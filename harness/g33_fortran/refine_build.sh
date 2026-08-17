@@ -94,23 +94,62 @@ CMDLOG="$OUT/commands.txt"; : >"$CMDLOG"
 # change to libmassv, the model constants, the radar module, the stub or the
 # driver was invisible -- and host/** is gitignored, so repo_commit and
 # tree_dirty do not see them either (owner P0-3).
+# CONTENT-ADDRESSED STAGING for every private source (owner §10). The build
+# compiled straight from the host tree and the provenance collector re-read
+# those same paths afterwards, so an edit in between yielded an executable
+# from one byte set and a record of another. Staging by digest makes the two
+# the same bytes by construction: what is hashed is what was compiled, and a
+# concurrent edit produces a different staged path rather than a silent
+# substitution. The overlay has been content-addressed since §9.1; this
+# extends it to the sources it is built beside.
+# OUTSIDE the output directory, and named by content: gfortran embeds each
+# source's filename in the binary, so staging under $OUT made the same
+# experiment compile to different executables in different output
+# directories -- the exact property the overlay was content-addressed for
+# (§9.1). Same bytes, same path, same binary.
+STAGE="${TMPDIR:-/tmp}/g33-stage"; mkdir -p "$STAGE"
+# The staged path is an IMPLEMENTATION detail -- it lives under the output
+# directory, so logging it would make the source record vary per build
+# directory and two builds of one experiment would address differently. The
+# map keeps the LOGICAL path, which is what the record is about; the staged
+# bytes are what gets compiled and hashed.
+STAGE_MAP="$OUT/staged-map.txt"; : >"$STAGE_MAP"
+stage() {
+    local src="$1" d b
+    d=$(shasum -a 256 "$src" | cut -d' ' -f1); b=$(basename "$src")
+    local dst="$STAGE/$d-$b"
+    [ -f "$dst" ] || { cp "$src" "$dst.$$.tmp" && mv -f "$dst.$$.tmp" "$dst"; }
+    printf '%s\t%s\n' "$dst" "$src" >>"$STAGE_MAP"
+    printf '%s' "$dst"
+}
+
 SRCLOG="$OUT/sources.txt"; : >"$SRCLOG"
 fc() { local o="$1"; shift
-       printf '%s\n' "${@: -1}" >>"$SRCLOG"
+       # The LOGICAL path with the digest of the bytes ACTUALLY COMPILED
+       # (Codex): logging the logical path alone sent the collector back to
+       # the host file, which is the very re-read staging exists to remove --
+       # an edit between compile and collect would then record bytes the
+       # compiler never saw. The name says what this source IS; the digest
+       # says what was fed to the compiler, taken here, at that moment.
+       local last="${@: -1}" logical sha
+       logical=$(awk -F'\t' -v k="$last" '$1==k{print $2}' "$STAGE_MAP" 2>/dev/null | tail -1)
+       sha=$(shasum -a 256 "$last" | cut -d' ' -f1)
+       printf '%s\t%s\n' "${logical:-$last}" "$sha" >>"$SRCLOG"
        printf '%q ' "$FC" -c "$@" -J"$OUT" -I"$OUT" -o "$o" >>"$CMDLOG"; printf '\n' >>"$CMDLOG"
        "$FC" -c "$@" -J"$OUT" -I"$OUT" -o "$o" 2>"$o.err" \
         || { echo "COMPILE FAILED: $*"; head -25 "$o.err"; exit 1; }; }
 
-fc "$OUT/g33_fixture_v1.o"         "${DRIVER_FLAGS[@]}" "$FIXTURE_SRC"
-fc "$OUT/libmassv.o"               "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$HOST/frame/libmassv.F"
-fc "$OUT/stub_wrf_error.o"         "${REF_FLAGS[@]}" "$HERE/stub_wrf_error.f90"
-fc "$OUT/module_model_constants.o" "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$HOST/share/module_model_constants.F"
-fc "$OUT/module_mp_radar.o"        "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$HOST/phys/module_mp_radar.F"
+fc "$OUT/g33_fixture_v1.o"         "${DRIVER_FLAGS[@]}" "$(stage "$FIXTURE_SRC")"
+fc "$OUT/libmassv.o"               "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$(stage "$HOST/frame/libmassv.F")"
+fc "$OUT/stub_wrf_error.o"         "${REF_FLAGS[@]}" "$(stage "$HERE/stub_wrf_error.f90")"
+fc "$OUT/module_model_constants.o" "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$(stage "$HOST/share/module_model_constants.F")"
+fc "$OUT/module_mp_radar.o"        "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$(stage "$HOST/phys/module_mp_radar.F")"
 # The PINNED module by default: this measures the reference operator, and
 # instrumentation would otherwise be a second difference between sweep members.
 # --dump swaps in the generated overlay, whose macro-OFF form is textually
 # identical to the pinned source (the A/B/C non-invasiveness proof).
-MODULE_SRC="$MODULE"; DUMP_DEF=()
+MODULE_STAGED=$(stage "$MODULE")
+MODULE_SRC="$MODULE_STAGED"; DUMP_DEF=()
 if [ "$DUMP" = 1 ]; then
     # CONTENT-ADDRESSED overlay path (owner §9.1). gfortran embeds each source's
     # filename in the binary for backtraces -- `-ffile-prefix-map` does not reach
@@ -118,7 +157,7 @@ if [ "$DUMP" = 1 ]; then
     # build a different executable digest in every output directory. Naming it by
     # its own digest makes the path a function of the content: identical overlays
     # compile from an identical path, different ones cannot collide.
-    python3 "$HERE/make_fortran_overlay.py" "$MODULE" "$OUT/module_mp_ovl.F" \
+    python3 "$HERE/make_fortran_overlay.py" "$MODULE_STAGED" "$OUT/module_mp_ovl.F" \
         --algo="$ALGO" --real-kind="$REAL_KIND" >/dev/null
     OVLFULL=$(shasum -a 256 "$OUT/module_mp_ovl.F" | cut -d' ' -f1)
     # CONTENT-ADDRESSED on the FULL digest (owner §13 P1-4). A 16-hex truncation
@@ -131,11 +170,26 @@ if [ "$DUMP" = 1 ]; then
     MODULE_SRC="${TMPDIR:-/tmp}/g33-ovl-${OVLFULL}.F"
     cp "$OUT/module_mp_ovl.F" "$MODULE_SRC.$$.tmp"
     mv -f "$MODULE_SRC.$$.tmp" "$MODULE_SRC"
+    # ...and the source log names it as the bundle publishes it: the
+    # content-addressed path lives under TMPDIR, which differs per machine,
+    # and a machine-specific string in the provenance would move the same
+    # experiment's address between hosts.
+    printf '%s\t%s\n' "$MODULE_SRC" "module_mp_ovl.F" >>"$STAGE_MAP"
     DUMP_DEF=(-DKDM6_G33_FORTRAN_DUMP)
     [ "$NFLUX" = 1 ] && DUMP_DEF+=(-DKDM6_G33_NUMBER_DUMP)
 fi
 fc "$OUT/module_mp.o"              "${KDM6_FLAGS[@]}" "${CPP_FLAGS[@]}" ${DUMP_DEF[@]+"${DUMP_DEF[@]}"} "$MODULE_SRC"
-fc "$OUT/g33_refine_driver.o"      "${DRIVER_FLAGS[@]}" "${CPP_FLAGS[@]}" ${DRVDEF[@]+"${DRVDEF[@]}"} ${DUMP_DEF[@]+"${DUMP_DEF[@]}"} \
+# The window header's loop count is the KERNEL's arithmetic, so its limit has
+# to be the KERNEL's constant. The driver held a literal 120.0, which agreed
+# with the pinned kernel by coincidence and would have gone on agreeing with
+# nothing if the kernel's limit ever moved (owner review §11). Taken from
+# $MODULE_SRC -- the bytes about to be compiled, overlay included -- so the
+# two cannot disagree by construction rather than by inspection.
+DTCLDCR=$(sed -n 's/.*::[[:space:]]*dtcldcr[[:space:]]*=[[:space:]]*\([0-9.]\{1,\}\).*/\1/p' "$MODULE_SRC")
+[ "$(printf '%s\n' "$DTCLDCR" | grep -c .)" = 1 ] || {
+    echo "REFUSED: $MODULE_SRC declares dtcldcr $(printf '%s\n' "$DTCLDCR" | grep -c .) times; the driver's window header needs exactly one" >&2
+    exit 2; }
+fc "$OUT/g33_refine_driver.o"      "${DRIVER_FLAGS[@]}" "${CPP_FLAGS[@]}" "-DKDM6_DTCLDCR=$DTCLDCR" ${DRVDEF[@]+"${DRVDEF[@]}"} ${DUMP_DEF[@]+"${DUMP_DEF[@]}"} \
                                    "$HERE/g33_refine_driver.f90"
 LINK=("$FC" "${COMMON_FLAGS[@]}" -o "$OUT/g33_refine_driver"
       "$OUT/g33_refine_driver.o" "$OUT/g33_fixture_v1.o" "$OUT/module_mp.o"
@@ -150,5 +204,6 @@ printf '%q ' "${LINK[@]}" >>"$CMDLOG"; printf '\n' >>"$CMDLOG"
 # recorded: binding only the compiled one would make an instrumented bundle
 # unlinkable to the reference it instruments.
 python3 "$(dirname "$0")/../g33_build_provenance.py" \
-    "$OUT" "$FC" "$MODULE" "$FIXTURE_SRC" "$0" "$OUT/g33_refine_driver" "$MODULE_SRC"
+    "$OUT" "$FC" "$MODULE" "$FIXTURE_SRC" "$0" "$OUT/g33_refine_driver" \
+    "$MODULE_SRC" "$MODULE_STAGED"
 echo "$OUT"

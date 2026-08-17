@@ -40,6 +40,15 @@ def _manifest():
         "fixture_sha256": "f" * 64,
         "module_path": "host/phys/module_mp_kdm6.F", "module_sha256": "d" * 64,
         "runtime_argv": [["12", "rezero"]],
+        # the REQUEST the recipe id is about; the argv above is how it was
+        # typed, and the validator ties the two
+        "expected_run": {"schema": "g33_expected_run_v1",
+                         "fixture_id": "fix", "fixture_sha256": "f" * 64,
+                         "dt_bits": "43960000", "window_seconds": 300.0,
+                         "columns": 3, "levels": 4, "algorithm": "legacy",
+                         "precision": "f32", "source_precision": "f32",
+                         "mode": "rezero", "nsplits": [12],
+                         "rho_profile": "as-is", "tile_sizes": [3]},
         "members": [{"file": "n12.rezero.txt", "output_sha256": "1" * 64,
                      "nsplit": 12, "mode": "rezero"}],
         "build_artifacts": [{"file": "g33_refine_driver", "sha256": "2" * 64}],
@@ -146,8 +155,17 @@ def test_an_ANALYSIS_module_moving_does_not_move_the_run():
      {"recipe", "content", "address"}),
     ("the module under test", lambda m: m.update(module_sha256="0" * 64),
      {"recipe", "content", "address"}),
-    ("the argv", lambda m: m.update(runtime_argv=[["24", "carry"]]),
+    # The REQUEST moves the recipe; the literal argv is the diagnostic
+    # record of how it was typed, and two spellings of one request are one
+    # request (owner review §7). An argv that disagrees with the request is
+    # refused by the validator, so this is a canonicalisation, not a hole.
+    ("the request", lambda m: m["expected_run"].update(nsplits=[24],
+                                                       mode="carry"),
      {"recipe", "content", "address"}),
+    ("the argv spelling alone",
+     lambda m: m.update(runtime_argv=[a + ["3", "as-is"]
+                                      for a in m["runtime_argv"]]),
+     {"address"}),
     ("a raw member", lambda m: m["members"][0].update(output_sha256="0" * 64),
      {"content", "address"}),
     ("the build", lambda m: m["build_artifacts"][0].update(sha256="0" * 64),
@@ -763,10 +781,15 @@ def test_LIST_ORDER_does_not_move_an_id():
     d["member_parsers"] = list(reversed(d["member_parsers"]))
     d["build_artifacts"] = list(reversed(d["build_artifacts"]))
     assert (gi.run_recipe_id(d), gi.run_content_id(d)) == before
-    # ...and an ORDER-BEARING list still moves it: argv is a command line.
+    # ...and the members are independent subprocesses, so the ORDER of the
+    # command list is not part of the request either (owner review §7):
+    # what moves the recipe id is the request itself.
     d2 = copy.deepcopy(man)
-    d2["runtime_argv"] = [list(reversed(a)) for a in d2["runtime_argv"]]
-    assert gi.run_recipe_id(d2) != before[0]
+    d2["runtime_argv"] = list(reversed(d2["runtime_argv"]))
+    assert gi.run_recipe_id(d2) == before[0]
+    d3 = copy.deepcopy(man)
+    d3["expected_run"]["mode"] = "carry"
+    assert gi.run_recipe_id(d3) != before[0]
 
 
 def test_INPUT_order_does_not_move_an_analysis_id():

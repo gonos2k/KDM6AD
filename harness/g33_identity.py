@@ -125,6 +125,13 @@ def unlabelled() -> set:
 #: a manifest says which derivation produced its ids rather than leaving a
 #: reader to assume today's.
 #:
+#: v4: `run_recipe_id` hashes the CANONICAL INVOCATION rather than the
+#: literal `runtime_argv`, and the ids carry their OWN schema tags rather
+#: than the container's. Two spellings of one request -- an omitted tile
+#: argument and its explicit default -- addressed differently, and so did
+#: two orderings of independent member commands; meanwhile a container-format
+#: bump moved every run id with no run byte changed (owner review §7, §8).
+#:
 #: v3: `run_recipe_id` carries the canonical `expected_run` and the
 #: `kernel_geometry` the run was held to. Both are "what was REQUESTED",
 #: which is the recipe's own question -- and until v3 the subtractive
@@ -140,7 +147,37 @@ def unlabelled() -> set:
 #: reach entry moved `run_content_id` with no run byte changed. A version
 #: rather than a quiet fix, because it changes what the id MEANS (owner
 #: review §3).
-IDENTITY_SCHEMA = "g33_layered_identity_v3"
+IDENTITY_SCHEMA = "g33_layered_identity_v4"
+
+#: The ids' OWN schema tags. They version the canonicalisation RULES, which
+#: is a different question from the container's format -- and hashing the
+#: container tag meant an archive-format bump re-addressed every run.
+RUN_RECIPE_SCHEMA = "g33_run_recipe_v1"
+RUN_CONTENT_SCHEMA = "g33_run_content_v1"
+ANALYSIS_SCHEMA = "g33_analysis_v1"
+
+
+def canonical_invocations(man: dict) -> list:
+    """The member command lines as REQUESTS, not as spellings.
+
+    The driver defaults an omitted tile argument to one tile over the domain
+    and an omitted forcing argument to `as-is`, so `["12","rezero"]` and
+    `["12","rezero","3","as-is"]` are the same invocation -- and the members
+    are independent subprocesses, so the ORDER of the list is not part of
+    the request either. Derived from `expected_run`, which the validator has
+    already tied to the literal argv, and sorted.
+    """
+    exp = man.get("expected_run") or {}
+    tiles = exp.get("tile_sizes") or ([exp["columns"]]
+                                      if isinstance(exp.get("columns"), int)
+                                      else None)
+    return sorted(
+        ({"nsplit": n, "mode": exp.get("mode"),
+          "tile_sizes": list(tiles) if tiles else None,
+          "rho_profile": exp.get("rho_profile")}
+         for n in (exp.get("nsplits") or [])),
+        key=lambda d: (d["nsplit"], str(d["mode"]), str(d["tile_sizes"]),
+                       str(d["rho_profile"])))
 
 
 def identity_block(published=()) -> dict:
@@ -406,13 +443,21 @@ def run_recipe_id(man: dict) -> str:
         "modules": _by_role(man, "run"),
         "member_parsers": content_only(man.get("member_parsers")),
         "tracked_build_inputs": content_only(man.get("tracked_build_inputs")),
-        "runtime_argv": man.get("runtime_argv"),
+        # The canonical invocation, not the literal argv (owner review §7):
+        # the argv stays in the MANIFEST as the diagnostic record of what was
+        # typed, and the validator ties the two -- but the id is about the
+        # request, and two spellings of one request are one request.
+        "invocations": canonical_invocations(man),
         "fixture": (man.get("fixture_path"), man.get("fixture_sha256")),
         "module": (man.get("module_path"), man.get("module_sha256")),
         "arm": man.get("arm"), "precision": man.get("precision"),
         "rho_profile": man.get("rho_profile"),
         "instrumented": man.get("instrumented"),
-        "schema": man.get("schema"), "artifact_type": man.get("artifact_type"),
+        # The RECIPE's own schema, not the container's (owner review §8): a
+        # container-format bump re-addressed every run whose bytes had not
+        # moved, which is the coupling the layered identity exists to remove.
+        "schema": RUN_RECIPE_SCHEMA,
+        "artifact_type": man.get("artifact_type"),
         # WHAT WAS ASKED FOR (identity v3, owner review §6). The recipe is
         # the request; `expected_run` is the request stated in full and
         # `kernel_geometry` is the rule the request is interpreted under.
@@ -451,6 +496,14 @@ def run_content_id(man: dict) -> str:
     keep = {k: v for k, v in man.items()
             if k not in ("analyses", "analyzer_sha256") + NARRATIVE_KEYS}
     keep["producer_modules"] = _by_role(man, "run")
+    # The CONTENT's own schema, for the same reason as the recipe's (owner
+    # review §8): the container's format version is not a fact about the
+    # run's bytes, and hashing it re-addressed every run on an
+    # archive-format bump. The literal argv goes with it -- the canonical
+    # invocation in the recipe id is the request, and the content id
+    # inherits that through the recipe.
+    keep["schema"] = RUN_CONTENT_SCHEMA
+    keep.pop("runtime_argv", None)
     # The identity block is reduced to its SCHEMA TAG (identity v2). The block
     # holds the role graph, the seeds and every reach entry, so hashing it
     # whole put the ANALYSIS half of the derivation into the run's content id
@@ -526,7 +579,8 @@ def analysis_id(man: dict, name: str) -> str:
     entries = [a for a in derived if a.get("analysis") == name]
     if not entries:
         raise KeyError(f"no derived analysis named {name!r} in this manifest")
-    return _digest({"run_content": run_content_id(man),
+    return _digest({"schema": ANALYSIS_SCHEMA,
+                    "run_content": run_content_id(man),
                     "entries": content_only(
                         sorted(entries, key=lambda a: str(a.get("file")))),
                     "modules": _pins_for(man, analysis_reach(man, name))})

@@ -181,7 +181,7 @@ def run(driver: str, tiles, nsplit: int = 1, carry: str = "rezero",
 
 def gated_text(driver: str, fixture: str, tiles, nsplit: int = 1,
                carry: str = "rezero", rho: str = "as-is",
-               algo: str | None = None) -> str:
+               algo: str | None = None, contract=None) -> str:
     """One decomposition's raw stdout, through the FULL member contract.
 
     The seam every multi-run leg shares. `qr_process_ledger` called `run()`
@@ -196,6 +196,13 @@ def gated_text(driver: str, fixture: str, tiles, nsplit: int = 1,
     label = f"{','.join(map(str, tiles))}/{nsplit}/{carry}/{rho}"
     text = run(driver, tiles, nsplit, carry, rho)
     _expect_tiles_are_live(text, tiles, label, nsplit)
+    if contract is not None:
+        # The bundle's OWN contract, read once at build time (owner review
+        # §6): re-reading the kernel source per leg made one bundle answer
+        # to two authorities.
+        validate_member_stream(text, name=label, nsplit=nsplit,
+                               contract=contract.for_tiles(tiles))
+        return text
     # ...including the DECOMPOSITION this leg asked for: `ncmin` is set by a
     # tile's last column, so a decomposition that is not the requested one is
     # a different operator -- and this analysis exists to measure exactly
@@ -205,6 +212,9 @@ def gated_text(driver: str, fixture: str, tiles, nsplit: int = 1,
                            levels=fixture_dims(fixture)[1], fixture=fixture,
                            horizon=fixture_horizon(fixture),
                            tiles=tuple(tiles), algo=algo,
+                           # no contract supplied (a direct call, e.g. the
+                           # standalone report): fall back to reading the
+                           # source, which is the pre-contract behaviour
                            dtcldcr=kernel_geometry(
                                algo=algo or "legacy")["dtcldcr"])
     return text
@@ -212,7 +222,8 @@ def gated_text(driver: str, fixture: str, tiles, nsplit: int = 1,
 
 def gated_state(driver: str, fixture: str, tiles, reference=None,
                 nsplit: int = 1, carry: str = "rezero",
-                rho: str = "as-is", algo: str | None = None) -> tuple:
+                rho: str = "as-is", algo: str | None = None,
+                contract=None) -> tuple:
     """One decomposition's final state, through EVERY gate, once.
 
     The single runner `local_oracle`, `class_law` and `control_replication`
@@ -227,7 +238,8 @@ def gated_state(driver: str, fixture: str, tiles, reference=None,
     Returns (state, records) so a caller can use the records as the reference
     for the rest of its legs.
     """
-    text = gated_text(driver, fixture, tiles, nsplit, carry, rho, algo)
+    text = gated_text(driver, fixture, tiles, nsplit, carry, rho, algo,
+                      contract)
     label = f"{','.join(map(str, tiles))}/{nsplit}/{carry}/{rho}"
     rec = read_records(text, label=label, nsplit=nsplit)
     if reference is not None:
@@ -237,7 +249,8 @@ def gated_state(driver: str, fixture: str, tiles, reference=None,
     return state, rec
 
 
-def control_replication(driver: str, fixture: str, algo: str | None = None) -> dict:
+def control_replication(driver: str, fixture: str, algo: str | None = None,
+                        contract=None) -> dict:
     """The attribution control, run on every trajectory rather than one.
 
     WITHIN a threshold class the decomposition genuinely changes -- `(1,2)` is
@@ -281,7 +294,8 @@ def control_replication(driver: str, fixture: str, algo: str | None = None) -> d
             if tiles in states:
                 continue
             states[tiles], rec = gated_state(driver, fixture, tiles, ref,
-                                             nsplit, carry, rho, algo=algo)
+                                             nsplit, carry, rho, algo=algo,
+                                             contract=contract)
             ref = ref or rec
         leg = (nsplit, carry, rho)
         if states[within[0]] == states[within[1]]:
@@ -562,7 +576,8 @@ def column_integrated(base_text: str, got_text: str, basis: str = "operator") ->
     return out
 
 
-def analysis(driver: str, fixture: str, algo: str | None = None) -> dict:
+def analysis(driver: str, fixture: str, algo: str | None = None,
+             contract=None) -> dict:
     """Every contiguous partition against the whole domain as one tile.
 
     Raw hex compared, not parsed floats: the question is whether the operator
@@ -687,7 +702,8 @@ def analysis(driver: str, fixture: str, algo: str | None = None) -> dict:
                     "decompositions": [list(t) for t in compositions(width)]}}
 
 
-def local_oracle(driver: str, fixture: str, algo: str | None = None) -> dict:
+def local_oracle(driver: str, fixture: str, algo: str | None = None,
+                 contract=None) -> dict:
     """Every decomposition against the PER-COLUMN answer, not against each other.
 
     Running each column as its own tile makes `ncmin` that column's own
@@ -709,13 +725,14 @@ def local_oracle(driver: str, fixture: str, algo: str | None = None) -> dict:
     """
     width, levels = fixture_dims(fixture)
     ones = (1,) * width
-    ref, ref_rec = gated_state(driver, fixture, ones, algo=algo)
+    ref, ref_rec = gated_state(driver, fixture, ones, algo=algo, contract=contract)
     ref_text = run(driver, ones)
 
     rows = {}
     for tiles in compositions(width):
         label = ",".join(map(str, tiles))
-        got, _ = gated_state(driver, fixture, tiles, ref_rec, algo=algo)
+        got, _ = gated_state(driver, fixture, tiles, ref_rec, algo=algo,
+                             contract=contract)
         text = run(driver, tiles)
         diff = [k for k in ref if ref[k] != got[k]]
         rows[label] = {
@@ -877,7 +894,8 @@ def equivalence_classes(fixture: str) -> dict:
     return out
 
 
-def class_law(driver: str, fixture: str, algo: str | None = None) -> dict:
+def class_law(driver: str, fixture: str, algo: str | None = None,
+              contract=None) -> dict:
     """Test that prediction: byte-identity WITHIN a class, difference ACROSS.
 
     This is what licenses reading a synthetic result as a statement about real
@@ -895,11 +913,11 @@ def class_law(driver: str, fixture: str, algo: str | None = None) -> dict:
     # then ran the whole domain would make every partition identical -- and
     # this check reads identity as the law HOLDING. The strongest possible
     # confirmation, produced by a completely broken run (Codex).
-    _ref_state, ref_rec = gated_state(driver, fixture, ones, algo=algo)
+    _ref_state, ref_rec = gated_state(driver, fixture, ones, algo=algo, contract=contract)
     state = {}
     for tiles in compositions(width):
         state[tiles], _ = gated_state(driver, fixture, tiles, ref_rec,
-                                      algo=algo)
+                                      algo=algo, contract=contract)
 
     within = [{"a": a, "b": b, "identical": state[a] == state[b]}
               for members in cls.values() for a in members[:1]

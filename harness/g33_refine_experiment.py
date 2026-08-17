@@ -27,6 +27,7 @@ import argparse
 import ast
 import hashlib
 import math
+from dataclasses import dataclass, replace
 import os
 import re
 import shutil
@@ -217,8 +218,12 @@ KERNEL_SOURCES = {
 #: v2 added `algorithm`: which kernel the limit was read from is part of
 #: the fact, and a tag whose required keys change without changing is a tag
 #: that means two things (Codex).
-KERNEL_GEOMETRY_SCHEMA = "kdm6_subcycle_v2"
-KNOWN_KERNEL_GEOMETRY_SCHEMAS = ("kdm6_subcycle_v1", "kdm6_subcycle_v2")
+#: v3 records the limit read from the bytes the compiler actually read --
+#: an --nflux build feeds it a generated overlay, so the pinned module's
+#: constant was an assumption about that overlay until now (owner review §4).
+KERNEL_GEOMETRY_SCHEMA = "kdm6_subcycle_v3"
+KNOWN_KERNEL_GEOMETRY_SCHEMAS = ("kdm6_subcycle_v1", "kdm6_subcycle_v2",
+                                 "kdm6_subcycle_v3")
 #: The CLOSED expected-run contract (owner review §5). Versioned because it
 #: is a document schema: an added field is a new contract, not a new
 #: optional convenience, and "compare if present" is what made the previous
@@ -226,7 +231,46 @@ KNOWN_KERNEL_GEOMETRY_SCHEMAS = ("kdm6_subcycle_v1", "kdm6_subcycle_v2")
 EXPECTED_RUN_SCHEMA = "g33_expected_run_v1"
 
 
-def kernel_geometry(precision: str = "f32", algo: str = "legacy") -> dict:
+@dataclass(frozen=True)
+class RunContract:
+    """Everything a raw execution is held to, read ONCE per bundle.
+
+    The producer read the kernel source for its members and the multi-run
+    legs read it again per leg, so one bundle had two geometry authorities
+    and a source edit between them would bind different legs to different
+    limits (owner review §6). Frozen, passed down, never re-derived: the
+    contract a stream answers to is the contract the bundle was built
+    under, whatever the tree does afterwards.
+    """
+    fixture: str
+    columns: int
+    levels: int
+    horizon: float
+    dtcldcr: float
+    algorithm: str
+    precision: str
+    mode: str
+    rho_profile: str
+    tiles: tuple
+
+    def for_tiles(self, tiles) -> "RunContract":
+        """The same contract with a different requested decomposition -- the
+        one axis a multi-run leg legitimately varies."""
+        return replace(self, tiles=tuple(tiles))
+
+
+def _dtcldcr_from(text: str, where: str) -> float:
+    """The one declaration of `dtcldcr` in a kernel source's bytes."""
+    hits = re.findall(r"::\s*dtcldcr\s*=\s*([0-9.]+)", text)
+    if len(hits) != 1:
+        raise SystemExit(
+            f"REFUSED: {where} declares dtcldcr {len(hits)} times; the "
+            f"geometry contract needs exactly one")
+    return float(hits[0])
+
+
+def kernel_geometry(precision: str = "f32", algo: str = "legacy",
+                    compiled: Path | None = None) -> dict:
     """What the kernel this bundle compiles against uses for `dtcldcr`.
 
     Recorded IN the bundle so a reader never has to have the private source
@@ -245,15 +289,27 @@ def kernel_geometry(precision: str = "f32", algo: str = "legacy") -> dict:
             f"REFUSED: {rel} is not here, so the sub-cycle limit the "
             f"{algo} kernel enforces cannot be read -- and a default would "
             f"be a number nobody measured")
-    text = src.read_text()
-    hits = re.findall(r"::\s*dtcldcr\s*=\s*([0-9.]+)", text)
-    if len(hits) != 1:
-        raise SystemExit(
-            f"REFUSED: {rel} declares dtcldcr {len(hits)} times; "
-            f"the geometry contract needs exactly one")
-    value = float(hits[0])
+    value = _dtcldcr_from(src.read_text(), str(rel))
     w = ">d" if precision == "f64" else ">f"
+    # ...and the bytes the COMPILER read, where this build generated them.
+    # The overlay is derived from the module, so the two agreeing is the
+    # expected case -- but "expected" is what a contract exists to check,
+    # and the executable was made from the overlay (owner review §4).
+    compiled_word = None
+    if compiled is not None:
+        got = _dtcldcr_from(Path(compiled).read_text(errors="replace"),
+                            str(compiled))
+        if struct.pack(w, got) != struct.pack(w, value):
+            raise SystemExit(
+                f"REFUSED: {rel} declares dtcldcr {value} but the compiled "
+                f"{Path(compiled).name} declares {got} -- the executable was "
+                f"made from the second")
+        compiled_word = struct.pack(w, got).hex().upper()
     return {"schema": KERNEL_GEOMETRY_SCHEMA,
+            **({"compiled_dtcldcr_word": compiled_word,
+                "compiled_source_sha256": hashlib.sha256(
+                    Path(compiled).read_bytes()).hexdigest()}
+               if compiled is not None else {}),
             "dtcldcr": struct.unpack(w, struct.pack(w, value))[0],
             "dtcldcr_storage": precision,
             "dtcldcr_word": struct.pack(w, value).hex().upper(),
@@ -396,7 +452,8 @@ def _require_current_profile(run, name, width, levels, algo=None, *,
             f"{algo!r}")
 
 
-def validate_member_stream(text, *, name, nsplit, mode, rho, width, levels,
+def validate_member_stream(text, *, name, nsplit, contract=None, mode=None,
+                           rho=None, width=None, levels=None,
                            arm="reference", algo=None, fixture=None,
                            horizon=None, tiles=None, transport=True,
                            dtcldcr=None):
@@ -410,6 +467,20 @@ def validate_member_stream(text, *, name, nsplit, mode, rho, width, levels,
     parsed by the arm's own strict parser, then held to the same contract
     the primary members answer to.
     """
+    # A CONTRACT, where the caller has one (owner review §6): every field
+    # below then comes from the object the producer built once, rather than
+    # from arguments each call site assembles -- and from a source nobody
+    # re-reads.
+    if contract is not None:
+        mode = contract.mode if mode is None else mode
+        rho = contract.rho_profile if rho is None else rho
+        width = contract.columns if width is None else width
+        levels = contract.levels if levels is None else levels
+        algo = contract.algorithm if algo is None else algo
+        fixture = contract.fixture if fixture is None else fixture
+        horizon = contract.horizon if horizon is None else horizon
+        dtcldcr = contract.dtcldcr if dtcldcr is None else dtcldcr
+        tiles = contract.tiles if tiles is None else tiles
     # EVERY arm read here, including the probe (owner review §9). The
     # function claimed to be the one validator while picking `pr.read` for
     # f64 alone, so a probe stream was read as G33R and then held to a
@@ -1232,12 +1303,12 @@ def _analyzer_pin(module: str) -> dict:
 #: (Codex). A registry cannot drift the way a hand-written call can.
 MULTI_RUN = {
     "ncmin_locality": ("g33_ncmin_locality",
-                       lambda exe, fixture, algo=None:
-                       _ncmin().analysis(exe, fixture, algo)),
+                       lambda exe, fixture, algo=None, contract=None:
+                       _ncmin().analysis(exe, fixture, algo, contract)),
     # WHICH PROCESS carries the difference the one above measures (owner §7).
     "qr_process_ledger": ("g33_qr_process_ledger",
-                          lambda exe, fixture, algo=None:
-                          _ledger().analysis(exe, fixture, algo)),
+                          lambda exe, fixture, algo=None, contract=None:
+                          _ledger().analysis(exe, fixture, algo, contract)),
 }
 
 
@@ -1251,8 +1322,53 @@ def _ncmin():
     return nl
 
 
+def resolved_violations(man: dict, root: Path, contract) -> list:
+    """The manifest against the BYTES it points at, before publication.
+
+    `rm.validate` can only hold a document to itself. The fixture's
+    parameters are in the fixture's bytes, the sub-cycle limit is in the
+    compiled overlay's, and each member's geometry is in its own stream --
+    so the resolved comparison is a different check from the structural one,
+    and it belongs on the publish path rather than only in the chain
+    (owner review §9).
+    """
+    bad = []
+    exp = man.get("expected_run") or {}
+    src = (HERE / "g33_fortran" / f"{contract.fixture}.f90").read_text()
+    for key, want in (("columns", fixture_dims(contract.fixture)[0]),
+                      ("levels", fixture_dims(contract.fixture)[1]),
+                      ("dt_bits", fixture_dt_bits_from(src, contract.fixture)),
+                      ("window_seconds", fixture_horizon_from(src,
+                                                              contract.fixture)),
+                      ("fixture_id", contract.fixture)):
+        if exp.get(key) != want:
+            bad.append(f"expected_run.{key} {exp.get(key)!r} is not the "
+                       f"fixture's {want!r}")
+    kg = man.get("kernel_geometry") or {}
+    if kg.get("dtcldcr") != contract.dtcldcr:
+        bad.append(f"kernel_geometry.dtcldcr {kg.get('dtcldcr')!r} is not the "
+                   f"{contract.dtcldcr!r} this build was held to")
+    for m in man.get("members") or []:
+        p = root / m.get("file", "")
+        if not p.is_file():
+            bad.append(f"members[{m.get('file')!r}] is not in the bundle")
+            continue
+        want_d, want_L, want_h = expected_geometry(
+            contract.horizon, m["nsplit"], contract.precision,
+            contract.dtcldcr)
+        for key, want in (("delt", want_d), ("dtcld", want_h)):
+            if f"{m.get(key, float('nan')):.6f}" != f"{want:.6f}":
+                bad.append(f"members[{m['file']}] records {key}={m.get(key)!r},"
+                           f" the fixture's horizon gives {want}")
+        if m.get("loops") != want_L:
+            bad.append(f"members[{m['file']}] records loops={m.get('loops')!r},"
+                       f" the kernel's rule gives {want_L}")
+    return bad
+
+
 def _multi_run_analyses(out: Path, exe: Path, fixture: str,
-                        precision: str = "f32", algo: str | None = None) -> list:
+                        precision: str = "f32", algo: str | None = None,
+                        contract=None) -> list:
     """Analyses that run the DRIVER over several decompositions.
 
     Emitted only where the fixture can support the question. `ncmin_locality`
@@ -1278,7 +1394,7 @@ def _multi_run_analyses(out: Path, exe: Path, fixture: str,
         # review §7): without it a multi-run stream whose two
         # protocols agreed on `conservative` could enter the
         # immutable store and be refused only later, by the chain.
-        result = fn(str(exe), fixture, algo)
+        result = fn(str(exe), fixture, algo, contract)
         # The RAW streams this analysis consumed, preserved as bundle members.
         # Without them the chain reached the derived JSON, the analyzer and the
         # binary, but never the stdout those numbers were computed from: the
@@ -1401,10 +1517,22 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
     # geometry contract is built on it, and a checker that re-reads it from
     # whatever tree it happens to sit in is not checking a content-addressed
     # archive (owner review §4).
-    kgeom = kernel_geometry("f64" if arm == "f64" else "f32", algo)
     tmp = Path(tempfile.mkdtemp(prefix=".g33-bundle-", dir=dest.parent))
     try:
         exe = build(tmp, fixture, algo, nflux, arm)
+        # AFTER the build, so the generated overlay the compiler read exists
+        # and the record can answer for those bytes rather than assuming the
+        # module's constant survived generation (owner review §4). Read ONCE
+        # per bundle: every member, arm and multi-run leg is held to this
+        # value, so a source edit mid-run cannot bind two legs to two limits.
+        ovl = tmp / "module_mp_ovl.F"
+        kgeom = kernel_geometry("f64" if arm == "f64" else "f32", algo,
+                                ovl if ovl.is_file() else None)
+        contract = RunContract(
+            fixture=fixture, columns=width, levels=fixture_dims(fixture)[1],
+            horizon=fixture_horizon(fixture), dtcldcr=kgeom["dtcldcr"],
+            algorithm=algo, precision="f64" if arm == "f64" else "f32",
+            mode=mode, rho_profile=rho_profile, tiles=(width,))
         if arm == "f64":
             # An f64 build emits no G33R at all, so there are no refinement
             # members to strict-parse; the probe stream is the artifact, and it
@@ -1464,7 +1592,7 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             # need the --nflux build, whose G33N records say which tiles the
             # kernel actually received.
             man["analyses"] += _multi_run_analyses(tmp, exe, fixture,
-                                                   precision, algo)
+                                                   precision, algo, contract)
         # The parser that ACTUALLY approved these members (owner §10.2): the
         # manifest recorded g33_refine_analyze.py even for an f64 arm, whose
         # members are read by the probe parser.
@@ -1501,7 +1629,12 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             {"file": q.name, "sha256": rm.sha256(q)}
             for q in (tmp / n for n in ("g33_refine_driver",
                                         "build_provenance.json",
-                                        "commands.txt", "sources.txt"))
+                                        "commands.txt", "sources.txt",
+                                        # the GENERATED overlay an --nflux
+                                        # build feeds the compiler: the bytes
+                                        # the executable was made from are
+                                        # evidence, not a temporary
+                                        "module_mp_ovl.F"))
             if q.is_file()]
         man["arm"] = arm
         # The SAME word the analyses were selected by, so the manifest cannot
@@ -1574,6 +1707,14 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             raise SystemExit(
                 f"REFUSED: the identity graph cannot be resolved against the "
                 f"pinned blobs at publish time -- {e}")
+        # ...and the RESOLVED experiment (owner review §9). `rm.validate`
+        # holds the document to itself; the fixture's own parameters live in
+        # its bytes and the members' in theirs, and until now only the
+        # evidence chain compared them -- so a producer regression writing
+        # `levels: 999` entered the immutable store and was found afterwards.
+        # This repository's rule is the other way round: refuse before
+        # publishing.
+        violations += resolved_violations(man, tmp, contract)
         if violations:
             raise SystemExit("REFUSED: the manifest does not satisfy "
                              f"{man['schema']}:\n  " + "\n  ".join(violations))

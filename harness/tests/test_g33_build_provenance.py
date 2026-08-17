@@ -156,7 +156,12 @@ def test_identity_is_stable_across_output_directories(build, tmp_path):
 def test_the_build_logs_its_sources_and_its_link():
     """A provenance field nothing populates records nothing."""
     script = (REPO / "harness/g33_fortran/refine_build.sh").read_text()
-    assert "SRCLOG=" in script and 'printf \'%s\\n\' "${@: -1}" >>"$SRCLOG"' in script
+    assert "SRCLOG=" in script
+    # the log carries the LOGICAL path with the digest of the bytes the
+    # compiler was actually fed, taken at compile time -- re-reading the
+    # path when collecting is what staging exists to remove (owner §10)
+    assert 'sha=$(shasum -a 256 "$last" | cut -d\' \' -f1)' in script
+    assert '>>"$SRCLOG"' in script
     assert 'printf \'%q \' "${LINK[@]}" >>"$CMDLOG"' in script
 
 
@@ -259,24 +264,40 @@ def test_the_build_script_passes_the_REAL_KIND_to_the_overlay():
 
 def test_the_preprocessor_guard_is_GONE_and_the_driver_still_compiles():
     """A guard that outlives its reason reads as protection and refuses work
-    that is now correct."""
-    drv = (REPO / "harness/g33_fortran/g33_refine_driver.f90").read_text()
-    assert "#error" not in drv
+    that is now correct.
+
+    Names the retired guard rather than asserting the driver has no `#error`
+    at all: the sub-cycle limit arrives as a `-D` from the build, and a
+    driver that compiles without it would carry no limit at all (§11)."""
+    lines = (REPO / "harness/g33_fortran/g33_refine_driver.f90").read_text() \
+        .splitlines()
+    assert not any("no f64 number record family" in ln for ln in lines)
+    errors = [i for i, ln in enumerate(lines) if ln.startswith("#error")]
+    assert [lines[i - 1] for i in errors] == ["#ifndef KDM6_DTCLDCR"], \
+        "the only refusal left is a driver with no sub-cycle limit at all"
 
 
 @pytest.mark.skipif(shutil.which("gfortran") is None, reason="needs gfortran")
 def test_the_driver_compiles_under_BOTH_real_kinds(tmp_path):
-    """The combination that was refused at compile time now has to parse."""
+    """The combination that was refused at compile time now has to parse.
+
+    `-DKDM6_DTCLDCR` is what the build passes from the compiled kernel (§11),
+    so a direct compile has to pass it too -- and the last case asserts that
+    LEAVING IT OUT is the refusal, not a driver carrying no limit."""
     drv = REPO / "harness/g33_fortran/g33_refine_driver.f90"
+    base = ["gfortran", "-cpp", "-fsyntax-only", "-ffree-form",
+            "-ffree-line-length-none", "-DKDM6_G33_NUMBER_DUMP"]
     for extra in ([], ["-DKDM6_G33_F64"]):
-        r = subprocess.run(["gfortran", "-cpp", "-fsyntax-only", "-ffree-form",
-                            "-ffree-line-length-none", "-DKDM6_G33_NUMBER_DUMP",
-                            *extra, str(drv)],
+        r = subprocess.run([*base, "-DKDM6_DTCLDCR=120.", *extra, str(drv)],
                            capture_output=True, text=True, cwd=tmp_path)
         # It cannot LINK here (no fixture module), but it must get past the
         # preprocessor and the declaration section.
         assert "no f64 number record family" not in r.stderr
         assert "#error" not in r.stderr
+    r = subprocess.run([*base, str(drv)], capture_output=True, text=True,
+                       cwd=tmp_path)
+    # (both runs fail on the missing .mod files, so the MESSAGE is the signal)
+    assert "must pass the compiled kernel" in r.stderr
 
 
 def test_the_overlay_path_carries_the_WHOLE_digest_so_it_cannot_collide(tmp_path):
@@ -305,3 +326,31 @@ def test_the_overlay_path_carries_the_WHOLE_digest_so_it_cannot_collide(tmp_path
     assert len(digest) == 64, f"path carries {len(digest)} hex, not the full digest"
     assert hashlib.sha256(overlays[0].read_bytes()).hexdigest() == digest
     assert not list(tmp_path.glob("*.tmp")), "a temp file survived the rename"
+
+
+def test_the_driver_takes_the_subcycle_limit_from_what_was_compiled():
+    """`loops_used = max(nint(delt_used/120.0), 1)` made the window header a
+    THIRD owner of the sub-cycle limit, agreeing with the pinned kernel by
+    coincidence (owner review §11). Forcing the driver's constant to 60 while
+    the kernel kept 120 moved the header to `loops 5 dtcld 60.000000` with
+    EVERY kernel record byte-identical -- a geometry claim nothing else in the
+    stream could contradict. The build now reads the limit out of the bytes it
+    is about to compile (the overlay under --nflux, not the original), and a
+    driver built without it does not compile at all."""
+    build = (REPO / "harness/g33_fortran/refine_build.sh").read_text()
+    driver = (REPO / "harness/g33_fortran/g33_refine_driver.f90").read_text()
+    extract = build.split("DTCLDCR=$(sed")[1].split("\n")[0]
+    assert '"$MODULE_SRC"' in extract, "the limit must come from what is compiled"
+    assert '"-DKDM6_DTCLDCR=$DTCLDCR"' in build
+    assert "#ifndef KDM6_DTCLDCR" in driver and "#error" in driver
+    assert "real, parameter :: dtcldcr = KDM6_DTCLDCR" in driver
+    assert "120.0" not in driver.split("loops_used = ")[1].split("\n")[0]
+
+
+def test_a_kernel_declaring_the_limit_twice_is_refused_not_guessed():
+    """One declaration or none: picking one of two would let the build and the
+    kernel disagree silently, which is the whole point of reading it here."""
+    build = (REPO / "harness/g33_fortran/refine_build.sh").read_text()
+    guard = build.split("DTCLDCR=$(sed")[1]
+    assert "grep -c ." in guard and "declares dtcldcr" in guard
+    assert "exit 2" in guard.split("declares dtcldcr")[1][:200]

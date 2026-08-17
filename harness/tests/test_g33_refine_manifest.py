@@ -27,6 +27,8 @@ def synthetic_manifest(root):
         f.write_text(text)
         return rm.sha256(f)
 
+    # the overlay the compiler read, published as a build artifact
+    _OVL = w("module_mp_ovl.F", "   real, parameter, private :: dtcldcr = 120.\n")
     pin = {"path": "harness/p.py", "content_sha256": "d" * 64,
            "commit": "e" * 40, "blob_sha": "f" * 40}
     # The role graph has to AGREE with the pins, so both come from one list:
@@ -50,10 +52,12 @@ def synthetic_manifest(root):
         "runtime_argv": [["12", "rezero"]],
         "fixture_path": "harness/g33_fortran/g33_fixture_multisubcycle_v1.f90",
         "fixture_sha256": "9" * 64,
-        "kernel_geometry": {"schema": "kdm6_subcycle_v2", "dtcldcr": 120.0,
+        "kernel_geometry": {"schema": "kdm6_subcycle_v3", "dtcldcr": 120.0,
                             "dtcldcr_storage": "f32",
                             "dtcldcr_word": "42F00000",
                             "algorithm": "legacy",
+                            "compiled_dtcldcr_word": "42F00000",
+                            "compiled_source_sha256": _OVL,
                             "source_path":
                                 "host/KIM-meso_v1.0/phys/module_mp_kdm6.F",
                             "source_sha256": "8" * 64},
@@ -87,9 +91,24 @@ def synthetic_manifest(root):
                      "tile_sizes": [3], "tile_ranges": [[1, 3]]},
              "runtime_argv": ["12", "rezero", "3", "uniform"]}],
         "build_artifacts": [{"file": "g33_refine_driver",
-                             "sha256": w("g33_refine_driver", "#!f\n")}],
-        "build_provenance": {"executable_sha256": rm.sha256(
-            root / "g33_refine_driver")},
+                             "sha256": w("g33_refine_driver", "#!f\n")},
+                            {"file": "module_mp_ovl.F", "sha256": _OVL}],
+        # v6: the build's record is closed -- compiler, sources, module,
+        # fixture, script -- so the fixture carries what a real build writes
+        "build_provenance": {
+            "executable_sha256": rm.sha256(root / "g33_refine_driver"),
+            "compiler_version": "gfortran (fake) 1.0",
+            "compiler_sha256": "1" * 64,
+            "module_path": "host/KIM-meso_v1.0/phys/module_mp_kdm6.F",
+            "module_sha256": "8" * 64,
+            "fixture_sha256": "9" * 64,
+            "build_script_sha256": "7" * 64,
+            "sources": [{"path": "host/x.F", "sha256": "6" * 64}],
+            "compile_commands": ["gfortran -c host/x.F"],
+            # an instrumented build feeds the compiler the GENERATED overlay
+            "compiled_module_sha256": _OVL},
+        "module_path": "host/KIM-meso_v1.0/phys/module_mp_kdm6.F",
+        "module_sha256": "8" * 64,
         "member_parsers": [pin], "producer_modules": _pins,
         "tracked_build_inputs": [pin],
         # The role graph the layered ids are derived under. Required from v3:
@@ -1124,3 +1143,48 @@ def test_an_OMITTED_argv_position_is_still_a_request(tmp_path, argv, declared,
     man["expected_run"]["rho_profile"] = declared
     got = [v for v in rm.validate(man) if "rho_profile" in v]
     assert (not got) is ok, got
+
+
+@pytest.mark.parametrize("tag,mutate,needle", [
+    ("an arbitrary kernel digest",
+     lambda m: m["kernel_geometry"].update({"source_sha256": "0" * 64}),
+     "is not the manifest's module_sha256"),
+    ("module_sha256 deleted", lambda m: m.pop("module_sha256"),
+     "required from v6"),
+    ("provenance names another module",
+     lambda m: m["build_provenance"].update({"module_sha256": "4" * 64}),
+     "two records of the module"),
+    ("f64 storage on an f32 build",
+     lambda m: m["kernel_geometry"].update({"dtcldcr_storage": "f64",
+                                            "dtcldcr_word": "405E000000000000"}),
+     "this build's real kind"),
+    ("provenance reduced to one key",
+     lambda m: m.update({"build_provenance": {
+         "executable_sha256": m["build_provenance"]["executable_sha256"]}}),
+     "required from v6"),
+    ("the overlay is not published",
+     lambda m: m.update({"build_artifacts": [
+         a for a in m["build_artifacts"] if a["file"] != "module_mp_ovl.F"]}),
+     "must publish module_mp_ovl.F"),
+    ("the published overlay is not the compiled one",
+     lambda m: m["build_provenance"].update({"compiled_module_sha256":
+                                             "3" * 64}),
+     "not the compiled_module_sha256"),
+    ("the overlay carries another limit",
+     lambda m: m["kernel_geometry"].update({"compiled_dtcldcr_word":
+                                            "42480000"}),
+     "generated overlay carries a different"),
+])
+def test_the_geometry_is_PROVENANCED_to_what_was_compiled(tmp_path, tag,
+                                                          mutate, needle):
+    """The record was length-checked and compared to the checkout's source
+    map, so an arbitrary digest passed while claiming to be the provenance
+    of the limit -- and an --nflux build feeds the compiler a GENERATED
+    overlay, so the pinned module's constant was an assumption about bytes
+    nothing checked (owner review §4). Six gaps measured on the live
+    manifest before this contract."""
+    man = synthetic_manifest(tmp_path)
+    man["schema"] = "refinement_experiment_v6"
+    assert rm.validate(man) == [], rm.validate(man)[:2]
+    mutate(man)
+    assert any(needle in v for v in rm.validate(man)), rm.validate(man)[:3]

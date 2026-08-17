@@ -6,6 +6,7 @@ prevented provenance from one build being published beside members from another.
 These tests hold the replacement to that: fail-closed at every stage, and visible
 under the destination only after everything succeeded.
 """
+import hashlib
 import inspect
 import json
 import re
@@ -39,11 +40,24 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
         # build_artifacts/build_provenance cross-check now refuses (owner §8.4).
         exe = workdir / "g33_refine_driver"
         exe.write_text("#!fake\n")
+        # the GENERATED overlay an instrumented build feeds the compiler --
+        # v6 publishes it and reads the sub-cycle limit from those bytes
+        ovl = workdir / "module_mp_ovl.F"
+        ovl.write_text("   real, parameter, private :: dtcldcr = 120.\n")
         (workdir / "commands.txt").write_text("fake\n")
         (workdir / "sources.txt").write_text("fake\n")
+        # a v6-shaped record: what a real build writes, faked
         (workdir / "build_provenance.json").write_text(json.dumps({
-            "module_sha256": xp.rm.sha256(MOD), "fixture_sha256": xp.rm.sha256(FIX),
-            "sources": [], "executable_sha256": xp.rm.sha256(exe)}))
+            "module_path": str(MOD),
+            "module_sha256": xp.rm.sha256(MOD),
+            "fixture_sha256": xp.rm.sha256(FIX),
+            "compiler_version": "gfortran (fake) 1.0",
+            "compiler_sha256": "1" * 64,
+            "build_script_sha256": "7" * 64,
+            "compile_commands": ["gfortran -c fake"],
+            "sources": [{"path": str(MOD), "sha256": xp.rm.sha256(MOD)}],
+            "compiled_module_sha256": xp.rm.sha256(ovl),
+            "executable_sha256": xp.rm.sha256(exe)}))
         return workdir / "driver"
 
     def analyses(out, exe, ns, mode, precision="f32"):
@@ -98,8 +112,18 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
     monkeypatch.setattr(xp, "_run", lambda cmd, **kw: "gfortran (fake) 1.0\n")
 
 
-MOD = ROOT / "g33_refine_analyze.py"       # any two real files, for digests
-FIX = ROOT / "g33_refine_manifest.py"
+# REAL files, because v6 ties the kernel record to the module the manifest
+# pins and the resolved gate reads the fixture's own bytes: a stand-in would
+# be testing a document that could not describe a run.
+FIX = ROOT / "g33_fortran" / "g33_fixture_multisubcycle_v1.f90"
+# ...and RELATIVE, as the real invocation records it: the kernel record and
+# the manifest name one file, so they must spell it the same way. The public
+# checkout's STAND-IN is relative for the same reason -- an absolute
+# `module_path` cannot equal the relative `source_path` the record carries,
+# and v6 requires those two to be one file.
+MOD = (xp.KERNEL_SOURCES["legacy"]
+       if (REPO / xp.KERNEL_SOURCES["legacy"]).is_file()
+       else FIX.relative_to(REPO))
 
 
 def _produce(dest, **kw):
@@ -123,15 +147,39 @@ def _kernel_geometry_on_a_public_checkout(monkeypatch, request):
     # algorithm rather than the SystemExit under test (Codex).
     if REF.is_file() or request.node.get_closest_marker("real_kernel_geometry"):
         return
-    monkeypatch.setattr(xp, "kernel_geometry",
-                        lambda precision="f32", algo="legacy": {
-                            "schema": xp.KERNEL_GEOMETRY_SCHEMA,
-                            "dtcldcr": 120.0, "dtcldcr_storage": precision,
-                            "dtcldcr_word": ("42F00000" if precision == "f32"
-                                             else "405E000000000000"),
-                            "algorithm": algo,
-                            "source_path": str(xp.KERNEL_SOURCES[algo]),
-                            "source_sha256": "0" * 64})
+    # The stand-in module is what the manifest pins here, so it has to be
+    # what the kernel record and the validator's `KERNEL_SOURCES` both name:
+    # v6 binds those three together, and a seam that faked only one of them
+    # would be testing a manifest no producer could write.
+    monkeypatch.setitem(xp.KERNEL_SOURCES, "legacy", MOD)
+    monkeypatch.setattr(xp, "kernel_geometry", _fake_kernel_geometry)
+
+
+def _fake_kernel_geometry(precision="f32", algo="legacy", compiled=None):
+    """The seam's record, shaped like the real one INCLUDING the compiled
+    witness -- a v6 manifest assembled without it does not validate."""
+    word = "42F00000" if precision == "f32" else "405E000000000000"
+    return {"schema": xp.KERNEL_GEOMETRY_SCHEMA,
+            **({"compiled_dtcldcr_word": word,
+                "compiled_source_sha256": hashlib.sha256(
+                    Path(compiled).read_bytes()).hexdigest()}
+               if compiled is not None else {}),
+            "dtcldcr": 120.0, "dtcldcr_storage": precision,
+            "dtcldcr_word": word, "algorithm": algo,
+            "source_path": str(xp.KERNEL_SOURCES[algo]),
+            "source_sha256": xp.rm.sha256(xp.KERNEL_SOURCES[algo])}
+
+
+@pytest.mark.real_kernel_geometry
+def test_the_public_checkout_seam_has_the_signature_it_stands_in_for():
+    """The seam only runs where `host/**` is absent, so a signature that
+    drifted from `kernel_geometry` broke NOTHING here and every bundle
+    assembly test on CI -- which is where the compiled-overlay argument was
+    added and this stub was not (Codex, twice now). Asserting the signature
+    makes the drift fail on the machine that caused it."""
+    shape = lambda f: [(p.name, p.default, p.kind)
+                       for p in inspect.signature(f).parameters.values()]
+    assert shape(_fake_kernel_geometry) == shape(xp.kernel_geometry)
 
 
 @pytest.fixture(autouse=True)
@@ -247,11 +295,24 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
         # build_artifacts/build_provenance cross-check now refuses (owner §8.4).
         exe = workdir / "g33_refine_driver"
         exe.write_text("#!fake\n")
+        # the GENERATED overlay an instrumented build feeds the compiler --
+        # v6 publishes it and reads the sub-cycle limit from those bytes
+        ovl = workdir / "module_mp_ovl.F"
+        ovl.write_text("   real, parameter, private :: dtcldcr = 120.\n")
         (workdir / "commands.txt").write_text("fake\n")
         (workdir / "sources.txt").write_text("fake\n")
+        # a v6-shaped record: what a real build writes, faked
         (workdir / "build_provenance.json").write_text(json.dumps({
-            "module_sha256": xp.rm.sha256(MOD), "fixture_sha256": xp.rm.sha256(FIX),
-            "sources": [], "executable_sha256": xp.rm.sha256(exe)}))
+            "module_path": str(MOD),
+            "module_sha256": xp.rm.sha256(MOD),
+            "fixture_sha256": xp.rm.sha256(FIX),
+            "compiler_version": "gfortran (fake) 1.0",
+            "compiler_sha256": "1" * 64,
+            "build_script_sha256": "7" * 64,
+            "compile_commands": ["gfortran -c fake"],
+            "sources": [{"path": str(MOD), "sha256": xp.rm.sha256(MOD)}],
+            "compiled_module_sha256": xp.rm.sha256(ovl),
+            "executable_sha256": xp.rm.sha256(exe)}))
         return workdir / "driver"
 
     def probe_members(exe, out, ns, mode, rho_profile="as-is", width=3,
@@ -454,11 +515,12 @@ def test_PRODUCE_passes_the_bundles_own_mode_and_width_to_the_analysis(
                         lambda out, exe, ns, mode, width, levels, algo=None,
                         fixture=None, horizon=None, dtcldcr=None: seen.update(
                             mode=mode, width=width, levels=levels) or [])
-    monkeypatch.setattr(xp, "fixture_width", lambda fixture: 5)
+
     xp.produce(tmp_path / "bundle", fixture="g33_fixture_multisubcycle_v1",
                algo="legacy", nsplits=(3, 6), mode="carry", nflux=True,
                module=MOD)
-    assert seen == {"mode": "carry", "width": 5, "levels": 4}, (
+    want_w, want_k = xp.fixture_dims("g33_fixture_multisubcycle_v1")
+    assert seen == {"mode": "carry", "width": want_w, "levels": want_k}, (
         "produce() must hand the analysis the bundle's OWN mode and fixture "
         f"width and level count, got {seen}")
 
@@ -1338,3 +1400,16 @@ def test_a_missing_kernel_source_REFUSES_rather_than_defaulting(monkeypatch,
         xp.kernel_geometry("f32", "legacy")
     with pytest.raises(SystemExit, match="no kernel source is known"):
         xp.kernel_geometry("f32", "conservative")
+
+
+def test_the_run_contract_is_frozen_and_varies_only_the_decomposition():
+    """One object, read once, passed down -- and the single axis a
+    multi-run leg legitimately varies is the requested tiling."""
+    c = xp.RunContract(fixture="fx", columns=3, levels=4, horizon=60.0,
+                       dtcldcr=120.0, algorithm="legacy", precision="f32",
+                       mode="rezero", rho_profile="as-is", tiles=(3,))
+    with pytest.raises(Exception):
+        c.dtcldcr = 60.0                      # frozen
+    other = c.for_tiles((1, 2))
+    assert other.tiles == (1, 2)
+    assert other.dtcldcr == c.dtcldcr and other.horizon == c.horizon
