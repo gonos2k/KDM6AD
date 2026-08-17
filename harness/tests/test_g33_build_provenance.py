@@ -506,3 +506,22 @@ def test_staging_is_never_called_from_a_command_substitution():
                      if not ln.lstrip().startswith("#"))
     assert "$(stage " not in code, "a refusal behind a subshell cannot abort"
     assert 'STAGED="$dst"' in code
+
+
+@pytest.mark.parametrize("drop", ["sources.txt", "commands.txt"])
+def test_a_MISSING_log_cannot_clear_the_witness_comparison(tmp_path, drop):
+    """Skipping the comparison when a log is absent let DELETING it clear the
+    check, so a record could claim sources and compile commands with nothing
+    left to contradict them -- fail-open under transient deletion (Codex)."""
+    root = tmp_path / "b"
+    root.mkdir()
+    (root / "sources.txt").write_text("harness/x.f90\t" + "a" * 64 + "\n")
+    (root / "commands.txt").write_text("gfortran -c x.f90\n")
+    (root / "build_provenance.json").write_text(json.dumps({
+        "sources": [{"path": "harness/x.f90", "sha256": "a" * 64}],
+        "compile_commands": ["gfortran -c x.f90"],
+        "diagnostic": {"outdir": "/build"}}))
+    assert bp.verify(root) == []
+    (root / drop).unlink()
+    got = bp.verify(root)
+    assert got and drop in got[0] and "not in the bundle" in got[0]

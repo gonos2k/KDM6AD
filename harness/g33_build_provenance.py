@@ -161,15 +161,23 @@ def verify(root: Path) -> list:
                 "published logs cannot be normalised the way the record was"]
     norm, bad = normaliser(Path(outdir)), []
     srcs, cmds = root / "sources.txt", root / "commands.txt"
-    if srcs.is_file():
-        rows = [_source_row(ln, norm) for ln in srcs.read_text().splitlines()
-                if ln.strip()]
-        if rows != got.get("sources"):
-            bad.append("sources.txt is not build_provenance.sources")
-    if cmds.is_file():
-        if [norm(c) for c in cmds.read_text().splitlines()] != \
-                got.get("compile_commands"):
-            bad.append("commands.txt is not build_provenance.compile_commands")
+    # ABSENT is not ABSENT-AND-FINE (Codex): skipping the comparison when a
+    # log is missing let deleting it clear the check, so a record could claim
+    # sources and commands with nothing left to contradict them. Every build
+    # writes both, so a bundle without them is not a bundle this can verify.
+    for f in (srcs, cmds):
+        if not f.is_file():
+            bad.append(f"{f.name} is not in the bundle, so "
+                       f"build_provenance cannot be re-derived from it")
+    if bad:
+        return bad
+    rows = [_source_row(ln, norm) for ln in srcs.read_text().splitlines()
+            if ln.strip()]
+    if rows != got.get("sources"):
+        bad.append("sources.txt is not build_provenance.sources")
+    if [norm(c) for c in cmds.read_text().splitlines()] != \
+            got.get("compile_commands"):
+        bad.append("commands.txt is not build_provenance.compile_commands")
     return bad
 
 

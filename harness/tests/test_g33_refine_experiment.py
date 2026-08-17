@@ -55,7 +55,8 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
         (workdir / "sources.txt").write_text(
             f"{MOD}\t{xp.rm.sha256(MOD)}\n"
             f"{FIXLOG}\t{xp.rm.sha256(FIX)}\n")
-        (workdir / "staged-map.txt").write_text(f"{FIX}\t{FIXLOG}\n")
+        (workdir / "staged-map.txt").write_text(
+            f"{FIX}\t{FIXLOG}\n{MOD}\t{MOD}\n")
         # a v6-shaped record: what a real build writes, faked
         (workdir / "build_provenance.json").write_text(json.dumps({
             "module_path": str(MOD),
@@ -324,7 +325,8 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
         (workdir / "sources.txt").write_text(
             f"{MOD}\t{xp.rm.sha256(MOD)}\n"
             f"{FIXLOG}\t{xp.rm.sha256(FIX)}\n")
-        (workdir / "staged-map.txt").write_text(f"{FIX}\t{FIXLOG}\n")
+        (workdir / "staged-map.txt").write_text(
+            f"{FIX}\t{FIXLOG}\n{MOD}\t{MOD}\n")
         # a v6-shaped record: what a real build writes, faked
         (workdir / "build_provenance.json").write_text(json.dumps({
             "module_path": str(MOD),
@@ -620,7 +622,8 @@ def test_a_GENERATOR_of_nsplits_does_not_publish_an_empty_bundle(tmp_path,
         # logs nothing describes a compile that never happened
         (workdir / "sources.txt").write_text(
             f"{FIXLOG}\t{xp.rm.sha256(FIX)}\n")
-        (workdir / "staged-map.txt").write_text(f"{FIX}\t{FIXLOG}\n")
+        (workdir / "staged-map.txt").write_text(
+            f"{FIX}\t{FIXLOG}\n{MOD}\t{MOD}\n")
         return exe
 
     def fake_members(exe, out, nsplits, mode, **k):
@@ -1533,3 +1536,41 @@ def test_the_logs_are_normalised_the_way_the_RECORD_was(tmp_path):
         json.dumps(man["build_provenance"], indent=2, sort_keys=True))
     got = xp._witness_violations(man, root)
     assert got and "outdir is missing" in got[-1], got
+
+
+@pytest.mark.parametrize("drop", ["sources.txt", "staged-map.txt"])
+def test_a_MISSING_build_log_is_refused_not_treated_as_empty(tmp_path, drop):
+    """Iterating over a log that is not there made the HEAD-blob check pass
+    vacuously, so DELETING the log cleared the gate that says what was
+    compiled -- fail-open under transient deletion (Codex). A build writes
+    both files; a build directory without them cannot answer the question."""
+    d = tmp_path / "build"
+    d.mkdir()
+    for name, text in (("sources.txt", f"{FIXLOG}\t{xp.rm.sha256(FIX)}\n"),
+                       ("staged-map.txt", f"{FIX}\t{FIXLOG}\n")):
+        (d / name).write_text(text)
+    assert xp.source_snapshot(d).entries          # both present: it works
+    (d / drop).unlink()
+    with pytest.raises(SystemExit, match=drop):
+        xp.source_snapshot(d)
+
+
+def test_a_source_that_is_logged_but_not_STAGED_is_refused(tmp_path):
+    """`digest()` would keep answering from the log while the bytes it names
+    are unavailable, so a consumer that asks only for the digest -- the pinned
+    fixture check does -- would pass on a claim nothing can check."""
+    d = tmp_path / "build"
+    d.mkdir()
+    (d / "sources.txt").write_text(f"{FIXLOG}\t{xp.rm.sha256(FIX)}\n")
+    (d / "staged-map.txt").write_text("")
+    with pytest.raises(SystemExit, match="staged bytes are not recorded"):
+        xp.source_snapshot(d)
+
+
+def test_a_build_that_logged_no_source_at_all_is_refused(tmp_path):
+    d = tmp_path / "build"
+    d.mkdir()
+    (d / "sources.txt").write_text("")
+    (d / "staged-map.txt").write_text("")
+    with pytest.raises(SystemExit, match="no compiled source was logged"):
+        xp.source_snapshot(d)

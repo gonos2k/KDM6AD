@@ -1379,28 +1379,50 @@ def source_snapshot(build_dir: Path) -> SourceSnapshot:
     pinned by digest alone and cannot be compared to a blob.
     """
     smap, slog = build_dir / "staged-map.txt", build_dir / "sources.txt"
+    # A MISSING log is not an empty one (Codex): iterating over nothing made
+    # the HEAD-blob check below pass vacuously, so deleting the log cleared
+    # the gate that exists to say what was compiled. A build writes both.
+    for f in (smap, slog):
+        if not f.is_file():
+            raise SystemExit(
+                f"REFUSED: {f.name} is not in the build directory, so what "
+                f"the compiler read cannot be established")
     staged = {}
-    for ln in smap.read_text().splitlines() if smap.is_file() else []:
+    for ln in smap.read_text().splitlines():
         path, _, logical = ln.partition("\t")
         if logical:
             staged[logical.strip()] = path
     entries, bad = [], []
-    for ln in slog.read_text().splitlines() if slog.is_file() else []:
+    for ln in slog.read_text().splitlines():
         logical, _, sha = ln.partition("\t")
         logical, sha = logical.strip(), sha.strip()
         if not logical or not sha:
             continue
-        entries.append((logical, staged.get(logical, ""), sha))
+        # ...and an entry with no staged file is unverifiable, not fine:
+        # `digest()` would keep answering from the log while the bytes it
+        # names are unavailable, so every consumer that asks only for the
+        # digest would pass on a claim nothing can check (Codex).
+        if logical not in staged:
+            bad.append(f"  {logical}: compiled, but the staged bytes are not "
+                       f"recorded in staged-map.txt")
+            continue
+        entries.append((logical, staged[logical], sha))
         blob = _head_blob(logical)
         if blob is not None and blob != sha:
             bad.append(f"  {logical}: compiled {sha[:12]}, HEAD holds "
                        f"{blob[:12]}")
+    # `bad` first: "this source was not staged" says what is wrong, while
+    # "nothing was logged" is what that looks like from a distance.
     if bad:
         raise SystemExit(
-            "REFUSED: the bytes the compiler read are not the bytes HEAD "
-            "pins.\n" + "\n".join(bad) +
+            "REFUSED: the bytes the compiler read cannot be established.\n"
+            + "\n".join(bad) +
             "\nCommit the change, or the bundle records a build it did not "
             "describe.")
+    if not entries:
+        raise SystemExit(
+            "REFUSED: no compiled source was logged, so the build cannot say "
+            "what it read")
     return SourceSnapshot(entries=tuple(entries))
 
 
