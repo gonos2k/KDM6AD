@@ -546,3 +546,29 @@ def test_a_malformed_source_line_is_REPORTED_not_raised(tmp_path):
         "diagnostic": {"outdir": "/build"}}))
     got = bp.verify(root)                      # must not raise
     assert got and "carries no digest" in got[0] and "line 2" in got[0]
+
+
+def test_the_ci_detect_job_compares_against_the_PUSH_BASE(tmp_path):
+    """`HEAD^` is the previous COMMIT, not the previous remote state. A push
+    of three commits whose FIRST touched libtorch left `HEAD^...HEAD` showing
+    only the last, so both required build jobs skipped while the port had in
+    fact changed -- a gate reporting "not needed" about a change it never saw
+    (Codex). Reproduced in a scratch repo; the base is `github.event.before`
+    now, and anything unresolvable builds rather than skips."""
+    ci = (REPO / ".github/workflows/ci.yml").read_text()
+    detect = ci.split("  detect:", 1)[1].split("\n  build-and-test:", 1)[0]
+    # CODE only: the comment explains the pattern it removed, and a guard
+    # that reads its own prose fails on the explanation for it
+    code = "\n".join(ln for ln in detect.splitlines()
+                     if not ln.lstrip().startswith("#"))
+    assert "github.event.before" in code, "a push must use its own base"
+    assert "HEAD^ " not in code and "HEAD^)" not in code, \
+        "HEAD^ is one commit, not one push"
+    # every unresolvable case has to fall to the building side
+    assert code.count('echo "port=true" >> "$GITHUB_OUTPUT"; exit 0') >= 2
+    assert "0000000000000000000000000000000000000000" in code
+    assert "git rev-parse --verify" in code
+    # ...and the required jobs still hang off it
+    for job in ("build-and-test:", "build-and-test-macos:"):
+        block = ci.split(f"  {job}", 1)[1][:400]
+        assert "needs: detect" in block and "port == 'true'" in block

@@ -49,10 +49,26 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # A PR compares against its base; a PUSH must compare against what
+          # the remote held BEFORE the push, not `HEAD^` (Codex). A push of
+          # three commits whose FIRST touched libtorch left `HEAD^...HEAD`
+          # showing only the last one, so both required build jobs skipped
+          # while the port had in fact changed -- reproduced. Anything this
+          # cannot resolve builds rather than skips: a gate that cannot tell
+          # must not answer "no".
           base="${{ github.event.pull_request.base.sha }}"
-          if [ -z "$base" ]; then base=$(git rev-parse HEAD^ 2>/dev/null || git rev-parse HEAD); fi
+          if [ -z "$base" ]; then base="${{ github.event.before }}"; fi
+          zero=0000000000000000000000000000000000000000
+          if [ -z "$base" ] || [ "$base" = "$zero" ] \
+             || ! git rev-parse --verify -q "$base^{commit}" >/dev/null; then
+            echo "no resolvable base ($base) -- building"
+            echo "port=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
           echo "comparing $base...HEAD"
-          changed=$(git diff --name-only "$base" HEAD || git diff --name-only HEAD)
+          if ! changed=$(git diff --name-only "$base" HEAD); then
+            echo "diff failed -- building"
+            echo "port=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
           printf '%s\n' "$changed" | sed 's/^/  /'
           if printf '%s\n' "$changed" | grep -Eq '^(libtorch/|oracle/kdm6/|harness/g33_overlay/|harness/g33_[^/]*\.py$|\.github/workflows/|README\.md$|ENVIRONMENT\.md$|docs/HOST_INTEGRATION\.md$|oracle/tests/test_cpp_parity\.py$|oracle/tests/test_cpp_conservative_interface_parity\.py$|oracle/conftest\.py$)'; then
             echo "port=true" >> "$GITHUB_OUTPUT"
