@@ -44,6 +44,13 @@ def _weight(run: dict, col: int, k: int, basis: str) -> float:
     return rho / (1.0 + run[("initial", "qv", col, k)]) * dz
 
 
+#: The standard forward-error growth factor for n floating-point operations,
+#: g(n) = n*u/(1 - n*u) with u the unit roundoff (owner review §10).
+def _gamma(n: int, u: float = 2.0 ** -53) -> float:
+    d = 1.0 - n * u
+    return (n * u / d) if d > 0 else float("inf")
+
+
 def water(run: dict) -> dict:
     """Per column and basis: R_W = (W_final - W_initial) + P_surface."""
     cols = sorted({k[2] for k in run if len(k) == 4 and k[0] == "initial"})
@@ -67,19 +74,68 @@ def water(run: dict) -> dict:
             # the claim binds the predicate it actually makes, and a future
             # artifact at 1.5 ULP FAILS instead of passing a loose gate.
             ulp = math.ulp(ends["initial"]) if ends["initial"] else None
+            # A FORWARD-ERROR SCREENING BOUND, not a single residual (owner
+            # review §10). `|R| < ulp(W_0)` compares the residual to the
+            # inventory's own resolution, which is a size indicator and says
+            # nothing about how many operations produced it. The budget is
+            # two column sums plus a surface term, so the bound carries the
+            # operation counts and the magnitudes actually summed:
+            #
+            #   B_R = g(n_f)*S_f + g(n_0)*S_0 + g(2)*(|W_f|+|W_0|+|P|),
+            #   g(n) = n*u / (1 - n*u),   u = 2^-53
+            #
+            # with S the sum of |w_k q_{s,k}| -- cancellation is exactly what
+            # a residual near zero hides, and S is what makes it visible.
+            scale = {}
+            for tag in ("initial", "state"):
+                scale[tag] = sum(
+                    abs(run[(tag, s, col, k)] * _weight(run, col, k, basis))
+                    for k in ks for s in WATER)
+            n_terms = len(ks) * len(WATER)
+            bound = (_gamma(n_terms) * scale["state"]
+                     + _gamma(n_terms) * scale["initial"]
+                     + _gamma(2) * (abs(ends["state"]) + abs(ends["initial"])
+                                    + abs(p)))
             row[basis] = {
                 "W_initial": ends["initial"], "W_final": ends["state"],
                 "P_surface": p, "residual": resid,
                 "relative": resid / ends["initial"] if ends["initial"] else None,
                 "residual_in_initial_ulps": abs(resid) / ulp if ulp else None,
-                "closes_within_one_initial_ulp":
+                # RENAMED from `closes_within_one_initial_ulp`: it states a
+                # size relation and was read as closure. The screening verdict
+                # is the field below, and it is the one a closure claim binds.
+                "is_sub_ulp_of_initial_inventory":
                     (abs(resid) / ulp < 1.0) if ulp else None,
+                "roundoff_scale": {"initial": scale["initial"],
+                                   "final": scale["state"]},
+                "roundoff_ops": n_terms,
+                "roundoff_bound": bound,
+                "residual_over_roundoff_bound":
+                    (abs(resid) / bound) if bound else None,
+                "passes_roundoff_screening":
+                    (abs(resid) <= bound) if bound else None,
             }
         ro, rp = row["operator"]["relative"], row["physical"]["relative"]
         # How much the basis MATTERS here. Reported as a ratio because the
         # claim is comparative: 213.6x on the column that closes to roundoff,
         # 1.0x on the two that do not.
-        row["basis_factor"] = abs(rp / ro) if ro not in (None, 0.0) else None
+        #
+        # A ratio of two residuals is only a physical comparison when BOTH
+        # are resolved above their own roundoff bound (owner review §10).
+        # Below it the denominator is noise and the ratio is arbitrarily
+        # large -- correct as arithmetic, meaningless as a statement about
+        # the bases. Unresolved gets `null` and a reason, not a number.
+        resolved = all(
+            row[b]["roundoff_bound"] and
+            abs(row[b]["residual"]) > row[b]["roundoff_bound"]
+            for b in ("operator", "physical"))
+        if ro in (None, 0.0) or not resolved:
+            row["basis_factor"] = None
+            row["basis_factor_unresolved"] = (
+                "denominator_not_resolved_above_roundoff" if ro not in (None, 0.0)
+                else "operator_relative_is_zero_or_absent")
+        else:
+            row["basis_factor"] = abs(rp / ro)
         out[str(col)] = row
     return out
 

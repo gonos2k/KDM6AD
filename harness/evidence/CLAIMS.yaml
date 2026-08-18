@@ -1280,8 +1280,8 @@ claims:
     # W_initial: a gate visibly weaker than the sentence it certified
     # (owner review §8).
     expected_predicates:
-      - kdm6ad-g33m-f64/water-001.bundles/f5ded55d9baebd06cb8fa6adb579bfa7ac0c57d4d9884835c5a15ae715a6eeec/n12.rezero.water_enthalpy_basis.json#water.1.operator.closes_within_one_initial_ulp: true
-      - kdm6ad-g33m-f64/water-001.bundles/f5ded55d9baebd06cb8fa6adb579bfa7ac0c57d4d9884835c5a15ae715a6eeec/n12.rezero.water_enthalpy_basis.json#water.3.operator.closes_within_one_initial_ulp: true
+      - kdm6ad-g33m-f64/water-001.bundles/f5ded55d9baebd06cb8fa6adb579bfa7ac0c57d4d9884835c5a15ae715a6eeec/n12.rezero.water_enthalpy_basis.json#water.1.operator.is_sub_ulp_of_initial_inventory: true
+      - kdm6ad-g33m-f64/water-001.bundles/f5ded55d9baebd06cb8fa6adb579bfa7ac0c57d4d9884835c5a15ae715a6eeec/n12.rezero.water_enthalpy_basis.json#water.3.operator.is_sub_ulp_of_initial_inventory: true
     expected_values:
       - kdm6ad-g33m-f64/water-001.bundles/f5ded55d9baebd06cb8fa6adb579bfa7ac0c57d4d9884835c5a15ae715a6eeec/n12.rezero.water_enthalpy_basis.json#water.1.operator.residual_in_initial_ulps: 0.2025456428527832
       - kdm6ad-g33m-f64/water-001.bundles/f5ded55d9baebd06cb8fa6adb579bfa7ac0c57d4d9884835c5a15ae715a6eeec/n12.rezero.water_enthalpy_basis.json#water.2.operator.residual: -1.5968866062809894e-08
