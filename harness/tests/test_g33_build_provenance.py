@@ -708,8 +708,14 @@ def test_the_eager_digest_is_taken_where_the_module_is_imported():
     the seam that runs later."""
     src = (REPO / "harness/g33_refine_experiment.py").read_text()
     head = src.split("def _an(", 1)[0]
-    assert "_EAGER_AT_LOAD = {" in head, "attest at load, beside the import"
-    assert "hashlib.sha256(" in head.split("_EAGER_AT_LOAD", 1)[1]
+    # The digest must BRACKET the import: taken before the module executes and
+    # re-checked after. Hashing on the line after the import still puts the
+    # read after the execution it claims to describe.
+    before = head.index("before = hashlib.sha256")
+    runs = head.index("importlib.import_module")
+    after = head.index("after = hashlib.sha256")
+    assert before < runs < after, "hash before execution, re-check after"
+    assert "if before != after:" in head, "a change under the import refuses"
     seam = src.split("def _an(", 1)[1].split("\ndef ", 1)[0]
     assert "_EAGER_AT_LOAD[name]" in seam and "read_bytes()" not in seam, \
         "the seam must use the load digest, never re-read the file"

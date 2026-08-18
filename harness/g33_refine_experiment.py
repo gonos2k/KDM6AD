@@ -43,18 +43,38 @@ sys.path.insert(0, str(HERE))
 import g33_refine_analyze as ra        # noqa: E402
 import g33_refine_manifest as rm       # noqa: E402
 import g33_probe_read as pr           # noqa: E402
-import g33_number_transport as nt     # noqa: E402
 import g33_run_matrix as rmx          # noqa: E402  (run role: makes arm streams)
 
-#: Run-role analyzers digested AT THE MOMENT THEY EXECUTED -- here, as the
-#: producer imports them. Hashing them later, when the analysis dispatches,
-#: reads whatever the tree holds THEN: reproduced in a fresh process, bytes
-#: d212a1b1 executed and 59f7f5dd was attested (Codex). A digest taken after
-#: execution attests nothing.
-_EAGER_AT_LOAD = {
-    "g33_number_transport": hashlib.sha256(
-        (HERE / "g33_number_transport.py").read_bytes()).hexdigest(),
-}
+#: Run-role analyzers digested BEFORE they execute, and re-checked after, so
+#: the bytes attested are the bytes the interpreter compiled. Hashing at
+#: dispatch read whatever the tree held then -- reproduced, d212a1b1 executed
+#: and 59f7f5dd was attested. Hashing on the line AFTER the import still put
+#: the read after the execution it claims to describe (Codex, twice).
+_EAGER_AT_LOAD: dict = {}
+
+
+def _eager_import(name: str):
+    """Import a run-role analyzer, attesting the bytes that will run.
+
+    These modules cannot reach the lazy `_an` seam: they are imported here
+    because they also play a RUN role -- `g33_number_transport` makes the
+    arm streams -- and the seam runs much later. The same rule is applied at
+    the only place it can be, around the import itself.
+    """
+    import importlib
+    src = HERE / f"{name}.py"
+    before = hashlib.sha256(src.read_bytes()).hexdigest()
+    mod = importlib.import_module(name)
+    after = hashlib.sha256(src.read_bytes()).hexdigest()
+    if before != after:
+        raise SystemExit(
+            f"REFUSED: {name} changed while it was being imported "
+            f"({before[:12]} -> {after[:12]})")
+    _EAGER_AT_LOAD[name] = before
+    return mod
+
+
+nt = _eager_import("g33_number_transport")     # noqa: E402
 
 
 def _an(name: str):
