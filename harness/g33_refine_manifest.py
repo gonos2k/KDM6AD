@@ -916,6 +916,7 @@ def validate(man: dict) -> list:
         if at_least(schema, "refinement_experiment_v4"):
             bad += _expected_run_violations(man, members)
             bad += _build_provenance_violations(man)
+            bad += _executed_analyzer_violations(man)
 
     arts = man.get("build_artifacts")
     if not isinstance(arts, list) or not arts:
@@ -1217,6 +1218,53 @@ _BUILD_PROVENANCE_KEYS = frozenset({
     "compiled_module_sha256", "fixture_path", "fixture_sha256",
     "repo_commit", "tree_dirty", "diagnostic",
 })
+
+
+def _executed_analyzer_violations(man: dict) -> list:
+    """What RAN, held to what the bundle PINS (owner review §8).
+
+    `executed_analyzers` is the digest each analyzer had when its first
+    statement executed. The module pins beside it are re-read from the
+    working tree when the manifest is assembled, at the end of a run that
+    takes the better part of an hour -- so the two can disagree, and the pin
+    is the one a reader follows. Recorded and never consumed, the block was
+    decoration: a mismatched digest, a malformed row and a repeated module
+    all validated CLEAN (measured).
+    """
+    if not at_least(man.get("schema"), "refinement_experiment_v7"):
+        return []
+    ran = man.get("executed_analyzers")
+    if ran is None:
+        return []                       # a run that dispatched no analyzer
+    if not isinstance(ran, list) or not ran:
+        return ["executed_analyzers must be a non-empty list when present"]
+    bad, seen = [], {}
+    pins = {}
+    for group in ("producer_modules", "member_parsers"):
+        for pin in man.get(group) or []:
+            if isinstance(pin, dict) and isinstance(pin.get("path"), str):
+                pins[Path(pin["path"]).stem] = pin.get("content_sha256")
+    for i, row in enumerate(ran):
+        if not isinstance(row, dict) or not isinstance(row.get("module"), str) \
+                or not _hexlen(row.get("sha256"), 64):
+            bad.append(f"executed_analyzers[{i}] is not a module/digest row")
+            continue
+        mod, got = row["module"], row["sha256"]
+        if mod in seen:
+            bad.append(f"executed_analyzers names {mod!r} twice "
+                       f"({seen[mod][:12]}, {got[:12]}) -- one import, one "
+                       f"attestation")
+            continue
+        seen[mod] = got
+        want = pins.get(mod)
+        if want is None:
+            bad.append(f"executed_analyzers names {mod!r}, which this bundle "
+                       f"pins nowhere -- code ran that nothing records")
+        elif want != got:
+            bad.append(f"{mod} executed as {got[:12]} but the bundle pins "
+                       f"{want[:12]} -- the pin describes bytes that did not "
+                       f"run")
+    return bad
 
 
 def _build_provenance_violations(man: dict) -> list:

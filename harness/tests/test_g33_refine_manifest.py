@@ -1286,3 +1286,44 @@ def test_a_v6_bundle_answers_for_the_v6_contract():
     assert man["schema"] == "refinement_experiment_v6"
     assert "schema" not in man["build_provenance"]
     assert rm.validate(man) == []
+
+
+# ---- owner review §8: what RAN is held to what the bundle PINS -------------
+
+@pytest.mark.parametrize("rows,expect", [
+    ([{"module": "g33_matched_closure", "sha256": "d" * 64}],
+     "describes bytes that did not run"),
+    ([{"module": 123}], "not a module/digest row"),
+    ([{"module": "g33_nowhere", "sha256": "e" * 64}], "pins nowhere"),
+])
+def test_executed_analyzers_is_consumed_not_just_recorded(rows, expect):
+    """The block is the digest each analyzer had when its first statement
+    executed; the pins beside it are re-read from the working tree when the
+    manifest is assembled, at the END of a run that takes the better part of
+    an hour. Recorded and never consumed it was decoration -- a mismatched
+    digest, a malformed row and a module pinned nowhere all validated CLEAN
+    (measured, Codex)."""
+    man = _real_v6_manifest_here()
+    if man is None:
+        pytest.skip("no v6 bundle on this host")
+    v7 = _v7(man)
+    assert not rm.validate(v7)
+    v7["executed_analyzers"] = rows
+    bad = rm.validate(v7)
+    assert bad and any(expect in b for b in bad), bad
+
+
+def test_an_analyzer_that_ran_as_its_pin_says_is_accepted():
+    man = _real_v6_manifest_here()
+    if man is None:
+        pytest.skip("no v6 bundle on this host")
+    v7 = _v7(man)
+    pin = next(p for p in v7["producer_modules"]
+               if p["path"].endswith("g33_matched_closure.py"))
+    v7["executed_analyzers"] = [{"module": "g33_matched_closure",
+                                 "sha256": pin["content_sha256"]}]
+    assert rm.validate(v7) == []
+    # ...and one import gets one attestation
+    v7["executed_analyzers"].append({"module": "g33_matched_closure",
+                                     "sha256": "b" * 64})
+    assert any("twice" in b for b in rm.validate(v7))
