@@ -1520,14 +1520,26 @@ def test_every_seed_is_attested_or_declared(monkeypatch):
     assert rm.validate(declared) == []
 
 
-def test_the_declaration_may_only_name_this_bundles_own_analyzers():
-    """Naming an unrelated module would let a bundle look thorough about a
-    gap it does not have."""
+@pytest.mark.parametrize("name", ["g33_nowhere", "KNOWN_BUT_UNRELATED"])
+def test_the_declaration_may_only_name_analyzers_that_actually_RAN(name):
+    """A confession about work that did not happen is not a limitation, it is
+    noise in the provenance. Checking against the whole seed registry let a
+    bundle declare a module whose analysis it never ran -- measured,
+    `g33_qr_process_ledger` declared unattested by a bundle carrying no such
+    analysis, CLEAN (Codex). The set is the seeds this bundle's own analyses
+    dispatched to."""
     man = _real_v6_manifest_here()
     if man is None:
         pytest.skip("no bundle on this host")
     v7 = _v7(man)
-    v7["unattested_analyzers"] = ["g33_nowhere"]
+    seeds = (v7.get("identity") or {}).get("analysis_seeds") or {}
+    ran = {seeds[a["analysis"]] for a in v7["analyses"]
+           if isinstance(a, dict) and a.get("analysis") in seeds}
+    if name == "KNOWN_BUT_UNRELATED":
+        name = next((s for s in sorted(set(seeds.values()) - ran)), None)
+        if name is None:
+            pytest.skip("this bundle's analyses cover every known seed")
+    v7["unattested_analyzers"] = [name]
     v7["decision_eligible"] = False
     bad = rm.validate(v7)
     assert bad and any("no analysis in this bundle dispatches to" in b

@@ -1233,6 +1233,15 @@ def _executed_analyzer_violations(man: dict) -> list:
     """
     if not at_least(man.get("schema"), "refinement_experiment_v7"):
         return []
+    ran = man.get("executed_analyzers")
+    # ABSENCE IS ONLY LEGAL WHEN NOTHING RAN (Codex). Letting it be optional
+    # made omitting it a way to skip the whole check, and `analyses` proves
+    # analyzers ran -- the manifest's own `analysis_seeds` names which module
+    # each analysis dispatched to, so the expected set is not a guess.
+    seeds = (man.get("identity") or {}).get("analysis_seeds") or {}
+    names = {a.get("analysis") for a in (man.get("analyses") or [])
+             if isinstance(a, dict)}
+    expected = {seeds[n] for n in names if isinstance(seeds.get(n), str)}
     # A bundle that could not attest everything says so, and saying so is
     # incompatible with being decision evidence (owner §8, Codex).
     cannot = man.get("unattested_analyzers")
@@ -1246,24 +1255,19 @@ def _executed_analyzer_violations(man: dict) -> list:
         both = sorted(set(cannot) & named)
         if both:
             return [f"{both} are named as BOTH attested and unattested"]
-        seeds_all = set(((man.get("identity") or {}).get("analysis_seeds")
-                         or {}).values())
-        stray = sorted(x for x in cannot if seeds_all and x not in seeds_all)
+        # THE SEEDS THIS BUNDLE'S ANALYSES DISPATCHED TO, not every seed the
+        # registry knows. Checking against the whole map let a bundle confess
+        # about an analysis it never ran -- measured, `g33_qr_process_ledger`
+        # declared unattested by a bundle with no such analysis, CLEAN
+        # (Codex). A confession about work that did not happen is not a
+        # limitation, it is noise in the provenance.
+        stray = sorted(x for x in cannot if expected and x not in expected)
         if stray:
             return [f"unattested_analyzers names {stray}, which no analysis "
                     f"in this bundle dispatches to"]
         if man.get("decision_eligible") is not False:
             return ["a bundle with unattested_analyzers cannot be "
                     "decision_eligible -- it cannot say what produced it"]
-    ran = man.get("executed_analyzers")
-    # ABSENCE IS ONLY LEGAL WHEN NOTHING RAN (Codex). Letting it be optional
-    # made omitting it a way to skip the whole check, and `analyses` proves
-    # analyzers ran -- the manifest's own `analysis_seeds` names which module
-    # each analysis dispatched to, so the expected set is not a guess.
-    seeds = (man.get("identity") or {}).get("analysis_seeds") or {}
-    names = {a.get("analysis") for a in (man.get("analyses") or [])
-             if isinstance(a, dict)}
-    expected = {seeds[n] for n in names if isinstance(seeds.get(n), str)}
     if ran is None:
         if names:
             return [f"executed_analyzers is absent, but {len(names)} analysis "
