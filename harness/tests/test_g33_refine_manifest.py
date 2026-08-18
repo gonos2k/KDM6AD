@@ -1188,3 +1188,72 @@ def test_the_geometry_is_PROVENANCED_to_what_was_compiled(tmp_path, tag,
     assert rm.validate(man) == [], rm.validate(man)[:2]
     mutate(man)
     assert any(needle in v for v in rm.validate(man)), rm.validate(man)[:3]
+
+
+# ---- owner review §5: build_provenance is an EXACT contract from v7 --------
+
+def _real_v6_manifest_here():
+    """A published v6 bundle on this host, or None on a public checkout."""
+    import json
+    from pathlib import Path
+    for root in sorted(Path.home().glob("kdm6ad-g33m-*")):
+        if not root.is_dir():
+            continue
+        for link in sorted(root.iterdir()):
+            j = link.resolve() / "manifest.json"
+            if link.is_symlink() and j.is_file():
+                man = json.loads(j.read_text())
+                if man.get("schema") == "refinement_experiment_v6":
+                    return man
+    return None
+
+
+def _v7(man):
+    """The same manifest, promoted to the v7 provenance contract."""
+    import g33_build_provenance as bp
+    out = json.loads(json.dumps(man))
+    out["schema"] = "refinement_experiment_v7"
+    b = out["build_provenance"]
+    b["schema"] = bp.BUILD_PROVENANCE_SCHEMA
+    for r in b["sources"]:
+        r["role"] = bp.role_of(r["path"])
+    return out
+
+
+@pytest.mark.parametrize("mutate,expect", [
+    (lambda b: b.__setitem__("sources", b["sources"][:1]), "missing the"),
+    (lambda b: b.__setitem__("sources", b["sources"]
+                             + [dict(b["sources"][0], sha256="e" * 64)]),
+     "two digests"),
+    (lambda b: b.__setitem__("sources", b["sources"]
+                             + [{"path": "harness/ghost.f90", "role": None,
+                                 "sha256": "f" * 64}]),
+     "no compiled source claims"),
+    (lambda b: b.pop("compiler_f951_sha256", None), "key set"),
+    (lambda b: b.__setitem__("smuggled", 1), "key set"),
+    (lambda b: b.pop("schema", None), "build_provenance.schema"),
+])
+def test_the_provenance_block_is_an_exact_contract(mutate, expect):
+    """v6 called this a closed contract and checked only that selected fields
+    were present and well shaped. Measured against a real published manifest:
+    dropping six of seven source rows, repeating one logical path under two
+    digests, adding a row nothing compiled, omitting `compiler_f951_sha256`,
+    and smuggling an unknown key ALL validated CLEAN (owner review §5)."""
+    man = _real_v6_manifest_here()
+    if man is None:
+        pytest.skip("no v6 bundle on this host")
+    v7 = _v7(man)
+    assert not rm.validate(v7), "the promoted manifest must start clean"
+    mutate(v7["build_provenance"])
+    bad = [b for b in rm.validate(v7) if "build_provenance" in b]
+    assert bad and any(expect in b for b in bad), (expect, rm.validate(v7))
+
+
+def test_a_v6_bundle_answers_for_the_v6_contract():
+    """A stricter key set is a NEW TAG, never a new demand on history."""
+    man = _real_v6_manifest_here()
+    if man is None:
+        pytest.skip("no v6 bundle on this host")
+    assert man["schema"] == "refinement_experiment_v6"
+    assert "schema" not in man["build_provenance"]
+    assert rm.validate(man) == []

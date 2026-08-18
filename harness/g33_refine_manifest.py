@@ -37,7 +37,7 @@ import g33_refine_analyze as ra   # noqa: E402
 #: bundles carry v2 arm streams and adding the requirement to v2 would either
 #: invalidate them or have to be opt-out-by-omission -- which is the defect the
 #: v2 bump itself was for.
-SCHEMA = "refinement_experiment_v6"
+SCHEMA = "refinement_experiment_v7"
 
 
 def sha256(path: Path) -> str:
@@ -260,7 +260,8 @@ _PRECISIONS = ("f32", "f64")
 _ALGOS = ("legacy", "conservative")
 KNOWN_SCHEMAS = ("refinement_experiment_v1", "refinement_experiment_v2",
                  "refinement_experiment_v3", "refinement_experiment_v4",
-                 "refinement_experiment_v5", "refinement_experiment_v6")
+                 "refinement_experiment_v5", "refinement_experiment_v6",
+                 "refinement_experiment_v7")
 #: Schemas carrying the v2 contract or better. Ordered, so "at least v3" is a
 #: comparison rather than a list someone extends by hand at each bump.
 _SCHEMA_RANK = {s: i for i, s in enumerate(KNOWN_SCHEMAS)}
@@ -896,6 +897,7 @@ def validate(man: dict) -> list:
                        f"one bundle, one experiment")
         if at_least(schema, "refinement_experiment_v4"):
             bad += _expected_run_violations(man, members)
+            bad += _build_provenance_violations(man)
 
     arts = man.get("build_artifacts")
     if not isinstance(arts, list) or not arts:
@@ -1177,6 +1179,74 @@ _RAN_CORE = ("nsplit", "carry", "width", "rho")
 #: beside `ran` as the literal command line: a diagnostic, and the thing the
 #: typed block is checked against.
 _ARGV_TO_RAN = ((0, "nsplit"), (1, "carry"), (2, "width"), (3, "rho"))
+
+
+#: The roles a complete build compiles, mirrored from the collector so the
+#: validator can hold an arbitrary manifest to them without importing it
+#: (the collector is stdlib-only and reached as a subprocess by design).
+_SOURCE_ROLES = ("driver", "fixture", "libmassv", "model_constants",
+                 "module", "radar", "stub")
+_BUILD_PROVENANCE_SCHEMA = "g33_build_provenance_v1"
+#: The EXACT key set. v6 called this a closed contract and checked only that
+#: selected fields were present and well shaped, so an arbitrary manifest
+#: could drop six of seven source rows, repeat one logical path under two
+#: digests, add a row nothing compiled, or omit `compiler_f951_sha256`
+#: entirely and validate CLEAN. All five measured (owner §5).
+_BUILD_PROVENANCE_KEYS = frozenset({
+    "schema", "compiler_sha256", "compiler_version", "compiler_f951_sha256",
+    "compile_commands", "sources", "executable_sha256", "build_script_sha256",
+    "module_path", "module_sha256", "compiled_module_path",
+    "compiled_module_sha256", "fixture_path", "fixture_sha256",
+    "repo_commit", "tree_dirty", "diagnostic",
+})
+
+
+def _build_provenance_violations(man: dict) -> list:
+    """The provenance block as an EXACT contract, from v7 (owner §5)."""
+    if not at_least(man.get("schema"), "refinement_experiment_v7"):
+        return []                      # older bundles answer for their own tag
+    bp = man.get("build_provenance")
+    if not isinstance(bp, dict):
+        return ["build_provenance must be an object"]
+    bad = []
+    if bp.get("schema") != _BUILD_PROVENANCE_SCHEMA:
+        bad.append(f"build_provenance.schema {bp.get('schema')!r} is not "
+                   f"{_BUILD_PROVENANCE_SCHEMA!r}")
+    missing = sorted(_BUILD_PROVENANCE_KEYS - set(bp))
+    extra = sorted(set(bp) - _BUILD_PROVENANCE_KEYS)
+    if missing or extra:
+        bad.append(f"build_provenance is not the {_BUILD_PROVENANCE_SCHEMA} key "
+                   f"set: missing {missing}, unexpected {extra}")
+    rows = bp.get("sources")
+    if not isinstance(rows, list) or not rows:
+        return bad + ["build_provenance.sources must be a non-empty list"]
+    seen, roles = {}, []
+    for i, r in enumerate(rows):
+        if not isinstance(r, dict) or not _hexlen(r.get("sha256"), 64) \
+                or not isinstance(r.get("path"), str) or not r["path"]:
+            bad.append(f"build_provenance.sources[{i}] is not a "
+                       f"path/role/digest row")
+            continue
+        if r.get("role") not in _SOURCE_ROLES:
+            bad.append(f"build_provenance.sources[{i}] has role "
+                       f"{r.get('role')!r}, which no compiled source claims -- "
+                       f"a new source is declared, not inferred")
+            continue
+        roles.append(r["role"])
+        # One logical path, one digest. Two rows for one file describe two
+        # different builds of it and nothing said which one ran.
+        if r["path"] in seen and seen[r["path"]] != r["sha256"]:
+            bad.append(f"build_provenance.sources names {r['path']!r} with two "
+                       f"digests ({seen[r['path']][:12]}, {r['sha256'][:12]})")
+        seen[r["path"]] = r["sha256"]
+    short = sorted(set(_SOURCE_ROLES) - set(roles))
+    if short:
+        bad.append(f"build_provenance.sources is missing the {short} role(s) -- "
+                   f"a build that compiled fewer sources is a different build")
+    dup = sorted({r for r in roles if roles.count(r) > 1})
+    if dup:
+        bad.append(f"build_provenance.sources repeats the {dup} role(s)")
+    return bad
 
 
 def _expected_run_violations(man: dict, members: list) -> list:

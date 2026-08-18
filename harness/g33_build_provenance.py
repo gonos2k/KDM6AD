@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -53,11 +54,41 @@ def normaliser(out: Path):
     return lambda c: c.replace(str(out), "<OUT>")
 
 
+#: The EXACT set of roles this build compiles. A source list was an ordered
+#: bag of {path, digest}: dropping six of seven rows, repeating one logical
+#: path under two digests, or adding a row nothing compiled all validated
+#: CLEAN (owner §5). Naming the roles makes the set checkable, and an
+#: unrecognised path gets `null` so a new source has to be declared here
+#: deliberately rather than slipping in as one more row.
+SOURCE_ROLES = (
+    ("fixture", r"g33_fixture_[A-Za-z0-9_]+\.f90$"),
+    ("driver", r"g33_refine_driver\.f90$"),
+    ("stub", r"stub_wrf_error\.f90$"),
+    ("libmassv", r"libmassv\.F$"),
+    ("model_constants", r"module_model_constants\.F$"),
+    ("radar", r"module_mp_radar\.F$"),
+    ("module", r"(module_mp_ovl\.F|module_mp_kdm6[A-Za-z0-9_]*\.F)$"),
+)
+#: Every role a complete build leaves behind.
+REQUIRED_ROLES = frozenset(r for r, _ in SOURCE_ROLES)
+BUILD_PROVENANCE_SCHEMA = "g33_build_provenance_v1"
+
+
+def role_of(path: str):
+    """Which role a compiled source plays, or None when nothing claims it."""
+    for role, pattern in SOURCE_ROLES:
+        if re.search(pattern, path):
+            return role
+    return None
+
+
 def _source_row(line: str, norm) -> dict:
     """One `sources.txt` line as a record: the logical path, and the digest
     of what the compiler read."""
     path, _, sha = line.partition("\t")
-    return {"path": norm(path), "sha256": sha.strip() or sha256(Path(path))}
+    p = norm(path)
+    return {"path": p, "role": role_of(p),
+            "sha256": sha.strip() or sha256(Path(path))}
 
 
 def collect(out: Path, fc: str, module: Path, fixture: Path, script: Path,
@@ -86,6 +117,7 @@ def collect(out: Path, fc: str, module: Path, fixture: Path, script: Path,
     # happen" rather than "what was built".
     norm = normaliser(out)
     ident = {
+        "schema": BUILD_PROVENANCE_SCHEMA,
         "compiler_sha256": sha256(binary),
         "compiler_version": version[0] if version else None,
         # From the log the build wrote as it compiled -- not from a caller that

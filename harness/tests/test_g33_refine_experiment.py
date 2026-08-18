@@ -66,10 +66,18 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
             "compiler_sha256": "1" * 64,
             "build_script_sha256": "7" * 64,
             "compile_commands": ["gfortran -c fake"],
-            "sources": [{"path": str(MOD), "sha256": xp.rm.sha256(MOD)},
-                        {"path": FIXLOG, "sha256": xp.rm.sha256(FIX)}],
+            "sources": _FAKE_SOURCES(MOD, FIX),
             "compiled_module_sha256": xp.rm.sha256(ovl),
             "diagnostic": {"outdir": str(workdir)},
+            # v7 holds this block to an EXACT key set and a role table, so a
+            # fake that carries a subset describes a build that could not have
+            # happened (owner review §5).
+            "schema": "g33_build_provenance_v1",
+            "compiler_f951_sha256": "5" * 64,
+            "compiled_module_path": "module_mp_ovl.F",
+            "fixture_path": FIXLOG,
+            "repo_commit": "0" * 40,
+            "tree_dirty": False,
             "executable_sha256": xp.rm.sha256(exe)}, indent=2, sort_keys=True))
         return workdir / "driver"
 
@@ -139,6 +147,21 @@ FIXLOG = str(FIX.relative_to(REPO))
 MOD = (xp.KERNEL_SOURCES["legacy"]
        if (REPO / xp.KERNEL_SOURCES["legacy"]).is_file()
        else FIX.relative_to(REPO))
+
+
+def _FAKE_SOURCES(mod, fix):
+    """One row per role the v7 contract requires (owner review §5)."""
+    rows = [{"path": str(mod), "role": "module", "sha256": xp.rm.sha256(mod)},
+            {"path": FIXLOG, "role": "fixture", "sha256": xp.rm.sha256(fix)}]
+    for role, path in (("driver", "harness/g33_fortran/g33_refine_driver.f90"),
+                       ("stub", "harness/g33_fortran/stub_wrf_error.f90"),
+                       ("libmassv", "host/KIM-meso_v1.0/frame/libmassv.F"),
+                       ("model_constants",
+                        "host/KIM-meso_v1.0/share/module_model_constants.F"),
+                       ("radar", "host/KIM-meso_v1.0/phys/module_mp_radar.F")):
+        rows.append({"path": path, "role": role,
+                     "sha256": hashlib.sha256(path.encode()).hexdigest()})
+    return rows
 
 
 def _produce(dest, **kw):
@@ -336,10 +359,18 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
             "compiler_sha256": "1" * 64,
             "build_script_sha256": "7" * 64,
             "compile_commands": ["gfortran -c fake"],
-            "sources": [{"path": str(MOD), "sha256": xp.rm.sha256(MOD)},
-                        {"path": FIXLOG, "sha256": xp.rm.sha256(FIX)}],
+            "sources": _FAKE_SOURCES(MOD, FIX),
             "compiled_module_sha256": xp.rm.sha256(ovl),
             "diagnostic": {"outdir": str(workdir)},
+            # v7 holds this block to an EXACT key set and a role table, so a
+            # fake that carries a subset describes a build that could not have
+            # happened (owner review §5).
+            "schema": "g33_build_provenance_v1",
+            "compiler_f951_sha256": "5" * 64,
+            "compiled_module_path": "module_mp_ovl.F",
+            "fixture_path": FIXLOG,
+            "repo_commit": "0" * 40,
+            "tree_dirty": False,
             "executable_sha256": xp.rm.sha256(exe)}, indent=2, sort_keys=True))
         return workdir / "driver"
 
@@ -1457,14 +1488,18 @@ def _witness_bundle(tmp_path, *, outdir="/build/out"):
     root = tmp_path / "b"
     root.mkdir()
     (root / "sources.txt").write_text(
-        "harness/g33_fortran/f.f90\t" + "a" * 64 + "\n"
+        "harness/g33_fortran/g33_fixture_f.f90\t" + "a" * 64 + "\n"
         "module_mp_ovl.F\t" + "b" * 64 + "\n")
     (root / "commands.txt").write_text(
         f"gfortran -c f.f90 -J{outdir} -o {outdir}/f.o\n")
     prov = {
         "compiler_sha256": "c" * 64,
-        "sources": [{"path": "harness/g33_fortran/f.f90", "sha256": "a" * 64},
-                    {"path": "module_mp_ovl.F", "sha256": "b" * 64}],
+        # `role` is part of a source row from v7, so the record the logs
+        # re-derive carries it too (owner review §5)
+        "sources": [{"path": "harness/g33_fortran/g33_fixture_f.f90", "role": "fixture",
+                     "sha256": "a" * 64},
+                    {"path": "module_mp_ovl.F", "role": "module",
+                     "sha256": "b" * 64}],
         "compile_commands": ["gfortran -c f.f90 -J<OUT> -o <OUT>/f.o"],
         "diagnostic": {"outdir": outdir},
     }
@@ -1492,7 +1527,7 @@ def test_the_four_build_witnesses_must_describe_the_same_build(tmp_path):
 
 
 @pytest.mark.parametrize("edit,expect", [
-    (lambda r: (r / "sources.txt").write_text("harness/g33_fortran/f.f90\t"
+    (lambda r: (r / "sources.txt").write_text("harness/g33_fortran/g33_fixture_f.f90\t"
                                               + "9" * 64 + "\n"),
      "sources.txt is not build_provenance.sources"),
     (lambda r: (r / "commands.txt").write_text("gfortran -c smuggled.f90\n"),
