@@ -1261,7 +1261,12 @@ def _executed_analyzer_violations(man: dict) -> list:
         # declared unattested by a bundle with no such analysis, CLEAN
         # (Codex). A confession about work that did not happen is not a
         # limitation, it is noise in the provenance.
-        stray = sorted(x for x in cannot if expected and x not in expected)
+        # NO `expected and` GUARD. When nothing ran, `expected` is empty and
+        # the guard short-circuited, so a manifest with `analyses: []` could
+        # declare any name at all -- measured, CLEAN (Codex). An empty
+        # expected set means EVERY name is unrelated, which is the correct
+        # reading: nothing ran, so nothing can be unattested.
+        stray = sorted(x for x in cannot if x not in expected)
         if stray:
             return [f"unattested_analyzers names {stray}, which no analysis "
                     f"in this bundle dispatches to"]

@@ -1544,3 +1544,28 @@ def test_the_declaration_may_only_name_analyzers_that_actually_RAN(name):
     bad = rm.validate(v7)
     assert bad and any("no analysis in this bundle dispatches to" in b
                        for b in bad), bad
+
+
+def test_a_bundle_that_ran_nothing_can_declare_nothing():
+    """`expected` is empty when no analysis ran, and the stray check was
+    guarded on it being non-empty -- so a manifest with `analyses: []` could
+    declare any name at all, measured CLEAN (Codex). An empty expected set
+    means EVERY name is unrelated: nothing ran, so nothing can be
+    unattested."""
+    man = _real_v6_manifest_here()
+    if man is None:
+        pytest.skip("no bundle on this host")
+    v7 = _v7(man)
+    v7["analyses"] = []
+    v7["executed_analyzers"] = []
+    v7["decision_eligible"] = False
+
+    # ...saying nothing is fine
+    assert not [b for b in rm.validate(v7)
+                if "unattested" in b or "dispatches to" in b]
+
+    # ...saying anything is not
+    v7["unattested_analyzers"] = ["made_up"]
+    bad = rm.validate(v7)
+    assert bad and any("no analysis in this bundle dispatches to" in b
+                       for b in bad), bad
