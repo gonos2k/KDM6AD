@@ -47,6 +47,14 @@ sys.path.insert(0, str(HERE))
 #: the read after the execution it claims to describe (Codex, twice).
 _EAGER_AT_LOAD: dict = {}
 
+#: Attestations from THIS PROCESS, in a registry the producer owns. Keyed
+#: into `sys.modules` under a name nothing imports, so the two executions of
+#: this file share it while the modules being attested cannot reach it by
+#: simply setting one of their own attributes.
+_ATTESTED = sys.modules.setdefault(
+    "_g33_attestations", __import__("types").ModuleType("_g33_attestations")
+).__dict__.setdefault("digests", {})
+
 
 def _eager_import(name: str):
     """Import a run-role analyzer, attesting the bytes that will run.
@@ -64,13 +72,16 @@ def _eager_import(name: str):
     # reason, and says so if the order is ever changed.
     prior = sys.modules.get(name)
     if prior is not None:
-        # The attestation lives ON the attested module, because this file is
-        # executed TWICE when it runs as `__main__` and something then
-        # imports it by name -- the second pass gets a fresh `_EAGER_AT_LOAD`
-        # but the same `sys.modules`. Carrying the digest on the module makes
-        # the second pass report what the first one measured instead of
-        # refusing a legitimate run.
-        got = getattr(prior, "_g33_attested_digest", None)
+        # This file is executed TWICE when it runs as `__main__` and another
+        # module then imports it by name: the second pass gets a fresh
+        # `_EAGER_AT_LOAD` and the same `sys.modules`, so it needs to find
+        # what the FIRST pass measured. That record lives in a private
+        # registry the producer owns, NOT on the attested module -- an
+        # attribute there is written by the module itself, so an edited file
+        # could declare `_g33_attested_digest = <HEAD's digest>` and attest
+        # itself in one line. Reproduced: bytes a6cdf165 ran and 59f7f5dd was
+        # recorded (Codex).
+        got = _ATTESTED.get(name)
         if got is None:
             raise SystemExit(
                 f"REFUSED: {name} was already imported before it could be "
@@ -85,7 +96,7 @@ def _eager_import(name: str):
         raise SystemExit(
             f"REFUSED: {name} changed while it was being imported "
             f"({before[:12]} -> {after[:12]})")
-    mod._g33_attested_digest = before
+    _ATTESTED[name] = before
     _EAGER_AT_LOAD[name] = before
     return mod
 

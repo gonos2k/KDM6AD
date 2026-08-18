@@ -719,7 +719,8 @@ def test_the_eager_digest_is_taken_where_the_module_is_imported():
     # ...and NOTHING may have imported it first, or the bracket is decoration:
     # `g33_probe_read` pulls this module in, so attesting it after that import
     # measured a module that had already run (Codex, third pass).
-    assert "if name in sys.modules:" in head, "refuse an already-imported one"
+    assert "prior = sys.modules.get(name)" in head, \
+        "a module something else imported first must be refused"
     order = [head.index("nt = _eager_import(")]
     for other in ("import g33_refine_analyze", "import g33_probe_read",
                   "import g33_run_matrix"):
@@ -728,3 +729,48 @@ def test_the_eager_digest_is_taken_where_the_module_is_imported():
     seam = src.split("def _an(", 1)[1].split("\ndef ", 1)[0]
     assert "_EAGER_AT_LOAD[name]" in seam and "read_bytes()" not in seam, \
         "the seam must use the load digest, never re-read the file"
+
+
+@pytest.mark.skipif(shutil.which("git") is None, reason="needs git")
+def test_a_module_cannot_attest_itself(tmp_path):
+    """The record lived on the attested module, so an edited file could
+    declare `_g33_attested_digest = <HEAD's digest>` and attest itself in one
+    line. Reproduced in a fresh process: bytes a6cdf165 ran and HEAD's
+    59f7f5dd was recorded and accepted (Codex). It lives in a registry the
+    producer owns now, which its two executions share and the attested module
+    does not reach by setting one of its own attributes."""
+    target = REPO / "harness/g33_number_transport.py"
+    keep = target.read_bytes()
+    head = subprocess.run(
+        ["git", "show", "HEAD:harness/g33_number_transport.py"],
+        cwd=REPO, capture_output=True).stdout
+    digest = hashlib.sha256(head).hexdigest()
+    forged = keep + f"\n_g33_attested_digest = {digest!r}\n".encode()
+    script = (
+        "import sys\n"
+        f"sys.path.insert(0, {str(REPO / 'harness')!r})\n"
+        "import g33_probe_read\n"
+        "try:\n"
+        "    import g33_refine_experiment as xp\n"
+        "    print('ACCEPTED', xp._EAGER_AT_LOAD)\n"
+        "except SystemExit as e:\n"
+        "    print('REFUSED', str(e).splitlines()[0])\n")
+    try:
+        target.write_bytes(forged)
+        r = subprocess.run([sys.executable, "-c", script], capture_output=True,
+                           text=True, cwd=REPO)
+        assert "REFUSED" in r.stdout, r.stdout + r.stderr
+    finally:
+        target.write_bytes(keep)
+
+
+def test_the_attestation_registry_is_not_an_attribute_of_the_module():
+    src = (REPO / "harness/g33_refine_experiment.py").read_text()
+    head = src.split("def _an(", 1)[0]
+    code = "\n".join(l for l in head.splitlines()
+                     if not l.lstrip().startswith("#"))
+    assert "_g33_attested_digest" not in code, "a module must not attest itself"
+    assert "_ATTESTED[name] = before" in code
+    assert "_g33_attestations" in code, "a registry the producer owns"
+    assert "prior = sys.modules.get(name)" in code, \
+        "a module something else imported first must be refused"
