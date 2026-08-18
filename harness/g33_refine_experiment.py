@@ -47,6 +47,11 @@ sys.path.insert(0, str(HERE))
 #: the read after the execution it claims to describe (Codex, twice).
 _EAGER_AT_LOAD: dict = {}
 
+#: What each analyzer's bytes were WHEN IT WAS IMPORTED, so the manifest can
+#: pin what ran rather than what the tree holds afterwards. `None` means this
+#: process cannot say -- `produce()` refuses to publish such a bundle.
+_IMPORTED: dict = {}
+
 
 
 def _is_duplicate_execution() -> bool:
@@ -95,6 +100,12 @@ def _eager_import(name: str):
         # unattestable, and `produce()` refuses to publish from it. Fail
         # closed, with nothing to forge.
         if _is_duplicate_execution():
+            # NOT SILENTLY SKIPPED. `extension_protocol` reaches this module
+            # through the module-level `nt`, never through `_an`, so leaving
+            # no record meant nothing marked it -- and a duplicate instance
+            # published an INSTRUMENTED bundle, 20 analyses, with this module
+            # missing from `executed_analyzers` entirely. Measured (Codex).
+            _IMPORTED[name] = None
             return prior
         raise SystemExit(
             f"REFUSED: {name} was already imported before it could be "
@@ -190,9 +201,6 @@ def _an(name: str):
     return mod
 
 
-#: What each analyzer's bytes were WHEN IT WAS IMPORTED, so the manifest can
-#: pin what ran rather than what the tree holds afterwards.
-_IMPORTED: dict = {}
 
 #: Analyzer modules the producer imports at module load because they also
 #: play a RUN role -- `g33_number_transport` makes arm streams and is also
