@@ -610,7 +610,30 @@ def test_verification_normalises_against_every_root_the_RECORD_used(tmp_path):
     (root / "build_provenance.json").write_text(json.dumps(rec))
     assert bp.verify(root), "a substituted root must not verify"
 
-    rec["diagnostic"].pop("repo_root")
+    # Dropping them is not a way past either: a record normalised with three
+    # roots and re-derived with one produces `<TMP>` where the logs hold a
+    # literal path.
+    rec["diagnostic"] = {"outdir": "/build/out"}
     (root / "build_provenance.json").write_text(json.dumps(rec))
-    got = bp.verify(root)
-    assert got and "repo_root" in got[0]
+    assert bp.verify(root), "dropping the roots must not clear the check"
+
+
+def test_a_record_made_BEFORE_the_extra_roots_still_verifies(tmp_path):
+    """Requiring `tmpdir`/`repo_root` made this refuse every bundle published
+    before §7: their records were normalised against the output directory
+    alone, so that is how they have to be re-derived (Codex). A stricter
+    demand on history is the one discipline this campaign has kept unbroken --
+    each root is used IF the record used it."""
+    root = tmp_path / "b"
+    root.mkdir()
+    mod = "host/KIM-meso_v1.0/phys/module_mp_kdm6.F"
+    (root / "sources.txt").write_text(mod + "\t" + "a" * 64 + "\n")
+    (root / "commands.txt").write_text(
+        "gfortran -c /var/t/g33-stage/dead-x.F -J/build/out\n")
+    (root / "build_provenance.json").write_text(json.dumps({
+        # the pre-§7 shape: literal paths, and only the output directory
+        "sources": [{"path": mod, "role": "module",
+                     "sha256": "a" * 64}],
+        "compile_commands": ["gfortran -c /var/t/g33-stage/dead-x.F -J<OUT>"],
+        "diagnostic": {"outdir": "/build/out"}}))
+    assert bp.verify(root) == []

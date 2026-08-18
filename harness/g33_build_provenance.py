@@ -231,12 +231,21 @@ def verify(root: Path) -> list:
     # reproduced on a real build, `commands.txt is not
     # build_provenance.compile_commands` (Codex).
     diag = got.get("diagnostic") or {}
-    missing = [k for k in ("outdir", "tmpdir", "repo_root") if not diag.get(k)]
-    if missing:
-        return [f"build_provenance.diagnostic is missing {missing}, so the "
-                f"published logs cannot be normalised the way the record was"]
-    norm = normaliser(Path(diag["outdir"]), Path(diag["tmpdir"]),
-                      Path(diag["repo_root"]))
+    if not diag.get("outdir"):
+        return ["build_provenance.diagnostic.outdir is missing, so the "
+                "published logs cannot be normalised the way the record was"]
+    # EACH ROOT IS USED IF THE RECORD USED IT (Codex). Requiring all three
+    # made this refuse every bundle published before §7 -- their records were
+    # normalised against the output directory alone, so that is how they have
+    # to be re-derived. A stricter demand on history is the one discipline
+    # this campaign has kept unbroken.
+    #
+    # Dropping the roots is not a way past the check: a record normalised
+    # with three roots and re-derived with one produces `<TMP>` where the
+    # logs hold a literal path, which is a mismatch and is refused.
+    norm = normaliser(Path(diag["outdir"]),
+                      Path(diag["tmpdir"]) if diag.get("tmpdir") else None,
+                      Path(diag["repo_root"]) if diag.get("repo_root") else None)
     bad = []
     srcs, cmds = root / "sources.txt", root / "commands.txt"
     # ABSENT is not ABSENT-AND-FINE (Codex): skipping the comparison when a
