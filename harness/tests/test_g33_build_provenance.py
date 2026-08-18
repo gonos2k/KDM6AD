@@ -778,3 +778,45 @@ def test_the_attestation_registry_is_not_an_attribute_of_the_module():
     assert "_is_duplicate_execution()" in code
     assert "prior = sys.modules.get(name)" in code, \
         "a module something else imported first must be refused"
+
+
+@pytest.mark.skipif(shutil.which("gfortran") is None or
+                    not (REPO / "host/KIM-meso_v1.0/phys/module_mp_kdm6.F").is_file(),
+                    reason="local-only (needs gfortran + the host tree)")
+@pytest.mark.parametrize("duplicate,expect", [(False, "published"),
+                                              (True, "refused")])
+def test_a_duplicate_execution_cannot_publish_an_unattested_bundle(
+        tmp_path, duplicate, expect):
+    """I claimed a duplicate execution "publishes nothing". It does: measured,
+    an INSTRUMENTED bundle with 20 analyses, published with
+    `g33_number_transport` missing from `executed_analyzers` altogether --
+    `extension_protocol` reaches it through the module-level `nt`, never
+    through `_an`, so the eager path is its only attestation and skipping it
+    left no record at all (Codex).
+
+    Both directions are asserted: the duplicate refuses, and the ordinary run
+    publishes WITH the module attested."""
+    script = f'''
+import sys, json
+from pathlib import Path
+sys.path.insert(0, {str(REPO / "harness")!r})
+if {duplicate!r}:
+    sys.modules["__main__"].__file__ = {str(REPO / "harness/g33_refine_experiment.py")!r}
+    import g33_probe_read
+import g33_refine_experiment as xp
+try:
+    d = xp.produce(Path({str(tmp_path / "b")!r}), fixture="g33_fixture_multisubcycle_v1",
+                   algo="legacy", nsplits=(3,), mode="rezero", nflux=True)
+    m = json.loads((d / "manifest.json").read_text())
+    named = {{e["module"] for e in m.get("executed_analyzers", [])}}
+    print("PUBLISHED", "g33_number_transport" in named, len(m["analyses"]))
+except SystemExit as e:
+    print("REFUSED", str(e).splitlines()[0])
+'''
+    r = subprocess.run([sys.executable, "-c", script], capture_output=True,
+                       text=True, cwd=REPO, timeout=1800)
+    if expect == "refused":
+        assert "REFUSED" in r.stdout, r.stdout + r.stderr[-800:]
+        assert "g33_number_transport" in r.stdout
+    else:
+        assert r.stdout.startswith("PUBLISHED True"), r.stdout + r.stderr[-800:]
