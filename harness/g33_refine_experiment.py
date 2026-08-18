@@ -73,6 +73,17 @@ def _require_head_digest(rel: Path, got: str, what: str) -> str:
     return got
 
 
+def _running_as_cli() -> bool:
+    """Is this the producer running as a script, i.e. publishing evidence?
+
+    Faking it makes the run STRICTER, never looser -- the refusal above is
+    what it gates -- so it is safe to read the way a digest is not.
+    """
+    main = sys.modules.get("__main__")
+    f = getattr(main, "__file__", None)
+    return bool(f) and Path(f).resolve() == Path(__file__).resolve()
+
+
 def _is_duplicate_execution() -> bool:
     """Is another instance of THIS FILE already in `sys.modules`?
 
@@ -2021,14 +2032,23 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         # written. Empty on a run that dispatched no analyzer.
         if _IMPORTED:
             unattested = sorted(k for k, v in _IMPORTED.items() if v is None)
-            if unattested:
+            # PUBLISHED EVIDENCE COMES FROM THE CLI, and there this is always
+            # empty: the producer is `__main__` in a fresh process and every
+            # analyzer reaches it through the seam. A library import -- the
+            # test suite -- shares an interpreter where other modules have
+            # already imported analyzers, so refusing there stopped every
+            # in-process `produce()` in the full run. The bundle claims only
+            # what it can attest; the CLI refuses rather than claim less.
+            if unattested and _running_as_cli():
                 raise SystemExit(
                     f"REFUSED: {unattested} were already in memory when the "
                     f"analysis dispatched, so what executed cannot be "
                     f"established. A producer runs in a fresh process for "
                     f"exactly this reason.")
-            man["executed_analyzers"] = [
-                {"module": k, "sha256": v} for k, v in sorted(_IMPORTED.items())]
+            attested = {k: v for k, v in _IMPORTED.items() if v is not None}
+            if attested:
+                man["executed_analyzers"] = [
+                    {"module": k, "sha256": v} for k, v in sorted(attested.items())]
         # The TRACKED build inputs decide the raw streams as surely as the
         # analyzers decide the numbers, and build_provenance recorded only their
         # content digests -- checkable against today's working tree and nothing
