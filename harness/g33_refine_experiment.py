@@ -119,6 +119,12 @@ def _eager_import(name: str):
             f"REFUSED: {name} changed while it was being imported "
             f"({before[:12]} -> {after[:12]})")
     _EAGER_AT_LOAD[name] = before
+    # ...and into the record the manifest is built from. `extension_protocol`
+    # reaches this module through the module-level `nt`, never through `_an`,
+    # so leaving it only in `_EAGER_AT_LOAD` meant a bundle whose analyses it
+    # produced never named it. Measured: 20 analyses published with it absent
+    # from `executed_analyzers` (Codex).
+    _IMPORTED[name] = before
     return mod
 
 
