@@ -224,13 +224,20 @@ def verify(root: Path) -> list:
     except ValueError as e:
         return [f"build_provenance.json is not readable JSON: {e}"]
     # The logs are copied VERBATIM from the build directory while the record
-    # is normalised against it, so the comparison needs the directory the
-    # build ran in -- which only the diagnostic block remembers.
-    outdir = (got.get("diagnostic") or {}).get("outdir")
-    if not outdir:
-        return ["build_provenance.diagnostic.outdir is missing, so the "
-                "published logs cannot be normalised the way the record was"]
-    norm, bad = normaliser(Path(outdir)), []
+    # is normalised against THREE roots -- the output directory, `$TMPDIR`
+    # and the checkout (owner §7) -- so the comparison needs all three, which
+    # only the diagnostic block remembers. Normalising with the output
+    # directory alone left every honest build failing its own verification:
+    # reproduced on a real build, `commands.txt is not
+    # build_provenance.compile_commands` (Codex).
+    diag = got.get("diagnostic") or {}
+    missing = [k for k in ("outdir", "tmpdir", "repo_root") if not diag.get(k)]
+    if missing:
+        return [f"build_provenance.diagnostic is missing {missing}, so the "
+                f"published logs cannot be normalised the way the record was"]
+    norm = normaliser(Path(diag["outdir"]), Path(diag["tmpdir"]),
+                      Path(diag["repo_root"]))
+    bad = []
     srcs, cmds = root / "sources.txt", root / "commands.txt"
     # ABSENT is not ABSENT-AND-FINE (Codex): skipping the comparison when a
     # log is missing let deleting it clear the check, so a record could claim

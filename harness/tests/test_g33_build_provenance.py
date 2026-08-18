@@ -526,7 +526,8 @@ def test_a_MISSING_log_cannot_clear_the_witness_comparison(tmp_path, drop):
         "sources": [{"path": "harness/g33_fortran/g33_refine_driver.f90",
                      "role": "driver", "sha256": "a" * 64}],
         "compile_commands": ["gfortran -c x.f90"],
-        "diagnostic": {"outdir": "/build"}}))
+        "diagnostic": {"outdir": "/build", "tmpdir": "/tmp",
+                       "repo_root": "/repo"}}))
     assert bp.verify(root) == []
     (root / drop).unlink()
     got = bp.verify(root)
@@ -547,7 +548,8 @@ def test_a_malformed_source_line_is_REPORTED_not_raised(tmp_path):
         "sources": [{"path": "harness/g33_fortran/g33_refine_driver.f90",
                      "role": "driver", "sha256": "a" * 64}],
         "compile_commands": ["gfortran -c x.f90"],
-        "diagnostic": {"outdir": "/build"}}))
+        "diagnostic": {"outdir": "/build", "tmpdir": "/tmp",
+                       "repo_root": "/repo"}}))
     got = bp.verify(root)                      # must not raise
     assert got and "carries no digest" in got[0] and "line 2" in got[0]
 
@@ -576,3 +578,39 @@ def test_the_ci_detect_job_compares_against_the_PUSH_BASE(tmp_path):
     for job in ("build-and-test:", "build-and-test-macos:"):
         block = ci.split(f"  {job}", 1)[1][:400]
         assert "needs: detect" in block and "port == 'true'" in block
+
+
+def test_verification_normalises_against_every_root_the_RECORD_used(tmp_path):
+    """The record is normalised against three roots -- the output directory,
+    `$TMPDIR` and the checkout (owner §7) -- and the published logs are
+    verbatim, so re-deriving them needs all three. Normalising with the output
+    directory alone made every honest build fail its OWN verification:
+    reproduced on a real build, `commands.txt is not
+    build_provenance.compile_commands` (Codex). A checker that refuses correct
+    artifacts is worse than none: it teaches the reader to ignore it."""
+    root = tmp_path / "b"
+    root.mkdir()
+    (root / "sources.txt").write_text(
+        "harness/g33_fortran/g33_refine_driver.f90\t" + "a" * 64 + "\n")
+    (root / "commands.txt").write_text(
+        "gfortran -c /var/t/g33-stage/dead-x.F -J/build/out -I/repo/inc\n")
+    rec = {
+        "sources": [{"path": "harness/g33_fortran/g33_refine_driver.f90",
+                     "role": "driver", "sha256": "a" * 64}],
+        "compile_commands": ["gfortran -c <TMP>/g33-stage/dead-x.F "
+                             "-J<OUT> -I<REPO>/inc"],
+        "diagnostic": {"outdir": "/build/out", "tmpdir": "/var/t",
+                       "repo_root": "/repo"},
+    }
+    (root / "build_provenance.json").write_text(json.dumps(rec))
+    assert bp.verify(root) == []
+
+    # ...and the roots themselves cannot be bent to make a wrong record fit
+    rec["diagnostic"]["tmpdir"] = "/nowhere"
+    (root / "build_provenance.json").write_text(json.dumps(rec))
+    assert bp.verify(root), "a substituted root must not verify"
+
+    rec["diagnostic"].pop("repo_root")
+    (root / "build_provenance.json").write_text(json.dumps(rec))
+    got = bp.verify(root)
+    assert got and "repo_root" in got[0]
