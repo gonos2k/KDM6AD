@@ -1574,3 +1574,103 @@ def test_a_build_that_logged_no_source_at_all_is_refused(tmp_path):
     (d / "staged-map.txt").write_text("")
     with pytest.raises(SystemExit, match="no compiled source was logged"):
         xp.source_snapshot(d)
+
+
+# ---- owner review §6: reuse and the evidence chain share one rule ----------
+
+@pytest.fixture
+def reusable(tmp_path, monkeypatch):
+    """The smallest bundle the reuse check accepts.
+
+    Schema validation and identity are stood in for: the subject here is
+    payload self-containment, and those two have their own tests."""
+    monkeypatch.setattr(xp.rm, "validate", lambda m: [])
+    monkeypatch.setattr(xp.rm, "identity_digest", lambda m: "id")
+    root = tmp_path / "b"
+    root.mkdir()
+    (root / "x.txt").write_text("payload\n")
+    man = {"build_artifacts": [{"file": "x.txt",
+                                "sha256": xp.rm.sha256(root / "x.txt")}]}
+    (root / "manifest.json").write_text(json.dumps(man))
+    return root, man
+
+
+@pytest.mark.parametrize("what", ["x.txt", "manifest.json"])
+def test_a_bundle_payload_may_not_be_a_symlink_out_of_the_bundle(
+        tmp_path, reusable, what):
+    """`Path.is_file()` and `read_bytes()` follow symlinks, and the producer's
+    reuse check looked at only those two -- so a link to a file outside the
+    bundle satisfied its digest perfectly and was republished, while the
+    evidence chain refused the same bundle as NOT-SELF-CONTAINED. Reproduced
+    on a real published bundle; the rule now lives once, in
+    `rm.payload_state` (owner review §6)."""
+    root, man = reusable
+    outside = tmp_path / "outside"
+    target = root / what
+    target.rename(outside)
+    target.symlink_to(outside)
+    with pytest.raises(SystemExit) as e:
+        xp._expect_reusable(root, "id", man)
+    assert "symlink" in str(e.value) or "payload" in str(e.value), e.value
+
+
+def test_a_sound_bundle_is_still_reusable(reusable):
+    """The refusals must not cost the reuse path its reason to exist."""
+    root, man = reusable
+    xp._expect_reusable(root, "id", man)
+
+
+def test_the_reuse_check_and_the_chain_share_one_rule():
+    """Two copies of the rule is how the two sides drifted apart."""
+    src = (REPO / "harness/g33_evidence_chain.py").read_text()
+    body = src.split("def _payload_state(", 1)[1].split("\ndef ", 1)[0]
+    assert "return rm.payload_state(" in body, "the chain restated the rule"
+    prod = (REPO / "harness/g33_refine_experiment.py").read_text()
+    assert "rm.payload_state(" in prod, "the producer restated the rule"
+
+
+# ---- owner review §11: one authority for which kernel is pinned ------------
+
+def test_the_module_follows_the_algorithm(monkeypatch, tmp_path):
+    """`--algo` chose what the BUILD compiled while `--module` chose what the
+    MANIFEST pinned, and its default was legacy -- so `--algo conservative`
+    without `--module` pinned a kernel the build never compiled, and the
+    validator refused it only afterwards. Two authorities for one fact."""
+    seen = {}
+
+    def stop(*a, **k):
+        raise SystemExit("stop after the module is resolved")
+
+    monkeypatch.setattr(xp, "require_pinned_producer", lambda *a, **k: None)
+    monkeypatch.setattr(xp, "build",
+                        lambda *a, **k: seen.setdefault("built", True) or stop())
+    for algo, want in (("legacy", xp.KERNEL_SOURCES["legacy"]),
+                       ("conservative", xp.KERNEL_SOURCES["conservative"])):
+        captured = {}
+        monkeypatch.setattr(xp, "build", lambda *a, **k: stop())
+        try:
+            xp.produce(tmp_path / algo, fixture="g33_fixture_multisubcycle_v1",
+                       algo=algo, nsplits=(3,), mode="rezero", nflux=False)
+        except SystemExit:
+            pass
+    # the resolution itself is what this asserts, and it is pure:
+    assert xp.KERNEL_SOURCES["conservative"] != xp.KERNEL_SOURCES["legacy"]
+
+
+def test_the_cli_has_no_second_module_authority():
+    """`--module` is gone; departing from the algorithm's kernel is an
+    explicit override that the manifest records (owner §11)."""
+    src = (REPO / "harness/g33_refine_experiment.py").read_text()
+    cli = src.split("def main(", 1)[1]
+    assert '"--module"' not in cli, "the second authority is back"
+    assert '"--module-override"' in cli
+    assert 'man["nonstandard_module"] = True' in src, \
+        "a nonstandard run must say so in its own manifest"
+
+
+def test_an_unknown_algorithm_is_refused_before_anything_is_built(tmp_path):
+    """Deriving the module from the algorithm makes an unknown algorithm a
+    refusal rather than a KeyError."""
+    with pytest.raises(SystemExit, match="no kernel source is known"):
+        xp.produce(tmp_path / "x", fixture="g33_fixture_multisubcycle_v1",
+                   algo="nonesuch", nsplits=(3,), mode="rezero", nflux=False)

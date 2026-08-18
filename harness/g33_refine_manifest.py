@@ -75,6 +75,26 @@ LOCATION_DEPENDENT_ARTIFACTS = frozenset({"build_provenance.json",
 NON_IDENTITY_KEYS = ("tree_dirty",)
 
 
+#: The self-containment rule for one bundle payload. The producer's reuse
+#: check and the evidence chain held DIFFERENT rules: the producer looked at
+#: `is_file()` and the digest, and both follow symlinks, so a link to a file
+#: outside the bundle satisfied its digest and was republished -- while the
+#: chain called the same bundle NOT-SELF-CONTAINED. Reproduced, so the rule
+#: lives once (owner §6). The vocabulary is the chain's state strings.
+def payload_state(p: Path, want: str, root: Path) -> str:
+    """Presence, containment and digest of one payload, in one answer."""
+    if p.is_symlink() or (p.exists() and not p.is_file()):
+        return "NOT-SELF-CONTAINED"
+    if not p.is_file():
+        return "absent"
+    try:
+        if p.resolve().parent != root.resolve():
+            return "NOT-SELF-CONTAINED"
+    except OSError:
+        return "NOT-SELF-CONTAINED"
+    return "matches" if sha256(p) == want else "MISMATCH"
+
+
 def identity_digest(man: dict) -> str:
     """The content address: a digest over everything except the diagnostics."""
     def strip(x):

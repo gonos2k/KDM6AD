@@ -1244,12 +1244,28 @@ def _expect_reusable(final: Path, identity: str, man: dict) -> None:
                   + (have.get("build_artifacts") or []) + nested):
         f = final / entry["file"]
         want = entry.get("output_sha256") or entry.get("sha256")
-        if not f.is_file():
+        # ONE rule, shared with the evidence chain (owner §6). This checked
+        # `is_file()` and the digest, and both follow symlinks, so a link to a
+        # file outside the bundle satisfied its digest and was republished --
+        # while the chain refused the same bundle as NOT-SELF-CONTAINED.
+        state = rm.payload_state(f, want, final)
+        if state == "absent":
             raise SystemExit(f"REFUSED: {final} declares {entry['file']} but it "
                              f"is missing -- the directory is incomplete")
-        if rm.sha256(f) != want:
+        if state == "NOT-SELF-CONTAINED":
+            raise SystemExit(
+                f"REFUSED: {final}/{entry['file']} is not bundle payload -- a "
+                f"symlink, or a file outside the bundle root. A correct digest "
+                f"does not make it an immutable archive")
+        if state != "matches":
             raise SystemExit(f"REFUSED: {final}/{entry['file']} does not match "
                              f"the digest its manifest recorded")
+    # The manifest and the bundle directory are payload too (owner §6).
+    for what, q in (("manifest.json", mf), ("bundle directory", final)):
+        if q.is_symlink():
+            raise SystemExit(
+                f"REFUSED: {what} is a symlink -- the bytes an address names "
+                f"have to be inside the bundle")
 
 
 def require_pinned_producer(fixture: str | None = None) -> None:
@@ -1613,9 +1629,21 @@ def _analyses(out: Path, exe: Path, nsplits, mode: str,
 
 
 def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
-            nflux: bool, module: Path, findings=(), arm: str = "reference",
+            nflux: bool, module: Path | None = None, findings=(),
+            arm: str = "reference",
             rho_profile: str = "as-is") -> Path:
     """Build, run, validate and publish. Returns the published bundle."""
+    # The algorithm selects the module (owner §11). The build script picks
+    # the kernel to compile from `--algo` while the module the manifest pins
+    # arrived separately, defaulting to legacy -- so a conservative run had to
+    # line the two up by hand. One authority; departures are recorded.
+    canonical = KERNEL_SOURCES.get(algo)
+    if canonical is None:
+        raise SystemExit(
+            f"REFUSED: no kernel source is known for algorithm {algo!r}; "
+            f"the build compiles {sorted(KERNEL_SOURCES)}")
+    nonstandard = module is not None and Path(module) != canonical
+    module = canonical if module is None else Path(module)
     # MATERIALISE FIRST (owner §13 P1). `nsplits` is walked six times below --
     # the duplicate check, the member loop, the analyses, the arm streams. A
     # generator is exhausted by the first walk, and every later one sees an
@@ -1820,6 +1848,11 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         # decomposition, so every member's geometry is a derivable fact the
         # validator recomputes rather than a number it copies.
         man["algorithm"] = algo
+        # A run that leaves the kernel its algorithm selects has to say so,
+        # or a reader with only the manifest takes it for a standard one
+        # (owner §11).
+        if nonstandard:
+            man["nonstandard_module"] = True
         man["kernel_geometry"] = kgeom
         man["expected_run"] = {
             "schema": EXPECTED_RUN_SCHEMA,
@@ -1961,8 +1994,16 @@ def main(argv) -> int:
                     choices=("reference", "probe", "f64"),
                     help="f64 is an INSTRUMENT: it emits no G33R and is never "
                          "decision evidence")
-    ap.add_argument("--module", type=Path,
-                    default=Path("host/KIM-meso_v1.0/phys/module_mp_kdm6.F"))
+    # `--algo` chose the module the BUILD compiles while `--module` chose the
+    # one the MANIFEST pins, and its default was legacy -- so a conservative
+    # run had to line the two up by hand, and a mismatch was refused later by
+    # the validator. Not a silent defect, but two authorities for one fact
+    # (owner §11). The module follows the algorithm now; leaving that has to
+    # be said out loud.
+    ap.add_argument("--module-override", type=Path, default=None,
+                    help="for a NONSTANDARD experiment: pin this file instead "
+                         "of the kernel the algorithm selects, and record in "
+                         "the manifest that it was done")
     ap.add_argument("--finding", type=Path, action="append", default=[])
     a = ap.parse_args(argv)
     # absolute(), NOT resolve(): once `dest` is a symlink into the bundle store,
@@ -1970,7 +2011,8 @@ def main(argv) -> int:
     # previous bundle (owner §10.3 fallout, found by rerunning for real).
     dest = produce(a.outdir.absolute(), fixture=a.fixture, algo=a.algo,
                    nsplits=[int(x) for x in a.nsplit.split(",")], mode=a.mode,
-                   nflux=a.nflux, module=a.module, findings=a.finding, arm=a.arm,
+                   nflux=a.nflux, module=a.module_override,
+                   findings=a.finding, arm=a.arm,
                    rho_profile=a.rho_profile)
     print(dest)
     return 0
