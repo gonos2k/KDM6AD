@@ -557,7 +557,10 @@ def test_the_driver_analysis_takes_mode_and_width_from_the_BUNDLE(tmp_path,
         seen.update(raw=raw)
         return {"arms": {}}
 
-    import g33_metric_trajectory as mtj
+    # THROUGH THE SEAM, as production does: importing it directly leaves it
+    # in memory unattested, and every later test that publishes a bundle then
+    # refuses -- the producer cannot say what bytes ran.
+    mtj = xp._an("g33_metric_trajectory")
     monkeypatch.setattr(mtj, "analysis", fake)
     monkeypatch.setattr(xp.rmx, "collect", fake_collect)
     (tmp_path / "n7.carry.txt").write_text("member-bytes\n")
