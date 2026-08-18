@@ -770,7 +770,11 @@ def test_the_attestation_registry_is_not_an_attribute_of_the_module():
     code = "\n".join(l for l in head.splitlines()
                      if not l.lstrip().startswith("#"))
     assert "_g33_attested_digest" not in code, "a module must not attest itself"
-    assert "_ATTESTED[name] = before" in code
-    assert "_g33_attestations" in code, "a registry the producer owns"
+    # ...and NO cross-execution record at all: everything in a Python
+    # process can write module attributes and `sys.modules`, so there is no
+    # in-process place the attested code cannot reach. The duplicate
+    # execution simply does not attest, and publication refuses.
+    assert "_g33_attestations" not in code, "a registry is forgeable too"
+    assert "_is_duplicate_execution()" in code
     assert "prior = sys.modules.get(name)" in code, \
         "a module something else imported first must be refused"

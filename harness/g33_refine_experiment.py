@@ -47,13 +47,22 @@ sys.path.insert(0, str(HERE))
 #: the read after the execution it claims to describe (Codex, twice).
 _EAGER_AT_LOAD: dict = {}
 
-#: Attestations from THIS PROCESS, in a registry the producer owns. Keyed
-#: into `sys.modules` under a name nothing imports, so the two executions of
-#: this file share it while the modules being attested cannot reach it by
-#: simply setting one of their own attributes.
-_ATTESTED = sys.modules.setdefault(
-    "_g33_attestations", __import__("types").ModuleType("_g33_attestations")
-).__dict__.setdefault("digests", {})
+
+
+def _is_duplicate_execution() -> bool:
+    """Is another instance of THIS FILE already in `sys.modules`?
+
+    It runs as `__main__` and again when a module imports it by name. Faking
+    this only makes the producer skip attestation, which makes publication
+    refuse -- so it is safe to trust in a way a digest is not.
+    """
+    me = Path(__file__).resolve()
+    mine = sys.modules.get(__name__)
+    for mod in list(sys.modules.values()):
+        f = getattr(mod, "__file__", None)
+        if f and mod is not mine and Path(f).resolve() == me:
+            return True
+    return False
 
 
 def _eager_import(name: str):
@@ -72,22 +81,24 @@ def _eager_import(name: str):
     # reason, and says so if the order is ever changed.
     prior = sys.modules.get(name)
     if prior is not None:
-        # This file is executed TWICE when it runs as `__main__` and another
-        # module then imports it by name: the second pass gets a fresh
-        # `_EAGER_AT_LOAD` and the same `sys.modules`, so it needs to find
-        # what the FIRST pass measured. That record lives in a private
-        # registry the producer owns, NOT on the attested module -- an
-        # attribute there is written by the module itself, so an edited file
-        # could declare `_g33_attested_digest = <HEAD's digest>` and attest
-        # itself in one line. Reproduced: bytes a6cdf165 ran and 59f7f5dd was
-        # recorded (Codex).
-        got = _ATTESTED.get(name)
-        if got is None:
-            raise SystemExit(
-                f"REFUSED: {name} was already imported before it could be "
-                f"attested -- move this call ahead of whatever pulled it in")
-        _EAGER_AT_LOAD[name] = got
-        return prior
+        # NO CROSS-EXECUTION RECORD. Two earlier attempts kept one -- on the
+        # attested module, then in a private registry -- and BOTH were
+        # forgeable: everything in a Python process can write module
+        # attributes and `sys.modules`, so there is no place in-process that
+        # the code being attested cannot reach. Reproduced twice, bytes
+        # a6cdf165 and 79ebfc28 each attesting themselves as HEAD (Codex).
+        #
+        # The only case that needs it is this file being executed TWICE --
+        # as `__main__`, and again when another module imports it by name.
+        # That duplicate does not publish anything, so it simply does not
+        # attest: its `_EAGER_AT_LOAD` stays empty, `_an` marks the module
+        # unattestable, and `produce()` refuses to publish from it. Fail
+        # closed, with nothing to forge.
+        if _is_duplicate_execution():
+            return prior
+        raise SystemExit(
+            f"REFUSED: {name} was already imported before it could be "
+            f"attested -- move this call ahead of whatever pulled it in")
     src = HERE / f"{name}.py"
     before = hashlib.sha256(src.read_bytes()).hexdigest()
     mod = importlib.import_module(name)
@@ -96,7 +107,6 @@ def _eager_import(name: str):
         raise SystemExit(
             f"REFUSED: {name} changed while it was being imported "
             f"({before[:12]} -> {after[:12]})")
-    _ATTESTED[name] = before
     _EAGER_AT_LOAD[name] = before
     return mod
 
