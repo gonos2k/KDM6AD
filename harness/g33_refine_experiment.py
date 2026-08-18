@@ -119,11 +119,22 @@ def _eager_import(name: str):
         # unattestable, and `produce()` refuses to publish from it. Fail
         # closed, with nothing to forge.
         if _is_duplicate_execution():
+            # THIS FILE RUNS TWICE ON EVERY REAL RUN: as `__main__`, and again
+            # when `g33_identity` imports it by name. The second execution was
+            # checked by nothing at all -- it recompiled the producer's own
+            # bytes with no comparison to anything (Codex). It holds them to
+            # HEAD here, which is the same guarantee `require_pinned_producer`
+            # gives the first execution, and needs no cross-instance state --
+            # there is no in-process place the attested code cannot reach.
+            _require_head_digest(
+                Path("harness/g33_refine_experiment.py"),
+                hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+                "the producer's second execution")
             # NOT SILENTLY SKIPPED. `extension_protocol` reaches this module
             # through the module-level `nt`, never through `_an`, so leaving
             # no record meant nothing marked it -- and a duplicate instance
             # published an INSTRUMENTED bundle, 20 analyses, with this module
-            # missing from `executed_analyzers` entirely. Measured (Codex).
+            # missing from `executed_analyzers` entirely. Measured.
             _IMPORTED[name] = None
             return prior
         raise SystemExit(
