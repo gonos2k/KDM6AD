@@ -17,61 +17,53 @@ permissions:
 # is gated separately by oracle-ci).
 
 on:
+  # NO `paths:` FILTER (owner review §12). The branch ruleset requires this
+  # workflow's two build jobs by name, and a path filter stops the WORKFLOW
+  # from running at all -- so on a PR that touches none of these paths the
+  # required contexts are never created and the PR cannot merge, which is
+  # what forced an administrator merge on #140. The path decision moved into
+  # the `detect` job below: the jobs are always present as check runs, and
+  # they are SKIPPED rather than absent when the port is untouched. A skipped
+  # required check satisfies the rule; a missing one waits forever.
   push:
     branches: [main]
-    paths:
-      - 'libtorch/**'
-      - '.github/workflows/**'
-      # docs that carry the "ctest is green 17/17" claim — re-run so the badge
-      # stays tied to the current commit, not just the last libtorch/** change.
-      - 'README.md'
-      - 'ENVIRONMENT.md'
-      - 'docs/HOST_INTEGRATION.md'
-      # oracle source: rebuild + re-run the oracle↔C++ forward-parity test (needs the built
-      # binary), so an oracle refactor that drifts from the C++ port is caught here.
-      - 'oracle/kdm6/**'
-      # the parity tests this job now runs + the conftest that puts `kdm6` on sys.path for them —
-      # trigger when any changes too (they are direct inputs to the parity run).
-      - 'oracle/tests/test_cpp_parity.py'
-      - 'oracle/tests/test_cpp_conservative_interface_parity.py'
-      - 'oracle/conftest.py'
-      # the G3.3-M kill gate now runs in this job — trigger on its inputs (overlay
-      # TUs / build script / gate / mutant generator + the self-check reader and
-      # its harness deps) so a change to them re-runs the continuous gate. Globs,
-      # not an enumerated list, so a new g33_*.py module cannot silently escape
-      # the trigger.
-      - 'harness/g33_overlay/**'
-      - 'harness/g33_*.py'
   pull_request:
     branches: [main]
-    paths:
-      - 'libtorch/**'
-      - '.github/workflows/**'
-      # docs that carry the "ctest is green 17/17" claim — re-run so the badge
-      # stays tied to the current commit, not just the last libtorch/** change.
-      - 'README.md'
-      - 'ENVIRONMENT.md'
-      - 'docs/HOST_INTEGRATION.md'
-      # oracle source: rebuild + re-run the oracle↔C++ forward-parity test (needs the built
-      # binary), so an oracle refactor that drifts from the C++ port is caught here.
-      - 'oracle/kdm6/**'
-      # the parity tests this job now runs + the conftest that puts `kdm6` on sys.path for them —
-      # trigger when any changes too (they are direct inputs to the parity run).
-      - 'oracle/tests/test_cpp_parity.py'
-      - 'oracle/tests/test_cpp_conservative_interface_parity.py'
-      - 'oracle/conftest.py'
-      # the G3.3-M kill gate now runs in this job — trigger on its inputs (overlay
-      # TUs / build script / gate / mutant generator + the self-check reader and
-      # its harness deps) so a change to them re-runs the continuous gate. Globs,
-      # not an enumerated list, so a new g33_*.py module cannot silently escape
-      # the trigger.
-      - 'harness/g33_overlay/**'
-      - 'harness/g33_*.py'
   workflow_dispatch:
 
 jobs:
+  # Which paths actually feed the port. This was the `paths:` filter above;
+  # as a job it can decide the same thing WITHOUT preventing the required
+  # contexts from existing.
+  detect:
+    name: detect changed paths
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      port: ${{ steps.f.outputs.port }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: f
+        shell: bash
+        run: |
+          set -euo pipefail
+          base="${{ github.event.pull_request.base.sha }}"
+          if [ -z "$base" ]; then base=$(git rev-parse HEAD^ 2>/dev/null || git rev-parse HEAD); fi
+          echo "comparing $base...HEAD"
+          changed=$(git diff --name-only "$base" HEAD || git diff --name-only HEAD)
+          printf '%s\n' "$changed" | sed 's/^/  /'
+          if printf '%s\n' "$changed" | grep -Eq '^(libtorch/|oracle/kdm6/|harness/g33_overlay/|harness/g33_[^/]*\.py$|\.github/workflows/|README\.md$|ENVIRONMENT\.md$|docs/HOST_INTEGRATION\.md$|oracle/tests/test_cpp_parity\.py$|oracle/tests/test_cpp_conservative_interface_parity\.py$|oracle/conftest\.py$)'; then
+            echo "port=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "port=false" >> "$GITHUB_OUTPUT"
+          fi
+
   build-and-test:
     name: build + ctest (ubuntu, libtorch CPU)
+    needs: detect
+    if: needs.detect.outputs.port == 'true'
     # Pinned image (not ubuntu-latest) so a future runner bump can't silently change the
     # compiler/libc under the port. Actions stay on major tags (v4/v5) — the "Record
     # toolchain versions" step logs cmake/g++/gfortran/torch so any drift is visible in the log.
@@ -232,6 +224,8 @@ jobs:
   # remains a separate merge gate (docs/PR3_VISIBILITY_DESIGN.md §9).
   build-and-test-macos:
     name: build + symbol surface + smoke (macOS arm64, libtorch CPU)
+    needs: detect
+    if: needs.detect.outputs.port == 'true'
     runs-on: macos-14
     # The full libtorch C++ build runs ~43-45 min on macos-14 hosted runners
     # (last green was 42.5 min), but the arm64 runner intermittently stalls
