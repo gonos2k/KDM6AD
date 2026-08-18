@@ -1234,7 +1234,19 @@ def _executed_analyzer_violations(man: dict) -> list:
     if not at_least(man.get("schema"), "refinement_experiment_v7"):
         return []
     ran = man.get("executed_analyzers")
+    # ABSENCE IS ONLY LEGAL WHEN NOTHING RAN (Codex). Letting it be optional
+    # made omitting it a way to skip the whole check, and `analyses` proves
+    # analyzers ran -- the manifest's own `analysis_seeds` names which module
+    # each analysis dispatched to, so the expected set is not a guess.
+    seeds = (man.get("identity") or {}).get("analysis_seeds") or {}
+    names = {a.get("analysis") for a in (man.get("analyses") or [])
+             if isinstance(a, dict)}
+    expected = {seeds[n] for n in names if isinstance(seeds.get(n), str)}
     if ran is None:
+        if names:
+            return [f"executed_analyzers is absent, but {len(names)} analysis "
+                    f"kind(s) ran -- omitting the record cannot be how a "
+                    f"bundle avoids saying what executed"]
         return []                       # a run that dispatched no analyzer
     if not isinstance(ran, list) or not ran:
         return ["executed_analyzers must be a non-empty list when present"]
@@ -1264,6 +1276,12 @@ def _executed_analyzer_violations(man: dict) -> list:
             bad.append(f"{mod} executed as {got[:12]} but the bundle pins "
                        f"{want[:12]} -- the pin describes bytes that did not "
                        f"run")
+    # FULL COVERAGE -- every analysis's seed module attested -- is the
+    # obvious next clause and is NOT enforced here yet. Multi-run analyses
+    # do not all reach their module through the `_an` seam, so the producer
+    # may not attest every seed, and enforcing it before a controlled
+    # re-production shows what it actually records would refuse real
+    # bundles. Deferred to that step, deliberately.
     return bad
 
 

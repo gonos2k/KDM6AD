@@ -73,7 +73,7 @@ def synthetic_manifest(root):
     _mods = ["p"] + [f"g33_{k}" for k in sorted(set(rm.DERIVED_ANALYSES)
                                                 | set(rm.MULTI_RUN_ANALYSES))]
     _pins = [{**pin, "path": f"harness/{m}.py"} for m in _mods]
-    return {
+    man = {
         # rm.SCHEMA, not a literal: pinned to "v2" this fixture went on
         # testing the previous contract after the bump, and every v3
         # check written against it asserted nothing.
@@ -157,7 +157,18 @@ def synthetic_manifest(root):
                                set(rm.DERIVED_ANALYSES)
                                | set(rm.MULTI_RUN_ANALYSES)},
         },
+        # v7: every analyzer an analysis dispatched to says what it EXECUTED
+        # as, and the digest has to be the one the bundle pins for it
+        # (owner review §8). Filled in below, once the analyses are known.
     }
+    seeds = man["identity"]["analysis_seeds"]
+    pins = {Path(q["path"]).stem: q["content_sha256"]
+            for g in ("producer_modules", "member_parsers") for q in man[g]}
+    ran = sorted({seeds[a["analysis"]] for a in man["analyses"]
+                  if a.get("analysis") in seeds})
+    man["executed_analyzers"] = [{"module": m, "sha256": pins.get(m, "0" * 64)}
+                                 for m in ran]
+    return man
 
 
 def _real_manifest():
@@ -1237,6 +1248,18 @@ def _real_v6_manifest_here():
     return None
 
 
+def _full_attestation(v7):
+    """One row per module the bundle's own analyses dispatched to."""
+    seeds = (v7.get("identity") or {}).get("analysis_seeds") or {}
+    names = {a["analysis"] for a in v7["analyses"]}
+    pins = {Path(p["path"]).stem: p["content_sha256"]
+            for g in ("producer_modules", "member_parsers")
+            for p in v7.get(g) or []}
+    return [{"module": m, "sha256": pins[m]}
+            for m in sorted({seeds[n] for n in names if n in seeds})
+            if m in pins]
+
+
 def _v7(man):
     """The same manifest, promoted to the v7 provenance contract."""
     import g33_build_provenance as bp
@@ -1246,6 +1269,8 @@ def _v7(man):
     b["schema"] = bp.BUILD_PROVENANCE_SCHEMA
     for r in b["sources"]:
         r["role"] = bp.role_of(r["path"])
+    # v7 also requires the run to say what its analyzers EXECUTED as
+    out["executed_analyzers"] = _full_attestation(out)
     return out
 
 
@@ -1327,3 +1352,38 @@ def test_an_analyzer_that_ran_as_its_pin_says_is_accepted():
     v7["executed_analyzers"].append({"module": "g33_matched_closure",
                                      "sha256": "b" * 64})
     assert any("twice" in b for b in rm.validate(v7))
+
+
+
+
+def test_omitting_the_attestation_is_not_how_a_bundle_avoids_it():
+    """Absence was legal so that a run dispatching no analyzer had nothing to
+    attest -- which made OMITTING the block a way to skip the check entirely,
+    while `analyses` proved analyzers had run (Codex). The manifest's own
+    `analysis_seeds` names which module each analysis dispatched to, so the
+    expected set is not a guess."""
+    man = _real_v6_manifest_here()
+    if man is None:
+        pytest.skip("no v6 bundle on this host")
+    v7 = _v7(man)
+    assert v7.get("analyses"), "this fixture must carry analyses"
+    v7.pop("executed_analyzers")          # the omission under test
+    bad = rm.validate(v7)
+    assert bad and any("is absent" in b for b in bad), bad
+
+    v7["executed_analyzers"] = _full_attestation(v7)
+    assert rm.validate(v7) == []
+
+
+def test_a_bundle_with_no_analyses_owes_no_attestation():
+    """An instrumented bundle must carry the analyses that make it
+    instrumented, so emptying `analyses` alone is a different violation --
+    the point here is only that the attestation is not demanded of a run that
+    dispatched nothing."""
+    man = _real_v6_manifest_here()
+    if man is None:
+        pytest.skip("no v6 bundle on this host")
+    v7 = _v7(man)
+    v7["analyses"] = []
+    assert not [b for b in rm.validate(v7)
+                if "executed_analyzers" in b or "nothing attests" in b]
