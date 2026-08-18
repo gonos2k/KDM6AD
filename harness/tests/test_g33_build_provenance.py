@@ -810,3 +810,24 @@ except SystemExit as e:
         assert "g33_number_transport" in r.stdout
     else:
         assert r.stdout.startswith("PUBLISHED True"), r.stdout + r.stderr[-800:]
+
+
+def test_the_producers_second_execution_is_held_to_HEAD_too():
+    """This file runs TWICE on every real run: as `__main__`, and again when
+    `g33_identity` imports it by name. The first is held to HEAD by
+    `require_pinned_producer`; the second was checked by nothing -- it
+    recompiled the producer's own bytes with no comparison to anything, and
+    the original went on to publish (Codex)."""
+    src = (REPO / "harness/g33_refine_experiment.py").read_text()
+    dup = src.split("if _is_duplicate_execution():", 1)[1].split("return prior", 1)[0]
+    code = "\n".join(l for l in dup.splitlines()
+                     if not l.lstrip().startswith("#"))
+    assert "_require_head_digest(" in code, "the second execution checks itself"
+    assert "g33_refine_experiment.py" in code
+    assert "_IMPORTED[name] = None" in code, "and still cannot attest"
+    # ...and the check is real, not a call that always passes
+    sys.path.insert(0, str(REPO / "harness"))
+    import g33_refine_experiment as xp
+    with pytest.raises(SystemExit, match="executed as"):
+        xp._require_head_digest(Path("harness/g33_refine_experiment.py"),
+                                "f" * 64, "second execution")
