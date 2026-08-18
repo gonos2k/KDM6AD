@@ -1233,6 +1233,22 @@ def _executed_analyzer_violations(man: dict) -> list:
     """
     if not at_least(man.get("schema"), "refinement_experiment_v7"):
         return []
+    # A bundle that could not attest everything says so, and saying so is
+    # incompatible with being decision evidence (owner §8, Codex).
+    cannot = man.get("unattested_analyzers")
+    if cannot is not None:
+        if not isinstance(cannot, list) or not cannot or \
+                not all(isinstance(x, str) and x for x in cannot):
+            return ["unattested_analyzers must be a non-empty list of module "
+                    "names when present"]
+        named = {r.get("module") for r in (man.get("executed_analyzers") or [])
+                 if isinstance(r, dict)}
+        both = sorted(set(cannot) & named)
+        if both:
+            return [f"{both} are named as BOTH attested and unattested"]
+        if man.get("decision_eligible") is not False:
+            return ["a bundle with unattested_analyzers cannot be "
+                    "decision_eligible -- it cannot say what produced it"]
     ran = man.get("executed_analyzers")
     # ABSENCE IS ONLY LEGAL WHEN NOTHING RAN (Codex). Letting it be optional
     # made omitting it a way to skip the whole check, and `analyses` proves

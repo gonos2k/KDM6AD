@@ -1232,8 +1232,25 @@ def test_the_geometry_is_PROVENANCED_to_what_was_compiled(tmp_path, tag,
 
 # ---- owner review §5: build_provenance is an EXACT contract from v7 --------
 
+def _published_manifests():
+    """Every published manifest on this host, newest tag first."""
+    import json
+    from pathlib import Path
+    for root in sorted(Path.home().glob("kdm6ad-g33m-*")):
+        if not root.is_dir():
+            continue
+        for link in sorted(root.iterdir()):
+            j = link.resolve() / "manifest.json"
+            if link.is_symlink() and j.is_file():
+                yield json.loads(j.read_text())
+
+
 def _real_v6_manifest_here():
-    """A published v6 bundle on this host, or None on a public checkout."""
+    """A published bundle on this host, or None on a public checkout.
+
+    Takes v6 or v7: the live bundles were v6 when these tests were written
+    and became v7 at the controlled re-production, and what they need is a
+    REAL manifest to promote, not a particular tag."""
     import json
     from pathlib import Path
     for root in sorted(Path.home().glob("kdm6ad-g33m-*")):
@@ -1243,7 +1260,8 @@ def _real_v6_manifest_here():
             j = link.resolve() / "manifest.json"
             if link.is_symlink() and j.is_file():
                 man = json.loads(j.read_text())
-                if man.get("schema") == "refinement_experiment_v6":
+                if man.get("schema") in ("refinement_experiment_v6",
+                                         "refinement_experiment_v7"):
                     return man
     return None
 
@@ -1265,6 +1283,7 @@ def _v7(man):
     import g33_build_provenance as bp
     out = json.loads(json.dumps(man))
     out["schema"] = "refinement_experiment_v7"
+    out.pop("unattested_analyzers", None)
     b = out["build_provenance"]
     b["schema"] = bp.BUILD_PROVENANCE_SCHEMA
     for r in b["sources"]:
@@ -1305,10 +1324,10 @@ def test_the_provenance_block_is_an_exact_contract(mutate, expect):
 
 def test_a_v6_bundle_answers_for_the_v6_contract():
     """A stricter key set is a NEW TAG, never a new demand on history."""
-    man = _real_v6_manifest_here()
+    man = next((m for m in _published_manifests()
+                if m.get("schema") == "refinement_experiment_v6"), None)
     if man is None:
-        pytest.skip("no v6 bundle on this host")
-    assert man["schema"] == "refinement_experiment_v6"
+        pytest.skip("no v6 bundle on this host -- the live ones are v7 now")
     assert "schema" not in man["build_provenance"]
     assert rm.validate(man) == []
 
@@ -1387,3 +1406,46 @@ def test_a_bundle_with_no_analyses_owes_no_attestation():
     v7["analyses"] = []
     assert not [b for b in rm.validate(v7)
                 if "executed_analyzers" in b or "nothing attests" in b]
+
+
+# ---- owner review §8: a bundle says what it could NOT attest ---------------
+
+def _with_unattested(v7):
+    out = json.loads(json.dumps(v7))
+    out["unattested_analyzers"] = ["g33_number_transport"]
+    out["executed_analyzers"] = [e for e in out["executed_analyzers"]
+                                 if e["module"] != "g33_number_transport"]
+    out["decision_eligible"] = False
+    return out
+
+
+def test_a_bundle_that_cannot_attest_everything_says_so():
+    """Dropping the modules it could not attest published a record a reader
+    cannot tell apart from a complete one: measured, 20 analyses with seven
+    modules named and `g33_number_transport` simply absent (Codex)."""
+    man = _real_v6_manifest_here()
+    if man is None:
+        pytest.skip("no v6 bundle on this host")
+    v7 = _with_unattested(_v7(man))
+    assert rm.validate(v7) == []
+
+
+@pytest.mark.parametrize("mutate,expect", [
+    (lambda m: m.__setitem__("decision_eligible", True), "decision_eligible"),
+    (lambda m: m["executed_analyzers"].append(
+        {"module": "g33_number_transport", "sha256": "a" * 64}),
+     "BOTH attested and unattested"),
+    (lambda m: m.__setitem__("unattested_analyzers", []), "non-empty list"),
+    (lambda m: m.__setitem__("unattested_analyzers", [123]), "non-empty list"),
+])
+def test_the_unattested_record_cannot_be_smoothed_over(mutate, expect):
+    """Saying it is incompatible with being decision evidence, a module may
+    not be claimed on both sides, and an empty or malformed list is not a way
+    to say nothing."""
+    man = _real_v6_manifest_here()
+    if man is None:
+        pytest.skip("no v6 bundle on this host")
+    v7 = _with_unattested(_v7(man))
+    mutate(v7)
+    bad = rm.validate(v7)
+    assert bad and any(expect in b for b in bad), bad

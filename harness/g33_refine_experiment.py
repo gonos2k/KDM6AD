@@ -2049,6 +2049,13 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             if attested:
                 man["executed_analyzers"] = [
                     {"module": k, "sha256": v} for k, v in sorted(attested.items())]
+            # ...and SAY what could not be attested. Dropping those silently
+            # published a bundle whose record a reader cannot tell apart from
+            # a complete one: measured, 20 analyses with 7 modules named and
+            # `g33_number_transport` simply absent (Codex). A bundle that
+            # cannot say what ran has to say that.
+            if unattested:
+                man["unattested_analyzers"] = unattested
         # The TRACKED build inputs decide the raw streams as surely as the
         # analyzers decide the numbers, and build_provenance recorded only their
         # content digests -- checkable against today's working tree and nothing
