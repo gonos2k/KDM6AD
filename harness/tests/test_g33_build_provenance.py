@@ -716,6 +716,15 @@ def test_the_eager_digest_is_taken_where_the_module_is_imported():
     after = head.index("after = hashlib.sha256")
     assert before < runs < after, "hash before execution, re-check after"
     assert "if before != after:" in head, "a change under the import refuses"
+    # ...and NOTHING may have imported it first, or the bracket is decoration:
+    # `g33_probe_read` pulls this module in, so attesting it after that import
+    # measured a module that had already run (Codex, third pass).
+    assert "if name in sys.modules:" in head, "refuse an already-imported one"
+    order = [head.index("nt = _eager_import(")]
+    for other in ("import g33_refine_analyze", "import g33_probe_read",
+                  "import g33_run_matrix"):
+        assert order[0] < head.index(other), \
+            f"{other} runs before the attestation it would defeat"
     seam = src.split("def _an(", 1)[1].split("\ndef ", 1)[0]
     assert "_EAGER_AT_LOAD[name]" in seam and "read_bytes()" not in seam, \
         "the seam must use the load digest, never re-read the file"

@@ -40,11 +40,6 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-import g33_refine_analyze as ra        # noqa: E402
-import g33_refine_manifest as rm       # noqa: E402
-import g33_probe_read as pr           # noqa: E402
-import g33_run_matrix as rmx          # noqa: E402  (run role: makes arm streams)
-
 #: Run-role analyzers digested BEFORE they execute, and re-checked after, so
 #: the bytes attested are the bytes the interpreter compiled. Hashing at
 #: dispatch read whatever the tree held then -- reproduced, d212a1b1 executed
@@ -62,6 +57,15 @@ def _eager_import(name: str):
     the only place it can be, around the import itself.
     """
     import importlib
+    # NOTHING may have imported it yet, or the "before" hash is taken after
+    # the execution it brackets. `g33_probe_read` pulls this module in, so
+    # attesting it after that import measured a module that had already run
+    # (Codex). This call sits ahead of every other g33 import for that
+    # reason, and says so if the order is ever changed.
+    if name in sys.modules:
+        raise SystemExit(
+            f"REFUSED: {name} was already imported before it could be "
+            f"attested -- move this call ahead of whatever pulled it in")
     src = HERE / f"{name}.py"
     before = hashlib.sha256(src.read_bytes()).hexdigest()
     mod = importlib.import_module(name)
@@ -75,6 +79,12 @@ def _eager_import(name: str):
 
 
 nt = _eager_import("g33_number_transport")     # noqa: E402
+
+import g33_refine_analyze as ra        # noqa: E402
+import g33_refine_manifest as rm       # noqa: E402
+import g33_probe_read as pr           # noqa: E402
+import g33_run_matrix as rmx          # noqa: E402  (run role: makes arm streams)
+
 
 
 def _an(name: str):
