@@ -67,7 +67,15 @@ def _an(name: str):
     # reproduced: bytes d86879e0 executed, 6bc1b9c8 was recorded and
     # accepted. A module imported outside this seam has already run code
     # nothing checked, which is the property the seam exists to give.
-    if name in sys.modules and name not in _IMPORTED:
+    # ONE attestation per module, taken when it executed (Codex). A second
+    # dispatch returns the same cached object, so re-hashing the file then
+    # described a LATER state of the tree -- and if HEAD moved mid-run, that
+    # later read passes and overwrites the record with bytes that never ran.
+    # Reproduced: the record went from the executed digest to one the
+    # interpreter had never compiled.
+    if name in _IMPORTED:
+        return importlib.import_module(name)
+    if name in sys.modules:
         raise SystemExit(
             f"REFUSED: {name} was imported outside the analysis dispatch, so "
             f"what executed cannot be established -- the lazy import is what "

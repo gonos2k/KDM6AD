@@ -1741,19 +1741,23 @@ def test_an_analyzer_edited_between_preflight_and_import_is_refused(tmp_path):
     import importlib
     target = REPO / "harness/g33_matched_closure.py"
     keep = target.read_bytes()
+    def clean():
+        for name in [m for m in sys.modules if m.startswith("g33_matched")]:
+            del sys.modules[name]
+        # an analyzer this seam has already attested returns its cached
+        # object without re-checking, so the record clears with the module
+        xp._IMPORTED.pop("g33_matched_closure", None)
+
     try:
-        for name in [m for m in sys.modules if m.startswith("g33_matched")]:
-            del sys.modules[name]
+        clean()
         assert xp._an("g33_matched_closure")          # sound tree: imports
-        for name in [m for m in sys.modules if m.startswith("g33_matched")]:
-            del sys.modules[name]
+        clean()
         target.write_bytes(keep + b"\n# transient\n")
         with pytest.raises(SystemExit, match="did not run"):
             xp._an("g33_matched_closure")
     finally:
         target.write_bytes(keep)
-        for name in [m for m in sys.modules if m.startswith("g33_matched")]:
-            del sys.modules[name]
+        clean()
 
 
 def test_the_manifest_records_what_each_analyzer_EXECUTED_as():
@@ -1807,6 +1811,41 @@ def test_the_digest_is_taken_before_the_module_executes():
     seam = src.split("def _an(", 1)[1].split("\ndef ", 1)[0]
     code = "\n".join(l for l in seam.splitlines()
                      if not l.lstrip().startswith("#"))
+    # the early return for an already-attested module also calls
+    # import_module, so the ordering is against the one that imports FRESH
     assert code.index("before = _require_head_bytes") < \
-        code.index("importlib.import_module"), "hash before execution"
-    assert "name in sys.modules and name not in _IMPORTED" in code
+        code.index("mod = importlib.import_module"), "hash before execution"
+    # the two questions are separate now: already attested here (return the
+    # cached object), vs in memory but never attested (refuse)
+    assert "if name in _IMPORTED:" in code
+    assert "if name in sys.modules:" in code
+
+
+def test_an_analyzer_is_attested_once_when_it_executes(monkeypatch):
+    """A second dispatch returns the SAME cached object, so re-hashing the
+    file then described a later state of the tree -- and if HEAD moved during
+    a run that takes the better part of an hour, that later read passes and
+    overwrites the record with bytes the interpreter never compiled.
+    Reproduced: the record went from the executed digest to one that never
+    ran (Codex). One attestation per module, taken when it executed."""
+    seen = {"n": 0}
+
+    def moving_head(src, what):
+        seen["n"] += 1
+        return ("a" * 64) if seen["n"] <= 2 else ("b" * 64)
+
+    monkeypatch.setattr(xp, "_require_head_bytes", moving_head)
+    for n in [m for m in sys.modules if m.startswith("g33_matched")]:
+        del sys.modules[n]
+    xp._IMPORTED.pop("g33_matched_closure", None)
+    try:
+        xp._an("g33_matched_closure")
+        first = xp._IMPORTED["g33_matched_closure"]
+        xp._an("g33_matched_closure")
+        assert xp._IMPORTED["g33_matched_closure"] == first, \
+            "a re-dispatch must not re-attest what is already in memory"
+        assert first == "a" * 64
+    finally:
+        xp._IMPORTED.pop("g33_matched_closure", None)
+        for n in [m for m in sys.modules if m.startswith("g33_matched")]:
+            del sys.modules[n]
