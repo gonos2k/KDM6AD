@@ -1764,3 +1764,49 @@ def test_the_manifest_records_what_each_analyzer_EXECUTED_as():
     assert 'man["executed_analyzers"]' in src
     # ...and it is taken from the imported module's own file, not from a path
     assert 'getattr(mod, "__file__"' in src
+
+
+def test_an_analyzer_already_in_memory_cannot_be_vouched_for():
+    """`import_module` returns the CACHED module when one exists, so hashing
+    the file afterwards described whatever the tree held THEN, not what the
+    interpreter compiled. Reproduced: bytes d86879e0 executed, were cached,
+    the file was restored, and 6bc1b9c8 was recorded and ACCEPTED (Codex).
+
+    A module already in memory has run code this seam never saw, so it is
+    refused rather than vouched for."""
+    target = REPO / "harness/g33_matched_closure.py"
+    keep = target.read_bytes()
+
+    def clean():
+        for n in [m for m in sys.modules if m.startswith("g33_matched")]:
+            del sys.modules[n]
+        xp._IMPORTED.pop("g33_matched_closure", None)
+
+    try:
+        clean()
+        assert xp._an("g33_matched_closure")           # sound: imports
+        assert xp._IMPORTED["g33_matched_closure"]     # ...and is recorded
+        # imported outside the seam, then restored
+        clean()
+        target.write_bytes(keep + b"\n# transient\n")
+        import importlib
+        importlib.import_module("g33_matched_closure")
+        target.write_bytes(keep)
+        xp._IMPORTED.pop("g33_matched_closure", None)
+        with pytest.raises(SystemExit, match="outside the analysis dispatch"):
+            xp._an("g33_matched_closure")
+    finally:
+        target.write_bytes(keep)
+        for n in [m for m in sys.modules if m.startswith("g33_matched")]:
+            del sys.modules[n]
+        xp._IMPORTED.pop("g33_matched_closure", None)
+
+
+def test_the_digest_is_taken_before_the_module_executes():
+    src = (REPO / "harness/g33_refine_experiment.py").read_text()
+    seam = src.split("def _an(", 1)[1].split("\ndef ", 1)[0]
+    code = "\n".join(l for l in seam.splitlines()
+                     if not l.lstrip().startswith("#"))
+    assert code.index("before = _require_head_bytes") < \
+        code.index("importlib.import_module"), "hash before execution"
+    assert "name in sys.modules and name not in _IMPORTED" in code

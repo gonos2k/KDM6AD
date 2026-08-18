@@ -61,6 +61,20 @@ def _an(name: str):
     analyzer's first statement executes.
     """
     import importlib
+    # BEFORE the import, and never against a module already in memory
+    # (Codex). `import_module` returns the CACHED module when one exists, so
+    # hashing the file afterwards described whatever the tree held THEN --
+    # reproduced: bytes d86879e0 executed, 6bc1b9c8 was recorded and
+    # accepted. A module imported outside this seam has already run code
+    # nothing checked, which is the property the seam exists to give.
+    if name in sys.modules and name not in _IMPORTED:
+        raise SystemExit(
+            f"REFUSED: {name} was imported outside the analysis dispatch, so "
+            f"what executed cannot be established -- the lazy import is what "
+            f"puts every raw member on disk before an analyzer's first "
+            f"statement runs")
+    src = HERE / f"{name}.py"
+    before = _require_head_bytes(src, name) if src.is_file() else None
     mod = importlib.import_module(name)
     # ...and the bytes that just EXECUTED are held to HEAD, here, at the
     # moment they run (owner review §8). The preflight compares the working
@@ -68,9 +82,16 @@ def _an(name: str):
     # imported at t2 and restored at t3 ran bytes neither check ever saw --
     # reproduced end to end: `d86879e0` executed, `6bc1b9c8` was pinned.
     # A hash taken at the point of use cannot be undone by a later revert.
-    src = Path(getattr(mod, "__file__", "") or "")
-    if src.is_file():
-        _IMPORTED[name] = _require_head_bytes(src, name)
+    # ...and unchanged ACROSS the import, so the bytes checked are the bytes
+    # the interpreter compiled.
+    got = Path(getattr(mod, "__file__", "") or "")
+    if got.is_file():
+        after = _require_head_bytes(got, name)
+        if before is not None and after != before:
+            raise SystemExit(
+                f"REFUSED: {name} changed while it was being imported "
+                f"({before[:12]} -> {after[:12]})")
+        _IMPORTED[name] = after
     return mod
 
 
