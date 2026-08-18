@@ -314,6 +314,24 @@ def decompose(base_text: str, got_text: str, width: int, run) -> dict:
     #
     # Measured here: identical in all 12 cells, so C_pre is zero -- which is
     # exactly why it has to be CHECKED rather than relied on.
+    # The cell universes are compared BEFORE anything indexes across them
+    # (owner review §9). This check sat after the loop below, so a `got` run
+    # missing a cell raised `KeyError` out of `sb[k]` instead of the refusal
+    # written for it -- the published runs share a universe, so no figure is
+    # affected, but the guard's error contract was broken for exactly the
+    # corrupt stream it exists to judge.
+    if set(a) != set(b):
+        missing, extra = sorted(set(a) - set(b)), sorted(set(b) - set(a))
+        raise ra.RefineError(
+            f"the two runs emitted different cells: "
+            f"{len(missing)} missing (first {missing[:1]}), "
+            f"{len(extra)} extra (first {extra[:1]})")
+    # ...and the STATE stream is a second universe, indexed by the same keys.
+    if set(sa) != set(a) or set(sb) != set(b):
+        raise ra.RefineError(
+            "the operand and state streams cover different cells: "
+            f"base {len(set(a) ^ set(sa))} differ, "
+            f"got {len(set(b) ^ set(sb))} differ")
     differing = sorted(k for k in a if sa[k]["qr_pre"] != sb[k]["qr_pre"])
     if differing:
         raise ra.RefineError(
@@ -323,8 +341,6 @@ def decompose(base_text: str, got_text: str, width: int, run) -> dict:
             f"does not carry")
     replay["prestate_equal_cells"] = len(a)
     replay["prestate_different_cells"] = 0
-    if set(a) != set(b):
-        raise ra.RefineError("the two runs emitted different cells")
 
     # The branch MAP, cell by cell. Counting cold and warm cells let two
     # different maps with the same totals compare as term-comparable.

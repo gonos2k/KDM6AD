@@ -26,6 +26,7 @@ from __future__ import annotations
 import argparse
 import ast
 import hashlib
+import json
 import math
 from dataclasses import dataclass, replace
 import os
@@ -102,11 +103,18 @@ def fixture_dims(fixture: str) -> tuple:
     silently drops a column agrees with itself perfectly, so only a figure from
     outside the run can catch it.
     """
-    src = (HERE / "g33_fortran" / f"{fixture}.f90").read_text()
+    return fixture_dims_from(
+        (HERE / "g33_fortran" / f"{fixture}.f90").read_text(), fixture)
+
+
+def fixture_dims_from(src: str, where: str = "<fixture>") -> tuple:
+    """(columns, levels) from BYTES, so a caller holding the fixture the
+    compiler actually read can ask them of those bytes rather than of
+    whatever is in the tree now (owner review §5)."""
     m = re.search(r"integer,\s*parameter\s*::\s*B\s*=\s*(\d+)\s*,\s*"
                   r"K\s*=\s*(\d+)", src)
     if not m:
-        raise SystemExit(f"cannot read dimensions B, K from {fixture}.f90")
+        raise FixtureContractError(f"cannot read dimensions B, K from {where}")
     return int(m.group(1)), int(m.group(2))
 
 
@@ -1322,6 +1330,112 @@ def _ncmin():
     return nl
 
 
+@dataclass(frozen=True)
+class SourceSnapshot:
+    """What the compiler actually read, keyed by logical path.
+
+    The build stages every compiled source by content and logs the digest it
+    fed the compiler; this is that log, frozen, so every consumer derives
+    from ONE set of bytes instead of re-reading the working tree afterwards
+    (owner review §5). `entries` is {logical path: (staged path, digest)}.
+    """
+    entries: tuple
+
+    def _get(self, logical: str) -> tuple:
+        for path, staged, sha in self.entries:
+            if path == logical:
+                return staged, sha
+        raise FixtureContractError(
+            f"{logical} is not among the compiled sources "
+            f"{sorted(p for p, _, _ in self.entries)}")
+
+    def digest(self, logical: str) -> str:
+        return self._get(logical)[1]
+
+    def text(self, logical: str) -> str:
+        """The bytes themselves, re-checked against the digest the build
+        recorded for them: the staged store is shared, and this read happens
+        after the compile that justified it."""
+        staged, sha = self._get(logical)
+        p = Path(staged)
+        if not p.is_file():
+            raise FixtureContractError(f"the staged {logical} is gone: {staged}")
+        got = hashlib.sha256(p.read_bytes()).hexdigest()
+        if got != sha:
+            raise FixtureContractError(
+                f"the staged {logical} now holds {got[:12]}, the build "
+                f"compiled {sha[:12]}")
+        return p.read_text()
+
+
+def source_snapshot(build_dir: Path) -> SourceSnapshot:
+    """The staged map and the source log, joined.
+
+    Also holds every TRACKED compiled source to its HEAD blob: the point of
+    a pin is that the recorded bytes are the executed bytes, and a file
+    edited after staging and restored before the manifest was written passed
+    both the preflight and the final check while the executable came from
+    the edit (owner review §5, §7). `host/**` is gitignored, so those are
+    pinned by digest alone and cannot be compared to a blob.
+    """
+    smap, slog = build_dir / "staged-map.txt", build_dir / "sources.txt"
+    # A MISSING log is not an empty one (Codex): iterating over nothing made
+    # the HEAD-blob check below pass vacuously, so deleting the log cleared
+    # the gate that exists to say what was compiled. A build writes both.
+    for f in (smap, slog):
+        if not f.is_file():
+            raise SystemExit(
+                f"REFUSED: {f.name} is not in the build directory, so what "
+                f"the compiler read cannot be established")
+    staged = {}
+    for ln in smap.read_text().splitlines():
+        path, _, logical = ln.partition("\t")
+        if logical:
+            staged[logical.strip()] = path
+    entries, bad = [], []
+    for ln in slog.read_text().splitlines():
+        logical, _, sha = ln.partition("\t")
+        logical, sha = logical.strip(), sha.strip()
+        if not logical or not sha:
+            continue
+        # ...and an entry with no staged file is unverifiable, not fine:
+        # `digest()` would keep answering from the log while the bytes it
+        # names are unavailable, so every consumer that asks only for the
+        # digest would pass on a claim nothing can check (Codex).
+        if logical not in staged:
+            bad.append(f"  {logical}: compiled, but the staged bytes are not "
+                       f"recorded in staged-map.txt")
+            continue
+        entries.append((logical, staged[logical], sha))
+        blob = _head_blob(logical)
+        if blob is not None and blob != sha:
+            bad.append(f"  {logical}: compiled {sha[:12]}, HEAD holds "
+                       f"{blob[:12]}")
+    # `bad` first: "this source was not staged" says what is wrong, while
+    # "nothing was logged" is what that looks like from a distance.
+    if bad:
+        raise SystemExit(
+            "REFUSED: the bytes the compiler read cannot be established.\n"
+            + "\n".join(bad) +
+            "\nCommit the change, or the bundle records a build it did not "
+            "describe.")
+    if not entries:
+        raise SystemExit(
+            "REFUSED: no compiled source was logged, so the build cannot say "
+            "what it read")
+    return SourceSnapshot(entries=tuple(entries))
+
+
+def _head_blob(logical: str) -> str | None:
+    """The SHA-256 of this path's content at HEAD, or None when git does not
+    track it (`host/**` is private and gitignored)."""
+    r = subprocess.run(["git", "show", f"HEAD:{logical}"], cwd=HERE.parent,
+                       capture_output=True)
+    if r.returncode != 0:
+        return None
+    return hashlib.sha256(r.stdout).hexdigest()
+
+
 def resolved_violations(man: dict, root: Path, contract) -> list:
     """The manifest against the BYTES it points at, before publication.
 
@@ -1363,6 +1477,44 @@ def resolved_violations(man: dict, root: Path, contract) -> list:
         if m.get("loops") != want_L:
             bad.append(f"members[{m['file']}] records loops={m.get('loops')!r},"
                        f" the kernel's rule gives {want_L}")
+    return bad + _witness_violations(man, root)
+
+
+#: The four records that describe ONE build. `build_artifacts` digests each
+#: file, so each is faithfully recorded -- but nothing asked whether they
+#: describe the same build (owner review §6). Measured: a manifest embedding
+#: build A beside a published `build_provenance.json` holding build B, with
+#: the artifact digest honestly naming B, validated CLEAN.
+def _witness_violations(man: dict, root: Path) -> list:
+    bad = []
+    embedded = man.get("build_provenance")
+    published = root / "build_provenance.json"
+    if not isinstance(embedded, dict) or not published.is_file():
+        return ["build_provenance is not an object, or the published record "
+                "is not in the bundle"]
+    try:
+        got = json.loads(published.read_text())
+    except ValueError as e:
+        return [f"build_provenance.json is not readable JSON: {e}"]
+    if got != embedded:
+        keys = sorted({k for k in set(got) | set(embedded)
+                       if got.get(k) != embedded.get(k)})
+        bad.append(f"the manifest's build_provenance is not the published "
+                   f"build_provenance.json; they differ at {keys}")
+    # ...and the two logs the collector read them FROM, through the collector's
+    # own parsers, so this comparison cannot drift from how the record is made.
+    # ...and the two logs the record was DERIVED from. The collector owns
+    # that derivation and is deliberately reached only as a subprocess -- it
+    # is stdlib-only so it can run inside the build, and importing it here
+    # would move it into the producer's import closure and reclassify it in
+    # the identity graph. So the check crosses the same boundary the build
+    # already uses, and there is still exactly one definition of the format.
+    r = subprocess.run([sys.executable, str(HERE / "g33_build_provenance.py"),
+                        "--verify", str(root)],
+                       capture_output=True, text=True)
+    if r.returncode != 0:
+        bad += [ln for ln in r.stdout.splitlines() if ln.strip()] or \
+            [f"the published logs do not re-derive the record: {r.stderr.strip()[:200]}"]
     return bad
 
 
@@ -1528,9 +1680,29 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         ovl = tmp / "module_mp_ovl.F"
         kgeom = kernel_geometry("f64" if arm == "f64" else "f32", algo,
                                 ovl if ovl.is_file() else None)
+        # The fixture's parameters come from the bytes the COMPILER read, not
+        # from the working tree it was staged out of (owner review §5). They
+        # were re-read here, so a fixture edited after staging and restored
+        # before the manifest was written gave an executable built from one
+        # domain and a record describing another.
+        snap = source_snapshot(tmp)
+        fixture_logical = f"harness/g33_fortran/{fixture}.f90"
+        fixture_bytes = snap.text(fixture_logical)
+        # Belt and braces: the snapshot holds tracked sources to HEAD and the
+        # preflight holds the working tree to HEAD, so these two agree by
+        # construction -- but "by construction" is the claim a gate exists to
+        # check, and this is the one that says the manifest pins what ran.
+        tree_fx = rm.sha256(HERE / "g33_fortran" / f"{fixture}.f90")
+        if snap.digest(fixture_logical) != tree_fx:
+            raise SystemExit(
+                f"REFUSED: the compiled fixture is "
+                f"{snap.digest(fixture_logical)[:12]}, the manifest would pin "
+                f"{tree_fx[:12]}")
         contract = RunContract(
-            fixture=fixture, columns=width, levels=fixture_dims(fixture)[1],
-            horizon=fixture_horizon(fixture), dtcldcr=kgeom["dtcldcr"],
+            fixture=fixture, columns=width,
+            levels=fixture_dims_from(fixture_bytes, fixture)[1],
+            horizon=fixture_horizon_from(fixture_bytes, fixture),
+            dtcldcr=kgeom["dtcldcr"],
             algorithm=algo, precision="f64" if arm == "f64" else "f32",
             mode=mode, rho_profile=rho_profile, tiles=(width,))
         if arm == "f64":
@@ -1538,9 +1710,9 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             # members to strict-parse; the probe stream is the artifact, and it
             # is read by its own parser.
             runs = probe_members(exe, tmp, nsplits, mode, rho_profile, width,
-                                 levels=fixture_dims(fixture)[1], nflux=nflux,
+                                 levels=contract.levels, nflux=nflux,
                                  algo=algo, fixture=fixture,
-                                 horizon=fixture_horizon(fixture),
+                                 horizon=contract.horizon,
                                  dtcldcr=kgeom["dtcldcr"])
             # The cross-member contract the manifest builder cannot apply on this
             # path: it leaves `runs` empty for a supplied member_reader, so an
@@ -1550,9 +1722,9 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         else:
             runs = members(exe, tmp, nsplits, mode, arm=arm, nflux=nflux,
                            rho_profile=rho_profile, width=width,
-                           levels=fixture_dims(fixture)[1],
+                           levels=contract.levels,
                            algo=algo, fixture=fixture,
-                           horizon=fixture_horizon(fixture),
+                           horizon=contract.horizon,
                            dtcldcr=kgeom["dtcldcr"])
             if len(runs) > 1:
                 ra.require_same_universe(runs)      # one experiment, not several
@@ -1584,9 +1756,9 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         if nflux and rho_profile == "as-is":
             if rm.applicable("metric_trajectory", precision):
                 man["analyses"] += _driver_analyses(
-                    tmp, exe, nsplits, mode, width, fixture_dims(fixture)[1],
+                    tmp, exe, nsplits, mode, width, contract.levels,
                     algo=algo, fixture=fixture,
-                    horizon=fixture_horizon(fixture),
+                    horizon=contract.horizon,
                     dtcldcr=kgeom["dtcldcr"])
             # Analyses of the bundle's OWN binary across decompositions. They
             # need the --nflux build, whose G33N records say which tiles the
@@ -1659,10 +1831,13 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             # decimal alias like 300.000001 rounds to the same f32 geometry,
             # so a document comparing only the decimal can name a horizon the
             # fixture does not hold.
-            "dt_bits": fixture_dt_bits(fixture),
-            "window_seconds": fixture_horizon(fixture),
+            # ...of the COMPILED fixture (owner review §5): this block is
+            # what the recipe id hashes, so re-reading the tree here would
+            # let the request describe a domain the executable never had.
+            "dt_bits": fixture_dt_bits_from(fixture_bytes, fixture),
+            "window_seconds": contract.horizon,
             "columns": width,
-            "levels": fixture_dims(fixture)[1],
+            "levels": contract.levels,
             "algorithm": algo,
             "precision": precision,
             "source_precision": "f32",

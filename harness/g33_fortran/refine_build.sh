@@ -123,6 +123,53 @@ STAGE_MAP="$OUT/staged-map.txt"; : >"$STAGE_MAP"
 # content disagreed, and a later build restoring the original source
 # compiled the poisoned copy. Deriving the address from the stored bytes
 # makes a concurrent edit produce a DIFFERENT address instead.
+#
+# ...and VERIFIED ON READ, not only on write (owner review §4). Naming an
+# entry by its digest makes writes honest; it does not make the store
+# immutable. `$TMPDIR` is shared and long-lived, so an entry already sitting
+# at an address -- left by the pre-#140 implementation that could write one,
+# by an interrupted run, or by anything else with write access -- was handed
+# straight to the compiler because the existence check asked only whether a
+# path was there. Reproduced: the store returned B under A's address and the
+# build compiled B. The name is a CLAIM about the bytes; a claim from a
+# shared location is untrusted input.
+# The digest a content-addressed path CLAIMS, or empty when the path is not
+# one of ours: `<64hex>-<name>` under the staging root, `g33-ovl-<64hex>.F`
+# for the generated overlay.
+addr_claim() {                      # path -> digest or ""
+    local b; b=$(basename "$1")
+    case "$1" in
+        "$STAGE"/*) [[ "$b" =~ ^([0-9a-f]{64})- ]] && printf '%s' "${BASH_REMATCH[1]}" ;;
+        *) [[ "$b" =~ ^g33-ovl-([0-9a-f]{64})\.F$ ]] && printf '%s' "${BASH_REMATCH[1]}" ;;
+    esac
+}
+addr_verify() {                     # path, want-digest, what-for
+    local p="$1" want="$2" what="$3" got
+    [ ! -L "$p" ] || { echo "REFUSED: $what $p is a symlink; a content address must be the bytes, not a pointer to them" >&2; exit 2; }
+    [ -f "$p" ]   || { echo "REFUSED: $what $p is not a regular file" >&2; exit 2; }
+    got=$(shasum -a 256 "$p" | cut -d' ' -f1)
+    [ "$got" = "$want" ] || {
+        echo "REFUSED: $what $p holds ${got:0:12} but its address claims ${want:0:12}; the store is corrupt at this entry" >&2
+        exit 2; }
+}
+# Install without clobbering, then verify UNCONDITIONALLY. `ln` reports
+# success when the target is a DIRECTORY -- like `cp` and `mv` it then means
+# "put it inside" -- so `if ln; then trust` accepted a directory sitting at a
+# content address and returned it as the compile input (found by the probe
+# list). Verifying whatever ends up at the address costs the same three lines
+# and stops depending on which failure modes `ln` signals.
+addr_install() {                    # tmp, dst, digest, what-for
+    local tmp="$1" dst="$2" d="$3" what="$4"
+    [ -e "$dst" ] || [ -L "$dst" ] || ln "$tmp" "$dst" 2>/dev/null || true
+    rm -f "$tmp"
+    addr_verify "$dst" "$d" "$what"
+}
+# Publishes into $STAGED rather than to stdout. It was called as
+# `fc ... "$(stage "$SRC")"`, and a command substitution is a SUBSHELL: the
+# `exit 2` above ended only the substitution, the script continued, and `fc`
+# was handed an EMPTY last argument -- every refusal added here was
+# unreachable from the one place that calls it (found by the probe list).
+# Fail-closed logic cannot live behind `$( )`.
 stage() {
     local src="$1" b tmp d dst
     b=$(basename "$src")
@@ -130,10 +177,9 @@ stage() {
     cp "$src" "$tmp"
     d=$(shasum -a 256 "$tmp" | cut -d' ' -f1)
     dst="$STAGE/$d-$b"
-    [ -f "$dst" ] || mv -f "$tmp" "$dst"
-    rm -f "$tmp"
+    addr_install "$tmp" "$dst" "$d" "staged source"
     printf '%s\t%s\n' "$dst" "$src" >>"$STAGE_MAP"
-    printf '%s' "$dst"
+    STAGED="$dst"
 }
 
 SRCLOG="$OUT/sources.txt"; : >"$SRCLOG"
@@ -144,24 +190,36 @@ fc() { local o="$1"; shift
        # an edit between compile and collect would then record bytes the
        # compiler never saw. The name says what this source IS; the digest
        # says what was fed to the compiler, taken here, at that moment.
-       local last="${@: -1}" logical sha
+       local last="${@: -1}" logical sha claimed
        logical=$(awk -F'\t' -v k="$last" '$1==k{print $2}' "$STAGE_MAP" 2>/dev/null | tail -1)
+       # A content-addressed input is checked against its own name BEFORE and
+       # AFTER the compiler reads it (owner review §4): before, because the
+       # store is shared; after, because "the entry was right when we looked"
+       # is not "the entry was right when the compiler read it".
+       claimed=$(addr_claim "$last")
+       [ -z "$claimed" ] || addr_verify "$last" "$claimed" "compile input"
        sha=$(shasum -a 256 "$last" | cut -d' ' -f1)
        printf '%s\t%s\n' "${logical:-$last}" "$sha" >>"$SRCLOG"
        printf '%q ' "$FC" -c "$@" -J"$OUT" -I"$OUT" -o "$o" >>"$CMDLOG"; printf '\n' >>"$CMDLOG"
        "$FC" -c "$@" -J"$OUT" -I"$OUT" -o "$o" 2>"$o.err" \
-        || { echo "COMPILE FAILED: $*"; head -25 "$o.err"; exit 1; }; }
+        || { echo "COMPILE FAILED: $*"; head -25 "$o.err"; exit 1; }
+       [ -z "$claimed" ] || addr_verify "$last" "$claimed" "compile input (after)"; }
 
-fc "$OUT/g33_fixture_v1.o"         "${DRIVER_FLAGS[@]}" "$(stage "$FIXTURE_SRC")"
-fc "$OUT/libmassv.o"               "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$(stage "$HOST/frame/libmassv.F")"
-fc "$OUT/stub_wrf_error.o"         "${REF_FLAGS[@]}" "$(stage "$HERE/stub_wrf_error.f90")"
-fc "$OUT/module_model_constants.o" "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$(stage "$HOST/share/module_model_constants.F")"
-fc "$OUT/module_mp_radar.o"        "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$(stage "$HOST/phys/module_mp_radar.F")"
+stage "$FIXTURE_SRC"; FIXTURE_STAGED="$STAGED"
+fc "$OUT/g33_fixture_v1.o"         "${DRIVER_FLAGS[@]}" "$STAGED"
+stage "$HOST/frame/libmassv.F"
+fc "$OUT/libmassv.o"               "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$STAGED"
+stage "$HERE/stub_wrf_error.f90"
+fc "$OUT/stub_wrf_error.o"         "${REF_FLAGS[@]}" "$STAGED"
+stage "$HOST/share/module_model_constants.F"
+fc "$OUT/module_model_constants.o" "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$STAGED"
+stage "$HOST/phys/module_mp_radar.F"
+fc "$OUT/module_mp_radar.o"        "${REF_FLAGS[@]}" "${CPP_FLAGS[@]}" "$STAGED"
 # The PINNED module by default: this measures the reference operator, and
 # instrumentation would otherwise be a second difference between sweep members.
 # --dump swaps in the generated overlay, whose macro-OFF form is textually
 # identical to the pinned source (the A/B/C non-invasiveness proof).
-MODULE_STAGED=$(stage "$MODULE")
+stage "$MODULE"; MODULE_STAGED="$STAGED"
 MODULE_SRC="$MODULE_STAGED"; DUMP_DEF=()
 if [ "$DUMP" = 1 ]; then
     # CONTENT-ADDRESSED overlay path (owner §9.1). gfortran embeds each source's
@@ -185,8 +243,7 @@ if [ "$DUMP" = 1 ]; then
     # so there is no collision to guard -- only a partial write, which the
     # temp-then-rename handles.
     MODULE_SRC="${TMPDIR:-/tmp}/g33-ovl-${OVLFULL}.F"
-    [ -f "$MODULE_SRC" ] || mv -f "$OVLTMP" "$MODULE_SRC"
-    rm -f "$OVLTMP"
+    addr_install "$OVLTMP" "$MODULE_SRC" "$OVLFULL" "staged overlay"
     # ...and the source log names it as the bundle publishes it: the
     # content-addressed path lives under TMPDIR, which differs per machine,
     # and a machine-specific string in the provenance would move the same
@@ -210,8 +267,9 @@ DTCLDCR=$(sed -n 's/.*::[[:space:]]*dtcldcr[[:space:]]*=[[:space:]]*\([0-9.]\{1,
 # input read straight from the tree, so `fc` hashed it and the compiler read it
 # again -- the window this staging exists to close, left open on the file that
 # writes the window header (Codex).
+stage "$HERE/g33_refine_driver.f90"; DRIVER_STAGED="$STAGED"
 fc "$OUT/g33_refine_driver.o"      "${DRIVER_FLAGS[@]}" "${CPP_FLAGS[@]}" "-DKDM6_DTCLDCR=$DTCLDCR" ${DRVDEF[@]+"${DRVDEF[@]}"} ${DUMP_DEF[@]+"${DUMP_DEF[@]}"} \
-                                   "$(stage "$HERE/g33_refine_driver.f90")"
+                                   "$DRIVER_STAGED"
 LINK=("$FC" "${COMMON_FLAGS[@]}" -o "$OUT/g33_refine_driver"
       "$OUT/g33_refine_driver.o" "$OUT/g33_fixture_v1.o" "$OUT/module_mp.o"
       "$OUT/module_mp_radar.o" "$OUT/module_model_constants.o"
@@ -226,5 +284,5 @@ printf '%q ' "${LINK[@]}" >>"$CMDLOG"; printf '\n' >>"$CMDLOG"
 # unlinkable to the reference it instruments.
 python3 "$(dirname "$0")/../g33_build_provenance.py" \
     "$OUT" "$FC" "$MODULE" "$FIXTURE_SRC" "$0" "$OUT/g33_refine_driver" \
-    "$MODULE_SRC" "$MODULE_STAGED"
+    "$MODULE_SRC" "$MODULE_STAGED" "$FIXTURE_STAGED"
 echo "$OUT"

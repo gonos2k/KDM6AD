@@ -44,8 +44,19 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
         # v6 publishes it and reads the sub-cycle limit from those bytes
         ovl = workdir / "module_mp_ovl.F"
         ovl.write_text("   real, parameter, private :: dtcldcr = 120.\n")
-        (workdir / "commands.txt").write_text("fake\n")
-        (workdir / "sources.txt").write_text("fake\n")
+        # ...and the logs the record is DERIVED from, agreeing with it: the
+        # publish gate re-derives `sources`/`compile_commands` from these, and
+        # a fake whose logs contradict its own record is exactly the build the
+        # gate exists to refuse (owner review §6).
+        (workdir / "commands.txt").write_text("gfortran -c fake\n")
+        # The FIXTURE is a compiled source too, and the contract's B, K and
+        # DT_BITS are read from the bytes the compiler got (owner review §5) --
+        # a fake that logs only the module describes a build with no fixture.
+        (workdir / "sources.txt").write_text(
+            f"{MOD}\t{xp.rm.sha256(MOD)}\n"
+            f"{FIXLOG}\t{xp.rm.sha256(FIX)}\n")
+        (workdir / "staged-map.txt").write_text(
+            f"{FIX}\t{FIXLOG}\n{MOD}\t{MOD}\n")
         # a v6-shaped record: what a real build writes, faked
         (workdir / "build_provenance.json").write_text(json.dumps({
             "module_path": str(MOD),
@@ -55,9 +66,11 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
             "compiler_sha256": "1" * 64,
             "build_script_sha256": "7" * 64,
             "compile_commands": ["gfortran -c fake"],
-            "sources": [{"path": str(MOD), "sha256": xp.rm.sha256(MOD)}],
+            "sources": [{"path": str(MOD), "sha256": xp.rm.sha256(MOD)},
+                        {"path": FIXLOG, "sha256": xp.rm.sha256(FIX)}],
             "compiled_module_sha256": xp.rm.sha256(ovl),
-            "executable_sha256": xp.rm.sha256(exe)}))
+            "diagnostic": {"outdir": str(workdir)},
+            "executable_sha256": xp.rm.sha256(exe)}, indent=2, sort_keys=True))
         return workdir / "driver"
 
     def analyses(out, exe, ns, mode, precision="f32"):
@@ -116,6 +129,8 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
 # pins and the resolved gate reads the fixture's own bytes: a stand-in would
 # be testing a document that could not describe a run.
 FIX = ROOT / "g33_fortran" / "g33_fixture_multisubcycle_v1.f90"
+#: as the build logs it -- repo-relative, which is what the snapshot keys on
+FIXLOG = str(FIX.relative_to(REPO))
 # ...and RELATIVE, as the real invocation records it: the kernel record and
 # the manifest name one file, so they must spell it the same way. The public
 # checkout's STAND-IN is relative for the same reason -- an absolute
@@ -299,8 +314,19 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
         # v6 publishes it and reads the sub-cycle limit from those bytes
         ovl = workdir / "module_mp_ovl.F"
         ovl.write_text("   real, parameter, private :: dtcldcr = 120.\n")
-        (workdir / "commands.txt").write_text("fake\n")
-        (workdir / "sources.txt").write_text("fake\n")
+        # ...and the logs the record is DERIVED from, agreeing with it: the
+        # publish gate re-derives `sources`/`compile_commands` from these, and
+        # a fake whose logs contradict its own record is exactly the build the
+        # gate exists to refuse (owner review §6).
+        (workdir / "commands.txt").write_text("gfortran -c fake\n")
+        # The FIXTURE is a compiled source too, and the contract's B, K and
+        # DT_BITS are read from the bytes the compiler got (owner review §5) --
+        # a fake that logs only the module describes a build with no fixture.
+        (workdir / "sources.txt").write_text(
+            f"{MOD}\t{xp.rm.sha256(MOD)}\n"
+            f"{FIXLOG}\t{xp.rm.sha256(FIX)}\n")
+        (workdir / "staged-map.txt").write_text(
+            f"{FIX}\t{FIXLOG}\n{MOD}\t{MOD}\n")
         # a v6-shaped record: what a real build writes, faked
         (workdir / "build_provenance.json").write_text(json.dumps({
             "module_path": str(MOD),
@@ -310,9 +336,11 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
             "compiler_sha256": "1" * 64,
             "build_script_sha256": "7" * 64,
             "compile_commands": ["gfortran -c fake"],
-            "sources": [{"path": str(MOD), "sha256": xp.rm.sha256(MOD)}],
+            "sources": [{"path": str(MOD), "sha256": xp.rm.sha256(MOD)},
+                        {"path": FIXLOG, "sha256": xp.rm.sha256(FIX)}],
             "compiled_module_sha256": xp.rm.sha256(ovl),
-            "executable_sha256": xp.rm.sha256(exe)}))
+            "diagnostic": {"outdir": str(workdir)},
+            "executable_sha256": xp.rm.sha256(exe)}, indent=2, sort_keys=True))
         return workdir / "driver"
 
     def probe_members(exe, out, ns, mode, rho_profile="as-is", width=3,
@@ -589,6 +617,13 @@ def test_a_GENERATOR_of_nsplits_does_not_publish_an_empty_bundle(tmp_path,
         workdir.mkdir(parents=True, exist_ok=True)
         exe = workdir / "g33_refine_driver"
         exe.touch()
+        # ...and the source log a build leaves: the contract's fixture
+        # parameters come from the bytes the compiler read, so a build that
+        # logs nothing describes a compile that never happened
+        (workdir / "sources.txt").write_text(
+            f"{FIXLOG}\t{xp.rm.sha256(FIX)}\n")
+        (workdir / "staged-map.txt").write_text(
+            f"{FIX}\t{FIXLOG}\n{MOD}\t{MOD}\n")
         return exe
 
     def fake_members(exe, out, nsplits, mode, **k):
@@ -1413,3 +1448,129 @@ def test_the_run_contract_is_frozen_and_varies_only_the_decomposition():
     other = c.for_tiles((1, 2))
     assert other.tiles == (1, 2)
     assert other.dtcldcr == c.dtcldcr and other.horizon == c.horizon
+
+
+# ---- owner review §6: the four witnesses describe ONE build -----------------
+
+def _witness_bundle(tmp_path, *, outdir="/build/out"):
+    """A bundle root with the four records a build leaves, all agreeing."""
+    root = tmp_path / "b"
+    root.mkdir()
+    (root / "sources.txt").write_text(
+        "harness/g33_fortran/f.f90\t" + "a" * 64 + "\n"
+        "module_mp_ovl.F\t" + "b" * 64 + "\n")
+    (root / "commands.txt").write_text(
+        f"gfortran -c f.f90 -J{outdir} -o {outdir}/f.o\n")
+    prov = {
+        "compiler_sha256": "c" * 64,
+        "sources": [{"path": "harness/g33_fortran/f.f90", "sha256": "a" * 64},
+                    {"path": "module_mp_ovl.F", "sha256": "b" * 64}],
+        "compile_commands": ["gfortran -c f.f90 -J<OUT> -o <OUT>/f.o"],
+        "diagnostic": {"outdir": outdir},
+    }
+    (root / "build_provenance.json").write_text(json.dumps(prov, indent=2,
+                                                           sort_keys=True))
+    return root, {"build_provenance": prov}
+
+
+def test_the_four_build_witnesses_must_describe_the_same_build(tmp_path):
+    """One build is recorded four times -- embedded in the manifest, published
+    as build_provenance.json, and as the two logs it was read from. Each file
+    is digested in build_artifacts, so each is faithfully RECORDED; nothing
+    asked whether they describe the same build (owner review §6). Measured on
+    a real bundle: a manifest embedding build A beside a published record
+    holding build B, with the artifact digest honestly naming B, validated
+    CLEAN."""
+    root, man = _witness_bundle(tmp_path)
+    assert xp._witness_violations(man, root) == []
+
+    man2 = json.loads(json.dumps(man))
+    man2["build_provenance"]["compiler_sha256"] = "d" * 64
+    got = xp._witness_violations(man2, root)
+    assert got and "not the published build_provenance.json" in got[0]
+    assert "compiler_sha256" in got[0], "say WHICH field disagrees"
+
+
+@pytest.mark.parametrize("edit,expect", [
+    (lambda r: (r / "sources.txt").write_text("harness/g33_fortran/f.f90\t"
+                                              + "9" * 64 + "\n"),
+     "sources.txt is not build_provenance.sources"),
+    (lambda r: (r / "commands.txt").write_text("gfortran -c smuggled.f90\n"),
+     "commands.txt is not build_provenance.compile_commands"),
+    (lambda r: (r / "build_provenance.json").unlink(),
+     "the published record is not in the bundle"),
+])
+def test_a_log_that_disagrees_with_the_record_is_refused(tmp_path, edit, expect):
+    root, man = _witness_bundle(tmp_path)
+    edit(root)
+    got = xp._witness_violations(man, root)
+    assert got and expect in got[0], got
+
+
+def test_the_log_comparison_does_not_import_the_collector():
+    """`g33_build_provenance` is stdlib-only so it can run inside the build,
+    and it is reached ONLY as a subprocess -- importing it here would put it
+    in the producer's import closure and reclassify it in the identity graph,
+    moving every bundle's recorded roles. The comparison crosses the same
+    boundary the build already uses, so there is still one definition of the
+    log format and no new edge."""
+    src = (REPO / "harness/g33_refine_experiment.py").read_text()
+    assert "import g33_build_provenance" not in src
+    assert "g33_build_provenance" not in xp._local_imports(
+        "g33_refine_experiment")
+    assert "g33_build_provenance" in xp._build_script_modules()
+    assert '"--verify"' in src, "the gate must still make the comparison"
+
+
+def test_the_logs_are_normalised_the_way_the_RECORD_was(tmp_path):
+    """`commands.txt` is copied verbatim from the build directory while the
+    record is normalised against it, so the comparison needs the directory the
+    build ran in -- which only `diagnostic.outdir` remembers. Normalising
+    against the bundle root instead would fail every honest bundle."""
+    root, man = _witness_bundle(tmp_path, outdir="/somewhere/else")
+    assert xp._witness_violations(man, root) == []
+    # Dropping it from BOTH keeps the two records equal, so the equality check
+    # -- which correctly fires first -- does not mask the one under test.
+    man["build_provenance"]["diagnostic"] = {}
+    (root / "build_provenance.json").write_text(
+        json.dumps(man["build_provenance"], indent=2, sort_keys=True))
+    got = xp._witness_violations(man, root)
+    assert got and "outdir is missing" in got[-1], got
+
+
+@pytest.mark.parametrize("drop", ["sources.txt", "staged-map.txt"])
+def test_a_MISSING_build_log_is_refused_not_treated_as_empty(tmp_path, drop):
+    """Iterating over a log that is not there made the HEAD-blob check pass
+    vacuously, so DELETING the log cleared the gate that says what was
+    compiled -- fail-open under transient deletion (Codex). A build writes
+    both files; a build directory without them cannot answer the question."""
+    d = tmp_path / "build"
+    d.mkdir()
+    for name, text in (("sources.txt", f"{FIXLOG}\t{xp.rm.sha256(FIX)}\n"),
+                       ("staged-map.txt", f"{FIX}\t{FIXLOG}\n")):
+        (d / name).write_text(text)
+    assert xp.source_snapshot(d).entries          # both present: it works
+    (d / drop).unlink()
+    with pytest.raises(SystemExit, match=drop):
+        xp.source_snapshot(d)
+
+
+def test_a_source_that_is_logged_but_not_STAGED_is_refused(tmp_path):
+    """`digest()` would keep answering from the log while the bytes it names
+    are unavailable, so a consumer that asks only for the digest -- the pinned
+    fixture check does -- would pass on a claim nothing can check."""
+    d = tmp_path / "build"
+    d.mkdir()
+    (d / "sources.txt").write_text(f"{FIXLOG}\t{xp.rm.sha256(FIX)}\n")
+    (d / "staged-map.txt").write_text("")
+    with pytest.raises(SystemExit, match="staged bytes are not recorded"):
+        xp.source_snapshot(d)
+
+
+def test_a_build_that_logged_no_source_at_all_is_refused(tmp_path):
+    d = tmp_path / "build"
+    d.mkdir()
+    (d / "sources.txt").write_text("")
+    (d / "staged-map.txt").write_text("")
+    with pytest.raises(SystemExit, match="no compiled source was logged"):
+        xp.source_snapshot(d)

@@ -43,6 +43,16 @@ def _git(*args: str) -> str:
                           text=True).stdout.strip()
 
 
+def normaliser(out: Path):
+    """`<OUT>` for the output directory, so the record does not carry where it
+    ran (owner §10.3). Named and exported rather than inlined, because the
+    publish gate compares the published logs to this record and has to
+    normalise them the SAME way -- against the directory the build actually
+    used, which only `diagnostic.outdir` remembers.
+    """
+    return lambda c: c.replace(str(out), "<OUT>")
+
+
 def _source_row(line: str, norm) -> dict:
     """One `sources.txt` line as a record: the logical path, and the digest
     of what the compiler read."""
@@ -52,7 +62,8 @@ def _source_row(line: str, norm) -> dict:
 
 def collect(out: Path, fc: str, module: Path, fixture: Path, script: Path,
             exe: Path | None = None, compiled: Path | None = None,
-            staged: Path | None = None) -> dict:
+            staged: Path | None = None,
+            staged_fixture: Path | None = None) -> dict:
     """Provenance for one build. `fc` may be a name or a path; it is resolved,
     because the digest of whatever `gfortran` resolved to is the point."""
     binary = shutil.which(fc) or fc
@@ -73,7 +84,7 @@ def collect(out: Path, fc: str, module: Path, fixture: Path, script: Path,
     # name every rerun. `<OUT>` stands in for that directory in the identity view;
     # the literal paths stay under `diagnostic`, where they answer "where did this
     # happen" rather than "what was built".
-    norm = lambda c: c.replace(str(out), "<OUT>")
+    norm = normaliser(out)
     ident = {
         "compiler_sha256": sha256(binary),
         "compiler_version": version[0] if version else None,
@@ -110,7 +121,13 @@ def collect(out: Path, fc: str, module: Path, fixture: Path, script: Path,
                                  and Path(compiled) != Path(module) else None),
         "compiled_module_sha256": (sha256(compiled) if compiled
                                    and Path(compiled) != Path(module) else None),
-        "fixture_path": norm(str(fixture)), "fixture_sha256": sha256(fixture),
+        # ...and the FIXTURE digest is of the staged bytes too (owner §4).
+        # `sources[]` already carried the compiled fixture's digest while this
+        # field re-read the working tree, so one provenance document held two
+        # fixture digests from two sources.
+        "fixture_path": norm(str(fixture)),
+        "fixture_sha256": sha256(staged_fixture if staged_fixture is not None
+                                 else fixture),
         "repo_commit": _git("rev-parse", "HEAD"),
         "tree_dirty": bool(_git("status", "--porcelain")),
     }
@@ -124,8 +141,68 @@ def collect(out: Path, fc: str, module: Path, fixture: Path, script: Path,
     }}
 
 
+def verify(root: Path) -> list:
+    """The published record against the two logs it was DERIVED from.
+
+    `collect()` builds `sources` and `compile_commands` by reading these
+    files, so at collection time the three agree by construction. What this
+    checks is that they still agree at PUBLICATION -- an edit in between
+    would leave a record describing a build the logs no longer show (owner
+    review §6). It lives here, beside the parsers, so the comparison cannot
+    drift from how the record is written; the producer reaches it through
+    the same subprocess boundary the build uses.
+    """
+    record = root / "build_provenance.json"
+    if not record.is_file():
+        return ["build_provenance.json is not in the bundle"]
+    try:
+        got = json.loads(record.read_text())
+    except ValueError as e:
+        return [f"build_provenance.json is not readable JSON: {e}"]
+    # The logs are copied VERBATIM from the build directory while the record
+    # is normalised against it, so the comparison needs the directory the
+    # build ran in -- which only the diagnostic block remembers.
+    outdir = (got.get("diagnostic") or {}).get("outdir")
+    if not outdir:
+        return ["build_provenance.diagnostic.outdir is missing, so the "
+                "published logs cannot be normalised the way the record was"]
+    norm, bad = normaliser(Path(outdir)), []
+    srcs, cmds = root / "sources.txt", root / "commands.txt"
+    # ABSENT is not ABSENT-AND-FINE (Codex): skipping the comparison when a
+    # log is missing let deleting it clear the check, so a record could claim
+    # sources and commands with nothing left to contradict them. Every build
+    # writes both, so a bundle without them is not a bundle this can verify.
+    for f in (srcs, cmds):
+        if not f.is_file():
+            bad.append(f"{f.name} is not in the bundle, so "
+                       f"build_provenance cannot be re-derived from it")
+    if bad:
+        return bad
+    # A checker REPORTS; it does not crash on the artifact it is judging.
+    # `_source_row` falls back to hashing the path when a line carries no
+    # digest -- right for an older log, but on a tampered one it reached for
+    # a file that does not exist and raised out of the verification instead
+    # of failing it.
+    lines = [ln for ln in srcs.read_text().splitlines() if ln.strip()]
+    malformed = [ln for ln in lines if "\t" not in ln or not ln.split("\t")[1].strip()]
+    if malformed:
+        return bad + [f"sources.txt line {lines.index(malformed[0]) + 1} carries "
+                      f"no digest: {malformed[0][:60]!r}"]
+    rows = [_source_row(ln, norm) for ln in lines]
+    if rows != got.get("sources"):
+        bad.append("sources.txt is not build_provenance.sources")
+    if [norm(c) for c in cmds.read_text().splitlines()] != \
+            got.get("compile_commands"):
+        bad.append("commands.txt is not build_provenance.compile_commands")
+    return bad
+
+
 def main(argv) -> int:
-    if not 5 <= len(argv) <= 8:
+    if len(argv) == 2 and argv[0] == "--verify":
+        bad = verify(Path(argv[1]))
+        print("\n".join(bad))
+        return 1 if bad else 0
+    if not 5 <= len(argv) <= 9:
         print(__doc__)
         return 2
     out = Path(argv[0])
@@ -134,7 +211,8 @@ def main(argv) -> int:
                            Path(argv[4]),
                            Path(argv[5]) if len(argv) > 5 else None,
                            Path(argv[6]) if len(argv) > 6 else None,
-                           Path(argv[7]) if len(argv) > 7 else None),
+                           Path(argv[7]) if len(argv) > 7 else None,
+                           Path(argv[8]) if len(argv) > 8 else None),
                    indent=2, sort_keys=True) + "\n")
     return 0
 
