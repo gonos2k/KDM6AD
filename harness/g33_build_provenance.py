@@ -269,7 +269,16 @@ def verify(root: Path) -> list:
         return bad + [f"sources.txt line {lines.index(malformed[0]) + 1} carries "
                       f"no digest: {malformed[0][:60]!r}"]
     rows = [_source_row(ln, norm) for ln in lines]
-    if rows != got.get("sources"):
+    # Compare on the FIELDS THE RECORD CARRIES. `role` joined a source row at
+    # v7, and re-deriving it against a record written before that made every
+    # published bundle fail its own verification -- the same shape as
+    # requiring the extra normalisation roots, and the same rule: a widened
+    # derivation is not a demand on records that predate it.
+    have = got.get("sources")
+    if isinstance(have, list) and have and all(isinstance(r, dict) for r in have):
+        keys = set().union(*(set(r) for r in have))
+        rows = [{k: v for k, v in r.items() if k in keys} for r in rows]
+    if rows != have:
         bad.append("sources.txt is not build_provenance.sources")
     if [norm(c) for c in cmds.read_text().splitlines()] != \
             got.get("compile_commands"):

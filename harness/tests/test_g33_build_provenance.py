@@ -637,3 +637,28 @@ def test_a_record_made_BEFORE_the_extra_roots_still_verifies(tmp_path):
         "compile_commands": ["gfortran -c /var/t/g33-stage/dead-x.F -J<OUT>"],
         "diagnostic": {"outdir": "/build/out"}}))
     assert bp.verify(root) == []
+
+
+def test_a_widened_source_row_does_not_refuse_records_that_predate_it(tmp_path):
+    """`role` joined a source row at v7. Re-deriving it against a record
+    written before that made EVERY published bundle fail its own
+    verification -- found by re-running the adversarial table, where "an
+    honest bundle" turned REFUSED. Same shape as requiring the extra
+    normalisation roots, same rule: a widened derivation is not a demand on
+    records that predate it."""
+    root = tmp_path / "b"
+    root.mkdir()
+    mod = "host/KIM-meso_v1.0/phys/module_mp_kdm6.F"
+    (root / "sources.txt").write_text(mod + "\t" + "a" * 64 + "\n")
+    (root / "commands.txt").write_text("gfortran -c x\n")
+    pre_v7 = {"sources": [{"path": mod, "sha256": "a" * 64}],   # no role
+              "compile_commands": ["gfortran -c x"],
+              "diagnostic": {"outdir": "/build"}}
+    (root / "build_provenance.json").write_text(json.dumps(pre_v7))
+    assert bp.verify(root) == []
+
+    # a v7 record is still held to its own role
+    v7 = json.loads(json.dumps(pre_v7))
+    v7["sources"][0]["role"] = "fixture"                # wrong for this path
+    (root / "build_provenance.json").write_text(json.dumps(v7))
+    assert bp.verify(root), "a wrong role must still be refused"
