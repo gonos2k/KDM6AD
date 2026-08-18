@@ -1764,7 +1764,7 @@ def test_the_manifest_records_what_each_analyzer_EXECUTED_as():
     """The module pins are re-read from the tree when the manifest is built;
     this block is the digest each analyzer had when it ran."""
     src = (REPO / "harness/g33_refine_experiment.py").read_text()
-    assert '_IMPORTED[name] = _require_head_bytes(' in src
+    assert '_IMPORTED[name] = after' in src
     assert 'man["executed_analyzers"]' in src
     # ...and it is taken from the imported module's own file, not from a path
     assert 'getattr(mod, "__file__"' in src
@@ -1797,8 +1797,10 @@ def test_an_analyzer_already_in_memory_cannot_be_vouched_for():
         importlib.import_module("g33_matched_closure")
         target.write_bytes(keep)
         xp._IMPORTED.pop("g33_matched_closure", None)
-        with pytest.raises(SystemExit, match="outside the analysis dispatch"):
-            xp._an("g33_matched_closure")
+        # this process cannot vouch for it, and says so rather than
+        # hashing the file and pretending
+        xp._an("g33_matched_closure")
+        assert xp._IMPORTED["g33_matched_closure"] is None
     finally:
         target.write_bytes(keep)
         for n in [m for m in sys.modules if m.startswith("g33_matched")]:
@@ -1819,6 +1821,7 @@ def test_the_digest_is_taken_before_the_module_executes():
     # cached object), vs in memory but never attested (refuse)
     assert "if name in _IMPORTED:" in code
     assert "if name in sys.modules:" in code
+    assert "_IMPORTED[name] = None" in code
 
 
 def test_an_analyzer_is_attested_once_when_it_executes(monkeypatch):

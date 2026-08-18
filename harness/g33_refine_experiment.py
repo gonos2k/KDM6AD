@@ -75,12 +75,15 @@ def _an(name: str):
     # interpreter had never compiled.
     if name in _IMPORTED:
         return importlib.import_module(name)
+    # Already in memory and never attested here: this process cannot say what
+    # bytes ran, so it records that it cannot rather than hashing the file and
+    # pretending. Refusing outright would be wrong -- the analyzer suites
+    # import these modules directly, which is their subject, and they publish
+    # nothing. `produce()` refuses to PUBLISH a bundle carrying one of these,
+    # which is where the claim is actually made.
     if name in sys.modules:
-        raise SystemExit(
-            f"REFUSED: {name} was imported outside the analysis dispatch, so "
-            f"what executed cannot be established -- the lazy import is what "
-            f"puts every raw member on disk before an analyzer's first "
-            f"statement runs")
+        _IMPORTED[name] = None
+        return sys.modules[name]
     src = HERE / f"{name}.py"
     before = _require_head_bytes(src, name) if src.is_file() else None
     mod = importlib.import_module(name)
@@ -1886,6 +1889,13 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         # cannot be undone by restoring the file before the manifest is
         # written. Empty on a run that dispatched no analyzer.
         if _IMPORTED:
+            unattested = sorted(k for k, v in _IMPORTED.items() if v is None)
+            if unattested:
+                raise SystemExit(
+                    f"REFUSED: {unattested} were already in memory when the "
+                    f"analysis dispatched, so what executed cannot be "
+                    f"established. A producer runs in a fresh process for "
+                    f"exactly this reason.")
             man["executed_analyzers"] = [
                 {"module": k, "sha256": v} for k, v in sorted(_IMPORTED.items())]
         # The TRACKED build inputs decide the raw streams as surely as the
