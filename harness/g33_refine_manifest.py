@@ -1246,6 +1246,12 @@ def _executed_analyzer_violations(man: dict) -> list:
         both = sorted(set(cannot) & named)
         if both:
             return [f"{both} are named as BOTH attested and unattested"]
+        seeds_all = set(((man.get("identity") or {}).get("analysis_seeds")
+                         or {}).values())
+        stray = sorted(x for x in cannot if seeds_all and x not in seeds_all)
+        if stray:
+            return [f"unattested_analyzers names {stray}, which no analysis "
+                    f"in this bundle dispatches to"]
         if man.get("decision_eligible") is not False:
             return ["a bundle with unattested_analyzers cannot be "
                     "decision_eligible -- it cannot say what produced it"]
@@ -1292,12 +1298,18 @@ def _executed_analyzer_violations(man: dict) -> list:
             bad.append(f"{mod} executed as {got[:12]} but the bundle pins "
                        f"{want[:12]} -- the pin describes bytes that did not "
                        f"run")
-    # FULL COVERAGE -- every analysis's seed module attested -- is the
-    # obvious next clause and is NOT enforced here yet. Multi-run analyses
-    # do not all reach their module through the `_an` seam, so the producer
-    # may not attest every seed, and enforcing it before a controlled
-    # re-production shows what it actually records would refuse real
-    # bundles. Deferred to that step, deliberately.
+    # COVERAGE, now that it can be enforced. Every seed an analysis
+    # dispatched to must be ATTESTED or DECLARED UNATTESTED -- otherwise
+    # `unattested_analyzers` masks the difference between "ran, cannot
+    # vouch" and "never ran at all", which is what the field would then be
+    # for (Codex). The multi-run analyzers reach their module through the
+    # seam now, so both lists together can cover the seeds.
+    declared = set(seen) | set(man.get("unattested_analyzers") or [])
+    short = sorted(expected - declared)
+    if short:
+        bad.append(f"{short} produced analyses in this bundle and are named "
+                   f"in neither executed_analyzers nor unattested_analyzers "
+                   f"-- code ran that the bundle does not account for")
     return bad
 
 

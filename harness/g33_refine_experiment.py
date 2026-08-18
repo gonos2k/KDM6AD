@@ -1548,12 +1548,16 @@ MULTI_RUN = {
 
 
 def _ledger():
-    import g33_qr_process_ledger as pl
+    # THROUGH THE SEAM: a multi-run analyzer imported directly was
+    # attested by nothing, so its seed appeared in neither list and
+    # `unattested_analyzers` could not be held to cover the seeds
+    # (Codex).
+    pl = _an("g33_qr_process_ledger")
     return pl
 
 
 def _ncmin():
-    import g33_ncmin_locality as nl
+    nl = _an("g33_ncmin_locality")
     return nl
 
 
@@ -1807,7 +1811,7 @@ def _multi_run_analyses(out: Path, exe: Path, fixture: str,
 
 def compositions_of(fixture: str) -> list:
     """The decompositions a multi-run analysis covered, from the fixture."""
-    import g33_ncmin_locality as nl
+    nl = _an("g33_ncmin_locality")
     return nl.compositions(fixture_dims(fixture)[0])
 
 

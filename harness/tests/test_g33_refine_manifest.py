@@ -164,8 +164,24 @@ def synthetic_manifest(root):
     seeds = man["identity"]["analysis_seeds"]
     pins = {Path(q["path"]).stem: q["content_sha256"]
             for g in ("producer_modules", "member_parsers") for q in man[g]}
+    # Every seed the analyses dispatch to, so coverage holds: a seed in
+    # neither list is refused, because that is indistinguishable from a
+    # module that never ran (owner review §8).
     ran = sorted({seeds[a["analysis"]] for a in man["analyses"]
                   if a.get("analysis") in seeds})
+    man["executed_analyzers"] = [{"module": m, "sha256": pins.get(m, "0" * 64)}
+                                 for m in ran]
+    return man
+
+
+def _recover_attestation(man):
+    """Re-derive the attestation after a test changes `analyses`."""
+    seeds = (man.get("identity") or {}).get("analysis_seeds") or {}
+    pins = {Path(q["path"]).stem: q["content_sha256"]
+            for g in ("producer_modules", "member_parsers")
+            for q in man.get(g) or []}
+    ran = sorted({seeds[a["analysis"]] for a in man.get("analyses") or []
+                  if isinstance(a, dict) and a.get("analysis") in seeds})
     man["executed_analyzers"] = [{"module": m, "sha256": pins.get(m, "0" * 64)}
                                  for m in ran]
     return man
@@ -274,6 +290,8 @@ def test_an_UNKNOWN_derived_analysis_kind_is_REFUSED(tmp_path):
     extra["analysis"] = "matched_clsoure"
     extra["file"] = "n12.rezero.typo.json"
     m["analyses"].append(extra)
+    # a new analysis brings a new seed to account for
+    _recover_attestation(m)
     assert any("unknown derived analysis" in b for b in rm.validate(m))
 
 
@@ -355,6 +373,8 @@ def test_an_f64_bundle_carrying_an_f32_only_analysis_is_REFUSED(tmp_path):
         "analyzer": "harness/g33_qr_process_ledger.py",
         "analyzer_sha256": "a" * 64, "analyzer_commit": "b" * 40,
         "analyzer_blob_sha": "c" * 40})
+    # a new analysis brings a new seed to account for
+    _recover_attestation(m)
     assert any("defined only at" in b for b in rm.validate(m))
     # ...and the same entry on an f32 bundle is fine, so the refusal is about
     # the precision and not about the analysis.
@@ -387,6 +407,8 @@ def _with_multi(root):
         "analyzer": "harness/g33_ncmin_locality.py",
         "analyzer_sha256": "a" * 64, "analyzer_commit": "b" * 40,
         "analyzer_blob_sha": "c" * 40})
+    # a new analysis brings a new seed to account for
+    _recover_attestation(m)
     return m
 
 
@@ -1267,15 +1289,27 @@ def _real_v6_manifest_here():
 
 
 def _full_attestation(v7):
-    """One row per module the bundle's own analyses dispatched to."""
+    """One row per module the bundle's own analyses dispatched to.
+
+    Every seed has to be covered: a seed named in neither list is refused,
+    so a module the bundle pins nowhere gets a placeholder digest rather
+    than being dropped -- the point here is coverage, and the digest/pin
+    agreement has its own tests."""
     seeds = (v7.get("identity") or {}).get("analysis_seeds") or {}
-    names = {a["analysis"] for a in v7["analyses"]}
+    names = {a["analysis"] for a in v7["analyses"] if isinstance(a, dict)}
     pins = {Path(p["path"]).stem: p["content_sha256"]
             for g in ("producer_modules", "member_parsers")
             for p in v7.get(g) or []}
-    return [{"module": m, "sha256": pins[m]}
-            for m in sorted({seeds[n] for n in names if n in seeds})
-            if m in pins]
+    out, missing = [], []
+    for m in sorted({seeds[n] for n in names if n in seeds}):
+        if m in pins:
+            out.append({"module": m, "sha256": pins[m]})
+        else:
+            missing.append(m)
+    if missing:
+        v7["unattested_analyzers"] = missing
+        v7["decision_eligible"] = False
+    return out
 
 
 def _v7(man):
@@ -1364,8 +1398,10 @@ def test_an_analyzer_that_ran_as_its_pin_says_is_accepted():
     v7 = _v7(man)
     pin = next(p for p in v7["producer_modules"]
                if p["path"].endswith("g33_matched_closure.py"))
-    v7["executed_analyzers"] = [{"module": "g33_matched_closure",
-                                 "sha256": pin["content_sha256"]}]
+    # the row under test, with the other seeds still accounted for
+    v7["executed_analyzers"] = [
+        e for e in v7["executed_analyzers"] if e["module"] != "g33_matched_closure"
+    ] + [{"module": "g33_matched_closure", "sha256": pin["content_sha256"]}]
     assert rm.validate(v7) == []
     # ...and one import gets one attestation
     v7["executed_analyzers"].append({"module": "g33_matched_closure",
@@ -1449,3 +1485,50 @@ def test_the_unattested_record_cannot_be_smoothed_over(mutate, expect):
     mutate(v7)
     bad = rm.validate(v7)
     assert bad and any(expect in b for b in bad), bad
+
+
+def test_every_seed_is_attested_or_declared(monkeypatch):
+    """`unattested_analyzers` gave a bundle a way to explain an absence, and
+    with no coverage rule it also became a way to HIDE one: a seed named in
+    neither list is indistinguishable from a module that never ran (Codex).
+
+    Enforceable now that the multi-run analyzers reach their module through
+    the seam -- a real CLI run attests nine modules and covers all eight
+    seeds, measured."""
+    man = _real_v6_manifest_here()
+    if man is None:
+        pytest.skip("no bundle on this host")
+    v7 = _v7(man)
+    seeds = (v7.get("identity") or {}).get("analysis_seeds") or {}
+    victim = next((seeds[a["analysis"]] for a in v7["analyses"]
+                   if a.get("analysis") in seeds
+                   and any(e["module"] == seeds[a["analysis"]]
+                           for e in v7["executed_analyzers"])), None)
+    if victim is None:
+        pytest.skip("this bundle attests no seed to drop")
+
+    dropped = json.loads(json.dumps(v7))
+    dropped["executed_analyzers"] = [e for e in dropped["executed_analyzers"]
+                                     if e["module"] != victim]
+    bad = rm.validate(dropped)
+    assert bad and any("does not account for" in b for b in bad), bad
+
+    # ...and DECLARING it is the honest way out, at the cost of eligibility
+    declared = json.loads(json.dumps(dropped))
+    declared["unattested_analyzers"] = [victim]
+    declared["decision_eligible"] = False
+    assert rm.validate(declared) == []
+
+
+def test_the_declaration_may_only_name_this_bundles_own_analyzers():
+    """Naming an unrelated module would let a bundle look thorough about a
+    gap it does not have."""
+    man = _real_v6_manifest_here()
+    if man is None:
+        pytest.skip("no bundle on this host")
+    v7 = _v7(man)
+    v7["unattested_analyzers"] = ["g33_nowhere"]
+    v7["decision_eligible"] = False
+    bad = rm.validate(v7)
+    assert bad and any("no analysis in this bundle dispatches to" in b
+                       for b in bad), bad
