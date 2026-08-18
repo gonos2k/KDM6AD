@@ -52,11 +52,14 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
         # The FIXTURE is a compiled source too, and the contract's B, K and
         # DT_BITS are read from the bytes the compiler got (owner review §5) --
         # a fake that logs only the module describes a build with no fixture.
+        # the log the record is DERIVED from: one line per role, matching
+        # `_FAKE_SOURCES` exactly, or the witness comparison refuses
+        rows = _FAKE_SOURCES(MOD, FIX)
         (workdir / "sources.txt").write_text(
-            f"{MOD}\t{xp.rm.sha256(MOD)}\n"
-            f"{FIXLOG}\t{xp.rm.sha256(FIX)}\n")
+            "".join(f"{r['path']}\t{r['sha256']}\n" for r in rows))
         (workdir / "staged-map.txt").write_text(
-            f"{FIX}\t{FIXLOG}\n{MOD}\t{MOD}\n")
+            "".join(f"{FIX if r['role'] == 'fixture' else MOD}\t{r['path']}\n"
+                    for r in rows))
         # a v6-shaped record: what a real build writes, faked
         (workdir / "build_provenance.json").write_text(json.dumps({
             "module_path": str(MOD),
@@ -159,8 +162,14 @@ def _FAKE_SOURCES(mod, fix):
                        ("model_constants",
                         "host/KIM-meso_v1.0/share/module_model_constants.F"),
                        ("radar", "host/KIM-meso_v1.0/phys/module_mp_radar.F")):
+        # A TRACKED path must carry its real digest: the snapshot holds every
+        # compiled source in the repo to its HEAD blob, so a placeholder here
+        # would describe a build from bytes that never existed. `host/**` is
+        # gitignored, so those keep a stand-in.
+        real = REPO / path
         rows.append({"path": path, "role": role,
-                     "sha256": hashlib.sha256(path.encode()).hexdigest()})
+                     "sha256": xp.rm.sha256(real) if real.is_file()
+                     else hashlib.sha256(path.encode()).hexdigest()})
     return rows
 
 
@@ -345,11 +354,14 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
         # The FIXTURE is a compiled source too, and the contract's B, K and
         # DT_BITS are read from the bytes the compiler got (owner review §5) --
         # a fake that logs only the module describes a build with no fixture.
+        # the log the record is DERIVED from: one line per role, matching
+        # `_FAKE_SOURCES` exactly, or the witness comparison refuses
+        rows = _FAKE_SOURCES(MOD, FIX)
         (workdir / "sources.txt").write_text(
-            f"{MOD}\t{xp.rm.sha256(MOD)}\n"
-            f"{FIXLOG}\t{xp.rm.sha256(FIX)}\n")
+            "".join(f"{r['path']}\t{r['sha256']}\n" for r in rows))
         (workdir / "staged-map.txt").write_text(
-            f"{FIX}\t{FIXLOG}\n{MOD}\t{MOD}\n")
+            "".join(f"{FIX if r['role'] == 'fixture' else MOD}\t{r['path']}\n"
+                    for r in rows))
         # a v6-shaped record: what a real build writes, faked
         (workdir / "build_provenance.json").write_text(json.dumps({
             "module_path": str(MOD),

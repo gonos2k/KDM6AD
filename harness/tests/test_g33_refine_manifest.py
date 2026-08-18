@@ -2,6 +2,7 @@
 
 """The v2 manifest schema as a CLOSED tagged union (owner §8)."""
 import copy
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -11,6 +12,41 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import g33_refine_manifest as rm  # noqa: E402
+
+
+#: Every field and every role the v7 provenance contract requires. A fixture
+#: carrying a subset describes a build that could not have happened.
+def _v7_provenance():
+    import g33_build_provenance as bp
+    roles = (("module", "host/KIM-meso_v1.0/phys/module_mp_kdm6.F"),
+             ("fixture", "harness/g33_fortran/g33_fixture_x_v1.f90"),
+             ("driver", "harness/g33_fortran/g33_refine_driver.f90"),
+             ("stub", "harness/g33_fortran/stub_wrf_error.f90"),
+             ("libmassv", "host/KIM-meso_v1.0/frame/libmassv.F"),
+             ("model_constants",
+              "host/KIM-meso_v1.0/share/module_model_constants.F"),
+             ("radar", "host/KIM-meso_v1.0/phys/module_mp_radar.F"))
+    return {
+        "schema": bp.BUILD_PROVENANCE_SCHEMA,
+        "compiler_version": "gfortran (fake) 1.0",
+        "compiler_sha256": "1" * 64,
+        "compiler_f951_sha256": "5" * 64,
+        "module_path": "host/KIM-meso_v1.0/phys/module_mp_kdm6.F",
+        "module_sha256": "8" * 64,
+        "compiled_module_path": "module_mp_ovl.F",
+        "compiled_module_sha256": "b" * 64,
+        "fixture_path": "harness/g33_fortran/g33_fixture_x_v1.f90",
+        "fixture_sha256": "9" * 64,
+        "build_script_sha256": "7" * 64,
+        "executable_sha256": "a" * 64,
+        "sources": [{"path": path, "role": role,
+                     "sha256": hashlib.sha256(role.encode()).hexdigest()}
+                    for role, path in roles],
+        "compile_commands": ["gfortran -c " + path for _r, path in roles],
+        "repo_commit": "0" * 40,
+        "tree_dirty": False,
+        "diagnostic": {"outdir": "/build"},
+    }
 
 
 def synthetic_manifest(root):
@@ -93,20 +129,13 @@ def synthetic_manifest(root):
         "build_artifacts": [{"file": "g33_refine_driver",
                              "sha256": w("g33_refine_driver", "#!f\n")},
                             {"file": "module_mp_ovl.F", "sha256": _OVL}],
-        # v6: the build's record is closed -- compiler, sources, module,
-        # fixture, script -- so the fixture carries what a real build writes
-        "build_provenance": {
+        # v7: the build's record is an EXACT key set with a ROLE table, so
+        # the fixture carries every field and every role a real build writes
+        # (owner review §5)
+        "build_provenance": dict(_v7_provenance(), **{
             "executable_sha256": rm.sha256(root / "g33_refine_driver"),
-            "compiler_version": "gfortran (fake) 1.0",
-            "compiler_sha256": "1" * 64,
-            "module_path": "host/KIM-meso_v1.0/phys/module_mp_kdm6.F",
-            "module_sha256": "8" * 64,
-            "fixture_sha256": "9" * 64,
-            "build_script_sha256": "7" * 64,
-            "sources": [{"path": "host/x.F", "sha256": "6" * 64}],
-            "compile_commands": ["gfortran -c host/x.F"],
             # an instrumented build feeds the compiler the GENERATED overlay
-            "compiled_module_sha256": _OVL},
+            "compiled_module_sha256": _OVL}),
         "module_path": "host/KIM-meso_v1.0/phys/module_mp_kdm6.F",
         "module_sha256": "8" * 64,
         "member_parsers": [pin], "producer_modules": _pins,

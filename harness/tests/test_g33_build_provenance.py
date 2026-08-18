@@ -515,10 +515,12 @@ def test_a_MISSING_log_cannot_clear_the_witness_comparison(tmp_path, drop):
     left to contradict them -- fail-open under transient deletion (Codex)."""
     root = tmp_path / "b"
     root.mkdir()
-    (root / "sources.txt").write_text("harness/x.f90\t" + "a" * 64 + "\n")
+    (root / "sources.txt").write_text(
+        "harness/g33_fortran/g33_refine_driver.f90\t" + "a" * 64 + "\n")
     (root / "commands.txt").write_text("gfortran -c x.f90\n")
     (root / "build_provenance.json").write_text(json.dumps({
-        "sources": [{"path": "harness/x.f90", "sha256": "a" * 64}],
+        "sources": [{"path": "harness/g33_fortran/g33_refine_driver.f90",
+                     "role": "driver", "sha256": "a" * 64}],
         "compile_commands": ["gfortran -c x.f90"],
         "diagnostic": {"outdir": "/build"}}))
     assert bp.verify(root) == []
@@ -534,10 +536,12 @@ def test_a_malformed_source_line_is_REPORTED_not_raised(tmp_path):
     failing it. A checker reports on the artifact it judges."""
     root = tmp_path / "b"
     root.mkdir()
-    (root / "sources.txt").write_text("harness/x.f90\t" + "a" * 64 + "\nsmuggled\n")
+    (root / "sources.txt").write_text(
+        "harness/g33_fortran/g33_refine_driver.f90\t" + "a" * 64 + "\nsmuggled\n")
     (root / "commands.txt").write_text("gfortran -c x.f90\n")
     (root / "build_provenance.json").write_text(json.dumps({
-        "sources": [{"path": "harness/x.f90", "sha256": "a" * 64}],
+        "sources": [{"path": "harness/g33_fortran/g33_refine_driver.f90",
+                     "role": "driver", "sha256": "a" * 64}],
         "compile_commands": ["gfortran -c x.f90"],
         "diagnostic": {"outdir": "/build"}}))
     got = bp.verify(root)                      # must not raise
