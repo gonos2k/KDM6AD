@@ -46,6 +46,16 @@ import g33_probe_read as pr           # noqa: E402
 import g33_number_transport as nt     # noqa: E402
 import g33_run_matrix as rmx          # noqa: E402  (run role: makes arm streams)
 
+#: Run-role analyzers digested AT THE MOMENT THEY EXECUTED -- here, as the
+#: producer imports them. Hashing them later, when the analysis dispatches,
+#: reads whatever the tree holds THEN: reproduced in a fresh process, bytes
+#: d212a1b1 executed and 59f7f5dd was attested (Codex). A digest taken after
+#: execution attests nothing.
+_EAGER_AT_LOAD = {
+    "g33_number_transport": hashlib.sha256(
+        (HERE / "g33_number_transport.py").read_bytes()).hexdigest(),
+}
+
 
 def _an(name: str):
     """An ANALYZER module, imported when an analysis runs -- never before.
@@ -89,9 +99,9 @@ def _an(name: str):
         # before `require_pinned_producer()`, so an edit reverted before that
         # preflight would still go unseen. Closing it needs the detached
         # snapshot, which is the open half of §8.
-        if name in _EAGER:
-            src = HERE / f"{name}.py"
-            _IMPORTED[name] = _require_head_bytes(src, name)
+        if name in _EAGER_AT_LOAD:
+            _IMPORTED[name] = _require_head_digest(
+                Path(f"harness/{name}.py"), _EAGER_AT_LOAD[name], name)
             return sys.modules[name]
         _IMPORTED[name] = None
         return sys.modules[name]
@@ -134,6 +144,13 @@ def _require_head_bytes(src: Path, what: str) -> str:
         rel = src.resolve().relative_to(HERE.parent)
     except ValueError:
         return got                      # outside the repo: nothing pins it
+    return _require_head_digest(rel, got, what)
+
+
+def _require_head_digest(rel: Path, got: str, what: str) -> str:
+    """A digest ALREADY TAKEN, held to HEAD. Separate from reading the file,
+    because the eager path must attest the bytes that executed at load and
+    must not re-read the tree afterwards."""
     blob = subprocess.run(["git", "show", f"HEAD:{rel}"], cwd=HERE.parent,
                           capture_output=True)
     if blob.returncode != 0:

@@ -662,3 +662,54 @@ def test_a_widened_source_row_does_not_refuse_records_that_predate_it(tmp_path):
     v7["sources"][0]["role"] = "fixture"                # wrong for this path
     (root / "build_provenance.json").write_text(json.dumps(v7))
     assert bp.verify(root), "a wrong role must still be refused"
+
+
+@pytest.mark.skipif(shutil.which("git") is None, reason="needs git")
+def test_a_run_role_analyzer_is_attested_at_LOAD_not_at_dispatch(tmp_path):
+    """`g33_number_transport` is imported at module load because it also makes
+    the arm streams, so it can never reach the lazy seam. Attesting it when
+    the analysis DISPATCHES reads whatever the tree holds then -- the same
+    hole one level down. Reproduced in a fresh process: bytes d212a1b1
+    executed at load, the file was restored, and 59f7f5dd was attested
+    (Codex).
+
+    Runs in a subprocess because the producer must be imported AFTER the
+    edit, and this interpreter has already imported it."""
+    target = REPO / "harness/g33_number_transport.py"
+    keep = target.read_bytes()
+    script = f'''
+import sys
+from pathlib import Path
+t = Path({str(target)!r}); keep = t.read_bytes()
+try:
+    t.write_bytes(keep + b"\\n# transient\\n")
+    sys.path.insert(0, {str(REPO / "harness")!r})
+    import g33_refine_experiment as xp
+    t.write_bytes(keep)
+    try:
+        xp._an("g33_number_transport")
+        print("ACCEPTED", xp._IMPORTED.get("g33_number_transport"))
+    except SystemExit as e:
+        print("REFUSED", str(e).splitlines()[0])
+finally:
+    t.write_bytes(keep)
+'''
+    try:
+        r = subprocess.run([sys.executable, "-c", script], capture_output=True,
+                           text=True, cwd=REPO)
+        assert "REFUSED" in r.stdout, r.stdout + r.stderr
+        assert "executed as" in r.stdout
+    finally:
+        target.write_bytes(keep)
+
+
+def test_the_eager_digest_is_taken_where_the_module_is_imported():
+    """Structural: the digest has to be computed in the import block, not in
+    the seam that runs later."""
+    src = (REPO / "harness/g33_refine_experiment.py").read_text()
+    head = src.split("def _an(", 1)[0]
+    assert "_EAGER_AT_LOAD = {" in head, "attest at load, beside the import"
+    assert "hashlib.sha256(" in head.split("_EAGER_AT_LOAD", 1)[1]
+    seam = src.split("def _an(", 1)[1].split("\ndef ", 1)[0]
+    assert "_EAGER_AT_LOAD[name]" in seam and "read_bytes()" not in seam, \
+        "the seam must use the load digest, never re-read the file"
