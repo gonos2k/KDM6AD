@@ -668,33 +668,23 @@ def test_a_widened_source_row_does_not_refuse_records_that_predate_it(tmp_path):
 def test_a_run_role_analyzer_is_attested_at_LOAD_not_at_dispatch(tmp_path):
     """`g33_number_transport` is imported at module load because it also makes
     the arm streams, so it can never reach the lazy seam. Attesting it when
-    the analysis DISPATCHES reads whatever the tree holds then -- the same
-    hole one level down. Reproduced in a fresh process: bytes d212a1b1
-    executed at load, the file was restored, and 59f7f5dd was attested
-    (Codex).
+    the analysis DISPATCHES read whatever the tree held then -- the same hole
+    one level down. Reproduced in a fresh process: bytes d212a1b1 executed at
+    load, the file was restored, and 59f7f5dd was attested (Codex).
 
-    Runs in a subprocess because the producer must be imported AFTER the
-    edit, and this interpreter has already imported it."""
+    The refusal is at LOAD, so importing the producer is what raises."""
     target = REPO / "harness/g33_number_transport.py"
     keep = target.read_bytes()
-    script = f'''
-import sys
-from pathlib import Path
-t = Path({str(target)!r}); keep = t.read_bytes()
-try:
-    t.write_bytes(keep + b"\\n# transient\\n")
-    sys.path.insert(0, {str(REPO / "harness")!r})
-    import g33_refine_experiment as xp
-    t.write_bytes(keep)
+    script = (
+        "import sys\n"
+        f"sys.path.insert(0, {str(REPO / 'harness')!r})\n"
+        "try:\n"
+        "    import g33_refine_experiment as xp\n"
+        "    print('ACCEPTED', xp._IMPORTED.get('g33_number_transport'))\n"
+        "except SystemExit as e:\n"
+        "    print('REFUSED', str(e).splitlines()[0])\n")
     try:
-        xp._an("g33_number_transport")
-        print("ACCEPTED", xp._IMPORTED.get("g33_number_transport"))
-    except SystemExit as e:
-        print("REFUSED", str(e).splitlines()[0])
-finally:
-    t.write_bytes(keep)
-'''
-    try:
+        target.write_bytes(keep + b"\n# transient\n")
         r = subprocess.run([sys.executable, "-c", script], capture_output=True,
                            text=True, cwd=REPO)
         assert "REFUSED" in r.stdout, r.stdout + r.stderr
