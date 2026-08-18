@@ -54,6 +54,25 @@ _IMPORTED: dict = {}
 
 
 
+def _require_head_digest(rel: Path, got: str, what: str) -> str:
+    """A digest ALREADY TAKEN, held to HEAD. Separate from reading the file,
+    because the eager path must attest the bytes that executed at load and
+    must not re-read the tree afterwards."""
+    blob = subprocess.run(["git", "show", f"HEAD:{rel}"], cwd=HERE.parent,
+                          capture_output=True)
+    if blob.returncode != 0:
+        raise SystemExit(
+            f"REFUSED: {rel} is not in HEAD, so nothing can pin the bytes "
+            f"that {what} just executed")
+    want = hashlib.sha256(blob.stdout).hexdigest()
+    if got != want:
+        raise SystemExit(
+            f"REFUSED: {rel} executed as {got[:12]} but HEAD holds "
+            f"{want[:12]} -- the bundle would pin bytes that did not run. "
+            f"Commit the change.")
+    return got
+
+
 def _is_duplicate_execution() -> bool:
     """Is another instance of THIS FILE already in `sys.modules`?
 
@@ -118,13 +137,17 @@ def _eager_import(name: str):
         raise SystemExit(
             f"REFUSED: {name} changed while it was being imported "
             f"({before[:12]} -> {after[:12]})")
-    _EAGER_AT_LOAD[name] = before
+    # HELD TO HEAD HERE, not later. `_an` returns early for anything already
+    # in `_IMPORTED`, so recording an unverified digest there skipped the
+    # check entirely: an edited module was accepted with its own digest.
+    checked = _require_head_digest(Path(f"harness/{name}.py"), before, name)
+    _EAGER_AT_LOAD[name] = checked
     # ...and into the record the manifest is built from. `extension_protocol`
     # reaches this module through the module-level `nt`, never through `_an`,
     # so leaving it only in `_EAGER_AT_LOAD` meant a bundle whose analyses it
     # produced never named it. Measured: 20 analyses published with it absent
     # from `executed_analyzers` (Codex).
-    _IMPORTED[name] = before
+    _IMPORTED[name] = checked
     return mod
 
 
@@ -223,24 +246,6 @@ def _require_head_bytes(src: Path, what: str) -> str:
         return got                      # outside the repo: nothing pins it
     return _require_head_digest(rel, got, what)
 
-
-def _require_head_digest(rel: Path, got: str, what: str) -> str:
-    """A digest ALREADY TAKEN, held to HEAD. Separate from reading the file,
-    because the eager path must attest the bytes that executed at load and
-    must not re-read the tree afterwards."""
-    blob = subprocess.run(["git", "show", f"HEAD:{rel}"], cwd=HERE.parent,
-                          capture_output=True)
-    if blob.returncode != 0:
-        raise SystemExit(
-            f"REFUSED: {rel} is not in HEAD, so nothing can pin the bytes "
-            f"that {what} just executed")
-    want = hashlib.sha256(blob.stdout).hexdigest()
-    if got != want:
-        raise SystemExit(
-            f"REFUSED: {rel} executed as {got[:12]} but HEAD holds "
-            f"{want[:12]} -- the bundle would pin bytes that did not run. "
-            f"Commit the change.")
-    return got
 
 BUILD = HERE / "g33_fortran" / "refine_build.sh"
 
