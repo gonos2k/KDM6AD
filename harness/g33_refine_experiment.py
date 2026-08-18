@@ -62,10 +62,21 @@ def _eager_import(name: str):
     # attesting it after that import measured a module that had already run
     # (Codex). This call sits ahead of every other g33 import for that
     # reason, and says so if the order is ever changed.
-    if name in sys.modules:
-        raise SystemExit(
-            f"REFUSED: {name} was already imported before it could be "
-            f"attested -- move this call ahead of whatever pulled it in")
+    prior = sys.modules.get(name)
+    if prior is not None:
+        # The attestation lives ON the attested module, because this file is
+        # executed TWICE when it runs as `__main__` and something then
+        # imports it by name -- the second pass gets a fresh `_EAGER_AT_LOAD`
+        # but the same `sys.modules`. Carrying the digest on the module makes
+        # the second pass report what the first one measured instead of
+        # refusing a legitimate run.
+        got = getattr(prior, "_g33_attested_digest", None)
+        if got is None:
+            raise SystemExit(
+                f"REFUSED: {name} was already imported before it could be "
+                f"attested -- move this call ahead of whatever pulled it in")
+        _EAGER_AT_LOAD[name] = got
+        return prior
     src = HERE / f"{name}.py"
     before = hashlib.sha256(src.read_bytes()).hexdigest()
     mod = importlib.import_module(name)
@@ -74,6 +85,7 @@ def _eager_import(name: str):
         raise SystemExit(
             f"REFUSED: {name} changed while it was being imported "
             f"({before[:12]} -> {after[:12]})")
+    mod._g33_attested_digest = before
     _EAGER_AT_LOAD[name] = before
     return mod
 
