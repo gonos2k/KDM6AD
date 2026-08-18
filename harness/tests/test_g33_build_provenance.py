@@ -740,16 +740,16 @@ def test_a_module_cannot_attest_itself(tmp_path):
         "import sys\n"
         f"sys.path.insert(0, {str(REPO / 'harness')!r})\n"
         "import g33_probe_read\n"
-        "try:\n"
-        "    import g33_refine_experiment as xp\n"
-        "    print('ACCEPTED', xp._EAGER_AT_LOAD)\n"
-        "except SystemExit as e:\n"
-        "    print('REFUSED', str(e).splitlines()[0])\n")
+        "import g33_refine_experiment as xp\n"
+        # never raises at import; it records that it cannot attest, and
+        # `produce()` refuses to publish such a bundle
+        "print('UNATTESTED' if xp._IMPORTED.get('g33_number_transport') is None"
+        "      else 'ATTESTED ' + xp._IMPORTED['g33_number_transport'])\n")
     try:
         target.write_bytes(forged)
         r = subprocess.run([sys.executable, "-c", script], capture_output=True,
                            text=True, cwd=REPO)
-        assert "REFUSED" in r.stdout, r.stdout + r.stderr
+        assert r.stdout.startswith("UNATTESTED"), r.stdout + r.stderr
     finally:
         target.write_bytes(keep)
 

@@ -137,9 +137,14 @@ def _eager_import(name: str):
             # missing from `executed_analyzers` entirely. Measured.
             _IMPORTED[name] = None
             return prior
-        raise SystemExit(
-            f"REFUSED: {name} was already imported before it could be "
-            f"attested -- move this call ahead of whatever pulled it in")
+        # NOT A RAISE. Refusing at IMPORT applied a production invariant --
+        # a fresh process where this module is imported first -- to a shared
+        # interpreter, and pytest collection died with SystemExit before a
+        # single test ran: many test modules import `g33_probe_read`, which
+        # pulls this one in. The process records that it cannot attest, and
+        # `produce()` refuses to publish, which is where the claim is made.
+        _IMPORTED[name] = None
+        return prior
     src = HERE / f"{name}.py"
     before = hashlib.sha256(src.read_bytes()).hexdigest()
     mod = importlib.import_module(name)
