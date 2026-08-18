@@ -95,6 +95,15 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
         (owner §8.3). The stub produces what a real bundle would rather than
         the test asserting a shape the contract forbids.
         """
+        # ...and each analysis reaches its module THROUGH THE SEAM, as the
+        # real `_analyses` does, so the bundle can say what executed (owner
+        # review §8). A fake that fabricates analyses without dispatching
+        # leaves the attestation empty -- a bundle claiming analyses that
+        # nothing ran.
+        for _kind in xp.rm.REQUIRED_WHEN_INSTRUMENTED:
+            _seed = xp.ANALYSES.get(_kind)
+            if _seed:
+                xp._an(_seed[0] if isinstance(_seed, tuple) else _seed)
         out_entries = []
         for kind in xp.rm.REQUIRED_WHEN_INSTRUMENTED:
             p = out / f"n{ns[0]}.{mode}.{kind}.json"

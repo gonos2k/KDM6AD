@@ -82,6 +82,17 @@ def _an(name: str):
     # nothing. `produce()` refuses to PUBLISH a bundle carrying one of these,
     # which is where the claim is actually made.
     if name in sys.modules:
+        # ...unless the PRODUCER ITSELF imports it at module load. A run-role
+        # module cannot reach a lazy seam that runs later, so it is attested
+        # here by the same rule -- its bytes, held to HEAD. The residual
+        # window is narrower than the one §8 closed but not zero: it executed
+        # before `require_pinned_producer()`, so an edit reverted before that
+        # preflight would still go unseen. Closing it needs the detached
+        # snapshot, which is the open half of §8.
+        if name in _EAGER:
+            src = HERE / f"{name}.py"
+            _IMPORTED[name] = _require_head_bytes(src, name)
+            return sys.modules[name]
         _IMPORTED[name] = None
         return sys.modules[name]
     src = HERE / f"{name}.py"
@@ -109,6 +120,11 @@ def _an(name: str):
 #: What each analyzer's bytes were WHEN IT WAS IMPORTED, so the manifest can
 #: pin what ran rather than what the tree holds afterwards.
 _IMPORTED: dict = {}
+
+#: Analyzer modules the producer imports at module load because they also
+#: play a RUN role -- `g33_number_transport` makes arm streams and is also
+#: the seed of `extension_protocol`. They cannot reach the lazy seam.
+_EAGER = frozenset({"g33_number_transport"})
 
 
 def _require_head_bytes(src: Path, what: str) -> str:
