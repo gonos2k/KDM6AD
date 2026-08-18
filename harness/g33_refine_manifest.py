@@ -40,6 +40,19 @@ import g33_refine_analyze as ra   # noqa: E402
 SCHEMA = "refinement_experiment_v7"
 
 
+#: A path as the repository names it. Identity may carry the role, the
+#: repo-relative logical path and the digest -- never where the checkout
+#: happens to sit (owner review §7).
+def _repo_relative(path) -> str:
+    p = Path(path)
+    if not p.is_absolute():
+        return str(p)
+    try:
+        return str(p.resolve().relative_to(Path(__file__).resolve().parents[1]))
+    except ValueError:
+        return str(p)
+
+
 def sha256(path: Path) -> str:
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
@@ -195,9 +208,14 @@ def build(outputs: Path, *, module: Path, fixture: Path, compiler: str,
         "repo_commit": _git("rev-parse", "HEAD"),
         "tree_dirty": bool(_git("status", "--porcelain")),
         "module_sha256": sha256(module),
-        "module_path": str(module),
+        "module_path": _repo_relative(module),
         "fixture_sha256": sha256(fixture),
-        "fixture_path": str(fixture),
+        # REPO-RELATIVE (owner review §7). The producer builds this from
+        # `HERE / ...`, so it was absolute -- and `run_recipe_id` hashes it,
+        # which made the same bytes under two checkout roots two different
+        # experiments. Measured: the recipe id moved. The absolute path is
+        # diagnostic, not identity.
+        "fixture_path": _repo_relative(fixture),
         # A human label. The compiler that actually ran is in build_provenance,
         # by digest -- two hosts print this same string and produce different
         # numbers. `null` there means the build recorded nothing, which is a

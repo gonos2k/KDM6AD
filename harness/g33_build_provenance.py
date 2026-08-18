@@ -44,14 +44,41 @@ def _git(*args: str) -> str:
                           text=True).stdout.strip()
 
 
-def normaliser(out: Path):
-    """`<OUT>` for the output directory, so the record does not carry where it
-    ran (owner §10.3). Named and exported rather than inlined, because the
-    publish gate compares the published logs to this record and has to
-    normalise them the SAME way -- against the directory the build actually
-    used, which only `diagnostic.outdir` remembers.
+def normaliser(out: Path, tmp: Path | None = None, repo: Path | None = None):
+    """Strip WHERE this ran, keep WHAT was built (owner §10.3, §7).
+
+    `<OUT>` for the output directory. `<TMP>` for the temporary root: the
+    staged sources and the generated overlay live under `$TMPDIR`, so the
+    compile commands and `compiled_module_path` carried `/tmp` on one host
+    and `/var/folders/...` on another -- measured, the content id moved
+    between them for identical bytes. The digest-bearing BASENAME survives,
+    which is what the source map is matched on. `<REPO>` for the checkout
+    root, for the same reason one level up.
+
+    Named and exported rather than inlined, because the publish gate compares
+    the published logs to this record and has to normalise them the SAME way
+    -- against the directories the build actually used, which only
+    `diagnostic` remembers.
     """
-    return lambda c: c.replace(str(out), "<OUT>")
+    # BOTH spellings of each directory. macOS resolves `/var/folders/...` to
+    # `/private/var/folders/...`, so replacing only the literal turned
+    # `/private/var/.../T/x` into `/private<TMP>/x` -- neither the path nor a
+    # clean tag (found by the provenance suite).
+    subs = []
+    for d, tag in ((out, "<OUT>"), (tmp, "<TMP>"), (repo, "<REPO>")):
+        if not d:
+            continue
+        for form in {str(Path(d)).rstrip("/"), str(Path(d).resolve()).rstrip("/")}:
+            subs.append((form, tag))
+    # Longest first: `$TMPDIR` may contain the output directory, and replacing
+    # the shorter one first would leave a half-normalised path.
+    subs.sort(key=lambda kv: len(kv[0]), reverse=True)
+
+    def norm(c: str) -> str:
+        for lit, tag in subs:
+            c = c.replace(lit, tag)
+        return c
+    return norm
 
 
 #: The EXACT set of roles this build compiles. A source list was an ordered
@@ -115,7 +142,9 @@ def collect(out: Path, fc: str, module: Path, fixture: Path, script: Path,
     # name every rerun. `<OUT>` stands in for that directory in the identity view;
     # the literal paths stay under `diagnostic`, where they answer "where did this
     # happen" rather than "what was built".
-    norm = normaliser(out)
+    import os, tempfile
+    norm = normaliser(out, Path(os.environ.get("TMPDIR", tempfile.gettempdir())),
+                      Path(__file__).resolve().parents[1])
     ident = {
         "schema": BUILD_PROVENANCE_SCHEMA,
         "compiler_sha256": sha256(binary),
@@ -163,8 +192,11 @@ def collect(out: Path, fc: str, module: Path, fixture: Path, script: Path,
         "repo_commit": _git("rev-parse", "HEAD"),
         "tree_dirty": bool(_git("status", "--porcelain")),
     }
+    import os as _os, tempfile as _tf
     return ident | {"diagnostic": {
         "outdir": str(out),
+        "tmpdir": str(Path(_os.environ.get("TMPDIR", _tf.gettempdir()))),
+        "repo_root": str(Path(__file__).resolve().parents[1]),
         "compiler_path": binary,
         "compiler_f951_path": f951 if Path(f951).is_file() else None,
         "executable_path": str(exe) if exe else None,

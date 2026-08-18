@@ -120,8 +120,12 @@ def test_every_compiled_source_is_digested_not_just_the_module(tmp_path, build):
     out, root = build
     (out / "sources.txt").write_text(f"{root / 'm.F'}\n{root / 'f.f90'}\n")
     got = _collect(out, root)["sources"]
-    assert [g["path"] for g in got] == [str(root / "m.F"), str(root / "f.f90")]
+    # `root` is pytest's tmp_path, i.e. under $TMPDIR, so the recorded path is
+    # tagged rather than literal (owner review §7). What this test is about is
+    # that EVERY compiled source is digested, not how the path is spelled.
+    assert len(got) == 2 and all(g["path"].startswith("<TMP>") for g in got), got
     assert got[0]["sha256"] == bp.sha256(root / "m.F")
+    assert got[0]["path"].endswith("/m.F") and got[1]["path"].endswith("/f.f90")
 
 
 def test_the_executable_that_ran_is_digested(build):
