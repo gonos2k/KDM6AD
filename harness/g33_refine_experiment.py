@@ -61,7 +61,44 @@ def _an(name: str):
     analyzer's first statement executes.
     """
     import importlib
-    return importlib.import_module(name)
+    mod = importlib.import_module(name)
+    # ...and the bytes that just EXECUTED are held to HEAD, here, at the
+    # moment they run (owner review §8). The preflight compares the working
+    # tree at t0 and the pin re-reads it at t4, so an analyzer edited at t1,
+    # imported at t2 and restored at t3 ran bytes neither check ever saw --
+    # reproduced end to end: `d86879e0` executed, `6bc1b9c8` was pinned.
+    # A hash taken at the point of use cannot be undone by a later revert.
+    src = Path(getattr(mod, "__file__", "") or "")
+    if src.is_file():
+        _IMPORTED[name] = _require_head_bytes(src, name)
+    return mod
+
+
+#: What each analyzer's bytes were WHEN IT WAS IMPORTED, so the manifest can
+#: pin what ran rather than what the tree holds afterwards.
+_IMPORTED: dict = {}
+
+
+def _require_head_bytes(src: Path, what: str) -> str:
+    """The file's digest, refused unless it is the digest HEAD holds."""
+    got = hashlib.sha256(src.read_bytes()).hexdigest()
+    try:
+        rel = src.resolve().relative_to(HERE.parent)
+    except ValueError:
+        return got                      # outside the repo: nothing pins it
+    blob = subprocess.run(["git", "show", f"HEAD:{rel}"], cwd=HERE.parent,
+                          capture_output=True)
+    if blob.returncode != 0:
+        raise SystemExit(
+            f"REFUSED: {rel} is not in HEAD, so nothing can pin the bytes "
+            f"that {what} just executed")
+    want = hashlib.sha256(blob.stdout).hexdigest()
+    if got != want:
+        raise SystemExit(
+            f"REFUSED: {rel} executed as {got[:12]} but HEAD holds "
+            f"{want[:12]} -- the bundle would pin bytes that did not run. "
+            f"Commit the change.")
+    return got
 
 BUILD = HERE / "g33_fortran" / "refine_build.sh"
 
@@ -1813,6 +1850,15 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         # same way, so the chain does not stop at the ones a reader thinks to ask
         # about.
         man["producer_modules"] = [_pin(m) for m in producer_modules()]
+        # WHAT ACTUALLY RAN, digested at import (owner review §8). The pins
+        # above are re-read from the working tree at the END of a run that
+        # takes the better part of an hour; this block is the digest each
+        # analyzer had when its first statement executed, so a transient edit
+        # cannot be undone by restoring the file before the manifest is
+        # written. Empty on a run that dispatched no analyzer.
+        if _IMPORTED:
+            man["executed_analyzers"] = [
+                {"module": k, "sha256": v} for k, v in sorted(_IMPORTED.items())]
         # The TRACKED build inputs decide the raw streams as surely as the
         # analyzers decide the numbers, and build_provenance recorded only their
         # content digests -- checkable against today's working tree and nothing

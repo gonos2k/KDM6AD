@@ -1721,3 +1721,46 @@ def test_an_unknown_algorithm_is_refused_before_anything_is_built(tmp_path):
     with pytest.raises(SystemExit, match="no kernel source is known"):
         xp.produce(tmp_path / "x", fixture="g33_fixture_multisubcycle_v1",
                    algo="nonesuch", nsplits=(3,), mode="rezero", nflux=False)
+
+
+# ---- owner review §8: the bytes that RAN, checked when they run ------------
+
+def test_an_analyzer_edited_between_preflight_and_import_is_refused(tmp_path):
+    """`require_pinned_producer()` compares the working tree at t0 and the pin
+    re-reads it at t4, and a private-host suite runs the better part of an
+    hour in between. An analyzer edited at t1, imported at t2 and restored at
+    t3 therefore RAN bytes neither check ever saw. Reproduced end to end:
+
+        t0 preflight        passes
+        t1 edit             tree d86879e0
+        t2 import           executed d86879e0
+        t3 restore          tree 6bc1b9c8
+        t4 pin              passes -- and pins 6bc1b9c8
+
+    A digest taken at the point of USE cannot be undone by a later revert."""
+    import importlib
+    target = REPO / "harness/g33_matched_closure.py"
+    keep = target.read_bytes()
+    try:
+        for name in [m for m in sys.modules if m.startswith("g33_matched")]:
+            del sys.modules[name]
+        assert xp._an("g33_matched_closure")          # sound tree: imports
+        for name in [m for m in sys.modules if m.startswith("g33_matched")]:
+            del sys.modules[name]
+        target.write_bytes(keep + b"\n# transient\n")
+        with pytest.raises(SystemExit, match="did not run"):
+            xp._an("g33_matched_closure")
+    finally:
+        target.write_bytes(keep)
+        for name in [m for m in sys.modules if m.startswith("g33_matched")]:
+            del sys.modules[name]
+
+
+def test_the_manifest_records_what_each_analyzer_EXECUTED_as():
+    """The module pins are re-read from the tree when the manifest is built;
+    this block is the digest each analyzer had when it ran."""
+    src = (REPO / "harness/g33_refine_experiment.py").read_text()
+    assert '_IMPORTED[name] = _require_head_bytes(' in src
+    assert 'man["executed_analyzers"]' in src
+    # ...and it is taken from the imported module's own file, not from a path
+    assert 'getattr(mod, "__file__"' in src
