@@ -73,6 +73,189 @@ in code written earlier in the same cycle. Three patterns are worth keeping:
   import was right for a fresh producer process and killed pytest
   collection outright. The gate belongs where the claim is published.
 
+## Post-rebase: what a public checkout said that this host could not
+
+PR #141 was squash-merged mid-cycle, so the remaining work was rebased onto
+the merged `main`. That changed the commit the bundles pin, and a bundle
+pinning an unreachable commit is not evidence -- so the experiment was
+re-produced against the rebased HEAD, member digests byte-identical, ten and
+eight analyzer attestations with nothing unattested, and **49 of 49 pinned
+figures reproduced before the pins moved**.
+
+CI then failed fifteen tests that pass here. Two independent causes, and the
+reproduction is the finding:
+
+* **`host/**` is gitignored, so a throwaway `git worktree` IS a public
+  checkout.** That is where the second defect became visible. The test's
+  module stand-in falls back to the fixture when the private kernel is
+  absent, so one path carried both `module` and `fixture` while `verify()`
+  re-derives every role from the path and called them both `fixture`. The
+  fake asserted what the verifier derives. It now derives them the same way,
+  so the two cannot disagree by construction.
+
+* **One rule, written out twice, drifts.** The attestation seam records an
+  analyzer it could not attest whether or not this bundle dispatches to it;
+  the manifest refuses declarations outside the dispatch set. Both were
+  right; together they made a suite that imported `g33_number_transport`
+  first publish a bundle its own validator rejected -- thirteen tests, and
+  none when that module was not collected first. `dispatched_seeds()` is now
+  the single authority both call.
+
+A fourth pattern to keep beside the three above:
+
+* **A skip is honest; a silent fallback is not.** Every other test that
+  needs the private kernel is `skipif`-ed. The one that quietly substituted
+  a different file instead changed the shape of what it was testing, and the
+  difference only surfaced on a machine that had never seen `host/**`.
+
+### The fix that hid what it fixed
+
+Codex, on that commit: *the public-checkout fix disguises a missing private
+kernel as compiled input.* It did. Naming `host/.../module_mp_kdm6.F` in the
+fake's `sources` traded a VISIBLE CI failure for a SILENT contradiction --
+on a public checkout that file is absent, its digest was a hash of its own
+path, and the manifest pinned the fixture as its module while the provenance
+claimed to have compiled the kernel. Measured: the two records named
+different files, and validation was CLEAN.
+
+That the fabrication survived is the finding. `build_provenance` states the
+fixture and the compiled module TWICE -- at the top, and again in `sources`
+as what the compiler read -- and nothing joined the two. All four mutations
+validated CLEAN against a real published bundle. The same shape as
+`dispatched_seeds`, one file later: **one fact written in two places drifts,
+and the drift is where a forgery lives.**
+
+The join for the module is `compiled_module_sha256`, not `module_path`. A
+build reads the kernel and compiles a GENERATED overlay, so those two are
+different files by design -- binding them refused all five published v7
+bundles. That measurement came before enforcement and corrected the rule,
+which is the discipline working rather than the discipline being followed:
+37 bundles, 0 refused after the correction, and forgery of the overlay
+digest, the fixture digest and the fixture path all refused on a real bundle.
+
+The fake now names the overlay it actually wrote -- which is what a real
+build compiles, since gfortran never opens the kernel -- so nothing has to
+be invented on any checkout.
+
+### The same root, a third time
+
+A full run then failed two tests that no partial run reproduces. The
+attestation record is a module-level dict living for the whole session, so
+whichever test first touches an analyzer fixes its attestability for every
+later one. With all eight seeds already imported, the producer attested
+none, omitted `executed_analyzers`, and the validator refused the omission
+even though `unattested_analyzers` named every seed the bundle dispatched
+to. Refusing an honest confession is, again, a production invariant applied
+to a process that is not the production one. Absence is legal now exactly
+when the declaration covers the dispatched seeds -- partial declarations and
+silence are still refused, and the field still bars decision eligibility.
+
+Public-checkout worktree at the fix: 1850 passed, 240 skipped, 0 failed.
+
+### The check I kept skipping
+
+Twice in this cycle I tightened a validator, ran the module that TESTS the
+validator, and committed -- while the modules that PRODUCE records for it
+went unrun. Both times Codex found it, and both times the reproduction took
+under two minutes. A rule and its fixtures are one change; running half of
+it is not a partial check, it is no check.
+
+A fifth pattern, then, beside the four above:
+
+* **Strengthening a rule is a change to everything that satisfies it.** The
+  blast radius of a validator edit is every producer of the thing validated,
+  and it is knowable before committing -- `grep` for the field.
+
+### Where the shape hardening stops, and why
+
+Owner, mid-cycle: **this system is not built for deployment; scientific
+demonstration is the centre.** That settles a question this cycle had
+started to lose. The last several rounds chased malformed-input crashes
+through every public reader, and each round found more, because the axis has
+no bottom: any location in the document can hold the wrong shape and every
+location is read somewhere.
+
+What is scientifically load-bearing is narrower and sharper:
+
+* **`validate()` must never crash.** It decides whether a bundle is
+  admissible evidence, and a validator that raises is indistinguishable from
+  a bundle nothing examined. The caller sees a crash either way, and the
+  difference between "refused" and "never looked at" is the difference
+  between evidence and no evidence. Measured: 2260 gate calls over every
+  location in a real manifest to depth two, five crash sites, now none.
+
+* **The other readers compute addresses for documents the gate has already
+  accepted.** Their contract is at the boundary now -- a document
+  `validate()` refuses turns a structural error into a refusal, while a
+  document it ACCEPTS lets the exception through untouched, so a genuine
+  defect still surfaces as itself rather than being swallowed. One rule, not
+  a guard per site.
+
+The exhaustive cross-product sweep is retired. It was finding shapes no
+producer in this system emits, at the cost of the work the bundles exist
+for. The gate test stays because the gate's answer is part of the evidence.
+
+### A test that does not run is not a rule
+
+The pin verifier's fail-closed properties -- a missing pin refused, a moved
+figure reported, a renamed archive caught -- were written against the real
+bundles, so ten of the thirteen SKIPPED on every public checkout, which is
+where CI runs (Codex). That is the sentence this cycle had already written
+down about a different table, then repeated three sections later.
+
+The distinction that resolves it: **is the property the tool's, or the
+data's?** "A missing pin is refused" is the tool's, so it is tested on a
+synthetic registry pinning a synthetic bundle, and it runs everywhere. "The
+real pins reproduce" is the data's, and that one alone still needs the
+archive. Ten skips became one.
+
+Ten archive-dependent skips remain elsewhere -- four in the evidence-chain
+tests, six in the manifest tests -- and they are measured, not fixed here:
+several genuinely check properties of the published bundles rather than of
+the code that reads them.
+
+### The anchor, and why it is a tag
+
+PR #142 squash-merged and the branch rebased again, which orphaned the
+commit the two live bundles pin -- `9a763f1c`, carried by `repo_commit` and
+by all three pin blocks in `ncmin-001` and `water-001`. The only remote ref
+holding it was the branch about to be force-pushed.
+
+The chain already names this state (`COMMIT-UNREACHABLE` /
+`commit-local-anchor-only`) and says why it matters: the point of pinning a
+commit is that a reader can go and get it. Re-producing the bundles against
+the merged history would re-anchor them -- and the NEXT squash merge would
+orphan the new anchor exactly the same way, at a full run plus a
+re-verification of 221 pinned figures each time. The treadmill is inherent
+to squash merges.
+
+`refs/tags/` is a trusted ref for precisely this, so the anchor is a tag:
+`g33-evidence-9a763f1c`, pushed BEFORE the branch, so the commit was never
+unreferenced even for the moment of the force-push. Measured after: both
+bundles `matches`.
+
+Across the archive, 20 anchored commits: 19 reachable from a trusted ref,
+one (`2c230729`) local-only and carried by two superseded bundles whose pins
+have already moved.
+
+### Open, and why it is not closed here
+
+Sweeping every nested block for the same defect found two more that accept
+keys nobody declared: `kernel_geometry` and `identity`. Measured -- a
+smuggled key validates CLEAN in both.
+
+It is a lesser hole than the ones closed above: an undeclared key is inert,
+where a nulled or emptied one erased a value something reads. And closing
+it is a **schema bump**, because a stricter key set is a new tag and never a
+new demand on history -- the one discipline this campaign has kept unbroken.
+Both blocks carry their own versioned tags, so `identity` and
+`kernel_geometry` would each move, every published bundle would answer for
+the tag it was published under, and the current experiment would have to be
+re-produced and its 49 figures re-verified before the pins could move again.
+
+That is the next item, not a thing to slip into this one. Recorded with the
+measurement so it is a decision rather than an oversight.
+
 ## Standing NO-GOs (unchanged)
 
 Identity Phase B/C; real mixed-coastal MPI; the `G33-NCMIN-005` mediation

@@ -157,6 +157,7 @@ RUN_CONTENT_SCHEMA = "g33_run_content_v1"
 ANALYSIS_SCHEMA = "g33_analysis_v1"
 
 
+@rm.refuses_a_malformed_manifest
 def canonical_invocations(man: dict) -> list:
     """The member command lines as REQUESTS, not as spellings.
 
@@ -167,7 +168,13 @@ def canonical_invocations(man: dict) -> list:
     the request either. Derived from `expected_run`, which the validator has
     already tied to the literal argv, and sorted.
     """
-    exp = man.get("expected_run") or {}
+    # THE ARGUMENT ITSELF, not only its fields (Codex, generalized from
+    # `identity_digest([])`). These are public readers, so a caller
+    # reaches them with whatever it holds, and a reader that raises has
+    # not answered. `rm._obj` is the same coercion the manifest module
+    # applies, so there is one definition of "read this as a record".
+    man = rm._obj(man)
+    exp = rm._obj(man.get("expected_run"))
     tiles = exp.get("tile_sizes") or ([exp["columns"]]
                                       if isinstance(exp.get("columns"), int)
                                       else None)
@@ -175,8 +182,11 @@ def canonical_invocations(man: dict) -> list:
         ({"nsplit": n, "mode": exp.get("mode"),
           "tile_sizes": list(tiles) if tiles else None,
           "rho_profile": exp.get("rho_profile")}
-         for n in (exp.get("nsplits") or [])),
-        key=lambda d: (d["nsplit"], str(d["mode"]), str(d["tile_sizes"]),
+         for n in rm._seq(exp.get("nsplits"))),
+        # SORTED BY STRING for every part. `nsplits` can carry a non-number
+        # in a malformed manifest, and a mixed-type sort key raised out of
+        # the invocation list rather than producing one (Codex).
+        key=lambda d: (str(d["nsplit"]), str(d["mode"]), str(d["tile_sizes"]),
                        str(d["rho_profile"])))
 
 
@@ -276,7 +286,7 @@ def _graph(man: dict) -> dict:
     opt-out-by-omission, which is exactly what the schema bump before it was
     for (Codex stop-time review).
     """
-    rec = (man.get("identity") or {}).get("role_graph")
+    rec = rm._obj(man.get("identity")).get("role_graph")
     if isinstance(rec, dict) and rec:
         return {m: set(r) for m, r in rec.items()}
     if _requires_block(man):
@@ -287,15 +297,23 @@ def _graph(man: dict) -> dict:
     return roles()
 
 
+@rm.refuses_a_malformed_manifest
 def identity_is_self_contained(man: dict) -> bool:
     """Whether this manifest's ids can be recomputed from the manifest alone."""
-    ident = man.get("identity") or {}
+    # THE ARGUMENT ITSELF, not only its fields (Codex, generalized from
+    # `identity_digest([])`). These are public readers, so a caller
+    # reaches them with whatever it holds, and a reader that raises has
+    # not answered. `rm._obj` is the same coercion the manifest module
+    # applies, so there is one definition of "read this as a record".
+    man = rm._obj(man)
+    ident = rm._obj(man.get("identity"))
     return (ident.get("schema") == IDENTITY_SCHEMA
             and isinstance(ident.get("role_graph"), dict)
             and bool(ident["role_graph"])
             and isinstance(ident.get("analysis_reach"), dict))
 
 
+@rm.refuses_a_malformed_manifest
 def split_analyses(man: dict) -> tuple:
     """(derived, raw) entries of the `analyses` block.
 
@@ -310,8 +328,14 @@ def split_analyses(man: dict) -> tuple:
     REFUSE anything that is neither: an entry nobody can classify must not
     quietly land on the side that happens to be cheaper.
     """
+    # THE ARGUMENT ITSELF, not only its fields (Codex, generalized from
+    # `identity_digest([])`). These are public readers, so a caller
+    # reaches them with whatever it holds, and a reader that raises has
+    # not answered. `rm._obj` is the same coercion the manifest module
+    # applies, so there is one definition of "read this as a record".
+    man = rm._obj(man)
     derived, raw, bad = [], [], []
-    for a in man.get("analyses") or []:
+    for a in rm._seq(man.get("analyses")):
         if not isinstance(a, dict):
             bad.append(a)
         elif a.get("analyzer"):
@@ -372,24 +396,33 @@ def _canonical_lists(man: dict) -> dict:
     an `analyses` entry's `inputs` follow its own sort.
     """
     out = dict(man)
+    # A LIST OF ROWS IS ONLY ROWS IF THEY ARE OBJECTS (Codex). The list check
+    # was here and the row check was not, so `[42]` reached `.get` inside the
+    # sort key and raised out of the id computation. `analyses` below already
+    # guarded its rows; these three did not. A non-row sorts by its own repr:
+    # the canonical order stays total, and `validate()` is where a malformed
+    # document is refused.
+    def _field(e, name, default=""):
+        return e.get(name, default) if isinstance(e, dict) else default
     for key in ("member_parsers", "tracked_build_inputs", "producer_modules"):
         if isinstance(out.get(key), list):
-            out[key] = sorted(out[key], key=lambda e: str(e.get("path", e)))
+            out[key] = sorted(out[key], key=lambda e: str(_field(e, "path", e)))
     if isinstance(out.get("members"), list):
         out["members"] = sorted(
             out["members"],
-            key=lambda e: (e.get("nsplit", 0), str(e.get("mode", "")),
-                           str(e.get("file", ""))))
+            key=lambda e: (_field(e, "nsplit", 0) if isinstance(
+                _field(e, "nsplit", 0), (int, float)) else 0,
+                str(_field(e, "mode")), str(_field(e, "file"))))
     if isinstance(out.get("build_artifacts"), list):
-        out["build_artifacts"] = sorted(out["build_artifacts"],
-                                        key=lambda e: str(e.get("file", e)))
+        out["build_artifacts"] = sorted(
+            out["build_artifacts"], key=lambda e: str(_field(e, "file", e)))
     # An analysis's `inputs` are a set of digested files (owner review §10.2):
     # the chain reads them per-file, nothing reads their order, and
     # `analysis_id` hashes the entry -- so the order must not move the id.
     if isinstance(out.get("analyses"), list):
         out["analyses"] = [
             {**a, "inputs": sorted(a["inputs"],
-                                   key=lambda e: str(e.get("file", e)))}
+                                   key=lambda e: str(_field(e, "file", e)))}
             if isinstance(a, dict) and isinstance(a.get("inputs"), list)
             else a
             for a in out["analyses"]]
@@ -422,12 +455,13 @@ def _by_role(man: dict, role: str) -> list:
     """
     keep = {m for m, r in _graph(man).items() if role in r}
     return content_only(
-        sorted((e for e in (man.get("producer_modules") or [])
+        sorted((e for e in rm._seq(man.get("producer_modules"))
                 if isinstance(e, dict)
                 and Path(str(e.get("path", ""))).stem in keep),
                key=lambda e: str(e.get("path"))))
 
 
+@rm.refuses_a_malformed_manifest
 def run_recipe_id(man: dict) -> str:
     """What was asked for: run-role code, the fixture, the module under test,
     and the argv. NOT the members -- a recipe that changed when its own output
@@ -438,6 +472,12 @@ def run_recipe_id(man: dict) -> str:
     module pins, so passing them through raw put the containing commit into the
     recipe by the back door.
     """
+    # THE ARGUMENT ITSELF, not only its fields (Codex, generalized from
+    # `identity_digest([])`). These are public readers, so a caller
+    # reaches them with whatever it holds, and a reader that raises has
+    # not answered. `rm._obj` is the same coercion the manifest module
+    # applies, so there is one definition of "read this as a record".
+    man = rm._obj(man)
     man = _canonical_lists(man)
     return _digest({
         "modules": _by_role(man, "run"),
@@ -469,6 +509,7 @@ def run_recipe_id(man: dict) -> str:
     })
 
 
+@rm.refuses_a_malformed_manifest
 def run_content_id(man: dict) -> str:
     """The run itself: the recipe, plus the raw members and the build behind
     them. STABLE when an analysis is added, changed or removed -- which is the
@@ -491,6 +532,12 @@ def run_content_id(man: dict) -> str:
     identical sources by different compilers are not the same run content, and
     an id that called them equal would be answering a question nobody asked.
     """
+    # THE ARGUMENT ITSELF, not only its fields (Codex, generalized from
+    # `identity_digest([])`). These are public readers, so a caller
+    # reaches them with whatever it holds, and a reader that raises has
+    # not answered. `rm._obj` is the same coercion the manifest module
+    # applies, so there is one definition of "read this as a record".
+    man = rm._obj(man)
     man = _canonical_lists(man)
     _derived, raw = split_analyses(man)
     keep = {k: v for k, v in man.items()
@@ -530,23 +577,51 @@ def run_content_id(man: dict) -> str:
 def _pins_for(man: dict, modules: set) -> list:
     """The manifest's pins for exactly these modules, reduced to their CONTENT."""
     return content_only(
-        sorted((e for e in (man.get("producer_modules") or [])
+        sorted((e for e in rm._seq(man.get("producer_modules"))
                 if isinstance(e, dict)
                 and Path(str(e.get("path", ""))).stem in modules),
                key=lambda e: str(e.get("path"))))
 
 
+@rm.refuses_a_malformed_manifest
 def analysis_reach(man: dict, name: str) -> set:
     """The modules ONE analysis can reach -- its own closure, not the whole
     analysis role. An id over the role would move every analysis whenever any
     analysis module changed, which is the cost being separated here reproduced
     one layer down."""
-    rec = (man.get("identity") or {}).get("analysis_reach", {})
-    if isinstance(rec, dict) and rec.get(name):
+    # THE ARGUMENT ITSELF, not only its fields (Codex). These two carry a
+    # SECOND required argument, which is how the first sweep missed them:
+    # the discovery filter asked for readers callable with `man` alone,
+    # and that is a convenience of the sweep, not the shape of the
+    # defect. The class is "a public function whose first argument is a
+    # manifest"; the rest the caller supplies.
+    man = rm._obj(man)
+    rec = rm._obj(man.get("identity")).get("analysis_reach", {})
+    # AN ANALYSIS NAME IS A STRING, and a malformed manifest can carry a list
+    # or an object there -- which is unhashable, so the lookup itself raised
+    # before any shape check could speak (Codex). `report()` reached here
+    # through `analysis_id` and died the same way.
+    if not isinstance(name, str):
+        raise ValueError(f"analysis name {name!r} is not a string, so no "
+                         f"recorded reach can be looked up for it")
+    entry = rec.get(name) if isinstance(rec, dict) else None
+    # A RECORDED ENTRY IS A LIST OF MODULE NAMES (Codex). The map was checked
+    # and the entry was not, so `analysis_reach: {"qr_process_ledger": 42}`
+    # reached `set(42)` -- one level below the shape sweep, which replaces
+    # `identity` WHOLESALE and so never leaves a single entry malformed. An
+    # entry that is not a collection of names records no closure, and the
+    # branch below states exactly why recomputing one is not allowed here.
+    if isinstance(entry, (list, tuple, set)) and entry \
+            and all(isinstance(m, str) and m.strip() for m in entry):
         # RECORDED: the closure as it stood when the bundle was made. Recomputing
         # it walks today's import graph, so an analyzer that grew an import
         # since would widen a historical analysis's id (owner priority 8).
-        return set(rec[name])
+        return set(entry)
+    if entry:
+        raise ValueError(
+            f"identity.analysis_reach[{name!r}] is {entry!r}, not a list of "
+            f"module names -- recomputing the closure would walk the "
+            f"reader's imports, not the producer's")
     if _requires_block(man):
         raise ValueError(
             f"schema {man.get('schema')!r} requires an `identity.analysis_reach` "
@@ -565,6 +640,7 @@ def analysis_reach(man: dict, name: str) -> set:
     return _closure(mods)
 
 
+@rm.refuses_a_malformed_manifest
 def analysis_id(man: dict, name: str) -> str:
     """One analysis: the content it read, its own entry, and the code IT can
     reach.
@@ -574,6 +650,13 @@ def analysis_id(man: dict, name: str) -> str:
     this id, and they do -- `analyzer_sha256` and `analyzer_blob_sha` are both
     still in it. The commit that happened to contain them must not.
     """
+    # THE ARGUMENT ITSELF, not only its fields (Codex). These two carry a
+    # SECOND required argument, which is how the first sweep missed them:
+    # the discovery filter asked for readers callable with `man` alone,
+    # and that is a convenience of the sweep, not the shape of the
+    # defect. The class is "a public function whose first argument is a
+    # manifest"; the rest the caller supplies.
+    man = rm._obj(man)
     man = _canonical_lists(man)
     derived, _raw = split_analyses(man)
     entries = [a for a in derived if a.get("analysis") == name]
@@ -595,16 +678,38 @@ graph_violations = rm.graph_violations
 pinned_imports = rm.pinned_imports
 
 
+@rm.refuses_a_malformed_manifest
 def report(man: dict) -> None:
+    # THE ARGUMENT ITSELF, not only its fields (Codex, generalized from
+    # `identity_digest([])`). These are public readers, so a caller
+    # reaches them with whatever it holds, and a reader that raises has
+    # not answered. `rm._obj` is the same coercion the manifest module
+    # applies, so there is one definition of "read this as a record".
+    man = rm._obj(man)
     print(f"  run_recipe_id   {run_recipe_id(man)[:16]}")
     print(f"  run_content_id  {run_content_id(man)[:16]}")
     print(f"  identity_digest {rm.identity_digest(man)[:16]}  (the address today)")
     derived, raw = split_analyses(man)
-    for n in sorted({a["analysis"] for a in derived}):
-        print(f"    {n:28} {analysis_id(man, n)[:16]}"
+    # SORTED BY STRING, and printed as one. A malformed manifest can carry a
+    # non-string `analysis`, and `sorted()` over a mixed set raised out of
+    # the report while `{n:28}` raised on the format -- a reporter that dies
+    # on the document it is reporting says nothing about it (Codex).
+    seen, names = set(), []
+    for a in derived:
+        # A SET NEEDS HASHABLE MEMBERS, and a malformed `analysis` can be a
+        # list or an object: the set comprehension died before the sort or
+        # the format ever ran. Keyed by the printed form, which is what the
+        # report shows anyway.
+        key = str(a["analysis"])
+        if key not in seen:
+            seen.add(key)
+            names.append(a["analysis"])
+    for n in sorted(names, key=str):
+        print(f"    {str(n):28} {analysis_id(man, n)[:16]}"
               f"  reaches {len(analysis_reach(man, n))}")
     for a in sorted(raw, key=lambda a: str(a.get("file"))):
-        print(f"    {a.get('analysis'):28} {'-':>16}  raw content, no analyzer")
+        print(f"    {str(a.get('analysis')):28} {'-':>16}"
+              f"  raw content, no analyzer")
 
 
 if __name__ == "__main__":

@@ -1727,6 +1727,15 @@ def _witness_violations(man: dict, root: Path) -> list:
         got = json.loads(published.read_text())
     except ValueError as e:
         return [f"build_provenance.json is not readable JSON: {e}"]
+    # PARSING SAYS THE SYNTAX IS JSON, NOT THAT THE DOCUMENT IS A RECORD
+    # (Codex). JSON allows an array, a string, a number, `true` and `null` at
+    # the top, and the comparison below reads keys off it -- all five raised
+    # out of the gate instead of failing it, measured. Same defect, same
+    # line, in the collector's own `verify()`.
+    if not isinstance(got, dict):
+        return [f"the published build_provenance.json is a "
+                f"{type(got).__name__}, not a record: there is nothing in it "
+                f"to compare the embedded one against"]
     if got != embedded:
         keys = sorted({k for k in set(got) | set(embedded)
                        if got.get(k) != embedded.get(k)})

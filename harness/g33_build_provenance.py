@@ -223,6 +223,15 @@ def verify(root: Path) -> list:
         got = json.loads(record.read_text())
     except ValueError as e:
         return [f"build_provenance.json is not readable JSON: {e}"]
+    # PARSING SAYS THE SYNTAX IS JSON, NOT THAT THE DOCUMENT IS A RECORD
+    # (Codex). JSON allows an array, a string, a number, `true` and `null` at
+    # the top, so every field read below reached `.get` on something that has
+    # none -- all five raised out of the verification instead of failing it,
+    # measured. The shape check the nested values already get belongs to the
+    # document first: there is nothing to look inside of otherwise.
+    if not isinstance(got, dict):
+        return [f"build_provenance.json is a {type(got).__name__}, not a "
+                f"record: there is nothing in it to verify"]
     # The logs are copied VERBATIM from the build directory while the record
     # is normalised against THREE roots -- the output directory, `$TMPDIR`
     # and the checkout (owner §7) -- so the comparison needs all three, which
@@ -230,10 +239,28 @@ def verify(root: Path) -> list:
     # directory alone left every honest build failing its own verification:
     # reproduced on a real build, `commands.txt is not
     # build_provenance.compile_commands` (Codex).
-    diag = got.get("diagnostic") or {}
+    # A CHECKER REPORTS; it does not crash on the artifact it is judging
+    # (Codex). This is a DIRECT entry point -- `--verify` reads a record off
+    # disk and never passes through the manifest validator -- so the shapes
+    # the roots need are its own to establish. Measured on a tampered
+    # record: a numeric `outdir`, a list `tmpdir` and a non-object
+    # `diagnostic` all raised out of the verification instead of failing it,
+    # and a caller cannot tell a crash from an unhandled bundle.
+    diag = got.get("diagnostic")
+    diag = diag if isinstance(diag, dict) else {}
+    # ABSENT and WRONG are different facts, and the caller acts on which.
+    roots, why = {}, ("so the published logs cannot be normalised the way "
+                      "the record was")
     if not diag.get("outdir"):
-        return ["build_provenance.diagnostic.outdir is missing, so the "
-                "published logs cannot be normalised the way the record was"]
+        return [f"build_provenance.diagnostic.outdir is missing, {why}"]
+    for key in ("outdir", "tmpdir", "repo_root"):
+        val = diag.get(key)
+        if val is None:
+            continue                   # a record that used fewer roots
+        if not isinstance(val, str) or not val.strip():
+            return [f"build_provenance.diagnostic.{key} is {val!r}, not a "
+                    f"path, {why}"]
+        roots[key] = Path(val)
     # EACH ROOT IS USED IF THE RECORD USED IT (Codex). Requiring all three
     # made this refuse every bundle published before §7 -- their records were
     # normalised against the output directory alone, so that is how they have
@@ -243,9 +270,8 @@ def verify(root: Path) -> list:
     # Dropping the roots is not a way past the check: a record normalised
     # with three roots and re-derived with one produces `<TMP>` where the
     # logs hold a literal path, which is a mismatch and is refused.
-    norm = normaliser(Path(diag["outdir"]),
-                      Path(diag["tmpdir"]) if diag.get("tmpdir") else None,
-                      Path(diag["repo_root"]) if diag.get("repo_root") else None)
+    norm = normaliser(roots["outdir"], roots.get("tmpdir"),
+                      roots.get("repo_root"))
     bad = []
     srcs, cmds = root / "sources.txt", root / "commands.txt"
     # ABSENT is not ABSENT-AND-FINE (Codex): skipping the comparison when a

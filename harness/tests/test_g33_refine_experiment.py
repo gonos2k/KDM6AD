@@ -55,12 +55,12 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
         # a fake that logs only the module describes a build with no fixture.
         # the log the record is DERIVED from: one line per role, matching
         # `_FAKE_SOURCES` exactly, or the witness comparison refuses
-        rows = _FAKE_SOURCES(FIX)
+        rows = _FAKE_SOURCES(FIX, ovl)
         (workdir / "sources.txt").write_text(
             "".join(f"{r['path']}\t{r['sha256']}\n" for r in rows))
         (workdir / "staged-map.txt").write_text(
-            "".join(f"{FIX if r['role'] == 'fixture' else MOD}\t{r['path']}\n"
-                    for r in rows))
+            "".join(f"{ {'fixture': FIX, 'module': ovl}.get(r['role'], MOD) }"
+                    f"\t{r['path']}\n" for r in rows))
         # a v6-shaped record: what a real build writes, faked
         (workdir / "build_provenance.json").write_text(json.dumps({
             "module_path": str(MOD),
@@ -70,9 +70,21 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
             "compiler_sha256": "1" * 64,
             "build_script_sha256": "7" * 64,
             "compile_commands": ["gfortran -c fake"],
-            "sources": _FAKE_SOURCES(FIX),
+            "sources": _FAKE_SOURCES(FIX, ovl),
             "compiled_module_sha256": xp.rm.sha256(ovl),
-            "diagnostic": {"outdir": str(workdir)},
+            # WHERE THE BUILD RAN, in full. `verify()` normalises the
+            # published logs by all three roots, so a one-key stand-in
+            # described a build whose record could not be re-derived -- and
+            # v7 holds this to an exact key set for that reason.
+            "diagnostic": {
+                "outdir": str(workdir),
+                "tmpdir": str(workdir / "tmp"),
+                "repo_root": str(REPO),
+                "compiler_path": "/usr/bin/gfortran",
+                "compiler_f951_path": "/usr/libexec/f951",
+                "executable_path": str(exe),
+                "compile_commands_literal": ["gfortran -c fake"],
+            },
             # v7 holds this block to an EXACT key set and a role table, so a
             # fake that carries a subset describes a build that could not have
             # happened (owner review §5).
@@ -162,7 +174,7 @@ MOD = (xp.KERNEL_SOURCES["legacy"]
        else FIX.relative_to(REPO))
 
 
-def _FAKE_SOURCES(fix):
+def _FAKE_SOURCES(fix, ovl):
     """One row per role the v7 contract requires (owner review §5).
 
     The role is DERIVED, never asserted. `verify()` re-derives every role
@@ -172,10 +184,18 @@ def _FAKE_SOURCES(fix):
     `fixture`, and re-derivation called them both `fixture`. Fifteen tests
     failed on CI and none on a host that has `host/**` (measured, in a
     throwaway worktree -- which is what a public checkout is).
+
+    THE MODULE ROW IS THE OVERLAY THIS FAKE ACTUALLY WROTE, which is also
+    what a real build compiles: gfortran never opens `module_mp_kdm6.F`, it
+    opens the overlay generated from it. Naming the private kernel here
+    instead dressed a file that is ABSENT on a public checkout as compiled
+    input, under a digest of its own path (Codex). The overlay exists on
+    every checkout, so nothing has to be invented -- and `sources[module]`
+    now agrees with `compiled_module_sha256`, which v7 requires.
     """
-    rows = [{"path": FIXLOG, "sha256": xp.rm.sha256(fix)}]
-    for path in ("host/KIM-meso_v1.0/phys/module_mp_kdm6.F",
-                 "harness/g33_fortran/g33_refine_driver.f90",
+    rows = [{"path": FIXLOG, "sha256": xp.rm.sha256(fix)},
+            {"path": "module_mp_ovl.F", "sha256": xp.rm.sha256(ovl)}]
+    for path in ("harness/g33_fortran/g33_refine_driver.f90",
                  "harness/g33_fortran/stub_wrf_error.f90",
                  "host/KIM-meso_v1.0/frame/libmassv.F",
                  "host/KIM-meso_v1.0/share/module_model_constants.F",
@@ -183,7 +203,9 @@ def _FAKE_SOURCES(fix):
         # A TRACKED path must carry its real digest: the snapshot holds every
         # compiled source in the repo to its HEAD blob, so a placeholder here
         # would describe a build from bytes that never existed. `host/**` is
-        # gitignored, so those keep a stand-in.
+        # gitignored, so those keep a stand-in -- they are inputs a real build
+        # reads and this fake does not, which is a different thing from
+        # inventing the module the record pins.
         real = REPO / path
         rows.append({"path": path,
                      "sha256": xp.rm.sha256(real) if real.is_file()
@@ -375,12 +397,12 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
         # a fake that logs only the module describes a build with no fixture.
         # the log the record is DERIVED from: one line per role, matching
         # `_FAKE_SOURCES` exactly, or the witness comparison refuses
-        rows = _FAKE_SOURCES(FIX)
+        rows = _FAKE_SOURCES(FIX, ovl)
         (workdir / "sources.txt").write_text(
             "".join(f"{r['path']}\t{r['sha256']}\n" for r in rows))
         (workdir / "staged-map.txt").write_text(
-            "".join(f"{FIX if r['role'] == 'fixture' else MOD}\t{r['path']}\n"
-                    for r in rows))
+            "".join(f"{ {'fixture': FIX, 'module': ovl}.get(r['role'], MOD) }"
+                    f"\t{r['path']}\n" for r in rows))
         # a v6-shaped record: what a real build writes, faked
         (workdir / "build_provenance.json").write_text(json.dumps({
             "module_path": str(MOD),
@@ -390,9 +412,21 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
             "compiler_sha256": "1" * 64,
             "build_script_sha256": "7" * 64,
             "compile_commands": ["gfortran -c fake"],
-            "sources": _FAKE_SOURCES(FIX),
+            "sources": _FAKE_SOURCES(FIX, ovl),
             "compiled_module_sha256": xp.rm.sha256(ovl),
-            "diagnostic": {"outdir": str(workdir)},
+            # WHERE THE BUILD RAN, in full. `verify()` normalises the
+            # published logs by all three roots, so a one-key stand-in
+            # described a build whose record could not be re-derived -- and
+            # v7 holds this to an exact key set for that reason.
+            "diagnostic": {
+                "outdir": str(workdir),
+                "tmpdir": str(workdir / "tmp"),
+                "repo_root": str(REPO),
+                "compiler_path": "/usr/bin/gfortran",
+                "compiler_f951_path": "/usr/libexec/f951",
+                "executable_path": str(exe),
+                "compile_commands_literal": ["gfortran -c fake"],
+            },
             # v7 holds this block to an EXACT key set and a role table, so a
             # fake that carries a subset describes a build that could not have
             # happened (owner review §5).
@@ -1574,6 +1608,18 @@ def test_a_log_that_disagrees_with_the_record_is_refused(tmp_path, edit, expect)
     edit(root)
     got = xp._witness_violations(man, root)
     assert got and expect in got[0], got
+
+
+@pytest.mark.parametrize("text", ["[]", "null", '"/build"', "42", "true"])
+def test_the_witness_REPORTS_a_published_record_that_is_not_an_object(
+        tmp_path, text):
+    """Same defect, same line, in the producer's own witness comparison: it
+    reads keys off whatever the file parsed to, and JSON's top level is not
+    required to be an object (Codex)."""
+    root, man = _witness_bundle(tmp_path)
+    (root / "build_provenance.json").write_text(text)
+    got = xp._witness_violations(man, root)   # must not raise
+    assert got and "not a record" in got[0], got
 
 
 def test_the_log_comparison_does_not_import_the_collector():

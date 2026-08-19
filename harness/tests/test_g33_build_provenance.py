@@ -618,6 +618,58 @@ def test_verification_normalises_against_every_root_the_RECORD_used(tmp_path):
     assert bp.verify(root), "dropping the roots must not clear the check"
 
 
+@pytest.mark.parametrize("text", ["[]", "null", '"/build"', "42", "true"])
+def test_verify_REPORTS_a_record_that_is_not_an_object(tmp_path, text):
+    """Parsing says the SYNTAX is JSON, not that the document is a record.
+
+    JSON allows an array, a string, a number, `true` and `null` at the top,
+    so every field read after the parse reached `.get` on something that has
+    none -- all five raised out of the verification instead of failing it
+    (Codex). The regression beside this one asked about malformed values
+    NESTED in the record and never about the record itself, which is how the
+    document escaped a check its own contents already had.
+    """
+    root = tmp_path / "b"
+    root.mkdir()
+    (root / "sources.txt").write_text("harness/x.f90\t" + "a" * 64 + "\n")
+    (root / "commands.txt").write_text("gfortran -c x\n")
+    (root / "build_provenance.json").write_text(text)
+    got = bp.verify(root)              # must not raise
+    assert got and "not a record" in got[0], got
+
+
+@pytest.mark.parametrize("diag,expect", [
+    ({"outdir": 123}, "not a path"),
+    ({"outdir": "  "}, "not a path"),
+    ({"outdir": "/b", "tmpdir": [1]}, "not a path"),
+    ({"outdir": "/b", "repo_root": {}}, "not a path"),
+    ({}, "is missing"),
+    ([1, 2], "is missing"),
+    ("/build", "is missing"),
+])
+def test_verify_REPORTS_a_malformed_diagnostic_rather_than_crashing(tmp_path,
+                                                                    diag,
+                                                                    expect):
+    """`--verify` is a DIRECT entry point: it reads a record off disk and
+    never passes through the manifest validator, so the shapes the roots
+    need are its own to establish.
+
+    Measured on tampered records -- a numeric `outdir`, a list `tmpdir`, a
+    non-object `diagnostic` -- each raised out of the verification instead
+    of failing it, and a caller cannot tell a crash from an unhandled
+    bundle. Absent and wrong stay different messages, because the caller
+    acts on which.
+    """
+    root = tmp_path / "b"
+    root.mkdir()
+    (root / "sources.txt").write_text("harness/x.f90\t" + "a" * 64 + "\n")
+    (root / "commands.txt").write_text("gfortran -c x\n")
+    (root / "build_provenance.json").write_text(json.dumps({
+        "sources": [], "compile_commands": [], "diagnostic": diag}))
+    got = bp.verify(root)              # must not raise
+    assert got and expect in got[0], got
+
+
 def test_a_record_made_BEFORE_the_extra_roots_still_verifies(tmp_path):
     """Requiring `tmpdir`/`repo_root` made this refuse every bundle published
     before §7: their records were normalised against the output directory

@@ -3,6 +3,7 @@
 """The v2 manifest schema as a CLOSED tagged union (owner §8)."""
 import copy
 import hashlib
+import inspect
 import json
 import sys
 from pathlib import Path
@@ -17,8 +18,18 @@ import g33_refine_manifest as rm  # noqa: E402
 #: Every field and every role the v7 provenance contract requires. A fixture
 #: carrying a subset describes a build that could not have happened.
 def _v7_provenance():
+    """A record that describes a build that could have happened.
+
+    The module row is the OVERLAY, as in every published bundle: gfortran
+    never opens `module_mp_kdm6.F`, it opens the overlay generated from it,
+    so `module_path` and the module row name two different files by design.
+    v7 joins the two records of one file -- `compiled_module_sha256` to the
+    module row, `fixture_path`/`fixture_sha256` to the fixture row -- so a
+    synthetic record that states them independently contradicts itself
+    before any mutation is applied.
+    """
     import g33_build_provenance as bp
-    roles = (("module", "host/KIM-meso_v1.0/phys/module_mp_kdm6.F"),
+    roles = (("module", "module_mp_ovl.F"),
              ("fixture", "harness/g33_fortran/g33_fixture_x_v1.f90"),
              ("driver", "harness/g33_fortran/g33_refine_driver.f90"),
              ("stub", "harness/g33_fortran/stub_wrf_error.f90"),
@@ -26,6 +37,10 @@ def _v7_provenance():
              ("model_constants",
               "host/KIM-meso_v1.0/share/module_model_constants.F"),
              ("radar", "host/KIM-meso_v1.0/phys/module_mp_radar.F"))
+    sources = [{"path": path, "role": role,
+                "sha256": hashlib.sha256(role.encode()).hexdigest()}
+               for role, path in roles]
+    by_role = {r["role"]: r for r in sources}
     return {
         "schema": bp.BUILD_PROVENANCE_SCHEMA,
         "compiler_version": "gfortran (fake) 1.0",
@@ -33,19 +48,29 @@ def _v7_provenance():
         "compiler_f951_sha256": "5" * 64,
         "module_path": "host/KIM-meso_v1.0/phys/module_mp_kdm6.F",
         "module_sha256": "8" * 64,
-        "compiled_module_path": "module_mp_ovl.F",
-        "compiled_module_sha256": "b" * 64,
-        "fixture_path": "harness/g33_fortran/g33_fixture_x_v1.f90",
-        "fixture_sha256": "9" * 64,
+        "compiled_module_path": by_role["module"]["path"],
+        "compiled_module_sha256": by_role["module"]["sha256"],
+        "fixture_path": by_role["fixture"]["path"],
+        "fixture_sha256": by_role["fixture"]["sha256"],
         "build_script_sha256": "7" * 64,
         "executable_sha256": "a" * 64,
-        "sources": [{"path": path, "role": role,
-                     "sha256": hashlib.sha256(role.encode()).hexdigest()}
-                    for role, path in roles],
+        "sources": sources,
         "compile_commands": ["gfortran -c " + path for _r, path in roles],
         "repo_commit": "0" * 40,
         "tree_dirty": False,
-        "diagnostic": {"outdir": "/build"},
+        # WHERE THE BUILD RAN, in full: `verify()` normalises the published
+        # logs by all three roots, so a one-key stand-in described a build
+        # whose record could not be re-derived -- and v7 holds this to an
+        # exact key set for that reason.
+        "diagnostic": {
+            "outdir": "/build",
+            "tmpdir": "/tmp",
+            "repo_root": "/repo",
+            "compiler_path": "/usr/bin/gfortran",
+            "compiler_f951_path": "/usr/libexec/f951",
+            "executable_path": "/build/g33_refine_driver",
+            "compile_commands_literal": ["gfortran -c fake"],
+        },
     }
 
 
@@ -80,7 +105,11 @@ def synthetic_manifest(root):
         "schema": rm.SCHEMA,
         "artifact_type": "refinement_experiment", "arm": "reference",
         "precision": "f32", "instrumented": True, "decision_eligible": False,
-        "is_refinement_chain": True,
+        # FALSE, and recomputed to false: one member cannot halve against
+        # anything. The fixture claimed a chain over a single run, which the
+        # validator now refuses -- the claim is derived from the members, so
+        # a fixture may not state it independently.
+        "is_refinement_chain": False,
         # v4: the experiment the bundle claims to be, and the geometry every
         # member's row is recomputed against (fixture 300 s / 12 splits = 25 s)
         "algorithm": "legacy", "rho_profile": "as-is",
@@ -135,7 +164,11 @@ def synthetic_manifest(root):
         "build_provenance": dict(_v7_provenance(), **{
             "executable_sha256": rm.sha256(root / "g33_refine_driver"),
             # an instrumented build feeds the compiler the GENERATED overlay
-            "compiled_module_sha256": _OVL}),
+            # -- and v7 joins that statement to the `module` source row, so
+            # the overlay's digest has to move in both places at once
+            "compiled_module_sha256": _OVL,
+            "sources": [dict(r, sha256=_OVL) if r["role"] == "module" else r
+                        for r in _v7_provenance()["sources"]]}),
         "module_path": "host/KIM-meso_v1.0/phys/module_mp_kdm6.F",
         "module_sha256": "8" * 64,
         "member_parsers": [pin], "producer_modules": _pins,
@@ -1339,6 +1372,20 @@ def _v7(man):
     (lambda b: b.pop("compiler_f951_sha256", None), "key set"),
     (lambda b: b.__setitem__("smuggled", 1), "key set"),
     (lambda b: b.pop("schema", None), "build_provenance.schema"),
+    # v7 JOINS the two records of one file. Each of these names a different
+    # file, or the same file under a different digest, in exactly one of the
+    # two places the record states it -- and all three validated CLEAN
+    # against a real published bundle before the join existed (Codex).
+    (lambda b: b.__setitem__("sources", [
+        dict(r, sha256="c" * 64) if r["role"] == "module" else r
+        for r in b["sources"]]), "records compiling one file"),
+    (lambda b: b.__setitem__("sources", [
+        dict(r, path="harness/g33_fortran/g33_fixture_other_v1.f90")
+        if r["role"] == "fixture" else r
+        for r in b["sources"]]), "records compiling one file"),
+    (lambda b: b.__setitem__("sources", [
+        dict(r, sha256="d" * 64) if r["role"] == "fixture" else r
+        for r in b["sources"]]), "records compiling one file"),
 ])
 def test_the_provenance_block_is_an_exact_contract(mutate, expect):
     """v6 called this a closed contract and checked only that selected fields
@@ -1354,6 +1401,440 @@ def test_the_provenance_block_is_an_exact_contract(mutate, expect):
     mutate(v7["build_provenance"])
     bad = [b for b in rm.validate(v7) if "build_provenance" in b]
     assert bad and any(expect in b for b in bad), (expect, rm.validate(v7))
+
+
+@pytest.mark.parametrize("mutate,expect", [
+    (lambda b: b.__setitem__("sources", [
+        dict(r, sha256="c" * 64) if r["role"] == "module" else r
+        for r in b["sources"]]), "compiled_module_sha256"),
+    (lambda b: b.__setitem__("sources", [
+        dict(r, path="harness/g33_fortran/g33_fixture_other_v1.f90")
+        if r["role"] == "fixture" else r
+        for r in b["sources"]]), "fixture_path"),
+    (lambda b: b.__setitem__("sources", [
+        dict(r, sha256="d" * 64) if r["role"] == "fixture" else r
+        for r in b["sources"]]), "fixture_sha256"),
+])
+def test_the_record_cannot_pin_one_file_and_compile_another(tmp_path, mutate,
+                                                            expect):
+    """SYNTHETIC, so a public checkout checks it too.
+
+    The mutation table above needs a published bundle and therefore skips
+    everywhere CI runs -- which is where a rule is most likely to regress
+    unnoticed. This is a property of the SCHEMA, not of any one bundle.
+    """
+    man = synthetic_manifest(tmp_path)
+    assert rm.validate(man) == [], rm.validate(man)[:2]
+    mutate(man["build_provenance"])
+    bad = rm.validate(man)
+    assert any(expect in v and "records compiling one file" in v
+               for v in bad), (expect, bad[:3])
+
+
+@pytest.mark.parametrize("mutate,expect", [
+    (lambda m: m.__setitem__("is_refinement_chain", None), "carries no value"),
+    (lambda m: m.__setitem__("is_refinement_chain",
+                             not m["is_refinement_chain"]), "disagree"),
+])
+def test_the_chain_claim_is_recomputed_from_its_own_members(tmp_path, mutate,
+                                                            expect):
+    """`is_refinement_chain` says the members halve step by step, and nothing
+    read it -- not this validator, not the evidence chain, not the overlay.
+    The field could say True over members that do nothing of the kind and
+    every gate stayed quiet."""
+    man = synthetic_manifest(tmp_path)
+    assert rm.validate(man) == [], rm.validate(man)[:2]
+    mutate(man)
+    bad = rm.validate(man)
+    assert any("is_refinement_chain" in v and expect in v for v in bad), bad[:3]
+
+
+@pytest.mark.parametrize("label,value", [
+    ("null", None), ("an empty string", ""), ("an empty list", []),
+    ("an empty object", {}), ("zero", 0),
+])
+def test_no_required_provenance_field_may_be_emptied(tmp_path, label, value):
+    """Presence satisfies the exact key set; every spelling of EMPTY
+    satisfied it too.
+
+    Refusing `null` alone refused one spelling of the same erasure -- `""`,
+    `[]` and `{}` went on passing for the same five fields (Codex). Asked of
+    every field and every spelling, because a test that named one of each is
+    what let this through the first time. Shape, not truthiness:
+    `tree_dirty: false` is a claim and must keep passing, which the clean
+    baseline asserts.
+    """
+    man = synthetic_manifest(tmp_path)
+    assert rm.validate(man) == [], rm.validate(man)[:2]
+    silent = []
+    for key in sorted(rm._BUILD_PROVENANCE_KEYS):
+        one = json.loads(json.dumps(man))
+        one["build_provenance"][key] = value
+        if not rm.validate(one):
+            silent.append(key)
+    assert not silent, f"{label} passes for {silent}"
+
+
+@pytest.mark.parametrize("label,value", [
+    ("null", None), ("an empty string", ""), ("an empty list", []),
+    ("an empty object", {}), ("zero", 0),
+])
+def test_no_top_level_field_may_be_emptied_or_crash_the_checker(tmp_path,
+                                                                label, value):
+    """The same question, one level up -- and it caught two checkers that
+    died on the artifact they were judging (`members` as ints, `algorithm`
+    as a list). A validator that raises has not refused anything: the caller
+    sees a crash, not a verdict, and a crash is what an unhandled bundle
+    looks like too."""
+    man = synthetic_manifest(tmp_path)
+    assert rm.validate(man) == [], rm.validate(man)[:2]
+    silent = []
+    for key in sorted(man):
+        if key == "build_provenance":
+            continue                   # walked field by field above
+        one = json.loads(json.dumps(man))
+        one[key] = value
+        if not rm.validate(one):       # raising here fails the test, as it must
+            silent.append(key)
+    assert not silent, f"{label} passes for {silent}"
+
+
+@pytest.mark.parametrize("label,value", [
+    ("null", None), ("an empty string", ""), ("a number", 123),
+    ("an empty list", []), ("an empty object", {}),
+])
+def test_no_diagnostic_field_may_be_emptied(tmp_path, label, value):
+    """`diagnostic` was held to being a non-empty object and nothing more,
+    so nested junk validated and then broke re-derivation (Codex).
+
+    `verify()` reads `outdir` and normalises the published logs by all three
+    roots -- and `Path(123)` raises, so an invalid value there did not fail
+    the check, it crashed it. Two paths stay optional because the collector
+    writes null when no f951 and no executable were found, which the null
+    case below asserts rather than assumes.
+    """
+    man = synthetic_manifest(tmp_path)
+    assert rm.validate(man) == [], rm.validate(man)[:2]
+    optional_null = {"compiler_f951_path", "executable_path"}
+    empty_list_ok = {"compile_commands_literal"}
+    silent = []
+    for key in sorted(rm._DIAGNOSTIC_KEYS):
+        if value is None and key in optional_null:
+            continue                   # a real build records null here
+        if value == [] and key in empty_list_ok:
+            continue                   # no commands is a shape, not a hole
+        one = json.loads(json.dumps(man))
+        one["build_provenance"]["diagnostic"][key] = value
+        if not any("diagnostic" in v for v in rm.validate(one)):
+            silent.append(key)
+    assert not silent, f"{label} passes for {silent}"
+
+
+def test_the_diagnostic_is_an_exact_key_set(tmp_path):
+    """A key nothing declares is a key nothing checks."""
+    man = synthetic_manifest(tmp_path)
+    assert rm.validate(man) == [], rm.validate(man)[:2]
+    smuggled = json.loads(json.dumps(man))
+    smuggled["build_provenance"]["diagnostic"]["where_else"] = "/elsewhere"
+    assert any("diagnostic is not the v7 key set" in v
+               for v in rm.validate(smuggled))
+    dropped = json.loads(json.dumps(man))
+    dropped["build_provenance"]["diagnostic"].pop("repo_root")
+    assert any("diagnostic is not the v7 key set" in v
+               for v in rm.validate(dropped))
+
+
+def test_the_optional_diagnostic_paths_really_are_optional(tmp_path):
+    """The collector writes null for an f951 and an executable it did not
+    find, so refusing null there would refuse a build that really happened."""
+    man = synthetic_manifest(tmp_path)
+    for key in ("compiler_f951_path", "executable_path"):
+        man["build_provenance"]["diagnostic"][key] = None
+    assert rm.validate(man) == [], rm.validate(man)[:2]
+
+
+@pytest.mark.parametrize("text", ["[]", "null", '"x"', "42", "true", "{}"])
+def test_no_field_of_any_wrong_json_type_can_crash_the_validator(tmp_path,
+                                                                 text):
+    """Every top-level field against every JSON root -- the CLASS, not the
+    case in front of me.
+
+    `x or []` filters the FALSY wrong types and passes `42` and `true`
+    straight into a `for` loop, so twelve of these raised out of the
+    validation instead of failing it (Codex). A validator that raises has
+    not refused anything. Asked as a sweep because fixing the site Codex
+    named would have left the other eleven, which is exactly how the
+    previous two rounds went.
+    """
+    man = synthetic_manifest(tmp_path)
+    assert rm.validate(man) == [], rm.validate(man)[:2]
+    value = json.loads(text)
+    silent = []
+    for key in sorted(man):
+        if man[key] == value:
+            continue               # not a mutation
+        one = json.loads(json.dumps(man))
+        one[key] = value
+        if not rm.validate(one):   # raising here fails the test, as it must
+            silent.append(key)
+    assert not silent, f"{text} passes for {silent}"
+
+
+@pytest.mark.parametrize("text", [
+    "[]", "null", '"x"', "42", "true", "{}", "[42]", "[null]",
+    '[{"path":42}]', '{"role_graph":42}',
+])
+def test_NO_public_reader_crashes_on_a_malformed_manifest(text):
+    """Every public function that takes a manifest, found by SIGNATURE.
+
+    The defences went in at `validate()`'s entry, so every entry point that
+    does not cross that door stayed exposed -- `graph_violations` and
+    `identity_digest` both died on pin containers (Codex). Same structure as
+    `verify()` two rounds earlier: a guard on the door is not a guard on the
+    code that walks.
+
+    Discovered rather than listed, so a reader added later is covered the
+    day it is added instead of the round after someone finds it.
+    """
+    man = _real_v6_manifest_here()
+    if man is None:
+        pytest.skip("no bundle on this host")
+    readers = []
+    for name, fn in vars(rm).items():
+        if name.startswith("_") or not inspect.isfunction(fn):
+            continue
+        if getattr(fn, "__module__", None) != rm.__name__:
+            continue
+        params = list(inspect.signature(fn).parameters.values())
+        if params and params[0].name == "man" and all(
+                p.default is not p.empty for p in params[1:]):
+            readers.append((name, fn))
+    assert len(readers) >= 6, [n for n, _ in readers]
+    value, died = json.loads(text), []
+    for key in sorted(man):
+        broken = json.loads(json.dumps(man))
+        broken[key] = value
+        for name, fn in readers:
+            try:
+                fn(broken)
+            except rm.BlobUnavailable:
+                pass               # a pin this host cannot resolve, not a shape
+            except Exception as e:
+                died.append(f"{name}({key}={text}) {type(e).__name__}")
+    assert not died, died[:5]
+
+
+#: Filled in for readers that take more than the manifest. Asserted rather
+#: than skipped: a reader taking something new must fail the sweep, not
+#: quietly leave it -- that was the defect one round after the sweep existed.
+_READER_ARGS = {"name": "qr_process_ledger", "blobs": None, "published": ()}
+
+
+def _public_readers():
+    """Every public function whose FIRST argument is a manifest, in both
+    modules, found by signature so one added later is covered the day it is
+    added."""
+    import g33_identity as gi
+    import inspect as _i
+    out = []
+    for mod in (rm, gi):
+        for name, fn in vars(mod).items():
+            if name.startswith("_") or not _i.isfunction(fn):
+                continue
+            if getattr(fn, "__module__", None) != mod.__name__:
+                continue
+            params = list(_i.signature(fn).parameters.values())
+            if not params or params[0].name != "man":
+                continue
+            required = [p for p in params[1:] if p.default is p.empty]
+            missing = [p.name for p in required if p.name not in _READER_ARGS]
+            assert not missing, (
+                f"{mod.__name__}.{name} takes {missing}, which the sweep "
+                f"cannot supply -- add it to _READER_ARGS rather than "
+                f"letting the reader go unswept")
+            out.append((f"{mod.__name__}.{name}", fn,
+                        tuple(_READER_ARGS[p.name] for p in required)))
+    assert len(out) >= 15, [n for n, _, _ in out]
+    return out
+
+
+def _paths(doc, prefix=(), depth=2):
+    """Every location in the document, to `depth` levels.
+
+    Replacing a TOP-LEVEL field wholesale never leaves one entry of a nested
+    map malformed, which is where `analysis_reach[name] = 42` lived (Codex).
+    """
+    if depth < 0:
+        return
+    items = (doc.items() if isinstance(doc, dict)
+             else enumerate(doc[:2]) if isinstance(doc, list) else ())
+    for key, value in items:
+        yield prefix + (key,)
+        yield from _paths(value, prefix + (key,), depth - 1)
+
+
+#: The three readers that re-read every pinned blob, ~1 s per call. The sweep
+#: is quadratic in reader x location, so they are covered at the top level --
+#: where the pin blocks they walk actually live -- and left out of the deeper
+#: passes rather than turning one test into a ten-minute one.
+_SLOW_READERS = ("pinned_blobs", "pinned_imports", "graph_violations")
+
+
+def _sweep_public_readers(man, value, depth=0, skip_slow=False):
+    """`man` with each location replaced by `value`, through every reader.
+
+    `report()` prints, so stdout is swallowed. Only two escapes are allowed,
+    and they are NARROW on purpose: `BlobUnavailable` is a pin this host
+    cannot resolve, and `ValueError` is what these readers raise to REFUSE a
+    record they will not recompute from. A blanket `except KeyError,
+    ValueError` had been hiding whatever else landed in those classes, which
+    is how a sweep reports zero while a crash is still there.
+    """
+    import contextlib
+    import io
+    died = []
+    locations = ([()] if not isinstance(man, dict)
+                 else sorted(set(_paths(man, depth=depth))))
+    for location in locations:
+        broken = value if not location else json.loads(json.dumps(man))
+        target = broken
+        for key in location[:-1]:
+            target = target[key]
+        if location:
+            target[location[-1]] = value
+        for label, fn, args in _public_readers():
+            if skip_slow and label.split(".")[-1] in _SLOW_READERS:
+                continue
+            try:
+                with contextlib.redirect_stdout(io.StringIO()):
+                    fn(broken, *args)
+            except (rm.BlobUnavailable, rm.PinConflict, ValueError, KeyError):
+                # NARROW, and by KIND rather than by message. `ValueError` and
+                # `KeyError` are how these readers REFUSE a record they will
+                # not recompute from -- `analysis_id` raises `KeyError("no
+                # derived analysis named ...")`, a sentence, not a key -- so
+                # matching on the text was reading an error message as an
+                # interface. What is under test is that a malformed document
+                # produces the SAME refusal an empty one does, never a
+                # `TypeError` or an `AttributeError` that depends on which
+                # wrong shape arrived.
+                pass
+            except Exception as e:
+                died.append(f"{label}({'.'.join(map(str, location))}="
+                            f"{value!r}) {type(e).__name__}")
+    assert not died, died[:5]
+
+
+@pytest.mark.parametrize("text", [
+    "[42]", "[null]", '[{"path":42}]', '[[1]]', '[{"inputs":42}]',
+    '{"analysis_reach":42}', '{"role_graph":"x"}', '{"analysis_seeds":42}',
+])
+def test_the_GATE_never_crashes_on_a_malformed_manifest(text):
+    """`validate()` decides whether a bundle is admissible evidence, so it
+    is the one reader that must always ANSWER.
+
+    A validator that raises is indistinguishable from a bundle nothing
+    handled -- the caller sees a crash either way, and the difference
+    between "refused" and "never examined" is the difference between
+    evidence and no evidence. That is why this axis is worth a test here and
+    is not chased through every reader: the other readers compute addresses
+    for documents the gate has already accepted.
+
+    Measured before this was true: 2260 gate calls over every location in a
+    real manifest to depth two, five crash sites, now none.
+    """
+    man = _real_v6_manifest_here()
+    if man is None:
+        pytest.skip("no bundle on this host")
+    value = json.loads(text)
+    for location in sorted(set(_paths(man, depth=2))):
+        broken = json.loads(json.dumps(man))
+        target = broken
+        for key in location[:-1]:
+            target = target[key]
+        target[location[-1]] = value
+        rm.validate(broken)            # raising here fails the test, as it must
+
+
+@pytest.mark.parametrize("value", [42, "x", {}, [42], [None], True, [""], []])
+def test_a_RECORDED_reach_entry_that_is_not_module_names_is_refused(value):
+    """One level below the shape sweep, which replaces `identity` WHOLESALE
+    and so never leaves a single entry malformed.
+
+    The map was checked and the entry was not, so
+    `analysis_reach: {"qr_process_ledger": 42}` reached `set(42)` (Codex).
+    An entry that is not a non-empty collection of module names records no
+    closure, and recomputing one here would walk the READER's imports rather
+    than the producer's -- which is exactly what the recorded block exists
+    to prevent, so this refuses rather than falling through.
+    """
+    import g33_identity as gi
+    man = _real_v6_manifest_here()
+    if man is None or not (man.get("identity") or {}).get("analysis_reach"):
+        pytest.skip("no bundle with a recorded reach on this host")
+    name = sorted(man["identity"]["analysis_reach"])[0]
+    broken = json.loads(json.dumps(man))
+    broken["identity"]["analysis_reach"][name] = value
+    with pytest.raises(ValueError):
+        gi.analysis_reach(broken, name)
+    # ...and the healthy record still answers
+    assert gi.analysis_reach(man, name)
+
+
+@pytest.mark.parametrize("value", [[], None, "x", 42, True, (), 0.5])
+def test_NO_public_reader_crashes_on_a_manifest_that_is_not_one(value):
+    """THE ARGUMENT ITSELF is an axis, and no field coverage reaches it.
+
+    The field sweep varies a real manifest's fields, so `man` was a dict in
+    every one of its calls -- and seven of eight readers died the moment
+    `man` was the wrong thing (Codex, on `identity_digest([])`), with six
+    more in `g33_identity` that naming the site would have left.
+    """
+    _sweep_public_readers(value, value)
+
+
+def test_every_container_the_rules_walk_is_judged_at_the_entry():
+    """A container added to the manifest without an entry here is one a
+    later rule can die on."""
+    named = {k for k, _, _ in rm._TOP_LEVEL_CONTAINERS}
+    assert "analyses" in named and "build_provenance" in named
+    assert all(kind in (list, dict) for _, kind, _ in rm._TOP_LEVEL_CONTAINERS)
+
+
+def test_the_shape_table_covers_the_whole_contract():
+    """A field added to the key set with no shape beside it is a field that
+    can be emptied -- which is the defect above, one release later."""
+    named = {k for k, _, _ in rm._BUILD_PROVENANCE_SHAPES}
+    assert named == rm._BUILD_PROVENANCE_KEYS, named ^ rm._BUILD_PROVENANCE_KEYS
+
+
+@pytest.mark.parametrize("declare,clean", [
+    (lambda seeds: sorted(seeds), True),
+    (lambda seeds: sorted(seeds)[:3], False),
+    (lambda seeds: None, False),
+])
+def test_a_bundle_that_attested_NOTHING_may_say_so(tmp_path, declare, clean):
+    """Absence of `executed_analyzers` is an omission unless the bundle
+    already named every seed it dispatched to as unattested.
+
+    Refusing that case meant a producer sharing an interpreter -- the suite,
+    where an earlier module has already imported the analyzers -- could not
+    publish at all: the same shape as refusing at import, a production
+    invariant applied to a process that is not the production one. A bundle
+    carrying `unattested_analyzers` can never be decision evidence, which is
+    what makes the confession safe to accept.
+    """
+    man = synthetic_manifest(tmp_path)
+    man.pop("executed_analyzers", None)
+    named = declare(rm.dispatched_seeds(man))
+    if named is not None:
+        man["unattested_analyzers"] = named
+        man["decision_eligible"] = False
+    bad = rm.validate(man)
+    if clean:
+        assert bad == [], bad[:2]
+    else:
+        assert any("omitting the record" in v for v in bad), bad[:3]
 
 
 def test_a_v6_bundle_answers_for_the_v6_contract():
