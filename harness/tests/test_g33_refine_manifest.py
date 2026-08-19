@@ -1552,6 +1552,41 @@ def test_the_optional_diagnostic_paths_really_are_optional(tmp_path):
     assert rm.validate(man) == [], rm.validate(man)[:2]
 
 
+@pytest.mark.parametrize("text", ["[]", "null", '"x"', "42", "true", "{}"])
+def test_no_field_of_any_wrong_json_type_can_crash_the_validator(tmp_path,
+                                                                 text):
+    """Every top-level field against every JSON root -- the CLASS, not the
+    case in front of me.
+
+    `x or []` filters the FALSY wrong types and passes `42` and `true`
+    straight into a `for` loop, so twelve of these raised out of the
+    validation instead of failing it (Codex). A validator that raises has
+    not refused anything. Asked as a sweep because fixing the site Codex
+    named would have left the other eleven, which is exactly how the
+    previous two rounds went.
+    """
+    man = synthetic_manifest(tmp_path)
+    assert rm.validate(man) == [], rm.validate(man)[:2]
+    value = json.loads(text)
+    silent = []
+    for key in sorted(man):
+        if man[key] == value:
+            continue               # not a mutation
+        one = json.loads(json.dumps(man))
+        one[key] = value
+        if not rm.validate(one):   # raising here fails the test, as it must
+            silent.append(key)
+    assert not silent, f"{text} passes for {silent}"
+
+
+def test_every_container_the_rules_walk_is_judged_at_the_entry():
+    """A container added to the manifest without an entry here is one a
+    later rule can die on."""
+    named = {k for k, _, _ in rm._TOP_LEVEL_CONTAINERS}
+    assert "analyses" in named and "build_provenance" in named
+    assert all(kind in (list, dict) for _, kind, _ in rm._TOP_LEVEL_CONTAINERS)
+
+
 def test_the_shape_table_covers_the_whole_contract():
     """A field added to the key set with no shape beside it is a field that
     can be emptied -- which is the defect above, one release later."""

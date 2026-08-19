@@ -290,6 +290,24 @@ def at_least(schema: str, floor: str) -> bool:
     return _SCHEMA_RANK.get(schema, -1) >= _SCHEMA_RANK[floor]
 
 
+def _obj(v) -> dict:
+    """The value as an OBJECT, or an empty one -- never a crash.
+
+    `x or {}` filters `None`, `[]` and `""` and passes `"x"`, `42` and
+    `true` straight through to the next `.get`, which raises out of the
+    validation instead of failing it (Codex). Falsiness is not a type check
+    -- the same distinction that turned `if not bp[k]` into a shape table
+    one contract earlier. The wrong TYPE is still reported by whichever rule
+    owns the field; this only stops the reader dying before that rule runs.
+    """
+    return v if isinstance(v, dict) else {}
+
+
+def _seq(v) -> list:
+    """...and the same for a value that should be a list."""
+    return v if isinstance(v, list) else []
+
+
 def _hexlen(v, n) -> bool:
     return isinstance(v, str) and len(v) == n and \
         all(c in "0123456789abcdef" for c in v.lower())
@@ -498,7 +516,7 @@ def _identity_slice_violations(man: dict, graph: dict, reach: dict) -> list:
     not cover the bytes that produced the analysis (Codex stop-time review).
     """
     prod = {e["path"].rsplit("/", 1)[-1][:-3]
-            for e in man.get("producer_modules") or []
+            for e in _seq(man.get("producer_modules"))
             if isinstance(e, dict) and isinstance(e.get("path"), str)
             and e["path"].endswith(".py")}
     bad = []
@@ -530,8 +548,8 @@ def _identity_slice_violations(man: dict, graph: dict, reach: dict) -> list:
 
 def _identity_covers(man: dict) -> list:
     """Analyses the bundle carries that its recorded reach map does not."""
-    reach = ((man.get("identity") or {}).get("analysis_reach") or {})
-    carried = {a.get("analysis") for a in (man.get("analyses") or [])
+    reach = _obj(_obj(man.get("identity")).get("analysis_reach"))
+    carried = {a.get("analysis") for a in _seq(man.get("analyses"))
                if isinstance(a, dict)} - {"arm_stream"}
     return sorted(carried - set(reach))
 
@@ -703,7 +721,7 @@ def graph_violations(man: dict) -> list:
       ones. Deriving it from `analyses` rather than from a registry keeps the
       check a function of the document.
     """
-    ident = man.get("identity") or {}
+    ident = _obj(man.get("identity"))
     graph, reach = ident.get("role_graph"), ident.get("analysis_reach")
     if not isinstance(graph, dict) or not isinstance(reach, dict):
         return []                       # shape is the schema's business
@@ -735,7 +753,7 @@ def graph_violations(man: dict) -> list:
     # Registry keys stay even when this bundle publishes none of them: the
     # dispatcher imports those modules whatever one bundle produced, so the cut
     # needs them. What goes is the freedom to invent a key.
-    published = {a["analysis"] for a in man.get("analyses") or []
+    published = {a["analysis"] for a in _seq(man.get("analyses"))
                  if isinstance(a, dict) and a.get("analyzer")
                  and isinstance(a.get("analysis"), str)}
     want_keys = set(registry) | published
@@ -790,6 +808,27 @@ def graph_violations(man: dict) -> list:
 
 
 
+#: The top-level fields every rule reaches into, and what each must BE. A
+#: wrong type here is a violation in its own right; judging them once at the
+#: entry also stops a later rule dying on the artifact it is judging.
+_TOP_LEVEL_CONTAINERS = (
+    ("analyses", list, "a list"),
+    ("members", list, "a list"),
+    ("build_artifacts", list, "a list"),
+    ("member_parsers", list, "a list"),
+    ("producer_modules", list, "a list"),
+    ("tracked_build_inputs", list, "a list"),
+    ("executed_analyzers", list, "a list"),
+    ("unattested_analyzers", list, "a list"),
+    ("findings", list, "a list"),
+    ("runtime_argv", list, "a list"),
+    ("identity", dict, "an object"),
+    ("kernel_geometry", dict, "an object"),
+    ("expected_run", dict, "an object"),
+    ("build_provenance", dict, "an object"),
+)
+
+
 def validate(man: dict) -> list:
     """Everything wrong with this manifest, as a list of sentences.
 
@@ -803,6 +842,19 @@ def validate(man: dict) -> list:
     if not isinstance(man, dict):
         return [f"top level is {type(man).__name__}, not an object"]
     bad = []
+    # THE CONTAINERS, JUDGED ONCE, BEFORE ANYTHING WALKS THEM (Codex,
+    # generalized). Every rule below reaches into these, and `x or []` filters
+    # only the FALSY wrong types -- `42` and `true` went straight through to a
+    # `for` loop and raised out of the validation instead of failing it.
+    # Measured by sweeping every top-level field against every JSON root:
+    # twelve crashes, all of this one shape. Reported here and then read as
+    # empty for the rest of the pass, so the wrong type is a VIOLATION and the
+    # rules that depend on it still get to say their piece.
+    man = dict(man)
+    for key, kind, what in _TOP_LEVEL_CONTAINERS:
+        if key in man and not isinstance(man[key], kind):
+            bad.append(f"{key} is a {type(man[key]).__name__}, not {what}")
+            man[key] = kind()
     if man.get("artifact_type") != "refinement_experiment":
         bad.append(f"artifact_type {man.get('artifact_type')!r} is not "
                    f"'refinement_experiment'")
@@ -864,7 +916,7 @@ def validate(man: dict) -> list:
                            "required for an instrumented build: the compiler "
                            "was fed the generated overlay, not the module")
             arts = {a.get("file"): a.get("sha256")
-                    for a in (man.get("build_artifacts") or [])
+                    for a in _seq(man.get("build_artifacts"))
                     if isinstance(a, dict)}
             if "module_mp_ovl.F" not in arts:
                 bad.append("build_artifacts must publish module_mp_ovl.F: the "
@@ -940,7 +992,7 @@ def validate(man: dict) -> list:
             # against each other are one statement and one decoration
             # (owner §8.4).
             got = {a.get("file"): a.get("sha256") for a in arts}
-            want = (man.get("build_provenance") or {}).get("executable_sha256")
+            want = _obj(man.get("build_provenance")).get("executable_sha256")
             if want and got.get("g33_refine_driver") != want:
                 bad.append(
                     f"build_artifacts records g33_refine_driver as "
@@ -951,7 +1003,7 @@ def validate(man: dict) -> list:
     # non-empty `analyses`: one arm_stream satisfied that while carrying none
     # of them (owner §8.3).
     if man.get("instrumented") is True:
-        kinds = {a.get("analysis") for a in (man.get("analyses") or [])
+        kinds = {a.get("analysis") for a in _seq(man.get("analyses"))
                  if isinstance(a, dict)}
         absent = [k for k in REQUIRED_WHEN_INSTRUMENTED if k not in kinds]
         if absent:
@@ -981,7 +1033,7 @@ def validate(man: dict) -> list:
     # this closes the identical ones, and the per-block ones.
     def _dupes(rows, key):
         seen, out = set(), []
-        for r in rows or []:
+        for r in _seq(rows):
             if isinstance(r, dict) and (k := key(r)) is not None:
                 if k in seen:
                     out.append(k)
@@ -997,7 +1049,7 @@ def validate(man: dict) -> list:
         bad.append(f"build_artifacts records {d!r} twice")
     for d in _dupes(man.get("analyses"), lambda e: e.get("file")):
         bad.append(f"analyses records {d!r} twice")
-    for i, a in enumerate(man.get("analyses") or []):
+    for i, a in enumerate(_seq(man.get("analyses"))):
         if isinstance(a, dict):
             for d in _dupes(a.get("inputs"), lambda e: e.get("file")):
                 bad.append(f"analyses[{i}].inputs records {d!r} twice")
@@ -1029,7 +1081,7 @@ def validate(man: dict) -> list:
     # against is the precision it declares about itself.
     prec = man.get("precision")
     if prec:
-        wrong = sorted({a.get("analysis") for a in (man.get("analyses") or [])
+        wrong = sorted({a.get("analysis") for a in _seq(man.get("analyses"))
                         if isinstance(a, dict)
                         and a.get("analysis") in ANALYSIS_PRECISIONS
                         and not applicable(a["analysis"], prec)})
@@ -1285,8 +1337,8 @@ def dispatched_seeds(man: dict) -> set:
     the producer therefore published a bundle its own validator rejected
     (measured, 13 tests, collection-order dependent).
     """
-    seeds = (man.get("identity") or {}).get("analysis_seeds") or {}
-    names = {a.get("analysis") for a in (man.get("analyses") or [])
+    seeds = _obj(_obj(man.get("identity")).get("analysis_seeds"))
+    names = {a.get("analysis") for a in _seq(man.get("analyses"))
              if isinstance(a, dict)}
     return {seeds[n] for n in names if isinstance(seeds.get(n), str)}
 
@@ -1309,7 +1361,7 @@ def _executed_analyzer_violations(man: dict) -> list:
     # made omitting it a way to skip the whole check, and `analyses` proves
     # analyzers ran -- the manifest's own `analysis_seeds` names which module
     # each analysis dispatched to, so the expected set is not a guess.
-    names = {a.get("analysis") for a in (man.get("analyses") or [])
+    names = {a.get("analysis") for a in _seq(man.get("analyses"))
              if isinstance(a, dict)}
     expected = dispatched_seeds(man)
     # A bundle that could not attest everything says so, and saying so is
@@ -1320,7 +1372,7 @@ def _executed_analyzer_violations(man: dict) -> list:
                 not all(isinstance(x, str) and x for x in cannot):
             return ["unattested_analyzers must be a non-empty list of module "
                     "names when present"]
-        named = {r.get("module") for r in (man.get("executed_analyzers") or [])
+        named = {r.get("module") for r in _seq(man.get("executed_analyzers"))
                  if isinstance(r, dict)}
         both = sorted(set(cannot) & named)
         if both:
@@ -1363,7 +1415,7 @@ def _executed_analyzer_violations(man: dict) -> list:
     bad, seen = [], {}
     pins = {}
     for group in ("producer_modules", "member_parsers"):
-        for pin in man.get(group) or []:
+        for pin in _seq(man.get(group)):
             if isinstance(pin, dict) and isinstance(pin.get("path"), str):
                 pins[Path(pin["path"]).stem] = pin.get("content_sha256")
     for i, row in enumerate(ran):
@@ -1392,7 +1444,7 @@ def _executed_analyzer_violations(man: dict) -> list:
     # vouch" and "never ran at all", which is what the field would then be
     # for (Codex). The multi-run analyzers reach their module through the
     # seam now, so both lists together can cover the seeds.
-    declared = set(seen) | set(man.get("unattested_analyzers") or [])
+    declared = set(seen) | set(_seq(man.get("unattested_analyzers")))
     short = sorted(expected - declared)
     if short:
         bad.append(f"{short} produced analyses in this bundle and are named "
@@ -1790,7 +1842,7 @@ def _expected_run_violations(man: dict, members: list) -> list:
     # decomposition is what that analysis is for, and each is checked
     # against its own recorded runtime_argv.
     if isinstance(tiles, list):
-        for i, a in enumerate(man.get("analyses") or []):
+        for i, a in enumerate(_seq(man.get("analyses"))):
             if not isinstance(a, dict) or a.get("analysis") != "arm_stream":
                 continue
             ran = a.get("ran")
