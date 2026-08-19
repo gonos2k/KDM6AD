@@ -12,6 +12,7 @@ make an experiment look decision-grade.
 from __future__ import annotations
 
 import ast
+import functools
 import hashlib
 import json
 import math
@@ -108,6 +109,45 @@ def payload_state(p: Path, want: str, root: Path) -> str:
     return "matches" if sha256(p) == want else "MISMATCH"
 
 
+def refuses_a_malformed_manifest(fn):
+    """A reader may not CRASH on a document the validator refuses.
+
+    Twelve rounds of this cycle chased individual sites -- a set member here,
+    a sort key there, a dict lookup one level further down -- and each round
+    found new ones, because the axis has no bottom: any location in the
+    document can hold the wrong shape, and every location is read somewhere.
+
+    So the contract moves to the boundary. A document `validate()` refuses is
+    malformed, and a structural error while reading it is that refusal, not a
+    crash. A document `validate()` accepts must never do this: the exception
+    propagates untouched, so a genuine defect in a reader still surfaces as
+    itself. That is what keeps this from being a blanket `except`.
+
+    `validate()` is not wrapped -- it is the gate, and it already answers
+    rather than raising.
+    """
+    @functools.wraps(fn)
+    def guarded(man, *a, **kw):
+        try:
+            return fn(man, *a, **kw)
+        except (BlobUnavailable, ValueError, KeyError):
+            raise                       # the readers' own refusals
+        except (TypeError, AttributeError, IndexError) as e:
+            # NOT WHILE THE GATE IS RUNNING. `validate()` calls these readers,
+            # so asking it for a verdict from inside one of them is mutual
+            # recursion -- measured as a RecursionError, which is a worse
+            # failure than the crash this guard exists to convert. Inside the
+            # gate the exception belongs to the gate, which reports it.
+            if _VALIDATING or not validate(man):
+                raise                   # a VALID manifest crashed it: a defect
+            raise ValueError(
+                f"{fn.__name__} cannot read this manifest: {type(e).__name__}"
+                f": {e}. It does not validate, and a reader is not where a "
+                f"malformed document is diagnosed") from e
+    return guarded
+
+
+@refuses_a_malformed_manifest
 def identity_digest(man: dict) -> str:
     """The content address: a digest over everything except the diagnostics."""
     # THE ARGUMENT ITSELF, not only its fields (Codex). Every reader
@@ -134,8 +174,8 @@ def identity_digest(man: dict) -> str:
     if isinstance(m.get("build_artifacts"), list):
         m["build_artifacts"] = [
             {k: v for k, v in a.items()
-             if not (k == "sha256"
-                     and a.get("file") in LOCATION_DEPENDENT_ARTIFACTS)}
+             if not (k == "sha256" and isinstance(a.get("file"), str)
+                     and a["file"] in LOCATION_DEPENDENT_ARTIFACTS)}
             if isinstance(a, dict) else a
             for a in m["build_artifacts"]]
     return hashlib.sha256(
@@ -317,6 +357,20 @@ def _obj(v) -> dict:
     return v if isinstance(v, dict) else {}
 
 
+def _names(rows) -> set:
+    """The `analysis` names in these rows, as a SET -- and only the hashable
+    ones.
+
+    A malformed `analysis` can be a list or an object, which is unhashable,
+    so `{a.get("analysis") for a in rows}` raised out of `validate()` and
+    `dispatched_seeds()` before either could report it (Codex). A name that
+    cannot be a name matches no rule and is refused by the row check that
+    owns it.
+    """
+    return {a["analysis"] for a in _seq(rows)
+            if isinstance(a, dict) and isinstance(a.get("analysis"), str)}
+
+
 def _seq(v) -> list:
     """...and the same for a value that should be a list."""
     return v if isinstance(v, list) else []
@@ -354,6 +408,7 @@ _ROLES = ("run", "analysis")
 _PIN_BLOCK_KEYS = ("producer_modules", "member_parsers", "tracked_build_inputs")
 
 
+@refuses_a_malformed_manifest
 def resolved_pins(man: dict) -> dict:
     """repo path -> its ONE consistent pin, from every block that carries it.
 
@@ -387,9 +442,14 @@ def resolved_pins(man: dict) -> dict:
             body = {"content_sha256": e.get("content_sha256"),
                     "blob_sha": e.get("blob_sha")}
             if path in table and table[path] != body:
-                bad.append(f"{path} is pinned as {table[path]['blob_sha'] and table[path]['blob_sha'][:12]}"
-                           f" in one block and {body['blob_sha'] and body['blob_sha'][:12]} in {key}"
-                           f" -- two records of one fact that disagree")
+                # `str(...)` because a malformed pin can carry a number
+                # where a digest belongs, and slicing it took the GATE down
+                # while it was writing the sentence that reports the fault.
+                bad.append(
+                    f"{path} is pinned as "
+                    f"{str(table[path]['blob_sha'])[:12]} in one block and "
+                    f"{str(body['blob_sha'])[:12]} in {key}"
+                    f" -- two records of one fact that disagree")
             table[path] = body
     stems = {}
     for path in table:
@@ -409,6 +469,7 @@ class PinConflict(Exception):
     """The document pins one file two ways, or two files under one name."""
 
 
+@refuses_a_malformed_manifest
 def pin_conflicts(man: dict) -> list:
     """`resolved_pins` as a violation list, for the validator."""
     # THE ARGUMENT ITSELF, not only its fields (Codex). Every reader
@@ -557,7 +618,10 @@ def _identity_slice_violations(man: dict, graph: dict, reach: dict) -> list:
         if not isinstance(a, dict) or a.get("analysis") == "arm_stream":
             continue
         name, analyzer = a.get("analysis"), a.get("analyzer")
-        if name not in reach:
+        # An analysis NAME is a string; a malformed one is unhashable and
+        # `name not in reach` raised. The row check that owns the field
+        # reports it.
+        if not isinstance(name, str) or name not in reach:
             continue                      # absence is reported by _identity_covers
         slice_ = prod & set(reach[name])
         if not slice_:
@@ -577,8 +641,7 @@ def _identity_slice_violations(man: dict, graph: dict, reach: dict) -> list:
 def _identity_covers(man: dict) -> list:
     """Analyses the bundle carries that its recorded reach map does not."""
     reach = _obj(_obj(man.get("identity")).get("analysis_reach"))
-    carried = {a.get("analysis") for a in _seq(man.get("analyses"))
-               if isinstance(a, dict)} - {"arm_stream"}
+    carried = _names(man.get("analyses")) - {"arm_stream"}
     return sorted(carried - set(reach))
 
 
@@ -606,6 +669,7 @@ def _imports_from(blob: bytes, universe: set) -> set:
     return names & universe
 
 
+@refuses_a_malformed_manifest
 def pinned_blobs(man: dict) -> dict:
     """module -> its PINNED source bytes.
 
@@ -643,6 +707,7 @@ def pinned_blobs(man: dict) -> dict:
     return out
 
 
+@refuses_a_malformed_manifest
 def pinned_imports(man: dict, blobs: dict | None = None) -> dict:
     """module -> the pinned modules it imports, read from the pinned blobs."""
     # THE ARGUMENT ITSELF, not only its fields (Codex). Every reader
@@ -741,6 +806,7 @@ def _blob_closure(edges: dict, seed: str) -> set:
     return seen
 
 
+@refuses_a_malformed_manifest
 def graph_violations(man: dict) -> list:
     """The recorded graph against the CODE IT CLAIMS TO DESCRIBE.
 
@@ -878,6 +944,21 @@ _TOP_LEVEL_CONTAINERS = (
 )
 
 
+#: The scalar fields inside those containers that later rules use as SET
+#: MEMBERS or DICT KEYS. A list or an object there is unhashable, so the rule
+#: raised instead of reporting -- 110 such uses, which is why this is one
+#: table at the entry rather than 110 guards (Codex).
+_ROW_SCALARS = {
+    "analyses": (("analysis", str), ("file", str), ("nsplit", (int, float))),
+    "members": (("file", str), ("nsplit", (int, float)), ("mode", str)),
+    "build_artifacts": (("file", str),),
+    "member_parsers": (("path", str),),
+    "producer_modules": (("path", str),),
+    "tracked_build_inputs": (("path", str),),
+    "executed_analyzers": (("module", str),),
+}
+
+
 def validate(man: dict) -> list:
     """Everything wrong with this manifest, as a list of sentences.
 
@@ -890,6 +971,20 @@ def validate(man: dict) -> list:
     """
     if not isinstance(man, dict):
         return [f"top level is {type(man).__name__}, not an object"]
+    global _VALIDATING
+    outer, _VALIDATING = _VALIDATING, True
+    try:
+        return _validate(man)
+    finally:
+        _VALIDATING = outer
+
+
+#: True while `validate()` is running, so a reader's guard does not ask the
+#: gate for a verdict from inside the gate.
+_VALIDATING = False
+
+
+def _validate(man: dict) -> list:
     bad = []
     # THE CONTAINERS, JUDGED ONCE, BEFORE ANYTHING WALKS THEM (Codex,
     # generalized). Every rule below reaches into these, and `x or []` filters
@@ -904,6 +999,32 @@ def validate(man: dict) -> list:
         if key in man and not isinstance(man[key], kind):
             bad.append(f"{key} is a {type(man[key]).__name__}, not {what}")
             man[key] = kind()
+    # ...and the SCALARS INSIDE THE ROWS, for the same reason one level down.
+    # These are read as set members and dict keys all over the rules below; a
+    # list or an object there is unhashable and raised. Reported here and
+    # then DROPPED from the row, so the rule that owns the field sees it
+    # absent and says its own piece rather than being pre-empted.
+    for key, fields in _ROW_SCALARS.items():
+        rows = man.get(key)
+        if not isinstance(rows, list):
+            continue
+        cleaned, touched = [], False
+        for i, row in enumerate(rows):
+            if not isinstance(row, dict):
+                cleaned.append(row)
+                continue
+            drop = [f for f, kind in fields
+                    if f in row and not isinstance(row[f], kind)]
+            if not drop:
+                cleaned.append(row)
+                continue
+            touched = True
+            for f in drop:
+                bad.append(f"{key}[{i}].{f} is a {type(row[f]).__name__}, "
+                           f"which cannot name anything")
+            cleaned.append({k: v for k, v in row.items() if k not in drop})
+        if touched:
+            man[key] = cleaned
     if man.get("artifact_type") != "refinement_experiment":
         bad.append(f"artifact_type {man.get('artifact_type')!r} is not "
                    f"'refinement_experiment'")
@@ -1009,8 +1130,8 @@ def validate(man: dict) -> list:
                 bad.append(
                     f"members[{i}] ran fixture {m['fixture']!r} but the "
                     f"bundle pins {fxstem!r}")
-        algos = {m.get("algorithm") for m in members
-                 if isinstance(m, dict)} - {None}
+        algos = {m["algorithm"] for m in members
+                 if isinstance(m, dict) and isinstance(m.get("algorithm"), str)}
         if len(algos) > 1:
             bad.append(f"members ran different algorithms {sorted(algos)} -- "
                        f"one bundle, one experiment")
@@ -1040,7 +1161,8 @@ def validate(man: dict) -> list:
             # them. Two statements about the same binary that are never checked
             # against each other are one statement and one decoration
             # (owner §8.4).
-            got = {a.get("file"): a.get("sha256") for a in arts}
+            got = {a["file"]: a.get("sha256") for a in arts
+                   if isinstance(a, dict) and isinstance(a.get("file"), str)}
             want = _obj(man.get("build_provenance")).get("executable_sha256")
             if want and got.get("g33_refine_driver") != want:
                 bad.append(
@@ -1052,8 +1174,7 @@ def validate(man: dict) -> list:
     # non-empty `analyses`: one arm_stream satisfied that while carrying none
     # of them (owner §8.3).
     if man.get("instrumented") is True:
-        kinds = {a.get("analysis") for a in _seq(man.get("analyses"))
-                 if isinstance(a, dict)}
+        kinds = _names(man.get("analyses"))
         absent = [k for k in REQUIRED_WHEN_INSTRUMENTED if k not in kinds]
         if absent:
             bad.append(f"instrumented bundle is missing the analyses that make "
@@ -1083,7 +1204,10 @@ def validate(man: dict) -> list:
     def _dupes(rows, key):
         seen, out = set(), []
         for r in _seq(rows):
-            if isinstance(r, dict) and (k := key(r)) is not None:
+            # HASHABLE, or it is not a key. A malformed row can carry a list
+            # where a path or a filename belongs, and `k in seen` raised out
+            # of the duplicate check rather than reporting one (Codex).
+            if isinstance(r, dict) and isinstance(k := key(r), (str, int, float)):
                 if k in seen:
                     out.append(k)
                 seen.add(k)
@@ -1130,10 +1254,9 @@ def validate(man: dict) -> list:
     # against is the precision it declares about itself.
     prec = man.get("precision")
     if prec:
-        wrong = sorted({a.get("analysis") for a in _seq(man.get("analyses"))
-                        if isinstance(a, dict)
-                        and a.get("analysis") in ANALYSIS_PRECISIONS
-                        and not applicable(a["analysis"], prec)})
+        wrong = sorted({n for n in _names(man.get("analyses"))
+                        if n in ANALYSIS_PRECISIONS
+                        and not applicable(n, prec)})
         if wrong:
             bad.append(
                 f"precision={prec} bundle carries {wrong}, which are defined "
@@ -1375,6 +1498,7 @@ _BUILD_PROVENANCE_KEYS = frozenset({
 })
 
 
+@refuses_a_malformed_manifest
 def dispatched_seeds(man: dict) -> set:
     """The analyzer modules THIS bundle's analyses actually reached.
 
@@ -1394,8 +1518,7 @@ def dispatched_seeds(man: dict) -> set:
     # of field coverage reaches it.
     man = _obj(man)
     seeds = _obj(_obj(man.get("identity")).get("analysis_seeds"))
-    names = {a.get("analysis") for a in _seq(man.get("analyses"))
-             if isinstance(a, dict)}
+    names = _names(man.get("analyses"))
     return {seeds[n] for n in names if isinstance(seeds.get(n), str)}
 
 
@@ -1417,8 +1540,7 @@ def _executed_analyzer_violations(man: dict) -> list:
     # made omitting it a way to skip the whole check, and `analyses` proves
     # analyzers ran -- the manifest's own `analysis_seeds` names which module
     # each analysis dispatched to, so the expected set is not a guess.
-    names = {a.get("analysis") for a in _seq(man.get("analyses"))
-             if isinstance(a, dict)}
+    names = _names(man.get("analyses"))
     expected = dispatched_seeds(man)
     # A bundle that could not attest everything says so, and saying so is
     # incompatible with being decision evidence (owner §8, Codex).
@@ -1492,8 +1614,8 @@ def _executed_analyzer_violations(man: dict) -> list:
                        f"pins nowhere -- code ran that nothing records")
         elif want != got:
             bad.append(f"{mod} executed as {got[:12]} but the bundle pins "
-                       f"{want[:12]} -- the pin describes bytes that did not "
-                       f"run")
+                       f"{str(want)[:12]} -- the pin describes bytes that "
+                       f"did not run")
     # COVERAGE, now that it can be enforced. Every seed an analysis
     # dispatched to must be ATTESTED or DECLARED UNATTESTED -- otherwise
     # `unattested_analyzers` masks the difference between "ran, cannot
@@ -1761,9 +1883,9 @@ def _expected_run_violations(man: dict, members: list) -> list:
         # steps and mode, the member rows, and (below) the geometry each
         # implies (owner review §6).
         elif isinstance(members, list):
-            got_ns = sorted(m.get("nsplit") for m in members
-                            if isinstance(m, dict))
-            if got_ns != sorted(ns):
+            got_ns = sorted((m.get("nsplit") for m in members
+                             if isinstance(m, dict)), key=str)
+            if list(map(str, got_ns)) != sorted(map(str, ns)):
                 bad.append(f"expected_run.nsplits {sorted(ns)} is not the "
                            f"members' {got_ns}")
         for i, m in enumerate(members if isinstance(members, list) else []):
@@ -1779,11 +1901,15 @@ def _expected_run_violations(man: dict, members: list) -> list:
         # argv, expected_run, the member rows, and (in the chain) the raw
         # headers -- and until here the first three were never tied.
         argv = man.get("runtime_argv")
+        # INITIALISED BEFORE THE BRANCH. It was set only inside `else` and
+        # read unconditionally below, so a manifest whose `runtime_argv` is
+        # not a list took the GATE down with an UnboundLocalError -- the one
+        # reader that must always answer.
+        seen = []
         if not isinstance(argv, list) or not argv:
             bad.append("runtime_argv must be a non-empty list: it is the "
                        "recipe id's record of what was invoked")
         else:
-            seen = []
             for i, a in enumerate(argv):
                 if not (isinstance(a, list) and len(a) >= 2):
                     bad.append(f"runtime_argv[{i}] {a!r} is not a driver "
@@ -1839,9 +1965,15 @@ def _expected_run_violations(man: dict, members: list) -> list:
                             f"it requested the driver's default of one tile "
                             f"over {exp.get('columns')!r} columns -- the "
                             f"bundle declares {declared}")
-            if seen and isinstance(ns, list) and sorted(seen) != sorted(ns):
-                bad.append(f"runtime_argv invokes nsplits {sorted(seen)}, the "
-                           f"bundle declares {sorted(ns)}")
+            # SORTED BY STRING. `nsplits` can carry a non-number in a malformed
+        # manifest, and a mixed-type sort raised out of the GATE -- the one
+        # reader that must always answer, because a validator that dies is
+        # indistinguishable from a bundle nothing handled.
+        if seen and isinstance(ns, list) and \
+                sorted(map(str, seen)) != sorted(map(str, ns)):
+                bad.append(f"runtime_argv invokes nsplits "
+                           f"{sorted(map(str, seen))}, the bundle declares "
+                           f"{sorted(map(str, ns))}")
     if exp.get("fixture_id") != Path(str(man.get("fixture_path", ""))).stem:
         bad.append(f"expected_run.fixture_id {exp.get('fixture_id')!r} is not "
                    f"the pinned fixture "
@@ -2351,7 +2483,9 @@ def _analysis_violations(analyses, member_nsplits, schema=SCHEMA) -> list:
                     if tuple(str(x) for x in dec) not in kept:
                         bad.append(f"analyses[{i}] says it ran {dec} but kept "
                                    f"no stream for it")
-        elif member_nsplits and a.get("nsplit") not in member_nsplits:
-            bad.append(f"analyses[{i}] nsplit {a.get('nsplit')!r} is not among "
-                       f"the members {sorted(member_nsplits)}")
+        elif member_nsplits and (not isinstance(a.get("nsplit"), (int, float))
+                                 or a["nsplit"] not in member_nsplits):
+            bad.append(f"analyses[{i}] nsplit {a.get('nsplit')!r} is not "
+                       f"among the members "
+                       f"{sorted(map(str, member_nsplits))}")
     return bad

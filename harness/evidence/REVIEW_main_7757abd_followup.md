@@ -166,6 +166,35 @@ A fifth pattern, then, beside the four above:
   blast radius of a validator edit is every producer of the thing validated,
   and it is knowable before committing -- `grep` for the field.
 
+### Where the shape hardening stops, and why
+
+Owner, mid-cycle: **this system is not built for deployment; scientific
+demonstration is the centre.** That settles a question this cycle had
+started to lose. The last several rounds chased malformed-input crashes
+through every public reader, and each round found more, because the axis has
+no bottom: any location in the document can hold the wrong shape and every
+location is read somewhere.
+
+What is scientifically load-bearing is narrower and sharper:
+
+* **`validate()` must never crash.** It decides whether a bundle is
+  admissible evidence, and a validator that raises is indistinguishable from
+  a bundle nothing examined. The caller sees a crash either way, and the
+  difference between "refused" and "never looked at" is the difference
+  between evidence and no evidence. Measured: 2260 gate calls over every
+  location in a real manifest to depth two, five crash sites, now none.
+
+* **The other readers compute addresses for documents the gate has already
+  accepted.** Their contract is at the boundary now -- a document
+  `validate()` refuses turns a structural error into a refusal, while a
+  document it ACCEPTS lets the exception through untouched, so a genuine
+  defect still surfaces as itself rather than being swallowed. One rule, not
+  a guard per site.
+
+The exhaustive cross-product sweep is retired. It was finding shapes no
+producer in this system emits, at the cost of the work the bundles exist
+for. The gate test stays because the gate's answer is part of the evidence.
+
 ### Open, and why it is not closed here
 
 Sweeping every nested block for the same defect found two more that accept

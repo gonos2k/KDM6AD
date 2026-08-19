@@ -157,6 +157,7 @@ RUN_CONTENT_SCHEMA = "g33_run_content_v1"
 ANALYSIS_SCHEMA = "g33_analysis_v1"
 
 
+@rm.refuses_a_malformed_manifest
 def canonical_invocations(man: dict) -> list:
     """The member command lines as REQUESTS, not as spellings.
 
@@ -182,7 +183,10 @@ def canonical_invocations(man: dict) -> list:
           "tile_sizes": list(tiles) if tiles else None,
           "rho_profile": exp.get("rho_profile")}
          for n in rm._seq(exp.get("nsplits"))),
-        key=lambda d: (d["nsplit"], str(d["mode"]), str(d["tile_sizes"]),
+        # SORTED BY STRING for every part. `nsplits` can carry a non-number
+        # in a malformed manifest, and a mixed-type sort key raised out of
+        # the invocation list rather than producing one (Codex).
+        key=lambda d: (str(d["nsplit"]), str(d["mode"]), str(d["tile_sizes"]),
                        str(d["rho_profile"])))
 
 
@@ -293,6 +297,7 @@ def _graph(man: dict) -> dict:
     return roles()
 
 
+@rm.refuses_a_malformed_manifest
 def identity_is_self_contained(man: dict) -> bool:
     """Whether this manifest's ids can be recomputed from the manifest alone."""
     # THE ARGUMENT ITSELF, not only its fields (Codex, generalized from
@@ -308,6 +313,7 @@ def identity_is_self_contained(man: dict) -> bool:
             and isinstance(ident.get("analysis_reach"), dict))
 
 
+@rm.refuses_a_malformed_manifest
 def split_analyses(man: dict) -> tuple:
     """(derived, raw) entries of the `analyses` block.
 
@@ -455,6 +461,7 @@ def _by_role(man: dict, role: str) -> list:
                key=lambda e: str(e.get("path"))))
 
 
+@rm.refuses_a_malformed_manifest
 def run_recipe_id(man: dict) -> str:
     """What was asked for: run-role code, the fixture, the module under test,
     and the argv. NOT the members -- a recipe that changed when its own output
@@ -502,6 +509,7 @@ def run_recipe_id(man: dict) -> str:
     })
 
 
+@rm.refuses_a_malformed_manifest
 def run_content_id(man: dict) -> str:
     """The run itself: the recipe, plus the raw members and the build behind
     them. STABLE when an analysis is added, changed or removed -- which is the
@@ -575,6 +583,7 @@ def _pins_for(man: dict, modules: set) -> list:
                key=lambda e: str(e.get("path"))))
 
 
+@rm.refuses_a_malformed_manifest
 def analysis_reach(man: dict, name: str) -> set:
     """The modules ONE analysis can reach -- its own closure, not the whole
     analysis role. An id over the role would move every analysis whenever any
@@ -588,11 +597,31 @@ def analysis_reach(man: dict, name: str) -> set:
     # manifest"; the rest the caller supplies.
     man = rm._obj(man)
     rec = rm._obj(man.get("identity")).get("analysis_reach", {})
-    if isinstance(rec, dict) and rec.get(name):
+    # AN ANALYSIS NAME IS A STRING, and a malformed manifest can carry a list
+    # or an object there -- which is unhashable, so the lookup itself raised
+    # before any shape check could speak (Codex). `report()` reached here
+    # through `analysis_id` and died the same way.
+    if not isinstance(name, str):
+        raise ValueError(f"analysis name {name!r} is not a string, so no "
+                         f"recorded reach can be looked up for it")
+    entry = rec.get(name) if isinstance(rec, dict) else None
+    # A RECORDED ENTRY IS A LIST OF MODULE NAMES (Codex). The map was checked
+    # and the entry was not, so `analysis_reach: {"qr_process_ledger": 42}`
+    # reached `set(42)` -- one level below the shape sweep, which replaces
+    # `identity` WHOLESALE and so never leaves a single entry malformed. An
+    # entry that is not a collection of names records no closure, and the
+    # branch below states exactly why recomputing one is not allowed here.
+    if isinstance(entry, (list, tuple, set)) and entry \
+            and all(isinstance(m, str) and m.strip() for m in entry):
         # RECORDED: the closure as it stood when the bundle was made. Recomputing
         # it walks today's import graph, so an analyzer that grew an import
         # since would widen a historical analysis's id (owner priority 8).
-        return set(rec[name])
+        return set(entry)
+    if entry:
+        raise ValueError(
+            f"identity.analysis_reach[{name!r}] is {entry!r}, not a list of "
+            f"module names -- recomputing the closure would walk the "
+            f"reader's imports, not the producer's")
     if _requires_block(man):
         raise ValueError(
             f"schema {man.get('schema')!r} requires an `identity.analysis_reach` "
@@ -611,6 +640,7 @@ def analysis_reach(man: dict, name: str) -> set:
     return _closure(mods)
 
 
+@rm.refuses_a_malformed_manifest
 def analysis_id(man: dict, name: str) -> str:
     """One analysis: the content it read, its own entry, and the code IT can
     reach.
@@ -648,6 +678,7 @@ graph_violations = rm.graph_violations
 pinned_imports = rm.pinned_imports
 
 
+@rm.refuses_a_malformed_manifest
 def report(man: dict) -> None:
     # THE ARGUMENT ITSELF, not only its fields (Codex, generalized from
     # `identity_digest([])`). These are public readers, so a caller
@@ -659,11 +690,26 @@ def report(man: dict) -> None:
     print(f"  run_content_id  {run_content_id(man)[:16]}")
     print(f"  identity_digest {rm.identity_digest(man)[:16]}  (the address today)")
     derived, raw = split_analyses(man)
-    for n in sorted({a["analysis"] for a in derived}):
-        print(f"    {n:28} {analysis_id(man, n)[:16]}"
+    # SORTED BY STRING, and printed as one. A malformed manifest can carry a
+    # non-string `analysis`, and `sorted()` over a mixed set raised out of
+    # the report while `{n:28}` raised on the format -- a reporter that dies
+    # on the document it is reporting says nothing about it (Codex).
+    seen, names = set(), []
+    for a in derived:
+        # A SET NEEDS HASHABLE MEMBERS, and a malformed `analysis` can be a
+        # list or an object: the set comprehension died before the sort or
+        # the format ever ran. Keyed by the printed form, which is what the
+        # report shows anyway.
+        key = str(a["analysis"])
+        if key not in seen:
+            seen.add(key)
+            names.append(a["analysis"])
+    for n in sorted(names, key=str):
+        print(f"    {str(n):28} {analysis_id(man, n)[:16]}"
               f"  reaches {len(analysis_reach(man, n))}")
     for a in sorted(raw, key=lambda a: str(a.get("file"))):
-        print(f"    {a.get('analysis'):28} {'-':>16}  raw content, no analyzer")
+        print(f"    {str(a.get('analysis')):28} {'-':>16}"
+              f"  raw content, no analyzer")
 
 
 if __name__ == "__main__":

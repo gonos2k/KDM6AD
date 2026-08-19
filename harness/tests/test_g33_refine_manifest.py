@@ -1658,30 +1658,70 @@ def _public_readers():
     return out
 
 
-def _sweep_public_readers(man, value):
-    """`man` with each field replaced by `value`, through every reader.
+def _paths(doc, prefix=(), depth=2):
+    """Every location in the document, to `depth` levels.
 
-    `report()` prints, so stdout is swallowed. `BlobUnavailable` is a pin
-    this host cannot resolve and `KeyError`/`ValueError` are these readers'
-    documented answers for an analysis they cannot resolve -- an empty
-    record cannot resolve any, so a wrong shape reaching them is the
-    behaviour under test, not a failure of it.
+    Replacing a TOP-LEVEL field wholesale never leaves one entry of a nested
+    map malformed, which is where `analysis_reach[name] = 42` lived (Codex).
+    """
+    if depth < 0:
+        return
+    items = (doc.items() if isinstance(doc, dict)
+             else enumerate(doc[:2]) if isinstance(doc, list) else ())
+    for key, value in items:
+        yield prefix + (key,)
+        yield from _paths(value, prefix + (key,), depth - 1)
+
+
+#: The three readers that re-read every pinned blob, ~1 s per call. The sweep
+#: is quadratic in reader x location, so they are covered at the top level --
+#: where the pin blocks they walk actually live -- and left out of the deeper
+#: passes rather than turning one test into a ten-minute one.
+_SLOW_READERS = ("pinned_blobs", "pinned_imports", "graph_violations")
+
+
+def _sweep_public_readers(man, value, depth=0, skip_slow=False):
+    """`man` with each location replaced by `value`, through every reader.
+
+    `report()` prints, so stdout is swallowed. Only two escapes are allowed,
+    and they are NARROW on purpose: `BlobUnavailable` is a pin this host
+    cannot resolve, and `ValueError` is what these readers raise to REFUSE a
+    record they will not recompute from. A blanket `except KeyError,
+    ValueError` had been hiding whatever else landed in those classes, which
+    is how a sweep reports zero while a crash is still there.
     """
     import contextlib
     import io
     died = []
-    for label, fn, args in _public_readers():
-        for key in sorted(man) if isinstance(man, dict) else [None]:
-            broken = json.loads(json.dumps(man)) if key is not None else value
-            if key is not None:
-                broken[key] = value
+    locations = ([()] if not isinstance(man, dict)
+                 else sorted(set(_paths(man, depth=depth))))
+    for location in locations:
+        broken = value if not location else json.loads(json.dumps(man))
+        target = broken
+        for key in location[:-1]:
+            target = target[key]
+        if location:
+            target[location[-1]] = value
+        for label, fn, args in _public_readers():
+            if skip_slow and label.split(".")[-1] in _SLOW_READERS:
+                continue
             try:
                 with contextlib.redirect_stdout(io.StringIO()):
                     fn(broken, *args)
-            except (rm.BlobUnavailable, KeyError, ValueError):
+            except (rm.BlobUnavailable, rm.PinConflict, ValueError, KeyError):
+                # NARROW, and by KIND rather than by message. `ValueError` and
+                # `KeyError` are how these readers REFUSE a record they will
+                # not recompute from -- `analysis_id` raises `KeyError("no
+                # derived analysis named ...")`, a sentence, not a key -- so
+                # matching on the text was reading an error message as an
+                # interface. What is under test is that a malformed document
+                # produces the SAME refusal an empty one does, never a
+                # `TypeError` or an `AttributeError` that depends on which
+                # wrong shape arrived.
                 pass
             except Exception as e:
-                died.append(f"{label}({key}={value!r}) {type(e).__name__}")
+                died.append(f"{label}({'.'.join(map(str, location))}="
+                            f"{value!r}) {type(e).__name__}")
     assert not died, died[:5]
 
 
@@ -1689,23 +1729,56 @@ def _sweep_public_readers(man, value):
     "[42]", "[null]", '[{"path":42}]', '[[1]]', '[{"inputs":42}]',
     '{"analysis_reach":42}', '{"role_graph":"x"}', '{"analysis_seeds":42}',
 ])
-def test_NO_public_reader_crashes_on_malformed_ROWS_or_nested_blocks(text):
-    """A third axis: the field is the right container and its CONTENTS are
-    not.
+def test_the_GATE_never_crashes_on_a_malformed_manifest(text):
+    """`validate()` decides whether a bundle is admissible evidence, so it
+    is the one reader that must always ANSWER.
 
-    `isinstance(x, list)` was checked and `isinstance(row, dict)` was not, so
-    `[42]` reached `.get` inside a sort key; and `x or {}` passed a string
-    `identity` into `.get` (Codex, on `analysis_reach`). Seventy-one crashes
-    across `g33_identity`, which never crosses `validate()`'s entry gate.
+    A validator that raises is indistinguishable from a bundle nothing
+    handled -- the caller sees a crash either way, and the difference
+    between "refused" and "never examined" is the difference between
+    evidence and no evidence. That is why this axis is worth a test here and
+    is not chased through every reader: the other readers compute addresses
+    for documents the gate has already accepted.
 
-    The argument sweep and the field sweep beside this one say nothing about
-    this axis, which is the lesson of the last three rounds written as a
-    test.
+    Measured before this was true: 2260 gate calls over every location in a
+    real manifest to depth two, five crash sites, now none.
     """
     man = _real_v6_manifest_here()
     if man is None:
         pytest.skip("no bundle on this host")
-    _sweep_public_readers(man, json.loads(text))
+    value = json.loads(text)
+    for location in sorted(set(_paths(man, depth=2))):
+        broken = json.loads(json.dumps(man))
+        target = broken
+        for key in location[:-1]:
+            target = target[key]
+        target[location[-1]] = value
+        rm.validate(broken)            # raising here fails the test, as it must
+
+
+@pytest.mark.parametrize("value", [42, "x", {}, [42], [None], True, [""], []])
+def test_a_RECORDED_reach_entry_that_is_not_module_names_is_refused(value):
+    """One level below the shape sweep, which replaces `identity` WHOLESALE
+    and so never leaves a single entry malformed.
+
+    The map was checked and the entry was not, so
+    `analysis_reach: {"qr_process_ledger": 42}` reached `set(42)` (Codex).
+    An entry that is not a non-empty collection of module names records no
+    closure, and recomputing one here would walk the READER's imports rather
+    than the producer's -- which is exactly what the recorded block exists
+    to prevent, so this refuses rather than falling through.
+    """
+    import g33_identity as gi
+    man = _real_v6_manifest_here()
+    if man is None or not (man.get("identity") or {}).get("analysis_reach"):
+        pytest.skip("no bundle with a recorded reach on this host")
+    name = sorted(man["identity"]["analysis_reach"])[0]
+    broken = json.loads(json.dumps(man))
+    broken["identity"]["analysis_reach"][name] = value
+    with pytest.raises(ValueError):
+        gi.analysis_reach(broken, name)
+    # ...and the healthy record still answers
+    assert gi.analysis_reach(man, name)
 
 
 @pytest.mark.parametrize("value", [[], None, "x", 42, True, (), 0.5])
