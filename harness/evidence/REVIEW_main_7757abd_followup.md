@@ -73,6 +73,43 @@ in code written earlier in the same cycle. Three patterns are worth keeping:
   import was right for a fresh producer process and killed pytest
   collection outright. The gate belongs where the claim is published.
 
+## Post-rebase: what a public checkout said that this host could not
+
+PR #141 was squash-merged mid-cycle, so the remaining work was rebased onto
+the merged `main`. That changed the commit the bundles pin, and a bundle
+pinning an unreachable commit is not evidence -- so the experiment was
+re-produced against the rebased HEAD, member digests byte-identical, ten and
+eight analyzer attestations with nothing unattested, and **49 of 49 pinned
+figures reproduced before the pins moved**.
+
+CI then failed fifteen tests that pass here. Two independent causes, and the
+reproduction is the finding:
+
+* **`host/**` is gitignored, so a throwaway `git worktree` IS a public
+  checkout.** That is where the second defect became visible. The test's
+  module stand-in falls back to the fixture when the private kernel is
+  absent, so one path carried both `module` and `fixture` while `verify()`
+  re-derives every role from the path and called them both `fixture`. The
+  fake asserted what the verifier derives. It now derives them the same way,
+  so the two cannot disagree by construction.
+
+* **One rule, written out twice, drifts.** The attestation seam records an
+  analyzer it could not attest whether or not this bundle dispatches to it;
+  the manifest refuses declarations outside the dispatch set. Both were
+  right; together they made a suite that imported `g33_number_transport`
+  first publish a bundle its own validator rejected -- thirteen tests, and
+  none when that module was not collected first. `dispatched_seeds()` is now
+  the single authority both call.
+
+A fourth pattern to keep beside the three above:
+
+* **A skip is honest; a silent fallback is not.** Every other test that
+  needs the private kernel is `skipif`-ed. The one that quietly substituted
+  a different file instead changed the shape of what it was testing, and the
+  difference only surfaced on a machine that had never seen `host/**`.
+
+Public-checkout worktree at the fix: 1850 passed, 240 skipped, 0 failed.
+
 ## Standing NO-GOs (unchanged)
 
 Identity Phase B/C; real mixed-coastal MPI; the `G33-NCMIN-005` mediation
