@@ -1548,6 +1548,51 @@ def test_a_SQUASHED_provenance_commit_is_CAUGHT(tmp_path, monkeypatch):
         "an unreachable anchor must FAIL, not be reported and passed over"
 
 
+def test_a_LOCAL_tag_does_not_make_an_anchor_fetchable(tmp_path, monkeypatch):
+    """`trusted` asks whether A REVIEWER WHO CLONES could get the commit, and
+    `refs/tags/` used to answer yes for a tag created five seconds ago and
+    never pushed.
+
+    A tag lives in the same namespace whether it was fetched or invented
+    here, so the ref namespace cannot answer this -- only the remote can.
+    Measured on the real archive: a local-only tag on an orphaned commit
+    turned `commit-local-anchor-only` into `matches`, which is the one thing
+    this predicate exists to rule out (Codex).
+    """
+    import subprocess as sp
+    live, dead = _tiny_repo(tmp_path)
+    monkeypatch.setattr(ec, "REPO", tmp_path)
+    sp.run(["git", "tag", "-a", "anchor", "-m", "local", dead], cwd=tmp_path,
+           capture_output=True)
+    monkeypatch.setattr(ec, "remote_tags", lambda: {})     # nothing pushed
+    ec._REACHABLE.clear()
+    man = {"repo_commit": dead, "member_parsers": [],
+           "producer_modules": [], "tracked_build_inputs": []}
+    states = {r["state"] for r in ec._commit_states(man)}
+    assert states == {"commit-local-anchor-only"}, ec._commit_states(man)
+    assert "refs/tags/" not in ec.TRUSTED_REFS, (
+        "a tag is trusted because the REMOTE has it, not because it is in "
+        "refs/tags/")
+
+    # ...and the same tag, once the remote has it, IS the anchor.
+    monkeypatch.setattr(ec, "remote_tags", lambda: {dead: ["anchor"]})
+    ec._REACHABLE.clear()
+    rows = ec._commit_states(man)
+    assert {r["state"] for r in rows} == {"matches"}, rows
+    assert "anchor" in rows[0]["file"], rows[0]
+
+
+def test_remote_tags_reports_nothing_rather_than_guessing(monkeypatch):
+    """A remote that cannot be reached is "not established", never "fine".
+    Returning an empty map leaves the anchor local-only, which is the
+    conservative reading and the one a closeout needs."""
+    import subprocess as sp
+    monkeypatch.setattr(ec, "_REMOTE_TAGS", {})
+    monkeypatch.setattr(sp, "run", lambda *a, **k: type(
+        "R", (), {"returncode": 128, "stdout": "", "stderr": "no remote"})())
+    assert ec.remote_tags() == {}
+
+
 def test_the_LIVE_bundles_anchor_to_reachable_commits():
     """The bundles this repo actually pins. Not a synthetic: the defect was
     found on a real one."""

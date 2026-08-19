@@ -234,9 +234,20 @@ to squash merges.
 unreferenced even for the moment of the force-push. Measured after: both
 bundles `matches`.
 
-Across the archive, 20 anchored commits: 19 reachable from a trusted ref,
-one (`2c230729`) local-only and carried by two superseded bundles whose pins
-have already moved.
+...and the claim that the tag does that had to become verifiable. `trusted`
+asked whether a reviewer who CLONES could fetch the commit, and `refs/tags/`
+answered yes for a tag created here and never pushed -- so the measurement
+reported above would have read the same with the tag purely local, which
+means it established nothing. A tag lives in the same namespace whether it
+was fetched or invented, so only the remote can answer, and `remote_tags()`
+asks it (`git ls-remote`, once per run, and an unreachable remote leaves the
+anchor local-only rather than fine).
+
+Externally verifiable now, and verified: `refs/tags/g33-evidence-9a763f1c`
+resolves to `9a763f1c` on `origin`. Across the archive, 37 anchor rows: 34
+`matches`, 3 `commit-local-anchor-only` -- one more than the old predicate
+reported, because it was crediting local tags -- and all three belong to
+superseded bundles the registry does not pin, so no claim rests on them.
 
 ### Open, and why it is not closed here
 

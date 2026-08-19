@@ -845,7 +845,39 @@ _REACHABLE: dict = {}
 #: the branch is pushed; requiring `main` would mark every bundle made during a
 #: review as unanchored until the merge, which says something false about
 #: whether a reviewer can get the history.
-TRUSTED_REFS = ("refs/remotes/", "refs/tags/")
+#: Refs that came FROM the remote, so a reviewer who clones has them too.
+#:
+#: `refs/tags/` used to be here and is not, because a tag lives in the same
+#: namespace whether it was fetched or created five seconds ago and never
+#: pushed -- so a purely LOCAL tag satisfied "a ref a reviewer could have",
+#: which is the one thing this predicate exists to establish (measured: a
+#: local-only tag on an orphaned commit turned `commit-local-anchor-only`
+#: into `matches`). A tag counts when the REMOTE has it, which only the
+#: remote can answer; `remote_tags()` asks, and `--require-available` is
+#: where the answer is required.
+TRUSTED_REFS = ("refs/remotes/",)
+
+#: `git ls-remote` output, once per run. Empty when the remote cannot be
+#: reached -- and that is reported as "not established", never as "fine":
+#: a check that cannot see must not answer "no".
+_REMOTE_TAGS: dict = {}
+
+
+def remote_tags() -> dict:
+    """{commit: [tag, ...]} as the REMOTE has them, or {} if it cannot be
+    asked. Network, so it is called only where the answer is required."""
+    if not _REMOTE_TAGS:
+        r = subprocess.run(["git", "ls-remote", "--tags", "origin"], cwd=REPO,
+                           capture_output=True, text=True, timeout=60)
+        out: dict = {}
+        if r.returncode == 0:
+            for line in r.stdout.splitlines():
+                sha, _, ref = line.partition("\t")
+                if ref.endswith("^{}"):          # the commit a tag points AT
+                    out.setdefault(sha.strip(), []).append(
+                        ref[len("refs/tags/"):-3])
+        _REMOTE_TAGS["v"] = out
+    return _REMOTE_TAGS["v"]
 
 
 def _reachable(commit: str, trusted: bool = False) -> bool:
@@ -902,6 +934,14 @@ def _commit_states(man: dict) -> list:
             # Reachable HERE and nowhere a reviewer could follow. A passing
             # state for a routine run and a blocker for a closeout, like every
             # other "we could not really check this" (owner priority 10).
+            tags = remote_tags().get(c)
+            if tags:
+                # THE REMOTE HAS IT, under a tag. That is the same guarantee a
+                # remote-tracking branch gives and the only one this predicate
+                # is about, so it is not a local-only anchor.
+                out.append({"file": f"{where} [tag {tags[0]}]",
+                            "state": "matches", "detail": ""})
+                continue
             out.append({
                 "file": where, "state": "commit-local-anchor-only",
                 "detail": f"{c[:12]} is contained only by a local ref -- a "
