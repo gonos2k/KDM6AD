@@ -857,26 +857,39 @@ _REACHABLE: dict = {}
 #: where the answer is required.
 TRUSTED_REFS = ("refs/remotes/",)
 
-#: `git ls-remote` output, once per run. Empty when the remote cannot be
-#: reached -- and that is reported as "not established", never as "fine":
-#: a check that cannot see must not answer "no".
+#: `git ls-remote` output, once per run.
 _REMOTE_TAGS: dict = {}
 
 
-def remote_tags() -> dict:
-    """{commit: [tag, ...]} as the REMOTE has them, or {} if it cannot be
-    asked. Network, so it is called only where the answer is required."""
+def remote_tags() -> tuple:
+    """`({commit: [tag, ...]}, asked)` as the REMOTE has them.
+
+    TWO FAILURE MODES, and they are different facts (Codex): the remote
+    ANSWERED and does not have the commit, or the remote could not be ASKED
+    at all. Folded together, a run with no network would state that an
+    anchor is local-only -- an assertion about the world made from not
+    having looked. `asked` carries the distinction; `False` means the
+    predicate below says "not established" rather than "no".
+
+    Never raises. A hanging remote and a missing `git` both used to come out
+    of this as a traceback, and a gate that dies has not answered.
+    """
     if not _REMOTE_TAGS:
-        r = subprocess.run(["git", "ls-remote", "--tags", "origin"], cwd=REPO,
-                           capture_output=True, text=True, timeout=60)
-        out: dict = {}
-        if r.returncode == 0:
-            for line in r.stdout.splitlines():
-                sha, _, ref = line.partition("\t")
-                if ref.endswith("^{}"):          # the commit a tag points AT
-                    out.setdefault(sha.strip(), []).append(
-                        ref[len("refs/tags/"):-3])
-        _REMOTE_TAGS["v"] = out
+        out, asked = {}, False
+        try:
+            r = subprocess.run(["git", "ls-remote", "--tags", "origin"],
+                               cwd=REPO, capture_output=True, text=True,
+                               timeout=30)
+            if r.returncode == 0:
+                asked = True
+                for line in r.stdout.splitlines():
+                    sha, _, ref = line.partition("\t")
+                    if ref.endswith("^{}"):      # the commit a tag points AT
+                        out.setdefault(sha.strip(), []).append(
+                            ref[len("refs/tags/"):-3])
+        except (OSError, subprocess.SubprocessError):
+            pass                                 # asked stays False
+        _REMOTE_TAGS["v"] = (out, asked)
     return _REMOTE_TAGS["v"]
 
 
@@ -934,7 +947,16 @@ def _commit_states(man: dict) -> list:
             # Reachable HERE and nowhere a reviewer could follow. A passing
             # state for a routine run and a blocker for a closeout, like every
             # other "we could not really check this" (owner priority 10).
-            tags = remote_tags().get(c)
+            known, asked = remote_tags()
+            if not asked:
+                out.append({
+                    "file": where, "state": "commit-anchor-unasked",
+                    "detail": f"no local ref contains {c[:12]} and the remote "
+                              f"could not be asked, so whether a reviewer "
+                              f"could fetch it is NOT ESTABLISHED -- which is "
+                              f"a different statement from 'they could not'"})
+                continue
+            tags = known.get(c)
             if tags:
                 # THE REMOTE HAS IT, under a tag. That is the same guarantee a
                 # remote-tracking branch gives and the only one this predicate
@@ -1427,6 +1449,10 @@ PASSING_STATES = frozenset({
     "value-unavailable",       # the bundle the figure is declared against is not here
     # The anchor resolves on THIS machine and nowhere a reviewer could follow.
     "commit-local-anchor-only",
+    # ...and the remote could not be asked, so it is not established
+    # either way. Excused in a routine run, a blocker in a closeout --
+    # "we did not look" must never read as "we looked and it is fine".
+    "commit-anchor-unasked",
     # The bundle predates the recorded role graph, so its layered ids are a
     # function of whichever checkout computes them.
     "identity-predates-block",
@@ -1490,6 +1516,8 @@ EXCUSED_BY_ABSENCE = frozenset({
     # Same shape, one layer out: the commit resolves because we are standing on
     # the machine that has it (owner priority 10).
     "commit-local-anchor-only",
+    # ...and one layer out again: we could not ask the remote at all.
+    "commit-anchor-unasked",
     # ...and one layer out again: the ids resolve because we are standing in a
     # checkout whose role graph happens to match. Phase B cannot start while a
     # pinned bundle answers this way (Codex stop-time review).

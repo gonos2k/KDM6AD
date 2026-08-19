@@ -1564,7 +1564,7 @@ def test_a_LOCAL_tag_does_not_make_an_anchor_fetchable(tmp_path, monkeypatch):
     monkeypatch.setattr(ec, "REPO", tmp_path)
     sp.run(["git", "tag", "-a", "anchor", "-m", "local", dead], cwd=tmp_path,
            capture_output=True)
-    monkeypatch.setattr(ec, "remote_tags", lambda: {})     # nothing pushed
+    monkeypatch.setattr(ec, "remote_tags", lambda: ({}, True))  # asked, absent
     ec._REACHABLE.clear()
     man = {"repo_commit": dead, "member_parsers": [],
            "producer_modules": [], "tracked_build_inputs": []}
@@ -1575,22 +1575,62 @@ def test_a_LOCAL_tag_does_not_make_an_anchor_fetchable(tmp_path, monkeypatch):
         "refs/tags/")
 
     # ...and the same tag, once the remote has it, IS the anchor.
-    monkeypatch.setattr(ec, "remote_tags", lambda: {dead: ["anchor"]})
+    monkeypatch.setattr(ec, "remote_tags", lambda: ({dead: ["anchor"]}, True))
     ec._REACHABLE.clear()
     rows = ec._commit_states(man)
     assert {r["state"] for r in rows} == {"matches"}, rows
     assert "anchor" in rows[0]["file"], rows[0]
 
 
-def test_remote_tags_reports_nothing_rather_than_guessing(monkeypatch):
-    """A remote that cannot be reached is "not established", never "fine".
-    Returning an empty map leaves the anchor local-only, which is the
-    conservative reading and the one a closeout needs."""
+@pytest.mark.parametrize("boom", [
+    __import__("subprocess").TimeoutExpired("git", 30),
+    FileNotFoundError("git"),
+    OSError("network is down"),
+])
+def test_remote_tags_NEVER_raises(monkeypatch, boom):
+    """A hanging remote and a missing `git` both came out of this as a
+    traceback, and a gate that dies has not answered (Codex)."""
     import subprocess as sp
     monkeypatch.setattr(ec, "_REMOTE_TAGS", {})
-    monkeypatch.setattr(sp, "run", lambda *a, **k: type(
-        "R", (), {"returncode": 128, "stdout": "", "stderr": "no remote"})())
-    assert ec.remote_tags() == {}
+    monkeypatch.setattr(sp, "run", lambda *a, **k: (_ for _ in ()).throw(boom))
+    known, asked = ec.remote_tags()
+    assert known == {} and asked is False
+
+
+def test_could_not_ask_is_NOT_the_same_as_the_remote_said_no(tmp_path,
+                                                             monkeypatch):
+    """Two failure modes, two facts (Codex).
+
+    "The remote answered and does not have it" is about the world; "the
+    remote could not be asked" is about us. Folded together, a run with no
+    network would ASSERT that an anchor is local-only from not having
+    looked. Both are excused in a routine run and both block a closeout --
+    but only one of them says something true about the anchor.
+    """
+    import subprocess as sp
+    live, dead = _tiny_repo(tmp_path)
+    monkeypatch.setattr(ec, "REPO", tmp_path)
+    # A LOCAL tag, so the commit is reachable here and the question becomes
+    # whether anyone else could get it -- which is the branch under test.
+    sp.run(["git", "tag", "-a", "anchor", "-m", "local", dead], cwd=tmp_path,
+           capture_output=True)
+    man = {"repo_commit": dead, "member_parsers": [],
+           "producer_modules": [], "tracked_build_inputs": []}
+
+    monkeypatch.setattr(ec, "remote_tags", lambda: ({}, True))
+    ec._REACHABLE.clear()
+    assert {r["state"] for r in ec._commit_states(man)} == {
+        "commit-local-anchor-only"}
+
+    monkeypatch.setattr(ec, "remote_tags", lambda: ({}, False))
+    ec._REACHABLE.clear()
+    rows = ec._commit_states(man)
+    assert {r["state"] for r in rows} == {"commit-anchor-unasked"}, rows
+    assert "NOT ESTABLISHED" in rows[0]["detail"]
+
+    for state in ("commit-local-anchor-only", "commit-anchor-unasked"):
+        assert state in ec.PASSING_STATES, f"{state} must not fail a routine run"
+        assert state in ec.EXCUSED_BY_ABSENCE, f"{state} must block a closeout"
 
 
 def test_the_LIVE_bundles_anchor_to_reachable_commits():

@@ -243,6 +243,15 @@ was fetched or invented, so only the remote can answer, and `remote_tags()`
 asks it (`git ls-remote`, once per run, and an unreachable remote leaves the
 anchor local-only rather than fine).
 
+...and the network check had to be failure-safe. Two failure modes, and
+they are different facts: the remote ANSWERED and does not have the commit,
+or the remote could not be ASKED. Folded together, a run with no network
+states that an anchor is local-only -- an assertion about the world made
+from not having looked. They are separate states now, both excused in a
+routine run and both blocking a closeout, and neither reached by a
+traceback: a hanging remote and a missing `git` used to come out of the
+lookup as an exception, and a gate that dies has not answered.
+
 Externally verifiable now, and verified: `refs/tags/g33-evidence-9a763f1c`
 resolves to `9a763f1c` on `origin`. Across the archive, 37 anchor rows: 34
 `matches`, 3 `commit-local-anchor-only` -- one more than the old predicate
