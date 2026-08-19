@@ -17,8 +17,18 @@ import g33_refine_manifest as rm  # noqa: E402
 #: Every field and every role the v7 provenance contract requires. A fixture
 #: carrying a subset describes a build that could not have happened.
 def _v7_provenance():
+    """A record that describes a build that could have happened.
+
+    The module row is the OVERLAY, as in every published bundle: gfortran
+    never opens `module_mp_kdm6.F`, it opens the overlay generated from it,
+    so `module_path` and the module row name two different files by design.
+    v7 joins the two records of one file -- `compiled_module_sha256` to the
+    module row, `fixture_path`/`fixture_sha256` to the fixture row -- so a
+    synthetic record that states them independently contradicts itself
+    before any mutation is applied.
+    """
     import g33_build_provenance as bp
-    roles = (("module", "host/KIM-meso_v1.0/phys/module_mp_kdm6.F"),
+    roles = (("module", "module_mp_ovl.F"),
              ("fixture", "harness/g33_fortran/g33_fixture_x_v1.f90"),
              ("driver", "harness/g33_fortran/g33_refine_driver.f90"),
              ("stub", "harness/g33_fortran/stub_wrf_error.f90"),
@@ -26,6 +36,10 @@ def _v7_provenance():
              ("model_constants",
               "host/KIM-meso_v1.0/share/module_model_constants.F"),
              ("radar", "host/KIM-meso_v1.0/phys/module_mp_radar.F"))
+    sources = [{"path": path, "role": role,
+                "sha256": hashlib.sha256(role.encode()).hexdigest()}
+               for role, path in roles]
+    by_role = {r["role"]: r for r in sources}
     return {
         "schema": bp.BUILD_PROVENANCE_SCHEMA,
         "compiler_version": "gfortran (fake) 1.0",
@@ -33,15 +47,13 @@ def _v7_provenance():
         "compiler_f951_sha256": "5" * 64,
         "module_path": "host/KIM-meso_v1.0/phys/module_mp_kdm6.F",
         "module_sha256": "8" * 64,
-        "compiled_module_path": "module_mp_ovl.F",
-        "compiled_module_sha256": "b" * 64,
-        "fixture_path": "harness/g33_fortran/g33_fixture_x_v1.f90",
-        "fixture_sha256": "9" * 64,
+        "compiled_module_path": by_role["module"]["path"],
+        "compiled_module_sha256": by_role["module"]["sha256"],
+        "fixture_path": by_role["fixture"]["path"],
+        "fixture_sha256": by_role["fixture"]["sha256"],
         "build_script_sha256": "7" * 64,
         "executable_sha256": "a" * 64,
-        "sources": [{"path": path, "role": role,
-                     "sha256": hashlib.sha256(role.encode()).hexdigest()}
-                    for role, path in roles],
+        "sources": sources,
         "compile_commands": ["gfortran -c " + path for _r, path in roles],
         "repo_commit": "0" * 40,
         "tree_dirty": False,
@@ -135,7 +147,11 @@ def synthetic_manifest(root):
         "build_provenance": dict(_v7_provenance(), **{
             "executable_sha256": rm.sha256(root / "g33_refine_driver"),
             # an instrumented build feeds the compiler the GENERATED overlay
-            "compiled_module_sha256": _OVL}),
+            # -- and v7 joins that statement to the `module` source row, so
+            # the overlay's digest has to move in both places at once
+            "compiled_module_sha256": _OVL,
+            "sources": [dict(r, sha256=_OVL) if r["role"] == "module" else r
+                        for r in _v7_provenance()["sources"]]}),
         "module_path": "host/KIM-meso_v1.0/phys/module_mp_kdm6.F",
         "module_sha256": "8" * 64,
         "member_parsers": [pin], "producer_modules": _pins,
@@ -1339,6 +1355,20 @@ def _v7(man):
     (lambda b: b.pop("compiler_f951_sha256", None), "key set"),
     (lambda b: b.__setitem__("smuggled", 1), "key set"),
     (lambda b: b.pop("schema", None), "build_provenance.schema"),
+    # v7 JOINS the two records of one file. Each of these names a different
+    # file, or the same file under a different digest, in exactly one of the
+    # two places the record states it -- and all three validated CLEAN
+    # against a real published bundle before the join existed (Codex).
+    (lambda b: b.__setitem__("sources", [
+        dict(r, sha256="c" * 64) if r["role"] == "module" else r
+        for r in b["sources"]]), "records compiling one file"),
+    (lambda b: b.__setitem__("sources", [
+        dict(r, path="harness/g33_fortran/g33_fixture_other_v1.f90")
+        if r["role"] == "fixture" else r
+        for r in b["sources"]]), "records compiling one file"),
+    (lambda b: b.__setitem__("sources", [
+        dict(r, sha256="d" * 64) if r["role"] == "fixture" else r
+        for r in b["sources"]]), "records compiling one file"),
 ])
 def test_the_provenance_block_is_an_exact_contract(mutate, expect):
     """v6 called this a closed contract and checked only that selected fields
@@ -1354,6 +1384,34 @@ def test_the_provenance_block_is_an_exact_contract(mutate, expect):
     mutate(v7["build_provenance"])
     bad = [b for b in rm.validate(v7) if "build_provenance" in b]
     assert bad and any(expect in b for b in bad), (expect, rm.validate(v7))
+
+
+@pytest.mark.parametrize("mutate,expect", [
+    (lambda b: b.__setitem__("sources", [
+        dict(r, sha256="c" * 64) if r["role"] == "module" else r
+        for r in b["sources"]]), "compiled_module_sha256"),
+    (lambda b: b.__setitem__("sources", [
+        dict(r, path="harness/g33_fortran/g33_fixture_other_v1.f90")
+        if r["role"] == "fixture" else r
+        for r in b["sources"]]), "fixture_path"),
+    (lambda b: b.__setitem__("sources", [
+        dict(r, sha256="d" * 64) if r["role"] == "fixture" else r
+        for r in b["sources"]]), "fixture_sha256"),
+])
+def test_the_record_cannot_pin_one_file_and_compile_another(tmp_path, mutate,
+                                                            expect):
+    """SYNTHETIC, so a public checkout checks it too.
+
+    The mutation table above needs a published bundle and therefore skips
+    everywhere CI runs -- which is where a rule is most likely to regress
+    unnoticed. This is a property of the SCHEMA, not of any one bundle.
+    """
+    man = synthetic_manifest(tmp_path)
+    assert rm.validate(man) == [], rm.validate(man)[:2]
+    mutate(man["build_provenance"])
+    bad = rm.validate(man)
+    assert any(expect in v and "records compiling one file" in v
+               for v in bad), (expect, bad[:3])
 
 
 def test_a_v6_bundle_answers_for_the_v6_contract():
