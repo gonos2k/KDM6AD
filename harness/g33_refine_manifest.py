@@ -1237,12 +1237,33 @@ _BUILD_PROVENANCE_SHAPES = (
     ("schema", _nonempty_str, "a schema tag"),
     ("tree_dirty", lambda v: isinstance(v, bool), "a yes-or-no"),
     ("diagnostic", lambda v: isinstance(v, dict) and bool(v),
-     "a non-empty record of where the build ran"),
+     "a non-empty record of where the build ran"),   # contents below
     ("compile_commands", lambda v: isinstance(v, list) and bool(v)
      and all(_nonempty_str(c) for c in v), "a non-empty list of commands"),
     ("sources", lambda v: isinstance(v, list) and bool(v),
      "a non-empty list of compiled sources"),
 )
+
+#: ...and what is INSIDE `diagnostic`, which the shape above only held to
+#: being a non-empty object. `verify()` reads `outdir` and normalises the
+#: published logs by all three roots, so nested junk passed validation and
+#: then broke re-derivation -- a record that cannot be re-derived is not a
+#: record. Two paths are genuinely optional: the collector writes null when
+#: no f951 and no executable were found.
+_DIAGNOSTIC_SHAPES = (
+    ("outdir", _nonempty_str, "a path"),
+    ("tmpdir", _nonempty_str, "a path"),
+    ("repo_root", _nonempty_str, "a path"),
+    ("compiler_path", _nonempty_str, "a path"),
+    ("compiler_f951_path", lambda v: v is None or _nonempty_str(v),
+     "a path or null"),
+    ("executable_path", lambda v: v is None or _nonempty_str(v),
+     "a path or null"),
+    ("compile_commands_literal",
+     lambda v: isinstance(v, list) and all(isinstance(c, str) for c in v),
+     "a list of command lines"),
+)
+_DIAGNOSTIC_KEYS = frozenset(k for k, _, _ in _DIAGNOSTIC_SHAPES)
 
 _BUILD_PROVENANCE_KEYS = frozenset({
     "schema", "compiler_sha256", "compiler_version", "compiler_f951_sha256",
@@ -1411,6 +1432,23 @@ def _build_provenance_violations(man: dict) -> list:
         if key in bp and not want(bp[key]):
             bad.append(f"build_provenance.{key} is not {what}: "
                        f"{bp[key]!r} cannot be what this field records")
+    # ...and inside `diagnostic`, whose shape above is only "a non-empty
+    # object" (Codex). `verify()` re-derives the record from the published
+    # logs through these three roots, so junk here validated and then broke
+    # the re-derivation -- or crashed it, since `Path(123)` raises. Held to
+    # an exact key set like the block itself: v7 bundles carry these seven
+    # and nothing else, measured across the archive.
+    diag = bp.get("diagnostic")
+    if isinstance(diag, dict) and diag:
+        missing = sorted(_DIAGNOSTIC_KEYS - set(diag))
+        extra = sorted(set(diag) - _DIAGNOSTIC_KEYS)
+        if missing or extra:
+            bad.append(f"build_provenance.diagnostic is not the v7 key set: "
+                       f"missing {missing}, unexpected {extra}")
+        for key, want, what in _DIAGNOSTIC_SHAPES:
+            if key in diag and not want(diag[key]):
+                bad.append(f"build_provenance.diagnostic.{key} is not {what}: "
+                           f"{diag[key]!r} cannot be what this field records")
     rows = bp.get("sources")
     if not isinstance(rows, list) or not rows:
         return bad + ["build_provenance.sources must be a non-empty list"]

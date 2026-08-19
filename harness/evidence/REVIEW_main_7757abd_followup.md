@@ -152,6 +152,24 @@ silence are still refused, and the field still bars decision eligibility.
 
 Public-checkout worktree at the fix: 1850 passed, 240 skipped, 0 failed.
 
+### Open, and why it is not closed here
+
+Sweeping every nested block for the same defect found two more that accept
+keys nobody declared: `kernel_geometry` and `identity`. Measured -- a
+smuggled key validates CLEAN in both.
+
+It is a lesser hole than the ones closed above: an undeclared key is inert,
+where a nulled or emptied one erased a value something reads. And closing
+it is a **schema bump**, because a stricter key set is a new tag and never a
+new demand on history -- the one discipline this campaign has kept unbroken.
+Both blocks carry their own versioned tags, so `identity` and
+`kernel_geometry` would each move, every published bundle would answer for
+the tag it was published under, and the current experiment would have to be
+re-produced and its 49 figures re-verified before the pins could move again.
+
+That is the next item, not a thing to slip into this one. Recorded with the
+measurement so it is a decision rather than an oversight.
+
 ## Standing NO-GOs (unchanged)
 
 Identity Phase B/C; real mixed-coastal MPI; the `G33-NCMIN-005` mediation

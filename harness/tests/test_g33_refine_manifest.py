@@ -57,7 +57,19 @@ def _v7_provenance():
         "compile_commands": ["gfortran -c " + path for _r, path in roles],
         "repo_commit": "0" * 40,
         "tree_dirty": False,
-        "diagnostic": {"outdir": "/build"},
+        # WHERE THE BUILD RAN, in full: `verify()` normalises the published
+        # logs by all three roots, so a one-key stand-in described a build
+        # whose record could not be re-derived -- and v7 holds this to an
+        # exact key set for that reason.
+        "diagnostic": {
+            "outdir": "/build",
+            "tmpdir": "/tmp",
+            "repo_root": "/repo",
+            "compiler_path": "/usr/bin/gfortran",
+            "compiler_f951_path": "/usr/libexec/f951",
+            "executable_path": "/build/g33_refine_driver",
+            "compile_commands_literal": ["gfortran -c fake"],
+        },
     }
 
 
@@ -1484,6 +1496,60 @@ def test_no_top_level_field_may_be_emptied_or_crash_the_checker(tmp_path,
         if not rm.validate(one):       # raising here fails the test, as it must
             silent.append(key)
     assert not silent, f"{label} passes for {silent}"
+
+
+@pytest.mark.parametrize("label,value", [
+    ("null", None), ("an empty string", ""), ("a number", 123),
+    ("an empty list", []), ("an empty object", {}),
+])
+def test_no_diagnostic_field_may_be_emptied(tmp_path, label, value):
+    """`diagnostic` was held to being a non-empty object and nothing more,
+    so nested junk validated and then broke re-derivation (Codex).
+
+    `verify()` reads `outdir` and normalises the published logs by all three
+    roots -- and `Path(123)` raises, so an invalid value there did not fail
+    the check, it crashed it. Two paths stay optional because the collector
+    writes null when no f951 and no executable were found, which the null
+    case below asserts rather than assumes.
+    """
+    man = synthetic_manifest(tmp_path)
+    assert rm.validate(man) == [], rm.validate(man)[:2]
+    optional_null = {"compiler_f951_path", "executable_path"}
+    empty_list_ok = {"compile_commands_literal"}
+    silent = []
+    for key in sorted(rm._DIAGNOSTIC_KEYS):
+        if value is None and key in optional_null:
+            continue                   # a real build records null here
+        if value == [] and key in empty_list_ok:
+            continue                   # no commands is a shape, not a hole
+        one = json.loads(json.dumps(man))
+        one["build_provenance"]["diagnostic"][key] = value
+        if not any("diagnostic" in v for v in rm.validate(one)):
+            silent.append(key)
+    assert not silent, f"{label} passes for {silent}"
+
+
+def test_the_diagnostic_is_an_exact_key_set(tmp_path):
+    """A key nothing declares is a key nothing checks."""
+    man = synthetic_manifest(tmp_path)
+    assert rm.validate(man) == [], rm.validate(man)[:2]
+    smuggled = json.loads(json.dumps(man))
+    smuggled["build_provenance"]["diagnostic"]["where_else"] = "/elsewhere"
+    assert any("diagnostic is not the v7 key set" in v
+               for v in rm.validate(smuggled))
+    dropped = json.loads(json.dumps(man))
+    dropped["build_provenance"]["diagnostic"].pop("repo_root")
+    assert any("diagnostic is not the v7 key set" in v
+               for v in rm.validate(dropped))
+
+
+def test_the_optional_diagnostic_paths_really_are_optional(tmp_path):
+    """The collector writes null for an f951 and an executable it did not
+    find, so refusing null there would refuse a build that really happened."""
+    man = synthetic_manifest(tmp_path)
+    for key in ("compiler_f951_path", "executable_path"):
+        man["build_provenance"]["diagnostic"][key] = None
+    assert rm.validate(man) == [], rm.validate(man)[:2]
 
 
 def test_the_shape_table_covers_the_whole_contract():
