@@ -152,6 +152,20 @@ silence are still refused, and the field still bars decision eligibility.
 
 Public-checkout worktree at the fix: 1850 passed, 240 skipped, 0 failed.
 
+### The check I kept skipping
+
+Twice in this cycle I tightened a validator, ran the module that TESTS the
+validator, and committed -- while the modules that PRODUCE records for it
+went unrun. Both times Codex found it, and both times the reproduction took
+under two minutes. A rule and its fixtures are one change; running half of
+it is not a partial check, it is no check.
+
+A fifth pattern, then, beside the four above:
+
+* **Strengthening a rule is a change to everything that satisfies it.** The
+  blast radius of a validator edit is every producer of the thing validated,
+  and it is knowable before committing -- `grep` for the field.
+
 ### Open, and why it is not closed here
 
 Sweeping every nested block for the same defect found two more that accept
