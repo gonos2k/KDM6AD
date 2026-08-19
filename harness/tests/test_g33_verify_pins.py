@@ -6,7 +6,7 @@ they name. That was checked by a script rewritten each cycle and lost with the
 session, so the claim rested on a tool nobody could re-run.
 """
 import io
-import re
+import json
 import sys
 from contextlib import redirect_stdout
 from pathlib import Path
@@ -15,6 +15,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+import g33_evidence_chain as ec  # noqa: E402
 import g33_verify_pins as vp  # noqa: E402
 
 HAVE_ARCHIVE = (Path.home() / "kdm6ad-g33m-migrate").is_dir()
@@ -22,22 +23,37 @@ needs_archive = pytest.mark.skipif(not HAVE_ARCHIVE, reason="no bundles here")
 
 
 def _run(monkeypatch, tmp_path, text):
+    """The tool against an edited registry, through the chain's own parser."""
     registry = tmp_path / "CLAIMS.yaml"
     registry.write_text(text)
-    monkeypatch.setattr(vp, "REGISTRY", registry)
+    monkeypatch.setattr(ec, "REGISTRY", registry)
     out = io.StringIO()
     with redirect_stdout(out):
         rc = vp.main()
     return rc, out.getvalue()
 
 
-def test_the_registry_pins_evidence_this_tool_recognises():
-    """A classifier that matches nothing reports zero disagreements, which
-    reads exactly like a clean run."""
-    rows = re.findall(r"^\s+- (\S+?): (\S+)\s*$", vp.REGISTRY.read_text(), re.M)
-    pins = [ref for ref, _ in rows if vp.is_evidence(ref)]
-    assert len(pins) > 200, len(pins)
-    assert any("#" in ref for ref in pins), "no figure pointers recognised"
+def test_the_tool_and_the_chain_read_ONE_registry():
+    """Three drafts of this tool parsed the registry with a pattern of their
+    own and each silently dropped what its pattern did not match -- rows
+    outside `.bundles/`, then rows outside the archive-root prefix, then
+    rows whose value was empty or carried a space (Codex, three rounds).
+
+    Two readers of one document is also two answers to "what is evidence
+    here", which is the defect this cycle already closed once elsewhere.
+    """
+    src = (ROOT / "g33_verify_pins.py").read_text()
+    assert "import g33_evidence_chain" in src
+    assert "re.findall" not in src and "yaml.safe_load" not in src
+
+
+def test_the_registry_pins_evidence_the_parser_recognises():
+    """A parser that matches nothing reports zero disagreements, which reads
+    exactly like a clean run."""
+    claims = ec.claims()
+    pins = sum(len(c["artifacts"]) + len(c["expected_values"])
+               + len(c["expected_predicates"]) for c in claims)
+    assert pins > 200, pins
 
 
 @needs_archive
@@ -47,87 +63,60 @@ def test_every_pinned_figure_reproduces():
 
 
 @needs_archive
-def test_a_MOVED_figure_is_reported(monkeypatch, tmp_path):
-    """A verifier that cannot fail has not verified anything."""
-    text = vp.REGISTRY.read_text()
-    hit = next(m for m in re.finditer(r"^(\s+- \S+?#\S+?: )(\S+)\s*$", text, re.M)
-               if m.group(2) not in ("true", "false"))
-    rc, out = _run(monkeypatch, tmp_path,
-                   text[:hit.start()] + hit.group(1) + "-999.5\n" + text[hit.end():])
-    assert rc == 1 and "FIGURE" in out
-
-
-@needs_archive
-def test_a_pointer_the_bundle_does_not_carry_is_reported(monkeypatch, tmp_path):
-    """Walking to a value that is not there is a claim the bundle does not
-    support, not a reason to stop reading."""
-    text = re.sub(r"(#)[A-Za-z_.0-9,+-]+(: )", r"\1no_such_key\2",
-                  vp.REGISTRY.read_text(), count=1)
-    rc, out = _run(monkeypatch, tmp_path, text)
-    assert rc == 1 and "no such value" in out
-
-
-@needs_archive
 @pytest.mark.parametrize("edit,expect", [
-    (lambda t: t.replace("ncmin-001.bundles/", "ncmin-001.bundles-GONE/"),
-     "not on this host"),
-    (lambda t: t.replace("kdm6ad-g33m-migrate/", "kdm6ad-g33m-ABSENT/"),
-     "not on this host"),
-    # ...and the renamings an ALLOWLIST would silently drop instead. Both
-    # spellings this tool used to key on -- `.bundles/` and the archive-root
-    # prefix -- stopped being evidence when renamed, and the count fell while
-    # the tool reported success (Codex, twice).
-    (lambda t: t.replace("kdm6ad-g33m-migrate/", "kdm6ad-archive-2026/"),
-     "not on this host"),
-    (lambda t: t.replace("kdm6ad-g33m-f64/", "some-future-store/"),
-     "not on this host"),
-    (lambda t: t.replace("ncmin-001.bundles/", "ncmin-001.b/"),
-     "not on this host"),
+    (lambda t: t.replace("#delt: 25.0", "#delt: -999.5"), "want -999.5"),
+    (lambda t: t.replace("#delt: 25.0", "#no_such_key: 25.0"),
+     "no such value"),
+    # A predicate is a yes/no, and swapping it must not read as a rounding
+    # difference.
+    (lambda t: t.replace("#by_chain.main.3.constant_across_calls: false",
+                         "#by_chain.main.3.constant_across_calls: true"),
+     "PREDICATE"),
+])
+def test_a_MOVED_figure_is_reported(monkeypatch, tmp_path, edit, expect):
+    """A verifier that cannot fail has not verified anything."""
+    rc, out = _run(monkeypatch, tmp_path, edit(ec.REGISTRY.read_text()))
+    assert rc == 1 and expect in out
+
+
+@needs_archive
+@pytest.mark.parametrize("old,new", [
+    ("ncmin-001.bundles/", "ncmin-001.bundles-GONE/"),   # the bundle dir
+    ("kdm6ad-g33m-migrate/", "kdm6ad-g33m-ABSENT/"),     # the archive root
+    ("kdm6ad-g33m-migrate/", "kdm6ad-archive-2026/"),    # a RENAMED root
+    ("kdm6ad-g33m-f64/", "some-future-store/"),          # an unknown store
+    ("ncmin-001.bundles/", "ncmin-001.b/"),              # a shortened suffix
 ])
 def test_EVIDENCE_THAT_IS_NOT_THERE_is_a_finding(monkeypatch, tmp_path,
-                                                 edit, expect):
+                                                 old, new):
     """Missing evidence was counted and reported as success (Codex).
 
-    Worse, the row filter keyed on the directory name `.bundles/`, so
-    renaming one archive took 35 figures out of the count entirely and the
-    tool still said everything reproduced. A pin either reproduces,
-    disagrees, or is GONE -- and only the first is a pass.
+    Every renaming here used to leave the tool printing that everything
+    reproduced -- the first two by being counted as skips, the last three by
+    falling outside whichever allowlist that draft used. An allowlist is
+    fail-open by construction: what it does not name is silently not
+    evidence.
     """
-    rc, out = _run(monkeypatch, tmp_path, edit(vp.REGISTRY.read_text()))
-    assert rc == 1 and expect in out and "GONE" in out
+    rc, out = _run(monkeypatch, tmp_path, ec.REGISTRY.read_text().replace(old, new))
+    assert rc == 1 and "not on this host" in out and "GONE" in out
 
 
-def test_a_row_that_looks_like_a_path_is_never_silently_dropped():
-    """The classification is inverted for a reason: an allowlist is
-    fail-open by construction.
-
-    Whatever it does not name is silently not evidence, which is how two
-    rounds of renamings took pins out of the count while the tool printed
-    success. So `FIELD_KEYS` names the registry's own scalar fields, every
-    path-like key is evidence, and anything path-like that still escapes is
-    REPORTED. This holds the field list to that shape: a field key that
-    contains a path separator would re-open the hole.
-    """
-    assert not any("/" in k or "#" in k for k in vp.FIELD_KEYS), vp.FIELD_KEYS
-    assert vp.is_evidence("some-future-store/x.bundles/abc/manifest.json#a.b")
-    assert vp.is_evidence("/absolute/path/manifest.json")
-    assert not vp.is_evidence("id")
-
-
-def test_the_field_list_is_exactly_what_the_registry_uses():
-    """Naming a field the registry does not use is pre-emptive exemption:
-    the day one of them starts holding a path, it is exempt before anyone
-    looks. The list drifting the other way is the same hole in reverse -- a
-    new scalar field would be read as an unresolvable artefact."""
-    rows = re.findall(r"^\s+- (\S+?): (\S+)\s*$", vp.REGISTRY.read_text(), re.M)
-    scalar = {ref for ref, _ in rows if "/" not in ref and "#" not in ref}
-    assert scalar == vp.FIELD_KEYS, (scalar ^ vp.FIELD_KEYS)
+@needs_archive
+def test_a_pin_a_LINE_SCAN_would_not_see_is_still_checked(monkeypatch,
+                                                          tmp_path):
+    """`- key: <empty>` matches no `key: value-with-no-spaces` pattern, so
+    the scanning drafts dropped it from the count and reported success. The
+    chain's parser REFUSES a line it cannot read, which is the property that
+    makes a miss visible."""
+    text = ec.REGISTRY.read_text().replace("#delt: 25.0", "#delt:")
+    with pytest.raises(ValueError):
+        _run(monkeypatch, tmp_path, text)
 
 
 def test_a_registry_with_no_pins_is_refused(monkeypatch, tmp_path):
     """Nothing to verify is not the same as everything verified: zero
     disagreements over zero pins is exactly what a clean run prints."""
-    text = "\n".join(l for l in vp.REGISTRY.read_text().splitlines()
+    text = "\n".join(l for l in ec.REGISTRY.read_text().splitlines()
                      if "kdm6ad-g33m-" not in l)
     rc, out = _run(monkeypatch, tmp_path, text)
     assert rc == 1 and "pins no evidence at all" in out

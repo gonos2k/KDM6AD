@@ -5,107 +5,97 @@ checked by a script written fresh each cycle and thrown away with the session --
 so "the pinned figures still reproduce" rested on a tool nobody could re-run.
 A claim whose verification cannot be repeated is a claim on trust.
 
-MISSING EVIDENCE IS A FINDING, not a skip (Codex). The first draft counted an
-unresolvable pin and reported success, and its row filter dropped pins that did
-not spell `.bundles/` at all -- so renaming one archive directory took 35
-figures out of the count and the tool still said everything reproduced. Both
-are the campaign's oldest rule in a new place: a gate that cannot see must not
-answer "no". A pin either reproduces, disagrees, or is GONE, and only the first
-is a pass.
+ONE PARSER, the evidence chain's. Three drafts of this tool read the registry
+with a pattern of their own, and each one silently dropped what its pattern did
+not match: rows outside `.bundles/`, then rows outside the archive-root prefix,
+then rows whose value was empty or carried a space (Codex, three rounds, the
+same shape each time in the fix for the last). Two readers of one document also
+means two answers to "what is evidence here", which is the defect this cycle
+already closed once in `dispatched_seeds`. `g33_evidence_chain.claims()` reads
+the grammar, REFUSES a line it cannot parse, and needs no dependency CI does
+not have -- so it is the parser, and this tool is the comparison.
 
-A host with no archive at all is a different statement from an archive with
-holes in it, and this says which: it verifies nothing and reports that it
-verified nothing, rather than reporting success.
+MISSING EVIDENCE IS A FINDING, not a skip. A pin either reproduces, disagrees,
+or is GONE, and only the first is a pass. A host with no archive at all is a
+different statement from an archive with holes in it, and this says which: it
+verifies nothing and reports that, rather than reporting success.
 
 Exact comparison. A pinned figure is a bit pattern -- that is the point of
-pinning it. Booleans compare case-folded because YAML writes `true` where
-Python writes `True`; the value is the same one, and a spelling difference
-reported as a disagreement is a false alarm that trains a reader to ignore the
-tool.
+pinning it -- so the registry's own `tolerance` is honoured where it states
+one and nothing is allowed to slip where it does not.
 """
 import hashlib
 import json
 import pathlib
-import re
 import sys
 
+HERE = pathlib.Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
+import g33_evidence_chain as ec  # noqa: E402
+
 HOME = pathlib.Path.home()
-REGISTRY = pathlib.Path(__file__).resolve().parent / "evidence" / "CLAIMS.yaml"
-#: Keys that are registry FIELDS rather than artefact references. Everything
-#: else that looks like a path is evidence.
-#:
-#: An ALLOWLIST is fail-open by construction: whatever it does not name is
-#: silently not evidence. Two rounds of exactly that -- first `.bundles/`, then
-#: the archive-root prefix `kdm6ad-g33m-` -- and each time renaming a directory
-#: took pins out of the count while the tool reported success (Codex, twice).
-#: So the rule is inverted: a row whose key looks like a path IS evidence, and
-#: anything path-like this cannot classify is REPORTED rather than dropped.
-#: Only what the registry ACTUALLY uses as a list-item key. Naming fields it
-#: does not use is pre-emptive exemption -- the day one of them starts holding
-#: a path, it is exempt before anyone looks.
-FIELD_KEYS = frozenset({"id"})
 
 
-def is_evidence(ref: str) -> bool:
-    """A reference to an artefact, as opposed to a registry field."""
-    if ref in FIELD_KEYS:
-        return False
-    return "/" in ref or "#" in ref
+def _walk(doc, pointer: str):
+    """The value at a dotted pointer, or `KeyError`/`IndexError` if the
+    bundle does not carry it -- which is a claim the artefact does not
+    support, not a reason to stop reading."""
+    for key in pointer.split("."):
+        doc = doc[int(key)] if isinstance(doc, list) else doc[key]
+    return doc
 
 
 def main() -> int:
-    rows = re.findall(r"^\s+- (\S+?): (\S+)\s*$", REGISTRY.read_text(), re.M)
-    pins, unclassified = [], []
-    for ref, want in rows:
-        if is_evidence(ref):
-            pins.append((ref, want))
-        elif "/" in ref or "#" in ref:
-            unclassified.append(ref)      # unreachable by construction; see above
-
     ok = bad = gone = digests = 0
-    for ref, want in pins:
-        path, _, pointer = ref.partition("#")
-        f = HOME / path
-        if not f.is_file():
-            gone += 1
-            print(f"  GONE    {ref}\n          the evidence this claim rests "
-                  f"on is not on this host")
-            continue
-        if not pointer:                        # a whole-file digest
+    pinned = 0
+    for claim in ec.claims():
+        for path, want in claim["artifacts"].items():
+            pinned += 1
+            f = HOME / path
+            if not f.is_file():
+                gone += 1
+                print(f"  GONE    {claim['id']}: {path}")
+                continue
             got = hashlib.sha256(f.read_bytes()).hexdigest()
             if got == want:
                 digests += 1
             else:
                 bad += 1
-                print(f"  DIGEST  {path}\n          want {want[:16]} got {got[:16]}")
-            continue
-        doc = json.loads(f.read_text())
-        try:
-            for key in pointer.split("."):
-                doc = doc[int(key)] if isinstance(doc, list) else doc[key]
-        except (KeyError, IndexError, ValueError):
-            bad += 1
-            print(f"  FIGURE  {ref}\n          the bundle has no such value")
-            continue
-        if isinstance(doc, bool):
-            same = want.lower() == str(doc).lower()
-        elif isinstance(doc, (int, float)) and re.fullmatch(r"-?[\d.eE+-]+", want):
-            same = float(doc) == float(want)
-        else:
-            same = str(doc) == want
-        if same:
-            ok += 1
-        else:
-            bad += 1
-            print(f"  FIGURE  {ref}\n          want {want} got {doc}")
+                print(f"  DIGEST  {claim['id']}: {path}\n"
+                      f"          want {want[:16]} got {got[:16]}")
+        rows = ([(v, "value") for v in claim["expected_values"]]
+                + [(w, "predicate") for w in claim["expected_predicates"]])
+        for row, kind in rows:
+            pinned += 1
+            f = HOME / row["file"]
+            if not f.is_file():
+                gone += 1
+                print(f"  GONE    {claim['id']}: {row['file']}#{row['path']}")
+                continue
+            try:
+                doc = _walk(json.loads(f.read_text()), row["path"])
+            except (KeyError, IndexError, ValueError):
+                bad += 1
+                print(f"  {kind.upper():7s} {claim['id']}: {row['file']}"
+                      f"#{row['path']}\n          the bundle has no such value")
+                continue
+            if kind == "predicate":
+                same = doc is row["want"]
+                want = row["want"]
+            else:
+                want, tol = row["value"], row.get("tolerance") or 0.0
+                same = (isinstance(doc, (int, float))
+                        and not isinstance(doc, bool)
+                        and abs(float(doc) - float(want)) <= tol)
+            if same:
+                ok += 1
+            else:
+                bad += 1
+                print(f"  {kind.upper():7s} {claim['id']}: {row['file']}"
+                      f"#{row['path']}\n          want {want!r} got {doc!r}")
     print(f"{ok} figures reproduce, {digests} digests match, "
-          f"{bad} disagree, {gone} gone, of {len(pins)} pinned")
-    if unclassified:
-        print(f"REFUSED: {len(unclassified)} row(s) look like artefact "
-              f"references and were not classified as evidence: "
-              f"{unclassified[:3]}")
-        return 1
-    if not pins:
+          f"{bad} disagree, {gone} gone, of {pinned} pinned")
+    if not pinned:
         print("REFUSED: the registry pins no evidence at all -- either it "
               "carries none or this tool stopped recognising it")
         return 1
