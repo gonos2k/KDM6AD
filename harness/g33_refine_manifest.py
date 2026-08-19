@@ -1212,6 +1212,38 @@ _BUILD_PROVENANCE_SCHEMA = "g33_build_provenance_v1"
 #: could drop six of seven source rows, repeat one logical path under two
 #: digests, add a row nothing compiled, or omit `compiler_f951_sha256`
 #: entirely and validate CLEAN. All five measured (owner §5).
+#: What each required field must BE, not merely that it is there. The key set
+#: is satisfied by presence, so without this a field could be emptied -- null,
+#: "", [], {} -- and the record still validated (measured, five fields, all
+#: four spellings). Shape rather than truthiness: `tree_dirty: false` is a
+#: claim and has to pass.
+def _nonempty_str(v):
+    return isinstance(v, str) and bool(v.strip())
+
+
+_BUILD_PROVENANCE_SHAPES = (
+    ("compiler_sha256", lambda v: _hexlen(v, 64), "a 64-hex digest"),
+    ("compiler_f951_sha256", lambda v: _hexlen(v, 64), "a 64-hex digest"),
+    ("module_sha256", lambda v: _hexlen(v, 64), "a 64-hex digest"),
+    ("compiled_module_sha256", lambda v: _hexlen(v, 64), "a 64-hex digest"),
+    ("fixture_sha256", lambda v: _hexlen(v, 64), "a 64-hex digest"),
+    ("build_script_sha256", lambda v: _hexlen(v, 64), "a 64-hex digest"),
+    ("executable_sha256", lambda v: _hexlen(v, 64), "a 64-hex digest"),
+    ("repo_commit", lambda v: _hexlen(v, 40), "a 40-hex commit"),
+    ("compiler_version", _nonempty_str, "a version string"),
+    ("module_path", _nonempty_str, "a path"),
+    ("compiled_module_path", _nonempty_str, "a path"),
+    ("fixture_path", _nonempty_str, "a path"),
+    ("schema", _nonempty_str, "a schema tag"),
+    ("tree_dirty", lambda v: isinstance(v, bool), "a yes-or-no"),
+    ("diagnostic", lambda v: isinstance(v, dict) and bool(v),
+     "a non-empty record of where the build ran"),
+    ("compile_commands", lambda v: isinstance(v, list) and bool(v)
+     and all(_nonempty_str(c) for c in v), "a non-empty list of commands"),
+    ("sources", lambda v: isinstance(v, list) and bool(v),
+     "a non-empty list of compiled sources"),
+)
+
 _BUILD_PROVENANCE_KEYS = frozenset({
     "schema", "compiler_sha256", "compiler_version", "compiler_f951_sha256",
     "compile_commands", "sources", "executable_sha256", "build_script_sha256",
@@ -1364,17 +1396,21 @@ def _build_provenance_violations(man: dict) -> list:
     if missing or extra:
         bad.append(f"build_provenance is not the {_BUILD_PROVENANCE_SCHEMA} key "
                    f"set: missing {missing}, unexpected {extra}")
-    # A KEY WITH NO VALUE IS NOT A KEY (Codex, generalized from the join
-    # below). The exact key set is satisfied by presence, so `null` passed it
-    # while erasing whatever the field said -- measured on a clean synthetic
-    # record, five of the seventeen required fields validated entirely CLEAN
-    # when nulled, `tree_dirty` among them. `tree_dirty: false` is a claim; a
-    # null is the absence of one, and this contract does not accept absence.
-    empty = sorted(k for k in _BUILD_PROVENANCE_KEYS & set(bp)
-                   if bp[k] is None)
-    if empty:
-        bad.append(f"build_provenance carries no value for {empty} -- the "
-                   f"contract requires these fields and 'no value' is not one")
+    # A KEY WITH NO VALUE IS NOT A KEY (Codex). The exact key set is
+    # satisfied by PRESENCE, so the value could be erased while the record
+    # still looked complete: five of the seventeen required fields validated
+    # entirely CLEAN when set to null, and the same five when set to `""`,
+    # `[]` or `{}` -- refusing null alone was refusing one spelling of the
+    # same erasure.
+    #
+    # SHAPE, not truthiness. `tree_dirty: false` is a claim and must pass,
+    # which is why this cannot be `if not bp[k]`. Each field says what it is,
+    # so a value that cannot be what the field is for is refused whatever it
+    # spells.
+    for key, want, what in _BUILD_PROVENANCE_SHAPES:
+        if key in bp and not want(bp[key]):
+            bad.append(f"build_provenance.{key} is not {what}: "
+                       f"{bp[key]!r} cannot be what this field records")
     rows = bp.get("sources")
     if not isinstance(rows, list) or not rows:
         return bad + ["build_provenance.sources must be a non-empty list"]
@@ -1828,7 +1864,11 @@ def _expected_run_violations(man: dict, members: list) -> list:
         bad.append(f"kernel_geometry.algorithm {kg.get('algorithm')!r} is not "
                    f"the bundle's {man.get('algorithm')!r} -- the limit was "
                    f"read from another kernel than the one that ran")
-    want_src = xp.KERNEL_SOURCES.get(man.get("algorithm"))
+    # A CHECKER REPORTS; it does not crash on the artifact it is judging.
+    # `algorithm` is used as a dict key here, so a list in that field raised
+    # TypeError out of the validation instead of failing it.
+    algo = man.get("algorithm")
+    want_src = xp.KERNEL_SOURCES.get(algo) if isinstance(algo, str) else None
     if (kg.get("schema") != "kdm6_subcycle_v1" and want_src is not None
             and kg.get("source_path") != str(want_src)):
         bad.append(f"kernel_geometry.source_path {kg.get('source_path')!r} is "

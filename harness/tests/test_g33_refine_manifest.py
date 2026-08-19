@@ -1436,25 +1436,61 @@ def test_the_chain_claim_is_recomputed_from_its_own_members(tmp_path, mutate,
     assert any("is_refinement_chain" in v and expect in v for v in bad), bad[:3]
 
 
-def test_no_required_provenance_field_may_carry_null(tmp_path):
-    """Presence satisfies the exact key set; `null` satisfied it too.
+@pytest.mark.parametrize("label,value", [
+    ("null", None), ("an empty string", ""), ("an empty list", []),
+    ("an empty object", {}), ("zero", 0),
+])
+def test_no_required_provenance_field_may_be_emptied(tmp_path, label, value):
+    """Presence satisfies the exact key set; every spelling of EMPTY
+    satisfied it too.
 
-    Nulling a field erased whatever it said while the record still looked
-    complete -- measured on a clean synthetic one, five of the seventeen
-    required fields validated entirely CLEAN, `tree_dirty` among them, and
-    `fixture_path` took the v7 join down with it. Asked of EVERY field
-    rather than the three the join reads, so the next field added to the
-    contract is covered the day it is added.
+    Refusing `null` alone refused one spelling of the same erasure -- `""`,
+    `[]` and `{}` went on passing for the same five fields (Codex). Asked of
+    every field and every spelling, because a test that named one of each is
+    what let this through the first time. Shape, not truthiness:
+    `tree_dirty: false` is a claim and must keep passing, which the clean
+    baseline asserts.
     """
     man = synthetic_manifest(tmp_path)
     assert rm.validate(man) == [], rm.validate(man)[:2]
     silent = []
     for key in sorted(rm._BUILD_PROVENANCE_KEYS):
         one = json.loads(json.dumps(man))
-        one["build_provenance"][key] = None
-        if not any("no value" in v for v in rm.validate(one)):
+        one["build_provenance"][key] = value
+        if not rm.validate(one):
             silent.append(key)
-    assert not silent, f"null passes for {silent}"
+    assert not silent, f"{label} passes for {silent}"
+
+
+@pytest.mark.parametrize("label,value", [
+    ("null", None), ("an empty string", ""), ("an empty list", []),
+    ("an empty object", {}), ("zero", 0),
+])
+def test_no_top_level_field_may_be_emptied_or_crash_the_checker(tmp_path,
+                                                                label, value):
+    """The same question, one level up -- and it caught two checkers that
+    died on the artifact they were judging (`members` as ints, `algorithm`
+    as a list). A validator that raises has not refused anything: the caller
+    sees a crash, not a verdict, and a crash is what an unhandled bundle
+    looks like too."""
+    man = synthetic_manifest(tmp_path)
+    assert rm.validate(man) == [], rm.validate(man)[:2]
+    silent = []
+    for key in sorted(man):
+        if key == "build_provenance":
+            continue                   # walked field by field above
+        one = json.loads(json.dumps(man))
+        one[key] = value
+        if not rm.validate(one):       # raising here fails the test, as it must
+            silent.append(key)
+    assert not silent, f"{label} passes for {silent}"
+
+
+def test_the_shape_table_covers_the_whole_contract():
+    """A field added to the key set with no shape beside it is a field that
+    can be emptied -- which is the defect above, one release later."""
+    named = {k for k, _, _ in rm._BUILD_PROVENANCE_SHAPES}
+    assert named == rm._BUILD_PROVENANCE_KEYS, named ^ rm._BUILD_PROVENANCE_KEYS
 
 
 @pytest.mark.parametrize("declare,clean", [
