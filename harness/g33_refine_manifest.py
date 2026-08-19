@@ -1220,6 +1220,23 @@ _BUILD_PROVENANCE_KEYS = frozenset({
 })
 
 
+def dispatched_seeds(man: dict) -> set:
+    """The analyzer modules THIS bundle's analyses actually reached.
+
+    ONE authority, called by the validator below and by the producer when it
+    decides what it may declare unattested. Written out twice the two drifted:
+    the seam records an analyzer it could not attest whether or not this
+    bundle dispatches to it, the validator refuses names outside the
+    dispatch set, and a suite that imported `g33_number_transport` before
+    the producer therefore published a bundle its own validator rejected
+    (measured, 13 tests, collection-order dependent).
+    """
+    seeds = (man.get("identity") or {}).get("analysis_seeds") or {}
+    names = {a.get("analysis") for a in (man.get("analyses") or [])
+             if isinstance(a, dict)}
+    return {seeds[n] for n in names if isinstance(seeds.get(n), str)}
+
+
 def _executed_analyzer_violations(man: dict) -> list:
     """What RAN, held to what the bundle PINS (owner review §8).
 
@@ -1238,10 +1255,9 @@ def _executed_analyzer_violations(man: dict) -> list:
     # made omitting it a way to skip the whole check, and `analyses` proves
     # analyzers ran -- the manifest's own `analysis_seeds` names which module
     # each analysis dispatched to, so the expected set is not a guess.
-    seeds = (man.get("identity") or {}).get("analysis_seeds") or {}
     names = {a.get("analysis") for a in (man.get("analyses") or [])
              if isinstance(a, dict)}
-    expected = {seeds[n] for n in names if isinstance(seeds.get(n), str)}
+    expected = dispatched_seeds(man)
     # A bundle that could not attest everything says so, and saying so is
     # incompatible with being decision evidence (owner §8, Codex).
     cannot = man.get("unattested_analyzers")

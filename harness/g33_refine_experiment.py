@@ -2053,13 +2053,8 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             if attested:
                 man["executed_analyzers"] = [
                     {"module": k, "sha256": v} for k, v in sorted(attested.items())]
-            # ...and SAY what could not be attested. Dropping those silently
-            # published a bundle whose record a reader cannot tell apart from
-            # a complete one: measured, 20 analyses with 7 modules named and
-            # `g33_number_transport` simply absent (Codex). A bundle that
-            # cannot say what ran has to say that.
-            if unattested:
-                man["unattested_analyzers"] = unattested
+            # ...and SAY what could not be attested -- but only once the
+            # dispatch scope is known, below, where `identity` exists.
         # The TRACKED build inputs decide the raw streams as surely as the
         # analyzers decide the numbers, and build_provenance recorded only their
         # content digests -- checkable against today's working tree and nothing
@@ -2140,6 +2135,27 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         import g33_identity as gi
         man["identity"] = gi.identity_block(
             {a["analysis"] for a in man["analyses"] if a.get("analyzer")})
+        # ...and NOW say what could not be attested. Dropping it silently
+        # published a bundle whose record a reader cannot tell apart from a
+        # complete one: measured, 20 analyses with 7 modules named and
+        # `g33_number_transport` simply absent (Codex). A bundle that cannot
+        # say what ran has to say that.
+        #
+        # SCOPED TO WHAT THIS BUNDLE DISPATCHES TO, by the validator's own
+        # authority. The seam records an analyzer it could not attest whether
+        # or not any analysis here reaches it, so a suite that imported
+        # `g33_number_transport` before the producer made every in-process
+        # `produce()` publish a name the validator refuses as unrelated --
+        # 13 tests, and only when collection put that module first. A module
+        # this bundle never dispatched to decided nothing in it, so it owes
+        # the record nothing; the CLI refusal above still fires on the FULL
+        # set, so nothing is relaxed on the path that publishes evidence.
+        if _IMPORTED:
+            reached = rm.dispatched_seeds(man)
+            confess = sorted(k for k, v in _IMPORTED.items()
+                             if v is None and k in reached)
+            if confess:
+                man["unattested_analyzers"] = confess
         # An instrument arm can never be decision evidence, and says so in the
         # artifact rather than only in prose.
         man["decision_eligible"] = False

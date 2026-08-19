@@ -23,6 +23,7 @@ REF = REPO / 'host' / 'KIM-meso_v1.0' / 'phys' / 'module_mp_kdm6.F'
 sys.path.insert(0, str(ROOT))
 import g33_refine_experiment as xp  # noqa: E402
 import g33_refine_manifest as rm  # noqa: E402
+import g33_build_provenance as bp  # noqa: E402
 
 sys.path.insert(0, str(ROOT / "tests"))
 from test_g33_refine_analyze import _stream  # noqa: E402
@@ -54,7 +55,7 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
         # a fake that logs only the module describes a build with no fixture.
         # the log the record is DERIVED from: one line per role, matching
         # `_FAKE_SOURCES` exactly, or the witness comparison refuses
-        rows = _FAKE_SOURCES(MOD, FIX)
+        rows = _FAKE_SOURCES(FIX)
         (workdir / "sources.txt").write_text(
             "".join(f"{r['path']}\t{r['sha256']}\n" for r in rows))
         (workdir / "staged-map.txt").write_text(
@@ -69,7 +70,7 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
             "compiler_sha256": "1" * 64,
             "build_script_sha256": "7" * 64,
             "compile_commands": ["gfortran -c fake"],
-            "sources": _FAKE_SOURCES(MOD, FIX),
+            "sources": _FAKE_SOURCES(FIX),
             "compiled_module_sha256": xp.rm.sha256(ovl),
             "diagnostic": {"outdir": str(workdir)},
             # v7 holds this block to an EXACT key set and a role table, so a
@@ -161,25 +162,34 @@ MOD = (xp.KERNEL_SOURCES["legacy"]
        else FIX.relative_to(REPO))
 
 
-def _FAKE_SOURCES(mod, fix):
-    """One row per role the v7 contract requires (owner review §5)."""
-    rows = [{"path": str(mod), "role": "module", "sha256": xp.rm.sha256(mod)},
-            {"path": FIXLOG, "role": "fixture", "sha256": xp.rm.sha256(fix)}]
-    for role, path in (("driver", "harness/g33_fortran/g33_refine_driver.f90"),
-                       ("stub", "harness/g33_fortran/stub_wrf_error.f90"),
-                       ("libmassv", "host/KIM-meso_v1.0/frame/libmassv.F"),
-                       ("model_constants",
-                        "host/KIM-meso_v1.0/share/module_model_constants.F"),
-                       ("radar", "host/KIM-meso_v1.0/phys/module_mp_radar.F")):
+def _FAKE_SOURCES(fix):
+    """One row per role the v7 contract requires (owner review §5).
+
+    The role is DERIVED, never asserted. `verify()` re-derives every role
+    from the path, so a fake that labels its own rows can contradict the
+    record it exists to match -- and on a PUBLIC checkout it did: `MOD`
+    falls back to the fixture there, one path carried both `module` and
+    `fixture`, and re-derivation called them both `fixture`. Fifteen tests
+    failed on CI and none on a host that has `host/**` (measured, in a
+    throwaway worktree -- which is what a public checkout is).
+    """
+    rows = [{"path": FIXLOG, "sha256": xp.rm.sha256(fix)}]
+    for path in ("host/KIM-meso_v1.0/phys/module_mp_kdm6.F",
+                 "harness/g33_fortran/g33_refine_driver.f90",
+                 "harness/g33_fortran/stub_wrf_error.f90",
+                 "host/KIM-meso_v1.0/frame/libmassv.F",
+                 "host/KIM-meso_v1.0/share/module_model_constants.F",
+                 "host/KIM-meso_v1.0/phys/module_mp_radar.F"):
         # A TRACKED path must carry its real digest: the snapshot holds every
         # compiled source in the repo to its HEAD blob, so a placeholder here
         # would describe a build from bytes that never existed. `host/**` is
         # gitignored, so those keep a stand-in.
         real = REPO / path
-        rows.append({"path": path, "role": role,
+        rows.append({"path": path,
                      "sha256": xp.rm.sha256(real) if real.is_file()
                      else hashlib.sha256(path.encode()).hexdigest()})
-    return rows
+    return [{"path": r["path"], "role": bp.role_of(r["path"]),
+             "sha256": r["sha256"]} for r in rows]
 
 
 def _produce(dest, **kw):
@@ -365,7 +375,7 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
         # a fake that logs only the module describes a build with no fixture.
         # the log the record is DERIVED from: one line per role, matching
         # `_FAKE_SOURCES` exactly, or the witness comparison refuses
-        rows = _FAKE_SOURCES(MOD, FIX)
+        rows = _FAKE_SOURCES(FIX)
         (workdir / "sources.txt").write_text(
             "".join(f"{r['path']}\t{r['sha256']}\n" for r in rows))
         (workdir / "staged-map.txt").write_text(
@@ -380,7 +390,7 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
             "compiler_sha256": "1" * 64,
             "build_script_sha256": "7" * 64,
             "compile_commands": ["gfortran -c fake"],
-            "sources": _FAKE_SOURCES(MOD, FIX),
+            "sources": _FAKE_SOURCES(FIX),
             "compiled_module_sha256": xp.rm.sha256(ovl),
             "diagnostic": {"outdir": str(workdir)},
             # v7 holds this block to an EXACT key set and a role table, so a
