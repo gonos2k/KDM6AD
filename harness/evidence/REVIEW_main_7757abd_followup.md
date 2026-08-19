@@ -108,6 +108,48 @@ A fourth pattern to keep beside the three above:
   a different file instead changed the shape of what it was testing, and the
   difference only surfaced on a machine that had never seen `host/**`.
 
+### The fix that hid what it fixed
+
+Codex, on that commit: *the public-checkout fix disguises a missing private
+kernel as compiled input.* It did. Naming `host/.../module_mp_kdm6.F` in the
+fake's `sources` traded a VISIBLE CI failure for a SILENT contradiction --
+on a public checkout that file is absent, its digest was a hash of its own
+path, and the manifest pinned the fixture as its module while the provenance
+claimed to have compiled the kernel. Measured: the two records named
+different files, and validation was CLEAN.
+
+That the fabrication survived is the finding. `build_provenance` states the
+fixture and the compiled module TWICE -- at the top, and again in `sources`
+as what the compiler read -- and nothing joined the two. All four mutations
+validated CLEAN against a real published bundle. The same shape as
+`dispatched_seeds`, one file later: **one fact written in two places drifts,
+and the drift is where a forgery lives.**
+
+The join for the module is `compiled_module_sha256`, not `module_path`. A
+build reads the kernel and compiles a GENERATED overlay, so those two are
+different files by design -- binding them refused all five published v7
+bundles. That measurement came before enforcement and corrected the rule,
+which is the discipline working rather than the discipline being followed:
+37 bundles, 0 refused after the correction, and forgery of the overlay
+digest, the fixture digest and the fixture path all refused on a real bundle.
+
+The fake now names the overlay it actually wrote -- which is what a real
+build compiles, since gfortran never opens the kernel -- so nothing has to
+be invented on any checkout.
+
+### The same root, a third time
+
+A full run then failed two tests that no partial run reproduces. The
+attestation record is a module-level dict living for the whole session, so
+whichever test first touches an analyzer fixes its attestability for every
+later one. With all eight seeds already imported, the producer attested
+none, omitted `executed_analyzers`, and the validator refused the omission
+even though `unattested_analyzers` named every seed the bundle dispatched
+to. Refusing an honest confession is, again, a production invariant applied
+to a process that is not the production one. Absence is legal now exactly
+when the declaration covers the dispatched seeds -- partial declarations and
+silence are still refused, and the field still bars decision eligibility.
+
 Public-checkout worktree at the fix: 1850 passed, 240 skipped, 0 failed.
 
 ## Standing NO-GOs (unchanged)
