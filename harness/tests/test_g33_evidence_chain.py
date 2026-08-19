@@ -1657,6 +1657,35 @@ def test_the_WHOLE_gate_answers_when_git_is_unusable(monkeypatch, boom):
     assert rc == 1
 
 
+def test_a_FRESH_process_without_git_still_answers(tmp_path):
+    """A FRESH interpreter, because that is the condition.
+
+    The producer holds every analyzer it eagerly imports to HEAD, and on a
+    machine without git that refusal used to be a `SystemExit` raised at
+    IMPORT -- so importing `g33_identity`, which imports the producer at its
+    own module level, killed the validator that imports IT. An in-process
+    check cannot see this: by then the producer is already loaded, which is
+    exactly the condition that hides it (Codex).
+
+    Refusing at import applies a production invariant to every process that
+    merely READS a manifest. The seam records the analyzer as unattested and
+    `produce()` refuses to publish, which is where the claim is made.
+    """
+    import subprocess as sp
+    bin_only = tmp_path / "bin"
+    bin_only.mkdir()
+    (bin_only / "env").symlink_to("/usr/bin/env")     # no git on PATH
+    probe = (
+        "import sys, json, pathlib\n"
+        f"sys.path.insert(0, {str(ROOT)!r})\n"
+        "import g33_identity, g33_refine_manifest as rm\n"
+        "print('OK', rm.validate({'artifact_type': 'x'}) is not None)\n")
+    r = sp.run([sys.executable, "-c", probe], capture_output=True, text=True,
+               env={"PATH": str(bin_only), "HOME": str(tmp_path)})
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "OK True" in r.stdout, r.stdout + r.stderr
+
+
 def test_the_LIVE_bundles_anchor_to_reachable_commits():
     """The bundles this repo actually pins. Not a synthetic: the defect was
     found on a real one."""

@@ -54,6 +54,23 @@ _IMPORTED: dict = {}
 
 
 
+class Unattestable(Exception):
+    """The bytes that just executed cannot be pinned to HEAD.
+
+    NOT a `SystemExit`. Refusing at IMPORT applies a production invariant --
+    a fresh process where the producer is imported first -- to every process
+    that merely READS a manifest: `g33_identity` imports this module at its
+    own module level, so on a machine without git, importing it killed the
+    validator that imports IT (Codex, reproduced in a fresh process; the
+    earlier measurement had this module already loaded, which is exactly the
+    condition that hides it).
+
+    The seam below records the analyzer as unattested and `produce()` refuses
+    to publish, which is where the claim is actually made. A reader gets a
+    manifest checked as far as it can be, and a producer gets its refusal.
+    """
+
+
 def _run_git(*args, cwd=None):
     """A git invocation that RETURNS rather than raises.
 
@@ -81,11 +98,11 @@ def _require_head_digest(rel: Path, got: str, what: str) -> str:
     # which imports this module).
     blob = _run_git("show", f"HEAD:{rel}", cwd=HERE.parent)
     if blob.returncode != 0:
-        # NO GIT AND NO SUCH PATH ARE ONE ANSWER HERE: either way nothing can
-        # pin the bytes that just executed, which is what this gate is for.
-        raise SystemExit(
-            f"REFUSED: {rel} is not readable from HEAD, so nothing can pin "
-            f"the bytes that {what} just executed")
+        # NO GIT AND NO SUCH PATH ARE ONE ANSWER: either way nothing can pin
+        # the bytes that just executed, which is what this gate is for.
+        raise Unattestable(
+            f"{rel} is not readable from HEAD, so nothing can pin the bytes "
+            f"that {what} just executed")
     want = hashlib.sha256(blob.stdout).hexdigest()
     if got != want:
         raise SystemExit(
@@ -159,10 +176,13 @@ def _eager_import(name: str):
             # HEAD here, which is the same guarantee `require_pinned_producer`
             # gives the first execution, and needs no cross-instance state --
             # there is no in-process place the attested code cannot reach.
-            _require_head_digest(
-                Path("harness/g33_refine_experiment.py"),
-                hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-                "the producer's second execution")
+            try:
+                _require_head_digest(
+                    Path("harness/g33_refine_experiment.py"),
+                    hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+                    "the producer's second execution")
+            except Unattestable:
+                pass                    # recorded as unattested just below
             # NOT SILENTLY SKIPPED. `extension_protocol` reaches this module
             # through the module-level `nt`, never through `_an`, so leaving
             # no record meant nothing marked it -- and a duplicate instance
@@ -189,7 +209,13 @@ def _eager_import(name: str):
     # HELD TO HEAD HERE, not later. `_an` returns early for anything already
     # in `_IMPORTED`, so recording an unverified digest there skipped the
     # check entirely: an edited module was accepted with its own digest.
-    checked = _require_head_digest(Path(f"harness/{name}.py"), before, name)
+    try:
+        checked = _require_head_digest(Path(f"harness/{name}.py"), before, name)
+    except Unattestable:
+        # Same shape as a module already in memory: the process records that
+        # it cannot attest and `produce()` refuses to publish.
+        _IMPORTED[name] = None
+        return mod
     _EAGER_AT_LOAD[name] = checked
     # ...and into the record the manifest is built from. `extension_protocol`
     # reaches this module through the module-level `nt`, never through `_an`,
@@ -252,8 +278,11 @@ def _an(name: str):
         # preflight would still go unseen. Closing it needs the detached
         # snapshot, which is the open half of §8.
         if name in _EAGER_AT_LOAD:
-            _IMPORTED[name] = _require_head_digest(
-                Path(f"harness/{name}.py"), _EAGER_AT_LOAD[name], name)
+            try:
+                _IMPORTED[name] = _require_head_digest(
+                    Path(f"harness/{name}.py"), _EAGER_AT_LOAD[name], name)
+            except Unattestable:
+                _IMPORTED[name] = None
             return sys.modules[name]
         _IMPORTED[name] = None
         return sys.modules[name]
