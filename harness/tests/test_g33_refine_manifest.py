@@ -1624,6 +1624,42 @@ def test_NO_public_reader_crashes_on_a_malformed_manifest(text):
     assert not died, died[:5]
 
 
+@pytest.mark.parametrize("value", [[], None, "x", 42, True, (), 0.5])
+def test_NO_public_reader_crashes_on_a_manifest_that_is_not_one(value):
+    """THE ARGUMENT ITSELF is an axis, and no field coverage reaches it.
+
+    The sweep beside this one varies the FIELDS of a real manifest, so `man`
+    was a dict in all 2880 of its calls -- and seven of the eight readers
+    died the moment `man` was the wrong thing (Codex, on
+    `identity_digest([])`). Same mistake as checking nested values while
+    never asking about the JSON document holding them, two rounds earlier.
+
+    Readers are discovered by signature in both modules, so one added later
+    is covered the day it is added.
+    """
+    import g33_identity as gi
+    died = []
+    for mod in (rm, gi):
+        for name, fn in vars(mod).items():
+            if name.startswith("_") or not inspect.isfunction(fn):
+                continue
+            if getattr(fn, "__module__", None) != mod.__name__:
+                continue
+            params = list(inspect.signature(fn).parameters.values())
+            if not params or params[0].name != "man":
+                continue
+            if not all(p.default is not p.empty for p in params[1:]):
+                continue
+            try:
+                fn(value)
+            except rm.BlobUnavailable:
+                pass
+            except Exception as e:
+                died.append(f"{mod.__name__}.{name}({value!r}) "
+                            f"{type(e).__name__}")
+    assert not died, died[:5]
+
+
 def test_every_container_the_rules_walk_is_judged_at_the_entry():
     """A container added to the manifest without an entry here is one a
     later rule can die on."""

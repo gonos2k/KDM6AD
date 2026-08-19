@@ -110,6 +110,13 @@ def payload_state(p: Path, want: str, root: Path) -> str:
 
 def identity_digest(man: dict) -> str:
     """The content address: a digest over everything except the diagnostics."""
+    # THE ARGUMENT ITSELF, not only its fields (Codex). Every reader
+    # here is public, so a caller reaches it with whatever it holds --
+    # and `identity_digest([])` raised where it should have answered.
+    # My sweep varied the FIELDS of a real manifest, so `man` was a dict
+    # in all 2880 calls: the argument is a separate axis, and no amount
+    # of field coverage reaches it.
+    man = _obj(man)
     def strip(x):
         if isinstance(x, dict):
             return {k: strip(v) for k, v in x.items()
@@ -364,6 +371,13 @@ def resolved_pins(man: dict) -> dict:
       two different paths whose basename gives the same Python module name --
       the import graph is keyed by module name, so they would collide in it.
     """
+    # THE ARGUMENT ITSELF, not only its fields (Codex). Every reader
+    # here is public, so a caller reaches it with whatever it holds --
+    # and `identity_digest([])` raised where it should have answered.
+    # My sweep varied the FIELDS of a real manifest, so `man` was a dict
+    # in all 2880 calls: the argument is a separate axis, and no amount
+    # of field coverage reaches it.
+    man = _obj(man)
     table, bad = {}, []
     for key in _PIN_BLOCK_KEYS:
         for e in _seq(man.get(key)):
@@ -397,6 +411,13 @@ class PinConflict(Exception):
 
 def pin_conflicts(man: dict) -> list:
     """`resolved_pins` as a violation list, for the validator."""
+    # THE ARGUMENT ITSELF, not only its fields (Codex). Every reader
+    # here is public, so a caller reaches it with whatever it holds --
+    # and `identity_digest([])` raised where it should have answered.
+    # My sweep varied the FIELDS of a real manifest, so `man` was a dict
+    # in all 2880 calls: the argument is a separate axis, and no amount
+    # of field coverage reaches it.
+    man = _obj(man)
     try:
         resolved_pins(man)
         return []
@@ -593,6 +614,13 @@ def pinned_blobs(man: dict) -> dict:
     checkout would defeat the recording -- while checking it against the blobs
     the manifest itself pins uses nothing the archive does not carry.
     """
+    # THE ARGUMENT ITSELF, not only its fields (Codex). Every reader
+    # here is public, so a caller reaches it with whatever it holds --
+    # and `identity_digest([])` raised where it should have answered.
+    # My sweep varied the FIELDS of a real manifest, so `man` was a dict
+    # in all 2880 calls: the argument is a separate axis, and no amount
+    # of field coverage reaches it.
+    man = _obj(man)
     out = {}
     for path, pin in resolved_pins(man).items():
         if not path.endswith(".py") or not isinstance(pin["blob_sha"], str):
@@ -617,6 +645,13 @@ def pinned_blobs(man: dict) -> dict:
 
 def pinned_imports(man: dict, blobs: dict | None = None) -> dict:
     """module -> the pinned modules it imports, read from the pinned blobs."""
+    # THE ARGUMENT ITSELF, not only its fields (Codex). Every reader
+    # here is public, so a caller reaches it with whatever it holds --
+    # and `identity_digest([])` raised where it should have answered.
+    # My sweep varied the FIELDS of a real manifest, so `man` was a dict
+    # in all 2880 calls: the argument is a separate axis, and no amount
+    # of field coverage reaches it.
+    man = _obj(man)
     blobs = pinned_blobs(man) if blobs is None else blobs
     out = {}
     for mod, src in blobs.items():
@@ -728,6 +763,13 @@ def graph_violations(man: dict) -> list:
       ones. Deriving it from `analyses` rather than from a registry keeps the
       check a function of the document.
     """
+    # THE ARGUMENT ITSELF, not only its fields (Codex). Every reader
+    # here is public, so a caller reaches it with whatever it holds --
+    # and `identity_digest([])` raised where it should have answered.
+    # My sweep varied the FIELDS of a real manifest, so `man` was a dict
+    # in all 2880 calls: the argument is a separate axis, and no amount
+    # of field coverage reaches it.
+    man = _obj(man)
     ident = _obj(man.get("identity"))
     graph, reach = ident.get("role_graph"), ident.get("analysis_reach")
     if not isinstance(graph, dict) or not isinstance(reach, dict):
@@ -1344,6 +1386,13 @@ def dispatched_seeds(man: dict) -> set:
     the producer therefore published a bundle its own validator rejected
     (measured, 13 tests, collection-order dependent).
     """
+    # THE ARGUMENT ITSELF, not only its fields (Codex). Every reader
+    # here is public, so a caller reaches it with whatever it holds --
+    # and `identity_digest([])` raised where it should have answered.
+    # My sweep varied the FIELDS of a real manifest, so `man` was a dict
+    # in all 2880 calls: the argument is a separate axis, and no amount
+    # of field coverage reaches it.
+    man = _obj(man)
     seeds = _obj(_obj(man.get("identity")).get("analysis_seeds"))
     names = {a.get("analysis") for a in _seq(man.get("analyses"))
              if isinstance(a, dict)}

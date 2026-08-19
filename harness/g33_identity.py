@@ -167,6 +167,12 @@ def canonical_invocations(man: dict) -> list:
     the request either. Derived from `expected_run`, which the validator has
     already tied to the literal argv, and sorted.
     """
+    # THE ARGUMENT ITSELF, not only its fields (Codex, generalized from
+    # `identity_digest([])`). These are public readers, so a caller
+    # reaches them with whatever it holds, and a reader that raises has
+    # not answered. `rm._obj` is the same coercion the manifest module
+    # applies, so there is one definition of "read this as a record".
+    man = rm._obj(man)
     exp = man.get("expected_run") or {}
     tiles = exp.get("tile_sizes") or ([exp["columns"]]
                                       if isinstance(exp.get("columns"), int)
@@ -289,6 +295,12 @@ def _graph(man: dict) -> dict:
 
 def identity_is_self_contained(man: dict) -> bool:
     """Whether this manifest's ids can be recomputed from the manifest alone."""
+    # THE ARGUMENT ITSELF, not only its fields (Codex, generalized from
+    # `identity_digest([])`). These are public readers, so a caller
+    # reaches them with whatever it holds, and a reader that raises has
+    # not answered. `rm._obj` is the same coercion the manifest module
+    # applies, so there is one definition of "read this as a record".
+    man = rm._obj(man)
     ident = man.get("identity") or {}
     return (ident.get("schema") == IDENTITY_SCHEMA
             and isinstance(ident.get("role_graph"), dict)
@@ -310,6 +322,12 @@ def split_analyses(man: dict) -> tuple:
     REFUSE anything that is neither: an entry nobody can classify must not
     quietly land on the side that happens to be cheaper.
     """
+    # THE ARGUMENT ITSELF, not only its fields (Codex, generalized from
+    # `identity_digest([])`). These are public readers, so a caller
+    # reaches them with whatever it holds, and a reader that raises has
+    # not answered. `rm._obj` is the same coercion the manifest module
+    # applies, so there is one definition of "read this as a record".
+    man = rm._obj(man)
     derived, raw, bad = [], [], []
     for a in man.get("analyses") or []:
         if not isinstance(a, dict):
@@ -438,6 +456,12 @@ def run_recipe_id(man: dict) -> str:
     module pins, so passing them through raw put the containing commit into the
     recipe by the back door.
     """
+    # THE ARGUMENT ITSELF, not only its fields (Codex, generalized from
+    # `identity_digest([])`). These are public readers, so a caller
+    # reaches them with whatever it holds, and a reader that raises has
+    # not answered. `rm._obj` is the same coercion the manifest module
+    # applies, so there is one definition of "read this as a record".
+    man = rm._obj(man)
     man = _canonical_lists(man)
     return _digest({
         "modules": _by_role(man, "run"),
@@ -491,6 +515,12 @@ def run_content_id(man: dict) -> str:
     identical sources by different compilers are not the same run content, and
     an id that called them equal would be answering a question nobody asked.
     """
+    # THE ARGUMENT ITSELF, not only its fields (Codex, generalized from
+    # `identity_digest([])`). These are public readers, so a caller
+    # reaches them with whatever it holds, and a reader that raises has
+    # not answered. `rm._obj` is the same coercion the manifest module
+    # applies, so there is one definition of "read this as a record".
+    man = rm._obj(man)
     man = _canonical_lists(man)
     _derived, raw = split_analyses(man)
     keep = {k: v for k, v in man.items()
@@ -596,6 +626,12 @@ pinned_imports = rm.pinned_imports
 
 
 def report(man: dict) -> None:
+    # THE ARGUMENT ITSELF, not only its fields (Codex, generalized from
+    # `identity_digest([])`). These are public readers, so a caller
+    # reaches them with whatever it holds, and a reader that raises has
+    # not answered. `rm._obj` is the same coercion the manifest module
+    # applies, so there is one definition of "read this as a record".
+    man = rm._obj(man)
     print(f"  run_recipe_id   {run_recipe_id(man)[:16]}")
     print(f"  run_content_id  {run_content_id(man)[:16]}")
     print(f"  identity_digest {rm.identity_digest(man)[:16]}  (the address today)")
