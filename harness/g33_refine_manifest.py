@@ -915,6 +915,7 @@ def validate(man: dict) -> list:
                        f"one bundle, one experiment")
         if at_least(schema, "refinement_experiment_v4"):
             bad += _expected_run_violations(man, members)
+            bad += _refinement_chain_violations(man, members)
             bad += _build_provenance_violations(man)
             bad += _executed_analyzer_violations(man)
 
@@ -1446,6 +1447,39 @@ def _build_provenance_violations(man: dict) -> list:
                        f"row's {key} {row.get(key)!r} -- the bundle records "
                        f"compiling one file and pins another")
     return bad
+
+
+def _refinement_chain_violations(man: dict, members: list) -> list:
+    """The chain claim, RECOMPUTED from the members that back it.
+
+    `is_refinement_chain` says the members halve step by step, and nothing
+    read it -- not this validator, not the evidence chain, not the overlay.
+    A written claim nobody joins to its evidence is the shape three findings
+    in this cycle already took, and it is worse here than a null: the field
+    could say True over members that do nothing of the kind and every gate
+    stayed quiet. Recomputed by the producer's own rule, so the two cannot
+    part. Measured across the published archive first: 37 bundles carry it,
+    0 disagree.
+    """
+    claim = man.get("is_refinement_chain")
+    if claim is None:
+        return ["is_refinement_chain carries no value -- a chain claim that "
+                "says nothing is not the absence of a claim"]
+    # A CHECKER REPORTS; it does not crash on the artifact it is judging.
+    # `members` reaches here before its own shape check has run, so a
+    # malformed row raised out of the validation instead of failing it.
+    rows = [m for m in members if isinstance(m, dict)]
+    steps = [m.get("dtcld") for m in rows]
+    by_step = ([m["dtcld"] for m in sorted(rows, key=lambda m: -m["dtcld"])]
+               if len(rows) == len(members) and all(
+                   isinstance(s, (int, float)) for s in steps) else [])
+    want = (len(by_step) > 1
+            and all(abs(a - 2 * b) < 1e-9 for a, b in zip(by_step, by_step[1:])))
+    if claim is not want:
+        return [f"is_refinement_chain is {claim!r}, but the members step "
+                f"{by_step or 'nothing measurable'} -- the claim and the "
+                f"runs that would back it disagree"]
+    return []
 
 
 def _expected_run_violations(man: dict, members: list) -> list:

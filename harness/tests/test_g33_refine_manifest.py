@@ -92,7 +92,11 @@ def synthetic_manifest(root):
         "schema": rm.SCHEMA,
         "artifact_type": "refinement_experiment", "arm": "reference",
         "precision": "f32", "instrumented": True, "decision_eligible": False,
-        "is_refinement_chain": True,
+        # FALSE, and recomputed to false: one member cannot halve against
+        # anything. The fixture claimed a chain over a single run, which the
+        # validator now refuses -- the claim is derived from the members, so
+        # a fixture may not state it independently.
+        "is_refinement_chain": False,
         # v4: the experiment the bundle claims to be, and the geometry every
         # member's row is recomputed against (fixture 300 s / 12 splits = 25 s)
         "algorithm": "legacy", "rho_profile": "as-is",
@@ -1412,6 +1416,24 @@ def test_the_record_cannot_pin_one_file_and_compile_another(tmp_path, mutate,
     bad = rm.validate(man)
     assert any(expect in v and "records compiling one file" in v
                for v in bad), (expect, bad[:3])
+
+
+@pytest.mark.parametrize("mutate,expect", [
+    (lambda m: m.__setitem__("is_refinement_chain", None), "carries no value"),
+    (lambda m: m.__setitem__("is_refinement_chain",
+                             not m["is_refinement_chain"]), "disagree"),
+])
+def test_the_chain_claim_is_recomputed_from_its_own_members(tmp_path, mutate,
+                                                            expect):
+    """`is_refinement_chain` says the members halve step by step, and nothing
+    read it -- not this validator, not the evidence chain, not the overlay.
+    The field could say True over members that do nothing of the kind and
+    every gate stayed quiet."""
+    man = synthetic_manifest(tmp_path)
+    assert rm.validate(man) == [], rm.validate(man)[:2]
+    mutate(man)
+    bad = rm.validate(man)
+    assert any("is_refinement_chain" in v and expect in v for v in bad), bad[:3]
 
 
 def test_no_required_provenance_field_may_carry_null(tmp_path):
