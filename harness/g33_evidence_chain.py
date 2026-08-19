@@ -448,8 +448,7 @@ def _pinned_fixture_dims(man: dict) -> tuple:
     fixture = Path(str(man.get("fixture_path", ""))).name
     rel = f"harness/g33_fortran/{fixture}"
     commit = man.get("repo_commit")
-    r = subprocess.run(["git", "cat-file", "blob", f"{commit}:{rel}"],
-                       cwd=REPO, capture_output=True)
+    r = _run_git("cat-file", "blob", f"{commit}:{rel}", text=False)
     if r.returncode != 0:
         raise ValueError(
             f"cannot resolve {rel} at the pinned commit "
@@ -857,6 +856,28 @@ _REACHABLE: dict = {}
 #: where the answer is required.
 TRUSTED_REFS = ("refs/remotes/",)
 
+def _run_git(*args, text: bool = True, timeout: int | None = None):
+    """A git invocation that RETURNS rather than raises.
+
+    Every call here has the same contract -- a result, or a failure, never an
+    exception -- because this module is a checker and a checker that dies has
+    not answered. Written out per site it was fixed per site: `remote_tags`
+    was hardened and `_blob_at` still took the whole gate down when `git` was
+    missing (Codex). One helper, so a call added later inherits the contract
+    instead of waiting for someone to notice it does not have it.
+
+    A non-zero return and an absent toolchain come back the same way, which
+    is right: neither one answered the question, and every caller here
+    already handles "could not resolve".
+    """
+    try:
+        return subprocess.run(("git",) + args, cwd=REPO, capture_output=True,
+                              text=text, timeout=timeout)
+    except (OSError, subprocess.SubprocessError):
+        return subprocess.CompletedProcess(
+            args, returncode=127, stdout="" if text else b"", stderr="")
+
+
 #: `git ls-remote` output, once per run.
 _REMOTE_TAGS: dict = {}
 
@@ -877,9 +898,7 @@ def remote_tags() -> tuple:
     if not _REMOTE_TAGS:
         out, asked = {}, False
         try:
-            r = subprocess.run(["git", "ls-remote", "--tags", "origin"],
-                               cwd=REPO, capture_output=True, text=True,
-                               timeout=30)
+            r = _run_git("ls-remote", "--tags", "origin", timeout=30)
             if r.returncode == 0:
                 asked = True
                 for line in r.stdout.splitlines():
@@ -911,7 +930,7 @@ def _reachable(commit: str, trusted: bool = False) -> bool:
         cmd = ["git", "for-each-ref", "--contains", commit, "--count=1"]
         if trusted:
             cmd += list(TRUSTED_REFS)
-        r = subprocess.run(cmd, cwd=REPO, capture_output=True, text=True)
+        r = _run_git(*cmd[1:])
         _REACHABLE[key] = r.returncode == 0 and bool(r.stdout.strip())
     return _REACHABLE[key]
 
@@ -976,8 +995,7 @@ def _commit_states(man: dict) -> list:
 
 def _blob_at(commit: str, path: str) -> str | None:
     """The git blob SHA of `path` as of `commit`, or None if it does not resolve."""
-    r = subprocess.run(["git", "rev-parse", f"{commit}:{path}"], cwd=REPO,
-                       capture_output=True, text=True)
+    r = _run_git("rev-parse", f"{commit}:{path}")
     return r.stdout.strip() if r.returncode == 0 else None
 
 
@@ -1037,8 +1055,7 @@ def _analyzer_state(an: dict) -> dict:
     # manifest recorded the disagreement (owner P0-2).
     content = an.get("analyzer_sha256")
     if content:
-        raw = subprocess.run(["git", "cat-file", "blob", blob], cwd=REPO,
-                             capture_output=True)
+        raw = _run_git("cat-file", "blob", blob, text=False)
         if raw.returncode != 0:
             return {"file": path, "state": "ANALYZER-UNRESOLVABLE",
                     "detail": f"blob {blob[:12]} is not readable in this clone"}

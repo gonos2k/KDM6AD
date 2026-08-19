@@ -54,16 +54,38 @@ _IMPORTED: dict = {}
 
 
 
+def _run_git(*args, cwd=None):
+    """A git invocation that RETURNS rather than raises.
+
+    Every call here already handles "git could not answer" through a
+    non-zero return; none of them handled git being unusable, which arrives
+    as an exception from a helper the caller never knew ran. One contract,
+    one place, so a call added later inherits it (Codex).
+    """
+    try:
+        return subprocess.run(("git",) + args, cwd=cwd, capture_output=True)
+    except (OSError, subprocess.SubprocessError):
+        return subprocess.CompletedProcess(args, returncode=127, stdout=b"",
+                                           stderr=b"")
+
+
 def _require_head_digest(rel: Path, got: str, what: str) -> str:
     """A digest ALREADY TAKEN, held to HEAD. Separate from reading the file,
     because the eager path must attest the bytes that executed at load and
     must not re-read the tree afterwards."""
-    blob = subprocess.run(["git", "show", f"HEAD:{rel}"], cwd=HERE.parent,
-                          capture_output=True)
+    # NO GIT IS A REFUSAL, not a traceback. Without it nothing can pin the
+    # bytes that just executed, which is exactly what this gate is for -- so
+    # the answer is the same refusal as a file missing from HEAD, and the
+    # caller sees a stated reason rather than an exception from a helper it
+    # never knew ran (Codex, found end-to-end through the evidence chain,
+    # which imports this module).
+    blob = _run_git("show", f"HEAD:{rel}", cwd=HERE.parent)
     if blob.returncode != 0:
+        # NO GIT AND NO SUCH PATH ARE ONE ANSWER HERE: either way nothing can
+        # pin the bytes that just executed, which is what this gate is for.
         raise SystemExit(
-            f"REFUSED: {rel} is not in HEAD, so nothing can pin the bytes "
-            f"that {what} just executed")
+            f"REFUSED: {rel} is not readable from HEAD, so nothing can pin "
+            f"the bytes that {what} just executed")
     want = hashlib.sha256(blob.stdout).hexdigest()
     if got != want:
         raise SystemExit(
@@ -1289,8 +1311,7 @@ def _pin_path(rel: Path) -> dict:
     if not blob:
         raise SystemExit(f"REFUSED: {rel} is not in HEAD, so nothing can pin it")
     recovered = hashlib.sha256(
-        subprocess.run(["git", "cat-file", "blob", blob], cwd=HERE.parent,
-                       capture_output=True).stdout).hexdigest()
+        _run_git("cat-file", "blob", blob, cwd=HERE.parent).stdout).hexdigest()
     if recovered != content:
         raise SystemExit(
             f"REFUSED: {rel} ran as {content[:12]} but HEAD holds {recovered[:12]}"
@@ -1660,8 +1681,7 @@ def source_snapshot(build_dir: Path) -> SourceSnapshot:
 def _head_blob(logical: str) -> str | None:
     """The SHA-256 of this path's content at HEAD, or None when git does not
     track it (`host/**` is private and gitignored)."""
-    r = subprocess.run(["git", "show", f"HEAD:{logical}"], cwd=HERE.parent,
-                       capture_output=True)
+    r = _run_git("show", f"HEAD:{logical}", cwd=HERE.parent)
     if r.returncode != 0:
         return None
     return hashlib.sha256(r.stdout).hexdigest()

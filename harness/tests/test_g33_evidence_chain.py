@@ -1633,6 +1633,30 @@ def test_could_not_ask_is_NOT_the_same_as_the_remote_said_no(tmp_path,
         assert state in ec.EXCUSED_BY_ABSENCE, f"{state} must block a closeout"
 
 
+@pytest.mark.parametrize("boom", [
+    __import__("subprocess").TimeoutExpired("git", 30),
+    FileNotFoundError("git"),
+    OSError("network is down"),
+])
+def test_the_WHOLE_gate_answers_when_git_is_unusable(monkeypatch, boom):
+    """END TO END, because that is where it was still crashing (Codex).
+
+    `remote_tags` was hardened and the gate still died -- in `_blob_at`, and
+    then in the producer's HEAD-digest gate, which `validate()` imports and
+    which REFUSES when git cannot show it HEAD. Refusing is right for a
+    producer; letting the refusal escape a validator is not, because a gate
+    states its verdict. Per-site fixes found per-site failures, so every git
+    call in these modules goes through one helper with one contract: a
+    result or a failure, never an exception.
+    """
+    import subprocess as sp
+    monkeypatch.setattr(ec, "_REACHABLE", {})
+    monkeypatch.setattr(ec, "_REMOTE_TAGS", {})
+    monkeypatch.setattr(sp, "run", lambda *a, **k: (_ for _ in ()).throw(boom))
+    rc = ec.check()                    # must not raise, and must not pass
+    assert rc == 1
+
+
 def test_the_LIVE_bundles_anchor_to_reachable_commits():
     """The bundles this repo actually pins. Not a synthetic: the defect was
     found on a real one."""
