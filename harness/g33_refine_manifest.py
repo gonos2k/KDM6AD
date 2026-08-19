@@ -1383,6 +1383,37 @@ def _build_provenance_violations(man: dict) -> list:
     dup = sorted({r for r in roles if roles.count(r) > 1})
     if dup:
         bad.append(f"build_provenance.sources repeats the {dup} role(s)")
+    # TWO RECORDS OF ONE FILE, joined (Codex). The record names the fixture
+    # and the compiled module twice -- once at the top, once in `sources` as
+    # what the compiler READ -- and nothing held the two together. Measured,
+    # all four CLEAN: either row could name a different path, or the same
+    # path under a different digest. A bundle may then record compiling one
+    # file and pin another, which is the one thing this record exists to
+    # rule out.
+    #
+    # THE MODULE ROW IS THE OVERLAY, not the pinned kernel. A build reads
+    # `module_mp_kdm6.F` and compiles a generated `module_mp_ovl.F`, so
+    # `module_path` (what the bundle pins) and the module row (what gfortran
+    # opened) are two different files by design -- binding them refused all
+    # five published v7 bundles, measured before this rule was enforced. The
+    # join is `compiled_module_sha256`, which matched every one of them
+    # bit-for-bit. The paths are two legitimate spellings of that artifact --
+    # a logical `module_mp_ovl.F` and a staged `<TMP>/g33-ovl-<digest>.F` --
+    # so only the digest can carry the check.
+    by_role = {r["role"]: r for r in rows
+               if isinstance(r, dict) and r.get("role") in _SOURCE_ROLES}
+    joins = (("fixture", "fixture_path", "path"),
+             ("fixture", "fixture_sha256", "sha256"),
+             ("module", "compiled_module_sha256", "sha256"))
+    for role, field, key in joins:
+        row = by_role.get(role)
+        if row is None:
+            continue                   # already reported as a missing role
+        top = bp.get(field)
+        if top is not None and row.get(key) != top:
+            bad.append(f"build_provenance.{field} {top!r} is not the {role} "
+                       f"row's {key} {row.get(key)!r} -- the bundle records "
+                       f"compiling one file and pins another")
     return bad
 
 
