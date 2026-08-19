@@ -118,11 +118,18 @@ def identity_digest(man: dict) -> str:
             return [strip(v) for v in x]
         return x
     m = strip(man)
-    if "build_artifacts" in m:
+    # ...and the rows are only rows if they are objects. This reached into
+    # whatever the field held, so a manifest whose `build_artifacts` was a
+    # string or a number raised out of the address computation rather than
+    # producing one -- and a crash is not an address (Codex, generalized).
+    # A wrong shape still HASHES: the digest is over the document as given,
+    # and `validate()` is where a malformed document is refused.
+    if isinstance(m.get("build_artifacts"), list):
         m["build_artifacts"] = [
             {k: v for k, v in a.items()
              if not (k == "sha256"
                      and a.get("file") in LOCATION_DEPENDENT_ARTIFACTS)}
+            if isinstance(a, dict) else a
             for a in m["build_artifacts"]]
     return hashlib.sha256(
         json.dumps(m, sort_keys=True).encode()).hexdigest()
@@ -359,7 +366,7 @@ def resolved_pins(man: dict) -> dict:
     """
     table, bad = {}, []
     for key in _PIN_BLOCK_KEYS:
-        for e in man.get(key) or []:
+        for e in _seq(man.get(key)):
             if not (isinstance(e, dict) and isinstance(e.get("path"), str)):
                 continue
             path = e["path"]
@@ -525,7 +532,7 @@ def _identity_slice_violations(man: dict, graph: dict, reach: dict) -> list:
             "identity.role_graph gives the `run` role to no module that is "
             "pinned in producer_modules, so the run recipe digests an empty "
             "list -- a module pinned only as a build input never reaches it")
-    for a in man.get("analyses") or []:
+    for a in _seq(man.get("analyses")):
         if not isinstance(a, dict) or a.get("analysis") == "arm_stream":
             continue
         name, analyzer = a.get("analysis"), a.get("analyzer")
@@ -772,7 +779,7 @@ def graph_violations(man: dict) -> list:
                        f"is not in the pinned registries and is not imported "
                        f"by {dispatcher} -- a seed the producer does not "
                        f"dispatch to widens the cut for nothing")
-    for a in man.get("analyses") or []:
+    for a in _seq(man.get("analyses")):
         if not isinstance(a, dict) or not a.get("analyzer"):
             continue
         name, own = a.get("analysis"), Path(str(a["analyzer"])).stem

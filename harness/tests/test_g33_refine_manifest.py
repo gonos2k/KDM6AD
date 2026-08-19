@@ -3,6 +3,7 @@
 """The v2 manifest schema as a CLOSED tagged union (owner §8)."""
 import copy
 import hashlib
+import inspect
 import json
 import sys
 from pathlib import Path
@@ -1577,6 +1578,50 @@ def test_no_field_of_any_wrong_json_type_can_crash_the_validator(tmp_path,
         if not rm.validate(one):   # raising here fails the test, as it must
             silent.append(key)
     assert not silent, f"{text} passes for {silent}"
+
+
+@pytest.mark.parametrize("text", [
+    "[]", "null", '"x"', "42", "true", "{}", "[42]", "[null]",
+    '[{"path":42}]', '{"role_graph":42}',
+])
+def test_NO_public_reader_crashes_on_a_malformed_manifest(text):
+    """Every public function that takes a manifest, found by SIGNATURE.
+
+    The defences went in at `validate()`'s entry, so every entry point that
+    does not cross that door stayed exposed -- `graph_violations` and
+    `identity_digest` both died on pin containers (Codex). Same structure as
+    `verify()` two rounds earlier: a guard on the door is not a guard on the
+    code that walks.
+
+    Discovered rather than listed, so a reader added later is covered the
+    day it is added instead of the round after someone finds it.
+    """
+    man = _real_v6_manifest_here()
+    if man is None:
+        pytest.skip("no bundle on this host")
+    readers = []
+    for name, fn in vars(rm).items():
+        if name.startswith("_") or not inspect.isfunction(fn):
+            continue
+        if getattr(fn, "__module__", None) != rm.__name__:
+            continue
+        params = list(inspect.signature(fn).parameters.values())
+        if params and params[0].name == "man" and all(
+                p.default is not p.empty for p in params[1:]):
+            readers.append((name, fn))
+    assert len(readers) >= 6, [n for n, _ in readers]
+    value, died = json.loads(text), []
+    for key in sorted(man):
+        broken = json.loads(json.dumps(man))
+        broken[key] = value
+        for name, fn in readers:
+            try:
+                fn(broken)
+            except rm.BlobUnavailable:
+                pass               # a pin this host cannot resolve, not a shape
+            except Exception as e:
+                died.append(f"{name}({key}={text}) {type(e).__name__}")
+    assert not died, died[:5]
 
 
 def test_every_container_the_rules_walk_is_judged_at_the_entry():
