@@ -37,7 +37,20 @@ import g33_refine_analyze as ra   # noqa: E402
 #: bundles carry v2 arm streams and adding the requirement to v2 would either
 #: invalidate them or have to be opt-out-by-omission -- which is the defect the
 #: v2 bump itself was for.
-SCHEMA = "refinement_experiment_v6"
+SCHEMA = "refinement_experiment_v7"
+
+
+#: A path as the repository names it. Identity may carry the role, the
+#: repo-relative logical path and the digest -- never where the checkout
+#: happens to sit (owner review §7).
+def _repo_relative(path) -> str:
+    p = Path(path)
+    if not p.is_absolute():
+        return str(p)
+    try:
+        return str(p.resolve().relative_to(Path(__file__).resolve().parents[1]))
+    except ValueError:
+        return str(p)
 
 
 def sha256(path: Path) -> str:
@@ -73,6 +86,26 @@ LOCATION_DEPENDENT_ARTIFACTS = frozenset({"build_provenance.json",
 #: modified. Letting an edited README change the experiment's address
 #: contradicts the producer's own rule for what makes a run the same run.
 NON_IDENTITY_KEYS = ("tree_dirty",)
+
+
+#: The self-containment rule for one bundle payload. The producer's reuse
+#: check and the evidence chain held DIFFERENT rules: the producer looked at
+#: `is_file()` and the digest, and both follow symlinks, so a link to a file
+#: outside the bundle satisfied its digest and was republished -- while the
+#: chain called the same bundle NOT-SELF-CONTAINED. Reproduced, so the rule
+#: lives once (owner §6). The vocabulary is the chain's state strings.
+def payload_state(p: Path, want: str, root: Path) -> str:
+    """Presence, containment and digest of one payload, in one answer."""
+    if p.is_symlink() or (p.exists() and not p.is_file()):
+        return "NOT-SELF-CONTAINED"
+    if not p.is_file():
+        return "absent"
+    try:
+        if p.resolve().parent != root.resolve():
+            return "NOT-SELF-CONTAINED"
+    except OSError:
+        return "NOT-SELF-CONTAINED"
+    return "matches" if sha256(p) == want else "MISMATCH"
 
 
 def identity_digest(man: dict) -> str:
@@ -175,9 +208,14 @@ def build(outputs: Path, *, module: Path, fixture: Path, compiler: str,
         "repo_commit": _git("rev-parse", "HEAD"),
         "tree_dirty": bool(_git("status", "--porcelain")),
         "module_sha256": sha256(module),
-        "module_path": str(module),
+        "module_path": _repo_relative(module),
         "fixture_sha256": sha256(fixture),
-        "fixture_path": str(fixture),
+        # REPO-RELATIVE (owner review §7). The producer builds this from
+        # `HERE / ...`, so it was absolute -- and `run_recipe_id` hashes it,
+        # which made the same bytes under two checkout roots two different
+        # experiments. Measured: the recipe id moved. The absolute path is
+        # diagnostic, not identity.
+        "fixture_path": _repo_relative(fixture),
         # A human label. The compiler that actually ran is in build_provenance,
         # by digest -- two hosts print this same string and produce different
         # numbers. `null` there means the build recorded nothing, which is a
@@ -240,7 +278,8 @@ _PRECISIONS = ("f32", "f64")
 _ALGOS = ("legacy", "conservative")
 KNOWN_SCHEMAS = ("refinement_experiment_v1", "refinement_experiment_v2",
                  "refinement_experiment_v3", "refinement_experiment_v4",
-                 "refinement_experiment_v5", "refinement_experiment_v6")
+                 "refinement_experiment_v5", "refinement_experiment_v6",
+                 "refinement_experiment_v7")
 #: Schemas carrying the v2 contract or better. Ordered, so "at least v3" is a
 #: comparison rather than a list someone extends by hand at each bump.
 _SCHEMA_RANK = {s: i for i, s in enumerate(KNOWN_SCHEMAS)}
@@ -876,6 +915,8 @@ def validate(man: dict) -> list:
                        f"one bundle, one experiment")
         if at_least(schema, "refinement_experiment_v4"):
             bad += _expected_run_violations(man, members)
+            bad += _build_provenance_violations(man)
+            bad += _executed_analyzer_violations(man)
 
     arts = man.get("build_artifacts")
     if not isinstance(arts, list) or not arts:
@@ -1157,6 +1198,192 @@ _RAN_CORE = ("nsplit", "carry", "width", "rho")
 #: beside `ran` as the literal command line: a diagnostic, and the thing the
 #: typed block is checked against.
 _ARGV_TO_RAN = ((0, "nsplit"), (1, "carry"), (2, "width"), (3, "rho"))
+
+
+#: The roles a complete build compiles, mirrored from the collector so the
+#: validator can hold an arbitrary manifest to them without importing it
+#: (the collector is stdlib-only and reached as a subprocess by design).
+_SOURCE_ROLES = ("driver", "fixture", "libmassv", "model_constants",
+                 "module", "radar", "stub")
+_BUILD_PROVENANCE_SCHEMA = "g33_build_provenance_v1"
+#: The EXACT key set. v6 called this a closed contract and checked only that
+#: selected fields were present and well shaped, so an arbitrary manifest
+#: could drop six of seven source rows, repeat one logical path under two
+#: digests, add a row nothing compiled, or omit `compiler_f951_sha256`
+#: entirely and validate CLEAN. All five measured (owner §5).
+_BUILD_PROVENANCE_KEYS = frozenset({
+    "schema", "compiler_sha256", "compiler_version", "compiler_f951_sha256",
+    "compile_commands", "sources", "executable_sha256", "build_script_sha256",
+    "module_path", "module_sha256", "compiled_module_path",
+    "compiled_module_sha256", "fixture_path", "fixture_sha256",
+    "repo_commit", "tree_dirty", "diagnostic",
+})
+
+
+def dispatched_seeds(man: dict) -> set:
+    """The analyzer modules THIS bundle's analyses actually reached.
+
+    ONE authority, called by the validator below and by the producer when it
+    decides what it may declare unattested. Written out twice the two drifted:
+    the seam records an analyzer it could not attest whether or not this
+    bundle dispatches to it, the validator refuses names outside the
+    dispatch set, and a suite that imported `g33_number_transport` before
+    the producer therefore published a bundle its own validator rejected
+    (measured, 13 tests, collection-order dependent).
+    """
+    seeds = (man.get("identity") or {}).get("analysis_seeds") or {}
+    names = {a.get("analysis") for a in (man.get("analyses") or [])
+             if isinstance(a, dict)}
+    return {seeds[n] for n in names if isinstance(seeds.get(n), str)}
+
+
+def _executed_analyzer_violations(man: dict) -> list:
+    """What RAN, held to what the bundle PINS (owner review §8).
+
+    `executed_analyzers` is the digest each analyzer had when its first
+    statement executed. The module pins beside it are re-read from the
+    working tree when the manifest is assembled, at the end of a run that
+    takes the better part of an hour -- so the two can disagree, and the pin
+    is the one a reader follows. Recorded and never consumed, the block was
+    decoration: a mismatched digest, a malformed row and a repeated module
+    all validated CLEAN (measured).
+    """
+    if not at_least(man.get("schema"), "refinement_experiment_v7"):
+        return []
+    ran = man.get("executed_analyzers")
+    # ABSENCE IS ONLY LEGAL WHEN NOTHING RAN (Codex). Letting it be optional
+    # made omitting it a way to skip the whole check, and `analyses` proves
+    # analyzers ran -- the manifest's own `analysis_seeds` names which module
+    # each analysis dispatched to, so the expected set is not a guess.
+    names = {a.get("analysis") for a in (man.get("analyses") or [])
+             if isinstance(a, dict)}
+    expected = dispatched_seeds(man)
+    # A bundle that could not attest everything says so, and saying so is
+    # incompatible with being decision evidence (owner §8, Codex).
+    cannot = man.get("unattested_analyzers")
+    if cannot is not None:
+        if not isinstance(cannot, list) or not cannot or \
+                not all(isinstance(x, str) and x for x in cannot):
+            return ["unattested_analyzers must be a non-empty list of module "
+                    "names when present"]
+        named = {r.get("module") for r in (man.get("executed_analyzers") or [])
+                 if isinstance(r, dict)}
+        both = sorted(set(cannot) & named)
+        if both:
+            return [f"{both} are named as BOTH attested and unattested"]
+        # THE SEEDS THIS BUNDLE'S ANALYSES DISPATCHED TO, not every seed the
+        # registry knows. Checking against the whole map let a bundle confess
+        # about an analysis it never ran -- measured, `g33_qr_process_ledger`
+        # declared unattested by a bundle with no such analysis, CLEAN
+        # (Codex). A confession about work that did not happen is not a
+        # limitation, it is noise in the provenance.
+        # NO `expected and` GUARD. When nothing ran, `expected` is empty and
+        # the guard short-circuited, so a manifest with `analyses: []` could
+        # declare any name at all -- measured, CLEAN (Codex). An empty
+        # expected set means EVERY name is unrelated, which is the correct
+        # reading: nothing ran, so nothing can be unattested.
+        stray = sorted(x for x in cannot if x not in expected)
+        if stray:
+            return [f"unattested_analyzers names {stray}, which no analysis "
+                    f"in this bundle dispatches to"]
+        if man.get("decision_eligible") is not False:
+            return ["a bundle with unattested_analyzers cannot be "
+                    "decision_eligible -- it cannot say what produced it"]
+    if ran is None:
+        if names:
+            return [f"executed_analyzers is absent, but {len(names)} analysis "
+                    f"kind(s) ran -- omitting the record cannot be how a "
+                    f"bundle avoids saying what executed"]
+        return []                       # a run that dispatched no analyzer
+    if not isinstance(ran, list) or not ran:
+        return ["executed_analyzers must be a non-empty list when present"]
+    bad, seen = [], {}
+    pins = {}
+    for group in ("producer_modules", "member_parsers"):
+        for pin in man.get(group) or []:
+            if isinstance(pin, dict) and isinstance(pin.get("path"), str):
+                pins[Path(pin["path"]).stem] = pin.get("content_sha256")
+    for i, row in enumerate(ran):
+        if not isinstance(row, dict) or not isinstance(row.get("module"), str) \
+                or not _hexlen(row.get("sha256"), 64):
+            bad.append(f"executed_analyzers[{i}] is not a module/digest row")
+            continue
+        mod, got = row["module"], row["sha256"]
+        if mod in seen:
+            bad.append(f"executed_analyzers names {mod!r} twice "
+                       f"({seen[mod][:12]}, {got[:12]}) -- one import, one "
+                       f"attestation")
+            continue
+        seen[mod] = got
+        want = pins.get(mod)
+        if want is None:
+            bad.append(f"executed_analyzers names {mod!r}, which this bundle "
+                       f"pins nowhere -- code ran that nothing records")
+        elif want != got:
+            bad.append(f"{mod} executed as {got[:12]} but the bundle pins "
+                       f"{want[:12]} -- the pin describes bytes that did not "
+                       f"run")
+    # COVERAGE, now that it can be enforced. Every seed an analysis
+    # dispatched to must be ATTESTED or DECLARED UNATTESTED -- otherwise
+    # `unattested_analyzers` masks the difference between "ran, cannot
+    # vouch" and "never ran at all", which is what the field would then be
+    # for (Codex). The multi-run analyzers reach their module through the
+    # seam now, so both lists together can cover the seeds.
+    declared = set(seen) | set(man.get("unattested_analyzers") or [])
+    short = sorted(expected - declared)
+    if short:
+        bad.append(f"{short} produced analyses in this bundle and are named "
+                   f"in neither executed_analyzers nor unattested_analyzers "
+                   f"-- code ran that the bundle does not account for")
+    return bad
+
+
+def _build_provenance_violations(man: dict) -> list:
+    """The provenance block as an EXACT contract, from v7 (owner §5)."""
+    if not at_least(man.get("schema"), "refinement_experiment_v7"):
+        return []                      # older bundles answer for their own tag
+    bp = man.get("build_provenance")
+    if not isinstance(bp, dict):
+        return ["build_provenance must be an object"]
+    bad = []
+    if bp.get("schema") != _BUILD_PROVENANCE_SCHEMA:
+        bad.append(f"build_provenance.schema {bp.get('schema')!r} is not "
+                   f"{_BUILD_PROVENANCE_SCHEMA!r}")
+    missing = sorted(_BUILD_PROVENANCE_KEYS - set(bp))
+    extra = sorted(set(bp) - _BUILD_PROVENANCE_KEYS)
+    if missing or extra:
+        bad.append(f"build_provenance is not the {_BUILD_PROVENANCE_SCHEMA} key "
+                   f"set: missing {missing}, unexpected {extra}")
+    rows = bp.get("sources")
+    if not isinstance(rows, list) or not rows:
+        return bad + ["build_provenance.sources must be a non-empty list"]
+    seen, roles = {}, []
+    for i, r in enumerate(rows):
+        if not isinstance(r, dict) or not _hexlen(r.get("sha256"), 64) \
+                or not isinstance(r.get("path"), str) or not r["path"]:
+            bad.append(f"build_provenance.sources[{i}] is not a "
+                       f"path/role/digest row")
+            continue
+        if r.get("role") not in _SOURCE_ROLES:
+            bad.append(f"build_provenance.sources[{i}] has role "
+                       f"{r.get('role')!r}, which no compiled source claims -- "
+                       f"a new source is declared, not inferred")
+            continue
+        roles.append(r["role"])
+        # One logical path, one digest. Two rows for one file describe two
+        # different builds of it and nothing said which one ran.
+        if r["path"] in seen and seen[r["path"]] != r["sha256"]:
+            bad.append(f"build_provenance.sources names {r['path']!r} with two "
+                       f"digests ({seen[r['path']][:12]}, {r['sha256'][:12]})")
+        seen[r["path"]] = r["sha256"]
+    short = sorted(set(_SOURCE_ROLES) - set(roles))
+    if short:
+        bad.append(f"build_provenance.sources is missing the {short} role(s) -- "
+                   f"a build that compiled fewer sources is a different build")
+    dup = sorted({r for r in roles if roles.count(r) > 1})
+    if dup:
+        bad.append(f"build_provenance.sources repeats the {dup} role(s)")
+    return bad
 
 
 def _expected_run_violations(man: dict, members: list) -> list:

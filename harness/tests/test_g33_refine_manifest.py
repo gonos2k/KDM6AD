@@ -2,6 +2,7 @@
 
 """The v2 manifest schema as a CLOSED tagged union (owner §8)."""
 import copy
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -11,6 +12,41 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import g33_refine_manifest as rm  # noqa: E402
+
+
+#: Every field and every role the v7 provenance contract requires. A fixture
+#: carrying a subset describes a build that could not have happened.
+def _v7_provenance():
+    import g33_build_provenance as bp
+    roles = (("module", "host/KIM-meso_v1.0/phys/module_mp_kdm6.F"),
+             ("fixture", "harness/g33_fortran/g33_fixture_x_v1.f90"),
+             ("driver", "harness/g33_fortran/g33_refine_driver.f90"),
+             ("stub", "harness/g33_fortran/stub_wrf_error.f90"),
+             ("libmassv", "host/KIM-meso_v1.0/frame/libmassv.F"),
+             ("model_constants",
+              "host/KIM-meso_v1.0/share/module_model_constants.F"),
+             ("radar", "host/KIM-meso_v1.0/phys/module_mp_radar.F"))
+    return {
+        "schema": bp.BUILD_PROVENANCE_SCHEMA,
+        "compiler_version": "gfortran (fake) 1.0",
+        "compiler_sha256": "1" * 64,
+        "compiler_f951_sha256": "5" * 64,
+        "module_path": "host/KIM-meso_v1.0/phys/module_mp_kdm6.F",
+        "module_sha256": "8" * 64,
+        "compiled_module_path": "module_mp_ovl.F",
+        "compiled_module_sha256": "b" * 64,
+        "fixture_path": "harness/g33_fortran/g33_fixture_x_v1.f90",
+        "fixture_sha256": "9" * 64,
+        "build_script_sha256": "7" * 64,
+        "executable_sha256": "a" * 64,
+        "sources": [{"path": path, "role": role,
+                     "sha256": hashlib.sha256(role.encode()).hexdigest()}
+                    for role, path in roles],
+        "compile_commands": ["gfortran -c " + path for _r, path in roles],
+        "repo_commit": "0" * 40,
+        "tree_dirty": False,
+        "diagnostic": {"outdir": "/build"},
+    }
 
 
 def synthetic_manifest(root):
@@ -37,7 +73,7 @@ def synthetic_manifest(root):
     _mods = ["p"] + [f"g33_{k}" for k in sorted(set(rm.DERIVED_ANALYSES)
                                                 | set(rm.MULTI_RUN_ANALYSES))]
     _pins = [{**pin, "path": f"harness/{m}.py"} for m in _mods]
-    return {
+    man = {
         # rm.SCHEMA, not a literal: pinned to "v2" this fixture went on
         # testing the previous contract after the bump, and every v3
         # check written against it asserted nothing.
@@ -93,20 +129,13 @@ def synthetic_manifest(root):
         "build_artifacts": [{"file": "g33_refine_driver",
                              "sha256": w("g33_refine_driver", "#!f\n")},
                             {"file": "module_mp_ovl.F", "sha256": _OVL}],
-        # v6: the build's record is closed -- compiler, sources, module,
-        # fixture, script -- so the fixture carries what a real build writes
-        "build_provenance": {
+        # v7: the build's record is an EXACT key set with a ROLE table, so
+        # the fixture carries every field and every role a real build writes
+        # (owner review §5)
+        "build_provenance": dict(_v7_provenance(), **{
             "executable_sha256": rm.sha256(root / "g33_refine_driver"),
-            "compiler_version": "gfortran (fake) 1.0",
-            "compiler_sha256": "1" * 64,
-            "module_path": "host/KIM-meso_v1.0/phys/module_mp_kdm6.F",
-            "module_sha256": "8" * 64,
-            "fixture_sha256": "9" * 64,
-            "build_script_sha256": "7" * 64,
-            "sources": [{"path": "host/x.F", "sha256": "6" * 64}],
-            "compile_commands": ["gfortran -c host/x.F"],
             # an instrumented build feeds the compiler the GENERATED overlay
-            "compiled_module_sha256": _OVL},
+            "compiled_module_sha256": _OVL}),
         "module_path": "host/KIM-meso_v1.0/phys/module_mp_kdm6.F",
         "module_sha256": "8" * 64,
         "member_parsers": [pin], "producer_modules": _pins,
@@ -128,7 +157,34 @@ def synthetic_manifest(root):
                                set(rm.DERIVED_ANALYSES)
                                | set(rm.MULTI_RUN_ANALYSES)},
         },
+        # v7: every analyzer an analysis dispatched to says what it EXECUTED
+        # as, and the digest has to be the one the bundle pins for it
+        # (owner review §8). Filled in below, once the analyses are known.
     }
+    seeds = man["identity"]["analysis_seeds"]
+    pins = {Path(q["path"]).stem: q["content_sha256"]
+            for g in ("producer_modules", "member_parsers") for q in man[g]}
+    # Every seed the analyses dispatch to, so coverage holds: a seed in
+    # neither list is refused, because that is indistinguishable from a
+    # module that never ran (owner review §8).
+    ran = sorted({seeds[a["analysis"]] for a in man["analyses"]
+                  if a.get("analysis") in seeds})
+    man["executed_analyzers"] = [{"module": m, "sha256": pins.get(m, "0" * 64)}
+                                 for m in ran]
+    return man
+
+
+def _recover_attestation(man):
+    """Re-derive the attestation after a test changes `analyses`."""
+    seeds = (man.get("identity") or {}).get("analysis_seeds") or {}
+    pins = {Path(q["path"]).stem: q["content_sha256"]
+            for g in ("producer_modules", "member_parsers")
+            for q in man.get(g) or []}
+    ran = sorted({seeds[a["analysis"]] for a in man.get("analyses") or []
+                  if isinstance(a, dict) and a.get("analysis") in seeds})
+    man["executed_analyzers"] = [{"module": m, "sha256": pins.get(m, "0" * 64)}
+                                 for m in ran]
+    return man
 
 
 def _real_manifest():
@@ -234,6 +290,8 @@ def test_an_UNKNOWN_derived_analysis_kind_is_REFUSED(tmp_path):
     extra["analysis"] = "matched_clsoure"
     extra["file"] = "n12.rezero.typo.json"
     m["analyses"].append(extra)
+    # a new analysis brings a new seed to account for
+    _recover_attestation(m)
     assert any("unknown derived analysis" in b for b in rm.validate(m))
 
 
@@ -315,6 +373,8 @@ def test_an_f64_bundle_carrying_an_f32_only_analysis_is_REFUSED(tmp_path):
         "analyzer": "harness/g33_qr_process_ledger.py",
         "analyzer_sha256": "a" * 64, "analyzer_commit": "b" * 40,
         "analyzer_blob_sha": "c" * 40})
+    # a new analysis brings a new seed to account for
+    _recover_attestation(m)
     assert any("defined only at" in b for b in rm.validate(m))
     # ...and the same entry on an f32 bundle is fine, so the refusal is about
     # the precision and not about the analysis.
@@ -347,6 +407,8 @@ def _with_multi(root):
         "analyzer": "harness/g33_ncmin_locality.py",
         "analyzer_sha256": "a" * 64, "analyzer_commit": "b" * 40,
         "analyzer_blob_sha": "c" * 40})
+    # a new analysis brings a new seed to account for
+    _recover_attestation(m)
     return m
 
 
@@ -1188,3 +1250,322 @@ def test_the_geometry_is_PROVENANCED_to_what_was_compiled(tmp_path, tag,
     assert rm.validate(man) == [], rm.validate(man)[:2]
     mutate(man)
     assert any(needle in v for v in rm.validate(man)), rm.validate(man)[:3]
+
+
+# ---- owner review §5: build_provenance is an EXACT contract from v7 --------
+
+def _published_manifests():
+    """Every published manifest on this host, newest tag first."""
+    import json
+    from pathlib import Path
+    for root in sorted(Path.home().glob("kdm6ad-g33m-*")):
+        if not root.is_dir():
+            continue
+        for link in sorted(root.iterdir()):
+            j = link.resolve() / "manifest.json"
+            if link.is_symlink() and j.is_file():
+                yield json.loads(j.read_text())
+
+
+def _real_v6_manifest_here():
+    """A published bundle on this host, or None on a public checkout.
+
+    Takes v6 or v7: the live bundles were v6 when these tests were written
+    and became v7 at the controlled re-production, and what they need is a
+    REAL manifest to promote, not a particular tag."""
+    import json
+    from pathlib import Path
+    for root in sorted(Path.home().glob("kdm6ad-g33m-*")):
+        if not root.is_dir():
+            continue
+        for link in sorted(root.iterdir()):
+            j = link.resolve() / "manifest.json"
+            if link.is_symlink() and j.is_file():
+                man = json.loads(j.read_text())
+                if man.get("schema") in ("refinement_experiment_v6",
+                                         "refinement_experiment_v7"):
+                    return man
+    return None
+
+
+def _full_attestation(v7):
+    """One row per module the bundle's own analyses dispatched to.
+
+    Every seed has to be covered: a seed named in neither list is refused,
+    so a module the bundle pins nowhere gets a placeholder digest rather
+    than being dropped -- the point here is coverage, and the digest/pin
+    agreement has its own tests."""
+    seeds = (v7.get("identity") or {}).get("analysis_seeds") or {}
+    names = {a["analysis"] for a in v7["analyses"] if isinstance(a, dict)}
+    pins = {Path(p["path"]).stem: p["content_sha256"]
+            for g in ("producer_modules", "member_parsers")
+            for p in v7.get(g) or []}
+    out, missing = [], []
+    for m in sorted({seeds[n] for n in names if n in seeds}):
+        if m in pins:
+            out.append({"module": m, "sha256": pins[m]})
+        else:
+            missing.append(m)
+    if missing:
+        v7["unattested_analyzers"] = missing
+        v7["decision_eligible"] = False
+    return out
+
+
+def _v7(man):
+    """The same manifest, promoted to the v7 provenance contract."""
+    import g33_build_provenance as bp
+    out = json.loads(json.dumps(man))
+    out["schema"] = "refinement_experiment_v7"
+    out.pop("unattested_analyzers", None)
+    b = out["build_provenance"]
+    b["schema"] = bp.BUILD_PROVENANCE_SCHEMA
+    for r in b["sources"]:
+        r["role"] = bp.role_of(r["path"])
+    # v7 also requires the run to say what its analyzers EXECUTED as
+    out["executed_analyzers"] = _full_attestation(out)
+    return out
+
+
+@pytest.mark.parametrize("mutate,expect", [
+    (lambda b: b.__setitem__("sources", b["sources"][:1]), "missing the"),
+    (lambda b: b.__setitem__("sources", b["sources"]
+                             + [dict(b["sources"][0], sha256="e" * 64)]),
+     "two digests"),
+    (lambda b: b.__setitem__("sources", b["sources"]
+                             + [{"path": "harness/ghost.f90", "role": None,
+                                 "sha256": "f" * 64}]),
+     "no compiled source claims"),
+    (lambda b: b.pop("compiler_f951_sha256", None), "key set"),
+    (lambda b: b.__setitem__("smuggled", 1), "key set"),
+    (lambda b: b.pop("schema", None), "build_provenance.schema"),
+])
+def test_the_provenance_block_is_an_exact_contract(mutate, expect):
+    """v6 called this a closed contract and checked only that selected fields
+    were present and well shaped. Measured against a real published manifest:
+    dropping six of seven source rows, repeating one logical path under two
+    digests, adding a row nothing compiled, omitting `compiler_f951_sha256`,
+    and smuggling an unknown key ALL validated CLEAN (owner review §5)."""
+    man = _real_v6_manifest_here()
+    if man is None:
+        pytest.skip("no v6 bundle on this host")
+    v7 = _v7(man)
+    assert not rm.validate(v7), "the promoted manifest must start clean"
+    mutate(v7["build_provenance"])
+    bad = [b for b in rm.validate(v7) if "build_provenance" in b]
+    assert bad and any(expect in b for b in bad), (expect, rm.validate(v7))
+
+
+def test_a_v6_bundle_answers_for_the_v6_contract():
+    """A stricter key set is a NEW TAG, never a new demand on history."""
+    man = next((m for m in _published_manifests()
+                if m.get("schema") == "refinement_experiment_v6"), None)
+    if man is None:
+        pytest.skip("no v6 bundle on this host -- the live ones are v7 now")
+    assert "schema" not in man["build_provenance"]
+    assert rm.validate(man) == []
+
+
+# ---- owner review §8: what RAN is held to what the bundle PINS -------------
+
+@pytest.mark.parametrize("rows,expect", [
+    ([{"module": "g33_matched_closure", "sha256": "d" * 64}],
+     "describes bytes that did not run"),
+    ([{"module": 123}], "not a module/digest row"),
+    ([{"module": "g33_nowhere", "sha256": "e" * 64}], "pins nowhere"),
+])
+def test_executed_analyzers_is_consumed_not_just_recorded(rows, expect):
+    """The block is the digest each analyzer had when its first statement
+    executed; the pins beside it are re-read from the working tree when the
+    manifest is assembled, at the END of a run that takes the better part of
+    an hour. Recorded and never consumed it was decoration -- a mismatched
+    digest, a malformed row and a module pinned nowhere all validated CLEAN
+    (measured, Codex)."""
+    man = _real_v6_manifest_here()
+    if man is None:
+        pytest.skip("no v6 bundle on this host")
+    v7 = _v7(man)
+    assert not rm.validate(v7)
+    v7["executed_analyzers"] = rows
+    bad = rm.validate(v7)
+    assert bad and any(expect in b for b in bad), bad
+
+
+def test_an_analyzer_that_ran_as_its_pin_says_is_accepted():
+    man = _real_v6_manifest_here()
+    if man is None:
+        pytest.skip("no v6 bundle on this host")
+    v7 = _v7(man)
+    pin = next(p for p in v7["producer_modules"]
+               if p["path"].endswith("g33_matched_closure.py"))
+    # the row under test, with the other seeds still accounted for
+    v7["executed_analyzers"] = [
+        e for e in v7["executed_analyzers"] if e["module"] != "g33_matched_closure"
+    ] + [{"module": "g33_matched_closure", "sha256": pin["content_sha256"]}]
+    assert rm.validate(v7) == []
+    # ...and one import gets one attestation
+    v7["executed_analyzers"].append({"module": "g33_matched_closure",
+                                     "sha256": "b" * 64})
+    assert any("twice" in b for b in rm.validate(v7))
+
+
+
+
+def test_omitting_the_attestation_is_not_how_a_bundle_avoids_it():
+    """Absence was legal so that a run dispatching no analyzer had nothing to
+    attest -- which made OMITTING the block a way to skip the check entirely,
+    while `analyses` proved analyzers had run (Codex). The manifest's own
+    `analysis_seeds` names which module each analysis dispatched to, so the
+    expected set is not a guess."""
+    man = _real_v6_manifest_here()
+    if man is None:
+        pytest.skip("no v6 bundle on this host")
+    v7 = _v7(man)
+    assert v7.get("analyses"), "this fixture must carry analyses"
+    v7.pop("executed_analyzers")          # the omission under test
+    bad = rm.validate(v7)
+    assert bad and any("is absent" in b for b in bad), bad
+
+    v7["executed_analyzers"] = _full_attestation(v7)
+    assert rm.validate(v7) == []
+
+
+def test_a_bundle_with_no_analyses_owes_no_attestation():
+    """An instrumented bundle must carry the analyses that make it
+    instrumented, so emptying `analyses` alone is a different violation --
+    the point here is only that the attestation is not demanded of a run that
+    dispatched nothing."""
+    man = _real_v6_manifest_here()
+    if man is None:
+        pytest.skip("no v6 bundle on this host")
+    v7 = _v7(man)
+    v7["analyses"] = []
+    assert not [b for b in rm.validate(v7)
+                if "executed_analyzers" in b or "nothing attests" in b]
+
+
+# ---- owner review §8: a bundle says what it could NOT attest ---------------
+
+def _with_unattested(v7):
+    out = json.loads(json.dumps(v7))
+    out["unattested_analyzers"] = ["g33_number_transport"]
+    out["executed_analyzers"] = [e for e in out["executed_analyzers"]
+                                 if e["module"] != "g33_number_transport"]
+    out["decision_eligible"] = False
+    return out
+
+
+def test_a_bundle_that_cannot_attest_everything_says_so():
+    """Dropping the modules it could not attest published a record a reader
+    cannot tell apart from a complete one: measured, 20 analyses with seven
+    modules named and `g33_number_transport` simply absent (Codex)."""
+    man = _real_v6_manifest_here()
+    if man is None:
+        pytest.skip("no v6 bundle on this host")
+    v7 = _with_unattested(_v7(man))
+    assert rm.validate(v7) == []
+
+
+@pytest.mark.parametrize("mutate,expect", [
+    (lambda m: m.__setitem__("decision_eligible", True), "decision_eligible"),
+    (lambda m: m["executed_analyzers"].append(
+        {"module": "g33_number_transport", "sha256": "a" * 64}),
+     "BOTH attested and unattested"),
+    (lambda m: m.__setitem__("unattested_analyzers", []), "non-empty list"),
+    (lambda m: m.__setitem__("unattested_analyzers", [123]), "non-empty list"),
+])
+def test_the_unattested_record_cannot_be_smoothed_over(mutate, expect):
+    """Saying it is incompatible with being decision evidence, a module may
+    not be claimed on both sides, and an empty or malformed list is not a way
+    to say nothing."""
+    man = _real_v6_manifest_here()
+    if man is None:
+        pytest.skip("no v6 bundle on this host")
+    v7 = _with_unattested(_v7(man))
+    mutate(v7)
+    bad = rm.validate(v7)
+    assert bad and any(expect in b for b in bad), bad
+
+
+def test_every_seed_is_attested_or_declared(monkeypatch):
+    """`unattested_analyzers` gave a bundle a way to explain an absence, and
+    with no coverage rule it also became a way to HIDE one: a seed named in
+    neither list is indistinguishable from a module that never ran (Codex).
+
+    Enforceable now that the multi-run analyzers reach their module through
+    the seam -- a real CLI run attests nine modules and covers all eight
+    seeds, measured."""
+    man = _real_v6_manifest_here()
+    if man is None:
+        pytest.skip("no bundle on this host")
+    v7 = _v7(man)
+    seeds = (v7.get("identity") or {}).get("analysis_seeds") or {}
+    victim = next((seeds[a["analysis"]] for a in v7["analyses"]
+                   if a.get("analysis") in seeds
+                   and any(e["module"] == seeds[a["analysis"]]
+                           for e in v7["executed_analyzers"])), None)
+    if victim is None:
+        pytest.skip("this bundle attests no seed to drop")
+
+    dropped = json.loads(json.dumps(v7))
+    dropped["executed_analyzers"] = [e for e in dropped["executed_analyzers"]
+                                     if e["module"] != victim]
+    bad = rm.validate(dropped)
+    assert bad and any("does not account for" in b for b in bad), bad
+
+    # ...and DECLARING it is the honest way out, at the cost of eligibility
+    declared = json.loads(json.dumps(dropped))
+    declared["unattested_analyzers"] = [victim]
+    declared["decision_eligible"] = False
+    assert rm.validate(declared) == []
+
+
+@pytest.mark.parametrize("name", ["g33_nowhere", "KNOWN_BUT_UNRELATED"])
+def test_the_declaration_may_only_name_analyzers_that_actually_RAN(name):
+    """A confession about work that did not happen is not a limitation, it is
+    noise in the provenance. Checking against the whole seed registry let a
+    bundle declare a module whose analysis it never ran -- measured,
+    `g33_qr_process_ledger` declared unattested by a bundle carrying no such
+    analysis, CLEAN (Codex). The set is the seeds this bundle's own analyses
+    dispatched to."""
+    man = _real_v6_manifest_here()
+    if man is None:
+        pytest.skip("no bundle on this host")
+    v7 = _v7(man)
+    seeds = (v7.get("identity") or {}).get("analysis_seeds") or {}
+    ran = {seeds[a["analysis"]] for a in v7["analyses"]
+           if isinstance(a, dict) and a.get("analysis") in seeds}
+    if name == "KNOWN_BUT_UNRELATED":
+        name = next((s for s in sorted(set(seeds.values()) - ran)), None)
+        if name is None:
+            pytest.skip("this bundle's analyses cover every known seed")
+    v7["unattested_analyzers"] = [name]
+    v7["decision_eligible"] = False
+    bad = rm.validate(v7)
+    assert bad and any("no analysis in this bundle dispatches to" in b
+                       for b in bad), bad
+
+
+def test_a_bundle_that_ran_nothing_can_declare_nothing():
+    """`expected` is empty when no analysis ran, and the stray check was
+    guarded on it being non-empty -- so a manifest with `analyses: []` could
+    declare any name at all, measured CLEAN (Codex). An empty expected set
+    means EVERY name is unrelated: nothing ran, so nothing can be
+    unattested."""
+    man = _real_v6_manifest_here()
+    if man is None:
+        pytest.skip("no bundle on this host")
+    v7 = _v7(man)
+    v7["analyses"] = []
+    v7["executed_analyzers"] = []
+    v7["decision_eligible"] = False
+
+    # ...saying nothing is fine
+    assert not [b for b in rm.validate(v7)
+                if "unattested" in b or "dispatches to" in b]
+
+    # ...saying anything is not
+    v7["unattested_analyzers"] = ["made_up"]
+    bad = rm.validate(v7)
+    assert bad and any("no analysis in this bundle dispatches to" in b
+                       for b in bad), bad

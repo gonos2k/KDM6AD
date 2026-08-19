@@ -823,3 +823,42 @@ def test_the_RECIPE_id_carries_what_was_requested():
         d = copy.deepcopy(man)
         d[key][field] = value
         assert gi.run_recipe_id(d) != gi.run_recipe_id(man), key
+
+
+# ---- owner review §7: identity is independent of WHERE it ran --------------
+
+def test_the_recipe_id_does_not_carry_the_checkout_root():
+    """The producer builds the fixture path from `HERE / ...`, so it was
+    absolute -- and `run_recipe_id` hashes it, which made the same bytes under
+    two checkout roots two different experiments. Measured on a real
+    manifest: the recipe id moved."""
+    man = _manifest()
+    man["fixture_path"] = "harness/g33_fortran/g33_fixture_multisubcycle_v1.f90"
+    here = gi.run_recipe_id(man)
+    elsewhere = copy.deepcopy(man)
+    # a reviewer's clone: same bytes, different place
+    elsewhere["build_provenance"] = dict(
+        elsewhere.get("build_provenance") or {},
+        diagnostic={"outdir": "/somewhere/else", "repo_root": "/work/rev"})
+    assert gi.run_recipe_id(elsewhere) == here
+    assert not str(man["fixture_path"]).startswith("/"), \
+        "an absolute path in identity is a path dependence"
+
+
+def test_the_normaliser_strips_TMPDIR_but_keeps_the_digest():
+    """The staged sources and the generated overlay live under `$TMPDIR`, so
+    the compile commands and `compiled_module_path` carried `/tmp` on one host
+    and `/var/folders/...` on another -- measured, the content id moved for
+    identical bytes. The digest-bearing BASENAME has to survive: the source
+    map is matched on it."""
+    import g33_build_provenance as bp
+    from pathlib import Path as P
+    n = bp.normaliser(P("/build/out"), P("/var/folders/k4/T"), P("/repo"))
+    assert n("/var/folders/k4/T/g33-ovl-abc.F") == "<TMP>/g33-ovl-abc.F"
+    assert n("gfortran -c /var/folders/k4/T/g33-stage/dead-libmassv.F "
+             "-J/build/out") == \
+        "gfortran -c <TMP>/g33-stage/dead-libmassv.F -J<OUT>"
+    assert n("/repo/harness/x.f90") == "<REPO>/harness/x.f90"
+    # a TMPDIR that CONTAINS the output directory must not half-normalise
+    m = bp.normaliser(P("/var/t/out"), P("/var/t"), None)
+    assert m("/var/t/out/a.o") == "<OUT>/a.o"

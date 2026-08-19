@@ -120,8 +120,12 @@ def test_every_compiled_source_is_digested_not_just_the_module(tmp_path, build):
     out, root = build
     (out / "sources.txt").write_text(f"{root / 'm.F'}\n{root / 'f.f90'}\n")
     got = _collect(out, root)["sources"]
-    assert [g["path"] for g in got] == [str(root / "m.F"), str(root / "f.f90")]
+    # `root` is pytest's tmp_path, i.e. under $TMPDIR, so the recorded path is
+    # tagged rather than literal (owner review §7). What this test is about is
+    # that EVERY compiled source is digested, not how the path is spelled.
+    assert len(got) == 2 and all(g["path"].startswith("<TMP>") for g in got), got
     assert got[0]["sha256"] == bp.sha256(root / "m.F")
+    assert got[0]["path"].endswith("/m.F") and got[1]["path"].endswith("/f.f90")
 
 
 def test_the_executable_that_ran_is_digested(build):
@@ -515,12 +519,15 @@ def test_a_MISSING_log_cannot_clear_the_witness_comparison(tmp_path, drop):
     left to contradict them -- fail-open under transient deletion (Codex)."""
     root = tmp_path / "b"
     root.mkdir()
-    (root / "sources.txt").write_text("harness/x.f90\t" + "a" * 64 + "\n")
+    (root / "sources.txt").write_text(
+        "harness/g33_fortran/g33_refine_driver.f90\t" + "a" * 64 + "\n")
     (root / "commands.txt").write_text("gfortran -c x.f90\n")
     (root / "build_provenance.json").write_text(json.dumps({
-        "sources": [{"path": "harness/x.f90", "sha256": "a" * 64}],
+        "sources": [{"path": "harness/g33_fortran/g33_refine_driver.f90",
+                     "role": "driver", "sha256": "a" * 64}],
         "compile_commands": ["gfortran -c x.f90"],
-        "diagnostic": {"outdir": "/build"}}))
+        "diagnostic": {"outdir": "/build", "tmpdir": "/tmp",
+                       "repo_root": "/repo"}}))
     assert bp.verify(root) == []
     (root / drop).unlink()
     got = bp.verify(root)
@@ -534,11 +541,293 @@ def test_a_malformed_source_line_is_REPORTED_not_raised(tmp_path):
     failing it. A checker reports on the artifact it judges."""
     root = tmp_path / "b"
     root.mkdir()
-    (root / "sources.txt").write_text("harness/x.f90\t" + "a" * 64 + "\nsmuggled\n")
+    (root / "sources.txt").write_text(
+        "harness/g33_fortran/g33_refine_driver.f90\t" + "a" * 64 + "\nsmuggled\n")
     (root / "commands.txt").write_text("gfortran -c x.f90\n")
     (root / "build_provenance.json").write_text(json.dumps({
-        "sources": [{"path": "harness/x.f90", "sha256": "a" * 64}],
+        "sources": [{"path": "harness/g33_fortran/g33_refine_driver.f90",
+                     "role": "driver", "sha256": "a" * 64}],
         "compile_commands": ["gfortran -c x.f90"],
-        "diagnostic": {"outdir": "/build"}}))
+        "diagnostic": {"outdir": "/build", "tmpdir": "/tmp",
+                       "repo_root": "/repo"}}))
     got = bp.verify(root)                      # must not raise
     assert got and "carries no digest" in got[0] and "line 2" in got[0]
+
+
+def test_the_ci_detect_job_compares_against_the_PUSH_BASE(tmp_path):
+    """`HEAD^` is the previous COMMIT, not the previous remote state. A push
+    of three commits whose FIRST touched libtorch left `HEAD^...HEAD` showing
+    only the last, so both required build jobs skipped while the port had in
+    fact changed -- a gate reporting "not needed" about a change it never saw
+    (Codex). Reproduced in a scratch repo; the base is `github.event.before`
+    now, and anything unresolvable builds rather than skips."""
+    ci = (REPO / ".github/workflows/ci.yml").read_text()
+    detect = ci.split("  detect:", 1)[1].split("\n  build-and-test:", 1)[0]
+    # CODE only: the comment explains the pattern it removed, and a guard
+    # that reads its own prose fails on the explanation for it
+    code = "\n".join(ln for ln in detect.splitlines()
+                     if not ln.lstrip().startswith("#"))
+    assert "github.event.before" in code, "a push must use its own base"
+    assert "HEAD^ " not in code and "HEAD^)" not in code, \
+        "HEAD^ is one commit, not one push"
+    # every unresolvable case has to fall to the building side
+    assert code.count('echo "port=true" >> "$GITHUB_OUTPUT"; exit 0') >= 2
+    assert "0000000000000000000000000000000000000000" in code
+    assert "git rev-parse --verify" in code
+    # ...and the required jobs still hang off it
+    for job in ("build-and-test:", "build-and-test-macos:"):
+        block = ci.split(f"  {job}", 1)[1][:400]
+        assert "needs: detect" in block and "port == 'true'" in block
+
+
+def test_verification_normalises_against_every_root_the_RECORD_used(tmp_path):
+    """The record is normalised against three roots -- the output directory,
+    `$TMPDIR` and the checkout (owner §7) -- and the published logs are
+    verbatim, so re-deriving them needs all three. Normalising with the output
+    directory alone made every honest build fail its OWN verification:
+    reproduced on a real build, `commands.txt is not
+    build_provenance.compile_commands` (Codex). A checker that refuses correct
+    artifacts is worse than none: it teaches the reader to ignore it."""
+    root = tmp_path / "b"
+    root.mkdir()
+    (root / "sources.txt").write_text(
+        "harness/g33_fortran/g33_refine_driver.f90\t" + "a" * 64 + "\n")
+    (root / "commands.txt").write_text(
+        "gfortran -c /var/t/g33-stage/dead-x.F -J/build/out -I/repo/inc\n")
+    rec = {
+        "sources": [{"path": "harness/g33_fortran/g33_refine_driver.f90",
+                     "role": "driver", "sha256": "a" * 64}],
+        "compile_commands": ["gfortran -c <TMP>/g33-stage/dead-x.F "
+                             "-J<OUT> -I<REPO>/inc"],
+        "diagnostic": {"outdir": "/build/out", "tmpdir": "/var/t",
+                       "repo_root": "/repo"},
+    }
+    (root / "build_provenance.json").write_text(json.dumps(rec))
+    assert bp.verify(root) == []
+
+    # ...and the roots themselves cannot be bent to make a wrong record fit
+    rec["diagnostic"]["tmpdir"] = "/nowhere"
+    (root / "build_provenance.json").write_text(json.dumps(rec))
+    assert bp.verify(root), "a substituted root must not verify"
+
+    # Dropping them is not a way past either: a record normalised with three
+    # roots and re-derived with one produces `<TMP>` where the logs hold a
+    # literal path.
+    rec["diagnostic"] = {"outdir": "/build/out"}
+    (root / "build_provenance.json").write_text(json.dumps(rec))
+    assert bp.verify(root), "dropping the roots must not clear the check"
+
+
+def test_a_record_made_BEFORE_the_extra_roots_still_verifies(tmp_path):
+    """Requiring `tmpdir`/`repo_root` made this refuse every bundle published
+    before §7: their records were normalised against the output directory
+    alone, so that is how they have to be re-derived (Codex). A stricter
+    demand on history is the one discipline this campaign has kept unbroken --
+    each root is used IF the record used it."""
+    root = tmp_path / "b"
+    root.mkdir()
+    mod = "host/KIM-meso_v1.0/phys/module_mp_kdm6.F"
+    (root / "sources.txt").write_text(mod + "\t" + "a" * 64 + "\n")
+    (root / "commands.txt").write_text(
+        "gfortran -c /var/t/g33-stage/dead-x.F -J/build/out\n")
+    (root / "build_provenance.json").write_text(json.dumps({
+        # the pre-§7 shape: literal paths, and only the output directory
+        "sources": [{"path": mod, "role": "module",
+                     "sha256": "a" * 64}],
+        "compile_commands": ["gfortran -c /var/t/g33-stage/dead-x.F -J<OUT>"],
+        "diagnostic": {"outdir": "/build/out"}}))
+    assert bp.verify(root) == []
+
+
+def test_a_widened_source_row_does_not_refuse_records_that_predate_it(tmp_path):
+    """`role` joined a source row at v7. Re-deriving it against a record
+    written before that made EVERY published bundle fail its own
+    verification -- found by re-running the adversarial table, where "an
+    honest bundle" turned REFUSED. Same shape as requiring the extra
+    normalisation roots, same rule: a widened derivation is not a demand on
+    records that predate it."""
+    root = tmp_path / "b"
+    root.mkdir()
+    mod = "host/KIM-meso_v1.0/phys/module_mp_kdm6.F"
+    (root / "sources.txt").write_text(mod + "\t" + "a" * 64 + "\n")
+    (root / "commands.txt").write_text("gfortran -c x\n")
+    pre_v7 = {"sources": [{"path": mod, "sha256": "a" * 64}],   # no role
+              "compile_commands": ["gfortran -c x"],
+              "diagnostic": {"outdir": "/build"}}
+    (root / "build_provenance.json").write_text(json.dumps(pre_v7))
+    assert bp.verify(root) == []
+
+    # a v7 record is still held to its own role
+    v7 = json.loads(json.dumps(pre_v7))
+    v7["sources"][0]["role"] = "fixture"                # wrong for this path
+    (root / "build_provenance.json").write_text(json.dumps(v7))
+    assert bp.verify(root), "a wrong role must still be refused"
+
+
+@pytest.mark.skipif(shutil.which("git") is None, reason="needs git")
+def test_a_run_role_analyzer_is_attested_at_LOAD_not_at_dispatch(tmp_path):
+    """`g33_number_transport` is imported at module load because it also makes
+    the arm streams, so it can never reach the lazy seam. Attesting it when
+    the analysis DISPATCHES read whatever the tree held then -- the same hole
+    one level down. Reproduced in a fresh process: bytes d212a1b1 executed at
+    load, the file was restored, and 59f7f5dd was attested (Codex).
+
+    The refusal is at LOAD, so importing the producer is what raises."""
+    target = REPO / "harness/g33_number_transport.py"
+    keep = target.read_bytes()
+    script = (
+        "import sys\n"
+        f"sys.path.insert(0, {str(REPO / 'harness')!r})\n"
+        "try:\n"
+        "    import g33_refine_experiment as xp\n"
+        "    print('ACCEPTED', xp._IMPORTED.get('g33_number_transport'))\n"
+        "except SystemExit as e:\n"
+        "    print('REFUSED', str(e).splitlines()[0])\n")
+    try:
+        target.write_bytes(keep + b"\n# transient\n")
+        r = subprocess.run([sys.executable, "-c", script], capture_output=True,
+                           text=True, cwd=REPO)
+        assert "REFUSED" in r.stdout, r.stdout + r.stderr
+        assert "executed as" in r.stdout
+    finally:
+        target.write_bytes(keep)
+
+
+def test_the_eager_digest_is_taken_where_the_module_is_imported():
+    """Structural: the digest has to be computed in the import block, not in
+    the seam that runs later."""
+    src = (REPO / "harness/g33_refine_experiment.py").read_text()
+    head = src.split("def _an(", 1)[0]
+    # The digest must BRACKET the import: taken before the module executes and
+    # re-checked after. Hashing on the line after the import still puts the
+    # read after the execution it claims to describe.
+    before = head.index("before = hashlib.sha256")
+    runs = head.index("importlib.import_module")
+    after = head.index("after = hashlib.sha256")
+    assert before < runs < after, "hash before execution, re-check after"
+    assert "if before != after:" in head, "a change under the import refuses"
+    # ...and NOTHING may have imported it first, or the bracket is decoration:
+    # `g33_probe_read` pulls this module in, so attesting it after that import
+    # measured a module that had already run (Codex, third pass).
+    assert "prior = sys.modules.get(name)" in head, \
+        "a module something else imported first must be refused"
+    order = [head.index("nt = _eager_import(")]
+    for other in ("import g33_refine_analyze", "import g33_probe_read",
+                  "import g33_run_matrix"):
+        assert order[0] < head.index(other), \
+            f"{other} runs before the attestation it would defeat"
+    seam = src.split("def _an(", 1)[1].split("\ndef ", 1)[0]
+    assert "_EAGER_AT_LOAD[name]" in seam and "read_bytes()" not in seam, \
+        "the seam must use the load digest, never re-read the file"
+
+
+@pytest.mark.skipif(shutil.which("git") is None, reason="needs git")
+def test_a_module_cannot_attest_itself(tmp_path):
+    """The record lived on the attested module, so an edited file could
+    declare `_g33_attested_digest = <HEAD's digest>` and attest itself in one
+    line. Reproduced in a fresh process: bytes a6cdf165 ran and HEAD's
+    59f7f5dd was recorded and accepted (Codex). It lives in a registry the
+    producer owns now, which its two executions share and the attested module
+    does not reach by setting one of its own attributes."""
+    target = REPO / "harness/g33_number_transport.py"
+    keep = target.read_bytes()
+    head = subprocess.run(
+        ["git", "show", "HEAD:harness/g33_number_transport.py"],
+        cwd=REPO, capture_output=True).stdout
+    digest = hashlib.sha256(head).hexdigest()
+    forged = keep + f"\n_g33_attested_digest = {digest!r}\n".encode()
+    script = (
+        "import sys\n"
+        f"sys.path.insert(0, {str(REPO / 'harness')!r})\n"
+        "import g33_probe_read\n"
+        "import g33_refine_experiment as xp\n"
+        # never raises at import; it records that it cannot attest, and
+        # `produce()` refuses to publish such a bundle
+        "print('UNATTESTED' if xp._IMPORTED.get('g33_number_transport') is None"
+        "      else 'ATTESTED ' + xp._IMPORTED['g33_number_transport'])\n")
+    try:
+        target.write_bytes(forged)
+        r = subprocess.run([sys.executable, "-c", script], capture_output=True,
+                           text=True, cwd=REPO)
+        assert r.stdout.startswith("UNATTESTED"), r.stdout + r.stderr
+    finally:
+        target.write_bytes(keep)
+
+
+def test_the_attestation_registry_is_not_an_attribute_of_the_module():
+    src = (REPO / "harness/g33_refine_experiment.py").read_text()
+    head = src.split("def _an(", 1)[0]
+    code = "\n".join(l for l in head.splitlines()
+                     if not l.lstrip().startswith("#"))
+    assert "_g33_attested_digest" not in code, "a module must not attest itself"
+    # ...and NO cross-execution record at all: everything in a Python
+    # process can write module attributes and `sys.modules`, so there is no
+    # in-process place the attested code cannot reach. The duplicate
+    # execution simply does not attest, and publication refuses.
+    assert "_g33_attestations" not in code, "a registry is forgeable too"
+    assert "_is_duplicate_execution()" in code
+    assert "prior = sys.modules.get(name)" in code, \
+        "a module something else imported first must be refused"
+
+
+@pytest.mark.skipif(shutil.which("gfortran") is None or
+                    not (REPO / "host/KIM-meso_v1.0/phys/module_mp_kdm6.F").is_file(),
+                    reason="local-only (needs gfortran + the host tree)")
+@pytest.mark.parametrize("duplicate,expect", [(False, "published"),
+                                              (True, "refused")])
+def test_a_duplicate_execution_cannot_publish_an_unattested_bundle(
+        tmp_path, duplicate, expect):
+    """I claimed a duplicate execution "publishes nothing". It does: measured,
+    an INSTRUMENTED bundle with 20 analyses, published with
+    `g33_number_transport` missing from `executed_analyzers` altogether --
+    `extension_protocol` reaches it through the module-level `nt`, never
+    through `_an`, so the eager path is its only attestation and skipping it
+    left no record at all (Codex).
+
+    Both directions are asserted: the duplicate refuses, and the ordinary run
+    publishes WITH the module attested."""
+    script = f'''
+import sys, json
+from pathlib import Path
+sys.path.insert(0, {str(REPO / "harness")!r})
+if {duplicate!r}:
+    sys.modules["__main__"].__file__ = {str(REPO / "harness/g33_refine_experiment.py")!r}
+    import g33_probe_read
+import g33_refine_experiment as xp
+try:
+    d = xp.produce(Path({str(tmp_path / "b")!r}), fixture="g33_fixture_multisubcycle_v1",
+                   algo="legacy", nsplits=(3,), mode="rezero", nflux=True)
+    m = json.loads((d / "manifest.json").read_text())
+    named = {{e["module"] for e in m.get("executed_analyzers", [])}}
+    print("PUBLISHED", "g33_number_transport" in named, len(m["analyses"]))
+except SystemExit as e:
+    print("REFUSED", str(e).splitlines()[0])
+'''
+    r = subprocess.run([sys.executable, "-c", script], capture_output=True,
+                       text=True, cwd=REPO, timeout=1800)
+    if expect == "refused":
+        assert "REFUSED" in r.stdout, r.stdout + r.stderr[-800:]
+        assert "g33_number_transport" in r.stdout
+    else:
+        assert r.stdout.startswith("PUBLISHED True"), r.stdout + r.stderr[-800:]
+
+
+def test_the_producers_second_execution_is_held_to_HEAD_too():
+    """This file runs TWICE on every real run: as `__main__`, and again when
+    `g33_identity` imports it by name. The first is held to HEAD by
+    `require_pinned_producer`; the second was checked by nothing -- it
+    recompiled the producer's own bytes with no comparison to anything, and
+    the original went on to publish (Codex)."""
+    src = (REPO / "harness/g33_refine_experiment.py").read_text()
+    dup = src.split("if _is_duplicate_execution():", 1)[1].split("return prior", 1)[0]
+    code = "\n".join(l for l in dup.splitlines()
+                     if not l.lstrip().startswith("#"))
+    assert "_require_head_digest(" in code, "the second execution checks itself"
+    assert "g33_refine_experiment.py" in code
+    assert "_IMPORTED[name] = None" in code, "and still cannot attest"
+    # ...and the check is real, not a call that always passes
+    sys.path.insert(0, str(REPO / "harness"))
+    import g33_refine_experiment as xp
+    with pytest.raises(SystemExit, match="executed as"):
+        xp._require_head_digest(Path("harness/g33_refine_experiment.py"),
+                                "f" * 64, "second execution")

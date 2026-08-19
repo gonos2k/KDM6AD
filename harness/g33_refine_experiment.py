@@ -40,11 +40,151 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+#: Run-role analyzers digested BEFORE they execute, and re-checked after, so
+#: the bytes attested are the bytes the interpreter compiled. Hashing at
+#: dispatch read whatever the tree held then -- reproduced, d212a1b1 executed
+#: and 59f7f5dd was attested. Hashing on the line AFTER the import still put
+#: the read after the execution it claims to describe (Codex, twice).
+_EAGER_AT_LOAD: dict = {}
+
+#: What each analyzer's bytes were WHEN IT WAS IMPORTED, so the manifest can
+#: pin what ran rather than what the tree holds afterwards. `None` means this
+#: process cannot say -- `produce()` refuses to publish such a bundle.
+_IMPORTED: dict = {}
+
+
+
+def _require_head_digest(rel: Path, got: str, what: str) -> str:
+    """A digest ALREADY TAKEN, held to HEAD. Separate from reading the file,
+    because the eager path must attest the bytes that executed at load and
+    must not re-read the tree afterwards."""
+    blob = subprocess.run(["git", "show", f"HEAD:{rel}"], cwd=HERE.parent,
+                          capture_output=True)
+    if blob.returncode != 0:
+        raise SystemExit(
+            f"REFUSED: {rel} is not in HEAD, so nothing can pin the bytes "
+            f"that {what} just executed")
+    want = hashlib.sha256(blob.stdout).hexdigest()
+    if got != want:
+        raise SystemExit(
+            f"REFUSED: {rel} executed as {got[:12]} but HEAD holds "
+            f"{want[:12]} -- the bundle would pin bytes that did not run. "
+            f"Commit the change.")
+    return got
+
+
+def _running_as_cli() -> bool:
+    """Is this the producer running as a script, i.e. publishing evidence?
+
+    Faking it makes the run STRICTER, never looser -- the refusal above is
+    what it gates -- so it is safe to read the way a digest is not.
+    """
+    main = sys.modules.get("__main__")
+    f = getattr(main, "__file__", None)
+    return bool(f) and Path(f).resolve() == Path(__file__).resolve()
+
+
+def _is_duplicate_execution() -> bool:
+    """Is another instance of THIS FILE already in `sys.modules`?
+
+    It runs as `__main__` and again when a module imports it by name. Faking
+    this only makes the producer skip attestation, which makes publication
+    refuse -- so it is safe to trust in a way a digest is not.
+    """
+    me = Path(__file__).resolve()
+    mine = sys.modules.get(__name__)
+    for mod in list(sys.modules.values()):
+        f = getattr(mod, "__file__", None)
+        if f and mod is not mine and Path(f).resolve() == me:
+            return True
+    return False
+
+
+def _eager_import(name: str):
+    """Import a run-role analyzer, attesting the bytes that will run.
+
+    These modules cannot reach the lazy `_an` seam: they are imported here
+    because they also play a RUN role -- `g33_number_transport` makes the
+    arm streams -- and the seam runs much later. The same rule is applied at
+    the only place it can be, around the import itself.
+    """
+    import importlib
+    # NOTHING may have imported it yet, or the "before" hash is taken after
+    # the execution it brackets. `g33_probe_read` pulls this module in, so
+    # attesting it after that import measured a module that had already run
+    # (Codex). This call sits ahead of every other g33 import for that
+    # reason, and says so if the order is ever changed.
+    prior = sys.modules.get(name)
+    if prior is not None:
+        # NO CROSS-EXECUTION RECORD. Two earlier attempts kept one -- on the
+        # attested module, then in a private registry -- and BOTH were
+        # forgeable: everything in a Python process can write module
+        # attributes and `sys.modules`, so there is no place in-process that
+        # the code being attested cannot reach. Reproduced twice, bytes
+        # a6cdf165 and 79ebfc28 each attesting themselves as HEAD (Codex).
+        #
+        # The only case that needs it is this file being executed TWICE --
+        # as `__main__`, and again when another module imports it by name.
+        # That duplicate does not publish anything, so it simply does not
+        # attest: its `_EAGER_AT_LOAD` stays empty, `_an` marks the module
+        # unattestable, and `produce()` refuses to publish from it. Fail
+        # closed, with nothing to forge.
+        if _is_duplicate_execution():
+            # THIS FILE RUNS TWICE ON EVERY REAL RUN: as `__main__`, and again
+            # when `g33_identity` imports it by name. The second execution was
+            # checked by nothing at all -- it recompiled the producer's own
+            # bytes with no comparison to anything (Codex). It holds them to
+            # HEAD here, which is the same guarantee `require_pinned_producer`
+            # gives the first execution, and needs no cross-instance state --
+            # there is no in-process place the attested code cannot reach.
+            _require_head_digest(
+                Path("harness/g33_refine_experiment.py"),
+                hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+                "the producer's second execution")
+            # NOT SILENTLY SKIPPED. `extension_protocol` reaches this module
+            # through the module-level `nt`, never through `_an`, so leaving
+            # no record meant nothing marked it -- and a duplicate instance
+            # published an INSTRUMENTED bundle, 20 analyses, with this module
+            # missing from `executed_analyzers` entirely. Measured.
+            _IMPORTED[name] = None
+            return prior
+        # NOT A RAISE. Refusing at IMPORT applied a production invariant --
+        # a fresh process where this module is imported first -- to a shared
+        # interpreter, and pytest collection died with SystemExit before a
+        # single test ran: many test modules import `g33_probe_read`, which
+        # pulls this one in. The process records that it cannot attest, and
+        # `produce()` refuses to publish, which is where the claim is made.
+        _IMPORTED[name] = None
+        return prior
+    src = HERE / f"{name}.py"
+    before = hashlib.sha256(src.read_bytes()).hexdigest()
+    mod = importlib.import_module(name)
+    after = hashlib.sha256(src.read_bytes()).hexdigest()
+    if before != after:
+        raise SystemExit(
+            f"REFUSED: {name} changed while it was being imported "
+            f"({before[:12]} -> {after[:12]})")
+    # HELD TO HEAD HERE, not later. `_an` returns early for anything already
+    # in `_IMPORTED`, so recording an unverified digest there skipped the
+    # check entirely: an edited module was accepted with its own digest.
+    checked = _require_head_digest(Path(f"harness/{name}.py"), before, name)
+    _EAGER_AT_LOAD[name] = checked
+    # ...and into the record the manifest is built from. `extension_protocol`
+    # reaches this module through the module-level `nt`, never through `_an`,
+    # so leaving it only in `_EAGER_AT_LOAD` meant a bundle whose analyses it
+    # produced never named it. Measured: 20 analyses published with it absent
+    # from `executed_analyzers` (Codex).
+    _IMPORTED[name] = checked
+    return mod
+
+
+nt = _eager_import("g33_number_transport")     # noqa: E402
+
 import g33_refine_analyze as ra        # noqa: E402
 import g33_refine_manifest as rm       # noqa: E402
 import g33_probe_read as pr           # noqa: E402
-import g33_number_transport as nt     # noqa: E402
 import g33_run_matrix as rmx          # noqa: E402  (run role: makes arm streams)
+
 
 
 def _an(name: str):
@@ -61,7 +201,78 @@ def _an(name: str):
     analyzer's first statement executes.
     """
     import importlib
-    return importlib.import_module(name)
+    # BEFORE the import, and never against a module already in memory
+    # (Codex). `import_module` returns the CACHED module when one exists, so
+    # hashing the file afterwards described whatever the tree held THEN --
+    # reproduced: bytes d86879e0 executed, 6bc1b9c8 was recorded and
+    # accepted. A module imported outside this seam has already run code
+    # nothing checked, which is the property the seam exists to give.
+    # ONE attestation per module, taken when it executed (Codex). A second
+    # dispatch returns the same cached object, so re-hashing the file then
+    # described a LATER state of the tree -- and if HEAD moved mid-run, that
+    # later read passes and overwrites the record with bytes that never ran.
+    # Reproduced: the record went from the executed digest to one the
+    # interpreter had never compiled.
+    if name in _IMPORTED:
+        return importlib.import_module(name)
+    # Already in memory and never attested here: this process cannot say what
+    # bytes ran, so it records that it cannot rather than hashing the file and
+    # pretending. Refusing outright would be wrong -- the analyzer suites
+    # import these modules directly, which is their subject, and they publish
+    # nothing. `produce()` refuses to PUBLISH a bundle carrying one of these,
+    # which is where the claim is actually made.
+    if name in sys.modules:
+        # ...unless the PRODUCER ITSELF imports it at module load. A run-role
+        # module cannot reach a lazy seam that runs later, so it is attested
+        # here by the same rule -- its bytes, held to HEAD. The residual
+        # window is narrower than the one §8 closed but not zero: it executed
+        # before `require_pinned_producer()`, so an edit reverted before that
+        # preflight would still go unseen. Closing it needs the detached
+        # snapshot, which is the open half of §8.
+        if name in _EAGER_AT_LOAD:
+            _IMPORTED[name] = _require_head_digest(
+                Path(f"harness/{name}.py"), _EAGER_AT_LOAD[name], name)
+            return sys.modules[name]
+        _IMPORTED[name] = None
+        return sys.modules[name]
+    src = HERE / f"{name}.py"
+    before = _require_head_bytes(src, name) if src.is_file() else None
+    mod = importlib.import_module(name)
+    # ...and the bytes that just EXECUTED are held to HEAD, here, at the
+    # moment they run (owner review §8). The preflight compares the working
+    # tree at t0 and the pin re-reads it at t4, so an analyzer edited at t1,
+    # imported at t2 and restored at t3 ran bytes neither check ever saw --
+    # reproduced end to end: `d86879e0` executed, `6bc1b9c8` was pinned.
+    # A hash taken at the point of use cannot be undone by a later revert.
+    # ...and unchanged ACROSS the import, so the bytes checked are the bytes
+    # the interpreter compiled.
+    got = Path(getattr(mod, "__file__", "") or "")
+    if got.is_file():
+        after = _require_head_bytes(got, name)
+        if before is not None and after != before:
+            raise SystemExit(
+                f"REFUSED: {name} changed while it was being imported "
+                f"({before[:12]} -> {after[:12]})")
+        _IMPORTED[name] = after
+    return mod
+
+
+
+#: Analyzer modules the producer imports at module load because they also
+#: play a RUN role -- `g33_number_transport` makes arm streams and is also
+#: the seed of `extension_protocol`. They cannot reach the lazy seam.
+_EAGER = frozenset({"g33_number_transport"})
+
+
+def _require_head_bytes(src: Path, what: str) -> str:
+    """The file's digest, refused unless it is the digest HEAD holds."""
+    got = hashlib.sha256(src.read_bytes()).hexdigest()
+    try:
+        rel = src.resolve().relative_to(HERE.parent)
+    except ValueError:
+        return got                      # outside the repo: nothing pins it
+    return _require_head_digest(rel, got, what)
+
 
 BUILD = HERE / "g33_fortran" / "refine_build.sh"
 
@@ -1244,12 +1455,28 @@ def _expect_reusable(final: Path, identity: str, man: dict) -> None:
                   + (have.get("build_artifacts") or []) + nested):
         f = final / entry["file"]
         want = entry.get("output_sha256") or entry.get("sha256")
-        if not f.is_file():
+        # ONE rule, shared with the evidence chain (owner §6). This checked
+        # `is_file()` and the digest, and both follow symlinks, so a link to a
+        # file outside the bundle satisfied its digest and was republished --
+        # while the chain refused the same bundle as NOT-SELF-CONTAINED.
+        state = rm.payload_state(f, want, final)
+        if state == "absent":
             raise SystemExit(f"REFUSED: {final} declares {entry['file']} but it "
                              f"is missing -- the directory is incomplete")
-        if rm.sha256(f) != want:
+        if state == "NOT-SELF-CONTAINED":
+            raise SystemExit(
+                f"REFUSED: {final}/{entry['file']} is not bundle payload -- a "
+                f"symlink, or a file outside the bundle root. A correct digest "
+                f"does not make it an immutable archive")
+        if state != "matches":
             raise SystemExit(f"REFUSED: {final}/{entry['file']} does not match "
                              f"the digest its manifest recorded")
+    # The manifest and the bundle directory are payload too (owner §6).
+    for what, q in (("manifest.json", mf), ("bundle directory", final)):
+        if q.is_symlink():
+            raise SystemExit(
+                f"REFUSED: {what} is a symlink -- the bytes an address names "
+                f"have to be inside the bundle")
 
 
 def require_pinned_producer(fixture: str | None = None) -> None:
@@ -1321,12 +1548,16 @@ MULTI_RUN = {
 
 
 def _ledger():
-    import g33_qr_process_ledger as pl
+    # THROUGH THE SEAM: a multi-run analyzer imported directly was
+    # attested by nothing, so its seed appeared in neither list and
+    # `unattested_analyzers` could not be held to cover the seeds
+    # (Codex).
+    pl = _an("g33_qr_process_ledger")
     return pl
 
 
 def _ncmin():
-    import g33_ncmin_locality as nl
+    nl = _an("g33_ncmin_locality")
     return nl
 
 
@@ -1580,7 +1811,7 @@ def _multi_run_analyses(out: Path, exe: Path, fixture: str,
 
 def compositions_of(fixture: str) -> list:
     """The decompositions a multi-run analysis covered, from the fixture."""
-    import g33_ncmin_locality as nl
+    nl = _an("g33_ncmin_locality")
     return nl.compositions(fixture_dims(fixture)[0])
 
 
@@ -1613,9 +1844,21 @@ def _analyses(out: Path, exe: Path, nsplits, mode: str,
 
 
 def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
-            nflux: bool, module: Path, findings=(), arm: str = "reference",
+            nflux: bool, module: Path | None = None, findings=(),
+            arm: str = "reference",
             rho_profile: str = "as-is") -> Path:
     """Build, run, validate and publish. Returns the published bundle."""
+    # The algorithm selects the module (owner §11). The build script picks
+    # the kernel to compile from `--algo` while the module the manifest pins
+    # arrived separately, defaulting to legacy -- so a conservative run had to
+    # line the two up by hand. One authority; departures are recorded.
+    canonical = KERNEL_SOURCES.get(algo)
+    if canonical is None:
+        raise SystemExit(
+            f"REFUSED: no kernel source is known for algorithm {algo!r}; "
+            f"the build compiles {sorted(KERNEL_SOURCES)}")
+    nonstandard = module is not None and Path(module) != canonical
+    module = canonical if module is None else Path(module)
     # MATERIALISE FIRST (owner §13 P1). `nsplits` is walked six times below --
     # the duplicate check, the member loop, the analyses, the arm streams. A
     # generator is exhausted by the first walk, and every later one sees an
@@ -1785,6 +2028,33 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         # same way, so the chain does not stop at the ones a reader thinks to ask
         # about.
         man["producer_modules"] = [_pin(m) for m in producer_modules()]
+        # WHAT ACTUALLY RAN, digested at import (owner review §8). The pins
+        # above are re-read from the working tree at the END of a run that
+        # takes the better part of an hour; this block is the digest each
+        # analyzer had when its first statement executed, so a transient edit
+        # cannot be undone by restoring the file before the manifest is
+        # written. Empty on a run that dispatched no analyzer.
+        if _IMPORTED:
+            unattested = sorted(k for k, v in _IMPORTED.items() if v is None)
+            # PUBLISHED EVIDENCE COMES FROM THE CLI, and there this is always
+            # empty: the producer is `__main__` in a fresh process and every
+            # analyzer reaches it through the seam. A library import -- the
+            # test suite -- shares an interpreter where other modules have
+            # already imported analyzers, so refusing there stopped every
+            # in-process `produce()` in the full run. The bundle claims only
+            # what it can attest; the CLI refuses rather than claim less.
+            if unattested and _running_as_cli():
+                raise SystemExit(
+                    f"REFUSED: {unattested} were already in memory when the "
+                    f"analysis dispatched, so what executed cannot be "
+                    f"established. A producer runs in a fresh process for "
+                    f"exactly this reason.")
+            attested = {k: v for k, v in _IMPORTED.items() if v is not None}
+            if attested:
+                man["executed_analyzers"] = [
+                    {"module": k, "sha256": v} for k, v in sorted(attested.items())]
+            # ...and SAY what could not be attested -- but only once the
+            # dispatch scope is known, below, where `identity` exists.
         # The TRACKED build inputs decide the raw streams as surely as the
         # analyzers decide the numbers, and build_provenance recorded only their
         # content digests -- checkable against today's working tree and nothing
@@ -1820,6 +2090,11 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         # decomposition, so every member's geometry is a derivable fact the
         # validator recomputes rather than a number it copies.
         man["algorithm"] = algo
+        # A run that leaves the kernel its algorithm selects has to say so,
+        # or a reader with only the manifest takes it for a standard one
+        # (owner §11).
+        if nonstandard:
+            man["nonstandard_module"] = True
         man["kernel_geometry"] = kgeom
         man["expected_run"] = {
             "schema": EXPECTED_RUN_SCHEMA,
@@ -1860,6 +2135,27 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         import g33_identity as gi
         man["identity"] = gi.identity_block(
             {a["analysis"] for a in man["analyses"] if a.get("analyzer")})
+        # ...and NOW say what could not be attested. Dropping it silently
+        # published a bundle whose record a reader cannot tell apart from a
+        # complete one: measured, 20 analyses with 7 modules named and
+        # `g33_number_transport` simply absent (Codex). A bundle that cannot
+        # say what ran has to say that.
+        #
+        # SCOPED TO WHAT THIS BUNDLE DISPATCHES TO, by the validator's own
+        # authority. The seam records an analyzer it could not attest whether
+        # or not any analysis here reaches it, so a suite that imported
+        # `g33_number_transport` before the producer made every in-process
+        # `produce()` publish a name the validator refuses as unrelated --
+        # 13 tests, and only when collection put that module first. A module
+        # this bundle never dispatched to decided nothing in it, so it owes
+        # the record nothing; the CLI refusal above still fires on the FULL
+        # set, so nothing is relaxed on the path that publishes evidence.
+        if _IMPORTED:
+            reached = rm.dispatched_seeds(man)
+            confess = sorted(k for k, v in _IMPORTED.items()
+                             if v is None and k in reached)
+            if confess:
+                man["unattested_analyzers"] = confess
         # An instrument arm can never be decision evidence, and says so in the
         # artifact rather than only in prose.
         man["decision_eligible"] = False
@@ -1961,8 +2257,16 @@ def main(argv) -> int:
                     choices=("reference", "probe", "f64"),
                     help="f64 is an INSTRUMENT: it emits no G33R and is never "
                          "decision evidence")
-    ap.add_argument("--module", type=Path,
-                    default=Path("host/KIM-meso_v1.0/phys/module_mp_kdm6.F"))
+    # `--algo` chose the module the BUILD compiles while `--module` chose the
+    # one the MANIFEST pins, and its default was legacy -- so a conservative
+    # run had to line the two up by hand, and a mismatch was refused later by
+    # the validator. Not a silent defect, but two authorities for one fact
+    # (owner §11). The module follows the algorithm now; leaving that has to
+    # be said out loud.
+    ap.add_argument("--module-override", type=Path, default=None,
+                    help="for a NONSTANDARD experiment: pin this file instead "
+                         "of the kernel the algorithm selects, and record in "
+                         "the manifest that it was done")
     ap.add_argument("--finding", type=Path, action="append", default=[])
     a = ap.parse_args(argv)
     # absolute(), NOT resolve(): once `dest` is a symlink into the bundle store,
@@ -1970,7 +2274,8 @@ def main(argv) -> int:
     # previous bundle (owner §10.3 fallout, found by rerunning for real).
     dest = produce(a.outdir.absolute(), fixture=a.fixture, algo=a.algo,
                    nsplits=[int(x) for x in a.nsplit.split(",")], mode=a.mode,
-                   nflux=a.nflux, module=a.module, findings=a.finding, arm=a.arm,
+                   nflux=a.nflux, module=a.module_override,
+                   findings=a.finding, arm=a.arm,
                    rho_profile=a.rho_profile)
     print(dest)
     return 0

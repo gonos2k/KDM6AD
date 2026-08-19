@@ -666,23 +666,15 @@ def _payload_state(p: Path, want: str, root: Path) -> str:
     `Path.is_file()` follows symlinks, so a bundle member could be a link to a
     file outside the bundle and match its digest perfectly. The digest would be
     telling the truth and the bundle would still not be the self-contained,
-    immutable thing the archive is defined to be: move or edit the target and
-    the "immutable" bundle changes with it (owner priority 10).
+    immutable thing the archive is defined to be (owner priority 10).
 
     Measured before enforcing: 169 payload files across the published archive,
-    0 symlinks -- so this states a property the bundles already have rather
-    than imposing one they would have to be rebuilt for.
+    0 symlinks -- so this states a property the bundles already have.
+
+    The rule itself lives once, in `rm.payload_state`: the producer's reuse
+    check held a different one, and that asymmetry was reproduced (owner §6).
     """
-    if p.is_symlink() or (p.exists() and not p.is_file()):
-        return "NOT-SELF-CONTAINED"
-    if not p.is_file():
-        return "absent"
-    try:
-        if p.resolve().parent != root.resolve():
-            return "NOT-SELF-CONTAINED"
-    except OSError:
-        return "NOT-SELF-CONTAINED"
-    return "matches" if sha256(p) == want else "MISMATCH"
+    return rm.payload_state(p, want, root)
 
 
 def members_of(manifest: Path) -> list[dict]:

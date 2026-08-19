@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -43,21 +44,78 @@ def _git(*args: str) -> str:
                           text=True).stdout.strip()
 
 
-def normaliser(out: Path):
-    """`<OUT>` for the output directory, so the record does not carry where it
-    ran (owner §10.3). Named and exported rather than inlined, because the
-    publish gate compares the published logs to this record and has to
-    normalise them the SAME way -- against the directory the build actually
-    used, which only `diagnostic.outdir` remembers.
+def normaliser(out: Path, tmp: Path | None = None, repo: Path | None = None):
+    """Strip WHERE this ran, keep WHAT was built (owner §10.3, §7).
+
+    `<OUT>` for the output directory. `<TMP>` for the temporary root: the
+    staged sources and the generated overlay live under `$TMPDIR`, so the
+    compile commands and `compiled_module_path` carried `/tmp` on one host
+    and `/var/folders/...` on another -- measured, the content id moved
+    between them for identical bytes. The digest-bearing BASENAME survives,
+    which is what the source map is matched on. `<REPO>` for the checkout
+    root, for the same reason one level up.
+
+    Named and exported rather than inlined, because the publish gate compares
+    the published logs to this record and has to normalise them the SAME way
+    -- against the directories the build actually used, which only
+    `diagnostic` remembers.
     """
-    return lambda c: c.replace(str(out), "<OUT>")
+    # BOTH spellings of each directory. macOS resolves `/var/folders/...` to
+    # `/private/var/folders/...`, so replacing only the literal turned
+    # `/private/var/.../T/x` into `/private<TMP>/x` -- neither the path nor a
+    # clean tag (found by the provenance suite).
+    subs = []
+    for d, tag in ((out, "<OUT>"), (tmp, "<TMP>"), (repo, "<REPO>")):
+        if not d:
+            continue
+        for form in {str(Path(d)).rstrip("/"), str(Path(d).resolve()).rstrip("/")}:
+            subs.append((form, tag))
+    # Longest first: `$TMPDIR` may contain the output directory, and replacing
+    # the shorter one first would leave a half-normalised path.
+    subs.sort(key=lambda kv: len(kv[0]), reverse=True)
+
+    def norm(c: str) -> str:
+        for lit, tag in subs:
+            c = c.replace(lit, tag)
+        return c
+    return norm
+
+
+#: The EXACT set of roles this build compiles. A source list was an ordered
+#: bag of {path, digest}: dropping six of seven rows, repeating one logical
+#: path under two digests, or adding a row nothing compiled all validated
+#: CLEAN (owner §5). Naming the roles makes the set checkable, and an
+#: unrecognised path gets `null` so a new source has to be declared here
+#: deliberately rather than slipping in as one more row.
+SOURCE_ROLES = (
+    ("fixture", r"g33_fixture_[A-Za-z0-9_]+\.f90$"),
+    ("driver", r"g33_refine_driver\.f90$"),
+    ("stub", r"stub_wrf_error\.f90$"),
+    ("libmassv", r"libmassv\.F$"),
+    ("model_constants", r"module_model_constants\.F$"),
+    ("radar", r"module_mp_radar\.F$"),
+    ("module", r"(module_mp_ovl\.F|module_mp_kdm6[A-Za-z0-9_]*\.F)$"),
+)
+#: Every role a complete build leaves behind.
+REQUIRED_ROLES = frozenset(r for r, _ in SOURCE_ROLES)
+BUILD_PROVENANCE_SCHEMA = "g33_build_provenance_v1"
+
+
+def role_of(path: str):
+    """Which role a compiled source plays, or None when nothing claims it."""
+    for role, pattern in SOURCE_ROLES:
+        if re.search(pattern, path):
+            return role
+    return None
 
 
 def _source_row(line: str, norm) -> dict:
     """One `sources.txt` line as a record: the logical path, and the digest
     of what the compiler read."""
     path, _, sha = line.partition("\t")
-    return {"path": norm(path), "sha256": sha.strip() or sha256(Path(path))}
+    p = norm(path)
+    return {"path": p, "role": role_of(p),
+            "sha256": sha.strip() or sha256(Path(path))}
 
 
 def collect(out: Path, fc: str, module: Path, fixture: Path, script: Path,
@@ -84,8 +142,11 @@ def collect(out: Path, fc: str, module: Path, fixture: Path, script: Path,
     # name every rerun. `<OUT>` stands in for that directory in the identity view;
     # the literal paths stay under `diagnostic`, where they answer "where did this
     # happen" rather than "what was built".
-    norm = normaliser(out)
+    import os, tempfile
+    norm = normaliser(out, Path(os.environ.get("TMPDIR", tempfile.gettempdir())),
+                      Path(__file__).resolve().parents[1])
     ident = {
+        "schema": BUILD_PROVENANCE_SCHEMA,
         "compiler_sha256": sha256(binary),
         "compiler_version": version[0] if version else None,
         # From the log the build wrote as it compiled -- not from a caller that
@@ -131,8 +192,11 @@ def collect(out: Path, fc: str, module: Path, fixture: Path, script: Path,
         "repo_commit": _git("rev-parse", "HEAD"),
         "tree_dirty": bool(_git("status", "--porcelain")),
     }
+    import os as _os, tempfile as _tf
     return ident | {"diagnostic": {
         "outdir": str(out),
+        "tmpdir": str(Path(_os.environ.get("TMPDIR", _tf.gettempdir()))),
+        "repo_root": str(Path(__file__).resolve().parents[1]),
         "compiler_path": binary,
         "compiler_f951_path": f951 if Path(f951).is_file() else None,
         "executable_path": str(exe) if exe else None,
@@ -160,13 +224,29 @@ def verify(root: Path) -> list:
     except ValueError as e:
         return [f"build_provenance.json is not readable JSON: {e}"]
     # The logs are copied VERBATIM from the build directory while the record
-    # is normalised against it, so the comparison needs the directory the
-    # build ran in -- which only the diagnostic block remembers.
-    outdir = (got.get("diagnostic") or {}).get("outdir")
-    if not outdir:
+    # is normalised against THREE roots -- the output directory, `$TMPDIR`
+    # and the checkout (owner §7) -- so the comparison needs all three, which
+    # only the diagnostic block remembers. Normalising with the output
+    # directory alone left every honest build failing its own verification:
+    # reproduced on a real build, `commands.txt is not
+    # build_provenance.compile_commands` (Codex).
+    diag = got.get("diagnostic") or {}
+    if not diag.get("outdir"):
         return ["build_provenance.diagnostic.outdir is missing, so the "
                 "published logs cannot be normalised the way the record was"]
-    norm, bad = normaliser(Path(outdir)), []
+    # EACH ROOT IS USED IF THE RECORD USED IT (Codex). Requiring all three
+    # made this refuse every bundle published before §7 -- their records were
+    # normalised against the output directory alone, so that is how they have
+    # to be re-derived. A stricter demand on history is the one discipline
+    # this campaign has kept unbroken.
+    #
+    # Dropping the roots is not a way past the check: a record normalised
+    # with three roots and re-derived with one produces `<TMP>` where the
+    # logs hold a literal path, which is a mismatch and is refused.
+    norm = normaliser(Path(diag["outdir"]),
+                      Path(diag["tmpdir"]) if diag.get("tmpdir") else None,
+                      Path(diag["repo_root"]) if diag.get("repo_root") else None)
+    bad = []
     srcs, cmds = root / "sources.txt", root / "commands.txt"
     # ABSENT is not ABSENT-AND-FINE (Codex): skipping the comparison when a
     # log is missing let deleting it clear the check, so a record could claim
@@ -189,7 +269,16 @@ def verify(root: Path) -> list:
         return bad + [f"sources.txt line {lines.index(malformed[0]) + 1} carries "
                       f"no digest: {malformed[0][:60]!r}"]
     rows = [_source_row(ln, norm) for ln in lines]
-    if rows != got.get("sources"):
+    # Compare on the FIELDS THE RECORD CARRIES. `role` joined a source row at
+    # v7, and re-deriving it against a record written before that made every
+    # published bundle fail its own verification -- the same shape as
+    # requiring the extra normalisation roots, and the same rule: a widened
+    # derivation is not a demand on records that predate it.
+    have = got.get("sources")
+    if isinstance(have, list) and have and all(isinstance(r, dict) for r in have):
+        keys = set().union(*(set(r) for r in have))
+        rows = [{k: v for k, v in r.items() if k in keys} for r in rows]
+    if rows != have:
         bad.append("sources.txt is not build_provenance.sources")
     if [norm(c) for c in cmds.read_text().splitlines()] != \
             got.get("compile_commands"):

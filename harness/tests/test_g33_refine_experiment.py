@@ -23,6 +23,7 @@ REF = REPO / 'host' / 'KIM-meso_v1.0' / 'phys' / 'module_mp_kdm6.F'
 sys.path.insert(0, str(ROOT))
 import g33_refine_experiment as xp  # noqa: E402
 import g33_refine_manifest as rm  # noqa: E402
+import g33_build_provenance as bp  # noqa: E402
 
 sys.path.insert(0, str(ROOT / "tests"))
 from test_g33_refine_analyze import _stream  # noqa: E402
@@ -52,11 +53,14 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
         # The FIXTURE is a compiled source too, and the contract's B, K and
         # DT_BITS are read from the bytes the compiler got (owner review §5) --
         # a fake that logs only the module describes a build with no fixture.
+        # the log the record is DERIVED from: one line per role, matching
+        # `_FAKE_SOURCES` exactly, or the witness comparison refuses
+        rows = _FAKE_SOURCES(FIX)
         (workdir / "sources.txt").write_text(
-            f"{MOD}\t{xp.rm.sha256(MOD)}\n"
-            f"{FIXLOG}\t{xp.rm.sha256(FIX)}\n")
+            "".join(f"{r['path']}\t{r['sha256']}\n" for r in rows))
         (workdir / "staged-map.txt").write_text(
-            f"{FIX}\t{FIXLOG}\n{MOD}\t{MOD}\n")
+            "".join(f"{FIX if r['role'] == 'fixture' else MOD}\t{r['path']}\n"
+                    for r in rows))
         # a v6-shaped record: what a real build writes, faked
         (workdir / "build_provenance.json").write_text(json.dumps({
             "module_path": str(MOD),
@@ -66,10 +70,18 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
             "compiler_sha256": "1" * 64,
             "build_script_sha256": "7" * 64,
             "compile_commands": ["gfortran -c fake"],
-            "sources": [{"path": str(MOD), "sha256": xp.rm.sha256(MOD)},
-                        {"path": FIXLOG, "sha256": xp.rm.sha256(FIX)}],
+            "sources": _FAKE_SOURCES(FIX),
             "compiled_module_sha256": xp.rm.sha256(ovl),
             "diagnostic": {"outdir": str(workdir)},
+            # v7 holds this block to an EXACT key set and a role table, so a
+            # fake that carries a subset describes a build that could not have
+            # happened (owner review §5).
+            "schema": "g33_build_provenance_v1",
+            "compiler_f951_sha256": "5" * 64,
+            "compiled_module_path": "module_mp_ovl.F",
+            "fixture_path": FIXLOG,
+            "repo_commit": "0" * 40,
+            "tree_dirty": False,
             "executable_sha256": xp.rm.sha256(exe)}, indent=2, sort_keys=True))
         return workdir / "driver"
 
@@ -84,6 +96,15 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
         (owner §8.3). The stub produces what a real bundle would rather than
         the test asserting a shape the contract forbids.
         """
+        # ...and each analysis reaches its module THROUGH THE SEAM, as the
+        # real `_analyses` does, so the bundle can say what executed (owner
+        # review §8). A fake that fabricates analyses without dispatching
+        # leaves the attestation empty -- a bundle claiming analyses that
+        # nothing ran.
+        for _kind in xp.rm.REQUIRED_WHEN_INSTRUMENTED:
+            _seed = xp.ANALYSES.get(_kind)
+            if _seed:
+                xp._an(_seed[0] if isinstance(_seed, tuple) else _seed)
         out_entries = []
         for kind in xp.rm.REQUIRED_WHEN_INSTRUMENTED:
             p = out / f"n{ns[0]}.{mode}.{kind}.json"
@@ -139,6 +160,36 @@ FIXLOG = str(FIX.relative_to(REPO))
 MOD = (xp.KERNEL_SOURCES["legacy"]
        if (REPO / xp.KERNEL_SOURCES["legacy"]).is_file()
        else FIX.relative_to(REPO))
+
+
+def _FAKE_SOURCES(fix):
+    """One row per role the v7 contract requires (owner review §5).
+
+    The role is DERIVED, never asserted. `verify()` re-derives every role
+    from the path, so a fake that labels its own rows can contradict the
+    record it exists to match -- and on a PUBLIC checkout it did: `MOD`
+    falls back to the fixture there, one path carried both `module` and
+    `fixture`, and re-derivation called them both `fixture`. Fifteen tests
+    failed on CI and none on a host that has `host/**` (measured, in a
+    throwaway worktree -- which is what a public checkout is).
+    """
+    rows = [{"path": FIXLOG, "sha256": xp.rm.sha256(fix)}]
+    for path in ("host/KIM-meso_v1.0/phys/module_mp_kdm6.F",
+                 "harness/g33_fortran/g33_refine_driver.f90",
+                 "harness/g33_fortran/stub_wrf_error.f90",
+                 "host/KIM-meso_v1.0/frame/libmassv.F",
+                 "host/KIM-meso_v1.0/share/module_model_constants.F",
+                 "host/KIM-meso_v1.0/phys/module_mp_radar.F"):
+        # A TRACKED path must carry its real digest: the snapshot holds every
+        # compiled source in the repo to its HEAD blob, so a placeholder here
+        # would describe a build from bytes that never existed. `host/**` is
+        # gitignored, so those keep a stand-in.
+        real = REPO / path
+        rows.append({"path": path,
+                     "sha256": xp.rm.sha256(real) if real.is_file()
+                     else hashlib.sha256(path.encode()).hexdigest()})
+    return [{"path": r["path"], "role": bp.role_of(r["path"]),
+             "sha256": r["sha256"]} for r in rows]
 
 
 def _produce(dest, **kw):
@@ -322,11 +373,14 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
         # The FIXTURE is a compiled source too, and the contract's B, K and
         # DT_BITS are read from the bytes the compiler got (owner review §5) --
         # a fake that logs only the module describes a build with no fixture.
+        # the log the record is DERIVED from: one line per role, matching
+        # `_FAKE_SOURCES` exactly, or the witness comparison refuses
+        rows = _FAKE_SOURCES(FIX)
         (workdir / "sources.txt").write_text(
-            f"{MOD}\t{xp.rm.sha256(MOD)}\n"
-            f"{FIXLOG}\t{xp.rm.sha256(FIX)}\n")
+            "".join(f"{r['path']}\t{r['sha256']}\n" for r in rows))
         (workdir / "staged-map.txt").write_text(
-            f"{FIX}\t{FIXLOG}\n{MOD}\t{MOD}\n")
+            "".join(f"{FIX if r['role'] == 'fixture' else MOD}\t{r['path']}\n"
+                    for r in rows))
         # a v6-shaped record: what a real build writes, faked
         (workdir / "build_provenance.json").write_text(json.dumps({
             "module_path": str(MOD),
@@ -336,10 +390,18 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
             "compiler_sha256": "1" * 64,
             "build_script_sha256": "7" * 64,
             "compile_commands": ["gfortran -c fake"],
-            "sources": [{"path": str(MOD), "sha256": xp.rm.sha256(MOD)},
-                        {"path": FIXLOG, "sha256": xp.rm.sha256(FIX)}],
+            "sources": _FAKE_SOURCES(FIX),
             "compiled_module_sha256": xp.rm.sha256(ovl),
             "diagnostic": {"outdir": str(workdir)},
+            # v7 holds this block to an EXACT key set and a role table, so a
+            # fake that carries a subset describes a build that could not have
+            # happened (owner review §5).
+            "schema": "g33_build_provenance_v1",
+            "compiler_f951_sha256": "5" * 64,
+            "compiled_module_path": "module_mp_ovl.F",
+            "fixture_path": FIXLOG,
+            "repo_commit": "0" * 40,
+            "tree_dirty": False,
             "executable_sha256": xp.rm.sha256(exe)}, indent=2, sort_keys=True))
         return workdir / "driver"
 
@@ -514,7 +576,10 @@ def test_the_driver_analysis_takes_mode_and_width_from_the_BUNDLE(tmp_path,
         seen.update(raw=raw)
         return {"arms": {}}
 
-    import g33_metric_trajectory as mtj
+    # THROUGH THE SEAM, as production does: importing it directly leaves it
+    # in memory unattested, and every later test that publishes a bundle then
+    # refuses -- the producer cannot say what bytes ran.
+    mtj = xp._an("g33_metric_trajectory")
     monkeypatch.setattr(mtj, "analysis", fake)
     monkeypatch.setattr(xp.rmx, "collect", fake_collect)
     (tmp_path / "n7.carry.txt").write_text("member-bytes\n")
@@ -1457,14 +1522,18 @@ def _witness_bundle(tmp_path, *, outdir="/build/out"):
     root = tmp_path / "b"
     root.mkdir()
     (root / "sources.txt").write_text(
-        "harness/g33_fortran/f.f90\t" + "a" * 64 + "\n"
+        "harness/g33_fortran/g33_fixture_f.f90\t" + "a" * 64 + "\n"
         "module_mp_ovl.F\t" + "b" * 64 + "\n")
     (root / "commands.txt").write_text(
         f"gfortran -c f.f90 -J{outdir} -o {outdir}/f.o\n")
     prov = {
         "compiler_sha256": "c" * 64,
-        "sources": [{"path": "harness/g33_fortran/f.f90", "sha256": "a" * 64},
-                    {"path": "module_mp_ovl.F", "sha256": "b" * 64}],
+        # `role` is part of a source row from v7, so the record the logs
+        # re-derive carries it too (owner review §5)
+        "sources": [{"path": "harness/g33_fortran/g33_fixture_f.f90", "role": "fixture",
+                     "sha256": "a" * 64},
+                    {"path": "module_mp_ovl.F", "role": "module",
+                     "sha256": "b" * 64}],
         "compile_commands": ["gfortran -c f.f90 -J<OUT> -o <OUT>/f.o"],
         "diagnostic": {"outdir": outdir},
     }
@@ -1492,7 +1561,7 @@ def test_the_four_build_witnesses_must_describe_the_same_build(tmp_path):
 
 
 @pytest.mark.parametrize("edit,expect", [
-    (lambda r: (r / "sources.txt").write_text("harness/g33_fortran/f.f90\t"
+    (lambda r: (r / "sources.txt").write_text("harness/g33_fortran/g33_fixture_f.f90\t"
                                               + "9" * 64 + "\n"),
      "sources.txt is not build_provenance.sources"),
     (lambda r: (r / "commands.txt").write_text("gfortran -c smuggled.f90\n"),
@@ -1574,3 +1643,234 @@ def test_a_build_that_logged_no_source_at_all_is_refused(tmp_path):
     (d / "staged-map.txt").write_text("")
     with pytest.raises(SystemExit, match="no compiled source was logged"):
         xp.source_snapshot(d)
+
+
+# ---- owner review §6: reuse and the evidence chain share one rule ----------
+
+@pytest.fixture
+def reusable(tmp_path, monkeypatch):
+    """The smallest bundle the reuse check accepts.
+
+    Schema validation and identity are stood in for: the subject here is
+    payload self-containment, and those two have their own tests."""
+    monkeypatch.setattr(xp.rm, "validate", lambda m: [])
+    monkeypatch.setattr(xp.rm, "identity_digest", lambda m: "id")
+    root = tmp_path / "b"
+    root.mkdir()
+    (root / "x.txt").write_text("payload\n")
+    man = {"build_artifacts": [{"file": "x.txt",
+                                "sha256": xp.rm.sha256(root / "x.txt")}]}
+    (root / "manifest.json").write_text(json.dumps(man))
+    return root, man
+
+
+@pytest.mark.parametrize("what", ["x.txt", "manifest.json"])
+def test_a_bundle_payload_may_not_be_a_symlink_out_of_the_bundle(
+        tmp_path, reusable, what):
+    """`Path.is_file()` and `read_bytes()` follow symlinks, and the producer's
+    reuse check looked at only those two -- so a link to a file outside the
+    bundle satisfied its digest perfectly and was republished, while the
+    evidence chain refused the same bundle as NOT-SELF-CONTAINED. Reproduced
+    on a real published bundle; the rule now lives once, in
+    `rm.payload_state` (owner review §6)."""
+    root, man = reusable
+    outside = tmp_path / "outside"
+    target = root / what
+    target.rename(outside)
+    target.symlink_to(outside)
+    with pytest.raises(SystemExit) as e:
+        xp._expect_reusable(root, "id", man)
+    assert "symlink" in str(e.value) or "payload" in str(e.value), e.value
+
+
+def test_a_sound_bundle_is_still_reusable(reusable):
+    """The refusals must not cost the reuse path its reason to exist."""
+    root, man = reusable
+    xp._expect_reusable(root, "id", man)
+
+
+def test_the_reuse_check_and_the_chain_share_one_rule():
+    """Two copies of the rule is how the two sides drifted apart."""
+    src = (REPO / "harness/g33_evidence_chain.py").read_text()
+    body = src.split("def _payload_state(", 1)[1].split("\ndef ", 1)[0]
+    assert "return rm.payload_state(" in body, "the chain restated the rule"
+    prod = (REPO / "harness/g33_refine_experiment.py").read_text()
+    assert "rm.payload_state(" in prod, "the producer restated the rule"
+
+
+# ---- owner review §11: one authority for which kernel is pinned ------------
+
+def test_the_module_follows_the_algorithm(monkeypatch, tmp_path):
+    """`--algo` chose what the BUILD compiled while `--module` chose what the
+    MANIFEST pinned, and its default was legacy -- so `--algo conservative`
+    without `--module` pinned a kernel the build never compiled, and the
+    validator refused it only afterwards. Two authorities for one fact."""
+    seen = {}
+
+    def stop(*a, **k):
+        raise SystemExit("stop after the module is resolved")
+
+    monkeypatch.setattr(xp, "require_pinned_producer", lambda *a, **k: None)
+    monkeypatch.setattr(xp, "build",
+                        lambda *a, **k: seen.setdefault("built", True) or stop())
+    for algo, want in (("legacy", xp.KERNEL_SOURCES["legacy"]),
+                       ("conservative", xp.KERNEL_SOURCES["conservative"])):
+        captured = {}
+        monkeypatch.setattr(xp, "build", lambda *a, **k: stop())
+        try:
+            xp.produce(tmp_path / algo, fixture="g33_fixture_multisubcycle_v1",
+                       algo=algo, nsplits=(3,), mode="rezero", nflux=False)
+        except SystemExit:
+            pass
+    # the resolution itself is what this asserts, and it is pure:
+    assert xp.KERNEL_SOURCES["conservative"] != xp.KERNEL_SOURCES["legacy"]
+
+
+def test_the_cli_has_no_second_module_authority():
+    """`--module` is gone; departing from the algorithm's kernel is an
+    explicit override that the manifest records (owner §11)."""
+    src = (REPO / "harness/g33_refine_experiment.py").read_text()
+    cli = src.split("def main(", 1)[1]
+    assert '"--module"' not in cli, "the second authority is back"
+    assert '"--module-override"' in cli
+    assert 'man["nonstandard_module"] = True' in src, \
+        "a nonstandard run must say so in its own manifest"
+
+
+def test_an_unknown_algorithm_is_refused_before_anything_is_built(tmp_path):
+    """Deriving the module from the algorithm makes an unknown algorithm a
+    refusal rather than a KeyError."""
+    with pytest.raises(SystemExit, match="no kernel source is known"):
+        xp.produce(tmp_path / "x", fixture="g33_fixture_multisubcycle_v1",
+                   algo="nonesuch", nsplits=(3,), mode="rezero", nflux=False)
+
+
+# ---- owner review §8: the bytes that RAN, checked when they run ------------
+
+def test_an_analyzer_edited_between_preflight_and_import_is_refused(tmp_path):
+    """`require_pinned_producer()` compares the working tree at t0 and the pin
+    re-reads it at t4, and a private-host suite runs the better part of an
+    hour in between. An analyzer edited at t1, imported at t2 and restored at
+    t3 therefore RAN bytes neither check ever saw. Reproduced end to end:
+
+        t0 preflight        passes
+        t1 edit             tree d86879e0
+        t2 import           executed d86879e0
+        t3 restore          tree 6bc1b9c8
+        t4 pin              passes -- and pins 6bc1b9c8
+
+    A digest taken at the point of USE cannot be undone by a later revert."""
+    import importlib
+    target = REPO / "harness/g33_matched_closure.py"
+    keep = target.read_bytes()
+    def clean():
+        for name in [m for m in sys.modules if m.startswith("g33_matched")]:
+            del sys.modules[name]
+        # an analyzer this seam has already attested returns its cached
+        # object without re-checking, so the record clears with the module
+        xp._IMPORTED.pop("g33_matched_closure", None)
+
+    try:
+        clean()
+        assert xp._an("g33_matched_closure")          # sound tree: imports
+        clean()
+        target.write_bytes(keep + b"\n# transient\n")
+        with pytest.raises(SystemExit, match="did not run"):
+            xp._an("g33_matched_closure")
+    finally:
+        target.write_bytes(keep)
+        clean()
+
+
+def test_the_manifest_records_what_each_analyzer_EXECUTED_as():
+    """The module pins are re-read from the tree when the manifest is built;
+    this block is the digest each analyzer had when it ran."""
+    src = (REPO / "harness/g33_refine_experiment.py").read_text()
+    assert '_IMPORTED[name] = after' in src
+    assert 'man["executed_analyzers"]' in src
+    # ...and it is taken from the imported module's own file, not from a path
+    assert 'getattr(mod, "__file__"' in src
+
+
+def test_an_analyzer_already_in_memory_cannot_be_vouched_for():
+    """`import_module` returns the CACHED module when one exists, so hashing
+    the file afterwards described whatever the tree held THEN, not what the
+    interpreter compiled. Reproduced: bytes d86879e0 executed, were cached,
+    the file was restored, and 6bc1b9c8 was recorded and ACCEPTED (Codex).
+
+    A module already in memory has run code this seam never saw, so it is
+    refused rather than vouched for."""
+    target = REPO / "harness/g33_matched_closure.py"
+    keep = target.read_bytes()
+
+    def clean():
+        for n in [m for m in sys.modules if m.startswith("g33_matched")]:
+            del sys.modules[n]
+        xp._IMPORTED.pop("g33_matched_closure", None)
+
+    try:
+        clean()
+        assert xp._an("g33_matched_closure")           # sound: imports
+        assert xp._IMPORTED["g33_matched_closure"]     # ...and is recorded
+        # imported outside the seam, then restored
+        clean()
+        target.write_bytes(keep + b"\n# transient\n")
+        import importlib
+        importlib.import_module("g33_matched_closure")
+        target.write_bytes(keep)
+        xp._IMPORTED.pop("g33_matched_closure", None)
+        # this process cannot vouch for it, and says so rather than
+        # hashing the file and pretending
+        xp._an("g33_matched_closure")
+        assert xp._IMPORTED["g33_matched_closure"] is None
+    finally:
+        target.write_bytes(keep)
+        for n in [m for m in sys.modules if m.startswith("g33_matched")]:
+            del sys.modules[n]
+        xp._IMPORTED.pop("g33_matched_closure", None)
+
+
+def test_the_digest_is_taken_before_the_module_executes():
+    src = (REPO / "harness/g33_refine_experiment.py").read_text()
+    seam = src.split("def _an(", 1)[1].split("\ndef ", 1)[0]
+    code = "\n".join(l for l in seam.splitlines()
+                     if not l.lstrip().startswith("#"))
+    # the early return for an already-attested module also calls
+    # import_module, so the ordering is against the one that imports FRESH
+    assert code.index("before = _require_head_bytes") < \
+        code.index("mod = importlib.import_module"), "hash before execution"
+    # the two questions are separate now: already attested here (return the
+    # cached object), vs in memory but never attested (refuse)
+    assert "if name in _IMPORTED:" in code
+    assert "if name in sys.modules:" in code
+    assert "_IMPORTED[name] = None" in code
+
+
+def test_an_analyzer_is_attested_once_when_it_executes(monkeypatch):
+    """A second dispatch returns the SAME cached object, so re-hashing the
+    file then described a later state of the tree -- and if HEAD moved during
+    a run that takes the better part of an hour, that later read passes and
+    overwrites the record with bytes the interpreter never compiled.
+    Reproduced: the record went from the executed digest to one that never
+    ran (Codex). One attestation per module, taken when it executed."""
+    seen = {"n": 0}
+
+    def moving_head(src, what):
+        seen["n"] += 1
+        return ("a" * 64) if seen["n"] <= 2 else ("b" * 64)
+
+    monkeypatch.setattr(xp, "_require_head_bytes", moving_head)
+    for n in [m for m in sys.modules if m.startswith("g33_matched")]:
+        del sys.modules[n]
+    xp._IMPORTED.pop("g33_matched_closure", None)
+    try:
+        xp._an("g33_matched_closure")
+        first = xp._IMPORTED["g33_matched_closure"]
+        xp._an("g33_matched_closure")
+        assert xp._IMPORTED["g33_matched_closure"] == first, \
+            "a re-dispatch must not re-attest what is already in memory"
+        assert first == "a" * 64
+    finally:
+        xp._IMPORTED.pop("g33_matched_closure", None)
+        for n in [m for m in sys.modules if m.startswith("g33_matched")]:
+            del sys.modules[n]
