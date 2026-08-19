@@ -1414,10 +1414,31 @@ def test_the_record_cannot_pin_one_file_and_compile_another(tmp_path, mutate,
                for v in bad), (expect, bad[:3])
 
 
+def test_no_required_provenance_field_may_carry_null(tmp_path):
+    """Presence satisfies the exact key set; `null` satisfied it too.
+
+    Nulling a field erased whatever it said while the record still looked
+    complete -- measured on a clean synthetic one, five of the seventeen
+    required fields validated entirely CLEAN, `tree_dirty` among them, and
+    `fixture_path` took the v7 join down with it. Asked of EVERY field
+    rather than the three the join reads, so the next field added to the
+    contract is covered the day it is added.
+    """
+    man = synthetic_manifest(tmp_path)
+    assert rm.validate(man) == [], rm.validate(man)[:2]
+    silent = []
+    for key in sorted(rm._BUILD_PROVENANCE_KEYS):
+        one = json.loads(json.dumps(man))
+        one["build_provenance"][key] = None
+        if not any("no value" in v for v in rm.validate(one)):
+            silent.append(key)
+    assert not silent, f"null passes for {silent}"
+
+
 @pytest.mark.parametrize("declare,clean", [
-    (lambda seeds: sorted(seeds), True),        # attested nothing, said so
-    (lambda seeds: sorted(seeds)[:3], False),   # said so about SOME of them
-    (lambda seeds: None, False),                # said nothing at all
+    (lambda seeds: sorted(seeds), True),
+    (lambda seeds: sorted(seeds)[:3], False),
+    (lambda seeds: None, False),
 ])
 def test_a_bundle_that_attested_NOTHING_may_say_so(tmp_path, declare, clean):
     """Absence of `executed_analyzers` is an omission unless the bundle

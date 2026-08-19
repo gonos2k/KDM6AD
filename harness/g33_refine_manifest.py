@@ -1363,6 +1363,17 @@ def _build_provenance_violations(man: dict) -> list:
     if missing or extra:
         bad.append(f"build_provenance is not the {_BUILD_PROVENANCE_SCHEMA} key "
                    f"set: missing {missing}, unexpected {extra}")
+    # A KEY WITH NO VALUE IS NOT A KEY (Codex, generalized from the join
+    # below). The exact key set is satisfied by presence, so `null` passed it
+    # while erasing whatever the field said -- measured on a clean synthetic
+    # record, five of the seventeen required fields validated entirely CLEAN
+    # when nulled, `tree_dirty` among them. `tree_dirty: false` is a claim; a
+    # null is the absence of one, and this contract does not accept absence.
+    empty = sorted(k for k in _BUILD_PROVENANCE_KEYS & set(bp)
+                   if bp[k] is None)
+    if empty:
+        bad.append(f"build_provenance carries no value for {empty} -- the "
+                   f"contract requires these fields and 'no value' is not one")
     rows = bp.get("sources")
     if not isinstance(rows, list) or not rows:
         return bad + ["build_provenance.sources must be a non-empty list"]
@@ -1419,7 +1430,18 @@ def _build_provenance_violations(man: dict) -> list:
         if row is None:
             continue                   # already reported as a missing role
         top = bp.get(field)
-        if top is not None and row.get(key) != top:
+        # NULL IS NOT A PASS (Codex). Skipping the join on a missing value
+        # made `null` a way to erase it: `fixture_path: null` validated
+        # entirely CLEAN, and the other two survived only because a
+        # different rule happened to demand them. The tolerance was copied
+        # from a rule that carries legacy shapes, but this contract is v7
+        # only and v7 requires the key -- so an absent VALUE is a gate that
+        # cannot see, which is the one thing it must not answer "no" to.
+        if top is None:
+            bad.append(f"build_provenance.{field} carries no value, so the "
+                       f"{role} row is bound to nothing -- the contract "
+                       f"requires this field and 'no value' is not one")
+        elif row.get(key) != top:
             bad.append(f"build_provenance.{field} {top!r} is not the {role} "
                        f"row's {key} {row.get(key)!r} -- the bundle records "
                        f"compiling one file and pins another")
