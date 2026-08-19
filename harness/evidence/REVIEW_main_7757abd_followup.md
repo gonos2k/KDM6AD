@@ -214,6 +214,30 @@ tests, six in the manifest tests -- and they are measured, not fixed here:
 several genuinely check properties of the published bundles rather than of
 the code that reads them.
 
+### The anchor, and why it is a tag
+
+PR #142 squash-merged and the branch rebased again, which orphaned the
+commit the two live bundles pin -- `9a763f1c`, carried by `repo_commit` and
+by all three pin blocks in `ncmin-001` and `water-001`. The only remote ref
+holding it was the branch about to be force-pushed.
+
+The chain already names this state (`COMMIT-UNREACHABLE` /
+`commit-local-anchor-only`) and says why it matters: the point of pinning a
+commit is that a reader can go and get it. Re-producing the bundles against
+the merged history would re-anchor them -- and the NEXT squash merge would
+orphan the new anchor exactly the same way, at a full run plus a
+re-verification of 221 pinned figures each time. The treadmill is inherent
+to squash merges.
+
+`refs/tags/` is a trusted ref for precisely this, so the anchor is a tag:
+`g33-evidence-9a763f1c`, pushed BEFORE the branch, so the commit was never
+unreferenced even for the moment of the force-push. Measured after: both
+bundles `matches`.
+
+Across the archive, 20 anchored commits: 19 reachable from a trusted ref,
+one (`2c230729`) local-only and carried by two superseded bundles whose pins
+have already moved.
+
 ### Open, and why it is not closed here
 
 Sweeping every nested block for the same defect found two more that accept
