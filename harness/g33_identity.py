@@ -173,7 +173,7 @@ def canonical_invocations(man: dict) -> list:
     # not answered. `rm._obj` is the same coercion the manifest module
     # applies, so there is one definition of "read this as a record".
     man = rm._obj(man)
-    exp = man.get("expected_run") or {}
+    exp = rm._obj(man.get("expected_run"))
     tiles = exp.get("tile_sizes") or ([exp["columns"]]
                                       if isinstance(exp.get("columns"), int)
                                       else None)
@@ -181,7 +181,7 @@ def canonical_invocations(man: dict) -> list:
         ({"nsplit": n, "mode": exp.get("mode"),
           "tile_sizes": list(tiles) if tiles else None,
           "rho_profile": exp.get("rho_profile")}
-         for n in (exp.get("nsplits") or [])),
+         for n in rm._seq(exp.get("nsplits"))),
         key=lambda d: (d["nsplit"], str(d["mode"]), str(d["tile_sizes"]),
                        str(d["rho_profile"])))
 
@@ -282,7 +282,7 @@ def _graph(man: dict) -> dict:
     opt-out-by-omission, which is exactly what the schema bump before it was
     for (Codex stop-time review).
     """
-    rec = (man.get("identity") or {}).get("role_graph")
+    rec = rm._obj(man.get("identity")).get("role_graph")
     if isinstance(rec, dict) and rec:
         return {m: set(r) for m, r in rec.items()}
     if _requires_block(man):
@@ -301,7 +301,7 @@ def identity_is_self_contained(man: dict) -> bool:
     # not answered. `rm._obj` is the same coercion the manifest module
     # applies, so there is one definition of "read this as a record".
     man = rm._obj(man)
-    ident = man.get("identity") or {}
+    ident = rm._obj(man.get("identity"))
     return (ident.get("schema") == IDENTITY_SCHEMA
             and isinstance(ident.get("role_graph"), dict)
             and bool(ident["role_graph"])
@@ -329,7 +329,7 @@ def split_analyses(man: dict) -> tuple:
     # applies, so there is one definition of "read this as a record".
     man = rm._obj(man)
     derived, raw, bad = [], [], []
-    for a in man.get("analyses") or []:
+    for a in rm._seq(man.get("analyses")):
         if not isinstance(a, dict):
             bad.append(a)
         elif a.get("analyzer"):
@@ -390,24 +390,33 @@ def _canonical_lists(man: dict) -> dict:
     an `analyses` entry's `inputs` follow its own sort.
     """
     out = dict(man)
+    # A LIST OF ROWS IS ONLY ROWS IF THEY ARE OBJECTS (Codex). The list check
+    # was here and the row check was not, so `[42]` reached `.get` inside the
+    # sort key and raised out of the id computation. `analyses` below already
+    # guarded its rows; these three did not. A non-row sorts by its own repr:
+    # the canonical order stays total, and `validate()` is where a malformed
+    # document is refused.
+    def _field(e, name, default=""):
+        return e.get(name, default) if isinstance(e, dict) else default
     for key in ("member_parsers", "tracked_build_inputs", "producer_modules"):
         if isinstance(out.get(key), list):
-            out[key] = sorted(out[key], key=lambda e: str(e.get("path", e)))
+            out[key] = sorted(out[key], key=lambda e: str(_field(e, "path", e)))
     if isinstance(out.get("members"), list):
         out["members"] = sorted(
             out["members"],
-            key=lambda e: (e.get("nsplit", 0), str(e.get("mode", "")),
-                           str(e.get("file", ""))))
+            key=lambda e: (_field(e, "nsplit", 0) if isinstance(
+                _field(e, "nsplit", 0), (int, float)) else 0,
+                str(_field(e, "mode")), str(_field(e, "file"))))
     if isinstance(out.get("build_artifacts"), list):
-        out["build_artifacts"] = sorted(out["build_artifacts"],
-                                        key=lambda e: str(e.get("file", e)))
+        out["build_artifacts"] = sorted(
+            out["build_artifacts"], key=lambda e: str(_field(e, "file", e)))
     # An analysis's `inputs` are a set of digested files (owner review §10.2):
     # the chain reads them per-file, nothing reads their order, and
     # `analysis_id` hashes the entry -- so the order must not move the id.
     if isinstance(out.get("analyses"), list):
         out["analyses"] = [
             {**a, "inputs": sorted(a["inputs"],
-                                   key=lambda e: str(e.get("file", e)))}
+                                   key=lambda e: str(_field(e, "file", e)))}
             if isinstance(a, dict) and isinstance(a.get("inputs"), list)
             else a
             for a in out["analyses"]]
@@ -440,7 +449,7 @@ def _by_role(man: dict, role: str) -> list:
     """
     keep = {m for m, r in _graph(man).items() if role in r}
     return content_only(
-        sorted((e for e in (man.get("producer_modules") or [])
+        sorted((e for e in rm._seq(man.get("producer_modules"))
                 if isinstance(e, dict)
                 and Path(str(e.get("path", ""))).stem in keep),
                key=lambda e: str(e.get("path"))))
@@ -560,7 +569,7 @@ def run_content_id(man: dict) -> str:
 def _pins_for(man: dict, modules: set) -> list:
     """The manifest's pins for exactly these modules, reduced to their CONTENT."""
     return content_only(
-        sorted((e for e in (man.get("producer_modules") or [])
+        sorted((e for e in rm._seq(man.get("producer_modules"))
                 if isinstance(e, dict)
                 and Path(str(e.get("path", ""))).stem in modules),
                key=lambda e: str(e.get("path"))))
@@ -578,7 +587,7 @@ def analysis_reach(man: dict, name: str) -> set:
     # defect. The class is "a public function whose first argument is a
     # manifest"; the rest the caller supplies.
     man = rm._obj(man)
-    rec = (man.get("identity") or {}).get("analysis_reach", {})
+    rec = rm._obj(man.get("identity")).get("analysis_reach", {})
     if isinstance(rec, dict) and rec.get(name):
         # RECORDED: the closure as it stood when the bundle was made. Recomputing
         # it walks today's import graph, so an analyzer that grew an import

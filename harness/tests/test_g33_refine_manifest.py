@@ -1624,55 +1624,100 @@ def test_NO_public_reader_crashes_on_a_malformed_manifest(text):
     assert not died, died[:5]
 
 
+#: Filled in for readers that take more than the manifest. Asserted rather
+#: than skipped: a reader taking something new must fail the sweep, not
+#: quietly leave it -- that was the defect one round after the sweep existed.
+_READER_ARGS = {"name": "qr_process_ledger", "blobs": None, "published": ()}
+
+
+def _public_readers():
+    """Every public function whose FIRST argument is a manifest, in both
+    modules, found by signature so one added later is covered the day it is
+    added."""
+    import g33_identity as gi
+    import inspect as _i
+    out = []
+    for mod in (rm, gi):
+        for name, fn in vars(mod).items():
+            if name.startswith("_") or not _i.isfunction(fn):
+                continue
+            if getattr(fn, "__module__", None) != mod.__name__:
+                continue
+            params = list(_i.signature(fn).parameters.values())
+            if not params or params[0].name != "man":
+                continue
+            required = [p for p in params[1:] if p.default is p.empty]
+            missing = [p.name for p in required if p.name not in _READER_ARGS]
+            assert not missing, (
+                f"{mod.__name__}.{name} takes {missing}, which the sweep "
+                f"cannot supply -- add it to _READER_ARGS rather than "
+                f"letting the reader go unswept")
+            out.append((f"{mod.__name__}.{name}", fn,
+                        tuple(_READER_ARGS[p.name] for p in required)))
+    assert len(out) >= 15, [n for n, _, _ in out]
+    return out
+
+
+def _sweep_public_readers(man, value):
+    """`man` with each field replaced by `value`, through every reader.
+
+    `report()` prints, so stdout is swallowed. `BlobUnavailable` is a pin
+    this host cannot resolve and `KeyError`/`ValueError` are these readers'
+    documented answers for an analysis they cannot resolve -- an empty
+    record cannot resolve any, so a wrong shape reaching them is the
+    behaviour under test, not a failure of it.
+    """
+    import contextlib
+    import io
+    died = []
+    for label, fn, args in _public_readers():
+        for key in sorted(man) if isinstance(man, dict) else [None]:
+            broken = json.loads(json.dumps(man)) if key is not None else value
+            if key is not None:
+                broken[key] = value
+            try:
+                with contextlib.redirect_stdout(io.StringIO()):
+                    fn(broken, *args)
+            except (rm.BlobUnavailable, KeyError, ValueError):
+                pass
+            except Exception as e:
+                died.append(f"{label}({key}={value!r}) {type(e).__name__}")
+    assert not died, died[:5]
+
+
+@pytest.mark.parametrize("text", [
+    "[42]", "[null]", '[{"path":42}]', '[[1]]', '[{"inputs":42}]',
+    '{"analysis_reach":42}', '{"role_graph":"x"}', '{"analysis_seeds":42}',
+])
+def test_NO_public_reader_crashes_on_malformed_ROWS_or_nested_blocks(text):
+    """A third axis: the field is the right container and its CONTENTS are
+    not.
+
+    `isinstance(x, list)` was checked and `isinstance(row, dict)` was not, so
+    `[42]` reached `.get` inside a sort key; and `x or {}` passed a string
+    `identity` into `.get` (Codex, on `analysis_reach`). Seventy-one crashes
+    across `g33_identity`, which never crosses `validate()`'s entry gate.
+
+    The argument sweep and the field sweep beside this one say nothing about
+    this axis, which is the lesson of the last three rounds written as a
+    test.
+    """
+    man = _real_v6_manifest_here()
+    if man is None:
+        pytest.skip("no bundle on this host")
+    _sweep_public_readers(man, json.loads(text))
+
+
 @pytest.mark.parametrize("value", [[], None, "x", 42, True, (), 0.5])
 def test_NO_public_reader_crashes_on_a_manifest_that_is_not_one(value):
     """THE ARGUMENT ITSELF is an axis, and no field coverage reaches it.
 
-    The sweep beside this one varies the FIELDS of a real manifest, so `man`
-    was a dict in all 2880 of its calls -- and seven of the eight readers
-    died the moment `man` was the wrong thing (Codex, on
-    `identity_digest([])`). Same mistake as checking nested values while
-    never asking about the JSON document holding them, two rounds earlier.
-
-    Readers are discovered by signature in both modules, so one added later
-    is covered the day it is added.
+    The field sweep varies a real manifest's fields, so `man` was a dict in
+    every one of its calls -- and seven of eight readers died the moment
+    `man` was the wrong thing (Codex, on `identity_digest([])`), with six
+    more in `g33_identity` that naming the site would have left.
     """
-    import g33_identity as gi
-    # The REST of the signature is the sweep's job to supply. Asking only for
-    # readers callable with `man` alone skipped `analysis_reach(man, name)`
-    # and `analysis_id(man, name)`, and both crashed -- the filter was a
-    # convenience of the sweep, not the shape of the defect (Codex).
-    fill = {"name": "qr_process_ledger", "blobs": None, "published": ()}
-    died, seen = [], 0
-    for mod in (rm, gi):
-        for name, fn in vars(mod).items():
-            if name.startswith("_") or not inspect.isfunction(fn):
-                continue
-            if getattr(fn, "__module__", None) != mod.__name__:
-                continue
-            params = list(inspect.signature(fn).parameters.values())
-            if not params or params[0].name != "man":
-                continue
-            required = [p for p in params[1:] if p.default is p.empty]
-            missing = [p.name for p in required if p.name not in fill]
-            assert not missing, (
-                f"{mod.__name__}.{name} takes {missing}, which this sweep "
-                f"cannot supply -- add it to `fill` rather than letting the "
-                f"reader go unswept")
-            seen += 1
-            try:
-                fn(value, *(fill[p.name] for p in required))
-            except (rm.BlobUnavailable, KeyError):
-                # KeyError is these readers' documented answer for an analysis
-                # they cannot resolve, and an empty record cannot resolve any:
-                # the non-object argument now behaves exactly as `{}` does,
-                # which is the property under test.
-                pass
-            except Exception as e:
-                died.append(f"{mod.__name__}.{name}({value!r}) "
-                            f"{type(e).__name__}")
-    assert seen >= 15, seen
-    assert not died, died[:5]
+    _sweep_public_readers(value, value)
 
 
 def test_every_container_the_rules_walk_is_judged_at_the_entry():
