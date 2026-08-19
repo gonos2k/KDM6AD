@@ -5,8 +5,10 @@ central scientific claim is that those numbers still come out of the bundles
 they name. That was checked by a script rewritten each cycle and lost with the
 session, so the claim rested on a tool nobody could re-run.
 """
-import json
+import io
+import re
 import sys
+from contextlib import redirect_stdout
 from pathlib import Path
 
 import pytest
@@ -15,36 +17,80 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import g33_verify_pins as vp  # noqa: E402
 
+HAVE_ARCHIVE = (Path.home() / "kdm6ad-g33m-migrate").is_dir()
+needs_archive = pytest.mark.skipif(not HAVE_ARCHIVE, reason="no bundles here")
 
-def test_the_registry_pins_figures_this_tool_can_parse():
-    """A parser that matches nothing reports zero disagreements, which reads
-    exactly like a clean run."""
-    import re
+
+def _run(monkeypatch, tmp_path, text):
+    registry = tmp_path / "CLAIMS.yaml"
+    registry.write_text(text)
+    monkeypatch.setattr(vp, "REGISTRY", registry)
+    out = io.StringIO()
+    with redirect_stdout(out):
+        rc = vp.main()
+    return rc, out.getvalue()
+
+
+def test_the_registry_pins_evidence_this_tool_recognises():
+    """A classifier that matches nothing reports zero disagreements, which
+    reads exactly like a clean run."""
     rows = re.findall(r"^\s+- (\S+?): (\S+)\s*$", vp.REGISTRY.read_text(), re.M)
-    pinned = [r for r in rows if ".bundles/" in r[0]]
-    assert len(pinned) > 100, len(pinned)
-    assert any("#" in ref for ref, _ in pinned), "no figure pointers parsed"
+    pins = [ref for ref, _ in rows if vp.is_evidence(ref)]
+    assert len(pins) > 200, len(pins)
+    assert any("#" in ref for ref in pins), "no figure pointers recognised"
 
 
-@pytest.mark.skipif(not (Path.home() / "kdm6ad-g33m-migrate").is_dir(),
-                    reason="no bundles on this host")
+@needs_archive
 def test_every_pinned_figure_reproduces():
     """The claim itself, run as a test rather than by hand."""
     assert vp.main() == 0
 
 
-@pytest.mark.skipif(not (Path.home() / "kdm6ad-g33m-migrate").is_dir(),
-                    reason="no bundles on this host")
-def test_a_MOVED_figure_is_reported(tmp_path, monkeypatch, capsys):
-    """A verifier that cannot fail has not verified anything: the check is
-    pointed at a registry whose value was changed, and must say so."""
+@needs_archive
+def test_a_MOVED_figure_is_reported(monkeypatch, tmp_path):
+    """A verifier that cannot fail has not verified anything."""
     text = vp.REGISTRY.read_text()
-    import re
     hit = next(m for m in re.finditer(r"^(\s+- \S+?#\S+?: )(\S+)\s*$", text, re.M)
                if m.group(2) not in ("true", "false"))
-    moved = tmp_path / "CLAIMS.yaml"
-    moved.write_text(text[:hit.start()] + hit.group(1) + "-999.5\n"
-                     + text[hit.end():])
-    monkeypatch.setattr(vp, "REGISTRY", moved)
-    assert vp.main() == 1
-    assert "FIGURE" in capsys.readouterr().out
+    rc, out = _run(monkeypatch, tmp_path,
+                   text[:hit.start()] + hit.group(1) + "-999.5\n" + text[hit.end():])
+    assert rc == 1 and "FIGURE" in out
+
+
+@needs_archive
+def test_a_pointer_the_bundle_does_not_carry_is_reported(monkeypatch, tmp_path):
+    """Walking to a value that is not there is a claim the bundle does not
+    support, not a reason to stop reading."""
+    text = re.sub(r"(#)[A-Za-z_.0-9,+-]+(: )", r"\1no_such_key\2",
+                  vp.REGISTRY.read_text(), count=1)
+    rc, out = _run(monkeypatch, tmp_path, text)
+    assert rc == 1 and "no such value" in out
+
+
+@needs_archive
+@pytest.mark.parametrize("edit,expect", [
+    (lambda t: t.replace("ncmin-001.bundles/", "ncmin-001.bundles-GONE/"),
+     "not on this host"),
+    (lambda t: t.replace("kdm6ad-g33m-migrate/", "kdm6ad-g33m-ABSENT/"),
+     "not on this host"),
+])
+def test_EVIDENCE_THAT_IS_NOT_THERE_is_a_finding(monkeypatch, tmp_path,
+                                                 edit, expect):
+    """Missing evidence was counted and reported as success (Codex).
+
+    Worse, the row filter keyed on the directory name `.bundles/`, so
+    renaming one archive took 35 figures out of the count entirely and the
+    tool still said everything reproduced. A pin either reproduces,
+    disagrees, or is GONE -- and only the first is a pass.
+    """
+    rc, out = _run(monkeypatch, tmp_path, edit(vp.REGISTRY.read_text()))
+    assert rc == 1 and expect in out and "GONE" in out
+
+
+def test_a_registry_with_no_pins_is_refused(monkeypatch, tmp_path):
+    """Nothing to verify is not the same as everything verified: zero
+    disagreements over zero pins is exactly what a clean run prints."""
+    text = "\n".join(l for l in vp.REGISTRY.read_text().splitlines()
+                     if "kdm6ad-g33m-" not in l)
+    rc, out = _run(monkeypatch, tmp_path, text)
+    assert rc == 1 and "pins no evidence at all" in out
