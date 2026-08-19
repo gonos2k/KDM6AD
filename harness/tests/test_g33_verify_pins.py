@@ -73,6 +73,16 @@ def test_a_pointer_the_bundle_does_not_carry_is_reported(monkeypatch, tmp_path):
      "not on this host"),
     (lambda t: t.replace("kdm6ad-g33m-migrate/", "kdm6ad-g33m-ABSENT/"),
      "not on this host"),
+    # ...and the renamings an ALLOWLIST would silently drop instead. Both
+    # spellings this tool used to key on -- `.bundles/` and the archive-root
+    # prefix -- stopped being evidence when renamed, and the count fell while
+    # the tool reported success (Codex, twice).
+    (lambda t: t.replace("kdm6ad-g33m-migrate/", "kdm6ad-archive-2026/"),
+     "not on this host"),
+    (lambda t: t.replace("kdm6ad-g33m-f64/", "some-future-store/"),
+     "not on this host"),
+    (lambda t: t.replace("ncmin-001.bundles/", "ncmin-001.b/"),
+     "not on this host"),
 ])
 def test_EVIDENCE_THAT_IS_NOT_THERE_is_a_finding(monkeypatch, tmp_path,
                                                  edit, expect):
@@ -85,6 +95,33 @@ def test_EVIDENCE_THAT_IS_NOT_THERE_is_a_finding(monkeypatch, tmp_path,
     """
     rc, out = _run(monkeypatch, tmp_path, edit(vp.REGISTRY.read_text()))
     assert rc == 1 and expect in out and "GONE" in out
+
+
+def test_a_row_that_looks_like_a_path_is_never_silently_dropped():
+    """The classification is inverted for a reason: an allowlist is
+    fail-open by construction.
+
+    Whatever it does not name is silently not evidence, which is how two
+    rounds of renamings took pins out of the count while the tool printed
+    success. So `FIELD_KEYS` names the registry's own scalar fields, every
+    path-like key is evidence, and anything path-like that still escapes is
+    REPORTED. This holds the field list to that shape: a field key that
+    contains a path separator would re-open the hole.
+    """
+    assert not any("/" in k or "#" in k for k in vp.FIELD_KEYS), vp.FIELD_KEYS
+    assert vp.is_evidence("some-future-store/x.bundles/abc/manifest.json#a.b")
+    assert vp.is_evidence("/absolute/path/manifest.json")
+    assert not vp.is_evidence("id")
+
+
+def test_the_field_list_is_exactly_what_the_registry_uses():
+    """Naming a field the registry does not use is pre-emptive exemption:
+    the day one of them starts holding a path, it is exempt before anyone
+    looks. The list drifting the other way is the same hole in reverse -- a
+    new scalar field would be read as an unresolvable artefact."""
+    rows = re.findall(r"^\s+- (\S+?): (\S+)\s*$", vp.REGISTRY.read_text(), re.M)
+    scalar = {ref for ref, _ in rows if "/" not in ref and "#" not in ref}
+    assert scalar == vp.FIELD_KEYS, (scalar ^ vp.FIELD_KEYS)
 
 
 def test_a_registry_with_no_pins_is_refused(monkeypatch, tmp_path):

@@ -31,20 +31,37 @@ import sys
 
 HOME = pathlib.Path.home()
 REGISTRY = pathlib.Path(__file__).resolve().parent / "evidence" / "CLAIMS.yaml"
-#: The archive roots the registry pins into. A row addressing one of these is
-#: EVIDENCE and must resolve; anything else is prose and is not this tool's
-#: business. Matching on `.bundles/` instead made the classification depend on
-#: a directory NAME, so a renamed archive silently stopped being evidence.
-ARCHIVE_ROOTS = ("kdm6ad-g33m-",)
+#: Keys that are registry FIELDS rather than artefact references. Everything
+#: else that looks like a path is evidence.
+#:
+#: An ALLOWLIST is fail-open by construction: whatever it does not name is
+#: silently not evidence. Two rounds of exactly that -- first `.bundles/`, then
+#: the archive-root prefix `kdm6ad-g33m-` -- and each time renaming a directory
+#: took pins out of the count while the tool reported success (Codex, twice).
+#: So the rule is inverted: a row whose key looks like a path IS evidence, and
+#: anything path-like this cannot classify is REPORTED rather than dropped.
+#: Only what the registry ACTUALLY uses as a list-item key. Naming fields it
+#: does not use is pre-emptive exemption -- the day one of them starts holding
+#: a path, it is exempt before anyone looks.
+FIELD_KEYS = frozenset({"id"})
 
 
 def is_evidence(ref: str) -> bool:
-    return "/" in ref and ref.startswith(ARCHIVE_ROOTS)
+    """A reference to an artefact, as opposed to a registry field."""
+    if ref in FIELD_KEYS:
+        return False
+    return "/" in ref or "#" in ref
 
 
 def main() -> int:
     rows = re.findall(r"^\s+- (\S+?): (\S+)\s*$", REGISTRY.read_text(), re.M)
-    pins = [(ref, want) for ref, want in rows if is_evidence(ref)]
+    pins, unclassified = [], []
+    for ref, want in rows:
+        if is_evidence(ref):
+            pins.append((ref, want))
+        elif "/" in ref or "#" in ref:
+            unclassified.append(ref)      # unreachable by construction; see above
+
     ok = bad = gone = digests = 0
     for ref, want in pins:
         path, _, pointer = ref.partition("#")
@@ -83,6 +100,11 @@ def main() -> int:
             print(f"  FIGURE  {ref}\n          want {want} got {doc}")
     print(f"{ok} figures reproduce, {digests} digests match, "
           f"{bad} disagree, {gone} gone, of {len(pins)} pinned")
+    if unclassified:
+        print(f"REFUSED: {len(unclassified)} row(s) look like artefact "
+              f"references and were not classified as evidence: "
+              f"{unclassified[:3]}")
+        return 1
     if not pins:
         print("REFUSED: the registry pins no evidence at all -- either it "
               "carries none or this tool stopped recognising it")
