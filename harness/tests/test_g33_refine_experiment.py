@@ -72,7 +72,19 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
             "compile_commands": ["gfortran -c fake"],
             "sources": _FAKE_SOURCES(FIX, ovl),
             "compiled_module_sha256": xp.rm.sha256(ovl),
-            "diagnostic": {"outdir": str(workdir)},
+            # WHERE THE BUILD RAN, in full. `verify()` normalises the
+            # published logs by all three roots, so a one-key stand-in
+            # described a build whose record could not be re-derived -- and
+            # v7 holds this to an exact key set for that reason.
+            "diagnostic": {
+                "outdir": str(workdir),
+                "tmpdir": str(workdir / "tmp"),
+                "repo_root": str(REPO),
+                "compiler_path": "/usr/bin/gfortran",
+                "compiler_f951_path": "/usr/libexec/f951",
+                "executable_path": str(exe),
+                "compile_commands_literal": ["gfortran -c fake"],
+            },
             # v7 holds this block to an EXACT key set and a role table, so a
             # fake that carries a subset describes a build that could not have
             # happened (owner review §5).
@@ -402,7 +414,19 @@ def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
             "compile_commands": ["gfortran -c fake"],
             "sources": _FAKE_SOURCES(FIX, ovl),
             "compiled_module_sha256": xp.rm.sha256(ovl),
-            "diagnostic": {"outdir": str(workdir)},
+            # WHERE THE BUILD RAN, in full. `verify()` normalises the
+            # published logs by all three roots, so a one-key stand-in
+            # described a build whose record could not be re-derived -- and
+            # v7 holds this to an exact key set for that reason.
+            "diagnostic": {
+                "outdir": str(workdir),
+                "tmpdir": str(workdir / "tmp"),
+                "repo_root": str(REPO),
+                "compiler_path": "/usr/bin/gfortran",
+                "compiler_f951_path": "/usr/libexec/f951",
+                "executable_path": str(exe),
+                "compile_commands_literal": ["gfortran -c fake"],
+            },
             # v7 holds this block to an EXACT key set and a role table, so a
             # fake that carries a subset describes a build that could not have
             # happened (owner review §5).
