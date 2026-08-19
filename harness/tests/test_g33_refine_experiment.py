@@ -1610,6 +1610,18 @@ def test_a_log_that_disagrees_with_the_record_is_refused(tmp_path, edit, expect)
     assert got and expect in got[0], got
 
 
+@pytest.mark.parametrize("text", ["[]", "null", '"/build"', "42", "true"])
+def test_the_witness_REPORTS_a_published_record_that_is_not_an_object(
+        tmp_path, text):
+    """Same defect, same line, in the producer's own witness comparison: it
+    reads keys off whatever the file parsed to, and JSON's top level is not
+    required to be an object (Codex)."""
+    root, man = _witness_bundle(tmp_path)
+    (root / "build_provenance.json").write_text(text)
+    got = xp._witness_violations(man, root)   # must not raise
+    assert got and "not a record" in got[0], got
+
+
 def test_the_log_comparison_does_not_import_the_collector():
     """`g33_build_provenance` is stdlib-only so it can run inside the build,
     and it is reached ONLY as a subprocess -- importing it here would put it

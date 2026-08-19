@@ -223,6 +223,15 @@ def verify(root: Path) -> list:
         got = json.loads(record.read_text())
     except ValueError as e:
         return [f"build_provenance.json is not readable JSON: {e}"]
+    # PARSING SAYS THE SYNTAX IS JSON, NOT THAT THE DOCUMENT IS A RECORD
+    # (Codex). JSON allows an array, a string, a number, `true` and `null` at
+    # the top, so every field read below reached `.get` on something that has
+    # none -- all five raised out of the verification instead of failing it,
+    # measured. The shape check the nested values already get belongs to the
+    # document first: there is nothing to look inside of otherwise.
+    if not isinstance(got, dict):
+        return [f"build_provenance.json is a {type(got).__name__}, not a "
+                f"record: there is nothing in it to verify"]
     # The logs are copied VERBATIM from the build directory while the record
     # is normalised against THREE roots -- the output directory, `$TMPDIR`
     # and the checkout (owner §7) -- so the comparison needs all three, which
