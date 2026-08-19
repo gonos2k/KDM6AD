@@ -54,6 +54,19 @@ _IMPORTED: dict = {}
 
 
 
+#: Recorded in `_IMPORTED` when the seam could not hold a module to HEAD
+#: because GIT could not answer -- as opposed to `None`, which means the
+#: module was already in memory when the analysis dispatched.
+#:
+#: Two different facts. Being pre-imported is a NORMAL condition of a shared
+#: interpreter, which is why the library path tolerates it and publishes a
+#: declaration instead of refusing. Git being unable to answer is not normal
+#: in any process: nothing held those bytes to anything, so the bundle would
+#: rest on an import nobody checked. Folded into one value, the tolerance
+#: written for the first covered the second (Codex).
+UNVERIFIED = "git-could-not-answer"
+
+
 class Unattestable(Exception):
     """The bytes that just executed cannot be pinned to HEAD.
 
@@ -212,9 +225,9 @@ def _eager_import(name: str):
     try:
         checked = _require_head_digest(Path(f"harness/{name}.py"), before, name)
     except Unattestable:
-        # Same shape as a module already in memory: the process records that
-        # it cannot attest and `produce()` refuses to publish.
-        _IMPORTED[name] = None
+        # NOT the same as a module already in memory: nothing held these
+        # bytes to anything, so `produce()` refuses on every path.
+        _IMPORTED[name] = UNVERIFIED
         return mod
     _EAGER_AT_LOAD[name] = checked
     # ...and into the record the manifest is built from. `extension_protocol`
@@ -282,7 +295,7 @@ def _an(name: str):
                 _IMPORTED[name] = _require_head_digest(
                     Path(f"harness/{name}.py"), _EAGER_AT_LOAD[name], name)
             except Unattestable:
-                _IMPORTED[name] = None
+                _IMPORTED[name] = UNVERIFIED
             return sys.modules[name]
         _IMPORTED[name] = None
         return sys.modules[name]
@@ -2093,7 +2106,25 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         # cannot be undone by restoring the file before the manifest is
         # written. Empty on a run that dispatched no analyzer.
         if _IMPORTED:
-            unattested = sorted(k for k, v in _IMPORTED.items() if v is None)
+            unattested = sorted(k for k, v in _IMPORTED.items()
+                                if v is None or v is UNVERIFIED)
+            # GIT COULD NOT ANSWER: refused on EVERY path, not only the CLI.
+            # The tolerance below is for a module that was already in memory,
+            # which is a normal condition of a shared interpreter. Nothing
+            # holding a module's bytes to HEAD is not normal anywhere, and a
+            # bundle resting on an import nobody checked is not evidence --
+            # so this fires whether or not git has since recovered, because
+            # recovery does not retroactively verify what already ran
+            # (Codex).
+            unverified = sorted(k for k, v in _IMPORTED.items()
+                                if v is UNVERIFIED)
+            if unverified:
+                raise SystemExit(
+                    f"REFUSED: {unverified} could not be held to HEAD when "
+                    f"they were imported -- git could not answer, so nothing "
+                    f"pins the bytes that ran. Re-run in a process where git "
+                    f"works; a later recovery does not verify an import that "
+                    f"already happened.")
             # PUBLISHED EVIDENCE COMES FROM THE CLI, and there this is always
             # empty: the producer is `__main__` in a fresh process and every
             # analyzer reaches it through the seam. A library import -- the
