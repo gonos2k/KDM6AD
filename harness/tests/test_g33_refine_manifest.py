@@ -1638,7 +1638,12 @@ def test_NO_public_reader_crashes_on_a_manifest_that_is_not_one(value):
     is covered the day it is added.
     """
     import g33_identity as gi
-    died = []
+    # The REST of the signature is the sweep's job to supply. Asking only for
+    # readers callable with `man` alone skipped `analysis_reach(man, name)`
+    # and `analysis_id(man, name)`, and both crashed -- the filter was a
+    # convenience of the sweep, not the shape of the defect (Codex).
+    fill = {"name": "qr_process_ledger", "blobs": None, "published": ()}
+    died, seen = [], 0
     for mod in (rm, gi):
         for name, fn in vars(mod).items():
             if name.startswith("_") or not inspect.isfunction(fn):
@@ -1648,15 +1653,25 @@ def test_NO_public_reader_crashes_on_a_manifest_that_is_not_one(value):
             params = list(inspect.signature(fn).parameters.values())
             if not params or params[0].name != "man":
                 continue
-            if not all(p.default is not p.empty for p in params[1:]):
-                continue
+            required = [p for p in params[1:] if p.default is p.empty]
+            missing = [p.name for p in required if p.name not in fill]
+            assert not missing, (
+                f"{mod.__name__}.{name} takes {missing}, which this sweep "
+                f"cannot supply -- add it to `fill` rather than letting the "
+                f"reader go unswept")
+            seen += 1
             try:
-                fn(value)
-            except rm.BlobUnavailable:
+                fn(value, *(fill[p.name] for p in required))
+            except (rm.BlobUnavailable, KeyError):
+                # KeyError is these readers' documented answer for an analysis
+                # they cannot resolve, and an empty record cannot resolve any:
+                # the non-object argument now behaves exactly as `{}` does,
+                # which is the property under test.
                 pass
             except Exception as e:
                 died.append(f"{mod.__name__}.{name}({value!r}) "
                             f"{type(e).__name__}")
+    assert seen >= 15, seen
     assert not died, died[:5]
 
 

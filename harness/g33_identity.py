@@ -571,6 +571,13 @@ def analysis_reach(man: dict, name: str) -> set:
     analysis role. An id over the role would move every analysis whenever any
     analysis module changed, which is the cost being separated here reproduced
     one layer down."""
+    # THE ARGUMENT ITSELF, not only its fields (Codex). These two carry a
+    # SECOND required argument, which is how the first sweep missed them:
+    # the discovery filter asked for readers callable with `man` alone,
+    # and that is a convenience of the sweep, not the shape of the
+    # defect. The class is "a public function whose first argument is a
+    # manifest"; the rest the caller supplies.
+    man = rm._obj(man)
     rec = (man.get("identity") or {}).get("analysis_reach", {})
     if isinstance(rec, dict) and rec.get(name):
         # RECORDED: the closure as it stood when the bundle was made. Recomputing
@@ -604,6 +611,13 @@ def analysis_id(man: dict, name: str) -> str:
     this id, and they do -- `analyzer_sha256` and `analyzer_blob_sha` are both
     still in it. The commit that happened to contain them must not.
     """
+    # THE ARGUMENT ITSELF, not only its fields (Codex). These two carry a
+    # SECOND required argument, which is how the first sweep missed them:
+    # the discovery filter asked for readers callable with `man` alone,
+    # and that is a convenience of the sweep, not the shape of the
+    # defect. The class is "a public function whose first argument is a
+    # manifest"; the rest the caller supplies.
+    man = rm._obj(man)
     man = _canonical_lists(man)
     derived, _raw = split_analyses(man)
     entries = [a for a in derived if a.get("analysis") == name]
