@@ -1290,7 +1290,16 @@ def _executed_analyzer_violations(man: dict) -> list:
             return ["a bundle with unattested_analyzers cannot be "
                     "decision_eligible -- it cannot say what produced it"]
     if ran is None:
-        if names:
+        # ...unless the bundle attested NOTHING and said so for every seed it
+        # dispatched to. Absence then is not an omission: `unattested_analyzers`
+        # already names each one, and a bundle carrying that field cannot be
+        # decision evidence (enforced above). Refusing it meant a producer
+        # sharing an interpreter -- the test suite, where an earlier module has
+        # already imported the analyzers -- could not publish at all, which is
+        # the same shape as refusing at import: a production invariant applied
+        # to a process that is not the production one (measured, 2 tests, full
+        # run only). The CLI still refuses before reaching here.
+        if names and expected - set(cannot or ()):
             return [f"executed_analyzers is absent, but {len(names)} analysis "
                     f"kind(s) ran -- omitting the record cannot be how a "
                     f"bundle avoids saying what executed"]

@@ -1414,6 +1414,35 @@ def test_the_record_cannot_pin_one_file_and_compile_another(tmp_path, mutate,
                for v in bad), (expect, bad[:3])
 
 
+@pytest.mark.parametrize("declare,clean", [
+    (lambda seeds: sorted(seeds), True),        # attested nothing, said so
+    (lambda seeds: sorted(seeds)[:3], False),   # said so about SOME of them
+    (lambda seeds: None, False),                # said nothing at all
+])
+def test_a_bundle_that_attested_NOTHING_may_say_so(tmp_path, declare, clean):
+    """Absence of `executed_analyzers` is an omission unless the bundle
+    already named every seed it dispatched to as unattested.
+
+    Refusing that case meant a producer sharing an interpreter -- the suite,
+    where an earlier module has already imported the analyzers -- could not
+    publish at all: the same shape as refusing at import, a production
+    invariant applied to a process that is not the production one. A bundle
+    carrying `unattested_analyzers` can never be decision evidence, which is
+    what makes the confession safe to accept.
+    """
+    man = synthetic_manifest(tmp_path)
+    man.pop("executed_analyzers", None)
+    named = declare(rm.dispatched_seeds(man))
+    if named is not None:
+        man["unattested_analyzers"] = named
+        man["decision_eligible"] = False
+    bad = rm.validate(man)
+    if clean:
+        assert bad == [], bad[:2]
+    else:
+        assert any("omitting the record" in v for v in bad), bad[:3]
+
+
 def test_a_v6_bundle_answers_for_the_v6_contract():
     """A stricter key set is a NEW TAG, never a new demand on history."""
     man = next((m for m in _published_manifests()
