@@ -195,6 +195,25 @@ The exhaustive cross-product sweep is retired. It was finding shapes no
 producer in this system emits, at the cost of the work the bundles exist
 for. The gate test stays because the gate's answer is part of the evidence.
 
+### A test that does not run is not a rule
+
+The pin verifier's fail-closed properties -- a missing pin refused, a moved
+figure reported, a renamed archive caught -- were written against the real
+bundles, so ten of the thirteen SKIPPED on every public checkout, which is
+where CI runs (Codex). That is the sentence this cycle had already written
+down about a different table, then repeated three sections later.
+
+The distinction that resolves it: **is the property the tool's, or the
+data's?** "A missing pin is refused" is the tool's, so it is tested on a
+synthetic registry pinning a synthetic bundle, and it runs everywhere. "The
+real pins reproduce" is the data's, and that one alone still needs the
+archive. Ten skips became one.
+
+Ten archive-dependent skips remain elsewhere -- four in the evidence-chain
+tests, six in the manifest tests -- and they are measured, not fixed here:
+several genuinely check properties of the published bundles rather than of
+the code that reads them.
+
 ### Open, and why it is not closed here
 
 Sweeping every nested block for the same defect found two more that accept
