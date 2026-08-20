@@ -1223,3 +1223,81 @@ def test_a_surface_row_missing_the_quantity_an_analysis_reads_is_refused():
                   "")
     with pytest.raises(nt.StreamError, match="is a silent skip"):
         nt.calls(s)
+
+
+# ---- the residual as an IDENTITY, not a measurement ------------------------
+
+def _live_streams():
+    """Every published density arm on this host, or nothing."""
+    from pathlib import Path
+    return sorted(Path.home().glob(
+        "kdm6ad-g33m-migrate/number-009-ice.bundles/*/n12.rezero*.txt"))
+
+
+@pytest.mark.skipif(not _live_streams(), reason="no number bundle on this host")
+@pytest.mark.parametrize("species", ["nr", "ni"])
+def test_the_closed_form_REPRODUCES_the_measured_residual(species):
+    """`sum [den(lower) - den(upper)] * delz(upper) * b` is the residual.
+
+    The module header has stated this since the defect was found, beside a
+    measurement, which left the claim resting on the size of an observed
+    number. Evaluated from the same recovered transfers it is an identity:
+    measured across six density arms and two species, every ratio
+    1.000000000000, and both sides exactly zero under a uniform profile.
+
+    That is what carries the defect from "this run leaks number" to "the
+    source equation leaks number" -- and it needs no change to the frozen
+    kernel to say so.
+    """
+    seen = 0
+    for stream in _live_streams():
+        for call in nt.calls(stream.read_text()):
+            loop = nt.single_loop(call)
+            if not isinstance(loop, int):
+                continue
+            for col in sorted({c for l, c, _k in call["outer_pre_sed"]
+                               if l == loop}):
+                out = nt.column(call, col, species)
+                if out is None:
+                    continue
+                seen += 1
+                ratio = out["predicted_over_measured"]
+                if ratio is None:
+                    # A uniform profile drives both sides to ROUNDOFF, not to
+                    # a clean zero: -0.0 against 0.0, relative residual 5e-17.
+                    scale = out["start"] or 1.0
+                    assert abs(out["residual"]) < 1e-12 * scale, (stream.name, col)
+                    assert abs(out["predicted_residual"]) < 1e-12 * scale, \
+                        (stream.name, col)
+                    continue
+                assert abs(ratio - 1.0) < 1e-9, (stream.name, col, ratio, out)
+    assert seen > 10, seen
+
+
+@pytest.mark.skipif(not _live_streams(), reason="no number bundle on this host")
+def test_the_identity_is_not_vacuous():
+    """A predicted value that merely echoed the measured one would pass the
+    test above and prove nothing. The arms disagree with each other in sign
+    and magnitude exactly as the closed form says they must -- inverted
+    density reverses it, doubled contrast roughly doubles it."""
+    total = {}
+    for stream in _live_streams():
+        got = 0.0
+        for call in nt.calls(stream.read_text()):
+            loop = nt.single_loop(call)
+            if not isinstance(loop, int):
+                continue
+            for col in sorted({c for l, c, _k in call["outer_pre_sed"]
+                               if l == loop}):
+                out = nt.column(call, col, "nr")
+                if out is not None:
+                    got += out["predicted_residual"]
+        total[stream.name] = got
+    base = total.get("n12.rezero.txt")
+    assert base and base > 0, total
+    if "n12.rezero.uniform.txt" in total:
+        assert abs(total["n12.rezero.uniform.txt"]) < 1e-6 * base, total
+    if "n12.rezero.inverted.txt" in total:
+        assert total["n12.rezero.inverted.txt"] < 0, total
+    if "n12.rezero.x2.txt" in total:
+        assert 1.7 < total["n12.rezero.x2.txt"] / base < 2.3, total
