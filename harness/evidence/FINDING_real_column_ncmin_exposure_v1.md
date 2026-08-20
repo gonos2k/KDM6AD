@@ -69,3 +69,43 @@ real MPI one-step the review puts at Stage B.
 - `host/**` is private, so the measurement is reproducible only where that
   state exists. The tool's own properties are tested synthetically and run
   everywhere.
+
+## Exposure is not effect: where the threshold can actually bite
+
+A column is only ACTUALLY affected when its number concentration sits between
+the two thresholds. Outside that band it branches the same way whichever value
+it is handed, so the exposure above is an upper bound and the band is what
+narrows it.
+
+Two states were checked, and neither supports narrowing it here:
+
+| state | `QNCLOUD` | in band (2.5e7 .. 1.0e8) |
+|---|---|---|
+| `lc05_da_run/wrfinput_d01` (5 km analysis) | identically zero | — |
+| `KIM-meso_v1.0/run/wrfout.137.ieee.nc` (ideal, 41x41) | 0.13 % of cells non-zero, median 4.0e9 | **0 cells** |
+
+The LC05 analysis carries hydrometeor MASS (`QCLOUD` 26 %, `QICE` 12 %) but
+its number arrays are identically zero: it has not been spun up through a
+double-moment scheme, so it cannot answer this question at all.
+
+The ideal run does carry number, and there the cloud concentration is one to
+two orders of magnitude ABOVE both thresholds. `ncmin` is a floor, so nothing
+in that state is near it.
+
+### What that means, and what it does not
+
+It does NOT weaken the mechanism: the threshold is still decided by another
+column, and the imposed value still moves with the decomposition — that is a
+property of the operator, established from geography.
+
+It DOES relocate where the mechanism can matter. The synthetic fixture
+`boundary_mapping_v1` places the concentration between the thresholds ON
+PURPOSE, which is what makes the +/-21 % rain difference visible there. For a
+real state to show it, the concentration has to fall to the threshold's own
+scale — thin or dissipating cloud, ice initiation, the edges of a field —
+not the cores these two states are dominated by.
+
+So the honest bound today is: exposure 39 % of columns, sensitivity NOT
+DEMONSTRATED on either state available here. Closing that needs a spun-up
+double-moment state over mixed coast — the review's Stage B — and no amount
+of analysis of these two files will substitute.
