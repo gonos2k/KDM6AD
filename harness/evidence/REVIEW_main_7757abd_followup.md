@@ -269,9 +269,16 @@ where a nulled or emptied one erased a value something reads. And closing
 it is a **schema bump**, because a stricter key set is a new tag and never a
 new demand on history -- the one discipline this campaign has kept unbroken.
 Both blocks carry their own versioned tags, so `identity` and
-`kernel_geometry` would each move, every published bundle would answer for
-the tag it was published under, and the current experiment would have to be
-re-produced and its 49 figures re-verified before the pins could move again.
+`kernel_geometry` would each move and every published bundle would answer
+for the tag it was published under.
+
+Measured, the cost is narrower than that reads. The registry pins five
+bundles: FOUR are `refinement_experiment_v2` and carry neither block at all,
+so they are untouched by a bump to either. Only the TWO v7 bundles
+(`identity=g33_layered_identity_v4`, `kernel_geometry=kdm6_subcycle_v3`)
+would need re-producing. Re-verification is all 221 pins, which is now a
+tool run rather than an afternoon, and 16 claims would have their chain
+re-checked after the pins moved.
 
 That is the next item, not a thing to slip into this one. Recorded with the
 measurement so it is a decision rather than an oversight.
