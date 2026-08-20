@@ -2460,6 +2460,11 @@ def test_a_LOCAL_ONLY_commit_anchor_is_reported_and_only_BLOCKS_a_closeout(
 
     man = {"repo_commit": local, "member_parsers": [], "producer_modules": [],
            "tracked_build_inputs": []}
+    # THE REMOTE ANSWERED. This throwaway repo has no remote, so without
+    # saying so the state would be `commit-anchor-unasked` -- correctly,
+    # since nobody asked anything. That is a different fact and has its own
+    # test; this one is about a commit the remote genuinely does not have.
+    monkeypatch.setattr(ec, "remote_tags", lambda: ({}, True))
     row, = ec._commit_states(man)
     assert row["state"] == "commit-local-anchor-only", row
     assert row["state"] in ec.PASSING_STATES, "a routine run must not fail on it"
