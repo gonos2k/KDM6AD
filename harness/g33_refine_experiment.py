@@ -1919,6 +1919,24 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             arm: str = "reference",
             rho_profile: str = "as-is") -> Path:
     """Build, run, validate and publish. Returns the published bundle."""
+    # FIRST, BEFORE ANY OTHER GATE. An analyzer nothing could hold to HEAD
+    # disqualifies the run whatever else is true, so it is not a verdict to
+    # reach at publish time behind other refusals -- on a public checkout the
+    # missing private kernel is refused long before, and the message a caller
+    # sees would name that instead (Codex, reproduced on CI).
+    #
+    # Refused on EVERY path, not only the CLI. The tolerance further down is
+    # for a module ALREADY IN MEMORY, which is a normal condition of a shared
+    # interpreter; nothing holding a module's bytes to HEAD is not normal
+    # anywhere. It fires whether or not git has since recovered, because
+    # recovery does not retroactively verify an import that already happened.
+    unverified = sorted(k for k, v in _IMPORTED.items() if v is UNVERIFIED)
+    if unverified:
+        raise SystemExit(
+            f"REFUSED: {unverified} could not be held to HEAD when they were "
+            f"imported -- git could not answer, so nothing pins the bytes "
+            f"that ran. Re-run in a process where git works; a later recovery "
+            f"does not verify an import that already happened.")
     # The algorithm selects the module (owner §11). The build script picks
     # the kernel to compile from `--algo` while the module the manifest pins
     # arrived separately, defaulting to legacy -- so a conservative run had to
@@ -2108,23 +2126,6 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         if _IMPORTED:
             unattested = sorted(k for k, v in _IMPORTED.items()
                                 if v is None or v is UNVERIFIED)
-            # GIT COULD NOT ANSWER: refused on EVERY path, not only the CLI.
-            # The tolerance below is for a module that was already in memory,
-            # which is a normal condition of a shared interpreter. Nothing
-            # holding a module's bytes to HEAD is not normal anywhere, and a
-            # bundle resting on an import nobody checked is not evidence --
-            # so this fires whether or not git has since recovered, because
-            # recovery does not retroactively verify what already ran
-            # (Codex).
-            unverified = sorted(k for k, v in _IMPORTED.items()
-                                if v is UNVERIFIED)
-            if unverified:
-                raise SystemExit(
-                    f"REFUSED: {unverified} could not be held to HEAD when "
-                    f"they were imported -- git could not answer, so nothing "
-                    f"pins the bytes that ran. Re-run in a process where git "
-                    f"works; a later recovery does not verify an import that "
-                    f"already happened.")
             # PUBLISHED EVIDENCE COMES FROM THE CLI, and there this is always
             # empty: the producer is `__main__` in a fresh process and every
             # analyzer reaches it through the seam. A library import -- the

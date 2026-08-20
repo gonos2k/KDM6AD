@@ -1653,8 +1653,14 @@ def test_the_WHOLE_gate_answers_when_git_is_unusable(monkeypatch, boom):
     monkeypatch.setattr(ec, "_REACHABLE", {})
     monkeypatch.setattr(ec, "_REMOTE_TAGS", {})
     monkeypatch.setattr(sp, "run", lambda *a, **k: (_ for _ in ()).throw(boom))
-    rc = ec.check()                    # must not raise, and must not pass
-    assert rc == 1
+    # NOT RAISING is the property. The VERDICT depends on whether this host
+    # has bundles at all -- with none there is nothing to fail on, and rc=0
+    # is correct -- so asserting rc==1 asserted the archive, not the tool
+    # (Codex found the crash; CI found this, where there is no archive).
+    rc = ec.check()                    # must not raise
+    assert rc in (0, 1)
+    if ec.bundles():
+        assert rc == 1, "with bundles present, unresolvable pins must fail"
 
 
 def test_a_FRESH_process_without_git_still_answers(tmp_path):
