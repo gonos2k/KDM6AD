@@ -497,6 +497,13 @@ def expected_geometry(total_seconds: float, nsplit: int,
 KERNEL_SOURCES = {
     "legacy": Path("host/KIM-meso_v1.0/phys/module_mp_kdm6.F"),
     "conservative": Path("host/KIM-meso_v1.0/phys/module_mp_kdm6_cons.F"),
+    # ARM N (owner freeze-lift, 2026-08-21). Legacy with the interface number
+    # transfer carrying the layer AIR MASS ratio instead of the thickness ratio
+    # alone -- two lines, `dnr` and `dni`, which were the only two of seven
+    # transfer sites in that loop without a density factor. Diagnostic: it is
+    # selected by `--algo`, it changes no default, and the identity in
+    # `g33_number_transport` predicts its residual collapses to roundoff.
+    "nmass": Path("host/KIM-meso_v1.0/phys/module_mp_kdm6_nmass.F"),
 }
 #: v2 added `algorithm`: which kernel the limit was read from is part of
 #: the fact, and a tag whose required keys change without changing is a tag

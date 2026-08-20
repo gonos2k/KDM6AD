@@ -21,6 +21,21 @@ from __future__ import annotations
 import hashlib
 from dataclasses import dataclass
 
+#: Algorithms whose OP STRUCTURE is legacy's. `nmass` (Arm N, owner
+#: freeze-lift 2026-08-21) changes two transfer lines' VALUE and neither their
+#: shape nor their order, so every rung, dtype and anchor below is legacy's.
+#:
+#: Normalised ONCE, at the entry, rather than at each `_shape_of(algorithm) == "legacy"`
+#: branch: there are four of them today, and a fifth added later would be the
+#: one nobody remembers -- the same reason `dispatched_seeds` became a single
+#: authority earlier in this campaign.
+_STRUCTURALLY_LEGACY = frozenset({"legacy", "nmass"})
+
+
+def _shape_of(algorithm: str) -> str:
+    return "legacy" if algorithm in _STRUCTURALLY_LEGACY else algorithm
+
+
 # ── op templates: (algorithm, cell_role, species) -> [op_id, ...] ────────────
 # Mass and number are DISTINCT expression families (§3): falk_nr omits dend,
 # dn_out has no /dend, dn_in is Delta-z only. Legacy TOP directly clamps (no
@@ -28,7 +43,7 @@ from dataclasses import dataclass
 def _mass_ops(algorithm: str, role: str) -> list[str]:
     if role == "TOP":
         # legacy TOP clamps directly (no outflow rung); conservative TOP caps first.
-        return ["QR_FALK", "QR_FALLACC", "QR_UPDATE"] if algorithm == "legacy" \
+        return ["QR_FALK", "QR_FALLACC", "QR_UPDATE"] if _shape_of(algorithm) == "legacy" \
             else ["QR_FALK", "QR_OUTFLOW", "QR_FALLACC", "QR_UPDATE"]
     # INTERIOR / BOTTOM
     return ["QR_FALK", "QR_OUTFLOW", "QR_FALLACC", "QR_INFLOW", "QR_UPDATE"]
@@ -39,7 +54,7 @@ def _number_ops(algorithm: str, role: str) -> list[str]:
     # DOES compute an outflow (dn_out = min(falk_nr*dtcld, nr)), so omitting
     # NR_OUTFLOW here would let a dump that skips it match the manifest.
     if role == "TOP":
-        return ["NR_FALK", "NR_FALLACC", "NR_UPDATE"] if algorithm == "legacy" \
+        return ["NR_FALK", "NR_FALLACC", "NR_UPDATE"] if _shape_of(algorithm) == "legacy" \
             else ["NR_FALK", "NR_OUTFLOW", "NR_FALLACC", "NR_UPDATE"]
     return ["NR_FALK", "NR_OUTFLOW", "NR_FALLACC", "NR_INFLOW", "NR_UPDATE"]
 
@@ -117,14 +132,14 @@ def _op_fields(algorithm: str, role: str, op_id: str) -> list[tuple[str, str]]:
         f = [("q_before", "f32"), ("q_minus_out", "f32")]
         if role != "TOP":
             f.append(("q_plus_in_preclamp", "f32"))
-        if algorithm == "legacy":
+        if _shape_of(algorithm) == "legacy":
             f.append(("clamp_active", "u8"))      # conservative has NO positivity clamp
         return f + [("q_post", "f32")]
     if op_id == "NR_UPDATE":
         f = [("n_before", "f32"), ("n_minus_out", "f32")]
         if role != "TOP":
             f.append(("n_plus_in_preclamp", "f32"))
-        if algorithm == "legacy":
+        if _shape_of(algorithm) == "legacy":
             f.append(("clamp_active", "u8"))
         return f + [("n_post", "f32")]
     raise KeyError(op_id)

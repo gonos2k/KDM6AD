@@ -53,7 +53,10 @@ REAL_KIND=f32
 case "$ALGO" in
     legacy)       MODULE="$HOST/phys/module_mp_kdm6.F";      DRVDEF=() ;;
     conservative) MODULE="$HOST/phys/module_mp_kdm6_cons.F"; DRVDEF=(-DKDM6_CONS) ;;
-    *) echo "--algo must be legacy or conservative" >&2; exit 2 ;;
+    # ARM N: legacy's interface, two transfer lines changed, so no driver
+    # define -- the conservative arm needs one because its CALL SHAPE differs.
+    nmass)        MODULE="$HOST/phys/module_mp_kdm6_nmass.F"; DRVDEF=(-DKDM6_NMASS) ;;
+    *) echo "--algo must be legacy, conservative or nmass" >&2; exit 2 ;;
 esac
 FIXTURE_SRC="$HERE/${FIXTURE_NAME}.f90"
 [ -f "$FIXTURE_SRC" ] || { echo "no such fixture: $FIXTURE_SRC" >&2; exit 2; }

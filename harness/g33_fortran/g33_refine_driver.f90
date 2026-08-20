@@ -63,6 +63,11 @@ module g33_refine
 #endif
 #ifdef KDM6_CONS
   character(len=*), parameter :: ALGOTAG = 'conservative'
+#elif defined(KDM6_NMASS)
+! ARM N declares itself. Without this the arm's stream said `legacy`, so no
+! analysis downstream could tell which kernel produced it -- an artifact that
+! cannot name its own operator is not evidence of that operator.
+  character(len=*), parameter :: ALGOTAG = 'nmass'
 #else
   character(len=*), parameter :: ALGOTAG = 'legacy'
 #endif

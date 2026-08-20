@@ -272,6 +272,11 @@ _CON_TOP = {   # conservative TOP DOES compute an outflow; no inflow, no clamp
 
 FIELD_EXPR = {
     "legacy": {"INTERIOR": _LEG_INT, "TOP": _LEG_TOP},
+    # `nmass` IS legacy with two lines changed, and neither is an anchor: the
+    # instrumentation keys on the UPDATE lines, and the emitted expression is
+    # `dnr(i,k+1)` itself -- whose value the arm changes and whose spelling it
+    # does not. So the ladder is legacy's, and only the SHA differs.
+    "nmass": {"INTERIOR": _LEG_INT, "TOP": _LEG_TOP},
     "conservative": {"INTERIOR": _CON_INT, "TOP": _CON_TOP},
 }
 
@@ -736,6 +741,25 @@ VARIANTS = {
             ("INTERIOR", "nr"): "             nrs(i,k,1) = max(nrs(i,k,1)-dnr(i,k)+dnr(i,k+1),0.)",
         },
     },
+    "nmass": {
+        "sha": "430d4b6f9c418a1db541dc90dca72527ee4e2cf6571685f2cc3b368b55a84a9a",
+        "cap_top": "         if(n.le.mstep(i)) then",
+        "cap_int": "           if(n.le.mstep(i)) then",
+        "emit": {
+            ("TOP", "qr"): "           qrs(i,k,1) = max(qrs(i,k,1)-falk(i,k,1)*dtcld/dend(i,k),0.)",
+            ("TOP", "nr"): "           nrs(i,k,1) = max(nrs(i,k,1)-falkn(i,k,1)*dtcld,0.)",
+            ("INTERIOR", "qr"): "             qrs(i,k,1) = max(qrs(i,k,1)-dqr(i,k)+dqr(i,k+1),0.)",
+            ("INTERIOR", "nr"): "             nrs(i,k,1) = max(nrs(i,k,1)-dnr(i,k)+dnr(i,k+1),0.)",
+        },
+        # q_post/n_post emitted AFTER the update line (legacy updates are single
+        # lines, so the post anchor is the update line itself).
+        "post": {
+            ("TOP", "qr"): "           qrs(i,k,1) = max(qrs(i,k,1)-falk(i,k,1)*dtcld/dend(i,k),0.)",
+            ("TOP", "nr"): "           nrs(i,k,1) = max(nrs(i,k,1)-falkn(i,k,1)*dtcld,0.)",
+            ("INTERIOR", "qr"): "             qrs(i,k,1) = max(qrs(i,k,1)-dqr(i,k)+dqr(i,k+1),0.)",
+            ("INTERIOR", "nr"): "             nrs(i,k,1) = max(nrs(i,k,1)-dnr(i,k)+dnr(i,k+1),0.)",
+        },
+    },
     "conservative": {
         "sha": "364a1319d0099bdb474a752a2a017defaf008babbe85dd03da872c603b2e7e3e",
         "cap_top": "         if(n.le.mstep(i)) then",
@@ -827,3 +851,12 @@ MICRO_FREEZE_HEAT = [
     ("pfrzdtc", "f64", "g33_pfrzdtc(i,k)"),
     ("pfrzdtr", "f64", "g33_pfrzdtr(i,k)"),
 ]
+
+
+#: ARM N reuses legacy's SITE TABLES too. It changes what two transfer lines
+#: COMPUTE, not where anything sits, so every anchor, cap site, top site and
+#: transfer site is legacy's -- and saying so here, once, beats discovering
+#: each missing table one KeyError at a time.
+for _t in (CAP_SITES, TOP_SITES, XFER_SITES):
+    _t["nmass"] = _t["legacy"]
+del _t
