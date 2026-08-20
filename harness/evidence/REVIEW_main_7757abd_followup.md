@@ -234,9 +234,29 @@ to squash merges.
 unreferenced even for the moment of the force-push. Measured after: both
 bundles `matches`.
 
-Across the archive, 20 anchored commits: 19 reachable from a trusted ref,
-one (`2c230729`) local-only and carried by two superseded bundles whose pins
-have already moved.
+...and the claim that the tag does that had to become verifiable. `trusted`
+asked whether a reviewer who CLONES could fetch the commit, and `refs/tags/`
+answered yes for a tag created here and never pushed -- so the measurement
+reported above would have read the same with the tag purely local, which
+means it established nothing. A tag lives in the same namespace whether it
+was fetched or invented, so only the remote can answer, and `remote_tags()`
+asks it (`git ls-remote`, once per run, and an unreachable remote leaves the
+anchor local-only rather than fine).
+
+...and the network check had to be failure-safe. Two failure modes, and
+they are different facts: the remote ANSWERED and does not have the commit,
+or the remote could not be ASKED. Folded together, a run with no network
+states that an anchor is local-only -- an assertion about the world made
+from not having looked. They are separate states now, both excused in a
+routine run and both blocking a closeout, and neither reached by a
+traceback: a hanging remote and a missing `git` used to come out of the
+lookup as an exception, and a gate that dies has not answered.
+
+Externally verifiable now, and verified: `refs/tags/g33-evidence-9a763f1c`
+resolves to `9a763f1c` on `origin`. Across the archive, 37 anchor rows: 34
+`matches`, 3 `commit-local-anchor-only` -- one more than the old predicate
+reported, because it was crediting local tags -- and all three belong to
+superseded bundles the registry does not pin, so no claim rests on them.
 
 ### Open, and why it is not closed here
 
@@ -249,9 +269,16 @@ where a nulled or emptied one erased a value something reads. And closing
 it is a **schema bump**, because a stricter key set is a new tag and never a
 new demand on history -- the one discipline this campaign has kept unbroken.
 Both blocks carry their own versioned tags, so `identity` and
-`kernel_geometry` would each move, every published bundle would answer for
-the tag it was published under, and the current experiment would have to be
-re-produced and its 49 figures re-verified before the pins could move again.
+`kernel_geometry` would each move and every published bundle would answer
+for the tag it was published under.
+
+Measured, the cost is narrower than that reads. The registry pins five
+bundles: FOUR are `refinement_experiment_v2` and carry neither block at all,
+so they are untouched by a bump to either. Only the TWO v7 bundles
+(`identity=g33_layered_identity_v4`, `kernel_geometry=kdm6_subcycle_v3`)
+would need re-producing. Re-verification is all 221 pins, which is now a
+tool run rather than an afternoon, and 16 claims would have their chain
+re-checked after the pins moved.
 
 That is the next item, not a thing to slip into this one. Recorded with the
 measurement so it is a decision rather than an oversight.

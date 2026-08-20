@@ -448,8 +448,7 @@ def _pinned_fixture_dims(man: dict) -> tuple:
     fixture = Path(str(man.get("fixture_path", ""))).name
     rel = f"harness/g33_fortran/{fixture}"
     commit = man.get("repo_commit")
-    r = subprocess.run(["git", "cat-file", "blob", f"{commit}:{rel}"],
-                       cwd=REPO, capture_output=True)
+    r = _run_git("cat-file", "blob", f"{commit}:{rel}", text=False)
     if r.returncode != 0:
         raise ValueError(
             f"cannot resolve {rel} at the pinned commit "
@@ -845,7 +844,72 @@ _REACHABLE: dict = {}
 #: the branch is pushed; requiring `main` would mark every bundle made during a
 #: review as unanchored until the merge, which says something false about
 #: whether a reviewer can get the history.
-TRUSTED_REFS = ("refs/remotes/", "refs/tags/")
+#: Refs that came FROM the remote, so a reviewer who clones has them too.
+#:
+#: `refs/tags/` used to be here and is not, because a tag lives in the same
+#: namespace whether it was fetched or created five seconds ago and never
+#: pushed -- so a purely LOCAL tag satisfied "a ref a reviewer could have",
+#: which is the one thing this predicate exists to establish (measured: a
+#: local-only tag on an orphaned commit turned `commit-local-anchor-only`
+#: into `matches`). A tag counts when the REMOTE has it, which only the
+#: remote can answer; `remote_tags()` asks, and `--require-available` is
+#: where the answer is required.
+TRUSTED_REFS = ("refs/remotes/",)
+
+def _run_git(*args, text: bool = True, timeout: int | None = None):
+    """A git invocation that RETURNS rather than raises.
+
+    Every call here has the same contract -- a result, or a failure, never an
+    exception -- because this module is a checker and a checker that dies has
+    not answered. Written out per site it was fixed per site: `remote_tags`
+    was hardened and `_blob_at` still took the whole gate down when `git` was
+    missing (Codex). One helper, so a call added later inherits the contract
+    instead of waiting for someone to notice it does not have it.
+
+    A non-zero return and an absent toolchain come back the same way, which
+    is right: neither one answered the question, and every caller here
+    already handles "could not resolve".
+    """
+    try:
+        return subprocess.run(("git",) + args, cwd=REPO, capture_output=True,
+                              text=text, timeout=timeout)
+    except (OSError, subprocess.SubprocessError):
+        return subprocess.CompletedProcess(
+            args, returncode=127, stdout="" if text else b"", stderr="")
+
+
+#: `git ls-remote` output, once per run.
+_REMOTE_TAGS: dict = {}
+
+
+def remote_tags() -> tuple:
+    """`({commit: [tag, ...]}, asked)` as the REMOTE has them.
+
+    TWO FAILURE MODES, and they are different facts (Codex): the remote
+    ANSWERED and does not have the commit, or the remote could not be ASKED
+    at all. Folded together, a run with no network would state that an
+    anchor is local-only -- an assertion about the world made from not
+    having looked. `asked` carries the distinction; `False` means the
+    predicate below says "not established" rather than "no".
+
+    Never raises. A hanging remote and a missing `git` both used to come out
+    of this as a traceback, and a gate that dies has not answered.
+    """
+    if not _REMOTE_TAGS:
+        out, asked = {}, False
+        try:
+            r = _run_git("ls-remote", "--tags", "origin", timeout=30)
+            if r.returncode == 0:
+                asked = True
+                for line in r.stdout.splitlines():
+                    sha, _, ref = line.partition("\t")
+                    if ref.endswith("^{}"):      # the commit a tag points AT
+                        out.setdefault(sha.strip(), []).append(
+                            ref[len("refs/tags/"):-3])
+        except (OSError, subprocess.SubprocessError):
+            pass                                 # asked stays False
+        _REMOTE_TAGS["v"] = (out, asked)
+    return _REMOTE_TAGS["v"]
 
 
 def _reachable(commit: str, trusted: bool = False) -> bool:
@@ -866,7 +930,7 @@ def _reachable(commit: str, trusted: bool = False) -> bool:
         cmd = ["git", "for-each-ref", "--contains", commit, "--count=1"]
         if trusted:
             cmd += list(TRUSTED_REFS)
-        r = subprocess.run(cmd, cwd=REPO, capture_output=True, text=True)
+        r = _run_git(*cmd[1:])
         _REACHABLE[key] = r.returncode == 0 and bool(r.stdout.strip())
     return _REACHABLE[key]
 
@@ -902,6 +966,23 @@ def _commit_states(man: dict) -> list:
             # Reachable HERE and nowhere a reviewer could follow. A passing
             # state for a routine run and a blocker for a closeout, like every
             # other "we could not really check this" (owner priority 10).
+            known, asked = remote_tags()
+            if not asked:
+                out.append({
+                    "file": where, "state": "commit-anchor-unasked",
+                    "detail": f"no local ref contains {c[:12]} and the remote "
+                              f"could not be asked, so whether a reviewer "
+                              f"could fetch it is NOT ESTABLISHED -- which is "
+                              f"a different statement from 'they could not'"})
+                continue
+            tags = known.get(c)
+            if tags:
+                # THE REMOTE HAS IT, under a tag. That is the same guarantee a
+                # remote-tracking branch gives and the only one this predicate
+                # is about, so it is not a local-only anchor.
+                out.append({"file": f"{where} [tag {tags[0]}]",
+                            "state": "matches", "detail": ""})
+                continue
             out.append({
                 "file": where, "state": "commit-local-anchor-only",
                 "detail": f"{c[:12]} is contained only by a local ref -- a "
@@ -914,8 +995,7 @@ def _commit_states(man: dict) -> list:
 
 def _blob_at(commit: str, path: str) -> str | None:
     """The git blob SHA of `path` as of `commit`, or None if it does not resolve."""
-    r = subprocess.run(["git", "rev-parse", f"{commit}:{path}"], cwd=REPO,
-                       capture_output=True, text=True)
+    r = _run_git("rev-parse", f"{commit}:{path}")
     return r.stdout.strip() if r.returncode == 0 else None
 
 
@@ -975,8 +1055,7 @@ def _analyzer_state(an: dict) -> dict:
     # manifest recorded the disagreement (owner P0-2).
     content = an.get("analyzer_sha256")
     if content:
-        raw = subprocess.run(["git", "cat-file", "blob", blob], cwd=REPO,
-                             capture_output=True)
+        raw = _run_git("cat-file", "blob", blob, text=False)
         if raw.returncode != 0:
             return {"file": path, "state": "ANALYZER-UNRESOLVABLE",
                     "detail": f"blob {blob[:12]} is not readable in this clone"}
@@ -1387,6 +1466,10 @@ PASSING_STATES = frozenset({
     "value-unavailable",       # the bundle the figure is declared against is not here
     # The anchor resolves on THIS machine and nowhere a reviewer could follow.
     "commit-local-anchor-only",
+    # ...and the remote could not be asked, so it is not established
+    # either way. Excused in a routine run, a blocker in a closeout --
+    # "we did not look" must never read as "we looked and it is fine".
+    "commit-anchor-unasked",
     # The bundle predates the recorded role graph, so its layered ids are a
     # function of whichever checkout computes them.
     "identity-predates-block",
@@ -1450,6 +1533,8 @@ EXCUSED_BY_ABSENCE = frozenset({
     # Same shape, one layer out: the commit resolves because we are standing on
     # the machine that has it (owner priority 10).
     "commit-local-anchor-only",
+    # ...and one layer out again: we could not ask the remote at all.
+    "commit-anchor-unasked",
     # ...and one layer out again: the ids resolve because we are standing in a
     # checkout whose role graph happens to match. Phase B cannot start while a
     # pinned bundle answers this way (Codex stop-time review).

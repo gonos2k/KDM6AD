@@ -183,8 +183,18 @@ def identity_digest(man: dict) -> str:
 
 
 def _git(*a) -> str:
-    return subprocess.run(("git",) + a, capture_output=True,
-                          text=True).stdout.strip()
+    """git stdout, or "" when git cannot answer.
+
+    This fills `repo_commit` and `tree_dirty`. An empty commit is caught by
+    the manifest's own shape contract -- a 40-hex field cannot be "" -- so
+    the failure surfaces as a REFUSED manifest rather than as a traceback
+    from a helper the caller never knew ran (Codex).
+    """
+    try:
+        r = subprocess.run(("git",) + a, capture_output=True, text=True)
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    return r.stdout.strip()
 
 
 _NAME = re.compile(r"^n(\d+)\.(carry|rezero)\.txt$")
@@ -342,6 +352,21 @@ _SCHEMA_RANK = {s: i for i, s in enumerate(KNOWN_SCHEMAS)}
 def at_least(schema: str, floor: str) -> bool:
     """Whether `schema` carries `floor`'s contract."""
     return _SCHEMA_RANK.get(schema, -1) >= _SCHEMA_RANK[floor]
+
+
+def _run_git(*args, cwd=None):
+    """A git invocation that RETURNS rather than raises.
+
+    Every call here already handles "git could not answer" through a
+    non-zero return; none of them handled git being unusable, which arrives
+    as an exception from a helper the caller never knew ran. One contract,
+    one place, so a call added later inherits it (Codex).
+    """
+    try:
+        return subprocess.run(("git",) + args, cwd=cwd, capture_output=True)
+    except (OSError, subprocess.SubprocessError):
+        return subprocess.CompletedProcess(args, returncode=127, stdout=b"",
+                                           stderr=b"")
 
 
 def _obj(v) -> dict:
@@ -690,8 +715,7 @@ def pinned_blobs(man: dict) -> dict:
         if not path.endswith(".py") or not isinstance(pin["blob_sha"], str):
             continue
         mod = path.rsplit("/", 1)[-1][:-3]
-        r = subprocess.run(["git", "cat-file", "blob", pin["blob_sha"]],
-                           cwd=REPO, capture_output=True)
+        r = _run_git("cat-file", "blob", pin["blob_sha"], cwd=REPO)
         if r.returncode != 0:
             raise BlobUnavailable(f"{mod} pins blob {pin['blob_sha'][:12]}, "
                                   f"not in this object database")
@@ -1800,7 +1824,15 @@ def _expected_run_violations(man: dict, members: list) -> list:
     Not a re-read of the streams: that is the evidence chain's job, against
     the bytes. This is the DOCUMENT answering for itself.
     """
-    import g33_refine_experiment as xp                  # cycle closes at call
+    # The cycle closes at call -- and the producer REFUSES at import when git
+    # cannot show it HEAD, which is right for a producer and wrong to let
+    # escape a validator. `validate()` is the gate; a gate states its verdict
+    # (Codex, reached end-to-end through the evidence chain).
+    try:
+        import g33_refine_experiment as xp
+    except SystemExit as e:
+        return [f"the producer's contract cannot be loaded, so this manifest "
+                f"was not checked against it: {e}"]
     EXPECTED_RUN_SCHEMA = xp.EXPECTED_RUN_SCHEMA
     bad = []
     if man.get("algorithm") not in _ALGOS:

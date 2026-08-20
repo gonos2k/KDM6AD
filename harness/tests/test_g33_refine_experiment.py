@@ -7,6 +7,7 @@ These tests hold the replacement to that: fail-closed at every stage, and visibl
 under the destination only after everything succeeded.
 """
 import hashlib
+import os
 import inspect
 import json
 import re
@@ -1620,6 +1621,49 @@ def test_the_witness_REPORTS_a_published_record_that_is_not_an_object(
     (root / "build_provenance.json").write_text(text)
     got = xp._witness_violations(man, root)   # must not raise
     assert got and "not a record" in got[0], got
+
+
+def test_GIT_COULD_NOT_ANSWER_is_refused_on_the_library_path_too(tmp_path):
+    """A FRESH interpreter without git, then git back, then publish.
+
+    `_IMPORTED[name] = None` meant two different things: the module was
+    already in memory when the analysis dispatched, or nothing could hold it
+    to HEAD at all. Being pre-imported is a NORMAL condition of a shared
+    interpreter, so the library path tolerates it and publishes a
+    declaration; git being unable to answer is not normal in any process,
+    and the tolerance written for the first covered the second (Codex).
+
+    Recovery does not retroactively verify an import that already happened,
+    which is why this refuses even with git working again by publish time.
+    """
+    import subprocess as sp
+    bin_only = tmp_path / "bin"
+    bin_only.mkdir()
+    (bin_only / "env").symlink_to("/usr/bin/env")     # no git on PATH
+    probe = (
+        "import os, sys, pathlib, tempfile\n"
+        f"sys.path.insert(0, {str(ROOT)!r})\n"
+        f"sys.path.insert(0, {str(ROOT / 'tests')!r})\n"
+        "import g33_refine_experiment as xp\n"
+        "print('MARK', sorted(k for k, v in xp._IMPORTED.items()\n"
+        "                     if v is xp.UNVERIFIED))\n"
+        "os.environ['PATH'] = os.environ['REAL_PATH']\n"   # git is back
+        "sys.argv = ['pytest']\n"                          # library path
+        "import test_g33_refine_experiment as t\n"
+        "import _pytest.monkeypatch as mp\n"
+        "m = mp.MonkeyPatch(); t._fake(m)\n"
+        "try:\n"
+        "    t._produce(pathlib.Path(tempfile.mkdtemp()) / 'b')\n"
+        "    print('PUBLISHED')\n"
+        "except SystemExit as e:\n"
+        "    print('REFUSED', 'could not be held to HEAD' in str(e))\n")
+    r = sp.run([sys.executable, "-c", probe], capture_output=True, text=True,
+               env={"PATH": str(bin_only), "REAL_PATH": os.environ["PATH"],
+                    "HOME": os.environ["HOME"]})
+    out = r.stdout
+    assert "MARK ['g33_number_transport']" in out, out + r.stderr
+    assert "REFUSED True" in out, out + r.stderr
+    assert "PUBLISHED" not in out, out
 
 
 def test_the_log_comparison_does_not_import_the_collector():

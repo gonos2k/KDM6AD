@@ -54,15 +54,67 @@ _IMPORTED: dict = {}
 
 
 
+#: Recorded in `_IMPORTED` when the seam could not hold a module to HEAD
+#: because GIT could not answer -- as opposed to `None`, which means the
+#: module was already in memory when the analysis dispatched.
+#:
+#: Two different facts. Being pre-imported is a NORMAL condition of a shared
+#: interpreter, which is why the library path tolerates it and publishes a
+#: declaration instead of refusing. Git being unable to answer is not normal
+#: in any process: nothing held those bytes to anything, so the bundle would
+#: rest on an import nobody checked. Folded into one value, the tolerance
+#: written for the first covered the second (Codex).
+UNVERIFIED = "git-could-not-answer"
+
+
+class Unattestable(Exception):
+    """The bytes that just executed cannot be pinned to HEAD.
+
+    NOT a `SystemExit`. Refusing at IMPORT applies a production invariant --
+    a fresh process where the producer is imported first -- to every process
+    that merely READS a manifest: `g33_identity` imports this module at its
+    own module level, so on a machine without git, importing it killed the
+    validator that imports IT (Codex, reproduced in a fresh process; the
+    earlier measurement had this module already loaded, which is exactly the
+    condition that hides it).
+
+    The seam below records the analyzer as unattested and `produce()` refuses
+    to publish, which is where the claim is actually made. A reader gets a
+    manifest checked as far as it can be, and a producer gets its refusal.
+    """
+
+
+def _run_git(*args, cwd=None):
+    """A git invocation that RETURNS rather than raises.
+
+    Every call here already handles "git could not answer" through a
+    non-zero return; none of them handled git being unusable, which arrives
+    as an exception from a helper the caller never knew ran. One contract,
+    one place, so a call added later inherits it (Codex).
+    """
+    try:
+        return subprocess.run(("git",) + args, cwd=cwd, capture_output=True)
+    except (OSError, subprocess.SubprocessError):
+        return subprocess.CompletedProcess(args, returncode=127, stdout=b"",
+                                           stderr=b"")
+
+
 def _require_head_digest(rel: Path, got: str, what: str) -> str:
     """A digest ALREADY TAKEN, held to HEAD. Separate from reading the file,
     because the eager path must attest the bytes that executed at load and
     must not re-read the tree afterwards."""
-    blob = subprocess.run(["git", "show", f"HEAD:{rel}"], cwd=HERE.parent,
-                          capture_output=True)
+    # NO GIT IS A REFUSAL, not a traceback. Without it nothing can pin the
+    # bytes that just executed, which is exactly what this gate is for -- so
+    # the answer is the same refusal as a file missing from HEAD, and the
+    # caller sees a stated reason rather than an exception from a helper it
+    # never knew ran (Codex, found end-to-end through the evidence chain,
+    # which imports this module).
+    blob = _run_git("show", f"HEAD:{rel}", cwd=HERE.parent)
     if blob.returncode != 0:
-        raise SystemExit(
-            f"REFUSED: {rel} is not in HEAD, so nothing can pin the bytes "
+        # NO GIT AND NO SUCH PATH ARE ONE ANSWER: either way nothing can pin
+        # the bytes that just executed, which is what this gate is for.
+        raise Unattestable(
+            f"{rel} is not readable from HEAD, so nothing can pin the bytes "
             f"that {what} just executed")
     want = hashlib.sha256(blob.stdout).hexdigest()
     if got != want:
@@ -137,10 +189,13 @@ def _eager_import(name: str):
             # HEAD here, which is the same guarantee `require_pinned_producer`
             # gives the first execution, and needs no cross-instance state --
             # there is no in-process place the attested code cannot reach.
-            _require_head_digest(
-                Path("harness/g33_refine_experiment.py"),
-                hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
-                "the producer's second execution")
+            try:
+                _require_head_digest(
+                    Path("harness/g33_refine_experiment.py"),
+                    hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+                    "the producer's second execution")
+            except Unattestable:
+                pass                    # recorded as unattested just below
             # NOT SILENTLY SKIPPED. `extension_protocol` reaches this module
             # through the module-level `nt`, never through `_an`, so leaving
             # no record meant nothing marked it -- and a duplicate instance
@@ -167,7 +222,13 @@ def _eager_import(name: str):
     # HELD TO HEAD HERE, not later. `_an` returns early for anything already
     # in `_IMPORTED`, so recording an unverified digest there skipped the
     # check entirely: an edited module was accepted with its own digest.
-    checked = _require_head_digest(Path(f"harness/{name}.py"), before, name)
+    try:
+        checked = _require_head_digest(Path(f"harness/{name}.py"), before, name)
+    except Unattestable:
+        # NOT the same as a module already in memory: nothing held these
+        # bytes to anything, so `produce()` refuses on every path.
+        _IMPORTED[name] = UNVERIFIED
+        return mod
     _EAGER_AT_LOAD[name] = checked
     # ...and into the record the manifest is built from. `extension_protocol`
     # reaches this module through the module-level `nt`, never through `_an`,
@@ -230,8 +291,11 @@ def _an(name: str):
         # preflight would still go unseen. Closing it needs the detached
         # snapshot, which is the open half of §8.
         if name in _EAGER_AT_LOAD:
-            _IMPORTED[name] = _require_head_digest(
-                Path(f"harness/{name}.py"), _EAGER_AT_LOAD[name], name)
+            try:
+                _IMPORTED[name] = _require_head_digest(
+                    Path(f"harness/{name}.py"), _EAGER_AT_LOAD[name], name)
+            except Unattestable:
+                _IMPORTED[name] = UNVERIFIED
             return sys.modules[name]
         _IMPORTED[name] = None
         return sys.modules[name]
@@ -1289,8 +1353,7 @@ def _pin_path(rel: Path) -> dict:
     if not blob:
         raise SystemExit(f"REFUSED: {rel} is not in HEAD, so nothing can pin it")
     recovered = hashlib.sha256(
-        subprocess.run(["git", "cat-file", "blob", blob], cwd=HERE.parent,
-                       capture_output=True).stdout).hexdigest()
+        _run_git("cat-file", "blob", blob, cwd=HERE.parent).stdout).hexdigest()
     if recovered != content:
         raise SystemExit(
             f"REFUSED: {rel} ran as {content[:12]} but HEAD holds {recovered[:12]}"
@@ -1660,8 +1723,7 @@ def source_snapshot(build_dir: Path) -> SourceSnapshot:
 def _head_blob(logical: str) -> str | None:
     """The SHA-256 of this path's content at HEAD, or None when git does not
     track it (`host/**` is private and gitignored)."""
-    r = subprocess.run(["git", "show", f"HEAD:{logical}"], cwd=HERE.parent,
-                       capture_output=True)
+    r = _run_git("show", f"HEAD:{logical}", cwd=HERE.parent)
     if r.returncode != 0:
         return None
     return hashlib.sha256(r.stdout).hexdigest()
@@ -1857,6 +1919,24 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             arm: str = "reference",
             rho_profile: str = "as-is") -> Path:
     """Build, run, validate and publish. Returns the published bundle."""
+    # FIRST, BEFORE ANY OTHER GATE. An analyzer nothing could hold to HEAD
+    # disqualifies the run whatever else is true, so it is not a verdict to
+    # reach at publish time behind other refusals -- on a public checkout the
+    # missing private kernel is refused long before, and the message a caller
+    # sees would name that instead (Codex, reproduced on CI).
+    #
+    # Refused on EVERY path, not only the CLI. The tolerance further down is
+    # for a module ALREADY IN MEMORY, which is a normal condition of a shared
+    # interpreter; nothing holding a module's bytes to HEAD is not normal
+    # anywhere. It fires whether or not git has since recovered, because
+    # recovery does not retroactively verify an import that already happened.
+    unverified = sorted(k for k, v in _IMPORTED.items() if v is UNVERIFIED)
+    if unverified:
+        raise SystemExit(
+            f"REFUSED: {unverified} could not be held to HEAD when they were "
+            f"imported -- git could not answer, so nothing pins the bytes "
+            f"that ran. Re-run in a process where git works; a later recovery "
+            f"does not verify an import that already happened.")
     # The algorithm selects the module (owner §11). The build script picks
     # the kernel to compile from `--algo` while the module the manifest pins
     # arrived separately, defaulting to legacy -- so a conservative run had to
@@ -2044,7 +2124,8 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         # cannot be undone by restoring the file before the manifest is
         # written. Empty on a run that dispatched no analyzer.
         if _IMPORTED:
-            unattested = sorted(k for k, v in _IMPORTED.items() if v is None)
+            unattested = sorted(k for k, v in _IMPORTED.items()
+                                if v is None or v is UNVERIFIED)
             # PUBLISHED EVIDENCE COMES FROM THE CLI, and there this is always
             # empty: the producer is `__main__` in a fresh process and every
             # analyzer reaches it through the seam. A library import -- the
