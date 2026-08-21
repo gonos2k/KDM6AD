@@ -55,8 +55,15 @@ case "$ALGO" in
     conservative) MODULE="$HOST/phys/module_mp_kdm6_cons.F"; DRVDEF=(-DKDM6_CONS) ;;
     # ARM N: legacy's interface, two transfer lines changed, so no driver
     # define -- the conservative arm needs one because its CALL SHAPE differs.
-    nmass)        MODULE="$HOST/phys/module_mp_kdm6_nmass.F"; DRVDEF=(-DKDM6_NMASS) ;;
-    lncmin)       MODULE="$HOST/phys/module_mp_kdm6_lncmin.F"; DRVDEF=(-DKDM6_LNCMIN) ;;
+    # THE FACTORIAL'S SIX DERIVED ARMS. Each is a base plus the N and/or L
+    # edit, so the driver define is the BASE's (conservative changes the call
+    # shape; N and L do not) and the ALGOTAG define names the arm. Written as
+    # one pattern rather than six cases: six near-identical lines is six
+    # chances for one to name the wrong file.
+    nmass|lncmin|nmasslncmin|cons_nmass|cons_lncmin|cons_nmasslncmin)
+        MODULE="$HOST/phys/module_mp_kdm6_${ALGO}.F"
+        DRVDEF=(-DKDM6_ARM_"$(printf %s "$ALGO" | tr '[:lower:]' '[:upper:]')")
+        case "$ALGO" in cons_*) DRVDEF+=(-DKDM6_CONS) ;; esac ;;
     *) echo "--algo must be legacy, conservative, nmass or lncmin" >&2; exit 2 ;;
 esac
 FIXTURE_SRC="$HERE/${FIXTURE_NAME}.f90"

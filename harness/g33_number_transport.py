@@ -223,7 +223,19 @@ SPECIES = {"nr": ("main", "bottom_falln_nr", False),
 #: Algorithms whose NUMBER transfer carries the layer air-mass ratio. Read
 #: from the stream's own header, so an artifact answers for the operator that
 #: made it rather than for whichever the reader assumed.
-NUMBER_CARRIES_DENSITY = frozenset({"nmass"})
+def number_carries_density(algorithm) -> bool:
+    """Does this arm's number transfer carry the layer air-mass ratio?
+
+    Keyed on the ARM'S OWN NAME containing the N edit's tag, not on a list of
+    names. A set had exactly `nmass` in it, so every COMBINED arm --
+    `nmasslncmin`, `cons_nmass`, `cons_nmasslncmin` -- was read back with the
+    thickness-only weight, which reconstructs the wrong transfers and reports
+    a residual that did not happen. Measured: `nmass` closed to 1e-17 while
+    `nmasslncmin`, the same edit plus an unrelated one, appeared WORSE than
+    legacy. That is the analyzer, not an interaction -- and it is the second
+    time this exact confusion has cost a reading.
+    """
+    return isinstance(algorithm, str) and "nmass" in algorithm
 
 
 def _f32(h: str) -> float:
@@ -1087,7 +1099,7 @@ def column(call, col, species):
     None where the sub-step count makes the transfers unrecoverable."""
     chain, fkey, carries_density = SPECIES[species]
     if species in ("nr", "ni") and \
-            call.get("algorithm") in NUMBER_CARRIES_DENSITY:
+            number_carries_density(call.get("algorithm")):
         carries_density = True
     lp = single_loop(call)
     if call["mstep"].get((lp, chain, col)) != 1:

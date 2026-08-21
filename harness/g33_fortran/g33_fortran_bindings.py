@@ -281,6 +281,10 @@ FIELD_EXPR = {
     # column is compared against -- so the sedimentation ladder is legacy's
     # unchanged.
     "lncmin": {"INTERIOR": _LEG_INT, "TOP": _LEG_TOP},
+    "nmasslncmin": {"INTERIOR": _LEG_INT, "TOP": _LEG_TOP},
+    "cons_nmass": {"INTERIOR": _CON_INT, "TOP": _CON_TOP},
+    "cons_lncmin": {"INTERIOR": _CON_INT, "TOP": _CON_TOP},
+    "cons_nmasslncmin": {"INTERIOR": _CON_INT, "TOP": _CON_TOP},
     "conservative": {"INTERIOR": _CON_INT, "TOP": _CON_TOP},
 }
 
@@ -746,7 +750,26 @@ VARIANTS = {
         },
     },
     "nmass": {
-        "sha": "430d4b6f9c418a1db541dc90dca72527ee4e2cf6571685f2cc3b368b55a84a9a",
+        "sha": "ea539880f853553f35d987a77b56a73e2583023c7c65525070c47d565371b5e7",
+        "cap_top": "         if(n.le.mstep(i)) then",
+        "cap_int": "           if(n.le.mstep(i)) then",
+        "emit": {
+            ("TOP", "qr"): "           qrs(i,k,1) = max(qrs(i,k,1)-falk(i,k,1)*dtcld/dend(i,k),0.)",
+            ("TOP", "nr"): "           nrs(i,k,1) = max(nrs(i,k,1)-falkn(i,k,1)*dtcld,0.)",
+            ("INTERIOR", "qr"): "             qrs(i,k,1) = max(qrs(i,k,1)-dqr(i,k)+dqr(i,k+1),0.)",
+            ("INTERIOR", "nr"): "             nrs(i,k,1) = max(nrs(i,k,1)-dnr(i,k)+dnr(i,k+1),0.)",
+        },
+        # q_post/n_post emitted AFTER the update line (legacy updates are single
+        # lines, so the post anchor is the update line itself).
+        "post": {
+            ("TOP", "qr"): "           qrs(i,k,1) = max(qrs(i,k,1)-falk(i,k,1)*dtcld/dend(i,k),0.)",
+            ("TOP", "nr"): "           nrs(i,k,1) = max(nrs(i,k,1)-falkn(i,k,1)*dtcld,0.)",
+            ("INTERIOR", "qr"): "             qrs(i,k,1) = max(qrs(i,k,1)-dqr(i,k)+dqr(i,k+1),0.)",
+            ("INTERIOR", "nr"): "             nrs(i,k,1) = max(nrs(i,k,1)-dnr(i,k)+dnr(i,k+1),0.)",
+        },
+    },
+    "nmasslncmin": {
+        "sha": "ac614415807d9a600352af085136cac2d4ab217f014e51bb9e974add881e6840",
         "cap_top": "         if(n.le.mstep(i)) then",
         "cap_int": "           if(n.le.mstep(i)) then",
         "emit": {
@@ -785,6 +808,75 @@ VARIANTS = {
     },
     "conservative": {
         "sha": "364a1319d0099bdb474a752a2a017defaf008babbe85dd03da872c603b2e7e3e",
+        "cap_top": "         if(n.le.mstep(i)) then",
+        "cap_int": "           if(n.le.mstep(i)) then",
+        "emit": {
+            ("TOP", "qr"): "           qrs(i,k,1) = qrs(i,k,1)-dqr(i,k)",
+            ("TOP", "nr"): "           nrs(i,k,1) = nrs(i,k,1)-dnr(i,k)",
+            ("INTERIOR", "qr"):
+                "             qrs(i,k,1) = qrs(i,k,1)-dqr(i,k)                                  &",
+            ("INTERIOR", "nr"):
+                "             nrs(i,k,1) = nrs(i,k,1)-dnr(i,k)                                  &",
+        },
+        # conservative TOP updates are single lines (post anchor = update line);
+        # INTERIOR updates are two-line continued statements, so q_post/n_post go
+        # AFTER the continuation line (inserting between the two would be a syntax
+        # error — the statement is not yet complete).
+        "post": {
+            ("TOP", "qr"): "           qrs(i,k,1) = qrs(i,k,1)-dqr(i,k)",
+            ("TOP", "nr"): "           nrs(i,k,1) = nrs(i,k,1)-dnr(i,k)",
+            ("INTERIOR", "qr"): "                          +dqr(i,k+1)*src_metric/dst_metric",
+            ("INTERIOR", "nr"): "                          +dnr(i,k+1)*delz(i,k+1)/delz(i,k)",
+        },
+    },
+    "cons_nmasslncmin": {
+        "sha": "20c5840222645b37c9cd8d5c29f13a83f8b12cd0bc667f5dad2eb1118b6851e6",
+        "cap_top": "         if(n.le.mstep(i)) then",
+        "cap_int": "           if(n.le.mstep(i)) then",
+        "emit": {
+            ("TOP", "qr"): "           qrs(i,k,1) = qrs(i,k,1)-dqr(i,k)",
+            ("TOP", "nr"): "           nrs(i,k,1) = nrs(i,k,1)-dnr(i,k)",
+            ("INTERIOR", "qr"):
+                "             qrs(i,k,1) = qrs(i,k,1)-dqr(i,k)                                  &",
+            ("INTERIOR", "nr"):
+                "             nrs(i,k,1) = nrs(i,k,1)-dnr(i,k)                                  &",
+        },
+        # conservative TOP updates are single lines (post anchor = update line);
+        # INTERIOR updates are two-line continued statements, so q_post/n_post go
+        # AFTER the continuation line (inserting between the two would be a syntax
+        # error — the statement is not yet complete).
+        "post": {
+            ("TOP", "qr"): "           qrs(i,k,1) = qrs(i,k,1)-dqr(i,k)",
+            ("TOP", "nr"): "           nrs(i,k,1) = nrs(i,k,1)-dnr(i,k)",
+            ("INTERIOR", "qr"): "                          +dqr(i,k+1)*src_metric/dst_metric",
+            ("INTERIOR", "nr"): "                          +dnr(i,k+1)*delz(i,k+1)/delz(i,k)",
+        },
+    },
+    "cons_lncmin": {
+        "sha": "a97e0cb507401209d9569ccc8959fdbf0a48c673130ee1c0951f4767c10d578f",
+        "cap_top": "         if(n.le.mstep(i)) then",
+        "cap_int": "           if(n.le.mstep(i)) then",
+        "emit": {
+            ("TOP", "qr"): "           qrs(i,k,1) = qrs(i,k,1)-dqr(i,k)",
+            ("TOP", "nr"): "           nrs(i,k,1) = nrs(i,k,1)-dnr(i,k)",
+            ("INTERIOR", "qr"):
+                "             qrs(i,k,1) = qrs(i,k,1)-dqr(i,k)                                  &",
+            ("INTERIOR", "nr"):
+                "             nrs(i,k,1) = nrs(i,k,1)-dnr(i,k)                                  &",
+        },
+        # conservative TOP updates are single lines (post anchor = update line);
+        # INTERIOR updates are two-line continued statements, so q_post/n_post go
+        # AFTER the continuation line (inserting between the two would be a syntax
+        # error — the statement is not yet complete).
+        "post": {
+            ("TOP", "qr"): "           qrs(i,k,1) = qrs(i,k,1)-dqr(i,k)",
+            ("TOP", "nr"): "           nrs(i,k,1) = nrs(i,k,1)-dnr(i,k)",
+            ("INTERIOR", "qr"): "                          +dqr(i,k+1)*src_metric/dst_metric",
+            ("INTERIOR", "nr"): "                          +dnr(i,k+1)*delz(i,k+1)/delz(i,k)",
+        },
+    },
+    "cons_nmass": {
+        "sha": "8e3df235f506f84f0598cb71d2468a08ef5a2decacfea9228f446b06f84edd9a",
         "cap_top": "         if(n.le.mstep(i)) then",
         "cap_int": "           if(n.le.mstep(i)) then",
         "emit": {
@@ -880,7 +972,50 @@ MICRO_FREEZE_HEAT = [
 #: COMPUTE, not where anything sits, so every anchor, cap site, top site and
 #: transfer site is legacy's -- and saying so here, once, beats discovering
 #: each missing table one KeyError at a time.
+#: Derived arms inherit their BASE's site tables: N and L change what a line
+#: computes, not where anything sits.
+_DERIVED = {"nmass": "legacy", "lncmin": "legacy", "nmasslncmin": "legacy",
+            "cons_nmass": "conservative", "cons_lncmin": "conservative",
+            "cons_nmasslncmin": "conservative"}
 for _t in (CAP_SITES, TOP_SITES, XFER_SITES):
-    _t["nmass"] = _t["legacy"]
-    _t["lncmin"] = _t["legacy"]
+    for _arm, _base in _DERIVED.items():
+        _t[_arm] = _t[_base]
+
+#: ...EXCEPT where the arm edits the very line the base anchors on.
+#:
+#: Legacy puts the number ratio inside `dnr(i,k+1) = min(...)` and anchors on
+#: the UPDATE line, so Arm N leaves its anchors alone. Conservative applies the
+#: ratio AT the update, which is exactly where its anchor sits -- so on a
+#: conservative base the N edit moves the anchor out from under the overlay,
+#: and the generator's whole-line match found 0 of 1. Loudly, which is what
+#: that check is for.
+#:
+#: Rewritten mechanically from the same substitution the variant generator
+#: applies, so the anchor cannot drift from the source it is meant to match.
+_N_OLD = "+dnr(i,k+1)*delz(i,k+1)/delz(i,k)"
+_N_NEW = "+dnr(i,k+1)*dend(i,k+1)*delz(i,k+1)/(dend(i,k)*delz(i,k))"
+
+
+def _with_n_edit(obj):
+    """The same structure with the N substitution applied to every string."""
+    if isinstance(obj, str):
+        return (obj.replace(_N_OLD, _N_NEW)
+                   .replace(_N_OLD.replace("dnr", "dni"),
+                            _N_NEW.replace("dnr", "dni")))
+    if isinstance(obj, tuple):
+        return tuple(_with_n_edit(x) for x in obj)
+    if isinstance(obj, list):
+        return [_with_n_edit(x) for x in obj]
+    if isinstance(obj, dict):
+        return {_with_n_edit(k): _with_n_edit(v) for k, v in obj.items()}
+    return obj
+
+
+for _arm in ("cons_nmass", "cons_nmasslncmin"):
+    for _t in (CAP_SITES, TOP_SITES, XFER_SITES):
+        _t[_arm] = _with_n_edit(_t["conservative"])
+    FIELD_EXPR[_arm] = _with_n_edit(FIELD_EXPR["conservative"])
+    VARIANTS[_arm] = dict(VARIANTS[_arm],
+                          emit=_with_n_edit(VARIANTS["conservative"]["emit"]),
+                          post=_with_n_edit(VARIANTS["conservative"]["post"]))
 del _t
