@@ -1188,37 +1188,115 @@ def closure(call, col, species):
     return {"start": x0, "out": out, "residual": (x1 - x0) + out}
 
 
-def closure_report(stream: str) -> dict:
-    """{species: {col: ...}} plus the printed table."""
+def surface_cap_binds(call, col, species):
+    """Did the SURFACE cap bind -- asked without recovering a transfer.
+
+    The transport-only closure needs its `out` term to be the removal that
+    actually happened. Where the `min` bound at the bottom cell, the emitted
+    accumulator overstates it and the call measures the cap rather than the
+    transport. That is the ONE question the guard asks; it is not the same as
+    "did a cap bind anywhere", and conflating the two throws away every row
+    with an interior cap for a reason the arithmetic never had.
+
+    `G33F CAPIN` at the bottom cell carries that cell's own outflow per
+    sub-step, so summing it gives what left, independent of `mstep`. Against
+    the recovered-transfer test this agrees on 218 of 220 rows where both can
+    see (`g33_fixture_multisubcycle_v1`, nsplit 3 and 24); the two exceptions
+    are at 2.7e-11 relative and at an absolute scale of 1e-10, which is a
+    tolerance comparing near-nothing, not a disagreement about capping.
+
+    Returns None where the stream carries no CAPIN records for the chain: a
+    guard that cannot see must not answer "no".
+    """
+    chain = SPECIES[species][0]
+    ks = [k for (_l, _n, c, ch, k) in call["capin"] if c == col and ch == chain]
+    if not ks:
+        return None
+    bottom = max(ks)
+    number = species.startswith("n")
+    left = sum((v[2] if number else v[0])
+               for (_l, _n, c, ch, k), v in call["capin"].items()
+               if c == col and ch == chain and k == bottom)
+    f = call["flux"].get((single_loop(call), col), {})
+    acc = EMITTED[species][0]
+    raw = f.get(acc, call["surface"].get((single_loop(call), col, -1), {}).get(acc))
+    if raw is None or "nflux_dtcld" not in f:
+        return None
+    uncapped = raw * f["nflux_dtcld"]
+    return abs(left - uncapped) > 1e-6 * abs(uncapped or 1.0)
+
+
+def interior_cap_binds(call, col, species):
+    """Did the cap bind at an INTERIOR interface? Reported, never excluded.
+
+    Where it does, the residual is still the operator's own behaviour -- the
+    capped transfer is what ran -- but it is no longer transport alone, so the
+    row is labelled rather than dropped. Measured on the multisubcycle fixture
+    the interior cap binds hard: 214 mass and 202 number interfaces, smallest
+    departure 2.6e-03 relative, median 76%.
+    """
+    chain = SPECIES[species][0]
+    rows = [(k, v) for (_l, _n, c, ch, k), v in call["capin"].items()
+            if c == col and ch == chain]
+    if not rows:
+        return None
+    bottom = max(k for k, _v in rows)
+    number = species.startswith("n")
+    return any((v[2] != v[3]) if number else (v[0] != v[1])
+               for k, v in rows if k != bottom)
+
+
+def closure_report(stream: str, *, multistep: bool = True) -> dict:
+    """{species: {col: ...}} plus the printed table.
+
+    `multistep=False` restores the mstep == 1 restriction the guard used to
+    impose by accident, so a figure published under it reproduces as stated.
+    """
     acc = {}
     for call in calls(stream):
+        lp = single_loop(call)
         for col in sorted({c for _, c, _ in call["outer_pre_sed"]}):
             for sp in EMITTED:
-                # The caps are per SPECIES, so the check has to be too. Where the
-                # emitted accumulator and the recovered transfer disagree the
-                # `min`/`max` bound and the emitted flux overstates the removal;
-                # such a call measures the cap, not the transport.
+                mstep = call["mstep"].get((lp, SPECIES[sp][0], col))
+                # The caps are per SPECIES, so the check has to be too. At
+                # mstep == 1 this is the recovered-transfer test, UNCHANGED, so
+                # every figure published under it is reproduced bit for bit.
+                # Above it there is no transfer to recover, and the same
+                # question is put to CAPIN instead -- which is what makes the
+                # path that advertises "no recursion" finally live up to it.
                 if sp in SPECIES and SPECIES[sp][1] is not None:
                     c = column(call, col, sp)
-                    if c is None or abs(c["surface"] - c["surface_uncapped"]) > \
-                            1e-6 * abs(c["surface_uncapped"] or 1.0):
-                        continue
+                    if c is not None:
+                        if abs(c["surface"] - c["surface_uncapped"]) > \
+                                1e-6 * abs(c["surface_uncapped"] or 1.0):
+                            continue
+                    else:
+                        if not multistep or surface_cap_binds(call, col, sp) \
+                                is not False:
+                            continue
                 r = closure(call, col, sp)
                 if r is None or r["start"] == 0 or r["out"] == 0:
                     continue
-                d = acc.setdefault((sp, col), {"n": 0, "out": 0.0, "residual": 0.0})
+                d = acc.setdefault((sp, col), {"n": 0, "out": 0.0, "residual": 0.0,
+                                               "mstep_max": 0, "interior_cap": 0})
                 d["n"] += 1
                 d["out"] += r["out"]
                 d["residual"] += r["residual"]
+                d["mstep_max"] = max(d["mstep_max"], mstep or 0)
+                d["interior_cap"] += bool(interior_cap_binds(call, col, sp))
     print("\n  TRANSPORT-ONLY closure from EMITTED data alone (no recursion)")
     print("  The segment is both sedimentation sub-cycles and nothing else, so a")
     print("  sources-off fixture is not needed. qr is a REAL control here.\n")
-    print(f"  {'sp':>3} {'col':>4} {'calls':>6} {'surface out':>14} "
-          f"{'residual':>14} {'residual/out':>14}")
+    print(f"  {'sp':>3} {'col':>4} {'calls':>6} {'mstep<=':>7} {'incap':>5} "
+          f"{'surface out':>14} {'residual':>14} {'residual/out':>14}")
     for (sp, col), d in sorted(acc.items(), key=lambda kv: (kv[0][0][0] != "q", kv[0])):
         rel = d["residual"] / d["out"] if d["out"] else float("nan")
-        print(f"  {sp:>3} {col:>4} {d['n']:>6} {d['out']:14.5e} "
+        print(f"  {sp:>3} {col:>4} {d['n']:>6} {d['mstep_max']:>7} "
+              f"{d['interior_cap']:>5} {d['out']:14.5e} "
               f"{d['residual']:14.5e} {rel:13.4%}")
+    print("\n  `incap` counts calls where the cap bound at an INTERIOR interface:"
+          "\n  the row is the operator's own behaviour there, but it is no longer"
+          "\n  transport alone. Labelled, not dropped.")
     return {f"{sp}/{col}": d for (sp, col), d in acc.items()}
 
 
