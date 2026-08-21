@@ -254,10 +254,10 @@
   },
   "supersession": {
     "note": "produced by gateb_g33m_check.py at 8daf6d920199 on CPython 3.11.14 / numpy 2.4.6, verifier semantics a75c08bc82e96ccd",
-    "status": "current",
+    "status": "withdrawn",
     "superseded_by": null,
-    "valid_for_decision": true,
-    "withdrawal_reason": null
+    "valid_for_decision": false,
+    "withdrawal_reason": "The declared decision logic changed (`g33_expectation.py` gained the `_shape_of` normalisation so a diagnostic arm reuses legacy's op structure), so `verifier_semantics_sha256` a75c08bc82e9 no longer describes this tree, which now computes 39cedd8df804. The verdict itself is untouched by that change -- it normalises algorithms that did not exist when this ran -- but the digest is over BYTES and cannot tell a widened vocabulary from a changed answer, which is the conservative reading and the right one. Regeneration was attempted and REFUSED: a decision-grade run needs --gate-a-scope-report, and that report (sha256 cff6cb64f36f) is not on this host -- only its digest survives, in anchors.sh. Passing the digest alone is refused, correctly: allowing the two legs to compile different modules is not authorizing one. So this artifact is withdrawn rather than re-decided, and the four-case verdict is OPEN until the Gate A scope report is available again. NO REPLACEMENT exists and regeneration is pending the Gate A scope report; the four-case decision is OPEN until then, not merely unstamped."
   },
   "verdict": "INCONCLUSIVE"
 }
