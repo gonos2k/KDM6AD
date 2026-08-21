@@ -108,10 +108,28 @@ the file.
 Note this is the same shape as the open `ncmin` sensitivity item, which needs a
 spun-up double-moment state over mixed coast. One run would serve both.
 
-## 8. Real MPI one-step, np = 1, 2, 4 — OPEN
+## 8. Real MPI one-step, np = 1, 2, 4 — PR #153
 
-Unaffected by item 7's blocker: decomposition invariance is L's subject and does
-not need a number field. Not run in this cycle.
+Unaffected by item 7's blocker: decomposition invariance does not need a number
+field. Run, and the result is the strongest of the cycle.
+
+The control first: at `t = 00:00:00` all 197 f32 time-varying fields are
+BIT-IDENTICAL across np = 1, 2, 4. Whatever separates the runs is made by the
+step.
+
+| | differing at t = 0 | at t = 20 s | worst |
+|---|---|---|---|
+| np = 2 vs 1 | 0 of 197 | 1 | `QNCCN`, 9.800e-01 relative |
+| np = 4 vs 1 | 0 of 197 | 28 | `REFL_10CM`, 1.917e+00 relative |
+
+After twenty seconds the forecast's precipitation and reflectivity depend on how
+many MPI ranks it ran on.
+
+The mechanism is NOT established. `ncmin` is the obvious candidate -- a scalar
+assigned inside `do i = its,ite`, so only each tile's last column survives -- but
+it gates `nci(i,k,1)`, cloud droplet number, which surfaces as `QNCLOUD`, and
+`QNCLOUD` is unchanged at np = 2 where `QNCCN` alone moves. Naming it would be
+the kind of inference this campaign has had to withdraw before.
 
 ## 9. The factorial cannot be PINNED — OPEN, and it is the structural lesson
 
