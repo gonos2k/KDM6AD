@@ -137,10 +137,24 @@ def test_instrumentation_sites_are_keyed_by_ALGORITHM():
         # something else.
         assert {"legacy", "conservative"} <= set(sites), sorted(sites)
         assert sites["legacy"] != sites["conservative"]
+        # A derived arm's table is its base's, or MECHANICALLY DERIVED from
+        # it. The first version of this demanded identity, and `cons_nmass`
+        # broke it correctly: conservative anchors ON the line Arm N edits, so
+        # that arm must re-anchor. What the check is for is that no arm
+        # invents anchors -- every site must appear in one of the two bases,
+        # modulo the one substitution the variant generator applies.
+        import re
+        def _canon(t):
+            return {re.sub(r"dend\(i,k\+1\)\*delz\(i,k\+1\)/\(dend\(i,k\)"
+                           r"\*delz\(i,k\)\)", "delz(i,k+1)/delz(i,k)", x)
+                    for row in t for x in (row if isinstance(row, tuple) else (row,))
+                    if isinstance(x, str)}
+        bases = _canon(sites["legacy"]) | _canon(sites["conservative"])
         for algo, tab in sites.items():
-            assert tab in (sites["legacy"], sites["conservative"]), (
-                f"{algo} carries site table that is neither base's -- a new "
-                f"base needs its own anchors, not a derived arm's")
+            stray = _canon(tab) - bases
+            assert not stray, (
+                f"{algo} anchors on text neither base carries: {sorted(stray)[:2]}"
+                f" -- a new base needs its own anchors, not an invented one")
     # conservative's number inflow keeps the dz-only ratio: that is the anchor
     assert any("delz(i,k+1)/delz(i,k)" in a
                for a, *_ in fb.XFER_SITES["conservative"])
