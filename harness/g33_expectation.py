@@ -29,7 +29,7 @@ from dataclasses import dataclass
 #: branch: there are four of them today, and a fifth added later would be the
 #: one nobody remembers -- the same reason `dispatched_seeds` became a single
 #: authority earlier in this campaign.
-_STRUCTURALLY_LEGACY = frozenset({"legacy", "nmass"})
+_STRUCTURALLY_LEGACY = frozenset({"legacy", "nmass", "lncmin"})
 
 
 def _shape_of(algorithm: str) -> str:

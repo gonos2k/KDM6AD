@@ -277,6 +277,10 @@ FIELD_EXPR = {
     # `dnr(i,k+1)` itself -- whose value the arm changes and whose spelling it
     # does not. So the ladder is legacy's, and only the SHA differs.
     "nmass": {"INTERIOR": _LEG_INT, "TOP": _LEG_TOP},
+    # ARM L changes no transfer line at all -- only which threshold each
+    # column is compared against -- so the sedimentation ladder is legacy's
+    # unchanged.
+    "lncmin": {"INTERIOR": _LEG_INT, "TOP": _LEG_TOP},
     "conservative": {"INTERIOR": _CON_INT, "TOP": _CON_TOP},
 }
 
@@ -760,6 +764,25 @@ VARIANTS = {
             ("INTERIOR", "nr"): "             nrs(i,k,1) = max(nrs(i,k,1)-dnr(i,k)+dnr(i,k+1),0.)",
         },
     },
+    "lncmin": {
+        "sha": "07bd3a82eec7b7d11d370289c5a92c64261d70ac129a077577cb39b18f6f6728",
+        "cap_top": "         if(n.le.mstep(i)) then",
+        "cap_int": "           if(n.le.mstep(i)) then",
+        "emit": {
+            ("TOP", "qr"): "           qrs(i,k,1) = max(qrs(i,k,1)-falk(i,k,1)*dtcld/dend(i,k),0.)",
+            ("TOP", "nr"): "           nrs(i,k,1) = max(nrs(i,k,1)-falkn(i,k,1)*dtcld,0.)",
+            ("INTERIOR", "qr"): "             qrs(i,k,1) = max(qrs(i,k,1)-dqr(i,k)+dqr(i,k+1),0.)",
+            ("INTERIOR", "nr"): "             nrs(i,k,1) = max(nrs(i,k,1)-dnr(i,k)+dnr(i,k+1),0.)",
+        },
+        # q_post/n_post emitted AFTER the update line (legacy updates are single
+        # lines, so the post anchor is the update line itself).
+        "post": {
+            ("TOP", "qr"): "           qrs(i,k,1) = max(qrs(i,k,1)-falk(i,k,1)*dtcld/dend(i,k),0.)",
+            ("TOP", "nr"): "           nrs(i,k,1) = max(nrs(i,k,1)-falkn(i,k,1)*dtcld,0.)",
+            ("INTERIOR", "qr"): "             qrs(i,k,1) = max(qrs(i,k,1)-dqr(i,k)+dqr(i,k+1),0.)",
+            ("INTERIOR", "nr"): "             nrs(i,k,1) = max(nrs(i,k,1)-dnr(i,k)+dnr(i,k+1),0.)",
+        },
+    },
     "conservative": {
         "sha": "364a1319d0099bdb474a752a2a017defaf008babbe85dd03da872c603b2e7e3e",
         "cap_top": "         if(n.le.mstep(i)) then",
@@ -859,4 +882,5 @@ MICRO_FREEZE_HEAT = [
 #: each missing table one KeyError at a time.
 for _t in (CAP_SITES, TOP_SITES, XFER_SITES):
     _t["nmass"] = _t["legacy"]
+    _t["lncmin"] = _t["legacy"]
 del _t

@@ -504,6 +504,11 @@ KERNEL_SOURCES = {
     # selected by `--algo`, it changes no default, and the identity in
     # `g33_number_transport` predicts its residual collapses to roundoff.
     "nmass": Path("host/KIM-meso_v1.0/phys/module_mp_kdm6_nmass.F"),
+    # ARM L (same freeze-lift). `ncmin` becomes per-column, so a tile's last
+    # column no longer thresholds all of it. The loop that sets it already
+    # walked every column -- writing a SCALAR made every iteration overwrite
+    # the previous, which is why only the last one survived.
+    "lncmin": Path("host/KIM-meso_v1.0/phys/module_mp_kdm6_lncmin.F"),
 }
 #: v2 added `algorithm`: which kernel the limit was read from is part of
 #: the fact, and a tag whose required keys change without changing is a tag
