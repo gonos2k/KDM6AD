@@ -59,23 +59,33 @@ RESPONSES = (("R_nr", "N"), ("R_ni", "N"), ("R_qr", None), ("R_qi", "C"),
              ("cap_sink", "C"), ("partition", "L"))
 
 
-def responses(stream_single: str, stream_split: str) -> dict:
-    """The full signed response vector for one arm."""
+def responses(stream_single: str, stream_split: str, *,
+              window: bool = False) -> dict:
+    """The full signed response vector for one arm.
+
+    `window=True` accumulates across the WHOLE run rather than the first call.
+    The first call is the matched comparison -- every arm meets the same initial
+    state, so a difference is the arm and nothing else. After it the arms hold
+    different fields, so the window measures what the operator does over its own
+    trajectory, which is the other question and not a more thorough version of
+    the first.
+    """
     import g33_number_transport as nt
     import g33_cap_interface as ci
     out = {}
     calls = nt.calls(stream_single)
-    first = calls[0]
-    loop = nt.single_loop(first)
-    cols = sorted({c for l, c, _k in first["outer_pre_sed"] if l == loop})
+    span = calls if window else calls[:1]
     for species, key in (("nr", "R_nr"), ("ni", "R_ni"),
                          ("qr", "R_qr"), ("qi", "R_qi")):
         total = start = 0.0
-        for col in cols:
-            row = nt.column(first, col, species)
-            if row:
-                total += row["residual"]      # SIGNED
-                start += row["start"]
+        for call in span:
+            loop = nt.single_loop(call)
+            for col in sorted({c for l, c, _k in call["outer_pre_sed"]
+                               if l == loop}):
+                row = nt.column(call, col, species)
+                if row:
+                    total += row["residual"]      # SIGNED
+                    start += row["start"]
         out[key] = total / start if start else 0.0
     # C's own invariant: the net interface cap term, signed, over the first
     # call's columns. `cap_sink` returns per-column interface rows.
@@ -147,6 +157,9 @@ def main() -> int:
     ap.add_argument("arm", nargs="+", metavar="ARM=SINGLE,SPLIT",
                     help="one per arm: the two raw streams of that arm's run")
     ap.add_argument("--json", type=Path, default=None)
+    ap.add_argument("--window", action="store_true",
+                    help="accumulate over the whole run instead of the matched "
+                         "first call")
     args = ap.parse_args()
 
     table = {}
@@ -158,7 +171,7 @@ def main() -> int:
         if not single or not split:
             raise SystemExit(f"{spec}: need ARM=SINGLE,SPLIT")
         table[name] = responses(Path(single).read_text(),
-                                Path(split).read_text())
+                                Path(split).read_text(), window=args.window)
     beta = coefficients(table)          # refuses anything but all eight
 
     terms = ["N", "C", "L", "NC", "NL", "CL", "NCL"]
@@ -176,7 +189,8 @@ def main() -> int:
         print("  " + f"{response:10s} {owner or '-':>6s} {b['']:11.4e} "
               + " ".join(f"{b[t]:11.4e}" for t in terms))
 
-    doc = {"arms": ALGO_FACTORS, "responses": table, "coefficients": beta}
+    doc = {"arms": ALGO_FACTORS, "span": "window" if args.window else "first-call",
+           "responses": table, "coefficients": beta}
     if args.json:
         args.json.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n")
     return 0
