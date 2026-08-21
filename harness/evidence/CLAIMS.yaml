@@ -346,6 +346,65 @@ claims:
     evidence: [FINDING_conservative_number_defect_v1.md]
     evidence_sha256: [FINDING_conservative_number_defect_v1.md:cb71248c8ab262b7a581b769b22f54a0b1535c1e7ae394c1ba9ed93a68ae283b]
 
+  - id: G33-NUMBER-010
+    text: >
+      Weighting the interface number transfer by the layer AIR MASS instead of
+      the thickness alone collapses the column-number residual to roundoff. Arm
+      N (`--algo nmass`) is the legacy kernel with two lines changed, `dnr` and
+      `dni` -- the only two of seven transfer sites in that sedimentation loop
+      without a density factor. Across the density matrix the legacy residual
+      runs 11.84-15.00% of surface flux as-is, -12.82 to -16.20% inverted and
+      23.38-29.00% doubled, while Arm N stays below 2.2e-04% everywhere. Under a
+      UNIFORM profile the two arms agree to the last digit, which is what shows
+      the arm intervenes where the stratification is rather than trimming a
+      residual wherever it finds one. The mass control is unmoved bit for bit.
+      This closes the chain source equation -> theoretical residual -> falsifying
+      intervention -> corrected collapse; it does NOT establish a forecast
+      impact, a precipitation change or any trajectory difference of a stated
+      size.
+    status: active
+    evidence_kind: measurement
+    run_support: [g33_fixture_multisubcycle_v1]
+    artifact_status: pinned
+    grade: confirmed
+    basis: >
+      matched control: one fixture, one commit, one harness state, the kernel
+      module the only difference; the density matrix run on both arms
+    scope: >
+      OPERATOR-LEVEL, and under the same den*dz ledger as G33-NUMBER-008 --
+      `dend(i,k) = den(i,k)` is MOIST density, so Arm N restores the OPERATOR's
+      own measure and says nothing about the physical dry-air column number
+      (G33-BASIS-002/003). One fixture, nsplit 12, f32, mstep>1 not re-run.
+      Diagnostic arm: selected by --algo, changes no default, and no published
+      bundle is re-pointed.
+    artifacts:
+      - kdm6ad-g33m-armn/nmass-001.bundles/6abc2514febc679bfa2803f56c56955fbf1f7b5acd287d67db7beaa4278da2e4/manifest.json: 22901ab613730162260f7ff835cd906a56d242866e7ff6351ff7f8a30dc86d37
+      - kdm6ad-g33m-armn/legacy-001.bundles/cb85cb587d5791d1ca9972ea6840fdd5c2aed6f70ce7db18593c87c51458c9e4/manifest.json: d6eae7da31969302d245274df6982118df03fb9ef3f50d66ffa1f8e4c64941ac
+    expected_values:
+      - kdm6ad-g33m-armn/nmass-001.bundles/6abc2514febc679bfa2803f56c56955fbf1f7b5acd287d67db7beaa4278da2e4/n12.rezero.defect_magnitude.json#rows.main/nr/1.of_surface_flux: 2.1471185471442643e-06
+      - kdm6ad-g33m-armn/nmass-001.bundles/6abc2514febc679bfa2803f56c56955fbf1f7b5acd287d67db7beaa4278da2e4/n12.rezero.defect_magnitude.json#rows.main/nr/2.of_surface_flux: 2.3055352485923401e-07
+      - kdm6ad-g33m-armn/nmass-001.bundles/6abc2514febc679bfa2803f56c56955fbf1f7b5acd287d67db7beaa4278da2e4/n12.rezero.defect_magnitude.json#rows.main/nr/3.of_surface_flux: 7.868760736642235e-08
+      - kdm6ad-g33m-armn/nmass-001.bundles/6abc2514febc679bfa2803f56c56955fbf1f7b5acd287d67db7beaa4278da2e4/n12.rezero.uniform.defect_magnitude.json#rows.main/nr/1.of_surface_flux: 2.1597184936599548e-07
+      - kdm6ad-g33m-armn/nmass-001.bundles/6abc2514febc679bfa2803f56c56955fbf1f7b5acd287d67db7beaa4278da2e4/n12.rezero.uniform.defect_magnitude.json#rows.main/nr/2.of_surface_flux: 0.0
+      - kdm6ad-g33m-armn/nmass-001.bundles/6abc2514febc679bfa2803f56c56955fbf1f7b5acd287d67db7beaa4278da2e4/n12.rezero.uniform.defect_magnitude.json#rows.main/nr/3.of_surface_flux: 4.6636971352440856e-07
+      - kdm6ad-g33m-armn/nmass-001.bundles/6abc2514febc679bfa2803f56c56955fbf1f7b5acd287d67db7beaa4278da2e4/n12.rezero.inverted.defect_magnitude.json#rows.main/nr/1.of_surface_flux: -3.97397547277531e-07
+      - kdm6ad-g33m-armn/nmass-001.bundles/6abc2514febc679bfa2803f56c56955fbf1f7b5acd287d67db7beaa4278da2e4/n12.rezero.inverted.defect_magnitude.json#rows.main/nr/2.of_surface_flux: -4.688552789113149e-07
+      - kdm6ad-g33m-armn/nmass-001.bundles/6abc2514febc679bfa2803f56c56955fbf1f7b5acd287d67db7beaa4278da2e4/n12.rezero.inverted.defect_magnitude.json#rows.main/nr/3.of_surface_flux: 6.956361885117302e-07
+      - kdm6ad-g33m-armn/nmass-001.bundles/6abc2514febc679bfa2803f56c56955fbf1f7b5acd287d67db7beaa4278da2e4/n12.rezero.x2.defect_magnitude.json#rows.main/nr/1.of_surface_flux: 8.826881676280051e-07
+      - kdm6ad-g33m-armn/nmass-001.bundles/6abc2514febc679bfa2803f56c56955fbf1f7b5acd287d67db7beaa4278da2e4/n12.rezero.x2.defect_magnitude.json#rows.main/nr/2.of_surface_flux: -3.5361492602738513e-07
+      - kdm6ad-g33m-armn/nmass-001.bundles/6abc2514febc679bfa2803f56c56955fbf1f7b5acd287d67db7beaa4278da2e4/n12.rezero.x2.defect_magnitude.json#rows.main/nr/3.of_surface_flux: -2.407658167719574e-07
+      - kdm6ad-g33m-armn/legacy-001.bundles/cb85cb587d5791d1ca9972ea6840fdd5c2aed6f70ce7db18593c87c51458c9e4/n12.rezero.defect_magnitude.json#rows.main/nr/1.of_surface_flux: 0.150035513206531
+      - kdm6ad-g33m-armn/legacy-001.bundles/cb85cb587d5791d1ca9972ea6840fdd5c2aed6f70ce7db18593c87c51458c9e4/n12.rezero.defect_magnitude.json#rows.main/nr/2.of_surface_flux: 0.13337699640928452
+      - kdm6ad-g33m-armn/legacy-001.bundles/cb85cb587d5791d1ca9972ea6840fdd5c2aed6f70ce7db18593c87c51458c9e4/n12.rezero.defect_magnitude.json#rows.main/nr/3.of_surface_flux: 0.11840246104547637
+      - kdm6ad-g33m-armn/legacy-001.bundles/cb85cb587d5791d1ca9972ea6840fdd5c2aed6f70ce7db18593c87c51458c9e4/n12.rezero.uniform.defect_magnitude.json#rows.main/nr/1.of_surface_flux: 2.1597184936599548e-07
+      - kdm6ad-g33m-armn/legacy-001.bundles/cb85cb587d5791d1ca9972ea6840fdd5c2aed6f70ce7db18593c87c51458c9e4/n12.rezero.uniform.defect_magnitude.json#rows.main/nr/2.of_surface_flux: 0.0
+      - kdm6ad-g33m-armn/legacy-001.bundles/cb85cb587d5791d1ca9972ea6840fdd5c2aed6f70ce7db18593c87c51458c9e4/n12.rezero.uniform.defect_magnitude.json#rows.main/nr/3.of_surface_flux: 4.6636971352440856e-07
+      - kdm6ad-g33m-armn/legacy-001.bundles/cb85cb587d5791d1ca9972ea6840fdd5c2aed6f70ce7db18593c87c51458c9e4/n12.rezero.inverted.defect_magnitude.json#rows.main/nr/1.of_surface_flux: -0.16195704469513675
+      - kdm6ad-g33m-armn/legacy-001.bundles/cb85cb587d5791d1ca9972ea6840fdd5c2aed6f70ce7db18593c87c51458c9e4/n12.rezero.inverted.defect_magnitude.json#rows.main/nr/2.of_surface_flux: -0.14301047010915138
+      - kdm6ad-g33m-armn/legacy-001.bundles/cb85cb587d5791d1ca9972ea6840fdd5c2aed6f70ce7db18593c87c51458c9e4/n12.rezero.inverted.defect_magnitude.json#rows.main/nr/3.of_surface_flux: -0.12815354580551774
+      - kdm6ad-g33m-armn/legacy-001.bundles/cb85cb587d5791d1ca9972ea6840fdd5c2aed6f70ce7db18593c87c51458c9e4/n12.rezero.x2.defect_magnitude.json#rows.main/nr/1.of_surface_flux: 0.28998751960380104
+      - kdm6ad-g33m-armn/legacy-001.bundles/cb85cb587d5791d1ca9972ea6840fdd5c2aed6f70ce7db18593c87c51458c9e4/n12.rezero.x2.defect_magnitude.json#rows.main/nr/2.of_surface_flux: 0.25844752212319255
+      - kdm6ad-g33m-armn/legacy-001.bundles/cb85cb587d5791d1ca9972ea6840fdd5c2aed6f70ce7db18593c87c51458c9e4/n12.rezero.x2.defect_magnitude.json#rows.main/nr/3.of_surface_flux: 0.23383927350093464
   - id: G33-NUMBER-008
     text: >
       The Delta-z-only number-transfer metric, applied across a nonzero
