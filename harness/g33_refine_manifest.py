@@ -339,7 +339,13 @@ _ARMS = ("reference", "probe", "f64")
 _PRECISIONS = ("f32", "f64")
 #: The driver's own `ALGOTAG` vocabulary. It error-stops on anything else, so
 #: a manifest declaring another word names a run that could not have happened.
-_ALGOS = ("legacy", "conservative")
+#: `nmass` is Arm N (owner freeze-lift, 2026-08-21): legacy with the interface
+#: number transfer carrying the layer air-mass ratio. A manifest may name it,
+#: which is a WIDENING -- every bundle published before it still validates,
+#: because nothing that was legal became illegal.
+_ALGOS = ("legacy", "conservative", "nmass", "lncmin",
+          "nmasslncmin", "cons_nmass", "cons_lncmin",
+          "cons_nmasslncmin")
 KNOWN_SCHEMAS = ("refinement_experiment_v1", "refinement_experiment_v2",
                  "refinement_experiment_v3", "refinement_experiment_v4",
                  "refinement_experiment_v5", "refinement_experiment_v6",

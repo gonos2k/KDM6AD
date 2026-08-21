@@ -207,10 +207,35 @@ MSTEP_MAX = 1 << 16
 #: species -> (sub-step record governing it, uncapped surface accumulator or None,
 #: whether its inflow carries the density ratio). `mstep` covers qr/nr/qs/qg,
 #: `mstep_i` covers qi/ni (F:1179-1180). The mass rows are the CONTROL.
+#: species -> (chain, surface accumulator, whether the transfer WEIGHT carries
+#: density under the LEGACY kernel).
+#:
+#: The third entry is a property of the ALGORITHM, not of the species, and
+#: writing it here made that invisible while legacy was the only arm. Arm N
+#: gives the number transfer the air-mass ratio, so recovering its transfers
+#: with the thickness-only weight reconstructs the wrong `b` and reports a
+#: residual that did not happen -- measured, the arm looked unchanged.
 SPECIES = {"nr": ("main", "bottom_falln_nr", False),
            "ni": ("ice", "bottom_falln_ni", False),
            "qr": ("main", None, True),
            "qi": ("ice", None, True)}
+
+#: Algorithms whose NUMBER transfer carries the layer air-mass ratio. Read
+#: from the stream's own header, so an artifact answers for the operator that
+#: made it rather than for whichever the reader assumed.
+def number_carries_density(algorithm) -> bool:
+    """Does this arm's number transfer carry the layer air-mass ratio?
+
+    Keyed on the ARM'S OWN NAME containing the N edit's tag, not on a list of
+    names. A set had exactly `nmass` in it, so every COMBINED arm --
+    `nmasslncmin`, `cons_nmass`, `cons_nmasslncmin` -- was read back with the
+    thickness-only weight, which reconstructs the wrong transfers and reports
+    a residual that did not happen. Measured: `nmass` closed to 1e-17 while
+    `nmasslncmin`, the same edit plus an unrelated one, appeared WORSE than
+    legacy. That is the analyzer, not an interaction -- and it is the second
+    time this exact confusion has cost a reading.
+    """
+    return isinstance(algorithm, str) and "nmass" in algorithm
 
 
 def _f32(h: str) -> float:
@@ -925,6 +950,12 @@ def calls(stream: str) -> list:
                 f"splits decompose the domain differently: {by_split} -- one "
                 f"stream, one decomposition, so every split must run the same "
                 f"tile vector")
+    # THE OPERATOR TRAVELS WITH THE CALL. The transfer weight depends on which
+    # kernel ran, and a reader that assumes legacy reconstructs the wrong `b`
+    # for any other arm -- measured on Arm N, which looked unchanged until the
+    # header reached here.
+    for c in out:
+        c["algorithm"] = header["algorithm"]
     return out
 
 
@@ -1067,6 +1098,9 @@ def column(call, col, species):
     """One (call, column, species): measured residual and predicted creation, or
     None where the sub-step count makes the transfers unrecoverable."""
     chain, fkey, carries_density = SPECIES[species]
+    if species in ("nr", "ni") and \
+            number_carries_density(call.get("algorithm")):
+        carries_density = True
     lp = single_loop(call)
     if call["mstep"].get((lp, chain, col)) != 1:
         return None

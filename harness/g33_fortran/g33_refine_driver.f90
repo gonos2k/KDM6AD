@@ -61,7 +61,27 @@ module g33_refine
 #else
   character(len=*), parameter :: G33_ZR = 'Z8.8'
 #endif
-#ifdef KDM6_CONS
+! EVERY ARM DECLARES ITSELF, and the derived ones come FIRST. Without this a
+! diagnostic arm's stream said `legacy`, so no analysis downstream could tell
+! which kernel produced it -- an artifact that cannot name its own operator is
+! not evidence of that operator.
+!
+! Order matters: `cons_nmass` also defines KDM6_CONS (it needs conservative's
+! call shape), so testing KDM6_CONS first would have named every combined arm
+! `conservative` -- the same silent mislabelling, one layer along.
+#ifdef KDM6_ARM_CONS_NMASSLNCMIN
+  character(len=*), parameter :: ALGOTAG = 'cons_nmasslncmin'
+#elif defined(KDM6_ARM_CONS_NMASS)
+  character(len=*), parameter :: ALGOTAG = 'cons_nmass'
+#elif defined(KDM6_ARM_CONS_LNCMIN)
+  character(len=*), parameter :: ALGOTAG = 'cons_lncmin'
+#elif defined(KDM6_ARM_NMASSLNCMIN)
+  character(len=*), parameter :: ALGOTAG = 'nmasslncmin'
+#elif defined(KDM6_ARM_NMASS) || defined(KDM6_NMASS)
+  character(len=*), parameter :: ALGOTAG = 'nmass'
+#elif defined(KDM6_ARM_LNCMIN) || defined(KDM6_LNCMIN)
+  character(len=*), parameter :: ALGOTAG = 'lncmin'
+#elif defined(KDM6_CONS)
   character(len=*), parameter :: ALGOTAG = 'conservative'
 #else
   character(len=*), parameter :: ALGOTAG = 'legacy'

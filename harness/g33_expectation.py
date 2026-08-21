@@ -21,6 +21,39 @@ from __future__ import annotations
 import hashlib
 from dataclasses import dataclass
 
+#: Algorithms whose OP STRUCTURE is legacy's. `nmass` (Arm N, owner
+#: freeze-lift 2026-08-21) changes two transfer lines' VALUE and neither their
+#: shape nor their order, so every rung, dtype and anchor below is legacy's.
+#:
+#: Normalised ONCE, at the entry, rather than at each `_shape_of(algorithm) == "legacy"`
+#: branch: there are four of them today, and a fifth added later would be the
+#: one nobody remembers -- the same reason `dispatched_seeds` became a single
+#: authority earlier in this campaign.
+_STRUCTURALLY_LEGACY = frozenset({"legacy", "nmass", "lncmin",
+                                  "nmasslncmin"})
+#: ...and the conservative-derived arms. Normalising only ONE direction was the
+#: first version of this, and the arms built on conservative then fell through
+#: to the legacy branch and drifted against their own bindings -- caught by the
+#: overlay's schema check, loudly, which is what it is for.
+_STRUCTURALLY_CONSERVATIVE = frozenset({"conservative", "cons_nmass",
+                                        "cons_lncmin", "cons_nmasslncmin"})
+
+
+def _shape_of(algorithm: str) -> str:
+    """Which BASE's op structure this algorithm has.
+
+    A diagnostic arm changes what a line computes, never the ladder's shape,
+    so it answers for its base everywhere the ops, fields and dtypes are
+    decided. An algorithm in neither set answers for itself, so a genuinely
+    new base fails loudly rather than silently borrowing legacy's.
+    """
+    if algorithm in _STRUCTURALLY_LEGACY:
+        return "legacy"
+    if algorithm in _STRUCTURALLY_CONSERVATIVE:
+        return "conservative"
+    return algorithm
+
+
 # ── op templates: (algorithm, cell_role, species) -> [op_id, ...] ────────────
 # Mass and number are DISTINCT expression families (§3): falk_nr omits dend,
 # dn_out has no /dend, dn_in is Delta-z only. Legacy TOP directly clamps (no
@@ -28,7 +61,7 @@ from dataclasses import dataclass
 def _mass_ops(algorithm: str, role: str) -> list[str]:
     if role == "TOP":
         # legacy TOP clamps directly (no outflow rung); conservative TOP caps first.
-        return ["QR_FALK", "QR_FALLACC", "QR_UPDATE"] if algorithm == "legacy" \
+        return ["QR_FALK", "QR_FALLACC", "QR_UPDATE"] if _shape_of(algorithm) == "legacy" \
             else ["QR_FALK", "QR_OUTFLOW", "QR_FALLACC", "QR_UPDATE"]
     # INTERIOR / BOTTOM
     return ["QR_FALK", "QR_OUTFLOW", "QR_FALLACC", "QR_INFLOW", "QR_UPDATE"]
@@ -39,7 +72,7 @@ def _number_ops(algorithm: str, role: str) -> list[str]:
     # DOES compute an outflow (dn_out = min(falk_nr*dtcld, nr)), so omitting
     # NR_OUTFLOW here would let a dump that skips it match the manifest.
     if role == "TOP":
-        return ["NR_FALK", "NR_FALLACC", "NR_UPDATE"] if algorithm == "legacy" \
+        return ["NR_FALK", "NR_FALLACC", "NR_UPDATE"] if _shape_of(algorithm) == "legacy" \
             else ["NR_FALK", "NR_OUTFLOW", "NR_FALLACC", "NR_UPDATE"]
     return ["NR_FALK", "NR_OUTFLOW", "NR_FALLACC", "NR_INFLOW", "NR_UPDATE"]
 
@@ -78,7 +111,7 @@ def _op_fields(algorithm: str, role: str, op_id: str) -> list[tuple[str, str]]:
         return [("outflow_pre_cap", "f32"), ("source_reservoir", "f32"),
                 ("cap_active", "u8"), ("dn_out", "f32")]
     if op_id == "QR_INFLOW":
-        if algorithm == "conservative":
+        if _shape_of(algorithm) == "conservative":
             # prev_out * (dend_safe_src*delz_RAW_src) / (dend_safe_dst*delz_SAFE_dst); no cap
             return [("prev_out", "f32"), ("dend_safe_src", "f32"), ("delz_raw_src", "f32"),
                     ("dend_safe_dst", "f32"), ("delz_safe_dst", "f32"),
@@ -91,7 +124,7 @@ def _op_fields(algorithm: str, role: str, op_id: str) -> list[tuple[str, str]]:
                 ("inflow_pre_cap", "f32"), ("source_reservoir", "f32"),
                 ("inflow_cap_active", "u8"), ("inflow_final", "f32")]
     if op_id == "NR_INFLOW":
-        if algorithm == "conservative":   # prev_out_nr * delz_RAW_src / delz_SAFE_dst; no dtcld, no cap
+        if _shape_of(algorithm) == "conservative":   # prev_out_nr * delz_RAW_src / delz_SAFE_dst; no dtcld, no cap
             return [("prev_out_nr", "f32"), ("delz_raw_src", "f32"), ("delz_safe_dst", "f32"),
                     ("mul_delz_src", "f32"), ("inflow_final", "f32")]
         # legacy: min(stored_falk_nr_prev*delz_RAW_src/delz_SAFE_dst*dtcld, nr[k-1])
@@ -104,12 +137,12 @@ def _op_fields(algorithm: str, role: str, op_id: str) -> list[tuple[str, str]]:
     # outflow RATE (dq_out*dend_safe/dtcld). Omitting this let a dump that skips
     # the accumulator match the manifest.
     if op_id == "QR_FALLACC":
-        if algorithm == "conservative":
+        if _shape_of(algorithm) == "conservative":
             return [("fall_before", "f32"), ("dq_out", "f32"), ("mul_dend_safe", "f32"),
                     ("fall_increment", "f32"), ("fall_after", "f32")]
         return [("fall_before", "f32"), ("fall_increment", "f32"), ("fall_after", "f32")]
     if op_id == "NR_FALLACC":
-        if algorithm == "conservative":          # fall_nr += dn_out/dtcld
+        if _shape_of(algorithm) == "conservative":          # fall_nr += dn_out/dtcld
             return [("fall_before", "f32"), ("dn_out", "f32"),
                     ("fall_increment", "f32"), ("fall_after", "f32")]
         return [("fall_before", "f32"), ("fall_increment", "f32"), ("fall_after", "f32")]
@@ -117,14 +150,14 @@ def _op_fields(algorithm: str, role: str, op_id: str) -> list[tuple[str, str]]:
         f = [("q_before", "f32"), ("q_minus_out", "f32")]
         if role != "TOP":
             f.append(("q_plus_in_preclamp", "f32"))
-        if algorithm == "legacy":
+        if _shape_of(algorithm) == "legacy":
             f.append(("clamp_active", "u8"))      # conservative has NO positivity clamp
         return f + [("q_post", "f32")]
     if op_id == "NR_UPDATE":
         f = [("n_before", "f32"), ("n_minus_out", "f32")]
         if role != "TOP":
             f.append(("n_plus_in_preclamp", "f32"))
-        if algorithm == "legacy":
+        if _shape_of(algorithm) == "legacy":
             f.append(("clamp_active", "u8"))
         return f + [("n_post", "f32")]
     raise KeyError(op_id)
