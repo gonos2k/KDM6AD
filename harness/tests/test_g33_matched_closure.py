@@ -130,8 +130,17 @@ def test_instrumentation_sites_are_keyed_by_ALGORITHM():
     sys.path.insert(0, str(ROOT / "g33_fortran"))
     import g33_fortran_bindings as fb
     for sites in (fb.XFER_SITES, fb.CAP_SITES, fb.TOP_SITES):
-        assert set(sites) == {"legacy", "conservative"}
+        # The property is that the two BASES differ, not that the vocabulary
+        # has exactly two words in it. Diagnostic arms derived from a base
+        # share its anchors -- they change what a line computes, not where it
+        # sits -- so pinning the set made every new arm fail a test about
+        # something else.
+        assert {"legacy", "conservative"} <= set(sites), sorted(sites)
         assert sites["legacy"] != sites["conservative"]
+        for algo, tab in sites.items():
+            assert tab in (sites["legacy"], sites["conservative"]), (
+                f"{algo} carries site table that is neither base's -- a new "
+                f"base needs its own anchors, not a derived arm's")
     # conservative's number inflow keeps the dz-only ratio: that is the anchor
     assert any("delz(i,k+1)/delz(i,k)" in a
                for a, *_ in fb.XFER_SITES["conservative"])

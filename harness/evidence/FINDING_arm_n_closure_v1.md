@@ -1,5 +1,14 @@
 # Arm N closes the number budget the closed form predicted it would
 
+<!-- claim-status: generated from CLAIMS.yaml, do not edit -->
+
+| claim | status | grade | scope |
+|---|---|---|---|
+| `G33-NUMBER-010` | **active** | confirmed | OPERATOR-LEVEL, and under the same den*dz ledger as G33-NUMBER-008 -- `dend(i,k) = den(i,k)` is MOIST density, so Arm N restores the OPERATOR's own measure and says nothing about the physical dry-air column number (G33-BASIS-002/003). One fixture, nsplit 12, f32, mstep>1 not re-run. Diagnostic arm: selected by --algo, changes no default, and no published bundle is re-pointed. |
+
+Statuses above are the authority; prose below may predate them.
+<!-- /claim-status -->
+
 Owner freeze-lift granted 2026-08-21. `module_mp_kdm6_nmass.F` is legacy with
 the interface number transfer weighted by air mass rather than thickness:
 

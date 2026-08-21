@@ -377,6 +377,8 @@ claims:
       (G33-BASIS-002/003). One fixture, nsplit 12, f32, mstep>1 not re-run.
       Diagnostic arm: selected by --algo, changes no default, and no published
       bundle is re-pointed.
+    evidence: [FINDING_arm_n_closure_v1.md]
+    evidence_sha256: [FINDING_arm_n_closure_v1.md:c53b8f51e742858b4dcaf0e38288dd988bda9adf758bcf8b662bd3c70bf203af]
     artifacts:
       - kdm6ad-g33m-armn/nmass-001.bundles/6abc2514febc679bfa2803f56c56955fbf1f7b5acd287d67db7beaa4278da2e4/manifest.json: 22901ab613730162260f7ff835cd906a56d242866e7ff6351ff7f8a30dc86d37
       - kdm6ad-g33m-armn/legacy-001.bundles/cb85cb587d5791d1ca9972ea6840fdd5c2aed6f70ce7db18593c87c51458c9e4/manifest.json: d6eae7da31969302d245274df6982118df03fb9ef3f50d66ffa1f8e4c64941ac
