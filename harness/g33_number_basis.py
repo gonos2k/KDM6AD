@@ -152,9 +152,10 @@ def where_the_number_is(state: Path, field: str = "QNRAIN",
     set by fall speed, sub-stepping and the interface cap. A state file records
     the first and not the second, so this is an
     `upper_inventory_weighted` aggregate and is named so. The actual
-    flux-weighted number needs the kernel's own per-interface transfers, which
-    means a replay -- `g33_real_column_batch` computes it for the columns it
-    runs.
+    flux-weighted number needs the kernel's own per-interface transfers. A
+    replay gets closer -- `from_stream` weights by the transfers RECOVERED from
+    the endpoints -- but the kernel emits only the surface one, so even that is
+    `recovered_transfer_weighted` and not a measured interface flux.
 
     "Transport-active" is likewise the population that COULD transport: `n > 0`
     in the upper cell does not mean the timestep moved any of it.
@@ -349,7 +350,12 @@ def from_stream(text: str, species: str = "nr") -> dict:
         wj = [abs(a[j] * dz[j]) for j in range(len(ks) - 1)]
         num = abs(sum(w * e for w, e in zip(wj, eps_arm)))
         den_ = abs(sum(w * e for w, e in zip(wj, eps_leg)))
-        row["flux_weighted_fraction"] = num / den_ if den_ else None
+        # RECOVERED, not emitted. `a[j]` comes from inverting the update at
+        # each interface; the kernel emits only the SURFACE transfer. So this
+        # weights the coefficients by the transfers the endpoints imply, and
+        # calling it the actual interface flux would claim an instrument that
+        # does not exist yet (owner review §7).
+        row["recovered_transfer_weighted_fraction"] = num / den_ if den_ else None
         for tag, B, DZ in (("moist", den, dz), ("dry", dry, dz_fixed)):
             n0 = sum(B[t] * DZ[t] * x[t] for t in range(len(ks)))
             n1 = sum(B[t] * DZ[t] * x1[t] for t in range(len(ks)))
