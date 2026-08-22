@@ -91,12 +91,28 @@ there is something to transport.
 Restricted to interfaces whose BOTH cells carry the field, on the 20 s `mp37`
 forecast frame of the same case:
 
-| field | interfaces carrying it | legacy (dry), median | Arm N leaves |
-|---|---|---|---|
-| `QNRAIN` | 13 611 (0.543 %) | 6.279e-02 | median **1.94 %**, p90 3.49 % |
-| `QNICE` | 99 763 (3.979 %) | 8.570e-02 | median 0.53 %, p90 1.04 % |
+| population | interfaces | median | p90 | flux-weighted |
+|---|---|---|---|---|
+| `QNRAIN`, both cells loaded | 13 611 | 1.92 % | 3.45 % | 1.97 % |
+| `QNRAIN`, **upper cell loaded** | 23 492 | 2.02 % | 3.55 % | 1.98 % |
+| all interfaces | 2 507 544 | 0.33 % | 4.62 % | -- |
 
-Against **0.33 %** unweighted. About six times larger for rain, because rain
+Three refinements, none of which moves the answer.
+
+The first published population required BOTH cells to carry number.
+Sedimentation moves number DOWNWARD, so an interface whose upper cell is loaded
+and whose lower cell is empty is transport-active and was excluded: the
+published population was 42 % of the right one.
+
+A ratio of medians is not the column defect either. The residual is
+`sum_j F_j eps_j`, so the coefficients are weighted by how much number actually
+crosses. Flux-weighted, both populations give 1.98 %.
+
+And the dry density is now the model's own `mu_d`/`d(eta)` rather than a
+thermodynamic estimate, which moves the median from 1.94 % to 1.92 %.
+
+So the figure to quote is **about 2 % of the legacy per-interface defect, where
+rain number actually moves**, against 0.33 % over all interfaces. About six times larger for rain, because rain
 number sits in the moist lower troposphere where the moisture gradient is
 steepest -- which is exactly where the two ledgers differ.
 
