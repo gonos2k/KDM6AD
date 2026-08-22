@@ -69,10 +69,19 @@ L's effect is real and it is a TRAJECTORY effect, not a first-call one.
 are at roundoff: every interaction coefficient is 1.99e-20 against a main effect
 of 1.843e-03 and a screening scale of 5.97e-08.
 
-**`R_ni` carries an N x C MASKING interaction on both spans.**
+**`D_ni_metric` carries an N x C MASKING interaction on both spans.**
+
+The name matters and this finding had it wrong. `D_ni_metric` is the
+ENDPOINT-RECOVERED number-metric residual; `R_ni` is the actual-transfer
+budget, and they are different quantities. The published masking result is the
+first of them:
 
     first call   beta_C = -5.865e-03   beta_NC = +5.865e-03
     window       beta_C = -2.271e-02   beta_NC = +2.271e-02
+
+The actual-transfer `R_ni` contrast is NOT scorable across all eight arms on
+this fixture, because the C=0 half fails its ice mass control. What it does
+give, in the C=1 half where the control closes, is a conditional -- see below.
 
 Equal and opposite on each span: C's effect exists only where N has not already
 removed the residual, so main effect and interaction cancel exactly in the N=1
@@ -197,14 +206,39 @@ microphysics runs after sedimentation in the same call. Reading the driver's own
 
 | response | legacy | `lncmin` | beta_L | beta_N |
 |---|---|---|---|---|
-| `partition_first` | 0 | 0 | 0 | 0 |
-| `partition_last_segment_post` | 4 | 0 | -2.000 | 0 |
-| `partition_window_final` | 32 | 0 | -16.375 | +0.125 |
-| `partition_path` | 45 | 0 | -22.50 | 0 |
+| point | legacy cells | legacy components | `lncmin` |
+|---|---|---|---|
+| first segment | 0 | 0 | 0 |
+| last segment | 4 | 38 | 0 |
+| **window final** | **4** | **33** | 0 |
+| path | 45 | 416 | 0 |
 
-The window-final count carries N and C terms that the segment count showed as
-exactly zero, so the earlier reading of `4` as "what the forecast would carry"
-was the wrong quantity as well as the wrong size.
+**AND THE EARLIER READING OF THIS TABLE WAS A UNIT ERROR.** It reported
+`4` at the last segment beside `32` at the window final and called the
+difference growth. Those were a CELL count and a COMPONENT count: a cell is a
+`(split, column, level)` differing in at least one field, a component is one
+`(field, column, level)`. Measured in matched units there is no growth at all --
+4 cells at both points, and the component count NARROWS, 38 to 33. The `32` was
+also wrong for legacy specifically, which is 33; the L=0 arms average 32.75,
+which is where `beta_L = -16.375` came from.
+
+What survives, and is now measured in both units at all four points: every
+`lncmin`-family arm is exactly 0 everywhere, and every L=0 arm is not. Arm L
+collapses the decomposition dependence completely; it does not merely shrink
+it.
+
+## What the actual-transfer budget says at mstep > 1
+
+On `g33_fixture_multisubcycle_v1`, `nsplit = 3`, `mstep <= 10`, the C=0 half
+fails its mass control and the C=1 half closes, so the contrast is not scorable
+and the conditional is:
+
+    N_at_C1(R_nr) = -1.06042e-02        N_at_C1(R_ni) = -2.56255e-02
+    N_at_C0       = not evidence
+
+and the SIMPLE effects underneath say the average is safe to quote: both are
+identical at L=0 and at L=1, so no N x L interaction is hidden inside that
+half.
 
 ## What is still not measured
 

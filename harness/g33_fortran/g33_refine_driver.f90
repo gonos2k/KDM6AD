@@ -480,6 +480,16 @@ program g33_refine_driver
       write(*,'(A,1X,A,1X,I0,1X,I0,1X,Z8.8)') 'G33R FORCING', 'delz', i, KM-k, b
       b = transfer(piiO(i,k), b)
       write(*,'(A,1X,A,1X,I0,1X,I0,1X,Z8.8)') 'G33R FORCING', 'pii', i, KM-k, b
+      ! THE LAND MASK, which nothing recorded. `ncmin` branches on it (F:876-882)
+      ! and Arm L is the correction to that branch, so it is the one input L's
+      ! causal story rests on -- and an analysis comparing two decompositions
+      ! could not check they were given the same one. It is a COLUMN property,
+      ! written at every level because the reader requires a forcing name to
+      ! cover the same cells the state does. Taken from the fixture's own
+      ! `XLAND_BITS` -- the same bits `run_refined` converts -- because the
+      ! subroutine's local copy is not in this scope.
+      b = transfer(f32(XLAND_BITS(i)), b)
+      write(*,'(A,1X,A,1X,I0,1X,I0,1X,Z8.8)') 'G33R FORCING', 'xland', i, KM-k, b
     end do
   end do
   do f = 1, 3

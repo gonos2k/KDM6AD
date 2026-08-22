@@ -119,7 +119,7 @@ def test_a_coefficient_is_reported_against_its_own_screening_scale():
     # difference of one state "unresolved".
     table = _table(lambda n, c, l: float(l))
     screens = {a: {r: 0.0 for r in fc.RESPONSES} for a in fc.ALGO_FACTORS}
-    assert fc.coefficients(table, screens)["partition_path"]["_bound"] == 0.0
+    assert fc.coefficients(table, screens)["partition_path_cells"]["_bound"] == 0.0
 
 
 def test_the_window_is_a_different_question_not_a_longer_first_call():
@@ -201,17 +201,19 @@ def test_partition_is_four_questions_not_one_count(monkeypatch):
     the segment count as "what the forecast carries" is the confusion this
     separation removes.
     """
-    a = {(1, 1, 0): ("x",), (2, 1, 0): ("x",), (3, 1, 0): ("x",)}
-    b = {(1, 1, 0): ("x",), (2, 1, 0): ("Z",), (3, 1, 0): ("Z",)}
+    a = {(1, 1, 0): (("qv", 1.0),), (2, 1, 0): (("qv", 1.0),),
+         (3, 1, 0): (("qv", 1.0),)}
+    b = {(1, 1, 0): (("qv", 1.0),), (2, 1, 0): (("qv", 9.0),),
+         (3, 1, 0): (("qv", 9.0),)}
     fa = {("qv", 1, 0): 1.0, ("qv", 1, 1): 2.0}
     fb = {("qv", 1, 0): 1.0, ("qv", 1, 1): 9.0}
     monkeypatch.setattr(fc, "_segment_states", lambda t: a if t == "A" else b)
     monkeypatch.setattr(fc, "_window_final", lambda t: fa if t == "A" else fb)
     got = fc._partition("A", "B")
-    assert got["partition_first"] == 0.0                  # agree after one
-    assert got["partition_last_segment_post"] == 1.0      # differ at the last
-    assert got["partition_window_final"] == 1.0           # and a DIFFERENT count
-    assert got["partition_path"] == 2.0                   # having differed twice
+    assert got["partition_first_cells"] == 0.0            # agree after one
+    assert got["partition_last_segment_cells"] == 1.0     # differ at the last
+    assert got["partition_window_final_cells"] == 1.0     # a DIFFERENT quantity
+    assert got["partition_path_cells"] == 2.0             # having differed twice
 
 
 def test_an_unrecoverable_row_invalidates_ITS_response_and_no_other(monkeypatch):
@@ -337,3 +339,94 @@ def test_a_conditional_over_an_invalid_arm_is_null_not_a_number():
     got = fc.conditionals(table)["R_ni"]
     assert got["N_at_C0"] is None            # legacy and nmass are in this half
     assert got["N_at_C1"] == pytest.approx(1.0)   # ... and this one is clean
+
+
+# ---------------------------------------------------------------------------
+# The validity contract: a refusal that still hands over the answer is not one.
+
+def test_an_invalid_contrast_carries_no_numbers():
+    """The module promises a contrast is computed only where every arm is
+    valid, and the previous version computed it anyway and attached
+    `_valid: false` -- so the JSON carried a beta a reader, a binding or a
+    notebook could pick up without ever consulting the flag."""
+    table = _table(lambda n, c, l: float(n), invalid={"legacy"})
+    b = fc.coefficients(table)["R_ni"]
+    assert b["_valid"] is False and "legacy" in b["_invalid"]
+    for term in ("", "N", "C", "L", "NC", "NL", "CL", "NCL", "_bound"):
+        assert b[term] is None, term
+
+
+def test_the_denominator_is_not_gated_by_a_mass_control():
+    """It is the starting inventory, a state quantity. Gating it deleted the
+    inventory half that numerator/denominator separation exists to expose."""
+    assert fc.RESPONSES["R_ni_den"][3] is None
+    assert fc.RESPONSES["R_ni_num"][3] == ("ice", "qi")
+    assert fc.RESPONSES["R_ni"][3] == ("ice", "qi")
+
+
+def test_a_zero_denominator_makes_the_ratio_invalid_not_zero(monkeypatch):
+    """A/0 is undefined. Reporting 0.0 makes an unmeasurable ratio look like a
+    residual that vanished -- the same shape as the coverage defect."""
+    import g33_matched_closure as mc
+    import g33_number_transport as nt
+    pc = {"call": 1, "residual": 5.0, "out": 0.0, "start": 0.0,
+          "scale": 1.0, "ops": 8}
+    monkeypatch.setattr(mc, "closures", lambda s, b: {
+        ("main", sp, 1): {"per_call": [dict(pc)], "residual": 5.0, "out": 0.0,
+                          "calls": 1} for sp in ("qr", "nr")})
+    monkeypatch.setattr(nt, "calls", lambda s: [{"outer_pre_sed": {}, "loops": {1}}])
+    monkeypatch.setattr(nt, "single_loop", lambda c: 1)
+    monkeypatch.setattr(fc, "_cap", lambda s, sc: {
+        c: {"signed": 0.0, "destroyed": 0.0, "created": 0.0,
+            "sum_abs": 0.0, "terms": 0} for c in ("main", "ice")})
+    monkeypatch.setattr(fc, "_partition", lambda a, b: {
+        k: 0.0 for k in fc.RESPONSES if k.startswith("partition_")})
+    got = fc.responses("", "")
+    assert got["R_qr_num"]["valid"] is True and got["R_qr_num"]["value"] == 5.0
+    assert got["R_qr"]["valid"] is False
+    assert "zero denominator" in got["R_qr"]["reason"]
+
+
+def test_the_two_decompositions_are_checked_for_the_same_input(monkeypatch):
+    """`check_identity` compared metadata and never state. Two streams can
+    agree on nsplit, mode, rho, width, levels, delt and dtcld and still start
+    from different atmospheres -- and then every partition count reads as a
+    decomposition effect."""
+    import g33_refine_analyze as ra
+    a = {("initial", "qv", 1, 0): 1.0, ("forcing", "xland", 1, 0): 1.0}
+    b = {("initial", "qv", 1, 0): 2.0, ("forcing", "xland", 1, 0): 1.0}
+    monkeypatch.setattr(ra, "read_text", lambda t: a if t == "A" else b)
+    with pytest.raises(fc.FactorialError, match="different inputs"):
+        fc.same_input("legacy", "A", "B")
+    monkeypatch.setattr(ra, "read_text", lambda t: a)
+    fc.same_input("legacy", "A", "B")
+
+
+def test_the_land_mask_is_part_of_what_is_compared():
+    """`ncmin` branches on it and Arm L is the correction to that branch, so it
+    is the one input L's causal story rests on."""
+    import g33_refine_analyze as ra
+    assert "xland" in ra._FORCING_NAMES
+    assert ra._FORCING.match("G33R FORCING xland 1 3 3F800000")
+    # ... and a name outside the set is still refused, so a typo cannot enter
+    # as a silent new quantity.
+    assert not ra._FORCING.match("G33R FORCING xlnd 1 3 3F800000")
+
+
+def test_cross_arm_identity_carries_the_timestep():
+    """delt/dtcld/loops were compared between the two decompositions and then
+    dropped, so the cross-arm gate reading this dict could not see them."""
+    import inspect
+    src = inspect.getsource(fc.check_identity)
+    ret = src[src.index("return {"):]
+    for key in ("delt", "dtcld", "loops"):
+        assert f'"{key}"' in ret, key
+
+
+def test_simple_effects_say_whether_the_conditional_average_is_safe():
+    """`N_at_C1` averages over L, so an N x L interaction inside that half is
+    hidden in the mean. The two halves it is a mean of are reported."""
+    row = fc.conditionals(_table(lambda n, c, l: float(n * c * (1 + l))))["R_ni"]
+    assert row["N_at_C1_L0"] != row["N_at_C1_L1"]        # the mean would hide it
+    flat = fc.conditionals(_table(lambda n, c, l: float(n * c)))["R_ni"]
+    assert flat["N_at_C1_L0"] == flat["N_at_C1_L1"]

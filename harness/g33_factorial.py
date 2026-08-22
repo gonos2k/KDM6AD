@@ -110,10 +110,14 @@ RESPONSES = {
     "R_qi_den": ("kg m-2", None, "matched", None, "selected"),
     "R_qi": ("dimensionless", "C", "matched", None, "selected"),
     "R_nr_num": ("number m-2", "N", "matched", ("main", "qr"), "selected"),
-    "R_nr_den": ("number m-2", None, "matched", ("main", "qr"), "selected"),
+    # The DENOMINATOR carries no control. It is the starting inventory, a state
+    # quantity, and a failing mass closure does not make it unmeasurable --
+    # gating it deleted exactly the inventory half that numerator/denominator
+    # separation exists to expose (owner review §8).
+    "R_nr_den": ("number m-2", None, "matched", None, "selected"),
     "R_nr": ("dimensionless", "N", "matched", ("main", "qr"), "selected"),
     "R_ni_num": ("number m-2", "N", "matched", ("ice", "qi"), "selected"),
-    "R_ni_den": ("number m-2", None, "matched", ("ice", "qi"), "selected"),
+    "R_ni_den": ("number m-2", None, "matched", None, "selected"),
     "R_ni": ("dimensionless", "N", "matched", ("ice", "qi"), "selected"),
     # The endpoint-recovered metric diagnostic, under its own name. It measures
     # the residual of the number METRIC as the endpoints imply it, which is a
@@ -127,11 +131,25 @@ RESPONSES = {
     "cap_ice_signed": ("kg m-2", None, "capin", None, "selected"),
     "cap_ice_destroyed": ("kg m-2", None, "capin", None, "selected"),
     "cap_ice_created": ("kg m-2", None, "capin", None, "selected"),
-    "partition_first": ("count", "L", "state", None, "first-segment-post"),
-    "partition_last_segment_post": ("count", "L", "state", None,
-                                    "last-segment-post"),
-    "partition_window_final": ("count", "L", "state", None, "window-final"),
-    "partition_path": ("count", "L", "state", None, "all-segments"),
+    # TWO COUNTS AT EVERY POINT, because they are two units. A CELL is a
+    # (split, column, level) whose state differs in at least one field; a
+    # COMPONENT is one (field, column, level). Reporting 4 at the last segment
+    # beside 32 at the window final and calling it eight-fold growth compared a
+    # cell count with a component count (owner review §7).
+    "partition_first_cells": ("cells", "L", "state", None, "first-segment-post"),
+    "partition_first_components": ("components", "L", "state", None,
+                                   "first-segment-post"),
+    "partition_last_segment_cells": ("cells", "L", "state", None,
+                                     "last-segment-post"),
+    "partition_last_segment_components": ("components", "L", "state", None,
+                                          "last-segment-post"),
+    "partition_window_final_cells": ("cells", "L", "state", None,
+                                     "window-final"),
+    "partition_window_final_components": ("components", "L", "state", None,
+                                          "window-final"),
+    "partition_path_cells": ("cells", "L", "state", None, "all-segments"),
+    "partition_path_components": ("components", "L", "state", None,
+                                  "all-segments"),
 }
 
 #: species -> the chain its cap belongs to, so the cap and the residual of one
@@ -346,12 +364,33 @@ def _partition(single: str, split: str) -> dict:
     if not splits:
         raise FactorialError("no segment states recovered from either stream")
     lo, hi = splits[0], splits[-1]
+
+    def counts(keys):
+        """(differing cells, differing field components) over `keys`."""
+        cells = comps = 0
+        for k in keys:
+            da = dict(a[k])
+            db = dict(b[k])
+            n = sum(1 for f in da if da[f] != db.get(f, object()))
+            cells += bool(n)
+            comps += n
+        return float(cells), float(comps)
+
+    first_c, first_p = counts([k for k in a if k[0] == lo])
+    last_c, last_p = counts([k for k in a if k[0] == hi])
+    path_c, path_p = counts(list(a))
+    # The window-final block is already keyed per (field, column, level), so a
+    # differing entry IS a component; the cells it touches are its (col, level).
+    wf_comp = [k for k in fa if fa[k] != fb[k]]
     return {
-        "partition_first": float(sum(1 for k in a if k[0] == lo and a[k] != b[k])),
-        "partition_last_segment_post":
-            float(sum(1 for k in a if k[0] == hi and a[k] != b[k])),
-        "partition_window_final": float(sum(1 for k in fa if fa[k] != fb[k])),
-        "partition_path": float(sum(1 for k in a if a[k] != b[k])),
+        "partition_first_cells": first_c,
+        "partition_first_components": first_p,
+        "partition_last_segment_cells": last_c,
+        "partition_last_segment_components": last_p,
+        "partition_window_final_cells": float(len({k[1:] for k in wf_comp})),
+        "partition_window_final_components": float(len(wf_comp)),
+        "partition_path_cells": path_c,
+        "partition_path_components": path_p,
     }
 
 
@@ -402,8 +441,17 @@ def responses(stream_single: str, stream_split: str, *,
                  _ratio_screen(r["num"], r["den"], r["b_num"], r["b_den"])
                  if r else 0.0)):
             name = f"R_{species}{suffix}"
-            put(name, value, valid=bool(r) and not bad,
-                reason="no matched rows on this span" if not r else bad)
+            # The control is per RESPONSE: the ratio and the numerator need the
+            # chain's mass row, the denominator does not.
+            gated = RESPONSES[name][3] is not None
+            reason = "no matched rows on this span" if not r else (
+                bad if gated else "")
+            # A/0 is undefined, not zero. Reporting 0.0 for it makes an
+            # unmeasurable ratio indistinguishable from a residual that
+            # vanished -- the same shape as the coverage defect already closed.
+            if not suffix and r and not r["den"]:
+                reason = reason or "zero denominator: the ratio is undefined"
+            put(name, value, valid=bool(r) and not reason, reason=reason)
             out[name]["screening_bound"] = bound
 
     for species, name in (("nr", "D_nr_metric"), ("ni", "D_ni_metric")):
@@ -459,10 +507,49 @@ def check_identity(name: str, single: str, split: str) -> dict:
             f"{name}: both streams ran {a['ntile']} tile(s), so there is no "
             f"decomposition to compare and `partition` would be zero by "
             f"construction.")
+    # delt/dtcld/loops were COMPARED between the two decompositions and then
+    # dropped from the returned dict, so the cross-arm gate that reads this
+    # could not see them: two arms on different timesteps passed (owner §9).
     return {"algorithm": a["algorithm"], "nsplit": a["nsplit"],
             "mode": a["carry"], "rho": a["rho"], "width": a["width"],
-            "levels": a["levels"], "tiles_single": a["tile_sizes"],
+            "levels": a["levels"], "delt": a["delt"], "dtcld": a["dtcld"],
+            "loops": a.get("loops"), "tiles_single": a["tile_sizes"],
             "tiles_split": b["tile_sizes"]}
+
+
+def _raw_input(text: str) -> dict:
+    """What a run was HANDED: the G33R `initial` state and every forcing.
+
+    `xland` is in there now. `ncmin` branches on the land mask (F:876-882) and
+    Arm L is the correction to that branch, so it is the one input L's causal
+    story rests on -- and until the driver emitted it, no analysis comparing
+    two decompositions could check they were given the same one.
+    """
+    import g33_refine_analyze as ra
+    d = ra.read_text(text)
+    return {k: v for k, v in d.items()
+            if isinstance(k, tuple) and k[0] in ("initial", "forcing")}
+
+
+def same_input(name: str, single: str, split: str) -> None:
+    """The two DECOMPOSITIONS of one arm must have been handed the same run.
+
+    `check_identity` compared their metadata -- nsplit, mode, rho, width,
+    levels, delt, dtcld -- and never their state. Two streams can agree on all
+    of that and start from different atmospheres, and then every `partition`
+    count reads as a decomposition effect (owner review §6).
+    """
+    a, b = _raw_input(single), _raw_input(split)
+    if set(a) != set(b):
+        raise FactorialError(
+            f"{name}: the two decompositions do not carry the same input "
+            f"records: {len(set(a) ^ set(b))} differ in the key set")
+    bad = sorted(k for k in a if a[k] != b[k])
+    if bad:
+        raise FactorialError(
+            f"{name}: the two decompositions were handed different inputs -- "
+            f"{len(bad)} of {len(a)} cells differ, e.g. {bad[:3]}. Every "
+            f"`partition` count would read as a decomposition effect.")
 
 
 def same_atmosphere(streams: dict) -> None:
@@ -477,12 +564,9 @@ def same_atmosphere(streams: dict) -> None:
     So the comparison is the raw G33R `initial` state and `forcing` records,
     every field, every cell, as the bytes the driver emitted.
     """
-    import g33_refine_analyze as ra
     ref = ref_arm = None
     for arm, text in streams.items():
-        d = ra.read_text(text)
-        got = {k: v for k, v in d.items()
-               if isinstance(k, tuple) and k[0] in ("initial", "forcing")}
+        got = _raw_input(text)
         if ref is None:
             ref, ref_arm = got, arm
             continue
@@ -522,9 +606,18 @@ def coefficients(table: dict, screens: dict | None = None) -> dict:
     for response in RESPONSES:
         invalid = {a: table[a][response]["reason"] for a in arms
                    if not table[a][response]["valid"]}
-        betas = {"_valid": not invalid}
         if invalid:
-            betas["_invalid"] = invalid
+            # NO NUMBERS. The contract says a contrast is computed only where
+            # the response is valid in all eight arms, and the previous version
+            # computed it anyway and attached `_valid: false` -- so the JSON
+            # carried a beta that a reader, a binding or a notebook could pick
+            # up without ever consulting the flag. A refusal that still hands
+            # over the answer is not a refusal.
+            out[response] = dict.fromkeys(
+                ["", "N", "C", "L", "NC", "NL", "CL", "NCL", "_bound"])
+            out[response].update({"_valid": False, "_invalid": invalid})
+            continue
+        betas = {"_valid": True}
         for size in range(4):
             for subset in _subsets(names, size):
                 acc = 0.0
@@ -576,6 +669,32 @@ def conditionals(table: dict) -> dict:
                     row[f"{x}_at_{y}{level}"] = (
                         sum(table[a][response]["value"] for a in hi) / len(hi)
                         - sum(table[a][response]["value"] for a in lo) / len(lo))
+        # ... and the SIMPLE effects underneath them. `N_at_C1` averages over
+        # L, so an N x L interaction inside that half is hidden in the mean.
+        # These are the two halves it is a mean of, and they are what says
+        # whether quoting the average is safe (owner review §11).
+        k = 2                       # the remaining factor, for each ordered pair
+        for i, x in enumerate(names):
+            for j, y in enumerate(names):
+                if i == j:
+                    continue
+                z = names[3 - i - j] if {i, j} != {0, 1} else names[
+                    [t for t in range(3) if t not in (i, j)][0]]
+                zi = names.index(z)
+                for ly in (0, 1):
+                    for lz in (0, 1):
+                        hi = [a for a in table if ALGO_FACTORS[a][i] == 1
+                              and ALGO_FACTORS[a][j] == ly
+                              and ALGO_FACTORS[a][zi] == lz]
+                        lo = [a for a in table if ALGO_FACTORS[a][i] == 0
+                              and ALGO_FACTORS[a][j] == ly
+                              and ALGO_FACTORS[a][zi] == lz]
+                        key = f"{x}_at_{y}{ly}_{z}{lz}"
+                        if not all(table[a][response]["valid"] for a in hi + lo):
+                            row[key] = None
+                            continue
+                        row[key] = (table[hi[0]][response]["value"]
+                                    - table[lo[0]][response]["value"])
         out[response] = row
     return out
 
@@ -610,6 +729,7 @@ def main() -> int:
             raise SystemExit(f"{spec}: need ARM=SINGLE,SPLIT")
         s, pth = Path(single).read_text(), Path(split).read_text()
         identity[name] = check_identity(name, s, pth)
+        same_input(name, s, pth)        # this arm's two decompositions
         streams[name] = s
         table[name] = responses(s, pth, window=args.window)
 
