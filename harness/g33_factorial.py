@@ -52,6 +52,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import struct
 import sys
 from itertools import combinations
 from pathlib import Path
@@ -550,6 +551,60 @@ def _raw_input(text: str) -> dict:
             if isinstance(k, tuple) and k[0] in ("initial", "forcing")}
 
 
+def ncmin_exposure(text: str) -> dict:
+    """What `ncmin` each column ASKED for and what its tile actually imposed.
+
+    DERIVED, not measured. `ncmin` is a kernel-local scalar and nothing emits
+    it, but it is fully determined by inputs that are now recorded: the land
+    mask, which the stream carries since the driver began emitting `xland`, and
+    `ncmin_land`/`ncmin_sea`, which the fixture manifest declares. The kernel's
+    rule is one branch (F:876-882) inside a `do i = its,ite` loop assigning to a
+    SCALAR, so every column computes its own value and only the tile's LAST one
+    survives to be used.
+
+    Derivation is not measurement and this says so. What makes it checkable is
+    Arm L: the arm exists precisely to make the imposed value per-column, and
+    where this function says a tile imposes a value some of its columns did not
+    ask for, `partition` is non-zero -- and Arm L drives it to zero.
+    """
+    import g33_number_transport as nt
+    import g33_refine_analyze as ra
+    d = ra.read_text(text)
+    xland = {k[2]: v for k, v in d.items()
+             if isinstance(k, tuple) and k[0] == "forcing" and k[1] == "xland"}
+    if not xland:
+        raise FactorialError(
+            "this stream carries no `xland`: it was produced before the driver "
+            "emitted the land mask, so what each column asked for cannot be "
+            "derived. A gate that cannot see must not answer.")
+    ident = nt.validated_run_identity(text)
+    # FROM THE FIXTURE THE STREAM NAMES, not from a constant here. The first
+    # draft of this carried the pair inline and carried it WRONG -- 2.5e7/2.5e6
+    # against the manifest's 1.0e8/2.5e7 -- which is what a second copy of a
+    # fact is for. The stream declares its fixture now, so there is no second
+    # copy to get wrong.
+    import g33_fixture_v1 as fx
+    fixture = ra.read_text(text)[("meta", "fixture")]
+    if fixture is None:
+        raise FactorialError(
+            "this stream does not name its fixture, so the ncmin parameters "
+            "cannot be read from the manifest that declares them")
+    _spec, manifest = fx.load_fixture(fixture)
+    par = manifest["common_parameters"]
+    land = struct.unpack(">f", bytes.fromhex(par["ncmin_land"]))[0]
+    sea = struct.unpack(">f", bytes.fromhex(par["ncmin_sea"]))[0]
+    out = {}
+    for lo, hi in ident["tile_ranges"]:
+        # slmsk == 2 takes ncmin_sea, anything else ncmin_land -- the branch as
+        # the kernel writes it, label and assignment included.
+        want = {c: (sea if xland[c] == 2.0 else land) for c in range(lo, hi + 1)}
+        imposed = want[hi]                     # the loop's last write survives
+        out[(lo, hi)] = {"intended": want, "imposed": imposed,
+                         "columns_overridden": sorted(c for c, v in want.items()
+                                                      if v != imposed)}
+    return out
+
+
 def same_input(name: str, single: str, split: str) -> None:
     """The two DECOMPOSITIONS of one arm must have been handed the same run.
 
@@ -787,14 +842,33 @@ def main() -> int:
         s, pth = Path(single).read_text(), Path(split).read_text()
         identity[name] = check_identity(name, s, pth)
         same_input(name, s, pth)        # this arm's two decompositions
+        # What each decomposition imposed on which columns -- the L mechanism,
+        # derived from recorded inputs instead of read out of the source.
+        try:
+            identity[name]["ncmin_single"] = {
+                f"{lo}-{hi}": {"imposed": r["imposed"],
+                               "overridden": r["columns_overridden"]}
+                for (lo, hi), r in ncmin_exposure(s).items()}
+            identity[name]["ncmin_split"] = {
+                f"{lo}-{hi}": {"imposed": r["imposed"],
+                               "overridden": r["columns_overridden"]}
+                for (lo, hi), r in ncmin_exposure(pth).items()}
+        except FactorialError as exc:
+            identity[name]["ncmin_single"] = None
+            identity[name]["ncmin_split"] = None
+            identity[name]["ncmin_reason"] = str(exc)
         streams[name] = s
         table[name] = responses(s, pth, window=args.window)
 
     ref = identity.get("legacy")
     if ref:
         for name, ident in identity.items():
+            # `ncmin_*` is a DERIVED description of the run, not part of what
+            # makes two arms the same experiment -- and Arm L changes it on
+            # purpose, so requiring it to match would refuse the arm.
             bad = [k for k, v in ref.items()
-                   if k != "algorithm" and ident[k] != v]
+                   if k != "algorithm" and not k.startswith("ncmin")
+                   and ident[k] != v]
             if bad:
                 raise SystemExit(
                     f"{name} and legacy differ in {bad}: the arms are not one "

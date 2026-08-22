@@ -17,7 +17,20 @@ What the first version observed was MARGINAL SELECTIVITY and reported as
 ORTHOGONALITY. Different claims; the first does not imply the second. Withdrawn
 and rewritten.
 
-## 2. C's own invariant in the response vector — PR #148
+## 2. C's own invariant in the response vector — PR #148, **SINCE WITHDRAWN**
+
+**Corrected 2026-08-22.** Two things below are now known false and are left in
+place with this note rather than rewritten, because the record of what was
+claimed is part of the evidence.
+
+The `+2.435 -> -3.400` figures are WHOLE-WINDOW numbers that were sitting in a
+first-call table; on the first call the ice cap term runs `+3.540e-02 ->
+-1.988e-02`. And the cap is not C's native invariant at all: the legacy
+interface term IS that arm's actual mass non-closure to the digit, while for
+the conservative arm the same term is non-zero and its column budget closes.
+C's outcome response is the actual-transfer `R_qi`. See
+`FINDING_factorial_orthogonality_v1.md`.
+
 
 N was scored on number closure and L on decomposition invariance, their own; C
 only through its indirect effect on the ice-number residual. `cap_sink` is C's,

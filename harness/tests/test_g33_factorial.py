@@ -491,3 +491,36 @@ def test_a_binding_must_go_through_the_validity_predicate():
         fc.bindable(bad, "N")
     with pytest.raises(fc.FactorialError, match="no coefficient"):
         fc.bindable(good, "NCLX")
+
+
+def test_what_each_tile_imposed_is_derived_from_recorded_inputs(monkeypatch):
+    """`ncmin` is a kernel-local scalar nothing emits, and it is fully
+    determined by inputs that ARE recorded: the land mask the driver now writes
+    and the two parameters the fixture manifest declares.
+
+    Derivation is not measurement, and the function says so. What makes it
+    checkable is Arm L, which exists to make the imposed value per-column.
+    """
+    import g33_refine_analyze as ra
+    import g33_number_transport as nt
+    import g33_fixture_v1 as fx
+    rec = {("forcing", "xland", 1, 0): 1.0, ("forcing", "xland", 2, 0): 2.0,
+           ("forcing", "xland", 3, 0): 1.0, ("meta", "fixture"): "fx"}
+    monkeypatch.setattr(ra, "read_text", lambda t: rec)
+    monkeypatch.setattr(nt, "validated_run_identity",
+                        lambda t: {"tile_ranges": ((1, 3),)})
+    monkeypatch.setattr(fx, "load_fixture", lambda f: (None, {
+        "common_parameters": {"ncmin_land": "4cbebc20", "ncmin_sea": "4bbebc20"}}))
+    got = fc.ncmin_exposure("")[(1, 3)]
+    # the LAST column's value survives the scalar assignment
+    assert got["imposed"] == got["intended"][3]
+    assert got["columns_overridden"] == [2]         # the sea column, overridden
+
+
+def test_a_stream_without_the_land_mask_refuses_rather_than_guessing(monkeypatch):
+    """Streams produced before the driver emitted `xland` cannot answer this,
+    and a gate that cannot see must not answer."""
+    import g33_refine_analyze as ra
+    monkeypatch.setattr(ra, "read_text", lambda t: {("meta", "fixture"): "fx"})
+    with pytest.raises(fc.FactorialError, match="no `xland`"):
+        fc.ncmin_exposure("")

@@ -42,18 +42,23 @@ was a whole-window number sitting in a first-call table.
 
 Over the window there IS an N x C term, and it is the OTHER shape:
 
-    R_ni           C at N=0  -9.085e-02     C at N=1   3.198e-17
-    cap_ice_rel    N at C=0   1.691e-04     N at C=1  -1.564e-02
+    D_ni_metric      C at N=0  -9.085e-02    C at N=1   3.198e-17
+    cap_ice_signed   N at C=0   2.977e-05    N at C=1   2.898e-01
 
-`R_ni` is C masked by N -- C acts only while N has not already removed the
-residual. The cap is N gated by C -- N acts only while C is present. Both are
-N x C interactions and they are not the same sentence; one `beta_NC` cannot
+`D_ni_metric` is C masked by N -- C acts only while N has not already removed
+the residual. The cap is N gated by C -- N acts only while C is present. Both
+are N x C interactions and they are not the same sentence; one `beta_NC` cannot
 tell them apart, which is why conditional effects are now reported beside it.
+
+The name is `D_ni_metric` here too, not `R_ni`: this is the endpoint-recovered
+metric residual. The actual-transfer `R_ni` is not scorable across all eight
+arms on this fixture.
 
 **"`partition` is L-selective on the first call."** After ONE sub-step the two
 decompositions agree completely: `partition_first` is 0 for all eight arms, so
 there is nothing for L to be selective about there. The 45 that was published
-is a PATH count over all twelve sub-steps. The three questions are now separate:
+is a PATH count over all twelve sub-steps. The four questions are now separate,
+each in both units:
 
 | response | legacy | `lncmin` | beta_L |
 |---|---|---|---|
@@ -262,9 +267,35 @@ they are identical to the last digit on every response, so the average is
 representative -- measured, with the flag computed from the response's own
 screening scale.
 
+## The L mechanism, out of the artifact instead of out of the source
+
+`ncmin` is a kernel-local scalar and nothing emits it, but it is fully
+determined by inputs that are now recorded: the land mask, which the stream
+carries since the driver began emitting `xland`, and `ncmin_land`/`ncmin_sea`,
+which the fixture manifest declares. So what each column ASKED for and what its
+tile actually IMPOSED can be derived, and the two decompositions can be
+compared on it:
+
+| decomposition | tile | imposed | columns overridden |
+|---|---|---|---|
+| single | 1..3 | 1.000e+08 | **2** |
+| `(2,1)` | 1..2 | 2.500e+07 | **1** |
+| `(2,1)` | 3..3 | 1.000e+08 | none |
+
+Column 1 is given 1.0e+08 under one decomposition and 2.5e+07 under the other;
+column 2 likewise. That is the decomposition dependence `partition` counts,
+visible in the record rather than inferred by reading the kernel.
+
+DERIVED, not measured, and the tool says so. What makes it checkable is Arm L
+itself: the arm exists to make the imposed value per-column, and every arm that
+carries it has `partition` exactly 0 at all four points in both units.
+
 ## What is still not measured
 
 - Longer than 300 s, and any real atmospheric column.
+- `ncmin` as EMITTED rather than derived. Recording the kernel's own scalar
+  would need a new overlay anchor in the frozen file; the derivation above uses
+  only recorded inputs and the branch as the source writes it.
 - `mstep > 1` for the NUMBER responses. The mass responses are now measured
   there (above); what remains unavailable is `R_nr`/`R_ni` in the C=0 half.
   Previously stated as a blanket NO-GO, and that was too broad. The recovered reader
