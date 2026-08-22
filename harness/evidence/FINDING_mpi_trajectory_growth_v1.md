@@ -93,10 +93,20 @@ minute and followed:
 The growth is real on a fixed population. The "350x" quoted earlier was over a
 support that had more than doubled.
 
-**And the six-minute jump is the radiation call.** `radt = 5` minutes, and of
-the 31 fields that start differing at frame 6, **27 are radiation accumulators**
-and the other four are `LWUP*`. It is the first radiation call after `t = 0`
-carrying the existing difference into its own diagnostics, not a new mechanism.
+**And the six-minute jump is the radiation call -- measured, not argued.** The
+first version of this reasoned from the field NAMES: 27 of the 31 fields that
+start differing at frame 6 are radiation accumulators. That is an argument. The
+measurement is moving the schedule and seeing whether the jump moves with it:
+
+| `radt` | fields differing, by frame 1..10 | jump at |
+|---|---|---|
+| 3 min | 77 79 79 **106** 106 106 106 106 106 106 | **frame 4** |
+| 5 min | 77 78 79 75 75 **106** 106 106 106 106 | **frame 6** |
+| 7 min | 77 79 79 75 75 75 75 **106** 106 106 | **frame 8** |
+
+The jump lands at `radt + 1` in every case -- the frame after the first
+radiation call. It is the radiation call carrying an existing difference into
+its own diagnostics, and no new mechanism fires at six minutes.
 
 ## What it says
 
