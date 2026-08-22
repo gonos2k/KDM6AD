@@ -76,3 +76,12 @@ was a STALE copy of the harness script -- it had neither `--seconds` nor `--np`
 -- and was refreshed from `harness/run_ss_case.py`. One script in two places
 drifts, and this is what the drift cost: the run directory could not express the
 experiment the harness already supported.
+
+## Which kernel this was
+
+The binary is `KDM6AD+/KIM-meso_v1.0/main/wrf.exe`, built 24 Jun from kernel
+revision `a06c954b`. That is NOT the SHA-pinned reference every fixture result
+in this campaign uses (`9354141b`, in the repository tree): the two differ by
+114 lines, none of them in `ncmin` or the interface transfer statements, so the
+candidate mechanism is present in this binary -- but the revision is different
+and was not stated. See `FINDING_two_wrf_trees_v1.md`.
