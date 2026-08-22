@@ -1301,3 +1301,66 @@ def test_the_identity_is_not_vacuous():
         assert total["n12.rezero.inverted.txt"] < 0, total
     if "n12.rezero.x2.txt" in total:
         assert 1.7 < total["n12.rezero.x2.txt"] / base < 2.3, total
+
+
+# ---------------------------------------------------------------------------
+# The transport-only closure at mstep > 1.
+#
+# `closure()` never needed the sub-step count, which is the whole point of the
+# path. Its GUARD did: the surface-cap test went through `column()`, so the
+# reader that advertises "no recursion" was silently mstep == 1 only, and the
+# archive carried no number-closure figure above it at all.
+
+def _guard_call(*, capin, flux, mstep=1, chain="main"):
+    """The minimum a guard needs: CAPIN rows, the emitted accumulator, mstep."""
+    return {"capin": capin, "flux": flux, "surface": {},
+            "mstep": {(1, chain, 1): mstep}, "loops": {1},
+            "outer_pre_sed": {(1, 1, 0): {}}}
+
+
+def _guard_capin(rows, col=1, chain="main"):
+    """rows: {k: (own_q, in_q, own_n, in_n)} for one sub-step."""
+    return {(1, 1, col, chain, k): v for k, v in rows.items()}
+
+
+def test_the_surface_cap_is_answered_without_recovering_a_transfer():
+    """CAPIN's bottom cell IS what left, so the question needs no sub-step count."""
+    call = _guard_call(capin=_guard_capin({1: (1.0, 1.0, 5.0, 5.0), 2: (2.0, 2.0, 7.0, 7.0)}),
+                 flux={(1, 1): {"bottom_falln_nr": 7.0, "nflux_dtcld": 1.0}},
+                 mstep=9)
+    assert nt.surface_cap_binds(call, 1, "nr") is False
+    call["flux"][(1, 1)]["bottom_falln_nr"] = 9.0        # accumulator overstates
+    assert nt.surface_cap_binds(call, 1, "nr") is True
+
+
+def test_a_guard_that_cannot_see_does_not_answer_no():
+    """No CAPIN records -> None, never False. An unbuilt overlay is not a pass."""
+    call = _guard_call(capin={}, flux={(1, 1): {"bottom_falln_nr": 7.0,
+                                          "nflux_dtcld": 1.0}})
+    assert nt.surface_cap_binds(call, 1, "nr") is None
+    assert nt.interior_cap_binds(call, 1, "nr") is None
+
+
+def test_an_interior_cap_is_LABELLED_not_excluded():
+    """Different question from the surface one, and conflating them cost rows.
+
+    Where an interior cap binds the residual is still what the operator did --
+    the capped transfer is the one that ran -- so it is reported, while the
+    surface test stays the exclusion, because that one is about whether `out`
+    is the removal that happened.
+    """
+    rows = {1: (1.0, 0.4, 5.0, 2.0),        # interior: own != inflow
+            2: (2.0, 2.0, 7.0, 7.0)}        # bottom: clean
+    call = _guard_call(capin=_guard_capin(rows),
+                 flux={(1, 1): {"bottom_falln_nr": 7.0, "nflux_dtcld": 1.0}})
+    assert nt.interior_cap_binds(call, 1, "nr") is True
+    assert nt.surface_cap_binds(call, 1, "nr") is False
+
+
+def test_the_bottom_cell_is_not_counted_as_an_interior_interface():
+    """Otherwise every surface cap would also read as an interior one and the
+    two verdicts would stop being independent."""
+    call = _guard_call(capin=_guard_capin({1: (1.0, 1.0, 5.0, 5.0),
+                               2: (2.0, 0.5, 7.0, 1.0)}),   # bottom capped
+                 flux={(1, 1): {"bottom_falln_nr": 7.0, "nflux_dtcld": 1.0}})
+    assert nt.interior_cap_binds(call, 1, "nr") is False
