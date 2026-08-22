@@ -60,11 +60,16 @@ case "$ALGO" in
     # shape; N and L do not) and the ALGOTAG define names the arm. Written as
     # one pattern rather than six cases: six near-identical lines is six
     # chances for one to name the wrong file.
-    nmass|lncmin|nmasslncmin|cons_nmass|cons_lncmin|cons_nmasslncmin)
+    # `nmass_dry` joins the same pattern: it is a base plus the N edit in its
+    # dry form, so the driver define is legacy's (none) and the ALGOTAG define
+    # names the arm (owner freeze-lift, 2026-08-22).
+    nmass|lncmin|nmasslncmin|nmass_dry|cons_nmass|cons_lncmin|cons_nmasslncmin)
         MODULE="$HOST/phys/module_mp_kdm6_${ALGO}.F"
         DRVDEF=(-DKDM6_ARM_"$(printf %s "$ALGO" | tr '[:lower:]' '[:upper:]')")
         case "$ALGO" in cons_*) DRVDEF+=(-DKDM6_CONS) ;; esac ;;
-    *) echo "--algo must be legacy, conservative, nmass or lncmin" >&2; exit 2 ;;
+    *) echo "--algo must be one of: legacy conservative nmass lncmin"\
+            " nmasslncmin nmass_dry cons_nmass cons_lncmin cons_nmasslncmin" >&2
+       exit 2 ;;
 esac
 FIXTURE_SRC="$HERE/${FIXTURE_NAME}.f90"
 [ -f "$FIXTURE_SRC" ] || { echo "no such fixture: $FIXTURE_SRC" >&2; exit 2; }

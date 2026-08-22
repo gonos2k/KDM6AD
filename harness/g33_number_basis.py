@@ -145,12 +145,23 @@ def where_the_number_is(state: Path, field: str = "QNRAIN",
 
     AND A RATIO OF MEDIANS IS NOT THE COLUMN DEFECT. The residual is
     `sum_j F_j eps_j`, so the coefficients are weighted by how much number
-    actually crosses. The flux-weighted aggregate is reported beside the
-    per-interface distribution.
+    actually crosses.
+
+    WHAT IS WEIGHTED HERE IS NOT THAT. `m_d(upper) * n(upper)` is the upper
+    cell's number INVENTORY, and the transferred amount is `m_d * dn` with `dn`
+    set by fall speed, sub-stepping and the interface cap. A state file records
+    the first and not the second, so this is an
+    `upper_inventory_weighted` aggregate and is named so. The actual
+    flux-weighted number needs the kernel's own per-interface transfers, which
+    means a replay -- `g33_real_column_batch` computes it for the columns it
+    runs.
+
+    "Transport-active" is likewise the population that COULD transport: `n > 0`
+    in the upper cell does not mean the timestep moved any of it.
 
     Measured on the 20 s `mp37` frame, none of this moves the answer: median
-    1.92 % on the published population, 2.02 % on the transport-active one, and
-    1.98 % flux-weighted on either.
+    1.92 % on the occupied-pair population, 2.02 % on the upper-populated one,
+    and 1.98 % upper-inventory-weighted on either.
     """
     import netCDF4
     import numpy as np
@@ -160,33 +171,35 @@ def where_the_number_is(state: Path, field: str = "QNRAIN",
                    dtype="float64")
     lo, up = slice(None, -1), slice(1, None)
     pops = {"occupied_pair": (n[lo] > 0) & (n[up] > 0),
-            "transport_active": n[up] > 0}
+            # NOT "transport_active": `n > 0` above the interface says the
+            # number is there to be moved, not that the step moved it.
+            "upper_populated": n[up] > 0}
     live = pops["occupied_pair"]
     out = {"state": str(state), "field": field, "basis": basis,
            "interfaces": int(live.size),
            "carrying": int(live.sum()),
            "carrying_fraction": float(live.mean()),
-           "transport_active": int(pops["transport_active"].sum())}
+           "upper_populated": int(pops["upper_populated"].sum())}
     if not live.any():
         out["empty"] = True
         return out
-    # `F_j` is what DEPARTS the upper cell under the column measure -- the
-    # quantity the per-interface coefficient multiplies in `sum_j F_j eps_j`.
-    flux = p["dry_layer_mass_upper"] * n[up]
+    # The upper cell's number INVENTORY. Not `F_j`: that is `m_d * dn` and `dn`
+    # is what the kernel actually moved, which a state file does not record.
+    inventory = p["dry_layer_mass_upper"] * n[up]
     out["populations"] = {}
     for nm, m in pops.items():
         if not m.any():
             continue
         f = np.abs(p["armn_dry"][m]) / np.maximum(np.abs(p["legacy_dry"][m]),
                                                   1e-300)
-        w = flux[m]
+        w = inventory[m]
         num = abs(float((w * p["armn_dry"][m]).sum()))
         den = abs(float((w * p["legacy_dry"][m]).sum()))
         out["populations"][nm] = {
             "interfaces": int(m.sum()),
             "median": float(np.median(f)),
             "p90": float(np.percentile(f, 90)),
-            "flux_weighted": num / den if den else None}
+            "upper_inventory_weighted": num / den if den else None}
     for key in ("legacy_moist", "legacy_dry", "armn_dry"):
         e = p[key][live]
         out[key] = {"median": float(np.median(e)), "mean": float(e.mean()),
@@ -312,6 +325,19 @@ def from_stream(text: str, species: str = "nr") -> dict:
         # an algebraic check and not an independent measurement (owner §6).
         chain = "main" if species in ("qr", "nr") else "ice"
         _dq, dn = xfer[(1, loop, col, chain)]
+        # THE ACTUAL FLUX WEIGHTING, which only a replay can give. `a[j]` is
+        # what crossed interface `j`, so the column defect is
+        # `sum_j a_j dz_j eps_j` and the ratio between two arms' coefficients is
+        # weighted by it. A state file records the upper cell's INVENTORY and
+        # not this, which is why the domain statistic is named for the
+        # inventory (owner review §4).
+        eps_leg = [den[j] / den[j + 1] - 1.0 for j in range(len(ks) - 1)]
+        eps_arm = [(1.0 + qv[j + 1]) / (1.0 + qv[j]) - 1.0
+                   for j in range(len(ks) - 1)]
+        wj = [abs(a[j] * dz[j]) for j in range(len(ks) - 1)]
+        num = abs(sum(w * e for w, e in zip(wj, eps_arm)))
+        den_ = abs(sum(w * e for w, e in zip(wj, eps_leg)))
+        row["flux_weighted_fraction"] = num / den_ if den_ else None
         for tag, B in (("moist", den), ("dry", dry)):
             n0 = sum(B[t] * dz[t] * x[t] for t in range(len(ks)))
             n1 = sum(B[t] * dz[t] * x1[t] for t in range(len(ks)))
