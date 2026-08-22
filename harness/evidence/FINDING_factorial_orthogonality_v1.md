@@ -1,7 +1,7 @@
-# The N x C x L factorial on one span, and three statements withdrawn from it
+# The N x C x L factorial: one reader, control and span per response
 
-This finding has been wrong twice, in ways that were visible in its own table
-both times.
+This finding has been wrong three times, in ways that were visible in its own
+table each time.
 
 The first version called the three corrections ORTHOGONAL from a table of
 absolute residuals whose `I_NC` was 0.0235 -- 13.8 % of baseline against an f32
@@ -17,7 +17,16 @@ number printed twice. So the "first-call" table was a hybrid of first-call
 residuals and whole-window diagnostics, and no statement about C or L in it was
 a first-call statement.
 
-Every response now takes the same span, and the span is part of the result.
+The third version gave every response the same span and then gave them all the
+same READER and the same CONTROL POLICY, which re-mixed what the span fix had
+just separated. Rejecting an arm because its mass control failed deletes the C
+response from the C experiment, since a failing mass closure is the defect C
+exists to remove. Measured: on this fixture the main-chain `qr` control passes
+on every arm (3e-02 at worst) while ice fails, and a scorable actual-transfer
+`R_nr` was being discarded by an ice-chain verdict it does not depend on.
+
+Now each response carries its own reader, control, span and verdict, and a
+contrast is computed only where the response is valid in all eight arms.
 
 ## What is withdrawn
 
@@ -150,10 +159,59 @@ terms, `sum|terms| * (U32 + gamma(n, U64))`, rather than against a bare epsilon:
 the inputs are f32, so nothing derived from them resolves below that. Integer
 counts are exact and are not screened.
 
+## What the per-response policy measures that nothing could before
+
+**`R_qi` is a response, not a rejection criterion.** First call:
+`beta_C = +3.0030e-01`, legacy -6.006e-01 to conservative 2.306e-08. C's own
+outcome, scored.
+
+**Matched `R_nr` scores for the first time**: `beta_N = -1.8426e-03`, every
+cross term at 1.4e-20, under the main-chain mass control which closes on all
+eight arms.
+
+**`mstep > 1` is no longer a blanket NO-GO.** On
+`g33_fixture_multisubcycle_v1` at `nsplit = 3`, `mstep <= 10`:
+
+| response | control | result |
+|---|---|---|
+| `R_qr` | none needed | `beta_C` = +2.3163e-02 |
+| `R_qi` | none needed | `beta_C` = +3.7655e-01 |
+| `R_nr` | `main/qr` | not scorable -- C=0 half fails |
+| `R_ni` | `ice/qi` | not scorable -- C=0 half fails |
+| `D_*_metric` | -- | not scorable -- 4 and 5 of 9 rows recoverable |
+
+and within the C=1 half, where the mass control closes:
+
+    N_at_C1(R_nr) = -1.06042e-02      (1.06042e-02 -> -5.83e-09)
+    N_at_C1(R_ni) = -2.56255e-02
+    N_at_C0       = not evidence
+
+That is the campaign's FIRST controlled measurement of Arm N above one
+sub-step, from actual transfers. `N_at_C0` reports "not evidence" rather than a
+number: the validity discipline must not leak through the conditionals.
+
+**`partition_window_final` is a different count from the last segment.** The
+last post-sedimentation segment is not the window final state -- other
+microphysics runs after sedimentation in the same call. Reading the driver's own
+`outF` block instead:
+
+| response | legacy | `lncmin` | beta_L | beta_N |
+|---|---|---|---|---|
+| `partition_first` | 0 | 0 | 0 | 0 |
+| `partition_last_segment_post` | 4 | 0 | -2.000 | 0 |
+| `partition_window_final` | 32 | 0 | -16.375 | +0.125 |
+| `partition_path` | 45 | 0 | -22.50 | 0 |
+
+The window-final count carries N and C terms that the segment count showed as
+exactly zero, so the earlier reading of `4` as "what the forecast would carry"
+was the wrong quantity as well as the wrong size.
+
 ## What is still not measured
 
 - Longer than 300 s, and any real atmospheric column.
-- `mstep > 1`, and NOT for the reason previously given. The recovered reader
+- `mstep > 1` for the NUMBER responses. The mass responses are now measured
+  there (above); what remains unavailable is `R_nr`/`R_ni` in the C=0 half.
+  Previously stated as a blanket NO-GO, and that was too broad. The recovered reader
   refuses it -- measured, 1 of 3 rows recoverable at `nsplit = 3` on
   `g33_fixture_multisubcycle_v1`, where the old code would have returned a
   ratio over the one that survived. The actual-transfer reader is admissible at
