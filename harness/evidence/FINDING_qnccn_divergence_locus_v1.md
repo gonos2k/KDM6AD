@@ -69,3 +69,12 @@ No mechanism. `ncmin` is still not named: it gates cloud droplet number, and
 `QNCLOUD` was unchanged at `np = 2` while `QNCCN` alone moved.
 
 One case, one initial time, one step, and the map above is of that step.
+
+## The `ncmin` candidate is ruled out for these runs
+
+This case sets `ncmin_land = ncmin_sea = 10`, verified in the saved namelist of
+every MPI run in this campaign. With the two equal, every column asks for the
+same threshold and the scalar holds what the array would have held -- so
+`ncmin` is identical under every decomposition and cannot produce a difference
+between them. Confirmed directly: an Arm L binary is bit-identical to legacy at
+`np = 1` on this case. See `FINDING_arm_l_mpi_null_v1.md`.
