@@ -114,10 +114,12 @@ RESPONSES = {
     # quantity, and a failing mass closure does not make it unmeasurable --
     # gating it deleted exactly the inventory half that numerator/denominator
     # separation exists to expose (owner review §8).
-    "R_nr_den": ("number m-2", None, "matched", None, "selected"),
+    # ... and its reader is `state`, not `matched`: it is an inventory read off
+    # the pre-sed endpoints, not something the transfer records produced.
+    "R_nr_den": ("number m-2", None, "state", None, "selected"),
     "R_nr": ("dimensionless", "N", "matched", ("main", "qr"), "selected"),
     "R_ni_num": ("number m-2", "N", "matched", ("ice", "qi"), "selected"),
-    "R_ni_den": ("number m-2", None, "matched", None, "selected"),
+    "R_ni_den": ("number m-2", None, "state", None, "selected"),
     "R_ni": ("dimensionless", "N", "matched", ("ice", "qi"), "selected"),
     # The endpoint-recovered metric diagnostic, under its own name. It measures
     # the residual of the number METRIC as the endpoints imply it, which is a
@@ -457,12 +459,16 @@ def responses(stream_single: str, stream_split: str, *,
     for species, name in (("nr", "D_nr_metric"), ("ni", "D_ni_metric")):
         d = _recovered_ratio(span, species)
         short = d["eligible"] != d["expected"]
+        reason = (f"{d['eligible']} of {d['expected']} rows recoverable -- "
+                  f"`column()` refuses mstep > 1, and a ratio over the rows "
+                  f"that happened to survive is not the span's residual"
+                  ) if short else ""
+        # A/0 is undefined here too. The rule belongs to the RATIO, not to the
+        # reader that produced it.
+        if not reason and not d["den"]:
+            reason = "zero denominator: the ratio is undefined"
         put(name, d["num"] / d["den"] if d["den"] else 0.0,
-            valid=not short,
-            reason=(f"{d['eligible']} of {d['expected']} rows recoverable -- "
-                    f"`column()` refuses mstep > 1, and a ratio over the rows "
-                    f"that happened to survive is not the span's residual")
-            if short else "")
+            valid=not reason, reason=reason)
         out[name]["screening_bound"] = _ratio_screen(
             d["num"], d["den"], _screen(d["sum_abs"], d["terms"]),
             _screen(abs(d["den"]), d["terms"]))
@@ -510,11 +516,24 @@ def check_identity(name: str, single: str, split: str) -> dict:
     # delt/dtcld/loops were COMPARED between the two decompositions and then
     # dropped from the returned dict, so the cross-arm gate that reads this
     # could not see them: two arms on different timesteps passed (owner §9).
+    # The FIXTURE and the window horizon complete it. The fixture is the
+    # atmosphere the arm was given, and until the driver emitted it no stream
+    # could name its own -- so eight arms could be compared without anything
+    # checking they ran on one. `window_seconds` is derived rather than emitted:
+    # the header already carries the per-split step and the split count, and one
+    # fact in two places drifts.
+    import g33_refine_analyze as ra
+    fixtures = {ra.read_text(t)[("meta", "fixture")] for t in (single, split)}
+    if len(fixtures) != 1:
+        raise FactorialError(
+            f"{name}: the two decompositions declare fixtures {sorted(fixtures)}")
     return {"algorithm": a["algorithm"], "nsplit": a["nsplit"],
             "mode": a["carry"], "rho": a["rho"], "width": a["width"],
             "levels": a["levels"], "delt": a["delt"], "dtcld": a["dtcld"],
-            "loops": a.get("loops"), "tiles_single": a["tile_sizes"],
-            "tiles_split": b["tile_sizes"]}
+            "loops": a.get("loops"), "fixture": fixtures.pop(),
+            "window_seconds": (a["delt"] * a["nsplit"]
+                               if a["delt"] is not None else None),
+            "tiles_single": a["tile_sizes"], "tiles_split": b["tile_sizes"]}
 
 
 def _raw_input(text: str) -> dict:
@@ -634,6 +653,27 @@ def coefficients(table: dict, screens: dict | None = None) -> dict:
     return out
 
 
+def bindable(beta: dict, term: str) -> float:
+    """One coefficient, or a refusal -- the predicate an evidence binding owes.
+
+    `coefficients()` already returns `None` for every term of an invalid
+    contrast, so a binding that reads one gets nothing to pin. This is the
+    check stated as a function rather than left to each caller to remember:
+    a figure enters `CLAIMS.yaml` through here or it does not enter.
+
+    The two failures it exists to stop are a binding taken while `_valid` is
+    false, and one taken from a term the response does not have.
+    """
+    if not beta.get("_valid"):
+        raise FactorialError(
+            f"this contrast is not evidence: {beta.get('_invalid', {})}. A "
+            f"coefficient computed over arms whose control failed is not a "
+            f"coefficient, and must not be pinned.")
+    if term not in beta or beta[term] is None:
+        raise FactorialError(f"no coefficient {term!r} on this response")
+    return float(beta[term])
+
+
 def conditionals(table: dict) -> dict:
     """The effect of each factor at each level of each other factor.
 
@@ -695,6 +735,23 @@ def conditionals(table: dict) -> dict:
                             continue
                         row[key] = (table[hi[0]][response]["value"]
                                     - table[lo[0]][response]["value"])
+        # AND WHETHER THE AVERAGE MAY STAND FOR THEM. `N_at_C1` is the mean of
+        # `N_at_C1_L0` and `N_at_C1_L1`; where those differ, quoting the mean
+        # hides an N x L interaction inside that half. The flag is set from the
+        # response's own screening scale rather than a round number, and is
+        # `None` where either simple effect is not evidence.
+        bound = max(table[a][response]["screening_bound"] for a in table)
+        for i, x in enumerate(names):
+            for j, y in enumerate(names):
+                if i == j:
+                    continue
+                z = names[[t for t in range(3) if t not in (i, j)][0]]
+                for ly in (0, 1):
+                    lo_v = row.get(f"{x}_at_{y}{ly}_{z}0")
+                    hi_v = row.get(f"{x}_at_{y}{ly}_{z}1")
+                    key = f"{x}_at_{y}{ly}_average_representative"
+                    row[key] = (None if lo_v is None or hi_v is None
+                                else abs(hi_v - lo_v) <= bound)
         out[response] = row
     return out
 

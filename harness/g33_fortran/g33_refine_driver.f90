@@ -457,6 +457,11 @@ program g33_refine_driver
   write(*,'(A,1X,I0,1X,A,1X,A,1X,A,1X,F0.6,1X,A,1X,I0,1X,A,1X,F0.6)') &
        'G33R BEGIN nsplit', nsplit, trim(merge('carry ', 'rezero', carry_aux)), &
        ALGOTAG, 'delt', delt_used, 'loops', loops_used, 'dtcld', dtcld_used
+  ! THE FIXTURE THIS RAN ON, which the stream did not carry. The driver has
+  ! imported FIX_ID since it was written and never emitted it, so an arm's
+  ! artifact could not name the atmosphere it was given -- and a cross-arm
+  ! gate comparing eight streams could not check they were the same one.
+  write(*,'(A,1X,A)') 'G33R FIXTURE', FIX_ID
   do f = 1, NFLD_ST
     do k = 1, KM
       do i = 1, IM

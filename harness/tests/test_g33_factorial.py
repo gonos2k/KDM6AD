@@ -430,3 +430,64 @@ def test_simple_effects_say_whether_the_conditional_average_is_safe():
     assert row["N_at_C1_L0"] != row["N_at_C1_L1"]        # the mean would hide it
     flat = fc.conditionals(_table(lambda n, c, l: float(n * c)))["R_ni"]
     assert flat["N_at_C1_L0"] == flat["N_at_C1_L1"]
+
+
+# ---------------------------------------------------------------------------
+# The five the previous pass only half-closed.
+
+def test_the_identity_names_the_fixture_and_the_window():
+    """Eight arms could be compared without anything checking they ran on one
+    atmosphere: the driver imported FIX_ID and never emitted it, so a stream
+    could not name its own fixture."""
+    import inspect
+    src = inspect.getsource(fc.check_identity)
+    ret = src[src.index("return {"):]
+    for key in ("fixture", "window_seconds", "delt", "dtcld", "loops"):
+        assert f'"{key}"' in ret, key
+
+
+def test_the_denominators_reader_is_the_state_not_the_transfers():
+    """It is an inventory read off the pre-sed endpoints, not something the
+    transfer records produced -- and the metadata should say which."""
+    for r in ("R_nr_den", "R_ni_den"):
+        assert fc.RESPONSES[r][2] == "state"
+        assert fc.RESPONSES[r][3] is None
+    for r in ("R_nr_num", "R_ni_num", "R_qi"):
+        assert fc.RESPONSES[r][2] == "matched"
+
+
+def test_the_zero_denominator_rule_belongs_to_the_ratio_not_the_reader():
+    """`D_*_metric` is a ratio too, and A/0 is undefined under either reader."""
+    src = (ROOT / "g33_factorial.py").read_text()
+    # once for the matched budget rows, once for the recovered metric
+    assert src.count("zero denominator: the ratio is undefined") == 2
+
+
+def test_an_averaged_conditional_says_whether_it_may_stand_for_its_halves():
+    """`N_at_C1` is a mean over L. Where the two halves differ, quoting it hides
+    an N x L interaction -- so the flag is computed, not assumed."""
+    split = fc.conditionals(_table(lambda n, c, l: float(n * c * (1 + 9 * l))))
+    assert split["R_ni"]["N_at_C1_average_representative"] is False
+    flat = fc.conditionals(_table(lambda n, c, l: float(n * c)))
+    assert flat["R_ni"]["N_at_C1_average_representative"] is True
+
+
+def test_a_conditional_flag_over_an_invalid_arm_is_None_not_False():
+    """"the halves disagree" and "one half is not evidence" are different
+    answers, and collapsing them would let a refusal read as a finding."""
+    table = _table(lambda n, c, l: float(n), invalid={"legacy"})
+    row = fc.conditionals(table)["R_ni"]
+    assert row["N_at_C0_average_representative"] is None
+
+
+def test_a_binding_must_go_through_the_validity_predicate():
+    """A coefficient computed over arms whose control failed is not a
+    coefficient, and must not reach `CLAIMS.yaml`."""
+    good = fc.coefficients(_table(lambda n, c, l: float(n)))["R_ni"]
+    assert fc.bindable(good, "N") == pytest.approx(0.5)
+    bad = fc.coefficients(_table(lambda n, c, l: float(n),
+                                 invalid={"legacy"}))["R_ni"]
+    with pytest.raises(fc.FactorialError, match="not evidence"):
+        fc.bindable(bad, "N")
+    with pytest.raises(fc.FactorialError, match="no coefficient"):
+        fc.bindable(good, "NCLX")

@@ -240,6 +240,28 @@ and the SIMPLE effects underneath say the average is safe to quote: both are
 identical at L=0 and at L=1, so no N x L interaction is hidden inside that
 half.
 
+## The contract a figure from this table has to pass
+
+Every response carries `{value, unit, reader, span, paired_control, valid,
+reason, screening_bound}`, an invalid contrast carries `None` in every term,
+and `bindable(beta, term)` is the single door a coefficient goes through to
+reach `CLAIMS.yaml`. A contrast computed over arms whose control failed is not
+a contrast, and the check is a function rather than something each caller is
+trusted to remember.
+
+The identity a cross-arm comparison needs is complete now: algorithm, nsplit,
+mode, rho, width, levels, delt, dtcld, loops, **fixture** and window seconds.
+The fixture was the gap -- the driver had imported `FIXTURE_ID` since it was
+written and never emitted it, so eight arms could be compared without anything
+checking they ran on one atmosphere.
+
+And an averaged conditional says whether it may stand for its halves.
+`N_at_C1` is the mean of `N_at_C1_L0` and `N_at_C1_L1`; where those differ,
+quoting the mean hides an N x L interaction inside that half. At mstep <= 10
+they are identical to the last digit on every response, so the average is
+representative -- measured, with the flag computed from the response's own
+screening scale.
+
 ## What is still not measured
 
 - Longer than 300 s, and any real atmospheric column.
