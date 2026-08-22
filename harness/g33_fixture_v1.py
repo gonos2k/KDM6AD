@@ -104,6 +104,25 @@ class UnknownFixture(KeyError):
     """A fixture id that is not in the registry."""
 
 
+def canonical_id(name: str) -> str:
+    """The registry key for a fixture, from either spelling.
+
+    The registry is keyed by `fixture_id` (`boundary_mapping_v1`) while callers
+    pass the MODULE name (`g33_fixture_boundary_mapping_v1`), and the driver
+    emits the id. Two spellings of one fact, and the first thing that compared
+    them refused every stream (43 tests). One function resolves both, so
+    nothing has to remember which end it is holding.
+    """
+    if name in FIXTURES:
+        return name
+    stripped = name[len("g33_fixture_"):] if name.startswith("g33_fixture_") \
+        else name
+    if stripped in FIXTURES:
+        return stripped
+    raise UnknownFixture(
+        f"unknown fixture {name!r} (known: {sorted(FIXTURES)})")
+
+
 def spec(fixture_id: str) -> FixtureSpec:
     """The registry entry for `fixture_id`, verified against its own manifest."""
     return load_fixture(fixture_id)[0]
