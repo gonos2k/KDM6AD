@@ -43,6 +43,61 @@ configuration is -35 to 174.8, and 174.8 dBZ is not a reflectivity. The extreme
 tail is dominated by whatever produces those values, so `p99` is the statistic
 that means something here.
 
+## Four corrections to the table above
+
+Every number in it is real and several are not what they were read as. The
+owner's re-review named them; each is measured here rather than argued.
+
+**The quantiles were CONDITIONAL on cells that differ.** Beside the domain's own:
+
+| field | t=10 | conditional p99 | **domain p99** |
+|---|---|---|---|
+| `REFL_10CM` | | 1.175e+01 | **8.06e-01** |
+| `T` | | 7.32e-03 | 6.59e-03 |
+| `QVAPOR` | | 2.93e-06 | 2.80e-06 |
+| `RAINNC` | | 1.29e-02 | 1.11e-03 |
+
+So "more than ten dBZ at the 99th percentile" is the conditional figure. The
+domain's is **0.81 dBZ**, fourteen times smaller, and that is the one a reader
+takes a p99 to mean.
+
+**The reflectivity tail was the unphysical one.** Screened to a real
+reflectivity range, `[-35, 80]` dBZ, which covers 99.995 % of the domain at ten
+minutes, the p99 is **0.80 dBZ**. And in the terms a forecast is read in, the
+area above 20 dBZ is 47 408 cells at np = 1 against 47 456 at np = 4 -- a
+difference of 0.1 %.
+
+**The precipitation difference is DISPLACEMENT, not a bias.** Signed against
+gross, over the domain at ten minutes: **+0.168 mm signed** against **13.86 mm
+gross**, so the signed total is 1.2 % of the movement. And by threshold:
+
+| |dRAINNC| | > 1e-3 mm | > 1e-2 mm | > 1e-1 mm |
+|---|---|---|---|---|
+| t = 5 | 0.635 % | 0.194 % | 0.021 % |
+| t = 10 | 1.068 % | 0.300 % | **0.048 %** |
+
+"A tenth of a millimetre depends on the rank count" is true of **0.048 % of
+columns**, about one in two thousand -- not of the domain.
+
+**The growth factor compared two different populations.** The differing support
+itself grows from 4.76 % to 11.17 %, so a median at one minute and a median at
+ten are medians over different sets. Held still on the cells that differ at ONE
+minute and followed:
+
+| field | t=1 | t=10 | growth |
+|---|---|---|---|
+| `T` | 3.05e-05 | 2.14e-04 | 7x |
+| `REFL_10CM` | 4.01e-05 | 9.93e-03 | 248x |
+| `QVAPOR` | 6.99e-10 | 2.03e-08 | 29x |
+
+The growth is real on a fixed population. The "350x" quoted earlier was over a
+support that had more than doubled.
+
+**And the six-minute jump is the radiation call.** `radt = 5` minutes, and of
+the 31 fields that start differing at frame 6, **27 are radiation accumulators**
+and the other four are `LWUP*`. It is the first radiation call after `t = 0`
+carrying the existing difference into its own diagnostics, not a new mechanism.
+
 ## What it says
 
 **The difference spreads and grows.** Coverage goes from 8.75 % of temperature
@@ -51,10 +106,15 @@ Magnitude grows with it: the median reflectivity difference rises by a factor of
 350 over the same interval, and accumulated precipitation goes from a p99 of
 1.4e-06 mm to 1.3e-02 mm, with a maximum of 0.36 mm.
 
-So the one-step result was not a transient. After ten minutes of the
-operational configuration, **a tenth of a millimetre of accumulated
-precipitation, and more than ten dBZ at the 99th percentile, depend on how many
-MPI ranks the forecast was run on.**
+So the one-step result was not a transient: the difference spreads across the
+domain and grows on a fixed population.
+
+**Its SIZE is smaller than the first reading of this table suggested.** Stated
+in domain terms: the 99th percentile of the reflectivity difference is 0.81 dBZ
+(0.80 screened), the area above 20 dBZ moves by 0.1 %, and accumulated
+precipitation differs by more than 0.1 mm in 0.048 % of columns while the
+signed domain total moves by 1.2 % of the gross. The decomposition changes
+WHERE it rains far more than whether it rains.
 
 ## What it does NOT say
 
