@@ -82,6 +82,20 @@ FIXTURES = {
         # code paths, so a mechanism verdict from it would be a claim about physics
         # drawn from values chosen to be unphysical (owner P0-8).
         cpp_define="boundary_mapping", decision_ceiling="STRUCTURAL_ONLY"),
+    # THE MOISTURE GRADIENT. Every fixture above carries `qv` CONSTANT in the
+    # column -- measured, in-column spread exactly 0.0 across every published
+    # stream that has it. Under a uniform profile the dry and moist number
+    # ledgers differ by a constant per column, and that constant cancels out of
+    # every ratio, so no fixture could distinguish the two measures
+    # (FINDING_number_basis_gap_v1). This one differs from boundary_mapping in
+    # `qv` ALONE, so it is that fixture's matched control for the basis
+    # question and nothing else moves.
+    "moisture_gradient_v1": FixtureSpec(
+        "moisture_gradient_v1",
+        ROOT / "harness" / "g33_fixture_moisture_gradient_v1.json",
+        ROOT / "harness" / "g33_overlay" / "g33_fixture_moisture_gradient_v1.h",
+        ROOT / "harness" / "g33_fortran" / "g33_fixture_moisture_gradient_v1.f90",
+        cpp_define="moisture_gradient", decision_ceiling="STRUCTURAL_ONLY"),
 }
 DEFAULT_FIXTURE_ID = "arithmetic_synthetic_v1"
 
@@ -109,6 +123,10 @@ def load_fixture(fixture_id: str) -> tuple[FixtureSpec, dict]:
         raise ValueError(f"registry says {fixture_id!r} but "
                          f"{entry.manifest.name} declares {data['fixture_id']!r}")
     return entry, data
+
+#: Fields that can serve as the COLUMN anchor: a real physical input that is
+#: unique across columns and constant down each one.
+_COLUMN_ANCHORS = ("qv", "nccn")
 
 STATE_FIELDS = ("th", "qv", "qc", "qr", "qi", "qs", "qg",
                 "nccn", "nc", "ni", "nr", "bg")
@@ -169,18 +187,38 @@ def load_manifest(path: Path = MANIFEST) -> dict:
              "xland contains a malformed f32 word")
 
     anchors = data.get("anchor_fields")
-    _require(anchors == {"vertical": "p", "column": "qv"},
-             "anchor_fields must use actual physical inputs p/qv")
+    _require(isinstance(anchors, dict) and set(anchors) == {"vertical", "column"},
+             "anchor_fields must declare exactly a vertical and a column anchor")
+    _require(anchors["vertical"] == "p", "the vertical anchor must be `p`")
+    # THE COLUMN ANCHOR IS DECLARED, not fixed at `qv`.
+    #
+    # It exists to catch a column transposition, and the property it needs is
+    # "unique across B, constant along K" -- which `qv` has in every fixture so
+    # far and is not the only field that does. Fixing it at `qv` made a vertical
+    # MOISTURE GRADIENT unrepresentable, and that is exactly what the dry-air
+    # number-measure question needs: under a column-uniform `qv` the dry and
+    # moist ledgers differ by a constant per column and it cancels out of every
+    # ratio (FINDING_number_basis_gap_v1). The schema forbade the experiment.
+    #
+    # WIDENING, not loosening: whichever field is named must still pass BOTH
+    # checks, so a fixture cannot escape the transposition guard by declaring a
+    # field that does not carry it. Every existing fixture declares `qv` and
+    # validates exactly as before.
+    _require(anchors["column"] in _COLUMN_ANCHORS,
+             f"column anchor must be one of {list(_COLUMN_ANCHORS)}, "
+             f"got {anchors['column']!r}")
     p0 = fields[anchors["vertical"]][:K]
     _require(len(set(p0)) == K, "vertical anchor field p is not unique along K")
     for b in range(B):
         _require(fields["p"][b*K:(b+1)*K] == p0,
                  "vertical anchor p must use the same K profile in every column")
-    qv_cols = [fields["qv"][b*K] for b in range(B)]
-    _require(len(set(qv_cols)) == B, "column anchor field qv is not unique across B")
+    ca = anchors["column"]
+    ca_cols = [fields[ca][b*K] for b in range(B)]
+    _require(len(set(ca_cols)) == B,
+             f"column anchor field {ca} is not unique across B")
     for b in range(B):
-        _require(len(set(fields["qv"][b*K:(b+1)*K])) == 1,
-                 "column anchor qv must be constant along K in each column")
+        _require(len(set(fields[ca][b*K:(b+1)*K])) == 1,
+                 f"column anchor {ca} must be constant along K in each column")
 
     # DYNAMICS-NEGATIVE INPUT, declared rather than discovered.
     #

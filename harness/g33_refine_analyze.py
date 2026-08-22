@@ -28,7 +28,20 @@ from pathlib import Path
 
 _STATE = re.compile(r"^G33R (STATE|INITIAL)\s+(\S+)\s+(\d+)\s+(-?\d+)\s+([0-9A-Fa-f]{8})$")
 _PREC = re.compile(r"^G33R PREC\s+(\d+)\s+(\d+)\s+([0-9A-Fa-f]{8})$")
-_FORCING = re.compile(r"^G33R FORCING\s+(rho|delz|pii)\s+(\d+)\s+(-?\d+)\s+([0-9A-Fa-f]{8})$")
+#: The forcing names this reader accepts. `xland` was added because `ncmin`
+#: branches on the land mask (F:876-882) and Arm L is the correction to that
+#: branch -- so an analysis comparing two decompositions could not check they
+#: were handed the same mask, the one input L's causal story rests on.
+#:
+#: WIDENING, not tightening. Every stream published under the previous set
+#: parses unchanged and no pinned figure moves; a name outside the set is still
+#: refused, so a typo cannot enter as a silent new quantity.
+_FORCING_NAMES = ("rho", "delz", "pii", "xland")
+#: The fixture the run was built against. Additive: a stream without it parses
+#: as before and reports `fixture: None`, so no published member is invalidated.
+_FIXTURE = re.compile(r"^G33R FIXTURE\s+(\S+)$")
+_FORCING = re.compile(r"^G33R FORCING\s+(" + "|".join(_FORCING_NAMES) +
+                      r")\s+(\d+)\s+(-?\d+)\s+([0-9A-Fa-f]{8})$")
 
 #: The water species, split by the phase the code's latent heats treat them as.
 #: MASS is derived, not restated: two copies of one species list is how a species
@@ -134,6 +147,9 @@ def read_text(text: str, *, nsplit=None, label: str = "<stream>") -> dict:
         elif m := _FORCING.match(ln):
             nm, i, k, b = m.groups()
             key = ("forcing", nm, int(i), int(k))
+        elif m := _FIXTURE.match(ln):
+            out[("meta", "fixture")] = m.group(1)
+            continue
         else:
             raise RefineError(f"{label}: unrecognised G33R record: {ln!r}")
         _expect(key not in seen,
@@ -199,6 +215,7 @@ def read_text(text: str, *, nsplit=None, label: str = "<stream>") -> dict:
             f"prec covers {len(pr)} of the {len(want)} (species, column) pairs the "
             f"state requires; a stream without precipitation is not a refinement "
             f"member", label)
+    out.setdefault(("meta", "fixture"), None)
     out[("meta", "nsplit")] = got_n
     out[("meta", "mode")] = mode
     out[("meta", "algorithm")] = algo

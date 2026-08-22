@@ -52,6 +52,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import struct
 import sys
 from itertools import combinations
 from pathlib import Path
@@ -110,10 +111,16 @@ RESPONSES = {
     "R_qi_den": ("kg m-2", None, "matched", None, "selected"),
     "R_qi": ("dimensionless", "C", "matched", None, "selected"),
     "R_nr_num": ("number m-2", "N", "matched", ("main", "qr"), "selected"),
-    "R_nr_den": ("number m-2", None, "matched", ("main", "qr"), "selected"),
+    # The DENOMINATOR carries no control. It is the starting inventory, a state
+    # quantity, and a failing mass closure does not make it unmeasurable --
+    # gating it deleted exactly the inventory half that numerator/denominator
+    # separation exists to expose (owner review §8).
+    # ... and its reader is `state`, not `matched`: it is an inventory read off
+    # the pre-sed endpoints, not something the transfer records produced.
+    "R_nr_den": ("number m-2", None, "state", None, "selected"),
     "R_nr": ("dimensionless", "N", "matched", ("main", "qr"), "selected"),
     "R_ni_num": ("number m-2", "N", "matched", ("ice", "qi"), "selected"),
-    "R_ni_den": ("number m-2", None, "matched", ("ice", "qi"), "selected"),
+    "R_ni_den": ("number m-2", None, "state", None, "selected"),
     "R_ni": ("dimensionless", "N", "matched", ("ice", "qi"), "selected"),
     # The endpoint-recovered metric diagnostic, under its own name. It measures
     # the residual of the number METRIC as the endpoints imply it, which is a
@@ -127,11 +134,25 @@ RESPONSES = {
     "cap_ice_signed": ("kg m-2", None, "capin", None, "selected"),
     "cap_ice_destroyed": ("kg m-2", None, "capin", None, "selected"),
     "cap_ice_created": ("kg m-2", None, "capin", None, "selected"),
-    "partition_first": ("count", "L", "state", None, "first-segment-post"),
-    "partition_last_segment_post": ("count", "L", "state", None,
-                                    "last-segment-post"),
-    "partition_window_final": ("count", "L", "state", None, "window-final"),
-    "partition_path": ("count", "L", "state", None, "all-segments"),
+    # TWO COUNTS AT EVERY POINT, because they are two units. A CELL is a
+    # (split, column, level) whose state differs in at least one field; a
+    # COMPONENT is one (field, column, level). Reporting 4 at the last segment
+    # beside 32 at the window final and calling it eight-fold growth compared a
+    # cell count with a component count (owner review §7).
+    "partition_first_cells": ("cells", "L", "state", None, "first-segment-post"),
+    "partition_first_components": ("components", "L", "state", None,
+                                   "first-segment-post"),
+    "partition_last_segment_cells": ("cells", "L", "state", None,
+                                     "last-segment-post"),
+    "partition_last_segment_components": ("components", "L", "state", None,
+                                          "last-segment-post"),
+    "partition_window_final_cells": ("cells", "L", "state", None,
+                                     "window-final"),
+    "partition_window_final_components": ("components", "L", "state", None,
+                                          "window-final"),
+    "partition_path_cells": ("cells", "L", "state", None, "all-segments"),
+    "partition_path_components": ("components", "L", "state", None,
+                                  "all-segments"),
 }
 
 #: species -> the chain its cap belongs to, so the cap and the residual of one
@@ -346,12 +367,33 @@ def _partition(single: str, split: str) -> dict:
     if not splits:
         raise FactorialError("no segment states recovered from either stream")
     lo, hi = splits[0], splits[-1]
+
+    def counts(keys):
+        """(differing cells, differing field components) over `keys`."""
+        cells = comps = 0
+        for k in keys:
+            da = dict(a[k])
+            db = dict(b[k])
+            n = sum(1 for f in da if da[f] != db.get(f, object()))
+            cells += bool(n)
+            comps += n
+        return float(cells), float(comps)
+
+    first_c, first_p = counts([k for k in a if k[0] == lo])
+    last_c, last_p = counts([k for k in a if k[0] == hi])
+    path_c, path_p = counts(list(a))
+    # The window-final block is already keyed per (field, column, level), so a
+    # differing entry IS a component; the cells it touches are its (col, level).
+    wf_comp = [k for k in fa if fa[k] != fb[k]]
     return {
-        "partition_first": float(sum(1 for k in a if k[0] == lo and a[k] != b[k])),
-        "partition_last_segment_post":
-            float(sum(1 for k in a if k[0] == hi and a[k] != b[k])),
-        "partition_window_final": float(sum(1 for k in fa if fa[k] != fb[k])),
-        "partition_path": float(sum(1 for k in a if a[k] != b[k])),
+        "partition_first_cells": first_c,
+        "partition_first_components": first_p,
+        "partition_last_segment_cells": last_c,
+        "partition_last_segment_components": last_p,
+        "partition_window_final_cells": float(len({k[1:] for k in wf_comp})),
+        "partition_window_final_components": float(len(wf_comp)),
+        "partition_path_cells": path_c,
+        "partition_path_components": path_p,
     }
 
 
@@ -402,19 +444,32 @@ def responses(stream_single: str, stream_split: str, *,
                  _ratio_screen(r["num"], r["den"], r["b_num"], r["b_den"])
                  if r else 0.0)):
             name = f"R_{species}{suffix}"
-            put(name, value, valid=bool(r) and not bad,
-                reason="no matched rows on this span" if not r else bad)
+            # The control is per RESPONSE: the ratio and the numerator need the
+            # chain's mass row, the denominator does not.
+            gated = RESPONSES[name][3] is not None
+            reason = "no matched rows on this span" if not r else (
+                bad if gated else "")
+            # A/0 is undefined, not zero. Reporting 0.0 for it makes an
+            # unmeasurable ratio indistinguishable from a residual that
+            # vanished -- the same shape as the coverage defect already closed.
+            if not suffix and r and not r["den"]:
+                reason = reason or "zero denominator: the ratio is undefined"
+            put(name, value, valid=bool(r) and not reason, reason=reason)
             out[name]["screening_bound"] = bound
 
     for species, name in (("nr", "D_nr_metric"), ("ni", "D_ni_metric")):
         d = _recovered_ratio(span, species)
         short = d["eligible"] != d["expected"]
+        reason = (f"{d['eligible']} of {d['expected']} rows recoverable -- "
+                  f"`column()` refuses mstep > 1, and a ratio over the rows "
+                  f"that happened to survive is not the span's residual"
+                  ) if short else ""
+        # A/0 is undefined here too. The rule belongs to the RATIO, not to the
+        # reader that produced it.
+        if not reason and not d["den"]:
+            reason = "zero denominator: the ratio is undefined"
         put(name, d["num"] / d["den"] if d["den"] else 0.0,
-            valid=not short,
-            reason=(f"{d['eligible']} of {d['expected']} rows recoverable -- "
-                    f"`column()` refuses mstep > 1, and a ratio over the rows "
-                    f"that happened to survive is not the span's residual")
-            if short else "")
+            valid=not reason, reason=reason)
         out[name]["screening_bound"] = _ratio_screen(
             d["num"], d["den"], _screen(d["sum_abs"], d["terms"]),
             _screen(abs(d["den"]), d["terms"]))
@@ -459,10 +514,116 @@ def check_identity(name: str, single: str, split: str) -> dict:
             f"{name}: both streams ran {a['ntile']} tile(s), so there is no "
             f"decomposition to compare and `partition` would be zero by "
             f"construction.")
+    # delt/dtcld/loops were COMPARED between the two decompositions and then
+    # dropped from the returned dict, so the cross-arm gate that reads this
+    # could not see them: two arms on different timesteps passed (owner §9).
+    # The FIXTURE and the window horizon complete it. The fixture is the
+    # atmosphere the arm was given, and until the driver emitted it no stream
+    # could name its own -- so eight arms could be compared without anything
+    # checking they ran on one. `window_seconds` is derived rather than emitted:
+    # the header already carries the per-split step and the split count, and one
+    # fact in two places drifts.
+    import g33_refine_analyze as ra
+    fixtures = {ra.read_text(t)[("meta", "fixture")] for t in (single, split)}
+    if len(fixtures) != 1:
+        raise FactorialError(
+            f"{name}: the two decompositions declare fixtures {sorted(fixtures)}")
     return {"algorithm": a["algorithm"], "nsplit": a["nsplit"],
             "mode": a["carry"], "rho": a["rho"], "width": a["width"],
-            "levels": a["levels"], "tiles_single": a["tile_sizes"],
-            "tiles_split": b["tile_sizes"]}
+            "levels": a["levels"], "delt": a["delt"], "dtcld": a["dtcld"],
+            "loops": a.get("loops"), "fixture": fixtures.pop(),
+            "window_seconds": (a["delt"] * a["nsplit"]
+                               if a["delt"] is not None else None),
+            "tiles_single": a["tile_sizes"], "tiles_split": b["tile_sizes"]}
+
+
+def _raw_input(text: str) -> dict:
+    """What a run was HANDED: the G33R `initial` state and every forcing.
+
+    `xland` is in there now. `ncmin` branches on the land mask (F:876-882) and
+    Arm L is the correction to that branch, so it is the one input L's causal
+    story rests on -- and until the driver emitted it, no analysis comparing
+    two decompositions could check they were given the same one.
+    """
+    import g33_refine_analyze as ra
+    d = ra.read_text(text)
+    return {k: v for k, v in d.items()
+            if isinstance(k, tuple) and k[0] in ("initial", "forcing")}
+
+
+def ncmin_exposure(text: str) -> dict:
+    """What `ncmin` each column ASKED for and what its tile actually imposed.
+
+    DERIVED, not measured. `ncmin` is a kernel-local scalar and nothing emits
+    it, but it is fully determined by inputs that are now recorded: the land
+    mask, which the stream carries since the driver began emitting `xland`, and
+    `ncmin_land`/`ncmin_sea`, which the fixture manifest declares. The kernel's
+    rule is one branch (F:876-882) inside a `do i = its,ite` loop assigning to a
+    SCALAR, so every column computes its own value and only the tile's LAST one
+    survives to be used.
+
+    Derivation is not measurement and this says so. What makes it checkable is
+    Arm L: the arm exists precisely to make the imposed value per-column, and
+    where this function says a tile imposes a value some of its columns did not
+    ask for, `partition` is non-zero -- and Arm L drives it to zero.
+    """
+    import g33_number_transport as nt
+    import g33_refine_analyze as ra
+    d = ra.read_text(text)
+    xland = {k[2]: v for k, v in d.items()
+             if isinstance(k, tuple) and k[0] == "forcing" and k[1] == "xland"}
+    if not xland:
+        raise FactorialError(
+            "this stream carries no `xland`: it was produced before the driver "
+            "emitted the land mask, so what each column asked for cannot be "
+            "derived. A gate that cannot see must not answer.")
+    ident = nt.validated_run_identity(text)
+    # FROM THE FIXTURE THE STREAM NAMES, not from a constant here. The first
+    # draft of this carried the pair inline and carried it WRONG -- 2.5e7/2.5e6
+    # against the manifest's 1.0e8/2.5e7 -- which is what a second copy of a
+    # fact is for. The stream declares its fixture now, so there is no second
+    # copy to get wrong.
+    import g33_fixture_v1 as fx
+    fixture = ra.read_text(text)[("meta", "fixture")]
+    if fixture is None:
+        raise FactorialError(
+            "this stream does not name its fixture, so the ncmin parameters "
+            "cannot be read from the manifest that declares them")
+    _spec, manifest = fx.load_fixture(fixture)
+    par = manifest["common_parameters"]
+    land = struct.unpack(">f", bytes.fromhex(par["ncmin_land"]))[0]
+    sea = struct.unpack(">f", bytes.fromhex(par["ncmin_sea"]))[0]
+    out = {}
+    for lo, hi in ident["tile_ranges"]:
+        # slmsk == 2 takes ncmin_sea, anything else ncmin_land -- the branch as
+        # the kernel writes it, label and assignment included.
+        want = {c: (sea if xland[c] == 2.0 else land) for c in range(lo, hi + 1)}
+        imposed = want[hi]                     # the loop's last write survives
+        out[(lo, hi)] = {"intended": want, "imposed": imposed,
+                         "columns_overridden": sorted(c for c, v in want.items()
+                                                      if v != imposed)}
+    return out
+
+
+def same_input(name: str, single: str, split: str) -> None:
+    """The two DECOMPOSITIONS of one arm must have been handed the same run.
+
+    `check_identity` compared their metadata -- nsplit, mode, rho, width,
+    levels, delt, dtcld -- and never their state. Two streams can agree on all
+    of that and start from different atmospheres, and then every `partition`
+    count reads as a decomposition effect (owner review §6).
+    """
+    a, b = _raw_input(single), _raw_input(split)
+    if set(a) != set(b):
+        raise FactorialError(
+            f"{name}: the two decompositions do not carry the same input "
+            f"records: {len(set(a) ^ set(b))} differ in the key set")
+    bad = sorted(k for k in a if a[k] != b[k])
+    if bad:
+        raise FactorialError(
+            f"{name}: the two decompositions were handed different inputs -- "
+            f"{len(bad)} of {len(a)} cells differ, e.g. {bad[:3]}. Every "
+            f"`partition` count would read as a decomposition effect.")
 
 
 def same_atmosphere(streams: dict) -> None:
@@ -477,12 +638,9 @@ def same_atmosphere(streams: dict) -> None:
     So the comparison is the raw G33R `initial` state and `forcing` records,
     every field, every cell, as the bytes the driver emitted.
     """
-    import g33_refine_analyze as ra
     ref = ref_arm = None
     for arm, text in streams.items():
-        d = ra.read_text(text)
-        got = {k: v for k, v in d.items()
-               if isinstance(k, tuple) and k[0] in ("initial", "forcing")}
+        got = _raw_input(text)
         if ref is None:
             ref, ref_arm = got, arm
             continue
@@ -522,9 +680,18 @@ def coefficients(table: dict, screens: dict | None = None) -> dict:
     for response in RESPONSES:
         invalid = {a: table[a][response]["reason"] for a in arms
                    if not table[a][response]["valid"]}
-        betas = {"_valid": not invalid}
         if invalid:
-            betas["_invalid"] = invalid
+            # NO NUMBERS. The contract says a contrast is computed only where
+            # the response is valid in all eight arms, and the previous version
+            # computed it anyway and attached `_valid: false` -- so the JSON
+            # carried a beta that a reader, a binding or a notebook could pick
+            # up without ever consulting the flag. A refusal that still hands
+            # over the answer is not a refusal.
+            out[response] = dict.fromkeys(
+                ["", "N", "C", "L", "NC", "NL", "CL", "NCL", "_bound"])
+            out[response].update({"_valid": False, "_invalid": invalid})
+            continue
+        betas = {"_valid": True}
         for size in range(4):
             for subset in _subsets(names, size):
                 acc = 0.0
@@ -539,6 +706,27 @@ def coefficients(table: dict, screens: dict | None = None) -> dict:
                               for a in arms) / 8.0
         out[response] = betas
     return out
+
+
+def bindable(beta: dict, term: str) -> float:
+    """One coefficient, or a refusal -- the predicate an evidence binding owes.
+
+    `coefficients()` already returns `None` for every term of an invalid
+    contrast, so a binding that reads one gets nothing to pin. This is the
+    check stated as a function rather than left to each caller to remember:
+    a figure enters `CLAIMS.yaml` through here or it does not enter.
+
+    The two failures it exists to stop are a binding taken while `_valid` is
+    false, and one taken from a term the response does not have.
+    """
+    if not beta.get("_valid"):
+        raise FactorialError(
+            f"this contrast is not evidence: {beta.get('_invalid', {})}. A "
+            f"coefficient computed over arms whose control failed is not a "
+            f"coefficient, and must not be pinned.")
+    if term not in beta or beta[term] is None:
+        raise FactorialError(f"no coefficient {term!r} on this response")
+    return float(beta[term])
 
 
 def conditionals(table: dict) -> dict:
@@ -576,6 +764,49 @@ def conditionals(table: dict) -> dict:
                     row[f"{x}_at_{y}{level}"] = (
                         sum(table[a][response]["value"] for a in hi) / len(hi)
                         - sum(table[a][response]["value"] for a in lo) / len(lo))
+        # ... and the SIMPLE effects underneath them. `N_at_C1` averages over
+        # L, so an N x L interaction inside that half is hidden in the mean.
+        # These are the two halves it is a mean of, and they are what says
+        # whether quoting the average is safe (owner review §11).
+        k = 2                       # the remaining factor, for each ordered pair
+        for i, x in enumerate(names):
+            for j, y in enumerate(names):
+                if i == j:
+                    continue
+                z = names[3 - i - j] if {i, j} != {0, 1} else names[
+                    [t for t in range(3) if t not in (i, j)][0]]
+                zi = names.index(z)
+                for ly in (0, 1):
+                    for lz in (0, 1):
+                        hi = [a for a in table if ALGO_FACTORS[a][i] == 1
+                              and ALGO_FACTORS[a][j] == ly
+                              and ALGO_FACTORS[a][zi] == lz]
+                        lo = [a for a in table if ALGO_FACTORS[a][i] == 0
+                              and ALGO_FACTORS[a][j] == ly
+                              and ALGO_FACTORS[a][zi] == lz]
+                        key = f"{x}_at_{y}{ly}_{z}{lz}"
+                        if not all(table[a][response]["valid"] for a in hi + lo):
+                            row[key] = None
+                            continue
+                        row[key] = (table[hi[0]][response]["value"]
+                                    - table[lo[0]][response]["value"])
+        # AND WHETHER THE AVERAGE MAY STAND FOR THEM. `N_at_C1` is the mean of
+        # `N_at_C1_L0` and `N_at_C1_L1`; where those differ, quoting the mean
+        # hides an N x L interaction inside that half. The flag is set from the
+        # response's own screening scale rather than a round number, and is
+        # `None` where either simple effect is not evidence.
+        bound = max(table[a][response]["screening_bound"] for a in table)
+        for i, x in enumerate(names):
+            for j, y in enumerate(names):
+                if i == j:
+                    continue
+                z = names[[t for t in range(3) if t not in (i, j)][0]]
+                for ly in (0, 1):
+                    lo_v = row.get(f"{x}_at_{y}{ly}_{z}0")
+                    hi_v = row.get(f"{x}_at_{y}{ly}_{z}1")
+                    key = f"{x}_at_{y}{ly}_average_representative"
+                    row[key] = (None if lo_v is None or hi_v is None
+                                else abs(hi_v - lo_v) <= bound)
         out[response] = row
     return out
 
@@ -610,14 +841,34 @@ def main() -> int:
             raise SystemExit(f"{spec}: need ARM=SINGLE,SPLIT")
         s, pth = Path(single).read_text(), Path(split).read_text()
         identity[name] = check_identity(name, s, pth)
+        same_input(name, s, pth)        # this arm's two decompositions
+        # What each decomposition imposed on which columns -- the L mechanism,
+        # derived from recorded inputs instead of read out of the source.
+        try:
+            identity[name]["ncmin_single"] = {
+                f"{lo}-{hi}": {"imposed": r["imposed"],
+                               "overridden": r["columns_overridden"]}
+                for (lo, hi), r in ncmin_exposure(s).items()}
+            identity[name]["ncmin_split"] = {
+                f"{lo}-{hi}": {"imposed": r["imposed"],
+                               "overridden": r["columns_overridden"]}
+                for (lo, hi), r in ncmin_exposure(pth).items()}
+        except FactorialError as exc:
+            identity[name]["ncmin_single"] = None
+            identity[name]["ncmin_split"] = None
+            identity[name]["ncmin_reason"] = str(exc)
         streams[name] = s
         table[name] = responses(s, pth, window=args.window)
 
     ref = identity.get("legacy")
     if ref:
         for name, ident in identity.items():
+            # `ncmin_*` is a DERIVED description of the run, not part of what
+            # makes two arms the same experiment -- and Arm L changes it on
+            # purpose, so requiring it to match would refuse the arm.
             bad = [k for k, v in ref.items()
-                   if k != "algorithm" and ident[k] != v]
+                   if k != "algorithm" and not k.startswith("ncmin")
+                   and ident[k] != v]
             if bad:
                 raise SystemExit(
                     f"{name} and legacy differ in {bad}: the arms are not one "

@@ -81,6 +81,35 @@ is, and vanishes above it:
 | 95 | 4.63e-06 | 1.07e-01 | -6.02e-08 |
 | 56 | 4.23e-06 | 1.13e-01 | -2.91e-07 |
 
+## The unweighted statistic understates it, and here is by how much
+
+Everything above runs over all 2 507 544 interfaces of the state, and most of
+them carry no rain number at all. A coefficient there is a property of the air,
+not of anything being transported: the defect only reaches a forecast where
+there is something to transport.
+
+Restricted to interfaces whose BOTH cells carry the field, on the 20 s `mp37`
+forecast frame of the same case:
+
+| field | interfaces carrying it | legacy (dry), median | Arm N leaves |
+|---|---|---|---|
+| `QNRAIN` | 13 611 (0.543 %) | 6.279e-02 | median **1.94 %**, p90 3.49 % |
+| `QNICE` | 99 763 (3.979 %) | 8.570e-02 | median 0.53 %, p90 1.04 % |
+
+Against **0.33 %** unweighted. About six times larger for rain, because rain
+number sits in the moist lower troposphere where the moisture gradient is
+steepest -- which is exactly where the two ledgers differ.
+
+So the sentence below, that Arm N removes "about 99.7 %" of the per-interface
+defect, is the all-interface figure. Where rain number actually is it removes
+98.1 %.
+
+This also corrects a blocker recorded in `CHECKLIST_review_main_2935fcd2.md`.
+That checklist said no state on this host carried a populated rain-number field,
+having checked `wrfinput_d01` (a cold start) and the 100 km IDEAL run. It did
+not check the real case's own forecast output, which carries `QNRAIN` after
+twenty seconds. The blocker was wrong.
+
 ## What this says, and what it does not
 
 Arm N removes about 99.7 % of the legacy per-interface defect against the

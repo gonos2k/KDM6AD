@@ -42,18 +42,23 @@ was a whole-window number sitting in a first-call table.
 
 Over the window there IS an N x C term, and it is the OTHER shape:
 
-    R_ni           C at N=0  -9.085e-02     C at N=1   3.198e-17
-    cap_ice_rel    N at C=0   1.691e-04     N at C=1  -1.564e-02
+    D_ni_metric      C at N=0  -9.085e-02    C at N=1   3.198e-17
+    cap_ice_signed   N at C=0   2.977e-05    N at C=1   2.898e-01
 
-`R_ni` is C masked by N -- C acts only while N has not already removed the
-residual. The cap is N gated by C -- N acts only while C is present. Both are
-N x C interactions and they are not the same sentence; one `beta_NC` cannot
+`D_ni_metric` is C masked by N -- C acts only while N has not already removed
+the residual. The cap is N gated by C -- N acts only while C is present. Both
+are N x C interactions and they are not the same sentence; one `beta_NC` cannot
 tell them apart, which is why conditional effects are now reported beside it.
+
+The name is `D_ni_metric` here too, not `R_ni`: this is the endpoint-recovered
+metric residual. The actual-transfer `R_ni` is not scorable across all eight
+arms on this fixture.
 
 **"`partition` is L-selective on the first call."** After ONE sub-step the two
 decompositions agree completely: `partition_first` is 0 for all eight arms, so
 there is nothing for L to be selective about there. The 45 that was published
-is a PATH count over all twelve sub-steps. The three questions are now separate:
+is a PATH count over all twelve sub-steps. The four questions are now separate,
+each in both units:
 
 | response | legacy | `lncmin` | beta_L |
 |---|---|---|---|
@@ -69,10 +74,19 @@ L's effect is real and it is a TRAJECTORY effect, not a first-call one.
 are at roundoff: every interaction coefficient is 1.99e-20 against a main effect
 of 1.843e-03 and a screening scale of 5.97e-08.
 
-**`R_ni` carries an N x C MASKING interaction on both spans.**
+**`D_ni_metric` carries an N x C MASKING interaction on both spans.**
+
+The name matters and this finding had it wrong. `D_ni_metric` is the
+ENDPOINT-RECOVERED number-metric residual; `R_ni` is the actual-transfer
+budget, and they are different quantities. The published masking result is the
+first of them:
 
     first call   beta_C = -5.865e-03   beta_NC = +5.865e-03
     window       beta_C = -2.271e-02   beta_NC = +2.271e-02
+
+The actual-transfer `R_ni` contrast is NOT scorable across all eight arms on
+this fixture, because the C=0 half fails its ice mass control. What it does
+give, in the C=1 half where the control closes, is a conditional -- see below.
 
 Equal and opposite on each span: C's effect exists only where N has not already
 removed the residual, so main effect and interaction cancel exactly in the N=1
@@ -197,18 +211,91 @@ microphysics runs after sedimentation in the same call. Reading the driver's own
 
 | response | legacy | `lncmin` | beta_L | beta_N |
 |---|---|---|---|---|
-| `partition_first` | 0 | 0 | 0 | 0 |
-| `partition_last_segment_post` | 4 | 0 | -2.000 | 0 |
-| `partition_window_final` | 32 | 0 | -16.375 | +0.125 |
-| `partition_path` | 45 | 0 | -22.50 | 0 |
+| point | legacy cells | legacy components | `lncmin` |
+|---|---|---|---|
+| first segment | 0 | 0 | 0 |
+| last segment | 4 | 38 | 0 |
+| **window final** | **4** | **33** | 0 |
+| path | 45 | 416 | 0 |
 
-The window-final count carries N and C terms that the segment count showed as
-exactly zero, so the earlier reading of `4` as "what the forecast would carry"
-was the wrong quantity as well as the wrong size.
+**AND THE EARLIER READING OF THIS TABLE WAS A UNIT ERROR.** It reported
+`4` at the last segment beside `32` at the window final and called the
+difference growth. Those were a CELL count and a COMPONENT count: a cell is a
+`(split, column, level)` differing in at least one field, a component is one
+`(field, column, level)`. Measured in matched units there is no growth at all --
+4 cells at both points, and the component count NARROWS, 38 to 33. The `32` was
+also wrong for legacy specifically, which is 33; the L=0 arms average 32.75,
+which is where `beta_L = -16.375` came from.
+
+What survives, and is now measured in both units at all four points: every
+`lncmin`-family arm is exactly 0 everywhere, and every L=0 arm is not. Arm L
+collapses the decomposition dependence completely; it does not merely shrink
+it.
+
+## What the actual-transfer budget says at mstep > 1
+
+On `g33_fixture_multisubcycle_v1`, `nsplit = 3`, `mstep <= 10`, the C=0 half
+fails its mass control and the C=1 half closes, so the contrast is not scorable
+and the conditional is:
+
+    N_at_C1(R_nr) = -1.06042e-02        N_at_C1(R_ni) = -2.56255e-02
+    N_at_C0       = not evidence
+
+and the SIMPLE effects underneath say the average is safe to quote: both are
+identical at L=0 and at L=1, so no N x L interaction is hidden inside that
+half.
+
+## The contract a figure from this table has to pass
+
+Every response carries `{value, unit, reader, span, paired_control, valid,
+reason, screening_bound}`, an invalid contrast carries `None` in every term,
+and `bindable(beta, term)` is the single door a coefficient goes through to
+reach `CLAIMS.yaml`. A contrast computed over arms whose control failed is not
+a contrast, and the check is a function rather than something each caller is
+trusted to remember.
+
+The identity a cross-arm comparison needs is complete now: algorithm, nsplit,
+mode, rho, width, levels, delt, dtcld, loops, **fixture** and window seconds.
+The fixture was the gap -- the driver had imported `FIXTURE_ID` since it was
+written and never emitted it, so eight arms could be compared without anything
+checking they ran on one atmosphere.
+
+And an averaged conditional says whether it may stand for its halves.
+`N_at_C1` is the mean of `N_at_C1_L0` and `N_at_C1_L1`; where those differ,
+quoting the mean hides an N x L interaction inside that half. At mstep <= 10
+they are identical to the last digit on every response, so the average is
+representative -- measured, with the flag computed from the response's own
+screening scale.
+
+## The L mechanism, out of the artifact instead of out of the source
+
+`ncmin` is a kernel-local scalar and nothing emits it, but it is fully
+determined by inputs that are now recorded: the land mask, which the stream
+carries since the driver began emitting `xland`, and `ncmin_land`/`ncmin_sea`,
+which the fixture manifest declares. So what each column ASKED for and what its
+tile actually IMPOSED can be derived, and the two decompositions can be
+compared on it:
+
+| decomposition | tile | imposed | columns overridden |
+|---|---|---|---|
+| single | 1..3 | 1.000e+08 | **2** |
+| `(2,1)` | 1..2 | 2.500e+07 | **1** |
+| `(2,1)` | 3..3 | 1.000e+08 | none |
+
+Column 1 is given 1.0e+08 under one decomposition and 2.5e+07 under the other;
+column 2 likewise. That is the decomposition dependence `partition` counts,
+visible in the record rather than inferred by reading the kernel.
+
+DERIVED, not measured, and the tool says so. What makes it checkable is Arm L
+itself: the arm exists to make the imposed value per-column, and every arm that
+carries it has `partition` exactly 0 at all four points in both units.
 
 ## What is still not measured
 
 - Longer than 300 s, and any real atmospheric column.
+- `ncmin` as EMITTED rather than derived. Recording the kernel's own scalar
+  would need a new overlay anchor in the frozen file; the derivation above uses
+  only recorded inputs and the branch as the source writes it.
 - `mstep > 1` for the NUMBER responses. The mass responses are now measured
   there (above); what remains unavailable is `R_nr`/`R_ni` in the C=0 half.
   Previously stated as a blanket NO-GO, and that was too broad. The recovered reader
