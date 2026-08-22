@@ -52,7 +52,7 @@ def test_uniform_moisture_leaves_arm_N_nothing_to_answer_for(tmp_path):
     That is why the basis question stayed open on fixture evidence -- not
     because Arm N was measured and found wanting.
     """
-    got = nb.profile(_state(tmp_path, PRESS, [8e-3] * len(PRESS)))
+    got = nb.profile(_state(tmp_path, PRESS, [8e-3] * len(PRESS)), "exact")
     assert np.abs(got["armn_dry"]).max() < 1e-15, got["armn_dry"]
     assert np.abs(got["legacy_dry"]).max() > 0.05      # legacy still leaks
 
@@ -67,8 +67,9 @@ def test_what_arm_N_leaves_does_not_depend_on_the_density_profile(tmp_path):
     test built on that would pass while measuring nothing.
     """
     qv = [1.6e-2, 1.2e-2, 6.0e-3, 2.0e-3, 4.0e-4]
-    a = nb.profile(_state(tmp_path, PRESS, qv, "a"))
-    b = nb.profile(_state(tmp_path, [1.0e5, 9.7e4, 9.3e4, 6.0e4, 3.0e4], qv, "b"))
+    a = nb.profile(_state(tmp_path, PRESS, qv, "a"), "exact")
+    b = nb.profile(_state(tmp_path, [1.0e5, 9.7e4, 9.3e4, 6.0e4, 3.0e4], qv, "b"),
+                   "exact")
     assert np.allclose(a["armn_dry"], b["armn_dry"], rtol=0, atol=1e-15)
     assert not np.allclose(a["legacy_dry"], b["legacy_dry"], rtol=1e-6)
 
@@ -81,7 +82,8 @@ def test_the_two_terms_compose_exactly_not_approximately(tmp_path):
     approximate version of this would make the remaining term a residue of the
     algebra rather than a measured quantity.
     """
-    got = nb.profile(_state(tmp_path, PRESS, [1.8e-2, 1.0e-2, 5e-3, 1e-3, 1e-4]))
+    got = nb.profile(_state(tmp_path, PRESS, [1.8e-2, 1.0e-2, 5e-3, 1e-3, 1e-4]),
+                     "exact")
     lhs = (1 + got["legacy_moist"]) * (1 + got["armn_dry"])
     assert np.abs(lhs - (1 + got["legacy_dry"])).max() < 1e-15
 
@@ -95,7 +97,7 @@ def test_the_tail_is_reported_with_its_absolute_scale(tmp_path):
     of the denominator.
     """
     press = [1.0e5, 9.99e4, 8.0e4, 7.0e4]        # first interface near-isopycnal
-    got = nb.report(_state(tmp_path, press, [1.8e-2, 1.0e-2, 5e-3, 1e-3]))
+    got = nb.report(_state(tmp_path, press, [1.8e-2, 1.0e-2, 5e-3, 1e-3]), "exact")
     frac = got["armn_residual_fraction"]
     assert frac["max"] > frac["p90"]
     assert "tail_abs_armn_median" in frac and "tail_abs_legacy_median" in frac
@@ -176,3 +178,33 @@ def test_an_arm_whose_weight_IS_the_ledger_predicts_algebraic_zero(monkeypatch):
     got = nb.from_stream("", "nr")[1]
     assert abs(got["moist_predicted"]) < 1e-12 * abs(got["start_moist"])
     assert abs(got["dry_predicted"]) > 1e-6 * abs(got["start_dry"])
+
+
+def test_a_state_without_the_models_own_dry_mass_refuses_rather_than_estimating(tmp_path):
+    """`canonical` is the model's `mu_d`/`d(eta)`, which assumes no
+    thermodynamics. A state that does not carry it must say so instead of
+    silently falling back to an estimate -- the estimates differ from it by a
+    median 2.3e-03 and up to 31 % on the real 5 km state.
+    """
+    st = _state(tmp_path, PRESS, [8e-3] * len(PRESS))
+    with pytest.raises(KeyError, match="MU/MUB/DNW"):
+        nb.profile(st, "canonical")
+    nb.profile(st, "exact")          # ... and the estimate is available by name
+
+
+def test_the_two_estimates_differ_by_the_virtual_temperature_linearisation(tmp_path):
+    """`rho_m/(1+qv)` with a `1+0.608qv` virtual temperature against the exact
+    `p / (Rd T (1 + qv/EPS))`.
+
+    On the REAL 5 km state the two differ by a median 9.5e-07 and at most
+    3.2e-04, while both differ from the model's own `mu_d`/`d(eta)` by a median
+    2.3e-03 -- so the choice that matters is thermodynamic-vs-canonical, not
+    exact-vs-approximate. This profile's moisture gradient is far steeper than
+    a typical column (1.8e-2 to 1e-4 across five levels) and reaches 2.2e-03,
+    which is the scale to expect here rather than the real-state median.
+    """
+    qv = [1.8e-2, 1.0e-2, 5e-3, 1e-3, 1e-4]
+    a = nb.profile(_state(tmp_path, PRESS, qv, "a"), "approx")
+    b = nb.profile(_state(tmp_path, PRESS, qv, "b"), "exact")
+    rel = np.abs(a["legacy_dry"] - b["legacy_dry"]) / np.abs(b["legacy_dry"])
+    assert 1e-4 < rel.max() < 1e-2

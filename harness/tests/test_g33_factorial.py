@@ -359,7 +359,7 @@ def test_an_invalid_contrast_carries_no_numbers():
 def test_the_denominator_is_not_gated_by_a_mass_control():
     """It is the starting inventory, a state quantity. Gating it deleted the
     inventory half that numerator/denominator separation exists to expose."""
-    assert fc.RESPONSES["R_ni_den"][3] is None
+    assert fc.RESPONSES["R_ni_sum_call_start"][3] is None
     assert fc.RESPONSES["R_ni_num"][3] == ("ice", "qi")
     assert fc.RESPONSES["R_ni"][3] == ("ice", "qi")
 
@@ -381,8 +381,11 @@ def test_a_zero_denominator_makes_the_ratio_invalid_not_zero(monkeypatch):
             "sum_abs": 0.0, "terms": 0} for c in ("main", "ice")})
     monkeypatch.setattr(fc, "_partition", lambda a, b: {
         k: 0.0 for k in fc.RESPONSES if k.startswith("partition_")})
+    import g33_refine_analyze as ra
+    monkeypatch.setattr(ra, "read_text", lambda t: {})
     got = fc.responses("", "")
     assert got["R_qr_num"]["valid"] is True and got["R_qr_num"]["value"] == 5.0
+    assert got["R_qr_sum_call_start"]["valid"] is True
     assert got["R_qr"]["valid"] is False
     assert "zero denominator" in got["R_qr"]["reason"]
 
@@ -449,9 +452,14 @@ def test_the_identity_names_the_fixture_and_the_window():
 def test_the_denominators_reader_is_the_state_not_the_transfers():
     """It is an inventory read off the pre-sed endpoints, not something the
     transfer records produced -- and the metadata should say which."""
-    for r in ("R_nr_den", "R_ni_den"):
+    for r in ("R_nr_sum_call_start", "R_ni_sum_call_start",
+              "R_qr_sum_call_start", "R_qi_sum_call_start"):
         assert fc.RESPONSES[r][2] == "state"
         assert fc.RESPONSES[r][3] is None
+    # ... and the WINDOW endpoints are separate responses, because the per-call
+    # sum is neither of them: it counts the column once per call.
+    for r in ("R_ni_window_initial", "R_ni_window_final"):
+        assert fc.RESPONSES[r][4] == "window"
     for r in ("R_nr_num", "R_ni_num", "R_qi"):
         assert fc.RESPONSES[r][2] == "matched"
 
@@ -507,14 +515,54 @@ def test_what_each_tile_imposed_is_derived_from_recorded_inputs(monkeypatch):
     rec = {("forcing", "xland", 1, 0): 1.0, ("forcing", "xland", 2, 0): 2.0,
            ("forcing", "xland", 3, 0): 1.0, ("meta", "fixture"): "fx"}
     monkeypatch.setattr(ra, "read_text", lambda t: rec)
-    monkeypatch.setattr(nt, "validated_run_identity",
-                        lambda t: {"tile_ranges": ((1, 3),)})
+    monkeypatch.setattr(fx, "canonical_id", lambda n: n)
     monkeypatch.setattr(fx, "load_fixture", lambda f: (None, {
         "common_parameters": {"ncmin_land": "4cbebc20", "ncmin_sea": "4bbebc20"}}))
+    monkeypatch.setattr(nt, "validated_run_identity",
+                        lambda t: {"tile_ranges": ((1, 3),), "algorithm": "legacy"})
     got = fc.ncmin_exposure("")[(1, 3)]
     # the LAST column's value survives the scalar assignment
-    assert got["imposed"] == got["intended"][3]
+    assert got["mode"] == "tile_scalar"
+    assert got["tile_scalar"] == got["intended_by_column"][3]
     assert got["columns_overridden"] == [2]         # the sea column, overridden
+
+
+def test_ARM_L_is_not_described_with_the_defects_own_rule(monkeypatch):
+    """Arm L makes `ncmin` per-column, which is the whole correction.
+
+    The first version applied the tile-scalar rule to every arm, so it reported
+    `lncmin` as overriding the same columns legacy does -- a diagnostic that
+    describes the corrected arm with the defect's rule says the correction did
+    not happen.
+    """
+    import g33_refine_analyze as ra
+    import g33_number_transport as nt
+    import g33_fixture_v1 as fx
+    rec = {("forcing", "xland", 1, 0): 1.0, ("forcing", "xland", 2, 0): 2.0,
+           ("forcing", "xland", 3, 0): 1.0, ("meta", "fixture"): "fx"}
+    monkeypatch.setattr(ra, "read_text", lambda t: rec)
+    monkeypatch.setattr(fx, "canonical_id", lambda n: n)
+    monkeypatch.setattr(fx, "load_fixture", lambda f: (None, {
+        "common_parameters": {"ncmin_land": "4cbebc20", "ncmin_sea": "4bbebc20"}}))
+    monkeypatch.setattr(nt, "validated_run_identity",
+                        lambda t: {"tile_ranges": ((1, 3),), "algorithm": "lncmin"})
+    got = fc.ncmin_exposure("")[(1, 3)]
+    assert got["mode"] == "per_column"
+    assert got["tile_scalar"] is None
+    assert got["columns_overridden"] == []
+    assert got["applied_by_column"] == got["intended_by_column"]
+
+
+def test_the_representativeness_bound_sums_the_four_arms_that_enter_it():
+    """The screened quantity is `(Y11 - Y01) - (Y10 - Y00)`, so its bound is the
+    SUM of the four. `max(B)` understated it by up to a factor of four -- enough
+    to call a real interaction representative."""
+    def row(v, b):
+        return {"value": v, "valid": True, "reason": "", "screening_bound": b}
+    table = {a: {r: row(float(n * c * (1 + l)), 1.0) for r in fc.RESPONSES}
+             for a, (n, c, l) in fc.ALGO_FACTORS.items()}
+    got = fc.conditionals(table)["R_ni"]
+    assert got["N_at_C1_difference_bound"] == 4.0
 
 
 def test_a_stream_without_the_land_mask_refuses_rather_than_guessing(monkeypatch):

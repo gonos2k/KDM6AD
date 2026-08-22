@@ -46,22 +46,69 @@ much number actually crosses is `b`, which this does not measure.
 import sys
 from pathlib import Path
 
-RD, CP, P0 = 287.04, 1004.5, 1.0e5
+RD, CP, P0, G = 287.04, 1004.5, 1.0e5, 9.81
+#: Rd/Rv. The dry-density relation for a MIXING ratio is
+#: `rho_d = p / (Rd T (1 + qv/EPS))`; the published statistics used
+#: `rho_m / (1 + qv)` with a virtual-temperature linearisation instead.
+EPS = 0.622
 
 
-def profile(state: Path) -> dict:
-    """The three per-interface coefficients from a WRF state file."""
+def _dry_density(d, p, temp, qv, basis: str):
+    """Dry-air density by one of three routes, named.
+
+    `canonical` is the model's OWN: WRF's hydrostatic relation is
+    `d(phi)/d(eta) = -mu_d * alpha_d`, so `rho_d * dz = mu_d |d(eta)| / g`
+    exactly in its discretisation. Nothing thermodynamic is assumed.
+
+    The other two are estimates from `p`, `T` and `qv`. Measured against the
+    canonical route on the real 5 km state they differ by a median 2.3e-03 and
+    up to 31 % -- which is about 2500 times the difference BETWEEN them
+    (median 9.5e-07). So the choice that matters is thermodynamic-vs-canonical,
+    not exact-vs-approximate.
+
+    It does not move the published statistic: the Arm N residual fraction where
+    rain number is runs 1.9422 % (approx), 1.9420 % (exact) and 1.9169 %
+    (canonical). `eps_armn` depends on `qv` alone and is route-free.
+    """
+    import numpy as np
+    if basis == "canonical":
+        mu = np.asarray(d["MU"][-1], dtype="float64") + \
+            np.asarray(d["MUB"][-1], dtype="float64")
+        dnw = np.asarray(d["DNW"][-1], dtype="float64")
+        ph = np.asarray(d["PH"][-1], dtype="float64") + \
+            np.asarray(d["PHB"][-1], dtype="float64")
+        dz = np.diff(ph, axis=0) / G
+        return (mu[None, :, :] * np.abs(dnw)[:, None, None]) / G / dz
+    if basis == "exact":
+        return p / (RD * temp * (1.0 + qv / EPS))
+    if basis == "approx":
+        return (p / (RD * temp * (1.0 + 0.608 * qv))) / (1.0 + qv)
+    raise ValueError(f"basis must be canonical|exact|approx, got {basis!r}")
+
+
+def profile(state: Path, basis: str = "canonical") -> dict:
+    """The three per-interface coefficients from a WRF state file.
+
+    `basis` selects the dry-density route; see `_dry_density`. The default is
+    the model's own `mu_d`/`d(eta)`, which assumes no thermodynamics at all.
+    """
     import netCDF4
     import numpy as np
     d = netCDF4.Dataset(str(state))
-    g = lambda k: np.asarray(d[k][0], dtype="float64")   # noqa: E731
+    frame = -1 if d["P"].shape[0] > 1 else 0
+    g = lambda k: np.asarray(d[k][frame], dtype="float64")   # noqa: E731
     pressure = g("P") + g("PB")
     theta = g("T") + 300.0
     qv = g("QVAPOR")
     temp = theta * (pressure / P0) ** (RD / CP)
-    # Total moist density, which is the kernel's `den`; dry is that over 1+qv.
-    den = pressure / (RD * temp * (1.0 + 0.608 * qv))
-    den_d = den / (1.0 + qv)
+    if basis == "canonical" and not all(v in d.variables
+                                        for v in ("MU", "MUB", "DNW", "PH")):
+        raise KeyError(
+            "this state carries no MU/MUB/DNW/PH, so the model's own dry-air "
+            "layer mass is not available; pass basis='exact' to estimate it")
+    den_d = _dry_density(d, pressure, temp, qv, basis)
+    # Total moist density, which is the kernel's `den`.
+    den = den_d * (1.0 + qv)
     # WRF k=0 is the BOTTOM, so [:-1] is the LOWER side of each interface and
     # [1:] the upper -- the direction sedimentation moves.
     lo, up = slice(None, -1), slice(1, None)
@@ -74,7 +121,8 @@ def profile(state: Path) -> dict:
     }
 
 
-def where_the_number_is(state: Path, field: str = "QNRAIN") -> dict:
+def where_the_number_is(state: Path, field: str = "QNRAIN",
+                        basis: str = "canonical") -> dict:
     """The same coefficients, restricted to interfaces that actually carry number.
 
     `report()` summarises every interface in the domain, and most of them hold
@@ -89,13 +137,13 @@ def where_the_number_is(state: Path, field: str = "QNRAIN") -> dict:
     """
     import netCDF4
     import numpy as np
-    p = profile(state)
+    p = profile(state, basis)
     d = netCDF4.Dataset(str(state))
     n = np.asarray(d[field][-1] if d[field].shape[0] > 1 else d[field][0],
                    dtype="float64")
     lo, up = slice(None, -1), slice(1, None)
     live = (n[lo] > 0) & (n[up] > 0)
-    out = {"state": str(state), "field": field,
+    out = {"state": str(state), "field": field, "basis": basis,
            "interfaces": int(live.size),
            "carrying": int(live.sum()),
            "carrying_fraction": float(live.mean())}
@@ -114,10 +162,11 @@ def where_the_number_is(state: Path, field: str = "QNRAIN") -> dict:
     return out
 
 
-def report(state: Path) -> dict:
+def report(state: Path, basis: str = "canonical") -> dict:
     import numpy as np
-    p = profile(state)
-    out = {"state": str(state), "interfaces": int(p["armn_dry"].size)}
+    p = profile(state, basis)
+    out = {"state": str(state), "basis": basis,
+           "interfaces": int(p["armn_dry"].size)}
     for key in ("legacy_moist", "legacy_dry", "armn_dry"):
         e = p[key]
         out[key] = {"median": float(np.median(e)),
