@@ -74,6 +74,46 @@ def profile(state: Path) -> dict:
     }
 
 
+def where_the_number_is(state: Path, field: str = "QNRAIN") -> dict:
+    """The same coefficients, restricted to interfaces that actually carry number.
+
+    `report()` summarises every interface in the domain, and most of them hold
+    no rain number at all -- a coefficient there is a property of the air, not
+    of anything being transported. The defect only reaches a forecast where
+    there is something to transport, so this weights the same profile by where
+    the number is.
+
+    An interface counts when BOTH its cells carry the field: transport across it
+    moves number from one to the other, and an interface with an empty side is
+    the edge of the population rather than inside it.
+    """
+    import netCDF4
+    import numpy as np
+    p = profile(state)
+    d = netCDF4.Dataset(str(state))
+    n = np.asarray(d[field][-1] if d[field].shape[0] > 1 else d[field][0],
+                   dtype="float64")
+    lo, up = slice(None, -1), slice(1, None)
+    live = (n[lo] > 0) & (n[up] > 0)
+    out = {"state": str(state), "field": field,
+           "interfaces": int(live.size),
+           "carrying": int(live.sum()),
+           "carrying_fraction": float(live.mean())}
+    if not live.any():
+        out["empty"] = True
+        return out
+    for key in ("legacy_moist", "legacy_dry", "armn_dry"):
+        e = p[key][live]
+        out[key] = {"median": float(np.median(e)), "mean": float(e.mean()),
+                    "abs_p90": float(np.percentile(np.abs(e), 90)),
+                    "abs_max": float(np.abs(e).max())}
+    frac = np.abs(p["armn_dry"][live]) / np.maximum(
+        np.abs(p["legacy_dry"][live]), 1e-300)
+    out["armn_residual_fraction"] = {
+        "median": float(np.median(frac)), "p90": float(np.percentile(frac, 90))}
+    return out
+
+
 def report(state: Path) -> dict:
     import numpy as np
     p = profile(state)

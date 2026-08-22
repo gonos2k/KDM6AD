@@ -69,9 +69,20 @@ remove the remaining 1.7 %.
 - No change to the legacy default, and none to Arm N. `nmass_dry` is an
   ADDITIONAL canonical variant selected by `--algo`.
 - No re-pointing of `CLAIMS.yaml`. New arms produce new bundles.
-- No claim of a forecast impact. `FINDING_number_basis_gap_v1` bounds what this
-  can be worth on a real atmosphere: a median 0.33 % of the legacy
-  per-interface defect, p90 4.62 %, largest absolute remainder 7.08e-03 over
-  2 507 544 LC05 interfaces. **The owner may reasonably decide that is too small
-  to be worth a kernel variant**, and this request is written so that decision
-  can be made against a number rather than a suspicion.
+- No claim of a forecast impact. What this can be worth on a real atmosphere is
+  measured, and the figure to use is NOT the one `FINDING_number_basis_gap_v1`
+  reported. That statistic ran over all 2 507 544 LC05 interfaces, and most of
+  them carry no rain number at all -- a coefficient there is a property of the
+  air, not of anything being transported. Restricted to the interfaces that
+  actually carry number, on the 20 s `mp37` forecast frame:
+
+      QNRAIN   13 611 interfaces (0.543%)   Arm N leaves median 1.94%, p90 3.49%
+      QNICE    99 763 interfaces (3.979%)   Arm N leaves median 0.53%, p90 1.04%
+
+  against 0.33% unweighted. About six times larger for rain, because rain
+  number sits in the moist lower troposphere where the moisture gradient is
+  steepest -- which is exactly where the two ledgers differ.
+
+  **The owner may still reasonably decide 2 % of a per-interface coefficient is
+  not worth a kernel variant**, and this request is written so that decision can
+  be made against a number rather than a suspicion.

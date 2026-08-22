@@ -84,7 +84,7 @@ and a term appears the first call could not show: `beta_L` on `R_ni` at
 1.83e-05, because after call one the arms hold different states. That is why the
 first call is the matched comparison and the window is not.
 
-## 7. The LC05 actual-column factorial — BLOCKED ON DATA
+## 7. The LC05 actual-column factorial — **THIS BLOCKER WAS WRONG**
 
 Every field the fixture generator needs is present in the real state EXCEPT the
 one the experiment is about. Measured:
@@ -99,9 +99,20 @@ never initialised, and the completed run available here is the 100 km IDEAL
 case, which develops no rain number. A factorial built on either would measure
 N's subject as identically zero.
 
-What unblocks it is a spun-up KDM6 forecast over the real 5 km domain, long
-enough to develop `QNRAIN` -- a model run, not a harness change, and an owner
-decision. The generator side is ready: fixtures are produced from a JSON by
+**Corrected 2026-08-22.** The table above is right about `wrfinput_d01` and
+about the 100 km ideal run, and it drew the wrong conclusion from them, because
+it never checked the real case's OWN forecast output. A twenty-second `mp37`
+run of this case carries `QNRAIN` in 0.9 % of cells (max 1.93e+03), `QNICE` in
+5.3 % and `QNCLOUD` in 4.3 %: the number fields spin up almost immediately. No
+new model run was needed -- one produced in this campaign already had them.
+
+What that unblocked is recorded in `FINDING_number_basis_gap_v1`: restricted to
+interfaces that actually carry rain number, Arm N leaves a median 1.94 % of the
+legacy defect rather than the 0.33 % the all-interface statistic reported.
+
+What remains genuinely blocked is a real-COLUMN FIXTURE, and for a different
+reason: the manifest requires the vertical anchor `p` to be the same profile in
+every column, and real columns on terrain-following levels are not. The generator side is ready: fixtures are produced from a JSON by
 `harness/g33_fixture_v1.py`, and every other field the schema requires is in
 the file.
 
