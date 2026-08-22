@@ -100,3 +100,79 @@ def test_the_tail_is_reported_with_its_absolute_scale(tmp_path):
     assert frac["max"] > frac["p90"]
     assert "tail_abs_armn_median" in frac and "tail_abs_legacy_median" in frac
     assert got["composition_max_abs_error"] < 1e-15
+
+
+def _stream_call(qv, den, dz, x, x1, algorithm="legacy"):
+    """A minimal parsed call, so the ledger arithmetic is tested without a run."""
+    pre = {(1, 1, k): {"rho": den[k], "qv": qv[k], "delz": dz[k], "nr": x[k]}
+           for k in range(len(qv))}
+    post = {(1, 1, k): {"nr": x1[k]} for k in range(len(qv))}
+    return {"outer_pre_sed": pre, "outer_post_sed": post, "loops": {1},
+            "algorithm": algorithm}
+
+
+def test_a_uniform_moisture_column_cannot_tell_the_two_ledgers_apart(monkeypatch):
+    """The archive's situation, as arithmetic.
+
+    With `qv` constant down the column the dry measure is the moist one times a
+    constant, so the two residuals are proportional and carry the same
+    information. No fixture published before this one could have shown a
+    difference, whatever the arm did.
+    """
+    import g33_number_transport as nt
+    den, dz = [0.4, 0.6, 0.9, 1.2], [300.0, 300.0, 300.0, 300.0]
+    x, x1 = [5.0, 4.0, 3.0, 2.0], [4.0, 3.6, 2.9, 2.3]
+    call = _stream_call([8e-3] * 4, den, dz, x, x1)
+    monkeypatch.setattr(nt, "calls", lambda t: [call])
+    monkeypatch.setattr(nt, "single_loop", lambda c: 1)
+    got = nb.from_stream("", "nr")[1]
+    assert got["moist"] / got["start_moist"] == pytest.approx(
+        got["dry"] / got["start_dry"], rel=1e-12)
+
+
+def test_a_moisture_gradient_makes_them_different_questions(monkeypatch):
+    """With `qv` varying down the column the proportionality is gone."""
+    import g33_number_transport as nt
+    den, dz = [0.4, 0.6, 0.9, 1.2], [300.0, 300.0, 300.0, 300.0]
+    x, x1 = [5.0, 4.0, 3.0, 2.0], [4.0, 3.6, 2.9, 2.3]
+    call = _stream_call([5e-4, 2e-3, 6e-3, 1.4e-2], den, dz, x, x1)
+    monkeypatch.setattr(nt, "calls", lambda t: [call])
+    monkeypatch.setattr(nt, "single_loop", lambda c: 1)
+    got = nb.from_stream("", "nr")[1]
+    assert got["moist"] / got["start_moist"] != pytest.approx(
+        got["dry"] / got["start_dry"], rel=1e-6)
+
+
+def test_the_closed_form_is_an_identity_not_a_fit(monkeypatch):
+    """`R = sum a_j dz_j (B_{j+1} A_j / A_{j+1} - B_j)`, evaluated from the same
+    recovered transfers. Measured 1.00000000 on all six rows of the gradient
+    fixture; here it is required rather than observed."""
+    import g33_number_transport as nt
+    den, dz = [0.4, 0.6, 0.9, 1.2], [300.0, 340.0, 380.0, 420.0]
+    x, x1 = [5.0, 4.0, 3.0, 2.0], [4.0, 3.6, 2.9, 2.3]
+    call = _stream_call([5e-4, 2e-3, 6e-3, 1.4e-2], den, dz, x, x1)
+    monkeypatch.setattr(nt, "calls", lambda t: [call])
+    monkeypatch.setattr(nt, "single_loop", lambda c: 1)
+    got = nb.from_stream("", "nr")[1]
+    for tag in ("moist", "dry"):
+        assert got[f"{tag}_predicted_over_measured"] == pytest.approx(1.0, rel=1e-9)
+
+
+def test_an_arm_whose_weight_IS_the_ledger_predicts_algebraic_zero(monkeypatch):
+    """`A == B` makes every term of the closed form vanish ALGEBRAICALLY.
+
+    Not bit-exactly: `B[j+1]*A[j]/A[j+1] - B[j]` is a division and a multiply
+    that round, so evaluated in f64 it lands near 1e-14 rather than on 0.0.
+    Requiring exact zero would be requiring the arithmetic to be something it is
+    not; requiring it to be negligible against the DRY term is the real claim.
+    """
+    import g33_number_transport as nt
+    den, dz = [0.4, 0.6, 0.9, 1.2], [300.0, 340.0, 380.0, 420.0]
+    x, x1 = [5.0, 4.0, 3.0, 2.0], [4.0, 3.6, 2.9, 2.3]
+    call = _stream_call([5e-4, 2e-3, 6e-3, 1.4e-2], den, dz, x, x1,
+                        algorithm="nmass")
+    monkeypatch.setattr(nt, "calls", lambda t: [call])
+    monkeypatch.setattr(nt, "single_loop", lambda c: 1)
+    got = nb.from_stream("", "nr")[1]
+    assert abs(got["moist_predicted"]) < 1e-12 * abs(got["start_moist"])
+    assert abs(got["dry_predicted"]) > 1e-6 * abs(got["start_dry"])

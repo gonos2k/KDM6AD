@@ -121,6 +121,70 @@ def report(state: Path) -> dict:
     return out
 
 
+def from_stream(text: str, species: str = "nr") -> dict:
+    """The same question put to a KERNEL RUN instead of a state file.
+
+    `profile()` reads coefficients off an atmosphere; this reads the residual an
+    arm actually leaves, in BOTH ledgers, from the transfers the run performed:
+
+        moist:  N = sum rho        * dz * n     -- the OPERATOR's own measure
+        dry:    N = sum rho/(1+qv) * dz * n     -- the physical one, G33-BASIS-006
+
+    and each is reported beside its closed form. With `A` the density the arm
+    weights the interface transfer by and `B` the ledger's,
+
+        R = sum_j a_j * dz_j * ( B_{j+1} * A_j / A_{j+1} - B_j )
+
+    which is an IDENTITY, not a fit -- ratio 1.00000000 on all six rows of
+    `g33_fixture_moisture_gradient_v1`. Where `A == B` every term is exactly
+    zero, which is why Arm N's moist prediction is 0.000000 against a measured
+    roundoff, and its DRY prediction is not.
+
+    This needs a fixture with a vertical moisture gradient. Under a
+    column-uniform `qv` the two ledgers differ by a constant factor per column
+    and say the same thing (`FINDING_number_basis_gap_v1`).
+    """
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parent))
+    import g33_number_transport as nt
+    call = nt.calls(text)[0]
+    loop = nt.single_loop(call)
+    pre, post = call["outer_pre_sed"], call["outer_post_sed"]
+    carries = nt.number_carries_density(call.get("algorithm"))
+    out = {}
+    for col in sorted({c for l, c, _k in pre if l == loop}):
+        ks = sorted(k for l, c, k in pre if c == col and l == loop)
+        den = [pre[(loop, col, k)]["rho"] for k in ks]
+        qv = [pre[(loop, col, k)]["qv"] for k in ks]
+        dz = [pre[(loop, col, k)]["delz"] for k in ks]
+        x = [pre[(loop, col, k)][species] for k in ks]
+        x1 = [post[(loop, col, k)][species] for k in ks]
+        dry = [den[t] / (1.0 + qv[t]) for t in range(len(ks))]
+        # The weight the ARM used, which is what produced these endpoints.
+        a_w = den if carries else [1.0] * len(ks)
+        w = [0.0] + [dz[t - 1] / dz[t] * (a_w[t - 1] / a_w[t])
+                     for t in range(1, len(ks))]
+        a = nt.transfers(x, x1, w)
+        row = {}
+        for tag, B in (("moist", den), ("dry", dry)):
+            n0 = sum(B[t] * dz[t] * x[t] for t in range(len(ks)))
+            n1 = sum(B[t] * dz[t] * x1[t] for t in range(len(ks)))
+            meas = (n1 - n0) + B[-1] * dz[-1] * a[-1]
+            pred = sum(a[j] * dz[j] * (B[j + 1] * a_w[j] / a_w[j + 1] - B[j])
+                       for j in range(len(ks) - 1))
+            row[tag] = meas
+            row[f"{tag}_predicted"] = pred
+            row[f"start_{tag}"] = n0
+            # `None` where there is nothing to divide by: an arm whose weight IS
+            # the ledger drives both sides to roundoff, and a ratio taken there
+            # says only which way the last bit fell.
+            row[f"{tag}_predicted_over_measured"] = (
+                pred / meas if abs(meas) > 1e-9 * (abs(n0) or 1.0) else None)
+        out[col] = row
+    return out
+
+
 def main(argv) -> int:
     if not argv:
         print(__doc__)
