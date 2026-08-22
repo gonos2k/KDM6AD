@@ -86,6 +86,11 @@ RESPONSES = {
     "R_ni_num": ("number m-2", "N"),
     "R_ni_den": ("number m-2", None),
     "R_ni": ("dimensionless", "N"),
+    # THE MASS ROWS ARE READER-DEPENDENT. Under the recovered reader they
+    # close by construction -- `column()` inverts the update, so the budget it
+    # reconstructs cannot fail to balance. Measured on this fixture's first
+    # call, legacy ice reads -8.83e-17 recovered and -6.006e-01 from the actual
+    # XFER records. Only `matched=True` makes these rows a measurement.
     "R_qr_num": ("kg m-2", None),
     "R_qr_den": ("kg m-2", None),
     "R_qr": ("dimensionless", None),
@@ -127,6 +132,64 @@ def _screen(sum_abs: float, n_terms: int) -> float:
     about whether a number is non-zero.
     """
     return sum_abs * (U32 + _gamma(max(n_terms, 1), U64))
+
+
+def _matched_rows(stream: str):
+    """`closures()` once per stream, with the chain's MASS control applied.
+
+    The pairing is the module's own: "the mass row is the CONTROL for the
+    number row beside it. If the mass row does not close, the accounting for
+    that chain is missing a term and NEITHER row of the pair is evidence." So
+    the control is keyed by (chain, column) and taken from the `q` species --
+    applying `usable()` to a NUMBER row instead rejects the very defect the
+    experiment is about, which is what happened on the first attempt here.
+
+    A failing control REFUSES the arm rather than dropping the column: a
+    factorial whose arms cover different columns is not a factorial.
+    """
+    import g33_matched_closure as mc
+    rows = mc.closures(stream, "operator")
+    for (chain, sp, col), d in rows.items():
+        if not sp.startswith("q"):
+            continue
+        ok, why = mc.usable(d)
+        if not ok:
+            raise FactorialError(f"{chain} column {col}: {why} -- the mass row "
+                                 f"is the control, so neither row of this pair "
+                                 f"is evidence")
+    return rows
+
+
+def _matched_residual(rows: dict, span_calls: frozenset, species: str):
+    """The residual from ACTUAL transfers, admissible at any `mstep`.
+
+    `column()` inverts the update to recover the transfers, which needs one
+    sub-step. `g33_matched_closure` reads the `XFER` records the kernel emits,
+    reconstructs nothing, and says so: "mstep > 1 is admissible". It also
+    carries each call's own gamma_n screening threshold.
+
+    The two readers are not interchangeable -- one measures the operator's
+    actual transfers, the other what the endpoints imply they must have been --
+    so which was used is recorded in the table.
+    """
+    num = den = sum_abs = 0.0
+    terms = 0
+    seen = False
+    for (_chain, sp, _col), d in rows.items():
+        if sp != species:
+            continue
+        for pc in d["per_call"]:
+            if pc["call"] not in span_calls:
+                continue
+            seen = True
+            num += pc["residual"]
+            den += pc["start"]
+            sum_abs += pc["scale"]
+            terms += pc["ops"]
+    if not seen:
+        raise FactorialError(f"{species}: no matched-closure rows on this span")
+    return {"num": num, "den": den, "sum_abs": sum_abs, "terms": terms,
+            "eligible": 1, "expected": 1}
 
 
 def _residual(span, species):
@@ -226,13 +289,16 @@ def _partition(single: str, split: str) -> dict:
 
 
 def responses(stream_single: str, stream_split: str, *,
-              window: bool = False) -> dict:
+              window: bool = False, matched: bool = False) -> dict:
     """The full signed response vector for one arm, on ONE span.
 
     `window=True` accumulates across the whole run; the default is the first
     call, where every arm meets the same initial state so a difference is the
     arm and nothing else. After it the arms hold different fields, so the
     window is a different question rather than a longer version of the first.
+
+    `matched=True` reads the ACTUAL transfers instead of recovering them, which
+    is what makes an `mstep > 1` factorial possible at all.
     """
     import g33_number_transport as nt
     calls = nt.calls(stream_single)
@@ -240,18 +306,21 @@ def responses(stream_single: str, stream_split: str, *,
     span_calls = frozenset(range(1, len(span) + 1))
 
     out, meta = {}, {"span": "window" if window else "first-call",
+                     "reader": "matched-xfer" if matched else "recovered",
                      "calls_in_span": len(span), "calls_in_stream": len(calls),
                      "screen": {}, "coverage": {}}
+    rows = _matched_rows(stream_single) if matched else None
     starts = {}
     for species in ("nr", "ni", "qr", "qi"):
-        r = _residual(span, species)
+        r = (_matched_residual(rows, span_calls, species) if matched
+             else _residual(span, species))
         if r["eligible"] != r["expected"]:
             raise FactorialError(
                 f"{species}: {r['eligible']} of {r['expected']} (call, column) "
                 f"rows are recoverable on this span -- `column()` refuses "
                 f"mstep > 1, and a ratio taken over the rows that happened to "
                 f"survive is not the span's residual. Use an analyzer that "
-                f"reads the actual transfers.")
+                f"reads the actual transfers -- pass `matched=True`.")
         out[f"R_{species}_num"] = r["num"]
         out[f"R_{species}_den"] = r["den"]
         out[f"R_{species}"] = r["num"] / r["den"] if r["den"] else 0.0
@@ -423,6 +492,9 @@ def main() -> int:
     ap.add_argument("arm", nargs="+", metavar="ARM=SINGLE,SPLIT",
                     help="one per arm: the two decompositions of that arm's run")
     ap.add_argument("--json", type=Path, default=None)
+    ap.add_argument("--matched", action="store_true",
+                    help="read the ACTUAL transfers (g33_matched_closure) "
+                         "instead of recovering them: admissible at mstep > 1")
     ap.add_argument("--window", action="store_true",
                     help="accumulate over the whole run instead of the matched "
                          "first call")
@@ -438,7 +510,7 @@ def main() -> int:
             raise SystemExit(f"{spec}: need ARM=SINGLE,SPLIT")
         s, p = Path(single).read_text(), Path(split).read_text()
         identity[name] = check_identity(name, s, p)
-        row = responses(s, p, window=args.window)
+        row = responses(s, p, window=args.window, matched=args.matched)
         screens[name] = row.pop("_meta")["screen"]
         table[name] = row
 
@@ -456,7 +528,9 @@ def main() -> int:
     cond = conditionals(table)
 
     span = "window" if args.window else "first-call"
-    print(f"\n  SPAN: {span}   (every response, not four of them)\n")
+    reader = "matched-xfer" if args.matched else "recovered"
+    print(f"\n  SPAN: {span}   READER: {reader}   "
+          f"(one span for every response, not four of them)\n")
     print("  " + f"{'arm':18s} {'NCL':>4s} " +
           " ".join(f"{k:>13s}" for k in RESPONSES))
     for arm in ALGO_FACTORS:
@@ -471,9 +545,15 @@ def main() -> int:
               + " ".join(f"{b[t]:12.4e}" for t in ("N", "C", "L", "NC"))
               + f" {b.get('_bound', 0.0):12.4e}")
     print("\n  Units differ between rows: compare terms WITHIN a response, "
-          "never magnitudes across them.\n")
+          "never magnitudes across them.")
+    if not args.matched:
+        print("  R_qr/R_qi CLOSE BY CONSTRUCTION under this reader: `column()`\n"
+              "  inverts the update, so the budget it rebuilds cannot fail to\n"
+              "  balance. They are an arithmetic check here, not a measurement\n"
+              "  of mass closure. Use --matched for that.")
+    print()
 
-    doc = {"span": span, "arms": ALGO_FACTORS, "identity": identity,
+    doc = {"span": span, "reader": reader, "arms": ALGO_FACTORS, "identity": identity,
            "units": {k: v[0] for k, v in RESPONSES.items()},
            "responses": table, "coefficients": beta, "conditionals": cond,
            "screens": screens}

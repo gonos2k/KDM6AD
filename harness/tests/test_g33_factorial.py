@@ -208,3 +208,16 @@ def test_an_unrecoverable_row_is_a_refusal_not_a_zero_response(monkeypatch):
     monkeypatch.setattr(nt, "column", lambda c, col, sp: None)
     with pytest.raises(fc.FactorialError, match="mstep"):
         fc.responses("", "")
+
+
+def test_the_mass_rows_are_marked_reader_dependent():
+    """`column()` inverts the update, so its mass budget cannot fail to close.
+
+    Measured on the factorial's own fixture, first call, legacy ice: -8.83e-17
+    recovered against -6.006e-01 from the actual XFER records. A table that
+    prints the first without saying which reader produced it invites the
+    sentence "the mass closes", which the second refutes.
+    """
+    src = (ROOT / "g33_factorial.py").read_text()
+    assert "CLOSE BY CONSTRUCTION" in src
+    assert "READER-DEPENDENT" in src

@@ -78,31 +78,50 @@ dynamically coupled.
 across all eight arms, `beta = 0` exactly. `same_atmosphere()` refuses a table
 where it is not.
 
-## What the cap actually does, once destruction and creation are separated
+## What the cap actually does, and what the mass rows could not say
 
 `Sink.signed` says in its own docstring that it is a SIGNED DEFECT and not a
 sink, and offers `destroyed`/`created` separately for exactly this reason.
 Summing every chain and column into one signed scalar hides the direction, and
-a reversal was read as C "doing its job".
+a reversal was read as C "doing its job". Split, ice chain, kg m-2:
 
-Ice chain, whole window, kg m-2:
+| span | arm | destroyed | created | signed |
+|---|---|---|---|---|
+| first call | `legacy` | 3.540e-02 | 0.000 | +3.540e-02 |
+| first call | `conservative` | 0.000 | 1.988e-02 | -1.988e-02 |
+| window | `legacy` | 2.435 | 0.000 | +2.435 |
+| window | `conservative` | 0.000 | 3.380 | -3.400 |
 
-| arm | destroyed | created | signed |
-|---|---|---|---|
-| `legacy` | 2.435 | 0.000 | +2.435 |
-| `conservative` | 0.000 | 3.380 | -3.400 |
+Read alone, that says C removes the destruction and replaces it with creation.
+It is not enough to conclude either way, because the interface term is not the
+column budget -- and the response that was supposed to be the column budget
+could not answer.
 
-C removes the destruction completely -- and replaces it with creation of larger
-magnitude. `|signed|` goes from 2.435 to 3.400. So on this fixture the
-conservative arm meets half of what restoring its own invariant would require
-(`destroyed -> 0`) and moves the other half further from it (`created -> 0`
-fails, and by 40 % more than what it removed).
+**`R_qi` closes by construction under the recovered reader.** `column()`
+recovers the transfers by INVERTING the update, so the budget it rebuilds
+cannot fail to balance; the module's own header says the mass rows "return ~0
+BY CONSTRUCTION of their weight". Reading the ACTUAL `XFER` records instead,
+on the same first call of the same fixture:
 
-That is a measurement of the interface term as `g33_cap_interface` defines it,
-on one fixture. It is NOT a claim that the conservative arm creates water in the
-column budget: the ice mass residual `R_qi` is at roundoff in every arm on both
-spans, so whatever these interface terms are, they are not showing up as column
-non-closure here.
+| arm | recovered `R_qi` | matched, from actual transfers |
+|---|---|---|
+| `legacy` | -8.828e-17 | **-6.006e-01** |
+| `conservative` | -6.822e-17 | **+2.306e-08** |
+
+Legacy's ice mass column does not close on the first call: it is short by
+60.06 % of its starting inventory, which is EXACTLY the cap interface term
+(+6.006e-01 signed, same number, opposite sign by the `signed = -mass_term`
+convention). And the conservative arm closes it to 2.3e-08.
+
+So **C does restore the ice mass budget on the first call**, and the
+"replaces destruction with creation of larger magnitude" reading came from the
+interface term alone. For the conservative arm that term is -3.373e-01 while
+its column closes, so for that arm the operator-basis interface term is no
+longer the budget defect -- which is what the corrected interface changes.
+
+The general lesson is the one this cycle keeps paying for: a response that
+cannot fail is not a control. `R_qi` at 1e-17 was read as "the mass closes" in
+the previous version of this finding, and the mass did not close.
 
 ## The window ratio moves through BOTH numerator and denominator
 
@@ -134,11 +153,17 @@ counts are exact and are not screened.
 ## What is still not measured
 
 - Longer than 300 s, and any real atmospheric column.
-- `mstep > 1`. `column()` refuses it, and the analyzer now REFUSES the table
-  rather than returning a ratio over whichever rows happened to survive. A
-  factorial at `mstep ~ 10` needs the actual-transfer reader, not this one.
-- Whether C's creation term is a defect in a budget that matters. `R_qi` says it
-  is not visible in the column ice mass on this fixture.
+- `mstep > 1`, and NOT for the reason previously given. The recovered reader
+  refuses it -- measured, 1 of 3 rows recoverable at `nsplit = 3` on
+  `g33_fixture_multisubcycle_v1`, where the old code would have returned a
+  ratio over the one that survived. The actual-transfer reader is admissible at
+  any `mstep` and refuses too, on its own control: the chain mass rows fail
+  their gamma_n screening threshold on every fixture available here -- 4 of 6
+  at `nsplit = 3` (worst 6.9e+05x), 2 of 6 at `nsplit = 24` (9.2e+05x), and
+  3 of 6 on `g33_fixture_boundary_mapping_v1` itself (1.4e+06x). The module's
+  rule is that the mass row is the control for the number row beside it, so
+  neither is evidence there. An `mstep > 1` factorial needs a fixture whose
+  mass accounting closes, not a different reader.
 - The physical dry-air basis, which is `FINDING_number_basis_gap_v1`.
 
 ## Reproducing
