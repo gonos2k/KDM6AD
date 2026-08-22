@@ -83,7 +83,18 @@ def streams(driver):
 #: kdm6ad-g33m-refine/full-legacy-dtcld/n12.rezero.txt. Pinned as a constant so
 #: the regression does not depend on that bundle being present on the host.
 BASELINE_G33R_SHA256 = \
+    "51403c1d7ca488acb74947b5ec90765a63e673e8cc2638c26e7f90154c249f6c"
+
+#: The SAME baseline as it stood before the driver began recording the land mask
+#: and the fixture id. It is kept, not replaced: those thirteen records are
+#: instrumentation, and the way to say so is to show the stream without them is
+#: unchanged BIT FOR BIT rather than to retire the attestation and assert it.
+PRE_INSTRUMENT_G33R_SHA256 = \
     "247cab0a9662d5df7d5960149ec1db435e38d946d251ebd6ab691297c52bde67"
+
+#: The records added since. Named here so a THIRD one cannot be waved through
+#: by the same argument without being written down.
+INSTRUMENT_PREFIXES = ("G33R FIXTURE", "G33R FORCING xland")
 
 
 def _g33r_sha(text):
@@ -108,6 +119,25 @@ def test_the_default_path_still_matches_the_PRE_CHANGE_baseline(driver):
     the control existed."""
     assert _g33r_sha(_run(driver)) == BASELINE_G33R_SHA256, (
         "the no-argument G33R stream no longer matches the pre-change baseline")
+
+
+def test_the_new_records_are_INSTRUMENTATION_and_nothing_else(driver):
+    """The stream minus the land mask and the fixture id is the pre-change one.
+
+    A changed baseline can be explained away; this is the explanation as a
+    measurement. If any of the thirteen new records carried a value the run
+    would otherwise not have had -- or if adding them had perturbed anything --
+    the remainder would not hash to the byte string the archive was attested
+    against.
+    """
+    kept = [l for l in _run(driver).splitlines()
+            if l.startswith("G33R")
+            and not l.startswith(INSTRUMENT_PREFIXES)]
+    body = "".join(l + "\n" for l in kept)
+    assert hashlib.sha256(body.encode()).hexdigest() == \
+        PRE_INSTRUMENT_G33R_SHA256, (
+            "removing the instrumentation records does not reproduce the "
+            "pre-change stream -- the change was not instrumentation")
 
 
 def test_a_density_arm_ACTUALLY_CHANGES_the_G33R_state(driver, streams):

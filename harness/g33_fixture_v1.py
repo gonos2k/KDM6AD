@@ -112,15 +112,26 @@ def canonical_id(name: str) -> str:
     emits the id. Two spellings of one fact, and the first thing that compared
     them refused every stream (43 tests). One function resolves both, so
     nothing has to remember which end it is holding.
+
+    The two are NOT related by a prefix: `arithmetic_multisubcycle_v1` lives in
+    `g33_fixture_multisubcycle_v1`. The mapping is the registry's own, which is
+    why this reads it rather than editing strings.
     """
     if name in FIXTURES:
         return name
-    stripped = name[len("g33_fixture_"):] if name.startswith("g33_fixture_") \
-        else name
-    if stripped in FIXTURES:
-        return stripped
+    # FROM THE REGISTRY, not by string surgery. The first draft stripped a
+    # `g33_fixture_` prefix, which is right for `boundary_mapping_v1` and wrong
+    # for `arithmetic_multisubcycle_v1`, whose module is
+    # `g33_fixture_multisubcycle_v1` -- the two names are not related by a
+    # prefix at all. The registry already holds both: the id is the key and the
+    # module is its Fortran output's stem.
+    for fid, entry in FIXTURES.items():
+        if name in (entry.fortran_module.stem, entry.fortran_build_name,
+                    entry.cpp_header.stem):
+            return fid
     raise UnknownFixture(
-        f"unknown fixture {name!r} (known: {sorted(FIXTURES)})")
+        f"unknown fixture {name!r} (known ids: {sorted(FIXTURES)}, "
+        f"known modules: {sorted(e.fortran_module.stem for e in FIXTURES.values())})")
 
 
 def spec(fixture_id: str) -> FixtureSpec:
