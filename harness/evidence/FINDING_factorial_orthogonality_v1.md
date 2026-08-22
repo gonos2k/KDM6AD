@@ -1,136 +1,154 @@
-# First-call response selectivity of the N x C x L arms, and an N x C masking interaction
+# The N x C x L factorial on one span, and three statements withdrawn from it
 
-**This finding replaces an earlier version that claimed the three corrections
-"do not interact" and that "cross terms are at roundoff". That claim was wrong,
-and its own table refutes it.** The owner's re-review computed the standard
-interaction on the ice-number residual:
+This finding has been wrong twice, in ways that were visible in its own table
+both times.
 
-    I_NC = Y11 - Y10 - Y01 + Y00
-         = 6.546e-20 - 7.540e-17 - 1.468e-01 + 1.703e-01
-         = 0.0235                       -- 13.8 % of baseline
+The first version called the three corrections ORTHOGONAL from a table of
+absolute residuals whose `I_NC` was 0.0235 -- 13.8 % of baseline against an f32
+epsilon of 1.19e-07. What it had observed was MARGINAL SELECTIVITY, which is a
+different claim and does not imply the second.
 
-f32 machine epsilon is 1.19e-07. That is not roundoff.
+The second version fixed the mathematics and left a defect in the instrument.
+`window` selected the span for the four residual responses and nothing else:
+the cap walked the whole stream and `partition` counted every sub-step, in BOTH
+tables. Measured, the two were bit-identical across the two spans -- which reads
+as "the trajectory does not move them" and was really the same whole-window
+number printed twice. So the "first-call" table was a hybrid of first-call
+residuals and whole-window diagnostics, and no statement about C or L in it was
+a first-call statement.
 
-What the first version actually observed was MARGINAL SELECTIVITY -- each
-response moving with one factor -- and reported it as ORTHOGONALITY, which is a
-statement about cross terms. The two are different claims and the first does
-not imply the second. The earlier text even wrote "C moves `R_ni` only while
-N=0", which IS the definition of an interaction, next to a heading saying there
-was none.
+Every response now takes the same span, and the span is part of the result.
 
-## The response vector, signed
+## What is withdrawn
 
-`g33_fixture_boundary_mapping_v1`, `nsplit = 12`, `rezero`, first call, the
-same initial state on every arm. Residuals are relative to starting inventory
-and **signed**: `|R|` is non-linear, hides sign reversal, and distorts any
-coefficient computed from it.
+**"C moves its own cap invariant on the first call."** The published figures
+(+2.435 -> -3.400) were the whole 300 s window. On the first call the ice cap
+term runs +3.540e-02 -> -1.988e-02, about seventy times smaller.
 
-`cap_sink` is the net interface cap term -- C's OWN invariant, absent from the
-first version, which scored C only through its indirect effect on `R_ni`.
-`partition` counts per-(split, column, level) final states differing between
-the single tile and `(2,1)`.
+**"The same N x C shape appears in the cap."** It does not, on either span. On
+the first call the cap has NO N x C interaction at all: the conditional effect
+of C is -9.379e-01 at N=0 and -9.379e-01 at N=1, identical, and every cap
+`beta_NC` is exactly zero. The +7.245e-02 that was read as a masking signature
+was a whole-window number sitting in a first-call table.
 
-| arm | NCL | R_nr | R_ni | R_qr | R_qi | cap_sink | partition |
-|---|---|---|---|---|---|---|---|
-| `legacy` | 000 | 3.685e-03 | 1.703e-01 | -1.011e-17 | -8.828e-17 | 2.435e+00 | 4.500e+01 |
-| `nmass` | 100 | 1.936e-17 | 7.540e-17 | -1.011e-17 | -8.828e-17 | 2.435e+00 | 4.500e+01 |
-| `lncmin` | 001 | 3.685e-03 | 1.703e-01 | -1.011e-17 | -8.828e-17 | 2.435e+00 | 0.000e+00 |
-| `nmasslncmin` | 101 | 1.936e-17 | 7.540e-17 | -1.011e-17 | -8.828e-17 | 2.435e+00 | 0.000e+00 |
-| `conservative` | 010 | 3.685e-03 | 1.468e-01 | -1.011e-17 | -6.822e-17 | -3.400e+00 | 4.500e+01 |
-| `cons_nmass` | 110 | 1.936e-17 | -6.546e-20 | -1.011e-17 | -6.822e-17 | -3.110e+00 | 4.500e+01 |
-| `cons_lncmin` | 011 | 3.685e-03 | 1.468e-01 | -1.011e-17 | -6.822e-17 | -3.400e+00 | 0.000e+00 |
-| `cons_nmasslncmin` | 111 | 1.936e-17 | -6.546e-20 | -1.011e-17 | -6.822e-17 | -3.110e+00 | 0.000e+00 |
+Over the window there IS an N x C term, and it is the OTHER shape:
 
-## Coefficients
+    R_ni           C at N=0  -9.085e-02     C at N=1   3.198e-17
+    cap_ice_rel    N at C=0   1.691e-04     N at C=1  -1.564e-02
 
-Standard 2^3 contrasts on +/-1 coding, `beta_S = (1/8) sum (prod x_j) Y`.
+`R_ni` is C masked by N -- C acts only while N has not already removed the
+residual. The cap is N gated by C -- N acts only while C is present. Both are
+N x C interactions and they are not the same sentence; one `beta_NC` cannot
+tell them apart, which is why conditional effects are now reported beside it.
 
-Two conversions, so this table and the review's arithmetic are read as the same
-numbers. `beta` is the HALF-effect: a factor whose 0 -> 1 step moves a response
-by `d` has `beta = d/2`. And the review's `I_NC` is the two-level interaction at
-fixed L, so `beta_NC = I_NC / 4` when L does not touch that response --
-`0.0235 / 4 = 5.865e-03`, which is the entry below.
+**"`partition` is L-selective on the first call."** After ONE sub-step the two
+decompositions agree completely: `partition_first` is 0 for all eight arms, so
+there is nothing for L to be selective about there. The 45 that was published
+is a PATH count over all twelve sub-steps. The three questions are now separate:
 
-| response | native to | N | C | L | NC | NL | CL | NCL |
-|---|---|---|---|---|---|---|---|---|
-| `R_nr` | N | -1.843e-03 | -1.987e-20 | -1.987e-20 | -1.987e-20 | -1.987e-20 | -1.987e-20 | -1.987e-20 |
-| `R_ni` | N | -7.927e-02 | -5.865e-03 | -8.182e-21 | 5.865e-03 | -8.182e-21 | -8.182e-21 | -8.182e-21 |
-| `R_qr` | — | 0.000e+00 | 0.000e+00 | 0.000e+00 | 0.000e+00 | 0.000e+00 | 0.000e+00 | 0.000e+00 |
-| `R_qi` | C | 0.000e+00 | 1.003e-17 | 0.000e+00 | 0.000e+00 | 0.000e+00 | 0.000e+00 | 0.000e+00 |
-| `cap_sink` | C | 7.247e-02 | -2.845e+00 | 1.931e-06 | 7.245e-02 | 6.955e-08 | -3.795e-06 | -1.368e-07 |
-| `partition` | L | 0.000e+00 | 0.000e+00 | -2.250e+01 | 0.000e+00 | 0.000e+00 | 0.000e+00 | 0.000e+00 |
+| response | legacy | `lncmin` | beta_L |
+|---|---|---|---|
+| `partition_first` | 0 | 0 | 0 |
+| `partition_endpoint` | 4 | 0 | -2.000 |
+| `partition_path` | 45 | 0 | -2.250e+01 |
 
-## What this says
+L's effect is real and it is a TRAJECTORY effect, not a first-call one.
 
-**`R_nr` is N-selective, and there the cross terms really are at roundoff**:
-every interaction coefficient is 1.99e-20 against a main effect of 1.84e-03.
+## What survives
 
-**`partition` is L-selective**, every interaction identically zero.
+**`R_nr` is N-selective on the first call**, and there the cross terms really
+are at roundoff: every interaction coefficient is 1.99e-20 against a main effect
+of 1.843e-03 and a screening scale of 5.97e-08.
 
-**`R_qi` and `cap_sink` are C's**, and C does its own job: `beta_C(cap_sink)`
-is -2.845, the largest main effect in the table, moving the net cap term from
-+2.435 to -3.400.
+**`R_ni` carries an N x C MASKING interaction on both spans.**
 
-**`R_ni` carries a real N x C interaction**, and its structure names it:
+    first call   beta_C = -5.865e-03   beta_NC = +5.865e-03
+    window       beta_C = -2.271e-02   beta_NC = +2.271e-02
 
-    beta_C(R_ni)  = -5.865e-03
-    beta_NC(R_ni) = +5.865e-03
+Equal and opposite on each span: C's effect exists only where N has not already
+removed the residual, so main effect and interaction cancel exactly in the N=1
+half. Both are resolved -- the screening scale is 6.4e-08 and 6.6e-08.
 
-Equal magnitude, opposite sign. That is the signature of MASKING, not coupling:
-C's effect exists only where N has not already removed the residual, so the
-main effect and the interaction cancel exactly in the N=1 half. The same shape
-appears in `cap_sink` (`beta_NC` = +7.245e-02 against `beta_N` = +7.247e-02).
+This is a statement about the two operators' measured interaction on this
+fixture. It is not a demonstration that the two physical processes are
+dynamically coupled.
 
-So the defensible statement is selectivity plus a named saturation interaction
--- not orthogonality.
+**The matched control is now verified mechanically.** On the first call every
+`_den` response -- the starting inventory each arm was handed -- is identical
+across all eight arms, `beta = 0` exactly. `same_atmosphere()` refuses a table
+where it is not.
 
-## Reproducing
+## What the cap actually does, once destruction and creation are separated
 
-    python harness/g33_factorial.py \\
-        legacy=<bundle>/n3.rezero.txt,<bundle>/n21.rezero.txt \\
-        ... one ARM=SINGLE,SPLIT per arm ... --json factorial_response.json
+`Sink.signed` says in its own docstring that it is a SIGNED DEFECT and not a
+sink, and offers `destroyed`/`created` separately for exactly this reason.
+Summing every chain and column into one signed scalar hides the direction, and
+a reversal was read as C "doing its job".
 
-`coefficients()` refuses anything but all eight arms: a contrast computed off
-seven is not a contrast.
+Ice chain, whole window, kg m-2:
 
-## Over the whole window
+| arm | destroyed | created | signed |
+|---|---|---|---|
+| `legacy` | 2.435 | 0.000 | +2.435 |
+| `conservative` | 0.000 | 3.380 | -3.400 |
 
-The table above is the FIRST CALL, where every arm meets the same initial state
-so a difference is the arm and nothing else. Accumulated over all twelve calls
-of the 300 s window the arms hold different fields, so this is the operator over
-its own trajectory -- the other question, not a more thorough version of the
-first.
+C removes the destruction completely -- and replaces it with creation of larger
+magnitude. `|signed|` goes from 2.435 to 3.400. So on this fixture the
+conservative arm meets half of what restoring its own invariant would require
+(`destroyed -> 0`) and moves the other half further from it (`created -> 0`
+fails, and by 40 % more than what it removed).
 
-| response | N | C | L | NC | NL |
-|---|---|---|---|---|---|
-| `R_nr` | -2.154e-04 | -1.425e-05 | -9.77e-09 | +1.425e-05 | +9.77e-09 |
-| `R_ni` | -1.092e-01 | -2.271e-02 | +1.827e-05 | +2.271e-02 | -1.798e-05 |
-| `cap_sink` | 7.247e-02 | -2.845e+00 | 1.931e-06 | 7.245e-02 | 6.96e-08 |
-| `partition` | 0 | 0 | -2.250e+01 | 0 | 0 |
+That is a measurement of the interface term as `g33_cap_interface` defines it,
+on one fixture. It is NOT a claim that the conservative arm creates water in the
+column budget: the ice mass residual `R_qi` is at roundoff in every arm on both
+spans, so whatever these interface terms are, they are not showing up as column
+non-closure here.
 
-Three things.
+## The window ratio moves through BOTH numerator and denominator
 
-The legacy ice-number residual GROWS along the trajectory: 0.1703 on the first
-call, 0.2637 over the window.
+Over the window the arms hold different fields, so `R_ni`'s denominator -- the
+number inventory each arm reached -- is no longer common:
 
-**The masking signature is preserved exactly.** `beta_C = -2.2713e-02` and
-`beta_NC = +2.2713e-02`, still equal and opposite at four times the first-call
-magnitude. Whatever the trajectory does to the size, the structure is the same:
-C acts only where N has not already removed the residual.
+    beta_L(R_ni_num) = +1.808e+04        beta_L(R_ni_den) = -9.891e+05
+    beta_C(R_ni_den) = +8.337e+08        beta_N(R_ni_den) = -6.155e+08
 
-And a term appears that the first call could not show. `beta_L` on `R_ni` is
-1.83e-05 where it was exactly zero, with `NL` and `CL` at the same scale. That
-is not L acquiring a number effect: it is the arms having DIFFERENT STATES after
-call one, so the decomposition change reaches the residual through the fields
-rather than through the operator. It is the reason the first call is the matched
-comparison and this one is not.
+The earlier text attributed the window's small `beta_L(R_ni)` to the
+decomposition change "reaching the residual through the fields". Both terms
+move, and a ratio cannot say which drove it, so numerator and denominator are
+now separate responses. The accurate sentence is that the local-threshold
+correction changes the trajectory state, and that changed state alters both the
+defect generated and the inventory it is measured against.
+
+## Units
+
+Responses carry their units and are not comparable across rows. A coefficient on
+a dimensionless ratio and one on a mass term are different kinds of quantity, so
+nothing here reports a "largest effect in the table" -- a sentence the previous
+version did use, about `beta_C(cap) = -2.845` beside `beta_N(R_ni) = -0.079`.
+
+Each coefficient is reported against a screening scale computed from its own
+terms, `sum|terms| * (U32 + gamma(n, U64))`, rather than against a bare epsilon:
+the inputs are f32, so nothing derived from them resolves below that. Integer
+counts are exact and are not screened.
 
 ## What is still not measured
 
-- Whether the interaction stays a masking one over a TRAJECTORY. These are all
-  first-call numbers on one identical initial state; the arms diverge
-  afterwards precisely because their fields differ.
-- One fixture, `nsplit = 12`, f32, `mstep > 1` not re-run.
-- Nothing here is a forecast impact, a precipitation change, or a physical
-  dry-air number statement -- Arm N closes the MOIST operator ledger
-  (`dend = den`), and the dry-air arm is a separate experiment.
+- Longer than 300 s, and any real atmospheric column.
+- `mstep > 1`. `column()` refuses it, and the analyzer now REFUSES the table
+  rather than returning a ratio over whichever rows happened to survive. A
+  factorial at `mstep ~ 10` needs the actual-transfer reader, not this one.
+- Whether C's creation term is a defect in a budget that matters. `R_qi` says it
+  is not visible in the column ice mass on this fixture.
+- The physical dry-air basis, which is `FINDING_number_basis_gap_v1`.
+
+## Reproducing
+
+    python3 harness/g33_factorial.py \
+        legacy=<single>,<split> ... one ARM=SINGLE,SPLIT per arm \
+        [--window] --json factorial.json
+
+Every arm's streams are checked against the arm NAME from their own headers,
+the two decompositions must agree on fixture, nsplit, mode, rho, width and
+levels and must differ in tile count, the partition universes must match
+exactly, and the residual coverage must be complete. Any of those failing is a
+refusal, not a footnote.
