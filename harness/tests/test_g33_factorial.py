@@ -15,9 +15,17 @@ sys.path.insert(0, str(ROOT))
 import g33_factorial as fc  # noqa: E402
 
 
-def _table(fn):
-    """A response table from a function of the 0/1 factor levels."""
-    return {arm: {r: fn(*fc.ALGO_FACTORS[arm]) for r in fc.RESPONSES}
+def _table(fn, invalid=()):
+    """A response table from a function of the 0/1 factor levels.
+
+    Rows carry the full record now -- value, validity and the reason -- because
+    a response is only scored where it is valid in ALL EIGHT arms.
+    """
+    return {arm: {r: {"value": fn(*fc.ALGO_FACTORS[arm]),
+                      "valid": arm not in invalid,
+                      "reason": "control failed" if arm in invalid else "",
+                      "screening_bound": 0.0}
+                  for r in fc.RESPONSES}
             for arm in fc.ALGO_FACTORS}
 
 
@@ -50,7 +58,8 @@ def test_masking_shows_as_main_effect_and_interaction_cancelling():
 def test_beta_nc_is_the_owners_interaction_over_four():
     """`I_NC = Y11 - Y10 - Y01 + Y00` at fixed L, the review's own arithmetic."""
     table = _table(lambda n, c, l: -0.5 * c * (1 - n))
-    y = {(n, c): table[a]["R_ni"] for a, (n, c, l) in fc.ALGO_FACTORS.items()}
+    y = {(n, c): table[a]["R_ni"]["value"]
+         for a, (n, c, l) in fc.ALGO_FACTORS.items()}
     i_nc = y[(1, 1)] - y[(1, 0)] - y[(0, 1)] + y[(0, 0)]
     assert fc.coefficients(table)["R_ni"]["NC"] == pytest.approx(i_nc / 4)
 
@@ -178,36 +187,74 @@ def test_a_partition_universe_mismatch_is_refused_not_intersected(monkeypatch):
     """
     a = {(1, 1, 0): ("x",), (1, 2, 0): ("y",)}
     b = {(1, 1, 0): ("x",)}
-    monkeypatch.setattr(fc, "_states", lambda t: a if t == "A" else b)
-    with pytest.raises(fc.FactorialError, match="same states"):
+    monkeypatch.setattr(fc, "_segment_states", lambda t: a if t == "A" else b)
+    monkeypatch.setattr(fc, "_window_final", lambda t: {})
+    with pytest.raises(fc.FactorialError, match="same segment states"):
         fc._partition("A", "B")
 
 
-def test_partition_is_three_questions_not_one_count(monkeypatch):
-    """First sub-step, final state, and how often they ever differed."""
+def test_partition_is_four_questions_not_one_count(monkeypatch):
+    """First segment, last segment, the WINDOW FINAL state, and the path.
+
+    The last post-sedimentation segment is not the window final state: other
+    microphysical processes run after sedimentation in the same call. Reading
+    the segment count as "what the forecast carries" is the confusion this
+    separation removes.
+    """
     a = {(1, 1, 0): ("x",), (2, 1, 0): ("x",), (3, 1, 0): ("x",)}
     b = {(1, 1, 0): ("x",), (2, 1, 0): ("Z",), (3, 1, 0): ("Z",)}
-    monkeypatch.setattr(fc, "_states", lambda t: a if t == "A" else b)
+    fa = {("qv", 1, 0): 1.0, ("qv", 1, 1): 2.0}
+    fb = {("qv", 1, 0): 1.0, ("qv", 1, 1): 9.0}
+    monkeypatch.setattr(fc, "_segment_states", lambda t: a if t == "A" else b)
+    monkeypatch.setattr(fc, "_window_final", lambda t: fa if t == "A" else fb)
     got = fc._partition("A", "B")
-    assert got["partition_first"] == 0.0        # they still agree after one
-    assert got["partition_endpoint"] == 1.0     # and disagree at the end
-    assert got["partition_path"] == 2.0         # having disagreed twice
+    assert got["partition_first"] == 0.0                  # agree after one
+    assert got["partition_last_segment_post"] == 1.0      # differ at the last
+    assert got["partition_window_final"] == 1.0           # and a DIFFERENT count
+    assert got["partition_path"] == 2.0                   # having differed twice
 
 
-def test_an_unrecoverable_row_is_a_refusal_not_a_zero_response(monkeypatch):
+def test_an_unrecoverable_row_invalidates_ITS_response_and_no_other(monkeypatch):
     """`column()` refuses mstep > 1, and `0.0` then means two different things.
 
     "the residual vanished" and "nothing in this span could be measured" are
-    the same number under the old code. The span's coverage is checked against
-    what it should have produced.
+    the same number under the old code. Coverage is checked -- and it
+    invalidates the recovered metric diagnostic ONLY, because the matched
+    budget rows and the partition responses never needed that reader.
     """
     import g33_number_transport as nt
     call = {"outer_pre_sed": {(1, 1, 0): {}}, "loops": {1}}
-    monkeypatch.setattr(nt, "calls", lambda s: [call])
     monkeypatch.setattr(nt, "single_loop", lambda c: 1)
     monkeypatch.setattr(nt, "column", lambda c, col, sp: None)
-    with pytest.raises(fc.FactorialError, match="mstep"):
-        fc.responses("", "")
+    got = fc._recovered_ratio([call], "nr")
+    assert got["eligible"] == 0 and got["expected"] == 1
+
+
+def test_one_chains_failed_control_does_not_delete_the_other_responses():
+    """Paired control, not global rejection.
+
+    An ice mass control failure invalidates `R_ni` -- the number response whose
+    interpretation depends on it -- and nothing else. Scoring every response off
+    the arms whose control happened to close is not a contrast, so a response is
+    scored only where it is valid in ALL EIGHT arms.
+    """
+    table = _table(lambda n, c, l: float(n), invalid={"legacy"})
+    for arm in fc.ALGO_FACTORS:
+        for r in ("R_nr", "R_qi"):
+            table[arm][r] = dict(table[arm][r], valid=True, reason="")
+    beta = fc.coefficients(table)
+    assert beta["R_nr"]["_valid"] and beta["R_qi"]["_valid"]
+    assert not beta["R_ni"]["_valid"]
+    assert "legacy" in beta["R_ni"]["_invalid"]
+
+
+def test_a_failing_mass_row_is_a_RESPONSE_not_a_reason_to_drop_the_arm():
+    """C exists to remove a mass defect, so rejecting an arm for having one
+    deletes the C response from the C experiment."""
+    unit, owner, reader, ctrl, span = fc.RESPONSES["R_qi"]
+    assert reader == "matched" and ctrl is None
+    unit, owner, reader, ctrl, span = fc.RESPONSES["R_ni"]
+    assert ctrl == ("ice", "qi")            # the NUMBER row is the one gated
 
 
 def test_the_mass_rows_are_marked_reader_dependent():
@@ -219,5 +266,74 @@ def test_the_mass_rows_are_marked_reader_dependent():
     sentence "the mass closes", which the second refutes.
     """
     src = (ROOT / "g33_factorial.py").read_text()
-    assert "CLOSE BY CONSTRUCTION" in src
-    assert "READER-DEPENDENT" in src
+    assert "close by construction" in src
+    # ... and the diagnostic carries a name that cannot be mistaken for a budget
+    assert "D_ni_metric" in fc.RESPONSES and "R_ni" in fc.RESPONSES
+    assert fc.RESPONSES["D_ni_metric"][2] == "recovered"
+    assert fc.RESPONSES["R_ni"][2] == "matched"
+
+
+def test_the_mass_control_is_cut_to_the_SPAN_it_is_asked_about(monkeypatch):
+    """A row that closes on call 1 and fails on call 7 failed a FIRST-CALL
+    table too, because `usable()` reads every per-call record.
+
+    The control is a property of the span the response is taken over.
+    """
+    import g33_matched_closure as mc
+    good = {"call": 1, "residual": 0.0, "out": 1.0, "start": 1.0,
+            "scale": 1.0, "ops": 8}
+    bad = {"call": 7, "residual": 1.0, "out": 1.0, "start": 1.0,
+           "scale": 1.0, "ops": 8}
+    row = {"per_call": [good, bad], "residual": 1.0, "out": 1.0, "calls": 2}
+    monkeypatch.setattr(mc, "closures", lambda s, b: {("ice", "qi", 1): row})
+    _rows, first = fc._matched_rows("", frozenset({1}))
+    _rows, whole = fc._matched_rows("", frozenset({1, 7}))
+    assert first[("ice", 1)][0] is True          # the first call closed
+    assert whole[("ice", 1)][0] is False         # the window did not
+
+
+def test_same_atmosphere_compares_RAW_state_not_four_integrals(monkeypatch):
+    """Two different vertical profiles can share a column integral.
+
+    `sum m_k x_k` is equal for many `x_k`, so denominator equality is necessary
+    and not sufficient -- and a factorial that accepts it can attribute a
+    difference to the factor naming the arm when the arms did not start level.
+    """
+    import g33_refine_analyze as ra
+    a = {("initial", "qv", 1, 0): 1.0, ("initial", "qv", 1, 1): 3.0,
+         ("forcing", "rho", 1, 0): 1.0, ("state", "qv", 1, 0): 9.0}
+    # same column integral (1+3 == 2+2), different profile
+    b = dict(a)
+    b[("initial", "qv", 1, 0)] = 2.0
+    b[("initial", "qv", 1, 1)] = 2.0
+    monkeypatch.setattr(ra, "read_text", lambda t: a if t == "A" else b)
+    with pytest.raises(fc.FactorialError, match="same atmosphere"):
+        fc.same_atmosphere({"legacy": "A", "nmass": "B"})
+    monkeypatch.setattr(ra, "read_text", lambda t: a)
+    fc.same_atmosphere({"legacy": "A", "nmass": "B"})    # identical: passes
+
+
+def test_the_final_state_is_not_compared_by_the_same_atmosphere_gate(monkeypatch):
+    """It compares what each arm was HANDED, not what it produced.
+
+    Including `state` would make every working arm fail the control that is
+    supposed to prove the arms were comparable.
+    """
+    import g33_refine_analyze as ra
+    a = {("initial", "qv", 1, 0): 1.0, ("state", "qv", 1, 0): 9.0}
+    b = {("initial", "qv", 1, 0): 1.0, ("state", "qv", 1, 0): 4.0}
+    monkeypatch.setattr(ra, "read_text", lambda t: a if t == "A" else b)
+    fc.same_atmosphere({"legacy": "A", "nmass": "B"})
+
+
+def test_a_conditional_over_an_invalid_arm_is_null_not_a_number():
+    """The validity discipline must not leak through the conditionals.
+
+    A conditional is a mean over four arms; if one of them is not evidence, the
+    conditional is not either. Reporting it anyway would let a number the
+    contrast refused to score reappear one table down.
+    """
+    table = _table(lambda n, c, l: float(n), invalid={"legacy", "nmass"})
+    got = fc.conditionals(table)["R_ni"]
+    assert got["N_at_C0"] is None            # legacy and nmass are in this half
+    assert got["N_at_C1"] == pytest.approx(1.0)   # ... and this one is clean

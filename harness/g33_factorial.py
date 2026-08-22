@@ -1,44 +1,52 @@
-"""The N x C x L factorial: one span per table, and each response in its own terms.
+"""The N x C x L factorial: one reader, one control and one span PER RESPONSE.
 
-Two corrections have already been made here and are kept. The response is
-SIGNED, because `|R|` hides sign reversal and turns cancellation into apparent
-effect. And the coefficients are the standard 2^3 contrasts,
+This module has been wrong three times, each time in a way its own table showed.
 
-    beta_S = (1/8) sum over arms of (prod_{j in S} x_j) * Y
+It called the three corrections ORTHOGONAL from absolute residuals whose `I_NC`
+was 0.0235 -- marginal selectivity reported as a statement about cross terms.
 
-computed rather than eyeballed, after "cross terms are at roundoff" was
-published about a table whose own `I_NC` was 0.0235.
+It then fixed the mathematics and left `window` selecting the span for four
+responses out of six, so a "first-call" table carried whole-window cap and
+partition numbers.
 
-This version fixes what those corrections did not reach.
+And it fixed the span with ONE global reader and ONE global control policy, which
+re-mixed what the span fix had just separated. N, C and L do not need the same
+ones:
 
-ONE SPAN PER TABLE. `window` selected the span for the four residual responses
-and nothing else: `cap_sink` walked the whole stream and `partition` counted
-every split, in BOTH tables. Measured, the two were bit-identical across the two
-spans -- which read as "the trajectory does not move them" and was really "the
-same whole-window number printed twice". So the first-call table was a hybrid,
-and no statement about C or L in it was a first-call statement. Every response
-now takes the same span, and the span is part of the result.
+    R_qr, R_qi   the ACTUAL-transfer budget. No control of their own, ON
+                 PURPOSE: a failing mass closure is the defect C exists to
+                 remove, so rejecting the arm for it deletes the C response
+                 from the C experiment.
+    R_nr, R_ni   the same reader, each PAIRED with its chain's mass row --
+                 a number residual is a number-specific measurement only where
+                 the mass beside it closed.
+    D_*_metric   the endpoint-recovered metric residual, under its own name.
+                 `column()` inverts the update, so its MASS rows close by
+                 construction and are not a budget; measured on the first call,
+                 legacy ice reads -8.83e-17 recovered against -6.006e-01 from
+                 the actual records.
+    cap_*        a LEGACY-MECHANISM diagnostic, not C's native invariant. The
+                 legacy ice interface term IS that arm's mass non-closure to
+                 the digit; for the conservative arm the same term is -3.373e-01
+                 while its column closes to 2.3e-08. One quantity cannot be the
+                 conserved invariant of both operators.
+    partition_*  four questions -- first segment, last segment, the WINDOW's
+                 final state, and the path -- each carrying its own span,
+                 because the last post-sedimentation segment is not what the
+                 forecast carries.
 
-THE CAP RESPONSE IS NOT ONE SCALAR. `Sink.signed` says in its own docstring
-that it is a SIGNED DEFECT and not a sink -- destruction and creation are
-opposite signs of one number, and the type offers `destroyed`/`created`
-separately for exactly that reason. Summing every chain and column into one
-signed scalar hides both the cancellation and the direction, and a reversal
-from +2.435 to -3.400 was read as C "doing its job". The cap is reported per
-CHAIN, as signed, destroyed and created, and normalised by that chain's own
-starting inventory so it is a number in the same terms as the residuals.
+Every response is `{value, unit, reader, span, paired_control, valid, reason,
+screening_bound}`, and a contrast is computed only where the response is valid
+in ALL EIGHT arms. Where it is not, `conditionals()` still reports the halves
+that are: on `g33_fixture_multisubcycle_v1` at mstep <= 10 the C=0 half fails
+its mass control and the C=1 half closes, which makes `N_at_C1` a controlled
+measurement of Arm N at high sub-step count even though `beta_N` is not scorable.
 
-COVERAGE IS A RESULT, NOT A DEFAULT. `column()` refuses mstep > 1, and the old
-code turned an empty row set into `0.0` -- indistinguishable from a residual
-that really vanished. Eligibility is counted against what the span should have
-produced, and an incomplete table is refused.
+SIGNED, NOT ABSOLUTE. `|R|` hides sign reversal and turns cancellation into
+apparent effect.
 
-NUMERATOR AND DENOMINATOR ARE SEPARATE RESPONSES. A ratio can move because the
-defect moved or because the inventory did, and one number cannot say which.
-
-RESPONSES ARE NOT COMPARABLE ACROSS ROWS. Each carries its unit. A coefficient
-on a dimensionless ratio and one on a mass term are not the same kind of
-quantity, so nothing here reports a "largest effect in the table".
+RESPONSES ARE NOT COMPARABLE ACROSS ROWS. Each carries its unit, and nothing
+here reports a "largest effect in the table".
 """
 from __future__ import annotations
 
@@ -77,37 +85,53 @@ ALGO_FACTORS = {
     "cons_nmasslncmin": (1, 1, 1),
 }
 
-#: response -> (unit, which factor it is the NATIVE invariant of, or None).
-#: The unit is carried so that nothing compares magnitudes across rows.
+#: response -> spec. ONE reader, ONE control and ONE span PER RESPONSE, because
+#: N, C and L do not need the same ones and a single global policy re-mixes what
+#: the span fix just separated.
+#:
+#: `reader`   matched   the actual XFER records, admissible at any mstep
+#:            recovered `column()` inverting the update -- needs mstep == 1, and
+#:                      its MASS rows close by construction, so they are named
+#:                      as a diagnostic rather than offered as a budget
+#:            capin     the interface protocol
+#:            state     the post-sed / window-final states
+#: `control`  the (chain, species) mass row whose closure this response's
+#:            interpretation depends on, or None where it depends on none.
+#: `span`     `selected` follows --window; anything else is fixed and says so.
+#:
+#: The MASS rows carry no control of their own ON PURPOSE. A failing mass
+#: closure is the defect C exists to remove, so rejecting the arm for it would
+#: delete the C response from the C experiment (owner review section 5.1).
 RESPONSES = {
-    "R_nr_num": ("number m-2", "N"),
-    "R_nr_den": ("number m-2", None),
-    "R_nr": ("dimensionless", "N"),
-    "R_ni_num": ("number m-2", "N"),
-    "R_ni_den": ("number m-2", None),
-    "R_ni": ("dimensionless", "N"),
-    # THE MASS ROWS ARE READER-DEPENDENT. Under the recovered reader they
-    # close by construction -- `column()` inverts the update, so the budget it
-    # reconstructs cannot fail to balance. Measured on this fixture's first
-    # call, legacy ice reads -8.83e-17 recovered and -6.006e-01 from the actual
-    # XFER records. Only `matched=True` makes these rows a measurement.
-    "R_qr_num": ("kg m-2", None),
-    "R_qr_den": ("kg m-2", None),
-    "R_qr": ("dimensionless", None),
-    "R_qi_num": ("kg m-2", "C"),
-    "R_qi_den": ("kg m-2", None),
-    "R_qi": ("dimensionless", "C"),
-    "cap_main_signed": ("kg m-2", "C"),
-    "cap_main_destroyed": ("kg m-2", "C"),
-    "cap_main_created": ("kg m-2", "C"),
-    "cap_main_signed_rel": ("dimensionless", "C"),
-    "cap_ice_signed": ("kg m-2", "C"),
-    "cap_ice_destroyed": ("kg m-2", "C"),
-    "cap_ice_created": ("kg m-2", "C"),
-    "cap_ice_signed_rel": ("dimensionless", "C"),
-    "partition_first": ("count", "L"),
-    "partition_endpoint": ("count", "L"),
-    "partition_path": ("count", "L"),
+    "R_qr_num": ("kg m-2", None, "matched", None, "selected"),
+    "R_qr_den": ("kg m-2", None, "matched", None, "selected"),
+    "R_qr": ("dimensionless", "C", "matched", None, "selected"),
+    "R_qi_num": ("kg m-2", "C", "matched", None, "selected"),
+    "R_qi_den": ("kg m-2", None, "matched", None, "selected"),
+    "R_qi": ("dimensionless", "C", "matched", None, "selected"),
+    "R_nr_num": ("number m-2", "N", "matched", ("main", "qr"), "selected"),
+    "R_nr_den": ("number m-2", None, "matched", ("main", "qr"), "selected"),
+    "R_nr": ("dimensionless", "N", "matched", ("main", "qr"), "selected"),
+    "R_ni_num": ("number m-2", "N", "matched", ("ice", "qi"), "selected"),
+    "R_ni_den": ("number m-2", None, "matched", ("ice", "qi"), "selected"),
+    "R_ni": ("dimensionless", "N", "matched", ("ice", "qi"), "selected"),
+    # The endpoint-recovered metric diagnostic, under its own name. It measures
+    # the residual of the number METRIC as the endpoints imply it, which is a
+    # different quantity from the actual-transfer budget above -- and the
+    # published N x C masking result is this one.
+    "D_nr_metric": ("dimensionless", "N", "recovered", None, "selected"),
+    "D_ni_metric": ("dimensionless", "N", "recovered", None, "selected"),
+    "cap_main_signed": ("kg m-2", None, "capin", None, "selected"),
+    "cap_main_destroyed": ("kg m-2", None, "capin", None, "selected"),
+    "cap_main_created": ("kg m-2", None, "capin", None, "selected"),
+    "cap_ice_signed": ("kg m-2", None, "capin", None, "selected"),
+    "cap_ice_destroyed": ("kg m-2", None, "capin", None, "selected"),
+    "cap_ice_created": ("kg m-2", None, "capin", None, "selected"),
+    "partition_first": ("count", "L", "state", None, "first-segment-post"),
+    "partition_last_segment_post": ("count", "L", "state", None,
+                                    "last-segment-post"),
+    "partition_window_final": ("count", "L", "state", None, "window-final"),
+    "partition_path": ("count", "L", "state", None, "all-segments"),
 }
 
 #: species -> the chain its cap belongs to, so the cap and the residual of one
@@ -134,66 +158,85 @@ def _screen(sum_abs: float, n_terms: int) -> float:
     return sum_abs * (U32 + _gamma(max(n_terms, 1), U64))
 
 
-def _matched_rows(stream: str):
-    """`closures()` once per stream, with the chain's MASS control applied.
+def _ratio_screen(num, den, b_num, b_den) -> float:
+    """First-order propagation for `R = A / D`.
 
-    The pairing is the module's own: "the mass row is the CONTROL for the
-    number row beside it. If the mass row does not close, the accounting for
-    that chain is missing a term and NEITHER row of the pair is evidence." So
-    the control is keyed by (chain, column) and taken from the `q` species --
-    applying `usable()` to a NUMBER row instead rejects the very defect the
-    experiment is about, which is what happened on the first attempt here.
+    The bound used to be the numerator's alone divided by `|D|`, which ignores
+    that the denominator is itself a sum of f32-derived terms. For a small `L`
+    effect or a third-order term, the missing piece is the one that decides
+    whether it is resolved.
 
-    A failing control REFUSES the arm rather than dropping the column: a
-    factorial whose arms cover different columns is not a factorial.
+        |dR| <= |dA|/|D| + |A||dD|/D^2
+    """
+    if not den:
+        return 0.0
+    return b_num / abs(den) + abs(num) * b_den / (den * den)
+
+
+def _matched_rows(stream: str, span_calls: frozenset):
+    """`closures()` once, with each chain's mass control taken ON THE SPAN.
+
+    `mc.usable()` reads every per-call record, so a row that closes on call 1
+    and fails on call 7 failed a FIRST-CALL table too. The control is a
+    property of the span the response is taken over, so it is cut to the same
+    calls before it is asked.
+
+    Nothing is raised. Which rows closed is a RESULT -- for the C arm the
+    legacy failure IS the response -- so the verdicts are returned and each
+    response decides for itself whether it needs them (owner review §5).
     """
     import g33_matched_closure as mc
     rows = mc.closures(stream, "operator")
+    control = {}
     for (chain, sp, col), d in rows.items():
         if not sp.startswith("q"):
             continue
-        ok, why = mc.usable(d)
-        if not ok:
-            raise FactorialError(f"{chain} column {col}: {why} -- the mass row "
-                                 f"is the control, so neither row of this pair "
-                                 f"is evidence")
-    return rows
+        pcs = [pc for pc in d["per_call"] if pc["call"] in span_calls]
+        if not pcs:
+            control[(chain, col)] = (False, "no calls on this span")
+            continue
+        ok, why = mc.usable({"per_call": pcs, "residual": 0.0, "out": 0.0,
+                             "calls": len(pcs)})
+        control[(chain, col)] = (ok, why)
+    return rows, control
 
 
 def _matched_residual(rows: dict, span_calls: frozenset, species: str):
     """The residual from ACTUAL transfers, admissible at any `mstep`.
 
     `column()` inverts the update to recover the transfers, which needs one
-    sub-step. `g33_matched_closure` reads the `XFER` records the kernel emits,
-    reconstructs nothing, and says so: "mstep > 1 is admissible". It also
-    carries each call's own gamma_n screening threshold.
-
-    The two readers are not interchangeable -- one measures the operator's
-    actual transfers, the other what the endpoints imply they must have been --
-    so which was used is recorded in the table.
+    sub-step. `g33_matched_closure` reads the `XFER` records the kernel emits
+    and reconstructs nothing -- "mstep > 1 is admissible".
     """
-    num = den = sum_abs = 0.0
-    terms = 0
+    num = den = b_num = b_den = 0.0
     seen = False
-    for (_chain, sp, _col), d in rows.items():
+    cols = set()
+    for (chain, sp, col), d in rows.items():
         if sp != species:
             continue
         for pc in d["per_call"]:
             if pc["call"] not in span_calls:
                 continue
             seen = True
+            cols.add((chain, col))
             num += pc["residual"]
             den += pc["start"]
-            sum_abs += pc["scale"]
-            terms += pc["ops"]
+            b_num += _screen(pc["scale"], pc["ops"])
+            b_den += _screen(abs(pc["start"]), pc["ops"])
     if not seen:
-        raise FactorialError(f"{species}: no matched-closure rows on this span")
-    return {"num": num, "den": den, "sum_abs": sum_abs, "terms": terms,
-            "eligible": 1, "expected": 1}
+        return None
+    return {"num": num, "den": den, "b_num": b_num, "b_den": b_den,
+            "cols": cols}
 
 
-def _residual(span, species):
-    """Signed residual, starting inventory, and the coverage behind them."""
+def _recovered_ratio(span, species):
+    """The endpoint-recovered metric residual, and whether the span was whole.
+
+    `column()` returns None above one sub-step. An all-`None` span used to
+    become `0.0` -- indistinguishable from a residual that vanished -- so the
+    eligible rows are counted against what the span should have produced and a
+    short count invalidates the response instead of scoring it.
+    """
     import g33_number_transport as nt
     num = den = sum_abs = 0.0
     eligible = expected = terms = 0
@@ -205,7 +248,7 @@ def _residual(span, species):
             if row is None:
                 continue
             eligible += 1
-            num += row["residual"]              # SIGNED
+            num += row["residual"]
             den += row["start"]
             sum_abs += abs(row["residual"]) + abs(row["start"])
             terms += 2
@@ -219,6 +262,13 @@ def _cap(stream: str, span_calls: frozenset) -> dict:
     `cap_sink()` returns rows for the whole stream with no way to select a
     call, so the interfaces are walked directly -- `Interface` carries its own
     1-based `call` -- and the span is applied here where it belongs.
+
+    This is a LEGACY-MECHANISM diagnostic, not C's native invariant. Measured:
+    the legacy first-call ice interface term (+6.006e-01 of starting mass) IS
+    that arm's actual mass non-closure to the digit, and for the conservative
+    arm the same term reads -3.373e-01 while its column budget closes to
+    2.3e-08. One quantity cannot be the conserved invariant of both operators.
+    C's outcome response is the actual-transfer `R_qi` (owner review §10).
     """
     import g33_cap_interface as ci
     out = {}
@@ -239,8 +289,8 @@ def _cap(stream: str, span_calls: frozenset) -> dict:
     return out
 
 
-def _states(text: str) -> dict:
-    """`(split, col, level) -> final state`, for every split in the run."""
+def _segment_states(text: str) -> dict:
+    """`(split, col, level) -> post-sedimentation state`, every segment."""
     import g33_number_transport as nt
     got = {}
     for call in nt.calls(text):
@@ -253,106 +303,132 @@ def _states(text: str) -> dict:
     return got
 
 
+def _window_final(text: str) -> dict:
+    """The window's FINAL state, from the G33R block the driver writes.
+
+    The last post-sedimentation segment is not the window final state: other
+    microphysical processes run after sedimentation within the same call. The
+    driver emits `outF` -- the state the run ends on -- and that is what a
+    forecast would carry, so it is compared separately from the segment
+    (owner review §8).
+    """
+    import g33_refine_analyze as ra
+    d = ra.read_text(text)
+    return {k[1:]: v for k, v in d.items()
+            if isinstance(k, tuple) and k[0] == "state"}
+
+
 def _partition(single: str, split: str) -> dict:
-    """Three partition responses, over an EXACT common universe.
+    """Four partition responses, over an EXACT common universe.
 
     The universe was intersected before, so a split stream missing a column or
     a sub-step compared fewer states and reported BETTER invariance. That is
-    fail-open: the count a missing state reduces is the count the response is.
-    A universe mismatch is refused.
+    fail-open: the count a missing state removes is the count the response is.
 
-    Three quantities, because they are three questions. `first` is the state
-    after one sub-step, where the two decompositions still meet the same
-    atmosphere. `endpoint` is the final state, which is what a forecast would
-    carry. `path` is how often they differed anywhere along the way, and is
-    the count the earlier table reported without saying which of the three it
-    was.
+    Four quantities, because they are four questions -- after ONE segment,
+    after the LAST segment, at the WINDOW's final state, and how often they
+    ever differed. The published 45 was the last of these.
     """
-    a, b = _states(single), _states(split)
+    a, b = _segment_states(single), _segment_states(split)
     if set(a) != set(b):
-        missing = sorted(set(a) - set(b))[:2]
-        extra = sorted(set(b) - set(a))[:2]
         raise FactorialError(
-            f"the two decompositions do not describe the same states: "
-            f"{len(set(a) - set(b))} missing (e.g. {missing}), "
-            f"{len(set(b) - set(a))} extra (e.g. {extra}). Comparing the "
-            f"intersection would report better invariance for a shorter run.")
+            f"the two decompositions do not describe the same segment states: "
+            f"{len(set(a) - set(b))} missing, {len(set(b) - set(a))} extra. "
+            f"Comparing the intersection would report better invariance for a "
+            f"shorter run.")
+    fa, fb = _window_final(single), _window_final(split)
+    if set(fa) != set(fb):
+        raise FactorialError(
+            f"the two decompositions do not describe the same window-final "
+            f"state: {len(set(fa) - set(fb))} missing, "
+            f"{len(set(fb) - set(fa))} extra")
     splits = sorted({k[0] for k in a})
     if not splits:
-        raise FactorialError("no sub-step states recovered from either stream")
+        raise FactorialError("no segment states recovered from either stream")
     lo, hi = splits[0], splits[-1]
     return {
         "partition_first": float(sum(1 for k in a if k[0] == lo and a[k] != b[k])),
-        "partition_endpoint": float(sum(1 for k in a if k[0] == hi and a[k] != b[k])),
+        "partition_last_segment_post":
+            float(sum(1 for k in a if k[0] == hi and a[k] != b[k])),
+        "partition_window_final": float(sum(1 for k in fa if fa[k] != fb[k])),
         "partition_path": float(sum(1 for k in a if a[k] != b[k])),
     }
 
 
 def responses(stream_single: str, stream_split: str, *,
-              window: bool = False, matched: bool = False) -> dict:
-    """The full signed response vector for one arm, on ONE span.
+              window: bool = False) -> dict:
+    """Every response, each with its own reader, control, span and verdict.
 
-    `window=True` accumulates across the whole run; the default is the first
-    call, where every arm meets the same initial state so a difference is the
-    arm and nothing else. After it the arms hold different fields, so the
-    window is a different question rather than a longer version of the first.
-
-    `matched=True` reads the ACTUAL transfers instead of recovering them, which
-    is what makes an `mstep > 1` factorial possible at all.
+    A response is `{value, unit, reader, span, paired_control, valid, reason,
+    screening_bound}`. There is no global `--matched` any more: the actual
+    transfers are the budget rows, the endpoint recovery is a separately named
+    metric diagnostic, and a failing mass control invalidates the number
+    response it is paired with and nothing else.
     """
     import g33_number_transport as nt
     calls = nt.calls(stream_single)
     span = calls if window else calls[:1]
     span_calls = frozenset(range(1, len(span) + 1))
+    selected = "window" if window else "first-call"
 
-    out, meta = {}, {"span": "window" if window else "first-call",
-                     "reader": "matched-xfer" if matched else "recovered",
-                     "calls_in_span": len(span), "calls_in_stream": len(calls),
-                     "screen": {}, "coverage": {}}
-    rows = _matched_rows(stream_single) if matched else None
-    starts = {}
-    for species in ("nr", "ni", "qr", "qi"):
-        r = (_matched_residual(rows, span_calls, species) if matched
-             else _residual(span, species))
-        if r["eligible"] != r["expected"]:
-            raise FactorialError(
-                f"{species}: {r['eligible']} of {r['expected']} (call, column) "
-                f"rows are recoverable on this span -- `column()` refuses "
-                f"mstep > 1, and a ratio taken over the rows that happened to "
-                f"survive is not the span's residual. Use an analyzer that "
-                f"reads the actual transfers -- pass `matched=True`.")
-        out[f"R_{species}_num"] = r["num"]
-        out[f"R_{species}_den"] = r["den"]
-        out[f"R_{species}"] = r["num"] / r["den"] if r["den"] else 0.0
-        starts[CHAIN_OF[species]] = r["den"] if species.startswith("q") else \
-            starts.get(CHAIN_OF[species])
-        meta["coverage"][species] = {"eligible": r["eligible"],
-                                     "expected": r["expected"]}
-        meta["screen"][f"R_{species}_num"] = _screen(r["sum_abs"], r["terms"])
-        meta["screen"][f"R_{species}_den"] = _screen(r["sum_abs"], r["terms"])
-        meta["screen"][f"R_{species}"] = (
-            _screen(r["sum_abs"], r["terms"]) / abs(r["den"]) if r["den"] else 0.0)
+    rows, control = _matched_rows(stream_single, span_calls)
+    out = {}
+
+    def put(name, value, *, valid=True, reason=""):
+        unit, owner, reader, ctrl, spanspec = RESPONSES[name]
+        out[name] = {"value": value, "unit": unit, "owner": owner,
+                     "reader": reader, "paired_control": list(ctrl) if ctrl
+                     else None,
+                     "span": selected if spanspec == "selected" else spanspec,
+                     "valid": valid, "reason": reason, "screening_bound": 0.0}
+
+    for species in ("qr", "qi", "nr", "ni"):
+        r = _matched_residual(rows, span_calls, species)
+        ctrl = RESPONSES[f"R_{species}"][3]
+        bad = ""
+        if ctrl and r:
+            fails = [f"{c[0]}/{c[1]}: {control[c][1]}" for c in sorted(r["cols"])
+                     if c in control and not control[c][0]]
+            # The control is the chain's OWN mass row; a number response is
+            # only a number-specific measurement where it closed.
+            fails += [f"{ctrl[0]}/{col}: {why}"
+                      for (ch, col), (ok, why) in sorted(control.items())
+                      if ch == ctrl[0] and not ok]
+            bad = "; ".join(dict.fromkeys(fails))
+        for suffix, value, bound in (
+                ("_num", r["num"] if r else 0.0, r["b_num"] if r else 0.0),
+                ("_den", r["den"] if r else 0.0, r["b_den"] if r else 0.0),
+                ("", (r["num"] / r["den"] if r and r["den"] else 0.0),
+                 _ratio_screen(r["num"], r["den"], r["b_num"], r["b_den"])
+                 if r else 0.0)):
+            name = f"R_{species}{suffix}"
+            put(name, value, valid=bool(r) and not bad,
+                reason="no matched rows on this span" if not r else bad)
+            out[name]["screening_bound"] = bound
+
+    for species, name in (("nr", "D_nr_metric"), ("ni", "D_ni_metric")):
+        d = _recovered_ratio(span, species)
+        short = d["eligible"] != d["expected"]
+        put(name, d["num"] / d["den"] if d["den"] else 0.0,
+            valid=not short,
+            reason=(f"{d['eligible']} of {d['expected']} rows recoverable -- "
+                    f"`column()` refuses mstep > 1, and a ratio over the rows "
+                    f"that happened to survive is not the span's residual")
+            if short else "")
+        out[name]["screening_bound"] = _ratio_screen(
+            d["num"], d["den"], _screen(d["sum_abs"], d["terms"]),
+            _screen(abs(d["den"]), d["terms"]))
 
     cap = _cap(stream_single, span_calls)
     for chain in ("main", "ice"):
         c = cap[chain]
         for what in ("signed", "destroyed", "created"):
-            out[f"cap_{chain}_{what}"] = c[what]
-            meta["screen"][f"cap_{chain}_{what}"] = _screen(c["sum_abs"],
-                                                            c["terms"])
-        # Normalised by the chain's OWN starting mass, so the cap is readable
-        # beside that chain's residual instead of in units of its own.
-        base = starts.get(chain)
-        out[f"cap_{chain}_signed_rel"] = c["signed"] / base if base else 0.0
-        meta["screen"][f"cap_{chain}_signed_rel"] = (
-            _screen(c["sum_abs"], c["terms"]) / abs(base) if base else 0.0)
+            put(f"cap_{chain}_{what}", c[what])
+            out[f"cap_{chain}_{what}"]["screening_bound"] = _screen(
+                c["sum_abs"], c["terms"])
 
-    part = _partition(stream_single, stream_split)
-    out.update(part)
-    for k in part:
-        meta["screen"][k] = 0.0        # integer counts; exact, not screened
-    meta["cap_interfaces"] = {c: cap[c]["terms"] for c in cap}
-    out["_meta"] = meta
+    for name, value in _partition(stream_single, stream_split).items():
+        put(name, value)                # integer counts: exact, unscreened
     return out
 
 
@@ -389,35 +465,49 @@ def check_identity(name: str, single: str, split: str) -> dict:
             "tiles_split": b["tile_sizes"]}
 
 
-def same_atmosphere(table: dict) -> None:
-    """Every arm must have met the same initial state, or the design is not one.
+def same_atmosphere(streams: dict) -> None:
+    """Every arm must have been handed the SAME atmosphere, bit for bit.
 
-    The first call's starting inventory is the atmosphere each arm was handed.
-    Two arms that started differently cannot have their difference attributed
-    to the factor that names them.
+    The previous gate compared four column-integrated scalars -- the `_den`
+    responses -- and two different vertical profiles can share an integral:
+    `sum m_k x_k` is equal for many `x_k`. A necessary condition read as a
+    sufficient one is how a factorial ends up attributing a difference to the
+    factor that names the arm when the arms did not start level.
+
+    So the comparison is the raw G33R `initial` state and `forcing` records,
+    every field, every cell, as the bytes the driver emitted.
     """
-    keys = [k for k in RESPONSES if k.endswith("_den")]
-    ref = None
-    for arm, row in table.items():
-        got = tuple(row[k] for k in keys)
+    import g33_refine_analyze as ra
+    ref = ref_arm = None
+    for arm, text in streams.items():
+        d = ra.read_text(text)
+        got = {k: v for k, v in d.items()
+               if isinstance(k, tuple) and k[0] in ("initial", "forcing")}
         if ref is None:
             ref, ref_arm = got, arm
-        elif got != ref:
-            bad = [k for k, x, y in zip(keys, got, ref) if x != y]
+            continue
+        if set(got) != set(ref):
             raise FactorialError(
-                f"{arm} and {ref_arm} did not start from the same atmosphere: "
-                f"{bad} differ. On the first call that is a broken control; "
-                f"over the window it is expected, and the window table must "
-                f"not be checked with this.")
+                f"{arm} and {ref_arm} do not even carry the same initial "
+                f"records: {len(set(ref) ^ set(got))} differ in the key set")
+        bad = sorted(k for k in ref if got[k] != ref[k])
+        if bad:
+            raise FactorialError(
+                f"{arm} and {ref_arm} were not handed the same atmosphere: "
+                f"{len(bad)} of {len(ref)} initial/forcing cells differ, "
+                f"e.g. {bad[:3]}. A factorial cannot attribute a difference to "
+                f"the factor that names the arm when the arms did not start "
+                f"level.")
 
 
 def coefficients(table: dict, screens: dict | None = None) -> dict:
     """Standard 2^3 contrasts on +/-1 coding, per response.
 
     Returns `{response: {term: beta}}` with terms "", "N", "C", "L", "NC",
-    "NL", "CL", "NCL", the empty key being the grand mean. With `screens`
-    (response -> per-arm screening scale) each response also carries
-    `_bound`, the scale below which its coefficients say nothing.
+    "NL", "CL", "NCL", the empty key being the grand mean, plus `_bound` and
+    `_valid`. A response is scored only where it is VALID IN ALL EIGHT ARMS: a
+    contrast over the arms whose control happened to close is not a contrast.
+    `_invalid` names the arms that stopped it and why.
 
     `beta` is the HALF-effect: a factor whose 0 -> 1 step moves the response
     by `d` has `beta = d/2`.
@@ -430,7 +520,11 @@ def coefficients(table: dict, screens: dict | None = None) -> dict:
     names = "NCL"
     out = {}
     for response in RESPONSES:
-        betas = {}
+        invalid = {a: table[a][response]["reason"] for a in arms
+                   if not table[a][response]["valid"]}
+        betas = {"_valid": not invalid}
+        if invalid:
+            betas["_invalid"] = invalid
         for size in range(4):
             for subset in _subsets(names, size):
                 acc = 0.0
@@ -439,11 +533,10 @@ def coefficients(table: dict, screens: dict | None = None) -> dict:
                     sign = 1
                     for ch in subset:
                         sign *= x[names.index(ch)]
-                    acc += sign * table[arm][response]
+                    acc += sign * table[arm][response]["value"]
                 betas[subset] = acc / 8.0
-        if screens:
-            betas["_bound"] = sum(screens[arm].get(response, 0.0)
-                                  for arm in arms) / 8.0
+        betas["_bound"] = sum(table[a][response]["screening_bound"]
+                              for a in arms) / 8.0
         out[response] = betas
     return out
 
@@ -456,6 +549,13 @@ def conditionals(table: dict) -> dict:
     effect actually is on each side, and the two shapes a 2-factor interaction
     can take -- "X only acts while Y is off" and "X only acts while Y is on" --
     are different sentences that one `beta_XY` does not distinguish.
+
+    A conditional is reported only where the four arms entering it are all
+    valid, and `null` otherwise. That is what makes it useful when the full
+    contrast is not scorable: on `g33_fixture_multisubcycle_v1` at mstep <= 10
+    the C=0 half fails its mass control while the C=1 half closes, so
+    `N_at_C1` is a controlled measurement of Arm N at high sub-step count even
+    though `beta_N` is not.
     """
     names = "NCL"
     out = {}
@@ -470,9 +570,12 @@ def conditionals(table: dict) -> dict:
                           and ALGO_FACTORS[a][j] == level]
                     lo = [a for a in table if ALGO_FACTORS[a][i] == 0
                           and ALGO_FACTORS[a][j] == level]
+                    if not all(table[a][response]["valid"] for a in hi + lo):
+                        row[f"{x}_at_{y}{level}"] = None
+                        continue
                     row[f"{x}_at_{y}{level}"] = (
-                        sum(table[a][response] for a in hi) / len(hi)
-                        - sum(table[a][response] for a in lo) / len(lo))
+                        sum(table[a][response]["value"] for a in hi) / len(hi)
+                        - sum(table[a][response]["value"] for a in lo) / len(lo))
         out[response] = row
     return out
 
@@ -492,15 +595,12 @@ def main() -> int:
     ap.add_argument("arm", nargs="+", metavar="ARM=SINGLE,SPLIT",
                     help="one per arm: the two decompositions of that arm's run")
     ap.add_argument("--json", type=Path, default=None)
-    ap.add_argument("--matched", action="store_true",
-                    help="read the ACTUAL transfers (g33_matched_closure) "
-                         "instead of recovering them: admissible at mstep > 1")
     ap.add_argument("--window", action="store_true",
                     help="accumulate over the whole run instead of the matched "
                          "first call")
     args = ap.parse_args()
 
-    table, screens, identity = {}, {}, {}
+    table, identity, streams = {}, {}, {}
     for spec in args.arm:
         name, _, paths = spec.partition("=")
         if name not in ALGO_FACTORS:
@@ -508,55 +608,57 @@ def main() -> int:
         single, _, split = paths.partition(",")
         if not single or not split:
             raise SystemExit(f"{spec}: need ARM=SINGLE,SPLIT")
-        s, p = Path(single).read_text(), Path(split).read_text()
-        identity[name] = check_identity(name, s, p)
-        row = responses(s, p, window=args.window, matched=args.matched)
-        screens[name] = row.pop("_meta")["screen"]
-        table[name] = row
+        s, pth = Path(single).read_text(), Path(split).read_text()
+        identity[name] = check_identity(name, s, pth)
+        streams[name] = s
+        table[name] = responses(s, pth, window=args.window)
 
-    shared = {k: v for k, v in identity["legacy"].items()
-              if k not in ("algorithm",)} if "legacy" in identity else {}
-    for name, ident in identity.items():
-        for key, want in shared.items():
-            if ident[key] != want:
+    ref = identity.get("legacy")
+    if ref:
+        for name, ident in identity.items():
+            bad = [k for k, v in ref.items()
+                   if k != "algorithm" and ident[k] != v]
+            if bad:
                 raise SystemExit(
-                    f"{name} ran with {key}={ident[key]!r} while legacy ran "
-                    f"{want!r}: the arms are not one experiment")
-    if not args.window:
-        same_atmosphere(table)          # the matched control, first call only
-    beta = coefficients(table, screens)
+                    f"{name} and legacy differ in {bad}: the arms are not one "
+                    f"experiment")
+    same_atmosphere(streams)        # raw initial + forcing, every arm
+    beta = coefficients(table)
     cond = conditionals(table)
 
     span = "window" if args.window else "first-call"
-    reader = "matched-xfer" if args.matched else "recovered"
-    print(f"\n  SPAN: {span}   READER: {reader}   "
-          f"(one span for every response, not four of them)\n")
+    print(f"\n  SELECTED SPAN: {span}   "
+          f"(each response also carries its own, below)\n")
     print("  " + f"{'arm':18s} {'NCL':>4s} " +
           " ".join(f"{k:>13s}" for k in RESPONSES))
     for arm in ALGO_FACTORS:
         n, c, l = ALGO_FACTORS[arm]
-        print("  " + f"{arm:18s} {n}{c}{l:<2d} " +
-              " ".join(f"{table[arm][k]:13.5e}" for k in RESPONSES))
-    print(f"\n  {'response':22s} {'unit':16s} {'native':>6s} "
+        cells = []
+        for k in RESPONSES:
+            r = table[arm][k]
+            cells.append(f"{r['value']:13.5e}" if r["valid"] else f"{'--':>13}")
+        print("  " + f"{arm:18s} {n}{c}{l:<2d} " + " ".join(cells))
+    print(f"\n  {'response':28s} {'reader':10s} {'span':18s} {'ctrl':9s} "
           + " ".join(f"{t:>12s}" for t in ("N", "C", "L", "NC", "bound")))
-    for response, (unit, owner) in RESPONSES.items():
+    for response, (unit, owner, reader, ctrl, spanspec) in RESPONSES.items():
         b = beta[response]
-        print(f"  {response:22s} {unit:16s} {owner or '-':>6s} "
+        sp = span if spanspec == "selected" else spanspec
+        cs = f"{ctrl[0]}/{ctrl[1]}" if ctrl else "-"
+        if not b["_valid"]:
+            why = sorted(set(b["_invalid"].values()))[0][:46]
+            print(f"  {response:28s} {reader:10s} {sp:18s} {cs:9s} "
+                  f"NOT SCORED: {why}")
+            continue
+        print(f"  {response:28s} {reader:10s} {sp:18s} {cs:9s} "
               + " ".join(f"{b[t]:12.4e}" for t in ("N", "C", "L", "NC"))
-              + f" {b.get('_bound', 0.0):12.4e}")
+              + f" {b['_bound']:12.4e}")
     print("\n  Units differ between rows: compare terms WITHIN a response, "
           "never magnitudes across them.")
-    if not args.matched:
-        print("  R_qr/R_qi CLOSE BY CONSTRUCTION under this reader: `column()`\n"
-              "  inverts the update, so the budget it rebuilds cannot fail to\n"
-              "  balance. They are an arithmetic check here, not a measurement\n"
-              "  of mass closure. Use --matched for that.")
-    print()
+    print("  `D_*_metric` is the ENDPOINT-RECOVERED metric residual, a different"
+          "\n  quantity from the actual-transfer budget rows above it.\n")
 
-    doc = {"span": span, "reader": reader, "arms": ALGO_FACTORS, "identity": identity,
-           "units": {k: v[0] for k, v in RESPONSES.items()},
-           "responses": table, "coefficients": beta, "conditionals": cond,
-           "screens": screens}
+    doc = {"selected_span": span, "arms": ALGO_FACTORS, "identity": identity,
+           "responses": table, "coefficients": beta, "conditionals": cond}
     if args.json:
         args.json.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n")
     return 0
