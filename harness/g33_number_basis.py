@@ -46,26 +46,78 @@ much number actually crosses is `b`, which this does not measure.
 import sys
 from pathlib import Path
 
-RD, CP, P0 = 287.04, 1004.5, 1.0e5
+RD, CP, P0, G = 287.04, 1004.5, 1.0e5, 9.81
+#: Rd/Rv. The dry-density relation for a MIXING ratio is
+#: `rho_d = p / (Rd T (1 + qv/EPS))`; the published statistics used
+#: `rho_m / (1 + qv)` with a virtual-temperature linearisation instead.
+EPS = 0.622
 
 
-def profile(state: Path) -> dict:
-    """The three per-interface coefficients from a WRF state file."""
+def _dry_density(d, p, temp, qv, basis: str):
+    """Dry-air density by one of three routes, named.
+
+    `canonical` is the model's OWN: WRF's hydrostatic relation is
+    `d(phi)/d(eta) = -mu_d * alpha_d`, so `rho_d * dz = mu_d |d(eta)| / g`
+    exactly in its discretisation. Nothing thermodynamic is assumed.
+
+    The other two are estimates from `p`, `T` and `qv`. Measured against the
+    canonical route on the real 5 km state they differ by a median 2.3e-03 and
+    up to 31 % -- which is about 2500 times the difference BETWEEN them
+    (median 9.5e-07). So the choice that matters is thermodynamic-vs-canonical,
+    not exact-vs-approximate.
+
+    It does not move the published statistic: the Arm N residual fraction where
+    rain number is runs 1.9422 % (approx), 1.9420 % (exact) and 1.9169 %
+    (canonical). `eps_armn` depends on `qv` alone and is route-free.
+    """
+    import numpy as np
+    if basis == "canonical":
+        mu = np.asarray(d["MU"][-1], dtype="float64") + \
+            np.asarray(d["MUB"][-1], dtype="float64")
+        dnw = np.asarray(d["DNW"][-1], dtype="float64")
+        ph = np.asarray(d["PH"][-1], dtype="float64") + \
+            np.asarray(d["PHB"][-1], dtype="float64")
+        dz = np.diff(ph, axis=0) / G
+        return (mu[None, :, :] * np.abs(dnw)[:, None, None]) / G / dz
+    if basis == "exact":
+        return p / (RD * temp * (1.0 + qv / EPS))
+    if basis == "approx":
+        return (p / (RD * temp * (1.0 + 0.608 * qv))) / (1.0 + qv)
+    raise ValueError(f"basis must be canonical|exact|approx, got {basis!r}")
+
+
+def profile(state: Path, basis: str = "canonical") -> dict:
+    """The three per-interface coefficients from a WRF state file.
+
+    `basis` selects the dry-density route; see `_dry_density`. The default is
+    the model's own `mu_d`/`d(eta)`, which assumes no thermodynamics at all.
+    """
     import netCDF4
     import numpy as np
     d = netCDF4.Dataset(str(state))
-    g = lambda k: np.asarray(d[k][0], dtype="float64")   # noqa: E731
+    frame = -1 if d["P"].shape[0] > 1 else 0
+    g = lambda k: np.asarray(d[k][frame], dtype="float64")   # noqa: E731
     pressure = g("P") + g("PB")
     theta = g("T") + 300.0
     qv = g("QVAPOR")
     temp = theta * (pressure / P0) ** (RD / CP)
-    # Total moist density, which is the kernel's `den`; dry is that over 1+qv.
-    den = pressure / (RD * temp * (1.0 + 0.608 * qv))
-    den_d = den / (1.0 + qv)
+    if basis == "canonical" and not all(v in d.variables
+                                        for v in ("MU", "MUB", "DNW", "PH")):
+        raise KeyError(
+            "this state carries no MU/MUB/DNW/PH, so the model's own dry-air "
+            "layer mass is not available; pass basis='exact' to estimate it")
+    den_d = _dry_density(d, pressure, temp, qv, basis)
+    # Total moist density, which is the kernel's `den`.
+    den = den_d * (1.0 + qv)
     # WRF k=0 is the BOTTOM, so [:-1] is the LOWER side of each interface and
     # [1:] the upper -- the direction sedimentation moves.
     lo, up = slice(None, -1), slice(1, None)
     return {
+        # what departs the upper cell, per unit mixing ratio
+        "dry_layer_mass_upper": den_d[up] * (np.diff(
+            (np.asarray(d["PH"][frame], dtype="float64")
+             + np.asarray(d["PHB"][frame], dtype="float64")), axis=0) / G)[up]
+        if "PH" in d.variables else den_d[up],
         "legacy_moist": den[lo] / den[up] - 1.0,
         "legacy_dry": den_d[lo] / den_d[up] - 1.0,
         "armn_dry": (1.0 + qv[up]) / (1.0 + qv[lo]) - 1.0,
@@ -74,7 +126,8 @@ def profile(state: Path) -> dict:
     }
 
 
-def where_the_number_is(state: Path, field: str = "QNRAIN") -> dict:
+def where_the_number_is(state: Path, field: str = "QNRAIN",
+                        basis: str = "canonical") -> dict:
     """The same coefficients, restricted to interfaces that actually carry number.
 
     `report()` summarises every interface in the domain, and most of them hold
@@ -83,25 +136,57 @@ def where_the_number_is(state: Path, field: str = "QNRAIN") -> dict:
     there is something to transport, so this weights the same profile by where
     the number is.
 
-    An interface counts when BOTH its cells carry the field: transport across it
-    moves number from one to the other, and an interface with an empty side is
-    the edge of the population rather than inside it.
+    TWO POPULATIONS, because the first published one was the wrong question.
+    "Both cells carry the field" is the interior of the population, and
+    sedimentation moves number DOWNWARD from the upper cell -- so an interface
+    whose upper cell is loaded and whose lower cell is empty is transport-active
+    and was excluded. Measured, that is 23 492 interfaces against 13 611: the
+    published population was 42 % of the transport-active one.
+
+    AND A RATIO OF MEDIANS IS NOT THE COLUMN DEFECT. The residual is
+    `sum_j F_j eps_j`, so the coefficients are weighted by how much number
+    actually crosses. The flux-weighted aggregate is reported beside the
+    per-interface distribution.
+
+    Measured on the 20 s `mp37` frame, none of this moves the answer: median
+    1.92 % on the published population, 2.02 % on the transport-active one, and
+    1.98 % flux-weighted on either.
     """
     import netCDF4
     import numpy as np
-    p = profile(state)
+    p = profile(state, basis)
     d = netCDF4.Dataset(str(state))
     n = np.asarray(d[field][-1] if d[field].shape[0] > 1 else d[field][0],
                    dtype="float64")
     lo, up = slice(None, -1), slice(1, None)
-    live = (n[lo] > 0) & (n[up] > 0)
-    out = {"state": str(state), "field": field,
+    pops = {"occupied_pair": (n[lo] > 0) & (n[up] > 0),
+            "transport_active": n[up] > 0}
+    live = pops["occupied_pair"]
+    out = {"state": str(state), "field": field, "basis": basis,
            "interfaces": int(live.size),
            "carrying": int(live.sum()),
-           "carrying_fraction": float(live.mean())}
+           "carrying_fraction": float(live.mean()),
+           "transport_active": int(pops["transport_active"].sum())}
     if not live.any():
         out["empty"] = True
         return out
+    # `F_j` is what DEPARTS the upper cell under the column measure -- the
+    # quantity the per-interface coefficient multiplies in `sum_j F_j eps_j`.
+    flux = p["dry_layer_mass_upper"] * n[up]
+    out["populations"] = {}
+    for nm, m in pops.items():
+        if not m.any():
+            continue
+        f = np.abs(p["armn_dry"][m]) / np.maximum(np.abs(p["legacy_dry"][m]),
+                                                  1e-300)
+        w = flux[m]
+        num = abs(float((w * p["armn_dry"][m]).sum()))
+        den = abs(float((w * p["legacy_dry"][m]).sum()))
+        out["populations"][nm] = {
+            "interfaces": int(m.sum()),
+            "median": float(np.median(f)),
+            "p90": float(np.percentile(f, 90)),
+            "flux_weighted": num / den if den else None}
     for key in ("legacy_moist", "legacy_dry", "armn_dry"):
         e = p[key][live]
         out[key] = {"median": float(np.median(e)), "mean": float(e.mean()),
@@ -114,10 +199,11 @@ def where_the_number_is(state: Path, field: str = "QNRAIN") -> dict:
     return out
 
 
-def report(state: Path) -> dict:
+def report(state: Path, basis: str = "canonical") -> dict:
     import numpy as np
-    p = profile(state)
-    out = {"state": str(state), "interfaces": int(p["armn_dry"].size)}
+    p = profile(state, basis)
+    out = {"state": str(state), "basis": basis,
+           "interfaces": int(p["armn_dry"].size)}
     for key in ("legacy_moist", "legacy_dry", "armn_dry"):
         e = p[key]
         out[key] = {"median": float(np.median(e)),
@@ -180,6 +266,17 @@ def from_stream(text: str, species: str = "nr") -> dict:
     zero, which is why Arm N's moist prediction is 0.000000 against a measured
     roundoff, and its DRY prediction is not.
 
+    Each residual is reported TWICE: once from the recovered transfers and once
+    from the ACTUAL `XFER` record the kernel emits, which shares no input with
+    the prediction. Measured on `g33_fixture_moisture_gradient_v1`, the dry
+    residuals agree to better than 0.1 % -- so the moisture term is an
+    independent measurement, not an artefact of the recovery.
+
+    The moist row is where they must NOT be read the same way. `A == B` makes
+    the recovered residual algebraically zero, so its 1e-17 relative is forced;
+    the XFER path gives 5.7e-08 relative, which is the honest number and is
+    still below the f32 epsilon of 1.19e-07.
+
     This needs a fixture with a vertical moisture gradient. Under a
     column-uniform `qv` the two ledgers differ by a constant factor per column
     and say the same thing (`FINDING_number_basis_gap_v1`).
@@ -188,6 +285,8 @@ def from_stream(text: str, species: str = "nr") -> dict:
     from pathlib import Path as _Path
     _sys.path.insert(0, str(_Path(__file__).resolve().parent))
     import g33_number_transport as nt
+    import g33_matched_closure as mc
+    xfer = mc.transfers(text)
     call = nt.calls(text)[0]
     loop = nt.single_loop(call)
     pre, post = call["outer_pre_sed"], call["outer_post_sed"]
@@ -207,10 +306,17 @@ def from_stream(text: str, species: str = "nr") -> dict:
                      for t in range(1, len(ks))]
         a = nt.transfers(x, x1, w)
         row = {}
+        # THE ACTUAL surface transfer, from the XFER record the kernel emits.
+        # `a[-1]` above is recovered from the endpoints, so a residual built on
+        # it and a prediction built on it share their input -- the agreement is
+        # an algebraic check and not an independent measurement (owner §6).
+        chain = "main" if species in ("qr", "nr") else "ice"
+        _dq, dn = xfer[(1, loop, col, chain)]
         for tag, B in (("moist", den), ("dry", dry)):
             n0 = sum(B[t] * dz[t] * x[t] for t in range(len(ks)))
             n1 = sum(B[t] * dz[t] * x1[t] for t in range(len(ks)))
             meas = (n1 - n0) + B[-1] * dz[-1] * a[-1]
+            row[f"{tag}_xfer"] = (n1 - n0) + B[-1] * dz[-1] * dn
             pred = sum(a[j] * dz[j] * (B[j + 1] * a_w[j] / a_w[j + 1] - B[j])
                        for j in range(len(ks) - 1))
             row[tag] = meas

@@ -105,10 +105,10 @@ ALGO_FACTORS = {
 #: delete the C response from the C experiment (owner review section 5.1).
 RESPONSES = {
     "R_qr_num": ("kg m-2", None, "matched", None, "selected"),
-    "R_qr_den": ("kg m-2", None, "matched", None, "selected"),
+    "R_qr_sum_call_start": ("kg m-2", None, "state", None, "selected"),
     "R_qr": ("dimensionless", "C", "matched", None, "selected"),
     "R_qi_num": ("kg m-2", "C", "matched", None, "selected"),
-    "R_qi_den": ("kg m-2", None, "matched", None, "selected"),
+    "R_qi_sum_call_start": ("kg m-2", None, "state", None, "selected"),
     "R_qi": ("dimensionless", "C", "matched", None, "selected"),
     "R_nr_num": ("number m-2", "N", "matched", ("main", "qr"), "selected"),
     # The DENOMINATOR carries no control. It is the starting inventory, a state
@@ -117,10 +117,20 @@ RESPONSES = {
     # separation exists to expose (owner review §8).
     # ... and its reader is `state`, not `matched`: it is an inventory read off
     # the pre-sed endpoints, not something the transfer records produced.
-    "R_nr_den": ("number m-2", None, "state", None, "selected"),
+    # NAMED FOR WHAT IT IS. Over the window this is the sum of each call's
+    # pre-sedimentation inventory -- not the window's initial inventory, not
+    # its final one, and not "the inventory the arm reached". Calls run in
+    # sequence, so call 2's pre-state is roughly call 1's post-state and the
+    # sum counts the column once per call. It is an EXPOSURE-like
+    # normalisation, and `beta_L(R_ni_den)` means nothing else (owner §10).
+    "R_nr_sum_call_start": ("number m-2", None, "state", None, "selected"),
+    "R_nr_window_initial": ("number m-2", None, "state", None, "window"),
+    "R_nr_window_final": ("number m-2", None, "state", None, "window"),
     "R_nr": ("dimensionless", "N", "matched", ("main", "qr"), "selected"),
     "R_ni_num": ("number m-2", "N", "matched", ("ice", "qi"), "selected"),
-    "R_ni_den": ("number m-2", None, "state", None, "selected"),
+    "R_ni_sum_call_start": ("number m-2", None, "state", None, "selected"),
+    "R_ni_window_initial": ("number m-2", None, "state", None, "window"),
+    "R_ni_window_final": ("number m-2", None, "state", None, "window"),
     "R_ni": ("dimensionless", "N", "matched", ("ice", "qi"), "selected"),
     # The endpoint-recovered metric diagnostic, under its own name. It measures
     # the residual of the number METRIC as the endpoints imply it, which is a
@@ -439,7 +449,8 @@ def responses(stream_single: str, stream_split: str, *,
             bad = "; ".join(dict.fromkeys(fails))
         for suffix, value, bound in (
                 ("_num", r["num"] if r else 0.0, r["b_num"] if r else 0.0),
-                ("_den", r["den"] if r else 0.0, r["b_den"] if r else 0.0),
+                ("_sum_call_start", r["den"] if r else 0.0,
+                 r["b_den"] if r else 0.0),
                 ("", (r["num"] / r["den"] if r and r["den"] else 0.0),
                  _ratio_screen(r["num"], r["den"], r["b_num"], r["b_den"])
                  if r else 0.0)):
@@ -473,6 +484,28 @@ def responses(stream_single: str, stream_split: str, *,
         out[name]["screening_bound"] = _ratio_screen(
             d["num"], d["den"], _screen(d["sum_abs"], d["terms"]),
             _screen(abs(d["den"]), d["terms"]))
+
+    # The window's own endpoints, which the per-call sum is NOT. `initial` and
+    # `state` are the G33R blocks the driver writes before and after the run,
+    # weighted by the same rho*dz measure the residuals use.
+    import g33_refine_analyze as _ra
+    _g33r = _ra.read_text(stream_single)
+
+    def _inventory(kind, species):
+        rho = {k[1:]: v for k, v in _g33r.items()
+               if isinstance(k, tuple) and k[0] == "forcing" and k[1] == "rho"}
+        dz = {k[1:]: v for k, v in _g33r.items()
+              if isinstance(k, tuple) and k[0] == "forcing" and k[1] == "delz"}
+        tot = 0.0
+        for k, v in _g33r.items():
+            if isinstance(k, tuple) and k[0] == kind and k[1] == species:
+                cell = ("rho",) + k[2:]
+                tot += rho.get(cell, 0.0) * dz.get(("delz",) + k[2:], 0.0) * v
+        return tot
+
+    for species in ("nr", "ni"):
+        put(f"R_{species}_window_initial", _inventory("initial", species))
+        put(f"R_{species}_window_final", _inventory("state", species))
 
     cap = _cap(stream_single, span_calls)
     for chain in ("main", "ice"):
@@ -552,20 +585,26 @@ def _raw_input(text: str) -> dict:
 
 
 def ncmin_exposure(text: str) -> dict:
-    """What `ncmin` each column ASKED for and what its tile actually imposed.
+    """What `ncmin` each column ASKED for and what its tile actually APPLIED.
 
     DERIVED, not measured. `ncmin` is a kernel-local scalar and nothing emits
     it, but it is fully determined by inputs that are now recorded: the land
     mask, which the stream carries since the driver began emitting `xland`, and
-    `ncmin_land`/`ncmin_sea`, which the fixture manifest declares. The kernel's
-    rule is one branch (F:876-882) inside a `do i = its,ite` loop assigning to a
-    SCALAR, so every column computes its own value and only the tile's LAST one
-    survives to be used.
+    `ncmin_land`/`ncmin_sea`, which the fixture manifest declares.
+
+    ALGORITHM-AWARE, and the first version was not. Under the legacy branch
+    (F:876-882) the assignment is to a SCALAR inside `do i = its,ite`, so every
+    column computes its own value and only the tile's LAST one survives. Arm L
+    is precisely the correction that makes it per-column -- and the first draft
+    applied the scalar rule to every arm, so it reported `lncmin` as overriding
+    the same columns legacy does. A diagnostic that describes the corrected arm
+    with the defect's own rule says the correction did not happen.
 
     Derivation is not measurement and this says so. What makes it checkable is
-    Arm L: the arm exists precisely to make the imposed value per-column, and
-    where this function says a tile imposes a value some of its columns did not
-    ask for, `partition` is non-zero -- and Arm L drives it to zero.
+    that the two modes predict different `partition` counts, and they are the
+    counts measured: every arm this reports as `per_column` has `partition`
+    exactly 0 at all four points in both units, and every arm it reports as
+    `tile_scalar` with a non-empty override set does not.
     """
     import g33_number_transport as nt
     import g33_refine_analyze as ra
@@ -578,18 +617,24 @@ def ncmin_exposure(text: str) -> dict:
             "emitted the land mask, so what each column asked for cannot be "
             "derived. A gate that cannot see must not answer.")
     ident = nt.validated_run_identity(text)
+    algorithm = ident["algorithm"]
+    if algorithm not in ALGO_FACTORS:
+        raise FactorialError(
+            f"{algorithm!r} is not an arm of this factorial, so whether it "
+            f"applies `ncmin` per column is not known here")
+    per_column = ALGO_FACTORS[algorithm][2] == 1          # the L factor
     # FROM THE FIXTURE THE STREAM NAMES, not from a constant here. The first
     # draft of this carried the pair inline and carried it WRONG -- 2.5e7/2.5e6
     # against the manifest's 1.0e8/2.5e7 -- which is what a second copy of a
     # fact is for. The stream declares its fixture now, so there is no second
     # copy to get wrong.
     import g33_fixture_v1 as fx
-    fixture = ra.read_text(text)[("meta", "fixture")]
+    fixture = d[("meta", "fixture")]
     if fixture is None:
         raise FactorialError(
             "this stream does not name its fixture, so the ncmin parameters "
             "cannot be read from the manifest that declares them")
-    _spec, manifest = fx.load_fixture(fixture)
+    _spec, manifest = fx.load_fixture(fx.canonical_id(fixture))
     par = manifest["common_parameters"]
     land = struct.unpack(">f", bytes.fromhex(par["ncmin_land"]))[0]
     sea = struct.unpack(">f", bytes.fromhex(par["ncmin_sea"]))[0]
@@ -598,10 +643,18 @@ def ncmin_exposure(text: str) -> dict:
         # slmsk == 2 takes ncmin_sea, anything else ncmin_land -- the branch as
         # the kernel writes it, label and assignment included.
         want = {c: (sea if xland[c] == 2.0 else land) for c in range(lo, hi + 1)}
-        imposed = want[hi]                     # the loop's last write survives
-        out[(lo, hi)] = {"intended": want, "imposed": imposed,
-                         "columns_overridden": sorted(c for c, v in want.items()
-                                                      if v != imposed)}
+        if per_column:
+            applied, scalar = dict(want), None
+        else:
+            scalar = want[hi]                  # the loop's last write survives
+            applied = {c: scalar for c in want}
+        out[(lo, hi)] = {
+            "mode": "per_column" if per_column else "tile_scalar",
+            "intended_by_column": want,
+            "applied_by_column": applied,
+            "tile_scalar": scalar,
+            "columns_overridden": sorted(c for c in want
+                                         if applied[c] != want[c])}
     return out
 
 
@@ -792,21 +845,37 @@ def conditionals(table: dict) -> dict:
                                     - table[lo[0]][response]["value"])
         # AND WHETHER THE AVERAGE MAY STAND FOR THEM. `N_at_C1` is the mean of
         # `N_at_C1_L0` and `N_at_C1_L1`; where those differ, quoting the mean
-        # hides an N x L interaction inside that half. The flag is set from the
-        # response's own screening scale rather than a round number, and is
-        # `None` where either simple effect is not evidence.
-        bound = max(table[a][response]["screening_bound"] for a in table)
+        # hides an N x L interaction inside that half. The flag is `None` where
+        # either simple effect is not evidence.
+        #
+        # THE BOUND IS THE SUM OVER THE FOUR ARMS THAT ENTER THE DIFFERENCE,
+        # not the largest of them. The quantity screened is
+        #
+        #     (Y_11 - Y_01) - (Y_10 - Y_00)
+        #
+        # so its forward-error bound is B_11 + B_01 + B_10 + B_00. Using
+        # `max(B)` understated it by up to a factor of four, which is enough to
+        # call a real N x L interaction "representative" or to refuse a
+        # roundoff-scale one.
         for i, x in enumerate(names):
             for j, y in enumerate(names):
                 if i == j:
                     continue
                 z = names[[t for t in range(3) if t not in (i, j)][0]]
+                zi = names.index(z)
                 for ly in (0, 1):
                     lo_v = row.get(f"{x}_at_{y}{ly}_{z}0")
                     hi_v = row.get(f"{x}_at_{y}{ly}_{z}1")
                     key = f"{x}_at_{y}{ly}_average_representative"
-                    row[key] = (None if lo_v is None or hi_v is None
-                                else abs(hi_v - lo_v) <= bound)
+                    if lo_v is None or hi_v is None:
+                        row[key] = None
+                        row[f"{x}_at_{y}{ly}_difference_bound"] = None
+                        continue
+                    quad = [a for a in table if ALGO_FACTORS[a][j] == ly]
+                    bound = sum(table[a][response]["screening_bound"]
+                                for a in quad)
+                    row[f"{x}_at_{y}{ly}_difference_bound"] = bound
+                    row[key] = abs(hi_v - lo_v) <= bound
         out[response] = row
     return out
 
@@ -845,14 +914,13 @@ def main() -> int:
         # What each decomposition imposed on which columns -- the L mechanism,
         # derived from recorded inputs instead of read out of the source.
         try:
-            identity[name]["ncmin_single"] = {
-                f"{lo}-{hi}": {"imposed": r["imposed"],
-                               "overridden": r["columns_overridden"]}
-                for (lo, hi), r in ncmin_exposure(s).items()}
-            identity[name]["ncmin_split"] = {
-                f"{lo}-{hi}": {"imposed": r["imposed"],
-                               "overridden": r["columns_overridden"]}
-                for (lo, hi), r in ncmin_exposure(pth).items()}
+            def _expo(text):
+                return {f"{lo}-{hi}": {"mode": r["mode"],
+                                       "tile_scalar": r["tile_scalar"],
+                                       "overridden": r["columns_overridden"]}
+                        for (lo, hi), r in ncmin_exposure(text).items()}
+            identity[name]["ncmin_single"] = _expo(s)
+            identity[name]["ncmin_split"] = _expo(pth)
         except FactorialError as exc:
             identity[name]["ncmin_single"] = None
             identity[name]["ncmin_split"] = None

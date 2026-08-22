@@ -900,10 +900,20 @@ def _require_same_run(name, rid, run, parsed, arm="reference", algo=None,
                 f"{run.get(('meta', 'source_precision'))!r} -- the reference "
                 f"this archive instruments is f32, always")
     wfix = run.get(("meta", "fixture"))
-    if fixture is not None and wfix is not None and wfix != fixture:
-        raise ra.RefineError(
-            f"{name}: the window protocol ran fixture {wfix!r}, the caller "
-            f"asked for {fixture!r}")
+    if fixture is not None and wfix is not None:
+        # BOTH SPELLINGS THROUGH THE REGISTRY. The stream carries the id and the
+        # caller passes the module name, and comparing them raw refused every
+        # stream the moment the driver began emitting the record this check was
+        # written for.
+        import g33_fixture_v1 as _fx
+        try:
+            same = _fx.canonical_id(wfix) == _fx.canonical_id(fixture)
+        except _fx.UnknownFixture:
+            same = wfix == fixture
+        if not same:
+            raise ra.RefineError(
+                f"{name}: the window protocol ran fixture {wfix!r}, the caller "
+                f"asked for {fixture!r}")
     walg = run.get(("meta", "algorithm"))
     if walg is not None and walg != rid["algorithm"]:
         raise ra.RefineError(
@@ -1341,7 +1351,14 @@ _CORE_MODULES = ("g33_refine_experiment", "g33_refine_manifest",
                  # completeness check below caught its absence from this
                  # tuple, which is what the check is for.
                  "g33_run_matrix")
-_PARSER_MODULES = ("g33_refine_analyze", "g33_number_transport", "g33_probe_read")
+_PARSER_MODULES = ("g33_refine_analyze", "g33_number_transport", "g33_probe_read",
+                   # The FIXTURE REGISTRY. The producer resolves the stream's
+                   # declared fixture through it to compare against the one the
+                   # caller asked for, so its bytes decide whether a member is
+                   # accepted at all. Reaching it without pinning it is the
+                   # exact hole `unpinned_reachable()` exists to find, and it
+                   # found this one.
+                   "g33_fixture_v1")
 
 
 #: Tracked files the BUILD reads. `host/**` is gitignored and cannot be pinned

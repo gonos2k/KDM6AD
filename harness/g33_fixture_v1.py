@@ -96,12 +96,57 @@ FIXTURES = {
         ROOT / "harness" / "g33_overlay" / "g33_fixture_moisture_gradient_v1.h",
         ROOT / "harness" / "g33_fortran" / "g33_fixture_moisture_gradient_v1.f90",
         cpp_define="moisture_gradient", decision_ceiling="STRUCTURAL_ONLY"),
+    # A REAL COLUMN, B = 1. The vertical anchor requires every column to carry
+    # the same `p` profile, and real columns on terrain-following levels do not
+    # -- which is what blocked a real-atmosphere replay. With ONE column the
+    # cross-column requirement is satisfied trivially and nothing in the schema
+    # has to move: a single column cannot be transposed with another.
+    #
+    # STRUCTURAL_ONLY like the others, and for a different reason: the state is
+    # real but it is ONE column at ONE time, so it is an instance and not a
+    # sample of an atmosphere.
+    "lc05_column_v1": FixtureSpec(
+        "lc05_column_v1",
+        ROOT / "harness" / "g33_fixture_lc05_column_v1.json",
+        ROOT / "harness" / "g33_overlay" / "g33_fixture_lc05_column_v1.h",
+        ROOT / "harness" / "g33_fortran" / "g33_fixture_lc05_column_v1.f90",
+        cpp_define="lc05_column", decision_ceiling="STRUCTURAL_ONLY"),
 }
 DEFAULT_FIXTURE_ID = "arithmetic_synthetic_v1"
 
 
 class UnknownFixture(KeyError):
     """A fixture id that is not in the registry."""
+
+
+def canonical_id(name: str) -> str:
+    """The registry key for a fixture, from either spelling.
+
+    The registry is keyed by `fixture_id` (`boundary_mapping_v1`) while callers
+    pass the MODULE name (`g33_fixture_boundary_mapping_v1`), and the driver
+    emits the id. Two spellings of one fact, and the first thing that compared
+    them refused every stream (43 tests). One function resolves both, so
+    nothing has to remember which end it is holding.
+
+    The two are NOT related by a prefix: `arithmetic_multisubcycle_v1` lives in
+    `g33_fixture_multisubcycle_v1`. The mapping is the registry's own, which is
+    why this reads it rather than editing strings.
+    """
+    if name in FIXTURES:
+        return name
+    # FROM THE REGISTRY, not by string surgery. The first draft stripped a
+    # `g33_fixture_` prefix, which is right for `boundary_mapping_v1` and wrong
+    # for `arithmetic_multisubcycle_v1`, whose module is
+    # `g33_fixture_multisubcycle_v1` -- the two names are not related by a
+    # prefix at all. The registry already holds both: the id is the key and the
+    # module is its Fortran output's stem.
+    for fid, entry in FIXTURES.items():
+        if name in (entry.fortran_module.stem, entry.fortran_build_name,
+                    entry.cpp_header.stem):
+            return fid
+    raise UnknownFixture(
+        f"unknown fixture {name!r} (known ids: {sorted(FIXTURES)}, "
+        f"known modules: {sorted(e.fortran_module.stem for e in FIXTURES.values())})")
 
 
 def spec(fixture_id: str) -> FixtureSpec:
@@ -123,6 +168,12 @@ def load_fixture(fixture_id: str) -> tuple[FixtureSpec, dict]:
         raise ValueError(f"registry says {fixture_id!r} but "
                          f"{entry.manifest.name} declares {data['fixture_id']!r}")
     return entry, data
+
+#: What KIND of thing a fixture is. Not what it may be used to decide -- that
+#: is `decision_ceiling` on the registry entry, and a real column is still
+#: STRUCTURAL_ONLY because one column at one time is an instance and not a
+#: sample.
+SCIENCE_ROLES = ("arithmetic_synthetic", "real_column")
 
 #: Fields that can serve as the COLUMN anchor: a real physical input that is
 #: unique across columns and constant down each one.
@@ -164,7 +215,14 @@ def load_manifest(path: Path = MANIFEST) -> dict:
     _require(data.get("schema_version") == 1, "fixture schema_version must be 1")
     _require(data.get("fixture_id") in FIXTURES,
              "unexpected fixture_id")
-    _require(data.get("science_role") == "arithmetic_synthetic", "science_role must be explicit")
+    # DECLARED, from a closed set. It was fixed at `arithmetic_synthetic`, so a
+    # fixture built from a real atmospheric column could only be registered by
+    # declaring something false about itself. The set is closed so a typo is
+    # still refused, and the DECISION CEILING is unchanged by the role: what a
+    # fixture may support is the registry's `decision_ceiling`, not this.
+    _require(data.get("science_role") in SCIENCE_ROLES,
+             f"science_role must be one of {list(SCIENCE_ROLES)}, "
+             f"got {data.get('science_role')!r}")
     _require(data.get("vertical_layout") == "top_first", "vertical_layout must be top_first")
     B, K = data.get("B"), data.get("K")
     _require(isinstance(B, int) and B > 0, "B must be a positive integer")
@@ -213,12 +271,20 @@ def load_manifest(path: Path = MANIFEST) -> dict:
         _require(fields["p"][b*K:(b+1)*K] == p0,
                  "vertical anchor p must use the same K profile in every column")
     ca = anchors["column"]
-    ca_cols = [fields[ca][b*K] for b in range(B)]
-    _require(len(set(ca_cols)) == B,
-             f"column anchor field {ca} is not unique across B")
-    for b in range(B):
-        _require(len(set(fields[ca][b*K:(b+1)*K])) == 1,
-                 f"column anchor {ca} must be constant along K in each column")
+    # WITH ONE COLUMN THERE IS NOTHING TO TRANSPOSE. The anchor exists to catch
+    # a column permutation, and both its requirements -- unique across B,
+    # constant down each column -- are that guard's mechanics. At B = 1 the
+    # first is vacuous and the second forbids any real atmospheric profile,
+    # since no field is constant in the vertical in a real column. The waiver
+    # is exactly and only B = 1, and is stated rather than achieved by
+    # declaring a field that happens to pass.
+    if B > 1:
+        ca_cols = [fields[ca][b*K] for b in range(B)]
+        _require(len(set(ca_cols)) == B,
+                 f"column anchor field {ca} is not unique across B")
+        for b in range(B):
+            _require(len(set(fields[ca][b*K:(b+1)*K])) == 1,
+                     f"column anchor {ca} must be constant along K in each column")
 
     # DYNAMICS-NEGATIVE INPUT, declared rather than discovered.
     #
