@@ -93,6 +93,38 @@ So the defensible statement is selectivity plus a named saturation interaction
 `coefficients()` refuses anything but all eight arms: a contrast computed off
 seven is not a contrast.
 
+## Over the whole window
+
+The table above is the FIRST CALL, where every arm meets the same initial state
+so a difference is the arm and nothing else. Accumulated over all twelve calls
+of the 300 s window the arms hold different fields, so this is the operator over
+its own trajectory -- the other question, not a more thorough version of the
+first.
+
+| response | N | C | L | NC | NL |
+|---|---|---|---|---|---|
+| `R_nr` | -2.154e-04 | -1.425e-05 | -9.77e-09 | +1.425e-05 | +9.77e-09 |
+| `R_ni` | -1.092e-01 | -2.271e-02 | +1.827e-05 | +2.271e-02 | -1.798e-05 |
+| `cap_sink` | 7.247e-02 | -2.845e+00 | 1.931e-06 | 7.245e-02 | 6.96e-08 |
+| `partition` | 0 | 0 | -2.250e+01 | 0 | 0 |
+
+Three things.
+
+The legacy ice-number residual GROWS along the trajectory: 0.1703 on the first
+call, 0.2637 over the window.
+
+**The masking signature is preserved exactly.** `beta_C = -2.2713e-02` and
+`beta_NC = +2.2713e-02`, still equal and opposite at four times the first-call
+magnitude. Whatever the trajectory does to the size, the structure is the same:
+C acts only where N has not already removed the residual.
+
+And a term appears that the first call could not show. `beta_L` on `R_ni` is
+1.83e-05 where it was exactly zero, with `NL` and `CL` at the same scale. That
+is not L acquiring a number effect: it is the arms having DIFFERENT STATES after
+call one, so the decomposition change reaches the residual through the fields
+rather than through the operator. It is the reason the first call is the matched
+comparison and this one is not.
+
 ## What is still not measured
 
 - Whether the interaction stays a masking one over a TRAJECTORY. These are all

@@ -79,3 +79,18 @@ def test_terms_are_named_in_factor_order():
     """`CN` and `NC` name one term and read as two. Regression: sorted() gave both."""
     assert fc._subsets("NCL", 2) == ["NC", "NL", "CL"]
     assert fc._subsets("NCL", 3) == ["NCL"]
+
+
+def test_the_window_is_a_different_question_not_a_longer_first_call():
+    """`window=True` accumulates over the run; the first call is the MATCHED one.
+
+    Both spans are offered because they answer different things: on call one
+    every arm meets the same initial state, so a difference is the arm; after it
+    the arms hold different fields, so the window measures the operator over its
+    own trajectory. A test that treated the second as a better version of the
+    first would licence quoting either for the other's claim.
+    """
+    import inspect
+    sig = inspect.signature(fc.responses)
+    assert sig.parameters["window"].kind is inspect.Parameter.KEYWORD_ONLY
+    assert sig.parameters["window"].default is False      # matched span is default
