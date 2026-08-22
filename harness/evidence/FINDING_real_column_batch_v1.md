@@ -16,17 +16,27 @@ column when it finishes, including after a failure.
 Twenty-four columns selected evenly from those carrying `QNRAIN` over at least
 six levels; twenty-two produced a usable pair.
 
-| | columns | median | min | max |
-|---|---|---|---|---|
-| all | 22 | **2.31 %** | 0.14 % | 5.47 % |
-| land (`xland` = 1) | 5 | 2.63 % | | |
-| sea (`xland` = 2) | 17 | 1.98 % | | |
+| | columns | median | p25 | p75 | min | max |
+|---|---|---|---|---|---|---|
+| all | 22 | **2.19 %** | 1.13 % | 2.84 % | 0.14 % | 5.47 % |
+| land (`xland` = 1) | 5 | 2.63 % | | | | |
+| sea (`xland` = 2) | 17 | 1.98 % | | | | |
 
-**The single column's 1.88 % was on the low side of a distribution that spans a
-factor of forty.** The median is 2.31 %, and the domain-wide coefficient
-estimate of 1.92-1.98 % sits between the sea median and the single column --
-close to the middle of the sample, but the sample is wide and any one column
-says little about the next.
+**The single column's 1.88 % was on the low side of a distribution spanning a
+factor of forty**, and the domain-wide coefficient estimate of 1.92-1.98 % sits
+just below the sample median. The interquartile range is 1.13-2.84 %, so any one
+column says little about the next.
+
+The first version of this table said 2.31 %, which is the UPPER MIDDLE value of
+an even sample and not its median: with 22 columns the median is the mean of the
+11th and 12th, 2.19 %. A small difference and the wrong name for it.
+
+**And this is not an unbiased sample of the state.** The columns are taken at
+even intervals along a row-major list of those carrying `QNRAIN` deeply enough,
+which spreads them spatially and balances nothing -- not land against sea, not
+moisture-gradient quantile, not rain intensity, not the size of the legacy
+defect. It is a deterministic spatial sample of one state, and a
+regime-stratified one would be a different experiment.
 
 ## The sign is not a distribution
 
