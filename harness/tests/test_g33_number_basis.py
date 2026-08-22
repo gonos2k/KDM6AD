@@ -104,6 +104,20 @@ def test_the_tail_is_reported_with_its_absolute_scale(tmp_path):
     assert got["composition_max_abs_error"] < 1e-15
 
 
+def _patch_stream(monkeypatch, call, dn=1.5):
+    """Point `from_stream` at one synthetic call and one synthetic XFER record.
+
+    The XFER record has to be stubbed too now: the residual is reported from
+    the ACTUAL transfer as well as the recovered one, and a synthetic call
+    carries no stream for `transfers()` to read.
+    """
+    import g33_number_transport as nt
+    import g33_matched_closure as mc
+    monkeypatch.setattr(nt, "calls", lambda t: [call])
+    monkeypatch.setattr(nt, "single_loop", lambda c: 1)
+    monkeypatch.setattr(mc, "transfers", lambda t: {(1, 1, 1, "main"): (0.0, dn)})
+
+
 def _stream_call(qv, den, dz, x, x1, algorithm="legacy"):
     """A minimal parsed call, so the ledger arithmetic is tested without a run."""
     pre = {(1, 1, k): {"rho": den[k], "qv": qv[k], "delz": dz[k], "nr": x[k]}
@@ -121,12 +135,10 @@ def test_a_uniform_moisture_column_cannot_tell_the_two_ledgers_apart(monkeypatch
     information. No fixture published before this one could have shown a
     difference, whatever the arm did.
     """
-    import g33_number_transport as nt
     den, dz = [0.4, 0.6, 0.9, 1.2], [300.0, 300.0, 300.0, 300.0]
     x, x1 = [5.0, 4.0, 3.0, 2.0], [4.0, 3.6, 2.9, 2.3]
     call = _stream_call([8e-3] * 4, den, dz, x, x1)
-    monkeypatch.setattr(nt, "calls", lambda t: [call])
-    monkeypatch.setattr(nt, "single_loop", lambda c: 1)
+    _patch_stream(monkeypatch, call)
     got = nb.from_stream("", "nr")[1]
     assert got["moist"] / got["start_moist"] == pytest.approx(
         got["dry"] / got["start_dry"], rel=1e-12)
@@ -134,12 +146,10 @@ def test_a_uniform_moisture_column_cannot_tell_the_two_ledgers_apart(monkeypatch
 
 def test_a_moisture_gradient_makes_them_different_questions(monkeypatch):
     """With `qv` varying down the column the proportionality is gone."""
-    import g33_number_transport as nt
     den, dz = [0.4, 0.6, 0.9, 1.2], [300.0, 300.0, 300.0, 300.0]
     x, x1 = [5.0, 4.0, 3.0, 2.0], [4.0, 3.6, 2.9, 2.3]
     call = _stream_call([5e-4, 2e-3, 6e-3, 1.4e-2], den, dz, x, x1)
-    monkeypatch.setattr(nt, "calls", lambda t: [call])
-    monkeypatch.setattr(nt, "single_loop", lambda c: 1)
+    _patch_stream(monkeypatch, call)
     got = nb.from_stream("", "nr")[1]
     assert got["moist"] / got["start_moist"] != pytest.approx(
         got["dry"] / got["start_dry"], rel=1e-6)
@@ -149,12 +159,10 @@ def test_the_closed_form_is_an_identity_not_a_fit(monkeypatch):
     """`R = sum a_j dz_j (B_{j+1} A_j / A_{j+1} - B_j)`, evaluated from the same
     recovered transfers. Measured 1.00000000 on all six rows of the gradient
     fixture; here it is required rather than observed."""
-    import g33_number_transport as nt
     den, dz = [0.4, 0.6, 0.9, 1.2], [300.0, 340.0, 380.0, 420.0]
     x, x1 = [5.0, 4.0, 3.0, 2.0], [4.0, 3.6, 2.9, 2.3]
     call = _stream_call([5e-4, 2e-3, 6e-3, 1.4e-2], den, dz, x, x1)
-    monkeypatch.setattr(nt, "calls", lambda t: [call])
-    monkeypatch.setattr(nt, "single_loop", lambda c: 1)
+    _patch_stream(monkeypatch, call)
     got = nb.from_stream("", "nr")[1]
     for tag in ("moist", "dry"):
         assert got[f"{tag}_predicted_over_measured"] == pytest.approx(1.0, rel=1e-9)
@@ -168,13 +176,11 @@ def test_an_arm_whose_weight_IS_the_ledger_predicts_algebraic_zero(monkeypatch):
     Requiring exact zero would be requiring the arithmetic to be something it is
     not; requiring it to be negligible against the DRY term is the real claim.
     """
-    import g33_number_transport as nt
     den, dz = [0.4, 0.6, 0.9, 1.2], [300.0, 340.0, 380.0, 420.0]
     x, x1 = [5.0, 4.0, 3.0, 2.0], [4.0, 3.6, 2.9, 2.3]
     call = _stream_call([5e-4, 2e-3, 6e-3, 1.4e-2], den, dz, x, x1,
                         algorithm="nmass")
-    monkeypatch.setattr(nt, "calls", lambda t: [call])
-    monkeypatch.setattr(nt, "single_loop", lambda c: 1)
+    _patch_stream(monkeypatch, call)
     got = nb.from_stream("", "nr")[1]
     assert abs(got["moist_predicted"]) < 1e-12 * abs(got["start_moist"])
     assert abs(got["dry_predicted"]) > 1e-6 * abs(got["start_dry"])
@@ -208,3 +214,21 @@ def test_the_two_estimates_differ_by_the_virtual_temperature_linearisation(tmp_p
     b = nb.profile(_state(tmp_path, PRESS, qv, "b"), "exact")
     rel = np.abs(a["legacy_dry"] - b["legacy_dry"]) / np.abs(b["legacy_dry"])
     assert 1e-4 < rel.max() < 1e-2
+
+
+def test_the_residual_is_reported_from_the_ACTUAL_transfer_too(monkeypatch):
+    """A residual and a prediction built on the same recovered transfers share
+    their input, so their agreement is algebra. The `XFER` record shares
+    nothing with the recovery, and both are reported.
+    """
+    den, dz = [0.4, 0.6, 0.9, 1.2], [300.0, 340.0, 380.0, 420.0]
+    x, x1 = [5.0, 4.0, 3.0, 2.0], [4.0, 3.6, 2.9, 2.3]
+    call = _stream_call([5e-4, 2e-3, 6e-3, 1.4e-2], den, dz, x, x1)
+    _patch_stream(monkeypatch, call)
+    got = nb.from_stream("", "nr")[1]
+    for tag in ("moist", "dry"):
+        assert f"{tag}_xfer" in got
+    # the two differ exactly by the surface term each used
+    a_recov = (got["moist"] - got["moist_xfer"])
+    b_recov = (got["dry"] - got["dry_xfer"])
+    assert a_recov != 0.0 and b_recov != 0.0

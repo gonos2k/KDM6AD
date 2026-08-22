@@ -84,6 +84,33 @@ size of a number somebody observed, and the arm that would remove it is
 determined: weight by `rho/(1+qv)` instead of `rho`, which makes every term of
 the dry prediction vanish the same algebraic way the moist one does now.
 
+## The same result from the ACTUAL transfer records
+
+The table above recovers the transfers from the endpoints, so a residual built
+on them and a prediction built on them share their input: the ratio of
+1.00000000 is an algebraic check, not an independent measurement. The kernel
+emits its own surface transfer in the `XFER` records, which shares nothing with
+the recovery. Residual over starting inventory, first call, `nr`:
+
+| arm | column | moist, from XFER | dry, from XFER | dry XFER / dry recovered |
+|---|---|---|---|---|
+| `legacy` | 1 | 3.849e-03 | 3.788e-03 | 1.000004 |
+| `legacy` | 2 | 3.690e-03 | 3.618e-03 | 0.999989 |
+| `legacy` | 3 | 3.538e-03 | 3.492e-03 | 0.999989 |
+| `nmass` | 1 | **5.775e-08** | -6.583e-05 | 0.999128 |
+| `nmass` | 2 | **-4.660e-08** | -7.714e-05 | 1.000601 |
+| `nmass` | 3 | **6.498e-10** | -4.989e-05 | 0.999987 |
+
+The dry residuals agree with the recovered ones to better than 0.1 %. **The
+moisture term is an independent measurement.**
+
+And the moist row corrects a number in this finding. `A == B` makes the
+RECOVERED moist residual algebraically zero, so its 1e-17 is forced by the
+arithmetic and is not a measurement of anything. The honest figure is the XFER
+path's 5.8e-08 relative -- still below the f32 epsilon of 1.19e-07, so "Arm N
+closes the operator's ledger to roundoff" stands, but at roundoff and not at
+1e-17.
+
 ## What this does NOT do
 
 It does not run that arm. Arm N_d is a change to the frozen kernel and the

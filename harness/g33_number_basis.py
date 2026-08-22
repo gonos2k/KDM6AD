@@ -229,6 +229,17 @@ def from_stream(text: str, species: str = "nr") -> dict:
     zero, which is why Arm N's moist prediction is 0.000000 against a measured
     roundoff, and its DRY prediction is not.
 
+    Each residual is reported TWICE: once from the recovered transfers and once
+    from the ACTUAL `XFER` record the kernel emits, which shares no input with
+    the prediction. Measured on `g33_fixture_moisture_gradient_v1`, the dry
+    residuals agree to better than 0.1 % -- so the moisture term is an
+    independent measurement, not an artefact of the recovery.
+
+    The moist row is where they must NOT be read the same way. `A == B` makes
+    the recovered residual algebraically zero, so its 1e-17 relative is forced;
+    the XFER path gives 5.7e-08 relative, which is the honest number and is
+    still below the f32 epsilon of 1.19e-07.
+
     This needs a fixture with a vertical moisture gradient. Under a
     column-uniform `qv` the two ledgers differ by a constant factor per column
     and say the same thing (`FINDING_number_basis_gap_v1`).
@@ -237,6 +248,8 @@ def from_stream(text: str, species: str = "nr") -> dict:
     from pathlib import Path as _Path
     _sys.path.insert(0, str(_Path(__file__).resolve().parent))
     import g33_number_transport as nt
+    import g33_matched_closure as mc
+    xfer = mc.transfers(text)
     call = nt.calls(text)[0]
     loop = nt.single_loop(call)
     pre, post = call["outer_pre_sed"], call["outer_post_sed"]
@@ -256,10 +269,17 @@ def from_stream(text: str, species: str = "nr") -> dict:
                      for t in range(1, len(ks))]
         a = nt.transfers(x, x1, w)
         row = {}
+        # THE ACTUAL surface transfer, from the XFER record the kernel emits.
+        # `a[-1]` above is recovered from the endpoints, so a residual built on
+        # it and a prediction built on it share their input -- the agreement is
+        # an algebraic check and not an independent measurement (owner §6).
+        chain = "main" if species in ("qr", "nr") else "ice"
+        _dq, dn = xfer[(1, loop, col, chain)]
         for tag, B in (("moist", den), ("dry", dry)):
             n0 = sum(B[t] * dz[t] * x[t] for t in range(len(ks)))
             n1 = sum(B[t] * dz[t] * x1[t] for t in range(len(ks)))
             meas = (n1 - n0) + B[-1] * dz[-1] * a[-1]
+            row[f"{tag}_xfer"] = (n1 - n0) + B[-1] * dz[-1] * dn
             pred = sum(a[j] * dz[j] * (B[j + 1] * a_w[j] / a_w[j + 1] - B[j])
                        for j in range(len(ks) - 1))
             row[tag] = meas
