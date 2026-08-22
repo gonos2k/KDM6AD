@@ -277,6 +277,7 @@ FIELD_EXPR = {
     # `dnr(i,k+1)` itself -- whose value the arm changes and whose spelling it
     # does not. So the ladder is legacy's, and only the SHA differs.
     "nmass": {"INTERIOR": _LEG_INT, "TOP": _LEG_TOP},
+    "nmass_dry": {"INTERIOR": _LEG_INT, "TOP": _LEG_TOP},
     # ARM L changes no transfer line at all -- only which threshold each
     # column is compared against -- so the sedimentation ladder is legacy's
     # unchanged.
@@ -974,7 +975,21 @@ MICRO_FREEZE_HEAT = [
 #: each missing table one KeyError at a time.
 #: Derived arms inherit their BASE's site tables: N and L change what a line
 #: computes, not where anything sits.
-_DERIVED = {"nmass": "legacy", "lncmin": "legacy", "nmasslncmin": "legacy",
+#: `nmass_dry` sits with them: its edit is INSIDE the `dnr(i,k+1) = min(...)`
+#: expression, and every legacy anchor is on an update line, so none of them
+#: moves. Checked rather than assumed -- CAP, TOP and XFER all anchor on
+#: `qrs(...)`/`qci(...)` assignments.
+#: ... and the same for the overlay's own per-arm record. `nmass_dry` shares
+#: every anchor with `nmass` -- both edit inside the `min(...)`, neither moves
+#: an update line -- so it is DERIVED from that entry rather than copied, with
+#: its own source sha. A copied block is a second place for the anchors to
+#: drift, which is the defect this file has already paid for twice.
+VARIANTS["nmass_dry"] = dict(
+    VARIANTS["nmass"],
+    sha="c0e9465d03ee107fb50ba67d0f1798b92d417572e2cdaef3ffa568c684e19273")
+
+_DERIVED = {"nmass": "legacy", "nmass_dry": "legacy",
+            "lncmin": "legacy", "nmasslncmin": "legacy",
             "cons_nmass": "conservative", "cons_lncmin": "conservative",
             "cons_nmasslncmin": "conservative"}
 for _t in (CAP_SITES, TOP_SITES, XFER_SITES):

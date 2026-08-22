@@ -69,7 +69,13 @@ module g33_refine
 ! Order matters: `cons_nmass` also defines KDM6_CONS (it needs conservative's
 ! call shape), so testing KDM6_CONS first would have named every combined arm
 ! `conservative` -- the same silent mislabelling, one layer along.
-#ifdef KDM6_ARM_CONS_NMASSLNCMIN
+! ... and `nmass_dry` before `nmass` for the same reason, even though the two
+! macros differ exactly: the rule this cascade follows is most-specific-first,
+! and an arm that relies on two macro names never colliding is one rename away
+! from naming itself something else.
+#ifdef KDM6_ARM_NMASS_DRY
+  character(len=*), parameter :: ALGOTAG = 'nmass_dry'
+#elif defined(KDM6_ARM_CONS_NMASSLNCMIN)
   character(len=*), parameter :: ALGOTAG = 'cons_nmasslncmin'
 #elif defined(KDM6_ARM_CONS_NMASS)
   character(len=*), parameter :: ALGOTAG = 'cons_nmass'
