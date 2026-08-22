@@ -37,10 +37,60 @@ inventory, from the ACTUAL `XFER` records:
 Columns 2 and 3 give 0.0000 % and 0.0003 %. **The acceptance criterion in the
 freeze-lift request is met**: `|R_dry|` is at roundoff, not merely smaller.
 
-**And it is a trade, not an improvement.** Arm N_d moves the MOIST residual from
-5.8e-08 to 6.6e-05 -- about the size of the dry residual Arm N left. Each arm
-closes one ledger and leaves the other. That was written into the request as a
-control precisely so it could not be quietly omitted here.
+**And it is a trade, though not between equals.** Arm N_d moves the MOIST
+residual from 5.8e-08 to 6.6e-05 -- about the size of the dry residual Arm N
+left. That control was written into the request precisely so it could not be
+quietly omitted here.
+
+But the two ledgers are not two equally valid choices. `nr` is a mixing ratio
+per kg of DRY air (`G33-BASIS-006`), so the physical column number has dry air
+as its carrier mass and the moist ledger is not a conservation law -- it is the
+measure the legacy operator happens to integrate. The accurate sentence is that
+Arm N_d recovers the physical invariant and gives up numerical compatibility
+with the legacy moist diagnostic, and which of those a release should prefer is
+`G33-BASIS-002`, an owner decision.
+
+## Against the ledger that does not move
+
+The table above measures the dry ledger with THIS call's `qv`, and that is a
+moving measure. Dry air does not leave the column during microphysics, so a
+denominator that changes with the vapour is not a conserved quantity being
+tracked -- it is a quantity being redefined. The repository already holds the
+right one: `window_cell_mass(stream, "physical")` takes `qv` from
+`G33R INITIAL` and freezes `rho*dz` together, and its docstring records that an
+earlier version of THAT function made exactly this mistake. This finding made
+it again, in the analyzer and in the arm.
+
+Re-measured against the window-initial physical ledger, residual over surface
+flux, whole 12-call window:
+
+| arm | column 1 | column 2 | column 3 |
+|---|---|---|---|
+| `legacy` | 1.043e-02 | 1.053e-02 | 7.330e-02 |
+| `nmass` | -1.817e-04 | -2.250e-04 | -1.856e-03 |
+| **`nmass_dry`** | **2.882e-07** | **-9.812e-08** | **6.641e-04** |
+
+Two things follow, and neither is the sentence this finding first wrote.
+
+**The first-call result stands unchanged.** Re-running it against the
+window-initial measure gives -8.209e-09, 9.207e-10 and 9.095e-09 -- the same
+numbers, because on the first call the pre-sed `qv` IS the window's initial
+`qv`. The moving-measure objection does not bite there.
+
+**Over the window it bites in one column of three.** Columns 1 and 2 close to
+3e-07 and 1e-07 -- against Arm N's 1.8e-04 and 2.2e-04, some six hundred and
+two thousand times better. Column 3 leaves 6.641e-04, which is 0.9 % of the
+legacy defect there while the other two are at 0.003 %.
+
+Why column 3 and not the others is NOT established. The obvious candidate is
+refuted: `qv` moves by 99.9 %, 99.9 % and 99.5 % of its initial value in the
+three columns, so the size of the excursion does not distinguish them. What is
+different is the legacy defect itself -- 7.330e-02 in column 3 against about
+1.05e-02 in the others.
+
+So Arm N_d closes the immutable physical ledger on the first call and in two
+columns of three over the window. The third is an open residual and this
+finding does not explain it.
 
 ## The uniform-moisture control, and what it revealed
 
