@@ -44,15 +44,38 @@ recovered residual is algebraically forced to zero and reads 3.3e-16, while the
 independent XFER path gives 1.0e-08 -- the honest figure, and still two orders
 below the f32 epsilon of 1.19e-07.
 
+## The timestep matrix, and the operational call
+
+The measurement above is a 5 s kernel call: the fixture's `dt` word is 60 s and
+`nsplit = 12`. The operational configuration calls the kernel at 20 s, so the
+number above was not the operational one and the finding did not say so.
+
+Same column, `nsplit` varied:
+
+| call dt | nsplit | mstep <= | legacy dry | Arm N dry | Arm N leaves | flux-weighted |
+|---|---|---|---|---|---|---|
+| 5 s | 12 | 1 | 1.374e-03 | -2.583e-05 | 1.8796 % | 2.0857 % |
+| 10 s | 6 | 2 | 2.755e-03 | -5.201e-05 | 1.8879 % | 2.0951 % |
+| **20 s** | **3** | **3** | **5.512e-03** | **-1.046e-04** | **1.8972 %** | **2.1067 %** |
+| 30 s | 2 | 4 | 8.244e-03 | -1.568e-04 | 1.9023 % | 2.1157 % |
+
+**At the operational 20 s call the answer is 1.8972 %**, and the ratio is
+invariant across the range: 1.880 % to 1.902 %, a 1.2 % relative spread, while
+`mstep` goes from 1 to 4.
+
+The residuals themselves scale with the timestep almost exactly -- 2.00x, 4.01x
+and 6.00x against dt ratios of 2, 4 and 6 -- which is what a per-step transfer
+defect should do, and it is why the RATIO is the timestep-invariant quantity
+and the residual is not.
+
 ## What this does and does not establish
 
 It establishes that the moisture term is not an artefact of synthetic
 stratification: a real column, real moisture profile, real hydrometeors and
 real number fields give the size the coefficient work predicted.
 
-It does NOT establish a forecast impact. One column, one time, one call,
-`mstep = 1`, and the ceiling on this fixture is STRUCTURAL_ONLY for that
-reason. A column is an instance; the domain statistics in
+It does NOT establish a forecast impact. One column, one time, and the ceiling
+on this fixture is STRUCTURAL_ONLY for that reason. A column is an instance; the domain statistics in
 `FINDING_number_basis_gap_v1` are what say how typical it is.
 
 ## Reproducing
