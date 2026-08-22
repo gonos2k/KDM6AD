@@ -312,7 +312,11 @@
   "summary": {
     "columns": 22,
     "max": 0.05467562645147964,
-    "median": 0.023113823016679354,
-    "min": 0.0013616171166886209
+    "median": 0.021895899036857215,
+    "min": 0.0013616171166886209,
+    "note": "requested 24; 22 produced a usable pair. The two rejections predate the rejection log and their positions were not recorded -- a later run of the tool records them.",
+    "p25": 0.011275885326989641,
+    "p75": 0.02842651642081253,
+    "upper_middle": 0.023113823016679354
   }
 }

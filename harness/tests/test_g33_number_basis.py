@@ -116,6 +116,16 @@ def _patch_stream(monkeypatch, call, dn=1.5):
     monkeypatch.setattr(nt, "calls", lambda t: [call])
     monkeypatch.setattr(nt, "single_loop", lambda c: 1)
     monkeypatch.setattr(mc, "transfers", lambda t: {(1, 1, 1, "main"): (0.0, dn)})
+    # The dry ledger reads the WINDOW measure from `g33_matched_closure`, which
+    # needs a G33R INITIAL block a synthetic call does not carry. The stub gives
+    # it the same frozen `rho/(1+qv)` and `dz` the call's own records imply, so
+    # these tests still exercise the arithmetic and not the stream parser.
+    pre = call["outer_pre_sed"]
+    measure = {(col, k): mc.CellMeasure(
+                   rec["rho"] / (1.0 + rec["qv"]), rec["delz"],
+                   rec["rho"] / (1.0 + rec["qv"]) * rec["delz"])
+               for (_lp, col, k), rec in pre.items()}
+    monkeypatch.setattr(mc, "window_cell_mass", lambda t, b: measure)
 
 
 def _stream_call(qv, den, dz, x, x1, algorithm="legacy"):

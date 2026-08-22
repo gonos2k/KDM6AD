@@ -42,6 +42,12 @@ def candidates(path: Path, want: int, field: str = "QNRAIN", levels: int = 6):
     Evenly over the SORTED candidate list rather than at random: the point is a
     spread across the domain's regimes, and a seeded random pick would be one
     more thing to have to reproduce.
+
+    NOT STRATIFIED. Row-major order spreads the sample spatially and balances
+    nothing -- not land against sea, not moisture-gradient quantile, not
+    precipitation intensity, not the size of the legacy defect. So the
+    distribution this produces is a deterministic spatial sample of one state
+    and is NOT an unbiased estimate of that state's columns (owner review §8.3).
     """
     import netCDF4
     import numpy as np
@@ -115,7 +121,11 @@ def main() -> int:
     a = ap.parse_args()
 
     keep = MANIFEST.read_text()          # the committed column, restored at the end
-    rows = []
+    # REJECTED COLUMNS ARE PART OF THE RESULT. A sample reported only through
+    # what survived cannot be checked for survivorship bias: if the columns that
+    # fail are the ones with the largest defect, the distribution is a
+    # selection. Every requested column is recorded with its verdict.
+    rows, rejected = [], []
     try:
         for j, i in candidates(a.state, a.columns):
             meta = write_manifest(a.state, j, i)
@@ -123,14 +133,17 @@ def main() -> int:
                                   "--write", f"--fixture-id={FIXTURE_ID}"],
                                  capture_output=True, text=True, cwd=REPO)
             if gen.returncode != 0:
-                print(f"  ({j},{i}) refused by the manifest: "
-                      f"{gen.stderr.strip().splitlines()[-1][:90]}")
+                why = gen.stderr.strip().splitlines()[-1][:120]
+                rejected.append(dict(meta, stage="manifest", reason=why))
+                print(f"  ({j},{i}) refused by the manifest: {why[:90]}")
                 continue
             with tempfile.TemporaryDirectory(prefix="g33-col.") as td:
                 try:
                     leg = residuals(Path(td), "legacy")
                     nm = residuals(Path(td), "nmass")
                 except SystemExit as exc:
+                    rejected.append(dict(meta, stage="build_or_run",
+                                         reason=str(exc)[:200]))
                     print(f"  ({j},{i}) {exc}")
                     continue
             row = dict(meta,
@@ -154,14 +167,25 @@ def main() -> int:
 
     if not rows:
         raise SystemExit("no column produced a usable pair")
+    import statistics
     fr = sorted(r["fraction_left"] for r in rows if r["fraction_left"] is not None)
     n = len(fr)
-    summary = {"columns": n, "median": fr[n // 2], "min": fr[0], "max": fr[-1]}
+    # `fr[n // 2]` is the UPPER MIDDLE value on an even sample, not the median.
+    # With 22 columns that is the 12th value where the median is the mean of the
+    # 11th and 12th -- a small difference and the wrong name for it.
+    summary = {"columns": n, "median": statistics.median(fr),
+               "upper_middle": fr[n // 2], "min": fr[0], "max": fr[-1],
+               "p25": statistics.quantiles(fr, n=4)[0] if n >= 4 else None,
+               "p75": statistics.quantiles(fr, n=4)[2] if n >= 4 else None}
     print(f"\n  {n} columns: Arm N leaves median {summary['median']:.4%} "
           f"(min {summary['min']:.4%}, max {summary['max']:.4%})")
+    if rejected:
+        print(f"  {len(rejected)} column(s) rejected; reasons in the JSON")
     if a.json:
-        a.json.write_text(json.dumps({"summary": summary, "columns": rows},
-                                     indent=2, sort_keys=True) + "\n")
+        a.json.write_text(json.dumps(
+            {"summary": summary, "columns": rows, "rejected": rejected,
+             "requested": len(rows) + len(rejected)},
+            indent=2, sort_keys=True) + "\n")
     return 0
 
 
