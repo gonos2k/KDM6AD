@@ -117,6 +117,19 @@ def apply_nd_window(text: str) -> str:
     text, n = re.subn(pat, rep, text)
     if n != 2:
         raise SystemExit(f"N_d-window edit: matched {n} sites, expected 2")
+    # GUARDED. The argument is optional so the 3D wrapper compiles, but the
+    # wrapper's own call to kdm62D omits it, and the four-leg decision driver
+    # (g33_fortran_driver.f90) goes through that wrapper. A build of this arm
+    # on that path would dereference an absent optional at the transfer line
+    # -- undefined, and possibly silent. Refuse at entry instead.
+    guard_anchor = "! 20250205 ncmin setting\n"
+    if text.count(guard_anchor) != 1:
+        raise SystemExit("N_d-window: entry anchor for the presence guard "
+                         f"matched {text.count(guard_anchor)} times")
+    text = text.replace(guard_anchor,
+        "   if (.not. present(mdry0)) error stop &\n"
+        "     'nmass_dry_window: kdm62D needs mdry0; the 3D wrapper does not pass it'\n"
+        + guard_anchor)
     return text
 
 

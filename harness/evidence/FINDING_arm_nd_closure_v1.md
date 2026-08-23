@@ -100,9 +100,31 @@ sub-step and interface:
 | 2 | 0.000e+00 | -9.596e-02 | -- |
 | **3** | **5.067e+02** | **5.059e+02** | **1.0017** |
 
-Column 3 is predicted to 0.17 %. Columns 1 and 2 predict exactly zero and
-measure 0.28 and -0.10, which against their surface flux is 2.9e-07 and
--9.8e-08 -- the roundoff they were already reported as closing to.
+Column 3 is predicted to 0.17 %. Columns 1 and 2 predict exactly zero -- and
+an adversarial pass found WHY, which changes what those columns mean. Per call:
+
+| column | call | sum of interior transfers | max `eps` |
+|---|---|---|---|
+| 1 | 1 | 1.221e+02 | **0** |
+| 1 | 2..12 | **0.000** | 2.6e-03 |
+| 3 | 1 | 1.209e+02 | 0 |
+| 3 | 2..12 | 36..39 each | 2.6e-03 |
+
+In columns 1 and 2 every interior transfer happens on call 1, where `eps` is
+zero by construction, and on every later call -- where `eps` is not zero --
+nothing crosses an interior interface. **Those two columns never tested the
+moving measure at all.** Their "closure" says only that nothing moved after the
+first call. Column 3 is the one column where transfer continues after `q` has
+moved, and it is the only test in this table.
+
+The 0.17 % gap in column 3 is NOT rounding: it is 789 times the f32 input
+resolution of a sum that size. The formula is first-order in the measure
+mismatch and the gap is what it leaves out. Whether the interface cap
+contributes is not determined here: the CAPIN departure-vs-arrival test fires
+at 25 of 36 records in column 3, but under a density-weighted arm a departure
+that differs from its arrival IS the weight, not a bound cap, so that
+instrument cannot tell the two apart for this arm. The gap is recorded as a
+first-order truncation of unknown composition.
 
 So the remainder is not unexplained and it is not a property of the arm's
 algebra: it is the cost of weighting by a measure that moves while the ledger

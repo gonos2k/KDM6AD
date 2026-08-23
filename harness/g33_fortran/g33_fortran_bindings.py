@@ -987,7 +987,7 @@ MICRO_FREEZE_HEAT = [
 #: drift, which is the defect this file has already paid for twice.
 VARIANTS["nmass_dry_window"] = dict(
     VARIANTS["nmass"],
-    sha="59feac17aa1230a5c633c8ebf8487e08eaf8ed15abfee5d52d3164b755c9f65b")
+    sha="a3330ad13b99460e305c01e4e9f02848cc74779ed0acf463b7865d6e6146ee60")
 VARIANTS["nmass_dry"] = dict(
     VARIANTS["nmass"],
     sha="c0e9465d03ee107fb50ba67d0f1798b92d417572e2cdaef3ffa568c684e19273")

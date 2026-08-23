@@ -22,9 +22,14 @@ physical ledger, 12-call window, `nr`, residual over surface flux,
 | `nmass_dry` | 2.882e-07 | -9.812e-08 | 6.641e-04 |
 | **`nmass_dry_window`** | **-3.235e-07** | **2.680e-09** | **-5.048e-07** |
 
-Column 3 goes from 6.641e-04 to -5.048e-07: three orders, to the roundoff the
-other two columns were already at. **The physical ledger closes in all three
-columns over the whole window.** The counterfactual chain is complete:
+Column 3 goes from 6.641e-04 to -5.048e-07: three orders, to roundoff. **The
+physical ledger closes over the whole window.**
+
+Stated carefully: column 3 is the only column that tests this. In columns 1
+and 2 all interior transfer happens on the first call, before `q` has moved, so
+they close under any measure and say nothing about the arm
+(`FINDING_arm_nd_closure_v1`, adversarial pass). One column, one test, and it
+passes by three orders. The counterfactual chain is complete:
 
     legacy  ->  Arm N  ->  Arm N_d  ->  Arm N_d-window
     density term removed   moisture term removed   harness artefact removed

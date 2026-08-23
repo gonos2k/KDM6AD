@@ -133,6 +133,19 @@ def main() -> int:
     ap.add_argument("--json", type=Path, default=None)
     a = ap.parse_args()
 
+    # THE COMMITTED MANIFEST IS OVERWRITTEN WHILE THIS RUNS. A `git add -A`
+    # issued mid-batch stages a transient column as if it were the fixture --
+    # which happened once, and was caught only because the status was read.
+    # Two defences: refuse to start if the manifest already differs from HEAD
+    # (a crashed run left it dirty), and say so loudly while running.
+    dirty = subprocess.run(["git", "status", "--porcelain", "--", str(MANIFEST)],
+                           capture_output=True, text=True, cwd=REPO).stdout.strip()
+    if dirty:
+        raise SystemExit(f"{MANIFEST.name} is modified relative to HEAD; a "
+                         f"previous batch did not restore it. Inspect before "
+                         f"running another.")
+    print(f"  NOTE: {MANIFEST.name} is rewritten per column until this finishes; "
+          f"do not stage it meanwhile")
     keep = MANIFEST.read_text()          # the committed column, restored at the end
     # REJECTED COLUMNS ARE PART OF THE RESULT. A sample reported only through
     # what survived cannot be checked for survivorship bias: if the columns that
