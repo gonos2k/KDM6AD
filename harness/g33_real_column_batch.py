@@ -109,8 +109,11 @@ def write_manifest(path: Path, j: int, i: int) -> dict:
             "density": "canonical mu_d|d(eta)|/g, rho_m = rho_d(1+qv)"}
 
 
-def residuals(build_root: Path, arm: str) -> dict:
-    """Build and run one arm on the manifest as it currently stands."""
+def residuals(build_root: Path, arm: str, nsplits=(12,)) -> dict:
+    """Build one arm on the manifest as it currently stands; run it once per
+    `nsplit`. The call step is `60 s / nsplit`, so 12, 6, 3, 2 give 5, 10, 20
+    and 30 s -- the operational call is 20 s. `nsplit` is a runtime argument,
+    so the timestep matrix costs no extra builds (owner review §9)."""
     import g33_number_basis as nb
     out = build_root / arm
     b = subprocess.run(
@@ -119,17 +122,22 @@ def residuals(build_root: Path, arm: str) -> dict:
         capture_output=True, text=True, cwd=REPO)
     if b.returncode != 0:
         raise SystemExit(f"{arm}: build failed\n{b.stdout[-800:]}{b.stderr[-800:]}")
-    r = subprocess.run([str(out / "g33_refine_driver"), "12", "rezero", "1"],
-                       capture_output=True, text=True)
-    if r.returncode != 0:
-        raise SystemExit(f"{arm}: driver crashed\n{r.stderr[-800:]}")
-    return nb.from_stream(r.stdout, "nr")[1]
+    got = {}
+    for n in nsplits:
+        r = subprocess.run([str(out / "g33_refine_driver"), str(n), "rezero", "1"],
+                           capture_output=True, text=True)
+        if r.returncode != 0:
+            raise SystemExit(f"{arm} nsplit={n}: driver crashed\n{r.stderr[-800:]}")
+        got[n] = nb.from_stream(r.stdout, "nr")[1]
+    return got
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("state", type=Path)
     ap.add_argument("--columns", type=int, default=12)
+    ap.add_argument("--nsplits", default="12",
+                    help="comma-separated; 12,6,3,2 is the 5/10/20/30 s matrix")
     ap.add_argument("--json", type=Path, default=None)
     a = ap.parse_args()
 
@@ -163,16 +171,25 @@ def main() -> int:
                 rejected.append(dict(meta, stage="manifest", reason=why))
                 print(f"  ({j},{i}) refused by the manifest: {why[:90]}")
                 continue
+            nsplits = tuple(int(v) for v in a.nsplits.split(","))
             with tempfile.TemporaryDirectory(prefix="g33-col.") as td:
                 try:
-                    leg = residuals(Path(td), "legacy")
-                    nm = residuals(Path(td), "nmass")
+                    legs = residuals(Path(td), "legacy", nsplits)
+                    nms = residuals(Path(td), "nmass", nsplits)
                 except SystemExit as exc:
                     rejected.append(dict(meta, stage="build_or_run",
                                          reason=str(exc)[:200]))
                     print(f"  ({j},{i}) {exc}")
                     continue
+            leg, nm = legs[nsplits[0]], nms[nsplits[0]]
             row = dict(meta,
+                       # the per-timestep matrix, ratio only: what the review
+                       # asked to see is whether the FRACTION is timestep-
+                       # invariant across the sample, as it was on one column
+                       timestep_matrix={
+                           f"{60 // n}s": (abs(nms[n]["dry_xfer"] / nms[n]["start_dry"])
+                                           / abs(legs[n]["dry_xfer"] / legs[n]["start_dry"]))
+                           for n in nsplits if legs[n]["dry_xfer"]},
                        legacy_moist=leg["moist"] / leg["start_moist"],
                        legacy_dry=leg["dry"] / leg["start_dry"],
                        # BOTH READERS, and `legacy_dry_xfer` was missing
