@@ -304,7 +304,7 @@ def from_stream(text: str, species: str = "nr") -> dict:
     call = nt.calls(text)[0]
     loop = nt.single_loop(call)
     pre, post = call["outer_pre_sed"], call["outer_post_sed"]
-    carries = nt.number_carries_density(call.get("algorithm"))
+    metric = nt.number_transfer_metric(call.get("algorithm"))
     out = {}
     for col in sorted({c for l, c, _k in pre if l == loop}):
         ks = sorted(k for l, c, k in pre if c == col and l == loop)
@@ -326,10 +326,15 @@ def from_stream(text: str, species: str = "nr") -> dict:
         wm = mc.window_cell_mass(text, "physical")
         dry = [mc.measure_at(wm, (col, k), "from_stream").density for k in ks]
         dz_fixed = [mc.measure_at(wm, (col, k), "from_stream").delz for k in ks]
-        # The weight the ARM used, which is what produced these endpoints.
-        a_w = den if carries else [1.0] * len(ks)
-        w = [0.0] + [dz[t - 1] / dz[t] * (a_w[t - 1] / a_w[t])
-                     for t in range(1, len(ks))]
+        # THE WEIGHT THE ARM USED, which is what produced these endpoints --
+        # taken from the arm's own registered measure, not from whether its
+        # name contains a substring. `nmass_dry` and `nmass_dry_window` both
+        # contain `nmass` and both weight by a DRY mass; inverting them with
+        # the moist one returned transfers that never happened (owner review
+        # §9). The window arm's measure is the frozen mass this function
+        # already has in hand.
+        mdry0 = [dry[t] * dz_fixed[t] for t in range(len(ks))]
+        w = nt.number_transfer_weights(metric, den, dz, qv, mdry0)
         a = nt.transfers(x, x1, w)
         row = {}
         # THE ACTUAL surface transfer, from the XFER record the kernel emits.
@@ -356,6 +361,8 @@ def from_stream(text: str, species: str = "nr") -> dict:
         # calling it the actual interface flux would claim an instrument that
         # does not exist yet (owner review §7).
         row["recovered_transfer_weighted_fraction"] = num / den_ if den_ else None
+        # The density half of the same registered measure, for the closed form.
+        a_w = nt.number_layer_density(metric, den, qv, dry)
         for tag, B, DZ in (("moist", den, dz), ("dry", dry, dz_fixed)):
             n0 = sum(B[t] * DZ[t] * x[t] for t in range(len(ks)))
             n1 = sum(B[t] * DZ[t] * x1[t] for t in range(len(ks)))
