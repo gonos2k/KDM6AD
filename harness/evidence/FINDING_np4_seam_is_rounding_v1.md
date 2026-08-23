@@ -37,6 +37,52 @@ So `np = 4` carries two unrelated things: the CCN block's halo read and per-tile
 overwrite, which the tile-bounds fix removes, and a rounding-scale `dz8w`
 difference at the seam, which it cannot.
 
+## Traced upstream: `dz8w` is a symptom, not the source
+
+This finding located the `np = 4` difference in `delz` and called it upstream of
+microphysics. It is further upstream than that. Comparing the arm-C binary --
+where the CCN block does not exist, so nothing in microphysics can be
+implicated -- at `np = 1` against `np = 4` after ONE 20 s step:
+
+| field | cells | relative median | relative max | i columns |
+|---|---|---|---|---|
+| `PHB` base geopotential | **0** | -- | -- | -- |
+| `PH` perturbation geopotential | 91 090 | 2.19e-07 | 1.10e-04 | 109..233 |
+| `MU` dry column mass | 3 829 | 1.42e-06 | 1.69e-03 | 109..233 |
+| `T` | 10 869 | 1.49e-06 | 8.82e-02 | 2..233 |
+| `U` | 123 227 | 7.40e-07 | 1.37e-01 | 110..234 |
+| `V` | 105 955 | 5.72e-07 | 9.23e-02 | 109..233 |
+| `W` | 202 664 | 7.12e-06 | 1.03e+01 | 108..234 |
+
+`dz8w` is `z_at_w(k+1) - z_at_w(k)`, computed from `PH` + `PHB`
+(`module_big_step_utilities_em.F:4877`). `PH` differs and `PHB` does not, so the
+`delz` difference reported above is DERIVED from a `PH` difference, and every
+other prognostic differs beside it. Naming `dz8w` as the site was naming the
+first place it was looked for.
+
+**`PHB` being bit-identical is the control that matters.** The base-state
+geopotential is a function of the grid and the reference profile, not of the
+integration; identical means this is not a grid setup or a decomposition-
+dependent static field. It is the prognostic solve.
+
+### And the first step creates it
+
+Same two runs, the initial frame against the one-step frame:
+
+    frame 0 (initial state)     0 of 197 fields differ
+    frame 1 (after one 20 s)   28 of 197 fields differ
+
+The decompositions start from a bit-identical state. Everything above is made by
+the first integration.
+
+### The medians are rounding-scale and the maxima are not
+
+Median relative differences of 2e-07 to 7e-06 are a handful of ULP. The maxima
+are not: `W` reaches 1.03e+01 -- more than 100 % -- and `T` 8.8e-02, in a single
+step. So "rounding-scale" describes the bulk of the distribution and not its
+tail, and the amplification the trajectory finding measures over ten minutes has
+already begun within the first one.
+
 ## What this does NOT settle
 
 **That the seam difference is harmless.** It is rounding-scale at the source and
