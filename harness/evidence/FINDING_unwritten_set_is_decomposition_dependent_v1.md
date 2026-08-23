@@ -1,4 +1,4 @@
-# CORRECTED: the `np = 2` residual is three populations, and "unwritten" was not measured
+# CORRECTED TWICE: the residual is three populations, and nothing is unwritten
 
 This finding said the tile-bounds arm's remaining `np = 2` difference "IS" a set
 of cells nobody writes. Two things in that were wrong and one was arithmetic I
@@ -39,13 +39,42 @@ a count from a rounded percentage. Counted directly:
     differing AND both sides zero              0      <- cannot differ
     zero at np = 1 but NOT differing       3 557      <- zero in both
 
-## "Unwritten" is not measured
+## Measured: nothing is unwritten
+
+The instrument needed no code. `start_em` initialises only when
+`ccn_max_val < 1.0`, so replacing `wrfinput`'s identically-zero `QNCCN` with a
+SENTINEL of `1e-30` -- a normal f32, far below that guard -- leaves the run
+otherwise identical while making absence observable: a cell nobody writes keeps
+`1e-30` instead of `0`.
+
+Tile-bounds binary, 20 s:
+
+| | never written (`= 1e-30`) | written zero (`= 0`) | written a value |
+|---|---|---|---|
+| `np = 1` | **0** | **11 152** | 2 562 380 |
+| `np = 2` | **0** | **3 557** | 2 569 975 |
+
+**Nothing is unwritten.** The sentinel survives in zero cells under either
+decomposition, and the zero counts are exactly those measured with a zero input
+-- 11 152 and 3 557. So every zero-valued cell is a cell something **wrote zero
+into**, and the hypothesis this finding was named for is refuted.
+
+The decomposition-dependence is therefore not "which cells are missed" but
+**which cells are assigned zero**: the never-written sets are identical (0
+against 0) and the written-zero sets differ by 7 595 cells.
+
+WHAT WRITES THE ZERO is not identified here. The measurement distinguishes
+"nobody wrote it" from "something wrote zero" and stops there; naming the writer
+needs the per-stage instrumentation below, which this makes worth building for a
+narrower question than the one it was proposed for.
+
+## Why "unwritten" was not measured before
 
 A cell holding zero can be a cell nobody wrote, a cell explicitly assigned zero,
 a cell whose input was zero and was left alone, a cell a halo exchange filled
 with zero, or a cell microphysics drove to zero. The output distinguishes none
 of them. This finding inferred the first from the last and had no instrument for
-it.
+it -- and when one was built, the first is the one the measurement rules out.
 
 What IS measured: the set of zero-valued `QNCCN` cells depends on the
 decomposition, 11 152 against 3 557. That is the claim; "unwritten" is a
