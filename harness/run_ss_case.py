@@ -75,6 +75,11 @@ def main() -> int:
                     help='MPI ranks; np>1 adds --mca btl self,tcp (Open MPI shm BTL SEGVs with libtorch-loaded ranks)')
     ap.add_argument('--label', default='smoke')
     ap.add_argument('--fixed-dt', action='store_true', help='Disable adaptive time step for parity smoke runs')
+    ap.add_argument('--radt', type=int, default=None,
+                    help='radiation call interval in minutes. For the NEGATIVE '
+                         'CONTROL on the six-minute field-count jump: if that '
+                         'jump is the first radiation call, it must move when '
+                         'this does, and stay put if it does not.')
     args=ap.parse_args()
 
     run=Path(__file__).resolve().parent
@@ -109,6 +114,8 @@ def main() -> int:
         text=replace_line(text,key,value)
     if args.history_s is not None:
         text=replace_line(text, 'history_interval_s', str(args.history_s))
+    if args.radt is not None:
+        text=replace_line(text, 'radt', str(args.radt))
     if args.fixed_dt:
         text=replace_line(text, 'use_adaptive_time_step', '.false.')
         text=replace_line(text, 'step_to_output_time', '.false.')
@@ -117,7 +124,8 @@ def main() -> int:
     stamp=time.strftime('%Y%m%d_%H%M%S')
     _np_tag = f"_np{args.np}" if args.np != 1 else ''
     _sec_tag = f"{args.seconds}s" if args.seconds else ''
-    out=run/'runs'/f"mp{args.mp}_{args.label}_{args.minutes}min{_sec_tag}_hist{args.history}{_np_tag}_{stamp}"
+    _rad_tag = f"_radt{args.radt}" if args.radt is not None else ''
+    out=run/'runs'/f"mp{args.mp}_{args.label}_{args.minutes}min{_sec_tag}_hist{args.history}{_rad_tag}{_np_tag}_{stamp}"
     out.mkdir(parents=True, exist_ok=True)
     for pat in ['rsl.error.*','rsl.out.*','wrfout_d01_*','klfs_lc05_fcst.*','klfs_lc05_prcp.*','klfs_lc05_ocean.*','klfs_lc05_energy.*','kdm6_step1_*.bin','kdm6_driver_step1_*.bin','kdm6_upstream_*.bin']:
         for p in run.glob(pat):

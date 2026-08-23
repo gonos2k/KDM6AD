@@ -88,10 +88,17 @@ def precipitation(a, b, t: int, name: str = "RAINNC") -> dict:
     x = np.asarray(a[name][t], dtype="float64")
     y = np.asarray(b[name][t], dtype="float64")
     d = y - x
+    # UNITS. `RAINNC` is mm per column, so a bare sum is mm x columns and is
+    # not a depth. The domain MEAN is a depth; the sum is reported as what it
+    # is, and the cancellation RATIO is dimensionless and unaffected either way
+    # (owner review §11). A volume needs cell areas, which this frame does not
+    # carry, so it is not claimed.
     out = {"field": name, "frame": t,
-           "signed_domain_mean": float(d.mean()),
-           "signed_domain_sum": float(d.sum()),
-           "gross_domain_sum": float(np.abs(d).sum()),
+           "signed_domain_mean_mm": float(d.mean()),
+           "signed_sum_mm_times_columns": float(d.sum()),
+           "gross_sum_mm_times_columns": float(np.abs(d).sum()),
+           "cancellation_ratio": (float(abs(d.sum()) / np.abs(d).sum())
+                                  if np.abs(d).sum() else None),
            "columns": int(d.size)}
     for thr in (1e-3, 1e-2, 1e-1):
         out[f"fraction_over_{thr:g}mm"] = float((np.abs(d) > thr).mean())
@@ -168,11 +175,11 @@ def main() -> int:
         if "REFL_10CM" in a.variables:
             doc["reflectivity"].append(reflectivity(a, b, t))
 
-    print(f"\n  {'t':>3s} {'signed sum (mm)':>16s} {'gross sum':>12s} "
+    print(f"\n  {'t':>3s} {'signed mean (mm)':>17s} {'cancel ratio':>13s} "
           f"{'>1e-3':>9s} {'>1e-2':>9s} {'>1e-1':>9s}")
     for r in doc["precipitation"]:
-        print(f"  {r['frame']:>3d} {r['signed_domain_sum']:16.4e} "
-              f"{r['gross_domain_sum']:12.4e} "
+        print(f"  {r['frame']:>3d} {r['signed_domain_mean_mm']:17.4e} "
+              f"{r['cancellation_ratio']:13.4f} "
               f"{r['fraction_over_0.001mm']:8.3%} "
               f"{r['fraction_over_0.01mm']:8.3%} {r['fraction_over_0.1mm']:8.3%}")
 

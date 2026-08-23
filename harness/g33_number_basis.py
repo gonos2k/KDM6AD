@@ -152,9 +152,10 @@ def where_the_number_is(state: Path, field: str = "QNRAIN",
     set by fall speed, sub-stepping and the interface cap. A state file records
     the first and not the second, so this is an
     `upper_inventory_weighted` aggregate and is named so. The actual
-    flux-weighted number needs the kernel's own per-interface transfers, which
-    means a replay -- `g33_real_column_batch` computes it for the columns it
-    runs.
+    flux-weighted number needs the kernel's own per-interface transfers. A
+    replay gets closer -- `from_stream` weights by the transfers RECOVERED from
+    the endpoints -- but the kernel emits only the surface one, so even that is
+    `recovered_transfer_weighted` and not a measured interface flux.
 
     "Transport-active" is likewise the population that COULD transport: `n > 0`
     in the upper cell does not mean the timestep moved any of it.
@@ -312,7 +313,19 @@ def from_stream(text: str, species: str = "nr") -> dict:
         dz = [pre[(loop, col, k)]["delz"] for k in ks]
         x = [pre[(loop, col, k)][species] for k in ks]
         x1 = [post[(loop, col, k)][species] for k in ks]
-        dry = [den[t] / (1.0 + qv[t]) for t in range(len(ks))]
+        # THE WINDOW-INITIAL DRY MASS, from the repository's single authority.
+        #
+        # `den[t] / (1 + qv[t])` with THIS call's `qv` is a moving measure: dry
+        # air does not leave the column during microphysics, so a ledger whose
+        # denominator changes is not a conserved quantity being tracked -- it is
+        # a quantity being redefined. `window_cell_mass(stream, "physical")`
+        # takes `qv` from `G33R INITIAL` and freezes `rho*dz` together, and its
+        # docstring records that an earlier version of THAT function made this
+        # same mistake. Making it twice is what a second copy of a fact is for
+        # (owner review §4).
+        wm = mc.window_cell_mass(text, "physical")
+        dry = [mc.measure_at(wm, (col, k), "from_stream").density for k in ks]
+        dz_fixed = [mc.measure_at(wm, (col, k), "from_stream").delz for k in ks]
         # The weight the ARM used, which is what produced these endpoints.
         a_w = den if carries else [1.0] * len(ks)
         w = [0.0] + [dz[t - 1] / dz[t] * (a_w[t - 1] / a_w[t])
@@ -337,13 +350,18 @@ def from_stream(text: str, species: str = "nr") -> dict:
         wj = [abs(a[j] * dz[j]) for j in range(len(ks) - 1)]
         num = abs(sum(w * e for w, e in zip(wj, eps_arm)))
         den_ = abs(sum(w * e for w, e in zip(wj, eps_leg)))
-        row["flux_weighted_fraction"] = num / den_ if den_ else None
-        for tag, B in (("moist", den), ("dry", dry)):
-            n0 = sum(B[t] * dz[t] * x[t] for t in range(len(ks)))
-            n1 = sum(B[t] * dz[t] * x1[t] for t in range(len(ks)))
-            meas = (n1 - n0) + B[-1] * dz[-1] * a[-1]
-            row[f"{tag}_xfer"] = (n1 - n0) + B[-1] * dz[-1] * dn
-            pred = sum(a[j] * dz[j] * (B[j + 1] * a_w[j] / a_w[j + 1] - B[j])
+        # RECOVERED, not emitted. `a[j]` comes from inverting the update at
+        # each interface; the kernel emits only the SURFACE transfer. So this
+        # weights the coefficients by the transfers the endpoints imply, and
+        # calling it the actual interface flux would claim an instrument that
+        # does not exist yet (owner review §7).
+        row["recovered_transfer_weighted_fraction"] = num / den_ if den_ else None
+        for tag, B, DZ in (("moist", den, dz), ("dry", dry, dz_fixed)):
+            n0 = sum(B[t] * DZ[t] * x[t] for t in range(len(ks)))
+            n1 = sum(B[t] * DZ[t] * x1[t] for t in range(len(ks)))
+            meas = (n1 - n0) + B[-1] * DZ[-1] * a[-1]
+            row[f"{tag}_xfer"] = (n1 - n0) + B[-1] * DZ[-1] * dn
+            pred = sum(a[j] * DZ[j] * (B[j + 1] * a_w[j] / a_w[j + 1] - B[j])
                        for j in range(len(ks) - 1))
             row[tag] = meas
             row[f"{tag}_predicted"] = pred
