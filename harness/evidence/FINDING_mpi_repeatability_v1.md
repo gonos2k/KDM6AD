@@ -51,17 +51,21 @@ grows with rank count. It is not:
 | `RAINNC` gross domain sum | 1.252e+01 mm | 1.386e+01 mm |
 | columns over 0.1 mm | 0.042 % | 0.048 % |
 | `REFL_10CM` screened p99 | 0.784 dBZ | 0.803 dBZ |
-| area over 20 dBZ (`np = 1`: 47 408) | 47 471 | 47 456 |
+| cells over 20 dBZ (`np = 1`: 47 408) | 47 471 | 47 456 |
 
 By one minute the two are indistinguishable in scale, and they stay so for ten.
 The single-field `np = 2` result was the SEED, one step in, and it cascades to
 the same place.
 
 **So the effect is not proportional to the number of tiles.** It fires as soon
-as there is more than one, which is what a tile-BOUNDARY mechanism looks like
-and not what a per-rank accumulation looks like. That narrows where to look
-considerably: whatever it is, splitting the domain once is enough to trigger all
-of it.
+as there is more than one MPI patch.
+
+The first version of this said "tile boundary", and the instrumentation that
+followed showed that is the wrong word. `np = 1` is ALREADY two physics tiles --
+`jts..jte` of 2..142 and 143..281 -- and it is bit-identical to itself. What
+`np = 2` adds is not a second tile but a second MPI PATCH, and with it a memory
+halo that `np = 1` does not have inside the domain. The boundary that matters is
+the patch/halo one (`FINDING_qnccn_first_write_v1.md`).
 
 ## What is still not established
 

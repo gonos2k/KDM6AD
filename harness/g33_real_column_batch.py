@@ -73,7 +73,19 @@ def write_manifest(path: Path, j: int, i: int) -> dict:
     temp = th * (p / P0) ** (RD / CP)
     ph = (g("PH") + g("PHB"))[:, j, i]
     dz = np.diff(ph) / G
-    den = p / (RD * temp * (1.0 + 0.608 * qv))
+    # THE MODEL'S OWN DENSITY, not a thermodynamic estimate. WRF's hydrostatic
+    # relation makes `rho_d * dz = mu_d |d(eta)| / g` exact in its own
+    # discretisation, and the host forms the `rho` it hands to microphysics as
+    # `rho_d * (1 + qv)` (module_big_step_utilities_em.F:4856). The first
+    # version of this used `p / (Rd T (1 + 0.608 qv))`, which differs from the
+    # canonical route by a median 2.3e-03 and up to 31 % on this state
+    # (FINDING_number_basis_gap_v1). The replay column now carries the density
+    # the kernel would actually have been given (owner review §10.2).
+    mu = (np.asarray(d["MU"][-1], dtype="float64")
+          + np.asarray(d["MUB"][-1], dtype="float64"))[j, i]
+    dnw = np.asarray(d["DNW"][-1], dtype="float64")
+    rho_d = (mu * np.abs(dnw)) / G / dz
+    den = rho_d * (1.0 + qv)
     pii = (p / P0) ** (RD / CP)
     f2b = lambda v: struct.pack(">f", float(v)).hex()        # noqa: E731
     flip = lambda a: list(a[::-1])                           # WRF k=0 is BOTTOM
@@ -93,11 +105,15 @@ def write_manifest(path: Path, j: int, i: int) -> dict:
     MANIFEST.write_text(json.dumps(out, indent=2, sort_keys=True) + "\n")
     return {"j": j, "i": i, "xland": float(g("XLAND")[j, i]),
             "qv_surface": float(qv[0]), "qv_top": float(qv[-1]),
-            "nr_levels": int((g("QNRAIN")[:, j, i] > 0).sum())}
+            "nr_levels": int((g("QNRAIN")[:, j, i] > 0).sum()),
+            "density": "canonical mu_d|d(eta)|/g, rho_m = rho_d(1+qv)"}
 
 
-def residuals(build_root: Path, arm: str) -> dict:
-    """Build and run one arm on the manifest as it currently stands."""
+def residuals(build_root: Path, arm: str, nsplits=(12,)) -> dict:
+    """Build one arm on the manifest as it currently stands; run it once per
+    `nsplit`. The call step is `60 s / nsplit`, so 12, 6, 3, 2 give 5, 10, 20
+    and 30 s -- the operational call is 20 s. `nsplit` is a runtime argument,
+    so the timestep matrix costs no extra builds (owner review §9)."""
     import g33_number_basis as nb
     out = build_root / arm
     b = subprocess.run(
@@ -106,20 +122,38 @@ def residuals(build_root: Path, arm: str) -> dict:
         capture_output=True, text=True, cwd=REPO)
     if b.returncode != 0:
         raise SystemExit(f"{arm}: build failed\n{b.stdout[-800:]}{b.stderr[-800:]}")
-    r = subprocess.run([str(out / "g33_refine_driver"), "12", "rezero", "1"],
-                       capture_output=True, text=True)
-    if r.returncode != 0:
-        raise SystemExit(f"{arm}: driver crashed\n{r.stderr[-800:]}")
-    return nb.from_stream(r.stdout, "nr")[1]
+    got = {}
+    for n in nsplits:
+        r = subprocess.run([str(out / "g33_refine_driver"), str(n), "rezero", "1"],
+                           capture_output=True, text=True)
+        if r.returncode != 0:
+            raise SystemExit(f"{arm} nsplit={n}: driver crashed\n{r.stderr[-800:]}")
+        got[n] = nb.from_stream(r.stdout, "nr")[1]
+    return got
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("state", type=Path)
     ap.add_argument("--columns", type=int, default=12)
+    ap.add_argument("--nsplits", default="12",
+                    help="comma-separated; 12,6,3,2 is the 5/10/20/30 s matrix")
     ap.add_argument("--json", type=Path, default=None)
     a = ap.parse_args()
 
+    # THE COMMITTED MANIFEST IS OVERWRITTEN WHILE THIS RUNS. A `git add -A`
+    # issued mid-batch stages a transient column as if it were the fixture --
+    # which happened once, and was caught only because the status was read.
+    # Two defences: refuse to start if the manifest already differs from HEAD
+    # (a crashed run left it dirty), and say so loudly while running.
+    dirty = subprocess.run(["git", "status", "--porcelain", "--", str(MANIFEST)],
+                           capture_output=True, text=True, cwd=REPO).stdout.strip()
+    if dirty:
+        raise SystemExit(f"{MANIFEST.name} is modified relative to HEAD; a "
+                         f"previous batch did not restore it. Inspect before "
+                         f"running another.")
+    print(f"  NOTE: {MANIFEST.name} is rewritten per column until this finishes; "
+          f"do not stage it meanwhile")
     keep = MANIFEST.read_text()          # the committed column, restored at the end
     # REJECTED COLUMNS ARE PART OF THE RESULT. A sample reported only through
     # what survived cannot be checked for survivorship bias: if the columns that
@@ -137,23 +171,40 @@ def main() -> int:
                 rejected.append(dict(meta, stage="manifest", reason=why))
                 print(f"  ({j},{i}) refused by the manifest: {why[:90]}")
                 continue
+            nsplits = tuple(int(v) for v in a.nsplits.split(","))
             with tempfile.TemporaryDirectory(prefix="g33-col.") as td:
                 try:
-                    leg = residuals(Path(td), "legacy")
-                    nm = residuals(Path(td), "nmass")
+                    legs = residuals(Path(td), "legacy", nsplits)
+                    nms = residuals(Path(td), "nmass", nsplits)
                 except SystemExit as exc:
                     rejected.append(dict(meta, stage="build_or_run",
                                          reason=str(exc)[:200]))
                     print(f"  ({j},{i}) {exc}")
                     continue
+            leg, nm = legs[nsplits[0]], nms[nsplits[0]]
             row = dict(meta,
+                       # the per-timestep matrix, ratio only: what the review
+                       # asked to see is whether the FRACTION is timestep-
+                       # invariant across the sample, as it was on one column
+                       timestep_matrix={
+                           f"{60 // n}s": (abs(nms[n]["dry_xfer"] / nms[n]["start_dry"])
+                                           / abs(legs[n]["dry_xfer"] / legs[n]["start_dry"]))
+                           for n in nsplits if legs[n]["dry_xfer"]},
                        legacy_moist=leg["moist"] / leg["start_moist"],
                        legacy_dry=leg["dry"] / leg["start_dry"],
+                       # BOTH READERS, and `legacy_dry_xfer` was missing
+                       # entirely -- so the ratio could only ever be formed
+                       # from the recovered pair (owner review §10.1).
+                       legacy_dry_xfer=leg["dry_xfer"] / leg["start_dry"],
+                       legacy_moist_xfer=leg["moist_xfer"] / leg["start_moist"],
                        armn_moist_xfer=nm["moist_xfer"] / nm["start_moist"],
                        armn_dry=nm["dry"] / nm["start_dry"],
                        armn_dry_xfer=nm["dry_xfer"] / nm["start_dry"])
             row["fraction_left"] = abs(row["armn_dry"]) / abs(row["legacy_dry"]) \
                 if row["legacy_dry"] else None
+            row["fraction_left_xfer"] = (
+                abs(row["armn_dry_xfer"]) / abs(row["legacy_dry_xfer"])
+                if row["legacy_dry_xfer"] else None)
             rows.append(row)
             print(f"  ({j:3d},{i:3d}) xland={meta['xland']:.0f} "
                   f"legacy_dry {row['legacy_dry']:11.4e}  "
@@ -169,6 +220,8 @@ def main() -> int:
         raise SystemExit("no column produced a usable pair")
     import statistics
     fr = sorted(r["fraction_left"] for r in rows if r["fraction_left"] is not None)
+    fx = sorted(r["fraction_left_xfer"] for r in rows
+                if r.get("fraction_left_xfer") is not None)
     n = len(fr)
     # `fr[n // 2]` is the UPPER MIDDLE value on an even sample, not the median.
     # With 22 columns that is the 12th value where the median is the mean of the
@@ -176,9 +229,20 @@ def main() -> int:
     summary = {"columns": n, "median": statistics.median(fr),
                "upper_middle": fr[n // 2], "min": fr[0], "max": fr[-1],
                "p25": statistics.quantiles(fr, n=4)[0] if n >= 4 else None,
-               "p75": statistics.quantiles(fr, n=4)[2] if n >= 4 else None}
-    print(f"\n  {n} columns: Arm N leaves median {summary['median']:.4%} "
-          f"(min {summary['min']:.4%}, max {summary['max']:.4%})")
+               "p75": statistics.quantiles(fr, n=4)[2] if n >= 4 else None,
+               # The ACTUAL-transfer statistic beside the recovered one. They
+               # are different quantities and the headline should say which.
+               "median_xfer": statistics.median(fx) if fx else None,
+               "min_xfer": fx[0] if fx else None,
+               "max_xfer": fx[-1] if fx else None,
+               "columns_xfer": len(fx)}
+    print(f"\n  {n} columns, RECOVERED transfers: Arm N leaves median "
+          f"{summary['median']:.4%} (min {summary['min']:.4%}, "
+          f"max {summary['max']:.4%})")
+    if fx:
+        print(f"  {len(fx)} columns, ACTUAL XFER:       median "
+              f"{summary['median_xfer']:.4%} (min {summary['min_xfer']:.4%}, "
+              f"max {summary['max_xfer']:.4%})")
     if rejected:
         print(f"  {len(rejected)} column(s) rejected; reasons in the JSON")
     if a.json:

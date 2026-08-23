@@ -94,3 +94,15 @@ same threshold and the scalar holds what the array would have held -- so
 `ncmin` is identical under every decomposition and cannot produce a difference
 between them. Confirmed directly: an Arm L binary is bit-identical to legacy at
 `np = 1` on this case. See `FINDING_arm_l_mpi_null_v1.md`.
+
+## Authority on the mechanism, as it now stands
+
+    Initial seed         CONFIRMED -- the memory-bound CCN initialisation reads
+                         unexchanged halo `delz`, which is 0.0 there
+                         (FINDING_qnccn_first_write_v1.md)
+    Propagation          OPEN -- seven seed rows, a 140-row terminal footprint,
+                         and nothing measured in between
+    Collapse on fixing   see FINDING_ccn_bounds_collapse_v1.md
+
+This supersedes the sentence above that no mechanism is named. The seed is
+named; what is unnamed is how it reaches the interior.

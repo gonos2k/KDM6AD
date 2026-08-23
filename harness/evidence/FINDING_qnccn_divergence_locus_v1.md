@@ -45,8 +45,12 @@ interior gap.
 
 ## What this rules out and what it leaves
 
-It is **not a boundary artefact**: the difference covers 140 rows on both sides
-of the split, not a halo-width strip.
+Its terminal footprint is **not boundary-confined**: the difference covers 140
+rows on both sides of the split, not a halo-width strip. That was written here
+as "not a boundary artefact", which does not follow and turned out to be wrong:
+`FINDING_qnccn_first_write_v1.md` measures the FIRST write and finds the seed in
+exactly seven rows, all of them rank 1's halo. A wide terminal footprint does
+not refute a boundary origin -- it only says something carries it inward.
 
 It is **not roundoff propagation**: the relative difference runs from -98 % to
 +4900 % with a median of +22.6 % over 450 000 distinct values. `QNCCN` is being

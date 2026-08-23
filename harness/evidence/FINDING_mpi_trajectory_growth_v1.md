@@ -64,12 +64,13 @@ takes a p99 to mean.
 **The reflectivity tail was the unphysical one.** Screened to a real
 reflectivity range, `[-35, 80]` dBZ, which covers 99.995 % of the domain at ten
 minutes, the p99 is **0.80 dBZ**. And in the terms a forecast is read in, the
-area above 20 dBZ is 47 408 cells at np = 1 against 47 456 at np = 4 -- a
-difference of 0.1 %.
+number of CELLS above 20 dBZ is 47 408 at np = 1 against 47 456 at np = 4 --
+a difference of 0.1 %. A cell count is not an area: on this projection cells
+differ in size and a physical area needs `DX*DY / MAPFAC_M**2`, which this
+frame does not carry.
 
 **The precipitation difference is DISPLACEMENT, not a bias.** Signed against
-gross, over the domain at ten minutes: **+0.168 mm signed** against **13.86 mm
-gross**, so the signed total is 1.2 % of the movement. And by threshold:
+gross, over the domain at ten minutes: **+0.168 signed** against **13.86 gross**, in mm x columns, so the signed total is 1.2 % of the movement. And by threshold:
 
 | |dRAINNC| | > 1e-3 mm | > 1e-2 mm | > 1e-1 mm |
 |---|---|---|---|---|
@@ -121,7 +122,7 @@ domain and grows on a fixed population.
 
 **Its SIZE is smaller than the first reading of this table suggested.** Stated
 in domain terms: the 99th percentile of the reflectivity difference is 0.81 dBZ
-(0.80 screened), the area above 20 dBZ moves by 0.1 %, and accumulated
+(0.80 screened), the CELL COUNT above 20 dBZ moves by 0.1 %, and accumulated
 precipitation differs by more than 0.1 mm in 0.048 % of columns while the
 signed domain total moves by 1.2 % of the gross. The decomposition changes
 WHERE it rains far more than whether it rains.
@@ -163,3 +164,34 @@ same threshold and the scalar holds what the array would have held -- so
 `ncmin` is identical under every decomposition and cannot produce a difference
 between them. Confirmed directly: an Arm L binary is bit-identical to legacy at
 `np = 1` on this case. See `FINDING_arm_l_mpi_null_v1.md`.
+
+## Authority on the mechanism, as it now stands
+
+    Initial seed         CONFIRMED -- the memory-bound CCN initialisation reads
+                         unexchanged halo `delz`, which is 0.0 there
+                         (FINDING_qnccn_first_write_v1.md)
+    Propagation          OPEN -- seven seed rows, a 140-row terminal footprint,
+                         and nothing measured in between
+    Collapse on fixing   see FINDING_ccn_bounds_collapse_v1.md
+
+This supersedes the sentence above that no mechanism is named. The seed is
+named; what is unnamed is how it reaches the interior.
+
+## Area-weighted, from `MAPFAC_M`
+
+`wrfinput_d01` carries the map factor, so `A_ij = DX*DY / MAPFAC_M^2` is
+available and the grid-cell statistics above can be checked against physical
+ones. At ten minutes, `np = 1` against `np = 4`:
+
+| | grid-cell | area-weighted |
+|---|---|---|
+| signed mean precipitation difference | 2.546e-06 mm | 2.554e-06 mm |
+| signed water volume | -- | 4.42e+03 m3 |
+| gross water volume | -- | 3.61e+05 m3 |
+| above 20 dBZ | 47 408 / 47 456 cells | 133 252 / 133 386 km2 |
+| above 30 dBZ | 24 968 / 25 061 cells | 75 221 / 75 483 km2 |
+
+The map factor moves the mean by 0.3 % and the threshold areas by 0.1 %, so
+every conclusion drawn from the cell counts stands in physical units. The
+signed volume is 1.2 % of the gross, which is the cancellation ratio already
+reported and is dimensionless either way.

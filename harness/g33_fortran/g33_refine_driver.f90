@@ -73,7 +73,9 @@ module g33_refine
 ! macros differ exactly: the rule this cascade follows is most-specific-first,
 ! and an arm that relies on two macro names never colliding is one rename away
 ! from naming itself something else.
-#ifdef KDM6_ARM_NMASS_DRY
+#ifdef KDM6_ARM_NMASS_DRY_WINDOW
+  character(len=*), parameter :: ALGOTAG = 'nmass_dry_window'
+#elif defined(KDM6_ARM_NMASS_DRY)
   character(len=*), parameter :: ALGOTAG = 'nmass_dry'
 #elif defined(KDM6_ARM_CONS_NMASSLNCMIN)
   character(len=*), parameter :: ALGOTAG = 'cons_nmasslncmin'
@@ -129,6 +131,9 @@ contains
     ! paired with the state in the SAME k convention, and re-deriving them in the
     ! analyzer from the fixture would be a second source that could drift.
     real,    intent(out) :: denO(im, km), delzO(im, km), piiO(im, km)
+#ifdef KDM6_ARM_NMASS_DRY_WINDOW
+    real :: mdry0(im, km)
+#endif
     ! t=0 state, for the enthalpy ledger. Emitted rather than re-read from
     ! the fixture so the ledger's endpoints come from ONE source.
     real,    intent(out) :: inF(im, km, NFLD_ST)
@@ -215,6 +220,17 @@ contains
     end do
     rhoxk = 0.0; cmgk = 0.0; n0so2d = 0.0; n0go2d = 0.0
 
+#ifdef KDM6_ARM_NMASS_DRY_WINDOW
+    ! THE WINDOW-INITIAL DRY LAYER MASS, computed once and never updated: the
+    ! harness holds den and delz fixed across its calls while q evolves, and
+    ! this is the measure the physical ledger (window_cell_mass "physical")
+    ! freezes. Handing it to the arm is what lets the arm close THAT ledger.
+    do i = 1, im
+      do k = 1, km
+        mdry0(i,k) = den(i,k) / (1.0 + qk(i,k)) * delz(i,k)
+      end do
+    end do
+#endif
     do i = 1, im
       do k = 1, km
         inF(i,k,1)  = tk(i,k)/pii(i,k); inF(i,k,2)  = qk(i,k)
@@ -276,6 +292,9 @@ contains
                    ,i0,i1, 1,1, 1,km, n0so2d(i0:i1,:), n0go2d(i0:i1,:)              &
                    ,snowF(i0:i1,1), snowncv(i0:i1,1)                                 &
                    ,graupelF(i0:i1,1), graupelncv(i0:i1,1)                           &
+#ifdef KDM6_ARM_NMASS_DRY_WINDOW
+                   ,mdry0(i0:i1,:)                                    &
+#endif
                     )
 #ifdef KDM6_G33_NUMBER_DUMP
         write(*,'(A,3(1X,I0))') 'G33N CALL_END', (s - 1) * ntile + tl, s, tl

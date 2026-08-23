@@ -81,7 +81,29 @@ def field_stats(a, b, name: str, t: int, mask=None) -> dict:
     return out
 
 
-def precipitation(a, b, t: int, name: str = "RAINNC") -> dict:
+def cell_area(state_path: Path, a):
+    """`A_ij = DX*DY / MAPFAC_M**2`, from a file that carries the map factor.
+
+    The forecast frames here do not; `wrfinput_d01` does. Without it every
+    spatial statistic is a grid-cell one, which this module labels as such.
+    """
+    import netCDF4
+    import numpy as np
+    d = netCDF4.Dataset(str(state_path))
+    mf = np.asarray(d["MAPFAC_M"][0], dtype="float64")
+    dx, dy = float(d.getncattr("DX")), float(d.getncattr("DY"))
+    # The map factor must be THIS domain's. A wrfinput from another run of the
+    # same grid size would pass silently and weight every cell wrongly.
+    ref = a["RAINNC"].shape[-2:] if "RAINNC" in a.variables else a["T"].shape[-2:]
+    if mf.shape != tuple(ref):
+        raise SystemExit(f"MAPFAC_M is {mf.shape}, the forecast grid is {tuple(ref)}")
+    for key in ("DX", "DY"):
+        if key in a.ncattrs() and abs(float(a.getncattr(key)) - (dx if key == "DX" else dy)) > 1e-6:
+            raise SystemExit(f"{key} differs between the map-factor file and the forecast")
+    return dx * dy / (mf * mf)
+
+
+def precipitation(a, b, t: int, name: str = "RAINNC", area=None) -> dict:
     """Signed and thresholded, because `|dP|` cannot tell more rain from
     rain somewhere else."""
     import numpy as np
@@ -93,20 +115,30 @@ def precipitation(a, b, t: int, name: str = "RAINNC") -> dict:
     # is, and the cancellation RATIO is dimensionless and unaffected either way
     # (owner review §11). A volume needs cell areas, which this frame does not
     # carry, so it is not claimed.
+    # GRID-CELL mean, not area-weighted. On a map projection the cells differ
+    # in area, so this is a model-grid statistic and not a domain precipitation
+    # depth; a volume would need MAPFAC_M, which this frame does not carry
+    # (owner review §12.2).
     out = {"field": name, "frame": t,
-           "signed_domain_mean_mm": float(d.mean()),
+           "signed_gridcell_mean_mm": float(d.mean()),
            "signed_sum_mm_times_columns": float(d.sum()),
            "gross_sum_mm_times_columns": float(np.abs(d).sum()),
            "cancellation_ratio": (float(abs(d.sum()) / np.abs(d).sum())
                                   if np.abs(d).sum() else None),
            "columns": int(d.size)}
+    if area is not None:
+        # AREA-WEIGHTED, which a grid-cell mean is not on a map projection.
+        # Volume in m^3 of liquid water: mm -> m is 1e-3.
+        out["area_weighted_mean_mm"] = float((d * area).sum() / area.sum())
+        out["signed_volume_m3"] = float((d * area).sum() * 1e-3)
+        out["gross_volume_m3"] = float((np.abs(d) * area).sum() * 1e-3)
     for thr in (1e-3, 1e-2, 1e-1):
         out[f"fraction_over_{thr:g}mm"] = float((np.abs(d) > thr).mean())
         out[f"columns_over_{thr:g}mm"] = int((np.abs(d) > thr).sum())
     return out
 
 
-def reflectivity(a, b, t: int, name: str = "REFL_10CM") -> dict:
+def reflectivity(a, b, t: int, name: str = "REFL_10CM", area=None) -> dict:
     """Screened to the physical range, in linear Z, and as threshold AREAS."""
     import numpy as np
     x = np.asarray(a[name][t], dtype="float64")
@@ -123,9 +155,19 @@ def reflectivity(a, b, t: int, name: str = "REFL_10CM") -> dict:
         zx, zy = 10.0 ** (x[ok] / 10.0), 10.0 ** (y[ok] / 10.0)
         r = np.where(zx > 0, zy / np.where(zx > 0, zx, 1.0), np.nan)
         out["linear_Z_ratio_p99"] = float(np.nanpercentile(r, 99))
+    # CELL COUNTS, not areas. A physical area needs the map factor,
+    #     A_ij = DX*DY / MAPFAC_M_ij**2
+    # and this frame does not carry MAPFAC_M, so the count is reported as a
+    # count and the word "area" is not used (owner review §12.1).
     for thr in (10.0, 20.0, 30.0, 40.0):
-        out[f"area_over_{thr:g}dbz_np1"] = int(((x >= thr) & (x <= hi)).sum())
-        out[f"area_over_{thr:g}dbz_np2"] = int(((y >= thr) & (y <= hi)).sum())
+        ma, mb = (x >= thr) & (x <= hi), (y >= thr) & (y <= hi)
+        out[f"cells_over_{thr:g}dbz_a"] = int(ma.sum())
+        out[f"cells_over_{thr:g}dbz_b"] = int(mb.sum())
+        if area is not None:
+            # the column is a cell; area weighting collapses the vertical
+            ca, cb = ma.any(axis=0), mb.any(axis=0)
+            out[f"area_km2_over_{thr:g}dbz_a"] = float((ca * area).sum() * 1e-6)
+            out[f"area_km2_over_{thr:g}dbz_b"] = float((cb * area).sum() * 1e-6)
     return out
 
 
@@ -138,8 +180,12 @@ def main() -> int:
     ap.add_argument("--frames", default="1,5,10")
     ap.add_argument("--fixed-mask-frame", type=int, default=1)
     ap.add_argument("--json", type=Path, default=None)
+    ap.add_argument("--mapfac-from", type=Path, default=None,
+                    help="a file carrying MAPFAC_M and DX/DY (wrfinput_d01); "
+                         "enables area-weighted precipitation and area in km2")
     args = ap.parse_args()
     a, b = netCDF4.Dataset(str(args.run_a)), netCDF4.Dataset(str(args.run_b))
+    area = cell_area(args.mapfac_from, a) if args.mapfac_from else None
     frames = [int(f) for f in args.frames.split(",")]
 
     cov = coverage(a, b)
@@ -171,24 +217,24 @@ def main() -> int:
                   f"{r['domain_p99']:11.3e} "
                   f"{r.get('fixed_mask_median', float('nan')):15.3e}")
         if "RAINNC" in a.variables:
-            doc["precipitation"].append(precipitation(a, b, t))
+            doc["precipitation"].append(precipitation(a, b, t, area=area))
         if "REFL_10CM" in a.variables:
-            doc["reflectivity"].append(reflectivity(a, b, t))
+            doc["reflectivity"].append(reflectivity(a, b, t, area=area))
 
-    print(f"\n  {'t':>3s} {'signed mean (mm)':>17s} {'cancel ratio':>13s} "
+    print(f"\n  {'t':>3s} {'signed cell-mean':>17s} {'cancel ratio':>13s} "
           f"{'>1e-3':>9s} {'>1e-2':>9s} {'>1e-1':>9s}")
     for r in doc["precipitation"]:
-        print(f"  {r['frame']:>3d} {r['signed_domain_mean_mm']:17.4e} "
+        print(f"  {r['frame']:>3d} {r['signed_gridcell_mean_mm']:17.4e} "
               f"{r['cancellation_ratio']:13.4f} "
               f"{r['fraction_over_0.001mm']:8.3%} "
               f"{r['fraction_over_0.01mm']:8.3%} {r['fraction_over_0.1mm']:8.3%}")
 
     print(f"\n  {'t':>3s} {'in-range':>9s} {'screened p99':>13s} "
-          f"{'>20dBZ np1':>11s} {'>20dBZ np2':>11s}")
+          f"{'>20dBZ cells a':>14s} {'cells b':>9s}")
     for r in doc["reflectivity"]:
         print(f"  {r['frame']:>3d} {r['physical_fraction']:8.3%} "
               f"{r.get('screened_p99_dbz', float('nan')):13.4f} "
-              f"{r['area_over_20dbz_np1']:11d} {r['area_over_20dbz_np2']:11d}")
+              f"{r['cells_over_20dbz_a']:14d} {r['cells_over_20dbz_b']:9d}")
 
     if args.json:
         args.json.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n")

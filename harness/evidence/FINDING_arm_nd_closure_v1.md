@@ -82,15 +82,55 @@ numbers, because on the first call the pre-sed `qv` IS the window's initial
 two thousand times better. Column 3 leaves 6.641e-04, which is 0.9 % of the
 legacy defect there while the other two are at 0.003 %.
 
-Why column 3 and not the others is NOT established. The obvious candidate is
-refuted: `qv` moves by 99.9 %, 99.9 % and 99.5 % of its initial value in the
-three columns, so the size of the excursion does not distinguish them. What is
-different is the legacy defect itself -- 7.330e-02 in column 3 against about
-1.05e-02 in the others.
+**Why column 3, answered.** This finding first said the candidate was refuted,
+because `qv` moves by 99.9 %, 99.9 % and 99.5 % of its initial value in the
+three columns and the excursion therefore does not distinguish them. That
+measured the wrong quantity. Arm N_d weights by the CURRENT dry mass while the
+ledger is taken in the window-initial one, so what a transfer leaves is not the
+size of the moisture excursion but the mismatch between the two ratios,
 
-So Arm N_d closes the immutable physical ledger on the first call and in two
-columns of three over the window. The third is an open residual and this
-finding does not explain it.
+    eps(u->l, t) = (1+qv_u^0)(1+qv_l(t)) / [ (1+qv_l^0)(1+qv_u(t)) ] - 1
+
+weighted by the transfer that actually crossed. Summed over every call,
+sub-step and interface:
+
+| column | predicted | measured | ratio |
+|---|---|---|---|
+| 1 | 0.000e+00 | 2.781e-01 | -- |
+| 2 | 0.000e+00 | -9.596e-02 | -- |
+| **3** | **5.067e+02** | **5.059e+02** | **1.0017** |
+
+Column 3 is predicted to 0.17 %. Columns 1 and 2 predict exactly zero -- and
+an adversarial pass found WHY, which changes what those columns mean. Per call:
+
+| column | call | sum of interior transfers | max `eps` |
+|---|---|---|---|
+| 1 | 1 | 1.221e+02 | **0** |
+| 1 | 2..12 | **0.000** | 2.6e-03 |
+| 3 | 1 | 1.209e+02 | 0 |
+| 3 | 2..12 | 36..39 each | 2.6e-03 |
+
+In columns 1 and 2 every interior transfer happens on call 1, where `eps` is
+zero by construction, and on every later call -- where `eps` is not zero --
+nothing crosses an interior interface. **Those two columns never tested the
+moving measure at all.** Their "closure" says only that nothing moved after the
+first call. Column 3 is the one column where transfer continues after `q` has
+moved, and it is the only test in this table.
+
+The 0.17 % gap in column 3 is NOT rounding: it is 789 times the f32 input
+resolution of a sum that size. The formula is first-order in the measure
+mismatch and the gap is what it leaves out. Whether the interface cap
+contributes is not determined here: the CAPIN departure-vs-arrival test fires
+at 25 of 36 records in column 3, but under a density-weighted arm a departure
+that differs from its arrival IS the weight, not a bound cap, so that
+instrument cannot tell the two apart for this arm. The gap is recorded as a
+first-order truncation of unknown composition.
+
+So the remainder is not unexplained and it is not a property of the arm's
+algebra: it is the cost of weighting by a measure that moves while the ledger
+does not. An arm that froze the dry mass at call entry would drive it to the
+same roundoff the other two columns already sit at, and that is the arm the
+next experiment should build.
 
 ## The uniform-moisture control, and what it revealed
 
