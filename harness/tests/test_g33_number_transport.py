@@ -1364,3 +1364,49 @@ def test_the_bottom_cell_is_not_counted_as_an_interior_interface():
                                2: (2.0, 0.5, 7.0, 1.0)}),   # bottom capped
                  flux={(1, 1): {"bottom_falln_nr": 7.0, "nflux_dtcld": 1.0}})
     assert nt.interior_cap_binds(call, 1, "nr") is False
+
+
+def test_every_arm_the_driver_can_emit_has_a_registered_transfer_metric():
+    """The registry's keys ARE the driver's `ALGOTAG` strings.
+
+    `number_transfer_metric` is a total function that refuses an unknown name,
+    which is only a safety net if the names it knows are the names a stream can
+    actually carry. They are maintained in two places -- the Fortran cascade
+    and the Python table -- so this pins them equal in both directions. It
+    caught `cons` against the driver's `conservative` the day it was written.
+    """
+    import re
+    driver = (Path(__file__).resolve().parents[1]
+              / "g33_fortran" / "g33_refine_driver.f90").read_text()
+    emitted = set(re.findall(r"ALGOTAG = '([a-z_0-9]+)'", driver))
+    assert emitted, "no ALGOTAG assignments found; the cascade moved"
+    registered = set(nt.NUMBER_TRANSFER_METRIC)
+    assert emitted == registered, (
+        f"only the driver knows: {sorted(emitted - registered)}; "
+        f"only the table knows: {sorted(registered - emitted)}")
+
+
+def test_the_dry_arms_are_not_read_with_the_moist_measure():
+    """The substring bug, pinned so it cannot come back.
+
+    `nmass_dry` and `nmass_dry_window` both contain `nmass` and both weight by
+    a DRY mass. A predicate keyed on the substring called them moist, which
+    inverted which ledger appeared to close (owner review §9).
+    """
+    assert nt.number_transfer_metric("nmass") == "moist_layer_mass"
+    assert nt.number_transfer_metric("nmass_dry") == "current_dry_layer_mass"
+    assert nt.number_transfer_metric("nmass_dry_window") == "window_dry_layer_mass"
+    # and the measures they produce are actually different
+    den, dz, qv = [1.2, 1.0], [100.0, 120.0], [0.02, 0.01]
+    mdry0 = [80.0, 90.0]
+    got = {m: nt.number_transfer_weights(m, den, dz, qv, mdry0)[1]
+           for m in ("thickness", "moist_layer_mass",
+                     "current_dry_layer_mass", "window_dry_layer_mass")}
+    assert len(set(got.values())) == 4, got
+
+
+def test_an_unregistered_arm_stops_the_read_instead_of_guessing():
+    with pytest.raises(ValueError, match="not a registered arm"):
+        nt.number_transfer_metric("nmass_dry_experimental")
+    with pytest.raises(ValueError, match="not a name"):
+        nt.number_transfer_metric(None)

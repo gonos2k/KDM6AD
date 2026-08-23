@@ -220,22 +220,129 @@ SPECIES = {"nr": ("main", "bottom_falln_nr", False),
            "qr": ("main", None, True),
            "qi": ("ice", None, True)}
 
-#: Algorithms whose NUMBER transfer carries the layer air-mass ratio. Read
-#: from the stream's own header, so an artifact answers for the operator that
-#: made it rather than for whichever the reader assumed.
-def number_carries_density(algorithm) -> bool:
-    """Does this arm's number transfer carry the layer air-mass ratio?
+#: WHICH LAYER MEASURE each arm's NUMBER transfer weights by. Read from the
+#: stream's own header, so an artifact answers for the operator that made it
+#: rather than for whichever the reader assumed.
+#:
+#: Every entry is transcribed from that arm's transfer statement, where the
+#: Fortran's `k+1` is this analyzer's `t-1` (the source layer, since `ks` is
+#: sorted with 0 = TOP):
+#:
+#:     legacy, lncmin, cons, cons_lncmin
+#:         falkn*delz(k+1)/delz(k)                          -> thickness
+#:     nmass, nmasslncmin, cons_nmass, cons_nmasslncmin
+#:         falkn*dend(k+1)*delz(k+1)/(dend(k)*delz(k))      -> moist layer mass
+#:     nmass_dry
+#:         ...*(1.+q(k)) / (...*(1.+q(k+1)))                -> CURRENT dry mass
+#:     nmass_dry_window
+#:         falkn*mdry0(k+1)/mdry0(k)                        -> WINDOW dry mass
+#:
+#: The KEYS are the driver's own `ALGOTAG` strings, which are what a stream
+#: carries -- not the variant file names, which differ (`conservative` against
+#: `module_mp_kdm6_cons.F`). A test pins the two sets equal.
+NUMBER_TRANSFER_METRIC = {
+    "legacy": "thickness",
+    "lncmin": "thickness",
+    "conservative": "thickness",
+    "cons_lncmin": "thickness",
+    "nmass": "moist_layer_mass",
+    "nmasslncmin": "moist_layer_mass",
+    "cons_nmass": "moist_layer_mass",
+    "cons_nmasslncmin": "moist_layer_mass",
+    "nmass_dry": "current_dry_layer_mass",
+    "nmass_dry_window": "window_dry_layer_mass",
+}
 
-    Keyed on the ARM'S OWN NAME containing the N edit's tag, not on a list of
-    names. A set had exactly `nmass` in it, so every COMBINED arm --
-    `nmasslncmin`, `cons_nmass`, `cons_nmasslncmin` -- was read back with the
-    thickness-only weight, which reconstructs the wrong transfers and reports
-    a residual that did not happen. Measured: `nmass` closed to 1e-17 while
-    `nmasslncmin`, the same edit plus an unrelated one, appeared WORSE than
-    legacy. That is the analyzer, not an interaction -- and it is the second
-    time this exact confusion has cost a reading.
+
+def number_transfer_metric(algorithm) -> str:
+    """Which layer measure does this arm's number transfer weight by?
+
+    A TOTAL function over the registry above, which refuses a name it does not
+    know. It replaces a boolean that answered `"nmass" in algorithm`, and the
+    history of that boolean is the argument for this shape:
+
+    * First it was a SET containing exactly `nmass`, so every combined arm --
+      `nmasslncmin`, `cons_nmass`, `cons_nmasslncmin` -- was read back with the
+      thickness weight. `nmass` closed to 1e-17 while `nmasslncmin`, the same
+      edit plus an unrelated one, appeared WORSE than legacy.
+    * Then it was the substring test, which fixed those four and silently
+      swallowed two more: `nmass_dry` and `nmass_dry_window` contain `nmass`
+      and weight by a DRY mass, so both were inverted with the moist measure.
+
+    Both bugs are the same bug -- a name being asked a question it cannot
+    answer -- and both were silent, because a wrong weight still produces
+    numbers. A substring test cannot fail; a lookup can, and an unknown arm now
+    stops the read instead of guessing at it (owner review §9).
     """
-    return isinstance(algorithm, str) and "nmass" in algorithm
+    if not isinstance(algorithm, str):
+        raise ValueError(
+            f"number transfer metric: algorithm is {algorithm!r}, not a name; "
+            f"the stream header is what carries it")
+    try:
+        return NUMBER_TRANSFER_METRIC[algorithm]
+    except KeyError:
+        raise ValueError(
+            f"number transfer metric: {algorithm!r} is not a registered arm. "
+            f"Add it to NUMBER_TRANSFER_METRIC with the measure its transfer "
+            f"statement actually uses -- do not let it default. Known: "
+            f"{', '.join(sorted(NUMBER_TRANSFER_METRIC))}") from None
+
+
+def number_layer_measure(metric, den, dz, qv=None, mdry0=None):
+    """The per-level measure whose RATIO is the arm's transfer weight.
+
+    `den`, `dz`, `qv` are per-level lists in the analyzer's order (0 = TOP);
+    `mdry0` is the window-initial dry layer MASS, which already contains its
+    own thickness and so is returned as given.
+    """
+    n = len(dz)
+    if metric == "thickness":
+        return list(dz)
+    if metric == "moist_layer_mass":
+        return [den[t] * dz[t] for t in range(n)]
+    if metric == "current_dry_layer_mass":
+        if qv is None:
+            raise ValueError(f"{metric} needs this call's qv")
+        return [den[t] / (1.0 + qv[t]) * dz[t] for t in range(n)]
+    if metric == "window_dry_layer_mass":
+        if mdry0 is None:
+            raise ValueError(
+                f"{metric} needs the WINDOW-INITIAL dry mass, which a single "
+                f"call's record does not carry")
+        return list(mdry0)
+    raise ValueError(f"unknown number transfer metric {metric!r}")
+
+
+def number_layer_density(metric, den, qv=None, dry=None):
+    """The DENSITY half of the arm's measure, for the closed form
+
+        R = sum_j a_j dz_j ( B_{j+1} A_j / A_{j+1} - B_j )
+
+    which keeps the thickness separate and so needs `A` alone rather than the
+    layer mass. Exact while the thickness the arm weighted by is the thickness
+    the ledger measures with -- true under the harness's fixed forcing, where
+    `delz` does not move across the window.
+    """
+    if metric == "thickness":
+        return [1.0] * len(den)
+    if metric == "moist_layer_mass":
+        return list(den)
+    if metric == "current_dry_layer_mass":
+        if qv is None:
+            raise ValueError(f"{metric} needs this call's qv")
+        return [den[t] / (1.0 + qv[t]) for t in range(len(den))]
+    if metric == "window_dry_layer_mass":
+        if dry is None:
+            raise ValueError(f"{metric} needs the window-initial dry density")
+        return list(dry)
+    raise ValueError(f"unknown number transfer metric {metric!r}")
+
+
+def number_transfer_weights(metric, den, dz, qv=None, mdry0=None):
+    """`w[0] = 0`; `w[t] = measure[t-1] / measure[t]`, the ratio the arm applied
+    when it moved number from `t-1` into `t`."""
+    m = number_layer_measure(metric, den, dz, qv, mdry0)
+    return [0.0] + [m[t - 1] / m[t] for t in range(1, len(m))]
 
 
 def _f32(h: str) -> float:
@@ -1094,13 +1201,16 @@ def transfers(x, x_post, w):
     return a
 
 
-def column(call, col, species):
+def column(call, col, species, mdry0=None):
     """One (call, column, species): measured residual and predicted creation, or
-    None where the sub-step count makes the transfers unrecoverable."""
+    None where the sub-step count makes the transfers unrecoverable.
+
+    `mdry0` is the window-initial dry layer mass, per level in this column's
+    order, required only by the arm that weights by it -- see
+    `number_transfer_metric`. Without it that arm returns None rather than a
+    reading taken with the wrong measure.
+    """
     chain, fkey, carries_density = SPECIES[species]
-    if species in ("nr", "ni") and \
-            number_carries_density(call.get("algorithm")):
-        carries_density = True
     lp = single_loop(call)
     if call["mstep"].get((lp, chain, col)) != 1:
         return None
@@ -1110,8 +1220,21 @@ def column(call, col, species):
     dz = [pre[(lp, col, k)]["delz"] for k in ks]
     x = [pre[(lp, col, k)][species] for k in ks]
     x1 = [post[(lp, col, k)][species] for k in ks]
-    w = [0.0] + [dz[t - 1] / dz[t] * (den[t - 1] / den[t] if carries_density else 1.0)
-                 for t in range(1, len(ks))]
+    if species in ("nr", "ni"):
+        # THE ARM'S OWN MEASURE. The mass species keep their per-species
+        # default; only the number transfer is what the N-family edits change.
+        metric = number_transfer_metric(call.get("algorithm"))
+        if metric == "window_dry_layer_mass" and mdry0 is None:
+            # Honest refusal, on the same footing as mstep > 1: this arm's
+            # weight is the WINDOW-INITIAL dry mass and one call's record does
+            # not carry it. Inverting with any other measure would return
+            # transfers that did not happen.
+            return None
+        qv = [pre[(lp, col, k)]["qv"] for k in ks] if "qv" in pre[(lp, col, ks[0])] else None
+        w = number_transfer_weights(metric, den, dz, qv, mdry0)
+    else:
+        w = [0.0] + [dz[t - 1] / dz[t] * (den[t - 1] / den[t] if carries_density else 1.0)
+                     for t in range(1, len(ks))]
     a = transfers(x, x1, w)
 
     n0w = sum(den[t] * dz[t] * x[t] for t in range(len(ks)))
