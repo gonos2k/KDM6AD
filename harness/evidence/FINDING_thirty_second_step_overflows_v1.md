@@ -62,6 +62,62 @@ consistent with the site rather than an additional fact about land -- but it
 does mean the defect is common in the part of the domain that has the ice phase,
 not rare.
 
+## The mechanism, measured -- two thresholds for one question
+
+The first account of this said "the guard closes one line too early". The review
+objected that moving an `endif` would not make the mass, number and volume
+updates consistent, and it was right for a reason neither of us had yet: **the
+defect is two different existence tests for the same physical question.**
+
+`rhox` is computed in exactly one place, `ProgB_param`, called at line 1325
+before the melt:
+
+    if (qrs(i,k,3).gt. qcrmin .or. brs(i,k).gt. brs_min) then
+        rhox(i,k) = qrs(i,k,3)/brs(i,k)
+        ... clamped to [rho_min, rho_max] = [100, 900] ...
+    endif
+
+and it is zeroed for every cell at the head of each sub-step (line 1013).
+**Once computed it is clamped to at least 100, so it can never be a small
+divisor** -- the only way to reach infinity is for it not to be computed at all.
+
+The melting block asks a different question:
+
+    if (qrs(i,k,3).gt. 0.) then          ! <- not qcrmin
+        pgmlt = min(max(pgmlt*dtcld, -qrs(i,k,3)), 0.)
+        ...
+        brs(i,k) = brs(i,k) + (pgmlt(i,k)/rhox(i,k))
+
+So the window is `0 < qg <= qcrmin` **and** `brs <= brs_min`: graupel present
+enough to melt, not present enough to have a density.
+
+### Verified from the stream, without a probe
+
+The stage dump carries `qg` and `brs`, so the operands are already recorded.
+Column `(100,142)`, 20 s, at the level whose `brs` goes non-finite, entering the
+melt (`outer_post_sed`):
+
+| | value | test |
+|---|---|---|
+| `qg` | 8.29644e-13 | `> 0` **yes**, `<= qcrmin = 1e-9` **yes** |
+| `brs` | 9.21827e-16 | `<= brs_min = 1e-15` **yes** |
+| `t` | 286.117 K | above freezing, so melting fires |
+
+Every predicted condition holds. And `pgmlt` is already capped at
+`-qrs(i,k,3)`, so the review's concern that it might exceed the available
+graupel does not apply -- post-melt `qg` is exactly `0.0`, the cap bound.
+
+### What that means for a fix
+
+Not "move the `endif`". The melt block and `ProgB_param` must ask the same
+question. Either the melt uses `qg > qcrmin .or. brs > brs_min`, or the `brs`
+update is guarded on `rhox > 0` and the leftover `qg` below `qcrmin` is disposed
+of consistently across mass, number and volume. Clamping the denominator is the
+wrong repair: a small `rhox` would turn a negligible melt into a large bulk
+volume, which is why `ProgB_param` clamps to `[100, 900]` in the first place.
+
+This is a kernel change to frozen code and is NOT made here.
+
 ## The site
 
 `module_mp_kdm6.F`, the graupel-melting block:
