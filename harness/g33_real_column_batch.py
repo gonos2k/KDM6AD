@@ -163,13 +163,19 @@ def main() -> int:
                          f"previous batch did not restore it. Inspect before "
                          f"running another.")
     lock = REPO / ".g33-fixture-lock"
-    if lock.exists():
+    # ATOMIC. `if exists: ... write` is a race with exactly the window it is
+    # meant to close -- two starters can both pass the test. O_CREAT|O_EXCL is
+    # one syscall and cannot.
+    try:
+        fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+    except FileExistsError:
         raise SystemExit(
             f"{lock.name} is held by: {lock.read_text().strip()}\n"
             f"The committed fixture is a compile-time constant, so two writers "
             f"produce a kernel built from two different columns. Wait, or "
-            f"remove the lock if that process is gone.")
-    lock.write_text(f"pid {os.getpid()}, {a.columns} columns, state {a.state}\n")
+            f"remove the lock if that process is gone.") from None
+    with os.fdopen(fd, "w") as fh:
+        fh.write(f"pid {os.getpid()}, {a.columns} columns, state {a.state}\n")
     print(f"  NOTE: {MANIFEST.name} and its generated .f90/.h are rewritten per "
           f"column until this finishes.\n"
           f"        Nothing else may build a fixture meanwhile -- not the test "
@@ -201,6 +207,18 @@ def main() -> int:
                     rejected.append(dict(meta, stage="build_or_run",
                                          reason=str(exc)[:200]))
                     print(f"  ({j},{i}) {exc}")
+                    continue
+                except Exception as exc:
+                    # A COLUMN THAT KILLS THE KERNEL IS A RESULT, not a crash.
+                    # One column emitted -inf at a 30 s call step and the
+                    # StreamError -- which is not a SystemExit -- aborted the
+                    # remaining nineteen. The sample now records it and goes on,
+                    # with the exception type named so a parser defect and a
+                    # kernel defect are not filed as the same thing
+                    # (FINDING_thirty_second_step_overflows_v1).
+                    rejected.append(dict(meta, stage="build_or_run",
+                                         reason=f"{type(exc).__name__}: {exc}"[:200]))
+                    print(f"  ({j},{i}) {type(exc).__name__}: {str(exc)[:90]}")
                     continue
             leg, nm = legs[nsplits[0]], nms[nsplits[0]]
             row = dict(meta,

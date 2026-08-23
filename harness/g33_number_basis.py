@@ -304,7 +304,8 @@ def from_stream(text: str, species: str = "nr") -> dict:
     call = nt.calls(text)[0]
     loop = nt.single_loop(call)
     pre, post = call["outer_pre_sed"], call["outer_post_sed"]
-    metric = nt.number_transfer_metric(call.get("algorithm"))
+    metric = nt.number_transfer_metric(call.get("algorithm"),
+                                       call.get("declared_metric"))
     out = {}
     for col in sorted({c for l, c, _k in pre if l == loop}):
         ks = sorted(k for l, c, k in pre if c == col and l == loop)
