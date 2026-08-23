@@ -53,6 +53,11 @@ grows with rank count. It is not:
 | `REFL_10CM` screened p99 | 0.784 dBZ | 0.803 dBZ |
 | cells over 20 dBZ (`np = 1`: 47 408) | 47 471 | 47 456 |
 
+**Three** independent runs at each rank count, not two: all nine pairwise
+comparisons (three per rank count, at `np` = 1, 2 and 4) are bit-identical
+across all 197 f32 time-varying fields. `D_within = 0` exactly, and
+`D_between` is unchanged at 75 fields for `np = 2` and 77 for `np = 4`.
+
 By one minute the two are indistinguishable in scale, and they stay so for ten.
 The single-field `np = 2` result was the SEED, one step in, and it cascades to
 the same place.
@@ -109,3 +114,29 @@ same threshold and the scalar holds what the array would have held -- so
 `ncmin` is identical under every decomposition and cannot produce a difference
 between them. Confirmed directly: an Arm L binary is bit-identical to legacy at
 `np = 1` on this case. See `FINDING_arm_l_mpi_null_v1.md`.
+
+## Authority, as of the arm-C round
+
+Superseded readings are kept in the sections above so the correction is legible;
+this table is what the evidence now says. Where they disagree, this table wins.
+
+| | grade |
+|---|---|
+| Same decomposition reproduces exactly (`D_within = 0`, 3 runs x 3 rank counts) | CONFIRMED |
+| Different decompositions diverge (`D_between` = 75 / 77 fields at 1 min) | CONFIRMED, one case and build |
+| Deployed `np = 2`, one-step `QNCCN` band | CONFIRMED -- per-tile whole-memory reinitialisation, `FINDING_ccn_overwrites_microphysics_v1` |
+| Halo input defect (`delz` and `xland` read unexchanged) | CONFIRMED -- `FINDING_qnccn_first_write_v1` |
+| Tile-bounds fix removes the `np > 1` difference | REFUTED -- 75 to 49, and 77 unchanged |
+| Tile-bounds fix leaves `np = 1` unchanged | REFUTED -- 75 of 197 fields |
+| `np = 2` residual after the fix | OPEN -- `QNCCN` alone, 0.39 % of cells |
+| `np = 4` upstream `dz8w` seam difference | MEASURED; source and numerical significance OPEN |
+| Ten-minute multi-field cascade | MEASURED; process-by-process propagation OPEN |
+| `ncmin` as a cause | REFUTED for this case -- both thresholds are 10 |
+| Forecast-skill impact | UNMEASURED |
+
+Two phrases in the sections above were wrong and are corrected where they
+appear: "tile-boundary mechanism" (`np = 1` is already two tiles and is
+bit-identical to itself; what `np = 2` adds is an MPI PATCH) and "not a boundary
+artefact" (a wide terminal footprint does not refute a boundary origin). The
+"7-row seed propagates to a 140-row footprint" account is superseded outright by
+the per-tile overwrite, which predicts the band exactly.
