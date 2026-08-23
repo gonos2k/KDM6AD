@@ -1,68 +1,56 @@
-# The `-inf` was two processes sharing one compile-time fixture
+# RETRACTED: the `-inf` was real, and my refutation of it was not
 
-The timestep-matrix batch died on its fourth column with the stream parser
-refusing a record:
+This finding claimed that a `-inf` emitted during the timestep-matrix batch came
+from two processes sharing the compile-time fixture, and that it "does not
+reproduce". **Both claims were wrong.** The retraction is kept here rather than
+deleted, because the way it was wrong is the point.
+
+## What the finding said
+
+The batch died on its fourth column with
 
     StreamError: STAGE f32 payload is -inf:
       'G33F STAGE 1 - micro_post_melt 0 brs 1 26 f32 FF800000'
 
-A kernel emitting `-inf` for a bulk density is a finding if it is real. It is
-not real.
+and I attributed it to a concurrent test suite regenerating the fixture between
+the tool's write and its build, producing a kernel whose `.f90` and `.h` held
+different columns.
 
-## It does not reproduce
+## Why that was wrong
 
-Column `(j, i) = (71, 147)`, `legacy`, the same four call steps, run alone --
-decoding every `f32`/`f64` payload rather than testing the line for a substring:
+**The rerun was serial, and it died in the same place.** No other writer, same
+column, same record.
 
-    nsplit 12  ( 5 s)   0 non-finite
-    nsplit  6  (10 s)   0 non-finite
-    nsplit  3  (20 s)   0 non-finite
-    nsplit  2  (30 s)   0 non-finite
+**And my reproduction had skipped a step.** The batch does three things per
+column: write the manifest, run `g33_fixture_v1.py --write` to REGENERATE the
+`.f90` and `.h` from it, then build. My reproduction wrote the manifest and
+built. The generated sources are compile-time constants, so the build took
+whatever column was generated LAST -- not the one I had just written. The "0
+non-finite at every step" was measured on a different column.
 
-## What actually happened
+A reproduction that does not reproduce is evidence only if it is faithful. Mine
+was not, and it produced exactly the answer that let me stop looking.
 
-The fixture is a COMPILE-TIME constant. `g33_real_column_batch` therefore
-rewrites `harness/g33_fixture_lc05_column_v1.json` for every column and
-regenerates the `.f90` and `.h` beside it -- one fixed path in the working
-tree, not a private copy. Five test modules build fixtures through the same
-files.
+## What is actually true
 
-The full test suite was running concurrently. Between this tool's write and its
-build, the artefacts were regenerated, and the build took a `.f90` and a `.h`
-holding **different columns**. That kernel compiled, ran, and produced `-inf`
-from a state that never existed.
+With the generation step included, column `(j, i) = (71, 147)`, `legacy`:
 
-## Two things this costs, and one it does not
+    nsplit 12  ( 5 s call)    0 non-finite
+    nsplit  6  (10 s call)    0 non-finite
+    nsplit  3  (20 s call)    0 non-finite
+    nsplit  2  (30 s call)    8 non-finite   brs at level 26 = -inf
 
-It cost the timestep matrix, which is re-run serially.
+See `FINDING_thirty_second_step_overflows_v1.md`.
 
-It cost nothing else measured today: every other result came from a build that
-held the lock on its own inputs by being the only writer at the time. The
-23-column batch, the gradient-fixture arms and the MPI runs do not share this
-path with anything that ran beside them -- but nothing was ENFORCING that,
-which is the actual defect.
+## What survives
 
-It did NOT cost the earlier full-suite failure of
-`test_the_ONE_validator_reads_the_probe_arm_too`, which has the same shape --
-a suite run reading files while they were edited -- and the same cause: work
-running concurrently with something that owns global mutable state.
+The lock added alongside this finding is still worth having: the fixture IS a
+shared compile-time constant, five test modules build through the same files,
+and nothing was enforcing single-writer access. That hazard is real and was
+never demonstrated to have fired. The lock guards it; it did not cause this.
 
-## The fix
-
-An advisory lock. The tool refuses to start if `.g33-fixture-lock` exists,
-writes its pid and scope into it, and removes it where it restores the manifest.
-It already refused to start on a manifest dirty against HEAD; that catches a
-crashed predecessor and not a live peer.
-
-That is a guard and not a cure. The cure is a fixture that is not a shared
-compile-time constant, which is a build-system change and is not made here.
-
-## The instrument that reported it was also wrong
-
-The first attempt to reproduce this searched each line for the substring `inf`
-and reported thousands of hits at every step -- all of them the token
-`NR_INFLOW`. That is the same defect corrected in the analyzer the same day,
-where `"nmass" in algorithm` swallowed `nmass_dry`
-(`FINDING_arm_nd_closure_v1`, owner review §9). A substring test on a name
-cannot fail; it can only be wrong quietly. The measurement above decodes the
-payload.
+The instrument note also survives, and gained a second instance. My first
+reproduction searched each line for the substring `inf` and reported thousands
+of hits, all of them the token `NR_INFLOW` -- the same defect corrected in the
+analyzer the same day, where `"nmass" in algorithm` swallowed `nmass_dry`. Two
+substring bugs and one unfaithful reproduction, in one investigation.
