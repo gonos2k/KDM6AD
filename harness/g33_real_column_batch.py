@@ -110,12 +110,13 @@ def write_manifest(path: Path, j: int, i: int) -> dict:
             "density": "canonical mu_d|d(eta)|/g, rho_m = rho_d(1+qv)"}
 
 
-def residuals(build_root: Path, arm: str, nsplits=(12,)) -> dict:
+def residuals(build_root: Path, arm: str, nsplits=(12,), partial=True) -> dict:
     """Build one arm on the manifest as it currently stands; run it once per
     `nsplit`. The call step is `60 s / nsplit`, so 12, 6, 3, 2 give 5, 10, 20
     and 30 s -- the operational call is 20 s. `nsplit` is a runtime argument,
     so the timestep matrix costs no extra builds (owner review §9)."""
     import g33_number_basis as nb
+    import g33_number_transport as nt  # noqa: F401
     out = build_root / arm
     b = subprocess.run(
         ["bash", str(HERE / "g33_fortran" / "refine_build.sh"), str(out),
@@ -123,13 +124,27 @@ def residuals(build_root: Path, arm: str, nsplits=(12,)) -> dict:
         capture_output=True, text=True, cwd=REPO)
     if b.returncode != 0:
         raise SystemExit(f"{arm}: build failed\n{b.stdout[-800:]}{b.stderr[-800:]}")
-    got = {}
+    got, failed = {}, {}
     for n in nsplits:
         r = subprocess.run([str(out / "g33_refine_driver"), str(n), "rezero", "1"],
                            capture_output=True, text=True)
         if r.returncode != 0:
             raise SystemExit(f"{arm} nsplit={n}: driver crashed\n{r.stderr[-800:]}")
-        got[n] = nb.from_stream(r.stdout, "nr")[1]
+        try:
+            got[n] = nb.from_stream(r.stdout, "nr")[1]
+        except nt.StreamError as exc:
+            # ONE STEP'S VERDICT IS ITS OWN. A column that emits -inf at 30 s
+            # still ran at 5, 10 and 20; discarding those made the operational
+            # 20 s sample condition on surviving a step nothing uses, and cost
+            # four land columns with above-median fractions
+            # (FINDING_timestep_matrix_sample_v1).
+            if not partial:
+                raise
+            failed[n] = f"StreamError: {exc}"[:200]
+    if not got:
+        raise nt.StreamError(f"{arm}: no call step produced a readable stream; "
+                             + "; ".join(f"{k}:{v}" for k, v in failed.items()))
+    got["_failed_steps"] = failed
     return got
 
 
@@ -141,6 +156,7 @@ def main() -> int:
                     help="comma-separated; 12,6,3,2 is the 5/10/20/30 s matrix")
     ap.add_argument("--json", type=Path, default=None)
     a = ap.parse_args()
+    import g33_number_transport as nt
 
     # THIS TOOL OWNS SHARED, COMMITTED, MUTABLE STATE while it runs. The
     # fixture is a COMPILE-TIME constant, so every column rewrites
@@ -208,18 +224,24 @@ def main() -> int:
                                          reason=str(exc)[:200]))
                     print(f"  ({j},{i}) {exc}")
                     continue
-                except Exception as exc:
-                    # A COLUMN THAT KILLS THE KERNEL IS A RESULT, not a crash.
-                    # One column emitted -inf at a 30 s call step and the
-                    # StreamError -- which is not a SystemExit -- aborted the
-                    # remaining nineteen. The sample now records it and goes on,
-                    # with the exception type named so a parser defect and a
-                    # kernel defect are not filed as the same thing
-                    # (FINDING_thirty_second_step_overflows_v1).
+                except nt.StreamError as exc:
+                    # A COLUMN THAT KILLS THE KERNEL IS A RESULT, not a crash:
+                    # one emitted -inf at a 30 s step and aborted the remaining
+                    # nineteen. But catching `Exception` files a KeyError, a
+                    # parser regression and a corrupt file as though they were
+                    # data -- the sample then completes while measuring nothing,
+                    # which is worse than stopping. Only a StreamError is a
+                    # verdict about the RUN; everything else re-raises.
                     rejected.append(dict(meta, stage="build_or_run",
-                                         reason=f"{type(exc).__name__}: {exc}"[:200]))
-                    print(f"  ({j},{i}) {type(exc).__name__}: {str(exc)[:90]}")
+                                         reason=f"StreamError: {exc}"[:200]))
+                    print(f"  ({j},{i}) StreamError: {str(exc)[:90]}")
                     continue
+            if nsplits[0] not in legs or nsplits[0] not in nms:
+                rejected.append(dict(meta, stage="build_or_run",
+                                     reason=f"the headline step {60 // nsplits[0]}s "
+                                            f"did not produce a readable stream"))
+                print(f"  ({j},{i}) headline step failed")
+                continue
             leg, nm = legs[nsplits[0]], nms[nsplits[0]]
             row = dict(meta,
                        # the per-timestep matrix, ratio only: what the review
@@ -228,7 +250,15 @@ def main() -> int:
                        timestep_matrix={
                            f"{60 // n}s": (abs(nms[n]["dry_xfer"] / nms[n]["start_dry"])
                                            / abs(legs[n]["dry_xfer"] / legs[n]["start_dry"]))
-                           for n in nsplits if legs[n]["dry_xfer"]},
+                           for n in nsplits
+                           if n in legs and n in nms and legs[n]["dry_xfer"]},
+                       # named, so a step that failed is visible as a failure
+                       # rather than as an absence
+                       timestep_failed={
+                           f"{60 // n}s": (legs["_failed_steps"].get(n)
+                                           or nms["_failed_steps"].get(n))
+                           for n in nsplits
+                           if n in legs["_failed_steps"] or n in nms["_failed_steps"]},
                        legacy_moist=leg["moist"] / leg["start_moist"],
                        legacy_dry=leg["dry"] / leg["start_dry"],
                        # BOTH READERS, and `legacy_dry_xfer` was missing
@@ -250,11 +280,21 @@ def main() -> int:
                   f"armN_dry {row['armn_dry']:11.4e}  "
                   f"leaves {row['fraction_left']:.4%}")
     finally:
+        # ORDER MATTERS. Releasing the lock before the generated .f90/.h are
+        # back leaves a window in which a waiting process starts, sees the
+        # restored MANIFEST, and builds the PREVIOUS column's sources -- which
+        # is the contamination this lock exists to prevent, reintroduced by the
+        # release itself. Restore, regenerate, verify, and only then release.
         MANIFEST.write_text(keep)
-        (REPO / ".g33-fixture-lock").unlink(missing_ok=True)
         subprocess.run([sys.executable, str(HERE / "g33_fixture_v1.py"),
                         "--write", f"--fixture-id={FIXTURE_ID}"],
                        capture_output=True, text=True, cwd=REPO)
+        left = subprocess.run(["git", "status", "--porcelain", "--",
+                               str(MANIFEST), "harness/g33_fortran", "harness/g33_overlay"],
+                              capture_output=True, text=True, cwd=REPO).stdout.strip()
+        if left:
+            print(f"  WARNING: the tree is not back to HEAD after restore:\n{left}")
+        (REPO / ".g33-fixture-lock").unlink(missing_ok=True)
 
     if not rows:
         raise SystemExit("no column produced a usable pair")

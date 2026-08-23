@@ -1,4 +1,4 @@
-# A 30 s call step drives `brs` to `-inf` through an unguarded division
+# The OPERATIONAL call step drives `brs` to `-inf` on a real column
 
 The timestep-matrix batch died on a real column. The cause was not the harness
 (`FINDING_shared_fixture_contaminates_v1`, retracted); it is an unguarded
@@ -23,6 +23,27 @@ The first record is
 
 `FF800000` is `-inf`. **The operational call step is 20 s and is clean on this
 column**; the failure begins at 30 s.
+
+## CORRECTED: the operational step is not clean
+
+This finding said "the operational call step is 20 s and is clean on this
+column", and later that "no WRF run in this campaign used a 30 s microphysics
+step" as though that bounded the exposure. **Both generalised from one column.**
+
+Column `(100,142)`, also land, swept finely:
+
+| 5 s | 10 s | **15 s** | **20 s** | 30 s |
+|---|---|---|---|---|
+| 0 | 0 | **0** | **4** | 8 |
+
+`G33F STAGE 1 - micro_post_melt 0 brs 1 27 f32 FF800000` at the 20 s step --
+**the operational configuration.** So the threshold is a property of the column
+and not of the scheme: `(71,147)` first fails at 30 s and `(100,142)` at 20 s,
+and nothing measured here says where the next column fails.
+
+The claim that operations sit inside a safe margin is withdrawn. What is
+measured is that one of this sample's land columns produces a non-finite `brs`
+at the step operations use.
 
 ## It is not one column, and it is land
 
