@@ -4,6 +4,33 @@ Owner authorisation, 2026-08-23, to instrument the deployed tree. The question
 was the one `FINDING_qnccn_divergence_locus_v1` mapped but could not answer:
 where does `QNCCN` first differ between decompositions?
 
+## This is a RE-discovery, and the fix already exists
+
+Before anything below: the repository tree's kernel revision `9354141b` --
+the SHA-pinned reference every fixture result uses -- **already carries the
+fix**, with a comment that names the defect:
+
+> np>=2 nondeterminism root-fix: TILE bounds only (its:ite/jts:jte/kts:kte).
+> The previous ims:ime/jms:jme sweep read delz(=dz8w) in the HALO region, which
+> dynamics never writes (dz8w is tile-computed) -> uninitialized heap; the
+> garbage-seeded halo NN varied run-to-run (ASLR/heap state) and leaked into
+> the trajectory under domain decomposition (np2/np4 runs were not bitwise
+> reproducible; WSM6 control was). Tile-interior values are IDENTICAL to the
+> old loop (z_sum is a per-column recurrence), so np1 results are unchanged.
+
+So the mechanism below was found, understood and corrected before this campaign
+looked at it. What this finding adds is a direct measurement of it, and one
+operational fact: **the DEPLOYED binary does not have the fix.** Its revision
+`a06c954b` still loops over memory bounds, and every MPI result in this campaign
+was produced by it (`FINDING_two_wrf_trees_v1.md`).
+
+It also refines the comment in one place. The comment attributes the
+non-reproducibility to varying heap garbage; measured here, the halo `delz` is
+**deterministically 0.0000**, which is why the same-`np` repeats in
+`FINDING_mpi_repeatability_v1.md` came back bit-identical while `np = 1` and
+`np = 2` still differ. Both can hold on different hosts or allocators; on this
+one the garbage is a stable zero.
+
 ## The site
 
 `module_mp_kdm6.F`, run tree revision `a06c954b`, at `itimestep == 1`:
