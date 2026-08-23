@@ -73,7 +73,19 @@ def write_manifest(path: Path, j: int, i: int) -> dict:
     temp = th * (p / P0) ** (RD / CP)
     ph = (g("PH") + g("PHB"))[:, j, i]
     dz = np.diff(ph) / G
-    den = p / (RD * temp * (1.0 + 0.608 * qv))
+    # THE MODEL'S OWN DENSITY, not a thermodynamic estimate. WRF's hydrostatic
+    # relation makes `rho_d * dz = mu_d |d(eta)| / g` exact in its own
+    # discretisation, and the host forms the `rho` it hands to microphysics as
+    # `rho_d * (1 + qv)` (module_big_step_utilities_em.F:4856). The first
+    # version of this used `p / (Rd T (1 + 0.608 qv))`, which differs from the
+    # canonical route by a median 2.3e-03 and up to 31 % on this state
+    # (FINDING_number_basis_gap_v1). The replay column now carries the density
+    # the kernel would actually have been given (owner review §10.2).
+    mu = (np.asarray(d["MU"][-1], dtype="float64")
+          + np.asarray(d["MUB"][-1], dtype="float64"))[j, i]
+    dnw = np.asarray(d["DNW"][-1], dtype="float64")
+    rho_d = (mu * np.abs(dnw)) / G / dz
+    den = rho_d * (1.0 + qv)
     pii = (p / P0) ** (RD / CP)
     f2b = lambda v: struct.pack(">f", float(v)).hex()        # noqa: E731
     flip = lambda a: list(a[::-1])                           # WRF k=0 is BOTTOM
@@ -93,7 +105,8 @@ def write_manifest(path: Path, j: int, i: int) -> dict:
     MANIFEST.write_text(json.dumps(out, indent=2, sort_keys=True) + "\n")
     return {"j": j, "i": i, "xland": float(g("XLAND")[j, i]),
             "qv_surface": float(qv[0]), "qv_top": float(qv[-1]),
-            "nr_levels": int((g("QNRAIN")[:, j, i] > 0).sum())}
+            "nr_levels": int((g("QNRAIN")[:, j, i] > 0).sum()),
+            "density": "canonical mu_d|d(eta)|/g, rho_m = rho_d(1+qv)"}
 
 
 def residuals(build_root: Path, arm: str) -> dict:
