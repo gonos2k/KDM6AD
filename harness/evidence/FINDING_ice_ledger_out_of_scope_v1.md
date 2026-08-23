@@ -77,12 +77,27 @@ this fixture is **empty**, so the arms have nothing to be compared over. The
 review's redesign is runnable and returns nothing here -- which is a measurement,
 where this finding previously had an argument.
 
-### And the screen would not have caught it
+### And the tool's own screen says the same thing -- I had misread it
 
-`g33_matched_closure`'s own per-call screen is about **2.0 x the starting
-inventory**, so it admits a 200 % error. Counted against it, all 36 ice calls
-"close". Any headline taken from that number would have been meaningless; the
-tolerances above are measured against the quantity, not the screen.
+This section first claimed `g33_matched_closure`'s per-call screen "is about
+2.0 x the starting inventory, so it admits a 200 % error", and that all 36 ice
+calls "close" against it. **That was a misreading of the tool, not a defect in
+it.** `scale` is the SUM OF MAGNITUDES that cancelled -- `|start| + |final| +
+|surface|`, so about `2 x start` by construction -- and the screen is
+`control_tolerance(ops, scale) = gamma_n * scale`, which is smaller by the
+operation count.
+
+Measured against the tool's actual screen:
+
+| species | median tolerance / start | calls within tolerance |
+|---|---|---|
+| `qr` | 1.4305e-06 | **22** of 36 |
+| `qi` | 1.4270e-06 | **0** of 36 |
+
+which is exactly the hand-rolled sweep above -- 22 and 0 -- from the tool's own
+threshold rather than a tolerance chosen here. So the conclusion does not change
+and its support is stronger: the instrument had a tight screen all along, and
+reading `scale` as if it were that screen was mine.
 
 ## What would be needed
 

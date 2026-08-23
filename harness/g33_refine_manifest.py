@@ -343,9 +343,16 @@ _PRECISIONS = ("f32", "f64")
 #: number transfer carrying the layer air-mass ratio. A manifest may name it,
 #: which is a WIDENING -- every bundle published before it still validates,
 #: because nothing that was legal became illegal.
+#: `nmass_dry` (owner freeze-lift, 2026-08-22) and `nmass_dry_window` (owner
+#: approval, 2026-08-23) were added to the driver's cascade and NOT to this
+#: table, so a manifest naming either was rejected as "a run that could not have
+#: happened" while those runs were being made. The same drift, in the same week,
+#: as the number-transfer metric table -- a closed registry is only a safety net
+#: while it tracks its producer, and a test now pins this one to the cascade in
+#: both directions.
 _ALGOS = ("legacy", "conservative", "nmass", "lncmin",
           "nmasslncmin", "cons_nmass", "cons_lncmin",
-          "cons_nmasslncmin")
+          "cons_nmasslncmin", "nmass_dry", "nmass_dry_window")
 KNOWN_SCHEMAS = ("refinement_experiment_v1", "refinement_experiment_v2",
                  "refinement_experiment_v3", "refinement_experiment_v4",
                  "refinement_experiment_v5", "refinement_experiment_v6",
