@@ -172,7 +172,9 @@ between them. Confirmed directly: an Arm L binary is bit-identical to legacy at
                          (FINDING_qnccn_first_write_v1.md)
     Propagation          OPEN -- seven seed rows, a 140-row terminal footprint,
                          and nothing measured in between
-    Collapse on fixing   see FINDING_ccn_bounds_collapse_v1.md
+    Collapse on fixing   REFUTED -- see FINDING_ccn_bounds_collapse_v1.md;
+                         the single authority table is in
+                         FINDING_mpi_repeatability_v1.md
 
 This supersedes the sentence above that no mechanism is named. The seed is
 named; what is unnamed is how it reaches the interior.
