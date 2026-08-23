@@ -34,6 +34,36 @@ passes by three orders. The counterfactual chain is complete:
     legacy  ->  Arm N  ->  Arm N_d  ->  Arm N_d-window
     density term removed   moisture term removed   harness artefact removed
 
+## Against the screen, not against "small"
+
+The review asked for the closure to be reported against a bound rather than
+asserted from a magnitude. `g33_matched_closure` now carries one beside every
+residual, built from the terms that CANCELLED to make it -- `|start| + |final| +
+|surface|` per call, at that call's operation count -- rather than from the
+answer:
+
+| arm | col 1 | col 2 | col 3 |
+|---|---|---|---|
+| `legacy` | 1333.8 | 1242.5 | 6201.6 |
+| `nmass` | 23.25 | 26.56 | 157.2 |
+| `nmass_dry` | **0.037** | **0.012** | 56.26 |
+| **`nmass_dry_window`** | **0.041** | **0.0003** | **0.043** |
+
+as `|residual| / screening_bound`. The window arm is below the screen in all
+three columns; `nmass_dry` is below it in two and 56x above it in the third,
+which is the column this arm was built for.
+
+**A first version of this bound was built from `|residual| + |out|` and came out
+two orders too tight, failing every arm.** That is circular -- bounding the error
+by the size of the answer -- and the distinction is the whole point: what matters
+is how big the numbers that cancelled were, not how big what is left is.
+
+**And it is a SCREEN, not a certificate.** The module's own note on `_F32_EPS`
+says so and says why: the operation count is a floor, and `gamma_n` assumes a
+straight-line summation that a capped, branching kernel is not. Passing it means
+the accounting is not visibly missing a term. It does not mean the residual IS
+roundoff, and this finding does not say that.
+
 ## The uniform-moisture control
 
 `g33_fixture_boundary_mapping_v1`, where `qv` is uniform down each column at

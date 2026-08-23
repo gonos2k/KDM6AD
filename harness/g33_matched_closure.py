@@ -242,6 +242,30 @@ def measure_at(measure: dict, key, label: str) -> CellMeasure:
     return measure[key]
 
 
+def screening_bound(per_call) -> float:
+    """The scale below which this row's residual says nothing.
+
+    Built from the TERMS THAT CANCELLED, not from the answer. The residual is
+    `(final - start) + surface`, three quantities of similar size that mostly
+    destroy each other, so `sum|terms| ~ start + final + |surface|` per call --
+    and the f32 inputs each carry `U32` of THEIR magnitude into it however the
+    sum is then accumulated.
+
+    A first version of this built the bound from `|residual| + |out|`. That is
+    circular -- it bounds the error by the size of the answer -- and it came out
+    two orders too tight, which made every arm look unresolved. The distinction
+    is the whole point of a forward-error bound: how big were the numbers that
+    cancelled, not how big is what is left.
+    """
+    import sys as _s
+    from pathlib import Path as _P
+    _s.path.insert(0, str(_P(__file__).resolve().parent))
+    import g33_factorial as _gf
+    sum_abs = sum(e["scale"] for e in per_call)
+    ops = sum(e.get("ops", 12) for e in per_call)
+    return _gf._screen(sum_abs, int(ops) or 1)
+
+
 def closures(stream: str, basis: str = "operator") -> dict:
     """{(chain, species, col): {'out':…, 'residual':…, 'calls':…}}."""
     if basis not in MEASURES:
@@ -304,6 +328,14 @@ def closures(stream: str, basis: str = "operator") -> dict:
                             "start": x0, "final": x1,
                             "scale": abs(x0) + abs(x1) + abs(w * transfer),
                             "ops": len(ks) * (ms + 2)})
+    # THE SCREEN, carried beside every residual so a reader does not have to
+    # decide what "small" means. Below it the accounting is not visibly
+    # missing a term; it is NOT a certificate of roundoff, and the note on
+    # `_F32_EPS` says why (owner review 9.3).
+    for d in acc.values():
+        b = screening_bound(d.get("per_call") or [])
+        d["screening_bound"] = b
+        d["residual_over_bound"] = abs(d["residual"]) / b if b else None
     return acc
 
 
@@ -405,6 +437,14 @@ def analysis(stream: str, basis: str = "operator") -> dict:
             # Recorded so a reader can see cancellation rather than infer it
             # from a total that hides it (owner §14 priority-3).
             "control": control(d),
+            # THE SCREEN, carried beside the residual so a reader does not have
+            # to decide what "small" means. Below it, the accounting is not
+            # visibly missing a term; it is NOT a certificate of roundoff, and
+            # the note on `_F32_EPS` says why (owner review 9.3).
+            "screening_bound": screening_bound(d.get("per_call") or []),
+            "residual_over_bound": (
+                abs(d["residual"]) / screening_bound(d["per_call"])
+                if d.get("per_call") and screening_bound(d["per_call"]) else None),
             "number_result": (d["residual"] / d["out"]
                               if ok and d["out"] and not sp.startswith("q")
                               else None),
