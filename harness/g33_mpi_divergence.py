@@ -93,8 +93,12 @@ def precipitation(a, b, t: int, name: str = "RAINNC") -> dict:
     # is, and the cancellation RATIO is dimensionless and unaffected either way
     # (owner review §11). A volume needs cell areas, which this frame does not
     # carry, so it is not claimed.
+    # GRID-CELL mean, not area-weighted. On a map projection the cells differ
+    # in area, so this is a model-grid statistic and not a domain precipitation
+    # depth; a volume would need MAPFAC_M, which this frame does not carry
+    # (owner review §12.2).
     out = {"field": name, "frame": t,
-           "signed_domain_mean_mm": float(d.mean()),
+           "signed_gridcell_mean_mm": float(d.mean()),
            "signed_sum_mm_times_columns": float(d.sum()),
            "gross_sum_mm_times_columns": float(np.abs(d).sum()),
            "cancellation_ratio": (float(abs(d.sum()) / np.abs(d).sum())
@@ -123,9 +127,13 @@ def reflectivity(a, b, t: int, name: str = "REFL_10CM") -> dict:
         zx, zy = 10.0 ** (x[ok] / 10.0), 10.0 ** (y[ok] / 10.0)
         r = np.where(zx > 0, zy / np.where(zx > 0, zx, 1.0), np.nan)
         out["linear_Z_ratio_p99"] = float(np.nanpercentile(r, 99))
+    # CELL COUNTS, not areas. A physical area needs the map factor,
+    #     A_ij = DX*DY / MAPFAC_M_ij**2
+    # and this frame does not carry MAPFAC_M, so the count is reported as a
+    # count and the word "area" is not used (owner review §12.1).
     for thr in (10.0, 20.0, 30.0, 40.0):
-        out[f"area_over_{thr:g}dbz_np1"] = int(((x >= thr) & (x <= hi)).sum())
-        out[f"area_over_{thr:g}dbz_np2"] = int(((y >= thr) & (y <= hi)).sum())
+        out[f"cells_over_{thr:g}dbz_a"] = int(((x >= thr) & (x <= hi)).sum())
+        out[f"cells_over_{thr:g}dbz_b"] = int(((y >= thr) & (y <= hi)).sum())
     return out
 
 
@@ -175,20 +183,20 @@ def main() -> int:
         if "REFL_10CM" in a.variables:
             doc["reflectivity"].append(reflectivity(a, b, t))
 
-    print(f"\n  {'t':>3s} {'signed mean (mm)':>17s} {'cancel ratio':>13s} "
+    print(f"\n  {'t':>3s} {'signed cell-mean':>17s} {'cancel ratio':>13s} "
           f"{'>1e-3':>9s} {'>1e-2':>9s} {'>1e-1':>9s}")
     for r in doc["precipitation"]:
-        print(f"  {r['frame']:>3d} {r['signed_domain_mean_mm']:17.4e} "
+        print(f"  {r['frame']:>3d} {r['signed_gridcell_mean_mm']:17.4e} "
               f"{r['cancellation_ratio']:13.4f} "
               f"{r['fraction_over_0.001mm']:8.3%} "
               f"{r['fraction_over_0.01mm']:8.3%} {r['fraction_over_0.1mm']:8.3%}")
 
     print(f"\n  {'t':>3s} {'in-range':>9s} {'screened p99':>13s} "
-          f"{'>20dBZ np1':>11s} {'>20dBZ np2':>11s}")
+          f"{'>20dBZ cells a':>14s} {'cells b':>9s}")
     for r in doc["reflectivity"]:
         print(f"  {r['frame']:>3d} {r['physical_fraction']:8.3%} "
               f"{r.get('screened_p99_dbz', float('nan')):13.4f} "
-              f"{r['area_over_20dbz_np1']:11d} {r['area_over_20dbz_np2']:11d}")
+              f"{r['cells_over_20dbz_a']:14d} {r['cells_over_20dbz_b']:9d}")
 
     if args.json:
         args.json.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n")

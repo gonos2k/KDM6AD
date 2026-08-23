@@ -51,7 +51,7 @@ grows with rank count. It is not:
 | `RAINNC` gross domain sum | 1.252e+01 mm | 1.386e+01 mm |
 | columns over 0.1 mm | 0.042 % | 0.048 % |
 | `REFL_10CM` screened p99 | 0.784 dBZ | 0.803 dBZ |
-| area over 20 dBZ (`np = 1`: 47 408) | 47 471 | 47 456 |
+| cells over 20 dBZ (`np = 1`: 47 408) | 47 471 | 47 456 |
 
 By one minute the two are indistinguishable in scale, and they stay so for ten.
 The single-field `np = 2` result was the SEED, one step in, and it cascades to

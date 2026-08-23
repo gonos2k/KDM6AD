@@ -149,11 +149,19 @@ def main() -> int:
             row = dict(meta,
                        legacy_moist=leg["moist"] / leg["start_moist"],
                        legacy_dry=leg["dry"] / leg["start_dry"],
+                       # BOTH READERS, and `legacy_dry_xfer` was missing
+                       # entirely -- so the ratio could only ever be formed
+                       # from the recovered pair (owner review §10.1).
+                       legacy_dry_xfer=leg["dry_xfer"] / leg["start_dry"],
+                       legacy_moist_xfer=leg["moist_xfer"] / leg["start_moist"],
                        armn_moist_xfer=nm["moist_xfer"] / nm["start_moist"],
                        armn_dry=nm["dry"] / nm["start_dry"],
                        armn_dry_xfer=nm["dry_xfer"] / nm["start_dry"])
             row["fraction_left"] = abs(row["armn_dry"]) / abs(row["legacy_dry"]) \
                 if row["legacy_dry"] else None
+            row["fraction_left_xfer"] = (
+                abs(row["armn_dry_xfer"]) / abs(row["legacy_dry_xfer"])
+                if row["legacy_dry_xfer"] else None)
             rows.append(row)
             print(f"  ({j:3d},{i:3d}) xland={meta['xland']:.0f} "
                   f"legacy_dry {row['legacy_dry']:11.4e}  "
@@ -169,6 +177,8 @@ def main() -> int:
         raise SystemExit("no column produced a usable pair")
     import statistics
     fr = sorted(r["fraction_left"] for r in rows if r["fraction_left"] is not None)
+    fx = sorted(r["fraction_left_xfer"] for r in rows
+                if r.get("fraction_left_xfer") is not None)
     n = len(fr)
     # `fr[n // 2]` is the UPPER MIDDLE value on an even sample, not the median.
     # With 22 columns that is the 12th value where the median is the mean of the
@@ -176,9 +186,20 @@ def main() -> int:
     summary = {"columns": n, "median": statistics.median(fr),
                "upper_middle": fr[n // 2], "min": fr[0], "max": fr[-1],
                "p25": statistics.quantiles(fr, n=4)[0] if n >= 4 else None,
-               "p75": statistics.quantiles(fr, n=4)[2] if n >= 4 else None}
-    print(f"\n  {n} columns: Arm N leaves median {summary['median']:.4%} "
-          f"(min {summary['min']:.4%}, max {summary['max']:.4%})")
+               "p75": statistics.quantiles(fr, n=4)[2] if n >= 4 else None,
+               # The ACTUAL-transfer statistic beside the recovered one. They
+               # are different quantities and the headline should say which.
+               "median_xfer": statistics.median(fx) if fx else None,
+               "min_xfer": fx[0] if fx else None,
+               "max_xfer": fx[-1] if fx else None,
+               "columns_xfer": len(fx)}
+    print(f"\n  {n} columns, RECOVERED transfers: Arm N leaves median "
+          f"{summary['median']:.4%} (min {summary['min']:.4%}, "
+          f"max {summary['max']:.4%})")
+    if fx:
+        print(f"  {len(fx)} columns, ACTUAL XFER:       median "
+              f"{summary['median_xfer']:.4%} (min {summary['min_xfer']:.4%}, "
+              f"max {summary['max_xfer']:.4%})")
     if rejected:
         print(f"  {len(rejected)} column(s) rejected; reasons in the JSON")
     if a.json:
