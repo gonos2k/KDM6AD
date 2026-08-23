@@ -519,6 +519,13 @@ KERNEL_SOURCES = {
     # and `g33_number_basis` predicts its dry residual vanishes the same
     # algebraic way Arm N's moist one does.
     "nmass_dry": Path("host/KIM-meso_v1.0/phys/module_mp_kdm6_nmass_dry.F"),
+    # ARM N_d-WINDOW (owner approval, 2026-08-23): Arm N_d told the WINDOW-
+    # INITIAL dry layer mass by the driver, as an extra `mdry0` argument. A
+    # harness instrument only -- it separates the arm's algebra from the
+    # harness's fixed-forcing artefact (FINDING_fixed_dry_mass_arm_v1) and says
+    # nothing about production, where the host supplies a dynamics-consistent
+    # `den` every call.
+    "nmass_dry_window": Path("host/KIM-meso_v1.0/phys/module_mp_kdm6_nmass_dry_window.F"),
     "cons_nmass": Path("host/KIM-meso_v1.0/phys/module_mp_kdm6_cons_nmass.F"),
     "cons_lncmin": Path("host/KIM-meso_v1.0/phys/module_mp_kdm6_cons_lncmin.F"),
     "cons_nmasslncmin": Path("host/KIM-meso_v1.0/phys/module_mp_kdm6_cons_nmasslncmin.F"),

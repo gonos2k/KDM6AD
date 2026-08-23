@@ -50,6 +50,35 @@ An unwritten edge ring is four lines of cells, and the measured difference is
 24.6 % of them. What carries it inward over three timesteps is not established
 here, and the same question is open for the seven-row halo seed.
 
+## Measured at one step: what the fix changes, and what it leaves
+
+The one-minute numbers above are three steps in. Re-run for a single 20-second
+step, three things resolve.
+
+**Why the fix changes `np = 1`: the overwrite, not the ring.** Deployed
+against fixed, single rank, one step: only `QNCCN` differs, in 32.2 % of cells.
+In those cells the deployed value is exactly the analytic profile 96.5 % of the
+time and the fixed value never is. The deployed binary's per-tile sweep
+(`FINDING_ccn_overwrites_microphysics_v1`) reverts the first tile's
+microphysics update; the fixed binary keeps it. The "unwritten ring"
+explanation given above was wrong -- `start_em.F:1779` initialises the ring and
+the kernel block never needed to -- and is withdrawn.
+
+**Why the fix does nothing at `np = 4`: the dynamics.** One step, fixed
+binary, `np = 1` against `np = 4`: 28 fields differ and they are `U`, `V`, `W`,
+`PH`, `T`, `THM`, `MU`, `P` -- the dynamical core's own prognostics -- at
+i-columns 109..125, the seam between patches `2..117` and `118..233`, over every
+row. `MU` is the dry column mass. No microphysics change can reach that; it is
+the same i-seam where `delz` was found to differ in owned cells, one layer
+further upstream.
+
+**What remains at `np = 2`: located, not explained.** One step, fixed binary:
+exactly one field, `QNCCN`, in 9 971 cells (0.39 %), spread over every level
+and every column, every row except `1` and `133..138`. In every differing cell
+one decomposition has `QNCCN = 0` and the other does not; neither equals the
+profile. That is the residual the fix leaves at `np = 2`, and this finding does
+not name its site.
+
 ## What this means for the repository tree
 
 The fix in revision `9354141b` was applied here to a DIFFERENT revision

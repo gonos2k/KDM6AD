@@ -62,8 +62,9 @@ To close the window-initial ledger over a multi-call harness window, the kernel
 would have to weight by a dry mass the harness fixes at `t = 0` -- a quantity
 the kernel cannot know. It has to be passed in, which changes `kdm62D`'s
 argument list, which is a call-shape change outside the 2026-08-22 freeze-lift
-("two lines"). `REQUEST_freeze_lift_arm_nd_window.md` asks for it, and says
-what it would show: exact algebraic closure of the window-initial ledger in the
+("two lines"). `REQUEST_freeze_lift_arm_nd_window.md` asked for it and it was granted the
+same day; `FINDING_arm_nd_window_v1.md` measures it. It showed what this
+predicted: exact algebraic closure of the window-initial ledger in the
 harness, and nothing about production, where the host already supplies the
 dynamics-consistent `den` every call.
 

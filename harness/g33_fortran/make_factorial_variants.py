@@ -85,6 +85,41 @@ def apply_nd(text: str) -> str:
     return text
 
 
+#: N_d-WINDOW (owner approval, 2026-08-23). Arm N_d is TOLD the dry layer mass
+#: instead of forming it from the call's own `q`: one extra `mdry0` argument on
+#: `kdm62D`, optional so the 3D wrapper's call still compiles, and the two
+#: transfer lines weight by its ratio directly. The driver fills it from the
+#: window-initial state. A harness instrument only -- see
+#: FINDING_fixed_dry_mass_arm_v1 for why production needs no such argument.
+NDW_SIG_OLD = ("                   ,graupel,graupelncv                            &\n"
+               "                    )")
+NDW_SIG_NEW = ("                   ,graupel,graupelncv                            &\n"
+               "                   ,mdry0                                         &\n"
+               "                    )")
+NDW_DECL_OLD = "   real, dimension(ims:ime,kms:kme)       , intent(in   ) :: den\n"
+NDW_DECL_NEW = (NDW_DECL_OLD +
+                "   real, dimension(ims:ime,kms:kme), intent(in), optional :: mdry0\n")
+NDW_EDIT = (r"dend\(i,k\+1\)\*delz\(i,k\+1\)/\(dend\(i,k\)\*delz\(i,k\)\)",
+            r"mdry0(i,k+1)/mdry0(i,k)")
+
+
+def apply_nd_window(text: str) -> str:
+    """The window-initial dry mass, on top of the N form."""
+    if text.count(NDW_SIG_OLD) != 1:
+        raise SystemExit("N_d-window: kdm62D signature close matched "
+                         f"{text.count(NDW_SIG_OLD)} times, expected 1")
+    text = text.replace(NDW_SIG_OLD, NDW_SIG_NEW)
+    if text.count(NDW_DECL_OLD) != 1:
+        raise SystemExit("N_d-window: kdm62D `den` declaration matched "
+                         f"{text.count(NDW_DECL_OLD)} times, expected 1")
+    text = text.replace(NDW_DECL_OLD, NDW_DECL_NEW)
+    pat, rep = NDW_EDIT
+    text, n = re.subn(pat, rep, text)
+    if n != 2:
+        raise SystemExit(f"N_d-window edit: matched {n} sites, expected 2")
+    return text
+
+
 def apply_l(text: str) -> str:
     old, new = L_DECL
     if text.count(old) != 1:
@@ -113,34 +148,42 @@ MAX_LINE = max(len(l) for f in BASES.values()
                for l in f.read_text().splitlines())
 
 
-def variant(base: str, n: bool, ell: bool, dry: bool = False) -> str:
+def variant(base: str, n: bool, ell: bool, dry: bool = False,
+            window: bool = False) -> str:
     text = BASES[base].read_text()
-    if dry and not n:
+    if (dry or window) and not n:
         raise SystemExit("N_d is the dry form OF the N edit; it needs N")
+    if dry and window:
+        raise SystemExit("N_d and N_d-window are alternatives, not a stack")
     if n:
         text = apply_n(text, base)
     if dry:
         text = apply_nd(text)
+    if window:
+        text = apply_nd_window(text)
     if ell:
         text = apply_l(text)
     long = [(i + 1, len(l)) for i, l in enumerate(text.splitlines())
             if len(l) > MAX_LINE]
     if long:
         raise SystemExit(
-            f"{base} N={n} L={ell} Nd={dry}: {len(long)} line(s) longer than "
+            f"{base} N={n} L={ell} Nd={dry} Ndw={window}: {len(long)} line(s) longer than "
             f"the "
             f"canonical maximum {MAX_LINE}, first at {long[0]} -- a lengthened "
             f"continuation is the edit whose truncation compiles silently")
     return text
 
 
-def name(base: str, n: bool, ell: bool, dry: bool = False) -> str:
-    """`legacy`, `nmass`, `lncmin`, `nmass_lncmin`, `nmass_dry`, and `cons_*`."""
+def name(base: str, n: bool, ell: bool, dry: bool = False,
+         window: bool = False) -> str:
+    """`legacy`, `nmass`, `lncmin`, `nmass_lncmin`, `nmass_dry`,
+    `nmass_dry_window`, and `cons_*`."""
     # The factorial's own tags concatenate (`nmasslncmin`), and `nmassdry` is
     # not readable as two words. `_dry` is a MODIFIER of the N edit rather than
     # a fourth factor, and the freeze-lift names it `nmass_dry`, so it joins
     # with an underscore and says so here rather than in a reader's head.
-    tag = "".join(t for t, on in (("nmass", n), ("_dry", dry), ("lncmin", ell))
+    tag = "".join(t for t, on in (("nmass", n), ("_dry", dry),
+                                  ("_dry_window", window), ("lncmin", ell))
                   if on)
     stem = {"legacy": "", "cons": "cons"}[base]
     parts = [p for p in (stem, tag) if p]
@@ -156,14 +199,15 @@ def main(argv) -> int:
     # granted. N_d is not a fourth factor: it is a modifier of the N edit and
     # is generated for the legacy base only, which is the scope that was asked
     # for and the scope that was given.
-    combos = [(base, n, ell, False) for base in BASES
+    combos = [(base, n, ell, False, False) for base in BASES
               for n in (False, True) for ell in (False, True)]
-    combos.append(("legacy", True, False, True))
-    for base, n, ell, dry in combos:
-                nm = name(base, n, ell, dry)
-                text = variant(base, n, ell, dry)
+    combos.append(("legacy", True, False, True, False))
+    combos.append(("legacy", True, False, False, True))
+    for base, n, ell, dry, window in combos:
+                nm = name(base, n, ell, dry, window)
+                text = variant(base, n, ell, dry, window)
                 digest = hashlib.sha256(text.encode()).hexdigest()
-                if not n and not ell and not dry:
+                if not n and not ell and not dry and not window:
                     # the base itself, byte for byte -- the reversibility check
                     if text != BASES[base].read_text():
                         raise SystemExit(f"{nm}: base text changed with no edits")

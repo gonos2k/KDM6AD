@@ -278,6 +278,7 @@ FIELD_EXPR = {
     # does not. So the ladder is legacy's, and only the SHA differs.
     "nmass": {"INTERIOR": _LEG_INT, "TOP": _LEG_TOP},
     "nmass_dry": {"INTERIOR": _LEG_INT, "TOP": _LEG_TOP},
+    "nmass_dry_window": {"INTERIOR": _LEG_INT, "TOP": _LEG_TOP},
     # ARM L changes no transfer line at all -- only which threshold each
     # column is compared against -- so the sedimentation ladder is legacy's
     # unchanged.
@@ -984,11 +985,15 @@ MICRO_FREEZE_HEAT = [
 #: an update line -- so it is DERIVED from that entry rather than copied, with
 #: its own source sha. A copied block is a second place for the anchors to
 #: drift, which is the defect this file has already paid for twice.
+VARIANTS["nmass_dry_window"] = dict(
+    VARIANTS["nmass"],
+    sha="59feac17aa1230a5c633c8ebf8487e08eaf8ed15abfee5d52d3164b755c9f65b")
 VARIANTS["nmass_dry"] = dict(
     VARIANTS["nmass"],
     sha="c0e9465d03ee107fb50ba67d0f1798b92d417572e2cdaef3ffa568c684e19273")
 
 _DERIVED = {"nmass": "legacy", "nmass_dry": "legacy",
+            "nmass_dry_window": "legacy",
             "lncmin": "legacy", "nmasslncmin": "legacy",
             "cons_nmass": "conservative", "cons_lncmin": "conservative",
             "cons_nmasslncmin": "conservative"}

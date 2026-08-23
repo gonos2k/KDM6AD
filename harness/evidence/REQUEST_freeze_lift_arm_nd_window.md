@@ -1,5 +1,8 @@
 # Freeze-lift request: a window-initial dry mass for Arm N_d, harness-only
 
+**GRANTED 2026-08-23.** Built and measured: `FINDING_arm_nd_window_v1.md`.
+The prediction below held -- column 3 closes to -5.048e-07.
+
 ## What is asked
 
 One additional argument to `kdm62D` -- a dry layer mass `mdry(its:ite,kts:kte)`

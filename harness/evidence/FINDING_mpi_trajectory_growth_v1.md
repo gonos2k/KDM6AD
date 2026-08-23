@@ -176,3 +176,22 @@ between them. Confirmed directly: an Arm L binary is bit-identical to legacy at
 
 This supersedes the sentence above that no mechanism is named. The seed is
 named; what is unnamed is how it reaches the interior.
+
+## Area-weighted, from `MAPFAC_M`
+
+`wrfinput_d01` carries the map factor, so `A_ij = DX*DY / MAPFAC_M^2` is
+available and the grid-cell statistics above can be checked against physical
+ones. At ten minutes, `np = 1` against `np = 4`:
+
+| | grid-cell | area-weighted |
+|---|---|---|
+| signed mean precipitation difference | 2.546e-06 mm | 2.554e-06 mm |
+| signed water volume | -- | 4.42e+03 m3 |
+| gross water volume | -- | 3.61e+05 m3 |
+| above 20 dBZ | 47 408 / 47 456 cells | 133 252 / 133 386 km2 |
+| above 30 dBZ | 24 968 / 25 061 cells | 75 221 / 75 483 km2 |
+
+The map factor moves the mean by 0.3 % and the threshold areas by 0.1 %, so
+every conclusion drawn from the cell counts stands in physical units. The
+signed volume is 1.2 % of the gross, which is the cancellation ratio already
+reported and is dimensionless either way.

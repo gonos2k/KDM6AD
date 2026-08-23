@@ -81,7 +81,21 @@ def field_stats(a, b, name: str, t: int, mask=None) -> dict:
     return out
 
 
-def precipitation(a, b, t: int, name: str = "RAINNC") -> dict:
+def cell_area(state_path: Path, a):
+    """`A_ij = DX*DY / MAPFAC_M**2`, from a file that carries the map factor.
+
+    The forecast frames here do not; `wrfinput_d01` does. Without it every
+    spatial statistic is a grid-cell one, which this module labels as such.
+    """
+    import netCDF4
+    import numpy as np
+    d = netCDF4.Dataset(str(state_path))
+    mf = np.asarray(d["MAPFAC_M"][0], dtype="float64")
+    dx, dy = float(d.getncattr("DX")), float(d.getncattr("DY"))
+    return dx * dy / (mf * mf)
+
+
+def precipitation(a, b, t: int, name: str = "RAINNC", area=None) -> dict:
     """Signed and thresholded, because `|dP|` cannot tell more rain from
     rain somewhere else."""
     import numpy as np
@@ -104,13 +118,19 @@ def precipitation(a, b, t: int, name: str = "RAINNC") -> dict:
            "cancellation_ratio": (float(abs(d.sum()) / np.abs(d).sum())
                                   if np.abs(d).sum() else None),
            "columns": int(d.size)}
+    if area is not None:
+        # AREA-WEIGHTED, which a grid-cell mean is not on a map projection.
+        # Volume in m^3 of liquid water: mm -> m is 1e-3.
+        out["area_weighted_mean_mm"] = float((d * area).sum() / area.sum())
+        out["signed_volume_m3"] = float((d * area).sum() * 1e-3)
+        out["gross_volume_m3"] = float((np.abs(d) * area).sum() * 1e-3)
     for thr in (1e-3, 1e-2, 1e-1):
         out[f"fraction_over_{thr:g}mm"] = float((np.abs(d) > thr).mean())
         out[f"columns_over_{thr:g}mm"] = int((np.abs(d) > thr).sum())
     return out
 
 
-def reflectivity(a, b, t: int, name: str = "REFL_10CM") -> dict:
+def reflectivity(a, b, t: int, name: str = "REFL_10CM", area=None) -> dict:
     """Screened to the physical range, in linear Z, and as threshold AREAS."""
     import numpy as np
     x = np.asarray(a[name][t], dtype="float64")
@@ -132,8 +152,14 @@ def reflectivity(a, b, t: int, name: str = "REFL_10CM") -> dict:
     # and this frame does not carry MAPFAC_M, so the count is reported as a
     # count and the word "area" is not used (owner review §12.1).
     for thr in (10.0, 20.0, 30.0, 40.0):
-        out[f"cells_over_{thr:g}dbz_a"] = int(((x >= thr) & (x <= hi)).sum())
-        out[f"cells_over_{thr:g}dbz_b"] = int(((y >= thr) & (y <= hi)).sum())
+        ma, mb = (x >= thr) & (x <= hi), (y >= thr) & (y <= hi)
+        out[f"cells_over_{thr:g}dbz_a"] = int(ma.sum())
+        out[f"cells_over_{thr:g}dbz_b"] = int(mb.sum())
+        if area is not None:
+            # the column is a cell; area weighting collapses the vertical
+            ca, cb = ma.any(axis=0), mb.any(axis=0)
+            out[f"area_km2_over_{thr:g}dbz_a"] = float((ca * area).sum() * 1e-6)
+            out[f"area_km2_over_{thr:g}dbz_b"] = float((cb * area).sum() * 1e-6)
     return out
 
 
@@ -146,8 +172,12 @@ def main() -> int:
     ap.add_argument("--frames", default="1,5,10")
     ap.add_argument("--fixed-mask-frame", type=int, default=1)
     ap.add_argument("--json", type=Path, default=None)
+    ap.add_argument("--mapfac-from", type=Path, default=None,
+                    help="a file carrying MAPFAC_M and DX/DY (wrfinput_d01); "
+                         "enables area-weighted precipitation and area in km2")
     args = ap.parse_args()
     a, b = netCDF4.Dataset(str(args.run_a)), netCDF4.Dataset(str(args.run_b))
+    area = cell_area(args.mapfac_from, a) if args.mapfac_from else None
     frames = [int(f) for f in args.frames.split(",")]
 
     cov = coverage(a, b)
@@ -179,9 +209,9 @@ def main() -> int:
                   f"{r['domain_p99']:11.3e} "
                   f"{r.get('fixed_mask_median', float('nan')):15.3e}")
         if "RAINNC" in a.variables:
-            doc["precipitation"].append(precipitation(a, b, t))
+            doc["precipitation"].append(precipitation(a, b, t, area=area))
         if "REFL_10CM" in a.variables:
-            doc["reflectivity"].append(reflectivity(a, b, t))
+            doc["reflectivity"].append(reflectivity(a, b, t, area=area))
 
     print(f"\n  {'t':>3s} {'signed cell-mean':>17s} {'cancel ratio':>13s} "
           f"{'>1e-3':>9s} {'>1e-2':>9s} {'>1e-1':>9s}")
