@@ -126,6 +126,12 @@ G33FOP = re.compile(r"^G33FOP (\d+) (\S+) (\d+) (\d+) (-?\d+) (\S+) (\S+) "
 CHECKED_SHAPES = {"STAGE": (ANY_STAGE, (3, 5), 8, 9),
                   "G33FOP": (G33FOP, (6, 7), 8, 9)}
 
+#: The arm's own declaration of which measure its number transfer weights by.
+#: OPTIONAL and accepted before it is emitted: a record the parser refuses is a
+#: record that cannot be added, and adding one to the driver first is what broke
+#: 47 local tests once. Parser tolerant, driver second.
+STREAM_METRIC = re.compile(r"^G33N METRIC (\S+)$")
+
 STREAM_BEGIN = re.compile(
     r"^G33N STREAM_BEGIN (\d+) (\d+) (\d+) (\d+) (\S+) (\S+) (\S+) (\S+)$")
 XFER = re.compile(r"^G33F XFER (\d+) (\d+) (\d+) (main|ice) (f32|f64) "
@@ -254,7 +260,7 @@ NUMBER_TRANSFER_METRIC = {
 }
 
 
-def number_transfer_metric(algorithm) -> str:
+def number_transfer_metric(algorithm, declared=None) -> str:
     """Which layer measure does this arm's number transfer weight by?
 
     A TOTAL function over the registry above, which refuses a name it does not
@@ -279,8 +285,25 @@ def number_transfer_metric(algorithm) -> str:
             f"number transfer metric: algorithm is {algorithm!r}, not a name; "
             f"the stream header is what carries it")
     try:
-        return NUMBER_TRANSFER_METRIC[algorithm]
+        known = NUMBER_TRANSFER_METRIC[algorithm]
     except KeyError:
+        known = None
+    if known is not None:
+        # TWO SOURCES THAT MUST AGREE. `declared` is what the BUILD said about
+        # itself (`G33N METRIC`); `known` is what this table says the name
+        # means. Either alone can be stale -- the table was wrong about
+        # `nmass_dry` for a week, and a driver cascade can be edited without
+        # its table. Disagreement is a defect in one of them and must not be
+        # resolved silently in favour of either.
+        if declared is not None and declared != known:
+            raise ValueError(
+                f"number transfer metric: the stream declares {declared!r} for "
+                f"{algorithm!r} and the table says {known!r}. One of the two "
+                f"is stale; do not guess which.")
+        return known
+    if declared is not None:
+        return declared
+    if True:
         raise ValueError(
             f"number transfer metric: {algorithm!r} is not a registered arm. "
             f"Add it to NUMBER_TRANSFER_METRIC with the measure its transfer "
@@ -712,6 +735,7 @@ def calls(stream: str) -> list:
     # (family, key) -> the label it first carried, for the records below that
     # this parser checks without consuming.
     widths = {}
+    declared_metric = None
     for line in stream.splitlines():
         if (m := PROTOCOL.match(line)):
             if proto:
@@ -749,6 +773,9 @@ def calls(stream: str) -> list:
                 f"triples. A header stating half of what the reader assumes is "
                 f"worse than none, because none is read under a documented "
                 f"default and half is read as agreement")
+        if (m := STREAM_METRIC.match(line)):
+            declared_metric = m.group(1)
+            continue
         if (m := STREAM_BEGIN.match(line)):
             if header:
                 raise StreamError("two STREAM_BEGIN headers in one stream")
@@ -766,6 +793,7 @@ def calls(stream: str) -> list:
                     f"expected one of {sorted(RHO_PROFILES)}")
             header = {"nsplit": int(nsplit), "ntile": int(ntile),
                       "expected_calls": int(expected), "algorithm": algo,
+                      "declared_metric": declared_metric,
                       "mode": mode, "features": features,
                       # The forcing intervention this run applied. An experiment
                       # arm that lives only in a document has to be INFERRED from
@@ -1061,8 +1089,13 @@ def calls(stream: str) -> list:
     # kernel ran, and a reader that assumes legacy reconstructs the wrong `b`
     # for any other arm -- measured on Arm N, which looked unchanged until the
     # header reached here.
+    # `G33N METRIC` follows STREAM_BEGIN, so the header dict built at the
+    # header record cannot already hold it. Read the loop's own value, and set
+    # it on EVERY call -- the first version of this line sat outside the loop
+    # and reached only the last one.
     for c in out:
         c["algorithm"] = header["algorithm"]
+        c["declared_metric"] = declared_metric
     return out
 
 
@@ -1130,7 +1163,11 @@ def stream_header(stream: str) -> dict:
     filename or trust a manifest field. Those are the two things that cannot
     check each other (owner priority 5).
     """
+    declared_metric = None
     for line in stream.splitlines():
+        if (m := STREAM_METRIC.match(line)):
+            declared_metric = m.group(1)
+            continue
         if (m := STREAM_BEGIN.match(line)):
             (schema, nsplit, ntile, expected, algo, mode, feats,
              rho_profile) = m.groups()
@@ -1223,7 +1260,8 @@ def column(call, col, species, mdry0=None):
     if species in ("nr", "ni"):
         # THE ARM'S OWN MEASURE. The mass species keep their per-species
         # default; only the number transfer is what the N-family edits change.
-        metric = number_transfer_metric(call.get("algorithm"))
+        metric = number_transfer_metric(call.get("algorithm"),
+                                        call.get("declared_metric"))
         if metric == "window_dry_layer_mass" and mdry0 is None:
             # Honest refusal, on the same footing as mstep > 1: this arm's
             # weight is the WINDOW-INITIAL dry mass and one call's record does

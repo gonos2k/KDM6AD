@@ -1,4 +1,4 @@
-# The ice chain's ledger measures conversion, so no arm can be read on it here
+# The ice chain does not close per call either, and the rain chain does
 
 The review asks for the physical number correction to be generalised from rain
 to ice, by building `cons_nmass_dry` on a mass-closed conservative base and
@@ -41,6 +41,63 @@ The arm's effect on ice IS present and IS swamped: across `nmass`, `nmass_dry`
 and `nmass_dry_window` the `ni` ratio moves from -45.68 to -45.57 to -45.53 in
 column 1, about 0.2 %, under a residual two orders larger than the flux
 normalising it. A 0.2 % move inside that is not a measurement.
+
+## The per-call test, run
+
+The review objected that a whole-window `qi` ledger failing does not make a
+PER-CALL ice sedimentation test impossible: bracket each call's
+`outer_pre_sed -> outer_post_sed` with its emitted `XFER`, keep only the calls
+whose MASS row closes, and compare arms on the number row over those. Conversion
+between calls is then absorbed into each call's new initial state.
+
+That is right as method, and the harness already carries the bracket
+(`g33_matched_closure(..., "physical")`, `per_call`). Run on the gradient
+fixture, legacy, 36 calls (12 x 3 columns), `|residual| / start`:
+
+| tolerance | `qr` calls admissible | `qi` calls admissible |
+|---|---|---|
+| 1e-07 | **22** of 36 | **0** of 36 |
+| 1e-06 | 22 | 0 |
+| 1e-05 | 22 | 0 |
+| 1e-04 | 29 | 0 |
+| 1e-03 | 36 | **0** |
+| 1e-02 | 36 | 22 |
+
+Median `|residual| / start`: `qr` **3.54e-08**, `qi` **4.92e-03**, with an ice
+maximum of **1.00** -- a call in which the entire starting ice inventory is
+unaccounted for by sedimentation plus surface flux.
+
+**`qr` is the positive control and it passes.** The bracket, the emitted
+transfer and the screen all work: 22 of 36 rain calls close to 1e-07 on the same
+instrument, in the same stream, over the same calls. So the empty ice column is
+not an instrument that cannot detect closure. It is ice not closing.
+
+Under any tolerance tight enough to mean "mass-closed", the admissible set on
+this fixture is **empty**, so the arms have nothing to be compared over. The
+review's redesign is runnable and returns nothing here -- which is a measurement,
+where this finding previously had an argument.
+
+### And the tool's own screen says the same thing -- I had misread it
+
+This section first claimed `g33_matched_closure`'s per-call screen "is about
+2.0 x the starting inventory, so it admits a 200 % error", and that all 36 ice
+calls "close" against it. **That was a misreading of the tool, not a defect in
+it.** `scale` is the SUM OF MAGNITUDES that cancelled -- `|start| + |final| +
+|surface|`, so about `2 x start` by construction -- and the screen is
+`control_tolerance(ops, scale) = gamma_n * scale`, which is smaller by the
+operation count.
+
+Measured against the tool's actual screen:
+
+| species | median tolerance / start | calls within tolerance |
+|---|---|---|
+| `qr` | 1.4305e-06 | **22** of 36 |
+| `qi` | 1.4270e-06 | **0** of 36 |
+
+which is exactly the hand-rolled sweep above -- 22 and 0 -- from the tool's own
+threshold rather than a tolerance chosen here. So the conclusion does not change
+and its support is stronger: the instrument had a tight screen all along, and
+reading `scale` as if it were that screen was mine.
 
 ## What would be needed
 

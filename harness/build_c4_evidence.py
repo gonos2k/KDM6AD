@@ -507,9 +507,25 @@ def main() -> int:
 
     if args.gateb_log and args.gateb_log.exists():
         text = args.gateb_log.read_text()
+        # A VERDICT LINE, not a substring of the whole log. `"GATE B: PASS" in
+        # text` is wrong in both directions and silent in both: a log that says
+        # "expected GATE B: PASS, got FAIL" reports a pass, and a producer that
+        # rewords its verdict reports a fail forever. Nothing in this repository
+        # emits the string -- it comes from an external log -- so nothing here
+        # would notice either. A log carrying no recognisable verdict now
+        # records `None` and says so, instead of defaulting to a claim.
+        verdicts = {ln.strip() for ln in text.splitlines()
+                    if ln.strip() in ("GATE B: PASS", "GATE B: FAIL")}
+        if verdicts == {"GATE B: PASS"}:
+            gate_b_pass = True
+        elif verdicts == {"GATE B: FAIL"}:
+            gate_b_pass = False
+        else:
+            gate_b_pass = None
         manifest["gate_b"] = {
             "log": str(args.gateb_log),
-            "pass": "GATE B: PASS" in text,
+            "pass": gate_b_pass,
+            "verdict_lines": sorted(verdicts),
             "output": text,
         }
     if args.g3_report and args.g3_report.exists():

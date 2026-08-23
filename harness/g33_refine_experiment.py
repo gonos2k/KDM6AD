@@ -1372,7 +1372,16 @@ _PARSER_MODULES = ("g33_refine_analyze", "g33_number_transport", "g33_probe_read
                    # accepted at all. Reaching it without pinning it is the
                    # exact hole `unpinned_reachable()` exists to find, and it
                    # found this one.
-                   "g33_fixture_v1")
+                   "g33_fixture_v1",
+                   # THE FORWARD-ERROR SCREEN. `g33_matched_closure` computes
+                   # every residual's screening bound through
+                   # `g33_factorial._screen`, so those bytes decide whether a
+                   # closure is reported as resolved. A bundle that pins the
+                   # residual and not the threshold it is judged against pins
+                   # half the claim. Same hole, same finder -- and this is the
+                   # second time `unpinned_reachable()` has caught a widening
+                   # the same week (owner review, defect-class audit).
+                   "g33_factorial")
 
 
 #: Tracked files the BUILD reads. `host/**` is gitignored and cannot be pinned

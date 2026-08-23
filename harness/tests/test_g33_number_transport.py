@@ -1410,3 +1410,49 @@ def test_an_unregistered_arm_stops_the_read_instead_of_guessing():
         nt.number_transfer_metric("nmass_dry_experimental")
     with pytest.raises(ValueError, match="not a name"):
         nt.number_transfer_metric(None)
+
+
+def test_the_stream_and_the_table_must_agree_about_the_metric():
+    """Two sources, and neither is allowed to win quietly.
+
+    `G33N METRIC` is what the BUILD said about itself; the table is what the
+    name is taken to mean. Either can go stale -- the table was wrong about
+    `nmass_dry` until it was measured -- so a disagreement has to stop the read
+    rather than resolve toward whichever the reader trusts (owner review 3.1).
+    """
+    assert nt.number_transfer_metric("nmass_dry", "current_dry_layer_mass") \
+        == "current_dry_layer_mass"
+    assert nt.number_transfer_metric("nmass_dry", None) == "current_dry_layer_mass"
+    with pytest.raises(ValueError, match="do not guess which"):
+        nt.number_transfer_metric("nmass_dry", "moist_layer_mass")
+
+
+def test_the_driver_declares_a_metric_for_every_arm_the_table_knows():
+    """The Fortran cascade and the table cover the same arms, both ways."""
+    import re
+    driver = (Path(__file__).resolve().parents[1]
+              / "g33_fortran" / "g33_refine_driver.f90").read_text()
+    declared = set(re.findall(r"METRICTAG = '([a-z_]+)'", driver))
+    assert declared, "no METRICTAG assignments found; the cascade moved"
+    assert declared <= set(nt.NUMBER_TRANSFER_METRIC.values()), (
+        f"driver declares metrics the analyzer cannot build weights from: "
+        f"{sorted(declared - set(nt.NUMBER_TRANSFER_METRIC.values()))}")
+    assert set(nt.NUMBER_TRANSFER_METRIC.values()) <= declared, (
+        f"the table knows metrics no build can declare: "
+        f"{sorted(set(nt.NUMBER_TRANSFER_METRIC.values()) - declared)}")
+
+
+def test_the_declared_metric_reaches_every_call_not_only_the_last():
+    """`G33N METRIC` follows STREAM_BEGIN, so the header dict cannot hold it,
+    and the assignment has to run per call. Both were wrong at first: the value
+    was read from the header (always None) and set outside the loop (last call
+    only)."""
+    body = _stream(_call(1), _call(2), _call(3))
+    head, rest = body.split("\n", 1)
+    stream = head + "\nG33N METRIC current_dry_layer_mass\n" + rest
+    got = nt.calls(stream)
+    assert len(got) == 3
+    assert [c.get("declared_metric") for c in got] == \
+        ["current_dry_layer_mass"] * 3
+    # and absent is absent, not a guess
+    assert [c.get("declared_metric") for c in nt.calls(body)] == [None] * 3

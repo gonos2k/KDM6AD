@@ -73,6 +73,21 @@ module g33_refine
 ! macros differ exactly: the rule this cascade follows is most-specific-first,
 ! and an arm that relies on two macro names never colliding is one rename away
 ! from naming itself something else.
+! WHICH LAYER MEASURE this build's number transfer weights by, declared by the
+! arm that has it rather than inferred downstream from its name. A reader that
+! parses the name is a reader that can be wrong about it, twice
+! (FINDING_arm_nd_closure_v1, owner review 3.1).
+#ifdef KDM6_ARM_NMASS_DRY_WINDOW
+  character(len=*), parameter :: METRICTAG = 'window_dry_layer_mass'
+#elif defined(KDM6_ARM_NMASS_DRY)
+  character(len=*), parameter :: METRICTAG = 'current_dry_layer_mass'
+#elif defined(KDM6_ARM_NMASS) || defined(KDM6_ARM_NMASSLNCMIN) \
+   || defined(KDM6_ARM_CONS_NMASS) || defined(KDM6_ARM_CONS_NMASSLNCMIN)
+  character(len=*), parameter :: METRICTAG = 'moist_layer_mass'
+#else
+  character(len=*), parameter :: METRICTAG = 'thickness'
+#endif
+
 #ifdef KDM6_ARM_NMASS_DRY_WINDOW
   character(len=*), parameter :: ALGOTAG = 'nmass_dry_window'
 #elif defined(KDM6_ARM_NMASS_DRY)
@@ -451,6 +466,9 @@ program g33_refine_driver
   write(*,'(A,4(1X,I0),4(1X,A))') 'G33N STREAM_BEGIN', 4, nsplit, ntile, &
         nsplit * ntile, ALGOTAG, trim(merge('carry ', 'rezero', carry_aux)), &
         'mstep,mstepi,nflux,xfer,capin,topout', trim(rho_name)
+  ! AFTER STREAM_BEGIN: the parser requires the first G33N record to be
+  ! the header, and putting this before it broke 20 tests.
+  write(*,'(A,1X,A)') 'G33N METRIC', METRICTAG
   ! How wide the reals in this stream are, read from the COMPILER rather than
   ! declared: `storage_size(1.0)` is what -fdefault-real-8 actually did, so the
   ! header cannot disagree with the records under it. Without this the width was
