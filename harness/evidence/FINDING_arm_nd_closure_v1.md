@@ -82,15 +82,33 @@ numbers, because on the first call the pre-sed `qv` IS the window's initial
 two thousand times better. Column 3 leaves 6.641e-04, which is 0.9 % of the
 legacy defect there while the other two are at 0.003 %.
 
-Why column 3 and not the others is NOT established. The obvious candidate is
-refuted: `qv` moves by 99.9 %, 99.9 % and 99.5 % of its initial value in the
-three columns, so the size of the excursion does not distinguish them. What is
-different is the legacy defect itself -- 7.330e-02 in column 3 against about
-1.05e-02 in the others.
+**Why column 3, answered.** This finding first said the candidate was refuted,
+because `qv` moves by 99.9 %, 99.9 % and 99.5 % of its initial value in the
+three columns and the excursion therefore does not distinguish them. That
+measured the wrong quantity. Arm N_d weights by the CURRENT dry mass while the
+ledger is taken in the window-initial one, so what a transfer leaves is not the
+size of the moisture excursion but the mismatch between the two ratios,
 
-So Arm N_d closes the immutable physical ledger on the first call and in two
-columns of three over the window. The third is an open residual and this
-finding does not explain it.
+    eps(u->l, t) = (1+qv_u^0)(1+qv_l(t)) / [ (1+qv_l^0)(1+qv_u(t)) ] - 1
+
+weighted by the transfer that actually crossed. Summed over every call,
+sub-step and interface:
+
+| column | predicted | measured | ratio |
+|---|---|---|---|
+| 1 | 0.000e+00 | 2.781e-01 | -- |
+| 2 | 0.000e+00 | -9.596e-02 | -- |
+| **3** | **5.067e+02** | **5.059e+02** | **1.0017** |
+
+Column 3 is predicted to 0.17 %. Columns 1 and 2 predict exactly zero and
+measure 0.28 and -0.10, which against their surface flux is 2.9e-07 and
+-9.8e-08 -- the roundoff they were already reported as closing to.
+
+So the remainder is not unexplained and it is not a property of the arm's
+algebra: it is the cost of weighting by a measure that moves while the ledger
+does not. An arm that froze the dry mass at call entry would drive it to the
+same roundoff the other two columns already sit at, and that is the arm the
+next experiment should build.
 
 ## The uniform-moisture control, and what it revealed
 
