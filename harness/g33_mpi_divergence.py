@@ -92,6 +92,14 @@ def cell_area(state_path: Path, a):
     d = netCDF4.Dataset(str(state_path))
     mf = np.asarray(d["MAPFAC_M"][0], dtype="float64")
     dx, dy = float(d.getncattr("DX")), float(d.getncattr("DY"))
+    # The map factor must be THIS domain's. A wrfinput from another run of the
+    # same grid size would pass silently and weight every cell wrongly.
+    ref = a["RAINNC"].shape[-2:] if "RAINNC" in a.variables else a["T"].shape[-2:]
+    if mf.shape != tuple(ref):
+        raise SystemExit(f"MAPFAC_M is {mf.shape}, the forecast grid is {tuple(ref)}")
+    for key in ("DX", "DY"):
+        if key in a.ncattrs() and abs(float(a.getncattr(key)) - (dx if key == "DX" else dy)) > 1e-6:
+            raise SystemExit(f"{key} differs between the map-factor file and the forecast")
     return dx * dy / (mf * mf)
 
 
