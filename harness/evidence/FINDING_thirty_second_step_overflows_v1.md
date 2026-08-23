@@ -24,6 +24,23 @@ The first record is
 `FF800000` is `-inf`. **The operational call step is 20 s and is clean on this
 column**; the failure begins at 30 s.
 
+## It is not one column, and it is land
+
+Re-run over the whole 24-column selection at all four steps, the columns that
+fail are:
+
+    (71,147)  xland = 1      (88,130)  xland = 1
+    (82,145)  xland = 1     (100,142)  xland = 1
+
+**Four of the sample's five land columns**, and none of its eighteen sea
+columns. The fifth land column, `(106,170)`, completes every step.
+
+Land is where this case's graupel is: the melting term below is a graupel term,
+and a sea column that never forms graupel never reaches it. So the pattern is
+consistent with the site rather than an additional fact about land -- but it
+does mean the defect is common in the part of the domain that has the ice phase,
+not rare.
+
 ## The site
 
 `module_mp_kdm6.F`, the graupel-melting block:
