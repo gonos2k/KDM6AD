@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import struct
 import subprocess
 import sys
@@ -141,19 +142,39 @@ def main() -> int:
     ap.add_argument("--json", type=Path, default=None)
     a = ap.parse_args()
 
-    # THE COMMITTED MANIFEST IS OVERWRITTEN WHILE THIS RUNS. A `git add -A`
-    # issued mid-batch stages a transient column as if it were the fixture --
-    # which happened once, and was caught only because the status was read.
-    # Two defences: refuse to start if the manifest already differs from HEAD
-    # (a crashed run left it dirty), and say so loudly while running.
+    # THIS TOOL OWNS SHARED, COMMITTED, MUTABLE STATE while it runs. The
+    # fixture is a COMPILE-TIME constant, so every column rewrites
+    # `MANIFEST` and regenerates the .f90 and .h beside it -- one fixed path,
+    # not a private copy. Two ways that has already gone wrong:
+    #
+    #   * a `git add -A` mid-batch staged a transient column as if it were the
+    #     fixture, caught only because the status was read;
+    #   * a concurrent test run regenerated those artefacts between this tool's
+    #     write and its build, producing a kernel whose .f90 and .h held
+    #     DIFFERENT columns. That build ran and emitted -inf, which read as a
+    #     kernel result and was not one.
+    #
+    # So: refuse to start dirty, refuse to start beside another holder, and
+    # hold a lock naming who we are for anything that looks.
     dirty = subprocess.run(["git", "status", "--porcelain", "--", str(MANIFEST)],
                            capture_output=True, text=True, cwd=REPO).stdout.strip()
     if dirty:
         raise SystemExit(f"{MANIFEST.name} is modified relative to HEAD; a "
                          f"previous batch did not restore it. Inspect before "
                          f"running another.")
-    print(f"  NOTE: {MANIFEST.name} is rewritten per column until this finishes; "
-          f"do not stage it meanwhile")
+    lock = REPO / ".g33-fixture-lock"
+    if lock.exists():
+        raise SystemExit(
+            f"{lock.name} is held by: {lock.read_text().strip()}\n"
+            f"The committed fixture is a compile-time constant, so two writers "
+            f"produce a kernel built from two different columns. Wait, or "
+            f"remove the lock if that process is gone.")
+    lock.write_text(f"pid {os.getpid()}, {a.columns} columns, state {a.state}\n")
+    print(f"  NOTE: {MANIFEST.name} and its generated .f90/.h are rewritten per "
+          f"column until this finishes.\n"
+          f"        Nothing else may build a fixture meanwhile -- not the test "
+          f"suite, not a variant generator.\n"
+          f"        Holding {lock.name}.")
     keep = MANIFEST.read_text()          # the committed column, restored at the end
     # REJECTED COLUMNS ARE PART OF THE RESULT. A sample reported only through
     # what survived cannot be checked for survivorship bias: if the columns that
@@ -212,6 +233,7 @@ def main() -> int:
                   f"leaves {row['fraction_left']:.4%}")
     finally:
         MANIFEST.write_text(keep)
+        (REPO / ".g33-fixture-lock").unlink(missing_ok=True)
         subprocess.run([sys.executable, str(HERE / "g33_fixture_v1.py"),
                         "--write", f"--fixture-id={FIXTURE_ID}"],
                        capture_output=True, text=True, cwd=REPO)
