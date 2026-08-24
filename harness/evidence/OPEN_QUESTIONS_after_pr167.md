@@ -49,14 +49,19 @@ one-ULP perturbation of one prognostic reaches as many fields as the
 decomposition does. **That is not "no defect"** -- it withdraws only the
 inference from "large at ten minutes" to "wrong in the dynamics".
 
-**Open:** whether the seam difference is harmless, which the size argument does
-not decide; and a matched-magnitude ENSEMBLE rather than one realisation.
+**Answered in part.** The processor-grid control ran
+(`FINDING_seam_direction_and_1x4_crash_v1`): `2x2` and `4x1` both differ from
+`np = 1` in exactly 77 fields, and from each other in 78. The seam's DIRECTION
+and COUNT do not change the size of the divergence, which is a second
+independent line agreeing with the perturbation result.
 
-The processor-grid control is no longer blocked on tooling: `run_ss_case` takes
-`--proc-grid NXxNY`, refuses a grid that does not multiply to `--np` (WRF
-ignores such a grid silently, which would make the control a null), and carries
-the grid in the run directory's name so two grids at the same rank count cannot
-overwrite each other. The runs themselves are not made here.
+**Still open:** whether the difference is harmless, which neither line decides;
+a matched-magnitude ENSEMBLE rather than single realisations; and the pure
+j-cut, because `1x4` crashes.
+
+**And new:** `1x4` exits 139 before completing a step, while `2x2` and `4x1`
+run. It is the only arrangement where a rank owns the full domain width. No
+probe was run and nothing here says what faults.
 
 ## 4. Ice, which needs a different fixture and not another arm
 
@@ -77,9 +82,16 @@ checkable. Every run made BEFORE 2026-08-24 has none, and the perturbation
 baseline is one of them: an independent run shows the binary held over 08-22 to
 08-23, and nothing spans 08-24.
 
-**Open:** whether to re-run the perturbation comparison now that runs record
-their binary. It is one 10-minute run and would convert an argued premise into a
-shown one.
+**Closed.** An unperturbed `np = 1` run made 2026-08-24, hash recorded, is
+bit-identical to the 08-22 baseline at minutes 1, 5 and 10 -- 0 of 197 fields.
+Re-making the BASELINE tested the binary directly, in one run rather than three.
+
+**And a related defect was found doing it:** the run tree keeps its OWN copy of
+`run_ss_case.py`, and it had fallen 12 lines behind, so the hash recording added
+that morning was not in the version that ran. Symlinking is not available --
+the script resolves its own directory to find `namelist.input` and `wrf.exe` --
+so the copy now compares itself to the repository's on startup and says so on
+stderr when it differs.
 
 ## What is NOT open
 
