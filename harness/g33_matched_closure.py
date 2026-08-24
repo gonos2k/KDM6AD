@@ -242,6 +242,13 @@ def measure_at(measure: dict, key, label: str) -> CellMeasure:
     return measure[key]
 
 
+def _bound_here(d, real_bytes: int) -> float:
+    """This row's screen at the stream's own width, or 0.0 where there is no
+    per-call detail to build one from."""
+    pc = d.get("per_call") or []
+    return screening_bound(pc, real_bytes) if pc else 0.0
+
+
 def _stream_real_bytes(stream: str) -> int:
     """What a default real is in THIS stream, from its own PROTOCOL header.
 
@@ -448,6 +455,7 @@ def analysis(stream: str, basis: str = "operator") -> dict:
     copies the table (owner §6.2). Here the exclusion is structural.
     """
     acc = closures(stream, basis)
+    _rb = _stream_real_bytes(stream)
     ctrl = {(ch, col): usable(d) for (ch, sp, col), d in acc.items()
             if sp.startswith("q")}
     out = {}
@@ -464,10 +472,13 @@ def analysis(stream: str, basis: str = "operator") -> dict:
             # to decide what "small" means. Below it, the accounting is not
             # visibly missing a term; it is NOT a certificate of roundoff, and
             # the note on `_F32_EPS` says why (owner review 9.3).
-            "screening_bound": screening_bound(d.get("per_call") or []),
-            "residual_over_bound": (
-                abs(d["residual"]) / screening_bound(d["per_call"])
-                if d.get("per_call") and screening_bound(d["per_call"]) else None),
+            # THE SAME WIDTH the other row path uses. This one kept the f32
+            # default, so one code path in this module was width-aware and the
+            # other was not -- which is what a default parameter buys you if
+            # the call sites are not updated with it.
+            "screening_bound": _bound_here(d, _rb),
+            "residual_over_bound": (abs(d["residual"]) / _bound_here(d, _rb)
+                                    if _bound_here(d, _rb) else None),
             "number_result": (d["residual"] / d["out"]
                               if ok and d["out"] and not sp.startswith("q")
                               else None),

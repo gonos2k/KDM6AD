@@ -238,7 +238,8 @@ def _matched_rows(stream: str, span_calls: frozenset):
     return rows, control
 
 
-def _matched_residual(rows: dict, span_calls: frozenset, species: str):
+def _matched_residual(rows: dict, span_calls: frozenset, species: str,
+                      input_u: float = U32):
     """The residual from ACTUAL transfers, admissible at any `mstep`.
 
     `column()` inverts the update to recover the transfers, which needs one
@@ -258,8 +259,8 @@ def _matched_residual(rows: dict, span_calls: frozenset, species: str):
             cols.add((chain, col))
             num += pc["residual"]
             den += pc["start"]
-            b_num += _screen(pc["scale"], pc["ops"])
-            b_den += _screen(abs(pc["start"]), pc["ops"])
+            b_num += _screen(pc["scale"], pc["ops"], input_u)
+            b_den += _screen(abs(pc["start"]), pc["ops"], input_u)
     if not seen:
         return None
     return {"num": num, "den": den, "b_num": b_num, "b_den": b_den,
@@ -423,6 +424,14 @@ def responses(stream_single: str, stream_split: str, *,
     metric diagnostic, and a failing mass control invalidates the number
     response it is paired with and nothing else.
     """
+    # THE WIDTH THESE STREAMS DECLARE. `_screen`'s input term scales with the
+    # unit roundoff of the values that entered it, and its default is f32
+    # because that is what these streams were. A default is not a fix: every
+    # call site here kept the old behaviour until it was passed through
+    # (owner review 12, and the adversarial pass that found the sites).
+    import g33_matched_closure as _mc
+    input_u = {4: U32, 8: U64}[_mc._stream_real_bytes(stream_single)]
+
     import g33_number_transport as nt
     calls = nt.calls(stream_single)
     span = calls if window else calls[:1]
@@ -441,7 +450,7 @@ def responses(stream_single: str, stream_split: str, *,
                      "valid": valid, "reason": reason, "screening_bound": 0.0}
 
     for species in ("qr", "qi", "nr", "ni"):
-        r = _matched_residual(rows, span_calls, species)
+        r = _matched_residual(rows, span_calls, species, input_u)
         ctrl = RESPONSES[f"R_{species}"][3]
         bad = ""
         if ctrl and r:
@@ -488,8 +497,8 @@ def responses(stream_single: str, stream_split: str, *,
         put(name, d["num"] / d["den"] if d["den"] else 0.0,
             valid=not reason, reason=reason)
         out[name]["screening_bound"] = _ratio_screen(
-            d["num"], d["den"], _screen(d["sum_abs"], d["terms"]),
-            _screen(abs(d["den"]), d["terms"]))
+            d["num"], d["den"], _screen(d["sum_abs"], d["terms"], input_u),
+            _screen(abs(d["den"]), d["terms"], input_u))
 
     # The window's own endpoints, which the per-call sum is NOT. `initial` and
     # `state` are the G33R blocks the driver writes before and after the run,
@@ -519,7 +528,7 @@ def responses(stream_single: str, stream_split: str, *,
         for what in ("signed", "destroyed", "created"):
             put(f"cap_{chain}_{what}", c[what])
             out[f"cap_{chain}_{what}"]["screening_bound"] = _screen(
-                c["sum_abs"], c["terms"])
+                c["sum_abs"], c["terms"], input_u)
 
     for name, value in _partition(stream_single, stream_split).items():
         put(name, value)                # integer counts: exact, unscreened

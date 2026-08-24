@@ -777,6 +777,15 @@ def calls(stream: str) -> list:
                 f"worse than none, because none is read under a documented "
                 f"default and half is read as agreement")
         if (m := STREAM_METRIC.match(line)):
+            # The SAME position rule the header reader applies. Without it a
+            # stream whose only declaration came after the body was accepted
+            # here and refused there -- the two readers disagreeing about one
+            # stream, which is the shape of every protocol defect in this file.
+            if cur is not None or seen:
+                raise StreamError(
+                    f"G33N METRIC {m.group(1)!r} appears after the first call; "
+                    f"the measure a stream is read with is fixed before its "
+                    f"body, not chosen after it")
             declared_metric = _one_metric(declared_metric, m.group(1), header)
             continue
         if (m := STREAM_BEGIN.match(line)):
@@ -1210,8 +1219,18 @@ def stream_header(stream: str) -> dict:
     # only in it had the same identity (owner review 4.3).
     head = None
     declared_metric = None
+    in_body = False
     for line in stream.splitlines():
         if (m := STREAM_METRIC.match(line)):
+            # BREAKING AT THE FIRST CALL made this reader IGNORE a metric
+            # declared after the body while `calls()` refused it -- so the two
+            # readers disagreed about the same stream, and the one that decides
+            # run identity was the permissive one. Scan to the end and refuse.
+            if in_body:
+                raise StreamError(
+                    f"G33N METRIC {m.group(1)!r} appears after the first call; "
+                    f"the measure a stream is read with is fixed before its "
+                    f"body, not chosen after it")
             declared_metric = _one_metric(declared_metric, m.group(1), head)
             continue
         if (m := STREAM_BEGIN.match(line)):
@@ -1223,7 +1242,7 @@ def stream_header(stream: str) -> dict:
                     "features": set(feats.split(",")), "rho_profile": rho_profile}
             continue
         if head is not None and CALL_BEGIN.match(line):
-            break          # the header region ends at the first call
+            in_body = True
     if head is None:
         raise StreamError("stream carries no G33N STREAM_BEGIN header")
     head["number_transfer_metric"] = declared_metric

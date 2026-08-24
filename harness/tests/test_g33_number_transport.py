@@ -1505,3 +1505,22 @@ def test_the_measure_is_part_of_the_run_identity():
     # and is refused rather than resolved toward either.
     with pytest.raises(ValueError, match="do not guess which"):
         nt.validated_run_identity(_hdr_with_metric("current_dry_layer_mass"))
+
+
+def test_both_readers_refuse_a_metric_declared_after_the_body():
+    """`stream_header` broke at the first call, so it IGNORED a late metric
+    while `calls()` refused it -- and the permissive one is what decides run
+    identity. Found by the adversarial pass, not by the change that introduced
+    the rule."""
+    good = _hdr_with_metric()
+    late = good.replace("G33N STREAM_END", "G33N METRIC moist_layer_mass\nG33N STREAM_END")
+    for reader in (nt.stream_header, nt.calls):
+        with pytest.raises(nt.StreamError, match="after the first call"):
+            reader(late)
+    # and a stream whose ONLY declaration is late -- no duplicate to catch it
+    bare = _stream(_call(1), _call(2))
+    only_late = bare.replace("G33N STREAM_END",
+                             "G33N METRIC thickness\nG33N STREAM_END")
+    for reader in (nt.stream_header, nt.calls):
+        with pytest.raises(nt.StreamError, match="after the first call"):
+            reader(only_late)
