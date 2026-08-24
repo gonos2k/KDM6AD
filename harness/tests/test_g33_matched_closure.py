@@ -349,3 +349,13 @@ def test_the_declared_width_is_read_from_the_protocol_header():
     assert mc._stream_real_bytes("G33N PROTOCOL 4 4 1 1 1 1 1 1\n") == 4
     # a stream from before the header existed was f32, so the default answers
     assert mc._stream_real_bytes("G33N STREAM_BEGIN 4 1 1 1 legacy rezero m as-is\n") == 4
+
+
+def test_the_width_reader_refuses_a_stream_that_declares_two():
+    """Returning the FIRST header would answer for a stream declaring two
+    widths. `calls()` refuses such a stream, so this is unreachable through any
+    real path today -- which is the reason to refuse here rather than depend on
+    another reader's strictness to stay safe."""
+    with pytest.raises(ValueError, match="two default reals"):
+        mc._stream_real_bytes("G33N PROTOCOL 4 4 1 1 1 1 1 1\n"
+                              "G33N PROTOCOL 8 8 1 1 1 1 1 1\n")

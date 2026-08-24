@@ -259,10 +259,21 @@ def _stream_real_bytes(stream: str) -> int:
     (owner review 12).
     """
     import g33_number_transport as _nt
+    seen = None
     for line in stream.splitlines():
         if (m := _nt.PROTOCOL.match(line)):
-            return int(m.group(1))          # same field `calls()` reads
-    return _nt.DEFAULT_REAL_BYTES
+            w = int(m.group(1))             # same field `calls()` reads
+            if seen is not None and seen != w:
+                # RETURNING THE FIRST would answer for a stream that declares
+                # two widths. `calls()` refuses such a stream, so this is
+                # currently unreachable through any real path -- which is
+                # exactly why it is worth refusing here too rather than
+                # depending on another reader's strictness to stay safe.
+                raise ValueError(
+                    f"stream declares two default reals, {seen} then {w} bytes; "
+                    f"a screen cannot be built for both")
+            seen = w
+    return seen if seen is not None else _nt.DEFAULT_REAL_BYTES
 
 
 def screening_bound(per_call, real_bytes: int = 4) -> float:

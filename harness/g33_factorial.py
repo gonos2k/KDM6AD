@@ -430,7 +430,19 @@ def responses(stream_single: str, stream_split: str, *,
     # call site here kept the old behaviour until it was passed through
     # (owner review 12, and the adversarial pass that found the sites).
     import g33_matched_closure as _mc
-    input_u = {4: U32, 8: U64}[_mc._stream_real_bytes(stream_single)]
+    _w_single = _mc._stream_real_bytes(stream_single)
+    _w_split = _mc._stream_real_bytes(stream_split)
+    if _w_single != _w_split:
+        # BOTH STREAMS, not one. Reading the width from `stream_single` alone
+        # applied its screen to the split stream's rows too -- silently wrong
+        # for the half that came from the other width, and invisible because a
+        # screen produces a number either way. Two streams of different widths
+        # are not a comparison this function can make.
+        raise FactorialError(
+            f"the two streams declare different default reals -- single is "
+            f"{_w_single} bytes and split is {_w_split}. A screen built at one "
+            f"width cannot judge residuals taken at the other")
+    input_u = {4: U32, 8: U64}[_w_single]
 
     import g33_number_transport as nt
     calls = nt.calls(stream_single)
