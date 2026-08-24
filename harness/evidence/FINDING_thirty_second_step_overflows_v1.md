@@ -21,8 +21,13 @@ The first record is
 
     G33F STAGE 1 - micro_post_melt 0 brs 1 26 f32 FF800000
 
-`FF800000` is `-inf`. **The operational call step is 20 s and is clean on this
-column**; the failure begins at 30 s.
+`FF800000` is `-inf`. On THIS column the failure begins at 30 s.
+
+> The sentence that stood here read "**the operational call step is 20 s and is
+> clean on this column**", asserted in bold. It is true of column `(71,147)` and
+> false as a general statement, and the correction below is what establishes
+> that -- but a bold assertion survives being quoted out of the document that
+> corrects it, so it is struck here rather than only answered later.
 
 ## CORRECTED: the operational step is not clean
 
