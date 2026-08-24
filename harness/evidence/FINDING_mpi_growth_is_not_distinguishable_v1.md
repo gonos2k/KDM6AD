@@ -37,10 +37,26 @@ differ:
 | `QVAPOR` | 6.8024e-04 | 5.3899e-04 | 1.26 |
 | `REFL_10CM` | 1.7025e+00 | 5.8004e-01 | **2.93** |
 
-**The single smallest perturbation this arithmetic can express, in one field,
-reaches MORE fields than the decomposition does at every time before ten
-minutes, and the same number at ten.** For the dynamical fields the magnitudes
-agree within 26 %.
+**A one-ULP change in one field reaches MORE fields than the decomposition does
+at every time before ten minutes, and the same number at ten.**
+
+That sentence first read "the single smallest perturbation this arithmetic can
+express", which is true PER CELL and misleading in aggregate: it is one ULP
+each in 186 966 cells, **7.26 % of the domain**. Minimal in amplitude, large in
+extent. And compared at one minute, neither seed dominates the other:
+
+| field | `np = 4` cells | 1 ULP cells | `np = 4` p99 | 1 ULP p99 |
+|---|---|---|---|---|
+| `THM` | 220 237 | 191 431 | 2.157e-04 | 1.892e-04 |
+| `T` | 225 067 | 194 241 | 1.874e-03 | 1.398e-03 |
+| `W` | 1 255 445 | 534 212 | 4.936e-02 | **1.307e-01** |
+| `U` | 1 006 583 | 469 744 | 6.994e-04 | **2.056e-03** |
+| `QVAPOR` | 585 597 | 352 525 | 4.608e-05 | **2.803e-04** |
+
+The perturbation touches FEWER cells and reaches HIGHER peaks in the dynamical
+fields; the decomposition is the reverse. They are the same order and neither is
+uniformly the larger, which is what the comparison can support -- not that a
+smaller kick did more.
 
 So the decomposition's ten-minute footprint is not evidence of a defect: it is
 what this case does with a rounding-scale seed. A difference that grows to 106

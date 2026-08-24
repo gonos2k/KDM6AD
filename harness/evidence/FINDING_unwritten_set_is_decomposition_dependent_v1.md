@@ -117,10 +117,16 @@ So the zeros are made DURING the first step, and A shows none only because its
 per-tile sweep rewrites the whole memory window at the end of that step and
 covers them (`FINDING_ccn_overwrites_microphysics_v1`).
 
-**And more ranks means FEWER zeros, in a smaller place.** Under B at one step:
+**And `np = 1` is the odd one out -- it is not a trend in rank count.** Under B
+at one step:
 
     np = 1    11 152 zeros    i columns 1..234 (all 234), j rows 2..282
-    np = 2     3 557 zeros    i columns {1, 234} only, j rows 2..141
+    np = 2     3 557 zeros    i columns {1, 234} only
+    np = 4     3 557 zeros    i columns {1, 234} only
+
+`np = 4` is IDENTICAL to `np = 2`, so "more ranks means fewer zeros" -- which is
+what this said from the two-point comparison -- is wrong. The split is between
+one rank and more than one, not along rank count.
 
 `np = 2`'s zeros are confined to the domain's two edge COLUMNS, inside rank 0's
 row range; `np = 1`'s are spread across every column. And `np = 2`'s set is a
@@ -128,9 +134,10 @@ strict subset of `np = 1`'s -- measured earlier as `zb & ~za = 0`.
 
 That is the opposite of the naive expectation, which is why it is recorded
 rather than explained. A story in which more decomposition means more unwritten
-or mis-written cells does not survive it.
+or mis-written cells does not survive it -- and neither does a story that scales
+with rank count, since `np = 2` and `np = 4` agree exactly.
 
 **Still open:** which stage assigns the zero. The measurements above say it is
-not the initial state, it is within the first step, and its footprint shrinks
-toward the domain edge as ranks are added. Naming the writer needs the
+not the initial state, it is within the first step, and its footprint is the whole domain at
+one rank and the two edge columns at more than one. Naming the writer needs the
 per-stage instrumentation described above, which is not built.
