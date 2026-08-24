@@ -176,17 +176,23 @@ def _gamma(n: int, u: float) -> float:
     return (n * u / d) if d > 0 else float("inf")
 
 
-def _screen(sum_abs: float, n_terms: int) -> float:
+def _screen(sum_abs: float, n_terms: int, input_u: float = U32) -> float:
     """The scale below which a sum of f32-derived terms says nothing.
 
-    Two contributions, and the first dominates: the inputs are f32, so each
-    carries `U32` of its own magnitude however exactly it is then summed; and
-    this module's own f64 accumulation adds `gamma(n)`. A coefficient is
+    Two contributions, and the first dominates: each INPUT carries `input_u` of
+    its own magnitude however exactly it is then summed, and this module's own
+    f64 accumulation adds `gamma(n)`.
+
+    `input_u` defaults to `U32` because the streams this was written for are
+    f32. Applied to an f64 stream unchanged it is 2**29 times too LARGE, which
+    errs toward calling a real residual resolved -- the direction that hides a
+    defect. Callers reading a stream pass the width the stream declares
+    (owner review 12). A coefficient is
     reported against this rather than against a bare epsilon, because
     "is it resolved" is a question about magnitude and operation count, not
     about whether a number is non-zero.
     """
-    return sum_abs * (U32 + _gamma(max(n_terms, 1), U64))
+    return sum_abs * (input_u + _gamma(max(n_terms, 1), U64))
 
 
 def _ratio_screen(num, den, b_num, b_den) -> float:
