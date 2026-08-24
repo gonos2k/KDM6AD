@@ -965,7 +965,12 @@ def test_validated_run_identity_is_the_strict_parse_plus_the_header():
     assert got == {"nsplit": 1, "carry": "rezero", "rho": "as-is",
                    "width": 1, "levels": 2, "ntile": 1,
                    "tile_ranges": ((1, 1),), "tile_sizes": (1,),
-                   "algorithm": "legacy", "delt": 100.0, "dtcld": 100.0,
+                   "algorithm": "legacy",
+                   # A stream that declares no metric still HAS one: the
+                   # registry resolves it from the arm, so the identity is
+                   # complete for historical streams too (owner review 4.3).
+                   "number_transfer_metric": "thickness",
+                   "delt": 100.0, "dtcld": 100.0,
                    "loops": 1}
 
 
@@ -1456,3 +1461,66 @@ def test_the_declared_metric_reaches_every_call_not_only_the_last():
         ["current_dry_layer_mass"] * 3
     # and absent is absent, not a guess
     assert [c.get("declared_metric") for c in nt.calls(body)] == [None] * 3
+
+
+def _hdr_with_metric(metric="thickness", extra=""):
+    body = _stream(_call(1), _call(2))
+    head, rest = body.split("\n", 1)
+    return head + f"\nG33N METRIC {metric}\n" + extra + rest
+
+
+def test_the_metric_declaration_is_exactly_once_and_only_in_the_header():
+    """`G33N METRIC` names the measure the whole stream is READ with, so a
+    second declaration, one before the header, or an unknown value each change
+    which ledger a residual is judged against (owner review 4.1, 4.2)."""
+    good = _hdr_with_metric()
+    assert nt.stream_header(good)["number_transfer_metric"] == "thickness"
+
+    with pytest.raises(nt.StreamError, match="declares G33N METRIC twice"):
+        nt.stream_header(_hdr_with_metric(extra="G33N METRIC moist_layer_mass\n"))
+    with pytest.raises(nt.StreamError, match="before STREAM_BEGIN"):
+        nt.stream_header("G33N METRIC thickness\n" + _stream(_call(1)))
+    with pytest.raises(nt.StreamError, match="not a measure"):
+        nt.stream_header(_hdr_with_metric("made_up_measure"))
+
+
+def test_an_unregistered_arm_cannot_walk_past_the_registry_by_declaring():
+    """The docstring said an unknown arm stops the read; the code returned the
+    declaration when the stream supplied one, so any name could bypass the
+    closed registry. A declaration is a CROSS-CHECK, never a substitute
+    (owner review 4.4)."""
+    with pytest.raises(ValueError, match="not a registered arm"):
+        nt.number_transfer_metric("not_an_arm", "thickness")
+    with pytest.raises(ValueError, match="not a registered arm"):
+        nt.number_transfer_metric("not_an_arm", None)
+
+
+def test_the_measure_is_part_of_the_run_identity():
+    """Two streams differing only in transfer measure were the same run to
+    `validated_run_identity`, and the measure decides which ledger closes."""
+    ident = nt.validated_run_identity(_hdr_with_metric())
+    assert ident["number_transfer_metric"] == "thickness"
+    # and the declaration must AGREE with the arm: `_stream` builds a `legacy`
+    # header, so declaring a dry measure on it is a defect in one of the two
+    # and is refused rather than resolved toward either.
+    with pytest.raises(ValueError, match="do not guess which"):
+        nt.validated_run_identity(_hdr_with_metric("current_dry_layer_mass"))
+
+
+def test_both_readers_refuse_a_metric_declared_after_the_body():
+    """`stream_header` broke at the first call, so it IGNORED a late metric
+    while `calls()` refused it -- and the permissive one is what decides run
+    identity. Found by the adversarial pass, not by the change that introduced
+    the rule."""
+    good = _hdr_with_metric()
+    late = good.replace("G33N STREAM_END", "G33N METRIC moist_layer_mass\nG33N STREAM_END")
+    for reader in (nt.stream_header, nt.calls):
+        with pytest.raises(nt.StreamError, match="after the first call"):
+            reader(late)
+    # and a stream whose ONLY declaration is late -- no duplicate to catch it
+    bare = _stream(_call(1), _call(2))
+    only_late = bare.replace("G33N STREAM_END",
+                             "G33N METRIC thickness\nG33N STREAM_END")
+    for reader in (nt.stream_header, nt.calls):
+        with pytest.raises(nt.StreamError, match="after the first call"):
+            reader(only_late)

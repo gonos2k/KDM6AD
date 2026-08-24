@@ -242,7 +242,41 @@ def measure_at(measure: dict, key, label: str) -> CellMeasure:
     return measure[key]
 
 
-def screening_bound(per_call) -> float:
+def _bound_here(d, real_bytes: int) -> float:
+    """This row's screen at the stream's own width, or 0.0 where there is no
+    per-call detail to build one from."""
+    pc = d.get("per_call") or []
+    return screening_bound(pc, real_bytes) if pc else 0.0
+
+
+def _stream_real_bytes(stream: str) -> int:
+    """What a default real is in THIS stream, from its own PROTOCOL header.
+
+    The screen's input term scales with the unit roundoff of the values that
+    entered it, so reading an f64 stream at the f32 constant makes the bound
+    2**29 too large. Streams written before the f64 family carry no header and
+    were all f32, so the default is the answer for them rather than a guess
+    (owner review 12).
+    """
+    import g33_number_transport as _nt
+    seen = None
+    for line in stream.splitlines():
+        if (m := _nt.PROTOCOL.match(line)):
+            w = int(m.group(1))             # same field `calls()` reads
+            if seen is not None and seen != w:
+                # RETURNING THE FIRST would answer for a stream that declares
+                # two widths. `calls()` refuses such a stream, so this is
+                # currently unreachable through any real path -- which is
+                # exactly why it is worth refusing here too rather than
+                # depending on another reader's strictness to stay safe.
+                raise ValueError(
+                    f"stream declares two default reals, {seen} then {w} bytes; "
+                    f"a screen cannot be built for both")
+            seen = w
+    return seen if seen is not None else _nt.DEFAULT_REAL_BYTES
+
+
+def screening_bound(per_call, real_bytes: int = 4) -> float:
     """The scale below which this row's residual says nothing.
 
     Built from the TERMS THAT CANCELLED, not from the answer. The residual is
@@ -263,7 +297,13 @@ def screening_bound(per_call) -> float:
     import g33_factorial as _gf
     sum_abs = sum(e["scale"] for e in per_call)
     ops = sum(e.get("ops", 12) for e in per_call)
-    return _gf._screen(sum_abs, int(ops) or 1)
+    # THE WIDTH THE STREAM DECLARES, not the width this was written for. An
+    # f64 stream screened at the f32 unit roundoff gets a bound 2**29 too
+    # large, and errs toward calling a real residual resolved.
+    u = {4: _gf.U32, 8: _gf.U64}.get(real_bytes)
+    if u is None:
+        raise ValueError(f"real_bytes must be 4 or 8, got {real_bytes!r}")
+    return _gf._screen(sum_abs, int(ops) or 1, u)
 
 
 def closures(stream: str, basis: str = "operator") -> dict:
@@ -332,8 +372,9 @@ def closures(stream: str, basis: str = "operator") -> dict:
     # decide what "small" means. Below it the accounting is not visibly
     # missing a term; it is NOT a certificate of roundoff, and the note on
     # `_F32_EPS` says why (owner review 9.3).
+    rb = _stream_real_bytes(stream)
     for d in acc.values():
-        b = screening_bound(d.get("per_call") or [])
+        b = screening_bound(d.get("per_call") or [], rb)
         d["screening_bound"] = b
         d["residual_over_bound"] = abs(d["residual"]) / b if b else None
     return acc
@@ -425,6 +466,7 @@ def analysis(stream: str, basis: str = "operator") -> dict:
     copies the table (owner §6.2). Here the exclusion is structural.
     """
     acc = closures(stream, basis)
+    _rb = _stream_real_bytes(stream)
     ctrl = {(ch, col): usable(d) for (ch, sp, col), d in acc.items()
             if sp.startswith("q")}
     out = {}
@@ -441,10 +483,13 @@ def analysis(stream: str, basis: str = "operator") -> dict:
             # to decide what "small" means. Below it, the accounting is not
             # visibly missing a term; it is NOT a certificate of roundoff, and
             # the note on `_F32_EPS` says why (owner review 9.3).
-            "screening_bound": screening_bound(d.get("per_call") or []),
-            "residual_over_bound": (
-                abs(d["residual"]) / screening_bound(d["per_call"])
-                if d.get("per_call") and screening_bound(d["per_call"]) else None),
+            # THE SAME WIDTH the other row path uses. This one kept the f32
+            # default, so one code path in this module was width-aware and the
+            # other was not -- which is what a default parameter buys you if
+            # the call sites are not updated with it.
+            "screening_bound": _bound_here(d, _rb),
+            "residual_over_bound": (abs(d["residual"]) / _bound_here(d, _rb)
+                                    if _bound_here(d, _rb) else None),
             "number_result": (d["residual"] / d["out"]
                               if ok and d["out"] and not sp.startswith("q")
                               else None),

@@ -167,6 +167,18 @@ def main() -> int:
                 msg = f"run_ss_case: launch failed: {e}"
                 print(msg, file=sys.stderr)
                 print(msg, file=f)
+        # Provenance: WHICH BINARY RAN. Comparing two runs assumes they came from
+        # the same wrf.exe, and nothing recorded it -- so a comparison made days
+        # apart, across a session that swapped binaries for diagnostic arms,
+        # could not be shown to be a fair one afterwards. The hash was checked
+        # by hand at every swap, which is evidence in a transcript and not in
+        # the run. It is in the run now.
+        try:
+            import hashlib
+            h = hashlib.sha256((run/'wrf.exe').read_bytes()).hexdigest()
+            (out/'wrf_exe_sha256').write_text(h + '\n')
+        except OSError as e:
+            (out/'wrf_exe_sha256').write_text(f'unavailable: {e}\n')
         # Provenance: archive the EXACT namelist used (before we restore the pristine one).
         if proc is not None:
             rsl=[p for pat in ('rsl.error.*','rsl.out.*') for p in run.glob(pat)]

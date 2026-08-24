@@ -63,7 +63,7 @@ The decomposition-dependence is therefore not "which cells are missed" but
 **which cells are assigned zero**: the never-written sets are identical (0
 against 0) and the written-zero sets differ by 7 595 cells.
 
-WHAT WRITES THE ZERO is not identified here. The measurement distinguishes
+WHAT WRITES THE ZERO is narrowed but not identified. The measurement distinguishes
 "nobody wrote it" from "something wrote zero" and stops there; naming the writer
 needs the per-stage instrumentation below, which this makes worth building for a
 narrower question than the one it was proposed for.
@@ -95,3 +95,49 @@ dependent. The tile-bounds arm does not remove the `np = 2` difference. Neither
 does removing the block (`FINDING_ccn_onetime_reference_v1`).
 
 One case, one build, one host, 20 s, deployed revision `a06c954b`.
+
+## When the zeros appear, and where
+
+The sentinel showed every cell is written. Two more cheap reads narrow when and
+where, without instrumentation.
+
+**They are not in the initial state.** `QNCCN` zeros at the output's frame 0 --
+the state before any step -- and at frame 1:
+
+| binary | `np` | zeros at frame 0 | zeros at frame 1 |
+|---|---|---|---|
+| A deployed (memory bounds) | 1 | **0** | 0 |
+| A deployed | 2 | **0** | 0 |
+| B tile bounds | 1 | **0** | 11 152 |
+| B tile bounds | 2 | **0** | 3 557 |
+| C block removed | 1 | **0** | 11 152 |
+| C block removed | 2 | **0** | 3 557 |
+
+So the zeros are made DURING the first step, and A shows none only because its
+per-tile sweep rewrites the whole memory window at the end of that step and
+covers them (`FINDING_ccn_overwrites_microphysics_v1`).
+
+**And `np = 1` is the odd one out -- it is not a trend in rank count.** Under B
+at one step:
+
+    np = 1    11 152 zeros    i columns 1..234 (all 234), j rows 2..282
+    np = 2     3 557 zeros    i columns {1, 234} only
+    np = 4     3 557 zeros    i columns {1, 234} only
+
+`np = 4` is IDENTICAL to `np = 2`, so "more ranks means fewer zeros" -- which is
+what this said from the two-point comparison -- is wrong. The split is between
+one rank and more than one, not along rank count.
+
+`np = 2`'s zeros are confined to the domain's two edge COLUMNS, inside rank 0's
+row range; `np = 1`'s are spread across every column. And `np = 2`'s set is a
+strict subset of `np = 1`'s -- measured earlier as `zb & ~za = 0`.
+
+That is the opposite of the naive expectation, which is why it is recorded
+rather than explained. A story in which more decomposition means more unwritten
+or mis-written cells does not survive it -- and neither does a story that scales
+with rank count, since `np = 2` and `np = 4` agree exactly.
+
+**Still open:** which stage assigns the zero. The measurements above say it is
+not the initial state, it is within the first step, and its footprint is the whole domain at
+one rank and the two edge columns at more than one. Naming the writer needs the
+per-stage instrumentation described above, which is not built.

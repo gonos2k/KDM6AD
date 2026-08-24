@@ -2669,3 +2669,30 @@ def test_the_declared_decomposition_is_held_to_the_PRIMARY_stream():
     mem = {m["file"] for m in man["members"]}
     assert any(r["state"] == "MEMBER-CONTRACT-MISMATCH" and r["file"] in mem
                for r in rows), [r["state"] for r in rows]
+
+
+def test_the_repositorys_anchor_tags_resolve_their_bundles():
+    """A pushed anchor tag IS the anchor -- established by `_commit_states`
+    through `remote_tags()`, NOT by widening `TRUSTED_REFS`.
+
+    This test first asserted `_reachable(commit, trusted=True)`, and drove a
+    change that put `refs/tags/` into the trusted set. That is exactly what
+    `test_a_LOCAL_tag_is_not_an_anchor` forbids, and CI said so: the ref
+    namespace cannot tell a fetched tag from an invented one, so a local-only
+    tag would turn `commit-local-anchor-only` into `matches` -- the one thing
+    that predicate exists to rule out. The repository had already solved this
+    one layer up. The fix, and this test, were aimed a layer too low.
+    """
+    byc, asked = ec.remote_tags()
+    if not asked:
+        pytest.skip("the remote could not be asked from this host")
+    anchors = {c: t for c, t in byc.items()
+               if any(x.startswith("g33-evidence-") for x in t)}
+    if not anchors:
+        pytest.skip("no anchor tags on the remote from this host")
+    for commit in sorted(anchors):
+        man = {"repo_commit": commit, "member_parsers": [],
+               "producer_modules": [], "tracked_build_inputs": []}
+        states = {r["state"] for r in ec._commit_states(man)}
+        assert states == {"matches"}, (commit, anchors[commit],
+                                       ec._commit_states(man))

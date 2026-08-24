@@ -288,6 +288,17 @@ def number_transfer_metric(algorithm, declared=None) -> str:
         known = NUMBER_TRANSFER_METRIC[algorithm]
     except KeyError:
         known = None
+    if known is None:
+        # FAIL CLOSED. The docstring said an unknown arm stops the read, and the
+        # code then returned `declared` when the stream supplied one -- so any
+        # name at all could walk past the registry by declaring a measure. The
+        # registry is the closed world; a declaration is a CROSS-CHECK on it,
+        # never a substitute for it (owner review 4.4).
+        raise ValueError(
+            f"number transfer metric: {algorithm!r} is not a registered arm"
+            + (f" (the stream declares {declared!r}, which is not enough -- add "
+               f"the arm to NUMBER_TRANSFER_METRIC)" if declared else "")
+            + f". Known: {', '.join(sorted(NUMBER_TRANSFER_METRIC))}")
     if known is not None:
         # TWO SOURCES THAT MUST AGREE. `declared` is what the BUILD said about
         # itself (`G33N METRIC`); `known` is what this table says the name
@@ -301,14 +312,6 @@ def number_transfer_metric(algorithm, declared=None) -> str:
                 f"{algorithm!r} and the table says {known!r}. One of the two "
                 f"is stale; do not guess which.")
         return known
-    if declared is not None:
-        return declared
-    if True:
-        raise ValueError(
-            f"number transfer metric: {algorithm!r} is not a registered arm. "
-            f"Add it to NUMBER_TRANSFER_METRIC with the measure its transfer "
-            f"statement actually uses -- do not let it default. Known: "
-            f"{', '.join(sorted(NUMBER_TRANSFER_METRIC))}") from None
 
 
 def number_layer_measure(metric, den, dz, qv=None, mdry0=None):
@@ -774,7 +777,16 @@ def calls(stream: str) -> list:
                 f"worse than none, because none is read under a documented "
                 f"default and half is read as agreement")
         if (m := STREAM_METRIC.match(line)):
-            declared_metric = m.group(1)
+            # The SAME position rule the header reader applies. Without it a
+            # stream whose only declaration came after the body was accepted
+            # here and refused there -- the two readers disagreeing about one
+            # stream, which is the shape of every protocol defect in this file.
+            if cur is not None or seen:
+                raise StreamError(
+                    f"G33N METRIC {m.group(1)!r} appears after the first call; "
+                    f"the measure a stream is read with is fixed before its "
+                    f"body, not chosen after it")
+            declared_metric = _one_metric(declared_metric, m.group(1), header)
             continue
         if (m := STREAM_BEGIN.match(line)):
             if header:
@@ -1144,7 +1156,15 @@ def validated_run_identity(text: str, expected_width: int | None = None,
            "rho": hdr["rho_profile"], "width": width, "levels": levels,
            "ntile": hdr["ntile"], "tile_ranges": tiles,
            "tile_sizes": tuple(b - a + 1 for a, b in tiles),
-           "algorithm": hdr["algorithm"], "delt": parsed[0]["delt"],
+           "algorithm": hdr["algorithm"],
+           # THE MEASURE IS IDENTITY. Two streams with the same arm, splits and
+           # timestep but different transfer measures were the same run to this
+           # function -- and the measure decides which ledger a residual closes,
+           # so they are not the same run at all (owner review 4.3). Resolved
+           # through the registry, so an unregistered arm cannot reach here.
+           "number_transfer_metric": number_transfer_metric(
+               hdr["algorithm"], hdr.get("number_transfer_metric")),
+           "delt": parsed[0]["delt"],
            "dtcld": dtclds.pop() if dtclds else None,
            # Proven exactly {1..L}, one L per stream, by `calls()` above --
            # so a caller holding the window header's `loops` can compare.
@@ -1155,6 +1175,36 @@ def validated_run_identity(text: str, expected_width: int | None = None,
     return (rid, parsed) if with_calls else rid
 
 
+def _one_metric(seen, value, head):
+    """`G33N METRIC` exactly once, and only between the header and the first call.
+
+    Three ways this was loose (owner review 4.1, 4.2):
+
+    * a second declaration silently replaced the first, so a stream could
+      change the measure its own body is read with;
+    * a declaration BEFORE `STREAM_BEGIN` was accepted, though the parser
+      requires the header to be the first G33N record;
+    * a declaration after the body was accepted and applied retroactively to
+      calls already parsed.
+
+    It names the run's transfer measure, so any of those changes which ledger a
+    residual is judged against. Fail closed.
+    """
+    if seen is not None:
+        raise StreamError(
+            f"stream declares G33N METRIC twice, {seen!r} then {value!r}; "
+            f"the measure a stream is read with cannot change inside it")
+    if head is None:
+        raise StreamError(
+            f"G33N METRIC {value!r} appears before STREAM_BEGIN; the header "
+            f"must be the first G33N record and the metric follows it")
+    if value not in set(NUMBER_TRANSFER_METRIC.values()):
+        raise StreamError(
+            f"G33N METRIC {value!r} is not a measure this analyzer can build "
+            f"weights from; known: {sorted(set(NUMBER_TRANSFER_METRIC.values()))}")
+    return value
+
+
 def stream_header(stream: str) -> dict:
     """What the stream DECLARES about the run that produced it.
 
@@ -1163,19 +1213,45 @@ def stream_header(stream: str) -> dict:
     filename or trust a manifest field. Those are the two things that cannot
     check each other (owner priority 5).
     """
+    # THE METRIC FOLLOWS THE HEADER, so returning at STREAM_BEGIN cannot see it.
+    # An earlier version did exactly that, and the field it left out is the one
+    # that decides WHICH LEDGER a residual is read against -- two runs differing
+    # only in it had the same identity (owner review 4.3).
+    head = None
     declared_metric = None
+    in_body = False
     for line in stream.splitlines():
         if (m := STREAM_METRIC.match(line)):
-            declared_metric = m.group(1)
+            # BREAKING AT THE FIRST CALL made this reader IGNORE a metric
+            # declared after the body while `calls()` refused it -- so the two
+            # readers disagreed about the same stream, and the one that decides
+            # run identity was the permissive one. Scan to the end and refuse.
+            #
+            # The early return is therefore gone, and the cost was measured
+            # rather than assumed: 3.3 ms over 10 968 lines, 5.9 ms over 43 869,
+            # and `validated_run_identity` is the only caller -- once per
+            # stream. Not worth a two-pass offset trick to get back.
+            if in_body:
+                raise StreamError(
+                    f"G33N METRIC {m.group(1)!r} appears after the first call; "
+                    f"the measure a stream is read with is fixed before its "
+                    f"body, not chosen after it")
+            declared_metric = _one_metric(declared_metric, m.group(1), head)
             continue
         if (m := STREAM_BEGIN.match(line)):
             (schema, nsplit, ntile, expected, algo, mode, feats,
              rho_profile) = m.groups()
-            return {"schema": int(schema), "nsplit": int(nsplit),
+            head = {"schema": int(schema), "nsplit": int(nsplit),
                     "ntile": int(ntile), "expected_calls": int(expected),
                     "algorithm": algo, "mode": mode,
                     "features": set(feats.split(",")), "rho_profile": rho_profile}
-    raise StreamError("stream carries no G33N STREAM_BEGIN header")
+            continue
+        if head is not None and CALL_BEGIN.match(line):
+            in_body = True
+    if head is None:
+        raise StreamError("stream carries no G33N STREAM_BEGIN header")
+    head["number_transfer_metric"] = declared_metric
+    return head
 
 
 def _expect_stream(cond, msg):

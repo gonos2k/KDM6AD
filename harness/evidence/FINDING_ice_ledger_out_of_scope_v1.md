@@ -29,6 +29,32 @@ The surface flux is 1.123e-02 against a residual of 6.023e-01 -- **a factor of
 riming, aggregation to snow and graupel, and sublimation -- conversion terms a
 sedimentation-transport ledger does not carry, and was never built to.
 
+## Measured on the conservative base, because it does not follow
+
+The review objected that legacy admitting no call does not make the conservative
+base unusable: the C correction changes what the interface cap does, and so
+changes `qi` closure itself. That is right, and it needed no new arm -- the
+existing `conservative` and `cons_nmass` arms run on this fixture.
+
+| base | `qi` median \|R\|/start | `qi` max | admissible |
+|---|---|---|---|
+| `legacy` | 4.9184e-03 | **1.000** | **0** of 36 |
+| `conservative` | 4.3900e-03 | **9.301e-03** | **0** of 36 |
+| `cons_nmass` | 4.3849e-03 | 9.297e-03 | **0** of 36 |
+
+`qr` is 22 of 36 on all three, so the instrument is working on all three.
+
+**The C correction does change ice closure, and by a lot -- in the tail.** Legacy
+has a call in which the ENTIRE starting ice inventory is unaccounted for, a
+ratio of 1.000; under the conservative base the worst call is 9.3e-03. Two
+orders. So the objection was well founded and the inference this finding first
+drew was not available.
+
+**The median barely moves** -- 4.92e-03 to 4.39e-03 -- and stays about 3 000
+times the tool's own per-call tolerance of 1.43e-06 of `start`. So the
+admissible set is empty on every base available here, and now by measurement on
+each rather than by extension from one.
+
 ## Why the conservative base does not fix it
 
 The conservative arms change what the interface CAP does to a transfer, which is
@@ -107,9 +133,17 @@ or a fixture where ice sediments WITHOUT converting: cold enough throughout that
 melting is off, and thin enough in the other hydrometeors that riming and
 aggregation do not fire.
 
-That is a fixture problem and not a member-count problem, the same shape as
-`FINDING_g33_fixture_cannot_answer_thermo_policy_v1`: the question is not
-under-sampled, it is not defined in the region the fixture occupies.
+That is a fixture problem and not a member-count problem: the question is not
+under-sampled, it is not defined in the region the fixture occupies. More calls,
+more columns and more arms all sample the same region, and the region does not
+contain a sedimentation-only ice signal to find.
+
+(This sentence originally cited a finding by name that **does not exist** --
+`FINDING_g33_fixture_cannot_answer_thermo_policy_v1`. The fact is real and is
+recorded in the campaign's working notes, but I promoted a remembered fact to a
+filename, so a reader following the citation would have found nothing and the
+claim would have been resting on an absence. The argument is made here instead
+of borrowed.)
 
 ## What this does establish
 

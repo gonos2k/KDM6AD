@@ -854,6 +854,15 @@ _REACHABLE: dict = {}
 #: into `matches`). A tag counts when the REMOTE has it, which only the
 #: remote can answer; `remote_tags()` asks, and `--require-available` is
 #: where the answer is required.
+#: What "a ref a reviewer who clones this could have" covers, by REF NAMESPACE.
+#:
+#: `refs/tags/` is deliberately absent and must stay absent: a tag lives in the
+#: same namespace whether it was fetched or invented here, so the namespace
+#: cannot tell a pushed anchor from a local one. A pushed tag IS an anchor --
+#: `_commit_states` establishes that through `remote_tags()`, which asks the
+#: remote -- and adding tags here instead would let a local-only tag turn
+#: `commit-local-anchor-only` into `matches`, which is the one thing that
+#: predicate exists to rule out.
 TRUSTED_REFS = ("refs/remotes/",)
 
 def _run_git(*args, text: bool = True, timeout: int | None = None):
@@ -931,7 +940,8 @@ def _reachable(commit: str, trusted: bool = False) -> bool:
         if trusted:
             cmd += list(TRUSTED_REFS)
         r = _run_git(*cmd[1:])
-        _REACHABLE[key] = r.returncode == 0 and bool(r.stdout.strip())
+        ok = r.returncode == 0 and bool(r.stdout.strip())
+        _REACHABLE[key] = ok
     return _REACHABLE[key]
 
 

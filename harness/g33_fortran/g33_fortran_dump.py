@@ -209,6 +209,12 @@ def species_of(op_id):
         raise ValueError(f"unknown op family in {op_id!r}") from None
 
 
+#: NOT CALLED anywhere today (audit, 2026-08-24). Kept rather than deleted:
+#: it answers a question this campaign has asked before and will ask again,
+#: and this session cost three separate reimplementations of things that
+#: already existed. Deleting an unused answer plants that mistake in the
+#: future. If it is still unused when the next reader passes, the reason to
+#: keep it is weaker than it is now -- say so then.
 def to_records(text, K):
     """Parsed ops enriched with cell_role + species — the logical fields the
     comparator keys on. `col` (Fortran i, 1-based) maps to the C++ per-record

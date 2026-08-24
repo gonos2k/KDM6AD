@@ -327,3 +327,35 @@ def test_a_cell_absent_from_the_measure_is_REFUSED_not_recomputed():
     weight for exactly the cells the window measure does not cover."""
     with pytest.raises(ValueError, match="no window measure"):
         mc.measure_at({(1, 0): None}, (2, 0), "test")
+
+
+def test_the_screen_takes_the_width_the_stream_declares():
+    """`_screen`'s input term scales with the unit roundoff of the values that
+    entered it. Reading an f64 stream at the f32 constant makes the bound about
+    2**29 too large -- and that errs toward calling a real residual resolved,
+    which is the direction that hides a defect (owner review 12)."""
+    per_call = [{"scale": 1.0, "ops": 12}]
+    b32 = mc.screening_bound(per_call, 4)
+    b64 = mc.screening_bound(per_call, 8)
+    assert b32 > b64 * 1e6, (b32, b64)
+    with pytest.raises(ValueError, match="must be 4 or 8"):
+        mc.screening_bound(per_call, 6)
+
+
+def test_the_declared_width_is_read_from_the_protocol_header():
+    """The same field `calls()` reads, so the screen and the decoder cannot
+    disagree about what a default real is in this stream."""
+    assert mc._stream_real_bytes("G33N PROTOCOL 8 8 1 1 1 1 1 1\n") == 8
+    assert mc._stream_real_bytes("G33N PROTOCOL 4 4 1 1 1 1 1 1\n") == 4
+    # a stream from before the header existed was f32, so the default answers
+    assert mc._stream_real_bytes("G33N STREAM_BEGIN 4 1 1 1 legacy rezero m as-is\n") == 4
+
+
+def test_the_width_reader_refuses_a_stream_that_declares_two():
+    """Returning the FIRST header would answer for a stream declaring two
+    widths. `calls()` refuses such a stream, so this is unreachable through any
+    real path today -- which is the reason to refuse here rather than depend on
+    another reader's strictness to stay safe."""
+    with pytest.raises(ValueError, match="two default reals"):
+        mc._stream_real_bytes("G33N PROTOCOL 4 4 1 1 1 1 1 1\n"
+                              "G33N PROTOCOL 8 8 1 1 1 1 1 1\n")
