@@ -335,11 +335,11 @@ def test_the_screen_takes_the_width_the_stream_declares():
     2**29 too large -- and that errs toward calling a real residual resolved,
     which is the direction that hides a defect (owner review 12)."""
     per_call = [{"scale": 1.0, "ops": 12}]
-    b32 = mc.screening_bound(per_call, 4)
-    b64 = mc.screening_bound(per_call, 8)
+    b32 = mc.screening_bound(per_call, real_bytes=4)
+    b64 = mc.screening_bound(per_call, real_bytes=8)
     assert b32 > b64 * 1e6, (b32, b64)
     with pytest.raises(ValueError, match="must be 4 or 8"):
-        mc.screening_bound(per_call, 6)
+        mc.screening_bound(per_call, real_bytes=6)
 
 
 def test_the_declared_width_is_read_from_the_protocol_header():

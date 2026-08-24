@@ -176,18 +176,18 @@ def _gamma(n: int, u: float) -> float:
     return (n * u / d) if d > 0 else float("inf")
 
 
-def _screen(sum_abs: float, n_terms: int, input_u: float = U32) -> float:
+def _screen(sum_abs: float, n_terms: int, *, input_u: float) -> float:
     """The scale below which a sum of f32-derived terms says nothing.
 
     Two contributions, and the first dominates: each INPUT carries `input_u` of
     its own magnitude however exactly it is then summed, and this module's own
     f64 accumulation adds `gamma(n)`.
 
-    `input_u` defaults to `U32` because the streams this was written for are
-    f32. Applied to an f64 stream unchanged it is 2**29 times too LARGE, which
-    errs toward calling a real residual resolved -- the direction that hides a
-    defect. Callers reading a stream pass the width the stream declares
-    (owner review 12). A coefficient is
+    `input_u` is REQUIRED and keyword-only. It was a default of `U32`, and the
+    default is how five call sites kept the f32 constant while the commit
+    message said the screen took the stream's width: a parameter you can forget
+    is a parameter that will be forgotten. Forgetting it now fails at the call
+    (owner review 3.1). A coefficient is
     reported against this rather than against a bare epsilon, because
     "is it resolved" is a question about magnitude and operation count, not
     about whether a number is non-zero.
@@ -239,7 +239,7 @@ def _matched_rows(stream: str, span_calls: frozenset):
 
 
 def _matched_residual(rows: dict, span_calls: frozenset, species: str,
-                      input_u: float = U32):
+                      *, input_u: float):
     """The residual from ACTUAL transfers, admissible at any `mstep`.
 
     `column()` inverts the update to recover the transfers, which needs one
@@ -259,8 +259,8 @@ def _matched_residual(rows: dict, span_calls: frozenset, species: str,
             cols.add((chain, col))
             num += pc["residual"]
             den += pc["start"]
-            b_num += _screen(pc["scale"], pc["ops"], input_u)
-            b_den += _screen(abs(pc["start"]), pc["ops"], input_u)
+            b_num += _screen(pc["scale"], pc["ops"], input_u=input_u)
+            b_den += _screen(abs(pc["start"]), pc["ops"], input_u=input_u)
     if not seen:
         return None
     return {"num": num, "den": den, "b_num": b_num, "b_den": b_den,
@@ -462,7 +462,7 @@ def responses(stream_single: str, stream_split: str, *,
                      "valid": valid, "reason": reason, "screening_bound": 0.0}
 
     for species in ("qr", "qi", "nr", "ni"):
-        r = _matched_residual(rows, span_calls, species, input_u)
+        r = _matched_residual(rows, span_calls, species, input_u=input_u)
         ctrl = RESPONSES[f"R_{species}"][3]
         bad = ""
         if ctrl and r:
@@ -509,8 +509,8 @@ def responses(stream_single: str, stream_split: str, *,
         put(name, d["num"] / d["den"] if d["den"] else 0.0,
             valid=not reason, reason=reason)
         out[name]["screening_bound"] = _ratio_screen(
-            d["num"], d["den"], _screen(d["sum_abs"], d["terms"], input_u),
-            _screen(abs(d["den"]), d["terms"], input_u))
+            d["num"], d["den"], _screen(d["sum_abs"], d["terms"], input_u=input_u),
+            _screen(abs(d["den"]), d["terms"], input_u=input_u))
 
     # The window's own endpoints, which the per-call sum is NOT. `initial` and
     # `state` are the G33R blocks the driver writes before and after the run,
@@ -540,7 +540,7 @@ def responses(stream_single: str, stream_split: str, *,
         for what in ("signed", "destroyed", "created"):
             put(f"cap_{chain}_{what}", c[what])
             out[f"cap_{chain}_{what}"]["screening_bound"] = _screen(
-                c["sum_abs"], c["terms"], input_u)
+                c["sum_abs"], c["terms"], input_u=input_u)
 
     for name, value in _partition(stream_single, stream_split).items():
         put(name, value)                # integer counts: exact, unscreened

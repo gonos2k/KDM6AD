@@ -113,8 +113,8 @@ def test_conditional_effects_tell_the_two_interaction_shapes_apart():
 def test_a_coefficient_is_reported_against_its_own_screening_scale():
     """A response's resolution is its magnitude and operation count, not an
     epsilon. An f32-derived sum of large terms does not resolve a small one."""
-    assert fc._screen(1.0e8, 100) > 1.0
-    assert fc._screen(1.0e-6, 4) < 1.0e-12
+    assert fc._screen(1.0e8, 100, input_u=fc.U32) > 1.0
+    assert fc._screen(1.0e-6, 4, input_u=fc.U32) < 1.0e-12
     # An integer count is exact: screening it would licence calling a real
     # difference of one state "unresolved".
     table = _table(lambda n, c, l: float(l))

@@ -129,7 +129,16 @@ def residuals(build_root: Path, arm: str, nsplits=(12,), partial=True) -> dict:
         r = subprocess.run([str(out / "g33_refine_driver"), str(n), "rezero", "1"],
                            capture_output=True, text=True)
         if r.returncode != 0:
-            raise SystemExit(f"{arm} nsplit={n}: driver crashed\n{r.stderr[-800:]}")
+            # A CRASH IS A PER-STEP VERDICT TOO. This used to abandon the whole
+            # column, so the 5 and 10 s results were lost with it -- the same
+            # complete-case loss the StreamError path was fixed for. It matters
+            # more once an FPE trap is on: the process then EXITS on the
+            # overflow instead of emitting it, so every -inf column would take
+            # its shorter steps down with it (owner review 6.2).
+            if not partial:
+                raise SystemExit(f"{arm} nsplit={n}: driver crashed\n{r.stderr[-800:]}")
+            failed[n] = f"driver exit {r.returncode}: {r.stderr.strip()[-120:]}"
+            continue
         try:
             got[n] = nb.from_stream(r.stdout, "nr")[1]
         except nt.StreamError as exc:
@@ -178,6 +187,11 @@ def main() -> int:
         raise SystemExit(f"{MANIFEST.name} is modified relative to HEAD; a "
                          f"previous batch did not restore it. Inspect before "
                          f"running another.")
+    failed = REPO / ".g33-fixture-lock.failed"
+    if failed.exists():
+        raise SystemExit(
+            f"{failed.name} is present: a previous run could not restore the "
+            f"working tree. Repair it and remove that file before running again.")
     lock = REPO / ".g33-fixture-lock"
     # ATOMIC. `if exists: ... write` is a race with exactly the window it is
     # meant to close -- two starters can both pass the test. O_CREAT|O_EXCL is
@@ -254,9 +268,13 @@ def main() -> int:
                            if n in legs and n in nms and legs[n]["dry_xfer"]},
                        # named, so a step that failed is visible as a failure
                        # rather than as an absence
+                       # PER ARM. Folding the two together with `or` lost which
+                       # one failed, and that is the fact that says whether an
+                       # overflow is common to the operator or introduced by a
+                       # correction (owner review 6.3).
                        timestep_failed={
-                           f"{60 // n}s": (legs["_failed_steps"].get(n)
-                                           or nms["_failed_steps"].get(n))
+                           f"{60 // n}s": {"legacy": legs["_failed_steps"].get(n),
+                                           "nmass": nms["_failed_steps"].get(n)}
                            for n in nsplits
                            if n in legs["_failed_steps"] or n in nms["_failed_steps"]},
                        legacy_moist=leg["moist"] / leg["start_moist"],
@@ -292,9 +310,19 @@ def main() -> int:
         left = subprocess.run(["git", "status", "--porcelain", "--",
                                str(MANIFEST), "harness/g33_fortran", "harness/g33_overlay"],
                               capture_output=True, text=True, cwd=REPO).stdout.strip()
+        lock = REPO / ".g33-fixture-lock"
         if left:
-            print(f"  WARNING: the tree is not back to HEAD after restore:\n{left}")
-        (REPO / ".g33-fixture-lock").unlink(missing_ok=True)
+            # FAIL CLOSED. Warning and releasing anyway is fail-open: the next
+            # process starts on a tree that does not match HEAD and builds from
+            # whatever is there. The lock stays, renamed so its state is legible,
+            # and the next run refuses until someone repairs the tree
+            # (owner review 6.4).
+            lock.rename(REPO / ".g33-fixture-lock.failed")
+            print(f"  RESTORE FAILED -- the tree is not back to HEAD:\n{left}\n"
+                  f"  .g33-fixture-lock.failed left in place; repair the tree and "
+                  f"remove it before the next run.")
+        else:
+            lock.unlink(missing_ok=True)
 
     if not rows:
         raise SystemExit("no column produced a usable pair")
