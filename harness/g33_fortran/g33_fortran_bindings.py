@@ -279,9 +279,7 @@ FIELD_EXPR = {
     "nmass": {"INTERIOR": _LEG_INT, "TOP": _LEG_TOP},
     "nmass_dry": {"INTERIOR": _LEG_INT, "TOP": _LEG_TOP},
     "nmass_dry_window": {"INTERIOR": _LEG_INT, "TOP": _LEG_TOP},
-    "melt_g1": {"INTERIOR": _LEG_INT, "TOP": _LEG_TOP},
-    "melt_g2": {"INTERIOR": _LEG_INT, "TOP": _LEG_TOP},
-    "melt_g3": {"INTERIOR": _LEG_INT, "TOP": _LEG_TOP},
+
     # ARM L changes no transfer line at all -- only which threshold each
     # column is compared against -- so the sedimentation ladder is legacy's
     # unchanged.
@@ -1061,3 +1059,13 @@ for _arm in ("cons_nmass", "cons_nmasslncmin"):
                           emit=_with_n_edit(VARIANTS["conservative"]["emit"]),
                           post=_with_n_edit(VARIANTS["conservative"]["post"]))
 del _t
+
+
+# THE MELT COUNTERFACTUALS INHERIT LEGACY'S BINDINGS WHOLE. A partial copy --
+# just INTERIOR and TOP -- passed every table check and then failed the schema
+# validation on `QR_OUTFLOW`, because that entry carries the per-operation field
+# lists too. The edits touch only the graupel melt block, which holds none of
+# these sites, so the right relationship is "identical to legacy", stated once.
+for _g in ("melt_g1", "melt_g2", "melt_g3"):
+    FIELD_EXPR[_g] = FIELD_EXPR["legacy"]
+    XFER_SITES[_g] = XFER_SITES["legacy"]

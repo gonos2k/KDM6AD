@@ -31,7 +31,12 @@ from dataclasses import dataclass
 #: authority earlier in this campaign.
 _STRUCTURALLY_LEGACY = frozenset({"legacy", "nmass", "nmass_dry",
                                   "nmass_dry_window", "lncmin",
-                                  "nmasslncmin"})
+                                  "nmasslncmin",
+                                  # the graupel-melt counterfactuals: the edit
+                                  # is inside the melt block, which carries no
+                                  # instrumentation site, so the emitted
+                                  # structure is legacy's exactly.
+                                  "melt_g1", "melt_g2", "melt_g3"})
 #: ...and the conservative-derived arms. Normalising only ONE direction was the
 #: first version of this, and the arms built on conservative then fell through
 #: to the legacy branch and drifted against their own bindings -- caught by the
