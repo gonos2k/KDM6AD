@@ -27,6 +27,30 @@ def replace_line(text: str, key: str, value: str) -> str:
     return "\n".join(lines)+"\n"
 
 
+def set_or_insert(text: str, key: str, value: str, section: str = "&domains") -> str:
+    """Set `key`, inserting it into `section` when the namelist does not carry it.
+
+    `replace_line` REFUSES a missing key, which is right for keys the namelist is
+    supposed to have -- a typo there should stop the run, not silently add a new
+    setting. `nproc_x`/`nproc_y` are different: WRF chooses the decomposition
+    itself unless told, so their absence is the normal state and inserting them
+    is the point.
+    """
+    try:
+        return replace_line(text, key, value)
+    except SystemExit:
+        pass
+    lines, done = [], False
+    for line in text.splitlines():
+        lines.append(line)
+        if not done and line.strip().lower().startswith(section):
+            lines.append(f" {key:<36}= {value},")
+            done = True
+    if not done:
+        raise SystemExit(f"cannot insert {key}: no {section} section in the namelist")
+    return "\n".join(lines) + "\n"
+
+
 def remove_keys(text: str, keys: set[str]) -> str:
     out=[]
     for line in text.splitlines():
@@ -75,12 +99,36 @@ def main() -> int:
                     help='MPI ranks; np>1 adds --mca btl self,tcp (Open MPI shm BTL SEGVs with libtorch-loaded ranks)')
     ap.add_argument('--label', default='smoke')
     ap.add_argument('--fixed-dt', action='store_true', help='Disable adaptive time step for parity smoke runs')
+    ap.add_argument('--proc-grid', default=None, metavar='NXxNY',
+                    help='force the MPI decomposition, e.g. 1x4, 2x2, 4x1. WRF '
+                         'picks one itself otherwise, so the seam direction is '
+                         'not a variable the caller controls -- and separating '
+                         'a seam-direction effect from a rank-count one needs '
+                         'the same np run with different grids '
+                         '(OPEN_QUESTIONS_after_pr167, item 3).')
     ap.add_argument('--radt', type=int, default=None,
                     help='radiation call interval in minutes. For the NEGATIVE '
                          'CONTROL on the six-minute field-count jump: if that '
                          'jump is the first radiation call, it must move when '
                          'this does, and stay put if it does not.')
     args=ap.parse_args()
+
+    # ARGUMENT VALIDATION BEFORE FILESYSTEM ACCESS. The grid check first lived
+    # beside the namelist edit, so on a host without the namelist the run died
+    # on a missing file and never reached it -- a guard that only fires where it
+    # is least needed.
+    proc_grid = None
+    if args.proc_grid is not None:
+        try:
+            nx, ny = (int(v) for v in args.proc_grid.lower().split('x'))
+        except ValueError:
+            raise SystemExit(f"--proc-grid wants NXxNY, got {args.proc_grid!r}")
+        if nx * ny != args.np:
+            raise SystemExit(
+                f"--proc-grid {args.proc_grid} is {nx * ny} ranks and --np is "
+                f"{args.np}; a grid that does not multiply to the rank count is "
+                f"silently ignored by WRF, which would make the control a null")
+        proc_grid = (nx, ny)
 
     run=Path(__file__).resolve().parent
     nml=run/'namelist.input'
@@ -114,6 +162,9 @@ def main() -> int:
         text=replace_line(text,key,value)
     if args.history_s is not None:
         text=replace_line(text, 'history_interval_s', str(args.history_s))
+    if proc_grid is not None:
+        text=set_or_insert(text, 'nproc_x', str(proc_grid[0]))
+        text=set_or_insert(text, 'nproc_y', str(proc_grid[1]))
     if args.radt is not None:
         text=replace_line(text, 'radt', str(args.radt))
     if args.fixed_dt:
@@ -125,7 +176,8 @@ def main() -> int:
     _np_tag = f"_np{args.np}" if args.np != 1 else ''
     _sec_tag = f"{args.seconds}s" if args.seconds else ''
     _rad_tag = f"_radt{args.radt}" if args.radt is not None else ''
-    out=run/'runs'/f"mp{args.mp}_{args.label}_{args.minutes}min{_sec_tag}_hist{args.history}{_rad_tag}{_np_tag}_{stamp}"
+    _grid_tag = f"_{args.proc_grid}" if args.proc_grid is not None else ''
+    out=run/'runs'/f"mp{args.mp}_{args.label}_{args.minutes}min{_sec_tag}_hist{args.history}{_rad_tag}{_np_tag}{_grid_tag}_{stamp}"
     out.mkdir(parents=True, exist_ok=True)
     for pat in ['rsl.error.*','rsl.out.*','wrfout_d01_*','klfs_lc05_fcst.*','klfs_lc05_prcp.*','klfs_lc05_ocean.*','klfs_lc05_energy.*','kdm6_step1_*.bin','kdm6_driver_step1_*.bin','kdm6_upstream_*.bin']:
         for p in run.glob(pat):

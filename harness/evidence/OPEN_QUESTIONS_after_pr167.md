@@ -50,9 +50,13 @@ decomposition does. **That is not "no defect"** -- it withdraws only the
 inference from "large at ten minutes" to "wrong in the dynamics".
 
 **Open:** whether the seam difference is harmless, which the size argument does
-not decide; the processor-grid control (`1x4`, `2x2`, `4x1` at the same rank
-count) that would separate seam direction, which `run_ss_case` cannot express
-today; and a matched-magnitude ENSEMBLE rather than one realisation.
+not decide; and a matched-magnitude ENSEMBLE rather than one realisation.
+
+The processor-grid control is no longer blocked on tooling: `run_ss_case` takes
+`--proc-grid NXxNY`, refuses a grid that does not multiply to `--np` (WRF
+ignores such a grid silently, which would make the control a null), and carries
+the grid in the run directory's name so two grids at the same rank count cannot
+overwrite each other. The runs themselves are not made here.
 
 ## 4. Ice, which needs a different fixture and not another arm
 
