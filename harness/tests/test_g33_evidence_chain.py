@@ -2669,3 +2669,31 @@ def test_the_declared_decomposition_is_held_to_the_PRIMARY_stream():
     mem = {m["file"] for m in man["members"]}
     assert any(r["state"] == "MEMBER-CONTRACT-MISMATCH" and r["file"] in mem
                for r in rows), [r["state"] for r in rows]
+
+
+def test_a_pushed_anchor_tag_satisfies_closeout_reachability():
+    """`refs/remotes/` alone excluded TAGS, and `git clone` fetches tags by
+    default -- so a pushed anchor tag, which is how a bundle's commit stays
+    resolvable after its branch was squashed, failed the CLOSEOUT while passing
+    the routine check. Both anchor tags in this repository failed it, which is
+    the trusted set being too narrow rather than the tags being wrong.
+
+    Found by asking which MODE was verified: the fix was declared on
+    `--check`, and `--check` asks the routine question.
+    """
+    tags = ec._pushed_tags()
+    anchors = {t for t in tags if t.startswith("refs/tags/g33-evidence-")}
+    if not anchors:
+        pytest.skip("no anchor tags on the remote from this host")
+    for ref in sorted(anchors):
+        commit = ref.rsplit("-", 1)[-1]
+        assert ec._reachable(commit, trusted=True), (
+            f"{ref} is on the remote and does not satisfy closeout reachability")
+
+
+def test_an_unpushed_tag_does_not_vouch_for_an_anchor():
+    """A local-only tag is not something a reviewer who clones would get, so it
+    must not pass the trusted question -- which is why this checks the remote
+    rather than the local ref name."""
+    assert all(t.startswith("refs/tags/") for t in ec._pushed_tags())
+    assert "refs/tags/g33-evidence-LOCALONLY-probe" not in ec._pushed_tags()

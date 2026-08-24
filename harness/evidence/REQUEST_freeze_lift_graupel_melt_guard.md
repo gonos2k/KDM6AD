@@ -48,11 +48,26 @@ exists to prevent. The divisor is not small; it is absent.
 
     the four land columns that fail   0 non-finite at 5, 10, 15, 20, 30, 60 s
     every arm on the gradient fixture bitwise unchanged
-    the 23-column batch              medians unchanged within the screen
+    every column that ALREADY produces numbers   bitwise unchanged
 
-The last is the load-bearing one: cells in the window carry `qg <= 1e-9`, so a
-correct fix must not move any published number. If it does, it changed more
-than the division.
+### The third criterion, corrected
+
+This first read "the 23-column batch: medians unchanged within the screen",
+which is **self-contradictory**. The four land columns that hit `-inf` are
+REJECTED from the sample today. A fix that works makes them produce numbers, so
+they JOIN the sample -- and they sit above the median, which is the
+survivorship effect `FINDING_timestep_matrix_sample_v1` measures in the other
+direction. **The median must move, and its moving is the fix working.**
+
+What must not move is any column the window never fires in. Those are
+bitwise-unchanged or the change reached past the division.
+
+And even on a passing column "no published number moves" is not guaranteed by
+the threshold argument alone. In the window the `nr` line at 1414 is guarded
+OFF -- it asks `qg > qcrmin` -- but lines 1416-1419 run, so `qr`, `qg`, `t` and
+`brs` do change there, and `qr` feeds later processes within the same call.
+The rain-NUMBER ledger is what this campaign publishes and is the most likely
+to be untouched; that is a prediction to check, not a property to assume.
 
 ## Not asked
 

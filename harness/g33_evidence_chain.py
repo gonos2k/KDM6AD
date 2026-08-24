@@ -854,6 +854,17 @@ _REACHABLE: dict = {}
 #: into `matches`). A tag counts when the REMOTE has it, which only the
 #: remote can answer; `remote_tags()` asks, and `--require-available` is
 #: where the answer is required.
+#: What "a ref a reviewer who clones this could have" actually covers.
+#:
+#: `refs/remotes/` alone excluded TAGS, and `git clone` fetches tags by default
+#: -- so a pushed anchor tag, which is how a bundle's commit is kept resolvable
+#: after its branch was squashed, failed the closeout while passing the routine
+#: check. Both anchor tags in this repository failed it, so this is the trusted
+#: set being too narrow rather than the tags being wrong.
+#:
+#: A LOCAL-ONLY tag would be a false pass, and this cannot tell one from the
+#: other by ref name. `_pushed_tags()` below narrows it to tags the remote
+#: actually has.
 TRUSTED_REFS = ("refs/remotes/",)
 
 def _run_git(*args, text: bool = True, timeout: int | None = None):
@@ -912,6 +923,23 @@ def remote_tags() -> tuple:
     return _REMOTE_TAGS["v"]
 
 
+def _pushed_tags() -> frozenset:
+    """Tag refs the REMOTE has, so a local-only tag cannot vouch for an anchor."""
+    global _PUSHED_TAGS
+    if _PUSHED_TAGS is None:
+        r = _run_git("ls-remote", "--tags", "origin", timeout=30)
+        names = set()
+        for ln in (r.stdout or "").splitlines():
+            parts = ln.split()
+            if len(parts) == 2 and parts[1].startswith("refs/tags/"):
+                names.add(parts[1].removesuffix("^{}"))
+        _PUSHED_TAGS = frozenset(names) if r.returncode == 0 else frozenset()
+    return _PUSHED_TAGS
+
+
+_PUSHED_TAGS = None
+
+
 def _reachable(commit: str, trusted: bool = False) -> bool:
     """Is `commit` reachable from a ref, or merely still in the object database?
 
@@ -931,7 +959,16 @@ def _reachable(commit: str, trusted: bool = False) -> bool:
         if trusted:
             cmd += list(TRUSTED_REFS)
         r = _run_git(*cmd[1:])
-        _REACHABLE[key] = r.returncode == 0 and bool(r.stdout.strip())
+        ok = r.returncode == 0 and bool(r.stdout.strip())
+        if trusted and not ok:
+            # A PUSHED TAG counts. Checked against the remote rather than the
+            # local ref, so a tag that was never pushed -- which a reviewer
+            # would not get -- does not pass.
+            t = _run_git("for-each-ref", "--contains", commit,
+                         "--format=%(refname)", "refs/tags/")
+            local = {ln.strip() for ln in (t.stdout or "").splitlines() if ln.strip()}
+            ok = bool(local & _pushed_tags())
+        _REACHABLE[key] = ok
     return _REACHABLE[key]
 
 

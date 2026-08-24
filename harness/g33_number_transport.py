@@ -1226,6 +1226,11 @@ def stream_header(stream: str) -> dict:
             # declared after the body while `calls()` refused it -- so the two
             # readers disagreed about the same stream, and the one that decides
             # run identity was the permissive one. Scan to the end and refuse.
+            #
+            # The early return is therefore gone, and the cost was measured
+            # rather than assumed: 3.3 ms over 10 968 lines, 5.9 ms over 43 869,
+            # and `validated_run_identity` is the only caller -- once per
+            # stream. Not worth a two-pass offset trick to get back.
             if in_body:
                 raise StreamError(
                     f"G33N METRIC {m.group(1)!r} appears after the first call; "
