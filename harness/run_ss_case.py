@@ -130,7 +130,27 @@ def main() -> int:
                 f"silently ignored by WRF, which would make the control a null")
         proc_grid = (nx, ny)
 
+    # THIS SCRIPT RUNS FROM BESIDE ITS CASE, not from the repository: it reads
+    # `namelist.input` and launches `wrf.exe` from its own directory, so a case
+    # keeps its own copy. That is the design, and it means the copy can fall
+    # behind the repository's -- which it had, by 12 lines, so a run made today
+    # silently used a version without the binary-hash recording added this
+    # morning. Symlinking the two is not the fix: `resolve()` follows the link
+    # and the script then looks for the case's files in the repository.
+    #
+    # So: say so, loudly, rather than pretend there is one file.
     run=Path(__file__).resolve().parent
+    _repo_copy = Path("/Users/yhlee/KDM6AD-k/harness/run_ss_case.py")
+    if _repo_copy.exists() and _repo_copy.resolve() != Path(__file__).resolve():
+        import hashlib as _h
+        mine = _h.sha256(Path(__file__).read_bytes()).hexdigest()
+        theirs = _h.sha256(_repo_copy.read_bytes()).hexdigest()
+        if mine != theirs:
+            print(f"run_ss_case: WARNING this copy differs from the repository's.\n"
+                  f"             here {mine[:12]}  repo {theirs[:12]}\n"
+                  f"             Anything added to the repository copy -- new flags,\n"
+                  f"             new provenance -- is NOT in this run.",
+                  file=sys.stderr)
     nml=run/'namelist.input'
     original=nml.read_text()
     text=original
