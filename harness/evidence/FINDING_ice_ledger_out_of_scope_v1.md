@@ -133,9 +133,17 @@ or a fixture where ice sediments WITHOUT converting: cold enough throughout that
 melting is off, and thin enough in the other hydrometeors that riming and
 aggregation do not fire.
 
-That is a fixture problem and not a member-count problem, the same shape as
-`FINDING_g33_fixture_cannot_answer_thermo_policy_v1`: the question is not
-under-sampled, it is not defined in the region the fixture occupies.
+That is a fixture problem and not a member-count problem: the question is not
+under-sampled, it is not defined in the region the fixture occupies. More calls,
+more columns and more arms all sample the same region, and the region does not
+contain a sedimentation-only ice signal to find.
+
+(This sentence originally cited a finding by name that **does not exist** --
+`FINDING_g33_fixture_cannot_answer_thermo_policy_v1`. The fact is real and is
+recorded in the campaign's working notes, but I promoted a remembered fact to a
+filename, so a reader following the citation would have found nothing and the
+claim would have been resting on an absence. The argument is made here instead
+of borrowed.)
 
 ## What this does establish
 

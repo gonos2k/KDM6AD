@@ -116,6 +116,12 @@ _NUMERIC_FLAGS = ("-ffp-contract=", "-O", "-ffast-math", "-funroll-loops",
                   "-ftree-vectorize", "-fno-", "-march=", "-mtune=", "-mfpmath=")
 
 
+#: NOT CALLED anywhere today (audit, 2026-08-24). Kept rather than deleted:
+#: it answers a question this campaign has asked before and will ask again,
+#: and this session cost three separate reimplementations of things that
+#: already existed. Deleting an unused answer plants that mistake in the
+#: future. If it is still unused when the next reader passes, the reason to
+#: keep it is weaker than it is now -- say so then.
 def _numeric_flags(commands) -> tuple:
     """The numerics-affecting flags each compile command carries, deduplicated and
     ordered. Paths, output names and the -D defines that SHOULD differ between the

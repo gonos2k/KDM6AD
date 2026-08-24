@@ -126,6 +126,12 @@ def profile(state: Path, basis: str = "canonical") -> dict:
     }
 
 
+#: NOT CALLED anywhere today (audit, 2026-08-24). Kept rather than deleted:
+#: it answers a question this campaign has asked before and will ask again,
+#: and this session cost three separate reimplementations of things that
+#: already existed. Deleting an unused answer plants that mistake in the
+#: future. If it is still unused when the next reader passes, the reason to
+#: keep it is weaker than it is now -- say so then.
 def where_the_number_is(state: Path, field: str = "QNRAIN",
                         basis: str = "canonical") -> dict:
     """The same coefficients, restricted to interfaces that actually carry number.

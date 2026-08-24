@@ -442,6 +442,12 @@ def fixture_dt_bits_from(src: str, where: str = "<fixture>") -> str:
     return m.group(1).upper()
 
 
+#: NOT CALLED anywhere today (audit, 2026-08-24). Kept rather than deleted:
+#: it answers a question this campaign has asked before and will ask again,
+#: and this session cost three separate reimplementations of things that
+#: already existed. Deleting an unused answer plants that mistake in the
+#: future. If it is still unused when the next reader passes, the reason to
+#: keep it is weaker than it is now -- say so then.
 def fixture_dt_bits(fixture: str) -> str:
     return fixture_dt_bits_from(
         (HERE / "g33_fortran" / f"{fixture}.f90").read_text(), f"{fixture}.f90")

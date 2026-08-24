@@ -862,3 +862,21 @@ def test_the_normaliser_strips_TMPDIR_but_keeps_the_digest():
     # a TMPDIR that CONTAINS the output directory must not half-normalise
     m = bp.normaliser(P("/var/t/out"), P("/var/t"), None)
     assert m("/var/t/out/a.o") == "<OUT>/a.o"
+
+
+def test_the_generator_and_the_validator_name_the_same_identity_schema():
+    """`IDENTITY_SCHEMA` is a literal in TWO modules -- `g33_identity` writes it
+    into every identity, `g33_refine_manifest` checks identities against it --
+    and nothing tied them together.
+
+    The divergence is asymmetric, which is why it is worth pinning. Bump the
+    GENERATOR and the validator refuses the bundles it produces: loud. Bump the
+    VALIDATOR and the old value is still in `KNOWN_IDENTITY_SCHEMAS`, so every
+    bundle keeps passing while being built to a schema the validator no longer
+    calls canonical. That direction is silent, and silence is what this pins.
+    """
+    import g33_refine_manifest as rm
+    assert gi.IDENTITY_SCHEMA == rm.IDENTITY_SCHEMA, (
+        f"the identity generator writes {gi.IDENTITY_SCHEMA!r} and the manifest "
+        f"validator calls {rm.IDENTITY_SCHEMA!r} canonical")
+    assert gi.IDENTITY_SCHEMA in rm.KNOWN_IDENTITY_SCHEMAS
