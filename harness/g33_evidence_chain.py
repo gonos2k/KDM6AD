@@ -854,18 +854,15 @@ _REACHABLE: dict = {}
 #: into `matches`). A tag counts when the REMOTE has it, which only the
 #: remote can answer; `remote_tags()` asks, and `--require-available` is
 #: where the answer is required.
-#: What "a ref a reviewer who clones this could have" actually covers.
+#: What "a ref a reviewer who clones this could have" covers, by REF NAMESPACE.
 #:
-#: `refs/remotes/` alone excluded TAGS, and `git clone` fetches tags by default
-#: -- so a pushed anchor tag, which is how a bundle's commit is kept resolvable
-#: after its branch was squashed, failed the closeout while passing the routine
-#: check. Both anchor tags in this repository failed it, so this is the trusted
-#: set being too narrow rather than the tags being wrong.
-#:
-#: A LOCAL-ONLY tag would be a false pass, and this cannot tell one from the
-#: other by ref name. `remote_tags()` -- which already existed for exactly this
-#: question, and already separates "the remote has not" from "the remote could
-#: not be asked" -- is what narrows it.
+#: `refs/tags/` is deliberately absent and must stay absent: a tag lives in the
+#: same namespace whether it was fetched or invented here, so the namespace
+#: cannot tell a pushed anchor from a local one. A pushed tag IS an anchor --
+#: `_commit_states` establishes that through `remote_tags()`, which asks the
+#: remote -- and adding tags here instead would let a local-only tag turn
+#: `commit-local-anchor-only` into `matches`, which is the one thing that
+#: predicate exists to rule out.
 TRUSTED_REFS = ("refs/remotes/",)
 
 def _run_git(*args, text: bool = True, timeout: int | None = None):
@@ -944,15 +941,6 @@ def _reachable(commit: str, trusted: bool = False) -> bool:
             cmd += list(TRUSTED_REFS)
         r = _run_git(*cmd[1:])
         ok = r.returncode == 0 and bool(r.stdout.strip())
-        if trusted and not ok:
-            # A PUSHED TAG counts, through the reader that already exists.
-            # `remote_tags()` indexes by the commit a tag points AT and carries
-            # `asked`, so "the remote has no such tag" and "the remote could
-            # not be reached" stay different facts. Writing a second one of
-            # these was the duplicate-fact mistake this campaign keeps paying
-            # for; found by the adversarial pass, two functions apart.
-            byc, asked = remote_tags()
-            ok = asked and bool(byc.get(commit) or byc.get(commit[:40]))
         _REACHABLE[key] = ok
     return _REACHABLE[key]
 

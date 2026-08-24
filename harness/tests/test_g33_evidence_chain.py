@@ -2671,46 +2671,28 @@ def test_the_declared_decomposition_is_held_to_the_PRIMARY_stream():
                for r in rows), [r["state"] for r in rows]
 
 
-def test_a_pushed_anchor_tag_satisfies_closeout_reachability():
-    """`refs/remotes/` alone excluded TAGS, and `git clone` fetches tags by
-    default -- so a pushed anchor tag, which is how a bundle's commit stays
-    resolvable after its branch was squashed, failed the CLOSEOUT while passing
-    the routine check. Both anchor tags in this repository failed it, which is
-    the trusted set being too narrow rather than the tags being wrong.
+def test_the_repositorys_anchor_tags_resolve_their_bundles():
+    """A pushed anchor tag IS the anchor -- established by `_commit_states`
+    through `remote_tags()`, NOT by widening `TRUSTED_REFS`.
 
-    Found by asking which MODE was verified: the fix was declared on
-    `--check`, and `--check` asks the routine question.
+    This test first asserted `_reachable(commit, trusted=True)`, and drove a
+    change that put `refs/tags/` into the trusted set. That is exactly what
+    `test_a_LOCAL_tag_is_not_an_anchor` forbids, and CI said so: the ref
+    namespace cannot tell a fetched tag from an invented one, so a local-only
+    tag would turn `commit-local-anchor-only` into `matches` -- the one thing
+    that predicate exists to rule out. The repository had already solved this
+    one layer up. The fix, and this test, were aimed a layer too low.
     """
     byc, asked = ec.remote_tags()
     if not asked:
         pytest.skip("the remote could not be asked from this host")
-    anchors = {f"refs/tags/{t}" for tags in byc.values() for t in tags
-               if t.startswith("g33-evidence-")}
+    anchors = {c: t for c, t in byc.items()
+               if any(x.startswith("g33-evidence-") for x in t)}
     if not anchors:
         pytest.skip("no anchor tags on the remote from this host")
-    for ref in sorted(anchors):
-        # ASK GIT WHAT THE TAG POINTS AT. The first version of this line read
-        # `ref.rsplit("-", 1)[-1]`, deriving a commit from the tag's NAME --
-        # which gives 'baseline' for `g33-evidence-armn-baseline` and tests
-        # nothing. Written in a session that had already corrected three
-        # name-derived-meaning defects, which is how ordinary the habit is.
-        r = ec._run_git("rev-list", "-n", "1", ref)
-        commit = (r.stdout or "").strip()
-        assert len(commit) == 40, f"{ref} does not resolve to a commit: {r.stderr[:80]}"
-        assert ec._reachable(commit, trusted=True), (
-            f"{ref} is on the remote and does not satisfy closeout reachability")
-
-
-def test_an_unpushed_tag_does_not_vouch_for_an_anchor():
-    """A local-only tag is not something a reviewer who clones would get, so it
-    must not pass the trusted question -- which is why this asks the remote
-    rather than reading a local ref name.
-
-    And `asked` is not the same fact as "the remote has none": a host with no
-    network must skip, not assert. `remote_tags()` carried that distinction
-    before this test existed."""
-    byc, asked = ec.remote_tags()
-    if not asked:
-        pytest.skip("the remote could not be asked from this host")
-    everywhere = {t for tags in byc.values() for t in tags}
-    assert "g33-evidence-LOCALONLY-probe" not in everywhere
+    for commit in sorted(anchors):
+        man = {"repo_commit": commit, "member_parsers": [],
+               "producer_modules": [], "tracked_build_inputs": []}
+        states = {r["state"] for r in ec._commit_states(man)}
+        assert states == {"matches"}, (commit, anchors[commit],
+                                       ec._commit_states(man))
