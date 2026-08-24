@@ -863,8 +863,9 @@ _REACHABLE: dict = {}
 #: set being too narrow rather than the tags being wrong.
 #:
 #: A LOCAL-ONLY tag would be a false pass, and this cannot tell one from the
-#: other by ref name. `_pushed_tags()` below narrows it to tags the remote
-#: actually has.
+#: other by ref name. `remote_tags()` -- which already existed for exactly this
+#: question, and already separates "the remote has not" from "the remote could
+#: not be asked" -- is what narrows it.
 TRUSTED_REFS = ("refs/remotes/",)
 
 def _run_git(*args, text: bool = True, timeout: int | None = None):
@@ -923,23 +924,6 @@ def remote_tags() -> tuple:
     return _REMOTE_TAGS["v"]
 
 
-def _pushed_tags() -> frozenset:
-    """Tag refs the REMOTE has, so a local-only tag cannot vouch for an anchor."""
-    global _PUSHED_TAGS
-    if _PUSHED_TAGS is None:
-        r = _run_git("ls-remote", "--tags", "origin", timeout=30)
-        names = set()
-        for ln in (r.stdout or "").splitlines():
-            parts = ln.split()
-            if len(parts) == 2 and parts[1].startswith("refs/tags/"):
-                names.add(parts[1].removesuffix("^{}"))
-        _PUSHED_TAGS = frozenset(names) if r.returncode == 0 else frozenset()
-    return _PUSHED_TAGS
-
-
-_PUSHED_TAGS = None
-
-
 def _reachable(commit: str, trusted: bool = False) -> bool:
     """Is `commit` reachable from a ref, or merely still in the object database?
 
@@ -961,13 +945,14 @@ def _reachable(commit: str, trusted: bool = False) -> bool:
         r = _run_git(*cmd[1:])
         ok = r.returncode == 0 and bool(r.stdout.strip())
         if trusted and not ok:
-            # A PUSHED TAG counts. Checked against the remote rather than the
-            # local ref, so a tag that was never pushed -- which a reviewer
-            # would not get -- does not pass.
-            t = _run_git("for-each-ref", "--contains", commit,
-                         "--format=%(refname)", "refs/tags/")
-            local = {ln.strip() for ln in (t.stdout or "").splitlines() if ln.strip()}
-            ok = bool(local & _pushed_tags())
+            # A PUSHED TAG counts, through the reader that already exists.
+            # `remote_tags()` indexes by the commit a tag points AT and carries
+            # `asked`, so "the remote has no such tag" and "the remote could
+            # not be reached" stay different facts. Writing a second one of
+            # these was the duplicate-fact mistake this campaign keeps paying
+            # for; found by the adversarial pass, two functions apart.
+            byc, asked = remote_tags()
+            ok = asked and bool(byc.get(commit) or byc.get(commit[:40]))
         _REACHABLE[key] = ok
     return _REACHABLE[key]
 

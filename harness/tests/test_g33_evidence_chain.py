@@ -2681,19 +2681,36 @@ def test_a_pushed_anchor_tag_satisfies_closeout_reachability():
     Found by asking which MODE was verified: the fix was declared on
     `--check`, and `--check` asks the routine question.
     """
-    tags = ec._pushed_tags()
-    anchors = {t for t in tags if t.startswith("refs/tags/g33-evidence-")}
+    byc, asked = ec.remote_tags()
+    if not asked:
+        pytest.skip("the remote could not be asked from this host")
+    anchors = {f"refs/tags/{t}" for tags in byc.values() for t in tags
+               if t.startswith("g33-evidence-")}
     if not anchors:
         pytest.skip("no anchor tags on the remote from this host")
     for ref in sorted(anchors):
-        commit = ref.rsplit("-", 1)[-1]
+        # ASK GIT WHAT THE TAG POINTS AT. The first version of this line read
+        # `ref.rsplit("-", 1)[-1]`, deriving a commit from the tag's NAME --
+        # which gives 'baseline' for `g33-evidence-armn-baseline` and tests
+        # nothing. Written in a session that had already corrected three
+        # name-derived-meaning defects, which is how ordinary the habit is.
+        r = ec._run_git("rev-list", "-n", "1", ref)
+        commit = (r.stdout or "").strip()
+        assert len(commit) == 40, f"{ref} does not resolve to a commit: {r.stderr[:80]}"
         assert ec._reachable(commit, trusted=True), (
             f"{ref} is on the remote and does not satisfy closeout reachability")
 
 
 def test_an_unpushed_tag_does_not_vouch_for_an_anchor():
     """A local-only tag is not something a reviewer who clones would get, so it
-    must not pass the trusted question -- which is why this checks the remote
-    rather than the local ref name."""
-    assert all(t.startswith("refs/tags/") for t in ec._pushed_tags())
-    assert "refs/tags/g33-evidence-LOCALONLY-probe" not in ec._pushed_tags()
+    must not pass the trusted question -- which is why this asks the remote
+    rather than reading a local ref name.
+
+    And `asked` is not the same fact as "the remote has none": a host with no
+    network must skip, not assert. `remote_tags()` carried that distinction
+    before this test existed."""
+    byc, asked = ec.remote_tags()
+    if not asked:
+        pytest.skip("the remote could not be asked from this host")
+    everywhere = {t for tags in byc.values() for t in tags}
+    assert "g33-evidence-LOCALONLY-probe" not in everywhere

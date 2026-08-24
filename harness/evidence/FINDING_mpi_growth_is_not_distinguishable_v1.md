@@ -93,3 +93,20 @@ A null from a perturbation experiment tests where the perturbation was put
 before it tests the model. The control that catches it is the initial frame.
 
 One case, one build, one host, one realisation.
+
+## The build was not recorded, and is argued rather than shown
+
+The baseline is from 2026-08-22 and the perturbed run from 2026-08-24, and in
+between this session swapped `wrf.exe` several times for diagnostic arms. The
+hash was checked after every restore -- but only in a transcript, and a run
+directory recorded nothing, so the comparison's most basic premise could not be
+verified from the evidence afterwards.
+
+What CAN be shown: an independent `np = 1` run made on 2026-08-23
+(`mp37_repc_1min_hist1`) is bit-identical to the baseline at one minute across
+all 197 fields, so the deployed binary was unchanged over 08-22 to 08-23. There
+is no such control spanning 08-24, and the argument for that day rests on the
+restore checks alone.
+
+`run_ss_case.py` now writes `wrf_exe_sha256` into every run directory, so the
+next comparison of this kind is checkable instead of argued.
