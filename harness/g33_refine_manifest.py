@@ -352,7 +352,11 @@ _PRECISIONS = ("f32", "f64")
 #: both directions.
 _ALGOS = ("legacy", "conservative", "nmass", "lncmin",
           "nmasslncmin", "cons_nmass", "cons_lncmin",
-          "cons_nmasslncmin", "nmass_dry", "nmass_dry_window")
+          "cons_nmasslncmin", "nmass_dry", "nmass_dry_window",
+          # the graupel-melt counterfactuals (owner review 4.5). Diagnostic
+          # arms: a manifest may name one, which is a WIDENING -- nothing that
+          # was legal became illegal.
+          "melt_g1", "melt_g2", "melt_g3")
 KNOWN_SCHEMAS = ("refinement_experiment_v1", "refinement_experiment_v2",
                  "refinement_experiment_v3", "refinement_experiment_v4",
                  "refinement_experiment_v5", "refinement_experiment_v6",
