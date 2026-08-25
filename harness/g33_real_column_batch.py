@@ -181,10 +181,20 @@ def main() -> int:
     #
     # So: refuse to start dirty, refuse to start beside another holder, and
     # hold a lock naming who we are for anything that looks.
-    dirty = subprocess.run(["git", "status", "--porcelain", "--", str(MANIFEST)],
+    # THE SAME PATHS AT BOTH ENDS. The start check looked at MANIFEST alone and
+    # the end check at three whole DIRECTORIES, so a tree with any unrelated
+    # edit under harness/g33_fortran passed the first and failed the second --
+    # renaming the lock to .failed and demanding a manual repair for something
+    # this batch never touched. Observed. These are the files it rewrites, and
+    # they are what both ends ask about.
+    OWNED = [str(MANIFEST),
+             f"harness/g33_fortran/g33_fixture_{FIXTURE_ID}.f90",
+             f"harness/g33_overlay/g33_fixture_{FIXTURE_ID}.h"]
+    dirty = subprocess.run(["git", "status", "--porcelain", "--", *OWNED],
                            capture_output=True, text=True, cwd=REPO).stdout.strip()
     if dirty:
-        raise SystemExit(f"{MANIFEST.name} is modified relative to HEAD; a "
+        raise SystemExit(f"the fixture files this batch rewrites are modified "
+                         f"relative to HEAD:\n{dirty}\nA "
                          f"previous batch did not restore it. Inspect before "
                          f"running another.")
     failed = REPO / ".g33-fixture-lock.failed"
@@ -315,8 +325,7 @@ def main() -> int:
         subprocess.run([sys.executable, str(HERE / "g33_fixture_v1.py"),
                         "--write", f"--fixture-id={FIXTURE_ID}"],
                        capture_output=True, text=True, cwd=REPO)
-        left = subprocess.run(["git", "status", "--porcelain", "--",
-                               str(MANIFEST), "harness/g33_fortran", "harness/g33_overlay"],
+        left = subprocess.run(["git", "status", "--porcelain", "--", *OWNED],
                               capture_output=True, text=True, cwd=REPO).stdout.strip()
         lock = REPO / ".g33-fixture-lock"
         if left:

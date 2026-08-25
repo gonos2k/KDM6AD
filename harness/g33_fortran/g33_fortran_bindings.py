@@ -1013,7 +1013,7 @@ VARIANTS["melt_g3"] = dict(
 #: and volume the melt started with. Instrumentation sites are still legacy's.
 VARIANTS["melt_g4"] = dict(
     VARIANTS["legacy"],
-    sha="fdc91ae14ba525bc466f8a4830d8b919b2412a3457e8f36331b60fef3d57b38f")
+    sha="1b1f4569ef9bfcec69e088bf9ee21a7afd15abe440982d586fbd25a37287cf93")
 VARIANTS["nmass_dry_window"] = dict(
     VARIANTS["nmass"],
     sha="a3330ad13b99460e305c01e4e9f02848cc74779ed0acf463b7865d6e6146ee60")
