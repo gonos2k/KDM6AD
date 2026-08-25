@@ -279,6 +279,7 @@ FIELD_EXPR = {
     "nmass": {"INTERIOR": _LEG_INT, "TOP": _LEG_TOP},
     "nmass_dry": {"INTERIOR": _LEG_INT, "TOP": _LEG_TOP},
     "nmass_dry_window": {"INTERIOR": _LEG_INT, "TOP": _LEG_TOP},
+
     # ARM L changes no transfer line at all -- only which threshold each
     # column is compared against -- so the sedimentation ladder is legacy's
     # unchanged.
@@ -985,6 +986,24 @@ MICRO_FREEZE_HEAT = [
 #: an update line -- so it is DERIVED from that entry rather than copied, with
 #: its own source sha. A copied block is a second place for the anchors to
 #: drift, which is the defect this file has already paid for twice.
+#: melt_g1: the graupel-melt counterfactual. Its instrumentation sites
+#: are legacy's -- the edit touches only the melt block, which carries
+#: none of them -- so it inherits legacy's bindings and pins its own sha.
+VARIANTS["melt_g1"] = dict(
+    VARIANTS["legacy"],
+    sha="5f5a4c73dbb0be9163d0c64511f2a632b6d6fbe8d0e36c68dbc64b2a0b8c759a")
+#: melt_g2: the graupel-melt counterfactual. Its instrumentation sites
+#: are legacy's -- the edit touches only the melt block, which carries
+#: none of them -- so it inherits legacy's bindings and pins its own sha.
+VARIANTS["melt_g2"] = dict(
+    VARIANTS["legacy"],
+    sha="ac136a82701bdcb944242c074f5f445ef1f80deb16ab8576730448123c09f517")
+#: melt_g3: the graupel-melt counterfactual. Its instrumentation sites
+#: are legacy's -- the edit touches only the melt block, which carries
+#: none of them -- so it inherits legacy's bindings and pins its own sha.
+VARIANTS["melt_g3"] = dict(
+    VARIANTS["legacy"],
+    sha="3acf8bcbdad4218309e20686415691072c69682392f36ce44db1614a401f32f8")
 VARIANTS["nmass_dry_window"] = dict(
     VARIANTS["nmass"],
     sha="a3330ad13b99460e305c01e4e9f02848cc74779ed0acf463b7865d6e6146ee60")
@@ -993,6 +1012,7 @@ VARIANTS["nmass_dry"] = dict(
     sha="c0e9465d03ee107fb50ba67d0f1798b92d417572e2cdaef3ffa568c684e19273")
 
 _DERIVED = {"nmass": "legacy", "nmass_dry": "legacy",
+            "melt_g1": "legacy", "melt_g2": "legacy", "melt_g3": "legacy",
             "nmass_dry_window": "legacy",
             "lncmin": "legacy", "nmasslncmin": "legacy",
             "cons_nmass": "conservative", "cons_lncmin": "conservative",
@@ -1039,3 +1059,13 @@ for _arm in ("cons_nmass", "cons_nmasslncmin"):
                           emit=_with_n_edit(VARIANTS["conservative"]["emit"]),
                           post=_with_n_edit(VARIANTS["conservative"]["post"]))
 del _t
+
+
+# THE MELT COUNTERFACTUALS INHERIT LEGACY'S BINDINGS WHOLE. A partial copy --
+# just INTERIOR and TOP -- passed every table check and then failed the schema
+# validation on `QR_OUTFLOW`, because that entry carries the per-operation field
+# lists too. The edits touch only the graupel melt block, which holds none of
+# these sites, so the right relationship is "identical to legacy", stated once.
+for _g in ("melt_g1", "melt_g2", "melt_g3"):
+    FIELD_EXPR[_g] = FIELD_EXPR["legacy"]
+    XFER_SITES[_g] = XFER_SITES["legacy"]

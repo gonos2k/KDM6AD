@@ -16,6 +16,7 @@
       "nr_levels": 6,
       "qv_surface": 0.021592719480395317,
       "qv_top": 1.3812330053042388e-06,
+      "timestep_failed": {},
       "timestep_matrix": {
         "10s": 0.017668976230140385,
         "20s": 0.017670401228300853,
@@ -40,6 +41,7 @@
       "nr_levels": 6,
       "qv_surface": 0.020560679957270622,
       "qv_top": 4.511519819061505e-06,
+      "timestep_failed": {},
       "timestep_matrix": {
         "10s": 0.05669826190479949,
         "20s": 0.0577114440203812,
@@ -64,6 +66,7 @@
       "nr_levels": 17,
       "qv_surface": 0.019144615158438683,
       "qv_top": 4.202719082968542e-06,
+      "timestep_failed": {},
       "timestep_matrix": {
         "10s": 0.028954215890494597,
         "20s": 0.028987096991289155,
@@ -71,6 +74,35 @@
         "5s": 0.02889460531419184
       },
       "xland": 2.0
+    },
+    {
+      "armn_dry": -9.227292211388653e-06,
+      "armn_dry_xfer": -9.228389465569982e-06,
+      "armn_moist_xfer": -1.1074593635135397e-09,
+      "density": "canonical mu_d|d(eta)|/g, rho_m = rho_d(1+qv)",
+      "fraction_left": 0.02288935198625597,
+      "fraction_left_xfer": 0.022893654282423473,
+      "i": 147,
+      "j": 71,
+      "legacy_dry": 0.00040312596953068956,
+      "legacy_dry_xfer": 0.0004030981402848844,
+      "legacy_moist": 0.00041300080670190597,
+      "legacy_moist_xfer": 0.00041297271862350126,
+      "nr_levels": 17,
+      "qv_surface": 0.01755322329699993,
+      "qv_top": 2.0961949758202536e-06,
+      "timestep_failed": {
+        "30s": {
+          "legacy": "StreamError: STAGE f32 payload is -inf: 'G33F STAGE 1 - micro_post_melt 0 brs 1 26 f32 FF800000'",
+          "nmass": "StreamError: STAGE f32 payload is -inf: 'G33F STAGE 1 - micro_post_melt 0 brs 1 26 f32 FF800000'"
+        }
+      },
+      "timestep_matrix": {
+        "10s": 0.02290438641534362,
+        "20s": 0.022904225480071806,
+        "5s": 0.022893654282423473
+      },
+      "xland": 1.0
     },
     {
       "armn_dry": -1.2225758689893967e-05,
@@ -88,6 +120,7 @@
       "nr_levels": 15,
       "qv_surface": 0.019714035093784332,
       "qv_top": 4.2319570638937876e-06,
+      "timestep_failed": {},
       "timestep_matrix": {
         "10s": 0.028549744767163304,
         "20s": 0.02854226379994227,
@@ -95,6 +128,67 @@
         "5s": 0.028566240241779704
       },
       "xland": 2.0
+    },
+    {
+      "armn_dry": -1.4679846094796055e-05,
+      "armn_dry_xfer": -1.4655517726892806e-05,
+      "armn_moist_xfer": 2.4500364038569104e-08,
+      "density": "canonical mu_d|d(eta)|/g, rho_m = rho_d(1+qv)",
+      "fraction_left": 0.024744914442969272,
+      "fraction_left_xfer": 0.02470410078740297,
+      "i": 145,
+      "j": 82,
+      "legacy_dry": 0.0005932469933823923,
+      "legacy_dry_xfer": 0.0005932423063285873,
+      "legacy_moist": 0.0006086790985080251,
+      "legacy_moist_xfer": 0.0006086743783177512,
+      "nr_levels": 17,
+      "qv_surface": 0.016009949147701263,
+      "qv_top": 1.8618791273183888e-06,
+      "timestep_failed": {
+        "30s": {
+          "legacy": "StreamError: STAGE f32 payload is -inf: 'G33F STAGE 1 - micro_post_melt 0 brs 1 28 f32 FF800000'",
+          "nmass": "StreamError: STAGE f32 payload is -inf: 'G33F STAGE 1 - micro_post_melt 0 brs 1 28 f32 FF800000'"
+        }
+      },
+      "timestep_matrix": {
+        "10s": 0.02475972744180358,
+        "20s": 0.024788450631302028,
+        "5s": 0.02470410078740297
+      },
+      "xland": 1.0
+    },
+    {
+      "armn_dry": -2.8609389974320025e-05,
+      "armn_dry_xfer": -2.8627573425037768e-05,
+      "armn_moist_xfer": -1.8354072405234617e-08,
+      "density": "canonical mu_d|d(eta)|/g, rho_m = rho_d(1+qv)",
+      "fraction_left": 0.028554771920151906,
+      "fraction_left_xfer": 0.0285727276744257,
+      "i": 130,
+      "j": 88,
+      "legacy_dry": 0.0010019127469944726,
+      "legacy_dry_xfer": 0.0010019195139937991,
+      "legacy_moist": 0.0010325444141177182,
+      "legacy_moist_xfer": 0.001032551244614126,
+      "nr_levels": 16,
+      "qv_surface": 0.019851189106702805,
+      "qv_top": 2.198631591454614e-06,
+      "timestep_failed": {
+        "20s": {
+          "legacy": "StreamError: STAGE f32 payload is -inf: 'G33F STAGE 1 - micro_post_melt 0 brs 1 26 f32 FF800000'",
+          "nmass": "StreamError: STAGE f32 payload is -inf: 'G33F STAGE 1 - micro_post_melt 0 brs 1 26 f32 FF800000'"
+        },
+        "30s": {
+          "legacy": "StreamError: STAGE f32 payload is -inf: 'G33F STAGE 1 - micro_post_melt 0 brs 1 27 f32 FF800000'",
+          "nmass": "StreamError: STAGE f32 payload is -inf: 'G33F STAGE 1 - micro_post_melt 0 brs 1 27 f32 FF800000'"
+        }
+      },
+      "timestep_matrix": {
+        "10s": 0.028547879333057403,
+        "5s": 0.0285727276744257
+      },
+      "xland": 1.0
     },
     {
       "armn_dry": -1.022675283484304e-05,
@@ -112,6 +206,7 @@
       "nr_levels": 17,
       "qv_surface": 0.018513528630137444,
       "qv_top": 3.970775651396252e-06,
+      "timestep_failed": {},
       "timestep_matrix": {
         "10s": 0.03934927046144971,
         "20s": 0.03935892799585482,
@@ -119,6 +214,38 @@
         "5s": 0.03932641662703184
       },
       "xland": 2.0
+    },
+    {
+      "armn_dry": -2.6245322454495407e-05,
+      "armn_dry_xfer": -2.6272291455398243e-05,
+      "armn_moist_xfer": -2.7200261035750927e-08,
+      "density": "canonical mu_d|d(eta)|/g, rho_m = rho_d(1+qv)",
+      "fraction_left": 0.029712201091174822,
+      "fraction_left_xfer": 0.02974312760692267,
+      "i": 142,
+      "j": 100,
+      "legacy_dry": 0.0008833180138340827,
+      "legacy_dry_xfer": 0.0008833062817940978,
+      "legacy_moist": 0.0009110316926618839,
+      "legacy_moist_xfer": 0.0009110198600194202,
+      "nr_levels": 16,
+      "qv_surface": 0.01861576735973358,
+      "qv_top": 2.1080140868434682e-06,
+      "timestep_failed": {
+        "20s": {
+          "legacy": "StreamError: STAGE f32 payload is -inf: 'G33F STAGE 1 - micro_post_melt 0 brs 1 27 f32 FF800000'",
+          "nmass": "StreamError: STAGE f32 payload is -inf: 'G33F STAGE 1 - micro_post_melt 0 brs 1 27 f32 FF800000'"
+        },
+        "30s": {
+          "legacy": "StreamError: STAGE f32 payload is -inf: 'G33F STAGE 1 - micro_post_melt 0 brs 1 28 f32 FF800000'",
+          "nmass": "StreamError: STAGE f32 payload is -inf: 'G33F STAGE 1 - micro_post_melt 0 brs 1 28 f32 FF800000'"
+        }
+      },
+      "timestep_matrix": {
+        "10s": 0.02972371011099596,
+        "5s": 0.02974312760692267
+      },
+      "xland": 1.0
     },
     {
       "armn_dry": -1.0216619410768133e-05,
@@ -136,6 +263,7 @@
       "nr_levels": 17,
       "qv_surface": 0.017899366095662117,
       "qv_top": 2.148912017219118e-06,
+      "timestep_failed": {},
       "timestep_matrix": {
         "10s": 0.026092127236740516,
         "20s": 0.026106772837791066,
@@ -160,6 +288,7 @@
       "nr_levels": 14,
       "qv_surface": 0.015824003145098686,
       "qv_top": 3.807158918789355e-06,
+      "timestep_failed": {},
       "timestep_matrix": {
         "10s": 0.014772018862136343,
         "20s": 0.014770340794129465,
@@ -184,6 +313,7 @@
       "nr_levels": 10,
       "qv_surface": 0.017226634547114372,
       "qv_top": 4.021441327495268e-06,
+      "timestep_failed": {},
       "timestep_matrix": {
         "10s": 0.014318040120011371,
         "20s": 0.014333226834261702,
@@ -208,6 +338,7 @@
       "nr_levels": 22,
       "qv_surface": 0.0183260478079319,
       "qv_top": 2.5574968276487198e-06,
+      "timestep_failed": {},
       "timestep_matrix": {
         "10s": 0.02323632788816918,
         "20s": 0.023230271540926013,
@@ -232,6 +363,7 @@
       "nr_levels": 9,
       "qv_surface": 0.017134258523583412,
       "qv_top": 4.011927558167372e-06,
+      "timestep_failed": {},
       "timestep_matrix": {
         "10s": 0.002028350899465735,
         "20s": 0.002099048627173997,
@@ -256,6 +388,7 @@
       "nr_levels": 9,
       "qv_surface": 0.017393402755260468,
       "qv_top": 4.075883680343395e-06,
+      "timestep_failed": {},
       "timestep_matrix": {
         "10s": 0.006582450264474239,
         "20s": 0.006689007060261015,
@@ -280,6 +413,7 @@
       "nr_levels": 6,
       "qv_surface": 0.01772148720920086,
       "qv_top": 3.629749926403747e-06,
+      "timestep_failed": {},
       "timestep_matrix": {
         "10s": 0.006371518654251474,
         "20s": 0.006452900867859021,
@@ -304,6 +438,7 @@
       "nr_levels": 17,
       "qv_surface": 0.01865280792117119,
       "qv_top": 1.9284912013972644e-06,
+      "timestep_failed": {},
       "timestep_matrix": {
         "10s": 0.027099467933092862,
         "20s": 0.027063422711065478,
@@ -328,6 +463,7 @@
       "nr_levels": 12,
       "qv_surface": 0.015219157561659813,
       "qv_top": 3.981204827141482e-06,
+      "timestep_failed": {},
       "timestep_matrix": {
         "10s": 0.008289309776775994,
         "20s": 0.008314430716968012,
@@ -352,6 +488,7 @@
       "nr_levels": 22,
       "qv_surface": 0.01736755669116974,
       "qv_top": 1.9754920685954858e-06,
+      "timestep_failed": {},
       "timestep_matrix": {
         "10s": 0.02026450103939965,
         "20s": 0.0202996869812308,
@@ -376,6 +513,7 @@
       "nr_levels": 10,
       "qv_surface": 0.015394668094813824,
       "qv_top": 3.972507329308428e-06,
+      "timestep_failed": {},
       "timestep_matrix": {
         "10s": 0.012542105182841058,
         "20s": 0.012490917167605947,
@@ -400,6 +538,7 @@
       "nr_levels": 16,
       "qv_surface": 0.017482228577136993,
       "qv_top": 1.4345631598189357e-06,
+      "timestep_failed": {},
       "timestep_matrix": {
         "10s": 0.019670884839753242,
         "20s": 0.019677550227968757,
@@ -424,6 +563,7 @@
       "nr_levels": 19,
       "qv_surface": 0.017074977979063988,
       "qv_top": 1.1984036518697394e-06,
+      "timestep_failed": {},
       "timestep_matrix": {
         "10s": 0.020627757927880585,
         "20s": 0.02063361157558602,
@@ -448,6 +588,7 @@
       "nr_levels": 9,
       "qv_surface": 0.015177602879703045,
       "qv_top": 1.3193657650845125e-06,
+      "timestep_failed": {},
       "timestep_matrix": {
         "10s": 0.0013849075947728214,
         "20s": 0.0013678105016140852,
@@ -459,56 +600,11 @@
   ],
   "provenance": {
     "density": "canonical mu_d|d(eta)|/g from MU+MUB and DNW; rho_m = rho_d(1+qv)",
-    "readers": "fraction_left is endpoint-recovered; fraction_left_xfer uses the emitted surface XFER",
-    "selection": "columns must run at EVERY step, so the four land columns that emit -inf at 30 s are absent -- see FINDING_timestep_matrix_sample_v1",
     "state": "mp37_traj_10min_hist1 20260822_212132, frame -1",
-    "timestep_matrix": "keys are call steps; 20s is operational"
+    "supersedes": "the 19-column complete-case table, which conditioned every step on surviving 30 s",
+    "verdicts": "per call step AND per arm; a step that fails no longer removes its column"
   },
   "rejected": [
-    {
-      "density": "canonical mu_d|d(eta)|/g, rho_m = rho_d(1+qv)",
-      "i": 147,
-      "j": 71,
-      "nr_levels": 17,
-      "qv_surface": 0.01755322329699993,
-      "qv_top": 2.0961949758202536e-06,
-      "reason": "StreamError: STAGE f32 payload is -inf: 'G33F STAGE 1 - micro_post_melt 0 brs 1 26 f32 FF800000'",
-      "stage": "build_or_run",
-      "xland": 1.0
-    },
-    {
-      "density": "canonical mu_d|d(eta)|/g, rho_m = rho_d(1+qv)",
-      "i": 145,
-      "j": 82,
-      "nr_levels": 17,
-      "qv_surface": 0.016009949147701263,
-      "qv_top": 1.8618791273183888e-06,
-      "reason": "StreamError: STAGE f32 payload is -inf: 'G33F STAGE 1 - micro_post_melt 0 brs 1 28 f32 FF800000'",
-      "stage": "build_or_run",
-      "xland": 1.0
-    },
-    {
-      "density": "canonical mu_d|d(eta)|/g, rho_m = rho_d(1+qv)",
-      "i": 130,
-      "j": 88,
-      "nr_levels": 16,
-      "qv_surface": 0.019851189106702805,
-      "qv_top": 2.198631591454614e-06,
-      "reason": "StreamError: STAGE f32 payload is -inf: 'G33F STAGE 1 - micro_post_melt 0 brs 1 26 f32 FF800000'",
-      "stage": "build_or_run",
-      "xland": 1.0
-    },
-    {
-      "density": "canonical mu_d|d(eta)|/g, rho_m = rho_d(1+qv)",
-      "i": 142,
-      "j": 100,
-      "nr_levels": 16,
-      "qv_surface": 0.01861576735973358,
-      "qv_top": 2.1080140868434682e-06,
-      "reason": "StreamError: STAGE f32 payload is -inf: 'G33F STAGE 1 - micro_post_melt 0 brs 1 27 f32 FF800000'",
-      "stage": "build_or_run",
-      "xland": 1.0
-    },
     {
       "density": "canonical mu_d|d(eta)|/g, rho_m = rho_d(1+qv)",
       "i": 233,
@@ -522,16 +618,16 @@
     }
   ],
   "summary": {
-    "columns": 19,
-    "columns_xfer": 19,
+    "columns": 23,
+    "columns_xfer": 23,
     "max": 0.05669127909443098,
     "max_xfer": 0.05676568581413828,
-    "median": 0.020296944090048123,
-    "median_xfer": 0.019642113932029005,
+    "median": 0.02288935198625597,
+    "median_xfer": 0.020664025705986834,
     "min": 0.0013326647484177671,
     "min_xfer": 0.001256329375234421,
-    "p25": 0.008329172210170406,
-    "p75": 0.027067978944845587,
-    "upper_middle": 0.020296944090048123
+    "p25": 0.012517513318302542,
+    "p75": 0.028537357011741645,
+    "upper_middle": 0.02288935198625597
   }
 }

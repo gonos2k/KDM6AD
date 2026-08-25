@@ -77,7 +77,9 @@ module g33_refine
 ! arm that has it rather than inferred downstream from its name. A reader that
 ! parses the name is a reader that can be wrong about it, twice
 ! (FINDING_arm_nd_closure_v1, owner review 3.1).
-#ifdef KDM6_ARM_NMASS_DRY_WINDOW
+#if defined(KDM6_ARM_MELT_G1) || defined(KDM6_ARM_MELT_G2) || defined(KDM6_ARM_MELT_G3)
+  character(len=*), parameter :: METRICTAG = 'thickness'
+#elif defined(KDM6_ARM_NMASS_DRY_WINDOW)
   character(len=*), parameter :: METRICTAG = 'window_dry_layer_mass'
 #elif defined(KDM6_ARM_NMASS_DRY)
   character(len=*), parameter :: METRICTAG = 'current_dry_layer_mass'
@@ -88,7 +90,13 @@ module g33_refine
   character(len=*), parameter :: METRICTAG = 'thickness'
 #endif
 
-#ifdef KDM6_ARM_NMASS_DRY_WINDOW
+#ifdef KDM6_ARM_MELT_G1
+  character(len=*), parameter :: ALGOTAG = 'melt_g1'
+#elif defined(KDM6_ARM_MELT_G2)
+  character(len=*), parameter :: ALGOTAG = 'melt_g2'
+#elif defined(KDM6_ARM_MELT_G3)
+  character(len=*), parameter :: ALGOTAG = 'melt_g3'
+#elif defined(KDM6_ARM_NMASS_DRY_WINDOW)
   character(len=*), parameter :: ALGOTAG = 'nmass_dry_window'
 #elif defined(KDM6_ARM_NMASS_DRY)
   character(len=*), parameter :: ALGOTAG = 'nmass_dry'

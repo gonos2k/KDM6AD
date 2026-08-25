@@ -94,7 +94,20 @@ before it tests the model. The control that catches it is the initial frame.
 
 One case, one build, one host, one realisation.
 
-## The build was not recorded, and is argued rather than shown
+## RESOLVED: the build is now shown, not argued
+
+An unperturbed `np = 1` run made on 2026-08-24 -- through the same deployed
+binary, with its hash recorded -- is **bit-identical to the 08-22 baseline at
+every frame**: 0 of 197 fields differ at minutes 1, 5 and 10. The premise this
+comparison rested on is measured.
+
+One run, not three: re-making the BASELINE tests the binary directly, where
+re-making the whole experiment would only have tested it indirectly.
+
+The section below is kept for what it says about recording provenance rather
+than arguing it.
+
+## The build was not recorded, and was argued rather than shown
 
 The baseline is from 2026-08-22 and the perturbed run from 2026-08-24, and in
 between this session swapped `wrf.exe` several times for diagnostic arms. The

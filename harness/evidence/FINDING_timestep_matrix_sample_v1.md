@@ -5,7 +5,34 @@ across the real-column sample. It holds -- and running the matrix changed WHICH
 columns are in the sample, in a direction that must not be read as a timestep
 effect.
 
-## Per column, across call steps
+## REGENERATED per step, so each step keeps its own sample
+
+The table below conditioned every step on surviving 30 s, which cost four land
+columns. With per-step verdicts each step reports the columns that ran it:
+
+| call step | columns | median | failures |
+|---|---|---|---|
+| 5 s | **23** | 2.0664 % | 0 |
+| 10 s | **23** | 2.0628 % | 0 |
+| **20 s** (operational) | **21** | **2.0300 %** | **2** |
+| 30 s | 19 | 1.9661 % | 4 |
+
+**The operational step has 21 columns, not 19.** Two of them fail at 20 s and
+the other two failures are 30 s only -- under complete-case all four vanished
+from every step.
+
+### And the failures are the same for both arms
+
+| step | `legacy` | `nmass` |
+|---|---|---|
+| 20 s | 2 | 2 |
+| 30 s | 4 | 4 |
+
+Identical counts, which answers what per-arm recording was added for: the
+overflow is a property of the OPERATOR, not something Arm N's correction
+introduces or removes.
+
+## Per column, across call steps (the superseded complete-case reading)
 
 Nineteen columns that completed all four steps, Arm N's physical dry residual as
 a fraction of legacy's, actual `XFER`:

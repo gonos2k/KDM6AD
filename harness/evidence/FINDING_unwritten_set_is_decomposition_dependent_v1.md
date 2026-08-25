@@ -39,7 +39,31 @@ a count from a rounded percentage. Counted directly:
     differing AND both sides zero              0      <- cannot differ
     zero at np = 1 but NOT differing       3 557      <- zero in both
 
-## Measured: nothing is unwritten
+## RETRACTED: the sentinel could not answer this
+
+This section reported that a `1e-30` sentinel survives in NO cell, and concluded
+that every cell is written. **The sentinel is destroyed by `start_em`, not by
+the kernel**, so it shows nothing about who writes what.
+
+`start_em` initialises the analytic profile when `ccn_max_val < 1.0`. The
+sentinel is `1e-30`, which is below 1, so the guard is TRUE and `start_em`
+overwrites every cell it covers **before the first timestep**. I chose the value
+below the guard deliberately, so the run would be otherwise unchanged -- and
+that is exactly what makes the instrument blind: the initialisation I wanted to
+leave alone is the first thing that erases the marker.
+
+An instrument designed not to disturb the thing it measures can end up measuring
+the disturbance it avoided.
+
+**What the numbers below still support**, from the frame comparison rather than
+the sentinel: `QNCCN` has no exact zeros at frame 0 and has them at frame 1, so
+the zeros are CREATED during the first integration step. That does not require
+the sentinel and stands.
+
+**What is now unmeasured:** whether every cell is written at all. Deciding it
+needs the per-stage writer instrumentation, not a marker value.
+
+## The sentinel numbers, kept for the frame comparison
 
 The instrument needed no code. `start_em` initialises only when
 `ccn_max_val < 1.0`, so replacing `wrfinput`'s identically-zero `QNCCN` with a
@@ -54,10 +78,10 @@ Tile-bounds binary, 20 s:
 | `np = 1` | **0** | **11 152** | 2 562 380 |
 | `np = 2` | **0** | **3 557** | 2 569 975 |
 
-**Nothing is unwritten.** The sentinel survives in zero cells under either
-decomposition, and the zero counts are exactly those measured with a zero input
--- 11 152 and 3 557. So every zero-valued cell is a cell something **wrote zero
-into**, and the hypothesis this finding was named for is refuted.
+The sentinel survives in zero cells under either decomposition, and the zero
+counts match those measured with a zero input -- 11 152 and 3 557. **That is
+consistent with `start_em` having overwritten it**, which is what the retraction
+above establishes, and is not evidence about the kernel.
 
 The decomposition-dependence is therefore not "which cells are missed" but
 **which cells are assigned zero**: the never-written sets are identical (0

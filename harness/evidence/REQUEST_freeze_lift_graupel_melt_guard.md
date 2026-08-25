@@ -38,6 +38,33 @@ is the division alone.
   generated from them, so no variant is hand-edited.
 - No change to `pgmlt`, to the mass or temperature updates, or to `ProgB_param`.
 
+## The density is NOT undefined, which changes what the fix is for
+
+The measured operands give
+
+    qg / brs = 8.29644e-13 / 9.21827e-16 = 899.9997
+
+and `ProgB_param` clamps `rhox` to `[100, 900]`. **The failing cell's graupel
+density is at the top of the valid range**, not undefined or degenerate. The
+division fails only because `ProgB_param` DECLINED TO COMPUTE it -- the absolute
+amounts are below `qcrmin` and `brs_min` -- and not because there is no density
+to compute.
+
+This request is therefore a SAFETY patch and not a physics decision. Aligning
+the melt's existence test with the density's removes the division by zero and
+leaves the trace graupel in place, unmelted, with its latent heat and rain-mass
+transfer also skipped. That is a defensible branch and it is not the only one:
+
+    G1  skip the melt entirely, as asked here
+    G2  compute rhox wherever qg > 0 and brs > 0 -- which at this cell gives
+        899.9997 and lets the full melt proceed as physics
+    G3  a complete-melt branch: pgmlt is already capped at -qg, so set
+        qg = 0 and brs = 0 directly and never divide
+
+The owner review asks for the three to be compared on the failing columns
+against mass, enthalpy and `qg = rho_g * b_g` consistency before one is adopted.
+This request does not settle that and should not be read as settling it.
+
 ## What must NOT be done
 
 **Clamping the denominator.** `max(rhox, eps)` turns a negligible melt into a

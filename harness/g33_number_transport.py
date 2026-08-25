@@ -257,6 +257,11 @@ NUMBER_TRANSFER_METRIC = {
     "cons_nmasslncmin": "moist_layer_mass",
     "nmass_dry": "current_dry_layer_mass",
     "nmass_dry_window": "window_dry_layer_mass",
+    # the melt counterfactuals change only the graupel melt, so their
+    # number transfer is legacy's: thickness.
+    "melt_g1": "thickness",
+    "melt_g2": "thickness",
+    "melt_g3": "thickness",
 }
 
 

@@ -246,7 +246,7 @@ def _bound_here(d, real_bytes: int) -> float:
     """This row's screen at the stream's own width, or 0.0 where there is no
     per-call detail to build one from."""
     pc = d.get("per_call") or []
-    return screening_bound(pc, real_bytes) if pc else 0.0
+    return screening_bound(pc, real_bytes=real_bytes) if pc else 0.0
 
 
 def _stream_real_bytes(stream: str) -> int:
@@ -276,7 +276,7 @@ def _stream_real_bytes(stream: str) -> int:
     return seen if seen is not None else _nt.DEFAULT_REAL_BYTES
 
 
-def screening_bound(per_call, real_bytes: int = 4) -> float:
+def screening_bound(per_call, *, real_bytes: int) -> float:
     """The scale below which this row's residual says nothing.
 
     Built from the TERMS THAT CANCELLED, not from the answer. The residual is
@@ -303,7 +303,7 @@ def screening_bound(per_call, real_bytes: int = 4) -> float:
     u = {4: _gf.U32, 8: _gf.U64}.get(real_bytes)
     if u is None:
         raise ValueError(f"real_bytes must be 4 or 8, got {real_bytes!r}")
-    return _gf._screen(sum_abs, int(ops) or 1, u)
+    return _gf._screen(sum_abs, int(ops) or 1, input_u=u)
 
 
 def closures(stream: str, basis: str = "operator") -> dict:
@@ -374,7 +374,7 @@ def closures(stream: str, basis: str = "operator") -> dict:
     # `_F32_EPS` says why (owner review 9.3).
     rb = _stream_real_bytes(stream)
     for d in acc.values():
-        b = screening_bound(d.get("per_call") or [], rb)
+        b = screening_bound(d.get("per_call") or [], real_bytes=rb)
         d["screening_bound"] = b
         d["residual_over_bound"] = abs(d["residual"]) / b if b else None
     return acc
