@@ -43,6 +43,14 @@ The footprints are both domain-wide, which is the same reading:
 
 ## `1x4` does not run
 
+**Scope, added after review:** `1x3` and `3x1` differ in more than the
+presence of a middle j-rank — orientation, patch dimensions, strides, halo
+direction, message topology and physical-boundary ownership all change
+together. The association is strong; the single-variable intervention was
+not performed. `2x3` against `3x2` at `np = 6` is the control that would
+separate them. See `FINDING_melt_number_and_replay_scope_v1.md`.
+
+
     1x4   exit 139 (SIGSEGV)
     2x2   exit 0
     4x1   exit 0

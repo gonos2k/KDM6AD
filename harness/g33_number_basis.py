@@ -46,6 +46,9 @@ much number actually crosses is `b`, which this does not measure.
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import g33_netcdf_read as nr   # noqa: E402
+
 RD, CP, P0, G = 287.04, 1004.5, 1.0e5, 9.81
 #: Rd/Rv. The dry-density relation for a MIXING ratio is
 #: `rho_d = p / (Rd T (1 + qv/EPS))`; the published statistics used
@@ -96,7 +99,17 @@ def profile(state: Path, basis: str = "canonical") -> dict:
     import numpy as np
     d = netCDF4.Dataset(str(state))
     frame = -1 if d["P"].shape[0] > 1 else 0
-    g = lambda k: np.asarray(d[k][frame], dtype="float64")   # noqa: E731
+
+    def g(k):
+        """Through the guarded reader, so a mask is refused rather than dropped.
+
+        netCDF4 hands back a MaskedArray either way and `np.asarray` discards
+        the mask, which would let fill values into a published median. Measured
+        on this state: seven load-bearing variables, 0 masked cells, no
+        `_FillValue` -- so this changes no number today and says so if a file
+        ever does declare one.
+        """
+        return nr.read_numeric(d[k], frame)["data"]
     pressure = g("P") + g("PB")
     theta = g("T") + 300.0
     qv = g("QVAPOR")
@@ -193,31 +206,60 @@ def where_the_number_is(state: Path, field: str = "QNRAIN",
     # The upper cell's number INVENTORY. Not `F_j`: that is `m_d * dn` and `dn`
     # is what the kernel actually moved, which a state file does not record.
     inventory = p["dry_layer_mass_upper"] * n[up]
+    # EVERY POPULATION GETS THE FINITE MASK, and each says what it dropped.
+    # A census computed for one population and reported for another is how the
+    # two names below came to be read here at all: they belong to `report()`,
+    # where the population is `keep`, and a non-unique string replacement put
+    # them in this function too, where nothing defines them. That is a
+    # NameError on any state whose number population is non-empty.
+    finite = (np.isfinite(p["legacy_dry"]) & np.isfinite(p["armn_dry"])
+              & np.isfinite(inventory))
+    out["nonfinite_interfaces"] = int((~finite).sum())
     out["populations"] = {}
     for nm, m in pops.items():
-        if not m.any():
+        valid = m & finite
+        if not valid.any():
+            out["populations"][nm] = {"population_interfaces": int(m.sum()),
+                                      "valid_interfaces": 0,
+                                      "nonfinite_excluded": int((m & ~finite).sum()),
+                                      "empty": True}
             continue
-        f = np.abs(p["armn_dry"][m]) / np.maximum(np.abs(p["legacy_dry"][m]),
-                                                  1e-300)
-        w = inventory[m]
-        num = abs(float((w * p["armn_dry"][m]).sum()))
-        den = abs(float((w * p["legacy_dry"][m]).sum()))
+        f = np.abs(p["armn_dry"][valid]) / np.maximum(
+            np.abs(p["legacy_dry"][valid]), 1e-300)
+        w = inventory[valid]
+        num = abs(float((w * p["armn_dry"][valid]).sum()))
+        den = abs(float((w * p["legacy_dry"][valid]).sum()))
         out["populations"][nm] = {
-            "interfaces": int(m.sum()),
+            "population_interfaces": int(m.sum()),
+            "valid_interfaces": int(valid.sum()),
+            "nonfinite_excluded": int((m & ~finite).sum()),
+            "zero_legacy_denominator": int((valid & (p["legacy_dry"] == 0.0)).sum()),
             "median": float(np.median(f)),
             "p90": float(np.percentile(f, 90)),
             "upper_inventory_weighted": num / den if den else None}
+    live_finite = live & finite
     for key in ("legacy_moist", "legacy_dry", "armn_dry"):
-        e = p[key][live]
-        out[key] = {"median": float(np.median(e)), "mean": float(e.mean()),
-                    "abs_p90": float(np.percentile(np.abs(e), 90)),
-                    "abs_max": float(np.abs(e).max())}
-    frac = np.abs(p["armn_dry"][live]) / np.maximum(
-        np.abs(p["legacy_dry"][live]), 1e-300)
-    out["armn_residual_fraction"] = {
-        "interfaces": int(keep.sum()),
-        "nonfinite_excluded": int((~finite).sum()),
-        "median": float(np.median(frac)), "p90": float(np.percentile(frac, 90))}
+        e = p[key][live_finite & np.isfinite(p[key])]
+        out[key] = ({"median": float(np.median(e)), "mean": float(e.mean()),
+                     "abs_p90": float(np.percentile(np.abs(e), 90)),
+                     "abs_max": float(np.abs(e).max()),
+                     "interfaces": int(e.size)}
+                    if e.size else {"interfaces": 0, "empty": True})
+    if live_finite.any():
+        frac = np.abs(p["armn_dry"][live_finite]) / np.maximum(
+            np.abs(p["legacy_dry"][live_finite]), 1e-300)
+        out["armn_residual_fraction"] = {
+            "population_interfaces": int(live.sum()),
+            "valid_interfaces": int(live_finite.sum()),
+            "nonfinite_excluded": int((live & ~finite).sum()),
+            "median": float(np.median(frac)),
+            "p90": float(np.percentile(frac, 90))}
+    else:
+        out["armn_residual_fraction"] = {
+            "population_interfaces": int(live.sum()),
+            "valid_interfaces": 0,
+            "nonfinite_excluded": int((live & ~finite).sum()),
+            "empty": True}
     return out
 
 

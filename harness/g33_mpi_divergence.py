@@ -43,9 +43,35 @@ def _fields(d):
             and "Time" in d[v].dimensions]
 
 
+def comparable(a, b) -> None:
+    """Refuse two files that are not the same experiment.
+
+    `coverage` walked `_fields(a)` alone, so a field present only in `b` was
+    silently not compared and the count read as agreement. And nothing asked
+    whether the two runs share a grid, a field universe or a time axis -- so
+    two forecasts of different domains would compare, field by field, and
+    report a number.
+    """
+    import numpy as np
+    fa, fb = set(_fields(a)), set(_fields(b))
+    if fa != fb:
+        raise SystemExit(
+            f"field universes differ: only in A {sorted(fa - fb)}; "
+            f"only in B {sorted(fb - fa)}")
+    ta = np.asarray(a["Times"][:])
+    tb = np.asarray(b["Times"][:])
+    if ta.shape != tb.shape or not np.array_equal(ta, tb):
+        raise SystemExit(f"time axes differ: A {ta.shape}, B {tb.shape}")
+    for v in sorted(fa):
+        if a[v].shape != b[v].shape:
+            raise SystemExit(
+                f"{v}: shape {a[v].shape} in A, {b[v].shape} in B")
+
+
 def coverage(a, b) -> list:
     """Per frame: how many fields differ, and which are new since the last."""
     import numpy as np
+    comparable(a, b)
     out, prev = [], set()
     for t in range(a["Times"].shape[0]):
         now = {v for v in _fields(a)
@@ -113,8 +139,19 @@ def field_stats(a, b, name: str, t: int, mask=None) -> dict:
         out["conditional_p99"] = float(np.percentile(d[cond], 99))
         out["conditional_median"] = float(np.median(d[cond]))
     if mask is not None and mask.any():
-        out["fixed_mask_median"] = float(np.median(d[mask]))
-        out["fixed_mask_p99"] = float(np.percentile(d[mask], 99))
+        # THE FIXED MASK NEEDS THE FINITE MASK TOO. It is chosen at the FIRST
+        # time and followed, so it can easily contain a cell that went
+        # non-finite later -- and one of those makes the median and the p99 NaN,
+        # which reports nothing about the rest of the held population. The
+        # domain statistics above were fixed for this and this one was missed.
+        held = mask & finite
+        out["fixed_mask_cells"] = int(mask.sum())
+        out["fixed_mask_finite_cells"] = int(held.sum())
+        out["fixed_mask_nonfinite_cells"] = int((mask & ~finite).sum())
+        out["fixed_mask_median"] = (float(np.median(d[held]))
+                                    if held.any() else None)
+        out["fixed_mask_p99"] = (float(np.percentile(d[held], 99))
+                                 if held.any() else None)
     return out
 
 
