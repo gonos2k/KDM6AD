@@ -46,6 +46,9 @@ much number actually crosses is `b`, which this does not measure.
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import g33_netcdf_read as nr   # noqa: E402
+
 RD, CP, P0, G = 287.04, 1004.5, 1.0e5, 9.81
 #: Rd/Rv. The dry-density relation for a MIXING ratio is
 #: `rho_d = p / (Rd T (1 + qv/EPS))`; the published statistics used
@@ -96,7 +99,17 @@ def profile(state: Path, basis: str = "canonical") -> dict:
     import numpy as np
     d = netCDF4.Dataset(str(state))
     frame = -1 if d["P"].shape[0] > 1 else 0
-    g = lambda k: np.asarray(d[k][frame], dtype="float64")   # noqa: E731
+
+    def g(k):
+        """Through the guarded reader, so a mask is refused rather than dropped.
+
+        netCDF4 hands back a MaskedArray either way and `np.asarray` discards
+        the mask, which would let fill values into a published median. Measured
+        on this state: seven load-bearing variables, 0 masked cells, no
+        `_FillValue` -- so this changes no number today and says so if a file
+        ever does declare one.
+        """
+        return nr.read_numeric(d[k], frame)["data"]
     pressure = g("P") + g("PB")
     theta = g("T") + 300.0
     qv = g("QVAPOR")

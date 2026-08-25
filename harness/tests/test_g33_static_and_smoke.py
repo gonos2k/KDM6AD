@@ -107,8 +107,14 @@ def test_no_harness_module_loads_a_name_nothing_binds():
     another, and the only way to reach it was to run the function on real data
     -- which CI cannot do, and which nothing else did either."""
     bad = []
-    for p in sorted(list(ROOT.glob("g33_*.py")) + list(ROOT.glob("run_*.py"))
-                    + list((ROOT / "g33_fortran").glob("*.py"))):
+    # EVERY module, which the two globs this started with were not. They
+    # covered 54 of the 65 files in harness/ and the docstring said "every
+    # harness module" -- a claim wider than the code, which is the shape of
+    # mistake this file exists to catch. The eleven that were missed scan
+    # clean, so nothing was hidden; the wording was still wrong.
+    for p in sorted(list(ROOT.glob("*.py"))
+                    + list((ROOT / "g33_fortran").glob("*.py"))
+                    + list((ROOT / "g33_overlay").glob("*.py"))):
         for ln, fn, name in _undefined(p):
             bad.append(f"{p.name}:{ln} {fn}(): {name!r}")
     assert not bad, "undefined name(s):\n  " + "\n  ".join(bad)
