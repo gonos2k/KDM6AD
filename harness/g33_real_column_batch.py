@@ -199,8 +199,16 @@ def main() -> int:
     try:
         fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
     except FileExistsError:
+        # The holder can release between our failed open and this read, and it
+        # can die between creating the lock and writing who it is. Neither may
+        # turn the message that says WHO HOLDS IT into a traceback -- the whole
+        # value of this path is the name it prints.
+        try:
+            held = lock.read_text().strip() or "(holder wrote no name)"
+        except OSError:
+            held = "(released while we were reporting it; try again)"
         raise SystemExit(
-            f"{lock.name} is held by: {lock.read_text().strip()}\n"
+            f"{lock.name} is held by: {held}\n"
             f"The committed fixture is a compile-time constant, so two writers "
             f"produce a kernel built from two different columns. Wait, or "
             f"remove the lock if that process is gone.") from None

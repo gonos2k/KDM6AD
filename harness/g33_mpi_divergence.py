@@ -58,23 +58,47 @@ def coverage(a, b) -> list:
 
 
 def field_stats(a, b, name: str, t: int, mask=None) -> dict:
-    """One field at one frame, conditional AND unconditional."""
+    """One field at one frame, conditional AND unconditional.
+
+    NOT-A-NUMBER IS A DIFFERENCE. The test used to be `abs(x - y) > 0`, and
+    `abs(nan - 1.0)` is `nan`, which is not greater than zero. So a field that
+    went NaN in ONE decomposition and stayed finite in the other reported
+    `differing = 0` -- "the two agree everywhere" -- for the one outcome a
+    divergence tool exists to catch. `coverage()` calls the same field
+    different, because `array_equal` is NaN-correct, so the two statistics this
+    module reports contradicted each other exactly there.
+
+    `x != y` is the same test `array_equal` makes, elementwise: NaN differs
+    from everything including NaN, so the two now agree by construction. The
+    non-finite census is reported beside the counts, because a reader owed the
+    number of differing cells is also owed whether they differ by being broken.
+
+    The magnitude statistics are taken over the FINITE differences only. A
+    single NaN makes every percentile NaN, which reports nothing about the
+    other cells and is not a size.
+    """
     import numpy as np
     x = np.asarray(a[name][t], dtype="float64")
     y = np.asarray(b[name][t], dtype="float64")
     d = np.abs(x - y)
-    diff = d > 0
+    diff = x != y
+    finite = np.isfinite(d)
+    fd = d[finite]
     out = {"field": name, "frame": t,
            "cells": int(d.size),
            "differing": int(diff.sum()),
            "differing_fraction": float(diff.mean()),
-           "domain_p99": float(np.percentile(d, 99)),
-           "domain_p999": float(np.percentile(d, 99.9)),
-           "domain_mean_abs": float(d.mean()),
-           "signed_mean": float((y - x).mean())}
-    if diff.any():
-        out["conditional_p99"] = float(np.percentile(d[diff], 99))
-        out["conditional_median"] = float(np.median(d[diff]))
+           "nonfinite_a": int((~np.isfinite(x)).sum()),
+           "nonfinite_b": int((~np.isfinite(y)).sum()),
+           "nonfinite_difference": int((~finite).sum()),
+           "domain_p99": float(np.percentile(fd, 99)) if fd.size else None,
+           "domain_p999": float(np.percentile(fd, 99.9)) if fd.size else None,
+           "domain_mean_abs": float(fd.mean()) if fd.size else None,
+           "signed_mean": float((y - x)[finite].mean()) if fd.size else None}
+    cond = diff & finite
+    if cond.any():
+        out["conditional_p99"] = float(np.percentile(d[cond], 99))
+        out["conditional_median"] = float(np.median(d[cond]))
     if mask is not None and mask.any():
         out["fixed_mask_median"] = float(np.median(d[mask]))
         out["fixed_mask_p99"] = float(np.percentile(d[mask], 99))
