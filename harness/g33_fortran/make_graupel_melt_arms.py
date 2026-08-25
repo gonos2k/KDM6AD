@@ -128,7 +128,11 @@ G4_TXN = (
     "                brs(i,k) = 0.\n"
     "              else if(melt_bg0.gt.0.) then\n"
     "                melt_rho = min(melt_rho_max,max(melt_rho_min,melt_qg0/melt_bg0))\n"
-    "                brs(i,k) = melt_bg0 + (pgmlt(i,k)/melt_rho)\n"
+    "! The clamp makes the volume removed inconsistent with the volume present:\n"
+    "! for a particle denser than rho_max, pgmlt/rho_max exceeds what bg0 holds,\n"
+    "! and the bulk volume goes NEGATIVE. Measured in f32: raw density 2000 does\n"
+    "! it at a 50 percent melt. A volume cannot be negative, so it floors at 0.\n"
+    "                brs(i,k) = max(0.,melt_bg0 + (pgmlt(i,k)/melt_rho))\n"
     "              endif\n")
 
 #: G4 alone needs mutable scalars. Kept OUT of the shared declaration so g1, g2
