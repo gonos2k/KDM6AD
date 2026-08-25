@@ -96,6 +96,8 @@ module g33_refine
   character(len=*), parameter :: ALGOTAG = 'melt_g2'
 #elif defined(KDM6_ARM_MELT_G3)
   character(len=*), parameter :: ALGOTAG = 'melt_g3'
+#elif defined(KDM6_ARM_MELT_G4)
+  character(len=*), parameter :: ALGOTAG = 'melt_g4'
 #elif defined(KDM6_ARM_NMASS_DRY_WINDOW)
   character(len=*), parameter :: ALGOTAG = 'nmass_dry_window'
 #elif defined(KDM6_ARM_NMASS_DRY)

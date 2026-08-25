@@ -63,11 +63,24 @@ G1_OPEN = ("            if(qrs(i,k,3).gt.qcrmin .or. brs(i,k).gt.melt_brs_min) t
            "! G1: the SAME existence test ProgB_param uses before computing rhox.\n"
            "! Where the density was not computed, the melt does not run either.\n")
 
+#: WHAT G2 ACTUALLY IS, corrected. It was described as computing the density
+#: at the failing cell from `qg/brs = 899.9997` and continuing the melt. It does
+#: not, and cannot: this text replaces the DIVIDE, which sits AFTER the mass
+#: update at F:1416, and in the measured window the melt is complete, so
+#: `qrs(i,k,3)` is already 0 by the time G2's guard is reached. G2 removes the
+#: defect by SKIPPING, like G1, by a different route.
+#:
+#: And it is not confined to the defect. Wherever the melt is PARTIAL, G2
+#: recomputes `rhox` from the POST-melt mass, which is a different density than
+#: the pre-melt one ProgB_param supplied -- so it perturbs every melting cell.
+#: That is why its 5 s digest differs from legacy while G1 and G3 are
+#: bit-identical, and why it is not the targeted counterfactual it was named as.
+#: The pre-melt counterfactual is G4 below.
 G2_DIVIDE = (
-    "! G2: compute the density here from positive mass and positive volume,\n"
-    "! with ProgB_param's own clamp, rather than skipping the melt. At the\n"
-    "! failing cell qg/brs is 899.9997, so this is a value the model already\n"
-    "! considers valid -- it was simply below the amount thresholds.\n"
+    "! G2: recompute the density from the POST-melt mass, with ProgB_param's\n"
+    "! own clamp. NOTE this is not a pre-melt density: the mass update at\n"
+    "! F:1416 has already run, so on a complete melt qg is 0 here and this\n"
+    "! guard is false. It changes every PARTIALLY melting cell.\n"
     "              if(qrs(i,k,3).gt.0. .and. brs(i,k).gt.0.) then\n"
     "                rhox(i,k) = min(melt_rho_max,max(melt_rho_min,qrs(i,k,3)/brs(i,k)))\n"
     "              endif\n"
@@ -85,6 +98,46 @@ G3_DIVIDE = (
     "              else if(rhox(i,k).gt.0.) then\n"
     "                brs(i,k) = brs(i,k) + (pgmlt(i,k)/rhox(i,k))\n"
     "              endif\n")
+
+
+#: G4 replaces the whole transaction -- the three state updates AND the divide --
+#: because the counterfactual it tests needs the PRE-melt mass, and by the time
+#: the divide runs the mass update has already consumed it. G2 was named as this
+#: experiment and is not it.
+#:
+#: On a COMPLETE melt G4 and G3 are the same statement. `pgmlt` is capped at
+#: `-qg0`, so `brs = bg0 + (-qg0)/(qg0/bg0) = bg0 - bg0 = 0`, which is G3's
+#: `brs = 0` exactly, whenever the pre-melt density is inside the clamp (at the
+#: measured failing cell it is 899.9997). They differ only on a PARTIAL melt,
+#: which is precisely the case G3 leaves unmeasured.
+TXN_ANCHOR = (
+    "              qrs(i,k,3) = qrs(i,k,3) + pgmlt(i,k)\n"
+    "              qrs(i,k,1) = qrs(i,k,1) - pgmlt(i,k)\n"
+    "              t(i,k) = t(i,k) + xlf/cpm(i,k)*pgmlt(i,k)\n"
+    "              brs(i,k) = brs(i,k) + (pgmlt(i,k)/rhox(i,k))\n")
+
+G4_TXN = (
+    "! G4: the pre-melt mass and volume decide the density, and a complete melt\n"
+    "! takes the volume with the mass instead of dividing.\n"
+    "              melt_qg0 = qrs(i,k,3)\n"
+    "              melt_bg0 = brs(i,k)\n"
+    "              qrs(i,k,3) = qrs(i,k,3) + pgmlt(i,k)\n"
+    "              qrs(i,k,1) = qrs(i,k,1) - pgmlt(i,k)\n"
+    "              t(i,k) = t(i,k) + xlf/cpm(i,k)*pgmlt(i,k)\n"
+    "              if(qrs(i,k,3).le.0.) then\n"
+    "                brs(i,k) = 0.\n"
+    "              else if(melt_bg0.gt.0.) then\n"
+    "                melt_rho = min(melt_rho_max,max(melt_rho_min,melt_qg0/melt_bg0))\n"
+    "                brs(i,k) = melt_bg0 + (pgmlt(i,k)/melt_rho)\n"
+    "              endif\n")
+
+#: G4 alone needs mutable scalars. Kept OUT of the shared declaration so g1, g2
+#: and g3 still generate the exact bytes their measurements were taken on.
+DECL_G4 = ("   real :: melt_qg0, melt_bg0, melt_rho\n")
+
+#: The budget is "not more than a melt-block edit", and g4's melt-block edit is
+#: legitimately larger -- it rewrites the transaction rather than one line.
+MAX_EDIT = {"g1": 20, "g2": 20, "g3": 20, "g4": 30}
 
 
 def _once(text: str, anchor: str, what: str) -> None:
@@ -131,14 +184,15 @@ def arm(name: str) -> str:
     bad argument on every host, not a FileNotFoundError wherever the reference
     tree is absent -- which is everywhere but the owner's machine.
     """
-    if name not in ("g1", "g2", "g3"):
-        raise SystemExit(f"unknown arm {name!r}; expected g1, g2 or g3")
+    if name not in ("g1", "g2", "g3", "g4"):
+        raise SystemExit(f"unknown arm {name!r}; expected g1, g2, g3 or g4")
     text = BASE.read_text()
     _check_constants(text)
     _once(text, MELT_OPEN, "melt open")
     _once(text, DIVIDE, "melt divide")
     _once(text, DECL_ANCHOR, "kdm62D locals")
-    text = text.replace(DECL_ANCHOR, DECL_ADD)
+    text = text.replace(DECL_ANCHOR,
+                        DECL_ADD + (DECL_G4 if name == "g4" else ""))
     if name == "g1":
         return text.replace(MELT_OPEN, G1_OPEN)
     if name == "g2":
@@ -146,12 +200,15 @@ def arm(name: str) -> str:
     if name == "g3":
         _mass_update_precedes_divide(text)
         return text.replace(DIVIDE, G3_DIVIDE)
+    if name == "g4":
+        _once(text, TXN_ANCHOR, "melt transaction")
+        return text.replace(TXN_ANCHOR, G4_TXN)
     raise AssertionError(f"unreachable: {name!r} passed the name check")
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("arm", choices=["g1", "g2", "g3"])
+    ap.add_argument("arm", choices=["g1", "g2", "g3", "g4"])
     ap.add_argument("--out", type=pathlib.Path, required=True)
     a = ap.parse_args()
     src = arm(a.arm)
@@ -169,9 +226,10 @@ def main() -> int:
         elif line.startswith("-") and not line.startswith("---"): removed += 1
     if added == removed == 0:
         raise SystemExit(f"{a.arm}: the edit changed nothing")
-    if added + removed > 20:
+    cap = MAX_EDIT[a.arm]
+    if added + removed > cap:
         raise SystemExit(f"{a.arm}: {added} added / {removed} removed is more "
-                         f"than a melt-block edit; check the anchors")
+                         f"than a melt-block edit (cap {cap}); check the anchors")
     print(f"       +{added} / -{removed} lines against the base")
     return 0
 
