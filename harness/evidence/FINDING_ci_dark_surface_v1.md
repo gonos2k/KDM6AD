@@ -42,8 +42,12 @@ second reference anywhere in `harness/tests/`:
     g33_density_control.py      g33_real_column_density.py
     g33_ice_density_matrix.py   g33_column_separability.py
 
-For those six, **a change merges with every required check green and nothing
-having executed the changed code.** Not "weakly covered" — not run.
+For those six, **a change merges with every required check green and no test
+file that references them having run.** That is a STATIC-reference argument
+and not a dynamic one: a transitive import, a helper, or a subprocess could
+still touch them. Saying "nothing executed it" would need coverage.py or an
+import trace in CI recording executed lines per module, which is not done
+here. What is measured is that no test file naming them ran.
 
 This is not hypothetical. Neutering `_expect_universe` in
 `g33_ncmin_locality.py` (return `None` at the top of the body) is caught locally
@@ -56,7 +60,7 @@ files (`test_g33_identity`, `test_g33_refine_experiment`, `test_g33_refine_manif
 `test_g33_factorial`, `test_g33_refine_analyze`), so a signature break there
 still fails CI. Their behaviour is unguarded; their interface is not.
 
-## Why each skip happens, and why none of it is a fixable defect
+## Why each skip happens, and why none is fixable in this CI as configured
 
 Every one of the 357 traces to one of three causes, all structural:
 
@@ -95,6 +99,12 @@ be cited as one.
 
 ## Not open
 
-- Making the Fortran leg run in CI. It needs a gitignored source tree.
+- Making the Fortran leg run on a PUBLIC HOSTED runner. It needs a gitignored
+  source tree, and that is a property of the runner, not of the problem. NOT
+  foreclosed, and a process question rather than a technical one: a self-hosted
+  required check, a minimal public reference kernel or stub, a sanitized
+  deterministic artifact, or an owner-host attestation JSON pinned to the PR
+  head SHA. This measures the current configuration; it does not argue that no
+  configuration could do better.
 - Splitting a structural half out of the five Fortran files. Measured above:
   there is no structural half to split.

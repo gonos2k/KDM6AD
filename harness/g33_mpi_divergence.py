@@ -82,19 +82,32 @@ def field_stats(a, b, name: str, t: int, mask=None) -> dict:
     y = np.asarray(b[name][t], dtype="float64")
     d = np.abs(x - y)
     diff = x != y
+    fx, fy = np.isfinite(x), np.isfinite(y)
     finite = np.isfinite(d)
     fd = d[finite]
     out = {"field": name, "frame": t,
            "cells": int(d.size),
            "differing": int(diff.sum()),
            "differing_fraction": float(diff.mean()),
-           "nonfinite_a": int((~np.isfinite(x)).sum()),
-           "nonfinite_b": int((~np.isfinite(y)).sum()),
-           "nonfinite_difference": int((~finite).sum()),
-           "domain_p99": float(np.percentile(fd, 99)) if fd.size else None,
-           "domain_p999": float(np.percentile(fd, 99.9)) if fd.size else None,
-           "domain_mean_abs": float(fd.mean()) if fd.size else None,
-           "signed_mean": float((y - x)[finite].mean()) if fd.size else None}
+           # THREE WAYS TO DIFFER, SEPARATED. `differing` answers "are the two
+           # runs the same", which is the question `coverage` answers and the
+           # one that must agree with it -- so NaN counts, since NaN differs
+           # from everything including NaN. But "they disagree numerically",
+           # "one of them broke", and "both broke in the same place" are three
+           # different findings, and a single count cannot be read as any one
+           # of them. They partition `differing` exactly.
+           "finite_value_differing": int((fx & fy & diff).sum()),
+           "finiteness_differing": int((fx ^ fy).sum()),
+           "common_nonfinite": int((~fx & ~fy).sum()),
+           "nonfinite_a": int((~fx).sum()),
+           "nonfinite_b": int((~fy).sum()),
+           # NAMED FOR THE POPULATION THEY ARE OVER. Called `domain_p99` these
+           # read as the domain's, and they are not when anything is non-finite:
+           # the cells that are excluded are exactly the broken ones.
+           "finite_domain_p99": float(np.percentile(fd, 99)) if fd.size else None,
+           "finite_domain_p999": float(np.percentile(fd, 99.9)) if fd.size else None,
+           "finite_domain_mean_abs": float(fd.mean()) if fd.size else None,
+           "finite_signed_mean": float((y - x)[finite].mean()) if fd.size else None}
     cond = diff & finite
     if cond.any():
         out["conditional_p99"] = float(np.percentile(d[cond], 99))
@@ -251,7 +264,7 @@ def main() -> int:
             doc["fields"].append(r)
             print(f"  {name:10s} {t:>3d} {r['differing_fraction']:7.2%} "
                   f"{r.get('conditional_p99', float('nan')):11.3e} "
-                  f"{r['domain_p99']:11.3e} "
+                  f"{r['finite_domain_p99']:11.3e} "
                   f"{r.get('fixed_mask_median', float('nan')):15.3e}")
         if "RAINNC" in a.variables:
             doc["precipitation"].append(precipitation(a, b, t, area=area))
