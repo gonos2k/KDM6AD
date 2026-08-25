@@ -143,22 +143,35 @@ def precipitation(a, b, t: int, name: str = "RAINNC", area=None) -> dict:
     # in area, so this is a model-grid statistic and not a domain precipitation
     # depth; a volume would need MAPFAC_M, which this frame does not carry
     # (owner review §12.2).
+    # NON-FINITE, the same hole `field_stats` had. `abs(nan) > thr` is False,
+    # so a column that went NaN counts as NOT exceeding every threshold and the
+    # exceedance fractions understate silently. `reflectivity` is immune by
+    # construction -- its physical screen drops NaN and reports the count -- so
+    # this is the one of the three that needed the census made explicit.
+    finite = np.isfinite(d)
+    fd = d[finite]
+    n = fd.size
     out = {"field": name, "frame": t,
-           "signed_gridcell_mean_mm": float(d.mean()),
-           "signed_sum_mm_times_columns": float(d.sum()),
-           "gross_sum_mm_times_columns": float(np.abs(d).sum()),
-           "cancellation_ratio": (float(abs(d.sum()) / np.abs(d).sum())
-                                  if np.abs(d).sum() else None),
-           "columns": int(d.size)}
+           "signed_gridcell_mean_mm": float(fd.mean()) if n else None,
+           "signed_sum_mm_times_columns": float(fd.sum()) if n else None,
+           "gross_sum_mm_times_columns": float(np.abs(fd).sum()) if n else None,
+           "cancellation_ratio": (float(abs(fd.sum()) / np.abs(fd).sum())
+                                  if n and np.abs(fd).sum() else None),
+           "columns": int(d.size),
+           "nonfinite_columns": int((~finite).sum())}
     if area is not None:
         # AREA-WEIGHTED, which a grid-cell mean is not on a map projection.
         # Volume in m^3 of liquid water: mm -> m is 1e-3.
-        out["area_weighted_mean_mm"] = float((d * area).sum() / area.sum())
-        out["signed_volume_m3"] = float((d * area).sum() * 1e-3)
-        out["gross_volume_m3"] = float((np.abs(d) * area).sum() * 1e-3)
+        af = np.asarray(area)[finite]
+        out["area_weighted_mean_mm"] = float((fd * af).sum() / af.sum()) if n else None
+        out["signed_volume_m3"] = float((fd * af).sum() * 1e-3) if n else None
+        out["gross_volume_m3"] = float((np.abs(fd) * af).sum() * 1e-3) if n else None
     for thr in (1e-3, 1e-2, 1e-1):
-        out[f"fraction_over_{thr:g}mm"] = float((np.abs(d) > thr).mean())
-        out[f"columns_over_{thr:g}mm"] = int((np.abs(d) > thr).sum())
+        # over the FINITE columns; `nonfinite_columns` says how many are not in
+        # this population, so the fraction has a stated denominator.
+        out[f"fraction_over_{thr:g}mm"] = (float((np.abs(fd) > thr).mean())
+                                           if n else None)
+        out[f"columns_over_{thr:g}mm"] = int((np.abs(fd) > thr).sum())
     return out
 
 

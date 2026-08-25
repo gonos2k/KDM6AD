@@ -163,3 +163,69 @@ def test_coverage_names_the_fields_that_appear_and_vanish_between_frames():
     cov = md.coverage(a, b)
     assert cov[0]["differing"] == 0
     assert cov[1]["differing"] == 1 and cov[1]["new_since_previous"] == ["T"]
+
+
+# ── the same hole in the sibling function ────────────────────────────────────
+
+def test_a_nan_column_is_not_counted_as_below_every_precipitation_threshold():
+    """`abs(nan) > thr` is False, so a column that went NaN silently counted as
+    NOT exceeding -- the exceedance fractions understated with no census."""
+    x = np.zeros((1, 10, 10), dtype="float32")
+    y = x.copy()
+    y[0, 0, :5] = 1.0            # 5 columns really exceed 0.1 mm
+    y[0, 1, :2] = np.nan         # 2 columns are broken
+    a, b = _pair(x, y, dims=("Time", "south_north", "west_east"))
+    s = md.precipitation(a, b, 0, name="T")
+    assert s["nonfinite_columns"] == 2, "the census must say they exist"
+    assert s["columns_over_0.1mm"] == 5
+    # the denominator is the finite population, and it is stated
+    assert s["fraction_over_0.1mm"] == pytest.approx(5 / 98)
+    assert np.isfinite(s["signed_gridcell_mean_mm"])
+
+
+def test_precipitation_reports_none_rather_than_nan_when_nothing_is_finite():
+    x = np.full((1, 3, 3), np.nan, dtype="float32")
+    a, b = _pair(x, x.copy())
+    s = md.precipitation(a, b, 0, name="T")
+    assert s["signed_gridcell_mean_mm"] is None
+    assert s["cancellation_ratio"] is None
+    assert s["nonfinite_columns"] == 9
+
+
+def test_the_cancellation_ratio_separates_more_rain_from_rain_elsewhere():
+    """The statistic the function exists for, pinned: same gross, different net."""
+    x = np.zeros((1, 2, 2), dtype="float32")
+    more = x.copy(); more[0, 0, 0] = 2.0; more[0, 0, 1] = 2.0
+    moved = x.copy(); moved[0, 0, 0] = 2.0; moved[0, 1, 1] = -2.0
+    a, b = _pair(x, more)
+    c, d = _pair(x, moved)
+    assert md.precipitation(a, b, 0, name="T")["cancellation_ratio"] == pytest.approx(1.0)
+    assert md.precipitation(c, d, 0, name="T")["cancellation_ratio"] == pytest.approx(0.0)
+
+
+def test_reflectivity_is_immune_by_construction_and_says_so():
+    """Its physical screen is `x >= lo & x <= hi`, and NaN fails every
+    comparison, so NaN lands in `outside_physical` instead of being counted as
+    agreement. Pinned because that is why it needed no change."""
+    x = np.full((1, 4, 4), 25.0, dtype="float32")
+    y = x.copy()
+    y[0, 0, :3] = np.nan
+    a, b = _pair(x, y)
+    s = md.reflectivity(a, b, 0, name="T")
+    assert s["outside_physical"] == 3
+    assert s["physical_fraction"] == pytest.approx(13 / 16)
+    assert np.isfinite(s["screened_p99_dbz"])
+
+
+def test_the_precipitation_fix_is_a_noop_on_finite_data():
+    """It must not move a published number where there was no NaN."""
+    rng = np.random.default_rng(4242)
+    for _ in range(50):
+        x = rng.normal(size=(1, 8, 8)).astype("float32")
+        y = (x + rng.normal(size=x.shape).astype("float32") * 1e-3)
+        a, b = _pair(x, y)
+        s = md.precipitation(a, b, 0, name="T")
+        d = y[0].astype("float64") - x[0].astype("float64")
+        assert s["signed_gridcell_mean_mm"] == pytest.approx(float(d.mean()))
+        assert s["columns_over_0.001mm"] == int((np.abs(d) > 1e-3).sum())
+        assert s["nonfinite_columns"] == 0

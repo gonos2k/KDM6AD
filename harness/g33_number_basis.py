@@ -215,6 +215,8 @@ def where_the_number_is(state: Path, field: str = "QNRAIN",
     frac = np.abs(p["armn_dry"][live]) / np.maximum(
         np.abs(p["legacy_dry"][live]), 1e-300)
     out["armn_residual_fraction"] = {
+        "interfaces": int(keep.sum()),
+        "nonfinite_excluded": int((~finite).sum()),
         "median": float(np.median(frac)), "p90": float(np.percentile(frac, 90))}
     return out
 
@@ -234,10 +236,19 @@ def report(state: Path, basis: str = "canonical") -> dict:
     # basis question is really asking for. Taken per interface and then
     # summarised, NOT as a ratio of the summaries: a ratio of medians is not
     # the median of ratios, and the difference is where a defect hides.
-    keep = np.abs(p["legacy_dry"]) > 0.0
+    # NON-FINITE IS EXCLUDED BY THE COMPARISON, NOT BY A DECISION. `abs(nan) >
+    # 0.0` is False, so a broken interface silently left this population and
+    # the fraction below was over a denominator nobody stated. This module
+    # reads a WRF state DIRECTLY -- the stream path refuses NaN and Inf on the
+    # way into a store (owner P0-5), but netCDF has no such gate -- so the
+    # exclusion is made explicit and counted.
+    finite = np.isfinite(p["legacy_dry"]) & np.isfinite(p["armn_dry"])
+    keep = finite & (np.abs(p["legacy_dry"]) > 0.0)
     frac = np.abs(p["armn_dry"][keep]) / np.abs(p["legacy_dry"][keep])
     tail = frac > 0.10
     out["armn_residual_fraction"] = {
+        "interfaces": int(keep.sum()),
+        "nonfinite_excluded": int((~finite).sum()),
         "median": float(np.median(frac)),
         "p90": float(np.percentile(frac, 90)),
         "max": float(frac.max()),
