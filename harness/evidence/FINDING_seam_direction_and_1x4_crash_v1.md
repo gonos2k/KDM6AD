@@ -1,11 +1,11 @@
-# The seam's direction does not change the size, and one decomposition does not run
+# 2x2 and 4x1 differ from np=1 in the same NUMBER of fields, and one decomposition does not run
 
 `FINDING_mpi_growth_is_not_distinguishable_v1` bounded the SIZE of the `np = 4`
 difference and left open whether the difference is a property of the SEAM'S
 GEOMETRY. `run_ss_case --proc-grid` now expresses that control: the same rank
 count with the domain cut a different way.
 
-## Direction does not change the size
+## Direction does not change the field COUNT
 
 `np = 4`, one minute, against the `np = 1` baseline, of 197 f32 time-varying
 fields:
@@ -20,8 +20,15 @@ fields:
 campaign was a `2x2`.
 
 **Identical counts, and not the identical difference:** `2x2` against `4x1`
-differs in **78** of 197 fields. Each cut produces the same amount of divergence
-and a different divergence.
+differs in **78** of 197 fields. Each cut reaches the same NUMBER of fields and
+reaches them differently.
+
+**"The same amount of divergence" would be more than this measures, and the
+footprints below refute it:** 225 067 against 292 905 cells is a 30.1 %
+difference in spatial support. What is measured is the count of fields with a
+nonzero difference. Per-field magnitude -- L1, L2, Linf, domain RMS, an energy
+norm, the precipitation and reflectivity response -- has not been compared at
+all, so direction-independence of the SIZE is open, not shown.
 
 That is what a rounding-scale seed amplified by the flow looks like, and not
 what a defect tied to a particular seam looks like -- a geometry-specific fault

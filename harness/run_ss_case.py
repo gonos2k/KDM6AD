@@ -64,6 +64,21 @@ def remove_keys(text: str, keys: set[str]) -> str:
     return "\n".join(out)+"\n"
 
 
+def parse_proc_grid(rsl_text: str) -> str | None:
+    """The decomposition WRF actually used, as `NXxNY`, from rsl.error.0000.
+
+    `--proc-grid` only pre-checks that the two factors multiply to `--np`. WRF
+    is free to do something else -- and a run whose grid is not the requested
+    one is a different experiment wearing the requested one's directory name
+    (owner review 9.5). Returns None when the lines are not there, which is
+    reported as "not found" rather than as agreement.
+    """
+    import re
+    x = re.search(r"[Nn]tasks in X\s+(\d+)", rsl_text)
+    y = re.search(r"ntasks in Y\s+(\d+)", rsl_text)
+    return f"{x.group(1)}x{y.group(1)}" if (x and y) else None
+
+
 def build_child_env() -> dict:
     # Single-thread fence for strict-bitwise parity. KMP_DUPLICATE_LIB_OK is
     # intentionally NOT set here: it is caller-owned — a parent UNSET stays unset,
@@ -98,6 +113,8 @@ def main() -> int:
     ap.add_argument('--np', type=int, default=1,
                     help='MPI ranks; np>1 adds --mca btl self,tcp (Open MPI shm BTL SEGVs with libtorch-loaded ranks)')
     ap.add_argument('--label', default='smoke')
+    ap.add_argument('--allow-runner-drift', action='store_true',
+                    help='run even though this copy differs from the repository runner')
     ap.add_argument('--fixed-dt', action='store_true', help='Disable adaptive time step for parity smoke runs')
     ap.add_argument('--proc-grid', default=None, metavar='NXxNY',
                     help='force the MPI decomposition, e.g. 1x4, 2x2, 4x1. WRF '
@@ -141,16 +158,60 @@ def main() -> int:
     # So: say so, loudly, rather than pretend there is one file.
     run=Path(__file__).resolve().parent
     _repo_copy = Path("/Users/yhlee/KDM6AD-k/harness/run_ss_case.py")
+    import hashlib as _h
+    mine = _h.sha256(Path(__file__).read_bytes()).hexdigest()
     if _repo_copy.exists() and _repo_copy.resolve() != Path(__file__).resolve():
-        import hashlib as _h
-        mine = _h.sha256(Path(__file__).read_bytes()).hexdigest()
         theirs = _h.sha256(_repo_copy.read_bytes()).hexdigest()
-        if mine != theirs:
-            print(f"run_ss_case: WARNING this copy differs from the repository's.\n"
+        _runner_state = ("match" if mine == theirs else "DRIFTED")
+        if mine != theirs and not args.allow_runner_drift:
+            # FAIL CLOSED. Warning and continuing is how the hash recording added
+            # one morning was absent from that day's runs: a stale copy silently
+            # lacks whatever self-check was just added, which is exactly the
+            # check that would have caught the staleness (owner review 9.1).
+            print(f"run_ss_case: this copy differs from the repository's.\n"
                   f"             here {mine[:12]}  repo {theirs[:12]}\n"
                   f"             Anything added to the repository copy -- new flags,\n"
-                  f"             new provenance -- is NOT in this run.",
+                  f"             new provenance -- is NOT in this run.\n"
+                  f"             cp {_repo_copy} {Path(__file__).resolve()}\n"
+                  f"             or pass --allow-runner-drift to run anyway.",
                   file=sys.stderr)
+            return 2
+    else:
+        # "we could not look" must not read as "we looked and it matched": the
+        # canonical path is one host's, so elsewhere there is nothing to compare.
+        mine = theirs = None
+        _runner_state = "uncomparable-no-repo-copy"
+    # ONE RUN PER CASE DIRECTORY. This rewrites `namelist.input`, deletes the
+    # previous rsl/wrfout, runs, then restores. Two concurrent runs interleave
+    # all four: each overwrites the other's namelist, deletes the other's
+    # output, archives results produced under the wrong settings, and the second
+    # to finish restores a namelist the first had already replaced. This repo
+    # has already paid for one shared-mutable-state race (the compile-time
+    # fixture); the lock is the same answer (owner review 9.3).
+    _lock = run/'.ss-case-lock'
+    try:
+        _lock_fd = os.open(_lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+    except FileExistsError:
+        try:
+            held = _lock.read_text().strip() or "(holder wrote no name)"
+        except OSError:
+            held = "(released while we were reporting it; try again)"
+        print(f"run_ss_case: {_lock.name} is held by: {held}\n"
+              f"             This case directory takes one run at a time.\n"
+              f"             Wait, or remove the lock if that process is gone.",
+              file=sys.stderr)
+        return 3
+    with os.fdopen(_lock_fd, 'w') as _lf:
+        _lf.write(f"pid {os.getpid()} mp{args.mp} {args.label} "
+                  f"{args.minutes}min np{args.np}\n")
+
+    import hashlib
+    try:
+        _exe_path = str((run/'wrf.exe').resolve())
+        _exe_before = hashlib.sha256((run/'wrf.exe').read_bytes()).hexdigest()
+    except OSError as e:
+        _exe_path, _exe_before = str(run/'wrf.exe'), f'unavailable: {e}'
+
     nml=run/'namelist.input'
     original=nml.read_text()
     text=original
@@ -198,7 +259,13 @@ def main() -> int:
     _rad_tag = f"_radt{args.radt}" if args.radt is not None else ''
     _grid_tag = f"_{args.proc_grid}" if args.proc_grid is not None else ''
     out=run/'runs'/f"mp{args.mp}_{args.label}_{args.minutes}min{_sec_tag}_hist{args.history}{_rad_tag}{_np_tag}{_grid_tag}_{stamp}"
-    out.mkdir(parents=True, exist_ok=True)
+    # PID, and exist_ok=False. The stamp resolves to one second, so two runs
+    # started in the same second with the same arguments shared a directory and
+    # interleaved their archives. The case lock above already serialises runs in
+    # ONE case dir; this keeps the collision impossible rather than unlikely,
+    # and makes it loud if it ever happens anyway (owner review 9.4).
+    out = out.with_name(f"{out.name}_p{os.getpid()}")
+    out.mkdir(parents=True, exist_ok=False)
     for pat in ['rsl.error.*','rsl.out.*','wrfout_d01_*','klfs_lc05_fcst.*','klfs_lc05_prcp.*','klfs_lc05_ocean.*','klfs_lc05_energy.*','kdm6_step1_*.bin','kdm6_driver_step1_*.bin','kdm6_upstream_*.bin']:
         for p in run.glob(pat):
             if p.is_file() or p.is_symlink():
@@ -245,25 +312,62 @@ def main() -> int:
         # could not be shown to be a fair one afterwards. The hash was checked
         # by hand at every swap, which is evidence in a transcript and not in
         # the run. It is in the run now.
+        # BEFORE AND AFTER. Hashing only after the run records whatever the file
+        # is when the run ENDS, which is not necessarily what executed: a
+        # symlink retargeted or a binary rebuilt mid-run would be recorded as
+        # the one that ran (owner review 9.2). Both are written, with the
+        # resolved path, and a mismatch is stated rather than silently resolved.
         try:
-            import hashlib
-            h = hashlib.sha256((run/'wrf.exe').read_bytes()).hexdigest()
-            (out/'wrf_exe_sha256').write_text(h + '\n')
+            h_after = hashlib.sha256((run/'wrf.exe').read_bytes()).hexdigest()
         except OSError as e:
-            (out/'wrf_exe_sha256').write_text(f'unavailable: {e}\n')
+            h_after = f'unavailable: {e}'
+        (out/'wrf_exe_sha256').write_text(
+            f"{h_after}\n"
+            f"before {_exe_before}\n"
+            f"after  {h_after}\n"
+            f"stable {'yes' if _exe_before == h_after else 'NO -- the binary changed during the run'}\n"
+            f"path   {_exe_path}\n")
+        # 9.5: WHAT WRF ACTUALLY DID, not what was asked for. `--proc-grid`
+        # only pre-checks the arithmetic; WRF prints the decomposition it chose,
+        # and a run whose grid is not the requested one is not the experiment
+        # (owner review 9.5). Recorded either way; a mismatch is named.
+        try:
+            _r0 = next(iter(sorted(run.glob('rsl.error.0000'))), None)
+            _actual = parse_proc_grid(
+                _r0.read_text(errors='replace')[:20000]) if _r0 else None
+        except OSError:
+            _actual = None
+        # And the runner's own identity, so "which script produced this" is a
+        # fact in the run rather than a memory. `uncomparable` is written as
+        # itself: on a host without the repository there is nothing to compare.
+        (out/'runner_sha256').write_text(
+            f"runner    {mine}\n"
+            f"canonical {theirs if theirs else '(no repository copy on this host)'}\n"
+            f"state     {_runner_state}\n")
+        _requested = args.proc_grid
+        (out/'proc_grid').write_text(
+            f"requested {_requested or '(unset -- WRF chose)'}\n"
+            f"actual    {_actual or '(not found in rsl.error.0000)'}\n"
+            f"matches   {'yes' if (_actual and _requested and _actual == _requested) else ('n/a' if not _requested else 'NO -- this run is not the requested decomposition')}\n"
+            f"np        {args.np}\n")
         # Provenance: archive the EXACT namelist used (before we restore the pristine one).
         if proc is not None:
             rsl=[p for pat in ('rsl.error.*','rsl.out.*') for p in run.glob(pat)]
             for src in [nml]+rsl:
                 if src.exists(): shutil.copy2(src, out/src.name)
     finally:
+        # ORDER. Restore, archive, and only then release: the outputs are still
+        # in the case directory until they are copied, so a waiter that started
+        # at the release would delete them as its own stale files. Releasing
+        # first is the same fail-open the fixture lock was fixed for.
         # Restore the pristine working namelist so the next run / git-diff is not polluted
         # by this run's mutations (see the §10 namelist-race lesson: stale working-dir namelist
         # → truncated runs → phantom parity failures).
         nml.write_text(original)
-    for pat in ['wrfout_d01_*','klfs_lc05_fcst.*','klfs_lc05_prcp.*','klfs_lc05_ocean.*','klfs_lc05_energy.*','kdm6_step1_*.bin','kdm6_driver_step1_*.bin','kdm6_upstream_*.bin']:
-        for src in run.glob(pat):
-            if src.is_file(): shutil.copy2(src, out/src.name)
+        for pat in ['wrfout_d01_*','klfs_lc05_fcst.*','klfs_lc05_prcp.*','klfs_lc05_ocean.*','klfs_lc05_energy.*','kdm6_step1_*.bin','kdm6_driver_step1_*.bin','kdm6_upstream_*.bin']:
+            for src in run.glob(pat):
+                if src.is_file(): shutil.copy2(src, out/src.name)
+        _lock.unlink(missing_ok=True)
     # proc is None only if the launch raised OSError above (caught) → report 127
     # (command-not-found convention); otherwise use WRF's real exit code.
     rc = proc.returncode if proc is not None else 127
