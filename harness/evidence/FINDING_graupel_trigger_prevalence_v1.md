@@ -26,7 +26,17 @@ graupel -- 2.68 %.**
 
 The replay sample had four of five LAND columns failing and no sea column, and
 that was read here as the defect living in land columns. **It does not.** Over
-the domain it is three times more common at sea. The sample selected columns
+the domain the candidate cell COUNT is about three times larger at sea.
+
+**That is a count, not a prevalence, and the difference matters.** 739 against
+248 says where the candidates are, not how likely a graupel-bearing cell is to
+be one. The propensity claim needs `P(candidate | qg > 0)` per surface class,
+and this finding never split `qg > 0` (30 607 cells) by land and sea, so the
+denominator is not here. The run directory has since been cleaned, so it takes
+a re-run to answer -- and the split is cheap to record when one happens.
+
+The COLUMN-level rate below is properly denominated and is unaffected: 217 of
+the 8 102 columns that carry graupel. The sample selected columns
 carrying `QNRAIN` over at least six levels, and that selection is what leaned
 land -- exactly the bias the review warned the prevalence numbers would correct.
 

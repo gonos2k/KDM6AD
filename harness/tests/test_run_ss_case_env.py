@@ -61,3 +61,34 @@ if __name__ == "__main__":
         fn()
         print(f"PASS {name}")
     print(f"all {len(tests)} env-contract tests passed")
+
+
+# ── the decomposition WRF actually used (owner review 9.5) ───────────────────
+
+RSL_SAMPLE = """ starting wrf task            0  of            4
+ Ntasks in X            2 , ntasks in Y            2
+ WRF NUMBER OF TILES =   1
+"""
+
+
+def test_the_actual_processor_grid_is_read_from_the_rsl_log():
+    """`--proc-grid` pre-checks arithmetic only. What WRF DID is in the log,
+    and a run that is not the requested decomposition is a different
+    experiment wearing the requested one's directory name."""
+    assert _load().parse_proc_grid(RSL_SAMPLE) == "2x2"
+
+
+def test_a_four_by_one_log_reads_as_four_by_one():
+    text = RSL_SAMPLE.replace("Ntasks in X            2 , ntasks in Y            2",
+                              "Ntasks in X            4 , ntasks in Y            1")
+    assert _load().parse_proc_grid(text) == "4x1"
+
+
+def test_a_log_without_the_lines_is_not_found_rather_than_agreement():
+    """"we could not read it" must never be recorded as "it matched"."""
+    assert _load().parse_proc_grid("some other wrf output\n") is None
+
+
+def test_a_truncated_log_is_not_found_rather_than_a_half_answer():
+    """One of the two numbers present is not a grid."""
+    assert _load().parse_proc_grid(" Ntasks in X            2\n") is None

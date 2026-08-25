@@ -82,9 +82,22 @@ checkable. Every run made BEFORE 2026-08-24 has none, and the perturbation
 baseline is one of them: an independent run shows the binary held over 08-22 to
 08-23, and nothing spans 08-24.
 
-**Closed.** An unperturbed `np = 1` run made 2026-08-24, hash recorded, is
-bit-identical to the 08-22 baseline at minutes 1, 5 and 10 -- 0 of 197 fields.
-Re-making the BASELINE tested the binary directly, in one run rather than three.
+**Narrowed, NOT closed.** An unperturbed `np = 1` run made 2026-08-24, hash
+recorded, is bit-identical to the 08-22 baseline at minutes 1, 5 and 10 -- 0 of
+197 fields. That establishes the binary in use reproduces the baseline
+trajectory, in one run rather than three.
+
+**It does not establish which binary ran the perturbed run.** Two binaries can
+agree on one trajectory and diverge on a perturbed one:
+
+    F_B'(X0) = F_B(X0)   does NOT imply   F_B'(X0 + dX) = F_B(X0 + dX)
+
+and the 08-24 perturbed run recorded no hash, so nothing ties it to either. The
+claim this supports is "the binary did not drift across the baseline window",
+which is weaker than "the perturbation comparison's premise is proved". Closing
+it needs the perturbation re-run under the hash-recording runner, with the
+baseline, the perturbation, the runner, the namelist and `wrf.exe` all digested
+in one experiment.
 
 **And a related defect was found doing it:** the run tree keeps its OWN copy of
 `run_ss_case.py`, and it had fallen 12 lines behind, so the hash recording added

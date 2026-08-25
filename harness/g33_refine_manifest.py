@@ -356,7 +356,7 @@ _ALGOS = ("legacy", "conservative", "nmass", "lncmin",
           # the graupel-melt counterfactuals (owner review 4.5). Diagnostic
           # arms: a manifest may name one, which is a WIDENING -- nothing that
           # was legal became illegal.
-          "melt_g1", "melt_g2", "melt_g3")
+          "melt_g1", "melt_g2", "melt_g3", "melt_g4")
 KNOWN_SCHEMAS = ("refinement_experiment_v1", "refinement_experiment_v2",
                  "refinement_experiment_v3", "refinement_experiment_v4",
                  "refinement_experiment_v5", "refinement_experiment_v6",

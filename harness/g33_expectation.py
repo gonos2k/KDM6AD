@@ -36,7 +36,7 @@ _STRUCTURALLY_LEGACY = frozenset({"legacy", "nmass", "nmass_dry",
                                   # is inside the melt block, which carries no
                                   # instrumentation site, so the emitted
                                   # structure is legacy's exactly.
-                                  "melt_g1", "melt_g2", "melt_g3"})
+                                  "melt_g1", "melt_g2", "melt_g3", "melt_g4"})
 #: ...and the conservative-derived arms. Normalising only ONE direction was the
 #: first version of this, and the arms built on conservative then fell through
 #: to the legacy branch and drifted against their own bindings -- caught by the
