@@ -140,3 +140,24 @@ bit-identical to itself; what `np = 2` adds is an MPI PATCH) and "not a boundary
 artefact" (a wide terminal footprint does not refute a boundary origin). The
 "7-row seed propagates to a 140-row footprint" account is superseded outright by
 the per-tile overwrite, which predicts the band exactly.
+
+## One thing this rests on that it did not check
+
+The comparator's per-field magnitudes were computed with a test that read a
+NaN as agreement: `abs(x - y) > 0` is False wherever either side is NaN, so a
+field non-finite in one decomposition and finite in the other counted ZERO
+differing cells. That is fixed (`field_stats` now compares with `x != y`, the
+elementwise form of the `array_equal` that `coverage` always used, and reports
+a non-finite census beside the counts).
+
+**The field COUNTS in the tables above are unaffected either way** -- 0, 75 and
+77 of 197 come from `coverage`, which was NaN-correct from the start. And the
+fix is verified to be a no-op on finite data: 200 randomised pairs agree with
+the old predicate on both the differing count and the domain p99, 200 of 200.
+
+**What is open** is whether these particular runs carried any non-finite value,
+because this finding never reported one and the run directories have since been
+cleaned. If they were finite -- which completing to ten minutes with the
+reported precipitation makes likely but does not establish -- every number here
+is unchanged. The next run answers it directly: the census is now part of the
+output, so it is a fact to read rather than an inference to make.

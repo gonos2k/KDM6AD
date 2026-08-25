@@ -58,23 +58,47 @@ def coverage(a, b) -> list:
 
 
 def field_stats(a, b, name: str, t: int, mask=None) -> dict:
-    """One field at one frame, conditional AND unconditional."""
+    """One field at one frame, conditional AND unconditional.
+
+    NOT-A-NUMBER IS A DIFFERENCE. The test used to be `abs(x - y) > 0`, and
+    `abs(nan - 1.0)` is `nan`, which is not greater than zero. So a field that
+    went NaN in ONE decomposition and stayed finite in the other reported
+    `differing = 0` -- "the two agree everywhere" -- for the one outcome a
+    divergence tool exists to catch. `coverage()` calls the same field
+    different, because `array_equal` is NaN-correct, so the two statistics this
+    module reports contradicted each other exactly there.
+
+    `x != y` is the same test `array_equal` makes, elementwise: NaN differs
+    from everything including NaN, so the two now agree by construction. The
+    non-finite census is reported beside the counts, because a reader owed the
+    number of differing cells is also owed whether they differ by being broken.
+
+    The magnitude statistics are taken over the FINITE differences only. A
+    single NaN makes every percentile NaN, which reports nothing about the
+    other cells and is not a size.
+    """
     import numpy as np
     x = np.asarray(a[name][t], dtype="float64")
     y = np.asarray(b[name][t], dtype="float64")
     d = np.abs(x - y)
-    diff = d > 0
+    diff = x != y
+    finite = np.isfinite(d)
+    fd = d[finite]
     out = {"field": name, "frame": t,
            "cells": int(d.size),
            "differing": int(diff.sum()),
            "differing_fraction": float(diff.mean()),
-           "domain_p99": float(np.percentile(d, 99)),
-           "domain_p999": float(np.percentile(d, 99.9)),
-           "domain_mean_abs": float(d.mean()),
-           "signed_mean": float((y - x).mean())}
-    if diff.any():
-        out["conditional_p99"] = float(np.percentile(d[diff], 99))
-        out["conditional_median"] = float(np.median(d[diff]))
+           "nonfinite_a": int((~np.isfinite(x)).sum()),
+           "nonfinite_b": int((~np.isfinite(y)).sum()),
+           "nonfinite_difference": int((~finite).sum()),
+           "domain_p99": float(np.percentile(fd, 99)) if fd.size else None,
+           "domain_p999": float(np.percentile(fd, 99.9)) if fd.size else None,
+           "domain_mean_abs": float(fd.mean()) if fd.size else None,
+           "signed_mean": float((y - x)[finite].mean()) if fd.size else None}
+    cond = diff & finite
+    if cond.any():
+        out["conditional_p99"] = float(np.percentile(d[cond], 99))
+        out["conditional_median"] = float(np.median(d[cond]))
     if mask is not None and mask.any():
         out["fixed_mask_median"] = float(np.median(d[mask]))
         out["fixed_mask_p99"] = float(np.percentile(d[mask], 99))
@@ -119,22 +143,35 @@ def precipitation(a, b, t: int, name: str = "RAINNC", area=None) -> dict:
     # in area, so this is a model-grid statistic and not a domain precipitation
     # depth; a volume would need MAPFAC_M, which this frame does not carry
     # (owner review §12.2).
+    # NON-FINITE, the same hole `field_stats` had. `abs(nan) > thr` is False,
+    # so a column that went NaN counts as NOT exceeding every threshold and the
+    # exceedance fractions understate silently. `reflectivity` is immune by
+    # construction -- its physical screen drops NaN and reports the count -- so
+    # this is the one of the three that needed the census made explicit.
+    finite = np.isfinite(d)
+    fd = d[finite]
+    n = fd.size
     out = {"field": name, "frame": t,
-           "signed_gridcell_mean_mm": float(d.mean()),
-           "signed_sum_mm_times_columns": float(d.sum()),
-           "gross_sum_mm_times_columns": float(np.abs(d).sum()),
-           "cancellation_ratio": (float(abs(d.sum()) / np.abs(d).sum())
-                                  if np.abs(d).sum() else None),
-           "columns": int(d.size)}
+           "signed_gridcell_mean_mm": float(fd.mean()) if n else None,
+           "signed_sum_mm_times_columns": float(fd.sum()) if n else None,
+           "gross_sum_mm_times_columns": float(np.abs(fd).sum()) if n else None,
+           "cancellation_ratio": (float(abs(fd.sum()) / np.abs(fd).sum())
+                                  if n and np.abs(fd).sum() else None),
+           "columns": int(d.size),
+           "nonfinite_columns": int((~finite).sum())}
     if area is not None:
         # AREA-WEIGHTED, which a grid-cell mean is not on a map projection.
         # Volume in m^3 of liquid water: mm -> m is 1e-3.
-        out["area_weighted_mean_mm"] = float((d * area).sum() / area.sum())
-        out["signed_volume_m3"] = float((d * area).sum() * 1e-3)
-        out["gross_volume_m3"] = float((np.abs(d) * area).sum() * 1e-3)
+        af = np.asarray(area)[finite]
+        out["area_weighted_mean_mm"] = float((fd * af).sum() / af.sum()) if n else None
+        out["signed_volume_m3"] = float((fd * af).sum() * 1e-3) if n else None
+        out["gross_volume_m3"] = float((np.abs(fd) * af).sum() * 1e-3) if n else None
     for thr in (1e-3, 1e-2, 1e-1):
-        out[f"fraction_over_{thr:g}mm"] = float((np.abs(d) > thr).mean())
-        out[f"columns_over_{thr:g}mm"] = int((np.abs(d) > thr).sum())
+        # over the FINITE columns; `nonfinite_columns` says how many are not in
+        # this population, so the fraction has a stated denominator.
+        out[f"fraction_over_{thr:g}mm"] = (float((np.abs(fd) > thr).mean())
+                                           if n else None)
+        out[f"columns_over_{thr:g}mm"] = int((np.abs(fd) > thr).sum())
     return out
 
 

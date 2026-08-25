@@ -49,6 +49,16 @@ DECL_ADD = ("   real                               :: gfac, sfac\n"
 MELT_OPEN = "            if(qrs(i,k,3).gt.0.) then\n"
 DIVIDE = "              brs(i,k) = brs(i,k) + (pgmlt(i,k)/rhox(i,k))\n"
 
+#: G3 does not reorder anything -- the base ALREADY updates the mass before the
+#: volume (F:1416 then F:1419). That order is what makes `qrs(i,k,3).le.0.` mean
+#: "this cell melted completely" instead of being dead code inside a block the
+#: melt opened on `qrs(i,k,3).gt.0.`. So it is a property of the BASE that G3
+#: depends on, and an unchecked dependency is the kind that breaks silently: a
+#: revision moving the mass update below the divide would still pass every
+#: anchor here and every line-count budget, and emit a G3 whose first branch
+#: can never be taken.
+MASS_UPDATE = "              qrs(i,k,3) = qrs(i,k,3) + pgmlt(i,k)\n"
+
 G1_OPEN = ("            if(qrs(i,k,3).gt.qcrmin .or. brs(i,k).gt.melt_brs_min) then\n"
            "! G1: the SAME existence test ProgB_param uses before computing rhox.\n"
            "! Where the density was not computed, the melt does not run either.\n")
@@ -84,18 +94,45 @@ def _once(text: str, anchor: str, what: str) -> None:
 
 
 def _check_constants(text: str) -> None:
-    """The arms' copies must equal ProgB_param's, or they answer another question."""
+    """The arms' copies must equal ProgB_param's, or they answer another question.
+
+    Two assumptions are checked rather than relied on. That each threshold is
+    declared EXACTLY ONCE: with more than one declaration the first match is an
+    arbitrary choice among scopes, and comparing against the wrong scope's value
+    would pass while the arm ran on another. And the values are compared as
+    NUMBERS -- `100.` and `100.0` are the same threshold, and a comparison that
+    calls them different fails a correct base.
+    """
     import re
     for name, mine in (("brs_min", "1.e-15"), ("rho_min", "100."), ("rho_max", "900.")):
-        m = re.search(rf"::\s*{name}\s*=\s*([0-9.e+-]+)", text)
-        if not m:
-            raise SystemExit(f"cannot find ProgB_param's {name} to check against")
-        if m.group(1).rstrip(".") != mine.rstrip("."):
-            raise SystemExit(f"{name} is {m.group(1)} in ProgB_param and {mine} here")
+        found = re.findall(rf"::\s*{name}\s*=\s*([0-9.eEdD+-]+)", text)
+        if len(found) != 1:
+            raise SystemExit(
+                f"{name}: {len(found)} declarations in the base, expected 1 -- "
+                f"cannot tell which scope the arms should match")
+        if float(found[0].replace("d", "e").replace("D", "e")) != float(mine):
+            raise SystemExit(f"{name} is {found[0]} in ProgB_param and {mine} here")
+
+
+def _mass_update_precedes_divide(text: str) -> None:
+    """G3's `qrs(i,k,3).le.0.` branch is only reachable if the mass update
+    already ran; see MASS_UPDATE."""
+    _once(text, MASS_UPDATE, "graupel mass update")
+    if text.index(MASS_UPDATE) > text.index(DIVIDE):
+        raise SystemExit(
+            "the graupel mass update no longer precedes the volume update, so "
+            "g3's complete-melt branch would be dead code; the base moved")
 
 
 def arm(name: str) -> str:
-    """The kernel source for one arm, from the pinned base."""
+    """The kernel source for one arm, from the pinned base.
+
+    The NAME is checked before the base is opened. A bad argument should be a
+    bad argument on every host, not a FileNotFoundError wherever the reference
+    tree is absent -- which is everywhere but the owner's machine.
+    """
+    if name not in ("g1", "g2", "g3"):
+        raise SystemExit(f"unknown arm {name!r}; expected g1, g2 or g3")
     text = BASE.read_text()
     _check_constants(text)
     _once(text, MELT_OPEN, "melt open")
@@ -107,10 +144,9 @@ def arm(name: str) -> str:
     if name == "g2":
         return text.replace(DIVIDE, G2_DIVIDE)
     if name == "g3":
-        # G3 reorders the mass update before the volume one, so `qrs(i,k,3)`
-        # already carries the post-melt value the branch tests.
+        _mass_update_precedes_divide(text)
         return text.replace(DIVIDE, G3_DIVIDE)
-    raise SystemExit(f"unknown arm {name!r}; expected g1, g2 or g3")
+    raise AssertionError(f"unreachable: {name!r} passed the name check")
 
 
 def main() -> int:
