@@ -34,7 +34,26 @@ RD, CP, P0 = 287.04, 1004.5, 1.0e5
 
 
 def profile(state: Path) -> dict:
-    """Per-interface over-delivery from a WRF state file."""
+    """Per-interface over-delivery from a WRF state file.
+
+    WHICH DENSITY THIS IS, named rather than assumed. `den` here is the
+    THERMODYNAMIC estimate `p / (Rd T (1 + 0.608 qv))` -- pressure, temperature
+    and a linearised virtual temperature. `g33_number_basis` uses a different
+    authority for the same physical question: WRF's own hydrostatic relation,
+    `rho_d dz = mu_d |d(eta)| / g`, which assumes no thermodynamics at all.
+
+    They are not interchangeable. Measured against each other on the real 5 km
+    state, the thermodynamic routes differ from the canonical one by a median
+    2.3e-03 and by up to 31 %, which is about 2500 times the difference BETWEEN
+    the two thermodynamic routes. So the choice that matters is
+    thermodynamic-versus-canonical.
+
+    This module keeps the thermodynamic route because its published statistics
+    were taken with it, and switching authorities silently would move numbers
+    that are already cited. The output says which one it is, so a reader does
+    not have to infer it, and `g33_number_basis.profile(..., basis='canonical')`
+    is the one to call when the model's own layer mass is the question.
+    """
     import netCDF4
     import numpy as np
     d = netCDF4.Dataset(str(state))
@@ -43,7 +62,7 @@ def profile(state: Path) -> dict:
     theta = g("T") + 300.0
     qv = g("QVAPOR")
     temp = theta * (pressure / P0) ** (RD / CP)
-    # Moist density, as the kernel's `den`.
+    # Moist density, as the kernel's `den` -- thermodynamic route, see above.
     den = pressure / (RD * temp * (1.0 + 0.608 * qv))
     # WRF k=0 is the BOTTOM, so `den[:-1]` is the LOWER side of each interface
     # and `den[1:]` the upper -- the direction sedimentation moves.
@@ -58,6 +77,10 @@ def report(state: Path) -> dict:
     p = profile(state)
     eps, mid = p["eps"], p["p_mid"]
     out = {
+        # NAMED IN THE OUTPUT, not only in the docstring: a reader
+        # comparing this against a number_basis figure must be able to see
+        # that the two are on different density authorities.
+        "density_authority": "thermodynamic p/(Rd T (1+0.608 qv))",
         "state": str(state),
         "columns": p["columns"],
         "interfaces": p["interfaces"],

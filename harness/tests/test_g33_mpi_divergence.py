@@ -255,3 +255,74 @@ def test_the_magnitude_keys_say_which_population_they_are_over():
     a, b = _pair(x, y)
     s = md.field_stats(a, b, "T", 0)
     assert "domain_p99" not in s and "finite_domain_p99" in s
+
+
+# ── the fixed mask needs the finite mask too ─────────────────────────────────
+
+def test_a_cell_that_went_nonfinite_later_does_not_erase_the_held_population():
+    """The fixed mask is chosen at the FIRST time and followed, so it can hold a
+    cell that breaks later. One of those made the median and the p99 NaN."""
+    x = np.zeros((1, 4, 4), dtype="float32")
+    y = x.copy()
+    y[0, 0, :] = 3.0
+    y[0, 0, 0] = np.nan
+    a, b = _pair(x, y)
+    mask = np.zeros((4, 4), dtype=bool)
+    mask[0, :] = True                      # the row held from the first time
+    s = md.field_stats(a, b, "T", 0, mask=mask)
+    assert s["fixed_mask_cells"] == 4
+    assert s["fixed_mask_finite_cells"] == 3
+    assert s["fixed_mask_nonfinite_cells"] == 1
+    assert s["fixed_mask_median"] == pytest.approx(3.0)
+
+
+def test_a_wholly_nonfinite_fixed_mask_reports_none_not_a_number():
+    x = np.zeros((1, 3, 3), dtype="float32")
+    y = x.copy(); y[0, 0, :] = np.nan
+    a, b = _pair(x, y)
+    mask = np.zeros((3, 3), dtype=bool); mask[0, :] = True
+    s = md.field_stats(a, b, "T", 0, mask=mask)
+    assert s["fixed_mask_median"] is None and s["fixed_mask_finite_cells"] == 0
+
+
+# ── the two files must be the same experiment ────────────────────────────────
+
+def test_a_field_present_in_only_one_run_is_refused_not_skipped():
+    """`coverage` walked A's fields alone, so a field only B has was never
+    compared and its absence read as agreement."""
+    x = np.zeros((1, 2, 2), dtype="float32")
+    dims = ("Time", "south_north", "west_east")
+    times = (np.zeros((1, 1), dtype="S1"), ("Time", "DateStrLen"))
+    a = md.__dict__ and _Ds({"T": (x, dims), "Times": times})
+    b = _Ds({"T": (x, dims), "QVAPOR": (x, dims), "Times": times})
+    with pytest.raises(SystemExit) as e:
+        md.comparable(a, b)
+    assert "QVAPOR" in str(e.value)
+
+
+def test_two_runs_on_different_grids_are_refused():
+    dims = ("Time", "south_north", "west_east")
+    times = (np.zeros((1, 1), dtype="S1"), ("Time", "DateStrLen"))
+    a = _Ds({"T": (np.zeros((1, 2, 2), dtype="float32"), dims), "Times": times})
+    b = _Ds({"T": (np.zeros((1, 3, 3), dtype="float32"), dims), "Times": times})
+    with pytest.raises(SystemExit) as e:
+        md.comparable(a, b)
+    assert "shape" in str(e.value)
+
+
+def test_two_runs_with_different_time_axes_are_refused():
+    dims = ("Time", "south_north", "west_east")
+    x = np.zeros((1, 2, 2), dtype="float32")
+    a = _Ds({"T": (x, dims), "Times": (np.zeros((1, 1), dtype="S1"),
+                                       ("Time", "DateStrLen"))})
+    b = _Ds({"T": (x, dims), "Times": (np.ones((1, 1), dtype="S1"),
+                                       ("Time", "DateStrLen"))})
+    with pytest.raises(SystemExit) as e:
+        md.comparable(a, b)
+    assert "time axes differ" in str(e.value)
+
+
+def test_the_same_experiment_is_accepted():
+    x = np.zeros((1, 2, 2), dtype="float32")
+    a, b = _pair(x, x.copy())
+    md.comparable(a, b)
