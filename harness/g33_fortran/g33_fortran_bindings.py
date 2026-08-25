@@ -997,13 +997,23 @@ VARIANTS["melt_g1"] = dict(
 #: none of them -- so it inherits legacy's bindings and pins its own sha.
 VARIANTS["melt_g2"] = dict(
     VARIANTS["legacy"],
-    sha="ac136a82701bdcb944242c074f5f445ef1f80deb16ab8576730448123c09f517")
+    #: Re-pinned 2026-08-25. The generator's emitted comment described g2 as
+    #: computing a PRE-melt density, which it does not -- the mass update runs
+    #: first, so on a complete melt its guard is false. Comment-only edit,
+    #: proved: 0 non-comment lines differ from the 08-24 source.
+    sha="9c7fd270c13efd019d2ccb7593f5a2df759eed8ab0e45ca2ce17e5335663eba6")
 #: melt_g3: the graupel-melt counterfactual. Its instrumentation sites
 #: are legacy's -- the edit touches only the melt block, which carries
 #: none of them -- so it inherits legacy's bindings and pins its own sha.
 VARIANTS["melt_g3"] = dict(
     VARIANTS["legacy"],
     sha="3acf8bcbdad4218309e20686415691072c69682392f36ce44db1614a401f32f8")
+#: melt_g4: the PRE-melt density counterfactual g2 was named as and is not.
+#: It replaces the whole melt transaction, so the density comes from the mass
+#: and volume the melt started with. Instrumentation sites are still legacy's.
+VARIANTS["melt_g4"] = dict(
+    VARIANTS["legacy"],
+    sha="fdc91ae14ba525bc466f8a4830d8b919b2412a3457e8f36331b60fef3d57b38f")
 VARIANTS["nmass_dry_window"] = dict(
     VARIANTS["nmass"],
     sha="a3330ad13b99460e305c01e4e9f02848cc74779ed0acf463b7865d6e6146ee60")
@@ -1013,6 +1023,7 @@ VARIANTS["nmass_dry"] = dict(
 
 _DERIVED = {"nmass": "legacy", "nmass_dry": "legacy",
             "melt_g1": "legacy", "melt_g2": "legacy", "melt_g3": "legacy",
+            "melt_g4": "legacy",
             "nmass_dry_window": "legacy",
             "lncmin": "legacy", "nmasslncmin": "legacy",
             "cons_nmass": "conservative", "cons_lncmin": "conservative",
@@ -1066,6 +1077,6 @@ del _t
 # validation on `QR_OUTFLOW`, because that entry carries the per-operation field
 # lists too. The edits touch only the graupel melt block, which holds none of
 # these sites, so the right relationship is "identical to legacy", stated once.
-for _g in ("melt_g1", "melt_g2", "melt_g3"):
+for _g in ("melt_g1", "melt_g2", "melt_g3", "melt_g4"):
     FIELD_EXPR[_g] = FIELD_EXPR["legacy"]
     XFER_SITES[_g] = XFER_SITES["legacy"]

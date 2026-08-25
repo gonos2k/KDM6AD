@@ -202,7 +202,10 @@ def test_the_binding_tables_know_exactly_the_arms_the_driver_emits():
     emitted = set(re.findall(r"ALGOTAG = '([a-z_0-9]+)'", driver))
     assert emitted, "no ALGOTAG assignments found; the cascade moved"
     for name, table in (("FIELD_EXPR", fb.FIELD_EXPR),
-                        ("XFER_SITES", fb.XFER_SITES)):
+                        ("XFER_SITES", fb.XFER_SITES),
+                        ("CAP_SITES", fb.CAP_SITES),
+                        ("TOP_SITES", fb.TOP_SITES),
+                        ("VARIANTS", fb.VARIANTS)):
         assert emitted == set(table), (
             f"{name}: only the driver knows: {sorted(emitted - set(table))}; "
             f"only the table knows: {sorted(set(table) - emitted)}")
@@ -219,3 +222,38 @@ def test_an_arm_missing_from_a_binding_table_is_caught_here_not_later():
     holed.pop("melt_g1")
     assert emitted != set(holed)
     assert sorted(emitted - set(holed)) == ["melt_g1"]
+
+
+def test_no_arm_keyed_table_in_the_bindings_is_left_unchecked():
+    """The list above was written from the tables I knew about, and that is the
+    same mistake it exists to catch.
+
+    Pinning FIELD_EXPR and XFER_SITES closed two of five. Adding `melt_g4` then
+    failed twice more, at tables the earlier sweep had not found: `VARIANTS`
+    (the overlay generator's `--algo` choices come from it) and `CAP_SITES` /
+    `TOP_SITES` (populated through `_DERIVED`). Each failure came from a build,
+    not from a test.
+
+    So this does not enumerate. It DISCOVERS every module-level dict keyed on
+    arm names and asserts the guard above covers it, which means a table added
+    later is caught by its absence from the list rather than by a broken build.
+    """
+    checked = {"FIELD_EXPR", "XFER_SITES", "CAP_SITES", "TOP_SITES", "VARIANTS"}
+    driver = (Path(__file__).resolve().parents[1]
+              / "g33_fortran" / "g33_refine_driver.f90").read_text()
+    emitted = set(re.findall(r"ALGOTAG = '([a-z_0-9]+)'", driver))
+    found = set()
+    for attr in dir(fb):
+        value = getattr(fb, attr)
+        if isinstance(value, dict) and value and set(value) & emitted:
+            found.add(attr)
+    # `_DERIVED` maps derived arms to their BASE, so it deliberately omits
+    # `legacy` and `conservative` -- a partial table, not a membership one.
+    partial = {k for k in found if not emitted <= set(getattr(fb, k))
+               and k not in checked}
+    assert partial == {"_DERIVED"}, (
+        f"a table that does not carry every arm and is not the known partial "
+        f"one: {sorted(partial - {'_DERIVED'})}")
+    assert found - partial == checked, (
+        f"unchecked arm-keyed table(s): {sorted(found - partial - checked)}; "
+        f"add them to the guard above")
