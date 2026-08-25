@@ -182,3 +182,40 @@ def test_EXACTLY_the_declared_expressions_carry_a_conversion():
                 if fb._CONVERSION.search(e)}
     assert carriers == set(fb.STORAGE_OVERRIDES), \
         sorted(carriers ^ set(fb.STORAGE_OVERRIDES))
+
+
+def test_the_binding_tables_know_exactly_the_arms_the_driver_emits():
+    """`FIELD_EXPR` and `XFER_SITES` were the two arm registries anchored to
+    nothing.
+
+    Adding the melt arms needed five separate registrations, and only some
+    failed at edit time. `_ALGOS` and `NUMBER_TRANSFER_METRIC` are each pinned
+    to the driver's own `ALGOTAG` vocabulary in both directions, so a missing
+    arm fails there immediately. These two were not: a partial `FIELD_EXPR`
+    entry passed every table check and then died much later inside schema
+    validation, on a `QR_OUTFLOW` key that had nothing to do with the edit.
+
+    Same invariant, same source of truth -- the driver, not a constant here.
+    """
+    driver = (Path(__file__).resolve().parents[1]
+              / "g33_fortran" / "g33_refine_driver.f90").read_text()
+    emitted = set(re.findall(r"ALGOTAG = '([a-z_0-9]+)'", driver))
+    assert emitted, "no ALGOTAG assignments found; the cascade moved"
+    for name, table in (("FIELD_EXPR", fb.FIELD_EXPR),
+                        ("XFER_SITES", fb.XFER_SITES)):
+        assert emitted == set(table), (
+            f"{name}: only the driver knows: {sorted(emitted - set(table))}; "
+            f"only the table knows: {sorted(set(table) - emitted)}")
+
+
+def test_an_arm_missing_from_a_binding_table_is_caught_here_not_later():
+    """The guard above must fail for the reason it claims. Dropping one arm
+    from a COPY of the table has to be visible as a set difference -- otherwise
+    the assertion is shape-checking, not membership-checking."""
+    driver = (Path(__file__).resolve().parents[1]
+              / "g33_fortran" / "g33_refine_driver.f90").read_text()
+    emitted = set(re.findall(r"ALGOTAG = '([a-z_0-9]+)'", driver))
+    holed = dict(fb.FIELD_EXPR)
+    holed.pop("melt_g1")
+    assert emitted != set(holed)
+    assert sorted(emitted - set(holed)) == ["melt_g1"]
