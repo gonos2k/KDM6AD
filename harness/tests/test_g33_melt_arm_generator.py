@@ -168,18 +168,46 @@ def test_the_g4_volume_update_is_floored_at_zero_in_the_source():
         f"the volume update is not floored: {line[0].strip()}"
 
 
-def test_the_unfloored_arithmetic_really_does_go_negative():
-    """The floor is not defensive decoration. Reproduced at the reference
-    precision, since this is an f32 kernel."""
+def test_the_unfloored_arithmetic_goes_negative_only_inside_the_window():
+    """The floor is not decoration, and its reach is narrower than first
+    recorded.
+
+    OUTSIDE the window `ProgB_param` computed `rhox` and rewrote
+    `brs = qg/rhox` (F:3680), so `brs + pgmlt/rhox = (qg+pgmlt)/rhox >= 0` for
+    ANY density and ANY melt fraction. The states that look dangerous cannot
+    reach the melt: that normalisation removes them. INSIDE the window `rhox`
+    was never computed and `brs` was never normalised, and there a particle far
+    above `rho_max` removes `pgmlt/900` from a volume holding far less.
+    """
     f32 = np.float32
-    qg0 = f32(1e-12)
-    for raw, frac in ((f32(2000.), 0.5), (f32(5000.), 0.5), (f32(1000.), 0.95)):
-        bg0 = f32(qg0 / raw)
-        pgmlt = f32(-qg0 * f32(frac))
-        rho = min(f32(900.), max(f32(100.), f32(qg0 / bg0)))
-        unfloored = f32(bg0 + f32(pgmlt / rho))
-        assert unfloored < 0, f"expected negative at raw={raw} frac={frac}"
-        assert max(f32(0.), unfloored) == 0
+    rmin, rmax = f32(100.), f32(900.)
+
+    # outside: normalised by ProgB_param, never negative
+    for raw in (f32(2000.), f32(5000.), f32(50.)):
+        qg = f32(1e-9)
+        rhox = min(rmax, max(rmin, raw))
+        brs_norm = f32(qg / rhox)                    # what ProgB_param leaves
+        for frac in (0.5, 0.99, 1.0):
+            v = f32(brs_norm + f32(f32(-qg * f32(frac)) / rhox))
+            assert v >= 0, f"outside the window went negative at raw={raw}"
+
+    # inside: not normalised, and it does go negative
+    for qg, brs in ((f32(1e-9), f32(1e-16)), (f32(1e-10), f32(1e-16))):
+        rho = min(rmax, max(rmin, f32(qg / brs)))
+        v = f32(brs + f32(f32(-qg * f32(0.5)) / rho))
+        assert v < 0, f"expected negative inside the window at qg={qg}"
+        assert max(f32(0.), v) == 0
+
+
+def test_g4_reuses_rhox_so_it_is_bit_exact_with_legacy_outside_the_window():
+    """`rhox` already IS the pre-melt density -- ProgB_param computed it at
+    F:1325 and nothing touches `qg` or `brs` before the melt at F:1400 -- so
+    reusing it makes the expression literally legacy's. Recomputing `qg/brs`
+    instead agrees only to within 1 ULP, which is a change this arm has no
+    reason to make where its window does not apply."""
+    src = mg.G4_TXN
+    assert "melt_rho = rhox(i,k)" in src, "g4 no longer reuses rhox"
+    assert "if(rhox(i,k).gt.0.) then" in src, "the reuse is not guarded on rhox"
 
 
 def test_a_complete_melt_inside_the_clamp_lands_on_zero_at_f32():

@@ -100,6 +100,22 @@ G3_DIVIDE = (
     "              endif\n")
 
 
+#: CONTAINMENT, and why g4 reuses `rhox`. Where ProgB_param computed it, it
+#: ALSO rewrote `brs` to `qg/rhox` (F:3680), and nothing touches `qg` or `brs`
+#: between that call (F:1325) and the melt -- so `rhox` already IS the pre-melt
+#: density and reusing it is bit-exact with legacy. Recomputing `qg/brs` there
+#: instead agrees to within 1 ULP (measured: 191151 of 200000 f32 draws exact,
+#: worst relative 7.6e-08), which is a change this arm has no reason to make
+#: outside its own window.
+#:
+#: THE NEGATIVE VOLUME IS A WINDOW-ONLY HAZARD, narrower than first recorded.
+#: Outside the window ProgB_param left `brs = qg/rhox`, so
+#: `brs + pgmlt/rhox = (qg+pgmlt)/rhox >= 0` for ANY density and ANY melt
+#: fraction -- the states that looked dangerous cannot reach the melt, because
+#: that normalisation removes them. INSIDE the window `brs` was never
+#: normalised, and a particle far above `rho_max` removes `pgmlt/900` from a
+#: volume holding much less: qg 1e-9 over brs 1e-16 gives -5.55e-13 at a half
+#: melt. Hence the floor, for that reason and not the wider one.
 #: G4 replaces the whole transaction -- the three state updates AND the divide --
 #: because the counterfactual it tests needs the PRE-melt mass, and by the time
 #: the divide runs the mass update has already consumed it. G2 was named as this
@@ -126,12 +142,16 @@ G4_TXN = (
     "              t(i,k) = t(i,k) + xlf/cpm(i,k)*pgmlt(i,k)\n"
     "              if(qrs(i,k,3).le.0.) then\n"
     "                brs(i,k) = 0.\n"
-    "              else if(melt_bg0.gt.0.) then\n"
-    "                melt_rho = min(melt_rho_max,max(melt_rho_min,melt_qg0/melt_bg0))\n"
-    "! The clamp makes the volume removed inconsistent with the volume present:\n"
-    "! for a particle denser than rho_max, pgmlt/rho_max exceeds what bg0 holds,\n"
-    "! and the bulk volume goes NEGATIVE. Measured in f32: raw density 2000 does\n"
-    "! it at a 50 percent melt. A volume cannot be negative, so it floors at 0.\n"
+    "              else\n"
+    "! g4: rhox already IS the pre-melt density where ProgB_param computed it,\n"
+    "! so reuse it -- recomputing differs by up to 1 ULP for no reason.\n"
+    "                if(rhox(i,k).gt.0.) then\n"
+    "                  melt_rho = rhox(i,k)\n"
+    "                else\n"
+    "                  melt_rho = min(melt_rho_max,max(melt_rho_min,           &\n"
+    "                             melt_qg0/max(melt_bg0,tiny(melt_bg0))))\n"
+    "                endif\n"
+    "! A bulk volume cannot be negative; only inside the window can it go there.\n"
     "                brs(i,k) = max(0.,melt_bg0 + (pgmlt(i,k)/melt_rho))\n"
     "              endif\n")
 

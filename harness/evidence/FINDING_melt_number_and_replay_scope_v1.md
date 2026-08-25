@@ -82,3 +82,36 @@ would separate them.
 
 Graded: **a supported decomposition SIGSEGVs — confirmed. Middle-j-rank
 topology as the cause — strong candidate. KDM6 as the cause — open.**
+
+## 5. Correcting my own scope on g4's negative volume
+
+`FINDING`-adjacent, and it corrects PR #170's commit message rather than an
+evidence file, because the claim never reached one.
+
+That commit reported g4's partial-melt branch producing a negative bulk volume
+at "raw density 2000, 50 per cent melt". The arithmetic is right and **the
+state is unreachable.** Where `ProgB_param` computes `rhox` it also rewrites
+`brs = qg/rhox` (F:3680), so by the time the melt runs,
+
+    brs + pgmlt/rhox  =  (qg + pgmlt)/rhox  >=  0
+
+for ANY density and ANY melt fraction. The normalisation removes exactly the
+states that looked dangerous. Measured over the same f32 draws: 0 negatives
+outside the window.
+
+**Inside** the window `rhox` was never computed and `brs` was never normalised,
+and there it is real: `qg = 1e-9` over `brs = 1e-16` gives `-5.55e-13` at a half
+melt. So the floor is necessary, for a window-only reason and not the general
+one. At the measured failing cell (`raw = 900`, exactly at the clamp) the value
+is `+4.6e-16` at a half melt and exactly `0` at a complete one.
+
+**And the same fact makes g4 exactly contained.** `rhox` at the melt already IS
+the pre-melt density — `ProgB_param` runs at F:1325, and neither `qrs(i,k,3)`
+nor `brs(i,k)` appears anywhere between there and F:1400. So g4 now REUSES it
+where it is positive, which makes the expression literally legacy's, rather
+than recomputing `qg/brs`, which agrees only to within 1 ULP (191 151 of 200 000
+f32 draws exact, worst relative 7.6e-08). The floor is then the only remaining
+difference outside the window, and it provably never binds there.
+
+That is the containment property `g2` was asked for and does not have, stated
+as a proof over all states rather than as a fixture that happens not to fire.
