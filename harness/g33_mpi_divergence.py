@@ -36,6 +36,21 @@ from pathlib import Path
 REFL_PHYSICAL = (-35.0, 80.0)
 
 
+def _num(var, index):
+    """A numeric field, through the guard (owner review 8.3).
+
+    `np.asarray` on a netCDF variable DROPS a mask, and this module then feeds
+    the result to equality, a non-finite census, and precipitation and
+    reflectivity thresholds. `g33_number_basis` was wired through the guard and
+    this one -- equally load-bearing -- was not.
+    """
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import g33_netcdf_read as nr
+    return nr.read_numeric(var, index)["data"]
+
+
 def _fields(d):
     import numpy as np
     return [v for v in d.variables
@@ -130,7 +145,8 @@ def coverage(a, b) -> list:
     out, prev = [], set()
     for t in range(a["Times"].shape[0]):
         now = {v for v in _fields(a)
-               if not np.array_equal(np.asarray(a[v][t]), np.asarray(b[v][t]))}
+               if not np.array_equal(_num(a[v], t), _num(b[v], t),
+                                     equal_nan=False)}
         out.append({"frame": t, "differing": len(now),
                     "new_since_previous": sorted(now - prev),
                     "gone_since_previous": sorted(prev - now)})
@@ -159,8 +175,8 @@ def field_stats(a, b, name: str, t: int, mask=None) -> dict:
     other cells and is not a size.
     """
     import numpy as np
-    x = np.asarray(a[name][t], dtype="float64")
-    y = np.asarray(b[name][t], dtype="float64")
+    x = _num(a[name], t)
+    y = _num(b[name], t)
     d = np.abs(x - y)
     diff = x != y
     fx, fy = np.isfinite(x), np.isfinite(y)
@@ -224,7 +240,7 @@ def cell_area(state_path: Path, a):
     import netCDF4
     import numpy as np
     d = netCDF4.Dataset(str(state_path))
-    mf = np.asarray(d["MAPFAC_M"][0], dtype="float64")
+    mf = _num(d["MAPFAC_M"], 0)
     dx, dy = float(d.getncattr("DX")), float(d.getncattr("DY"))
     # The map factor must be THIS domain's. A wrfinput from another run of the
     # same grid size would pass silently and weight every cell wrongly.
@@ -241,8 +257,8 @@ def precipitation(a, b, t: int, name: str = "RAINNC", area=None) -> dict:
     """Signed and thresholded, because `|dP|` cannot tell more rain from
     rain somewhere else."""
     import numpy as np
-    x = np.asarray(a[name][t], dtype="float64")
-    y = np.asarray(b[name][t], dtype="float64")
+    x = _num(a[name], t)
+    y = _num(b[name], t)
     d = y - x
     # UNITS. `RAINNC` is mm per column, so a bare sum is mm x columns and is
     # not a depth. The domain MEAN is a depth; the sum is reported as what it
@@ -288,8 +304,8 @@ def precipitation(a, b, t: int, name: str = "RAINNC", area=None) -> dict:
 def reflectivity(a, b, t: int, name: str = "REFL_10CM", area=None) -> dict:
     """Screened to the physical range, in linear Z, and as threshold AREAS."""
     import numpy as np
-    x = np.asarray(a[name][t], dtype="float64")
-    y = np.asarray(b[name][t], dtype="float64")
+    x = _num(a[name], t)
+    y = _num(b[name], t)
     lo, hi = REFL_PHYSICAL
     ok = (x >= lo) & (x <= hi) & (y >= lo) & (y <= hi)
     out = {"field": name, "frame": t,
@@ -346,6 +362,17 @@ def main() -> int:
     area = cell_area(args.mapfac_from, a) if args.mapfac_from else None
     frames = [int(f) for f in args.frames.split(",")]
 
+    # THE REQUESTED FRAMES MUST EXIST. Asking for minute 10 of a one-minute run
+    # raised `IndexError: index exceeds dimension bounds` from inside netCDF4 --
+    # true, and it names neither the frame nor the file. A comparison that
+    # cannot be made should say which one and stop.
+    n_frames = a["Times"].shape[0]
+    missing = [f for f in frames if f >= n_frames or f < -n_frames]
+    if missing:
+        raise SystemExit(
+            f"these runs carry {n_frames} frames (0..{n_frames - 1}) and "
+            f"frames {missing} were asked for. Pass --frames with what the "
+            f"files actually hold.")
     cov = coverage(a, b)
     print("  frame  differing fields   new since previous")
     for row in cov:
@@ -356,8 +383,8 @@ def main() -> int:
     masks = {}
     for name in ("T", "REFL_10CM", "QVAPOR"):
         if name in a.variables:
-            x = np.asarray(a[name][args.fixed_mask_frame], dtype="float64")
-            y = np.asarray(b[name][args.fixed_mask_frame], dtype="float64")
+            x = _num(a[name], args.fixed_mask_frame)
+            y = _num(b[name], args.fixed_mask_frame)
             masks[name] = x != y
 
     doc = {"coverage": cov, "fields": [], "precipitation": [],

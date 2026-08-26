@@ -158,132 +158,147 @@ def main() -> int:
     # So: say so, loudly, rather than pretend there is one file.
     run=Path(__file__).resolve().parent
     _repo_copy = Path("/Users/yhlee/KDM6AD-k/harness/run_ss_case.py")
-    import hashlib as _h
-    mine = _h.sha256(Path(__file__).read_bytes()).hexdigest()
-    if _repo_copy.exists() and _repo_copy.resolve() != Path(__file__).resolve():
-        theirs = _h.sha256(_repo_copy.read_bytes()).hexdigest()
-        _runner_state = ("match" if mine == theirs else "DRIFTED")
-        if mine != theirs and not args.allow_runner_drift:
-            # FAIL CLOSED. Warning and continuing is how the hash recording added
-            # one morning was absent from that day's runs: a stale copy silently
-            # lacks whatever self-check was just added, which is exactly the
-            # check that would have caught the staleness (owner review 9.1).
-            print(f"run_ss_case: this copy differs from the repository's.\n"
-                  f"             here {mine[:12]}  repo {theirs[:12]}\n"
-                  f"             Anything added to the repository copy -- new flags,\n"
-                  f"             new provenance -- is NOT in this run.\n"
-                  f"             cp {_repo_copy} {Path(__file__).resolve()}\n"
-                  f"             or pass --allow-runner-drift to run anyway.",
-                  file=sys.stderr)
-            return 2
-    else:
-        # "we could not look" must not read as "we looked and it matched": the
-        # canonical path is one host's, so elsewhere there is nothing to compare.
-        mine = theirs = None
-        _runner_state = "uncomparable-no-repo-copy"
-    # ONE RUN PER CASE DIRECTORY. This rewrites `namelist.input`, deletes the
-    # previous rsl/wrfout, runs, then restores. Two concurrent runs interleave
-    # all four: each overwrites the other's namelist, deletes the other's
-    # output, archives results produced under the wrong settings, and the second
-    # to finish restores a namelist the first had already replaced. This repo
-    # has already paid for one shared-mutable-state race (the compile-time
-    # fixture); the lock is the same answer (owner review 9.3).
-    _lock = run/'.ss-case-lock'
+    # EVERYTHING AFTER THE LOCK IS INSIDE A RESTORE SCOPE. The protecting try
+    # used to open ~90 lines below, so a failure in between -- a namelist key
+    # that will not substitute, a write that fails, mkdir on a full disk --
+    # left the lock held AND the namelist rewritten, and the case needed a
+    # manual repair for a run that never started (owner review 9.1).
+    _restore_needed = False
+    original = None
+    nml = run/'namelist.input'
     try:
-        _lock_fd = os.open(_lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
-    except FileExistsError:
+        import hashlib as _h
+        mine = _h.sha256(Path(__file__).read_bytes()).hexdigest()
+        if _repo_copy.exists() and _repo_copy.resolve() != Path(__file__).resolve():
+            theirs = _h.sha256(_repo_copy.read_bytes()).hexdigest()
+            _runner_state = ("match" if mine == theirs else "DRIFTED")
+            if mine != theirs and not args.allow_runner_drift:
+                # FAIL CLOSED. Warning and continuing is how the hash recording added
+                # one morning was absent from that day's runs: a stale copy silently
+                # lacks whatever self-check was just added, which is exactly the
+                # check that would have caught the staleness (owner review 9.1).
+                print(f"run_ss_case: this copy differs from the repository's.\n"
+                      f"             here {mine[:12]}  repo {theirs[:12]}\n"
+                      f"             Anything added to the repository copy -- new flags,\n"
+                      f"             new provenance -- is NOT in this run.\n"
+                      f"             cp {_repo_copy} {Path(__file__).resolve()}\n"
+                      f"             or pass --allow-runner-drift to run anyway.",
+                      file=sys.stderr)
+                return 2
+        else:
+            # "we could not look" must not read as "we looked and it matched": the
+            # canonical path is one host's, so elsewhere there is nothing to compare.
+            mine = theirs = None
+            _runner_state = "uncomparable-no-repo-copy"
+        # ONE RUN PER CASE DIRECTORY. This rewrites `namelist.input`, deletes the
+        # previous rsl/wrfout, runs, then restores. Two concurrent runs interleave
+        # all four: each overwrites the other's namelist, deletes the other's
+        # output, archives results produced under the wrong settings, and the second
+        # to finish restores a namelist the first had already replaced. This repo
+        # has already paid for one shared-mutable-state race (the compile-time
+        # fixture); the lock is the same answer (owner review 9.3).
+        _lock = run/'.ss-case-lock'
         try:
-            held = _lock.read_text().strip() or "(holder wrote no name)"
-        except OSError:
-            held = "(released while we were reporting it; try again)"
-        print(f"run_ss_case: {_lock.name} is held by: {held}\n"
-              f"             This case directory takes one run at a time.\n"
-              f"             Wait, or remove the lock if that process is gone.",
-              file=sys.stderr)
-        return 3
-    with os.fdopen(_lock_fd, 'w') as _lf:
-        _lf.write(f"pid {os.getpid()} mp{args.mp} {args.label} "
-                  f"{args.minutes}min np{args.np}\n")
+            _lock_fd = os.open(_lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
+        except FileExistsError:
+            try:
+                held = _lock.read_text().strip() or "(holder wrote no name)"
+            except OSError:
+                held = "(released while we were reporting it; try again)"
+            print(f"run_ss_case: {_lock.name} is held by: {held}\n"
+                  f"             This case directory takes one run at a time.\n"
+                  f"             Wait, or remove the lock if that process is gone.",
+                  file=sys.stderr)
+            return 3
+        with os.fdopen(_lock_fd, 'w') as _lf:
+            _lf.write(f"pid {os.getpid()} mp{args.mp} {args.label} "
+                      f"{args.minutes}min np{args.np}\n")
 
-    import hashlib
-    try:
-        _exe_path = str((run/'wrf.exe').resolve())
-        _exe_before = hashlib.sha256((run/'wrf.exe').read_bytes()).hexdigest()
-    except OSError as e:
-        _exe_path, _exe_before = str(run/'wrf.exe'), f'unavailable: {e}'
+        import hashlib
+        try:
+            _exe_path = str((run/'wrf.exe').resolve())
+            _exe_before = hashlib.sha256((run/'wrf.exe').read_bytes()).hexdigest()
+        except OSError as e:
+            _exe_path, _exe_before = str(run/'wrf.exe'), f'unavailable: {e}'
 
-    nml=run/'namelist.input'
-    original=nml.read_text()
-    text=original
-    text=remove_keys(text, {
-        'qnn_land_mult', 'qnn_sea_mult',
-        'fogvis_vis_consis_opt', 'fogvis_hydro_gate_opt', 'fogvis_hydro_min',
-        'fogvis_clw_gate_opt', 'fogvis_clw_min', 'fogvis_ccn_aer_opt',
-        'fogvis_ccn_ref_cm3', 'fogvis_ccn_rh_opt', 'fogvis_ccn_drh',
-        'fogvis_ccn_rh_low_opt', 'fogvis_ccn_rh_low0', 'fogvis_ccn_rh_low_drh',
-        'fogvis_ccn_rh_low_min', 'fogvis_ff_thresh', 'fogvis_hydro_wc0_gm3',
-        'fogvis_hydro_dwc_gm3', 'fogvis_clw_wc0_gm3', 'fogvis_clw_dwc_gm3',
-        'fogvis_ccn_beta_ref', 'fogvis_ccn_gamma', 'fogvis_ccn_rh0',
-        'fogvis_ccn_rh_max',
-    })
-    for key,value in [
-        ('run_days','0'),
-        ('run_hours','0'),
-        ('run_minutes',str(args.minutes)),
-        ('run_seconds',str(args.seconds)),
-        ('input_inname','"wrfinput_d<domain>"'),
-        ('bdy_inname','"wrfbdy_d<domain>"'),
-        ('auxinput24_inname','"wrfchainp_d<domain>"'),
-        ('history_interval',str(args.history)),
-        ('frames_per_outfile','1000'),
-        ('mp_physics',args.mp),
-        ('nio_tasks_per_group','0'),
-        ('nio_groups','1'),
-    ]:
-        text=replace_line(text,key,value)
-    if args.history_s is not None:
-        text=replace_line(text, 'history_interval_s', str(args.history_s))
-    if proc_grid is not None:
-        text=set_or_insert(text, 'nproc_x', str(proc_grid[0]))
-        text=set_or_insert(text, 'nproc_y', str(proc_grid[1]))
-    if args.radt is not None:
-        text=replace_line(text, 'radt', str(args.radt))
-    if args.fixed_dt:
-        text=replace_line(text, 'use_adaptive_time_step', '.false.')
-        text=replace_line(text, 'step_to_output_time', '.false.')
-    nml.write_text(text)
+        original=nml.read_text()
+        text=original
+        text=remove_keys(text, {
+            'qnn_land_mult', 'qnn_sea_mult',
+            'fogvis_vis_consis_opt', 'fogvis_hydro_gate_opt', 'fogvis_hydro_min',
+            'fogvis_clw_gate_opt', 'fogvis_clw_min', 'fogvis_ccn_aer_opt',
+            'fogvis_ccn_ref_cm3', 'fogvis_ccn_rh_opt', 'fogvis_ccn_drh',
+            'fogvis_ccn_rh_low_opt', 'fogvis_ccn_rh_low0', 'fogvis_ccn_rh_low_drh',
+            'fogvis_ccn_rh_low_min', 'fogvis_ff_thresh', 'fogvis_hydro_wc0_gm3',
+            'fogvis_hydro_dwc_gm3', 'fogvis_clw_wc0_gm3', 'fogvis_clw_dwc_gm3',
+            'fogvis_ccn_beta_ref', 'fogvis_ccn_gamma', 'fogvis_ccn_rh0',
+            'fogvis_ccn_rh_max',
+        })
+        for key,value in [
+            ('run_days','0'),
+            ('run_hours','0'),
+            ('run_minutes',str(args.minutes)),
+            ('run_seconds',str(args.seconds)),
+            ('input_inname','"wrfinput_d<domain>"'),
+            ('bdy_inname','"wrfbdy_d<domain>"'),
+            ('auxinput24_inname','"wrfchainp_d<domain>"'),
+            ('history_interval',str(args.history)),
+            ('frames_per_outfile','1000'),
+            ('mp_physics',args.mp),
+            ('nio_tasks_per_group','0'),
+            ('nio_groups','1'),
+        ]:
+            text=replace_line(text,key,value)
+        if args.history_s is not None:
+            text=replace_line(text, 'history_interval_s', str(args.history_s))
+        if proc_grid is not None:
+            text=set_or_insert(text, 'nproc_x', str(proc_grid[0]))
+            text=set_or_insert(text, 'nproc_y', str(proc_grid[1]))
+        if args.radt is not None:
+            text=replace_line(text, 'radt', str(args.radt))
+        if args.fixed_dt:
+            text=replace_line(text, 'use_adaptive_time_step', '.false.')
+            text=replace_line(text, 'step_to_output_time', '.false.')
+        _restore_needed = True
+        nml.write_text(text)
 
-    stamp=time.strftime('%Y%m%d_%H%M%S')
-    _np_tag = f"_np{args.np}" if args.np != 1 else ''
-    _sec_tag = f"{args.seconds}s" if args.seconds else ''
-    _rad_tag = f"_radt{args.radt}" if args.radt is not None else ''
-    _grid_tag = f"_{args.proc_grid}" if args.proc_grid is not None else ''
-    out=run/'runs'/f"mp{args.mp}_{args.label}_{args.minutes}min{_sec_tag}_hist{args.history}{_rad_tag}{_np_tag}{_grid_tag}_{stamp}"
-    # PID, and exist_ok=False. The stamp resolves to one second, so two runs
-    # started in the same second with the same arguments shared a directory and
-    # interleaved their archives. The case lock above already serialises runs in
-    # ONE case dir; this keeps the collision impossible rather than unlikely,
-    # and makes it loud if it ever happens anyway (owner review 9.4).
-    out = out.with_name(f"{out.name}_p{os.getpid()}")
-    out.mkdir(parents=True, exist_ok=False)
-    for pat in ['rsl.error.*','rsl.out.*','wrfout_d01_*','klfs_lc05_fcst.*','klfs_lc05_prcp.*','klfs_lc05_ocean.*','klfs_lc05_energy.*','kdm6_step1_*.bin','kdm6_driver_step1_*.bin','kdm6_upstream_*.bin']:
-        for p in run.glob(pat):
-            if p.is_file() or p.is_symlink():
-                p.unlink()
-    # KDM6_SUBSTEP_DUMP per-substep/graupel parity dumps: the Fortran dumps use position='append', so
-    # they accumulate (duplicate-record corruption) unless cleaned each run. Clean ONLY the current run's
-    # own tree (mp37=KDM6 writes fort_*, mp137=KDM6AD writes cpp_*) — NEVER the other tree's, which the
-    # cross-tree comparison still needs. No-op when the dump macro is off (no such files exist).
-    # Fortran schemes (37 legacy, 237 conservative reference) write fort_*;
-    # C++ schemes (137 legacy, 337 conservative v2) write cpp_*.
-    _dump_prefix = 'fort' if args.mp in ('37','237') else 'cpp'
-    for pat in [_dump_prefix + '_*.bin']:  # ALL own-tree dumps (append-mode; stale mixed-schema records corrupt readers)
-        for p in run.glob(pat):
-            if p.is_file() or p.is_symlink():
-                p.unlink()
-    env=build_child_env()
-    stdout=out/f"wrf_mp{args.mp}_{args.label}.stdout"
-    proc=None
+        stamp=time.strftime('%Y%m%d_%H%M%S')
+        _np_tag = f"_np{args.np}" if args.np != 1 else ''
+        _sec_tag = f"{args.seconds}s" if args.seconds else ''
+        _rad_tag = f"_radt{args.radt}" if args.radt is not None else ''
+        _grid_tag = f"_{args.proc_grid}" if args.proc_grid is not None else ''
+        out=run/'runs'/f"mp{args.mp}_{args.label}_{args.minutes}min{_sec_tag}_hist{args.history}{_rad_tag}{_np_tag}{_grid_tag}_{stamp}"
+        # PID, and exist_ok=False. The stamp resolves to one second, so two runs
+        # started in the same second with the same arguments shared a directory and
+        # interleaved their archives. The case lock above already serialises runs in
+        # ONE case dir; this keeps the collision impossible rather than unlikely,
+        # and makes it loud if it ever happens anyway (owner review 9.4).
+        out = out.with_name(f"{out.name}_p{os.getpid()}")
+        out.mkdir(parents=True, exist_ok=False)
+        for pat in ['rsl.error.*','rsl.out.*','wrfout_d01_*','klfs_lc05_fcst.*','klfs_lc05_prcp.*','klfs_lc05_ocean.*','klfs_lc05_energy.*','kdm6_step1_*.bin','kdm6_driver_step1_*.bin','kdm6_upstream_*.bin']:
+            for p in run.glob(pat):
+                if p.is_file() or p.is_symlink():
+                    p.unlink()
+        # KDM6_SUBSTEP_DUMP per-substep/graupel parity dumps: the Fortran dumps use position='append', so
+        # they accumulate (duplicate-record corruption) unless cleaned each run. Clean ONLY the current run's
+        # own tree (mp37=KDM6 writes fort_*, mp137=KDM6AD writes cpp_*) — NEVER the other tree's, which the
+        # cross-tree comparison still needs. No-op when the dump macro is off (no such files exist).
+        # Fortran schemes (37 legacy, 237 conservative reference) write fort_*;
+        # C++ schemes (137 legacy, 337 conservative v2) write cpp_*.
+        _dump_prefix = 'fort' if args.mp in ('37','237') else 'cpp'
+        for pat in [_dump_prefix + '_*.bin']:  # ALL own-tree dumps (append-mode; stale mixed-schema records corrupt readers)
+            for p in run.glob(pat):
+                if p.is_file() or p.is_symlink():
+                    p.unlink()
+        env=build_child_env()
+        stdout=out/f"wrf_mp{args.mp}_{args.label}.stdout"
+        proc=None
+    except BaseException:
+        # Restore what was touched, release, and re-raise unchanged.
+        if _restore_needed and original is not None:
+            nml.write_text(original)
+        _lock.unlink(missing_ok=True)
+        raise
     try:
         with stdout.open('w') as f:
             # Inner try/except is scoped to the SPAWN ONLY (mpirun/wrf.exe launch). A
@@ -364,15 +379,52 @@ def main() -> int:
         # by this run's mutations (see the §10 namelist-race lesson: stale working-dir namelist
         # → truncated runs → phantom parity failures).
         nml.write_text(original)
-        for pat in ['wrfout_d01_*','klfs_lc05_fcst.*','klfs_lc05_prcp.*','klfs_lc05_ocean.*','klfs_lc05_energy.*','kdm6_step1_*.bin','kdm6_driver_step1_*.bin','kdm6_upstream_*.bin']:
-            for src in run.glob(pat):
-                if src.is_file(): shutil.copy2(src, out/src.name)
-        _lock.unlink(missing_ok=True)
+        # THE RELEASE MUST SURVIVE A FAILING ARCHIVE. The copy loop is the only
+        # step here that touches a filesystem it does not control -- a full
+        # disk, a vanishing file -- and the unlink sat AFTER it, so one raised
+        # copy left the lock held for a run that had already finished. Found by
+        # injecting an OSError into shutil.copy2 (owner review 9.1, the half of
+        # it that is not in setup).
+        try:
+            for pat in ['wrfout_d01_*','klfs_lc05_fcst.*','klfs_lc05_prcp.*','klfs_lc05_ocean.*','klfs_lc05_energy.*','kdm6_step1_*.bin','kdm6_driver_step1_*.bin','kdm6_upstream_*.bin']:
+                for src in run.glob(pat):
+                    if src.is_file(): shutil.copy2(src, out/src.name)
+        finally:
+            _lock.unlink(missing_ok=True)
+    # THE EXPERIMENT'S VERDICT IS NOT THE MODEL'S EXIT CODE. A run whose binary
+    # changed under it, or whose processor grid is not the one requested, is
+    # recorded as such -- and a pipeline reading only the exit code took it as a
+    # success anyway (owner review 9.2). The verdict is written beside the
+    # metadata and, when the experiment is invalid, returned.
+    _invalid = []
+    if _exe_before != h_after:
+        _invalid.append("binary_changed_during_run")
+    if _requested and _actual and _actual != _requested:
+        _invalid.append("processor_grid_mismatch")
+    if _requested and not _actual:
+        _invalid.append("processor_grid_not_found")
+    if _runner_state == "DRIFTED":
+        _invalid.append("runner_drifted")
+    import json as _json
+    (out/'experiment_valid.json').write_text(_json.dumps({
+        "experiment_valid": not _invalid,
+        "invalid_reasons": _invalid,
+        "requested_proc_grid": _requested,
+        "actual_proc_grid": _actual,
+        "runner_state": _runner_state,
+    }, indent=1) + "\n")
+
     # proc is None only if the launch raised OSError above (caught) → report 127
     # (command-not-found convention); otherwise use WRF's real exit code.
     rc = proc.returncode if proc is not None else 127
     (out/'exit_code').write_text(str(rc)+'\n')
     print(out)
+    if _invalid and rc == 0:
+        print(f"run_ss_case: the MODEL succeeded and the EXPERIMENT did not: "
+              f"{_invalid}\n"
+              f"             see {out.name}/experiment_valid.json",
+              file=sys.stderr)
+        return 4
     return rc
 
 if __name__ == '__main__':
