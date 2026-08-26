@@ -24,38 +24,58 @@ Under `g3` and `g4` those same five levels read
 which is the acceptance criterion's second branch -- `qg+ = b+ = 0` -- exactly,
 not to a tolerance. The volume leaves with the mass.
 
-## Mass conservation, over every melt event -- corrected
+## Mass conservation, and what the metric can actually resolve
 
-**The first reading of this section was wrong, and the collapse is why.** It
-reported ONE partial melt at `k = 23` with a residual of exactly zero. Keying by
-`(stage, field, k)` and taking the last write meant reading substep 3 and
-calling it the whole story.
+This section has been wrong twice, in opposite directions, and the corrections
+are the useful part.
 
-Parsing by OCCURRENCE ORDER instead -- the n-th write of a key is the n-th
-substep -- there are **six melt events across four levels**:
+**First reading: one event, residual exactly zero.** Keying the stream by
+`(stage, field, k)` and taking the last write reads substep 3 and calls it the
+whole story.
 
-| level | substep | `d(qr + qg)` | |
-|---:|---:|---:|---|
-| 18 | 0 | `+0.0000e+00` | partial |
-| 19 | 0 | `+0.0000e+00` | partial |
-| 20 | 0 | `+0.0000e+00` | partial |
-| 23 | 0 | `+0.0000e+00` | partial |
-| 23 | **1** | **`-3.5527e-15`** | partial |
-| 23 | 2 | `+0.0000e+00` | partial |
+**Second reading: six events, one residual of 1 ULP.** Parsing by occurrence
+order -- the n-th write of a key is the n-th substep -- finds changes at
+`k = 18, 19, 20` (substep 0) and `k = 23` (all three). That is the right parse
+and still the wrong conclusion, because three of those six are below the
+metric's resolution.
 
-Every one is a PARTIAL melt -- `qg` never reaches zero at these levels, which
-are all above `qcrmin` and therefore outside the defect window.
+**What the bracket spans, checked rather than assumed.** `micro_post_freeze`
+sits at the `ProgB_param` call and `micro_post_melt` at `endif !supcol`
+(F:1434), so the bracket contains **three** melts: `psmlt` (F:1372), `pgmlt`
+(F:1397) and `pimlt` (F:1422). Attributing the change to the graupel melt is
+only valid if the other two did not fire. Measured: `d(qs) = d(qi) = d(qc) = 0`
+at every one of the six, so they did not.
 
-`3.5527e-15` is **exactly one ULP** of `qr` at that magnitude
-(`spacing(5.78e-08) = 3.5527e-15`). So the honest statement is **mass conserves
-to zero or one ULP**, not "exactly, 0 ULP" -- which was true of the one event
-the collapsed reading happened to show.
+**Third reading, and the resolution limit that made the second one wrong:**
+
+| level | substep | `qg` before → after | `qr` before → after | `d(qr+qg)` | resolvable |
+|---:|---:|---|---|---:|---|
+| 18 | 0 | 2.74609e-11 → **unchanged** | 9.11892e-35 → 9.12301e-35 | `0` | **no** |
+| 19 | 0 | 1.75051e-09 → **unchanged** | 2.60876e-36 → 2.60877e-36 | `0` | **no** |
+| 20 | 0 | 2.21153e-09 → **unchanged** | 8.90211e-19 → 8.90211e-19 | `0` | **no** |
+| 23 | 0 | 3.50032e-08 → 3.50031e-08 | 8.40206e-08 → 8.40206e-08 | `+0.0e+00` | yes |
+| 23 | 1 | 3.40400e-08 → 3.40400e-08 | 6.94456e-08 → 6.94456e-08 | `-3.5527e-15` | yes |
+| 23 | 2 | 3.19961e-08 → 3.19961e-08 | 5.78051e-08 → 5.78051e-08 | `+0.0e+00` | yes |
+
+At `k = 18, 19, 20` the melt moves roughly `1e-38`. On the `qr` side that is a
+large RELATIVE change, because `qr` there is `1e-35` or smaller. On the `qg`
+side it is absorbed -- `qg + pgmlt == qg` in f32 -- so `qg` is bit-identical.
+And `d(qr + qg)` is formed against a `qg` of `1e-11`, which **cannot see a
+`1e-38` change at all**. Reporting "conserved" there reports the metric's
+resolution, not the physics.
+
+**So the claim is: at the one level where the melt moves an amount the sum can
+resolve, mass conserves to zero or one ULP.** `3.5527e-15` is exactly one ULP
+of `qr` at that magnitude (`spacing(5.78e-08) = 3.5527e-15`, ratio 1.00).
+
+`d(qr + qg)` is the wrong metric wherever the two species differ by many orders.
+A relative or per-species check is what those levels need.
 
 ## And the arms agree at every one of them, to the bit
 
-`legacy`, `g3` and `g4` produce identical values at **all six events, across
-four levels and three substeps** -- not at the single cell the first reading
-found. That is the containment property measured on a wider population than was
+`legacy`, `g3` and `g4` produce identical values at **all six changes, across
+four levels and three substeps** -- including the three the conservation metric
+cannot resolve, since bit-identity does not depend on a metric. That is the containment property measured on a wider population than was
 claimed: outside the window `rhox` is positive, every arm reduces to legacy's
 expression, and the outputs are the same words.
 
