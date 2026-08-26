@@ -63,6 +63,25 @@ And the tail is not scattered. It is the number fields:
 | `QNRAIN` | 74 226 | 43 098 | 5.14e-02 | 1.75e-02 |
 | `QICE` | 26 492 | 33 413 | 4.89e-02 | 9.08e-05 |
 
+**And the denominators are large, so the ratio is not an artefact.** Checked,
+because a relative norm inflates without limit when the field it normalises by
+is near zero:
+
+| field | RMS(baseline) | RMS(diff) 2x2 | RMS(diff) 4x1 |
+|---|---:|---:|---:|
+| `QNCLOUD` | 4.7757e+08 | **1.7243e+08** | 4.2295e+06 |
+| `QNCCN` | 1.3978e+09 | 1.1331e+08 | 9.2919e+06 |
+| `T` | 7.1635e+01 | 9.5014e-04 | 7.2352e-04 |
+
+`QNCLOUD`'s baseline RMS is `4.8e+08` -- not small -- and the `2x2` difference
+is `1.7e+08` of it. **At one minute, the `2x2` decomposition changes the cloud
+droplet number by 36 % in RMS against `np = 1`**, while `4x1` changes it by
+0.9 %, a factor of 41 in absolute terms as well as relative.
+
+That is not a rounding-scale seed amplified by the flow. `T` and `QVAPOR`, in
+the same runs, differ by 1e-05 relative -- which IS rounding scale. The number
+fields are three to four orders above them.
+
 `QNCCN` and `QNCLOUD` are exactly where this campaign already has a
 decomposition-dependent defect on record
 (`FINDING_ccn_overwrites_microphysics_v1`). The seam-direction sensitivity
