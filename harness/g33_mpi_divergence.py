@@ -258,6 +258,17 @@ def reflectivity(a, b, t: int, name: str = "REFL_10CM", area=None) -> dict:
     return out
 
 
+def _fmt(v) -> str:
+    """A missing or empty population prints as itself, not as `nan`.
+
+    The row fell back to `float('nan')` when a field had no held population at
+    all -- RAINNC, whose fixed mask is empty -- and a printed `nan` reads as a
+    measurement that came out undefined rather than as one that was never
+    taken.
+    """
+    return "-" if v is None else f"{v:.3e}"
+
+
 def main() -> int:
     import netCDF4
     import numpy as np
@@ -302,7 +313,7 @@ def main() -> int:
             print(f"  {name:10s} {t:>3d} {r['differing_fraction']:7.2%} "
                   f"{r.get('conditional_p99', float('nan')):11.3e} "
                   f"{r['finite_domain_p99']:11.3e} "
-                  f"{r.get('fixed_mask_median', float('nan')):15.3e}")
+                  f"{_fmt(r.get('fixed_mask_median')):>15s}")
         if "RAINNC" in a.variables:
             doc["precipitation"].append(precipitation(a, b, t, area=area))
         if "REFL_10CM" in a.variables:
