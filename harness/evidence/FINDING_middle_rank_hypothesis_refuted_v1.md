@@ -44,31 +44,51 @@ exact settings -- `--minutes 0 --seconds 20 --history 0` -- and exits **0**.
 discriminator is therefore a **joint (i, j) patch property**, not a property of
 where a rank sits in j.
 
-## What the crashing patches have in common
+## Scoring both rules against every measured rank -- and withdrawing mine
 
-Every crashing band contains or begins at **row 141/142**, the domain's middle
-row (`jde = 283`):
+The first version of this finding offered "every crashing band contains or
+begins at row 141/142" as the lead. Scored against all sixteen ranks measured
+across seven grids, that rule is **worse than the one it replaced**:
 
-    3x2   j 142-283   begins at 142
-    2x3   j  95-188   contains 141
-    1x3   j  95-188   contains 141
-    1x4   j  71-141 and 142-212   the two that crash
+| rule | correct | counterexamples |
+|---|---:|---|
+| middle-j: the band touches NEITHER physical j boundary | **15/16** | `3x2` j 142-283 |
+| contains or abuts row 141/142 | 11/16 | `2x2` j 1-141 and 142-283, `3x1`, `3x2` j 1-141, `4x1` |
 
-and every surviving band either ends at 141 (`1-141`) or spans the whole domain
-(`1-283`, in `3x1` and `4x1`, which run).
+`2x2`'s `j 1-141` ends at 141 and survives; `1x4`'s `j 72-141` ends at 141 and
+crashes. Same endpoint, opposite outcome. **The row-141 lead is withdrawn.**
 
-**Row 141 is already on this campaign's record**: it is where the `QNCCN`
-memory-boundary halo writes were traced and fixed. That is a lead, not a
-conclusion -- the CCN block was already excluded as the cause by Arm C, which
-crashed identically with it removed.
+(The earlier text also quoted `1x4`'s crashing band as `71-141`. Measured, it is
+`72-141`.)
+
+## What survives: one counterexample, and it is the informative one
+
+The middle-j rule accounts for fifteen of sixteen ranks. Every crashing band in
+`1x3`, `1x4` and `2x3` is interior in j on both sides; every surviving band
+touches `j = 1` or `j = 283` or spans both.
+
+**It fails on exactly one:**
+
+| | i patch | j patch | touches j=283 | |
+|---|---|---|---|---|
+| `2x2` rank 2 | 1-117 | 142-283 | yes | **ok** |
+| `3x2` rank 3 | 1-78 | 142-283 | yes | **CRASH** |
+
+Same j band, same tile count, same binary, same run settings -- and `3x2`'s
+band is NOT a middle band, so the rule predicts it should survive. It does not.
+
+So the honest grading is not "refuted and here is a better idea". It is: the
+middle-j characterisation predicts fifteen of sixteen, and the sixteenth is a
+pair that differs only in how i was cut. That pair is the experiment.
 
 ## Grading, revised
 
 | claim | before | now |
 |---|---|---|
 | a supported decomposition SIGSEGVs | CONFIRMED | CONFIRMED |
-| middle-j-rank topology is the cause | STRONG CANDIDATE | **REFUTED** |
-| the discriminator is joint (i, j) | — | **MEASURED** |
+| middle-j-rank topology is the cause | STRONG CANDIDATE | **15/16, one counterexample** |
+| the discriminator is j position ALONE | — | **REFUTED** by `2x2` vs `3x2` |
+| row 141/142 as the discriminator | — | **WITHDRAWN, 11/16** |
 | KDM6 is the cause | OPEN | OPEN |
 
 ## What to do next, now that the cheap hypothesis is gone
