@@ -43,6 +43,61 @@ def _fields(d):
             and "Time" in d[v].dimensions]
 
 
+def same_experiment(dir_a, dir_b, *, expect: str = "decomposition") -> dict:
+    """Refuse two RUNS that are not the same experiment (owner review 8.2).
+
+    `comparable` below checks the two FILES agree in field universe, time axis
+    and shape. That is necessary and nowhere near sufficient: two forecasts of
+    different initial states, built from different binaries, under different
+    namelists, all pass it -- and then a divergence statistic gets attributed to
+    the decomposition.
+
+    `run_ss_case` now records what settles it. This reads that metadata and
+    states which of the four agree, so an attribution has something to stand on
+    besides the array shapes.
+
+    `expect` names what SHOULD differ: "decomposition" wants the same binary,
+    runner and namelist with a different processor grid; "perturbation" wants
+    all four identical, the input having been changed instead.
+    """
+    from pathlib import Path
+
+    def read(d, name):
+        p = Path(d) / name
+        return p.read_text().strip() if p.is_file() else None
+
+    def first(text):
+        return text.splitlines()[0].strip() if text else None
+
+    out = {"expect": expect, "a": str(dir_a), "b": str(dir_b), "agree": {}, "differ": {}}
+    for key, name, pick in (("wrf_exe", "wrf_exe_sha256", first),
+                            ("runner", "runner_sha256", first),
+                            ("proc_grid", "proc_grid", lambda t: t),
+                            ("namelist", "namelist.input", lambda t: t)):
+        va, vb = pick(read(dir_a, name)), pick(read(dir_b, name))
+        if va is None or vb is None:
+            out["differ"][key] = "not recorded in one or both runs"
+        elif va == vb:
+            out["agree"][key] = True
+        else:
+            out["differ"][key] = "differs"
+
+    must_agree = {"decomposition": ("wrf_exe", "runner"),
+                  "perturbation": ("wrf_exe", "runner", "proc_grid", "namelist")}[expect]
+    bad = [k for k in must_agree if k not in out["agree"]]
+    if bad:
+        raise SystemExit(
+            f"these runs are not one {expect} experiment: {bad} "
+            f"({ {k: out['differ'].get(k) for k in bad} }). "
+            f"A divergence measured across them cannot be attributed to "
+            f"{expect}.")
+    if expect == "decomposition" and "proc_grid" in out["agree"]:
+        raise SystemExit(
+            "both runs used the same processor grid, so there is no "
+            "decomposition difference to attribute anything to.")
+    return out
+
+
 def comparable(a, b) -> None:
     """Refuse two files that are not the same experiment.
 

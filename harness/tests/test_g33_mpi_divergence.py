@@ -353,3 +353,63 @@ def test_the_partition_holds_with_infinities_and_nans_mixed():
     assert s["both_nonfinite_equal"] == 1        # the +inf pair
     assert s["both_nonfinite_differing"] == 1    # the NaN pair
     assert s["finite_value_differing"] == 1      # 2.0 vs 3.0
+
+
+# ── the two runs must be one experiment (owner review 8.2) ───────────────────
+
+def _run_dir(tmp, exe="A"*64, runner="B"*64, grid="1x1", nml="&domains\n"):
+    tmp.mkdir(parents=True, exist_ok=True)
+    (tmp / "wrf_exe_sha256").write_text(f"{exe}\nbefore {exe}\nafter  {exe}\n")
+    (tmp / "runner_sha256").write_text(f"runner    {runner}\nstate     match\n")
+    (tmp / "proc_grid").write_text(f"requested {grid}\nactual    {grid}\n")
+    (tmp / "namelist.input").write_text(nml)
+    return tmp
+
+
+def test_a_decomposition_pair_needs_the_same_binary(tmp_path):
+    """Two forecasts of different builds agree in field universe, time axis and
+    shape -- and a divergence across them says nothing about decomposition."""
+    a = _run_dir(tmp_path / "a", exe="A"*64, grid="2x2")
+    b = _run_dir(tmp_path / "b", exe="C"*64, grid="4x1")
+    with pytest.raises(SystemExit) as e:
+        md.same_experiment(a, b, expect="decomposition")
+    assert "wrf_exe" in str(e.value)
+
+
+def test_a_decomposition_pair_with_the_same_grid_is_refused(tmp_path):
+    """There is no decomposition difference to attribute anything to."""
+    a = _run_dir(tmp_path / "a", grid="2x2")
+    b = _run_dir(tmp_path / "b", grid="2x2")
+    with pytest.raises(SystemExit) as e:
+        md.same_experiment(a, b, expect="decomposition")
+    assert "same processor grid" in str(e.value)
+
+
+def test_a_valid_decomposition_pair_is_accepted(tmp_path):
+    a = _run_dir(tmp_path / "a", grid="2x2")
+    b = _run_dir(tmp_path / "b", grid="4x1")
+    r = md.same_experiment(a, b, expect="decomposition")
+    assert r["agree"]["wrf_exe"] and r["agree"]["runner"]
+
+
+def test_a_perturbation_pair_needs_the_namelist_and_grid_to_match_too(tmp_path):
+    """The input was perturbed; everything else must be held."""
+    a = _run_dir(tmp_path / "a", grid="1x1", nml="&domains\nnproc_x=1\n")
+    b = _run_dir(tmp_path / "b", grid="2x2", nml="&domains\nnproc_x=2\n")
+    with pytest.raises(SystemExit) as e:
+        md.same_experiment(a, b, expect="perturbation")
+    assert "perturbation" in str(e.value)
+    r = md.same_experiment(_run_dir(tmp_path / "c"), _run_dir(tmp_path / "d"),
+                           expect="perturbation")
+    assert set(r["agree"]) == {"wrf_exe", "runner", "proc_grid", "namelist"}
+
+
+def test_a_run_without_recorded_provenance_is_refused(tmp_path):
+    """"we could not look" must not read as "we looked and they matched"."""
+    a = _run_dir(tmp_path / "a", grid="2x2")
+    b = tmp_path / "b"
+    b.mkdir()
+    (b / "proc_grid").write_text("requested 4x1\nactual    4x1\n")
+    with pytest.raises(SystemExit) as e:
+        md.same_experiment(a, b, expect="decomposition")
+    assert "not recorded" in str(e.value)
