@@ -57,12 +57,21 @@ jobs:
           # registry is read by a hand-written regex parser, so without this
           # the file can become unparseable while every test stays green --
           # which happened (Codex).
-          pip install "numpy==2.4.6" "pytest==9.1.1" "pyyaml==6.0.2"
+          # ruff runs F821 (undefined name) over the whole harness. The
+          # hand-written AST check in test_g33_static_and_smoke.py caught the
+          # NameError that shipped, and misses a lambda body, a class scope and
+          # a comprehension target that leaks -- measured, all three. This is
+          # the checker that does not, and it needs no private source or data
+          # (owner review 10).
+          pip install "numpy==2.4.6" "pytest==9.1.1" "pyyaml==6.0.2" "ruff==0.14.4"
 
       - name: Record versions
         run: |
           python -c 'import sys, numpy, pytest, yaml; print("python", sys.version.split()[0], "| numpy", numpy.__version__, "| pytest", pytest.__version__, "| pyyaml", yaml.__version__)'
           c++ --version | head -1   # the C++ probes are compiled by the suite
+
+      - name: undefined names (ruff F821, whole harness)
+        run: python -m ruff check --select F821 --no-cache harness/
 
       - name: pytest (harness/tests — container, comparator, overlay, probes)
         run: python -m pytest -rs -q harness/tests

@@ -19,6 +19,7 @@ boundary. Widen only on INCONCLUSIVE.
 from __future__ import annotations
 
 import hashlib
+from collections import Counter
 from dataclasses import dataclass
 
 #: Algorithms whose OP STRUCTURE is legacy's. `nmass` (Arm N, owner
@@ -829,7 +830,6 @@ def expected_key_set(schedule: dict) -> set:
 
 def expected_key_counts(schedule: dict) -> "Counter":
     """Expected MULTIPLICITY of every key (every key is expected exactly once)."""
-    from collections import Counter
     return Counter(record_key(r) for r in expected_records(schedule))
 
 
