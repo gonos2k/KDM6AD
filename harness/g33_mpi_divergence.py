@@ -36,6 +36,17 @@ from pathlib import Path
 REFL_PHYSICAL = (-35.0, 80.0)
 
 
+def _signed_mean(x, y, finite):
+    """Mean signed difference over the finite cells.
+
+    Same reason as the subtraction above: `inf - inf` warns, the NaN is excluded
+    by `finite`, and the warning would only hide a real one later.
+    """
+    import numpy as np
+    with np.errstate(invalid="ignore"):
+        return float((y - x)[finite].mean())
+
+
 def _num(var, index):
     """A numeric field, through the guard (owner review 8.3).
 
@@ -177,7 +188,11 @@ def field_stats(a, b, name: str, t: int, mask=None) -> dict:
     import numpy as np
     x = _num(a[name], t)
     y = _num(b[name], t)
-    d = np.abs(x - y)
+    # `inf - inf` is NaN and warns. The NaN is expected and handled -- `finite`
+    # excludes it below -- so the warning is noise that would hide a real one.
+    # Suppressed around the subtraction only; it changes no value.
+    with np.errstate(invalid="ignore"):
+        d = np.abs(x - y)
     diff = x != y
     fx, fy = np.isfinite(x), np.isfinite(y)
     finite = np.isfinite(d)
@@ -209,7 +224,7 @@ def field_stats(a, b, name: str, t: int, mask=None) -> dict:
            "finite_domain_p99": float(np.percentile(fd, 99)) if fd.size else None,
            "finite_domain_p999": float(np.percentile(fd, 99.9)) if fd.size else None,
            "finite_domain_mean_abs": float(fd.mean()) if fd.size else None,
-           "finite_signed_mean": float((y - x)[finite].mean()) if fd.size else None}
+           "finite_signed_mean": _signed_mean(x, y, finite) if fd.size else None}
     cond = diff & finite
     if cond.any():
         out["conditional_p99"] = float(np.percentile(d[cond], 99))
