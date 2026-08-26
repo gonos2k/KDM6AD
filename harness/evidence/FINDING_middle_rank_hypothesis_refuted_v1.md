@@ -33,7 +33,14 @@ hypothesis as stated.
 | `2x2` rank 2 | 1-117 | 142-283 | **ok** |
 | `3x2` rank 3 | 1-78 | 142-283 | **CRASH** |
 
-Identical j decomposition, identical tile count, opposite outcome. The
+Identical j decomposition, identical tile count, opposite outcome.
+
+**And at identical run settings**, which the first version of this table did not
+have: `2x2` was originally a one-minute `--history 1` run and `3x2` a
+twenty-second `--history 0` one, so "2x2 survives" could have meant only that it
+had not yet reached the fault. `2x2` was re-run at the crashing configuration's
+exact settings -- `--minutes 0 --seconds 20 --history 0` -- and exits **0**.
+`4x1` likewise. The confound is removed. The
 discriminator is therefore a **joint (i, j) patch property**, not a property of
 where a rank sits in j.
 

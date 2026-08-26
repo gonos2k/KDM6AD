@@ -24,26 +24,40 @@ Under `g3` and `g4` those same five levels read
 which is the acceptance criterion's second branch -- `qg+ = b+ = 0` -- exactly,
 not to a tolerance. The volume leaves with the mass.
 
-## Mass conservation, at the one cell where the melt is partial
+## Mass conservation, over every melt event -- corrected
 
-`k = 23` is the only level where `qg` and `qr` both change and stay finite. It
-carries `qg = 3.199609e-08`, which is **above** `qcrmin = 1e-9` -- so it is
-OUTSIDE the defect window, `ProgB_param` computed `rhox` there, and it is a
-genuine PARTIAL melt.
+**The first reading of this section was wrong, and the collapse is why.** It
+reported ONE partial melt at `k = 23` with a residual of exactly zero. Keying by
+`(stage, field, k)` and taking the last write meant reading substep 3 and
+calling it the whole story.
 
-    d(qg)     -3.1974e-14
-    d(qr)     +2.8422e-14
-    d(qr+qg)   0.0000e+00      exactly, 0 ULP of qr
+Parsing by OCCURRENCE ORDER instead -- the n-th write of a key is the n-th
+substep -- there are **six melt events across four levels**:
 
-The two increments differ from each other by more than an ULP -- each is
-rounded separately -- and the SUM is bit-exactly conserved.
+| level | substep | `d(qr + qg)` | |
+|---:|---:|---:|---|
+| 18 | 0 | `+0.0000e+00` | partial |
+| 19 | 0 | `+0.0000e+00` | partial |
+| 20 | 0 | `+0.0000e+00` | partial |
+| 23 | 0 | `+0.0000e+00` | partial |
+| 23 | **1** | **`-3.5527e-15`** | partial |
+| 23 | 2 | `+0.0000e+00` | partial |
 
-## And all four arms agree there, to the bit
+Every one is a PARTIAL melt -- `qg` never reaches zero at these levels, which
+are all above `qcrmin` and therefore outside the defect window.
 
-At `k = 23` `legacy`, `g1`, `g3` and `g4` produce identical `qg`, `qr`, `brs`
-and `nr`. That is the containment property measured rather than argued: outside
-the window `rhox` is positive, every arm reduces to legacy's expression, and
-the outputs are the same words.
+`3.5527e-15` is **exactly one ULP** of `qr` at that magnitude
+(`spacing(5.78e-08) = 3.5527e-15`). So the honest statement is **mass conserves
+to zero or one ULP**, not "exactly, 0 ULP" -- which was true of the one event
+the collapsed reading happened to show.
+
+## And the arms agree at every one of them, to the bit
+
+`legacy`, `g3` and `g4` produce identical values at **all six events, across
+four levels and three substeps** -- not at the single cell the first reading
+found. That is the containment property measured on a wider population than was
+claimed: outside the window `rhox` is positive, every arm reduces to legacy's
+expression, and the outputs are the same words.
 
 Combined with the defect levels above, the arms differ from legacy **only where
 `rhox` was never computed**, which is what they were built to do.
