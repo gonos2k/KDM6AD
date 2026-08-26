@@ -263,3 +263,47 @@ def test_a_genuinely_empty_field_still_returns_empty(monkeypatch):
                 armn_dry=np.full((K - 1, 1, 1), 0.02),
                 mass=np.full((K - 1, 1, 1), 3.0))
     assert nb.where_the_number_is(Path("synthetic")).get("empty") is True
+
+
+def test_a_nonfinite_number_cell_is_counted_not_silently_dropped(monkeypatch):
+    """`n > 0` is False at a NaN, so a broken number cell used to leave every
+    population without appearing in any census (owner review 6.2)."""
+    K = 5
+    n = np.full((K, 1, 1), 2.0)
+    n[2] = np.nan
+    _fake_state(monkeypatch, number=n,
+                legacy_dry=np.full((K - 1, 1, 1), 0.10),
+                armn_dry=np.full((K - 1, 1, 1), 0.02),
+                mass=np.full((K - 1, 1, 1), 3.0))
+    out = nb.where_the_number_is(Path("synthetic"))
+    assert out["nonfinite_number_interfaces"] == 2      # k=2 bounds two interfaces
+    assert out["nonfinite_interfaces"] >= 2
+
+
+def test_negative_number_cells_are_reported(monkeypatch):
+    """The real ten-minute forecast carries 97 negative QNRAIN cells. A number
+    concentration below zero is not a measurement; it should be visible."""
+    K = 4
+    n = np.full((K, 1, 1), 2.0)
+    n[1] = -1.0
+    _fake_state(monkeypatch, number=n,
+                legacy_dry=np.full((K - 1, 1, 1), 0.10),
+                armn_dry=np.full((K - 1, 1, 1), 0.02),
+                mass=np.full((K - 1, 1, 1), 3.0))
+    assert nb.where_the_number_is(Path("synthetic"))["negative_number_cells"] == 1
+
+
+def test_a_zero_legacy_denominator_leaves_the_ratio(monkeypatch):
+    """Flooring it at 1e-300 turned an interface with no legacy defect into an
+    enormous finite ratio and put it in the median (owner review 6.3)."""
+    K = 4
+    legacy = np.full((K - 1, 1, 1), 0.10)
+    legacy[0] = 0.0
+    _fake_state(monkeypatch, number=np.full((K, 1, 1), 2.0),
+                legacy_dry=legacy, armn_dry=np.full((K - 1, 1, 1), 0.02),
+                mass=np.full((K - 1, 1, 1), 3.0))
+    out = nb.where_the_number_is(Path("synthetic"))
+    pop = out["populations"]["occupied_pair"]
+    assert pop["zero_legacy_denominator"] == 1
+    assert pop["ratio_interfaces"] == pop["valid_interfaces"] - 1
+    assert pop["median"] == pytest.approx(0.2)     # not 2e+298
