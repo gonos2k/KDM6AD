@@ -101,6 +101,35 @@ def _undefined(path):
     return sorted(set(hits))
 
 
+def test_this_checker_is_narrower_than_ruff_and_says_so():
+    """What this check does NOT cover, measured rather than assumed.
+
+    It caught the `NameError` that shipped, and it misses three things `ruff
+    F821` catches -- a name only a lambda body reads, a method reading a CLASS
+    attribute as if it were enclosing scope, and a comprehension target used
+    after the comprehension. All three were probed and all three came back
+    clean here, which is why `ruff --select F821` is now a CI step and this
+    stays as the regression test for the one case it was written for.
+    """
+    probes = {
+        "lambda": "f = lambda: missing_in_lambda\n",
+        "class_scope": "class A:\n    x = 1\n    def f(self):\n        return x\n",
+        "comprehension": "def g(xs):\n    ys = [q for q in xs]\n    return q\n",
+    }
+    missed = []
+    for name, src in probes.items():
+        tmp = ROOT / "tests" / f"_gap_{name}.py"
+        tmp.write_text(src)
+        try:
+            if not _undefined(tmp):
+                missed.append(name)
+        finally:
+            tmp.unlink(missing_ok=True)
+    assert sorted(missed) == ["class_scope", "comprehension", "lambda"], (
+        f"the gaps moved: {missed}. If this checker got wider, say so; if it "
+        f"got narrower, that is a regression.")
+
+
 def test_no_harness_module_loads_a_name_nothing_binds():
     """`where_the_number_is` referenced `keep` and `finite`, which are bound in
     `report()`. A non-unique string replacement put one function's census into
