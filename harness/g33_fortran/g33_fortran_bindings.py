@@ -1014,6 +1014,12 @@ VARIANTS["melt_g3"] = dict(
 VARIANTS["melt_g4"] = dict(
     VARIANTS["legacy"],
     sha="c0da77ba3fe009a97289cf70f80f07bafcb03516b962f6f5de102c1306b7c642")
+#: melt_g5: the window-only proportional-volume transaction. Outside the
+#: window it is legacy to the bit; inside it scales the volume by the mass
+#: fraction, so no clamp and no floor.
+VARIANTS["melt_g5"] = dict(
+    VARIANTS["legacy"],
+    sha="cc49f0568e5bd5bb127229dc1ddd8263404a848349aedc5c36f052d9357ab2e8")
 VARIANTS["nmass_dry_window"] = dict(
     VARIANTS["nmass"],
     sha="a3330ad13b99460e305c01e4e9f02848cc74779ed0acf463b7865d6e6146ee60")
@@ -1023,7 +1029,7 @@ VARIANTS["nmass_dry"] = dict(
 
 _DERIVED = {"nmass": "legacy", "nmass_dry": "legacy",
             "melt_g1": "legacy", "melt_g2": "legacy", "melt_g3": "legacy",
-            "melt_g4": "legacy",
+            "melt_g4": "legacy", "melt_g5": "legacy",
             "nmass_dry_window": "legacy",
             "lncmin": "legacy", "nmasslncmin": "legacy",
             "cons_nmass": "conservative", "cons_lncmin": "conservative",
@@ -1077,6 +1083,6 @@ del _t
 # validation on `QR_OUTFLOW`, because that entry carries the per-operation field
 # lists too. The edits touch only the graupel melt block, which holds none of
 # these sites, so the right relationship is "identical to legacy", stated once.
-for _g in ("melt_g1", "melt_g2", "melt_g3", "melt_g4"):
+for _g in ("melt_g1", "melt_g2", "melt_g3", "melt_g4", "melt_g5"):
     FIELD_EXPR[_g] = FIELD_EXPR["legacy"]
     XFER_SITES[_g] = XFER_SITES["legacy"]

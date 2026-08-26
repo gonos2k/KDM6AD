@@ -36,11 +36,92 @@ from pathlib import Path
 REFL_PHYSICAL = (-35.0, 80.0)
 
 
+def _signed_mean(x, y, finite):
+    """Mean signed difference over the finite cells.
+
+    Same reason as the subtraction above: `inf - inf` warns, the NaN is excluded
+    by `finite`, and the warning would only hide a real one later.
+    """
+    import numpy as np
+    with np.errstate(invalid="ignore"):
+        return float((y - x)[finite].mean())
+
+
+def _num(var, index):
+    """A numeric field, through the guard (owner review 8.3).
+
+    `np.asarray` on a netCDF variable DROPS a mask, and this module then feeds
+    the result to equality, a non-finite census, and precipitation and
+    reflectivity thresholds. `g33_number_basis` was wired through the guard and
+    this one -- equally load-bearing -- was not.
+    """
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import g33_netcdf_read as nr
+    return nr.read_numeric(var, index)["data"]
+
+
 def _fields(d):
     import numpy as np
     return [v for v in d.variables
             if d[v].dtype == np.float32 and d[v].ndim >= 3
             and "Time" in d[v].dimensions]
+
+
+def same_experiment(dir_a, dir_b, *, expect: str = "decomposition") -> dict:
+    """Refuse two RUNS that are not the same experiment (owner review 8.2).
+
+    `comparable` below checks the two FILES agree in field universe, time axis
+    and shape. That is necessary and nowhere near sufficient: two forecasts of
+    different initial states, built from different binaries, under different
+    namelists, all pass it -- and then a divergence statistic gets attributed to
+    the decomposition.
+
+    `run_ss_case` now records what settles it. This reads that metadata and
+    states which of the four agree, so an attribution has something to stand on
+    besides the array shapes.
+
+    `expect` names what SHOULD differ: "decomposition" wants the same binary,
+    runner and namelist with a different processor grid; "perturbation" wants
+    all four identical, the input having been changed instead.
+    """
+    from pathlib import Path
+
+    def read(d, name):
+        p = Path(d) / name
+        return p.read_text().strip() if p.is_file() else None
+
+    def first(text):
+        return text.splitlines()[0].strip() if text else None
+
+    out = {"expect": expect, "a": str(dir_a), "b": str(dir_b), "agree": {}, "differ": {}}
+    for key, name, pick in (("wrf_exe", "wrf_exe_sha256", first),
+                            ("runner", "runner_sha256", first),
+                            ("proc_grid", "proc_grid", lambda t: t),
+                            ("namelist", "namelist.input", lambda t: t)):
+        va, vb = pick(read(dir_a, name)), pick(read(dir_b, name))
+        if va is None or vb is None:
+            out["differ"][key] = "not recorded in one or both runs"
+        elif va == vb:
+            out["agree"][key] = True
+        else:
+            out["differ"][key] = "differs"
+
+    must_agree = {"decomposition": ("wrf_exe", "runner"),
+                  "perturbation": ("wrf_exe", "runner", "proc_grid", "namelist")}[expect]
+    bad = [k for k in must_agree if k not in out["agree"]]
+    if bad:
+        raise SystemExit(
+            f"these runs are not one {expect} experiment: {bad} "
+            f"({ {k: out['differ'].get(k) for k in bad} }). "
+            f"A divergence measured across them cannot be attributed to "
+            f"{expect}.")
+    if expect == "decomposition" and "proc_grid" in out["agree"]:
+        raise SystemExit(
+            "both runs used the same processor grid, so there is no "
+            "decomposition difference to attribute anything to.")
+    return out
 
 
 def comparable(a, b) -> None:
@@ -75,7 +156,8 @@ def coverage(a, b) -> list:
     out, prev = [], set()
     for t in range(a["Times"].shape[0]):
         now = {v for v in _fields(a)
-               if not np.array_equal(np.asarray(a[v][t]), np.asarray(b[v][t]))}
+               if not np.array_equal(_num(a[v], t), _num(b[v], t),
+                                     equal_nan=False)}
         out.append({"frame": t, "differing": len(now),
                     "new_since_previous": sorted(now - prev),
                     "gone_since_previous": sorted(prev - now)})
@@ -104,9 +186,13 @@ def field_stats(a, b, name: str, t: int, mask=None) -> dict:
     other cells and is not a size.
     """
     import numpy as np
-    x = np.asarray(a[name][t], dtype="float64")
-    y = np.asarray(b[name][t], dtype="float64")
-    d = np.abs(x - y)
+    x = _num(a[name], t)
+    y = _num(b[name], t)
+    # `inf - inf` is NaN and warns. The NaN is expected and handled -- `finite`
+    # excludes it below -- so the warning is noise that would hide a real one.
+    # Suppressed around the subtraction only; it changes no value.
+    with np.errstate(invalid="ignore"):
+        d = np.abs(x - y)
     diff = x != y
     fx, fy = np.isfinite(x), np.isfinite(y)
     finite = np.isfinite(d)
@@ -115,16 +201,21 @@ def field_stats(a, b, name: str, t: int, mask=None) -> dict:
            "cells": int(d.size),
            "differing": int(diff.sum()),
            "differing_fraction": float(diff.mean()),
-           # THREE WAYS TO DIFFER, SEPARATED. `differing` answers "are the two
-           # runs the same", which is the question `coverage` answers and the
-           # one that must agree with it -- so NaN counts, since NaN differs
-           # from everything including NaN. But "they disagree numerically",
-           # "one of them broke", and "both broke in the same place" are three
-           # different findings, and a single count cannot be read as any one
-           # of them. They partition `differing` exactly.
+           # THREE WAYS TO DIFFER, AND THEY PARTITION `differing` -- which the
+           # first version of this got wrong. "Both non-finite" is NOT one of
+           # them: `+inf` against `+inf` is both-non-finite and `x != y` is
+           # FALSE, so counting it as a way to differ made the three sum to
+           # MORE than `differing`. Two cells of `[+inf, nan]` against
+           # themselves gave 0 + 0 + 2 against a `differing` of 1.
+           #
+           # The both-non-finite cells split: NaN differs from NaN, `+inf` does
+           # not. Only the differing half belongs in the partition, and the
+           # equal half is reported beside it because "both runs broke in the
+           # same place, identically" is a finding of its own.
            "finite_value_differing": int((fx & fy & diff).sum()),
            "finiteness_differing": int((fx ^ fy).sum()),
-           "common_nonfinite": int((~fx & ~fy).sum()),
+           "both_nonfinite_differing": int((~fx & ~fy & diff).sum()),
+           "both_nonfinite_equal": int((~fx & ~fy & ~diff).sum()),
            "nonfinite_a": int((~fx).sum()),
            "nonfinite_b": int((~fy).sum()),
            # NAMED FOR THE POPULATION THEY ARE OVER. Called `domain_p99` these
@@ -133,7 +224,7 @@ def field_stats(a, b, name: str, t: int, mask=None) -> dict:
            "finite_domain_p99": float(np.percentile(fd, 99)) if fd.size else None,
            "finite_domain_p999": float(np.percentile(fd, 99.9)) if fd.size else None,
            "finite_domain_mean_abs": float(fd.mean()) if fd.size else None,
-           "finite_signed_mean": float((y - x)[finite].mean()) if fd.size else None}
+           "finite_signed_mean": _signed_mean(x, y, finite) if fd.size else None}
     cond = diff & finite
     if cond.any():
         out["conditional_p99"] = float(np.percentile(d[cond], 99))
@@ -164,7 +255,7 @@ def cell_area(state_path: Path, a):
     import netCDF4
     import numpy as np
     d = netCDF4.Dataset(str(state_path))
-    mf = np.asarray(d["MAPFAC_M"][0], dtype="float64")
+    mf = _num(d["MAPFAC_M"], 0)
     dx, dy = float(d.getncattr("DX")), float(d.getncattr("DY"))
     # The map factor must be THIS domain's. A wrfinput from another run of the
     # same grid size would pass silently and weight every cell wrongly.
@@ -181,8 +272,8 @@ def precipitation(a, b, t: int, name: str = "RAINNC", area=None) -> dict:
     """Signed and thresholded, because `|dP|` cannot tell more rain from
     rain somewhere else."""
     import numpy as np
-    x = np.asarray(a[name][t], dtype="float64")
-    y = np.asarray(b[name][t], dtype="float64")
+    x = _num(a[name], t)
+    y = _num(b[name], t)
     d = y - x
     # UNITS. `RAINNC` is mm per column, so a bare sum is mm x columns and is
     # not a depth. The domain MEAN is a depth; the sum is reported as what it
@@ -228,8 +319,8 @@ def precipitation(a, b, t: int, name: str = "RAINNC", area=None) -> dict:
 def reflectivity(a, b, t: int, name: str = "REFL_10CM", area=None) -> dict:
     """Screened to the physical range, in linear Z, and as threshold AREAS."""
     import numpy as np
-    x = np.asarray(a[name][t], dtype="float64")
-    y = np.asarray(b[name][t], dtype="float64")
+    x = _num(a[name], t)
+    y = _num(b[name], t)
     lo, hi = REFL_PHYSICAL
     ok = (x >= lo) & (x <= hi) & (y >= lo) & (y <= hi)
     out = {"field": name, "frame": t,
@@ -258,6 +349,17 @@ def reflectivity(a, b, t: int, name: str = "REFL_10CM", area=None) -> dict:
     return out
 
 
+def _fmt(v) -> str:
+    """A missing or empty population prints as itself, not as `nan`.
+
+    The row fell back to `float('nan')` when a field had no held population at
+    all -- RAINNC, whose fixed mask is empty -- and a printed `nan` reads as a
+    measurement that came out undefined rather than as one that was never
+    taken.
+    """
+    return "-" if v is None else f"{v:.3e}"
+
+
 def main() -> int:
     import netCDF4
     import numpy as np
@@ -275,6 +377,17 @@ def main() -> int:
     area = cell_area(args.mapfac_from, a) if args.mapfac_from else None
     frames = [int(f) for f in args.frames.split(",")]
 
+    # THE REQUESTED FRAMES MUST EXIST. Asking for minute 10 of a one-minute run
+    # raised `IndexError: index exceeds dimension bounds` from inside netCDF4 --
+    # true, and it names neither the frame nor the file. A comparison that
+    # cannot be made should say which one and stop.
+    n_frames = a["Times"].shape[0]
+    missing = [f for f in frames if f >= n_frames or f < -n_frames]
+    if missing:
+        raise SystemExit(
+            f"these runs carry {n_frames} frames (0..{n_frames - 1}) and "
+            f"frames {missing} were asked for. Pass --frames with what the "
+            f"files actually hold.")
     cov = coverage(a, b)
     print("  frame  differing fields   new since previous")
     for row in cov:
@@ -285,8 +398,8 @@ def main() -> int:
     masks = {}
     for name in ("T", "REFL_10CM", "QVAPOR"):
         if name in a.variables:
-            x = np.asarray(a[name][args.fixed_mask_frame], dtype="float64")
-            y = np.asarray(b[name][args.fixed_mask_frame], dtype="float64")
+            x = _num(a[name], args.fixed_mask_frame)
+            y = _num(b[name], args.fixed_mask_frame)
             masks[name] = x != y
 
     doc = {"coverage": cov, "fields": [], "precipitation": [],
@@ -302,7 +415,7 @@ def main() -> int:
             print(f"  {name:10s} {t:>3d} {r['differing_fraction']:7.2%} "
                   f"{r.get('conditional_p99', float('nan')):11.3e} "
                   f"{r['finite_domain_p99']:11.3e} "
-                  f"{r.get('fixed_mask_median', float('nan')):15.3e}")
+                  f"{_fmt(r.get('fixed_mask_median')):>15s}")
         if "RAINNC" in a.variables:
             doc["precipitation"].append(precipitation(a, b, t, area=area))
         if "REFL_10CM" in a.variables:

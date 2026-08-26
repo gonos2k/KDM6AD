@@ -161,7 +161,37 @@ DECL_G4 = ("   real :: melt_qg0, melt_bg0, melt_rho\n")
 
 #: The budget is "not more than a melt-block edit", and g4's melt-block edit is
 #: legitimately larger -- it rewrites the transaction rather than one line.
-MAX_EDIT = {"g1": 20, "g2": 20, "g3": 20, "g4": 30}
+MAX_EDIT = {"g1": 20, "g2": 20, "g3": 20, "g4": 30, "g5": 30}
+
+
+#: G5 is the window-only transaction the review asked for, and it is the arm
+#: that makes g4's floor unnecessary rather than safe.
+#:
+#: OUTSIDE the window `rhox` is positive and the expression is legacy's, to the
+#: bit. INSIDE it the volume is scaled by the MASS FRACTION:
+#:
+#:     b+ = b0 * (q+ / q0)
+#:
+#: which preserves the pre-melt apparent density exactly -- `q+/b+ = q0/b0` --
+#: goes to zero on its own when the melt is complete, and cannot produce a
+#: negative volume, because it never subtracts. g4 clamps the density and then
+#: floors the result; this needs neither. Checked over 50000 f32 draws spanning
+#: the window: 0 negatives and 0 density drift above 1e-5 relative.
+G5_TXN = (
+    "! G5: legacy exactly where rhox exists; inside the window scale the volume\n"
+    "! by the mass fraction, which preserves the pre-melt density.\n"
+    "              melt_qg0 = qrs(i,k,3)\n"
+    "              melt_bg0 = brs(i,k)\n"
+    "              qrs(i,k,3) = qrs(i,k,3) + pgmlt(i,k)\n"
+    "              qrs(i,k,1) = qrs(i,k,1) - pgmlt(i,k)\n"
+    "              t(i,k) = t(i,k) + xlf/cpm(i,k)*pgmlt(i,k)\n"
+    "              if(rhox(i,k).gt.0.) then\n"
+    "                brs(i,k) = melt_bg0 + (pgmlt(i,k)/rhox(i,k))\n"
+    "              else if(qrs(i,k,3).le.0.) then\n"
+    "                brs(i,k) = 0.\n"
+    "              else if(melt_qg0.gt.0.) then\n"
+    "                brs(i,k) = melt_bg0*(qrs(i,k,3)/melt_qg0)\n"
+    "              endif\n")
 
 
 def _once(text: str, anchor: str, what: str) -> None:
@@ -208,15 +238,15 @@ def arm(name: str) -> str:
     bad argument on every host, not a FileNotFoundError wherever the reference
     tree is absent -- which is everywhere but the owner's machine.
     """
-    if name not in ("g1", "g2", "g3", "g4"):
-        raise SystemExit(f"unknown arm {name!r}; expected g1, g2, g3 or g4")
+    if name not in ("g1", "g2", "g3", "g4", "g5"):
+        raise SystemExit(f"unknown arm {name!r}; expected g1, g2, g3, g4 or g5")
     text = BASE.read_text()
     _check_constants(text)
     _once(text, MELT_OPEN, "melt open")
     _once(text, DIVIDE, "melt divide")
     _once(text, DECL_ANCHOR, "kdm62D locals")
     text = text.replace(DECL_ANCHOR,
-                        DECL_ADD + (DECL_G4 if name == "g4" else ""))
+                        DECL_ADD + (DECL_G4 if name in ("g4", "g5") else ""))
     if name == "g1":
         return text.replace(MELT_OPEN, G1_OPEN)
     if name == "g2":
@@ -227,12 +257,15 @@ def arm(name: str) -> str:
     if name == "g4":
         _once(text, TXN_ANCHOR, "melt transaction")
         return text.replace(TXN_ANCHOR, G4_TXN)
+    if name == "g5":
+        _once(text, TXN_ANCHOR, "melt transaction")
+        return text.replace(TXN_ANCHOR, G5_TXN)
     raise AssertionError(f"unreachable: {name!r} passed the name check")
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("arm", choices=["g1", "g2", "g3", "g4"])
+    ap.add_argument("arm", choices=["g1", "g2", "g3", "g4", "g5"])
     ap.add_argument("--out", type=pathlib.Path, required=True)
     a = ap.parse_args()
     src = arm(a.arm)

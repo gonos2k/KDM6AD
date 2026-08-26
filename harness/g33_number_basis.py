@@ -75,11 +75,13 @@ def _dry_density(d, p, temp, qv, basis: str):
     """
     import numpy as np
     if basis == "canonical":
-        mu = np.asarray(d["MU"][-1], dtype="float64") + \
-            np.asarray(d["MUB"][-1], dtype="float64")
-        dnw = np.asarray(d["DNW"][-1], dtype="float64")
-        ph = np.asarray(d["PH"][-1], dtype="float64") + \
-            np.asarray(d["PHB"][-1], dtype="float64")
+        # THE CANONICAL ROUTE READS THROUGH THE GUARD TOO. It is the authority
+        # -- WRF's own layer mass -- so a dropped mask here would be a dropped
+        # mask in the number the campaign publishes (owner review 7).
+        g5 = lambda k: nr.read_numeric(d[k], -1)["data"]        # noqa: E731
+        mu = g5("MU") + g5("MUB")
+        dnw = g5("DNW")
+        ph = g5("PH") + g5("PHB")
         dz = np.diff(ph, axis=0) / G
         return (mu[None, :, :] * np.abs(dnw)[:, None, None]) / G / dz
     if basis == "exact":
@@ -128,8 +130,8 @@ def profile(state: Path, basis: str = "canonical") -> dict:
     return {
         # what departs the upper cell, per unit mixing ratio
         "dry_layer_mass_upper": den_d[up] * (np.diff(
-            (np.asarray(d["PH"][frame], dtype="float64")
-             + np.asarray(d["PHB"][frame], dtype="float64")), axis=0) / G)[up]
+            (nr.read_numeric(d["PH"], frame)["data"]
+             + nr.read_numeric(d["PHB"], frame)["data"]), axis=0) / G)[up]
         if "PH" in d.variables else den_d[up],
         "legacy_moist": den[lo] / den[up] - 1.0,
         "legacy_dry": den_d[lo] / den_d[up] - 1.0,
@@ -187,20 +189,27 @@ def where_the_number_is(state: Path, field: str = "QNRAIN",
     import numpy as np
     p = profile(state, basis)
     d = netCDF4.Dataset(str(state))
-    n = np.asarray(d[field][-1] if d[field].shape[0] > 1 else d[field][0],
-                   dtype="float64")
+    # THE NUMBER FIELD ITSELF WENT ROUND THE GUARD. It is what selects every
+    # population here, and `n > 0` is False at a NaN -- so a broken cell left
+    # the population silently and `nonfinite_interfaces` never counted it.
+    n = nr.read_numeric(d[field], -1 if d[field].shape[0] > 1 else 0)["data"]
     lo, up = slice(None, -1), slice(1, None)
     pops = {"occupied_pair": (n[lo] > 0) & (n[up] > 0),
             # NOT "transport_active": `n > 0` above the interface says the
             # number is there to be moved, not that the step moved it.
             "upper_populated": n[up] > 0}
+    # THE EARLY RETURN MUST ASK ABOUT EVERY POPULATION. `upper_populated` was
+    # added because an interface whose upper cell is loaded and whose lower
+    # cell is empty IS transport-active -- and returning `empty` on
+    # `occupied_pair` alone threw exactly those states away, which is the
+    # sedimentation front this function exists to see (owner review 6.1).
     live = pops["occupied_pair"]
     out = {"state": str(state), "field": field, "basis": basis,
            "interfaces": int(live.size),
            "carrying": int(live.sum()),
            "carrying_fraction": float(live.mean()),
            "upper_populated": int(pops["upper_populated"].sum())}
-    if not live.any():
+    if not any(m.any() for m in pops.values()):
         out["empty"] = True
         return out
     # The upper cell's number INVENTORY. Not `F_j`: that is `m_d * dn` and `dn`
@@ -212,9 +221,16 @@ def where_the_number_is(state: Path, field: str = "QNRAIN",
     # where the population is `keep`, and a non-unique string replacement put
     # them in this function too, where nothing defines them. That is a
     # NameError on any state whose number population is non-empty.
+    # `n` IS PART OF THE MASK. It selects the populations, so a non-finite
+    # number cell must be excluded and COUNTED rather than dropping out through
+    # `n > 0` being False (owner review 6.2).
     finite = (np.isfinite(p["legacy_dry"]) & np.isfinite(p["armn_dry"])
-              & np.isfinite(inventory))
+              & np.isfinite(inventory)
+              & np.isfinite(n[lo]) & np.isfinite(n[up]))
     out["nonfinite_interfaces"] = int((~finite).sum())
+    out["nonfinite_number_interfaces"] = int(
+        (~(np.isfinite(n[lo]) & np.isfinite(n[up]))).sum())
+    out["negative_number_cells"] = int((n < 0).sum())
     out["populations"] = {}
     for nm, m in pops.items():
         valid = m & finite
@@ -224,8 +240,12 @@ def where_the_number_is(state: Path, field: str = "QNRAIN",
                                       "nonfinite_excluded": int((m & ~finite).sum()),
                                       "empty": True}
             continue
-        f = np.abs(p["armn_dry"][valid]) / np.maximum(
-            np.abs(p["legacy_dry"][valid]), 1e-300)
+        # A ZERO DENOMINATOR LEAVES THE RATIO. Flooring it at 1e-300 turned an
+        # interface with no legacy defect into an enormous finite ratio and put
+        # it in the median. `report()` requires `|legacy| > 0`; this now does
+        # too, and says how many it dropped (owner review 6.3).
+        ratio = valid & (np.abs(p["legacy_dry"]) > 0.0)
+        f = np.abs(p["armn_dry"][ratio]) / np.abs(p["legacy_dry"][ratio])
         w = inventory[valid]
         num = abs(float((w * p["armn_dry"][valid]).sum()))
         den = abs(float((w * p["legacy_dry"][valid]).sum()))
@@ -233,6 +253,7 @@ def where_the_number_is(state: Path, field: str = "QNRAIN",
             "population_interfaces": int(m.sum()),
             "valid_interfaces": int(valid.sum()),
             "nonfinite_excluded": int((m & ~finite).sum()),
+            "ratio_interfaces": int(ratio.sum()),
             "zero_legacy_denominator": int((valid & (p["legacy_dry"] == 0.0)).sum()),
             "median": float(np.median(f)),
             "p90": float(np.percentile(f, 90)),
@@ -246,11 +267,12 @@ def where_the_number_is(state: Path, field: str = "QNRAIN",
                      "interfaces": int(e.size)}
                     if e.size else {"interfaces": 0, "empty": True})
     if live_finite.any():
-        frac = np.abs(p["armn_dry"][live_finite]) / np.maximum(
-            np.abs(p["legacy_dry"][live_finite]), 1e-300)
+        ratio_live = live_finite & (np.abs(p["legacy_dry"]) > 0.0)
+        frac = np.abs(p["armn_dry"][ratio_live]) / np.abs(p["legacy_dry"][ratio_live])
         out["armn_residual_fraction"] = {
             "population_interfaces": int(live.sum()),
             "valid_interfaces": int(live_finite.sum()),
+            "ratio_interfaces": int(ratio_live.sum()),
             "nonfinite_excluded": int((live & ~finite).sum()),
             "median": float(np.median(frac)),
             "p90": float(np.percentile(frac, 90))}

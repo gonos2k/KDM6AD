@@ -63,7 +63,7 @@ case "$ALGO" in
     # `nmass_dry` joins the same pattern: it is a base plus the N edit in its
     # dry form, so the driver define is legacy's (none) and the ALGOTAG define
     # names the arm (owner freeze-lift, 2026-08-22).
-    nmass|lncmin|nmasslncmin|nmass_dry|nmass_dry_window|melt_g1|melt_g2|melt_g3|melt_g4|cons_nmass|cons_lncmin|cons_nmasslncmin)
+    nmass|lncmin|nmasslncmin|nmass_dry|nmass_dry_window|melt_g1|melt_g2|melt_g3|melt_g4|melt_g5|cons_nmass|cons_lncmin|cons_nmasslncmin)
         MODULE="$HOST/phys/module_mp_kdm6_${ALGO}.F"
         DRVDEF=(-DKDM6_ARM_"$(printf %s "$ALGO" | tr '[:lower:]' '[:upper:]')")
         case "$ALGO" in cons_*) DRVDEF+=(-DKDM6_CONS) ;; esac ;;

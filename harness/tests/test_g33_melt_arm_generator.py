@@ -106,11 +106,20 @@ def test_an_absent_mass_update_is_refused_before_the_order_is_asked():
 
 # ── the arm selector ─────────────────────────────────────────────────────────
 
+def test_the_known_arms_are_exactly_what_the_selector_accepts():
+    """This test has now been broken twice by an arm becoming real -- first g4,
+    then g5. Pinning the set makes the next one a deliberate edit rather than a
+    surprise failure."""
+    import inspect
+    src = inspect.getsource(mg.arm)
+    assert '("g1", "g2", "g3", "g4", "g5")' in src, "the accepted set moved"
+
+
 def test_an_unknown_arm_is_refused_rather_than_returning_the_base():
     """Returning the unedited base for an unknown name would produce a file
     that compiles, runs, and is silently the legacy arm."""
     with pytest.raises(SystemExit) as e:
-        mg.arm("g5")
+        mg.arm("g99")
     assert "unknown arm" in str(e.value)
 
 

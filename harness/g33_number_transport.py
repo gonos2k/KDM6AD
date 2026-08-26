@@ -263,6 +263,7 @@ NUMBER_TRANSFER_METRIC = {
     "melt_g2": "thickness",
     "melt_g3": "thickness",
     "melt_g4": "thickness",
+    "melt_g5": "thickness",
 }
 
 

@@ -20,16 +20,43 @@ window this campaign is studying, **rain mass increases and rain number does
 not**, which moves `qr/nr`, the mean drop size, the fall speed and the
 reflectivity that follows from them.
 
-**This is legacy's structure, not something the arms introduce.** `g1`, `g3`
-and `g4` all leave `F:1412` untouched, so none of them makes it worse and none
-of them fixes it. It is a property of the base that any FINAL correction has to
-decide about, and it is not a reason to prefer one arm over another.
+**This is legacy's structure. It is ALSO an arm-selection criterion, and the
+first version of this finding said it was not.** That was wrong, and the source
+plus a measurement both say so.
 
-What that means for the arms: a complete melt under `g3`/`g4` zeroes `qg` and
-`brs`, so the graupel is gone as mass and as volume, while its particles are
-never handed to rain as number. Whether that is right depends on what KDM6
-intends a sub-`qcrmin` graupel population to be, which is a question for the
-owner and not one the harness can measure.
+`g3` and `g4` replace the DIVIDE, which sits inside the melt block, so the
+block still runs in the window: `qg > 0` is true, the mass moves, and `F:1412`
+keeps the number gated off. `g1` replaces the block's OPENING condition with
+`qg > qcrmin .or. brs > brs_min` -- both false in the window -- so it skips the
+block entirely. Neither mass nor number moves.
+
+| arm | trace graupel mass | rain mass | rain number |
+|---|---|---|---|
+| `g1` | **kept** | unchanged | unchanged |
+| `g3`, `g4` | **removed** | increased | unchanged |
+
+Measured on column `(281,16)` at the five defect levels, `micro_post_melt`,
+substep 0 -- the only place `g1` and `g3` differ anywhere in the prognostics:
+
+| k | `qg` under `g1` | `qg` under `g3` |
+|---:|---:|---:|
+| 26 | 3.047664e-20 | **0** |
+| 27 | 3.086330e-27 | **0** |
+| 28 | 8.745150e-35 | **0** |
+| 29 | 2.302014e-37 | **0** |
+| 30 | 4.988623e-43 | **0** |
+
+`qr` and `nr` are identical between them, because the mass removed is `1e-20`
+and below and `qr` is `1e-05` -- f32 absorbs it entirely. So the two policies
+are distinguishable in `qg` and, at this column, **not** in the rain moments.
+
+**The distinction is therefore real and the magnitude is not.** `g3`/`g4`
+convert graupel mass to rain without the matching number, which moves `qr/nr`
+and with it the mean drop size, fall speed and reflectivity -- in principle.
+Establishing that it matters needs a column where the trace graupel mass is
+large enough to move `qr` above its own ULP, which this one is not. The window
+caps that mass at `qcrmin = 1e-9`, so the ratio is bounded, and bounding it is
+a measurement nobody has made.
 
 ## 2. The real-column replay does not carry a real graupel state
 
