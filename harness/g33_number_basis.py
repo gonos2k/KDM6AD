@@ -194,13 +194,18 @@ def where_the_number_is(state: Path, field: str = "QNRAIN",
             # NOT "transport_active": `n > 0` above the interface says the
             # number is there to be moved, not that the step moved it.
             "upper_populated": n[up] > 0}
+    # THE EARLY RETURN MUST ASK ABOUT EVERY POPULATION. `upper_populated` was
+    # added because an interface whose upper cell is loaded and whose lower
+    # cell is empty IS transport-active -- and returning `empty` on
+    # `occupied_pair` alone threw exactly those states away, which is the
+    # sedimentation front this function exists to see (owner review 6.1).
     live = pops["occupied_pair"]
     out = {"state": str(state), "field": field, "basis": basis,
            "interfaces": int(live.size),
            "carrying": int(live.sum()),
            "carrying_fraction": float(live.mean()),
            "upper_populated": int(pops["upper_populated"].sum())}
-    if not live.any():
+    if not any(m.any() for m in pops.values()):
         out["empty"] = True
         return out
     # The upper cell's number INVENTORY. Not `F_j`: that is `m_d * dn` and `dn`

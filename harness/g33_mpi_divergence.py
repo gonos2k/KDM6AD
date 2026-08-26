@@ -115,16 +115,21 @@ def field_stats(a, b, name: str, t: int, mask=None) -> dict:
            "cells": int(d.size),
            "differing": int(diff.sum()),
            "differing_fraction": float(diff.mean()),
-           # THREE WAYS TO DIFFER, SEPARATED. `differing` answers "are the two
-           # runs the same", which is the question `coverage` answers and the
-           # one that must agree with it -- so NaN counts, since NaN differs
-           # from everything including NaN. But "they disagree numerically",
-           # "one of them broke", and "both broke in the same place" are three
-           # different findings, and a single count cannot be read as any one
-           # of them. They partition `differing` exactly.
+           # THREE WAYS TO DIFFER, AND THEY PARTITION `differing` -- which the
+           # first version of this got wrong. "Both non-finite" is NOT one of
+           # them: `+inf` against `+inf` is both-non-finite and `x != y` is
+           # FALSE, so counting it as a way to differ made the three sum to
+           # MORE than `differing`. Two cells of `[+inf, nan]` against
+           # themselves gave 0 + 0 + 2 against a `differing` of 1.
+           #
+           # The both-non-finite cells split: NaN differs from NaN, `+inf` does
+           # not. Only the differing half belongs in the partition, and the
+           # equal half is reported beside it because "both runs broke in the
+           # same place, identically" is a finding of its own.
            "finite_value_differing": int((fx & fy & diff).sum()),
            "finiteness_differing": int((fx ^ fy).sum()),
-           "common_nonfinite": int((~fx & ~fy).sum()),
+           "both_nonfinite_differing": int((~fx & ~fy & diff).sum()),
+           "both_nonfinite_equal": int((~fx & ~fy & ~diff).sum()),
            "nonfinite_a": int((~fx).sum()),
            "nonfinite_b": int((~fy).sum()),
            # NAMED FOR THE POPULATION THEY ARE OVER. Called `domain_p99` these

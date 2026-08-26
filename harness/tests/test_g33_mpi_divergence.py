@@ -98,7 +98,7 @@ def test_a_single_nan_does_not_erase_the_size_of_every_other_difference():
     s = md.field_stats(a, b, "T", 0)
     assert s["finite_domain_p99"] is not None and np.isfinite(s["finite_domain_p99"])
     assert s["conditional_median"] == pytest.approx(5.0)
-    assert s["finiteness_differing"] == 1 and s["common_nonfinite"] == 0
+    assert s["finiteness_differing"] == 1 and s["both_nonfinite_differing"] == 0
 
 
 def test_all_nonfinite_reports_none_rather_than_a_fabricated_size():
@@ -244,9 +244,9 @@ def test_the_three_ways_to_differ_partition_the_count():
     s = md.field_stats(a, b, "T", 0)
     assert s["finite_value_differing"] == 1
     assert s["finiteness_differing"] == 1
-    assert s["common_nonfinite"] == 1
+    assert s["both_nonfinite_differing"] == 1
     assert (s["finite_value_differing"] + s["finiteness_differing"]
-            + s["common_nonfinite"]) == s["differing"]
+            + s["both_nonfinite_differing"]) == s["differing"]
 
 
 def test_the_magnitude_keys_say_which_population_they_are_over():
@@ -326,3 +326,30 @@ def test_the_same_experiment_is_accepted():
     x = np.zeros((1, 2, 2), dtype="float32")
     a, b = _pair(x, x.copy())
     md.comparable(a, b)
+
+
+def test_two_equal_infinities_are_not_counted_as_a_difference():
+    """`+inf` against `+inf` is both-non-finite and `x != y` is FALSE. Counting
+    it as a way to differ made the three categories sum to MORE than
+    `differing` -- the earlier test used NaN for both, and NaN != NaN, so it
+    could not see this."""
+    x = np.full((1, 2, 2), np.inf, dtype="float32")
+    a, b = _pair(x, x.copy())
+    s = md.field_stats(a, b, "T", 0)
+    assert s["differing"] == 0
+    assert s["both_nonfinite_equal"] == 4
+    assert s["both_nonfinite_differing"] == 0
+    assert (s["finite_value_differing"] + s["finiteness_differing"]
+            + s["both_nonfinite_differing"]) == s["differing"]
+
+
+def test_the_partition_holds_with_infinities_and_nans_mixed():
+    x = np.array([[[np.inf, np.nan], [1.0, 2.0]]], dtype="float32")
+    y = np.array([[[np.inf, np.nan], [1.0, 3.0]]], dtype="float32")
+    a, b = _pair(x, y)
+    s = md.field_stats(a, b, "T", 0)
+    assert (s["finite_value_differing"] + s["finiteness_differing"]
+            + s["both_nonfinite_differing"]) == s["differing"]
+    assert s["both_nonfinite_equal"] == 1        # the +inf pair
+    assert s["both_nonfinite_differing"] == 1    # the NaN pair
+    assert s["finite_value_differing"] == 1      # 2.0 vs 3.0

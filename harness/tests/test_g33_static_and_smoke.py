@@ -235,3 +235,31 @@ def test_every_population_reports_what_it_dropped(monkeypatch):
     for name, pop in out["populations"].items():
         assert pop["population_interfaces"] >= pop["valid_interfaces"], name
         assert pop["nonfinite_excluded"] == 1, name
+
+
+def test_an_upper_populated_front_is_not_thrown_away_as_empty(monkeypatch):
+    """`upper_populated` exists because an interface whose UPPER cell carries
+    number and whose lower cell is empty is transport-active -- sedimentation
+    moves number downward. Returning `empty` on `occupied_pair` alone discarded
+    exactly those, which is the front the second population was added to see."""
+    K = 5
+    n = np.zeros((K, 1, 1))
+    n[3:] = 2.0                        # loaded above, empty below: a front
+    _fake_state(monkeypatch, number=n,
+                legacy_dry=np.full((K - 1, 1, 1), 0.10),
+                armn_dry=np.full((K - 1, 1, 1), 0.02),
+                mass=np.full((K - 1, 1, 1), 3.0))
+    out = nb.where_the_number_is(Path("synthetic"))
+    assert out.get("empty") is not True, "the front was discarded as empty"
+    assert out["populations"]["upper_populated"]["valid_interfaces"] > 0
+    assert out["populations"]["occupied_pair"]["valid_interfaces"] >= 0
+
+
+def test_a_genuinely_empty_field_still_returns_empty(monkeypatch):
+    """Widening the early return must not remove it."""
+    K = 5
+    _fake_state(monkeypatch, number=np.zeros((K, 1, 1)),
+                legacy_dry=np.full((K - 1, 1, 1), 0.10),
+                armn_dry=np.full((K - 1, 1, 1), 0.02),
+                mass=np.full((K - 1, 1, 1), 3.0))
+    assert nb.where_the_number_is(Path("synthetic")).get("empty") is True
