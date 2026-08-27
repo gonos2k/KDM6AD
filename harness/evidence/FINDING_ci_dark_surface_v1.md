@@ -1,9 +1,35 @@
 # What a green CI actually certifies, measured
 
-The harness suite is the campaign's regression gate, and `g33-harness-ci` is a
-required check. This measures what that check EXECUTES, because "the suite
-passes" and "CI proves the suite passes" are different claims and only the
-first one has ever been made with numbers.
+The harness suite is the campaign's regression gate. This measures what its CI
+check EXECUTES, because "the suite passes" and "CI proves the suite passes" are
+different claims and only the first one has ever been made with numbers.
+
+> **2026-08-27 correction.** The sentence above used to say `g33-harness-ci` is
+> "a required check". **It is not.** Asked directly, the active ruleset on `main`
+> lists three required contexts and this is not among them:
+>
+>     oracle pytest (f64 reference)
+>     build + ctest (ubuntu, libtorch CPU)
+>     build + symbol surface + smoke (macOS arm64, libtorch CPU)
+>
+> `strict_required_status_checks_policy` is `false`, and the repository allows
+> an actor to bypass. So **a red `g33-harness-ci` does not block a merge** — the
+> workflow is written to be requirable (it reports on every PR, unfiltered) and
+> was never registered. Everything measured below is unaffected; the sentence
+> that framed it was a claim about repository configuration, made without
+> asking the repository.
+>
+> Registering the context is an owner action. Until it is, the accurate grade
+> is **runs on every PR, blocks nothing**.
+
+> **2026-08-27 addendum, on what "not fixable" covered.** The skip measurement
+> below stands: the Fortran leg and the bundle tests need a gitignored source
+> tree and host artifacts, and no public runner can execute them. But the
+> section was read as covering the PYTHON contract too, and that was too wide.
+> PR #171 added synthetic-array smoke tests and a scope-aware name check; PR
+> #173 added `ruff F821` over the whole harness. Both run in public CI and need
+> neither private source nor host data. Static Python coverage improved; the
+> skipped Fortran and host-data tests still do not execute.
 
 ## The measurement
 

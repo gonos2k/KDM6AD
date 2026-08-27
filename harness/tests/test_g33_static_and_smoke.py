@@ -101,7 +101,7 @@ def _undefined(path):
     return sorted(set(hits))
 
 
-def test_this_checker_is_narrower_than_ruff_and_says_so():
+def test_this_checker_is_narrower_than_ruff_and_says_so(tmp_path):
     """What this check does NOT cover, measured rather than assumed.
 
     It caught the `NameError` that shipped, and it misses three things `ruff
@@ -118,7 +118,7 @@ def test_this_checker_is_narrower_than_ruff_and_says_so():
     }
     missed = []
     for name, src in probes.items():
-        tmp = ROOT / "tests" / f"_gap_{name}.py"
+        tmp = tmp_path / f"_gap_{name}.py"
         tmp.write_text(src)
         try:
             if not _undefined(tmp):
@@ -130,7 +130,7 @@ def test_this_checker_is_narrower_than_ruff_and_says_so():
         f"got narrower, that is a regression.")
 
 
-def test_no_harness_module_loads_a_name_nothing_binds():
+def test_the_local_checker_finds_plain_scope_undefined_names():
     """`where_the_number_is` referenced `keep` and `finite`, which are bound in
     `report()`. A non-unique string replacement put one function's census into
     another, and the only way to reach it was to run the function on real data
@@ -149,10 +149,10 @@ def test_no_harness_module_loads_a_name_nothing_binds():
     assert not bad, "undefined name(s):\n  " + "\n  ".join(bad)
 
 
-def test_the_name_check_actually_fires():
+def test_the_name_check_actually_fires(tmp_path):
     """A check that never fails is not a check."""
     src = "def f(a):\n    return a + b\n"
-    tmp = ROOT / "tests" / "_undef_probe.py"
+    tmp = tmp_path / "_undef_probe.py"
     tmp.write_text(src)
     try:
         assert _undefined(tmp) == [(2, "f", "b")]
@@ -160,14 +160,14 @@ def test_the_name_check_actually_fires():
         tmp.unlink(missing_ok=True)
 
 
-def test_the_name_check_does_not_fire_on_a_closure():
+def test_the_name_check_does_not_fire_on_a_closure(tmp_path):
     """The naive version called every closed-over name undefined."""
     src = ("def outer():\n"
            "    x = 1\n"
            "    def inner():\n"
            "        return x\n"
            "    return inner()\n")
-    tmp = ROOT / "tests" / "_closure_probe.py"
+    tmp = tmp_path / "_closure_probe.py"
     tmp.write_text(src)
     try:
         assert _undefined(tmp) == []
@@ -336,3 +336,60 @@ def test_a_zero_legacy_denominator_leaves_the_ratio(monkeypatch):
     assert pop["zero_legacy_denominator"] == 1
     assert pop["ratio_interfaces"] == pop["valid_interfaces"] - 1
     assert pop["median"] == pytest.approx(0.2)     # not 2e+298
+
+
+# ── ruff is the authority, so the contract is on RUFF, not on my checker ─────
+
+RUFF_PROBES = [
+    ("lambda body", "f = lambda: missing_in_lambda\n", "F821"),
+    ("class scope", "class A:\n    x = 1\n    def f(self):\n        return x\n", "F821"),
+    ("comprehension target", "def g(xs):\n    ys = [q for q in xs]\n    return q\n", "F821"),
+    ("read before assignment", "def h():\n    y = x\n    x = 1\n    return y\n", "F821"),
+    ("undefined export", '__all__ = ["nope"]\n', "F822"),
+]
+
+
+@pytest.mark.parametrize("what, source, code",
+                         RUFF_PROBES, ids=[p[0] for p in RUFF_PROBES])
+def test_ruff_catches_the_name_failures_ci_relies_on(tmp_path, what, source, code):
+    """The CI step's contract, pinned against ruff ITSELF.
+
+    The other tests here pin what the hand-written checker MISSES. That is not
+    the same contract: ruff runs before pytest, over the repository only, so
+    these probes never reach it and nothing would notice if the rule selection
+    narrowed, the command lost a flag, or ruff stopped being installed.
+
+    This runs ruff exactly as the workflow does. Skipped where ruff is absent,
+    which is how a developer machine without it reads -- not as a pass.
+    """
+    import subprocess
+    probe = tmp_path / "probe.py"
+    probe.write_text(source, encoding="utf-8")
+    try:
+        r = subprocess.run(
+            [sys.executable, "-m", "ruff", "--isolated", "check",
+             "--select", "F821,F822,F823", "--no-cache", str(probe)],
+            text=True, capture_output=True, check=False)
+    except OSError:                                     # pragma: no cover
+        pytest.skip("ruff is not installed here")
+    if "No module named ruff" in (r.stderr or ""):
+        pytest.skip("ruff is not installed here")
+    out = r.stdout + r.stderr
+    assert r.returncode == 1, f"ruff accepted {what}:\n{out}"
+    assert code in out, f"ruff reported something other than {code} for {what}:\n{out}"
+
+
+def test_the_harness_is_clean_under_the_selection_ci_uses(tmp_path):
+    """And the same command, on the real tree, the way CI runs it."""
+    import subprocess
+    try:
+        r = subprocess.run(
+            [sys.executable, "-m", "ruff", "--isolated", "check",
+             "--select", "F821,F822,F823", "--no-cache",
+             "--no-respect-gitignore", str(ROOT)],
+            text=True, capture_output=True, check=False)
+    except OSError:                                     # pragma: no cover
+        pytest.skip("ruff is not installed here")
+    if "No module named ruff" in (r.stderr or ""):
+        pytest.skip("ruff is not installed here")
+    assert r.returncode == 0, (r.stdout + r.stderr)
