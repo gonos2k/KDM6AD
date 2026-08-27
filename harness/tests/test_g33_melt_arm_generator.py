@@ -226,3 +226,38 @@ def test_a_complete_melt_inside_the_clamp_lands_on_zero_at_f32():
     qg0, bg0 = f32(8.29644e-13), f32(9.21827e-16)
     rho = min(f32(900.), max(f32(100.), f32(qg0 / bg0)))
     assert f32(bg0 + f32(f32(-qg0) / rho)) == f32(0.0)
+
+
+# ── g5 refuses the state it cannot answer (owner review 4.2) ────────────────
+
+def test_g5_refuses_a_partial_melt_from_zero_volume():
+    """`b+ = b0 * (q+/q0)` returns 0 when `b0 = 0`, leaving `qg > 0` with
+    `bg = 0` -- the same inconsistency g4's floor produced, reached another
+    way, and no finite density satisfies it. The window admits `brs <= brs_min`
+    and nothing excludes `brs = 0` exactly, so the state is reachable."""
+    src = mg.G5_TXN
+    assert "melt_bg0.gt.0." in src, "g5 no longer guards the zero-volume case"
+    assert "error stop" in src, "g5 does not refuse; it may emit qg>0 with bg=0"
+    assert "UNDEFINED partial melt" in src, "the refusal does not name the case"
+
+
+def test_the_zero_volume_partial_melt_really_is_inconsistent():
+    """Arithmetic, not assertion: the proportional form gives exactly zero."""
+    f32 = np.float32
+    qg0, bg0 = f32(5e-10), f32(0.0)
+    for frac in (0.1, 0.5, 0.9):
+        pg = f32(-qg0 * f32(frac))
+        qg1 = f32(qg0 + pg)
+        assert qg1 > 0
+        assert f32(bg0 * f32(qg1 / qg0)) == 0.0
+
+
+def test_g5_still_answers_the_defined_cases():
+    """The refusal must not swallow the branch it was added beside."""
+    f32 = np.float32
+    qg0, bg0 = f32(5e-10), f32(5e-13)          # positive volume
+    pg = f32(-qg0 * f32(0.5))
+    qg1 = f32(qg0 + pg)
+    b1 = f32(bg0 * f32(qg1 / qg0))
+    assert b1 > 0
+    assert abs(float(qg1 / b1) - float(qg0 / bg0)) / float(qg0 / bg0) < 1e-5

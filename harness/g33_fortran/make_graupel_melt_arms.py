@@ -164,7 +164,20 @@ DECL_G4 = ("   real :: melt_qg0, melt_bg0, melt_rho\n")
 MAX_EDIT = {"g1": 20, "g2": 20, "g3": 20, "g4": 30, "g5": 30}
 
 
-#: G5 is the window-only transaction the review asked for, and it is the arm
+#: ZERO PRE-MELT VOLUME HAS NO ANSWER, so g5 refuses instead of inventing one.
+#: `b+ = b0 * (q+/q0)` is exact when `b0 > 0`. When `b0 = 0` and the melt is
+#: PARTIAL it returns 0 with `q+ > 0` -- the same `qg > 0, bg = 0` state g4's
+#: floor produced, reached a different way, and no finite density satisfies it.
+#: The state is reachable: the window admits `brs <= brs_min` and nothing
+#: excludes `brs = 0` exactly.
+#:
+#: Four policies are available -- fail, skip like g1, reconstruct with a chosen
+#: trace density, or promote to a complete melt -- and they are not equivalent
+#: in mass or number. Choosing one is the owner's, so this arm FAILS LOUDLY: an
+#: `error stop` naming the cell. A diagnostic that quietly picks a density hides
+#: the very case it was built to find.
+#:
+#: g5 is the window-only transaction the review asked for, and it is the arm
 #: that makes g4's floor unnecessary rather than safe.
 #:
 #: OUTSIDE the window `rhox` is positive and the expression is legacy's, to the
@@ -189,8 +202,14 @@ G5_TXN = (
     "                brs(i,k) = melt_bg0 + (pgmlt(i,k)/rhox(i,k))\n"
     "              else if(qrs(i,k,3).le.0.) then\n"
     "                brs(i,k) = 0.\n"
-    "              else if(melt_qg0.gt.0.) then\n"
+    "              else if(melt_qg0.gt.0. .and. melt_bg0.gt.0.) then\n"
     "                brs(i,k) = melt_bg0*(qrs(i,k,3)/melt_qg0)\n"
+    "              else\n"
+    "! A PARTIAL melt from zero volume has no consistent answer: any b+ leaves\n"
+    "! qg+ > 0 with no finite density. Stop rather than emit it silently.\n"
+    "                write(*,*) 'G33 G5 UNDEFINED partial melt zero volume i k', &\n"
+    "                           i, k, melt_qg0, melt_bg0\n"
+    "                error stop 'g5: partial melt from zero graupel volume'\n"
     "              endif\n")
 
 

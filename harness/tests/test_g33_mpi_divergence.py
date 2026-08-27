@@ -413,3 +413,52 @@ def test_a_run_without_recorded_provenance_is_refused(tmp_path):
     with pytest.raises(SystemExit) as e:
         md.same_experiment(a, b, expect="decomposition")
     assert "not recorded" in str(e.value)
+
+
+# ── the gate is wired into the CLI, not just defined (owner review 7) ────────
+
+def test_the_cli_gate_is_actually_called(tmp_path):
+    """`same_experiment` was written and called from nothing, so every
+    comparison this CLI made was ungated. A guard that exists and does not
+    guard is worse than none: its existence reads as protection."""
+    import inspect
+    src = inspect.getsource(md.main)
+    assert "same_experiment(" in src, "main() does not call the gate"
+    assert "_forecast_in(" in src, "main() cannot take run directories"
+
+
+def test_a_forecast_file_pair_records_that_it_was_not_gated():
+    """Comparing bare files is allowed and must SAY so -- 'not checked' is not
+    the same as 'checked and fine'."""
+    import inspect
+    src = inspect.getsource(md.main)
+    assert '"applied": False' in src
+    assert "NO EXPERIMENT GATE" in src
+
+
+def test_a_run_directory_with_two_forecasts_is_refused(tmp_path):
+    d = tmp_path / "run"
+    d.mkdir()
+    (d / "klfs_lc05_fcst.202507190000").write_text("a")
+    (d / "klfs_lc05_fcst.202507190100").write_text("b")
+    with pytest.raises(SystemExit) as e:
+        md._forecast_in(d)
+    assert "exactly one forecast file, found 2" in str(e.value)
+
+
+def test_a_run_directory_with_no_forecast_is_refused(tmp_path):
+    d = tmp_path / "run"
+    d.mkdir()
+    (d / "exit_code").write_text("0\n")
+    with pytest.raises(SystemExit) as e:
+        md._forecast_in(d)
+    assert "found 0" in str(e.value)
+
+
+def test_the_one_forecast_is_found(tmp_path):
+    d = tmp_path / "run"
+    d.mkdir()
+    (d / "exit_code").write_text("0\n")
+    f = d / "klfs_lc05_fcst.202507190000"
+    f.write_text("x")
+    assert md._forecast_in(d) == f
