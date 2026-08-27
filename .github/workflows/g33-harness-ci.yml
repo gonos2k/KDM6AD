@@ -68,6 +68,9 @@ jobs:
       - name: Record versions
         run: |
           python -c 'import sys, numpy, pytest, yaml; print("python", sys.version.split()[0], "| numpy", numpy.__version__, "| pytest", pytest.__version__, "| pyyaml", yaml.__version__)'
+          # ruff is pinned like the others, so it is recorded like the others --
+          # otherwise the run that found something cannot say which version did.
+          python -m ruff --version
           c++ --version | head -1   # the C++ probes are compiled by the suite
 
       - name: undefined names (ruff F821, whole harness)
