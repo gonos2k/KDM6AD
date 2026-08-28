@@ -73,8 +73,25 @@ jobs:
           python -m ruff --version
           c++ --version | head -1   # the C++ probes are compiled by the suite
 
-      - name: undefined names (ruff F821, whole harness)
-        run: python -m ruff check --select F821 --no-cache harness/
+      - name: undefined-name family (ruff F821/F822/F823, whole harness)
+        # F821 alone is not "Python name safety". F822 is an __all__ export
+        # naming nothing; F823 is a local read before its own assignment, which
+        # raises UnboundLocalError at runtime -- the same failure class the
+        # NameError that started this belonged to, and one the hand-written
+        # checker cannot see, because it collects every Store in a function
+        # without ordering them against the Loads (owner review P1-C1).
+        #
+        # --isolated ignores any pyproject/ruff.toml that appears later and
+        # could narrow the selection or exclude paths; --no-respect-gitignore
+        # keeps an ignored-but-tracked file in scope. The step claims "whole
+        # harness", so it should not be a configuration file away from meaning
+        # something smaller (owner review P1-C2).
+        run: >
+          python -m ruff --isolated check
+          --select F821,F822,F823
+          --no-cache
+          --no-respect-gitignore
+          harness/
 
       - name: pytest (harness/tests — container, comparator, overlay, probes)
         run: python -m pytest -rs -q harness/tests

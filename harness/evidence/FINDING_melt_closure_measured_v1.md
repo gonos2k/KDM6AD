@@ -71,6 +71,38 @@ of `qr` at that magnitude (`spacing(5.78e-08) = 3.5527e-15`, ratio 1.00).
 `d(qr + qg)` is the wrong metric wherever the two species differ by many orders.
 A relative or per-species check is what those levels need.
 
+## The three the f32 sum could not see, measured in float64
+
+Saying "the metric has no resolution there" was right and incomplete: every f32
+value is exact in float64, so promoting the four endpoints and summing there
+gives the leakage the combined f32 sum hides (owner review 6).
+
+    R_m = (qr+ - qr0) + (qg+ - qg0)      each term exact, the sum in float64
+
+| k | sub | `d(qg)` | `d(qr)` | `R_m` | `qg` bits |
+|---:|---:|---:|---:|---:|---|
+| 18 | 0 | `0` | `4.097011e-38` | **`4.097011e-38`** | **unchanged** |
+| 19 | 0 | `0` | `1.739852e-41` | **`1.739852e-41`** | **unchanged** |
+| 20 | 0 | `0` | `2.067952e-25` | **`2.067952e-25`** | **unchanged** |
+| 23 | 0 | `-4.263e-14` | `+4.263e-14` | `0` | moved |
+| 23 | 1 | `-3.197e-14` | `+2.842e-14` | `-3.553e-15` | moved |
+| 23 | 2 | `-2.487e-14` | `+2.487e-14` | `0` | moved |
+
+At `k = 18, 19, 20` **`qg`'s bits do not move at all while `qr`'s do**: mass
+arrives in rain and never leaves graupel. That is a real residual in the stored
+state, not an absence of one.
+
+**Its size is exactly what the f32 update permits.** Each `R_m` sits inside a
+half-ULP of `qg` at that magnitude -- `4.1e-38` against `8.7e-19`, `1.7e-41`
+against `5.6e-17`, `2.1e-25` against `1.1e-16` -- so it is `qg + pgmlt` rounding
+back to `qg` and swallowing the increment. Expected f32 behaviour, now with a
+number.
+
+**Against `qr` it is not small.** The same residuals are `7138`, `97` and `2`
+ULP of `qr` at those levels. Whether that matters is a question about the
+species it lands in, not about the one it left, and the combined `qr + qg` sum
+cannot ask it.
+
 ## And the arms agree at every one of them, to the bit
 
 `legacy`, `g3` and `g4` produce identical values at **all six changes, across

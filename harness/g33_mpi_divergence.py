@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 #: Outside this, `REFL_10CM` is not being used as a reflectivity.
@@ -69,6 +70,19 @@ def _fields(d):
             and "Time" in d[v].dimensions]
 
 
+def _forecast_in(run_dir):
+    """The one forecast file in a run directory, or a refusal naming what it found."""
+    from pathlib import Path
+    cands = sorted(p for p in Path(run_dir).iterdir()
+                   if p.is_file() and (p.name.startswith("klfs_lc05_fcst.")
+                                       or p.name.startswith("wrfout_d01_")))
+    if len(cands) != 1:
+        raise SystemExit(
+            f"{run_dir}: expected exactly one forecast file, found {len(cands)}"
+            + (f": {[c.name for c in cands]}" if cands else ""))
+    return cands[0]
+
+
 def same_experiment(dir_a, dir_b, *, expect: str = "decomposition") -> dict:
     """Refuse two RUNS that are not the same experiment (owner review 8.2).
 
@@ -95,7 +109,8 @@ def same_experiment(dir_a, dir_b, *, expect: str = "decomposition") -> dict:
     def first(text):
         return text.splitlines()[0].strip() if text else None
 
-    out = {"expect": expect, "a": str(dir_a), "b": str(dir_b), "agree": {}, "differ": {}}
+    out = {"applied": True, "expect": expect,
+           "a": str(dir_a), "b": str(dir_b), "agree": {}, "differ": {}}
     for key, name, pick in (("wrf_exe", "wrf_exe_sha256", first),
                             ("runner", "runner_sha256", first),
                             ("proc_grid", "proc_grid", lambda t: t),
@@ -364,8 +379,12 @@ def main() -> int:
     import netCDF4
     import numpy as np
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("run_a", type=Path)
+    ap.add_argument("run_a", type=Path,
+                    help="a run DIRECTORY (gated) or a forecast file (ungated)")
     ap.add_argument("run_b", type=Path)
+    ap.add_argument("--expect", choices=["decomposition", "perturbation"],
+                    default="decomposition",
+                    help="what the two runs are allowed to differ in")
     ap.add_argument("--frames", default="1,5,10")
     ap.add_argument("--fixed-mask-frame", type=int, default=1)
     ap.add_argument("--json", type=Path, default=None)
@@ -373,7 +392,29 @@ def main() -> int:
                     help="a file carrying MAPFAC_M and DX/DY (wrfinput_d01); "
                          "enables area-weighted precipitation and area in km2")
     args = ap.parse_args()
-    a, b = netCDF4.Dataset(str(args.run_a)), netCDF4.Dataset(str(args.run_b))
+    # THE GATE RUNS HERE, OR THE ARTIFACT SAYS IT DID NOT. same_experiment() was
+    # written and then called from nothing, so every comparison this CLI made
+    # was ungated -- a guard that exists and does not guard is worse than none,
+    # because its existence reads as protection (owner review 7).
+    #
+    # A RUN DIRECTORY carries the metadata that settles attribution; a bare
+    # forecast file does not. Both are accepted, and the difference is recorded:
+    # given directories the gate runs and a mismatch refuses; given files the
+    # comparison proceeds and says, in the JSON and on stderr, that no
+    # experiment gate was applied.
+    gate = None
+    if args.run_a.is_dir() and args.run_b.is_dir():
+        gate = same_experiment(args.run_a, args.run_b, expect=args.expect)
+        file_a, file_b = _forecast_in(args.run_a), _forecast_in(args.run_b)
+    elif args.run_a.is_dir() or args.run_b.is_dir():
+        raise SystemExit("pass two run directories or two files, not one of each")
+    else:
+        file_a, file_b = args.run_a, args.run_b
+        print("g33_mpi_divergence: NO EXPERIMENT GATE. These are forecast files, "
+              "so nothing here checked that the two runs share a binary, a "
+              "runner, a namelist or an input. Pass the run DIRECTORIES to have "
+              "that checked.", file=sys.stderr)
+    a, b = netCDF4.Dataset(str(file_a)), netCDF4.Dataset(str(file_b))
     area = cell_area(args.mapfac_from, a) if args.mapfac_from else None
     frames = [int(f) for f in args.frames.split(",")]
 
@@ -402,7 +443,16 @@ def main() -> int:
             y = _num(b[name], args.fixed_mask_frame)
             masks[name] = x != y
 
-    doc = {"coverage": cov, "fields": [], "precipitation": [],
+    # THE ARTIFACT SAYS WHETHER IT WAS GATED. A reader cannot tell from the
+    # numbers whether the two runs were one experiment, so the answer travels
+    # with them -- including "not checked", which is not the same as "checked
+    # and fine".
+    doc = {"experiment_gate": gate if gate is not None else {
+               "applied": False,
+               "why": "compared forecast FILES, not run directories; nothing "
+                      "checked that the two runs share a binary, runner, "
+                      "namelist or input"},
+           "coverage": cov, "fields": [], "precipitation": [],
            "reflectivity": [], "fixed_mask_frame": args.fixed_mask_frame}
     print(f"\n  {'field':10s} {'t':>3s} {'differ':>8s} {'cond p99':>11s} "
           f"{'domain p99':>11s} {'fixed-mask med':>15s}")
