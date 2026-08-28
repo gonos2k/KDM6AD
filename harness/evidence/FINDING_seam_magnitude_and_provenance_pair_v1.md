@@ -92,6 +92,54 @@ decomposition-invariant, which is a connection the field count could not show.
 Direction-independence of the SIZE -- REFUTED in the tail, and the tail is the
 CCN/number family.**
 
+## Paired, per field -- which changes the numbers again
+
+A ratio of medians is not the median of ratios, and nothing had checked that the
+two grids differ in the SAME fields (owner review 8). Both matter here.
+
+**The field sets are not identical.** 76 fields differ under both grids; `SNOWH`
+differs only under `2x2` and `TML` only under `4x1`. "77 = 77" is 76 + 1 + 1.
+
+Per COMMON field, with `r_f = log10(E_4x1 / E_2x2)` and
+`E = RMS(x - baseline) / RMS(baseline)`:
+
+| | value |
+|---|---:|
+| median `r_f` | **+0.038** (ratio 1.09) |
+| median \|`r_f`\| | 0.177 (a typical field differs by ~1.5x) |
+| p90 \|`r_f`\| | **1.017** (a tenth differ by 10x or more) |
+| max \|`r_f`\| | **3.074** (`SNOW`, a factor of 1185) |
+
+The ratio of medians over the same set is 0.852. The paired median is 1.09.
+**They are different statistics and the earlier section reported the first one
+as if it answered the second.**
+
+## And by field family, which is where the structure is
+
+| family | n | median `r_f` | max \|`r_f`\| | worst |
+|---|---:|---:|---:|---|
+| dynamics / thermo | 8 | +0.050 | **0.154** | `MU` |
+| number-moment | 4 | **-1.017** | 1.610 | `QNCLOUD` |
+| water-mass | 9 | -0.580 | 2.731 | `QICE` |
+| surface / accumulation | 11 | +0.130 | **3.074** | `SNOW` |
+| radiation / diagnostic | 14 | +0.154 | 3.074 | `ACSNOM` |
+
+**Every dynamical field agrees between the two grids to within 0.154 decades --
+a factor of 1.43.** That is the "same order" result, now measured field by field
+instead of through a ratio of medians.
+
+**The number-moment family is systematically an order larger under `2x2`** --
+median `r_f` of `-1.017` across all four, not one outlier.
+
+**And the extreme is not `QNCLOUD`.** The earlier section called the tail "15x"
+by comparing the largest relative-L2 VALUES; per-field ratios put `SNOW` and
+`ACSNOM` at `-3.074` (1185x) and `QICE` at `-2.731` (539x), with `QNCLOUD` at
+`-1.610` (41x). `SNOW` and `ACSNOM` carry the same absolute RMS to three digits
+and are the same accumulated quantity, so they are one signal, not two.
+
+So the tail was understated by roughly eighty-fold, in the direction of making
+the two grids look more alike than they are.
+
 ## A method note, because the first pass would have said something else
 
 Summing `L1` and `L2` across all differing fields gave `2x2` a total L1 **162
