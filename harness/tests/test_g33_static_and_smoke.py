@@ -393,3 +393,39 @@ def test_the_harness_is_clean_under_the_selection_ci_uses(tmp_path):
     if "No module named ruff" in (r.stderr or ""):
         pytest.skip("ruff is not installed here")
     assert r.returncode == 0, (r.stdout + r.stderr)
+
+
+def test_an_empty_ratio_population_is_a_verdict_not_an_IndexError(monkeypatch):
+    """`valid.any()` was asked and `ratio.any()` was not. A column whose every
+    valid interface has `legacy_dry == 0` reached `np.median` on an empty array
+    and raised `IndexError: cannot do a non-empty take from an empty axes`
+    (owner review 9). The two populations are different sizes and only one of
+    them can carry a median."""
+    K = 4
+    _fake_state(monkeypatch, number=np.full((K, 1, 1), 2.0),
+                legacy_dry=np.zeros((K - 1, 1, 1)),
+                armn_dry=np.full((K - 1, 1, 1), 0.02),
+                mass=np.full((K - 1, 1, 1), 3.0))
+    out = nb.where_the_number_is(Path("synthetic"))
+    for name, pop in out["populations"].items():
+        assert pop["ratio_interfaces"] == 0, name
+        assert pop.get("empty_ratio") is True, name
+        assert "median" not in pop, f"{name} reported a median over nothing"
+    r = out["armn_residual_fraction"]
+    assert r["ratio_interfaces"] == 0 and r.get("empty_ratio") is True
+    assert "median" not in r
+
+
+def test_a_partly_zero_denominator_still_reports_over_what_is_left(monkeypatch):
+    """The guard must not swallow a population that has SOME usable ratios."""
+    K = 4
+    legacy = np.full((K - 1, 1, 1), 0.10)
+    legacy[0] = 0.0
+    _fake_state(monkeypatch, number=np.full((K, 1, 1), 2.0),
+                legacy_dry=legacy, armn_dry=np.full((K - 1, 1, 1), 0.02),
+                mass=np.full((K - 1, 1, 1), 3.0))
+    pop = nb.where_the_number_is(Path("synthetic"))["populations"]["occupied_pair"]
+    assert pop["zero_legacy_denominator"] == 1
+    assert pop["ratio_interfaces"] == pop["valid_interfaces"] - 1
+    assert pop["median"] == pytest.approx(0.2)
+    assert "empty_ratio" not in pop

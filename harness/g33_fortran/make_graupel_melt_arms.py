@@ -164,7 +164,14 @@ DECL_G4 = ("   real :: melt_qg0, melt_bg0, melt_rho\n")
 MAX_EDIT = {"g1": 20, "g2": 20, "g3": 20, "g4": 30, "g5": 30}
 
 
-#: ZERO PRE-MELT VOLUME HAS NO ANSWER, so g5 refuses instead of inventing one.
+#: A ZERO POST-MELT VOLUME HAS NO ANSWER, so g5 refuses instead of inventing one.
+#:
+#: The first version of this guard tested `b0 > 0` -- the INPUT -- and a sweep
+#: over the subnormal grid found 14 states it lets through: with `b0` near the
+#: smallest subnormal (1.4e-45), `b0 * (q+/q0)` UNDERFLOWS to zero at a half
+#: melt, so `qg+ > 0` arrives with `b+ = 0` anyway. The window's own `qg` runs
+#: 1e-43 to 1e-40 on the measured column, which is exactly that region.
+#:
 #: `b+ = b0 * (q+/q0)` is exact when `b0 > 0`. When `b0 = 0` and the melt is
 #: PARTIAL it returns 0 with `q+ > 0` -- the same `qg > 0, bg = 0` state g4's
 #: floor produced, reached a different way, and no finite density satisfies it.
@@ -202,14 +209,17 @@ G5_TXN = (
     "                brs(i,k) = melt_bg0 + (pgmlt(i,k)/rhox(i,k))\n"
     "              else if(qrs(i,k,3).le.0.) then\n"
     "                brs(i,k) = 0.\n"
-    "              else if(melt_qg0.gt.0. .and. melt_bg0.gt.0.) then\n"
-    "                brs(i,k) = melt_bg0*(qrs(i,k,3)/melt_qg0)\n"
     "              else\n"
-    "! A PARTIAL melt from zero volume has no consistent answer: any b+ leaves\n"
-    "! qg+ > 0 with no finite density. Stop rather than emit it silently.\n"
-    "                write(*,*) 'G33 G5 UNDEFINED partial melt zero volume i k', &\n"
-    "                           i, k, melt_qg0, melt_bg0\n"
-    "                error stop 'g5: partial melt from zero graupel volume'\n"
+    "                brs(i,k) = melt_bg0*(qrs(i,k,3)/melt_qg0)\n"
+    "! THE RESULT DECIDES, NOT THE INPUT. b0 > 0 is not enough: b0 * (q+/q0)\n"
+    "! UNDERFLOWS to zero when b0 is near the smallest subnormal, leaving\n"
+    "! qg+ > 0 with b+ = 0 -- no finite density satisfies it. Guarding b0 alone\n"
+    "! missed that; this guards what was actually produced.\n"
+    "                if(brs(i,k).le.0.) then\n"
+    "                  write(*,*) 'G33 G5 UNDEFINED partial melt zero volume', &\n"
+    "                             i, k, melt_qg0, melt_bg0, qrs(i,k,3)\n"
+    "                  error stop 'g5: partial melt leaves positive mass, zero volume'\n"
+    "                endif\n"
     "              endif\n")
 
 

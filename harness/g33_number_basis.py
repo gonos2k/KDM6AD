@@ -249,15 +249,24 @@ def where_the_number_is(state: Path, field: str = "QNRAIN",
         w = inventory[valid]
         num = abs(float((w * p["armn_dry"][valid]).sum()))
         den = abs(float((w * p["legacy_dry"][valid]).sum()))
-        out["populations"][nm] = {
+        # AND AN EMPTY RATIO POPULATION IS ITS OWN VERDICT. `valid.any()` was
+        # asked and `ratio.any()` was not, so a column whose every valid
+        # interface has `legacy_dry == 0` reached `np.median` on an empty array
+        # -- IndexError, reproduced. The two populations are different sizes and
+        # only one of them can carry a median (owner review 9).
+        entry = {
             "population_interfaces": int(m.sum()),
             "valid_interfaces": int(valid.sum()),
             "nonfinite_excluded": int((m & ~finite).sum()),
             "ratio_interfaces": int(ratio.sum()),
             "zero_legacy_denominator": int((valid & (p["legacy_dry"] == 0.0)).sum()),
-            "median": float(np.median(f)),
-            "p90": float(np.percentile(f, 90)),
             "upper_inventory_weighted": num / den if den else None}
+        if ratio.any():
+            entry["median"] = float(np.median(f))
+            entry["p90"] = float(np.percentile(f, 90))
+        else:
+            entry["empty_ratio"] = True
+        out["populations"][nm] = entry
     live_finite = live & finite
     for key in ("legacy_moist", "legacy_dry", "armn_dry"):
         e = p[key][live_finite & np.isfinite(p[key])]
@@ -269,6 +278,16 @@ def where_the_number_is(state: Path, field: str = "QNRAIN",
     if live_finite.any():
         ratio_live = live_finite & (np.abs(p["legacy_dry"]) > 0.0)
         frac = np.abs(p["armn_dry"][ratio_live]) / np.abs(p["legacy_dry"][ratio_live])
+        if not ratio_live.any():
+            out["armn_residual_fraction"] = {
+                "population_interfaces": int(live.sum()),
+                "valid_interfaces": int(live_finite.sum()),
+                "ratio_interfaces": 0,
+                "nonfinite_excluded": int((live & ~finite).sum()),
+                "zero_legacy_denominator": int(
+                    (live_finite & (p["legacy_dry"] == 0.0)).sum()),
+                "empty_ratio": True}
+            return out
         out["armn_residual_fraction"] = {
             "population_interfaces": int(live.sum()),
             "valid_interfaces": int(live_finite.sum()),

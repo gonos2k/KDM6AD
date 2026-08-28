@@ -236,9 +236,12 @@ def test_g5_refuses_a_partial_melt_from_zero_volume():
     way, and no finite density satisfies it. The window admits `brs <= brs_min`
     and nothing excludes `brs = 0` exactly, so the state is reachable."""
     src = mg.G5_TXN
-    assert "melt_bg0.gt.0." in src, "g5 no longer guards the zero-volume case"
     assert "error stop" in src, "g5 does not refuse; it may emit qg>0 with bg=0"
     assert "UNDEFINED partial melt" in src, "the refusal does not name the case"
+    # The guard tests the RESULT. An input guard (`melt_bg0.gt.0.`) was the
+    # first version and it let the underflow case through -- see
+    # test_g5_guards_the_produced_volume_not_the_input.
+    assert "if(brs(i,k).le.0.) then" in src
 
 
 def test_the_zero_volume_partial_melt_really_is_inconsistent():
@@ -261,3 +264,45 @@ def test_g5_still_answers_the_defined_cases():
     b1 = f32(bg0 * f32(qg1 / qg0))
     assert b1 > 0
     assert abs(float(qg1 / b1) - float(qg0 / bg0)) / float(qg0 / bg0) < 1e-5
+
+
+def test_g5_guards_the_produced_volume_not_the_input():
+    """`b0 > 0` is not enough. `b0 * (q+/q0)` UNDERFLOWS to zero when `b0` is
+    near the smallest subnormal, so `qg+ > 0` arrives with `b+ = 0` anyway --
+    which is the state the guard exists to refuse, reached past a guard that
+    only looked at the input."""
+    src = mg.G5_TXN
+    assert "if(brs(i,k).le.0.) then" in src, "g5 guards the input, not the result"
+    assert "error stop" in src
+
+
+def test_the_underflow_really_produces_the_forbidden_state():
+    """Arithmetic, at the reference precision, in the window's own range."""
+    f32 = np.float32
+    bg0 = f32(1e-45)                      # near the smallest subnormal
+    for qg0, frac in ((f32(9.949e-44), 0.5), (f32(1e-40), 0.5), (f32(1e-40), 0.9)):
+        qg1 = f32(qg0 + f32(-qg0 * f32(frac)))
+        assert qg1 > 0
+        assert f32(bg0 * f32(qg1 / qg0)) == 0.0, "expected underflow to zero"
+
+
+def test_the_invariant_holds_wherever_g5_does_not_refuse():
+    """Over the grid the review specifies: subnormal to qcrmin, zero to
+    brs_min, melt fractions 0 to 1. Every state g5 accepts satisfies
+    (qg+ > 0) <=> (b+ > 0)."""
+    f32 = np.float32
+    tiny = np.finfo(np.float32).tiny
+    refused = accepted = 0
+    for qg0 in (f32(1e-45), f32(1e-43), f32(1e-40), tiny, f32(1e-30), f32(1e-9)):
+        for bg0 in (f32(1e-45), f32(1e-30), f32(1e-15),
+                    f32(qg0 / f32(900.)), f32(qg0 / f32(100.))):
+            for frac in (0.0, 1e-7, 0.1, 0.5, 0.9, 1.0):
+                qg1 = f32(qg0 + f32(-qg0 * f32(frac)))
+                b1 = f32(0.) if qg1 <= 0 else f32(bg0 * f32(qg1 / qg0))
+                if qg1 > 0 and b1 <= 0:
+                    refused += 1           # g5 error-stops here
+                else:
+                    accepted += 1
+                    assert (qg1 > 0) == (b1 > 0)
+                    assert 0 <= b1 <= max(float(bg0), 0.0)
+    assert refused > 0 and accepted > 0

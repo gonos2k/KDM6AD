@@ -1019,7 +1019,7 @@ VARIANTS["melt_g4"] = dict(
 #: fraction, so no clamp and no floor.
 VARIANTS["melt_g5"] = dict(
     VARIANTS["legacy"],
-    sha="0c890b614af6243aced915c4b7115b97be725239a9ffa33a7599f0cfeabab11f")
+    sha="6a1de0ca0ab1520a16da6e4f90163e98a19180704274e965186dd4f70d8e171f")
 VARIANTS["nmass_dry_window"] = dict(
     VARIANTS["nmass"],
     sha="a3330ad13b99460e305c01e4e9f02848cc74779ed0acf463b7865d6e6146ee60")
