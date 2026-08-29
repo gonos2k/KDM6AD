@@ -20,10 +20,10 @@ REPO = ROOT.parent
 BUILD = ROOT / "g33_fortran" / "refine_build.sh"
 REF = REPO / "host" / "KIM-meso_v1.0" / "phys" / "module_mp_kdm6.F"
 
-pytestmark = pytest.mark.skipif(
+pytestmark = [pytest.mark.local, pytest.mark.skipif(
     shutil.which("gfortran") is None or not REF.is_file(),
     reason="local-only (needs gfortran + the gitignored host reference tree)",
-)
+)]
 
 
 @pytest.fixture(scope="module")

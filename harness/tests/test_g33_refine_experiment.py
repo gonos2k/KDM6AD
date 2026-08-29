@@ -18,6 +18,8 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = pytest.mark.local
+
 ROOT = Path(__file__).resolve().parents[1]
 REPO = ROOT.parent
 REF = REPO / 'host' / 'KIM-meso_v1.0' / 'phys' / 'module_mp_kdm6.F'

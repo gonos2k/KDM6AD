@@ -13,6 +13,8 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = pytest.mark.local
+
 EVIDENCE = Path(__file__).resolve().parents[1] / "evidence"
 REGISTRY = EVIDENCE / "CLAIMS.yaml"
 STATUSES = {"active", "superseded", "withdrawn", "hold"}
