@@ -113,8 +113,9 @@ def main() -> int:
     ap.add_argument('--np', type=int, default=1,
                     help='MPI ranks; np>1 adds --mca btl self,tcp (Open MPI shm BTL SEGVs with libtorch-loaded ranks)')
     ap.add_argument('--label', default='smoke')
-    ap.add_argument('--allow-runner-drift', action='store_true',
-                    help='run even though this copy differs from the repository runner')
+    ap.add_argument('--case', type=Path, default=None, metavar='DIR',
+                    help='case directory holding namelist.input and wrf.exe '
+                         '(default: the directory this script is in)')
     ap.add_argument('--fixed-dt', action='store_true', help='Disable adaptive time step for parity smoke runs')
     ap.add_argument('--proc-grid', default=None, metavar='NXxNY',
                     help='force the MPI decomposition, e.g. 1x4, 2x2, 4x1. WRF '
@@ -147,17 +148,9 @@ def main() -> int:
                 f"silently ignored by WRF, which would make the control a null")
         proc_grid = (nx, ny)
 
-    # THIS SCRIPT RUNS FROM BESIDE ITS CASE, not from the repository: it reads
-    # `namelist.input` and launches `wrf.exe` from its own directory, so a case
-    # keeps its own copy. That is the design, and it means the copy can fall
-    # behind the repository's -- which it had, by 12 lines, so a run made today
-    # silently used a version without the binary-hash recording added this
-    # morning. Symlinking the two is not the fix: `resolve()` follows the link
-    # and the script then looks for the case's files in the repository.
-    #
-    # So: say so, loudly, rather than pretend there is one file.
-    run=Path(__file__).resolve().parent
-    _repo_copy = Path("/Users/yhlee/KDM6AD-k/harness/run_ss_case.py")
+    # ONE RUNNER. The case is named on the command line; the default keeps a
+    # copy placed beside a case working, but nothing needs such a copy now.
+    run = (args.case or Path(__file__).parent).resolve()
     # EVERYTHING AFTER THE LOCK IS INSIDE A RESTORE SCOPE. The protecting try
     # used to open ~90 lines below, so a failure in between -- a namelist key
     # that will not substitute, a write that fails, mkdir on a full disk --
@@ -169,27 +162,6 @@ def main() -> int:
     try:
         import hashlib as _h
         mine = _h.sha256(Path(__file__).read_bytes()).hexdigest()
-        if _repo_copy.exists() and _repo_copy.resolve() != Path(__file__).resolve():
-            theirs = _h.sha256(_repo_copy.read_bytes()).hexdigest()
-            _runner_state = ("match" if mine == theirs else "DRIFTED")
-            if mine != theirs and not args.allow_runner_drift:
-                # FAIL CLOSED. Warning and continuing is how the hash recording added
-                # one morning was absent from that day's runs: a stale copy silently
-                # lacks whatever self-check was just added, which is exactly the
-                # check that would have caught the staleness (owner review 9.1).
-                print(f"run_ss_case: this copy differs from the repository's.\n"
-                      f"             here {mine[:12]}  repo {theirs[:12]}\n"
-                      f"             Anything added to the repository copy -- new flags,\n"
-                      f"             new provenance -- is NOT in this run.\n"
-                      f"             cp {_repo_copy} {Path(__file__).resolve()}\n"
-                      f"             or pass --allow-runner-drift to run anyway.",
-                      file=sys.stderr)
-                return 2
-        else:
-            # "we could not look" must not read as "we looked and it matched": the
-            # canonical path is one host's, so elsewhere there is nothing to compare.
-            mine = theirs = None
-            _runner_state = "uncomparable-no-repo-copy"
         # ONE RUN PER CASE DIRECTORY. This rewrites `namelist.input`, deletes the
         # previous rsl/wrfout, runs, then restores. Two concurrent runs interleave
         # all four: each overwrites the other's namelist, deletes the other's
@@ -356,9 +328,8 @@ def main() -> int:
         # fact in the run rather than a memory. `uncomparable` is written as
         # itself: on a host without the repository there is nothing to compare.
         (out/'runner_sha256').write_text(
-            f"runner    {mine}\n"
-            f"canonical {theirs if theirs else '(no repository copy on this host)'}\n"
-            f"state     {_runner_state}\n")
+            f"runner {mine}\n"
+            f"path   {Path(__file__).resolve()}\n")
         _requested = args.proc_grid
         (out/'proc_grid').write_text(
             f"requested {_requested or '(unset -- WRF chose)'}\n"
@@ -403,15 +374,12 @@ def main() -> int:
         _invalid.append("processor_grid_mismatch")
     if _requested and not _actual:
         _invalid.append("processor_grid_not_found")
-    if _runner_state == "DRIFTED":
-        _invalid.append("runner_drifted")
     import json as _json
     (out/'experiment_valid.json').write_text(_json.dumps({
         "experiment_valid": not _invalid,
         "invalid_reasons": _invalid,
         "requested_proc_grid": _requested,
         "actual_proc_grid": _actual,
-        "runner_state": _runner_state,
     }, indent=1) + "\n")
 
     # proc is None only if the launch raised OSError above (caught) → report 127

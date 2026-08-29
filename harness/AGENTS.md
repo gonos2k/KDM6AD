@@ -13,7 +13,7 @@ contract is raw-bit forward parity.
 | File | Role |
 | --- | --- |
 | `strict_bitwise_nc.py` | final NetCDF raw-bit comparator |
-| `run_ss_case.py` | SS namelist/run wrapper copy |
+| `run_ss_case.py` | SS namelist/run wrapper; `--case DIR` names the case |
 | `compare_step1_kdm6_bitwise.py` | step-1 KDM6 bitwise helper |
 | `compare_step1_kdm6_vs_kdm6ad.py` | mp37 vs mp137 comparison helper |
 | `compare_substep_stage.py` | substep dump stage localizer |
@@ -25,8 +25,8 @@ contract is raw-bit forward parity.
 - Keep `Times` handling explicit; do not generalize non-numeric exemptions.
 - Namelist edits must be exact-key replacements. `history_interval` must not
   rewrite `history_interval_s`.
-- Keep host-tree copies of run/parity scripts behaviorally aligned when changing
-  comparator semantics.
+- There is one runner. Run it from the repository with `--case DIR`; do not copy
+  it beside a case.
 
 ## Anti-Patterns
 

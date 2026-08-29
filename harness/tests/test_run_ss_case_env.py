@@ -92,3 +92,13 @@ def test_a_log_without_the_lines_is_not_found_rather_than_agreement():
 def test_a_truncated_log_is_not_found_rather_than_a_half_answer():
     """One of the two numbers present is not a grid."""
     assert _load().parse_proc_grid(" Ntasks in X            2\n") is None
+
+
+def test_the_case_is_named_on_the_command_line_and_the_drift_flag_is_gone():
+    """One runner: `--case DIR` replaces the copy-beside-the-case design and
+    the gate that compared copies."""
+    import subprocess, sys
+    r = subprocess.run([sys.executable, str(RUNNER), "--help"], capture_output=True, text=True)
+    assert r.returncode == 0
+    assert "--case" in r.stdout
+    assert "--allow-runner-drift" not in r.stdout
