@@ -10,7 +10,7 @@ Repointing its producer at a later commit would be false provenance: no later pr
 generated those artifacts. Its lineage, and the digest that freezes it, are recorded in
 `docs/c4_evidence_lineage.json`.
 
-The authority for the **current** G3.3 research harness is `harness/evidence/CLAIMS.yaml`
+The authority for the **current** G3.3 research harness is `harness/evidence/SCIENCE_STATUS.md`
 together with the experiment manifest each claim pins. A successor C4 package will be
 published as a separate addendum carrying the snapshot's full digest as its parent, after
 §16-6 and the two correctness items the owner named; C4 remains **HOLD** until then.
@@ -31,7 +31,7 @@ A green badge therefore means the **static** contracts hold. It does not mean th
 `mstep_i`, flux or closure numbers in this document were reproduced in CI — they were
 not, and cannot be until the reference tree is reachable from a runner.
 
-**Claim status lives in [`../harness/evidence/CLAIMS.yaml`](../harness/evidence/CLAIMS.yaml)**,
+**Current status lives in [`../harness/evidence/SCIENCE_STATUS.md`](../harness/evidence/SCIENCE_STATUS.md)** (the former `CLAIMS.yaml` is in `harness/evidence/historical/`),
 not in the findings (owner §7.5). Findings accumulate corrections in place, so a
 reader cannot tell which sentence is current; the registry records `status`,
 `scope` and `superseded_by` per claim and is checked mechanically

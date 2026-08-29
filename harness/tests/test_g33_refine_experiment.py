@@ -542,13 +542,6 @@ def test_each_analysis_records_the_ANALYZER_digest_beside_its_own():
     assert '"analyzer_sha256"' in src and '"sha256": rm.sha256(path)' in src
 
 
-def test_the_evidence_chain_follows_the_manifest_to_the_ANALYSES():
-    """Pinning a manifest that reaches the raw streams but not the analyses stops
-    one step short of the numbers a claim actually quotes."""
-    src = (ROOT.parent / "harness/g33_evidence_chain.py").read_text()
-    assert 'man.get("analyses", [])' in src
-
-
 # ---- owner §5.2: the bundle must say which forcing arm it is ------------------
 
 def test_the_manifest_records_the_density_arm_and_the_exact_command_line():
@@ -967,12 +960,12 @@ def test_the_completeness_check_CATCHES_a_new_import(monkeypatch):
 
     def with_extra(module):
         got = real(module)
-        return got | {"g33_evidence_chain"} if module == "g33_refine_experiment" \
+        return got | {"g33_mpi_divergence"} if module == "g33_refine_experiment" \
             else got
 
     monkeypatch.setattr(xp, "_local_imports", with_extra)
-    assert "g33_evidence_chain" in xp.reachable_modules()
-    assert "g33_evidence_chain" in xp.unpinned_reachable()
+    assert "g33_mpi_divergence" in xp.reachable_modules()
+    assert "g33_mpi_divergence" in xp.unpinned_reachable()
 
 
 def test_a_SUBPROCESS_module_is_reachable_though_NOTHING_imports_it():
@@ -1779,15 +1772,6 @@ def test_a_sound_bundle_is_still_reusable(reusable):
     """The refusals must not cost the reuse path its reason to exist."""
     root, man = reusable
     xp._expect_reusable(root, "id", man)
-
-
-def test_the_reuse_check_and_the_chain_share_one_rule():
-    """Two copies of the rule is how the two sides drifted apart."""
-    src = (REPO / "harness/g33_evidence_chain.py").read_text()
-    body = src.split("def _payload_state(", 1)[1].split("\ndef ", 1)[0]
-    assert "return rm.payload_state(" in body, "the chain restated the rule"
-    prod = (REPO / "harness/g33_refine_experiment.py").read_text()
-    assert "rm.payload_state(" in prod, "the producer restated the rule"
 
 
 # ---- owner review §11: one authority for which kernel is pinned ------------
