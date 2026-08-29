@@ -20,10 +20,10 @@ ROOT = Path(__file__).resolve().parents[2]
 BUILD = ROOT / "harness" / "g33_fortran" / "fortran_build.sh"
 REF = ROOT / "host" / "KIM-meso_v1.0" / "phys" / "module_mp_kdm6.F"
 
-pytestmark = pytest.mark.skipif(
+pytestmark = [pytest.mark.local, pytest.mark.skipif(
     shutil.which("gfortran") is None or not REF.is_file(),
     reason="Fortran leg is local-only (needs gfortran + the gitignored host reference tree)",
-)
+)]
 
 
 ALGOS = ["legacy", "conservative"]

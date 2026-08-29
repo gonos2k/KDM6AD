@@ -14,6 +14,8 @@ from pathlib import Path
 
 import pytest
 
+pytestmark = pytest.mark.local
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import g33_build_provenance as bp  # noqa: E402
 

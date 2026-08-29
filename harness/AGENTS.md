@@ -38,6 +38,8 @@ contract is raw-bit forward parity.
 ## Commands
 
 ```bash
+python3 -m pytest harness/tests            # what CI runs, ~3 min
+python3 -m pytest harness/tests --local    # + the host-tree / bundle / gfortran leg, ~55 min
 python3 harness/strict_bitwise_nc.py <mp37-history-file> <mp137-history-file> 1
 python3 harness/compare_substep_stage.py --help
 ```
