@@ -22,6 +22,7 @@ declares. It is NOT how many bytes the build gives it; `storage_class` below is,
 and the two only agree at the reference precision.
 """
 import re
+import g33_arms
 
 #: What a narrowing cast LOOKS like. Kept only as a cross-check on the
 #: declarations below -- it must never be the thing that decides, because the
@@ -1027,13 +1028,7 @@ VARIANTS["nmass_dry"] = dict(
     VARIANTS["nmass"],
     sha="c0e9465d03ee107fb50ba67d0f1798b92d417572e2cdaef3ffa568c684e19273")
 
-_DERIVED = {"nmass": "legacy", "nmass_dry": "legacy",
-            "melt_g1": "legacy", "melt_g2": "legacy", "melt_g3": "legacy",
-            "melt_g4": "legacy", "melt_g5": "legacy",
-            "nmass_dry_window": "legacy",
-            "lncmin": "legacy", "nmasslncmin": "legacy",
-            "cons_nmass": "conservative", "cons_lncmin": "conservative",
-            "cons_nmasslncmin": "conservative"}
+_DERIVED = g33_arms.derived()   # arm -> base, from the one registry
 for _t in (CAP_SITES, TOP_SITES, XFER_SITES):
     for _arm, _base in _DERIVED.items():
         _t[_arm] = _t[_base]

@@ -1356,6 +1356,10 @@ _CORE_MODULES = ("g33_refine_experiment", "g33_refine_manifest",
                  # so its bytes decide what the recorded identity MEANS
                  # (owner priority 8).
                  "g33_identity",
+                 # The ARM REGISTRY: which arms exist, their base kernel and their
+                 # number-transfer metric. Reached from the analyzers and the
+                 # bindings; its bytes decide what every arm-keyed table says.
+                 "g33_arms",
                  # The OVERLAY generator's dependencies. `make_fortran_overlay`
                  # is pinned as a tracked build input, but what it imports was
                  # pinned by nothing -- and that code decides which

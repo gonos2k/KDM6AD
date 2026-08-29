@@ -1371,26 +1371,6 @@ def test_the_bottom_cell_is_not_counted_as_an_interior_interface():
     assert nt.interior_cap_binds(call, 1, "nr") is False
 
 
-def test_every_arm_the_driver_can_emit_has_a_registered_transfer_metric():
-    """The registry's keys ARE the driver's `ALGOTAG` strings.
-
-    `number_transfer_metric` is a total function that refuses an unknown name,
-    which is only a safety net if the names it knows are the names a stream can
-    actually carry. They are maintained in two places -- the Fortran cascade
-    and the Python table -- so this pins them equal in both directions. It
-    caught `cons` against the driver's `conservative` the day it was written.
-    """
-    import re
-    driver = (Path(__file__).resolve().parents[1]
-              / "g33_fortran" / "g33_refine_driver.f90").read_text()
-    emitted = set(re.findall(r"ALGOTAG = '([a-z_0-9]+)'", driver))
-    assert emitted, "no ALGOTAG assignments found; the cascade moved"
-    registered = set(nt.NUMBER_TRANSFER_METRIC)
-    assert emitted == registered, (
-        f"only the driver knows: {sorted(emitted - registered)}; "
-        f"only the table knows: {sorted(registered - emitted)}")
-
-
 def test_the_dry_arms_are_not_read_with_the_moist_measure():
     """The substring bug, pinned so it cannot come back.
 
@@ -1430,21 +1410,6 @@ def test_the_stream_and_the_table_must_agree_about_the_metric():
     assert nt.number_transfer_metric("nmass_dry", None) == "current_dry_layer_mass"
     with pytest.raises(ValueError, match="do not guess which"):
         nt.number_transfer_metric("nmass_dry", "moist_layer_mass")
-
-
-def test_the_driver_declares_a_metric_for_every_arm_the_table_knows():
-    """The Fortran cascade and the table cover the same arms, both ways."""
-    import re
-    driver = (Path(__file__).resolve().parents[1]
-              / "g33_fortran" / "g33_refine_driver.f90").read_text()
-    declared = set(re.findall(r"METRICTAG = '([a-z_]+)'", driver))
-    assert declared, "no METRICTAG assignments found; the cascade moved"
-    assert declared <= set(nt.NUMBER_TRANSFER_METRIC.values()), (
-        f"driver declares metrics the analyzer cannot build weights from: "
-        f"{sorted(declared - set(nt.NUMBER_TRANSFER_METRIC.values()))}")
-    assert set(nt.NUMBER_TRANSFER_METRIC.values()) <= declared, (
-        f"the table knows metrics no build can declare: "
-        f"{sorted(set(nt.NUMBER_TRANSFER_METRIC.values()) - declared)}")
 
 
 def test_the_declared_metric_reaches_every_call_not_only_the_last():

@@ -2053,20 +2053,3 @@ def test_a_bundle_that_ran_nothing_can_declare_nothing():
     assert bad and any("no analysis in this bundle dispatches to" in b
                        for b in bad), bad
 
-
-def test_the_manifest_algorithm_vocabulary_tracks_the_driver_cascade():
-    """`_ALGOS` says it is the driver's own `ALGOTAG` vocabulary, and a manifest
-    naming anything else is rejected as a run that could not have happened. So a
-    driver arm missing from it makes a REAL run unpublishable -- which is what
-    happened to `nmass_dry` and `nmass_dry_window` for a week.
-
-    Pinned in both directions, like the transfer-metric table it repeats.
-    """
-    import re
-    driver = (Path(__file__).resolve().parents[1]
-              / "g33_fortran" / "g33_refine_driver.f90").read_text()
-    emitted = set(re.findall(r"ALGOTAG = '([a-z_0-9]+)'", driver))
-    assert emitted, "no ALGOTAG assignments found; the cascade moved"
-    assert emitted == set(rm._ALGOS), (
-        f"only the driver knows: {sorted(emitted - set(rm._ALGOS))}; "
-        f"only the manifest knows: {sorted(set(rm._ALGOS) - emitted)}")

@@ -70,6 +70,7 @@ import struct
 import subprocess
 import sys
 from pathlib import Path
+import g33_arms
 
 #: One hex field, either width. The width is the STORAGE the build gave a
 #: default real; `PROTOCOL` below says which, and `_real` refuses a record whose
@@ -246,25 +247,7 @@ SPECIES = {"nr": ("main", "bottom_falln_nr", False),
 #: The KEYS are the driver's own `ALGOTAG` strings, which are what a stream
 #: carries -- not the variant file names, which differ (`conservative` against
 #: `module_mp_kdm6_cons.F`). A test pins the two sets equal.
-NUMBER_TRANSFER_METRIC = {
-    "legacy": "thickness",
-    "lncmin": "thickness",
-    "conservative": "thickness",
-    "cons_lncmin": "thickness",
-    "nmass": "moist_layer_mass",
-    "nmasslncmin": "moist_layer_mass",
-    "cons_nmass": "moist_layer_mass",
-    "cons_nmasslncmin": "moist_layer_mass",
-    "nmass_dry": "current_dry_layer_mass",
-    "nmass_dry_window": "window_dry_layer_mass",
-    # the melt counterfactuals change only the graupel melt, so their
-    # number transfer is legacy's: thickness.
-    "melt_g1": "thickness",
-    "melt_g2": "thickness",
-    "melt_g3": "thickness",
-    "melt_g4": "thickness",
-    "melt_g5": "thickness",
-}
+NUMBER_TRANSFER_METRIC = g33_arms.metrics()   # the keys are the driver's ALGOTAG strings
 
 
 def number_transfer_metric(algorithm, declared=None) -> str:
