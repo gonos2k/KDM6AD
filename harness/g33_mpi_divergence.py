@@ -364,15 +364,23 @@ def reflectivity(a, b, t: int, name: str = "REFL_10CM", area=None) -> dict:
     return out
 
 
-def _fmt(v) -> str:
+def _fmt(v, spec: str = ".3e") -> str:
     """A missing or empty population prints as itself, not as `nan`.
 
     The row fell back to `float('nan')` when a field had no held population at
     all -- RAINNC, whose fixed mask is empty -- and a printed `nan` reads as a
     measurement that came out undefined rather than as one that was never
     taken.
+
+    The precipitation row formatted its values directly, which crashed on
+    `cancellation_ratio`. That field is None in exactly one case: the gross sum
+    is zero, because the two decompositions AGREE. So the summary was reachable
+    only while the runs still differed, and the first pair that matched took the
+    whole report down -- including the JSON, written further on. Every printed
+    statistic there is None on an empty population, so all of them go through
+    here.
     """
-    return "-" if v is None else f"{v:.3e}"
+    return "-" if v is None else format(v, spec)
 
 
 def main() -> int:
@@ -471,13 +479,19 @@ def main() -> int:
         if "REFL_10CM" in a.variables:
             doc["reflectivity"].append(reflectivity(a, b, t, area=area))
 
+    # The JSON is the measurement; the tables below are a reading of it. It is
+    # written FIRST so a formatting fault cannot destroy the result it reports.
+    if args.json:
+        args.json.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n")
+
     print(f"\n  {'t':>3s} {'signed cell-mean':>17s} {'cancel ratio':>13s} "
           f"{'>1e-3':>9s} {'>1e-2':>9s} {'>1e-1':>9s}")
     for r in doc["precipitation"]:
-        print(f"  {r['frame']:>3d} {r['signed_gridcell_mean_mm']:17.4e} "
-              f"{r['cancellation_ratio']:13.4f} "
-              f"{r['fraction_over_0.001mm']:8.3%} "
-              f"{r['fraction_over_0.01mm']:8.3%} {r['fraction_over_0.1mm']:8.3%}")
+        print(f"  {r['frame']:>3d} {_fmt(r['signed_gridcell_mean_mm'], '.4e'):>17s} "
+              f"{_fmt(r['cancellation_ratio'], '.4f'):>13s} "
+              f"{_fmt(r['fraction_over_0.001mm'], '.3%'):>9s} "
+              f"{_fmt(r['fraction_over_0.01mm'], '.3%'):>9s} "
+              f"{_fmt(r['fraction_over_0.1mm'], '.3%'):>9s}")
 
     print(f"\n  {'t':>3s} {'in-range':>9s} {'screened p99':>13s} "
           f"{'>20dBZ cells a':>14s} {'cells b':>9s}")
@@ -486,8 +500,6 @@ def main() -> int:
               f"{r.get('screened_p99_dbz', float('nan')):13.4f} "
               f"{r['cells_over_20dbz_a']:14d} {r['cells_over_20dbz_b']:9d}")
 
-    if args.json:
-        args.json.write_text(json.dumps(doc, indent=2, sort_keys=True) + "\n")
     return 0
 
 

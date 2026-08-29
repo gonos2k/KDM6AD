@@ -462,3 +462,41 @@ def test_the_one_forecast_is_found(tmp_path):
     f = d / "klfs_lc05_fcst.202507190000"
     f.write_text("x")
     assert md._forecast_in(d) == f
+
+
+# --- the summary must survive the case it exists to report: agreement ---------
+
+def test_fmt_carries_a_format_spec_and_still_prints_none_as_itself():
+    assert md._fmt(None) == "-"
+    assert md._fmt(None, ".4f") == "-"
+    assert md._fmt(None, ".3%") == "-"
+    assert md._fmt(0.0, ".4e") == "0.0000e+00"
+    assert md._fmt(0.25, ".3%") == "25.000%"
+
+
+def test_identical_runs_leave_cancellation_ratio_undefined():
+    """Not a defect in the runs -- `|sum| / sum|.|` has no denominator when the
+    two decompositions agree, so None is the honest answer."""
+    x = np.zeros((1, 4, 4), dtype="float32")
+    a, b = _pair(x, x.copy())
+    s = md.precipitation(a, b, 0, name="T")
+    assert s["cancellation_ratio"] is None
+    assert s["signed_gridcell_mean_mm"] == 0.0, "a real, measured zero"
+    assert s["nonfinite_columns"] == 0, "and it is not an empty population"
+
+
+@pytest.mark.parametrize("arr", [
+    np.zeros((1, 4, 4), dtype="float32"),          # agreement: ratio is None
+    np.full((1, 4, 4), np.nan, dtype="float32"),   # empty: every stat is None
+])
+def test_every_printed_precipitation_statistic_formats_without_raising(arr):
+    """The row formatted its values directly and went down on the first pair
+    that matched, taking the JSON with it."""
+    a, b = _pair(arr, arr.copy())
+    r = md.precipitation(a, b, 0, name="T")
+    line = (f"{r['frame']:>3d} {md._fmt(r['signed_gridcell_mean_mm'], '.4e'):>17s} "
+            f"{md._fmt(r['cancellation_ratio'], '.4f'):>13s} "
+            f"{md._fmt(r['fraction_over_0.001mm'], '.3%'):>9s} "
+            f"{md._fmt(r['fraction_over_0.01mm'], '.3%'):>9s} "
+            f"{md._fmt(r['fraction_over_0.1mm'], '.3%'):>9s}")
+    assert "-" in line
