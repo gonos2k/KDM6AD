@@ -99,7 +99,7 @@ cd <WRF> && ./compile -j 4 em_real            # SS real case → em_real; → ma
 # (idealized/dry toy cases would use em_b_wave etc.)
 # touch phys/module_mp_kdm6*.F if only .F changed; no clean unless Registry changed.
 ```
-Then run with `harness/run_ss_case.py` (set `mp_physics` via `--mp 37|137|237|337`) on an
+Then run with `harness/run_ss_case.py --case <case-dir>` (set `mp_physics` via `--mp 37|137|237|337`) on an
 SS real case. The Fortran schemes (37/237) write `fort_*` substep dumps when the env-gated
 dump is enabled; the C++ schemes (137/337) write `cpp_*`.
 
