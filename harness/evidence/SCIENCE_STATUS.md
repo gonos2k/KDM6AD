@@ -19,7 +19,10 @@ Deployed WRF binary for MPI runs: `f54ef3c9` (kernel `9354141b`, corrected
 |---|---|---|
 | Number sedimentation transfers a mixing ratio by thickness ratio only; the rho*dz column measure is not conserved | CONFIRMED | `FINDING_number_transport_creation_v1` |
 | The conservative variant carries the same number defect, identical to the last digit (main/nr 15.00/13.34/11.84 %) | CONFIRMED | `FINDING_conservative_number_defect_v1` |
-| Weighting the interface transfer by layer air mass (Arm N) collapses the residual to roundoff | CONFIRMED | `FINDING_arm_n_closure_v1` |
+| Arm N weights the interface transfer by MOIST layer air mass and closes the moist/operator number ledger on the tested first-call matrix | CONFIRMED | `FINDING_arm_n_closure_v1` |
+| Under vertical moisture gradients Arm N leaves a dry-air physical remainder; over 23 real columns the actual-`XFER` median is 2.0664 % of the legacy defect | CONFIRMED | `FINDING_real_column_batch_v1`, `FINDING_moisture_gradient_basis_v1` |
+| Arm `N_d` closes the first-call dry-air physical number ledger on the moisture-gradient fixture | CONFIRMED | `FINDING_arm_nd_closure_v1` |
+| `nmass_dry_window` closes the fixed-forcing 12-call dry ledger on the one column that keeps transporting after call 1 | CONFIRMED | `FINDING_arm_nd_window_v1` |
 | The defect's sign and size follow the layer-air-mass gradient | CONFIRMED | `FINDING_density_falsification_v1`, `FINDING_ice_density_matrix_v1` |
 | `nr` is per kg of dry air; the physical column measure is sum rho_d*dz*nr | CONFIRMED | `FINDING_number_mass_basis_v1` |
 | Conservative `nr`/`ni` sedimentation creates number on density increase | CONFIRMED | `FINDING_number_transport_creation_v1`; the fix is frozen pending an owner freeze-lift, which is a release decision, not a status |
@@ -47,11 +50,13 @@ Deployed WRF binary for MPI runs: `f54ef3c9` (kernel `9354141b`, corrected
 | statement | status | where |
 |---|---|---|
 | A decomposition that cuts i (`2x2`, `4x1`) differs from `np=1` in 77 of 197 fields at one minute | CONFIRMED | `FINDING_second_decomposition_defect_v1`, `FINDING_seam_is_i_specific_v1` |
-| A decomposition that cuts only j (`1x2`, `1x3`, `1x4`) is bit-identical to `np=1`, so the difference is specific to splitting i | CONFIRMED | `FINDING_seam_is_i_specific_v1` |
+| A decomposition that cuts only j (`1x2`, `1x3`, `1x4`) is bit-identical to `np=1` -- raw-word comparison, 0 of 197 fields differing in any bit -- so the difference is specific to splitting i | CONFIRMED | `FINDING_seam_is_i_specific_v1` |
 | The difference is derived from `PH` with `PHB` bit-identical, rounding-scale in the median (6.9e-07) and not in the tail | CONFIRMED | `FINDING_np4_seam_is_rounding_v1` |
 | The i-cut difference is banded on the i patch boundaries -- one band per boundary, peaking within 2 columns of it for `PH` and `T` -- so it is local and not a changed global reduction | CONFIRMED | `FINDING_i_seam_is_banded_at_the_patch_boundary_v1` |
-| Cutting i also perturbs the EASTERN lateral-boundary zone (`spec_bdy_width=5`) and not the western one, in a band that sits under no patch boundary | CONFIRMED | `FINDING_i_seam_is_banded_at_the_patch_boundary_v1` |
-| The band is seeded within 2-4 columns of the i patch boundary -- the halo scale -- and widened by the integration at ~11 columns per time step, ~8x the sound speed | CONFIRMED | `FINDING_i_seam_is_banded_at_the_patch_boundary_v1` |
+| Cutting i also perturbs the EASTERN lateral-boundary zone (`spec_bdy_width=5`) and not the western one, in a band that sits under no patch boundary and is kept a separate source family from the interior bands | CONFIRMED | `FINDING_i_seam_is_banded_at_the_patch_boundary_v1` |
+| After one 20 s step the exact-difference support spans 14-20 i columns around each interior i patch boundary; from step 1 to 3 that envelope widens by 9-13 columns per step while the half-maximum core stays within 1-6 columns and does not widen | CONFIRMED | `FINDING_i_seam_is_banded_at_the_patch_boundary_v1` |
+| The envelope's edge advances at 1.1-1.6 km/s, 3.5-4.5x the sound speed, so it is numerical domain of dependence and not a signal in the fluid | CONFIRMED | `FINDING_i_seam_is_banded_at_the_patch_boundary_v1` |
+| The instantaneous first-write support, and whether it is set by halo width, stencil reach or a patch-local boundary update | OPEN | `FINDING_i_seam_is_banded_at_the_patch_boundary_v1` |
 | What within those few columns produces it (halo width, stencil reach, or per-patch boundary update) | OPEN | `FINDING_i_seam_is_banded_at_the_patch_boundary_v1` |
 | The i-cut difference grows to 77/77/75/106 fields over ten minutes on the corrected binary (np=4 arm, `f54ef3c9`) | CONFIRMED | `RECERT_results_v1` (historical) |
 | That ten-minute growth is not distinguishable from a 1-ULP perturbation on the CORRECTED binary (the 1-ULP arm has not been re-run since the two CCN fixes) | UNMEASURED | `RECERT_results_v1` (historical) |

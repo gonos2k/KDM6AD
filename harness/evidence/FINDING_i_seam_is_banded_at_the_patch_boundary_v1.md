@@ -6,7 +6,7 @@ i-split produces it. A difference made AT a patch boundary and a difference
 made everywhere reach the same 77 fields, so the field count cannot separate
 them. Collapsing the differing cells onto each axis can.
 
-Deployed binary `f54ef3c9`, `mp_physics = 137`, one minute (three 20 s steps),
+Deployed binary `f54ef3c9`, `mp_physics = 37` (Fortran KDM6; the archived `namelist.input` in each run directory is the authority), one minute (three 20 s steps),
 frame 1 against the `np = 1` run. Patch bounds read from each rank's
 `rsl.error.*`, not assumed:
 
@@ -100,60 +100,121 @@ Runs `mp37_k1m_1min_hist1_{1x1,np4_2x2,np4_4x1,np4_1x4}_20260829_10*`, binary
 `f54ef3c962a1d6a0`, comparator attribution gate applied on every pair. Measured
 with `harness/g33_mpi_divergence.py --frames 1 --footprint PH,T,W`.
 
-## Resolved at one step: the seed is halo-wide and the integration spreads it
+## Resolved at one step, on one matched pair
 
-The bands above are measured after three time steps, which is why their width
-could not be read as a mechanism. Re-run at ONE 20 s step, `4x1` against
-`np = 1`, same binary, same runner, both runs made for this purpose:
+The bands above are measured after three time steps, so their width is mostly
+spread and cannot be read as a mechanism. Two runs were made for this section
+with the current runner -- `np = 1` and `4x1`, one minute, history every 20 s --
+so steps 1, 2 and 3 come from ONE pair rather than from two experiments made a
+day apart. That matters: the first version of this section compared 20 s widths
+from these runs against 60 s widths from the 2026-08-29 runs, which were made
+with the pre-#181 runner, while giving "the comparator refuses a pair whose
+runners differ" as the reason for making new runs at all. The comparison
+contradicted its own premise (owner review 8). Re-measured on the matched pair,
+the widths are the same to the column, so the earlier numbers survive -- but
+they are now measured rather than assumed.
 
-| field | one step (1 x 20 s) | three steps (60 s) | growth per step | width at zero steps |
-|---|---|---|---|---|
-| `PH` | 17, 18, 18 | 38, 41, 42 | 11 | **7** |
-| `T` | 15, 14, 16 | 34, 37, 40 | 11 | **4** |
-| `W` | 19, 20, 20 | 38, 43, 44 | 11.5 | **7.5** |
+### The support envelope grows; the energetic core does not
 
-Each row is the three interior bands. The width grows by about eleven columns
-per time step -- five to six on each side -- and the two-point extrapolation to
-zero steps leaves four to eight columns, which is two to four columns each side
-of the boundary. **That is the halo scale.** The difference is created within a
-few columns of the i patch boundary and everything wider is the integration
-carrying it outward.
+`footprint()` counts cells where `x != y`, so its width is the outer envelope of
+ANY difference. For `PH` that envelope's outermost column is **one ULP** on
+every band and at every step, while the peak column is 4 512 to 96 932 ULP. The
+envelope is a one-ULP fringe around something much smaller, and reporting only
+its width would say the difference occupies forty columns when almost all of it
+occupies a handful (owner review 5.2). Both are now reported.
 
-Eleven columns per step is 55 km in 20 s, about 2 700 m/s, roughly eight times
-the sound speed. Nothing propagates that fast here; this is the numerical
-domain of dependence of one RK3 step with its acoustic sub-steps, not a signal
-moving through the fluid.
+`PH`, `4x1`, per band, columns:
 
-**The eastern band checks that reading.** It sits against the domain edge and
-can only spread west, and it grows at half the interior rate:
+| band (boundary) | measure | step 1 | step 2 | step 3 | per step |
+|---|---|---|---|---|---|
+| 1 (i = 59) | envelope | 17 | 27 | 38 | +10, +11 |
+| | half-maximum core | 6 | 1 | 4 | -5, +3 |
+| 2 (i = 117) | envelope | 18 | 30 | 41 | +12, +11 |
+| | half-maximum core | 5 | 2 | 2 | -3, 0 |
+| 3 (i = 176) | envelope | 18 | 31 | 42 | +13, +11 |
+| | half-maximum core | 6 | 3 | 1 | -3, -2 |
 
-    PH  east band   width  8 at one step -> 18 at three steps   (5 per step)
-    T   east band   width  8            -> 17                   (4.5)
-    W   east band   width 11            -> 22                   (5.5)
+**The half-maximum core does not grow.** It stays between one and six columns at
+every step measured, while the envelope adds ten to thirteen columns per step.
+The part of the difference that carries its magnitude sits within a few columns
+of the i patch boundary and stays there; what advances is the one-ULP fringe.
 
-A band free on both sides grows at eleven columns per step; one with a wall on
-one side grows at five. If the widening were physical it would not care; a
-stencil reaching outward from a seed does exactly this.
+This replaces the two-point extrapolation the first version of this section
+used. That fit reported an "effective width at zero steps" of 4 to 8 columns
+and its `W` value, 7.5, was not reproducible from the per-band table (the
+per-band intercepts are 9.5, 8.5, 8.0, median 8.5), and the per-band range
+across all three fields was 2.5 to 9.5, not 4 to 8 (owner review 9.2). The
+extrapolation is dropped rather than corrected: the core width measures the same
+quantity directly, at three steps instead of inferring one before the first.
 
-At one step `4x1` differs from `np = 1` in **28** of 197 fields, against 77 at
-one minute. `FINDING_np4_seam_is_rounding_v1` reports 28 at one step for an
-i-cut on the arm-C binary, so the two binaries agree on the first-step count.
+### The envelope's growth rate is not physical
 
-**Still not settled: what within those few columns.** A halo exchanged too
-narrow for the stencil that reads it, a stencil reaching past what is
-exchanged, or a boundary-zone update applied per patch all fit a seed of this
-width. Naming which needs a probe at the boundary, not another decomposition.
+Across the three interior bands and three fields the envelope adds **9 to 13
+columns per step**, one outlier at 7 and one at 14. The envelope grows at BOTH
+edges, so an edge advances at half that:
 
-**Provenance for this section.** Runs
-`mp37_step1_0min20s_hist0{,_np4_4x1}_20260830_2052*`, made on binary
-`f54ef3c962a1d6a0` with the current runner `397b5076`, `experiment_valid` true,
-requested grid matching actual, `wrf_exe_sha256` stable across each run. They
-were made rather than reusing the 2026-08-29 one-step runs because the runner
-changed after those (PR #181 removed the copy-drift gate), and the comparator
-refuses a pair whose runners differ -- correctly, since it cannot know the
-change was to provenance plumbing and not to what ran.
+    edge rate   4.5 to 6.5 columns per step
+                = 22.5 to 32.5 km per 20 s
+                = 1.1 to 1.6 km/s, about 3.5 to 4.5 times the sound speed
 
-The case directory `host/lc05_da_run/` had `wrf.exe` symlinked to
-`676223e8`, whose `module_mp_kdm6.o` is older than its `.F`, rather than to the
-deployed `f54ef3c9`. It was corrected before these runs.
+The first version of this section read the whole-width rate as a propagation
+speed and reported 2 700 m/s and eight times the sound speed, which is twice the
+value the geometry supports (owner review 10). The qualitative reading is
+unchanged: nothing in this flow propagates at even the corrected rate, so the
+fringe advances by numerical domain of dependence, not by a signal in the fluid.
 
+### The eastern band is consistent with one-sided expansion, and is not proof
+
+The eastern band is pinned against the domain edge and can widen only westward.
+It adds 4 to 7 columns per step -- one edge's worth, and comparable to one
+interior edge:
+
+    interior band   two free edges   9-13 columns per step of total width
+    eastern band    one free edge    4-7
+
+That is what one-sided support expansion looks like. It is NOT proof of a
+stencil mechanism, and the earlier claim that "physical widening would not care
+about the wall" was wrong: WRF's specified lateral boundary is an active region
+with injected external data, a relaxation zone, one-sided tendencies and
+inflow/outflow asymmetry, and physical and numerical widening alike are shaped
+by it (owner review 11).
+
+For the same reason the eastern band is NOT merged with the interior ones here.
+It sits in the lateral-boundary zone and not on a patch boundary, and two source
+families are kept apart until something measures them to be one:
+
+    interior i-patch-boundary bands
+    eastern lateral-boundary-zone band
+
+### Field counts along the way
+
+At one step `4x1` differs from `np = 1` in **28** of 197 fields, at two steps 71,
+at three steps 77. `FINDING_np4_seam_is_rounding_v1` reports 28 at one step for
+an i-cut on the arm-C binary, so the two binaries agree on the first-step count.
+
+### Still open, and now stated as such
+
+**CONFIRMED.** After one 20 s step the exact-difference support spans 14 to 20 i
+columns around each interior i patch boundary; between steps 1 and 3 that
+envelope widens by 9 to 13 columns per step while the half-maximum core stays
+within one to six columns and does not widen.
+
+**OPEN.** The instantaneous first-write support, and whether it is set by halo
+width, stencil reach, or a patch-local boundary update. Two to six columns is
+compatible with all of them, and neither the exchanged halo width nor the
+stencil radius has been read out of the source and compared. Naming which needs
+a probe inside the step at the boundary, not another decomposition.
+
+### Provenance for this section
+
+Runs `mp37_lin3_1min_hist0{,_np4_4x1}_20260830_2114*` -- binary
+`f54ef3c962a1d6a0` stable before and after each run, runner `397b5076` on both,
+`mp_physics = 37` in both archived namelists, `experiment_valid` true, requested
+grid matching actual, four frames at 0, 20, 40 and 60 s. The comparator's
+attribution gate now also requires the two namelists to agree apart from
+`nproc_x`/`nproc_y`, and it passed.
+
+The case directory `host/lc05_da_run/` had `wrf.exe` symlinked to `676223e8`,
+whose `module_mp_kdm6.o` is older than its `.F`, rather than to the deployed
+`f54ef3c9`. It was corrected before these runs. Runs made through that case
+before 2026-08-30 are attributable only by their own recorded `wrf_exe_sha256`.

@@ -114,7 +114,19 @@ def same_experiment(dir_a, dir_b, *, expect: str = "decomposition") -> dict:
     for key, name, pick in (("wrf_exe", "wrf_exe_sha256", first),
                             ("runner", "runner_sha256", first),
                             ("proc_grid", "proc_grid", lambda t: t),
-                            ("namelist", "namelist.input", lambda t: t)):
+                            ("namelist", "namelist.input", lambda t: t),
+                            # A decomposition experiment differs in the grid and
+                            # in nothing else. The raw namelist ALWAYS differs
+                            # here, because the runner writes nproc_x/nproc_y
+                            # into it, so requiring the raw text would refuse
+                            # every valid pair -- and not requiring anything let
+                            # a pair differing in the time step, the physics or
+                            # the forecast length pass as one experiment (owner
+                            # review 15). Compare it with those two lines out.
+                            ("namelist_but_grid", "namelist.input",
+                             lambda t: None if t is None else "\n".join(
+                                 ln for ln in t.splitlines()
+                                 if "nproc_x" not in ln and "nproc_y" not in ln))):
         va, vb = pick(read(dir_a, name)), pick(read(dir_b, name))
         if va is None or vb is None:
             out["differ"][key] = "not recorded in one or both runs"
@@ -123,7 +135,7 @@ def same_experiment(dir_a, dir_b, *, expect: str = "decomposition") -> dict:
         else:
             out["differ"][key] = "differs"
 
-    must_agree = {"decomposition": ("wrf_exe", "runner"),
+    must_agree = {"decomposition": ("wrf_exe", "runner", "namelist_but_grid"),
                   "perturbation": ("wrf_exe", "runner", "proc_grid", "namelist")}[expect]
     bad = [k for k in must_agree if k not in out["agree"]]
     if bad:
@@ -281,9 +293,28 @@ def footprint(a, b, name: str, t: int) -> dict:
     keep_i = tuple(r for r in range(d.ndim) if r != d.ndim - 1)
     keep_j = tuple(r for r in range(d.ndim) if r != d.ndim - 2)
     per_i, per_j = d.sum(axis=keep_i), d.sum(axis=keep_j)
+    # SUPPORT IS NOT SIZE. The counts above are the width of the set of cells
+    # that differ AT ALL, which locates a source and says nothing about whether
+    # the band's edge is one ULP or the same size as its centre (owner review
+    # 5.2). The magnitude per column is the other half, and it is one more
+    # reduction over the array already loaded.
+    with np.errstate(invalid="ignore"):
+        gap = np.abs(x.astype("f8") - y.astype("f8"))
+    gap = np.where(np.isfinite(gap), gap, 0.0)
+    # The reader hands back f8, so the f32 words have to be recovered before
+    # they can be viewed as integers -- viewing the f8 array gives twice as many
+    # int32s and compares the wrong halves. The cast back is exact because the
+    # variable is f32 on disk. The distance is the int32-view difference, which
+    # IS the ULP distance for two values of the same sign and is only a bound
+    # across zero; every band here is far from a sign change.
+    xi = x.astype(np.float32).view(np.int32).astype("i8")
+    yi = y.astype(np.float32).view(np.int32).astype("i8")
+    ulp = np.where(d, np.abs(xi - yi), 0)
     return {"field": name, "frame": t,
             "i_counts": [int(v) for v in per_i],
             "j_counts": [int(v) for v in per_j],
+            "i_absmax": [float(v) for v in gap.max(axis=keep_i)],
+            "i_ulpmax": [int(v) for v in ulp.max(axis=keep_i)],
             "cells_per_i": int(d.size // d.shape[-1]),
             "cells_per_j": int(d.size // d.shape[-2])}
 

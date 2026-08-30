@@ -401,7 +401,8 @@ def test_a_perturbation_pair_needs_the_namelist_and_grid_to_match_too(tmp_path):
     assert "perturbation" in str(e.value)
     r = md.same_experiment(_run_dir(tmp_path / "c"), _run_dir(tmp_path / "d"),
                            expect="perturbation")
-    assert set(r["agree"]) == {"wrf_exe", "runner", "proc_grid", "namelist"}
+    assert set(r["agree"]) == {"wrf_exe", "runner", "proc_grid", "namelist",
+                               "namelist_but_grid"}
 
 
 def test_a_run_without_recorded_provenance_is_refused(tmp_path):
