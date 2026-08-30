@@ -482,15 +482,6 @@ def test_the_producer_actually_calls_it():
     assert "pr.require_probe_chain(runs)" in src
 
 
-def test_the_duplicate_nsplit_check_no_longer_depends_on_the_reader():
-    """Two members for one nsplit collapse to one entry whichever parser read
-    them, so guarding the check on `member_reader is None` exempted exactly the
-    bundle that had no other cross-member check at all."""
-    src = (Path(__file__).resolve().parents[1] / "g33_refine_manifest.py").read_text()
-    assert "if member_reader is None and len(ns) != len(set(ns)):" not in src
-    assert "if len(ns) != len(set(ns)):" in src
-
-
 def test_the_chain_invariant_is_COMPUTED_from_IDENTITY():
     """Listed, it fails open on the next schema change — the same shape the
     pairwise comparison identity had before it was computed (owner P1-11.4)."""

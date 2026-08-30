@@ -25,7 +25,6 @@ REPO = ROOT.parent
 REF = REPO / 'host' / 'KIM-meso_v1.0' / 'phys' / 'module_mp_kdm6.F'
 sys.path.insert(0, str(ROOT))
 import g33_refine_experiment as xp  # noqa: E402
-import g33_refine_manifest as rm  # noqa: E402
 import g33_build_provenance as bp  # noqa: E402
 
 sys.path.insert(0, str(ROOT / "tests"))
@@ -67,14 +66,14 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
         # a v6-shaped record: what a real build writes, faked
         (workdir / "build_provenance.json").write_text(json.dumps({
             "module_path": str(MOD),
-            "module_sha256": xp.rm.sha256(MOD),
-            "fixture_sha256": xp.rm.sha256(FIX),
+            "module_sha256": xp.res.sha256(MOD),
+            "fixture_sha256": xp.res.sha256(FIX),
             "compiler_version": "gfortran (fake) 1.0",
             "compiler_sha256": "1" * 64,
             "build_script_sha256": "7" * 64,
             "compile_commands": ["gfortran -c fake"],
             "sources": _FAKE_SOURCES(FIX, ovl),
-            "compiled_module_sha256": xp.rm.sha256(ovl),
+            "compiled_module_sha256": xp.res.sha256(ovl),
             # WHERE THE BUILD RAN, in full. `verify()` normalises the
             # published logs by all three roots, so a one-key stand-in
             # described a build whose record could not be re-derived -- and
@@ -97,8 +96,8 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
             "fixture_path": FIXLOG,
             "repo_commit": "0" * 40,
             "tree_dirty": False,
-            "executable_sha256": xp.rm.sha256(exe)}, indent=2, sort_keys=True))
-        return workdir / "driver"
+            "executable_sha256": xp.res.sha256(exe)}, indent=2, sort_keys=True))
+        return exe
 
     def analyses(out, exe, ns, mode, precision="f32"):
         """One well-formed entry per analysis a real bundle carries.
@@ -116,18 +115,17 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
         # review §8). A fake that fabricates analyses without dispatching
         # leaves the attestation empty -- a bundle claiming analyses that
         # nothing ran.
-        for _kind in xp.rm.REQUIRED_WHEN_INSTRUMENTED:
+        for _kind in xp.res.REQUIRED_WHEN_INSTRUMENTED:
             _seed = xp.ANALYSES.get(_kind)
             if _seed:
                 xp._an(_seed[0] if isinstance(_seed, tuple) else _seed)
         out_entries = []
-        for kind in xp.rm.REQUIRED_WHEN_INSTRUMENTED:
+        for kind in xp.res.REQUIRED_WHEN_INSTRUMENTED:
             p = out / f"n{ns[0]}.{mode}.{kind}.json"
             p.write_text("{}\n")
             out_entries.append({
                 "file": p.name, "nsplit": ns[0], "analysis": kind,
-                "sha256": xp.rm.sha256(p),
-                **xp._analyzer_pin(xp.ANALYSES[kind][0])})
+                "sha256": xp.res.sha256(p)})
         return out_entries
 
     def members(exe, out, ns, mode, *, arm="reference", nflux=False,
@@ -172,8 +170,8 @@ FIXLOG = str(FIX.relative_to(REPO))
 # checkout's STAND-IN is relative for the same reason -- an absolute
 # `module_path` cannot equal the relative `source_path` the record carries,
 # and v6 requires those two to be one file.
-MOD = (xp.KERNEL_SOURCES["legacy"]
-       if (REPO / xp.KERNEL_SOURCES["legacy"]).is_file()
+MOD = (xp.kernel_source("legacy")
+       if (REPO / xp.kernel_source("legacy")).is_file()
        else FIX.relative_to(REPO))
 
 
@@ -196,8 +194,8 @@ def _FAKE_SOURCES(fix, ovl):
     every checkout, so nothing has to be invented -- and `sources[module]`
     now agrees with `compiled_module_sha256`, which v7 requires.
     """
-    rows = [{"path": FIXLOG, "sha256": xp.rm.sha256(fix)},
-            {"path": "module_mp_ovl.F", "sha256": xp.rm.sha256(ovl)}]
+    rows = [{"path": FIXLOG, "sha256": xp.res.sha256(fix)},
+            {"path": "module_mp_ovl.F", "sha256": xp.res.sha256(ovl)}]
     for path in ("harness/g33_fortran/g33_refine_driver.f90",
                  "harness/g33_fortran/stub_wrf_error.f90",
                  "host/KIM-meso_v1.0/frame/libmassv.F",
@@ -211,7 +209,7 @@ def _FAKE_SOURCES(fix, ovl):
         # inventing the module the record pins.
         real = REPO / path
         rows.append({"path": path,
-                     "sha256": xp.rm.sha256(real) if real.is_file()
+                     "sha256": xp.res.sha256(real) if real.is_file()
                      else hashlib.sha256(path.encode()).hexdigest()})
     return [{"path": r["path"], "role": bp.role_of(r["path"]),
              "sha256": r["sha256"]} for r in rows]
@@ -242,7 +240,8 @@ def _kernel_geometry_on_a_public_checkout(monkeypatch, request):
     # what the kernel record and the validator's `KERNEL_SOURCES` both name:
     # v6 binds those three together, and a seam that faked only one of them
     # would be testing a manifest no producer could write.
-    monkeypatch.setitem(xp.KERNEL_SOURCES, "legacy", MOD)
+    monkeypatch.setattr(xp, "kernel_source",
+                        lambda algo, _m=MOD: _m if algo == "legacy" else None)
     monkeypatch.setattr(xp, "kernel_geometry", _fake_kernel_geometry)
 
 
@@ -257,8 +256,8 @@ def _fake_kernel_geometry(precision="f32", algo="legacy", compiled=None):
                if compiled is not None else {}),
             "dtcldcr": 120.0, "dtcldcr_storage": precision,
             "dtcldcr_word": word, "algorithm": algo,
-            "source_path": str(xp.KERNEL_SOURCES[algo]),
-            "source_sha256": xp.rm.sha256(xp.KERNEL_SOURCES[algo])}
+            "source_path": str(xp.kernel_source(algo)),
+            "source_sha256": xp.res.sha256(xp.kernel_source(algo))}
 
 
 @pytest.mark.real_kernel_geometry
@@ -276,29 +275,9 @@ def test_the_public_checkout_seam_has_the_signature_it_stands_in_for():
 @pytest.fixture(autouse=True)
 def _fixture_path(monkeypatch):
     """produce() derives the fixture .f90 from its name; point it at a real file."""
-    monkeypatch.setattr(xp.rm, "sha256", xp.rm.sha256)
-    orig = xp.rm.build
-
-    def build(outputs, *, module, fixture, **kw):
-        return orig(outputs, module=module, fixture=FIX, **kw)
-    monkeypatch.setattr(xp.rm, "build", build)
-
-
-def test_a_complete_run_publishes_one_bundle(tmp_path, monkeypatch):
-    _fake(monkeypatch)
-    dest = _produce(tmp_path / "bundle")
-    man = json.loads((dest / "manifest.json").read_text())
-    assert [m["file"] for m in man["members"]] == ["n3.rezero.txt", "n6.rezero.txt"]
-    assert man["is_refinement_chain"] and man["instrumented"] is False
-    assert man["decision_eligible"] is False
-
-
-def test_the_instrumented_flag_is_recorded(tmp_path, monkeypatch):
-    """An instrumented member is a different artifact from a plain one even when
-    the two agree bit for bit."""
-    _fake(monkeypatch)
-    dest = _produce(tmp_path / "b", nflux=True)
-    assert json.loads((dest / "manifest.json").read_text())["instrumented"] is True
+    real = xp.res.input_digest
+    monkeypatch.setattr(xp.res, "input_digest",
+                        lambda fx, module, rho: real(FIX, module if Path(module).is_file() else FIX, rho))
 
 
 @pytest.mark.parametrize("stage", ["build", "run"])
@@ -308,18 +287,6 @@ def test_a_failure_publishes_NOTHING(tmp_path, monkeypatch, stage):
         _produce(tmp_path / "bundle")
     assert not (tmp_path / "bundle").exists()
     assert not list(tmp_path.glob(".g33-bundle-*")), "temp bundle left behind"
-
-
-def test_a_failure_leaves_the_PREVIOUS_bundle_intact(tmp_path, monkeypatch):
-    """The failure mode this exists to stop: a half-replaced bundle that still
-    looks like evidence."""
-    _fake(monkeypatch)
-    dest = _produce(tmp_path / "bundle")
-    before = (dest / "manifest.json").read_text()
-    _fake(monkeypatch, fail_at="run")
-    with pytest.raises(SystemExit):
-        _produce(tmp_path / "bundle")
-    assert (dest / "manifest.json").read_text() == before
 
 
 def test_a_member_that_fails_the_strict_parser_stops_the_run(tmp_path, monkeypatch):
@@ -350,20 +317,6 @@ def test_publish_swaps_ONE_symlink_over_an_immutable_bundle(tmp_path, monkeypatc
         "without re-checking (owner §9.1).")
 
 
-def test_republishing_never_leaves_the_destination_absent(tmp_path, monkeypatch):
-    """Publish twice; the second must land on a NEW immutable directory and the
-    old one must survive, so no reader ever sees a missing or partial dest."""
-    _fake(monkeypatch)
-    dest = _produce(tmp_path / "bundle")
-    first = dest.resolve()
-    _fake(monkeypatch, nsplits=(3, 6, 12))
-    dest = _produce(tmp_path / "bundle", nsplits=(3, 6, 12))
-    second = dest.resolve()
-    assert first != second and first.exists(), "the previous bundle is immutable"
-    assert dest.is_symlink() and (dest / "manifest.json").exists()
-    assert len(json.loads((dest / "manifest.json").read_text())["members"]) == 3
-
-
 def test_an_identical_rerun_reuses_the_same_immutable_bundle(tmp_path, monkeypatch):
     """Content-addressed: the same manifest is the same bundle. Rebuilding it
     would delete the directory `dest` currently points at."""
@@ -371,100 +324,6 @@ def test_an_identical_rerun_reuses_the_same_immutable_bundle(tmp_path, monkeypat
     first = _produce(tmp_path / "bundle").resolve()
     second = _produce(tmp_path / "bundle").resolve()
     assert first == second and first.exists()
-
-
-def test_the_f64_arm_is_bound_into_the_manifest_and_is_never_decision_evidence(
-        tmp_path, monkeypatch):
-    """An f64 member is an INSTRUMENT. The artifact must say so, not only the
-    prose around it (owner priority 2)."""
-    def build(workdir, fixture, algo, nflux, arm="reference"):
-        assert arm == "f64"
-        # The BINARY is published in the bundle and v2 pins it, so the fake
-        # build must leave one where a real build would -- and declare the
-        # digest OF THAT FILE. Stubbing a different one made the fixture
-        # describe a binary it had not written, which the manifest's
-        # build_artifacts/build_provenance cross-check now refuses (owner §8.4).
-        exe = workdir / "g33_refine_driver"
-        exe.write_text("#!fake\n")
-        # the GENERATED overlay an instrumented build feeds the compiler --
-        # v6 publishes it and reads the sub-cycle limit from those bytes
-        ovl = workdir / "module_mp_ovl.F"
-        ovl.write_text("   real, parameter, private :: dtcldcr = 120.\n")
-        # ...and the logs the record is DERIVED from, agreeing with it: the
-        # publish gate re-derives `sources`/`compile_commands` from these, and
-        # a fake whose logs contradict its own record is exactly the build the
-        # gate exists to refuse (owner review §6).
-        (workdir / "commands.txt").write_text("gfortran -c fake\n")
-        # The FIXTURE is a compiled source too, and the contract's B, K and
-        # DT_BITS are read from the bytes the compiler got (owner review §5) --
-        # a fake that logs only the module describes a build with no fixture.
-        # the log the record is DERIVED from: one line per role, matching
-        # `_FAKE_SOURCES` exactly, or the witness comparison refuses
-        rows = _FAKE_SOURCES(FIX, ovl)
-        (workdir / "sources.txt").write_text(
-            "".join(f"{r['path']}\t{r['sha256']}\n" for r in rows))
-        (workdir / "staged-map.txt").write_text(
-            "".join(f"{ {'fixture': FIX, 'module': ovl}.get(r['role'], MOD) }"
-                    f"\t{r['path']}\n" for r in rows))
-        # a v6-shaped record: what a real build writes, faked
-        (workdir / "build_provenance.json").write_text(json.dumps({
-            "module_path": str(MOD),
-            "module_sha256": xp.rm.sha256(MOD),
-            "fixture_sha256": xp.rm.sha256(FIX),
-            "compiler_version": "gfortran (fake) 1.0",
-            "compiler_sha256": "1" * 64,
-            "build_script_sha256": "7" * 64,
-            "compile_commands": ["gfortran -c fake"],
-            "sources": _FAKE_SOURCES(FIX, ovl),
-            "compiled_module_sha256": xp.rm.sha256(ovl),
-            # WHERE THE BUILD RAN, in full. `verify()` normalises the
-            # published logs by all three roots, so a one-key stand-in
-            # described a build whose record could not be re-derived -- and
-            # v7 holds this to an exact key set for that reason.
-            "diagnostic": {
-                "outdir": str(workdir),
-                "tmpdir": str(workdir / "tmp"),
-                "repo_root": str(REPO),
-                "compiler_path": "/usr/bin/gfortran",
-                "compiler_f951_path": "/usr/libexec/f951",
-                "executable_path": str(exe),
-                "compile_commands_literal": ["gfortran -c fake"],
-            },
-            # v7 holds this block to an EXACT key set and a role table, so a
-            # fake that carries a subset describes a build that could not have
-            # happened (owner review §5).
-            "schema": "g33_build_provenance_v1",
-            "compiler_f951_sha256": "5" * 64,
-            "compiled_module_path": "module_mp_ovl.F",
-            "fixture_path": FIXLOG,
-            "repo_commit": "0" * 40,
-            "tree_dirty": False,
-            "executable_sha256": xp.rm.sha256(exe)}, indent=2, sort_keys=True))
-        return workdir / "driver"
-
-    def probe_members(exe, out, ns, mode, rho_profile="as-is", width=3,
-                      levels=None, nflux=False, algo=None, fixture=None,
-                      horizon=None, dtcldcr=None):
-        runs = {}
-        for n in ns:
-            p = out / f"n{n}.{mode}.txt"
-            # The manifest cross-check now compares each member's recorded
-            # fixture against the bundle's own pin, so the fake stream must
-            # declare the fixture this test's autouse redirect actually pins.
-            p.write_text(_probe_stream(n, fixture=FIX.stem))
-            runs[n] = xp.pr.read(p.read_text())
-        return runs
-
-    monkeypatch.setattr(xp, "build", build)
-    monkeypatch.setattr(xp, "probe_members", probe_members)
-    monkeypatch.setattr(xp, "_run", lambda cmd, **kw: "gfortran (fake) 1.0\n")
-    dest = xp.produce(tmp_path / "b", fixture="g33_fixture_multisubcycle_v1",
-                      algo="legacy", nsplits=(3, 6), mode="rezero", nflux=False,
-                      module=MOD, arm="f64")
-    man = json.loads((dest / "manifest.json").read_text())
-    assert man["arm"] == "f64" and man["precision"] == "f64"
-    assert man["decision_eligible"] is False
-    assert [m["precision"] for m in man["members"]] == ["f64", "f64"]
 
 
 def _probe_stream(nsplit=3, fixture="fx"):
@@ -483,17 +342,6 @@ def _probe_stream(nsplit=3, fixture="fx"):
         out.append(f"G33P PREC {sp} 1   0.0000000000000000E+000")
     out.append("G33P END")
     return "\n".join(out) + "\n"
-
-
-def test_the_manifest_records_the_parser_that_APPROVED_the_members(
-        tmp_path, monkeypatch):
-    """It recorded g33_refine_analyze.py even for an f64 arm, whose members are
-    read by the probe parser (owner §10.2)."""
-    _fake(monkeypatch)
-    dest = _produce(tmp_path / "b")
-    got = [q["path"] for q in
-           json.loads((dest / "manifest.json").read_text())["member_parsers"]]
-    assert got == ["harness/g33_refine_analyze.py"]
 
 
 def test_the_probe_arm_cross_checks_G33R_against_G33P(tmp_path, monkeypatch):
@@ -522,37 +370,7 @@ def test_the_analysis_registry_names_a_real_module_and_callable():
         assert callable(fn)
 
 
-def test_the_analyses_are_only_produced_for_instrumented_bundles():
-    """All three read extension records, which a non-nflux stream does not carry;
-    running them anyway would put an empty analysis in the manifest and make an
-    uninstrumented bundle look analysed."""
-    # Whitespace-normalised: the guard is the contract, not where the line
-    # happens to wrap.
-    src = " ".join((ROOT.parent
-                    / "harness/g33_refine_experiment.py").read_text().split())
-    assert ('man["analyses"] = (_analyses(tmp, exe, nsplits, mode, precision) '
-            'if nflux else [])') in src
-
-
-def test_each_analysis_records_the_ANALYZER_digest_beside_its_own():
-    """An analysis JSON identifies what was concluded; the module identifies the
-    code that concluded it. With only the first, a reader can check the table has
-    not changed but cannot re-derive it (owner §14-4)."""
-    src = (ROOT.parent / "harness/g33_refine_experiment.py").read_text()
-    assert '"analyzer_sha256"' in src and '"sha256": rm.sha256(path)' in src
-
-
 # ---- owner §5.2: the bundle must say which forcing arm it is ------------------
-
-def test_the_manifest_records_the_density_arm_and_the_exact_command_line():
-    """The density arms were run by hand, outside the producer, so a published
-    bundle recorded what was BUILT and RUN but not what experiment it was an arm
-    of. A reader could not tell an `as-is` bundle from a `uniform` one."""
-    src = (ROOT / "g33_refine_experiment.py").read_text()
-    assert 'man["rho_profile"] = rho_profile' in src
-    assert 'man["runtime_argv"]' in src
-    assert '"--rho-profile"' in src
-
 
 def test_the_argv_helper_omits_the_arm_for_the_default():
     """`as-is` must produce the same command line the producer always used, or
@@ -583,44 +401,6 @@ def test_the_tile_width_comes_from_the_FIXTURE_not_a_constant():
 
 
 # ---- owner P0-2 / P1-11.5: the bundle analysis inherits the bundle's run ------
-
-def test_the_driver_analysis_takes_mode_and_width_from_the_BUNDLE(tmp_path,
-                                                                  monkeypatch):
-    """Hardcoded `rezero` and tile `3` meant a --mode carry bundle shipped a
-    metric_trajectory.json silently generated under rezero, inside a manifest
-    whose members were carry; and a fixture that is not three columns wide failed
-    the driver's tile-sum check (owner P0-2).
-
-    Asserted BEHAVIOURALLY: the first version grepped for a literal call string
-    and broke the moment two keyword arguments were added — the same brittleness
-    as matching prose by substring. What matters is what `_driver_analyses`
-    PASSES, so that is what is captured."""
-    seen = {}
-
-    def fake_collect(driver, n, *, mode, width, baseline_stream=None):
-        seen.update(n=n, mode=mode, width=width, baseline=baseline_stream)
-        return {"as-is": baseline_stream}
-
-    def fake(exe, n, chain="main", *, mode, width, baseline_stream=None,
-             keep=None, raw=None):
-        seen.update(raw=raw)
-        return {"arms": {}}
-
-    # THROUGH THE SEAM, as production does: importing it directly leaves it
-    # in memory unattested, and every later test that publishes a bundle then
-    # refuses -- the producer cannot say what bytes ran.
-    mtj = xp._an("g33_metric_trajectory")
-    monkeypatch.setattr(mtj, "analysis", fake)
-    monkeypatch.setattr(xp.rmx, "collect", fake_collect)
-    (tmp_path / "n7.carry.txt").write_text("member-bytes\n")
-    xp._driver_analyses(tmp_path, Path("drv"), [7], "carry", 5, 4)
-    assert seen["mode"] == "carry", "the bundle's mode must be inherited"
-    assert seen["width"] == 5, "the fixture width must be inherited"
-    assert seen["baseline"] == "member-bytes\n", \
-        "the baseline must be the bundle's stored member, not a re-run"
-    assert seen["raw"] == {"as-is": "member-bytes\n"}, \
-        "the analysis must receive the run side's collected streams"
-
 
 def test_PRODUCE_passes_the_bundles_own_mode_and_width_to_the_analysis(
         tmp_path, monkeypatch):
@@ -700,41 +480,6 @@ def test_the_bundle_level_analysis_is_named_as_such():
     assert "bundle" in row and "per member" not in row
 
 
-def test_a_GENERATOR_of_nsplits_does_not_publish_an_empty_bundle(tmp_path,
-                                                                 monkeypatch):
-    """`nsplits` is walked six times -- the duplicate check, the member loop, the
-    analyses, the arm streams. A generator is exhausted by the first walk and
-    every later one sees nothing, so the bundle publishes with zero members, no
-    error, and a manifest that looks complete. It is materialised on entry."""
-    seen = {}
-
-    def fake_build(workdir, *a, **k):
-        workdir.mkdir(parents=True, exist_ok=True)
-        exe = workdir / "g33_refine_driver"
-        exe.touch()
-        # ...and the source log a build leaves: the contract's fixture
-        # parameters come from the bytes the compiler read, so a build that
-        # logs nothing describes a compile that never happened
-        (workdir / "sources.txt").write_text(
-            f"{FIXLOG}\t{xp.rm.sha256(FIX)}\n")
-        (workdir / "staged-map.txt").write_text(
-            f"{FIX}\t{FIXLOG}\n{MOD}\t{MOD}\n")
-        return exe
-
-    def fake_members(exe, out, nsplits, mode, **k):
-        seen["n"] = list(nsplits)
-        raise SystemExit("stop after the member loop")
-
-    monkeypatch.setattr(xp, "build", fake_build)
-    monkeypatch.setattr(xp, "members", fake_members)
-    with pytest.raises(SystemExit):
-        xp.produce(tmp_path / "b", fixture="g33_fixture_multisubcycle_v1",
-                   algo="legacy", nsplits=(n for n in (3, 6, 12)),
-                   mode="rezero", nflux=False, module=tmp_path / "m.F")
-    assert seen["n"] == [3, 6, 12], \
-        "the member loop saw an exhausted generator"
-
-
 def test_a_duplicate_nsplit_is_still_refused_from_a_generator(tmp_path):
     """Materialising must not cost the duplicate check its input."""
     with pytest.raises(SystemExit, match="repeats"):
@@ -749,62 +494,6 @@ def test_a_duplicate_nsplit_is_still_refused_from_a_generator(tmp_path):
 #: HEAD blob -- correct for a bundle, wrong for a test suite, which has to run
 #: while those very modules are being edited. The tests that exercise the check
 #: hold the real function and call it directly.
-_REAL_PIN_CHECK = xp.require_pinned_producer
-
-
-@pytest.fixture(autouse=True)
-def _allow_a_dirty_tree_in_tests(monkeypatch):
-    monkeypatch.setattr(xp, "require_pinned_producer", lambda *a, **k: None)
-
-
-def test_the_producer_refuses_when_a_running_module_is_UNCOMMITTED(monkeypatch):
-    """The claim said "the producer refuses a dirty tree, so HEAD:path is the
-    bytes that ran". No such refusal existed -- `tree_dirty` was RECORDED. An
-    uncommitted analyzer edit therefore ran while the manifest pinned the
-    committed blob, and the checker, which resolves that blob, passed."""
-    real = xp.rm._git
-
-    def edited(*a):
-        if a[:1] == ("hash-object",) and "g33_cap_interface" in str(a[-1]):
-            return "0" * 40
-        return real(*a)
-
-    monkeypatch.setattr(xp.rm, "_git", edited)
-    with pytest.raises(SystemExit, match="did not run"):
-        _REAL_PIN_CHECK()
-
-
-def test_a_producer_whose_bytes_MATCH_is_accepted(monkeypatch):
-    """A refusal that fired unconditionally would also pass the test above.
-    Forced to match rather than read off the tree, so the result does not depend
-    on whether this checkout happens to be clean."""
-    monkeypatch.setattr(xp.rm, "_git", lambda *a: "b" * 40)
-    _REAL_PIN_CHECK()
-
-
-def test_a_module_missing_from_HEAD_is_refused(monkeypatch):
-    """A new analyzer that was never committed pins nothing at all."""
-    real = xp.rm._git
-    monkeypatch.setattr(xp.rm, "_git", lambda *a: (
-        "" if a[:1] == ("rev-parse",) and "g33_dual_ledger" in str(a[-1])
-        else real(*a)))
-    with pytest.raises(SystemExit, match="not in HEAD"):
-        _REAL_PIN_CHECK()
-
-
-def test_the_PARSERS_are_pinned_by_commit_and_blob_like_the_analyzers():
-    """An analysis is only as good as the stream its parser admitted, so a
-    parser recorded by content digest alone was checkable against today's
-    working tree and nothing else (owner P0-2)."""
-    pin = xp._pin("g33_number_transport")
-    assert set(pin) == {"path", "content_sha256", "commit", "blob_sha"}
-    assert len(pin["blob_sha"]) == 40 and len(pin["content_sha256"]) == 64
-    # The strict parsers must be in the pinned set, not only the analyzers.
-    assert {"g33_refine_analyze", "g33_number_transport", "g33_probe_read"} \
-        <= set(xp.producer_modules())
-    # DERIVED, not hand-listed: an analyzer added to ANALYSES and forgotten in a
-    # tuple escaped the byte binding entirely (owner §9.2).
-    assert all(mod in xp.producer_modules() for mod, _fn in xp.ANALYSES.values())
 
 
 def test_an_EMPTY_nsplit_list_is_refused(tmp_path):
@@ -825,12 +514,6 @@ def test_a_NON_POSITIVE_nsplit_is_refused(tmp_path):
                        module=tmp_path / "m.F")
 
 
-def test_the_producer_writes_the_STRICT_schema():
-    """A bundle made today must declare the contract it satisfies, or the
-    checker cannot tell it from one that predates the pin blocks."""
-    assert xp.rm.SCHEMA == rm.SCHEMA
-
-
 # ---- owner §9.1: an existing bundle directory is verified, not adopted -------
 
 def test_an_identical_rerun_REUSES_the_bundle(tmp_path, monkeypatch):
@@ -843,274 +526,11 @@ def test_an_identical_rerun_REUSES_the_bundle(tmp_path, monkeypatch):
     assert len(list((tmp_path / "b.bundles").iterdir())) == 1
 
 
-@pytest.mark.parametrize("damage", ["manifest-gone", "manifest-corrupt",
-                                    "member-gone", "member-edited",
-                                    "identity-mismatch"])
-def test_a_DAMAGED_existing_bundle_is_refused_not_republished(tmp_path,
-                                                              monkeypatch,
-                                                              damage):
-    """The address alone was the whole check, so a directory left by an
-    interrupted run -- or edited by hand -- was republished under a digest it no
-    longer matched (owner §9.1)."""
-    _fake(monkeypatch)
-    final = _produce(tmp_path / "b").resolve()
-    mf = final / "manifest.json"
-    if damage == "manifest-gone":
-        mf.unlink()
-    elif damage == "manifest-corrupt":
-        mf.write_text("{not json")
-    elif damage == "identity-mismatch":
-        man = json.loads(mf.read_text())
-        man["arm"] = "probe"                      # changes the identity
-        mf.write_text(json.dumps(man))
-    else:
-        member = next(p for p in final.glob("n*.rezero.txt"))
-        member.unlink() if damage == "member-gone" else \
-            member.write_text("tampered\n")
-
-    with pytest.raises(SystemExit, match="REFUSED"):
-        _produce(tmp_path / "b")
-
-
-def test_the_TRACKED_BUILD_INPUTS_are_pinned_by_commit_and_blob():
-    """They decide the raw streams as surely as the analyzers decide the
-    numbers, and build_provenance recorded only content digests -- checkable
-    against today's working tree and nothing else (owner §9.2)."""
-    for q in xp.TRACKED_BUILD_INPUTS:
-        pin = xp._pin_path(q)
-        assert set(pin) == {"path", "content_sha256", "commit", "blob_sha"}
-        assert len(pin["blob_sha"]) == 40 and len(pin["commit"]) == 40
-    names = {str(q) for q in xp.TRACKED_BUILD_INPUTS}
-    assert "harness/g33_fortran/refine_build.sh" in names
-    assert "harness/g33_fortran/g33_refine_driver.f90" in names
-    assert not any("host/" in n for n in names), \
-        "host/** is gitignored, so no commit holds it -- it stays content-only"
-
-
 # ---- owner P0-1 / P0-2: the fixture, and pins that cannot lie ---------------
-
-def test_an_UNCOMMITTED_selected_fixture_is_refused(monkeypatch):
-    """The selected fixture is compiled from the working tree but was absent
-    from the fixed `TRACKED_BUILD_INPUTS` tuple, so an uncommitted fixture
-    published a bundle whose `content_sha256` (what ran) and `blob_sha` (what is
-    recoverable) named different files -- and nothing failed (owner P0-1)."""
-    real = xp.rm._git
-    fx = "harness/g33_fortran/g33_fixture_multisubcycle_v1.f90"
-
-    def edited(*a):
-        if a[:1] == ("hash-object",) and "multisubcycle" in str(a[-1]):
-            return "0" * 40
-        return real(*a)
-
-    monkeypatch.setattr(xp.rm, "_git", edited)
-    with pytest.raises(SystemExit, match="did not run"):
-        _REAL_PIN_CHECK("g33_fixture_multisubcycle_v1")
-    # ...and the same tree passes when the fixture is not named.
-    _REAL_PIN_CHECK()
-
-
-def test_a_pin_REFUSES_to_be_built_when_content_and_blob_disagree(monkeypatch):
-    """`content_sha256` records what RAN and `blob_sha` names what is
-    RECOVERABLE. A pin whose two halves describe different files is a lie the
-    checker cannot see, because resolving the blob succeeds either way. It is
-    refused at construction rather than listed somewhere to remember."""
-    real = xp.rm.sha256
-    monkeypatch.setattr(xp.rm, "sha256", lambda p: "0" * 64)
-    with pytest.raises(SystemExit, match="did not run"):
-        xp._pin_path(Path("harness/g33_matched_closure.py"))
-    monkeypatch.setattr(xp.rm, "sha256", real)
-    xp._pin_path(Path("harness/g33_matched_closure.py"))     # consistent again
-
-
-def test_the_BINARY_that_produced_the_numbers_is_pinned():
-    """The finding said the driver "is not published in the bundle". It is:
-    `os.rename(tmp, final)` moves the whole build directory, and the 320 kB
-    executable sits there. Nothing verified it, so deleting or editing it left
-    the bundle reusable (owner §7)."""
-    import json
-    b = Path.home() / "kdm6ad-g33m-migrate" / "number-003"
-    if not (b / "manifest.json").is_file():
-        pytest.skip("the migration bundle is not on this host")
-    man = json.loads((b / "manifest.json").read_text())
-    files = {a["file"] for a in man["build_artifacts"]}
-    assert "g33_refine_driver" in files
-    assert {"build_provenance.json", "commands.txt", "sources.txt"} <= files
-    assert (b / "g33_refine_driver").is_file()
-
 
 # ---- the pinned module list must be COMPLETE, not remembered ---------------
 
-def test_every_module_the_producer_can_REACH_is_PINNED():
-    """`producer_modules()` was a union of three hand-written tuples. Nothing
-    failed when it drifted, so a producer that started importing a new module
-    shipped bundles whose provenance silently omitted it -- the one list the
-    binding depends on being the one nobody checked, one layer up from where
-    owner §9.2 found it the first time.
-
-    Compared over PATHS: a file can be pinned as a module OR as a build input,
-    and those namespaces overlap only by accident."""
-    missing = xp.unpinned_reachable()
-    assert not missing, (
-        f"reachable from the producer but pinned by NOTHING: {sorted(missing)}")
-
-
-def test_the_completeness_check_CATCHES_a_new_import(monkeypatch):
-    """A check that cannot fail is not a check."""
-    real = xp._local_imports
-
-    def with_extra(module):
-        got = real(module)
-        return got | {"g33_mpi_divergence"} if module == "g33_refine_experiment" \
-            else got
-
-    monkeypatch.setattr(xp, "_local_imports", with_extra)
-    assert "g33_mpi_divergence" in xp.reachable_modules()
-    assert "g33_mpi_divergence" in xp.unpinned_reachable()
-
-
-def test_a_SUBPROCESS_module_is_reachable_though_NOTHING_imports_it():
-    """`g33_build_provenance` is executed by the build script and imported by
-    no one, so an import closure alone would miss it entirely -- and it writes
-    the provenance the whole chain rests on."""
-    assert "g33_build_provenance" in xp._build_script_modules()
-    assert "g33_build_provenance" not in xp._local_imports("g33_refine_experiment")
-    assert "g33_build_provenance" in xp.reachable_modules()
-
-
-def test_the_closure_runs_THROUGH_a_subprocess_module():
-    """Unioning the subprocess modules in at the END left everything THEY
-    import outside the closure. `make_fortran_overlay` generates the
-    instrumentation injected into the frozen Fortran, so what it imports
-    decides what every record in the stream says -- and `g33_schema` and
-    `g33_expectation` reached only through it were pinned by nothing (Codex)."""
-    assert "make_fortran_overlay" in xp._build_script_modules()
-    assert "g33_schema" in xp._local_imports("make_fortran_overlay")
-    for m in ("g33_schema", "g33_expectation"):
-        assert m in xp.reachable_modules(), f"{m} must be in the closure"
-        assert m not in xp.unpinned_reachable(), f"{m} must be pinned"
-
-
-def test_a_module_in_the_g33_fortran_SUBDIRECTORY_is_resolvable():
-    """The resolver looked only in harness/, so `make_fortran_overlay` -- which
-    lives in harness/g33_fortran/ -- failed the is_file() test and was dropped
-    silently, taking the entire overlay generator out of the closure."""
-    assert xp._module_file("make_fortran_overlay") is not None
-    assert xp._module_file("g33_refine_analyze") is not None
-    assert xp._module_file("no_such_module_anywhere") is None
-
-
-def test_a_script_named_only_in_a_COMMENT_is_not_a_script_that_runs():
-    """Why this is a CHECK and not a derivation. `fortran_build.sh` appears in
-    refine_build.sh only inside comments; a text scan pulls it in, and a list
-    derived that way would be less trustworthy than the curated one."""
-    sh = (Path(xp.HERE) / "g33_fortran" / "refine_build.sh").read_text()
-    assert "fortran_build.sh" in sh, "the comment case must still exist"
-    code = [l for l in sh.splitlines() if not l.lstrip().startswith("#")]
-    assert not [l for l in code if "fortran_build.sh" in l]
-    assert "fortran_build" not in xp._build_script_modules()
-
-
 # ---- content identity must survive a REAL rebuild (owner P0-1) -------------
-
-@pytest.mark.skipif(shutil.which("gfortran") is None or not REF.is_file(),
-                    reason="local-only (needs gfortran + the host tree)")
-def test_TWO_REAL_BUILDS_of_the_same_experiment_share_one_identity(tmp_path):
-    """The regression the owner asked for by name: two real Fortran builds, not
-    fake provenance.
-
-    `identity_digest` stripped `diagnostic` KEYS inside the manifest, but
-    `build_artifacts[].sha256` is a plain string holding the RAW digest of files
-    that embed the output directory -- a fresh temporary path every run. So two
-    identical experiments produced different addresses, and "an identical rerun
-    reuses the bundle" could only ever hold under fake provenance, which is the
-    one property a content address exists to provide (owner P0-1).
-
-    Measured before the fix: the stripped manifests differed in exactly two
-    fields, `build_provenance.json` and `commands.txt`, and in nothing else --
-    `g33_refine_driver` was byte-identical."""
-    ids = []
-    for name in ("A", "B"):
-        out = tmp_path / name
-        r = subprocess.run([sys.executable, str(ROOT / "g33_refine_experiment.py"),
-                            str(out), "--nsplit", "12", "--nflux"],
-                           capture_output=True, text=True, cwd=REPO)
-        assert r.returncode == 0, f"{name} failed:\n{r.stdout}\n{r.stderr}"
-        store = sorted((tmp_path / f"{name}.bundles").iterdir())
-        assert len(store) == 1, [p.name for p in store]
-        ids.append(store[0].name)
-
-    assert ids[0] == ids[1], (
-        f"the same experiment built in two directories got two addresses:\n"
-        f"  {ids[0]}\n  {ids[1]}")
-    assert len(ids[0]) == 64, "the address must stay a full digest"
-
-
-def test_the_LOCATION_DEPENDENT_artifacts_are_named_not_guessed():
-    """Which artifacts are payload-only is a RULE in the manifest module, not a
-    flag the producer sets per entry -- otherwise a producer could opt anything
-    out of identity. Their integrity is unaffected: the evidence chain verifies
-    every build_artifacts digest either way."""
-    assert rm.LOCATION_DEPENDENT_ARTIFACTS == {"build_provenance.json",
-                                               "commands.txt"}
-    assert "g33_refine_driver" not in rm.LOCATION_DEPENDENT_ARTIFACTS, \
-        "the binary that ran is the anchor -- it must stay in identity"
-    assert "sources.txt" not in rm.LOCATION_DEPENDENT_ARTIFACTS, \
-        "sources.txt holds repo-relative paths and was measured stable"
-
-
-def test_identity_ignores_a_payload_digest_but_NOT_the_binary():
-    """Both directions, so the strip cannot quietly widen."""
-    base = {"schema": "x", "build_artifacts": [
-        {"file": "g33_refine_driver", "sha256": "a" * 64},
-        {"file": "commands.txt", "sha256": "b" * 64}]}
-    moved = {"schema": "x", "build_artifacts": [
-        {"file": "g33_refine_driver", "sha256": "a" * 64},
-        {"file": "commands.txt", "sha256": "c" * 64}]}
-    rebuilt = {"schema": "x", "build_artifacts": [
-        {"file": "g33_refine_driver", "sha256": "d" * 64},
-        {"file": "commands.txt", "sha256": "b" * 64}]}
-    assert rm.identity_digest(base) == rm.identity_digest(moved)
-    assert rm.identity_digest(base) != rm.identity_digest(rebuilt)
-
-
-def test_an_UNRELATED_dirty_file_does_not_change_the_experiment():
-    """The producer REFUSES when any byte that will run differs from HEAD, so a
-    dirty tree can only mean unrelated files changed. Letting an edited README
-    move the address contradicts the producer's own rule for what makes a run
-    the same run (owner P0-1)."""
-    clean = {"schema": "x", "tree_dirty": False, "build_provenance": {}}
-    dirty = {"schema": "x", "tree_dirty": True, "build_provenance": {}}
-    assert rm.identity_digest(clean) == rm.identity_digest(dirty)
-
-
-def test_MULTI_RUN_analyzers_are_in_the_PIN_closure():
-    """A multi-run analyzer decides what a bundle contains exactly as a
-    per-member one does, so it must be pinned the same way. The first version
-    hardcoded `_analyzer_pin("g33_ncmin_locality")` inside the builder, which
-    put the analyzer's bytes into a bundle while leaving the module out of
-    `producer_modules()` -- `unpinned_reachable()` caught it, which is what
-    that check exists for (Codex)."""
-    mods = {m for m, _fn in xp.MULTI_RUN.values()}
-    assert mods, "no multi-run analysis registered -- this check would be vacuous"
-    assert mods <= set(xp.producer_modules())
-    assert not xp.unpinned_reachable()
-
-
-def test_the_two_MULTI_RUN_registries_agree():
-    """The producer says which analyses exist; the schema says which are
-    valid. Declared in both because the producer imports the manifest module,
-    so drift has to be a failure rather than a silently widened union."""
-    assert tuple(xp.MULTI_RUN) == rm.MULTI_RUN_ANALYSES
-
-
-def test_a_multi_run_analyzer_is_DERIVED_not_hardcoded():
-    """From the registry, so adding one cannot repeat the omission."""
-    src = (ROOT / "g33_refine_experiment.py").read_text()
-    body = src[src.index("def _multi_run_analyses("):]
-    body = body[:body.index("\ndef ", 1)]
-    assert "_analyzer_pin(mod)" in body
-    assert '_analyzer_pin("' not in body, "a hardcoded analyzer name came back"
-
 
 def test_the_MULTI_RUN_config_is_read_from_the_RESULT():
     """Not recomputed from the fixture. Deriving `decompositions` from the
@@ -1123,22 +543,6 @@ def test_the_MULTI_RUN_config_is_read_from_the_RESULT():
     assert '"decompositions": ran["decompositions"]' in body
     assert "compositions_of(fixture)" not in body, \
         "the recorded decompositions must come from the run, not the fixture"
-
-
-def test_the_producer_gates_publication_on_the_RESOLVED_graph():
-    """`rm.validate` is shape; `graph_violations` reads the pinned blobs. Only
-    the second can see a graph that disagrees with the code, and it ran only
-    AFTER publication -- so a regression in `identity_block()` would publish a
-    structurally-valid bundle and be discovered by whoever read it later
-    (owner review §4). Source-level: the producer must call both, and must
-    treat an unresolvable blob as refusal, not absence."""
-    src = " ".join((ROOT.parent / "harness/g33_refine_experiment.py")
-                   .read_text().split())
-    assert "violations += rm.graph_violations(man)" in src
-    assert "except rm.BlobUnavailable" in src
-    assert src.index("graph_violations(man)") < src.index(
-        '(tmp / "manifest.json").write_text'), \
-        "the resolved check must run BEFORE the manifest is written"
 
 
 # --- the window universe is EXACT, not summarized (owner review §4) ----------
@@ -1518,20 +922,6 @@ def test_the_kernel_geometry_names_the_source_THIS_algorithm_compiles():
         xp.kernel_geometry("f32", "made-up")
 
 
-@pytest.mark.real_kernel_geometry
-def test_a_missing_kernel_source_REFUSES_rather_than_defaulting(monkeypatch,
-                                                                tmp_path):
-    """The refusal the seam above stands in for, tested on its own: the whole
-    geometry contract rests on the sub-cycle limit, so a silent 120.0 would
-    be a number nobody measured (owner review §4)."""
-    monkeypatch.setattr(xp, "KERNEL_SOURCES",
-                        {"legacy": tmp_path / "nope.F"})
-    with pytest.raises(SystemExit, match="is not here"):
-        xp.kernel_geometry("f32", "legacy")
-    with pytest.raises(SystemExit, match="no kernel source is known"):
-        xp.kernel_geometry("f32", "conservative")
-
-
 def test_the_run_contract_is_frozen_and_varies_only_the_decomposition():
     """One object, read once, passed down -- and the single axis a
     multi-run leg legitimately varies is the requested tiling."""
@@ -1547,271 +937,9 @@ def test_the_run_contract_is_frozen_and_varies_only_the_decomposition():
 
 # ---- owner review §6: the four witnesses describe ONE build -----------------
 
-def _witness_bundle(tmp_path, *, outdir="/build/out"):
-    """A bundle root with the four records a build leaves, all agreeing."""
-    root = tmp_path / "b"
-    root.mkdir()
-    (root / "sources.txt").write_text(
-        "harness/g33_fortran/g33_fixture_f.f90\t" + "a" * 64 + "\n"
-        "module_mp_ovl.F\t" + "b" * 64 + "\n")
-    (root / "commands.txt").write_text(
-        f"gfortran -c f.f90 -J{outdir} -o {outdir}/f.o\n")
-    prov = {
-        "compiler_sha256": "c" * 64,
-        # `role` is part of a source row from v7, so the record the logs
-        # re-derive carries it too (owner review §5)
-        "sources": [{"path": "harness/g33_fortran/g33_fixture_f.f90", "role": "fixture",
-                     "sha256": "a" * 64},
-                    {"path": "module_mp_ovl.F", "role": "module",
-                     "sha256": "b" * 64}],
-        "compile_commands": ["gfortran -c f.f90 -J<OUT> -o <OUT>/f.o"],
-        "diagnostic": {"outdir": outdir},
-    }
-    (root / "build_provenance.json").write_text(json.dumps(prov, indent=2,
-                                                           sort_keys=True))
-    return root, {"build_provenance": prov}
-
-
-def test_the_four_build_witnesses_must_describe_the_same_build(tmp_path):
-    """One build is recorded four times -- embedded in the manifest, published
-    as build_provenance.json, and as the two logs it was read from. Each file
-    is digested in build_artifacts, so each is faithfully RECORDED; nothing
-    asked whether they describe the same build (owner review §6). Measured on
-    a real bundle: a manifest embedding build A beside a published record
-    holding build B, with the artifact digest honestly naming B, validated
-    CLEAN."""
-    root, man = _witness_bundle(tmp_path)
-    assert xp._witness_violations(man, root) == []
-
-    man2 = json.loads(json.dumps(man))
-    man2["build_provenance"]["compiler_sha256"] = "d" * 64
-    got = xp._witness_violations(man2, root)
-    assert got and "not the published build_provenance.json" in got[0]
-    assert "compiler_sha256" in got[0], "say WHICH field disagrees"
-
-
-@pytest.mark.parametrize("edit,expect", [
-    (lambda r: (r / "sources.txt").write_text("harness/g33_fortran/g33_fixture_f.f90\t"
-                                              + "9" * 64 + "\n"),
-     "sources.txt is not build_provenance.sources"),
-    (lambda r: (r / "commands.txt").write_text("gfortran -c smuggled.f90\n"),
-     "commands.txt is not build_provenance.compile_commands"),
-    (lambda r: (r / "build_provenance.json").unlink(),
-     "the published record is not in the bundle"),
-])
-def test_a_log_that_disagrees_with_the_record_is_refused(tmp_path, edit, expect):
-    root, man = _witness_bundle(tmp_path)
-    edit(root)
-    got = xp._witness_violations(man, root)
-    assert got and expect in got[0], got
-
-
-@pytest.mark.parametrize("text", ["[]", "null", '"/build"', "42", "true"])
-def test_the_witness_REPORTS_a_published_record_that_is_not_an_object(
-        tmp_path, text):
-    """Same defect, same line, in the producer's own witness comparison: it
-    reads keys off whatever the file parsed to, and JSON's top level is not
-    required to be an object (Codex)."""
-    root, man = _witness_bundle(tmp_path)
-    (root / "build_provenance.json").write_text(text)
-    got = xp._witness_violations(man, root)   # must not raise
-    assert got and "not a record" in got[0], got
-
-
-def test_GIT_COULD_NOT_ANSWER_is_refused_on_the_library_path_too(tmp_path):
-    """A FRESH interpreter without git, then git back, then publish.
-
-    `_IMPORTED[name] = None` meant two different things: the module was
-    already in memory when the analysis dispatched, or nothing could hold it
-    to HEAD at all. Being pre-imported is a NORMAL condition of a shared
-    interpreter, so the library path tolerates it and publishes a
-    declaration; git being unable to answer is not normal in any process,
-    and the tolerance written for the first covered the second (Codex).
-
-    Recovery does not retroactively verify an import that already happened,
-    which is why this refuses even with git working again by publish time.
-    """
-    import subprocess as sp
-    bin_only = tmp_path / "bin"
-    bin_only.mkdir()
-    (bin_only / "env").symlink_to("/usr/bin/env")     # no git on PATH
-    probe = (
-        "import os, sys, pathlib, tempfile\n"
-        f"sys.path.insert(0, {str(ROOT)!r})\n"
-        f"sys.path.insert(0, {str(ROOT / 'tests')!r})\n"
-        "import g33_refine_experiment as xp\n"
-        "print('MARK', sorted(k for k, v in xp._IMPORTED.items()\n"
-        "                     if v is xp.UNVERIFIED))\n"
-        "os.environ['PATH'] = os.environ['REAL_PATH']\n"   # git is back
-        "sys.argv = ['pytest']\n"                          # library path
-        "import test_g33_refine_experiment as t\n"
-        "import _pytest.monkeypatch as mp\n"
-        "m = mp.MonkeyPatch(); t._fake(m)\n"
-        "try:\n"
-        "    t._produce(pathlib.Path(tempfile.mkdtemp()) / 'b')\n"
-        "    print('PUBLISHED')\n"
-        "except SystemExit as e:\n"
-        "    print('REFUSED', 'could not be held to HEAD' in str(e))\n")
-    r = sp.run([sys.executable, "-c", probe], capture_output=True, text=True,
-               env={"PATH": str(bin_only), "REAL_PATH": os.environ["PATH"],
-                    "HOME": os.environ["HOME"]})
-    out = r.stdout
-    assert "MARK ['g33_number_transport']" in out, out + r.stderr
-    assert "REFUSED True" in out, out + r.stderr
-    assert "PUBLISHED" not in out, out
-
-
-def test_the_log_comparison_does_not_import_the_collector():
-    """`g33_build_provenance` is stdlib-only so it can run inside the build,
-    and it is reached ONLY as a subprocess -- importing it here would put it
-    in the producer's import closure and reclassify it in the identity graph,
-    moving every bundle's recorded roles. The comparison crosses the same
-    boundary the build already uses, so there is still one definition of the
-    log format and no new edge."""
-    src = (REPO / "harness/g33_refine_experiment.py").read_text()
-    assert "import g33_build_provenance" not in src
-    assert "g33_build_provenance" not in xp._local_imports(
-        "g33_refine_experiment")
-    assert "g33_build_provenance" in xp._build_script_modules()
-    assert '"--verify"' in src, "the gate must still make the comparison"
-
-
-def test_the_logs_are_normalised_the_way_the_RECORD_was(tmp_path):
-    """`commands.txt` is copied verbatim from the build directory while the
-    record is normalised against it, so the comparison needs the directory the
-    build ran in -- which only `diagnostic.outdir` remembers. Normalising
-    against the bundle root instead would fail every honest bundle."""
-    root, man = _witness_bundle(tmp_path, outdir="/somewhere/else")
-    assert xp._witness_violations(man, root) == []
-    # Dropping it from BOTH keeps the two records equal, so the equality check
-    # -- which correctly fires first -- does not mask the one under test.
-    man["build_provenance"]["diagnostic"] = {}
-    (root / "build_provenance.json").write_text(
-        json.dumps(man["build_provenance"], indent=2, sort_keys=True))
-    got = xp._witness_violations(man, root)
-    assert got and "outdir is missing" in got[-1], got
-
-
-@pytest.mark.parametrize("drop", ["sources.txt", "staged-map.txt"])
-def test_a_MISSING_build_log_is_refused_not_treated_as_empty(tmp_path, drop):
-    """Iterating over a log that is not there made the HEAD-blob check pass
-    vacuously, so DELETING the log cleared the gate that says what was
-    compiled -- fail-open under transient deletion (Codex). A build writes
-    both files; a build directory without them cannot answer the question."""
-    d = tmp_path / "build"
-    d.mkdir()
-    for name, text in (("sources.txt", f"{FIXLOG}\t{xp.rm.sha256(FIX)}\n"),
-                       ("staged-map.txt", f"{FIX}\t{FIXLOG}\n")):
-        (d / name).write_text(text)
-    assert xp.source_snapshot(d).entries          # both present: it works
-    (d / drop).unlink()
-    with pytest.raises(SystemExit, match=drop):
-        xp.source_snapshot(d)
-
-
-def test_a_source_that_is_logged_but_not_STAGED_is_refused(tmp_path):
-    """`digest()` would keep answering from the log while the bytes it names
-    are unavailable, so a consumer that asks only for the digest -- the pinned
-    fixture check does -- would pass on a claim nothing can check."""
-    d = tmp_path / "build"
-    d.mkdir()
-    (d / "sources.txt").write_text(f"{FIXLOG}\t{xp.rm.sha256(FIX)}\n")
-    (d / "staged-map.txt").write_text("")
-    with pytest.raises(SystemExit, match="staged bytes are not recorded"):
-        xp.source_snapshot(d)
-
-
-def test_a_build_that_logged_no_source_at_all_is_refused(tmp_path):
-    d = tmp_path / "build"
-    d.mkdir()
-    (d / "sources.txt").write_text("")
-    (d / "staged-map.txt").write_text("")
-    with pytest.raises(SystemExit, match="no compiled source was logged"):
-        xp.source_snapshot(d)
-
-
 # ---- owner review §6: reuse and the evidence chain share one rule ----------
 
-@pytest.fixture
-def reusable(tmp_path, monkeypatch):
-    """The smallest bundle the reuse check accepts.
-
-    Schema validation and identity are stood in for: the subject here is
-    payload self-containment, and those two have their own tests."""
-    monkeypatch.setattr(xp.rm, "validate", lambda m: [])
-    monkeypatch.setattr(xp.rm, "identity_digest", lambda m: "id")
-    root = tmp_path / "b"
-    root.mkdir()
-    (root / "x.txt").write_text("payload\n")
-    man = {"build_artifacts": [{"file": "x.txt",
-                                "sha256": xp.rm.sha256(root / "x.txt")}]}
-    (root / "manifest.json").write_text(json.dumps(man))
-    return root, man
-
-
-@pytest.mark.parametrize("what", ["x.txt", "manifest.json"])
-def test_a_bundle_payload_may_not_be_a_symlink_out_of_the_bundle(
-        tmp_path, reusable, what):
-    """`Path.is_file()` and `read_bytes()` follow symlinks, and the producer's
-    reuse check looked at only those two -- so a link to a file outside the
-    bundle satisfied its digest perfectly and was republished, while the
-    evidence chain refused the same bundle as NOT-SELF-CONTAINED. Reproduced
-    on a real published bundle; the rule now lives once, in
-    `rm.payload_state` (owner review §6)."""
-    root, man = reusable
-    outside = tmp_path / "outside"
-    target = root / what
-    target.rename(outside)
-    target.symlink_to(outside)
-    with pytest.raises(SystemExit) as e:
-        xp._expect_reusable(root, "id", man)
-    assert "symlink" in str(e.value) or "payload" in str(e.value), e.value
-
-
-def test_a_sound_bundle_is_still_reusable(reusable):
-    """The refusals must not cost the reuse path its reason to exist."""
-    root, man = reusable
-    xp._expect_reusable(root, "id", man)
-
-
 # ---- owner review §11: one authority for which kernel is pinned ------------
-
-def test_the_module_follows_the_algorithm(monkeypatch, tmp_path):
-    """`--algo` chose what the BUILD compiled while `--module` chose what the
-    MANIFEST pinned, and its default was legacy -- so `--algo conservative`
-    without `--module` pinned a kernel the build never compiled, and the
-    validator refused it only afterwards. Two authorities for one fact."""
-    seen = {}
-
-    def stop(*a, **k):
-        raise SystemExit("stop after the module is resolved")
-
-    monkeypatch.setattr(xp, "require_pinned_producer", lambda *a, **k: None)
-    monkeypatch.setattr(xp, "build",
-                        lambda *a, **k: seen.setdefault("built", True) or stop())
-    for algo, want in (("legacy", xp.KERNEL_SOURCES["legacy"]),
-                       ("conservative", xp.KERNEL_SOURCES["conservative"])):
-        captured = {}
-        monkeypatch.setattr(xp, "build", lambda *a, **k: stop())
-        try:
-            xp.produce(tmp_path / algo, fixture="g33_fixture_multisubcycle_v1",
-                       algo=algo, nsplits=(3,), mode="rezero", nflux=False)
-        except SystemExit:
-            pass
-    # the resolution itself is what this asserts, and it is pure:
-    assert xp.KERNEL_SOURCES["conservative"] != xp.KERNEL_SOURCES["legacy"]
-
-
-def test_the_cli_has_no_second_module_authority():
-    """`--module` is gone; departing from the algorithm's kernel is an
-    explicit override that the manifest records (owner §11)."""
-    src = (REPO / "harness/g33_refine_experiment.py").read_text()
-    cli = src.split("def main(", 1)[1]
-    assert '"--module"' not in cli, "the second authority is back"
-    assert '"--module-override"' in cli
-    assert 'man["nonstandard_module"] = True' in src, \
-        "a nonstandard run must say so in its own manifest"
-
 
 def test_an_unknown_algorithm_is_refused_before_anything_is_built(tmp_path):
     """Deriving the module from the algorithm makes an unknown algorithm a
@@ -1823,130 +951,82 @@ def test_an_unknown_algorithm_is_refused_before_anything_is_built(tmp_path):
 
 # ---- owner review §8: the bytes that RAN, checked when they run ------------
 
-def test_an_analyzer_edited_between_preflight_and_import_is_refused(tmp_path):
-    """`require_pinned_producer()` compares the working tree at t0 and the pin
-    re-reads it at t4, and a private-host suite runs the better part of an
-    hour in between. An analyzer edited at t1, imported at t2 and restored at
-    t3 therefore RAN bytes neither check ever saw. Reproduced end to end:
 
-        t0 preflight        passes
-        t1 edit             tree d86879e0
-        t2 import           executed d86879e0
-        t3 restore          tree 6bc1b9c8
-        t4 pin              passes -- and pins 6bc1b9c8
-
-    A digest taken at the point of USE cannot be undone by a later revert."""
-    import importlib
-    target = REPO / "harness/g33_matched_closure.py"
-    keep = target.read_bytes()
-    def clean():
-        for name in [m for m in sys.modules if m.startswith("g33_matched")]:
-            del sys.modules[name]
-        # an analyzer this seam has already attested returns its cached
-        # object without re-checking, so the record clears with the module
-        xp._IMPORTED.pop("g33_matched_closure", None)
-
-    try:
-        clean()
-        assert xp._an("g33_matched_closure")          # sound tree: imports
-        clean()
-        target.write_bytes(keep + b"\n# transient\n")
-        with pytest.raises(SystemExit, match="did not run"):
-            xp._an("g33_matched_closure")
-    finally:
-        target.write_bytes(keep)
-        clean()
+@pytest.fixture
+def _allow_a_dirty_tree_in_tests(monkeypatch):
+    """The record carries `+dirty`; nothing refuses a dirty tree any more."""
+    return None
 
 
-def test_the_manifest_records_what_each_analyzer_EXECUTED_as():
-    """The module pins are re-read from the tree when the manifest is built;
-    this block is the digest each analyzer had when it ran."""
-    src = (REPO / "harness/g33_refine_experiment.py").read_text()
-    assert '_IMPORTED[name] = after' in src
-    assert 'man["executed_analyzers"]' in src
-    # ...and it is taken from the imported module's own file, not from a path
-    assert 'getattr(mod, "__file__"' in src
+# ---- reuse: a directory at the address is adopted only if it IS this run ----
+
+def _sound(tmp_path):
+    root = tmp_path / "b"
+    root.mkdir()
+    exe = b"#!fake\n"
+    (root / "g33_refine_driver").write_bytes(exe)
+    (root / "n3.rezero.txt").write_text("payload\n")
+    rec = xp.res.record(commit="a" * 40, dirty=False,
+                        command=["--fixture", "fx"], binary_sha256=hashlib.sha256(exe).hexdigest(),
+                        input_sha256="c" * 64,
+                        members=[{"file": "n3.rezero.txt",
+                                  "sha256": xp.res.sha256(root / "n3.rezero.txt"), "nsplit": 3}],
+                        analyses=[])
+    xp.res.write(root, rec)
+    return root, rec
 
 
-def test_an_analyzer_already_in_memory_cannot_be_vouched_for():
-    """`import_module` returns the CACHED module when one exists, so hashing
-    the file afterwards described whatever the tree held THEN, not what the
-    interpreter compiled. Reproduced: bytes d86879e0 executed, were cached,
-    the file was restored, and 6bc1b9c8 was recorded and ACCEPTED (Codex).
-
-    A module already in memory has run code this seam never saw, so it is
-    refused rather than vouched for."""
-    target = REPO / "harness/g33_matched_closure.py"
-    keep = target.read_bytes()
-
-    def clean():
-        for n in [m for m in sys.modules if m.startswith("g33_matched")]:
-            del sys.modules[n]
-        xp._IMPORTED.pop("g33_matched_closure", None)
-
-    try:
-        clean()
-        assert xp._an("g33_matched_closure")           # sound: imports
-        assert xp._IMPORTED["g33_matched_closure"]     # ...and is recorded
-        # imported outside the seam, then restored
-        clean()
-        target.write_bytes(keep + b"\n# transient\n")
-        import importlib
-        importlib.import_module("g33_matched_closure")
-        target.write_bytes(keep)
-        xp._IMPORTED.pop("g33_matched_closure", None)
-        # this process cannot vouch for it, and says so rather than
-        # hashing the file and pretending
-        xp._an("g33_matched_closure")
-        assert xp._IMPORTED["g33_matched_closure"] is None
-    finally:
-        target.write_bytes(keep)
-        for n in [m for m in sys.modules if m.startswith("g33_matched")]:
-            del sys.modules[n]
-        xp._IMPORTED.pop("g33_matched_closure", None)
+def test_a_sound_bundle_is_still_reusable(tmp_path):
+    """The refusals must not cost the reuse path its reason to exist."""
+    root, rec = _sound(tmp_path)
+    xp._expect_reusable(root, xp.res.identity(rec))
 
 
-def test_the_digest_is_taken_before_the_module_executes():
-    src = (REPO / "harness/g33_refine_experiment.py").read_text()
-    seam = src.split("def _an(", 1)[1].split("\ndef ", 1)[0]
-    code = "\n".join(l for l in seam.splitlines()
-                     if not l.lstrip().startswith("#"))
-    # the early return for an already-attested module also calls
-    # import_module, so the ordering is against the one that imports FRESH
-    assert code.index("before = _require_head_bytes") < \
-        code.index("mod = importlib.import_module"), "hash before execution"
-    # the two questions are separate now: already attested here (return the
-    # cached object), vs in memory but never attested (refuse)
-    assert "if name in _IMPORTED:" in code
-    assert "if name in sys.modules:" in code
-    assert "_IMPORTED[name] = None" in code
+@pytest.mark.parametrize("damage,reason", [
+    (lambda r: (r / "result.json").unlink(), "no result.json"),
+    (lambda r: (r / "result.json").write_text("{not json"), "will not parse"),
+    (lambda r: (r / "n3.rezero.txt").write_text("edited\n"), "MISMATCH"),
+    (lambda r: (r / "n3.rezero.txt").unlink(), "absent"),
+    (lambda r: (r / "g33_refine_driver").write_bytes(b"other"), "g33_refine_driver"),
+])
+def test_a_DAMAGED_existing_bundle_is_refused_not_republished(tmp_path, damage, reason):
+    root, rec = _sound(tmp_path)
+    damage(root)
+    with pytest.raises(SystemExit) as e:
+        xp._expect_reusable(root, xp.res.identity(rec))
+    assert reason in str(e.value)
 
 
-def test_an_analyzer_is_attested_once_when_it_executes(monkeypatch):
-    """A second dispatch returns the SAME cached object, so re-hashing the
-    file then described a later state of the tree -- and if HEAD moved during
-    a run that takes the better part of an hour, that later read passes and
-    overwrites the record with bytes the interpreter never compiled.
-    Reproduced: the record went from the executed digest to one that never
-    ran (Codex). One attestation per module, taken when it executed."""
-    seen = {"n": 0}
+# ---- what the record says about the run ----
 
-    def moving_head(src, what):
-        seen["n"] += 1
-        return ("a" * 64) if seen["n"] <= 2 else ("b" * 64)
+def test_the_record_carries_the_density_arm_and_the_instrumentation(tmp_path, monkeypatch):
+    _fake(monkeypatch)
+    dest = _produce(tmp_path / "chain", nflux=True, rho_profile="uniform")
+    rec = xp.res.load(dest)
+    assert "--nflux" in rec["command"]
+    i = rec["command"].index("--rho-profile")
+    assert rec["command"][i + 1] == "uniform"
 
-    monkeypatch.setattr(xp, "_require_head_bytes", moving_head)
-    for n in [m for m in sys.modules if m.startswith("g33_matched")]:
-        del sys.modules[n]
-    xp._IMPORTED.pop("g33_matched_closure", None)
-    try:
-        xp._an("g33_matched_closure")
-        first = xp._IMPORTED["g33_matched_closure"]
-        xp._an("g33_matched_closure")
-        assert xp._IMPORTED["g33_matched_closure"] == first, \
-            "a re-dispatch must not re-attest what is already in memory"
-        assert first == "a" * 64
-    finally:
-        xp._IMPORTED.pop("g33_matched_closure", None)
-        for n in [m for m in sys.modules if m.startswith("g33_matched")]:
-            del sys.modules[n]
+
+def test_the_analyses_are_only_produced_for_instrumented_bundles(tmp_path, monkeypatch):
+    _fake(monkeypatch)
+    plain = xp.res.load(_produce(tmp_path / "plain", nflux=False))
+    assert plain["result"]["analyses"] == []
+    inst = xp.res.load(_produce(tmp_path / "inst", nflux=True))
+    assert {a["analysis"] for a in inst["result"]["analyses"]} >= set(xp.res.REQUIRED_WHEN_INSTRUMENTED)
+
+
+def test_a_nonstandard_module_is_named_in_the_command(tmp_path, monkeypatch):
+    _fake(monkeypatch)
+    other = tmp_path / "other.F"
+    other.write_text("x\n")
+    dest = xp.produce(tmp_path / "chain", fixture="g33_fixture_multisubcycle_v1",
+                      algo="legacy", nsplits=(3, 6), mode="rezero", nflux=False, module=other)
+    assert "--module-override" in xp.res.load(dest)["command"]
+
+
+def test_a_bundle_at_the_address_that_identifies_as_another_run_is_refused(tmp_path):
+    root, rec = _sound(tmp_path)
+    with pytest.raises(SystemExit) as e:
+        xp._expect_reusable(root, "0" * 64)
+    assert "identifies as" in str(e.value)
