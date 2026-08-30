@@ -261,6 +261,52 @@ def field_stats(a, b, name: str, t: int, mask=None) -> dict:
     return out
 
 
+def footprint(a, b, name: str, t: int) -> dict:
+    """WHERE along i and along j the difference sits, as a count per column.
+
+    The field COUNT cannot tell a difference made at a patch boundary from one
+    made everywhere: both report the same 77. `FINDING_seam_is_i_specific_v1`
+    established that cutting i produces the difference and cutting j does not,
+    and left open what in the i-split produces it. A difference banded at the
+    patch boundaries and a difference already spread across the domain point at
+    different mechanisms, and collapsing the differing cells onto each axis is
+    what separates them.
+
+    The test is `x != y`, the same one `field_stats` and `coverage` make, so a
+    field that went NaN on one side counts as differing here too.
+    """
+    import numpy as np
+    x, y = _num(a[name], t), _num(b[name], t)
+    d = x != y
+    keep_i = tuple(r for r in range(d.ndim) if r != d.ndim - 1)
+    keep_j = tuple(r for r in range(d.ndim) if r != d.ndim - 2)
+    per_i, per_j = d.sum(axis=keep_i), d.sum(axis=keep_j)
+    return {"field": name, "frame": t,
+            "i_counts": [int(v) for v in per_i],
+            "j_counts": [int(v) for v in per_j],
+            "cells_per_i": int(d.size // d.shape[-1]),
+            "cells_per_j": int(d.size // d.shape[-2])}
+
+
+def _profile(counts, per, width: int = 58) -> str:
+    """The per-column fractions as one line, so the shape is readable at all."""
+    bar = " .:-=+*#%@"
+    n = len(counts)
+    out = []
+    for s in range(width):
+        lo, hi = s * n // width, max(s * n // width + 1, (s + 1) * n // width)
+        f = max(counts[lo:hi]) / per if per else 0.0
+        out.append(bar[min(len(bar) - 1, int(f * (len(bar) - 1) + 0.999))])
+    return "".join(out)
+
+
+def _span(counts) -> str:
+    hit = [i for i, c in enumerate(counts) if c]
+    if not hit:
+        return "none"
+    return f"{hit[0] + 1}..{hit[-1] + 1} ({len(hit)} of {len(counts)})"
+
+
 def cell_area(state_path: Path, a):
     """`A_ij = DX*DY / MAPFAC_M**2`, from a file that carries the map factor.
 
@@ -396,6 +442,9 @@ def main() -> int:
     ap.add_argument("--frames", default="1,5,10")
     ap.add_argument("--fixed-mask-frame", type=int, default=1)
     ap.add_argument("--json", type=Path, default=None)
+    ap.add_argument("--footprint", default=None, metavar="FIELD[,FIELD]",
+                    help="also report WHERE the difference sits: the differing "
+                         "cells collapsed onto i and onto j, per column")
     ap.add_argument("--mapfac-from", type=Path, default=None,
                     help="a file carrying MAPFAC_M and DX/DY (wrfinput_d01); "
                          "enables area-weighted precipitation and area in km2")
@@ -478,6 +527,22 @@ def main() -> int:
             doc["precipitation"].append(precipitation(a, b, t, area=area))
         if "REFL_10CM" in a.variables:
             doc["reflectivity"].append(reflectivity(a, b, t, area=area))
+
+    if args.footprint:
+        doc["footprint"] = []
+        print(f"\n  {'field':10s} {'t':>3s} {'axis':>4s} {'columns that differ':>22s}"
+              f"  profile (max per bucket, . = few  @ = all)")
+        for t in frames:
+            for name in args.footprint.split(","):
+                if name not in a.variables:
+                    print(f"  {name:10s} {t:>3d}   --  not in the forecast file")
+                    continue
+                r = footprint(a, b, name, t)
+                doc["footprint"].append(r)
+                for ax, counts, per in (("i", r["i_counts"], r["cells_per_i"]),
+                                        ("j", r["j_counts"], r["cells_per_j"])):
+                    print(f"  {name:10s} {t:>3d} {ax:>4s} {_span(counts):>22s}"
+                          f"  {_profile(counts, per)}")
 
     # The JSON is the measurement; the tables below are a reading of it. It is
     # written FIRST so a formatting fault cannot destroy the result it reports.
