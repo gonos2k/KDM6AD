@@ -95,6 +95,36 @@ The request recorded four, as revised by the owner.
 4. *"The eastern band is absent through stage 4 and first present immediately
    after stage 5."* **HELD exactly.** Stage 4 clean, stage 5 carries it.
 
+## Inside the bracket: one measured link and one code reading
+
+`rk_step_prep` reaches `ww` through `CALL calc_ww_cp ( u, v, mu, mub, c1h, c2h,
+ww, ... )`, and `calc_ww_cp` is in `module_big_step_utilities_em.F`. Its
+divergence, line 108, reads one column EAST:
+
+    divv(i,k) = msftx(i,j)*dnw(k)*( rdx*( (c1h(k)*muu(i+1,j)+c2h(k))*u(i+1,k,j)/msfuy(i+1,j)
+                                        - (c1h(k)*muu(i,j)  +c2h(k))*u(i,k,j)  /msfuy(i,j) ) + ... )
+
+and its i loop ends at `itf = MIN(ite, ide-1)`, the last owned mass column. So on
+rank 0, computing `ww(59)` reads `muu(60)`, `u(60)` and `msfuy(60)` -- all halo
+cells. **`muu` is in the `HALO_EM_A` set, and that exchange runs after
+`rk_step_prep`, not before it.**
+
+Half of that chain is measured here and half is read from the source, and the
+two are not the same kind of statement:
+
+| link | status |
+|---|---|
+| rank 0's halo copy of `muu` at the columns beside the boundary differs from `np = 1`'s value there, at stage 2 | **MEASURED** |
+| `muu` itself is identical in every OWNED cell at stage 2 | **MEASURED** |
+| `calc_ww_cp` computes `ww(i)` from `muu(i+1)`, `u(i+1)`, `msfuy(i+1)` up to the last owned column | **read from the source, not measured** |
+| `ww` differs at exactly those last-owned columns and nowhere else | **MEASURED** |
+
+That is a coherent account and it is not a proof. Closing it needs anchors
+INSIDE `rk_step_prep` -- after `calc_mu_uv` and before `calc_ww_cp` -- dumping
+`muu` and `u` over the memory window, which is a different file and a separate
+freeze-lift. It would also have to explain why a j cut, whose `divv` reads
+`muv(j+1)` in the same expression, produces nothing at all.
+
 ## What this does NOT show
 
 **That `rk_step_prep` is at fault.** The anchors are call boundaries, so this
