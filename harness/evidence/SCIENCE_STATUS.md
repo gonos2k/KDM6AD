@@ -51,7 +51,8 @@ Deployed WRF binary for MPI runs: `f54ef3c9` (kernel `9354141b`, corrected
 | The difference is derived from `PH` with `PHB` bit-identical, rounding-scale in the median (6.9e-07) and not in the tail | CONFIRMED | `FINDING_np4_seam_is_rounding_v1` |
 | The i-cut difference is banded on the i patch boundaries -- one band per boundary, peaking within 2 columns of it for `PH` and `T` -- so it is local and not a changed global reduction | CONFIRMED | `FINDING_i_seam_is_banded_at_the_patch_boundary_v1` |
 | Cutting i also perturbs the EASTERN lateral-boundary zone (`spec_bdy_width=5`) and not the western one, in a band that sits under no patch boundary | CONFIRMED | `FINDING_i_seam_is_banded_at_the_patch_boundary_v1` |
-| What at an i patch boundary produces the difference | OPEN | `FINDING_i_seam_is_banded_at_the_patch_boundary_v1` |
+| The band is seeded within 2-4 columns of the i patch boundary -- the halo scale -- and widened by the integration at ~11 columns per time step, ~8x the sound speed | CONFIRMED | `FINDING_i_seam_is_banded_at_the_patch_boundary_v1` |
+| What within those few columns produces it (halo width, stencil reach, or per-patch boundary update) | OPEN | `FINDING_i_seam_is_banded_at_the_patch_boundary_v1` |
 | The i-cut difference grows to 77/77/75/106 fields over ten minutes on the corrected binary (np=4 arm, `f54ef3c9`) | CONFIRMED | `RECERT_results_v1` (historical) |
 | That ten-minute growth is not distinguishable from a 1-ULP perturbation on the CORRECTED binary (the 1-ULP arm has not been re-run since the two CCN fixes) | UNMEASURED | `RECERT_results_v1` (historical) |
 | Same-decomposition runs repeat bit-identically | CONFIRMED | `FINDING_mpi_repeatability_v1` |
