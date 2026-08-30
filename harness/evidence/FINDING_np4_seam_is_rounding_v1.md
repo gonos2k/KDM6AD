@@ -105,3 +105,11 @@ run here.
 microphysics was handed, not which of those produced the difference.
 
 One case, one build, one host, first timestep.
+
+## Corrected: direction is decisive, not irrelevant
+
+The reading above -- that identical `2x2` and `4x1` counts mean the difference is
+not tied to a particular seam -- holds only among grids that cut i. A pure j-cut
+(`1x2`, `1x3`, `1x4`) is bit-identical to `np = 1`. The magnitudes measured here
+stand; the inference that a geometry-specific fault is ruled out does not. See
+`FINDING_seam_is_i_specific_v1`.
