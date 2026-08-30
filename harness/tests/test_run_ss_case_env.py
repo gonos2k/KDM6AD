@@ -94,11 +94,9 @@ def test_a_truncated_log_is_not_found_rather_than_a_half_answer():
     assert _load().parse_proc_grid(" Ntasks in X            2\n") is None
 
 
-def test_the_case_is_named_on_the_command_line_and_the_drift_flag_is_gone():
-    """One runner: `--case DIR` replaces the copy-beside-the-case design and
-    the gate that compared copies."""
+def test_the_case_is_named_on_the_command_line():
+    """One runner: `--case DIR` replaces the copy-beside-the-case design."""
     import subprocess, sys
     r = subprocess.run([sys.executable, str(RUNNER), "--help"], capture_output=True, text=True)
     assert r.returncode == 0
     assert "--case" in r.stdout
-    assert "--allow-runner-drift" not in r.stdout

@@ -421,7 +421,7 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   contrast is **1.6× in column 2 and nil in column 3** — a weak single-column signal
   that does not separate the policies, and which compares implementations rather than
   policies in any case. The earlier ~74×/~2200× figures are withdrawn.
-  See [`../harness/evidence/FINDING_moist_enthalpy_ledger_v1.md`](../harness/evidence/FINDING_moist_enthalpy_ledger_v1.md).
+  See [`../harness/evidence/historical/FINDING_moist_enthalpy_ledger_v1.md`](../harness/evidence/historical/FINDING_moist_enthalpy_ledger_v1.md).
 
 Provenance for the closed hardening line: [`RELEASE_ABI_V2_HARDENED.md`](RELEASE_ABI_V2_HARDENED.md),
 [`PR1B_OPENMP_DIAGNOSTIC.md`](PR1B_OPENMP_DIAGNOSTIC.md). External deep review that motivated

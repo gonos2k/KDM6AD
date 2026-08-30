@@ -794,7 +794,7 @@ def bindable(beta: dict, term: str) -> float:
     `coefficients()` already returns `None` for every term of an invalid
     contrast, so a binding that reads one gets nothing to pin. This is the
     check stated as a function rather than left to each caller to remember:
-    a figure enters `CLAIMS.yaml` through here or it does not enter.
+    a figure enters `SCIENCE_STATUS.md` through here or it does not enter.
 
     The two failures it exists to stop are a binding taken while `_valid` is
     false, and one taken from a term the response does not have.

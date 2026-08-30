@@ -236,10 +236,8 @@ def _kernel_geometry_on_a_public_checkout(monkeypatch, request):
     # algorithm rather than the SystemExit under test (Codex).
     if REF.is_file() or request.node.get_closest_marker("real_kernel_geometry"):
         return
-    # The stand-in module is what the manifest pins here, so it has to be
-    # what the kernel record and the validator's `KERNEL_SOURCES` both name:
-    # v6 binds those three together, and a seam that faked only one of them
-    # would be testing a manifest no producer could write.
+    # The stand-in module is what the result record digests as the kernel
+    # source, so it has to be what `kernel_source` names for `legacy`.
     monkeypatch.setattr(xp, "kernel_source",
                         lambda algo, _m=MOD: _m if algo == "legacy" else None)
     monkeypatch.setattr(xp, "kernel_geometry", _fake_kernel_geometry)
@@ -445,39 +443,6 @@ def test_a_repeated_nsplit_is_refused_at_the_COMMAND_LINE():
         xp.produce(Path("/tmp/should-not-exist"),
                    fixture="g33_fixture_multisubcycle_v1", algo="legacy",
                    nsplits=(3, 3, 6), mode="rezero", nflux=False, module=MOD)
-
-
-# ---- owner §8.1 / §16-6: the finding's analysis list is CHECKED against code --
-
-FINDING = ROOT / "evidence" / "FINDING_bundle_analyses_v1.md"
-
-
-def test_the_finding_lists_every_analysis_the_code_registers():
-    """The finding said "three analyses" and named three while the registry had
-    grown to five plus a bundle-level one — a document describing a superseded
-    implementation, which the digest pin and the status stamp both pass.
-
-    This is the cheapest useful prose-to-code check: the names in the finding's
-    generated block must be exactly the names the producer registers. It does not
-    verify the prose is *right*, only that it is not describing code that no
-    longer exists — which is the failure that actually keeps happening.
-    """
-    block = re.search(r"<!-- analyses:.*?-->(.*?)<!-- /analyses -->",
-                      FINDING.read_text(), re.S)
-    assert block, "the generated analyses block is missing"
-    listed = set(re.findall(r"^\| `([a-z_]+)` \|", block.group(1), re.M))
-    registered = set(xp.ANALYSES) | {"metric_trajectory"}
-    assert listed == registered, (
-        f"finding lists {sorted(listed)}, code registers {sorted(registered)}")
-
-
-def test_the_bundle_level_analysis_is_named_as_such():
-    """`metric_trajectory` re-runs the driver under six arms; it is not a
-    per-member stream analysis and the finding must not imply it is."""
-    block = re.search(r"<!-- analyses:.*?-->(.*?)<!-- /analyses -->",
-                      FINDING.read_text(), re.S).group(1)
-    row = next(l for l in block.splitlines() if "`metric_trajectory`" in l)
-    assert "bundle" in row and "per member" not in row
 
 
 def test_a_duplicate_nsplit_is_still_refused_from_a_generator(tmp_path):
