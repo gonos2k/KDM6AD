@@ -17,12 +17,10 @@ on:
       - 'harness/**'
       - 'docs/C4_G3_3_OP_PROVENANCE_PROTOCOL.md'
       - '.github/workflows/g33-harness-ci.yml'
-  # No paths filter on pull_request: to be a REQUIRED status check it must
-  # REPORT on every PR to main (a path-filtered required context leaves
-  # non-harness PRs blocked forever, waiting on a job that never runs). The
-  # suite is a ~1-2 min pure-Python pytest plus clang probe builds; running it
-  # on all PRs is cheap and keeps the gate always satisfiable. (push stays
-  # harness-scoped — post-merge only.)
+  # No paths filter on pull_request: a harness defect can be introduced by a PR
+  # that edits no harness file, and the suite is a ~1-2 min pytest plus clang
+  # probe builds. Reporting on every PR costs little and is the whole reason an
+  # advisory job is worth having. (push stays harness-scoped -- post-merge only.)
   pull_request:
     branches: [main]
   workflow_dispatch:
