@@ -99,3 +99,61 @@ separately, because the runs that cut i at one 20 s step on this binary
 Runs `mp37_k1m_1min_hist1_{1x1,np4_2x2,np4_4x1,np4_1x4}_20260829_10*`, binary
 `f54ef3c962a1d6a0`, comparator attribution gate applied on every pair. Measured
 with `harness/g33_mpi_divergence.py --frames 1 --footprint PH,T,W`.
+
+## Resolved at one step: the seed is halo-wide and the integration spreads it
+
+The bands above are measured after three time steps, which is why their width
+could not be read as a mechanism. Re-run at ONE 20 s step, `4x1` against
+`np = 1`, same binary, same runner, both runs made for this purpose:
+
+| field | one step (1 x 20 s) | three steps (60 s) | growth per step | width at zero steps |
+|---|---|---|---|---|
+| `PH` | 17, 18, 18 | 38, 41, 42 | 11 | **7** |
+| `T` | 15, 14, 16 | 34, 37, 40 | 11 | **4** |
+| `W` | 19, 20, 20 | 38, 43, 44 | 11.5 | **7.5** |
+
+Each row is the three interior bands. The width grows by about eleven columns
+per time step -- five to six on each side -- and the two-point extrapolation to
+zero steps leaves four to eight columns, which is two to four columns each side
+of the boundary. **That is the halo scale.** The difference is created within a
+few columns of the i patch boundary and everything wider is the integration
+carrying it outward.
+
+Eleven columns per step is 55 km in 20 s, about 2 700 m/s, roughly eight times
+the sound speed. Nothing propagates that fast here; this is the numerical
+domain of dependence of one RK3 step with its acoustic sub-steps, not a signal
+moving through the fluid.
+
+**The eastern band checks that reading.** It sits against the domain edge and
+can only spread west, and it grows at half the interior rate:
+
+    PH  east band   width  8 at one step -> 18 at three steps   (5 per step)
+    T   east band   width  8            -> 17                   (4.5)
+    W   east band   width 11            -> 22                   (5.5)
+
+A band free on both sides grows at eleven columns per step; one with a wall on
+one side grows at five. If the widening were physical it would not care; a
+stencil reaching outward from a seed does exactly this.
+
+At one step `4x1` differs from `np = 1` in **28** of 197 fields, against 77 at
+one minute. `FINDING_np4_seam_is_rounding_v1` reports 28 at one step for an
+i-cut on the arm-C binary, so the two binaries agree on the first-step count.
+
+**Still not settled: what within those few columns.** A halo exchanged too
+narrow for the stencil that reads it, a stencil reaching past what is
+exchanged, or a boundary-zone update applied per patch all fit a seed of this
+width. Naming which needs a probe at the boundary, not another decomposition.
+
+**Provenance for this section.** Runs
+`mp37_step1_0min20s_hist0{,_np4_4x1}_20260830_2052*`, made on binary
+`f54ef3c962a1d6a0` with the current runner `397b5076`, `experiment_valid` true,
+requested grid matching actual, `wrf_exe_sha256` stable across each run. They
+were made rather than reusing the 2026-08-29 one-step runs because the runner
+changed after those (PR #181 removed the copy-drift gate), and the comparator
+refuses a pair whose runners differ -- correctly, since it cannot know the
+change was to provenance plumbing and not to what ran.
+
+The case directory `host/lc05_da_run/` had `wrf.exe` symlinked to
+`676223e8`, whose `module_mp_kdm6.o` is older than its `.F`, rather than to the
+deployed `f54ef3c9`. It was corrected before these runs.
+
