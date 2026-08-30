@@ -9,7 +9,7 @@ deployed binary, so the control exists now, and it separates them.
 
 ## The measurement
 
-Deployed binary `f54ef3c9` throughout, `mp_physics = 137`, one case, one host.
+Deployed binary `f54ef3c9` throughout, `mp_physics = 37` (the Fortran KDM6 scheme; the run directories' archived `namelist.input` is the authority, and it reads 37), one case, one host.
 Of 197 f32 time-varying fields, against the `np = 1` run of the same length:
 
 | grid | seams | np | horizon | fields differing |
@@ -40,6 +40,20 @@ true): the runner digest and `wrf_exe_sha256` agree, and the only recorded
 differences are `namelist` and `proc_grid`, which is what `--expect
 decomposition` allows.
 
+## "Bit-identical" is measured, not inferred from the comparator
+
+`g33_mpi_divergence.py` tests `x != y` and `np.array_equal`, which are numeric:
+they call `+0.0` and `-0.0` equal. That is weaker than bit identity, so the
+claim was checked directly. `np = 1` against `1x4`, frame 1, every float32
+time-varying field, comparing the raw words as `uint32`:
+
+    fields compared                          197
+    fields differing in ANY raw bit            0
+    cells where only the sign of a zero differs 0
+
+So the word holds as written: the two runs' outputs are identical bit for bit,
+not merely numerically equal (owner review 4.2).
+
 ## What it changes
 
 **`FINDING_seam_direction_and_1x4_crash_v1`.** Its open item is closed: `1x4`
@@ -63,8 +77,17 @@ the j-extent is.
 **That it is a defect.** A core whose reductions are order-fixed in j and not
 in i is possible, and this measures the asymmetry rather than explaining it.
 What it removes is the reading that the difference is direction-blind rounding:
-rounding that came from summing in a different order would not care which axis
-the patches are cut along.
+rounding that came from summing in a different order ACROSS THE WHOLE DOMAIN
+would not care which axis the patches are cut along.
+
+That is the exact reach of the refutation, and it is narrower than "not
+rounding". What is refuted is a mechanism whose outcome depends on the rank
+count alone. Still standing are every mechanism that differs BETWEEN the two
+axes -- memory traversal order, the staggered stencils, which of `U` and `V`
+sits on which face of the C-grid, patch-local reductions, halo packing order,
+and the x-direction pressure-gradient and divergence terms. A patch-local
+floating-point ordering effect is not excluded by anything measured here
+(owner review 4.3).
 
 **The first step, on the i side.** The j-cuts are exact at the first 20 s step
 AND at one minute. The i-cuts here are measured at one minute only: the two
