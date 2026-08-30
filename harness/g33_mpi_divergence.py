@@ -273,6 +273,34 @@ def field_stats(a, b, name: str, t: int, mask=None) -> dict:
     return out
 
 
+def _ulp_distance(x, y, differs):
+    """f32 ULP distance valid across sign, +/-0 and non-finite values.
+
+    The previous form differenced the raw int32 view. That is the ULP distance only
+    for two values of the SAME sign: the f32 bit pattern is sign-magnitude, so the
+    negatives run backwards and -0.0 (0x80000000) sits a full 2^31 from +0.0. `W`
+    crosses zero, so a generic report built on the old form could print an enormous
+    ULP for two adjacent values (owner review 3.2). `PH` is a positive geopotential
+    series, which is why the published PH fringe result is unaffected.
+
+    Mapping each word onto a monotone line fixes both: complement a negative word,
+    set the top bit of a non-negative one. Cells where either side is non-finite have
+    no ULP distance and report 0 rather than a number that would be thresholded.
+    """
+    import numpy as np
+    # Normalise -0.0 to +0.0 first. The ordered mapping alone puts them one integer
+    # apart, so a pair that IEEE calls equal would report 1 ULP and everything
+    # crossing zero would be off by one.
+    xf = x.astype(np.float32) + np.float32(0.0)
+    yf = y.astype(np.float32) + np.float32(0.0)
+    xb = xf.view(np.uint32)
+    yb = yf.view(np.uint32)
+    def order(b):
+        return np.where(b & 0x80000000, ~b, b | 0x80000000).astype("u8").astype("i8")
+    finite = np.isfinite(xf) & np.isfinite(yf)
+    return np.where(differs & finite, np.abs(order(xb) - order(yb)), 0)
+
+
 def footprint(a, b, name: str, t: int) -> dict:
     """WHERE along i and along j the difference sits, as a count per column.
 
@@ -301,22 +329,62 @@ def footprint(a, b, name: str, t: int) -> dict:
     with np.errstate(invalid="ignore"):
         gap = np.abs(x.astype("f8") - y.astype("f8"))
     gap = np.where(np.isfinite(gap), gap, 0.0)
-    # The reader hands back f8, so the f32 words have to be recovered before
-    # they can be viewed as integers -- viewing the f8 array gives twice as many
-    # int32s and compares the wrong halves. The cast back is exact because the
-    # variable is f32 on disk. The distance is the int32-view difference, which
-    # IS the ULP distance for two values of the same sign and is only a bound
-    # across zero; every band here is far from a sign change.
-    xi = x.astype(np.float32).view(np.int32).astype("i8")
-    yi = y.astype(np.float32).view(np.int32).astype("i8")
-    ulp = np.where(d, np.abs(xi - yi), 0)
+    # The reader hands back f8, so the f32 words have to be recovered before they can
+    # be viewed as integers -- viewing the f8 array gives twice as many int32s and
+    # compares the wrong halves. _ulp_distance does that recovery and the ordered-bit
+    # mapping; see its note for why the raw int32 difference was not general.
+    ulp = _ulp_distance(x, y, d)
+    # A HALF-PEAK core is not an energetic core (owner review 3.1). Both a peak that
+    # grows and surroundings that do not move narrow it, so "the core does not widen"
+    # cannot be read as "the difference energy stays localized". The per-column L2
+    # answers the energy question directly and is one more reduction over an array
+    # already in memory; the 50%/90% widths are derived downstream from i_l2.
+    i_l2 = np.sqrt((gap ** 2).sum(axis=keep_i))
     return {"field": name, "frame": t,
             "i_counts": [int(v) for v in per_i],
             "j_counts": [int(v) for v in per_j],
             "i_absmax": [float(v) for v in gap.max(axis=keep_i)],
+            "i_l2": [float(v) for v in i_l2],
             "i_ulpmax": [int(v) for v in ulp.max(axis=keep_i)],
             "cells_per_i": int(d.size // d.shape[-1]),
             "cells_per_j": int(d.size // d.shape[-2])}
+
+
+def core_widths(absmax, l2) -> dict:
+    """Three widths side by side, because they answer different questions.
+
+    `half_peak` is the count of columns whose per-column max |diff| is at least half
+    that frame's peak. It is a SUPPORT relative to a moving peak: a boundary value
+    that grows faster than its surroundings narrows it without any energy moving
+    (owner review 3.1), so it cannot carry a claim about localization on its own.
+
+    `l2_50` / `l2_90` are the narrowest windows grown outward from the peak-energy
+    column that hold 50% / 90% of the summed per-column energy. Those are the ones
+    that answer "did the difference energy stay localized".
+    """
+    n = len(absmax)
+    peak = max(absmax) if n else 0.0
+    half = sum(1 for v in absmax if peak > 0.0 and v >= 0.5 * peak)
+    e = [v * v for v in l2]
+    total = sum(e)
+    out = {"half_peak": half, "l2_50": 0, "l2_90": 0,
+           "l2_peak_column": (max(range(n), key=lambda i: e[i]) + 1) if n and total > 0 else 0}
+    if total <= 0.0:
+        return out
+    c = out["l2_peak_column"] - 1
+    lo = hi = c
+    acc = e[c]
+    for frac, key in ((0.5, "l2_50"), (0.9, "l2_90")):
+        while acc < frac * total and (lo > 0 or hi < n - 1):
+            # extend toward the heavier neighbour, so the window stays minimal
+            left = e[lo - 1] if lo > 0 else -1.0
+            right = e[hi + 1] if hi < n - 1 else -1.0
+            if right >= left:
+                hi += 1; acc += e[hi]
+            else:
+                lo -= 1; acc += e[lo]
+        out[key] = hi - lo + 1
+    return out
 
 
 def _profile(counts, per, width: int = 58) -> str:
@@ -569,11 +637,16 @@ def main() -> int:
                     print(f"  {name:10s} {t:>3d}   --  not in the forecast file")
                     continue
                 r = footprint(a, b, name, t)
+                r["core_widths"] = core_widths(r["i_absmax"], r["i_l2"])
                 doc["footprint"].append(r)
                 for ax, counts, per in (("i", r["i_counts"], r["cells_per_i"]),
                                         ("j", r["j_counts"], r["cells_per_j"])):
                     print(f"  {name:10s} {t:>3d} {ax:>4s} {_span(counts):>22s}"
                           f"  {_profile(counts, per)}")
+                w = r["core_widths"]
+                print(f"  {'':10s} {'':>3s}      half-peak {w['half_peak']:>3d} cols |"
+                      f"  L2-50% {w['l2_50']:>3d} |  L2-90% {w['l2_90']:>3d}"
+                      f"  (peak-energy column {w['l2_peak_column']})")
 
     # The JSON is the measurement; the tables below are a reading of it. It is
     # written FIRST so a formatting fault cannot destroy the result it reports.
