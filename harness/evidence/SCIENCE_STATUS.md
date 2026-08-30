@@ -46,9 +46,12 @@ Deployed WRF binary for MPI runs: `f54ef3c9` (kernel `9354141b`, corrected
 
 | statement | status | where |
 |---|---|---|
-| The i-seam: `2x2`/`4x1` differ from `np=1` in 77 of 197 fields, from a `delz` difference in owned cells, relative median 6.9e-07 | OPEN | `FINDING_second_decomposition_defect_v1`, `FINDING_np4_seam_is_rounding_v1` |
-| Its ten-minute growth on the corrected binary is 77/77/75/106 fields (np=4 arm, `f54ef3c9`) | CONFIRMED | `RECERT_results_v1` (historical) |
-| That growth is not distinguishable from a 1-ULP perturbation on the CORRECTED binary (the 1-ULP arm has not been re-run since the two CCN fixes) | UNMEASURED | `RECERT_results_v1` (historical) |
+| A decomposition that cuts i (`2x2`, `4x1`) differs from `np=1` in 77 of 197 fields at one minute | CONFIRMED | `FINDING_second_decomposition_defect_v1`, `FINDING_seam_is_i_specific_v1` |
+| A decomposition that cuts only j (`1x2`, `1x3`, `1x4`) is bit-identical to `np=1`, so the difference is specific to splitting i | CONFIRMED | `FINDING_seam_is_i_specific_v1` |
+| The difference is derived from `PH` with `PHB` bit-identical, rounding-scale in the median (6.9e-07) and not in the tail | CONFIRMED | `FINDING_np4_seam_is_rounding_v1` |
+| What in the i-split produces the `PH` difference | OPEN | `FINDING_seam_is_i_specific_v1` |
+| The i-cut difference grows to 77/77/75/106 fields over ten minutes on the corrected binary (np=4 arm, `f54ef3c9`) | CONFIRMED | `RECERT_results_v1` (historical) |
+| That ten-minute growth is not distinguishable from a 1-ULP perturbation on the CORRECTED binary (the 1-ULP arm has not been re-run since the two CCN fixes) | UNMEASURED | `RECERT_results_v1` (historical) |
 | Same-decomposition runs repeat bit-identically | CONFIRMED | `FINDING_mpi_repeatability_v1` |
 | `ncmin` is a scalar overwritten in the column loop; tile decomposition changes prognostic components | CONFIRMED | `FINDING_ncmin_scalar_vs_percell` |
 | Arm L (`ncmin` per cell) removes none of the decomposition difference -- a null about `ncmin`, not about the seam | CONFIRMED | `FINDING_arm_l_mpi_null_v1` |

@@ -78,3 +78,11 @@ missing.
 
 One case, one build, one host, `np = 4`, one minute. Binary `a40bd80fae33`,
 recorded in each run directory.
+
+## Superseded: `1x4` runs, and it is bit-identical
+
+`FINDING_segv_localised_to_flow_dep_bdy_qnn_v1` fixed the crash. On the deployed
+binary `f54ef3c9` the missing row is measured: `1x4` differs from `np = 1` in
+**0** of 197 fields, at one 20 s step and at one minute. The two survivors above
+both cut i; the one that does not cut i differs in nothing. See
+`FINDING_seam_is_i_specific_v1`.
