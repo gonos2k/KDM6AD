@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""The five-field result record: what it hashes, what it holds a bundle to,
-and that a pre-format manifest converts to the same five fields."""
+"""The five-field result record: what it hashes, and what it holds a bundle to."""
 import hashlib
 import json
 import sys
@@ -91,48 +90,10 @@ def test_verify_names_the_executable_binary_sha256_points_at(tmp_path):
     assert any("g33_refine_driver: MISMATCH" in x for x in res.verify(b))
 
 
-def test_convert_reads_the_five_fields_out_of_a_manifest_and_drops_the_pins():
-    man = {
-        "repo_commit": "9" * 40, "tree_dirty": True,
-        "fixture_path": "harness/g33_fortran/g33_fixture_multisubcycle_v1.f90",
-        "fixture_sha256": "1" * 64, "module_sha256": "2" * 64, "rho_profile": "uniform",
-        "algorithm": "nmass", "arm": "probe", "instrumented": True,
-        "members": [{"file": "n6.rezero.txt", "output_sha256": "3" * 64, "nsplit": 6, "mode": "rezero"},
-                    {"file": "n3.rezero.txt", "output_sha256": "4" * 64, "nsplit": 3, "mode": "rezero"}],
-        "analyses": [{"file": "n3.rezero.cap_interface.json", "sha256": "5" * 64, "analysis": "cap_interface",
-                      "nsplit": 3, "analyzer": "harness/g33_cap_interface.py", "analyzer_sha256": "6" * 64,
-                      "analyzer_commit": "7" * 40, "analyzer_blob_sha": "8" * 40}],
-        "build_artifacts": [{"file": "g33_refine_driver", "sha256": "a" * 64}],
-        "producer_modules": [{"module": "x", "sha256": "b" * 64}], "identity": {"role_graph": {}},
-    }
-    rec = res.convert(man)
-    assert sorted(rec) == ["binary_sha256", "command", "commit", "input_sha256", "result"]
-    assert rec["commit"] == "9" * 40 + "+dirty"
-    assert rec["command"] == ["--fixture", "g33_fixture_multisubcycle_v1", "--algo", "nmass",
-                              "--mode", "rezero", "--nsplit", "3,6", "--nflux",
-                              "--rho-profile", "uniform", "--arm", "probe"]
-    assert rec["binary_sha256"] == "a" * 64
-    assert rec["input_sha256"] == res.input_digest_from("1" * 64, "2" * 64, "uniform")
-    assert [m["sha256"] for m in rec["result"]["members"]] == ["3" * 64, "4" * 64]
-    assert rec["result"]["analyses"] == [{"file": "n3.rezero.cap_interface.json", "sha256": "5" * 64,
-                                          "analysis": "cap_interface", "nsplit": 3}]
-
-
 def test_applicability_refuses_an_unlisted_analysis_rather_than_defaulting():
     assert res.applicable("metric_trajectory", "f32") and not res.applicable("metric_trajectory", "f64")
     with pytest.raises(KeyError):
         res.applicable("brand_new", "f32")
-
-
-def test_the_converter_cli_writes_the_file_and_verify_reads_it_back(tmp_path):
-    exe = b"#!fake\n"
-    (tmp_path / "g33_refine_driver").write_bytes(exe)
-    (tmp_path / "manifest.json").write_text(json.dumps({
-        "repo_commit": "9" * 40, "fixture_path": "x/fx.f90", "fixture_sha256": "1" * 64,
-        "module_sha256": "2" * 64, "members": [], "analyses": []}))
-    assert res.main(["convert", str(tmp_path)]) == 0
-    assert res.load(tmp_path)["binary_sha256"] == hashlib.sha256(exe).hexdigest()
-    assert res.main(["verify", str(tmp_path)]) == 0
 
 
 # ---- the raw member goes through the STRICT parser, and the name is bound to the stream ----

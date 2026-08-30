@@ -15,7 +15,7 @@ temporary directory, so a run that dies half way leaves the previous bundle
 exactly as it was rather than a half-replaced one.
 
     g33_refine_experiment.py <outdir> --fixture=NAME --algo=legacy \\
-        --nsplit 3,6,12,24 [--nflux] [--finding path ...]
+        --nsplit 3,6,12,24 [--nflux]
 
 `--nflux` also turns on the number-flux/ice-substep overlay, and is recorded in
 the manifest as `instrumented`, because an instrumented member is a different
@@ -161,17 +161,6 @@ def fixture_dt_bits_from(src: str, where: str = "<fixture>") -> str:
     if not m:
         raise FixtureContractError(f"cannot read DT_BITS from {where}")
     return m.group(1).upper()
-
-
-#: NOT CALLED anywhere today (audit, 2026-08-24). Kept rather than deleted:
-#: it answers a question this campaign has asked before and will ask again,
-#: and this session cost three separate reimplementations of things that
-#: already existed. Deleting an unused answer plants that mistake in the
-#: future. If it is still unused when the next reader passes, the reason to
-#: keep it is weaker than it is now -- say so then.
-def fixture_dt_bits(fixture: str) -> str:
-    return fixture_dt_bits_from(
-        (HERE / "g33_fortran" / f"{fixture}.f90").read_text(), f"{fixture}.f90")
 
 
 def fixture_horizon(fixture: str) -> float:
@@ -1011,15 +1000,33 @@ def _driver_analyses(out: Path, exe: Path, nsplits, mode: str,
     return made
 
 
-def _expect_reusable(final: Path, identity: str) -> None:
+def _expect_reusable(final: Path, fresh: dict) -> None:
     """An existing bundle directory may be adopted only if it IS this run: its
-    record parses, identifies as this identity, and every file it names is
-    present, inside the bundle, with the digest recorded."""
+    record parses, identifies as this run's identity, holds the SAME files with
+    the SAME digests this run just produced, and every file it names is present
+    inside it.
+
+    The third condition is the reproducibility contract. The identity is the
+    experiment (commit, command, binary, input); the result is what the
+    experiment produced. Same identity with a different result is not a bundle
+    to re-publish and not one to reuse -- it is non-determinism, a hidden
+    environment dependency, an unrecorded input or a changed analyzer, and it
+    must be seen rather than resolved by keeping whichever bundle came first.
+    """
     have = res.load(final)
-    if res.identity(have) != identity:
+    if res.identity(have) != res.identity(fresh):
         raise SystemExit(
-            f"REFUSED: {final} is addressed {identity[:16]} but its record "
-            f"identifies as {res.identity(have)[:16]}")
+            f"REFUSED: {final} is addressed {res.identity(fresh)[:16]} but its "
+            f"record identifies as {res.identity(have)[:16]}")
+    old, new = res.payloads(have), res.payloads(fresh)
+    if old != new:
+        differ = sorted(set(old) ^ set(new)) + \
+            sorted(f for f in set(old) & set(new) if old[f] != new[f])
+        raise SystemExit(
+            f"REFUSED: {final} has this run's identity but a different result -- "
+            f"the same experiment did not reproduce:\n  "
+            + "\n  ".join(f"{f}: {old.get(f, 'absent')[:16]} -> "
+                           f"{new.get(f, 'absent')[:16]}" for f in differ))
     bad = res.verify(final)
     if bad:
         raise SystemExit(f"REFUSED: {final} does not hold what its record says:\n  "
@@ -1148,7 +1155,7 @@ def _analyses(out: Path, exe: Path, nsplits, mode: str,
 
 
 def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
-            nflux: bool, module: Path | None = None, findings=(),
+            nflux: bool, module: Path | None = None,
             arm: str = "reference",
             rho_profile: str = "as-is") -> Path:
     """Build, run, validate and publish. Returns the published bundle."""
@@ -1167,6 +1174,16 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
     # the kernel to compile from `--algo` while the module the manifest pins
     # arrived separately, defaulting to legacy -- so a conservative run had to
     # line the two up by hand. One authority; departures are recorded.
+    # A bundle is immutable and addressed by (commit, command, binary, input).
+    # A dirty tree's code is not any commit, so a bundle published from one
+    # occupies the address of an experiment whose source cannot be recovered.
+    # Refused HERE, before the build, so an hour of compute is not spent on a
+    # run that cannot be published (owner review, dirty-publish policy).
+    if res.git("status", "--porcelain"):
+        raise SystemExit(
+            "REFUSED: the working tree is dirty, so this run has no commit to "
+            "publish under. Commit (or stash) first; `git status --porcelain` "
+            "names what is uncommitted.")
     canonical = kernel_source(algo)
     if canonical is None:
         raise SystemExit(
@@ -1307,7 +1324,7 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         identity = res.identity(rec)
         final = store / identity
         if final.exists():
-            _expect_reusable(final, identity)
+            _expect_reusable(final, rec)
         else:
             os.rename(tmp, final)
         link = dest.with_name(dest.name + ".new")
@@ -1356,7 +1373,6 @@ def main(argv) -> int:
                     help="for a NONSTANDARD experiment: pin this file instead "
                          "of the kernel the algorithm selects, and record in "
                          "the manifest that it was done")
-    ap.add_argument("--finding", type=Path, action="append", default=[])
     a = ap.parse_args(argv)
     # absolute(), NOT resolve(): once `dest` is a symlink into the bundle store,
     # resolve() follows it and the next publish writes its store INSIDE the
@@ -1364,7 +1380,7 @@ def main(argv) -> int:
     dest = produce(a.outdir.absolute(), fixture=a.fixture, algo=a.algo,
                    nsplits=[int(x) for x in a.nsplit.split(",")], mode=a.mode,
                    nflux=a.nflux, module=a.module_override,
-                   findings=a.finding, arm=a.arm,
+                   arm=a.arm,
                    rho_profile=a.rho_profile)
     print(dest)
     return 0

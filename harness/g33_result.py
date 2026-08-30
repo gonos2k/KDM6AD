@@ -13,8 +13,6 @@ four; two runs with the same identity are the same experiment and share one
 immutable bundle. `verify()` holds a bundle to its record: every file the
 record names is present, inside the bundle, and has the digest recorded.
 
-`convert()` reads the manifest.json of a bundle made before this format and
-writes the same five fields; the raw streams and analysis files are untouched.
 """
 from __future__ import annotations
 
@@ -46,13 +44,6 @@ ANALYSIS_PRECISIONS = {
     "ncmin_locality": ("f32",),
     "qr_process_ledger": ("f32",),
 }
-
-
-#: The analyses an INSTRUMENTED (--nflux) bundle carries for every member.
-REQUIRED_WHEN_INSTRUMENTED = ("matched_closure", "cap_interface",
-                              "extension_protocol", "dual_ledger",
-                              "defect_magnitude", "internal_cap_enthalpy",
-                              "substep_schedule", "water_enthalpy_basis")
 
 
 def applicable(analysis: str, precision: str) -> bool:
@@ -176,14 +167,19 @@ def payload_state(p: Path, want: str, root: Path) -> str:
     return "matches" if sha256(p) == want else "MISMATCH"
 
 
-def _entries(rec: dict):
-    res = rec.get("result") or {}
-    for row in (res.get("members") or []) + (res.get("analyses") or []):
+def payloads(rec: dict) -> dict:
+    """file -> digest, for every file the record names. This is WHAT THE RUN
+    PRODUCED, apart from how the record describes it: two records with the same
+    payload map hold the same bytes."""
+    out = {}
+    r = rec.get("result") or {}
+    for row in (r.get("members") or []) + (r.get("analyses") or []):
         if isinstance(row, dict) and row.get("file"):
-            yield row["file"], row.get("sha256") or row.get("output_sha256")
+            out[row["file"]] = row.get("sha256") or row.get("output_sha256")
             for src in row.get("inputs") or []:
                 if isinstance(src, dict) and src.get("file"):
-                    yield src["file"], src.get("sha256")
+                    out.setdefault(src["file"], src.get("sha256"))
+    return out
 
 
 def verify(bundle: Path) -> list:
@@ -195,75 +191,24 @@ def verify(bundle: Path) -> list:
     st = payload_state(exe, rec["binary_sha256"], bundle)
     if st != "matches":
         bad.append(f"g33_refine_driver: {st} (binary_sha256 names another executable)")
-    for name, want in _entries(rec):
+    for name, want in payloads(rec).items():
         st = payload_state(bundle / name, want, bundle)
         if st != "matches":
             bad.append(f"{name}: {st}")
     return bad
 
 
-_PIN_KEYS = ("analyzer", "analyzer_sha256", "analyzer_commit", "analyzer_blob_sha")
-
-
-def convert(man: dict) -> dict:
-    """The five fields, read out of a pre-format manifest.json."""
-    members = [dict(m) for m in man.get("members") or []]
-    for m in members:
-        if "output_sha256" in m and "sha256" not in m:
-            m["sha256"] = m.pop("output_sha256")
-    analyses = [{k: v for k, v in a.items() if k not in _PIN_KEYS}
-                for a in man.get("analyses") or []]
-    fixture = Path(man.get("fixture_path") or "").stem
-    modes = sorted({m.get("mode") for m in members if m.get("mode")})
-    nsplits = sorted({int(m["nsplit"]) for m in members if "nsplit" in m})
-    command = ["--fixture", fixture, "--algo", man.get("algorithm") or "legacy"]
-    if modes:
-        command += ["--mode", modes[0]]
-    if nsplits:
-        command += ["--nsplit", ",".join(map(str, nsplits))]
-    if man.get("instrumented"):
-        command += ["--nflux"]
-    command += ["--rho-profile", man.get("rho_profile") or "as-is",
-                "--arm", man.get("arm") or "reference"]
-    if man.get("nonstandard_module"):
-        command += ["--module-override", man.get("module_path") or "?"]
-    binary = None
-    for a in man.get("build_artifacts") or []:
-        if isinstance(a, dict) and a.get("file") == "g33_refine_driver":
-            binary = a.get("sha256")
-    if binary is None:
-        binary = ((man.get("build_provenance") or {}).get("executable_sha256")
-                  or "unrecorded")
-    return record(commit=man.get("repo_commit"), dirty=bool(man.get("tree_dirty")),
-                  command=command, binary_sha256=binary,
-                  input_sha256=input_digest_from(man.get("fixture_sha256") or "",
-                                                 man.get("module_sha256") or "",
-                                                 man.get("rho_profile") or "as-is"),
-                  members=members, analyses=analyses)
-
-
 def main(argv=None) -> int:
     import argparse
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    sub = ap.add_subparsers(dest="cmd", required=True)
-    c = sub.add_parser("convert", help="write result.json from a bundle's manifest.json")
-    c.add_argument("bundle", type=Path, nargs="+")
-    v = sub.add_parser("verify", help="hold a bundle to its result.json")
-    v.add_argument("bundle", type=Path, nargs="+")
+    ap.add_argument("bundle", type=Path, nargs="+",
+                    help="hold each bundle to its result.json")
     a = ap.parse_args(argv)
     rc = 0
     for b in a.bundle:
-        if a.cmd == "convert":
-            man = json.loads((b / "manifest.json").read_text())
-            rec = convert(man)
-            if (b / "g33_refine_driver").is_file():
-                rec["binary_sha256"] = sha256(b / "g33_refine_driver")
-            write(b, rec)
-            print(f"{b}: {FILE} written, identity {identity(rec)[:16]}")
-        else:
-            bad = verify(b)
-            print(f"{b}: " + ("sound" if not bad else "\n  " + "\n  ".join(bad)))
-            rc |= bool(bad)
+        bad = verify(b)
+        print(f"{b}: " + ("sound" if not bad else "\n  " + "\n  ".join(bad)))
+        rc |= bool(bad)
     return rc
 
 
