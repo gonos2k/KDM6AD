@@ -25,6 +25,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import g33_refine_analyze as ra   # noqa: E402
+import g33_arms
 
 #: v2 REQUIRES the commit+blob pin blocks and a non-empty member list. Under v1
 #: those were optional metadata, so deleting them downgraded a new bundle to the
@@ -350,13 +351,7 @@ _PRECISIONS = ("f32", "f64")
 #: as the number-transfer metric table -- a closed registry is only a safety net
 #: while it tracks its producer, and a test now pins this one to the cascade in
 #: both directions.
-_ALGOS = ("legacy", "conservative", "nmass", "lncmin",
-          "nmasslncmin", "cons_nmass", "cons_lncmin",
-          "cons_nmasslncmin", "nmass_dry", "nmass_dry_window",
-          # the graupel-melt counterfactuals (owner review 4.5). Diagnostic
-          # arms: a manifest may name one, which is a WIDENING -- nothing that
-          # was legal became illegal.
-          "melt_g1", "melt_g2", "melt_g3", "melt_g4", "melt_g5")
+_ALGOS = g33_arms.names()
 KNOWN_SCHEMAS = ("refinement_experiment_v1", "refinement_experiment_v2",
                  "refinement_experiment_v3", "refinement_experiment_v4",
                  "refinement_experiment_v5", "refinement_experiment_v6",

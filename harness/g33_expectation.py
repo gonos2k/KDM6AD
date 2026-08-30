@@ -21,6 +21,7 @@ from __future__ import annotations
 import hashlib
 from collections import Counter
 from dataclasses import dataclass
+import g33_arms
 
 #: Algorithms whose OP STRUCTURE is legacy's. `nmass` (Arm N, owner
 #: freeze-lift 2026-08-21) changes two transfer lines' VALUE and neither their
@@ -30,14 +31,7 @@ from dataclasses import dataclass
 #: branch: there are four of them today, and a fifth added later would be the
 #: one nobody remembers -- the same reason `dispatched_seeds` became a single
 #: authority earlier in this campaign.
-_STRUCTURALLY_LEGACY = frozenset({"legacy", "nmass", "nmass_dry",
-                                  "nmass_dry_window", "lncmin",
-                                  "nmasslncmin",
-                                  # the graupel-melt counterfactuals: the edit
-                                  # is inside the melt block, which carries no
-                                  # instrumentation site, so the emitted
-                                  # structure is legacy's exactly.
-                                  "melt_g1", "melt_g2", "melt_g3", "melt_g4", "melt_g5"})
+_STRUCTURALLY_LEGACY = g33_arms.structurally_legacy()
 #: ...and the conservative-derived arms. Normalising only ONE direction was the
 #: first version of this, and the arms built on conservative then fell through
 #: to the legacy branch and drifted against their own bindings -- caught by the

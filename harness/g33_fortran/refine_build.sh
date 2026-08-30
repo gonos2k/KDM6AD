@@ -50,28 +50,14 @@ done
 # `storage_size` says the compiler actually did.
 REAL_KIND=f32
 [ "$F64" = 1 ] && REAL_KIND=f64
+# ONE REGISTRY. The module is named by the arm; the driver defines come from
+# harness/g33_arms.py, which refuses a name it does not know.
 case "$ALGO" in
-    legacy)       MODULE="$HOST/phys/module_mp_kdm6.F";      DRVDEF=() ;;
-    conservative) MODULE="$HOST/phys/module_mp_kdm6_cons.F"; DRVDEF=(-DKDM6_CONS) ;;
-    # ARM N: legacy's interface, two transfer lines changed, so no driver
-    # define -- the conservative arm needs one because its CALL SHAPE differs.
-    # THE FACTORIAL'S SIX DERIVED ARMS. Each is a base plus the N and/or L
-    # edit, so the driver define is the BASE's (conservative changes the call
-    # shape; N and L do not) and the ALGOTAG define names the arm. Written as
-    # one pattern rather than six cases: six near-identical lines is six
-    # chances for one to name the wrong file.
-    # `nmass_dry` joins the same pattern: it is a base plus the N edit in its
-    # dry form, so the driver define is legacy's (none) and the ALGOTAG define
-    # names the arm (owner freeze-lift, 2026-08-22).
-    nmass|lncmin|nmasslncmin|nmass_dry|nmass_dry_window|melt_g1|melt_g2|melt_g3|melt_g4|melt_g5|cons_nmass|cons_lncmin|cons_nmasslncmin)
-        MODULE="$HOST/phys/module_mp_kdm6_${ALGO}.F"
-        DRVDEF=(-DKDM6_ARM_"$(printf %s "$ALGO" | tr '[:lower:]' '[:upper:]')")
-        case "$ALGO" in cons_*) DRVDEF+=(-DKDM6_CONS) ;; esac ;;
-    *) echo "--algo must be one of: legacy conservative nmass lncmin"\
-            " nmasslncmin nmass_dry nmass_dry_window cons_nmass cons_lncmin"\
-            " cons_nmasslncmin" >&2
-       exit 2 ;;
+    legacy)       MODULE="$HOST/phys/module_mp_kdm6.F" ;;
+    conservative) MODULE="$HOST/phys/module_mp_kdm6_cons.F" ;;
+    *)            MODULE="$HOST/phys/module_mp_kdm6_${ALGO}.F" ;;
 esac
+DRVDEF=( $(python3 "$HERE/../g33_arms.py" defines "$ALGO") ) || exit 2
 FIXTURE_SRC="$HERE/${FIXTURE_NAME}.f90"
 [ -f "$FIXTURE_SRC" ] || { echo "no such fixture: $FIXTURE_SRC" >&2; exit 2; }
 [ -n "$OUT" ] || OUT=$(mktemp -d "${TMPDIR:-/tmp}/g33-refine.XXXXXX")
