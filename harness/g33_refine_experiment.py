@@ -1027,12 +1027,8 @@ def _expect_reusable(final: Path, identity: str) -> None:
 
 
 #: Analyses that run the DRIVER over several decompositions, name -> (module,
-#: fn). A REGISTRY, mirroring ANALYSES, so `producer_modules()` derives their
-#: modules the same way it derives the per-member ones. The first version
-#: hardcoded `_analyzer_pin("g33_ncmin_locality")` inside the builder, which
-#: put the analyzer's bytes into a bundle while leaving the module out of the
-#: pin list -- the completeness check caught it as `unpinned_reachable`
-#: (Codex). A registry cannot drift the way a hand-written call can.
+#: fn). A registry mirroring ANALYSES, so the producer runs and records them
+#: the same way it does the per-member ones.
 MULTI_RUN = {
     "ncmin_locality": ("g33_ncmin_locality",
                        lambda exe, fixture, algo=None, contract=None:

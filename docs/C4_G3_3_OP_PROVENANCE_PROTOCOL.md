@@ -283,13 +283,14 @@ EVIDENCE alone — never the driver's fixture, so a driver bug cannot vacuously
 agree with itself: exact sealed container set; per-record shadow_falk_f32 ==
 falk_f32; a NumPy recomputation from the dumped operands reproducing every
 FALK rung bit-for-bit (72 rungs per algorithm); and the producer cross-checks
-(gate law, mstep range, floor semantics) on real data. The standing mutation kill is ENFORCED by
-`selfcheck_gate.sh` (a committed gate, not a transcript loop): it rebuilds the
-shadow mutant from the committed overlay every run — a fake mutant cannot be
-handed in — and requires real=PASS and mutant=FAIL *for the right reason* (a
-fidelity mismatch, never a SKIP, crash or configuration error). The mutant dies
-exactly at the first rung where the gate matters (n=2, the mstep=1 column,
-falk_precast). Measured green for legacy AND conservative.
+(gate law, mstep range, floor semantics) on real data. `selfcheck_gate.sh` is the
+CI gate: real=PASS for legacy AND conservative with the pinned rung coverage.
+The mutation kill test is `selfcheck_kill_test.sh`, run by hand when the
+self-check itself changes: it rebuilds seven mutants from the committed overlays
+(`make_mutant.py`) and requires each to die at its predicted site *for the right
+reason* (a fidelity mismatch, never a SKIP, crash or configuration error); the
+shadow mutant dies at the first rung where the gate matters (n=2, the mstep=1
+column, falk_precast).
 
 ## 6. Canonical Fortran + C++ via temporary build overlay (P0-8, P0-10)
 

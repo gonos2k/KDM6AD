@@ -1,7 +1,6 @@
 #!/bin/bash
-# Verdict helpers for selfcheck_gate.sh, extracted so the acceptance logic can
-# be driven directly with synthetic (output, rc) pairs — the gate's own runs
-# always rebuild real artifacts, so its branches were unfalsifiable in place.
+# Verdict helper for selfcheck_kill_test.sh, kept apart so it can be driven
+# with synthetic (output, rc) pairs.
 
 # verdict_mutant OUT RC EXPECTED_KILL -> 0 iff this is the CONTROLLED predicted
 # failure and nothing else:

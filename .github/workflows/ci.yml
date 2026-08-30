@@ -144,14 +144,13 @@ jobs:
       - name: ctest (shipped, all 17)
         run: ctest --test-dir libtorch/build --output-on-failure
 
-      # G3.3-M op-provenance kill gate: build the instrumented self-check driver
-      # + 5 mutants against the libkdm6.a this job just built, and require
-      # real=PASS with every mutant killed at its predicted site. This makes the
-      # op-provenance evidence a CONTINUOUS CI gate, not a local transcript. Runs
-      # on the SHIPPED (test-hooks OFF) config, BEFORE the reconfigure-ON below
-      # that rewrites flags.make. The reader's numpy (pinned, installed above —
-      # torch>=2.8 does NOT pull it in) is its only dep beyond the stdlib.
-      - name: G3.3-M self-check + 5-mutant kill gate
+      # G3.3-M gate: build the instrumented self-check drivers against the
+      # libkdm6.a this job just built and require real=PASS with the pinned rung
+      # coverage. Runs on the SHIPPED (test-hooks OFF) config, BEFORE the
+      # reconfigure-ON below that rewrites flags.make. The reader's numpy (pinned,
+      # installed above — torch>=2.8 does NOT pull it in) is its only dep beyond
+      # the stdlib. The mutation kill test is selfcheck_kill_test.sh, by hand.
+      - name: G3.3-M self-check gate
         run: |
           # runner-owned, per-run path so the diagnostics below can find it.
           bash harness/g33_overlay/selfcheck_gate.sh \
@@ -297,7 +296,7 @@ jobs:
       # CONTINUOUSLY exercised on the macOS/arm64 reference toolchain — not only
       # on Linux. This is where "the self-check runs on macOS" stops being a
       # local claim.
-      - name: G3.3-M self-check + 5-mutant kill gate
+      - name: G3.3-M self-check gate
         run: |
           # runner-owned, per-run path so the diagnostics below can find it.
           bash harness/g33_overlay/selfcheck_gate.sh \
