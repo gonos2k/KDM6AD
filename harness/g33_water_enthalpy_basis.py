@@ -46,6 +46,13 @@ def _weight(run: dict, col: int, k: int, basis: str) -> float:
 
 #: The standard forward-error growth factor for n floating-point operations,
 #: g(n) = n*u/(1 - n*u) with u the unit roundoff (owner review §10).
+#:
+#: u is THIS HARNESS's: the ledger sums f32-decoded values in f64, and the
+#: bound says whether the residual could be the harness's own summation
+#: error. The f32 kernel's roundoff is not screened out by it -- that is the
+#: signal the ledger measures (mixed-precision design: f32 operator, f64
+#: analysis). `g33_matched_closure` asks the other question, whether the
+#: kernel conserved to ITS OWN f32 roundoff, and uses 2**-24 for that.
 def _gamma(n: int, u: float = 2.0 ** -53) -> float:
     d = 1.0 - n * u
     return (n * u / d) if d > 0 else float("inf")

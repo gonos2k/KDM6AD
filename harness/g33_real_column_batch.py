@@ -37,6 +37,11 @@ FIXTURE_ID = "lc05_column_v1"
 MANIFEST = HERE / "g33_fixture_lc05_column_v1.json"
 
 
+
+def _frac(num: float, den: float):
+    """num/den, or None where the column started with nothing (den == 0)."""
+    return num / den if den else None
+
 def candidates(path: Path, want: int, field: str = "QNRAIN", levels: int = 6):
     """Columns carrying `field` over at least `levels` levels, spread evenly.
 
@@ -283,7 +288,8 @@ def main() -> int:
                            f"{60 // n}s": (abs(nms[n]["dry_xfer"] / nms[n]["start_dry"])
                                            / abs(legs[n]["dry_xfer"] / legs[n]["start_dry"]))
                            for n in nsplits
-                           if n in legs and n in nms and legs[n]["dry_xfer"]},
+                           if n in legs and n in nms and legs[n]["dry_xfer"]
+            and legs[n]["start_dry"] and nms[n]["start_dry"]},
                        # named, so a step that failed is visible as a failure
                        # rather than as an absence
                        # PER ARM. Folding the two together with `or` lost which
@@ -295,21 +301,21 @@ def main() -> int:
                                            "nmass": nms["_failed_steps"].get(n)}
                            for n in nsplits
                            if n in legs["_failed_steps"] or n in nms["_failed_steps"]},
-                       legacy_moist=leg["moist"] / leg["start_moist"],
-                       legacy_dry=leg["dry"] / leg["start_dry"],
+                       legacy_moist=_frac(leg["moist"], leg["start_moist"]),
+                       legacy_dry=_frac(leg["dry"], leg["start_dry"]),
                        # BOTH READERS, and `legacy_dry_xfer` was missing
                        # entirely -- so the ratio could only ever be formed
                        # from the recovered pair (owner review §10.1).
-                       legacy_dry_xfer=leg["dry_xfer"] / leg["start_dry"],
-                       legacy_moist_xfer=leg["moist_xfer"] / leg["start_moist"],
-                       armn_moist_xfer=nm["moist_xfer"] / nm["start_moist"],
-                       armn_dry=nm["dry"] / nm["start_dry"],
-                       armn_dry_xfer=nm["dry_xfer"] / nm["start_dry"])
+                       legacy_dry_xfer=_frac(leg["dry_xfer"], leg["start_dry"]),
+                       legacy_moist_xfer=_frac(leg["moist_xfer"], leg["start_moist"]),
+                       armn_moist_xfer=_frac(nm["moist_xfer"], nm["start_moist"]),
+                       armn_dry=_frac(nm["dry"], nm["start_dry"]),
+                       armn_dry_xfer=_frac(nm["dry_xfer"], nm["start_dry"]))
             row["fraction_left"] = abs(row["armn_dry"]) / abs(row["legacy_dry"]) \
-                if row["legacy_dry"] else None
+                if row["legacy_dry"] and row["armn_dry"] is not None else None
             row["fraction_left_xfer"] = (
                 abs(row["armn_dry_xfer"]) / abs(row["legacy_dry_xfer"])
-                if row["legacy_dry_xfer"] else None)
+                if row["legacy_dry_xfer"] and row["armn_dry_xfer"] is not None else None)
             rows.append(row)
             print(f"  ({j:3d},{i:3d}) xland={meta['xland']:.0f} "
                   f"legacy_dry {row['legacy_dry']:11.4e}  "
