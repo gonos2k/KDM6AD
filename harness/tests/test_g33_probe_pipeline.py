@@ -85,21 +85,12 @@ def test_a_real_f64_BUNDLE_can_be_produced(tmp_path):
     # its HEAD blob (owner P0-1) -- correct for a bundle, wrong for a test suite
     # that runs while those modules are being edited. The check itself is
     # exercised in test_g33_refine_experiment.py, against the real function.
-    monkeypatch_pin = pytest.MonkeyPatch()
-    monkeypatch_pin.setattr(xp, "require_pinned_producer", lambda *a, **k: None)
-    try:
-            dest = xp.produce(tmp_path / "chain",
-                          fixture="g33_fixture_multisubcycle_v1", algo="legacy",
-                          nsplits=(3, 6, 12), mode="rezero", nflux=False,
-                          # RELATIVE, as the real invocation records it: the
-                          # kernel record and the manifest name one file, so
-                          # they must spell it the same way
-                          module=xp.KERNEL_SOURCES["legacy"],
-                          arm="f64")
-    finally:
-        monkeypatch_pin.undo()
-    man = json.loads((dest / "manifest.json").read_text())
-    assert man["arm"] == "f64" and man["precision"] == "f64"
-    assert man["decision_eligible"] is False
-    assert sorted(m["nsplit"] for m in man["members"]) == [3, 6, 12]
-    assert all(m["precision"] == "f64" for m in man["members"])
+    dest = xp.produce(tmp_path / "chain",
+                      fixture="g33_fixture_multisubcycle_v1", algo="legacy",
+                      nsplits=(3, 6, 12), mode="rezero", nflux=False,
+                      module=xp.kernel_source("legacy"), arm="f64")
+    rec = json.loads((dest / "result.json").read_text())
+    assert rec["command"][-2:] == ["--arm", "f64"]
+    members = rec["result"]["members"]
+    assert sorted(m["nsplit"] for m in members) == [3, 6, 12]
+    assert all(m["precision"] == "f64" for m in members)

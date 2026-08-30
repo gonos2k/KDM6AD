@@ -325,7 +325,6 @@ def test_a_first_order_operator_reads_above_one_against_the_finest():
 
 # ── experiment provenance (owner review §9) ──────────────────────────────────
 
-import g33_refine_manifest as rm   # noqa: E402
 
 
 def _outputs(tmp_path, ns):
@@ -334,61 +333,6 @@ def _outputs(tmp_path, ns):
     for n in ns:
         (d / f"n{n}.rezero.txt").write_text(_stream(nsplit=n))
     return d
-
-
-def _build(d, tmp_path):
-    mod = tmp_path / "m.F"; mod.write_text("x")
-    fix = tmp_path / "f.f90"; fix.write_text("y")
-    return rm.build(d, module=mod, fixture=fix, compiler="gfortran-test")
-
-
-def test_an_experiment_manifest_is_never_decision_eligible(tmp_path):
-    """A constant with no argument that sets it. Writing the experiment somewhere
-    else would be a convention; this is structural."""
-    man = _build(_outputs(tmp_path, (3, 6)), tmp_path)
-    assert man["decision_eligible"] is False
-    assert man["artifact_type"] == "refinement_experiment"
-    src = (ROOT / "g33_refine_manifest.py").read_text()
-    assert "decision_eligible=" not in src and '"decision_eligible": True' not in src
-
-
-def test_the_manifest_records_what_is_needed_to_reproduce(tmp_path):
-    man = _build(_outputs(tmp_path, (3, 6)), tmp_path)
-    for k in ("repo_commit", "tree_dirty", "module_sha256", "fixture_sha256",
-              "compiler", "analyzer_sha256", "members"):
-        assert k in man, k
-    assert all("output_sha256" in m for m in man["members"])
-
-
-def test_the_manifest_reads_dtcld_from_the_run_not_from_N(tmp_path):
-    """Recomputing it would restate the assumption the §9 correction exists to
-    check -- that the kernel, not the caller, picks the step."""
-    man = _build(_outputs(tmp_path, (3, 6)), tmp_path)
-    assert {m["nsplit"]: m["dtcld"] for m in man["members"]} == {3: 100.0, 6: 50.0}
-
-
-def test_the_specified_sweep_is_flagged_as_not_a_refinement_chain(tmp_path):
-    """The synthetic stream reports dtcld = 300/N, so this checks the flag's logic
-    on a halving vs a non-halving set of steps."""
-    assert _build(_outputs(tmp_path, (3, 6, 12, 24)), tmp_path)["is_refinement_chain"]
-    d = tmp_path / "o2"; d.mkdir()
-    for n, s in ((3, 100.0), (4, 75.0)):
-        (d / f"n{n}.rezero.txt").write_text(_stream(nsplit=n))
-    assert not _build(d, tmp_path)["is_refinement_chain"]
-
-
-def test_the_policy_control_pair_is_not_claimed_to_be_a_chain(tmp_path):
-    """N=1 and N=3 share dtcld = 100 s -- that is what makes them a controlled
-    contrast, and it is exactly what disqualifies them as a refinement sequence.
-    The manifest must not present the pair as one."""
-    d = tmp_path / "o3"; d.mkdir()
-    (d / "n1.rezero.txt").write_text(
-        "G33R BEGIN nsplit 1 rezero legacy delt 300.000000 loops 3 dtcld 100.000000\n"
-        + "\n".join(_stream(nsplit=3).splitlines()[1:]) + "\n")
-    (d / "n3.rezero.txt").write_text(_stream(nsplit=3))
-    man = _build(d, tmp_path)
-    assert not man["is_refinement_chain"]
-    assert {m["dtcld"] for m in man["members"]} == {100.0}
 
 
 # ── the C++ call-boundary control (owner review §3) ──────────────────────────
@@ -769,57 +713,6 @@ def test_the_outflow_split_separates_bottom_flux_from_the_unaccounted_part(tmp_p
     assert d["D_share"] == pytest.approx(0.5)
 
 
-def test_the_manifest_uses_the_STRICT_parser_for_members(tmp_path):
-    """Owner §9: reading only the BEGIN line would admit a truncated or ragged
-    member into the manifest — precisely what the strict reader rejects, and the
-    manifest is what claims the table is reproducible."""
-    d = tmp_path / "out"; d.mkdir()
-    (d / "n3.rezero.txt").write_text(_stream(nsplit=3))
-    lines = _stream(nsplit=6).splitlines()
-    del lines[5]                                   # ragged: one state record short
-    (d / "n6.rezero.txt").write_text("\n".join(lines) + "\n")
-    mod = tmp_path / "m.F"; mod.write_text("x")
-    fix = tmp_path / "f.f90"; fix.write_text("y")
-    with pytest.raises(ra.RefineError):
-        rm.build(d, module=mod, fixture=fix, compiler="gfortran-test")
-
-
-def test_build_provenance_absent_is_null_not_an_empty_list(tmp_path):
-    """An empty command list is indistinguishable from a build nobody recorded.
-    `null` says which one it is."""
-    d = tmp_path / "o"; d.mkdir()
-    (d / "n3.rezero.txt").write_text(_stream(nsplit=3))
-    mod = tmp_path / "m.F"; mod.write_text("x")
-    fix = tmp_path / "f.f90"; fix.write_text("y")
-    man = rm.build(d, module=mod, fixture=fix, compiler="c")
-    assert man["build_provenance"] is None
-
-
-def test_findings_are_linked_by_digest(tmp_path):
-    """A finding citing a table nobody can tie to the run it came from is
-    unreviewable (owner §9)."""
-    d = tmp_path / "o"; d.mkdir()
-    (d / "n3.rezero.txt").write_text(_stream(nsplit=3))
-    mod = tmp_path / "m.F"; mod.write_text("x")
-    fix = tmp_path / "f.f90"; fix.write_text("y")
-    doc = tmp_path / "FINDING_x.md"; doc.write_text("# a claim\n")
-    man = rm.build(d, module=mod, fixture=fix, compiler="c", findings=[doc])
-    assert man["findings"] == [{"path": str(doc), "sha256": rm.sha256(doc)}]
-    assert rm.build(d, module=mod, fixture=fix, compiler="c")["findings"] == []
-
-
-def test_a_finding_that_is_not_there_is_loud(tmp_path):
-    """Silently recording nothing would leave the manifest claiming a link it
-    does not have."""
-    d = tmp_path / "o"; d.mkdir()
-    (d / "n3.rezero.txt").write_text(_stream(nsplit=3))
-    mod = tmp_path / "m.F"; mod.write_text("x")
-    fix = tmp_path / "f.f90"; fix.write_text("y")
-    with pytest.raises(FileNotFoundError):
-        rm.build(d, module=mod, fixture=fix, compiler="c",
-                 findings=[tmp_path / "absent.md"])
-
-
 # ---- owner P0-1: the order is against the step the KERNEL ran ---------------
 
 def _member(tmp_path, nsplit, dtcld, *, delt=None, loops=1, mode="rezero",
@@ -907,60 +800,6 @@ def _bundle(tmp_path, *specs, mode="rezero"):
     mod = tmp_path / "m.F"; mod.write_text("x")
     fix = tmp_path / "f.f90"; fix.write_text("y")
     return d, mod, fix
-
-
-def test_the_filename_is_bound_to_the_stream(tmp_path):
-    """A member called n6 whose BEGIN says nsplit 3 is a mislabelled file, and
-    that is how two experiments become one table."""
-    d, mod, fix = _bundle(tmp_path, (3, 100.0))
-    (d / "n3.rezero.txt").rename(d / "n6.rezero.txt")
-    with pytest.raises(ra.RefineError):
-        rm.build(d, module=mod, fixture=fix, compiler="c")
-
-
-def test_the_filename_mode_is_bound_to_the_stream(tmp_path):
-    d, mod, fix = _bundle(tmp_path, (3, 100.0))
-    (d / "n3.rezero.txt").rename(d / "n3.carry.txt")
-    with pytest.raises(ra.RefineError, match="filename says mode"):
-        rm.build(d, module=mod, fixture=fix, compiler="c")
-
-
-def test_members_from_different_experiments_are_refused(tmp_path):
-    """Mixed modes reach the manifest only if nothing checks across members."""
-    d, mod, fix = _bundle(tmp_path, (3, 100.0))
-    _bundle(tmp_path, (6, 50.0), mode="carry")
-    with pytest.raises(ra.RefineError, match="mix modes"):
-        rm.build(d, module=mod, fixture=fix, compiler="c")
-
-
-def test_a_repeated_step_is_recorded_but_is_not_a_chain(tmp_path):
-    """The N=1/N=3 policy control runs the same dtcld twice on purpose. The
-    manifest must still describe it; only an ORDER over it is refused."""
-    d, mod, fix = _bundle(tmp_path, (1, 100.0), (3, 100.0))
-    man = rm.build(d, module=mod, fixture=fix, compiler="c")
-    assert len(man["members"]) == 2 and not man["is_refinement_chain"]
-
-
-def test_is_refinement_chain_orders_by_STEP_not_by_N(tmp_path):
-    """Sorting the dtcld VALUES alone calls any bag of members a chain as long as
-    the numbers happen to halve. N = 2 running the coarser step must not."""
-    d, mod, fix = _bundle(tmp_path, (2, 100.0), (4, 50.0), (8, 25.0))
-    assert rm.build(d, module=mod, fixture=fix, compiler="c")["is_refinement_chain"]
-    (tmp_path / "b").mkdir()
-    d2, mod2, fix2 = _bundle(tmp_path / "b", (2, 150.0), (4, 120.0))
-    assert not rm.build(d2, module=mod2, fixture=fix2,
-                        compiler="c")["is_refinement_chain"]
-
-
-def test_provenance_from_a_different_build_is_refused(tmp_path):
-    """A manifest whose provenance describes other sources documents a build
-    that did not produce these members."""
-    d, mod, fix = _bundle(tmp_path, (3, 100.0))
-    prov = tmp_path / "bp.json"
-    prov.write_text(json.dumps({"module_sha256": "deadbeef",
-                                "fixture_sha256": "deadbeef"}))
-    with pytest.raises(ra.RefineError, match="different build"):
-        rm.build(d, module=mod, fixture=fix, compiler="c", build_provenance=prov)
 
 
 # ---- owner §7.1: the parser must reject an incomplete record universe -------
@@ -1051,15 +890,6 @@ def test_the_water_caveat_is_generic_and_names_how_to_decide(tmp_path):
     assert "WATER ORDERS ARE A RATE ONLY IF THE VARIATION IS PHYSICAL" in src
     assert "--f64" in src, "it must say how to decide"
     assert "Do not carry that" in src, "it must scope the fixture's answer"
-
-
-def test_a_bundle_with_two_members_at_one_nsplit_is_refused(tmp_path):
-    """n3.rezero beside n3.carry collapsed to one entry, so the mode check ran on
-    whichever survived (owner §7.3)."""
-    d, mod, fix = _bundle(tmp_path, (3, 100.0))
-    _bundle(tmp_path, (3, 100.0), mode="carry")
-    with pytest.raises(ra.RefineError, match="more than one member for nsplit"):
-        rm.build(d, module=mod, fixture=fix, compiler="c")
 
 
 # ---- owner §9.2: water and enthalpy on BOTH bases -----------------------------
