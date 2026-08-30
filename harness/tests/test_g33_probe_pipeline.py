@@ -73,7 +73,7 @@ def test_a_real_precision_pair_compares_under_the_current_contract(tmp_path):
     assert d["records"] > 0 and d["ulp_lattice"] == "f32"
 
 
-def test_a_real_f64_BUNDLE_can_be_produced(tmp_path):
+def test_a_real_f64_BUNDLE_can_be_produced(tmp_path, monkeypatch):
     """The whole point of P0-1: with the schema literal drifted, this path raised
     ProbeError and no f64 bundle could be made at all. It also exercises the
     cross-member contract (owner §8.4) on real streams rather than synthetic
@@ -81,10 +81,12 @@ def test_a_real_f64_BUNDLE_can_be_produced(tmp_path):
     import json
     import g33_refine_experiment as xp
 
-    # `produce()` refuses unless every producing module's working bytes hash to
-    # its HEAD blob (owner P0-1) -- correct for a bundle, wrong for a test suite
-    # that runs while those modules are being edited. The check itself is
-    # exercised in test_g33_refine_experiment.py, against the real function.
+    # `produce()` refuses to publish from a dirty tree -- correct for a bundle,
+    # wrong for a test suite that runs while the tree is being edited. Only
+    # `git status` is faked; the refusal has its own test.
+    real = xp.res.git
+    monkeypatch.setattr(xp.res, "git",
+                        lambda *a, **k: "" if a[:1] == ("status",) else real(*a, **k))
     dest = xp.produce(tmp_path / "chain",
                       fixture="g33_fixture_multisubcycle_v1", algo="legacy",
                       nsplits=(3, 6, 12), mode="rezero", nflux=False,

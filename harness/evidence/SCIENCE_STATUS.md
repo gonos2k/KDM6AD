@@ -1,7 +1,8 @@
 # Science status
 
-One file. Four words: CONFIRMED, OPEN, REFUTED, UNMEASURED. A line moves only
-when a measurement moves it. History is in `evidence/historical/`; the findings
+One file. Four words: CONFIRMED, OPEN, REFUTED, UNMEASURED -- one statement
+per row, one word per statement, and no release or adoption decisions here. A
+line moves only when a measurement moves it. History is in `evidence/historical/`; the findings
 still cited here are in `evidence/`.
 
 Standard commands:
@@ -21,7 +22,7 @@ Deployed WRF binary for MPI runs: `f54ef3c9` (kernel `9354141b`, corrected
 | Weighting the interface transfer by layer air mass (Arm N) collapses the residual to roundoff | CONFIRMED | `FINDING_arm_n_closure_v1` |
 | The defect's sign and size follow the layer-air-mass gradient | CONFIRMED | `FINDING_density_falsification_v1`, `FINDING_ice_density_matrix_v1` |
 | `nr` is per kg of dry air; the physical column measure is sum rho_d*dz*nr | CONFIRMED | `FINDING_number_mass_basis_v1` |
-| Conservative `nr`/`ni` sedimentation creates number on density increase (release blocker) | OPEN | frozen mid-G3.3-M; owner freeze-lift needed |
+| Conservative `nr`/`ni` sedimentation creates number on density increase | CONFIRMED | `FINDING_number_transport_creation_v1`; the fix is frozen pending an owner freeze-lift, which is a release decision, not a status |
 
 ## Graupel melting
 
@@ -46,16 +47,17 @@ Deployed WRF binary for MPI runs: `f54ef3c9` (kernel `9354141b`, corrected
 | statement | status | where |
 |---|---|---|
 | The i-seam: `2x2`/`4x1` differ from `np=1` in 77 of 197 fields, from a `delz` difference in owned cells, relative median 6.9e-07 | OPEN | `FINDING_second_decomposition_defect_v1`, `FINDING_np4_seam_is_rounding_v1` |
-| Its ten-minute growth is not distinguishable from a 1-ULP perturbation (np=4 arm re-measured 77/77/75/106 on `f54ef3c9`; 1-ULP arm not re-run) | CONFIRMED, 1-ULP arm UNMEASURED post-fix | `RECERT_results_v1` (historical) |
+| Its ten-minute growth on the corrected binary is 77/77/75/106 fields (np=4 arm, `f54ef3c9`) | CONFIRMED | `RECERT_results_v1` (historical) |
+| That growth is not distinguishable from a 1-ULP perturbation on the CORRECTED binary (the 1-ULP arm has not been re-run since the two CCN fixes) | UNMEASURED | `RECERT_results_v1` (historical) |
 | Same-decomposition runs repeat bit-identically | CONFIRMED | `FINDING_mpi_repeatability_v1` |
 | `ncmin` is a scalar overwritten in the column loop; tile decomposition changes prognostic components | CONFIRMED | `FINDING_ncmin_scalar_vs_percell` |
-| Arm L (`ncmin`) removes none of the decomposition difference | CONFIRMED (null about `ncmin` only) | `FINDING_arm_l_mpi_null_v1` |
+| Arm L (`ncmin` per cell) removes none of the decomposition difference -- a null about `ncmin`, not about the seam | CONFIRMED | `FINDING_arm_l_mpi_null_v1` |
 
 ## Ice number
 
 | statement | status | where |
 |---|---|---|
-| Column 3's ni number is first-order-consistent over five estimates; not branch-certified | CONFIRMED (scope) | `FINDING_two_sedimentation_chains_v1` |
+| Column 3's ni number is first-order-consistent over five estimates (consistency of the estimates, not a branch certificate) | CONFIRMED | `FINDING_two_sedimentation_chains_v1` |
 | The ice-chain missing term is the post-update-reservoir inflow cap | CONFIRMED | `FINDING_ice_chain_missing_term_v1` |
 | A conversion-free ice fixture | UNMEASURED | no fixture exists |
 
@@ -67,7 +69,7 @@ Deployed WRF binary for MPI runs: `f54ef3c9` (kernel `9354141b`, corrected
 | legacy and conservative are bit-identical at f64 and differ in 39 records at f32; the fixture precipitates only at f32 | CONFIRMED | `FINDING_fixture_precipitates_only_at_f32_v1` |
 | The f32 fine-step turnover is precision-dependent | OPEN | `FINDING_refinement_noise_floor_v1` |
 | Both column measures (rho_m*dz operator, rho_d*dz physical) reported on every closure row | CONFIRMED | `FINDING_dual_ledger_v1`, `FINDING_water_enthalpy_dual_basis_v1` |
-| dt=300 wrapper-boundary verdict | OPEN (INCONCLUSIVE) | `g33m_dt300_wrapper_boundary_result.json` |
+| The dt=300 wrapper boundary decides the four-case verdict | OPEN | `g33m_dt300_wrapper_boundary_result.json` (the run was inconclusive) |
 | `QNCLOUD` negative cells (~1e-9..1e-2) | UNMEASURED | source undiagnosed |
 
 ## Not carried forward

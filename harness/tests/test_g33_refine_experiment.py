@@ -25,7 +25,6 @@ REPO = ROOT.parent
 REF = REPO / 'host' / 'KIM-meso_v1.0' / 'phys' / 'module_mp_kdm6.F'
 sys.path.insert(0, str(ROOT))
 import g33_refine_experiment as xp  # noqa: E402
-import g33_build_provenance as bp  # noqa: E402
 
 sys.path.insert(0, str(ROOT / "tests"))
 from test_g33_refine_analyze import _stream  # noqa: E402
@@ -36,67 +35,13 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
     def build(workdir, fixture, algo, nflux, arm="reference"):
         if fail_at == "build":
             raise SystemExit("build failed")
-        # The BINARY is published in the bundle and v2 pins it, so the fake
-        # build must leave one where a real build would -- and declare the
-        # digest OF THAT FILE. Stubbing a different one made the fixture
-        # describe a binary it had not written, which the manifest's
-        # build_artifacts/build_provenance cross-check now refuses (owner §8.4).
+        # The producer publishes the BINARY and reads the sub-cycle limit
+        # from the GENERATED overlay, so the fake leaves both where a real
+        # build does. It writes no build logs: the publish path reads none.
         exe = workdir / "g33_refine_driver"
         exe.write_text("#!fake\n")
-        # the GENERATED overlay an instrumented build feeds the compiler --
-        # v6 publishes it and reads the sub-cycle limit from those bytes
         ovl = workdir / "module_mp_ovl.F"
         ovl.write_text("   real, parameter, private :: dtcldcr = 120.\n")
-        # ...and the logs the record is DERIVED from, agreeing with it: the
-        # publish gate re-derives `sources`/`compile_commands` from these, and
-        # a fake whose logs contradict its own record is exactly the build the
-        # gate exists to refuse (owner review §6).
-        (workdir / "commands.txt").write_text("gfortran -c fake\n")
-        # The FIXTURE is a compiled source too, and the contract's B, K and
-        # DT_BITS are read from the bytes the compiler got (owner review §5) --
-        # a fake that logs only the module describes a build with no fixture.
-        # the log the record is DERIVED from: one line per role, matching
-        # `_FAKE_SOURCES` exactly, or the witness comparison refuses
-        rows = _FAKE_SOURCES(FIX, ovl)
-        (workdir / "sources.txt").write_text(
-            "".join(f"{r['path']}\t{r['sha256']}\n" for r in rows))
-        (workdir / "staged-map.txt").write_text(
-            "".join(f"{ {'fixture': FIX, 'module': ovl}.get(r['role'], MOD) }"
-                    f"\t{r['path']}\n" for r in rows))
-        # a v6-shaped record: what a real build writes, faked
-        (workdir / "build_provenance.json").write_text(json.dumps({
-            "module_path": str(MOD),
-            "module_sha256": xp.res.sha256(MOD),
-            "fixture_sha256": xp.res.sha256(FIX),
-            "compiler_version": "gfortran (fake) 1.0",
-            "compiler_sha256": "1" * 64,
-            "build_script_sha256": "7" * 64,
-            "compile_commands": ["gfortran -c fake"],
-            "sources": _FAKE_SOURCES(FIX, ovl),
-            "compiled_module_sha256": xp.res.sha256(ovl),
-            # WHERE THE BUILD RAN, in full. `verify()` normalises the
-            # published logs by all three roots, so a one-key stand-in
-            # described a build whose record could not be re-derived -- and
-            # v7 holds this to an exact key set for that reason.
-            "diagnostic": {
-                "outdir": str(workdir),
-                "tmpdir": str(workdir / "tmp"),
-                "repo_root": str(REPO),
-                "compiler_path": "/usr/bin/gfortran",
-                "compiler_f951_path": "/usr/libexec/f951",
-                "executable_path": str(exe),
-                "compile_commands_literal": ["gfortran -c fake"],
-            },
-            # v7 holds this block to an EXACT key set and a role table, so a
-            # fake that carries a subset describes a build that could not have
-            # happened (owner review §5).
-            "schema": "g33_build_provenance_v1",
-            "compiler_f951_sha256": "5" * 64,
-            "compiled_module_path": "module_mp_ovl.F",
-            "fixture_path": FIXLOG,
-            "repo_commit": "0" * 40,
-            "tree_dirty": False,
-            "executable_sha256": xp.res.sha256(exe)}, indent=2, sort_keys=True))
         return exe
 
     def analyses(out, exe, ns, mode, precision="f32"):
@@ -115,12 +60,8 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
         # review §8). A fake that fabricates analyses without dispatching
         # leaves the attestation empty -- a bundle claiming analyses that
         # nothing ran.
-        for _kind in xp.res.REQUIRED_WHEN_INSTRUMENTED:
-            _seed = xp.ANALYSES.get(_kind)
-            if _seed:
-                xp._an(_seed[0] if isinstance(_seed, tuple) else _seed)
         out_entries = []
-        for kind in xp.res.REQUIRED_WHEN_INSTRUMENTED:
+        for kind in _instrumented_analyses():
             p = out / f"n{ns[0]}.{mode}.{kind}.json"
             p.write_text("{}\n")
             out_entries.append({
@@ -164,7 +105,6 @@ def _fake(monkeypatch, *, nsplits=(3, 6), fail_at=None):
 # be testing a document that could not describe a run.
 FIX = ROOT / "g33_fortran" / "g33_fixture_multisubcycle_v1.f90"
 #: as the build logs it -- repo-relative, which is what the snapshot keys on
-FIXLOG = str(FIX.relative_to(REPO))
 # ...and RELATIVE, as the real invocation records it: the kernel record and
 # the manifest name one file, so they must spell it the same way. The public
 # checkout's STAND-IN is relative for the same reason -- an absolute
@@ -175,44 +115,10 @@ MOD = (xp.kernel_source("legacy")
        else FIX.relative_to(REPO))
 
 
-def _FAKE_SOURCES(fix, ovl):
-    """One row per role the v7 contract requires (owner review §5).
-
-    The role is DERIVED, never asserted. `verify()` re-derives every role
-    from the path, so a fake that labels its own rows can contradict the
-    record it exists to match -- and on a PUBLIC checkout it did: `MOD`
-    falls back to the fixture there, one path carried both `module` and
-    `fixture`, and re-derivation called them both `fixture`. Fifteen tests
-    failed on CI and none on a host that has `host/**` (measured, in a
-    throwaway worktree -- which is what a public checkout is).
-
-    THE MODULE ROW IS THE OVERLAY THIS FAKE ACTUALLY WROTE, which is also
-    what a real build compiles: gfortran never opens `module_mp_kdm6.F`, it
-    opens the overlay generated from it. Naming the private kernel here
-    instead dressed a file that is ABSENT on a public checkout as compiled
-    input, under a digest of its own path (Codex). The overlay exists on
-    every checkout, so nothing has to be invented -- and `sources[module]`
-    now agrees with `compiled_module_sha256`, which v7 requires.
-    """
-    rows = [{"path": FIXLOG, "sha256": xp.res.sha256(fix)},
-            {"path": "module_mp_ovl.F", "sha256": xp.res.sha256(ovl)}]
-    for path in ("harness/g33_fortran/g33_refine_driver.f90",
-                 "harness/g33_fortran/stub_wrf_error.f90",
-                 "host/KIM-meso_v1.0/frame/libmassv.F",
-                 "host/KIM-meso_v1.0/share/module_model_constants.F",
-                 "host/KIM-meso_v1.0/phys/module_mp_radar.F"):
-        # A TRACKED path must carry its real digest: the snapshot holds every
-        # compiled source in the repo to its HEAD blob, so a placeholder here
-        # would describe a build from bytes that never existed. `host/**` is
-        # gitignored, so those keep a stand-in -- they are inputs a real build
-        # reads and this fake does not, which is a different thing from
-        # inventing the module the record pins.
-        real = REPO / path
-        rows.append({"path": path,
-                     "sha256": xp.res.sha256(real) if real.is_file()
-                     else hashlib.sha256(path.encode()).hexdigest()})
-    return [{"path": r["path"], "role": bp.role_of(r["path"]),
-             "sha256": r["sha256"]} for r in rows]
+def _instrumented_analyses(precision="f32"):
+    """What an instrumented bundle carries, DERIVED from the production
+    registry rather than kept as a second list beside it."""
+    return {n for n in xp.ANALYSES if xp.res.applicable(n, precision)}
 
 
 def _produce(dest, **kw):
@@ -917,10 +823,13 @@ def test_an_unknown_algorithm_is_refused_before_anything_is_built(tmp_path):
 # ---- owner review §8: the bytes that RAN, checked when they run ------------
 
 
-@pytest.fixture
-def _allow_a_dirty_tree_in_tests(monkeypatch):
-    """The record carries `+dirty`; nothing refuses a dirty tree any more."""
-    return None
+@pytest.fixture(autouse=True)
+def _a_clean_tree(monkeypatch):
+    """`produce()` refuses a dirty tree, and a developer's tree is dirty while
+    they work. Only `git status` is faked; the commit is the real one."""
+    real = xp.res.git
+    monkeypatch.setattr(xp.res, "git",
+                        lambda *a, **k: "" if a[:1] == ("status",) else real(*a, **k))
 
 
 # ---- reuse: a directory at the address is adopted only if it IS this run ----
@@ -944,7 +853,7 @@ def _sound(tmp_path):
 def test_a_sound_bundle_is_still_reusable(tmp_path):
     """The refusals must not cost the reuse path its reason to exist."""
     root, rec = _sound(tmp_path)
-    xp._expect_reusable(root, xp.res.identity(rec))
+    xp._expect_reusable(root, rec)
 
 
 @pytest.mark.parametrize("damage,reason", [
@@ -958,8 +867,34 @@ def test_a_DAMAGED_existing_bundle_is_refused_not_republished(tmp_path, damage, 
     root, rec = _sound(tmp_path)
     damage(root)
     with pytest.raises(SystemExit) as e:
-        xp._expect_reusable(root, xp.res.identity(rec))
+        xp._expect_reusable(root, rec)
     assert reason in str(e.value)
+
+
+def test_the_SAME_experiment_with_a_DIFFERENT_result_is_refused(tmp_path):
+    """The reproducibility contract: identity is the experiment, the payloads
+    are what it produced. A rerun that lands on an existing address and hands
+    back other bytes is non-determinism, an unrecorded input or a changed
+    analyzer -- it must be seen, not resolved by keeping the older bundle."""
+    root, rec = _sound(tmp_path)
+    fresh = json.loads(json.dumps(rec))
+    fresh["result"]["members"][0]["sha256"] = "9" * 64
+    assert xp.res.identity(fresh) == xp.res.identity(rec)      # same experiment
+    with pytest.raises(SystemExit) as e:
+        xp._expect_reusable(root, fresh)
+    assert "did not reproduce" in str(e.value)
+    assert "n3.rezero.txt" in str(e.value)
+
+
+def test_a_DIRTY_TREE_does_not_publish_into_the_immutable_store(tmp_path, monkeypatch):
+    """A dirty tree's code is not any commit, so a bundle from one occupies the
+    address of an experiment whose source cannot be recovered. Refused before
+    the build, so nothing is computed to be thrown away."""
+    monkeypatch.setattr(xp.res, "git",
+                        lambda *a, **k: "M harness/x.py" if a[:1] == ("status",) else "a" * 40)
+    with pytest.raises(SystemExit, match="working tree is dirty"):
+        xp.produce(tmp_path / "b", fixture="g33_fixture_multisubcycle_v1",
+                   algo="legacy", nsplits=(3,), mode="rezero", nflux=False)
 
 
 # ---- what the record says about the run ----
@@ -978,7 +913,7 @@ def test_the_analyses_are_only_produced_for_instrumented_bundles(tmp_path, monke
     plain = xp.res.load(_produce(tmp_path / "plain", nflux=False))
     assert plain["result"]["analyses"] == []
     inst = xp.res.load(_produce(tmp_path / "inst", nflux=True))
-    assert {a["analysis"] for a in inst["result"]["analyses"]} >= set(xp.res.REQUIRED_WHEN_INSTRUMENTED)
+    assert {a["analysis"] for a in inst["result"]["analyses"]} == _instrumented_analyses()
 
 
 def test_a_nonstandard_module_is_named_in_the_command(tmp_path, monkeypatch):
@@ -993,5 +928,5 @@ def test_a_nonstandard_module_is_named_in_the_command(tmp_path, monkeypatch):
 def test_a_bundle_at_the_address_that_identifies_as_another_run_is_refused(tmp_path):
     root, rec = _sound(tmp_path)
     with pytest.raises(SystemExit) as e:
-        xp._expect_reusable(root, "0" * 64)
+        xp._expect_reusable(root, dict(rec, binary_sha256="0" * 64))
     assert "identifies as" in str(e.value)

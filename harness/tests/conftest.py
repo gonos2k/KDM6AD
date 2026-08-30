@@ -20,9 +20,7 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers",
         "local: needs the gitignored host tree, its bundles, or gfortran. "
-        "Deselected unless --local or CI=true. Measured 2026-08-29: these "
-        "tests are ~50 of the suite's ~54 local minutes, and 35 of those "
-        "minutes are pure-Python walks of the real bundle tree, not compiles.")
+        "Deselected unless --local or CI=true.")
 
 
 def pytest_collection_modifyitems(config, items):

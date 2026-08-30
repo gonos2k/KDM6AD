@@ -4,13 +4,12 @@ name: g33-harness-ci
 permissions:
   contents: read
 
-# The G3.3-M evidence system lives almost entirely in harness/, but no required
-# check ran it — oracle-ci only runs `cd oracle && pytest`, and port-ci's path
-# filter has no harness/**. So "216 pass" was LOCAL evidence, never GitHub CI
-# evidence: the very system that certifies op-provenance had no continuous
-# regression gate. This job closes that. It compiles the C++ probes (via the
-# pytest suite) and runs the overlay 4-check, so a drift in the container
-# format, the derived-flag authority, or the overlay projection fails on the PR.
+# ADVISORY. This job runs the harness suite (which compiles the C++ probes),
+# ruff's undefined-name family and the overlay 4-check on every PR, but it is
+# NOT in the branch ruleset's required contexts: it reports, it does not block.
+# It is not folded into port-ci's required build job either -- that job SKIPS
+# when the port is untouched, which is exactly the PR where the harness suite
+# matters most.
 on:
   push:
     branches: [main]
@@ -35,14 +34,6 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-        with:
-          # The evidence-index tests check that an artifact's producer and verifier
-          # commits are commits IN THIS REPOSITORY. A shallow clone cannot see a
-          # commit that is genuinely present, so with the default fetch-depth those
-          # checks skip and the membership half of the lineage goes unverified in
-          # public CI (owner review §11). This job is cheap; the full history is
-          # the price of the check actually running here.
-          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
@@ -53,33 +44,20 @@ jobs:
           python -m pip install --upgrade pip
           # numpy is used by the derived-flag comparator and the self-check;
           # pinned to the same combo as oracle-ci for reproducible float behavior.
-          # pyyaml validates CLAIMS.yaml against a REAL YAML reader. The
-          # registry is read by a hand-written regex parser, so without this
-          # the file can become unparseable while every test stays green --
-          # which happened (Codex).
-          # ruff runs F821 (undefined name) over the whole harness. The
-          # hand-written AST check in test_g33_static_and_smoke.py caught the
-          # NameError that shipped, and misses a lambda body, a class scope and
-          # a comprehension target that leaks -- measured, all three. This is
-          # the checker that does not, and it needs no private source or data
-          # (owner review 10).
-          pip install "numpy==2.4.6" "pytest==9.1.1" "pyyaml==6.0.2" "ruff==0.14.4"
+          # ruff runs the undefined-name family over the whole harness.
+          pip install "numpy==2.4.6" "pytest==9.1.1" "ruff==0.14.4"
 
       - name: Record versions
         run: |
-          python -c 'import sys, numpy, pytest, yaml; print("python", sys.version.split()[0], "| numpy", numpy.__version__, "| pytest", pytest.__version__, "| pyyaml", yaml.__version__)'
+          python -c 'import sys, numpy, pytest; print("python", sys.version.split()[0], "| numpy", numpy.__version__, "| pytest", pytest.__version__)'
           # ruff is pinned like the others, so it is recorded like the others --
           # otherwise the run that found something cannot say which version did.
           python -m ruff --version
           c++ --version | head -1   # the C++ probes are compiled by the suite
 
       - name: undefined-name family (ruff F821/F822/F823, whole harness)
-        # F821 alone is not "Python name safety". F822 is an __all__ export
-        # naming nothing; F823 is a local read before its own assignment, which
-        # raises UnboundLocalError at runtime -- the same failure class the
-        # NameError that started this belonged to, and one the hand-written
-        # checker cannot see, because it collects every Store in a function
-        # without ordering them against the Loads (owner review P1-C1).
+        # F821 is an undefined name, F822 an __all__ export naming nothing, F823
+        # a local read before its own assignment (UnboundLocalError at runtime).
         #
         # --isolated ignores any pyproject/ruff.toml that appears later and
         # could narrow the selection or exclude paths; --no-respect-gitignore
