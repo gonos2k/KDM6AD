@@ -57,7 +57,8 @@ def profile(state: Path) -> dict:
     import netCDF4
     import numpy as np
     d = netCDF4.Dataset(str(state))
-    g = lambda k: np.asarray(d[k][0], dtype="float64")   # noqa: E731
+    import g33_netcdf_read as nr
+    g = lambda k: nr.read_numeric(d[k], 0)["data"]   # noqa: E731  f64, mask refused
     pressure = g("P") + g("PB")
     theta = g("T") + 300.0
     qv = g("QVAPOR")
