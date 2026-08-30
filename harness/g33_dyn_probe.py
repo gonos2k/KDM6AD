@@ -1,0 +1,382 @@
+#!/usr/bin/env python3
+"""Write the dynamics stage-probe overlay, and read what it dumps.
+
+Freeze-lift `REQUEST_freeze_lift_dyn_first_write_probe.md`, granted 2026-08-30.
+The canonical `dyn_em/solve_em.F` is never edited: this reads it, verifies its
+SHA against the pin, inserts `#ifdef KDM6_G33_DYN_DUMP`-guarded emission at
+unique whole-line anchors and writes a throw-away patched copy -- the same
+protocol 5.1 rule `g33_fortran/make_fortran_overlay.py` follows for the
+microphysics.
+
+    g33_dyn_probe.py overlay <canonical.F> <out_overlay.F>
+    g33_dyn_probe.py first-difference <np1_dump_dir> <np4_dump_dir>
+
+WHY BENCH_END ANCHORS. Every phase in the RK loop ends with a `BENCH_END(<name>)`
+macro on a line of its own, and each name occurs once in the file. A multi-line
+CALL has no unique last line; its timer does. Anchoring on the timer puts the
+probe exactly at the end of the phase it names, and a drift in the file makes
+the anchor missing rather than silently misplaced.
+
+WHY ONLY THE FIRST RK STAGE. The request's prediction is that the first
+difference appears at or before `rk_tendency` in the first step, so the probe
+covers `itimestep == 1 .AND. rk_step == 1`. That is also what keeps the dump at
+about 320 MB per run: `rk_step == 1` runs exactly one acoustic sub-step, so the
+twelve anchors fire twelve times and not fifty-six.
+
+WHY PATCH BOUNDS NAME THE FILE. Each rank needs its own file and the rank id
+would mean adding `wrf_get_myproc` to a USE list -- a change outside the
+`#ifdef`. `ips/ipe/jps/jpe` are already in scope and are unique per rank.
+"""
+from __future__ import annotations
+
+import hashlib
+import sys
+from pathlib import Path
+
+#: The canonical file this overlay is authorized against (request, Scope).
+PIN = "d66e9db1bba8f37e3f46d30c2fd74bdf8def411adf233376a69e0b401c6d3d1f"
+
+#: i windows the probe writes: 16 columns either side of each 4x1 patch
+#: boundary (59, 117, 176), plus the eastern lateral-boundary zone.
+WINDOWS = [(43, 75), (101, 133), (160, 192), (214, 234)]
+
+#: Field groups the probe can dump. STATE is the prognostic set; HALO is what
+#: `HALO_EM_A` actually exchanges, read from the Registry
+#: (`8:ru,rv,rw,ww,php,alt,al,p,muu,muv,mut,rho`) and NOT intersecting STATE --
+#: a probe that watched only STATE around the exchange would be blind to a halo
+#: defect; TEND is what `rk_tendency` writes. Kind: M mass-level 3-D, Z
+#: vertically staggered 3-D, S 2-D.
+GROUPS = {
+    1: [("u_2", "M"), ("t_2", "M"), ("ph_2", "Z"), ("w_2", "Z"), ("mu_2", "S")],
+    2: [("ru", "M"), ("rv", "M"), ("rw", "Z"), ("ww", "Z"), ("php", "Z"),
+        ("alt", "M"), ("al", "M"), ("p", "M"), ("rho", "M"),
+        ("muu", "S"), ("muv", "S"), ("mut", "S")],
+    3: [("ru_tend", "M"), ("rv_tend", "M"), ("rw_tend", "Z"), ("ph_tend", "Z"),
+        ("t_tend", "M"), ("mu_tend", "S")],
+}
+
+#: `grid%` prefixed, except the tendencies the Registry declares as i1 locals.
+LOCAL = {"rw_tend", "ph_tend", "t_tend", "mu_tend"}
+
+#: (stage id, groups, anchor line, where). Stage 0 is the timestep entry and
+#: stage 1 the entry of EACH RK stage -- `Runge_Kutta_loop: DO rk_step = ...` is
+#: the latter, so without stage 0 a difference made before the loop is unseen.
+#: 31 and 32 straddle the halo exchange: without the "before" dump there is no
+#: way to separate "the halo arrived wrong" from "the halo was right and a later
+#: stencil diverged".
+ANCHORS = [
+    (0, (1,), "   Runge_Kutta_loop:  DO rk_step = 1, rk_order", "before"),
+    (1, (1,), "   Runge_Kutta_loop:  DO rk_step = 1, rk_order", "after"),
+    (2, (1, 2), "BENCH_END(step_prep_tim)", "after"),
+    (31, (2,), '#    include "HALO_EM_A.inc"', "before"),
+    (32, (2,), '#    include "HALO_EM_A.inc"', "after"),
+    (4, (1,), "BENCH_END(set_phys_bc_tim)", "after"),
+    (5, (1, 3), "BENCH_END(rk_tend_tim)", "after"),
+    (6, (1, 2, 3), "BENCH_END(relax_bdy_dry_tim)", "after"),
+    (7, (1, 2), "BENCH_END(small_step_prep_tim)", "after"),
+    (8, (1,), "BENCH_END(advance_uv_tim)", "after"),
+    (9, (1,), "BENCH_END(spec_bdy_uv_tim)", "after"),
+    (10, (1,), "BENCH_END(advance_mu_t_tim)", "after"),
+    (11, (1,), "BENCH_END(advance_w_tim)", "after"),
+    (12, (1,), "BENCH_END(small_step_finish_tim)", "after"),
+]
+
+#: The overlay defines the macro itself, so the build needs no flag and
+#: `configure.wrf` is not touched -- it is outside the granted scope. The
+#: `#ifdef` still earns its place: it marks every added line so the audit below
+#: can prove the overlay adds nothing else, and emission is gated a SECOND time
+#: on the dump environment, which is what makes B and C the same executable.
+DEFINE = "#define KDM6_G33_DYN_DUMP\n"
+
+CALL = """#ifdef KDM6_G33_DYN_DUMP
+{calls}#endif
+"""
+
+HELPER = """#ifdef KDM6_G33_DYN_DUMP
+
+CONTAINS
+
+!  G3.3-M dynamics stage probe. Host-associated: it reads `grid`, the patch
+!  bounds and `rk_step` from solve_em and writes nothing back. Emission is
+!  conditional on the macro AND on KDM6_G33_DYN_DUMP_DIR being set, so the
+!  instrumented binary with no dump environment must be byte-identical to the
+!  canonical one -- which is the acceptance gate.
+   SUBROUTINE g33_dyn_stage ( stage, grp )
+      IMPLICIT NONE
+      INTEGER, INTENT(IN) :: stage, grp
+      INTEGER, PARAMETER  :: nwin = {nwin}
+      INTEGER, PARAMETER  :: win(2,nwin) = RESHAPE( (/ {win} /), (/ 2, nwin /) )
+      INTEGER, SAVE       :: un = -1
+!  NEWUNIT hands back a NEGATIVE unit number, so the sign of `un` cannot stand
+!  in for "opened" -- testing it that way armed nothing and wrote a zero-byte
+!  file. `armed` says it instead.
+      LOGICAL, SAVE       :: asked = .FALSE., armed = .FALSE.
+      CHARACTER(LEN=512)  :: dir, fn
+      INTEGER             :: st, w, i0, i1, ju, ku, iu
+
+!  The first step's first RK stage only: that is what the request predicts about,
+!  and rk_step 1 takes exactly one acoustic sub-step, which bounds the dump.
+      IF ( grid%itimestep /= 1 ) RETURN
+!  Stage 0 sits ABOVE the RK loop, where `rk_step` has not been assigned yet, so
+!  it must not be tested there -- doing so silently dropped every stage-0 record.
+      IF ( stage /= 0 .AND. rk_step /= 1 ) RETURN
+
+      IF ( .NOT. asked ) THEN
+         asked = .TRUE.
+         CALL GET_ENVIRONMENT_VARIABLE( 'KDM6_G33_DYN_DUMP_DIR', dir, STATUS=st )
+         IF ( st == 0 .AND. LEN_TRIM(dir) > 0 ) THEN
+            WRITE( fn, '(A,A,I0,A,I0,A,I0,A,I0,A)' ) TRIM(dir), '/g33dyn_i', &
+                   ips, '-', ipe, '_j', jps, '-', jpe, '.bin'
+            OPEN( NEWUNIT=un, FILE=TRIM(fn), FORM='UNFORMATTED', ACCESS='STREAM', &
+                  STATUS='REPLACE', ACTION='WRITE', IOSTAT=st )
+            armed = ( st == 0 )
+         END IF
+      END IF
+      IF ( .NOT. armed ) RETURN
+
+!  Mass points stop one short of the staggered end in each direction; writing to
+!  the memory bound instead would compare memory the model never set, and two
+!  runs can differ there without the model differing at all.
+      ju = MIN( jpe, jde-1 )
+      ku = MIN( kpe, kde-1 )
+      iu = MIN( ipe, ide-1 )
+
+      DO w = 1, nwin
+!  The halo-exchanged group is dumped over the MEMORY window, clipped to the
+!  domain, so a rank's halo copies come too -- that is the only way to ask
+!  whether the halo arrived wrong. Everything else is owned cells.
+         IF ( grp == 2 ) THEN
+            i0 = MAX( MAX( ims, ids ), win(1,w) )
+            i1 = MIN( MIN( ime, ide-1 ), win(2,w) )
+         ELSE
+            i0 = MAX( ips, win(1,w) )
+            i1 = MIN( iu, win(2,w) )
+         END IF
+         IF ( i0 > i1 ) CYCLE
+         WRITE(un) stage, grp, i0, i1, jps, ju, kps, ku, ips, iu
+         SELECT CASE ( grp )
+{cases}         END SELECT
+      END DO
+      FLUSH(un)
+   END SUBROUTINE g33_dyn_stage
+
+#endif
+"""
+
+
+
+def _call(stage: int, grps) -> str:
+    return CALL.format(calls="".join(
+        f"      CALL g33_dyn_stage ( {stage}, {g} )\n" for g in grps))
+
+
+def _slice(kind: str) -> str:
+    return {"M": "(i0:i1,kps:ku ,jps:ju)",
+            "Z": "(i0:i1,kps:kpe,jps:ju)",
+            "S": "(i0:i1,        jps:ju)"}[kind]
+
+
+def _cases() -> str:
+    out = []
+    for g, fields in sorted(GROUPS.items()):
+        out.append(f"         CASE ( {g} )\n")
+        for name, kind in fields:
+            who = name if name in LOCAL else f"grid%{name}"
+            out.append(f"            WRITE(un) REAL( {who}{_slice(kind)}, 4 )\n")
+    return "".join(out)
+
+
+def build(src: str) -> str:
+    lines = src.splitlines(keepends=True)
+    out, placed = [], {}
+    for ln in lines:
+        key = ln.rstrip("\n").strip()
+        for n, grps, anchor, where in ANCHORS:
+            if key != anchor.strip() or where != "before":
+                continue
+            placed[n] = True
+            out.append(_call(n, grps))
+        out.append(ln)
+        for n, grps, anchor, where in ANCHORS:
+            if key != anchor.strip() or where != "after":
+                continue
+            if n in placed:
+                raise SystemExit(f"anchor for stage {n} is not unique: {anchor!r}")
+            placed[n] = True
+            out.append(_call(n, grps))
+    missing = [n for n, _, _, _ in ANCHORS if n not in placed]
+    if missing:
+        raise SystemExit(f"anchors not found for stages {missing}")
+
+    body = "".join(out)
+    tail = "END SUBROUTINE solve_em"
+    if body.count(tail) != 1:
+        raise SystemExit(f"{tail!r} is not unique")
+    win = ", ".join(f"{a}, {b}" for a, b in WINDOWS)
+    helper = HELPER.format(nwin=len(WINDOWS), win=win, cases=_cases())
+    return DEFINE + body.replace(tail, helper + tail, 1)
+
+
+def strip_guarded(text: str) -> str:
+    """The overlay with every `KDM6_G33_DYN_DUMP` block removed.
+
+    This is the audit the request promises, and it is stronger than counting
+    added lines: if deleting the guarded regions gives the canonical back BYTE
+    FOR BYTE, then the overlay adds only guarded lines and changes nothing else.
+    Nested conditionals inside a guarded block are counted so the matching
+    `#endif` is the one that closes it.
+    """
+    lines = text.splitlines(keepends=True)
+    if lines and lines[0] == DEFINE:
+        lines = lines[1:]
+    out, depth = [], 0
+    for ln in lines:
+        s = ln.strip()
+        if depth:
+            if s.startswith(("#if", "#ifdef", "#ifndef")):
+                depth += 1
+            elif s.startswith("#endif"):
+                depth -= 1
+            continue
+        if s == "#ifdef KDM6_G33_DYN_DUMP":
+            depth = 1
+            continue
+        out.append(ln)
+    if depth:
+        raise SystemExit("unbalanced KDM6_G33_DYN_DUMP block in the overlay")
+    return "".join(out)
+
+
+
+def read_dump(path: Path) -> dict:
+    """One rank's file as {(stage, grp, i): {"own": bool, field: array}}.
+
+    THE EMITTER AND THE PARSER LIVE IN ONE FILE because a record layout that
+    drifts between them produces numbers that look fine and are not. WRF is
+    built with -fconvert=big-endian here, so its stream writes are big-endian.
+    """
+    import numpy as np
+    raw = np.fromfile(path, dtype=np.uint8)
+    out, off = {}, 0
+    while off < raw.size:
+        stage, grp, i0, i1, jps, ju, kps, ku, ips, iu = (
+            int(v) for v in raw[off:off + 40].view(">i4"))
+        off += 40
+        ni, nj, nk = i1 - i0 + 1, ju - jps + 1, ku - kps + 1
+        for name, kind in GROUPS[grp]:
+            n = ni * nj * (1 if kind == "S" else nk + (1 if kind == "Z" else 0))
+            a = raw[off:off + 4 * n].view(">f4")
+            off += 4 * n
+            a = a.reshape((ni, nj) if kind == "S" else
+                          (ni, nk + (1 if kind == "Z" else 0), nj), order="F")
+            for c in range(ni):
+                i = i0 + c
+                rec = out.setdefault((stage, grp, i, ips <= i <= iu), {})
+                rec[name] = a[c]
+    return out
+
+
+def _load(d: Path) -> dict:
+    out = {}
+    for f in sorted(d.glob("g33dyn_*.bin")):
+        for k, v in read_dump(f).items():
+            out.setdefault(k, {}).update(v)
+    return out
+
+
+def first_difference(dir_a: Path, dir_b: Path) -> list:
+    """Per stage, group and field, the OWNED i columns where the two differ.
+
+    Compared as raw words: one ULP is a difference, which is the point of asking
+    where it is first written. Halo copies are excluded here -- the same global
+    cell exists owned on one rank and as a halo copy on its neighbour, and
+    mixing them would either hide a halo mismatch or invent a difference.
+    """
+    import numpy as np
+    A, B = _load(dir_a), _load(dir_b)
+    rows = []
+    for stage, grp in sorted({(s, g) for s, g, _, _ in A} & {(s, g) for s, g, _, _ in B}):
+        for name, _ in GROUPS[grp]:
+            hit = [i for (s, g, i, own) in sorted(set(A) & set(B))
+                   if s == stage and g == grp and own
+                   and not np.array_equal(A[(s, g, i, own)][name].view(np.uint32),
+                                          B[(s, g, i, own)][name].view(np.uint32))]
+            rows.append({"stage": stage, "group": grp, "field": name, "columns": hit})
+    return rows
+
+
+def halo_content(dump_dir: Path) -> list:
+    """Within ONE decomposition: does a rank's halo copy match the owner's value?
+
+    This needs no `np=1` run. If a halo copy differs from the owned value of the
+    same global cell after the exchange, the halo arrived wrong; if it matches,
+    the exchange did its job and a later difference came from somewhere else.
+    """
+    import numpy as np
+    D = _load(dump_dir)
+    rows = []
+    for stage, grp in sorted({(s, g) for s, g, _, _ in D}):
+        for name, _ in GROUPS[grp]:
+            bad = [i for (s, g, i, own) in sorted(D)
+                   if s == stage and g == grp and not own
+                   and (s, g, i, True) in D
+                   and not np.array_equal(D[(s, g, i, False)][name].view(np.uint32),
+                                          D[(s, g, i, True)][name].view(np.uint32))]
+            rows.append({"stage": stage, "group": grp, "field": name, "columns": bad})
+    return rows
+
+
+SEAMS = (59, 117, 176)
+
+
+def _report(rows) -> None:
+    print(f"  {'stage':>5} {'grp':>3} {'field':>8} {'cols':>6}   columns / nearest boundary")
+    for r in rows:
+        c = r["columns"]
+        if not c:
+            continue
+        near = min(SEAMS, key=lambda s: min(abs(i - s) for i in c))
+        print(f"  {r['stage']:>5} {r['group']:>3} {r['field']:>8} {len(c):>6}   "
+              f"{c[:9]}{' ...' if len(c) > 9 else ''}  nearest boundary {near}")
+
+
+def main() -> int:
+    if len(sys.argv) >= 2 and sys.argv[1] == "first-difference":
+        if len(sys.argv) != 4:
+            raise SystemExit("first-difference <np1_dump_dir> <np4_dump_dir>")
+        print("  np=1 vs np=4, OWNED cells (blank stages agree everywhere)")
+        _report(first_difference(Path(sys.argv[2]), Path(sys.argv[3])))
+        return 0
+    if len(sys.argv) >= 2 and sys.argv[1] == "halo-content":
+        if len(sys.argv) != 3:
+            raise SystemExit("halo-content <np4_dump_dir>")
+        print("  within np=4: halo copy vs the owner's value (blank = halo is right)")
+        _report(halo_content(Path(sys.argv[2])))
+        return 0
+    argv = sys.argv[2:] if len(sys.argv) >= 2 and sys.argv[1] == "overlay" else sys.argv[1:]
+    if len(argv) != 2:
+        raise SystemExit(__doc__.splitlines()[0])
+    src_path, out_path = Path(argv[0]), Path(argv[1])
+    src = src_path.read_text()
+    got = hashlib.sha256(src.encode()).hexdigest()
+    if got != PIN:
+        raise SystemExit(
+            f"REFUSED: {src_path} is {got[:16]}, and this overlay is authorized "
+            f"against {PIN[:16]}. A different canonical needs a re-read of the "
+            f"anchors, not a re-pin.")
+    overlay = build(src)
+    back = strip_guarded(overlay)
+    if back != src:
+        raise SystemExit(
+            "REFUSED: removing the guarded blocks does not give the canonical "
+            "back, so the overlay changes something outside the #ifdef.")
+    out_path.write_text(overlay)
+    print(f"{out_path}: {len(ANCHORS)} probes, {len(WINDOWS)} i windows, "
+          f"canonical {got[:16]}")
+    print(f"  audit: guarded blocks removed == canonical, byte for byte "
+          f"(1 #define + {len(overlay.splitlines()) - len(src.splitlines()) - 1} guarded lines added)")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -114,7 +114,7 @@ contradicted its own premise (owner review 8). Re-measured on the matched pair,
 the widths are the same to the column, so the earlier numbers survive -- but
 they are now measured rather than assumed.
 
-### The support envelope grows; the energetic core does not
+### The support envelope grows; the relative half-peak core does not
 
 `footprint()` counts cells where `x != y`, so its width is the outer envelope of
 ANY difference. For `PH` that envelope's outermost column is **one ULP** on
@@ -128,16 +128,31 @@ occupies a handful (owner review 5.2). Both are now reported.
 | band (boundary) | measure | step 1 | step 2 | step 3 | per step |
 |---|---|---|---|---|---|
 | 1 (i = 59) | envelope | 17 | 27 | 38 | +10, +11 |
-| | half-maximum core | 6 | 1 | 4 | -5, +3 |
+| | relative half-peak core | 6 | 1 | 4 | -5, +3 |
 | 2 (i = 117) | envelope | 18 | 30 | 41 | +12, +11 |
-| | half-maximum core | 5 | 2 | 2 | -3, 0 |
+| | relative half-peak core | 5 | 2 | 2 | -3, 0 |
 | 3 (i = 176) | envelope | 18 | 31 | 42 | +13, +11 |
-| | half-maximum core | 6 | 3 | 1 | -3, -2 |
+| | relative half-peak core | 6 | 3 | 1 | -3, -2 |
 
-**The half-maximum core does not grow.** It stays between one and six columns at
-every step measured, while the envelope adds ten to thirteen columns per step.
-The part of the difference that carries its magnitude sits within a few columns
-of the i patch boundary and stays there; what advances is the one-ULP fringe.
+**The relative half-peak core does not grow.** It stays between one and six
+columns at every step measured, while the envelope adds ten to thirteen columns
+per step.
+
+**What that does and does not establish (owner review 3.1).** The core above is the
+set of columns whose per-column max |diff| is at least half *that step's* peak. It
+is a support measured against a MOVING reference, so it narrows under two different
+situations: the difference genuinely concentrating, or the boundary peak simply
+growing faster than an unchanged surround. Synthetically, multiplying a single peak
+by two on an untouched bump collapses this core from 15 columns to 1 while the width
+holding 90% of the energy goes only 15 to 14 -- so "the core does not widen" cannot
+by itself carry "the difference ENERGY stays localized".
+
+What is established: the envelope's outer columns are a one-ULP fringe, the
+per-column magnitude peaks within a few columns of the i patch boundary, and the
+relative half-peak support does not widen. Whether the energy stays localized is
+**UNMEASURED** here; `core_widths()` in `harness/g33_mpi_divergence.py` now reports
+`l2_50` and `l2_90` beside `half_peak` from the per-column L2, and re-running the
+footprint on the existing pairs closes it without new fixtures.
 
 This replaces the two-point extrapolation the first version of this section
 used. That fit reported an "effective width at zero steps" of 4 to 8 columns
@@ -196,7 +211,7 @@ an i-cut on the arm-C binary, so the two binaries agree on the first-step count.
 
 **CONFIRMED.** After one 20 s step the exact-difference support spans 14 to 20 i
 columns around each interior i patch boundary; between steps 1 and 3 that
-envelope widens by 9 to 13 columns per step while the half-maximum core stays
+envelope widens by 9 to 13 columns per step while the relative half-peak core stays
 within one to six columns and does not widen.
 
 **OPEN.** The instantaneous first-write support, and whether it is set by halo
