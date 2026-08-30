@@ -1,5 +1,8 @@
 # Freeze-lift request: a stage probe inside one dynamics step, one file
 
+**GRANTED 2026-08-30.** The owner approved this request as written. Work stays
+inside the scope below; anything outside it needs a separate request.
+
 ## What is asked
 
 Permission to build and run an instrumented copy of **one file** --
