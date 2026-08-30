@@ -490,7 +490,7 @@ def test_a_conditional_flag_over_an_invalid_arm_is_None_not_False():
 
 def test_a_binding_must_go_through_the_validity_predicate():
     """A coefficient computed over arms whose control failed is not a
-    coefficient, and must not reach `CLAIMS.yaml`."""
+    coefficient, and must not reach `SCIENCE_STATUS.md`."""
     good = fc.coefficients(_table(lambda n, c, l: float(n)))["R_ni"]
     assert fc.bindable(good, "N") == pytest.approx(0.5)
     bad = fc.coefficients(_table(lambda n, c, l: float(n),
