@@ -98,6 +98,8 @@ Deployed WRF binary for MPI runs: `f54ef3c9` (kernel `9354141b`, corrected
 | The f32 fine-step turnover is precision-dependent | OPEN | `FINDING_refinement_noise_floor_v1` |
 | Both column measures (rho_m*dz operator, rho_d*dz physical) reported on every closure row | CONFIRMED | `FINDING_dual_ledger_v1`, `FINDING_water_enthalpy_dual_basis_v1` |
 | The dt=300 wrapper boundary decides the four-case verdict | OPEN | `g33m_dt300_wrapper_boundary_result.json` (the run was inconclusive) |
+| The Gate A scope report that `g33m_v14_fourcase_result.json` withdraws itself for lacking IS in the repository: `harness/evidence/gate_a_scope_report.json`, sha256 `cff6cb64f36f818f...`, the pinned digest exactly. Added 2026-07-28 and byte-identical at `2935fcd` (2026-08-21), the commit that wrote "not on this host" -- so the premise was already false when written, and `gateb_g33m_check.py` takes the file by path | CONFIRMED | this row; artifact `g33m_v14_fourcase_result.json` |
+| Whether regenerating the four-case decision now yields a verdict | UNMEASURED -- feasible (pinned runtime `~/kdm6ad-g33m-runtime` CPython 3.11.14 / numpy 2.4.6 present, digest pinned in `anchors.sh`), NOT run: writing a decision artifact for a release gate is owner adjudication | `g33m_v14_fourcase_result.json` |
 | `QNCLOUD` negative cells (~1e-9..1e-2) | UNMEASURED | source undiagnosed |
 
 ## Not carried forward
