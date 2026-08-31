@@ -1,8 +1,114 @@
-# The first owned-cell difference is `ww`, written by `rk_step_prep`, before the halo exchange
+# The `ww` difference was code generation, not data: RETRACTION and what survives
+
+> **RETRACTED, 2026-08-31.** This document's original headline -- *"the first
+> owned-cell difference is `ww`, written by `rk_step_prep`"* -- is **not a
+> statement about the model**. Rebuilt with `-ffp-contract=off
+> -fno-tree-vectorize` and nothing else changed, the `ww` difference disappears
+> at every stage and the first difference moves to stage 5. The measurements
+> below stand; the conclusion drawn from them did not survive its own test. The
+> original text is kept, not edited away, so the retraction is legible.
 
 Under the freeze-lift `REQUEST_freeze_lift_dyn_first_write_probe.md`, a probe was
 placed inside the first RK stage of the first time step, `np = 1` against `4x1`
 (i patch boundaries after 59, 117, 176), on the deployed binary's tree.
+
+## The two measurements that close it
+
+They point at the same answer from opposite sides, and neither is sufficient alone.
+
+**One -- the inputs are identical (production build, probe5).** At the RK-stage
+entry, every owned cell agrees, and every halo column `calc_ww_cp` reads at a
+patch's last owned mass column -- i = 60, 118, 177 -- is bitwise identical to
+`np=1` in `u_2`, `mu_2`, `mub` and `msfuy`, at all three boundaries.
+
+**Two -- with the evaluation freedom removed, the output is identical too
+(probe6).** Same source, same overlay, one change: `FCOPTIM` from
+`-O2 -ftree-vectorize -funroll-loops` to `-O2 -fno-tree-vectorize
+-ffp-contract=off`. Both arms built from the resulting binary `f15d07a1`.
+
+    stage  2  ww        ABSENT   (production build: [59, 176])
+    stage 31  ww        ABSENT
+    stage 32  ww        ABSENT
+    stage  5  ph_tend   ABSENT   (production build: [59, 176])
+    stages 0, 1, 2, 31, 32, 4   CLEAN
+    stage  5  ru_tend   [59, 117, 176, 232, 233, 234]   survives
+    stage  5  rv_tend   [59, 117, 176, 231, 232]        survives
+    stage  5  rw_tend   [59, 117, 176, 231, 232]        survives
+    stage  5   t_tend   [59, 117, 176, 231, 232]        survives
+
+Identical operands cannot be made equal by a compiler flag, and they were already
+measured identical. So the `ww` difference was created by **how the expression was
+evaluated**, not by what it read. `ph_tend` goes with it because it was downstream
+of `ww`.
+
+This subsumes the trip-count correlation recorded earlier: `itf = MIN(ite,ide-1)`
+gives patches 0 and 2 a 59-trip `i` loop and patches 1 and 3 a 58-trip one, and a
+different trip count selects a different vector body and remainder for the same
+operands. **"Why 59 and 176 and not 117" therefore has no answer in the physics.
+It was never a property of the boundary.**
+
+## What this makes of the i-versus-j asymmetry
+
+The oldest result in this line is that cutting j is bit-identical at every rank
+count while cutting i differs in 77 of 197 fields. That has been an open puzzle
+across four findings. It now has a candidate that costs nothing to state:
+
+> `i` is the INNER loop of every stencil in this code. Decomposing i changes inner
+> trip counts and hence which vector body and remainder run. Decomposing j changes
+> only the OUTER loop's extent, which does not change how the inner loop is
+> compiled or run.
+
+That is a HYPOTHESIS about the whole phenomenon, not a result, and it is
+decisively testable by the run already under way: rebuild ALL of `dyn_em` with the
+same flags -- `module_advect_em.F`, which `rk_tendency` calls for advection, was
+NOT in probe6's rebuilt object set and is still contracting and vectorizing.
+
+- If stage 5 also goes clean, the i-seam is decomposition-dependent CODE
+  GENERATION end to end, and there is no numerical defect in the halo or the
+  stencils to find.
+- If it survives, THAT is the first difference that is about the model, and the
+  target is much smaller than a whole time step.
+
+Until that run reports, the surviving stage-5 tendency difference is **not shown
+to be data either**.
+
+## What still stands from the original pass
+
+The measurements are unaffected by the retraction; only the headline was wrong.
+
+- The stage table on the production build, and that stages 0, 1, 4 are clean.
+- `HALO_EM_A` delivers what it declares, at full scope: 12 exchanged fields x 3
+  interior i boundaries x both directions, 72 post-exchange comparisons, every one
+  bitwise equal to the owner.
+- The halo columns the stencil reads are current (probe5, above).
+- `relax_bdy_dry` is not the first producer of the eastern-zone columns.
+- The instrument is inert: the dumping binary reproduced `f54ef3c9` on both
+  decompositions, 0 of 197 fields x 4 frames, and the canonical source rebuilt
+  afterwards to `f54ef3c9` bit for bit.
+- `ww` is `INTENT(OUT)` and `calc_ww_cp` assigns every owned cell of `k = 1..kte`,
+  so the stage-2 value was that call's output whatever it held before. That
+  argument was correct and is now beside the point.
+
+## A run that failed and was recorded valid
+
+The `4x1` arm of probe6 died with `mca_btl_tcp_frag_send: writev failed: No buffer
+space available (55)`, exit 14, immediately after `SIMULATION START DATE`; rerun
+alone it succeeded, and the dumps analysed here are the rerun's
+(`mp37_probe6b_...105103`, `SUCCESS COMPLETE WRF`, dump mtimes inside its window).
+
+Its `experiment_valid.json` said `true`. That file answers "was the experiment set
+up as asked" -- binary stable, processor grid as requested -- and by design does
+not answer "did the model finish"; `run_ss_case` writes the real exit code beside
+it and returns it. But this document and its predecessors cited
+`experiment_valid` as if it certified the run, and a reader of that one file could
+not have seen the crash. The file now carries `exit_code` and `model_completed`,
+and a non-zero exit is an invalid reason. The asymmetry the original design
+insisted on is kept: a zero exit still does not make an experiment valid.
+
+The comparator would also have caught it a second way -- a truncated dump fails
+the coverage check added in the same change -- and the probe6 pair passes it.
+
+## ORIGINAL TEXT, kept as written
 
 ## The instrument is inert, and the tree is as it was found
 
