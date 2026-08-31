@@ -1,10 +1,15 @@
 # The i-cut seam is decomposition-dependent code generation
 
-Rebuild every `dyn_em` object with `-ffp-contract=off -fno-tree-vectorize`,
-change nothing else, and `np = 1` and `4x1` compute **the same values at every
+Rebuild the 30 `dyn_em` objects listed below with `-O2 -fno-tree-vectorize
+-ffp-contract=off`, change nothing else, and `np = 1` and `4x1` compute **the same values at every
 instrumented point of the first dynamics step**. On the production flags they
-differ at the last owned column of some patches. That is the whole i-seam, and it
-closes a question that had been open across four findings.
+differ at the last owned column of some patches.
+
+That is the i-seam AS THIS PROBE MEASURES IT -- one time step, the first RK
+stage, the instrumented field set. The headline i-seam is 77 of 197 fields at ONE
+MINUTE, and this run wrote no forecast output, so whether the alternative build
+removes that too is unmeasured. The wording "the whole i-seam" appeared in an
+earlier version of this document and is withdrawn.
 
 ## The result, with its denominator
 
@@ -51,7 +56,10 @@ decomposition, not about the deployed model's numbers.
 
 ## What was rebuilt
 
-Thirty objects, with no compile line in the build lacking the flag:
+Thirty objects took the flags, with no compile line in the build lacking one.
+The restore rebuild afterwards recompiled 31, so these 30 are THE OBJECTS THAT
+TOOK THE FLAGS and not provably every object in `dyn_em`; which one is outside
+the list, and whether it is on the execution path, has not been established:
 `adapt_timestep_em`, `couple_or_uncouple_em`, `interp_domain_em`,
 `mediation_integrate`, `module_advect_em`, `module_after_all_rk_steps`,
 `module_avgflx_em`, `module_big_step_utilities_em`, `module_convtrans_prep`,
@@ -62,8 +70,39 @@ Thirty objects, with no compile line in the build lacking the flag:
 `module_solvedebug_em`, `module_stoch`, `ndown_em`, `nest_init_utils`,
 `shift_domain_em`, `solve_em`, `start_em`, `tc_em`.
 
-`module_advect_em` and `module_small_step_em` are both in, which is what the
-partial rebuild lacked and why its stage-5 tendency difference survived.
+`module_advect_em` and `module_small_step_em` are both in, and the partial
+rebuild lacked them. That is a correlation over two builds, not an attribution:
+this build added twenty other objects and `start_em` at the same time, so which
+one removes the stage-5 tendency difference is UNMEASURED. An arm that adds
+`module_advect_em` alone would say.
+
+## Three compiler effects changed together
+
+Production is `-O2 -ftree-vectorize -funroll-loops`; the alternative is
+`-O2 -fno-tree-vectorize -ffp-contract=off`. So three things moved at once:
+vectorisation was turned off, explicit unrolling was DROPPED, and floating-point
+contraction was forbidden. The measurement is that the decomposition difference
+is non-zero under the first setting and zero under the second. It does not say
+which of the three did it, or whether it takes more than one.
+
+Separating them needs no new instrument, only three more arms off production:
+`-fno-tree-vectorize` alone, `-ffp-contract=off` alone, and `-funroll-loops`
+removed alone. Until then, "a trip count selects the vector body and remainder"
+below is the reading the evidence points at, not the reading it establishes.
+
+## The initial state moved too
+
+The 30 objects include `start_em`, which computes the base state, and control 3
+shows this build differs from production at stage 0 in `w_2` and `mub`. So the
+two builds do not start from the same operands, and
+
+> zero difference under the alternative build
+
+does not by itself prove that production's own operands were equal and only its
+evaluation differed. What supplies that is the separate probe5 measurement below.
+The clean form of this experiment leaves the initial state bitwise unchanged --
+rebuild only the objects on the `ww` path, with `start_em` on production flags --
+and it has not been run.
 
 ## Why cutting i differs and cutting j does not
 
@@ -74,8 +113,18 @@ OUTER loop's extent, which does not change how the inner loop is compiled or run
 
 That is why `1x2`, `1x3` and `1x4` are bit-identical to `np=1` at every rank
 count while `2x2` and `4x1` differ in 77 of 197 fields -- an asymmetry that had
-no explanation through four findings, and which needs no numerical defect
-anywhere. On the production build the shape is visible directly:
+no explanation through four findings.
+
+**This does not establish that no defect exists.** Turning vectorisation off also
+suppresses a second class of cause: an out-of-bounds vector load, an
+uninitialised temporary, a wrong extent, an aliasing violation. Distinguishing
+that class from ordinary reordering needs counterfactuals none of which has been
+run here -- bounds checking, an uninitialised-value trap, signalling-NaN
+initialisation, the vectorisation report, a disassembly comparison. So the
+accurate statement is that no stale-halo or lateral-boundary source was found for
+the measured first-stage seam and the remaining evidence points at
+compiler- and loop-shape-sensitive evaluation; whether that is ordinary rounding
+sensitivity or exposes a source or extent defect is OPEN. On the production build the shape is visible directly:
 `itf = MIN(ite, ide-1)` gives patches 0 and 2 a 59-trip `i` loop and patches 1
 and 3 a 58-trip one, and `ww` differed at the last owned column of the 59-trip
 patches only.
@@ -164,8 +213,15 @@ claim that position and data are irrelevant.
   this and is NOT measured here.
 - **"Not a defect" is not "harmless".** A 1-ULP seam at a patch boundary still
   seeds the divergence that grows later, and nothing here bounds that growth.
-- **Nothing about the deployed model's numbers changes.** `8bd8cdbf` is not
-  `f54ef3c9`, and control 3 shows the two differ from initialization onward.
+- **This is a property of the deployed implementation, not only of a build.** A
+  numerical model is source plus compiler plus flags plus processor plus
+  decomposition. `f54ef3c9` does not reproduce bitwise across i decompositions,
+  and that is a REPRODUCIBILITY failure of the deployed model wherever bitwise
+  decomposition invariance is required. "Not a defect" was too strong; what is
+  established is that it is not a physical-state or stale-halo defect.
+- **The alternative build's own numbers say nothing about `f54ef3c9`.**
+  `8bd8cdbf` is not `f54ef3c9`, and control 3 shows the two differ from
+  initialisation onward.
 - **This does not say the code is correct.** It says the difference between
   decompositions comes from code generation rather than from halo exchange,
   stencil reach, or the lateral-boundary update. Whether a stencil reads past the

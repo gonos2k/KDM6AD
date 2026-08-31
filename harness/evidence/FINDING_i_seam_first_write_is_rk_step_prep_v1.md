@@ -1,8 +1,11 @@
 # The `ww` difference was code generation, not data: RETRACTION and what survives
 
 > **RETRACTED, 2026-08-31.** This document's original headline -- *"the first
-> owned-cell difference is `ww`, written by `rk_step_prep`"* -- is **not a
-> statement about the model**. Rebuilt with `-ffp-contract=off
+> owned-cell difference is `ww`, written by `rk_step_prep`"* -- attributed to the
+> dynamics a difference that is **build-specific floating-point evaluation in the
+> deployed numerical implementation**. It is not a physical-state or stale-halo
+> defect; it IS a property of the model as built and run, and calling it "the
+> build, not the model" (an earlier wording here) understated it. Rebuilt with `-ffp-contract=off
 > -fno-tree-vectorize` and nothing else changed, the `ww` difference disappears
 > at every stage and the first difference moves to stage 5. The measurements
 > below stand; the conclusion drawn from them did not survive its own test. The

@@ -359,18 +359,26 @@ def _require_same_coverage(A: dict, B: dict, dir_a: Path, dir_b: Path) -> None:
     owned-cell key sets against each other, and the field list per record.
     """
     want = {(st, g) for st, grps, _, _ in ANCHORS for g in grps}
+    cols = {i for a, b in WINDOWS for i in range(a, b + 1)}
+    want_keys = {(s, g, i) for (s, g) in want for i in cols}
     for tag, D, d in (("A", A, dir_a), ("B", B, dir_b)):
         have = {(s, g) for s, g, _, _ in D}
         if have != want:
             raise SystemExit(
                 f"{tag} ({d}) stage/group coverage != ANCHORS: "
                 f"missing {sorted(want - have)}, unexpected {sorted(have - want)}")
-    ka = {(s, g, i) for (s, g, i, own) in A if own}
-    kb = {(s, g, i) for (s, g, i, own) in B if own}
-    if ka != kb:
-        raise SystemExit(
-            f"owned-cell coverage differs: only in {dir_a}: {sorted(ka - kb)[:8]} "
-            f"({len(ka - kb)}), only in {dir_b}: {sorted(kb - ka)[:8]} ({len(kb - ka)})")
+        # AGAINST THE DECLARED DENOMINATOR, not just against each other. Two arms
+        # that drop the SAME record agree, and agreement was the whole test until
+        # now (owner review 11): a window missing on both sides passed as "no
+        # difference". `ANCHORS` x `WINDOWS` is what the probe promised to write,
+        # so it is what a comparison has to find.
+        got = {(s, g, i) for (s, g, i, own) in D if own}
+        if got != want_keys:
+            raise SystemExit(
+                f"{tag} ({d}) owned coverage != ANCHORS x WINDOWS "
+                f"({len(want_keys)} expected): missing {sorted(want_keys - got)[:8]} "
+                f"({len(want_keys - got)}), unexpected {sorted(got - want_keys)[:8]} "
+                f"({len(got - want_keys)})")
     for (s, g, i, own) in A:
         want_f = {n for n, _, _ in GROUPS[g]}
         for tag, D in (("A", A), ("B", B)):
@@ -417,19 +425,28 @@ def halo_vs_reference(ref_dir: Path, dec_dir: Path) -> list:
     """
     import numpy as np
     R = _load(ref_dir)
-    rows = []
+    rows, skipped = [], set()
     for f in sorted(Path(dec_dir).glob("g33dyn_*.bin")):
         D = read_dump(f)
         for stage, grp in sorted({(s, g) for s, g, _, _ in D}):
             for name, _, _ in GROUPS[grp]:
-                bad = [i for (s, g, i, own) in sorted(D)
-                       if s == stage and g == grp and not own
-                       and (s, g, i, True) in R
+                cand = [(s, g, i, own) for (s, g, i, own) in sorted(D)
+                        if s == stage and g == grp and not own]
+                skipped |= {k[:3] for k in cand if (k[0], k[1], k[2], True) not in R}
+                bad = [i for (s, g, i, own) in cand
+                       if (s, g, i, True) in R
                        and not np.array_equal(
                            D[(s, g, i, own)][name].view(np.uint32),
                            R[(s, g, i, True)][name].view(np.uint32))]
                 rows.append({"rank": f.stem.replace("g33dyn_", ""), "stage": stage,
                              "group": grp, "field": name, "columns": bad})
+    # A HALO COLUMN THE REFERENCE DOES NOT HOLD IS NOT A MATCH. It was skipped,
+    # and a silent skip reads as agreement in a table that only prints
+    # disagreements (owner review 11). Report the count so a zero has a
+    # denominator.
+    if skipped:
+        rows.append({"rank": "(skipped)", "stage": -1, "group": -1,
+                     "field": "no-reference", "columns": sorted(i for _, _, i in skipped)})
     return rows
 
 
