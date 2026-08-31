@@ -342,11 +342,25 @@ WHAT THIS DOES AND DOES NOT ADD. It establishes the STRUCTURE the trip-count
 reading assumed -- body plus narrower remainder -- rather than leaving it
 assumed. It does not establish that the remainder is where the difference is
 made: that needs the generated code, or a numeric test that isolates the
-remainder lanes, and neither has been done. Nor does it touch the second
-possibility this document keeps open, that vectorisation is suppressing an
-out-of-bounds load or an uninitialised value rather than only reordering
-arithmetic; a bounds-checked or trap-initialised build would speak to that and
-has not been run.
+remainder lanes, and neither has been done. The second possibility this document keeps open -- that vectorisation is
+suppressing an out-of-bounds load or an uninitialised value rather than only
+reordering arithmetic -- was ATTEMPTED and is still open. A bounds-checked build
+of the same 32 objects (`649b437f`) aborted in INITIALISATION, before the first
+dynamics step, on a real out-of-bounds read in the CCN block
+(`FINDING_ccn_init_reads_past_the_model_top_v1`). So the dynamics were never
+reached under bounds checking and the question is untested, not answered.
+
+Two weaker checks did run and found nothing: re-enabling the warnings the build
+suppresses with `-w` yields 208 for this file, all `-Wunused-dummy-argument` or
+`-Wunused-variable` and none about initialisation; and the three reads that cross
+the patch boundary are in bounds by declaration --
+
+    muu(i+1,j)   declared its:ite+1     read to MIN(ite,ide-1)+1 <= ite+1
+    u(i+1,k,j)   declared ims:ime       read to ite+1, halo measured >= 7
+    muv(i,j+1)   declared jts:jte+1     read to jte+1
+
+-- so the specific stencil is not where an extent defect would be. That is not
+the same as the dynamics being clean.
 
 For the record, since it is arithmetic and not a claim: at four f32 lanes, 59
 trips leave a remainder of 3 and 58 leave 2, and a two-lane epilogue covers 2
