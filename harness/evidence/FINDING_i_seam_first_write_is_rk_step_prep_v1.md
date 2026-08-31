@@ -95,35 +95,94 @@ The request recorded four, as revised by the owner.
 4. *"The eastern band is absent through stage 4 and first present immediately
    after stage 5."* **HELD exactly.** Stage 4 clean, stage 5 carries it.
 
-## Inside the bracket: one measured link and one code reading
+## Inside the bracket: the read that crosses the patch boundary
 
-`rk_step_prep` reaches `ww` through `CALL calc_ww_cp ( u, v, mu, mub, c1h, c2h,
-ww, ... )`, and `calc_ww_cp` is in `module_big_step_utilities_em.F`. Its
-divergence, line 108, reads one column EAST:
+The first version of this section named the wrong array, and correcting it changes
+what the measurements support. Every line below was re-checked against the pinned
+source, with `file:line` so it can be checked again.
 
-    divv(i,k) = msftx(i,j)*dnw(k)*( rdx*( (c1h(k)*muu(i+1,j)+c2h(k))*u(i+1,k,j)/msfuy(i+1,j)
-                                        - (c1h(k)*muu(i,j)  +c2h(k))*u(i,k,j)  /msfuy(i,j) ) + ... )
+**`calc_ww_cp` does not read `grid%muu`.** It declares and fills its own:
 
-and its i loop ends at `itf = MIN(ite, ide-1)`, the last owned mass column. So on
-rank 0, computing `ww(59)` reads `muu(60)`, `u(60)` and `msfuy(60)` -- all halo
-cells. **`muu` is in the `HALO_EM_A` set, and that exchange runs after
-`rk_step_prep`, not before it.**
+| where | what |
+|---|---|
+| `dyn_em/solve_em.F:652` | `rk_step_prep` is called with `grid%u_2`, `grid%mu_2`, and separately `grid%muu` |
+| `dyn_em/module_em.F:163` | `rk_step_prep` calls `calc_ww_cp ( u, v, mu, mub, c1h, c2h, ww, ... )` -- it passes `mu`, and no `muu` |
+| `dyn_em/module_big_step_utilities_em.F:674` | `REAL , DIMENSION( its:ite+1 , jts:jte+1 ) :: muu, muv` -- a LOCAL array that shadows the name of the grid field |
+| `dyn_em/module_big_step_utilities_em.F:699` | `MUU(i,j) = 0.5*(MUP(i,j)+MUB(i,j)+MUP(i-1,j)+MUB(i-1,j))` over `DO i = its, min(ite+1,ide)` |
 
-Half of that chain is measured here and half is read from the source, and the
-two are not the same kind of statement:
+So the `muu` in the divergence is rebuilt inside the routine from `mu` on every
+call, is never exchanged, and is not the `muu` that `HALO_EM_A` moves. The earlier
+claim -- "`muu` is in the `HALO_EM_A` set, and that exchange runs after
+`rk_step_prep`" -- is true of the grid field and does not bear on `ww`.
+
+What the divergence actually depends on, `module_big_step_utilities_em.F:747`, over
+`DO i = its, itf` with `itf = MIN(ite, ide-1)`:
+
+    divv(i,k) = msftx(i,j)*dnw(k)*( rdx*((c1h(k)*muu(i+1,j)+c2h(k))*u(i+1,k,j)/msfuy(i+1,j)
+                                        -(c1h(k)*muu(i,j)  +c2h(k))*u(i,k,j)  /msfuy(i,j))     &
+                                  + rdy*((c1h(k)*muv(i,j+1)+c2h(k))*v(i,k,j+1)*msfvx_inv(i,j+1)
+                                        -(c1h(k)*muv(i,j)  +c2h(k))*v(i,k,j)  *msfvx_inv(i,j)) )
+
+At the last owned mass column the `i+1` term needs `u(ite+1)` and, through the local
+`muu`, `mu(ite+1)` -- both halo columns. Nothing refreshes them first:
+
+- `solve_em.F` lines 573 to 652 contain no `#include` at all. The first is `#ifdef
+  DM_PARALLEL` at 672 and `HALO_EM_A.inc` at 703.
+- `inc/HALO_EM_A_inline.inc` moves `al, alt, mut, muu, muv, p, php, rho, ru, rv, rw,
+  ww`. **`u`, `v` and `mu` are not in it.** The exchange fifty lines later cannot
+  refresh what `calc_ww_cp` read: it carries the OUTPUT `ww`, not the inputs.
+
+### What the measurements support, corrected
 
 | link | status |
 |---|---|
-| rank 0's halo copy of `muu` at the columns beside the boundary differs from `np = 1`'s value there, at stage 2 | **MEASURED** |
-| `muu` itself is identical in every OWNED cell at stage 2 | **MEASURED** |
-| `calc_ww_cp` computes `ww(i)` from `muu(i+1)`, `u(i+1)`, `msfuy(i+1)` up to the last owned column | **read from the source, not measured** |
-| `ww` differs at exactly those last-owned columns and nowhere else | **MEASURED** |
+| `ww` differs at exactly the last owned mass column of each affected boundary at stage 2, and nowhere else | MEASURED |
+| `u_2` and `mu_2`, the two inputs `calc_ww_cp` reads, are identical in every OWNED cell at stage 1 | MEASURED |
+| `mub`, `msfuy`, `msfvx_inv`, `c1h`, `c2h` are time-invariant fields read from input | identical by construction, NOT dumped |
+| `calc_ww_cp` reads `u(i+1)` and, through its local `muu`, `mu(i+1)` past the last owned column | source, `:747` and `:699` |
+| nothing exchanges `u` or `mu` between the RK-stage entry and the call | source, `solve_em.F` 573-652 and the `HALO_EM_A` field set |
+| rank 0's halo copy of `muu` differs before the exchange and matches after | MEASURED, but of `grid%muu`, which `calc_ww_cp` never reads -- it is evidence about the exchange, not about `ww` |
+| the halo columns of `u` and `mu` that it reads actually differ | **UNMEASURED -- the missing link** |
 
-That is a coherent account and it is not a proof. Closing it needs anchors
-INSIDE `rk_step_prep` -- after `calc_mu_uv` and before `calc_ww_cp` -- dumping
-`muu` and `u` over the memory window, which is a different file and a separate
-freeze-lift. It would also have to explain why a j cut, whose `divv` reads
-`muv(j+1)` in the same expression, produces nothing at all.
+The account is now one named measurement short, rather than half-supported by a
+fact about a different array.
+
+## The same expression reads `j+1`, and the j cut measures zero
+
+The `rdy` half of `:747` is the mirror of the `rdx` half. `muv` is filled at `:706`
+as `MUV(i,j) = 0.5*(MUP(i,j)+MUB(i,j)+MUP(i,j-1)+MUB(i,j-1))` over
+`DO j = jts, min(jte+1,jde)` -- `j`/`j-1` where `muu` used `i`/`i-1` -- and the
+divergence reads `muv(i,j+1)` and `v(i,k,j+1)` where the x term reads `i+1`.
+
+The mechanism is symmetric in the source; the measurement is not. 77 of 197 fields
+differ on an i cut, 0 of 197 on a j cut, at every rank count. **An unexchanged halo
+read therefore cannot by itself be the explanation.** It is at most necessary.
+Something outside this stencil breaks the symmetry.
+
+One candidate is closed by the archived namelist rather than left open: the case is
+`specified = .true.` with `spec_zone = 1` and `relax_zone = 4`, no periodicity in
+either direction, `e_we = 235`, `e_sn = 283`. The lateral boundary treatment is the
+same kind in i and j, so the asymmetry is not a boundary-condition-type asymmetry.
+
+The discriminating experiment is a pair, not a single run: dump the HALO columns of
+`u_2` and `mu_2` at stage 1 on BOTH the `4x1` and the `1x4` decomposition, and test
+
+> the stage-2 `ww` difference appears at a patch boundary if and only if the halo
+> `u`/`mu` that `calc_ww_cp` reads across it already differs at stage 1.
+
+An i cut whose halo differs and a j cut whose halo does not would put the asymmetry
+in whatever fills the halo, upstream of the dynamics entirely. Both differing would
+mean the divergence cancels it in j, which is a claim about the two map-factor forms
+in the expression above (`/msfuy(i+1,j)` against `*msfvx_inv(i,j+1)`) and would need
+its own test. Neither is argued here.
+
+**That experiment does not need a new freeze-lift.** Its anchor is stage 1, already
+in `solve_em.F`, and the probe already dumps a group over the MEMORY window rather
+than owned cells (`g33_dyn_probe.py`, the `grp == 2` branch). Putting `u_2` and
+`mu_2` in a memory-window group is a field-list edit to `g33_dyn_probe.py` inside
+the granted scope. Narrowing further -- between `calc_mu_uv` and `calc_ww_cp` --
+is what would reach `module_em.F` and `module_big_step_utilities_em.F`, and that is
+a separate request.
 
 ## What this does NOT show
 
