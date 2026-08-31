@@ -94,6 +94,46 @@ Identical operands, and no compiler flag can equate operands that differ. So on
 the production build the difference was in the evaluation, and this run shows
 what happens when that freedom is taken away.
 
+## No stencil propagates a stale halo into an owned cell
+
+`FINDING_i_seam_first_write_is_rk_step_prep_v1` left open whether any stencil
+reads the exchanged fields past the width they are refreshed to. The probe7 pair
+answers it, because it holds a stale halo and a clean result side by side.
+
+Comparing each rank's records against `np=1` at the same global column:
+
+    stage   halo cells differing      owned cells differing
+        0            284,256                        0
+        1            284,256                        0
+        2          2,971,331                        0
+        6          3,054,680                        0
+        7          3,092,161                        0
+       31          2,971,331                        0
+       32          2,658,752                        0
+    TOTAL         15,316,767                        0
+
+Stages 4, 5 and 8-12 are absent from the left column because they dump only
+owned-clipped groups (1 and 3); they hold no halo records at all, and their zero
+is an absence of observation, not an observation of currency. Their owned zero is
+real.
+
+So fifteen million halo cells hold values that differ from what the single-patch
+run has at the same global column -- and not one owned cell differs, at any
+stage. Had a stencil read one of those columns and used it, the owned result
+would have moved with it.
+
+> **Within the first RK stage of the first time step, for the fields dumped, no
+> stencil propagates a stale halo value into an owned cell.**
+
+This carries to the production build. A stale read is a DATA difference, and a
+data difference survives a change of optimisation flags -- that is the same
+argument that refuted the halo account of `ww`. So the null is not an artefact of
+building without contraction.
+
+What it does not cover: fields the probe does not dump, later RK stages, later
+time steps, the microphysics, and any read whose effect is overwritten before the
+next anchor. The claim is about owned cells observed at the anchors.
+
 ## A prediction, registered before the run that would test it
 
 Which boundaries differ is still unexplained. The trip-count reading says the
