@@ -47,33 +47,26 @@ Deployed WRF binary for MPI runs: `f54ef3c9` (kernel `9354141b`, corrected
 
 ## MPI decomposition
 
+Detail lives in the findings; this table carries what is true now.
+
 | statement | status | where |
 |---|---|---|
-| On the production flags, a decomposition that cuts i (`2x2`, `4x1`) differs from `np=1` in 77 of 197 fields at one minute | CONFIRMED | `FINDING_second_decomposition_defect_v1`, `FINDING_seam_is_i_specific_v1` |
-| A decomposition that cuts only j (`1x2`, `1x3`, `1x4`) is raw-word identical to `np=1`, 0 of 197 fields differing in any bit | CONFIRMED | `FINDING_seam_is_i_specific_v1` |
-| The i-cut difference is banded on the i patch boundaries, one band per boundary, peaking within 2 columns of it for `PH` and `T` | CONFIRMED | `FINDING_i_seam_is_banded_at_the_patch_boundary_v1` |
-| Cutting i also perturbs the EASTERN lateral-boundary zone (`spec_bdy_width=5`) and not the western one | CONFIRMED | `FINDING_i_seam_is_banded_at_the_patch_boundary_v1` |
-| The envelope's edge advances at 1.1-1.6 km/s, 3.5-4.5x the sound speed, so it is numerical domain of dependence and not a signal in the fluid | CONFIRMED | `FINDING_i_seam_is_banded_at_the_patch_boundary_v1` |
-| `relax_bdy_dry` is not the first producer of the eastern-zone columns: they are already in the `rk_tendency` outputs one stage earlier. The eastern band going clean under the full alternative build is NOT evidence about the dynamics: that build also recompiled `module_bc_em`, which the partial one did not | CONFIRMED | `FINDING_i_seam_first_write_is_rk_step_prep_v1` |
-| `HALO_EM_A` width-1 transfers match the owner bit for bit -- 12 exchanged fields x 3 interior i boundaries x both directions | CONFIRMED | `FINDING_i_seam_first_write_is_rk_step_prep_v1` |
-| The halo columns `calc_ww_cp` reads at each patch's last owned mass column (i = 60, 118, 177) are bitwise identical to `np=1` in `u_2`, `mu_2`, `mub` and `msfuy` | CONFIRMED | `FINDING_i_seam_first_write_is_rk_step_prep_v1` |
-| That the stage-2 `ww` difference is a stale `u`/`mu` halo read | REFUTED | `FINDING_i_seam_first_write_is_rk_step_prep_v1` |
-| No stencil propagates a stale halo value into an owned cell, over the fields dumped in the first RK stage of the first step | CONFIRMED | `FINDING_i_seam_is_code_generation_v1` |
-| Rebuilding the 32 `dyn_em` objects (recounted from the build log; 30 was a published extraction bug) with `-fno-tree-vectorize -ffp-contract=off` APPENDED to the production flags (so `-funroll-loops` is unchanged) removes every instrumented first-RK-stage difference between `np=1` and `4x1`: 0 of 141,214,320 f32 words | CONFIRMED | `FINDING_i_seam_is_code_generation_v1` |
-| Which compiler transformation removes it -- vectorisation and contraction changed together, unrolling did not change | UNMEASURED | `FINDING_i_seam_is_code_generation_v1` |
-| Whether a minimal-object rebuild that leaves the initial state bitwise unchanged also removes it; the 32-object build included `start_em` and `module_initialize_real` and moved the state from stage 0 | UNMEASURED | `FINDING_i_seam_is_code_generation_v1` |
-| Whether the removal at stage 5 is attributable to `module_advect_em`; it entered together with 20 other objects | UNMEASURED | `FINDING_i_seam_is_code_generation_v1` |
-| Whether the `i`-loop trip count is the mechanism: 59-trip patches differ at their last owned column and 58-trip do not, 2 patches against 2, and no other `nproc_x` has been run | OPEN | `FINDING_i_seam_is_code_generation_v1` |
-| Whether every `calc_ww_cp` operand agrees across decompositions: `v_2`, `msftx` and `msfvx_inv` are dumped by no group, so only the x-side operands are measured | UNMEASURED | `FINDING_i_seam_is_code_generation_v1` |
-| Whether the alternative build also removes the one-minute difference over all 197 fields; the probe7 runs wrote no forecast output | UNMEASURED | `FINDING_i_seam_is_code_generation_v1` |
-| Whether the sensitivity is ordinary rounding or exposes a source or extent defect: no bounds-check, uninitialised-value trap, vectorization report or disassembly has been read | OPEN | `FINDING_i_seam_is_code_generation_v1` |
+| On the production flags an i cut (`2x2`, `4x1`) differs from `np=1` in 77 of 197 fields at one minute, while a pure j cut (`1x2`, `1x3`, `1x4`) is raw-word identical at every rank count | CONFIRMED | `FINDING_second_decomposition_defect_v1`, `FINDING_seam_is_i_specific_v1` |
+| The i-cut difference is banded on the i patch boundaries, one band per boundary, and its envelope edge advances at 1.1-1.6 km/s -- numerical domain of dependence, not a signal in the fluid | CONFIRMED | `FINDING_i_seam_is_banded_at_the_patch_boundary_v1` |
+| Cutting i also perturbs the EASTERN lateral-boundary zone and not the western one; `relax_bdy_dry` is not its first producer, and the band going clean under the alternative build is NOT evidence about the dynamics, because that build also recompiled `module_bc_em` | CONFIRMED | `FINDING_i_seam_is_banded_at_the_patch_boundary_v1`, `FINDING_i_seam_first_write_is_rk_step_prep_v1` |
+| `HALO_EM_A` width-1 transfers match the owner bit for bit: 12 exchanged fields x 3 interior i boundaries x both directions | CONFIRMED | `FINDING_i_seam_first_write_is_rk_step_prep_v1` |
+| The halo columns `calc_ww_cp` reads at each patch's last owned mass column (i = 60, 118, 177) are bitwise identical to `np=1` in `u_2`, `mu_2`, `mub` and `msfuy`, so the stale-halo account of the `ww` difference is dead | REFUTED | `FINDING_i_seam_first_write_is_rk_step_prep_v1` |
+| Three alternative builds -- both flags, `-fno-tree-vectorize` alone, `-ffp-contract=off` alone -- each remove the ENTIRE one-minute difference: 0 of 197 fields at 0/20/40/60 s, against 0/28/71/77 for production on the same case, frames and comparator | CONFIRMED | `FINDING_i_seam_is_code_generation_v1` |
+| The difference requires BOTH vectorisation and contraction enabled -- turning off either alone removes it -- so it is an interaction, not a main effect of either | CONFIRMED | `FINDING_i_seam_is_code_generation_v1` |
+| The `-fno-tree-vectorize` arm starts from the production initial state BIT FOR BIT (0 of 197 fields at frame 0) and still removes the seam, while itself changing the arithmetic (78 of 197 fields by one minute), so the removal is not an artefact of a moved initial state | CONFIRMED | `FINDING_i_seam_is_code_generation_v1` |
 | The deployed build does not reproduce bitwise across i decompositions | CONFIRMED | `FINDING_i_seam_is_code_generation_v1` |
+| Under the alternative build the sampled non-owned records differ from the single-patch reference while the sampled owned outputs are raw-word identical; whether those values are read, overwritten before an anchor, or observable under the PRODUCTION flags is a separate question, and a null under one build does not transfer to another | UNMEASURED | `FINDING_i_seam_is_code_generation_v1` |
+| The mechanism: whether a vector body is fused differently from its scalar remainder, whether the `i`-loop trip count predicts WHICH boundaries differ (a prediction is registered), and whether the sensitivity is ordinary rounding or exposes a source or extent defect -- no vectorisation report, disassembly, bounds check or uninitialised-value trap has been run | OPEN | `FINDING_i_seam_is_code_generation_v1` |
+| Whether every `calc_ww_cp` operand agrees across decompositions: `v_2`, `msftx` and `msfvx_inv` are dumped by no group, so only the x-side operands are measured | UNMEASURED | `FINDING_i_seam_first_write_is_rk_step_prep_v1` |
+| The i-cut difference grows to 77/77/75/106 fields over ten minutes on the corrected binary; whether that growth is distinguishable from a 1-ULP perturbation on `f54ef3c9` is not measured, and the three 1-ULP runs on disk used other binaries or record none | CONFIRMED | `RECERT_results_v1` (historical) |
 | The forecast-skill effect of the seam | UNMEASURED | `FINDING_i_seam_is_code_generation_v1` |
-| The i-cut difference grows to 77/77/75/106 fields over ten minutes on the corrected binary (np=4 arm, `f54ef3c9`) | CONFIRMED | `RECERT_results_v1` (historical) |
-| Whether that ten-minute growth is distinguishable from a 1-ULP perturbation on `f54ef3c9`; the three 1-ULP runs on disk used other binaries or record none | UNMEASURED | `RECERT_results_v1` (historical) |
 | Same-decomposition runs repeat bit-identically | CONFIRMED | `FINDING_mpi_repeatability_v1` |
-| `ncmin` is a scalar overwritten in the column loop; tile decomposition changes prognostic components | CONFIRMED | `FINDING_ncmin_scalar_vs_percell` |
-| Arm L (`ncmin` per cell) removes none of the decomposition difference -- a null about `ncmin`, not about the seam | CONFIRMED | `FINDING_arm_l_mpi_null_v1` |
+| `ncmin` is a scalar overwritten in the column loop; tile decomposition changes prognostic components, and Arm L (`ncmin` per cell) removes none of the decomposition difference | CONFIRMED | `FINDING_ncmin_scalar_vs_percell`, `FINDING_arm_l_mpi_null_v1` |
 
 ## Ice number
 
@@ -92,8 +85,6 @@ Deployed WRF binary for MPI runs: `f54ef3c9` (kernel `9354141b`, corrected
 | The f32 fine-step turnover is precision-dependent | OPEN | `FINDING_refinement_noise_floor_v1` |
 | Both column measures (rho_m*dz operator, rho_d*dz physical) reported on every closure row | CONFIRMED | `FINDING_dual_ledger_v1`, `FINDING_water_enthalpy_dual_basis_v1` |
 | The dt=300 wrapper boundary decides the four-case verdict | OPEN | `g33m_dt300_wrapper_boundary_result.json` (the run was inconclusive) |
-| The Gate A scope report that `g33m_v14_fourcase_result.json` withdraws itself for lacking IS in the repository: `harness/evidence/gate_a_scope_report.json`, sha256 `cff6cb64f36f818f...`, the pinned digest exactly. Added 2026-07-28 and byte-identical at `2935fcd` (2026-08-21), the commit that wrote "not on this host" -- so the premise was already false when written, and `gateb_g33m_check.py` takes the file by path | CONFIRMED | this row; artifact `g33m_v14_fourcase_result.json` |
-| Whether regenerating the four-case decision now yields a verdict. It is feasible -- the pinned runtime `~/kdm6ad-g33m-runtime` (CPython 3.11.14, numpy 2.4.6) is present and the digest is in `anchors.sh` -- and deliberately not run, because writing a decision artifact for a release gate is owner adjudication | UNMEASURED | `g33m_v14_fourcase_result.json` |
 | `QNCLOUD` negative cells (~1e-9..1e-2) | UNMEASURED | source undiagnosed |
 
 ## Not carried forward

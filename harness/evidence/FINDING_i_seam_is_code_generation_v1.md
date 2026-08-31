@@ -1,15 +1,14 @@
 # The i-cut seam is decomposition-dependent code generation
 
-Rebuild the 30 `dyn_em` objects listed below with `-O2 -fno-tree-vectorize
--ffp-contract=off`, change nothing else, and `np = 1` and `4x1` compute **the same values at every
+Rebuild the 32 `dyn_em` objects identified from the anchored compile lines
+with `-fno-tree-vectorize -ffp-contract=off` appended, change nothing else, and `np = 1` and `4x1` compute **the same values at every
 instrumented point of the first dynamics step**. On the production flags they
 differ at the last owned column of some patches.
 
-That is the i-seam AS THIS PROBE MEASURES IT -- one time step, the first RK
-stage, the instrumented field set. The headline i-seam is 77 of 197 fields at ONE
-MINUTE, and this run wrote no forecast output, so whether the alternative build
-removes that too is unmeasured. The wording "the whole i-seam" appeared in an
-earlier version of this document and is withdrawn.
+That was first shown only for the instrumented first RK stage, and this document
+said so. It has since been measured over the headline quantity as well: all 197
+fields at one minute, on three alternative builds, all zero, against 77 for
+production. The section below carries that.
 
 ## The result, with its denominator
 
@@ -25,6 +24,71 @@ Binary `8bd8cdbf`, both arms built from it, one minute, `4x1` against `np=1`.
 
 Zero at every stage, every group, every field, including the stage-5 tendencies
 that survived the partial rebuild and the eastern-zone columns 231-234.
+
+## The one-minute seam, and which flag removes it
+
+The measurements above were confined to the instrumented first RK stage, because
+the runs that produced them wrote no forecast output. That limitation is now
+gone. Four builds were made, differing only in `FCOPTIM`, each rebuilding the
+same 32 `dyn_em` objects, and each run at `np=1` and `4x1` for one minute with
+history every 20 s. The comparator's field universe is **197** in every file.
+
+    frame                                        0     1     2     3
+                                               (0s) (20s) (40s) (60s)
+    production      f54ef3c9   vec on,  fma on    0    28    71    77
+    both flags off  309e2a8e   vec off, fma off   0     0     0     0
+    vectorise off   b6eb2159   vec off, fma on    0     0     0     0
+    contract off    5f77fefe   vec on,  fma off   0     0     0     0
+
+The production row reproduces the campaign's headline number -- 77 of 197 fields
+at one minute -- with the same comparator, case, frames and field universe. So
+the zeros are not the instrument failing to see this seam.
+
+**The difference needs BOTH vectorisation and contraction.** Turning off either
+one removes it entirely. It is an interaction, not a main effect of either, and
+that is a sharper statement than "compiler-sensitive": it names a conjunction.
+
+### The vectorisation arm leaves the initial state untouched
+
+The full 32-object rebuild includes `start_em` and `module_initialize_real`, so
+"the two builds do not start from the same operands" was a live objection to
+every zero above. It is now measured, per arm, against the production run:
+
+    arm np=1 frame 0 vs production np=1 frame 0, 197 fields
+      both flags off    7 fields differ   MUB, P, PB, PHB, P_HYD, QNCCN, W
+      contract off      7 fields differ
+      vectorise off     0 fields differ   <-- bitwise identical start
+
+So `-fno-tree-vectorize` alone starts from the production initial state bit for
+bit and still removes the whole one-minute seam. The same-initial-state
+counterfactual the objection asked for is satisfied for that arm, and it is the
+arm that matters, since it is sufficient on its own.
+
+### And that flag does change the arithmetic
+
+A flag that changed nothing would also give zero. The control, same build against
+production at `np=1`, where the start is identical so any difference is the flag:
+
+    vectorise off np=1 vs production np=1    0    28    76    78
+
+Seventy-eight fields differ by one minute -- about the size of the seam itself.
+So the flag did not make the answer smaller or smoother; it made the two
+decompositions follow the same path. That is what a code-generation account
+predicts and a data account does not.
+
+### What this settles and what it does not
+
+It settles the scope objection that this document carried: the removal is not
+confined to the instrumented first RK stage. Over all 197 fields at one minute,
+on this case and `4x1`, the seam is gone under any of the three alternative
+builds.
+
+It does not settle the mechanism. Vectorisation and contraction are each
+sufficient to remove the difference, which is consistent with a vector body and
+its scalar remainder being fused differently for the same operands, and also
+consistent with other readings. No vectorisation report or disassembly has been
+read, and the ten-minute growth, other decompositions, other cases and forecast
+skill remain unmeasured.
 
 ## Three controls, because an empty table is also what a broken read looks like
 
@@ -111,8 +175,12 @@ the difference matters: the decomposition needs TWO arms off production
 (`-fno-tree-vectorize` alone, `-ffp-contract=off` alone), and an unrolling arm
 would test something neither build varied.
 
-Until those run, "a trip count selects the vector body and remainder" below is
-the reading the evidence points at, not the reading it establishes.
+Those arms have since been run, and each flag ALONE removes the difference; see
+the flag matrix above. So the difference requires both transformations enabled,
+which is an interaction rather than a main effect. It still does not establish
+that "a trip count selects the vector body and remainder": that reading is
+consistent with the interaction and so are others, and no vectorisation report or
+disassembly has been read.
 
 ## The initial state moved too
 
@@ -125,9 +193,12 @@ two builds do not start from the same operands, and
 
 does not by itself prove that production's own operands were equal and only its
 evaluation differed. What supplies that is the separate probe5 measurement below.
-The clean form of this experiment leaves the initial state bitwise unchanged --
-rebuild only the objects on the `ww` path, with `start_em` on production flags --
-and it has not been run.
+That objection is now answered by measurement rather than by a narrower rebuild:
+the `-fno-tree-vectorize` arm starts from the production initial state BIT FOR
+BIT (0 of 197 fields differ at frame 0) and still removes the whole one-minute
+seam. The two arms carrying `-ffp-contract=off` do move the start, by 7 fields.
+So the objection stands for those two and is retired for the arm that matters,
+since that arm is sufficient on its own.
 
 ## The eastern band cannot be read as being about the dynamics
 
@@ -184,7 +255,7 @@ NO production-build operand measurement at all, so for those the only evidence i
 "zero under a different build", which is the weaker half. The same-state
 minimal-object arm is not a refinement there; it is the missing measurement.
 
-## No stencil propagates a stale halo into an owned cell
+## Stale non-owned records beside an owned null, and what that does not prove
 
 `FINDING_i_seam_first_write_is_rk_step_prep_v1` left open whether any stencil
 reads the exchanged fields past the width they are refreshed to. The probe7 pair
@@ -192,7 +263,7 @@ answers it, because it holds a stale halo and a clean result side by side.
 
 Comparing each rank's records against `np=1` at the same global column:
 
-    stage   halo cells differing      owned cells differing
+    stage   non-owned f32 words differing   owned f32 words differing
         0            284,256                        0
         1            284,256                        0
         2          2,971,331                        0
@@ -207,22 +278,37 @@ owned-clipped groups (1 and 3); they hold no halo records at all, and their zero
 is an absence of observation, not an observation of currency. Their owned zero is
 real.
 
-So fifteen million halo cells hold values that differ from what the single-patch
-run has at the same global column -- and not one owned cell differs, at any
-stage. Had a stencil read one of those columns and used it, the owned result
-would have moved with it.
+That count is f32 WORD comparisons summed over stage, field, rank, j and k --
+not fifteen million distinct halo cells. The same spatial column is counted once
+per field and per stage.
 
-> **Within the first RK stage of the first time step, for the fields dumped, no
-> stencil propagates a stale halo value into an owned cell.**
+What it says is narrow and it is what is measured: at every stage that records
+both, the sampled non-owned records differ from the single-patch reference while
+the sampled owned outputs are raw-word identical.
 
-This carries to the production build. A stale read is a DATA difference, and a
-data difference survives a change of optimisation flags -- that is the same
-argument that refuted the halo account of `ww`. So the null is not an artefact of
-building without contraction.
+> **Under this build, at the stages that record both, the non-owned records
+> differ from the single-patch reference and the owned outputs do not.**
 
-What it does not cover: fields the probe does not dump, later RK stages, later
-time steps, the microphysics, and any read whose effect is overwritten before the
-next anchor. The claim is about owned cells observed at the anchors.
+**Two inferences drawn from that earlier are withdrawn.**
+
+*"Had a stencil read one of those columns, the owned result would have moved with
+it."* Floating-point evaluation is not injective. Two different inputs can round
+to the same f32 output -- the difference can fall below a rounding threshold, be
+multiplied by a small or zero coefficient, cancel against another term, leave the
+branch taken unchanged, be overwritten before the next anchor, or propagate only
+into fields the probe does not dump. A net null at the anchors is not proof that
+nothing was read.
+
+*"A data difference survives a change of optimisation flags."* This is false in
+general, and it contradicts the rest of this document. Changing vectorisation or
+contraction changes the map from operands to stored result, so two operands that
+give different f32 values under one build can give the same value under another.
+That is the very effect measured here. So the null observed under this build does
+NOT transfer to the production build, and whether those non-owned values become
+observable under production flags is UNMEASURED.
+
+What the null also does not cover: fields the probe does not dump, later RK
+stages, later time steps, and the microphysics.
 
 ## A prediction, registered before the run that would test it
 
@@ -249,9 +335,9 @@ claim that position and data are irrelevant.
 
 ## Scope, and what this does NOT license
 
-- **One case, one time step, the first RK stage, `4x1` only, and only the fields
-  the probe dumps.** The ten-minute growth to 77/77/75/106 fields is downstream of
-  this and is NOT measured here.
+- **One case and `4x1` only.** The first-stage result covers the probe's field
+  set; the one-minute result covers all 197 forecast fields. The TEN-minute
+  growth to 77/77/75/106 fields is still downstream of both and NOT measured.
 - **"Not a defect" is not "harmless".** A 1-ULP seam at a patch boundary still
   seeds the divergence that grows later, and nothing here bounds that growth.
 - **This is a property of the deployed implementation, not only of a build.** A
@@ -270,6 +356,23 @@ claim that position and data are irrelevant.
 - **`v_2`, `msftx` and `msfvx_inv` are in no group.** The probe's input coverage
   is still incomplete; this result happens not to depend on it, because a flag
   change cannot equate differing data whatever the enumeration.
+
+## Provenance for the flag matrix
+
+Four builds, differing only in `FCOPTIM`, each rebuilding the same 32 `dyn_em`
+objects (36 anchored compile lines, none lacking `-funroll-loops`), each run at
+`np=1` and `4x1`, `--minutes 1 --history 0 --history-s 20`, all six runs
+`experiment_valid` true with `exit_code` 0 and `model_completed` true:
+
+    f54ef3c9  production                 mp37_lin3_1min_hist0{,_np4_4x1}_20260830_2114*
+    309e2a8e  + both flags               mp37_p1nc_1min_hist0{,_np4_4x1}_20260831_1815*
+    b6eb2159  + -fno-tree-vectorize      mp37_p2cv_1min_hist0{,_np4_4x1}_20260831_1833*
+    5f77fefe  + -ffp-contract=off        mp37_p2cf_1min_hist0{,_np4_4x1}_20260831_1850*
+
+The tree was restored afterwards and gated: `configure.wrf` back to
+`-O2 -ftree-vectorize -funroll-loops`, `dyn_em/solve_em.F` `d66e9db1`, and
+`main/wrf.exe` `f54ef3c962a1d6a0` -- the deployed binary, bit for bit, from a
+32-object recompile, with zero `-ffp-contract=off` lines in the restore log.
 
 ## Provenance
 

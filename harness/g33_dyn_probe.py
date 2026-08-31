@@ -372,6 +372,12 @@ def _require_same_coverage(A: dict, B: dict, dir_a: Path, dir_b: Path) -> None:
         # now (owner review 11): a window missing on both sides passed as "no
         # difference". `ANCHORS` x `WINDOWS` is what the probe promised to write,
         # so it is what a comparison has to find.
+        #
+        # SCOPE: this closes symmetric omission on the OWNED i axis only. The
+        # expected j and k extents, the per-record word count, and the expected
+        # set of halo copies are still not checked against a declared value, so
+        # two arms that both truncate j, drop a level, or lose one halo direction
+        # would still pass here.
         got = {(s, g, i) for (s, g, i, own) in D if own}
         if got != want_keys:
             raise SystemExit(
