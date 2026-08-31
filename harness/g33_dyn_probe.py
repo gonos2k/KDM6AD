@@ -58,13 +58,16 @@ WINDOWS = [(43, 75), (101, 133), (160, 192), (214, 234)]
 #: rank. If all four match bitwise the mechanism is refuted, because the rest of
 #: the expression is the same operations on owned data in the same order.
 GROUPS = {
-    1: [("u_2", "M"), ("t_2", "M"), ("ph_2", "Z"), ("w_2", "Z"), ("mu_2", "S")],
-    2: [("ru", "M"), ("rv", "M"), ("rw", "Z"), ("ww", "Z"), ("php", "Z"),
-        ("alt", "M"), ("al", "M"), ("p", "M"), ("rho", "M"),
-        ("muu", "S"), ("muv", "S"), ("mut", "S")],
-    3: [("ru_tend", "M"), ("rv_tend", "M"), ("rw_tend", "Z"), ("ph_tend", "Z"),
-        ("t_tend", "M"), ("mu_tend", "S")],
-    4: [("u_2", "M"), ("mu_2", "S"), ("mub", "S"), ("msfuy", "S")],
+    1: [("u_2", "M", "X"), ("t_2", "M", "M"), ("ph_2", "Z", "M"),
+        ("w_2", "Z", "M"), ("mu_2", "S", "M")],
+    2: [("ru", "M", "X"), ("rv", "M", "Y"), ("rw", "Z", "M"), ("ww", "Z", "M"),
+        ("php", "Z", "M"), ("alt", "M", "M"), ("al", "M", "M"), ("p", "M", "M"),
+        ("rho", "M", "M"), ("muu", "S", "X"), ("muv", "S", "Y"),
+        ("mut", "S", "M")],
+    3: [("ru_tend", "M", "X"), ("rv_tend", "M", "Y"), ("rw_tend", "Z", "M"),
+        ("ph_tend", "Z", "M"), ("t_tend", "M", "M"), ("mu_tend", "S", "M")],
+    4: [("u_2", "M", "X"), ("mu_2", "S", "M"), ("mub", "S", "M"),
+        ("msfuy", "S", "X")],
 }
 
 #: Groups dumped over the MEMORY window (halo copies included) rather than owned
@@ -197,7 +200,7 @@ def _cases() -> str:
     out = []
     for g, fields in sorted(GROUPS.items()):
         out.append(f"         CASE ( {g} )\n")
-        for name, kind in fields:
+        for name, kind, _ in fields:
             who = name if name in LOCAL else f"grid%{name}"
             out.append(f"            WRITE(un) REAL( {who}{_slice(kind)}, 4 )\n")
     return "".join(out)
@@ -287,7 +290,7 @@ def read_dump(path: Path) -> dict:
             int(v) for v in raw[off:off + 40].view(">i4"))
         off += 40
         ni, nj, nk = i1 - i0 + 1, ju - jps + 1, ku - kps + 1
-        for name, kind in GROUPS[grp]:
+        for name, kind, _ in GROUPS[grp]:
             n = ni * nj * (1 if kind == "S" else nk + (1 if kind == "Z" else 0))
             a = raw[off:off + 4 * n].view(">f4")
             off += 4 * n
@@ -301,10 +304,23 @@ def read_dump(path: Path) -> dict:
 
 
 def _load(d: Path) -> dict:
-    out = {}
+    """Every rank's records merged on (stage, group, i, owned).
+
+    A KEY IS CLAIMED BY EXACTLY ONE FILE. Two ranks holding the same global
+    column with the same ownership flag is not a merge to resolve -- their two
+    values can legitimately differ, and `setdefault(...).update(...)` would keep
+    whichever file sorted last and report the pair as agreeing. Refuse instead.
+    """
+    out, owner = {}, {}
     for f in sorted(d.glob("g33dyn_*.bin")):
         for k, v in read_dump(f).items():
-            out.setdefault(k, {}).update(v)
+            if k in owner:
+                raise SystemExit(
+                    f"duplicate dump key {k}: written by {owner[k].name} "
+                    f"and {f.name}; the two values cannot be merged")
+            owner[k], out[k] = f, v
+    if not out:
+        raise SystemExit(f"no g33dyn_*.bin records under {d}")
     return out
 
 
@@ -318,15 +334,51 @@ def first_difference(dir_a: Path, dir_b: Path) -> list:
     """
     import numpy as np
     A, B = _load(dir_a), _load(dir_b)
+    _require_same_coverage(A, B, dir_a, dir_b)
     rows = []
-    for stage, grp in sorted({(s, g) for s, g, _, _ in A} & {(s, g) for s, g, _, _ in B}):
-        for name, _ in GROUPS[grp]:
-            hit = [i for (s, g, i, own) in sorted(set(A) & set(B))
+    for stage, grp in sorted({(s, g) for s, g, _, _ in A}):
+        for name, _, _ in GROUPS[grp]:
+            hit = [i for (s, g, i, own) in sorted(A)
                    if s == stage and g == grp and own
                    and not np.array_equal(A[(s, g, i, own)][name].view(np.uint32),
                                           B[(s, g, i, own)][name].view(np.uint32))]
             rows.append({"stage": stage, "group": grp, "field": name, "columns": hit})
     return rows
+
+
+def _require_same_coverage(A: dict, B: dict, dir_a: Path, dir_b: Path) -> None:
+    """Both arms must carry the SAME records, or the comparison is not defined.
+
+    An intersection is a fail-open: a stage the emitter never wrote on one arm
+    silently leaves that stage out and the run reports no difference there. That
+    is not hypothetical -- the first build of this probe dropped stage 0 on both
+    arms because its guard tested `rk_step` above the loop that assigns it, and
+    only a hand count of the records found it.
+
+    Checked here: the (stage, group) universe against what ANCHORS declares, the
+    owned-cell key sets against each other, and the field list per record.
+    """
+    want = {(st, g) for st, grps, _, _ in ANCHORS for g in grps}
+    for tag, D, d in (("A", A, dir_a), ("B", B, dir_b)):
+        have = {(s, g) for s, g, _, _ in D}
+        if have != want:
+            raise SystemExit(
+                f"{tag} ({d}) stage/group coverage != ANCHORS: "
+                f"missing {sorted(want - have)}, unexpected {sorted(have - want)}")
+    ka = {(s, g, i) for (s, g, i, own) in A if own}
+    kb = {(s, g, i) for (s, g, i, own) in B if own}
+    if ka != kb:
+        raise SystemExit(
+            f"owned-cell coverage differs: only in {dir_a}: {sorted(ka - kb)[:8]} "
+            f"({len(ka - kb)}), only in {dir_b}: {sorted(kb - ka)[:8]} ({len(kb - ka)})")
+    for (s, g, i, own) in A:
+        want_f = {n for n, _, _ in GROUPS[g]}
+        for tag, D in (("A", A), ("B", B)):
+            got = set(D[(s, g, i, own)])
+            if got != want_f:
+                raise SystemExit(
+                    f"{tag} record {(s, g, i, own)} fields != GROUPS[{g}]: "
+                    f"missing {sorted(want_f - got)}, extra {sorted(got - want_f)}")
 
 
 def halo_content(dump_dir: Path) -> list:
@@ -340,7 +392,7 @@ def halo_content(dump_dir: Path) -> list:
     D = _load(dump_dir)
     rows = []
     for stage, grp in sorted({(s, g) for s, g, _, _ in D}):
-        for name, _ in GROUPS[grp]:
+        for name, _, _ in GROUPS[grp]:
             bad = [i for (s, g, i, own) in sorted(D)
                    if s == stage and g == grp and not own
                    and (s, g, i, True) in D
@@ -369,7 +421,7 @@ def halo_vs_reference(ref_dir: Path, dec_dir: Path) -> list:
     for f in sorted(Path(dec_dir).glob("g33dyn_*.bin")):
         D = read_dump(f)
         for stage, grp in sorted({(s, g) for s, g, _, _ in D}):
-            for name, _ in GROUPS[grp]:
+            for name, _, _ in GROUPS[grp]:
                 bad = [i for (s, g, i, own) in sorted(D)
                        if s == stage and g == grp and not own
                        and (s, g, i, True) in R
