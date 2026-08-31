@@ -310,6 +310,48 @@ observable under production flags is UNMEASURED.
 What the null also does not cover: fields the probe does not dump, later RK
 stages, later time steps, and the microphysics.
 
+## The compiler was asked what it did
+
+Every mechanism statement in this document so far was inference from timing and
+flags. `-fopt-info-vec` answers it directly, and costs no run: the same compile
+line the restore build used, on the same preprocessed source, with the object
+written to a scratch path so the tree is untouched.
+
+In `dyn_em/module_big_step_utilities_em.f90`, `calc_ww_cp` spans 633-775 and the
+`divv` assignment sits at 740, inside
+
+    737   DO k=kts,ktf
+    738   DO i=its,itf
+    740     divv(i,k) = msftx(i,j)*dnw(k)*( rdx*(... muu(i+1,j) ... u(i+1,k,j) ...
+
+Under the production flags the report for that loop is
+
+    module_big_step_utilities_em.f90:738:13: optimized: loop vectorized using 16 byte vectors
+    module_big_step_utilities_em.f90:738:13: optimized: loop vectorized using 8 byte vectors
+
+**Two widths for one loop**: a body at 16 bytes -- four f32 lanes -- and a
+narrower 8-byte, two-lane epilogue. So the `i` loop that reads `i+1` across the
+patch boundary is in fact compiled as a full-width body plus a narrower
+remainder. That is not a deduction from the seam any more; it is what the
+compiler reports building.
+
+Adding `-fno-tree-vectorize` to the identical line takes the whole file from 347
+vectorisation reports to **zero**, and `calc_ww_cp` from 10 to zero.
+
+WHAT THIS DOES AND DOES NOT ADD. It establishes the STRUCTURE the trip-count
+reading assumed -- body plus narrower remainder -- rather than leaving it
+assumed. It does not establish that the remainder is where the difference is
+made: that needs the generated code, or a numeric test that isolates the
+remainder lanes, and neither has been done. Nor does it touch the second
+possibility this document keeps open, that vectorisation is suppressing an
+out-of-bounds load or an uninitialised value rather than only reordering
+arithmetic; a bounds-checked or trap-initialised build would speak to that and
+has not been run.
+
+For the record, since it is arithmetic and not a claim: at four f32 lanes, 59
+trips leave a remainder of 3 and 58 leave 2, and a two-lane epilogue covers 2
+exactly while 3 needs the epilogue plus one scalar iteration.
+
 ## A prediction, registered before the run that would test it
 
 Which boundaries differ is still unexplained. The trip-count reading says the
@@ -332,6 +374,33 @@ What it does NOT predict is which side of 58/59 a new trip count falls on: that
 depends on the vector width and how the remainder is emitted, which has not been
 read out of the object code. Point 1 is the load-bearing one, because it is the
 claim that position and data are irrelevant.
+
+### The attempt to test it, and why it did not
+
+`nproc_x` = 2, 3 and 5 were run on `f54ef3c9`, no rebuild. Their patches carry
+
+    2x1   117, 117                 boundary 117
+    3x1    78,  78,  78            boundaries 78, 156
+    5x1    47,  47,  47,  47, 46   boundaries 47, 94, 141, 188
+
+**Neither point is decided by these runs.** Point 2 needs a 58 or a 59 and none
+occurs. Point 1 is satisfied, but vacuously: almost every patch in these
+decompositions shares one trip count, so "equal trip counts behave alike" cannot
+fail when every boundary behaves the same way -- which it does. The footprint at
+20 s shows one band per interior boundary and nothing else: one band for `2x1`,
+two for `3x1`, four for `5x1`, plus the eastern zone in each.
+
+That per-boundary scaling is a real measurement and it is new. The prediction is
+not.
+
+**It also corrects how the prediction was stated here.** The 59-versus-58
+observation was about `ww` AT STAGE 2 -- the first write -- and at `4x1` the
+58-trip boundary at 117 carries no stage-2 `ww` difference. But it does carry a
+forecast band: `FINDING_i_seam_is_banded_at_the_patch_boundary_v1` records three
+`PH` and `T` bands at `4x1`, at 59, 117 and 176. So trip count is at most about
+WHICH BOUNDARY THE DIFFERENCE IS WRITTEN AT FIRST, not about which boundaries end
+up differing. The prediction therefore cannot be tested on forecast output at
+all; it needs the stage probe at a decomposition whose trip counts are mixed.
 
 ## Scope, and what this does NOT license
 
