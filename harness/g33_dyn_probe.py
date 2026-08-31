@@ -372,6 +372,12 @@ def _require_same_coverage(A: dict, B: dict, dir_a: Path, dir_b: Path) -> None:
         # now (owner review 11): a window missing on both sides passed as "no
         # difference". `ANCHORS` x `WINDOWS` is what the probe promised to write,
         # so it is what a comparison has to find.
+        #
+        # SCOPE: this closes symmetric omission on the OWNED i axis only. The
+        # expected j and k extents, the per-record word count, and the expected
+        # set of halo copies are still not checked against a declared value, so
+        # two arms that both truncate j, drop a level, or lose one halo direction
+        # would still pass here.
         got = {(s, g, i) for (s, g, i, own) in D if own}
         if got != want_keys:
             raise SystemExit(
@@ -387,6 +393,34 @@ def _require_same_coverage(A: dict, B: dict, dir_a: Path, dir_b: Path) -> None:
                 raise SystemExit(
                     f"{tag} record {(s, g, i, own)} fields != GROUPS[{g}]: "
                     f"missing {sorted(want_f - got)}, extra {sorted(got - want_f)}")
+    _require_same_payload(A, B, dir_a, dir_b)
+
+
+def _require_same_payload(A: dict, B: dict, dir_a: Path, dir_b: Path) -> None:
+    """The j and k extent of every record, against every other and across arms.
+
+    The i axis is checked against `ANCHORS` x `WINDOWS` above, and that was the
+    whole of it until now (owner review 6): two arms that both truncate j, both
+    drop a vertical level, or both write a field at the wrong shape agree with
+    each other and pass. There is no declared j/k universe to check against --
+    the extents come from the domain at run time -- but there is something
+    stronger available for free: every record of a given KIND must have the SAME
+    shape, in one arm and between arms, because j is not decomposed here and the
+    vertical is whole. A truncation shows up as a second shape.
+    """
+    shapes = {}
+    for tag, D in (("A", A), ("B", B)):
+        for (s, g, i, own), rec in D.items():
+            for name, kind, _ in GROUPS[g]:
+                shapes.setdefault(kind, {}).setdefault(rec[name].shape, []).append(
+                    (tag, s, g, i, name))
+    for kind, byshape in sorted(shapes.items()):
+        if len(byshape) > 1:
+            detail = "; ".join(f"{sh} e.g. {ex[0]}" for sh, ex in sorted(byshape.items()))
+            raise SystemExit(
+                f"kind {kind!r} records do not share one shape across {dir_a} and "
+                f"{dir_b}: {detail}. A j truncation or a dropped level looks like "
+                f"this, and agreeing arms would hide it.")
 
 
 def halo_content(dump_dir: Path) -> list:
