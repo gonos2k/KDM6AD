@@ -56,10 +56,21 @@ decomposition, not about the deployed model's numbers.
 
 ## What was rebuilt
 
-Thirty objects took the flags, with no compile line in the build lacking one.
-The restore rebuild afterwards recompiled 31, so these 30 are THE OBJECTS THAT
-TOOK THE FLAGS and not provably every object in `dyn_em`; which one is outside
-the list, and whether it is on the execution path, has not been established:
+**Thirty-two, not thirty.** `compile_ffpoff_all.log` carries 45 compile lines
+with the flags, over 32 distinct `dyn_em` sources. The list reported with the
+experiment held 30; the two it omits are
+
+    module_bc_em              -o ../dyn_em/module_bc_em.o
+    module_initialize_real    -o ../dyn_em/module_initialize_real.o
+
+and neither is incidental -- both are compiled in those lines. They matter to two
+caveats already in this document: `module_initialize_real` sits with `start_em`
+in the group that moved the initial state, and `module_bc_em` is the
+boundary-condition code, which the eastern-band question turns on.
+
+The restore rebuild afterwards was reported as 31 objects. 32 took the flags and
+31 were rebuilt on restore; that mismatch is not explained here. The thirty
+reported with the experiment were:
 `adapt_timestep_em`, `couple_or_uncouple_em`, `interp_domain_em`,
 `mediation_integrate`, `module_advect_em`, `module_after_all_rk_steps`,
 `module_avgflx_em`, `module_big_step_utilities_em`, `module_convtrans_prep`,
@@ -76,23 +87,30 @@ this build added twenty other objects and `start_em` at the same time, so which
 one removes the stage-5 tendency difference is UNMEASURED. An arm that adds
 `module_advect_em` alone would say.
 
-## Three compiler effects changed together
+## Two compiler effects changed together
 
-Production is `-O2 -ftree-vectorize -funroll-loops`; the alternative is
-`-O2 -fno-tree-vectorize -ffp-contract=off`. So three things moved at once:
-vectorisation was turned off, explicit unrolling was DROPPED, and floating-point
-contraction was forbidden. The measurement is that the decomposition difference
-is non-zero under the first setting and zero under the second. It does not say
-which of the three did it, or whether it takes more than one.
+The flags were APPENDED, not replaced. Every one of the 45 compile lines in
+`compile_ffpoff_all.log` reads
 
-Separating them needs no new instrument, only three more arms off production:
-`-fno-tree-vectorize` alone, `-ffp-contract=off` alone, and `-funroll-loops`
-removed alone. Until then, "a trip count selects the vector body and remainder"
-below is the reading the evidence points at, not the reading it establishes.
+    -O2 -ftree-vectorize -funroll-loops -fno-tree-vectorize -ffp-contract=off
+
+so `-funroll-loops` is present in the alternative build exactly as in production,
+and `-ftree-vectorize` is present but overridden by the later
+`-fno-tree-vectorize`. TWO things moved: vectorisation off and contraction
+forbidden. Unrolling was constant across both arms.
+
+An earlier version of this section said unrolling was dropped. It was not, and
+the difference matters: the decomposition needs TWO arms off production
+(`-fno-tree-vectorize` alone, `-ffp-contract=off` alone), and an unrolling arm
+would test something neither build varied.
+
+Until those run, "a trip count selects the vector body and remainder" below is
+the reading the evidence points at, not the reading it establishes.
 
 ## The initial state moved too
 
-The 30 objects include `start_em`, which computes the base state, and control 3
+The rebuilt objects include `start_em` AND `module_initialize_real`, which
+between them compute the base and initial state, and control 3
 shows this build differs from production at stage 0 in `w_2` and `mub`. So the
 two builds do not start from the same operands, and
 
@@ -142,6 +160,12 @@ owned mass column -- i = 60, 118, 177 -- is bitwise identical in `u_2`, `mu_2`,
 Identical operands, and no compiler flag can equate operands that differ. So on
 the production build the difference was in the evaluation, and this run shows
 what happens when that freedom is taken away.
+
+**That argument covers `ww` and nothing else.** probe5 measured the operands
+`calc_ww_cp` reads, on the production build. For the stage-5 tendencies there is
+NO production-build operand measurement at all, so for those the only evidence is
+"zero under a different build", which is the weaker half. The same-state
+minimal-object arm is not a refinement there; it is the missing measurement.
 
 ## No stencil propagates a stale halo into an owned cell
 
