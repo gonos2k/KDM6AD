@@ -76,7 +76,7 @@ a whole. The full table -- twelve fields, three boundaries, both directions --
 is below, and it agrees; but the narrow measurement came first and the general
 statement was made from it before the table existed.
 
-## The eastern band comes from `rk_tendency`, not the boundary code
+## The eastern band is in `rk_tendency`'s output before `relax_bdy_dry` runs
 
 The eastern columns 231-234 appear first at stage 5, in `ru_tend`, `rv_tend`,
 `rw_tend` and `t_tend` -- one stage BEFORE `relax_bdy_dry`, which is stage 6.
