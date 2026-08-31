@@ -58,19 +58,16 @@ across four findings. It now has a candidate that costs nothing to state:
 > only the OUTER loop's extent, which does not change how the inner loop is
 > compiled or run.
 
-That is a HYPOTHESIS about the whole phenomenon, not a result, and it is
-decisively testable by the run already under way: rebuild ALL of `dyn_em` with the
-same flags -- `module_advect_em.F`, which `rk_tendency` calls for advection, was
-NOT in probe6's rebuilt object set and is still contracting and vectorizing.
+That test has since been run and it CONFIRMED the hypothesis: with all 30
+`dyn_em` objects rebuilt -- including `module_advect_em`, which probe6 lacked and
+which `rk_tendency` calls for advection -- `np=1` and `4x1` agree on every
+instrumented point of the step, 0 of 141,214,320 f32 words. The stage-5 tendency
+difference goes with the rest, so it was not data either.
 
-- If stage 5 also goes clean, the i-seam is decomposition-dependent CODE
-  GENERATION end to end, and there is no numerical defect in the halo or the
-  stencils to find.
-- If it survives, THAT is the first difference that is about the model, and the
-  target is much smaller than a whole time step.
-
-Until that run reports, the surviving stage-5 tendency difference is **not shown
-to be data either**.
+See **`FINDING_i_seam_is_code_generation_v1`** for that run, its denominator, the
+three controls that make an empty table a result rather than a failed read, and
+the scope it does not license -- in particular that "not a defect" is not
+"harmless", and that the ten-minute growth is downstream and unmeasured.
 
 ## What still stands from the original pass
 
