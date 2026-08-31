@@ -121,6 +121,28 @@ and actual), both `experiment_valid` true with `exit_code` 0 and
 Production-flag reference `dyn_dumps_probe5`, partial rebuild `dyn_dumps_probe6`.
 Comparator `harness/g33_dyn_probe.py`.
 
+**The tree is as it was found, and the build is deterministic across a flag
+round-trip.** After the experiments, the canonical source and the canonical
+`FCOPTIM` went back and all 31 `dyn_em` objects were recompiled from scratch;
+verified here: `dyn_em/solve_em.F` `d66e9db1bba8f37e` (5002 lines, zero
+instrumentation markers), `configure.wrf` line 150
+`FCOPTIM = -O2 -ftree-vectorize -funroll-loops`, and `main/wrf.exe`
+`f54ef3c962a1d6a0` -- the deployed hash, bit for bit. This is a stronger control
+than the original pass's: not merely that removing an overlay restores the
+binary, but that a full flag round-trip out and back reproduces it exactly.
+
+Run directories, for citation:
+
+    probe5  np1 mp37_probe5_1min_hist0_20260831_102334_p64676
+            4x1 mp37_probe5_1min_hist0_np4_4x1_20260831_102528_p74909    d1b46b8c, production flags
+    probe6  np1 mp37_probe6_1min_hist0_20260831_104756_p97861
+            4x1 mp37_probe6b_1min_hist0_np4_4x1_20260831_105103_p99140   f15d07a1, 6 objects
+    probe7  np1 mp37_probe7_1min_hist0_20260831_110634_p17386
+            4x1 mp37_probe7_1min_hist0_np4_4x1_20260831_110832_p20651    8bd8cdbf, 30 objects
+
+`mp37_probe6_1min_hist0_np4_4x1_20260831_104910_p98502` is the attempt that died
+(exit 14, `writev`) and is NOT the analysed run.
+
 The probe6 and probe7 experiments and the object list are a second session's work
 on the same tree. The reproduction of every number above, the three controls as
 run here, and this document are this one's. The two sessions reached the earlier
