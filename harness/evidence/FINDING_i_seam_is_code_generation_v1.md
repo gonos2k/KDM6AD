@@ -1,10 +1,15 @@
 # The i-cut seam is decomposition-dependent code generation
 
-Rebuild every `dyn_em` object with `-ffp-contract=off -fno-tree-vectorize`,
-change nothing else, and `np = 1` and `4x1` compute **the same values at every
+Rebuild the 30 `dyn_em` objects listed below with `-O2 -fno-tree-vectorize
+-ffp-contract=off`, change nothing else, and `np = 1` and `4x1` compute **the same values at every
 instrumented point of the first dynamics step**. On the production flags they
-differ at the last owned column of some patches. That is the whole i-seam, and it
-closes a question that had been open across four findings.
+differ at the last owned column of some patches.
+
+That is the i-seam AS THIS PROBE MEASURES IT -- one time step, the first RK
+stage, the instrumented field set. The headline i-seam is 77 of 197 fields at ONE
+MINUTE, and this run wrote no forecast output, so whether the alternative build
+removes that too is unmeasured. The wording "the whole i-seam" appeared in an
+earlier version of this document and is withdrawn.
 
 ## The result, with its denominator
 
@@ -51,7 +56,28 @@ decomposition, not about the deployed model's numbers.
 
 ## What was rebuilt
 
-Thirty objects, with no compile line in the build lacking the flag:
+**Thirty-two, not thirty**, and the discrepancy had one cause. The list
+published with the experiment was extracted with a pattern requiring a BARE
+filename after `-o`, so every object compiled with a path prefix vanished from
+it. Counted from the 36 compile lines of `compile_ffpoff_all.log` with
+`-o\s+(\S+\.o)`, the build touched 32 `dyn_em` sources; the two the published
+list omits are
+
+    module_bc_em              -o ../dyn_em/module_bc_em.o
+    module_initialize_real    -o ../dyn_em/module_initialize_real.o
+
+Neither is neutral here. `module_initialize_real` sits with `start_em` in the
+group that moved the initial state, and `module_bc_em` is the boundary-condition
+code, which the eastern-band question turns on.
+
+The same bug undercounted the other two builds. Recounted: the partial build took
+9 objects (published as 6), this one 32 (published as 30), and the restore
+rebuild 32 (published as 31). The restore set is IDENTICAL to this one, so the
+restore recompiled exactly what the experiment had changed, and
+`compile_restore.log` carries zero lines with `-ffp-contract=off`. Nothing is
+left unreconciled.
+
+The 30 published with the experiment were, and the two above complete them:
 `adapt_timestep_em`, `couple_or_uncouple_em`, `interp_domain_em`,
 `mediation_integrate`, `module_advect_em`, `module_after_all_rk_steps`,
 `module_avgflx_em`, `module_big_step_utilities_em`, `module_convtrans_prep`,
@@ -62,8 +88,56 @@ Thirty objects, with no compile line in the build lacking the flag:
 `module_solvedebug_em`, `module_stoch`, `ndown_em`, `nest_init_utils`,
 `shift_domain_em`, `solve_em`, `start_em`, `tc_em`.
 
-`module_advect_em` and `module_small_step_em` are both in, which is what the
-partial rebuild lacked and why its stage-5 tendency difference survived.
+`module_advect_em` and `module_small_step_em` are both in, and the partial
+rebuild lacked them. That is a correlation over two builds, not an attribution:
+this build added twenty other objects and `start_em` at the same time, so which
+one removes the stage-5 tendency difference is UNMEASURED. An arm that adds
+`module_advect_em` alone would say.
+
+## Two compiler effects changed together
+
+The flags were APPENDED, not replaced. Every one of the 36 compile lines in
+`compile_ffpoff_all.log` -- lines matching `^time (mpif90|mpicc) ` -- reads
+
+    -O2 -ftree-vectorize -funroll-loops -fno-tree-vectorize -ffp-contract=off
+
+so `-funroll-loops` is present in the alternative build exactly as in production,
+and `-ftree-vectorize` is present but overridden by the later
+`-fno-tree-vectorize`. TWO things moved: vectorisation off and contraction
+forbidden. Unrolling was constant across both arms.
+
+An earlier version of this section said unrolling was dropped. It was not, and
+the difference matters: the decomposition needs TWO arms off production
+(`-fno-tree-vectorize` alone, `-ffp-contract=off` alone), and an unrolling arm
+would test something neither build varied.
+
+Until those run, "a trip count selects the vector body and remainder" below is
+the reading the evidence points at, not the reading it establishes.
+
+## The initial state moved too
+
+The rebuilt objects include `start_em` AND `module_initialize_real`, which
+between them compute the base and initial state, and control 3
+shows this build differs from production at stage 0 in `w_2` and `mub`. So the
+two builds do not start from the same operands, and
+
+> zero difference under the alternative build
+
+does not by itself prove that production's own operands were equal and only its
+evaluation differed. What supplies that is the separate probe5 measurement below.
+The clean form of this experiment leaves the initial state bitwise unchanged --
+rebuild only the objects on the `ww` path, with `start_em` on production flags --
+and it has not been run.
+
+## The eastern band cannot be read as being about the dynamics
+
+The partial build did NOT recompile `module_bc_em`; the full build did. Across
+that pair the eastern-zone columns 231-234 were still present at stage 5 under
+the partial build and absent under the full one -- but the boundary-condition
+code moved between the two builds along with twenty-two other objects. So the
+band going clean is a correlation across a pair of builds, not evidence about
+`module_bc_em` and not evidence that the band is a dynamics effect. Any earlier
+reading of it as the latter is withdrawn.
 
 ## Why cutting i differs and cutting j does not
 
@@ -74,8 +148,18 @@ OUTER loop's extent, which does not change how the inner loop is compiled or run
 
 That is why `1x2`, `1x3` and `1x4` are bit-identical to `np=1` at every rank
 count while `2x2` and `4x1` differ in 77 of 197 fields -- an asymmetry that had
-no explanation through four findings, and which needs no numerical defect
-anywhere. On the production build the shape is visible directly:
+no explanation through four findings.
+
+**This does not establish that no defect exists.** Turning vectorisation off also
+suppresses a second class of cause: an out-of-bounds vector load, an
+uninitialised temporary, a wrong extent, an aliasing violation. Distinguishing
+that class from ordinary reordering needs counterfactuals none of which has been
+run here -- bounds checking, an uninitialised-value trap, signalling-NaN
+initialisation, the vectorisation report, a disassembly comparison. So the
+accurate statement is that no stale-halo or lateral-boundary source was found for
+the measured first-stage seam and the remaining evidence points at
+compiler- and loop-shape-sensitive evaluation; whether that is ordinary rounding
+sensitivity or exposes a source or extent defect is OPEN. On the production build the shape is visible directly:
 `itf = MIN(ite, ide-1)` gives patches 0 and 2 a 59-trip `i` loop and patches 1
 and 3 a 58-trip one, and `ww` differed at the last owned column of the 59-trip
 patches only.
@@ -93,6 +177,52 @@ owned mass column -- i = 60, 118, 177 -- is bitwise identical in `u_2`, `mu_2`,
 Identical operands, and no compiler flag can equate operands that differ. So on
 the production build the difference was in the evaluation, and this run shows
 what happens when that freedom is taken away.
+
+**That argument covers `ww` and nothing else.** probe5 measured the operands
+`calc_ww_cp` reads, on the production build. For the stage-5 tendencies there is
+NO production-build operand measurement at all, so for those the only evidence is
+"zero under a different build", which is the weaker half. The same-state
+minimal-object arm is not a refinement there; it is the missing measurement.
+
+## No stencil propagates a stale halo into an owned cell
+
+`FINDING_i_seam_first_write_is_rk_step_prep_v1` left open whether any stencil
+reads the exchanged fields past the width they are refreshed to. The probe7 pair
+answers it, because it holds a stale halo and a clean result side by side.
+
+Comparing each rank's records against `np=1` at the same global column:
+
+    stage   halo cells differing      owned cells differing
+        0            284,256                        0
+        1            284,256                        0
+        2          2,971,331                        0
+        6          3,054,680                        0
+        7          3,092,161                        0
+       31          2,971,331                        0
+       32          2,658,752                        0
+    TOTAL         15,316,767                        0
+
+Stages 4, 5 and 8-12 are absent from the left column because they dump only
+owned-clipped groups (1 and 3); they hold no halo records at all, and their zero
+is an absence of observation, not an observation of currency. Their owned zero is
+real.
+
+So fifteen million halo cells hold values that differ from what the single-patch
+run has at the same global column -- and not one owned cell differs, at any
+stage. Had a stencil read one of those columns and used it, the owned result
+would have moved with it.
+
+> **Within the first RK stage of the first time step, for the fields dumped, no
+> stencil propagates a stale halo value into an owned cell.**
+
+This carries to the production build. A stale read is a DATA difference, and a
+data difference survives a change of optimisation flags -- that is the same
+argument that refuted the halo account of `ww`. So the null is not an artefact of
+building without contraction.
+
+What it does not cover: fields the probe does not dump, later RK stages, later
+time steps, the microphysics, and any read whose effect is overwritten before the
+next anchor. The claim is about owned cells observed at the anchors.
 
 ## A prediction, registered before the run that would test it
 
@@ -124,8 +254,15 @@ claim that position and data are irrelevant.
   this and is NOT measured here.
 - **"Not a defect" is not "harmless".** A 1-ULP seam at a patch boundary still
   seeds the divergence that grows later, and nothing here bounds that growth.
-- **Nothing about the deployed model's numbers changes.** `8bd8cdbf` is not
-  `f54ef3c9`, and control 3 shows the two differ from initialization onward.
+- **This is a property of the deployed implementation, not only of a build.** A
+  numerical model is source plus compiler plus flags plus processor plus
+  decomposition. `f54ef3c9` does not reproduce bitwise across i decompositions,
+  and that is a REPRODUCIBILITY failure of the deployed model wherever bitwise
+  decomposition invariance is required. "Not a defect" was too strong; what is
+  established is that it is not a physical-state or stale-halo defect.
+- **The alternative build's own numbers say nothing about `f54ef3c9`.**
+  `8bd8cdbf` is not `f54ef3c9`, and control 3 shows the two differ from
+  initialisation onward.
 - **This does not say the code is correct.** It says the difference between
   decompositions comes from code generation rather than from halo exchange,
   stencil reach, or the lateral-boundary update. Whether a stencil reads past the
@@ -159,9 +296,9 @@ Run directories, for citation:
     probe5  np1 mp37_probe5_1min_hist0_20260831_102334_p64676
             4x1 mp37_probe5_1min_hist0_np4_4x1_20260831_102528_p74909    d1b46b8c, production flags
     probe6  np1 mp37_probe6_1min_hist0_20260831_104756_p97861
-            4x1 mp37_probe6b_1min_hist0_np4_4x1_20260831_105103_p99140   f15d07a1, 6 objects
+            4x1 mp37_probe6b_1min_hist0_np4_4x1_20260831_105103_p99140   f15d07a1, 9 objects
     probe7  np1 mp37_probe7_1min_hist0_20260831_110634_p17386
-            4x1 mp37_probe7_1min_hist0_np4_4x1_20260831_110832_p20651    8bd8cdbf, 30 objects
+            4x1 mp37_probe7_1min_hist0_np4_4x1_20260831_110832_p20651    8bd8cdbf, 32 objects
 
 `mp37_probe6_1min_hist0_np4_4x1_20260831_104910_p98502` is the attempt that died
 (exit 14, `writev`) and is NOT the analysed run.
