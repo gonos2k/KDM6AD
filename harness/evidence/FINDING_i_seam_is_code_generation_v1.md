@@ -94,6 +94,29 @@ Identical operands, and no compiler flag can equate operands that differ. So on
 the production build the difference was in the evaluation, and this run shows
 what happens when that freedom is taken away.
 
+## A prediction, registered before the run that would test it
+
+Which boundaries differ is still unexplained. The trip-count reading says the
+answer depends on the loop extent and nothing else, and that is falsifiable
+without any rebuild -- `f54ef3c9` is back, so a different `nproc_x` is one pair of
+runs. Writing the prediction down first is what makes that run worth doing.
+
+For each patch, let `trips = MIN(ipe, ide-1) - ips + 1` (the patch bounds are in
+the dump filenames). The hypothesis predicts:
+
+1. **Two patches with the same trip count behave the same.** Both differ at their
+   last owned mass column, or neither does. A run where they disagree kills it.
+2. **58 trips does not differ; 59 trips does.** Measured at `4x1`, where patches 0
+   and 2 have 59 and patches 1 and 3 have 58. Any 58-trip patch that differs, or
+   any 59-trip patch that does not, kills it.
+3. **A trip count not yet seen has no prediction here**, but must be consistent
+   across every patch that shares it.
+
+What it does NOT predict is which side of 58/59 a new trip count falls on: that
+depends on the vector width and how the remainder is emitted, which has not been
+read out of the object code. Point 1 is the load-bearing one, because it is the
+claim that position and data are irrelevant.
+
 ## Scope, and what this does NOT license
 
 - **One case, one time step, the first RK stage, `4x1` only, and only the fields
