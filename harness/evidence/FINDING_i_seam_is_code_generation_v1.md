@@ -56,21 +56,28 @@ decomposition, not about the deployed model's numbers.
 
 ## What was rebuilt
 
-**Thirty-two, not thirty.** `compile_ffpoff_all.log` carries 45 compile lines
-with the flags, over 32 distinct `dyn_em` sources. The list reported with the
-experiment held 30; the two it omits are
+**Thirty-two, not thirty**, and the discrepancy had one cause. The list
+published with the experiment was extracted with a pattern requiring a BARE
+filename after `-o`, so every object compiled with a path prefix vanished from
+it. Counted from the 36 compile lines of `compile_ffpoff_all.log` with
+`-o\s+(\S+\.o)`, the build touched 32 `dyn_em` sources; the two the published
+list omits are
 
     module_bc_em              -o ../dyn_em/module_bc_em.o
     module_initialize_real    -o ../dyn_em/module_initialize_real.o
 
-and neither is incidental -- both are compiled in those lines. They matter to two
-caveats already in this document: `module_initialize_real` sits with `start_em`
-in the group that moved the initial state, and `module_bc_em` is the
-boundary-condition code, which the eastern-band question turns on.
+Neither is neutral here. `module_initialize_real` sits with `start_em` in the
+group that moved the initial state, and `module_bc_em` is the boundary-condition
+code, which the eastern-band question turns on.
 
-The restore rebuild afterwards was reported as 31 objects. 32 took the flags and
-31 were rebuilt on restore; that mismatch is not explained here. The thirty
-reported with the experiment were:
+The same bug undercounted the other two builds. Recounted: the partial build took
+9 objects (published as 6), this one 32 (published as 30), and the restore
+rebuild 32 (published as 31). The restore set is IDENTICAL to this one, so the
+restore recompiled exactly what the experiment had changed, and
+`compile_restore.log` carries zero lines with `-ffp-contract=off`. Nothing is
+left unreconciled.
+
+The 30 published with the experiment were, and the two above complete them:
 `adapt_timestep_em`, `couple_or_uncouple_em`, `interp_domain_em`,
 `mediation_integrate`, `module_advect_em`, `module_after_all_rk_steps`,
 `module_avgflx_em`, `module_big_step_utilities_em`, `module_convtrans_prep`,
@@ -89,8 +96,8 @@ one removes the stage-5 tendency difference is UNMEASURED. An arm that adds
 
 ## Two compiler effects changed together
 
-The flags were APPENDED, not replaced. Every one of the 45 compile lines in
-`compile_ffpoff_all.log` reads
+The flags were APPENDED, not replaced. Every one of the 36 compile lines in
+`compile_ffpoff_all.log` -- lines matching `^time (mpif90|mpicc) ` -- reads
 
     -O2 -ftree-vectorize -funroll-loops -fno-tree-vectorize -ffp-contract=off
 
@@ -121,6 +128,16 @@ evaluation differed. What supplies that is the separate probe5 measurement below
 The clean form of this experiment leaves the initial state bitwise unchanged --
 rebuild only the objects on the `ww` path, with `start_em` on production flags --
 and it has not been run.
+
+## The eastern band cannot be read as being about the dynamics
+
+The partial build did NOT recompile `module_bc_em`; the full build did. Across
+that pair the eastern-zone columns 231-234 were still present at stage 5 under
+the partial build and absent under the full one -- but the boundary-condition
+code moved between the two builds along with twenty-two other objects. So the
+band going clean is a correlation across a pair of builds, not evidence about
+`module_bc_em` and not evidence that the band is a dynamics effect. Any earlier
+reading of it as the latter is withdrawn.
 
 ## Why cutting i differs and cutting j does not
 
@@ -279,9 +296,9 @@ Run directories, for citation:
     probe5  np1 mp37_probe5_1min_hist0_20260831_102334_p64676
             4x1 mp37_probe5_1min_hist0_np4_4x1_20260831_102528_p74909    d1b46b8c, production flags
     probe6  np1 mp37_probe6_1min_hist0_20260831_104756_p97861
-            4x1 mp37_probe6b_1min_hist0_np4_4x1_20260831_105103_p99140   f15d07a1, 6 objects
+            4x1 mp37_probe6b_1min_hist0_np4_4x1_20260831_105103_p99140   f15d07a1, 9 objects
     probe7  np1 mp37_probe7_1min_hist0_20260831_110634_p17386
-            4x1 mp37_probe7_1min_hist0_np4_4x1_20260831_110832_p20651    8bd8cdbf, 30 objects
+            4x1 mp37_probe7_1min_hist0_np4_4x1_20260831_110832_p20651    8bd8cdbf, 32 objects
 
 `mp37_probe6_1min_hist0_np4_4x1_20260831_104910_p98502` is the attempt that died
 (exit 14, `writev`) and is NOT the analysed run.
