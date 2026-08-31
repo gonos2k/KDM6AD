@@ -9,7 +9,9 @@ protocol 5.1 rule `g33_fortran/make_fortran_overlay.py` follows for the
 microphysics.
 
     g33_dyn_probe.py overlay <canonical.F> <out_overlay.F>
-    g33_dyn_probe.py first-difference <np1_dump_dir> <np4_dump_dir>
+    g33_dyn_probe.py first-difference   <np1_dump_dir> <np4_dump_dir>
+    g33_dyn_probe.py halo-vs-reference  <np1_dump_dir> <np4_dump_dir>
+    g33_dyn_probe.py halo-content       <np4_dump_dir>
 
 WHY BENCH_END ANCHORS. Every phase in the RK loop ends with a `BENCH_END(<name>)`
 macro on a line of its own, and each name occurs once in the file. A multi-line
@@ -46,14 +48,32 @@ WINDOWS = [(43, 75), (101, 133), (160, 192), (214, 234)]
 #: a probe that watched only STATE around the exchange would be blind to a halo
 #: defect; TEND is what `rk_tendency` writes. Kind: M mass-level 3-D, Z
 #: vertically staggered 3-D, S 2-D.
+#:
+#: GROUP 4 IS THE INPUT SET OF ONE STENCIL, dumped over the memory window so the
+#: HALO copies come too. `calc_ww_cp` builds `divv(i,k)` at the last owned mass
+#: column from one column EAST: `muu(i+1)` -- which is `0.5*(mup+mub)(i+1) +
+#: (i)` -- times `u(i+1)` over `msfuy(i+1)`. Those four arrays are the whole of
+#: what a 4x1 cut can carry into `ww`: the `rdy` half of the same expression
+#: reads `j+1`, and j is not decomposed here, so it sits at owned i on every
+#: rank. If all four match bitwise the mechanism is refuted, because the rest of
+#: the expression is the same operations on owned data in the same order.
 GROUPS = {
-    1: [("u_2", "M"), ("t_2", "M"), ("ph_2", "Z"), ("w_2", "Z"), ("mu_2", "S")],
-    2: [("ru", "M"), ("rv", "M"), ("rw", "Z"), ("ww", "Z"), ("php", "Z"),
-        ("alt", "M"), ("al", "M"), ("p", "M"), ("rho", "M"),
-        ("muu", "S"), ("muv", "S"), ("mut", "S")],
-    3: [("ru_tend", "M"), ("rv_tend", "M"), ("rw_tend", "Z"), ("ph_tend", "Z"),
-        ("t_tend", "M"), ("mu_tend", "S")],
+    1: [("u_2", "M", "X"), ("t_2", "M", "M"), ("ph_2", "Z", "M"),
+        ("w_2", "Z", "M"), ("mu_2", "S", "M")],
+    2: [("ru", "M", "X"), ("rv", "M", "Y"), ("rw", "Z", "M"), ("ww", "Z", "M"),
+        ("php", "Z", "M"), ("alt", "M", "M"), ("al", "M", "M"), ("p", "M", "M"),
+        ("rho", "M", "M"), ("muu", "S", "X"), ("muv", "S", "Y"),
+        ("mut", "S", "M")],
+    3: [("ru_tend", "M", "X"), ("rv_tend", "M", "Y"), ("rw_tend", "Z", "M"),
+        ("ph_tend", "Z", "M"), ("t_tend", "M", "M"), ("mu_tend", "S", "M")],
+    4: [("u_2", "M", "X"), ("mu_2", "S", "M"), ("mub", "S", "M"),
+        ("msfuy", "S", "X")],
 }
+
+#: Groups dumped over the MEMORY window (halo copies included) rather than owned
+#: cells: 2 asks whether the exchange delivered, 4 asks whether what a stencil
+#: READS at the patch edge is stale.
+HALO_WINDOW = (2, 4)
 
 #: `grid%` prefixed, except the tendencies the Registry declares as i1 locals.
 LOCAL = {"rw_tend", "ph_tend", "t_tend", "mu_tend"}
@@ -65,8 +85,8 @@ LOCAL = {"rw_tend", "ph_tend", "t_tend", "mu_tend"}
 #: way to separate "the halo arrived wrong" from "the halo was right and a later
 #: stencil diverged".
 ANCHORS = [
-    (0, (1,), "   Runge_Kutta_loop:  DO rk_step = 1, rk_order", "before"),
-    (1, (1,), "   Runge_Kutta_loop:  DO rk_step = 1, rk_order", "after"),
+    (0, (1, 4), "   Runge_Kutta_loop:  DO rk_step = 1, rk_order", "before"),
+    (1, (1, 4), "   Runge_Kutta_loop:  DO rk_step = 1, rk_order", "after"),
     (2, (1, 2), "BENCH_END(step_prep_tim)", "after"),
     (31, (2,), '#    include "HALO_EM_A.inc"', "before"),
     (32, (2,), '#    include "HALO_EM_A.inc"', "after"),
@@ -142,10 +162,10 @@ CONTAINS
       iu = MIN( ipe, ide-1 )
 
       DO w = 1, nwin
-!  The halo-exchanged group is dumped over the MEMORY window, clipped to the
-!  domain, so a rank's halo copies come too -- that is the only way to ask
-!  whether the halo arrived wrong. Everything else is owned cells.
-         IF ( grp == 2 ) THEN
+!  Groups 2 and 4 are dumped over the MEMORY window, clipped to the domain, so a
+!  rank's halo copies come too -- that is the only way to ask whether the halo
+!  arrived wrong (2) or was read stale (4). Everything else is owned cells.
+         IF ( {halowin} ) THEN
             i0 = MAX( MAX( ims, ids ), win(1,w) )
             i1 = MIN( MIN( ime, ide-1 ), win(2,w) )
          ELSE
@@ -180,7 +200,7 @@ def _cases() -> str:
     out = []
     for g, fields in sorted(GROUPS.items()):
         out.append(f"         CASE ( {g} )\n")
-        for name, kind in fields:
+        for name, kind, _ in fields:
             who = name if name in LOCAL else f"grid%{name}"
             out.append(f"            WRITE(un) REAL( {who}{_slice(kind)}, 4 )\n")
     return "".join(out)
@@ -213,7 +233,9 @@ def build(src: str) -> str:
     if body.count(tail) != 1:
         raise SystemExit(f"{tail!r} is not unique")
     win = ", ".join(f"{a}, {b}" for a, b in WINDOWS)
-    helper = HELPER.format(nwin=len(WINDOWS), win=win, cases=_cases())
+    helper = HELPER.format(
+        nwin=len(WINDOWS), win=win, cases=_cases(),
+        halowin=" .OR. ".join(f"grp == {g}" for g in HALO_WINDOW))
     return DEFINE + body.replace(tail, helper + tail, 1)
 
 
@@ -249,7 +271,12 @@ def strip_guarded(text: str) -> str:
 
 
 def read_dump(path: Path) -> dict:
-    """One rank's file as {(stage, grp, i): {"own": bool, field: array}}.
+    """One rank's file as {(stage, grp, i, owned): {field: array}}.
+
+    OWNERSHIP IS IN THE KEY, not the value: the same global column is owned
+    on one rank and a halo copy on its neighbour, and both must survive a
+    merge across ranks for `halo_content` and `halo_vs_reference` to be able
+    to ask whether they agree.
 
     THE EMITTER AND THE PARSER LIVE IN ONE FILE because a record layout that
     drifts between them produces numbers that look fine and are not. WRF is
@@ -263,7 +290,7 @@ def read_dump(path: Path) -> dict:
             int(v) for v in raw[off:off + 40].view(">i4"))
         off += 40
         ni, nj, nk = i1 - i0 + 1, ju - jps + 1, ku - kps + 1
-        for name, kind in GROUPS[grp]:
+        for name, kind, _ in GROUPS[grp]:
             n = ni * nj * (1 if kind == "S" else nk + (1 if kind == "Z" else 0))
             a = raw[off:off + 4 * n].view(">f4")
             off += 4 * n
@@ -277,10 +304,23 @@ def read_dump(path: Path) -> dict:
 
 
 def _load(d: Path) -> dict:
-    out = {}
+    """Every rank's records merged on (stage, group, i, owned).
+
+    A KEY IS CLAIMED BY EXACTLY ONE FILE. Two ranks holding the same global
+    column with the same ownership flag is not a merge to resolve -- their two
+    values can legitimately differ, and `setdefault(...).update(...)` would keep
+    whichever file sorted last and report the pair as agreeing. Refuse instead.
+    """
+    out, owner = {}, {}
     for f in sorted(d.glob("g33dyn_*.bin")):
         for k, v in read_dump(f).items():
-            out.setdefault(k, {}).update(v)
+            if k in owner:
+                raise SystemExit(
+                    f"duplicate dump key {k}: written by {owner[k].name} "
+                    f"and {f.name}; the two values cannot be merged")
+            owner[k], out[k] = f, v
+    if not out:
+        raise SystemExit(f"no g33dyn_*.bin records under {d}")
     return out
 
 
@@ -294,15 +334,51 @@ def first_difference(dir_a: Path, dir_b: Path) -> list:
     """
     import numpy as np
     A, B = _load(dir_a), _load(dir_b)
+    _require_same_coverage(A, B, dir_a, dir_b)
     rows = []
-    for stage, grp in sorted({(s, g) for s, g, _, _ in A} & {(s, g) for s, g, _, _ in B}):
-        for name, _ in GROUPS[grp]:
-            hit = [i for (s, g, i, own) in sorted(set(A) & set(B))
+    for stage, grp in sorted({(s, g) for s, g, _, _ in A}):
+        for name, _, _ in GROUPS[grp]:
+            hit = [i for (s, g, i, own) in sorted(A)
                    if s == stage and g == grp and own
                    and not np.array_equal(A[(s, g, i, own)][name].view(np.uint32),
                                           B[(s, g, i, own)][name].view(np.uint32))]
             rows.append({"stage": stage, "group": grp, "field": name, "columns": hit})
     return rows
+
+
+def _require_same_coverage(A: dict, B: dict, dir_a: Path, dir_b: Path) -> None:
+    """Both arms must carry the SAME records, or the comparison is not defined.
+
+    An intersection is a fail-open: a stage the emitter never wrote on one arm
+    silently leaves that stage out and the run reports no difference there. That
+    is not hypothetical -- the first build of this probe dropped stage 0 on both
+    arms because its guard tested `rk_step` above the loop that assigns it, and
+    only a hand count of the records found it.
+
+    Checked here: the (stage, group) universe against what ANCHORS declares, the
+    owned-cell key sets against each other, and the field list per record.
+    """
+    want = {(st, g) for st, grps, _, _ in ANCHORS for g in grps}
+    for tag, D, d in (("A", A, dir_a), ("B", B, dir_b)):
+        have = {(s, g) for s, g, _, _ in D}
+        if have != want:
+            raise SystemExit(
+                f"{tag} ({d}) stage/group coverage != ANCHORS: "
+                f"missing {sorted(want - have)}, unexpected {sorted(have - want)}")
+    ka = {(s, g, i) for (s, g, i, own) in A if own}
+    kb = {(s, g, i) for (s, g, i, own) in B if own}
+    if ka != kb:
+        raise SystemExit(
+            f"owned-cell coverage differs: only in {dir_a}: {sorted(ka - kb)[:8]} "
+            f"({len(ka - kb)}), only in {dir_b}: {sorted(kb - ka)[:8]} ({len(kb - ka)})")
+    for (s, g, i, own) in A:
+        want_f = {n for n, _, _ in GROUPS[g]}
+        for tag, D in (("A", A), ("B", B)):
+            got = set(D[(s, g, i, own)])
+            if got != want_f:
+                raise SystemExit(
+                    f"{tag} record {(s, g, i, own)} fields != GROUPS[{g}]: "
+                    f"missing {sorted(want_f - got)}, extra {sorted(got - want_f)}")
 
 
 def halo_content(dump_dir: Path) -> list:
@@ -316,7 +392,7 @@ def halo_content(dump_dir: Path) -> list:
     D = _load(dump_dir)
     rows = []
     for stage, grp in sorted({(s, g) for s, g, _, _ in D}):
-        for name, _ in GROUPS[grp]:
+        for name, _, _ in GROUPS[grp]:
             bad = [i for (s, g, i, own) in sorted(D)
                    if s == stage and g == grp and not own
                    and (s, g, i, True) in D
@@ -326,17 +402,50 @@ def halo_content(dump_dir: Path) -> list:
     return rows
 
 
+def halo_vs_reference(ref_dir: Path, dec_dir: Path) -> list:
+    """Each rank's HALO copy against the single-patch value at the same global i.
+
+    `first_difference` compares OWNED cells only, and is right to: the same
+    global cell is owned on one rank and a halo copy on its neighbour, and
+    mixing them either hides a halo mismatch or invents a difference. But the
+    input a stencil READS at the patch edge is exactly that halo copy, so
+    asking whether it is stale needs this comparison and not that one.
+
+    Per FILE, so the answer is per rank. Two ranks can hold a halo copy of the
+    same column, and `_load` merges by global index -- which is what makes it
+    the wrong loader for this question.
+    """
+    import numpy as np
+    R = _load(ref_dir)
+    rows = []
+    for f in sorted(Path(dec_dir).glob("g33dyn_*.bin")):
+        D = read_dump(f)
+        for stage, grp in sorted({(s, g) for s, g, _, _ in D}):
+            for name, _, _ in GROUPS[grp]:
+                bad = [i for (s, g, i, own) in sorted(D)
+                       if s == stage and g == grp and not own
+                       and (s, g, i, True) in R
+                       and not np.array_equal(
+                           D[(s, g, i, own)][name].view(np.uint32),
+                           R[(s, g, i, True)][name].view(np.uint32))]
+                rows.append({"rank": f.stem.replace("g33dyn_", ""), "stage": stage,
+                             "group": grp, "field": name, "columns": bad})
+    return rows
+
+
 SEAMS = (59, 117, 176)
 
 
-def _report(rows) -> None:
-    print(f"  {'stage':>5} {'grp':>3} {'field':>8} {'cols':>6}   columns / nearest boundary")
+def _report(rows, key: str | None = None) -> None:
+    head = f"  {'stage':>5} {'grp':>3} {'field':>8} {'cols':>6}   columns / nearest boundary"
+    print(f"  {key:>18}{head}" if key else head)
     for r in rows:
         c = r["columns"]
         if not c:
             continue
         near = min(SEAMS, key=lambda s: min(abs(i - s) for i in c))
-        print(f"  {r['stage']:>5} {r['group']:>3} {r['field']:>8} {len(c):>6}   "
+        lead = f"  {r[key]:>18}" if key else ""
+        print(f"{lead}  {r['stage']:>5} {r['group']:>3} {r['field']:>8} {len(c):>6}   "
               f"{c[:9]}{' ...' if len(c) > 9 else ''}  nearest boundary {near}")
 
 
@@ -346,6 +455,13 @@ def main() -> int:
             raise SystemExit("first-difference <np1_dump_dir> <np4_dump_dir>")
         print("  np=1 vs np=4, OWNED cells (blank stages agree everywhere)")
         _report(first_difference(Path(sys.argv[2]), Path(sys.argv[3])))
+        return 0
+    if len(sys.argv) >= 2 and sys.argv[1] == "halo-vs-reference":
+        if len(sys.argv) != 4:
+            raise SystemExit("halo-vs-reference <np1_dump_dir> <np4_dump_dir>")
+        print("  np=4 HALO copies vs np=1 at the same global column "
+              "(blank = the halo a stencil reads there is current)")
+        _report(halo_vs_reference(Path(sys.argv[2]), Path(sys.argv[3])), key="rank")
         return 0
     if len(sys.argv) >= 2 and sys.argv[1] == "halo-content":
         if len(sys.argv) != 3:

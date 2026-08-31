@@ -367,6 +367,9 @@ def main() -> int:
     # recorded as such -- and a pipeline reading only the exit code took it as a
     # success anyway (owner review 9.2). The verdict is written beside the
     # metadata and, when the experiment is invalid, returned.
+    # proc is None only if the launch raised OSError above (caught) → report 127
+    # (command-not-found convention); otherwise use WRF's real exit code.
+    rc = proc.returncode if proc is not None else 127
     _invalid = []
     if _exe_before != h_after:
         _invalid.append("binary_changed_during_run")
@@ -374,17 +377,23 @@ def main() -> int:
         _invalid.append("processor_grid_mismatch")
     if _requested and not _actual:
         _invalid.append("processor_grid_not_found")
+    # A crashed run is not a valid experiment. The asymmetry above is deliberate
+    # and kept: a ZERO exit still does not make an experiment valid. What was
+    # missing is the other direction. An MPI transport failure
+    # ("writev failed: No buffer space available", exit 14, right after
+    # SIMULATION START) left this file reading `true`, and findings cited it as
+    # if it certified the run; the exit code was in a sibling file nobody read.
+    if rc != 0:
+        _invalid.append("model_did_not_complete")
     import json as _json
     (out/'experiment_valid.json').write_text(_json.dumps({
         "experiment_valid": not _invalid,
         "invalid_reasons": _invalid,
         "requested_proc_grid": _requested,
         "actual_proc_grid": _actual,
+        "exit_code": rc,
+        "model_completed": rc == 0,
     }, indent=1) + "\n")
-
-    # proc is None only if the launch raised OSError above (caught) → report 127
-    # (command-not-found convention); otherwise use WRF's real exit code.
-    rc = proc.returncode if proc is not None else 127
     (out/'exit_code').write_text(str(rc)+'\n')
     print(out)
     if _invalid and rc == 0:

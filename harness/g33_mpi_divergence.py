@@ -358,9 +358,16 @@ def core_widths(absmax, l2) -> dict:
     that grows faster than its surroundings narrows it without any energy moving
     (owner review 3.1), so it cannot carry a claim about localization on its own.
 
-    `l2_50` / `l2_90` are the narrowest windows grown outward from the peak-energy
-    column that hold 50% / 90% of the summed per-column energy. Those are the ones
-    that answer "did the difference energy stay localized".
+    `l2_50` / `l2_90` are the narrowest CONTIGUOUS windows containing the
+    peak-energy column that hold 50% / 90% of the summed per-column energy. Those
+    are the ones that answer "did the difference energy stay localized".
+
+    Searched exhaustively, not grown greedily. Extending toward the heavier
+    immediate neighbour does not minimise the window: with energies
+    `[2, 2, 100, 1, 100]` and the peak in the middle, 90% needs width 3 (peak plus
+    the two columns to its right), but a greedy step takes the 2 on the left twice
+    before it ever reaches the 100 on the right. The domain is ~235 columns wide,
+    so the exhaustive search costs nothing.
     """
     n = len(absmax)
     peak = max(absmax) if n else 0.0
@@ -372,18 +379,17 @@ def core_widths(absmax, l2) -> dict:
     if total <= 0.0:
         return out
     c = out["l2_peak_column"] - 1
-    lo = hi = c
-    acc = e[c]
+    pre = [0.0]
+    for v in e:
+        pre.append(pre[-1] + v)
     for frac, key in ((0.5, "l2_50"), (0.9, "l2_90")):
-        while acc < frac * total and (lo > 0 or hi < n - 1):
-            # extend toward the heavier neighbour, so the window stays minimal
-            left = e[lo - 1] if lo > 0 else -1.0
-            right = e[hi + 1] if hi < n - 1 else -1.0
-            if right >= left:
-                hi += 1; acc += e[hi]
-            else:
-                lo -= 1; acc += e[lo]
-        out[key] = hi - lo + 1
+        want, best = frac * total, n
+        for lo in range(c + 1):
+            for hi in range(max(c, lo), n):
+                if pre[hi + 1] - pre[lo] >= want:
+                    best = min(best, hi - lo + 1)
+                    break
+        out[key] = best
     return out
 
 
@@ -413,7 +419,6 @@ def cell_area(state_path: Path, a):
     spatial statistic is a grid-cell one, which this module labels as such.
     """
     import netCDF4
-    import numpy as np
     d = netCDF4.Dataset(str(state_path))
     mf = _num(d["MAPFAC_M"], 0)
     dx, dy = float(d.getncattr("DX")), float(d.getncattr("DY"))
@@ -530,7 +535,6 @@ def _fmt(v, spec: str = ".3e") -> str:
 
 def main() -> int:
     import netCDF4
-    import numpy as np
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("run_a", type=Path,
                     help="a run DIRECTORY (gated) or a forecast file (ungated)")
