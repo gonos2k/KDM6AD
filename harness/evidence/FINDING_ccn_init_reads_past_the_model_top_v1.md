@@ -145,9 +145,29 @@ source tracing or a sentinel, neither of which was done.
 It also places the earlier 75: that came from the bounds instrumentation, not
 from the correction.
 
-**The permanent correction, and what should fill the `k = kte` slot, remain owner
-decisions.** Nothing here says the read is acceptable -- it reads memory the
-array does not own -- only that its value does not reach these outputs.
+## The slot has no consumer, so no padding policy is needed
+
+Both readers of `qnn` stop one short of it, in source:
+
+    share/module_bc.F   flow_dep_bdy_qnn   ktf = kde-1, DO k = kts, ktf
+    dyn_em/solve_em.F   microphysics_driver called with KTE = min(k_end, kde-1)
+
+`k_end` is `kpe`, so the driver receives `kde-1` and the microphysics never sees
+`k = kte`. `p_qnn` appears nowhere else in `dyn_em`, `phys` or `share`.
+
+So the two sides agree: the measurement found no observable effect because,
+in the source, nothing reads the slot. The correction is therefore just
+
+    DO k = kts, kte-1
+
+with no padding assignment to decide -- the question of what should fill
+`scalar(:,kte,:,p_qnn)` does not arise, because nothing reads it.
+
+**The permanent correction remains an owner decision**, for one reason that is
+not about the loop: applying it changes the deployed binary, and `f54ef3c9` is
+cited as the campaign reference across the MPI findings. The numbers those
+findings report do not move -- the correction is bitwise neutral on both
+decompositions, measured -- but the hash they name would become historical.
 
 It is also probably not related to the seam, but "it happens once" is not the
 reason -- a one-time initialisation error perturbs the state and can seed a later
