@@ -22,7 +22,7 @@ the anchor missing rather than silently misplaced.
 WHY ONLY THE FIRST RK STAGE. The request's prediction is that the first
 difference appears at or before `rk_tendency` in the first step, so the probe
 covers `itimestep == 1 .AND. rk_step == 1`. That is also what keeps the dump at
-about 320 MB per run: `rk_step == 1` runs exactly one acoustic sub-step, so the
+about 320 MB per run: the anchors outside the acoustic sub-step loop fire once, so the
 twelve anchors fire twelve times and not fifty-six.
 
 WHY PATCH BOUNDS NAME THE FILE. Each rank needs its own file and the rank id
@@ -94,11 +94,6 @@ ANCHORS = [
     (5, (1, 3), "BENCH_END(rk_tend_tim)", "after"),
     (6, (1, 2, 3), "BENCH_END(relax_bdy_dry_tim)", "after"),
     (7, (1, 2), "BENCH_END(small_step_prep_tim)", "after"),
-    (8, (1,), "BENCH_END(advance_uv_tim)", "after"),
-    (9, (1,), "BENCH_END(spec_bdy_uv_tim)", "after"),
-    (10, (1,), "BENCH_END(advance_mu_t_tim)", "after"),
-    (11, (1,), "BENCH_END(advance_w_tim)", "after"),
-    (12, (1,), "BENCH_END(small_step_finish_tim)", "after"),
 ]
 
 #: The overlay defines the macro itself, so the build needs no flag and
@@ -135,7 +130,7 @@ CONTAINS
       INTEGER             :: st, w, i0, i1, ju, ku, iu
 
 !  The first step's first RK stage only: that is what the request predicts about,
-!  and rk_step 1 takes exactly one acoustic sub-step, which bounds the dump.
+!  and every anchor here fires once per RK stage, which bounds the dump.
       IF ( grid%itimestep /= 1 ) RETURN
 !  Stage 0 sits ABOVE the RK loop, where `rk_step` has not been assigned yet, so
 !  it must not be tested there -- doing so silently dropped every stage-0 record.
@@ -273,9 +268,6 @@ def strip_guarded(text: str) -> str:
 def read_dump(path: Path) -> dict:
     """One rank's file as {(stage, grp, i, owned): {field: array}}.
 
-    STAGES 8-12 ARE PER ACOUSTIC SUB-STEP, not per time step: their anchors sit
-    inside that loop, so each fires several times and the record returned is the
-    LAST sub-step's. Stages 0-7, 31 and 32 fire once.
 
     OWNERSHIP IS IN THE KEY, not the value: the same global column is owned
     on one rank and a halo copy on its neighbour, and both must survive a
@@ -302,11 +294,6 @@ def read_dump(path: Path) -> dict:
                           (ni, nk + (1 if kind == "Z" else 0), nj), order="F")
             for c in range(ni):
                 i = i0 + c
-                # LAST WRITE WINS, AND THAT IS LOAD-BEARING. Stages 8-12 sit
-                # inside the acoustic sub-step loop, so they fire once per
-                # sub-step and the record kept is the LAST one. A refusal here
-                # was tried and fires on correct dumps; the fact belongs in the
-                # docstring, not in a guard.
                 out.setdefault((stage, grp, i, ips <= i <= iu), {})[name] = a[c]
     return out
 
@@ -378,6 +365,9 @@ def _require_declared_coverage(A: dict, B: dict, dir_a: Path, dir_b: Path) -> No
     record of a kind must share one array shape, which catches a j truncation or
     a dropped level, for which no declared universe exists.
 
+    Extra records are allowed: a dump written by an earlier probe with more
+    anchors stays readable, and an extra record cannot hide an omission.
+
     Not covered: a truncation identical in every record of both arms, and the set
     of halo copies, which is rank-dependent and undeclared.
     """
@@ -387,12 +377,10 @@ def _require_declared_coverage(A: dict, B: dict, dir_a: Path, dir_b: Path) -> No
     shapes = {}
     for tag, D, d in (("A", A, dir_a), ("B", B, dir_b)):
         got = {(s, g, i) for (s, g, i, own) in D if own}
-        if got != want:
+        if want - got:
             raise SystemExit(
-                f"{tag} ({d}) owned coverage != ANCHORS x WINDOWS "
-                f"({len(want)} expected): missing {sorted(want - got)[:6]} "
-                f"({len(want - got)}), unexpected {sorted(got - want)[:6]} "
-                f"({len(got - want)})")
+                f"{tag} ({d}) is missing {len(want - got)} of the {len(want)} "
+                f"records ANCHORS x WINDOWS declares, e.g. {sorted(want - got)[:6]}")
         for (s, g, i, own), rec in D.items():
             for name, kind, _ in GROUPS[g]:
                 shapes.setdefault(kind, set()).add(rec[name].shape)
