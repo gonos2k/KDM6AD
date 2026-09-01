@@ -33,16 +33,23 @@ The block's own guard, twelve lines above at `.F:1774`, is written
 `MAXVAL(scalar(its:MIN(ite,ide-1), kts:kte-1, ...))` -- `kte-1`. The upper bound
 was known in the same block and missed in the fill loop.
 
-## What it reaches
+## What it reaches -- less than first written
 
-`dz8w(i,kte,j)` is computed from memory past the declared top. `z_sum`
-accumulates upward and each level's CCN is set from the running sum before the
-next increment, so the levels below `kte` use only in-bounds thicknesses. The
-value that carries the out-of-bounds read is **the top model level's initial CCN
-number**, on every column the block fills.
+`phb` has bound 40 and the runtime caught index 41, so `kte = 40` here and the
+physical mass levels are `kts .. kte-1` = 1..39. That is also the range this
+block's own guard uses. So:
 
-Whether that value matters to the forecast is NOT measured here. What is measured
-is that it is computed from memory the array does not own.
+- levels 1..39, the physical mass levels, read `k+1` up to 40 and are **in
+  bounds and correct**;
+- the out-of-bounds read happens only at `k = 40`, and the value it produces is
+  written to `scalar(i,40,j,p_qnn)` -- the **top allocated slot, above the
+  physical mass-level range**, not the top model level.
+
+An earlier version of this finding said "the top model level's initial CCN
+number". That was wrong: no physical level is affected. Whether anything
+downstream reads the `k = kte` slot is not measured, and until it is, the
+consequence is a value written from undefined memory into a slot that may never
+be consumed.
 
 ## Why nobody had seen it
 
@@ -62,9 +69,41 @@ the question this experiment was run to answer --
 > whether the i-cut seam is ordinary rounding sensitivity or exposes a source or
 > extent defect
 
--- is **untested**. This finding is what the run hit on the way there. It is in a
-different subsystem, it happens once, and it cannot be the seam, which is created
-inside the RK loop at every step.
+-- was untested at the time. It has since been answered by correcting this read
+temporarily and re-running: see below.
+
+## Corrected temporarily, and what that showed
+
+`DO k=kts,kte` was changed to `DO k=kts,kte-1` -- one line, verified by diff --
+and the 32 objects rebuilt with `-fcheck=bounds` (binary `63b788a1`). Both
+decompositions then ran the whole first minute:
+
+    np=1   exit 0, SUCCESS COMPLETE, 0 bounds violations
+    4x1    exit 0, SUCCESS COMPLETE, 0 bounds violations on all four ranks
+
+So this read was the only array-bounds violation on that path, and correcting it
+lets the check reach the dynamics, which is what it was run for.
+
+**And the seam is still there**: `np=1` against `4x1` on that binary differs in
+0 / 28 / 71 / **75** of 197 fields at 0 / 20 / 40 / 60 s. So the two defects are
+independent BY MEASUREMENT rather than by argument -- removing this one does not
+remove the seam.
+
+The 75 rather than 77 is expected: `63b788a1` carries the correction and is a
+different binary from `f54ef3c9`, so its trajectory is not production's.
+
+The change was reverted afterwards. `start_em.F` is back to `5c6d6faa` and
+`main/wrf.exe` to `f54ef3c962a1d6a0`, bit for bit. **The permanent correction,
+and the question of what should fill the `k = kte` slot, remain owner
+decisions.**
+
+It is also probably not related to the seam, but "it happens once" is not the
+reason -- a one-time initialisation error perturbs the state and can seed a later
+divergence perfectly well. The reasons that do apply are that the affected slot
+is outside the physical mass-level range, and that the seam's first appearance
+was traced to `ww` in `rk_step_prep`, which does not read `p_qnn`. Whether the
+`k = kte` slot enters any stencil is unmeasured, so this is a strong expectation
+and not a demonstration.
 
 Reaching the dynamics under bounds checking needs this read corrected first, and
 `start_em.F` is campaign source: not corrected here, and the correction is an

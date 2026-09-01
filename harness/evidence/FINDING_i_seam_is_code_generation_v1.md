@@ -33,20 +33,38 @@ gone. Four builds were made, differing only in `FCOPTIM`, each rebuilding the
 same 32 `dyn_em` objects, and each run at `np=1` and `4x1` for one minute with
 history every 20 s. The comparator's field universe is **197** in every file.
 
-    frame                                        0     1     2     3
-                                               (0s) (20s) (40s) (60s)
-    production      f54ef3c9   vec on,  fma on    0    28    71    77
-    both flags off  309e2a8e   vec off, fma off   0     0     0     0
-    vectorise off   b6eb2159   vec off, fma on    0     0     0     0
-    contract off    5f77fefe   vec on,  fma off   0     0     0     0
+    build                       vectorise   contract    0s  20s  40s  60s
+    production      f54ef3c9    permitted  permitted    0   28   71   77
+    both off        309e2a8e    forbidden  forbidden    0    0    0    0
+    vectorise off   b6eb2159    forbidden  permitted    0    0    0    0
+    contract off    5f77fefe    permitted  forbidden    0    0    0    0
+
+`-ffp-contract=off` forbids CONTRACTION. Whether the loop actually emitted FMA
+instructions under the production flags is a separate question and is not
+measured; "fma on/off" appeared in an earlier version of this table and is
+withdrawn.
+
+Counted as RAW WORDS rather than as values the table is unchanged -- 0/28/71/77
+and 0/0/0/0 over the same 197 fields -- so "identical" here is bit for bit in the
+compared output, not merely equal as floating-point values.
 
 The production row reproduces the campaign's headline number -- 77 of 197 fields
 at one minute -- with the same comparator, case, frames and field universe. So
 the zeros are not the instrument failing to see this seam.
 
-**The difference needs BOTH vectorisation and contraction.** Turning off either
-one removes it entirely. It is an interaction, not a main effect of either, and
-that is a sharper statement than "compiler-sensitive": it names a conjunction.
+**The response is conjunctive.** The seam appears only when both transformations
+are permitted, and forbidding either is sufficient to remove it.
+
+An earlier version of this section called that "an interaction, not a main effect
+of either". That is wrong, and wrong in a way that depends on how the factors are
+coded. In the standard +-1 factorial with `Y(++)=77` and the other three cells 0,
+
+    Y = 19.25 + 19.25 x_V + 19.25 x_C + 19.25 x_V x_C
+
+so both main effects and the interaction are equal and non-zero. Only in 0/1
+treatment coding against the off/off cell does the product term stand alone.
+"Conjunctive and non-additive" says what was measured without depending on the
+coding, and is what this document now claims.
 
 ### The vectorisation arm leaves the initial state untouched
 
@@ -59,10 +77,19 @@ every zero above. It is now measured, per arm, against the production run:
       contract off      7 fields differ
       vectorise off     0 fields differ   <-- bitwise identical start
 
-So `-fno-tree-vectorize` alone starts from the production initial state bit for
-bit and still removes the whole one-minute seam. The same-initial-state
-counterfactual the objection asked for is satisfied for that arm, and it is the
-arm that matters, since it is sufficient on its own.
+So `-fno-tree-vectorize` alone starts from the production initial state and still
+removes the whole one-minute seam.
+
+"Bit for bit" is measured, not assumed: comparing those frame-0 fields as raw
+uint32 words rather than as floating-point values gives 0 of 197 differing, with
+zero cells where one arm holds `+0.0` and the other `-0.0`. The comparator's own
+equality is `np.array_equal`, which is value equality and would not have
+distinguished those, so the raw-word pass was run separately.
+
+Its SCOPE is the 197 time-varying f32 output fields. Static fields, integer and
+logical state, halo and boundary arrays and internal temporaries are not in the
+forecast file and are not compared, so this is not a claim that the two builds'
+entire initial states are identical.
 
 ### And that flag does change the arithmetic
 
@@ -71,10 +98,16 @@ production at `np=1`, where the start is identical so any difference is the flag
 
     vectorise off np=1 vs production np=1    0    28    76    78
 
-Seventy-eight fields differ by one minute -- about the size of the seam itself.
-So the flag did not make the answer smaller or smoother; it made the two
-decompositions follow the same path. That is what a code-generation account
-predicts and a data account does not.
+Seventy-eight of 197 fields differ by one minute. That is a count of FIELD NAMES,
+not a magnitude, so it says the flag is not a no-op and nothing about whether the
+answer got smaller or smoother; an earlier version of this paragraph said it did
+and that is withdrawn.
+
+What is measured is that under the alternative build the two decompositions agree
+in the 197 compared fields at every sampled frame through 60 s. Intermediate RK
+stages and acoustic sub-steps are not sampled here, so "they follow the same
+path" -- also an earlier wording -- overstates it: paths that differ in between
+and rejoin at the frame boundary are not excluded by this measurement.
 
 ### What this settles and what it does not
 
@@ -179,8 +212,8 @@ Those arms have since been run, and each flag ALONE removes the difference; see
 the flag matrix above. So the difference requires both transformations enabled,
 which is an interaction rather than a main effect. It still does not establish
 that "a trip count selects the vector body and remainder": that reading is
-consistent with the interaction and so are others, and no vectorisation report or
-disassembly has been read.
+consistent with the interaction and so are others, and a vectorisation report and the
+vectoriser's own dump have now been read (below); disassembly has not.
 
 ## The initial state moved too
 
@@ -209,6 +242,46 @@ code moved between the two builds along with twenty-two other objects. So the
 band going clean is a correlation across a pair of builds, not evidence about
 `module_bc_em` and not evidence that the band is a dynamics effect. Any earlier
 reading of it as the latter is withdrawn.
+
+## The intervention is global, so the site is not attributed
+
+`-fno-tree-vectorize` turns tree vectorisation off in all 32 objects, not in
+`calc_ww_cp`. So what is established is that the whole-build intervention removes
+the seam, NOT that this loop is the only place that would. `module_advect_em`,
+`module_small_step_em`, `module_bc_em`, `start_em` and the rest are in the same
+build.
+
+Those arms have been run, and no single object accounts for it.
+
+A true one-object arm is not reachable: the build recompiles whatever `USE`s a
+changed module, so touching `module_big_step_utilities_em.F` flags nine objects
+and touching `module_small_step_em.F` flags three. The set, not the object, is
+the smallest unit this build offers. Every arm below leaves `start_em` and
+`module_initialize_real` on production flags, so the initial state is unchanged
+-- confirmed at 0 of 197 fields at frame 0 in each.
+
+    flagged with -fno-tree-vectorize                     seam at 60 s, of 197
+    (none: production f54ef3c9)                                 77
+    {small_step_em, solve_em, madwrf}                           74
+    {big_step_utilities, em, diffusion, madwrf, frk1,
+     frk2, solve_em, ndown, tc}                    9 objects    75
+    those 9 + {advect_em}                                       74
+    those 9 + {advect_em} + {small_step_em}      ~12 objects     0
+    all 32                                                       0
+
+Each subset takes 1 to 3 fields off 77. Only the union collapses to zero. So the
+difference is not made in one place: **no single object, and no object's
+dependency closure, removes it.**
+
+The cumulative ladder alone would have read as "`module_small_step_em` is the
+cause", since adding it is the step that reaches zero. The direct arm --
+production everywhere except that one file -- refutes that: 74, with the flag
+demonstrably active, since that arm's `np=1` differs from production in 77 of 197
+fields by one minute. Recorded because the ladder alone would have published a
+wrong attribution.
+
+The shape is the same as the flag matrix: parts do almost nothing and the
+conjunction decides.
 
 ## Why cutting i differs and cutting j does not
 
@@ -329,11 +402,21 @@ Under the production flags the report for that loop is
     module_big_step_utilities_em.f90:738:13: optimized: loop vectorized using 16 byte vectors
     module_big_step_utilities_em.f90:738:13: optimized: loop vectorized using 8 byte vectors
 
-**Two widths for one loop**: a body at 16 bytes -- four f32 lanes -- and a
-narrower 8-byte, two-lane epilogue. So the `i` loop that reads `i+1` across the
-patch boundary is in fact compiled as a full-width body plus a narrower
-remainder. That is not a deduction from the seam any more; it is what the
-compiler reports building.
+Two widths for one loop. `-fopt-info` alone does NOT say which is the main loop
+and which the epilogue -- it never uses the word -- so the vectoriser's own dump
+was read instead (`-fdump-tree-vect-details`, GCC 15.2.0). For the same loop, in
+order:
+
+    vectorization factor = 4
+    ... Vectorizing an unaligned access.  (x14)
+    epilog loop required
+    vectorization factor = 2
+
+and, on the same loop, `cost model: epilogue peel iters set to vf/2 because loop
+iterations are unknown`. So the four-lane body and the two-lane epilogue are
+named by the compiler, in that order, and the reason the epilogue cannot be
+specialised is that the trip count is a run-time value -- which is exactly what
+changes with the patch width.
 
 Adding `-fno-tree-vectorize` to the identical line takes the whole file from 347
 vectorisation reports to **zero**, and `calc_ww_cp` from 10 to zero.
@@ -342,13 +425,21 @@ WHAT THIS DOES AND DOES NOT ADD. It establishes the STRUCTURE the trip-count
 reading assumed -- body plus narrower remainder -- rather than leaving it
 assumed. It does not establish that the remainder is where the difference is
 made: that needs the generated code, or a numeric test that isolates the
-remainder lanes, and neither has been done. The second possibility this document keeps open -- that vectorisation is
-suppressing an out-of-bounds load or an uninitialised value rather than only
-reordering arithmetic -- was ATTEMPTED and is still open. A bounds-checked build
-of the same 32 objects (`649b437f`) aborted in INITIALISATION, before the first
-dynamics step, on a real out-of-bounds read in the CCN block
-(`FINDING_ccn_init_reads_past_the_model_top_v1`). So the dynamics were never
-reached under bounds checking and the question is untested, not answered.
+remainder lanes, and neither has been done. The second possibility this document kept open -- that vectorisation is
+suppressing an out-of-bounds load rather than only reordering arithmetic -- now
+has direct evidence against it. A bounds-checked build first aborted in
+INITIALISATION on a real out-of-bounds read in the CCN block
+(`FINDING_ccn_init_reads_past_the_model_top_v1`); with that one line corrected,
+the rebuilt binary `63b788a1` ran the whole first minute at `np=1` and at `4x1`
+with **zero bounds violations on every rank** -- and the seam was still present,
+0 / 28 / 71 / 75 of 197 fields.
+
+So the seam survives in a build where no array-bounds violation occurs anywhere
+in the 32 `dyn_em` objects. An array-index violation is not the explanation.
+
+That does NOT close the branch. `-fcheck=bounds` catches index violations, not
+uninitialised reads, aliasing or type violations, and only `dyn_em` was
+instrumented -- `phys/`, `share/` and `frame/` were not.
 
 Two weaker checks did run and found nothing: re-enabling the warnings the build
 suppresses with `-w` yields 208 for this file, all `-Wunused-dummy-argument` or
@@ -444,8 +535,8 @@ all; it needs the stage probe at a decomposition whose trip counts are mixed.
 
 Four builds, differing only in `FCOPTIM`, each rebuilding the same 32 `dyn_em`
 objects (36 anchored compile lines, none lacking `-funroll-loops`), each run at
-`np=1` and `4x1`, `--minutes 1 --history 0 --history-s 20`, all six runs
-`experiment_valid` true with `exit_code` 0 and `model_completed` true:
+`np=1` and `4x1`, `--minutes 1 --history 0 --history-s 20` -- eight runs, six new
+and the two production references -- all with `experiment_valid` true with `exit_code` 0 and `model_completed` true:
 
     f54ef3c9  production                 mp37_lin3_1min_hist0{,_np4_4x1}_20260830_2114*
     309e2a8e  + both flags               mp37_p1nc_1min_hist0{,_np4_4x1}_20260831_1815*
@@ -469,7 +560,8 @@ Comparator `harness/g33_dyn_probe.py`.
 
 **The tree is as it was found, and the build is deterministic across a flag
 round-trip.** After the experiments, the canonical source and the canonical
-`FCOPTIM` went back and all 31 `dyn_em` objects were recompiled from scratch;
+`FCOPTIM` went back and all 32 `dyn_em` objects were recompiled from scratch
+(recounted; "31" was the same extraction bug that produced "30");
 verified here: `dyn_em/solve_em.F` `d66e9db1bba8f37e` (5002 lines, zero
 instrumentation markers), `configure.wrf` line 150
 `FCOPTIM = -O2 -ftree-vectorize -funroll-loops`, and `main/wrf.exe`

@@ -324,6 +324,16 @@ def _load(d: Path) -> dict:
     return out
 
 
+def _same_words(x, y) -> bool:
+    """Bitwise equality, not value equality.
+
+    `np.array_equal` would call `+0.0` and `-0.0` equal, and a one-ULP
+    difference is the thing this probe exists to find.
+    """
+    import numpy as np
+    return np.array_equal(x.view(np.uint32), y.view(np.uint32))
+
+
 def first_difference(dir_a: Path, dir_b: Path) -> list:
     """Per stage, group and field, the OWNED i columns where the two differ.
 
@@ -332,95 +342,58 @@ def first_difference(dir_a: Path, dir_b: Path) -> list:
     cell exists owned on one rank and as a halo copy on its neighbour, and
     mixing them would either hide a halo mismatch or invent a difference.
     """
-    import numpy as np
-    A, B = _load(dir_a), _load(dir_b)
-    _require_same_coverage(A, B, dir_a, dir_b)
-    rows = []
-    for stage, grp in sorted({(s, g) for s, g, _, _ in A}):
+    a, b = _load(dir_a), _load(dir_b)
+    _require_declared_coverage(a, b, dir_a, dir_b)
+    columns = {}
+    for key, rec in a.items():
+        stage, grp, i, owned = key
+        if not owned:
+            continue
         for name, _, _ in GROUPS[grp]:
-            hit = [i for (s, g, i, own) in sorted(A)
-                   if s == stage and g == grp and own
-                   and not np.array_equal(A[(s, g, i, own)][name].view(np.uint32),
-                                          B[(s, g, i, own)][name].view(np.uint32))]
-            rows.append({"stage": stage, "group": grp, "field": name, "columns": hit})
+            if not _same_words(rec[name], b[key][name]):
+                columns.setdefault((stage, grp, name), []).append(i)
+    rows = []
+    for stage, grp in sorted({(k[0], k[1]) for k in a}):
+        for name, _, _ in GROUPS[grp]:
+            rows.append({"stage": stage, "group": grp, "field": name,
+                         "columns": sorted(columns.get((stage, grp, name), []))})
     return rows
 
 
-def _require_same_coverage(A: dict, B: dict, dir_a: Path, dir_b: Path) -> None:
-    """Both arms must carry the SAME records, or the comparison is not defined.
+def _require_declared_coverage(A: dict, B: dict, dir_a: Path, dir_b: Path) -> None:
+    """Each arm must hold exactly what the probe declared, in one shape.
 
-    An intersection is a fail-open: a stage the emitter never wrote on one arm
-    silently leaves that stage out and the run reports no difference there. That
-    is not hypothetical -- the first build of this probe dropped stage 0 on both
-    arms because its guard tested `rk_step` above the loop that assigns it, and
-    only a hand count of the records found it.
+    Comparing the two arms against EACH OTHER is a fail-open: whatever both drop,
+    both agree about, and that is how a build that wrote no stage-0 record at all
+    once passed as "no difference". So each arm is checked against
+    `ANCHORS` x `WINDOWS`, which is what the emitter promised to write; and every
+    record of a kind must share one array shape, which catches a j truncation or
+    a dropped level, for which no declared universe exists.
 
-    Checked here: the (stage, group) universe against what ANCHORS declares, the
-    owned-cell key sets against each other, and the field list per record.
+    Not covered: a truncation identical in every record of both arms, and the set
+    of halo copies, which is rank-dependent and undeclared.
     """
-    want = {(st, g) for st, grps, _, _ in ANCHORS for g in grps}
-    cols = {i for a, b in WINDOWS for i in range(a, b + 1)}
-    want_keys = {(s, g, i) for (s, g) in want for i in cols}
+    pairs = {(st, g) for st, grps, _, _ in ANCHORS for g in grps}
+    cols = {i for lo, hi in WINDOWS for i in range(lo, hi + 1)}
+    want = {(s, g, i) for s, g in pairs for i in cols}
+    shapes = {}
     for tag, D, d in (("A", A, dir_a), ("B", B, dir_b)):
-        have = {(s, g) for s, g, _, _ in D}
-        if have != want:
-            raise SystemExit(
-                f"{tag} ({d}) stage/group coverage != ANCHORS: "
-                f"missing {sorted(want - have)}, unexpected {sorted(have - want)}")
-        # AGAINST THE DECLARED DENOMINATOR, not just against each other. Two arms
-        # that drop the SAME record agree, and agreement was the whole test until
-        # now (owner review 11): a window missing on both sides passed as "no
-        # difference". `ANCHORS` x `WINDOWS` is what the probe promised to write,
-        # so it is what a comparison has to find.
-        #
-        # SCOPE: this closes symmetric omission on the OWNED i axis only. The
-        # expected j and k extents, the per-record word count, and the expected
-        # set of halo copies are still not checked against a declared value, so
-        # two arms that both truncate j, drop a level, or lose one halo direction
-        # would still pass here.
         got = {(s, g, i) for (s, g, i, own) in D if own}
-        if got != want_keys:
+        if got != want:
             raise SystemExit(
                 f"{tag} ({d}) owned coverage != ANCHORS x WINDOWS "
-                f"({len(want_keys)} expected): missing {sorted(want_keys - got)[:8]} "
-                f"({len(want_keys - got)}), unexpected {sorted(got - want_keys)[:8]} "
-                f"({len(got - want_keys)})")
-    for (s, g, i, own) in A:
-        want_f = {n for n, _, _ in GROUPS[g]}
-        for tag, D in (("A", A), ("B", B)):
-            got = set(D[(s, g, i, own)])
-            if got != want_f:
-                raise SystemExit(
-                    f"{tag} record {(s, g, i, own)} fields != GROUPS[{g}]: "
-                    f"missing {sorted(want_f - got)}, extra {sorted(got - want_f)}")
-    _require_same_payload(A, B, dir_a, dir_b)
-
-
-def _require_same_payload(A: dict, B: dict, dir_a: Path, dir_b: Path) -> None:
-    """The j and k extent of every record, against every other and across arms.
-
-    The i axis is checked against `ANCHORS` x `WINDOWS` above, and that was the
-    whole of it until now (owner review 6): two arms that both truncate j, both
-    drop a vertical level, or both write a field at the wrong shape agree with
-    each other and pass. There is no declared j/k universe to check against --
-    the extents come from the domain at run time -- but there is something
-    stronger available for free: every record of a given KIND must have the SAME
-    shape, in one arm and between arms, because j is not decomposed here and the
-    vertical is whole. A truncation shows up as a second shape.
-    """
-    shapes = {}
-    for tag, D in (("A", A), ("B", B)):
+                f"({len(want)} expected): missing {sorted(want - got)[:6]} "
+                f"({len(want - got)}), unexpected {sorted(got - want)[:6]} "
+                f"({len(got - want)})")
         for (s, g, i, own), rec in D.items():
             for name, kind, _ in GROUPS[g]:
-                shapes.setdefault(kind, {}).setdefault(rec[name].shape, []).append(
-                    (tag, s, g, i, name))
-    for kind, byshape in sorted(shapes.items()):
-        if len(byshape) > 1:
-            detail = "; ".join(f"{sh} e.g. {ex[0]}" for sh, ex in sorted(byshape.items()))
+                shapes.setdefault(kind, set()).add(rec[name].shape)
+    for kind, seen in sorted(shapes.items()):
+        if len(seen) > 1:
             raise SystemExit(
-                f"kind {kind!r} records do not share one shape across {dir_a} and "
-                f"{dir_b}: {detail}. A j truncation or a dropped level looks like "
-                f"this, and agreeing arms would hide it.")
+                f"kind {kind!r} has more than one shape across {dir_a} and "
+                f"{dir_b}: {sorted(seen)}. A j truncation or a dropped level "
+                f"looks like this.")
 
 
 def halo_content(dump_dir: Path) -> list:
@@ -430,17 +403,21 @@ def halo_content(dump_dir: Path) -> list:
     same global cell after the exchange, the halo arrived wrong; if it matches,
     the exchange did its job and a later difference came from somewhere else.
     """
-    import numpy as np
-    D = _load(dump_dir)
-    rows = []
-    for stage, grp in sorted({(s, g) for s, g, _, _ in D}):
+    dump = _load(dump_dir)
+    columns = {}
+    for key, rec in dump.items():
+        stage, grp, i, owned = key
+        owner = dump.get((stage, grp, i, True))
+        if owned or owner is None:
+            continue
         for name, _, _ in GROUPS[grp]:
-            bad = [i for (s, g, i, own) in sorted(D)
-                   if s == stage and g == grp and not own
-                   and (s, g, i, True) in D
-                   and not np.array_equal(D[(s, g, i, False)][name].view(np.uint32),
-                                          D[(s, g, i, True)][name].view(np.uint32))]
-            rows.append({"stage": stage, "group": grp, "field": name, "columns": bad})
+            if not _same_words(rec[name], owner[name]):
+                columns.setdefault((stage, grp, name), []).append(i)
+    rows = []
+    for stage, grp in sorted({(k[0], k[1]) for k in dump}):
+        for name, _, _ in GROUPS[grp]:
+            rows.append({"stage": stage, "group": grp, "field": name,
+                         "columns": sorted(columns.get((stage, grp, name), []))})
     return rows
 
 
@@ -457,30 +434,31 @@ def halo_vs_reference(ref_dir: Path, dec_dir: Path) -> list:
     same column, and `_load` merges by global index -- which is what makes it
     the wrong loader for this question.
     """
-    import numpy as np
-    R = _load(ref_dir)
-    rows, skipped = [], set()
-    for f in sorted(Path(dec_dir).glob("g33dyn_*.bin")):
-        D = read_dump(f)
-        for stage, grp in sorted({(s, g) for s, g, _, _ in D}):
+    ref = _load(ref_dir)
+    rows = []
+    for path in sorted(Path(dec_dir).glob("g33dyn_*.bin")):
+        rank = path.stem.replace("g33dyn_", "")
+        differ, no_reference = {}, {}
+        for key, rec in read_dump(path).items():
+            stage, grp, i, owned = key
+            if owned:
+                continue
+            owner = ref.get((stage, grp, i, True))
+            if owner is None:
+                # A COLUMN THE REFERENCE DOES NOT HOLD IS NOT A MATCH. Skipping
+                # it silently reads as agreement in a table that prints only
+                # disagreements, so it gets a row of its own.
+                no_reference.setdefault((stage, grp), []).append(i)
+                continue
             for name, _, _ in GROUPS[grp]:
-                cand = [(s, g, i, own) for (s, g, i, own) in sorted(D)
-                        if s == stage and g == grp and not own]
-                skipped |= {k[:3] for k in cand if (k[0], k[1], k[2], True) not in R}
-                bad = [i for (s, g, i, own) in cand
-                       if (s, g, i, True) in R
-                       and not np.array_equal(
-                           D[(s, g, i, own)][name].view(np.uint32),
-                           R[(s, g, i, True)][name].view(np.uint32))]
-                rows.append({"rank": f.stem.replace("g33dyn_", ""), "stage": stage,
-                             "group": grp, "field": name, "columns": bad})
-    # A HALO COLUMN THE REFERENCE DOES NOT HOLD IS NOT A MATCH. It was skipped,
-    # and a silent skip reads as agreement in a table that only prints
-    # disagreements (owner review 11). Report the count so a zero has a
-    # denominator.
-    if skipped:
-        rows.append({"rank": "(skipped)", "stage": -1, "group": -1,
-                     "field": "no-reference", "columns": sorted(i for _, _, i in skipped)})
+                if not _same_words(rec[name], owner[name]):
+                    differ.setdefault((stage, grp, name), []).append(i)
+        for (stage, grp, name), cols in sorted(differ.items()):
+            rows.append({"rank": rank, "stage": stage, "group": grp,
+                         "field": name, "columns": sorted(cols)})
+        for (stage, grp), cols in sorted(no_reference.items()):
+            rows.append({"rank": rank, "stage": stage, "group": grp,
+                         "field": "NO-REFERENCE", "columns": sorted(cols)})
     return rows
 
 
