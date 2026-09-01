@@ -93,8 +93,9 @@ loop and the bounds instrumentation, and the cell that separates them -- CCN
 corrected with production flags -- is a separate arm. An earlier version said
 "independent by measurement"; that is withdrawn.
 
-**It is the same seam**, checked as SETS rather than counts, since equal
-cardinality is not equal membership:
+**It carries the same structural signature**, checked as SETS rather than
+counts, since equal cardinality is not equal membership. Signature, not identity:
+cell masks, signs and magnitudes were not compared.
 
     t      production   checked   common   prod-only   checked-only   Jaccard
     20 s       28         28        28         0            0          1.000
@@ -108,7 +109,9 @@ three interior bands plus the eastern zone in both, weaker in the checked build.
 The 75 rather than 77 is expected: `63b788a1` is not `f54ef3c9`.
 
 The change was reverted afterwards. `start_em.F` is back to `5c6d6faa` and
-`main/wrf.exe` to `f54ef3c962a1d6a0`, bit for bit. ## Corrected alone, with production flags: no effect at all
+`main/wrf.exe` to `f54ef3c962a1d6a0`, bit for bit.
+
+## Corrected alone, with production flags: no effect at all
 
 The bounds-checked arm changed two things at once, so it could not separate them.
 This one changes only the loop bound, on the production flags (`6797945d`):
@@ -116,12 +119,28 @@ This one changes only the loop bound, on the production flags (`6797945d`):
     np=1 against production np=1     0 / 0 / 0 / 0  of 197 fields
     np=1 against 4x1                 0 / 28 / 71 / 77
 
-**The correction changes nothing in the 197 output fields**, at any frame -- so
-the `k = kte` slot is not consumed into any of them over one minute, which was
-the open question about what the out-of-bounds value reaches. And the seam is
-production's exactly, 77 with the same progression, so **this defect contributes
-nothing to it.** The two are independent, now from a single-intervention arm
-rather than from a joint one.
+**The correction changes nothing in either decomposition's output, bit for bit**
+(raw `uint32`, 197 fields, every frame):
+
+    corrected np=1 vs production np=1     0 0 0 0
+    corrected 4x1  vs production 4x1      0 0 0 0
+
+Both endpoints being bitwise equal, the difference tensors are identical by
+construction, and the differing-field sets confirm it: Jaccard 1.000 at 20, 40
+AND 60 s. **So this defect contributes nothing to the production seam**, from a
+single-intervention arm compared on both decompositions.
+
+The `np=1`-only version of this comparison was published first and was not
+enough: equal counts are not equal sets, and `X_fix1 = X_prod1` does not imply
+`X_fix4 = X_prod4`, since the value an out-of-bounds read returns can depend on
+rank count and memory layout. The `4x1` cell was the one that mattered.
+
+On the slot itself: what is measured is that **no effect of the correction is
+observable in the 197 sampled output fields through 60 s**, on either
+decomposition. That is not the same as "the slot is never read" -- it could be
+read and multiplied by zero, or cancel, or fall below a rounding threshold, or
+reach only state the forecast file does not carry. Proving it is never read needs
+source tracing or a sentinel, neither of which was done.
 
 It also places the earlier 75: that came from the bounds instrumentation, not
 from the correction.

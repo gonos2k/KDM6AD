@@ -153,13 +153,14 @@ Owned cells, raw-word comparison. Total differing (field, column) pairs:
 | 5 | after `rk_tendency` | 26 -- `ru_tend` `rv_tend` `rw_tend` `ph_tend` `t_tend` |
 | 6 | after `relax_bdy_dry` | 29 |
 | 7 | after `small_step_prep` | 22 -- `u_2` `t_2` `w_2` first differ here |
-| 8-12 | acoustic sub-step | 24, 24, 50, 82, 85 |
 
-Stages 8-12 sit INSIDE the acoustic sub-step loop, so each fires once per
-sub-step and the dump keeps the LAST one. Those five counts are the final
-sub-step, not the first. Found by adding a duplicate-record refusal to the
-parser, which fired on correct dumps and was removed; the fact it exposed is
-kept.
+The acoustic sub-step stages that used to close this table are WITHDRAWN. Their
+anchors sat inside that loop, so each fired once per sub-step and the parser kept
+only the last; the numbers read as a progression and were not one. Found by
+adding a duplicate-record refusal, which fired on correct dumps. The anchors have
+since been removed from the probe rather than documented around -- they were not
+needed for the first-write question and their data could not mean what it looked
+like.
 
 **`ww` after `rk_step_prep` is the first, and it is two columns.** At stage 2
 every other field of the exchanged set -- `ru`, `rv`, `rw`, `php`, `alt`, `al`,
