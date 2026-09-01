@@ -273,6 +273,10 @@ def strip_guarded(text: str) -> str:
 def read_dump(path: Path) -> dict:
     """One rank's file as {(stage, grp, i, owned): {field: array}}.
 
+    STAGES 8-12 ARE PER ACOUSTIC SUB-STEP, not per time step: their anchors sit
+    inside that loop, so each fires several times and the record returned is the
+    LAST sub-step's. Stages 0-7, 31 and 32 fire once.
+
     OWNERSHIP IS IN THE KEY, not the value: the same global column is owned
     on one rank and a halo copy on its neighbour, and both must survive a
     merge across ranks for `halo_content` and `halo_vs_reference` to be able
@@ -298,8 +302,12 @@ def read_dump(path: Path) -> dict:
                           (ni, nk + (1 if kind == "Z" else 0), nj), order="F")
             for c in range(ni):
                 i = i0 + c
-                rec = out.setdefault((stage, grp, i, ips <= i <= iu), {})
-                rec[name] = a[c]
+                # LAST WRITE WINS, AND THAT IS LOAD-BEARING. Stages 8-12 sit
+                # inside the acoustic sub-step loop, so they fire once per
+                # sub-step and the record kept is the LAST one. A refusal here
+                # was tried and fires on correct dumps; the fact belongs in the
+                # docstring, not in a guard.
+                out.setdefault((stage, grp, i, ips <= i <= iu), {})[name] = a[c]
     return out
 
 
@@ -404,11 +412,17 @@ def halo_content(dump_dir: Path) -> list:
     the exchange did its job and a later difference came from somewhere else.
     """
     dump = _load(dump_dir)
-    columns = {}
+    columns, no_owner = {}, {}
     for key, rec in dump.items():
         stage, grp, i, owned = key
+        if owned:
+            continue
         owner = dump.get((stage, grp, i, True))
-        if owned or owner is None:
+        if owner is None:
+            # NOT A MATCH -- there was nothing to match against. Blank used to
+            # mean both "the halo is right" and "no owned record existed", and
+            # only one of those is a result.
+            no_owner.setdefault((stage, grp), []).append(i)
             continue
         for name, _, _ in GROUPS[grp]:
             if not _same_words(rec[name], owner[name]):
@@ -418,6 +432,9 @@ def halo_content(dump_dir: Path) -> list:
         for name, _, _ in GROUPS[grp]:
             rows.append({"stage": stage, "group": grp, "field": name,
                          "columns": sorted(columns.get((stage, grp, name), []))})
+    for (stage, grp), cols in sorted(no_owner.items()):
+        rows.append({"stage": stage, "group": grp, "field": "NO-OWNER",
+                     "columns": sorted(cols)})
     return rows
 
 

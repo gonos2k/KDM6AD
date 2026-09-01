@@ -85,17 +85,50 @@ So this read was the only array-bounds violation on that path, and correcting it
 lets the check reach the dynamics, which is what it was run for.
 
 **And the seam is still there**: `np=1` against `4x1` on that binary differs in
-0 / 28 / 71 / **75** of 197 fields at 0 / 20 / 40 / 60 s. So the two defects are
-independent BY MEASUREMENT rather than by argument -- removing this one does not
-remove the seam.
+0 / 28 / 71 / **75** of 197 fields at 0 / 20 / 40 / 60 s.
 
-The 75 rather than 77 is expected: `63b788a1` carries the correction and is a
-different binary from `f54ef3c9`, so its trajectory is not production's.
+That shows this defect is not NECESSARY for a decomposition difference. It does
+NOT show the two are independent: this build changed two things at once, the CCN
+loop and the bounds instrumentation, and the cell that separates them -- CCN
+corrected with production flags -- is a separate arm. An earlier version said
+"independent by measurement"; that is withdrawn.
+
+**It is the same seam**, checked as SETS rather than counts, since equal
+cardinality is not equal membership:
+
+    t      production   checked   common   prod-only   checked-only   Jaccard
+    20 s       28         28        28         0            0          1.000
+    40 s       71         71        71         0            0          1.000
+    60 s       77         75        74         3            1          0.949
+
+Identical field sets at 20 and 40 s. The four differing at 60 s are `ACSNOM`,
+`SNOW`, `SNOWH` and `VIS_SFC_CAPPED` -- accumulation and capped-diagnostic fields
+that cross a threshold on or off. The `PH` footprint at 20 s sits in the same
+three interior bands plus the eastern zone in both, weaker in the checked build.
+The 75 rather than 77 is expected: `63b788a1` is not `f54ef3c9`.
 
 The change was reverted afterwards. `start_em.F` is back to `5c6d6faa` and
-`main/wrf.exe` to `f54ef3c962a1d6a0`, bit for bit. **The permanent correction,
-and the question of what should fill the `k = kte` slot, remain owner
-decisions.**
+`main/wrf.exe` to `f54ef3c962a1d6a0`, bit for bit. ## Corrected alone, with production flags: no effect at all
+
+The bounds-checked arm changed two things at once, so it could not separate them.
+This one changes only the loop bound, on the production flags (`6797945d`):
+
+    np=1 against production np=1     0 / 0 / 0 / 0  of 197 fields
+    np=1 against 4x1                 0 / 28 / 71 / 77
+
+**The correction changes nothing in the 197 output fields**, at any frame -- so
+the `k = kte` slot is not consumed into any of them over one minute, which was
+the open question about what the out-of-bounds value reaches. And the seam is
+production's exactly, 77 with the same progression, so **this defect contributes
+nothing to it.** The two are independent, now from a single-intervention arm
+rather than from a joint one.
+
+It also places the earlier 75: that came from the bounds instrumentation, not
+from the correction.
+
+**The permanent correction, and what should fill the `k = kte` slot, remain owner
+decisions.** Nothing here says the read is acceptable -- it reads memory the
+array does not own -- only that its value does not reach these outputs.
 
 It is also probably not related to the seam, but "it happens once" is not the
 reason -- a one-time initialisation error perturbs the state and can seed a later
