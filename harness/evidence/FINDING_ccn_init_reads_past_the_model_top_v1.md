@@ -69,7 +69,33 @@ the question this experiment was run to answer --
 > whether the i-cut seam is ordinary rounding sensitivity or exposes a source or
 > extent defect
 
--- is **untested**. This finding is what the run hit on the way there.
+-- was untested at the time. It has since been answered by correcting this read
+temporarily and re-running: see below.
+
+## Corrected temporarily, and what that showed
+
+`DO k=kts,kte` was changed to `DO k=kts,kte-1` -- one line, verified by diff --
+and the 32 objects rebuilt with `-fcheck=bounds` (binary `63b788a1`). Both
+decompositions then ran the whole first minute:
+
+    np=1   exit 0, SUCCESS COMPLETE, 0 bounds violations
+    4x1    exit 0, SUCCESS COMPLETE, 0 bounds violations on all four ranks
+
+So this read was the only array-bounds violation on that path, and correcting it
+lets the check reach the dynamics, which is what it was run for.
+
+**And the seam is still there**: `np=1` against `4x1` on that binary differs in
+0 / 28 / 71 / **75** of 197 fields at 0 / 20 / 40 / 60 s. So the two defects are
+independent BY MEASUREMENT rather than by argument -- removing this one does not
+remove the seam.
+
+The 75 rather than 77 is expected: `63b788a1` carries the correction and is a
+different binary from `f54ef3c9`, so its trajectory is not production's.
+
+The change was reverted afterwards. `start_em.F` is back to `5c6d6faa` and
+`main/wrf.exe` to `f54ef3c962a1d6a0`, bit for bit. **The permanent correction,
+and the question of what should fill the `k = kte` slot, remain owner
+decisions.**
 
 It is also probably not related to the seam, but "it happens once" is not the
 reason -- a one-time initialisation error perturbs the state and can seed a later

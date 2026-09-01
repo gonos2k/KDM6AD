@@ -399,13 +399,21 @@ WHAT THIS DOES AND DOES NOT ADD. It establishes the STRUCTURE the trip-count
 reading assumed -- body plus narrower remainder -- rather than leaving it
 assumed. It does not establish that the remainder is where the difference is
 made: that needs the generated code, or a numeric test that isolates the
-remainder lanes, and neither has been done. The second possibility this document keeps open -- that vectorisation is
-suppressing an out-of-bounds load or an uninitialised value rather than only
-reordering arithmetic -- was ATTEMPTED and is still open. A bounds-checked build
-of the same 32 objects (`649b437f`) aborted in INITIALISATION, before the first
-dynamics step, on a real out-of-bounds read in the CCN block
-(`FINDING_ccn_init_reads_past_the_model_top_v1`). So the dynamics were never
-reached under bounds checking and the question is untested, not answered.
+remainder lanes, and neither has been done. The second possibility this document kept open -- that vectorisation is
+suppressing an out-of-bounds load rather than only reordering arithmetic -- now
+has direct evidence against it. A bounds-checked build first aborted in
+INITIALISATION on a real out-of-bounds read in the CCN block
+(`FINDING_ccn_init_reads_past_the_model_top_v1`); with that one line corrected,
+the rebuilt binary `63b788a1` ran the whole first minute at `np=1` and at `4x1`
+with **zero bounds violations on every rank** -- and the seam was still present,
+0 / 28 / 71 / 75 of 197 fields.
+
+So the seam survives in a build where no array-bounds violation occurs anywhere
+in the 32 `dyn_em` objects. An array-index violation is not the explanation.
+
+That does NOT close the branch. `-fcheck=bounds` catches index violations, not
+uninitialised reads, aliasing or type violations, and only `dyn_em` was
+instrumented -- `phys/`, `share/` and `frame/` were not.
 
 Two weaker checks did run and found nothing: re-enabling the warnings the build
 suppresses with `-w` yields 208 for this file, all `-Wunused-dummy-argument` or

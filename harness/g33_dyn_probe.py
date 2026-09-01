@@ -324,6 +324,16 @@ def _load(d: Path) -> dict:
     return out
 
 
+def _same_words(x, y) -> bool:
+    """Bitwise equality, not value equality.
+
+    `np.array_equal` would call `+0.0` and `-0.0` equal, and a one-ULP
+    difference is the thing this probe exists to find.
+    """
+    import numpy as np
+    return np.array_equal(x.view(np.uint32), y.view(np.uint32))
+
+
 def first_difference(dir_a: Path, dir_b: Path) -> list:
     """Per stage, group and field, the OWNED i columns where the two differ.
 
@@ -332,17 +342,21 @@ def first_difference(dir_a: Path, dir_b: Path) -> list:
     cell exists owned on one rank and as a halo copy on its neighbour, and
     mixing them would either hide a halo mismatch or invent a difference.
     """
-    import numpy as np
-    A, B = _load(dir_a), _load(dir_b)
-    _require_declared_coverage(A, B, dir_a, dir_b)
-    rows = []
-    for stage, grp in sorted({(s, g) for s, g, _, _ in A}):
+    a, b = _load(dir_a), _load(dir_b)
+    _require_declared_coverage(a, b, dir_a, dir_b)
+    columns = {}
+    for key, rec in a.items():
+        stage, grp, i, owned = key
+        if not owned:
+            continue
         for name, _, _ in GROUPS[grp]:
-            hit = [i for (s, g, i, own) in sorted(A)
-                   if s == stage and g == grp and own
-                   and not np.array_equal(A[(s, g, i, own)][name].view(np.uint32),
-                                          B[(s, g, i, own)][name].view(np.uint32))]
-            rows.append({"stage": stage, "group": grp, "field": name, "columns": hit})
+            if not _same_words(rec[name], b[key][name]):
+                columns.setdefault((stage, grp, name), []).append(i)
+    rows = []
+    for stage, grp in sorted({(k[0], k[1]) for k in a}):
+        for name, _, _ in GROUPS[grp]:
+            rows.append({"stage": stage, "group": grp, "field": name,
+                         "columns": sorted(columns.get((stage, grp, name), []))})
     return rows
 
 
@@ -389,17 +403,21 @@ def halo_content(dump_dir: Path) -> list:
     same global cell after the exchange, the halo arrived wrong; if it matches,
     the exchange did its job and a later difference came from somewhere else.
     """
-    import numpy as np
-    D = _load(dump_dir)
-    rows = []
-    for stage, grp in sorted({(s, g) for s, g, _, _ in D}):
+    dump = _load(dump_dir)
+    columns = {}
+    for key, rec in dump.items():
+        stage, grp, i, owned = key
+        owner = dump.get((stage, grp, i, True))
+        if owned or owner is None:
+            continue
         for name, _, _ in GROUPS[grp]:
-            bad = [i for (s, g, i, own) in sorted(D)
-                   if s == stage and g == grp and not own
-                   and (s, g, i, True) in D
-                   and not np.array_equal(D[(s, g, i, False)][name].view(np.uint32),
-                                          D[(s, g, i, True)][name].view(np.uint32))]
-            rows.append({"stage": stage, "group": grp, "field": name, "columns": bad})
+            if not _same_words(rec[name], owner[name]):
+                columns.setdefault((stage, grp, name), []).append(i)
+    rows = []
+    for stage, grp in sorted({(k[0], k[1]) for k in dump}):
+        for name, _, _ in GROUPS[grp]:
+            rows.append({"stage": stage, "group": grp, "field": name,
+                         "columns": sorted(columns.get((stage, grp, name), []))})
     return rows
 
 
@@ -416,30 +434,31 @@ def halo_vs_reference(ref_dir: Path, dec_dir: Path) -> list:
     same column, and `_load` merges by global index -- which is what makes it
     the wrong loader for this question.
     """
-    import numpy as np
-    R = _load(ref_dir)
-    rows, skipped = [], set()
-    for f in sorted(Path(dec_dir).glob("g33dyn_*.bin")):
-        D = read_dump(f)
-        for stage, grp in sorted({(s, g) for s, g, _, _ in D}):
+    ref = _load(ref_dir)
+    rows = []
+    for path in sorted(Path(dec_dir).glob("g33dyn_*.bin")):
+        rank = path.stem.replace("g33dyn_", "")
+        differ, no_reference = {}, {}
+        for key, rec in read_dump(path).items():
+            stage, grp, i, owned = key
+            if owned:
+                continue
+            owner = ref.get((stage, grp, i, True))
+            if owner is None:
+                # A COLUMN THE REFERENCE DOES NOT HOLD IS NOT A MATCH. Skipping
+                # it silently reads as agreement in a table that prints only
+                # disagreements, so it gets a row of its own.
+                no_reference.setdefault((stage, grp), []).append(i)
+                continue
             for name, _, _ in GROUPS[grp]:
-                cand = [(s, g, i, own) for (s, g, i, own) in sorted(D)
-                        if s == stage and g == grp and not own]
-                skipped |= {k[:3] for k in cand if (k[0], k[1], k[2], True) not in R}
-                bad = [i for (s, g, i, own) in cand
-                       if (s, g, i, True) in R
-                       and not np.array_equal(
-                           D[(s, g, i, own)][name].view(np.uint32),
-                           R[(s, g, i, True)][name].view(np.uint32))]
-                rows.append({"rank": f.stem.replace("g33dyn_", ""), "stage": stage,
-                             "group": grp, "field": name, "columns": bad})
-    # A HALO COLUMN THE REFERENCE DOES NOT HOLD IS NOT A MATCH. It was skipped,
-    # and a silent skip reads as agreement in a table that only prints
-    # disagreements (owner review 11). Report the count so a zero has a
-    # denominator.
-    if skipped:
-        rows.append({"rank": "(skipped)", "stage": -1, "group": -1,
-                     "field": "no-reference", "columns": sorted(i for _, _, i in skipped)})
+                if not _same_words(rec[name], owner[name]):
+                    differ.setdefault((stage, grp, name), []).append(i)
+        for (stage, grp, name), cols in sorted(differ.items()):
+            rows.append({"rank": rank, "stage": stage, "group": grp,
+                         "field": name, "columns": sorted(cols)})
+        for (stage, grp), cols in sorted(no_reference.items()):
+            rows.append({"rank": rank, "stage": stage, "group": grp,
+                         "field": "NO-REFERENCE", "columns": sorted(cols)})
     return rows
 
 
