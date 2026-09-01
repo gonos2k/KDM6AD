@@ -155,6 +155,12 @@ Owned cells, raw-word comparison. Total differing (field, column) pairs:
 | 7 | after `small_step_prep` | 22 -- `u_2` `t_2` `w_2` first differ here |
 | 8-12 | acoustic sub-step | 24, 24, 50, 82, 85 |
 
+Stages 8-12 sit INSIDE the acoustic sub-step loop, so each fires once per
+sub-step and the dump keeps the LAST one. Those five counts are the final
+sub-step, not the first. Found by adding a duplicate-record refusal to the
+parser, which fired on correct dumps and was removed; the fact it exposed is
+kept.
+
 **`ww` after `rk_step_prep` is the first, and it is two columns.** At stage 2
 every other field of the exchanged set -- `ru`, `rv`, `rw`, `php`, `alt`, `al`,
 `p`, `rho`, `muu`, `muv`, `mut` -- is identical, and so is the whole prognostic

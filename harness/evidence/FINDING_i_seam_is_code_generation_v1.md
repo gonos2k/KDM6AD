@@ -87,9 +87,11 @@ equality is `np.array_equal`, which is value equality and would not have
 distinguished those, so the raw-word pass was run separately.
 
 Its SCOPE is the 197 time-varying f32 output fields. Static fields, integer and
-logical state, halo and boundary arrays and internal temporaries are not in the
-forecast file and are not compared, so this is not a claim that the two builds'
-entire initial states are identical.
+logical state, halo and boundary arrays, padding slots, module `SAVE` state and
+internal temporaries are not in the forecast file and are not compared. So the
+accurate statement is that the removal is not attributable to a change in the 197
+recorded fields at frame 0 -- not that the two builds' entire initial states are
+identical, which was not tested.
 
 ### And that flag does change the arithmetic
 
@@ -269,9 +271,18 @@ the smallest unit this build offers. Every arm below leaves `start_em` and
     those 9 + {advect_em} + {small_step_em}      ~12 objects     0
     all 32                                                       0
 
-Each subset takes 1 to 3 fields off 77. Only the union collapses to zero. So the
-difference is not made in one place: **no single object, and no object's
-dependency closure, removes it.**
+Each subset takes 1 to 3 fields off 77. Only the union collapses to zero.
+
+**What that supports is narrower than an earlier version of this section
+claimed.** It says the three sets TESTED are not individually sufficient and
+their union is. It does not say no single object would do it -- the 32 were not
+tried one at a time, and no arm here is one object -- and it does not say the
+difference "is not made in one place": a single local source can still be the
+origin, since whether a perturbation survives to 60 s depends on the arithmetic
+downstream of it, which these arms also change. Both sentences are withdrawn.
+
+The minimal sufficient set, and whether the first arithmetic source is one place,
+are UNMEASURED.
 
 The cumulative ladder alone would have read as "`module_small_step_em` is the
 cause", since adding it is the step that reaches zero. The direct arm --
@@ -434,8 +445,13 @@ the rebuilt binary `63b788a1` ran the whole first minute at `np=1` and at `4x1`
 with **zero bounds violations on every rank** -- and the seam was still present,
 0 / 28 / 71 / 75 of 197 fields.
 
-So the seam survives in a build where no array-bounds violation occurs anywhere
-in the 32 `dyn_em` objects. An array-index violation is not the explanation.
+So the seam survives a run in which the gfortran subscript checks enabled on the
+rebuilt `dyn_em` objects reported nothing. That weakens an array-index violation
+as the explanation without refuting it: `-fcheck=bounds` sees executed subscript
+violations in Fortran it compiled, and not uninitialised but in-bounds reads,
+reads outside a logical patch extent but inside allocated memory, aliasing,
+assumed-size dimensions it cannot check, anything in C or a precompiled library,
+or a branch this run did not take.
 
 That does NOT close the branch. `-fcheck=bounds` catches index violations, not
 uninitialised reads, aliasing or type violations, and only `dyn_em` was
