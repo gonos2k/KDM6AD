@@ -251,11 +251,37 @@ the seam, NOT that this loop is the only place that would. `module_advect_em`,
 `module_small_step_em`, `module_bc_em`, `start_em` and the rest are in the same
 build.
 
-The arm that would attribute it keeps production flags everywhere and applies
-`-fno-tree-vectorize` to one object at a time -- `module_big_step_utilities_em`
-first, then `module_advect_em` and `module_bc_em` if anything survives. It also
-holds the initial state fixed, since `start_em` and `module_initialize_real` stay
-on production flags. It has not been run.
+Those arms have been run, and no single object accounts for it.
+
+A true one-object arm is not reachable: the build recompiles whatever `USE`s a
+changed module, so touching `module_big_step_utilities_em.F` flags nine objects
+and touching `module_small_step_em.F` flags three. The set, not the object, is
+the smallest unit this build offers. Every arm below leaves `start_em` and
+`module_initialize_real` on production flags, so the initial state is unchanged
+-- confirmed at 0 of 197 fields at frame 0 in each.
+
+    flagged with -fno-tree-vectorize                     seam at 60 s, of 197
+    (none: production f54ef3c9)                                 77
+    {small_step_em, solve_em, madwrf}                           74
+    {big_step_utilities, em, diffusion, madwrf, frk1,
+     frk2, solve_em, ndown, tc}                    9 objects    75
+    those 9 + {advect_em}                                       74
+    those 9 + {advect_em} + {small_step_em}      ~12 objects     0
+    all 32                                                       0
+
+Each subset takes 1 to 3 fields off 77. Only the union collapses to zero. So the
+difference is not made in one place: **no single object, and no object's
+dependency closure, removes it.**
+
+The cumulative ladder alone would have read as "`module_small_step_em` is the
+cause", since adding it is the step that reaches zero. The direct arm --
+production everywhere except that one file -- refutes that: 74, with the flag
+demonstrably active, since that arm's `np=1` differs from production in 77 of 197
+fields by one minute. Recorded because the ladder alone would have published a
+wrong attribution.
+
+The shape is the same as the flag matrix: parts do almost nothing and the
+conjunction decides.
 
 ## Why cutting i differs and cutting j does not
 
