@@ -162,10 +162,17 @@ since been removed from the probe rather than documented around -- they were not
 needed for the first-write question and their data could not mean what it looked
 like.
 
-**`ww` after `rk_step_prep` is the first, and it is two columns.** At stage 2
-every other field of the exchanged set -- `ru`, `rv`, `rw`, `php`, `alt`, `al`,
-`p`, `rho`, `muu`, `muv`, `mut` -- is identical, and so is the whole prognostic
-set. `ww` is the vertical mass flux.
+**`ww` at the return from `rk_step_prep` is the EARLIEST OBSERVED, and it is two
+columns.** At stage 2 every other field of the exchanged set -- `ru`, `rv`, `rw`,
+`php`, `alt`, `al`, `p`, `rho`, `muu`, `muv`, `mut` -- is identical, and so is
+the whole prognostic set. `ww` is the vertical mass flux.
+
+Observed, not first written: the exchanged group is not dumped at stages 0 and 1,
+so `ww` is not compared before stage 2. What closes the bracket is not the stage
+table but the source -- `ww` is `INTENT(OUT)` and `calc_ww_cp` assigns every
+owned cell of `k = 1..kte`, so the stage-2 value is that call's output whatever
+it held before. That argument is below; the stage table alone does not carry it,
+and an earlier version of this sentence read as if it did.
 
 **Stage 2 precedes the exchange.** `rk_step_prep` is at L652 and `HALO_EM_A` at
 L703, so the difference exists before any halo is moved in this step.
