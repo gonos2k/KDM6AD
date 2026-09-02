@@ -37,8 +37,33 @@ draws spanning the window: **0 negatives, 0 density drift above 1e-5 relative**.
 **And `g4` and `g5` are indistinguishable here** -- 0 differences across every
 level, substep and prognostic. They can only differ on a PARTIAL melt inside the
 window, and this column has none: every melt in the window is complete, so both
-take the `brs = 0` branch. `g5`'s distinguishing property is therefore
-implemented and **not yet exercised by any measurement**.
+take the `brs = 0` branch.
+
+### What they do when that branch IS reached
+
+The branch was not reachable on the fixture, so it was characterised directly
+instead, in f32, over 200 000 draws log-uniform in the window (`qg0` up to
+`qcrmin = 1e-9`, `bg0` up to `brs_min = 1e-15`, `pgmlt` a proper fraction of
+`qg0` so the melt is partial):
+
+    g4 floored to zero, leaving qg > 0 with bg = 0   128 585   64.3 %
+    g5 zero                                                0
+    g4 and g5 bit-equal                                6 646    3.3 %
+    g5 apparent-density drift, median relative                  2.5e-08
+    g4 apparent density finite                                  35.7 %
+      and where finite, median relative drift                   0.32
+
+So the arms are not separated by rounding here. On a partial melt inside the
+window `g4` produces the unphysical `qg > 0, bg = 0` state in about two thirds of
+the sampled space -- the exact state its floor was added to prevent it from going
+NEGATIVE into -- and where it stays positive the apparent density is off by tens
+of percent. `g5` holds the pre-melt density to f32 roundoff and never reaches
+zero while mass remains.
+
+The sampling is uniform in log over the window, which is not the model's
+distribution: this says what the arms DO when the branch is reached, not how
+often it is reached. **Whether any model column reaches it is still unmeasured**,
+and the fixture has none.
 
 ## The number policy is the real arm choice
 

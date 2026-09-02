@@ -23,7 +23,8 @@ WHY ONLY THE FIRST RK STAGE. The request's prediction is that the first
 difference appears at or before `rk_tendency` in the first step, so the probe
 covers `itimestep == 1 .AND. rk_step == 1`. That is also what keeps the dump at
 about 320 MB per run: the anchors outside the acoustic sub-step loop fire once, so the
-twelve anchors fire twelve times and not fifty-six.
+every remaining anchor lies outside the acoustic sub-step loop and fires
+once in the first RK stage.
 
 WHY PATCH BOUNDS NAME THE FILE. Each rank needs its own file and the rank id
 would mean adding `wrf_get_myproc` to a USE list -- a change outside the
@@ -52,11 +53,12 @@ WINDOWS = [(43, 75), (101, 133), (160, 192), (214, 234)]
 #: GROUP 4 IS THE INPUT SET OF ONE STENCIL, dumped over the memory window so the
 #: HALO copies come too. `calc_ww_cp` builds `divv(i,k)` at the last owned mass
 #: column from one column EAST: `muu(i+1)` -- which is `0.5*(mup+mub)(i+1) +
-#: (i)` -- times `u(i+1)` over `msfuy(i+1)`. Those four arrays are the whole of
-#: what a 4x1 cut can carry into `ww`: the `rdy` half of the same expression
-#: reads `j+1`, and j is not decomposed here, so it sits at owned i on every
-#: rank. If all four match bitwise the mechanism is refuted, because the rest of
-#: the expression is the same operations on owned data in the same order.
+#: (i)` -- times `u(i+1)` over `msfuy(i+1)`. Those four are the x-side operands
+#: that CROSS a patch boundary, and matching them bitwise refutes the specific
+#: stale-east-halo account of the `ww` difference. It does NOT establish that all
+#: operands agree: `v_2`, `msftx` and `msfvx_inv` are dumped by no group, and
+#: while j is not decomposed here, their OWNED values could still differ through
+#: earlier i-dependent arithmetic.
 GROUPS = {
     1: [("u_2", "M", "X"), ("t_2", "M", "M"), ("ph_2", "Z", "M"),
         ("w_2", "Z", "M"), ("mu_2", "S", "M")],
@@ -298,6 +300,19 @@ def read_dump(path: Path) -> dict:
     return out
 
 
+def _declared(dump: dict) -> dict:
+    """The records the CURRENT `ANCHORS` declares, and nothing else.
+
+    A dump written by an earlier probe carries stages this one has withdrawn.
+    Reading them back lets retired instrumentation re-enter an analysis -- the
+    acoustic sub-step stages did exactly that -- and it made the comparison
+    depend on argument order, since whatever the first dump holds is what gets
+    walked. Project once, on the way in.
+    """
+    want = {(st, g) for st, grps, _, _ in ANCHORS for g in grps}
+    return {k: v for k, v in dump.items() if (k[0], k[1]) in want}
+
+
 def _load(d: Path) -> dict:
     """Every rank's records merged on (stage, group, i, owned).
 
@@ -316,7 +331,7 @@ def _load(d: Path) -> dict:
             owner[k], out[k] = f, v
     if not out:
         raise SystemExit(f"no g33dyn_*.bin records under {d}")
-    return out
+    return _declared(out)
 
 
 def _same_words(x, y) -> bool:
@@ -365,8 +380,9 @@ def _require_declared_coverage(A: dict, B: dict, dir_a: Path, dir_b: Path) -> No
     record of a kind must share one array shape, which catches a j truncation or
     a dropped level, for which no declared universe exists.
 
-    Extra records are allowed: a dump written by an earlier probe with more
-    anchors stays readable, and an extra record cannot hide an omission.
+    Records outside the current `ANCHORS` are projected away before this runs,
+    so a dump written by an earlier probe stays readable without its retired
+    stages re-entering the comparison.
 
     Not covered: a truncation identical in every record of both arms, and the set
     of halo copies, which is rank-dependent and undeclared.
@@ -377,10 +393,12 @@ def _require_declared_coverage(A: dict, B: dict, dir_a: Path, dir_b: Path) -> No
     shapes = {}
     for tag, D, d in (("A", A, dir_a), ("B", B, dir_b)):
         got = {(s, g, i) for (s, g, i, own) in D if own}
-        if want - got:
+        if got != want:
             raise SystemExit(
-                f"{tag} ({d}) is missing {len(want - got)} of the {len(want)} "
-                f"records ANCHORS x WINDOWS declares, e.g. {sorted(want - got)[:6]}")
+                f"{tag} ({d}) owned coverage != ANCHORS x WINDOWS "
+                f"({len(want)} expected): missing {sorted(want - got)[:6]} "
+                f"({len(want - got)}), unexpected {sorted(got - want)[:6]} "
+                f"({len(got - want)})")
         for (s, g, i, own), rec in D.items():
             for name, kind, _ in GROUPS[g]:
                 shapes.setdefault(kind, set()).add(rec[name].shape)
@@ -444,7 +462,7 @@ def halo_vs_reference(ref_dir: Path, dec_dir: Path) -> list:
     for path in sorted(Path(dec_dir).glob("g33dyn_*.bin")):
         rank = path.stem.replace("g33dyn_", "")
         differ, no_reference = {}, {}
-        for key, rec in read_dump(path).items():
+        for key, rec in _declared(read_dump(path)).items():
             stage, grp, i, owned = key
             if owned:
                 continue
