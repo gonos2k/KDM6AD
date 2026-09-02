@@ -86,7 +86,13 @@ def derive_delz(ph: torch.Tensor, phb: torch.Tensor) -> torch.Tensor:
 
 
 def nccn_init_profile(delz: torch.Tensor, is_land: torch.Tensor) -> torch.Tensor:
-    """wrapper module_mp_kdm6ad.F ITIMESTEP==1 nccn(NN) init의 미러.
+    """The CCN profile formula, applied to whatever geometry is passed in.
+
+    This is the formula BOTH initialisers use, not either one's output. Arm C
+    measured that they disagree because they run on different geometry:
+    `start_em` uses the initial `PH+PHB`, and the kernel's `ITIMESTEP==1` block
+    uses `delz` after one dynamics step. Feed this the frame's own `delz` and a
+    t=0 frame reproduces `start_em`; no frame reproduces the kernel's.
 
     Z_SUM(k) = Σ_{k'<=k} delz(k')  (해당 층 두께 포함 하부누적 — Fortran 루프 그대로:
     Z_SUM을 먼저 더한 뒤 NN(k)을 계산).
@@ -118,8 +124,17 @@ def _flat(var, time_idx: int) -> torch.Tensor:
     return a.reshape(-1)                  # (ny, nx) → (B,)
 
 
-def read_wrfout_frame(path: str, time_idx: int = 0) -> FrameData:
-    """wrfout 프레임 하나를 State/Forcing으로 읽는다 (파생은 위 순수 함수 위임)."""
+def read_wrfout_frame(path: str, time_idx: int = 0,
+                      nccn_policy: str = "as_stored") -> FrameData:
+    """wrfout 프레임 하나를 State/Forcing으로 읽는다 (파생은 위 순수 함수 위임).
+
+    nccn_policy: "as_stored" reads QNCCN verbatim. "init_profile" synthesises it
+    from this frame's own geometry when the stored field is all zero -- ask for
+    it only when that is what you mean, because the result is neither
+    initialiser's field unless the frame is t=0.
+    """
+    if nccn_policy not in ("as_stored", "init_profile"):
+        raise ValueError(f"read_wrfout_frame: unknown nccn_policy {nccn_policy!r}")
     import netCDF4
 
     ds = netCDF4.Dataset(path)
@@ -139,10 +154,8 @@ def read_wrfout_frame(path: str, time_idx: int = 0) -> FrameData:
         xland = _flat(ds.variables["XLAND"], time_idx)
 
         nccn = _flat(ds.variables["QNCCN"], time_idx)
-        nccn_fallback = bool((nccn == 0).all())
+        nccn_fallback = nccn_policy == "init_profile" and bool((nccn == 0).all())
         if nccn_fallback:
-            # 첫 히스토리 프레임이 물리 1스텝 이전에 쓰였을 때 QNCCN은 전부 0 —
-            # wrapper의 ITIMESTEP==1 초기화를 미러해 채운다.
             nccn = nccn_init_profile(delz, xland == 1.0)
 
         state = State(

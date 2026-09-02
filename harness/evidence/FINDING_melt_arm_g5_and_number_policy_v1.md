@@ -175,6 +175,13 @@ zero. Nine occurrences had `brs > 0` going in; the product was not computed.
 What stands: nine partial occurrences, eight with `rho0 > 900`, one below 100,
 none in band.
 
+**On the counts' thread safety** (owner review 8): this build has OpenMP off --
+`configure.wrf` carries `OMP = # -fopenmp` and `OMPCPP = # -D_OPENMP`, both
+commented out -- and the runs are `np = 1`. The increments were single-threaded,
+so 644,771 / 193,827 / 9 do not depend on any atomic or reduction. What is still
+missing is the instrumented binary's identity against the deployed one; that is
+recorded as unmeasured rather than argued away.
+
 The window itself is not rare -- 30.1% of all counted occurrences are in it -- but
 99.995% of those melts are COMPLETE, where `g3`, `g4` and `g5` all set
 `brs = 0` and agree. The arms separate only in the thin residue, and in this run
