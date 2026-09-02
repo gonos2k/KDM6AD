@@ -43,19 +43,38 @@ take the `brs = 0` branch.
 
 The branch was not reachable on the fixture, so it was classified from the
 formulas, with a sample only as a check. Write the melt fraction
-`a = -pgmlt/qg0` in `(0,1)` and the raw ratio `rho0 = qg0/bg0`, and let
-`rho_c = clip(rho0, 100, 900)`. Then
+`a = -pgmlt/qg0` in `(0,1)` and the raw ratio `rho0 = qg0/bg0`.
+
+Inside the window `rhox <= 0`, so `g4` takes its RECOMPUTE branch, and that
+branch bounds the denominator (`make_graupel_melt_arms.py`, `G4_TXN`):
+
+    melt_rho = min(900., max(100., melt_qg0/max(melt_bg0,tiny(melt_bg0))))
+
+so the density `g4` actually divides by is
+
+    rho_c = clip(qg0 / max(bg0, tau), 100, 900),   tau = tiny(f32) = 1.17549e-38
+
+not `clip(rho0, 100, 900)`. The two agree only while `bg0 >= tau`. Then
 
     g4 : bg+ = max(0, bg0 - a*qg0/rho_c)
     g5 : bg+ = bg0 * (qg+/qg0) = (1-a)*bg0        in exact arithmetic
 
 and three statements follow, none of them statistical:
 
-**1. Inside the model's density band the two are the same equation.** If
-`100 <= rho0 <= 900` then `rho_c = rho0`, so `a*qg0/rho_c = a*bg0` and both give
+**1. Inside the density band AND above `tau` the two are the same equation.**
+If `bg0 >= tau` AND `100 <= rho0 <= 900` then `rho_c = rho0`, so
+`a*qg0/rho_c = a*bg0` and both give
 `(1-a)*bg0`. Checked on 14,344 in-band f32 draws: bit-equal in 6,646, and where
 f32 separates them the difference is rounding -- relative median 1.006e-07, max
 2.936e-04 -- with **no in-band draw floored to zero**.
+
+**The `bg0 >= tau` half of that condition was missing here, and the claim without
+it was wrong** (owner review 4). Below `tau` the denominator is pinned at `tau`,
+so `rho_c` no longer tracks `rho0` and the arms separate even in band. Owner's
+counterexample: `qg0 = 5e-37`, `bg0 = 1e-39`, `a = 0.1` gives `rho0 = 500`, in
+band, yet `qg0/tau = 42.5` clips to `rho_c = 100`, and `g4` returns `~5e-40`
+against `g5`'s `9e-40`. The window admits `bg0` this small -- it bounds `bg` only
+from above, at `brs_min = 1e-15`.
 
 **2. `g4` floors exactly when `a*rho0 >= rho_c`.** Which for a partial melt needs
 `rho0 > 900`, since `rho_c = clip(rho0)` and `a < 1`. Checked: the predicate and
@@ -125,22 +144,38 @@ Counters at the melt site -- immediately after `pgmlt` is clamped, where
 `qrs(i,k,3)` is still the pre-melt mass -- over the same ten minutes, `np = 1`,
 changing nothing:
 
-    melt events, pgmlt < 0                                        644,771
+    cell-operator occurrences, pgmlt < 0                                        644,771
     of those, in the window (rhox <= 0)                           193,827   30.1%
       of those, PARTIAL (qg + pgmlt > 0)                                9   0.005%
         with brs > 0                                                    9
         with brs <= 0   -- g5 would error stop                          0
-        raw rho in [100, 900]  -- g4 = g5                               0
-        raw rho > 900          -- g4 FLOORS to zero                     8
+        raw rho in [100, 900]                                           0
+        raw rho > 900          -- g4 CAN floor here                      8
         raw rho < 100                                                   1
 
 **Both earlier readings were wrong.** The fixture said the branch never fires; the
 log-uniform sample suggested 64.3% of a space. It fires nine times in ten
-minutes, one in 72,000 melt events -- and **eight of those nine land exactly where
-`g4` floors and `g5` does not.** So `g4` produced `qg > 0` with `bg = 0` eight
-times in this run, and `g5`'s abort condition did not occur once.
+minutes -- one partial occurrence per about 72,000 counted melt occurrences in
+this run.
 
-The window itself is not rare -- 30.1% of all melt events are in it -- but
+**Two claims that stood here are withdrawn** (owner review 5 and 6).
+
+*"`g4` produced `qg > 0, bg = 0` eight times"* -- withdrawn. `rho0 > 900` is
+NECESSARY for the floor, not sufficient: `g4` floors when `a*rho0 >= rho_c`,
+which at `rho0 > 900` means `a >= 900/rho0`. At `rho0 = 1000, a = 0.1` it does
+not floor. The eight were classified by `rho0` alone; `a` was not recorded, and
+`g4` was never executed -- this was a counter run on the unmodified kernel, so
+every `g4`/`g5` figure here is a counterfactual, not an observation.
+
+*"`g5`'s abort condition did not occur once"* -- withdrawn. The guard tests the
+POST product `fl32(bg0 * fl32(qg+/qg0))`, not the pre-melt `bg0`. The generator's
+own note records 14 subnormal states where `bg0 > 0` underflows that product to
+zero. Nine occurrences had `brs > 0` going in; the product was not computed.
+
+What stands: nine partial occurrences, eight with `rho0 > 900`, one below 100,
+none in band.
+
+The window itself is not rare -- 30.1% of all counted occurrences are in it -- but
 99.995% of those melts are COMPLETE, where `g3`, `g4` and `g5` all set
 `brs = 0` and agree. The arms separate only in the thin residue, and in this run
 the residue sat almost entirely in the region where they disagree.

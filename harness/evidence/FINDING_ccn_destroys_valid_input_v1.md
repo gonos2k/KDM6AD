@@ -83,17 +83,52 @@ source:
 `qnn` carries `d` and `=(bdy_interp:dt)` in its io flags, so it is interpolated
 down to the nest: the nest receives its parent's EVOLVED `QNCCN`. `start_domain`
 then runs `start_em` for the nest, whose guard sees that non-zero field and
-correctly stands down. `itimestep` is per domain and `med_nest_initial` sets only
-the PARENT's (the save/restore at 831/848), so the nest's stays at its allocation
-default and its first `solve_em` makes it 1 -- and the unguarded kernel block
-fires, replacing the interpolated field with the analytic profile.
+correctly stands down. `itimestep` is per domain, and `start_em.F:242` decides
+whether it is zeroed:
+
+```fortran
+IF ( .not. ( config_flags%restart .or. grid%moved ) ) THEN
+    grid%itimestep=0
+ENDIF
+```
+
+A newly spawned nest is neither a restart nor `moved`, so the assignment RUNS and
+its first `solve_em` makes `itimestep` 1 -- and the unguarded kernel block fires,
+replacing the interpolated field with the analytic profile.
 
 So the nest discards not merely a supplied input but the parent's evolved state,
 one step into the nest's life.
 
-Established from the io flags and the call chain. **No nested run was made**, and
-the nest's initial `itimestep` is the allocation default rather than a literal
-assignment anyone wrote.
+Established from the io flags and the call chain. **No nested run was made.**
+
+## The full exposure map, from that one guard
+
+`start_em.F:242` excludes exactly `restart` and `moved`; everything else is
+zeroed and therefore reaches 1 on its first solve. `share/dfi.F:287` zeroes it
+again, unconditionally, when DFI ends.
+
+| path | `itimestep` zeroed | block fires |
+|---|---|---|
+| cold start | yes, `start_em.F:243` | yes -- exposed if the input carries `QNCCN` |
+| ordinary restart | **no**, excluded | no |
+| moved nest | **no**, excluded | no |
+| newly spawned nest | yes, `start_em.F:243` | yes, over the parent's evolved field |
+| end of DFI | yes, `share/dfi.F:287`, unconditional | yes |
+| cycling (non-HRRR) | yes -- `:242` excludes only restart and `moved` | yes |
+
+The cycling row is a reading of the guard, not a run: `:242` omits `cycling` from
+its exclusion list while the very next block at `:246` adds `cycling` to
+`first_trip_for_this_domain`. The parallel guard at `:328` excludes
+`hrrr_cycling` but `:242` does not, so the two are not the same predicate. That
+asymmetry is in the WRF source as distributed; whether it is intended is not
+established here.
+
+**Withdrawn**: the earlier line that the exposure is a cold start. DFI, cycling
+and a new nest reach it too, and the DFI path does so unconditionally.
+
+**Not measured**: any of these paths. This whole map is the one guard at
+`start_em.F:242` read against `dfi.F:287`; no DFI, cycling or nested run was
+made.
 
 ~~Whether the overwrite changes a forecast when the input IS zero. It does not:
 with `QNCCN = 0` on input the profile is what `start_em` would have written, so

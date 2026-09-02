@@ -1,5 +1,14 @@
 # How common the graupel-melt window is, and why the sample said "land"
 
+> **SUPERSEDED.** This finding states that no output field carries the kernel's
+> `brs`, so the volume half of the window condition cannot be checked and 987 is
+> an upper bound. `QIB` was subsequently identified as the stored bulk-volume
+> moment the driver passes to KDM6 as `BG`
+> (`module_microphysics_driver.F:2750`), so the window state IS countable from
+> output, and it was counted. Use
+> `FINDING_melt_arm_g5_and_number_policy_v1` for the window census. The
+> reasoning below is kept for the record.
+
 The overflow's exposure was known only through a 24-column sample chosen for
 rain-number depth. The review asked for the trigger population directly. Two of
 the four conditions are measurable from a WRF output frame; the third is not,
