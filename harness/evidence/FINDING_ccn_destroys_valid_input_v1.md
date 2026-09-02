@@ -113,6 +113,41 @@ is now `6797945d`. The defect itself is unchanged and the check is a source one:
 `ccn_max_val` guard. Arm B arrived; the guard did not. The control was not
 re-run, and would only re-measure a share the source already determines.
 
+## The guard makes the block dead code, because `start_em` always populates
+
+Adding `start_em`'s own rule to the kernel block
+
+    g33_ccn_max = maxval(nn(its:ite,kts:kte,jts:jte))
+    if (itimestep .eq. 1 .and. g33_ccn_max .lt. 1.0) then
+
+and running it gives output **bitwise identical to Arm C**, which deletes the
+block outright -- 197 fields, frames 0-3, zero differing fields. The guard did
+not merely leave this case alone; it stopped the block from ever firing.
+
+The reason is the order. `start_em` runs first, and its guard reads
+
+    IF ( ccn_max_val < 1.0 ) THEN ! initialization of ccn not already done
+
+so it is a FALLBACK: it generates a profile when the field is empty and keeps the
+field when it is not. Either way `QNCCN` is populated by the time `start_em`
+returns. The kernel block runs one dynamics step later, at `itimestep == 1`, and
+therefore never meets an empty field -- not on a cold start, not with supplied
+input, not on a nest.
+
+So the block has no path on which it does useful work. It is not a second
+initialiser competing with the first; it is an unconditional overwrite of
+whatever the first produced. Guarding it and deleting it are the same edit, and
+the measurement says so at the bit level.
+
+That also answers the "single initialization authority" question by removing it:
+there is nothing to unify, because only one of the two ever has work to do.
+
+Measured at np=1 on this case. The tile max used here equals the domain max only
+because np=1; a production guard needs `start_em`'s distributed
+`wrf_dm_max_real`, or the decision would be one per rank -- the decomposition
+dependence this campaign has been chasing elsewhere.
+
+
 ## Arm C on the corrected code: the two initialisers write DIFFERENT profiles
 
 Arm C is the kernel block removed -- one line, `if (itimestep .eq. 1)` made
