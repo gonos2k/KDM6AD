@@ -48,7 +48,9 @@ binary `a40bd80f` is kept beside them.
 | The melt window's STATE predicate is common in the real trajectory, not rare: over `mp37_traj_10min_hist1_20260822_212132`, 11 frames, 12,919 of 243,117 graupel-bearing cell-frames satisfy `qg <= qcrmin` and `bg <= brs_min` (5.3%), present in every frame after the first at about 1,300 a frame. Counted from `QGRAUP` and `QIB`, the field the driver passes as the kernel's `bg` | CONFIRMED | `FINDING_melt_arm_g5_and_number_policy_v1` |
 | Within that window 1,831 cell-frames have raw density above 900, where `g4` floors and `g5` does not, and 2,901 lie in `[100, 900]`, where the two arms are the same equation | CONFIRMED | `FINDING_melt_arm_g5_and_number_policy_v1` |
 | The model's own state already carries the inconsistency the melt arms argue about: 551 in-window cell-frames have `qg > 0` with `bg` exactly 0, and 16 have `bg < 0` | CONFIRMED | `FINDING_melt_arm_g5_and_number_policy_v1` |
-| The melt-EVENT rate in that window and its partial/complete split -- the counts above are states at output time, and whether a melt fired there needs `pgmlt` inside a microphysics call, not a field on disk | UNMEASURED | `FINDING_melt_arm_g5_and_number_policy_v1` |
+| Melt events counted inside the kernel over the same ten minutes: 644,771 melts, 193,827 of them in the window (30.1%), of which 9 are PARTIAL (0.005%) -- the branch that separates `g4` from `g5` is reachable but thin | CONFIRMED | `FINDING_melt_arm_g5_and_number_policy_v1` |
+| Of those 9 partial window melts, 8 have raw density above 900 where `g4` floors to zero and `g5` does not, 1 below 100, and none in `[100, 900]`; `g5`'s abort condition (`brs <= 0`) occurred 0 times | CONFIRMED | `FINDING_melt_arm_g5_and_number_policy_v1` |
+| The RATE those nine imply -- one case, `np=1`, ten minutes, nine events is a thin count and other cases or longer integrations are not covered | UNMEASURED | `FINDING_melt_arm_g5_and_number_policy_v1` |
 
 ## CCN initialisation
 

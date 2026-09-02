@@ -116,15 +116,41 @@ already carries `qg > 0` with `bg = 0` in 551 cell-frames and `bg < 0` in 16**,
 which is the inconsistency the melt-arm question is about, present before any
 melt arm is chosen.
 
-WHAT THIS DOES NOT COUNT. These are STATES at output time, not melt EVENTS. A
-melt needs `pgmlt` non-zero in a microphysics call, which needs the cell above
-freezing at that moment; an output snapshot cannot say whether a melt fired
-there, nor whether it was partial or complete. **The melt-event rate in the
-window, and its partial/complete split, remain unmeasured** -- that needs a
-count inside the kernel, not a field on disk.
+Those are STATES at output time, not melt EVENTS, so they were counted inside the
+kernel too.
 
-What has changed is the prior: the branch's state precondition is common, not
-rare, and the fixture's silence on it was a property of the fixture.
+### The events, counted where they happen
+
+Counters at the melt site -- immediately after `pgmlt` is clamped, where
+`qrs(i,k,3)` is still the pre-melt mass -- over the same ten minutes, `np = 1`,
+changing nothing:
+
+    melt events, pgmlt < 0                                        644,771
+    of those, in the window (rhox <= 0)                           193,827   30.1%
+      of those, PARTIAL (qg + pgmlt > 0)                                9   0.005%
+        with brs > 0                                                    9
+        with brs <= 0   -- g5 would error stop                          0
+        raw rho in [100, 900]  -- g4 = g5                               0
+        raw rho > 900          -- g4 FLOORS to zero                     8
+        raw rho < 100                                                   1
+
+**Both earlier readings were wrong.** The fixture said the branch never fires; the
+log-uniform sample suggested 64.3% of a space. It fires nine times in ten
+minutes, one in 72,000 melt events -- and **eight of those nine land exactly where
+`g4` floors and `g5` does not.** So `g4` produced `qg > 0` with `bg = 0` eight
+times in this run, and `g5`'s abort condition did not occur once.
+
+The window itself is not rare -- 30.1% of all melt events are in it -- but
+99.995% of those melts are COMPLETE, where `g3`, `g4` and `g5` all set
+`brs = 0` and agree. The arms separate only in the thin residue, and in this run
+the residue sat almost entirely in the region where they disagree.
+
+Scope: one case, `np = 1`, ten minutes. Nine events is a thin count, so the RATE
+carries little weight; what it establishes is that the branch is reachable in the
+model and that its occupancy is not spread evenly over the window.
+
+Instrument restored afterwards: `module_mp_kdm6.F` `9354141b`, `main/wrf.exe`
+`6797945d`.
 
 ## The number policy is the real arm choice
 
