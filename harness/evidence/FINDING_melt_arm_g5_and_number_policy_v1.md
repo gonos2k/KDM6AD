@@ -290,3 +290,95 @@ An earlier version of this paragraph said the effect on `qr/nr` is bounded by
 `qcrmin`. Only the absolute increment is. The relative and moment effects are not
 bounded, and a column carrying trace graupel near `qcrmin` with small `qr` is
 where that would show.
+
+
+## Every window melt moves mass to rain and adds no rain number
+
+Owner review 12.3 asks for the number-moment consequence. Two source facts fix
+it exactly, with no run needed.
+
+`ProgB_param` computes `rhox` under
+
+    if (qrs(i,k,3).gt.qcrmin .or. brs(i,k).gt.brs_min) then      :3693
+
+so `rhox` is left uncomputed precisely when `qg <= qcrmin` AND `bg <= brs_min` --
+the window, as recorded. And the melt's rain-number update is gated on
+
+    if(qrs(i,k,3).gt.qcrmin) then
+      gfac = (rslope(i,k,3))*n0go(i,k)/qrs(i,k,3)
+      nrs(i,k,1) = nrs(i,k,1) - gfac*pgmlt(i,k)                  :1412
+    endif
+
+Inside the window `qg <= qcrmin`, so that gate is FALSE in **all 193,827**
+occurrences: the mass moves to rain, and the rain number does not change. Not a
+sample -- the two predicates are complementary by construction.
+
+The consequence per occurrence, with `dnr = 0`:
+
+    d(qr/nr) / (qr/nr) = dqr/qr = -pgmlt/qr
+
+so every window melt raises the mean drop mass, and by a fraction this ledger
+measures directly.
+
+There is no graupel number moment to balance against: the scheme sets
+`nrs(i,k,3) = 0.` on entry (`:392`) and only floors it afterwards (`:859`).
+Melting adds rain number from the graupel SIZE DISTRIBUTION (`n0go`), never from
+a carried graupel number. So "graupel-number residual" has nothing to residualise
+-- the moment does not exist.
+
+
+## The ledger: negligible in mass and enthalpy, severe in the number tail
+
+Owner review 12 asks for mass-, enthalpy- and number-weighted ledgers over the
+193,827 window occurrences rather than a count. Accumulated in the kernel in
+double precision, with the same three counters as a positive control -- they
+returned 644,771 / 193,827 / 9 again.
+
+### Mass, and therefore enthalpy
+
+    sum rho*dz*(-pgmlt), ALL melt occurrences      1.77818e+02 kg m^-2
+    sum rho*dz*(-pgmlt), WINDOW occurrences        9.31222e-05 kg m^-2
+    f_M                                            5.24e-07
+
+The window is **30.1% of the count and 0.0000524% of the melted mass**. Latent
+enthalpy is `xlf` times that mass, `xlf` being a parameter, so `f_E = f_M`
+exactly -- the same half a millionth.
+
+So the g1-versus-g3/g4/g5 policy difference, which applies to every one of the
+193,827, moves five parts in ten million of the melted mass and the same share of
+the latent cooling. **Count was not physics here.**
+
+(The weight is `den`, which is moist-air density, while `pgmlt` is per dry kg;
+`FINDING_number_mass_basis_v1` measures that basis error at 0.10% on a comparable
+column. It does not move a ratio of 5e-07.)
+
+### The number moment is where it is not negligible
+
+Every window occurrence moves mass to rain and adds no rain number, so
+`d(qr/nr)/(qr/nr) = -pgmlt/qr`. Over the 193,806 window occurrences that had
+`qr > 0`:
+
+    p50      2.1983e-09
+    p90      3.2747e-06
+    p99      2.9707e-03
+    p99.9    1.7269e-01
+    max      1.0882e+08
+
+    above 1%     958
+    above 10%    274
+    above 100%    71
+
+The median window melt perturbs the mean drop mass by two parts in a billion.
+The tail does not: 71 occurrences **more than double the rain mass without adding
+a single drop**, and the worst multiplies it by 1e8.
+
+And the denominator is not always there:
+
+    window occurrences with qr <= 0      21     rain mass created where there was none
+    window occurrences with nr <= 0   2,904     qr/nr undefined
+
+So the owner's expectation holds, with the channel identified: the 193,797
+complete transfers matter more than the nine partials -- **not through mass or
+enthalpy, which are negligible, but through the number moment**, where a thin
+tail produces grossly inconsistent drop sizes and 2,904 cells have no rain number
+to be inconsistent with.
