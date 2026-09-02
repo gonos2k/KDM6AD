@@ -63,10 +63,13 @@ constructs an input that does not otherwise occur here, to ask what the code
 would do with one. A coupled aerosol run or a restart would supply one, and
 neither is run here.
 
-Whether the overwrite changes a forecast when the input IS zero. It does not:
+~~Whether the overwrite changes a forecast when the input IS zero. It does not:
 with `QNCCN = 0` on input the profile is what `start_em` would have written, so
-A, B and C differ over the tiling and the halo, not over the field's origin
-(`FINDING_ccn_overwrites_microphysics_v1`).
+A, B and C differ over the tiling and the halo, not over the field's origin.~~
+
+**That paragraph is WRONG and is withdrawn.** It has now been measured on the
+corrected code and the overwrite changes the forecast substantially even with
+`QNCCN = 0` on input -- see below.
 
 One case, one host, deployed revision `a06c954b`, `np = 1`, 20 s.
 
@@ -77,3 +80,45 @@ is now `6797945d`. The defect itself is unchanged and the check is a source one:
 `module_mp_kdm6.F:309` is still `if (itimestep .eq. 1) then` with no
 `ccn_max_val` guard. Arm B arrived; the guard did not. The control was not
 re-run, and would only re-measure a share the source already determines.
+
+## Arm C on the corrected code: the two initialisers write DIFFERENT profiles
+
+Arm C is the kernel block removed -- one line, `if (itimestep .eq. 1)` made
+false, binary `30e69d46` -- against the deployed `6797945d`, `np = 1`, one
+minute, 197 fields:
+
+    frame          0s   20s   40s   60s
+    differing       0    11    74    76
+
+At 20 s the first to differ are `QNCCN` itself and what it feeds: `QCLOUD`,
+`QNCLOUD`, `QVAPOR`, `T`, `P`, `REFL_10CM`, `FOGFRAC_SFC`.
+
+`QNCCN` alone:
+
+    t = 0 s     0 of 2,573,532 cells differ          both start from start_em's profile
+    t = 20 s    1,398,566 of 2,573,532 (54.3%)       i 2..233, j 2..281 -- domain-wide
+                median |diff| 8.4e+04, max 3.4e+08
+
+**Domain-wide in VALUE, not a coverage gap at the edge.** The kernel block does
+not re-impose what `start_em` wrote; it imposes a different field.
+
+The source says why, and the two halves agree. Both initialisers use the same
+formula on `z_sum`, and they accumulate different thicknesses:
+
+    start_em.F:1786          dz8w from phb + ph_2, at initialisation
+    module_mp_kdm6.F:322     delz as passed at itimestep 1, after one dynamics step
+
+which is exactly consistent with `QNCCN` being identical at `t = 0` and split by
+`t = 20 s`.
+
+So the policy question is not "which of two spellings of the same profile", and
+the overwrite is not harmless when the input is zero. It is a second, different
+initialisation applied one time step later, and removing it moves 76 of 197
+fields at one minute.
+
+Scope: one case, `np = 1`, one minute, this configuration. Whether Arm C is
+RIGHT is unchanged by this -- it inherits `start_em`'s coverage, which leaves the
+outermost ring unwritten. What changed is the size of what is at stake.
+
+Tree restored afterwards: `module_mp_kdm6.F` `9354141b`, `main/wrf.exe`
+`6797945d`.
