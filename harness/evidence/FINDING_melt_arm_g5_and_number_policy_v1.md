@@ -158,22 +158,62 @@ log-uniform sample suggested 64.3% of a space. It fires nine times in ten
 minutes -- one partial occurrence per about 72,000 counted melt occurrences in
 this run.
 
-**Two claims that stood here are withdrawn** (owner review 5 and 6).
+### The nine, measured
 
-*"`g4` produced `qg > 0, bg = 0` eight times"* -- withdrawn. `rho0 > 900` is
+The two claims below were withdrawn on the owner's objection that neither had
+been computed. They have now been computed. A diagnostic emits, at the melt
+clamp, the raw f32 state of every partial in-window occurrence together with
+BOTH arms' actual f32 candidates, with three counters as a positive control --
+they returned 644,771 / 193,827 / 9, the census's own numbers, so the predicate
+is the census's.
+
+    #    i   k         qg0         bg0    alpha        rho0  g4_rho      g4_bg1      g5_bg1     a*rho0
+     1  129  16  7.0310e-11  8.7523e-18   0.7152  8.0332e+06   900.0  0.0000e+00  2.4924e-18  5.746e+06
+     2  167  16  7.4239e-11  9.1959e-16   0.2906  8.0731e+04   900.0  0.0000e+00  6.5236e-16  2.346e+04
+     3  167  16  8.6450e-11  8.7073e-16   0.3457  9.9285e+04   900.0  0.0000e+00  5.6975e-16  3.432e+04
+     4  167  16  9.1692e-11  8.6683e-16   0.4002  1.0578e+05   900.0  0.0000e+00  5.1993e-16  4.233e+04
+     5  167  16  9.0056e-11  8.3088e-16   0.1295  1.0839e+05   900.0  0.0000e+00  7.2327e-16  1.404e+04
+     6  167  16  5.7291e-11  7.9798e-16   0.6295  7.1795e+04   900.0  0.0000e+00  2.9562e-16  4.520e+04
+     7   13  16  8.1739e-14  9.1325e-16   0.8849  8.9503e+01   100.0  1.8995e-16  1.0511e-16  7.920e+01
+     8  156  16  2.5279e-10  8.2676e-16   0.6432  3.0576e+05   900.0  0.0000e+00  2.9499e-16  1.967e+05
+     9  130  16  6.0190e-10  3.3036e-16   0.0033  1.8219e+06   900.0  0.0000e+00  3.2928e-16  5.995e+03
+
+**`g4`'s candidate is exactly zero in 8 of 9, and `g5`'s is positive in 9 of 9.**
+Both numbers now rest on the arms' own f32 arithmetic rather than on a
+classification by `rho0`.
+
+The floor predicate holds exactly: the eight floored all have `a*rho0` far above
+`rho_c = 900`, and occurrence 7 -- the only one that does not floor -- has
+`a*rho0 = 79.2` against `rho_c = 100`. Occurrence 9 shows why `rho0 > 900` alone
+was never the test and why it happened not to matter here: its melt fraction is
+0.33%, yet `a*rho0 = 5,995` still clears 900.
+
+**All nine have `bg0 >= tau`**, so the `max(bg0,tiny)` bound never bit in this
+run. The algebra correction stands; this trajectory does not exercise it.
+
+The 9 occurrences carry only 5 distinct `i`, all at `k = 16`, with `i = 167`
+appearing five times -- so they are not nine independent cells. `j` is not
+resolved: the index printed is a local in `kdm62D`, not the slice index, so
+unique `(i,j,k)` and episode length remain uncounted.
+
+**What the withdrawal was about** (owner review 5 and 6).
+
+*"`g4` produced `qg > 0, bg = 0` eight times"* -- was withdrawn, now MEASURED and
+restored by the table above. `rho0 > 900` is
 NECESSARY for the floor, not sufficient: `g4` floors when `a*rho0 >= rho_c`,
 which at `rho0 > 900` means `a >= 900/rho0`. At `rho0 = 1000, a = 0.1` it does
 not floor. The eight were classified by `rho0` alone; `a` was not recorded, and
 `g4` was never executed -- this was a counter run on the unmodified kernel, so
 every `g4`/`g5` figure here is a counterfactual, not an observation.
 
-*"`g5`'s abort condition did not occur once"* -- withdrawn. The guard tests the
+*"`g5`'s abort condition did not occur once"* -- was withdrawn, now MEASURED on
+the actual post-product and restored. The guard tests the
 POST product `fl32(bg0 * fl32(qg+/qg0))`, not the pre-melt `bg0`. The generator's
 own note records 14 subnormal states where `bg0 > 0` underflows that product to
 zero. Nine occurrences had `brs > 0` going in; the product was not computed.
 
-What stands: nine partial occurrences, eight with `rho0 > 900`, one below 100,
-none in band.
+Both values survive the correction; what changed is that they are now
+observations of the arms' arithmetic instead of inferences from `rho0`.
 
 ### Half the zero-volume states are an f32 limit; half are not
 
@@ -202,9 +242,10 @@ positivity or cleanup defect to chase.
 **On the counts' thread safety** (owner review 8): this build has OpenMP off --
 `configure.wrf` carries `OMP = # -fopenmp` and `OMPCPP = # -D_OPENMP`, both
 commented out -- and the runs are `np = 1`. The increments were single-threaded,
-so 644,771 / 193,827 / 9 do not depend on any atomic or reduction. What is still
-missing is the instrumented binary's identity against the deployed one; that is
-recorded as unmeasured rather than argued away.
+so 644,771 / 193,827 / 9 do not depend on any atomic or reduction. And the instrumented binary's identity is now measured too: the raw-row run
+against the deployed 10-minute run differs in **0 of 197 fields across all seven
+frames**, so the instrumentation is non-invasive in fact and not only by
+argument.
 
 The window itself is not rare -- 30.1% of all counted occurrences are in it -- but
 99.995% of those melts are COMPLETE, where `g3`, `g4` and `g5` all set
