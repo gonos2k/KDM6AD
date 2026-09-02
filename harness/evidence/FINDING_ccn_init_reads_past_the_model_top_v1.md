@@ -169,11 +169,23 @@ the slot. The correction is therefore just
 with no padding assignment to decide -- the question of what should fill
 `scalar(:,kte,:,p_qnn)` does not arise, because nothing reads it.
 
-**The permanent correction remains an owner decision**, for one reason that is
-not about the loop: applying it changes the deployed binary, and `f54ef3c9` is
-cited as the campaign reference across the MPI findings. The numbers those
-findings report do not move -- the correction is bitwise neutral on both
-decompositions, measured -- but the hash they name would become historical.
+## Corrected, permanently
+
+Applied on the owner's decision, 2026-09-02:
+
+    dyn_em/start_em.F   5c6d6faa -> 5090ca10   DO k=kts,kte  ->  DO k=kts,kte-1
+    main/wrf.exe        f54ef3c9 -> 6797945d
+
+No padding assignment was added, because no reader needs one.
+
+The rebuild reproduced `6797945de1ada48f`, the same hash the temporary fix-only
+build produced earlier from the same source and flags -- so the build is
+deterministic across the experiment and the permanent change.
+
+Nothing recorded against `f54ef3c9` moves: that binary and this one produce
+bitwise identical output on both `np=1` and `4x1`, 197 fields, every frame to
+60 s, which is the measurement above. `f54ef3c9` is now the historical campaign
+reference and `6797945d` is the deployed one.
 
 It is also probably not related to the seam, but "it happens once" is not the
 reason -- a one-time initialisation error perturbs the state and can seed a later

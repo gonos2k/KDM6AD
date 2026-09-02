@@ -10,8 +10,13 @@ Standard commands:
     python3 -m pytest harness/tests            # what CI runs
     python3 -m pytest harness/tests --local    # + the Fortran / bundle / real-column leg
 
-Deployed WRF binary for MPI runs: `f54ef3c9` (kernel `9354141b`, corrected
-`share/module_bc.F`). The campaign binary `a40bd80f` is kept beside it.
+Deployed WRF binary for MPI runs: `6797945d` (kernel `9354141b`, corrected
+`share/module_bc.F`, and `start_em.F` corrected at the CCN loop bound,
+2026-09-02). It produces output BITWISE IDENTICAL to the previous `f54ef3c9`
+on both `np=1` and `4x1`, 197 fields, every frame to 60 s, so every result
+recorded against `f54ef3c9` carries over unchanged; `f54ef3c9` is the
+historical campaign reference. The campaign binary `a40bd80f` is kept beside
+them.
 
 ## Number transport
 
@@ -44,7 +49,7 @@ Deployed WRF binary for MPI runs: `f54ef3c9` (kernel `9354141b`, corrected
 | With both fixed, `np=1` vs `1x2`/`1x3`/`1x4` is 197 of 197 fields byte-equal at 20 s; `1x4` 0 of 197 at 1 min | CONFIRMED | `RECERT_results_v1` (historical), runs on `f54ef3c9` |
 | The kernel block still overwrites valid external `QNCCN` (no `ccn_max_val` guard; `start_em.F` has one) | CONFIRMED | `FINDING_ccn_destroys_valid_input_v1` |
 | One-time-initialisation reference (Arm C) against the corrected block | UNMEASURED | needs a variant binary; owner-host only |
-| `start_em.F:1786` reads `phb(i,kte+1,j)` at the last iteration of a loop bounded by `kte`, one past the declared top | CONFIRMED | `FINDING_ccn_init_reads_past_the_model_top_v1` |
+| `start_em.F:1786` reads `phb(i,kte+1,j)` at the last iteration of a loop bounded by `kte`, one past the declared top. CORRECTED 2026-09-02 to `DO k=kts,kte-1`, no padding assignment; `start_em.F` `5090ca10`, `wrf.exe` `6797945d` | CONFIRMED | `FINDING_ccn_init_reads_past_the_model_top_v1` |
 | The physical mass levels 1..`kte-1` are computed from in-bounds reads and are unaffected; the out-of-bounds value lands in the top ALLOCATED slot `k = kte` | CONFIRMED | `FINDING_ccn_init_reads_past_the_model_top_v1` |
 | Every `p_qnn`-specific reader found in the forward path stops at `kde-1` -- `flow_dep_bdy_qnn` loops to `ktf = kde-1` and `microphysics_driver` is called with `KTE = min(k_end, kde-1)` -- so no padding policy is needed for the correction. `qnn` is a member of the generic `scalar` container, so a literal `p_qnn` search is not an exhaustive consumer proof; the generic scalar-update paths inspected also stop at `kde-1` | CONFIRMED | `FINDING_ccn_init_reads_past_the_model_top_v1` |
 | A decomposition difference persists in a build that corrects the CCN loop AND enables bounds checking, so the CCN defect is not necessary for one | CONFIRMED | `FINDING_ccn_init_reads_past_the_model_top_v1` |
