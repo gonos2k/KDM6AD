@@ -12,11 +12,13 @@ Standard commands:
 
 Deployed WRF binary for MPI runs: `6797945d` (kernel `9354141b`, corrected
 `share/module_bc.F`, and `start_em.F` corrected at the CCN loop bound,
-2026-09-02). It produces output BITWISE IDENTICAL to the previous `f54ef3c9`
-on both `np=1` and `4x1`, 197 fields, every frame to 60 s, so every result
-recorded against `f54ef3c9` carries over unchanged; `f54ef3c9` is the
-historical campaign reference. The campaign binary `a40bd80f` is kept beside
-them.
+2026-09-02). It is raw-word identical to the previous `f54ef3c9` for the
+sampled `np=1` and `4x1` 197-field outputs through 60 s, so the ONE-MINUTE
+results derived from those outputs carry over. Everything else -- other
+decompositions, the ten-minute runs, other cases, the stage dumps, the 1-ULP arm
+-- stays attributed to the binary it was measured under, because it was not
+re-measured. `f54ef3c9` is the historical campaign reference and the campaign
+binary `a40bd80f` is kept beside them.
 
 ## Number transport
 
@@ -39,8 +41,16 @@ them.
 | `rhox` is computed only under `qg > qcrmin .or. brs > brs_min` (F:3669) while melt asks `qg > 0.` (F:1400); `brs += pgmlt/rhox` divides by zero | CONFIRMED | source, `FINDING_melt_closure_measured_v1` |
 | Float64 residual of the three melts, per level | CONFIRMED | `FINDING_melt_closure_measured_v1` |
 | Whether trace graupel (1e-20..1e-43 kg/kg) should melt at all -- g1 skips, g3/g4/g5 zero it | OPEN | owner decision; `FINDING_melt_arm_g5_and_number_policy_v1` |
-| On a partial melt inside the window `g4` and `g5` differ substantively, not at rounding: over 200,000 f32 draws log-uniform in the window, `g4` floors to zero -- leaving `qg > 0` with `bg = 0` -- in 64.3%, and where it stays positive the apparent density drifts a median 32%, while `g5` holds that density to 2.5e-08 relative and never reaches zero while mass remains | CONFIRMED | `FINDING_melt_arm_g5_and_number_policy_v1` |
-| Whether any model column reaches that branch -- the fixture's window melts are all complete, and the sampling above is uniform in log over the window, not the model's distribution | UNMEASURED | `FINDING_melt_arm_g5_and_number_policy_v1` |
+| Inside the model's density band (`100 <= qg0/bg0 <= 900`) `g4` and `g5` are the same equation: both give `(1-a)*bg0`, and over 14,344 in-band f32 draws they are bit-equal in 6,646 with the rest differing at rounding (relative median 1.006e-07, max 2.936e-04) and none floored to zero | CONFIRMED | `FINDING_melt_arm_g5_and_number_policy_v1` |
+| `g4` floors to zero exactly when `a*rho0 >= rho_c`, which for a partial melt requires `rho0 > 900`: the predicate and `g4 == 0` agree on 100.000% of 200,000 draws, and every floored draw has `rho0 > 900` | CONFIRMED | `FINDING_melt_arm_g5_and_number_policy_v1` |
+| `g5` preserves the raw ratio `qg0/bg0` through the melt. That is algebraic consistency, not admissibility: the branch is entered where `rhox` was never computed, so the ratio can sit orders of magnitude outside `[100, 900]` and `g5` carries it through intact | CONFIRMED | `FINDING_melt_arm_g5_and_number_policy_v1` |
+| That `g5` never produces a zero volume while mass remains -- with `bg0` exactly zero, or at the smallest f32 subnormal, `bg0*(qg+/qg0)` is 0.0 with `qg+ > 0`; `g5` does not RETURN that state, it `error stop`s, which suits a diagnostic arm and is not production-safe | REFUTED | `FINDING_melt_arm_g5_and_number_policy_v1` |
+| The melt window's STATE predicate is common in the real trajectory, not rare: over `mp37_traj_10min_hist1_20260822_212132`, 11 frames, 12,919 of 243,117 graupel-bearing cell-frames satisfy `qg <= qcrmin` and `bg <= brs_min` (5.3%), present in every frame after the first at about 1,300 a frame. Counted from `QGRAUP` and `QIB`, the field the driver passes as the kernel's `bg` | CONFIRMED | `FINDING_melt_arm_g5_and_number_policy_v1` |
+| Within that window 1,831 cell-frames have raw density above 900, where `g4` floors and `g5` does not, and 2,901 lie in `[100, 900]`, where the two arms are the same equation | CONFIRMED | `FINDING_melt_arm_g5_and_number_policy_v1` |
+| The model's own state already carries the inconsistency the melt arms argue about: 551 in-window cell-frames have `qg > 0` with `bg` exactly 0, and 16 have `bg < 0` | CONFIRMED | `FINDING_melt_arm_g5_and_number_policy_v1` |
+| Melt events counted inside the kernel over the same ten minutes: 644,771 melts, 193,827 of them in the window (30.1%), of which 9 are PARTIAL (0.005%) -- the branch that separates `g4` from `g5` is reachable but thin | CONFIRMED | `FINDING_melt_arm_g5_and_number_policy_v1` |
+| Of those 9 partial window melts, 8 have raw density above 900 where `g4` floors to zero and `g5` does not, 1 below 100, and none in `[100, 900]`; `g5`'s abort condition (`brs <= 0`) occurred 0 times | CONFIRMED | `FINDING_melt_arm_g5_and_number_policy_v1` |
+| The RATE those nine imply -- one case, `np=1`, ten minutes, nine events is a thin count and other cases or longer integrations are not covered | UNMEASURED | `FINDING_melt_arm_g5_and_number_policy_v1` |
 
 ## CCN initialisation
 
@@ -48,8 +58,12 @@ them.
 |---|---|---|
 | Two sites: kernel memory-bounds sweep (`module_mp_kdm6.F:311`) seeds the divergence; `flow_dep_bdy_qnn` (transposed `dz8w`, wrong `xland` extent, slab `z_sum`) crashes | CONFIRMED | `FINDING_segv_localised_to_flow_dep_bdy_qnn_v1` |
 | With both fixed, `np=1` vs `1x2`/`1x3`/`1x4` is 197 of 197 fields byte-equal at 20 s; `1x4` 0 of 197 at 1 min | CONFIRMED | `RECERT_results_v1` (historical), runs on `f54ef3c9` |
-| The kernel block still overwrites valid external `QNCCN` (no `ccn_max_val` guard; `start_em.F` has one) | CONFIRMED | `FINDING_ccn_destroys_valid_input_v1` |
-| One-time-initialisation reference (Arm C) against the corrected block | UNMEASURED | needs a variant binary; owner-host only |
+| The kernel block still overwrites valid external `QNCCN`: `module_mp_kdm6.F:309` is `if (itimestep .eq. 1)` with no `ccn_max_val` guard, which `start_em.F` has. The 85.41%-overwritten control was measured on `a06c954b`; the tile-bounds fix has landed since and the GUARD has not, so the defect carries to `6797945d` as a source fact | CONFIRMED | `FINDING_ccn_destroys_valid_input_v1` |
+| A RESTART supplies `QNCCN` and does not trigger the overwrite: `qnn` carries `r` in its io flags, and so does `itimestep` (`rh`), which therefore resumes across a restart rather than resetting, so `if (itimestep .eq. 1)` does not fire on a restarted segment. The exposure is a COLD START whose input carries the field | CONFIRMED | `FINDING_ccn_destroys_valid_input_v1` |
+| Whether a NEST fires the block over fields interpolated from its parent -- `med_nest_initial` does not visibly set `itimestep` and a nest beginning its own count would reach 1 on its first step | UNMEASURED | `FINDING_ccn_destroys_valid_input_v1` |
+| Arm C -- the kernel one-time CCN block removed -- differs from the deployed binary in 0/11/74/76 of 197 fields at 0/20/40/60 s, `np=1` | CONFIRMED | `FINDING_ccn_destroys_valid_input_v1` |
+| The two initialisers write DIFFERENT profiles, not two spellings of one: `QNCCN` is identical at `t=0` and differs in 54.3% of cells domain-wide by 20 s (median 8.4e+04, max 3.4e+08). They apply the same formula to different thicknesses -- `start_em` to `dz8w` from `phb+ph_2` at initialisation, the kernel to `delz` as passed after one dynamics step | CONFIRMED | `FINDING_ccn_destroys_valid_input_v1` |
+| That the overwrite is harmless when the input is zero -- an earlier reading held that A, B and C then differ over tiling and halo rather than over the field's origin | REFUTED | `FINDING_ccn_destroys_valid_input_v1` |
 | `start_em.F:1786` reads `phb(i,kte+1,j)` at the last iteration of a loop bounded by `kte`, one past the declared top. CORRECTED 2026-09-02 to `DO k=kts,kte-1`, no padding assignment; `start_em.F` `5090ca10`, `wrf.exe` `6797945d` | CONFIRMED | `FINDING_ccn_init_reads_past_the_model_top_v1` |
 | The physical mass levels 1..`kte-1` are computed from in-bounds reads and are unaffected; the out-of-bounds value lands in the top ALLOCATED slot `k = kte` | CONFIRMED | `FINDING_ccn_init_reads_past_the_model_top_v1` |
 | Every `p_qnn`-specific reader found in the forward path stops at `kde-1` -- `flow_dep_bdy_qnn` loops to `ktf = kde-1` and `microphysics_driver` is called with `KTE = min(k_end, kde-1)` -- so no padding policy is needed for the correction. `qnn` is a member of the generic `scalar` container, so a literal `p_qnn` search is not an exhaustive consumer proof; the generic scalar-update paths inspected also stop at `kde-1` | CONFIRMED | `FINDING_ccn_init_reads_past_the_model_top_v1` |
@@ -91,7 +105,7 @@ Detail lives in the findings; this table carries what is true now.
 |---|---|---|
 | Column 3's ni number is first-order-consistent over five estimates (consistency of the estimates, not a branch certificate) | CONFIRMED | `FINDING_two_sedimentation_chains_v1` |
 | The ice-chain missing term is the post-update-reservoir inflow cap | CONFIRMED | `FINDING_ice_chain_missing_term_v1` |
-| A conversion-free ice fixture | UNMEASURED | no fixture exists |
+| A conversion-free ice fixture. No fixture exists and building one is a modelling choice, not an extraction: it must hold ice with sedimentation active and conversion terms off, which no current column does | UNMEASURED | `FINDING_ice_chain_missing_term_v1` |
 
 ## Fixture and protocol facts still relied on
 
