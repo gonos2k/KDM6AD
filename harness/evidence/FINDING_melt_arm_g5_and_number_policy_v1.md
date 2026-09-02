@@ -175,6 +175,30 @@ zero. Nine occurrences had `brs > 0` going in; the product was not computed.
 What stands: nine partial occurrences, eight with `rho0 > 900`, one below 100,
 none in band.
 
+### Half the zero-volume states are an f32 limit; half are not
+
+Owner review 11 asks whether `qg > 0, bg = 0` is forced by f32. The smallest
+positive f32 subnormal is `eta = 1.4012985e-45`, so a cell can carry an
+admissible density (`100 <= qg/bg <= 900`) with a positive `bg` only if
+`qg >= 100*eta`. Splitting the 551 in-window zero-volume cell-frames on that:
+
+| `qg` | admissible positive `bg` in f32 | count |
+|---|---|---|
+| `< 100*eta` = 1.4013e-43 | **none exists** | 280 |
+| `100*eta .. 900*eta` | `bg = eta` alone | 90 |
+| `>= 900*eta` = 1.2612e-42 | many | 181 |
+
+So 280 of 551 are a **representability failure of the paired moment** -- no
+choice of `bg` could have been both positive and admissible -- and 271 are not:
+an admissible positive `bg` existed and the state carries zero anyway. The
+largest is `qg = 5.1177e-18`, five orders above the threshold.
+
+The 16 cells with `bg < 0` are outside this argument entirely; no representability
+limit produces a negative volume.
+
+That splits the 551 into two different problems, and only the second is a
+positivity or cleanup defect to chase.
+
 **On the counts' thread safety** (owner review 8): this build has OpenMP off --
 `configure.wrf` carries `OMP = # -fopenmp` and `OMPCPP = # -D_OPENMP`, both
 commented out -- and the runs are `np = 1`. The increments were single-threaded,

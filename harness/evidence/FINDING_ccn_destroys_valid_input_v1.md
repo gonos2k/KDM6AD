@@ -224,3 +224,37 @@ outermost ring unwritten. What changed is the size of what is at stake.
 
 Tree restored afterwards: `module_mp_kdm6.F` `9354141b`, `main/wrf.exe`
 `6797945d`.
+
+
+## How large the 76 fields are, not just how many
+
+Owner review 15: a field COUNT is breadth, not magnitude -- the MPI seam work
+established that distinction and it applies here too. Deployed against Arm C at
+60 s, `np = 1`, relative differences taken where either side is non-zero:
+
+| field | domain RMS | max abs | rel p50 | rel p90 | rel p99 |
+|---|---|---|---|---|---|
+| `QNCCN` | 7.565e+06 | 4.200e+09 | 1.79e-05 | 1.49e-03 | 3.55e-02 |
+| `QNCLOUD` | 4.804e+06 | 4.300e+09 | 2.09e-04 | 5.88e-03 | 1.67e-01 |
+| `QCLOUD` | 1.766e-07 | 9.458e-05 | 1.25e-04 | 2.04e-03 | 3.30e-02 |
+| `QNRAIN` | 3.985e+01 | 2.611e+04 | 1.26e-05 | 9.74e-04 | 9.17e-01 |
+| `QRAIN` | 1.472e-06 | 6.561e-04 | 5.35e-06 | 4.51e-04 | 1.81e-01 |
+| `QVAPOR` | 2.745e-07 | 1.688e-04 | 0 | 7.80e-07 | 7.67e-06 |
+| `T` | 9.663e-04 | 6.029e-01 | 0 | 8.37e-07 | 1.10e-04 |
+| `REFL_10CM` | 1.770e+00 | 3.513e+02 | 0 | 0 | 4.34e-05 |
+
+Domain-total accumulated precipitation:
+
+    RAINNC      18.76216 vs 18.75524 mm    +6.92e-03 mm    +0.037%
+    SNOWNC      identical
+    GRAUPELNC   identical
+
+So the effect at one minute is concentrated in the NUMBER concentrations -- 92%
+at the 99th percentile for `QNRAIN`, 17% for `QNCLOUD` -- while the thermodynamic
+state hardly moves (`T` and `QVAPOR` are bit-identical in more than half the
+domain and reach 1e-4 at p99), reflectivity is unchanged below p99, and the
+accumulated precipitation differs by 0.037%.
+
+That is the honest shape of it: **wide, and large only where the defect writes**.
+Sixty seconds says nothing about hours; forecast skill remains unmeasured, and
+this table is not a proxy for it.
