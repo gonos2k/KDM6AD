@@ -73,10 +73,27 @@ That narrows the exposure to a COLD START whose input carries `QNCCN` -- a
 coupled aerosol initialisation, or any `wrfinput` that provides the field. That
 is exactly what the marker control above constructs, and what it destroys.
 
-The NEST path is not established either way. `med_nest_initial` does not visibly
-set `itimestep`, and a nest that begins its own count would reach 1 on its first
-step and fire the block over fields interpolated from its parent. Not checked
-here, and not asserted.
+**The NEST path is exposed, and worse than a cold start.** The chain is in the
+source:
+
+    mediation_integrate.F:671   CALL med_interp_domain( parent, nest )
+    mediation_integrate.F:797   CALL start_domain ( nest , .TRUE. )
+    solve_em.F:371              grid%itimestep = grid%itimestep + 1
+
+`qnn` carries `d` and `=(bdy_interp:dt)` in its io flags, so it is interpolated
+down to the nest: the nest receives its parent's EVOLVED `QNCCN`. `start_domain`
+then runs `start_em` for the nest, whose guard sees that non-zero field and
+correctly stands down. `itimestep` is per domain and `med_nest_initial` sets only
+the PARENT's (the save/restore at 831/848), so the nest's stays at its allocation
+default and its first `solve_em` makes it 1 -- and the unguarded kernel block
+fires, replacing the interpolated field with the analytic profile.
+
+So the nest discards not merely a supplied input but the parent's evolved state,
+one step into the nest's life.
+
+Established from the io flags and the call chain. **No nested run was made**, and
+the nest's initial `itimestep` is the allocation default rather than a literal
+assignment anyone wrote.
 
 ~~Whether the overwrite changes a forecast when the input IS zero. It does not:
 with `QNCCN = 0` on input the profile is what `start_em` would have written, so
