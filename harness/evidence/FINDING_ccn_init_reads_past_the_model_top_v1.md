@@ -155,8 +155,14 @@ Both readers of `qnn` stop one short of it, in source:
 `k_end` is `kpe`, so the driver receives `kde-1` and the microphysics never sees
 `k = kte`. `p_qnn` appears nowhere else in `dyn_em`, `phys` or `share`.
 
-So the two sides agree: the measurement found no observable effect because,
-in the source, nothing reads the slot. The correction is therefore just
+So the two sides agree: the measurement found no observable effect, and every
+reader found in the forward path stops one short of the slot.
+
+**That is a reader audit, not an exhaustive proof.** `qnn` is a member of the
+generic `scalar` container, so code can reach it as `scalar(:,:,:,is)` without
+naming `p_qnn`; the generic scalar-update paths inspected also stop at `kde-1`,
+but a literal search for the symbol is not by itself a proof that nothing reads
+the slot. The correction is therefore just
 
     DO k = kts, kte-1
 
