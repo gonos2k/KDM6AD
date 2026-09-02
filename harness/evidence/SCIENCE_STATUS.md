@@ -39,7 +39,8 @@ them.
 | `rhox` is computed only under `qg > qcrmin .or. brs > brs_min` (F:3669) while melt asks `qg > 0.` (F:1400); `brs += pgmlt/rhox` divides by zero | CONFIRMED | source, `FINDING_melt_closure_measured_v1` |
 | Float64 residual of the three melts, per level | CONFIRMED | `FINDING_melt_closure_measured_v1` |
 | Whether trace graupel (1e-20..1e-43 kg/kg) should melt at all -- g1 skips, g3/g4/g5 zero it | OPEN | owner decision; `FINDING_melt_arm_g5_and_number_policy_v1` |
-| g5's partial-melt branch (window-only proportional volume) | UNMEASURED | never reached on the fixture |
+| On a partial melt inside the window `g4` and `g5` differ substantively, not at rounding: over 200,000 f32 draws log-uniform in the window, `g4` floors to zero -- leaving `qg > 0` with `bg = 0` -- in 64.3%, and where it stays positive the apparent density drifts a median 32%, while `g5` holds that density to 2.5e-08 relative and never reaches zero while mass remains | CONFIRMED | `FINDING_melt_arm_g5_and_number_policy_v1` |
+| Whether any model column reaches that branch -- the fixture's window melts are all complete, and the sampling above is uniform in log over the window, not the model's distribution | UNMEASURED | `FINDING_melt_arm_g5_and_number_policy_v1` |
 
 ## CCN initialisation
 
