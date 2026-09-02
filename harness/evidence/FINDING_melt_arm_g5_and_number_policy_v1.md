@@ -89,8 +89,42 @@ it stops the model. That is right for a diagnostic arm and is not
 production-safe behaviour.
 
 The sampling is uniform in log over the window, which is not the model's
-distribution, and it excludes the boundary. **Whether any model column reaches
-this branch at all is still unmeasured**, and the fixture has none.
+distribution, and it excludes the boundary.
+
+### The window is populated in the real trajectory, and the fixture is not representative
+
+The fixture column has no partial window melt, and that was read as the branch
+being remote. It is not. `QGRAUP` is the mass and `QIB` is the volume the kernel
+receives as `bg` (`module_microphysics_driver.F:2750`, `BG=qib_curr`; `vg` is a
+different scheme's and is not allocated for `mp_physics = 37`), so the window's
+state predicate can be counted straight from forecast output. Over the ten-minute
+trajectory `mp37_traj_10min_hist1_20260822_212132`, 11 frames:
+
+    qg > 0                                                  243,117 cell-frames
+    in the window: qg <= qcrmin AND bg <= brs_min            12,919   (5.3%)
+      of which bg is exactly 0 -- qg > 0 with no volume         551
+      of which bg < 0                                            16
+      of which bg > 0 and raw rho < 100                       7,620
+      of which bg > 0 and raw rho in [100, 900]  (g4 = g5)    2,901
+      of which bg > 0 and raw rho > 900          (g4 floors)  1,831
+
+Present in every frame after the first, at about 1,300 cells a frame.
+
+Two things follow. The region where `g4` floors is populated -- 1,831
+cell-frames, not a corner of a sampling measure. And **the model's own state
+already carries `qg > 0` with `bg = 0` in 551 cell-frames and `bg < 0` in 16**,
+which is the inconsistency the melt-arm question is about, present before any
+melt arm is chosen.
+
+WHAT THIS DOES NOT COUNT. These are STATES at output time, not melt EVENTS. A
+melt needs `pgmlt` non-zero in a microphysics call, which needs the cell above
+freezing at that moment; an output snapshot cannot say whether a melt fired
+there, nor whether it was partial or complete. **The melt-event rate in the
+window, and its partial/complete split, remain unmeasured** -- that needs a
+count inside the kernel, not a field on disk.
+
+What has changed is the prior: the branch's state precondition is common, not
+rare, and the fixture's silence on it was a property of the fixture.
 
 ## The number policy is the real arm choice
 
