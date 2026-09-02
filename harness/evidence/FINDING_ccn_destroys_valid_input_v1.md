@@ -60,8 +60,23 @@ about this**, from the model's own stated intent rather than from a preference.
 Whether anything in this configuration supplies a real external `QNCCN`. This
 case does not -- the field is zero, which is why the profile fires. The control
 constructs an input that does not otherwise occur here, to ask what the code
-would do with one. A coupled aerosol run or a restart would supply one, and
-neither is run here.
+would do with one.
+
+**A restart supplies one and does NOT trigger the overwrite**, which corrects an
+earlier reading here that named it as a trigger. `qnn` carries `r` in its
+Registry io flags, so it is written to and read from restart -- but so does
+`itimestep`, whose flags are `rh`. `itimestep` therefore RESUMES across a restart
+rather than resetting, so `if (itimestep .eq. 1)` does not fire on the first step
+of a restarted segment. The restart path supplies the field and leaves it alone.
+
+That narrows the exposure to a COLD START whose input carries `QNCCN` -- a
+coupled aerosol initialisation, or any `wrfinput` that provides the field. That
+is exactly what the marker control above constructs, and what it destroys.
+
+The NEST path is not established either way. `med_nest_initial` does not visibly
+set `itimestep`, and a nest that begins its own count would reach 1 on its first
+step and fire the block over fields interpolated from its parent. Not checked
+here, and not asserted.
 
 ~~Whether the overwrite changes a forecast when the input IS zero. It does not:
 with `QNCCN = 0` on input the profile is what `start_em` would have written, so
