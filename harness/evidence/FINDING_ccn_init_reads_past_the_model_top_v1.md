@@ -182,9 +182,11 @@ The rebuild reproduced `6797945de1ada48f`, the same hash the temporary fix-only
 build produced earlier from the same source and flags -- so the build is
 deterministic across the experiment and the permanent change.
 
-Nothing recorded against `f54ef3c9` moves: that binary and this one produce
-bitwise identical output on both `np=1` and `4x1`, 197 fields, every frame to
-60 s, which is the measurement above. `f54ef3c9` is now the historical campaign
+What was MEASURED does not move: the two binaries produce raw-word identical
+output on both `np=1` and `4x1`, 197 fields, every frame to 60 s. That covers the
+one-minute results derived from those outputs and nothing further -- other
+decompositions, the ten-minute runs, the stage dumps and the 1-ULP arm were not
+re-measured and stay attributed to the binary they ran under. `f54ef3c9` is now the historical campaign
 reference and `6797945d` is the deployed one.
 
 It is also probably not related to the seam, but "it happens once" is not the

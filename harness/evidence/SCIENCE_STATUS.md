@@ -12,11 +12,13 @@ Standard commands:
 
 Deployed WRF binary for MPI runs: `6797945d` (kernel `9354141b`, corrected
 `share/module_bc.F`, and `start_em.F` corrected at the CCN loop bound,
-2026-09-02). It produces output BITWISE IDENTICAL to the previous `f54ef3c9`
-on both `np=1` and `4x1`, 197 fields, every frame to 60 s, so every result
-recorded against `f54ef3c9` carries over unchanged; `f54ef3c9` is the
-historical campaign reference. The campaign binary `a40bd80f` is kept beside
-them.
+2026-09-02). It is raw-word identical to the previous `f54ef3c9` for the
+sampled `np=1` and `4x1` 197-field outputs through 60 s, so the ONE-MINUTE
+results derived from those outputs carry over. Everything else -- other
+decompositions, the ten-minute runs, other cases, the stage dumps, the 1-ULP arm
+-- stays attributed to the binary it was measured under, because it was not
+re-measured. `f54ef3c9` is the historical campaign reference and the campaign
+binary `a40bd80f` is kept beside them.
 
 ## Number transport
 
@@ -39,7 +41,10 @@ them.
 | `rhox` is computed only under `qg > qcrmin .or. brs > brs_min` (F:3669) while melt asks `qg > 0.` (F:1400); `brs += pgmlt/rhox` divides by zero | CONFIRMED | source, `FINDING_melt_closure_measured_v1` |
 | Float64 residual of the three melts, per level | CONFIRMED | `FINDING_melt_closure_measured_v1` |
 | Whether trace graupel (1e-20..1e-43 kg/kg) should melt at all -- g1 skips, g3/g4/g5 zero it | OPEN | owner decision; `FINDING_melt_arm_g5_and_number_policy_v1` |
-| On a partial melt inside the window `g4` and `g5` differ substantively, not at rounding: over 200,000 f32 draws log-uniform in the window, `g4` floors to zero -- leaving `qg > 0` with `bg = 0` -- in 64.3%, and where it stays positive the apparent density drifts a median 32%, while `g5` holds that density to 2.5e-08 relative and never reaches zero while mass remains | CONFIRMED | `FINDING_melt_arm_g5_and_number_policy_v1` |
+| Inside the model's density band (`100 <= qg0/bg0 <= 900`) `g4` and `g5` are the same equation: both give `(1-a)*bg0`, and over 14,344 in-band f32 draws they are bit-equal in 6,646 with the rest differing at rounding (relative median 1.006e-07, max 2.936e-04) and none floored to zero | CONFIRMED | `FINDING_melt_arm_g5_and_number_policy_v1` |
+| `g4` floors to zero exactly when `a*rho0 >= rho_c`, which for a partial melt requires `rho0 > 900`: the predicate and `g4 == 0` agree on 100.000% of 200,000 draws, and every floored draw has `rho0 > 900` | CONFIRMED | `FINDING_melt_arm_g5_and_number_policy_v1` |
+| `g5` preserves the raw ratio `qg0/bg0` through the melt. That is algebraic consistency, not admissibility: the branch is entered where `rhox` was never computed, so the ratio can sit orders of magnitude outside `[100, 900]` and `g5` carries it through intact | CONFIRMED | `FINDING_melt_arm_g5_and_number_policy_v1` |
+| That `g5` never produces a zero volume while mass remains -- with `bg0` exactly zero, or at the smallest f32 subnormal, `bg0*(qg+/qg0)` is 0.0 with `qg+ > 0`; `g5` does not RETURN that state, it `error stop`s, which suits a diagnostic arm and is not production-safe | REFUTED | `FINDING_melt_arm_g5_and_number_policy_v1` |
 | Whether any model column reaches that branch -- the fixture's window melts are all complete, and the sampling above is uniform in log over the window, not the model's distribution | UNMEASURED | `FINDING_melt_arm_g5_and_number_policy_v1` |
 
 ## CCN initialisation
