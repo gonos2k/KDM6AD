@@ -69,3 +69,11 @@ A, B and C differ over the tiling and the halo, not over the field's origin
 (`FINDING_ccn_overwrites_microphysics_v1`).
 
 One case, one host, deployed revision `a06c954b`, `np = 1`, 20 s.
+
+**Re-checked against the current deployed binary, 2026-09-02.** The 85.41 % / 0.01
+% control above was measured on `a06c954b`. Since then the tile-bounds fix landed
+in this block and the CCN loop bound in `start_em.F` was corrected, so the binary
+is now `6797945d`. The defect itself is unchanged and the check is a source one:
+`module_mp_kdm6.F:309` is still `if (itimestep .eq. 1) then` with no
+`ccn_max_val` guard. Arm B arrived; the guard did not. The control was not
+re-run, and would only re-measure a share the source already determines.
