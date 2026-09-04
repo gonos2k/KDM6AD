@@ -15,7 +15,10 @@ from __future__ import annotations
 
 import math
 from pathlib import Path
+import sys
+from types import SimpleNamespace
 
+import numpy as np
 import pytest
 import torch
 
@@ -27,7 +30,7 @@ from kdm6.io import (
     nccn_init_profile,
     read_wrfout_frame,
 )
-from kdm6.io.frame_reader import G, R_D, R_V, T0
+from kdm6.io.frame_reader import G, R_D, R_V, T0, _flat
 
 _REPO = Path(__file__).resolve().parents[2]
 _WRFOUT = _REPO / "host" / "KIM-meso_v1.0" / "run" / "wrfout.37.quarter_ss.nc"
@@ -87,6 +90,101 @@ def test_derive_rho_ideal_gas_roundtrip():
     rho_d = rho / (1.0 + qv)
     p_back = rho_d * R_D * (thm_pert + T0) * pii
     assert torch.allclose(p_back, p, rtol=1e-14)
+
+
+class _Variable:
+    def __init__(self, name, data):
+        self.name, self.data = name, data
+
+    def __getitem__(self, key):
+        return self.data[key]
+
+
+@pytest.fixture
+def synthetic_frame(monkeypatch):
+    """Two columns / two levels; exercise reader policies without private files or netCDF4."""
+    names = ("QVAPOR THM P PB QNCCN QCLOUD QRAIN QICE QSNOW QGRAUP "
+             "QNCLOUD QNICE QNRAIN QIB").split()
+    variables = {name: _Variable(name, np.zeros((1, 2, 1, 2), dtype=np.float32))
+                 for name in names}
+    variables["PB"].data.fill(90000)
+    heights = np.array([0., 500., 1200.]).reshape(1, 3, 1, 1)
+    variables["PHB"] = _Variable("PHB", np.broadcast_to(heights * G, (1, 3, 1, 2)).copy())
+    variables["PH"] = _Variable("PH", np.zeros((1, 3, 1, 2)))
+    for name, values in (("XLAND", [1., 2.]), ("XLAT", [35., 36.]),
+                         ("XLONG", [127., 128.])):
+        variables[name] = _Variable(name, np.array(values).reshape(1, 1, 2))
+    closed = []
+    dataset = SimpleNamespace(
+        variables=variables, USE_THETA_M=1,
+        dimensions={name: SimpleNamespace(size=size) for name, size in
+                    (("west_east", 2), ("south_north", 1), ("bottom_top", 2))},
+        close=lambda: closed.append(True))
+    monkeypatch.setitem(sys.modules, "netCDF4", SimpleNamespace(Dataset=lambda path: dataset))
+    return variables, closed
+
+
+@pytest.mark.parametrize("shape", [(2, 3, 2), (3, 2)])
+def test_flat_preserves_values_and_column_layout(shape):
+    raw = np.arange(np.prod(shape), dtype=np.float32).reshape(shape)
+    raw.flat[0] = -0.0
+    # A MaskedArray with no missing elements is valid input.
+    var = _Variable("sample", np.ma.array(raw[None], mask=False))
+    actual = _flat(var, 0).numpy()
+    expected = (raw.transpose(1, 2, 0).reshape(-1, shape[0])
+                if len(shape) == 3 else raw.reshape(-1)).astype(np.float64)
+    np.testing.assert_array_equal(actual.view(np.uint64), expected.view(np.uint64))
+
+
+@pytest.mark.parametrize("policy", [None, "as_stored", "init_profile"])
+def test_stored_zero_ccn_requires_explicit_synthesis(synthetic_frame, policy):
+    _, closed = synthetic_frame
+    kwargs = {} if policy is None else {"nccn_policy": policy}
+    frame = read_wrfout_frame("synthetic", **kwargs)
+    assert closed == [True]
+    assert frame.meta["nccn_fallback"] is (policy == "init_profile")
+    if policy == "init_profile":
+        expected = torch.tensor([
+            [(5000 * math.exp(-0.4 * z / 1000) + 100) * 1e6 for z in (500, 1200)],
+            [(150 * math.exp(-0.35 * z / 1000) + 10) * 1e6 for z in (500, 1200)],
+        ], dtype=torch.float64)
+        torch.testing.assert_close(frame.state.nccn, expected, rtol=1e-12, atol=0)
+    else:
+        assert torch.equal(frame.state.nccn, torch.zeros((2, 2), dtype=torch.float64))
+
+
+@pytest.mark.parametrize("policy", ["as_stored", "init_profile"])
+def test_nonzero_ccn_preserves_entire_stored_field(synthetic_frame, policy):
+    variables, _ = synthetic_frame
+    # One nonzero cell must prevent replacement of every zero in the field.
+    variables["QNCCN"].data[0, 1, 0, 0] = 123.
+    frame = read_wrfout_frame("synthetic", nccn_policy=policy)
+    assert not frame.meta["nccn_fallback"]
+    assert torch.equal(frame.state.nccn, torch.tensor([[0., 123.], [0., 0.]],
+                                                     dtype=torch.float64))
+
+
+def test_unknown_ccn_policy_rejected_before_opening_file():
+    with pytest.raises(ValueError, match="unknown nccn_policy"):
+        read_wrfout_frame("does-not-exist", nccn_policy="automatic")
+
+
+@pytest.mark.parametrize("name", ["QNCCN", "QVAPOR", "XLAT", "XLONG"])
+@pytest.mark.parametrize("bad", ["masked", np.nan, np.inf, -np.inf])
+def test_reader_rejects_missing_inputs_and_closes_dataset(synthetic_frame, name, bad):
+    variables, closed = synthetic_frame
+    var = variables[name]
+    if bad == "masked":
+        var.data = np.ma.array(var.data, mask=False)
+        var.data.data.flat[0] = 9.9692e36  # finite hidden fill value
+        var.data.mask.flat[0] = True
+        reason = "masked values"
+    else:
+        var.data.flat[0] = bad
+        reason = "non-finite values"
+    with pytest.raises(ValueError, match=f"{name}: {reason}"):
+        read_wrfout_frame("synthetic", nccn_policy="init_profile")
+    assert closed == [True]
 
 
 # ─── 2. 로컬 wrfout 통합 (없으면 skip) ────────────────────────────────────────
@@ -167,7 +265,7 @@ def test_oracle_step_smoke(frame):
 
 
 @needs_wrfout
-def test_nccn_t0_fallback_applies_only_when_all_zero(frame):
-    """t=1 프레임은 QNCCN이 살아 있으므로 폴백 미적용이어야 한다."""
+def test_real_frame_preserves_stored_ccn(frame):
+    """기본 정책은 저장된 QNCCN을 합성 프로파일로 대체하지 않는다."""
     assert frame.meta["nccn_fallback"] is False
     assert frame.state.nccn.max() > 0

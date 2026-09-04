@@ -13,7 +13,7 @@
      검증: 정수압 일관성 dp/dz ≈ −rho·g (rho와 delz를 동시에 잡음).
   3. PH/PHB→delz — phy_prep F:148: dz8w(k) = z_w(k+1)−z_w(k), z_w = (PH+PHB)/g
      (w-스태거 41레벨 → 질량 40레벨 delz).
-  4. t=0 nccn 폴백 — wrapper module_mp_kdm6ad.F ITIMESTEP==1 init:
+  4. 명시적 nccn 합성 — nccn_policy="init_profile"이고 저장값이 모두 0일 때만:
      Z_SUM 하부누적, land: (5000·e^{−0.4·Z/1000}+100)·1e6,
      sea: (150·e^{−0.35·Z/1000}+10)·1e6.
 
@@ -22,7 +22,7 @@ read_wrfout_frame은 netCDF 배관 + 순수 함수 호출로만 구성된다.
 
 State 12필드 소스 (전부 wrfout에 존재, kdm6adscheme 히스토리 패키지):
   th←(THM 파생), qv←QVAPOR, qc←QCLOUD, qr←QRAIN, qi←QICE, qs←QSNOW, qg←QGRAUP,
-  nccn←QNCCN(t=0 전부 0이면 폴백), nc←QNCLOUD, ni←QNICE, nr←QNRAIN, bg←QIB.
+  nccn←QNCCN(기본값은 0도 그대로 보존), nc←QNCLOUD, ni←QNICE, nr←QNRAIN, bg←QIB.
 
 레이아웃: WRF (Time, bottom_top, south_north, west_east) → (B, K) fp64,
 column (i, j) ↦ b = j·nx + i (meta에 기록). K는 WRF와 동일하게 bottom-up.
@@ -118,7 +118,15 @@ class FrameData(NamedTuple):
 
 def _flat(var, time_idx: int) -> torch.Tensor:
     """(Time, K[, +1], ny, nx) → (B, K[.+1]) fp64;  (Time, ny, nx) → (B,) fp64."""
-    a = torch.from_numpy(var[time_idx, ...].astype("float64"))
+    raw = var[time_idx, ...]
+    name = getattr(var, "name", "variable")
+    # NetCDF fill values can be finite: reject the mask before np.asarray loses it.
+    if np.ma.is_masked(raw):
+        raise ValueError(f"{name}: masked values")
+    array = np.asarray(raw, dtype=np.float64)
+    if not np.isfinite(array).all():
+        raise ValueError(f"{name}: non-finite values")
+    a = torch.from_numpy(array)
     if a.dim() == 3:                      # (K, ny, nx) → (B, K)
         return a.permute(1, 2, 0).reshape(-1, a.shape[0])
     return a.reshape(-1)                  # (ny, nx) → (B,)
@@ -187,10 +195,8 @@ def read_wrfout_frame(path: str, time_idx: int = 0,
         # 실사례 격자면 컬럼 위경도를 meta에 노출 — collocation(obs_ingest)용.
         # (B,) flatten은 state와 동일한 b = j*nx + i C-order.
         if "XLAT" in ds.variables and "XLONG" in ds.variables:
-            meta["lat"] = torch.tensor(
-                np.asarray(ds.variables["XLAT"][time_idx], dtype=np.float64).reshape(-1))
-            meta["lon"] = torch.tensor(
-                np.asarray(ds.variables["XLONG"][time_idx], dtype=np.float64).reshape(-1))
+            meta["lat"] = _flat(ds.variables["XLAT"], time_idx)
+            meta["lon"] = _flat(ds.variables["XLONG"], time_idx)
         return FrameData(state=state, forcing=forcing, xland=xland, meta=meta)
     finally:
         ds.close()
