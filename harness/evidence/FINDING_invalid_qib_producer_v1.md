@@ -137,3 +137,34 @@ which of those defeats the bound is not measured here.
 **Scope**: this localisation is a two-minute run, so its counts are not the
 ten-minute maxima quoted above; the ordering and the `is = 5` attribution are
 what it establishes.
+
+
+## Not the lateral boundary: the residue is spread like the field itself
+
+The surviving negatives could come from the specified and relaxation zones, which
+add a non-advective tendency the positive-definite bound does not cover. Bucketing
+every cell with `bg < 0` or `qg < 0` before microphysics by its distance `d` to
+the nearest lateral boundary (`spec_zone = 1`, `relax_zone = 4`, so the treated
+frame is `d <= 4`), six steps, grid 234 x 282 x 39:
+
+| zone | negatives | share | share of cells | enrichment |
+|---|---|---|---|---|
+| boundary, `d <= 4` | 1,370 | 8.32% | 7.67% | **1.08x** |
+| interior, `d >= 5` | 15,100 | 91.68% | 92.33% | **0.99x** |
+
+Normalised by how many cells each zone holds, the two are the same. The frame is
+7.67% of the domain and carries 8.32% of the negatives; 85% of them sit at
+`d >= 9`, far inside.
+
+**The boundary treatment is not the source.** The residue is distributed like the
+graupel field, not like the boundary zone.
+
+The absolute counts alone would have suggested the opposite reading in either
+direction -- the interior looks dominant because it is 92% of the grid. The
+enrichment ratio is the statement; the raw counts are not.
+
+What remains as a candidate is a non-advective tendency the bound does not cover
+anywhere in particular -- diffusion is the obvious one, being no more
+positive-definite in the interior than at the edge -- or the mass coupling
+itself. Neither is measured here, and separating them needs a probe on the
+tendency terms rather than on the field.
