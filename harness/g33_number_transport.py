@@ -8,16 +8,14 @@ carries only the thickness ratio (F:1221-1224):
     dnr(i,k+1) = min(falkn(i,k+1,1)*delz(i,k+1)/delz(i,k)*dtcld, nrs(i,k+1,1))
     nrs(i,k,1) = max(nrs(i,k,1) - dnr(i,k) + dnr(i,k+1), 0.)
 
-`nrs` IS the prognostic number MIXING ratio (`nrs(i,k,1) = nr(i,k,j)`, F:388).
-`den` here is MOIST density, so `sum_k den_k*delz_k*nr_k` is the OPERATOR's
-pseudo-measure -- the weight the mass channel actually carries; the PHYSICAL
-dry-air column number is `sum_k rho_d,k*delz_k*nr_k` (G33-BASIS-006, since
-`nr` is per kg of dry air). This module measures the operator's own budget,
-which is the right measure for asking what the operator conserves; which one a
-CORRECTION should conserve is G33-BASIS-002. Weighted either way, the number
-arriving below is `den(lower)*delz(upper)*b` where the number that left above was
-`den(upper)*delz(upper)*b`. Density increases downward, so every interface
-CREATES number:
+`nrs` receives the host's stored `nr` without conversion (F:388). Registry's
+per-dry-kg interpretation and the slope equation's per-volume requirement remain
+inconsistent; see SCIENCE_STATUS.md. `den` here is MOIST density. The dry-weight
+ledger is physical number only under the per-dry-kg interpretation; a per-volume
+interpretation instead uses sum dz*N. These diagnostic weights do not choose a
+production unit contract.
+
+IF thickness-weighted departure equals arrival, the density-weighted residual is
 
     created = sum over interfaces of [den(lower) - den(upper)] * delz(upper) * b
 
@@ -32,9 +30,12 @@ transfers follow from the state change alone, top down:
     b_0 = nr_0 - nr'_0                                (top cell: no inflow)
     b_t = nr_t - nr'_t + b_{t-1} * delz_{t-1}/delz_t
 
-which is what the kernel actually did, caps included, and the bottom cell's `b`
-is the true surface removal. Restricted to `mstep == 1` because with more
-substeps the composition is not invertible from endpoints.
+This recovery ASSUMES matched thickness-weighted interface transfers. Separate
+departure/arrival caps can violate it even at mstep=1. The recovered bottom
+value is not then a measured removal. For actual paired accounting use the
+TOPOUT/CAPIN path in g33_cap_interface, which includes the additional term
+rho_lo*(dz_lo*dn_in-dz_up*dn_out). More than one substep also makes recovery
+non-invertible from endpoints.
 
 ## What is and is not evidence here
 
@@ -1296,7 +1297,8 @@ def transfers(x, x_post, w):
     """Per-cell outflow in mixing-ratio units, top-first, from the state change.
 
     `w[t]` is the inflow weight the kernel applies to what left the cell above.
-    Valid for a single substep only; see the module docstring.
+    Valid only for a single substep with matched interface transfers; separate
+    arrival caps break this recovery assumption. See the module docstring.
     """
     a = [x[0] - x_post[0]]
     for t in range(1, len(x)):
@@ -1345,16 +1347,12 @@ def column(call, col, species, mdry0=None):
     n1w = sum(den[t] * dz[t] * x1[t] for t in range(len(ks)))
     surface = den[-1] * dz[-1] * a[-1]
     residual = (n1w - n0w) + surface
-    # THE CLOSED FORM, EVALUATED. The module header states the residual as
+    # Conditional density-contrast identity for the recovered transfers:
     #
     #     sum over interfaces of [den(lower) - den(upper)] * delz(upper) * b
     #
-    # and until now that was prose beside a measurement. Evaluated here from
-    # the same recovered transfers, it is an IDENTITY, not a fit: the defect
-    # then follows from the source equation rather than from the size of a
-    # number somebody observed. Measured across six density arms and two
-    # species, ratio 1.000000000000 on all twelve rows, both sides exactly
-    # zero under a uniform profile.
+    # This telescopes by construction and cannot validate the matched-transfer
+    # assumption. With independently capped arrivals, use CAPIN/TOPOUT instead.
     #
     # Only the INTERFACES. `a[-1]` leaves the column at the surface and is
     # the flux the residual is measured against, not a term in it.

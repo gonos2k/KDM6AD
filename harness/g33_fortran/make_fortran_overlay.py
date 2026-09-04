@@ -262,7 +262,7 @@ def _xfer_lines(chain, mass, num):
 
 
 def _cap_inflow_lines(chain, own, inflow, own_n, inflow_n):
-    """A cell's OWN outflow beside the inflow it grants the cell below.
+    """A cell's OWN outflow beside the actual inflow it receives from above.
 
     Paired across an interface these give departure and arrival, and their
     difference under the rho*dz measure is the mass the interface destroys.

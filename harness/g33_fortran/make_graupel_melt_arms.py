@@ -14,9 +14,9 @@ COMPARED rather than for one to be assumed:
         where rhox was not computed. The submitted freeze-lift request. Trace
         graupel stays, unmelted, and its latent heat and rain-mass transfer are
         skipped with it.
-    G2  compute rhox wherever there is positive mass AND positive volume, with
-        the same clamp. At the failing cell that is 899.9997 and the full melt
-        proceeds as physics.
+    G2  recompute rhox from POST-melt mass where mass and volume remain positive.
+        This skips the division on a complete melt and changes partial melts;
+        it is not the pre-melt counterfactual (G4).
     G3  a complete-melt branch. `pgmlt` is already capped at `-qg`, so where it
         takes that bound the cell melts entirely: set qg and brs to zero
         directly and never divide.
@@ -91,8 +91,8 @@ G2_DIVIDE = (
 G3_DIVIDE = (
     "! G3: a complete melt needs no division. pgmlt is capped at -qrs(i,k,3),\n"
     "! so when it takes that bound the cell melts entirely and the volume goes\n"
-    "! with the mass. Only a PARTIAL melt needs a density, and there rhox is\n"
-    "! computed by construction.\n"
+    "! with the mass. A PARTIAL melt needs a density; rhox can still be absent\n"
+    "! inside the threshold window, where this arm leaves volume unchanged.\n"
     "              if(qrs(i,k,3).le.0.) then\n"
     "                brs(i,k) = 0.\n"
     "              else if(rhox(i,k).gt.0.) then\n"
@@ -116,16 +116,20 @@ G3_DIVIDE = (
 #: normalised, and a particle far above `rho_max` removes `pgmlt/900` from a
 #: volume holding much less: qg 1e-9 over brs 1e-16 gives -5.55e-13 at a half
 #: melt. Hence the floor, for that reason and not the wider one.
+#: A raw density above 900 is not necessary below tiny(f32): the recomputation
+#: divides by max(bg0,tiny), so qg0=5e-37, bg0=1e-39, a=0.3 uses rho_c=100
+#: and floors at raw rho0 about 500. For positive bg0 and a partial melt the
+#: real-arithmetic condition is a*rho0 >= rho_c WITH that denominator bound;
+#: f32 boundary cases require evaluating the actual rounded candidate.
 #: G4 replaces the whole transaction -- the three state updates AND the divide --
 #: because the counterfactual it tests needs the PRE-melt mass, and by the time
 #: the divide runs the mass update has already consumed it. G2 was named as this
 #: experiment and is not it.
 #:
-#: On a COMPLETE melt G4 and G3 are the same statement. `pgmlt` is capped at
-#: `-qg0`, so `brs = bg0 + (-qg0)/(qg0/bg0) = bg0 - bg0 = 0`, which is G3's
-#: `brs = 0` exactly, whenever the pre-melt density is inside the clamp (at the
-#: measured failing cell it is 899.9997). They differ only on a PARTIAL melt,
-#: which is precisely the case G3 leaves unmeasured.
+#: On a COMPLETE melt G4 and G3 both explicitly set brs=0. This follows from
+#: their branch code, without assuming an in-band density or an exact quotient.
+#: Nine partial window occurrences have since been measured; G3 leaves volume
+#: unchanged there when rhox is absent. See FINDING_melt_arm_g5_and_number_policy_v1.
 TXN_ANCHOR = (
     "              qrs(i,k,3) = qrs(i,k,3) + pgmlt(i,k)\n"
     "              qrs(i,k,1) = qrs(i,k,1) - pgmlt(i,k)\n"
@@ -192,11 +196,11 @@ MAX_EDIT = {"g1": 20, "g2": 20, "g3": 20, "g4": 30, "g5": 30}
 #:
 #:     b+ = b0 * (q+ / q0)
 #:
-#: which preserves the pre-melt apparent density exactly -- `q+/b+ = q0/b0` --
-#: goes to zero on its own when the melt is complete, and cannot produce a
-#: negative volume, because it never subtracts. g4 clamps the density and then
-#: floors the result; this needs neither. Checked over 50000 f32 draws spanning
-#: the window: 0 negatives and 0 density drift above 1e-5 relative.
+#: which preserves q+/b+ = q0/b0 in real arithmetic for positive operands.
+#: Rounded products can underflow; the result guard below refuses nonpositive
+#: volume while mass remains. It also preserves an inadmissible raw density,
+#: so fewer zero candidates do not establish a production remedy. The earlier
+#: 50000-draw result (0 negatives, relative density drift <=1e-5) is sample-scoped.
 G5_TXN = (
     "! G5: legacy exactly where rhox exists; inside the window scale the volume\n"
     "! by the mass fraction, which preserves the pre-melt density.\n"
