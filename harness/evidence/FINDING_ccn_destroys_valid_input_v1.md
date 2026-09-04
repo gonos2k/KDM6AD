@@ -83,17 +83,52 @@ source:
 `qnn` carries `d` and `=(bdy_interp:dt)` in its io flags, so it is interpolated
 down to the nest: the nest receives its parent's EVOLVED `QNCCN`. `start_domain`
 then runs `start_em` for the nest, whose guard sees that non-zero field and
-correctly stands down. `itimestep` is per domain and `med_nest_initial` sets only
-the PARENT's (the save/restore at 831/848), so the nest's stays at its allocation
-default and its first `solve_em` makes it 1 -- and the unguarded kernel block
-fires, replacing the interpolated field with the analytic profile.
+correctly stands down. `itimestep` is per domain, and `start_em.F:242` decides
+whether it is zeroed:
+
+```fortran
+IF ( .not. ( config_flags%restart .or. grid%moved ) ) THEN
+    grid%itimestep=0
+ENDIF
+```
+
+A newly spawned nest is neither a restart nor `moved`, so the assignment RUNS and
+its first `solve_em` makes `itimestep` 1 -- and the unguarded kernel block fires,
+replacing the interpolated field with the analytic profile.
 
 So the nest discards not merely a supplied input but the parent's evolved state,
 one step into the nest's life.
 
-Established from the io flags and the call chain. **No nested run was made**, and
-the nest's initial `itimestep` is the allocation default rather than a literal
-assignment anyone wrote.
+Established from the io flags and the call chain. **No nested run was made.**
+
+## The full exposure map, from that one guard
+
+`start_em.F:242` excludes exactly `restart` and `moved`; everything else is
+zeroed and therefore reaches 1 on its first solve. `share/dfi.F:287` zeroes it
+again, unconditionally, when DFI ends.
+
+| path | `itimestep` zeroed | block fires |
+|---|---|---|
+| cold start | yes, `start_em.F:243` | yes -- exposed if the input carries `QNCCN` |
+| ordinary restart | **no**, excluded | no |
+| moved nest | **no**, excluded | no |
+| newly spawned nest | yes, `start_em.F:243` | yes, over the parent's evolved field |
+| end of DFI | yes, `share/dfi.F:287`, unconditional | yes |
+| cycling (non-HRRR) | yes -- `:242` excludes only restart and `moved` | yes |
+
+The cycling row is a reading of the guard, not a run: `:242` omits `cycling` from
+its exclusion list while the very next block at `:246` adds `cycling` to
+`first_trip_for_this_domain`. The parallel guard at `:328` excludes
+`hrrr_cycling` but `:242` does not, so the two are not the same predicate. That
+asymmetry is in the WRF source as distributed; whether it is intended is not
+established here.
+
+**Withdrawn**: the earlier line that the exposure is a cold start. DFI, cycling
+and a new nest reach it too, and the DFI path does so unconditionally.
+
+**Not measured**: any of these paths. This whole map is the one guard at
+`start_em.F:242` read against `dfi.F:287`; no DFI, cycling or nested run was
+made.
 
 ~~Whether the overwrite changes a forecast when the input IS zero. It does not:
 with `QNCCN = 0` on input the profile is what `start_em` would have written, so
@@ -189,3 +224,37 @@ outermost ring unwritten. What changed is the size of what is at stake.
 
 Tree restored afterwards: `module_mp_kdm6.F` `9354141b`, `main/wrf.exe`
 `6797945d`.
+
+
+## How large the 76 fields are, not just how many
+
+Owner review 15: a field COUNT is breadth, not magnitude -- the MPI seam work
+established that distinction and it applies here too. Deployed against Arm C at
+60 s, `np = 1`, relative differences taken where either side is non-zero:
+
+| field | domain RMS | max abs | rel p50 | rel p90 | rel p99 |
+|---|---|---|---|---|---|
+| `QNCCN` | 7.565e+06 | 4.200e+09 | 1.79e-05 | 1.49e-03 | 3.55e-02 |
+| `QNCLOUD` | 4.804e+06 | 4.300e+09 | 2.09e-04 | 5.88e-03 | 1.67e-01 |
+| `QCLOUD` | 1.766e-07 | 9.458e-05 | 1.25e-04 | 2.04e-03 | 3.30e-02 |
+| `QNRAIN` | 3.985e+01 | 2.611e+04 | 1.26e-05 | 9.74e-04 | 9.17e-01 |
+| `QRAIN` | 1.472e-06 | 6.561e-04 | 5.35e-06 | 4.51e-04 | 1.81e-01 |
+| `QVAPOR` | 2.745e-07 | 1.688e-04 | 0 | 7.80e-07 | 7.67e-06 |
+| `T` | 9.663e-04 | 6.029e-01 | 0 | 8.37e-07 | 1.10e-04 |
+| `REFL_10CM` | 1.770e+00 | 3.513e+02 | 0 | 0 | 4.34e-05 |
+
+Domain-total accumulated precipitation:
+
+    RAINNC      18.76216 vs 18.75524 mm    +6.92e-03 mm    +0.037%
+    SNOWNC      identical
+    GRAUPELNC   identical
+
+So the effect at one minute is concentrated in the NUMBER concentrations -- 92%
+at the 99th percentile for `QNRAIN`, 17% for `QNCLOUD` -- while the thermodynamic
+state hardly moves (`T` and `QVAPOR` are bit-identical in more than half the
+domain and reach 1e-4 at p99), reflectivity is unchanged below p99, and the
+accumulated precipitation differs by 0.037%.
+
+That is the honest shape of it: **wide, and large only where the defect writes**.
+Sixty seconds says nothing about hours; forecast skill remains unmeasured, and
+this table is not a proxy for it.
