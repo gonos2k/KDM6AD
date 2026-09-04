@@ -97,8 +97,43 @@ for at most a single cell in eighty thousand, and every downstream count is
 unchanged. So advection PRODUCES the negative volumes; it does not amplify
 inherited ones.
 
-**Not established**: which part of the positive-definite path fails for `qib`.
-That the limiter is reached and is insufficient is measured; where inside it the
-guarantee breaks is not. A paired moment advected independently of its mass has
-no reason to stay consistent with it, but that is a hypothesis here, not a
-result.
+## Localised: the last stage does renormalise, and `qg` goes negative too
+
+Labelling the same counter with `rk_step` and the scalar index `is`, and counting
+`qg` alongside `qib`. One step, two-minute run, `np = 1` (`P_QIB = 5`):
+
+    point  rk is  qib<0   qg<0
+    RK entry            0       0
+      2     1   2      0   19849
+      2     1   3      0   19849
+      2     1   4      0   19849
+      2     1   5  29887   19849      <- qib's own update
+      2     2   5  57851   42154
+      2     3   2  57851    1172
+      2     3   5   1535    1172      <- final stage renormalises
+    before microphysics  1535    1172
+
+Three things follow, and the third narrows the finding above.
+
+**1. It is `qib`'s own update.** The count moves at `is = 5` and nowhere else, so
+this is not spillover from another scalar.
+
+**2. The final stage DOES renormalise, and does not finish.** Stage 3 takes
+`qib` from 57,851 negatives to 1,535 -- the positive-definite treatment acts on
+the last stage as WRF designs it, and leaves about 1,500 behind. The 80,586 in
+the table above is an INTERMEDIATE-stage count; stages 1 and 2 are unbounded
+scratch by design.
+
+**3. `qg` goes negative too, in comparable numbers** -- 19,849, then 42,154, then
+1,172 surviving into microphysics under `moist_adv_opt = 1`. So this is **not a
+paired-moment defect**. Graupel MASS behaves the same way. The hypothesis in the
+previous version of this section -- that a moment advected independently of its
+mass drifts from it -- is not what the measurement shows, and is withdrawn.
+
+**Still not established**: why the final-stage renormalisation leaves any. The
+update carries tendencies besides advection and couples through `mu_old`/`mu_new`;
+which of those defeats the bound is not measured here.
+
+**Scope**: this localisation is a two-minute run, so its counts are not the
+ten-minute maxima quoted above; the ordering and the `is = 5` attribution are
+what it establishes.
