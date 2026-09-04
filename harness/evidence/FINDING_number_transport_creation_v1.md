@@ -1,4 +1,10 @@
-# Sedimentation creates column number: measured, and the alternative hypothesis excluded
+# Density-weighted sedimentation residual on the recorded fixture
+
+Review scope correction (2026-09-05): the following historical measurements
+are on stated diagnostic measures. The host per-dry-kg and kernel per-volume
+number assumptions are inconsistent; see `SCIENCE_STATUS.md`. Actual legacy
+interface accounting also needs the independent departure/arrival cap terms;
+see `FINDING_number_creation_in_the_real_model_v1` for the sign counterexample.
 
 <!-- claim-status: generated from CLAIMS.yaml, do not edit -->
 
@@ -27,18 +33,19 @@ dnr  (i,k+1) = min(falkn(i,k+1,1)*delz(i,k+1)/delz(i,k)*dtcld,          ...)
                                                             <- and none here either
 ```
 
-`nrs(i,k,1) = nr(i,k,j)` (F:388) makes `nrs` the prognostic number **mixing**
-ratio, so the physical column measure is `Σ den·delz·nr`. Weighted,
+`nrs(i,k,1) = nr(i,k,j)` (F:388) copies the stored number without conversion.
+Under the diagnostic `Σ den·delz·nr` measure, IF thickness-weighted actual
+departure equals arrival,
 `den(lower)·delz(upper)·a` arrives where `den(upper)·delz(upper)·a` left, so the
 per-interface residual is
 
     R_N = (den(lower) − den(upper)) · delz(upper) · a
 
-**The sign is the density gradient's** (owner §5.1). Where density increases
-downward — this fixture, and the troposphere generally — number is **created**.
-An inverted layer would destroy it. "Every interface creates number" is
-therefore scoped to a downward-increasing density profile, not a property of the
-transfer alone.
+This density term has the gradient's sign for positive departure. It is not
+the whole interface residual when arrival is independently capped: add
+`den_lower*(dz_lower*dn_in-dz_upper*dn_out)`. That term can reverse the sign.
+Neither the gradient nor the copy at the boundary establishes physical number
+creation without a resolved unit contract.
 
 ## Two things that look like proof and are not
 
@@ -55,8 +62,8 @@ Both were caught by working them out, not by the numbers looking wrong.
 
 ## What is evidence: a hypothesis test against data the recursion never sees
 
-With `mstep == 1` there is a single substep, so the per-interface transfers follow
-from the state change alone, top down:
+With `mstep == 1` AND matched interface transfers, candidate transfers can be
+recovered from state change, top down:
 
     a_0 = x_0 − x'_0                        (top cell has no inflow)
     a_t = x_t − x'_t + a_{t−1}·w_t

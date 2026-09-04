@@ -1,5 +1,12 @@
 # What Arm N leaves against the physical number measure, over a real atmosphere
 
+Review scope correction (2026-09-05): “physical” below denotes the dry-density
+weight conditional on interpreting stored number as per dry-air kg. The kernel
+slope's conflicting per-volume requirement remains unresolved (SCIENCE_STATUS.md).
+The coefficients below describe matched/unclipped transfers; actual independently
+capped departures and arrivals require the additional transfer-mismatch term.
+These coefficient statistics alone do not measure a full transport residual.
+
 Arm N closes the OPERATOR's number ledger: its residual collapses to roundoff
 across the density matrix (`G33-NUMBER-010`). That ledger is MOIST --
 `dend(i,k) = den(i,k)` at F:870 -- while the physical column number is taken in
