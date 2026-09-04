@@ -58,12 +58,47 @@ unrepresentable class appearing after step ~28 and reaching 31.
   consumes almost all of them; a residue of about 0-2 negative and a growing
   count of invalid zeros survives each step; and the initial condition violates
   the invariant before any operator runs.
-- **Not settled**: WHY advection produces them -- whether `qib` is outside the
-  positive-definite limiter, or inside it and the limiter is insufficient for a
-  paired moment. That is the next question and it is not answered here.
+- **Settled since**: `qib` is INSIDE the positive-definite option and the input
+  to advection is non-negative -- see the clamp arm below. The limiter is
+  insufficient for this field, not bypassed.
 - **Not measured**: any consequence. This counts states, not their effect.
 
 ## Reproducing
 
 Four counters at `solve_em.F` before the RK loop, after `scalar_tile_loop_2`,
 before `microphysics_driver`, and after it; `np = 1`, 10 minutes, history 1.
+
+
+## The clamp arm: advection makes them, it does not amplify them
+
+`scalar_adv_opt = 1` in this case's namelist, and `original = 0` in the generated
+`module_state_description.F`, so the positive-definite branch is the one taken --
+`qib` is inside the limiter, not outside it.
+
+That leaves the limiter's own precondition: a positive-definite scheme guarantees
+a non-negative result from a NON-NEGATIVE input, and up to 6 cells enter each
+step already negative. To separate the two, a diagnostic arm zeroes every
+negative `bg` at RK entry, before advection, and counts as before. This changes
+the trajectory on purpose.
+
+| point | `bg<0` max | `bg<0` mean |
+|---|---|---|
+| RK entry, before clamp | 6 | 2.1 |
+| RK entry, **after clamp** | **0** | **0.0** |
+| after scalar advection | **80,585** | 39,559.2 |
+| before microphysics | 2,570 | 2,288.1 |
+| after microphysics | 6 | 2.1 |
+
+Unclamped, the same run gave 80,586 and 39,559.9.
+
+**Handed a strictly non-negative field, advection still returns up to 80,585
+negative cells** -- one fewer than with the six seeds present. The seeds account
+for at most a single cell in eighty thousand, and every downstream count is
+unchanged. So advection PRODUCES the negative volumes; it does not amplify
+inherited ones.
+
+**Not established**: which part of the positive-definite path fails for `qib`.
+That the limiter is reached and is insufficient is measured; where inside it the
+guarantee breaks is not. A paired moment advected independently of its mass has
+no reason to stay consistent with it, but that is a hypothesis here, not a
+result.
