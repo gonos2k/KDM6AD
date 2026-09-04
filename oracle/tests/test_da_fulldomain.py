@@ -30,7 +30,7 @@ def test_fulldomain_smoke_capped(tmp_path):
     if not _HAVE_CLOUD_EXE:
         pytest.skip("live cloud RTTOV (ami_cloud) 부재")
 
-    fr = read_wrfout_frame(str(_WRFIN), 0)
+    fr = read_wrfout_frame(str(_WRFIN), 0, nccn_policy="init_profile")
     cal = load_cal_table(_CAL)
     pl = read_ko_slot(slot_files(_GK2A, "202507190000",
                                  channels=CLEAN_IR_CHANNELS), cal, stride=8)
@@ -685,7 +685,7 @@ def test_fulldomain_smoke_conserving_capped(tmp_path):
     if not _HAVE_CLOUD_EXE:
         pytest.skip("live cloud RTTOV (ami_cloud) 부재")
 
-    fr = read_wrfout_frame(str(_WRFIN), 0)
+    fr = read_wrfout_frame(str(_WRFIN), 0, nccn_policy="init_profile")
     cal = load_cal_table(_CAL)
     pl = read_ko_slot(slot_files(_GK2A, "202507190000",
                                  channels=CLEAN_IR_CHANNELS), cal, stride=8)

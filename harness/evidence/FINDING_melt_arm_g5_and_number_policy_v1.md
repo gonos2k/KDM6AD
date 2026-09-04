@@ -43,19 +43,38 @@ take the `brs = 0` branch.
 
 The branch was not reachable on the fixture, so it was classified from the
 formulas, with a sample only as a check. Write the melt fraction
-`a = -pgmlt/qg0` in `(0,1)` and the raw ratio `rho0 = qg0/bg0`, and let
-`rho_c = clip(rho0, 100, 900)`. Then
+`a = -pgmlt/qg0` in `(0,1)` and the raw ratio `rho0 = qg0/bg0`.
+
+Inside the window `rhox <= 0`, so `g4` takes its RECOMPUTE branch, and that
+branch bounds the denominator (`make_graupel_melt_arms.py`, `G4_TXN`):
+
+    melt_rho = min(900., max(100., melt_qg0/max(melt_bg0,tiny(melt_bg0))))
+
+so the density `g4` actually divides by is
+
+    rho_c = clip(qg0 / max(bg0, tau), 100, 900),   tau = tiny(f32) = 1.17549e-38
+
+not `clip(rho0, 100, 900)`. The two agree only while `bg0 >= tau`. Then
 
     g4 : bg+ = max(0, bg0 - a*qg0/rho_c)
     g5 : bg+ = bg0 * (qg+/qg0) = (1-a)*bg0        in exact arithmetic
 
 and three statements follow, none of them statistical:
 
-**1. Inside the model's density band the two are the same equation.** If
-`100 <= rho0 <= 900` then `rho_c = rho0`, so `a*qg0/rho_c = a*bg0` and both give
+**1. Inside the density band AND above `tau` the two are the same equation.**
+If `bg0 >= tau` AND `100 <= rho0 <= 900` then `rho_c = rho0`, so
+`a*qg0/rho_c = a*bg0` and both give
 `(1-a)*bg0`. Checked on 14,344 in-band f32 draws: bit-equal in 6,646, and where
 f32 separates them the difference is rounding -- relative median 1.006e-07, max
 2.936e-04 -- with **no in-band draw floored to zero**.
+
+**The `bg0 >= tau` half of that condition was missing here, and the claim without
+it was wrong** (owner review 4). Below `tau` the denominator is pinned at `tau`,
+so `rho_c` no longer tracks `rho0` and the arms separate even in band. Owner's
+counterexample: `qg0 = 5e-37`, `bg0 = 1e-39`, `a = 0.1` gives `rho0 = 500`, in
+band, yet `qg0/tau = 42.5` clips to `rho_c = 100`, and `g4` returns `~5e-40`
+against `g5`'s `9e-40`. The window admits `bg0` this small -- it bounds `bg` only
+from above, at `brs_min = 1e-15`.
 
 **2. `g4` floors exactly when `a*rho0 >= rho_c`.** Which for a partial melt needs
 `rho0 > 900`, since `rho_c = clip(rho0)` and `a < 1`. Checked: the predicate and
@@ -125,22 +144,110 @@ Counters at the melt site -- immediately after `pgmlt` is clamped, where
 `qrs(i,k,3)` is still the pre-melt mass -- over the same ten minutes, `np = 1`,
 changing nothing:
 
-    melt events, pgmlt < 0                                        644,771
+    cell-operator occurrences, pgmlt < 0                                        644,771
     of those, in the window (rhox <= 0)                           193,827   30.1%
       of those, PARTIAL (qg + pgmlt > 0)                                9   0.005%
         with brs > 0                                                    9
         with brs <= 0   -- g5 would error stop                          0
-        raw rho in [100, 900]  -- g4 = g5                               0
-        raw rho > 900          -- g4 FLOORS to zero                     8
+        raw rho in [100, 900]                                           0
+        raw rho > 900          -- g4 CAN floor here                      8
         raw rho < 100                                                   1
 
 **Both earlier readings were wrong.** The fixture said the branch never fires; the
 log-uniform sample suggested 64.3% of a space. It fires nine times in ten
-minutes, one in 72,000 melt events -- and **eight of those nine land exactly where
-`g4` floors and `g5` does not.** So `g4` produced `qg > 0` with `bg = 0` eight
-times in this run, and `g5`'s abort condition did not occur once.
+minutes -- one partial occurrence per about 72,000 counted melt occurrences in
+this run.
 
-The window itself is not rare -- 30.1% of all melt events are in it -- but
+### The nine, measured
+
+The two claims below were withdrawn on the owner's objection that neither had
+been computed. They have now been computed. A diagnostic emits, at the melt
+clamp, the raw f32 state of every partial in-window occurrence together with
+BOTH arms' actual f32 candidates, with three counters as a positive control --
+they returned 644,771 / 193,827 / 9, the census's own numbers, so the predicate
+is the census's.
+
+    #    i   k         qg0         bg0    alpha        rho0  g4_rho      g4_bg1      g5_bg1     a*rho0
+     1  129  16  7.0310e-11  8.7523e-18   0.7152  8.0332e+06   900.0  0.0000e+00  2.4924e-18  5.746e+06
+     2  167  16  7.4239e-11  9.1959e-16   0.2906  8.0731e+04   900.0  0.0000e+00  6.5236e-16  2.346e+04
+     3  167  16  8.6450e-11  8.7073e-16   0.3457  9.9285e+04   900.0  0.0000e+00  5.6975e-16  3.432e+04
+     4  167  16  9.1692e-11  8.6683e-16   0.4002  1.0578e+05   900.0  0.0000e+00  5.1993e-16  4.233e+04
+     5  167  16  9.0056e-11  8.3088e-16   0.1295  1.0839e+05   900.0  0.0000e+00  7.2327e-16  1.404e+04
+     6  167  16  5.7291e-11  7.9798e-16   0.6295  7.1795e+04   900.0  0.0000e+00  2.9562e-16  4.520e+04
+     7   13  16  8.1739e-14  9.1325e-16   0.8849  8.9503e+01   100.0  1.8995e-16  1.0511e-16  7.920e+01
+     8  156  16  2.5279e-10  8.2676e-16   0.6432  3.0576e+05   900.0  0.0000e+00  2.9499e-16  1.967e+05
+     9  130  16  6.0190e-10  3.3036e-16   0.0033  1.8219e+06   900.0  0.0000e+00  3.2928e-16  5.995e+03
+
+**`g4`'s candidate is exactly zero in 8 of 9, and `g5`'s is positive in 9 of 9.**
+Both numbers now rest on the arms' own f32 arithmetic rather than on a
+classification by `rho0`.
+
+The floor predicate holds exactly: the eight floored all have `a*rho0` far above
+`rho_c = 900`, and occurrence 7 -- the only one that does not floor -- has
+`a*rho0 = 79.2` against `rho_c = 100`. Occurrence 9 shows why `rho0 > 900` alone
+was never the test and why it happened not to matter here: its melt fraction is
+0.33%, yet `a*rho0 = 5,995` still clears 900.
+
+**All nine have `bg0 >= tau`**, so the `max(bg0,tiny)` bound never bit in this
+run. The algebra correction stands; this trajectory does not exercise it.
+
+The 9 occurrences carry only 5 distinct `i`, all at `k = 16`, with `i = 167`
+appearing five times -- so they are not nine independent cells. `j` is not
+resolved: the index printed is a local in `kdm62D`, not the slice index, so
+unique `(i,j,k)` and episode length remain uncounted.
+
+**What the withdrawal was about** (owner review 5 and 6).
+
+*"`g4` produced `qg > 0, bg = 0` eight times"* -- was withdrawn, now MEASURED and
+restored by the table above. `rho0 > 900` is
+NECESSARY for the floor, not sufficient: `g4` floors when `a*rho0 >= rho_c`,
+which at `rho0 > 900` means `a >= 900/rho0`. At `rho0 = 1000, a = 0.1` it does
+not floor. The eight were classified by `rho0` alone; `a` was not recorded, and
+`g4` was never executed -- this was a counter run on the unmodified kernel, so
+every `g4`/`g5` figure here is a counterfactual, not an observation.
+
+*"`g5`'s abort condition did not occur once"* -- was withdrawn, now MEASURED on
+the actual post-product and restored. The guard tests the
+POST product `fl32(bg0 * fl32(qg+/qg0))`, not the pre-melt `bg0`. The generator's
+own note records 14 subnormal states where `bg0 > 0` underflows that product to
+zero. Nine occurrences had `brs > 0` going in; the product was not computed.
+
+Both values survive the correction; what changed is that they are now
+observations of the arms' arithmetic instead of inferences from `rho0`.
+
+### Half the zero-volume states are an f32 limit; half are not
+
+Owner review 11 asks whether `qg > 0, bg = 0` is forced by f32. The smallest
+positive f32 subnormal is `eta = 1.4012985e-45`, so a cell can carry an
+admissible density (`100 <= qg/bg <= 900`) with a positive `bg` only if
+`qg >= 100*eta`. Splitting the 551 in-window zero-volume cell-frames on that:
+
+| `qg` | admissible positive `bg` in f32 | count |
+|---|---|---|
+| `< 100*eta` = 1.4013e-43 | **none exists** | 280 |
+| `100*eta .. 900*eta` | `bg = eta` alone | 90 |
+| `>= 900*eta` = 1.2612e-42 | many | 181 |
+
+So 280 of 551 are a **representability failure of the paired moment** -- no
+choice of `bg` could have been both positive and admissible -- and 271 are not:
+an admissible positive `bg` existed and the state carries zero anyway. The
+largest is `qg = 5.1177e-18`, five orders above the threshold.
+
+The 16 cells with `bg < 0` are outside this argument entirely; no representability
+limit produces a negative volume.
+
+That splits the 551 into two different problems, and only the second is a
+positivity or cleanup defect to chase.
+
+**On the counts' thread safety** (owner review 8): this build has OpenMP off --
+`configure.wrf` carries `OMP = # -fopenmp` and `OMPCPP = # -D_OPENMP`, both
+commented out -- and the runs are `np = 1`. The increments were single-threaded,
+so 644,771 / 193,827 / 9 do not depend on any atomic or reduction. And the instrumented binary's identity is now measured too: the raw-row run
+against the deployed 10-minute run differs in **0 of 197 fields across all seven
+frames**, so the instrumentation is non-invasive in fact and not only by
+argument.
+
+The window itself is not rare -- 30.1% of all counted occurrences are in it -- but
 99.995% of those melts are COMPLETE, where `g3`, `g4` and `g5` all set
 `brs = 0` and agree. The arms separate only in the thin residue, and in this run
 the residue sat almost entirely in the region where they disagree.
@@ -183,3 +290,95 @@ An earlier version of this paragraph said the effect on `qr/nr` is bounded by
 `qcrmin`. Only the absolute increment is. The relative and moment effects are not
 bounded, and a column carrying trace graupel near `qcrmin` with small `qr` is
 where that would show.
+
+
+## Every window melt moves mass to rain and adds no rain number
+
+Owner review 12.3 asks for the number-moment consequence. Two source facts fix
+it exactly, with no run needed.
+
+`ProgB_param` computes `rhox` under
+
+    if (qrs(i,k,3).gt.qcrmin .or. brs(i,k).gt.brs_min) then      :3693
+
+so `rhox` is left uncomputed precisely when `qg <= qcrmin` AND `bg <= brs_min` --
+the window, as recorded. And the melt's rain-number update is gated on
+
+    if(qrs(i,k,3).gt.qcrmin) then
+      gfac = (rslope(i,k,3))*n0go(i,k)/qrs(i,k,3)
+      nrs(i,k,1) = nrs(i,k,1) - gfac*pgmlt(i,k)                  :1412
+    endif
+
+Inside the window `qg <= qcrmin`, so that gate is FALSE in **all 193,827**
+occurrences: the mass moves to rain, and the rain number does not change. Not a
+sample -- the two predicates are complementary by construction.
+
+The consequence per occurrence, with `dnr = 0`:
+
+    d(qr/nr) / (qr/nr) = dqr/qr = -pgmlt/qr
+
+so every window melt raises the mean drop mass, and by a fraction this ledger
+measures directly.
+
+There is no graupel number moment to balance against: the scheme sets
+`nrs(i,k,3) = 0.` on entry (`:392`) and only floors it afterwards (`:859`).
+Melting adds rain number from the graupel SIZE DISTRIBUTION (`n0go`), never from
+a carried graupel number. So "graupel-number residual" has nothing to residualise
+-- the moment does not exist.
+
+
+## The ledger: negligible in mass and enthalpy, severe in the number tail
+
+Owner review 12 asks for mass-, enthalpy- and number-weighted ledgers over the
+193,827 window occurrences rather than a count. Accumulated in the kernel in
+double precision, with the same three counters as a positive control -- they
+returned 644,771 / 193,827 / 9 again.
+
+### Mass, and therefore enthalpy
+
+    sum rho*dz*(-pgmlt), ALL melt occurrences      1.77818e+02 kg m^-2
+    sum rho*dz*(-pgmlt), WINDOW occurrences        9.31222e-05 kg m^-2
+    f_M                                            5.24e-07
+
+The window is **30.1% of the count and 0.0000524% of the melted mass**. Latent
+enthalpy is `xlf` times that mass, `xlf` being a parameter, so `f_E = f_M`
+exactly -- the same half a millionth.
+
+So the g1-versus-g3/g4/g5 policy difference, which applies to every one of the
+193,827, moves five parts in ten million of the melted mass and the same share of
+the latent cooling. **Count was not physics here.**
+
+(The weight is `den`, which is moist-air density, while `pgmlt` is per dry kg;
+`FINDING_number_mass_basis_v1` measures that basis error at 0.10% on a comparable
+column. It does not move a ratio of 5e-07.)
+
+### The number moment is where it is not negligible
+
+Every window occurrence moves mass to rain and adds no rain number, so
+`d(qr/nr)/(qr/nr) = -pgmlt/qr`. Over the 193,806 window occurrences that had
+`qr > 0`:
+
+    p50      2.1983e-09
+    p90      3.2747e-06
+    p99      2.9707e-03
+    p99.9    1.7269e-01
+    max      1.0882e+08
+
+    above 1%     958
+    above 10%    274
+    above 100%    71
+
+The median window melt perturbs the mean drop mass by two parts in a billion.
+The tail does not: 71 occurrences **more than double the rain mass without adding
+a single drop**, and the worst multiplies it by 1e8.
+
+And the denominator is not always there:
+
+    window occurrences with qr <= 0      21     rain mass created where there was none
+    window occurrences with nr <= 0   2,904     qr/nr undefined
+
+So the owner's expectation holds, with the channel identified: the 193,797
+complete transfers matter more than the nine partials -- **not through mass or
+enthalpy, which are negligible, but through the number moment**, where a thin
+tail produces grossly inconsistent drop sizes and 2,904 cells have no rain number
+to be inconsistent with.
