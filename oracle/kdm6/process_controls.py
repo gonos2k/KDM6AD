@@ -156,7 +156,10 @@ def apply_freeze_controls(mf_d234, controls: Optional[ProcessControls],
     the rates here are per-substep AMOUNTS — the inline applier subtracts
     them directly). The renorm factor is piecewise differentiable (min via
     clamp). Both baseline and scaled combined draws must be finite; this
-    boundary refuses overflow instead of silently losing a transfer."""
+    boundary refuses overflow instead of silently losing a transfer.
+    A binding cap distributes the budget by the unscaled amounts' shares;
+    an unbound cap returns the scaled amounts directly. At exact equality,
+    AD follows the unbound branch (the cap kink has no unique derivative)."""
     if controls is None or controls.alpha_freeze is None:
         return mf_d234
     scaled = _scale(mf_d234, ("pinuc", "ninuc", "pfrzdtc", "nfrzdtc"),
@@ -174,29 +177,47 @@ def apply_freeze_controls(mf_d234, controls: Optional[ProcessControls],
     # → fac ≡ 1.0 exactly (clamp max=1.0, ×1.0 exact), and at α>0 the scaled
     # draw is capped at the baseline's own draw — no control-introduced mass
     # creation (Codex adversarial review 2026-06-13, finding 1 adjudication).
-    eps = 1.0e-30
     base_q = mf_d234.pinuc + mf_d234.pfrzdtc
     base_n = mf_d234.ninuc + mf_d234.nfrzdtc
     scaled_q = scaled.pinuc + scaled.pfrzdtc
     scaled_n = scaled.ninuc + scaled.nfrzdtc
     # Value-only rejection, as in _scale: finite per-process products do not
     # imply a finite combined draw. A budget / Inf factor would erase the
-    # transfer and can give NaN derivatives. Keep the original tensors and
-    # arithmetic for every accepted control.
+    # transfer and can give NaN derivatives. The accepted tensors retain
+    # their original autograd graph.
     for name, draw in (("baseline mass", base_q), ("baseline number", base_n),
                        ("scaled mass", scaled_q), ("scaled number", scaled_n)):
         if not bool(torch.isfinite(draw).all().item()):
             raise ValueError(f"freeze {name} combined draw must be finite")
-    fac_q = torch.clamp(torch.maximum(qc, base_q)
-                        / torch.clamp(scaled_q, min=eps),
-                        max=1.0)
-    fac_n = torch.clamp(torch.maximum(nc, base_n)
-                        / torch.clamp(scaled_n, min=eps),
-                        max=1.0)
-    return scaled._replace(
-        pinuc=scaled.pinuc * fac_q, pfrzdtc=scaled.pfrzdtc * fac_q,
-        ninuc=scaled.ninuc * fac_n, nfrzdtc=scaled.nfrzdtc * fac_n,
-    )
+    capped = {}
+    for fields, base, draw, reservoir in (
+            (("pinuc", "pfrzdtc"), base_q, scaled_q, qc),
+            (("ninuc", "nfrzdtc"), base_n, scaled_n, nc)):
+        budget = torch.maximum(reservoir, base)
+        # With a common positive scale, a binding cap is exactly
+        # r_i * s * B / (s * sum(r)) = (r_i / sum(r)) * B.
+        # Cancel s algebraically: at huge finite s the reciprocal derivative
+        # in the former expression underflows, corrupting reverse AD even
+        # though the forward result is finite. D2/D3 amounts are nonnegative,
+        # so a binding cap implies a positive base sum. In the other branch
+        # no division is needed: a dimensionful epsilon would shrink tiny
+        # valid draws and even break alpha=0 value identity.
+        binding = draw > budget
+        safe_base = torch.where(binding, base, torch.ones_like(base))
+        # Rescale subnormal amounts by an exact power of two before taking
+        # their ratio. Otherwise 1/base can overflow in reverse AD even when
+        # the final rate/reservoir derivatives are representable.
+        tiny = torch.finfo(base.dtype).tiny
+        normalize = torch.where(safe_base < tiny,
+                                torch.full_like(base, 1.0 / tiny),
+                                torch.ones_like(base))
+        normalized_base = safe_base * normalize
+        for field in fields:
+            capped[field] = torch.where(
+                binding, (getattr(mf_d234, field) * normalize)
+                / normalized_base * budget,
+                getattr(scaled, field))
+    return scaled._replace(**capped)
 
 
 def apply_melt_controls(mf5, controls: Optional[ProcessControls]):
