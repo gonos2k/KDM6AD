@@ -103,6 +103,11 @@ Generated or foreign areas are not source for normal KDM6AD work:
 
 ## Theory Before Patching
 
+Team agents use `gpt-5.6-luna` with reasoning effort `xhigh` by default,
+including Green/Red implementation and independent review teams. Apply this
+setting when spawning or restarting team agents unless the user explicitly
+requests a different model or reasoning effort.
+
 Before changing KDM6/KDM6AD code, check consistency from all four perspectives.
 Prioritize a coherent mathematical and physical contract over a local symptom fix.
 

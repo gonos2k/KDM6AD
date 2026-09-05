@@ -7,12 +7,15 @@ For layer weights w=rho*dz and paired applied transfers F=(dn_out,dn_in),
     R(w',F') - R(w,F) = [R(w',F)-R(w,F)] + [R(w',F')-R(w',F)]
                         weight effect       transport response
 
+This is a weight-first decomposition: the interaction R(w'-w,F'-F) is
+assigned to the transport response, not a unique order-independent cause.
 The counterfactual fixes BOTH baseline departure and arrival. With unmatched
 transfers, adding a constant c to density changes R by c*sum(B-A), where
 A=dz_up*dn_out and B=dz_lo*dn_in; it need not cancel. The density contribution
 and transfer mismatch are reported separately as an accounting identity, not
 substituted for the full residual in the decomposition.
 
+The analysis first validates the requested run and the cross-arm run identity.
 Interface identities (call, loop, substep, upper, lower) and geometry must match.
 On the historical multisubcycle fixture, inverted changes main column 3's
 schedule, so that comparison is undefined. Equal interface counts are not
@@ -57,11 +60,18 @@ def interface_terms(stream: str, chain: str = "main") -> dict:
     `dn_departure` is the number that actually LEFT the cell above, taken from
     TOPOUT at the top interface and CAPIN's own-outflow below it -- the same
     pairing the cap-interface analysis uses.
+
+    This extracts operands for arithmetic. Use `analysis` for a density-arm
+    experiment: that boundary also validates the request and paired run identities.
     """
+    return _interface_terms(nt.calls(stream), chain)
+
+
+def _interface_terms(calls: list, chain: str) -> dict:
+    """Reuse an already validated parse without reading the stream again."""
     rows = {}
     if chain not in ("main", "ice"):
         raise ValueError(f"unknown sedimentation chain {chain!r}")
-    calls = nt.calls(stream)
     for key, departure, arrival in nt.applied_interfaces(calls):
         ci, lp, n, col, ch, ku, kl = key
         if ch != chain:
@@ -89,6 +99,8 @@ def decompose(base: dict, arm: dict) -> dict:
 
     baseline=R(w,F), metric=R(w',F), actual=R(w',F'). Thus metric is the
     counterfactual residual level; weight_effect=metric-baseline is its change.
+    The weight-first order assigns R(w'-w,F'-F) to trajectory. These arithmetic
+    operands must come from comparable experiments, as checked by `analysis`.
     """
     out = {}
     for col in sorted(base.keys() | arm.keys()):
@@ -162,10 +174,36 @@ def analysis(driver: str, nsplit: int, chain: str = "main", *,
     function asks `g33_run_matrix` itself, which keeps the standalone report
     working and keeps exactly one implementation of the matrix.
     """
+    if mode not in ("rezero", "carry"):
+        raise ValueError(f"unsupported mode {mode!r}; expected 'rezero' or 'carry'")
+    supplied_raw = raw is not None
     if raw is None:
         raw = rmx.collect(driver, nsplit, mode=mode, width=width,
                           baseline_stream=baseline_stream)
-    base = interface_terms(raw["as-is"], chain)
+    if set(raw) != set(ARMS):
+        raise nt.StreamError("density matrix must contain exactly the requested arms")
+    if baseline_stream is not None and raw["as-is"] != baseline_stream:
+        raise nt.StreamError("raw as-is stream differs from the supplied bundle baseline")
+    identities, terms = {}, {}
+    for arm in ARMS:
+        rid, calls = nt.validated_run_identity(
+            raw[arm], expected_width=width, with_calls=True)
+        want = {"nsplit": nsplit, "carry": mode, "rho": arm}
+        for field, value in want.items():
+            if rid[field] != value:
+                raise nt.StreamError(
+                    f"{arm}: requested {field}={value!r}, stream declares {rid[field]!r}")
+        if arm != "as-is":
+            # All run-identity fields are fixed except the requested density
+            # intervention. Adaptive mstep is response data, not in this identity.
+            for field, value in identities["as-is"].items():
+                if field != "rho" and rid[field] != value:
+                    raise nt.StreamError(
+                        f"{arm}: {field} differs from as-is "
+                        f"({rid[field]!r} vs {value!r}); not a density-only comparison")
+        identities[arm] = rid
+        terms[arm] = _interface_terms(calls, chain)
+    base = terms["as-is"]
     # Hand the raw streams back so the caller can PRESERVE them beside the
     # analysis. Without this the six runs existed only inside this function and
     # the evidence chain stopped at a derived JSON (owner §4).
@@ -174,19 +212,15 @@ def analysis(driver: str, nsplit: int, chain: str = "main", *,
     return {"quantity": "full_interface_residual",
             "chain": chain, "mode": mode, "nsplit": nsplit, "tile_width": width,
             "baseline": ("bundle member" if baseline_stream is not None
-                         else "re-run"),
-            # The exact command line for each arm, and the arm the STREAM
-            # declares -- so a reader can check the analysis describes the run it
-            # claims to, without the raw bytes.
+                         else "provided raw" if supplied_raw else "re-run"),
+            # argv records the validated request, not evidence of a subprocess
+            # execution when the caller provided raw streams.
             "arms_runtime": {a: {"argv": [str(nsplit), mode, str(width), a],
-                                 "declared_rho_profile": _declared_arm(raw[a])}
+                                 "declared_rho_profile": identities[a]["rho"],
+                                 "run_identity": identities[a]}
                              for a in ARMS},
-            "arms": {a: decompose(base, interface_terms(raw[a], chain))
+            "arms": {a: decompose(base, terms[a])
                      for a in ARMS if a != "as-is"}}
-
-
-#: One reader for "which arm does this stream declare", the run side's.
-_declared_arm = rmx.declared_arm
 
 
 def report(driver: str, nsplit: int, *, result: dict | None = None) -> None:
@@ -195,6 +229,7 @@ def report(driver: str, nsplit: int, *, result: dict | None = None) -> None:
     print("  weight effect = R(arm weights, baseline transfers) - R(baseline)")
     print("  transport response = R(arm) - R(arm weights, baseline transfers)")
     print("  residual change = weight effect + transport response.\n")
+    print("  Weight-first order: the weight/transfer interaction is in transport response.")
     print(f"  {'arm':10} {'col':>3} {'baseline':>13} {'actual':>13} "
           f"{'weight effect':>13} {'transport':>13} {'change':>13}")
     for arm, cols in a["arms"].items():
