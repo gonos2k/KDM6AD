@@ -92,6 +92,18 @@ oracle↔C++ 시험 **4 passed, 0 skipped**. 이는 해당 시험의 허용 오�
 WRF mp37↔mp137 전체 필드 raw-bit 비교를 대신하지 않는다. Overlay 4-check도 통과했으며
 이 정적 검사는 계측 실행의 비침습성을 증명하지 않는다.
 
+## macOS CI 후속 점검
+
+이전 head `d23cda8`의 macOS 로그는 libtorch archive 링크 뒤 16개 이상의 C++
+컴파일을 거의 동시에 시작했다. 메모리 사용량이나 OOM은 측정하지 않았으므로 지연
+원인을 확정하지 않는다. macOS의 shipped 및 test-hooks 재빌드에 `--parallel 2`를
+명시하고 90분 timeout과 모든 컴파일·수치 검증 옵션을 유지했다. G3.3 self-check의
+별도 compiler 호출은 이미 순차 실행이다. 실행 시간 개선 여부는 새 CI 결과로 판단한다.
+
+워크플로 구조 검사 `actionlint -shellcheck=''` 및 변경 범위 대조는 통과했다.
+전체 actionlint는 변경 전후 모두 기존 Ubuntu shell의 SC2012 세 건과 SC2155 한 건을
+보고한다. 이 검사 결과를 경고 없는 전체 shell lint 통과로 표현하지 않는다.
+
 ## 열린 과학적·외부 과제
 
 - **M1:** 실제 10분 WRF에서 적용된 입자수 유출·유입과 전체 잔차를 다시 계측.
