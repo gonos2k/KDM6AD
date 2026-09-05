@@ -84,7 +84,7 @@ cap 구간에서 매끄러우며 경계에서 꺾인다. 정확한 `draw=budget`
 - Luna xhigh Green이 추가 유한 cap VJP와 tiny-floor 반례를 찾았으며,
   부모가 subnormal rate 미분까지 재현해 식을 정리했다. 최종 Green/Red
   교차 검토 판정은 PR에 함께 기록한다.
-- Graphify AST 갱신: 632개 파일, 11,298 nodes / 18,816 edges. 원시 보고서는
+- Graphify AST 갱신: 632개 파일, 11,304 nodes / 18,832 edges. 원시 보고서는
   `graphify-out/`에 유지한다.
 추가 native/WRF/MPI/live RTTOV 또는 예보 성능 실험은 이 변경의 검증 범위가 아니다.
 M1, M2, 입자수 단위 계약과 D4 측정은 계속 별도의 열린 과제다.

@@ -154,8 +154,8 @@ def apply_freeze_controls(mf_d234, controls: Optional[ProcessControls],
         ninuc + nfrzdtc ≤ max(nc, unscaled draw)
     (= the reservoir up to the ≲1-ULP rounding the baseline itself carries;
     the rates here are per-substep AMOUNTS — the inline applier subtracts
-    them directly). The renorm factor is piecewise differentiable (min via
-    clamp). Both baseline and scaled combined draws must be finite; this
+    them directly). The cap is piecewise differentiable. Both baseline and
+    scaled combined draws must be finite; this
     boundary refuses overflow instead of silently losing a transfer.
     A binding cap distributes the budget by the unscaled amounts' shares;
     an unbound cap returns the scaled amounts directly. At exact equality,
