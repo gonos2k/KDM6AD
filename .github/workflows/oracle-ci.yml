@@ -44,17 +44,18 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install torch (CPU, pinned) + numpy + pytest
+      - name: Install torch (CPU, pinned) + numpy + pytest + netCDF4
         run: |
           python -m pip install --upgrade pip
           pip install "torch==2.8.0" --index-url https://download.pytorch.org/whl/cpu
           # numpy/pytest pinned to the last green combo (with torch 2.8.0 / py3.11) so the
           # numeric suite is reproducible — a numpy major bump could shift float behavior.
-          pip install "numpy==2.4.6" "pytest==9.1.1"
+          # Exercise synthetic NetCDF ingestion/identity tests in CI, not only locally.
+          pip install "numpy==2.4.6" "pytest==9.1.1" "netCDF4==1.7.4"
 
       - name: Record versions
         run: |
-          python -c 'import sys, torch, numpy, pytest; print("python", sys.version.split()[0], "| torch", torch.__version__, "| numpy", numpy.__version__, "| pytest", pytest.__version__)'
+          python -c 'import sys, torch, numpy, pytest, netCDF4; print("python", sys.version.split()[0], "| torch", torch.__version__, "| numpy", numpy.__version__, "| pytest", pytest.__version__, "| netCDF4", netCDF4.__version__)'
           pip --version   # installer version (deps are pinned; pip itself is not)
 
       - name: pytest (oracle/, pure-Python subset)
