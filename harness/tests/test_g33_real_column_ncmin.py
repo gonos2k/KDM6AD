@@ -49,6 +49,26 @@ def test_the_AFFECTED_SET_MOVES_with_the_decomposition():
     assert list(rcn.imposed(xl, 2)[0]) == [2, 2, 1, 1]
 
 
+def test_report_rejects_masked_or_out_of_domain_xland(tmp_path):
+    netCDF4 = pytest.importorskip("netCDF4")
+    path = tmp_path / "xland.nc"
+    with netCDF4.Dataset(str(path), "w") as d:
+        d.createDimension("Time", 1)
+        d.createDimension("south_north", 1)
+        d.createDimension("west_east", 2)
+        v = d.createVariable("XLAND", "f8",
+                             ("Time", "south_north", "west_east"),
+                             fill_value=-9999.0)
+        v[0] = np.ma.array([[1.0, 2.0]], mask=[[False, True]])
+    with pytest.raises(ValueError, match="masked"):
+        rcn.report(path, tilings=(1, 2))
+
+    with netCDF4.Dataset(str(path), "r+") as d:
+        d["XLAND"][0] = [[1.0, 3.0]]
+    with pytest.raises(ValueError, match="must be 1 .* or 2"):
+        rcn.report(path, tilings=(1, 2))
+
+
 @pytest.mark.skipif(not LC05.is_file(), reason="no LC05 state on this host")
 def test_the_REAL_domain_is_substantially_exposed():
     """The measurement the review asks for as external validity for the

@@ -394,9 +394,10 @@ def main(argv) -> int:
     if len(argv) >= 3 and argv[2] in COMPARISONS:
         a, b = (read(Path(q).read_text()) for q in argv[:2])
         d = diff(a, b, argv[2])
+        max_ulp_key = f"max_ulp_{d['ulp_lattice']}"
         print(f"  {argv[2]}: {d['different']} of {d['records']} records differ"
-              f"   max_rel={d['max_rel']:.3e}  max_ulp={d['max_ulp']}"
-              f"   bitwise_identical={d['bitwise_identical']}")
+              f"   max_rel={d['max_rel']:.3e}  {max_ulp_key}={d[max_ulp_key]}"
+              f"   raw_bit_identical={d['raw_bit_identical']}")
         if len(argv) == 4:
             import json
             Path(argv[3]).write_text(json.dumps(d, indent=2, sort_keys=True) + "\n")

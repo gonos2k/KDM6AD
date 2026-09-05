@@ -15,6 +15,10 @@ Each file format:
 Compares:
   - input parity (proves IC machinery matches between slot 37 and slot 137)
   - output parity (the actual scheme-level forward consistency metric)
+
+This is a REPORT-ONLY diagnostic helper. A zero process exit means that the
+tables were produced; it does not certify parity. Use
+compare_step1_kdm6_bitwise.py for the strict fail-closed parity gate.
 """
 import sys, numpy as np
 from pathlib import Path
@@ -64,6 +68,7 @@ def main():
     f137_in  = load(base / 'kdm6_step1_kdm6ad_in.bin')
     f137_out = load(base / 'kdm6_step1_kdm6ad_out.bin')
 
+    print('# REPORT-ONLY: exit status is not a parity verdict')
     print(f'# Step-1 forward-consistency: Fortran kdm6 (slot 37) vs PyTorch kdm6ad (slot 137)')
     print(f'# dims: {f37_in["_dims"]}')
 

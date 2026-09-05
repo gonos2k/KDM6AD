@@ -50,6 +50,31 @@ def test_strict_parse_and_semantics_hold():
     assert len(RUN.ops) > 5000 and len(RUN.stages) > 2000
 
 
+def _raw_mutant_qpost(loop):
+    lines = SAMPLE.read_text().splitlines()
+    for i, line in enumerate(lines):
+        fields = line.split()
+        if (len(fields) == 10 and fields[0] == "G33FOP" and
+                int(fields[1]) == loop and fields[6] == "QR_UPDATE" and
+                fields[7] == "q_post"):
+            fields[9] = f"{int(fields[9], 16) ^ 1:08X}"
+            lines[i] = " ".join(fields)
+            return "\n".join(lines) + "\n"
+    raise AssertionError(f"no raw q_post record for loop {loop}")
+
+
+@pytest.mark.parametrize("loop", [1, 2, 3])
+def test_raw_stream_mutation_in_every_outer_loop_fails_full_replay(loop):
+    """The decision consumer must inspect raw records from every loop.
+
+    Mutating a q_post token in any outer loop leaves the parser and schema intact,
+    so only the complete ladder can reject it.
+    """
+    mutant = fd.parse_fortran_run(_raw_mutant_qpost(loop), "legacy", 4, 3)
+    with pytest.raises(fd.FortranRunError, match="full offline replay"):
+        fd.verify_offline_replay(mutant)
+
+
 def test_normalized_run_spans_every_outer_loop():
     assert sorted({o["loop"] for o in NORM["ops"]}) == [1, 2, 3]
     # ONCE-PER-CALL stages carry loop 0, meaning "not loop-scoped": the whole-step

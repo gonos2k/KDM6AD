@@ -65,7 +65,8 @@ def _build_run(sub, algo, flags, entry="wrapper"):
         env["G33_ENTRY"] = "kernel"
     run = subprocess.run([exe], capture_output=True, env=env)
     if run.returncode != 0:
-        raise SystemExit(f"driver crashed ({flags}):\n{run.stderr.decode('replace')}")
+        raise SystemExit(
+            f"driver crashed ({flags}):\n{run.stderr.decode(errors='replace')}")
     return exe, run.stdout, run.stderr
 
 
