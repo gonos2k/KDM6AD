@@ -42,6 +42,9 @@ unresolved (see SCIENCE_STATUS.md). With A=dz_up*dn_out and B=dz_lo*dn_in:
 unclipped flux. Their sum equals the residual up to diagnostic rounding.
 This reader uses fixed window measures; it rejects changing forcing and does
 not interpret an evolving host trajectory as a fixed-forcing microphysics window.
+New streams declare `capin_applied`: conservative arrival operands include the
+metric factors in the update. Archived conservative streams omit these factors
+and are refused here. Archived legacy streams already carry applied operands.
 
     python g33_cap_interface.py <driver---nflux> <nsplit> [out.json]
 """
@@ -58,6 +61,7 @@ import g33_matched_closure as mc  # noqa: E402
 import g33_number_transport as nt  # noqa: E402
 import g33_refine_analyze as ra  # noqa: E402
 import g33_probe_read as pr  # noqa: E402
+import g33_arms  # noqa: E402
 
 
 class Interface(NamedTuple):
@@ -94,8 +98,22 @@ def _walk(stream: str, basis: str):
     Requires `capin` and `topout`; the strict parser has already checked their
     exact universes, so a level or sub-step missing here is not possible.
     """
+    if basis not in mc.MEASURES:
+        raise ValueError(f"unknown basis {basis!r}; expected one of {tuple(mc.MEASURES)}")
+    calls = nt.calls(stream)
+    for call in calls:
+        missing = {"capin", "topout"} - call["features"]
+        if missing:
+            raise nt.StreamError(f"interface analysis requires features {sorted(missing)}")
+        algorithm = call["algorithm"]
+        nt.number_transfer_metric(algorithm, call.get("declared_metric"))
+        if (g33_arms.base(algorithm) == "conservative"
+                and "capin_applied" not in call["features"]):
+            raise nt.StreamError(
+                "conservative CAPIN lacks capin_applied: archived records contain "
+                "unscaled source increments; re-emit with the updated --nflux build")
     measure = mc.window_cell_mass(stream, basis)
-    for ci, call in enumerate(nt.calls(stream), start=1):
+    for ci, call in enumerate(calls, start=1):
         for lp in sorted(call["loops"]):
             pre = call["outer_pre_sed"]
             for col in sorted({c for l, c, _ in pre if l == lp}):
@@ -112,25 +130,17 @@ def _walk(stream: str, basis: str):
                 # instead -- failing where the value is actually required.
                 t = {k: pre[(lp, col, k)].get("t") for k in ks}
                 for chain in ("main", "ice"):
-                    ms = call["mstep"].get((lp, chain, col))
-                    if ms is None:
-                        continue
+                    ms = call["mstep"][(lp, chain, col)]
                     for n in range(1, ms + 1):
                         # TOPOUT gives the top cell's removal, which CAPIN cannot:
                         # that cell is updated outside the interior loop.
-                        top = call["topout"].get((lp, n, col, chain, 0))
-                        if top is None:
-                            continue
+                        top = call["topout"][(lp, n, col, chain, 0)]
                         own, inflow = {0: top}, {}
                         for j in ks[1:]:
-                            cap = call["capin"].get((lp, n, col, chain, j))
-                            if cap is None:
-                                continue
+                            cap = call["capin"][(lp, n, col, chain, j)]
                             oq, iq, on, ino = cap
                             own[j], inflow[j] = (oq, on), (iq, ino)
                         for j in ks[1:]:
-                            if j not in inflow or (j - 1) not in own:
-                                continue
                             dq_out, dn_out = own[j - 1]
                             dq_in, dn_in = inflow[j]
                             w_up, w_lo = rho[j - 1] * dz[j - 1], rho[j] * dz[j]

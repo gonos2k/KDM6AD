@@ -176,7 +176,7 @@ MAX_EDIT = {"g1": 20, "g2": 20, "g3": 20, "g4": 30, "g5": 30}
 #: melt, so `qg+ > 0` arrives with `b+ = 0` anyway. The window's own `qg` runs
 #: 1e-43 to 1e-40 on the measured column, which is exactly that region.
 #:
-#: `b+ = b0 * (q+/q0)` is exact when `b0 > 0`. When `b0 = 0` and the melt is
+#: `b+ = b0 * (q+/q0)` preserves density in real arithmetic when `b0 > 0`. When `b0 = 0` and the melt is
 #: PARTIAL it returns 0 with `q+ > 0` -- the same `qg > 0, bg = 0` state g4's
 #: floor produced, reached a different way, and no finite density satisfies it.
 #: The state is reachable: the window admits `brs <= brs_min` and nothing

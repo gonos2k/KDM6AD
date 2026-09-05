@@ -144,7 +144,8 @@ TOPOUT = re.compile(r"^G33F TOPOUT (\d+) (\d+) (\d+) (-?\d+) (main|ice) (f32|f64
                     + " ".join([_H] * 2) + "$")
 #: Extension records this parser knows. A stream declaring a feature it does not
 #: emit, or emitting one it did not declare, is refused.
-FEATURES = {"mstep", "mstepi", "nflux", "xfer", "capin", "topout"}
+#: capin_applied is a semantic marker on CAPIN, not a separate record family.
+FEATURES = {"mstep", "mstepi", "nflux", "xfer", "capin", "topout", "capin_applied"}
 
 #: The density-control arms. `as-is` is the unperturbed forcing; the rest are
 #: interventions, and a stream must say which it is.
@@ -790,6 +791,8 @@ def calls(stream: str) -> list:
             unknown = features - FEATURES
             if unknown:
                 raise StreamError(f"stream declares unknown features {sorted(unknown)}")
+            if "capin_applied" in features and not {"capin", "topout"} <= features:
+                raise StreamError("capin_applied requires capin and topout features")
             if rho_profile not in RHO_PROFILES:
                 raise StreamError(
                     f"stream declares unknown rho_profile {rho_profile!r}; "
@@ -986,7 +989,8 @@ def calls(stream: str) -> list:
         # like success: `capin` in the header with zero CAPIN records passed,
         # and the cap analysis it backs would have been computed over nothing
         # (owner P0-1).
-        missing = header["features"] - emitted
+        # capin_applied describes CAPIN's operands; it has no separate records.
+        missing = header["features"] - {"capin_applied"} - emitted
         if missing:
             raise StreamError(
                 f"header declares features {sorted(missing)} that no record "
@@ -1452,13 +1456,11 @@ def surface_cap_binds(call, col, species):
 
 
 def interior_cap_binds(call, col, species):
-    """Did the cap bind at an INTERIOR interface? Reported, never excluded.
+    """Legacy API: do a non-bottom cell's OWN outflow and inflow differ?
 
-    Where it does, the residual is still the operator's own behaviour -- the
-    capped transfer is what ran -- but it is no longer transport alone, so the
-    row is labelled rather than dropped. Measured on the multisubcycle fixture
-    the interior cap binds hard: 214 mass and 202 number interfaces, smallest
-    departure 2.6e-03 relative, median 76%.
+    These are different interfaces and may use different local units. Their
+    inequality does not establish cap binding. Retained for historical output
+    compatibility only; use g33_cap_interface for paired interface residuals.
     """
     chain = SPECIES[species][0]
     rows = [(k, v) for (_l, _n, c, ch, k), v in call["capin"].items()
@@ -1512,16 +1514,16 @@ def closure_report(stream: str, *, multistep: bool = True) -> dict:
     print("\n  TRANSPORT-ONLY closure from EMITTED data alone (no recursion)")
     print("  The segment is both sedimentation sub-cycles and nothing else, so a")
     print("  sources-off fixture is not needed. qr is a REAL control here.\n")
-    print(f"  {'sp':>3} {'col':>4} {'calls':>6} {'mstep<=':>7} {'incap':>5} "
+    print(f"  {'sp':>3} {'col':>4} {'calls':>6} {'mstep<=':>7} {'diff':>5} "
           f"{'surface out':>14} {'residual':>14} {'residual/out':>14}")
     for (sp, col), d in sorted(acc.items(), key=lambda kv: (kv[0][0][0] != "q", kv[0])):
         rel = d["residual"] / d["out"] if d["out"] else float("nan")
         print(f"  {sp:>3} {col:>4} {d['n']:>6} {d['mstep_max']:>7} "
               f"{d['interior_cap']:>5} {d['out']:14.5e} "
               f"{d['residual']:14.5e} {rel:13.4%}")
-    print("\n  `incap` counts calls where the cap bound at an INTERIOR interface:"
-          "\n  the row is the operator's own behaviour there, but it is no longer"
-          "\n  transport alone. Labelled, not dropped.")
+    print("\n  `diff` (legacy JSON key `interior_cap`) counts calls with unequal"
+          "\n  own outflow and inflow at a non-bottom cell. These are different"
+          "\n  interfaces; the count does not establish cap binding.")
     return {f"{sp}/{col}": d for (sp, col), d in acc.items()}
 
 
@@ -1554,8 +1556,8 @@ def report(stream: str) -> None:
               f"{(d['residual'] / fin if fin else float('nan')):10.2%} {chk:16.4f}")
     print("\n  created  = [X(post_sed) - X(pre_sed)] + surface out;  0 iff conserved")
     print("  per call = mean of created/X at the start of that call")
-    print("  recovered/falln = 1.0000 means the caps did not bind and the recovery")
-    print("                    is exact; rows far from 1 are cap-dominated, not usable")
+    print("  recovered/falln = 1.0000 checks the recovered surface sum only;")
+    print("                    it does not certify matched transfers at every interface.")
     closure_report(stream)
 
 

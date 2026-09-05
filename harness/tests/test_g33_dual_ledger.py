@@ -34,7 +34,7 @@ def _stream(qv, qr=0.0):
     """
     pre = [10.0, 20.0, 30.0, 40.0]
     post = [pre[t] - XFER[t] + (XFER[t - 1] if t else 0.0) for t in range(4)]
-    L = ["G33N STREAM_BEGIN 4 1 1 1 legacy rezero mstep,mstepi,nflux,xfer as-is",
+    L = ["G33N STREAM_BEGIN 4 1 1 1 legacy rezero mstep,mstepi,nflux,xfer,capin,topout as-is",
          f"G33N CALL_BEGIN 1 1 1 1 1 {len(RHO)} 42C80000"]
     for stage, vals in (("outer_pre_sed", pre), ("outer_post_sed", post)):
         for k in range(len(RHO)):
@@ -53,6 +53,12 @@ def _stream(qv, qr=0.0):
     L += [f"G33F NFLUX 1 1 {f} f32 "
           f"{_hex({'nflux_den': RHO[-1], 'nflux_delz': DZ, 'nflux_dtcld': 100.0}.get(f, 1.0))}"
           for f in mc.nt.NFLUX_FIELDS]
+    for chain in ("main", "ice"):
+        departures = XFER if chain == "main" else [0.] * len(RHO)
+        L.append(f"G33F TOPOUT 1 1 1 0 {chain} f32 00000000 {_hex(departures[0])}")
+        for k in range(1, len(RHO)):
+            L.append(f"G33F CAPIN 1 1 1 {k} {chain} f32 00000000 00000000 "
+                     f"{_hex(departures[k])} {_hex(departures[k - 1])}")
     L += [f"G33F XFER 1 1 1 main f32 {_hex(0.0)} {_hex(XFER[-1])}",
           "G33F XFER 1 1 1 ice f32 00000000 00000000",
           "G33N CALL_END 1 1 1", "G33N STREAM_END"]

@@ -1,10 +1,12 @@
-"""What Arm N still leaves against the PHYSICAL number measure.
+"""Matched-transfer coefficients on a conditional dry-density number measure.
 
 Arm N gives the interface number transfer the air-mass ratio, and the archive
 shows its residual collapsing to roundoff. That closes the OPERATOR's own
-ledger: `dend(i,k) = den(i,k)` (F:870) is MOIST density. The physical column
-number is `sum rho_d*dz*nr`, because `nr` is per kg of DRY air (G33-BASIS-006),
-so a gap remains and its size is what this measures.
+ledger: `dend(i,k) = den(i,k)` (F:870) is MOIST density. If stored number is per
+dry-air kg, column number is `sum rho_d*dz*nr`. The kernel slope instead requires
+per-volume number; the host/kernel unit contract remains OPEN (SCIENCE_STATUS).
+These coefficients assume matched transfers. Independent caps add a mismatch
+term, so this profile calculation does not measure an actual full residual.
 
 Per interface, divide what arrives by what should arrive; the transfer `b`
 drops out and a COEFFICIENT is left that depends on the profile alone. With
@@ -20,20 +22,19 @@ Three readings follow, and the third is the one that was not available before:
     ARM N,  physical measure   A = den   B = den_d   eps = (1+qv_up)/(1+qv_lo) - 1
 
 with `den_d = den/(1+qv)`. The third is PURELY THE MOISTURE JUMP: Arm N's
-remaining physical defect does not depend on the density profile at all.
+remaining coefficient does not depend on the density profile at all.
 
 And the three compose exactly, not approximately:
 
     1 + eps_legacy_dry = (1 + eps_legacy_moist) * (1 + eps_armn_dry)
 
-so the legacy defect against the physical measure FACTORISES into a density
-term and a moisture term, and Arm N removes exactly the first one. That is the
-statement `G33-BASIS-002` was holding open a decision about, now with a size.
+so the matched-transfer coefficient factorises into density and moisture
+factors. This identity does not include the independent-cap mismatch term.
 
 WHY THIS NEEDS A REAL ATMOSPHERE. Every stream in the archive that carries qv
 carries it UNIFORM in the column -- measured, in-column spread exactly 0.0
 across `armn`, `f64` and `migrate`. Under a uniform profile the moisture term
-is identically 1 and the two ledgers differ by a constant per column, which
+factor `1 + eps_armn_dry` is identically 1 and the two ledgers differ by a constant per column, which
 cancels out of every ratio. So no fixture published so far can distinguish the
 bases, and this is not a defect of Arm N's evidence: it is the reason the
 question stayed open. It takes a moisture GRADIENT, which is what a real state

@@ -5,7 +5,9 @@ The headline number is
 
     R_N / F_surface
 
-the number-creation residual over the surface number outflow. It is the natural
+the signed density-weighted number residual over the surface outflow. Physical
+number interpretation requires per-dry-kg stored number and dry density; the
+host/kernel unit contract remains unresolved. It is the natural
 denominator for *"is the transport accounting closed"*, and it is the wrong one
 for almost every sentence a reader is tempted to write next. It does **not** say
 
@@ -19,9 +21,9 @@ something, side by side, with the mean particle mass beside it. A number with on
 denominator invites the reader to supply their own.
 
     R / F_surface     closure -- is the transport accounting closed
-    R / N_initial     what fraction of what the column STARTED with was invented
-    R / N_final       what fraction of what it ENDED with is spurious
-    R / N_transported what fraction of what MOVED was invented
+    R / N_initial     signed residual relative to the initial weighted inventory
+    R / N_final       signed residual relative to the final weighted inventory
+    R / N_transported signed residual relative to actual weighted departures
 
     python g33_defect_magnitude.py <driver---nflux> <nsplit> [out.json]
 """
@@ -72,11 +74,13 @@ def _eps(d):
 
 
 def _defect_mass_bias(d):
-    """Mean particle mass q/N is deflated by 1/(1+eps) when N carries eps
-    spurious. Mass is unaffected -- its control closes -- so all of it lands on
-    the ratio."""
+    """At fixed mass, (q/N)/(q/(N-R))-1 = -R/N for positive N and N-R.
+
+    This assumes subtracting the signed residual defines the comparison number;
+    it neither settles the number-unit contract nor simulates feedback.
+    """
     e = _eps(d)
-    return None if e is None or e <= -1 else 1.0 / (1.0 + e) - 1.0
+    return None if d["final"] <= 0 or e is None or e >= 1 else -e
 
 
 def _defect_diameter_bias(d):
@@ -84,7 +88,7 @@ def _defect_diameter_bias(d):
     a cube root -- which is why a 15%-sounding number is not a 3-5% diameter
     change."""
     e = _eps(d)
-    return None if e is None or e <= -1 else (1.0 + e) ** (-1.0 / 3.0) - 1.0
+    return None if d["final"] <= 0 or e is None or e >= 1 else (1.0 - e) ** (1.0 / 3.0) - 1.0
 
 
 def analysis(stream: str, basis: str = "operator") -> dict:
@@ -167,10 +171,11 @@ def analysis(stream: str, basis: str = "operator") -> dict:
                 if mass and d["start"] and d["final"] and mass["start"] else None),
             # The part attributable to the DEFECT, which is the only part a
             # reflectivity or fall-speed argument may use. Number inflated by
-            # eps = R/N_final deflates q/N by 1/(1+eps), and a characteristic
+            # eps = R/N_final gives relative bias -eps against q/(N_final-R);
+            # a characteristic
             # DIAMETER goes as (q/N)^(1/3).
-            # FROZEN-TRAJECTORY bounds (owner §5). They answer: at this segment
-            # endpoint, with q held at what the run produced, how much is q/N
+            # FROZEN-TRAJECTORY comparisons (owner §5). They answer: on summed
+            # segment endpoints, with q held at what the run produced, how much is q/N
             # depressed by the spurious number. They are NOT forecast biases:
             # correcting the number changes fall speed and the size
             # distribution, which feeds back into q on every later sub-step and
@@ -187,8 +192,10 @@ def analysis(stream: str, basis: str = "operator") -> dict:
             "note": "R/F_surface is a CLOSURE statistic. It is not a column "
                     "increase, a diameter change, a reflectivity change or a "
                     "precipitation change. The size figures are FROZEN-TRAJECTORY "
-                    "and segment-local: they hold q fixed and do not include the "
-                    "feedback of corrected number on later sub-steps."}
+                    "on summed segment endpoints: they hold q fixed and do not include the "
+                    "feedback of corrected number on later sub-steps. They compare "
+                    "N with N-R, requiring both positive, and assume a consistent "
+                    "mass-specific number contract, which remains unresolved."}
 
 
 def report(stream: str) -> None:

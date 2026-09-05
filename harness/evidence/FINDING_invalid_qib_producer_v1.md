@@ -14,7 +14,7 @@ counts, at one operator boundary, cells with `bg < 0`; cells with `qg > 0` and
 | boundary | emissions | `bg<0` max | `bg<0` mean | steps with `bg<0` | `qg>0,bg<=0` max |
 |---|---|---|---|---|---|
 | RK entry, before advection | 30 | 6 | 2.2 | 25 | 635 |
-| after scalar advection | 450 | **80,586** | 39,560 | 423 | 21,896 |
+| after scalar-update interval | 450 | **80,586** | 39,560 | 423 | 21,896 |
 | before microphysics | 30 | 2,570 | 2,288 | 29 | 4,104 |
 | after microphysics | 30 | 6 | 2.2 | 25 | 39 |
 
@@ -32,9 +32,10 @@ post-dynamics number is the third row, 2,570 max and 2,288 mean.
 
 ## Microphysics is the consumer, and does not finish
 
-It removes nearly all of it -- 2,570 negatives to 6, and 4,104 invalid zeros to
-39 -- but a residue survives every step. That residue is what the output census
-sees.
+The before/after-microphysics maxima are 2,570 versus 6 negative volumes and
+4,104 versus 39 states with `qg > 0, bg <= 0`. These are separate maxima across
+the run, not a paired transition for one cell or step. Negative volumes remain
+at 25 of 30 after-microphysics boundaries; invalid paired states also remain.
 
 ## Boundary counts agree; the first RK entry already contains invalid states
 
@@ -59,7 +60,7 @@ unrepresentable class appearing after step ~28 and reaching 31.
 
 - **Observed**: negative counts increase across the scalar-update interval
   and fall across microphysics. The recorded small negative residue and invalid
-  zero-volume counts remain after microphysics; the first RK entry already
+  nonpositive-volume counts remain after microphysics; the first RK entry already
   violates the paired-state invariant.
 - **Observed**: `qib` uses the positive-definite option, and the clamp arm
   provides nonnegative RK-entry input. This does not isolate the pure advection
@@ -88,7 +89,7 @@ the trajectory on purpose.
 |---|---|---|
 | RK entry, before clamp | 6 | 2.1 |
 | RK entry, **after clamp** | **0** | **0.0** |
-| after scalar advection | **80,585** | 39,559.2 |
+| after scalar-update interval | **80,585** | 39,559.2 |
 | before microphysics | 2,570 | 2,288.1 |
 | after microphysics | 6 | 2.1 |
 

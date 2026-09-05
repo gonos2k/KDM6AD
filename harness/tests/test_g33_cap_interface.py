@@ -26,6 +26,42 @@ pytestmark = [pytest.mark.local, pytest.mark.skipif(
 )]
 
 
+@pytest.mark.parametrize("arm", ["legacy", "conservative", "cons_nmass"])
+def test_applied_interfaces_match_state_ledger_on_unequal_layers(tmp_path, arm):
+    """Producer/reader round trip; equal-thickness fixtures miss unscaled CAPIN.
+
+    The state ledger independently uses before/after inventories and surface
+    removal. The gap tolerance allows f32 update rounding, not a metric error.
+    """
+    streams = []
+    for instrument in (False, True):
+        out = tmp_path / ("nflux" if instrument else "plain")
+        args = ["bash", str(BUILD), str(out),
+                "--fixture=g33_fixture_moisture_gradient_v1", f"--algo={arm}"]
+        if instrument:
+            args.append("--nflux")
+        build = subprocess.run(args, capture_output=True, text=True, cwd=REPO)
+        assert build.returncode == 0, build.stdout + build.stderr
+        run = subprocess.run([str(out / "g33_refine_driver"), "12", "rezero"],
+                             capture_output=True, text=True)
+        assert run.returncode == 0, run.stderr
+        streams.append(run.stdout)
+    states = [[l for l in s.splitlines() if l.startswith("G33R ")] for s in streams]
+    assert states[0] and states[0] == states[1], "instrumentation changed raw state records"
+    assert "capin_applied" in ci.nt.calls(streams[1])[0]["features"]
+    for basis in ("operator", "physical"):
+        pairs = ci.interfaces(streams[1], basis)
+        ledger = ci.mc.closures(streams[1], basis)
+        assert sum(r["interfaces"] for r in pairs.values()) > 0
+        for (chain, col), row in pairs.items():
+            for species, term in zip(ci.mc.CHAIN[chain],
+                                     ("mass_interface_term", "number_created")):
+                state = ledger[(chain, species, col)]
+                scale = max(abs(state["start"]), abs(state["final"]),
+                            abs(state["out"]), 1e-30)
+                assert abs(state["residual"] - row[term]) / scale < 3e-7
+
+
 @pytest.fixture(scope="module")
 def stream(tmp_path_factory):
     out = tmp_path_factory.mktemp("cap") / "build"

@@ -72,9 +72,13 @@ cannot establish how these ten-minute ratios change. Likewise, similarity to a
 
 ## Reproducing the corrected diagnostic
 
-The existing `--nflux` overlay already emits the required operands, with no new
-transport arm: `TOPOUT` records the top removal, `CAPIN` records each cell's own
-removal and the inflow it receives. `g33_cap_interface.py` pairs the upper
+The updated `--nflux` overlay emits the required operands, with no new transport
+arm: `TOPOUT` records the top removal, `CAPIN` records each cell's own removal
+and applied inflow. Legacy already emitted applied increments, but conservative
+previously emitted unscaled source increments. New streams declare
+`capin_applied` and include the actual update's metric factors. The analyzer
+rejects missing record families and old conservative streams without this marker;
+old legacy streams remain readable. `g33_cap_interface.py` pairs the upper
 removal with the lower arrival. Its existing `number_created` JSON key is the
 signed residual under the selected measure; `number_predicted` is the density
 term using actual departure, and `number_transfer_mismatch` is the second term.

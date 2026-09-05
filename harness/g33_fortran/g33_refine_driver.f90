@@ -475,9 +475,11 @@ program g33_refine_driver
   ! streams could not tell `as-is` from `uniform`: the arm lived only in the
   ! finding, so experiment intent had to be inferred from the forcing numbers
   ! instead of read off the record (owner §5).
+  ! capin_applied marks arrival operands in destination units, including the
+  ! conservative update's metric factors. Older conservative CAPIN was unscaled.
   write(*,'(A,4(1X,I0),4(1X,A))') 'G33N STREAM_BEGIN', 4, nsplit, ntile, &
         nsplit * ntile, ALGOTAG, trim(merge('carry ', 'rezero', carry_aux)), &
-        'mstep,mstepi,nflux,xfer,capin,topout', trim(rho_name)
+        'mstep,mstepi,nflux,xfer,capin,topout,capin_applied', trim(rho_name)
   ! AFTER STREAM_BEGIN: the parser requires the first G33N record to be
   ! the header, and putting this before it broke 20 tests.
   write(*,'(A,1X,A)') 'G33N METRIC', METRICTAG

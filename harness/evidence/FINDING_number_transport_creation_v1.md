@@ -79,9 +79,10 @@ which the recursion does not consume. A wrong `w` does not reproduce it.
 | `nr` col 3 | **1.00000** | 0.87436 |
 | `ni` col 3 | 1.00614 | 0.94313 |
 
-The source says (A); the run agrees to five decimals and **excludes (B) by
-7–15%**. `recovered/falln = 1.0000` is simultaneously the test that the caps did
-not bind, so those rows are exact.
+The source uses (A), and its reconstructed surface total agrees more closely
+with the emitted accumulator in these rows. Agreement of that single total
+does not prove every interface transfer matched or every cap was inactive.
+The previous claim that these rows are therefore exact is withdrawn.
 
 ## The closure, on emitted data only — and here the mass control is real
 
@@ -113,45 +114,46 @@ cells, same kind of emitted accumulator.
 difference" is **withdrawn**: the mass rows are `qr` on the MAIN chain over 1–3
 calls while the largest number row is `ni` on the ICE chain over 95, so the two
 are not the same calls, the same chain, or the same cap state. The supported
-statement is: *on selected cap-unbound `mstep == 1` legacy calls the ρΔz number
+statement is: *on legacy calls selected by the historical surface-agreement filter the ρΔz number
 closure residual is 6–14% of surface outflow, and on separately selected mass
 calls the residual is at the f32 floor.* A matched contrast needs `qr/nr` on one
 main-chain call set and `qi/ni` on one ice-chain set, with the capped transfers
-emitted directly so `mstep > 1` is admissible. Calls where a `min`/`max` cap bound are excluded per species, detected
-as a disagreement between the emitted accumulator and the recovered transfer;
-such a call measures the cap, not the transport.
+emitted directly so `mstep > 1` is admissible. The filter detects surface-total
+disagreement, not all cap activity. Actual transfer records now support that
+matched analysis in `g33_cap_interface.py`.
 
-## How much number is created
+## Historical matched-transfer reconstruction
 
 ρΔz column number across the sedimentation segment, `mstep == 1`, h = 3.125 s:
 
-| species | col | calls | created (# m⁻²) | per call | of final column |
+| species | col | calls | inferred rho*dz residual | per call | inferred residual / final inventory |
 |---|---|---|---|---|---|
 | `ni` | 3 | 96 | 2.113e+07 | **0.248%** | **19.6%** |
 | `ni` | 2 | 1 | 1.596e+05 | 4.30% | 10.2% |
 | `nr` | 2 | 3 | 8.244e+03 | 0.034% | 0.44% |
 | `nr` | 1 | 1 | 1.055e+04 | 0.027% | 0.03% |
 
-**In the ice-heavy column, transport alone inflates column ice number by ~0.25%
-per call, compounding to ~20% of what the column ends with** over 300 s.
+These are the historical recursion outputs under matched-transfer assumptions.
+The ~0.25% and ~20% figures are not independently measured physical-number
+growth: the surface recovery does not validate every applied transfer, and the
+number-unit contract remains unresolved.
 
-**Step-robust.** Total created for `ni` col 3 is 1.978e+07 at h = 6.25 s against
-2.113e+07 at h = 3.125 s — within 7%. Creation scales with the number *transported*,
-which the physics sets, not with how many calls it is split into. So the ~20% is
-not an artifact of measuring at a fine step.
+The inferred `ni` col 3 residual is 1.978e+07 at h = 6.25 s against 2.113e+07
+at h = 3.125 s, within 7%. Agreement between these two reconstructions does not
+validate their matching assumption or establish general step independence.
 
-`nr` col 3 reads 4475% "of final" because that column ends with 94 particles m⁻²;
-the ratio is meaningless there and the per-call figure (0.12%) is the usable one.
+`nr` col 3 reads 4475% "of final" with a final weighted inventory of about 94.
+This small denominator explains the large ratio; the per-call 0.12% estimate
+has a different denominator and retains the same reconstruction assumptions.
 
 ## Limits
 
-- **`mstep == 1` only, and for one reason.** The closure above needs no such
+- **Historical `mstep == 1` reconstruction only.** The closure above needs no such
   restriction — it reads endpoints and an emitted flux. What needs it is the
   *cap-detection filter*, which compares the emitted accumulator against the
   recovered transfer and so inherits the recursion's single-substep requirement.
-  Operational steps (`mstep` 5–10) are therefore unmeasured. Emitting the capped
-  `dnr`/`dqr` directly would lift the restriction; the step-robustness above is
-  evidence against a strong step dependence, not a measurement at those steps.
+  The direct `CAPIN`/`TOPOUT`/`XFER` reader now supports multiple substeps;
+  the table above has not been replaced by such a measurement.
 - **Legacy reference.** This experiment is legacy-only. The prediction it made
   here — that the conservative variant fixes the *mass* measure and leaves number
   on the legacy one (`sedimentation_conservative.cpp:91-92` against `:109`), so

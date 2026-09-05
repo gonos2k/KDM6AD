@@ -681,9 +681,11 @@ CAP_SITES = {
     ],
     "conservative": [
         ("                          +dnr(i,k+1)*delz(i,k+1)/delz(i,k)",
-         "main", "dqr(i,k)", "dqr(i,k+1)", "dnr(i,k)", "dnr(i,k+1)"),
+         "main", "dqr(i,k)", "dqr(i,k+1)*src_metric/dst_metric",
+         "dnr(i,k)", "dnr(i,k+1)*delz(i,k+1)/delz(i,k)"),
         ("                          +dni(i,k+1)*delz(i,k+1)/delz(i,k)",
-         "ice", "dqi(i,k)", "dqi(i,k+1)", "dni(i,k)", "dni(i,k+1)"),
+         "ice", "dqi(i,k)", "dqi(i,k+1)*src_metric/dst_metric",
+         "dni(i,k)", "dni(i,k+1)*delz(i,k+1)/delz(i,k)"),
     ],
 }
 
@@ -1044,8 +1046,10 @@ for _t in (CAP_SITES, TOP_SITES, XFER_SITES):
 #:
 #: Rewritten mechanically from the same substitution the variant generator
 #: applies, so the anchor cannot drift from the source it is meant to match.
-_N_OLD = "+dnr(i,k+1)*delz(i,k+1)/delz(i,k)"
-_N_NEW = "+dnr(i,k+1)*dend(i,k+1)*delz(i,k+1)/(dend(i,k)*delz(i,k))"
+# Match the operand both in a continuation line (preceded by '+') and in
+# CAPIN's emitted arrival expression. The latter must use the arm's metric too.
+_N_OLD = "dnr(i,k+1)*delz(i,k+1)/delz(i,k)"
+_N_NEW = "dnr(i,k+1)*dend(i,k+1)*delz(i,k+1)/(dend(i,k)*delz(i,k))"
 
 
 def _with_n_edit(obj):

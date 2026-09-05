@@ -68,3 +68,74 @@ remains OPEN; no production conversion was selected or inserted.
 - `git diff --check` passed. `graphify update .` rebuilt the worktree's derived
   graph (10,571 nodes / 17,671 edges at the first validation update). The
   canonical worktree's pre-existing wiki edits were left intact.
+
+## Exhaustive follow-up audit (2026-09-05)
+
+Scope: every changed file above, its diagnostic producers/readers, portable
+tests, and the cited evidence supporting the review claims. This audit found
+real omissions in the first correction; the checks above alone were insufficient.
+It is not a repository-wide correctness proof or a rerun of the private WRF
+campaign.
+
+- [x] A1 — **Missing capture passed silently.** `g33_cap_interface._walk` skipped
+  absent CAPIN/TOPOUT and returned an empty result. It now requires both feature
+  families and validates the basis and registered arm before analyzing records.
+- [x] A2 — **Conservative CAPIN used source units.** Its arrival fields omitted
+  the destination metric factors. With upper/lower thickness 2/1, raw departure
+  2 and actual arrival 4, the old reader reported -2 instead of zero. The
+  producer now emits the applied mass and number operands, including the
+  conservative N arms' density factors. The `capin_applied` feature marks this
+  meaning. Old conservative streams must be re-emitted; old legacy streams
+  remain valid. No transport update was changed.
+- [x] A3 — **A local outflow/inflow difference was called a cap count.** The
+  historical `interior_cap` key compares different interfaces around one cell.
+  The report now labels it `diff` and explains what is counted. Surface-total
+  agreement is no longer described as proof that every cap was inactive.
+- [x] A4 — **Frozen size comparisons used the wrong denominator formula.**
+  With `eps=R/N_observed`, comparison against `N_observed-R` gives mean-mass
+  bias `-eps` and diameter bias `(1-eps)^(1/3)-1`, provided both inventories are
+  positive. The old reciprocal formula treated eps as though its denominator
+  were the corrected inventory. An independent q/N example (N=100, R=10)
+  pins -10%, rather than the former -9.09%. These remain conditional aggregate
+  comparisons at fixed mass, not measured forecast effects or bounds.
+- [x] A5 — **Contradictory prose remained behind correction banners.** The
+  profile coefficient finding still asserted per-dry-kg units and full-residual
+  improvement; the transport finding still certified inactive caps from one
+  surface ratio. Both are now conditional. QIB table labels, separate maxima
+  versus paired transitions, and G3's unchanged-volume behavior are explicit.
+  Historical numeric tables retain their original measurement/reconstruction
+  scope; no new ten-minute result is inferred from them.
+- [x] A6 — **Tests bypassed the producer/parser boundary.** Added real text-stream
+  tests, old/new record compatibility checks, both diagnostic measures with a
+  humidity gradient, endpoint/surface closure comparisons, and local Fortran
+  round trips on the existing unequal-layer moisture-gradient fixture. The
+  denominator fixture now supplies its actual interface records rather than
+  passing because the reader silently omitted them.
+
+Follow-up validation:
+
+- Portable harness: **1,388 passed, 58 skipped, 308 deselected**; the local build tests are
+  selected separately. Oracle again reports **814 passed, 31 skipped, 1 failed**
+  on the same four-frame fixture limitation described above.
+- Local `test_applied_interfaces_match_state_ledger_on_unequal_layers`:
+  **3 passed** (legacy, conservative, cons_nmass). Each builds and runs both
+  instrumented and uninstrumented variants for 12 calls. All **348 G33R records
+  per arm** match as raw text/hex values. This certifies only these fixture runs.
+- An additional operand check on those three arms verifies **432 conservative
+  applied mass/number pairs** against the update's f32 metric arithmetic, bit
+  for bit. All three arms emit **216 interfaces each**. Across both density
+  measures and both moments, the largest endpoint/surface-ledger versus
+  interface-sum gap is **1.23e-8** of the inventory/outflow scale; f32 state
+  update rounding is retained rather than described as exact algebraic closure.
+- Local build paths/provenance and numeric results:
+  `graphify-out/review-2638fb2/audit-build-root.txt` and
+  `audit_fortran_results.json`. No host sources were edited. The temporary host
+  link was removed after the builds.
+- Undefined-name lint, the C++ overlay static check and `git diff --check`
+  passed. Production f32 physics and the packed AD ABI still have no diff.
+- `graphify update .` completed: **10,585 nodes / 17,694 edges / 866 communities**.
+  This updates the derived code graph; it is not a semantic verification of the
+  scientific claims.
+
+M1, M2 and the host/kernel number-unit contract remain open. Finding and fixing
+these diagnostic errors does not substitute for those measurements.
