@@ -245,7 +245,9 @@ def gated_state(driver: str, fixture: str, tiles, reference=None,
     if reference is not None:
         _expect_same_inputs(reference, rec, label)
     state = {k[1:]: v for k, v in rec.items() if k[0] == "state"}
-    _expect_universe(state, *fixture_dims(fixture), label)
+    dims = ((contract.columns, contract.levels) if contract is not None
+            else fixture_dims(fixture))
+    _expect_universe(state, *dims, label)
     return state, rec
 
 
@@ -583,25 +585,35 @@ def analysis(driver: str, fixture: str, algo: str | None = None,
     Raw hex compared, not parsed floats: the question is whether the operator
     produced the same bits, and a float round-trip is the wrong instrument.
     """
-    width, levels = fixture_dims(fixture)
+    # A producer passes one frozen RunContract.  Use its dimensions and run
+    # settings throughout this analysis; re-reading the fixture or falling back
+    # to run() would let one member answer a different experiment after the
+    # bundle was built.  Direct callers retain the historical source-backed
+    # fallback.
+    if contract is None:
+        width, levels = fixture_dims(fixture)
+        run_nsplit, run_mode, run_rho = 1, "rezero", "as-is"
+    else:
+        width, levels = contract.columns, contract.levels
+        run_nsplit, run_mode, run_rho = 1, contract.mode, contract.rho_profile
     xland = fixture_xland(fixture)
     ncmin = fixture_ncmin(fixture)
-    base_text = run(driver, (width,))
-    _expect_tiles_are_live(base_text, (width,), "baseline")
-    base_rec = read_records(base_text, label="baseline")
+    base_text = gated_text(driver, fixture, (width,), run_nsplit, run_mode,
+                           run_rho, algo=algo, contract=contract)
+    base_rec = read_records(base_text, label="baseline", nsplit=run_nsplit)
     base = {k[1:]: v for k, v in base_rec.items() if k[0] == "state"}
     _expect_universe(base, width, levels, "baseline")
-    base_run = ra.read_text(base_text, nsplit=1)
+    base_run = ra.read_text(base_text, nsplit=run_nsplit)
     active = {c for c in range(1, width + 1)
               if threshold_can_matter(base_run, c, ncmin)}
     rows = {}
     for tiles in compositions(width):
         if tiles == (width,):
             continue
-        got_text = run(driver, tiles)
+        got_text = gated_text(driver, fixture, tiles, run_nsplit, run_mode,
+                              run_rho, algo=algo, contract=contract)
         label = f"tiles={','.join(map(str, tiles))}"
-        _expect_tiles_are_live(got_text, tiles, label)
-        got_rec = read_records(got_text, label=label)
+        got_rec = read_records(got_text, label=label, nsplit=run_nsplit)
         _expect_same_inputs(base_rec, got_rec, label)
         got = {k[1:]: v for k, v in got_rec.items() if k[0] == "state"}
         _expect_universe(got, width, levels, label)
@@ -692,8 +704,9 @@ def analysis(driver: str, fixture: str, algo: str | None = None,
             # this table lived only in a function nothing published. Binding a
             # same-looking number from the whole-domain-baseline table above
             # would have pinned a different quantity (owner priority 6).
-            "local_oracle": local_oracle(driver, fixture),
-            "ran": {"nsplit": 1, "carry": "rezero", "rho": "as-is",
+            "local_oracle": local_oracle(driver, fixture, algo=algo,
+                                          contract=contract),
+            "ran": {"nsplit": run_nsplit, "carry": run_mode, "rho": run_rho,
                     # The DOMAIN the decompositions cover. The driver
                     # error-stops with "tile sizes must sum to B" on anything
                     # else, so without it the record cannot be checked for
@@ -723,17 +736,29 @@ def local_oracle(driver: str, fixture: str, algo: str | None = None,
     even though the decomposition changed, so nothing but the `ncmin` gate
     responds to tiling here.
     """
-    width, levels = fixture_dims(fixture)
+    if contract is None:
+        width, levels = fixture_dims(fixture)
+        run_nsplit, run_mode, run_rho = 1, "rezero", "as-is"
+    else:
+        width, levels = contract.columns, contract.levels
+        run_nsplit, run_mode, run_rho = 1, contract.mode, contract.rho_profile
     ones = (1,) * width
-    ref, ref_rec = gated_state(driver, fixture, ones, algo=algo, contract=contract)
-    ref_text = run(driver, ones)
+    ref_text = gated_text(driver, fixture, ones, run_nsplit, run_mode, run_rho,
+                          algo=algo, contract=contract)
+    ref_rec = read_records(ref_text, label="local-oracle", nsplit=run_nsplit)
+    ref = {k[1:]: v for k, v in ref_rec.items() if k[0] == "state"}
+    _expect_universe(ref, width, levels, "local-oracle")
 
     rows = {}
     for tiles in compositions(width):
         label = ",".join(map(str, tiles))
-        got, _ = gated_state(driver, fixture, tiles, ref_rec, algo=algo,
-                             contract=contract)
-        text = run(driver, tiles)
+        text = gated_text(driver, fixture, tiles, run_nsplit, run_mode, run_rho,
+                          algo=algo, contract=contract)
+        got_rec = read_records(text, label=f"local-oracle/{label}",
+                               nsplit=run_nsplit)
+        _expect_same_inputs(ref_rec, got_rec, f"local-oracle/{label}")
+        got = {k[1:]: v for k, v in got_rec.items() if k[0] == "state"}
+        _expect_universe(got, width, levels, f"local-oracle/{label}")
         diff = [k for k in ref if ref[k] != got[k]]
         rows[label] = {
             "is_the_oracle": tiles == ones,

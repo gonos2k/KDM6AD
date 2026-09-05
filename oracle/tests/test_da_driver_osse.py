@@ -40,17 +40,23 @@ def _sub(frame, idx):
     return s, f
 
 
-def _obs_cfg(tmp_path):
+def _obs_cfg(tmp_path, *, background=None, forcing=None):
     from kdm6.obs.model_profile_builder import RttovProfileConfig
     from kdm6.obs.rttov_case_writer import fixture_layer_pressure
     from kdm6.obs.rttov_input_builder import RttovInputConfig
+    from kdm6.rttov_bridge import freeze_dry_air_density
     import numpy as np
+    if (background is None) != (forcing is None):
+        raise ValueError("background and forcing must be supplied together")
+    rho_d = (None if background is None
+             else freeze_dry_air_density(background, forcing))
     profile_cfg = RttovProfileConfig(
         gas_units=2, qv_convention="mixing_ratio_kgkg_dry",
         rttov_layer_pressure=torch.as_tensor(
             np.asarray(fixture_layer_pressure(), dtype=float), **_F64),
         rttov_level_pressure=torch.as_tensor(
-            np.asarray(_fixture_p_half(), dtype=float), **_F64))
+            np.asarray(_fixture_p_half(), dtype=float), **_F64),
+        rho_d=rho_d)
     input_cfg = RttovInputConfig(coef_id="ami_501_test", channels=_CHANNELS)
     # 모델-상단(~60 hPa) 위 기준 프로파일: 픽스처 001의 T/Q (regression-limit
     # 플래그 방지 — 클램프 상수 연장은 rad_quality=1로 mask 전멸, 실측)
@@ -288,7 +294,7 @@ def test_batched_allsky_bt_live_gradients(tmp_path):
     frame = read_wrfout_frame(str(_WRFOUT), time_idx=1)
     idx = torch.argsort(frame.state.qc.sum(-1), descending=True)[:2]
     x, f = _sub(frame, idx)                              # 응결수 최다 컬럼 2개
-    cfg = _obs_cfg(tmp_path)
+    cfg = _obs_cfg(tmp_path, background=x, forcing=f)
     cfg.profile_cfg = cfg.profile_cfg._replace(cloud=True)
 
     bt, rq, leaves = batched_allsky_bt(x, f, cfg)

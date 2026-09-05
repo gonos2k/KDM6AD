@@ -21,6 +21,7 @@ import pathlib
 import platform
 import subprocess
 import sys
+from typing import Optional
 
 import torch
 
@@ -62,19 +63,29 @@ def _kdm6_tree_sha256():
     return h.hexdigest()
 
 
-def provenance():
+def provenance(*, include_trajectory: Optional[bool] = None):
+    """Describe the comparison without requiring private LC05 assets.
+
+    The synthetic heavy-rain comparison is portable and must be able to run
+    from a public checkout.  Real-window provenance is added only when both
+    private trajectory inputs are present (or explicitly requested); this
+    keeps startup from failing before the synthetic result is produced.
+    """
     root = pathlib.Path(__file__).resolve().parents[2]
     code_sha = subprocess.run(["git", "-C", str(root), "rev-parse", "HEAD"],
                               capture_output=True, text=True).stdout.strip()
-    return {
+    if include_trajectory is None:
+        include_trajectory = (pathlib.Path(FCST).is_file()
+                              and pathlib.Path(MANIFEST).is_file())
+    if include_trajectory and not (pathlib.Path(FCST).is_file()
+                                   and pathlib.Path(MANIFEST).is_file()):
+        raise FileNotFoundError(
+            "real LC05 trajectory provenance requested but FCST/MANIFEST is "
+            "missing; run synthetic-only mode or provide the private inputs")
+    prov = {
         "producer_code_sha": code_sha,
         "script_sha256": _sha256(__file__),
         "kdm6_tree_sha256": _kdm6_tree_sha256(),
-        "trajectory": FCST,
-        "trajectory_sha256": _sha256(FCST),
-        "restore_manifest_sha256": _sha256(MANIFEST),
-        "trajectory_provenance": ("faithful reconstruction (regenerated 3h/5-min run per "
-                                  "RESTORE_MANIFEST), not the byte-identical original"),
         "torch_version": torch.__version__,
         "python_version": platform.python_version(),
         "window_dt": 300.0,
@@ -84,6 +95,25 @@ def provenance():
         "ncmin_land": NCMIN_LAND,
         "ncmin_sea": NCMIN_SEA,
     }
+    if include_trajectory:
+        prov.update(
+            trajectory=FCST,
+            trajectory_sha256=_sha256(FCST),
+            restore_manifest_sha256=_sha256(MANIFEST),
+            trajectory_provenance=(
+                "faithful reconstruction (regenerated 3h/5-min run per "
+                "RESTORE_MANIFEST), not the byte-identical original"),
+            trajectory_mode="private_lc05")
+    else:
+        prov.update(
+            trajectory=None,
+            trajectory_sha256=None,
+            restore_manifest_sha256=None,
+            trajectory_provenance=(
+                "deferred: synthetic-only portable mode; private LC05 "
+                "trajectory was not read"),
+            trajectory_mode="synthetic_only")
+    return prov
 
 
 def _mk(cv, K):
@@ -213,18 +243,27 @@ def window_comparison(n_steps, sel_n=256):
 
 
 def main():
-    prov = provenance()        # startup hashes — taken before any computation
+    have_trajectory = (pathlib.Path(FCST).is_file()
+                       and pathlib.Path(MANIFEST).is_file())
+    prov = provenance(include_trajectory=have_trajectory)
     art = {
         "artifact": "p0_4b1_impact_comparison",
         "role": "legacy_reference vs conservative_experiment (P0-4b.1 component 4, P0-4b.2 corrected)",
         "provenance": prov,
         "one_step_heavy_rain_dt120": one_step_comparison(),
     }
-    try:
-        art["window_1h_lc05_heaviest256"] = window_comparison(12)
-        art["window_3h_lc05_heaviest256"] = window_comparison(36)
-    except Exception as e:                                        # noqa: BLE001
-        art["window_lc05"] = f"skipped: {e}"
+    if have_trajectory:
+        try:
+            art["window_1h_lc05_heaviest256"] = window_comparison(12)
+            art["window_3h_lc05_heaviest256"] = window_comparison(36)
+        except Exception as e:                                    # noqa: BLE001
+            # Keep a failed private-runtime detail out of a portable/public
+            # artifact; the exception type is enough to diagnose the deferred
+            # branch without reproducing a local filesystem path.
+            art["window_lc05"] = f"skipped: {type(e).__name__}"
+    else:
+        art["window_lc05"] = (
+            "deferred: requires private LC05 trajectory and restore manifest")
     # all-sky BT comparison needs the local RTTOV runtime — do not fabricate
     art["allsky_bt_comparison"] = ("deferred: requires the local RTTOV runtime/science "
                                    "assets (host-coupled); state-space impacts above are "

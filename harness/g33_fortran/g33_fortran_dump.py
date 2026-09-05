@@ -80,6 +80,11 @@ _END = re.compile(r"^G33F END v([1-9][0-9]*) (\S+)$")
 
 _HEXWIDTH = {"f32": 8, "f64": 16, "i32": 8, "u8": 2}
 
+# The parser has an explicit grammar/record universe for each of v1 through v14.
+# Keep this closed: threshold checks below describe those known contracts; they do
+# not make an arbitrary future banner compatible with the newest one.
+SUPPORTED_PROTOCOL_VERSIONS = frozenset(range(1, 15))
+
 
 def parse_ops(text):
     out = []
@@ -445,7 +450,8 @@ class FortranRun:
     #: kdm6init's arguments -> bits. Empty before v7.
     init_params: dict
     #: The G33F banner version this stream was emitted at. Carried because the
-    #: PARSER accepts v1-v5 (migration and re-verification of past evidence need
+    #: PARSER accepts the explicitly known v1-v14 contracts (migration and
+    #: re-verification of past evidence need
     #: that) while the DECISION path must not: a v4 stream's bridge omits nc/ni/
     #: nccn/brs, so "the sedimentation result matched" would be a claim about
     #: two thirds of the carried state. Without the version on the run, a v4
@@ -600,6 +606,10 @@ def parse_fortran_run(text, algo, K, B, evidence_mode="instrumented",
     if versions != {int(m.group(1)) for m in end_ms} or len(versions) != 1:
         raise FortranRunError(f"BEGIN/END protocol versions disagree: {versions}")
     version = versions.pop()
+    if version not in SUPPORTED_PROTOCOL_VERSIONS:
+        raise FortranRunError(
+            f"unsupported G33F protocol version v{version}; "
+            f"known versions are {sorted(SUPPORTED_PROTOCOL_VERSIONS)}")
 
     entries = [m.group(1) for line in lines if (m := _ENTRY.match(line))]
     if len(entries) > 1:
@@ -744,9 +754,12 @@ def parse_fortran_run(text, algo, K, B, evidence_mode="instrumented",
     _require_names(params, _COMMON_PARAMS, _PARAM, lines, "PARAM")
     init_params = {m.group(1): int(m.group(3), 16)
                    for line in lines if (m := _INIT.match(line))}
-    if version >= 7 and set(init_params) != set(_INIT_ARGS):
-        raise FortranRunError(
-            f"INIT: expected {sorted(_INIT_ARGS)}, got {sorted(init_params)}")
+    if version >= 7:
+        # INIT is a one-record-per-argument contract.  Do not use a bare dict
+        # comprehension as the duplicate would be silently overwritten.
+        _require_names(init_params, _INIT_ARGS, _INIT, lines, "INIT")
+    elif init_params:
+        raise FortranRunError(f"INIT records are unsupported in G33F v{version}")
     localparams = parse_localparam(text)
     _require_names(localparams, _LOCAL_PARAMS, _LOCALPARAM, lines, "LOCALPARAM")
     _validate_domain(fixin, params, localparams, state, precip, B, K,

@@ -74,8 +74,8 @@ def test_dn_to_bt_hand_computed():
                Boltzmann_constant_k=1.3806488e-23,
                channel_center_wavelength="10.5")
     dn = 3000
-    raw = np.array([[dn | (0b01 << 13)]], dtype=np.uint16)   # quality=1 플래그 실험
-    bt, q = dn_to_bt(raw, cal)
+    raw = np.array([[0x4BB8]], dtype=np.uint16)  # fixed AMI word: DQF=1, DN=3000
+    bt, q = dn_to_bt(raw, cal, valid_bits=13)
     assert q[0, 0] == 1.0
     # 손계산 (같은 수식)
     rad = cal["DN_to_Radiance_Offset"] + cal["DN_to_Radiance_Gain"] * dn
@@ -110,6 +110,7 @@ def test_read_ko_slot_masks_filled_dn_without_invalidating_valid_pixels(tmp_path
         ds.createDimension("y", 2); ds.createDimension("x", 2)
         v = ds.createVariable("image_pixel_values", "u2", ("y", "x"),
                              fill_value=65535)
+        v.number_of_valid_bits_per_pixel = np.uint8(13)
         v[:] = np.ma.array([[3000, 3001], [3002, 3003]],
                            mask=[[False, True], [False, False]])
         for key, value in dict(_KO_ATTRS, image_width=2, image_height=2).items():

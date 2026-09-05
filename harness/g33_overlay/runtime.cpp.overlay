@@ -107,16 +107,10 @@ State coord_to_state(const CoordinatorState& c, const State& orig, const Forcing
 }
 
 CoordinatorForcing build_forcing(const Forcing& f) {
-    // dend = air density (NOT density × delz).
-    // Fortran reference `module_mp_kdm6.F:812` sets `dend(i,k) = den(i,k)`.
-    // Python oracle's `CoordinatorForcing.dend` is mis-documented as
-    // `density × delz` at `coordinator.py:63` — that label is wrong vs
-    // operational Fortran. Codex stop-gate review caught this when the
-    // squall RAINNC came out at 10,455 mm / 30 min (~250× physical) because
-    // the extra delz factor cascaded through `falk = dend·q·work1/mstep`
-    // (where work1 = vt/delz, so delz cancels OUT of falk only if dend=ρ),
-    // and the bottom-layer fall ended up over-scaled by delz when
-    // `surface_accumulation_torch` multiplies by delz again.
+    // `dend` is air density rho [kg m^-3], matching Fortran F:812 and the
+    // Python CoordinatorForcing contract. Sedimentation forms the volumetric
+    // fall flux falk = rho*q*(vt/delz); surface accumulation applies the
+    // bottom-layer delz exactly once.
     return CoordinatorForcing{
         /*p=*/f.p,
         /*den=*/f.rho,
@@ -139,6 +133,26 @@ void validate_physics_variant(PhysicsVariant variant, const char* caller) {
             TORCH_CHECK(false, caller, ": unsupported PhysicsVariant: ",
                         static_cast<uint32_t>(variant));
     }
+}
+
+// A Tensor carries the shape metadata that the raw C xland pointer cannot.
+// Validate direct C++ callers before flattening/broadcasting so a short mask
+// cannot be read as though it had im*jme entries and NaN cannot silently land
+// in the land/sea comparison (where it would otherwise classify as land).
+void validate_xland(const torch::Tensor& xland, int64_t ncol) {
+    TORCH_CHECK(xland.defined(), "xland must be a defined tensor");
+    if (xland.dim() == 1) {
+        TORCH_CHECK(xland.numel() == ncol,
+                    "xland 1-D cardinality must be im*jme (", ncol,
+                    "), got ", xland.numel());
+    } else {
+        TORCH_CHECK(xland.dim() == 2 && xland.numel() == ncol,
+                    "xland 2-D cardinality must be im*jme (", ncol,
+                    "), got ", xland.sizes());
+    }
+    torch::NoGradGuard no_grad;
+    TORCH_CHECK(torch::isfinite(xland).all().item<bool>(),
+                "xland must contain only finite values");
 }
 
 }  // namespace
@@ -380,6 +394,19 @@ FnResult kdm6_fn(const State& state,
     // the dt<=0 no-op early return below, so an invalid variant can never
     // silently succeed as a no-op.
     validate_physics_variant(physics.variant, "kdm6_fn");
+    TORCH_CHECK(std::isfinite(dt), "kdm6_fn: dt must be finite");
+    if (xland.has_value()) validate_xland(xland.value(), state.qc.size(0));
+
+    // delt<=0 → exact no-op.  Return before state/forcing coordinate conversion:
+    // even a mathematically cancelling t=th*pii; th=t/pii round trip can move a
+    // float32 theta by one ULP.  The original State tensors are the identity map.
+    if (dt <= 0.0) {
+        auto z = torch::zeros({state.qc.size(0)}, state.qc.options());
+        return FnResult{/*state_out=*/state,
+                        /*rain_increment=*/z, /*snow_increment=*/z, /*graupel_increment=*/z,
+                        /*rhog=*/torch::zeros_like(state.qg)};
+    }
+
     // F4 wiring: wrapper State → CoordinatorState → kdm62d_step → State.
     // params (PEAUT/NCRK1/NCRK2/ECCBRK)는 현재 default cold/warm/mf-phase params에서
     // baked-in 상수로 사용됨. AD-trainable parameters로 활용하려면 별도 plumbing 필요.
@@ -389,14 +416,6 @@ FnResult kdm6_fn(const State& state,
     // Coordinator params first — build_default_aux needs thermo params for the
     // diffac (work1) computation.
     auto full_p = default_coordinator_params();
-
-    // delt<=0 → no-op (dtcld=0 would NaN the per-rate mass/dtcld divisions).
-    if (dt <= 0.0) {
-        auto z = torch::zeros({cs.qc.size(0)}, cs.qc.options());
-        return FnResult{/*state_out=*/coord_to_state(cs, state, forcing),
-                        /*rain_increment=*/z, /*snow_increment=*/z, /*graupel_increment=*/z,
-                        /*rhog=*/torch::zeros_like(cs.qg)};
-    }
 
     auto warm_p   = default_warm_phase_params();
     auto cold_p   = default_cold_phase_params();

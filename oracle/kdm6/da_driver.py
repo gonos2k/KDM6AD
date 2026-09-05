@@ -110,12 +110,19 @@ def batched_clear_bt(x_t: State, forcing: Forcing, obs_cfg: OsseObsConfig):
 
 
 def batched_allsky_bt(x_t: State, forcing: Forcing, obs_cfg: OsseObsConfig,
-                      *, xland: "torch.Tensor | None" = None):
+                      *, xland: "torch.Tensor | None" = None,
+                      ncmin_land: float = 0.0,
+                      ncmin_sea: float = 0.0):
     """B-컬럼 상태의 all-sky BT — 컬럼별 RTTOV 호출 (leaves에 구름 연결 grad).
 
     batched_clear_bt의 all-sky 짝: profile_cfg.cloud=True 필수. all-sky는
     배칭 레버가 ~1.3×(산란 계산 지배; allsky_shard docstring 실측)이라
     컬럼별 직렬 호출이 표준 형태다 — 대규모는 sharded_allsky로 병렬화.
+    ``xland`` and ``ncmin_*`` are frozen caller controls for the per-column
+    hydrometeor number-moment gate and are forwarded unchanged to the profile
+    builder.  ``xland`` is one land/sea value per input column (1=land,
+    2=sea); callers that construct a fixed H must snapshot it before invoking
+    this helper.
     leaves는 전 필드 requires_grad (obs_adjoint_callback 관례) — RTTOV 경로가
     있는 필드는 ALL_SKY_CONNECTED(th·qv·qc·qi·qs·nc·ni)이고, 나머지의 None
     grad는 assemble_obs_covector가 정당한 0으로 판정한다.
@@ -145,7 +152,9 @@ def batched_allsky_bt(x_t: State, forcing: Forcing, obs_cfg: OsseObsConfig,
         fcol = Forcing(*(getattr(flip_forcing, k)[i] for k in Forcing._fields))
         xl = None if xland is None else xland[i]
         pcfg = with_dry_air_density(obs_cfg.profile_cfg, _flip(rho_d)[i])
-        prof = model_to_rttov_tensors(col, fcol, pcfg, xland=xl)
+        prof = model_to_rttov_tensors(
+            col, fcol, pcfg, xland=xl,
+            ncmin_land=ncmin_land, ncmin_sea=ncmin_sea)
         t_lay, q_lay = prof.t_lay, prof.q_lay
         p_top = fcol.p[0].reshape(1)
         if obs_cfg.t_ref is not None:
@@ -156,7 +165,7 @@ def batched_allsky_bt(x_t: State, forcing: Forcing, obs_cfg: OsseObsConfig,
                 q_lay.unsqueeze(0), obs_cfg.q_ref, prof.p_lay, p_top,
                 octaves=obs_cfg.q_blend_octaves).squeeze(0)
         bt_i, rq_i = RttovObsOp.apply(
-            obs_cfg.run_k, obs_cfg.input_cfg, t_lay, q_lay, None, prof.p_half,
+            obs_cfg.run_k, obs_cfg.input_cfg, t_lay, q_lay, prof.p_lay, prof.p_half,
             prof.clw, prof.ciw, prof.deff_liq, prof.deff_ice, prof.cfrac)
         bts.append(bt_i.reshape(-1).to(torch.float64))
         rqs.append(rq_i.reshape(-1))

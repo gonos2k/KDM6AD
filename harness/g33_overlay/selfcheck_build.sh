@@ -29,6 +29,8 @@ for a in "$@"; do
     case "$a" in
         --fixture=multisubcycle)    FIXDEF="-DKDM6_G33_FIXTURE_MULTISUBCYCLE" ;;
         --fixture=boundary_mapping) FIXDEF="-DKDM6_G33_FIXTURE_BOUNDARY_MAPPING" ;;
+        --fixture=moisture_gradient) FIXDEF="-DKDM6_G33_FIXTURE_MOISTURE_GRADIENT" ;;
+        --fixture=lc05_column)       FIXDEF="-DKDM6_G33_FIXTURE_LC05_COLUMN" ;;
         # An unknown value used to fall through SILENTLY, so the driver compiled the
         # DEFAULT fixture while the checker used the requested authority — a binary
         # for the wrong problem, reported as "the fixture stream has a missing or
@@ -58,6 +60,7 @@ esac
 TORCHLIBS=(
     "$TORCHLIB/libtorch.$LIB_EXT"
     "$TORCHLIB/libtorch_cpu.$LIB_EXT"
+    "$TORCHLIB/libc10.$LIB_EXT"
     "$TORCHLIB/libc10.$LIB_EXT"
 )
 for lib in "${TORCHLIBS[@]}"; do

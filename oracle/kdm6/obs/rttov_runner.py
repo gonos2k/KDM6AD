@@ -151,6 +151,8 @@ def parse_rttov_radiance(path, *, nchannels):
             "enabled; the RTTOV quality mask (design section 8) cannot be enforced "
             "without it.")
     qual_flat = blocks["RADIANCE%QUALITY"]
+    if any(not math.isfinite(v) for v in qual_flat):
+        raise ValueError(f"{path}: RADIANCE%QUALITY has non-finite values.")
     if len(qual_flat) != len(bt_flat):
         raise ValueError(
             f"{path}: RADIANCE%QUALITY length {len(qual_flat)} != RADIANCE%BT "

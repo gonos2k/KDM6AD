@@ -8,6 +8,7 @@ only when every raw IEEE-754 float32 bit is identical.
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -24,7 +25,25 @@ def load_dump(path: Path) -> tuple[dict[str, int], dict[str, np.ndarray]]:
         nx = ime - ims + 1
         nk = kme - kms + 1
         ny = jme - jms + 1
+        if nx <= 0 or nk <= 0 or ny <= 0:
+            raise ValueError(
+                f"{path}: invalid non-positive geometry "
+                f"(nx={nx}, nk={nk}, ny={ny}) from header "
+                f"ims/ime={ims}/{ime}, kms/kme={kms}/{kme}, jms/jme={jms}/{jme}")
         n = nx * nk * ny
+        # Validate exact byte geometry before asking NumPy to allocate a potentially
+        # enormous array for a corrupt header. A valid file has twelve f32 fields.
+        header_size = 6 * np.dtype(">i4").itemsize
+        expected_size = header_size + n * len(FIELDS) * np.dtype(">f4").itemsize
+        actual_size = path.stat().st_size
+        if actual_size != expected_size:
+            extra = actual_size - expected_size
+            if extra > 0:
+                raise ValueError(
+                    f"{path}: trailing bytes after expected payload ({extra} extra bytes)")
+            raise ValueError(
+                f"{path}: size mismatch ({actual_size} bytes vs expected "
+                f"{expected_size} bytes)")
         arrays: dict[str, np.ndarray] = {}
         for field in FIELDS:
             arr = np.fromfile(f, dtype=">f4", count=n)
@@ -32,12 +51,9 @@ def load_dump(path: Path) -> tuple[dict[str, int], dict[str, np.ndarray]]:
                 raise ValueError(f"{path}: {field} short read ({arr.size} vs {n})")
             arrays[field] = arr.reshape((nx, nk, ny), order="F")
         expected_size = f.tell()
-    actual_size = path.stat().st_size
-    if actual_size != expected_size:
-        extra = actual_size - expected_size
-        if extra > 0:
-            raise ValueError(f"{path}: trailing bytes after expected payload ({extra} extra bytes)")
-        raise ValueError(f"{path}: size mismatch ({actual_size} bytes vs expected {expected_size})")
+    # Keep a defensive post-read check in case the format constants are edited.
+    if expected_size != actual_size:
+        raise ValueError(f"{path}: payload read geometry changed during parsing")
     dims = {"ims": ims, "ime": ime, "kms": kms, "kme": kme, "jms": jms, "jme": jme}
     return dims, arrays
 
@@ -56,8 +72,15 @@ def first_mismatch(a: np.ndarray, b: np.ndarray) -> tuple[tuple[int, int, int], 
 
 
 def compare_pair(label: str, ref_path: Path, got_path: Path) -> int:
-    ref_dims, ref = load_dump(ref_path)
-    got_dims, got = load_dump(got_path)
+    try:
+        ref_dims, ref = load_dump(ref_path)
+        got_dims, got = load_dump(got_path)
+    except (OSError, ValueError) as exc:
+        # A malformed/truncated binary is unusable evidence. Keep the CLI a
+        # deterministic failed comparison instead of leaking a traceback that
+        # can be mistaken for a tool defect or a parity result.
+        print(f"FAIL malformed step dump: {exc}", file=sys.stderr)
+        return 1
     print(f"\n## {label}")
     print(f"ref={ref_path}")
     print(f"got={got_path}")

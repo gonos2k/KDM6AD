@@ -10,6 +10,11 @@ remaining load-bearing edge:
         -> left-associated per-species total
         -> actual rain/snow/graupel increments.
 
+The focused checker also binds the emitted ``surface_denr`` operand to the
+reference f32 water-density constant before replaying the conversion. It does
+not claim upstream provenance for the non-rain bottom-fall fields; the formal
+backend-neutral replay owns that wider relation set.
+
 The surface arithmetic is independently replayed from dumped operands at f32
 operation boundaries. No driver fixture value is used as an expected result.
 """
@@ -41,6 +46,7 @@ _DECLARED_CONTAINER_FIELDS = (
     "container_id", "outer_loop", "chain", "n", "first_op_seq_id",
     "last_op_seq_id", "record_count", "path",
 )
+_SEALED_CONTAINER_FIELDS = _DECLARED_CONTAINER_FIELDS + ("descriptor_sha256",)
 
 
 def _die(code: int, message: str) -> None:
@@ -91,9 +97,13 @@ def _same_shape(*arrays: np.ndarray) -> None:
 
 
 def recompute_surface(qr: np.ndarray, qs: np.ndarray, qg: np.ndarray,
-                      qi: np.ndarray, delz: np.ndarray, dtcld: float = DTCLD) -> dict:
+                      qi: np.ndarray, delz: np.ndarray, dtcld: float = DTCLD,
+                      denr: np.ndarray | float = DENR) -> dict:
     """Replay surface_accumulation_torch in its exact left-associated f32 order."""
-    _same_shape(qr, qs, qg, qi, delz)
+    denr_array = np.asarray(denr, dtype=np.float32)
+    if denr_array.ndim == 0:
+        denr_array = np.full(np.asarray(qr).shape, denr_array, dtype=np.float32)
+    _same_shape(qr, qs, qg, qi, delz, denr_array)
     for name, array in (("qr", qr), ("qs", qs), ("qg", qg),
                         ("qi", qi), ("delz", delz)):
         if not np.isfinite(array).all():
@@ -102,6 +112,11 @@ def recompute_surface(qr: np.ndarray, qs: np.ndarray, qg: np.ndarray,
         raise gd.G33Corruption("surface bottom-fall operand is negative")
     if (delz <= 0).any():
         raise gd.G33Corruption("surface delz_bottom is non-positive")
+    if not np.isfinite(denr_array).all() or (denr_array <= 0).any():
+        raise gd.G33Corruption("surface density denominator is non-positive or non-finite")
+    dt32 = np.float32(dtcld)
+    if not np.isfinite(dt32) or dt32 <= 0:
+        raise gd.G33Corruption("surface dtcld is non-positive or non-finite")
 
     total = (qr + qs).astype(np.float32)
     total = (total + qg).astype(np.float32)
@@ -111,8 +126,8 @@ def recompute_surface(qr: np.ndarray, qs: np.ndarray, qg: np.ndarray,
     def increment(fall: np.ndarray) -> np.ndarray:
         out = np.maximum(fall, np.float32(0.0)).astype(np.float32)
         out = (out * delz).astype(np.float32)
-        out = (out / np.float32(DENR)).astype(np.float32)
-        out = (out * np.float32(dtcld)).astype(np.float32)
+        out = (out / denr_array).astype(np.float32)
+        out = (out * dt32).astype(np.float32)
         return (out * np.float32(1000.0)).astype(np.float32)
 
     return {
@@ -182,11 +197,28 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
         _die(EXIT_EVIDENCE, "FAIL: surface run_contract.json changed after the run")
     try:
         contract = json.loads(contract_bytes.decode("utf-8"))
+        if not isinstance(contract, dict):
+            raise TypeError("run contract is not an object")
+        required_contract = ("case_id", "pair_id", "run_uuid", "column_layout_id",
+                             "qcrmin", "dtcld", "containers", "schedule")
+        missing_contract = [name for name in required_contract if name not in contract]
+        if missing_contract:
+            raise KeyError(", ".join(missing_contract))
         containers = contract["containers"]
         if not isinstance(containers, list) or not all(isinstance(item, dict) for item in containers):
             raise TypeError("containers is not a list of objects")
+        if not isinstance(contract["schedule"], dict):
+            raise TypeError("schedule is not an object")
+        if contract["schedule"].get("algorithm") not in ("legacy", "conservative"):
+            raise ValueError("schedule.algorithm is not legacy or conservative")
+        for item in containers:
+            missing = [name for name in _SEALED_CONTAINER_FIELDS if name not in item]
+            if missing:
+                raise KeyError(f"container missing {', '.join(missing)}")
         seal_qcrmin = float(contract["qcrmin"])
         seal_dtcld = float(contract["dtcld"])
+        if not (np.isfinite(seal_qcrmin) and np.isfinite(seal_dtcld)):
+            raise ValueError("qcrmin/dtcld are non-finite")
     except (UnicodeDecodeError, json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
         _die(EXIT_EVIDENCE, f"FAIL: malformed surface run contract: {exc}")
 
@@ -209,7 +241,10 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
     if on_disk != expected_paths:
         _die(EXIT_EVIDENCE,
              f"FAIL surface container set:\n  disk    {on_disk}\n  sealed  {expected_paths}")
-    loaded = _load_bound_containers(containers, dump_dir, contract, sealed_sha)
+    try:
+        loaded = _load_bound_containers(containers, dump_dir, contract, sealed_sha)
+    except (KeyError, TypeError, ValueError, IndexError) as exc:
+        _die(EXIT_EVIDENCE, f"FAIL malformed surface evidence: {exc}")
 
     main_specs = [container for container in containers if container.get("chain") == "main"]
     surface_specs = [container for container in containers
@@ -223,8 +258,19 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
 
     main_records = last_main["records"]
     surface_records = surface["records"]
-    pre = {record["field"]: (record["dtype"], record["payload"])
-           for record in main_records if record["stage"] == "substep_pre"}
+    pre = {}
+    for record in main_records:
+        if record["stage"] != "substep_pre":
+            continue
+        if record["field"] in pre:
+            _die(EXIT_EVIDENCE,
+                 f"FAIL: {last_main_spec['container_id']} substep_pre has "
+                 f"duplicate field {record['field']}")
+        pre[record["field"]] = (record["dtype"], record["payload"])
+    missing_pre = sorted(set(gdv._REQUIRED) - set(pre))
+    if missing_pre:
+        _die(EXIT_EVIDENCE,
+             f"FAIL: {last_main_spec['container_id']} substep_pre missing {missing_pre}")
     gdv.check_producer_flags(pre, int(last_main_spec["n"]), seal_qcrmin, seal_dtcld)
     k_bottom = K - 1
 
@@ -252,14 +298,23 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
         name: _f32(_record(surface_records, stage="surface", field=name))
         for name in (
             "bottom_fall_qr", "bottom_fall_qs", "bottom_fall_qg", "bottom_fall_qi",
-            "bottom_fall_total", "delz_bottom", "rain_increment", "snow_increment",
-            "graupel_increment",
+            "bottom_fall_total", "delz_bottom", "surface_denr", "rain_increment",
+            "snow_increment", "graupel_increment",
         )
     }
+    expected_denr = np.full(B, np.float32(DENR), dtype=np.float32)
+    if fields["surface_denr"].shape != expected_denr.shape:
+        _die(EXIT_EVIDENCE,
+             f"FAIL surface_denr shape {fields['surface_denr'].shape} != "
+             f"{expected_denr.shape}")
+    if _bits(fields["surface_denr"]) != _bits(expected_denr):
+        _die(EXIT_FIDELITY,
+             f"FAIL surface-link: {algorithm} L1_surface surface_denr "
+             f"does not equal the sealed f32 water-density constant")
     offline = recompute_surface(
         fields["bottom_fall_qr"], fields["bottom_fall_qs"],
         fields["bottom_fall_qg"], fields["bottom_fall_qi"],
-        fields["delz_bottom"], seal_dtcld)
+        fields["delz_bottom"], seal_dtcld, fields["surface_denr"])
     for name, expected_values in offline.items():
         record = _record(surface_records, stage="surface", field=name)
         if record["payload"] != _bits(expected_values):
@@ -289,6 +344,10 @@ def main() -> None:
     except gd.G33Corruption as exc:
         print(f"(evidence preserved at {root})", file=sys.stderr)
         _die(EXIT_EVIDENCE, f"FAIL surface evidence: {exc}")
+    except (KeyError, TypeError, ValueError, IndexError, OverflowError) as exc:
+        print(f"(evidence preserved at {root})", file=sys.stderr)
+        _die(EXIT_EVIDENCE,
+             f"FAIL malformed surface evidence: {type(exc).__name__}: {exc}")
     except BaseException:
         print(f"(evidence preserved at {root})", file=sys.stderr)
         raise

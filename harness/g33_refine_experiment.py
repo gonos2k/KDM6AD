@@ -252,6 +252,23 @@ def kernel_source(algo: str):
     return Path("host/KIM-meso_v1.0/phys") / f"{stem}.F"
 
 
+def _is_selected_kernel_source(path: Path, selected: Path) -> bool:
+    """Whether ``path`` names the exact source selected by ``algo``.
+
+    The refinement build has one source-selection authority: ``--algo`` in
+    ``refine_build.sh``.  There is no second source path that can be threaded
+    through the overlay, geometry reader, and provenance record atomically, so
+    a module override is only meaningful when it names that same file.  Accept
+    both the repository-relative spelling used by the build and its absolute
+    spelling for callers that construct paths programmatically.
+    """
+    if path == selected:
+        return True
+    if path.is_absolute():
+        return path.absolute() == (HERE.parent / selected).absolute()
+    return path.absolute() == (HERE.parent / selected).absolute()
+
+
 def _dtcldcr_from(text: str, where: str) -> float:
     """The one declaration of `dtcldcr` in a kernel source's bytes."""
     hits = re.findall(r"::\s*dtcldcr\s*=\s*([0-9.]+)", text)
@@ -711,26 +728,12 @@ def _require_same_run(name, rid, run, parsed, arm="reference", algo=None,
             f"{name}: ran the decomposition {rid['tile_sizes']}, the caller "
             f"asked for {tuple(tiles)} -- `ncmin` is set by a tile's last "
             f"column, so these are two operators")
-    # The forcing VALUES, per cell (owner review §6): matched closure builds
-    # the physical layer mass from G33N's rho/delz beside the window's initial
-    # qv, which silently assumes the two protocols' rho/delz are the same
-    # numbers. Assume nothing: compare every cell of every call.
-    frc = {(k[1], k[2], k[3]): v for k, v in run.items()
-           if k[0] == "forcing" and k[1] in ("rho", "delz")}
-    if not frc:
-        raise ra.RefineError(
-            f"{name}: the window protocol carries no rho/delz forcing to hold "
-            f"the G33N leg's to -- the same-run contract cannot bind")
-    for call in parsed:
-            for (lp, c, kk), rec in call["outer_pre_sed"].items():
-                for nm in ("rho", "delz"):
-                    wv = frc.get((nm, c, kk))
-                    if wv is None or word(rec[nm]) != word(wv):
-                        raise ra.RefineError(
-                            f"{name}: call {call['call_id']} loop {lp} "
-                            f"col {c} level {kk}: G33N {nm}={rec[nm]!r} vs "
-                            f"window forcing {wv!r} -- the physical measure "
-                            f"would be built from two different runs")
+    # Shared with standalone consumers: G33N transfers and window inventories
+    # must use the same forcing words, not merely matching metadata.
+    try:
+        nt.require_window_forcing(parsed, run, 8 if arm == "f64" else 4, name)
+    except nt.StreamError as exc:
+        raise ra.RefineError(str(exc)) from exc
 
 
 def _agree(g33r: dict, g33p: dict, name: str) -> None:
@@ -1165,15 +1168,13 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
     # missing private kernel is refused long before, and the message a caller
     # sees would name that instead (Codex, reproduced on CI).
     #
-    # Refused on EVERY path, not only the CLI. The tolerance further down is
-    # for a module ALREADY IN MEMORY, which is a normal condition of a shared
-    # interpreter; nothing holding a module's bytes to HEAD is not normal
-    # anywhere. It fires whether or not git has since recovered, because
-    # recovery does not retroactively verify an import that already happened.
+    # The checks below apply to the Python API as well as the CLI. A caller that
+    # supplies an alternate module cannot make the build, overlay, and manifest
+    # agree merely by pinning that path in memory.
     # The algorithm selects the module (owner §11). The build script picks
-    # the kernel to compile from `--algo` while the module the manifest pins
-    # arrived separately, defaulting to legacy -- so a conservative run had to
-    # line the two up by hand. One authority; departures are recorded.
+    # the kernel to compile from `--algo`; an alternate module has no matching
+    # source-selection path through overlay, geometry, and manifest, so it is
+    # refused below rather than recorded as if it had been compiled.
     # A bundle is immutable and addressed by (commit, command, binary, input).
     # A dirty tree's code is not any commit, so a bundle published from one
     # occupies the address of an experiment whose source cannot be recovered.
@@ -1189,8 +1190,6 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         raise SystemExit(
             f"REFUSED: no kernel source is known for algorithm {algo!r}; "
             f"the build compiles {sorted(g33_arms.ARMS)}")
-    nonstandard = module is not None and Path(module) != canonical
-    module = canonical if module is None else Path(module)
     # MATERIALISE FIRST (owner §13 P1). `nsplits` is walked six times below --
     # the duplicate check, the member loop, the analyses, the arm streams. A
     # generator is exhausted by the first walk, and every later one sees an
@@ -1237,6 +1236,15 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
             f"--nsplit repeats {dup}: both members would write one filename and "
             f"the second would overwrite the first, so the bundle would silently "
             f"contain fewer members than requested.")
+    if module is not None and not _is_selected_kernel_source(Path(module), canonical):
+        raise SystemExit(
+            "REFUSED: unsupported --module-override for a source other than "
+            f"the algorithm-selected {canonical}. The build and manifest must "
+            "name the same kernel bytes; no alternate module was compiled.")
+    # Keep one source authority all the way through build, geometry, and digest.
+    # A canonical override is equivalent to omitting the option, so it does not
+    # create a manifest identity that the build script cannot reproduce.
+    module = canonical
     width = fixture_width(fixture)
     # The sub-cycle limit the kernel enforces, read ONCE from the frozen
     # source this build compiles against and recorded in the bundle: the
@@ -1310,8 +1318,6 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         if nflux:
             command.append("--nflux")
         command += ["--rho-profile", rho_profile, "--arm", arm]
-        if nonstandard:
-            command += ["--module-override", res.repo_relative(module)]
         rec = res.record(commit=res.git("rev-parse", "HEAD"),
                          dirty=bool(res.git("status", "--porcelain")),
                          command=command,
@@ -1363,16 +1369,12 @@ def main(argv) -> int:
                     choices=("reference", "probe", "f64"),
                     help="f64 is an INSTRUMENT: it emits no G33R and is never "
                          "decision evidence")
-    # `--algo` chose the module the BUILD compiles while `--module` chose the
-    # one the MANIFEST pins, and its default was legacy -- so a conservative
-    # run had to line the two up by hand, and a mismatch was refused later by
-    # the validator. Not a silent defect, but two authorities for one fact
-    # (owner §11). The module follows the algorithm now; leaving that has to
-    # be said out loud.
+    # Keep the historical option for callers that spell the selected source
+    # explicitly.  A noncanonical path is refused before the build, because
+    # refine_build.sh has no matching source-selection input to compile.
     ap.add_argument("--module-override", type=Path, default=None,
-                    help="for a NONSTANDARD experiment: pin this file instead "
-                         "of the kernel the algorithm selects, and record in "
-                         "the manifest that it was done")
+                    help="compatibility pin; only the exact algorithm-selected "
+                         "source is supported")
     a = ap.parse_args(argv)
     # absolute(), NOT resolve(): once `dest` is a symlink into the bundle store,
     # resolve() follows it and the next publish writes its store INSIDE the

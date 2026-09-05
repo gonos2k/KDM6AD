@@ -148,7 +148,12 @@ def read_text(text: str, *, nsplit=None, label: str = "<stream>") -> dict:
             nm, i, k, b = m.groups()
             key = ("forcing", nm, int(i), int(k))
         elif m := _FIXTURE.match(ln):
-            out[("meta", "fixture")] = m.group(1)
+            key = ("meta", "fixture")
+            _expect(key not in seen,
+                    f"duplicate record {key} — a second value would silently "
+                    "overwrite the first", label)
+            seen.add(key)
+            out[key] = m.group(1)
             continue
         else:
             raise RefineError(f"{label}: unrecognised G33R record: {ln!r}")
@@ -285,6 +290,65 @@ def require_comparable(runs: dict) -> None:
             f"their difference is not a discretisation error")
 
 
+def _f32_bits(value: float) -> int:
+    """Return the raw f32 word represented by a parsed stream value.
+
+    Refinement members are compared at the stream's precision.  Comparing the
+    Python values directly would collapse signed zero and would make this gate
+    weaker than the G33R record contract itself.
+    """
+    return struct.unpack("<I", struct.pack("<f", value))[0]
+
+
+def _common_run_metadata(runs: dict) -> None:
+    """Require fixed identity/conditions to agree across standalone members.
+
+    ``nsplit``, ``delt``, ``loops`` and ``dtcld`` are deliberately member
+    dependent.  The fixture, algorithm, mode, and any optional source/precision
+    metadata describe the numerical problem and therefore must be invariant.
+    Missing optional metadata is allowed only when it is missing from every
+    member; accepting one-sided metadata would make the comparison ambiguous.
+    """
+    optional = ("precision", "source_precision", "rho_profile")
+    fixed = ("fixture", "mode", "algorithm") + optional
+    missing = object()
+    for name in fixed:
+        values = [r.get(("meta", name), missing) for r in runs.values()]
+        if any(v is missing for v in values):
+            _expect(all(v is missing for v in values),
+                    f"members disagree on whether fixed metadata `{name}` "
+                    "is present", "refinement")
+            continue
+        if len(set(values)) > 1:
+            raise RefineError(
+                f"members mix fixed run condition `{name}`: "
+                f"{sorted(values, key=repr)}")
+
+
+def _common_input_words(runs: dict) -> None:
+    """Require initial and forcing records to be bit-identical.
+
+    A refinement order is a controlled comparison of one atmosphere at several
+    internal steps.  The record universe check above proves that each member
+    has the same input *keys*; this check proves it has the same input *words*.
+    State and precipitation values are intentionally excluded because those are
+    the quantities whose step dependence is measured.
+    """
+    ref_n = min(runs)
+    ref = runs[ref_n]
+    input_keys = sorted(k for k in ref
+                        if k[0] in ("initial", "forcing"))
+    for n, run in runs.items():
+        if n == ref_n:
+            continue
+        for key in input_keys:
+            if _f32_bits(ref[key]) != _f32_bits(run[key]):
+                raise RefineError(
+                    f"member N={n} has different raw input at {key} from "
+                    f"N={ref_n}: 0x{_f32_bits(ref[key]):08x} vs "
+                    f"0x{_f32_bits(run[key]):08x}")
+
+
 def require_same_universe(runs: dict) -> None:
     """Same identities in every member, checked once up front.
 
@@ -303,6 +367,8 @@ def require_same_universe(runs: dict) -> None:
     if len(algos) > 1:
         raise RefineError(f"members mix algorithms: {sorted(algos)}")
     require_comparable(runs)
+    _common_run_metadata(runs)
+    _common_input_words(runs)
 
 
 def _norm(a: dict, b: dict, keys) -> float:
@@ -325,6 +391,26 @@ def _keys(run, group):
 
 GROUPS = ("th", "mass", "number", "prec")
 
+def _forcing_names(run: dict) -> set:
+    return {k[1] for k in run if k[0] == "forcing"}
+
+
+def _unavailable(reason: str) -> dict:
+    """A measured quantity that this stream does not carry."""
+    return {"available": False, "reason": reason}
+
+
+def _is_unavailable(value: dict) -> bool:
+    return isinstance(value, dict) and value.get("available") is False
+
+
+def _print_unavailable(title: str, values: dict) -> None:
+    reasons = sorted({d.get("reason", "required records are absent")
+                      for d in values.values() if _is_unavailable(d)})
+    if reasons:
+        print(f"\n  {title}: unavailable — " + "; ".join(reasons))
+
+
 #: Physical column budgets (§7): sum_k rho_k dz_k q, per column so one bad column
 #: is not diluted by the rest. The grouped max norms above are over MIXING RATIOS
 #: and are set by a single migrating cell; these are what conservation is about.
@@ -332,8 +418,12 @@ GROUPS = ("th", "mass", "number", "prec")
 
 def column_budgets(run: dict) -> dict:
     """{(quantity, col): rho*dz-weighted column integral}, or {} without forcing."""
-    if not any(k[0] == "forcing" for k in run):
+    names = _forcing_names(run)
+    if not names:
         return {}
+    if not {"rho", "delz"} <= names:
+        return _unavailable(
+            "rho*dz column budget requires both `rho` and `delz` forcing")
     cells = {(k[2], k[3]) for k in run if k[0] == "state"}
     cols = sorted({c for c, _ in cells})
     out = {}
@@ -447,6 +537,9 @@ def water_residual(run: dict, c: int, basis: str = "operator") -> dict:
     if not any(k[0] == "initial" for k in run) or \
        not any(k[0] == "forcing" for k in run):
         return {}
+    if not {"rho", "delz"} <= _forcing_names(run):
+        return _unavailable(
+            "water residual requires both `rho` and `delz` forcing")
     if basis not in MEASURES:
         raise ValueError(f"basis must be one of {MEASURES}, got {basis!r}")
     ks = sorted(k[3] for k in run if k[0] == "state" and k[1] == "qv" and k[2] == c)
@@ -461,9 +554,17 @@ def water_residual(run: dict, c: int, basis: str = "operator") -> dict:
 
 def water_residual_report(runs: dict) -> None:
     H = steps(runs)
-    rows = [(n, c, water_residual(runs[n], c))
-            for n in sorted(runs)
-            for c in sorted({k[2] for k in runs[n] if k[0] == "state"})]
+    by_member = {n: {c: water_residual(runs[n], c)
+                     for c in sorted({k[2] for k in runs[n]
+                                      if k[0] == "state"})}
+                 for n in sorted(runs)}
+    unavailable = {n: d for n, cols in by_member.items()
+                   for d in cols.values() if _is_unavailable(d)}
+    if unavailable:
+        _print_unavailable("water conservation", unavailable)
+        return
+    rows = [(n, c, d) for n, cols in by_member.items()
+            for c, d in cols.items()]
     rows = [(n, c, d) for n, c, d in rows if d]
     if not rows:
         print("\n  water conservation: needs INITIAL and forcing")
@@ -480,6 +581,9 @@ def water_residual_report(runs: dict) -> None:
 
 def budget_report(runs: dict) -> None:
     b = {n: column_budgets(runs[n]) for n in sorted(runs)}
+    if any(_is_unavailable(d) for d in b.values()):
+        _print_unavailable("column budgets", b)
+        return
     if not b[min(b)]:
         print("\n  column budgets: forcing not present in this stream set")
         return
@@ -736,6 +840,9 @@ def outflow_split(run: dict, c: int, ks) -> dict:
     diagnostic, it never charges phantom mass; what remains open is the LEVEL the
     departing water is charged at, which `_ledger` reports as a band.
     """
+    if not {"rho", "delz"} <= _forcing_names(run):
+        return _unavailable(
+            "outflow split requires both `rho` and `delz` forcing")
     w = _water_out(run, c, ks)
     p = total_precip(run, c)
     return {"water_out": w, "P_bottom": p, "D_internal": w - p,
@@ -753,6 +860,9 @@ def _ledger(run: dict, h_cell, h_precip_out, basis: str = "operator",
     if not any(k[0] == "initial" for k in run) or \
        not any(k[0] == "forcing" and k[1] == "pii" for k in run):
         return {}
+    if not {"rho", "delz"} <= _forcing_names(run):
+        return _unavailable(
+            "enthalpy ledger requires `rho`, `delz`, and `pii` forcing")
     cells = {(k[2], k[3]) for k in run if k[0] == "state"}
     out = {}
     for c in sorted({x for x, _ in cells}):
@@ -968,6 +1078,9 @@ def ledger_report(runs: dict) -> None:
             ("OPERATOR-consistency residual   (code's own cpm/xl; §8.1)",
              operator_ledger)):
         L = {n: ledger(runs[n]) for n in ns}
+        if any(_is_unavailable(d) for d in L.values()):
+            _print_unavailable("ledger", L)
+            return
         if not L[ns[0]]:
             print("\n  ledger: initial state or `pii` missing")
             return
@@ -1006,6 +1119,13 @@ def diagnostic_budget_consistency_report(runs: dict) -> None:
     if not any(k[0] == "initial" for k in runs[ns[0]]):
         print("\n  diagnostic trust: no INITIAL records, cannot compare")
         return
+    missing = [n for n in ns
+               if not {"rho", "delz"} <= _forcing_names(runs[n])]
+    if missing:
+        print("\n  diagnostic trust: unavailable — column water loss requires "
+              "both `rho` and `delz` forcing "
+              f"(missing in members N={missing})")
+        return
     cols = sorted({k[2] for k in runs[ns[0]] if k[0] == "state"})
     print("\n  fallout diagnostic / column water loss   "
           "(1.0 = the diagnostic IS the budget)")
@@ -1032,6 +1152,14 @@ def main(argv) -> int:
     if len(runs) < 2:
         raise SystemExit(f"need at least two members, found {sorted(runs)}")
     require_same_universe(runs)
+    # Archived streams remain readable, but these CLI tables require a recorded
+    # step even when no convergence order can be taken. Refuse cleanly before
+    # advertising partial tables whose own formatting needs missing geometry.
+    try:
+        steps(runs)
+    except RefineError as exc:
+        print(f"refinement geometry unavailable: {exc}", file=sys.stderr)
+        return 2
     # A bundle that cannot carry an order is still worth reading: the N=1/N=3
     # policy control deliberately runs one step twice. Refuse the ORDER tables,
     # which are keyed by step and would silently collide, and print the rest.

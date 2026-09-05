@@ -242,6 +242,19 @@ def test_bt_huge_exponent_inf_rejected(tmp_path):
         parse_rttov_radiance(f, nchannels=2)
 
 
+def test_quality_huge_exponent_inf_rejected(tmp_path):
+    """QUALITY must stay finite even when an overflow exponent parses as inf.
+
+    Finite nonzero quality values remain valid unusable markers; only the
+    non-finite value is rejected at the radiance parser boundary.
+    """
+    f = tmp_path / "radiance.txt"
+    f.write_text("RADIANCE%BT = (\n 300.0 301.0\n)\n"
+                 "RADIANCE%QUALITY = (\n 0.0 1e400\n)\n")
+    with pytest.raises(ValueError, match="RADIANCE%QUALITY has non-finite"):
+        parse_rttov_radiance(f, nchannels=2)
+
+
 def test_phalf_layer_mismatch_raises(tmp_path):
     f = tmp_path / "profiles_k.txt"
     f.write_text(

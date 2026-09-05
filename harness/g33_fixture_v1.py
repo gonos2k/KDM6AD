@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import re
 import struct
 from dataclasses import dataclass
@@ -238,11 +239,18 @@ def load_manifest(path: Path = MANIFEST) -> dict:
                  f"{name} must contain B*K={B*K} words")
         _require(all(isinstance(w, str) and _HEX32.fullmatch(w) for w in words),
                  f"{name} contains a malformed f32 word")
+        values = [_f32_word(w) for w in words]
+        _require(all(math.isfinite(v) for v in values),
+                 f"{name} contains a nonfinite f32 value")
+        if name in ("rho", "p", "pii", "delz", "th"):
+            _require(all(v > 0.0 for v in values), f"{name} must be strictly positive")
 
     xland = data.get("xland")
     _require(isinstance(xland, list) and len(xland) == B, f"xland must contain {B} words")
     _require(all(isinstance(w, str) and _HEX32.fullmatch(w) for w in xland),
              "xland contains a malformed f32 word")
+    _require(all(_f32_word(w) in (1.0, 2.0) for w in xland),
+             "xland must contain land/sea codes 1 or 2")
 
     anchors = data.get("anchor_fields")
     _require(isinstance(anchors, dict) and set(anchors) == {"vertical", "column"},

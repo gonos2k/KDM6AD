@@ -20,9 +20,11 @@ run_dual_minimizer(hybrid CVT) → 슬롯 시각 O−B/O−A + 4-regime 층화 �
 """
 from __future__ import annotations
 
+import copy
 import hashlib
 import math
 import time
+from dataclasses import fields, is_dataclass
 from pathlib import Path
 
 import torch
@@ -42,11 +44,141 @@ IR105_COL = 12               # CLEAN_IR 채널 배열 내 ir105 위치 (LC05 게
 OBS_CLOUD_BT = 270.0         # 관측 구름 판정: ir105 BT < 270K (LC05 게이트 관례)
 REGIME_NAMES = {1: "clear_clear", 2: "clear_cloudy",
                 3: "cloudy_cloudy", 4: "cloudy_clear"}
+CLEAR_CONNECTED_FIELDS = ("th", "qv")
+
+
+def _freeze_h_value(value):
+    """Make a private, detached snapshot of an H-defining value.
+
+    Full-domain H inputs are often nested dictionaries containing NumPy grids,
+    while the clear configuration is a dataclass whose fields contain
+    namedtuples and tensors.  A shallow ``dict`` copy leaves those arrays
+    aliased to the caller.  Keep this helper deliberately data-oriented: copy
+    the supported containers recursively and deepcopy opaque values/callables.
+    The returned snapshot is owned solely by the observation closure.
+
+    Callable closure cells are a deliberate API boundary: Python cannot copy
+    them with ``deepcopy``.  The production runner therefore supplies a
+    provenance-attested, stable callback; custom callbacks must satisfy the
+    same stateless-callback precondition for the lifetime of the evaluator.
+    This helper does not claim to freeze arbitrary external state captured by a
+    callback, nor does it attempt generic closure cloning.
+    """
+    if isinstance(value, torch.Tensor):
+        return value.detach().clone()
+    try:
+        import numpy as np
+        if isinstance(value, np.ndarray):
+            return value.copy()
+        if isinstance(value, np.generic):
+            return value.item()
+    except ImportError:  # pragma: no cover - NumPy is an oracle dependency
+        pass
+    if is_dataclass(value) and not isinstance(value, type):
+        return type(value)(**{
+            f.name: _freeze_h_value(getattr(value, f.name))
+            for f in fields(value)})
+    if hasattr(value, "_fields") and isinstance(value, tuple):
+        return type(value)(*(_freeze_h_value(v) for v in value))
+    if isinstance(value, tuple):
+        return tuple(_freeze_h_value(v) for v in value)
+    if isinstance(value, list):
+        # Lists are mutable, so a tuple makes the captured sequence immutable
+        # as well as independent of the caller's list.
+        return tuple(_freeze_h_value(v) for v in value)
+    if isinstance(value, dict):
+        return {_freeze_h_value(k): _freeze_h_value(v)
+                for k, v in value.items()}
+    if isinstance(value, (set, frozenset)):
+        return frozenset(_freeze_h_value(v) for v in value)
+    return copy.deepcopy(value)
+
+
+def _h_fingerprint_value(value):
+    """Return a deterministic, value-sensitive summary for H configuration."""
+    if isinstance(value, torch.Tensor):
+        v = value.detach().cpu()
+        return ("torch", str(v.dtype), tuple(v.shape),
+                v.numpy().tobytes().hex())
+    try:
+        import numpy as np
+        if isinstance(value, np.ndarray):
+            v = np.ascontiguousarray(value)
+            return ("numpy", str(v.dtype), tuple(v.shape), v.tobytes().hex())
+        if isinstance(value, np.generic):
+            return ("numpy-scalar", str(value.dtype), value.item())
+    except ImportError:  # pragma: no cover
+        pass
+    if is_dataclass(value) and not isinstance(value, type):
+        return (type(value).__name__, tuple(
+            (f.name, _h_fingerprint_value(getattr(value, f.name)))
+            for f in fields(value)))
+    if hasattr(value, "_fields") and isinstance(value, tuple):
+        return (type(value).__name__, tuple(
+            (name, _h_fingerprint_value(getattr(value, name)))
+            for name in value._fields))
+    if isinstance(value, dict):
+        entries = [(_h_fingerprint_value(k), _h_fingerprint_value(v))
+                   for k, v in value.items()]
+        return ("dict", tuple(sorted(entries, key=repr)))
+    if isinstance(value, (tuple, list)):
+        return (type(value).__name__, tuple(_h_fingerprint_value(v)
+                                            for v in value))
+    if isinstance(value, (set, frozenset)):
+        return (type(value).__name__, tuple(sorted(
+            (_h_fingerprint_value(v) for v in value), key=repr)))
+    if callable(value):
+        # The executable itself is attested by the runner's provenance.  The
+        # callback's stable executable identity belongs in H's signature, while
+        # a repr with a process-local address does not.  Closure cells remain
+        # caller-owned under the stateless-callback precondition documented by
+        # _freeze_h_value.
+        attrs = getattr(value, "__dict__", {})
+        return ("callable", type(value).__module__, type(value).__qualname__,
+                getattr(value, "__module__", None),
+                getattr(value, "__qualname__", None),
+                _h_fingerprint_value(getattr(value, "solar_channels", None)),
+                _h_fingerprint_value(attrs))
+    if hasattr(value, "__dict__"):
+        # Attribute-only test/adaptor configs are common at this boundary and
+        # are part of H just like a namedtuple config.  Hash their contents,
+        # never the process-local object repr.
+        return (type(value).__module__, type(value).__qualname__,
+                _h_fingerprint_value(vars(value)))
+    if isinstance(value, Path):
+        return ("path", str(value))
+    return value
+
+
+def _h_signature(**parts) -> str:
+    """Hash one canonical ordered collection of fixed H inputs/settings."""
+    payload = tuple((name, _h_fingerprint_value(value))
+                    for name, value in parts.items())
+    return hashlib.sha256(repr(payload).encode()).hexdigest()
 
 
 def _take(s, idx):
     """State/Forcing 컬럼 부분집합."""
     return type(s)(*(f[idx] for f in s))
+
+
+def _connected_fields_metadata(obs_eval):
+    """Serialize the evaluator's exact direct-H support for a JSON report."""
+    by_partition = {}
+    for name in ("allsky", "clear"):
+        fields_ = obs_eval.connected_fields_by_partition[name]
+        positions = obs_eval.connected_fields_by_partition[f"{name}_pos"]
+        by_partition[name] = {
+            "fields": list(fields_),
+            "positions": [int(p) for p in positions.tolist()],
+        }
+    return {
+        "connected_fields": list(obs_eval.connected_fields),
+        "connected_fields_by_position": {
+            str(pos): list(fields_)
+            for pos, fields_ in obs_eval.connected_fields_by_position.items()},
+        "connected_fields_by_partition": by_partition,
+    }
 
 
 QTOT_MIN = 1.0e-5            # model-cloud condensate threshold [kg/kg summed]
@@ -400,7 +532,9 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
     동결 기준은 배경 '슬롯 시각' 상태 x_slot_bg(기본 xb_sub — obs_time=0일 때):
     맑음 파트는 batched_clear_bt, 구름 파트는 sharded_allsky(grad=False)의
     rad_quality. covector는 맑음 th/qv + 구름 12필드(all-sky 연결 7필드만
-    비영)를 부분공간 위치에 산개 합성. obs_time≥1이면 관측항이 M(미세물리)을
+    비영)를 부분공간 위치에 산개 합성. ``connected_fields``는 run-level
+    union이며, ``connected_fields_by_position``은 실제 direct-H support를
+    기록한다. obs_time≥1이면 관측항이 M(미세물리)을
     관통해 θ·전 필드 결합 기울기가 살아난다 (P0-1). huber_delta는 양 파트
     공통 (P0-3). pseudo = dict(cols, target, levels, sigma_p) — regime-2
     부트스트랩 항 합성 (P0-2; 동결 구성은 서명에 합성).
@@ -410,14 +544,25 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
 
     nch = y_bt.shape[1]
     # Freeze the original background air-mass measure, NOT the slot/trial qv.
-    # Copy caller-supplied data so later config mutation cannot change H inside
-    # the supposedly fixed objective. Include it in the operator signature.
+    # Every value consumed by H after this boundary is copied below.  In
+    # particular, ``dict(rttov_cfg, ...)`` would only copy the outer mapping and
+    # leave its NumPy pressure/reference arrays aliased to the caller.
     rho_d = (freeze_dry_air_density(xb_sub, fc_sub) if "rho_d" not in rttov_cfg
              else torch.as_tensor(rttov_cfg["rho_d"], **_F64).detach().clone())
     require_dry_air_density(rho_d, xb_sub.qv)
     if not torch.equal(rho_d, freeze_dry_air_density(xb_sub, fc_sub)):
         raise ValueError("rttov_cfg rho_d must come from this window's background and forcing")
-    rttov_cfg = dict(rttov_cfg, rho_d=rho_d.numpy())
+    rttov_cfg = _freeze_h_value(rttov_cfg)
+    rttov_cfg["rho_d"] = rho_d.detach().cpu().numpy().copy()
+    clear_cfg = _freeze_h_value(clear_cfg)
+    fc_sub = _freeze_h_value(fc_sub)
+    y_bt = torch.as_tensor(y_bt, dtype=torch.float64).detach().clone()
+    y_rq = torch.as_tensor(y_rq, dtype=torch.float64).detach().clone()
+    xland_sub = (None if xland_sub is None else
+                 torch.as_tensor(xland_sub).detach().clone())
+    cloudy_pos = torch.as_tensor(cloudy_pos, dtype=torch.int64).detach().clone()
+    clear_pos = torch.as_tensor(clear_pos, dtype=torch.int64).detach().clone()
+    pseudo = None if pseudo is None else _freeze_h_value(pseudo)
     x_probe = xb_sub if x_slot_bg is None else x_slot_bg
     with torch.no_grad():
         _, rq_clear = _clear_bt_chunked(_take(x_probe, clear_pos),
@@ -431,19 +576,18 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
     mask[cloudy_pos] = ((y_rq[cloudy_pos] == 0) & (probe["rq"] == 0)).to(torch.float64)
     mask[clear_pos] = ((y_rq[clear_pos] == 0) & (rq_clear == 0)).to(torch.float64)
     n_valid = int(mask.sum())
-    h = hashlib.sha256()
-    h.update(mask.numpy().tobytes())
-    h.update(cloudy_pos.numpy().tobytes() + clear_pos.numpy().tobytes())
-    h.update(f"|{clear_cfg.input_cfg.coef_id}|{rttov_cfg['coef_id']}|".encode())
-    h.update(f"|t={obs_time}|huber={huber_delta}|".encode())
-    h.update(b"|rho_d|" + rho_d.numpy().tobytes())
+    # One canonical digest covers every fixed setting/data object that can
+    # affect H or the loss.  Keeping this list beside the closure's captures
+    # makes additions reviewable: if a captured H input is added, it must also
+    # be added here.
+    signature = _h_signature(
+        y_bt=y_bt, y_rq=y_rq, mask=mask,
+        cloudy_pos=cloudy_pos, clear_pos=clear_pos,
+        xland=xland_sub, forcing=fc_sub,
+        clear_cfg=clear_cfg, rttov_cfg=rttov_cfg,
+        obs_time=obs_time, huber_delta=huber_delta, pseudo=pseudo)
     if pseudo is not None:
-        h.update(b"|pseudo|" + pseudo["cols"].to(torch.int64).numpy().tobytes()
-                 + pseudo["target"].to(torch.float64).numpy().tobytes()
-                 + pseudo["levels"].to(torch.uint8).numpy().tobytes()
-                 + f"|{float(pseudo['sigma_p']).hex()}".encode())
         n_valid += int(pseudo["levels"].sum())
-    signature = h.hexdigest()
 
     counters = {"call": 0}
 
@@ -484,8 +628,32 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
         return ObsEvalResult(j=j, adj=State(**adj), n_valid=n_valid,
                              signature=signature)
 
-    obs_eval.connected_fields = ALLSKY_FIELDS
-    obs_eval.mask = mask                      # O−B/O−A 보고 재사용 (동결본)
+    # The legacy consumer accepts one run-level tuple.  Give it the union of
+    # fields reachable by any routed partition, and retain the precise
+    # per-position support as metadata for audits/consumers that can enforce
+    # cell-local support.  A clear-only adapter therefore reports exactly
+    # (th,qv), fixing the t=0 V7 false support case without changing H.
+    connected = set(CLEAR_CONNECTED_FIELDS if clear_pos.numel() else ())
+    if cloudy_pos.numel():
+        connected.update(ALLSKY_FIELDS)
+    obs_eval.connected_fields = tuple(f for f in State._fields if f in connected)
+    obs_eval.connected_fields_by_position = {
+        int(pos): tuple(ALLSKY_FIELDS) for pos in cloudy_pos.tolist()}
+    obs_eval.connected_fields_by_position.update({
+        int(pos): tuple(CLEAR_CONNECTED_FIELDS) for pos in clear_pos.tolist()})
+    obs_eval.connected_fields_by_partition = {
+        "allsky": tuple(ALLSKY_FIELDS),
+        "clear": tuple(CLEAR_CONNECTED_FIELDS),
+        "allsky_pos": cloudy_pos.clone(),
+        "clear_pos": clear_pos.clone(),
+    }
+    # The closure retains the private fixed mask.  Reporting consumers receive
+    # a detached copy so O−B/O−A inspection cannot mutate the objective while
+    # leaving its signature unchanged.
+    obs_eval.mask = mask.detach().clone()
+    obs_eval.h_callback_contract = (
+        "runner-provenance-attested stable callback; custom callback closure "
+        "state is caller-owned and must remain unchanged")
     return obs_eval
 
 
@@ -813,6 +981,11 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     hydro_minmax_t0, pathology_t0, nonfinite_t0 = _hydro_audit(res.x_analysis)
     hydro_minmax_slot, pathology_slot, nonfinite_slot = _hydro_audit(x_slot_a)
 
+    # JSON-safe copy of the direct-H support.  The evaluator keeps tensor
+    # positions for internal routing, while the artifact records the exact
+    # fields and positions used by each partition.
+    connected_metadata = _connected_fields_metadata(obs_eval)
+
     # Conserving water budget: separate the P_w-stage error (roundoff by
     # construction) from the DELIBERATE qv-diagonal total-water change —
     # column-integral (sum over K) per column, reviewer-mandated split.
@@ -861,6 +1034,7 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
                                / int(sub.numel())) if sub.numel() else 0.0),
         theta=[float(t) for t in res.theta_analysis],
         theta_b=[float(t) for t in prior.theta_b],
+        **connected_metadata,
         increment_norms=dnorm, increment_norms_slot=dnorm_slot,
         hydro_minmax_t0=hydro_minmax_t0, hydro_minmax_slot=hydro_minmax_slot,
         pathology_t0=pathology_t0, pathology_slot=pathology_slot,

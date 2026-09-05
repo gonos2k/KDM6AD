@@ -12,6 +12,7 @@
 #include <cassert>
 #include <cstring>
 #include <iostream>
+#include <limits>
 #include <vector>
 
 using namespace kdm6;
@@ -293,6 +294,22 @@ void test_kdm6_step_xland_direct_cpp_caller() {
         assert(qc_land >= qc_sea - 1e-12);
         // (d) sanity — at least one cell evolved (the sea one).
         assert(!torch::allclose(r_2d.state_out.qc, s_2d.qc, 0.0, 1e-12));
+
+        // Invalid direct masks must fail before the flatten/expand path can
+        // broadcast one regime over every column or classify NaN as land.
+        for (const auto& bad_xland : {
+                 torch::tensor({1.0}, opts),
+                 torch::tensor({1.0, std::numeric_limits<double>::quiet_NaN()}, opts)}) {
+            bool threw = false;
+            try {
+                (void)kdm6_step(build_state(), f, params, /*dt=*/60.0,
+                                /*value_only=*/true, bad_xland,
+                                /*ncmin_land=*/1.0e3, /*ncmin_sea=*/1.0e1);
+            } catch (const c10::Error&) {
+                threw = true;
+            }
+            assert(threw);
+        }
     } END_TEST();
 }
 
@@ -327,6 +344,11 @@ void test_unknown_physics_variant_throws() {
         f.delz = torch::full({B, K}, 550.0, opts);
         auto params = make_parameters(/*grad_flags=*/0);
 
+        // A valid no-op must preserve arbitrary state/Exner bits exactly; this
+        // pair is known to move theta under the former (th*pii)/pii path.
+        s.th = torch::full({B, K}, 290.0, opts);
+        f.pii = torch::full({B, K}, 0.9000000000000007, opts);
+
         // (a) kdm6_step options overload rejects an unknown selector at entry.
         PhysicsOptions bad;
         bad.variant = static_cast<PhysicsVariant>(2);
@@ -335,6 +357,33 @@ void test_unknown_physics_variant_throws() {
             (void)kdm6_step(s, f, params, /*dt=*/60.0, /*value_only=*/true,
                             c10::nullopt, /*ncmin_land=*/0.0, /*ncmin_sea=*/0.0,
                             bad);
+        } catch (const c10::Error&) {
+            threw = true;
+        }
+        assert(threw);
+
+        assert(compute_loops_max(0.0, 120.0) == 1);
+        for (const auto& bad : {
+                 std::numeric_limits<double>::quiet_NaN(),
+                 std::numeric_limits<double>::infinity()}) {
+            threw = false;
+            try {
+                (void)compute_loops_max(bad, 120.0);
+            } catch (const c10::Error&) {
+                threw = true;
+            }
+            assert(threw);
+        }
+        threw = false;
+        try {
+            (void)compute_loops_max(60.0, 0.0);
+        } catch (const c10::Error&) {
+            threw = true;
+        }
+        assert(threw);
+        threw = false;
+        try {
+            (void)compute_loops_max(std::numeric_limits<double>::max(), 1.0);
         } catch (const c10::Error&) {
             threw = true;
         }
@@ -363,10 +412,9 @@ void test_unknown_physics_variant_throws() {
 
         // (a3) valid variants keep the dt<=0 no-op contract — for BOTH the
         // dt=0 boundary and a strictly negative dt: no throw, state out ==
-        // state in bitwise, all three precip increments exactly zero. (The
-        // no-op round-trips th through th*pii/pii; with the pii/th values
-        // above that round-trip is fp64-exact, and every other field is
-        // passed through untouched.)
+        // state in bitwise, all three precip increments exactly zero. The
+        // adversarial theta/Exner pair above would move by one ULP under the
+        // former coordinate round trip.
         for (auto v : {PhysicsVariant::Legacy,
                        PhysicsVariant::ConservativeInterface}) {
             PhysicsOptions good;

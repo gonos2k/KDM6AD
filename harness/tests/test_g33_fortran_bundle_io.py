@@ -24,7 +24,7 @@ VARIANT_KEY = fbio.VARIANT_MODULE_KEY
 
 def _sources(names, **override):
     """A complete source map; a real build attests every name."""
-    out = {n: ("%-64s" % n).replace(' ', 'f')[:64] for n in sorted(names)}
+    out = {n: hashlib.sha256(n.encode()).hexdigest() for n in sorted(names)}
     out.update(override)
     return out
 import g33_fortran_dump as fd               # noqa: E402
@@ -48,7 +48,10 @@ def _noninstrumented(raw: bytes) -> bytes:
 def _provenance(exe_bytes: bytes, *, canonical=True, compiler="f" * 64,
                 version="GNU Fortran 13.2.0", host_sha=None) -> dict:
     """A real build record for one lane."""
-    module = "m" * 64 if canonical else "n" * 64
+    # Synthetic provenance uses valid SHA-256 syntax.  These values are still
+    # self-consistent claims; the bundle does not ship source bytes that would
+    # independently prove them.
+    module = "1" * 64 if canonical else "2" * 64
     return {
         "schema_version": 2,
         "algorithm": "legacy",
@@ -57,7 +60,7 @@ def _provenance(exe_bytes: bytes, *, canonical=True, compiler="f" * 64,
         "host_source_sha256": host_sha or _sources(fbio.EXPECTED_HOST_SOURCES),
         "harness_source_sha256": _sources(fbio.EXPECTED_HARNESS_SOURCES),
         "module_compiled_sha256": module,
-        "module_canonical_sha256": "m" * 64,
+        "module_canonical_sha256": "1" * 64,
         "executable_sha256": hashlib.sha256(exe_bytes).hexdigest(),
         "compiler_path": "/usr/bin/gfortran",
         "compiler_binary_sha256": compiler,
@@ -124,7 +127,7 @@ def _bundle(root: Path, *, dirty=False, algo="legacy", lane_edit=None,
         "op_record_count": len(run.ops),
         "mstep_per_column": {f"L{lp}/{ch}/col{c}": v
                              for (lp, ch, c), v in run.mstep.items()},
-        "module_canonical_sha256": "m" * 64,
+        "module_canonical_sha256": "1" * 64,
         "compiler_binary_sha256": "f" * 64,
         "compiler_version": "GNU Fortran 13.2.0",
         "host_source_sha256": _sources(fbio.EXPECTED_HOST_SOURCES),
@@ -322,7 +325,7 @@ def test_a_modified_stderr_is_refused(tmp_path):
 def test_lane_A_must_be_the_canonical_module(tmp_path):
     # A is the control: an overlay there invalidates the non-invasiveness claim
     root = _bundle(tmp_path / "b",
-                   prov_edit=lambda lane, p: p.update(module_compiled_sha256="z" * 64)
+                   prov_edit=lambda lane, p: p.update(module_compiled_sha256="3" * 64)
                    if lane == "A" else None)
     with pytest.raises(fbio.FortranBundleError, match="canonical module"):
         fbio.verify_fortran_bundle(root, "legacy", **_anchors(root))
@@ -330,7 +333,7 @@ def test_lane_A_must_be_the_canonical_module(tmp_path):
 
 def test_lanes_B_and_C_must_compile_the_same_module(tmp_path):
     root = _bundle(tmp_path / "b",
-                   prov_edit=lambda lane, p: p.update(module_compiled_sha256="q" * 64)
+                   prov_edit=lambda lane, p: p.update(module_compiled_sha256="4" * 64)
                    if lane == "C" else None)
     with pytest.raises(fbio.FortranBundleError, match="different modules"):
         fbio.verify_fortran_bundle(root, "legacy", **_anchors(root))
@@ -393,11 +396,11 @@ def test_the_two_legs_may_compile_DIFFERENT_modules(tmp_path):
     in this file, because the fixture gave both legs the same module hash."""
     a = _bundle(tmp_path / "a")
     def _module(lane, p):                       # a whole variant, consistently
-        p["module_canonical_sha256"] = "k" * 64
+        p["module_canonical_sha256"] = "5" * 64
         if lane == "A":
-            p["module_compiled_sha256"] = "k" * 64
+            p["module_compiled_sha256"] = "5" * 64
     b = _bundle(tmp_path / "b", prov_edit=_module,
-                manifest_edit=lambda m: m.update(module_canonical_sha256="k" * 64))
+                manifest_edit=lambda m: m.update(module_canonical_sha256="5" * 64))
     lg = fbio.verify_fortran_bundle(a, "legacy", **_anchors(a))
     cn = fbio.verify_fortran_bundle(b, "legacy", **_anchors(b))
     assert lg.build != cn.build, "the module hash must be visible in BuildIdentity"
@@ -419,7 +422,7 @@ def test_a_differing_harness_source_is_caught_across_legs(tmp_path):
     # the module is dropped from toolchain() BY NAME, so everything else still counts
     a = _bundle(tmp_path / "a")
     harness = _sources(fbio.EXPECTED_HARNESS_SOURCES,
-                       **{"g33_fortran_driver.f90": "z" * 64})
+                       **{"g33_fortran_driver.f90": "6" * 64})
     b = _bundle(tmp_path / "b",
                 prov_edit=lambda lane, p: p.update(harness_source_sha256=harness),
                 manifest_edit=lambda m: m.update(harness_source_sha256=harness))
@@ -593,7 +596,7 @@ def test_a_verified_leg_names_the_module_it_compiled():
         root = _bundle(Path(td) / "b")
         leg = fbio.verify_fortran_bundle(root, "legacy", **_anchors(root))
     assert leg.variant_source.algorithm == "legacy"
-    assert leg.variant_source.canonical_module_sha256 == "m" * 64
+    assert leg.variant_source.canonical_module_sha256 == "1" * 64
 
 
 @pytest.mark.parametrize("field", ["schema_version", "checker_commit",

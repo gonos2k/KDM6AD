@@ -310,12 +310,16 @@ def test_eps_creation_and_removal_mechanism_synthetic_obs():
     forcings = [_mk_forcing()] * 2
     cfg = WindowConfig(dt=DT)
 
-    # 생성: xb.qc ≡ 0 + ε>0 → σ 유지(V3), 관측이 qc>0 생성
+    # 생성: xb.qc ≡ 0 + ε>0 → σ 유지(V3), t=0 identity observation must
+    # pull the initial analysis qc above zero.  Observing t=1 would test model
+    # cloud generation (satadj) as well as CVT creation; with corrected
+    # cold/warm routing that trajectory can produce qc>0 while the optimal
+    # initial qc remains zero, so it is not a valid probe of this mechanism.
     xb = _mk_state()._replace(qc=_t2(0.0, 0.0))
     spec, b_sigma = make_default_cvt(xb, eps_overrides={"qc": eps})
     assert float(b_sigma.qc.min()) > 0.0
     y = torch.full_like(xb.qc, 2.0e-4)
-    res = run_minimizer(xb, forcings, _obs_field_at(1, "qc", y, sigma_o=1.0e-5),
+    res = run_minimizer(xb, forcings, _obs_field_at(0, "qc", y, sigma_o=1.0e-5),
                         cfg, b_sigma, max_iter=10, cvt=spec)
     assert float(res.x_analysis.qc.max()) > 0.0
     assert res.j_trace[-1] < res.j_trace[0]

@@ -173,8 +173,14 @@ struct framing checked first:
 9. single-thread fence → `KDM6_ERR_THREAD_CONFIG` (from PR1-A)
 10. tensor creation / microphysics
 
-Same fail-closed contract on every error: `*handle == NULL`, no output buffer
-written.
+For a matching `abi_version` and a `struct_size` covering the required prefix,
+the library sets `*handle = NULL` before the remaining validation, and all
+validation/thread-fence refusals leave caller output buffers untouched. A
+version mismatch returns before the library can locate `handle` in an unknown
+layout, so it must not dereference or modify any handle/output pointer; short
+framing records have the same no-pointer-guarantee. After tensor work begins,
+an internal failure can occur after caller-owned output has been copied, so
+callers must discard outputs when the return code is `KDM6_ERR_INTERNAL`.
 
 ## 6. Fortran `bind(C)` interop
 
@@ -237,8 +243,11 @@ Through the pure-C `test_c_abi.cpp` consumer (ABI isolation preserved):
   outputs, increments, and (for `value_only=0`) the same VJP/JVP on the handle.
   This is the load-bearing test: it proves v2 is the same physics, just a
   different calling convention.
-* handle is `NULL` on every error path; all outputs are sentinel-preserved on
-  every refusal (the PR1-A optional-output sentinel pattern).
+* For a matching version, `handle` is `NULL` and outputs are sentinel-preserved
+  on every pre-work refusal (the PR1-A optional-output sentinel pattern).
+  Version-mismatch and short-framing cases are tested only for their safe early
+  return; because the layout is unknown, the callee does not touch guessed
+  pointers.
 
 ## 8. Freeze / scope boundaries
 

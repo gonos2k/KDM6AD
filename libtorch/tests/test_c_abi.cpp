@@ -998,14 +998,97 @@ void test_c_abi_v2_framing() {
         }
         // wrong abi_version major (with a valid struct_size) → INVALID_ARG
         {
-            kdm6_step_v2_args a = base; a.abi_version = KDM6_ABI_VERSION + 1u;
+            kdm6_step_v2_args a = base;
+            a.abi_version = KDM6_ABI_VERSION + 1u;
+            // A full-size record is still rejected before the callee can
+            // claim a handle offset for an unknown ABI layout.  The caller's
+            // sentinel must therefore remain untouched, and the call must not
+            // dereference the intentionally invalid handle value.
+            kdm6_handle_t* stale = reinterpret_cast<kdm6_handle_t*>(0x1234);
+            a.handle = &stale;
             assert(kdm6_step_v2_c(&a) == KDM6_ERR_INVALID_ARG);
+            assert(stale == reinterpret_cast<kdm6_handle_t*>(0x1234));
         }
         // struct_size >= framing minimum but below the required-fields cutoff
         {
             kdm6_step_v2_args a = base; a.struct_size = KDM6_STEP_V2_MIN_SIZE;
             assert(kdm6_step_v2_c(&a) == KDM6_ERR_INVALID_ARG);
         }
+    } END_TEST();
+}
+
+void test_c_abi_checked_shape_products() {
+    TEST(test_c_abi_checked_shape_products) {
+        // The buffers are deliberately tiny: shape rejection must happen
+        // before from_blob/clone or any allocation based on the dimensions.
+        FortranBuf one(1, 1, 1, 1.0f);
+        const int huge = std::numeric_limits<int>::max();
+        kdm6_handle_t* h = nullptr;
+        const int rc = kdm6_step_c(
+            one.ptr(), one.ptr(), one.ptr(), one.ptr(), one.ptr(), one.ptr(), one.ptr(),
+            one.ptr(), one.ptr(), one.ptr(), one.ptr(), one.ptr(),
+            one.ptr(), one.ptr(), one.ptr(), one.ptr(),
+            huge, huge, huge, 60.0, 0, 1,
+            one.ptr(), one.ptr(), one.ptr(), one.ptr(), one.ptr(), one.ptr(), one.ptr(),
+            one.ptr(), one.ptr(), one.ptr(), one.ptr(), one.ptr(), &h,
+            nullptr, 0.0, 0.0, nullptr, nullptr, nullptr, nullptr);
+        assert(rc == KDM6_ERR_INVALID_DIM);
+        assert(h == nullptr);
+
+        kdm6_step_v2_args a = mk_v2_args(
+            one.ptr(), one.ptr(), one.ptr(), one.ptr(), one.ptr(), one.ptr(), one.ptr(),
+            one.ptr(), one.ptr(), one.ptr(), one.ptr(), one.ptr(),
+            one.ptr(), one.ptr(), one.ptr(), one.ptr(), huge, huge, huge, 60.0, 1,
+            one.ptr(), one.ptr(), one.ptr(), one.ptr(), one.ptr(), one.ptr(), one.ptr(),
+            one.ptr(), one.ptr(), one.ptr(), one.ptr(), one.ptr(), &h);
+        assert(kdm6_step_v2_c(&a) == KDM6_ERR_INVALID_DIM);
+        assert(h == nullptr);
+
+        std::vector<double> state(12, 1.0), forcing(4, 1.0), out(12, -7.0);
+        assert(kdm6_step_ad_c(state.data(), forcing.data(), huge, huge, huge,
+                              60.0, 1, out.data(), &h, nullptr, 0.0, 0.0)
+               == KDM6_ERR_INVALID_DIM);
+        assert(h == nullptr && out[0] == -7.0);
+    } END_TEST();
+}
+
+void test_c_abi_nonpositive_dt_is_bitwise_identity() {
+    TEST(test_c_abi_nonpositive_dt_is_bitwise_identity) {
+        const int im = 1, kme = 1, jme = 1;
+        // This f32 pair is a witness for the former (th*pii)/pii +1-ULP path.
+        FortranBuf th(im, kme, jme, 329.58008f);
+        FortranBuf one(im, kme, jme, 1.0f);
+        FortranBuf pii(im, kme, jme, 0.945573f);
+        std::vector<FortranBuf> out;
+        for (int i = 0; i < 12; ++i) out.emplace_back(im, kme, jme, -77.0f);
+        auto assert_identity = [&]() {
+            assert(std::memcmp(out[0].ptr(), th.ptr(), sizeof(float)) == 0);
+            for (int i = 1; i < 12; ++i)
+                assert(std::memcmp(out[i].ptr(), one.ptr(), sizeof(float)) == 0);
+        };
+
+        kdm6_handle_t* h = reinterpret_cast<kdm6_handle_t*>(0x1);
+        const int rc1 = kdm6_step_c(
+            th.ptr(), one.ptr(), one.ptr(), one.ptr(), one.ptr(), one.ptr(), one.ptr(),
+            one.ptr(), one.ptr(), one.ptr(), one.ptr(), one.ptr(),
+            one.ptr(), pii.ptr(), one.ptr(), one.ptr(),
+            im, kme, jme, /*dt=*/0.0, 0, 1,
+            out[0].ptr(), out[1].ptr(), out[2].ptr(), out[3].ptr(), out[4].ptr(), out[5].ptr(),
+            out[6].ptr(), out[7].ptr(), out[8].ptr(), out[9].ptr(), out[10].ptr(), out[11].ptr(), &h,
+            nullptr, 0.0, 0.0, nullptr, nullptr, nullptr, nullptr);
+        assert(rc1 == KDM6_OK && h == nullptr);
+        assert_identity();
+
+        for (auto& b : out) b.data[0] = -77.0f;
+        h = reinterpret_cast<kdm6_handle_t*>(0x1);
+        auto a = mk_v2_args(
+            th.ptr(), one.ptr(), one.ptr(), one.ptr(), one.ptr(), one.ptr(), one.ptr(),
+            one.ptr(), one.ptr(), one.ptr(), one.ptr(), one.ptr(),
+            one.ptr(), pii.ptr(), one.ptr(), one.ptr(), im, kme, jme, /*dt=*/-1.0, 1,
+            out[0].ptr(), out[1].ptr(), out[2].ptr(), out[3].ptr(), out[4].ptr(), out[5].ptr(),
+            out[6].ptr(), out[7].ptr(), out[8].ptr(), out[9].ptr(), out[10].ptr(), out[11].ptr(), &h);
+        assert(kdm6_step_v2_c(&a) == KDM6_OK && h == nullptr);
+        assert_identity();
     } END_TEST();
 }
 
@@ -1641,6 +1724,8 @@ int main() {
     std::cout << "KDM6AD-k libtorch C ABI bridge tests\n";
     test_c_abi_v2_version_and_size();
     test_c_abi_v2_framing();
+    test_c_abi_checked_shape_products();
+    test_c_abi_nonpositive_dt_is_bitwise_identity();
     test_c_abi_v2_precedence();
     test_c_abi_v2_physics_variant_gate();
     test_c_abi_conservative_c2_minimal_gates();

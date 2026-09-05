@@ -76,6 +76,7 @@ def repo_relative(path: Path) -> str:
 
 _NAME = re.compile(r"^n(\d+)\.(carry|rezero)\.txt$")
 _SHA256 = re.compile(r"^[0-9a-fA-F]{64}$")
+_COMMIT = re.compile(r"^[0-9a-fA-F]{40}(?:\+dirty)?$")
 
 
 class ResultShapeError(ValueError):
@@ -95,6 +96,13 @@ def _no_duplicate_json_keys(pairs):
 def _digest(value, where: str) -> str:
     if not isinstance(value, str) or not _SHA256.fullmatch(value):
         raise ResultShapeError(f"{where} must be a 64-hex SHA-256 string")
+    return value
+
+
+def _commit(value, where: str) -> str:
+    if not isinstance(value, str) or not _COMMIT.fullmatch(value):
+        raise ResultShapeError(
+            f"{where} must be a 40-hex Git commit, optionally followed by +dirty")
     return value
 
 
@@ -163,8 +171,7 @@ def _validate_record_shape(rec: dict, path: Path) -> None:
     missing = sorted(wanted - set(rec))
     if missing:
         raise ResultShapeError(f"{path} lacks {missing}")
-    if not isinstance(rec["commit"], str) or not rec["commit"]:
-        raise ResultShapeError(f"{path}.commit must be a non-empty string")
+    _commit(rec["commit"], f"{path}.commit")
     if (not isinstance(rec["command"], list) or
             not rec["command"] or
             not all(isinstance(arg, str) for arg in rec["command"])):
@@ -228,6 +235,13 @@ def record(*, commit: str | None, dirty: bool, command: list,
     if not commit:
         raise SystemExit("REFUSED: git could not name the commit, so the record "
                          "cannot say what code ran")
+    if (not isinstance(commit, str)
+            or not re.fullmatch(r"[0-9a-fA-F]{40}", commit)):
+        raise SystemExit(
+            "REFUSED: commit must be a 40-hex Git commit before the optional "
+            "+dirty suffix is produced")
+    if not isinstance(dirty, bool):
+        raise SystemExit("REFUSED: dirty must be a boolean")
     return {
         "commit": commit + ("+dirty" if dirty else ""),
         "command": list(command),
@@ -241,6 +255,7 @@ def identity(rec: dict) -> str:
     """Same commit, same command, same binary, same input: the same run. A
     dirty tree does not change the identity -- it is recorded, not hashed --
     so an unrelated edit does not re-publish an experiment."""
+    _commit(rec["commit"], "commit")
     core = {"commit": rec["commit"].split("+")[0], "command": rec["command"],
             "binary_sha256": rec["binary_sha256"],
             "input_sha256": rec["input_sha256"]}
@@ -260,7 +275,7 @@ def load(bundle: Path) -> dict:
     try:
         rec = json.loads(p.read_text(), object_pairs_hook=_no_duplicate_json_keys)
         _validate_record_shape(rec, p)
-    except (OSError, ValueError, TypeError) as e:
+    except (OSError, ValueError, TypeError, RecursionError) as e:
         raise SystemExit(f"REFUSED: {p} will not parse: {e}")
     return rec
 

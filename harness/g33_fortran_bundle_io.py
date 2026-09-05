@@ -16,6 +16,11 @@ the two legs reach the decision boundary as the same kind of object.
 
 External anchors are the same idea as the C++ side: a bundle that rewrites its own
 manifest stays self-consistent, so a decision needs a value held outside it.
+
+The source/module/compiler digest fields are checked for exact SHA-256 syntax and
+cross-lane consistency only. This public bundle does not ship an independently
+pinned source/toolchain archive, so those fields remain provenance claims rather
+than proof that the recorded bytes built the executable.
 """
 from __future__ import annotations
 
@@ -36,6 +41,46 @@ import g33_fortran_dump as fd          # noqa: E402
 import g33_fortran_semantics as sem    # noqa: E402
 
 LANES = ("A", "B", "C")
+_HEX64 = frozenset("0123456789abcdef")
+
+
+def _is_hex64(value) -> bool:
+    return (isinstance(value, str) and len(value) == 64
+            and all(ch in _HEX64 for ch in value))
+
+
+def _is_commit(value) -> bool:
+    return (isinstance(value, str) and len(value) == 40
+            and all(ch in _HEX64 for ch in value))
+
+
+def _require_digest(value, where: str) -> str:
+    """Require the syntax of a SHA-256 claim, without treating it as content proof.
+
+    Source/module/compiler bytes are not shipped by the Fortran bundle and this
+    reader has no independently pinned archive to hash.  A well-formed value is
+    therefore still only a self-consistent provenance claim; this helper prevents
+    malformed values from being mistaken for one while deliberately adding no
+    invented builder attestation.
+    """
+    if not _is_hex64(value):
+        raise FortranBundleError(f"{where} must be a 64-hex SHA-256 string")
+    return value
+
+
+def _require_digest_map(value, where: str, expected_keys=None) -> dict:
+    if not isinstance(value, dict):
+        raise FortranBundleError(f"{where} must be an object of SHA-256 strings")
+    if expected_keys is not None and set(value) != set(expected_keys):
+        raise FortranBundleError(
+            f"{where} is not the attested set: missing "
+            f"{sorted(set(expected_keys) - set(value), key=str)}, unexpected "
+            f"{sorted(set(value) - set(expected_keys), key=str)}")
+    for key, digest in value.items():
+        if not isinstance(key, str) or not key:
+            raise FortranBundleError(f"{where} has an invalid key {key!r}")
+        _require_digest(digest, f"{where}.{key}")
+    return value
 
 
 #: Every FortranRun field that carries evidence in a mutable mapping. Named rather
@@ -240,6 +285,10 @@ def authorized_by_gate_a(report: dict, legs: dict) -> None:
     "they differ in the authorized way" — without it the decision boundary accepts
     any conservative source whatsoever.
     """
+    if not isinstance(report, dict):
+        raise FortranBundleError("Gate A scope report must be a JSON object")
+    if not isinstance(legs, dict):
+        raise FortranBundleError("Fortran legs must be an object")
     if report.get("pass") is not True:
         raise FortranBundleError(
             "the Gate A scope report does not pass: %r" % (report.get("failures"),))
@@ -274,6 +323,8 @@ def authorized_by_gate_a(report: dict, legs: dict) -> None:
     _verify_checker_provenance(report)
 
     pinned = report.get("sha256") or dict()
+    if not isinstance(pinned, dict):
+        raise FortranBundleError("the Gate A report sha256 field must be an object")
     for algo, filename in (("legacy", "module_mp_kdm6.F"),
                            ("conservative", "module_mp_kdm6_cons.F")):
         want = pinned.get(filename)
@@ -353,6 +404,19 @@ class BuildIdentity:
 
     @classmethod
     def of(cls, prov: dict) -> "BuildIdentity":
+        if not isinstance(prov, dict):
+            raise FortranBundleError("provenance must be a JSON object")
+        for field in ("compiler_binary_sha256", "module_canonical_sha256",
+                      "module_compiled_sha256"):
+            _require_digest(prov.get(field), f"provenance.{field}")
+        _require_digest_map(prov.get("host_source_sha256"),
+                            "provenance.host_source_sha256")
+        _require_digest_map(prov.get("harness_source_sha256"),
+                            "provenance.harness_source_sha256")
+        if not isinstance(prov.get("compiler_version"), str) \
+                or not prov["compiler_version"].strip():
+            raise FortranBundleError(
+                "provenance.compiler_version must be a non-empty string")
         return cls(
             compiler_binary_sha256=prov["compiler_binary_sha256"],
             compiler_version=prov["compiler_version"],
@@ -448,7 +512,10 @@ def _sha256_bytes(data: bytes) -> str:
 
 
 def _sha256_file(path: Path) -> str:
-    return _sha256_bytes(path.read_bytes())
+    try:
+        return _sha256_bytes(path.read_bytes())
+    except OSError as e:
+        raise FortranBundleError(f"cannot read bundle file {path}: {e}") from None
 
 
 def _under(root: Path, path: Path) -> Path:
@@ -483,13 +550,22 @@ def verify_fortran_bundle(bundle_dir, algorithm: str, *,
     manifest_path = _under(root, root / "abc_manifest.json")
     manifest_bytes = manifest_path.read_bytes()
     manifest_sha = _sha256_bytes(manifest_bytes)
-    if expected_manifest_sha256 and manifest_sha != expected_manifest_sha256:
+    if expected_manifest_sha256 is not None:
+        if not _is_hex64(expected_manifest_sha256):
+            raise FortranBundleError(
+                "expected manifest sha256 must be a 64-hex SHA-256 string")
+    if expected_manifest_sha256 is not None and manifest_sha != expected_manifest_sha256:
         raise FortranBundleError(
             f"manifest sha256 {manifest_sha} != expected {expected_manifest_sha256}")
     try:
-        manifest = json.loads(manifest_bytes, object_pairs_hook=_no_dup_keys)
-    except json.JSONDecodeError as e:
+        manifest = json.loads(manifest_bytes.decode("utf-8"),
+                              object_pairs_hook=_no_dup_keys)
+    except (UnicodeDecodeError, json.JSONDecodeError, RecursionError) as e:
         raise FortranBundleError(f"abc_manifest.json is not JSON: {e}") from None
+    if not isinstance(manifest, dict):
+        raise FortranBundleError(
+            f"abc_manifest.json top level must be a JSON object, got "
+            f"{type(manifest).__name__}")
 
     if manifest.get("algorithm") != algorithm:
         raise FortranBundleError(
@@ -500,15 +576,27 @@ def verify_fortran_bundle(bundle_dir, algorithm: str, *,
 
     # A dirty producer tree means the recorded commit does not describe the source
     # the evidence came from — the anchor would point at the wrong thing.
+    if not isinstance(manifest.get("repo_dirty"), bool):
+        raise FortranBundleError("manifest repo_dirty must be a boolean")
     repo_clean = manifest.get("repo_dirty") is False
     commit = manifest.get("repo_commit")
-    if expected_repo_commit and commit != expected_repo_commit:
+    if not _is_commit(commit):
+        raise FortranBundleError(
+            "manifest repo_commit must be a 40-hex Git object name")
+    if expected_repo_commit is not None and not _is_commit(expected_repo_commit):
+        raise FortranBundleError(
+            "expected repo commit must be a 40-hex Git object name")
+    if expected_repo_commit is not None and commit != expected_repo_commit:
         raise FortranBundleError(
             f"repo_commit {commit} != expected {expected_repo_commit}")
 
     # FIXTURE: named by the caller, checked against the checked-in authority. A
     # bundle checked against the fixture it declares attests nothing.
+    if expected_fixture_id is not None and not isinstance(expected_fixture_id, str):
+        raise FortranBundleError("expected fixture id must be a string")
     fixture_id = expected_fixture_id or manifest.get("fixture_id")
+    if not isinstance(fixture_id, str):
+        raise FortranBundleError("manifest fixture_id must be a string")
     try:
         _, authority = gfx.load_fixture(fixture_id)
     except (gfx.UnknownFixture, ValueError, KeyError) as e:
@@ -518,7 +606,11 @@ def verify_fortran_bundle(bundle_dir, algorithm: str, *,
     # file anyone reviewed. expected_repo_commit does not close this either: it pins
     # the evidence PRODUCER's commit, not the fixture the verifier read.
     resolved = gfx.manifest_sha256(authority)
-    if expected_fixture_manifest_sha256 and resolved != expected_fixture_manifest_sha256:
+    if expected_fixture_manifest_sha256 is not None:
+        if not _is_hex64(expected_fixture_manifest_sha256):
+            raise FortranBundleError(
+                "expected fixture manifest sha256 must be a 64-hex SHA-256 string")
+    if expected_fixture_manifest_sha256 is not None and resolved != expected_fixture_manifest_sha256:
         raise FortranBundleError(
             f"fixture manifest sha256 {resolved} != expected "
             f"{expected_fixture_manifest_sha256} — the verifier read a different "
@@ -532,8 +624,13 @@ def verify_fortran_bundle(bundle_dir, algorithm: str, *,
                       ("parameter_sha256", gfx.parameter_sha256(authority)),
                       ("fortran_parameter_sha256",
                        gfx.fortran_parameter_sha256(authority))):
+        _require_digest(manifest.get(key), f"manifest.{key}")
         if manifest.get(key) != want:
             raise FortranBundleError(f"manifest {key} != the {fixture_id} authority")
+
+    for key in ("stdout_sha256", "stderr_sha256", "executable_sha256",
+                "build_provenance_sha256"):
+        _require_digest_map(manifest.get(key), f"manifest.{key}", LANES)
 
     # LANES: re-hash every artifact on disk. A manifest's own sha is an assertion
     # about a file, not a fact about it — and an executable "verified" by checking
@@ -556,9 +653,14 @@ def verify_fortran_bundle(bundle_dir, algorithm: str, *,
                 manifest.get("build_provenance_sha256") or {}).get(lane):
             raise FortranBundleError(f"lane {lane} provenance sha256 != manifest")
         try:
-            prov = json.loads(prov_bytes, object_pairs_hook=_no_dup_keys)
-        except json.JSONDecodeError as e:
+            prov = json.loads(prov_bytes.decode("utf-8"),
+                              object_pairs_hook=_no_dup_keys)
+        except (UnicodeDecodeError, json.JSONDecodeError, RecursionError) as e:
             raise FortranBundleError(f"lane {lane} provenance is not JSON: {e}") from None
+        if not isinstance(prov, dict):
+            raise FortranBundleError(
+                f"lane {lane} provenance top level must be a JSON object, got "
+                f"{type(prov).__name__}")
         need = ("compiler_binary_sha256", "compiler_version", "module_canonical_sha256",
                 "module_compiled_sha256", "executable_sha256", "host_source_sha256",
                 "harness_source_sha256",
@@ -576,9 +678,23 @@ def verify_fortran_bundle(bundle_dir, algorithm: str, *,
             raise FortranBundleError(
                 f"lane {lane} provenance has an EMPTY commands list: the compile "
                 f"profiles would be empty and the toolchain comparison vacuous")
+        if (not isinstance(prov["commands"], list)
+                or not all(isinstance(command, str) and command.strip()
+                           for command in prov["commands"])):
+            raise FortranBundleError(
+                f"lane {lane} provenance commands must be a non-empty string list")
+        for field in ("compiler_binary_sha256", "module_canonical_sha256",
+                      "module_compiled_sha256", "executable_sha256"):
+            _require_digest(prov[field], f"lane {lane} provenance.{field}")
+        if (not isinstance(prov["compiler_version"], str)
+                or not prov["compiler_version"].strip()):
+            raise FortranBundleError(
+                f"lane {lane} provenance.compiler_version must be a non-empty string")
         # EXACT source universe, not merely "the map is present"
         for field, expected in (("host_source_sha256", EXPECTED_HOST_SOURCES),
                                 ("harness_source_sha256", EXPECTED_HARNESS_SOURCES)):
+            _require_digest_map(prov[field], f"lane {lane} provenance.{field}",
+                                expected)
             got = frozenset(prov[field])
             if got != expected:
                 raise FortranBundleError(
@@ -612,6 +728,18 @@ def verify_fortran_bundle(bundle_dir, algorithm: str, *,
             raise FortranBundleError(
                 f"lane {lane} was built from a different toolchain or source than A")
     # the root manifest's copies of the build facts must equal the lanes' own
+    _require_digest(manifest.get("module_canonical_sha256"),
+                    "manifest.module_canonical_sha256")
+    _require_digest(manifest.get("compiler_binary_sha256"),
+                    "manifest.compiler_binary_sha256")
+    if (not isinstance(manifest.get("compiler_version"), str)
+            or not manifest["compiler_version"].strip()):
+        raise FortranBundleError(
+            "manifest.compiler_version must be a non-empty string")
+    _require_digest_map(manifest.get("host_source_sha256"),
+                        "manifest.host_source_sha256", EXPECTED_HOST_SOURCES)
+    _require_digest_map(manifest.get("harness_source_sha256"),
+                        "manifest.harness_source_sha256", EXPECTED_HARNESS_SOURCES)
     for key in ("module_canonical_sha256", "compiler_binary_sha256",
                 "compiler_version", "host_source_sha256", "harness_source_sha256"):
         declared = manifest.get(key)
@@ -661,7 +789,12 @@ def verify_fortran_bundle(bundle_dir, algorithm: str, *,
     if declared_ops is not None and declared_ops != len(run.ops):
         raise FortranBundleError(
             f"manifest op_record_count {declared_ops} != {len(run.ops)} in the C lane")
-    declared_mstep = manifest.get("mstep_per_column") or {}
+    declared_mstep = manifest.get("mstep_per_column")
+    if declared_mstep is None:
+        declared_mstep = {}
+    elif not isinstance(declared_mstep, dict):
+        raise FortranBundleError(
+            "manifest mstep_per_column must be an object")
     actual_mstep = {f"L{lp}/{ch}/col{c}": v for (lp, ch, c), v in run.mstep.items()}
     if declared_mstep and declared_mstep != actual_mstep:
         raise FortranBundleError(

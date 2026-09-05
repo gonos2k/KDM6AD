@@ -114,7 +114,7 @@ def _validate_pair(legacy: dict, conservative: dict,
                 f"{legacy_path.name} and {conservative_path.name} differ in "
                 f"shared {group} record coverage")
         for key in sorted(keys):
-            if legacy[key] != conservative[key]:
+            if ra._f32_bits(legacy[key]) != ra._f32_bits(conservative[key]):
                 raise ra.RefineError(
                     f"{legacy_path.name} and {conservative_path.name} differ in "
                     f"shared {group} value {key[1:]}: {legacy[key]!r} vs "

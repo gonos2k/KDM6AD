@@ -4,19 +4,25 @@
 Runs the instrumented substep chain (one FRESH PROCESS per algorithm) under a
 sealed environment, then verifies from the EVIDENCE alone:
 
-  1. container-set completeness — the files on disk are exactly the sealed
-     run-contract container set, and every container reads fail-closed;
+  1. container-set and record-universe completeness — the files on disk are exactly
+     the sealed run-contract container set, and every container's logical records
+     match the independent schedule manifest before any ladder lookup;
   2. shadow == actual — the diagnostic shadow ladder's final f32 equals the
      ACTUAL falk bits, per record (§5a shadow-fidelity);
   3. offline == shadow — an independent NumPy recomputation FROM THE DUMPED
      OPERANDS reproduces every FALK rung, plus the OUTFLOW/FALLACC and the
      conservative INFLOW ladders, bit-for-bit (same IEEE ops, same promotion:
-     f32*f32→f32, f32*f64→f64, one final f32 rounding);
+     f32*f32→f32, f32*f64→f64, one final f32 rounding). The legacy branch has
+     the legacy FALK/continuity scope here; its full outflow/inflow/update
+     arithmetic is checked by the backend-neutral formal replay gate;
   4. producer cross-checks — check_producer_flags per substep (gate law
      n<=mstep, mstep range, floor semantics against qcrmin);
-  5. cross-record causal graph — prev_out↔dq_out, op operands↔substep_pre
-     snapshot columns, the (no-clamp) state equations, per-cell q_post/n_post↔
-     the returned whole-field substep_post, and cross-substep continuity;
+  5. cross-record causal graph — conservative prev_out↔dq_out, op
+     operands↔substep_pre snapshot columns, the (no-clamp) state equations,
+     per-cell q_post/n_post↔the returned whole-field substep_post, and
+     cross-substep continuity. Legacy state snapshot/returned-state wiring and
+     continuity are checked here; its variant-specific arithmetic remains the
+     formal replay gate's scope;
   6. coverage & residual — branch/gate/floor coverage, strict tie-aware cap
      branches with a ULP margin, and the measured f32 interface residual (κ).
 
@@ -108,7 +114,11 @@ def _fallacc(records, field):
     for r in records:
         if r["stage"] == "op" and r["op_id"].endswith("_FALLACC") \
                 and r["field"] == field:
-            out[(r["species"], r["k"])] = r["payload"]
+            key = (r["species"], r["k"])
+            if key in out:
+                raise gd.G33Corruption(
+                    f"duplicate FALLACC {field} record for species/k={key}")
+            out[key] = r["payload"]
     return out
 
 
@@ -117,8 +127,14 @@ def _post_map(recs, cid):
     fields the caller relies on. A truncated/malformed container missing qr or
     nr would otherwise KeyError into a raw traceback; the harness is fail-closed,
     so a missing field must be a clean EXIT_EVIDENCE, not a crash."""
-    m = {r["field"]: (r["dtype"], r["payload"])
-         for r in recs if r["stage"] == "substep_post"}
+    m = {}
+    for r in recs:
+        if r["stage"] != "substep_post":
+            continue
+        if r["field"] in m:
+            _die(EXIT_EVIDENCE,
+                 f"FAIL: {cid} substep_post has duplicate field {r['field']}")
+        m[r["field"]] = (r["dtype"], r["payload"])
     for f in ("qr", "nr"):
         if f not in m:
             _die(EXIT_EVIDENCE, f"FAIL: {cid} substep_post is missing field {f}")
@@ -131,6 +147,9 @@ def _post_snap(post_map, cid):
     harness fail-closes with a clean EXIT_EVIDENCE instead."""
     out = {}
     for f in ("qr", "nr"):
+        if post_map[f][0] != "f32":
+            _die(EXIT_EVIDENCE,
+                 f"FAIL: {cid} substep_post.{f} dtype {post_map[f][0]!r} != 'f32'")
         arr = _np(*post_map[f])
         if arr.size != B * K:
             _die(EXIT_EVIDENCE,
@@ -143,6 +162,22 @@ def _bits(a, dt):
     # container payloads are BIG-endian per element; a native tobytes() would
     # compare LE bytes against BE payloads and fail on identical values
     return a.astype({"f32": ">f4", "f64": ">f8"}[dt]).tobytes()
+
+
+def _record_identity(record: dict) -> tuple:
+    """The manifest identity for one decoded record, excluding its payload.
+
+    ``g33_dump`` validates byte geometry, while the self-check owns the logical
+    completeness boundary. Keeping this key in one helper makes an omitted or
+    extra logical record fail before a later lookup can accidentally leave part
+    of the advertised ladder unchecked.
+    """
+    # case/pair/backend live in the sealed container header, not in each C++
+    # record key. The per-record key below is the complete logical identity
+    # shared by the independent Python schedule and the native writer.
+    return tuple(record.get(name) for name in (
+        "outer_loop", "chain", "n", "cell_role", "k", "species", "op_id",
+        "stage", "field", "dtype", "shape", "op_seq_id"))
 
 
 def positive_f32_ulp_distance(pa, pb):
@@ -204,8 +239,23 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
         _die(EXIT_EVIDENCE,
              f"FAIL: run_contract.json edited after the run "
              f"(file {file_sha[:12]} != sealed {env_sha[:12]})")
-    contract = json.loads(contract_bytes.decode("utf-8"))
-    seal_qcrmin, seal_dtcld = contract["qcrmin"], contract["dtcld"]
+    try:
+        contract = json.loads(contract_bytes.decode("utf-8"))
+        if not isinstance(contract, dict):
+            raise TypeError("run contract is not an object")
+        seal_qcrmin, seal_dtcld = float(contract["qcrmin"]), float(contract["dtcld"])
+        containers = contract["containers"]
+        if not isinstance(containers, list) or not all(
+                isinstance(item, dict) for item in containers):
+            raise TypeError("containers is not a list of objects")
+        for item in containers:
+            missing = [name for name in (
+                "container_id", "outer_loop", "chain", "n", "first_op_seq_id",
+                "last_op_seq_id", "record_count", "path") if name not in item]
+            if missing:
+                raise KeyError(", ".join(missing))
+    except (UnicodeDecodeError, json.JSONDecodeError, KeyError, TypeError, ValueError) as exc:
+        _die(EXIT_EVIDENCE, f"FAIL: malformed run contract: {exc}")
 
     # 1. container-set completeness: exactly the sealed set, nothing else.
     # The SEALED run contract is the single authority; run_index() is only its
@@ -215,11 +265,14 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
     _decl = ("container_id", "outer_loop", "chain", "n", "first_op_seq_id",
              "last_op_seq_id", "record_count", "path")
     gen = [{k: c[k] for k in _decl} for c in ge.run_index(sched)["containers"]]
-    containers = contract.get("containers", [])
     if gen != [{k: c.get(k) for k in _decl} for c in containers]:
         _die(EXIT_EVIDENCE,
              "FAIL: run_index() disagrees with the sealed run_contract.containers "
              "— schedule/generator drift")
+    expected_by_cid = {}
+    for expected_record in ge.expected_records(sched):
+        expected_by_cid.setdefault(ge.container_id(expected_record), []).append(
+            _record_identity(expected_record))
     dump_dir = Path(env["KDM6_G33_DUMP_DIR"])
     on_disk = sorted(p.name for p in dump_dir.glob("*.g33"))
     expected = sorted(c["path"] for c in containers)
@@ -261,6 +314,14 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
         recs = cont["records"]
         n_sub = c["n"]
         stats["containers"] += 1
+        expected_identities = expected_by_cid.get(c["container_id"])
+        actual_identities = [_record_identity(record) for record in recs]
+        if expected_identities is None or actual_identities != expected_identities:
+            _die(EXIT_EVIDENCE,
+                 f"FAIL: {c['container_id']} logical record universe differs "
+                 f"from the sealed expectation "
+                 f"(actual={len(actual_identities)}, expected="
+                 f"{0 if expected_identities is None else len(expected_identities)})")
         # the container sealed the contract digest INSIDE its (sha256'd) payload
         # frame, so a header edit breaks the footer; requiring header == env_sha
         # ties the three channels together.
@@ -273,8 +334,26 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
         # missing qr/nr) and reused by both the §2.1 post_snap and the carry.
         post = _post_map(recs, c["container_id"])
 
-        pre = {r["field"]: (r["dtype"], r["payload"])
-               for r in recs if r["stage"] == "substep_pre"}
+        pre = {}
+        for r in recs:
+            if r["stage"] != "substep_pre":
+                continue
+            if r["field"] in pre:
+                _die(EXIT_EVIDENCE,
+                     f"FAIL: {c['container_id']} substep_pre has duplicate field "
+                     f"{r['field']}")
+            pre[r["field"]] = (r["dtype"], r["payload"])
+        # check_producer_flags has its own missing-operand diagnostic, but make
+        # the boundary explicit before any metric/coverage access below. This
+        # turns a truncated logical record into the stable evidence exit class
+        # rather than an incidental KeyError halfway through the proof.
+        required_pre = set(gdv._REQUIRED) | {"qr", "nr", "work1_qr", "workn_qr"}
+        if algorithm == "conservative":
+            required_pre |= {"dend_safe", "delz_safe"}
+        missing_pre = sorted(required_pre - set(pre))
+        if missing_pre:
+            _die(EXIT_EVIDENCE,
+                 f"FAIL: {c['container_id']} substep_pre missing {missing_pre}")
         gdv.check_producer_flags(pre, n_sub, seal_qcrmin, seal_dtcld)
         stats["flags"] += 1
 
@@ -374,11 +453,36 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
                     elif br == gdv.BRANCH_LEFT_SELECTED:
                         cap_margin[sp]["unbound"].append(int(du))
 
-        dend = _np(*pre["dend_raw"]).reshape(B, K)
-        w1 = _np(*pre["work1_qr"]).reshape(B, K)
-        wn = _np(*pre["workn_qr"]).reshape(B, K)
-        mstep = _np(*pre["mstep_native"])
-        gate = _np(*pre["gate_native"])
+        try:
+            dend = _np(*pre["dend_raw"]).reshape(B, K)
+            w1 = _np(*pre["work1_qr"]).reshape(B, K)
+            wn = _np(*pre["workn_qr"]).reshape(B, K)
+            mstep = _np(*pre["mstep_native"])
+            gate = _np(*pre["gate_native"])
+        except (KeyError, TypeError, ValueError) as exc:
+            _die(EXIT_EVIDENCE,
+                 f"FAIL: malformed {c['container_id']} substep_pre operands: {exc}")
+
+        # The legacy self-check deliberately stops short of recreating the full
+        # variant-specific transport replay (g33_replay is the formal owner for
+        # that). It still proves the simple state wiring that makes the records
+        # meaningful: operation inputs came from this substep's snapshot and the
+        # returned whole-field state is the state represented by each update.
+        legacy_state_pre = legacy_state_post = None
+        if algorithm == "legacy":
+            legacy_state_pre = {}
+            for sp in ("qr", "nr"):
+                if pre[sp][0] != "f32":
+                    _die(EXIT_EVIDENCE,
+                         f"FAIL: {c['container_id']} substep_pre.{sp} dtype "
+                         f"{pre[sp][0]!r} != 'f32'")
+                arr = _np(*pre[sp])
+                if arr.size != B * K:
+                    _die(EXIT_EVIDENCE,
+                         f"FAIL: {c['container_id']} substep_pre.{sp} size "
+                         f"{arr.size} != {B * K}")
+                legacy_state_pre[sp] = arr.reshape(B, K)
+            legacy_state_post = _post_snap(post, c["container_id"])
 
         for k in range(K):
             for sp, op, before_op, before_f in (
@@ -420,6 +524,31 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
                          f"FAIL shadow!=actual: {algorithm} {c['container_id']} "
                          f"k={k} {sp}")
                 stats["shadow_actual"] += 1
+
+        if algorithm == "legacy":
+            for k in range(K):
+                for sp, before, post_name in (
+                        ("qr", "q_before", "q_post"),
+                        ("nr", "n_before", "n_post")):
+                    op_name = "QR_UPDATE" if sp == "qr" else "NR_UPDATE"
+                    before_record = _payload(
+                        recs, stage="op", k=k, species=sp, op_id=op_name,
+                        field=before)
+                    post_record = _payload(
+                        recs, stage="op", k=k, species=sp, op_id=op_name,
+                        field=post_name)
+                    if before_record["payload"] != _bits(
+                            legacy_state_pre[sp][:, k], "f32"):
+                        _die(EXIT_FIDELITY,
+                             f"FAIL causal-link: legacy {c['container_id']} k={k} "
+                             f"{op_name}.{before} != substep_pre.{sp}[:, {k}]")
+                    stats_links["n"] += 1
+                    if post_record["payload"] != _bits(
+                            legacy_state_post[sp][:, k], "f32"):
+                        _die(EXIT_FIDELITY,
+                             f"FAIL causal-link: legacy {c['container_id']} k={k} "
+                             f"{op_name}.{post_name} != substep_post.{sp}[:, {k}]")
+                    stats_links["n"] += 1
 
         # conservative QR_INFLOW — the LOAD-BEARING G3.3-M operation (the
         # rho*dz metric conversion that is conservative-only). Recompute
@@ -722,11 +851,22 @@ def main() -> int:
                 stats = check_algorithm(driver, algorithm, root / algorithm)
             except gd.G33Corruption as e:
                 _die(EXIT_EVIDENCE, f"FAIL evidence: {algorithm}: {e}")
+            except (KeyError, TypeError, ValueError, IndexError, OverflowError) as e:
+                # Reader-level corruption is normally normalized to G33Corruption.
+                # Keep malformed logical records fail-closed even when a newly
+                # added operand reaches a plain NumPy/lookup operation before the
+                # reader has a schema-specific diagnostic for it.
+                _die(EXIT_EVIDENCE,
+                     f"FAIL malformed evidence: {algorithm}: {type(e).__name__}: {e}")
             print(f"{algorithm}: PASS — {stats['containers']} containers, "
                   f"{stats['shadow_actual']} shadow==actual, "
                   f"{stats['offline_rungs']} FALK + {stats['inflow_rungs']} INFLOW + "
                   f"{stats['ladder_rungs']} LADDER offline rungs bit-exact, "
                   f"{stats['flags']} producer cross-checks", flush=True)
+            if algorithm == "legacy":
+                print("  scope: legacy FALK, state wiring, and continuity; "
+                      "variant-specific transport arithmetic is covered by the "
+                      "formal g33_replay gate", flush=True)
             print(f"  coverage: {stats['coverage']}", flush=True)
     except SystemExit as e:
         # ANY failure keeps the evidence and reports where — the forensic
@@ -736,7 +876,8 @@ def main() -> int:
             print(f"(evidence preserved at {root})", file=sys.stderr)
         raise
     shutil.rmtree(root, ignore_errors=True)     # success only
-    print("SELF-CHECK PASS: shadow == actual == offline, both algorithms")
+    print("SELF-CHECK PASS: shadow == actual == offline, both algorithms "
+          "within their declared scopes")
     print("  (fixture: valid_metric + arithmetic_synthetic — branch coverage, "
           "NOT a meteorological representativeness claim)")
     return 0

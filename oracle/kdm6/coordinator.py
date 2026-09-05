@@ -64,7 +64,7 @@ class CoordinatorForcing(NamedTuple):
     p: torch.Tensor    # pressure [Pa]
     den: torch.Tensor  # air density
     delz: torch.Tensor # layer thickness
-    dend: torch.Tensor # density × delz
+    dend: torch.Tensor # air density rho [kg m^-3], NOT rho × delz
 
 
 class CoordinatorParams(NamedTuple):
@@ -846,7 +846,7 @@ def scale_rates_for_conservation_torch(
     tier the per-rate caps cannot provide (its absence caused the 806× staged-ice
     over-production). Runs AFTER melt_freeze (D5 read UNSCALED cold rates, as
     Fortran does) and BEFORE state_update; supcol gates cold(pass1)/warm(pass2)
-    exactly as state_update's cold_mask=(supcol>0).
+    exactly as state_update's cold_mask=(supcol>=0).
 
     Mirrors C++ scale_rates_for_conservation 1:1. Each `source` is the LITERAL
     Fortran arithmetic on the corresponding rate tensors (the port carries
@@ -859,8 +859,7 @@ def scale_rates_for_conservation_torch(
     """
     dtype = state.qc.dtype
     cold_gate = supcol >= 0         # Fortran F:2456 `t.le.t0c` ⇔ supcol>=0; == state_update cold_mask
-    warm_gate = supcol < 0          # complement (warm arm, Fortran t>t0c). Boundary supcol==0 is a
-                                    # no-op (all cold rates strict-gated supcol>0 ⇒ 0 there); literal-fidelity only
+    warm_gate = supcol < 0          # complement (warm arm, Fortran t>t0c); supcol==0 stays on the cold arm.
     delta2 = ((state.qr < 1.0e-4) & (state.qs < 1.0e-4)).to(dtype)
     delta3 = (state.qr < 1.0e-4).to(dtype)
     one_m_d2 = 1.0 - delta2
@@ -1047,31 +1046,20 @@ def state_update_torch(
 ) -> CoordinatorState:
     """F1e — 모든 phase rate를 state에 적용해 새 state 산출.
 
-    Mass balance (per dtcld):
-        qv += dtcld·(prevp - pcond - pinud - pidep - psdep - pgdep
-                     + psevp - pseml/xlf adjustments)
-        qc += dtcld·(pcond - praut - pracw - piacw - psacw - pgacw
-                     - paacw_adj - pinuc - pfrzdtc - pmulcs - pmulcg + pimlt_qi)
-        qr += dtcld·(praut + pracw + paacw_adj - prevp + (psmlt + pgmlt) - pfrzdtr)
-                # T<T0c routing: psacw/pgacw/paacw → qs/qg, psacr/pgacr remain in qr;
-                # T>=T0c routing: snow→rain via psmlt/pgmlt; psacr/pgacr stay; pfrzdtr off (cold only)
-        qs += dtcld·(psaut + psaci + paacw_adj_warm0 + psacr_adj·H[T<T0c] - psmlt - pseml
-                     + pinud_psdep + pmulcs + pmulrs - pgaut + pfrzdtc·... )  # complex routing
-        qg += dtcld·(pgaci + paacw_adj·warm0 + pgacr_adj + piacr - pgmlt - pgeml + pfrzdtr + pmulcg + pmulrg)
-        qi += dtcld·(pinud + pinuc + pfrzdtc + pidep - praci - psaci - pgaci - pmulcs - pmulrs - pmulcg - pmulrg
-                     + piacw - pimlt_qi - psaut)
-        brs += delta_brs_melt + delta_brs_freeze  (graupel volume)
-
-    Number balance: 비슷한 구조로 nc, nr, ni 갱신.
-
-    Energy balance (T):
-        T += dtcld·xl/cpm·(pcond - prevp - psevp)
-           + dtcld·xlf/cpm·(pinud + pidep + psdep + pgdep + pinuc + pfrzdtc + pfrzdtr
-                             - psmlt - pgmlt - pimlt_qi - pseml - pgeml)
+    The mass and paired-number budgets select the complete cold arm
+    (`supcol >= 0`) or warm arm (`supcol < 0`) at this boundary. Common
+    praut/pracw terms remain in both arms, and the paacw producer remains
+    available for the arm-specific destination terms. Cold collision,
+    deposition, nucleation, and ice-number terms are excluded from the warm
+    arm, while snow/graupel evaporation and D5 terms are excluded from the
+    cold arm.
+    D1-D4 amounts are applied separately, and the latent-heat update uses the
+    corresponding Fortran `xlwork2` expression (constant `xls` for
+    deposition, `xlf=xls-xl(T)` for freezing/D5, and `xlf0` for D1 melt).
 
     Note: Fortran의 모든 mutation을 정확히 직역. T-branch routing은 *cold*=`supcol >= 0`
-    (Fortran F:2456 `t.le.t0c`), *warm*=`supcol < 0` mask로 처리. 경계 supcol==0은
-    no-op (cold rate가 모두 strict-gate supcol>0 ⇒ 0) — 리터럴 충실도용.
+    (Fortran F:2456 `t.le.t0c`), *warm*=`supcol < 0` mask로 처리한다. 따라서 경계
+    supcol==0은 cold arm에 포함된다.
     """
     cold_mask = (pre.supcol >= 0).to(state.qc.dtype)  # Fortran F:2456 `t.le.t0c` ⇔ supcol>=0
     warm_mask = 1.0 - cold_mask  # = supcol<0 (Fortran t>t0c)
@@ -1085,25 +1073,28 @@ def state_update_torch(
     # F1e 안에서 두 group을 분리해 더한다.
 
     # ── Mass balance ───────────────────────────────────────────────────
-    # qv (water vapor)
-    dqv = dtcld * (
-        # pcond DEFERRED to apply_satadj_step_torch (post-update + post-reclass,
-        # Fortran :2922-2943; mirrors C++ apply_satadj_step). NOT applied here.
-        - warm.prevp                            # B4 (rain↔vapor; prevp<0이면 qv 증가)
-        - cold.pinud                            # C3 deposition nucleation (qv→qi)
-        - cold.pidep - cold.psdep - cold.pgdep  # C4 dep/sub (vapor↔ice/snow/graupel)
-        - cold.psevp                            # C6 snow evap (psevp<0 → vapor 증가)
-        - cold.pgevp                            # C6' graupel evap (pgevp<0 → vapor 증가)
+    # qv (water vapor). pcond is deferred to apply_satadj_step_torch (post-update
+    # + post-reclass, Fortran :2922-2943; mirrors C++ apply_satadj_step). The
+    # Fortran cold arm (:2782) and warm arm (:2913) have different complete rate
+    # sets. Producers intentionally emit residual cold rates in warm cells (the
+    # same rates feed D5), so select the whole arm at this owning boundary.
+    dqv_cold = (
+        - warm.prevp - cold.psdep - cold.pgdep
+        - cold.pinud - cold.pidep
     )
+    dqv_warm = - warm.prevp - cold.psevp - cold.pgevp
+    dqv = dtcld * torch.where(pre.supcol >= 0, dqv_cold, dqv_warm)
     qv_new = state.qv + dqv
 
     # qc (cloud water)
     dqc_rate = dtcld * (
         # pcond DEFERRED to apply_satadj_step_torch (see qv). NOT applied here.
+        # praut/pracw and both paacw additions are present in both arms. piacw
+        # and HM cloud splinter sinks are cold-only.
         - warm.praut - warm.pracw                                # B1/B2 (qc→qr)
-        - cold.piacw                                             # 2616 piacw (qc→qi)
-        - 2.0 * cold.paacw_adj                                   # 2616: paacw·2 (qc→qs+qg)
-        - cold.pmulcs - cold.pmulcg                              # 2616 C2e HM
+        - cold.piacw * cold_mask                                 # 2616 piacw (cold→qi)
+        - cold.paacw_adj - cold.paacw_adj                        # 2616 paacw twice
+        - cold.pmulcs * cold_mask - cold.pmulcg * cold_mask       # 2616 C2e HM
     )
     dqc_amount = -mf.pinuc - mf.pfrzdtc + mf.pimlt_qi            # 1505/1533/1337 (amounts)
     dqc = dqc_rate + dqc_amount
@@ -1111,14 +1102,17 @@ def state_update_torch(
 
     # qr (rain water)
     dqr_rate = dtcld * (
-        warm.praut + warm.pracw                   # B1/B2 (qc→qr)
-        + warm.prevp                              # 2740 prevp<0 → qr 감소
-        - cold.piacr - cold.pgacr_adj - cold.psacr_adj  # 2621-2623 rain collected (sinks)
-        - cold.pmulrs - cold.pmulrg               # 2623 HM rain→ice splinter sinks
-        - (mf.psmlt + mf.pgmlt) * warm_mask       # D1 psmlt<0 → qr 증가 (qr -= psmlt)
-        - mf.pseml - mf.pgeml                     # D5 enhanced melt (pseml<0 → qr 증가)
-        + 2.0 * cold.paacw_adj * warm_mask        # #1: WARM arm sheds rimed cloud to RAIN (Fortran :2740 qr+=2*paacw);
-                                                  # cold arm routes paacw to qs/qg (below, cold_mask). Mirrors C++.
+        warm.praut + warm.pracw + warm.prevp       # common B1/B2/B4 terms
+        # COLD (F:2712): collision/riming sinks. These producers are not
+        # temperature-gated because their adjusted values feed D5.
+        - cold.piacr * cold_mask - cold.pgacr_adj * cold_mask
+        - cold.psacr_adj * cold_mask
+        - cold.pmulrs * cold_mask - cold.pmulrg * cold_mask
+        # WARM (F:2831): two source-order paacw additions and D5 sinks.
+        + cold.paacw_adj * warm_mask + cold.paacw_adj * warm_mask
+        - mf.pseml * warm_mask - mf.pgeml * warm_mask
+        # D1 snow/graupel melt → rain; mf D1 is zeroed before runtime state_update.
+        - (mf.psmlt + mf.pgmlt) * warm_mask
     )
     dqr_amount = -mf.pfrzdtr                      # 1560 Bigg rain → qg (amount)
     dqr = dqr_rate + dqr_amount
@@ -1135,39 +1129,40 @@ def state_update_torch(
     one_m_d3 = 1.0 - delta3
 
     # qs (snow) — Fortran 2633-2637 + warm-branch 2743 직역
-    # review4#1: psacw 제거 (Fortran 2633은 paacw만 사용); cold_mask 제거 (paacw 무조건 적용);
-    #   psevp 추가 (warm branch snow→vapor 직접 sink, Fortran 2743 일부).
+    # review4#1: psacw 제거 (Fortran 2633은 paacw만 사용); paacw는 cold arm에만
+    #   적용한다. psevp는 warm branch snow→vapor 직접 sink (Fortran 2743 일부).
     dqs = dtcld * (
-        cold.psdep                                # C4 deposition
-        + cold.psaut                              # C5 ice aggregation → snow
+        cold.psdep * cold_mask                    # C4 deposition (cold arm)
+        + cold.psaut * cold_mask                  # C5 ice aggregation → snow
         + cold.paacw_adj * cold_mask              # #1: paacw→qs only in COLD arm (Fortran :2633); warm arm sheds to qr
-        + cold.piacr * delta3                     # piacr → qs when qr small
-        + cold.praci * delta3                     # praci → qs when qr small
-        + cold.psacr_adj * delta2                 # psacr → qs when qr&qs small
-        + cold.psaci                              # C2 ice → snow
-        - cold.pracs * one_m_d2                   # snow→graupel when (1-delta2)
-        + cold.psevp                              # 2743 warm: snow evap (psevp<0 → qs sink)
+        + cold.piacr * delta3 * cold_mask         # piacr → qs when qr small
+        + cold.praci * delta3 * cold_mask         # praci → qs when qr small
+        + cold.psacr_adj * delta2 * cold_mask     # psacr → qs when qr&qs small
+        + cold.psaci * cold_mask                  # C2 ice → snow
+        - cold.pracs * one_m_d2 * cold_mask       # snow→graupel when (1-delta2)
+        + cold.psevp * warm_mask                  # 2743 warm: snow evap (psevp<0 → qs sink)
         + mf.psmlt                                # D1 melt (psmlt<0 → qs sink)
-        + mf.pseml                                # D5 enhanced melt
+        + mf.pseml * warm_mask                    # D5 enhanced melt
         # review5 audit: pmulcs 제거 — Fortran 2633은 pmul* 없음. paacw_adj가 이미
         # HM 분기를 반영 (paacw_adj = paacw - pmulcs - pmulcg). pmul* 추가 시 double-count.
     )
     qs_new = state.qs + dqs
 
     # qg (graupel) — Fortran 2638-2642 + warm-branch 2745 직역
-    # review4#1: pgacw 제거; cold_mask 제거. pgevp 유지 (codex#4).
+    # review4#1: pgacw 제거; graupel collision/deposition terms are cold-arm
+    #   terms, while pgevp remains the warm-branch evaporation (codex#4).
     dqg_rate = dtcld * (
-        cold.pgdep                                # C4 deposition
+        cold.pgdep * cold_mask                    # C4 deposition (cold arm)
         + cold.paacw_adj * cold_mask              # #1: paacw→qg only in COLD arm (Fortran :2641); warm arm sheds to qr
-        + cold.pgacr_adj                          # 2641 rain ←collected by graupel
-        + cold.pracs * one_m_d2                   # snow → graupel when (1-delta2)
-        + cold.piacr * one_m_d3                   # piacr → qg when qr ≥ 1e-4
-        + cold.praci * one_m_d3                   # praci → qg when qr ≥ 1e-4
-        + cold.psacr_adj * one_m_d2               # psacr → qg
-        + cold.pgaci                              # C2 ice → graupel
-        + cold.pgevp                              # C6' graupel evap (pgevp<0 → qg sink)
+        + cold.pgacr_adj * cold_mask              # 2641 rain ←collected by graupel
+        + cold.pracs * one_m_d2 * cold_mask       # snow → graupel when (1-delta2)
+        + cold.piacr * one_m_d3 * cold_mask       # piacr → qg when qr ≥ 1e-4
+        + cold.praci * one_m_d3 * cold_mask       # praci → qg when qr ≥ 1e-4
+        + cold.psacr_adj * one_m_d2 * cold_mask   # psacr → qg
+        + cold.pgaci * cold_mask                  # C2 ice → graupel
+        + cold.pgevp * warm_mask                  # C6' graupel evap (pgevp<0 → qg sink)
         + mf.pgmlt                                # D1 (pgmlt<0 → qg sink)
-        + mf.pgeml                                # D5 enhanced melt
+        + mf.pgeml * warm_mask                    # D5 enhanced melt
     )
     dqg_amount = mf.pfrzdtr                       # 1558 Bigg rain → qg (amount)
     dqg = dqg_rate + dqg_amount
@@ -1175,14 +1170,13 @@ def state_update_torch(
 
     # qi (cloud ice)
     # qi (cloud ice) — Fortran 2626-2630 + inline 1505/1533/1337
-    dqi_rate = dtcld * (
-        cold.pinud + cold.pidep                   # C3/C4 vapor → ice (+)
-        + cold.piacw                              # 2626 piacw cloud → ice (+)
-        - cold.praci - cold.psaci - cold.pgaci    # 2626 ice → rain/snow/graupel (sinks)
-        - cold.psaut                              # 2626 ice → snow aggregation (sink)
-        + cold.pmulcs + cold.pmulrs               # 2628 HM (+ to ice)
-        + cold.pmulcg + cold.pmulrg               # 2628 HM (+ to ice)
-    )
+    dqi_rate = dtcld * cold_mask * (-(
+        # COLD-only qi budget, in Fortran/C++ source order F:2717:
+        # psaut+praci+psaci+pgaci-pinud-pidep-piacw-pmulcs-pmulcg-pmulrs-pmulrg.
+        cold.psaut + cold.praci + cold.psaci + cold.pgaci
+        - cold.pinud - cold.pidep - cold.piacw
+        - cold.pmulcs - cold.pmulcg - cold.pmulrs - cold.pmulrg
+    ))
     dqi_amount = mf.pinuc + mf.pfrzdtc - mf.pimlt_qi   # 1506/1534/1338 (amounts)
     dqi = dqi_rate + dqi_amount
     qi_new = state.qi + dqi
@@ -1193,8 +1187,8 @@ def state_update_torch(
         - warm.nraut                              # qc → qr autoconv
         - warm.nccol                              # cloud self-collection
         - warm.nracw                              # qc → qr accretion
-        - cold.niacw                              # C2c ice riming on cloud
-        - 2.0 * cold.naacw                        # naacw 2× (Fortran 2620)
+        - cold.niacw * cold_mask                  # C2c ice riming on cloud (cold)
+        - cold.naacw - cold.naacw                 # naacw twice (Fortran 2620)
     )
     dnc_amount = -mf.ninuc - mf.nfrzdtc + mf.pimlt_ni  # 1500/1530/1338 (amounts)
     dnc = dnc_rate + dnc_amount
@@ -1204,30 +1198,28 @@ def state_update_torch(
     dnr_rate = dtcld * (
         warm.nraut                                # B1 autoconv → rain
         - warm.nrcol                              # rain self-collection
-        - cold.niacr - cold.nraci                 # 2624 rain ←collected by ice
-        - cold.nsacr - cold.ngacr                 # 2625 rain ←snow/graupel
-        + mf.nseml + mf.ngeml                     # 2749-2750 warm enhanced-melt number → rain
+        - cold.niacr * cold_mask - cold.nraci * cold_mask # 2624 rain ←collected by ice
+        - cold.nsacr * cold_mask - cold.ngacr * cold_mask # 2625 rain ←snow/graupel
+        + mf.nseml * warm_mask + mf.ngeml * warm_mask      # 2749-2750 warm enhanced-melt number → rain
                                                   # (warm-gated in melt_freeze ⇒ no-op when cold; mirrors C++)
         - mf.sfac_melt * mf.psmlt - mf.gfac_melt * mf.pgmlt  # D1 melt snow/graupel → rain number (Fortran 1299/1323; D1-zeroed in mf5 at runtime, preserves inline↔state_update identity)
     )
     dnr_amount = -mf.nfrzdtr                      # 1556 Bigg rain (amount)
     dnr = dnr_rate + dnr_amount
-    # NOTE: complete-rain-evap nr-zeroing (Fortran :1794) is NOT applied here.
-    # It must run BEFORE the conservation budget (so the rain-number budget reads
-    # the zeroed nr) and before the cold-phase rates that read nr — i.e. right
-    # after warm_phase, not in state_update. Both C++ and Python currently lack
-    # that correct-timed zeroing; it is scoped to the WRF-validated pass with the
-    # other shared Fortran gaps (see memory project_kdm6_parity_audit_findings).
+    # Complete-rain-evap nr-zeroing (Fortran :1794) is performed by the owning
+    # one-step driver immediately after warm_phase, before the cold phase and
+    # conservation budget. Thus state_update receives the already-zeroed
+    # reservoir in complete-evap cells and only applies the ordinary dnr terms.
     nr_new = state.nr + dnr
 
     # ni (ice number) — Fortran 2630-2632 + inline 1501/1531/1338
-    dni_rate = dtcld * (
-        cold.ninud                                # C3 nucleation (+)
-        - cold.nraci - cold.nsaci - cold.ngaci    # 2630 ice → rain/snow/graupel (sinks)
-        - cold.niacr                              # 2631 niacr (rain ←ice의 ice 소멸)
-        + cold.nmulcs + cold.nmulcg               # 2631 HM cloud splinter (+)
-        + cold.nmulrs + cold.nmulrg               # 2632 HM rain splinter (+)
-        - cold.nsaut                              # 2632 ice → snow aggregation (-)
+    dni_rate = dtcld * cold_mask * (
+        # COLD-only ni budget, in Fortran/C++ source order F:2721. Keep ninud
+        # after the four collision sinks; it is not the first add.
+        - cold.nraci - cold.nsaci - cold.ngaci
+        - cold.niacr + cold.ninud
+        + cold.nmulcs + cold.nmulcg + cold.nmulrs + cold.nmulrg
+        - cold.nsaut
     )
     dni_amount = mf.ninuc + mf.nfrzdtc - mf.pimlt_ni  # 1501/1531/1338 (amounts)
     # complete-sublim zeroes only the BASE reservoir (Fortran F:2435 nci2=0), THEN the
@@ -1288,46 +1280,33 @@ def state_update_torch(
     # (Fortran warm-branch F:2752); cold riming on xls-xl(T) (F:2645).
     xlf_melt = _mf.DEFAULT_XLF
 
-    dT_warm_phase = dtcld * pre.xl / cpm_safe * (
-        # pcond warming DEFERRED to apply_satadj_step_torch (post-reclass).
-        warm.prevp                            # B4 rain evap (prevp<0 → cooling)
-        + cold.psevp                          # C6 snow evap (psevp<0 → cooling)
-        + cold.pgevp                          # C6' graupel evap (pgevp<0 → cooling)
+    # Fortran xlwork2 has two complete arm-specific expressions (cold
+    # F:2738-2741, warm F:2844-2845). Keep each source order and select the
+    # result with the same gate used by every mass/number update. This matters
+    # for residual cold rates in warm cells: they are real producer outputs,
+    # but are not part of the warm latent-heat budget.
+    dep_sum_c = cold.psdep + cold.pgdep + cold.pidep + cold.pinud
+    frz_sum_c = (
+        cold.piacr + cold.paacw_adj
+        + cold.pmulcs + cold.pmulcg + cold.pmulrs + cold.pmulrg
+        + cold.piacw + cold.paacw_adj + cold.pgacr_adj + cold.psacr_adj
     )
-    dT_dep_phase = dtcld * xls / cpm_safe * (
-        cold.pinud + cold.pidep + cold.psdep + cold.pgdep   # vapor→ice deposition (xls)
+    xlwork2_cold = -xls * dep_sum_c - pre.xl * warm.prevp - xlf * frz_sum_c
+    vap_sum_w = warm.prevp + cold.psevp + cold.pgevp
+    xlwork2_warm = -pre.xl * vap_sum_w - xlf * (mf.pseml + mf.pgeml)
+    xlwork2 = torch.where(pre.supcol >= 0, xlwork2_cold, xlwork2_warm)
+
+    # D1 melt + D2-D4 freeze amounts. D1 uses constant xlf0; D2-D4 uses
+    # xlf(T), matching apply_melt_freeze_inline_torch and the C++ component
+    # path. Runtime applies D1-D4 inline and passes these as zeroed amounts,
+    # but the component boundary remains directly callable.
+    coef_melt = dtcld * xlf_melt / cpm_safe
+    dT_amount = (
+        coef_melt * mf.psmlt + coef_melt * mf.pgmlt
+        - xlf_melt / cpm_safe * mf.pimlt_qi
+        + xlf / cpm_safe * (mf.pinuc + mf.pfrzdtc + mf.pfrzdtr)
     )
-    # D1 melt (psmlt/pgmlt rate + pimlt_qi amount) → CONSTANT xlf0 (Fortran F:1303/1327/1339).
-    # SEED#5: psmlt/pgmlt are two SEQUENTIAL t-adds (F:1303 then :1327), split
-    # identically to apply_melt_freeze_inline_torch (inline↔state_update identity guard).
-    dT_melt_d1 = (
-        dtcld * xlf_melt / cpm_safe * mf.psmlt                # D1 snow melt (sequential, F:1303)
-        + dtcld * xlf_melt / cpm_safe * mf.pgmlt              # D1 graupel melt (sequential, F:1327)
-        - xlf_melt / cpm_safe * mf.pimlt_qi                   # 1339 D1 instant ice-melt (amount, cooling)
-    )
-    # xlf group — review4#4: Fortran 2647-2650 cold branch xlf list 추가.
-    #   Fortran의 paacw/psacr/pgacr는 HM 후 *post-adjusted* value이므로, 우리 oracle의
-    #   paacw_adj/psacr_adj/pgacr_adj와 동일. piacr·1 + paacw·2 + pmul*·1 + piacw·1
-    #   + pgacr·1 + psacr·1 = 10 항.
-    # xlf rate group (D5 + cold riming) — D1 melt moved to dT_melt_d1 (xlf0, Codex round-2).
-    dT_freeze_rate = dtcld * xlf / cpm_safe * (
-        mf.pseml + mf.pgeml                     # D5 enhanced melt cooling (xls-xl, Fortran F:2752)
-        # cold-branch riming/freezing: liquid → solid → fusion latent heat 방출 → warming
-        + cold_mask * (
-            cold.piacr                          # 2648 rain frozen on ice
-            + 2.0 * cold.paacw_adj              # 2649 paacw·2 (cloud rimed on snow+graupel)
-            + cold.pmulcs + cold.pmulcg         # 2649 HM cloud splinter
-            + cold.pmulrs + cold.pmulrg         # 2649 HM rain splinter
-            + cold.piacw                        # 2650 cloud frozen on ice
-            + cold.pgacr_adj + cold.psacr_adj   # 2650 rain collected by graupel/snow
-        )
-    )
-    # xlf amount group (D2-D4 freezes) — D1 ice-melt pimlt_qi moved to dT_melt_d1 (xlf0).
-    dT_freeze_amount = xlf / cpm_safe * (
-        mf.pinuc + mf.pfrzdtc + mf.pfrzdtr      # 1507/1536/1559 inline (amount, +)
-    )
-    dT_freeze_phase = dT_melt_d1 + dT_freeze_rate + dT_freeze_amount
-    t_new = state.t + dT_warm_phase + dT_dep_phase + dT_freeze_phase
+    t_new = state.t - xlwork2 / cpm_safe * dtcld + dT_amount
 
     # review5#2 (partial): Fortran 2615-2756 `max(... ,0.)` — nonnegative clamp만 적용.
     # review9#1 fix: paired threshold cleanup은 이 함수 *밖*에서 reclassification 뒤에
@@ -2112,6 +2091,20 @@ def kdm62d_one_step_torch(
 
     warm_out = apply_warm_controls(warm_out, controls)   # [DA §5.2] no-op when None
 
+    # F1b/F1c boundary: complete rain evaporation transfers the paired rain
+    # number to CCN and zeroes the rain-number reservoir before any C1-C6
+    # producer reads it (Fortran F:1795-1796; C++ coordinator.cpp:1066-1076).
+    # Keep the transfer amount separately for the CCN reservoir; the updated
+    # ``working.nr`` is what cold rates, D5, conservation and state_update see.
+    # The component path has no threaded CCN reservoir, so it retains its
+    # established nccn=None behavior.
+    if nccn is not None:
+        rce_amount = working.nr * warm_out.rain_complete_evap.to(working.nr.dtype)
+        nccn = nccn + rce_amount
+        working = working._replace(
+            nr=torch.where(warm_out.rain_complete_evap,
+                           torch.zeros_like(working.nr), working.nr))
+
     cold_out = cold_phase_torch(
         working, forcing, pre2, warm_out.prevp,
         aux2.n0i, aux2.n0r, aux2.n0so, aux2.n0go, aux2.n0c,
@@ -2169,14 +2162,9 @@ def kdm62d_one_step_torch(
     # (sites #0-#3, #resed) to fix the qg cascade; genuine Group-B cells grow qg>qcrmin by the final stage.
     new_state = new_state._replace(
         brs=torch.where(new_state.qg > full_params.progb.qcrmin, _bg4, torch.zeros_like(_bg4)))
-    # complete-rain-evap NR → NCCN (Fortran :2937; C++ state_update coordinator.cpp:1170/1254).
-    # state_update_torch gives new_state.nr = working.nr + dnr (no rce term — C++ subtracts rce
-    # separately); mirror C++ here: nr -= rce, nccn += rce. Gated on nccn so the component-test
-    # path (nccn=None) is byte-unchanged; placed before the reclass/satadj, matching C++.
-    if nccn is not None:
-        rce_amount = working.nr * warm_out.rain_complete_evap.to(working.nr.dtype)
-        nccn = nccn + rce_amount
-        new_state = new_state._replace(nr=torch.clamp(new_state.nr - rce_amount, min=0.0))
+    # Complete-rain-evap NR→NCCN was transferred immediately after B4 above;
+    # state_update therefore sees nr=0 in those cells, matching the C++/Fortran
+    # owning boundary without a second post-update subtraction.
     # review5#4 + review7#1: Picons (Fortran 2807-2813) qi→qs.
     new_state = reclassify_large_ice_to_snow_torch(new_state, forcing.den)
     # review8#3: rain→cloud reclassification (Fortran 2883-2892) when avedia_r ≤ 82μm.
@@ -2209,9 +2197,33 @@ def kdm62d_one_step_torch(
 def compute_loops_max(delt: float, dtcldcr: float = c.DTCLDCR) -> int:
     """Fortran kdm62D 진입 시: loops_max = max(nint(delt/dtcldcr + 0.5), 1).
 
-    정수 연산 — 미분 불가 영역 (caller가 결정).
+    정수 연산 — 미분 불가 영역 (caller가 결정).  The public helper mirrors
+    the C++ boundary: both elapsed time and the subcycle denominator must be
+    finite, the denominator must be positive, and the rounded result must fit
+    the C++ ``int`` loop bound.  Non-positive elapsed time retains the
+    established identity result of one loop.
     """
-    return max(int(delt / dtcldcr + 0.5), 1)
+    if not math.isfinite(delt):
+        raise ValueError(f"delt must be finite (got {delt!r})")
+    if not (math.isfinite(dtcldcr) and dtcldcr > 0.0):
+        raise ValueError(
+            f"dtcldcr must be finite and > 0 (got {dtcldcr!r})")
+    if delt <= 0.0:
+        return 1
+
+    quotient = delt / dtcldcr
+    rounded = quotient + 0.5
+    # C++ casts to a signed 32-bit int after this check.  For positive delt
+    # the lower bound is already guaranteed; checking the quotient before the
+    # cast also rejects Python values that would become an implementation-
+    # dependent C++ conversion.
+    if (not math.isfinite(quotient) or not math.isfinite(rounded)
+            or rounded > 2_147_483_647.0):
+        raise ValueError(
+            "delt/dtcldcr is outside the representable subcycle range: "
+            f"{quotient!r}")
+    loops = int(rounded)
+    return loops if loops > 1 else 1
 
 
 def kdm62d_step_torch(

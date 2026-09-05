@@ -221,7 +221,16 @@ KDM6_C_API uint32_t kdm6_step_v2_args_size_c(void);
  * major mismatch → INVALID_ARG; struct_size too small for the required fields →
  * INVALID_ARG; then the v1 checks (dims/value_only/pointers/param_grad) and the
  * PR1-A thread fence. The library reads at most min(struct_size, sizeof) bytes.
- * Same fail-closed contract as v1: *handle=NULL and no output written on error.
+ * For a matching ABI version and a struct_size covering the required prefix,
+ * *handle is set to NULL before argument validation; validation and thread-fence
+ * refusals leave all caller outputs untouched. A version mismatch returns before
+ * the library can safely locate `handle` in an unknown layout, so it does NOT
+ * dereference or modify any handle/output pointer. Likewise, a short framing
+ * record has no handle/output guarantee. Once tensor work begins, an internal
+ * failure may occur after a caller output has been copied; callers must use the
+ * return code and discard outputs on KDM6_ERR_INTERNAL. This is the v2
+ * documented error boundary and avoids claiming rollback for caller-owned
+ * buffers.
  * @return KDM6_OK or a negative error code.
  */
 KDM6_C_API int kdm6_step_v2_c(const kdm6_step_v2_args* args);

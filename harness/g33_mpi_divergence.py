@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -83,6 +84,287 @@ def _forecast_in(run_dir):
     return cands[0]
 
 
+_GRID_TOKEN = re.compile(r"^(\d+)x(\d+)$")
+
+
+def _grid_record(text: str | None, run_dir: Path) -> dict:
+    """Parse the runner's requested/actual processor-grid record.
+
+    A decomposition claim needs both sides of the record: a requested grid that
+    WRF acknowledged and an actual grid parsed from ``rsl.error.0000``.  The
+    old consumer compared opaque text and therefore accepted two different
+    requests that both ran as 1x1.
+    """
+    if text is None:
+        return {"present": False, "requested": None, "actual": None,
+                "matches": None, "np": None, "valid": False}
+    fields: dict[str, str] = {}
+    for line in text.splitlines():
+        m = re.match(r"^\s*(requested|actual|matches|np)\s+(.+?)\s*$",
+                     line, re.IGNORECASE)
+        if not m:
+            continue
+        key = m.group(1).lower()
+        if key in fields:
+            return {"present": True, "requested": None, "actual": None,
+                    "matches": None, "np": None, "valid": False,
+                    "error": f"duplicate {key} in {run_dir / 'proc_grid'}"}
+        fields[key] = m.group(2)
+
+    def grid(value: str | None) -> str | None:
+        if value is None or value.lower().startswith(("(unset", "(not found")):
+            return None
+        m = _GRID_TOKEN.fullmatch(value.lower())
+        if not m or int(m.group(1)) < 1 or int(m.group(2)) < 1:
+            return None
+        return f"{int(m.group(1))}x{int(m.group(2))}"
+
+    requested, actual = grid(fields.get("requested")), grid(fields.get("actual"))
+    matches_raw = fields.get("matches", "").lower()
+    if matches_raw.startswith("yes"):
+        matches = "yes"
+    elif matches_raw.startswith("no"):
+        matches = "no"
+    elif matches_raw.startswith("n/a"):
+        matches = "n/a"
+    else:
+        # Older records did not carry a matches line.  Derive it only when both
+        # grids are present; a malformed/missing actual grid remains invalid.
+        matches = "yes" if requested is not None and actual is not None and requested == actual else None
+    try:
+        np_value = int(fields["np"]) if "np" in fields else None
+    except ValueError:
+        np_value = None
+    valid = bool(actual is not None and (np_value is None or np_value > 0))
+    if valid and np_value is not None:
+        ax, ay = (int(v) for v in actual.split("x"))
+        valid = ax * ay == np_value
+    return {"present": True, "requested": requested, "actual": actual,
+            "matches": matches, "np": np_value, "valid": valid,
+            "raw": fields}
+
+
+def _active_input_specs(run_dir: Path) -> list[dict[str, str]]:
+    """Resolve the archived namelist's active input set.
+
+    This calls the same ordinary-namelist resolver as the producer.  A minimal
+    no-assignment fixture is retained as legacy synthetic metadata; an ordinary
+    WRF run control without explicit input names is identity-incomplete and is
+    refused because registry defaults are outside this parser's scope.
+    """
+    nml = Path(run_dir) / "namelist.input"
+    if not nml.is_file():
+        return []
+    try:
+        from run_ss_case import (_namelist_assignments,
+                                 resolve_active_namelist_inputs)
+        text = nml.read_text()
+        assignments = _namelist_assignments(text)
+        specs = resolve_active_namelist_inputs(text)
+        # WRF supplies registry defaults for input_inname/bdy_inname and active
+        # aux streams.  This audit parser intentionally does not recreate that
+        # registry.  Once a normal WRF namelist identifies max_dom, require the
+        # core names (and any declared auxiliary interval's matching name) so a
+        # missing default cannot be misreported as a no-input experiment.
+        # A real WRF namelist may omit max_dom (its registry default is one), so
+        # use a small set of unmistakable WRF run controls to recognize that
+        # scope.  The minimal ``&domains/`` fixtures used by old unit tests have
+        # none of these controls and remain explicitly legacy synthetic inputs.
+        standard_keys = {
+            "max_dom", "history_interval", "history_interval_s", "run_days",
+            "run_hours", "run_minutes", "run_seconds", "start_year",
+            "mp_physics", "time_step", "input_from_file",
+        }
+        if standard_keys.intersection(assignments):
+            missing_core = sorted({"input_inname", "bdy_inname"}
+                                  - set(assignments))
+            if missing_core:
+                raise SystemExit(
+                    f"{run_dir}: identity-incomplete: standard WRF defaults for "
+                    f"{', '.join(missing_core)} are unsupported; declare explicit input names")
+            aux_intervals = {
+                match.group(1)
+                for key in assignments
+                for match in [re.fullmatch(r"(auxinput\d+)_interval(?:_s)?", key)]
+                if match
+            }
+            missing_aux = sorted(
+                f"{base}_inname" for base in aux_intervals
+                if f"{base}_inname" not in assignments)
+            if missing_aux:
+                raise SystemExit(
+                    f"{run_dir}: identity-incomplete: active auxiliary defaults are "
+                    f"unsupported; declare explicit {', '.join(missing_aux)}")
+        return specs
+    except Exception as exc:
+        if isinstance(exc, SystemExit):
+            raise
+        raise SystemExit(
+            f"{run_dir}: cannot resolve active inputs from namelist.input: {exc}") from exc
+
+
+def _active_input_declared(run_dir: Path) -> bool:
+    return bool(_active_input_specs(run_dir))
+
+
+def _validate_producer_status(run_dir: Path) -> bool:
+    """Consume producer validity without inventing it for old fixtures.
+
+    The SS producer writes both an explicit experiment verdict and an
+    executable before/after stability line.  A final executable digest alone
+    cannot prove that the bytes stayed fixed while the model ran.  Historical
+    synthetic fixtures may predate these files, so their absence is retained as
+    legacy metadata; an explicitly supplied invalid/stability record is always
+    a hard refusal.
+    """
+    run_dir = Path(run_dir)
+    validity = run_dir / "experiment_valid.json"
+    if validity.is_file():
+        try:
+            record = json.loads(validity.read_text())
+        except (OSError, json.JSONDecodeError) as exc:
+            raise SystemExit(f"{run_dir}: invalid experiment_valid.json: {exc}") from exc
+        if not isinstance(record, dict) or record.get("experiment_valid") is not True:
+            reasons = record.get("invalid_reasons") if isinstance(record, dict) else None
+            raise SystemExit(
+                f"{run_dir}: producer marked experiment_valid=false"
+                + (f" ({reasons})" if reasons else ""))
+    exe = run_dir / "wrf_exe_sha256"
+    if exe.is_file():
+        try:
+            lines = exe.read_text().splitlines()
+        except OSError as exc:
+            raise SystemExit(f"{run_dir}: cannot read wrf_exe_sha256: {exc}") from exc
+        stable_seen = False
+        for line in lines:
+            if re.match(r"^\s*stable\s+yes(?:\s|$)", line, re.IGNORECASE):
+                stable_seen = True
+            if re.match(r"^\s*stable\s+NO(?:\s|$)", line, re.IGNORECASE):
+                raise SystemExit(
+                    f"{run_dir}: producer executable record is unstable (stable NO)")
+        if validity.is_file() and not stable_seen:
+            raise SystemExit(
+                f"{run_dir}: producer validity lacks a stable executable record")
+    elif validity.is_file():
+        raise SystemExit(
+            f"{run_dir}: producer validity lacks wrf_exe_sha256 stability record")
+    return validity.is_file()
+
+
+def _input_identity(run_dir: Path) -> dict:
+    """Load and validate the runner's per-domain input hashes."""
+    run_dir = Path(run_dir)
+    json_path = run_dir / "input_sha256.json"
+    text_path = run_dir / "input_sha256"
+    active_specs = _active_input_specs(run_dir)
+    declared_by_nml = bool(active_specs)
+    if json_path.is_file():
+        try:
+            identity = json.loads(json_path.read_text())
+        except (OSError, json.JSONDecodeError) as exc:
+            raise SystemExit(f"{run_dir}: invalid input_sha256.json: {exc}") from exc
+    elif text_path.is_file():
+        records = []
+        canonical_text = None
+        try:
+            lines = text_path.read_text().splitlines()
+        except OSError as exc:
+            raise SystemExit(f"{run_dir}: cannot read input_sha256: {exc}") from exc
+        for line in lines:
+            fields = line.split()
+            if len(fields) == 2 and fields[0].lower() == "canonical_sha256":
+                canonical_text = fields[1]
+                continue
+            if len(fields) < 4 or fields[0].lower() in {"schema", "declared", "complete"}:
+                continue
+            kind, domain, name, digest = fields[:4]
+            records.append({"kind": kind, "domain": domain, "name": name,
+                            "sha256_before": None if digest == "(missing)" else digest,
+                            "sha256": None if digest == "(missing)" else digest,
+                            "status": "ok" if digest != "(missing)" else "missing",
+                            "stable": all(not f.startswith("stable=NO") for f in fields[4:])})
+        identity = {"schema": 1, "declared": bool(records), "records": records,
+                    "complete": all(r["status"] == "ok" and r.get("stable", True)
+                                    for r in records)}
+        if canonical_text is not None:
+            identity["canonical_sha256"] = canonical_text
+    else:
+        if declared_by_nml:
+            raise SystemExit(
+                f"{run_dir}: active namelist inputs are not recorded in input_sha256")
+        return {"present": False, "declared": False, "complete": True,
+                "keys": (), "records": []}
+
+    if not isinstance(identity, dict) or not isinstance(identity.get("records"), list):
+        raise SystemExit(f"{run_dir}: input identity has no records list")
+    declared_raw = identity.get("declared", bool(identity["records"]))
+    if not isinstance(declared_raw, bool):
+        raise SystemExit(f"{run_dir}: input identity declared flag is not boolean")
+    declared = declared_raw
+    if identity["records"] and not declared:
+        raise SystemExit(f"{run_dir}: input identity has records but is marked undeclared")
+    if declared_by_nml and (not declared or not identity["records"]):
+        raise SystemExit(f"{run_dir}: namelist declares inputs but input identity is empty")
+    expected_records = {(s["kind"], s["domain"], s["name"]) for s in active_specs}
+    actual_records = {(r.get("kind"), r.get("domain"), r.get("name"))
+                      for r in identity["records"] if isinstance(r, dict)}
+    if expected_records != actual_records:
+        raise SystemExit(
+            f"{run_dir}: input identity does not cover the active namelist input set")
+    keys = []
+    for rec in identity["records"]:
+        if not isinstance(rec, dict):
+            raise SystemExit(f"{run_dir}: malformed input identity record")
+        kind, domain = rec.get("kind"), rec.get("domain")
+        digest = rec.get("sha256_before", rec.get("sha256"))
+        if not isinstance(kind, str) or not isinstance(domain, str):
+            raise SystemExit(f"{run_dir}: input identity record lacks kind/domain")
+        if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-fA-F]{64}", digest):
+            raise SystemExit(f"{run_dir}: invalid input hash for {kind}/{domain}")
+        stable = rec.get("stable", True)
+        if rec.get("status", "ok") != "ok" or stable is not True:
+            raise SystemExit(f"{run_dir}: input {kind}/{domain} was unavailable or changed during run")
+        keys.append((kind, domain, digest.lower()))
+    complete_raw = identity.get("complete", True)
+    if not isinstance(complete_raw, bool):
+        raise SystemExit(f"{run_dir}: input identity complete flag is not boolean")
+    if declared and not complete_raw:
+        raise SystemExit(f"{run_dir}: input identity is incomplete")
+
+    # A producer may seal its path-independent records with a canonical digest.
+    # Validate that declaration against the records; never read the current
+    # resolved_path as if it were the historical byte stream consumed by WRF.
+    # Archived runs can legitimately lack those source files or have changed
+    # paths, while the producer's before/after record remains the relevant
+    # attestation.
+    canonical = identity.get("canonical_sha256")
+    producer_status_present = (run_dir / "experiment_valid.json").is_file()
+    if canonical is not None:
+        if not isinstance(canonical, str) or not re.fullmatch(r"[0-9a-fA-F]{64}", canonical):
+            raise SystemExit(f"{run_dir}: invalid canonical input identity hash")
+        try:
+            from run_ss_case import canonical_input_sha256
+            expected_canonical = canonical_input_sha256(identity)
+        except Exception as exc:
+            raise SystemExit(f"{run_dir}: cannot compute canonical input identity hash: {exc}") from exc
+        if canonical.lower() != expected_canonical:
+            raise SystemExit(
+                f"{run_dir}: canonical input identity hash does not match its records")
+        attestation = "producer_canonical_record"
+    else:
+        # New producer runs have experiment_valid.json and therefore must carry
+        # the seal.  Old synthetic metadata remains readable, but is explicitly
+        # labelled unanchored and is never described as independently byte-checked.
+        if producer_status_present and declared:
+            raise SystemExit(
+                f"{run_dir}: producer input identity lacks canonical record hash")
+        attestation = "unanchored_metadata"
+    return {"present": True, "declared": declared, "complete": True,
+            "keys": tuple(sorted(keys)), "records": identity["records"],
+            "canonical_sha256": canonical.lower() if isinstance(canonical, str) else None,
+            "attestation": attestation}
+
+
 def same_experiment(dir_a, dir_b, *, expect: str = "decomposition") -> dict:
     """Refuse two RUNS that are not the same experiment (owner review 8.2).
 
@@ -92,15 +374,25 @@ def same_experiment(dir_a, dir_b, *, expect: str = "decomposition") -> dict:
     namelists, all pass it -- and then a divergence statistic gets attributed to
     the decomposition.
 
-    `run_ss_case` now records what settles it. This reads that metadata and
-    states which of the four agree, so an attribution has something to stand on
-    besides the array shapes.
+    `run_ss_case` now records what settles it, including the requested and
+    actual processor grids plus hashes of every active initial, boundary, and
+    auxiliary input. This reads that metadata and states which identities agree,
+    so an attribution has something to stand on besides the array shapes.
 
     `expect` names what SHOULD differ: "decomposition" wants the same binary,
     runner and namelist with a different processor grid; "perturbation" wants
     all four identical, the input having been changed instead.
     """
     from pathlib import Path
+    if expect not in {"decomposition", "perturbation"}:
+        raise SystemExit(f"unknown experiment expectation: {expect}")
+
+    producer_a = _validate_producer_status(Path(dir_a))
+    producer_b = _validate_producer_status(Path(dir_b))
+    if producer_a != producer_b:
+        raise SystemExit(
+            "producer validity metadata is present in only one run; "
+            "legacy and sealed runs cannot be attributed as one experiment")
 
     def read(d, name):
         p = Path(d) / name
@@ -111,6 +403,8 @@ def same_experiment(dir_a, dir_b, *, expect: str = "decomposition") -> dict:
 
     out = {"applied": True, "expect": expect,
            "a": str(dir_a), "b": str(dir_b), "agree": {}, "differ": {}}
+    out["producer_status"] = {"a": {"explicit": producer_a},
+                               "b": {"explicit": producer_b}}
     for key, name, pick in (("wrf_exe", "wrf_exe_sha256", first),
                             ("runner", "runner_sha256", first),
                             ("proc_grid", "proc_grid", lambda t: t),
@@ -135,8 +429,73 @@ def same_experiment(dir_a, dir_b, *, expect: str = "decomposition") -> dict:
         else:
             out["differ"][key] = "differs"
 
-    must_agree = {"decomposition": ("wrf_exe", "runner", "namelist_but_grid"),
-                  "perturbation": ("wrf_exe", "runner", "proc_grid", "namelist")}[expect]
+    # The raw file is retained in the report for auditability, while the
+    # attribution decision uses structured actual/requested values.  A
+    # decomposition comparison is valid only when each run's requested grid
+    # was actually used and the pair's actual grids differ.
+    grid_a = _grid_record(read(dir_a, "proc_grid"), Path(dir_a))
+    grid_b = _grid_record(read(dir_b, "proc_grid"), Path(dir_b))
+    out["proc_grid_identity"] = {
+        "a": {k: grid_a.get(k) for k in ("requested", "actual", "matches", "np", "valid")},
+        "b": {k: grid_b.get(k) for k in ("requested", "actual", "matches", "np", "valid")},
+    }
+    if grid_a.get("valid") and grid_b.get("valid"):
+        if grid_a["actual"] == grid_b["actual"]:
+            out["differ"]["proc_grid_actual"] = "same actual processor grid"
+        else:
+            out["differ"]["proc_grid_actual"] = "differs"
+
+    inputs_a = _input_identity(Path(dir_a))
+    inputs_b = _input_identity(Path(dir_b))
+    input_declared = bool(inputs_a.get("declared") or inputs_b.get("declared"))
+    if input_declared:
+        if not (inputs_a.get("present") and inputs_b.get("present")):
+            out["differ"]["input_sha256"] = "not recorded in one or both runs"
+        elif inputs_a["keys"] == inputs_b["keys"]:
+            out["agree"]["input_sha256"] = True
+        else:
+            out["differ"]["input_sha256"] = "differs"
+    out["input_identity"] = {
+        "required": input_declared,
+        "a": {"present": inputs_a.get("present"), "declared": inputs_a.get("declared"),
+              "complete": inputs_a.get("complete"), "records": len(inputs_a.get("records", [])),
+              "attestation": inputs_a.get("attestation"),
+              "canonical_sha256": inputs_a.get("canonical_sha256")},
+        "b": {"present": inputs_b.get("present"), "declared": inputs_b.get("declared"),
+              "complete": inputs_b.get("complete"), "records": len(inputs_b.get("records", [])),
+              "attestation": inputs_b.get("attestation"),
+              "canonical_sha256": inputs_b.get("canonical_sha256")},
+    }
+
+    must_agree = {"decomposition": ["wrf_exe", "runner", "namelist_but_grid"],
+                  "perturbation": ["wrf_exe", "runner", "proc_grid", "namelist"]}[expect]
+    if expect == "decomposition":
+        if not (grid_a.get("valid") and grid_b.get("valid")):
+            raise SystemExit(
+                "decomposition attribution requires actual processor grids in both proc_grid records")
+        bad_grid = []
+        for label, grid in (("A", grid_a), ("B", grid_b)):
+            if grid.get("requested") is None:
+                bad_grid.append(f"{label} requested grid not recorded")
+            elif grid.get("actual") != grid.get("requested") or grid.get("matches") != "yes":
+                bad_grid.append(
+                    f"{label} requested {grid.get('requested')} but actual is "
+                    f"{grid.get('actual')} (matches={grid.get('matches')})")
+        if bad_grid:
+            raise SystemExit(
+                "these runs cannot support decomposition attribution: " + "; ".join(bad_grid))
+        if grid_a["actual"] == grid_b["actual"]:
+            raise SystemExit(
+                "both runs used the same processor grid (actual grid), so there is no "
+                "decomposition difference to attribute anything to.")
+        if input_declared:
+            must_agree.append("input_sha256")
+    elif input_declared:
+        # Perturbation identity is useful only if the changed input is recorded;
+        # all input hashes must be available and at least one must differ.
+        if "input_sha256" not in out["differ"]:
+            raise SystemExit(
+                "perturbation attribution requires a recorded input hash difference")
     bad = [k for k in must_agree if k not in out["agree"]]
     if bad:
         raise SystemExit(
@@ -144,10 +503,6 @@ def same_experiment(dir_a, dir_b, *, expect: str = "decomposition") -> dict:
             f"({ {k: out['differ'].get(k) for k in bad} }). "
             f"A divergence measured across them cannot be attributed to "
             f"{expect}.")
-    if expect == "decomposition" and "proc_grid" in out["agree"]:
-        raise SystemExit(
-            "both runs used the same processor grid, so there is no "
-            "decomposition difference to attribute anything to.")
     return out
 
 
@@ -171,6 +526,10 @@ def comparable(a, b) -> None:
     if ta.shape != tb.shape or not np.array_equal(ta, tb):
         raise SystemExit(f"time axes differ: A {ta.shape}, B {tb.shape}")
     for v in sorted(fa):
+        if a[v].dimensions != b[v].dimensions:
+            raise SystemExit(
+                f"{v}: dimension order differs: {a[v].dimensions} in A, "
+                f"{b[v].dimensions} in B")
         if a[v].shape != b[v].shape:
             raise SystemExit(
                 f"{v}: shape {a[v].shape} in A, {b[v].shape} in B")

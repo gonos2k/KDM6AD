@@ -20,6 +20,22 @@ decompositions, the ten-minute runs, other cases, the stage dumps, the 1-ULP arm
 re-measured. `f54ef3c9` is the historical campaign reference and the campaign
 binary `a40bd80f` is kept beside them.
 
+## Observation input decoding (2026-09-05)
+
+| statement | status | where |
+|---|---|---|
+| AMI DQF occupies bits 14–15; DN width is a separate image-variable attribute. The KO/FD readers now use both and preserve NetCDF missingness independently | CONFIRMED | `docs/AMI_INPUT_CONTRACT.md`; literal-word and synthetic NetCDF regressions |
+| All 16 channels in the sampled KO 202507190000 and FD 202507190100 files contain the valid-width variable attribute; SW038 is 14-bit and WV063 is 12-bit | CONFIRMED | `docs/reports/ami_bit_decode_full_raster_summary_20260905.json` |
+| In those finite-coordinate samples, old decoding rejects all SW038 pixels; corrected decoding accepts them. Other channels' QC availability and common-usable BT do not change | CONFIRMED | AMI measurement record; separate full-raster and production-sample scopes |
+| The former SW038 value near 376 K establishes solar contamination | REFUTED | Incorrect DN truncation produced those values; `docs/DA_REALTIME_PLAN.md` correction |
+| Assimilation or forecast skill change from corrected AMI decoding | UNMEASURED | Input decode measurements are not a forecast experiment |
+
+The whole-code correction and review status is tracked in
+`CHECKLIST_whole_audit_resolution_2026-09-05.md`. Code checks do not close
+M1 (10-minute applied-transfer residual), M2 (first-negative QIB operands),
+or the number-unit contract below. Private source edits and syntax checks do
+not change the deployed-binary attribution above.
+
 ## Number transport
 
 Number-unit contract (review of main `2638fb2`, 2026-09-05): the host Registry

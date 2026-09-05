@@ -66,7 +66,18 @@ def parse_rttov_ascii_blocks(path: str | Path) -> dict[str, list[float]]:
 
 
 def _parse_floats(line: str) -> list[float]:
-    return [float(token.replace("D", "E").replace("d", "e")) for token in _FLOAT_RE.findall(line)]
+    # Parse complete whitespace-delimited tokens.  ``findall`` alone silently
+    # skips an unknown token (for example ``BAD``), so a uniformly dropped
+    # value can leave a rectangular but shortened BT/K field that passes later
+    # shape checks.  RTTOV writes numeric values separated by whitespace; an
+    # unparseable token is therefore malformed output and must fail here.
+    tokens = line.split()
+    values: list[float] = []
+    for token in tokens:
+        if _FLOAT_RE.fullmatch(token) is None:
+            raise ValueError(f"invalid numeric token in RTTOV ASCII block: {token!r}")
+        values.append(float(token.replace("D", "E").replace("d", "e")))
+    return values
 
 
 def reshape_flat(values: list[float], nprofiles: int, nchannels: int) -> list[list[float]]:

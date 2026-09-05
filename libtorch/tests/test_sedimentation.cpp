@@ -35,7 +35,7 @@ SubstepAdvectionInputs make_adv_inputs(int K, bool grad = false) {
         torch::full({1, K}, 5.0e-4, plain),
         torch::full({1, K}, 8.0e-4, plain),
         torch::full({1, K}, 500.0, plain),
-        torch::full({1, K}, 1.1 * 500.0, plain),
+        torch::full({1, K}, 1.1, plain),  // production contract: dend = rho
     };
 }
 
@@ -96,7 +96,7 @@ void test_ice_substep_grad_finite() {
             torch::full({1, 4}, 5.0e-4, plain),
             torch::full({1, 4}, 5.0e-4, plain),
             torch::full({1, 4}, 500.0, plain),
-            torch::full({1, 4}, 1.1 * 500.0, plain),
+            torch::full({1, 4}, 1.1, plain),  // production contract: dend = rho
         };
         auto out = ice_substep_advection_torch(
             in, /*mstep_col=*/torch::full({1}, 2.0, f64()),
@@ -165,7 +165,7 @@ void test_sedimentation_chain_near_zero_precip_state() {
             /*p=*/torch::full({B, K}, 8.0e4, opts),
             /*den=*/torch::full({B, K}, 1.1, opts),
             /*delz=*/torch::full({B, K}, 250.0, opts),
-            /*dend=*/torch::full({B, K}, 1.1 * 250.0, opts),
+            /*dend=*/torch::full({B, K}, 1.1, opts),  // production contract: dend = rho
         };
 
         // Small but non-zero work1_* (normalized fall velocity / delz).
@@ -256,7 +256,7 @@ void test_sedimentation_via_preamble_repath() {
             torch::full({B, K}, 8.0e4, opts),
             torch::full({B, K}, 1.1, opts),
             torch::full({B, K}, 250.0, opts),
-            torch::full({B, K}, 1.1 * 250.0, opts),
+            torch::full({B, K}, 1.1, opts),  // production contract: dend = rho
         };
 
         auto full_p = default_coordinator_params();
@@ -361,7 +361,7 @@ void test_sedimentation_exact_zero_precip() {
             torch::full({B, K}, 8.0e4, opts),
             torch::full({B, K}, 1.1, opts),
             torch::full({B, K}, 250.0, opts),
-            torch::full({B, K}, 1.1 * 250.0, opts),
+            torch::full({B, K}, 1.1, opts),  // production contract: dend = rho
         };
         auto full_p = default_coordinator_params();
         auto pre = preamble(state, forcing, full_p);
@@ -458,7 +458,7 @@ void test_sedimentation_direction_python_convention() {
             torch::full({B, K}, 8.0e4, opts),
             torch::full({B, K}, 1.1, opts),
             torch::full({B, K}, 500.0, opts),
-            torch::full({B, K}, 1.1 * 500.0, opts),
+            torch::full({B, K}, 1.1, opts),  // production contract: dend = rho
         };
 
         // Strong fall velocity at all levels — large enough that one timestep
@@ -535,7 +535,7 @@ void test_sedimentation_reslope_per_substep() {
         };
         CoordinatorForcing forcing{
             torch::full({B, K}, 8.0e4, opts), torch::full({B, K}, 1.1, opts),
-            torch::full({B, K}, 250.0, opts), torch::full({B, K}, 1.1 * 250.0, opts),
+            torch::full({B, K}, 250.0, opts), torch::full({B, K}, 1.1, opts),  // production contract: dend = rho
         };
         auto full_p = default_coordinator_params();
         auto sed_params = default_substep_advection_params();
@@ -570,8 +570,23 @@ void test_sedimentation_reslope_per_substep() {
     } END_TEST();
 }
 
+void test_substep_shapes_refuse_broadcast() {
+    auto params = default_substep_advection_params();
+    for (int which = 0; which < 3; ++which) {
+        auto in = make_adv_inputs(which == 2 ? 0 : 2);
+        auto mstep = torch::ones({1}, f64());
+        if (which == 0) in.dend = torch::ones({2, 2}, f64());
+        if (which == 1) mstep = torch::ones({1, 1}, f64());
+        bool rejected = false;
+        try { substep_advection_torch(in, mstep, 1, 1, 60.0, params); }
+        catch (const c10::Error&) { rejected = true; }
+        assert(rejected);
+    }
+}
+
 int main() {
     std::cout << "KDM6AD-k libtorch sedimentation tests\n";
+    test_substep_shapes_refuse_broadcast();
     test_normalize_work_basic();
     test_substep_advection_state_nonneg();
     test_substep_advection_grad_finite();

@@ -190,9 +190,12 @@ struct StepResult {
 };
 
 // `xland`: optional Tensor with values 1 (land) or 2 (sea). Accepted shapes:
-//   - (im, jme) 2-D — preferred for direct C++ callers
+//   - a 2-D tensor with exactly im*jme elements — preferred for direct C++ callers
 //   - (im*jme,) 1-D — what the C ABI flattens to before invoking runtime
-// Runtime reshapes via `.view({-1})` so either layout works.
+// Runtime reshapes via `.view({-1})` so either layout works. Direct C++ callers
+// are rejected when the tensor is undefined, has the wrong cardinality, or
+// contains NaN/Inf; the raw C ABI pointer has the documented caller-owned
+// im*jme allocation contract and receives the same finite check after staging.
 // Convention: xland >= 1.5 → sea, else land (WRF slmsk).
 // When set, runtime derives sea_mask from xland (replacing the all-true
 // fallback at runtime.cpp `kdm6_fn`) AND builds a per-cell ncmin tensor:

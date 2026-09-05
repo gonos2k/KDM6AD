@@ -89,6 +89,17 @@ def main():
     _ssd = os.path.dirname(os.path.abspath(sys.argv[1]))
     _wrf = os.path.join(_ssd, 'wrf.exe')
     _lib = local_libtorch_dylib()
+    # A missing producer binary is useful for inspecting an archived dump, but
+    # cannot prove that the dump came from the current producer.  Keep the
+    # byte-comparison result available while labelling that decision explicitly
+    # as offline/unattested; callers must not read it as a fresh binary-backed
+    # parity result.
+    _producer_attested = os.path.exists(_wrf) and os.path.exists(_lib)
+    if not _producer_attested:
+        print("STAGE PROVENANCE: OFFLINE_UNATTESTED (producer binary missing; "
+              "byte comparison is not a fresh producer attestation)")
+    else:
+        print("STAGE PROVENANCE: FRESH_PRODUCER_ATTESTED")
     if os.path.exists(_wrf) and os.path.getmtime(sys.argv[1]) < os.path.getmtime(_wrf):
         die("STALE fortran dump: %s predates wrf.exe — re-run mp37 (dump is from an older Fortran build)" % sys.argv[1])
     if os.path.exists(_lib) and os.path.getmtime(sys.argv[2]) < os.path.getmtime(_lib):

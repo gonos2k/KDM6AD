@@ -56,7 +56,7 @@ def _adv_inputs(*, requires_grad: bool = False, K: int = 4):
     work1_qs = torch.full((1, K), 5.0e-4, dtype=dtype)
     work1_qg = torch.full((1, K), 8.0e-4, dtype=dtype)
     delz = torch.full((1, K), 500.0, dtype=dtype)
-    dend = torch.full((1, K), 1.1 * 500.0, dtype=dtype)  # den * delz
+    dend = torch.full((1, K), 1.1, dtype=dtype)  # production contract: dend = rho
     return (
         state, fall_zero, fall_zero.clone(), fall_zero.clone(),
         fall_zero.clone(), fall_zero.clone(),
@@ -99,7 +99,7 @@ def test_substep_advection_one_cell_per_substep_stored_falk():
     state = SubstepAdvectionState(qr=qr, nr=qr * 1.0e9, qs=z.clone(), qg=z.clone(), brs=z.clone())
     work1 = torch.full((1, K), 5.0e-3, dtype=dtype)
     delz = torch.full((1, K), 500.0, dtype=dtype)
-    dend = torch.full((1, K), 1.1 * 500.0, dtype=dtype)
+    dend = torch.full((1, K), 1.1, dtype=dtype)  # production contract: dend = rho
     out = substep_advection_torch(
         state, z.clone(), z.clone(), z.clone(), z.clone(), z.clone(),
         work1, work1, z.clone(), z.clone(), delz, dend,
@@ -158,7 +158,7 @@ def _ice_inputs(*, requires_grad: bool = False, K: int = 4):
     work1_qi = torch.full((1, K), 5.0e-4, dtype=dtype)
     workn_qi = torch.full((1, K), 5.0e-4, dtype=dtype)
     delz = torch.full((1, K), 500.0, dtype=dtype)
-    dend = torch.full((1, K), 1.1 * 500.0, dtype=dtype)
+    dend = torch.full((1, K), 1.1, dtype=dtype)  # production contract: dend = rho
     return state, fall_zero, fall_zero.clone(), work1_qi, workn_qi, delz, dend
 
 

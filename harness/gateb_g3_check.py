@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Gate B G3 verifier — owner-adjudicated no-new-divergence conditions
+"""Gate B G3 comparison checker — owner-adjudicated no-new-divergence predicates
 (2026-07-17 adjudication). Consumes the Gate B driver's machine-readable
 diff listing (gateb_diffs.txt: "case|field| j k fort_bits cpp_bits" and
 "case|field|NONFINITE j k" records) and enforces, per multi-subcycle
@@ -20,8 +20,15 @@ checks are host-dump-level properties (compare_substep_stage.py /
 compare_rate_dump.py) — out of this standalone checker's scope, recorded
 as such in the report.
 
+The diff-listing format records only differences.  It has no zero-difference
+sentinel, declared population, or sealed producer census, so this standalone
+tool reports observed predicate results for comparison/debugging only.  It
+cannot issue a decision-grade full-G3 PASS; the additive G3.3-M protocol has
+the separate completeness/evidence contract for that decision.
+
 usage: gateb_g3_check.py <gateb_diffs.txt> [--json-out report.json]
-exit 0 iff every G3 condition holds.
+exit 1 when observed predicates fail, and 2 when the structurally valid
+comparison is incomplete for a decision (or the input is malformed).
 """
 import argparse
 import json
@@ -37,6 +44,10 @@ MULTI_PAIRS = {
 SINGLE_CASES = {"single-layer", "mstep-mix", "LEG single-layer", "LEG mstep-mix"}
 
 
+class G3EvidenceError(ValueError):
+    """The diff listing is not a structurally usable G3 evidence stream."""
+
+
 def ulp(a_bits: int, b_bits: int) -> int:
     # f32 ULP distance: map the sign-magnitude bit pattern onto a monotone
     # integer line (u < 0x80000000 -> u; else 0x80000000 - u) and subtract.
@@ -48,33 +59,63 @@ def ulp(a_bits: int, b_bits: int) -> int:
 def load(path):
     diffs = defaultdict(lambda: defaultdict(dict))   # case -> field -> (j,k) -> ulp
     nonfinite = []
-    with open(path) as fh:
-        lines = fh.readlines()
+    seen = set()
+    try:
+        with open(path, encoding="utf-8") as fh:
+            lines = fh.readlines()
+    except UnicodeDecodeError as exc:
+        raise G3EvidenceError(f"evidence listing is not valid UTF-8: {exc}") from None
     for raw in lines:
         raw = raw.rstrip("\n")
         if not raw.strip():
             continue
         parts = raw.split("|")
         if len(parts) != 3:
-            print(f"ERROR: malformed record: {raw!r}")
-            sys.exit(2)
+            raise G3EvidenceError(f"malformed record: {raw!r}")
         case, field, rest = parts[0].strip(), parts[1].strip(), parts[2]
+        if not case or not field:
+            raise G3EvidenceError(f"malformed record with empty case/field: {raw!r}")
         if rest.startswith("NONFINITE"):
             toks = rest.split()
-            nonfinite.append((case, field, int(toks[1]), int(toks[2])))
+            if len(toks) != 3:
+                raise G3EvidenceError(f"malformed NONFINITE record: {raw!r}")
+            try:
+                j, k = (int(t) for t in toks[1:])
+            except ValueError:
+                raise G3EvidenceError(f"non-integer NONFINITE record: {raw!r}") from None
+            if j < 0 or k < 0:
+                raise G3EvidenceError(f"negative NONFINITE coordinate: {raw!r}")
+            key = (case, field, j, k)
+            if key in seen:
+                raise G3EvidenceError(f"duplicate evidence record: {raw!r}")
+            seen.add(key)
+            nonfinite.append((case, field, j, k))
             continue
         toks = rest.split()
         if len(toks) != 4:
-            print(f"ERROR: malformed diff record: {raw!r}")
-            sys.exit(2)
+            raise G3EvidenceError(f"malformed diff record: {raw!r}")
         # j k ia ib — all DECIMAL (the driver writes Fortran `I0`, not hex);
         # ia/ib are int32 transfers of the f32 bits (may be negative).
         try:
             j, k, ia, ib = (int(t) for t in toks)
         except ValueError:
-            print(f"ERROR: non-integer diff record: {raw!r}")
-            sys.exit(2)
+            raise G3EvidenceError(f"non-integer diff record: {raw!r}") from None
+        if j < 0 or k < 0:
+            raise G3EvidenceError(f"negative diff coordinate: {raw!r}")
+        i32 = -(1 << 31), (1 << 31) - 1
+        if not (i32[0] <= ia <= i32[1] and i32[0] <= ib <= i32[1]):
+            raise G3EvidenceError(
+                f"diff bit transfer outside signed int32 range: {raw!r}")
+        key = (case, field, j, k)
+        if key in seen:
+            raise G3EvidenceError(f"duplicate evidence record: {raw!r}")
+        seen.add(key)
         diffs[case][field][(j, k)] = ulp(ia, ib)
+    if not seen:
+        # A diff listing has no independent zero-diff sentinel.  An empty file
+        # therefore proves that no evidence was consumed, not that every required
+        # pair was compared cleanly.
+        raise G3EvidenceError("empty evidence listing: no G3 records were supplied")
     return diffs, nonfinite
 
 
@@ -84,14 +125,29 @@ def main():
     ap.add_argument("--json-out", default=None)
     args = ap.parse_args()
 
-    diffs, nonfinite = load(args.difffile)
-    report = {"checker": "gateb_g3_check", "pass": False, "failures": [],
+    try:
+        diffs, nonfinite = load(args.difffile)
+    except (OSError, G3EvidenceError) as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 2
+    report = {"checker": "gateb_g3_check", "pass": False,
+              "decision": False, "comparison_only": True,
+              "evidence_strength": "PARTIAL", "failures": [],
               "cases": {}, "nonfinite_records": len(nonfinite),
+              "observed_predicates_pass": False,
+              "census": {"available": False,
+                          "reason": ("gateb_diffs.txt contains differing records only; "
+                                     "the required population/zero-difference census "
+                                     "is not part of this input contract")},
               "scope_note": ("first-divergence-stage and mstep/branch-signature "
                              "comparability are host-dump-level checks "
                              "(compare_substep_stage/compare_rate_dump), not "
                              "assessable from final-state diffs; recorded as "
-                             "out-of-scope here.")}
+                             "out-of-scope here. This report is also "
+                             "comparison-only: without a sealed census, absence "
+                             "of a record cannot establish equality over the "
+                             "required population, and no full-G3 decision is "
+                             "claimed.")}
     fails = report["failures"]
 
     # G3.4 — non-finite anywhere fails
@@ -139,14 +195,20 @@ def main():
             fails.append(f"G3.3 {cons_case}: cons max ULP {c_ulp} exceeds "
                          f"legacy envelope {l_ulp}")
 
-    report["pass"] = not fails
+    # ``not fails`` means only that the records observed in this partial stream
+    # satisfy the subset/envelope predicates.  A diff-only stream cannot prove
+    # that omitted records were compared, so retain the observed result under a
+    # diagnostic name and keep the decision verdict fail-closed.
+    report["observed_predicates_pass"] = not fails
+    report["pass"] = False
     out = json.dumps(report, indent=2)
     if args.json_out:
         open(args.json_out, "w").write(out + "\n")
     print(out)
-    print(f"\ngateb_g3_check: {'PASS' if report['pass'] else 'FAIL'}",
-          file=sys.stderr)
-    return 0 if report["pass"] else 1
+    observed = "OK" if report["observed_predicates_pass"] else "FAIL"
+    print(f"\ngateb_g3_check: COMPARISON-ONLY (observed predicates {observed}; "
+          "no decision-grade census)", file=sys.stderr)
+    return 1 if fails else 2
 
 
 if __name__ == "__main__":

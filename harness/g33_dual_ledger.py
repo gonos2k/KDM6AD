@@ -5,15 +5,16 @@
 
     rho_m = rho_d (1 + qv)          (module_big_step_utilities_em.F:4856)
 
-while `nr` and the `q` fields are mixing ratios per DRY-air kg. So there are two
-different column integrals and they are not the same quantity:
+while mass mixing ratios `q` are per dry-air kg. The number basis remains
+unresolved: Registry suggests #/kg_d while the PSD slope requires #/m3.
+The two reported integrals are therefore distinct diagnostic measures:
 
     operator measure   sum_k rho_m,k dz_k x_k     what the operator's own budget is
-    physical measure   sum_k rho_d,k dz_k x_k     what is physically conserved
+    dry measure        sum_k rho_d,k dz_k x_k     physical number only if n is #/kg_d
 
-Reporting one of them makes a statement about the OPERATOR read as a statement
-about the ATMOSPHERE. Both are reported, always, so a reader cannot pick up the
-wrong one by accident.
+The legacy JSON key `physical` denotes the dry measure. For volume-specific
+number, physical column number instead uses sum dz*N. Neither ledger settles
+that host/kernel contract.
 
 ## The claim this exists to test
 
@@ -87,22 +88,27 @@ def analysis(stream: str) -> dict:
         }
     return {"rows": rows, "humidity": humidity(stream),
             "basis_note": "operator = rho_m*dz (what the kernel budgets); "
-                          "physical = rho_d*dz (what is conserved). rho_d = "
-                          "rho_m/(1+qv)."}
+                          "physical key = rho_d*dz, physical number only if n is #/kg_d; "
+                          "for #/m3 use dz. Number basis unresolved. rho_d = rho_m/(1+qv)."}
 
 
 def report(stream: str) -> None:
     a = analysis(stream)
-    print("  Both measures, always. operator = rho_m*dz, physical = rho_d*dz.\n")
+    print("  Both measures, always. operator = rho_m*dz, physical key = rho_d*dz (number conditional on #/kg_d).\n")
     print(f"  {'row':14} {'operator ratio':>15} {'physical ratio':>15} "
           f"{'divergence':>11}")
     for k, r in a["rows"].items():
         o, p = r["operator"]["ratio"], r["physical"]["ratio"]
         if o is None and p is None:
             continue
+        # One basis can be unavailable while the other remains measured (for
+        # example a missing dry-air window endpoint). Keep that distinction in
+        # the report instead of multiplying None and crashing the whole ledger.
+        fo = f"{100 * o:14.4f}%" if o is not None else f"{'-':>15}"
+        fp = f"{100 * p:14.4f}%" if p is not None else f"{'-':>15}"
         dv = (f"{100*r['ratio_divergence']:.4f}%"
               if r["ratio_divergence"] is not None else "-")
-        print(f"  {k:14} {100*o:14.4f}% {100*p:14.4f}% {dv:>11}")
+        print(f"  {k:14} {fo} {fp} {dv:>11}")
     print("\n  The basis conversion is 1+qv. Its VERTICAL SPREAD is what decides")
     print("  whether the two ratios can differ at all:")
     for col, h in sorted(a["humidity"].items()):

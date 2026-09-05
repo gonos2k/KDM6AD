@@ -52,6 +52,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import struct
 import sys
 from itertools import combinations
@@ -110,7 +111,7 @@ RESPONSES = {
     "R_qi_num": ("kg m-2", "C", "matched", None, "selected"),
     "R_qi_sum_call_start": ("kg m-2", None, "state", None, "selected"),
     "R_qi": ("dimensionless", "C", "matched", None, "selected"),
-    "R_nr_num": ("number m-2", "N", "matched", ("main", "qr"), "selected"),
+    "R_nr_num": ("number m-2 conditional on n per dry kg", "N", "matched", ("main", "qr"), "selected"),
     # The DENOMINATOR carries no control. It is the starting inventory, a state
     # quantity, and a failing mass closure does not make it unmeasurable --
     # gating it deleted exactly the inventory half that numerator/denominator
@@ -123,14 +124,14 @@ RESPONSES = {
     # sequence, so call 2's pre-state is roughly call 1's post-state and the
     # sum counts the column once per call. It is an EXPOSURE-like
     # normalisation, and `beta_L(R_ni_den)` means nothing else (owner §10).
-    "R_nr_sum_call_start": ("number m-2", None, "state", None, "selected"),
-    "R_nr_window_initial": ("number m-2", None, "state", None, "window"),
-    "R_nr_window_final": ("number m-2", None, "state", None, "window"),
+    "R_nr_sum_call_start": ("number m-2 conditional on n per dry kg", None, "state", None, "selected"),
+    "R_nr_window_initial": ("number m-2 conditional on n per dry kg", None, "state", None, "window"),
+    "R_nr_window_final": ("number m-2 conditional on n per dry kg", None, "state", None, "window"),
     "R_nr": ("dimensionless", "N", "matched", ("main", "qr"), "selected"),
-    "R_ni_num": ("number m-2", "N", "matched", ("ice", "qi"), "selected"),
-    "R_ni_sum_call_start": ("number m-2", None, "state", None, "selected"),
-    "R_ni_window_initial": ("number m-2", None, "state", None, "window"),
-    "R_ni_window_final": ("number m-2", None, "state", None, "window"),
+    "R_ni_num": ("number m-2 conditional on n per dry kg", "N", "matched", ("ice", "qi"), "selected"),
+    "R_ni_sum_call_start": ("number m-2 conditional on n per dry kg", None, "state", None, "selected"),
+    "R_ni_window_initial": ("number m-2 conditional on n per dry kg", None, "state", None, "window"),
+    "R_ni_window_final": ("number m-2 conditional on n per dry kg", None, "state", None, "window"),
     "R_ni": ("dimensionless", "N", "matched", ("ice", "qi"), "selected"),
     # The endpoint-recovered metric diagnostic, under its own name. It measures
     # the residual of the number METRIC as the endpoints imply it, which is a
@@ -414,6 +415,19 @@ def _partition(single: str, split: str) -> dict:
     }
 
 
+def _bound_window_identity(text: str) -> dict:
+    """A standalone response must bind its transfer and inventory operands."""
+    import g33_number_transport as nt
+    import g33_refine_analyze as ra
+    rid, parsed = nt.validated_run_identity(text, with_calls=True)
+    run = ra.read_text(text)
+    try:
+        nt.require_window_forcing(parsed, run, rid["real_bytes"])
+    except nt.StreamError as exc:
+        raise FactorialError(str(exc)) from exc
+    return rid
+
+
 def responses(stream_single: str, stream_split: str, *,
               window: bool = False) -> dict:
     """Every response, each with its own reader, control, span and verdict.
@@ -430,8 +444,8 @@ def responses(stream_single: str, stream_split: str, *,
     # call site here kept the old behaviour until it was passed through
     # (owner review 12, and the adversarial pass that found the sites).
     import g33_matched_closure as _mc
-    _w_single = _mc._stream_real_bytes(stream_single)
-    _w_split = _mc._stream_real_bytes(stream_split)
+    _w_single = _bound_window_identity(stream_single)["real_bytes"]
+    _w_split = _bound_window_identity(stream_split)["real_bytes"]
     if _w_single != _w_split:
         # BOTH STREAMS, not one. Reading the width from `stream_single` alone
         # applied its screen to the split stream's rows too -- silently wrong
@@ -556,8 +570,8 @@ def check_identity(name: str, single: str, split: str) -> dict:
     the kernel actually ran.
     """
     import g33_number_transport as nt
-    a = nt.validated_run_identity(single)
-    b = nt.validated_run_identity(split)
+    a = _bound_window_identity(single)
+    b = _bound_window_identity(split)
     if a["algorithm"] != name or b["algorithm"] != name:
         raise FactorialError(
             f"{name}: the streams declare algorithm "
@@ -607,7 +621,7 @@ def _raw_input(text: str) -> dict:
     """
     import g33_refine_analyze as ra
     d = ra.read_text(text)
-    return {k: v for k, v in d.items()
+    return {k: ra._f32_bits(v) for k, v in d.items()
             if isinstance(k, tuple) and k[0] in ("initial", "forcing")}
 
 
@@ -755,6 +769,25 @@ def coefficients(table: dict, screens: dict | None = None) -> dict:
         raise FactorialError(
             f"a 2^3 factorial needs all eight arms, got {len(arms)}: "
             f"{sorted(set(ALGO_FACTORS) - set(arms))} missing")
+    screen_values = None
+    if screens is not None:
+        if not isinstance(screens, dict):
+            raise FactorialError("screens must be a nested arm -> response mapping")
+        screen_values = {}
+        for arm in arms:
+            row = screens.get(arm)
+            if not isinstance(row, dict):
+                raise FactorialError(
+                    f"screens is missing the response mapping for arm {arm!r}")
+            for response in RESPONSES:
+                value = row.get(response)
+                if (isinstance(value, bool) or
+                        not isinstance(value, (int, float)) or
+                        not math.isfinite(value) or value < 0):
+                    raise FactorialError(
+                        f"screens[{arm!r}][{response!r}] must be a finite "
+                        f"non-negative number")
+                screen_values[(arm, response)] = float(value)
     names = "NCL"
     out = {}
     for response in RESPONSES:
@@ -782,8 +815,10 @@ def coefficients(table: dict, screens: dict | None = None) -> dict:
                         sign *= x[names.index(ch)]
                     acc += sign * table[arm][response]["value"]
                 betas[subset] = acc / 8.0
-        betas["_bound"] = sum(table[a][response]["screening_bound"]
-                              for a in arms) / 8.0
+        betas["_bound"] = sum(
+            (screen_values[(a, response)] if screen_values is not None
+             else table[a][response]["screening_bound"])
+            for a in arms) / 8.0
         out[response] = betas
     return out
 

@@ -57,7 +57,30 @@ RD, CP, P0, G = 287.04, 1004.5, 1.0e5, 9.81
 EPS = 0.622
 
 
-def _dry_density(d, p, temp, qv, basis: str):
+def _read(d, name: str, frame: int):
+    """Read one state field without dropping masks or raw non-finite values."""
+    read = nr.read_numeric(d[name], frame)
+    if read["nonfinite_count"]:
+        raise ValueError(
+            f"{name}: {read['nonfinite_count']} nonfinite cells in number-basis input")
+    return read["data"]
+
+
+def _physical(name: str, value, *, positive: bool = False,
+              nonnegative: bool = False):
+    """Check a derived array at the state-to-diagnostic boundary."""
+    import numpy as np
+    value = np.asarray(value, dtype="float64")
+    if not np.isfinite(value).all():
+        raise ValueError(f"{name} must be finite")
+    if positive and not (value > 0.0).all():
+        raise ValueError(f"{name} must be strictly positive")
+    if nonnegative and not (value >= 0.0).all():
+        raise ValueError(f"{name} must be non-negative")
+    return value
+
+
+def _dry_density(d, p, temp, qv, basis: str, frame: int):
     """Dry-air density by one of three routes, named.
 
     `canonical` is the model's OWN: WRF's hydrostatic relation is
@@ -79,16 +102,23 @@ def _dry_density(d, p, temp, qv, basis: str):
         # THE CANONICAL ROUTE READS THROUGH THE GUARD TOO. It is the authority
         # -- WRF's own layer mass -- so a dropped mask here would be a dropped
         # mask in the number the campaign publishes (owner review 7).
-        g5 = lambda k: nr.read_numeric(d[k], -1)["data"]        # noqa: E731
-        mu = g5("MU") + g5("MUB")
-        dnw = g5("DNW")
-        ph = g5("PH") + g5("PHB")
-        dz = np.diff(ph, axis=0) / G
-        return (mu[None, :, :] * np.abs(dnw)[:, None, None]) / G / dz
+        mu = _physical("MU+MUB", _read(d, "MU", frame) + _read(d, "MUB", frame),
+                       positive=True)
+        dnw = _physical("|DNW|", np.abs(_read(d, "DNW", frame)), positive=True)
+        ph = _physical("PH+PHB", _read(d, "PH", frame) + _read(d, "PHB", frame))
+        dz = _physical("layer thickness", np.diff(ph, axis=0) / G, positive=True)
+        rho_d = (mu[None, :, :] * dnw[:, None, None]) / G / dz
+        return _physical("dry density", rho_d, positive=True)
     if basis == "exact":
-        return p / (RD * temp * (1.0 + qv / EPS))
+        denominator = _physical("exact dry-density denominator",
+                                RD * temp * (1.0 + qv / EPS), positive=True)
+        return _physical("dry density", p / denominator, positive=True)
     if basis == "approx":
-        return (p / (RD * temp * (1.0 + 0.608 * qv))) / (1.0 + qv)
+        denominator = _physical("approx dry-density denominator",
+                                RD * temp * (1.0 + 0.608 * qv), positive=True)
+        dry = (p / denominator) / _physical("dry-air mixing-ratio denominator",
+                                             1.0 + qv, positive=True)
+        return _physical("dry density", dry, positive=True)
     raise ValueError(f"basis must be canonical|exact|approx, got {basis!r}")
 
 
@@ -100,46 +130,53 @@ def profile(state: Path, basis: str = "canonical") -> dict:
     """
     import netCDF4
     import numpy as np
-    d = netCDF4.Dataset(str(state))
-    frame = -1 if d["P"].shape[0] > 1 else 0
+    with netCDF4.Dataset(str(state)) as d:
+        frame = -1 if d["P"].shape[0] > 1 else 0
 
-    def g(k):
-        """Through the guarded reader, so a mask is refused rather than dropped.
+        def g(k):
+            """Through the guarded reader, so a mask is refused rather than dropped.
 
-        netCDF4 hands back a MaskedArray either way and `np.asarray` discards
-        the mask, which would let fill values into a published median. Measured
-        on this state: seven load-bearing variables, 0 masked cells, no
-        `_FillValue` -- so this changes no number today and says so if a file
-        ever does declare one.
-        """
-        return nr.read_numeric(d[k], frame)["data"]
-    pressure = g("P") + g("PB")
-    theta = g("T") + 300.0
-    qv = g("QVAPOR")
-    temp = theta * (pressure / P0) ** (RD / CP)
-    if basis == "canonical" and not all(v in d.variables
-                                        for v in ("MU", "MUB", "DNW", "PH")):
-        raise KeyError(
-            "this state carries no MU/MUB/DNW/PH, so the model's own dry-air "
-            "layer mass is not available; pass basis='exact' to estimate it")
-    den_d = _dry_density(d, pressure, temp, qv, basis)
-    # Total moist density, which is the kernel's `den`.
-    den = den_d * (1.0 + qv)
-    # WRF k=0 is the BOTTOM, so [:-1] is the LOWER side of each interface and
-    # [1:] the upper -- the direction sedimentation moves.
-    lo, up = slice(None, -1), slice(1, None)
-    return {
-        # what departs the upper cell, per unit mixing ratio
-        "dry_layer_mass_upper": den_d[up] * (np.diff(
-            (nr.read_numeric(d["PH"], frame)["data"]
-             + nr.read_numeric(d["PHB"], frame)["data"]), axis=0) / G)[up]
-        if "PH" in d.variables else den_d[up],
-        "legacy_moist": den[lo] / den[up] - 1.0,
-        "legacy_dry": den_d[lo] / den_d[up] - 1.0,
-        "armn_dry": (1.0 + qv[up]) / (1.0 + qv[lo]) - 1.0,
-        "qv_lower": qv[lo],
-        "p_mid": 0.5 * (pressure[lo] + pressure[up]),
-    }
+            netCDF4 hands back a MaskedArray either way and `np.asarray` discards
+            the mask, which would let fill values into a published median. Measured
+            on this state: seven load-bearing variables, 0 masked cells, no
+            `_FillValue` -- so this changes no number today and says so if a file
+            ever does declare one.
+            """
+            return _read(d, k, frame)
+        pressure = _physical("pressure P+PB", g("P") + g("PB"), positive=True)
+        theta = _physical("potential temperature T+300", g("T") + 300.0,
+                          positive=True)
+        qv = _physical("QVAPOR", g("QVAPOR"), nonnegative=True)
+        temp = _physical("temperature", theta * (pressure / P0) ** (RD / CP),
+                         positive=True)
+        _physical("moisture denominator", 1.0 + qv, positive=True)
+        if basis == "canonical" and not all(v in d.variables
+                                            for v in ("MU", "MUB", "DNW", "PH")):
+            raise KeyError(
+                "this state carries no MU/MUB/DNW/PH, so the model's own dry-air "
+                "layer mass is not available; pass basis='exact' to estimate it")
+        den_d = _dry_density(d, pressure, temp, qv, basis, frame)
+        # Total moist density, which is the kernel's `den`.
+        den = _physical("moist density", den_d * (1.0 + qv), positive=True)
+        # WRF k=0 is the BOTTOM, so [:-1] is the LOWER side of each interface and
+        # [1:] the upper -- the direction sedimentation moves.
+        lo, up = slice(None, -1), slice(1, None)
+        return {
+            # what departs the upper cell, per unit mixing ratio
+            "dry_layer_mass_upper": _physical("upper dry layer mass", den_d[up] * _physical(
+                "layer thickness", np.diff(
+                    g("PH") + g("PHB"), axis=0) / G, positive=True)[up], positive=True)
+            if "PH" in d.variables else den_d[up],
+            "legacy_moist": _physical("legacy moist coefficient",
+                                       den[lo] / den[up] - 1.0),
+            "legacy_dry": _physical("legacy dry coefficient",
+                                     den_d[lo] / den_d[up] - 1.0),
+            "armn_dry": _physical("Arm N dry coefficient",
+                                   (1.0 + qv[up]) / (1.0 + qv[lo]) - 1.0),
+            "qv_lower": qv[lo],
+            "p_mid": _physical("interface pressure",
+                                0.5 * (pressure[lo] + pressure[up]), positive=True),
+        }
 
 
 #: NOT CALLED anywhere today (audit, 2026-08-24). Kept rather than deleted:
@@ -193,6 +230,9 @@ def where_the_number_is(state: Path, field: str = "QNRAIN",
     # THE NUMBER FIELD ITSELF WENT ROUND THE GUARD. It is what selects every
     # population here, and `n > 0` is False at a NaN -- so a broken cell left
     # the population silently and `nonfinite_interfaces` never counted it.
+    # Unlike forcing, this field is the subject of an invalid-state census.
+    # Keep nonfinite values visible to the explicit counts below; masks still
+    # fail in read_numeric before their fill storage can masquerade as number.
     n = nr.read_numeric(d[field], -1 if d[field].shape[0] > 1 else 0)["data"]
     lo, up = slice(None, -1), slice(1, None)
     pops = {"occupied_pair": (n[lo] > 0) & (n[up] > 0),
@@ -210,9 +250,6 @@ def where_the_number_is(state: Path, field: str = "QNRAIN",
            "carrying": int(live.sum()),
            "carrying_fraction": float(live.mean()),
            "upper_populated": int(pops["upper_populated"].sum())}
-    if not any(m.any() for m in pops.values()):
-        out["empty"] = True
-        return out
     # The upper cell's number INVENTORY. Not `F_j`: that is `m_d * dn` and `dn`
     # is what the kernel actually moved, which a state file does not record.
     inventory = p["dry_layer_mass_upper"] * n[up]
@@ -232,6 +269,9 @@ def where_the_number_is(state: Path, field: str = "QNRAIN",
     out["nonfinite_number_interfaces"] = int(
         (~(np.isfinite(n[lo]) & np.isfinite(n[up]))).sum())
     out["negative_number_cells"] = int((n < 0).sum())
+    if not any(m.any() for m in pops.values()):
+        out["empty"] = True
+        return out
     out["populations"] = {}
     for nm, m in pops.items():
         valid = m & finite
@@ -312,10 +352,14 @@ def report(state: Path, basis: str = "canonical") -> dict:
            "interfaces": int(p["armn_dry"].size)}
     for key in ("legacy_moist", "legacy_dry", "armn_dry"):
         e = p[key]
-        out[key] = {"median": float(np.median(e)),
-                    "mean": float(e.mean()),
-                    "abs_p90": float(np.percentile(np.abs(e), 90)),
-                    "abs_max": float(np.abs(e).max())}
+        if e.size:
+            out[key] = {"median": float(np.median(e)),
+                        "mean": float(e.mean()),
+                        "abs_p90": float(np.percentile(np.abs(e), 90)),
+                        "abs_max": float(np.abs(e).max()),
+                        "interfaces": int(e.size)}
+        else:
+            out[key] = {"interfaces": 0, "empty": True}
     # What Arm N leaves, as a fraction of what legacy had -- the number the
     # basis question is really asking for. Taken per interface and then
     # summarised, NOT as a ratio of the summaries: a ratio of medians is not
@@ -330,28 +374,43 @@ def report(state: Path, basis: str = "canonical") -> dict:
     keep = finite & (np.abs(p["legacy_dry"]) > 0.0)
     frac = np.abs(p["armn_dry"][keep]) / np.abs(p["legacy_dry"][keep])
     tail = frac > 0.10
-    out["armn_residual_fraction"] = {
+    ratio_report = {
         "interfaces": int(keep.sum()),
         "nonfinite_excluded": int((~finite).sum()),
-        "median": float(np.median(frac)),
-        "p90": float(np.percentile(frac, 90)),
-        "max": float(frac.max()),
-        "over_10_percent": float(tail.mean()),
         # A RATIO WITHOUT ITS SCALE IS NOT A RESULT. The fraction blows up at a
         # near-isopycnal interface, where legacy had almost no defect to remove
         # -- a large share of nearly nothing. So the tail is reported with the
         # ABSOLUTE size of what Arm N leaves there and of what legacy had, and
         # the reader decides whether it matters instead of being handed a
         # maximum that is an artefact of the denominator.
-        "tail_abs_armn_median": float(np.median(np.abs(p["armn_dry"][keep][tail]))
-                                      ) if tail.any() else 0.0,
-        "tail_abs_legacy_median": float(np.median(np.abs(p["legacy_dry"][keep][tail]))
-                                        ) if tail.any() else 0.0,
-        "interfaces": int(frac.size)}
+        "tail_abs_armn_median": None,
+        "tail_abs_legacy_median": None,
+    }
+    if frac.size:
+        tail = frac > 0.10
+        ratio_report.update({
+            "median": float(np.median(frac)),
+            "p90": float(np.percentile(frac, 90)),
+            "max": float(frac.max()),
+            "over_10_percent": float(tail.mean()),
+            "tail_abs_armn_median": (
+                float(np.median(np.abs(p["armn_dry"][keep][tail])))
+                if tail.any() else 0.0),
+            "tail_abs_legacy_median": (
+                float(np.median(np.abs(p["legacy_dry"][keep][tail])))
+                if tail.any() else 0.0),
+        })
+    else:
+        # A flat/isopycnal profile is a valid control. Its denominator
+        # population is empty, so the summary is explicitly unavailable rather
+        # than zero (or a NumPy empty-array exception).
+        ratio_report.update({"median": None, "p90": None, "max": None,
+                             "over_10_percent": None, "empty_ratio": True})
+    out["armn_residual_fraction"] = ratio_report
     # The exact composition, verified on the data rather than asserted.
     err = np.abs((1 + p["legacy_moist"]) * (1 + p["armn_dry"])
                  - (1 + p["legacy_dry"]))
-    out["composition_max_abs_error"] = float(err.max())
+    out["composition_max_abs_error"] = float(err.max()) if err.size else None
     out["by_level"] = [
         {"k": int(k),
          "p_mid_hpa": float(np.median(p["p_mid"][k]) / 100.0),
@@ -364,6 +423,10 @@ def report(state: Path, basis: str = "canonical") -> dict:
 
 def from_stream(text: str, species: str = "nr") -> dict:
     """The same question put to a KERNEL RUN instead of a state file.
+
+    This endpoint-recovery helper is defined only for one external call and one
+    substep of the requested species. Multi-call or multi-substep streams are
+    refused; their actual transfers belong to the applied XFER ledger.
 
     `profile()` reads coefficients off an atmosphere; this reads the residual an
     arm actually leaves, in BOTH ledgers, from the transfers the run performed:
@@ -401,9 +464,31 @@ def from_stream(text: str, species: str = "nr") -> dict:
     _sys.path.insert(0, str(_Path(__file__).resolve().parent))
     import g33_number_transport as nt
     import g33_matched_closure as mc
-    xfer = mc.transfers(text)
-    call = nt.calls(text)[0]
+    parsed = nt.calls(text)
+    # Endpoint inversion has no unique answer once another external call is
+    # present: the first and last call states are not one segment, and the
+    # XFER lookup must not silently select call 1 while ignoring later tiles.
+    # This helper is intentionally a single-call diagnostic; callers needing a
+    # full multi-call or multi-substep ledger should use the applied XFER path.
+    if len(parsed) != 1:
+        raise nt.StreamError(
+            f"from_stream requires exactly one external call for endpoint "
+            f"recovery, got {len(parsed)}; use matched applied transfers for "
+            f"multi-call evidence")
+    call = parsed[0]
     loop = nt.single_loop(call)
+    chain = nt.SPECIES[species][0]
+    counts = {key: value for key, value in call.get("mstep", {}).items()
+              if key[0] == loop and key[1] == chain}
+    # Older hand-built unit fixtures omit mstep entirely; retain that local
+    # arithmetic contract. A real parsed call always carries the map, and a
+    # count greater than one makes endpoint inversion non-invertible.
+    if counts and any(value != 1 for value in counts.values()):
+        raise nt.StreamError(
+            f"from_stream cannot recover {species} transfers for a multi-"
+            f"substep {chain} call: mstep={sorted(counts.items())}; use the "
+            f"emitted XFER records instead")
+    xfer = mc.transfers(text)
     pre, post = call["outer_pre_sed"], call["outer_post_sed"]
     metric = nt.number_transfer_metric(call.get("algorithm"),
                                        call.get("declared_metric"))
@@ -443,7 +528,6 @@ def from_stream(text: str, species: str = "nr") -> dict:
         # `a[-1]` above is recovered from the endpoints, so a residual built on
         # it and a prediction built on it share their input -- the agreement is
         # an algebraic check and not an independent measurement (owner §6).
-        chain = "main" if species in ("qr", "nr") else "ice"
         _dq, dn = xfer[(1, loop, col, chain)]
         # THE ACTUAL FLUX WEIGHTING, which only a replay can give. `a[j]` is
         # what crossed interface `j`, so the column defect is

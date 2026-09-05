@@ -256,8 +256,12 @@ def superob_with_mapping(payload: ObsPayload, mapping: torch.Tensor, B: int,
                          *, min_pixels: int = 3) -> SuperObs:
     """사전계산 사상으로 superob — collocation 생략 (mapping 전환 방식).
 
-    payload 화소 순서는 mapping 을 만든 화소 순서와 동일해야 한다
-    (같은 어댑터·같은 stride — 길이 불일치는 즉시 거부).
+    Caller precondition: payload coordinates and their order, model-grid
+    coordinates/order, and the distance gate must match the mapping build.
+    Equal length, adapter name or stride alone cannot establish this identity.
+    The bare index tensor carries no footprint metadata, so this function
+    checks only structural validity. Use superob_to_model_grid to build a
+    mapping from the current payload whenever reuse identity is not known.
     """
     if (isinstance(B, bool) or not isinstance(B, int) or B <= 0):
         raise ValueError(f"B (column count) must be a positive int (got {B!r})")
