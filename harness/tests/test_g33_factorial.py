@@ -387,7 +387,9 @@ def test_a_zero_denominator_makes_the_ratio_invalid_not_zero(monkeypatch):
     got = fc.responses("", "")
     assert got["R_qr_num"]["valid"] is True and got["R_qr_num"]["value"] == 5.0
     assert got["R_qr_sum_call_start"]["valid"] is True
+    assert got["R_qr_sum_call_start"]["value"] == 0.0
     assert got["R_qr"]["valid"] is False
+    assert got["R_qr"]["value"] is None
     assert "zero denominator" in got["R_qr"]["reason"]
 
 

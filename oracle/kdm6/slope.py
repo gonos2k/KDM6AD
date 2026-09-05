@@ -511,7 +511,7 @@ def slope_rain_torch(
     채워 일관된 oracle 값으로 만든다.
     """
     del t  # Fortran 시그니처 유지용. slope_rain 내부 계산에는 사용되지 않음.
-    return _rain_slope_components(
+    out = _rain_slope_components(
         qr,
         nr,
         den,
@@ -519,6 +519,10 @@ def slope_rain_torch(
         params=params,
         include_den_gate=False,
     )
+    # Standalone Fortran slope_rain zeroes vtn for nrs<=0 (F:3905-3908).
+    # Keep this gate at the standalone boundary: slope_kdm6's later
+    # unconditional vtn reassignment is intentionally preserved.
+    return out._replace(vtn_r=torch.where(nr <= 0.0, torch.zeros_like(out.vtn_r), out.vtn_r))
 
 
 __all__ = [

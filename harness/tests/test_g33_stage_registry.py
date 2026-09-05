@@ -29,6 +29,7 @@ import g33_fortran_dump as fortran_dump        # noqa: E402
 import g33_fourcase_comparator as comparator   # noqa: E402
 import g33_normalize as normalize              # noqa: E402
 import g33_schema as schema                    # noqa: E402
+import gateb_g33m_check                         # noqa: E402
 
 
 def test_execution_order_is_a_contiguous_ranking_of_the_compared_stages():
@@ -164,12 +165,20 @@ def _write_result(tmp_path, result):
     return json.loads(out.read_text())
 
 
-def test_the_writer_supplies_supersession(tmp_path):
+def test_the_writer_supplies_supersession(tmp_path, monkeypatch):
     """The index requires the field on every artifact and nothing produced it: it
     was typed on by hand after each run, so a regeneration either dropped it or
     reintroduced it from memory. A hand-edited field in a decision artifact is
     indistinguishable from a hand-edited verdict."""
-    d = _write_result(tmp_path, {"verdict": "INCONCLUSIVE", "provenance": {
+    # A decision-valid result must carry the complete publication contract. The
+    # source tree is intentionally dirty while tests run, so pin the identity calls
+    # to the values supplied by this synthetic writer fixture.
+    monkeypatch.setattr(gateb_g33m_check.vid, "runtime_matches", lambda _runtime: None)
+    monkeypatch.setattr(gateb_g33m_check.vid, "semantics_sha256_at",
+                        lambda _commit: "b" * 64)
+    d = _write_result(tmp_path, {"verdict": "INCONCLUSIVE", "attested": True,
+                                 "anchored": True, "decision_valid": True,
+                                 "evidence_tier": "decision", "provenance": {
         "verifier_commit": "a" * 40, "verifier_semantics_sha256": "b" * 64,
         "verifier_tree_dirty": False, "verifier_runtime": {"python_version": "3.11.14"}}})
     s = d["supersession"]

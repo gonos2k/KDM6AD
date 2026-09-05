@@ -128,7 +128,7 @@ struct GraphOptions {
     GraphMode mode = GraphMode::RecordGraph;
     uint32_t active_field_mask = 0x0FFFu;   // all 12 State fields
     bool retain_graph = false;              // default one-shot vjp (DA policy §6.2)
-    bool create_graph = false;              // true → grad-of-grad (double-VJP)
+    bool create_graph = false;              // true → retain differentiable VJP/JVP output (grad-of-grad)
 };
 
 inline constexpr uint32_t kAllStateFields = 0x0FFFu;
@@ -157,6 +157,8 @@ public:
     // jvp: J v via the double-VJP/Pearlmutter route (torch.func-style forward AD
     //      is NOT used — custom Functions lack forward-mode rules; §0.1.B).
     //      Repeat-callable (the forward graph is retained). v is INPUT-masked.
+    //      opts.create_graph is honored for the second reverse-mode sweep, so
+    //      the returned JVP can itself participate in higher-order AD.
     State vjp(const State& u, const GraphOptions& opts = {}) const;
     State jvp(const State& v, const GraphOptions& opts = {}) const;
     // jacobian / param_grad — 후행 추가

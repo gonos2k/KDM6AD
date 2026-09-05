@@ -100,16 +100,72 @@ def replay_qr(qr_pre_bits: int, operands: dict, dtcld, cold: bool,
     return bits32(out)
 
 
-def verify_leg(pre: dict, operands: dict, post: dict, dtcld) -> list[dict]:
+def _cells(mapping):
+    cells = set()
+    for key in mapping:
+        if not isinstance(key, tuple) or len(key) != 3:
+            raise ValueError(f"malformed replay key {key!r}; expected (field, col, k)")
+        cells.add((key[1], key[2]))
+    return cells
+
+
+def _finite_f32(bits, where):
+    value = float(f32(bits))
+    if not np.isfinite(value):
+        raise ValueError(f"{where} is not a finite f32")
+    return value
+
+
+def _validate_cell_universe(pre, operands, post, expected_cells=None):
+    sets = {"pre": _cells(pre), "operands": _cells(operands), "post": _cells(post)}
+    if not sets["pre"]:
+        raise ValueError("no cells in replay evidence")
+    if sets["pre"] != sets["operands"] or sets["pre"] != sets["post"]:
+        raise ValueError(
+            "replay cell sets differ: "
+            + ", ".join(f"{name}={sorted(value)}" for name, value in sets.items()))
+    if expected_cells is not None and sets["pre"] != set(expected_cells):
+        raise ValueError(
+            f"replay cells {sorted(sets['pre'])} != expected {sorted(set(expected_cells))}")
+    return sorted(sets["pre"])
+
+
+def _validate_update_values(pre, operands, post, cells):
+    """Validate every recorded value before any replay census is computed.
+
+    `coverage()` is itself a public helper and can be called without `verify_leg()`.
+    Letting it classify an all-NaN cell as load-bearing would make that direct path
+    report semantic support for an update that cannot be interpreted. Keep the
+    finite/domain checks shared with the actual replay so the two entry points cannot
+    disagree about admissibility.
+    """
+    for c, k in cells:
+        for name, mapping in (("pre", pre), ("operands", operands), ("post", post)):
+            for (field, col, level), bits in mapping.items():
+                if (col, level) == (c, k):
+                    _finite_f32(bits, f"{name}.{field} col{c} k{k}")
+        for name, mapping, field in (
+                ("pre", pre, "qr"), ("pre", pre, "t"), ("post", post, "qr")):
+            if (field, c, k) not in mapping:
+                raise ValueError(f"{name} is missing {field} at col{c} k{k}")
+        if float(f32(pre[("qr", c, k)])) < 0.0:
+            raise ValueError(f"col{c} k{k}: qr_pre is negative")
+        if float(f32(post[("qr", c, k)])) < 0.0:
+            raise ValueError(f"col{c} k{k}: qr_post is negative")
+
+
+def verify_leg(pre: dict, operands: dict, post: dict, dtcld,
+               expected_cells=None) -> list[dict]:
     """Every (col, k) of one leg. Returns the cells whose replay misses.
 
     `pre` / `post` are {(field, col, k): bits}; `operands` the same for the rate
     stage. A missing operand is a defect in the evidence, not a reason to skip the
     cell, so it raises rather than returning a pass.
     """
-    cells = sorted({(c, k) for (f, c, k) in pre if f == "qr"})
-    if not cells:
-        raise ValueError("no qr cells in micro_pre_state_update — nothing to replay")
+    if not np.isfinite(float(dtcld)) or float(dtcld) <= 0.0:
+        raise ValueError(f"dtcld {dtcld!r} is not a positive finite timestep")
+    cells = _validate_cell_universe(pre, operands, post, expected_cells)
+    _validate_update_values(pre, operands, post, cells)
     bad = []
     for c, k in cells:
         cold = is_cold(pre[("t", c, k)])
@@ -121,6 +177,8 @@ def verify_leg(pre: dict, operands: dict, post: dict, dtcld) -> list[dict]:
                 f"col{c} k{k}: micro_qr_operands is missing {e.args[0]}, which the "
                 f"{'cold' if cold else 'warm'} arm reads") from None
         want = post[("qr", c, k)]
+        if float(f32(want)) < 0.0:
+            raise ValueError(f"col{c} k{k}: qr_post is negative")
         got = replay_qr(pre[("qr", c, k)], ops, dtcld, cold)
         if got != want:
             bad.append({"col": c, "k": k, "branch": "cold" if cold else "warm",
@@ -129,7 +187,7 @@ def verify_leg(pre: dict, operands: dict, post: dict, dtcld) -> list[dict]:
     return bad
 
 
-def coverage(pre: dict, operands: dict, post: dict, dtcld) -> dict:
+def coverage(pre: dict, operands: dict, post: dict, dtcld, expected_cells=None) -> dict:
     """How much of a passing replay is load-bearing.
 
     "144 cells, 0 misses" reads as 144 checks and is not. Where every rate is
@@ -143,7 +201,10 @@ def coverage(pre: dict, operands: dict, post: dict, dtcld) -> dict:
     Returns cells / moved (qr changed) / zero_sum (vacuous) / clamped, and
     `load_bearing` = cells that are neither vacuous nor clamped.
     """
-    cells = sorted({(c, k) for (f, c, k) in pre if f == "qr"})
+    cells = _validate_cell_universe(pre, operands, post, expected_cells)
+    if not np.isfinite(float(dtcld)) or float(dtcld) <= 0.0:
+        raise ValueError(f"dtcld {dtcld!r} is not a positive finite timestep")
+    _validate_update_values(pre, operands, post, cells)
     moved = zero_sum = clamped = 0
     for c, k in cells:
         cold = is_cold(pre[("t", c, k)])
@@ -207,18 +268,37 @@ def replay_freeze_t(operands: dict, as_f32_rates: bool = False) -> int:
     return bits32(t)
 
 
-def verify_freeze_heat(operands: dict, post_t: dict) -> list[dict]:
+def verify_freeze_heat(operands: dict, post_t: dict, expected_cells=None) -> list[dict]:
     """Every cell of one leg. `operands` and `post_t` are {(field,col,k): bits}.
 
     phom must be zero: the C++ chain has no homogeneous-freeze term, so a fixture
     that reaches −40 °C would have the two backends replaying different chains.
     Raising is the point — a silent pass there would compare two different things.
     """
-    cells = sorted({(c, k) for (f, c, k) in operands if f == "t_pre_freeze"})
-    if not cells:
+    operand_cells = _cells(operands)
+    post_cells = _cells(post_t)
+    if not operand_cells:
         raise ValueError("no micro_freeze_heat cells — nothing to replay")
+    if operand_cells != post_cells:
+        raise ValueError(
+            f"freeze replay cell sets differ: operands={sorted(operand_cells)} "
+            f"post={sorted(post_cells)}")
+    if expected_cells is not None and operand_cells != set(expected_cells):
+        raise ValueError(
+            f"freeze replay cells {sorted(operand_cells)} != expected "
+            f"{sorted(set(expected_cells))}")
+    cells = sorted(operand_cells)
     bad = []
     for c, k in cells:
+        for field, bits in operands.items():
+            if (field[1], field[2]) == (c, k):
+                if field[0] in FREEZE_TERMS:
+                    value = struct.unpack("<d", struct.pack("<Q", bits))[0]
+                    if not np.isfinite(value):
+                        raise ValueError(f"operands.{field[0]} col{c} k{k} is not finite")
+                else:
+                    _finite_f32(bits, f"operands.{field[0]} col{c} k{k}")
+        _finite_f32(post_t[("t", c, k)], f"post.t col{c} k{k}")
         if f32(operands[("phom", c, k)]) != 0.0:
             raise ValueError(
                 f"col{c} k{k}: phom is non-zero, so the Fortran t chain has a "

@@ -116,6 +116,34 @@ def provenance(*, include_trajectory: Optional[bool] = None):
     return prov
 
 
+def _end_identity_check(prov):
+    """Re-hash every source/input identity consumed by this comparison.
+
+    The synthetic mode has no trajectory inputs, but it still consumes this
+    script and the imported physics tree.  The optional LC05 mode additionally
+    rechecks the trajectory and restore manifest before publication, closing
+    the startup-only hash window of the long comparison.
+    """
+    paths = {"script_sha256": __file__}
+    if prov.get("trajectory") is not None:
+        paths.update(
+            trajectory_sha256=prov["trajectory"],
+            restore_manifest_sha256=MANIFEST,
+        )
+    observed = {}
+    for key, path in paths.items():
+        try:
+            observed[key] = _sha256(path)
+        except OSError as exc:
+            observed[key] = f"unreadable:{type(exc).__name__}"
+    observed["kdm6_tree_sha256"] = _kdm6_tree_sha256()
+    expected = {key: prov.get(key) for key in observed}
+    mismatches = {key: (expected[key], observed[key])
+                  for key in observed if expected[key] != observed[key]}
+    return {"ok": not mismatches, "expected": expected, "observed": observed,
+            "mismatches": mismatches}
+
+
 def _mk(cv, K):
     return torch.tensor([[v] * K for v in cv], dtype=torch.float64)
 
@@ -268,8 +296,15 @@ def main():
     art["allsky_bt_comparison"] = ("deferred: requires the local RTTOV runtime/science "
                                    "assets (host-coupled); state-space impacts above are "
                                    "the merge-decision inputs")
+    end_identity = _end_identity_check(prov)
+    if not end_identity["ok"]:
+        raise RuntimeError(
+            "comparison inputs or source tree changed during execution; refusing "
+            f"to publish an artifact: {end_identity['mismatches']}")
+    prov["end_identity"] = end_identity
     OUT.mkdir(parents=True, exist_ok=True)
-    (OUT / "p0_4b1_impact_comparison.json").write_text(json.dumps(art, indent=1))
+    (OUT / "p0_4b1_impact_comparison.json").write_text(
+        json.dumps(art, indent=1, allow_nan=False))
     o = art["one_step_heavy_rain_dt120"]
     print("one-step: precip legacy", o["surface_precip_kg_m2"]["legacy_diag"],
           "→ conservative", o["surface_precip_kg_m2"]["conservative_actual"])

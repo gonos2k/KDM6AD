@@ -15,6 +15,18 @@ files can be dropped into a host and produce `wrf.exe` with selectable
 the conservative-interface-v1 variant pair `mp_physics=237` (corrected Fortran reference) /
 `mp_physics=337` (C++ v2 `physics_variant=1`).
 
+The current private host build hook supports **macOS only** (`.dylib` and
+`@loader_path`); it rejects other platforms before changing the configuration.
+The public CMake port has separate Linux and macOS builds. Linux port CI does
+not certify Linux host integration; `.so`/`$ORIGIN` host wiring is still open.
+
+For mp137/mp337 the supported selector is `hail_opt=0`. The host rejects
+`hail_opt=1` explicitly because the AD ABI carries no hail selector; silently
+using graupel defaults would disagree with the Fortran hail branch. Required
+optional driver actuals are checked before staging, and surface reflectivity
+is copied only when its destination is present. These source checks require
+a new host build and run before any runtime parity claim.
+
 ## Files (drop into `<WRF>/phys/`)
 | File | Role |
 |---|---|
@@ -22,7 +34,7 @@ the conservative-interface-v1 variant pair `mp_physics=237` (corrected Fortran r
 | `module_mp_kdm6ad.F` | KDM6AD mp137 wrapper — calls the C++ ABI; computes re_*/diag_rhog/REFL_10CM diagnostics |
 | `kdm6_iso_c.F` | ISO_C_BINDING interface declaring `kdm6_step_c` etc.; C4 adds the **append-only** v2 mirror (`kdm6_step_v2_args`, `kdm6_step_v2_c`, `kdm6_step_v2_args_size_c`, variant enums) |
 | `module_mp_kdm6_cons.F` | **C4** corrected Fortran conservative reference (mp237): byte-identical copy of `module_mp_kdm6.F` except renames + the pinned sedimentation interface-transfer edits (Gate A manifest) |
-| `module_mp_kdm6ad_cons.F` | **C4** thin separate wrapper (mp337): calls `kdm6_step_v2_c` with `physics_variant=1`, `value_only=1`; first-call `abi_version` + `struct_size` layout gate (fatal on mismatch — a stale mirror must never silently run legacy) |
+| `module_mp_kdm6ad_cons.F` | **C4** thin separate wrapper (mp337): calls `kdm6_step_v2_c` with `physics_variant=1`, `value_only=1`; per-call `abi_version` + `struct_size` layout gate without a shared mutable cache (fatal on mismatch) |
 | `module_microphysics_driver.F` | dispatches mp37 / mp137 / mp237 / mp337 (additive CASEs only) |
 
 For all four KDM6 dispatch cases, `QIB_CURR` is passed as `BG`; the Fortran

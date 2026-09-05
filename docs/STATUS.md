@@ -31,12 +31,11 @@ A green badge therefore means the **static** contracts hold. It does not mean th
 `mstep_i`, flux or closure numbers in this document were reproduced in CI — they were
 not, and cannot be until the reference tree is reachable from a runner.
 
-**Current status lives in [`../harness/evidence/SCIENCE_STATUS.md`](../harness/evidence/SCIENCE_STATUS.md)** (the former `CLAIMS.yaml` is in `harness/evidence/historical/`),
-not in the findings (owner §7.5). Findings accumulate corrections in place, so a
-reader cannot tell which sentence is current; the registry records `status`,
-`scope` and `superseded_by` per claim and is checked mechanically
-(`test_g33_claims.py`): evidence must exist, every `superseded_by` must resolve to
-an `active` claim, and every claim must declare a scope.
+**Current status lives in [`../harness/evidence/SCIENCE_STATUS.md`](../harness/evidence/SCIENCE_STATUS.md)**,
+with each result bounded by its pinned experiment manifest. The former
+`CLAIMS.yaml` registry and its validation scheme are historical; they are not
+an active executable gate. Older findings below retain experiment-specific
+numbers and must be read with the current unit and measurement qualifications.
 
 ## Differentiation surface
 
@@ -92,7 +91,7 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
 
 | Variant | C++ implementation | Public v2 selector | Fortran reference variant | 12h × MPI certification | Release / default-DA eligibility |
 |---|---|---|---|---|---|
-| conservative-interface-v1 | experimental | implemented | implemented (**scope: water-mass-conservative interface; NUMBER transport (nr) is reference-faithful, NOT certified column-number-conserving** — nr is a number MIXING ratio [# kg-1] (Registry.EM_COMMON:122) so the physical column measure is rho*dz*nr, while the reference-faithful rung uses the dz ratio only; a dedicated number-budget science gate on the rho*dz*nr measure is required before any column-number-conservation claim. C4: host mp237/mp337; Gates A/C PASS; Gate D SS-short 237↔337 STRICT BITWISE post the merged C4-S1 `piacw` `pi_t` fix, PR #26; Gate B G1/G2/G3.1/G3.2/G3.4 PASS but **G3.3 legacy-ULP-envelope OPEN** (unchanged by the fix; closure via the G3.3-M mechanism-provenance gate, not the withdrawn relative-envelope); legacy 12h×np4 37↔137 recert **STRICT BITWISE PASS on all generated frames** (both runs fail-closed verified; 12 frames × 254 vars incl `Times` raw-bit identical — the fix did not perturb legacy f32 parity), **and terminal 12:00:00-state parity PASS** (dedicated exact-hourly re-run, 13 frames 00:00:00…12:00:00, 12:00 terminal frame raw-bit + `Times` exact). C4 HOLD until G3.3 attributed. See FREEZE_LIFT §Current-status.) | pending (C5) | no |
+| conservative-interface-v1 | experimental | implemented | implemented (**scope: water-mass-conservative interface; NUMBER transport (nr) is reference-faithful, NOT certified column-number-conserving** — under the Registry dry-air mass basis [# kg-1], the column measure is rho_d*dz*nr; under the kernel PSD volume-concentration basis [# m-3], it is dz*nr. The host/kernel unit boundary remains OPEN. Reference-faithful number transfer uses thickness weighting; neither physical basis nor conservation is certified by inheritance. C4: host mp237/mp337; Gates A/C PASS; Gate D SS-short 237↔337 STRICT BITWISE post the merged C4-S1 `piacw` `pi_t` fix, PR #26; Gate B G1/G2/G3.1/G3.2/G3.4 PASS but **G3.3 legacy-ULP-envelope OPEN** (unchanged by the fix; closure via the G3.3-M mechanism-provenance gate, not the withdrawn relative-envelope); legacy 12h×np4 37↔137 recert **STRICT BITWISE PASS on all generated frames** (both runs fail-closed verified; 12 frames × 254 vars incl `Times` raw-bit identical — the fix did not perturb legacy f32 parity), **and terminal 12:00:00-state parity PASS** (dedicated exact-hourly re-run, 13 frames 00:00:00…12:00:00, 12:00 terminal frame raw-bit + `Times` exact). C4 HOLD until G3.3 attributed. See FREEZE_LIFT §Current-status.) | pending (C5) | no |
 
 ## Known scope boundaries (see README → Scope & differentiation contract)
 
@@ -125,33 +124,20 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   package: [`P0-4b1_interface_sink_prevalence.md`](P0-4b1_interface_sink_prevalence.md).
 - Column water budget is `ρΔz`-weighted (`oracle/kdm6/water_budget.py`, opt-in, byte-identical
   default); the earlier "water budget" was an unweighted layer-sum.
-- The **number-transport measure mismatch is now measured**, not only reasoned about
-  (owner §7). Mass moves with `ρΔz` and number with the legacy `Δz`-only measure, so a
-  transferred population's mean particle mass shifts by `ρ_u/ρ_l`. Predicted 1.0330 /
-  1.0319 / 1.0309 for the three column-3 transfers; **measured 1.0331 / 1.0296 / 1.0126**
-  against the legacy run at the same cell, with the no-inflow top level at exactly
-  1.0000 as the control. **The mechanism is real and it is ~3% per transfer.** The much
-  larger differences at coarse steps (up to 8.7×) are **unattributed** — an earlier
-  "dominated by branch-topology divergence" is withdrawn, since the flipping species
-  is 3.99e-06 of the column. The finest-step endpoint shows little difference, which
-  makes the *final-state manifestation* small at a fine step and does **not** make
-  the measure mismatch non-structural: the transfer still uses ρΔz for mass and
-  Δz-only for number, in the source, independent of timestep. ~~No column-number CLOSURE is possible from the current drivers — the surface
-  NUMBER flux is not emitted, only mass precipitation~~ — **both halves of that are
-  now WITHDRAWN** (owner §7.4). The flux is `falln(i,kts,1:2)` (rain and ice
-  number), a kernel **local** at `module_mp_kdm6.F:719` with no `intent`, so it is
-  reachable only through the SHA-pinned macro-gated overlay that recovered
-  `mstep`, **not** by a driver edit as an earlier note claimed — and that overlay
-  now emits it, alongside `G33F XFER`, the bottom cell's ACTUAL capped transfer
-  per sub-step. So the closure is not only possible, it has been performed: the
-  **matched** closure runs mass and number on the same chain, the same calls and
-  the same cap state, and `mstep > 1` is admissible because nothing is
-  reconstructed. ~~the rain-number channel this row names is still
-  unexercised~~ — also **WITHDRAWN**: `main/nr` is measured at +15.00 / +13.34 /
-  +11.84% (h = 25 s) with its `qr` mass control closing to f32 roundoff on the
-  same rows. See
-  [`../harness/evidence/FINDING_matched_number_closure_v1.md`](../harness/evidence/FINDING_matched_number_closure_v1.md).
-  See [`../harness/evidence/FINDING_number_budget_v1.md`](../harness/evidence/FINDING_number_budget_v1.md).
+- Number transport uses thickness weighting while mass transport carries density.
+  Under the **conditional dry-air mass basis**, the full applied interface residual is
+  `rho_d,lower * dz_lower * dn_in - rho_d,upper * dz_upper * dn_out`.
+  Its density-contrast and inflow/outflow-mismatch terms must both be retained;
+  a density ratio alone is not a general creation rate or particle-mass change.
+  The historical column-3 comparisons predicted ratios 1.0330 / 1.0319 / 1.0309
+  and measured 1.0331 / 1.0296 / 1.0126 in that experiment. They do not establish
+  a universal “3% per transfer” effect. The larger coarse-step endpoint differences
+  remain separately attributed in the pinned findings.
+  Applied transfer instrumentation and matched fixture closure are available;
+  the real 10-minute WRF applied-transfer remeasurement and the host/kernel number
+  unit contract remain OPEN. See
+  [`FINDING_matched_number_closure_v1.md`](../harness/evidence/FINDING_matched_number_closure_v1.md)
+  and [`SCIENCE_STATUS.md`](../harness/evidence/SCIENCE_STATUS.md).
 - **A correction to the refinement work's own reasoning.** The graupel presence flip
   used to argue that column 3 is "not a valid convergence domain" carries
   **3.88e-06 of that column's water** — parts per million, far too small to produce
@@ -278,26 +264,17 @@ full gate set (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md) is green:
   `fortran_build.sh` — the decision-path stream is **bit-identical** to before, and
   the instrumented run is **bit-identical** to the plain build.
   See [`../harness/evidence/FINDING_two_sedimentation_chains_v1.md`](../harness/evidence/FINDING_two_sedimentation_chains_v1.md).
-- **The `nr` number-moment blocker is now MEASURED on the pinned legacy reference:
-  sedimentation CREATES column number.** Mass carries the density ratio (`falk` built
-  with `dend(k+1)`, inflow divided by `dend(k)`, F:1214-1219); number carries only the
-  thickness ratio (F:1221-1224). Since `nrs` IS the prognostic number **mixing** ratio
-  (F:388), the ρΔz-weighted number arriving below exceeds what left above by
-  `den(lower)/den(upper)`, and density increases downward. With `mstep == 1` the
-  per-interface transfers are recoverable from the state change, and the evidence is a
-  **hypothesis test against data the recursion never consumes**: recovered bottom
-  transfer against the independently emitted `falln`. The `dz`-only weight gives
-  **1.00000–1.00001** for `nr` in every column; the density-carrying alternative gives
-  **0.850–0.925**, excluded by 7–15%. **Magnitude: ~0.25% per call for ice number in
-  the ice-heavy column, compounding to ~20% of the column's final ice number over
-  300 s**, and step-robust (1.98e7 at h = 6.25 s vs 2.11e7 at h = 3.125 s — creation
-  scales with number transported, not with call count). **Two apparent proofs were
-  caught and discarded**: the interface decomposition is an algebraic identity that
-  telescopes for any transfers, and the mass channel returning ~0 is forced by its own
-  weight — both check arithmetic, neither is a control. **Limits**: `mstep == 1` only,
-  so operational steps are not measured; the conservative variant is *predicted* to be
-  unaffected (it fixes the mass measure, leaves number on the legacy one) and was not
-  run; cap-dominated calls are excluded, not explained.
+- **Historical number-budget fixture result, conditional on a dry-air mass basis.**
+  The pinned reference moves mass with density weighting and number with thickness
+  weighting. If `nrs` denotes #/kg dry air, use `rho_d*dz*nrs`; if it denotes
+  #/m³, use `dz*nrs`. Registry declarations and PSD usage disagree, so neither
+  this fixture nor its WDM6 inheritance settles the physical unit contract.
+  The original endpoint recovery applies only to `mstep == 1` and excludes
+  cap-dominated calls. Its density-ratio argument is valid only when the actual
+  outgoing and incoming thickness-weighted transfers match. It is not a general
+  whole-residual formula. Reported fixture percentages below retain their pinned
+  scope, conditional measure, and cap exclusions; they are not operational WRF
+  particle-creation measurements.
   **Closure, on emitted data only** (owner priority-3): the segment
   `outer_pre_sed..outer_post_sed` is F:1189-1340 — both sedimentation sub-cycles and
   nothing else — so it isolates transport temporally and **a sources-off fixture is

@@ -120,6 +120,12 @@ value — **including a degenerate `struct_size < 4`** — is rejected with
 `abi_version` (offset 4) or any other field is read** (a 4-byte-struct caller
 must not have `abi_version` read past its buffer).
 
+The implementation copies each framing field from bytes into a local `uint32_t`.
+It does not access the short prefix through a full options-struct lvalue: a
+four-byte caller need not contain a live, fully aligned C++ options object.
+Structured member access begins only after the version and required-prefix
+checks, where the ordinary options-record alignment and allocation contract applies.
+
 Exact access bound (the corrected invariant): the library reads the 4-byte
 `struct_size` field unconditionally, and thereafter **never reads any field
 whose end exceeds `min(struct_size, LIB)`**. Equivalently, total bytes touched

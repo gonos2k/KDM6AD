@@ -471,6 +471,11 @@ def _samerun_window(cols=(1, 2, 3), ks=range(4)):
     run = _domain_run(cols, ks)
     run[("meta", "algorithm")] = "legacy"
     run[("meta", "delt")] = 100.0
+    # G33N's first split/loop duplicates the window's initial transport state;
+    # the same-run validator now binds these words explicitly.
+    run.update({("initial", f, c, k): 1.0
+                for f in ("qv", "nr", "ni", "qr", "qi")
+                for c in cols for k in ks})
     run.update({("forcing", nm, c, k): 1.0
                 for nm in ("rho", "delz") for c in cols for k in ks})
     return run
@@ -479,6 +484,20 @@ def _samerun_window(cols=(1, 2, 3), ks=range(4)):
 def test_the_same_run_contract_control_passes():
     xp._require_fixture_domain(_domain_text(), "n1.rezero.txt", 1, "rezero",
                                "as-is", 3, 4, _samerun_window())
+
+
+def test_review208_same_run_binds_initial_transport_state_raw_words():
+    """A G33P INITIAL qv sign change cannot alter a dry-weighted ledger."""
+    run = _samerun_window()
+    stream = _domain_text().replace(
+        "G33F STAGE 1 - outer_pre_sed 0 qv 1 0 f32 3F800000",
+        "G33F STAGE 1 - outer_pre_sed 0 qv 1 0 f32 00000000")
+    # +0.0 and -0.0 are numerically equal but distinct f32 inputs. Use -0.0
+    # in the window so only the raw-word contract distinguishes this pair.
+    run[("initial", "qv", 1, 0)] = -0.0
+    with pytest.raises(xp.ra.RefineError, match="initial qv differs"):
+        xp._require_fixture_domain(stream, "n1.rezero.txt", 1, "rezero",
+                                   "as-is", 3, 4, run)
 
 
 @pytest.mark.parametrize("mutate,match", [

@@ -42,6 +42,12 @@ def streams(monkeypatch):
         monkeypatch.setattr(ql, "verify_replay", lambda *a, **k: {})
         monkeypatch.setattr(ql, "_require_same_weights", lambda *a, **k: None)
         monkeypatch.setattr(ra, "read_text", lambda t, **k: t)
+        rid = {"algorithm": "legacy", "number_transfer_metric": "thickness",
+               "nsplit": 1, "carry": "rezero", "rho": "as-is", "width": 3,
+               "levels": 2, "delt": 100.0, "dtcld": 100.0, "loops": 1}
+        monkeypatch.setattr(
+            ql, "_validated_window",
+            lambda text, label: (rid, {("meta", "fixture"): "fx"}))
     return install
 
 
@@ -73,8 +79,8 @@ def test_matching_universes_get_past_the_guard(streams):
     try:
         ql.decompose("base", "got", 3, object())
     except ra.RefineError as e:
-        assert "different cells" not in str(e.value), \
-            f"a well-formed pair was refused by the universe guard: {e.value}"
+        assert "different cells" not in str(e), \
+            f"a well-formed pair was refused by the universe guard: {e}"
     except Exception:
         pass
 

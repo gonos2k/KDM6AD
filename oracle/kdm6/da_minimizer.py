@@ -208,7 +208,8 @@ def run_minimizer(
         closure()
 
     with torch.no_grad():
-        x_a, _ = cvt_apply(xb64, b_sigma, v, cvt)
+        x_cvt, _ = cvt_apply(xb64, b_sigma, v, cvt)
+        x_a = x_cvt
         part_rec = None
         if partition is not None:
             # reconstruct the analysis with the COMPOSED decoder — cvt_apply
@@ -216,7 +217,7 @@ def run_minimizer(
             x_a = apply_partition_chain(x_a, partition_forcing, w.detach(),
                                         caps)
             part_rec = build_partition_record(partition, caps, w.detach())
-        cvt_rec = (build_cvt_record(cvt, b_sigma, xb64, x_a)
+        cvt_rec = (build_cvt_record(cvt, b_sigma, xb64, x_cvt)
                    if cvt is not None else None)
     return MinimizeResult(
         x_analysis=x_a, v=v.detach(), j_trace=trace,

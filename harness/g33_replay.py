@@ -152,19 +152,48 @@ def _need(mapping, key, what):
     return mapping[key]
 
 
-def replay_report(run: dict) -> Counter:
+def _op_identity(record):
+    return (record["loop"], record["chain"], record["n"], record["col"],
+            record["k"], record.get("species"),
+            record.get("op_id", record.get("op")), record["field"],
+            record["dtype"])
+
+
+def _stage_identity(record):
+    return (record["stage"], record["loop"], record["chain"], record["n"],
+            record["col"], record["k"], record["field"], record["dtype"])
+
+
+def _check_expected_identity(run, expected_identity):
+    if expected_identity is None:
+        return
+    if not isinstance(expected_identity, dict):
+        raise FidelityError("expected_identity must be an object with ops/stages")
+    for name, fn in (("ops", _op_identity), ("stages", _stage_identity)):
+        if name not in expected_identity:
+            continue
+        want = Counter(tuple(item) if not isinstance(item, dict) else fn(item)
+                       for item in expected_identity[name])
+        got = Counter(fn(item) for item in run.get(name, ()))
+        if got != want:
+            raise FidelityError(
+                f"{name} identity multiset differs: missing={sum((want-got).values())} "
+                f"extra={sum((got-want).values())}")
+
+
+def replay_report(run: dict, expected_identity=None) -> Counter:
     """Per-relation counts. Lets a caller assert WHICH relations were checked, not
     just how many: a producer that silently stops emitting an op family would other-
     wise shrink coverage without failing anything."""
     try:
-        return _replay(run)
+        return _replay(run, expected_identity=expected_identity)
     except FidelityError:
         raise
     except (KeyError, TypeError, ValueError, IndexError) as e:
         raise FidelityError(f"ladder cannot be replayed: {e!r}") from None
 
 
-def replay_run(run: dict) -> int:
+def replay_run(run: dict, expected_identity=None) -> int:
     """Re-derive every ladder rung; raise FidelityError on the first mismatch.
     Returns the number of relations checked (0 means nothing was proven).
 
@@ -172,7 +201,7 @@ def replay_run(run: dict) -> int:
     crash — evidence whose variant label disagrees with its own arithmetic (a legacy
     ladder labelled conservative, say) lacks the operands the other variant's
     relations need, and that must READ as a fidelity failure."""
-    report = replay_report(run)
+    report = replay_report(run, expected_identity=expected_identity)
     backend = run.get("backend")
     if backend not in BACKEND_RELATIONS:
         raise FidelityError(f"run has no usable backend label: {backend!r}")
@@ -185,8 +214,9 @@ def replay_run(run: dict) -> int:
     return sum(report.values())
 
 
-def _replay(run: dict) -> Counter:
+def _replay(run: dict, expected_identity=None) -> Counter:
     cons = run["algorithm"] == "conservative"
+    _check_expected_identity(run, expected_identity)
     ops: dict = {}
     stg: dict = {}
     srf: dict = {}      # (loop, col) -> surface operands
@@ -194,18 +224,32 @@ def _replay(run: dict) -> Counter:
     dts: dict = {}      # (loop, col) -> dtcld
     incs: dict = run.get("surface_increments", {})   # producer's own per-loop values
     native_output = run.get("backend") == "cpp"      # only this backend emits them
+    op_seen = set()
     for o in run["ops"]:
-        ops.setdefault((o["loop"], o["chain"], o["n"], o["col"], o["k"],
-                        o["species"], o["op_id"]), _Tracked())[o["field"]] = int(o["bits"])
+        identity = _op_identity(o)
+        if identity in op_seen:
+            raise FidelityError(f"duplicate op identity {identity!r}")
+        op_seen.add(identity)
+        key = (o["loop"], o["chain"], o["n"], o["col"], o["k"],
+               o["species"], o["op_id"])
+        if o["field"] in ops.setdefault(key, _Tracked()):
+            raise FidelityError(f"duplicate op field identity {identity!r}")
+        ops[key][o["field"]] = int(o["bits"])
+    stage_seen = set()
     for s in run["stages"]:
-        stg[(s["loop"], s["chain"], s["n"], s["col"], s["k"], s["field"])] = int(s["bits"])
+        identity = _stage_identity(s)
+        if identity in stage_seen:
+            raise FidelityError(f"duplicate stage identity {identity!r}")
+        stage_seen.add(identity)
+        stg[(s["stage"], s["loop"], s["chain"], s["n"], s["col"],
+            s["k"], s["field"])] = int(s["bits"])
         if s["stage"] == "surface":
             srf.setdefault((s["loop"], s["col"]), _Tracked())[s["field"]] = int(s["bits"])
         elif s["stage"] == "final_output":
             fin.setdefault(s["col"], _Tracked())[s["field"]] = int(s["bits"])
-        elif s["field"] == "dtcld":
+        elif s["stage"] == "substep_pre" and s["field"] == "dtcld":
             dts[(s["loop"], s["col"])] = int(s["bits"])
-    kbot = max((k for (_l, _c, _n, _co, k, _f) in stg), default=-1)   # bottom cell
+    kbot = max((k for (_stage, _l, _c, _n, _co, k, _f) in stg), default=-1)
     counts: Counter = Counter()
 
     def eq(name, got, want, where):
@@ -218,14 +262,14 @@ def _replay(run: dict) -> Counter:
     # rather than inherit it: a floored metric silently changes the divisor.
     for (loop, chain, n, col, k, fld), raw in sorted(run.get("raw_metrics", {}).items()):
         safe, w = fld.replace("_raw", "_safe"), f"loop{loop}/n{n}/col{col}/k{k}"
-        eq(f"METRIC.{safe}=={fld}", _need(stg, (loop, chain, n, col, k, safe), w),
+        eq(f"METRIC.{safe}=={fld}", _need(stg, ("substep_pre", loop, chain, n, col, k, safe), w),
            raw, w)
 
     for key, f in ops.items():
         loop, chain, n, col, k, sp, op = key
         where = f"loop{loop}/{chain}/n{n}/col{col}/k{k}/{sp}/{op}"
         fam = op.split("_", 1)[1]
-        sub = lambda name, kk=k: _need(stg, (loop, chain, n, col, kk, name), where)
+        sub = lambda name, kk=k: _need(stg, ("substep_pre", loop, chain, n, col, kk, name), where)
         dt = _F32(sub("dtcld", -1))
         dend = _F32(sub("dend_safe"))
 
@@ -312,7 +356,7 @@ def _replay(run: dict) -> Counter:
                                   ("dend_safe_src", "dend_safe", k - 1)):
                 if opnd in f:
                     eq(f"INFLOW.{opnd}(state)",
-                       _need(stg, (loop, chain, n, col, kk, fld), where), f[opnd], where)
+                       _need(stg, ("substep_pre", loop, chain, n, col, kk, fld), where), f[opnd], where)
             if cons:
                 above_out = (loop, chain, n, col, k - 1, sp, f"{sp.upper()}_OUTFLOW")
                 pv = "prev_out" if sp == "qr" else "prev_out_nr"
@@ -408,7 +452,7 @@ def _replay(run: dict) -> Counter:
                                where), "fall_after", where),
                    f["bottom_fall_qr"], where)
             eq("SURFACE.delz_bottom(state)",
-               _need(stg, (loop, "main", 1, col, kbot, "delz_safe"), where),
+               _need(stg, ("substep_pre", loop, "main", 1, col, kbot, "delz_safe"), where),
                f["delz_bottom"], where)
             total = q("bottom_fall_qr")
             for nm in ("bottom_fall_qs", "bottom_fall_qg", "bottom_fall_qi"):

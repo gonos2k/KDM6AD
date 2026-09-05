@@ -14,6 +14,7 @@ the actual bottom outflow. Acceptance (owner spec):
 legacy_reference = the unchanged default path; conservative_experiment = the
 functions under test. NOT wired to the default runtime, C++/Fortran, or the DA path.
 """
+import pytest
 import torch
 
 from kdm6.sedimentation import (
@@ -165,3 +166,44 @@ def test_conservative_ice_no_defect():
                      <= _tol(att.column_loss_by_species_kg_m2["qi"]))
     assert torch.all(att.gap_by_species_kg_m2["qi"].abs()
                      <= _tol(att.column_loss_by_species_kg_m2["qi"]))
+
+
+def test_review208_conservative_direct_shape_guards():
+    """Conservative helpers reject broadcastable state/forcing grids."""
+    from kdm6.sedimentation import IceSubstepState
+
+    state = SubstepAdvectionState(
+        qr=_full(2, 2, 1.0e-4), nr=_full(2, 2, 1.0e3),
+        qs=_full(2, 2, 0.0), qg=_full(2, 2, 0.0), brs=_full(2, 2, 0.0),
+    )
+    z = torch.zeros((2, 2), dtype=torch.float64)
+    w = _full(2, 2, 0.01)
+    kwargs = dict(mstep=1, dtcld=60.0, params=default_substep_advection_params())
+
+    with pytest.raises(ValueError, match="shapes must match"):
+        conservative_substep_advection_torch(
+            state, z, z, z, z, z, w, z, z, z,
+            _full(1, 2, 500.0), _full(2, 2, 1.0), **kwargs)
+
+    with pytest.raises(ValueError, match="mstep_col"):
+        conservative_substep_advection_torch(
+            state, z, z, z, z, z, w, z, z, z,
+            _full(2, 2, 500.0), _full(2, 2, 1.0),
+            mstep_col=torch.ones((2, 1), dtype=torch.float64),
+            dtcld=60.0, params=default_substep_advection_params())
+
+    ice = IceSubstepState(qi=_full(2, 2, 1.0e-4), ni=_full(2, 2, 1.0e3))
+    with pytest.raises(ValueError, match="shapes must match"):
+        conservative_ice_substep_advection_torch(
+            ice, z, z, w, z, _full(1, 2, 500.0), _full(2, 2, 1.0), **kwargs)
+
+    empty = SubstepAdvectionState(
+        qr=torch.empty((0, 2), dtype=torch.float64), nr=torch.empty((0, 2), dtype=torch.float64),
+        qs=torch.empty((0, 2), dtype=torch.float64), qg=torch.empty((0, 2), dtype=torch.float64),
+        brs=torch.empty((0, 2), dtype=torch.float64),
+    )
+    empty_z = torch.empty((0, 2), dtype=torch.float64)
+    with pytest.raises(ValueError, match="positive"):
+        conservative_substep_advection_torch(
+            empty, empty_z, empty_z, empty_z, empty_z, empty_z,
+            empty_z, empty_z, empty_z, empty_z, empty_z, empty_z, **kwargs)

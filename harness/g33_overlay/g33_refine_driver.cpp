@@ -25,10 +25,10 @@
 // Emits the same G33R grammar as the Fortran refinement driver so one analyzer
 // reads both -- but tags its algorithm `legacy-cpp` / `conservative-cpp`, so a
 // mixed C++/Fortran set is rejected by the analyzer's algorithm check rather than
-// silently compared. The k index here is HOST-K (bottom-first) as the C++ tensors
-// carry it, NOT the Fortran driver's top-first convention: this leg is for
-// C++-against-C++ comparison and a cross-backend read would need the flip the
-// normalizer applies.
+// silently compared. The shared fixture is canonical TOP-FIRST (k=0 is top),
+// while C++ State/Forcing tensors are HOST-K surface-first. This driver performs
+// the conversion at the call boundary and emits canonical top-first G33R records
+// so the refinement reader can compare them to the Fortran leg.
 #include "kdm6/constants.h"
 #include "kdm6/coordinator.h"
 #include "kdm6/runtime.h"
@@ -101,9 +101,19 @@ std::vector<float> decode(const Arr& bits) {
     return out;
 }
 
-torch::Tensor host2(int64_t B, int64_t K, const std::vector<float>& v) {
+torch::Tensor tensor2(int64_t B, int64_t K, const std::vector<float>& v) {
+    if (static_cast<int64_t>(v.size()) != B * K)
+        throw std::runtime_error("fixture tensor has the wrong element count");
     return torch::from_blob(const_cast<float*>(v.data()), {B, K},
                             torch::kFloat32).clone();
+}
+
+torch::Tensor to_host_order(const torch::Tensor& canonical_top_first) {
+    return torch::flip(canonical_top_first, {1}).contiguous();
+}
+
+torch::Tensor host2(int64_t B, int64_t K, const std::vector<float>& v) {
+    return to_host_order(tensor2(B, K, v));
 }
 
 torch::Tensor tensor1(const std::vector<float>& v) {
@@ -114,7 +124,8 @@ torch::Tensor tensor1(const std::vector<float>& v) {
 
 void emit(const char* name, const torch::Tensor& value, int64_t B, int64_t K,
           const char* cls = "STATE") {
-    auto t = value.detach().to(torch::kFloat32).contiguous().cpu().view({B, K});
+    auto t = torch::flip(value.detach().to(torch::kFloat32).view({B, K}), {1})
+                 .contiguous().cpu();
     const float* p = t.data_ptr<float>();
     std::cout << std::hex << std::setfill('0');
     for (int64_t b = 0; b < B; ++b)
@@ -295,8 +306,9 @@ int main(int argc, char** argv) {
                 static const char* nm[12] = {"th","qv","qc","qr","qi","qs","qg",
                                              "nccn","nc","ni","nr","bg"};
                 for (int j = 0; j < 12; ++j) {
-                    auto t = fs[j]->detach().to(torch::kFloat32).contiguous().cpu()
-                                 .view({fx::B, fx::K});
+                    auto t = torch::flip(
+                                 fs[j]->detach().to(torch::kFloat32).view({fx::B, fx::K}),
+                                 {1}).contiguous().cpu();
                     const float* pv = t.data_ptr<float>();
                     for (int64_t bb = 0; bb < fx::B; ++bb)
                         for (int64_t kk = 0; kk < fx::K; ++kk)

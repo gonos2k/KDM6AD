@@ -18,6 +18,21 @@
 #include <utility>
 #include <vector>
 
+// The v2 framing contract is size-first: a caller may provide only the
+// four-byte struct_size prefix.  On the supported Unix targets, the test
+// places that prefix immediately before a protected page and runs the call in
+// a child, so an accidental offset-four read is an ordinary test failure.
+#if defined(__linux__) || defined(__APPLE__)
+#include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#if defined(__APPLE__) && !defined(MAP_ANONYMOUS)
+#define MAP_ANONYMOUS MAP_ANON
+#endif
+#define KDM6_HAVE_GUARD_PAGE_FRAMING_TEST 1
+#endif
+
 #define TEST(name) std::cout << "  RUN  " << #name << "\n"; do
 #define END_TEST() while(false); std::cout << "  PASS\n"
 
@@ -379,7 +394,9 @@ void test_c_abi_scalar_finite_validation() {
         FortranBuf out(im, kme, jme, SENT);
         auto out_is_sentinel = [&]() { return out.data[0] == SENT; };
 
-        auto call_v1 = [&](double dt, double ncmin_land, double ncmin_sea) {
+        FortranBuf xland(im, kme, jme, 1.0f);
+        auto call_v1 = [&](double dt, double ncmin_land, double ncmin_sea,
+                           const float* xland_ptr = nullptr) {
             kdm6_handle_t* h = reinterpret_cast<kdm6_handle_t*>(0x1);
             out.data[0] = SENT;
             return std::pair<int, kdm6_handle_t*>(
@@ -390,7 +407,7 @@ void test_c_abi_scalar_finite_validation() {
                     im, kme, jme, dt, 0, 1,
                     out.ptr(), out.ptr(), out.ptr(), out.ptr(), out.ptr(), out.ptr(), out.ptr(),
                     out.ptr(), out.ptr(), out.ptr(), out.ptr(), out.ptr(), &h,
-                    nullptr, ncmin_land, ncmin_sea, nullptr, nullptr, nullptr, nullptr), h);
+                    xland_ptr, ncmin_land, ncmin_sea, nullptr, nullptr, nullptr, nullptr), h);
         };
         for (const auto& bad : std::array<std::pair<double, double>, 2>{
                  std::pair<double, double>{std::numeric_limits<double>::quiet_NaN(), 0.0},
@@ -401,6 +418,23 @@ void test_c_abi_scalar_finite_validation() {
         }
         {
             auto result = call_v1(60.0, 0.0, std::numeric_limits<double>::infinity());
+            assert(result.first == KDM6_ERR_INVALID_ARG);
+            assert(result.second == nullptr && out_is_sentinel());
+        }
+        // Positive dt is valid only when the runtime's required f32 dtcld is
+        // finite and strictly positive, and positive ncmin must survive the
+        // operational f32 staging.  Both checks happen before tensor work.
+        for (const double bad_dt : {1.0e-46, 1.0e308}) {
+            auto result = call_v1(bad_dt, 0.0, 0.0);
+            assert(result.first == KDM6_ERR_INVALID_ARG);
+            assert(result.second == nullptr && out_is_sentinel());
+        }
+        {
+            auto result = call_v1(60.0, 3.5e38, 10.0, xland.ptr());
+            assert(result.first == KDM6_ERR_INVALID_ARG);
+            assert(result.second == nullptr && out_is_sentinel());
+            xland.data[0] = 2.0f;  // all-sea still materializes the land arm
+            result = call_v1(60.0, 10.0, 3.5e38, xland.ptr());
             assert(result.first == KDM6_ERR_INVALID_ARG);
             assert(result.second == nullptr && out_is_sentinel());
         }
@@ -424,14 +458,40 @@ void test_c_abi_scalar_finite_validation() {
         out.data[0] = SENT;
         assert(kdm6_step_v2_c(&v2) == KDM6_ERR_INVALID_ARG);
         assert(h2 == nullptr && out_is_sentinel());
+        for (const double bad_dt : {1.0e-46, 1.0e308}) {
+            v2.dt = bad_dt;
+            v2.ncmin_sea = 0.0;
+            v2.xland = nullptr;
+            h2 = reinterpret_cast<kdm6_handle_t*>(0x1);
+            out.data[0] = SENT;
+            assert(kdm6_step_v2_c(&v2) == KDM6_ERR_INVALID_ARG);
+            assert(h2 == nullptr && out_is_sentinel());
+        }
         v2.dt = 60.0;
         v2.ncmin_sea = -1.0;
         h2 = reinterpret_cast<kdm6_handle_t*>(0x1);
         out.data[0] = SENT;
         assert(kdm6_step_v2_c(&v2) == KDM6_ERR_INVALID_ARG);
         assert(h2 == nullptr && out_is_sentinel());
+        v2.ncmin_land = 3.5e38;
+        v2.ncmin_sea = 10.0;
+        xland.data[0] = 1.0f;
+        v2.xland = xland.ptr();
+        h2 = reinterpret_cast<kdm6_handle_t*>(0x1);
+        out.data[0] = SENT;
+        assert(kdm6_step_v2_c(&v2) == KDM6_ERR_INVALID_ARG);
+        assert(h2 == nullptr && out_is_sentinel());
+        v2.ncmin_land = 10.0;
+        v2.ncmin_sea = 3.5e38;
+        xland.data[0] = 2.0f;
+        h2 = reinterpret_cast<kdm6_handle_t*>(0x1);
+        out.data[0] = SENT;
+        assert(kdm6_step_v2_c(&v2) == KDM6_ERR_INVALID_ARG);
+        assert(h2 == nullptr && out_is_sentinel());
 
-        // Packed fp64 DA entry has the same finite scalar contract.
+        // Packed fp64 DA entry shares the timestep domain; its ncmin fields
+        // remain finite/non-negative f64 controls because this path stages
+        // ncmin in f64 rather than operational f32.
         std::vector<double> state(12, 1.0), forcing(4, 1.0), packed_out(12, -654.0);
         auto packed_is_sentinel = [&]() { return packed_out[0] == -654.0; };
         kdm6_handle_t* ha = reinterpret_cast<kdm6_handle_t*>(0x1);
@@ -440,6 +500,14 @@ void test_c_abi_scalar_finite_validation() {
                               packed_out.data(), &ha, nullptr, 0.0, 0.0)
                == KDM6_ERR_INVALID_ARG);
         assert(ha == nullptr && packed_is_sentinel());
+        for (const double bad_dt : {1.0e-46, 1.0e308}) {
+            ha = reinterpret_cast<kdm6_handle_t*>(0x1);
+            std::fill(packed_out.begin(), packed_out.end(), -654.0);
+            assert(kdm6_step_ad_c(state.data(), forcing.data(), im, kme, jme,
+                                  bad_dt, 1, packed_out.data(), &ha, nullptr, 0.0, 0.0)
+                   == KDM6_ERR_INVALID_ARG);
+            assert(ha == nullptr && packed_is_sentinel());
+        }
         ha = reinterpret_cast<kdm6_handle_t*>(0x1);
         assert(kdm6_step_ad_c(state.data(), forcing.data(), im, kme, jme, 60.0, 1,
                               packed_out.data(), &ha, nullptr,
@@ -1016,6 +1084,51 @@ void test_c_abi_v2_framing() {
         }
     } END_TEST();
 }
+
+// ABI-RED-003: prove the size-first framing rule with an actually four-byte
+// caller record.  The child isolates an intentional SIGSEGV if a reordered
+// implementation reads abi_version at offset four before rejecting the short
+// record; the parent then reports that signal as a normal assertion failure.
+#if defined(KDM6_HAVE_GUARD_PAGE_FRAMING_TEST)
+void test_c_abi_v2_short_framing_guard_page() {
+    TEST(test_c_abi_v2_short_framing_guard_page) {
+        const long page_long = sysconf(_SC_PAGESIZE);
+        assert(page_long > static_cast<long>(sizeof(uint32_t)));
+        const size_t page = static_cast<size_t>(page_long);
+        const size_t mapping_len = page * 2;
+        void* mapping = mmap(nullptr, mapping_len, PROT_READ | PROT_WRITE,
+                             MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        assert(mapping != MAP_FAILED);
+        auto* guard_page = static_cast<char*>(mapping) + page;
+        assert(mprotect(guard_page, page, PROT_NONE) == 0);
+
+        auto* payload = guard_page - sizeof(uint32_t);
+        for (const uint32_t short_size : {0u, 4u, 7u}) {
+            // Exactly four bytes are readable at this address.  The next byte
+            // belongs to the PROT_NONE page, so offset-four reads fault.
+            std::memcpy(payload, &short_size, sizeof(short_size));
+            const pid_t child = fork();
+            assert(child >= 0);
+            if (child == 0) {
+                const int rc = kdm6_step_v2_c(
+                    reinterpret_cast<const kdm6_step_v2_args*>(payload));
+                _exit(rc == KDM6_ERR_INVALID_ARG ? 0 : 1);
+            }
+
+            int status = 0;
+            assert(waitpid(child, &status, 0) == child);
+            assert(WIFEXITED(status) && WEXITSTATUS(status) == 0);
+        }
+        assert(munmap(mapping, mapping_len) == 0);
+    } END_TEST();
+}
+#else
+void test_c_abi_v2_short_framing_guard_page() {
+    TEST(test_c_abi_v2_short_framing_guard_page) {
+        std::cout << "  SKIP (guard-page framing test requires Linux or macOS)\n";
+    } END_TEST();
+}
+#endif
 
 void test_c_abi_checked_shape_products() {
     TEST(test_c_abi_checked_shape_products) {
@@ -1724,6 +1837,7 @@ int main() {
     std::cout << "KDM6AD-k libtorch C ABI bridge tests\n";
     test_c_abi_v2_version_and_size();
     test_c_abi_v2_framing();
+    test_c_abi_v2_short_framing_guard_page();
     test_c_abi_checked_shape_products();
     test_c_abi_nonpositive_dt_is_bitwise_identity();
     test_c_abi_v2_precedence();

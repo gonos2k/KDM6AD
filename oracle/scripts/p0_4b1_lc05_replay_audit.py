@@ -20,6 +20,7 @@ Analysis-only; no repo behavior change.
 """
 import hashlib
 import json
+import math
 import os
 import pathlib
 import platform
@@ -102,6 +103,7 @@ def provenance(traj_sha, script_sha, kdm6_sha):
                                   "RESTORE_MANIFEST), not the byte-identical original"),
         "torch_version": torch.__version__,
         "python_version": platform.python_version(),
+        "python_optimize": int(sys.flags.optimize),
         "dt": DT,
         "frame_start": 0,
         "frame_stop_exclusive": N_CUM_STEPS,
@@ -121,7 +123,55 @@ def _ckpt_meta(traj_sha, script_sha, kdm6_sha):
             "trajectory": FCST, "trajectory_sha256": traj_sha,
             "script_sha256": script_sha, "kdm6_tree_sha256": kdm6_sha, "dt": DT,
             "ncmin_land": NCMIN_LAND, "ncmin_sea": NCMIN_SEA,
-            "n_cum_steps": N_CUM_STEPS}
+            "n_cum_steps": N_CUM_STEPS,
+            "python_optimize": int(sys.flags.optimize)}
+
+
+def _is_finite_float(value):
+    """Return true only for a JSON/torch metric represented by a finite float."""
+    return type(value) is float and math.isfinite(value)
+
+
+def _validate_top_first_pressure(p_tf):
+    """Fail closed when replay pressure cannot support an interface label.
+
+    Sedimentation attribution indexes pressure in top-first order.  This is an
+    input invariant, not an assertion-only diagnostic: ``python -O`` must not
+    turn a reversed or non-finite pressure vector into a plausible artifact.
+    """
+    if not isinstance(p_tf, torch.Tensor) or p_tf.ndim != 2:
+        raise ValueError("top-first pressure must be a 2-D tensor")
+    if not bool(torch.isfinite(p_tf).all()):
+        raise ValueError("top-first pressure must be finite")
+    if not bool((p_tf[:, :-1] <= p_tf[:, 1:]).all()):
+        raise ValueError("top-first pressure must increase downward — K-order mismatch")
+
+
+def _end_identity_check(prov):
+    """Re-hash every input/source identity consumed by this replay.
+
+    The startup hashes identify the run configuration.  This completion check
+    closes the long-run window in which a trajectory, manifest, imported
+    physics source, or this script could change after startup; a mismatched
+    artifact must not be published as if it had one stable identity.
+    """
+    paths = {
+        "trajectory_sha256": FCST,
+        "restore_manifest_sha256": MANIFEST,
+        "script_sha256": __file__,
+    }
+    observed = {}
+    for key, path in paths.items():
+        try:
+            observed[key] = _sha256(path)
+        except OSError as exc:
+            observed[key] = f"unreadable:{type(exc).__name__}"
+    observed["kdm6_tree_sha256"] = _kdm6_tree_sha256()
+    expected = {key: prov.get(key) for key in observed}
+    mismatches = {key: (expected[key], observed[key])
+                  for key in observed if expected[key] != observed[key]}
+    return {"ok": not mismatches, "expected": expected, "observed": observed,
+            "mismatches": mismatches}
 
 
 def _validate_resume(ck, ck_meta, prov, n_frames_total=37, n_columns=None):
@@ -147,6 +197,8 @@ def _validate_resume(ck, ck_meta, prov, n_frames_total=37, n_columns=None):
                 and type(r.get("frame")) is int
                 and type(r.get("sink_sum_of_column_equivalents_kg_m2")) is float
                 and type(r.get("affected_fraction")) is float
+                and _is_finite_float(r.get("sink_sum_of_column_equivalents_kg_m2"))
+                and _is_finite_float(r.get("affected_fraction"))
                 for r in frames)
         and [r["frame"] for r in frames] == list(range(len(frames)))
     )
@@ -165,10 +217,11 @@ def _validate_resume(ck, ck_meta, prov, n_frames_total=37, n_columns=None):
         # accumulator through to a late shape error outside the contract
         and (ck["cum36_sink"].numel() == n_columns if n_columns is not None
              else ck["cum36_sink"].numel() > 1)
+        and bool(torch.isfinite(ck["cum36_sink"]).all())
         and isinstance(ck.get("cum36_species"), dict)
         and set(ck["cum36_species"]) == set(SPECIES)
-        and all(type(v) is float for v in ck["cum36_species"].values())
-        and type(ck.get("cum36_proj")) is float
+        and all(_is_finite_float(v) for v in ck["cum36_species"].values())
+        and _is_finite_float(ck.get("cum36_proj"))
     )
     if not (isinstance(ck, dict) and ck.get("meta") == ck_meta
             and valid_frames and valid_payload):
@@ -279,8 +332,7 @@ def main():
         # WRF bottom-up — flip p, and use the half-level mean between the two
         # cells sharing interface k (an interface is between levels, not at one).
         p_tf = torch.flip(f_full.p, dims=(-1,))        # (B, K) top-first
-        assert bool((p_tf[:, :-1] <= p_tf[:, 1:]).all()), \
-            "top-first pressure must increase downward — K-order mismatch"
+        _validate_top_first_pressure(p_tf)
         rec = {
             "frame": fr_i,
             "minutes": fr_i * 5,
@@ -369,6 +421,12 @@ def main():
         "all_37_frame_replay_sum_of_column_equivalents_kg_m2": float(sum(fr_[_SUM]
                                                                          for fr_ in frames)),
     }
+    end_identity = _end_identity_check(prov)
+    if not end_identity["ok"]:
+        raise RuntimeError(
+            "replay inputs or source tree changed during execution; refusing "
+            f"to publish an artifact: {end_identity['mismatches']}")
+    prov["end_identity"] = end_identity
     art = {
         "artifact": "p0_4b1_lc05_replay_audit",
         "role": "LC05 frame-replay susceptibility audit (P0-4b.1 component 2, P0-4b.2 corrected)",
@@ -382,7 +440,8 @@ def main():
         "cumulative_replay": cum,
     }
     OUT.mkdir(parents=True, exist_ok=True)
-    (OUT / "p0_4b1_lc05_replay_audit.json").write_text(json.dumps(art, indent=1))
+    (OUT / "p0_4b1_lc05_replay_audit.json").write_text(
+        json.dumps(art, indent=1, allow_nan=False))
     if ckpt:
         pathlib.Path(ckpt).unlink(missing_ok=True)
     print("\nartifact:", OUT / "p0_4b1_lc05_replay_audit.json")

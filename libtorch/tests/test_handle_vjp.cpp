@@ -178,6 +178,42 @@ int main() {
         res.handle->close();
     } END_TEST();
 
+    // create_graph is a JVP contract, too: the tangent returned by the
+    // double-VJP route must remain differentiable when requested.  This
+    // catches a second autograd::grad call that silently hardcodes
+    // create_graph=false while ordinary first-order JVP still passes.
+    TEST(jvp_create_graph_ready) {
+        auto st = mk_state(torch::kFloat64, true);
+        auto res = kdm6_step(st, mk_forcing(torch::kFloat64), make_parameters(0), kDt, false);
+        auto v = scaled_direction(st, 37);
+        GraphOptions opts;
+        opts.create_graph = true;
+        auto jv = res.handle->jvp(v, opts);
+
+        bool any_requires_grad = false;
+        torch::Tensor probe = torch::zeros({}, torch::kFloat64);
+        for (auto* p : jv.fields()) {
+            any_requires_grad = any_requires_grad || p->requires_grad();
+            probe = probe + (*p * *p).sum();
+        }
+        if (!any_requires_grad || !probe.requires_grad())
+            fail("JVP create_graph=true returned a detached tangent");
+
+        std::vector<torch::Tensor> leaves;
+        for (auto* p : st.fields()) leaves.push_back(*p);
+        auto second = torch::autograd::grad({probe}, leaves, {}, false, false, true);
+        bool any_second = false;
+        for (const auto& g : second) {
+            if (g.defined()) {
+                if (!torch::isfinite(g).all().item<bool>())
+                    fail("JVP higher-order derivative is non-finite");
+                any_second = any_second || (g != 0).any().item<bool>();
+            }
+        }
+        if (!any_second) fail("JVP create_graph higher-order derivative is all-zero");
+        res.handle->close();
+    } END_TEST();
+
     // ── OPERATIONAL f32 forward-determinism (Phase 2.5, kdm6ad+da.md §8.4):
     //    value_only(InferenceMode-class) vs graph forward must be BITWISE equal
     //    on float32 — the custom-op dispatch (GradMode/requires_grad) switches
@@ -216,6 +252,35 @@ int main() {
         for (auto* p : g.fields()) if ((*p != 0).any().item<bool>()) nz = true;
         if (!nz) fail("graph consumed by rejected call");
         res.handle->close();
+    } END_TEST();
+
+    // The direct runtime owns the same exact (B,K) State/Forcing contract as
+    // Python.  Use fields not consumed by sedimentation so this test proves
+    // the top-level guard rather than a downstream helper guard; dt=0 also
+    // must reject malformed inputs before its identity return.
+    TEST(runtime_shape_contract_rejects_broadcast) {
+        auto st = mk_state(torch::kFloat64, false);
+        auto f = mk_forcing(torch::kFloat64);
+
+        auto bad_forcing = f;
+        bad_forcing.pii = torch::ones({1, 1}, torch::kFloat64);
+        bool threw = false;
+        try {
+            (void)kdm6_step(st, bad_forcing, make_parameters(0), kDt, true);
+        } catch (const std::exception&) {
+            threw = true;
+        }
+        if (!threw) fail("broadcast-compatible forcing.pii was accepted");
+
+        auto bad_state = st;
+        bad_state.qv = torch::ones({1, 1}, torch::kFloat64);
+        threw = false;
+        try {
+            (void)kdm6_step(bad_state, f, make_parameters(0), /*dt=*/0.0, true);
+        } catch (const std::exception&) {
+            threw = true;
+        }
+        if (!threw) fail("malformed state.qv bypassed the dt<=0 shape guard");
     } END_TEST();
 
     // ── lifecycle: value_only returns NO handle; closed handles refuse calls ──

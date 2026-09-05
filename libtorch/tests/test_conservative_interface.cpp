@@ -1037,6 +1037,56 @@ void test_c35_pin_legacy_ad() {
     } END_TEST();
 }
 
+// Direct conservative helpers must reject a different column grid before
+// their sequential split/transfer arithmetic.  The legacy counterpart has
+// this metadata guard; valid-input closure tests above ensure the guard itself
+// cannot change f32/f64 results.
+void test_review208_conservative_shape_guards() {
+    TEST(test_review208_conservative_shape_guards) {
+        const auto o = f64();
+        const auto z = torch::zeros({2, 2}, o);
+        const auto mcol = torch::ones({2}, o);
+        const auto params = default_substep_advection_params();
+        SubstepAdvectionState st{z, z, z, z, z};
+        SubstepAdvectionInputs in{
+            st, z, z, z, z, z,
+            z, z, z, z, z, z,
+        };
+
+        auto bad_delz = in;
+        bad_delz.delz = torch::ones({1, 2}, o);
+        bool threw = false;
+        try {
+            (void)substep_advection_conservative(bad_delz, mcol, 1, 1, 60.0, params);
+        } catch (const std::exception&) {
+            threw = true;
+        }
+        assert(threw);
+
+        threw = false;
+        try {
+            (void)substep_advection_conservative(in, torch::ones({2, 1}, o),
+                                                 1, 1, 60.0, params);
+        } catch (const std::exception&) {
+            threw = true;
+        }
+        assert(threw);
+
+        IceSubstepState ice{z, z};
+        IceSubstepInputs iin{ice, z, z, z, z, z, z};
+        auto bad_ice_work = iin;
+        bad_ice_work.work1_qi = torch::ones({1, 2}, o);
+        threw = false;
+        try {
+            (void)ice_substep_advection_conservative(bad_ice_work, mcol,
+                                                     1, 1, 60.0, params);
+        } catch (const std::exception&) {
+            threw = true;
+        }
+        assert(threw);
+    } END_TEST();
+}
+
 // ═════════════════════════════════════════════════════════════════════════
 // C3.6 — legacy invariance through the OLD-SIGNATURE caller fixture
 // ═════════════════════════════════════════════════════════════════════════
@@ -1094,6 +1144,7 @@ int main() {
     test_c35_ad_gates_internal_fp64();
     test_c35_public_v2_f32_graph_gate();
     test_c35_pin_legacy_ad();
+    test_review208_conservative_shape_guards();
     test_c36_old_signature_fixture_bitwise_legacy();
     std::cout << "All conservative-interface C3 gates passed.\n";
     return 0;

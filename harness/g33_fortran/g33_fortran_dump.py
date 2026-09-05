@@ -389,6 +389,14 @@ def _validate_stages(stages, n_raw, mstep, K, B, version=4,
             f"STAGE universe: {len(missing)} missing (e.g. {next(iter(missing), None)}), "
             f"{len(extra)} extra (e.g. {next(iter(extra), None)})")
     for (_loop, _chain, stage, n, f, c, k), (dt, b) in stages.items():
+        expected_chain = _STAGE_CHAIN.get(stage)
+        if expected_chain is None:
+            raise FortranRunError(f"unknown STAGE name {stage!r}")
+        if _chain != expected_chain:
+            raise FortranRunError(
+                f"STAGE {stage} chain {_chain!r} != schema chain {expected_chain!r}")
+        if f not in _STAGE_DTYPE:
+            raise FortranRunError(f"unknown STAGE field {stage}.{f}")
         if dt != _STAGE_DTYPE[f]:
             raise FortranRunError(f"STAGE {stage}.{f} dtype {dt} != {_STAGE_DTYPE[f]}")
         if dt == "f32" and not _math.isfinite(_f32(b)):
@@ -401,6 +409,11 @@ def _validate_stages(stages, n_raw, mstep, K, B, version=4,
                 raise FortranRunError(f"surface {f} col={c} must be > 0")
             if f not in ("delz_bottom", "surface_denr") and v < 0.0:
                 raise FortranRunError(f"surface {f} col={c} must be >= 0")
+        elif (stage in _STATE_SNAPSHOT_STAGES
+              and f in _STATE_SNAPSHOT_FIELDS
+              and dt == "f32" and _f32(b) < 0.0):
+            raise FortranRunError(
+                f"STAGE {stage}.{f} col={c} k={k} must be >= 0 in a carried-state snapshot")
 
 
 def _validate_domain(fixin, params, localparams, state, precip, B, K,
@@ -439,6 +452,14 @@ def _validate_domain(fixin, params, localparams, state, precip, B, K,
             raise FortranRunError(f"FIXIN p col={c} not strictly increasing downward: {ps}")
         if _f32(fixin[("xland", c, -1)]) not in (1.0, 2.0):
             raise FortranRunError(f"FIXIN xland col={c} must be 1 or 2")
+    # The final STATE is a physical output.  Its signed diagnostic/rate
+    # intermediates are handled separately above; allowing a negative carried
+    # prognostic here would certify an invalid final state merely because the
+    # input declaration permitted entry padding.
+    for (field, c, k), bits in state.items():
+        if field in nonneg and _f32(bits) < 0.0:
+            raise FortranRunError(
+                f"STATE {field} col={c} k={k} must be >= 0 (final physical state)")
     for (fam, c), b in precip.items():                     # accumulated precip >= 0
         if _f32(b) < 0.0:
             raise FortranRunError(f"PREC family={fam} col={c} must be >= 0")
@@ -489,6 +510,34 @@ class FortranRun:
 
 _KNOWN = (_ENTRY, _OP, _MSTEP_V1, _MSTEP_V3, _STAGE_V1, _STAGE_V2, _FIXIN, _PARAM,
           _LOCALPARAM, _INIT, _STATE, _PREC, _BEGIN, _END)
+
+
+def _matches_selected_grammar(line, version):
+    """Match a G33F line against the grammar selected by BEGIN/END.
+
+    `_KNOWN` is the union used for diagnostics, but using that union for
+    acceptance lets a v3 stream smuggle in a v1 MSTEP or a v1 STAGE whose
+    fields have different positions.  The banner is the version discriminator;
+    record classes must obey it too.
+    """
+    fixed = (_ENTRY, _OP, _FIXIN, _PARAM, _LOCALPARAM, _INIT, _STATE, _PREC)
+    if any(p.match(line) for p in fixed):
+        return True
+    if version >= 3:
+        if _MSTEP_V3.match(line) or _STAGE_V2.match(line):
+            return True
+    else:
+        if _MSTEP_V1.match(line):
+            return True
+        if version >= 2 and _STAGE_V2.match(line):
+            return True
+        if version < 2 and _STAGE_V1.match(line):
+            return True
+    for pattern in (_BEGIN, _END):
+        match = pattern.match(line)
+        if match:
+            return int(match.group(1)) == version
+    return False
 
 # pre-sed STAGE field vocabulary (mirrors g33_fortran_bindings; small + stable).
 #: The carried state, by protocol version. Keyed rather than versioned by constant
@@ -551,6 +600,16 @@ def _derive_stage_dtype():
 
 
 _STAGE_DTYPE = _derive_stage_dtype()
+
+# State snapshots are constrained to the carried prognostics.  Signed rate and
+# diagnostic stages deliberately remain outside this set: negative tendencies are
+# legitimate observations and must not be mistaken for an invalid final state.
+_STATE_SNAPSHOT_STAGES = frozenset((
+    "kernel_call_input", "kernel_after_entry_clamp", "outer_pre_sed",
+    "outer_post_sed", "micro_post_melt", "micro_post_freeze",
+    "micro_pre_state_update", "micro_post_state_update", "outer_post_micro",
+))
+_STATE_SNAPSHOT_FIELDS = frozenset(_schema._SEMANTIC_STAGE_FIELDS["outer_post_micro"])
 
 
 def _expected_op_universe(algo, K, B, mstep):
@@ -618,9 +677,11 @@ def parse_fortran_run(text, algo, K, B, evidence_mode="instrumented",
     # kernel path did not exist. Defaulting is safe here and only here.
     entry = entries[0] if entries else WRAPPER_INPUT
 
-    # every G33F-prefixed line MUST match a known record — never silently skipped.
+    # every G33F-prefixed line MUST match the record grammar selected by the
+    # banner — never silently skipped, and never accepted under a different
+    # version's field positions.
     for line in lines:
-        if line.startswith("G33F") and not any(p.match(line) for p in _KNOWN):
+        if line.startswith("G33F") and not _matches_selected_grammar(line, version):
             raise FortranRunError(f"malformed/unknown G33F line: {line!r}")
 
     # BRACKETING: the whole stream must be BEGIN, then FIXIN/PARAM, then
@@ -762,6 +823,18 @@ def parse_fortran_run(text, algo, K, B, evidence_mode="instrumented",
         raise FortranRunError(f"INIT records are unsupported in G33F v{version}")
     localparams = parse_localparam(text)
     _require_names(localparams, _LOCAL_PARAMS, _LOCALPARAM, lines, "LOCALPARAM")
+    if version >= 3 and evidence_mode == "instrumented":
+        # The outer-loop schedule is the producer's positive round-half-up
+        # nint(dt / 120 s).  Canonical loop labels are part of the protocol: a
+        # relabelled stream would otherwise form a self-consistent but displaced
+        # bridge and could hide a missing first loop.
+        expected_loops = max(1, int(_math.floor(_f32(params["dt"]) / 120.0 + 0.5)))
+        observed_loops = sorted({loop for loop, _chain, _c in mstep})
+        want_loops = list(range(1, expected_loops + 1))
+        if observed_loops != want_loops:
+            raise FortranRunError(
+                f"MSTEP outer loops {observed_loops} != canonical schedule {want_loops} "
+                f"for dt={_f32(params['dt'])}")
     _validate_domain(fixin, params, localparams, state, precip, B, K,
                      allow_negative_input)
 

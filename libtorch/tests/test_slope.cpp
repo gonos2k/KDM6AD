@@ -239,6 +239,32 @@ void test_slope_rain_consistency() {
     } END_TEST();
 }
 
+void test_review208_slope_rain_number_gate() {
+    TEST(test_review208_slope_rain_number_gate) {
+        auto p = default_slope_params();
+        auto qr = torch::tensor({{1.0e-4, 1.0e-4, 1.0e-4}}, torch::kFloat64);
+        auto nr = torch::tensor({{0.0, -1.0, 1.0e4}}, torch::kFloat64);
+        auto den = torch::ones_like(qr);
+        auto denfac = torch::ones_like(qr);
+        auto t = torch::full_like(qr, 270.0);
+        auto rain = slope_rain_torch(qr, nr, den, denfac, t, p);
+
+        assert(torch::equal(rain.vtn.narrow(1, 0, 2),
+                            torch::zeros({1, 2}, torch::kFloat64)));
+        assert(rain.vtn.index({0, 2}).item<double>() > 0.0);
+
+        // The shared slope_kdm6 path keeps the Fortran post-zeroing vtn
+        // reassignment; its nr<=0 cells must remain nonzero.
+        SlopeKdm6Inputs in{
+            qr, torch::zeros_like(qr), torch::zeros_like(qr), torch::zeros_like(qr),
+            nr, torch::zeros_like(qr), den, denfac, t,
+            torch::zeros_like(qr), torch::zeros_like(qr), torch::full_like(qr, 0.5316),
+            torch::pow(torch::full_like(qr, p.rslopegmax), torch::full_like(qr, 0.5316))};
+        auto multi = slope_kdm6_torch(in, p);
+        assert(torch::all(multi.vtn_r.narrow(1, 0, 2) > 0.0).item<bool>());
+    } END_TEST();
+}
+
 int main() {
     std::cout << "KDM6AD-k libtorch slope tests\n";
     test_default_slope_params_finite();
@@ -246,6 +272,7 @@ int main() {
     test_slope_kdm6_branches_to_max();
     test_slope_kdm6_above_threshold_grad();
     test_slope_rain_consistency();
+    test_review208_slope_rain_number_gate();
     std::cout << "All slope tests passed.\n";
     return 0;
 }

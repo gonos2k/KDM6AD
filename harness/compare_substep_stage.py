@@ -18,9 +18,9 @@ Safety (Codex stop-review: comparator must not falsely pass invalid/non-aligned 
     => halo/dim mismatch). We do NOT fall back to any order-insensitive heuristic.
   * Alignment is explicit: Fortran record = one j-tile, q(its:ite,kts:kte) col-major
     (i fastest) => per-field canonical [j,k,i]. C++ (B,K) row-major, b=i*jme+j
-    (state.cpp) => reshape(im=ni, jme=nj, K)[i,j,K] -> transpose [j,K,i]. K-flip
-    (runtime flip_k: sed K=0=top vs Fortran K=0=surface) tried both ways; the physical
-    orientation is the one giving far fewer diffs (vertical reversal is unambiguous).
+    (state.cpp) => reshape(im=ni, jme=nj, K)[i,j,K] -> transpose [j,K,i].
+    ``--k-order {same,flip}`` is mandatory: the producer/deck declaration fixes
+    the vertical orientation. The data is never used to select the orientation.
   * PASS (exit 0) ONLY if every field is cell-for-cell bit-identical under one flip.
 
 Field order (both): qv qc qr qi qs qg nc nr ni nccn brs t
@@ -81,12 +81,18 @@ def read_cpp(path):
     return out, (B,K)
 
 def main():
-    if len(sys.argv)!=3:
-        die("usage: compare_substep_stage.py <fort_substep_TAG.bin> <cpp_substep_TAG.bin>")
+    import argparse
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("fort")
+    ap.add_argument("cpp")
+    ap.add_argument("--k-order", required=True, choices=("same", "flip"),
+                    help="producer-declared K orientation of the C++ dump")
+    args = ap.parse_args()
+    fort_path, cpp_path = args.fort, args.cpp
     # STALENESS GUARD (Codex: a stale peer dump can false-pass). A dump is stale iff its PRODUCING
     # BINARY changed after it: fort_* must be newer than wrf.exe (re-run mp37 after any Fortran rebuild);
     # cpp_* must be newer than the installed libkdm6_c.dylib (re-run mp137 after any C++ lib rebuild).
-    _ssd = os.path.dirname(os.path.abspath(sys.argv[1]))
+    _ssd = os.path.dirname(os.path.abspath(fort_path))
     _wrf = os.path.join(_ssd, 'wrf.exe')
     _lib = local_libtorch_dylib()
     # A missing producer binary is useful for inspecting an archived dump, but
@@ -100,12 +106,12 @@ def main():
               "byte comparison is not a fresh producer attestation)")
     else:
         print("STAGE PROVENANCE: FRESH_PRODUCER_ATTESTED")
-    if os.path.exists(_wrf) and os.path.getmtime(sys.argv[1]) < os.path.getmtime(_wrf):
-        die("STALE fortran dump: %s predates wrf.exe — re-run mp37 (dump is from an older Fortran build)" % sys.argv[1])
-    if os.path.exists(_lib) and os.path.getmtime(sys.argv[2]) < os.path.getmtime(_lib):
-        die("STALE cpp dump: %s predates libkdm6_c.dylib — re-run mp137 (dump is from an older C++ lib)" % sys.argv[2])
-    F,(nj,nk,ni) = read_fortran(sys.argv[1])
-    C,(B,K)      = read_cpp(sys.argv[2])
+    if os.path.exists(_wrf) and os.path.getmtime(fort_path) < os.path.getmtime(_wrf):
+        die("STALE fortran dump: %s predates wrf.exe — re-run mp37 (dump is from an older Fortran build)" % fort_path)
+    if os.path.exists(_lib) and os.path.getmtime(cpp_path) < os.path.getmtime(_lib):
+        die("STALE cpp dump: %s predates libkdm6_c.dylib — re-run mp137 (dump is from an older C++ lib)" % cpp_path)
+    F,(nj,nk,ni) = read_fortran(fort_path)
+    C,(B,K)      = read_cpp(cpp_path)
     print(f"fortran: nj={nj} nk={nk} ni={ni} (cells={nj*nk*ni})   cpp: B={B} K={K} (cells={B*K})")
     # MALFORMED-DUMP GUARD (Codex): reject non-finite / degenerate dumps before any verdict — identical
     # garbage (NaN/inf from uninitialized memory, or all-constant) on both trees would else compare bit-equal
@@ -140,20 +146,23 @@ def main():
     F = {f: F[f][:nj_cpp] for f in FIELDS}   # [j(0..nj_cpp-1), k, i]
     # cpp canonical: reshape [i,j,K] -> [j,K,i]
     cpp={f: C[f].reshape(ni,nj_cpp,K).transpose(1,2,0) for f in FIELDS}  # [j,K,i]
-    res={}
-    for flip in (False,True):
-        tot=0; per={}
-        for f in FIELDS:
-            cc = cpp[f][:, ::-1, :] if flip else cpp[f]      # flip K axis
-            d = int(np.count_nonzero(F[f].view(np.uint32)!=cc.copy().view(np.uint32)))
-            per[f]=d; tot+=d
-        res[flip]=(tot,per)
-    (tot,per),flip = (res[False],False) if res[False][0]<=res[True][0] else (res[True],True)
+    # The producer/deck declares the orientation.  Compute the alternate
+    # reading for context only; it cannot choose the parity result.
+    flip = args.k_order == "flip"
+    per, tot = {}, 0
+    for f in FIELDS:
+        cc = cpp[f][:, ::-1, :] if flip else cpp[f]
+        d = int(np.count_nonzero(F[f].view(np.uint32) != cc.copy().view(np.uint32)))
+        per[f] = d; tot += d
+    other_tot = 0
+    for f in FIELDS:
+        cc = cpp[f] if flip else cpp[f][:, ::-1, :]
+        other_tot += int(np.count_nonzero(F[f].view(np.uint32) != cc.copy().view(np.uint32)))
     ncell = nj_cpp*nk*ni
     # FALSE-PASS GUARD 1 (alignment ambiguity): if BOTH K-flips give 0 total diffs, the data is K-symmetric
     # / degenerate / empty and the "match" does NOT validate alignment — a min-diffs auto-pick would report
     # a spurious PASS. Require a non-trivial K-varying reference field to disambiguate; else HARD-FAIL.
-    if res[False][0]==0 and res[True][0]==0:
+    if tot == 0 and other_tot == 0:
         # confirm with a field that should vary in K (t = temperature, monotonic-ish in K)
         tvar = int(np.count_nonzero(F["t"][:, :-1, :].view(np.uint32) != F["t"][:, 1:, :].view(np.uint32)))
         if tvar > 0:
@@ -161,7 +170,8 @@ def main():
                   "validate the flip; refusing to report PASS."); sys.exit(2)
         print("DEGENERATE: both K-flips 0 diffs AND t is K-constant (empty/uniform tile) — not a meaningful "
               "bitwise validation."); sys.exit(2)
-    print(f"K-flip={'TOP<->SURFACE' if flip else 'none'}  (chosen: fewer diffs; other flip tot={res[not flip][0]})")
+    print(f"K-order={'flip' if flip else 'same'} (declared; other orientation "
+          f"tot={other_tot}; it does not select the verdict)")
     allmatch=True
     for f in FIELDS:
         if per[f]==0: print(f"  {f:5s} BITWISE-MATCH ({ncell} cells)")

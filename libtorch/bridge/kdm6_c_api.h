@@ -55,7 +55,8 @@ enum {
 //   2. value_only ∈ {0,1} → KDM6_ERR_INVALID_ARG
 //   3. required pointers → KDM6_ERR_NULL_POINTER
 //   4. param_grad_flags (step_c only) → KDM6_ERR_NOT_IMPLEMENTED
-//   5. scalar domains (finite dt; finite, non-negative ncmin values) → KDM6_ERR_INVALID_ARG
+//   5. scalar domains (finite dt whose positive operational f32 dtcld remains finite/nonzero;
+//      finite, non-negative ncmin values representable in operational f32) → KDM6_ERR_INVALID_ARG
 //   6. single-thread fence → KDM6_ERR_THREAD_CONFIG (AFTER all argument checks, BEFORE
 //      any tensor creation): libtorch/OpenMP could not be pinned to 1 intra-op AND 1
 //      inter-op thread, which bitwise determinism requires. Fail-closed — the output
@@ -153,8 +154,9 @@ typedef enum {
     KDM6_PHYSICS_LEGACY = 0,
     KDM6_PHYSICS_CONSERVATIVE_INTERFACE = 1
 } kdm6_physics_variant;
-/* the two framing fields a valid caller MUST allocate. struct_size is read
- * first as a bare uint32_t; a value below this is rejected before abi_version
+/* the two framing fields a valid caller MUST allocate. struct_size is copied
+ * first into a uint32_t without requiring a full options object; a value below
+ * this is rejected before abi_version
  * (offset 4) — otherwise a 4-byte caller would have abi_version read past its
  * buffer (see docs/PR2_ABI_V2_DESIGN.md §4). */
 #define KDM6_STEP_V2_MIN_SIZE ((uint32_t)(2u * sizeof(uint32_t)))
@@ -264,6 +266,8 @@ KDM6_C_API int kdm6_step_v2_c(const kdm6_step_v2_args* args);
  *   Fortran wrapper kdm6_step_ad (kdm6_iso_c) takes xland as a REQUIRED
  *   assumed-shape argument and always passes it — KIM/WRF hosts always have
  *   XLAND, so no optional variant is provided (Codex review finding 3).
+ * ncmin_land/ncmin_sea retain the finite, non-negative fp64 control domain on
+ * this entry; operational v1/v2 additionally require target-f32 staging.
  *
  * NOTE: this entry does NOT touch the operational path — it is additive; the
  * f32 kdm6_step_c remains bitwise-locked.

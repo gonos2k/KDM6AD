@@ -39,7 +39,9 @@ from typing import Callable, Sequence
 import torch
 
 from .state import State, Forcing, map_state, zeros_like_state
-from .runtime import kdm6_step, make_parameters, Parameters, _validate_state_shapes
+from .runtime import (kdm6_step, make_parameters, Parameters,
+                      _mask_inactive_fields, _validate_active_fields,
+                      _validate_state_shapes)
 from .thermo import compute_qs_water, compute_xl, compute_cpm, default_thermo_params
 
 
@@ -316,6 +318,14 @@ def run_da_window(
             grad_eta_pre[t] = State(*(g.clone() for g in adj))
         if t in obs_adj:
             adj = _add_states(adj, obs_adj[t])
+
+    # The t=0 observation is already in x0-space and is added after the last
+    # per-step VJP above.  Apply the control-space projection to that final
+    # accumulated covector as well.  Do not pre-project obs_adj: an inactive
+    # observed output may still depend on an active input through J^T.
+    if config.active_fields is not None:
+        _validate_active_fields(config.active_fields)
+        adj = _mask_inactive_fields(adj, config.active_fields)
 
     return WindowResult(adj_x0=adj, checkpoints=checkpoints,
                         state_final=state_final,

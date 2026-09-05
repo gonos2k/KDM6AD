@@ -25,7 +25,7 @@ import torch
 from .sedimentation import (
     SubstepAdvectionState, SubstepAdvectionOutputs,
     IceSubstepState, IceSubstepOutputs,
-    SubstepAdvectionParams, _SubstepCapture,
+    SubstepAdvectionParams, _SubstepCapture, _require_column_shapes,
 )
 
 
@@ -49,6 +49,9 @@ def conservative_substep_advection_torch(
     ledger=None,
 ) -> SubstepAdvectionOutputs:
     """Conservative counterfactual of ``substep_advection_torch`` (same signature)."""
+    _require_column_shapes(state.qr, (
+        *state, fall_qr_in, fall_nr_in, fall_qs_in, fall_qg_in, fall_brs_in,
+        work1_qr, workn_qr, work1_qs, work1_qg, delz, dend), mstep_col)
     K = state.qr.shape[-1]
     dend_safe = torch.clamp(dend, min=params.qcrmin)
     delz_safe = torch.clamp(delz, min=params.qcrmin)
@@ -123,6 +126,8 @@ def conservative_ice_substep_advection_torch(
     ledger=None,
 ) -> IceSubstepOutputs:
     """Conservative counterfactual of ``ice_substep_advection_torch``."""
+    _require_column_shapes(state.qi, (
+        *state, fall_qi_in, fall_ni_in, work1_qi, workn_qi, delz, dend), mstep_col)
     K = state.qi.shape[-1]
     dend_safe = torch.clamp(dend, min=params.qcrmin)
     delz_safe = torch.clamp(delz, min=params.qcrmin)

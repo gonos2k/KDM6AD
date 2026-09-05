@@ -386,13 +386,24 @@ def _partition(single: str, split: str) -> dict:
         raise FactorialError("no segment states recovered from either stream")
     lo, hi = splits[0], splits[-1]
 
+    def same_value(x, y):
+        """Compare f32 state values by their words, preserving signed zero."""
+        if isinstance(x, (int, float)) and not isinstance(x, bool) \
+                and isinstance(y, (int, float)) and not isinstance(y, bool):
+            try:
+                return struct.pack(">f", float(x)) == struct.pack(">f", float(y))
+            except (OverflowError, struct.error):
+                pass
+        return x == y
+
     def counts(keys):
         """(differing cells, differing field components) over `keys`."""
         cells = comps = 0
         for k in keys:
             da = dict(a[k])
             db = dict(b[k])
-            n = sum(1 for f in da if da[f] != db.get(f, object()))
+            n = sum(1 for f in da
+                    if f not in db or not same_value(da[f], db[f]))
             cells += bool(n)
             comps += n
         return float(cells), float(comps)
@@ -402,7 +413,8 @@ def _partition(single: str, split: str) -> dict:
     path_c, path_p = counts(list(a))
     # The window-final block is already keyed per (field, column, level), so a
     # differing entry IS a component; the cells it touches are its (col, level).
-    wf_comp = [k for k in fa if fa[k] != fb[k]]
+    wf_comp = [k for k in fa
+               if k not in fb or not same_value(fa[k], fb[k])]
     return {
         "partition_first_cells": first_c,
         "partition_first_components": first_p,
@@ -421,11 +433,61 @@ def _bound_window_identity(text: str) -> dict:
     import g33_refine_analyze as ra
     rid, parsed = nt.validated_run_identity(text, with_calls=True)
     run = ra.read_text(text)
+    # The window inventory rows below are scored responses, not optional
+    # metadata.  ``read_text`` remains permissive for historical members, but
+    # a direct factorial response cannot turn an absent INITIAL block into a
+    # zero inventory.  Require the complete current INITIAL/STATE universe at
+    # this response boundary; the producer applies the same gate before it
+    # publishes a current bundle.
+    states = {k[1:] for k in run
+              if isinstance(k, tuple) and k[0] == "state"}
+    initials = {k[1:] for k in run
+                if isinstance(k, tuple) and k[0] == "initial"}
+    if not initials:
+        raise FactorialError(
+            "the factorial response has no INITIAL state; an absent window "
+            "inventory is unavailable, not zero")
+    if initials != states:
+        raise FactorialError(
+            "the factorial response INITIAL/STATE universes differ: "
+            f"{len(states - initials)} state-only and "
+            f"{len(initials - states)} initial-only records")
     try:
         nt.require_window_forcing(parsed, run, rid["real_bytes"])
     except nt.StreamError as exc:
         raise FactorialError(str(exc)) from exc
     return rid
+
+
+def _require_response_pair(a: dict, b: dict, single: str, split: str) -> None:
+    """Bind a direct response pair to one run and one deliberate decomposition."""
+    # A real identity from ``_bound_window_identity`` always has this complete
+    # set.  Keeping the missing-key escape makes the tiny response unit seam
+    # (which stubs the identity reader and supplies no streams) useful without
+    # weakening actual parsed artifacts.
+    fixed = ("algorithm", "number_transfer_metric", "nsplit", "carry", "rho",
+             "width", "levels", "delt", "dtcld", "loops")
+    if not all(key in a and key in b for key in fixed):
+        return
+    diff = [key for key in fixed if a[key] != b[key]]
+    if diff:
+        key = diff[0]
+        raise FactorialError(
+            f"the two factorial responses differ in {key}: {a[key]!r} vs "
+            f"{b[key]!r} -- they are not one experiment")
+    if a["ntile"] == b["ntile"]:
+        raise FactorialError(
+            f"the two factorial responses both ran {a['ntile']} tile(s); "
+            "a response pair needs a deliberate decomposition change")
+    import g33_refine_analyze as ra
+    ar, br = ra.read_text(single), ra.read_text(split)
+    af, bf = ar.get(("meta", "fixture")), br.get(("meta", "fixture"))
+    if af != bf and (af is not None or bf is not None):
+        raise FactorialError(
+            f"the two factorial responses differ in fixture: {af!r} vs {bf!r}")
+    # Reuse the existing exact raw input comparison. It includes every INITIAL
+    # prognostic and forcing field, with f32 words preserved by ``_raw_input``.
+    same_input("response-pair", single, split)
 
 
 def responses(stream_single: str, stream_split: str, *,
@@ -444,8 +506,11 @@ def responses(stream_single: str, stream_split: str, *,
     # call site here kept the old behaviour until it was passed through
     # (owner review 12, and the adversarial pass that found the sites).
     import g33_matched_closure as _mc
-    _w_single = _bound_window_identity(stream_single)["real_bytes"]
-    _w_split = _bound_window_identity(stream_split)["real_bytes"]
+    single_id = _bound_window_identity(stream_single)
+    split_id = _bound_window_identity(stream_split)
+    _require_response_pair(single_id, split_id, stream_single, stream_split)
+    _w_single = single_id["real_bytes"]
+    _w_split = split_id["real_bytes"]
     if _w_single != _w_split:
         # BOTH STREAMS, not one. Reading the width from `stream_single` alone
         # applied its screen to the split stream's rows too -- silently wrong
@@ -469,6 +534,12 @@ def responses(stream_single: str, stream_split: str, *,
 
     def put(name, value, *, valid=True, reason=""):
         unit, owner, reader, ctrl, spanspec = RESPONSES[name]
+        # An invalid response carries no measured value. Keeping a numeric
+        # zero beside ``valid: false`` lets a consumer that overlooks the
+        # predicate mistake an undefined ratio or absent match for a measured
+        # zero; valid zeroes remain unchanged.
+        if not valid:
+            value = None
         out[name] = {"value": value, "unit": unit, "owner": owner,
                      "reader": reader, "paired_control": list(ctrl) if ctrl
                      else None,

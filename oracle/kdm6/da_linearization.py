@@ -16,8 +16,10 @@ from typing import Mapping, Sequence
 
 import torch
 
-from .runtime import kdm6_step, make_parameters, _validate_state_shapes
+from .runtime import (kdm6_step, make_parameters, _mask_inactive_fields,
+                      _validate_active_fields, _validate_state_shapes)
 from .state import State, Forcing
+from .da_driver import _normalize_obs_times
 
 
 def _zeros_like_state(s: State) -> State:
@@ -100,8 +102,9 @@ class WindowLinearization:
         # 검증과 소비의 키 공간을 하나로 통일한다. 정규화 충돌("2"와 2 동시
         # 존재)도 침묵 병합 대신 loud 거부.
         norm: dict[int, State] = {}
-        for t_key, u in obs_adj.items():
-            tk = int(t_key)
+        items = tuple(obs_adj.items())
+        normalized_times = _normalize_obs_times(tuple(k for k, _ in items), self.T)
+        for (t_key, u), tk in zip(items, normalized_times):
             if not (0 <= tk <= self.T):
                 raise ValueError(
                     f"obs_adj time key {t_key!r} outside [0, {self.T}]")
@@ -121,6 +124,12 @@ class WindowLinearization:
                                        active_fields=active_fields)
             if t in norm:
                 adj = _add(adj, _f64(norm[t]))
+        # A t=0 covector is added after the final per-step VJP.  Project the
+        # accumulated x0 result at the control boundary; retain the full
+        # observed covector for each J^T pullback above.
+        if active_fields is not None:
+            _validate_active_fields(active_fields)
+            adj = _mask_inactive_fields(adj, active_fields)
         return adj
 
     def apply_tangent(self, v0: State,
@@ -132,10 +141,7 @@ class WindowLinearization:
         self._assert_open()
         _validate_state_shapes(v0, self.checkpoints[0], arg="v0",
                                ref_name="x_0")
-        want = set(int(t) for t in obs_times)
-        bad = [t for t in want if not (0 <= t <= self.T)]
-        if bad:
-            raise ValueError(f"obs_times {sorted(bad)} outside [0, {self.T}]")
+        want = set(_normalize_obs_times(obs_times, self.T))
         out: dict = {}
         tan = _f64(v0)
         for t in range(self.T):

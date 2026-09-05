@@ -3,6 +3,7 @@
 #include "kdm6/state.h"
 
 #include <ATen/Parallel.h>
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
@@ -14,6 +15,7 @@
 #include <cstdint>
 #include <fenv.h>
 #include <cmath>
+#include <limits>
 
 //
 // C ABI ↔ C++ 어댑터.
@@ -61,6 +63,44 @@ bool any_null(std::initializer_list<const void*> ptrs) {
 
 bool invalid_ncmin(double value) {
     return !std::isfinite(value) || value < 0.0;
+}
+
+// The runtime deliberately narrows dt/loops to the operational f32 timestep
+// before any rate division.  Preflight the same round-half-up loop domain and
+// narrowing here so a finite double that becomes zero, Inf, or an out-of-range
+// loop count is reported as INVALID_ARG before tensor work.  Non-positive dt
+// remains the documented exact no-op and is therefore exempt from the f32
+// positivity check.
+bool invalid_operational_dt(double dt) {
+    if (!std::isfinite(dt)) return true;
+    if (dt <= 0.0) return false;
+
+    const double quotient = dt / kdm6::constants::DTCLDCR;
+    const double rounded = quotient + 0.5;  // compute_loops_max round-half-up
+    if (!std::isfinite(quotient) || !std::isfinite(rounded) ||
+        rounded > static_cast<double>(std::numeric_limits<int>::max())) {
+        return true;
+    }
+    const int loops = std::max(1, static_cast<int>(rounded));
+    const double dtcld_raw = dt / static_cast<double>(loops);
+    if (dtcld_raw > static_cast<double>(std::numeric_limits<float>::max())) return true;
+    const float dtcld = static_cast<float>(dtcld_raw);
+    return !std::isfinite(dtcld) || dtcld <= 0.0f;
+}
+
+// The operational v1/v2 state is staged as float32 before ncmin is expanded
+// over columns.  Reject finite doubles that cannot survive that target-dtype
+// conversion; clamping later in runtime.cpp cannot repair an overflowing
+// full_like arm because both where arms are materialized first.  Tiny positive
+// values may underflow to zero and are still handled by the runtime safety floor.
+bool invalid_operational_ncmin(double value) {
+    if (invalid_ncmin(value)) return true;
+    // Avoid an out-of-range double-to-float conversion before asking whether
+    // the staged value is finite; the explicit bound is the representability
+    // test and keeps the cast itself within the target type's range.
+    if (value > static_cast<double>(std::numeric_limits<float>::max())) return true;
+    const float staged = static_cast<float>(value);
+    return !std::isfinite(staged);
 }
 
 bool invalid_fortran_shape(int im, int kme, int jme,
@@ -208,7 +248,8 @@ extern "C" int kdm6_step_c(
     // Match the public Python boundary: dt may be non-positive (the runtime's
     // documented no-op), but NaN/Inf is outside the scalar contract. ncmin is a
     // non-negative regime floor; reject malformed values before any tensor work.
-    if (!std::isfinite(dt) || invalid_ncmin(ncmin_land) || invalid_ncmin(ncmin_sea))
+    if (invalid_operational_dt(dt) || invalid_operational_ncmin(ncmin_land) ||
+        invalid_operational_ncmin(ncmin_sea))
         return KDM6_ERR_INVALID_ARG;
 
     // RAII: restore the caller's (Fortran host) FP env on every return path.
@@ -326,17 +367,25 @@ extern "C" int kdm6_step_v2_c(const kdm6_step_v2_args* args) {
     if (args == nullptr) return KDM6_ERR_NULL_POINTER;
     // FRAMING read-order (design §4): read struct_size (offset 0) FIRST and
     // reject below the two framing fields BEFORE abi_version (offset 4) is read.
-    if (args->struct_size < KDM6_STEP_V2_MIN_SIZE) return KDM6_ERR_INVALID_ARG;
-    if (args->abi_version != KDM6_ABI_VERSION) return KDM6_ERR_INVALID_ARG;
+    // A short caller owns only the framing bytes, not a full aligned C++
+    // options object. Bytewise reads keep that prefix contract well-defined.
+    const auto* bytes = reinterpret_cast<const unsigned char*>(args);
+    uint32_t struct_size = 0;
+    std::memcpy(&struct_size, bytes, sizeof(struct_size));
+    if (struct_size < KDM6_STEP_V2_MIN_SIZE) return KDM6_ERR_INVALID_ARG;
+    uint32_t abi_version = 0;
+    std::memcpy(&abi_version, bytes + offsetof(kdm6_step_v2_args, abi_version),
+                sizeof(abi_version));
+    if (abi_version != KDM6_ABI_VERSION) return KDM6_ERR_INVALID_ARG;
     // struct_size must cover every REQUIRED field (everything up to the first
     // optional field, `xland`). The optional tail may be absent (older caller).
-    if (args->struct_size < (uint32_t)offsetof(kdm6_step_v2_args, xland))
+    if (struct_size < (uint32_t)offsetof(kdm6_step_v2_args, xland))
         return KDM6_ERR_INVALID_ARG;
 
     // Read an optional field ONLY if struct_size extends through it — never
     // read past min(struct_size, sizeof) (design §4).
 #define KDM6_V2_HAS(f) \
-    (args->struct_size >= (uint32_t)(offsetof(kdm6_step_v2_args, f) + sizeof(args->f)))
+    (struct_size >= (uint32_t)(offsetof(kdm6_step_v2_args, f) + sizeof(args->f)))
     const float* xland = KDM6_V2_HAS(xland) ? args->xland : nullptr;
     double ncmin_land = KDM6_V2_HAS(ncmin_land) ? args->ncmin_land : 0.0;
     double ncmin_sea  = KDM6_V2_HAS(ncmin_sea)  ? args->ncmin_sea  : 0.0;
@@ -376,7 +425,8 @@ extern "C" int kdm6_step_v2_c(const kdm6_step_v2_args* args) {
     // Required dt is always covered by the v2 required prefix. The ncmin fields
     // are optional and default to zero when absent, so validate the values after
     // the size-gated reads above and before the thread/tensor boundary.
-    if (!std::isfinite(args->dt) || invalid_ncmin(ncmin_land) || invalid_ncmin(ncmin_sea))
+    if (invalid_operational_dt(args->dt) || invalid_operational_ncmin(ncmin_land) ||
+        invalid_operational_ncmin(ncmin_sea))
         return KDM6_ERR_INVALID_ARG;
     // Variant validation: fail-loud BEFORE the thread fence and any tensor
     // work; *handle is already fail-closed to NULL above and no output has
@@ -582,7 +632,11 @@ extern "C" int kdm6_step_ad_c(
                   static_cast<const void*>(handle)})) {
         return KDM6_ERR_NULL_POINTER;
     }
-    if (!std::isfinite(dt) || invalid_ncmin(ncmin_land) || invalid_ncmin(ncmin_sea))
+    // The fp64 DA entry still uses the runtime's f32 dtcld timestep for the
+    // Fortran-compatible subcycle schedule, but ncmin itself is staged in f64;
+    // keep the finite/non-negative domain without imposing the operational
+    // f32 upper bound on this separate DA path.
+    if (invalid_operational_dt(dt) || invalid_ncmin(ncmin_land) || invalid_ncmin(ncmin_sea))
         return KDM6_ERR_INVALID_ARG;
     // Same FP-env insulation as the operational kdm6_step_c: this fp64 DA entry also
     // calls into libtorch/BLAS, which could perturb FTZ/rounding and leak into host

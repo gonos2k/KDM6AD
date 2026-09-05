@@ -24,6 +24,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import platform
 import struct
 import subprocess
 import sys
@@ -39,6 +40,8 @@ import g33_fourcase_load as fcl        # noqa: E402
 import g33_schema as schema            # noqa: E402
 import g33_normalize as nz             # noqa: E402
 import g33_schedule_probe as gsp       # noqa: E402
+import g33_verifier_identity as vid    # noqa: E402
+import numpy as np                    # noqa: E402
 
 #: The constant approximation, kept for comparison only. Recorded so the residual it
 #: produces is read as a constant-coefficient diagnostic and not as a bound — at
@@ -200,6 +203,10 @@ def _closure_section(levels: list) -> dict:
                 "unobserved.",
         "t_is": "temperature (CoordinatorState::t, documented absolute [K]); the "
                 "returned STATE carries `th` separately, so no Exner factor is applied",
+        "coverage": {
+            "loops": sorted({row["loop"] for row in levels}),
+            "scope": "every compared legacy outer_post_micro loop/cell with a qv/qc/t divergence",
+        },
         "levels": levels,
     }
 
@@ -303,6 +310,23 @@ def main() -> int:
               "Commit or stash first, or pass --debug-only to mark the artifact "
               "non-decisional.", file=sys.stderr)
         return 2
+    verifier_commit = _git("rev-parse", "HEAD")
+    verifier_runtime = {
+        "python_implementation": platform.python_implementation(),
+        "python_version": platform.python_version(),
+        "numpy_version": np.__version__,
+        "byteorder": sys.byteorder,
+    }
+    runtime_mismatch = vid.runtime_matches(verifier_runtime)
+    tree_digest = vid.semantics_sha256()
+    commit_digest = vid.semantics_sha256_at(verifier_commit) if verifier_commit else None
+    identity_valid = not runtime_mismatch and commit_digest == tree_digest
+    if loaded.anchored and not a.debug_only and not identity_valid:
+        print("refusing to write a decision artifact: verifier runtime/source identity "
+              f"does not match the required pin (runtime={runtime_mismatch}, "
+              f"commit_digest={commit_digest}, tree_digest={tree_digest})",
+              file=sys.stderr)
+        return 2
     verdict = loaded.verdict()
 
     per_algo, closure = {}, []
@@ -326,8 +350,8 @@ def main() -> int:
             "shared_stage_records": len(shared),
             "differing_stage_records": len(diff),
             "differing_by_loop_and_stage": {
-                f"L{lp}/{st}": cnt[(lp, st)] for lp in loops for st in STAGE_ORDER
-                if cnt.get((lp, st))},
+                f"L{lp}/{st}": cnt[(lp, st)]
+                for lp, st in sorted(cnt) if cnt[(lp, st)]},
             "differing_digest": _digest(
                 (str(k), f, c) for k, (f, c) in diff.items()),
             "mstep_range": list(loaded.cpp_legs[algo].mstep_range or ()),
@@ -344,13 +368,13 @@ def main() -> int:
             # EVERY cell where the condensation triple actually differs, not the
             # column the first divergence happens to sit in — those need not be the
             # same place, and pinning the closure to the latter reported zeros.
-            cells = sorted({(k[4], k[5]) for k in diff
-                            if k[0] == "outer_post_micro" and k[1] == 1
+            cells = sorted({(k[1], k[4], k[5]) for k in diff
+                            if k[0] == "outer_post_micro"
                             and k[6] in ("qv", "qc", "t")})
-            for col, k in cells:
+            for loop, col, k in cells:
                 try:
-                    g = lambda f: (_f32(fk[("outer_post_micro", 1, "-", 0, col, k, f)]),
-                                   _f32(ck[("outer_post_micro", 1, "-", 0, col, k, f)]))
+                    g = lambda f: (_f32(fk[("outer_post_micro", loop, "-", 0, col, k, f)]),
+                                   _f32(ck[("outer_post_micro", loop, "-", 0, col, k, f)]))
                     (qv_f, qv_c), (qc_f, qc_c), (t_f, t_c) = g("qv"), g("qc"), g("t")
                 except KeyError:
                     continue
@@ -364,7 +388,7 @@ def main() -> int:
                     "Lv_T_J_kg": lv, "cpm_q_J_kg_K": cpm,
                     "model_latent_predicted_delta_T_K": lv / cpm * dqc,
                     "model_closure_residual_T_K": dT - lv / cpm * dqc,
-                    "col": col, "k": k,
+                    "loop": loop, "col": col, "k": k,
                     "delta_qv_abs_kg_kg": dqv, "delta_qc_abs_kg_kg": dqc,
                     "delta_qv_rel": dqv / qv_f if qv_f else None,
                     "delta_qc_rel": dqc / qc_f if qc_f else None,
@@ -385,10 +409,12 @@ def main() -> int:
         # the artifact could disagree with the gate and still look authoritative.
         "verdict": verdict["verdict"],
         "attested": loaded.attested,
+        "anchored": loaded.anchored,
         "reason": verdict["reason"],
         "attestation": loaded.attestation,
         "debug_only": bool(a.debug_only),
-        "decision_valid": bool(loaded.anchored and not a.debug_only and not tree_dirty),
+        "decision_valid": bool(loaded.anchored and not a.debug_only and not tree_dirty
+                                and identity_valid and verdict["verdict"] != "INVALID_EVIDENCE"),
         # ADMISSIBILITY, stated rather than inferred. The four legs must all be at the
         # kernel entry for the result to bear on conservative-interface arithmetic; a
         # wrapper leg compared against the C++ port is evidence about the BOUNDARY.
@@ -409,9 +435,12 @@ def main() -> int:
         "wrapper_mapping_admissible": _boundaries(loaded) == {schema.WRAPPER_INPUT},
         "evidence_tier": ("decision"
                           if loaded.anchored and not a.debug_only and not tree_dirty
+                          and identity_valid and verdict["verdict"] != "INVALID_EVIDENCE"
                           else "debug"),
-        "verifier_commit": _git("rev-parse", "HEAD"),
+        "verifier_commit": verifier_commit,
         "verifier_tree_dirty": tree_dirty,
+        "verifier_semantics_sha256": tree_digest,
+        "verifier_runtime": verifier_runtime,
         "producer_commit": json.loads(
             (EV / "fortran-legacy" / "abc_manifest.json").read_text())["repo_commit"],
         "fixture": {

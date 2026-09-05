@@ -1142,11 +1142,14 @@ def calls(stream: str) -> list:
 
 def require_window_forcing(parsed: list, run: dict, real_bytes: int,
                            name: str = "stream") -> None:
-    """Bind every G33N density/thickness operand to its window record.
+    """Bind every G33N forcing and initial transport operand to its window.
 
-    The two protocols must describe the same complete forcing universe. Compare
-    at the recorded real width, including signed zero; numerical closeness does
-    not establish identical inputs to an experiment.
+    The two protocols must describe the same complete forcing universe, and the
+    first split's initial state must be the state the window calls ``INITIAL``.
+    Later splits start from the previous split's post-state, so only split 1,
+    loop 1 is a duplicate of the window initial state. Compare at the recorded
+    real width, including signed zero; numerical closeness does not establish
+    identical inputs to an experiment.
     """
     if real_bytes not in (4, 8):
         raise StreamError(f"{name}: unsupported forcing precision {real_bytes}")
@@ -1155,7 +1158,19 @@ def require_window_forcing(parsed: list, run: dict, real_bytes: int,
                if k[0] == "forcing" and k[1] in ("rho", "delz")}
     if not forcing:
         raise StreamError(f"{name}: window carries no rho/delz forcing")
+    # These are the G33N stage fields that downstream transport ledgers read.
+    # They are duplicated by G33R/G33P INITIAL only for the first split. Keep
+    # this list beside STAGE_REQUIRED: adding a required transport operand
+    # without adding it to the same-run binding would reopen the exact gap this
+    # function exists to close.
+    initial = {(k[1], k[2], k[3]): v for k, v in run.items()
+               if k[0] == "initial" and k[1] in ("qv", "nr", "ni", "qr", "qi")}
+    if not initial:
+        raise StreamError(
+            f"{name}: window carries no INITIAL transport state; the G33N "
+            "initial operands cannot be bound to the window")
     seen = set()
+    seen_initial = set()
     for call in parsed:
         for (loop, col, level), record in call["outer_pre_sed"].items():
             for field in ("rho", "delz"):
@@ -1166,8 +1181,21 @@ def require_window_forcing(parsed: list, run: dict, real_bytes: int,
                         f"{name}: call {call['call_id']} loop {loop} col {col} "
                         f"level {level}: G33N {field} differs from window forcing "
                         "-- two different runs")
+            if call["split"] == 1 and loop == 1:
+                for field in ("qv", "nr", "ni", "qr", "qi"):
+                    key = (field, col, level)
+                    seen_initial.add(key)
+                    if (key not in initial
+                            or word(record[field]) != word(initial[key])):
+                        raise StreamError(
+                            f"{name}: call {call['call_id']} loop {loop} col "
+                            f"{col} level {level}: G33N initial {field} differs "
+                            "from window INITIAL -- two different runs")
     if seen != set(forcing):
         raise StreamError(f"{name}: G33N/window forcing record universes differ")
+    if seen_initial != set(initial):
+        raise StreamError(
+            f"{name}: G33N/window initial transport state universes differ")
 
 
 def validated_run_identity(text: str, expected_width: int | None = None,
@@ -1416,16 +1444,21 @@ def column(call, col, species, mdry0=None):
     n1w = sum(den[t] * dz[t] * x1[t] for t in range(len(ks)))
     surface = den[-1] * dz[-1] * a[-1]
     residual = (n1w - n0w) + surface
-    # Conditional density-contrast identity for the recovered transfers:
+    # Conditional metric identity for the recovered transfers.  Let Q be the
+    # measure used by the reported endpoint residual (rho*dz) and let M be the
+    # measure whose ratio is the operator's inflow weight.  For each interior
+    # interface j, the endpoint budget contributes
     #
-    #     sum over interfaces of [den(lower) - den(upper)] * delz(upper) * b
+    #     (Q[j+1] * M[j]/M[j+1] - Q[j]) * a[j].
     #
-    # This telescopes by construction and cannot validate the matched-transfer
-    # assumption. With independently capped arrivals, use CAPIN/TOPOUT instead.
-    #
-    # Only the INTERFACES. `a[-1]` leaves the column at the surface and is
-    # the flux the residual is measured against, not a term in it.
-    predicted = sum((den[t] - den[t - 1]) * dz[t - 1] * a[t - 1]
+    # The old expression hardcoded M=dz, so an ``nmass`` run could report a
+    # thickness-only predicted residual even though its recovered transfer was
+    # weighted by moist layer mass.  Using the already computed ``w`` keeps the
+    # diagnostic tied to the metric declared by this call.  This identity is a
+    # check on the recovered-transfer assumption; independently capped arrivals
+    # still require CAPIN/TOPOUT.
+    q = [den[t] * dz[t] for t in range(len(ks))]
+    predicted = sum((q[t] * w[t] - q[t - 1]) * a[t - 1]
                     for t in range(1, len(ks)))
     out = {"start": n0w, "residual": residual, "surface": surface,
            "relative": residual / n0w if n0w else 0.0, "final": 0.0,
