@@ -8,11 +8,11 @@ evidence. The conservative interface computes the inflow once from the source
 cell's actual outflow, so there is no post-update recapture, `ice/qi` closes, and
 the ice chain becomes measurable under exactly the same arms.
 
-That makes this an independent replication rather than a repetition: a different
-chain (`mstep_i`, not `mstep`), a different species pair, and a different
-algorithm.
+This extends the fixture comparison to another chain, species pair and
+algorithm, while sharing the driver, parser and diagnostic apparatus.
 """
 import shutil
+import struct
 import subprocess
 import sys
 from pathlib import Path
@@ -98,9 +98,10 @@ def test_an_OFFSET_barely_moves_the_ICE_residual(rows):
             assert abs(ratio - 1.0) < 0.10
 
 
-def test_the_ICE_metric_term_is_exact_too(driver):
-    """The decomposition holds on ice: metric/base is exactly 0 / -1 / +2 / +1,
-    so the whole departure is trajectory there as well."""
+def test_ice_counterfactual_ratios_on_the_sampled_baseline(driver):
+    """The fixture's matched baseline transfers give the ideal profile ratios,
+    allowing for f32 profile rounding. Unmatched pairs need not scale this way.
+    """
     a = mt.analysis(driver, 12, chain="ice")
     want = {"uniform": 0.0, "inverted": -1.0, "x2": 2.0,
             "offset+": 1.0, "offset-": 1.0}
@@ -116,22 +117,34 @@ def test_the_ICE_metric_term_is_exact_too(driver):
 
 # ---- owner §5: the number-cap gate, and proof that it can fail ---------------
 
-def test_the_conservative_ice_number_cap_term_is_ZERO_in_every_arm(driver):
-    """G33-NUMBER-009 rested on the ice MASS control plus the arm ratios. A
-    passing mass control does not establish that the NUMBER cap is inactive, and
-    if it were active the metric-only reading would be incomplete. Computed
-    directly: the term is exactly zero at every interface in every arm, so the
-    metric decomposition is complete here — a conclusion, not an assumption."""
-    a = mt.analysis(driver, 12, chain="ice")
-    seen = 0
-    for cols in a["arms"].values():
-        for r in cols.values():
+def test_conservative_ice_arrivals_match_applied_f32_arithmetic(driver):
+    """Equal layer thickness does not undo the rounding in (dn*dz)/dz.
+
+    Archived CAPIN contained dn twice and falsely implied zero mismatch.
+    Verify all actual arrivals bitwise against the conservative update, then
+    pin the one rounded mismatch in this fixture instead of widening a zero
+    tolerance. This checks producer meaning as well as the diagnostic sum.
+    """
+    def f32(value):
+        return struct.unpack("f", struct.pack("f", value))[0]
+
+    streams = {}
+    a = mt.analysis(driver, 12, chain="ice", keep=streams)
+    seen, nonzero = 0, {}
+    for arm, cols in a["arms"].items():
+        terms = mt.interface_terms(streams[arm], "ice")
+        for col, r in cols.items():
             if not r["comparable"]:
                 continue
-            assert r["number_cap_term"] == pytest.approx(0.0, abs=1e-6)
-            assert r["measure_only"] is True
-            seen += 1
-    assert seen >= 8, f"only {seen} comparable ice rows"
+            for key, row in terms[col].items():
+                expected_in = f32(f32(row["dn_out"] * row["dz_up"]) / row["dz_lo"])
+                assert struct.pack("f", row["dn_in"]) == struct.pack("f", expected_in), (arm, col, key)
+                seen += 1
+            if r["number_cap_term"]:
+                nonzero[(arm, col)] = r["number_cap_term"]
+                assert not r["measure_only"]
+    assert seen == 540  # five perturbed profiles, three columns, 36 interfaces
+    assert nonzero == pytest.approx({("inverted", 2): -0.05458984465803951}, abs=1e-12)
 
 
 @pytest.fixture(scope="module")
@@ -156,5 +169,5 @@ def test_the_gate_FIRES_on_legacy_ice_where_the_cap_binds(legacy_driver):
              if r.get("comparable") and not r["measure_only"]]
     assert fired, "measure_only never went False — the gate is vacuous"
     dominated = [r for r in fired
-                 if abs(r["number_cap_term"]) > 5 * abs(r["metric"])]
+                 if abs(r["number_cap_term"]) > 5 * abs(r["density_contribution"])]
     assert dominated, "expected the cap term to dominate the metric term"

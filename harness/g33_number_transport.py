@@ -1455,6 +1455,48 @@ def surface_cap_binds(call, col, species):
     return abs(left - uncapped) > 1e-6 * abs(uncapped or 1.0)
 
 
+def require_applied_interface_records(call):
+    """Require complete capture with arrivals in destination units.
+
+    Used after calls() validates the declared record universes. Conservative
+    archives predating capin_applied contain unscaled source increments.
+    Every consumer of arrival values must enforce the same meaning.
+    """
+    missing = {"capin", "topout"} - call["features"]
+    if missing:
+        raise StreamError(f"interface analysis requires features {sorted(missing)}")
+    algorithm = call["algorithm"]
+    number_transfer_metric(algorithm, call.get("declared_metric"))
+    if (g33_arms.base(algorithm) == "conservative"
+            and "capin_applied" not in call["features"]):
+        raise StreamError(
+            "conservative CAPIN lacks capin_applied: archived records contain "
+            "unscaled source increments; re-emit with the updated --nflux build")
+
+
+def applied_interfaces(call_rows):
+    """Yield identity, departure (dq, dn), arrival (dq, dn) from parsed calls.
+
+    Identity is (call, loop, substep, column, chain, upper, lower). Call numbers
+    are one-based; levels are the parser's top-down indices. Validation and
+    TOPOUT/CAPIN pairing live here so every consumer uses applied local units.
+    """
+    for call in call_rows:
+        require_applied_interface_records(call)
+    for ci, call in enumerate(call_rows, start=1):
+        for lp in sorted(call["loops"]):
+            pre = call["outer_pre_sed"]
+            for col in sorted({c for l, c, _ in pre if l == lp}):
+                ks = sorted(k for l, c, k in pre if l == lp and c == col)
+                for chain in ("main", "ice"):
+                    for n in range(1, call["mstep"][(lp, chain, col)] + 1):
+                        departure = call["topout"][(lp, n, col, chain, ks[0])]
+                        for ku, kl in zip(ks, ks[1:]):
+                            oq, iq, on, ino = call["capin"][(lp, n, col, chain, kl)]
+                            yield (ci, lp, n, col, chain, ku, kl), departure, (iq, ino)
+                            departure = (oq, on)
+
+
 def interior_cap_binds(call, col, species):
     """Legacy API: do a non-bottom cell's OWN outflow and inflow differ?
 

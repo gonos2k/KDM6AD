@@ -55,8 +55,9 @@ doubles it, and a ±10% **magnitude** shift barely moves it.
 | `offset+` | 2 / 3 | **+1.0000** | 0.9878 / 1.0292 | 1.22% / 2.92% |
 | `offset−` | 2 / 3 | **+1.0000** | 1.0123 / 0.9405 | 1.23% / 5.95% |
 
-`metric/base` is exact on ice as it is on main, so the whole departure is again
-the trajectory term — here 0.59–5.95%. Unlike `inverted` on main column 3, **no
+The displayed `metric/base` ratios follow ideal profile scaling at this precision;
+f32 profile rounding can perturb it. The density-term trajectory response is
+0.59–5.95%. Unlike `inverted` on main column 3, **no
 ice column changes its sub-step schedule**, so every row is comparable.
 
 ## The number-cap term, computed rather than assumed
@@ -70,10 +71,20 @@ inactive, and if it were active the metric-only reading would be incomplete
     R_measure = (ρ_lo − ρ_up)·Δz_up·dn_out          measure mismatch
     R_ncap    = ρ_lo·(Δz_lo·dn_in − Δz_up·dn_out)   arrival mismatch
 
-Computed for every conservative ice arm: **`R_ncap` is exactly zero** at every
-interface, so `R_full = R_measure` and the metric reading is complete. That is
-now a conclusion the analysis reports (`measure_only: true`), not an assumption
-the prose made.
+The archived conservative ice analysis reported **zero net `R_ncap`**, and its
+test checked only the net sum. Re-emitting with `capin_applied` on 2026-09-05
+**refuted the exact-zero claim**: `inverted`, call 2, column 2, interface 1→2
+has `dn_out=16224.173828125` and `dn_in=16224.1728515625` at equal 65 m thickness.
+The f32 update `(dn_out*65)/65` rounds the arrival down by 1 ULP, giving
+`R_ncap=-0.05458984465803951`; this row now reports `measure_only: false`.
+
+All **540 arrivals** across five perturbed profiles and three columns were
+checked bitwise against that conservative f32 update. This is the sole nonzero
+mismatch among those interfaces. The old conservative archives contained the
+unscaled source increment in the arrival field; they cannot establish applied
+closure and require re-emission. `sum_abs_number_transfer_mismatch` now also
+exposes cancellation: a zero net sum by itself would not prove zero mismatch at
+every interface. These are synthetic fixture results, not a host rerun.
 
 **The gate is not vacuous.** On the *legacy* ice chain the number cap binds at 39
 of 108 interfaces, and there `R_ncap` does not merely appear — it **dominates**:

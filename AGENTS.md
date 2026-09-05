@@ -101,6 +101,29 @@ Generated or foreign areas are not source for normal KDM6AD work:
 - `diag_rhog`, `re_*`, and `REFL_10CM` are forward diagnostics; do not silently
   add them to the packed AD ABI.
 
+## Theory Before Patching
+
+Before changing KDM6/KDM6AD code, check consistency from all three perspectives.
+Prioritize a coherent mathematical and physical contract over a local symptom fix.
+
+- **Mathematical:** identify the variables, units, measure, assumptions and full
+  quantity being computed. Derive the relevant identity or budget before changing
+  its implementation. Distinguish a diagnostic component from the full residual,
+  and fix both applied arrival and departure in a transfer counterfactual.
+- **Engineering:** trace the contract from producer through every consumer,
+  runner, fixture and report. Share record validation and pairing where the data
+  have the same meaning, and make initialization versus stored-data reads explicit.
+  Verify actual call boundaries as well as isolated helper functions.
+- **Numerical analysis:** check the executed precision, operation order, independent
+  caps, rounding, underflow/subnormals and zero denominators. Real-arithmetic
+  identities do not imply floating-point bit equality. Use explicit counterexamples
+  and independently computed expectations at the relevant boundaries.
+
+Then choose the smallest change that satisfies that contract end to end. Do not
+silence a contradiction by widening tolerances, dropping operands or weakening
+assertions. If the physical contract is unresolved, state the conditional result
+and open measurement; preserve operational f32 parity and the AD contract.
+
 ## Anti-Patterns
 
 - Do not treat the bundled host as a general WRF refactor target.

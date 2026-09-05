@@ -44,7 +44,7 @@ def lc05_collocated():
     from kdm6.obs.gk2a_l1b import (CLEAN_IR_CHANNELS, load_cal_table,
                                    read_ko_slot, slot_files)
     from kdm6.obs.obs_ingest import payload_to_column_obs
-    fr = read_wrfout_frame(str(_WRFIN), 0)
+    fr = read_wrfout_frame(str(_WRFIN), 0, nccn_policy="init_profile")
     cal = load_cal_table(_CAL)
     # 주간 케이스 표준: sw038 제외 깨끗한 IR 9채널 (사용자 지시 2026-07-07)
     pl = read_ko_slot(slot_files(_GK2A, "202507190000", channels=CLEAN_IR_CHANNELS),
@@ -62,7 +62,7 @@ def test_real_grid_collocation_physical(lc05_collocated):
     ok = co.obs_quality[:, 12] == 0
     bt = co.bt[ok, 12]
     assert 180.0 < float(bt.min()) and float(bt.max()) < 320.0
-    assert fr.meta["nccn_fallback"] is True  # wrfinput QNCCN=0 → 래퍼 폴백 작동
+    assert fr.meta["nccn_fallback"] is True  # 빈 wrfinput CCN의 명시적 초기화
 
 
 @needs_all
