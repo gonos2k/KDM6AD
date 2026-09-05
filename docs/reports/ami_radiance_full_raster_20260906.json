@@ -1,0 +1,2670 @@
+{
+  "artifact_role": "full_raster_radiance_control_comparison",
+  "comparison_role": "saved_baseline_dn_to_bt_vs_current_dn_to_bt",
+  "files": {
+    "FD": [
+      {
+        "basename": "gk2a_ami_le1b_sw038_fd020ge_202507190100.nc",
+        "channel": "sw038",
+        "dtype": "uint16",
+        "sha256": "09ba44432840a047e4c128fbbaf101503ec30f18d4513afcfcff99161a88b051",
+        "sha256_32": "09ba44432840a047e4c128fbbaf10150",
+        "shape": [
+          5500,
+          5500
+        ],
+        "size_bytes": 29299170,
+        "source": "FD",
+        "timestamp": "202507190100",
+        "valid_bits": 14,
+        "valid_bits_location": "image_pixel_values variable"
+      },
+      {
+        "basename": "gk2a_ami_le1b_wv063_fd020ge_202507190100.nc",
+        "channel": "wv063",
+        "dtype": "uint16",
+        "sha256": "37b100e5a388543ebb0e22a1d7b14277eba19bda5d36d9cf1de0c3ce04882786",
+        "sha256_32": "37b100e5a388543ebb0e22a1d7b14277",
+        "shape": [
+          5500,
+          5500
+        ],
+        "size_bytes": 19108694,
+        "source": "FD",
+        "timestamp": "202507190100",
+        "valid_bits": 12,
+        "valid_bits_location": "image_pixel_values variable"
+      },
+      {
+        "basename": "gk2a_ami_le1b_wv069_fd020ge_202507190100.nc",
+        "channel": "wv069",
+        "dtype": "uint16",
+        "sha256": "52e324f3a781ac7f662e6297e6a2c84cebfe468ed5788bffd6814c228cd2b0e2",
+        "sha256_32": "52e324f3a781ac7f662e6297e6a2c84c",
+        "shape": [
+          5500,
+          5500
+        ],
+        "size_bytes": 27792058,
+        "source": "FD",
+        "timestamp": "202507190100",
+        "valid_bits": 13,
+        "valid_bits_location": "image_pixel_values variable"
+      },
+      {
+        "basename": "gk2a_ami_le1b_wv073_fd020ge_202507190100.nc",
+        "channel": "wv073",
+        "dtype": "uint16",
+        "sha256": "1d2a5d08986361f032f1347d3d50819174cfed2871fc8490fb2a744b1fd2d6bd",
+        "sha256_32": "1d2a5d08986361f032f1347d3d508191",
+        "shape": [
+          5500,
+          5500
+        ],
+        "size_bytes": 30032375,
+        "source": "FD",
+        "timestamp": "202507190100",
+        "valid_bits": 13,
+        "valid_bits_location": "image_pixel_values variable"
+      },
+      {
+        "basename": "gk2a_ami_le1b_ir087_fd020ge_202507190100.nc",
+        "channel": "ir087",
+        "dtype": "uint16",
+        "sha256": "966bf23c5bc520242df2bec563cd0aef9c11ce30b5370a0db3f3f40da36469d4",
+        "sha256_32": "966bf23c5bc520242df2bec563cd0aef",
+        "shape": [
+          5500,
+          5500
+        ],
+        "size_bytes": 35549650,
+        "source": "FD",
+        "timestamp": "202507190100",
+        "valid_bits": 13,
+        "valid_bits_location": "image_pixel_values variable"
+      },
+      {
+        "basename": "gk2a_ami_le1b_ir096_fd020ge_202507190100.nc",
+        "channel": "ir096",
+        "dtype": "uint16",
+        "sha256": "365beaa7f89bbbf7f06f4bd4fcac88f24c8b478f28aee01e48b22e175b995c4a",
+        "sha256_32": "365beaa7f89bbbf7f06f4bd4fcac88f2",
+        "shape": [
+          5500,
+          5500
+        ],
+        "size_bytes": 32676108,
+        "source": "FD",
+        "timestamp": "202507190100",
+        "valid_bits": 13,
+        "valid_bits_location": "image_pixel_values variable"
+      },
+      {
+        "basename": "gk2a_ami_le1b_ir105_fd020ge_202507190100.nc",
+        "channel": "ir105",
+        "dtype": "uint16",
+        "sha256": "e2c34e6cb7ca6da5e5aee414d0a4fad1e3a334c46b8fb6fba007b14199a33eae",
+        "sha256_32": "e2c34e6cb7ca6da5e5aee414d0a4fad1",
+        "shape": [
+          5500,
+          5500
+        ],
+        "size_bytes": 35848482,
+        "source": "FD",
+        "timestamp": "202507190100",
+        "valid_bits": 13,
+        "valid_bits_location": "image_pixel_values variable"
+      },
+      {
+        "basename": "gk2a_ami_le1b_ir112_fd020ge_202507190100.nc",
+        "channel": "ir112",
+        "dtype": "uint16",
+        "sha256": "0f04a649c5d1f43a0c0ab3bb3b80f9587dfbc3d77e920a535b5327d6337a308c",
+        "sha256_32": "0f04a649c5d1f43a0c0ab3bb3b80f958",
+        "shape": [
+          5500,
+          5500
+        ],
+        "size_bytes": 35812472,
+        "source": "FD",
+        "timestamp": "202507190100",
+        "valid_bits": 13,
+        "valid_bits_location": "image_pixel_values variable"
+      },
+      {
+        "basename": "gk2a_ami_le1b_ir123_fd020ge_202507190100.nc",
+        "channel": "ir123",
+        "dtype": "uint16",
+        "sha256": "73ef6e4792105fa643896d6235f33cfaad156a5b7d452602a54922ac5318ab98",
+        "sha256_32": "73ef6e4792105fa643896d6235f33cfa",
+        "shape": [
+          5500,
+          5500
+        ],
+        "size_bytes": 35412686,
+        "source": "FD",
+        "timestamp": "202507190100",
+        "valid_bits": 13,
+        "valid_bits_location": "image_pixel_values variable"
+      },
+      {
+        "basename": "gk2a_ami_le1b_ir133_fd020ge_202507190100.nc",
+        "channel": "ir133",
+        "dtype": "uint16",
+        "sha256": "ff54854442b7651c47be3cb88c400e66f29eda5f650b340419ee77f7d8358e11",
+        "sha256_32": "ff54854442b7651c47be3cb88c400e66",
+        "shape": [
+          5500,
+          5500
+        ],
+        "size_bytes": 33555716,
+        "source": "FD",
+        "timestamp": "202507190100",
+        "valid_bits": 13,
+        "valid_bits_location": "image_pixel_values variable"
+      }
+    ],
+    "KO": [
+      {
+        "basename": "gk2a_ami_le1b_sw038_ko020lc_202507190000.nc",
+        "channel": "sw038",
+        "dtype": "uint16",
+        "sha256": "4b426ce7451459b0d24075a6cbec8538ee3cd885c6c53699633cecdaefa5d842",
+        "sha256_32": "4b426ce7451459b0d24075a6cbec8538",
+        "shape": [
+          900,
+          900
+        ],
+        "size_bytes": 921072,
+        "source": "KO",
+        "timestamp": "202507190000",
+        "valid_bits": 14,
+        "valid_bits_location": "image_pixel_values variable"
+      },
+      {
+        "basename": "gk2a_ami_le1b_wv063_ko020lc_202507190000.nc",
+        "channel": "wv063",
+        "dtype": "uint16",
+        "sha256": "ecd9d3ae1c899b3bef20a870f01393631365a694b802cd78dd2708130451e1d3",
+        "sha256_32": "ecd9d3ae1c899b3bef20a870f0139363",
+        "shape": [
+          900,
+          900
+        ],
+        "size_bytes": 635551,
+        "source": "KO",
+        "timestamp": "202507190000",
+        "valid_bits": 12,
+        "valid_bits_location": "image_pixel_values variable"
+      },
+      {
+        "basename": "gk2a_ami_le1b_wv069_ko020lc_202507190000.nc",
+        "channel": "wv069",
+        "dtype": "uint16",
+        "sha256": "8bf7f25a5f8e5ecad17d8433bc835819c6a8ab5db06f7305e8d61139ec613cfb",
+        "sha256_32": "8bf7f25a5f8e5ecad17d8433bc835819",
+        "shape": [
+          900,
+          900
+        ],
+        "size_bytes": 883194,
+        "source": "KO",
+        "timestamp": "202507190000",
+        "valid_bits": 13,
+        "valid_bits_location": "image_pixel_values variable"
+      },
+      {
+        "basename": "gk2a_ami_le1b_wv073_ko020lc_202507190000.nc",
+        "channel": "wv073",
+        "dtype": "uint16",
+        "sha256": "37095ec9805eafa4d928e7e77c6906a1557d61d22c90c965fd758d07862f404c",
+        "sha256_32": "37095ec9805eafa4d928e7e77c6906a1",
+        "shape": [
+          900,
+          900
+        ],
+        "size_bytes": 936430,
+        "source": "KO",
+        "timestamp": "202507190000",
+        "valid_bits": 13,
+        "valid_bits_location": "image_pixel_values variable"
+      },
+      {
+        "basename": "gk2a_ami_le1b_ir087_ko020lc_202507190000.nc",
+        "channel": "ir087",
+        "dtype": "uint16",
+        "sha256": "a4cec04e51982e7c0b8d4da7dd8cef3f244b692a51fa7c4a7e86b5ca16618f1e",
+        "sha256_32": "a4cec04e51982e7c0b8d4da7dd8cef3f",
+        "shape": [
+          900,
+          900
+        ],
+        "size_bytes": 1047610,
+        "source": "KO",
+        "timestamp": "202507190000",
+        "valid_bits": 13,
+        "valid_bits_location": "image_pixel_values variable"
+      },
+      {
+        "basename": "gk2a_ami_le1b_ir096_ko020lc_202507190000.nc",
+        "channel": "ir096",
+        "dtype": "uint16",
+        "sha256": "e115d5e88eac27769fd43b79cdca51ea789ac4eab0cf3ea33a5622f7e7c14040",
+        "sha256_32": "e115d5e88eac27769fd43b79cdca51ea",
+        "shape": [
+          900,
+          900
+        ],
+        "size_bytes": 977994,
+        "source": "KO",
+        "timestamp": "202507190000",
+        "valid_bits": 13,
+        "valid_bits_location": "image_pixel_values variable"
+      },
+      {
+        "basename": "gk2a_ami_le1b_ir105_ko020lc_202507190000.nc",
+        "channel": "ir105",
+        "dtype": "uint16",
+        "sha256": "c50356a3614e16d12ff770820000a9e7a1657248b21b94c3a70f0db0e47947af",
+        "sha256_32": "c50356a3614e16d12ff770820000a9e7",
+        "shape": [
+          900,
+          900
+        ],
+        "size_bytes": 1053804,
+        "source": "KO",
+        "timestamp": "202507190000",
+        "valid_bits": 13,
+        "valid_bits_location": "image_pixel_values variable"
+      },
+      {
+        "basename": "gk2a_ami_le1b_ir112_ko020lc_202507190000.nc",
+        "channel": "ir112",
+        "dtype": "uint16",
+        "sha256": "1df480537f95d25aa44236f65a52b9a8746354e6ae322ad154ecae5b84d149ca",
+        "sha256_32": "1df480537f95d25aa44236f65a52b9a8",
+        "shape": [
+          900,
+          900
+        ],
+        "size_bytes": 1049681,
+        "source": "KO",
+        "timestamp": "202507190000",
+        "valid_bits": 13,
+        "valid_bits_location": "image_pixel_values variable"
+      },
+      {
+        "basename": "gk2a_ami_le1b_ir123_ko020lc_202507190000.nc",
+        "channel": "ir123",
+        "dtype": "uint16",
+        "sha256": "74bed1daf0da6c1bfe4e2a321fc4c986e70083b76d50f6af60af9e97b366bf72",
+        "sha256_32": "74bed1daf0da6c1bfe4e2a321fc4c986",
+        "shape": [
+          900,
+          900
+        ],
+        "size_bytes": 1035821,
+        "source": "KO",
+        "timestamp": "202507190000",
+        "valid_bits": 13,
+        "valid_bits_location": "image_pixel_values variable"
+      },
+      {
+        "basename": "gk2a_ami_le1b_ir133_ko020lc_202507190000.nc",
+        "channel": "ir133",
+        "dtype": "uint16",
+        "sha256": "08729e98bcf155b9c52bcd679597799814aa967c6e250f1df00fe3d5d9adc600",
+        "sha256_32": "08729e98bcf155b9c52bcd6795977998",
+        "shape": [
+          900,
+          900
+        ],
+        "size_bytes": 991174,
+        "source": "KO",
+        "timestamp": "202507190000",
+        "valid_bits": 13,
+        "valid_bits_location": "image_pixel_values variable"
+      }
+    ]
+  },
+  "measurement_status": "completed",
+  "provenance": {
+    "baseline_reader": {
+      "basename": "before_gk2a_l1b.py",
+      "sha256": "1b8c8895d7062b1d5ddd3b00f1e69619043b537311f66fa098740b30c1da8230",
+      "commit": "2f88c4a54d94ae68a00f9393bd1cd6eec234b039"
+    },
+    "calibration": {
+      "basename": "gk2a_ami_cal_202507190000.json",
+      "sha256": "f519149e3ea3538866bad9f3e28cc0ddef741b6b4cdbf8febb7988aff6c08d40"
+    },
+    "current_fd_reader": {
+      "sha256": "3ef5c4f943922f77e96ba8d72e0875f1d3218d9e373a81dd4fd3526a7564c268",
+      "source_path": "oracle/kdm6/obs/gk2a_l1b_fd.py"
+    },
+    "current_reader": {
+      "sha256": "a7d8cae5c4d6b2793c878352bc3f50a03f95b17b38cd698c95287b25d6e7758c",
+      "source_path": "oracle/kdm6/obs/gk2a_l1b.py",
+      "commit": "0e3dbe4ec68deaca87caf6b35240623a9c4cc941"
+    },
+    "measurement_script": {
+      "basename": "measurement_radiance_controls_20260906.py",
+      "sha256": "38cb80238171ab212c02a07b959e6ce8d0e57d74ca6c8b401c6754e9f1c3d16f"
+    },
+    "source_paths_redacted": true
+  },
+  "scope": {
+    "FD": "full raster, 5500x5500, finite GEOS geolocation",
+    "KO": "full raster, 900x900, finite KO geolocation",
+    "channels": [
+      "sw038",
+      "wv063",
+      "wv069",
+      "wv073",
+      "ir087",
+      "ir096",
+      "ir105",
+      "ir112",
+      "ir123",
+      "ir133"
+    ],
+    "chunk_rows": 256,
+    "domain": "NetCDF-unmasked AND finite geolocation",
+    "host_or_rttov": false,
+    "new_download": false,
+    "valid_radiance_common": "domain AND embedded DQF=0 AND calibrated radiance finite and >0",
+    "selection_limit": "Full-raster unmasked/finite-geometry domains, not the FD production bbox/stride selection or assimilated observations."
+  },
+  "sources": {
+    "FD": {
+      "channels": {
+        "ir087": {
+          "all_invalid_radiance_domain": 0,
+          "all_invalid_radiance_unmasked": 0,
+          "all_q0_invalid_radiance_unmasked": 0,
+          "bt_common_exact_zero_count": 23046116,
+          "bt_common_max_ulp": 0,
+          "bt_current_minus_before_common_usable_K": {
+            "max_abs_K": 0.0,
+            "mean_abs_K": 0.0,
+            "mean_signed_K": 0.0,
+            "n": 23046116,
+            "rmse_K": 0.0
+          },
+          "current_dqf_counts_domain": [
+            23046116,
+            0,
+            0,
+            0
+          ],
+          "current_dqf_counts_unmasked": [
+            23131643,
+            0,
+            7118357,
+            0
+          ],
+          "current_q3_added_for_q0_invalid_domain": 0,
+          "current_q3_added_for_q0_invalid_unmasked": 0,
+          "domain_pixels_unmasked_and_finite_geometry": 23046116,
+          "dqf_confusion_domain_old_rows_current_columns": [
+            [
+              23046116,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dqf_confusion_unmasked_old_rows_current_columns": [
+            [
+              23131643,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              7118357,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dtype": "uint16",
+          "embedded_q0_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_radiance_domain": 0,
+          "embedded_q0_nonpositive_radiance_unmasked": 0,
+          "finite_geometry_pixels": 23046116,
+          "invalid_radiance_q0_current_bt_zero_count": 0,
+          "invalid_radiance_q0_old_bt_finite_count": 0,
+          "netcdf_masked_pixels": 0,
+          "netcdf_unmasked_pixels": 30250000,
+          "nonfinite_geometry_pixels": 7203884,
+          "old_dqf_counts_domain": [
+            23046116,
+            0,
+            0,
+            0
+          ],
+          "old_dqf_counts_unmasked": [
+            23131643,
+            0,
+            7118357,
+            0
+          ],
+          "quality_changed_domain": 0,
+          "shape": [
+            5500,
+            5500
+          ],
+          "total_pixels": 30250000,
+          "valid_bits": 13,
+          "valid_radiance_common_usable_pixels": 23046116
+        },
+        "ir096": {
+          "all_invalid_radiance_domain": 0,
+          "all_invalid_radiance_unmasked": 0,
+          "all_q0_invalid_radiance_unmasked": 0,
+          "bt_common_exact_zero_count": 23046116,
+          "bt_common_max_ulp": 0,
+          "bt_current_minus_before_common_usable_K": {
+            "max_abs_K": 0.0,
+            "mean_abs_K": 0.0,
+            "mean_signed_K": 0.0,
+            "n": 23046116,
+            "rmse_K": 0.0
+          },
+          "current_dqf_counts_domain": [
+            23046116,
+            0,
+            0,
+            0
+          ],
+          "current_dqf_counts_unmasked": [
+            23131643,
+            0,
+            7118357,
+            0
+          ],
+          "current_q3_added_for_q0_invalid_domain": 0,
+          "current_q3_added_for_q0_invalid_unmasked": 0,
+          "domain_pixels_unmasked_and_finite_geometry": 23046116,
+          "dqf_confusion_domain_old_rows_current_columns": [
+            [
+              23046116,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dqf_confusion_unmasked_old_rows_current_columns": [
+            [
+              23131643,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              7118357,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dtype": "uint16",
+          "embedded_q0_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_radiance_domain": 0,
+          "embedded_q0_nonpositive_radiance_unmasked": 0,
+          "finite_geometry_pixels": 23046116,
+          "invalid_radiance_q0_current_bt_zero_count": 0,
+          "invalid_radiance_q0_old_bt_finite_count": 0,
+          "netcdf_masked_pixels": 0,
+          "netcdf_unmasked_pixels": 30250000,
+          "nonfinite_geometry_pixels": 7203884,
+          "old_dqf_counts_domain": [
+            23046116,
+            0,
+            0,
+            0
+          ],
+          "old_dqf_counts_unmasked": [
+            23131643,
+            0,
+            7118357,
+            0
+          ],
+          "quality_changed_domain": 0,
+          "shape": [
+            5500,
+            5500
+          ],
+          "total_pixels": 30250000,
+          "valid_bits": 13,
+          "valid_radiance_common_usable_pixels": 23046116
+        },
+        "ir105": {
+          "all_invalid_radiance_domain": 0,
+          "all_invalid_radiance_unmasked": 0,
+          "all_q0_invalid_radiance_unmasked": 0,
+          "bt_common_exact_zero_count": 23046116,
+          "bt_common_max_ulp": 0,
+          "bt_current_minus_before_common_usable_K": {
+            "max_abs_K": 0.0,
+            "mean_abs_K": 0.0,
+            "mean_signed_K": 0.0,
+            "n": 23046116,
+            "rmse_K": 0.0
+          },
+          "current_dqf_counts_domain": [
+            23046116,
+            0,
+            0,
+            0
+          ],
+          "current_dqf_counts_unmasked": [
+            23131643,
+            0,
+            7118357,
+            0
+          ],
+          "current_q3_added_for_q0_invalid_domain": 0,
+          "current_q3_added_for_q0_invalid_unmasked": 0,
+          "domain_pixels_unmasked_and_finite_geometry": 23046116,
+          "dqf_confusion_domain_old_rows_current_columns": [
+            [
+              23046116,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dqf_confusion_unmasked_old_rows_current_columns": [
+            [
+              23131643,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              7118357,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dtype": "uint16",
+          "embedded_q0_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_radiance_domain": 0,
+          "embedded_q0_nonpositive_radiance_unmasked": 0,
+          "finite_geometry_pixels": 23046116,
+          "invalid_radiance_q0_current_bt_zero_count": 0,
+          "invalid_radiance_q0_old_bt_finite_count": 0,
+          "netcdf_masked_pixels": 0,
+          "netcdf_unmasked_pixels": 30250000,
+          "nonfinite_geometry_pixels": 7203884,
+          "old_dqf_counts_domain": [
+            23046116,
+            0,
+            0,
+            0
+          ],
+          "old_dqf_counts_unmasked": [
+            23131643,
+            0,
+            7118357,
+            0
+          ],
+          "quality_changed_domain": 0,
+          "shape": [
+            5500,
+            5500
+          ],
+          "total_pixels": 30250000,
+          "valid_bits": 13,
+          "valid_radiance_common_usable_pixels": 23046116
+        },
+        "ir112": {
+          "all_invalid_radiance_domain": 0,
+          "all_invalid_radiance_unmasked": 0,
+          "all_q0_invalid_radiance_unmasked": 0,
+          "bt_common_exact_zero_count": 23046116,
+          "bt_common_max_ulp": 0,
+          "bt_current_minus_before_common_usable_K": {
+            "max_abs_K": 0.0,
+            "mean_abs_K": 0.0,
+            "mean_signed_K": 0.0,
+            "n": 23046116,
+            "rmse_K": 0.0
+          },
+          "current_dqf_counts_domain": [
+            23046116,
+            0,
+            0,
+            0
+          ],
+          "current_dqf_counts_unmasked": [
+            23131643,
+            0,
+            7118357,
+            0
+          ],
+          "current_q3_added_for_q0_invalid_domain": 0,
+          "current_q3_added_for_q0_invalid_unmasked": 0,
+          "domain_pixels_unmasked_and_finite_geometry": 23046116,
+          "dqf_confusion_domain_old_rows_current_columns": [
+            [
+              23046116,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dqf_confusion_unmasked_old_rows_current_columns": [
+            [
+              23131643,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              7118357,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dtype": "uint16",
+          "embedded_q0_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_radiance_domain": 0,
+          "embedded_q0_nonpositive_radiance_unmasked": 0,
+          "finite_geometry_pixels": 23046116,
+          "invalid_radiance_q0_current_bt_zero_count": 0,
+          "invalid_radiance_q0_old_bt_finite_count": 0,
+          "netcdf_masked_pixels": 0,
+          "netcdf_unmasked_pixels": 30250000,
+          "nonfinite_geometry_pixels": 7203884,
+          "old_dqf_counts_domain": [
+            23046116,
+            0,
+            0,
+            0
+          ],
+          "old_dqf_counts_unmasked": [
+            23131643,
+            0,
+            7118357,
+            0
+          ],
+          "quality_changed_domain": 0,
+          "shape": [
+            5500,
+            5500
+          ],
+          "total_pixels": 30250000,
+          "valid_bits": 13,
+          "valid_radiance_common_usable_pixels": 23046116
+        },
+        "ir123": {
+          "all_invalid_radiance_domain": 0,
+          "all_invalid_radiance_unmasked": 0,
+          "all_q0_invalid_radiance_unmasked": 0,
+          "bt_common_exact_zero_count": 23046116,
+          "bt_common_max_ulp": 0,
+          "bt_current_minus_before_common_usable_K": {
+            "max_abs_K": 0.0,
+            "mean_abs_K": 0.0,
+            "mean_signed_K": 0.0,
+            "n": 23046116,
+            "rmse_K": 0.0
+          },
+          "current_dqf_counts_domain": [
+            23046116,
+            0,
+            0,
+            0
+          ],
+          "current_dqf_counts_unmasked": [
+            23131643,
+            0,
+            7118357,
+            0
+          ],
+          "current_q3_added_for_q0_invalid_domain": 0,
+          "current_q3_added_for_q0_invalid_unmasked": 0,
+          "domain_pixels_unmasked_and_finite_geometry": 23046116,
+          "dqf_confusion_domain_old_rows_current_columns": [
+            [
+              23046116,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dqf_confusion_unmasked_old_rows_current_columns": [
+            [
+              23131643,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              7118357,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dtype": "uint16",
+          "embedded_q0_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_radiance_domain": 0,
+          "embedded_q0_nonpositive_radiance_unmasked": 0,
+          "finite_geometry_pixels": 23046116,
+          "invalid_radiance_q0_current_bt_zero_count": 0,
+          "invalid_radiance_q0_old_bt_finite_count": 0,
+          "netcdf_masked_pixels": 0,
+          "netcdf_unmasked_pixels": 30250000,
+          "nonfinite_geometry_pixels": 7203884,
+          "old_dqf_counts_domain": [
+            23046116,
+            0,
+            0,
+            0
+          ],
+          "old_dqf_counts_unmasked": [
+            23131643,
+            0,
+            7118357,
+            0
+          ],
+          "quality_changed_domain": 0,
+          "shape": [
+            5500,
+            5500
+          ],
+          "total_pixels": 30250000,
+          "valid_bits": 13,
+          "valid_radiance_common_usable_pixels": 23046116
+        },
+        "ir133": {
+          "all_invalid_radiance_domain": 0,
+          "all_invalid_radiance_unmasked": 0,
+          "all_q0_invalid_radiance_unmasked": 0,
+          "bt_common_exact_zero_count": 23046116,
+          "bt_common_max_ulp": 0,
+          "bt_current_minus_before_common_usable_K": {
+            "max_abs_K": 0.0,
+            "mean_abs_K": 0.0,
+            "mean_signed_K": 0.0,
+            "n": 23046116,
+            "rmse_K": 0.0
+          },
+          "current_dqf_counts_domain": [
+            23046116,
+            0,
+            0,
+            0
+          ],
+          "current_dqf_counts_unmasked": [
+            23131643,
+            0,
+            7118357,
+            0
+          ],
+          "current_q3_added_for_q0_invalid_domain": 0,
+          "current_q3_added_for_q0_invalid_unmasked": 0,
+          "domain_pixels_unmasked_and_finite_geometry": 23046116,
+          "dqf_confusion_domain_old_rows_current_columns": [
+            [
+              23046116,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dqf_confusion_unmasked_old_rows_current_columns": [
+            [
+              23131643,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              7118357,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dtype": "uint16",
+          "embedded_q0_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_radiance_domain": 0,
+          "embedded_q0_nonpositive_radiance_unmasked": 0,
+          "finite_geometry_pixels": 23046116,
+          "invalid_radiance_q0_current_bt_zero_count": 0,
+          "invalid_radiance_q0_old_bt_finite_count": 0,
+          "netcdf_masked_pixels": 0,
+          "netcdf_unmasked_pixels": 30250000,
+          "nonfinite_geometry_pixels": 7203884,
+          "old_dqf_counts_domain": [
+            23046116,
+            0,
+            0,
+            0
+          ],
+          "old_dqf_counts_unmasked": [
+            23131643,
+            0,
+            7118357,
+            0
+          ],
+          "quality_changed_domain": 0,
+          "shape": [
+            5500,
+            5500
+          ],
+          "total_pixels": 30250000,
+          "valid_bits": 13,
+          "valid_radiance_common_usable_pixels": 23046116
+        },
+        "sw038": {
+          "all_invalid_radiance_domain": 76,
+          "all_invalid_radiance_unmasked": 243,
+          "all_q0_invalid_radiance_unmasked": 243,
+          "bt_common_exact_zero_count": 23046040,
+          "bt_common_max_ulp": 0,
+          "bt_current_minus_before_common_usable_K": {
+            "max_abs_K": 0.0,
+            "mean_abs_K": 0.0,
+            "mean_signed_K": 0.0,
+            "n": 23046040,
+            "rmse_K": 0.0
+          },
+          "current_dqf_counts_domain": [
+            23046040,
+            0,
+            0,
+            76
+          ],
+          "current_dqf_counts_unmasked": [
+            23131400,
+            0,
+            7118357,
+            243
+          ],
+          "current_q3_added_for_q0_invalid_domain": 76,
+          "current_q3_added_for_q0_invalid_unmasked": 243,
+          "domain_pixels_unmasked_and_finite_geometry": 23046116,
+          "dqf_confusion_domain_old_rows_current_columns": [
+            [
+              23046040,
+              0,
+              0,
+              76
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dqf_confusion_unmasked_old_rows_current_columns": [
+            [
+              23131400,
+              0,
+              0,
+              243
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              7118357,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dtype": "uint16",
+          "embedded_q0_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_domain": 76,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_unmasked": 243,
+          "embedded_q0_nonpositive_radiance_domain": 76,
+          "embedded_q0_nonpositive_radiance_unmasked": 243,
+          "finite_geometry_pixels": 23046116,
+          "invalid_radiance_q0_current_bt_zero_count": 76,
+          "invalid_radiance_q0_old_bt_finite_count": 76,
+          "netcdf_masked_pixels": 0,
+          "netcdf_unmasked_pixels": 30250000,
+          "nonfinite_geometry_pixels": 7203884,
+          "old_dqf_counts_domain": [
+            23046116,
+            0,
+            0,
+            0
+          ],
+          "old_dqf_counts_unmasked": [
+            23131643,
+            0,
+            7118357,
+            0
+          ],
+          "quality_changed_domain": 76,
+          "shape": [
+            5500,
+            5500
+          ],
+          "total_pixels": 30250000,
+          "valid_bits": 14,
+          "valid_radiance_common_usable_pixels": 23046040
+        },
+        "wv063": {
+          "all_invalid_radiance_domain": 0,
+          "all_invalid_radiance_unmasked": 0,
+          "all_q0_invalid_radiance_unmasked": 0,
+          "bt_common_exact_zero_count": 23046116,
+          "bt_common_max_ulp": 0,
+          "bt_current_minus_before_common_usable_K": {
+            "max_abs_K": 0.0,
+            "mean_abs_K": 0.0,
+            "mean_signed_K": 0.0,
+            "n": 23046116,
+            "rmse_K": 0.0
+          },
+          "current_dqf_counts_domain": [
+            23046116,
+            0,
+            0,
+            0
+          ],
+          "current_dqf_counts_unmasked": [
+            23131643,
+            0,
+            7118357,
+            0
+          ],
+          "current_q3_added_for_q0_invalid_domain": 0,
+          "current_q3_added_for_q0_invalid_unmasked": 0,
+          "domain_pixels_unmasked_and_finite_geometry": 23046116,
+          "dqf_confusion_domain_old_rows_current_columns": [
+            [
+              23046116,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dqf_confusion_unmasked_old_rows_current_columns": [
+            [
+              23131643,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              7118357,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dtype": "uint16",
+          "embedded_q0_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_radiance_domain": 0,
+          "embedded_q0_nonpositive_radiance_unmasked": 0,
+          "finite_geometry_pixels": 23046116,
+          "invalid_radiance_q0_current_bt_zero_count": 0,
+          "invalid_radiance_q0_old_bt_finite_count": 0,
+          "netcdf_masked_pixels": 0,
+          "netcdf_unmasked_pixels": 30250000,
+          "nonfinite_geometry_pixels": 7203884,
+          "old_dqf_counts_domain": [
+            23046116,
+            0,
+            0,
+            0
+          ],
+          "old_dqf_counts_unmasked": [
+            23131643,
+            0,
+            7118357,
+            0
+          ],
+          "quality_changed_domain": 0,
+          "shape": [
+            5500,
+            5500
+          ],
+          "total_pixels": 30250000,
+          "valid_bits": 12,
+          "valid_radiance_common_usable_pixels": 23046116
+        },
+        "wv069": {
+          "all_invalid_radiance_domain": 0,
+          "all_invalid_radiance_unmasked": 0,
+          "all_q0_invalid_radiance_unmasked": 0,
+          "bt_common_exact_zero_count": 23046116,
+          "bt_common_max_ulp": 0,
+          "bt_current_minus_before_common_usable_K": {
+            "max_abs_K": 0.0,
+            "mean_abs_K": 0.0,
+            "mean_signed_K": 0.0,
+            "n": 23046116,
+            "rmse_K": 0.0
+          },
+          "current_dqf_counts_domain": [
+            23046116,
+            0,
+            0,
+            0
+          ],
+          "current_dqf_counts_unmasked": [
+            23131643,
+            0,
+            7118357,
+            0
+          ],
+          "current_q3_added_for_q0_invalid_domain": 0,
+          "current_q3_added_for_q0_invalid_unmasked": 0,
+          "domain_pixels_unmasked_and_finite_geometry": 23046116,
+          "dqf_confusion_domain_old_rows_current_columns": [
+            [
+              23046116,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dqf_confusion_unmasked_old_rows_current_columns": [
+            [
+              23131643,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              7118357,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dtype": "uint16",
+          "embedded_q0_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_radiance_domain": 0,
+          "embedded_q0_nonpositive_radiance_unmasked": 0,
+          "finite_geometry_pixels": 23046116,
+          "invalid_radiance_q0_current_bt_zero_count": 0,
+          "invalid_radiance_q0_old_bt_finite_count": 0,
+          "netcdf_masked_pixels": 0,
+          "netcdf_unmasked_pixels": 30250000,
+          "nonfinite_geometry_pixels": 7203884,
+          "old_dqf_counts_domain": [
+            23046116,
+            0,
+            0,
+            0
+          ],
+          "old_dqf_counts_unmasked": [
+            23131643,
+            0,
+            7118357,
+            0
+          ],
+          "quality_changed_domain": 0,
+          "shape": [
+            5500,
+            5500
+          ],
+          "total_pixels": 30250000,
+          "valid_bits": 13,
+          "valid_radiance_common_usable_pixels": 23046116
+        },
+        "wv073": {
+          "all_invalid_radiance_domain": 0,
+          "all_invalid_radiance_unmasked": 0,
+          "all_q0_invalid_radiance_unmasked": 0,
+          "bt_common_exact_zero_count": 23046116,
+          "bt_common_max_ulp": 0,
+          "bt_current_minus_before_common_usable_K": {
+            "max_abs_K": 0.0,
+            "mean_abs_K": 0.0,
+            "mean_signed_K": 0.0,
+            "n": 23046116,
+            "rmse_K": 0.0
+          },
+          "current_dqf_counts_domain": [
+            23046116,
+            0,
+            0,
+            0
+          ],
+          "current_dqf_counts_unmasked": [
+            23131643,
+            0,
+            7118357,
+            0
+          ],
+          "current_q3_added_for_q0_invalid_domain": 0,
+          "current_q3_added_for_q0_invalid_unmasked": 0,
+          "domain_pixels_unmasked_and_finite_geometry": 23046116,
+          "dqf_confusion_domain_old_rows_current_columns": [
+            [
+              23046116,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dqf_confusion_unmasked_old_rows_current_columns": [
+            [
+              23131643,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              7118357,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dtype": "uint16",
+          "embedded_q0_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_radiance_domain": 0,
+          "embedded_q0_nonpositive_radiance_unmasked": 0,
+          "finite_geometry_pixels": 23046116,
+          "invalid_radiance_q0_current_bt_zero_count": 0,
+          "invalid_radiance_q0_old_bt_finite_count": 0,
+          "netcdf_masked_pixels": 0,
+          "netcdf_unmasked_pixels": 30250000,
+          "nonfinite_geometry_pixels": 7203884,
+          "old_dqf_counts_domain": [
+            23046116,
+            0,
+            0,
+            0
+          ],
+          "old_dqf_counts_unmasked": [
+            23131643,
+            0,
+            7118357,
+            0
+          ],
+          "quality_changed_domain": 0,
+          "shape": [
+            5500,
+            5500
+          ],
+          "total_pixels": 30250000,
+          "valid_bits": 13,
+          "valid_radiance_common_usable_pixels": 23046116
+        }
+      },
+      "timestamp": "202507190100"
+    },
+    "KO": {
+      "channels": {
+        "ir087": {
+          "all_invalid_radiance_domain": 0,
+          "all_invalid_radiance_unmasked": 0,
+          "all_q0_invalid_radiance_unmasked": 0,
+          "bt_common_exact_zero_count": 810000,
+          "bt_common_max_ulp": 0,
+          "bt_current_minus_before_common_usable_K": {
+            "max_abs_K": 0.0,
+            "mean_abs_K": 0.0,
+            "mean_signed_K": 0.0,
+            "n": 810000,
+            "rmse_K": 0.0
+          },
+          "current_dqf_counts_domain": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "current_dqf_counts_unmasked": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "current_q3_added_for_q0_invalid_domain": 0,
+          "current_q3_added_for_q0_invalid_unmasked": 0,
+          "domain_pixels_unmasked_and_finite_geometry": 810000,
+          "dqf_confusion_domain_old_rows_current_columns": [
+            [
+              810000,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dqf_confusion_unmasked_old_rows_current_columns": [
+            [
+              810000,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dtype": "uint16",
+          "embedded_q0_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_radiance_domain": 0,
+          "embedded_q0_nonpositive_radiance_unmasked": 0,
+          "finite_geometry_pixels": 810000,
+          "invalid_radiance_q0_current_bt_zero_count": 0,
+          "invalid_radiance_q0_old_bt_finite_count": 0,
+          "netcdf_masked_pixels": 0,
+          "netcdf_unmasked_pixels": 810000,
+          "nonfinite_geometry_pixels": 0,
+          "old_dqf_counts_domain": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "old_dqf_counts_unmasked": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "quality_changed_domain": 0,
+          "shape": [
+            900,
+            900
+          ],
+          "total_pixels": 810000,
+          "valid_bits": 13,
+          "valid_radiance_common_usable_pixels": 810000
+        },
+        "ir096": {
+          "all_invalid_radiance_domain": 0,
+          "all_invalid_radiance_unmasked": 0,
+          "all_q0_invalid_radiance_unmasked": 0,
+          "bt_common_exact_zero_count": 810000,
+          "bt_common_max_ulp": 0,
+          "bt_current_minus_before_common_usable_K": {
+            "max_abs_K": 0.0,
+            "mean_abs_K": 0.0,
+            "mean_signed_K": 0.0,
+            "n": 810000,
+            "rmse_K": 0.0
+          },
+          "current_dqf_counts_domain": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "current_dqf_counts_unmasked": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "current_q3_added_for_q0_invalid_domain": 0,
+          "current_q3_added_for_q0_invalid_unmasked": 0,
+          "domain_pixels_unmasked_and_finite_geometry": 810000,
+          "dqf_confusion_domain_old_rows_current_columns": [
+            [
+              810000,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dqf_confusion_unmasked_old_rows_current_columns": [
+            [
+              810000,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dtype": "uint16",
+          "embedded_q0_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_radiance_domain": 0,
+          "embedded_q0_nonpositive_radiance_unmasked": 0,
+          "finite_geometry_pixels": 810000,
+          "invalid_radiance_q0_current_bt_zero_count": 0,
+          "invalid_radiance_q0_old_bt_finite_count": 0,
+          "netcdf_masked_pixels": 0,
+          "netcdf_unmasked_pixels": 810000,
+          "nonfinite_geometry_pixels": 0,
+          "old_dqf_counts_domain": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "old_dqf_counts_unmasked": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "quality_changed_domain": 0,
+          "shape": [
+            900,
+            900
+          ],
+          "total_pixels": 810000,
+          "valid_bits": 13,
+          "valid_radiance_common_usable_pixels": 810000
+        },
+        "ir105": {
+          "all_invalid_radiance_domain": 0,
+          "all_invalid_radiance_unmasked": 0,
+          "all_q0_invalid_radiance_unmasked": 0,
+          "bt_common_exact_zero_count": 810000,
+          "bt_common_max_ulp": 0,
+          "bt_current_minus_before_common_usable_K": {
+            "max_abs_K": 0.0,
+            "mean_abs_K": 0.0,
+            "mean_signed_K": 0.0,
+            "n": 810000,
+            "rmse_K": 0.0
+          },
+          "current_dqf_counts_domain": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "current_dqf_counts_unmasked": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "current_q3_added_for_q0_invalid_domain": 0,
+          "current_q3_added_for_q0_invalid_unmasked": 0,
+          "domain_pixels_unmasked_and_finite_geometry": 810000,
+          "dqf_confusion_domain_old_rows_current_columns": [
+            [
+              810000,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dqf_confusion_unmasked_old_rows_current_columns": [
+            [
+              810000,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dtype": "uint16",
+          "embedded_q0_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_radiance_domain": 0,
+          "embedded_q0_nonpositive_radiance_unmasked": 0,
+          "finite_geometry_pixels": 810000,
+          "invalid_radiance_q0_current_bt_zero_count": 0,
+          "invalid_radiance_q0_old_bt_finite_count": 0,
+          "netcdf_masked_pixels": 0,
+          "netcdf_unmasked_pixels": 810000,
+          "nonfinite_geometry_pixels": 0,
+          "old_dqf_counts_domain": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "old_dqf_counts_unmasked": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "quality_changed_domain": 0,
+          "shape": [
+            900,
+            900
+          ],
+          "total_pixels": 810000,
+          "valid_bits": 13,
+          "valid_radiance_common_usable_pixels": 810000
+        },
+        "ir112": {
+          "all_invalid_radiance_domain": 0,
+          "all_invalid_radiance_unmasked": 0,
+          "all_q0_invalid_radiance_unmasked": 0,
+          "bt_common_exact_zero_count": 810000,
+          "bt_common_max_ulp": 0,
+          "bt_current_minus_before_common_usable_K": {
+            "max_abs_K": 0.0,
+            "mean_abs_K": 0.0,
+            "mean_signed_K": 0.0,
+            "n": 810000,
+            "rmse_K": 0.0
+          },
+          "current_dqf_counts_domain": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "current_dqf_counts_unmasked": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "current_q3_added_for_q0_invalid_domain": 0,
+          "current_q3_added_for_q0_invalid_unmasked": 0,
+          "domain_pixels_unmasked_and_finite_geometry": 810000,
+          "dqf_confusion_domain_old_rows_current_columns": [
+            [
+              810000,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dqf_confusion_unmasked_old_rows_current_columns": [
+            [
+              810000,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dtype": "uint16",
+          "embedded_q0_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_radiance_domain": 0,
+          "embedded_q0_nonpositive_radiance_unmasked": 0,
+          "finite_geometry_pixels": 810000,
+          "invalid_radiance_q0_current_bt_zero_count": 0,
+          "invalid_radiance_q0_old_bt_finite_count": 0,
+          "netcdf_masked_pixels": 0,
+          "netcdf_unmasked_pixels": 810000,
+          "nonfinite_geometry_pixels": 0,
+          "old_dqf_counts_domain": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "old_dqf_counts_unmasked": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "quality_changed_domain": 0,
+          "shape": [
+            900,
+            900
+          ],
+          "total_pixels": 810000,
+          "valid_bits": 13,
+          "valid_radiance_common_usable_pixels": 810000
+        },
+        "ir123": {
+          "all_invalid_radiance_domain": 0,
+          "all_invalid_radiance_unmasked": 0,
+          "all_q0_invalid_radiance_unmasked": 0,
+          "bt_common_exact_zero_count": 810000,
+          "bt_common_max_ulp": 0,
+          "bt_current_minus_before_common_usable_K": {
+            "max_abs_K": 0.0,
+            "mean_abs_K": 0.0,
+            "mean_signed_K": 0.0,
+            "n": 810000,
+            "rmse_K": 0.0
+          },
+          "current_dqf_counts_domain": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "current_dqf_counts_unmasked": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "current_q3_added_for_q0_invalid_domain": 0,
+          "current_q3_added_for_q0_invalid_unmasked": 0,
+          "domain_pixels_unmasked_and_finite_geometry": 810000,
+          "dqf_confusion_domain_old_rows_current_columns": [
+            [
+              810000,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dqf_confusion_unmasked_old_rows_current_columns": [
+            [
+              810000,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dtype": "uint16",
+          "embedded_q0_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_radiance_domain": 0,
+          "embedded_q0_nonpositive_radiance_unmasked": 0,
+          "finite_geometry_pixels": 810000,
+          "invalid_radiance_q0_current_bt_zero_count": 0,
+          "invalid_radiance_q0_old_bt_finite_count": 0,
+          "netcdf_masked_pixels": 0,
+          "netcdf_unmasked_pixels": 810000,
+          "nonfinite_geometry_pixels": 0,
+          "old_dqf_counts_domain": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "old_dqf_counts_unmasked": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "quality_changed_domain": 0,
+          "shape": [
+            900,
+            900
+          ],
+          "total_pixels": 810000,
+          "valid_bits": 13,
+          "valid_radiance_common_usable_pixels": 810000
+        },
+        "ir133": {
+          "all_invalid_radiance_domain": 0,
+          "all_invalid_radiance_unmasked": 0,
+          "all_q0_invalid_radiance_unmasked": 0,
+          "bt_common_exact_zero_count": 810000,
+          "bt_common_max_ulp": 0,
+          "bt_current_minus_before_common_usable_K": {
+            "max_abs_K": 0.0,
+            "mean_abs_K": 0.0,
+            "mean_signed_K": 0.0,
+            "n": 810000,
+            "rmse_K": 0.0
+          },
+          "current_dqf_counts_domain": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "current_dqf_counts_unmasked": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "current_q3_added_for_q0_invalid_domain": 0,
+          "current_q3_added_for_q0_invalid_unmasked": 0,
+          "domain_pixels_unmasked_and_finite_geometry": 810000,
+          "dqf_confusion_domain_old_rows_current_columns": [
+            [
+              810000,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dqf_confusion_unmasked_old_rows_current_columns": [
+            [
+              810000,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dtype": "uint16",
+          "embedded_q0_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_radiance_domain": 0,
+          "embedded_q0_nonpositive_radiance_unmasked": 0,
+          "finite_geometry_pixels": 810000,
+          "invalid_radiance_q0_current_bt_zero_count": 0,
+          "invalid_radiance_q0_old_bt_finite_count": 0,
+          "netcdf_masked_pixels": 0,
+          "netcdf_unmasked_pixels": 810000,
+          "nonfinite_geometry_pixels": 0,
+          "old_dqf_counts_domain": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "old_dqf_counts_unmasked": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "quality_changed_domain": 0,
+          "shape": [
+            900,
+            900
+          ],
+          "total_pixels": 810000,
+          "valid_bits": 13,
+          "valid_radiance_common_usable_pixels": 810000
+        },
+        "sw038": {
+          "all_invalid_radiance_domain": 0,
+          "all_invalid_radiance_unmasked": 0,
+          "all_q0_invalid_radiance_unmasked": 0,
+          "bt_common_exact_zero_count": 810000,
+          "bt_common_max_ulp": 0,
+          "bt_current_minus_before_common_usable_K": {
+            "max_abs_K": 0.0,
+            "mean_abs_K": 0.0,
+            "mean_signed_K": 0.0,
+            "n": 810000,
+            "rmse_K": 0.0
+          },
+          "current_dqf_counts_domain": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "current_dqf_counts_unmasked": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "current_q3_added_for_q0_invalid_domain": 0,
+          "current_q3_added_for_q0_invalid_unmasked": 0,
+          "domain_pixels_unmasked_and_finite_geometry": 810000,
+          "dqf_confusion_domain_old_rows_current_columns": [
+            [
+              810000,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dqf_confusion_unmasked_old_rows_current_columns": [
+            [
+              810000,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dtype": "uint16",
+          "embedded_q0_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_radiance_domain": 0,
+          "embedded_q0_nonpositive_radiance_unmasked": 0,
+          "finite_geometry_pixels": 810000,
+          "invalid_radiance_q0_current_bt_zero_count": 0,
+          "invalid_radiance_q0_old_bt_finite_count": 0,
+          "netcdf_masked_pixels": 0,
+          "netcdf_unmasked_pixels": 810000,
+          "nonfinite_geometry_pixels": 0,
+          "old_dqf_counts_domain": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "old_dqf_counts_unmasked": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "quality_changed_domain": 0,
+          "shape": [
+            900,
+            900
+          ],
+          "total_pixels": 810000,
+          "valid_bits": 14,
+          "valid_radiance_common_usable_pixels": 810000
+        },
+        "wv063": {
+          "all_invalid_radiance_domain": 0,
+          "all_invalid_radiance_unmasked": 0,
+          "all_q0_invalid_radiance_unmasked": 0,
+          "bt_common_exact_zero_count": 810000,
+          "bt_common_max_ulp": 0,
+          "bt_current_minus_before_common_usable_K": {
+            "max_abs_K": 0.0,
+            "mean_abs_K": 0.0,
+            "mean_signed_K": 0.0,
+            "n": 810000,
+            "rmse_K": 0.0
+          },
+          "current_dqf_counts_domain": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "current_dqf_counts_unmasked": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "current_q3_added_for_q0_invalid_domain": 0,
+          "current_q3_added_for_q0_invalid_unmasked": 0,
+          "domain_pixels_unmasked_and_finite_geometry": 810000,
+          "dqf_confusion_domain_old_rows_current_columns": [
+            [
+              810000,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dqf_confusion_unmasked_old_rows_current_columns": [
+            [
+              810000,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dtype": "uint16",
+          "embedded_q0_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_radiance_domain": 0,
+          "embedded_q0_nonpositive_radiance_unmasked": 0,
+          "finite_geometry_pixels": 810000,
+          "invalid_radiance_q0_current_bt_zero_count": 0,
+          "invalid_radiance_q0_old_bt_finite_count": 0,
+          "netcdf_masked_pixels": 0,
+          "netcdf_unmasked_pixels": 810000,
+          "nonfinite_geometry_pixels": 0,
+          "old_dqf_counts_domain": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "old_dqf_counts_unmasked": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "quality_changed_domain": 0,
+          "shape": [
+            900,
+            900
+          ],
+          "total_pixels": 810000,
+          "valid_bits": 12,
+          "valid_radiance_common_usable_pixels": 810000
+        },
+        "wv069": {
+          "all_invalid_radiance_domain": 0,
+          "all_invalid_radiance_unmasked": 0,
+          "all_q0_invalid_radiance_unmasked": 0,
+          "bt_common_exact_zero_count": 810000,
+          "bt_common_max_ulp": 0,
+          "bt_current_minus_before_common_usable_K": {
+            "max_abs_K": 0.0,
+            "mean_abs_K": 0.0,
+            "mean_signed_K": 0.0,
+            "n": 810000,
+            "rmse_K": 0.0
+          },
+          "current_dqf_counts_domain": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "current_dqf_counts_unmasked": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "current_q3_added_for_q0_invalid_domain": 0,
+          "current_q3_added_for_q0_invalid_unmasked": 0,
+          "domain_pixels_unmasked_and_finite_geometry": 810000,
+          "dqf_confusion_domain_old_rows_current_columns": [
+            [
+              810000,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dqf_confusion_unmasked_old_rows_current_columns": [
+            [
+              810000,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dtype": "uint16",
+          "embedded_q0_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_radiance_domain": 0,
+          "embedded_q0_nonpositive_radiance_unmasked": 0,
+          "finite_geometry_pixels": 810000,
+          "invalid_radiance_q0_current_bt_zero_count": 0,
+          "invalid_radiance_q0_old_bt_finite_count": 0,
+          "netcdf_masked_pixels": 0,
+          "netcdf_unmasked_pixels": 810000,
+          "nonfinite_geometry_pixels": 0,
+          "old_dqf_counts_domain": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "old_dqf_counts_unmasked": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "quality_changed_domain": 0,
+          "shape": [
+            900,
+            900
+          ],
+          "total_pixels": 810000,
+          "valid_bits": 13,
+          "valid_radiance_common_usable_pixels": 810000
+        },
+        "wv073": {
+          "all_invalid_radiance_domain": 0,
+          "all_invalid_radiance_unmasked": 0,
+          "all_q0_invalid_radiance_unmasked": 0,
+          "bt_common_exact_zero_count": 810000,
+          "bt_common_max_ulp": 0,
+          "bt_current_minus_before_common_usable_K": {
+            "max_abs_K": 0.0,
+            "mean_abs_K": 0.0,
+            "mean_signed_K": 0.0,
+            "n": 810000,
+            "rmse_K": 0.0
+          },
+          "current_dqf_counts_domain": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "current_dqf_counts_unmasked": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "current_q3_added_for_q0_invalid_domain": 0,
+          "current_q3_added_for_q0_invalid_unmasked": 0,
+          "domain_pixels_unmasked_and_finite_geometry": 810000,
+          "dqf_confusion_domain_old_rows_current_columns": [
+            [
+              810000,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dqf_confusion_unmasked_old_rows_current_columns": [
+            [
+              810000,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          "dtype": "uint16",
+          "embedded_q0_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_domain": 0,
+          "embedded_q0_nonpositive_or_nonfinite_radiance_unmasked": 0,
+          "embedded_q0_nonpositive_radiance_domain": 0,
+          "embedded_q0_nonpositive_radiance_unmasked": 0,
+          "finite_geometry_pixels": 810000,
+          "invalid_radiance_q0_current_bt_zero_count": 0,
+          "invalid_radiance_q0_old_bt_finite_count": 0,
+          "netcdf_masked_pixels": 0,
+          "netcdf_unmasked_pixels": 810000,
+          "nonfinite_geometry_pixels": 0,
+          "old_dqf_counts_domain": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "old_dqf_counts_unmasked": [
+            810000,
+            0,
+            0,
+            0
+          ],
+          "quality_changed_domain": 0,
+          "shape": [
+            900,
+            900
+          ],
+          "total_pixels": 810000,
+          "valid_bits": 13,
+          "valid_radiance_common_usable_pixels": 810000
+        }
+      },
+      "timestamp": "202507190000"
+    }
+  }
+}

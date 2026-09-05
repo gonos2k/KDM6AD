@@ -165,6 +165,14 @@ Luna xhigh Green/Red가 수정된 AMI 연결 경계와 과정률 검사를 재�
 이번 범위의 추가 미해소 P1/P2는 확인하지 못했다. Red의 별도 대상 시험은
 AMI 109 passed / 3 skipped, 과정률 12 passed이며 부모 실행 수에 더하지 않는다.
 
+후속 실자료 측정: 기존 KO 202507190000·FD 202507190100의 IR 20파일을
+전체 래스터에서 다시 읽었다. KO의 invalid-radiance Q0는 0개; FD SW038은
+전체 unmasked 243개, 그중 finite-geolocation 영역 76개가 비양수 복사휘도이며
+모두 Q3/BT0로 바뀐다. 나머지 채널의 QC와 공통 사용 가능 BT(0 ULP)는 동일하다.
+[실자료 집계와 입력/소스 해시](../../docs/reports/ami_radiance_full_raster_20260906.json).
+이는 production bbox/stride 선택이나 실제 동화된 관측 수가 아니다.
+선행 32파일 bit-decoding 보고서는 수정하지 않았다.
+
 ## 별도 미측정 과제
 
 - M1: 실제 10분 WRF에서 적용된 유출·유입 잔차 재계측 — OPEN.

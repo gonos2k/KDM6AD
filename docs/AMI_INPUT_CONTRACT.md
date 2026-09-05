@@ -83,7 +83,8 @@ DQF and BT match an independent word decoder exactly in those samples. The
 coordinate selection and calibration arithmetic are shared; this is an
 independent bit-decoding comparison, not an independent geolocation proof.
 
-On the finite-coordinate domain, SW038 changes from zero usable pixels to
+In that historical bit-decoding-only comparison, on the finite-coordinate
+domain, SW038 changes from zero usable pixels to
 810,000/810,000 in KO and 23,046,116/23,046,116 in FD. Its mean decoded BT
 changes from 376.616 to 288.818 K (KO) and 376.458 to 286.776 K (FD).
 There are no commonly usable SW038 pixels under the old and new decoders:
@@ -92,6 +93,25 @@ Other channels have unchanged DN, QC availability and common-usable BT in
 these two finite-coordinate samples. Off-disk DQF=2 also demonstrates the
 old quality decoding error; the FD reader's coordinate filter independently
 excludes off-disk points. No forecast or assimilation performance is measured.
+
+### Radiance-domain follow-up, 2026-09-06
+
+A new [20-file full-raster measurement](reports/ami_radiance_full_raster_20260906.json)
+compares parent `2f88c4a` and corrected decoder `0e3dbe4`, with the existing
+KO `202507190000` and FD `202507190100` ten-IR-channel slots. All input files,
+decoder sources, calibration and measurement script have recorded hashes.
+NetCDF masks and finite-geolocation domains are counted separately.
+
+KO has no Q0 pixels with invalid radiance. FD SW038 has **243** such pixels
+among all 30,250,000 unmasked pixels; **76** are in the 23,046,116-pixel
+finite-geolocation domain. All have nonpositive radiance; none is nonfinite.
+They become Q3/BT=0. Thus the SW038 domain's usable count changes from
+23,046,116 to **23,046,040**; the other nine IR channels do not change QC.
+Common usable BTs remain exactly equal (0 K difference, 0 ULP) in all
+twenty channel/slot pairs. The historical bit-decoding report is preserved.
+
+This is a full-raster domain count, not the FD production bbox/stride
+selection, an assimilated-pixel count, or a forecast-impact measurement.
 
 ## Empty input and ownership policy
 
