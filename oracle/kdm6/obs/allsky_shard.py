@@ -18,6 +18,8 @@ import os
 import numpy as np
 import torch
 
+from ..state import State, Forcing
+
 _F64 = dict(dtype=torch.float64)
 
 
@@ -44,6 +46,7 @@ def _allsky_columns_worker(args: dict) -> dict:
 
     st = torch.as_tensor(args["state"], **_F64)          # (12, n, K)
     fc = torch.as_tensor(args["forcing"], **_F64)        # (4, n, K)
+    rho_d = torch.as_tensor(args["rho_d"], **_F64)      # frozen dry density (n,K)
     xland = torch.as_tensor(args["xland"], **_F64)
     y_bt = torch.as_tensor(args["y_bt"], **_F64)
     mask = torch.as_tensor(args["mask"], **_F64)
@@ -68,7 +71,8 @@ def _allsky_columns_worker(args: dict) -> dict:
         fcol = Forcing(rho=torch.flip(fc[0, i], [-1]), pii=torch.flip(fc[1, i], [-1]),
                        p=torch.flip(fc[2, i], [-1]) / 100.0,
                        delz=torch.flip(fc[3, i], [-1]))
-        prof = model_to_rttov_tensors(leaves, fcol, pcfg, xland=xland[i],
+        col_cfg = pcfg._replace(rho_d=torch.flip(rho_d[i], [-1]))
+        prof = model_to_rttov_tensors(leaves, fcol, col_cfg, xland=xland[i],
                                       ncmin_land=args.get("ncmin_land", 0.0),
                                       ncmin_sea=args.get("ncmin_sea", 0.0))
         p_top = fcol.p[0].reshape(1)
@@ -76,14 +80,12 @@ def _allsky_columns_worker(args: dict) -> dict:
                                     p_top, octaves=1.0).squeeze(0)
         ql = _blend_above_model_top(prof.q_lay.unsqueeze(0), q_ref, prof.p_lay,
                                     p_top, octaves=4.0).squeeze(0)
-        above = (prof.p_lay < p_top).double().detach()
         case_dir = f"{args['case_root']}/w{args['worker_id']}_{i}"
         try:
             bt_i, rq_i = RttovObsOp.apply(
                 make_live_run_k(case_dir),
                 icfg, tl, ql, None, prof.p_half,
-                prof.clw * (1 - above), prof.ciw * (1 - above),
-                prof.deff_liq, prof.deff_ice, prof.cfrac)
+                prof.clw, prof.ciw, prof.deff_liq, prof.deff_ice, prof.cfrac)
         finally:
             # 디스크 고갈 방지 — 실패 경로 포함(finally; 재검토 #6): K는
             # forward에서 ctx.k_dict로 파싱 완료라 케이스(~14MB)는 즉시 삭제
@@ -134,8 +136,13 @@ def sharded_allsky(state: "State", forcing: "Forcing", cidx: torch.Tensor,
     oracle_root. pool을 주면 재사용(스폰 비용 상각), 아니면 1회용 생성.
     """
     import multiprocessing as mp
+    from ..rttov_bridge import require_dry_air_density
 
     n = int(cidx.numel())
+    if "rho_d" not in rttov_cfg:
+        raise ValueError("rttov_cfg requires frozen background rho_d on the full model grid")
+    rho_d = require_dry_air_density(
+        torch.as_tensor(rttov_cfg["rho_d"], **_F64), state.qv)
     st = torch.stack(list(state))[:, cidx].numpy()          # (12, n, K)
     fc = torch.stack(list(forcing))[:, cidx].numpy()
     chunks = np.array_split(np.arange(n), n_workers)
@@ -144,6 +151,7 @@ def sharded_allsky(state: "State", forcing: "Forcing", cidx: torch.Tensor,
         if len(ch) == 0:
             continue
         jobs.append(dict(rttov_cfg, state=st[:, ch], forcing=fc[:, ch],
+                         rho_d=rho_d[cidx][ch].numpy(),
                          xland=xland[cidx][ch].numpy(),
                          y_bt=y_bt[cidx][ch].numpy(), mask=mask[cidx][ch].numpy(),
                          case_root=case_root, worker_id=w, grad=grad,

@@ -1,8 +1,8 @@
 """Phase 3 (all-sky) -- symmetric cloud observation error + IR-10ch channel gate.
 
 The symmetric cloud-amount obs error (Okamoto 2014): sigma ramps sigma_clr->sigma_cld
-over CA=(|B-Bclr|+|O-Bclr|)/2. It is a DETACHED weighting (no ghost gradient into
-lambda_BT). The IR gate masks the solar channels (IR-10ch first).
+over CA=(|B-Bclr|+|O-Bclr|)/2. A frozen background B supplies the weighting for
+the inner objective. The IR gate masks the solar channels (IR-10ch first).
 """
 import pytest
 import torch
@@ -35,9 +35,9 @@ def test_symmetric_error_ramp_monotone():
     assert bool((s[1:] >= s[:-1]).all())                  # monotone non-decreasing
 
 
-def test_sigma_is_detached_no_ghost_gradient():
-    """sigma(CA) depends on B=bt_hat, but is DETACHED: the loss gradient w.r.t. bt_hat
-    must equal the static-sigma formula m·psi'(r)/sigma -- NO dsigma/dB ghost term."""
+def test_sigma_is_detached_fixed_weight_gradient():
+    """Construct weights once, then differentiate the fixed-weight objective.
+    This does not test a composite objective that recomputes sigma for each B."""
     bt_clear = torch.full((1, 3), 250.0, dtype=F64)
     bt_obs = torch.tensor([[248.0, 270.0, 200.0]], dtype=F64)
     bt_hat = torch.tensor([[251.0, 285.0, 240.0]], dtype=F64, requires_grad=True)

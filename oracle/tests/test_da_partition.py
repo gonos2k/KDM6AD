@@ -47,7 +47,7 @@ def _mk_state() -> State:
         qi=_t2(2.0e-4, 0.0), qs=_t2(1.0e-4, 5.0e-5),
         qg=_t2(5.0e-5, 1.0e-5), nccn=_t2(1.0e9, 1.0e9),
         nc=_t2(1.0e8, 1.0e8), ni=_t2(5.0e7, 1.0e8),
-        nr=_t2(1.0e4, 1.0e3), bg=_t2(0.0, 0.0),
+        nr=_t2(1.0e4, 1.0e3), bg=_t2(2.0e-7, 4.0e-8),  # rho_g=250
     )
 
 
@@ -345,7 +345,7 @@ def test_partition_spec_fingerprint():
     assert f1 != PartitionSpec(alpha_total=0.4).fingerprint()
     assert f1 != PartitionSpec(sigma_scale=0.1).fingerprint()
     d = PartitionSpec().as_dict()
-    assert d["version"] == 2                # v2 = dimensionless-w metric
+    assert d["version"] == 3                # v2 = dimensionless-w metric
     assert d["alpha_total"] == 0.5
     assert d["sigma_scale"] == 0.25
     assert d["control_units"] == "dimensionless"
@@ -1019,3 +1019,36 @@ def test_composed_latent_second_order_and_order_dependent():
     fwd = apply_partition_chain(y, f, w_full, caps)
     assert float(fwd.th[0, c]) != float(rev.th[0, c])
     assert abs(float(fwd.th[0, c] - rev.th[0, c])) < 10.0 * abs(err_d)
+
+
+def test_fixed_volume_caps_close_density_counterexample():
+    xb = _mk_state()
+    qg = torch.full_like(xb.qg, 1.e-4)
+    xb = xb._replace(qs=torch.full_like(xb.qs, .001), qg=qg, bg=qg / 850.)
+    caps = build_partition_caps(xb, PartitionSpec())
+    fc = _mk_forcing(xb)
+    for control in (1., 1.e9, -1., -1.e9):
+        w = torch.zeros_like(caps.sigma)
+        w[3] = control
+        out = apply_partition_chain(xb, fc, w, caps)
+        assert torch.equal(out.bg, xb.bg)
+        assert bool(((out.qg >= 100. * xb.bg) & (out.qg <= 900. * xb.bg)).all())
+        assert torch.allclose(out.qs + out.qg, xb.qs + xb.qg, rtol=2e-16, atol=0.)
+
+
+def test_invalid_graupel_pair_deactivates_without_repair():
+    xb = _mk_state()._replace(bg=torch.zeros_like(_mk_state().bg))
+    caps = build_partition_caps(xb, PartitionSpec())
+    assert not bool(caps.active[3].any())
+    w = torch.zeros_like(caps.sigma, requires_grad=True)
+    out = apply_partition_chain(xb, _mk_forcing(xb), w, caps)
+    assert torch.equal(out.qg, xb.qg) and torch.equal(out.bg, xb.bg)
+    grad = torch.autograd.grad(out.qg.sum(), w)[0]
+    assert torch.equal(grad[3], torch.zeros_like(grad[3]))
+
+
+def test_partition_rejects_diagonal_volume_control():
+    from kdm6.da_partition import validate_conserving_sigma
+    zero = State(*(torch.zeros_like(x) for x in _mk_state()))
+    with pytest.raises(ValueError, match="bg"):
+        validate_conserving_sigma(zero._replace(bg=torch.ones_like(zero.bg)))

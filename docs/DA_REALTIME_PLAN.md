@@ -310,21 +310,29 @@ bitwise가 12h×np4로 검증된 바로 그 구간에서 실관측 DA를 수행�
 ### 6.3 체계 재설계 — 관측 전처리의 정식 단계화 (사용자 지시, 2026-07-07)
 
 원칙: **자료동화는 수치모델 도메인에서 수행된다.** 위성 관측은 동화·검증 이전에
-모델 격자·해상도로 전처리되어야 하며, 하류(J·adjoint·검증·영상)는 전처리
-산출물만 소비한다.
+모델 격자·해상도로 전처리되어야 한다. 다만 이 문서의 superob 설계는 현재
+실시간 runner가 이미 연결되었다는 기록이 아니라, 별도 오프라인 전처리 경로의
+계약과 계획이다. 현재 `oracle/scripts/run_fulldomain_lc05.py`는 KO 슬롯을 읽은
+뒤 `payload_to_column_obs`를 호출하여 최근접 단일 화소를 모델 컬럼에 배정하고
+그 `ColumnObs`를 `run_fulldomain_analysis`에 전달한다. 이 경로는 `ObsPayload`의
+`valid_time_utc`를 보존하며, SuperObs archive를 읽거나 averaged superob를
+동화 입력으로 사용하지 않는다.
 
 ```
 [1] 어댑터    gk2a_l1b(KO)/gk2a_l1b_fd(FD) → ObsPayload (원해상도)
-[2] 전처리    superob.py — 전 모델도메인(234×282) 모델격자 관측장, 슬롯별 저장
+[2] 오프라인/계획 전처리    superob.py — 전 모델도메인(234×282) 모델격자 관측장, 슬롯별 저장
               · superob: 셀당 quality-0 화소 평균, min_pixels 미달 셀 quality=1
               · mapping 전환 방식: 화소→셀 사상은 시불변 — 1회 구축·저장 후
                 슬롯당 0.1 s (haversine 재계산 188 s 대비 1,880×; bitwise 동일 검증)
               · 실측: 2 km 전화소(413,716) → IR105 전 도메인 커버 100%
-[3] 동화      SuperObs만 소비 (최근접-단일화소 payload_to_column_obs는 점검증용)
-[4] 검증·영상  같은 SuperObs·같은 모델격자 (O−B/O−A, 채널별 반영률, 2-D 비교)
+[3] 계획 동화  SuperObs만 소비 (현재 runner의 최근접-단일화소 경로와 별도)
+[4] 계획 검증·영상  같은 SuperObs·같은 모델격자 (O−B/O−A, 채널별 반영률, 2-D 비교)
 ```
 
-산출물: host/lc05_da_run/obs_products/{gk2a_superob_<ts>.pt, ko_to_lc05_mapping.pt}
+계획 산출물: host/lc05_da_run/obs_products/{gk2a_superob_<ts>.pt, ko_to_lc05_mapping.pt}
+SuperObs archive에는 원자료의 `valid_time_utc`를 저장한다. 이전 archive에 이
+키가 없으면 loader는 값을 `None`으로 유지하며, 날짜 정합성이 필요한 하류
+consumer는 기존 date guard에서 명시적 offset 없이 이를 거부해야 한다.
   - **superob 현업-시간 달성** (지시 반영, 2026-07-07): brute-force 전쌍
     haversine(187s)을 KD-트리(단위구면 3-D; 현거리≡대원거리 단조)로 교체하고
     전 경로를 O(N log B)로 리팩터링 — **끝-대-끝 슬롯당 1.3s (사상 재사용 시

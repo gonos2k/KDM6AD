@@ -182,7 +182,7 @@ def test_regime2_live_bootstrap_lc05(tmp_path):
                 np.asarray(fixture_layer_pressure(), dtype=float), **_F64),
             rttov_level_pressure=torch.as_tensor(
                 np.asarray(_fixture_p_half(), dtype=float), **_F64),
-            cloud=True),
+            cloud=True, rho_d=fc.rho / (1 + xb.qv)),
         input_cfg=RttovInputConfig(coef_id="ami_cloud", channels=_CHANNELS),
         obs_sigma=1.0,
         t_ref=torch.as_tensor(np.asarray(tr, dtype=float), **_F64),

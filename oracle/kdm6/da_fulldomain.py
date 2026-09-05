@@ -307,13 +307,13 @@ def _gate_final_audited(rep: dict, *, require_w: bool = False,
 
 def _gate_conserving_contract(rep: dict) -> bool:
     """The conserving contract held in the recorded configuration: the
-    partition record round-trips EXACTLY through PartitionSpec (v2 schema
-    with control_units/sigma_rule/channel order, int version) with a
-    matching recomputed fingerprint, and every mass hydrometeor diagonal
+    partition record round-trips EXACTLY through the current PartitionSpec
+    (including density caps, channel order and integer version) with a
+    matching recomputed fingerprint, and every mass/volume hydrometeor diagonal
     control was OFF (plain-int zero). False on missing/malformed records."""
     try:
         spec_d = rep["partition"]["spec"]
-        if type(spec_d.get("version")) is not int or spec_d["version"] != 2:
+        if type(spec_d.get("version")) is not int:
             return False
         ref = PartitionSpec(alpha_total=spec_d["alpha_total"],
                             sigma_scale=spec_d["sigma_scale"])
@@ -323,7 +323,7 @@ def _gate_conserving_contract(rep: dict) -> bool:
             return False
         nc = rep["cvt"]["n_controlled"]
         return all(type(nc[f]) is int and nc[f] == 0
-                   for f in ("qc", "qr", "qi", "qs", "qg"))
+                   for f in ("qc", "qr", "qi", "qs", "qg", "bg"))
     except (KeyError, TypeError, ValueError, AttributeError):
         return False
 
@@ -406,8 +406,18 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
     부트스트랩 항 합성 (P0-2; 동결 구성은 서명에 합성).
     """
     from .da_regime2 import pseudo_rh_term
+    from .rttov_bridge import freeze_dry_air_density, require_dry_air_density
 
     nch = y_bt.shape[1]
+    # Freeze the original background air-mass measure, NOT the slot/trial qv.
+    # Copy caller-supplied data so later config mutation cannot change H inside
+    # the supposedly fixed objective. Include it in the operator signature.
+    rho_d = (freeze_dry_air_density(xb_sub, fc_sub) if "rho_d" not in rttov_cfg
+             else torch.as_tensor(rttov_cfg["rho_d"], **_F64).detach().clone())
+    require_dry_air_density(rho_d, xb_sub.qv)
+    if not torch.equal(rho_d, freeze_dry_air_density(xb_sub, fc_sub)):
+        raise ValueError("rttov_cfg rho_d must come from this window's background and forcing")
+    rttov_cfg = dict(rttov_cfg, rho_d=rho_d.numpy())
     x_probe = xb_sub if x_slot_bg is None else x_slot_bg
     with torch.no_grad():
         _, rq_clear = _clear_bt_chunked(_take(x_probe, clear_pos),
@@ -426,6 +436,7 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
     h.update(cloudy_pos.numpy().tobytes() + clear_pos.numpy().tobytes())
     h.update(f"|{clear_cfg.input_cfg.coef_id}|{rttov_cfg['coef_id']}|".encode())
     h.update(f"|t={obs_time}|huber={huber_delta}|".encode())
+    h.update(b"|rho_d|" + rho_d.numpy().tobytes())
     if pseudo is not None:
         h.update(b"|pseudo|" + pseudo["cols"].to(torch.int64).numpy().tobytes()
                  + pseudo["target"].to(torch.float64).numpy().tobytes()
@@ -521,6 +532,10 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     import numpy as np
 
     t0 = time.time()
+    if getattr(co, "bias", None) is not None or getattr(co, "channel_gate", None) is not None:
+        raise ValueError(
+            "run_fulldomain_analysis does not consume ColumnObs.bias/channel_gate; "
+            "apply these fields in an obs-eval adapter before entering this driver")
     jset = select_membership(fr, co, boundary=boundary)
     if jset.numel() == 0:
         raise ValueError("empty J-subspace — no interior column carries a "
@@ -640,6 +655,8 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
             f"partition {n_mc_precap} cloudy / {n_cl_precap} clear "
             "before caps) — nothing to minimize")
     xb, fc, xland = _take(xb, keep), _take(fc, keep), xland[keep]
+    from .rttov_bridge import freeze_dry_air_density
+    rttov_cfg["rho_d"] = freeze_dry_air_density(xb, fc).numpy()
     x_slot_bg = _take(x_slot_bg, keep)
     y_bt, y_rq = y_bt[keep], y_rq[keep]
     model_cloudy_pos = torch.arange(mc.numel())

@@ -116,7 +116,7 @@ def _cloud_cfg():
     pc = RttovProfileConfig(gas_units=2, qv_convention="mixing_ratio_kgkg_dry",
                             rttov_layer_pressure=None,
                             rttov_level_pressure=torch.tensor([2.0e4, 6.0e4, 9.5e4], dtype=F64),
-                            cloud=True)
+                            cloud=True, rho_d=_forcing_col().rho / (1 + _cloudy_col().qv))
     return ObsOperatorConfig(profile_cfg=pc,
                              input_cfg=RttovInputConfig(coef_id="ami", channels=(1, 2, 3)),
                              sigma=20.0, connected_fields=ALL_SKY_CONNECTED)
@@ -179,6 +179,36 @@ def test_clear_sky_apply_still_6_arg():
 def _obs(cloudy_prof_bt):
     return {"bt": (cloudy_prof_bt - 1.0).detach(),
             "obs_quality": torch.zeros(1, NCH, dtype=F64)}
+
+
+def test_single_column_callback_clears_cloud_above_model_top():
+    cfg = _cloud_cfg()
+    cfg = cfg._replace(profile_cfg=cfg.profile_cfg._replace(
+        rttov_layer_pressure=torch.tensor([1e4, 3e4, 9e4], dtype=F64),
+        rttov_level_pressure=torch.tensor([5e3, 2e4, 6e4, 1e5], dtype=F64)))
+    seen = []
+
+    def run_k(rin):
+        seen.append(rin.profile)
+        return _mock_run_k(rin)
+
+    o = {"bt": torch.zeros((1, NCH), dtype=F64)}
+    cov = obs_adjoint_callback(0, _cloudy_state(),
+        schedule=ObsSchedule(by_step={0: [o]}), cfg=cfg,
+        forcings=[_forcing()], run_k=run_k)
+    assert all(bool(torch.isfinite(f).all()) for f in cov)
+    for key in ("HYDRO6", "HYDRO7", "CFRAC"):
+        assert seen[0][key][0, 0] == 0.
+    assert seen[0]["HYDRO7"][0, 1] > 0.
+    assert seen[0]["CFRAC"][0, 1] > 0.
+    # Masking is part of H: a top-only content loss has zero cloud-content
+    # derivative, while the same content at the supported top remains live.
+    x = _cloudy_col()._replace(qi=_cloudy_col().qi.clone().requires_grad_(True))
+    prof = model_to_rttov_tensors(x, _forcing_col(), cfg.profile_cfg)
+    above_grad, = torch.autograd.grad(prof.ciw[0], x.qi, retain_graph=True)
+    top_grad, = torch.autograd.grad(prof.ciw[1], x.qi)
+    assert torch.equal(above_grad, torch.zeros_like(above_grad))
+    assert top_grad[0] > 0.
 
 
 def test_full_cloud_closure_grad_anchor():
@@ -253,7 +283,7 @@ def test_callback_uses_symmetric_obs_error():
     # CA model: |O-Bclr|=30 -> CA~15 > ca_cld -> sigma=sigma_cld=20 (10x the static 2).
     model = SymmetricObsError(sigma_clr=2.0, sigma_cld=20.0, ca_clr=1.0, ca_cld=10.0)
     cfg_ca = cfg_static._replace(error_model=model)
-    o_ca = {**o_static, "bt_clear": base_bt}
+    o_ca = {**o_static, "bt_clear": base_bt, "bt_background": base_bt}
     cov_ca = obs_adjoint_callback(0, _cloudy_state(), schedule=ObsSchedule(by_step={0: [o_ca]}),
                                   cfg=cfg_ca, forcings=[_forcing()], run_k=_mock_run_k)
     assert torch.isfinite(cov_ca.th).all()
@@ -269,7 +299,7 @@ def test_callback_rejects_inf_bt_clear_in_kept_channel():
     bt_clear = torch.zeros(1, NCH, dtype=F64)
     bt_clear[0, 1] = float("inf")                          # inf in a kept channel
     o = {"bt": torch.zeros(1, NCH, dtype=F64), "obs_quality": torch.zeros(1, NCH, dtype=F64),
-         "bt_clear": bt_clear}
+         "bt_clear": bt_clear, "bt_background": torch.zeros(1, NCH, dtype=F64)}
     with pytest.raises(ValueError, match="KEPT channel"):
         obs_adjoint_callback(0, _cloudy_state(), schedule=ObsSchedule(by_step={0: [o]}),
                              cfg=cfg, forcings=[_forcing()], run_k=_mock_run_k)
@@ -361,7 +391,7 @@ def test_callback_rejects_error_model_with_kept_solar():
         obs_adjoint_callback(0, _cloudy_state(), schedule=ObsSchedule(by_step={0: [o]}),
                              cfg=cfg, forcings=[_forcing()], run_k=_mock_run_k)
     # gate the solar channel out -> the error_model weights only IR channels -> OK.
-    o_gated = dict(o, channel_gate=torch.tensor([[0.0, 1.0, 1.0]], dtype=F64))
+    o_gated = dict(o, bt_background=torch.zeros(1, NCH, dtype=F64), channel_gate=torch.tensor([[0.0, 1.0, 1.0]], dtype=F64))
     cov = obs_adjoint_callback(0, _cloudy_state(), schedule=ObsSchedule(by_step={0: [o_gated]}),
                                cfg=cfg, forcings=[_forcing()], run_k=_mock_run_k)
     assert isinstance(cov, State)
@@ -398,3 +428,38 @@ def test_backward_rejects_nonfinite_injected_k():
                                  t, q, None, ph)
     with pytest.raises(ValueError, match="non-finite"):
         torch.autograd.grad(bt_hat.sum(), [t, q])
+
+
+def test_symmetric_callback_requires_frozen_background():
+    from kdm6.obs.obs_loss import SymmetricObsError
+    cfg = _cloud_cfg()._replace(error_model=SymmetricObsError(1., 10., 0., 10.))
+    o = {"bt": torch.zeros(1, NCH, dtype=F64),
+         "obs_quality": torch.zeros(1, NCH, dtype=F64),
+         "bt_clear": torch.zeros(1, NCH, dtype=F64)}
+    with pytest.raises(ValueError, match="bt_background"):
+        obs_adjoint_callback(0, _cloudy_state(), schedule=ObsSchedule(by_step={0: [o]}),
+                             cfg=cfg, forcings=[_forcing()], run_k=_mock_run_k)
+
+
+def test_symmetric_callback_matches_fixed_background_objective_fd():
+    from kdm6.obs.obs_loss import SymmetricObsError, symmetric_obs_error
+    cfg = _cloud_cfg()._replace(error_model=SymmetricObsError(1., 10., 0., 10.))
+    base = _bt_torch(model_to_rttov_tensors(_cloudy_col(), _forcing_col(),
+                                            cfg.profile_cfg)).detach()
+    o = {"bt": base + 1., "obs_quality": torch.zeros_like(base),
+         "bt_clear": base - 4., "bt_background": base}
+    sched = ObsSchedule(by_step={0: [o]})
+    x = _cloudy_state()
+    cov = obs_adjoint_callback(0, x, schedule=sched, cfg=cfg,
+                               forcings=[_forcing()], run_k=_mock_run_k)
+    fixed_sigma = symmetric_obs_error(o["bt_background"], o["bt"], o["bt_clear"],
+                                      cfg.error_model, mask=torch.ones_like(base))
+    def value(offset):
+        trial = x._replace(th=x.th + offset)
+        col = State(*(f.squeeze(0) for f in trial))
+        bt = _bt_torch(model_to_rttov_tensors(col, _forcing_col(), cfg.profile_cfg))
+        return compute_obs_loss(bt, o, torch.ones_like(base), fixed_sigma,
+                                delta=cfg.huber_delta)
+    eps = 1.0e-4
+    fd = (value(eps) - value(-eps)) / (2 * eps)
+    assert torch.allclose(cov.th.sum(), fd, rtol=2e-6, atol=1e-9)

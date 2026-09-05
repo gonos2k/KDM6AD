@@ -1040,7 +1040,8 @@ def test_live_cloud_full_model_closure_nc_ni_through_deff(tmp_path):
 
     profile_cfg = RttovProfileConfig(
         gas_units=2, qv_convention="mixing_ratio_kgkg_dry", rttov_layer_pressure=None,
-        rttov_level_pressure=torch.tensor(ph, dtype=f64), cloud=True)
+        rttov_level_pressure=torch.tensor(ph, dtype=f64), cloud=True,
+        rho_d=forcing.rho.detach() / (1 + state.qv.detach()))
     prof = model_to_rttov_tensors(state, forcing, profile_cfg)
     input_cfg = RttovInputConfig(coef_id="ami_cloud", channels=_CHANNELS)
     run_k = make_live_run_k(tmp_path / "cloud_case")

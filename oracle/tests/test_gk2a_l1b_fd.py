@@ -20,6 +20,7 @@ import numpy as np
 import pytest
 import torch
 
+from kdm6.obs.gk2a_l1b import AMI_CHANNELS
 from kdm6.obs.gk2a_l1b_fd import (find_domain_window, geos_latlon,
                                   fd_slot_files, read_fd_slot)
 
@@ -72,6 +73,34 @@ def test_read_fd_slot_rejects_bad_names(tmp_path):
     a.touch()
     with pytest.raises(ValueError, match="not an FD 2km"):
         read_fd_slot([a])
+
+
+def test_read_fd_slot_masks_filled_dn_and_propagates_timestamp(tmp_path):
+    nc4 = pytest.importorskip("netCDF4")
+    path = tmp_path / "gk2a_ami_le1b_ir105_fd020ge_202507190100.nc"
+    cal = dict(DN_to_Radiance_Gain=-0.0198196955025196,
+               DN_to_Radiance_Offset=161.580139160156,
+               Teff_to_Tbb_c0=-0.142866448475177,
+               Teff_to_Tbb_c1=1.00064069572049,
+               Teff_to_Tbb_c2=-5.50443294960498e-07,
+               Plank_constant_h=6.62606957e-34, light_speed=299792458.0,
+               Boltzmann_constant_k=1.3806488e-23,
+               channel_center_wavelength="10.5")
+    with nc4.Dataset(path, "w") as ds:
+        ds.createDimension("dim_image_y", 2); ds.createDimension("dim_image_x", 2)
+        v = ds.createVariable("image_pixel_values", "u2",
+                             ("dim_image_y", "dim_image_x"), fill_value=65535)
+        v[:] = np.ma.array([[3000, 3001], [3002, 3003]],
+                           mask=[[False, True], [False, False]])
+        for key, value in dict(_G, coff=0.5, loff=0.5).items():
+            ds.setncattr(key, value)
+        for key, value in cal.items():
+            ds.setncattr(key, value)
+    pl = read_fd_slot([path], bbox=(-90.0, 90.0, -180.0, 180.0), stride=1)
+    j = AMI_CHANNELS.index("ir105")
+    assert pl.valid_time_utc == "202507190100"
+    assert int((pl.obs_quality[:, j] == 1.0).sum()) >= 1
+    assert bool((pl.obs_quality[:, j] == 0.0).any())
 
 
 @needs_fd

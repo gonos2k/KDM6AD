@@ -159,11 +159,16 @@ def read_ko_slot(files: Sequence[str | Path], cal_table: dict,
         import netCDF4                       # 검증 뒤로 지연 — 파일명/타임스탬프
         ds = netCDF4.Dataset(str(path))
         try:
-            raw = np.ma.filled(ds.variables["image_pixel_values"][:], 0).astype(np.uint16)
+            raw_ma = ds.variables["image_pixel_values"][:]
+            missing = np.ma.getmaskarray(raw_ma)
+            raw = np.ma.filled(raw_ma, 0).astype(np.uint16)
             if lat is None:
                 attrs = {a: ds.getncattr(a) for a in ds.ncattrs()}
                 lat, lon = ko_grid_latlon(attrs)
             bt, q = dn_to_bt(raw, cal_table["channels"][ch])
+            # Fill values must never become quality-0 observations. Keep the
+            # valid DN path unchanged and mark only masked pixels unusable.
+            q = np.where(missing, 1.0, q)
             bt_all[ch], q_all[ch] = bt, q
         finally:
             ds.close()

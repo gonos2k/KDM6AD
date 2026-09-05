@@ -94,3 +94,32 @@ def test_xland_correct_shape_accepted():
     out2 = _kdm6_pure(s, f, make_parameters(), dt=60.0,
                       xland=xland.reshape(3, 1))
     assert out2.th.shape == s.th.shape
+
+
+def test_forcing_must_match_state_columns_without_implicit_broadcast():
+    """A one-column forcing must not silently feed every state column."""
+    s, f = _mk(B=3, K=4)
+    shared = Forcing(*(value[:1] for value in f))
+    with pytest.raises(ValueError, match=r"forcing\.rho shape"):
+        _kdm6_pure(s, shared, make_parameters(), dt=60.0)
+
+    # Intentional sharing is explicit: expand every field to the exact state
+    # shape, retaining a zero-stride view without asking the runtime to infer it.
+    expanded = Forcing(*(value.expand_as(s.th) for value in shared))
+    out = _kdm6_pure(s, expanded, make_parameters(), dt=60.0)
+    assert out.th.shape == s.th.shape
+
+
+def test_state_and_forcing_fields_require_consistent_shape_dtype_device():
+    s, f = _mk(B=2, K=3)
+    with pytest.raises(ValueError, match=r"state\.qv shape"):
+        _kdm6_pure(s._replace(qv=s.qv[:1]), f, make_parameters(), dt=60.0)
+    with pytest.raises(ValueError, match="dtype/device"):
+        _kdm6_pure(s, f._replace(delz=f.delz.float()), make_parameters(), dt=60.0)
+
+
+@pytest.mark.parametrize("shape", [(0, 3), (2, 0)])
+def test_state_forcing_boundary_requires_positive_batch_and_level_dimensions(shape):
+    s, f = _mk(*shape)
+    with pytest.raises(ValueError, match=r"positive \(B, K\)"):
+        _kdm6_pure(s, f, make_parameters(), dt=60.0)

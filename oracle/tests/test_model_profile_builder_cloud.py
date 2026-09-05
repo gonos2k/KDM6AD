@@ -43,7 +43,7 @@ def _mk_forcing():
 
 def _cfg(cloud=True, layer_p=None):
     return RttovProfileConfig(gas_units=2, qv_convention="mixing_ratio_kgkg_dry",
-                              rttov_layer_pressure=layer_p, cloud=cloud)
+                              rttov_layer_pressure=layer_p, cloud=cloud, rho_d=_mk_forcing().rho / (1 + _mk_col().qv))
 
 
 def test_clear_sky_path_unchanged():
@@ -79,7 +79,7 @@ def test_content_and_deff_match_bridge():
     p = model_to_rttov_tensors(col, f, _cfg(cloud=True))
     col2 = State(*(x.unsqueeze(0) for x in col))
     f2 = Forcing(*(x.unsqueeze(0) for x in f))
-    cp = rttov_cloud_profile(col2, f2)
+    cp = rttov_cloud_profile(col2, f2, rho_d=_cfg().rho_d.unsqueeze(0))
 
     assert torch.allclose(p.clw, cp.clw.squeeze(0))
     assert torch.allclose(p.ciw, (cp.ciw + cp.snow).squeeze(0))          # qi+qs ice

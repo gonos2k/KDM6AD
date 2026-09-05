@@ -21,6 +21,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Sequence
 
+import numpy as np
 import torch
 
 from .da_window import WindowConfig
@@ -141,16 +142,65 @@ def build_shard_specs(x_truth: State, x_background: State, forcing: Forcing,
                       q_blend_octaves: float = 4.0) -> list:
     """(B_total, K) 입력 + 분할 인덱스 리스트(예: da_shard.compose_shards 출력)
     → ShardSpec 리스트. col_idx는 [0, B_total) 재조립 인덱스 그 자체."""
+    B, K = x_truth.th.shape
+    expected = (B, K)
+    for name, state in (("x_truth", x_truth), ("x_background", x_background),
+                        ("forcing", forcing)):
+        for field, value in state._asdict().items():
+            if value.shape != expected:
+                raise ValueError(
+                    f"{name}.{field} must have full shape {expected}, got {tuple(value.shape)}")
+    if not isinstance(profile_kwargs, dict):
+        raise TypeError("profile_kwargs must be a dict")
+    if not isinstance(input_kwargs, dict):
+        raise TypeError("input_kwargs must be a dict")
+    rho_d = profile_kwargs.get("rho_d")
+    if rho_d is not None:
+        if not isinstance(rho_d, torch.Tensor):
+            raise ValueError("profile_kwargs.rho_d must be a fixed torch.Tensor")
+        if rho_d.shape != x_truth.qv.shape:
+            raise ValueError(
+                f"profile_kwargs.rho_d must have full shape {expected}, "
+                f"got {tuple(rho_d.shape)}")
+        if rho_d.device != x_truth.qv.device or rho_d.dtype != x_truth.qv.dtype:
+            raise ValueError("profile_kwargs.rho_d must match state dtype and device")
+        if rho_d.requires_grad:
+            raise ValueError("profile_kwargs.rho_d must be fixed (requires_grad=False)")
+        if not bool(torch.isfinite(rho_d).all()) or bool((rho_d <= 0).any()):
+            raise ValueError("profile_kwargs.rho_d must be finite and positive")
     specs = []
     for i, ci in enumerate(shard_indices):
+        if not isinstance(ci, torch.Tensor) or ci.ndim != 1:
+            raise ValueError(f"shard {i} col_idx must be a 1-D integer tensor")
+        if ci.dtype not in (torch.int32, torch.int64):
+            raise ValueError(f"shard {i} col_idx must be an integer tensor")
+        if ci.device != x_truth.th.device:
+            raise ValueError(f"shard {i} col_idx must be on the state device")
+        if ci.numel() and (int(ci.min()) < 0 or int(ci.max()) >= B):
+            raise ValueError(f"shard {i} col_idx outside [0, {B})")
+        if ci.unique().numel() != ci.numel():
+            raise ValueError(f"shard {i} col_idx contains duplicates")
+        # Index order is meaningful for reassembly. Preserve all non-density
+        # configuration while giving each worker an independent tensor copy.
+        shard_profile = {}
+        for key, value in profile_kwargs.items():
+            if isinstance(value, torch.Tensor):
+                shard_profile[key] = value.detach().clone()
+            else:
+                shard_profile[key] = value
+        if rho_d is not None:
+            shard_profile["rho_d"] = rho_d.index_select(0, ci).detach().clone()
+        shard_input = {key: (value.detach().clone()
+                             if isinstance(value, torch.Tensor) else value)
+                       for key, value in input_kwargs.items()}
         sub = lambda s: type(s)(**{k: v[ci] for k, v in s._asdict().items()})
         specs.append(ShardSpec(
-            shard_id=i, b_total=int(x_truth.th.shape[0]), col_idx=ci.clone(),
+            shard_id=i, b_total=B, col_idx=ci.clone(),
             x_truth=sub(x_truth), x_background=sub(x_background),
             forcing=sub(forcing),
             n_steps=n_steps, dt=dt, obs_times=tuple(int(t) for t in obs_times),
             case_root=str(Path(case_root) / f"shard{i:03d}"),
-            profile_kwargs=profile_kwargs, input_kwargs=input_kwargs,
+            profile_kwargs=shard_profile, input_kwargs=shard_input,
             obs_sigma=obs_sigma, t_ref=t_ref, q_ref=q_ref,
             q_blend_octaves=q_blend_octaves))
     return specs

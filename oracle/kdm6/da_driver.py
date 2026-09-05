@@ -80,6 +80,10 @@ def batched_clear_bt(x_t: State, forcing: Forcing, obs_cfg: OsseObsConfig):
 
     반환: (bt (B,nch), rad_quality, leaves(State; th/qv requires_grad)).
     """
+    if getattr(obs_cfg.profile_cfg, "cloud", False):
+        raise ValueError(
+            "batched_clear_bt is clear-sky only; profile_cfg.cloud=True is "
+            "unsupported here")
     from .obs.model_profile_builder import model_to_rttov_tensors
     from .obs.rttov_input_builder import pack_rttov_input  # noqa: F401 (계약 문서화)
     from .obs.rttov_obs_operator import RttovObsOp
@@ -119,11 +123,17 @@ def batched_allsky_bt(x_t: State, forcing: Forcing, obs_cfg: OsseObsConfig,
     """
     from .obs.model_profile_builder import model_to_rttov_tensors
     from .obs.rttov_obs_operator import RttovObsOp
+    from .rttov_bridge import require_dry_air_density
 
     if not getattr(obs_cfg.profile_cfg, "cloud", False):
         raise ValueError(
             "batched_allsky_bt requires profile_cfg.cloud=True — a clear-sky "
             "profile config would silently omit the hydrometeor inputs")
+    # Config density is frozen on the input MODEL batch/grid. Apply exactly the
+    # same column selection and vertical reversal as the corresponding state.
+    rho_d = require_dry_air_density(getattr(obs_cfg.profile_cfg, "rho_d", None), x_t.qv)
+    if obs_cfg.profile_cfg.rttov_layer_pressure is None:
+        raise ValueError("batched_allsky_bt requires an explicit RTTOV layer pressure grid")
     leaves = State(*(f.detach().clone().to(torch.float64).requires_grad_(True)
                      for f in x_t))
     flip_forcing = Forcing(rho=_flip(forcing.rho), pii=_flip(forcing.pii),
@@ -134,7 +144,8 @@ def batched_allsky_bt(x_t: State, forcing: Forcing, obs_cfg: OsseObsConfig,
         col = State(*(f[i] for f in flip_leaves))
         fcol = Forcing(*(getattr(flip_forcing, k)[i] for k in Forcing._fields))
         xl = None if xland is None else xland[i]
-        prof = model_to_rttov_tensors(col, fcol, obs_cfg.profile_cfg, xland=xl)
+        pcfg = obs_cfg.profile_cfg._replace(rho_d=_flip(rho_d)[i])
+        prof = model_to_rttov_tensors(col, fcol, pcfg, xland=xl)
         t_lay, q_lay = prof.t_lay, prof.q_lay
         p_top = fcol.p[0].reshape(1)
         if obs_cfg.t_ref is not None:
@@ -144,11 +155,9 @@ def batched_allsky_bt(x_t: State, forcing: Forcing, obs_cfg: OsseObsConfig,
             q_lay = _blend_above_model_top(
                 q_lay.unsqueeze(0), obs_cfg.q_ref, prof.p_lay, p_top,
                 octaves=obs_cfg.q_blend_octaves).squeeze(0)
-        above = (prof.p_lay < p_top).to(torch.float64).detach()   # 모델 상단 위 구름 제거
         bt_i, rq_i = RttovObsOp.apply(
             obs_cfg.run_k, obs_cfg.input_cfg, t_lay, q_lay, None, prof.p_half,
-            prof.clw * (1 - above), prof.ciw * (1 - above),
-            prof.deff_liq, prof.deff_ice, prof.cfrac)
+            prof.clw, prof.ciw, prof.deff_liq, prof.deff_ice, prof.cfrac)
         bts.append(bt_i.reshape(-1).to(torch.float64))
         rqs.append(rq_i.reshape(-1))
     return torch.stack(bts), torch.stack(rqs), leaves
@@ -231,6 +240,10 @@ def run_osse_sensitivity(x_truth: State, x_background: State,
                          window_cfg: WindowConfig, obs_cfg: OsseObsConfig,
                          *, top_k: int = 5) -> OsseReport:
     """OSSE 민감도 사이클 1회: 진실→y 기록, 배경→innovation adjoint."""
+    if getattr(obs_cfg.profile_cfg, "cloud", False):
+        raise ValueError(
+            "run_osse_sensitivity is clear-sky only; profile_cfg.cloud=True is "
+            "unsupported here")
     obs_set = set(int(t) for t in obs_times)
     y_store: dict = {}
     run_da_window(x_truth, forcings,

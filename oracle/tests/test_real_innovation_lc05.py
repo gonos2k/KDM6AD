@@ -177,7 +177,8 @@ def test_real_allsky_beats_clear_on_cloudy_columns(lc05_collocated, tmp_path):
                        pii=torch.flip(fc.pii[i], [-1]),
                        p=torch.flip(fc.p[i], [-1]) / 100.0,
                        delz=torch.flip(fc.delz[i], [-1]))
-        prof = model_to_rttov_tensors(leaves, fcol, pcfg, xland=fr.xland[sel][i])
+        col_cfg = pcfg._replace(rho_d=torch.flip(fc.rho[i] / (1 + x0.qv[i]), [-1]))
+        prof = model_to_rttov_tensors(leaves, fcol, col_cfg, xland=fr.xland[sel][i])
         p_top = fcol.p[0].reshape(1)
         t_lay = _blend_above_model_top(prof.t_lay.unsqueeze(0), ccfg.t_ref,
                                        prof.p_lay, p_top, octaves=1.0).squeeze(0)
@@ -244,7 +245,7 @@ def test_real_allsky_dual_cvt_analysis(lc05_collocated, tmp_path):
                 np.asarray(fixture_layer_pressure(), dtype=float), **_F64),
             rttov_level_pressure=torch.as_tensor(
                 np.asarray(_fixture_p_half(), dtype=float), **_F64),
-            cloud=True),
+            cloud=True, rho_d=fc.rho / (1 + xb.qv)),
         input_cfg=RttovInputConfig(coef_id="ami_cloud", channels=_CHANNELS),
         obs_sigma=1.0,
         t_ref=torch.as_tensor(np.asarray(tr, dtype=float), **_F64),
