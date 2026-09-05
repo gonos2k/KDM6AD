@@ -1,11 +1,18 @@
-# What Arm N leaves against the physical number measure, over a real atmosphere
+# Arm N's matched-transfer coefficient on a dry-density measure
+
+Review scope correction (2026-09-05): “physical” below denotes the dry-density
+weight conditional on interpreting stored number as per dry-air kg. The kernel
+slope's conflicting per-volume requirement remains unresolved (SCIENCE_STATUS.md).
+The coefficients below describe matched/unclipped transfers; actual independently
+capped departures and arrivals require the additional transfer-mismatch term.
+These coefficient statistics alone do not measure a full transport residual.
 
 Arm N closes the OPERATOR's number ledger: its residual collapses to roundoff
 across the density matrix (`G33-NUMBER-010`). That ledger is MOIST --
-`dend(i,k) = den(i,k)` at F:870 -- while the physical column number is taken in
-DRY mass, because `nr` is per kg of dry air (`G33-BASIS-006`). So a gap remains
-by construction, and `G33-BASIS-002` has been holding a decision open about it
-without a size. This is the size.
+`dend(i,k) = den(i,k)` at F:870. If `nr` is interpreted per dry-air kg,
+the column-number measure instead uses dry density. The kernel slope requires
+per-volume number, so that interpretation is conditional, not a settled unit
+contract. This finding measures the profile coefficient under matched transfers.
 
 No kernel change and no freeze-lift. The per-interface coefficient falls out of
 the same identity, with the transfer cancelling, so it is a function of the
@@ -32,15 +39,16 @@ And the two compose exactly:
     1 + eps_legacy_dry = (1 + eps_legacy_moist) * (1 + eps_armn_dry)
 
 verified on the data, not asserted -- max absolute error 4.44e-16 over 2 507 544
-interfaces. So the legacy defect against the physical measure FACTORISES into a
-density term and a moisture term, and Arm N removes exactly the first.
+interfaces. The matched-transfer coefficient factorises into density and
+moisture factors. Independent outflow/inflow caps add a separate mismatch term;
+this factorisation does not describe the full capped residual.
 
 ## Why no published fixture could answer this
 
 Every stream in the archive that carries `qv` carries it UNIFORM in the column.
 Measured across `kdm6ad-g33m-armn` (12 members), `-f64` (135) and `-migrate`
 (144): maximum in-column spread exactly 0.0. Under a uniform profile the
-moisture term is identically 1, the two ledgers differ by a constant per column,
+moisture factor `1 + eps_armn_dry` is identically 1, the two ledgers differ by a constant per column,
 and that constant cancels out of every ratio and every residual-over-start
 figure.
 
@@ -81,7 +89,7 @@ is, and vanishes above it:
 | 95 | 4.63e-06 | 1.07e-01 | -6.02e-08 |
 | 56 | 4.23e-06 | 1.13e-01 | -2.91e-07 |
 
-## The unweighted statistic understates it, and here is by how much
+## Rain-bearing and flux-weighted coefficient statistics
 
 Everything above runs over all 2 507 544 interfaces of the state, and most of
 them carry no rain number at all. A coefficient there is a property of the air,
@@ -104,21 +112,21 @@ Sedimentation moves number DOWNWARD, so an interface whose upper cell is loaded
 and whose lower cell is empty is transport-active and was excluded: the
 published population was 42 % of the right one.
 
-A ratio of medians is not the column defect either. The residual is
-`sum_j F_j eps_j`, so the coefficients are weighted by how much number actually
-crosses. Flux-weighted, both populations give 1.98 %.
+A ratio of medians is not the column residual. Under matched transfers its
+density contribution is `sum_j F_j eps_j`. The historical flux-weighted
+coefficient ratios above are 1.97% and 1.98%; actual capped departures and arrivals
+were not measured by this profile analysis.
 
 And the dry density is now the model's own `mu_d`/`d(eta)` rather than a
 thermodynamic estimate, which moves the median from 1.94 % to 1.92 %.
 
-So the figure to quote is **about 2 % of the legacy per-interface defect, where
-rain number actually moves**, against 0.33 % over all interfaces. About six times larger for rain, because rain
+The recorded coefficient comparison is **about 2% on rain-bearing interfaces**,
+against 0.33% over all interfaces. About six times larger for rain, because rain
 number sits in the moist lower troposphere where the moisture gradient is
 steepest -- which is exactly where the two ledgers differ.
 
-So the sentence below, that Arm N removes "about 99.7 %" of the per-interface
-defect, is the all-interface figure. Where rain number actually is it removes
-98.1 %.
+The complementary 99.7% and 98.1% summaries describe these coefficient ratios;
+they are not measured fractions of physical number creation removed by Arm N.
 
 This also corrects a blocker recorded in `CHECKLIST_review_main_2935fcd2.md`.
 That checklist said no state on this host carried a populated rain-number field,
@@ -128,15 +136,14 @@ twenty seconds. The blocker was wrong.
 
 ## What this says, and what it does not
 
-Arm N removes about 99.7 % of the legacy per-interface defect against the
-PHYSICAL measure at the median, and the ~0.3 % it leaves is the moisture jump.
+The median all-interface coefficient ratio leaves about 0.3% on the conditional
+dry-density measure, due to the moisture gradient.
 The largest absolute remainder anywhere in this state is 7.08e-03, against a
 legacy defect reaching 1.15e-01.
 
-So a further dry-air arm -- weighting by `den/(1+qv)` instead of `den` -- would
-buy at most that much, and the freeze-lift request such an arm would need can
-be written against a number rather than a suspicion. This finding does not ask
-for one.
+These profile coefficients do not bound the improvement from changing a kernel
+metric. Such a change also affects applied transfers and the evolving state;
+the unit contract and full residual need to be established first.
 
 It is also NOT a forecast impact, a column-number change, or a precipitation
 difference. `eps` is the per-interface coefficient of the transport metric; how

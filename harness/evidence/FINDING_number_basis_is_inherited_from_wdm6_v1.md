@@ -52,8 +52,10 @@ There is no `*den` on entry and no `/den` on exit, for `nr` or for `ni`.
     :1221   dnr(i,k)  = min(falkn(i,k,1)*dtcld, nrs(i,k,1))
 
 Mass is lifted to a per-volume flux by `dend` and dropped back by `dend`; number
-gets neither. Both incoming terms carry `delz(k+1)/delz(k)`. The update therefore
-conserves `sum rho*q*dz` for mass and `sum N*dz` for number -- and `sum N*dz` is
+gets neither. Both incoming terms carry `delz(k+1)/delz(k)`. These are the
+candidate measures for matched interface transfers: `sum rho*q*dz` for mass
+and `sum N*dz` for number. Legacy's separate departure/arrival caps can break
+that matching, so conservation is not unconditional. `sum N*dz` is
 the physical column number **only if N is per m^3**, which is what the slope
 machinery assumes and not what the Registry declares.
 
@@ -80,8 +82,9 @@ parent scheme's policy, carried across.
 ## What this does and does not settle
 
 **Settled from source**: the kernel's slope machinery assumes m^-3; the Registry
-declares kg^-1; no conversion sits between them; the sedimentation update
-conserves `sum N*dz`; and each of these is inherited from WDM6 unchanged.
+declares kg^-1; no conversion sits between them; thickness-only number transfer
+has `sum N*dz` as its matched-transfer measure; and these source assumptions
+are inherited from WDM6 unchanged.
 
 **Not settled**: which side is wrong. If the code is right, the Registry's units
 string is wrong and the dynamics -- which advects `qnr` as a per-kg scalar scaled
@@ -93,10 +96,12 @@ is. Both readings leave an inconsistency; they place it in different code.
 weight error in `FINDING_number_mass_basis_v1` are different quantities against
 different measures, and neither is evidence for or against this one.
 
-**Why it matters**: it moves the number-moment blocker from "introduced here,
-needs a freeze-lift to touch" to "inherited from the WRF distribution" -- the
-category the multi-subcycle legacy-pair drift already sits in. That is an owner
-call, not a measurement.
+**Boundary contract still to close**: host dry-mass number `n_d [# kg_d^-1]`
+would map to kernel volume number `N [# m^-3]` via `N=rho_d*n_d`, with the inverse
+on return. This states the conditional conversion, not a decision to insert it.
+Choosing it requires checking the PSD, mean particle mass and dynamics together;
+adding density to sedimentation alone cannot resolve the mismatch. Inheritance
+establishes origin, not correctness or authorization to change the f32 path.
 
 ## Reproducing
 

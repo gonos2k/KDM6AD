@@ -59,8 +59,26 @@ def test_a_diameter_bias_is_a_CUBE_ROOT_of_the_number_bias():
     r = _row()
     eps = r["spurious_fraction_of_segment_endpoint"]
     assert r["defect_diameter_bias_frozen"] == pytest.approx(
-        (1 + eps) ** (-1 / 3) - 1, rel=1e-9)
+        (1 - eps) ** (1 / 3) - 1, rel=1e-9)
     assert abs(r["defect_diameter_bias_frozen"]) < abs(r["defect_mean_mass_bias_frozen"])
+
+
+@pytest.mark.parametrize("residual", [10., -150.])
+def test_frozen_bias_compares_observed_number_with_residual_removed(residual):
+    # Independent q/N calculation: eps uses observed N, not corrected N-R.
+    mass, observed = 2., 100.
+    corrected = observed - residual
+    row = {"residual": residual, "final": observed}
+    mass_ratio = (mass / observed) / (mass / corrected)
+    assert dm._defect_mass_bias(row) == pytest.approx(mass_ratio - 1)
+    assert dm._defect_diameter_bias(row) == pytest.approx(mass_ratio ** (1/3) - 1)
+
+
+@pytest.mark.parametrize("observed,residual", [(0., 0.), (-1., 0.), (100., 100.), (100., 101.)])
+def test_frozen_bias_requires_positive_observed_and_comparison_number(observed, residual):
+    row = {"final": observed, "residual": residual}
+    assert dm._defect_mass_bias(row) is None
+    assert dm._defect_diameter_bias(row) is None
 
 
 def test_the_artifact_says_what_the_number_is_NOT():

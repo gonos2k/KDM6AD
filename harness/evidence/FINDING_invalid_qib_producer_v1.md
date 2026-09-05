@@ -1,4 +1,4 @@
-# Scalar advection produces the negative graupel volumes; the initial condition already carries the zero ones
+# Negative graupel volumes appear during the scalar-update interval
 
 Owner review item 20, third priority: find the operator that first breaks
 `bg >= 0` and `qg > 0 => bg > 0`, with mass below the f32 representability
@@ -14,15 +14,17 @@ counts, at one operator boundary, cells with `bg < 0`; cells with `qg > 0` and
 | boundary | emissions | `bg<0` max | `bg<0` mean | steps with `bg<0` | `qg>0,bg<=0` max |
 |---|---|---|---|---|---|
 | RK entry, before advection | 30 | 6 | 2.2 | 25 | 635 |
-| after scalar advection | 450 | **80,586** | 39,560 | 423 | 21,896 |
+| after scalar-update interval | 450 | **80,586** | 39,560 | 423 | 21,896 |
 | before microphysics | 30 | 2,570 | 2,288 | 29 | 4,104 |
 | after microphysics | 30 | 6 | 2.2 | 25 | 39 |
 
-## Scalar advection is the producer
+## Localisation to the scalar-update interval
 
-At most 6 cells carry a negative volume entering the step. Scalar advection
-produces up to **80,586**, and **2,570** are still there when microphysics is
-called. Microphysics then takes it back to 6.
+At most 6 cells carry a negative volume entering the step. The counter after
+the scalar-update interval reaches **80,586**, and **2,570** remain when
+microphysics is called. After microphysics the maximum is 6. This interval
+contains advection, other tendencies and mass coupling; the counts do not
+isolate which term creates the final negative values.
 
 The 450 emissions at the second boundary are 15 per step -- the counter sits
 inside the scalar loop, so those are mid-loop transients; the settled
@@ -30,14 +32,16 @@ post-dynamics number is the third row, 2,570 max and 2,288 mean.
 
 ## Microphysics is the consumer, and does not finish
 
-It removes nearly all of it -- 2,570 negatives to 6, and 4,104 invalid zeros to
-39 -- but a residue survives every step. That residue is what the output census
-sees.
+The before/after-microphysics maxima are 2,570 versus 6 negative volumes and
+4,104 versus 39 states with `qg > 0, bg <= 0`. These are separate maxima across
+the run, not a paired transition for one cell or step. Negative volumes remain
+at 25 of 30 after-microphysics boundaries; invalid paired states also remain.
 
-## The chain is closed, and the initial condition is already invalid
+## Boundary counts agree; the first RK entry already contains invalid states
 
-Step N's RK entry equals step N-1's after-microphysics exactly, at every step and
-in all three counters, so nothing between the two touches the field:
+Step N's RK-entry COUNTS equal step N-1's after-microphysics counts in all
+three recorded categories. This does not establish equality of values or
+locations. A raw-bit field comparison or checksum was not recorded:
 
     step   RK entry (neg, invalid, unrepr)   after microphysics
       1        (0,  635,  0)                    (0,   6,  0)
@@ -46,21 +50,21 @@ in all three counters, so nothing between the two touches the field:
       ...
      30        (1,   38, 31)                    (0,  39, 28)
 
-**635 at step 1 is the initial condition.** Before any operator has run, the
-input state already holds 635 cells with `qg > 0` and `bg <= 0` where an
+**635 is the count at the first RK entry.** At that boundary the state
+already holds 635 cells with `qg > 0` and `bg <= 0` where an
 admissible positive `bg` exists. Microphysics clears that to 6 in one step, and
 the count then grows monotonically to 39 over thirty steps, with the
 unrepresentable class appearing after step ~28 and reaching 31.
 
 ## What this settles
 
-- **Settled**: scalar advection produces the negative volumes; microphysics
-  consumes almost all of them; a residue of about 0-2 negative and a growing
-  count of invalid zeros survives each step; and the initial condition violates
-  the invariant before any operator runs.
-- **Settled since**: `qib` is INSIDE the positive-definite option and the input
-  to advection is non-negative -- see the clamp arm below. The limiter is
-  insufficient for this field, not bypassed.
+- **Observed**: negative counts increase across the scalar-update interval
+  and fall across microphysics. The recorded small negative residue and invalid
+  nonpositive-volume counts remain after microphysics; the first RK entry already
+  violates the paired-state invariant.
+- **Observed**: `qib` uses the positive-definite option, and the clamp arm
+  provides nonnegative RK-entry input. This does not isolate the pure advection
+  operator or show a violation of the limiter's own preconditions.
 - **Not measured**: any consequence. This counts states, not their effect.
 
 ## Reproducing
@@ -69,7 +73,7 @@ Four counters at `solve_em.F` before the RK loop, after `scalar_tile_loop_2`,
 before `microphysics_driver`, and after it; `np = 1`, 10 minutes, history 1.
 
 
-## The clamp arm: advection makes them, it does not amplify them
+## The clamp arm: inherited negative RK-entry values are not necessary
 
 `scalar_adv_opt = 1` in this case's namelist, and `original = 0` in the generated
 `module_state_description.F`, so the positive-definite branch is the one taken --
@@ -85,17 +89,18 @@ the trajectory on purpose.
 |---|---|---|
 | RK entry, before clamp | 6 | 2.1 |
 | RK entry, **after clamp** | **0** | **0.0** |
-| after scalar advection | **80,585** | 39,559.2 |
+| after scalar-update interval | **80,585** | 39,559.2 |
 | before microphysics | 2,570 | 2,288.1 |
 | after microphysics | 6 | 2.1 |
 
 Unclamped, the same run gave 80,586 and 39,559.9.
 
-**Handed a strictly non-negative field, advection still returns up to 80,585
-negative cells** -- one fewer than with the six seeds present. The seeds account
-for at most a single cell in eighty thousand, and every downstream count is
-unchanged. So advection PRODUCES the negative volumes; it does not amplify
-inherited ones.
+**With nonnegative RK-entry input, the scalar-update interval still reaches
+80,585 negative cells**, compared with 80,586 without the clamp. The displayed
+downstream counts are also nearly unchanged. Thus inherited RK-entry negatives
+are not necessary for this pattern. A difference of one in aggregate maxima
+does not bound the seeds' effect on individual cells, amplitudes or locations,
+and the experiment does not isolate advection from the other update terms.
 
 ## Localised: the last stage does renormalise, and `qg` goes negative too
 
@@ -125,10 +130,11 @@ the table above is an INTERMEDIATE-stage count; stages 1 and 2 are unbounded
 scratch by design.
 
 **3. `qg` goes negative too, in comparable numbers** -- 19,849, then 42,154, then
-1,172 surviving into microphysics under `moist_adv_opt = 1`. So this is **not a
-paired-moment defect**. Graupel MASS behaves the same way. The hypothesis in the
-previous version of this section -- that a moment advected independently of its
-mass drifts from it -- is not what the measurement shows, and is withdrawn.
+1,172 surviving into microphysics under `moist_adv_opt = 1`. Negativity is
+therefore not confined to the volume field. The counters do not test the
+mass/volume ratio or their co-location; mutual consistency of the two moments
+remains a separate question. The prior claim that this refutes a paired-moment
+defect is withdrawn.
 
 **Still not established**: why the final-stage renormalisation leaves any. The
 update carries tendencies besides advection and couples through `mu_old`/`mu_new`;
@@ -139,7 +145,7 @@ ten-minute maxima quoted above; the ordering and the `is = 5` attribution are
 what it establishes.
 
 
-## Not the lateral boundary: the residue is spread like the field itself
+## Weak boundary enrichment under whole-grid normalisation
 
 The surviving negatives could come from the specified and relaxation zones, which
 add a non-advective tendency the positive-definite bound does not cover. Bucketing
@@ -152,19 +158,23 @@ frame is `d <= 4`), six steps, grid 234 x 282 x 39:
 | boundary, `d <= 4` | 1,370 | 8.32% | 7.67% | **1.08x** |
 | interior, `d >= 5` | 15,100 | 91.68% | 92.33% | **0.99x** |
 
-Normalised by how many cells each zone holds, the two are the same. The frame is
+Normalised by all cells in each zone, enrichment is close to one. The frame is
 7.67% of the domain and carries 8.32% of the negatives; 85% of them sit at
 `d >= 9`, far inside.
 
-**The boundary treatment is not the source.** The residue is distributed like the
-graupel field, not like the boundary zone.
+**The counts show no strong concentration in the treated boundary frame.**
+They do not rule out a contribution from boundary treatment. The denominator
+is all grid cells, not the graupel-bearing cells exposed to negativity; no
+claim about distribution relative to the graupel field follows from this table.
 
 The absolute counts alone would have suggested the opposite reading in either
 direction -- the interior looks dominant because it is 92% of the grid. The
 enrichment ratio is the statement; the raw counts are not.
 
-What remains as a candidate is a non-advective tendency the bound does not cover
-anywhere in particular -- diffusion is the obvious one, being no more
-positive-definite in the interior than at the edge -- or the mass coupling
-itself. Neither is measured here, and separating them needs a probe on the
-tendency terms rather than on the field.
+The causal candidates still include advection, non-advective tendencies
+(including boundary and diffusion terms), and the `mu_old`/`mu_new` coupling.
+The next discriminating record is the first cell that becomes negative: its
+index and RK/scalar stage, state before/after, applied tendency components,
+`mu_old`/`mu_new`, and the limiter-related values used by that update. This
+would support a term-by-term reconstruction; more whole-domain counts alone
+would not. That operand record has not been measured here.

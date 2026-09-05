@@ -18,23 +18,33 @@ For the interface between level `j-1` (above) and `j` (below):
     departure = own(j-1)      TOPOUT when j-1 == 0, else CAPIN's own
     arrival   = inflow(j)     CAPIN's inflow at j
 
-Both are mixing ratios in their own cell's units -- the kernel adds `dq(i,k+1)`
-straight into `qrs(i,k)` -- so under the column measure they weigh differently:
+Both are increments in their destination cell's stored units. Under the
+selected density-weighted column measure they weigh differently:
 
     delta = rho(j)*delz(j)*arrival - rho(j-1)*delz(j-1)*departure
 
-which is signed the way the closure residual is: negative where the interface
-destroys. The cap BINDS at an interface when departure != arrival, and that
-difference is the P0-4b post-update-reservoir gap: `dq(i,k+1)` is written twice,
+which is signed the way the closure residual is: negative for a loss on that
+measure. Raw departure != arrival is not itself a cap predicate when layer
+weights differ. The P0-4b post-update-reservoir gap is one source of mismatch:
+`dq(i,k+1)` is written twice,
 capped against the cell above PRE-update as its outflow and POST-update as the
 inflow below.
 
-For NUMBER the same pairing gives what the interface CREATES, which is compared
-against the rho*dz-vs-dz prediction
+For NUMBER this pairing gives the actual signed interface residual. The legacy
+JSON name `number_created` is retained; its physical interpretation is conditional
+on per-dry-kg number and dry density. The host/kernel number-unit contract is
+unresolved (see SCIENCE_STATUS.md). With A=dz_up*dn_out and B=dz_lo*dn_in:
 
-    sum over interfaces of (rho(j) - rho(j-1)) * delz(j-1) * departure_n
+    residual = (rho_lo-rho_up)*A + rho_lo*(B-A)
 
-on the same interfaces. Where the cap does not bind, the two must agree.
+`number_predicted` retains the first term, using the ACTUAL departure, and
+`number_transfer_mismatch` records the second. Neither is computed from an
+unclipped flux. Their sum equals the residual up to diagnostic rounding.
+This reader uses fixed window measures; it rejects changing forcing and does
+not interpret an evolving host trajectory as a fixed-forcing microphysics window.
+New streams declare `capin_applied`: conservative arrival operands include the
+metric factors in the update. Archived conservative streams omit these factors
+and are refused here. Archived legacy streams already carry applied operands.
 
     python g33_cap_interface.py <driver---nflux> <nsplit> [out.json]
 """
@@ -51,14 +61,15 @@ import g33_matched_closure as mc  # noqa: E402
 import g33_number_transport as nt  # noqa: E402
 import g33_refine_analyze as ra  # noqa: E402
 import g33_probe_read as pr  # noqa: E402
+import g33_arms  # noqa: E402
 
 
 class Interface(NamedTuple):
     """One interface, one chain, one sub-step, with the column measure applied.
 
     `mass_term` is signed the way the closure residual is: NEGATIVE where the
-    interface destroys. The cap BINDS where departure differs from arrival --
-    the P0-4b post-update-reservoir gap, `dq(i,k+1)` written twice.
+    interface loses the selected measure. Departure/arrival differences include
+    the P0-4b reservoir gap and, on unequal layers, differences in local units.
     """
     chain: str
     col: int
@@ -70,8 +81,9 @@ class Interface(NamedTuple):
     t_up: float            # THIS call's pre-sed temperature at k_up ...
     t_lo: float            # ... and at k_lo
     mass_term: float       # w_lo*dq_in - w_up*dq_out
-    number_created: float  # the same, for number
-    number_predicted: float  # what the measure mismatch alone predicts
+    number_created: float  # signed residual under the selected measure
+    number_predicted: float  # density contrast, using ACTUAL departure
+    number_transfer_mismatch: float  # rho_lo*(dz_lo*dn_in - dz_up*dn_out)
     number_out: float      # number leaving the upper cell, column measure
     mass_differs: bool
     number_differs: bool
@@ -86,8 +98,22 @@ def _walk(stream: str, basis: str):
     Requires `capin` and `topout`; the strict parser has already checked their
     exact universes, so a level or sub-step missing here is not possible.
     """
+    if basis not in mc.MEASURES:
+        raise ValueError(f"unknown basis {basis!r}; expected one of {tuple(mc.MEASURES)}")
+    calls = nt.calls(stream)
+    for call in calls:
+        missing = {"capin", "topout"} - call["features"]
+        if missing:
+            raise nt.StreamError(f"interface analysis requires features {sorted(missing)}")
+        algorithm = call["algorithm"]
+        nt.number_transfer_metric(algorithm, call.get("declared_metric"))
+        if (g33_arms.base(algorithm) == "conservative"
+                and "capin_applied" not in call["features"]):
+            raise nt.StreamError(
+                "conservative CAPIN lacks capin_applied: archived records contain "
+                "unscaled source increments; re-emit with the updated --nflux build")
     measure = mc.window_cell_mass(stream, basis)
-    for ci, call in enumerate(nt.calls(stream), start=1):
+    for ci, call in enumerate(calls, start=1):
         for lp in sorted(call["loops"]):
             pre = call["outer_pre_sed"]
             for col in sorted({c for l, c, _ in pre if l == lp}):
@@ -104,25 +130,17 @@ def _walk(stream: str, basis: str):
                 # instead -- failing where the value is actually required.
                 t = {k: pre[(lp, col, k)].get("t") for k in ks}
                 for chain in ("main", "ice"):
-                    ms = call["mstep"].get((lp, chain, col))
-                    if ms is None:
-                        continue
+                    ms = call["mstep"][(lp, chain, col)]
                     for n in range(1, ms + 1):
                         # TOPOUT gives the top cell's removal, which CAPIN cannot:
                         # that cell is updated outside the interior loop.
-                        top = call["topout"].get((lp, n, col, chain, 0))
-                        if top is None:
-                            continue
+                        top = call["topout"][(lp, n, col, chain, 0)]
                         own, inflow = {0: top}, {}
                         for j in ks[1:]:
-                            cap = call["capin"].get((lp, n, col, chain, j))
-                            if cap is None:
-                                continue
+                            cap = call["capin"][(lp, n, col, chain, j)]
                             oq, iq, on, ino = cap
                             own[j], inflow[j] = (oq, on), (iq, ino)
                         for j in ks[1:]:
-                            if j not in inflow or (j - 1) not in own:
-                                continue
                             dq_out, dn_out = own[j - 1]
                             dq_in, dn_in = inflow[j]
                             w_up, w_lo = rho[j - 1] * dz[j - 1], rho[j] * dz[j]
@@ -132,6 +150,7 @@ def _walk(stream: str, basis: str):
                                 w_lo * dq_in - w_up * dq_out,
                                 w_lo * dn_in - w_up * dn_out,
                                 (rho[j] - rho[j - 1]) * dz[j - 1] * dn_out,
+                                rho[j] * (dz[j] * dn_in - dz[j - 1] * dn_out),
                                 w_up * dn_out,
                                 dq_out != dq_in, dn_out != dn_in)
 
@@ -153,13 +172,14 @@ def _totals() -> dict:
     """
     return {"mass_interface_term": 0.0, "sum_abs_interface_term": 0.0,
             "max_abs_interface_term": 0.0, "number_created": 0.0,
-            "number_predicted": 0.0, "number_transported": 0.0,
+            "number_predicted": 0.0, "number_transfer_mismatch": 0.0,
+            "number_transported": 0.0,
             "interfaces": 0, "mass_departure_arrival_differ": 0,
             "number_departure_arrival_differ": 0, "either_differ": 0}
 
 
 def interfaces(stream: str, basis: str = "operator") -> dict:
-    """{(chain, col): totals} -- the interface terms, and how often the cap bound."""
+    """{(chain, col): totals} from actual transfers on the selected fixed measure."""
     acc = {}
     for f in _walk(stream, basis):
         d = acc.setdefault((f.chain, f.col), _totals())
@@ -169,6 +189,7 @@ def interfaces(stream: str, basis: str = "operator") -> dict:
                                           abs(f.mass_term))
         d["number_created"] += f.number_created
         d["number_predicted"] += f.number_predicted
+        d["number_transfer_mismatch"] += f.number_transfer_mismatch
         d["number_transported"] += abs(f.number_out)
         d["interfaces"] += 1
         d["mass_departure_arrival_differ"] += int(f.mass_differs)
@@ -300,6 +321,9 @@ def analysis(stream: str) -> dict:
                           if resid not in (None, 0.0) else None),
             "created_over_predicted": (d["number_created"] / d["number_predicted"]
                                        if d["number_predicted"] else None),
+            "number_residual_over_transported": (
+                d["number_created"] / d["number_transported"]
+                if d["number_transported"] else None),
         }
     # Split BY CHAIN, and beside the magnitude. A bare count said "39 of 255,
     # all in the ice chain"; the main chain in fact differs at 23 interfaces too,
@@ -334,7 +358,7 @@ def analysis(stream: str) -> dict:
 
 def report(stream: str) -> None:
     a = analysis(stream)
-    print("  Departure vs arrival, per interface. The cap binds where they differ.\n")
+    print("  Actual departure vs arrival under the operator density measure.\n")
     print(f"  {'row':10} {'mass residual':>14} {'interface term':>15} "
           f"{'explained':>10} {'created/predicted':>18} {'cap':>8}")
     for k, r in a["rows"].items():
@@ -345,6 +369,13 @@ def report(stream: str) -> None:
               f"{ex:>10} {cp:>18} "
               f"{r['mass_departure_arrival_differ']:3}m/"
               f"{r['number_departure_arrival_differ']:<3}n")
+    print("\n  Number residual = density contrast + transfer mismatch (actual increments):")
+    for k, r in a["rows"].items():
+        ratio = r["number_residual_over_transported"]
+        rel = f"{ratio:.4%}" if ratio is not None else "undefined (zero throughput)"
+        print(f"    {k:10} {r['number_created']:+.6e} = "
+              f"{r['number_predicted']:+.6e} + {r['number_transfer_mismatch']:+.6e}; "
+              f"residual/actual departure {rel}")
     print(f"\n  Departure differs from arrival, of {a['total_interfaces']} "
           f"interfaces: mass at {a['mass_departure_arrival_differ']}, number at "
           f"{a['number_departure_arrival_differ']},")

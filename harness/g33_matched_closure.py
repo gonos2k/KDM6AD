@@ -143,10 +143,10 @@ def transfers(stream: str) -> dict:
 
 
 #: The two column measures (owner §9). `den` passed to the kernel is MOIST-air
-#: density (rho_m = rho_d(1+qv)), while `nr` and the `q` fields are mixing ratios
-#: per DRY-air kg -- so the physically conserved column integral uses rho_d and
-#: the operator's own integral uses rho_m. Reporting only one of them makes a
-#: statement about the operator read as a statement about the atmosphere.
+#: density (rho_m = rho_d(1+qv)). The legacy name `physical` uses rho_d; for
+#: number its physical interpretation is conditional on the host's per-dry-kg
+#: contract, which conflicts with the kernel slope's per-volume requirement.
+#: These measure names do not resolve that boundary contract (SCIENCE_STATUS.md).
 MEASURES = ("operator", "physical")
 
 

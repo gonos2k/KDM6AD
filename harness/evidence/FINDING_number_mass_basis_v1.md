@@ -1,4 +1,10 @@
-# The ρΔz weight is moist-air density; `nr` is per kg of dry air
+# Moist versus dry density under the host number-unit interpretation
+
+Review correction (2026-09-05, main 2638fb2): Registry/dynamics support a
+per-dry-kg interpretation, but the kernel slope formula requires per-volume
+number without a boundary conversion. The end-to-end contract is unresolved;
+see `FINDING_number_basis_is_inherited_from_wdm6_v1`. The historical claim
+table below does not establish `nr`'s physical units inside the kernel.
 
 <!-- claim-status: generated from CLAIMS.yaml, do not edit -->
 
@@ -8,7 +14,8 @@
 | `G33-BASIS-002` | **hold** | open-question | owner engineering-compatibility and release policy; the physics is G33-BASIS-006 and the operator's measured behaviour is G33-NUMBER-003 |
 | `G33-BASIS-006` | **active** | confirmed | source definitions only; which measure the correction adopts as default is G33-BASIS-002, which stays an owner decision |
 
-Statuses above are the authority; prose below may predate them.
+The historical statuses above are retained for provenance. The conditional unit
+contract in this correction supersedes their unconditional physical-unit claim.
 <!-- /claim-status -->
 
 Owner §7. The number-transport result is stated against the column measure
@@ -17,8 +24,9 @@ Owner §7. The number-transport result is stated against the column measure
 
 ## From source
 
-`nr` is `# kg-1` (`Registry.EM_COMMON:122`, "rain num concentration"), and WRF
-mixing ratios are per kg of **dry** air (`QVAPOR` is `kg kg-1` on that basis).
+Registry declares `nr` as `# kg-1`, and the host's mixing-ratio interpretation
+uses kg of **dry** air. This declaration does not settle the kernel's competing
+per-volume assumption.
 
 The `den` the kernel receives is `DEN=rho` from the microphysics driver
 (`module_microphysics_driver.F:2742`), and `rho` is built in
@@ -36,7 +44,7 @@ The kernel then uses it directly: `dend(i,k) = den(i,k)` (F:870).
 
 ## The size of it
 
-The column measure should weight a per-dry-kg quantity by ρ_d, so
+Under the per-dry-kg interpretation, the column measure weights by ρ_d, so
 `Σ den·Δz·nr` overstates by `(1 + qv)` per cell. Measured on
 `g33_fixture_multisubcycle_v1` at h = 25 s:
 
@@ -45,23 +53,19 @@ The column measure should weight a per-dry-kg quantity by ρ_d, so
 | this fixture | 1.03e-03 | **0.10%** |
 | a moist operational layer (qv ≈ 0.02) | 2e-02 | ~2% |
 
-**This does not explain the number-closure residual.** 0.10% is an order of
-magnitude below the measured 6–14%, so the ρΔz-vs-Δz transfer defect stands. What
-the basis does affect is the **absolute** [# m⁻²] figures, which carry a
-systematic 0.1% offset here and would carry ~2% on a moist real case.
+This is a per-cell weight comparison, not a bound on a signed transport
+residual or its ratio to throughput. Those can change through cancellation and
+spatial weighting and must be recomputed from actual transfers on one basis.
 
 ## What is and is not settled
 
-- **Settled from source**: `den` is moist-air density; `nr` is per dry kg; the
-  two bases differ by `(1 + qv)`.
+- **Settled from source**: `den` is moist-air density; moist and dry density
+  differ by `(1 + qv)`; Registry and kernel number-unit assumptions disagree.
 - **Settled by measurement**: the resulting weight error is 0.10% on this fixture.
-- **Settled since (owner review §10, superseding the line that stood here)**:
-  the PHYSICAL column number is `Σ ρ_d Δz nr` -- unit-forced, because `nr` is
-  per kg of dry air, so it is not an owner preference (G33-BASIS-006).
-  `Σ ρ_m Δz nr` remains meaningful only as the legacy operator's
-  pseudo-measure. What stays an owner decision is narrower than this line
-  originally said: whether a corrected transport keeps compatibility with the
-  pseudo-measure, and whether the default promotes to the physical measure
-  (G33-BASIS-002).
+- **Conditional identity**: if `n_d` is per dry kg, physical column number is
+  `Σ ρ_d Δz n_d`; if `N` is per m³, it is `Σ Δz N`, with `N=ρ_d*n_d`.
+  The earlier unconditional G33-BASIS-006 reading is withdrawn. Closing the
+  host/kernel boundary contract is a prerequisite to choosing a conversion;
+  a sedimentation-only density factor is not an established remedy.
 - **Not measured**: the effect on a real case, where qv is 20× larger and varies
   strongly in the vertical.

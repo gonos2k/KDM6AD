@@ -219,6 +219,33 @@ def test_g4_reuses_rhox_so_it_is_bit_exact_with_legacy_outside_the_window():
     assert "if(rhox(i,k).gt.0.) then" in src, "the reuse is not guarded on rhox"
 
 
+def test_g4_can_floor_a_partial_melt_at_in_band_subnormal_volume():
+    """The tiny denominator defeats the claimed raw-rho > 900 necessity."""
+    f32 = np.float32
+    q0, b0, a = f32(5e-37), f32(1e-39), f32(0.3)
+    tau = np.finfo(f32).tiny
+    pg = f32(-q0 * a)
+    q1 = f32(q0 + pg)
+    rho_c = min(f32(900), max(f32(100), f32(q0 / max(b0, tau))))
+    g4 = max(f32(0), f32(b0 + f32(pg / rho_c)))
+    g5 = f32(b0 * f32(q1 / q0))
+    assert 100 < f32(q0 / b0) < 900
+    assert b0 < tau and rho_c == f32(100)
+    assert q1 > 0 and g4 == 0 and g5 > 0
+
+
+def test_subnormal_admissible_volume_exists_without_being_unique():
+    """qg=500*eta admits five positive f32 volumes; qg<100*eta admits none."""
+    f32 = np.float32
+    eta = np.nextafter(f32(0), f32(1))
+    qg = f32(500) * eta
+    candidates = [f32(n) * eta for n in range(1, 7)]
+    admissible = [b for b in candidates if 100 <= f32(qg / b) <= 900]
+    assert admissible == candidates[:5]
+    # The largest possible density below 100*eta uses the smallest volume.
+    assert f32((f32(99) * eta) / eta) < 100
+
+
 def test_a_complete_melt_inside_the_clamp_lands_on_zero_at_f32():
     """g3 and g4 are the same statement there, and this is the arithmetic
     rather than the algebra: the measured operands give exactly 0.0f."""

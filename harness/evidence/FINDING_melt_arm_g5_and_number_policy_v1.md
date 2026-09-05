@@ -22,17 +22,18 @@ Three separate policies, and the table is the whole difference:
 
 `g4` clamps the density inside the window and then floors the result at zero.
 That prevents a negative volume but permits `qg > 0` with `bg = 0`, which no
-finite density satisfies. `g5` avoids both by scaling the volume by the MASS
-FRACTION instead of subtracting a clamped quotient:
+finite density satisfies. `g5` instead scales the volume by the MASS FRACTION
+and refuses a nonpositive result while mass remains:
 
     outside the window   brs = brs + pgmlt/rhox        legacy, to the bit
     inside, complete     brs = 0
     inside, partial      brs = bg0 * (qg+ / qg0)
 
-which preserves the pre-melt apparent density exactly (`qg+/bg+ = qg0/bg0`),
-reaches zero on its own when the melt is complete, and **never subtracts**, so a
-negative volume is unreachable and no floor is needed. Checked over 50 000 f32
-draws spanning the window: **0 negatives, 0 density drift above 1e-5 relative**.
+This preserves `qg+/bg+ = qg0/bg0` in real arithmetic for positive operands;
+f32 rounding and underflow require checking the actual product. The guard can
+abort and an accepted ratio can still be outside the admissible band, so this
+is a diagnostic arm, not a production remedy. The earlier sample of 50 000 f32
+draws had **0 negatives, 0 density drift above 1e-5 relative**.
 
 **And `g4` and `g5` are indistinguishable here** -- 0 differences across every
 level, substep and prognostic. They can only differ on a PARTIAL melt inside the
@@ -76,10 +77,20 @@ band, yet `qg0/tau = 42.5` clips to `rho_c = 100`, and `g4` returns `~5e-40`
 against `g5`'s `9e-40`. The window admits `bg0` this small -- it bounds `bg` only
 from above, at `brs_min = 1e-15`.
 
-**2. `g4` floors exactly when `a*rho0 >= rho_c`.** Which for a partial melt needs
-`rho0 > 900`, since `rho_c = clip(rho0)` and `a < 1`. Checked: the predicate and
-`g4 == 0` agree on **100.000%** of 200,000 draws, and every floored draw has
-`rho0 > 900`.
+**2. For `bg0 > 0` and a partial melt, the real-arithmetic floor condition is
+`a*rho0 >= rho_c`, with `rho_c = clip(qg0/max(bg0,tau),100,900)`.** Only when
+`bg0 >= tau` does this require `rho0 > 900`; even then that is not sufficient
+without `a >= 900/rho0`. The earlier 200,000-draw check agreed with the predicate
+on its sample, which did not establish a condition below `tau`.
+
+An in-band f32 counterexample is `qg0=5e-37`, `bg0=1e-39`, `a=0.3`:
+raw `rho0` is about 500, but the bounded denominator gives `rho_c=100`.
+The actual rounded candidates are `qg+ ~ 3.5e-37`, `g4 bg+ = 0`, and
+`g5 bg+ ~ 7e-40`. Thus `rho0 > 900` is not a general necessity. Near equality
+or underflow, evaluate the rounded f32 expression rather than an exact-real
+predicate. `test_g4_can_floor_a_partial_melt_at_in_band_subnormal_volume`
+reproduces this case. All nine measured partial occurrences had `bg0 >= tau`;
+their candidate values remain valid.
 
 **3. `g5` preserves `rho0`, whatever `rho0` is.** That is algebraic consistency,
 not admissibility: this branch is entered precisely where `rhox` was never
@@ -199,12 +210,13 @@ unique `(i,j,k)` and episode length remain uncounted.
 **What the withdrawal was about** (owner review 5 and 6).
 
 *"`g4` produced `qg > 0, bg = 0` eight times"* -- was withdrawn, now MEASURED and
-restored by the table above. `rho0 > 900` is
-NECESSARY for the floor, not sufficient: `g4` floors when `a*rho0 >= rho_c`,
-which at `rho0 > 900` means `a >= 900/rho0`. At `rho0 = 1000, a = 0.1` it does
-not floor. The eight were classified by `rho0` alone; `a` was not recorded, and
-`g4` was never executed -- this was a counter run on the unmodified kernel, so
-every `g4`/`g5` figure here is a counterfactual, not an observation.
+restored as a measurement of candidate arithmetic by the table above. For
+these nine above-`tau` inputs, `rho0 > 900` is necessary in real arithmetic,
+not sufficient without `a >= 900/rho0`. It is not a general necessity below
+`tau`. Before the candidate-emitting run, the eight were classified by `rho0`
+alone and `a` was not recorded. The newer run evaluates the candidates but
+does not apply them to the trajectory: they are measured counterfactual values,
+not observations of a forecast driven by either arm.
 
 *"`g5`'s abort condition did not occur once"* -- was withdrawn, now MEASURED on
 the actual post-product and restored. The guard tests the
@@ -225,13 +237,24 @@ admissible density (`100 <= qg/bg <= 900`) with a positive `bg` only if
 | `qg` | admissible positive `bg` in f32 | count |
 |---|---|---|
 | `< 100*eta` = 1.4013e-43 | **none exists** | 280 |
-| `100*eta .. 900*eta` | `bg = eta` alone | 90 |
+| `100*eta <= qg < 900*eta` | `bg = eta` is a candidate, not necessarily unique | 90 |
 | `>= 900*eta` = 1.2612e-42 | many | 181 |
 
 So 280 of 551 are a **representability failure of the paired moment** -- no
 choice of `bg` could have been both positive and admissible -- and 271 are not:
 an admissible positive `bg` existed and the state carries zero anyway. The
-largest is `qg = 5.1177e-18`, five orders above the threshold.
+largest is `qg = 5.1177e-18`.
+
+For a subnormal candidate `bg=n*eta`, admissible integers satisfy
+
+    ceil(qg/(900*eta)) <= n <= floor(qg/(100*eta)), n >= 1.
+
+For example, `qg=500*eta` permits `bg=eta,2*eta,3*eta,4*eta,5*eta`, with
+densities 500, 250, about 166.67, 125 and 100. The former claim that the 90
+middle-bin cell-frames admit only `eta` is withdrawn. Their individual
+candidate counts were not measured; the 280/271 existence split is unchanged.
+`test_subnormal_admissible_volume_exists_without_being_unique` checks the five
+f32 candidates and the impossibility below `100*eta`.
 
 The 16 cells with `bg < 0` are outside this argument entirely; no representability
 limit produces a negative volume.
