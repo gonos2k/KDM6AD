@@ -3,7 +3,8 @@
 기준 main `27cfef11a89fd9e4a08cf262c0c9b7eb4602a4ab`.
 90개 원장 행은 중복·별칭·기각된 주장도 보존한 검토 기록이며 결함 90개라는 뜻이 아니다.
 수학적 대상, 단위, 적용 경계와 실제 증거를 먼저 확인했다. 원래 375개 검토 경로와
-추가 linker 2개 경로의 Green/Red 감사를 바탕으로 수정하고, 변경 경로의 독립 재검토에서 발견된 추가 연결 오류도 수정했다.
+추가 linker 2개 경로의 Green/Red 감사를 바탕으로 수정하고, 변경 경로의 독립 재검토에서 발견된 추가 연결 오류도 수정했다. 최종 재검토에서 지원하는 공개 호출 경로의 P1/P2 잔여는 확인하지 못했다.
+역사적 no-replacement supersession 예외, callback/fixture 불변 전제와 외부 campaign/schema 권위는 명시한 계약 범위다.
 팀은 Luna xhigh, 동시에 최대 7개 에이전트다.
 
 ## 원래 검토 항목
@@ -69,7 +70,7 @@
 | 57 | R-RED-02 | C++ common state snapshots lack finite/domain validation before raw-bit comparison. | 수정 · 검증 완료 | [harness/g33_evidence_validate.py](../../harness/g33_evidence_validate.py) · [harness/g33_fourcase_comparator.py](../../harness/g33_fourcase_comparator.py) |
 | 58 | R-RED-03 | Replay dictionaries overwrite identities and lack independent expected stage/cell census. | 수정 · 검증 완료 | [harness/g33_replay.py](../../harness/g33_replay.py) |
 | 59 | R-RED-04 | Malformed evidence is not accepted as a schedule but escapes the declared ProbeError/bundle-error channel. | 수정 · 검증 완료 | [harness/g33_schedule_probe.py](../../harness/g33_schedule_probe.py) · [harness/g33_bundle_io.py](../../harness/g33_bundle_io.py) |
-| 60 | R-RED-05 | Standalone selfcheck does not bind all intrinsic container headers to its sealed authority. | 코드 수정 · native 증거 대기 | [harness/g33_selfcheck.py](../../harness/g33_selfcheck.py) · [harness/g33_dump.py](../../harness/g33_dump.py) |
+| 60 | R-RED-05 | Standalone selfcheck does not bind all intrinsic container headers to its sealed authority. | 수정 · 검증 완료 | [harness/g33_selfcheck.py](../../harness/g33_selfcheck.py) |
 | 61 | R-RED-06 | Helpers infer the cell universe and lack finite/domain checks for all consumed maps. | 수정 · 검증 완료 | [harness/g33_update_replay.py](../../harness/g33_update_replay.py) |
 | 62 | PUB-01 | Gate B records verifier runtime and identity without enforcing runtime or semantics identity before a decision-valid write. | 수정 · 검증 완료 | [harness/gateb_g33m_check.py](../../harness/gateb_g33m_check.py) |
 | 63 | PUB-02 | RESULT_INDEX.json is documented as the authority but has no current executable consumer or consistency validator. | 수정 · 검증 완료 | [harness/evidence/RESULT_INDEX.json](../../harness/evidence/RESULT_INDEX.json) · [harness/gateb_g33m_check.py](../../harness/gateb_g33m_check.py) |
@@ -158,7 +159,7 @@
 - 합성 f32 old/new ABI: warm/mixed/cold × dt 0/1/60/300, **12사례·192배열·1,980값 raw-bit 동일**.
 - C++ refinement: B=3/K=4 초기·최종 각144 word가 canonical fixture/공개 ABI와 raw-bit 동일.
 - Portable harness: **1,615 passed / 59 skipped / 309 deselected**. Local-only 호스트/Fortran 시험을 실행 수에 넣지 않았다.
-- clean-source 계측 selfcheck: 커밋 고정 후 실행 대기.
+- clean-source `e0e19ce` 계측 gate: **substep + surface + shared fixture PASS; C++ A/B/C 4개 algorithm/case 쌍 raw-bit PASS**. 실제 신규 드라이버를 빌드하여 실행했다.
 - Private host: 7개 source hash, driver/init 전처리, wrapper 부분 syntax, shell 지원 플랫폼 검사 PASS. 전체 호스트 build/run 없음.
 - 별도 AD4DVAR: 기존 A3-01 21개 시험 PASS; 두 구형 분모 mutation은 각각 기대한 회귀 실패. PR157 CI 네 개 모두 SUCCESS.
 
