@@ -17,8 +17,8 @@ neither audit is a proof of correctness for the entire repository or host.
 - [x] B2 — **The trajectory report still called the density term the full
   residual.** Its text and linked findings now distinguish the metric/trajectory
   split of the density contribution from the additional transfer-mismatch term.
-  The report prints all three quantities. Existing JSON keys retain their names
-  for compatibility, with their meanings documented.
+  The report prints all three quantities. Follow-up C3 below changes the main
+  decomposition to full residuals and explicitly identifies the output quantity.
 - [x] B3 — **An incomplete comparison could look complete.** Counterfactuals
   now reject changed layer geometry, retain missing whole columns as incomparable
   rows, and refuse unknown arrivals rather than dropping their contributions.
@@ -39,7 +39,7 @@ neither audit is a proof of correctness for the entire repository or host.
   chain from an independent measurement apparatus. Historical tables are labeled
   as historical; the archived claim ledger was not rewritten.
 
-## Validation
+## Validation at 8efdcb2
 
 - Full portable harness: `python3 -m pytest harness/tests -q` — **1,410 passed,
   58 skipped, 308 deselected**. The new portable capture/decomposition module
@@ -76,3 +76,51 @@ no changes in this follow-up. No new mp37/mp137 host parity run is claimed.
 The canonical wiki is maintained separately from this isolated public-code
 worktree. Its session log records the audit, local evidence, PR state and pending
 measurements, preserving unrelated user edits.
+
+## Follow-up review: complete call and mathematical contracts
+
+- [x] C1 — **Explicit LC05 initialization at the remaining callers.** The
+  full-domain runner, real-innovation fixture and regime-2 bootstrap now request
+  `init_profile`, matching both full-domain smoke modes. Forecast-output replay
+  and coordinate/observation inspection retain stored data. A substitute reader
+  observes all six actual initialization call paths before external asset I/O;
+  no GK2A or RTTOV execution is needed for this contract test.
+- [x] C2 — **One applied-interface pairing implementation.** Both analyzers now
+  use `g33_number_transport.applied_interfaces`, which validates capture and
+  applied units, then pairs TOPOUT/CAPIN departures with lower-cell arrivals.
+  No consumer silently skips unknown arrivals.
+- [x] C3 — **Full residual decomposition, not just corrected density labels.**
+  One `R(w,F)` function computes baseline, counterfactual and actual residuals.
+  The counterfactual fixes both applied transfers. The offset counterexample
+  yields weight effect -.50 and transport response 0; a separate fixed-departure
+  case checks response to a changed arrival. Output identifies its full-residual
+  quantity so historical density-only JSON cannot be read as the same result.
+  Original upper density is used directly, rather than reconstructed from a
+  rounded density difference. The report and JSON share one analysis execution.
+- [x] C4 — **Theory before patching.** Root AGENTS.md now requires mathematical,
+  engineering and numerical consistency checks before implementation: identify
+  units and the full quantity, trace every producer/consumer/call boundary, and
+  distinguish real arithmetic from executed f32/f64 operations. This user-requested
+  rule is also present in the canonical worktree.
+
+Follow-up validation:
+
+- Full portable harness: **1,414 passed, 58 skipped, 308 deselected**. The
+  portable trajectory module now has 26 tests, including the offset, changed
+  arrival, original-density rounding and single-analysis CLI cases.
+- Actual Fortran trajectory/ice-density and unequal-layer state-ledger tests:
+  **26 passed**. These exercise both consumers' common pairing, independent
+  endpoint/surface budgets, and the 540-arrival f32 check described above.
+- LC05 caller and reader tests: **34 passed, 5 skipped**. Six actual call
+  boundaries request explicit initialization. The broader related oracle set
+  gives **77 passed, 12 skipped**; live GK2A/RTTOV tests remain asset-gated.
+- Full local oracle: **820 passed, 31 skipped, 1 failed**. The failure is the
+  same `test_sharded_forward_window_bitwise` read beyond the existing four-frame
+  private file, previously reproduced on unchanged canonical code. No data or
+  assertion was altered to hide it.
+- Reanalysis of retained conservative ice streams gives 15 comparable rows and
+  zero observed rounding gap in `weight_effect+trajectory=residual_change`.
+  This finite fixture check does not prove bit-exact algebra for arbitrary
+  inputs. Local results are in `graphify-out/audit-pr205/full_residual_decomposition.json`.
+- Undefined-name lint, diff checks and Graphify updates passed. The canonical
+  and PR worktrees contain identical Theory Before Patching instructions.

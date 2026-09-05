@@ -100,49 +100,25 @@ def _walk(stream: str, basis: str):
     if basis not in mc.MEASURES:
         raise ValueError(f"unknown basis {basis!r}; expected one of {tuple(mc.MEASURES)}")
     calls = nt.calls(stream)
-    for call in calls:
-        nt.require_applied_interface_records(call)
     measure = mc.window_cell_mass(stream, basis)
-    for ci, call in enumerate(calls, start=1):
-        for lp in sorted(call["loops"]):
-            pre = call["outer_pre_sed"]
-            for col in sorted({c for l, c, _ in pre if l == lp}):
-                ks = sorted(k for l, c, k in pre if c == col and l == lp)
-                cm = {k: mc.measure_at(measure, (col, k), "_walk") for k in ks}
-                rho = {k: c.density for k, c in cm.items()}
-                dz = {k: c.delz for k, c in cm.items()}
-                # THIS call's own pre-sed temperature. The window-initial one is
-                # a different quantity: on column 3 it is 1.77 K away by call 12,
-                # worth ~21 J/m2 against a 28 J/m2 correction (owner §16-4 P0-1).
-                # `.get`: the MASS analysis does not need a temperature, and
-                # `t` is not in STAGE_REQUIRED, so a stream without it still
-                # yields interfaces. The enthalpy path refuses on `None`
-                # instead -- failing where the value is actually required.
-                t = {k: pre[(lp, col, k)].get("t") for k in ks}
-                for chain in ("main", "ice"):
-                    ms = call["mstep"][(lp, chain, col)]
-                    for n in range(1, ms + 1):
-                        # TOPOUT gives the top cell's removal, which CAPIN cannot:
-                        # that cell is updated outside the interior loop.
-                        top = call["topout"][(lp, n, col, chain, 0)]
-                        own, inflow = {0: top}, {}
-                        for j in ks[1:]:
-                            cap = call["capin"][(lp, n, col, chain, j)]
-                            oq, iq, on, ino = cap
-                            own[j], inflow[j] = (oq, on), (iq, ino)
-                        for j in ks[1:]:
-                            dq_out, dn_out = own[j - 1]
-                            dq_in, dn_in = inflow[j]
-                            w_up, w_lo = rho[j - 1] * dz[j - 1], rho[j] * dz[j]
-                            yield Interface(
-                                chain, col, ci, lp, n, j - 1, j,
-                                t[j - 1], t[j],
-                                w_lo * dq_in - w_up * dq_out,
-                                w_lo * dn_in - w_up * dn_out,
-                                (rho[j] - rho[j - 1]) * dz[j - 1] * dn_out,
-                                rho[j] * (dz[j] * dn_in - dz[j - 1] * dn_out),
-                                w_up * dn_out,
-                                dq_out != dq_in, dn_out != dn_in)
+    for key, departure, arrival in nt.applied_interfaces(calls):
+        ci, lp, n, col, chain, ku, kl = key
+        pre = calls[ci - 1]["outer_pre_sed"]
+        up = mc.measure_at(measure, (col, ku), "_walk")
+        lo = mc.measure_at(measure, (col, kl), "_walk")
+        dq_out, dn_out = departure
+        dq_in, dn_in = arrival
+        w_up, w_lo = up.density * up.delz, lo.density * lo.delz
+        yield Interface(
+            chain, col, ci, lp, n, ku, kl,
+            # Enthalpy needs this call's temperature; the mass path permits None.
+            pre[(lp, col, ku)].get("t"), pre[(lp, col, kl)].get("t"),
+            w_lo * dq_in - w_up * dq_out,
+            w_lo * dn_in - w_up * dn_out,
+            (lo.density - up.density) * up.delz * dn_out,
+            lo.density * (lo.delz * dn_in - up.delz * dn_out),
+            w_up * dn_out,
+            dq_out != dq_in, dn_out != dn_in)
 
 
 def _totals() -> dict:

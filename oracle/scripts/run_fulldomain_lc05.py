@@ -533,7 +533,8 @@ def main(out_json, case_root, conserving=False, allow_dirty=False):
             [out_json, case_root],
             [WRFIN, CAL, GK2A] + [e["path"] for e in manifest["rttov"].values()
                                   if isinstance(e, dict) and "path" in e])
-        fr = read_wrfout_frame(WRFIN, 0)
+        # This wrfinput seeds a DA window; initialize its empty CCN explicitly.
+        fr = read_wrfout_frame(WRFIN, 0, nccn_policy="init_profile")
         cal = load_cal_table(CAL)
         pl = read_ko_slot(gk2a_files, cal, stride=8)
         co = payload_to_column_obs(pl, fr.meta["lat"], fr.meta["lon"],

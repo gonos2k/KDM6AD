@@ -98,9 +98,10 @@ def test_an_OFFSET_barely_moves_the_ICE_residual(rows):
             assert abs(ratio - 1.0) < 0.10
 
 
-def test_the_ICE_metric_term_is_exact_too(driver):
-    """The decomposition holds on ice: metric/base is exactly 0 / -1 / +2 / +1,
-    so the whole departure is trajectory there as well."""
+def test_ice_counterfactual_ratios_on_the_sampled_baseline(driver):
+    """The fixture's matched baseline transfers give the ideal profile ratios,
+    allowing for f32 profile rounding. Unmatched pairs need not scale this way.
+    """
     a = mt.analysis(driver, 12, chain="ice")
     want = {"uniform": 0.0, "inverted": -1.0, "x2": 2.0,
             "offset+": 1.0, "offset-": 1.0}
@@ -168,5 +169,5 @@ def test_the_gate_FIRES_on_legacy_ice_where_the_cap_binds(legacy_driver):
              if r.get("comparable") and not r["measure_only"]]
     assert fired, "measure_only never went False — the gate is vacuous"
     dominated = [r for r in fired
-                 if abs(r["number_cap_term"]) > 5 * abs(r["metric"])]
+                 if abs(r["number_cap_term"]) > 5 * abs(r["density_contribution"])]
     assert dominated, "expected the cap term to dominate the metric term"

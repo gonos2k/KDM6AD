@@ -157,7 +157,7 @@ def test_regime2_live_bootstrap_lc05(tmp_path):
     from test_rttov_case_writer import _CHANNELS, _fixture_p_half, _fixture_tq
 
     wrfin, gk2a, cal_p = _lc05_gate()
-    fr = read_wrfout_frame(str(wrfin), 0)
+    fr = read_wrfout_frame(str(wrfin), 0, nccn_policy="init_profile")
     cal = load_cal_table(cal_p)
     pl = read_ko_slot(slot_files(gk2a, "202507190000",
                                  channels=CLEAN_IR_CHANNELS), cal, stride=8)

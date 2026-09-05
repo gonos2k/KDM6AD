@@ -1,11 +1,37 @@
-# Density-term trajectory response in the sampled density arms
+# Full-residual weight and transport effects; historical density-term results
 
 Scope: historical `g33_fixture_multisubcycle_v1`, legacy, main chain, h = 25 s.
 Interpretation corrected 2026-09-05 after PR #205. The archived
 `G33-TRAJECTORY-001` claim is historical; `SCIENCE_STATUS.md` is the current
-status authority. The table below is retained from that measurement, not rerun
-by this correction. The counterfactual requires matching interface identities
-and unchanged layer geometry.
+status authority. The table below retains the historical density-only values;
+current output identifies the full-residual calculation described next. The
+counterfactual requires matching interface identities and unchanged layer geometry.
+
+## Current computation: both applied transfers are fixed
+
+The follow-up review of `b771d0d` requires decomposition of the **full** residual,
+not just clearer labeling of the density term. The analyzer now uses one function
+
+    R(w,F) = sum_e (w_lo*dn_in - w_up*dn_out),  w=rho*dz
+
+and computes `baseline=R(w,F)`, `metric=R(w',F)` and `actual=R(w',F')`.
+`weight_effect=metric-baseline` and `trajectory=actual-metric` add to
+`residual_change=actual-baseline`. Both the baseline arrival and departure stay
+fixed in the counterfactual. Interface identities and layer geometry must match.
+
+With unit thickness, departure .75 and arrival .25, a density offset from (1,2)
+to (2,3) changes the full residual from -.25 to -.75: **weight effect -.50,
+transport response 0**. In general the offset effect is `c*sum(B-A)`; it cancels
+only when that summed transfer mismatch is zero. A changed arrival at fixed
+departure is also a transport response and is now included.
+
+Output declares `quantity=full_interface_residual`. Older JSON without that
+marker decomposed the density contribution; its `metric`, `actual`, `trajectory`
+and ratios have a different meaning. Recompute from the captured streams when
+comparing full residuals. `density_contribution` and `number_cap_term` remain
+separate accounting diagnostics, whose sum equals `actual` up to rounding.
+
+## Historical density-term interpretation and measurements
 
 Owner §7. The density arms land at −0.99 and +2.01 rather than exactly −1 and +2.
 That was once attributed to a second-order

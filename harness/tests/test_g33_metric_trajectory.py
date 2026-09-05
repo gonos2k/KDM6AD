@@ -92,20 +92,20 @@ def test_a_column_whose_SCHEDULE_moved_is_refused_not_zipped(result):
 
 
 def test_uniform_kills_BOTH_terms(result):
-    """Under a flat profile every density gap is zero, so the metric term is zero
-    for any transfers whatever -- and the trajectory term has nothing to
-    multiply. This is why uniform is the strongest arm."""
+    """The sampled legacy MAIN fixture has matched number transfers.
+    Its flat profile gives zero full residual; this is not true for a general
+    independently capped pair (covered by the portable offset counterexample).
+    """
     for r in result["arms"]["uniform"].values():
         assert r["metric"] == pytest.approx(0.0, abs=1e-6)
         assert r["trajectory"] == pytest.approx(0.0, abs=1e-6)
 
 
 def test_an_OFFSET_leaves_the_metric_term_exactly_alone(result):
-    """The most direct separation of gradient from magnitude (owner §7). A
-    constant added to every level cancels out of (rho_below - rho_above), so
-    shifting the absolute density by 10% must leave the metric term at exactly
-    1.0 -- while DOUBLING THE GRADIENT doubles it. Whatever the residual then
-    does is trajectory by construction, not measure."""
+    """On this matched-transfer legacy main fixture the baseline offset term
+    vanishes in exact arithmetic. f32 profile arithmetic remains in the check.
+    With unmatched transfers an offset also changes the counterfactual residual.
+    """
     for arm in ("offset+", "offset-"):
         for r in result["arms"][arm].values():
             if not r["comparable"]:
@@ -114,8 +114,7 @@ def test_an_OFFSET_leaves_the_metric_term_exactly_alone(result):
 
 
 def test_magnitude_moves_the_residual_far_less_than_gradient_does(result):
-    """10% of absolute density against a doubled gradient: the residual follows
-    the gradient, not the magnitude."""
+    """Compare these two perturbation sizes on the sampled legacy main fixture."""
     offs = [abs(r["actual_over_baseline"] - 1.0)
             for arm in ("offset+", "offset-")
             for r in result["arms"][arm].values() if r["comparable"]]
@@ -136,7 +135,7 @@ def test_equal_counts_with_DIFFERENT_interfaces_are_refused():
     under a key identical across them, compared only the last, and missed a real
     mstep 3->2 change. Same class of mistake, one layer up."""
     # (call, loop, substep, upper, lower) -> (drho, dz, dn)
-    cell = lambda dn: {"drho": 0.2, "dz_up": 150.0, "dn_out": dn,
+    cell = lambda dn: {"drho": 0.2, "rho_up": 1., "dz_up": 150.0, "dn_out": dn,
                        "rho_lo": 1.2, "dz_lo": 150.0, "dn_in": dn}
     base = {1: {(1, 1, 1, 0, 1): cell(1.0), (1, 1, 2, 0, 1): cell(2.0),
                 (2, 1, 1, 0, 1): cell(3.0)}}
@@ -150,7 +149,7 @@ def test_equal_counts_with_DIFFERENT_interfaces_are_refused():
 
 def test_an_identical_universe_decomposes():
     """The control for the test above."""
-    mk = lambda drho, dn: {"drho": drho, "dz_up": 150.0, "dn_out": dn,
+    mk = lambda drho, dn: {"drho": drho, "rho_up": 1.2-drho, "dz_up": 150.0, "dn_out": dn,
                            "rho_lo": 1.2, "dz_lo": 150.0, "dn_in": dn}
     base = {1: {(1, 1, 1, 0, 1): mk(0.2, 1.0), (1, 1, 2, 0, 1): mk(0.2, 2.0)}}
     arm = {1: {(1, 1, 1, 0, 1): mk(0.4, 1.5), (1, 1, 2, 0, 1): mk(0.4, 2.5)}}
@@ -160,11 +159,12 @@ def test_an_identical_universe_decomposes():
     assert got["metric"] == pytest.approx(0.4 * 150.0 * (1.0 + 2.0))
 
 
-def test_interface_terms_are_keyed_by_identity(result):
-    """A list cannot say which interface an entry is."""
-    src = (ROOT / "g33_metric_trajectory.py").read_text()
-    assert "rows.setdefault(col, {})[(i, lp, n, j - 1, j)]" in src
-    assert "zip(rows, b)" not in src
+def test_interface_terms_preserve_every_call_identity(driver):
+    """Later calls must not overwrite earlier records with the same local key."""
+    stream = subprocess.check_output([driver, "12", "rezero", "3"], text=True)
+    for rows in mt.interface_terms(stream).values():
+        assert {key[0] for key in rows} == set(range(1, 13))
+        assert all(len(key) == 5 and key[4] == key[3] + 1 for key in rows)
 
 
 # ---- owner §4 / §13.1: the chain reaches the raw runs, and the arm is enforced
@@ -219,19 +219,19 @@ def test_the_three_terms_are_an_exact_identity(result):
         R_measure = (rho_lo - rho_up)*dz_up*dn_out
         R_ncap    = rho_lo*(dz_lo*dn_in - dz_up*dn_out)
 
-    The measure term here uses THIS ARM's transfers, which is `actual`. `metric`
-    is the counterfactual — this arm's density gap against the BASELINE's
-    transfers — and belongs to the metric/trajectory split. Asserting
-    `metric + numcap == full` mixes a counterfactual with a measurement, which is
-    the error the first version of this test made.
-
-    If this is not an identity the split is a model, not a decomposition."""
+    The density accounting term uses this arm's transfers. The separate
+    counterfactual fixes both baseline transfers under the arm's weights.
+    Check both identities under diagnostic rounding, without conflating them.
+    """
     for cols in result["arms"].values():
         for r in cols.values():
             if not r["comparable"]:
                 continue
-            assert r["actual"] + r["number_cap_term"] == pytest.approx(
+            assert r["density_contribution"] + r["number_cap_term"] == pytest.approx(
                 r["full_interface_residual"], rel=1e-9, abs=1e-6)
+            assert r["actual"] == r["full_interface_residual"]
+            assert r["weight_effect"] + r["trajectory"] == pytest.approx(
+                r["residual_change"], rel=1e-9, abs=1e-6)
 
 
 def test_metric_only_is_a_CONCLUSION_not_an_assumption(result):
