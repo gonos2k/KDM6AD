@@ -120,7 +120,8 @@ def _cloud_profile_cfg(rho_d):
         rho_d=rho_d)
 
 
-def test_batched_allsky_selects_distinct_frozen_density_per_column():
+@pytest.mark.parametrize("attribute_config", [False, True])
+def test_batched_allsky_selects_distinct_frozen_density_per_column(attribute_config):
     state = _state(batch=2)
     forcing = _forcing(batch=2)
     rho_d = torch.tensor([[1.0, 3.0], [2.0, 4.0]], dtype=F64)
@@ -141,6 +142,9 @@ def test_batched_allsky_selects_distinct_frozen_density_per_column():
         profile_cfg=_cloud_profile_cfg(rho_d),
         input_cfg=RttovInputConfig(coef_id="density-test", channels=(1, 2)),
     )
+    if attribute_config:
+        from types import SimpleNamespace
+        cfg.profile_cfg = SimpleNamespace(**cfg.profile_cfg._asdict())
     bt, rq, _ = batched_allsky_bt(state, forcing, cfg)
     assert bt.shape == (2, 2) and bool(torch.isfinite(bt).all())
     assert torch.equal(rq, torch.zeros_like(rq))

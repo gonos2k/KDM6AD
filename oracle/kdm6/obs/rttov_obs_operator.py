@@ -29,7 +29,7 @@ from typing import NamedTuple
 import torch
 
 from ..state import Forcing, State
-from .model_profile_builder import RttovProfileTensors, model_to_rttov_tensors
+from .model_profile_builder import RttovProfileTensors, model_to_rttov_tensors, with_dry_air_density
 from .obs_loss import compute_obs_loss, symmetric_obs_error
 from .rttov_input_builder import pack_rttov_input
 
@@ -318,7 +318,7 @@ def obs_adjoint_callback(t, x_t, *, schedule, cfg, forcings, run_k,
     if getattr(pcfg, "cloud", False) and col_leaves.th.ndim != 1:
         raise ValueError("cloud obs_adjoint_callback requires a single column; use batched_allsky_bt for batches")
     if getattr(pcfg, "cloud", False) and getattr(pcfg, "rho_d", None) is not None:
-        pcfg = pcfg._replace(rho_d=_col(pcfg.rho_d))
+        pcfg = with_dry_air_density(pcfg, _col(pcfg.rho_d))
     prof = model_to_rttov_tensors(col_leaves, col_forcing, pcfg,
                                   xland=xland, ncmin_land=ncmin_land, ncmin_sea=ncmin_sea)
     cloud = getattr(cfg.profile_cfg, "cloud", False)

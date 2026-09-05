@@ -211,6 +211,22 @@ def test_single_column_callback_clears_cloud_above_model_top():
     assert top_grad[0] > 0.
 
 
+def test_callback_preserves_attribute_based_cloud_config():
+    from types import SimpleNamespace
+    cfg = _cloud_cfg()
+    # The background measure is on the same [1,K] grid as the input state.
+    profile_cfg = SimpleNamespace(**cfg.profile_cfg._asdict())
+    profile_cfg.rho_d = profile_cfg.rho_d.unsqueeze(0)
+    original = profile_cfg.rho_d
+    cfg = cfg._replace(profile_cfg=profile_cfg)
+    o = {"bt": torch.zeros((1, NCH), dtype=F64)}
+    cov = obs_adjoint_callback(0, _cloudy_state(),
+        schedule=ObsSchedule(by_step={0: [o]}), cfg=cfg,
+        forcings=[_forcing()], run_k=_mock_run_k)
+    assert all(bool(torch.isfinite(f).all()) for f in cov)
+    assert profile_cfg.rho_d is original and original.shape == (1, 2)
+
+
 def test_full_cloud_closure_grad_anchor():
     """model leaves -> model_to_rttov(cloud) -> RttovObsOp(cloud) -> loss ->
     autograd.grad: connected leaves (th,qv,qc,qi,qs) finite+nonzero, nc/ni finite,

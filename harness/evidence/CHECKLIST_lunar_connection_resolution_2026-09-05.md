@@ -57,6 +57,10 @@ Green·Red 구현 담당과 별도로 `gpt-5.6-luna` Green·Red가 생산자→�
   tensor/int64/길이/범위를 검증한다. 비교하는 G33R의 선언된 forcing·초기값·시간·fixture는
   정확히 같아야 한다. 상단 구름 제거는 공통 profile builder로 옮겨 단일 컬럼 callback에도
   적용했으며, 실제 runK 입력과 상단 밖 함량 미분 0을 회귀 시험으로 확인했다.
+- 최종 호환성 대조에서 일반 객체 형태의 profile config에 namedtuple `_replace`를
+  요구한 회귀도 재현했다. callback과 batch는 작은 공통 함수에서 기존 config 타입으로
+  필요한 속성을 복사하며 호출자 객체를 변경하지 않는다. 별도 Red 재검증은
+  **85 passed / 6 skipped**였고, 단일 컬럼·batch의 실제 호출과 밀도 선택을 확인했다.
 
 독립 검토의 잠정 지적도 그대로 확정하지 않았다. generic OSSE의 cloud 설정은 이미
 하위 경계에서 거부됐으므로 이번 조기 거부를 기존의 조용한 cloud 누락 해소로 부르지 않는다.
@@ -65,7 +69,7 @@ DA partition 변경에 Fortran stage schema/새 arm은 필요하지 않다. 미�
 
 ## 검증 상태
 
-최종 로컬 전체 oracle: **874 passed / 32 skipped**. 초기 실행의 두 v2/v3 결과 판정
+최종 로컬 전체 oracle: **876 passed / 32 skipped**. 초기 실행의 두 v2/v3 결과 판정
 회귀는 같은 소비자 계약 수정으로 해소했다. 기존 live 시험은 12프레임 요구를 유지하며
 4프레임 자산을 명시적으로 skip한다. 별도 portable 12단계 cloudy-column 시험은 실제
 2-worker 전방을 직렬 결과와 raw `torch.equal`로 비교하고 xland/ncmin 전달도 확인했다.

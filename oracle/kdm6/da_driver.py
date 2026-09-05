@@ -121,7 +121,7 @@ def batched_allsky_bt(x_t: State, forcing: Forcing, obs_cfg: OsseObsConfig,
     grad는 assemble_obs_covector가 정당한 0으로 판정한다.
     반환: (bt (B,nch), rad_quality (B,nch), leaves).
     """
-    from .obs.model_profile_builder import model_to_rttov_tensors
+    from .obs.model_profile_builder import model_to_rttov_tensors, with_dry_air_density
     from .obs.rttov_obs_operator import RttovObsOp
     from .rttov_bridge import require_dry_air_density
 
@@ -144,7 +144,7 @@ def batched_allsky_bt(x_t: State, forcing: Forcing, obs_cfg: OsseObsConfig,
         col = State(*(f[i] for f in flip_leaves))
         fcol = Forcing(*(getattr(flip_forcing, k)[i] for k in Forcing._fields))
         xl = None if xland is None else xland[i]
-        pcfg = obs_cfg.profile_cfg._replace(rho_d=_flip(rho_d)[i])
+        pcfg = with_dry_air_density(obs_cfg.profile_cfg, _flip(rho_d)[i])
         prof = model_to_rttov_tensors(col, fcol, pcfg, xland=xl)
         t_lay, q_lay = prof.t_lay, prof.q_lay
         p_top = fcol.p[0].reshape(1)

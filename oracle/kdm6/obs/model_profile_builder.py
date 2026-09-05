@@ -69,6 +69,19 @@ class RttovProfileConfig(NamedTuple):
     rho_d: "torch.Tensor | None" = None             # frozen dry density, model grid/order
 
 
+def with_dry_air_density(cfg, rho_d: torch.Tensor) -> RttovProfileConfig:
+    """Copy the attribute-based profile config with a selected density view.
+
+    External configs need not implement namedtuple._replace. Never mutate them;
+    shape, dtype and frozen-value checks remain at the cloud profile boundary.
+    """
+    return RttovProfileConfig(
+        gas_units=cfg.gas_units, qv_convention=cfg.qv_convention,
+        rttov_layer_pressure=cfg.rttov_layer_pressure,
+        rttov_level_pressure=cfg.rttov_level_pressure,
+        cloud=cfg.cloud, rho_d=rho_d)
+
+
 class RttovProfileTensors(NamedTuple):
     """RTTOV-unit profile tensors (design 5). ``t_lay``/``q_lay`` (and the cloud
     fields) are differentiable in the model leaves; ``p_lay``/``p_half`` are
