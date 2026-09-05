@@ -54,7 +54,8 @@ import torch
 
 class ProcessControls(NamedTuple):
     """α controls; each entry is None (control absent — zero added ops) or a
-    tensor broadcastable to the rate shape (per-cell) / scalar tensor."""
+    tensor whose broadcast shape is exactly the rate shape (per-cell) / a
+    scalar tensor."""
     alpha_autoconv: Optional[torch.Tensor] = None
     alpha_accretion: Optional[torch.Tensor] = None
     alpha_deposition: Optional[torch.Tensor] = None
@@ -83,13 +84,38 @@ def _scale(struct, fields: tuple, alpha: Optional[torch.Tensor]):
         raise TypeError("process-control alpha must be a floating-point tensor")
     if not bool(torch.isfinite(alpha).all().item()):
         raise ValueError("process-control alpha must be finite")
+
+    # A broadcast-compatible control is valid only when it stays on the rate
+    # grid.  PyTorch otherwise prepends dimensions silently, e.g. a rate with
+    # shape (2, 3) and alpha with shape (2, 1, 1) produce (2, 2, 3).  Check
+    # every selected field because the struct is the source of each rate's
+    # shape contract.
+    for field in fields:
+        rate = getattr(struct, field)
+        try:
+            broadcast_shape = torch.broadcast_shapes(rate.shape, alpha.shape)
+        except RuntimeError as exc:
+            raise ValueError(
+                f"process-control alpha shape {tuple(alpha.shape)} cannot "
+                f"broadcast to {field} rate shape {tuple(rate.shape)}") from exc
+        if tuple(broadcast_shape) != tuple(rate.shape):
+            raise ValueError(
+                f"process-control alpha broadcast shape "
+                f"{tuple(broadcast_shape)} must equal {field} rate shape "
+                f"{tuple(rate.shape)}")
+
     s = torch.exp(alpha)
     if (not bool(torch.isfinite(s).all().item())
             or not bool((s > 0).all().item())):
         raise ValueError(
             "exp(process-control alpha) must be positive and finite in the "
             f"alpha dtype ({alpha.dtype})")
-    return struct._replace(**{f: getattr(struct, f) * s for f in fields})
+    scaled = {f: getattr(struct, f) * s for f in fields}
+    for field, rate in scaled.items():
+        if not bool(torch.isfinite(rate).all().item()):
+            raise ValueError(
+                f"scaled {field} rate (rate * exp(alpha)) must be finite")
+    return struct._replace(**scaled)
 
 
 def apply_warm_controls(warm_out, controls: Optional[ProcessControls]):

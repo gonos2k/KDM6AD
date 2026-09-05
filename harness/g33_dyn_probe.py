@@ -68,7 +68,7 @@ GROUPS = {
         ("mut", "S", "M")],
     3: [("ru_tend", "M", "X"), ("rv_tend", "M", "Y"), ("rw_tend", "Z", "M"),
         ("ph_tend", "Z", "M"), ("t_tend", "M", "M"), ("mu_tend", "S", "M")],
-    4: [("u_2", "M", "X"), ("mu_2", "S", "M"), ("mub", "S", "M"),
+    4: [("u_2", "M", "X"), ("muu", "S", "M"), ("mub", "S", "M"),
         ("msfuy", "S", "X")],
 }
 
@@ -457,9 +457,10 @@ def halo_content(dump_dir: Path) -> list:
     same global cell after the exchange, the halo arrived wrong; if it matches,
     the exchange did its job and a later difference came from somewhere else.
     """
+    import numpy as np
     files = sorted(dump_dir.glob("g33dyn_*.bin"))
     if not files:
-        raise SystemExit(f"no g33dyn_*.bin files under {dump_dir}")
+        raise SystemExit(f"INSUFFICIENT: no g33dyn_*.bin files under {dump_dir}")
 
     # `_load` intentionally rejects duplicate global keys because it serves the
     # cross-decomposition owned-cell comparison. A halo question has a
@@ -485,9 +486,10 @@ def halo_content(dump_dir: Path) -> list:
                     f"{previous.name} and {path.name}; owners cannot be merged")
             owners[(stage, grp, i)] = (path, rec)
     if not per_file:
-        raise SystemExit(f"g33dyn_*.bin files under {dump_dir} carry no declared records")
+        raise SystemExit(
+            f"INSUFFICIENT: g33dyn_*.bin files under {dump_dir} carry no declared records")
 
-    columns, no_owner = {}, {}
+    columns, no_owner, nonfinite = {}, {}, {}
     halo_count = 0
     for rank, _path, dump in per_file:
         for key, rec in dump.items():
@@ -504,6 +506,10 @@ def halo_content(dump_dir: Path) -> list:
                 continue
             owner = owner_entry[1]
             for name, _, _ in GROUPS[grp]:
+                if (not np.all(np.isfinite(rec[name]))
+                        or not np.all(np.isfinite(owner[name]))):
+                    nonfinite.setdefault((rank, stage, grp, name), []).append(i)
+                    continue
                 if not _same_words(rec[name], owner[name]):
                     columns.setdefault((rank, stage, grp, name), []).append(i)
 
@@ -511,7 +517,7 @@ def halo_content(dump_dir: Path) -> list:
     # it explicitly so the CLI cannot label an empty observation as agreement.
     if halo_count == 0:
         raise SystemExit(
-            f"no halo records in {dump_dir}; halo-content requires observed "
+            f"INSUFFICIENT: no halo records in {dump_dir}; halo-content requires observed "
             f"rank copies before it can report agreement")
 
     rows = []
@@ -519,12 +525,18 @@ def halo_content(dump_dir: Path) -> list:
                 for key in dump if not key[3]}
     for rank, stage, grp in sorted(observed):
         for name, _, _ in GROUPS[grp]:
+            observed_cols = sorted(set(columns.get((rank, stage, grp, name), []))
+                                   | set(nonfinite.get((rank, stage, grp, name), [])))
             rows.append({"rank": rank, "stage": stage, "group": grp,
                          "field": name,
-                         "columns": sorted(columns.get((rank, stage, grp, name), []))})
+                         "columns": observed_cols,
+                         "status": ("INSUFFICIENT_NONFINITE" if
+                                    (rank, stage, grp, name) in nonfinite
+                                    else "compared")})
     for (rank, stage, grp), cols in sorted(no_owner.items()):
         rows.append({"rank": rank, "stage": stage, "group": grp,
-                     "field": "NO-OWNER", "columns": sorted(cols)})
+                     "field": "NO-OWNER", "columns": sorted(cols),
+                     "status": "INSUFFICIENT_NO_OWNER"})
     return rows
 
 
@@ -541,15 +553,21 @@ def halo_vs_reference(ref_dir: Path, dec_dir: Path) -> list:
     same column, and `_load` merges by global index -- which is what makes it
     the wrong loader for this question.
     """
+    import numpy as np
     ref = _load(ref_dir)
+    files = sorted(Path(dec_dir).glob("g33dyn_*.bin"))
+    if not files:
+        raise SystemExit(f"INSUFFICIENT: no g33dyn_*.bin files under {dec_dir}")
     rows = []
-    for path in sorted(Path(dec_dir).glob("g33dyn_*.bin")):
+    halo_count = 0
+    for path in files:
         rank = path.stem.replace("g33dyn_", "")
-        differ, no_reference = {}, {}
+        differ, no_reference, nonfinite = {}, {}, {}
         for key, rec in _declared(read_dump(path)).items():
             stage, grp, i, owned = key
             if owned:
                 continue
+            halo_count += 1
             owner = ref.get((stage, grp, i, True))
             if owner is None:
                 # A COLUMN THE REFERENCE DOES NOT HOLD IS NOT A MATCH. Skipping
@@ -558,14 +576,33 @@ def halo_vs_reference(ref_dir: Path, dec_dir: Path) -> list:
                 no_reference.setdefault((stage, grp), []).append(i)
                 continue
             for name, _, _ in GROUPS[grp]:
+                if (not np.all(np.isfinite(rec[name]))
+                        or not np.all(np.isfinite(owner[name]))):
+                    nonfinite.setdefault((stage, grp, name), []).append(i)
+                    continue
                 if not _same_words(rec[name], owner[name]):
                     differ.setdefault((stage, grp, name), []).append(i)
         for (stage, grp, name), cols in sorted(differ.items()):
+            observed_cols = sorted(set(cols) | set(nonfinite.get((stage, grp, name), [])))
             rows.append({"rank": rank, "stage": stage, "group": grp,
-                         "field": name, "columns": sorted(cols)})
+                         "field": name, "columns": observed_cols,
+                         "status": ("INSUFFICIENT_NONFINITE" if
+                                    (stage, grp, name) in nonfinite
+                                    else "compared")})
+        for (stage, grp, name), cols in sorted(nonfinite.items()):
+            if (stage, grp, name) in differ:
+                continue
+            rows.append({"rank": rank, "stage": stage, "group": grp,
+                         "field": name, "columns": sorted(cols),
+                         "status": "INSUFFICIENT_NONFINITE"})
         for (stage, grp), cols in sorted(no_reference.items()):
             rows.append({"rank": rank, "stage": stage, "group": grp,
-                         "field": "NO-REFERENCE", "columns": sorted(cols)})
+                         "field": "NO-REFERENCE", "columns": sorted(cols),
+                         "status": "INSUFFICIENT_NO_REFERENCE"})
+    if halo_count == 0:
+        raise SystemExit(
+            f"INSUFFICIENT: no halo records in {dec_dir}; halo-vs-reference requires observed "
+            "rank copies before it can report agreement")
     return rows
 
 
@@ -573,7 +610,7 @@ SEAMS = (59, 117, 176)
 
 
 def _report(rows, key: str | None = None) -> None:
-    head = f"  {'stage':>5} {'grp':>3} {'field':>8} {'cols':>6}   columns / nearest boundary"
+    head = f"  {'stage':>5} {'grp':>3} {'field':>8} {'cols':>6} {'status':>24}   columns / nearest boundary"
     print(f"  {key:>18}{head}" if key else head)
     for r in rows:
         c = r["columns"]
@@ -581,7 +618,8 @@ def _report(rows, key: str | None = None) -> None:
             continue
         near = min(SEAMS, key=lambda s: min(abs(i - s) for i in c))
         lead = f"  {r[key]:>18}" if key else ""
-        print(f"{lead}  {r['stage']:>5} {r['group']:>3} {r['field']:>8} {len(c):>6}   "
+        print(f"{lead}  {r['stage']:>5} {r['group']:>3} {r['field']:>8} {len(c):>6} "
+              f"{r.get('status', 'compared'):>24}   "
               f"{c[:9]}{' ...' if len(c) > 9 else ''}  nearest boundary {near}")
 
 

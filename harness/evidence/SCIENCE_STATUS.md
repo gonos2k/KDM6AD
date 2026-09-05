@@ -31,7 +31,8 @@ binary `a40bd80f` is kept beside them.
 | Assimilation or forecast skill change from corrected AMI decoding | UNMEASURED | Input decode measurements are not a forecast experiment |
 
 The whole-code correction and review status is tracked in
-`CHECKLIST_whole_audit_resolution_2026-09-05.md`. Code checks do not close
+`CHECKLIST_whole_audit_resolution_2026-09-05.md` and its follow-up
+`CHECKLIST_pr208_review_resolution_2026-09-06.md`. Code checks do not close
 M1 (10-minute applied-transfer residual), M2 (first-negative QIB operands),
 or the number-unit contract below. Private source edits and syntax checks do
 not change the deployed-binary attribution above.

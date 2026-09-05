@@ -584,7 +584,8 @@ def _resolve_coef_path(case_root: Path) -> Path:
     if mp is None or mc is None or not mp.group(1).strip() or not mc.group(1).strip():
         raise ValueError(f"{case_root}: cannot resolve coef path (defn%coef_prefix / "
                          "defn%f_coef missing) -- needed to verify solar channel types.")
-    return Path(mp.group(1)) / mc.group(1)
+    # RTTOV runs in case_root/out; relative prefixes belong to that cwd.
+    return (case_root / "out" / mp.group(1) / mc.group(1)).resolve()
 
 
 def _verify_solar_channel_types(case_root: Path, solar_ids) -> None:
@@ -734,6 +735,19 @@ def write_rttov_case(rttov_input, out_case_dir, *, fixture_case_dir=None, overwr
     # geometry (viewing + solar angles) and surface (skin + near-surface state) are BOTH
     # overlaid now (see _overlay_geometry / _overlay_surface, applied in _populate_case);
     # validate them BEFORE any FS mutation.
+    if rttov_input.nprofiles < 1:
+        raise ValueError(
+            f"RttovInput has nprofiles={rttov_input.nprofiles}; an RTTOV case "
+            "requires at least one profile (empty observation slots must return "
+            "before case construction).")
+    if rttov_input.nlayers < 1:
+        raise ValueError(
+            f"RttovInput has nlayers={rttov_input.nlayers}; an RTTOV case "
+            "requires at least one layer.")
+    if not cfg.channels:
+        raise ValueError(
+            "RttovInput config requires at least one channel "
+            "(an empty RTTOV case is not executable).")
     _validate_geometry(getattr(cfg, "geometry", None), rttov_input.nprofiles)
     _validate_surface(getattr(cfg, "surface", None), rttov_input.nprofiles)
     # Every solar id must be a REQUESTED channel -- reject an out-of-run id at the

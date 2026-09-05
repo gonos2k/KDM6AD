@@ -187,6 +187,9 @@ def rttov_provenance(fixtures=None):
     fixture's run.sh, the rtcoef and hydrotable resolved exactly like the
     run resolves them (coef_prefix + f_coef/f_hydrotable), and the
     runtime-selection env vars. Resolution happens ONCE here."""
+    import shlex
+    from kdm6.obs.rttov_case_writer import _resolve_coef_path
+
     if fixtures is None:
         from kdm6.obs.rttov_case_writer import (cloud_fixture_case_dir,
                                                 default_fixture_case_dir)
@@ -195,8 +198,14 @@ def rttov_provenance(fixtures=None):
     rt = dict(env={k: os.environ.get(k) for k in _RTTOV_ENV})
     for name, root in fixtures.items():
         root = Path(root).resolve()
-        m = re.search(r"(\S+\.exe)", (root / "out" / "run.sh").read_text())
-        if m is None or not Path(m.group(1)).is_file():
+        # The supported fixtures name one literal executable path. Parse shell
+        # quoting without evaluating expansions or guessing PATH resolution.
+        tokens = shlex.split((root / "out" / "run.sh").read_text(), comments=True)
+        paths = [token for token in tokens if token.endswith(".exe")]
+        literal = (len(paths) == 1 and "/" in paths[0]
+                   and not any(c in paths[0] for c in "$`*?[]~"))
+        exe = (root / "out" / paths[0]).resolve() if literal else None
+        if exe is None or not exe.is_file():
             raise RuntimeError(f"{name}: run.sh names no existing RTTOV exe")
         nl = (root / "out" / "rttov_test.txt").read_text()
         mp = re.search(r"(?m)^\s*defn%coef_prefix\s*=\s*'([^']*)'", nl)
@@ -204,10 +213,10 @@ def rttov_provenance(fixtures=None):
                                 (root / "in" / "coef.txt").read_text()))
         if mp is None or not names.get("f_coef", "").strip():
             raise RuntimeError(f"{name}: cannot resolve the rtcoef path")
-        prefix = Path(mp.group(1))
+        prefix = (root / "out" / mp.group(1)).resolve()
         entry = dict(path=str(root), tree_sha256=_tree_merkle(root),
-                     exe=_hashed(m.group(1)),
-                     coef=_hashed(prefix / names["f_coef"]))
+                     exe=_hashed(exe),
+                     coef=_hashed(_resolve_coef_path(root)))
         ht = names.get("f_hydrotable", "").strip()
         entry["hydrotable"] = _hashed(prefix / ht) if ht else None
         rt[name] = entry

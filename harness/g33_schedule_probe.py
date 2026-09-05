@@ -49,9 +49,9 @@ class ProbeError(Exception):
 def step_schedule(authority: dict) -> tuple[int, float]:
     """(loops, dtcld) implied by the fixture's own dt — never passed in by hand.
 
-    ceil on the REAL dt: `int(dt) // 120` truncates before dividing, so dt = 120.5 s
-    would give 1 outer loop where the reference takes 2. Both current fixtures are
-    integral (20 s, 300 s), which is exactly why the bug was invisible.
+    The producers use positive `nint(dt / 120)`, i.e. round-half-up.  Using a
+    ceiling here would manufacture an extra outer loop for a 120.5 s fixture and
+    would seal a schedule the runtime never executed.
 
     dtcld comes back through f32: it is the f32 cloud timestep the backends carry, and
     a Python double here would seal a value neither of them computes with.
@@ -59,7 +59,7 @@ def step_schedule(authority: dict) -> tuple[int, float]:
     dt = struct.unpack(">f", bytes.fromhex(authority["common_parameters"]["dt"]))[0]
     if not (math.isfinite(dt) and dt > 0):
         raise SystemExit(f"fixture dt is not a positive finite value: {dt!r}")
-    loops = max(1, math.ceil(float(dt) / SUBCYCLE_SECONDS))
+    loops = max(1, math.floor(float(dt) / SUBCYCLE_SECONDS + 0.5))
     dtcld = struct.unpack(">f", struct.pack(">f", float(dt) / loops))[0]
     return loops, dtcld
 
@@ -185,7 +185,8 @@ _WORK_FIELDS = ("work1_qr", "workn_qr", "work1_qs", "work1_qg")
 
 _SCHED_TAG = "KDM6SCHED"
 
-#: The cloud sub-cycle threshold: loops = ceil(dt / this).
+#: The cloud sub-cycle interval: loops = max(nint(dt / this), 1), with positive
+#: round-half-up semantics matching the C++ coordinator and Fortran driver.
 SUBCYCLE_SECONDS = 120.0
 
 #: The probe's lineage record, written beside schedule.json and copied into the
@@ -215,7 +216,12 @@ def parse_sched_stream(raw) -> dict:
     survived.
     """
     if isinstance(raw, bytes):
-        raw = raw.decode("ascii", errors="strict")
+        try:
+            raw = raw.decode("ascii", errors="strict")
+        except UnicodeDecodeError as exc:
+            raise ProbeError(f"probe stream is not ASCII: {exc}") from None
+    if not isinstance(raw, str):
+        raise ProbeError(f"probe stream must be text or bytes, got {type(raw).__name__}")
     out: dict = {}
     for line in raw.splitlines():
         if not line.startswith(_SCHED_TAG + " "):
@@ -242,12 +248,16 @@ def parse_sched_stream(raw) -> dict:
         if field not in _PROBE_FIELDS:
             raise ProbeError(f"unknown probe field {field!r}: the stream builds a "
                              f"sealed contract, so its schema is closed")
-        payload = bytes.fromhex("".join(words))
+        try:
+            payload = bytes.fromhex("".join(words))
+            values = list(gd.unpack_values(dtype, payload))
+        except (ValueError, struct.error) as exc:
+            raise ProbeError(f"malformed {dtype} payload in probe line: {line!r}: {exc}") from None
         rec = out.setdefault(scope, {})
         if field in rec:
             # last-wins is never right here: the survivor would seal the contract
             raise ProbeError(f"duplicate {field!r} record for {scope}")
-        rec[field] = list(gd.unpack_values(dtype, payload))
+        rec[field] = values
     if not out:
         raise ProbeError("probe stream carries no KDM6SCHED records")
     return out
@@ -268,69 +278,123 @@ def probe_from_stream(raw, expected_shape=None) -> dict:
     seen: dict = {}
     want_b, want_k = expected_shape or (None, None)
     for (loop, chain, n), rec in sorted(parsed.items()):
-        entry = seen.setdefault((loop, chain), {"mstep": None, "n_seen": set()})
+        if loop < 1 or n < 1:
+            raise ProbeError(f"probe scope loop={loop}, n={n} must be positive")
+        entry = seen.setdefault((loop, chain), {
+            "mstep": None, "n_seen": set(), "shape": None, "dtcld": None})
         entry["n_seen"].add(n)
-        if n != 1:
-            continue                      # mstep is fixed before the substep loop
-        missing = [f for f in (*_WORK_FIELDS, "mstep_native", "dtcld")
-                   if f not in rec]
+        # Every sched_emit call writes all six fields. Validate the complete record
+        # at EVERY n: checking only n=1 made a stream with a real schedule number but
+        # a truncated later payload look sealed. The n=1 record is still the only
+        # record used to derive mstep; later records are lineage completeness checks.
+        missing = sorted(_PROBE_FIELDS - set(rec))
         if missing:
-            raise ProbeError(f"loop {loop} chain {chain}: probe is missing "
-                             f"{missing} — the substep count cannot be re-derived")
-        dtcld = rec["dtcld"]
-        if len(set(dtcld)) != 1:
-            raise ProbeError(f"loop {loop} chain {chain}: dtcld differs across "
-                             f"columns: {sorted(set(dtcld))}")
-        if not (math.isfinite(dtcld[0]) and dtcld[0] > 0):
-            raise ProbeError(f"loop {loop} chain {chain}: dtcld {dtcld[0]!r} is not "
-                             f"a positive finite timestep")
-        # ADMISSIBILITY, not arithmetic. derive_mstep clamps a negative speed to 1,
-        # which is the right formula and the wrong conclusion: a negative or
-        # non-finite fall speed is a broken measurement, not a one-substep run.
+            raise ProbeError(f"loop {loop} chain {chain} n={n}: probe is missing "
+                             f"{missing}")
+        if set(rec) != _PROBE_FIELDS:
+            extra = sorted(set(rec) - _PROBE_FIELDS)
+            raise ProbeError(f"loop {loop} chain {chain} n={n}: unexpected fields "
+                             f"{extra}")
+
+        if n == 1:
+            dtcld = rec["dtcld"]
+            if not dtcld:
+                raise ProbeError(f"loop {loop} chain {chain}: empty dtcld vector")
+            if len(set(dtcld)) != 1:
+                raise ProbeError(f"loop {loop} chain {chain}: dtcld differs across "
+                                 f"columns: {sorted(set(dtcld))}")
+            if not (math.isfinite(dtcld[0]) and dtcld[0] > 0):
+                raise ProbeError(f"loop {loop} chain {chain}: dtcld {dtcld[0]!r} is not "
+                                 f"a positive finite timestep")
+            # ADMISSIBILITY, not arithmetic. derive_mstep clamps a negative speed to
+            # 1, which is the right formula and the wrong conclusion: a negative or
+            # non-finite fall speed is a broken measurement, not a one-substep run.
+            for field in _WORK_FIELDS:
+                for i, v in enumerate(rec[field]):
+                    if not math.isfinite(v) or v < 0:
+                        raise ProbeError(
+                            f"loop {loop} chain {chain}: {field}[{i}] = {v!r} is outside "
+                            f"the fall-speed domain (finite, >= 0)")
+            # the per-column fields fix B, and every whole-column field must then be
+            # exactly BxK for one consistent K
+            columns = len(rec["mstep_native"])
+            if columns < 1:
+                raise ProbeError(f"loop {loop} chain {chain}: empty mstep_native vector")
+            if len(rec["dtcld"]) != columns:
+                raise ProbeError(f"loop {loop} chain {chain}: dtcld carries "
+                                 f"{len(rec['dtcld'])} values but mstep_native "
+                                 f"{columns} — the scope has no single column count")
+            widths = {len(rec[f]) for f in _WORK_FIELDS}
+            if len(widths) != 1:
+                raise ProbeError(f"loop {loop} chain {chain}: the fall-speed fields have "
+                                 f"differing lengths {sorted(widths)}")
+            span = widths.pop()
+            if span % columns or span == 0:
+                raise ProbeError(f"loop {loop} chain {chain}: {span} work values do not "
+                                 f"form whole columns over {columns} columns")
+            levels = span // columns
+            # The stream declares no K, so a [B, K-1] truncation still forms whole
+            # columns and cannot be caught from the inside. The grid comes from the
+            # FIXTURE AUTHORITY when the caller has it — the same reason the K order in
+            # compare_rate_dump must be declared rather than inferred.
+            if want_b is not None and (columns, levels) != (want_b, want_k):
+                raise ProbeError(
+                    f"loop {loop} chain {chain}: probe carries a {columns}x{levels} grid "
+                    f"but the fixture declares {want_b}x{want_k}")
+            vmax = _vmax_per_column(rec, columns, levels)
+            derived = derive_mstep(vmax, dtcld[0])
+            claimed = []
+            for v in rec["mstep_native"]:
+                if not math.isfinite(v) or float(v) != math.trunc(v):
+                    raise ProbeError(f"loop {loop} chain {chain}: mstep_native {v} is "
+                                     f"not integral")
+                claimed.append(int(v))
+            if derived != claimed:
+                raise ProbeError(
+                    f"loop {loop} chain {chain}: the run used mstep {claimed} but its "
+                    f"own fall speeds give {derived} — the producer's schedule is not "
+                    f"what its operands imply")
+            entry["mstep"] = derived
+            entry["shape"] = (columns, levels)
+            entry["dtcld"] = list(dtcld)
+            continue
+
+        # A stream is sorted by (loop, chain, n), so n=1 has established the shape
+        # before this branch. Keeping this guard makes malformed out-of-order inputs
+        # fail explicitly if the parser's ordering ever changes.
+        if entry["shape"] is None or entry["mstep"] is None:
+            raise ProbeError(f"loop {loop} chain {chain} n={n}: cannot validate "
+                             "a substep before its n=1 record")
+        columns, levels = entry["shape"]
+        if len(rec["mstep_native"]) != columns or len(rec["dtcld"]) != columns:
+            raise ProbeError(f"loop {loop} chain {chain} n={n}: per-column fields "
+                             f"must have length {columns}")
         for field in _WORK_FIELDS:
+            if len(rec[field]) != columns * levels:
+                raise ProbeError(f"loop {loop} chain {chain} n={n}: {field} carries "
+                                 f"{len(rec[field])} values, not the sealed "
+                                 f"{columns}x{levels} grid")
             for i, v in enumerate(rec[field]):
                 if not math.isfinite(v) or v < 0:
                     raise ProbeError(
-                        f"loop {loop} chain {chain}: {field}[{i}] = {v!r} is outside "
-                        f"the fall-speed domain (finite, >= 0)")
-        # the per-column fields fix B, and every whole-column field must then be
-        # exactly BxK for one consistent K
-        columns = len(rec["mstep_native"])
-        if len(rec["dtcld"]) != columns:
-            raise ProbeError(f"loop {loop} chain {chain}: dtcld carries "
-                             f"{len(rec['dtcld'])} values but mstep_native "
-                             f"{columns} — the scope has no single column count")
-        widths = {len(rec[f]) for f in _WORK_FIELDS}
-        if len(widths) != 1:
-            raise ProbeError(f"loop {loop} chain {chain}: the fall-speed fields have "
-                             f"differing lengths {sorted(widths)}")
-        span = widths.pop()
-        if span % columns or span == 0:
-            raise ProbeError(f"loop {loop} chain {chain}: {span} work values do not "
-                             f"form whole columns over {columns} columns")
-        levels = span // columns
-        # The stream declares no K, so a [B, K-1] truncation still forms whole
-        # columns and cannot be caught from the inside. The grid comes from the
-        # FIXTURE AUTHORITY when the caller has it — the same reason the K order in
-        # compare_rate_dump must be declared rather than inferred.
-        if want_b is not None and (columns, levels) != (want_b, want_k):
-            raise ProbeError(
-                f"loop {loop} chain {chain}: probe carries a {columns}x{levels} grid "
-                f"but the fixture declares {want_b}x{want_k}")
-        vmax = _vmax_per_column(rec, columns, levels)
-        derived = derive_mstep(vmax, dtcld[0])
+                        f"loop {loop} chain {chain} n={n}: {field}[{i}] = {v!r} is "
+                        "outside the fall-speed domain (finite, >= 0)")
+        if len(set(rec["dtcld"])) != 1 or not all(
+                math.isfinite(v) and v > 0 for v in rec["dtcld"]):
+            raise ProbeError(f"loop {loop} chain {chain} n={n}: dtcld is not a "
+                             "positive finite per-column constant")
+        if rec["dtcld"] != entry["dtcld"]:
+            raise ProbeError(f"loop {loop} chain {chain} n={n}: dtcld differs from "
+                             "the n=1 schedule record")
         claimed = []
         for v in rec["mstep_native"]:
-            if float(v) != int(v):
-                raise ProbeError(f"loop {loop} chain {chain}: mstep_native {v} is "
-                                 f"not integral")
+            if not math.isfinite(v) or float(v) != math.trunc(v):
+                raise ProbeError(f"loop {loop} chain {chain} n={n}: mstep_native "
+                                 f"{v} is not integral")
             claimed.append(int(v))
-        if derived != claimed:
-            raise ProbeError(
-                f"loop {loop} chain {chain}: the run used mstep {claimed} but its "
-                f"own fall speeds give {derived} — the producer's schedule is not "
-                f"what its operands imply")
-        entry["mstep"] = derived
+        if claimed != entry["mstep"]:
+            raise ProbeError(f"loop {loop} chain {chain} n={n}: mstep_native "
+                             f"{claimed} differs from n=1 {entry['mstep']}")
     missing = sorted(k for k, v in seen.items() if not v["mstep"])
     if missing:
         raise ProbeError(f"probe has no n=1 record for {missing}")

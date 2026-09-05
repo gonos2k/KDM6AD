@@ -1,5 +1,7 @@
 #include "kdm6/sedimentation_conservative.h"
 
+#include <initializer_list>
+
 //
 // Conservative-interface sedimentation substeps — 1:1 port of
 // oracle/kdm6/sed_conservative.py (the AUTHORITATIVE numerical semantics).
@@ -14,6 +16,27 @@ namespace kdm6 {
 namespace sed {
 
 namespace {
+
+// The conservative counterfactual has the same direct (B,K)/(B,) input
+// contract as the legacy substeps.  Keep this guard metadata-only and before
+// K extraction, splitting, or denominator clamps so broadcast-compatible
+// malformed grids fail deterministically without changing valid arithmetic.
+void require_conservative_column_shapes(
+    const torch::Tensor& reference,
+    std::initializer_list<torch::Tensor> tensors,
+    const torch::Tensor& mstep_col) {
+    TORCH_CHECK(reference.defined() && reference.dim() == 2 &&
+                    reference.size(0) > 0 && reference.size(1) > 0,
+                "conservative sedimentation state must have positive (B, K) shape");
+    for (const auto& tensor : tensors) {
+        TORCH_CHECK(tensor.defined() && tensor.sizes() == reference.sizes(),
+                    "all conservative sedimentation state/work/fall/forcing shapes "
+                    "must match (B, K)");
+    }
+    TORCH_CHECK(mstep_col.defined() && mstep_col.dim() == 1 &&
+                    mstep_col.size(0) == reference.size(0),
+                "conservative mstep_col must have shape (B,)");
+}
 
 std::vector<torch::Tensor> split_columns(const torch::Tensor& x, int64_t K) {
     std::vector<torch::Tensor> cols;
@@ -34,6 +57,10 @@ SubstepAdvectionOutputs substep_advection_conservative(
     double dtcld,
     const SubstepAdvectionParams& p
 ) {
+    require_conservative_column_shapes(in.state.qr, {
+        in.state.nr, in.state.qs, in.state.qg, in.state.brs,
+        in.fall_qr_in, in.fall_nr_in, in.fall_qs_in, in.fall_qg_in, in.fall_brs_in,
+        in.work1_qr, in.workn_qr, in.work1_qs, in.work1_qg, in.delz, in.dend}, mstep_col);
     const int64_t K = in.state.qr.size(-1);
     // dend_safe/delz_safe are NUMERICAL denominator guards only (ρ and Δz appear
     // in divisors below), NOT a physical threshold — and the three quantities
@@ -136,6 +163,9 @@ IceSubstepOutputs ice_substep_advection_conservative(
     double dtcld,
     const SubstepAdvectionParams& p
 ) {
+    require_conservative_column_shapes(in.state.qi, {
+        in.state.ni, in.fall_qi_in, in.fall_ni_in,
+        in.work1_qi, in.workn_qi, in.delz, in.dend}, mstep_col);
     const int64_t K = in.state.qi.size(-1);
     auto dend_safe = torch::clamp(in.dend, /*min=*/p.qcrmin);
     auto delz_safe = torch::clamp(in.delz, /*min=*/p.qcrmin);

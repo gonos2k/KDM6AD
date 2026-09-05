@@ -622,7 +622,8 @@ def run_dual_minimizer(
         closure()
 
     with torch.no_grad():
-        x_a, _ = cvt_apply(xb, b_sigma, v_x, cvt)
+        x_cvt, _ = cvt_apply(xb, b_sigma, v_x, cvt)
+        x_a = x_cvt
         part_rec = None
         if partition is not None:
             # reconstruct the analysis with the COMPOSED decoder — cvt_apply
@@ -631,7 +632,7 @@ def run_dual_minimizer(
                                         caps)
             part_rec = build_partition_record(partition, caps, w.detach())
         theta_a = params_from_vtheta(param_prior, v_th.detach(), live=False)
-        cvt_rec = (build_cvt_record(cvt, b_sigma, xb, x_a)
+        cvt_rec = (build_cvt_record(cvt, b_sigma, xb, x_cvt)
                    if cvt is not None else None)
     return DualMinimizeResult(
         x_analysis=x_a, theta_analysis=theta_a,
@@ -690,7 +691,8 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
     import hashlib
     from . import da_driver as _drv
     from .da_window import collect_window_trajectory
-    from .obs.obs_loss import compute_obs_loss
+    from .obs.obs_loss import (compute_obs_loss,
+                               validate_mixed_observation_sigma)
 
     conn = (("th", "qv", "qc", "qi", "qs", "nc", "ni") if cloud
             else ("th", "qv"))
@@ -752,6 +754,15 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
         _fingerprint_obj(forcings_f),
         _fingerprint_obj(xland_f), ncmin_land, ncmin_sea)).encode()).hexdigest()
     obs_sigma_f = torch.as_tensor(obs_cfg_f.obs_sigma, dtype=torch.float64).detach().clone()
+    # make_dual_frozen_obs_eval bypasses ObsOperatorConfig, so enforce the
+    # shared mixed-unit contract at this adapter boundary too.  make_live_run_k
+    # tags its callable with channel IDs whose observable is reflectance; all
+    # other positions remain BT(K).
+    solar_channels = getattr(getattr(obs_cfg_f, "run_k", None),
+                             "solar_channels", ())
+    channels = getattr(getattr(obs_cfg_f, "input_cfg", None), "channels", None)
+    validate_mixed_observation_sigma(obs_sigma_f, channels, solar_channels,
+                                     name="obs_sigma")
     T_win = len(forcings)
     for t, entry in y_by_time.items():
         # H2: 시각 키는 plain int 스텝 인덱스 — bool은 int 서브클래스, float은

@@ -97,6 +97,46 @@ def compute_obs_loss(bt_hat, obs, masks, sigma, *, delta: float = 1.0):
     return contrib.sum()
 
 
+def validate_mixed_observation_sigma(sigma, channels, solar_channels,
+                                     *, name: str = "sigma") -> None:
+    """Validate the shared sigma contract for a mixed BT/reflectance vector.
+
+    ``channels`` and ``solar_channels`` are 1-based RTTOV channel IDs.  The
+    observable returned by the producer is ordered by ``channels``; therefore
+    a mixed vector needs exactly one sigma per configured output position.  A
+    scalar remains valid when no solar channel is tagged (the IR-only case).
+    This small boundary helper is shared by the direct OSSE and frozen-dual
+    adapters, which otherwise call ``compute_obs_loss`` without the lower
+    ``ObsOperatorConfig`` validation.
+    """
+    if not solar_channels:
+        return
+    if channels is None:
+        raise ValueError(
+            f"{name} mixed solar+IR observable requires configured channel IDs")
+    try:
+        channel_ids = tuple(int(c) for c in channels)
+        solar_ids = tuple(int(c) for c in solar_channels)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(
+            f"{name} mixed solar+IR observable has invalid channel IDs") from exc
+    unknown = set(solar_ids) - set(channel_ids)
+    if unknown:
+        raise ValueError(
+            f"solar_channels {sorted(unknown)} are not in channels "
+            f"{list(channel_ids)}")
+    sig = torch.as_tensor(sigma)
+    if sig.ndim == 0 or sig.numel() == 1:
+        raise ValueError(
+            f"{name} for a mixed solar+IR observable must be per-channel "
+            "(BT-scale for IR, reflectance-scale for solar); scalar sigma "
+            "would mix Kelvin and reflectance units")
+    if sig.numel() != len(channel_ids):
+        raise ValueError(
+            f"{name} has {sig.numel()} values but the mixed observable has "
+            f"{len(channel_ids)} channels")
+
+
 # --- Phase 3: symmetric cloud-amount observation error (all-sky IR) -----------
 
 class SymmetricObsError(NamedTuple):

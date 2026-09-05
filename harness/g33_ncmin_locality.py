@@ -31,7 +31,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import g33_number_transport as nt  # noqa: E402
 import g33_refine_analyze as ra  # noqa: E402
-from g33_refine_experiment import fixture_dims  # noqa: E402
+from g33_refine_experiment import fixture_dims, fixture_dims_from  # noqa: E402
 
 #: The condensate species, and the vapour that feeds them.
 CONDENSATE = ("qc", "qr", "qi", "qs", "qg")
@@ -262,7 +262,9 @@ def control_replication(driver: str, fixture: str, algo: str | None = None,
     insensitive to everything, which would make the control vacuous rather than
     strong.
     """
-    cls = equivalence_classes(fixture)
+    _width, _levels, _xland, _ncmin, source = _fixture_authority(fixture,
+                                                                   contract)
+    cls = equivalence_classes(fixture, source=source)
     within = next((ms for ms in cls.values() if len(ms) > 1), None)
     if within is None:
         raise ra.RefineError(
@@ -386,6 +388,18 @@ def _ulps(a: str, b: str) -> int:
     return abs(_ordered(a) - _ordered(b))
 
 
+def fixture_xland_from(src: str, where: str = "<fixture>") -> dict:
+    """{column: 1.0 land | 2.0 sea} declared by fixture bytes."""
+    m = re.search(r"XLAND_BITS\(B\)\s*=\s*\[(.*?)\]", src, re.S)
+    if not m:
+        raise ra.RefineError(f"cannot read XLAND_BITS from {where}")
+    bits = re.findall(r"z'([0-9A-Fa-f]{8})'", m.group(1))
+    if not bits:
+        raise ra.RefineError(f"{where}: XLAND_BITS carries no columns")
+    return {i: struct.unpack(">f", bytes.fromhex(b))[0]
+            for i, b in enumerate(bits, start=1)}
+
+
 def fixture_xland(fixture: str) -> dict:
     """{column: 1.0 land | 2.0 sea} declared by the fixture source.
 
@@ -393,27 +407,27 @@ def fixture_xland(fixture: str) -> dict:
     the stream carries no `xland`. Reading it from the fixture keeps the
     prediction checkable without widening the protocol (owner P0-S1).
     """
-    src = (Path(__file__).resolve().parent / "g33_fortran"
-           / f"{fixture}.f90").read_text()
-    m = re.search(r"XLAND_BITS\(B\)\s*=\s*\[(.*?)\]", src, re.S)
-    if not m:
-        raise SystemExit(f"cannot read XLAND_BITS from {fixture}.f90")
-    bits = re.findall(r"z'([0-9A-Fa-f]{8})'", m.group(1))
-    return {i: struct.unpack(">f", bytes.fromhex(b))[0]
-            for i, b in enumerate(bits, start=1)}
+    path = (Path(__file__).resolve().parent / "g33_fortran"
+            / f"{fixture}.f90")
+    return fixture_xland_from(path.read_text(), str(path))
 
 
-def fixture_ncmin(fixture: str) -> tuple:
-    """(ncmin_land, ncmin_sea) declared by the fixture source."""
-    src = (Path(__file__).resolve().parent / "g33_fortran"
-           / f"{fixture}.f90").read_text()
+def fixture_ncmin_from(src: str, where: str = "<fixture>") -> tuple:
+    """(ncmin_land, ncmin_sea) declared by fixture bytes."""
     out = []
     for name in ("NCMIN_LAND_BITS", "NCMIN_SEA_BITS"):
         m = re.search(name + r"\s*=\s*int\(z'([0-9A-Fa-f]{8})'", src)
         if not m:
-            raise SystemExit(f"cannot read {name} from {fixture}.f90")
+            raise ra.RefineError(f"cannot read {name} from {where}")
         out.append(struct.unpack(">f", bytes.fromhex(m.group(1)))[0])
     return tuple(out)
+
+
+def fixture_ncmin(fixture: str) -> tuple:
+    """(ncmin_land, ncmin_sea) declared by the fixture source."""
+    path = (Path(__file__).resolve().parent / "g33_fortran"
+            / f"{fixture}.f90")
+    return fixture_ncmin_from(path.read_text(), str(path))
 
 
 def threshold_can_matter(run: dict, col: int, ncmin: tuple) -> bool:
@@ -590,14 +604,12 @@ def analysis(driver: str, fixture: str, algo: str | None = None,
     # to run() would let one member answer a different experiment after the
     # bundle was built.  Direct callers retain the historical source-backed
     # fallback.
+    width, levels, xland, ncmin, _source = _fixture_authority(
+        fixture, contract, require_source=False)
     if contract is None:
-        width, levels = fixture_dims(fixture)
         run_nsplit, run_mode, run_rho = 1, "rezero", "as-is"
     else:
-        width, levels = contract.columns, contract.levels
         run_nsplit, run_mode, run_rho = 1, contract.mode, contract.rho_profile
-    xland = fixture_xland(fixture)
-    ncmin = fixture_ncmin(fixture)
     base_text = gated_text(driver, fixture, (width,), run_nsplit, run_mode,
                            run_rho, algo=algo, contract=contract)
     base_rec = read_records(base_text, label="baseline", nsplit=run_nsplit)
@@ -736,11 +748,11 @@ def local_oracle(driver: str, fixture: str, algo: str | None = None,
     even though the decomposition changed, so nothing but the `ncmin` gate
     responds to tiling here.
     """
+    width, levels, _xland, _ncmin, _source = _fixture_authority(
+        fixture, contract, require_source=False)
     if contract is None:
-        width, levels = fixture_dims(fixture)
         run_nsplit, run_mode, run_rho = 1, "rezero", "as-is"
     else:
-        width, levels = contract.columns, contract.levels
         run_nsplit, run_mode, run_rho = 1, contract.mode, contract.rho_profile
     ones = (1,) * width
     ref_text = gated_text(driver, fixture, ones, run_nsplit, run_mode, run_rho,
@@ -907,16 +919,75 @@ def threshold_vector(tiles, fixture: str) -> tuple:
                  for c in range(1, fixture_dims(fixture)[0] + 1))
 
 
-def equivalence_classes(fixture: str) -> dict:
+def equivalence_classes(fixture: str, *, source: str | None = None) -> dict:
     """{threshold vector: [decompositions that produce it]}.
 
     If the mechanism really is `slmsk(ite)`-only, this partitions the whole
     decomposition space: same vector => same answer, bit for bit.
+
+    ``source`` is the frozen fixture text held by a bundle producer.  A
+    post-build reread of the working-tree fixture could change the land/sea
+    classes used to decide whether this analysis runs.
     """
+    if source is None:
+        width = fixture_dims(fixture)[0]
+        return _equivalence_classes_for(width, fixture_xland(fixture),
+                                        fixture_ncmin(fixture))
+    width, _ = fixture_dims_from(source, fixture)
+    return _equivalence_classes_for(width, fixture_xland_from(source, fixture),
+                                    fixture_ncmin_from(source, fixture))
+
+
+def _equivalence_classes_for(width: int, xland: dict, ncmin: tuple) -> dict:
+    """Build threshold-vector classes from one already-read fixture authority."""
     out = {}
-    for tiles in compositions(fixture_dims(fixture)[0]):
-        out.setdefault(threshold_vector(tiles, fixture), []).append(tiles)
+    land, sea = ncmin
+    for tiles in compositions(width):
+        vec = []
+        first = 1
+        for size in tiles:
+            last = first + size - 1
+            imposed = sea if xland[last] == 2.0 else land
+            vec.extend([imposed] * size)
+            first = last + 1
+        out.setdefault(tuple(vec), []).append(tiles)
     return out
+
+
+def _fixture_authority(fixture: str, contract=None, *, require_source=True) -> tuple:
+    """Return dimensions and locality controls from one fixture authority.
+
+    A contract-taking helper must not silently switch back to the mutable
+    working-tree fixture.  Real bundle contracts carry the staged source; a
+    direct caller that supplies an incomplete contract is refused so its
+    locality classes cannot describe bytes different from the executed run.
+    """
+    if contract is None:
+        width, levels = fixture_dims(fixture)
+        return (width, levels, fixture_xland(fixture), fixture_ncmin(fixture),
+                None)
+    source = getattr(contract, "fixture_source", "")
+    if not source:
+        if not require_source:
+            # `analysis` and `local_oracle` use the contract's dimensions for
+            # stream completeness; their compiler-free test seam historically
+            # supplies source-backed controls separately.  The class-law and
+            # control helpers set `require_source=True` because they construct
+            # threshold classes from fixture bytes and cannot safely fall back.
+            return (contract.columns, contract.levels, fixture_xland(fixture),
+                    fixture_ncmin(fixture), None)
+        raise ra.RefineError(
+            f"{fixture}: locality contract has no fixture_source; refusing "
+            "to reread the mutable working-tree fixture")
+    width, levels = fixture_dims_from(source, fixture)
+    expected = (getattr(contract, "columns", None),
+                getattr(contract, "levels", None))
+    if (width, levels) != expected:
+        raise ra.RefineError(
+            f"{fixture}: contract dimensions {expected} disagree with its "
+            f"fixture_source dimensions {(width, levels)}")
+    return (width, levels, fixture_xland_from(source, fixture),
+            fixture_ncmin_from(source, fixture), source)
 
 
 def class_law(driver: str, fixture: str, algo: str | None = None,
@@ -929,8 +1000,8 @@ def class_law(driver: str, fixture: str, algo: str | None = None,
     show reduces to WHICH vectors its patch layout produces, a geometric
     question about the decomposition rather than a physics campaign.
     """
-    cls = equivalence_classes(fixture)
-    width, levels = fixture_dims(fixture)
+    width, levels, _xland, _ncmin, source = _fixture_authority(fixture, contract)
+    cls = equivalence_classes(fixture, source=source)
     ones = (1,) * width
 
     # THE SAME GATES `local_oracle` applies. Reading the streams directly

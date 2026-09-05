@@ -192,6 +192,16 @@ def read_wrfout_frame(path: str, time_idx: int = 0,
         delz = derive_delz(_flat(ds.variables["PH"], time_idx),
                            _flat(ds.variables["PHB"], time_idx))
         xland = _flat(ds.variables["XLAND"], time_idx)
+        # XLAND is a WRF categorical field, not a continuous land fraction:
+        # 1=land and 2=water.  _flat's finite check is insufficient because a
+        # finite fill/sentinel or fractional value would otherwise be accepted;
+        # the init_profile fallback below treats every value except 1 as water.
+        valid_xland = (xland == 1.0) | (xland == 2.0)
+        if not bool(valid_xland.all()):
+            bad = xland[~valid_xland][:8].tolist()
+            raise ValueError(
+                "XLAND must contain only WRF categorical values {1.0, 2.0} "
+                f"(land/water); got invalid values {bad}")
 
         nccn = _flat(ds.variables["QNCCN"], time_idx)
         nccn_fallback = nccn_policy == "init_profile" and bool((nccn == 0).all())

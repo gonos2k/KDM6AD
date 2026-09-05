@@ -20,6 +20,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import g33_derived as gdv      # noqa: E402
 import g33_dump as gd          # noqa: E402
 import g33_expectation as ge   # noqa: E402
+import g33_schema as schema    # noqa: E402
 
 _INDEX_KEYS = ("container_id", "outer_loop", "chain", "n", "first_op_seq_id",
                "last_op_seq_id", "record_count", "path")
@@ -170,6 +171,40 @@ def _sign_ok(bits, dtype):
     return _is_zero(bits, dtype) or not (bits >> sign_bit) & 1
 
 
+# These are snapshots of carried prognostic state.  Rate and diagnostic stages
+# intentionally stay out of this set: signed tendencies and residuals are valid
+# observations even when they are negative.  The finite check applies to every
+# numeric stage below, so a NaN cannot hide in a diagnostic-only lane.
+_STATE_SNAPSHOT_STAGES = frozenset((
+    "kernel_call_input", "kernel_after_entry_clamp", "outer_pre_sed",
+    "outer_post_sed", "micro_post_melt", "micro_post_freeze",
+    "micro_pre_state_update", "micro_post_state_update", "outer_post_micro",
+))
+_CARRIED_STATE_FIELDS = frozenset(schema._SEMANTIC_STAGE_FIELDS["outer_post_micro"])
+
+
+def validate_stage_domains(run: dict) -> None:
+    """Validate all normalized stage payloads before semantic replay.
+
+    A stage value is evidence consumed by the comparator even when no arithmetic
+    rung refers to it directly.  Treating only active op operands as trusted let a
+    NaN snapshot pass a clean same-backend replay and then enter a cross-backend
+    comparison as if it were a physical state.
+    """
+    for s in run.get("stages", ()):
+        bits, dtype = int(s["bits"]), s["dtype"]
+        if not _is_finite(bits, dtype):
+            raise GateSemanticsError(
+                f"non-finite stage {s['stage']}.{s['field']} at "
+                f"loop{s['loop']} chain{s['chain']} n{s['n']} col{s['col']} k{s['k']}")
+        if (s["stage"] in _STATE_SNAPSHOT_STAGES
+                and s["field"] in _CARRIED_STATE_FIELDS
+                and not _sign_ok(bits, dtype)):
+            raise GateSemanticsError(
+                f"negative carried state {s['stage']}.{s['field']} at "
+                f"loop{s['loop']} chain{s['chain']} n{s['n']} col{s['col']} k{s['k']}")
+
+
 def validate_gate_semantics(run: dict, mech) -> dict:
     """Independent per-run gate contract. Returns the active mask
     {LaneKey: bool}; raises GateSemanticsError on a violation.
@@ -187,6 +222,7 @@ def validate_gate_semantics(run: dict, mech) -> dict:
     * DOMAIN: where gate==1 every actual transport must be finite and non-negative.
     """
     algo = run["algorithm"]
+    validate_stage_domains(run)
     gates, msteps = {}, {}
     for s in run["stages"]:
         if s["stage"] != "substep_pre":

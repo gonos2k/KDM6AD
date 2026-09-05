@@ -182,6 +182,14 @@ def main():
         subset = False
 
     _, nj, nk, ni = F.shape
+    # Raw equality of identical NaN/Inf words is not a physically interpretable
+    # rate comparison.  Keep the documented ``brs`` exception (empty-cell
+    # sentinel) and refuse the other fields before any orientation verdict.
+    for label, data in (("fortran", F), ("cpp", C)):
+        for field in range(nf):
+            if not np.all(np.isfinite(data[field])):
+                die(f"INSUFFICIENT {label} rate dump: field {field} has "
+                    "non-finite values; no physical rate verdict")
     if K != nk or ni <= 0 or B % ni:
         die(f"cannot align: fort (nj={nj},nk={nk},ni={ni}) vs cpp (B={B},K={K})")
     nj_cpp = B // ni

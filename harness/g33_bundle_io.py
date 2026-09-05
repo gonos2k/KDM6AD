@@ -562,7 +562,10 @@ def _verify_probe_lineage(bundle_dir, algo, meta, leg, diag_sha, authority):
     # and refuses a stream whose own mstep_native disagrees, so this is not a replay of
     # the producer's arithmetic.
     try:
-        probe = gsp.probe_from_stream(stream)
+        probe = gsp.probe_from_stream(
+            stream,
+            expected_shape=(int(authority["B"]), int(authority["K"])),
+        )
     except gsp.ProbeError as e:
         raise BundleError(f"{algo}: shipped probe stream does not derive: {e}") from None
     derived = {}

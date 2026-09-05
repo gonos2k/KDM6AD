@@ -110,6 +110,54 @@ void validate_xland(const torch::Tensor& xland, int64_t ncol) {
                 "xland must contain only finite values");
 }
 
+// The direct C++ API has the same explicit batched (B,K) contract as the
+// Python boundary.  Check every field before the dt<=0 identity return and
+// before any coordinate conversion: relying on Tensor broadcasting here can
+// silently apply a one-column forcing to a different vertical-column grid.
+// This is metadata-only, so valid operational f32 arithmetic is unchanged.
+void validate_state_forcing_shapes(const State& state, const Forcing& forcing) {
+    constexpr const char* state_names[] = {
+        "th", "qv", "qc", "qr", "qi", "qs", "qg", "nccn", "nc", "ni", "nr", "bg"};
+    constexpr const char* forcing_names[] = {"rho", "pii", "p", "delz"};
+
+    const auto state_fields = state.fields();
+    const torch::Tensor* forcing_fields[] = {&forcing.rho, &forcing.pii, &forcing.p, &forcing.delz};
+    TORCH_CHECK(state_fields[0]->defined(), "state.", state_names[0], " must be defined");
+    TORCH_CHECK(state_fields[0]->dim() == 2 && state_fields[0]->size(0) > 0 &&
+                    state_fields[0]->size(1) > 0,
+                "state.", state_names[0], " must have a positive rank-2 (B,K) shape");
+    const auto expected_shape = state_fields[0]->sizes();
+    const auto expected_dtype = state_fields[0]->scalar_type();
+    const auto expected_device = state_fields[0]->device();
+
+    for (size_t i = 0; i < state_fields.size(); ++i) {
+        const auto& tensor = *state_fields[i];
+        TORCH_CHECK(tensor.defined(), "state.", state_names[i], " must be defined");
+        TORCH_CHECK(tensor.dim() == 2 && tensor.size(0) > 0 && tensor.size(1) > 0,
+                    "state.", state_names[i], " must have a positive rank-2 (B,K) shape");
+        TORCH_CHECK(tensor.sizes() == expected_shape,
+                    "state.", state_names[i], " shape ", tensor.sizes(),
+                    " != state fields shape ", expected_shape,
+                    " (broadcasting is not allowed)");
+        TORCH_CHECK(tensor.scalar_type() == expected_dtype && tensor.device() == expected_device,
+                    "state.", state_names[i], " must match state dtype/device (",
+                    expected_dtype, ", ", expected_device, ")");
+    }
+    for (size_t i = 0; i < sizeof(forcing_fields) / sizeof(forcing_fields[0]); ++i) {
+        const auto& tensor = *forcing_fields[i];
+        TORCH_CHECK(tensor.defined(), "forcing.", forcing_names[i], " must be defined");
+        TORCH_CHECK(tensor.dim() == 2 && tensor.size(0) > 0 && tensor.size(1) > 0,
+                    "forcing.", forcing_names[i], " must have a positive rank-2 (B,K) shape");
+        TORCH_CHECK(tensor.sizes() == expected_shape,
+                    "forcing.", forcing_names[i], " shape ", tensor.sizes(),
+                    " != state fields shape ", expected_shape,
+                    " (broadcasting is not allowed)");
+        TORCH_CHECK(tensor.scalar_type() == expected_dtype && tensor.device() == expected_device,
+                    "forcing.", forcing_names[i], " must match state dtype/device (",
+                    expected_dtype, ", ", expected_device, ")");
+    }
+}
+
 }  // namespace
 
 // Operational auxiliary diagnostics — physics-based, mirroring Fortran
@@ -349,6 +397,7 @@ FnResult kdm6_fn(const State& state,
     // the dt<=0 no-op early return below, so an invalid variant can never
     // silently succeed as a no-op.
     validate_physics_variant(physics.variant, "kdm6_fn");
+    validate_state_forcing_shapes(state, forcing);
     TORCH_CHECK(std::isfinite(dt), "kdm6_fn: dt must be finite");
     if (xland.has_value()) validate_xland(xland.value(), state.qc.size(0));
 
@@ -763,7 +812,8 @@ State Handle::jvp(const State& v, const GraphOptions& opts) const {
 
     auto tangents = torch::autograd::grad(
         {inner}, u_leaves, /*grad_outputs=*/{},
-        /*retain_graph=*/false, /*create_graph=*/false, /*allow_unused=*/true);
+        /*retain_graph=*/opts.retain_graph || opts.create_graph,
+        /*create_graph=*/opts.create_graph, /*allow_unused=*/true);
     for (size_t i = 0; i < t_ptrs.size(); ++i) {
         *t_ptrs[i] = tangents[i].defined() ? tangents[i]
                                            : torch::zeros_like(*out_ptrs[i]);

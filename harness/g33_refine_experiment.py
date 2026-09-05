@@ -39,6 +39,7 @@ import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+REPO = HERE.parent
 sys.path.insert(0, str(HERE))
 import g33_number_transport as nt     # noqa: E402
 
@@ -235,6 +236,10 @@ class RunContract:
     mode: str
     rho_profile: str
     tiles: tuple
+    # The build stages fixture source bytes before compiling.  Keeping those
+    # bytes in the in-memory contract lets downstream locality analysis derive
+    # xland/ncmin from the same authority instead of rereading a mutable tree.
+    fixture_source: str = ""
 
     def for_tiles(self, tiles) -> "RunContract":
         """The same contract with a different requested decomposition -- the
@@ -1064,6 +1069,82 @@ def _ncmin():
     return nl
 
 
+_STAGED_NAME = re.compile(r"^(?P<sha>[0-9a-f]{64})-[^/]+$")
+
+
+def _verified_staged_bytes(path: Path, label: str) -> bytes:
+    """Read one content-addressed build input and verify its address first.
+
+    The build script checks the staged path before and after compilation, but
+    publication reads it later.  Reading the bytes once and hashing those same
+    bytes closes the post-build verification-to-publication gap; a mutation
+    cannot become the contract while retaining the original staged filename.
+    """
+    if path.is_symlink() or not path.is_file():
+        raise SystemExit(f"REFUSED: staged {label} {path} is not a regular file")
+    m = _STAGED_NAME.fullmatch(path.name)
+    if not m:
+        raise SystemExit(
+            f"REFUSED: staged {label} {path} has no content-addressed digest")
+    data = path.read_bytes()
+    got = hashlib.sha256(data).hexdigest()
+    if got != m.group("sha"):
+        raise SystemExit(
+            f"REFUSED: staged {label} {path} claims {m.group('sha')[:12]} "
+            f"but contains {got[:12]}")
+    return data
+
+
+def _staged_source_bytes(workdir: Path, logical, *, fallback: Path,
+                         label: str) -> bytes:
+    """Return verified staged bytes for a logical source path.
+
+    A real build always has a map entry.  The fallback is retained only for
+    compiler-free unit seams, where no staged map exists at all.
+    """
+    mapping = workdir / "staged-map.txt"
+    logical_path = Path(logical)
+    if not logical_path.is_absolute():
+        logical_path = (REPO / logical_path).resolve()
+    if mapping.is_file():
+        for line in mapping.read_text().splitlines():
+            try:
+                staged, mapped = line.split("\t", 1)
+            except ValueError:
+                continue
+            candidate = Path(mapped)
+            if not candidate.is_absolute():
+                candidate = (REPO / candidate).resolve()
+            if candidate == logical_path:
+                staged_path = Path(staged)
+                if not staged_path.is_absolute():
+                    staged_path = (workdir / staged_path).resolve()
+                return _verified_staged_bytes(staged_path, label)
+        raise SystemExit(
+            f"REFUSED: build staged no source bytes for {logical!r}; "
+            "the analysis cannot choose a second source authority")
+    fallback = Path(fallback)
+    if not fallback.is_absolute():
+        fallback = (REPO / fallback).resolve()
+    if not fallback.is_file():
+        raise SystemExit(f"REFUSED: source {fallback} is missing")
+    return fallback.read_bytes()
+
+
+def _frozen_fixture_source(workdir: Path, fixture: str) -> str:
+    """Read and rehash the fixture copy the build staged.
+
+    ``refine_build.sh`` records the logical-to-staged mapping after copying and
+    digesting the source. Real builds therefore always have this authority. A
+    missing map is retained as a test seam for the no-compiler fakes; it is not
+    accepted as an alternate authority when a map exists but is incomplete.
+    """
+    current = HERE / "g33_fortran" / f"{fixture}.f90"
+    data = _staged_source_bytes(workdir, current, fallback=current,
+                                label="fixture source")
+    return data.decode()
+
+
 def _multi_run_analyses(out: Path, exe: Path, fixture: str,
                         precision: str = "f32", algo: str | None = None,
                         contract=None) -> list:
@@ -1082,7 +1163,8 @@ def _multi_run_analyses(out: Path, exe: Path, fixture: str,
     from an analysis nobody ran (owner priority 6).
     """
     made = []
-    if len(_ncmin().equivalence_classes(fixture)) < 2:
+    frozen_source = contract.fixture_source if contract is not None else None
+    if len(_ncmin().equivalence_classes(fixture, source=frozen_source)) < 2:
         return made
     for name, (mod, fn) in MULTI_RUN.items():
         if not res.applicable(name, precision):
@@ -1245,7 +1327,6 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
     # A canonical override is equivalent to omitting the option, so it does not
     # create a manifest identity that the build script cannot reproduce.
     module = canonical
-    width = fixture_width(fixture)
     # The sub-cycle limit the kernel enforces, read ONCE from the frozen
     # source this build compiles against and recorded in the bundle: the
     # geometry contract is built on it, and a checker that re-reads it from
@@ -1267,14 +1348,20 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         # were re-read here, so a fixture edited after staging and restored
         # before the manifest was written gave an executable built from one
         # domain and a record describing another.
-        fixture_bytes = (HERE / "g33_fortran" / f"{fixture}.f90").read_text()
+        fixture_blob = _staged_source_bytes(
+            tmp, HERE / "g33_fortran" / f"{fixture}.f90",
+            fallback=HERE / "g33_fortran" / f"{fixture}.f90",
+            label="fixture source")
+        fixture_bytes = fixture_blob.decode()
+        width, levels = fixture_dims_from(fixture_bytes, fixture)
         contract = RunContract(
             fixture=fixture, columns=width,
-            levels=fixture_dims_from(fixture_bytes, fixture)[1],
+            levels=levels,
             horizon=fixture_horizon_from(fixture_bytes, fixture),
             dtcldcr=kgeom["dtcldcr"],
             algorithm=algo, precision="f64" if arm == "f64" else "f32",
-            mode=mode, rho_profile=rho_profile, tiles=(width,))
+            mode=mode, rho_profile=rho_profile, tiles=(width,),
+            fixture_source=fixture_bytes)
         if arm == "f64":
             # An f64 build emits no G33R at all, so there are no refinement
             # members to strict-parse; the probe stream is the artifact, and it
@@ -1298,7 +1385,6 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
                            dtcldcr=kgeom["dtcldcr"])
             if len(runs) > 1:
                 ra.require_same_universe(runs)      # one experiment, not several
-        fx = HERE / "g33_fortran" / f"{fixture}.f90"
         precision = "f64" if arm == "f64" else "f32"
         # THE RESULT: the raw members through the strict parser, then every
         # applicable analysis over them, each file digested where it lies.
@@ -1318,11 +1404,16 @@ def produce(dest: Path, *, fixture: str, algo: str, nsplits, mode: str,
         if nflux:
             command.append("--nflux")
         command += ["--rho-profile", rho_profile, "--arm", arm]
+        module_blob = _staged_source_bytes(tmp, module, fallback=module,
+                                           label="kernel source")
+        input_sha256 = res.input_digest_from(
+            hashlib.sha256(fixture_blob).hexdigest(),
+            hashlib.sha256(module_blob).hexdigest(), rho_profile)
         rec = res.record(commit=res.git("rev-parse", "HEAD"),
                          dirty=bool(res.git("status", "--porcelain")),
                          command=command,
                          binary_sha256=res.sha256(exe),
-                         input_sha256=res.input_digest(fx, module, rho_profile),
+                         input_sha256=input_sha256,
                          members=member_rows, analyses=analyses)
         res.write(tmp, rec)
         store = dest.parent / f"{dest.name}.bundles"

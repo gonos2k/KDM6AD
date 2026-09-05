@@ -271,16 +271,14 @@ _NEXT_240 = _next_f32(240.0)
 
 @pytest.mark.parametrize("dt,loops", [
     (20.0, 1), (120.0, 1),                      # exactly the threshold: still one
-    (_NEXT_120, 2),                             # a hair over, in f32: two
-    (120.5, 2),                                 # int(dt)//120 truncated this to 1
+    (_NEXT_120, 1),                             # nint(1+epsilon) is still one
+    (120.5, 1),                                 # round-half-up, not ceil
     (239.9, 2), (240.0, 2),
-    (_NEXT_240, 3),
+    (_NEXT_240, 2),
     (300.0, 3),
 ])
-def test_outer_loop_count_ceils_the_real_dt(dt, loops):
-    """`int(dt) // 120` truncates BEFORE dividing, so dt = 120.5 gave 1 loop where the
-    reference takes 2. Both shipped fixtures are integral (20 s, 300 s), which is
-    exactly why it stayed invisible."""
+def test_outer_loop_count_matches_positive_nint(dt, loops):
+    """The coordinator and Fortran driver use positive round-half-up nint."""
     got_loops, _ = probe_mod.step_schedule(_authority_with_dt(dt))
     assert got_loops == loops
 

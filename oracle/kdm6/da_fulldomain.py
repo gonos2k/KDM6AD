@@ -24,7 +24,7 @@ import copy
 import hashlib
 import math
 import time
-from dataclasses import fields, is_dataclass
+from dataclasses import fields, is_dataclass, replace
 from pathlib import Path
 
 import torch
@@ -34,7 +34,7 @@ from .da_partition import PartitionSpec
 from .da_driver import OsseObsConfig, batched_clear_bt
 from .da_dual import ObsEvalResult, default_param_prior, run_dual_minimizer
 from .da_window import WindowConfig
-from .obs.allsky_shard import sharded_allsky
+from .obs.allsky_shard import sharded_allsky, take_profile_aux
 from .state import Forcing, State
 
 _F64 = dict(dtype=torch.float64)
@@ -504,6 +504,15 @@ def _clear_slices(n: int, nch: int):
     return [torch.arange(a, min(a + step, n)) for a in range(0, n, step)]
 
 
+def _take_clear_config(cfg: OsseObsConfig, indices):
+    """Keep fixed H auxiliary rows aligned with the selected state columns."""
+    input_cfg = getattr(cfg, "input_cfg", None)
+    changes = {name: take_profile_aux(getattr(input_cfg, name), indices)
+               for name in ("geometry", "surface")
+               if isinstance(getattr(input_cfg, name, None), (list, tuple))}
+    return replace(cfg, input_cfg=input_cfg._replace(**changes)) if changes else cfg
+
+
 def _clear_bt_chunked(x_cl: State, fc_cl: Forcing, cfg: OsseObsConfig, nch: int):
     """Chunked clear-sky BT/rq (no-grad use — frozen probe and report).
 
@@ -513,7 +522,8 @@ def _clear_bt_chunked(x_cl: State, fc_cl: Forcing, cfg: OsseObsConfig, nch: int)
         return (torch.zeros((0, nch), **_F64), torch.ones((0, nch), **_F64))
     bts, rqs = [], []
     for sl in _clear_slices(x_cl.th.shape[0], nch):
-        bt, rq, _ = batched_clear_bt(_take(x_cl, sl), _take(fc_cl, sl), cfg)
+        bt, rq, _ = batched_clear_bt(_take(x_cl, sl), _take(fc_cl, sl),
+                                      _take_clear_config(cfg, sl))
         bts.append(bt.to(torch.float64))
         rqs.append(rq)
     return torch.cat(bts), torch.cat(rqs)
@@ -562,12 +572,13 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
                  torch.as_tensor(xland_sub).detach().clone())
     cloudy_pos = torch.as_tensor(cloudy_pos, dtype=torch.int64).detach().clone()
     clear_pos = torch.as_tensor(clear_pos, dtype=torch.int64).detach().clone()
+    clear_partition_cfg = _take_clear_config(clear_cfg, clear_pos)
     pseudo = None if pseudo is None else _freeze_h_value(pseudo)
     x_probe = xb_sub if x_slot_bg is None else x_slot_bg
     with torch.no_grad():
         _, rq_clear = _clear_bt_chunked(_take(x_probe, clear_pos),
                                         _take(fc_sub, clear_pos),
-                                        clear_cfg, nch)
+                                        clear_partition_cfg, nch)
         probe = sharded_allsky(x_probe, fc_sub, cloudy_pos, y_bt,
                                torch.zeros_like(y_bt), xland_sub, rttov_cfg,
                                f"{case_root}/probe", n_workers=n_workers,
@@ -576,10 +587,10 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
     mask[cloudy_pos] = ((y_rq[cloudy_pos] == 0) & (probe["rq"] == 0)).to(torch.float64)
     mask[clear_pos] = ((y_rq[clear_pos] == 0) & (rq_clear == 0)).to(torch.float64)
     n_valid = int(mask.sum())
-    # One canonical digest covers every fixed setting/data object that can
-    # affect H or the loss.  Keeping this list beside the closure's captures
-    # makes additions reviewable: if a captured H input is added, it must also
-    # be added here.
+    # This digest checks captured data within one fixed window. Stateless
+    # callbacks and unchanged external fixture provenance remain run-level
+    # preconditions; it is not an identity for arbitrary Python closures.
+    # Add newly captured H inputs to this list beside the closure's captures.
     signature = _h_signature(
         y_bt=y_bt, y_rq=y_rq, mask=mask,
         cloudy_pos=cloudy_pos, clear_pos=clear_pos,
@@ -606,7 +617,8 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
         j_parts = []
         for sl in _clear_slices(x_cl.th.shape[0], nch):     # K-인덱스 4자리 청킹
             bt_c, _, leaves = batched_clear_bt(_take(x_cl, sl),
-                                               _take(fc_cl, sl), clear_cfg)
+                                               _take(fc_cl, sl),
+                                               _take_clear_config(clear_partition_cfg, sl))
             j_c = _part_loss(bt_c.to(torch.float64), y_cl[sl], m_cl[sl],
                              huber_delta)
             gt, gq = torch.autograd.grad(j_c, [leaves.th, leaves.qv],
@@ -665,6 +677,7 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
                             coef_clear: str = "ami_501_test",
                             coef_cloud: str = "ami_cloud",
                             channels: tuple = (),
+                            geometry=None, surface=None,
                             obs_time: int = 1,
                             dt: float = 300.0,
                             obs_offset_s: "float | None" = None,
@@ -681,6 +694,12 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
 
     grids: dict(p_lay, p_half, t_ref, q_ref) — RTTOV 픽스처 격자/기준 프로파일
     (테스트 헬퍼 또는 케이스 자산에서 공급; 모듈은 tests에 의존하지 않는다).
+    geometry/surface: fixed RTTOV inputs, each a broadcast dict or one dict
+    per ORIGINAL model column. Both clear/all-sky routes select the same rows
+    through membership, caps and chunks. Omitted fields use the reference
+    fixture and are labelled as such in observation_auxiliary; this is not
+    location-specific real-observation H validation. Geometry elevation is km;
+    surface q2m is ppmv moist for the configured gas_units=2.
     obs_time=1(기본): 관측이 M(미세물리 1스텝)을 관통 — θ·결합 기울기 활성
     (P0-1; obs_time=0은 3D-Var형 직접 조정으로 퇴화, θ는 prior에 pin).
     huber_delta: 양 파트 관측손실의 Huber δ[K] (P0-3; None=구계약 순수 이차).
@@ -700,6 +719,13 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     import numpy as np
 
     t0 = time.time()
+    # Fixed nuisance inputs of H, in ORIGINAL model-column order. Absence
+    # explicitly retains the reference fixture and is reported below; it is
+    # not a claim of location-specific observation geometry/surface matching.
+    from .obs.rttov_case_writer import _validate_geometry, _validate_surface
+    _validate_geometry(geometry, fr.state.th.shape[0])
+    _validate_surface(surface, fr.state.th.shape[0])
+    geometry, surface = _freeze_h_value(geometry), _freeze_h_value(surface)
     if getattr(co, "bias", None) is not None or getattr(co, "channel_gate", None) is not None:
         raise ValueError(
             "run_fulldomain_analysis does not consume ColumnObs.bias/channel_gate; "
@@ -722,7 +748,10 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
         profile_cfg=RttovProfileConfig(
             gas_units=2, qv_convention="mixing_ratio_kgkg_dry",
             rttov_layer_pressure=p_lay, rttov_level_pressure=p_half),
-        input_cfg=RttovInputConfig(coef_id=coef_clear, channels=channels),
+        input_cfg=RttovInputConfig(
+            coef_id=coef_clear, channels=channels,
+            geometry=take_profile_aux(geometry, jset),
+            surface=take_profile_aux(surface, jset)),
         obs_sigma=1.0, t_ref=t_ref, q_ref=q_ref)
     # M and H must see the SAME land/sea and activation-minimum settings —
     # a mismatch makes microphysics activation and RTTOV Deff inconsistent
@@ -730,6 +759,8 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     rttov_cfg = dict(t_ref=t_ref.numpy(), q_ref=q_ref.numpy(),
                      p_lay=p_lay.numpy(), p_half=p_half.numpy(),
                      channels=tuple(channels), coef_id=coef_cloud,
+                     geometry=take_profile_aux(geometry, jset),
+                     surface=take_profile_aux(surface, jset),
                      ncmin_land=ncmin_land, ncmin_sea=ncmin_sea,
                      oracle_root=str(Path(__file__).resolve().parents[1]))
 
@@ -823,6 +854,9 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
             f"partition {n_mc_precap} cloudy / {n_cl_precap} clear "
             "before caps) — nothing to minimize")
     xb, fc, xland = _take(xb, keep), _take(fc, keep), xland[keep]
+    clear_cfg = _take_clear_config(clear_cfg, keep)
+    for name in ("geometry", "surface"):
+        rttov_cfg[name] = take_profile_aux(rttov_cfg[name], keep)
     from .rttov_bridge import freeze_dry_air_density
     rttov_cfg["rho_d"] = freeze_dry_air_density(xb, fc).numpy()
     x_slot_bg = _take(x_slot_bg, keep)
@@ -893,7 +927,8 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
                 bt[allsky_pos] = o["bt"]
                 bt_cl, _ = _clear_bt_chunked(_take(x_slot, clear_op_pos),
                                              _take(fc, clear_op_pos),
-                                             clear_cfg, y_bt.shape[1])
+                                             _take_clear_config(clear_cfg, clear_op_pos),
+                                             y_bt.shape[1])
                 bt[clear_op_pos] = bt_cl
             return bt
 
@@ -1015,6 +1050,14 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
         n_allsky_routed=int(allsky_pos.numel()),
         n_regime2=int(r2.numel()), n_clear_operator=int(clear_op_pos.numel()),
         n_valid=int(mask.sum()),
+        n_valid_observation_values=int(mask.sum()),
+        n_objective_terms=(int(mask.sum()) +
+                           (0 if pseudo is None else int(pseudo["levels"].sum()))),
+        observation_auxiliary=dict(
+            geometry="reference_fixture" if geometry is None else "caller_supplied",
+            surface="reference_fixture" if surface is None else "caller_supplied",
+            signature=_h_signature(geometry=rttov_cfg["geometry"],
+                                   surface=rttov_cfg["surface"])),
         caps=dict(max_cloudy=max_cloudy, max_clear=max_clear),
         obs_time=obs_time, dt=dt, obs_offset_s=obs_offset_s,
         obs_valid_time_utc=obs_vt, frame_valid_time_utc=frame_vt,

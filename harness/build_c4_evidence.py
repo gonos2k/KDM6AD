@@ -35,6 +35,280 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+_HEX64 = re.compile(r"^[0-9a-fA-F]{64}$")
+
+
+def schema_digest(variables: dict) -> str:
+    """Digest the declared variable contract, excluding its own seal.
+
+    A schema is an explicit campaign input, not a count guessed from whatever
+    variables happen to be present.  Descriptors use the normalized dtype
+    string, ordered dimensions, and optional dimension sizes (``None`` means
+    that the size is campaign-dependent, normally ``Time``).
+    """
+    import numpy as np
+    normalized = {}
+    for name, desc in sorted(variables.items()):
+        if not isinstance(name, str) or not isinstance(desc, dict):
+            raise ValueError("schema variables must map names to descriptors")
+        dims = desc.get("dimensions")
+        if not isinstance(dims, list) or not all(isinstance(d, str) for d in dims):
+            raise ValueError(f"schema variable {name!r} has invalid dimensions")
+        try:
+            dtype = np.dtype(desc["dtype"]).str
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError(f"schema variable {name!r} has invalid dtype") from exc
+        item = {"dimensions": dims, "dtype": dtype}
+        if "shape" in desc:
+            shape = desc["shape"]
+            if not isinstance(shape, list) or len(shape) != len(dims):
+                raise ValueError(f"schema variable {name!r} has invalid shape")
+            if not all(x is None or x == "*" or isinstance(x, int) for x in shape):
+                raise ValueError(f"schema variable {name!r} has invalid shape entries")
+            item["shape"] = shape
+        normalized[name] = item
+    payload = json.dumps(normalized, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def _load_expected_schema(spec) -> dict:
+    """Load a sealed expected schema supplied by the C4 campaign.
+
+    The manifest must carry ``schema_id``, ``schema_sha256`` and a ``variables``
+    mapping.  The digest is over the normalized mapping returned by
+    :func:`schema_digest`; accepting an unsealed list would recreate the
+    arbitrary-minimum-count gap this gate is intended to close.
+    """
+    if spec is None:
+        return None
+    source = str(spec) if isinstance(spec, (str, Path)) else "inline"
+    if isinstance(spec, (str, Path)):
+        path = Path(spec)
+        try:
+            raw = json.loads(path.read_text())
+        except (OSError, json.JSONDecodeError) as exc:
+            raise SystemExit(f"cannot read expected C4 schema {path}: {exc}") from exc
+    else:
+        raw = spec
+    if not isinstance(raw, dict):
+        raise SystemExit("expected C4 schema must be a JSON object")
+    schema_id = raw.get("schema_id")
+    supplied = raw.get("schema_sha256")
+    variables = raw.get("variables")
+    if not isinstance(schema_id, str) or not schema_id.strip():
+        raise SystemExit("expected C4 schema lacks a non-empty schema_id")
+    if not isinstance(supplied, str) or not _HEX64.fullmatch(supplied):
+        raise SystemExit("expected C4 schema lacks a valid schema_sha256 seal")
+    if not isinstance(variables, dict) or not variables:
+        raise SystemExit("expected C4 schema lacks a non-empty variables mapping")
+    campaign_id = raw.get("campaign_id")
+    if campaign_id is not None and (
+            not isinstance(campaign_id, str) or not _HEX64.fullmatch(campaign_id)):
+        raise SystemExit("expected C4 schema has an invalid campaign_id")
+    try:
+        digest = schema_digest(variables)
+    except ValueError as exc:
+        raise SystemExit(f"invalid expected C4 schema: {exc}") from exc
+    if digest.lower() != supplied.lower():
+        raise SystemExit("expected C4 schema digest does not match its variables")
+    if "Times" not in variables:
+        raise SystemExit("expected C4 schema must declare Times explicitly")
+    return {"schema_id": schema_id, "schema_sha256": supplied.lower(),
+            "variables": variables, "source": source,
+            "campaign_id": campaign_id.lower() if isinstance(campaign_id, str) else None}
+
+
+def _schema_matches(a, b, expected: dict) -> tuple[bool, list[str]]:
+    """Check exact variable/dimension/dtype schema against a sealed contract."""
+    import numpy as np
+    expected_vars = expected["variables"]
+    actual_a = set(a.variables)
+    actual_b = set(b.variables)
+    errors = []
+    if actual_a != set(expected_vars):
+        errors.append(f"mp37 variable set differs from expected: missing={sorted(set(expected_vars)-actual_a)} extra={sorted(actual_a-set(expected_vars))}")
+    if actual_b != set(expected_vars):
+        errors.append(f"mp137 variable set differs from expected: missing={sorted(set(expected_vars)-actual_b)} extra={sorted(actual_b-set(expected_vars))}")
+    for side, ds in (("mp37", a), ("mp137", b)):
+        for name, desc in expected_vars.items():
+            if name not in ds.variables:
+                continue
+            var = ds.variables[name]
+            try:
+                want_dtype = np.dtype(desc["dtype"]).str
+            except (TypeError, ValueError):
+                continue
+            if tuple(var.dimensions) != tuple(desc["dimensions"]):
+                errors.append(f"{side}:{name} dimensions {var.dimensions} != expected {tuple(desc['dimensions'])}")
+            if var.dtype.str != want_dtype:
+                errors.append(f"{side}:{name} dtype {var.dtype.str} != expected {want_dtype}")
+            if "shape" in desc:
+                for dim, got, want in zip(var.dimensions, var.shape, desc["shape"]):
+                    if want is not None and want != "*" and got != want:
+                        errors.append(f"{side}:{name} dimension {dim} size {got} != expected {want}")
+    times = expected_vars.get("Times", {})
+    if "Time" not in times.get("dimensions", []):
+        errors.append("expected C4 Times descriptor must include Time dimension")
+    return not errors, errors
+
+
+def _producer_campaign_id(controls: dict) -> str:
+    """Use the producer's campaign-id function, including its exact payload."""
+    try:
+        from run_ss_case import campaign_id_from_controls
+    except (ImportError, ModuleNotFoundError):
+        # ``build_c4_evidence.py`` is also loaded by focused tests via an
+        # importlib path, where the harness directory is not on sys.path.
+        import importlib.util
+        path = Path(__file__).with_name("run_ss_case.py")
+        spec = importlib.util.spec_from_file_location("run_ss_case", path)
+        if spec is None or spec.loader is None:
+            raise SystemExit("cannot load campaign identity producer")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        campaign_id_from_controls = module.campaign_id_from_controls
+    try:
+        return campaign_id_from_controls(controls)
+    except (TypeError, ValueError, KeyError) as exc:
+        raise SystemExit(f"run_identity controls cannot produce campaign_id: {exc}") from exc
+
+
+def _pair_identity(rundir: Path, *, require_status: bool = False) -> dict:
+    """Read and internally validate the producer's stable pair identity."""
+    path = Path(rundir) / "run_identity.json"
+    if not path.is_file():
+        raise SystemExit(f"{rundir}: C4 pair identity is missing (run_identity.json)")
+    try:
+        record = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SystemExit(f"{rundir}: invalid run_identity.json: {exc}") from exc
+    if not isinstance(record, dict):
+        raise SystemExit(f"{rundir}: run_identity.json is not an object")
+    campaign_id = record.get("campaign_id")
+    if not isinstance(campaign_id, str) or not re.fullmatch(r"[0-9a-fA-F]{64}", campaign_id):
+        raise SystemExit(f"{rundir}: run_identity.json lacks a valid campaign_id")
+    controls = record.get("controls")
+    if not isinstance(controls, dict):
+        raise SystemExit(f"{rundir}: run_identity.json lacks producer controls")
+    expected_campaign = _producer_campaign_id(controls)
+    if campaign_id.lower() != expected_campaign.lower():
+        raise SystemExit(
+            f"{rundir}: campaign_id does not match producer campaign_id_from_controls")
+    if record.get("experiment_valid") is not True:
+        raise SystemExit(f"{rundir}: C4 pair identity is not an experiment-valid run")
+    if record.get("exit_code") != 0:
+        raise SystemExit(f"{rundir}: C4 pair identity has nonzero exit_code")
+    status_path = Path(rundir) / "experiment_valid.json"
+    if not status_path.is_file():
+        if require_status:
+            raise SystemExit(
+                f"{rundir}: C4 pair identity lacks producer experiment_valid.json")
+        return record
+    if require_status:
+        # Reuse the producer-status consumer used by the MPI attribution tool,
+        # including its executable before/after/final consistency checks.  C4
+        # must not pair a run identity with a sibling status that is only
+        # superficially valid.
+        try:
+            import g33_mpi_divergence as mpi_identity
+        except (ImportError, ModuleNotFoundError):
+            import importlib.util
+            mpi_path = Path(__file__).with_name("g33_mpi_divergence.py")
+            mpi_spec = importlib.util.spec_from_file_location(
+                "g33_mpi_divergence", mpi_path)
+            if mpi_spec is None or mpi_spec.loader is None:
+                raise SystemExit("cannot load producer-status consumer")
+            mpi_identity = importlib.util.module_from_spec(mpi_spec)
+            mpi_spec.loader.exec_module(mpi_identity)
+        mpi_identity._validate_producer_status(Path(rundir))
+    try:
+        status = json.loads(status_path.read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        raise SystemExit(f"{rundir}: invalid experiment_valid.json: {exc}") from exc
+    if not isinstance(status, dict):
+        raise SystemExit(f"{rundir}: experiment_valid.json is not an object")
+    if status.get("experiment_valid") is not record.get("experiment_valid"):
+        raise SystemExit(
+            f"{rundir}: run_identity experiment_valid disagrees with producer status")
+    if status.get("exit_code") != record.get("exit_code"):
+        raise SystemExit(
+            f"{rundir}: run_identity exit_code disagrees with producer status")
+    if status.get("experiment_valid") is True:
+        if status.get("model_completed") is not True:
+            raise SystemExit(
+                f"{rundir}: producer status marks a valid run without model_completed=true")
+        reasons = status.get("invalid_reasons")
+        if not isinstance(reasons, list) or reasons:
+            raise SystemExit(
+                f"{rundir}: producer status has invalid_reasons={reasons!r} for a valid run")
+    for key in ("requested_proc_grid", "actual_proc_grid"):
+        if key in status and status.get(key) != record.get(key):
+            raise SystemExit(
+                f"{rundir}: run_identity {key} disagrees with producer status")
+    return record
+
+
+def _schema_binding(expected: dict | None, identities: tuple[dict, dict],
+                    campaign_id: str) -> None:
+    """Bind optional producer schema metadata to the requested caller schema.
+
+    The variable-map digest is an integrity check over that map.  It does not
+    authenticate the caller's claim that the map describes this campaign.  If
+    a producer emits schema metadata, this consumer cross-checks it; otherwise
+    the explicitly supplied expected schema remains the caller-owned contract.
+    """
+    if expected is None:
+        return
+    declared_campaign = expected.get("campaign_id")
+    if declared_campaign is not None and declared_campaign != campaign_id.lower():
+        raise SystemExit(
+            "expected C4 schema campaign_id does not match the paired run campaign")
+    for label, identity in zip(("A", "B"), identities):
+        nested = identity.get("expected_schema")
+        if not isinstance(nested, dict) and isinstance(identity.get("schema"), dict):
+            nested = identity.get("schema")
+        nested = nested if isinstance(nested, dict) else {}
+        schema_id = nested.get("schema_id", identity.get("expected_schema_id",
+                                                            identity.get("schema_id")))
+        schema_sha = nested.get("schema_sha256", identity.get(
+            "expected_schema_sha256", identity.get("schema_sha256")))
+        if schema_id is None and schema_sha is None:
+            continue
+        if (not isinstance(schema_id, str) or schema_id != expected["schema_id"]
+                or not isinstance(schema_sha, str)
+                or not _HEX64.fullmatch(schema_sha)
+                or schema_sha.lower() != expected["schema_sha256"]):
+            raise SystemExit(
+                f"producer {label} schema identity does not match the requested C4 schema")
+
+
+def _require_pair_identity(run_a: Path, run_b: Path, *,
+                           expected_schemes: tuple[str, str] | None = None,
+                           expected_schema: dict | None = None,
+                           require_status: bool = False) -> dict:
+    ia, ib = (_pair_identity(run_a, require_status=require_status),
+              _pair_identity(run_b, require_status=require_status))
+    if ia["campaign_id"].lower() != ib["campaign_id"].lower():
+        raise SystemExit("C4 runs have different campaign_id values; refusing to pair unrelated runs")
+    if ia.get("controls") != ib.get("controls"):
+        raise SystemExit("C4 runs have contradictory campaign controls")
+    # The identity is shared, while each side records its own arm.  A producer
+    # that omits the role leaves the pair unverifiable; writing the same role
+    # twice is not a two-arm parity pair.
+    role_a, role_b = ia.get("scheme"), ib.get("scheme")
+    if not isinstance(role_a, str) or not isinstance(role_b, str):
+        raise SystemExit("C4 pair identity must declare a scheme role for both runs")
+    if role_a == role_b:
+        raise SystemExit(f"C4 pair has the same scheme role ({role_a!r}) on both runs")
+    if expected_schemes is not None and {role_a, role_b} != set(expected_schemes):
+        raise SystemExit(
+            f"C4 pair must contain intended scheme arms {expected_schemes}, "
+            f"got {(role_a, role_b)}")
+    _schema_binding(expected_schema, (ia, ib), ia["campaign_id"])
+    return {"campaign_id": ia["campaign_id"].lower(),
+            "a": {"scheme": role_a}, "b": {"scheme": role_b}}
+
+
 def cmd_out(args: list[str]) -> str:
     try:
         lines = subprocess.run(args, capture_output=True, text=True,
@@ -146,18 +420,35 @@ def verify_recert_run(rundir: Path, np: int = 4) -> dict:
 
 
 def strict_bitwise_all_frames(f37: str, f137: str,
-                              min_common_numeric: int = 250) -> dict:
-    """254-var raw-bit (uint-view) comparison across EVERY common frame.
+                              min_common_numeric: int | None = None,
+                              expected_schema=None) -> dict:
+    """Raw-bit (uint-view) comparison across EVERY common frame.
     FAIL-CLOSED — strict_bitwise is True ONLY if:
       * the variable SETS are identical (no only_a / only_b),
       * the frame counts are identical (na == nb, same cadence),
-      * the number of common NUMERIC variables meets min_common_numeric — a
-        malformed/degenerate file pair with a tiny common set must never pass,
+      * either a sealed expected_schema matches exactly, or the number of common
+        NUMERIC variables meets min_common_numeric — a malformed/degenerate file
+        pair with a tiny common set must never pass,
       * and for EVERY frame, every one of those numeric variables was actually
         compared and matched (n_match == numeric_common AND n_diff == 0). A
         frame where variables were only skipped (nothing compared) fails."""
     import numpy as np
     import netCDF4 as nc
+    expected = _load_expected_schema(expected_schema)
+    if min_common_numeric is None:
+        # A sealed schema defines the requested population.  The historical
+        # fallback remains available to direct generic callers, but it is never
+        # used as the C4 campaign contract.
+        if expected is not None:
+            min_common_numeric = 0
+            for descriptor in expected["variables"].values():
+                try:
+                    if np.dtype(descriptor["dtype"]).kind in ("f", "i", "u"):
+                        min_common_numeric += 1
+                except (KeyError, TypeError, ValueError):
+                    pass
+        else:
+            min_common_numeric = 250
     a = nc.Dataset(f37); b = nc.Dataset(f137)
     a.set_auto_maskandscale(False); b.set_auto_maskandscale(False)
     na = a.dimensions["Time"].size if "Time" in a.dimensions else 1
@@ -176,8 +467,16 @@ def strict_bitwise_all_frames(f37: str, f137: str,
     per_frame = []
     times_equal = True
     last_time = None
+    empty_numeric = {
+        v for v in numeric_common
+        if any(size == 0 for size in a.variables[v].shape)
+        or any(size == 0 for size in b.variables[v].shape)
+    }
+    schema_ok, schema_errors = (True, [])
+    if expected is not None:
+        schema_ok, schema_errors = _schema_matches(a, b, expected)
     all_ok = ((not only_a) and (not only_b) and (na == nb) and nframes >= 1
-              and ncnum >= min_common_numeric)
+              and ncnum >= min_common_numeric and schema_ok)
     itype = {1: np.uint8, 2: np.uint16, 4: np.uint32, 8: np.uint64}
 
     def frame_value(var, frame):
@@ -218,6 +517,9 @@ def strict_bitwise_all_frames(f37: str, f137: str,
             xb = frame_value(vb, fr)
             if xa.shape != xb.shape or xa.dtype != xb.dtype:
                 n_diff += 1; continue
+            if xa.size == 0 or xb.size == 0:
+                empty_numeric.add(v)
+                continue
             # .view() needs a contiguous buffer; NetCDF slices may not be.
             ua = np.ascontiguousarray(xa).view(itype[xa.dtype.itemsize])
             ub = np.ascontiguousarray(xb).view(itype[xb.dtype.itemsize])
@@ -234,20 +536,34 @@ def strict_bitwise_all_frames(f37: str, f137: str,
         # empty/all-skipped comparison.
         if not (n_diff == 0 and n_match == ncnum and n_match > 0 and char_diff == 0):
             all_ok = False
-    a.close(); b.close()
-    return {"frames_compared": nframes, "common_variables": len(common),
+    result = {"frames_compared": nframes, "common_variables": len(common),
             "common_numeric_variables": ncnum,
             "common_char_variables": len(char_common),
             "min_common_numeric_required": min_common_numeric,
             "only_in_mp37": only_a, "only_in_mp137": only_b,
+            "empty_numeric_variables": sorted(empty_numeric),
+            "insufficient": bool(empty_numeric or ncnum == 0 or nframes < 1),
             "times_equal": times_equal, "last_compared_time": last_time,
-            "per_frame": per_frame, "strict_bitwise": all_ok}
+            "per_frame": per_frame, "strict_bitwise": all_ok,
+            "schema_provenance": ({"required": True,
+                                    "schema_id": expected["schema_id"],
+                                    "schema_sha256": expected["schema_sha256"],
+                                    "campaign_id": expected.get("campaign_id"),
+                                    "source": expected["source"],
+                                    "matches": schema_ok,
+                                    "errors": schema_errors}
+                                   if expected is not None else
+                                   {"required": False,
+                                    "mode": "minimum_common_numeric"})}
+    a.close(); b.close()
+    return result
 
 
-def legacy_12h_block(runs_dir: Path) -> dict:
+def legacy_12h_block(runs_dir: Path, expected_schema=None) -> dict:
     """Assemble the fail-closed legacy 12h x np4 recertification block from the
     latest mp37/mp137 recert run dirs. strict_bitwise is recorded True ONLY
-    when both runs verify AND EVERY common frame is 254-var raw-bit. The frame
+    when both runs verify, share a pair identity, and every requested schema
+    field in every common frame is raw-bit equal. The frame
     count is cadence-derived, not hardcoded: this case's --history 60 + base
     history_interval_s=20 emits 12 hourly frames drifting +20s/frame
     (00:00:00 … 11:03:40); the 13th at ~12:04:00 falls past the 12:00:00 end,
@@ -256,6 +572,12 @@ def legacy_12h_block(runs_dir: Path) -> dict:
     def latest(glob):
         cands = sorted(runs_dir.glob(glob))
         return cands[-1] if cands else None
+    if expected_schema is None:
+        for candidate in (runs_dir / "expected_schema.json",
+                          runs_dir / "c4_expected_schema.json"):
+            if candidate.is_file():
+                expected_schema = candidate
+                break
     d37 = latest("mp37_recert12h_*")
     d137 = latest("mp137_recert12h_*")
     block: dict = {
@@ -267,7 +589,27 @@ def legacy_12h_block(runs_dir: Path) -> dict:
     both_verified = bool(block["mp37"].get("verified")
                          and block["mp137"].get("verified"))
     if both_verified:
-        cmp = strict_bitwise_all_frames(block["mp37"]["fcst"], block["mp137"]["fcst"])
+        expected = _load_expected_schema(expected_schema) if expected_schema is not None else None
+        try:
+            pair = _require_pair_identity(
+                d37, d137, expected_schemes=("37", "137"),
+                expected_schema=expected, require_status=True)
+        except SystemExit as exc:
+            block["comparison"] = None
+            block["strict_bitwise"] = False
+            block["note"] = str(exc)
+            return block
+        block["pair_identity"] = pair
+        if expected_schema is None:
+            block["comparison"] = None
+            block["strict_bitwise"] = False
+            block["note"] = ("C4 comparison requires a sealed expected schema "
+                              "bound to the requested campaign; a minimum numeric "
+                              "count is not an output-schema contract")
+            return block
+        cmp = strict_bitwise_all_frames(
+            block["mp37"]["fcst"], block["mp137"]["fcst"],
+            expected_schema=expected)
         block["comparison"] = cmp
         block["strict_bitwise"] = bool(cmp["strict_bitwise"])
         # Terminal-state coverage is NOT implied by run completion: the history
@@ -301,7 +643,7 @@ def legacy_12h_block(runs_dir: Path) -> dict:
     return block
 
 
-def terminal_parity_block(runs_dir: Path) -> dict:
+def terminal_parity_block(runs_dir: Path, expected_schema=None) -> dict:
     """Assemble the fail-closed TERMINAL-STATE parity block from the latest
     mp37/mp137 *_termparity_* run dirs (12 h x np4, history_interval_s=0 => exact
     hourly frames 00:00:00 … 12:00:00). Unlike the recert (whose last frame is
@@ -326,7 +668,26 @@ def terminal_parity_block(runs_dir: Path) -> dict:
     both_verified = bool(block["mp37"].get("verified")
                          and block["mp137"].get("verified"))
     if both_verified:
-        cmp = strict_bitwise_all_frames(block["mp37"]["fcst"], block["mp137"]["fcst"])
+        expected = _load_expected_schema(expected_schema) if expected_schema is not None else None
+        try:
+            pair = _require_pair_identity(
+                d37, d137, expected_schemes=("37", "137"),
+                expected_schema=expected, require_status=True)
+        except SystemExit as exc:
+            block["comparison"] = None
+            block["terminal_parity"] = False
+            block["note"] = str(exc)
+            return block
+        block["pair_identity"] = pair
+        if expected_schema is None:
+            block["comparison"] = None
+            block["terminal_parity"] = False
+            block["note"] = ("terminal C4 comparison requires a sealed expected "
+                              "schema bound to the requested campaign")
+            return block
+        cmp = strict_bitwise_all_frames(
+            block["mp37"]["fcst"], block["mp137"]["fcst"],
+            expected_schema=expected)
         run_end = block["mp37"].get("run_end_time")
         last_t = cmp.get("last_compared_time")
         reached = bool(run_end and last_t and last_t.endswith(run_end))
@@ -365,6 +726,9 @@ def main() -> int:
                          "the fail-closed TERMINAL-STATE (12:00:00) parity block")
     ap.add_argument("--terminal-log", type=Path, default=None,
                     help="terminal_parity.log to embed verbatim")
+    ap.add_argument("--expected-schema", type=Path, default=None,
+                    help="sealed JSON schema for the requested C4 campaign; "
+                         "required before a recert parity verdict")
     ap.add_argument("--out", type=Path, default=REPO / "artifacts" / "c4" /
                     "evidence_manifest.json")
     args = ap.parse_args()
@@ -509,11 +873,13 @@ def main() -> int:
                 "G1/G2/G3 until G3.3 is attributed or its metric re-adjudicated.",
     }
     if args.recert_runs is not None:
-        manifest["legacy_12h_np4_recertification"] = legacy_12h_block(args.recert_runs)
+        manifest["legacy_12h_np4_recertification"] = legacy_12h_block(
+            args.recert_runs, expected_schema=args.expected_schema)
         if args.recert_log and args.recert_log.exists():
             manifest["legacy_12h_np4_recertification"]["log"] = args.recert_log.read_text()
     if args.terminal_runs is not None:
-        manifest["terminal_state_parity"] = terminal_parity_block(args.terminal_runs)
+        manifest["terminal_state_parity"] = terminal_parity_block(
+            args.terminal_runs, expected_schema=args.expected_schema)
         if args.terminal_log and args.terminal_log.exists():
             manifest["terminal_state_parity"]["log"] = args.terminal_log.read_text()
     manifest["gate_d_bisection_verdict_2026_07_17"] = {

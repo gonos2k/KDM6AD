@@ -29,6 +29,9 @@ REPLAY_CUM_RENAMES = {
     "all_37_frame_replay_domain_sum_kg_m2":
         "all_37_frame_replay_sum_of_column_equivalents_kg_m2",
 }
+REPLAY_CUMULATIVE_3H_RENAMES = {
+    "domain_sum_kg_m2": "sum_of_column_equivalents_kg_m2",
+}
 UNITS_NOTE = ("every *_sum field aggregates per-column kg/m2 water-equivalents "
               "over the column set (65,988 columns unless stated) — a SUM OF "
               "COLUMN EQUIVALENTS, not a per-area domain mass; a true domain "
@@ -40,8 +43,18 @@ def _sha256_file(path):
 
 
 def _rename(d, renames):
+    # Preflight every destination before mutating.  A multi-key migration must
+    # either apply as a whole or refuse; otherwise an early rename would leave
+    # a caller's in-memory artifact half-migrated when a later collision raises.
+    for old, new in renames.items():
+        if old != new and old in d and new in d:
+            raise ValueError(
+                f"cannot migrate {old!r} to {new!r}: both keys already exist; "
+                "refusing to overwrite the existing value")
     changed = False
     for old, new in renames.items():
+        if old == new:
+            continue
         if old in d:
             d[new] = d.pop(old)
             changed = True
@@ -69,15 +82,11 @@ def migrate_replay(path):
     cum = art.get("cumulative_replay", {})
     changed |= _rename(cum, REPLAY_CUM_RENAMES)
     c3 = cum.get("cumulative_3h", {})
-    if "domain_sum_kg_m2" in c3:
-        c3["sum_of_column_equivalents_kg_m2"] = c3.pop("domain_sum_kg_m2")
-        changed = True
+    changed |= _rename(c3, REPLAY_CUMULATIVE_3H_RENAMES)
     ep = cum.get("endpoint_frame36", {})
     changed |= _rename(ep, REPLAY_FRAME_RENAMES)
     prov = art.get("provenance", {})
-    if "code_sha" in prov:
-        prov["producer_code_sha"] = prov.pop("code_sha")
-        changed = True
+    changed |= _rename(prov, {"code_sha": "producer_code_sha"})
     if "units_note" not in art:
         art["units_note"] = UNITS_NOTE
         changed = True
@@ -92,9 +101,7 @@ def migrate_impact(path):
     art = json.loads(path.read_text())
     prov = art.get("provenance", {})
     changed = False
-    if "code_sha" in prov:
-        prov["producer_code_sha"] = prov.pop("code_sha")
-        changed = True
+    changed |= _rename(prov, {"code_sha": "producer_code_sha"})
     if changed:
         art["migration"] = _migration_block(original_sha)
         path.write_text(json.dumps(art, indent=1))

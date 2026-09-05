@@ -64,7 +64,7 @@ def test_the_generator_actually_runs(tmp_path, monkeypatch, capsys):
     assert out.is_file(), "no artifact written"
     art = json.loads(out.read_text())
     # the fields a reader depends on, including the ones the NameError sat behind
-    for key in ("schema_version", "verdict", "attested", "reason", "per_algorithm",
+    for key in ("schema_version", "verdict", "attested", "anchored", "reason", "per_algorithm",
                 "comparison_boundary", "admissibility", "evidence_tier",
                 "first_divergence", "intra_backend_carry_proof",
                 "cross_backend_difference_propagation", "fixture"):

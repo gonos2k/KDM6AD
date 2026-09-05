@@ -68,7 +68,143 @@ EXIT_USAGE = 4
 #: an operator is not sent to audit a bundle that is fine.
 EXIT_INTERNAL = 6
 
+# Only these tool verdicts can describe a decision-grade four-case load. An
+# unattested mechanism candidate is deliberately a separate value and
+# INVALID_EVIDENCE is an evidence failure, even when a caller supplies otherwise
+# plausible metadata.
+_DECISION_VERDICTS = frozenset(("PASS_MECHANISM", "FAIL", "INCONCLUSIVE"))
 
+
+def _decision_grade(result: dict) -> bool:
+    """Whether *result* satisfies the complete publication contract.
+
+    The supersession bit is a produced projection of this predicate, not an
+    independent claim. Keeping the conjunction here also gives the index reader a
+    single contract to apply to artifacts written by older or alternate callers.
+    """
+    return bool(
+        result.get("anchored") is True
+        and result.get("attested") is True
+        and result.get("decision_valid") is True
+        and result.get("evidence_tier") == "decision"
+        and result.get("verdict") in _DECISION_VERDICTS
+        and not result.get("debug_only", False)
+    )
+
+
+
+def validate_result_index(index_path=None) -> dict:
+    """Validate the result authority and every result it names.
+
+    This is a small reader contract for the existing index, not a second result
+    registry.  It checks that the pointer, artifact supersession fields, and
+    on-disk result set agree before a gate result can be published.
+    """
+    default_evidence = _HERE / "evidence"
+    path = Path(index_path) if index_path is not None else default_evidence / "RESULT_INDEX.json"
+    evidence = path.parent if index_path is not None else default_evidence
+    try:
+        index = json.loads(path.read_text())
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError(f"cannot read result index {path}: {exc}") from None
+    if not isinstance(index, dict) or index.get("index_schema_version") != 1:
+        raise ValueError("result index has unsupported schema")
+    listed = index.get("superseded")
+    if not isinstance(listed, list) or not all(isinstance(x, dict) for x in listed):
+        raise ValueError("result index superseded list is malformed")
+    refs = {}
+    for row in listed:
+        name, status = row.get("file"), row.get("status")
+        if not isinstance(name, str) or not name or name in refs:
+            raise ValueError(f"result index has duplicate/malformed file {name!r}")
+        if status not in ("superseded", "withdrawn"):
+            raise ValueError(f"result index has invalid retired status {status!r}")
+        refs[name] = status
+    current = index.get("current_decision_result")
+    if current is not None:
+        if not isinstance(current, str) or current in refs:
+            raise ValueError("current_decision_result must be a distinct path or null")
+        refs[current] = "current"
+    actual = {p.relative_to(evidence).as_posix()
+              for p in evidence.rglob("g33m_*_result.json")}
+    if set(refs) != actual:
+        raise ValueError(
+            f"result index file set differs: missing={sorted(actual-set(refs))} "
+            f"unlisted={sorted(set(refs)-actual)}")
+    artifacts = {}
+    valid = []
+    for name, expected_status in refs.items():
+        try:
+            artifact = json.loads((evidence / name).read_text())
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise ValueError(f"{name} is unreadable: {exc}") from None
+        sup = artifact.get("supersession")
+        if not isinstance(sup, dict) or sup.get("status") != expected_status:
+            raise ValueError(f"{name} supersession status disagrees with index")
+        artifacts[name] = artifact
+        is_valid = sup.get("valid_for_decision") is True
+        if is_valid:
+            if not _decision_grade(artifact):
+                raise ValueError(
+                    f"{name} is marked decision-valid without the complete "
+                    "attested/anchored decision contract")
+            valid.append(name)
+        successor = sup.get("superseded_by")
+        if successor is not None and successor not in actual:
+            raise ValueError(f"{name} points to missing successor {successor!r}")
+        if expected_status == "withdrawn":
+            if not isinstance(sup.get("withdrawal_reason"), str) or not sup["withdrawal_reason"]:
+                raise ValueError(f"withdrawn artifact {name} has no withdrawal reason")
+            if is_valid:
+                raise ValueError(f"withdrawn artifact {name} is decision-valid")
+        elif expected_status == "superseded" and is_valid:
+            raise ValueError(f"superseded artifact {name} is decision-valid")
+        elif expected_status == "current":
+            if not is_valid or successor is not None:
+                raise ValueError(f"current artifact {name} is not a terminal valid result")
+    # A withdrawn artifact may be the terminal historical successor only when its
+    # own required reason explicitly says that no replacement exists. Otherwise a
+    # superseded result pointing at withdrawn metadata is a broken successor link,
+    # rather than a lineage closure. This preserves the checked-in v13 -> v14
+    # history, whose withdrawal reason records that exact condition.
+    for name, artifact in artifacts.items():
+        successor = artifact["supersession"].get("superseded_by")
+        if successor is not None and refs.get(successor) == "withdrawn":
+            reason = artifacts[successor]["supersession"].get("withdrawal_reason", "")
+            if "no replacement" not in reason.casefold():
+                raise ValueError(
+                    f"{name} points to withdrawn successor {successor!r} without "
+                    "an explicit no-replacement reason")
+
+    # Supersession is historical metadata while no result is promoted, so the
+    # checked-in retired chain may terminate in a withdrawn artifact. It must still
+    # be finite. Once a current result is published, every predecessor's lineage
+    # must terminate at that current artifact; this prevents a current pointer from
+    # coexisting with a retired/withdrawn successor branch.
+    for name in artifacts:
+        path = []
+        cur = name
+        while cur is not None:
+            if cur in path:
+                cycle = path[path.index(cur):] + [cur]
+                raise ValueError(f"result supersession cycle: {' -> '.join(cycle)}")
+            path.append(cur)
+            successor = artifacts[cur]["supersession"].get("superseded_by")
+            if successor is not None and successor not in artifacts:
+                # This is also checked while reading each artifact; keeping the
+                # guard here documents the graph traversal's closed-world contract.
+                raise ValueError(f"{cur} points to missing successor {successor!r}")
+            cur = successor
+        if current is not None and path[-1] != current:
+            raise ValueError(
+                f"{name} supersession lineage terminates at {path[-1]!r}, "
+                f"not current result {current!r}")
+    if current is None:
+        if valid:
+            raise ValueError(f"index current pointer is null but valid artifacts exist: {valid}")
+    elif valid != [current]:
+        raise ValueError(f"index current pointer {current!r} disagrees with valid artifacts {valid}")
+    return index
 
 
 def main(argv=None) -> int:
@@ -118,6 +254,12 @@ def main(argv=None) -> int:
     ap.add_argument("--out", type=Path, required=True)
     a = ap.parse_args(argv)
 
+    try:
+        validate_result_index()
+    except ValueError as exc:
+        print(f"refusing to run with invalid result index: {exc}", file=sys.stderr)
+        return EXIT_USAGE
+
     # ALL FOUR legs, or the word "attested" overstates what was checked.
     anchored = bool(a.expected_manifest_sha256 and a.expected_repo_commit
                     and a.expected_fixture_id
@@ -141,6 +283,8 @@ def main(argv=None) -> int:
     B, K = authority["B"], authority["K"]
 
     result = {"verdict": None, "reason": None, "attested": False,
+              "anchored": False, "decision_valid": False,
+              "evidence_tier": "invalid",
               "provenance": _provenance(a, fbio.DECISION_PROTOCOL_VERSION),
               "debug_only": bool(a.debug_only),
               "inputs": {"cpp_bundle": str(a.cpp_bundle),
@@ -191,6 +335,17 @@ def main(argv=None) -> int:
     # anchored. An unattested debug load has no `evidence`, so it goes down a path
     # that cannot promote.
     result.update(loaded.verdict())
+    result["anchored"] = bool(loaded.anchored)
+    # The field is produced here as a consequence of the load. The temporary true
+    # lets `_decision_grade` check every condition without trusting a caller's
+    # decision_valid claim.
+    result["decision_valid"] = _decision_grade({
+        **result,
+        "decision_valid": True,
+        "evidence_tier": "decision" if loaded.anchored else "debug",
+    })
+    result["evidence_tier"] = (
+        "decision" if result["decision_valid"] else "debug")
     result["scope"] = {
         "note": "A PASS_MECHANISM certifies only that the observed Fortran<->C++ "
                 "difference did "
@@ -271,6 +426,22 @@ def _write(path: Path, result: dict, *, force: bool = False) -> None:
             "refusing to write a decision artifact from a DIRTY working tree: the "
             "recorded verifier_commit would not reproduce this result. Commit or "
             "stash first, or pass --debug-only to mark the artifact non-decisional.")
+    # A recorded runtime and source digest are only useful if the writer enforces
+    # them. Keep this check on attested, non-debug results so evidence failures and
+    # the small unit-test writer remain readable forensic artifacts.
+    if _decision_grade(result):
+        runtime = prov.get("verifier_runtime", {})
+        mismatch = vid.runtime_matches(runtime)
+        if mismatch:
+            raise SystemExit(
+                "refusing to write a decision artifact under a verifier runtime "
+                f"mismatch: {mismatch}")
+        commit = prov.get("verifier_commit")
+        expected_sha = vid.semantics_sha256_at(commit) if commit else None
+        if not commit or expected_sha is None or expected_sha != prov.get("verifier_semantics_sha256"):
+            raise SystemExit(
+                "refusing to write a decision artifact whose verifier commit and "
+                "semantics digest do not agree")
     # The evidence index requires `supersession` on every artifact and reads
     # `status` to enforce exactly-one-current. Nothing PRODUCED it: it was typed
     # onto each artifact by hand after the run, so a regeneration either lost the
@@ -282,7 +453,7 @@ def _write(path: Path, result: dict, *, force: bool = False) -> None:
     result.setdefault("supersession", {
         "status": "current",
         "superseded_by": None,
-        "valid_for_decision": not result.get("debug_only", False),
+        "valid_for_decision": _decision_grade(result),
         "withdrawal_reason": None,
         "note": ("debug-only run: not valid for decision"
                  if result.get("debug_only")
@@ -294,6 +465,13 @@ def _write(path: Path, result: dict, *, force: bool = False) -> None:
                       f"verifier semantics "
                       f"{prov.get('verifier_semantics_sha256', '?')[:16]}"),
     })
+    # A caller supplied metadata block cannot turn an unattested candidate, evidence
+    # failure, debug run, or non-decision tier into a publication. `setdefault` above
+    # preserves an existing block for deliberate forensic fields, but the validity
+    # bit is owned by this writer.
+    result["supersession"]["valid_for_decision"] = bool(
+        result["supersession"].get("valid_for_decision", False)
+        and _decision_grade(result))
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(json.dumps(result, indent=2, sort_keys=True, default=str) + "\n")
     tmp.replace(path)

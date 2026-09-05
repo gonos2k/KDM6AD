@@ -114,6 +114,22 @@ def torch_float64():
     return torch.float64
 
 
+def _validate_grid_rows(arr, nprofiles, name):
+    """Require a shared grid row or one grid row per serialized profile.
+
+    T/Q establish the profile axis.  A pressure array with any other number
+    of rows cannot be paired with those profiles: indexing it later either
+    forwards an unpaired row or fails after an expensive RTTOV case has been
+    staged.  The writer may broadcast the one shared row for its fixture path,
+    so both ``1`` and ``nprofiles`` are intentional here.
+    """
+    rows = int(arr.shape[0])
+    if rows not in (1, nprofiles):
+        raise ValueError(
+            f"{name} has {rows} profile rows but T/Q has {nprofiles}; "
+            f"provide one shared row or exactly {nprofiles} rows.")
+
+
 # All-sky cloud profile fields (design 9.1): attr on RttovProfileTensors -> RTTOV
 # PROFILES_K field key. Content HYDRO6/7 [g/m^3], effective DIAMETER HYDRO_DEFF6/7
 # [micron], cloud fraction CFRAC. Present only in cloud mode.
@@ -179,6 +195,15 @@ def pack_rttov_input(profile_tensors, rttov_config) -> RttovInput:
     if t.shape != q.shape:
         raise ValueError(f"t_lay {t.shape} != q_lay {q.shape} (same profile/layer grid).")
     nprofiles, nlayers = t.shape
+    # Observation no-data is handled before this boundary (collocation/DA
+    # returns an empty result without constructing an RTTOV case).  A packed
+    # RTTOV input, by contrast, is executable profile data and must have both
+    # axes non-empty; accepting a zero profile would produce a namelist that
+    # the runner deliberately rejects.
+    if nprofiles < 1:
+        raise ValueError("RttovInput requires at least one profile")
+    if nlayers < 1:
+        raise ValueError("RttovInput requires at least one layer")
 
     profile = {"T": t, "Q": q}
     nlevels = None
@@ -189,9 +214,16 @@ def pack_rttov_input(profile_tensors, rttov_config) -> RttovInput:
             raise ValueError(
                 f"Nlevels {nlevels} != Nlayers+1 ({nlayers + 1}) -- RTTOV-14 "
                 "layer-based grid (design 5/profile.py:124).")
+        _validate_grid_rows(ph, nprofiles, "P_HALF")
         profile["P_HALF"] = ph
     if getattr(profile_tensors, "p_lay", None) is not None:
-        profile["P"] = _to_numpy_2d(profile_tensors.p_lay, "p_lay")
+        pl = _to_numpy_2d(profile_tensors.p_lay, "p_lay")
+        _validate_grid_rows(pl, nprofiles, "P")
+        if pl.shape[-1] != nlayers:
+            raise ValueError(
+                f"P has {pl.shape[-1]} layers but T/Q have {nlayers}; "
+                "layer pressure must ride the T/Q grid.")
+        profile["P"] = pl
 
     # all-sky cloud fields (present only in cloud mode); each on the T/Q layer grid.
     for attr, fkey in _CLOUD_FIELD_MAP:

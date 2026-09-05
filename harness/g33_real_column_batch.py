@@ -42,6 +42,43 @@ def _frac(num: float, den: float):
     """num/den, or None where the column started with nothing (den == 0)."""
     return num / den if den else None
 
+
+def _display(value, format_spec: str) -> str:
+    """Render a number or the explicit unavailable sentinel used by reports."""
+    return "n/a" if value is None else format(value, format_spec)
+
+
+def _fraction_summary(rows: list[dict]) -> tuple[dict, list, list]:
+    """Summarize defined fractions while preserving an empty population."""
+    import statistics
+
+    fr = sorted(r["fraction_left"] for r in rows
+                if r.get("fraction_left") is not None)
+    fx = sorted(r["fraction_left_xfer"] for r in rows
+                if r.get("fraction_left_xfer") is not None)
+    n = len(fr)
+    # `fr[n // 2]` is the UPPER MIDDLE value on an even sample, not the median.
+    # With 22 columns that is the 12th value where the median is the mean of the
+    # 11th and 12th -- a small difference and the wrong name for it.
+    summary = {"columns": n,
+               "columns_with_fraction": n,
+               "columns_unavailable": len(rows) - n,
+               "summary_unavailable": not bool(fr),
+               "median": statistics.median(fr) if fr else None,
+               "upper_middle": fr[n // 2] if fr else None,
+               "min": fr[0] if fr else None,
+               "max": fr[-1] if fr else None,
+               "p25": statistics.quantiles(fr, n=4)[0] if n >= 4 else None,
+               "p75": statistics.quantiles(fr, n=4)[2] if n >= 4 else None,
+               # The ACTUAL-transfer statistic beside the recovered one. They
+               # are different quantities and the headline should say which.
+               "median_xfer": statistics.median(fx) if fx else None,
+               "min_xfer": fx[0] if fx else None,
+               "max_xfer": fx[-1] if fx else None,
+               "columns_xfer": len(fx)}
+    return summary, fr, fx
+
+
 def candidates(path: Path, want: int, field: str = "QNRAIN", levels: int = 6):
     """Columns carrying `field` over at least `levels` levels, spread evenly.
 
@@ -353,9 +390,9 @@ def main() -> int:
                 if row["legacy_dry_xfer"] and row["armn_dry_xfer"] is not None else None)
             rows.append(row)
             print(f"  ({j:3d},{i:3d}) xland={meta['xland']:.0f} "
-                  f"legacy_dry {row['legacy_dry']:11.4e}  "
-                  f"armN_dry {row['armn_dry']:11.4e}  "
-                  f"leaves {row['fraction_left']:.4%}")
+                  f"legacy_dry {_display(row['legacy_dry'], '11.4e')}  "
+                  f"armN_dry {_display(row['armn_dry'], '11.4e')}  "
+                  f"leaves {_display(row['fraction_left'], '.4%')}")
     finally:
         # ORDER MATTERS. Releasing the lock before the generated .f90/.h are
         # back leaves a window in which a waiting process starts, sees the
@@ -384,27 +421,15 @@ def main() -> int:
 
     if not rows:
         raise SystemExit("no column produced a usable pair")
-    import statistics
-    fr = sorted(r["fraction_left"] for r in rows if r["fraction_left"] is not None)
-    fx = sorted(r["fraction_left_xfer"] for r in rows
-                if r.get("fraction_left_xfer") is not None)
+    summary, fr, fx = _fraction_summary(rows)
     n = len(fr)
-    # `fr[n // 2]` is the UPPER MIDDLE value on an even sample, not the median.
-    # With 22 columns that is the 12th value where the median is the mean of the
-    # 11th and 12th -- a small difference and the wrong name for it.
-    summary = {"columns": n, "median": statistics.median(fr),
-               "upper_middle": fr[n // 2], "min": fr[0], "max": fr[-1],
-               "p25": statistics.quantiles(fr, n=4)[0] if n >= 4 else None,
-               "p75": statistics.quantiles(fr, n=4)[2] if n >= 4 else None,
-               # The ACTUAL-transfer statistic beside the recovered one. They
-               # are different quantities and the headline should say which.
-               "median_xfer": statistics.median(fx) if fx else None,
-               "min_xfer": fx[0] if fx else None,
-               "max_xfer": fx[-1] if fx else None,
-               "columns_xfer": len(fx)}
-    print(f"\n  {n} columns, RECOVERED transfers: Arm N leaves median "
-          f"{summary['median']:.4%} (min {summary['min']:.4%}, "
-          f"max {summary['max']:.4%})")
+    if fr:
+        print(f"\n  {n} columns, RECOVERED transfers: Arm N leaves median "
+              f"{summary['median']:.4%} (min {summary['min']:.4%}, "
+              f"max {summary['max']:.4%})")
+    else:
+        print(f"\n  {len(rows)} columns, RECOVERED transfers: Arm N leaves "
+              "n/a (no defined legacy denominator)")
     if fx:
         print(f"  {len(fx)} columns, ACTUAL XFER:       median "
               f"{summary['median_xfer']:.4%} (min {summary['min_xfer']:.4%}, "

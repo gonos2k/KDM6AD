@@ -8,12 +8,15 @@ oracle's own parity baselines).
 """
 from __future__ import annotations
 
+import math
+
 import pytest
 import torch
 
 from kdm6.state import State, Forcing, state_dot
 from kdm6.runtime import kdm6_fn, make_parameters
-from kdm6.process_controls import ProcessControls
+from kdm6.process_controls import ProcessControls, _scale, apply_warm_controls
+from kdm6.coordinator import WarmPhaseOutputs
 
 DT = 20.0
 
@@ -38,6 +41,62 @@ def _mk_state(rg=False):
 def _mk_forcing():
     return Forcing(rho=_t2(1.089, 0.9567), pii=_t2(0.9704, 0.9031),
                    p=_t2(9.0e4, 7.0e4), delz=_t2(500.0, 500.0))
+
+
+def _warm_rates(shape=(2, 3), value=1.0):
+    z = torch.full(shape, value, dtype=torch.float64)
+    return WarmPhaseOutputs(
+        praut=z, nraut=z, pracw=z, nracw=z, nccol=z, nrcol=z,
+        prevp=z, rain_complete_evap=torch.zeros(shape, dtype=torch.bool),
+    )
+
+
+def test_process_control_alpha_none_preserves_same_struct_object():
+    rates = _warm_rates()
+    assert _scale(rates, ("praut", "nraut"), None) is rates
+
+
+def test_process_control_rejects_alpha_that_expands_rate_shape():
+    """Leading dimensions must not be introduced by PyTorch broadcasting."""
+    rates = _warm_rates()
+    alpha = torch.zeros((2, 1, 1), dtype=torch.float64)
+    with pytest.raises(ValueError, match="broadcast shape.*rate shape"):
+        apply_warm_controls(rates, ProcessControls(alpha_autoconv=alpha))
+
+
+def test_process_control_rejects_nonfinite_scaled_rate():
+    """A finite alpha can still overflow the rate multiplication in f64."""
+    rates = _warm_rates(shape=(1, 1), value=1.0e8)
+    alpha = torch.full((), 700.0, dtype=torch.float64)
+    with pytest.raises(ValueError, match="scaled .*rate.*must be finite"):
+        apply_warm_controls(rates, ProcessControls(alpha_autoconv=alpha))
+
+
+def test_process_control_scalar_grad_and_column_jvp_keep_rate_shape():
+    """Valid scalar and column controls retain the differentiable map."""
+    rates = _warm_rates(value=2.0)
+    alpha = torch.tensor(0.25, dtype=torch.float64, requires_grad=True)
+    scaled = apply_warm_controls(
+        rates, ProcessControls(alpha_autoconv=alpha)).praut
+    grad, = torch.autograd.grad(scaled.sum(), alpha)
+    assert scaled.shape == rates.praut.shape
+    assert grad.item() == pytest.approx(12.0 * math.exp(0.25), rel=1e-14)
+
+    alpha_col = torch.tensor([[0.1], [0.2]], dtype=torch.float64)
+    direction = torch.tensor([[0.03], [0.04]], dtype=torch.float64)
+
+    def scale_column(a):
+        return apply_warm_controls(
+            rates, ProcessControls(alpha_autoconv=a)).praut
+
+    primal, tangent = torch.autograd.functional.jvp(
+        scale_column, (alpha_col,), (direction,))
+    expected_primal = rates.praut * torch.exp(alpha_col)
+    expected_tangent = expected_primal * direction
+    assert primal.shape == rates.praut.shape
+    assert tangent.shape == rates.praut.shape
+    assert torch.allclose(primal, expected_primal)
+    assert torch.allclose(tangent, expected_tangent)
 
 
 def _run(controls=None, state=None):

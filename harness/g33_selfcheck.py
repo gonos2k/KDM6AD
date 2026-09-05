@@ -180,6 +180,52 @@ def _record_identity(record: dict) -> tuple:
         "stage", "field", "dtype", "shape", "op_seq_id"))
 
 
+def _verify_container_attestation(container: dict, sealed: dict, env: dict,
+                                  schedule: dict, run_uuid: str,
+                                  algorithm: str) -> None:
+    """Bind every container header to the run environment and sealed row.
+
+    `read_container` authenticates the bytes and `verify_attestation` compares a
+    supplied attestation object.  The self-check used to supply neither the
+    environment-derived attestation nor the header's dimensions/layout, so a
+    coherent container from a different run could reach the arithmetic checks.
+    """
+    header = container["header"]
+    attestation = {
+        "producer_commit": env["KDM6_G33_PRODUCER_COMMIT"],
+        "binary_sha256": env["KDM6_G33_BINARY_SHA256"],
+        "case_id": schedule["case_id"],
+        "pair_id": schedule["pair_id"],
+        "backend": "cpp",
+        "algorithm": algorithm,
+        "run_uuid": run_uuid,
+    }
+    gd.verify_attestation(header, attestation)
+    checks = {
+        "B": int(schedule["B"]),
+        "K": int(schedule["K"]),
+        "column_layout_id": env["KDM6_G33_COLUMN_LAYOUT_ID"],
+        "canonical_k_order": "top-first",
+        "container_id": sealed["container_id"],
+        "global_op_seq_start": sealed["first_op_seq_id"],
+        "global_op_seq_end": sealed["last_op_seq_id"],
+        "record_count_expected": sealed["record_count"],
+        "descriptor_sha256": sealed.get("descriptor_sha256"),
+    }
+    for field, want in checks.items():
+        if want is not None and header.get(field) != want:
+            raise gd.G33Corruption(
+                f"container {sealed['container_id']} header {field}="
+                f"{header.get(field)!r} != sealed/environment {want!r}")
+    try:
+        expected_map = json.loads(env["KDM6_G33_COLUMN_MAP"])
+    except (TypeError, json.JSONDecodeError) as exc:
+        raise gd.G33Corruption(f"environment column map is malformed: {exc}") from None
+    if header.get("column_index_map") != expected_map:
+        raise gd.G33Corruption(
+            f"container {sealed['container_id']} column_index_map differs from run environment")
+
+
 def positive_f32_ulp_distance(pa, pb):
     """|bit_int(a) - bit_int(b)| for a, b from BE-f32 payloads — the ULP distance,
     VALID only for finite nonnegative operands (bit order is monotone only there).
@@ -311,6 +357,7 @@ def check_algorithm(driver: Path, algorithm: str, workdir: Path) -> dict:
     carry = {}
     for c in containers:
         cont = gd.read_container(dump_dir / c["path"])       # fail-closed
+        _verify_container_attestation(cont, c, env, sched, run_uuid, algorithm)
         recs = cont["records"]
         n_sub = c["n"]
         stats["containers"] += 1

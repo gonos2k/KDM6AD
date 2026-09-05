@@ -277,7 +277,23 @@ def _require_same_weights(base_run: dict, got_run: dict) -> None:
             raise ra.RefineError(
                 f"the base stream carries no ({cls}, {field}) records -- the "
                 f"weight field cannot be built, let alone compared")
-        diff = [k for k in keys if got_run.get(k) != base_run[k]]
+        got_keys = {k for k in got_run
+                    if len(k) == 4 and k[0] == cls and k[1] == field}
+        if got_keys != set(keys):
+            missing = sorted(set(keys) - got_keys)
+            extra = sorted(got_keys - set(keys))
+            raise ra.RefineError(
+                f"the two runs disagree on the {field} record universe: "
+                f"{len(missing)} missing, {len(extra)} extra"
+                + (f" (first missing {missing[0]})" if missing else "")
+                + (f" (first extra {extra[0]})" if extra else ""))
+        # `read_text()` returns Python floats, so `0.0 == -0.0` would erase a
+        # meaningful f32 input distinction. Re-encode at the stream's f32
+        # storage width before comparing the words.
+        def bits(v):
+            return None if v is None else ra._f32_bits(v)
+
+        diff = [k for k in keys if bits(got_run.get(k)) != bits(base_run[k])]
         if diff:
             raise ra.RefineError(
                 f"the two runs disagree on {field} at {len(diff)} cell(s), "
@@ -286,8 +302,65 @@ def _require_same_weights(base_run: dict, got_run: dict) -> None:
                 f"would be two measures presented as one")
 
 
+def _validated_window(text: str, label: str):
+    """Strictly validate one combined G33R/G33N stream for direct callers.
+
+    The producer already passes this contract through ``gated_text``.  The
+    standalone ledger is also a public analysis boundary, however, and must
+    not rely on its caller having run that seam first. Reuse the existing
+    identity and same-run forcing validators rather than maintaining a second
+    parser here.
+    """
+    import g33_number_transport as nt
+    import g33_refine_analyze as _ra
+
+    try:
+        rid, parsed = nt.validated_run_identity(text, with_calls=True)
+        window = _ra.read_text(text, nsplit=rid["nsplit"], label=label)
+        # G33R and G33N are two records of the same operation.  The strict
+        # window reader carries algorithm/mode when those fields exist; bind
+        # them here before the ledger reads any operands.  (rho is a G33N
+        # header fact and is compared between the two G33N streams below.)
+        for field in ("algorithm", "mode"):
+            value = window.get(("meta", field))
+            expected = rid["algorithm"] if field == "algorithm" else rid["carry"]
+            if value is not None and value != expected:
+                raise ra.RefineError(
+                    f"{label}: G33R {field}={value!r} differs from G33N "
+                    f"{field}={expected!r}")
+        nt.require_window_forcing(parsed, window, rid["real_bytes"], label)
+    except (ra.RefineError, nt.StreamError, ValueError) as exc:
+        raise ra.RefineError(f"{label}: {exc}") from exc
+    return rid, window
+
+
+def _same_run_identity(base, got, width: int) -> None:
+    """Require fixed identity while allowing the deliberate tile change."""
+    if base["width"] != width or got["width"] != width:
+        raise ra.RefineError(
+            f"the requested width {width} does not match the streams "
+            f"({base['width']} and {got['width']})")
+    fixed = ("algorithm", "number_transfer_metric", "nsplit", "carry",
+             "rho", "width", "levels", "delt", "dtcld", "loops")
+    diff = [key for key in fixed if base[key] != got[key]]
+    if diff:
+        key = diff[0]
+        raise ra.RefineError(
+            f"the two runs differ in {key}: {base[key]!r} vs {got[key]!r}; "
+            "one process-ledger decomposition cannot compare two identities")
+
+
 def decompose(base_text: str, got_text: str, width: int, run) -> dict:
     """Per column, which terms move, weighted and unweighted."""
+    base_id, base_window = _validated_window(base_text, "base")
+    got_id, got_window = _validated_window(got_text, "got")
+    _same_run_identity(base_id, got_id, width)
+    for label, a, b in (("fixture", base_window.get(("meta", "fixture")),
+                         got_window.get(("meta", "fixture"))),):
+        if a is not None and b is not None and a != b:
+            raise ra.RefineError(
+                f"the two runs differ in {label}: {a!r} vs {b!r}; one "
+                "process-ledger decomposition cannot compare two inputs")
     a, b = (read_cells(base_text, label="base"), read_cells(got_text, label="got"))
     sa, sb = (read_state(base_text, label="base"), read_state(got_text, label="got"))
     dt_a, dt_b = read_dtcld(base_text, label="base"), read_dtcld(got_text, label="got")
@@ -295,7 +368,10 @@ def decompose(base_text: str, got_text: str, width: int, run) -> dict:
         raise ra.RefineError(f"dtcld differs between the runs ({dt_a} vs {dt_b})")
     replay = {"base": verify_replay(a, sa, dt_a, label="base"),
               "got": verify_replay(b, sb, dt_b, label="got")}
-    _require_same_weights(run, ra.read_text(got_text))
+    # The weights come from the strictly parsed base window above. The old
+    # implementation trusted a separately supplied ``run`` object, allowing a
+    # caller to analyse one pair while weighting it with another atmosphere.
+    _require_same_weights(base_window, got_window)
 
     # THE PRE-STATE. The telescoping substitutes operands one at a time into a
     # single starting qr, so it decomposes
@@ -453,16 +529,19 @@ def analysis(driver: str, fixture: str, algo: str | None = None,
     carried the full one.
     """
     import g33_ncmin_locality as nl
-    width = nl.fixture_dims(fixture)[0]
+    if contract is None:
+        width, run_mode, run_rho = nl.fixture_dims(fixture)[0], "rezero", "as-is"
+    else:
+        width, run_mode, run_rho = contract.columns, contract.mode, contract.rho_profile
     oracle, whole = (1,) * width, (width,)
-    base_text = nl.gated_text(driver, fixture, oracle, algo=algo,
-                              contract=contract)
-    got_text = nl.gated_text(driver, fixture, whole, algo=algo,
-                             contract=contract)
+    base_text = nl.gated_text(driver, fixture, oracle, carry=run_mode,
+                              rho=run_rho, algo=algo, contract=contract)
+    got_text = nl.gated_text(driver, fixture, whole, carry=run_mode,
+                             rho=run_rho, algo=algo, contract=contract)
     got = decompose(base_text, got_text, width, ra.read_text(base_text))
     return {
         **got,
         "compared": {"oracle": list(oracle), "against": list(whole)},
-        "ran": {"nsplit": 1, "carry": "rezero", "rho": "as-is", "width": width,
+        "ran": {"nsplit": 1, "carry": run_mode, "rho": run_rho, "width": width,
                 "decompositions": [list(oracle), list(whole)]},
     }

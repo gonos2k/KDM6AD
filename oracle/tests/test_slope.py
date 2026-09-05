@@ -209,3 +209,31 @@ def test_slope_rain_consistency():
     assert torch.allclose(rain.rslope3_r, multi.rslope3_r)
     assert torch.allclose(rain.vt_r, multi.vt_r)
     assert torch.allclose(rain.vtn_r, multi.vtn_r)
+
+
+def test_review208_slope_rain_zeroes_number_speed_without_changing_kdm6():
+    """Only standalone slope_rain applies the Fortran nr<=0 vtn gate."""
+    params = default_slope_params()
+    shape = (1, 3)
+    qr = torch.tensor([[1.0e-4, 1.0e-4, 1.0e-4]], dtype=torch.float64)
+    nr = torch.tensor([[0.0, -1.0, 1.0e4]], dtype=torch.float64)
+    den = torch.ones(shape, dtype=torch.float64)
+    denfac = torch.ones(shape, dtype=torch.float64)
+    t = torch.full(shape, 270.0, dtype=torch.float64)
+
+    rain = slope_rain_torch(qr, nr, den, denfac, t, params)
+    assert torch.equal(rain.vtn_r[:, :2], torch.zeros((1, 2), dtype=torch.float64))
+    assert rain.vtn_r[0, 2] > 0.0
+
+    zeros = torch.zeros_like(qr)
+    bvtg = torch.full_like(qr, 0.5316)
+    multi = slope_kdm6_torch(
+        qr=qr, qs=zeros, qg=zeros, qi=zeros, nr=nr, ni=zeros,
+        den=den, denfac=denfac, t=t,
+        pidn0g=zeros, pvtg=zeros, bvtg=bvtg,
+        rslopegbmax=torch.full_like(qr, params.rslopegmax) ** bvtg,
+        params=params,
+    )
+    # slope_kdm6 retains its later unconditional vtn reassignment, including
+    # the two nr<=0 cells that standalone slope_rain intentionally gates.
+    assert torch.all(multi.vtn_r[:, :2] > 0.0)

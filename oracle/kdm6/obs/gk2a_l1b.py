@@ -130,21 +130,57 @@ def dn_to_bt(raw: np.ndarray, cal: dict, *, valid_bits: int
              ) -> tuple[np.ndarray, np.ndarray]:
     """uint16 raw → (BT [K], quality flag) — 둘 다 (ny, nx).
 
-    quality: 0=정상 (bits 14-15), 비0=플래그. BT는 플래그 픽셀에서도 계산되나
-    소비측 mask가 배제한다 (reject-don't-drop: NaN 주입 대신 플래그 유지).
+    quality: 0=usable, nonzero=unusable. Embedded DQF is preserved; a
+    nonpositive/nonfinite calibrated radiance changes only DQF=0 to 3.
+    Such pixels carry BT=0 as a finite placeholder, never as an observation.
+    Malformed calibration is a configuration error, not missing pixel data.
     """
     dn, quality = unpack_ami_word(raw, valid_bits)
-    gain, offset = cal["DN_to_Radiance_Gain"], cal["DN_to_Radiance_Offset"]
-    lam_um = float(cal["channel_center_wavelength"])  # FD 속성이 문자열인 채널 존재
-    h, c, k = (cal["Plank_constant_h"], cal["light_speed"],
-               cal["Boltzmann_constant_k"])
-    rad = offset + gain * dn                                      # mW m-2 sr-1 cm
-    sigma_m = (10000.0 / lam_um) * 100.0                          # m-1
-    l_sigma = np.clip(rad * 1.0e-3 / 100.0, 1e-30, None)          # W m-2 sr-1 (m-1)-1
-    teff = h * c * sigma_m / k / np.log((2.0 * h * c * c * sigma_m ** 3) / l_sigma + 1.0)
-    tbb = cal["Teff_to_Tbb_c0"] + cal["Teff_to_Tbb_c1"] * teff \
-        + cal["Teff_to_Tbb_c2"] * teff * teff
-    return tbb, quality
+    coefficients = {}
+    for name in ("DN_to_Radiance_Gain", "DN_to_Radiance_Offset",
+                 "channel_center_wavelength", "Plank_constant_h", "light_speed",
+                 "Boltzmann_constant_k", "Teff_to_Tbb_c0", "Teff_to_Tbb_c1",
+                 "Teff_to_Tbb_c2"):
+        value = cal.get(name)
+        try:
+            if np.ndim(value) != 0 or isinstance(value, (bool, np.bool_)):
+                raise ValueError
+            value = float(value)  # Some FD wavelength attributes are strings.
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError(f"AMI calibration {name} must be a finite scalar") from exc
+        if not math.isfinite(value):
+            raise ValueError(f"AMI calibration {name} must be a finite scalar")
+        coefficients[name] = value
+    gain, offset = (coefficients["DN_to_Radiance_Gain"],
+                    coefficients["DN_to_Radiance_Offset"])
+    lam_um, h, c, k = (coefficients[name] for name in (
+        "channel_center_wavelength", "Plank_constant_h", "light_speed",
+        "Boltzmann_constant_k"))
+    if min(lam_um, h, c, k) <= 0.0:
+        raise ValueError("AMI calibration wavelength and Planck constants must be positive")
+    try:
+        sigma_m = (10000.0 / lam_um) * 100.0                      # m-1
+        planck_t = h * c * sigma_m / k
+        planck_r = 2.0 * h * c * c * sigma_m ** 3
+    except OverflowError as exc:
+        raise ValueError("AMI calibration Planck factors must be positive and finite") from exc
+    if not all(math.isfinite(v) and v > 0.0 for v in (planck_t, planck_r)):
+        raise ValueError("AMI calibration Planck factors must be positive and finite")
+    with np.errstate(over="ignore", invalid="ignore"):
+        rad = offset + gain * dn                                 # mW m-2 sr-1 cm
+    radiance_ok = np.isfinite(rad) & (rad > 0.0)
+    safe_rad = np.where(radiance_ok, rad, 1.0)
+    # Keep the existing positive-radiance arithmetic. The substitute above is
+    # only an operand for unusable pixels; it does not repair the observation.
+    l_sigma = np.clip(safe_rad * 1.0e-3 / 100.0, 1e-30, None)     # W m-2 sr-1 (m-1)-1
+    with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+        teff = planck_t / np.log(planck_r / l_sigma + 1.0)
+        tbb = coefficients["Teff_to_Tbb_c0"] + coefficients["Teff_to_Tbb_c1"] * teff \
+            + coefficients["Teff_to_Tbb_c2"] * teff * teff
+    if not np.isfinite(tbb[radiance_ok]).all():
+        raise ValueError("AMI calibration yields non-finite brightness temperature")
+    quality = np.where((~radiance_ok) & (quality == 0.0), 3.0, quality)
+    return np.where(radiance_ok, tbb, 0.0), quality
 
 
 def _read_ami_bt(var, cal: dict, key=Ellipsis) -> tuple[np.ndarray, np.ndarray]:

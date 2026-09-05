@@ -400,6 +400,55 @@ def canonical_input_sha256(identity: dict) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+def campaign_id_from_controls(controls: dict) -> str:
+    """Return the campaign identity for the producer's canonical controls.
+
+    This is deliberately a public producer function so consumers can recompute
+    the identity from the stored controls.  The resulting digest is an
+    integrity/self-consistency check; it does not authenticate who supplied the
+    controls or prove that a caller's expected schema is scientifically true.
+    """
+    if not isinstance(controls, dict):
+        raise ValueError("campaign controls must be an object")
+    payload = json.dumps(controls, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def campaign_identity(*, args, runner_sha256: str, effective_namelist: str,
+                      input_identity: dict | None) -> dict:
+    """Create the shared identity used to pair the two C4 scheme arms.
+
+    ``mp`` and the requested processor grid are deliberately arm-specific and
+    therefore excluded from ``campaign_id``.  The effective run controls,
+    runner, active input seal, and label are shared controls; hashing them gives
+    the C4 consumer a stable pair key instead of pairing independently selected
+    directory names.  The actual grid is retained on the record for the
+    decomposition assertion, but never folded into the shared key.
+    """
+    controls = {
+        "label": args.label,
+        "minutes": args.minutes,
+        "seconds": args.seconds,
+        "history": args.history,
+        "history_s": args.history_s,
+        "fixed_dt": bool(args.fixed_dt),
+        "np": args.np,
+        "radt": args.radt,
+        "runner_sha256": runner_sha256,
+        "namelist_without_grid_sha256": hashlib.sha256(
+            "\n".join(line for line in effective_namelist.splitlines()
+                    if "nproc_x" not in line and "nproc_y" not in line)
+            .encode("utf-8")).hexdigest(),
+        "input_canonical_sha256": (
+            input_identity.get("canonical_sha256")
+            if input_identity and input_identity.get("records") else None),
+    }
+    return {"schema": 1,
+            "campaign_id": campaign_id_from_controls(controls),
+            "scheme": args.mp,
+            "controls": controls}
+
+
 def input_identity_text(identity: dict) -> str:
     lines = ["schema 1", f"declared {'yes' if identity.get('declared') else 'no'}",
              f"complete {'yes' if identity.get('complete') else 'NO'}"]
@@ -477,12 +526,17 @@ def main() -> int:
     # beside the namelist edit, so on a host without the namelist the run died
     # on a missing file and never reached it -- a guard that only fires where it
     # is least needed.
+    if args.np < 1:
+        raise SystemExit(f"--np must be >= 1, got {args.np}")
     proc_grid = None
     if args.proc_grid is not None:
         try:
             nx, ny = (int(v) for v in args.proc_grid.lower().split('x'))
         except ValueError:
             raise SystemExit(f"--proc-grid wants NXxNY, got {args.proc_grid!r}")
+        if nx < 1 or ny < 1:
+            raise SystemExit(
+                f"--proc-grid factors must be >= 1, got {args.proc_grid!r}")
         if nx * ny != args.np:
             raise SystemExit(
                 f"--proc-grid {args.proc_grid} is {nx * ny} ranks and --np is "
@@ -805,6 +859,18 @@ def main() -> int:
         "exit_code": rc,
         "model_completed": rc == 0,
     }, indent=1) + "\n")
+    # Shared campaign identity for downstream pair consumers.  This is written
+    # even for an invalid run so a reader can explain why no pair was formed;
+    # ``experiment_valid`` remains the independent execution verdict.
+    _campaign = campaign_identity(args=args, runner_sha256=mine,
+                                  effective_namelist=text,
+                                  input_identity=_input_identity)
+    _campaign.update({"requested_proc_grid": _requested,
+                      "actual_proc_grid": _actual,
+                      "exit_code": rc,
+                      "experiment_valid": not _invalid})
+    (out/'run_identity.json').write_text(
+        _json.dumps(_campaign, indent=1, sort_keys=True) + "\n")
     (out/'exit_code').write_text(str(rc)+'\n')
     print(out)
     if _invalid and rc == 0:

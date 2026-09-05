@@ -356,7 +356,13 @@ SlopeRainOutputs slope_rain_torch(const torch::Tensor& qr,
                                   const torch::Tensor& t,
                                   const SlopeParams& params) {
     (void)t;
-    return rain_slope_components(qr, nr, den, denfac, params, /*include_den_gate=*/false);
+    auto out = rain_slope_components(qr, nr, den, denfac, params,
+                                     /*include_den_gate=*/false);
+    // Standalone Fortran slope_rain zeros the rain-number fall speed for
+    // nrs<=0 (F:3905-3908).  slope_kdm6 has a later unconditional vtn
+    // reassignment, so keep this mode-specific gate out of the shared helper.
+    out.vtn = torch::where(nr <= 0.0, torch::zeros_like(out.vtn), out.vtn);
+    return out;
 }
 
 }  // namespace slope

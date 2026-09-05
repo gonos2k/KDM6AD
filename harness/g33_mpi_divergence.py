@@ -61,7 +61,11 @@ def _num(var, index):
     from pathlib import Path
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     import g33_netcdf_read as nr
-    return nr.read_numeric(var, index)["data"]
+    data = nr.read_numeric(var, index)["data"]
+    if data.size == 0:
+        raise SystemExit(
+            f"INSUFFICIENT: {getattr(var, 'name', 'numeric field')} has zero numeric cells")
+    return data
 
 
 def _fields(d):
@@ -84,7 +88,31 @@ def _forecast_in(run_dir):
     return cands[0]
 
 
+def _times_values(ds, label: str):
+    """Read the required history labels before any frame-indexed statistic."""
+    import numpy as np
+    if "Times" not in ds.variables:
+        raise SystemExit(
+            f"INSUFFICIENT: {label} forecast is missing required Times variable")
+    var = ds.variables["Times"]
+    if "Time" not in var.dimensions:
+        raise SystemExit(
+            f"INSUFFICIENT: {label} Times variable lacks a Time dimension")
+    axis = var.dimensions.index("Time")
+    if var.shape[axis] < 1:
+        raise SystemExit(f"INSUFFICIENT: {label} Times variable has no frames")
+    try:
+        value = np.asarray(var[:])
+    except (IndexError, OSError, RuntimeError, ValueError) as exc:
+        raise SystemExit(
+            f"INSUFFICIENT: {label} Times variable cannot be read: {exc}") from exc
+    if value.size == 0:
+        raise SystemExit(f"INSUFFICIENT: {label} Times variable has no cells")
+    return value
+
+
 _GRID_TOKEN = re.compile(r"^(\d+)x(\d+)$")
+_HEX64 = re.compile(r"^[0-9a-fA-F]{64}$")
 
 
 def _grid_record(text: str | None, run_dir: Path) -> dict:
@@ -103,6 +131,11 @@ def _grid_record(text: str | None, run_dir: Path) -> dict:
         m = re.match(r"^\s*(requested|actual|matches|np)\s+(.+?)\s*$",
                      line, re.IGNORECASE)
         if not m:
+            if re.match(r"^\s*(requested|actual|matches|np)\b", line,
+                        re.IGNORECASE):
+                return {"present": True, "requested": None, "actual": None,
+                        "matches": None, "np": None, "valid": False,
+                        "error": f"malformed grid fact in {run_dir / 'proc_grid'}"}
             continue
         key = m.group(1).lower()
         if key in fields:
@@ -111,37 +144,68 @@ def _grid_record(text: str | None, run_dir: Path) -> dict:
                     "error": f"duplicate {key} in {run_dir / 'proc_grid'}"}
         fields[key] = m.group(2)
 
-    def grid(value: str | None) -> str | None:
-        if value is None or value.lower().startswith(("(unset", "(not found")):
-            return None
+    def grid(value: str | None) -> tuple[str | None, bool]:
+        if value is None:
+            return None, False
+        value = value.strip().lower()
+        if value.startswith("(unset") or value.startswith("(not found"):
+            return None, False
         m = _GRID_TOKEN.fullmatch(value.lower())
         if not m or int(m.group(1)) < 1 or int(m.group(2)) < 1:
-            return None
-        return f"{int(m.group(1))}x{int(m.group(2))}"
+            return None, True
+        return f"{int(m.group(1))}x{int(m.group(2))}", False
 
-    requested, actual = grid(fields.get("requested")), grid(fields.get("actual"))
-    matches_raw = fields.get("matches", "").lower()
-    if matches_raw.startswith("yes"):
+    requested, requested_malformed = grid(fields.get("requested"))
+    actual, actual_malformed = grid(fields.get("actual"))
+    matches_present = "matches" in fields
+    matches_raw = fields.get("matches", "").strip().lower()
+    # The producer may append an explanatory ``-- ...`` comment.  The token
+    # itself must still be one of the three declared values; arbitrary text is
+    # never a reason to derive a value from the grids.
+    match = re.fullmatch(r"(yes|no|n/a)(?:\s+--.*)?", matches_raw)
+    if match and match.group(1) == "yes":
         matches = "yes"
-    elif matches_raw.startswith("no"):
+    elif match and match.group(1) == "no":
         matches = "no"
-    elif matches_raw.startswith("n/a"):
+    elif match and match.group(1) == "n/a":
         matches = "n/a"
+    elif matches_present:
+        matches = None
     else:
         # Older records did not carry a matches line.  Derive it only when both
         # grids are present; a malformed/missing actual grid remains invalid.
         matches = "yes" if requested is not None and actual is not None and requested == actual else None
     try:
         np_value = int(fields["np"]) if "np" in fields else None
-    except ValueError:
+        np_malformed = False
+    except (TypeError, ValueError):
         np_value = None
+        np_malformed = True
     valid = bool(actual is not None and (np_value is None or np_value > 0))
+    if requested_malformed or actual_malformed or np_malformed:
+        valid = False
+    if matches_present and not match:
+        valid = False
     if valid and np_value is not None:
         ax, ay = (int(v) for v in actual.split("x"))
         valid = ax * ay == np_value
+    # ``matches`` is a claim about the two parsed grids, not an override for a
+    # contradictory record.  Treat an explicit contradiction as malformed
+    # metadata so attribution cannot proceed on an opaque text pair.
+    if valid:
+        if requested is not None:
+            valid = (actual is not None and matches in {"yes", "no"}
+                     and ((matches == "yes") == (requested == actual)))
+        elif matches_present:
+            # ``n/a`` is the only declared matches value for an unrequested
+            # grid.  A yes/no claim without a requested grid is contradictory.
+            valid = matches == "n/a"
     return {"present": True, "requested": requested, "actual": actual,
             "matches": matches, "np": np_value, "valid": valid,
-            "raw": fields}
+            "raw": fields,
+            "error": ("malformed requested/actual/np/matches field"
+                       if (requested_malformed or actual_malformed or np_malformed
+                           or (matches_present and not match)) else None)}
 
 
 def _active_input_specs(run_dir: Path) -> list[dict[str, str]]:
@@ -229,20 +293,100 @@ def _validate_producer_status(run_dir: Path) -> bool:
             raise SystemExit(
                 f"{run_dir}: producer marked experiment_valid=false"
                 + (f" ({reasons})" if reasons else ""))
+        reasons = record.get("invalid_reasons")
+        if not isinstance(reasons, list) or reasons:
+            raise SystemExit(
+                f"{run_dir}: experiment_valid=true contradicts invalid_reasons={reasons!r}")
+        exit_code = record.get("exit_code")
+        completed = record.get("model_completed")
+        if not isinstance(exit_code, int) or isinstance(exit_code, bool):
+            raise SystemExit(
+                f"{run_dir}: producer validity lacks an integer exit_code")
+        if exit_code != 0 or completed is not True:
+            raise SystemExit(
+                f"{run_dir}: experiment_valid=true contradicts exit_code="
+                f"{exit_code} model_completed={completed!r}")
+        requested = record.get("requested_proc_grid")
+        actual = record.get("actual_proc_grid")
+        if requested is not None and actual != requested:
+            raise SystemExit(
+                f"{run_dir}: experiment_valid=true contradicts processor grid "
+                f"requested={requested!r} actual={actual!r}")
     exe = run_dir / "wrf_exe_sha256"
     if exe.is_file():
         try:
             lines = exe.read_text().splitlines()
         except OSError as exc:
             raise SystemExit(f"{run_dir}: cannot read wrf_exe_sha256: {exc}") from exc
-        stable_seen = False
-        for line in lines:
-            if re.match(r"^\s*stable\s+yes(?:\s|$)", line, re.IGNORECASE):
-                stable_seen = True
-            if re.match(r"^\s*stable\s+NO(?:\s|$)", line, re.IGNORECASE):
+        # The producer writes a bare final digest followed by explicit before,
+        # after, and stable facts.  Read all four as one record.  A stable line
+        # is not an authentication mechanism: it is accepted only when the
+        # independently recorded digests imply the same result.
+        nonempty = [line.strip() for line in lines if line.strip()]
+        final = None
+        before = after = None
+        stable = None
+        seen_keys: set[str] = set()
+        for line in nonempty:
+            if _HEX64.fullmatch(line):
+                if final is not None:
+                    raise SystemExit(f"{run_dir}: duplicate final executable digest")
+                final = line.lower()
+                continue
+            m = re.fullmatch(r"(before|after)\s+([^\s]+)", line,
+                             re.IGNORECASE)
+            if m:
+                key = m.group(1).lower()
+                if key in seen_keys:
+                    raise SystemExit(f"{run_dir}: duplicate {key} executable digest")
+                seen_keys.add(key)
+                digest = m.group(2)
+                if not _HEX64.fullmatch(digest):
+                    raise SystemExit(
+                        f"{run_dir}: {key} executable digest is not a 64-hex hash")
+                if key == "before":
+                    before = digest.lower()
+                else:
+                    after = digest.lower()
+                continue
+            m = re.fullmatch(r"stable\s+(yes|no)(?:\s+--.*)?", line,
+                             re.IGNORECASE)
+            if m:
+                if "stable" in seen_keys:
+                    raise SystemExit(f"{run_dir}: duplicate stable executable fact")
+                seen_keys.add("stable")
+                stable = m.group(1).lower() == "yes"
+                continue
+            if re.match(r"^\s*path\s+", line, re.IGNORECASE):
+                # The resolved path is descriptive and is not part of the
+                # digest consistency check.
+                continue
+            raise SystemExit(f"{run_dir}: malformed executable identity line: {line!r}")
+
+        has_pair_digests = before is not None or after is not None
+        if stable is False and not has_pair_digests and not validity.is_file():
+            raise SystemExit(
+                f"{run_dir}: producer executable record is unstable (stable NO)")
+        if has_pair_digests or stable is not None or validity.is_file():
+            if final is None or before is None or after is None:
                 raise SystemExit(
-                    f"{run_dir}: producer executable record is unstable (stable NO)")
-        if validity.is_file() and not stable_seen:
+                    f"{run_dir}: executable identity lacks final/before/after digest")
+            implied_stable = before == after == final
+            if stable is not None and stable is not implied_stable:
+                raise SystemExit(
+                    f"{run_dir}: executable stable fact contradicts final/before/after digests")
+            if stable is None and validity.is_file():
+                raise SystemExit(
+                    f"{run_dir}: producer validity lacks a stable executable record")
+            if not implied_stable:
+                raise SystemExit(
+                    f"{run_dir}: executable final/before/after digests are inconsistent")
+        elif stable is False:
+            # Legacy records may carry only a stable NO claim; it remains a
+            # hard refusal even though there are no digests to reconcile.
+            raise SystemExit(
+                f"{run_dir}: producer executable record is unstable (stable NO)")
+        elif validity.is_file():
             raise SystemExit(
                 f"{run_dir}: producer validity lacks a stable executable record")
     elif validity.is_file():
@@ -306,8 +450,18 @@ def _input_identity(run_dir: Path) -> dict:
     if declared_by_nml and (not declared or not identity["records"]):
         raise SystemExit(f"{run_dir}: namelist declares inputs but input identity is empty")
     expected_records = {(s["kind"], s["domain"], s["name"]) for s in active_specs}
-    actual_records = {(r.get("kind"), r.get("domain"), r.get("name"))
-                      for r in identity["records"] if isinstance(r, dict)}
+    actual_records = set()
+    for rec in identity["records"]:
+        if not isinstance(rec, dict):
+            raise SystemExit(f"{run_dir}: malformed input identity record")
+        key = (rec.get("kind"), rec.get("domain"), rec.get("name"))
+        if (not all(isinstance(part, str) and part for part in key)):
+            raise SystemExit(
+                f"{run_dir}: active input identity record lacks a non-empty kind/domain/name")
+        if key in actual_records:
+            raise SystemExit(
+                f"{run_dir}: duplicate active input identity key {key!r}")
+        actual_records.add(key)
     if expected_records != actual_records:
         raise SystemExit(
             f"{run_dir}: input identity does not cover the active namelist input set")
@@ -316,13 +470,25 @@ def _input_identity(run_dir: Path) -> dict:
         if not isinstance(rec, dict):
             raise SystemExit(f"{run_dir}: malformed input identity record")
         kind, domain = rec.get("kind"), rec.get("domain")
-        digest = rec.get("sha256_before", rec.get("sha256"))
+        before = rec.get("sha256_before", rec.get("sha256"))
+        after = rec.get("sha256_after", rec.get("sha256"))
+        digest = before
         if not isinstance(kind, str) or not isinstance(domain, str):
             raise SystemExit(f"{run_dir}: input identity record lacks kind/domain")
-        if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-fA-F]{64}", digest):
+        if (not isinstance(digest, str)
+                or not re.fullmatch(r"[0-9a-fA-F]{64}", digest)
+                or not isinstance(after, str)
+                or not re.fullmatch(r"[0-9a-fA-F]{64}", after)):
             raise SystemExit(f"{run_dir}: invalid input hash for {kind}/{domain}")
-        stable = rec.get("stable", True)
-        if rec.get("status", "ok") != "ok" or stable is not True:
+        derived_stable = before.lower() == after.lower()
+        declared_stable = rec.get("stable")
+        if declared_stable is not None and declared_stable is not derived_stable:
+            raise SystemExit(
+                f"{run_dir}: input {kind}/{domain} has contradictory stable metadata; "
+                "canonical input identity hash is not trustworthy")
+        status_after = rec.get("status_after", "ok")
+        if (rec.get("status", "ok") != "ok" or status_after != "ok"
+                or not derived_stable):
             raise SystemExit(f"{run_dir}: input {kind}/{domain} was unavailable or changed during run")
         keys.append((kind, domain, digest.lower()))
     complete_raw = identity.get("complete", True)
@@ -490,12 +656,35 @@ def same_experiment(dir_a, dir_b, *, expect: str = "decomposition") -> dict:
                 "decomposition difference to attribute anything to.")
         if input_declared:
             must_agree.append("input_sha256")
-    elif input_declared:
+    else:
+        # A perturbation comparison must keep the actual decomposition fixed.
+        # Parse both records before looking at the requested/raw text; malformed
+        # opaque grid strings are not a controlled input perturbation.
+        if not (grid_a.get("valid") and grid_b.get("valid")):
+            raise SystemExit(
+                "perturbation attribution requires valid actual processor grids "
+                "in both proc_grid records")
+        if grid_a.get("actual") != grid_b.get("actual"):
+            raise SystemExit(
+                "perturbation attribution requires equal actual processor grids")
+        bad_grid = []
+        for label, grid in (("A", grid_a), ("B", grid_b)):
+            if grid.get("requested") is not None and (
+                    grid.get("actual") != grid.get("requested")
+                    or grid.get("matches") != "yes"):
+                bad_grid.append(
+                    f"{label} requested {grid.get('requested')} but actual is "
+                    f"{grid.get('actual')} (matches={grid.get('matches')})")
+        if bad_grid:
+            raise SystemExit(
+                "these runs cannot support perturbation attribution: "
+                + "; ".join(bad_grid))
+        if input_declared:
         # Perturbation identity is useful only if the changed input is recorded;
         # all input hashes must be available and at least one must differ.
-        if "input_sha256" not in out["differ"]:
-            raise SystemExit(
-                "perturbation attribution requires a recorded input hash difference")
+            if "input_sha256" not in out["differ"]:
+                raise SystemExit(
+                    "perturbation attribution requires a recorded input hash difference")
     bad = [k for k in must_agree if k not in out["agree"]]
     if bad:
         raise SystemExit(
@@ -521,8 +710,8 @@ def comparable(a, b) -> None:
         raise SystemExit(
             f"field universes differ: only in A {sorted(fa - fb)}; "
             f"only in B {sorted(fb - fa)}")
-    ta = np.asarray(a["Times"][:])
-    tb = np.asarray(b["Times"][:])
+    ta = _times_values(a, "A")
+    tb = _times_values(b, "B")
     if ta.shape != tb.shape or not np.array_equal(ta, tb):
         raise SystemExit(f"time axes differ: A {ta.shape}, B {tb.shape}")
     for v in sorted(fa):
@@ -533,6 +722,13 @@ def comparable(a, b) -> None:
         if a[v].shape != b[v].shape:
             raise SystemExit(
                 f"{v}: shape {a[v].shape} in A, {b[v].shape} in B")
+        if any(size == 0 for size in a[v].shape):
+            raise SystemExit(
+                f"INSUFFICIENT: {v} has zero numeric cells in the selected population")
+    if not fa:
+        raise SystemExit(
+            "INSUFFICIENT: no common supported numeric fields; Times-only or "
+            "metadata-only files cannot establish a divergence result")
 
 
 def coverage(a, b) -> list:
@@ -540,7 +736,8 @@ def coverage(a, b) -> list:
     import numpy as np
     comparable(a, b)
     out, prev = [], set()
-    for t in range(a["Times"].shape[0]):
+    time_axis = a["Times"].dimensions.index("Time")
+    for t in range(a["Times"].shape[time_axis]):
         now = {v for v in _fields(a)
                if not np.array_equal(_num(a[v], t), _num(b[v], t),
                                      equal_nan=False)}
@@ -771,16 +968,44 @@ def _span(counts) -> str:
     return f"{hit[0] + 1}..{hit[-1] + 1} ({len(hit)} of {len(counts)})"
 
 
-def cell_area(state_path: Path, a):
+def cell_area(state_path: Path, a, *, expected_sha256: str | None = None):
     """`A_ij = DX*DY / MAPFAC_M**2`, from a file that carries the map factor.
 
     The forecast frames here do not; `wrfinput_d01` does. Without it every
     spatial statistic is a grid-cell one, which this module labels as such.
     """
+    import hashlib
     import netCDF4
-    d = netCDF4.Dataset(str(state_path))
-    mf = _num(d["MAPFAC_M"], 0)
-    dx, dy = float(d.getncattr("DX")), float(d.getncattr("DY"))
+    state_path = Path(state_path)
+    if not state_path.is_file():
+        raise SystemExit(f"MAPFAC provenance file is not a regular file: {state_path}")
+    actual_sha = hashlib.sha256(state_path.read_bytes()).hexdigest()
+    if expected_sha256 is None:
+        raise SystemExit(
+            "MAPFAC provenance is required: pass --mapfac-sha256 for bare files "
+            "or use run-directory input identity")
+    if (not isinstance(expected_sha256, str)
+            or not re.fullmatch(r"[0-9a-fA-F]{64}", expected_sha256)
+            or expected_sha256.lower() != actual_sha):
+        raise SystemExit(
+            f"MAPFAC file hash does not match the declared run identity "
+            f"(actual {actual_sha})")
+    with netCDF4.Dataset(str(state_path)) as d:
+        if "MAPFAC_M" not in d.variables:
+            raise SystemExit(f"{state_path}: MAPFAC_M is missing")
+        # MAPFAC_M has no Time axis; read its complete two-dimensional field,
+        # rather than treating index 0 as a frame selector.
+        mf = _num(d["MAPFAC_M"], None)
+        try:
+            dx, dy = float(d.getncattr("DX")), float(d.getncattr("DY"))
+        except (AttributeError, KeyError, TypeError, ValueError) as exc:
+            raise SystemExit(f"{state_path}: DX/DY map provenance is missing or invalid") from exc
+        import numpy as np
+        if not (np.isfinite(dx) and np.isfinite(dy) and dx > 0.0 and dy > 0.0):
+            raise SystemExit(f"{state_path}: DX and DY must be finite and positive")
+        if not np.all(np.isfinite(mf)) or not np.all(mf > 0.0):
+            raise SystemExit(
+                f"{state_path}: MAPFAC_M must be finite and strictly positive")
     # The map factor must be THIS domain's. A wrfinput from another run of the
     # same grid size would pass silently and weight every cell wrongly.
     ref = a["RAINNC"].shape[-2:] if "RAINNC" in a.variables else a["T"].shape[-2:]
@@ -790,6 +1015,32 @@ def cell_area(state_path: Path, a):
         if key in a.ncattrs() and abs(float(a.getncattr(key)) - (dx if key == "DX" else dy)) > 1e-6:
             raise SystemExit(f"{key} differs between the map-factor file and the forecast")
     return dx * dy / (mf * mf)
+
+
+def _mapfac_sha_for_runs(state_path: Path, run_dirs: list[Path]) -> str:
+    """Bind the map-factor file to every run's active input record."""
+    import hashlib
+    actual = hashlib.sha256(Path(state_path).read_bytes()).hexdigest()
+    for run_dir in run_dirs:
+        identity = _input_identity(Path(run_dir))
+        if not identity.get("declared"):
+            raise SystemExit(
+                f"{run_dir}: MAPFAC comparison requires declared active input identity")
+        matches = []
+        for rec in identity.get("records", []):
+            name = Path(str(rec.get("name", ""))).name
+            resolved = Path(str(rec.get("resolved_path", ""))).name
+            if name == Path(state_path).name or resolved == Path(state_path).name:
+                matches.append(rec)
+        if len(matches) != 1:
+            raise SystemExit(
+                f"{run_dir}: MAPFAC file {Path(state_path).name} is not uniquely "
+                "bound to an active input record")
+        rec = matches[0]
+        if rec.get("sha256_before", rec.get("sha256", "")).lower() != actual:
+            raise SystemExit(
+                f"{run_dir}: MAPFAC file hash differs from its active input record")
+    return actual
 
 
 def precipitation(a, b, t: int, name: str = "RAINNC", area=None) -> dict:
@@ -910,6 +1161,10 @@ def main() -> int:
     ap.add_argument("--mapfac-from", type=Path, default=None,
                     help="a file carrying MAPFAC_M and DX/DY (wrfinput_d01); "
                          "enables area-weighted precipitation and area in km2")
+    ap.add_argument("--mapfac-sha256", default=None,
+                    help="sha256 of --mapfac-from when comparing bare forecast "
+                         "files; run-directory comparisons derive it from the "
+                         "active input identity")
     args = ap.parse_args()
     # THE GATE RUNS HERE, OR THE ARTIFACT SAYS IT DID NOT. same_experiment() was
     # written and then called from nothing, so every comparison this CLI made
@@ -934,20 +1189,46 @@ def main() -> int:
               "runner, a namelist or an input. Pass the run DIRECTORIES to have "
               "that checked.", file=sys.stderr)
     a, b = netCDF4.Dataset(str(file_a)), netCDF4.Dataset(str(file_b))
-    area = cell_area(args.mapfac_from, a) if args.mapfac_from else None
+    # History labels are the time boundary for every requested statistic.  Do
+    # this typed check before map-factor setup or frame indexing so a missing
+    # label cannot escape as a netCDF traceback or an apparent empty result.
+    times_a = _times_values(a, "A")
+    times_b = _times_values(b, "B")
+    if args.mapfac_from:
+        if gate is not None:
+            map_sha = _mapfac_sha_for_runs(args.mapfac_from,
+                                           [args.run_a, args.run_b])
+        else:
+            map_sha = args.mapfac_sha256
+            if map_sha is None:
+                raise SystemExit(
+                    "--mapfac-sha256 is required with bare forecast files")
+        area = cell_area(args.mapfac_from, a, expected_sha256=map_sha)
+    else:
+        area = None
     frames = [int(f) for f in args.frames.split(",")]
 
     # THE REQUESTED FRAMES MUST EXIST. Asking for minute 10 of a one-minute run
     # raised `IndexError: index exceeds dimension bounds` from inside netCDF4 --
     # true, and it names neither the frame nor the file. A comparison that
     # cannot be made should say which one and stop.
-    n_frames = a["Times"].shape[0]
-    missing = [f for f in frames if f >= n_frames or f < -n_frames]
+    n_frames_a = times_a.shape[a["Times"].dimensions.index("Time")]
+    n_frames_b = times_b.shape[b["Times"].dimensions.index("Time")]
+    missing = [f for f in frames
+               if f >= n_frames_a or f < -n_frames_a
+               or f >= n_frames_b or f < -n_frames_b]
     if missing:
         raise SystemExit(
-            f"these runs carry {n_frames} frames (0..{n_frames - 1}) and "
+            f"these runs carry {n_frames_a} and {n_frames_b} frames "
+            f"(0..{min(n_frames_a, n_frames_b) - 1}) and "
             f"frames {missing} were asked for. Pass --frames with what the "
             f"files actually hold.")
+    fixed = args.fixed_mask_frame
+    if (fixed < -n_frames_a or fixed >= n_frames_a
+            or fixed < -n_frames_b or fixed >= n_frames_b):
+        raise SystemExit(
+            f"--fixed-mask-frame {fixed} is outside both runs' frame ranges "
+            f"(A={n_frames_a}, B={n_frames_b}); choose an existing frame")
     cov = coverage(a, b)
     print("  frame  differing fields   new since previous")
     for row in cov:
@@ -972,7 +1253,8 @@ def main() -> int:
                       "checked that the two runs share a binary, runner, "
                       "namelist or input"},
            "coverage": cov, "fields": [], "precipitation": [],
-           "reflectivity": [], "fixed_mask_frame": args.fixed_mask_frame}
+           "reflectivity": [], "fixed_mask_frame": args.fixed_mask_frame,
+           "mapfac_sha256": (map_sha if args.mapfac_from else None)}
     print(f"\n  {'field':10s} {'t':>3s} {'differ':>8s} {'cond p99':>11s} "
           f"{'domain p99':>11s} {'fixed-mask med':>15s}")
     for t in frames:
@@ -982,8 +1264,8 @@ def main() -> int:
             r = field_stats(a, b, name, t, masks.get(name))
             doc["fields"].append(r)
             print(f"  {name:10s} {t:>3d} {r['differing_fraction']:7.2%} "
-                  f"{r.get('conditional_p99', float('nan')):11.3e} "
-                  f"{r['finite_domain_p99']:11.3e} "
+                  f"{_fmt(r.get('conditional_p99')):>11s} "
+                  f"{_fmt(r.get('finite_domain_p99')):>11s} "
                   f"{_fmt(r.get('fixed_mask_median')):>15s}")
         if "RAINNC" in a.variables:
             doc["precipitation"].append(precipitation(a, b, t, area=area))
@@ -1029,7 +1311,7 @@ def main() -> int:
           f"{'>20dBZ cells a':>14s} {'cells b':>9s}")
     for r in doc["reflectivity"]:
         print(f"  {r['frame']:>3d} {r['physical_fraction']:8.3%} "
-              f"{r.get('screened_p99_dbz', float('nan')):13.4f} "
+              f"{_fmt(r.get('screened_p99_dbz'), '.4f'):>13s} "
               f"{r['cells_over_20dbz_a']:14d} {r['cells_over_20dbz_b']:9d}")
 
     return 0

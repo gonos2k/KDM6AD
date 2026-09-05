@@ -23,6 +23,13 @@ from ..state import State, Forcing
 _F64 = dict(dtype=torch.float64)
 
 
+def take_profile_aux(value, indices):
+    """Select fixed per-column geometry/surface; a single dict broadcasts."""
+    if isinstance(value, (list, tuple)):
+        return tuple(value[int(i)] for i in indices)
+    return value
+
+
 def _allsky_columns_worker(args: dict) -> dict:
     """spawn-안전 워커: 샤드의 구름 컬럼들에 대한 all-sky H (+adjoint).
 
@@ -33,9 +40,6 @@ def _allsky_columns_worker(args: dict) -> dict:
     """
     os.environ.setdefault("OMP_NUM_THREADS", "1")
     torch.set_num_threads(1)
-    import sys
-    sys.path.insert(0, args["oracle_root"])
-    sys.path.insert(0, args["oracle_root"] + "/tests")
     from kdm6.da_driver import _blend_above_model_top
     from kdm6.obs.model_profile_builder import (RttovProfileConfig,
                                                 model_to_rttov_tensors)
@@ -56,7 +60,6 @@ def _allsky_columns_worker(args: dict) -> dict:
         gas_units=2, qv_convention="mixing_ratio_kgkg_dry",
         rttov_layer_pressure=torch.as_tensor(args["p_lay"], **_F64),
         rttov_level_pressure=torch.as_tensor(args["p_half"], **_F64), cloud=True)
-    icfg = RttovInputConfig(coef_id=args["coef_id"], channels=tuple(args["channels"]))
     n, nch = y_bt.shape
     K = st.shape[2]
     grad = bool(args["grad"])
@@ -66,6 +69,10 @@ def _allsky_columns_worker(args: dict) -> dict:
     bt_out = np.zeros((n, nch))
     rq_out = np.ones((n, nch))
     for i in range(n):
+        icfg = RttovInputConfig(
+            coef_id=args["coef_id"], channels=tuple(args["channels"]),
+            geometry=take_profile_aux(args.get("geometry"), [i]),
+            surface=take_profile_aux(args.get("surface"), [i]))
         leaves = State(*(torch.flip(st[f, i], [-1]).detach().clone()
                          .requires_grad_(grad) for f in range(12)))
         fcol = Forcing(rho=torch.flip(fc[0, i], [-1]), pii=torch.flip(fc[1, i], [-1]),
@@ -151,6 +158,8 @@ def sharded_allsky(state: "State", forcing: "Forcing", cidx: torch.Tensor,
         if len(ch) == 0:
             continue
         jobs.append(dict(rttov_cfg, state=st[:, ch], forcing=fc[:, ch],
+                         geometry=take_profile_aux(rttov_cfg.get("geometry"), cidx[ch]),
+                         surface=take_profile_aux(rttov_cfg.get("surface"), cidx[ch]),
                          rho_d=rho_d[cidx][ch].numpy(),
                          xland=xland[cidx][ch].numpy(),
                          y_bt=y_bt[cidx][ch].numpy(), mask=mask[cidx][ch].numpy(),

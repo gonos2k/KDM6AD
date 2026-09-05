@@ -59,6 +59,12 @@ class ShardSpec:
     ncmin_land: float = 0.0
     ncmin_sea: float = 0.0
 
+    def __post_init__(self):
+        # Keep direct construction on the same fail-fast boundary as the
+        # worker's OsseObsConfig; an invalid pair must never reach spawn.
+        from .da_driver import _validate_profile_ref_pair
+        _validate_profile_ref_pair(self.t_ref, self.q_ref)
+
 
 def _shard_worker(spec: ShardSpec) -> dict:
     """worker 프로세스 본체 (spawn-safe 모듈 최상위). 민감도 사이클 1회."""
@@ -98,6 +104,27 @@ def run_sharded_sensitivity(specs: Sequence[ShardSpec], *, n_workers: int,
     bitwise 동등성 게이트의 참조 경로 (같은 코드, 같은 스레드 고정).
     반환: {"j_obs": Σ, "adj_x0": State (B_total, K) 원 인덱스 재조립, ...}
     """
+    if not specs:
+        raise ValueError("specs must contain at least one shard")
+    # Direct callers can construct ShardSpec without the validated builder.
+    # Reject duplicates before spawning workers; otherwise advanced indexing
+    # overwrites a repeated destination during reassembly.
+    from .da_driver import _validate_profile_ref_pair
+    for s in specs:
+        if not isinstance(s, ShardSpec):
+            raise TypeError("specs must contain ShardSpec instances")
+        _validate_profile_ref_pair(s.t_ref, s.q_ref)
+        ci = s.col_idx
+        if not isinstance(ci, torch.Tensor) or ci.ndim != 1:
+            raise ValueError(
+                f"shard {s.shard_id} col_idx must be a 1-D integer tensor")
+        if ci.dtype not in (torch.int32, torch.int64):
+            raise ValueError(
+                f"shard {s.shard_id} col_idx must be an integer tensor")
+        if ci.unique().numel() != ci.numel():
+            raise RuntimeError(
+                f"shard {s.shard_id} col_idx contains duplicates — partition broken")
+
     if parallel:
         import multiprocessing as mp
         # spawn 자식은 부모의 sys.path 수정(conftest)을 상속하지 않는다 —
@@ -156,7 +183,12 @@ def build_shard_specs(x_truth: State, x_background: State, forcing: Forcing,
                       ncmin_sea: float = 0.0) -> list:
     """(B_total, K) 입력 + 분할 인덱스 리스트(예: da_shard.compose_shards 출력)
     → ShardSpec 리스트. col_idx는 [0, B_total) 재조립 인덱스 그 자체."""
+    from .da_driver import (_normalize_obs_times,
+                            _validate_profile_ref_pair)
+
+    _validate_profile_ref_pair(t_ref, q_ref)
     B, K = x_truth.th.shape
+    obs_times_f = _normalize_obs_times(obs_times, n_steps)
     expected = (B, K)
     for name, state in (("x_truth", x_truth), ("x_background", x_background),
                         ("forcing", forcing)):
@@ -238,7 +270,7 @@ def build_shard_specs(x_truth: State, x_background: State, forcing: Forcing,
             shard_id=i, b_total=B, col_idx=ci.clone(),
             x_truth=sub(x_truth), x_background=sub(x_background),
             forcing=sub(forcing),
-            n_steps=n_steps, dt=dt, obs_times=tuple(int(t) for t in obs_times),
+            n_steps=n_steps, dt=dt, obs_times=obs_times_f,
             case_root=str(Path(case_root) / f"shard{i:03d}"),
             profile_kwargs=shard_profile, input_kwargs=shard_input,
             obs_sigma=obs_sigma, t_ref=shard_t_ref, q_ref=shard_q_ref,

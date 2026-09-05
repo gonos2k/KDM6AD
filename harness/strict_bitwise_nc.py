@@ -13,6 +13,20 @@ have the same schema; an unsupported-versus-supported kind is a schema failure.
 """
 import sys, numpy as np, netCDF4 as nc
 
+
+def _frame_value(var, frame):
+    """Read one frame by the variable's named ``Time`` dimension.
+
+    WRF normally stores Time first, but this generic helper does not declare
+    that as part of its contract.  Axis-zero indexing compares the wrong slice
+    for a valid variable with a non-leading Time dimension.
+    """
+    if "Time" not in var.dimensions:
+        return np.asarray(var[:])
+    index = [slice(None)] * var.ndim
+    index[var.dimensions.index("Time")] = frame
+    return np.asarray(var[tuple(index)])
+
 def main():
     try:
         a = nc.Dataset(sys.argv[1], "r")
@@ -26,6 +40,11 @@ def main():
     explicit = len(sys.argv) > 3
     frame = int(sys.argv[3]) if explicit else min(na, nb) - 1
     label = "selected" if explicit else "last common"
+    if na < 1 or nb < 1:
+        print(f"INSUFFICIENT: no history frame in file37/file137 "
+              f"(file37={na}, file137={nb})")
+        a.close(); b.close()
+        return 1
     if frame < 0 or frame >= na or frame >= nb:
         print(f"ERROR: frame index {frame} is outside the common frame range "
               f"(file37={na}, file137={nb})")
@@ -37,8 +56,15 @@ def main():
     only_a = sorted(set(a.variables) - set(b.variables))
     only_b = sorted(set(b.variables) - set(a.variables))
     n_match = n_diff = n_skip = 0
+    numeric_common = 0
     unsupported = []
     diffs = []
+    empty_numeric = [
+        v for v in common
+        if a.variables[v].dtype.kind in ("f", "i", "u")
+        and (any(size == 0 for size in a.variables[v].shape)
+             or any(size == 0 for size in b.variables[v].shape))
+    ]
     for v in common:
         va, vb = a.variables[v], b.variables[v]
         # Dimensions are part of a variable's identity. Check them before the
@@ -66,8 +92,8 @@ def main():
                 if va.dtype != vb.dtype:
                     diffs.append((v, f"DTYPE {va.dtype} vs {vb.dtype}")); n_diff += 1; continue
                 try:
-                    ca = np.asarray(va[frame]) if "Time" in va.dimensions else np.asarray(va[:])
-                    cb = np.asarray(vb[frame]) if "Time" in vb.dimensions else np.asarray(vb[:])
+                    ca = _frame_value(va, frame)
+                    cb = _frame_value(vb, frame)
                 except IndexError:
                     diffs.append((v, "frame oob")); n_diff += 1; continue
                 if ca.shape != cb.shape or ca.tobytes() != cb.tobytes():
@@ -81,15 +107,19 @@ def main():
                 n_skip += 1
                 unsupported.append((v, str(va.dtype)))
             continue
-        if "Time" in va.dimensions:
-            try: xa = np.asarray(va[frame]); xb = np.asarray(vb[frame])
-            except IndexError: diffs.append((v, "frame oob")); n_diff += 1; continue
-        else:
-            xa = np.asarray(va[:]); xb = np.asarray(vb[:])
+        numeric_common += 1
+        try:
+            xa = _frame_value(va, frame)
+            xb = _frame_value(vb, frame)
+        except IndexError:
+            diffs.append((v, "frame oob")); n_diff += 1; continue
         if xa.shape != xb.shape:
             diffs.append((v, f"SHAPE {xa.shape} vs {xb.shape}")); n_diff += 1; continue
         if xa.dtype != xb.dtype:
             diffs.append((v, f"DTYPE {xa.dtype} vs {xb.dtype}")); n_diff += 1; continue
+        if xa.size == 0 or xb.size == 0:
+            empty_numeric.append(v)
+            continue
         # raw-bit view
         itype = {1:np.uint8,2:np.uint16,4:np.uint32,8:np.uint64}.get(xa.dtype.itemsize)
         ua = xa.view(itype); ub = xb.view(itype)
@@ -110,6 +140,19 @@ def main():
     if diffs:
         print("\nDIFFERING variables:")
         for v, msg in diffs: print(f"  {v:22s} {msg}")
+    # A Times-only (or otherwise unsupported-only) pair has no numeric
+    # population on which this command can establish parity.  Scan completion
+    # remains a failure: unavailable evidence is not a scientific PASS.
+    if numeric_common == 0:
+        print("\nRESULT: INSUFFICIENT (no common supported numeric variables; "
+              "character/unsupported metadata alone cannot establish parity)")
+        a.close(); b.close()
+        return 1
+    if empty_numeric:
+        print("\nRESULT: INSUFFICIENT (zero numeric cells in "
+              f"{sorted(set(empty_numeric))}; no populated parity census)")
+        a.close(); b.close()
+        return 1
     ok = (n_diff == 0) and (not only_a) and (not only_b)
     print(f"\nRESULT: {'STRICT BITWISE PASS' if ok else 'FAIL'}")
     a.close(); b.close()

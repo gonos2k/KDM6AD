@@ -17,6 +17,8 @@ OSSE 구성: 진실 x0로 창을 돌려 관측시각 BT를 '관측' y로 기록(
 """
 from __future__ import annotations
 
+import math
+import numbers
 from dataclasses import dataclass, field
 from typing import Sequence
 
@@ -40,7 +42,7 @@ class OsseObsConfig:
     run_k: object                       # make_live_run_k(case_dir) 등
     profile_cfg: object                 # RttovProfileConfig (공유 fixture 그리드)
     input_cfg: object                   # RttovInputConfig (coef, channels)
-    obs_sigma: float = 1.0              # 관측오차 σo [K]
+    obs_sigma: object = 1.0              # IR σo [K], or per-channel mixed-unit σ
     # 모델-상단 위 기준 프로파일 (표준 NWP-위성 관행): NWP 모델 상단(SS 케이스
     # ~60 hPa)보다 위의 타깃 레이어를 no-extrapolation 클램프(상수 연장)로 두면
     # 중간권까지 비물리 상수 T/Q가 되어 RTTOV regression limits가 프로파일을
@@ -57,6 +59,79 @@ class OsseObsConfig:
     # 프레임에선 더 좁혀도 될 것.
     t_blend_octaves: float = 1.0
     q_blend_octaves: float = 4.0
+
+    def __post_init__(self):
+        _validate_profile_ref_pair(self.t_ref, self.q_ref)
+
+
+def _validate_profile_ref_pair(t_ref, q_ref) -> None:
+    """Keep the temperature/humidity model-top reference pair inseparable."""
+    if (t_ref is None) != (q_ref is None):
+        raise ValueError(
+            "t_ref and q_ref must be supplied together for the model-top blend")
+
+
+def _validate_top_profile_refs(obs_cfg: OsseObsConfig) -> None:
+    """Keep the temperature/humidity model-top reference pair inseparable."""
+    _validate_profile_ref_pair(obs_cfg.t_ref, obs_cfg.q_ref)
+
+
+def _validate_obs_sigma_contract(obs_cfg) -> None:
+    """Apply the shared mixed observable sigma guard at direct OSSE boundaries."""
+    from .obs.obs_loss import validate_mixed_observation_sigma
+
+    run_k = getattr(obs_cfg, "run_k", None)
+    input_cfg = getattr(obs_cfg, "input_cfg", None)
+    validate_mixed_observation_sigma(
+        getattr(obs_cfg, "obs_sigma", None),
+        getattr(input_cfg, "channels", None),
+        getattr(run_k, "solar_channels", ()),
+        name="obs_sigma")
+
+
+def _normalize_obs_times(obs_times: Sequence, n_steps: int) -> tuple[int, ...]:
+    """Validate public checkpoint times before converting them to Python ints."""
+    normalized = []
+    for t in obs_times:
+        if isinstance(t, bool):
+            raise TypeError(
+                f"obs time must be a non-bool integer step index; got {t!r}")
+        if isinstance(t, torch.Tensor):
+            if t.ndim != 0 or t.dtype == torch.bool:
+                raise TypeError(
+                    f"obs time must be a scalar integer step index; got {t!r}")
+            if t.dtype.is_floating_point:
+                value = float(t.item())
+                if not math.isfinite(value) or not value.is_integer():
+                    raise ValueError(
+                        f"obs time must be finite and exactly integral; got {t!r}")
+                ti = int(value)
+            else:
+                ti = int(t.item())
+        elif isinstance(t, str):
+            # Retain the documented mapping-key alias (e.g. JSON key "2"),
+            # while rejecting decimal strings that could hide truncation.
+            try:
+                ti = int(t.strip(), 10)
+            except (TypeError, ValueError) as exc:
+                raise TypeError(
+                    f"obs time must be an integer step index; got {t!r}") from exc
+        elif isinstance(t, numbers.Integral):
+            ti = int(t)
+        elif isinstance(t, numbers.Real):
+            value = float(t)
+            if not math.isfinite(value) or not value.is_integer():
+                raise ValueError(
+                    f"obs time must be finite and exactly integral; got {t!r}")
+            ti = int(value)
+        else:
+            raise TypeError(
+                f"obs time must be a non-bool integer step index; got {t!r}")
+        if not 0 <= ti <= n_steps:
+            raise ValueError(
+                f"obs time {ti} outside window [0, {n_steps}]")
+        normalized.append(ti)
+    return tuple(normalized)
 
 
 def _blend_above_model_top(x_lay: torch.Tensor, x_ref: torch.Tensor,
@@ -84,6 +159,8 @@ def batched_clear_bt(x_t: State, forcing: Forcing, obs_cfg: OsseObsConfig):
         raise ValueError(
             "batched_clear_bt is clear-sky only; profile_cfg.cloud=True is "
             "unsupported here")
+    _validate_top_profile_refs(obs_cfg)
+    _validate_obs_sigma_contract(obs_cfg)
     from .obs.model_profile_builder import model_to_rttov_tensors
     from .obs.rttov_input_builder import pack_rttov_input  # noqa: F401 (계약 문서화)
     from .obs.rttov_obs_operator import RttovObsOp
@@ -136,6 +213,8 @@ def batched_allsky_bt(x_t: State, forcing: Forcing, obs_cfg: OsseObsConfig,
         raise ValueError(
             "batched_allsky_bt requires profile_cfg.cloud=True — a clear-sky "
             "profile config would silently omit the hydrometeor inputs")
+    _validate_top_profile_refs(obs_cfg)
+    _validate_obs_sigma_contract(obs_cfg)
     # Config density is frozen on the input MODEL batch/grid. Apply exactly the
     # same column selection and vertical reversal as the corresponding state.
     rho_d = require_dry_air_density(getattr(obs_cfg.profile_cfg, "rho_d", None), x_t.qv)
@@ -201,6 +280,7 @@ def _innovation_term(t: int, x_t: State, forcings: Sequence[Forcing],
 
     if t not in y_by_time:
         return None
+    _validate_obs_sigma_contract(obs_cfg)
     f = forcings[t] if t < len(forcings) else forcings[-1]
     y_bt, y_rq = y_by_time[t]
     bt, rad_quality, leaves = batched_clear_bt(x_t, f, obs_cfg)
@@ -253,7 +333,8 @@ def run_osse_sensitivity(x_truth: State, x_background: State,
         raise ValueError(
             "run_osse_sensitivity is clear-sky only; profile_cfg.cloud=True is "
             "unsupported here")
-    obs_set = set(int(t) for t in obs_times)
+    _validate_obs_sigma_contract(obs_cfg)
+    obs_set = set(_normalize_obs_times(obs_times, len(forcings)))
     y_store: dict = {}
     run_da_window(x_truth, forcings,
                   make_truth_bt_recorder(forcings, obs_set, obs_cfg, y_store),
@@ -301,7 +382,8 @@ def run_osse_analysis(x_truth: State, x_background: State,
     """
     from .da_minimizer import run_minimizer
 
-    obs_set = set(int(t) for t in obs_times)
+    _validate_obs_sigma_contract(obs_cfg)
+    obs_set = set(_normalize_obs_times(obs_times, len(forcings)))
     y_store: dict = {}
     run_da_window(x_truth, forcings,
                   make_truth_bt_recorder(forcings, obs_set, obs_cfg, y_store),

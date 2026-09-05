@@ -108,6 +108,10 @@ including Green/Red implementation and independent review teams. Apply this
 setting when spawning or restarting team agents unless the user explicitly
 requests a different model or reasoning effort.
 
+Keep at most seven team agents active at once across the session, including
+follow-up reviews. Reuse completed agents and queue remaining work within this
+limit; the user's instruction forbids eight or more active team agents.
+
 Before changing KDM6/KDM6AD code, check consistency from all four perspectives.
 Prioritize a coherent mathematical and physical contract over a local symptom fix.
 
