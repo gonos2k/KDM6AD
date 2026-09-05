@@ -1,0 +1,81 @@
+{
+  "baseline_commit": "2f88c4a54d94ae68a00f9393bd1cd6eec234b039",
+  "word_combinations": 524288,
+  "word_mismatches": 0,
+  "channels": {
+    "sw038": {
+      "bits": 14,
+      "positive_radiance_words": 65380,
+      "positive_bt_bit_mismatches": 0,
+      "invalid_dn_count": 39,
+      "invalid_words_all_unusable": true
+    },
+    "wv063": {
+      "bits": 12,
+      "positive_radiance_words": 64912,
+      "positive_bt_bit_mismatches": 0,
+      "invalid_dn_count": 39,
+      "invalid_words_all_unusable": true
+    },
+    "wv069": {
+      "bits": 13,
+      "positive_radiance_words": 65224,
+      "positive_bt_bit_mismatches": 0,
+      "invalid_dn_count": 39,
+      "invalid_words_all_unusable": true
+    },
+    "wv073": {
+      "bits": 13,
+      "positive_radiance_words": 65224,
+      "positive_bt_bit_mismatches": 0,
+      "invalid_dn_count": 39,
+      "invalid_words_all_unusable": true
+    },
+    "ir087": {
+      "bits": 13,
+      "positive_radiance_words": 65224,
+      "positive_bt_bit_mismatches": 0,
+      "invalid_dn_count": 39,
+      "invalid_words_all_unusable": true
+    },
+    "ir096": {
+      "bits": 13,
+      "positive_radiance_words": 65224,
+      "positive_bt_bit_mismatches": 0,
+      "invalid_dn_count": 39,
+      "invalid_words_all_unusable": true
+    },
+    "ir105": {
+      "bits": 13,
+      "positive_radiance_words": 65224,
+      "positive_bt_bit_mismatches": 0,
+      "invalid_dn_count": 39,
+      "invalid_words_all_unusable": true
+    },
+    "ir112": {
+      "bits": 13,
+      "positive_radiance_words": 65232,
+      "positive_bt_bit_mismatches": 0,
+      "invalid_dn_count": 38,
+      "invalid_words_all_unusable": true
+    },
+    "ir123": {
+      "bits": 13,
+      "positive_radiance_words": 65240,
+      "positive_bt_bit_mismatches": 0,
+      "invalid_dn_count": 37,
+      "invalid_words_all_unusable": true
+    },
+    "ir133": {
+      "bits": 13,
+      "positive_radiance_words": 65256,
+      "positive_bt_bit_mismatches": 0,
+      "invalid_dn_count": 35,
+      "invalid_words_all_unusable": true
+    }
+  },
+  "method": "Synthetic uint16 words; independent quotient/remainder expectations for unpacking. Positive-radiance BT compared bitwise to the saved module at the baseline commit, for all DQF values. No geolocation, scene-frequency or forecast claim.",
+  "baseline_module_sha256": "1b8c8895d7062b1d5ddd3b00f1e69619043b537311f66fa098740b30c1da8230",
+  "positive_radiance_words_total": 652140,
+  "regression_tests": "oracle/tests/test_ami_word_contract.py; synthetic NetCDF KO/FD to payload, collocation, combined QC mask, Huber loss and gradient"
+}

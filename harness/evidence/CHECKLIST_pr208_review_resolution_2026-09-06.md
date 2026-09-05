@@ -3,7 +3,7 @@
 기준 main `27cfef11a89fd9e4a08cf262c0c9b7eb4602a4ab`.
 90개 원장 행은 중복·별칭·기각된 주장도 보존한 검토 기록이며 결함 90개라는 뜻이 아니다.
 수학적 대상, 단위, 적용 경계와 실제 증거를 먼저 확인했다. 원래 375개 검토 경로와
-추가 linker 2개 경로의 Green/Red 감사를 바탕으로 수정하고, 변경 경로의 독립 재검토에서 발견된 추가 연결 오류도 수정했다. 최종 재검토에서 지원하는 공개 호출 경로의 P1/P2 잔여는 확인하지 못했다.
+추가 linker 2개 경로의 Green/Red 감사를 바탕으로 수정하고, 변경 경로의 독립 재검토에서 발견된 추가 연결 오류도 수정했다. `2f88c4a` 당시 재검토에서 확인하지 못했던 후속 복사휘도·과정률 입력 경계는 아래 별도 항목으로 추가했다.
 역사적 no-replacement supersession 예외, callback/fixture 불변 전제와 외부 campaign/schema 권위는 명시한 계약 범위다.
 팀은 Luna xhigh, 동시에 최대 7개 에이전트다.
 
@@ -137,8 +137,33 @@
 [literal-word 시험](../../oracle/tests/test_ami_word_contract.py),
 [기존 실제 자료의 전체 래스터 집계](../../docs/reports/ami_bit_decode_full_raster_summary_20260905.json),
 [기존 production 표본](../../docs/reports/ami_bit_decode_20260905.json).
-이번 세션은 기존 실제 자료 측정 기록과 현재 함수를 재검토했으며 전체 래스터를 다시 실행하지 않았다.
+`2f88c4a`까지의 해소에서는 기존 실제 자료 측정 기록과 당시 함수를 재검토했으며 전체 래스터를 다시 실행하지 않았다.
 품질 비트와 DN 폭의 외부 대조: [Satpy AMI 원본 reader](https://satpy.readthedocs.io/en/v0.54.0/_modules/satpy/readers/ami_l1b.html).
+
+## 후속 복사휘도·과정률 경계 검토
+
+사용자 검토 기준은 main `27cfef11`; 부모는 현재 PR209 `2f88c4a`에서도
+두 반례를 먼저 재현했다. 이전 AMI 비트·빈 관측·비교 계약의 완료 판정은 유지한다.
+
+| ID | 항목 | 상태 | 완료 근거 |
+|---|---|---|---|
+| U-RAD-01 | 비양수/비유한 복사휘도가 DQF=0으로 전달됨 | 구현·portable 검증 완료 | 공통 `dn_to_bt`에서 정의역 검사, 기존 비0 DQF 보존, 비사용 BT placeholder |
+| U-RAD-02 | 정상 복사휘도 값·품질 보존 | 검증 완료 | 10개 IR 채널 전체 uint16 word 중 양의 복사휘도 BT 비트·DQF 차이 0; bit 분리 524,288조합 차이 0 |
+| U-RAD-03 | 품질 처리의 reader→격자→손실 연결 | 검증 완료 | 실제 합성 NetCDF KO/FD 경로에서 잘못된 복사휘도·마스크 픽셀 gradient=0, 정상 이웃 유지 |
+| U-SCALE-01 | 제어 broadcast가 과정률 차원을 확대함 | 구현·portable 검증 완료 | 각 필드의 원래 모양과 broadcast 결과 모양 일치 요구 |
+| U-SCALE-02 | 유한 exp(alpha)와 과정률 곱이 Inf를 반환함 | 구현·portable 검증 완료 | 실제 곱의 유한성 검사; None 객체 동일성·정상 scalar 미분·column JVP 유지 |
+
+검정계수 설정 오류와 픽셀 정의역 위반을 구분하며, 제어값 clamp나
+새 QC 계층을 추가하지 않았다. 이 후속 변경은 두 공통 Python 경계에 한정한다.
+원시 재현·실행 로그는 `graphify-out/review-radiance-controls-20260906/`에 둔다.
+부모 전체 oracle **1,029 passed / 26 skipped**, AMI·reader·collocation 대상
+시험 **83 passed / 3 skipped**, 과정률 대상 **21 passed**. 정상 scalar gradient
+assertion 강화 뒤 과정률 21개를 재실행했다. 정상 BT 비트 보존 원장은
+[합성 입력 검증 JSON](../../docs/reports/ami_radiance_boundary_20260906.json)에 있다.
+이 숫자는 선행 native/harness 검증 수에 합산하지 않는다.
+Luna xhigh Green/Red가 수정된 AMI 연결 경계와 과정률 검사를 재검토했고,
+이번 범위의 추가 미해소 P1/P2는 확인하지 못했다. Red의 별도 대상 시험은
+AMI 109 passed / 3 skipped, 과정률 12 passed이며 부모 실행 수에 더하지 않는다.
 
 ## 별도 미측정 과제
 
@@ -151,7 +176,7 @@
 - 별도 AD4DVAR A3-01은 기존 PR157의 수정과 mutation 회귀를 재확인했다.
   A3-03 실제 레이더 고정영역 비교는 원자료·검증시각 부재로 OPEN이며 KDM6AD 검증 수치에 합치지 않는다.
 
-## 최종 검증
+## 선행 검증 (`e0e19ce` / `2f88c4a`)
 
 - Oracle 전체: **1,008 passed / 26 skipped**, 33 warnings (기존 tuple 반환 사용 경고 등).
 - 공개 C++ 재빌드: **CTest 17/17**; guard-page ABI 시험 추가 후 해당 target 재빌드·재실행 PASS.

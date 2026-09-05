@@ -26,7 +26,37 @@ Both sampled KO and FD slots contain the attribute in every channel:
 
 These are observed metadata values, not fallback defaults. The calibration
 JSON contains radiance/Planck coefficients; its former null word-width
-placeholders are removed. The radiance and Planck arithmetic is unchanged.
+placeholders are removed. Positive finite radiances retain the existing
+Planck arithmetic and operation order.
+
+## Calibrated radiance domain
+
+A BT observation requires finite, strictly positive calibrated radiance.
+`dn_to_bt()` checks this before the inverse Planck calculation. Nonpositive
+or nonfinite pixel radiances receive a finite BT=0 placeholder; embedded
+DQF=0 becomes 3, while an existing nonzero DQF is preserved. The temporary
+positive calculation operand is not a repaired observation. The NetCDF
+missing mask separately marks a pixel unusable, as before.
+
+Calibration coefficients must be finite scalars, with positive wavelength
+and Planck constants and representable positive Planck factors. A malformed
+calibration or a nonfinite BT from positive radiance raises an error instead
+of treating a file/configuration error as pixel missingness. Negative AMI
+radiance gains remain valid. KO and FD readers share this one boundary.
+
+With the shipped coefficients, synthetic DQF=0 words IR105 `0x1FFF` and
+SW038 `0x3FFF` yield negative radiance. They are unusable, even though clipping
+their radiance could produce finite, misleading temperatures. Synthetic
+NetCDF → payload → collocation → combined mask → Huber tests verify zero
+loss gradient for these pixels and retain a valid neighbour's contribution.
+This checks input/QC propagation, not a live RTTOV or forecast experiment.
+
+The [synthetic boundary record](reports/ami_radiance_boundary_20260906.json)
+compares the saved PR209 parent decoder at `2f88c4a` with this correction.
+All 652,140 positive-radiance words across ten IR channel fixtures retain
+BT bits and DQF exactly. Separately, all 524,288 word/width/byte-order
+combinations match quotient/remainder expectations for DN and DQF. These
+counts enumerate synthetic input space; they are not scene frequencies.
 
 ## Regression witnesses
 
