@@ -61,6 +61,19 @@ def _sha_path(p: Path) -> str:
     return _sha(p.read_bytes())
 
 
+def _bind_evidence_tree(root: Path, entry: dict) -> dict:
+    """Bind every persisted C++ evidence byte to the root manifest entry.
+
+    This runs only after the C evidence and the optional probe lineage have been
+    copied into ``root``.  The root manifest is the externally anchored object,
+    so a per-file sidecar cannot be allowed to authenticate a replacement tree
+    by rewriting its own digest.
+    """
+    bound = dict(entry)
+    bound["evidence_tree_sha256"] = bio.cpp_evidence_tree_sha256(
+        root, bound["evidence_dir"], bound.get("probe_dir"))
+    return bound
+
 
 def _schedule_arg(pairs, algo):
     """The ALGO=path entry for `algo`, or None."""
@@ -78,8 +91,10 @@ def _sealed_schedule(pairs, algo):
     path = _schedule_arg(pairs, algo)
     if path is None:
         return None
-    sealed = json.loads(path.read_text())
-    return sealed
+    # This is a persisted input to the producer boundary.  Use the same strict
+    # loader as the offline verifier so arrays and duplicate keys become evidence
+    # errors instead of reaching the schedule arithmetic as raw TypeError/KeyError.
+    return bio._load_json(path, f"{algo} schedule")
 
 
 def _probe_reading(pairs, algo):
@@ -214,7 +229,7 @@ def main() -> None:
                         "schedule_sha256": _sha_path(dst / gsp.PROBE_SCHEDULE),
                         "probe_manifest_sha256": _sha_path(dst / gsp.PROBE_MANIFEST),
                     }
-                bundle["algorithms"][algo] = {
+                bundle["algorithms"][algo] = _bind_evidence_tree(root, {
                     "fixture_sha256": got_a[0], "parameter_sha256": got_a[1],
                     "abc_equal": True,
                     "stdout_sha256": {"A": _sha(out_a), "B": _sha(out_b), "C": _sha(out_c)},
@@ -222,10 +237,10 @@ def main() -> None:
                     "mstep_min": diag["mstep_min"], "mstep_max": diag["mstep_max"],
                     "evidence_dir": f"{algo}-C-evidence",
                     **probe_meta,
-                }
+                })
         print("FOURCASE FIXTURE PASS — actual C++ A/B/C tensors and common "
               "parameters match the shared raw-bit authority")
-    except (ValueError, gd.G33Corruption) as exc:
+    except (ValueError, gd.G33Corruption, bio.BundleError, RecursionError) as exc:
         print(f"(fourcase evidence preserved at {root})", file=sys.stderr)
         _die(EXIT_EVIDENCE, f"shared fixture evidence invalid: {exc}")
     except BaseException:

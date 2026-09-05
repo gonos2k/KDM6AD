@@ -34,6 +34,12 @@ for a in "$@"; do
         # The same full-precision probe stream at the REFERENCE f32 precision --
         # the control arm of the roundoff experiment.
         --probe)     PROBE=1 ;;
+        # The algorithm is the sole kernel-source selector. A module override
+        # cannot be compiled, overlaid, and attested atomically by this script,
+        # so refuse it explicitly instead of accepting a provenance-only pin.
+        --module-override|--module-override=*)
+            echo "unsupported module override: use --algo to select the canonical source" >&2
+            exit 2 ;;
         --*) echo "unknown flag: $a" >&2; exit 2 ;;
         *) [ -z "$OUT" ] && OUT="$a" || { echo "unexpected arg: $a" >&2; exit 2; } ;;
     esac

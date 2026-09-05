@@ -230,6 +230,9 @@ def _bundle(root: Path, truncate_abc=False, rain="00000000", **ev):
             "parameter_sha256": gfx.parameter_sha256(authority),
             "mstep_min": min(msteps), "mstep_max": max(msteps),
             "stdout_sha256": {"A": sha, "B": sha, "C": sha}}
+        manifest["algorithms"][algo]["evidence_tree_sha256"] = (
+            bio.cpp_evidence_tree_sha256(
+                root, f"{algo}-C-evidence", probe.get("probe_dir")))
     (root / "cpp_abc_manifest.json").write_text(json.dumps(manifest))
     return root
 

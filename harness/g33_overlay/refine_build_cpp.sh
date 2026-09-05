@@ -27,6 +27,8 @@ for a in "$@"; do
     case "$a" in
         --fixture=multisubcycle)    FIXDEF="-DKDM6_G33_FIXTURE_MULTISUBCYCLE" ;;
         --fixture=boundary_mapping) FIXDEF="-DKDM6_G33_FIXTURE_BOUNDARY_MAPPING" ;;
+        --fixture=moisture_gradient) FIXDEF="-DKDM6_G33_FIXTURE_MOISTURE_GRADIENT" ;;
+        --fixture=lc05_column)       FIXDEF="-DKDM6_G33_FIXTURE_LC05_COLUMN" ;;
         --fixture=*) echo "unknown --fixture: $a" >&2; exit 2 ;;
         --*) echo "unknown flag: $a" >&2; exit 2 ;;
         *) [ -z "$OUT" ] && OUT="$a" || { echo "unexpected arg: $a" >&2; exit 2; } ;;
@@ -43,7 +45,8 @@ case "$(uname -s)" in
     Linux)  LIB_EXT=so ;;
     *) echo "unsupported OS: $(uname -s)" >&2; exit 2 ;;
 esac
-TORCHLIBS=("$TORCHLIB/libtorch.$LIB_EXT" "$TORCHLIB/libtorch_cpu.$LIB_EXT" "$TORCHLIB/libc10.$LIB_EXT")
+TORCHLIBS=("$TORCHLIB/libtorch.$LIB_EXT" "$TORCHLIB/libtorch_cpu.$LIB_EXT"
+           "$TORCHLIB/libc10.$LIB_EXT" "$TORCHLIB/libc10.$LIB_EXT")
 for lib in "${TORCHLIBS[@]}"; do [ -f "$lib" ] || { echo "missing: $lib" >&2; exit 2; }; done
 [ -n "$OUT" ] || OUT=$(mktemp -d "${TMPDIR:-/tmp}/g33-refine-cpp.XXXXXX")
 [ -d "$OUT" ] || mkdir -p "$OUT"

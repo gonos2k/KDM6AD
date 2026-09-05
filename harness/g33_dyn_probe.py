@@ -266,6 +266,10 @@ def strip_guarded(text: str) -> str:
     return "".join(out)
 
 
+class DynDumpError(ValueError):
+    """A dynamics dump is not a complete, structurally valid rank file."""
+
+
 
 def read_dump(path: Path) -> dict:
     """One rank's file as {(stage, grp, i, owned): {field: array}}.
@@ -281,17 +285,53 @@ def read_dump(path: Path) -> dict:
     built with -fconvert=big-endian here, so its stream writes are big-endian.
     """
     import numpy as np
-    raw = np.fromfile(path, dtype=np.uint8)
-    out, off = {}, 0
+
+    try:
+        raw = np.fromfile(path, dtype=np.uint8)
+    except OSError as exc:
+        raise DynDumpError(f"cannot read dynamics dump {path}: {exc}") from exc
+
+    out, seen, off = {}, set(), 0
     while off < raw.size:
+        header_at = off
+        remaining = raw.size - off
+        if remaining < 40:
+            raise DynDumpError(
+                f"malformed dynamics dump {path}: truncated record header at "
+                f"byte {header_at} (need 40 bytes, have {remaining})")
         stage, grp, i0, i1, jps, ju, kps, ku, ips, iu = (
             int(v) for v in raw[off:off + 40].view(">i4"))
+
+        if grp not in GROUPS:
+            raise DynDumpError(
+                f"malformed dynamics dump {path}: unknown group {grp} at "
+                f"byte {header_at}")
+        if i0 > i1 or jps > ju or kps > ku or ips > iu:
+            raise DynDumpError(
+                f"malformed dynamics dump {path}: invalid bounds at byte "
+                f"{header_at}: {(i0, i1, jps, ju, kps, ku, ips, iu)}")
+
+        keys = [(stage, grp, i, ips <= i <= iu)
+                for i in range(i0, i1 + 1)]
+        duplicate = next((key for key in keys if key in seen), None)
+        if duplicate is not None:
+            raise DynDumpError(
+                f"duplicate record {duplicate} in dynamics dump {path} "
+                f"at byte {header_at}")
+        seen.update(keys)
         off += 40
         ni, nj, nk = i1 - i0 + 1, ju - jps + 1, ku - kps + 1
         for name, kind, _ in GROUPS[grp]:
             n = ni * nj * (1 if kind == "S" else nk + (1 if kind == "Z" else 0))
-            a = raw[off:off + 4 * n].view(">f4")
-            off += 4 * n
+            need = 4 * n
+            remaining = raw.size - off
+            if remaining < need:
+                raise DynDumpError(
+                    f"malformed dynamics dump {path}: truncated {name} "
+                    f"payload at byte {off} (need {need} bytes, have "
+                    f"{remaining})")
+            a = raw[off:off + need].view(">f4")
+            off += need
             a = a.reshape((ni, nj) if kind == "S" else
                           (ni, nk + (1 if kind == "Z" else 0), nj), order="F")
             for c in range(ni):
@@ -417,30 +457,74 @@ def halo_content(dump_dir: Path) -> list:
     same global cell after the exchange, the halo arrived wrong; if it matches,
     the exchange did its job and a later difference came from somewhere else.
     """
-    dump = _load(dump_dir)
+    files = sorted(dump_dir.glob("g33dyn_*.bin"))
+    if not files:
+        raise SystemExit(f"no g33dyn_*.bin files under {dump_dir}")
+
+    # `_load` intentionally rejects duplicate global keys because it serves the
+    # cross-decomposition owned-cell comparison. A halo question has a
+    # different identity: `(rank copy, stage, group, global cell)`. Keep each
+    # rank file separate, while building a unique owner map for the values they
+    # are compared against.
+    per_file = []
+    owners = {}
+    for path in files:
+        dump = _declared(read_dump(path))
+        if not dump:
+            continue
+        rank = path.stem.replace("g33dyn_", "")
+        per_file.append((rank, path, dump))
+        for key, rec in dump.items():
+            stage, grp, i, owned = key
+            if not owned:
+                continue
+            if (stage, grp, i) in owners:
+                previous = owners[(stage, grp, i)][0]
+                raise SystemExit(
+                    f"duplicate owned dump key {(stage, grp, i)}: written by "
+                    f"{previous.name} and {path.name}; owners cannot be merged")
+            owners[(stage, grp, i)] = (path, rec)
+    if not per_file:
+        raise SystemExit(f"g33dyn_*.bin files under {dump_dir} carry no declared records")
+
     columns, no_owner = {}, {}
-    for key, rec in dump.items():
-        stage, grp, i, owned = key
-        if owned:
-            continue
-        owner = dump.get((stage, grp, i, True))
-        if owner is None:
-            # NOT A MATCH -- there was nothing to match against. Blank used to
-            # mean both "the halo is right" and "no owned record existed", and
-            # only one of those is a result.
-            no_owner.setdefault((stage, grp), []).append(i)
-            continue
-        for name, _, _ in GROUPS[grp]:
-            if not _same_words(rec[name], owner[name]):
-                columns.setdefault((stage, grp, name), []).append(i)
+    halo_count = 0
+    for rank, _path, dump in per_file:
+        for key, rec in dump.items():
+            stage, grp, i, owned = key
+            if owned:
+                continue
+            halo_count += 1
+            owner_entry = owners.get((stage, grp, i))
+            if owner_entry is None:
+                # NOT A MATCH -- there was nothing to match against. Blank used
+                # to mean both "the halo is right" and "no owned record
+                # existed", and only one of those is a result.
+                no_owner.setdefault((rank, stage, grp), []).append(i)
+                continue
+            owner = owner_entry[1]
+            for name, _, _ in GROUPS[grp]:
+                if not _same_words(rec[name], owner[name]):
+                    columns.setdefault((rank, stage, grp, name), []).append(i)
+
+    # A directory with only owned records cannot certify halo exchange. Refuse
+    # it explicitly so the CLI cannot label an empty observation as agreement.
+    if halo_count == 0:
+        raise SystemExit(
+            f"no halo records in {dump_dir}; halo-content requires observed "
+            f"rank copies before it can report agreement")
+
     rows = []
-    for stage, grp in sorted({(k[0], k[1]) for k in dump}):
+    observed = {(rank, key[0], key[1]) for rank, _path, dump in per_file
+                for key in dump if not key[3]}
+    for rank, stage, grp in sorted(observed):
         for name, _, _ in GROUPS[grp]:
-            rows.append({"stage": stage, "group": grp, "field": name,
-                         "columns": sorted(columns.get((stage, grp, name), []))})
-    for (stage, grp), cols in sorted(no_owner.items()):
-        rows.append({"stage": stage, "group": grp, "field": "NO-OWNER",
-                     "columns": sorted(cols)})
+            rows.append({"rank": rank, "stage": stage, "group": grp,
+                         "field": name,
+                         "columns": sorted(columns.get((rank, stage, grp, name), []))})
+    for (rank, stage, grp), cols in sorted(no_owner.items()):
+        rows.append({"rank": rank, "stage": stage, "group": grp,
+                     "field": "NO-OWNER", "columns": sorted(cols)})
     return rows
 
 
@@ -518,8 +602,9 @@ def main() -> int:
     if len(sys.argv) >= 2 and sys.argv[1] == "halo-content":
         if len(sys.argv) != 3:
             raise SystemExit("halo-content <np4_dump_dir>")
-        print("  within np=4: halo copy vs the owner's value (blank = halo is right)")
-        _report(halo_content(Path(sys.argv[2])))
+        print("  within np=4: observed halo copies vs their owners "
+              "(blank = all observed halos agree)")
+        _report(halo_content(Path(sys.argv[2])), key="rank")
         return 0
     argv = sys.argv[2:] if len(sys.argv) >= 2 and sys.argv[1] == "overlay" else sys.argv[1:]
     if len(argv) != 2:

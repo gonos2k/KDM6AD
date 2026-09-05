@@ -99,6 +99,7 @@ SOURCE_ROLES = (
 #: Every role a complete build leaves behind.
 REQUIRED_ROLES = frozenset(r for r, _ in SOURCE_ROLES)
 BUILD_PROVENANCE_SCHEMA = "g33_build_provenance_v1"
+_SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
 
 def role_of(path: str):
@@ -113,9 +114,15 @@ def _source_row(line: str, norm) -> dict:
     """One `sources.txt` line as a record: the logical path, and the digest
     of what the compiler read."""
     path, _, sha = line.partition("\t")
+    if not path.strip():
+        raise ValueError("sources.txt has an empty source path")
+    claimed = sha.strip()
+    if claimed and not _SHA256.fullmatch(claimed):
+        raise ValueError(
+            f"sources.txt digest for {path!r} must be a 64-hex SHA-256 string")
     p = norm(path)
     return {"path": p, "role": role_of(p),
-            "sha256": sha.strip() or sha256(Path(path))}
+            "sha256": claimed or sha256(Path(path))}
 
 
 def collect(out: Path, fc: str, module: Path, fixture: Path, script: Path,
@@ -221,7 +228,7 @@ def verify(root: Path) -> list:
         return ["build_provenance.json is not in the bundle"]
     try:
         got = json.loads(record.read_text())
-    except ValueError as e:
+    except (ValueError, RecursionError) as e:
         return [f"build_provenance.json is not readable JSON: {e}"]
     # PARSING SAYS THE SYNTAX IS JSON, NOT THAT THE DOCUMENT IS A RECORD
     # (Codex). JSON allows an array, a string, a number, `true` and `null` at
@@ -289,12 +296,18 @@ def verify(root: Path) -> list:
     # digest -- right for an older log, but on a tampered one it reached for
     # a file that does not exist and raised out of the verification instead
     # of failing it.
-    lines = [ln for ln in srcs.read_text().splitlines() if ln.strip()]
+    try:
+        lines = [ln for ln in srcs.read_text().splitlines() if ln.strip()]
+    except (OSError, UnicodeError) as e:
+        return bad + [f"sources.txt cannot be read: {e}"]
     malformed = [ln for ln in lines if "\t" not in ln or not ln.split("\t")[1].strip()]
     if malformed:
         return bad + [f"sources.txt line {lines.index(malformed[0]) + 1} carries "
                       f"no digest: {malformed[0][:60]!r}"]
-    rows = [_source_row(ln, norm) for ln in lines]
+    try:
+        rows = [_source_row(ln, norm) for ln in lines]
+    except (OSError, UnicodeError, ValueError) as e:
+        return bad + [f"sources.txt has invalid provenance: {e}"]
     # Compare on the FIELDS THE RECORD CARRIES. `role` joined a source row at
     # v7, and re-deriving it against a record written before that made every
     # published bundle fail its own verification -- the same shape as
@@ -306,8 +319,11 @@ def verify(root: Path) -> list:
         rows = [{k: v for k, v in r.items() if k in keys} for r in rows]
     if rows != have:
         bad.append("sources.txt is not build_provenance.sources")
-    if [norm(c) for c in cmds.read_text().splitlines()] != \
-            got.get("compile_commands"):
+    try:
+        commands = [norm(c) for c in cmds.read_text().splitlines()]
+    except (OSError, UnicodeError) as e:
+        return bad + [f"commands.txt cannot be read: {e}"]
+    if commands != got.get("compile_commands"):
         bad.append("commands.txt is not build_provenance.compile_commands")
     return bad
 

@@ -58,8 +58,12 @@ def verify_recert_run(rundir: Path, np: int = 4) -> dict:
     +20s/frame: 00:00:00 … 11:03:40; the 13th frame at ~12:04:00 falls past the
     12:00:00 run end, so 12 frames is the COMPLETE output, not truncation —
     verified against the `_12:00:00 wrf: SUCCESS COMPLETE WRF` marker.)
-    Returns a dict with every checked fact and a single `verified` bool."""
-    r: dict = {"rundir": str(rundir), "exists": rundir.is_dir()}
+    The recert contract declares one forecast history stream per run; rollover or
+    additional history files make the run incomplete until they are explicitly
+    handled by a separate multi-file contract. Returns a dict with every checked
+    fact and a single `verified` bool."""
+    r: dict = {"rundir": str(rundir), "exists": rundir.is_dir(),
+               "output_contract": "exactly one forecast history file"}
     if not r["exists"]:
         r["verified"] = False
         return r
@@ -96,16 +100,47 @@ def verify_recert_run(rundir: Path, np: int = 4) -> dict:
         if FATAL_RE.search(p.read_text(errors="replace")):
             fatal += 1
     r["fatal_markers"] = fatal
-    fcst = sorted(rundir.glob("klfs_lc05_fcst.*")) or sorted(rundir.glob("wrfout_d01_*"))
-    if fcst:
-        import netCDF4 as nc
-        with nc.Dataset(str(fcst[0])) as d:
-            r["frames"] = d.dimensions["Time"].size if "Time" in d.dimensions else 1
-        r["fcst"] = str(fcst[0])
+    # A run directory is a single declared history stream.  The old `or [0]`
+    # selection silently ignored rollover/additional outputs, so a divergent
+    # second file could sit beside a verified first file.  Refuse the whole run
+    # unless exactly one supported output exists.
+    # Keep malformed candidates in the manifest so an output directory or
+    # special path cannot masquerade as a history file.  Open/hash only a
+    # regular file after the exact-one contract has passed.
+    fcst = sorted(rundir.glob("klfs_lc05_fcst.*")) + sorted(rundir.glob("wrfout_d01_*"))
+    r["forecast_files"] = [str(p) for p in fcst]
+    r["output_files_ok"] = len(fcst) == 1 and fcst[0].is_file()
+    if len(fcst) == 1 and fcst[0].is_file():
+        fcst_path = fcst[0]
+        try:
+            import netCDF4 as nc
+            with nc.Dataset(str(fcst_path)) as d:
+                r["frames"] = d.dimensions["Time"].size if "Time" in d.dimensions else 1
+        except Exception as exc:
+            r["frames"] = 0
+            r["output_files_ok"] = False
+            r["fcst"] = None
+            r["forecast_sha256"] = None
+            r["output_error"] = f"forecast history is not readable NetCDF: {exc}"
+        else:
+            r["fcst"] = str(fcst_path)
+            r["forecast_sha256"] = hashlib.sha256(fcst_path.read_bytes()).hexdigest()
     else:
         r["frames"] = 0
+        r["fcst"] = None
+        r["forecast_sha256"] = None
+        if fcst:
+            if len(fcst) == 1 and not fcst[0].is_file():
+                r["output_error"] = (
+                    "forecast candidate is not a regular file: "
+                    f"{fcst[0].name}")
+            else:
+                r["output_error"] = (
+                    "expected exactly one forecast history file, found "
+                    f"{len(fcst)}: {[p.name for p in fcst]}")
     r["verified"] = (ec == "0" and r["rank_ids_ok"] and n_success == np
                      and fatal == 0 and r["reached_full_duration"]
+                     and r["output_files_ok"]
                      and r["frames"] >= 1)
     return r
 
@@ -144,23 +179,43 @@ def strict_bitwise_all_frames(f37: str, f137: str,
     all_ok = ((not only_a) and (not only_b) and (na == nb) and nframes >= 1
               and ncnum >= min_common_numeric)
     itype = {1: np.uint8, 2: np.uint16, 4: np.uint32, 8: np.uint64}
+
+    def frame_value(var, frame):
+        if "Time" not in var.dimensions:
+            return np.asarray(var[:])
+        axis = var.dimensions.index("Time")
+        index = [slice(None)] * var.ndim
+        index[axis] = frame
+        return np.asarray(var[tuple(index)])
+
     for fr in range(nframes):
         n_match = n_diff = n_skip = char_diff = 0
         for v in char_common:
             va, vb = a.variables[v], b.variables[v]
-            ca = np.asarray(va[fr]) if "Time" in va.dimensions else np.asarray(va[:])
-            cb = np.asarray(vb[fr]) if "Time" in vb.dimensions else np.asarray(vb[:])
+            # NetCDF dimension names/order are part of cell identity.  Equal
+            # shaped arrays with ('Time','x','y') vs ('Time','y','x') must not
+            # be called equal merely because their raw bytes happen to match.
+            if (va.dimensions != vb.dimensions or va.shape != vb.shape
+                    or va.dtype != vb.dtype):
+                char_diff += 1
+                continue
+            ca = frame_value(va, fr)
+            cb = frame_value(vb, fr)
             if ca.shape != cb.shape or ca.tobytes() != cb.tobytes():
                 char_diff += 1
         if "Times" in char_common:
-            last_time = np.asarray(a.variables["Times"][fr]).tobytes().decode(
+            last_time = frame_value(a.variables["Times"], fr).tobytes().decode(
                 errors="replace").strip("\x00 ")
         for v in common:
             va, vb = a.variables[v], b.variables[v]
             if va.dtype.kind not in ("f", "i", "u"):
                 n_skip += 1; continue
-            xa = np.asarray(va[fr]) if "Time" in va.dimensions else np.asarray(va[:])
-            xb = np.asarray(vb[fr]) if "Time" in vb.dimensions else np.asarray(vb[:])
+            if (va.dimensions != vb.dimensions or va.shape != vb.shape
+                    or va.dtype != vb.dtype):
+                n_diff += 1
+                continue
+            xa = frame_value(va, fr)
+            xb = frame_value(vb, fr)
             if xa.shape != xb.shape or xa.dtype != xb.dtype:
                 n_diff += 1; continue
             # .view() needs a contiguous buffer; NetCDF slices may not be.

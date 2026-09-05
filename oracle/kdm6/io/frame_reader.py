@@ -55,13 +55,28 @@ _F64 = dict(dtype=torch.float64)
 def derive_p_pii(p_pert: torch.Tensor, pb: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
     """phy_prep F:124-125 — p = P+PB, pii = (p/p1000mb)**rcp."""
     p = p_pert + pb
+    if not bool(torch.isfinite(p).all()):
+        raise ValueError("derived pressure p=P+PB must be finite")
+    if bool((p <= 0.0).any()):
+        raise ValueError("derived pressure p=P+PB must be strictly positive")
     pii = (p / P1000MB) ** RCP
+    if not bool(torch.isfinite(pii).all()) or bool((pii <= 0.0).any()):
+        raise ValueError("derived Exner pressure pii must be finite and strictly positive")
     return p, pii
 
 
 def derive_th(thm_pert: torch.Tensor, qv: torch.Tensor) -> torch.Tensor:
     """phy_prep F:105 (use_theta_m=1) — th = (THM+T0)/(1+Rv/Rd·qv)."""
-    return (thm_pert + T0) / (1.0 + (R_V / R_D) * qv)
+    numerator = thm_pert + T0
+    denominator = 1.0 + (R_V / R_D) * qv
+    if not bool(torch.isfinite(numerator).all()) or bool((numerator <= 0.0).any()):
+        raise ValueError("derived temperature numerator THM+T0 must be finite and strictly positive")
+    if not bool(torch.isfinite(denominator).all()) or bool((denominator <= 0.0).any()):
+        raise ValueError("derived temperature denominator must be finite and strictly positive")
+    th = numerator / denominator
+    if not bool(torch.isfinite(th).all()) or bool((th <= 0.0).any()):
+        raise ValueError("derived potential temperature must be finite and strictly positive")
+    return th
 
 
 def derive_rho(p: torch.Tensor, thm_pert: torch.Tensor, pii: torch.Tensor,
@@ -72,8 +87,20 @@ def derive_rho(p: torch.Tensor, thm_pert: torch.Tensor, pii: torch.Tensor,
     ρ_d = p/(R_d·θm·π), rho = ρ_d·(1+qv).
     """
     thm = thm_pert + T0
+    q_factor = 1.0 + qv
+    if (not bool(torch.isfinite(p).all()) or bool((p <= 0.0).any())):
+        raise ValueError("pressure for density must be finite and strictly positive")
+    if not bool(torch.isfinite(thm).all()) or bool((thm <= 0.0).any()):
+        raise ValueError("temperature for density must be finite and strictly positive")
+    if not bool(torch.isfinite(pii).all()) or bool((pii <= 0.0).any()):
+        raise ValueError("Exner pressure for density must be finite and strictly positive")
+    if not bool(torch.isfinite(q_factor).all()) or bool((q_factor <= 0.0).any()):
+        raise ValueError("moist-air factor 1+qv must be finite and strictly positive")
     rho_d = p / (R_D * thm * pii)
-    return rho_d * (1.0 + qv)
+    rho = rho_d * q_factor
+    if not bool(torch.isfinite(rho).all()) or bool((rho <= 0.0).any()):
+        raise ValueError("derived air density must be finite and strictly positive")
+    return rho
 
 
 def derive_delz(ph: torch.Tensor, phb: torch.Tensor) -> torch.Tensor:
@@ -82,7 +109,12 @@ def derive_delz(ph: torch.Tensor, phb: torch.Tensor) -> torch.Tensor:
     ph/phb: (B, K+1) w-스태거 geopotential → (B, K) 층두께.
     """
     z_w = (ph + phb) / G
-    return z_w[:, 1:] - z_w[:, :-1]
+    if not bool(torch.isfinite(z_w).all()):
+        raise ValueError("derived geopotential height must be finite")
+    delz = z_w[:, 1:] - z_w[:, :-1]
+    if not bool(torch.isfinite(delz).all()) or bool((delz <= 0.0).any()):
+        raise ValueError("derived layer thickness delz must be finite and strictly positive")
+    return delz
 
 
 def nccn_init_profile(delz: torch.Tensor, is_land: torch.Tensor) -> torch.Tensor:

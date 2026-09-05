@@ -26,6 +26,16 @@ import torch
 from . import constants as c
 
 
+def _require_column_shapes(reference, tensors, mstep_col):
+    """Metadata-only check: a substep may not broadcast a different column grid."""
+    if reference.ndim != 2 or min(reference.shape) < 1:
+        raise ValueError("sedimentation state must have positive (B, K) shape")
+    if any(t.shape != reference.shape for t in tensors):
+        raise ValueError("all sedimentation state/work/fall/forcing shapes must match (B, K)")
+    if mstep_col is not None and mstep_col.shape != (reference.shape[0],):
+        raise ValueError("mstep_col must have shape (B,)")
+
+
 # ─── Step E1: work1/workn / delz 정규화 ──────────────────────────────────────
 
 
@@ -123,7 +133,10 @@ class SubstepAdvectionState(NamedTuple):
 
 class SubstepAdvectionOutputs(NamedTuple):
     state: SubstepAdvectionState   # 갱신된 state
-    fall_qr: torch.Tensor          # 누적 fall rate [kg/m²/s], 표면 누적용
+    # `dend` is the air density rho [kg m^-3], so q-species falk is a
+    # volumetric mass rate [kg m^-3 s^-1] before surface accumulation multiplies
+    # by the bottom-layer thickness. It is not already an areal rate.
+    fall_qr: torch.Tensor          # 누적 volumetric fall rate, 표면 누적용
     fall_nr: torch.Tensor
     fall_qs: torch.Tensor
     fall_qg: torch.Tensor
@@ -142,7 +155,7 @@ def substep_advection_torch(
     work1_qs: torch.Tensor,        # work1(:,:,2)/delz
     work1_qg: torch.Tensor,        # work1(:,:,3)/delz (also for brs)
     delz: torch.Tensor,
-    dend: torch.Tensor,            # density × delz product (ProgB output)
+    dend: torch.Tensor,            # air density rho [kg m^-3], NOT rho × delz
     *,
     mstep: int = 1,                # legacy global divisor (used iff mstep_col is None)
     mstep_col: torch.Tensor | None = None,  # (B,) per-column int-valued divisor + gate
@@ -154,17 +167,20 @@ def substep_advection_torch(
     """Fortran 1148-1205 — one substep of NISLFV-PLM advection.
 
     Algorithm:
-      Top cell (k = kte): falk = dend·qx·work1/mstep, qx -= falk·dtcld/dend
+      Top cell (k = kte): falk = rho·qx·work1/mstep, qx -= falk·dtcld/rho
       Interior (k = kte-1 → kts):
-          falk[k] = dend[k]·qx[k]·work1[k]/mstep
-          dqx[k]      = min(falk[k]·dtcld/dend[k], qx[k])
-          dqx_above   = min(falk[k+1]·delz[k+1]/delz[k]·dtcld/dend[k], qx[k+1])
+          falk[k] = rho[k]·qx[k]·work1[k]/mstep
+          dqx[k]      = min(falk[k]·dtcld/rho[k], qx[k])
+          dqx_above   = min(falk[k+1]·delz[k+1]/delz[k]·dtcld/rho[k], qx[k+1])
           qx[k] = max(qx[k] - dqx[k] + dqx_above, 0)
 
     Conventions:
       Tensors shape (B, K) where K=0 corresponds to *top* (kte) and K=K-1 to *bottom* (kts).
       Fortran의 `for k = kte → kts`는 PyTorch에서 `for k_idx = 0 → K-1`.
     """
+    _require_column_shapes(state.qr, (
+        *state, fall_qr_in, fall_nr_in, fall_qs_in, fall_qg_in, fall_brs_in,
+        work1_qr, workn_qr, work1_qs, work1_qg, delz, dend), mstep_col)
     K = state.qr.shape[-1]
     dend_safe = torch.clamp(dend, min=params.qcrmin)
     delz_safe = torch.clamp(delz, min=params.qcrmin)
@@ -351,6 +367,8 @@ def ice_substep_advection_torch(
 
     E2와 동일 패턴이지만 ice species만. list-based chain으로 AD 보존.
     """
+    _require_column_shapes(state.qi, (
+        *state, fall_qi_in, fall_ni_in, work1_qi, workn_qi, delz, dend), mstep_col)
     K = state.qi.shape[-1]
     dend_safe = torch.clamp(dend, min=params.qcrmin)
     delz_safe = torch.clamp(delz, min=params.qcrmin)

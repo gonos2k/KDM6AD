@@ -4,6 +4,7 @@
 // (B, K) 텐서 layout, 12 prognostic + 4 forcing.
 //
 #include <torch/torch.h>
+#include <cstddef>
 #include <functional>
 
 namespace kdm6 {
@@ -47,8 +48,10 @@ State map_state(const State& s, const std::function<torch::Tensor(const torch::T
 
 // ── Fortran-style array adapter ────────────────────────────────────────────
 //
-// [C4] Fortran의 (im, kme, jme) 배열을 zero-copy로 (B=im*jme, K=kme) 텐서로 변환.
-// `requires_grad=true`이면 leaf clone 생성.
+// [C4] Fortran의 (im, kme, jme) 배열을 (B=im*jme, K=kme) 순서의
+// owning tensor copy로 변환한다. Fortran strides를 B,K layout으로 정렬하고
+// nan/negative 입력 게이트를 적용한 뒤에도 원본 buffer와 alias하지 않는다.
+// `requires_grad=true`이면 별도의 owning leaf clone을 생성한다.
 //
 struct FortranArrayDescriptor {
     const float* th;
@@ -67,6 +70,20 @@ struct FortranArrayDescriptor {
     int kme;
     int jme;
 };
+
+// Validate the shape arithmetic used by the Fortran adapter before constructing
+// a tensor.  The caller supplies an element size because the forward adapter
+// carries float32 buffers while the packed AD adapter carries float64 buffers.
+// This is a shape/representability check only; it does not inspect or allocate
+// the caller's buffers.
+bool fortran_shape_fits(int im, int kme, int jme,
+                        std::size_t element_size = sizeof(float)) noexcept;
+// Same check for a field-major packed buffer containing `field_count` complete
+// Fortran arrays.  In addition to byte representability this bounds field
+// offsets used by the packed AD bridge to int64_t before any pointer arithmetic.
+bool fortran_packed_shape_fits(
+    int im, int kme, int jme, std::size_t element_size,
+    std::size_t field_count) noexcept;
 
 State from_fortran_arrays(const FortranArrayDescriptor& d,
                           bool requires_grad = true,

@@ -28,6 +28,12 @@ HYDRO = ["QVAPOR", "QCLOUD", "QRAIN", "QICE", "QSNOW", "QGRAUP"]
 # wrfouts. A missing field means the comparison cannot cover all species, so the
 # gate must FAIL rather than silently checking only the intersection.
 REQUIRED = ["T"] + HYDRO
+# RAINNC is a required accumulated-output field, but is not an initial-condition
+# operand.  These are the only state/forcing fields whose frame-0 values this
+# standalone parity probe claims to compare.  Keep this declaration explicit:
+# a generic NetCDF comparator must not silently turn it into a whole-WRF census.
+IC_FIELDS = tuple(REQUIRED)
+SCHEMA_FIELDS = tuple(REQUIRED) + ("RAINNC", "RAINC")
 TEMP_BASE = 300.0  # WRF 'T' is θ perturbation about 300 K
 
 
@@ -39,7 +45,7 @@ def f(d, v, fr):
 
 
 def common_vars(a, b):
-    return [v for v in (["T"] + HYDRO) if v in a.variables and v in b.variables]
+    return [v for v in REQUIRED if v in a.variables and v in b.variables]
 
 
 def reldiff_field(va, vb, is_temp):
@@ -62,21 +68,87 @@ def reldiff_field(va, vb, is_temp):
     return float(rel.max()), float(rel.mean())
 
 
+def ic_reldiff_field(va, vb, is_temp):
+    """Symmetric frame-0 relative difference, including zero-valued cells.
+
+    ``reldiff_field`` intentionally omits physically trivial hydrometeor cells
+    for its forward probe.  Initial-condition identity cannot do that: a
+    QRAIN difference that is restored before frame 1 is still a different IC.
+    Use both operands in the scale so the check is symmetric when one side is
+    zero.
+    """
+    a = va + TEMP_BASE if is_temp else va
+    b = vb + TEMP_BASE if is_temp else vb
+    finite = np.isfinite(a) & np.isfinite(b)
+    if not finite.any():
+        return float("nan"), float("nan")
+    denom = np.maximum(np.maximum(np.abs(a), np.abs(b)), 1.0e-12)
+    rel = np.abs(a[finite] - b[finite]) / denom[finite]
+    return float(rel.max()), float(rel.mean())
+
+
+def _schema_errors(a, b, fields):
+    """Return declared-field geometry errors without reinterpreting axes."""
+    errors = []
+    for v in fields:
+        if v not in a.variables or v not in b.variables:
+            continue
+        va, vb = a.variables[v], b.variables[v]
+        if not va.dimensions or not vb.dimensions:
+            errors.append(f"{v}: scalar variable has no Time/grid dimensions")
+            continue
+        if len(va.dimensions) < 2 or len(vb.dimensions) < 2:
+            errors.append(f"{v}: variable must have Time plus at least one grid dimension")
+            continue
+        if va.dimensions[0] != "Time" or vb.dimensions[0] != "Time":
+            errors.append(f"{v}: Time must be the leading dimension in both runs")
+            continue
+        if va.dtype.kind not in ("f", "i", "u") or vb.dtype.kind not in ("f", "i", "u"):
+            errors.append(f"{v}: unsupported non-numeric dtype "
+                          f"({va.dtype} vs {vb.dtype})")
+            continue
+        if va.dimensions != vb.dimensions:
+            errors.append(f"{v}: dimension names/order differ "
+                          f"({va.dimensions!r} vs {vb.dimensions!r})")
+            continue
+        if va.shape[1:] != vb.shape[1:]:
+            errors.append(f"{v}: non-Time shape differs "
+                          f"({va.shape[1:]!r} vs {vb.shape[1:]!r})")
+            continue
+        if any(int(n) <= 0 for n in va.shape[1:]):
+            errors.append(f"{v}: non-Time dimension is empty or invalid "
+                          f"(shape={va.shape!r})")
+    return errors
+
+
 def scan_validity(d, nframes):
-    """First frame with non-finite data. Returns (frame, var, kind):
-      'no-data' = whole frame is NaN/FillValue (libomp I/O flush failure),
-      'nan'     = partial NaN (real physics instability). None if all clean."""
+    """First frame with non-finite data. Returns ``(frame, var, kind)``.
+
+    ``no-data`` means every cell is a fill/NaN value (the known libomp flush
+    failure); ``nonfinite`` means a partial NaN or Inf payload from the run.
+    Neither is usable parity evidence. ``None`` means all inspected values are
+    finite.
+    """
     # Include the accumulated-precip fields: RAINNC/RAINC NaN/FillValue must be
     # caught here, otherwise the bulk np.nansum silently drops it and a run with
     # bad precip data slides through as "zero precip, in band".
     for fr in range(nframes):
         for v in HYDRO + ["T", "RAINNC", "RAINC"]:
             if v in d.variables:
-                nbad = int(np.isnan(f(d, v, fr)).sum())
+                var = d.variables[v]
+                if (not var.dimensions or var.dimensions[0] != "Time"
+                        or not var.shape or fr >= int(var.shape[0])
+                        or any(int(n) <= 0 for n in var.shape[1:])):
+                    return fr, v, "malformed"
+                values = f(d, v, fr)
+                nbad = int((~np.isfinite(values)).sum())
                 if nbad == 0:
                     continue
-                size = d.variables[v][fr].size
-                return fr, v, ("no-data" if nbad == size else "nan")
+                # FillValue/masked cells are converted to NaN by f(). An all-NaN
+                # frame is the known no-data I/O failure; an all-Inf frame is
+                # still a real non-finite payload and must not be relabelled as
+                # missing data merely because every cell is invalid.
+                return fr, v, ("no-data" if np.isnan(values).all() else "nonfinite")
     return None
 
 
@@ -90,10 +162,29 @@ def main():
                     help="minimum frames BOTH runs must contain; fewer = aborted run = FAIL")
     args = ap.parse_args()
 
-    a = nc.Dataset(args.mp37)
-    b = nc.Dataset(args.mp137)
-    na = a.dimensions["Time"].size
-    nb = b.dimensions["Time"].size
+    a = b = None
+    try:
+        a = nc.Dataset(args.mp37)
+        b = nc.Dataset(args.mp137)
+    except (OSError, RuntimeError, ValueError) as exc:
+        if a is not None:
+            a.close()
+        print(f"ERROR: unable to open parity input: {exc}", file=sys.stderr)
+        return 6
+    try:
+        ta = a.dimensions.get("Time")
+        tb = b.dimensions.get("Time")
+        if ta is None or tb is None:
+            raise ValueError("both inputs must declare a Time dimension")
+        na = int(ta.size)
+        nb = int(tb.size)
+        if na <= 0 or nb <= 0:
+            raise ValueError(f"empty Time dimension (mp37={na}, mp137={nb})")
+    except (TypeError, ValueError, AttributeError) as exc:
+        a.close()
+        b.close()
+        print(f"ERROR: invalid parity frame geometry: {exc}", file=sys.stderr)
+        return 6
     ncommon = min(na, nb)
     cv = common_vars(a, b)
     missing = [v for v in REQUIRED if v not in a.variables or v not in b.variables]
@@ -109,19 +200,52 @@ def main():
     print(f"  required species: {', '.join(REQUIRED)}"
           + (f"   MISSING: {', '.join(missing)}" if missing else "   (all present)"))
 
+    # Validate field geometry before reading frame 0.  The comparator's WRF
+    # contract is Time-leading and exact declared axis names/order; it does not
+    # guess whether an x/y or vertical axis was transposed by a producer.
+    if missing:
+        print("\n[VERDICT]")
+        print(f"    FAIL(missing-species) — required field(s) absent from a run: "
+              f"{', '.join(missing)}; cannot verify parity across all species "
+              f"  [exit 5]")
+        a.close()
+        b.close()
+        return 5
+    schema_errors = _schema_errors(a, b, SCHEMA_FIELDS)
+    if schema_errors:
+        print("\n[VERDICT]")
+        print("    FAIL(schema) — declared fields have incompatible geometry:")
+        for error in schema_errors:
+            print(f"      - {error}")
+        print("    Axis order is a precondition of this comparison; no automatic "
+              "orientation reinterpretation is applied.  [exit 6]")
+        a.close()
+        b.close()
+        return 6
+
     # ── (0) IC IDENTITY GATE ─────────────────────────────────────────────────
     # A scheme-consistency comparison is only valid if both runs start from the
     # SAME initial field. Some ideal cases (convrad) seed convection with a
     # non-deterministic `call random_seed` -> different IC per ideal.exe run ->
     # comparison is meaningless. Frame 0 must be bit-identical (or float-eps).
     ic_max = 0.0
+    ic_nonfinite = []
     print("\n[0] IC identity (frame 0 — must match for a valid comparison)")
-    for v in [x for x in ["T", "QVAPOR"] if x in a.variables and x in b.variables]:
-        mx, mn = reldiff_field(f(a, v, 0), f(b, v, 0), v == "T")
+    for v in IC_FIELDS:
+        va, vb = f(a, v, 0), f(b, v, 0)
+        if not (np.isfinite(va).all() and np.isfinite(vb).all()):
+            ic_nonfinite.append(v)
+            print(f"    {v:>8}: NONFINITE frame-0 data — IC identity unavailable")
+            continue
+        mx, mn = ic_reldiff_field(va, vb, v == "T")
         ic_max = max(ic_max, mx)
         print(f"    {v:>8}: max reldiff {mx:.2e}  mean {mn:.2e}")
-    ic_valid = ic_max < 1.0e-5
-    print(f"    -> {'IDENTICAL IC (valid)' if ic_valid else f'DIFFERENT IC (max {ic_max:.2e}) — COMPARISON INVALID'}")
+    ic_valid = not ic_nonfinite and np.isfinite(ic_max) and ic_max < 1.0e-5
+    if ic_nonfinite:
+        print("    -> INVALID IC — non-finite frame-0 field(s): "
+              + ", ".join(ic_nonfinite))
+    else:
+        print(f"    -> {'IDENTICAL IC (valid)' if ic_valid else f'DIFFERENT IC (max {ic_max:.2e}) — COMPARISON INVALID'}")
 
     # ── (2) STABILITY ────────────────────────────────────────────────────────
     val37 = scan_validity(a, na)
@@ -188,8 +312,10 @@ def main():
     seed = max(seed_vals) if seed_vals else float("nan")
     nodata = ((val37 is not None and val37[2] == "no-data")
               or (val137 is not None and val137[2] == "no-data"))
-    real_nan_137 = val137 is not None and val137[2] == "nan"
-    real_nan_37 = val37 is not None and val37[2] == "nan"
+    real_nonfinite_137 = val137 is not None and val137[2] == "nonfinite"
+    real_nonfinite_37 = val37 is not None and val37[2] == "nonfinite"
+    malformed_137 = val137 is not None and val137[2] == "malformed"
+    malformed_37 = val37 is not None and val37[2] == "malformed"
     # A run that wrote FEWER frames than its peer aborted early (crash / CFL
     # blowup / MPI abort). Its partial frames may look "consistent", but the run
     # itself FAILED — comparing only the surviving frames would report success
@@ -210,10 +336,6 @@ def main():
         verdict = (f"FAIL(missing-species) — required field(s) absent from a run: "
                    f"{', '.join(missing)}; cannot verify parity across all species")
         rc = 5
-    elif not ic_valid:
-        verdict = (f"INVALID — runs start from DIFFERENT ICs (frame-0 reldiff {ic_max:.2e}); "
-                   f"fix the IC generator's random seed before comparing")
-        rc = 2
     elif frames_mismatch:
         verdict = (f"INCOMPLETE — {short_run} wrote {min(na, nb)} frames vs the peer's "
                    f"{max(na, nb)}; it aborted early (crash / CFL blowup / MPI abort). "
@@ -228,12 +350,29 @@ def main():
         verdict = (f"DATA-FAIL — {who} wrfout is FillValue-only after the IC frame "
                    f"(libomp I/O flush, T11); no usable data to compare")
         rc = 3
-    elif real_nan_137 and not real_nan_37:
-        verdict = f"FAIL(NaN) — mp137 instability NaN at frame {val137[0]} ({val137[1]}) where mp37 is clean"
+    elif real_nonfinite_137 and not real_nonfinite_37:
+        verdict = (f"FAIL(nonfinite) — mp137 instability NaN/Inf at frame "
+                   f"{val137[0]} ({val137[1]}) where mp37 is clean")
         rc = 1
-    elif real_nan_37:
-        verdict = f"FAIL(reference-NaN) — mp37 itself NaNs at frame {val37[0]} ({val37[1]}); reference invalid"
+    elif real_nonfinite_37:
+        verdict = (f"FAIL(reference-nonfinite) — mp37 itself has NaN/Inf at "
+                   f"frame {val37[0]} ({val37[1]}); reference invalid")
         rc = 1
+    elif malformed_137 or malformed_37:
+        bad = val37 if malformed_37 else val137
+        who = "mp37" if malformed_37 else "mp137"
+        verdict = (f"FAIL(schema) — {who} field {bad[1]} has malformed frame "
+                   f"geometry at frame {bad[0]}; declared Time-leading schema "
+                   f"is required")
+        rc = 6
+    elif not ic_valid:
+        if ic_nonfinite:
+            verdict = ("INVALID — frame-0 IC contains non-finite data in "
+                       + ", ".join(ic_nonfinite) + "; comparison is invalid")
+        else:
+            verdict = (f"INVALID — runs start from DIFFERENT ICs (frame-0 reldiff {ic_max:.2e}); "
+                       f"fix the IC generator's random seed before comparing")
+        rc = 2
     elif not np.isfinite(seed):
         verdict = f"FAIL(no-data) — frame-{args.early} probe has no comparable finite cells"
         rc = 1
@@ -268,6 +407,8 @@ def main():
                    f"faithful per-step port, both runs complete, integrated fields agree.")
         rc = 0
     print(f"    {args.case}: {verdict}  [exit {rc}]")
+    a.close()
+    b.close()
     return rc
 
 

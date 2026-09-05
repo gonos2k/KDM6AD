@@ -35,7 +35,6 @@ _M_WATER_VAPOR = 18.01528e-3
 _SUPPORTED_QV_CONVENTIONS = ("mixing_ratio_kgkg_dry", "specific_humidity_kgkg_moist")
 _REQUIRED_GAS_UNITS = 2
 
-_PMIN = 1.0e-30  # log() floor; pressures are >0 so this only guards against junk.
 _QMAX = 1.0 - 1.0e-12  # specific-humidity ceiling (q < 1 strictly).
 
 # RTTOV cloudy VIS/IR effective-DIAMETER bounds [micron] (code-clipped; design 9.1,
@@ -116,6 +115,53 @@ def _require_qv_units(gas_units, qv_convention) -> None:
             f"got {qv_convention!r} (design 5/4.2).")
 
 
+def _validate_pressure_domain(p: torch.Tensor, name: str, *, allow_zero: bool = False) -> None:
+    """Validate a pressure array before any logarithm or interpolation.
+
+    Pressure is a physical coordinate, so a finite check alone is insufficient:
+    zero/negative values must not be turned into a usable coordinate by the
+    interpolation log floor.  RTTOV half-level fixtures may use one exact zero
+    at the top boundary, hence the explicit ``allow_zero`` option for P_HALF;
+    layer/source/target pressure grids used in log-pressure interpolation remain
+    strictly positive.
+    """
+    if not isinstance(p, torch.Tensor) or p.ndim == 0 or p.numel() == 0:
+        raise ValueError(f"{name} must be a non-empty tensor of pressure values")
+    if not bool(torch.isfinite(p).all()):
+        raise ValueError(f"{name} must contain only finite pressure values")
+    bad = (p < 0.0) if allow_zero else (p <= 0.0)
+    if bool(bad.any()):
+        domain = "nonnegative" if allow_zero else "strictly positive"
+        raise ValueError(f"{name} must be finite and {domain}; invalid pressure cannot be clamped")
+
+
+def _validate_forcing_domain(t_model: torch.Tensor, qv_model: torch.Tensor,
+                             p_model: torch.Tensor, forcing) -> None:
+    """Check raw forcing and derived profile quantities at the obs boundary.
+
+    ``T = th*pii`` is the emitted temperature, while ``pii``, ``rho`` and
+    ``delz`` are derived-coordinate measures consumed by the profile/cloud
+    bridge.  Reject malformed values before they can be hidden by a later
+    clamp or quality mask.  Negative qv remains accepted because the existing
+    unit conversion intentionally clips it to its documented zero subgradient.
+    """
+    _validate_pressure_domain(p_model, "model pressure")
+    for name, value, positive in (
+            ("pii (Exner forcing)", getattr(forcing, "pii", None), True),
+            ("rho (air density forcing)", getattr(forcing, "rho", None), True),
+            ("delz (layer height forcing)", getattr(forcing, "delz", None), True)):
+        if not isinstance(value, torch.Tensor) or value.numel() == 0:
+            raise ValueError(f"{name} must be a non-empty tensor")
+        if not bool(torch.isfinite(value).all()):
+            raise ValueError(f"{name} must contain only finite values")
+        if positive and bool((value <= 0.0).any()):
+            raise ValueError(f"{name} must be finite and strictly positive")
+    if not bool(torch.isfinite(t_model).all()) or bool((t_model <= 0.0).any()):
+        raise ValueError("derived temperature T=th*pii must be finite and strictly positive")
+    if not bool(torch.isfinite(qv_model).all()):
+        raise ValueError("qv must contain only finite values")
+
+
 def qv_to_q_ppmv_moist(qv: torch.Tensor, *, gas_units: int, qv_convention: str) -> torch.Tensor:
     """Convert model water vapour ``qv`` to RTTOV Q (ppmv over moist air), torch.
 
@@ -165,6 +211,8 @@ def interp_log_pressure(field: torch.Tensor, p_src: torch.Tensor, p_dst: torch.T
     ``[B, n_src]`` and a SHARED 1-D ``p_dst`` -> ``[B, n_dst]``. Row-wise identical
     to the 1-D form (gate test: batched == per-column loop, exact).
     """
+    _validate_pressure_domain(p_src, "p_src")
+    _validate_pressure_domain(p_dst, "p_dst")
     if p_src.ndim == 2:
         # BATCHED per-column source grids (T1-5): p_src [B, n_src], field [B, n_src],
         # p_dst SHARED 1-D target (every column lands on the one fixture layer grid --
@@ -181,8 +229,8 @@ def interp_log_pressure(field: torch.Tensor, p_src: torch.Tensor, p_dst: torch.T
         if n_src < 2:
             raise ValueError("p_src must have at least 2 levels to interpolate.")
         with torch.no_grad():
-            xs = torch.log(torch.clamp(p_src, min=_PMIN))                # [B, n_src]
-            xd1 = torch.log(torch.clamp(p_dst, min=_PMIN))               # [n_dst]
+            xs = torch.log(p_src)                                       # [B, n_src]
+            xd1 = torch.log(p_dst)                                      # [n_dst]
             if not bool(torch.all(xs[:, 1:] > xs[:, :-1])):
                 raise ValueError(
                     "every p_src column must be strictly ascending in pressure "
@@ -216,8 +264,8 @@ def interp_log_pressure(field: torch.Tensor, p_src: torch.Tensor, p_dst: torch.T
     if n_src < 2:
         raise ValueError("p_src must have at least 2 levels to interpolate.")
     with torch.no_grad():
-        xs = torch.log(torch.clamp(p_src, min=_PMIN))
-        xd = torch.log(torch.clamp(p_dst, min=_PMIN))
+        xs = torch.log(p_src)
+        xd = torch.log(p_dst)
         if not bool(torch.all(xs[1:] > xs[:-1])):
             raise ValueError("p_src must be strictly ascending in pressure (TOA->surface).")
         if not bool(torch.all(xd[1:] > xd[:-1])):
@@ -349,6 +397,9 @@ def model_to_rttov_tensors(leaves, forcing, cfg, xland=None,
     t_model, qv_model, p_model = extract_model_columns(leaves, forcing)
     q_model = qv_to_q_ppmv_moist(qv_model, gas_units=cfg.gas_units,
                                  qv_convention=cfg.qv_convention)
+    _validate_forcing_domain(t_model, qv_model, p_model, forcing)
+    if not bool(torch.isfinite(q_model).all()):
+        raise ValueError("derived RTTOV humidity Q must contain only finite values")
 
     # Shared column-grid validation for BOTH the interp and passthrough paths.
     # The passthrough must fail as loudly as the interp branch: a silently
@@ -360,6 +411,15 @@ def model_to_rttov_tensors(leaves, forcing, cfg, xland=None,
             f"model pressure must be a 1-D column or a [B, nlev] batch "
             f"(got ndim={p_model.ndim}).")
     p_target = getattr(cfg, "rttov_layer_pressure", None)
+    if p_target is not None:
+        # detach: the grid is a constant (forcing), never a grad leaf (design 5).
+        p_target = torch.as_tensor(
+            p_target, dtype=t_model.dtype, device=t_model.device).detach()
+        _validate_pressure_domain(p_target, "RTTOV layer pressure")
+        if p_target.ndim != 1:
+            raise ValueError(
+                f"RTTOV layer pressure must be a 1-D shared target grid "
+                f"(got ndim={p_target.ndim}).")
     if batched:
         # BATCHED columns (T1-5): every column interpolates onto the ONE shared
         # target grid, so the interp branch is REQUIRED -- a batched passthrough
@@ -390,9 +450,6 @@ def model_to_rttov_tensors(leaves, forcing, cfg, xland=None,
     if p_target is None:
         t_lay, q_lay, p_lay = t_model, q_model, None
     else:
-        # detach: the grid is a constant (forcing), never a grad leaf (design 5).
-        p_target = torch.as_tensor(
-            p_target, dtype=t_model.dtype, device=t_model.device).detach()
         t_lay = interp_log_pressure(t_model, p_model, p_target)
         q_lay = interp_log_pressure(q_model, p_model, p_target)
         p_lay = p_target
@@ -401,10 +458,27 @@ def model_to_rttov_tensors(leaves, forcing, cfg, xland=None,
     if p_half is not None:
         p_half = torch.as_tensor(
             p_half, dtype=t_model.dtype, device=t_model.device).detach()
+        _validate_pressure_domain(p_half, "RTTOV half-level pressure", allow_zero=True)
+        if p_half.ndim not in (1, 2):
+            raise ValueError(
+                f"RTTOV half-level pressure must be 1-D or batched 2-D "
+                f"(got ndim={p_half.ndim}).")
+        with torch.no_grad():
+            if not bool(torch.all(p_half[..., 1:] > p_half[..., :-1])):
+                raise ValueError(
+                    "RTTOV half-level pressure must be strictly ascending "
+                    "(TOA->surface).")
         if batched and p_half.ndim == 1:
             # pack_rttov_input requires per-profile P_HALF rows; the shared fixture
             # grid is identical for every column -> broadcast explicitly.
             p_half = p_half.unsqueeze(0).expand(t_lay.shape[0], -1)
+        elif batched and p_half.shape[0] != t_lay.shape[0]:
+            raise ValueError(
+                f"batched RTTOV half-level pressure rows {p_half.shape[0]} "
+                f"!= profile rows {t_lay.shape[0]}")
+        elif not batched and p_half.ndim == 2:
+            raise ValueError(
+                "single-column RTTOV half-level pressure must be 1-D")
     # RTTOV-14 layer-based invariant: Nlayers = Nlevels - 1 (design 5; profile.py:124).
     # Check the EMITTED layer count (t_lay's vertical axis) vs p_half so the
     # PASSTHROUGH path (p_lay is None) cannot silently emit an invalid

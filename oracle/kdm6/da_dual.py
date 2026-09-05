@@ -258,7 +258,21 @@ def _obs_cfg_fingerprint(obs_cfg) -> str:
                     for name in fields_to_hash)
     run_k = getattr(obs_cfg, "run_k", None)
     run_k_solar = getattr(run_k, "solar_channels", None)
-    payload += (("run_k.solar_channels", _fingerprint_obj(run_k_solar)),)
+    # _FrozenCallable keeps the executable object behind ``fn``.  Include its
+    # stable module/qualified-name identity in the digest; callable closure
+    # cells remain caller-owned under the explicit stable-callback precondition
+    # documented by make_dual_frozen_obs_eval.
+    run_k_fn = getattr(run_k, "fn", run_k)
+    run_k_attrs = (getattr(run_k, "__dict__", {})
+                   if not isinstance(run_k, _FrozenCallable)
+                   else {"solar_channels": getattr(run_k, "solar_channels", None)})
+    run_k_identity = (
+        type(run_k_fn).__module__, type(run_k_fn).__qualname__,
+        getattr(run_k_fn, "__module__", None),
+        getattr(run_k_fn, "__qualname__", None),
+        _fingerprint_obj(run_k_attrs))
+    payload += (("run_k.identity", run_k_identity),
+                ("run_k.solar_channels", _fingerprint_obj(run_k_solar)))
     return hashlib.sha256(repr(payload).encode()).hexdigest()
 
 
@@ -638,7 +652,9 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
                               allow_zero_valid_slots: bool = False,
                               policy: "ObsGatePolicy | None" = None,
                               cloud: bool = False,
-                              xland: "torch.Tensor | None" = None) -> Callable:
+                              xland: "torch.Tensor | None" = None,
+                              ncmin_land: "float | None" = None,
+                              ncmin_sea: "float | None" = None) -> Callable:
     """표준 dual obs_eval — 동결 QC + n_valid + mask 서명 (clear-sky/all-sky).
 
     cloud=False(기본): batched_clear_bt, covector는 th/qv (CLEAR_SKY_CONNECTED).
@@ -646,6 +662,8 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
     covector가 hydrometeor 직접 민감도를 포함(ALL_SKY_CONNECTED 7필드)하므로
     hybrid CVT의 qc/qi/qs/nc/ni가 t=0 단독 창에서도 직접 제어된다 (V7의
     connected_fields 태그가 이를 반영). xland는 all-sky Deff 하한용(선택).
+    ncmin_land/ncmin_sea는 선택적 override이며 생략하면 window_config의
+    control을 사용해 모든 all-sky H 평가에 전달한다.
 
     동결 기준은 **θ_b 배경 궤적**: collect_window_trajectory(전방-전용,
     run_da_window와 bitwise 동일 forward 의미론 — η/η_pre 포함)로 M(x_b→t; θ_b)
@@ -661,6 +679,12 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
 
     y_by_time: {t: (y_bt (B,nch), y_rq (B,nch)[, bias])} — superob 권장.
     반환 obs_eval: ObsEvalResult(j, adj, n_valid, sha256(t|shape|dtype|mask)).
+
+    관측 구성, forcing sequence, land/sea vector, number-floor control은
+    생성 시점에 snapshot한다. run_k callback은 실행 경계라서 generic하게
+    clone하지 않는다. Production runner는 provenance-attested stable callback을
+    공급해야 하며, custom callback은 evaluator lifetime 동안 captured mutable
+    state를 caller가 변경하지 않아야 한다.
     """
     import dataclasses
     import hashlib
@@ -671,10 +695,48 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
     conn = (("th", "qv", "qc", "qi", "qs", "nc", "ni") if cloud
             else ("th", "qv"))
 
+    def _control(name, value):
+        if value is None:
+            value = getattr(window_config, name, 0.0)
+        if isinstance(value, bool):
+            raise TypeError(f"{name} must be a finite non-negative number")
+        try:
+            value = float(value)
+        except (TypeError, ValueError) as exc:
+            raise TypeError(f"{name} must be a finite non-negative number") from exc
+        if not math.isfinite(value) or value < 0.0:
+            raise ValueError(f"{name} must be finite and >= 0; got {value!r}")
+        return value
+
+    ncmin_land = _control("ncmin_land", ncmin_land)
+    ncmin_sea = _control("ncmin_sea", ncmin_sea)
+    if xland is None:
+        xland = getattr(window_config, "xland", None)
+    xland_f = None
+    if xland is not None:
+        xland_f = torch.as_tensor(xland, dtype=torch.float64).detach().clone()
+        if xland_f.ndim != 1 or xland_f.shape[0] != xb.th.shape[0]:
+            raise ValueError(
+                "xland must be a 1-D land/sea vector with one value per "
+                f"background column; got shape {tuple(xland_f.shape)} for "
+                f"B={xb.th.shape[0]}")
+        if not bool(torch.isfinite(xland_f).all()) or not bool(
+                ((xland_f == 1.0) | (xland_f == 2.0)).all()):
+            raise ValueError("xland must contain only finite land/sea codes 1 or 2")
+    forcings_f = tuple(_freeze_obs_cfg_value(f) for f in forcings)
+
     def _h(state_t, forcing_t):
         if cloud:
+            controls = {}
+            # Keep calls made with all defaults compatible with the historical
+            # low-level test doubles; every non-default frozen control is
+            # explicit at the updated driver boundary.
+            if xland_f is not None:
+                controls["xland"] = xland_f
+            if ncmin_land != 0.0 or ncmin_sea != 0.0:
+                controls.update(ncmin_land=ncmin_land, ncmin_sea=ncmin_sea)
             return _drv.batched_allsky_bt(state_t, forcing_t, obs_cfg_f,
-                                          xland=xland)
+                                          **controls)
         return _drv.batched_clear_bt(state_t, forcing_t, obs_cfg_f)
 
     # H3: policy/legacy kwarg 동시 지정 충돌 거부 (최소화기와 동일 규율)
@@ -685,7 +747,10 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
                 "kwarg, not both — silent double specification forbidden")
         allow_zero_valid_slots = policy.allow_zero_valid_slots
     obs_cfg_f = _freeze_obs_cfg(obs_cfg)
-    operator_fingerprint = _obs_cfg_fingerprint(obs_cfg_f)
+    operator_fingerprint = hashlib.sha256(repr((
+        _obs_cfg_fingerprint(obs_cfg_f),
+        _fingerprint_obj(forcings_f),
+        _fingerprint_obj(xland_f), ncmin_land, ncmin_sea)).encode()).hexdigest()
     obs_sigma_f = torch.as_tensor(obs_cfg_f.obs_sigma, dtype=torch.float64).detach().clone()
     T_win = len(forcings)
     for t, entry in y_by_time.items():
@@ -703,11 +768,13 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
     theta_b_params = params_from_vtheta(param_prior, torch.zeros(4, **_F64),
                                         live=False)
     probe_cfg = dataclasses.replace(window_config, params=theta_b_params,
-                                    param_grads=False)
+                                    param_grads=False, xland=xland_f,
+                                    ncmin_land=ncmin_land,
+                                    ncmin_sea=ncmin_sea)
     # forward-전용 수집기 (재검토 H2): run_da_window 프로브는 전 스텝 VJP
     # 비용을 낸다 — 동일 forward 의미론(bitwise 게이트 고정), backward 없음
     try:
-        traj = collect_window_trajectory(xb, forcings, probe_cfg,
+        traj = collect_window_trajectory(xb, forcings_f, probe_cfg,
                                          set(y_by_time))
     except ValueError as e:
         raise ValueError(
@@ -717,7 +784,7 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
     for t, entry in y_by_time.items():
         y_bt, y_rq = entry[0], entry[1]
         with torch.no_grad():
-            _, rad_q, _ = _h(traj[t], forcings[min(t, len(forcings) - 1)])
+            _, rad_q, _ = _h(traj[t], forcings_f[min(t, len(forcings_f) - 1)])
         # shape 엄격 검증 (재검토 H1): [nch]·[B,1] 등이 broadcasting으로 조용히
         # [B,nch] mask가 되는 경로 차단 — superob 규약은 full-shape (B,nch)
         for nm, arr in (("y_bt", y_bt), ("y_rq", y_rq)):
@@ -770,7 +837,7 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
         slot = frozen.get(t)
         if slot is None:
             return None
-        bt, _, leaves = _h(x_t, forcings[min(t, len(forcings) - 1)])
+        bt, _, leaves = _h(x_t, forcings_f[min(t, len(forcings_f) - 1)])
         obs = {"bt": slot.y_bt}
         if slot.bias is not None:
             obs["bias"] = slot.bias
@@ -793,4 +860,7 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
     # 서명은 여기서 θ_b/배경 궤적에 동결되어 v-독립이다 — 상태 CVT 종류와
     # 무관하게 유효한 계약 (live-state regime 해시는 어떤 CVT와도 양립 불가).
     obs_eval.connected_fields = conn
+    obs_eval.h_callback_contract = (
+        "runner-provenance-attested stable callback; custom callback closure "
+        "state is caller-owned and must remain unchanged")
     return obs_eval

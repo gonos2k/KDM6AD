@@ -10,6 +10,8 @@
 #include <exception>
 #include <memory>
 #include <mutex>
+#include <cstddef>
+#include <cstdint>
 #include <fenv.h>
 #include <cmath>
 
@@ -59,6 +61,11 @@ bool any_null(std::initializer_list<const void*> ptrs) {
 
 bool invalid_ncmin(double value) {
     return !std::isfinite(value) || value < 0.0;
+}
+
+bool invalid_fortran_shape(int im, int kme, int jme,
+                           std::size_t element_size = sizeof(float)) {
+    return !kdm6::fortran_shape_fits(im, kme, jme, element_size);
 }
 
 // libtorch/OpenMP single-thread fence.
@@ -182,7 +189,8 @@ extern "C" int kdm6_step_c(
     // Defensive ABI: guarantee the output handle is NULL on EVERY error path, so a caller
     // that forgets to check the return code never reads an uninitialized handle.
     if (handle) *handle = nullptr;
-    if (im <= 0 || kme <= 0 || jme <= 0) return KDM6_ERR_INVALID_DIM;
+    if (im <= 0 || kme <= 0 || jme <= 0 ||
+        invalid_fortran_shape(im, kme, jme)) return KDM6_ERR_INVALID_DIM;
     // value_only is a 0/1 flag (0 → derivative handle, 1 → NULL handle). Reject any other
     // value rather than silently treating a stray nonzero (e.g. 2) as value-only.
     if (value_only != 0 && value_only != 1) return KDM6_ERR_INVALID_ARG;
@@ -235,7 +243,9 @@ extern "C" int kdm6_step_c(
                                            {jme, im}, opts)
                               .permute({1, 0})
                               .contiguous();
-            xland_t = view2d.reshape({im * jme});
+            const int64_t ncol = static_cast<int64_t>(im) *
+                                 static_cast<int64_t>(jme);
+            xland_t = view2d.reshape({ncol});
         }
 
         auto result = kdm6::kdm6_step(state_in, forcing, params, dt, value_only != 0,
@@ -345,9 +355,13 @@ extern "C" int kdm6_step_v2_c(const kdm6_step_v2_args* args) {
     const int value_only = args->value_only;
     kdm6_handle_t** handle = args->handle;
 
-    // Same validation precedence + fail-closed contract as kdm6_step_c.
+    // For a matching, sufficiently framed record, use the same validation
+    // precedence as kdm6_step_c and clear the safely located handle before
+    // returning any pre-work refusal.  Version/short-framing returns above
+    // intentionally cannot make a pointer postcondition about unknown layout.
     if (handle) *handle = nullptr;
-    if (im <= 0 || kme <= 0 || jme <= 0) return KDM6_ERR_INVALID_DIM;
+    if (im <= 0 || kme <= 0 || jme <= 0 ||
+        invalid_fortran_shape(im, kme, jme)) return KDM6_ERR_INVALID_DIM;
     if (value_only != 0 && value_only != 1) return KDM6_ERR_INVALID_ARG;
     if (any_null({args->th, args->qv, args->qc, args->qr, args->qi, args->qs,
                   args->qg, args->nccn, args->nc, args->ni, args->nr, args->bg,
@@ -398,12 +412,29 @@ extern "C" int kdm6_step_v2_c(const kdm6_step_v2_args* args) {
             auto view2d = torch::from_blob(const_cast<float*>(xland),
                                            {jme, im}, opts)
                               .permute({1, 0}).contiguous();
-            xland_t = view2d.reshape({im * jme});
+            const int64_t ncol = static_cast<int64_t>(im) *
+                                 static_cast<int64_t>(jme);
+            xland_t = view2d.reshape({ncol});
         }
 
         auto result = kdm6::kdm6_step(state_in, forcing, params, args->dt,
                                       value_only != 0, xland_t,
                                       ncmin_land, ncmin_sea, physics);
+
+        // Reserve the fallible handle allocation before touching any caller
+        // output.  This keeps the common allocation failure path fully
+        // pre-output; the public v2 contract still deliberately treats later
+        // internal failures as non-transactional (caller buffers cannot be
+        // rolled back without a second output staging framework).
+        std::unique_ptr<kdm6_handle_t> output_handle;
+        if (value_only == 0) {
+            output_handle = std::make_unique<kdm6_handle_t>();
+            output_handle->impl = std::move(result.handle);
+            output_handle->im = im;
+            output_handle->kme = kme;
+            output_handle->jme = jme;
+            output_handle->dtype = c10::ScalarType::Float;
+        }
 
         kdm6::to_fortran_arrays(result.state_out, im, jme,
             args->th_out, args->qv_out, args->qc_out, args->qr_out, args->qi_out,
@@ -435,11 +466,7 @@ extern "C" int kdm6_step_v2_c(const kdm6_step_v2_args* args) {
         if (value_only != 0) {
             *handle = nullptr;
         } else {
-            auto* h = new kdm6_handle_t{};
-            h->impl = std::move(result.handle);
-            h->im = im; h->kme = kme; h->jme = jme;
-            h->dtype = c10::ScalarType::Float;
-            *handle = h;
+            *handle = output_handle.release();
         }
         return KDM6_OK;
     } catch (const c10::NotImplementedError&) {
@@ -546,7 +573,10 @@ extern "C" int kdm6_step_ad_c(
     double ncmin_land,
     double ncmin_sea) {
     if (handle) *handle = nullptr;   // NULL output handle on every error path (see kdm6_step_c)
-    if (im <= 0 || kme <= 0 || jme <= 0) return KDM6_ERR_INVALID_DIM;
+    if (im <= 0 || kme <= 0 || jme <= 0 ||
+        !kdm6::fortran_packed_shape_fits(im, kme, jme, sizeof(double),
+                                         /*field_count=*/12))
+        return KDM6_ERR_INVALID_DIM;
     if (value_only != 0 && value_only != 1) return KDM6_ERR_INVALID_ARG;  // 0/1 flag only
     if (any_null({state_in_packed, forcing_packed, state_out_packed,
                   static_cast<const void*>(handle)})) {
@@ -580,7 +610,9 @@ extern "C" int kdm6_step_ad_c(
                                            {jme, im}, xopts)
                               .permute({1, 0})
                               .contiguous();
-            xland_t = view2d.reshape({im * jme});
+            const int64_t ncol = static_cast<int64_t>(im) *
+                                 static_cast<int64_t>(jme);
+            xland_t = view2d.reshape({ncol});
         }
 
         auto result = kdm6::kdm6_step(state_in, forcing, params, dt,

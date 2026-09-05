@@ -18,12 +18,27 @@ the conservative-interface-v1 variant pair `mp_physics=237` (corrected Fortran r
 ## Files (drop into `<WRF>/phys/`)
 | File | Role |
 |---|---|
-| `module_mp_kdm6.F` | KDM6 mp37 reference scheme (incl. the diag_rhog gate+snap, commit eb1c823) — **never modified** |
-| `module_mp_kdm6ad.F` | KDM6AD mp137 wrapper — calls the C++ ABI; computes re_*/diag_rhog/REFL_10CM diagnostics — **never modified** |
+| `module_mp_kdm6.F` | KDM6 mp37 reference scheme; exact source bytes must be recorded for each host build |
+| `module_mp_kdm6ad.F` | KDM6AD mp137 wrapper — calls the C++ ABI; computes re_*/diag_rhog/REFL_10CM diagnostics |
 | `kdm6_iso_c.F` | ISO_C_BINDING interface declaring `kdm6_step_c` etc.; C4 adds the **append-only** v2 mirror (`kdm6_step_v2_args`, `kdm6_step_v2_c`, `kdm6_step_v2_args_size_c`, variant enums) |
 | `module_mp_kdm6_cons.F` | **C4** corrected Fortran conservative reference (mp237): byte-identical copy of `module_mp_kdm6.F` except renames + the pinned sedimentation interface-transfer edits (Gate A manifest) |
 | `module_mp_kdm6ad_cons.F` | **C4** thin separate wrapper (mp337): calls `kdm6_step_v2_c` with `physics_variant=1`, `value_only=1`; first-call `abi_version` + `struct_size` layout gate (fatal on mismatch — a stale mirror must never silently run legacy) |
 | `module_microphysics_driver.F` | dispatches mp37 / mp137 / mp237 / mp337 (additive CASEs only) |
+
+For all four KDM6 dispatch cases, `QIB_CURR` is passed as `BG`; the Fortran
+reference then copies `bg` into its local `brs`. It stores **graupel bulk volume
+mixing ratio**. The
+shared Registry description inherited from P3 calls QIB rime-ice volume; that
+description does not define the KDM6 field's meaning. Do not change the global
+P3 metadata to repair a scheme-specific interpretation. Postprocessing must
+identify `mp_physics` before interpreting QIB. This volume contract does not
+settle the separate open `nr`/`ni` number-unit question.
+
+The local `host_fortran/` directory is a historical archive, not proof of the
+source used by the runnable host. Source witness hashes and a successful source
+check establish a source snapshot only. A rebuilt executable requires its own
+source/configuration/object provenance and new run evidence; private source
+edits or syntax checks do not recertify previously recorded parity runs.
 
 ## Build wiring (in the WRF host)
 

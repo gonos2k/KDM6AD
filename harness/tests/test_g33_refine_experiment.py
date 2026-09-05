@@ -916,13 +916,14 @@ def test_the_analyses_are_only_produced_for_instrumented_bundles(tmp_path, monke
     assert {a["analysis"] for a in inst["result"]["analyses"]} == _instrumented_analyses()
 
 
-def test_a_nonstandard_module_is_named_in_the_command(tmp_path, monkeypatch):
+def test_a_nonstandard_module_override_is_refused_before_build(tmp_path, monkeypatch):
     _fake(monkeypatch)
     other = tmp_path / "other.F"
     other.write_text("x\n")
-    dest = xp.produce(tmp_path / "chain", fixture="g33_fixture_multisubcycle_v1",
-                      algo="legacy", nsplits=(3, 6), mode="rezero", nflux=False, module=other)
-    assert "--module-override" in xp.res.load(dest)["command"]
+    with pytest.raises(SystemExit, match="unsupported.*module-override"):
+        xp.produce(tmp_path / "chain", fixture="g33_fixture_multisubcycle_v1",
+                   algo="legacy", nsplits=(3, 6), mode="rezero", nflux=False,
+                   module=other)
 
 
 def test_a_bundle_at_the_address_that_identifies_as_another_run_is_refused(tmp_path):

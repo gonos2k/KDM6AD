@@ -21,6 +21,8 @@ Provenance contract (review rounds):
     reproducing a dirty run needs the patch/untracked bundle, roadmap);
   * end-of-run drift re-check over code, inputs, and RTTOV assets; ANY
     start/end mismatch rejects the artifact;
+  * the published JSON digest covers canonical redacted report bytes with
+    ``manifest.outputs`` omitted (the outputs map contains the digest itself);
   * a rejected run leaves NOTHING under the canonical approved names —
     every file lands under *.rejected (exit code alone does not protect a
     file-collecting archive step).
@@ -335,7 +337,6 @@ def finalize_artifact(rep, manifest, drift, out_json, staging_npz):
     *.rejected (review P1-2: the exit code alone does not protect a
     file-collecting archive step). Returns the final accepted verdict."""
     manifest["provenance_drift"] = drift or None
-    rep["manifest"] = manifest
     rep["gates"]["provenance_stable"] = not bool(drift)
     rep["gates"]["accepted"] = all(
         v for k, v in rep["gates"].items() if k != "accepted")
@@ -377,10 +378,28 @@ def finalize_artifact(rep, manifest, drift, out_json, staging_npz):
                 os.fsync(f.fileno())
             return tmp
 
+        # The JSON certificate covers a cycle-free PUBLIC scope: the finalized
+        # report with its manifest.outputs map omitted.  The outputs map itself
+        # contains this digest, so including it would make the digest
+        # self-referential.  Build the public object only after drift and output
+        # records exist; the private manifest is never serialized or staged.
+        manifest["outputs"] = {
+            json_path: None,
+            npz_path: _sha256(staging_npz)}
+        manifest["output_hash_scopes"] = {
+            "json": "sha256 of UTF-8 json.dumps(report without manifest.outputs, indent=1, sort_keys=True)",
+            "npz": "sha256 of file bytes"}
+        public_manifest = redact_manifest(manifest)
+        rep["manifest"] = public_manifest
+        json_digest = hashlib.sha256(
+            _canonical_public_report_bytes(rep)).hexdigest()
+        manifest["outputs"][json_path] = json_digest
+        # Redact again after the final digest is present.  This exact public
+        # object is embedded in the report and written as the sidecar.
+        public_manifest = redact_manifest(manifest)
+        rep["manifest"] = public_manifest
         tmp_json = _owned_tmp(rep)
-        manifest["outputs"] = {json_path: _sha256(tmp_json),
-                               npz_path: _sha256(staging_npz)}
-        tmp_man = _owned_tmp(manifest)
+        tmp_man = _owned_tmp(public_manifest)
         # the staging NPZ is the largest payload and was written by
         # np.savez upstream (not fsync'd) — make it durable BEFORE its link,
         # else a crash can leave the manifest name visible with the fields
@@ -407,6 +426,22 @@ def finalize_artifact(rep, manifest, drift, out_json, staging_npz):
                 os.unlink(tmp)
     os.unlink(staging_npz)
     return accepted
+
+
+def _canonical_public_report_bytes(rep):
+    """Canonical bytes authenticated by the public JSON output digest.
+
+    ``manifest.outputs`` is excluded because it contains the digest itself;
+    every other field is the finalized, already-redacted public report.  Key
+    sorting and the explicit indentation make this scope stable across
+    construction order and reproducible by an artifact consumer.
+    """
+    import copy
+    payload = copy.deepcopy(rep)
+    manifest = payload.get("manifest")
+    if isinstance(manifest, dict):
+        manifest.pop("outputs", None)
+    return json.dumps(payload, indent=1, sort_keys=True).encode()
 
 
 def _acquire_run_lock(out_json):
@@ -467,12 +502,16 @@ def _logical_input_map():
 
 
 def redact_manifest(manifest):
-    """Public-safe copy of a manifest: repo-absolute paths become
-    repo-relative, the known external inputs become logical IDs, and the
-    interpreter/user prefix is dropped — every hash is preserved so the
-    redacted manifest still certifies reproducibility (review P2-5). The
-    original (with absolute paths) is retained privately by the operator."""
+    """Return a recursive public-safe copy of a finalized manifest.
+
+    Redaction happens after finalization has added drift and output records, so
+    those records must be traversed too.  Hash values are opaque and preserved;
+    path-bearing keys and strings are mapped to logical IDs/repo-relative names
+    (or a basename for an unrelated absolute path).  The caller's private
+    manifest is never modified.
+    """
     import copy
+    import shlex
     repo = str(_ORACLE.parent)
     logical = _logical_input_map()
 
@@ -482,28 +521,72 @@ def redact_manifest(manifest):
             return logical[s]
         if s.startswith(repo + os.sep):
             return os.path.relpath(s, repo)
-        # strip a leading interpreter path in a command/argv token
+        # Strip a leading interpreter/path component for an unrelated local
+        # absolute path.  Public artifacts retain a useful logical basename.
         return os.path.basename(s) if s.startswith(os.sep) else s
 
-    m = copy.deepcopy(manifest)
-    if "cwd" in m:
-        m["cwd"] = rel(m["cwd"])
-    if "argv" in m and isinstance(m["argv"], list):
-        m["argv"] = [rel(a) if a.startswith(os.sep) else a for a in m["argv"]]
-    if "command" in m:
-        m["command"] = " ".join(rel(t) if t.startswith(os.sep) else t
-                                for t in m["command"].split(" "))
-    if isinstance(m.get("inputs"), dict):
-        m["inputs"] = {rel(k): v for k, v in m["inputs"].items()}
-    if isinstance(m.get("rttov"), dict):
-        for name, e in m["rttov"].items():
-            if isinstance(e, dict) and "path" in e:
-                e["path"] = rel(e["path"])
-            for part in ("exe", "coef", "hydrotable"):
-                rec = e.get(part) if isinstance(e, dict) else None
-                if isinstance(rec, dict) and "path" in rec:
-                    rec["path"] = rel(rec["path"])
-    return m
+    # Generic absolute-path fragments, including ``--key=/root/file`` and
+    # prose such as ``prefix /secret/file``.  URLs are temporarily protected
+    # and restored byte-for-byte; this lets the scrubber also handle a path
+    # after punctuation (for example ``path:/secret/file``) without excluding
+    # a whole class of roots.  Known external inputs are replaced first with
+    # stable logical IDs.
+    url = re.compile(r"\b(?:https?|s3)://[^\s,;\"'<>\]}]+")
+    unc_path = re.compile(r"(?<![A-Za-z0-9_])//[^\s,;\"'<>\]}]+")
+    abs_path = re.compile(
+        r"(?<![A-Za-z0-9_/])/(?!/)[^\s,;\"'<>\]}]+")
+
+    def redact_string(value):
+        s = str(value)
+        if s in logical or s.startswith(repo + os.sep) or s.startswith(os.sep):
+            return rel(s)
+        urls = []
+
+        def stash(match):
+            urls.append(match.group(0))
+            return f"\x00URL{len(urls) - 1}\x00"
+
+        s = url.sub(stash, s)
+        for path, name in sorted(logical.items(), key=lambda item: -len(item[0])):
+            s = s.replace(path, name)
+        if repo + os.sep in s:
+            s = s.replace(repo + os.sep, "")
+        s = unc_path.sub(lambda match: os.path.basename(match.group(0)), s)
+        s = abs_path.sub(lambda match: os.path.basename(match.group(0)), s)
+        for i, original in enumerate(urls):
+            s = s.replace(f"\x00URL{i}\x00", original)
+        return s
+
+    def redact_command(value):
+        s = str(value)
+        try:
+            # ``command`` is shlex.join(argv); parse it before redacting so a
+            # quoted path containing spaces is handled as one argument.
+            return shlex.join(redact_string(token) for token in shlex.split(s))
+        except ValueError:
+            # Preserve a malformed diagnostic command while still removing
+            # obvious absolute path fragments.
+            return redact_string(s)
+
+    def scrub(value, *, key=None):
+        if isinstance(value, dict):
+            out = {}
+            for k, v in value.items():
+                rk = redact_string(k) if isinstance(k, str) else k
+                if rk in out:
+                    raise ValueError(
+                        f"manifest redaction key collision: {k!r} -> {rk!r}")
+                out[rk] = scrub(v, key=rk)
+            return out
+        if isinstance(value, list):
+            return [scrub(v, key=key) for v in value]
+        if isinstance(value, tuple):
+            return tuple(scrub(v, key=key) for v in value)
+        if isinstance(value, str):
+            return redact_command(value) if key == "command" else redact_string(value)
+        return copy.deepcopy(value)
+
+    return scrub(manifest)
 
 
 def main(out_json, case_root, conserving=False, allow_dirty=False):

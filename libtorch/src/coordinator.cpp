@@ -15,6 +15,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -1295,9 +1296,24 @@ CoordinatorState kdm62d_one_step(
 // ─── F2: sub-cycling wrapper ────────────────────────────────────────────────
 
 int compute_loops_max(double delt, double dtcldcr) {
+    TORCH_CHECK(std::isfinite(delt),
+                "delt must be finite, got ", delt);
+    TORCH_CHECK(std::isfinite(dtcldcr) && dtcldcr > 0.0,
+                "dtcldcr must be finite and > 0, got ", dtcldcr);
+    // The public kdm62d_step contract treats non-positive elapsed time as an
+    // identity.  Return before forming/casting a potentially huge negative
+    // quotient, while retaining the established compute_loops_max(0) result.
+    if (delt <= 0.0) return 1;
+
     // Fortran: max(nint(delt/dtcldcr), 1).  For positive delt,
     // (int)(delt/dtcldcr + 0.5) == nint(delt/dtcldcr) (round-half-up).
-    int n = static_cast<int>(delt / dtcldcr + 0.5);
+    const double quotient = delt / dtcldcr;
+    const double rounded = quotient + 0.5;
+    TORCH_CHECK(std::isfinite(quotient) && std::isfinite(rounded) &&
+                    rounded <= static_cast<double>(std::numeric_limits<int>::max()),
+                "delt/dtcldcr is outside the representable subcycle range: ",
+                quotient);
+    int n = static_cast<int>(rounded);
     return n > 1 ? n : 1;
 }
 

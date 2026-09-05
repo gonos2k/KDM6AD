@@ -590,6 +590,39 @@ def _check_loop(call, lp, feats=frozenset()):
                         f"call {call['call_id']} loop {lp} col {c} level {k}: "
                         f"{stage} carries fields {sorted(got)}, the rest of the "
                         f"stage carries {sorted(fields)}")
+    # A complete rectangular stream can still describe an impossible layer.
+    # The NFLUX copies below are only the bottom-cell facts; checking them does
+    # not constrain an upper or interior cell. Every layer used by rho*dz (or
+    # rho/(1+qv)*dz) therefore gets its own physical-domain check here, before
+    # any closure or transfer weight can consume it.
+    for (l, c, k), rec in call["outer_pre_sed"].items():
+        if l != lp:
+            continue
+        if rec["rho"] <= 0:
+            raise StreamError(
+                f"call {call['call_id']} loop {lp} col {c} level {k}: "
+                f"outer_pre_sed rho={rec['rho']!r} must be finite and > 0")
+        if rec["delz"] <= 0:
+            raise StreamError(
+                f"call {call['call_id']} loop {lp} col {c} level {k}: "
+                f"outer_pre_sed delz={rec['delz']!r} must be finite and > 0")
+        # The dry measure is conditional on the stored mixing-ratio contract;
+        # at minimum its denominator must remain positive. qv is a model water
+        # vapour mixing ratio, so negative values are outside this stream's
+        # meteorological input domain as well.
+        if rec["qv"] < 0 or 1.0 + rec["qv"] <= 0:
+            raise StreamError(
+                f"call {call['call_id']} loop {lp} col {c} level {k}: "
+                f"outer_pre_sed qv={rec['qv']!r} is outside qv >= 0 and "
+                f"1+qv > 0")
+    for (l, c, k), rec in call["outer_post_sed"].items():
+        if l != lp:
+            continue
+        if rec["qv"] < 0 or 1.0 + rec["qv"] <= 0:
+            raise StreamError(
+                f"call {call['call_id']} loop {lp} col {c} level {k}: "
+                f"outer_post_sed qv={rec['qv']!r} is outside qv >= 0 and "
+                f"1+qv > 0")
     # The SURFACE stage gets the same exact-universe contract as pre/post
     # (owner review §9.2): its rows feed surface-dependent closures, and a
     # missing cell used to come back as None -- a row silently skipped
@@ -1105,6 +1138,36 @@ def calls(stream: str) -> list:
         c["declared_metric"] = declared_metric
         c["real_bytes"] = rb
     return out
+
+
+def require_window_forcing(parsed: list, run: dict, real_bytes: int,
+                           name: str = "stream") -> None:
+    """Bind every G33N density/thickness operand to its window record.
+
+    The two protocols must describe the same complete forcing universe. Compare
+    at the recorded real width, including signed zero; numerical closeness does
+    not establish identical inputs to an experiment.
+    """
+    if real_bytes not in (4, 8):
+        raise StreamError(f"{name}: unsupported forcing precision {real_bytes}")
+    word = lambda v: struct.pack(">f" if real_bytes == 4 else ">d", v)
+    forcing = {(k[1], k[2], k[3]): v for k, v in run.items()
+               if k[0] == "forcing" and k[1] in ("rho", "delz")}
+    if not forcing:
+        raise StreamError(f"{name}: window carries no rho/delz forcing")
+    seen = set()
+    for call in parsed:
+        for (loop, col, level), record in call["outer_pre_sed"].items():
+            for field in ("rho", "delz"):
+                key = (field, col, level)
+                seen.add(key)
+                if key not in forcing or word(record[field]) != word(forcing[key]):
+                    raise StreamError(
+                        f"{name}: call {call['call_id']} loop {loop} col {col} "
+                        f"level {level}: G33N {field} differs from window forcing "
+                        "-- two different runs")
+    if seen != set(forcing):
+        raise StreamError(f"{name}: G33N/window forcing record universes differ")
 
 
 def validated_run_identity(text: str, expected_width: int | None = None,

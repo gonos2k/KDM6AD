@@ -543,7 +543,10 @@ CoordinatorState kdm62d_one_step(
 );
 
 // Fortran kdm62D entry: loops_max = max(nint(delt/dtcldcr + 0.5), 1).
-// Integer arithmetic — non-differentiable (caller decides delt).
+// Integer arithmetic — non-differentiable (caller decides delt).  `delt` must
+// be finite; `dtcldcr` must be finite and strictly positive.  Non-positive
+// finite `delt` retains the identity/no-op convention and returns one loop.
+// The quotient must round to a representable int.
 int compute_loops_max(double delt, double dtcldcr = constants::DTCLDCR);
 
 // ─── F2 sub-cycling wrapper ─────────────────────────────────────────────────

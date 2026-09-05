@@ -22,7 +22,7 @@ from typing import Sequence
 import numpy as np
 import torch
 
-from .gk2a_l1b import AMI_CHANNELS, dn_to_bt
+from .gk2a_l1b import AMI_CHANNELS, _positive_stride, _read_ami_bt
 from .obs_ingest import ObsPayload
 
 _F64 = dict(dtype=torch.float64)
@@ -102,6 +102,9 @@ def read_fd_slot(files: Sequence[str | Path], *,
     검정계수는 각 파일의 내장 속성에서 직접. 타임스탬프 혼합·비 2km 해상도 거부.
     stride 4 → 8km 솎음 (KO stride 4와 동일 밀도).
     """
+    stride = _positive_stride(stride)
+    if not files:
+        raise ValueError("FD slot must contain at least one channel file")
     by_ch: dict[str, Path] = {}
     stamp = None
     for f in files:
@@ -113,21 +116,31 @@ def read_fd_slot(files: Sequence[str | Path], *,
             stamp = ts
         elif ts != stamp:
             raise ValueError(f"mixed timestamps in one slot: {stamp} vs {ts} ({f})")
+        if ch in by_ch:
+            raise ValueError(f"duplicate AMI channel {ch} in one slot")
         by_ch[ch] = Path(f)
     unknown = set(by_ch) - set(AMI_CHANNELS)
     if unknown:
         raise ValueError(f"unknown AMI channels: {sorted(unknown)}")
 
     win = lat = lon = None
+    slot_geometry = None
     bt_all: dict[str, np.ndarray] = {}
     q_all: dict[str, np.ndarray] = {}
     for ch, path in sorted(by_ch.items()):
         import netCDF4                       # 검증 뒤로 지연 — 파일명/타임스탬프
         ds = netCDF4.Dataset(str(path))
         try:
+            g = {a: float(ds.getncattr(a)) for a in _GEO_ATTRS}
+            shape = ds.variables["image_pixel_values"].shape
+            n = ds.dimensions["dim_image_y"].size
+            if shape != (n, n):
+                raise ValueError(f"{path.name}: FD 2km reader requires square image geometry")
+            geometry = (shape, g)
+            if slot_geometry is not None and geometry != slot_geometry:
+                raise ValueError(f"{path.name}: channel geometry differs within FD slot")
             if win is None:
-                g = {a: float(ds.getncattr(a)) for a in _GEO_ATTRS}
-                n = ds.dimensions["dim_image_y"].size
+                slot_geometry = geometry
                 win = find_domain_window(g, bbox=bbox, n=n)
                 l0, l1, c0, c1 = win
                 L, C = np.meshgrid(np.arange(l0, l1, dtype=np.float64),
@@ -135,14 +148,9 @@ def read_fd_slot(files: Sequence[str | Path], *,
                                    indexing="ij")
                 lat, lon = geos_latlon(L, C, g)
             l0, l1, c0, c1 = win
-            raw_ma = ds.variables["image_pixel_values"][l0:l1, c0:c1]
-            missing = np.ma.getmaskarray(raw_ma)
-            raw = np.ma.filled(raw_ma, 0).astype(np.uint16)
             cal = {a: ds.getncattr(a) for a in _CAL_ATTRS}
-            bt, q = dn_to_bt(raw, cal)
-            # Preserve valid pixels while ensuring NetCDF fill/masked pixels
-            # cannot be turned into quality-0 observations by zero filling.
-            q = np.where(missing, 1.0, q)
+            bt, q = _read_ami_bt(ds.variables["image_pixel_values"], cal,
+                                 (slice(l0, l1), slice(c0, c1)))
             bt_all[ch], q_all[ch] = bt, q
         finally:
             ds.close()
@@ -176,5 +184,7 @@ def fd_slot_files(root: str | Path, timestamp: str,
         hits = sorted(root.rglob(f"gk2a_ami_le1b_{ch}_fd020ge_{timestamp}.nc"))
         if not hits:
             raise FileNotFoundError(f"FD channel {ch} @ {timestamp} not under {root}")
+        if len(hits) != 1:
+            raise ValueError(f"ambiguous AMI channel {ch} @ {timestamp}: {len(hits)} files")
         out.append(hits[0])
     return out

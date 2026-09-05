@@ -383,6 +383,7 @@ def test_a_zero_denominator_makes_the_ratio_invalid_not_zero(monkeypatch):
         k: 0.0 for k in fc.RESPONSES if k.startswith("partition_")})
     import g33_refine_analyze as ra
     monkeypatch.setattr(ra, "read_text", lambda t: {})
+    monkeypatch.setattr(fc, "_bound_window_identity", lambda t: {"real_bytes": 4})
     got = fc.responses("", "")
     assert got["R_qr_num"]["valid"] is True and got["R_qr_num"]["value"] == 5.0
     assert got["R_qr_sum_call_start"]["valid"] is True

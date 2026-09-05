@@ -30,6 +30,7 @@ denominator invites the reader to supply their own.
 from __future__ import annotations
 
 import json
+import statistics
 import subprocess
 import sys
 from pathlib import Path
@@ -152,7 +153,11 @@ def analysis(stream: str, basis: str = "operator") -> dict:
             "of_final_inventory": _ratio(
                 d["residual"], window.get((sp, col), (None, None))[1]),
             "active_calls": len(active), "total_calls": e["calls"],
-            "per_call_fraction_median": fracs[len(fracs) // 2] if fracs else None,
+            # The statistical median averages the two middle values for an
+            # even population. The upper-middle order statistic is not the
+            # field named here; the separate max remains the conservative
+            # magnitude summary.
+            "per_call_fraction_median": statistics.median(fracs) if fracs else None,
             "per_call_fraction_max": max(fracs, key=abs) if fracs else None,
             "of_interface_throughput": _ratio(
                 d["residual"], iface.get((ch, col), {}).get("number_transported")),

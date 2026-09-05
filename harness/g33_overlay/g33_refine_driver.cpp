@@ -38,12 +38,18 @@
 #include "g33_fixture_multisubcycle_v1.h"
 #elif defined(KDM6_G33_FIXTURE_BOUNDARY_MAPPING)
 #include "g33_fixture_boundary_mapping_v1.h"
+#elif defined(KDM6_G33_FIXTURE_MOISTURE_GRADIENT)
+#include "g33_fixture_moisture_gradient_v1.h"
+#elif defined(KDM6_G33_FIXTURE_LC05_COLUMN)
+#include "g33_fixture_lc05_column_v1.h"
 #else
 #include "g33_fixture_v1.h"
 #endif
 
 #include <torch/torch.h>
 
+#include <charconv>
+#include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <iomanip>
@@ -69,6 +75,22 @@ std::uint32_t bits_from_f32(float v) {
     std::uint32_t u;
     std::memcpy(&u, &v, sizeof u);
     return u;
+}
+
+int parse_positive_nsplit(const std::string& token) {
+    if (token.empty())
+        throw std::runtime_error(
+            "--nsplit must be a positive decimal integer");
+    int value = 0;
+    const auto first = token.data();
+    const auto last = first + token.size();
+    const auto parsed = std::from_chars(first, last, value, 10);
+    if (parsed.ec == std::errc::result_out_of_range)
+        throw std::runtime_error("--nsplit is out of range for int");
+    if (parsed.ec != std::errc{} || parsed.ptr != last || value < 1)
+        throw std::runtime_error(
+            "--nsplit must be a positive decimal integer");
+    return value;
 }
 
 template <typename Arr>
@@ -135,22 +157,34 @@ int main(int argc, char** argv) {
             } else if (a == "--emit-each") {
                 emit_each = true;
             } else if (a.rfind("--segments=", 0) == 0) {
-                // Explicit, possibly UNEQUAL sub-call lengths, e.g. 200,100.
-                // --nsplit only produces uniform splits, which cannot separate
-                // "a boundary costs something" from "a boundary costs something
-                // WHERE it falls". Every segment here still runs at the same
-                // dtcld when each length is a multiple of the sub-cycle the
-                // kernel picks, so refresh count is held constant too.
+                // The current G33R header carries one delt/loops/dtcld triple,
+                // so custom schedules must remain uniform.  A duration vector
+                // would need a protocol extension before it could be described
+                // truthfully in the emitted header.
                 std::string rest = a.substr(11);
                 size_t pos = 0;
-                while (!rest.empty()) {
+                while (true) {
                     pos = rest.find(',');
-                    segments.push_back(std::stod(rest.substr(0, pos)));
+                    const std::string token = rest.substr(0, pos);
+                    if (token.empty())
+                        throw std::runtime_error("--segments contains an empty duration");
+                    size_t consumed = 0;
+                    double duration = 0.0;
+                    try {
+                        duration = std::stod(token, &consumed);
+                    } catch (const std::exception&) {
+                        throw std::runtime_error(
+                            "--segments contains a malformed duration");
+                    }
+                    if (consumed != token.size())
+                        throw std::runtime_error(
+                            "--segments contains a malformed duration");
+                    segments.push_back(duration);
                     if (pos == std::string::npos) break;
                     rest = rest.substr(pos + 1);
                 }
             } else if (a.rfind("--nsplit=", 0) == 0) {
-                nsplit = std::stoi(a.substr(9));
+                nsplit = parse_positive_nsplit(a.substr(9));
             } else {
                 throw std::runtime_error("unknown argument: " + a);
             }
@@ -194,13 +228,24 @@ int main(int argc, char** argv) {
             for (int i = 0; i < nsplit; ++i)
                 segments.push_back(static_cast<double>(
                     static_cast<float>(dt_total) / static_cast<float>(nsplit)));
+        for (double g : segments) {
+            if (!std::isfinite(g) || g <= 0.0)
+                throw std::runtime_error(
+                    "segment durations must be finite and strictly positive");
+        }
+        const double delt = segments.front();
+        for (size_t i = 1; i < segments.size(); ++i) {
+            if (segments[i] != delt)
+                throw std::runtime_error(
+                    "--segments must contain equal durations; use --nsplit for "
+                    "uniform refinement");
+        }
         // The total must be the fixture's, or the members are not the same
         // experiment. Checked in f32 because that is the arithmetic the legs use.
         float tot = 0.0f;
         for (double g : segments) tot += static_cast<float>(g);
         if (tot != static_cast<float>(dt_total))
             throw std::runtime_error("segments must sum to the fixture dt");
-        const double delt = segments.front();
         const auto variant = algorithm == "conservative"
             ? PhysicsVariant::ConservativeInterface : PhysicsVariant::Legacy;
 

@@ -90,6 +90,7 @@ def test_read_fd_slot_masks_filled_dn_and_propagates_timestamp(tmp_path):
         ds.createDimension("dim_image_y", 2); ds.createDimension("dim_image_x", 2)
         v = ds.createVariable("image_pixel_values", "u2",
                              ("dim_image_y", "dim_image_x"), fill_value=65535)
+        v.number_of_valid_bits_per_pixel = np.uint8(13)
         v[:] = np.ma.array([[3000, 3001], [3002, 3003]],
                            mask=[[False, True], [False, False]])
         for key, value in dict(_G, coff=0.5, loff=0.5).items():

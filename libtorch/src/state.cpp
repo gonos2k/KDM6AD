@@ -1,8 +1,72 @@
 #include "kdm6/state.h"
 
+#include <cstdint>
 #include <cstring>
+#include <limits>
 
 namespace kdm6 {
+
+namespace {
+
+bool checked_product3(int64_t a, int64_t b, int64_t c,
+                      std::size_t element_size) noexcept {
+    if (a <= 0 || b <= 0 || c <= 0 || element_size == 0) return false;
+    constexpr uint64_t I64_MAX =
+        static_cast<uint64_t>(std::numeric_limits<int64_t>::max());
+    const uint64_t ua = static_cast<uint64_t>(a);
+    const uint64_t ub = static_cast<uint64_t>(b);
+    const uint64_t uc = static_cast<uint64_t>(c);
+    const uint64_t bytes_max =
+        static_cast<uint64_t>(std::numeric_limits<std::size_t>::max());
+    if (ua > I64_MAX / ub) return false;
+    const uint64_t ab = ua * ub;
+    if (ab > I64_MAX / uc) return false;
+    const uint64_t elements = ab * uc;
+    return elements <= bytes_max / static_cast<uint64_t>(element_size);
+}
+
+bool checked_packed_product3(int64_t a, int64_t b, int64_t c,
+                             std::size_t element_size,
+                             std::size_t field_count) noexcept {
+    if (!checked_product3(a, b, c, element_size) || field_count == 0) {
+        return false;
+    }
+    constexpr uint64_t I64_MAX =
+        static_cast<uint64_t>(std::numeric_limits<int64_t>::max());
+    const uint64_t ua = static_cast<uint64_t>(a);
+    const uint64_t ub = static_cast<uint64_t>(b);
+    const uint64_t uc = static_cast<uint64_t>(c);
+    const uint64_t elements = ua * ub * uc;
+    const uint64_t fields = static_cast<uint64_t>(field_count);
+    const uint64_t bytes_max =
+        static_cast<uint64_t>(std::numeric_limits<std::size_t>::max());
+    if (fields > I64_MAX / elements) return false;
+    if (fields > std::numeric_limits<uint64_t>::max() /
+                     static_cast<uint64_t>(element_size)) {
+        return false;
+    }
+    const uint64_t field_bytes =
+        fields * static_cast<uint64_t>(element_size);
+    return elements <= bytes_max / field_bytes;
+}
+
+}  // namespace
+
+bool fortran_shape_fits(int im, int kme, int jme,
+                        std::size_t element_size) noexcept {
+    return checked_product3(static_cast<int64_t>(im),
+                            static_cast<int64_t>(kme),
+                            static_cast<int64_t>(jme), element_size);
+}
+
+bool fortran_packed_shape_fits(int im, int kme, int jme,
+                               std::size_t element_size,
+                               std::size_t field_count) noexcept {
+    return checked_packed_product3(static_cast<int64_t>(im),
+                                   static_cast<int64_t>(kme),
+                                   static_cast<int64_t>(jme), element_size,
+                                   field_count);
+}
 
 // ── state-algebra ───────────────────────────────────────────────────────────
 State zeros_like_state(const State& s) {
@@ -61,6 +125,9 @@ static torch::Tensor from_blob_3d(const float* ptr, int im, int kme, int jme,
                                   bool nan_gate,
                                   bool clip_neg,
                                   bool is_th /*th는 clip_neg 면제*/) {
+    TORCH_CHECK(fortran_shape_fits(im, kme, jme),
+                "Fortran array shape is not representable: (", im, ", ",
+                kme, ", ", jme, ")");
     // [C4] non-owning view — NATIVE float32 operational ABI (matches Fortran RWORDSIZE=4);
     // dtype propagates so the whole kdm6_fn forward runs single, like Fortran mp37.
     auto opts = torch::TensorOptions().dtype(torch::kFloat32);
@@ -70,7 +137,9 @@ static torch::Tensor from_blob_3d(const float* ptr, int im, int kme, int jme,
                       .permute({2, 1, 0})
                       .contiguous();
     // (im, kme, jme) → (im, jme, kme) → (B=im*jme, kme)
-    auto flat = view3d.permute({0, 2, 1}).reshape({im * jme, kme});
+    const int64_t ncol = static_cast<int64_t>(im) *
+                         static_cast<int64_t>(jme);
+    auto flat = view3d.permute({0, 2, 1}).reshape({ncol, kme});
 
     // [D10] NaN gate (optional)
     if (nan_gate) {
@@ -132,7 +201,15 @@ Forcing forcing_from_fortran_arrays(const float* rho,
 void copy_back_to_fortran(const torch::Tensor& flat /*(B, K)*/,
                           int im, int jme,
                           float* out /*(im, kme, jme)*/) {
-    auto K = flat.size(1);
+    TORCH_CHECK(flat.defined() && flat.dim() == 2,
+                "Fortran copy-back requires a defined rank-2 tensor");
+    const auto K = flat.size(1);
+    TORCH_CHECK(K > 0,
+                "Fortran copy-back requires a non-empty rank-2 tensor");
+    TORCH_CHECK(checked_product3(static_cast<int64_t>(im), K,
+                                 static_cast<int64_t>(jme), sizeof(float)),
+                "Fortran copy-back shape is not representable: (", im, ", ",
+                K, ", ", jme, ")");
     // Recover logical (im, kme, jme), then emit row-major (jme, kme, im)
     // so memcpy lands in the same byte order that Fortran uses for
     // arr(im, kme, jme) column-major storage. NATIVE float32 (cast in case the

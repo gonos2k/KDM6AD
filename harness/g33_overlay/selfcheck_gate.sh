@@ -32,6 +32,7 @@ for pin in "$LEGACY_LINE" "$CONS_LINE"; do
     fi
 done
 
+# The surface count includes the newly verified surface_denr operand.
 # ── bottom-fall -> surface proof ─────────────────────────────────────────────
 surface_out=$(python3 harness/g33_surface_selfcheck.py --driver "$OUT/surface_selfcheck_driver" --algorithm both 2>&1); surface_rc=$?
 echo "$surface_out" | tail -3
@@ -39,8 +40,8 @@ if [ "$surface_rc" -ne 0 ]; then
     echo "GATE FAIL: surface driver did not PASS (rc=$surface_rc)"; exit 1
 fi
 for pin in \
-  "legacy: SURFACE PASS — 3 containers, qr bottom link + 9 fields bit-exact" \
-  "conservative: SURFACE PASS — 3 containers, qr bottom link + 9 fields bit-exact" \
+  "legacy: SURFACE PASS — 3 containers, qr bottom link + 10 fields bit-exact" \
+  "conservative: SURFACE PASS — 3 containers, qr bottom link + 10 fields bit-exact" \
   "SURFACE SELF-CHECK PASS"; do
     printf '%s\n' "$surface_out" | grep -qF "$pin" || {
         echo "GATE FAIL: surface coverage drifted; missing: $pin"; exit 1; }

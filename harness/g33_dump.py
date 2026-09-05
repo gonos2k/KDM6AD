@@ -123,7 +123,7 @@ def _parse_json(raw: bytes, what: str):
     # any JSON block are a G33Corruption, not an unhandled traceback.
     try:
         return json.loads(raw.decode("utf-8"), object_pairs_hook=_no_dup_keys)
-    except (UnicodeDecodeError, json.JSONDecodeError) as e:
+    except (UnicodeDecodeError, json.JSONDecodeError, RecursionError) as e:
         raise G33Corruption(f"corrupt {what} JSON: {e}") from None
 
 

@@ -16,6 +16,7 @@ macOS 관례: multiprocessing spawn (fork는 torch와 불안정). worker는 모�
 """
 from __future__ import annotations
 
+import copy
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -51,6 +52,12 @@ class ShardSpec:
     t_ref: torch.Tensor | None
     q_ref: torch.Tensor | None
     q_blend_octaves: float
+    # Operational land/sea controls are part of the sensitivity experiment
+    # identity.  They are optional for the legacy maritime path, but when
+    # supplied they are sliced exactly like the state and forcing.
+    xland: torch.Tensor | None = None
+    ncmin_land: float = 0.0
+    ncmin_sea: float = 0.0
 
 
 def _shard_worker(spec: ShardSpec) -> dict:
@@ -71,7 +78,11 @@ def _shard_worker(spec: ShardSpec) -> dict:
         q_blend_octaves=spec.q_blend_octaves)
     rep = run_osse_sensitivity(
         spec.x_truth, spec.x_background, [spec.forcing] * spec.n_steps,
-        list(spec.obs_times), WindowConfig(dt=spec.dt), obs_cfg)
+        list(spec.obs_times),
+        WindowConfig(dt=spec.dt, xland=spec.xland,
+                     ncmin_land=spec.ncmin_land,
+                     ncmin_sea=spec.ncmin_sea),
+        obs_cfg)
     return dict(shard_id=spec.shard_id,
                 col_idx=spec.col_idx,
                 j_obs=rep.j_obs,
@@ -139,7 +150,10 @@ def build_shard_specs(x_truth: State, x_background: State, forcing: Forcing,
                       obs_sigma: float = 1.0,
                       t_ref: torch.Tensor | None = None,
                       q_ref: torch.Tensor | None = None,
-                      q_blend_octaves: float = 4.0) -> list:
+                      q_blend_octaves: float = 4.0,
+                      xland: torch.Tensor | None = None,
+                      ncmin_land: float = 0.0,
+                      ncmin_sea: float = 0.0) -> list:
     """(B_total, K) 입력 + 분할 인덱스 리스트(예: da_shard.compose_shards 출력)
     → ShardSpec 리스트. col_idx는 [0, B_total) 재조립 인덱스 그 자체."""
     B, K = x_truth.th.shape
@@ -154,6 +168,25 @@ def build_shard_specs(x_truth: State, x_background: State, forcing: Forcing,
         raise TypeError("profile_kwargs must be a dict")
     if not isinstance(input_kwargs, dict):
         raise TypeError("input_kwargs must be a dict")
+    for name, value in (("ncmin_land", ncmin_land),
+                        ("ncmin_sea", ncmin_sea)):
+        if not isinstance(value, (int, float)) or isinstance(value, bool):
+            raise TypeError(f"{name} must be a plain real number")
+        if not np.isfinite(value) or value < 0.0:
+            raise ValueError(f"{name} must be finite and >= 0 (got {value!r})")
+    if xland is not None:
+        if not isinstance(xland, torch.Tensor) or xland.ndim != 1:
+            raise ValueError("xland must be a 1-D tensor with one value per column")
+        if tuple(xland.shape) != (B,):
+            raise ValueError(f"xland must have full shape ({B},), got {tuple(xland.shape)}")
+        if xland.device != x_truth.th.device:
+            raise ValueError("xland must be on the state device")
+        if xland.requires_grad:
+            raise ValueError("xland must be fixed (requires_grad=False)")
+        if not bool(torch.isfinite(xland).all()):
+            raise ValueError("xland must be finite")
+        if not bool(((xland == 1) | (xland == 2)).all()):
+            raise ValueError("xland must contain only WRF land/water values {1, 2}")
     rho_d = profile_kwargs.get("rho_d")
     if rho_d is not None:
         if not isinstance(rho_d, torch.Tensor):
@@ -187,12 +220,19 @@ def build_shard_specs(x_truth: State, x_background: State, forcing: Forcing,
             if isinstance(value, torch.Tensor):
                 shard_profile[key] = value.detach().clone()
             else:
-                shard_profile[key] = value
+                shard_profile[key] = copy.deepcopy(value)
         if rho_d is not None:
             shard_profile["rho_d"] = rho_d.index_select(0, ci).detach().clone()
         shard_input = {key: (value.detach().clone()
-                             if isinstance(value, torch.Tensor) else value)
+                             if isinstance(value, torch.Tensor)
+                             else copy.deepcopy(value))
                        for key, value in input_kwargs.items()}
+        shard_xland = (None if xland is None
+                       else xland.index_select(0, ci).detach().clone())
+        shard_t_ref = (None if t_ref is None
+                       else t_ref.detach().clone())
+        shard_q_ref = (None if q_ref is None
+                       else q_ref.detach().clone())
         sub = lambda s: type(s)(**{k: v[ci] for k, v in s._asdict().items()})
         specs.append(ShardSpec(
             shard_id=i, b_total=B, col_idx=ci.clone(),
@@ -201,8 +241,10 @@ def build_shard_specs(x_truth: State, x_background: State, forcing: Forcing,
             n_steps=n_steps, dt=dt, obs_times=tuple(int(t) for t in obs_times),
             case_root=str(Path(case_root) / f"shard{i:03d}"),
             profile_kwargs=shard_profile, input_kwargs=shard_input,
-            obs_sigma=obs_sigma, t_ref=t_ref, q_ref=q_ref,
-            q_blend_octaves=q_blend_octaves))
+            obs_sigma=obs_sigma, t_ref=shard_t_ref, q_ref=shard_q_ref,
+            q_blend_octaves=q_blend_octaves,
+            xland=shard_xland, ncmin_land=float(ncmin_land),
+            ncmin_sea=float(ncmin_sea)))
     return specs
 
 

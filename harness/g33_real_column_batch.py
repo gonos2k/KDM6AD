@@ -55,10 +55,11 @@ def candidates(path: Path, want: int, field: str = "QNRAIN", levels: int = 6):
     distribution this produces is a deterministic spatial sample of one state
     and is NOT an unbiased estimate of that state's columns (owner review §8.3).
     """
-    import netCDF4
     import numpy as np
-    d = netCDF4.Dataset(str(path))
-    n = np.asarray(d[field][-1], dtype="float64")
+    import netCDF4
+    import g33_netcdf_read as nr
+    with netCDF4.Dataset(str(path)) as d:
+        n = _read_frame(d, field, -1)
     hits = np.argwhere((n > 0).sum(axis=0) >= levels)
     if len(hits) == 0:
         raise SystemExit(f"no column carries {field} over {levels} levels")
@@ -66,53 +67,87 @@ def candidates(path: Path, want: int, field: str = "QNRAIN", levels: int = 6):
     return [tuple(int(v) for v in hits[i]) for i in range(0, len(hits), step)][:want]
 
 
+def _read_frame(dataset, name: str, frame: int):
+    """Read one model field through the shared mask and finite-value gate.
+
+    A masked netCDF value must never become a finite compile-time fixture value.
+    ``read_numeric`` refuses masks by default; this wrapper also refuses raw
+    non-finite values so every field used for selection or manifest generation
+    has the same input contract.
+    """
+    import g33_netcdf_read as nr
+
+    try:
+        got = nr.read_numeric(dataset[name], frame)
+    except ValueError as exc:
+        raise ValueError(f"{name}: invalid masked input at frame {frame}: {exc}") from exc
+    if got["nonfinite_count"]:
+        raise ValueError(
+            f"{name}: {got['nonfinite_count']} nonfinite cells at frame {frame}")
+    return got["data"]
+
+
 def write_manifest(path: Path, j: int, i: int) -> dict:
     """Rewrite the committed manifest for one column. Returns its own summary."""
     import netCDF4
     import numpy as np
-    d = netCDF4.Dataset(str(path))
-    g = lambda k: np.asarray(d[k][-1], dtype="float64")      # noqa: E731
-    K = d.dimensions["bottom_top"].size
-    p = (g("P") + g("PB"))[:, j, i]
-    th = (g("T") + 300.0)[:, j, i]
-    qv = g("QVAPOR")[:, j, i]
-    temp = th * (p / P0) ** (RD / CP)
-    ph = (g("PH") + g("PHB"))[:, j, i]
-    dz = np.diff(ph) / G
-    # THE MODEL'S OWN DENSITY, not a thermodynamic estimate. WRF's hydrostatic
-    # relation makes `rho_d * dz = mu_d |d(eta)| / g` exact in its own
-    # discretisation, and the host forms the `rho` it hands to microphysics as
-    # `rho_d * (1 + qv)` (module_big_step_utilities_em.F:4856). The first
-    # version of this used `p / (Rd T (1 + 0.608 qv))`, which differs from the
-    # canonical route by a median 2.3e-03 and up to 31 % on this state
-    # (FINDING_number_basis_gap_v1). The replay column now carries the density
-    # the kernel would actually have been given (owner review §10.2).
-    mu = (np.asarray(d["MU"][-1], dtype="float64")
-          + np.asarray(d["MUB"][-1], dtype="float64"))[j, i]
-    dnw = np.asarray(d["DNW"][-1], dtype="float64")
-    rho_d = (mu * np.abs(dnw)) / G / dz
-    den = rho_d * (1.0 + qv)
-    pii = (p / P0) ** (RD / CP)
-    f2b = lambda v: struct.pack(">f", float(v)).hex()        # noqa: E731
-    flip = lambda a: list(a[::-1])                           # WRF k=0 is BOTTOM
-    src = json.loads(MANIFEST.read_text())
-    fields = {}
-    for nm, arr in (("th", th), ("qv", qv), ("qc", g("QCLOUD")[:, j, i]),
-                    ("qr", g("QRAIN")[:, j, i]), ("qi", g("QICE")[:, j, i]),
-                    ("qs", g("QSNOW")[:, j, i]), ("qg", g("QGRAUP")[:, j, i]),
-                    ("nccn", g("QNCCN")[:, j, i]), ("nc", g("QNCLOUD")[:, j, i]),
-                    ("ni", g("QNICE")[:, j, i]), ("nr", g("QNRAIN")[:, j, i]),
-                    ("rho", den), ("pii", pii), ("p", p), ("delz", dz)):
-        fields[nm] = [f2b(v) for v in flip(arr)]
-    fields["bg"] = [f2b(0.0)] * K
-    out = dict(src)
-    out.update({"B": 1, "K": K, "fields": fields,
-                "xland": [f2b(g("XLAND")[j, i])]})
-    MANIFEST.write_text(json.dumps(out, indent=2, sort_keys=True) + "\n")
-    return {"j": j, "i": i, "xland": float(g("XLAND")[j, i]),
-            "qv_surface": float(qv[0]), "qv_top": float(qv[-1]),
-            "nr_levels": int((g("QNRAIN")[:, j, i] > 0).sum()),
-            "density": "canonical mu_d|d(eta)|/g, rho_m = rho_d(1+qv)"}
+    from g33_number_basis import _physical
+    with netCDF4.Dataset(str(path)) as d:
+        # The batch's historical behavior is the terminal frame. Keep that
+        # compatible choice, but make every read pass through one guarded
+        # producer boundary.
+        frame = -1
+        g = lambda k: _read_frame(d, k, frame)                 # noqa: E731
+        K = d.dimensions["bottom_top"].size
+        p = _physical("pressure", (g("P") + g("PB"))[:, j, i], positive=True)
+        th = _physical("potential temperature", (g("T") + 300.0)[:, j, i], positive=True)
+        qv = g("QVAPOR")[:, j, i]
+        ph = (g("PH") + g("PHB"))[:, j, i]
+        dz = _physical("layer thickness", np.diff(ph) / G, positive=True)
+        # THE MODEL'S OWN DENSITY, not a thermodynamic estimate. WRF's
+        # hydrostatic relation makes `rho_d * dz = mu_d |d(eta)| / g` exact in
+        # its own discretisation, and the host forms the `rho` it hands to
+        # microphysics as `rho_d * (1 + qv)` (module_big_step_utilities_em.F:4856).
+        mu = _physical("MU+MUB", (g("MU") + g("MUB"))[j, i], positive=True)
+        dnw = _physical("|DNW|", np.abs(g("DNW")), positive=True)
+        if dnw.shape != (K,):
+            raise ValueError(f"DNW must be a {K}-level vector, got {dnw.shape}")
+        rho_d = _physical("dry density", (mu * dnw) / G / dz, positive=True)
+        den = _physical("moist density", rho_d * (1.0 + qv), positive=True)
+        pii = _physical("Exner function", (p / P0) ** (RD / CP), positive=True)
+        def f2b(v):
+            _physical("fixture value", v)
+            try:
+                return struct.pack(">f", float(v)).hex()
+            except OverflowError as exc:
+                raise ValueError("fixture value is not representable as finite f32") from exc
+        flip = lambda a: list(a[::-1])                           # WRF k=0 is BOTTOM
+        src = json.loads(MANIFEST.read_text())
+        fields = {}
+        for nm, arr in (("th", th), ("qv", qv), ("qc", g("QCLOUD")[:, j, i]),
+                        ("qr", g("QRAIN")[:, j, i]), ("qi", g("QICE")[:, j, i]),
+                        ("qs", g("QSNOW")[:, j, i]), ("qg", g("QGRAUP")[:, j, i]),
+                        ("nccn", g("QNCCN")[:, j, i]), ("nc", g("QNCLOUD")[:, j, i]),
+                        ("ni", g("QNICE")[:, j, i]), ("nr", g("QNRAIN")[:, j, i]),
+                        ("rho", den), ("pii", pii), ("p", p), ("delz", dz)):
+            fields[nm] = [f2b(v) for v in flip(arr)]
+        fields["bg"] = [f2b(0.0)] * K
+        out = dict(src)
+        out.update({"B": 1, "K": K, "fields": fields,
+                    "xland": [f2b(g("XLAND")[j, i])]})
+        # Validate the decoded f32 forcing before replacing the authority. In
+        # particular, a positive f64 metric may have rounded to f32 zero.
+        import g33_fixture_v1 as fx
+        for name in ("rho", "pii", "p", "delz"):
+            _physical(name, [fx._f32_word(w) for w in fields[name]], positive=True)
+        if fx._f32_word(out["xland"][0]) not in (1.0, 2.0):
+            raise ValueError("XLAND must be 1 or 2")
+        MANIFEST.write_text(json.dumps(out, indent=2, sort_keys=True) + "\n")
+        return {"j": j, "i": i, "xland": float(g("XLAND")[j, i]),
+                "qv_surface": float(qv[0]), "qv_top": float(qv[-1]),
+                "nr_levels": int((g("QNRAIN")[:, j, i] > 0).sum()),
+                "frame": frame,
+                "density": "canonical mu_d|d(eta)|/g, rho_m = rho_d(1+qv)"}
 
 
 def residuals(build_root: Path, arm: str, nsplits=(12,), partial=True) -> dict:

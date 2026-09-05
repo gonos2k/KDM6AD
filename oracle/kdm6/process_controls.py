@@ -20,6 +20,11 @@ Design constraints honored:
 - α_sedimentation is intentionally ABSENT (design §5.2: the mstep integer /
   no-grad discontinuity makes it a different mechanism — deferred).
 
+Active α values must be finite, and ``exp(α)`` must be a positive finite value
+in the α tensor's dtype.  The check rejects both exponential overflow and
+underflow to zero at this boundary; it does not clamp or otherwise alter the
+value supplied to the differentiable rate map.
+
 Per-process rate groups (mass + number of the same process move together):
   autoconv    → warm praut, nraut
   accretion   → warm pracw, nracw                      (warm rain ← cloud)
@@ -63,10 +68,27 @@ class ProcessControls(NamedTuple):
 
 def _scale(struct, fields: tuple, alpha: Optional[torch.Tensor]):
     """Return struct with the named rate fields multiplied by exp(alpha).
-    alpha=None returns the SAME object (no ops, no copy)."""
+    alpha=None returns the SAME object (no ops, no copy).
+
+    ``alpha`` validation is deliberately value-only: the finite/positive
+    checks use scalar extraction only for deciding whether to reject the
+    input.  The factor used below remains the original autograd tensor, so a
+    valid control keeps its gradient path intact.  In particular, silently
+    clamping an overflowing/underflowing factor would change the requested
+    control and hide an invalid optimization input.
+    """
     if alpha is None:
         return struct
+    if not isinstance(alpha, torch.Tensor) or not alpha.is_floating_point():
+        raise TypeError("process-control alpha must be a floating-point tensor")
+    if not bool(torch.isfinite(alpha).all().item()):
+        raise ValueError("process-control alpha must be finite")
     s = torch.exp(alpha)
+    if (not bool(torch.isfinite(s).all().item())
+            or not bool((s > 0).all().item())):
+        raise ValueError(
+            "exp(process-control alpha) must be positive and finite in the "
+            f"alpha dtype ({alpha.dtype})")
     return struct._replace(**{f: getattr(struct, f) * s for f in fields})
 
 

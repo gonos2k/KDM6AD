@@ -195,8 +195,10 @@ class StageSpec:
 
 
 STAGES = (
-    StageSpec("kernel_init_constants",     0, "-", "kernel_init_constants",    True,  True),
-    StageSpec("kernel_call_input",         1, "-", "kernel_call_input",        True,  True),
+    # The caller snapshot is emitted before entering kdm6init, so the canonical
+    # order must follow the producer: call input -> init constants -> entry clamp.
+    StageSpec("kernel_call_input",         0, "-", "kernel_call_input",        True,  True),
+    StageSpec("kernel_init_constants",     1, "-", "kernel_init_constants",    True,  True),
     StageSpec("kernel_after_entry_clamp",  2, "-", "kernel_after_entry_clamp", True,  True),
     StageSpec("outer_pre_sed",             3, "-", "outer_pre",                True,  True),
     StageSpec("substep_pre",               4, "main", None,                    True,  True),

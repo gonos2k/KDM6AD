@@ -11,9 +11,10 @@ pre-sed:
 
     count(L1 outer_post_micro) == count(L2 outer_pre_sed)
 
-Equal counts of entirely different cells pass that. The carry is now proven by a
-digest over the differing records' (field, column, level) identities AND their raw
-bits, so the two ends must differ in the same places by the same amounts.
+Equal counts of entirely different cells pass that. The carry now reports the exact
+carried key universe and a digest over every shared key's (field, column, level)
+identity and both endpoint raw-bit values, so a missing key cannot be hidden by an
+otherwise equal intersection.
 
     make_g33m_evidence_artifact.py --evidence DIR --fixture-id ID \
         [--gate-a-report PATH] --out harness/evidence/g33m_dt300_kernel_result.json
@@ -108,26 +109,45 @@ def _intra_backend_carry(run, loops) -> dict:
     carries exactly that for L1->L2, so the strongest-looking row in the carry proof was
     the one proving least.
     """
+    # The bridge carries the twelve prognostic fields in outer_post_micro into
+    # outer_pre_sed of the next outer loop.  outer_pre_sed also contains p/rho/delz,
+    # which are forcing values and deliberately do not belong to this proof.  Derive
+    # this set from the shared schema so adding a carried field cannot silently leave
+    # the proof's universe behind.
+    carried_fields = frozenset(schema.semantic_stage_fields("outer_post_micro"))
     by_stage = {}
     for r in run["stages"]:
         if r["stage"] in ("outer_post_micro", "outer_pre_sed"):
-            by_stage.setdefault((r["stage"], r["loop"]), {})[
-                (r["field"], r["col"], r["k"])] = r["bits"]
+            if r["field"] not in carried_fields:
+                continue
+            key = (r["field"], r["col"], r["k"])
+            records = by_stage.setdefault((r["stage"], r["loop"]), {})
+            if key in records:
+                raise ValueError(
+                    f"duplicate carry record at {r['stage']} loop {r['loop']}: {key}")
+            records[key] = r["bits"]
     out = {}
     for loop in loops[:-1]:
         post = by_stage.get(("outer_post_micro", loop), {})
         pre = by_stage.get(("outer_pre_sed", loop + 1), {})
-        # The carry is over the CARRIED state only: outer_pre_sed additionally carries
-        # p/rho/delz, which are forcings and not handed from one loop to the next.
-        shared = post.keys() & pre.keys()
+        post_keys, pre_keys = set(post), set(pre)
+        shared = post_keys & pre_keys
         differing = sorted(k for k in shared if post[k] != pre[k])
+        # A digest over only the shared intersection cannot distinguish a complete
+        # copy from one that silently dropped a field/cell.  Keep the intersection
+        # digest for a useful first-divergence witness, but make exact key-universe
+        # equality an independent part of the proof predicate.
         out[f"L{loop}->L{loop + 1}"] = {
             "records": len(shared),
-            "post_micro_only": len(post.keys() - pre.keys()),
-            "pre_sed_only": len(pre.keys() - post.keys()),
-            "identical": not differing and bool(shared),
+            "post_micro_records": len(post_keys),
+            "pre_sed_records": len(pre_keys),
+            "post_micro_only": len(post_keys - pre_keys),
+            "pre_sed_only": len(pre_keys - post_keys),
+            "key_universe_equal": post_keys == pre_keys,
+            "identical": post_keys == pre_keys and not differing and bool(shared),
             "differing": [list(k) for k in differing[:8]],
-            "state_digest": _digest((str(k), post[k]) for k in sorted(shared)),
+            "state_digest": _digest(
+                (str(k), post[k], pre[k]) for k in sorted(shared)),
         }
     return out
 
@@ -241,6 +261,9 @@ def main() -> int:
     ap.add_argument("--allow-unattested", action="store_true",
                     help="DEBUG. Produces an artifact whose verdict cannot promote; "
                          "the tier is recorded in the artifact itself.")
+    ap.add_argument("--debug-only", action="store_true",
+                    help="allow a dirty verifier tree, but label the artifact "
+                         "non-decisional (the only dirty-tree write mode)")
     ap.add_argument("--out", type=Path, required=True)
     a = ap.parse_args()
 
@@ -267,6 +290,18 @@ def main() -> int:
         print("refusing to write a decision artifact from unanchored evidence: pass "
               "the six --expected-* anchors, or --allow-unattested for debugging",
               file=sys.stderr)
+        return 2
+    # A decision summary records verifier_commit as the code identity that produced
+    # it. If the tree was dirty, checking out that commit cannot reproduce the
+    # verifier semantics. Mirror gateb_g33m_check's writer policy: refuse the
+    # decision write, while an explicit debug-only run may still produce a readable
+    # forensic artifact whose tier is not eligible for publication.
+    tree_dirty = bool(_git("status", "--porcelain", default="?"))
+    if loaded.anchored and tree_dirty and not a.debug_only:
+        print("refusing to write a decision artifact from a DIRTY working tree: "
+              "the recorded verifier_commit would not reproduce this result. "
+              "Commit or stash first, or pass --debug-only to mark the artifact "
+              "non-decisional.", file=sys.stderr)
         return 2
     verdict = loaded.verdict()
 
@@ -352,6 +387,8 @@ def main() -> int:
         "attested": loaded.attested,
         "reason": verdict["reason"],
         "attestation": loaded.attestation,
+        "debug_only": bool(a.debug_only),
+        "decision_valid": bool(loaded.anchored and not a.debug_only and not tree_dirty),
         # ADMISSIBILITY, stated rather than inferred. The four legs must all be at the
         # kernel entry for the result to bear on conservative-interface arithmetic; a
         # wrapper leg compared against the C++ port is evidence about the BOUNDARY.
@@ -370,9 +407,11 @@ def main() -> int:
         # being absent — a missing row reads as satisfied.
         "admissibility": _admissibility(loaded),
         "wrapper_mapping_admissible": _boundaries(loaded) == {schema.WRAPPER_INPUT},
-        "evidence_tier": "decision" if loaded.anchored else "debug",
+        "evidence_tier": ("decision"
+                          if loaded.anchored and not a.debug_only and not tree_dirty
+                          else "debug"),
         "verifier_commit": _git("rev-parse", "HEAD"),
-        "verifier_tree_dirty": bool(_git("status", "--porcelain", default="?")),
+        "verifier_tree_dirty": tree_dirty,
         "producer_commit": json.loads(
             (EV / "fortran-legacy" / "abc_manifest.json").read_text())["repo_commit"],
         "fixture": {

@@ -5,7 +5,8 @@ The four-case comparator must never read tampered, partial, or wrong-problem
 evidence. This module is the single trusted gate between an on-disk bundle and the
 normalizer. It re-checks, INDEPENDENTLY:
   * every sealed hash (run_contract, descriptors, container payloads, A/B/C stdout,
-    diagnostic-binary) and the root manifest attestation;
+    diagnostic-binary), the root manifest attestation, and the externally bound
+    evidence-tree digest;
   * that the record universe is EXACTLY the sealed schedule's (via
     g33_evidence_validate — the same check the live A/B/C gate runs), not merely a
     set of internally-valid containers;
@@ -43,9 +44,34 @@ _SAME_RUN = ("run_uuid", "process_id", "owner_thread_id", "producer_commit",
 def _is_hex64(s) -> bool:
     return isinstance(s, str) and len(s) == 64 and all(c in _HEX64 for c in s)
 
+
+def _is_commit(s) -> bool:
+    return isinstance(s, str) and len(s) == 40 and all(c in _HEX64 for c in s)
+
+
+def _require_sha_map(value, where: str, keys) -> dict:
+    if not isinstance(value, dict):
+        raise BundleError(f"{where} must be an object of SHA-256 strings")
+    if set(value) != set(keys):
+        raise BundleError(
+            f"{where} must have exactly {sorted(set(keys))}, got "
+            f"{sorted(set(value), key=str)}")
+    for key, digest in value.items():
+        if not isinstance(key, str) or not _is_hex64(digest):
+            raise BundleError(f"{where}.{key!r} must be a 64-hex SHA-256 string")
+    return value
+
+
+def _require_relative_dir(value, where: str) -> str:
+    if (not isinstance(value, str) or not value or value.startswith(("/", "\\"))
+            or "/" in value or "\\" in value or ".." in value):
+        raise BundleError(f"{where} must be a safe relative directory name")
+    return value
+
 COMPARATOR_CONTAINERS = ("L1_outer_pre", "L1_main_n1", "L1_surface")
 _MAX_JSON_BYTES = 4 * 1024 * 1024
 _MAX_SHA_BYTES = 1 * 1024 * 1024
+_TREE_READ_BYTES = 1 * 1024 * 1024
 _ALGOS = ("legacy", "conservative")
 
 
@@ -112,13 +138,112 @@ def _load_json(path: Path, what: str):
     if len(raw) > _MAX_JSON_BYTES:
         raise BundleError(f"{what} {path.name} exceeds size bound")
     try:
-        return json.loads(raw.decode("utf-8"), object_pairs_hook=_no_dup_keys)
-    except (UnicodeDecodeError, json.JSONDecodeError) as e:
+        value = json.loads(raw.decode("utf-8"), object_pairs_hook=_no_dup_keys)
+    except (UnicodeDecodeError, json.JSONDecodeError, RecursionError) as e:
         raise BundleError(f"{what} {path.name} is not valid JSON: {e}") from None
+    if not isinstance(value, dict):
+        raise BundleError(
+            f"{what} {path.name} top level must be a JSON object, got "
+            f"{type(value).__name__}")
+    return value
 
 
 def _sha256_file(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    try:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError as e:
+        raise BundleError(f"cannot read bundle file {path}: {e}") from None
+
+
+def cpp_evidence_tree_sha256(bundle_dir, evidence_dir, probe_dir=None) -> str:
+    """Digest the complete C++ evidence tree consumed by the bundle verifier.
+
+    The root manifest is externally anchored, but its old per-file fields covered
+    only stdout and driver/fixture identities.  Internal sidecars then made a
+    mutated contract/schema/container tree self-consistent.  This digest binds
+    every file under the evidence directory, and under the shipped probe lineage
+    when one exists, to the externally anchored root metadata.
+
+    The encoding includes each bundle-relative path and its byte length before its
+    bytes.  That makes file names, file boundaries, and contents part of one
+    unambiguous deterministic digest; filesystem order and directory mtimes do not
+    enter it.  Symlinks and non-regular entries are refused because the verifier
+    cannot treat them as stable shipped evidence.
+    """
+    root = Path(bundle_dir).resolve()
+    raw_dirs = [evidence_dir] + ([probe_dir] if probe_dir else [])
+    dirs = []
+    for raw in raw_dirs:
+        if not isinstance(raw, (str, os.PathLike)):
+            raise BundleError(f"evidence tree path must be a string: {raw!r}")
+        declared = Path(raw)
+        if ".." in declared.parts:
+            raise BundleError(f"unsafe evidence tree path {raw!r}")
+        if declared.is_absolute():
+            try:
+                declared = declared.relative_to(root)
+            except ValueError:
+                raise BundleError(f"evidence tree path escapes bundle: {raw!r}") from None
+        candidate = root / declared
+        current = root
+        for part in declared.parts:
+            current /= part
+            if current.is_symlink():
+                raise BundleError(f"symlink not allowed in evidence tree: {current}")
+        path = _under(root, candidate)
+        if not path.is_dir():
+            raise BundleError(f"evidence tree directory not found: {raw}")
+        dirs.append(path)
+
+    files = []
+    seen = set()
+    for directory in dirs:
+        for path in directory.rglob("*"):
+            if path.is_symlink():
+                raise BundleError(f"symlink not allowed in evidence tree: {path}")
+            if path.is_dir():
+                continue
+            if not path.is_file():
+                raise BundleError(f"non-regular file in evidence tree: {path}")
+            rel = path.relative_to(root).as_posix()
+            if rel in seen:
+                raise BundleError(f"evidence tree path listed twice: {rel}")
+            seen.add(rel)
+            try:
+                size = path.stat().st_size
+            except OSError as e:
+                raise BundleError(f"cannot stat evidence tree file {path}: {e}") from None
+            files.append((rel, path, size))
+    if not files:
+        raise BundleError("evidence tree contains no regular files")
+
+    digest = hashlib.sha256()
+    for rel, path, size in sorted(files, key=lambda item: item[0]):
+        name = rel.encode("utf-8")
+        digest.update(len(name).to_bytes(8, "big"))
+        digest.update(name)
+        digest.update(size.to_bytes(8, "big"))
+        try:
+            with path.open("rb") as stream:
+                remaining = size
+                while remaining:
+                    chunk = stream.read(min(_TREE_READ_BYTES, remaining))
+                    if not chunk:
+                        raise BundleError(
+                            f"evidence tree file changed while reading: {path}")
+                    digest.update(chunk)
+                    remaining -= len(chunk)
+                if stream.read(1):
+                    raise BundleError(
+                        f"evidence tree file changed while reading: {path}")
+        except OSError as e:
+            raise BundleError(f"cannot read evidence tree file {path}: {e}") from None
+    return digest.hexdigest()
+
+
+# Short public spelling for producer callers. Keep the backend-specific spelling
+# above as the explicit API used by the C++ bundle verifier and existing tests.
+evidence_tree_sha256 = cpp_evidence_tree_sha256
 
 
 def _safe_name(name: str, where: str) -> str:
@@ -408,7 +533,10 @@ def _verify_probe_lineage(bundle_dir, algo, meta, leg, diag_sha, authority):
     # its lists are tuples, and a bare != would report every list-valued key as a
     # difference while saying nothing about the values
     canon = lambda d: json.loads(json.dumps(d, sort_keys=True, default=list))
-    probe_canon, sched_canon = canon(probe_schedule), canon(dict(sched))
+    try:
+        probe_canon, sched_canon = canon(probe_schedule), canon(dict(sched))
+    except RecursionError as e:
+        raise BundleError(f"{algo}: schedule JSON is too deeply nested: {e}") from None
     if probe_canon != sched_canon:
         differing = sorted(
             k for k in set(probe_canon) | set(sched_canon)
@@ -479,10 +607,18 @@ def verify_cpp_bundle(bundle_dir, *, expected_manifest_sha256=None,
     `expected_manifest_sha256` pins the root manifest to a hash held elsewhere (a
     committed C4 evidence manifest / the owner's adjudication record), and
     `expected_repo_commit` pins every container's producer_commit to the reviewed
-    source revision."""
+    source revision. Each algorithm entry must also carry the producer's
+    `evidence_tree_sha256`, computed with :func:`cpp_evidence_tree_sha256`; this
+    deliberately makes pre-binding manifests unusable at this boundary."""
     bundle_dir = Path(bundle_dir).resolve()
+    if expected_repo_commit is not None and not _is_commit(expected_repo_commit):
+        raise BundleError(
+            "expected producer commit must be a 40-hex Git object name")
     manifest_path = bundle_dir / "cpp_abc_manifest.json"
     if expected_manifest_sha256 is not None:
+        if not _is_hex64(expected_manifest_sha256):
+            raise BundleError(
+                "expected root manifest sha256 must be a 64-hex SHA-256 string")
         got = _sha256_file(manifest_path)
         if got != expected_manifest_sha256:
             raise BundleError(f"root manifest sha256 {got} != external anchor "
@@ -496,6 +632,9 @@ def verify_cpp_bundle(bundle_dir, *, expected_manifest_sha256=None,
     diag_sha = manifest.get("diagnostic_driver_sha256")
     if not _is_hex64(diag_sha):                # P0-2: mandatory, well-formed
         raise BundleError("manifest diagnostic_driver_sha256 missing or not 64-hex")
+    if not _is_hex64(manifest.get("canonical_driver_sha256")):
+        raise BundleError(
+            "manifest canonical_driver_sha256 missing or not 64-hex")
 
     # The fixture is named by the CALLER, not read out of the bundle: a bundle that
     # declares its own fixture and is checked against that declaration attests
@@ -504,6 +643,8 @@ def verify_cpp_bundle(bundle_dir, *, expected_manifest_sha256=None,
     # Defaulting this would let any caller that simply omits it mint a
     # verdict-ready leg for whichever fixture happens to be the module default —
     # the CLI would be anchored while the API it calls was not.
+    if expected_fixture_id is not None and not isinstance(expected_fixture_id, str):
+        raise BundleError("expected fixture id must be a string")
     try:
         _, authority = gfx.load_fixture(
             expected_fixture_id or gfx.DEFAULT_FIXTURE_ID)
@@ -514,7 +655,11 @@ def verify_cpp_bundle(bundle_dir, *, expected_manifest_sha256=None,
     # file anyone reviewed. expected_repo_commit does not close this either: it pins
     # the evidence PRODUCER's commit, not the fixture the verifier read.
     resolved = gfx.manifest_sha256(authority)
-    if expected_fixture_manifest_sha256 and resolved != expected_fixture_manifest_sha256:
+    if expected_fixture_manifest_sha256 is not None:
+        if not _is_hex64(expected_fixture_manifest_sha256):
+            raise BundleError(
+                "expected fixture manifest sha256 must be a 64-hex SHA-256 string")
+    if expected_fixture_manifest_sha256 is not None and resolved != expected_fixture_manifest_sha256:
         raise BundleError(
             f"fixture manifest sha256 {resolved} != expected "
             f"{expected_fixture_manifest_sha256} — the verifier read a different "
@@ -533,8 +678,21 @@ def verify_cpp_bundle(bundle_dir, *, expected_manifest_sha256=None,
     fixtures, params, out = set(), set(), {}
     for algo in _ALGOS:
         meta = algos[algo]
+        if not isinstance(meta, dict):
+            raise BundleError(f"{algo}: manifest entry must be a JSON object")
         if meta.get("abc_equal") is not True:
             raise BundleError(f"{algo}: abc_equal is not True")
+        tree_sha = meta.get("evidence_tree_sha256")
+        if not _is_hex64(tree_sha):
+            raise BundleError(
+                f"{algo}: evidence_tree_sha256 is missing or not 64-hex; "
+                "old unbound evidence cannot be used for a decision")
+        _require_relative_dir(meta.get("evidence_dir"),
+                              f"{algo}.evidence_dir")
+        if meta.get("probe_dir") is not None:
+            _require_relative_dir(meta.get("probe_dir"), f"{algo}.probe_dir")
+        _require_sha_map(meta.get("stdout_sha256"),
+                         f"{algo}.stdout_sha256", ("A", "B", "C"))
         # A/B/C stdout must rehash to the sealed value AND be byte-equal to each other.
         seen = set()
         for lane in ("A", "B", "C"):
@@ -585,6 +743,15 @@ def verify_cpp_bundle(bundle_dir, *, expected_manifest_sha256=None,
                               f"{meta.get('mstep_max')}] != evidence {obs}")
         lineage = _verify_probe_lineage(bundle_dir, algo, meta, leg, diag_sha,
                                         authority)
+        # The internal sidecars above establish only self-consistency.  The
+        # externally anchored root must also bind the exact contract, descriptors,
+        # containers, and shipped probe bytes that normalization consumes.
+        got_tree_sha = cpp_evidence_tree_sha256(
+            bundle_dir, meta["evidence_dir"], meta.get("probe_dir"))
+        if got_tree_sha != tree_sha:
+            raise BundleError(
+                f"{algo}: evidence tree sha256 {got_tree_sha} != externally "
+                f"bound root value {tree_sha}")
         out[algo] = replace(leg, root_attested=True, actual_final_output=actual,
                             probe_lineage=_freeze(lineage) if lineage else None,
                             problem={"fixture_sha256": meta.get("fixture_sha256"),

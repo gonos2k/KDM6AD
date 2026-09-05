@@ -16,6 +16,10 @@
 #include "g33_fixture_multisubcycle_v1.h"
 #elif defined(KDM6_G33_FIXTURE_BOUNDARY_MAPPING)
 #include "g33_fixture_boundary_mapping_v1.h"
+#elif defined(KDM6_G33_FIXTURE_MOISTURE_GRADIENT)
+#include "g33_fixture_moisture_gradient_v1.h"
+#elif defined(KDM6_G33_FIXTURE_LC05_COLUMN)
+#include "g33_fixture_lc05_column_v1.h"
 #else
 #include "g33_fixture_v1.h"
 #endif

@@ -126,6 +126,14 @@ def collocate(obs_lat: torch.Tensor, obs_lon: torch.Tensor,
     XLAT/XLONG이 정확히 이 꼴)는 최근접이 무의미하므로 loud 거부.
     """
     _validate_coordinate_tensors(obs_lat, obs_lon, grid_lat, grid_lon)
+    # Validate the model grid first even when the observation slot is empty. An
+    # empty slot is a valid no-data result only on a valid, geolocated model
+    # grid; returning before validation would turn malformed grids into a
+    # misleading empty success.  Once the shared coordinate contract passes,
+    # there is no distance matrix to build and the geometric policy is vacuous.
+    if obs_lat.numel() == 0:
+        return (torch.empty((0,), dtype=torch.int64, device=grid_lat.device),
+                torch.empty((0,), dtype=grid_lat.dtype, device=grid_lat.device))
     # 청크 처리: 전체 (n_obs, B) 거리행렬은 실규모(50k obs × 66k 컬럼)에서
     # 26GB로 OOM — LC05 실그리드 첫 접촉에서 실측 확인. 관측 축을 나눠
     # 피크 메모리를 chunk×B×8B (~0.5GB @1024×66k)로 제한한다.

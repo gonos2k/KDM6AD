@@ -7,8 +7,8 @@
     사용 (data/gk2a_ami_cal_202507190000.json — 채널별 gain/offset/Teff c0-c2/
     물리상수, provenance 포함).
 
-DN→BT 변환은 AD-RTTOV에서 검증된 로직의 1:1 이식:
-  valid DN = raw & (2^13-1), quality = bits 13-14 (0=정상)
+AMI word 해독은 image_pixel_values의 유효 비트 속성을 사용한다:
+  valid DN = raw & (2^valid_bits-1), quality = bits 14-15 (0=정상)
   radiance [mW m⁻² sr⁻¹ cm] = offset + gain·DN
   Teff = Planck⁻¹(radiance, ν=10⁴/λμm)   (h·c·σ/k / ln(2hc²σ³/L + 1))
   Tbb  = c0 + c1·Teff + c2·Teff²
@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import json
 import math
+import operator
 import re
 from pathlib import Path
 from typing import Sequence
@@ -41,13 +42,15 @@ AMI_CHANNELS = ["vi004", "vi005", "vi006", "vi008", "nr013", "nr016",
                 "sw038", "wv063", "wv069", "wv073", "ir087", "ir096",
                 "ir105", "ir112", "ir123", "ir133"]
 IR_CHANNELS = AMI_CHANNELS[6:]                     # RTTOV ch 7-16 (열적외)
-# 주간 케이스 표준 세트: sw038(3.8μm) 제외 — 주간 태양반사 혼입으로 BT 오염
-# (실측 376K @ 09-12 KST; 운영 관례상 주간 배제/특별처리 대상). 야간 케이스나
-# 태양보정 도입 시에만 sw038 포함을 고려한다.
+# 주간 케이스의 기존 채널 선택: 태양반사 성분을 별도 처리하지 않는 sw038 제외.
+# 과거 376 K 해독값은 잘못된 DN 비트 분리의 영향을 받으므로 태양혼입의 증거가 아니다.
 CLEAN_IR_CHANNELS = [c for c in IR_CHANNELS if c != "sw038"]   # 9채널
 
 # KMA LCC 표준 구면 반경 [m] — KO/EA LC 격자 규격 (파일 속성엔 반경이 없음).
 EARTH_RADIUS_M = 6371008.77
+_KO_GEO_ATTRS = ("standard_parallel1", "standard_parallel2", "origin_latitude",
+                 "central_meridian", "pixel_size", "upper_left_easting",
+                 "upper_left_northing", "image_width", "image_height")
 
 
 # ─── LCC 역변환 (Snyder, 구면) ───────────────────────────────────────────────
@@ -87,7 +90,7 @@ def ko_grid_latlon(attrs: dict) -> tuple[np.ndarray, np.ndarray]:
     return lat, lon
 
 
-# ─── DN → BT (AD-RTTOV 검증 로직 1:1) ───────────────────────────────────────
+# ─── AMI word 해독 → 기존 radiance/Planck 변환 ──────────────────────────────
 
 
 def load_cal_table(path: str | Path) -> dict:
@@ -97,14 +100,40 @@ def load_cal_table(path: str | Path) -> dict:
     return tab
 
 
-def dn_to_bt(raw: np.ndarray, cal: dict) -> tuple[np.ndarray, np.ndarray]:
+def unpack_ami_word(raw: np.ndarray, valid_bits: int) -> tuple[np.ndarray, np.ndarray]:
+    """Separate DN from the two most significant DQF bits of a uint16 word.
+
+    NMSC L1B variable metadata defines 11–14 valid DN bits independently of
+    DQF. See docs/AMI_INPUT_CONTRACT.md for the format sources and scope.
+    NetCDF missing masks must be handled before calling this raw-word helper.
+    """
+    if np.ma.is_masked(raw):
+        raise ValueError("AMI raw mask must be handled before word decoding")
+    raw = np.asarray(raw)
+    if raw.dtype.kind != "u" or raw.dtype.itemsize != 2:
+        raise ValueError("AMI raw must be uint16")
+    raw = raw.astype(np.uint16, copy=False)  # unsigned word meaning is endian independent
+    if isinstance(valid_bits, (bool, np.bool_)):
+        raise ValueError("AMI valid bit count must be an integer in 11..14")
+    try:
+        valid_bits = operator.index(valid_bits)
+    except TypeError as exc:
+        raise ValueError("AMI valid bit count must be an integer in 11..14") from exc
+    if valid_bits not in (11, 12, 13, 14):
+        raise ValueError("unsupported AMI valid bit count; expected 11..14")
+    dn = (raw & ((1 << valid_bits) - 1)).astype(np.float64)
+    quality = ((raw >> 14) & 0b11).astype(np.float64)
+    return dn, quality
+
+
+def dn_to_bt(raw: np.ndarray, cal: dict, *, valid_bits: int
+             ) -> tuple[np.ndarray, np.ndarray]:
     """uint16 raw → (BT [K], quality flag) — 둘 다 (ny, nx).
 
-    quality: 0=정상 (bits 13-14), 비0=플래그. BT는 플래그 픽셀에서도 계산되나
+    quality: 0=정상 (bits 14-15), 비0=플래그. BT는 플래그 픽셀에서도 계산되나
     소비측 mask가 배제한다 (reject-don't-drop: NaN 주입 대신 플래그 유지).
     """
-    dn = (raw & ((1 << 13) - 1)).astype(np.float64)
-    quality = ((raw >> 13) & 0b11).astype(np.float64)
+    dn, quality = unpack_ami_word(raw, valid_bits)
     gain, offset = cal["DN_to_Radiance_Gain"], cal["DN_to_Radiance_Offset"]
     lam_um = float(cal["channel_center_wavelength"])  # FD 속성이 문자열인 채널 존재
     h, c, k = (cal["Plank_constant_h"], cal["light_speed"],
@@ -118,10 +147,37 @@ def dn_to_bt(raw: np.ndarray, cal: dict) -> tuple[np.ndarray, np.ndarray]:
     return tbb, quality
 
 
+def _read_ami_bt(var, cal: dict, key=Ellipsis) -> tuple[np.ndarray, np.ndarray]:
+    """Read variable-specific DN width and preserve NetCDF missingness in QC."""
+    try:
+        valid_bits = var.getncattr("number_of_valid_bits_per_pixel")
+    except AttributeError as exc:
+        raise ValueError("image_pixel_values: missing number_of_valid_bits_per_pixel") from exc
+    raw_ma = var[key]
+    missing = np.ma.getmaskarray(raw_ma)
+    # Filling only supplies an operand for BT calculation; QC keeps it unusable.
+    # Preserve the source dtype so malformed packed words cannot be silently cast.
+    raw = np.ma.filled(raw_ma, 0)
+    bt, quality = dn_to_bt(raw, cal, valid_bits=valid_bits)
+    return bt, np.where(missing, 1.0, quality)
+
+
 # ─── 슬롯 읽기 → ObsPayload ─────────────────────────────────────────────────
 
 
 _FN_RE = re.compile(r"gk2a_ami_le1b_([a-z0-9]+)_ko020lc_(\d{12})\.nc$")
+
+
+def _positive_stride(stride: int) -> int:
+    if isinstance(stride, (bool, np.bool_)):
+        raise ValueError("stride must be a positive integer")
+    try:
+        stride = operator.index(stride)
+    except TypeError as exc:
+        raise ValueError("stride must be a positive integer") from exc
+    if stride < 1:
+        raise ValueError("stride must be a positive integer")
+    return stride
 
 
 def read_ko_slot(files: Sequence[str | Path], cal_table: dict,
@@ -132,6 +188,9 @@ def read_ko_slot(files: Sequence[str | Path], cal_table: dict,
     파싱하고 타임스탬프 불일치는 거부. stride: 픽셀 솎음 (8 → 16 km 간격,
     900² → ~12.7k 관측; collocation/thinning의 상류 단계).
     """
+    stride = _positive_stride(stride)
+    if not files:
+        raise ValueError("KO slot must contain at least one channel file")
     by_ch: dict[str, Path] = {}
     stamp = None
     for f in files:
@@ -143,6 +202,8 @@ def read_ko_slot(files: Sequence[str | Path], cal_table: dict,
             stamp = ts
         elif ts != stamp:
             raise ValueError(f"mixed timestamps in one slot: {stamp} vs {ts} ({f})")
+        if ch in by_ch:
+            raise ValueError(f"duplicate AMI channel {ch} in one slot")
         by_ch[ch] = Path(f)
     unknown = set(by_ch) - set(AMI_CHANNELS)
     if unknown:
@@ -153,22 +214,23 @@ def read_ko_slot(files: Sequence[str | Path], cal_table: dict,
         raise ValueError(f"cal table has no channel(s) {missing_cal}")
 
     lat = lon = None
+    slot_geometry = None
     bt_all: dict[str, np.ndarray] = {}
     q_all: dict[str, np.ndarray] = {}
     for ch, path in sorted(by_ch.items()):
         import netCDF4                       # 검증 뒤로 지연 — 파일명/타임스탬프
         ds = netCDF4.Dataset(str(path))
         try:
-            raw_ma = ds.variables["image_pixel_values"][:]
-            missing = np.ma.getmaskarray(raw_ma)
-            raw = np.ma.filled(raw_ma, 0).astype(np.uint16)
+            attrs = {a: ds.getncattr(a) for a in _KO_GEO_ATTRS}
+            shape = ds.variables["image_pixel_values"].shape
+            if shape != (attrs["image_height"], attrs["image_width"]):
+                raise ValueError(f"{path.name}: image dimensions disagree with KO geometry")
+            if slot_geometry is not None and attrs != slot_geometry:
+                raise ValueError(f"{path.name}: channel geometry differs within KO slot")
             if lat is None:
-                attrs = {a: ds.getncattr(a) for a in ds.ncattrs()}
+                slot_geometry = attrs
                 lat, lon = ko_grid_latlon(attrs)
-            bt, q = dn_to_bt(raw, cal_table["channels"][ch])
-            # Fill values must never become quality-0 observations. Keep the
-            # valid DN path unchanged and mark only masked pixels unusable.
-            q = np.where(missing, 1.0, q)
+            bt, q = _read_ami_bt(ds.variables["image_pixel_values"], cal_table["channels"][ch])
             bt_all[ch], q_all[ch] = bt, q
         finally:
             ds.close()
@@ -201,5 +263,7 @@ def slot_files(root: str | Path, timestamp: str,
         if not hits:
             raise FileNotFoundError(
                 f"channel {ch} @ {timestamp} not found under {root}")
+        if len(hits) != 1:
+            raise ValueError(f"ambiguous AMI channel {ch} @ {timestamp}: {len(hits)} files")
         out.append(hits[0])
     return out

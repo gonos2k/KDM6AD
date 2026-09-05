@@ -84,7 +84,7 @@ def _allsky_columns_worker(args: dict) -> dict:
         try:
             bt_i, rq_i = RttovObsOp.apply(
                 make_live_run_k(case_dir),
-                icfg, tl, ql, None, prof.p_half,
+                icfg, tl, ql, prof.p_lay, prof.p_half,
                 prof.clw, prof.ciw, prof.deff_liq, prof.deff_ice, prof.cfrac)
         finally:
             # 디스크 고갈 방지 — 실패 경로 포함(finally; 재검토 #6): K는

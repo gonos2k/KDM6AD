@@ -57,7 +57,7 @@ def _state_forcing(*, requires_grad: bool = False, B: int = 1, K: int = 3):
         p=torch.full((B, K), 8.0e4, dtype=dtype),
         den=torch.full((B, K), 1.1, dtype=dtype),
         delz=torch.full((B, K), 500.0, dtype=dtype),
-        dend=torch.full((B, K), 1.1 * 500.0, dtype=dtype),
+        dend=torch.full((B, K), 1.1, dtype=dtype),  # production contract: dend = rho
     )
     sea_mask = torch.zeros((B, K), dtype=torch.bool)
     return state, forcing, sea_mask
@@ -637,7 +637,7 @@ def _make_aux(state, sea_mask, p_full):
         p=torch.full_like(state.t, 8.0e4),
         den=torch.full_like(state.t, 1.1),
         delz=torch.full_like(state.t, 500.0),
-        dend=torch.full_like(state.t, 1.1 * 500.0),
+        dend=torch.full_like(state.t, 1.1),  # production contract: dend = rho
     ), sea_mask, params=p_full)
     rslopecmu = pre.rslopec ** c.MUC if c.MUC != 0 else torch.ones_like(pre.rslopec)
     rslopecd = pre.rslopec ** c.DMC
@@ -1217,7 +1217,7 @@ def test_aux_rain_slope_inactive_gate_low_nr():
         qs=m(0.0), qg=m(0.0), qi=m(0.0), nc=m(1e8),
         nr=torch.tensor([[1.0e4, 0.5 * c.NRMIN]], dtype=torch.float64),  # active, inactive(<=nrmin)
         ni=m(0.0), brs=m(0.0), t=m(290.0))
-    forcing = CoordinatorForcing(p=m(9e4), den=m(1.0), delz=m(500.0), dend=m(500.0))
+    forcing = CoordinatorForcing(p=m(9e4), den=m(1.0), delz=m(500.0), dend=m(1.0))
     aux = build_default_aux_torch(state, forcing, m(2.0e-6),
                                   thermo_params=default_coordinator_params().thermo)
     g1pmr = _math.exp(_math.lgamma(1.0 + c.MUR))
