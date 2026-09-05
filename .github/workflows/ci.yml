@@ -242,11 +242,9 @@ jobs:
     needs: detect
     if: needs.detect.outputs.port == 'true'
     runs-on: macos-14
-    # The full libtorch C++ build runs ~43-45 min on macos-14 hosted runners
-    # (last green was 42.5 min), but the arm64 runner intermittently stalls
-    # mid-build under load and blew past 60 (cancelled at 27% link). 90 gives the
-    # slow-but-progressing case room to finish; a genuine hang is a runner issue
-    # (owner: consider ccache / a self-hosted runner), not tunable here.
+    # Bound both CMake builds to two concurrent jobs: libtorch translation
+    # units are memory-heavy on the standard macos-14 runner (3 cores, 7 GB).
+    # Retain the timeout until bounded-build timings are measured in CI.
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
@@ -283,7 +281,7 @@ jobs:
             -DCMAKE_CXX_FLAGS=-DKDM6_SUBSTEP_DUMP
 
       - name: Build (shipped)
-        run: cmake --build libtorch/build -j
+        run: cmake --build libtorch/build --parallel 2
 
       - name: Install (file-copy)
         run: cmake --install libtorch/build
@@ -356,5 +354,5 @@ jobs:
         run: |
           cd libtorch/build
           cmake .. -DKDM6_ENABLE_TEST_HOOKS=ON
-          cmake --build . --target kdm6_c test_c_abi -j
+          cmake --build . --target kdm6_c test_c_abi --parallel 2
           ctest -R '^c_abi$' -V --output-on-failure

@@ -29,7 +29,7 @@ from typing import NamedTuple
 import torch
 
 from ..state import Forcing, State
-from .model_profile_builder import RttovProfileTensors, model_to_rttov_tensors
+from .model_profile_builder import RttovProfileTensors, model_to_rttov_tensors, with_dry_air_density
 from .obs_loss import compute_obs_loss, symmetric_obs_error
 from .rttov_input_builder import pack_rttov_input
 
@@ -77,7 +77,9 @@ class ObsOperatorConfig(NamedTuple):
     sigma: object              # static obs error (scalar, or PER-CHANNEL if solar_channels)
     huber_delta: float = 1.0
     connected_fields: frozenset = CLEAR_SKY_CONNECTED
-    error_model: object = None  # Phase 3: SymmetricObsError (CA-dependent sigma) or None
+    # SymmetricObsError requires frozen obs bt_background AND bt_clear. Current
+    # trial BT is never used to update weights inside this objective evaluation.
+    error_model: object = None
     # Phase 7: 1-based ids whose observable is REFLECTANCE (the run_k must be built with
     # the SAME set, e.g. make_live_run_k(solar_channels=...)). When non-empty the
     # observable mixes BT + REFL units -> ``sigma`` MUST be per-channel (validated below).
@@ -197,7 +199,7 @@ def assemble_obs_covector(leaves: State, grads, *, connected_fields=CLEAR_SKY_CO
 
 
 def _build_mask(obs, rad_quality):
-    """Combined detached 0/1 keep-mask (design 8): keep (profile, channel) iff
+    """Combined detached [0,1] keep-weight (design 8): keep (profile, channel) iff
     ``obs_quality == 0`` AND ``rad_quality == 0``.
 
     ``obs_quality`` and ``rad_quality`` are QUALITY FLAGS, not keep-masks: 0 means
@@ -205,16 +207,32 @@ def _build_mask(obs, rad_quality):
     "BOTH quality == 0 enter"). They are gated identically (== 0) so a real obs
     quality flag (0=good) is honored, not inverted. ``channel_gate`` (optional) is
     a genuine keep-condition (1=keep, e.g. IR-only / cloud regime) and multiplies
-    directly. ``obs`` may omit ``obs_quality`` (default: all usable).
+    directly; fractional gates retain their explicit weight. ``obs`` may omit
+    ``obs_quality`` (default: all usable).
     """
     dt = torch.float64
+    rad_quality = torch.as_tensor(rad_quality)
+    if rad_quality.ndim != 2 or not bool(torch.isfinite(rad_quality).all()):
+        raise ValueError("rad_quality must be a finite [nprofiles, nchannels] field")
     mask = (rad_quality == 0).to(dt)
     oq = obs.get("obs_quality")
     if oq is not None:
-        mask = mask * (torch.as_tensor(oq, device=mask.device) == 0).to(dt)
+        oq = torch.as_tensor(oq, device=mask.device)
+        if oq.shape != mask.shape or not bool(torch.isfinite(oq).all()):
+            raise ValueError("obs_quality must be finite and match the full radiance field")
+        mask = mask * (oq == 0).to(dt)
     cg = obs.get("channel_gate")     # keep-condition (1=keep), NOT a quality flag
     if cg is not None:
-        mask = mask * torch.as_tensor(cg, dtype=dt, device=mask.device)
+        cg = torch.as_tensor(cg, dtype=dt, device=mask.device)
+        try:
+            shape = torch.broadcast_shapes(cg.shape, mask.shape)
+        except RuntimeError:
+            shape = None
+        if shape != mask.shape:
+            raise ValueError("channel_gate must broadcast into the full radiance field")
+        if not bool(torch.isfinite(cg).all()) or bool(((cg < 0) | (cg > 1)).any()):
+            raise ValueError("channel_gate must be finite and in [0, 1]")
+        mask = mask * cg
     return mask.detach()
 
 
@@ -296,7 +314,12 @@ def obs_adjoint_callback(t, x_t, *, schedule, cfg, forcings, run_k,
     col_forcing = (Forcing(*(_col(getattr(forcing, k)) for k in Forcing._fields))
                    if squeeze else forcing)
 
-    prof = model_to_rttov_tensors(col_leaves, col_forcing, cfg.profile_cfg,
+    pcfg = cfg.profile_cfg
+    if getattr(pcfg, "cloud", False) and col_leaves.th.ndim != 1:
+        raise ValueError("cloud obs_adjoint_callback requires a single column; use batched_allsky_bt for batches")
+    if getattr(pcfg, "cloud", False) and getattr(pcfg, "rho_d", None) is not None:
+        pcfg = with_dry_air_density(pcfg, _col(pcfg.rho_d))
+    prof = model_to_rttov_tensors(col_leaves, col_forcing, pcfg,
                                   xland=xland, ncmin_land=ncmin_land, ncmin_sea=ncmin_sea)
     cloud = getattr(cfg.profile_cfg, "cloud", False)
     # The connected set (sever detection in assemble_obs_covector) is determined by the
@@ -362,9 +385,9 @@ def obs_adjoint_callback(t, x_t, *, schedule, cfg, forcings, run_k,
         mask = _build_mask(o, rad_quality)
         if float(mask.sum()) > 0.0:   # mask is detached -> .sum() is graph-free
             any_active = True
-        # Phase 3: symmetric cloud obs-error sigma(CA) when an error_model + a clear-sky
-        # first-guess BT (o["bt_clear"]) are provided; else the static cfg.sigma. The
-        # CA-sigma is DETACHED (a weighting, no ghost grad into lambda_BT).
+        # CA weights belong to the fixed outer/background problem. Recomputing
+        # them from current bt_hat while detaching sigma would return a different
+        # derivative than finite-differencing the reported objective.
         sigma = cfg.sigma
         if cfg.error_model is not None:
             if solar_cols and float(mask[..., solar_cols].sum()) > 0.0:
@@ -380,9 +403,16 @@ def obs_adjoint_callback(t, x_t, *, schedule, cfg, forcings, run_k,
                 raise ValueError(
                     "ObsOperatorConfig.error_model is set but obs lacks 'bt_clear' "
                     "(clear-sky first-guess BT) -- required for the symmetric CA obs-error.")
-            # pass the keep-mask: bt_clear/bt_hat/bt_obs are validated finite only in
-            # KEPT channels (an inf bt_clear is otherwise silently absorbed into sigma_cld).
-            sigma = symmetric_obs_error(bt_hat, o["bt"], bt_clear, cfg.error_model, mask=mask)
+            bt_background = o.get("bt_background")
+            if bt_background is None:
+                raise ValueError("error_model requires frozen obs 'bt_background'; "
+                                 "current trial BT cannot define fixed observation weights")
+            if tuple(torch.as_tensor(bt_background).shape) != tuple(bt_hat.shape):
+                raise ValueError("bt_background must have the full predicted BT shape")
+            bt_background = torch.as_tensor(bt_background, dtype=bt_hat.dtype,
+                                             device=bt_hat.device)
+            sigma = symmetric_obs_error(bt_background, o["bt"], bt_clear,
+                                        cfg.error_model, mask=mask)
         term = compute_obs_loss(bt_hat, o, mask, sigma, delta=cfg.huber_delta)
         j = term if j is None else j + term
     if not any_active:

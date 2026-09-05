@@ -95,6 +95,32 @@ def test_read_ko_slot_rejects_mixed_timestamps(tmp_path):
         read_ko_slot([a, b], {"channels": {}})
 
 
+def test_read_ko_slot_masks_filled_dn_without_invalidating_valid_pixels(tmp_path):
+    nc4 = pytest.importorskip("netCDF4")
+    path = tmp_path / "gk2a_ami_le1b_ir105_ko020lc_202507190000.nc"
+    cal_ch = dict(DN_to_Radiance_Gain=-0.0198196955025196,
+                  DN_to_Radiance_Offset=161.580139160156,
+                  Teff_to_Tbb_c0=-0.142866448475177,
+                  Teff_to_Tbb_c1=1.00064069572049,
+                  Teff_to_Tbb_c2=-5.50443294960498e-07,
+                  Plank_constant_h=6.62606957e-34, light_speed=299792458.0,
+                  Boltzmann_constant_k=1.3806488e-23,
+                  channel_center_wavelength="10.5")
+    with nc4.Dataset(path, "w") as ds:
+        ds.createDimension("y", 2); ds.createDimension("x", 2)
+        v = ds.createVariable("image_pixel_values", "u2", ("y", "x"),
+                             fill_value=65535)
+        v[:] = np.ma.array([[3000, 3001], [3002, 3003]],
+                           mask=[[False, True], [False, False]])
+        for key, value in dict(_KO_ATTRS, image_width=2, image_height=2).items():
+            ds.setncattr(key, value)
+    pl = read_ko_slot([path], {"channels": {"ir105": cal_ch}}, stride=1)
+    j = AMI_CHANNELS.index("ir105")
+    assert pl.obs_quality[1, j] == 1.0
+    assert bool((pl.obs_quality[[0, 2, 3], j] == 0).all())
+    assert bool(torch.isfinite(pl.bt[:, j]).all())
+
+
 # ─── 2. 실데이터 통합 (GK2A/ + 검정 테이블 게이트) ──────────────────────────
 
 

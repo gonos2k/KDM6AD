@@ -39,8 +39,16 @@ def imposed(xland, tiles: int):
 def report(state: Path, tilings=(1, 2, 4, 8)) -> dict:
     import netCDF4
     import numpy as np
-    d = netCDF4.Dataset(str(state))
-    xland = np.asarray(d["XLAND"][0], dtype="int32")
+    import g33_netcdf_read as nr
+    with netCDF4.Dataset(str(state)) as d:
+        read = nr.read_numeric(d["XLAND"], 0)
+    if read["nonfinite_count"]:
+        raise ValueError(f"XLAND: {read['nonfinite_count']} nonfinite cells")
+    raw = read["data"]
+    if not np.all(np.isin(raw, (1.0, 2.0))):
+        bad = raw[~np.isin(raw, (1.0, 2.0))]
+        raise ValueError(f"XLAND values must be 1 (land) or 2 (sea), got {bad[:4]}")
+    xland = raw.astype("int32")
     seen = {n: imposed(xland, n) for n in tilings}
     pairs = [{"a": a, "b": b,
               "columns_disagreeing": float((seen[a] != seen[b]).mean())}

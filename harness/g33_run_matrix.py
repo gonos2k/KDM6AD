@@ -17,11 +17,12 @@ from __future__ import annotations
 
 import subprocess
 
-#: `offset+/-` shift every level by the same constant, so the GRADIENT is
-#: untouched and only the absolute density moves. Since the residual depends
-#: on (rho_below - rho_above), a constant cancels exactly -- which separates
-#: "the gradient matters" from "the magnitude matters" far more directly than
-#: scaling the contrast does (owner §7).
+#: `offset+/-` shifts every level by the same constant, preserving each density
+#: gap while moving the absolute density. In the metric counterfactual the
+#: offset changes the residual by c*sum(dz_lo*dn_in - dz_up*dn_out), so it
+#: cancels only when the paired transfers balance in that measure. This
+#: separates gradient sensitivity from absolute-density sensitivity on the
+#: captured fixture without asserting that an offset always cancels (owner §7).
 ARMS = ("as-is", "uniform", "inverted", "x2", "offset+", "offset-")
 
 

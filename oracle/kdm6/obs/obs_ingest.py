@@ -21,6 +21,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import math
 from typing import Optional
 
 import torch
@@ -49,6 +50,20 @@ class ObsPayload:
     valid_time_utc: Optional[str] = None    # data-derived slot stamp (yyyymmddHHMM)
 
     def __post_init__(self):
+        # The ingestion contract is f64 end to end.  Without this boundary a
+        # float32 payload reaches the f64 ``index_add_`` accumulators in the
+        # collocation consumers and fails there with an opaque dtype error.
+        # Check optional fields too: they are part of the same payload record.
+        required = {"bt", "obs_quality", "lat", "lon"}
+        for name in ("bt", "obs_quality", "lat", "lon", "bias", "channel_gate"):
+            value = getattr(self, name)
+            if value is None and name in required:
+                raise ValueError(f"{name} must be a torch.Tensor")
+            if value is not None and not isinstance(value, torch.Tensor):
+                raise ValueError(f"{name} must be a torch.Tensor")
+            if value is not None and value.dtype != torch.float64:
+                raise ValueError(
+                    f"{name} must use torch.float64 (got {value.dtype})")
         bt = self.bt
         if bt.ndim != 2:
             raise ValueError(f"bt must be (n_obs, nch), got ndim={bt.ndim}")
@@ -68,8 +83,19 @@ class ObsPayload:
                     f"{name} shape {tuple(v.shape)} != bt {(n_obs, nch)}")
         if not torch.isfinite(bt).all():
             raise ValueError("bt contains non-finite values")
+        if not torch.isfinite(self.obs_quality).all():
+            raise ValueError("obs_quality contains non-finite values")
+        if not torch.isfinite(self.lat).all() or not torch.isfinite(self.lon).all():
+            raise ValueError("lat/lon contains non-finite values")
         if bool((self.lat.abs() > 90.0).any()) or bool((self.lon.abs() > 360.0).any()):
             raise ValueError("lat/lon out of range")
+        if self.bias is not None and not torch.isfinite(self.bias).all():
+            raise ValueError("bias contains non-finite values")
+        if self.channel_gate is not None:
+            if not torch.isfinite(self.channel_gate).all():
+                raise ValueError("channel_gate contains non-finite values")
+            if bool((self.channel_gate < 0.0).any()) or bool((self.channel_gate > 1.0).any()):
+                raise ValueError("channel_gate must be in [0, 1]")
 
     @property
     def n_obs(self) -> int:
@@ -99,13 +125,7 @@ def collocate(obs_lat: torch.Tensor, obs_lon: torch.Tensor,
     flatten을 호출자가 보장). 퇴화 그리드(전 좌표 동일 — 이상화 케이스의 all-0
     XLAT/XLONG이 정확히 이 꼴)는 최근접이 무의미하므로 loud 거부.
     """
-    if grid_lat.numel() < 2:
-        raise ValueError("grid must have at least 2 columns")
-    if bool((grid_lat == grid_lat[0]).all()) and bool((grid_lon == grid_lon[0]).all()):
-        raise ValueError(
-            "degenerate grid: all columns share one (lat, lon) — an idealized "
-            "case (all-zero XLAT/XLONG) has no geolocation; collocation is "
-            "undefined there")
+    _validate_coordinate_tensors(obs_lat, obs_lon, grid_lat, grid_lon)
     # 청크 처리: 전체 (n_obs, B) 거리행렬은 실규모(50k obs × 66k 컬럼)에서
     # 26GB로 OOM — LC05 실그리드 첫 접촉에서 실측 확인. 관측 축을 나눠
     # 피크 메모리를 chunk×B×8B (~0.5GB @1024×66k)로 제한한다.
@@ -118,6 +138,35 @@ def collocate(obs_lat: torch.Tensor, obs_lon: torch.Tensor,
         idx_parts.append(ii)
         dist_parts.append(dd)
     return torch.cat(idx_parts), torch.cat(dist_parts)
+
+
+def _validate_coordinate_tensors(obs_lat: torch.Tensor, obs_lon: torch.Tensor,
+                                 grid_lat: torch.Tensor,
+                                 grid_lon: torch.Tensor) -> None:
+    """Validate the coordinate contract shared by every collocation backend."""
+    if (not isinstance(obs_lat, torch.Tensor)
+            or not isinstance(obs_lon, torch.Tensor)
+            or obs_lat.ndim != 1 or obs_lon.shape != obs_lat.shape):
+        raise ValueError("obs_lat/obs_lon must be matching 1-D tensors")
+    if (not isinstance(grid_lat, torch.Tensor)
+            or not isinstance(grid_lon, torch.Tensor)
+            or grid_lat.ndim != 1 or grid_lon.shape != grid_lat.shape):
+        raise ValueError("grid_lat/grid_lon must be matching 1-D tensors")
+    if not torch.isfinite(obs_lat).all() or not torch.isfinite(obs_lon).all():
+        raise ValueError("observation coordinates must be finite")
+    if not torch.isfinite(grid_lat).all() or not torch.isfinite(grid_lon).all():
+        raise ValueError("grid coordinates must be finite")
+    if bool((obs_lat.abs() > 90.0).any()) or bool((obs_lon.abs() > 360.0).any()):
+        raise ValueError("observation coordinates out of range")
+    if bool((grid_lat.abs() > 90.0).any()) or bool((grid_lon.abs() > 360.0).any()):
+        raise ValueError("grid coordinates out of range")
+    if grid_lat.numel() < 2:
+        raise ValueError("grid must have at least 2 columns")
+    if bool((grid_lat == grid_lat[0]).all()) and bool((grid_lon == grid_lon[0]).all()):
+        raise ValueError(
+            "degenerate grid: all columns share one (lat, lon) — an idealized "
+            "case (all-zero XLAT/XLONG) has no geolocation; collocation is "
+            "undefined there")
 
 
 @dataclass
@@ -134,18 +183,27 @@ class ColumnObs:
     n_dropped_collision: int
     col_of_obs: torch.Tensor           # (n_obs,) — 배정 컬럼 (-1 = dropped)
     valid_time_utc: "str | None" = None   # propagated from ObsPayload
+    bias: Optional[torch.Tensor] = None          # (B, nch), if supplied by payload
+    channel_gate: Optional[torch.Tensor] = None  # (B, nch), if supplied by payload
 
 
 def payload_to_column_obs(payload: ObsPayload, grid_lat: torch.Tensor,
                           grid_lon: torch.Tensor, *,
                           max_dist_km: float) -> ColumnObs:
     """collocation + 충돌 해소 + 컬럼-정렬 (B, nch) 관측 생성."""
+    if not (math.isfinite(max_dist_km) and max_dist_km >= 0.0):
+        raise ValueError(
+            f"max_dist_km must be finite and >= 0 (got {max_dist_km!r})")
     B = int(grid_lat.numel())
     nch = payload.nch
     idx, dist = collocate(payload.lat, payload.lon, grid_lat, grid_lon)
 
     bt = torch.zeros((B, nch), **_F64)
     quality = torch.ones((B, nch), **_F64)              # 기본: 전 컬럼 unusable
+    bias = (torch.zeros((B, nch), **_F64)
+            if payload.bias is not None else None)
+    channel_gate = (torch.zeros((B, nch), **_F64)
+                    if payload.channel_gate is not None else None)
     best_dist = torch.full((B,), float("inf"), **_F64)
     col_of_obs = torch.full((payload.n_obs,), -1, dtype=torch.int64)
     owner_of_col = torch.full((B,), -1, dtype=torch.int64)
@@ -170,9 +228,14 @@ def payload_to_column_obs(payload: ObsPayload, grid_lat: torch.Tensor,
         col_of_obs[o] = b
         bt[b] = payload.bt[o]
         quality[b] = payload.obs_quality[o]
+        if bias is not None:
+            bias[b] = payload.bias[o]
+        if channel_gate is not None:
+            channel_gate[b] = payload.channel_gate[o]
 
     return ColumnObs(bt=bt, obs_quality=quality,
                      n_assigned=int((col_of_obs >= 0).sum()),
                      n_dropped_far=n_far, n_dropped_collision=n_coll,
                      col_of_obs=col_of_obs,
+                     bias=bias, channel_gate=channel_gate,
                      valid_time_utc=payload.valid_time_utc)

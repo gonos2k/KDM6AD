@@ -135,11 +135,14 @@ def read_fd_slot(files: Sequence[str | Path], *,
                                    indexing="ij")
                 lat, lon = geos_latlon(L, C, g)
             l0, l1, c0, c1 = win
-            raw = np.ma.filled(
-                ds.variables["image_pixel_values"][l0:l1, c0:c1], 0
-            ).astype(np.uint16)
+            raw_ma = ds.variables["image_pixel_values"][l0:l1, c0:c1]
+            missing = np.ma.getmaskarray(raw_ma)
+            raw = np.ma.filled(raw_ma, 0).astype(np.uint16)
             cal = {a: ds.getncattr(a) for a in _CAL_ATTRS}
             bt, q = dn_to_bt(raw, cal)
+            # Preserve valid pixels while ensuring NetCDF fill/masked pixels
+            # cannot be turned into quality-0 observations by zero filling.
+            q = np.where(missing, 1.0, q)
             bt_all[ch], q_all[ch] = bt, q
         finally:
             ds.close()
@@ -160,7 +163,8 @@ def read_fd_slot(files: Sequence[str | Path], *,
         bt=torch.as_tensor(bt_full, **_F64),
         obs_quality=torch.as_tensor(q_full, **_F64),
         lat=torch.as_tensor(np.ascontiguousarray(lat_s), **_F64),
-        lon=torch.as_tensor(np.ascontiguousarray(lon_s), **_F64))
+        lon=torch.as_tensor(np.ascontiguousarray(lon_s), **_F64),
+        valid_time_utc=stamp)
 
 
 def fd_slot_files(root: str | Path, timestamp: str,

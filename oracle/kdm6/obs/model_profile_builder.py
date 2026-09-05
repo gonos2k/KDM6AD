@@ -58,13 +58,28 @@ class RttovProfileConfig(NamedTuple):
     pressure) for T/Q; ``None`` skips interpolation (column already on grid).
     ``rttov_level_pressure`` (PHalf, 1-D ascending) is a constant passthrough.
     ``cloud=True`` enables the all-sky cloud path (content + effective diameter
-    via the hydrometeor bridge); the clear-sky default is unchanged.
+    via the hydrometeor bridge) and requires ``rho_d`` frozen from the background
+    on the same model grid/order. Trial-state qv must not redefine this measure.
     """
     gas_units: int                                 # must be _REQUIRED_GAS_UNITS (2)
     qv_convention: str                             # one of _SUPPORTED_QV_CONVENTIONS
     rttov_layer_pressure: "torch.Tensor | None" = None
     rttov_level_pressure: "torch.Tensor | None" = None
     cloud: bool = False                            # all-sky cloud path on/off
+    rho_d: "torch.Tensor | None" = None             # frozen dry density, model grid/order
+
+
+def with_dry_air_density(cfg, rho_d: torch.Tensor) -> RttovProfileConfig:
+    """Copy the attribute-based profile config with a selected density view.
+
+    External configs need not implement namedtuple._replace. Never mutate them;
+    shape, dtype and frozen-value checks remain at the cloud profile boundary.
+    """
+    return RttovProfileConfig(
+        gas_units=cfg.gas_units, qv_convention=cfg.qv_convention,
+        rttov_layer_pressure=cfg.rttov_layer_pressure,
+        rttov_level_pressure=cfg.rttov_level_pressure,
+        cloud=cfg.cloud, rho_d=rho_d)
 
 
 class RttovProfileTensors(NamedTuple):
@@ -229,7 +244,7 @@ def interp_log_pressure(field: torch.Tensor, p_src: torch.Tensor, p_dst: torch.T
 
 
 def _cloud_profile_tensors(leaves, forcing, p_model, p_target, xland,
-                           ncmin_land, ncmin_sea):
+                           ncmin_land, ncmin_sea, rho_d):
     """All-sky cloud fields on the RTTOV layer grid (pure-torch, differentiable).
 
     Wires the hydrometeor bridge (``rttov_cloud_profile``) into the obs path with the
@@ -242,7 +257,8 @@ def _cloud_profile_tensors(leaves, forcing, p_model, p_target, xland,
     ``p_target`` with the SAME constant-W operator as T/Q (grad flows only through the
     gathered field). Returns (clw, ciw, deff_liq, deff_ice, cfrac) on the layer grid.
     """
-    from ..rttov_bridge import rttov_cloud_profile   # lazy: pulls the coordinator chain
+    from ..rttov_bridge import rttov_cloud_profile, require_dry_air_density
+    rho_d = require_dry_air_density(rho_d, leaves.qv)
     # xland feeds the bridge's per-cell sea/land ncmin gate (xland.view(-1,1)); the obs
     # path is ONE column, so require a single value (reject a multi-column/scalar-float
     # xland that would silently mis-mask -- reject-don't-drop).
@@ -257,7 +273,8 @@ def _cloud_profile_tensors(leaves, forcing, p_model, p_target, xland,
     leaves2d = type(leaves)(*(f.unsqueeze(0) for f in leaves))
     forcing2d = type(forcing)(*(f.unsqueeze(0) for f in forcing))
     cp = rttov_cloud_profile(leaves2d, forcing2d, xland=xland,
-                             ncmin_land=ncmin_land, ncmin_sea=ncmin_sea)
+                             ncmin_land=ncmin_land, ncmin_sea=ncmin_sea,
+                             rho_d=rho_d.unsqueeze(0))
 
     # RTTOV content must be >= 0 (DA increments can drive q<0); clamp_min is the
     # clip_positive subgradient (0 in the unphysical region), not a graph break.
@@ -301,6 +318,14 @@ def _cloud_profile_tensors(leaves, forcing, p_model, p_target, xland,
                 f"cloud field {_nm!r} has non-finite values (degenerate column / bad "
                 "bridge output) -- invalid RTTOV input (reject-don't-drop).")
 
+    # Endpoint interpolation must not extend model-top cloud into unsupported
+    # atmosphere. Own this at the shared builder so callback, batch and worker
+    # use the same H. Retain valid inactive Deff bounds; contents/cfrac are zero.
+    if p_target is not None:
+        within_model_top = (p_target >= p_model[0]).to(clw_lay.dtype).detach()
+        clw_lay = clw_lay * within_model_top
+        ciw_lay = ciw_lay * within_model_top
+
     # cfrac: detached binary condensate gate on the LAYER grid (clamped < 1.0). It is
     # a weighting, not a differentiated input (Phase 1) -> detach so no ghost grad.
     total = (clw_lay + ciw_lay).detach()
@@ -317,9 +342,9 @@ def model_to_rttov_tensors(leaves, forcing, cfg, xland=None,
     Pure-torch from ``leaves`` (design 14.3): extract T=th*pii and Q=ppmv(qv),
     then interpolate both onto the RTTOV layer grid (cfg.rttov_layer_pressure) if
     given. Returns ``RttovProfileTensors``; ``t_lay``/``q_lay`` carry grad to
-    th/qv. Cloud and surface tensors are deferred (hydrotable-blocked, design
-    1.7/13); ``xland``/``ncmin_*`` are accepted for signature parity with the
-    cloud path and are unused on the clear-sky path.
+    th/qv. With ``cfg.cloud=True`` the shared cloud builder also supplies content,
+    diameters and fraction, removing cloud above the model top. Surface tensors
+    remain deferred. ``xland``/``ncmin_*`` are unused on the clear-sky path.
     """
     t_model, qv_model, p_model = extract_model_columns(leaves, forcing)
     q_model = qv_to_q_ppmv_moist(qv_model, gas_units=cfg.gas_units,
@@ -395,6 +420,7 @@ def model_to_rttov_tensors(leaves, forcing, cfg, xland=None,
     cloud = {}
     if getattr(cfg, "cloud", False):
         clw, ciw, deff_liq, deff_ice, cfrac = _cloud_profile_tensors(
-            leaves, forcing, p_model, p_target, xland, ncmin_land, ncmin_sea)
+            leaves, forcing, p_model, p_target, xland, ncmin_land, ncmin_sea,
+            getattr(cfg, "rho_d", None))
         cloud = dict(clw=clw, ciw=ciw, deff_liq=deff_liq, deff_ice=deff_ice, cfrac=cfrac)
     return RttovProfileTensors(t_lay=t_lay, q_lay=q_lay, p_lay=p_lay, p_half=p_half, **cloud)

@@ -965,7 +965,7 @@ def test_validated_run_identity_is_the_strict_parse_plus_the_header():
     assert got == {"nsplit": 1, "carry": "rezero", "rho": "as-is",
                    "width": 1, "levels": 2, "ntile": 1,
                    "tile_ranges": ((1, 1),), "tile_sizes": (1,),
-                   "algorithm": "legacy",
+                   "algorithm": "legacy", "real_bytes": 4,
                    # A stream that declares no metric still HAS one: the
                    # registry resolves it from the arm, so the identity is
                    # complete for historical streams too (owner review 4.3).

@@ -13,7 +13,7 @@ order is part of the fingerprint):
     vap<->liq      qv <-> qc   latent xl(T_pre)   (same L both directions)
     vap<->ice      qv <-> qi   latent xls          (constant, symmetric)
     cloud<->rain   qc <-> qr   mass-only
-    snow<->graupel qs <-> qg   mass-only
+    snow<->graupel qs <-> qg   mass-only, fixed bg, density-admissible caps
 
 liq<->ice has NO direct channel: it is reachable by composition
 vap<->liq(-d) + vap<->ice(+d), whose net latent equals the freeze operator's
@@ -69,6 +69,7 @@ import torch
 
 from .state import Forcing, State
 from .thermo import compute_cpm, compute_xl, default_thermo_params
+from .progb import RHO_MIN, RHO_MAX
 
 # (name, forward donor, forward receiver, latent kind) — frozen order
 CHANNELS = (
@@ -116,22 +117,25 @@ class PartitionSpec:
             object.__setattr__(self, name, float(a))
 
     def as_dict(self) -> dict:
-        # version 2: w changed meaning from physical (kg/kg) to
-        # dimensionless — the schema names the control metric explicitly
-        return {"version": 2, "alpha_total": self.alpha_total,
+        # v3 retains dimensionless controls but intersects snow/graupel donor
+        # budgets with the fixed-volume density domain. Older caps differ.
+        return {"version": 3, "alpha_total": self.alpha_total,
                 "sigma_scale": self.sigma_scale,
                 "control_units": "dimensionless",
                 "sigma_rule": "sigma_scale*min(cap_fwd,cap_rev)",
+                "graupel_rule": "fixed_bg_density_interval",
+                "graupel_density_bounds": [RHO_MIN, RHO_MAX],
                 "channels": [c[0] for c in CHANNELS]}
 
     def fingerprint(self) -> str:
         """Name-bound sha256 — sensitive to channel order/pairing/latent
         convention and to alpha/sigma_scale (the chain is non-commuting
-        through T; sigma_scale changes the control metric). v2 = the
-        dimensionless-w metric (v1 was physical kg/kg controls)."""
-        payload = "partition-v2|" + "|".join(
+        through T; sigma_scale changes the control metric). v3 adds the fixed-bg
+        density domain to the dimensionless-w metric (v2)."""
+        payload = "partition-v3|fixed_bg_density_interval|" + "|".join(
             f"{n}:{d}>{r}:{l}" for n, d, r, l in CHANNELS)
         payload += f"|{self.alpha_total.hex()}|{self.sigma_scale.hex()}"
+        payload += f"|{RHO_MIN.hex()}|{RHO_MAX.hex()}"
         return hashlib.sha256(payload.encode()).hexdigest()
 
 
@@ -157,6 +161,19 @@ def build_partition_caps(xb: State, spec: PartitionSpec) -> PartitionCaps:
                         f"xb.{src} must be finite to build partition caps")
                 a = spec.alpha_total / _DRAINERS[src]
                 out.append(torch.where(q > 0, a * q, torch.zeros_like(q)))
+        # The mass-only fourth channel leaves bg fixed. Available headroom is
+        # therefore the intersection of donor budgets and 100*bg <= qg <= 900*bg.
+        # An invalid/absent background pair deactivates this channel; this CVT
+        # does not repair upstream invalid moments or invent a graupel volume.
+        bg, qg = xb.bg.detach(), xb.qg.detach()
+        if bg.shape != qg.shape or not bool(torch.isfinite(bg).all()):
+            raise ValueError("xb.bg must be finite and match xb.qg shape")
+        low, high = RHO_MIN * bg, RHO_MAX * bg
+        valid = (bg > 0) & (qg >= low) & (qg <= high)
+        fwd[3] = torch.where(valid, torch.minimum(fwd[3], (high - qg).clamp_min(0)),
+                             torch.zeros_like(qg))
+        rev[3] = torch.where(valid, torch.minimum(rev[3], (qg - low).clamp_min(0)),
+                             torch.zeros_like(qg))
         cf, cr = torch.stack(fwd), torch.stack(rev)
         sigma = spec.sigma_scale * torch.minimum(cf, cr)
         return PartitionCaps(cap_fwd=cf, cap_rev=cr, sigma=sigma,
@@ -239,11 +256,13 @@ def validate_conserving_sigma(b_sigma: State) -> None:
     channels) and silently breaks the total-water invariance the partition
     stage exists to provide. qv stays allowed — it is the deliberate
     total-water dof (moisture correction)."""
-    bad = [f for f in MASS_HYDRO_FIELDS
+    # bg must also stay fixed: changing volume in the diagonal CVT would
+    # invalidate the frozen density headroom of the snow/graupel channel.
+    bad = [f for f in (*MASS_HYDRO_FIELDS, "bg")
            if bool((getattr(b_sigma, f) != 0).any())]
     if bad:
         raise ValueError(
-            f"partition given but b_sigma is nonzero for mass hydrometeor "
+            f"partition given but b_sigma is nonzero for mass hydrometeor/volume "
             f"fields {bad} — the conserving contract requires their diagonal "
             "sigma == 0 (species move only through partition channels)")
 

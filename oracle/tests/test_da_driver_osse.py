@@ -62,6 +62,24 @@ def _obs_cfg(tmp_path):
                          q_ref=torch.as_tensor(np.asarray(q_ref_np, dtype=float), **_F64))
 
 
+def test_clear_entry_rejects_cloud_profile_early():
+    """Generic OSSE is clear-sky; cloud input must not reach the clear builder."""
+    from types import SimpleNamespace
+    cfg = OsseObsConfig(run_k=None, profile_cfg=SimpleNamespace(cloud=True),
+                        input_cfg=None)
+    with pytest.raises(ValueError, match="clear-sky only"):
+        from kdm6.da_driver import batched_clear_bt
+        batched_clear_bt(None, None, cfg)
+
+
+def test_generic_osse_rejects_cloud_profile_before_window():
+    from types import SimpleNamespace
+    cfg = OsseObsConfig(run_k=None, profile_cfg=SimpleNamespace(cloud=True),
+                        input_cfg=None)
+    with pytest.raises(ValueError, match="clear-sky only"):
+        run_osse_sensitivity(None, None, [], [], WindowConfig(dt=300.0), cfg)
+
+
 @needs_all
 def test_osse_cycle_end_to_end(tmp_path):
     frame = read_wrfout_frame(str(_WRFOUT), time_idx=1)

@@ -42,7 +42,7 @@ def _mk_forcing():
 
 def _cfg():
     return RttovProfileConfig(gas_units=2, qv_convention="mixing_ratio_kgkg_dry",
-                              rttov_layer_pressure=None, cloud=True)
+                              rttov_layer_pressure=None, cloud=True, rho_d=_mk_forcing().rho / (1 + _mk_col().qv))
 
 
 def _cloud_vec(state, forcing, cfg, xland=None, ncl=0.0, ncs=0.0):
@@ -124,7 +124,7 @@ def test_cloud_xland_ncmin_threads_to_obs():
     col2 = State(*(x.unsqueeze(0) for x in _mk_col()))
     f2 = Forcing(*(x.unsqueeze(0) for x in f))
     for xl in (2.0, 0.0):
-        cp = rttov_cloud_profile(col2, f2, xland=_t([xl]), ncmin_land=ncl, ncmin_sea=ncs)
+        cp = rttov_cloud_profile(col2, f2, xland=_t([xl]), ncmin_land=ncl, ncmin_sea=ncs, rho_d=_cfg().rho_d.unsqueeze(0))
         expect = torch.clamp(2.0 * cp.reff_liq.squeeze(0), _DEFF_LIQ_MIN, _DEFF_LIQ_MAX)
         got = (sea if xl == 2.0 else land).deff_liq
         assert torch.allclose(got, expect)
@@ -136,8 +136,8 @@ def test_cloud_content_oracle_and_precip_excluded():
     output graph (no VIS/IR Deff item -> dropped from the obs path)."""
     col, f, cfg = _mk_col(rg=True), _mk_forcing(), _cfg()
     p = model_to_rttov_tensors(col, f, cfg)
-    assert torch.allclose(p.clw, f.rho * col.qc.detach() * 1.0e3)
-    assert torch.allclose(p.ciw, f.rho * (col.qi.detach() + col.qs.detach()) * 1.0e3)
+    assert torch.allclose(p.clw, _cfg().rho_d * col.qc.detach() * 1.0e3)
+    assert torch.allclose(p.ciw, _cfg().rho_d * (col.qi.detach() + col.qs.detach()) * 1.0e3)
     out = torch.cat([p.clw, p.ciw, p.deff_liq, p.deff_ice])
     g_qr, g_qg = torch.autograd.grad(out.sum(), (col.qr, col.qg), allow_unused=True)
     assert g_qr is None and g_qg is None        # precip has no VIS/IR Deff item -> not connected
@@ -148,7 +148,7 @@ def test_cloud_interp_path_grad_flows():
     -- emits cloud fields on the target layer grid with grad still flowing to leaves."""
     col, f = _mk_col(rg=True), _mk_forcing()
     cfg = RttovProfileConfig(gas_units=2, qv_convention="mixing_ratio_kgkg_dry",
-                             rttov_layer_pressure=_t([4.0e4, 6.0e4, 8.0e4]), cloud=True)
+                             rttov_layer_pressure=_t([4.0e4, 6.0e4, 8.0e4]), cloud=True, rho_d=_mk_forcing().rho / (1 + _mk_col().qv))
     p = model_to_rttov_tensors(col, f, cfg)
     for fld in (p.clw, p.ciw, p.deff_liq, p.deff_ice, p.cfrac):
         assert fld.shape == (3,)                                # all on the 3-layer target grid

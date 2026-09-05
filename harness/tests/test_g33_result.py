@@ -86,8 +86,67 @@ def test_verify_refuses_a_payload_that_is_a_symlink_out_of_the_bundle(tmp_path):
 
 
 def test_verify_names_the_executable_binary_sha256_points_at(tmp_path):
-    b = _bundle(tmp_path, _rec(binary_sha256="0" * 64), {"g33_refine_driver": b"#!fake\n"})
+    mem = b"declared member\n"
+    b = _bundle(
+        tmp_path,
+        _rec(binary_sha256="0" * 64,
+             members=[{"file": "n3.rezero.txt", "sha256": hashlib.sha256(mem).hexdigest()}]),
+        {"g33_refine_driver": b"#!fake\n", "n3.rezero.txt": mem})
     assert any("g33_refine_driver: MISMATCH" in x for x in res.verify(b))
+
+
+def test_load_rejects_vacuous_result_record(tmp_path):
+    p = tmp_path / "result.json"
+    p.write_text(json.dumps(_rec()) + "\n")
+    with pytest.raises(SystemExit, match="no output artifacts"):
+        res.load(tmp_path)
+
+
+def test_load_rejects_duplicate_json_keys(tmp_path):
+    p = tmp_path / "result.json"
+    p.write_text(
+        '{"commit":"' + "a" * 40 + '","command":["driver"],'
+        '"binary_sha256":"' + "b" * 64 + '","input_sha256":"' + "c" * 64 + '",'
+        '"result":{"members":[],"members":[],"analyses":[]}}\n')
+    with pytest.raises(SystemExit, match="duplicate JSON key"):
+        res.load(tmp_path)
+
+
+def test_load_rejects_malformed_declared_artifact_shape(tmp_path):
+    rec = _rec(members=[{"file": "n3.rezero.txt", "sha256": "not-a-digest"}])
+    res.write(tmp_path, rec)
+    with pytest.raises(SystemExit, match="64-hex SHA-256"):
+        res.load(tmp_path)
+
+
+def test_load_rejects_conflicting_digest_for_shared_input_across_rows(tmp_path):
+    rec = _rec(
+        members=[{"file": "n3.rezero.txt", "sha256": "1" * 64}],
+        analyses=[{"file": "analysis.json", "sha256": "2" * 64,
+                    "inputs": [{"file": "n3.rezero.txt", "sha256": "3" * 64}]}])
+    res.write(tmp_path, rec)
+    with pytest.raises(SystemExit, match="conflicts.*n3.rezero.txt"):
+        res.load(tmp_path)
+
+
+def test_verify_treats_uppercase_sha256_as_the_same_hex_digest(tmp_path):
+    exe = b"#!fake\n"
+    mem = b"member\n"
+    b = _bundle(tmp_path, _rec(
+        binary_sha256=hashlib.sha256(exe).hexdigest().upper(),
+        input_sha256="C" * 64,
+        members=[{"file": "n3.rezero.txt",
+                   "sha256": hashlib.sha256(mem).hexdigest().upper()}]),
+        {"g33_refine_driver": exe, "n3.rezero.txt": mem})
+    assert res.verify(b) == []
+
+
+def test_load_allows_an_empty_analysis_list_when_members_exist(tmp_path):
+    mem = b"member\n"
+    rec = _rec(members=[{"file": "n3.rezero.txt",
+                         "sha256": hashlib.sha256(mem).hexdigest()}], analyses=[])
+    _bundle(tmp_path, rec, {"g33_refine_driver": b"#!fake\n", "n3.rezero.txt": mem})
+    assert res.load(tmp_path)["result"]["analyses"] == []
 
 
 def test_applicability_refuses_an_unlisted_analysis_rather_than_defaulting():

@@ -6,7 +6,7 @@ produces and feeds to `RttovObsOp.backward` (design 8; runK takes no seed).
 
 Masking (design 8): only (profile, channel) with BOTH obs-quality and RTTOV
 rad_quality == 0 enter the metric/gradient. The caller passes the combined
-DETACHED 0/1 ``masks`` (obs_quality & rad_quality==0 & channel-gate); a clipped
+DETACHED [0,1] ``masks`` (quality==0 times channel-gate); a clipped
 cloudy radiance (rad_quality≠0) thus contributes exactly 0 to J_obs and λ_BT.
 Bias correction is a detached static (or VarBC-frozen) per-channel offset applied
 at residual definition, so ∂J/∂state is unaffected.
@@ -39,7 +39,7 @@ def compute_obs_loss(bt_hat, obs, masks, sigma, *, delta: float = 1.0):
     """Masked Huber BT-residual loss -> torch scalar J_obs (differentiable in bt_hat).
 
     ``bt_hat`` [nprofiles, nchannels] (torch); ``obs`` dict with ``bt`` (same
-    shape) and optional detached ``bias``; ``masks`` detached 0/1 [nprofiles,
+    shape) and optional detached ``bias``; ``masks`` detached [0,1] [nprofiles,
     nchannels]; ``sigma`` obs error (scalar or per-channel). Returns
     ``Σ_{p,c} m·ψ_δ((bt_hat − (bt_obs+bias))/σ)``. ``bias``/``masks``/``sigma`` are
     detached/constant so λ_BT = ∂J/∂bt_hat = m·ψ_δ'(r)/σ is unaffected by them.
@@ -72,6 +72,8 @@ def compute_obs_loss(bt_hat, obs, masks, sigma, *, delta: float = 1.0):
     if tuple(m.shape) != tuple(bt_hat.shape):
         raise ValueError(f"masks shape {tuple(m.shape)} != bt_hat {tuple(bt_hat.shape)} "
                          "-- the keep-mask must be the full [nprofiles, nchannels] field.")
+    if not bool(torch.isfinite(m).all()) or bool(((m < 0) | (m > 1)).any()):
+        raise ValueError("masks must be finite and in [0, 1]")
     sig = torch.as_tensor(sigma, dtype=bt_hat.dtype, device=bt_hat.device).detach()
     # MASK-AWARE validation (design 8): a MASKED channel (m==0: solar via the IR gate,
     # or rad_quality-flagged) may carry junk/non-finite sigma & BT; it must contribute 0
@@ -112,9 +114,11 @@ def symmetric_obs_error(bt_hat, bt_obs, bt_clear, model: SymmetricObsError, *, m
     ``CA = (|B-Bclr| + |O-Bclr|)/2`` (Okamoto et al. 2014), a piecewise-linear ramp
     ``sigma_clr -> sigma_cld`` over ``[ca_clr, ca_cld]``.
 
-    Returned DETACHED: the obs error is a WEIGHTING, not part of the forward operator.
-    CA depends on B (=bt_hat); if sigma carried that dependence it would leak a ghost
-    gradient into lambda_BT. ``Bclr`` is the clear-sky first-guess BT (detached).
+    Returned DETACHED for an explicitly fixed-weight inner objective. Supply a
+    frozen background B, not each trial prediction, when constructing weights for
+    that objective. Recomputing sigma from trial B would define a different
+    composite value whose total derivative includes d(sigma)/dB. ``Bclr`` is the
+    frozen clear-sky first-guess BT. The callback requires both background fields.
 
     Per-(profile, channel) finiteness is validated MASK-AWARE: when ``mask`` (the
     design-8 keep-mask, 1=keep) is given, bt_hat/bt_obs/bt_clear must be finite where

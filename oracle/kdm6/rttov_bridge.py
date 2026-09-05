@@ -17,8 +17,11 @@ radiation coupling — a 1:1 port of ``effectRad_kdm6`` (module_mp_kdm6.F:4042,
 gamma M3/(2·M2) ratio: the KDM6 cloud DSD is a Cohard-Pinty GENERALIZED gamma
 (adversarial review F2 — the naive (μ+3)/2 prefactor overestimated cloud Reff
 by 4.5×). Rain has no effectRad entry; the §9.3 "rain Dm" proxy is the
-scheme's own ``avedia_r``. The graupel density proxy is the rime-mass
-fraction brs/qg.
+scheme's own ``avedia_r``. The graupel diagnostic bg/qg is reciprocal bulk
+density [m^3/kg], not a rime-mass fraction. It is not wired to RTTOV HYDRO.
+
+Hydrometeor q is per dry-air mass. Contents therefore use an explicitly supplied
+frozen dry-air density, while the preamble retains the model's forcing.rho.
 
 Differentiability: the operator is pure tensor ops on the scheme's
 AD-validated preamble — VJP/JVP compose through ``torch.autograd`` (the bridge
@@ -63,10 +66,10 @@ class DsdDiagnostics(NamedTuple):
     # avedia_r doubles as the §9.3 "rain Dm" proxy (λ_nr carrier).
     avedia_c: torch.Tensor
     avedia_r: torch.Tensor
-    # graupel density proxy: rime-mass fraction brs/qg (λ_bg carrier, §9.3);
+    # reciprocal graupel bulk density bg/qg [m^3/kg] (λ_bg carrier);
     # 0 (with zero adjoint) where qg ≤ 1e-15 — inactive-graupel gate
-    graupel_rime_frac: torch.Tensor
-    # water contents rho·q [kg/m^3]
+    graupel_specific_volume: torch.Tensor
+    # water contents rho_d·q [kg/m^3]
     wc_c: torch.Tensor
     wc_r: torch.Tensor
     wc_s: torch.Tensor
@@ -93,8 +96,40 @@ class RttovCloudProfile(NamedTuple):
     reff_snow: torch.Tensor  # snow effective radius [micron] (effectRad_kdm6)
     rain_dm: torch.Tensor    # rain mean-volume diameter avedia_r [micron] — §9.3
                              # "rain Dm" proxy; carries the λ_nr adjoint
-    graupel_rime_frac: torch.Tensor  # brs/qg [—] — §9.3 graupel density proxy;
-                             # carries the λ_bg adjoint
+    graupel_specific_volume: torch.Tensor  # bg/qg [m^3/kg], diagnostic only
+
+
+def freeze_dry_air_density(background: State, forcing: Forcing) -> torch.Tensor:
+    """Freeze rho_d from a WRF-convention background before a DA window.
+
+    forcing.rho = rho_d*(1+background.qv). The returned constant must accompany
+    that forcing through column selection and vertical reversal. Never call this
+    on each trial/slot state: current qv is a control, the air-mass measure is not.
+    This is an explicit value-only background construction, outside the AD map.
+    """
+    if (background.qv.shape != forcing.rho.shape
+            or background.qv.dtype != forcing.rho.dtype
+            or background.qv.device != forcing.rho.device):
+        raise ValueError("background qv and forcing rho must have the same shape, dtype and device")
+    with torch.no_grad():
+        if (not bool(torch.isfinite(background.qv).all())
+                or bool((background.qv < 0).any())):
+            raise ValueError("background qv must be finite and nonnegative")
+        rho_d = (forcing.rho / (1.0 + background.qv)).detach().clone()
+    return require_dry_air_density(rho_d, background.qv)
+
+
+def require_dry_air_density(rho_d, ref: torch.Tensor) -> torch.Tensor:
+    """Require an explicit, fixed, positive dry-air measure on the model grid."""
+    if not isinstance(rho_d, torch.Tensor):
+        raise ValueError("rho_d is required: pass frozen dry-air density on the model grid")
+    if rho_d.shape != ref.shape or rho_d.device != ref.device or rho_d.dtype != ref.dtype:
+        raise ValueError("rho_d must match the model field shape, dtype and device")
+    if rho_d.requires_grad:
+        raise ValueError("rho_d must be frozen before the observation/DA evaluation")
+    if not bool(torch.isfinite(rho_d).all()) or bool((rho_d <= 0).any()):
+        raise ValueError("rho_d must be finite and positive")
+    return rho_d
 
 
 def _sea_mask_from_xland(xland, ref: torch.Tensor) -> torch.Tensor:
@@ -106,7 +141,7 @@ def _sea_mask_from_xland(xland, ref: torch.Tensor) -> torch.Tensor:
 def dsd_diagnostics(state: State, forcing: Forcing,
                     xland: "torch.Tensor | None" = None,
                     ncmin_land: float = 0.0,
-                    ncmin_sea: float = 0.0) -> DsdDiagnostics:
+                    ncmin_sea: float = 0.0, *, rho_d=None) -> DsdDiagnostics:
     """Compute the scheme-consistent DSD diagnostics by RUNNING the scheme's
     own preamble (slopes, avedia) on the given state — no re-derivation.
 
@@ -114,6 +149,7 @@ def dsd_diagnostics(state: State, forcing: Forcing,
     the per-cell ncmin feeds the cloud-slope inactive gate inside the
     preamble (1:1 fix #18), so omitting it would make the bridge's rslopec
     diverge from the scheme's own on land cells (Codex stop-review)."""
+    rho_d = require_dry_air_density(rho_d, state.qv)
     cs = _state_to_coord(state, forcing)
     cf = _build_coord_forcing(forcing)
     sea_mask = _sea_mask_from_xland(xland, cs.qc)
@@ -155,7 +191,7 @@ def dsd_diagnostics(state: State, forcing: Forcing,
                          min=10.01e-6, max=125.0e-6)
     reff_s = torch.clamp(0.5 * rslope_s, min=25.0e-6, max=999.0e-6)
 
-    # Rime fraction is meaningful only where graupel is ACTIVE. (qg→0, bg>0)
+    # Reciprocal density is meaningful only where graupel is ACTIVE. (qg→0, bg>0)
     # is reachable at the DA boundary (bg is prognostic; analysis increments
     # need not keep the qg/bg pair coupled) and the bare ratio would return
     # ~bg/1e-15 garbage with an explosive ∂/∂bg = 1e15 adjoint. Gate to 0 with
@@ -163,7 +199,7 @@ def dsd_diagnostics(state: State, forcing: Forcing,
     # The clamp inside keeps the inactive branch finite, so torch.where's
     # both-branch backward stays NaN-free (§30 Inf×0 class).
     qg_active = state.qg > 1.0e-15
-    graupel_rime_frac = torch.where(
+    graupel_specific_volume = torch.where(
         qg_active, state.bg / torch.clamp(state.qg, min=1.0e-15),
         torch.zeros_like(state.qg))
 
@@ -172,23 +208,23 @@ def dsd_diagnostics(state: State, forcing: Forcing,
         rslope_g=rslope_g, rslope_i=rslope_i,
         reff_c=reff_c, reff_s=reff_s, reff_i=reff_i,
         avedia_c=pre.avedia_c, avedia_r=pre.avedia_r,
-        graupel_rime_frac=graupel_rime_frac,
-        wc_c=forcing.rho * state.qc, wc_r=forcing.rho * state.qr,
-        wc_s=forcing.rho * state.qs, wc_g=forcing.rho * state.qg,
-        wc_i=forcing.rho * state.qi,
+        graupel_specific_volume=graupel_specific_volume,
+        wc_c=rho_d * state.qc, wc_r=rho_d * state.qr,
+        wc_s=rho_d * state.qs, wc_g=rho_d * state.qg,
+        wc_i=rho_d * state.qi,
     )
 
 
 def rttov_cloud_profile(state: State, forcing: Forcing,
                         xland: "torch.Tensor | None" = None,
                         ncmin_land: float = 0.0,
-                        ncmin_sea: float = 0.0) -> RttovCloudProfile:
+                        ncmin_sea: float = 0.0, *, rho_d=None) -> RttovCloudProfile:
     """Map the DSD diagnostics onto RTTOV VIS/IR all-sky cloud profile variables.
 
     Pure tensor ops — the RTTOV-K adjoint composes with this operator's VJP
     via torch.autograd (chain: lambda_BT -> RTTOV-K -> lambda_profile ->
     THIS operator's VJP -> lambda_{q*,n*} -> Handle.vjp; design §9.3)."""
-    d = dsd_diagnostics(state, forcing, xland, ncmin_land, ncmin_sea)
+    d = dsd_diagnostics(state, forcing, xland, ncmin_land, ncmin_sea, rho_d=rho_d)
     KG2G = 1.0e3      # kg/m^3 -> g/m^3
     M2UM = 1.0e6      # m -> micron
     return RttovCloudProfile(
@@ -197,5 +233,5 @@ def rttov_cloud_profile(state: State, forcing: Forcing,
         reff_liq=d.reff_c * M2UM, reff_ice=d.reff_i * M2UM,
         reff_snow=d.reff_s * M2UM,
         rain_dm=d.avedia_r * M2UM,
-        graupel_rime_frac=d.graupel_rime_frac,
+        graupel_specific_volume=d.graupel_specific_volume,
     )

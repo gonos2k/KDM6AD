@@ -1,26 +1,23 @@
-"""The number-transport defect's COEFFICIENT, over a real atmosphere.
+"""The density-profile contrast proxy, over a real atmosphere.
 
-`g33_number_transport` establishes the residual as an identity:
+The density-only component of the transport metric can be written:
 
-    R_N = sum over interfaces of [den(lower) - den(upper)] * delz(upper) * b
+    R_proxy = sum over interfaces of [den(lower) - den(upper)] * delz(upper) * b
 
-Divide the interface term by what SHOULD have arrived, `den(upper)*delz(upper)*b`,
-and the transfer drops out:
+Dividing the proxy term by `den(upper)*delz(upper)*b` gives:
 
     eps_j = den(lower)/den(upper) - 1
 
-That is the fraction of number the legacy metric over-delivers across one
-interface, and it is a function of the DENSITY PROFILE ALONE. So the magnitude
-this defect can reach in a real atmosphere is measurable without running the
-model, without the corrected arm, and without touching the frozen kernel --
-which is what makes it available while the freeze-lift for that arm is a
-decision the owner has not taken.
+That is a density-profile contrast proxy for the legacy metric. It is a function
+of the density profile alone; it does not measure the actual applied inflow or
+outflow transfers, clipping, or forecast impact. The proxy magnitude is
+measurable without running the model, while the full residual remains a
+separate measurement.
 
-What this is NOT: a forecast impact, a column-number increase, or a
-precipitation change. `eps_j` bounds the per-interface error of the transport
-metric; how much number actually crosses each interface is `b`, which this
-does not measure. A column where nothing sediments has the same `eps` profile
-as one that rains.
+What this is NOT: a full residual, a forecast impact, a column-number increase,
+or a precipitation change. `eps_j` describes the density contrast at an
+interface; the applied transfer and clipping terms are not read here. A column
+where nothing sediments has the same `eps` profile as one that rains.
 
 Density here is MOIST, matching the kernel's `den` (`dend(i,k) = den(i,k)`,
 F:870) -- so this is the operator's own measure, not the dry-air one the
@@ -56,12 +53,17 @@ def profile(state: Path) -> dict:
     """
     import netCDF4
     import numpy as np
-    d = netCDF4.Dataset(str(state))
     import g33_netcdf_read as nr
-    g = lambda k: nr.read_numeric(d[k], 0)["data"]   # noqa: E731  f64, mask refused
-    pressure = g("P") + g("PB")
-    theta = g("T") + 300.0
-    qv = g("QVAPOR")
+    with netCDF4.Dataset(str(state)) as d:
+        def g(k):
+            read = nr.read_numeric(d[k], 0)
+            if read["nonfinite_count"]:
+                raise ValueError(
+                    f"{k}: {read['nonfinite_count']} nonfinite cells in density input")
+            return read["data"]
+        pressure = g("P") + g("PB")
+        theta = g("T") + 300.0
+        qv = g("QVAPOR")
     temp = theta * (pressure / P0) ** (RD / CP)
     # Moist density, as the kernel's `den` -- thermodynamic route, see above.
     den = pressure / (RD * temp * (1.0 + 0.608 * qv))
@@ -70,7 +72,10 @@ def profile(state: Path) -> dict:
     eps = den[:-1] / den[1:] - 1.0
     mid = 0.5 * (pressure[:-1] + pressure[1:])
     return {"eps": eps, "p_mid": mid, "columns": eps.shape[1] * eps.shape[2],
-            "interfaces": int(eps.size)}
+            "interfaces": int(eps.size),
+            "residual_scope": "density_profile_contrast_proxy",
+            "applied_transfers_included": False,
+            "clipping_included": False}
 
 
 def report(state: Path) -> dict:
@@ -82,6 +87,9 @@ def report(state: Path) -> dict:
         # comparing this against a number_basis figure must be able to see
         # that the two are on different density authorities.
         "density_authority": "thermodynamic p/(Rd T (1+0.608 qv))",
+        "residual_scope": p["residual_scope"],
+        "applied_transfers_included": p["applied_transfers_included"],
+        "clipping_included": p["clipping_included"],
         "state": str(state),
         "columns": p["columns"],
         "interfaces": p["interfaces"],

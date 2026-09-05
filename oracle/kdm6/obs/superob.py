@@ -30,7 +30,8 @@ from dataclasses import dataclass
 
 import torch
 
-from .obs_ingest import ObsPayload, collocate
+from .obs_ingest import (ObsPayload, _validate_coordinate_tensors, collocate,
+                         haversine_km)
 
 _F64 = dict(dtype=torch.float64)
 
@@ -43,6 +44,7 @@ class SuperObs:
     n_pixels: torch.Tensor      # (B, nch) — 셀·채널별 기여 화소 수
     n_assigned_pixels: int      # 배정된 원화소 총수 (진단)
     n_dropped_far: int          # max_dist 밖 화소 수 (진단)
+    valid_time_utc: "str | None" = None  # data-derived slot stamp
 
 
 def superob_to_model_grid(payload: ObsPayload, grid_lat: torch.Tensor,
@@ -60,6 +62,10 @@ def superob_to_model_grid(payload: ObsPayload, grid_lat: torch.Tensor,
     if not (math.isfinite(max_dist_km) and max_dist_km > 0.0):
         raise ValueError(
             f"max_dist_km must be finite and > 0 (got {max_dist_km!r})")
+    if payload.bias is not None or payload.channel_gate is not None:
+        raise ValueError(
+            "superob_to_model_grid does not consume ObsPayload.bias/channel_gate; "
+            "apply these fields in an obs-eval adapter before superobbing")
     # KD-트리 사상 + index_add 조합 — 전 경로가 O(N log B) (brute-force 제거).
     mapping = build_pixel_mapping(payload.lat, payload.lon, grid_lat, grid_lon,
                                   max_dist_km=max_dist_km)
@@ -67,19 +73,103 @@ def superob_to_model_grid(payload: ObsPayload, grid_lat: torch.Tensor,
                                 min_pixels=min_pixels)
 
 
+_SUPEROB_REQUIRED_KEYS = frozenset({
+    "bt", "obs_quality", "n_pixels", "n_assigned_pixels", "n_dropped_far",
+})
+_SUPEROB_OPTIONAL_KEYS = frozenset({"valid_time_utc"})
+
+
+def _validate_superob_archive(d) -> None:
+    """Validate the small, tensor-only SuperObs archive schema."""
+    if not isinstance(d, dict):
+        raise ValueError("SuperObs archive must contain a dictionary")
+    keys = set(d)
+    missing = _SUPEROB_REQUIRED_KEYS - keys
+    unknown = keys - _SUPEROB_REQUIRED_KEYS - _SUPEROB_OPTIONAL_KEYS
+    if missing:
+        raise ValueError(f"SuperObs archive missing keys: {sorted(missing)}")
+    if unknown:
+        raise ValueError(f"SuperObs archive has unknown keys: {sorted(unknown)}")
+
+    tensors = {}
+    for name in ("bt", "obs_quality", "n_pixels"):
+        value = d[name]
+        if not isinstance(value, torch.Tensor):
+            raise ValueError(f"SuperObs archive {name} must be a tensor")
+        if value.dtype != torch.float64:
+            raise ValueError(
+                f"SuperObs archive {name} must use torch.float64 "
+                f"(got {value.dtype})")
+        if value.ndim != 2 or value.shape[0] < 1 or value.shape[1] < 1:
+            raise ValueError(
+                f"SuperObs archive {name} must be a non-empty 2-D tensor "
+                f"(got shape {tuple(value.shape)})")
+        tensors[name] = value
+    shape = tensors["bt"].shape
+    if tensors["obs_quality"].shape != shape or tensors["n_pixels"].shape != shape:
+        raise ValueError(
+            "SuperObs archive bt, obs_quality, and n_pixels must have "
+            f"the same (B, nch) shape (got {tuple(tensors['bt'].shape)}, "
+            f"{tuple(tensors['obs_quality'].shape)}, "
+            f"{tuple(tensors['n_pixels'].shape)})")
+
+    quality = tensors["obs_quality"]
+    n_pixels = tensors["n_pixels"]
+    if not torch.isfinite(quality).all():
+        raise ValueError("SuperObs archive obs_quality contains non-finite values")
+    if not bool(((quality == 0.0) | (quality == 1.0)).all()):
+        raise ValueError("SuperObs archive obs_quality must contain only 0 or 1")
+    usable = quality == 0.0
+    bt = tensors["bt"]
+    if not torch.isfinite(bt[usable]).all():
+        raise ValueError("SuperObs archive usable bt contains non-finite values")
+    if not torch.isfinite(n_pixels).all() or bool((n_pixels < 0.0).any()):
+        raise ValueError("SuperObs archive n_pixels must be finite and >= 0")
+    if not bool((n_pixels == torch.round(n_pixels)).all()):
+        raise ValueError("SuperObs archive n_pixels must contain integer counts")
+    if bool((n_pixels[usable] < 1.0).any()):
+        raise ValueError("SuperObs archive usable cells need n_pixels >= 1")
+
+    for name in ("n_assigned_pixels", "n_dropped_far"):
+        value = d[name]
+        if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            raise ValueError(
+                f"SuperObs archive {name} must be a plain int >= 0 "
+                f"(got {value!r})")
+    # Each source pixel contributes at most once per channel, and a usable
+    # cell cannot claim zero contributors.  This catches swapped counts and
+    # malformed tensors without introducing a mapping/provenance schema.
+    if bool((n_pixels.sum(dim=0) > d["n_assigned_pixels"]).any()):
+        raise ValueError(
+            "SuperObs archive n_pixels exceeds n_assigned_pixels for a channel")
+
+    if "valid_time_utc" in d:
+        stamp = d["valid_time_utc"]
+        if stamp is not None and not isinstance(stamp, str):
+            raise ValueError("SuperObs archive valid_time_utc must be str or None")
+
+
 def save_superobs(so: SuperObs, path) -> None:
     """슬롯 산출물 저장 (torch.save) — 전처리는 1회, 소비는 다회."""
-    torch.save(dict(bt=so.bt, obs_quality=so.obs_quality, n_pixels=so.n_pixels,
-                    n_assigned_pixels=so.n_assigned_pixels,
-                    n_dropped_far=so.n_dropped_far), path)
+    archive = dict(bt=so.bt, obs_quality=so.obs_quality, n_pixels=so.n_pixels,
+                   n_assigned_pixels=so.n_assigned_pixels,
+                   n_dropped_far=so.n_dropped_far,
+                   valid_time_utc=so.valid_time_utc)
+    _validate_superob_archive(archive)
+    torch.save(archive, path)
 
 
 def load_superobs(path) -> SuperObs:
     d = torch.load(path, weights_only=True)
+    _validate_superob_archive(d)
     return SuperObs(bt=d["bt"], obs_quality=d["obs_quality"],
                     n_pixels=d["n_pixels"],
                     n_assigned_pixels=int(d["n_assigned_pixels"]),
-                    n_dropped_far=int(d["n_dropped_far"]))
+                    n_dropped_far=int(d["n_dropped_far"]),
+                    # Archives made before timestamp propagation remain
+                    # explicitly untimed; a date-aware downstream consumer
+                    # must apply its existing fail-closed date guard.
+                    valid_time_utc=d.get("valid_time_utc"))
 
 
 def preprocess_gk2a_ko_slot(gk2a_root, timestamp: str, channels,
@@ -99,7 +189,11 @@ def preprocess_gk2a_ko_slot(gk2a_root, timestamp: str, channels,
     m = ((pl.lat >= grid_lat.min() - 0.1) & (pl.lat <= grid_lat.max() + 0.1)
          & (pl.lon >= grid_lon.min() - 0.1) & (pl.lon <= grid_lon.max() + 0.1))
     pl = ObsPayload(bt=pl.bt[m], obs_quality=pl.obs_quality[m],
-                    lat=pl.lat[m], lon=pl.lon[m])
+                    lat=pl.lat[m], lon=pl.lon[m],
+                    bias=None if pl.bias is None else pl.bias[m],
+                    channel_gate=(None if pl.channel_gate is None
+                                  else pl.channel_gate[m]),
+                    valid_time_utc=pl.valid_time_utc)
     so = superob_to_model_grid(pl, grid_lat, grid_lon,
                                max_dist_km=max_dist_km, min_pixels=min_pixels)
     if out_path is not None:
@@ -130,6 +224,13 @@ def build_pixel_mapping(obs_lat: torch.Tensor, obs_lon: torch.Tensor,
     scipy 부재 시 chunked brute-force 로 폴백 (결과 동일, 느림).
     """
     import math
+    if not (math.isfinite(max_dist_km) and max_dist_km > 0.0):
+        raise ValueError(
+            f"max_dist_km must be finite and > 0 (got {max_dist_km!r})")
+    # Validate before selecting SciPy KDTree.  The fallback calls collocate,
+    # but the fast branch otherwise used to bypass its finite/range/degenerate
+    # grid checks entirely.
+    _validate_coordinate_tensors(obs_lat, obs_lon, grid_lat, grid_lon)
     try:
         from scipy.spatial import cKDTree
     except ImportError:                                    # pragma: no cover
@@ -138,12 +239,16 @@ def build_pixel_mapping(obs_lat: torch.Tensor, obs_lon: torch.Tensor,
         mapping[dist > max_dist_km] = -1
         return mapping
     tree = cKDTree(_unit_xyz(grid_lat, grid_lon))
-    d_chord, idx = tree.query(_unit_xyz(obs_lat, obs_lon), k=1)
-    # 대원거리 게이트를 현거리로 환산: chord = 2·sin(d_gc/2R)
-    R = 6371.0088
-    chord_max = 2.0 * math.sin(max_dist_km / (2.0 * R))
+    _, idx = tree.query(_unit_xyz(obs_lat, obs_lon), k=1)
     mapping = torch.as_tensor(idx, dtype=torch.int64)
-    mapping[torch.as_tensor(d_chord) > chord_max] = -1
+    # Use the actual shared great-circle distance for the gate.  Converting a
+    # large distance to a chord with sin() folds values above pi*R back into
+    # the near side of the sphere (e.g. 50,000 km rejects an exact hit), and
+    # can disagree with the brute-force fallback at strict boundaries.
+    nearest_lat = grid_lat[mapping]
+    nearest_lon = grid_lon[mapping]
+    dist = haversine_km(obs_lat, obs_lon, nearest_lat, nearest_lon)
+    mapping[dist > max_dist_km] = -1
     return mapping
 
 
@@ -154,17 +259,30 @@ def superob_with_mapping(payload: ObsPayload, mapping: torch.Tensor, B: int,
     payload 화소 순서는 mapping 을 만든 화소 순서와 동일해야 한다
     (같은 어댑터·같은 stride — 길이 불일치는 즉시 거부).
     """
+    if (isinstance(B, bool) or not isinstance(B, int) or B <= 0):
+        raise ValueError(f"B (column count) must be a positive int (got {B!r})")
+    if not isinstance(mapping, torch.Tensor):
+        raise ValueError("mapping must be a rank-1 torch.Tensor")
+    if mapping.ndim != 1:
+        raise ValueError(
+            f"mapping must be rank-1 (got shape {tuple(mapping.shape)})")
+    if mapping.dtype != torch.int64:
+        raise ValueError(
+            f"mapping must use torch.int64 (got {mapping.dtype})")
     if payload.n_obs != mapping.numel():
         raise ValueError(
             f"payload pixel count {payload.n_obs} != mapping {mapping.numel()} "
             "-- mapping was built for a different pixel set/stride")
+    if payload.bias is not None or payload.channel_gate is not None:
+        raise ValueError(
+            "superob_with_mapping does not consume ObsPayload.bias/channel_gate; "
+            "apply these fields in an obs-eval adapter before superobbing")
     # Input-validation contract (external review P1-3): min_pixels < 1 makes
     # `good = n >= min_pixels` accept EMPTY cells (0/0 mean + usable quality);
     # an out-of-range mapping index scatters out of bounds (or silently
     # wraps). Reject at the boundary rather than mis-compute.
-    if not (isinstance(B, int) and B > 0):
-        raise ValueError(f"B (column count) must be a positive int (got {B!r})")
-    if not (isinstance(min_pixels, int) and min_pixels >= 1):
+    if (isinstance(min_pixels, bool) or not isinstance(min_pixels, int)
+            or min_pixels < 1):
         raise ValueError(f"min_pixels must be an int >= 1 (got {min_pixels!r})")
     if bool(((mapping >= B) | (mapping < -1)).any()):
         raise ValueError(
@@ -189,4 +307,5 @@ def superob_with_mapping(payload: ObsPayload, mapping: torch.Tensor, B: int,
         n_pix[:, j] = n
     return SuperObs(bt=bt, obs_quality=quality, n_pixels=n_pix,
                     n_assigned_pixels=int(near.sum()),
-                    n_dropped_far=int((~near).sum()))
+                    n_dropped_far=int((~near).sum()),
+                    valid_time_utc=payload.valid_time_utc)

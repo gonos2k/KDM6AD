@@ -50,6 +50,41 @@ def test_payload_schema_rejects_bad_shapes_and_values():
     with pytest.raises(ValueError, match="out of range"):
         ObsPayload(bt=torch.zeros((1, 4), **_F64), obs_quality=torch.zeros((1, 4), **_F64),
                    lat=torch.tensor([95.0], **_F64), lon=torch.zeros(1, **_F64))
+    with pytest.raises(ValueError, match="non-finite"):
+        ObsPayload(bt=torch.zeros((1, 4), **_F64), obs_quality=torch.zeros((1, 4), **_F64),
+                   lat=torch.tensor([float("nan")], **_F64), lon=torch.zeros(1, **_F64))
+    with pytest.raises(ValueError, match="channel_gate"):
+        ObsPayload(bt=torch.zeros((1, 4), **_F64), obs_quality=torch.zeros((1, 4), **_F64),
+                   lat=torch.zeros(1, **_F64), lon=torch.zeros(1, **_F64),
+                   channel_gate=torch.full((1, 4), 2.0, **_F64))
+
+
+def test_payload_schema_rejects_float32_before_collocation():
+    """The documented f64 payload boundary catches dtype errors at ingest."""
+    fields = dict(
+        bt=torch.zeros((1, 2), **_F64),
+        obs_quality=torch.zeros((1, 2), **_F64),
+        lat=torch.tensor([35.0], **_F64),
+        lon=torch.tensor([125.0], **_F64),
+    )
+    for name in fields:
+        bad = dict(fields)
+        bad[name] = bad[name].float()
+        with pytest.raises(ValueError, match=f"{name} must use torch.float64"):
+            ObsPayload(**bad)
+
+
+def test_payload_schema_rejects_missing_required_fields():
+    fields = dict(obs_quality=torch.zeros((1, 2), **_F64),
+                  lat=torch.tensor([35.0], **_F64),
+                  lon=torch.tensor([125.0], **_F64))
+    with pytest.raises(ValueError, match="bt must be a torch.Tensor"):
+        ObsPayload(bt=None, **fields)
+    fields = dict(bt=torch.zeros((1, 2), **_F64),
+                  lat=torch.tensor([35.0], **_F64),
+                  lon=torch.tensor([125.0], **_F64))
+    with pytest.raises(ValueError, match="obs_quality must be a torch.Tensor"):
+        ObsPayload(obs_quality=None, **fields)
 
 
 # ─── haversine / collocation ────────────────────────────────────────────────
@@ -82,6 +117,16 @@ def test_collocate_rejects_degenerate_grid():
         collocate(torch.tensor([35.0], **_F64), torch.tensor([125.0], **_F64), z, z)
 
 
+def test_collocate_rejects_nonfinite_or_mismatched_grid():
+    with pytest.raises(ValueError, match="grid coordinates"):
+        collocate(torch.tensor([35.0], **_F64), torch.tensor([125.0], **_F64),
+                  torch.tensor([35.0, float("nan")], **_F64),
+                  torch.tensor([125.0, 126.0], **_F64))
+    with pytest.raises(ValueError, match="matching 1-D"):
+        collocate(torch.tensor([35.0], **_F64), torch.tensor([125.0], **_F64),
+                  torch.zeros((1, 2), **_F64), torch.zeros((1, 2), **_F64))
+
+
 # ─── payload → 컬럼 정렬 ─────────────────────────────────────────────────────
 
 
@@ -111,6 +156,28 @@ def test_column_obs_far_gate_and_collision():
     assert co.col_of_obs.tolist()[1] == -1
     assert co.col_of_obs.tolist()[2] == -1
     assert torch.equal(co.bt[0], pl.bt[0])                   # 최근접(obs0)이 승자
+
+
+def test_column_obs_preserves_optional_fields_through_collision():
+    glat, glon = _grid(nlat=2, nlon=2)
+    pl = _payload(lat=[35.0, 35.06], lon=[125.0, 125.0], nch=2)
+    pl = ObsPayload(
+        bt=pl.bt, obs_quality=pl.obs_quality, lat=pl.lat, lon=pl.lon,
+        bias=torch.tensor([[1.0, 2.0], [3.0, 4.0]], **_F64),
+        channel_gate=torch.tensor([[1.0, 0.0], [0.0, 1.0]], **_F64),
+        valid_time_utc="202507190000")
+    co = payload_to_column_obs(pl, glat, glon, max_dist_km=15.0)
+    assert torch.equal(co.bias[0], pl.bias[0])
+    assert torch.equal(co.channel_gate[0], pl.channel_gate[0])
+    assert co.bias[1].eq(0).all() and co.channel_gate[1].eq(0).all()
+    assert co.valid_time_utc == pl.valid_time_utc
+
+
+def test_column_obs_accepts_exact_zero_distance_gate():
+    glat, glon = _grid(nlat=2, nlon=2)
+    pl = _payload(lat=[35.0], lon=[125.0])
+    co = payload_to_column_obs(pl, glat, glon, max_dist_km=0.0)
+    assert co.n_assigned == 1 and co.n_dropped_far == 0
 
 
 def test_column_obs_feeds_both_sides_qc_mask():

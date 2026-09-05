@@ -425,14 +425,14 @@ def _good_conserving_report():
         partition=dict(
             spec=PartitionSpec().as_dict(),
             fingerprint=PartitionSpec().fingerprint()),
-        cvt=dict(n_controlled=dict(qc=0, qr=0, qi=0, qs=0, qg=0,
+        cvt=dict(n_controlled=dict(qc=0, qr=0, qi=0, qs=0, qg=0, bg=0,
                                    th=100, qv=100)))
 
 
 def test_evaluate_artifact_gates_conserving_and_audit():
     """Conserving evidence artifacts carry three additional ENFORCED gates:
     P_w water conservation, the strengthened final-audit consistency, and
-    the conserving contract (partition schema v2 + zero mass-hydro diagonal
+    the conserving contract (partition schema v3 + zero mass/volume diagonal
     controls)."""
     from kdm6.da_fulldomain import evaluate_artifact_gates
 
@@ -521,7 +521,13 @@ def test_conserving_gates_fail_closed_on_missing_fields():
             "conserving_contract")
     gate_of(lambda r: r["cvt"]["n_controlled"].update(qc=0.0),
             "conserving_contract")
-    # deep v2 schema: every spec field and the fingerprint are load-bearing
+    gate_of(lambda r: r["cvt"]["n_controlled"].update(bg=1),
+            "conserving_contract")
+    gate_of(lambda r: r["partition"]["spec"].update(version=2),
+            "conserving_contract")
+    gate_of(lambda r: r["partition"]["spec"].pop("graupel_rule"),
+            "conserving_contract")
+    # Every current spec field and the fingerprint are load-bearing.
     gate_of(lambda r: r["partition"]["spec"].pop("control_units"),
             "conserving_contract")
     gate_of(lambda r: r["partition"]["spec"].pop("sigma_rule"),
@@ -702,7 +708,7 @@ def test_fulldomain_smoke_conserving_capped(tmp_path):
 
     json.dumps(rep)
     assert rep["conserving"] is True
-    assert rep["partition"]["spec"]["version"] == 2
+    assert rep["partition"]["spec"]["version"] == 3
     assert rep["n_audit_evals"] == 1
     assert len(rep["j_trace"]) == rep["n_window_evals"] + 1
     assert rep["j_trace"][-1]["total"] == pytest.approx(

@@ -1103,6 +1103,7 @@ def calls(stream: str) -> list:
     for c in out:
         c["algorithm"] = header["algorithm"]
         c["declared_metric"] = declared_metric
+        c["real_bytes"] = rb
     return out
 
 
@@ -1152,6 +1153,7 @@ def validated_run_identity(text: str, expected_width: int | None = None,
            "ntile": hdr["ntile"], "tile_ranges": tiles,
            "tile_sizes": tuple(b - a + 1 for a, b in tiles),
            "algorithm": hdr["algorithm"],
+           "real_bytes": parsed[0]["real_bytes"],
            # THE MEASURE IS IDENTITY. Two streams with the same arm, splits and
            # timestep but different transfer measures were the same run to this
            # function -- and the measure decides which ledger a residual closes,

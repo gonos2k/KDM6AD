@@ -39,6 +39,18 @@ def _mk_forcing():
                    p=_t2(9.0e4, 7.0e4), delz=_t2(500.0, 500.0))
 
 
+def test_mass_only_graupel_partition_rejects_density_escape_and_nonfinite_pair():
+    from kdm6.da_window import apply_partition_snow2graupel
+    x = _mk_state()._replace(qs=_t2(1e-4, 1e-4), qg=_t2(1e-4, 1e-4),
+                             bg=_t2(1e-4 / 850., 1e-4 / 850.))
+    with pytest.raises(ValueError, match="initial/final qg"):
+        apply_partition_snow2graupel(x, _t2(2e-5, 2e-5))
+    for name in ("qs", "qg", "bg"):
+        with pytest.raises(ValueError, match="finite"):
+            apply_partition_snow2graupel(
+                x._replace(**{name: _t2(float("inf"), 1.)}), _t2(0., 0.))
+
+
 def _unit_state(seed):
     g = torch.Generator().manual_seed(seed)
     return State(*(torch.randn((1, 2), generator=g, dtype=torch.float64)
@@ -511,6 +523,9 @@ def test_partition_pair_operators():
     assert torch.equal(o.qc, s64.qc - d) and torch.equal(o.qr, s64.qr + d)
     assert torch.equal(o.th, s64.th)            # same phase — no latent term
 
+    # The mass-only graupel control needs a valid positive volume pair.
+    qg = torch.full_like(s64.qg, 5.0e-5)
+    s64 = s64._replace(qs=torch.full_like(s64.qs, 1.0e-4), qg=qg, bg=qg / 250.)
     o2 = apply_partition_snow2graupel(s64, d)
     assert torch.equal(o2.qs, s64.qs - d) and torch.equal(o2.qg, s64.qg + d)
     assert torch.equal(o2.th, s64.th) and torch.equal(o2.bg, s64.bg)

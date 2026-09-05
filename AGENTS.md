@@ -103,7 +103,12 @@ Generated or foreign areas are not source for normal KDM6AD work:
 
 ## Theory Before Patching
 
-Before changing KDM6/KDM6AD code, check consistency from all three perspectives.
+Team agents use `gpt-5.6-luna` with reasoning effort `xhigh` by default,
+including Green/Red implementation and independent review teams. Apply this
+setting when spawning or restarting team agents unless the user explicitly
+requests a different model or reasoning effort.
+
+Before changing KDM6/KDM6AD code, check consistency from all four perspectives.
 Prioritize a coherent mathematical and physical contract over a local symptom fix.
 
 - **Mathematical:** identify the variables, units, measure, assumptions and full
@@ -118,6 +123,10 @@ Prioritize a coherent mathematical and physical contract over a local symptom fi
   caps, rounding, underflow/subnormals and zero denominators. Real-arithmetic
   identities do not imply floating-point bit equality. Use explicit counterexamples
   and independently computed expectations at the relevant boundaries.
+- **Meteorological:** trace host and kernel mass/number/volume conventions and
+  the species actually connected to observations. Check admissible moment pairs,
+  initialization and forcing assumptions. Separate numerical parity, physical
+  budgets, mock observation tests and measured forecast performance.
 
 Then choose the smallest change that satisfies that contract end to end. Do not
 silence a contradiction by widening tolerances, dropping operands or weakening

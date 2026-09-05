@@ -5,6 +5,8 @@ different numbers, so nothing structurally stopped a reader mixing them; and a
 truncated probe stream looked like a complete one.
 """
 import re
+import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -54,6 +56,22 @@ def test_a_complete_stream_reads():
     r = pr.read(_stream())
     assert r[("meta", "precision")] == "f32"
     assert r[("meta", "source_precision")] == "f32"
+
+
+def test_cli_uses_dtype_specific_ulp_and_raw_bit_keys(tmp_path):
+    a = tmp_path / "legacy.g33p"
+    b = tmp_path / "conservative.g33p"
+    out = tmp_path / "result.json"
+    a.write_text(_stream(algo="legacy"))
+    b.write_text(_stream(algo="conservative"))
+    proc = subprocess.run(
+        [sys.executable, str(ROOT / "g33_probe_read.py"), str(a), str(b),
+         "variant", str(out)], capture_output=True, text=True, cwd=ROOT)
+    assert proc.returncode == 0, proc.stderr
+    result = json.loads(out.read_text())
+    assert "max_ulp_f32" in result and result["raw_bit_identical"] is True
+    assert "max_ulp=" not in proc.stdout
+    assert "max_ulp_f32=0" in proc.stdout
 
 
 def test_the_field_vocabulary_is_taken_from_the_G33R_contract():

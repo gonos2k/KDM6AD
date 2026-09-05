@@ -57,6 +57,18 @@ def test_a_UNIFORM_density_profile_has_no_defect(tmp_path):
     report zero there it cannot report anything."""
     got = rcd.profile(_state(tmp_path, [1.0] * 6))
     assert np.abs(got["eps"]).max() < 1e-12, got["eps"]
+    assert got["residual_scope"] == "density_profile_contrast_proxy"
+    assert got["applied_transfers_included"] is False
+    assert got["clipping_included"] is False
+
+
+def test_nonfinite_density_input_is_rejected(tmp_path):
+    path = _state(tmp_path, [1.0, 1.1, 1.2])
+    netCDF4 = pytest.importorskip("netCDF4")
+    with netCDF4.Dataset(str(path), "r+") as d:
+        d["QVAPOR"][0, 1, 0, 0] = np.nan
+    with pytest.raises(ValueError, match="nonfinite cells"):
+        rcd.profile(path)
 
 
 def test_a_DECREASING_profile_over_delivers(tmp_path):

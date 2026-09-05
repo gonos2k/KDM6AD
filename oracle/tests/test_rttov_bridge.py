@@ -37,6 +37,11 @@ def _mk_forcing():
                    p=_t2(9.0e4, 7.0e4), delz=_t2(500.0, 500.0))
 
 
+def _rho_d():
+    # Independent fixed background measure, shared by FD trial evaluations.
+    return _mk_forcing().rho / (1.0 + _mk_state().qv)
+
+
 def _profile_vec(p: RttovCloudProfile) -> torch.Tensor:
     return torch.cat([f.reshape(-1) for f in p])
 
@@ -45,7 +50,7 @@ def test_bridge_slopes_are_schemes_own():
     """§9.3 consistency: bridge rslopes/avedia must be BITWISE the values the
     scheme's own preamble computes — the bridge re-derives nothing."""
     state, forcing = _mk_state(), _mk_forcing()
-    d = dsd_diagnostics(state, forcing)
+    d = dsd_diagnostics(state, forcing, rho_d=_rho_d())
 
     cs = _state_to_coord(state, forcing)
     cf = _build_coord_forcing(forcing)
@@ -68,7 +73,7 @@ def test_reff_matches_fortran_effectrad():
     Reff by 4.51x (adversarial review F2; host: re_qc = Γ(2)/(2Γ(5/3))·rslopec
     ≈ 0.5539·rslopec)."""
     import math
-    d = dsd_diagnostics(_mk_state(), _mk_forcing())
+    d = dsd_diagnostics(_mk_state(), _mk_forcing(), rho_d=_rho_d())
     cdm2 = math.gamma(2.0 / (c.MUC + 1.0) + 1.0)   # Γ(5/3)
     cdm3 = math.gamma(3.0 / (c.MUC + 1.0) + 1.0)   # Γ(2) = 1
     pref_c = cdm3 / (2.0 * cdm2)
@@ -91,8 +96,8 @@ def test_profile_carries_nr_and_bg_adjoints():
     state = _mk_state(rg=True)
     state = state._replace(bg=torch.tensor([[1.0e-6, 2.0e-6]],
                                            dtype=torch.float64, requires_grad=True))
-    p = rttov_cloud_profile(state, _mk_forcing())
-    loss = (p.rain_dm * p.rain_dm).sum() + (p.graupel_rime_frac ** 2).sum()
+    p = rttov_cloud_profile(state, _mk_forcing(), rho_d=_rho_d())
+    loss = (p.rain_dm * p.rain_dm).sum() + (p.graupel_specific_volume ** 2).sum()
     grads = torch.autograd.grad(loss, (state.nr, state.bg), allow_unused=True,
                                 materialize_grads=True)
     assert (grads[0] != 0).any(), "λ_nr still zero — rain Dm proxy not wired"
@@ -112,9 +117,9 @@ def test_rime_frac_inactive_graupel_gate():
                         requires_grad=True),
         bg=torch.tensor([[1.0e-6, 2.0e-6]], dtype=torch.float64,
                         requires_grad=True))
-    d = dsd_diagnostics(state, _mk_forcing())
+    d = dsd_diagnostics(state, _mk_forcing(), rho_d=_rho_d())
     # value: exactly 0 in the inactive cell, the plain ratio in the active one
-    frac = d.graupel_rime_frac.detach()
+    frac = d.graupel_specific_volume.detach()
     assert float(frac[0, 0]) == 0.0
     assert torch.equal(frac[:, 1:],
                        (state.bg[:, 1:] / state.qg[:, 1:]).detach())
@@ -122,7 +127,7 @@ def test_rime_frac_inactive_graupel_gate():
         "bg/1e-15 garbage leaked through the inactive-graupel gate"
     # adjoint: zero w.r.t. bg AND qg in the inactive cell, finite everywhere,
     # nonzero in the active cell (the λ_bg carrier must survive the gate)
-    g_bg, g_qg = torch.autograd.grad(d.graupel_rime_frac.sum(),
+    g_bg, g_qg = torch.autograd.grad(d.graupel_specific_volume.sum(),
                                      (state.bg, state.qg))
     assert float(g_bg[0, 0]) == 0.0 and float(g_qg[0, 0]) == 0.0
     assert torch.isfinite(g_bg).all() and torch.isfinite(g_qg).all()
@@ -133,7 +138,7 @@ def test_bridge_autograd_flows():
     """Gradients flow from every profile variable back to the hydrometeor
     state leaves, finite, and hit the expected leaves (qc&nc for reff_liq)."""
     state = _mk_state(rg=True)
-    p = rttov_cloud_profile(state, _mk_forcing())
+    p = rttov_cloud_profile(state, _mk_forcing(), rho_d=_rho_d())
     loss = sum((f * f).sum() for f in p)
     grads = torch.autograd.grad(loss, tuple(state), allow_unused=True,
                                 materialize_grads=True)
@@ -149,7 +154,7 @@ def test_bridge_vjp_fd_directional():
     <profile(x+eps v), u> on a smooth direction (qc/nc/qv subspace)."""
     forcing = _mk_forcing()
     state = _mk_state(rg=True)
-    p = rttov_cloud_profile(state, forcing)
+    p = rttov_cloud_profile(state, forcing, rho_d=_rho_d())
     gen = torch.Generator().manual_seed(137)
     u = [torch.randn_like(f) for f in p]
 
@@ -172,7 +177,7 @@ def test_bridge_vjp_fd_directional():
     def loss_at(eps):
         with torch.no_grad():
             xs = State(*(f + eps * vf for f, vf in zip(_mk_state(), v)))
-            pp = rttov_cloud_profile(xs, forcing)
+            pp = rttov_cloud_profile(xs, forcing, rho_d=_rho_d())
             return float(sum((f * uf).sum() for f, uf in zip(pp, u)))
 
     fd = (loss_at(1.0) - loss_at(-1.0)) / 2.0
@@ -185,7 +190,7 @@ def test_bridge_jvp_vjp_inner_product_exact():
     operator alone (independent of the KDM6AD Handle)."""
     forcing = _mk_forcing()
     state = _mk_state(rg=True)
-    p = rttov_cloud_profile(state, forcing)
+    p = rttov_cloud_profile(state, forcing, rho_d=_rho_d())
     gen = torch.Generator().manual_seed(139)
     u = [torch.randn_like(f) for f in p]
     v = [torch.randn(f.shape, generator=gen, dtype=torch.float64) * 1e-6
@@ -221,7 +226,7 @@ def test_bridge_clear_state_finite():
         nc=_t2(0.0, 0.0), ni=_t2(0.0, 0.0), nr=_t2(0.0, 0.0),
         bg=_t2(0.0, 0.0),
     )
-    p = rttov_cloud_profile(z, _mk_forcing())
+    p = rttov_cloud_profile(z, _mk_forcing(), rho_d=_rho_d())
     for name, f in zip(RttovCloudProfile._fields, p):
         assert torch.isfinite(f).all(), f"non-finite {name} on clear state"
     for name in ("clw", "ciw", "rain", "snow", "graupel"):
@@ -243,8 +248,8 @@ def test_bridge_honors_xland_ncmin_gate():
     xland = _t.tensor([1.0], dtype=_t.float64)      # LAND column
     ncmin_land, ncmin_sea = 100.0e6, 10.0e6
 
-    d_land = dsd_diagnostics(state, forcing, xland, ncmin_land, ncmin_sea)
-    d_def = dsd_diagnostics(state, forcing)          # no xland → scalar NCMIN
+    d_land = dsd_diagnostics(state, forcing, xland, ncmin_land, ncmin_sea, rho_d=_rho_d())
+    d_def = dsd_diagnostics(state, forcing, rho_d=_rho_d())          # no xland → scalar NCMIN
 
     # reference: preamble with the runtime-identical ncmin_tensor
     cs = _state_to_coord(state, forcing)

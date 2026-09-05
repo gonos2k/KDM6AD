@@ -283,30 +283,34 @@ def check_universe():
     """Closed-world guard: the table covers exactly the schema universe, and a
     field outside it fails loudly (not a silent variant default)."""
     universe = set(_schema_universe())
-    assert set(MECHANISMS) == universe, "mechanism table != schema universe"
+    if set(MECHANISMS) != universe:
+        raise TaxonomyHole("mechanism table != schema universe")
     # exact, both ways: a missing rule is a fail-open, a stale one is dead taxonomy
     fields = {field for _a, _r, _s, _o, field in universe}
-    assert set(_DOMAIN_RULES) == fields, (
-        f"domain rules != schema fields: missing {sorted(fields - set(_DOMAIN_RULES))}, "
-        f"stale {sorted(set(_DOMAIN_RULES) - fields)}")
+    if set(_DOMAIN_RULES) != fields:
+        raise TaxonomyHole(
+            f"domain rules != schema fields: missing {sorted(fields - set(_DOMAIN_RULES))}, "
+            f"stale {sorted(set(_DOMAIN_RULES) - fields)}")
     try:
         domain_rule("not_a_real_field")
     except TaxonomyHole:
         pass
     else:
-        raise AssertionError("domain_rule is fail-open")
+        raise TaxonomyHole("domain_rule is fail-open")
     # the surface world, both ways: a stale entry for a field the schema no longer
     # compares is as much a defect as a missing one
     surf = (set(schema.semantic_stage_fields("surface"))
             | set(schema.semantic_stage_fields("final_output")))
-    assert set(_SURFACE) == surf, (
-        f"surface mechanisms != schema: missing {sorted(surf - set(_SURFACE))}, "
-        f"stale {sorted(set(_SURFACE) - surf)}")
-    assert set(_SURFACE_DOMAIN) == surf, (
-        f"surface domains != schema: missing {sorted(surf - set(_SURFACE_DOMAIN))}, "
-        f"stale {sorted(set(_SURFACE_DOMAIN) - surf)}")
+    if set(_SURFACE) != surf:
+        raise TaxonomyHole(
+            f"surface mechanisms != schema: missing {sorted(surf - set(_SURFACE))}, "
+            f"stale {sorted(set(_SURFACE) - surf)}")
+    if set(_SURFACE_DOMAIN) != surf:
+        raise TaxonomyHole(
+            f"surface domains != schema: missing {sorted(surf - set(_SURFACE_DOMAIN))}, "
+            f"stale {sorted(set(_SURFACE_DOMAIN) - surf)}")
     try:
         _classify("legacy", "INTERIOR", "qr", "QR_FALK", "not_a_real_field")
     except TaxonomyHole:
         return
-    raise AssertionError("taxonomy is fail-open: an unknown field did not raise")
+    raise TaxonomyHole("taxonomy is fail-open: an unknown field did not raise")

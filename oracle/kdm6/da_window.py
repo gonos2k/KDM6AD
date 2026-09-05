@@ -372,13 +372,29 @@ def apply_partition_cloud2rain(state: State, delta: torch.Tensor) -> State:
 
 def apply_partition_snow2graupel(state: State, delta: torch.Tensor) -> State:
     """Δ_snow→graupel partition control (design §5.3 list): same-phase
-    ice→ice — mass-only move, NO latent-heat term. The graupel rime-mass
-    bookkeeping (bg) is deliberately untouched: converted snow carries no
-    rime by definition; the bg/qg density proxy shifts accordingly."""
+    ice→ice — mass-only move, NO latent-heat term. bg is a VOLUME mixing
+    ratio and remains fixed. The caller must keep the initial/final qg/bg pair
+    in the ProgB density interval; use the bounded partition CVT for optimization.
+    This diagnostic driver operator does not invent transferred volume or clamp
+    the requested increment. The operational mp137 path never calls it."""
     if delta.shape != state.qs.shape:
         raise ValueError(f"delta shape {tuple(delta.shape)} != state shape "
                          f"{tuple(state.qs.shape)}")
-    return state._replace(qs=state.qs - delta, qg=state.qg + delta)
+    from .progb import RHO_MIN, RHO_MAX
+    for name in ("qs", "qg", "bg"):
+        value = getattr(state, name)
+        if (value.shape != delta.shape or value.dtype != delta.dtype
+                or value.device != delta.device or not bool(torch.isfinite(value).all())):
+            raise ValueError("snow2graupel state fields must be finite and match delta shape, dtype and device")
+    qg_new, qs_new = state.qg + delta, state.qs - delta
+    # Explicit admissible-input validation; no detached replacement of the map.
+    low, high = RHO_MIN * state.bg, RHO_MAX * state.bg
+    valid = ((state.bg > 0) & (state.qs >= 0) & (state.qg >= low) & (state.qg <= high)
+             & (qg_new >= low) & (qg_new <= high) & (qs_new >= 0))
+    if not bool(torch.isfinite(delta).all()) or not bool(valid.all()):
+        raise ValueError("snow2graupel requires finite increments, nonnegative snow "
+                         "and initial/final qg in [100*bg, 900*bg] with positive bg")
+    return state._replace(qs=qs_new, qg=qg_new)
 
 
 def apply_partition_ice2liq(state: State, forcing: Forcing,

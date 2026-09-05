@@ -32,7 +32,7 @@ Usage:
 --conserving (v10): P1-1 conserving CVT — mass-hydro diagonal sigma zeroed,
 species move only through the signed partition channels; the artifact adds
 the water-budget split (P_w stage error vs deliberate qv-diagonal change),
-the partition v2 record, and the pw_conserved/final_audited gates.
+the partition v3 fixed-volume density record, and the pw_conserved/final_audited gates.
 """
 import hashlib
 import json

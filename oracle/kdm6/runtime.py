@@ -365,6 +365,61 @@ def _build_coord_forcing(f: Forcing) -> "_coord.CoordinatorForcing":
     return _coord.CoordinatorForcing(p=f.p, den=f.rho, delz=f.delz, dend=f.rho)
 
 
+def _validate_state_forcing_boundary(state: State, forcing: Forcing) -> None:
+    """Validate the public runtime's explicit batched ``(B, K)`` boundary.
+
+    Every state and forcing field participates in column-local arithmetic. Letting
+    PyTorch broadcast a ``(1, K)`` forcing over a ``(B, K)`` state therefore hides
+    an accidental column mismatch. Callers that intentionally share one forcing
+    column must expand it explicitly (for example ``f.rho.expand(B, -1)``), which
+    has the required ``(B, K)`` shape while preserving the documented zero-copy
+    view semantics.
+    """
+    state_fields = tuple(zip(State._fields, state))
+    forcing_fields = tuple(zip(Forcing._fields, forcing))
+    if not state_fields or not forcing_fields:
+        raise ValueError("state and forcing must contain tensor fields")
+
+    first_name, first = state_fields[0]
+    if not isinstance(first, torch.Tensor) or first.ndim != 2:
+        shape = getattr(first, "shape", None)
+        raise ValueError(f"state.{first_name} must be a rank-2 (B, K) tensor (got {shape})")
+    expected_shape = tuple(first.shape)
+    if expected_shape[0] <= 0 or expected_shape[1] <= 0:
+        raise ValueError(f"state fields must have positive (B, K) shape (got {expected_shape})")
+    expected_dtype = first.dtype
+    expected_device = first.device
+
+    for name, value in state_fields:
+        if not isinstance(value, torch.Tensor) or value.ndim != 2:
+            shape = getattr(value, "shape", None)
+            raise ValueError(f"state.{name} must be a rank-2 (B, K) tensor (got {shape})")
+        if tuple(value.shape) != expected_shape:
+            raise ValueError(
+                f"state.{name} shape {tuple(value.shape)} != state fields {expected_shape}"
+            )
+        if value.dtype != expected_dtype or value.device != expected_device:
+            raise ValueError(
+                f"state.{name} must match state dtype/device "
+                f"({expected_dtype}, {expected_device})"
+            )
+
+    for name, value in forcing_fields:
+        if not isinstance(value, torch.Tensor) or value.ndim != 2:
+            shape = getattr(value, "shape", None)
+            raise ValueError(f"forcing.{name} must be a rank-2 (B, K) tensor (got {shape})")
+        if tuple(value.shape) != expected_shape:
+            raise ValueError(
+                f"forcing.{name} shape {tuple(value.shape)} != state shape {expected_shape}; "
+                "expand shared columns explicitly"
+            )
+        if value.dtype != expected_dtype or value.device != expected_device:
+            raise ValueError(
+                f"forcing.{name} must match state dtype/device "
+                f"({expected_dtype}, {expected_device})"
+            )
+
+
 def _coord_to_state(cobj: "_coord.CoordinatorState", orig: State, f: Forcing) -> State:
     """CoordinatorState → State (reverse). th = t/pii, bg = brs. nccn passes through
     from `orig` unchanged (not processed by the Python coordinator — Task #74)."""
@@ -434,6 +489,7 @@ def _kdm6_pure(
     Returns ``State`` only (no surface rain/snow/graupel increments — those are a C++ ABI
     concern; ``_kdm6_pure``'s job is the differentiable state evolution).
     """
+    _validate_state_forcing_boundary(state, forcing)
     # Input-validation contract (external review P1-2/P1-3, Python boundary —
     # the operational C++/ABI path is frozen for f32 parity, so the guards
     # live here). For VALID inputs the numerical path below is unchanged.
@@ -648,7 +704,9 @@ def kdm6_step(
     state : State
         prognostic state, (B, K) 텐서들 with requires_grad as configured
     forcing : Forcing
-        rho, pii, p, delz — 보통 grad off
+        rho, pii, p, delz — each must have exactly the state ``(B, K)`` shape and
+        matching dtype/device. To share one column intentionally, explicitly
+        expand each field to ``(B, K)`` before calling the runtime.
     params : Parameters, optional
         모델 파라미터 텐서들. None이면 디폴트(frozen).
     dt : float

@@ -7,11 +7,15 @@
 #include "kdm6_c_api.h"
 
 #include <cassert>
+#include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+#include <limits>
+#include <utility>
 #include <vector>
 
 #define TEST(name) std::cout << "  RUN  " << #name << "\n"; do
@@ -364,6 +368,122 @@ void test_c_abi_vjp_value_only_refused() {
         std::vector<double> buf(12, 0.0);
         assert(kdm6_handle_vjp_c(nullptr, buf.data(), buf.data()) == KDM6_ERR_NULL_POINTER);
         assert(kdm6_handle_jvp_c(nullptr, buf.data(), buf.data()) == KDM6_ERR_NULL_POINTER);
+    } END_TEST();
+}
+
+void test_c_abi_scalar_finite_validation() {
+    TEST(test_c_abi_scalar_finite_validation) {
+        const int im = 1, kme = 1, jme = 1;
+        FortranBuf in(im, kme, jme, 1.0f);
+        const float SENT = -321.0f;
+        FortranBuf out(im, kme, jme, SENT);
+        auto out_is_sentinel = [&]() { return out.data[0] == SENT; };
+
+        auto call_v1 = [&](double dt, double ncmin_land, double ncmin_sea) {
+            kdm6_handle_t* h = reinterpret_cast<kdm6_handle_t*>(0x1);
+            out.data[0] = SENT;
+            return std::pair<int, kdm6_handle_t*>(
+                kdm6_step_c(
+                    in.ptr(), in.ptr(), in.ptr(), in.ptr(), in.ptr(), in.ptr(), in.ptr(),
+                    in.ptr(), in.ptr(), in.ptr(), in.ptr(), in.ptr(),
+                    in.ptr(), in.ptr(), in.ptr(), in.ptr(),
+                    im, kme, jme, dt, 0, 1,
+                    out.ptr(), out.ptr(), out.ptr(), out.ptr(), out.ptr(), out.ptr(), out.ptr(),
+                    out.ptr(), out.ptr(), out.ptr(), out.ptr(), out.ptr(), &h,
+                    nullptr, ncmin_land, ncmin_sea, nullptr, nullptr, nullptr, nullptr), h);
+        };
+        for (const auto& bad : std::array<std::pair<double, double>, 2>{
+                 std::pair<double, double>{std::numeric_limits<double>::quiet_NaN(), 0.0},
+                 std::pair<double, double>{60.0, -1.0}}) {
+            auto result = call_v1(bad.first, bad.second, 0.0);
+            assert(result.first == KDM6_ERR_INVALID_ARG);
+            assert(result.second == nullptr && out_is_sentinel());
+        }
+        {
+            auto result = call_v1(60.0, 0.0, std::numeric_limits<double>::infinity());
+            assert(result.first == KDM6_ERR_INVALID_ARG);
+            assert(result.second == nullptr && out_is_sentinel());
+        }
+
+        // v2 uses the same scalar domains, including its size-gated optional ncmin tail.
+        kdm6_handle_t* h2 = reinterpret_cast<kdm6_handle_t*>(0x1);
+        kdm6_step_v2_args v2{};
+        v2.struct_size = static_cast<uint32_t>(sizeof(v2));
+        v2.abi_version = KDM6_ABI_VERSION;
+        v2.im = im; v2.kme = kme; v2.jme = jme; v2.dt = 60.0;
+        v2.value_only = 1;
+        v2.th = in.ptr(); v2.qv = in.ptr(); v2.qc = in.ptr(); v2.qr = in.ptr();
+        v2.qi = in.ptr(); v2.qs = in.ptr(); v2.qg = in.ptr(); v2.nccn = in.ptr();
+        v2.nc = in.ptr(); v2.ni = in.ptr(); v2.nr = in.ptr(); v2.bg = in.ptr();
+        v2.rho = in.ptr(); v2.pii = in.ptr(); v2.p = in.ptr(); v2.delz = in.ptr();
+        v2.th_out = out.ptr(); v2.qv_out = out.ptr(); v2.qc_out = out.ptr(); v2.qr_out = out.ptr();
+        v2.qi_out = out.ptr(); v2.qs_out = out.ptr(); v2.qg_out = out.ptr(); v2.nccn_out = out.ptr();
+        v2.nc_out = out.ptr(); v2.ni_out = out.ptr(); v2.nr_out = out.ptr(); v2.bg_out = out.ptr();
+        v2.handle = &h2;
+        v2.dt = std::numeric_limits<double>::quiet_NaN();
+        out.data[0] = SENT;
+        assert(kdm6_step_v2_c(&v2) == KDM6_ERR_INVALID_ARG);
+        assert(h2 == nullptr && out_is_sentinel());
+        v2.dt = 60.0;
+        v2.ncmin_sea = -1.0;
+        h2 = reinterpret_cast<kdm6_handle_t*>(0x1);
+        out.data[0] = SENT;
+        assert(kdm6_step_v2_c(&v2) == KDM6_ERR_INVALID_ARG);
+        assert(h2 == nullptr && out_is_sentinel());
+
+        // Packed fp64 DA entry has the same finite scalar contract.
+        std::vector<double> state(12, 1.0), forcing(4, 1.0), packed_out(12, -654.0);
+        auto packed_is_sentinel = [&]() { return packed_out[0] == -654.0; };
+        kdm6_handle_t* ha = reinterpret_cast<kdm6_handle_t*>(0x1);
+        assert(kdm6_step_ad_c(state.data(), forcing.data(), im, kme, jme,
+                              std::numeric_limits<double>::infinity(), 1,
+                              packed_out.data(), &ha, nullptr, 0.0, 0.0)
+               == KDM6_ERR_INVALID_ARG);
+        assert(ha == nullptr && packed_is_sentinel());
+        ha = reinterpret_cast<kdm6_handle_t*>(0x1);
+        assert(kdm6_step_ad_c(state.data(), forcing.data(), im, kme, jme, 60.0, 1,
+                              packed_out.data(), &ha, nullptr,
+                              std::numeric_limits<double>::quiet_NaN(), 0.0)
+               == KDM6_ERR_INVALID_ARG);
+        assert(ha == nullptr && packed_is_sentinel());
+    } END_TEST();
+}
+
+void test_c_abi_vjp_jvp_thread_config_fail_closed() {
+    TEST(test_c_abi_vjp_jvp_thread_config_fail_closed) {
+#ifdef KDM6_ENABLE_TEST_HOOKS
+        const int im = 1, kme = 1, jme = 1;
+        FortranBuf th(im,kme,jme,290.0f), qv(im,kme,jme,1.0e-2f), qc(im,kme,jme,5.0e-4f);
+        FortranBuf qr(im,kme,jme,1.0e-4f), qi(im,kme,jme), qs(im,kme,jme), qg(im,kme,jme);
+        FortranBuf nccn(im,kme,jme,1.0e9f), nc(im,kme,jme,1.0e8f), ni(im,kme,jme), nr(im,kme,jme,1.0e4f);
+        FortranBuf bg(im,kme,jme);
+        FortranBuf rho(im,kme,jme,1.0f), pii(im,kme,jme,0.97f), p(im,kme,jme,9.0e4f), delz(im,kme,jme,500.0f);
+        FortranBuf th_o(im,kme,jme), qv_o(im,kme,jme), qc_o(im,kme,jme), qr_o(im,kme,jme);
+        FortranBuf qi_o(im,kme,jme), qs_o(im,kme,jme), qg_o(im,kme,jme), nccn_o(im,kme,jme);
+        FortranBuf nc_o(im,kme,jme), ni_o(im,kme,jme), nr_o(im,kme,jme), bg_o(im,kme,jme);
+        kdm6_handle_t* h = nullptr;
+        assert(kdm6_step_c(
+                   th.ptr(), qv.ptr(), qc.ptr(), qr.ptr(), qi.ptr(), qs.ptr(), qg.ptr(),
+                   nccn.ptr(), nc.ptr(), ni.ptr(), nr.ptr(), bg.ptr(),
+                   rho.ptr(), pii.ptr(), p.ptr(), delz.ptr(), im, kme, jme, 20.0, 0, 0,
+                   th_o.ptr(), qv_o.ptr(), qc_o.ptr(), qr_o.ptr(), qi_o.ptr(), qs_o.ptr(), qg_o.ptr(),
+                   nccn_o.ptr(), nc_o.ptr(), ni_o.ptr(), nr_o.ptr(), bg_o.ptr(), &h,
+                   nullptr, 0.0, 0.0, nullptr, nullptr, nullptr, nullptr)
+               == KDM6_OK);
+        assert(h != nullptr);
+
+        std::vector<double> u(12, 1.0), grad(12, -987.0), tangent(12, -987.0);
+        setenv("KDM6_TEST_FORCE_THREAD_CONFIG_FAIL", "1", 1);
+        assert(kdm6_handle_vjp_c(h, u.data(), grad.data()) == KDM6_ERR_THREAD_CONFIG);
+        assert(std::all_of(grad.begin(), grad.end(), [](double v) { return v == -987.0; }));
+        assert(kdm6_handle_jvp_c(h, u.data(), tangent.data()) == KDM6_ERR_THREAD_CONFIG);
+        assert(std::all_of(tangent.begin(), tangent.end(), [](double v) { return v == -987.0; }));
+        unsetenv("KDM6_TEST_FORCE_THREAD_CONFIG_FAIL");
+        assert(kdm6_handle_closep_c(&h) == KDM6_OK);
+        assert(h == nullptr);
+#else
+        std::cout << "  SKIP (build without -DKDM6_ENABLE_TEST_HOOKS=ON)\n";
+#endif
     } END_TEST();
 }
 
@@ -1535,6 +1655,8 @@ int main() {
     test_c_abi_null_pointer();
     test_c_abi_step_per_cell_ncmin_mixed_xland();
     test_c_abi_vjp_jvp_roundtrip();
+    test_c_abi_scalar_finite_validation();
+    test_c_abi_vjp_jvp_thread_config_fail_closed();
     test_c_abi_vjp_value_only_refused();
     test_c_abi_vjp_packed_layout_nontrivial_tile();
     test_c_abi_step_ad_fp64_vjp_finite_and_adjoint();

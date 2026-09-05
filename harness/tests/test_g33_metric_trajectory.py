@@ -43,11 +43,12 @@ def result(driver):
 
 def test_the_metric_term_follows_profile_scaling_with_f32_rounding(result):
     """Ideal profile ratios hold up to f32 forcing arithmetic on this fixture.
-    The density-term decomposition remains an identity for the actual profile.
+    The full-residual decomposition remains an identity for the actual profile.
     """
-    # +1 for the offsets: a constant added to every level cancels out of
-    # (rho_below - rho_above) exactly, so the metric term is untouched while the
-    # absolute density moves by 10%.
+    # Ratio 1 for the offsets: they preserve every density gap. Here the baseline
+    # paired transfers balance in the metric counterfactual, so the offset
+    # cancels in exact arithmetic while the absolute density moves by 10%.
+    # Unmatched transfers would retain the offset contribution to the residual.
     want = {"uniform": 0.0, "inverted": -1.0, "x2": 2.0,
             "offset+": 1.0, "offset-": 1.0}
     for arm, cols in result["arms"].items():
@@ -102,9 +103,11 @@ def test_uniform_kills_BOTH_terms(result):
 
 
 def test_an_OFFSET_leaves_the_metric_term_exactly_alone(result):
-    """On this matched-transfer legacy main fixture the baseline offset term
-    vanishes in exact arithmetic. f32 profile arithmetic remains in the check.
-    With unmatched transfers an offset also changes the counterfactual residual.
+    """On this matched-transfer legacy main fixture each offset preserves the
+    density gaps and the baseline transfer-weighted measure balances, so the
+    metric counterfactual is unchanged in exact arithmetic. f32 profile
+    arithmetic remains in the check. With unmatched transfers an offset also
+    changes the counterfactual residual.
     """
     for arm in ("offset+", "offset-"):
         for r in result["arms"][arm].values():

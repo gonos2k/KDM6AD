@@ -14,6 +14,7 @@ import g33_fourcase_comparator as cmp  # noqa: E402
 import g33_mechanism as mech           # noqa: E402
 import g33_schema as schema            # noqa: E402
 import struct                          # noqa: E402
+import subprocess                      # noqa: E402
 
 
 def _f32(bits):
@@ -331,6 +332,20 @@ def test_mechanism_out_of_schema_key_raises():
     import pytest
     with pytest.raises(mech.TaxonomyHole):
         mech.mechanism("legacy", "TOP", "qr", "QR_OUTFLOW", "dq_out")  # no outflow at legacy TOP
+
+
+def test_taxonomy_universe_guard_survives_python_optimization():
+    code = """
+import sys
+sys.path.insert(0, 'harness')
+import g33_mechanism as m
+m._DOMAIN_RULES.pop(next(iter(m._DOMAIN_RULES)))
+m.check_universe()
+"""
+    proc = subprocess.run([sys.executable, "-O", "-c", code], cwd=ROOT,
+                          capture_output=True, text=True)
+    assert proc.returncode != 0
+    assert "TaxonomyHole" in proc.stderr
 
 
 # ── gate semantics: only PRE-GATE rungs may differ in a dead lane ─────────────

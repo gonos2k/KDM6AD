@@ -11,6 +11,7 @@
 #include <memory>
 #include <mutex>
 #include <fenv.h>
+#include <cmath>
 
 //
 // C ABI ↔ C++ 어댑터.
@@ -54,6 +55,10 @@ bool any_null(std::initializer_list<const void*> ptrs) {
         if (!p) return true;
     }
     return false;
+}
+
+bool invalid_ncmin(double value) {
+    return !std::isfinite(value) || value < 0.0;
 }
 
 // libtorch/OpenMP single-thread fence.
@@ -192,6 +197,11 @@ extern "C" int kdm6_step_c(
     // not wired into the forward graph (kdm6_fn uses baked-in constants), so a
     // non-zero flag would silently have no effect. Reject it loudly instead.
     if (param_grad_flags != 0) return KDM6_ERR_NOT_IMPLEMENTED;
+    // Match the public Python boundary: dt may be non-positive (the runtime's
+    // documented no-op), but NaN/Inf is outside the scalar contract. ncmin is a
+    // non-negative regime floor; reject malformed values before any tensor work.
+    if (!std::isfinite(dt) || invalid_ncmin(ncmin_land) || invalid_ncmin(ncmin_sea))
+        return KDM6_ERR_INVALID_ARG;
 
     // RAII: restore the caller's (Fortran host) FP env on every return path.
     // Defensive ABI hygiene — libtorch/its BLAS backend could set FTZ/DAZ/rounding;
@@ -349,6 +359,11 @@ extern "C" int kdm6_step_v2_c(const kdm6_step_v2_args* args) {
         return KDM6_ERR_NULL_POINTER;
     }
     if (args->param_grad_flags != 0) return KDM6_ERR_NOT_IMPLEMENTED;
+    // Required dt is always covered by the v2 required prefix. The ncmin fields
+    // are optional and default to zero when absent, so validate the values after
+    // the size-gated reads above and before the thread/tensor boundary.
+    if (!std::isfinite(args->dt) || invalid_ncmin(ncmin_land) || invalid_ncmin(ncmin_sea))
+        return KDM6_ERR_INVALID_ARG;
     // Variant validation: fail-loud BEFORE the thread fence and any tensor
     // work; *handle is already fail-closed to NULL above and no output has
     // been written. Unknown values must never fall back to legacy silently.
@@ -537,6 +552,8 @@ extern "C" int kdm6_step_ad_c(
                   static_cast<const void*>(handle)})) {
         return KDM6_ERR_NULL_POINTER;
     }
+    if (!std::isfinite(dt) || invalid_ncmin(ncmin_land) || invalid_ncmin(ncmin_sea))
+        return KDM6_ERR_INVALID_ARG;
     // Same FP-env insulation as the operational kdm6_step_c: this fp64 DA entry also
     // calls into libtorch/BLAS, which could perturb FTZ/rounding and leak into host
     // dynamics when a DA workflow interleaves with the Fortran/WRF integration.
@@ -601,6 +618,10 @@ extern "C" int kdm6_handle_vjp_c(kdm6_handle_t* h,
     if (h->im <= 0 || h->kme <= 0 || h->jme <= 0) return KDM6_ERR_INVALID_DIM;
 
     FpEnvGuard kdm6_fpenv_guard;  // torch autograd (backward) may touch FP env — insulate host
+    // VJP/JVP are ABI entries too: enforce the same fail-closed single-thread
+    // contract as every forward entry before unpacking tensors or writing the
+    // caller's gradient buffer.
+    if (!ensure_libtorch_singlethread()) return KDM6_ERR_THREAD_CONFIG;
     try {
         auto u = unpack_packed_state(u_packed, h->im, h->kme, h->jme, h->dtype);
         // Repeat-callable by design at the ABI (a DA driver may apply several
@@ -630,6 +651,7 @@ extern "C" int kdm6_handle_jvp_c(kdm6_handle_t* h,
     if (h->im <= 0 || h->kme <= 0 || h->jme <= 0) return KDM6_ERR_INVALID_DIM;
 
     FpEnvGuard kdm6_fpenv_guard;  // Pearlmutter double-VJP (autograd) may touch FP env — insulate host
+    if (!ensure_libtorch_singlethread()) return KDM6_ERR_THREAD_CONFIG;
     try {
         auto v = unpack_packed_state(v_packed, h->im, h->kme, h->jme, h->dtype);
         // Pearlmutter double-VJP under the hood (Handle::jvp); the forward

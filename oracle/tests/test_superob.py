@@ -7,7 +7,8 @@ import pytest
 import torch
 
 from kdm6.obs.obs_ingest import ObsPayload
-from kdm6.obs.superob import superob_to_model_grid
+from kdm6.obs.superob import (load_superobs, save_superobs,
+                               superob_to_model_grid, superob_with_mapping)
 
 _F64 = dict(dtype=torch.float64)
 _REPO = Path(__file__).resolve().parents[2]
@@ -107,6 +108,36 @@ def test_superob_max_dist_must_be_finite_positive():
                                   min_pixels=1)
 
 
+def test_kdtree_mapping_shares_coordinate_validation():
+    """The SciPy fast path rejects the same bad coordinates as collocate."""
+    from kdm6.obs.superob import build_pixel_mapping
+    good_obs_lat = torch.tensor([35.0], **_F64)
+    good_obs_lon = torch.tensor([125.0], **_F64)
+    good_grid_lat = torch.tensor([35.0, 36.0], **_F64)
+    good_grid_lon = torch.tensor([125.0, 125.0], **_F64)
+    cases = [
+        (torch.tensor([float("nan")], **_F64), good_obs_lon,
+         good_grid_lat, good_grid_lon, "observation coordinates"),
+        (good_obs_lat, good_obs_lon, torch.tensor([95.0, 96.0], **_F64),
+         good_grid_lon, "grid coordinates out of range"),
+        (good_obs_lat, good_obs_lon, torch.tensor([35.0, 35.0], **_F64),
+         torch.tensor([125.0, 125.0], **_F64), "degenerate grid"),
+    ]
+    for args in cases:
+        with pytest.raises(ValueError, match=args[-1]):
+            build_pixel_mapping(*args[:-1], max_dist_km=4.0)
+
+
+def test_kdtree_mapping_uses_actual_distance_for_large_gate():
+    """A gate beyond a hemisphere must not fold through chord sin()."""
+    from kdm6.obs.superob import build_pixel_mapping
+    mapping = build_pixel_mapping(
+        torch.tensor([35.0], **_F64), torch.tensor([125.0], **_F64),
+        torch.tensor([35.0, 36.0], **_F64),
+        torch.tensor([125.0, 125.0], **_F64), max_dist_km=50_000.0)
+    assert mapping.tolist() == [0]
+
+
 def test_superob_with_mapping_validates_B_and_mapping_range():
     from kdm6.obs.superob import superob_with_mapping
     pl = _payload(lat=[35.0, 36.0], lon=[125.0, 125.0], bt_vals=[250.0, 251.0])
@@ -121,3 +152,144 @@ def test_superob_with_mapping_validates_B_and_mapping_range():
     bad_lo = torch.tensor([0, -2], dtype=torch.int64)  # < -1: out of range
     with pytest.raises(ValueError, match="mapping"):
         superob_with_mapping(pl, bad_lo, 2, min_pixels=1)
+
+
+def test_superob_with_mapping_rejects_malformed_mapping_before_indexing():
+    pl = _payload(lat=[35.0], lon=[125.0], bt_vals=[250.0])
+    for bad in ([0], torch.tensor([[0]], dtype=torch.int64),
+                torch.tensor([0.0], **_F64)):
+        with pytest.raises(ValueError, match="mapping"):
+            superob_with_mapping(pl, bad, 1, min_pixels=1)
+    for bad_B in (True, 1.0, 0):
+        with pytest.raises(ValueError, match="B"):
+            superob_with_mapping(pl, torch.tensor([0], dtype=torch.int64),
+                                  bad_B, min_pixels=1)
+
+
+def test_superob_archive_schema_and_budget_validation(tmp_path):
+    """Malformed archives fail at load before any consumer sees their tensors."""
+    pl = _payload(lat=[35.0], lon=[125.0], bt_vals=[250.0])
+    so = superob_to_model_grid(
+        ObsPayload(bt=pl.bt, obs_quality=pl.obs_quality, lat=pl.lat,
+                   lon=pl.lon, valid_time_utc="202507190000"),
+        torch.tensor([35.0, 36.0], **_F64),
+        torch.tensor([125.0, 125.0], **_F64), max_dist_km=4.0, min_pixels=1)
+    base = dict(bt=so.bt, obs_quality=so.obs_quality, n_pixels=so.n_pixels,
+                n_assigned_pixels=so.n_assigned_pixels, n_dropped_far=0,
+                valid_time_utc=so.valid_time_utc)
+    cases = []
+    missing = dict(base); missing.pop("n_pixels"); cases.append((missing, "missing keys"))
+    unknown = dict(base); unknown["unexpected"] = 1; cases.append((unknown, "unknown keys"))
+    shape = dict(base); shape["obs_quality"] = so.obs_quality[:1]; cases.append((shape, "same .* shape"))
+    nonfinite = dict(base); nonfinite["bt"] = so.bt.clone(); nonfinite["bt"][0, 0] = float("nan")
+    cases.append((nonfinite, "usable bt contains non-finite"))
+    quality = dict(base); quality["obs_quality"] = so.obs_quality.clone(); quality["obs_quality"][0, 0] = 2.0
+    cases.append((quality, "obs_quality must contain only 0 or 1"))
+    zero = dict(base); zero["n_pixels"] = so.n_pixels.clone(); zero["n_pixels"][0, 0] = 0.0
+    cases.append((zero, "usable cells need n_pixels"))
+    budget = dict(base); budget["n_pixels"] = so.n_pixels.clone(); budget["n_pixels"][0, 0] = 2.0
+    cases.append((budget, "exceeds n_assigned_pixels"))
+    for i, (archive, error) in enumerate(cases):
+        path = tmp_path / f"bad-{i}.pt"
+        torch.save(archive, path)
+        with pytest.raises(ValueError, match=error):
+            load_superobs(path)
+
+
+def test_empty_all_unusable_superob_archive_roundtrip(tmp_path):
+    """An empty input slot may legitimately produce an all-quality1 grid."""
+    empty = ObsPayload(
+        bt=torch.empty((0, 2), **_F64),
+        obs_quality=torch.empty((0, 2), **_F64),
+        lat=torch.empty((0,), **_F64), lon=torch.empty((0,), **_F64))
+    so = superob_with_mapping(empty, torch.empty((0,), dtype=torch.int64), 2,
+                              min_pixels=1)
+    assert so.n_assigned_pixels == 0 and so.n_dropped_far == 0
+    assert bool((so.obs_quality == 1.0).all())
+    archive = tmp_path / "empty-superob.pt"
+    save_superobs(so, archive)
+    loaded = load_superobs(archive)
+    assert loaded.n_assigned_pixels == 0
+    assert torch.equal(loaded.obs_quality, so.obs_quality)
+
+
+def test_superob_rejects_unconsumed_optional_payload_fields():
+    pl = _payload(lat=[35.0], lon=[125.0], bt_vals=[250.0])
+    pl = ObsPayload(bt=pl.bt, obs_quality=pl.obs_quality, lat=pl.lat, lon=pl.lon,
+                    bias=torch.zeros_like(pl.bt))
+    glat = torch.tensor([35.0, 36.0], **_F64)
+    glon = torch.tensor([125.0, 125.0], **_F64)
+    with pytest.raises(ValueError, match="bias/channel_gate"):
+        superob_to_model_grid(pl, glat, glon, max_dist_km=4.0, min_pixels=1)
+
+
+def test_superob_timestamp_roundtrip_and_legacy_archive(tmp_path):
+    """The slot stamp survives both superob implementations and torch I/O."""
+    pl0 = _payload(lat=[35.0], lon=[125.0], bt_vals=[250.0])
+    pl = ObsPayload(bt=pl0.bt, obs_quality=pl0.obs_quality, lat=pl0.lat,
+                    lon=pl0.lon, valid_time_utc="202507190000")
+    glat = torch.tensor([35.0, 36.0], **_F64)
+    glon = torch.tensor([125.0, 125.0], **_F64)
+
+    so = superob_to_model_grid(pl, glat, glon, max_dist_km=4.0, min_pixels=1)
+    assert so.valid_time_utc == "202507190000"
+    mapped = superob_with_mapping(pl, torch.tensor([0], dtype=torch.int64), 1,
+                                   min_pixels=1)
+    assert mapped.valid_time_utc == so.valid_time_utc
+
+    archive = tmp_path / "superob.pt"
+    save_superobs(so, archive)
+    assert load_superobs(archive).valid_time_utc == "202507190000"
+
+    # A pre-timestamp archive remains explicitly untimed.  The primitive
+    # archive contains tensors and scalar metadata only, so weights_only=True
+    # remains the loading boundary (no object pickle fallback).
+    legacy = tmp_path / "legacy-superob.pt"
+    torch.save(dict(bt=so.bt, obs_quality=so.obs_quality, n_pixels=so.n_pixels,
+                    n_assigned_pixels=so.n_assigned_pixels,
+                    n_dropped_far=so.n_dropped_far), legacy)
+    assert load_superobs(legacy).valid_time_utc is None
+
+
+def test_legacy_superob_without_time_is_rejected_by_driver_date_guard(
+        tmp_path, monkeypatch):
+    """An untimed old archive cannot silently enter date-sensitive DA."""
+    from types import SimpleNamespace
+    import numpy as np
+    import kdm6.da_fulldomain as da
+    from kdm6.obs.obs_ingest import ColumnObs
+    from kdm6.state import Forcing, State
+
+    pl = _payload(lat=[35.0], lon=[125.0], bt_vals=[250.0])
+    so = superob_to_model_grid(
+        ObsPayload(bt=pl.bt, obs_quality=pl.obs_quality, lat=pl.lat,
+                   lon=pl.lon, valid_time_utc="202507190000"),
+        torch.tensor([35.0, 36.0], **_F64),
+        torch.tensor([125.0, 125.0], **_F64), max_dist_km=4.0, min_pixels=1)
+    legacy = tmp_path / "legacy-superob.pt"
+    torch.save(dict(bt=so.bt, obs_quality=so.obs_quality, n_pixels=so.n_pixels,
+                    n_assigned_pixels=so.n_assigned_pixels,
+                    n_dropped_far=so.n_dropped_far), legacy)
+    old = load_superobs(legacy)
+    co = ColumnObs(bt=old.bt[:1], obs_quality=old.obs_quality[:1],
+                   n_assigned=old.n_assigned_pixels,
+                   n_dropped_far=old.n_dropped_far, n_dropped_collision=0,
+                   col_of_obs=torch.tensor([0], dtype=torch.int64),
+                   valid_time_utc=old.valid_time_utc)
+    one = torch.ones((1, 1), **_F64)
+    state = State(*(one.clone() for _ in State._fields))
+    forcing = Forcing(*(one.clone() for _ in Forcing._fields))
+    frame = SimpleNamespace(
+        state=state, forcing=forcing, xland=torch.ones(1, **_F64),
+        meta={"nx": 1, "ny": 1, "valid_time_utc": "2025-07-19_00:00:00"})
+    # Stop before any RTTOV or filesystem work; this isolates the existing
+    # driver date guard after it receives the archived timestamp value.
+    monkeypatch.setattr(da, "select_membership",
+                        lambda fr, co, boundary=10: torch.tensor([0]))
+    import kdm6.obs.rttov_case_writer as case_writer
+    monkeypatch.setattr(case_writer, "make_live_run_k",
+                        lambda *a, **k: object())
+    grids = {"p_lay": np.array([1000.0]), "p_half": np.array([1000.0, 900.0]),
+             "t_ref": np.array([250.0]), "q_ref": np.array([1.0])}
+    with pytest.raises(ValueError, match="valid_time_utc.*missing"):
+        da.run_fulldomain_analysis(frame, co, grids, str(tmp_path), channels=())
