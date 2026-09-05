@@ -141,17 +141,18 @@ call, the cap state, and every density-dependent rate, so "second-order effect o
 density on the fall speed" names one candidate among several without separating
 them.
 
-What the departure IS, exactly, is the sum of a metric term and a trajectory
-response,
+For the density contribution, the decomposition is a metric counterfactual
+plus a trajectory response,
 
-    R(ρ′) = Σ_j Δρ′_j Δz_j d_j(ρ)          metric-only counterfactual
+    D(ρ′) = Σ_j Δρ′_j Δz_j d_j(ρ)          metric-only counterfactual
           + Σ_j Δρ′_j Δz_j [d_j(ρ′) − d_j(ρ)]   trajectory response
 
-**Now measured** (`FINDING_metric_trajectory_split_v1.md`): the metric term is
-exactly 0 / −1 / +2, so the whole departure is the trajectory response, and it is
-**0.45–2.04%** of the metric term. What the two weaker arms still establish is
-that a competing explanation would have to reproduce −0.99 and +2.01 across
-three columns by some other route.
+The archived `FINDING_metric_trajectory_split_v1.md` measurement reports a
+trajectory response of **0.45–2.04%** of the metric term for comparable
+inverted/x2 rows. Ideal profile scaling gives 0 / −1 / +2; f32 profile rounding
+can perturb it. This decomposes `D`. The full residual additionally needs
+`Σ rho_lo*(dz_lo*dn_in-dz_up*dn_out)` from applied transfers, so those two terms
+alone do not explain every capped-interface residual.
 
 ## Limits
 

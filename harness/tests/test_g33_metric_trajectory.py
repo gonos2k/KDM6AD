@@ -41,10 +41,10 @@ def result(driver):
     return mt.analysis(driver, 12)
 
 
-def test_the_metric_term_is_EXACTLY_the_profile_scaling(result):
-    """0 for uniform, -1 for inverted, +2 for x2 -- exact by construction, since
-    those profiles scale every density gap by exactly that factor. If this were
-    approximate the decomposition would be a fit rather than an identity."""
+def test_the_metric_term_follows_profile_scaling_with_f32_rounding(result):
+    """Ideal profile ratios hold up to f32 forcing arithmetic on this fixture.
+    The density-term decomposition remains an identity for the actual profile.
+    """
     # +1 for the offsets: a constant added to every level cancels out of
     # (rho_below - rho_above) exactly, so the metric term is untouched while the
     # absolute density moves by 10%.
@@ -235,10 +235,9 @@ def test_the_three_terms_are_an_exact_identity(result):
 
 
 def test_metric_only_is_a_CONCLUSION_not_an_assumption(result):
-    """The metric form equals the full residual only where the number cap
-    contributes nothing. That was assumed; it is now computed and reported as
-    `measure_only`, so a row where the cap binds cannot be read as
-    measure-only."""
+    """Publish the net transfer mismatch instead of assuming it vanishes.
+    This field alone does not certify cap inactivity at every interface.
+    """
     for cols in result["arms"].values():
         for r in cols.values():
             if not r["comparable"]:

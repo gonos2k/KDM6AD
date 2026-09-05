@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Splitting a perturbed arm's residual into metric and trajectory (owner §7).
+"""Splitting a perturbed arm's density term into metric and trajectory (owner §7).
 
 The density arms come out at −0.99 and +2.01 rather than exactly −1 and +2, and
 that departure was once attributed to "density also changes the fall speed". It
@@ -7,16 +7,18 @@ was withdrawn: density also changes the next call's pre-sedimentation state, the
 cap state, and every density-dependent rate, so naming fall speed picked one
 candidate out of several without separating them.
 
-What the departure IS, exactly, is
+For the density-contrast contribution the decomposition is
 
-    R(rho') = sum_j drho'_j dz_j d_j(rho)              metric-only counterfactual
+    D(rho') = sum_j drho'_j dz_j d_j(rho)              metric-only counterfactual
             + sum_j drho'_j dz_j [d_j(rho') - d_j(rho)]  trajectory response
 
-The first term holds the TRANSFERS at their unperturbed values and moves only the
-density gap -- so it is the pure metric scaling, and for `inverted` it is exactly
-−R(rho) and for `x2` exactly 2R(rho), by construction of those profiles. The
-second is everything the perturbation did to the run itself. Their sum is the
-measured residual identically, so this is a decomposition and not a model.
+The first term holds departures at their unperturbed values and moves the
+density gap on unchanged layer geometry. The second is the response of this
+density term to changed departures. Their sum is the density contribution,
+not generally the full residual: add sum_j rho_lo*(dz_lo*dn_in-dz_up*dn_out).
+The ideal inverted/x2 profiles scale the metric by -1 and +2; f32 profile rounding
+can perturb those equalities. These are moist-density-weighted diagnostics;
+the physical number-unit contract remains unresolved (SCIENCE_STATUS.md).
 
 Interfaces correspond one-to-one only when the arm leaves the SUB-STEP SCHEDULE
 alone, which `uniform` and `x2` do and `inverted` does NOT: it drops column 3's
@@ -48,7 +50,7 @@ ARMS = rmx.ARMS
 
 
 def interface_terms(stream: str, chain: str = "main") -> dict:
-    """{col: {key: (drho, dz_above, dn_departure)}} keyed by INTERFACE IDENTITY.
+    """Applied transfers and density/geometry keyed by INTERFACE IDENTITY.
 
     The key is (call, loop, sub-step, upper level, lower level) -- everything
     that names the interface. It used to be a LIST, and `decompose` paired the
@@ -65,35 +67,31 @@ def interface_terms(stream: str, chain: str = "main") -> dict:
     pairing the cap-interface analysis uses.
     """
     rows = {}
+    if chain not in ("main", "ice"):
+        raise ValueError(f"unknown sedimentation chain {chain!r}")
     for i, call in enumerate(nt.calls(stream), start=1):
+        nt.require_applied_interface_records(call)
         for lp in sorted(call["loops"]):
             pre = call["outer_pre_sed"]
             for col in sorted({c for l, c, _ in pre if l == lp}):
                 ks = sorted(k for l, c, k in pre if c == col and l == lp)
                 rho = {k: pre[(lp, col, k)]["rho"] for k in ks}
                 dz = {k: pre[(lp, col, k)]["delz"] for k in ks}
-                ms = call["mstep"].get((lp, chain, col))
-                if ms is None:
-                    continue
+                ms = call["mstep"][(lp, chain, col)]
                 for n in range(1, ms + 1):
-                    top = call["topout"].get((lp, n, col, chain, 0))
-                    if top is None:
-                        continue
+                    top = call["topout"][(lp, n, col, chain, 0)]
                     own, inflow = {0: top[1]}, {}
                     for j in ks[1:]:
-                        cap = call["capin"].get((lp, n, col, chain, j))
-                        if cap:
-                            own[j], inflow[j] = cap[2], cap[3]
+                        cap = call["capin"][(lp, n, col, chain, j)]
+                        own[j], inflow[j] = cap[2], cap[3]
                     for j in ks[1:]:
-                        if (j - 1) not in own:
-                            continue
                         rows.setdefault(col, {})[(i, lp, n, j - 1, j)] = {
                             "drho": rho[j] - rho[j - 1],
                             "dz_up": dz[j - 1], "dn_out": own[j - 1],
                             # the ARRIVAL side, so the number-cap term can be
                             # computed rather than assumed zero (owner §5)
                             "rho_lo": rho[j], "dz_lo": dz[j],
-                            "dn_in": inflow.get(j)}
+                            "dn_in": inflow[j]}
     return rows
 
 
@@ -101,11 +99,12 @@ def decompose(base: dict, arm: dict) -> dict:
     """{col: {metric, trajectory, actual, ...}} for one arm against the baseline.
 
     `metric` uses the ARM's density gap with the BASELINE transfer; `actual` uses
-    both from the arm. Their difference is what the perturbation did to the run
-    rather than to the measure.
+    both from the arm. These are density contributions; `full_interface_residual`
+    also includes the applied arrival/departure mismatch.
     """
     out = {}
-    for col, rows in sorted(arm.items()):
+    for col in sorted(base.keys() | arm.keys()):
+        rows = arm.get(col) or {}
         b = base.get(col) or {}
         # EXACT KEY UNIVERSE, not equal counts (owner P0-1). Two arms with the
         # same number of interfaces can still be describing different ones.
@@ -114,9 +113,16 @@ def decompose(base: dict, arm: dict) -> dict:
             out[col] = {"comparable": False,
                         "reason": f"interface universes differ: {miss} missing, "
                                   f"{extra} extra (counts {len(rows)} vs "
-                                  f"{len(b)}) — the arm changed the sub-step "
-                                  f"schedule, so interfaces do not correspond"}
+                                  f"{len(b)}) — capture or sub-step schedules "
+                                  f"differ, so interfaces do not correspond"}
             continue
+        if any(rows[k][field] != b[k][field]
+               for k in rows for field in ("dz_up", "dz_lo")):
+            out[col] = {"comparable": False,
+                        "reason": "layer geometry differs; this counterfactual varies density only"}
+            continue
+        if any(r["dn_in"] is None for r in (*rows.values(), *b.values())):
+            raise ValueError("metric/trajectory decomposition requires every applied arrival")
         metric = sum(rows[k]["drho"] * rows[k]["dz_up"] * b[k]["dn_out"]
                      for k in rows)
         actual = sum(r["drho"] * r["dz_up"] * r["dn_out"] for r in rows.values())
@@ -135,16 +141,16 @@ def decompose(base: dict, arm: dict) -> dict:
         # and NOT metric + numcap; conflating the two mixes a counterfactual with
         # a measurement.
         #
-        # The measure form alone equals the full residual only when the number
-        # cap never binds. That was ASSUMED for the conservative ice arms and is
-        # now computed: a nonzero term means the split is incomplete and the row
-        # must not be read as measure-only.
-        numcap = sum(r["rho_lo"] * (r["dz_lo"] * r["dn_in"]
-                                    - r["dz_up"] * r["dn_out"])
-                     for r in rows.values() if r["dn_in"] is not None)
+        # The historical name number_cap_term includes any transfer mismatch,
+        # including metric conversion and rounding. A zero NET term does not
+        # prove every interface matched; also report its absolute sum.
+        mismatches = [r["rho_lo"] * (r["dz_lo"] * r["dn_in"]
+                                     - r["dz_up"] * r["dn_out"])
+                      for r in rows.values()]
+        numcap = sum(mismatches)
         full = sum(r["rho_lo"] * r["dz_lo"] * r["dn_in"]
                    - (r["rho_lo"] - r["drho"]) * r["dz_up"] * r["dn_out"]
-                   for r in rows.values() if r["dn_in"] is not None)
+                   for r in rows.values())
         out[col] = {
             "comparable": True, "interfaces": len(rows),
             "baseline": baseline, "metric": metric, "actual": actual,
@@ -160,9 +166,9 @@ def decompose(base: dict, arm: dict) -> dict:
             "trajectory_over_metric": (abs((actual - metric) / metric)
                                        if metric else None),
             "number_cap_term": numcap,
+            "sum_abs_number_transfer_mismatch": sum(abs(v) for v in mismatches),
             "full_interface_residual": full,
-            # metric-only is a CONCLUSION, not an assumption: it holds when the
-            # number cap contributes nothing at this arm's interfaces.
+            # NET diagnostic agreement only; individual mismatches may cancel.
             "measure_only": abs(numcap) <= 1e-9 * max(abs(actual), 1e-300),
         }
     return out
@@ -218,10 +224,13 @@ def report(driver: str, nsplit: int) -> None:
     a = analysis(driver, nsplit)
     print("  The departure from -1 and +2, decomposed rather than attributed.\n")
     print("  metric    = arm's density gap x BASELINE transfer  (pure measure)")
-    print("  trajectory = what the perturbation did to the run itself")
-    print("  Their sum is the measured residual identically.\n")
-    print(f"  {'arm':10} {'col':>3} {'metric/base':>12} {'actual/base':>12} "
+    print("  trajectory = changed departures' contribution to the density term")
+    print("  metric + trajectory = density contribution; full residual also includes transfer mismatch.\n")
+    print(f"  {'arm':10} {'col':>3} {'metric/base':>12} {'density/base':>12} "
           f"{'trajectory':>13} {'traj/metric':>12}")
+    def ratio(value):
+        return f"{value:12.4f}" if value is not None else f"{'-':>12}"
+
     for arm, cols in a["arms"].items():
         for col, r in cols.items():
             if not r["comparable"]:
@@ -229,13 +238,14 @@ def report(driver: str, nsplit: int) -> None:
                 continue
             sh = (f"{100*r['trajectory_over_metric']:11.2f}%"
                   if r["trajectory_over_metric"] is not None else "  -")
-            print(f"  {arm:10} {col:>3} {r['metric_over_baseline']:12.4f} "
-                  f"{r['actual_over_baseline']:12.4f} {r['trajectory']:13.5e} {sh}")
-    print("\n  metric/base is EXACT by construction: 0 (uniform), -1 (inverted),")
+            print(f"  {arm:10} {col:>3} {ratio(r['metric_over_baseline'])} "
+                  f"{ratio(r['actual_over_baseline'])} {r['trajectory']:13.5e} {sh}")
+            print(f"    density={r['actual']:+.6e} mismatch={r['number_cap_term']:+.6e} "
+                  f"full={r['full_interface_residual']:+.6e}")
+    print("\n  With ideal profiles metric/base is 0 (uniform), -1 (inverted),")
     print("  +2 (x2), and +1 for the OFFSET arms — a constant added to every level")
-    print("  cancels out of (rho_below - rho_above) identically. So an offset")
-    print("  changes the magnitude without touching the metric term, and whatever")
-    print("  the residual does there is trajectory, not measure.")
+    print("  cancels in exact arithmetic. Rounded f32 profiles can perturb this.")
+    print("  measure_only describes the NET mismatch, not cap inactivity at every interface.")
 
 
 def main(argv) -> int:

@@ -61,7 +61,6 @@ import g33_matched_closure as mc  # noqa: E402
 import g33_number_transport as nt  # noqa: E402
 import g33_refine_analyze as ra  # noqa: E402
 import g33_probe_read as pr  # noqa: E402
-import g33_arms  # noqa: E402
 
 
 class Interface(NamedTuple):
@@ -102,16 +101,7 @@ def _walk(stream: str, basis: str):
         raise ValueError(f"unknown basis {basis!r}; expected one of {tuple(mc.MEASURES)}")
     calls = nt.calls(stream)
     for call in calls:
-        missing = {"capin", "topout"} - call["features"]
-        if missing:
-            raise nt.StreamError(f"interface analysis requires features {sorted(missing)}")
-        algorithm = call["algorithm"]
-        nt.number_transfer_metric(algorithm, call.get("declared_metric"))
-        if (g33_arms.base(algorithm) == "conservative"
-                and "capin_applied" not in call["features"]):
-            raise nt.StreamError(
-                "conservative CAPIN lacks capin_applied: archived records contain "
-                "unscaled source increments; re-emit with the updated --nflux build")
+        nt.require_applied_interface_records(call)
     measure = mc.window_cell_mass(stream, basis)
     for ci, call in enumerate(calls, start=1):
         for lp in sorted(call["loops"]):

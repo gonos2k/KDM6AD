@@ -1455,6 +1455,25 @@ def surface_cap_binds(call, col, species):
     return abs(left - uncapped) > 1e-6 * abs(uncapped or 1.0)
 
 
+def require_applied_interface_records(call):
+    """Require complete capture with arrivals in destination units.
+
+    Used after calls() validates the declared record universes. Conservative
+    archives predating capin_applied contain unscaled source increments.
+    Every consumer of arrival values must enforce the same meaning.
+    """
+    missing = {"capin", "topout"} - call["features"]
+    if missing:
+        raise StreamError(f"interface analysis requires features {sorted(missing)}")
+    algorithm = call["algorithm"]
+    number_transfer_metric(algorithm, call.get("declared_metric"))
+    if (g33_arms.base(algorithm) == "conservative"
+            and "capin_applied" not in call["features"]):
+        raise StreamError(
+            "conservative CAPIN lacks capin_applied: archived records contain "
+            "unscaled source increments; re-emit with the updated --nflux build")
+
+
 def interior_cap_binds(call, col, species):
     """Legacy API: do a non-bottom cell's OWN outflow and inflow differ?
 
