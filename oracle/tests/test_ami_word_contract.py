@@ -98,6 +98,13 @@ def test_nonfinite_temperature_from_calibration_is_refused():
                  dict(CAL["ir105"], Teff_to_Tbb_c2=1e308), valid_bits=13)
 
 
+def test_nonpositive_temperature_from_finite_calibration_is_refused():
+    cal = dict(CAL["ir105"], Teff_to_Tbb_c0=-300.0,
+               Teff_to_Tbb_c1=0.0, Teff_to_Tbb_c2=0.0)
+    with pytest.raises(ValueError, match="calibration.*non-positive brightness temperature"):
+        dn_to_bt(np.array([0x0BB8], dtype=np.uint16), cal, valid_bits=13)
+
+
 @pytest.mark.parametrize("bits", [None, 10, 15, 16, 13.0, "13", True, np.bool_(True)])
 def test_invalid_valid_bit_metadata_is_not_guessed(bits):
     with pytest.raises(ValueError, match="bit count"):

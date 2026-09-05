@@ -4,9 +4,10 @@
 The default run samples the exact pixels returned by the current production
 ``read_ko_slot(stride=16)`` and ``read_fd_slot(stride=8)`` calls.  Its second
 decode is independent word arithmetic: the old ``&8191``/``>>13`` equations
-are a counterfactual, while ``valid_bits``/``>>14`` is the contract under test.
-``--full-raster-input`` only summarizes an already completed full-raster audit;
-it never reruns that artifact.
+are a counterfactual, while ``valid_bits``/``>>14`` plus the finite-positive
+radiance QC is the current contract under test. ``--full-raster-input`` only
+summarizes an already completed full-raster audit; it never reruns that
+artifact.
 """
 from __future__ import annotations
 
@@ -117,17 +118,44 @@ def independent_words(raw: np.ndarray, vb: int, missing: np.ndarray
     return old_dn, np.where(missing, 1.0, old_q), new_dn, np.where(missing, 1.0, new_q)
 
 
-def independent_bt(dn: np.ndarray, cal: dict[str, Any]) -> np.ndarray:
+def independent_radiance_ok(dn: np.ndarray, cal: dict[str, Any]) -> np.ndarray:
+    """Independent finite-positive radiance predicate for current-QC checks."""
+    gain, offset = scalar(cal["DN_to_Radiance_Gain"]), scalar(cal["DN_to_Radiance_Offset"])
+    with np.errstate(over="ignore", invalid="ignore"):
+        radiance = offset + gain * dn
+    return np.isfinite(radiance) & (radiance > 0.0)
+
+
+def independent_bt(dn: np.ndarray, cal: dict[str, Any], *, historical: bool = False
+                   ) -> np.ndarray:
+    """Independent BT arithmetic; ``historical`` retains the old clip behavior."""
     gain, offset = scalar(cal["DN_to_Radiance_Gain"]), scalar(cal["DN_to_Radiance_Offset"])
     wave = scalar(cal["channel_center_wavelength"])
     h, c, k = (scalar(cal[x]) for x in ("Plank_constant_h", "light_speed", "Boltzmann_constant_k"))
-    rad = offset + gain * dn
+    with np.errstate(over="ignore", invalid="ignore"):
+        rad = offset + gain * dn
     sigma = (10000.0 / wave) * 100.0
-    ls = np.clip(rad * 1.0e-3 / 100.0, 1.0e-30, None)
-    teff = h * c * sigma / k / np.log((2.0 * h * c * c * sigma ** 3) / ls + 1.0)
-    return (scalar(cal["Teff_to_Tbb_c0"])
-            + scalar(cal["Teff_to_Tbb_c1"]) * teff
-            + scalar(cal["Teff_to_Tbb_c2"]) * teff * teff)
+    if historical:
+        # Preserve the bit-only historical counterfactual: its old decoder
+        # clipped nonpositive radiance and left DQF unchanged.
+        radiance_ok = np.ones(rad.shape, dtype=bool)
+        ls = np.clip(rad * 1.0e-3 / 100.0, 1.0e-30, None)
+    else:
+        radiance_ok = np.isfinite(rad) & (rad > 0.0)
+        safe_rad = np.where(radiance_ok, rad, 1.0)
+        ls = np.clip(safe_rad * 1.0e-3 / 100.0, 1.0e-30, None)
+    with np.errstate(over="ignore", invalid="ignore", divide="ignore"):
+        teff = h * c * sigma / k / np.log((2.0 * h * c * c * sigma ** 3) / ls + 1.0)
+        tbb = (scalar(cal["Teff_to_Tbb_c0"])
+               + scalar(cal["Teff_to_Tbb_c1"]) * teff
+               + scalar(cal["Teff_to_Tbb_c2"]) * teff * teff)
+    if historical:
+        return tbb
+    if not np.isfinite(tbb[radiance_ok]).all():
+        raise ValueError("independent AMI calibration yields non-finite brightness temperature")
+    if not (tbb[radiance_ok] > 0.0).all():
+        raise ValueError("independent AMI calibration yields non-positive brightness temperature")
+    return np.where(radiance_ok, tbb, 0.0)
 
 
 def stats(delta: np.ndarray) -> list[Any]:
@@ -192,9 +220,11 @@ def sample_source(source: str, files: list[Path], timestamp: str, cal_table: dic
         info = file_info(path, source, channel, timestamp, cal)
         raw, missing, vb = sampled_raw(path, sel["rows"], sel["cols"], chunk_rows)
         old_dn, old_q, new_dn, new_q = independent_words(raw, vb, missing)
+        new_radiance_ok = independent_radiance_ok(new_dn, cal)
+        new_q = np.where((~new_radiance_ok) & (new_q == 0.0), 3.0, new_q)
         finite_old_q, finite_new_q = old_q[keep], new_q[keep]
         old_valid, new_valid = finite_old_q == 0, finite_new_q == 0
-        old_bt = independent_bt(old_dn[keep], cal)
+        old_bt = independent_bt(old_dn[keep], cal, historical=True)
         new_bt = independent_bt(new_dn[keep], cal)
         j = AMI_CHANNELS.index(channel)
         prod_bt = payload.bt[:, j].detach().cpu().numpy()
@@ -355,6 +385,9 @@ def main() -> int:
     result = {"artifact_role": "production_sample_verification",
               "comparison_role": "current_production_reader_vs_independent_contract_decode",
               "old_equations_are_counterfactual": True,
+              "current_quality_contract": "embedded DQF + NetCDF mask + finite-positive radiance",
+              "current_bt_contract": "positive finite Kelvin for valid radiance; zero unusable placeholder otherwise",
+              "historical_bt_contract": "old radiance clipping retained without radiance QC",
               "scope": {"channels": list(IR_CHANNELS), "ko_timestamp": args.ko_timestamp,
                          "fd_timestamp": args.fd_timestamp, "read_only": True,
                          "independent_read_chunk_rows": args.chunk_rows,

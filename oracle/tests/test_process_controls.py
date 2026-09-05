@@ -231,10 +231,62 @@ def test_alpha_freeze_reservoir_cap():
         "cap distorted a within-budget draw"
 
 
+@pytest.mark.parametrize("kind", ["mass", "number"])
+@pytest.mark.parametrize("stage,rate,alpha_value", [
+    ("scaled", 10000.0, 700.0),  # Each product finite, their sum overflows.
+    ("baseline", 1e308, -1.0),  # A smaller control cannot repair invalid totals.
+])
+def test_freeze_rejects_nonfinite_combined_draw(kind, stage, rate, alpha_value):
+    from kdm6.coordinator import MeltFreezePhaseOutputs
+    from kdm6.process_controls import apply_freeze_controls
+
+    z = torch.zeros((1, 1), dtype=torch.float64)
+    mf = MeltFreezePhaseOutputs(*(z for _ in MeltFreezePhaseOutputs._fields))
+    fields = ("pinuc", "pfrzdtc") if kind == "mass" else ("ninuc", "nfrzdtc")
+    mf = mf._replace(**{field: torch.full_like(z, rate) for field in fields})
+    alpha = torch.tensor(alpha_value, dtype=torch.float64, requires_grad=True)
+    # Verify the witness reaches beyond the already protected product boundary.
+    scaled = _scale(mf, fields, alpha)
+    assert all(torch.isfinite(getattr(scaled, f)).all() for f in fields)
+    qc = torch.full_like(z, 30000.0 if kind == "mass" else .001)
+    nc = torch.full_like(z, 30000.0)
+    # The mass case exercises the numerical guard, not a meteorological state.
+    with pytest.raises(ValueError, match=f"freeze {stage} {kind} combined draw"):
+        apply_freeze_controls(mf, ProcessControls(alpha_freeze=alpha), qc, nc)
+
+
+@pytest.mark.parametrize("offset", [-1e-6, 1e-6])
+def test_freeze_cap_one_sided_derivatives(offset):
+    """D(alpha)=min(0.5*Q*exp(alpha), Q): smooth only on either cap side."""
+    from kdm6.coordinator import MeltFreezePhaseOutputs
+    from kdm6.process_controls import apply_freeze_controls
+
+    qc = torch.full((1, 1), 2e-4, dtype=torch.float64)
+    nc = torch.full_like(qc, 5e6)
+    z = torch.zeros_like(qc)
+    mf = MeltFreezePhaseOutputs(*(z for _ in MeltFreezePhaseOutputs._fields))
+    mf = mf._replace(pinuc=.25*qc, pfrzdtc=.25*qc,
+                     ninuc=.25*nc, nfrzdtc=.25*nc)
+    alpha = torch.tensor(math.log(2) + offset, dtype=torch.float64,
+                         requires_grad=True)
+
+    def mass_draw(a):
+        out = apply_freeze_controls(mf, ProcessControls(alpha_freeze=a), qc, nc)
+        return out.pinuc + out.pfrzdtc
+
+    draw, tangent = torch.func.jvp(mass_draw, (alpha,), (torch.ones_like(alpha),))
+    grad, = torch.autograd.grad(draw.sum(), alpha)
+    expected = min(2e-4 * math.exp(offset), 2e-4)
+    derivative = expected if offset < 0 else 0.0
+    assert draw.item() == pytest.approx(expected, rel=1e-14)
+    assert grad.item() == pytest.approx(derivative, rel=1e-14, abs=1e-18)
+    assert tangent.item() == pytest.approx(derivative, rel=1e-14, abs=1e-18)
+
+
 def test_alpha_freeze_zero_bitwise_on_cap_saturated_ic():
-    """Review finding 1: Fortran's INDEPENDENT D2/D3 caps allow a combined
-    unscaled draw > qc, so a naive qc-budget cap would BIND at α=0 and break
-    the α=0 value-identity by ULPs. The excess-only budget (max(qc, unscaled))
+    """Sequential D2/D3 caps can leave a combined draw > qc by rounding,
+    so a naive qc-budget cap would BIND at α=0 and break the α=0
+    value-identity by ULPs. The excess-only budget (max(qc, unscaled))
     must keep α_freeze=0 bitwise-identical even on a Bigg-cap-saturated IC."""
     sup = State(  # strongly supercooled, qc-rich: Bigg freezing cap saturates
         th=_t2(245.0, 240.0), qv=_t2(8.0e-4, 5.0e-4),

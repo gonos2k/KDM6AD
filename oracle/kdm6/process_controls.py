@@ -10,10 +10,11 @@ Design constraints honored:
 - ``controls=None`` (the default everywhere) adds ZERO ops — the oracle's
   graph and values are byte-identical to the pre-control code. The operational
   C++/f32 path never sees these hooks at all (strongest bitwise protection).
-- Branch/gate masks (ifsat, complete-evap/sublim, conservation trip masks) are
-  evaluated at the UNPERTURBED rates' state — α perturbs magnitudes, not
-  branch selection. This keeps the α→output map smooth (no new kinks on the
-  control path; cf. the §31/§45 kink lessons).
+- Within each phase, rate-generation gates use that phase's input state.
+  The subsequent freeze and group conservation limiters see controlled
+  amounts, so changing α can activate a cap. The α→output map is smooth
+  only within a fixed gate/limiter regime; cap transitions introduce kinks
+  (cf. the §31/§45 kink lessons).
 - exp(0) == 1.0 exactly in IEEE, so α = 0 gives bitwise-identical rates —
   but the α=None and α=0 paths differ in GRAPH (α=0 still inserts ops); use
   None when the control must not exist.
@@ -153,7 +154,9 @@ def apply_freeze_controls(mf_d234, controls: Optional[ProcessControls],
         ninuc + nfrzdtc ≤ max(nc, unscaled draw)
     (= the reservoir up to the ≲1-ULP rounding the baseline itself carries;
     the rates here are per-substep AMOUNTS — the inline applier subtracts
-    them directly). The renorm factor is differentiable (min via clamp)."""
+    them directly). The renorm factor is piecewise differentiable (min via
+    clamp). Both baseline and scaled combined draws must be finite; this
+    boundary refuses overflow instead of silently losing a transfer."""
     if controls is None or controls.alpha_freeze is None:
         return mf_d234
     scaled = _scale(mf_d234, ("pinuc", "ninuc", "pfrzdtc", "nfrzdtc"),
@@ -174,11 +177,21 @@ def apply_freeze_controls(mf_d234, controls: Optional[ProcessControls],
     eps = 1.0e-30
     base_q = mf_d234.pinuc + mf_d234.pfrzdtc
     base_n = mf_d234.ninuc + mf_d234.nfrzdtc
+    scaled_q = scaled.pinuc + scaled.pfrzdtc
+    scaled_n = scaled.ninuc + scaled.nfrzdtc
+    # Value-only rejection, as in _scale: finite per-process products do not
+    # imply a finite combined draw. A budget / Inf factor would erase the
+    # transfer and can give NaN derivatives. Keep the original tensors and
+    # arithmetic for every accepted control.
+    for name, draw in (("baseline mass", base_q), ("baseline number", base_n),
+                       ("scaled mass", scaled_q), ("scaled number", scaled_n)):
+        if not bool(torch.isfinite(draw).all().item()):
+            raise ValueError(f"freeze {name} combined draw must be finite")
     fac_q = torch.clamp(torch.maximum(qc, base_q)
-                        / torch.clamp(scaled.pinuc + scaled.pfrzdtc, min=eps),
+                        / torch.clamp(scaled_q, min=eps),
                         max=1.0)
     fac_n = torch.clamp(torch.maximum(nc, base_n)
-                        / torch.clamp(scaled.ninuc + scaled.nfrzdtc, min=eps),
+                        / torch.clamp(scaled_n, min=eps),
                         max=1.0)
     return scaled._replace(
         pinuc=scaled.pinuc * fac_q, pfrzdtc=scaled.pfrzdtc * fac_q,

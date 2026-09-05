@@ -40,9 +40,11 @@ missing mask separately marks a pixel unusable, as before.
 
 Calibration coefficients must be finite scalars, with positive wavelength
 and Planck constants and representable positive Planck factors. A malformed
-calibration or a nonfinite BT from positive radiance raises an error instead
-of treating a file/configuration error as pixel missingness. Negative AMI
-radiance gains remain valid. KO and FD readers share this one boundary.
+calibration or a nonfinite or nonpositive BT in kelvin from positive radiance
+raises an error instead of treating a file/configuration error as pixel
+missingness. This is the physical Kelvin domain, not an empirical temperature
+range filter. The BT=0 placeholder for invalid radiance remains unusable.
+Negative AMI radiance gains remain valid. KO and FD readers share this boundary.
 
 With the shipped coefficients, synthetic DQF=0 words IR105 `0x1FFF` and
 SW038 `0x3FFF` yield negative radiance. They are unusable, even though clipping
@@ -50,6 +52,19 @@ their radiance could produce finite, misleading temperatures. Synthetic
 NetCDF → payload → collocation → combined mask → Huber tests verify zero
 loss gradient for these pixels and retain a valid neighbour's contribution.
 This checks input/QC propagation, not a live RTTOV or forecast experiment.
+
+The independent `measure_ami_bits.py` comparison applies this same physical
+domain and pixel-QC contract to its current-reader expectation. Its historical
+counterfactual retains the old bit extraction and radiance clipping, including
+the misleading finite BT from a negative radiance. Those old values describe
+the old decoder; they are not current usable observations. Published historical
+measurement files retain their original source hashes and results.
+
+The [post-PR209 checklist](../harness/evidence/CHECKLIST_pr209_boundary_resolution_2026-09-06.md)
+records the new regression and normal-value checks. Its
+[KO/FD production sample](reports/ami_boundary_followup_sample_20260906.json)
+compares the updated independent expectation with the current reader at
+explicit strides 16/8; it does not replace the historical full-raster evidence.
 
 The [synthetic boundary record](reports/ami_radiance_boundary_20260906.json)
 compares the saved PR209 parent decoder at `2f88c4a` with this correction.
