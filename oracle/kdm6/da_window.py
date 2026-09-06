@@ -119,7 +119,10 @@ class WindowConfig:
     min_total_hydro: float = 1.0e-12     # §3.1 diagnostic threshold (not the skip condition)
     subsat_margin: float = 1.0e-3        # strict sub-saturation margin for the provable skip
     obs_active: Callable[[int], bool] | None = None
-    # §8.2 hydrometeor-centric adjoint (None = all fields)
+    # §8.2 initial control-space projection (None = all fields).  This is
+    # applied once to adj_x0 after the full window pullback; intermediate VJPs,
+    # eta/eta_pre covectors, and parameter covectors stay in the full State
+    # space so cross-field Jacobian paths are preserved.
     active_fields: tuple[str, ...] | None = None
     # [G4] True → backward 스윕에서 스텝별 ∂⟨M(x_t,θ), λ_{t+1}⟩/∂θ 를 누적해
     # WindowResult.grad_params 로 반환 (config.params 에 live leaf 필요).
@@ -217,6 +220,10 @@ def run_da_window(
         the fp64 trajectory (x_t = state BEFORE step t for t<T; x_T = final).
         Return None when there is no observation at t.
     config : WindowConfig
+        ``config.active_fields`` is an initial control-space projection. The
+        backward sweep keeps full intermediate covectors (including the
+        covectors used for ``eta``, ``eta_pre``, and parameter gradients) and
+        masks only the returned ``adj_x0``.
 
     Returns
     -------
@@ -224,6 +231,8 @@ def run_da_window(
     """
     params = config.params if config.params is not None else make_parameters()
     T = len(forcings)
+    if config.active_fields is not None:
+        _validate_active_fields(config.active_fields)
 
     # ── forward sweep: fp64 value-only + checkpoints + obs adjoints ─────────
     x = _to_f64(x0)
@@ -309,7 +318,10 @@ def run_da_window(
             else:
                 for k, g in pg.items():
                     grad_params_acc[k] = grad_params_acc[k] + g
-        adj = handle.vjp(adj, active_fields=config.active_fields)
+        # active_fields is an INITIAL control-space projection.  Keep every
+        # intermediate covector full so J_t^T can carry output sensitivity
+        # through inactive fields into the active x0 subspace.
+        adj = handle.vjp(adj)
         handle.close()
         vjp_steps.append(t)
         if grad_eta_pre is not None:
@@ -324,7 +336,6 @@ def run_da_window(
     # accumulated covector as well.  Do not pre-project obs_adj: an inactive
     # observed output may still depend on an active input through J^T.
     if config.active_fields is not None:
-        _validate_active_fields(config.active_fields)
         adj = _mask_inactive_fields(adj, config.active_fields)
 
     return WindowResult(adj_x0=adj, checkpoints=checkpoints,

@@ -89,8 +89,14 @@ class WindowLinearization:
 
         obs_adj: {t: covector} (t = 0..T; run_da_window 과 동일 규약 —
         u_t 는 x_t 공간, t=T 는 state_final 공간).
+
+        ``active_fields`` is the initial control-space projection: all
+        intermediate VJPs receive the full covector so cross-field paths are
+        retained, and only the returned x0 covector is projected.
         """
         self._assert_open()
+        if active_fields is not None:
+            _validate_active_fields(active_fields)
         # 사전 검증 (Codex stop-review): broadcast-호환이지만 틀린 covector shape
         # ((1,K) vs (B,K) 등)는 vjp 내적/누산에서 조용히 broadcast 되어
         # wrong-but-finite adjoint 가 된다 — run_da_window 와 동일한 exact-shape
@@ -120,15 +126,16 @@ class WindowLinearization:
         adj = (_f64(adj) if adj is not None
                else _zeros_like_state(self.state_final))
         for t in reversed(range(self.T)):
-            adj = self._handles[t].vjp(adj, retain_graph=True,
-                                       active_fields=active_fields)
+            # Project only the final x0 control covector.  Applying the mask
+            # at each intermediate VJP would discard paths through inactive
+            # output fields before they reach an active initial field.
+            adj = self._handles[t].vjp(adj, retain_graph=True)
             if t in norm:
                 adj = _add(adj, _f64(norm[t]))
         # A t=0 covector is added after the final per-step VJP.  Project the
         # accumulated x0 result at the control boundary; retain the full
         # observed covector for each J^T pullback above.
         if active_fields is not None:
-            _validate_active_fields(active_fields)
             adj = _mask_inactive_fields(adj, active_fields)
         return adj
 
@@ -139,7 +146,8 @@ class WindowLinearization:
         tangent_at_x_t 는 스텝 t 적용 전 접선 (obs 가 x_t 를 보는 규약과 동일).
         """
         self._assert_open()
-        _validate_state_shapes(v0, self.checkpoints[0], arg="v0",
+        x0_ref = self.checkpoints[0] if self.T else self.state_final
+        _validate_state_shapes(v0, x0_ref, arg="v0",
                                ref_name="x_0")
         want = set(_normalize_obs_times(obs_times, self.T))
         out: dict = {}

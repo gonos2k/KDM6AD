@@ -177,8 +177,11 @@ def dn_to_bt(raw: np.ndarray, cal: dict, *, valid_bits: int
         teff = planck_t / np.log(planck_r / l_sigma + 1.0)
         tbb = coefficients["Teff_to_Tbb_c0"] + coefficients["Teff_to_Tbb_c1"] * teff \
             + coefficients["Teff_to_Tbb_c2"] * teff * teff
-    if not np.isfinite(tbb[radiance_ok]).all():
+    tbb_ok = tbb[radiance_ok]
+    if not np.isfinite(tbb_ok).all():
         raise ValueError("AMI calibration yields non-finite brightness temperature")
+    if not (tbb_ok > 0.0).all():
+        raise ValueError("AMI calibration yields non-positive brightness temperature")
     quality = np.where((~radiance_ok) & (quality == 0.0), 3.0, quality)
     return np.where(radiance_ok, tbb, 0.0), quality
 
