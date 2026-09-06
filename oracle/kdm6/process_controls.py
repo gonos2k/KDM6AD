@@ -48,6 +48,7 @@ deferral). Extending coverage = same phase-output-boundary pattern.
 """
 from __future__ import annotations
 
+import math
 from typing import NamedTuple, Optional
 
 import torch
@@ -204,19 +205,32 @@ def apply_freeze_controls(mf_d234, controls: Optional[ProcessControls],
         # valid draws and even break alpha=0 value identity.
         binding = draw > budget
         safe_base = torch.where(binding, base, torch.ones_like(base))
-        # Rescale subnormal amounts by an exact power of two before taking
-        # their ratio. Otherwise 1/base can overflow in reverse AD even when
-        # the final rate/reservoir derivatives are representable.
-        tiny = torch.finfo(base.dtype).tiny
-        normalize = torch.where(safe_base < tiny,
-                                torch.full_like(base, 1.0 / tiny),
-                                torch.ones_like(base))
-        normalized_base = safe_base * normalize
-        for field in fields:
-            capped[field] = torch.where(
-                binding, (getattr(mf_d234, field) * normalize)
-                / normalized_base * budget,
-                getattr(scaled, field))
+        safe_budget = torch.where(binding, budget, torch.ones_like(budget))
+        # B >= S for this nonnegative freeze budget, and binding with finite
+        # scaled sums bounds B/S by exp(alpha). Compute this bounded ratio
+        # before multiplying an amount: amount/S may underflow even when
+        # amount*(B/S) is representable. Normalizing BOTH B and S also avoids
+        # losing the denominator's first/higher derivatives inside division.
+        # Integer exponent selection is value-only; multiplication keeps the
+        # live budget/base graph. Cap the shift so the multiplier stays finite
+        # even when S itself is subnormal (no epsilon is added to the budget).
+        exponent = torch.frexp(safe_base)[1]
+        max_shift = -math.log2(torch.finfo(base.dtype).tiny)
+        normalize = torch.exp2((-exponent).clamp(max=max_shift).to(base.dtype))
+        budget_ratio = (safe_budget * normalize) / (safe_base * normalize)
+        first, second = fields
+        a = torch.where(binding, getattr(mf_d234, first), torch.zeros_like(base))
+        b = torch.where(binding, getattr(mf_d234, second), torch.zeros_like(base))
+        first_is_small = a <= b
+        small = torch.where(first_is_small, a, b) * budget_ratio
+        # The larger share is the budget complement. Its direct quotient's
+        # self-derivative subtracts nearly equal terms and can erase a finite
+        # cross-process sensitivity even after denominator normalization.
+        large = safe_budget - small
+        capped[first] = torch.where(binding, torch.where(first_is_small, small, large),
+                                     getattr(scaled, first))
+        capped[second] = torch.where(binding, torch.where(first_is_small, large, small),
+                                      getattr(scaled, second))
     return scaled._replace(**capped)
 
 
