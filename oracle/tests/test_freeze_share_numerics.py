@@ -152,3 +152,59 @@ def test_larger_share_keeps_its_small_self_derivative():
     assert tangent.item() == pytest.approx(1.5, rel=1e-14)
     assert adj.item() == pytest.approx(1.5, rel=1e-14)
     assert second.item() == pytest.approx(-1.5, rel=1e-14)
+
+
+@pytest.mark.parametrize("b,alpha_value", [(1e-300, 700.0), (1e-100, 300.0)])
+def test_subnormal_share_budget_ad_domain_is_rejected_before_derivatives(
+        b, alpha_value):
+    """Reject a subnormal amount with a normal final budget covector."""
+    a = torch.nextafter(torch.zeros((), **F64), torch.ones((), **F64))
+    b = torch.tensor(b, **F64)
+    budget = torch.tensor(1.0, **F64)
+    with pytest.raises(ValueError, match="supported AD numerical domain"):
+        _number_cap(a, b, budget, alpha_value)
+
+
+@pytest.mark.parametrize(
+    ("a", "b"),
+    [(1e-300, 1e-300), (0.0, 1e-300)],
+)
+def test_tiny_source_ad_domain_is_rejected_before_jvp(a, b):
+    """Reject source directions whose quotient tangent is not representable."""
+    with pytest.raises(ValueError, match="supported AD numerical domain"):
+        _number_cap(a, b, 1.0, 700.0)
+
+
+@pytest.mark.parametrize(
+    ("a", "b", "budget"),
+    [(1e-300, 1.2, 1.5e308),
+     (1e-312, 9e-312, 1e-3)],
+)
+def test_extreme_freeze_ad_domain_is_rejected_before_forward(a, b, budget):
+    """Finite draws with overflowing AD intermediates are refused.
+
+    The final value and mathematical partials can remain finite; the rejected
+    quantities are intermediate products used by the chosen AD operation order.
+    """
+    with pytest.raises(ValueError, match="supported AD numerical domain"):
+        _number_cap(a, b, budget, 709.5)
+
+
+def test_large_finite_alpha_remains_supported_for_safe_share_domain():
+    """The domain guard is local; safe binding shares are not alpha-clipped."""
+    out = _number_cap(.001, .003, 1.0, 709.5)
+    assert out.ninuc.item() == pytest.approx(.25, rel=1e-14, abs=0.0)
+    assert out.nfrzdtc.item() == pytest.approx(.75, rel=1e-14, abs=0.0)
+
+
+def test_mixed_batch_rejects_if_any_binding_cell_is_outside_ad_domain():
+    """A bad binding cell cannot silently pass through a batched control call."""
+    a = torch.tensor([[.001, 1e-300]], **F64)
+    b = torch.tensor([[.003, 1.2]], **F64)
+    budget = torch.tensor([[1.0, 1.5e308]], **F64)
+    alpha = torch.tensor([[709.5, 709.5]], **F64)
+    z = torch.zeros_like(a)
+    mf = MeltFreezePhaseOutputs(*(z for _ in MeltFreezePhaseOutputs._fields))
+    mf = mf._replace(ninuc=a, nfrzdtc=b)
+    with pytest.raises(ValueError, match="supported AD numerical domain"):
+        apply_freeze_controls(mf, ProcessControls(alpha_freeze=alpha), z, budget)
