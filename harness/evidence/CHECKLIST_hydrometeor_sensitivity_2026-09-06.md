@@ -344,3 +344,38 @@ cold-profile cap transitions and local energy identity; overlapping earlier
 suites). Local thermal FD maximum relative error is 2.6896472278e-11. Artifacts:
 `graphify-out/goal-budget-20260907/parent/`. Prior full-oracle and CI results
 remain attached to their recorded commits until this head is checked.
+
+## Applied satadj and downstream melting (2026-09-07, baseline 43b5426)
+
+- [x] **V1 total control→later process:** on the existing admissible melt
+  fixture, total riming alpha changes D5 `pgeml`. The actual source is the
+  controlled **pre-conservation** `cold` bundle, not the later `cold_limited`
+  record. Genuine forward-mode JVP and reverse VJP both equal
+  -8.751409092818744e-10; independent FD at .01/.03/.1 has maximum relative
+  difference .001664725 and unchanged tapped topology. The example paacw_adj
+  value does not establish its unique causal contribution. No runtime or
+  global diagnostic monkeypatch is used.
+- [x] **V4 actual satadj boundary:** move the existing stage record to the
+  executed update and retain pcact, pcond, xl and cpm. No duplicate boundary
+  or change to physics arithmetic is introduced. The local identity is
+  `cpm*(T_out-T_in) = xl*(pcact+pcond)*dtcld`, including activation.
+  Cold pointwise residual is 2.01794137e-12 J/kg. A resolved warm qv direction
+  gives about1193.77672658 J/kg; actual/formula AD and independent FD at
+  1e-4/1e-3/1e-2 agree with maximum relative differences 2.217e-10/9.213e-11.
+  The cold pcond-only derivative remains unresolved numerically. A few endpoint
+  ULPs do not exclude upstream roundoff. Full-column/all-subcycle energy,
+  sedimentation enthalpy and physical mass-reference conventions remain open.
+- [x] **N1 bounded refinement evidence:** three existing singleton regimes at
+  fixed forcing/final time20s, 1/2/4/8 external steps, transported initial-qv
+  JVPs and independent endpoint trajectories. Warm qc successive state and
+  tangent differences decrease; melt qc state differences decrease while
+  tangent differences flatten/increase at the finest pair. Cold nccn changes
+  are unresolved at output spacing. This measures behavior, not universal
+  convergence order or an all-branch proof.
+
+Final focused validation: **14 passed /18 deprecation warnings** (12.21s).
+Warnings originate in torch.jit.script during genuine forward-mode execution.
+Counts overlap prior suites. Reproducible public-source artifacts live in
+`graphify-out/goal-applied-20260907/` (parent, energy, process). M1 copied-host
+instrumentation is separate work; no ten-minute applied residual is claimed
+by these portable tests. Operational f32 and packed ABI are unchanged.

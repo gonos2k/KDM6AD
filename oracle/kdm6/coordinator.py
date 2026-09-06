@@ -1819,6 +1819,8 @@ def apply_satadj_step_torch(
     *,
     dtcld: float,
     nccn: "torch.Tensor | None" = None,
+    diagnostic_trace=None,
+    diagnostic_step: int = 0,
 ) -> "CoordinatorState | tuple[CoordinatorState, torch.Tensor]":
     """F1g+ — saturation adjustment on the POST-state-update + POST-reclass state
     (Fortran module_mp_kdm6.F:2922-2943). Mirrors C++ apply_satadj_step.
@@ -1842,11 +1844,19 @@ def apply_satadj_step_torch(
         qs1 = _thermo.compute_qs_water(state.t, forcing.p, params=thermo_params)
         pcond = _satadj.saturation_adjustment_torch(
             state.t, state.qv, state.qc, qs1, xl, cpm_safe, params=satadj_params, dtcld=dtcld)
-        return state._replace(
+        new_state = state._replace(
             qv=torch.clamp(state.qv - pcond * dtcld, min=0.0),
             qc=torch.clamp(state.qc + pcond * dtcld, min=0.0),
             t=state.t + pcond * xl / cpm_safe * dtcld,
         )
+        if diagnostic_trace is not None:
+            diagnostic_trace.record_stage(
+                "satadj", diagnostic_step, dtcld, state, new_state, None,
+                branch=(pcond != 0), operands={"pcact": torch.zeros_like(pcond), "pcond": pcond,
+                                               "xl": xl, "cpm": cpm_safe},
+                metadata={"kind": "applied_latent_transfer", "pcond_units": "kg/kg/s",
+                          "branch_scope": "pcond nonzero only; not all satadj branches"},)
+        return new_state
 
     # ── CCN activation + satadj + complete-evap NC→NCCN ──────────────────────────
     # 1:1 mirror of C++ apply_satadj_step (coordinator.cpp:1301-1361 / Fortran :2905-2939).
@@ -1910,7 +1920,16 @@ def apply_satadj_step_torch(
     qc_final = torch.clamp(qc_pp + pcond * dtcld, min=0.0)
     t_final = t_pp + pcond * xl / cpm_safe * dtcld
 
-    return state._replace(qv=qv_final, qc=qc_final, t=t_final, nc=nc_final), nccn_final
+    new_state = state._replace(qv=qv_final, qc=qc_final, t=t_final, nc=nc_final)
+    if diagnostic_trace is not None:
+        diagnostic_trace.record_stage(
+            "satadj", diagnostic_step, dtcld, state, new_state, None,
+            branch=(pcond != 0), operands={"pcact": pcact, "pcond": pcond,
+                                           "xl": xl, "cpm": cpm_safe},
+            metadata={"kind": "applied_latent_transfer", "pcond_units": "kg/kg/s",
+                      "includes_pcact": True,
+                      "branch_scope": "pcond nonzero only; not all satadj branches"},)
+    return new_state, nccn_final
 
 
 def apply_homogeneous_freeze_supercold_torch(
@@ -2311,22 +2330,15 @@ def kdm62d_one_step_torch(
     # state_update_torch so condensation fires on the proper post-mass-balance,
     # post-reclass state (the C++↔Python parity fix Codex flagged).
     _activate = nccn is not None
-    _pre_sat = new_state
     sat_result = apply_satadj_step_torch(
         new_state, forcing, pre.xl, pre.cpm,
         warm_params.satadj, full_params.thermo, dtcld=dtcld, nccn=nccn,
+        diagnostic_trace=diagnostic_trace, diagnostic_step=diagnostic_step,
     )
     if _activate:
         new_state, nccn = sat_result   # nccn updated by CCN activation — carried out
     else:
         new_state = sat_result
-    if diagnostic_trace is not None:
-        diagnostic_trace.record_stage(
-            "satadj", diagnostic_step, dtcld, _pre_sat,
-            new_state, None, branch=(pre.supcol >= 0), metadata={
-                "kind": "post_state_adjustment",
-                "note": "satadj boundary captured after evaluation; use state_update for net transfer",
-            })
     # review9#1: paired threshold cleanup (Fortran 2951-2970) — *after* reclassifications
     # to catch tiny qs/qc remnants Picons/rain-cloud may have produced.
     # [P0-4] measure the cleanup sink at the exact boundary (None → no diagnostic)
