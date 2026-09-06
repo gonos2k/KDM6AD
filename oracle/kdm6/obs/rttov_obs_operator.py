@@ -89,6 +89,10 @@ class ObsOperatorConfig(NamedTuple):
 class RttovObsOp(torch.autograd.Function):
     """forward: runK 1x -> (BT, rad_quality), cache K. backward: K^T·λ_BT.
 
+    K is recomputed at each forward profile. This is a first-order derivative
+    contract: the cached external K has no differentiable dependence on that
+    profile, so a second backward does not supply dK/dx or the full Hessian.
+
     Clear-sky: ``apply(run_k, rttov_config, t_lay, q_lay, p_lay, p_half)`` (6 args).
     All-sky (cloud): ``apply(..., p_half, clw, ciw, deff_liq, deff_ice, cfrac)`` (11
     args, all-or-nothing). ``run_k``/``rttov_config`` are non-tensor; ``t_lay``/

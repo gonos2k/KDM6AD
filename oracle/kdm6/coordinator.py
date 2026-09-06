@@ -1955,6 +1955,8 @@ def kdm62d_one_step_torch(
     controls=None,       # [DA §5.2] ProcessControls (fp64 DA path only). None → ZERO
                          # added ops (byte-identical oracle); see process_controls.py.
     budget=None,         # [P0-4] opt-in water-budget ledger; None → byte-identical (no diagnostic)
+    diagnostic_trace=None,  # opt-in stage trace; None → no diagnostic work
+    diagnostic_step: int = 0,
 ) -> "CoordinatorState | tuple[CoordinatorState, torch.Tensor]":
     """F1 chain을 *single timestep*에 대해 한 번 호출 → new state 반환.
 
@@ -1993,6 +1995,10 @@ def kdm62d_one_step_torch(
         state, forcing, pre, aux.n0so, aux.n0go, params=mf_params, dtcld=dtcld)
     working1 = apply_melt_freeze_inline_torch(
         state, mf_d1, pre, dtcld=dtcld, xls=full_params.thermo.xls)
+    if diagnostic_trace is not None:
+        diagnostic_trace.record_stage(
+            "d1_melt", diagnostic_step, dtcld, state, working1, mf_d1,
+            branch=(pre.supcol < 0), metadata={"kind": "applied_transfer"})
 
     # 1b. Homogeneous freeze (Fortran :1410-1420): supcol>40 ⇒ all qc→qi, between
     # D1 melt and the post-melt re-slope (so the re-slope + D2-D4 see post-homog qc).
@@ -2076,6 +2082,10 @@ def kdm62d_one_step_torch(
     mf_d234 = apply_freeze_controls(mf_d234, controls, working1b.qc, working1b.nc)
     working = apply_melt_freeze_inline_torch(
         working1b, mf_d234, pre, dtcld=dtcld, xls=full_params.thermo.xls)
+    if diagnostic_trace is not None:
+        diagnostic_trace.record_stage(
+            "d2_d4_freeze", diagnostic_step, dtcld, working1b, working, mf_d234,
+            branch=(pre1.supcol >= 0), metadata={"kind": "applied_transfer"})
 
     # 4. rebuild on the post-freeze state (re-slope; the prior STEP-2 rebuild).
     pre2, aux2 = rebuild_aux_torch(
@@ -2167,11 +2177,35 @@ def kdm62d_one_step_torch(
 
     cold_out = apply_cold_controls(cold_out, controls)   # [DA §5.2] no-op when None
 
+    if diagnostic_trace is not None:
+        diagnostic_trace.record_stage(
+            "warm", diagnostic_step, dtcld, working, working, warm_out,
+            branch=(pre2.supcol < 0), metadata={
+                "kind": "rate_generation",
+                "upstream_to_cold": "warm.prevp",
+                "controls_applied": controls is not None,
+            })
+        diagnostic_trace.record_stage(
+            "cold", diagnostic_step, dtcld, working, working, cold_out,
+            branch=(pre2.supcol >= 0), metadata={
+                "kind": "rate_generation",
+                "upstream_from_warm": "warm.prevp",
+                "controls_applied": controls is not None,
+            })
+
     mf5 = melt_freeze_d5_torch(
         working, forcing, pre2, cold_out,
         aux2.n0so, aux2.n0go, params=mf_params, dtcld=dtcld,
     )
     mf5 = apply_melt_controls(mf5, controls)             # [DA §5.2] no-op when None
+    if diagnostic_trace is not None:
+        diagnostic_trace.record_stage(
+            "d5_melt", diagnostic_step, dtcld, working, working, mf5,
+            branch=(pre2.supcol < 0), metadata={
+                "kind": "rate_generation",
+                "upstream_from_cold": "cold.paacw_adj/psacr_adj/pgacr_adj",
+                "controls_applied": controls is not None,
+            })
 
     # F1d2: group conservation limiters bound warm/cold/D5 sinks against the
     # WORKING (post-melt/freeze) reservoirs, gated by post-freeze supcol — exactly
@@ -2188,6 +2222,34 @@ def kdm62d_one_step_torch(
         # parameter bundles; slope and DSD consumers receive it directly.
         ncmin_tensor=ncmin_tensor,
     )
+    if diagnostic_trace is not None:
+        # Keep the rate-generation records above and add the rates that actually
+        # reach state_update after the shared reservoir/number limits.  The two
+        # records are intentionally separate: a raw process rate is not an
+        # applied transfer when a conservation cap binds.
+        diagnostic_trace.record_stage(
+            "warm_limited", diagnostic_step, dtcld, working, working, warm_out,
+            branch=(pre2.supcol < 0), metadata={
+                "kind": "applied_rate",
+                "upstream_to_cold": "warm.prevp",
+                "source_stage": "warm",
+                "conservation_limited": True,
+            })
+        diagnostic_trace.record_stage(
+            "cold_limited", diagnostic_step, dtcld, working, working, cold_out,
+            branch=(pre2.supcol >= 0), metadata={
+                "kind": "applied_rate",
+                "upstream_from_warm": "warm.prevp",
+                "source_stage": "cold",
+                "conservation_limited": True,
+            })
+        diagnostic_trace.record_stage(
+            "d5_limited", diagnostic_step, dtcld, working, working, mf5,
+            branch=(pre2.supcol < 0), metadata={
+                "kind": "applied_rate",
+                "source_stage": "d5_melt",
+                "conservation_limited": True,
+            })
 
     # F1e: state update on the WORKING base. HYBRID pre (Fortran-exact):
     #   xl/cpm = ENTRY (module_mp_kdm6.F:835-836 set once, reused through mass balance),
@@ -2200,6 +2262,13 @@ def kdm62d_one_step_torch(
         working, pre_su, warm_out, cold_out, mf5,
         dtcld=dtcld, xls=full_params.thermo.xls, delta_src=None,
     )
+    if diagnostic_trace is not None:
+        diagnostic_trace.record_stage(
+            "state_update", diagnostic_step, dtcld, working, new_state, None,
+            branch=(pre2.supcol >= 0), metadata={
+                "kind": "applied_transfer",
+                "rates_are_conservation_limited": True,
+            })
     # BRS density re-clamp #4 (Fortran ProgB_param L2772/L2863 = the LAST ProgB of the
     # sub-cycle, AFTER the cold/warm graupel-volume adds at L2643/L2751). This is the
     # reclamp that produces the OUTPUT bg (L406 bg=brs, no post-L2863 brs mod). It caps
@@ -2227,6 +2296,7 @@ def kdm62d_one_step_torch(
     # state_update_torch so condensation fires on the proper post-mass-balance,
     # post-reclass state (the C++↔Python parity fix Codex flagged).
     _activate = nccn is not None
+    _pre_sat = new_state
     sat_result = apply_satadj_step_torch(
         new_state, forcing, pre.xl, pre.cpm,
         warm_params.satadj, full_params.thermo, dtcld=dtcld, nccn=nccn,
@@ -2235,15 +2305,31 @@ def kdm62d_one_step_torch(
         new_state, nccn = sat_result   # nccn updated by CCN activation — carried out
     else:
         new_state = sat_result
+    if diagnostic_trace is not None:
+        diagnostic_trace.record_stage(
+            "satadj", diagnostic_step, dtcld, _pre_sat,
+            new_state, None, branch=(pre.supcol >= 0), metadata={
+                "kind": "post_state_adjustment",
+                "note": "satadj boundary captured after evaluation; use state_update for net transfer",
+            })
     # review9#1: paired threshold cleanup (Fortran 2951-2970) — *after* reclassifications
     # to catch tiny qs/qc remnants Picons/rain-cloud may have produced.
     # [P0-4] measure the cleanup sink at the exact boundary (None → no diagnostic)
-    _wb_pre_clean = new_state if budget is not None else None
+    _wb_pre_clean = new_state
     new_state = apply_threshold_cleanup_torch(new_state)
     if budget is not None:
         budget.add_cleanup(_wb_pre_clean, new_state, forcing)
+    if diagnostic_trace is not None:
+        diagnostic_trace.record_stage(
+            "cleanup", diagnostic_step, dtcld, _wb_pre_clean if _wb_pre_clean is not None else new_state,
+            new_state, None, metadata={"kind": "applied_transfer"})
     # review9#2: DSD number limiters (Fortran 2972-3013) — lamda 범위를 벗어나면 number 재계산.
+    _pre_limit = new_state
     new_state = apply_dsd_number_limiters_torch(new_state, forcing.den, ncmin_tensor=ncmin_tensor)
+    if diagnostic_trace is not None:
+        diagnostic_trace.record_stage(
+            "dsd_limiter", diagnostic_step, dtcld, _pre_limit, new_state, None,
+            metadata={"kind": "applied_transfer"})
     return (new_state, nccn) if _activate else new_state
 
 
