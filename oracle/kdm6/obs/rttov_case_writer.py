@@ -25,7 +25,8 @@ import shutil
 from pathlib import Path
 
 from .rttov_runner import (DEFAULT_RTTOV_TIMEOUT, ad_rttov_home,
-                           exclusive_rttov_case, rttov_runtime_root, run_rttov_k,
+                           exclusive_rttov_case, rttov_runtime_root,
+                           _resolve_run_script, _run_rttov_k_unlocked,
                            validate_rttov_timeout)
 
 # The ami/501 GK2A AMI clear-sky fixture (6 profiles x 16 channels, 69 layers).
@@ -709,8 +710,30 @@ def _patch_config_counts(config_path: Path, nprofiles: int, nchannels_total: int
     config_path.write_text(text)
 
 
+def _selected_fixture_case_dir(rttov_input, fixture_case_dir=None) -> Path:
+    """Select the fixture path without touching the filesystem."""
+    if fixture_case_dir is not None:
+        return Path(fixture_case_dir)
+    profile = getattr(rttov_input, "profile", {})
+    if any(key in profile for key in _CLOUD_KEYS):
+        return cloud_fixture_case_dir()
+    return default_fixture_case_dir()
+
+
+def _validate_disjoint_case_paths(out: Path, fixture: Path) -> None:
+    """Reject equal, ancestor, and descendant output/fixture paths."""
+    out_resolved = out.resolve()
+    fixture_resolved = fixture.resolve()
+    if (out_resolved == fixture_resolved
+            or out_resolved in fixture_resolved.parents
+            or fixture_resolved in out_resolved.parents):
+        raise ValueError(
+            "refusing overlapping RTTOV output and fixture paths: output and fixture "
+            "must be disjoint (neither may contain the other).")
+
+
 def write_rttov_case(rttov_input, out_case_dir, *, fixture_case_dir=None, overwrite=False,
-                     solar_channels=()) -> Path:
+                     solar_channels=(), _lock=True) -> Path:
     """Copy the fixture case and overlay atm/t.txt + atm/q.txt from ``rttov_input``.
 
     If ``rttov_input`` carries the full all-sky cloud set (HYDRO6/7 content +
@@ -730,6 +753,16 @@ def write_rttov_case(rttov_input, out_case_dir, *, fixture_case_dir=None, overwr
     fixture whose namelist contradicts the forced K/gas-unit contract).
     """
     out = Path(out_case_dir)
+    if _lock:
+        # Check the relationship before acquiring the lock: opening a lock for a
+        # not-yet-created nested output can otherwise create directories inside
+        # the fixture before the reject-don't-delete guard runs.
+        fixture_for_lock = _selected_fixture_case_dir(rttov_input, fixture_case_dir)
+        _validate_disjoint_case_paths(out, fixture_for_lock)
+        with exclusive_rttov_case(out, role="root"):
+            return write_rttov_case(
+                rttov_input, out, fixture_case_dir=fixture_case_dir,
+                overwrite=overwrite, solar_channels=solar_channels, _lock=False)
     # Validate the RttovInput BEFORE any filesystem mutation (no leftover dir on reject).
     # The run uses the fixture's config/grid/gases/surface/geometry -- only T/Q (+ cloud)
     # + channels come from the RttovInput; reject fields the writer would silently ignore.
@@ -797,11 +830,10 @@ def write_rttov_case(rttov_input, out_case_dir, *, fixture_case_dir=None, overwr
     if not fixture.is_dir():
         raise FileNotFoundError(
             f"RTTOV fixture case not found: {fixture} (set AD_RTTOV_HOME / install ami/501).")
+    _validate_disjoint_case_paths(out, fixture)
     if out.exists():
         if not overwrite:
             raise FileExistsError(f"out_case_dir already exists: {out} (use overwrite=True).")
-        if out.resolve() == fixture.resolve():
-            raise ValueError("refusing to overwrite the fixture case in place.")
         shutil.rmtree(out)
     shutil.copytree(fixture, out)
     # Everything past copytree may reject (a bad fixture contract, an off-grid P_HALF,
@@ -1066,12 +1098,18 @@ def make_live_run_k(out_case_dir, *, fixture_case_dir=None, solar_channels=(),
     """
     timeout = validate_rttov_timeout(timeout)
     def _run_k(rttov_input):
-        with exclusive_rttov_case(out_case_dir):
+        with exclusive_rttov_case(out_case_dir, role="root"):
             case_out = write_rttov_case(rttov_input, out_case_dir,
                                         fixture_case_dir=fixture_case_dir, overwrite=True,
-                                        solar_channels=solar_channels)
-            out = run_rttov_k(case_out, nchannels=len(rttov_input.config.channels),
-                              expected_nprofiles=rttov_input.nprofiles, timeout=timeout)
+                                        solar_channels=solar_channels, _lock=False)
+            # The closure already owns CASE for the complete write/run/parse
+            # transaction. Use the runner's unlocked core here so macOS flock
+            # does not reject this intentional nested acquisition; direct
+            # run_rttov_k callers still acquire the same CASE lock themselves.
+            out = _run_rttov_k_unlocked(
+                _resolve_run_script(case_out, "run.sh"),
+                nchannels=len(rttov_input.config.channels),
+                expected_nprofiles=rttov_input.nprofiles, timeout=timeout)
             # Cloud K adapter: RTTOV emits the cloud K as flat PROFILES_K HYDRO/HYDRO_DEFF
             # blocks ([nprof][nch][ntype*nlay]); RttovObsOp.backward wants per-slot
             # HYDRO6/7 + HYDRO_DEFF6/7 ([nprof][nch][nlay]). No-op for clear-sky (no HYDRO).

@@ -14,6 +14,7 @@ RUN here (AD_RTTOV_HOME present).
 """
 import re
 import shutil
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -215,6 +216,25 @@ def test_overlay_exists_without_overwrite_raises(tmp_path):
         write_rttov_case(rin, tmp_path / "case")
     # overwrite=True succeeds.
     write_rttov_case(rin, tmp_path / "case", overwrite=True)
+
+
+def test_writer_rejects_fixture_ancestor_and_descendant_without_mutation(tmp_path):
+    """The overwrite target and fixture may not contain one another."""
+    fixture = tmp_path / "fixture"
+    fixture.mkdir()
+    marker = fixture / "protected-source.txt"
+    marker.write_text("fixture\n")
+    inp = SimpleNamespace(
+        config=SimpleNamespace(channels=(1,), geometry=None, surface=None),
+        nprofiles=1, nlayers=1, profile={})
+
+    with pytest.raises(ValueError, match="overlapping RTTOV output and fixture"):
+        write_rttov_case(inp, tmp_path, fixture_case_dir=fixture, overwrite=True)
+    assert marker.read_text() == "fixture\n"
+
+    with pytest.raises(ValueError, match="overlapping RTTOV output and fixture"):
+        write_rttov_case(inp, fixture / "child", fixture_case_dir=fixture)
+    assert marker.read_text() == "fixture\n"
 
 
 @needs_fixture

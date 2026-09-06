@@ -46,9 +46,14 @@ def validate_rttov_timeout(value):
 
 
 @contextmanager
-def exclusive_rttov_case(case_dir):
+def exclusive_rttov_case(case_dir, *, role=None):
     """Reject overlapping writers/runners using the same canonical case path.
 
+    A prepared writer case has the layout ``CASE/in`` + ``CASE/out`` and the
+    runner is handed ``CASE/out``. Collapse that output path to ``CASE`` so
+    the writer and runner APIs acquire the same lock. ``role="root"`` and
+    ``role="prepared"`` are explicit at the public boundaries; an omitted
+    role retains the historical basename inference for low-level callers.
     The lock lives beside the rewritten directory. Keep its inode after release:
     unlinking an advisory lock allows two callers to lock different inodes.
     Unique disposable workspaces should contain both the case and this lock.
@@ -56,7 +61,7 @@ def exclusive_rttov_case(case_dir):
     if os.name != "posix":
         raise RuntimeError("RTTOV external execution requires POSIX process groups")
     import fcntl
-    case_dir = Path(case_dir).resolve()
+    case_dir = _canonical_rttov_case_dir(case_dir, role=role)
     case_dir.parent.mkdir(parents=True, exist_ok=True)
     with (case_dir.parent / f".{case_dir.name}.rttov.lock").open("a") as lock:
         try:
@@ -67,6 +72,24 @@ def exclusive_rttov_case(case_dir):
             yield
         finally:
             fcntl.flock(lock, fcntl.LOCK_UN)
+
+
+def _canonical_rttov_case_dir(case_dir, *, role=None) -> Path:
+    """Return the ownership path for a live RTTOV case.
+
+    ``write_rttov_case`` returns the prepared ``CASE/out`` directory because
+    that is where ``run.sh`` lives, while ``make_live_run_k`` owns ``CASE``.
+    Both are one logical mutable workspace, so their lock key must be CASE.
+    Direct runner callers that pass a case directory (with ``run.sh`` at its
+    root) retain that directory as the key.
+    """
+    if role not in (None, "root", "prepared"):
+        raise ValueError(f"unknown RTTOV case ownership role: {role!r}")
+    path = Path(case_dir).resolve()
+    if ((role == "prepared" and path.name == "out")
+            or (role is None and path.name == "out")):
+        return path.parent
+    return path
 
 
 _DEFAULT_AD_RTTOV_HOME = "/Users/yhlee/AD-RTTOV"
@@ -328,6 +351,28 @@ def _resolve_run_script(case_dir, run_script):
         "(AD-RTTOV profile overlay) before run_rttov_k.")
 
 
+def _log_tail(path, max_bytes=800):
+    try:
+        with Path(path).open("rb") as log:
+            log.seek(0, os.SEEK_END)
+            log.seek(max(0, log.tell() - max_bytes))
+            return log.read().decode("utf-8", errors="replace")
+    except OSError:
+        return ""  # A log I/O failure must not mask the execution error.
+
+
+def _write_failure_record(case_dir, exc):
+    """Best-effort compact record for execution and output-contract failures."""
+    case_dir = Path(case_dir)
+    diagnostic = _log_tail(case_dir / "run.stderr.log") or _log_tail(
+        case_dir / "run.stdout.log")
+    try:
+        (case_dir / "run.failure.txt").write_text(
+            f"{type(exc).__name__}: {exc}\n{diagnostic}\n")
+    except OSError:
+        pass  # Preserve the original exception if the filesystem cannot record it.
+
+
 def _run_case_fresh(script, targets, timeout):
     """Bound a trusted POSIX wrapper and children remaining in its group.
 
@@ -346,15 +391,6 @@ def _run_case_fresh(script, targets, timeout):
     stderr_path = script.parent / "run.stderr.log"
     failure_path = script.parent / "run.failure.txt"
     failure_path.unlink(missing_ok=True)
-
-    def tail(path):
-        try:
-            with path.open("rb") as log:
-                log.seek(0, os.SEEK_END)
-                log.seek(max(0, log.tell() - 800))
-                return log.read().decode("utf-8", errors="replace")
-        except OSError:
-            return ""  # A log I/O failure must not mask the execution error.
 
     try:
         with stdout_path.open("wb") as stdout, stderr_path.open("wb") as stderr:
@@ -390,13 +426,10 @@ def _run_case_fresh(script, targets, timeout):
                     f"RTTOV exited 0 but did not write {p} -- invalid run (the prior "
                     "stale output was cleared; clean exit != valid output).")
     except BaseException as exc:
-        diagnostic = tail(stderr_path) or tail(stdout_path)
-        try:
-            failure_path.write_text(f"{type(exc).__name__}: {exc}\n{diagnostic}\n")
-        except OSError:
-            pass  # e.g. a full disk; still propagate the original failure
+        diagnostic = _log_tail(stderr_path) or _log_tail(stdout_path)
+        _write_failure_record(script.parent, exc)
         if isinstance(exc, subprocess.TimeoutExpired):
-            exc.output, exc.stderr = tail(stdout_path), tail(stderr_path)
+            exc.output, exc.stderr = _log_tail(stdout_path), _log_tail(stderr_path)
         elif isinstance(exc, RuntimeError):
             raise RuntimeError(f"{exc}: {diagnostic}") from exc
         raise
@@ -425,11 +458,23 @@ def run_rttov_k(case_dir, *, nchannels, expected_nprofiles,
     """
     timeout = validate_rttov_timeout(timeout)
     script = _resolve_run_script(case_dir, run_script)
+    with exclusive_rttov_case(script.parent, role="prepared"):
+        return _run_rttov_k_unlocked(
+            script, nchannels=nchannels, expected_nprofiles=expected_nprofiles,
+            timeout=timeout)
+
+
+def _run_rttov_k_unlocked(script, *, nchannels, expected_nprofiles, timeout):
+    """Run and parse a prepared case while the caller owns its case lock."""
+    script = Path(script)
     out_k = script.parent / "k"
-    with exclusive_rttov_case(script.parent):
-        _run_case_fresh(script, [out_k / "radiance.txt", out_k / "profiles_k.txt"], timeout)
+    _run_case_fresh(script, [out_k / "radiance.txt", out_k / "profiles_k.txt"], timeout)
+    try:
         return parse_rttov_k_case(script.parent, nchannels=nchannels,
                                   expected_nprofiles=expected_nprofiles)
+    except BaseException as exc:
+        _write_failure_record(script.parent, exc)
+        raise
 
 
 def run_rttov_direct(case_dir, *, nchannels, expected_nprofiles,
@@ -441,11 +486,15 @@ def run_rttov_direct(case_dir, *, nchannels, expected_nprofiles,
     timeout = validate_rttov_timeout(timeout)
     script = _resolve_run_script(case_dir, run_script)
     target = script.parent / "direct" / "radiance.txt"
-    with exclusive_rttov_case(script.parent):
+    with exclusive_rttov_case(script.parent, role="prepared"):
         _run_case_fresh(script, [target], timeout)
-        rad = parse_rttov_radiance(target, nchannels=nchannels)
-    if rad["nprofiles"] != expected_nprofiles:
-        raise ValueError(
-            f"{target}: parsed {rad['nprofiles']} profiles, expected "
-            f"{expected_nprofiles} (uniformly-truncated output).")
-    return rad
+        try:
+            rad = parse_rttov_radiance(target, nchannels=nchannels)
+            if rad["nprofiles"] != expected_nprofiles:
+                raise ValueError(
+                    f"{target}: parsed {rad['nprofiles']} profiles, expected "
+                    f"{expected_nprofiles} (uniformly-truncated output).")
+            return rad
+        except BaseException as exc:
+            _write_failure_record(script.parent, exc)
+            raise

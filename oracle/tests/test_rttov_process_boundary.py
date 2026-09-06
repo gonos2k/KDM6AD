@@ -122,6 +122,57 @@ def test_live_case_lock_covers_separate_closures_and_aliases(tmp_path, monkeypat
     assert validate_rttov_timeout(1) == 1.0
 
 
+@pytest.mark.parametrize("case_name", ["case", "out"])
+def test_prepared_out_lock_is_shared_with_live_case_root(tmp_path, monkeypatch, case_name):
+    """A direct runner on CASE/out must block a live writer of CASE."""
+    import kdm6.obs.rttov_case_writer as writer
+
+    case = tmp_path / case_name
+    prepared = case / "out"
+    prepared.mkdir(parents=True)
+    ready = tmp_path / "ready"
+    code = """
+import sys
+from pathlib import Path
+from kdm6.obs.rttov_runner import exclusive_rttov_case
+with exclusive_rttov_case(Path(sys.argv[1])):
+    Path(sys.argv[2]).write_text('held')
+    input()
+"""
+    child = subprocess.Popen(
+        [sys.executable, "-c", code, str(prepared), str(ready)],
+        cwd=Path(__file__).parents[1], stdin=subprocess.PIPE,
+        env={**os.environ, "PYTHONPATH": str(Path(__file__).parents[1])},
+        text=True)
+    try:
+        deadline = time.monotonic() + 2
+        while not ready.exists() and time.monotonic() < deadline:
+            time.sleep(.01)
+        assert ready.exists()
+        monkeypatch.setattr(writer, "write_rttov_case", lambda *a, **k: None)
+        with pytest.raises(RuntimeError, match="already in use"):
+            writer.make_live_run_k(case)(None)
+    finally:
+        child.terminate()
+        child.wait(timeout=3)
+
+
+def test_parser_failure_keeps_marker_and_log_tail(tmp_path):
+    """Malformed fresh output is rejected and remains diagnosable to a caller."""
+    case = tmp_path
+    (case / "k").mkdir()
+    (case / "run.sh").write_text(
+        "printf 'RADIANCE%%BT = (\\n not-a-number\\n)\\n' > k/radiance.txt\n"
+        "printf 'PROFILES_K( 1)%%T = (\\n 1.0\\n)\\n' > k/profiles_k.txt\n"
+        "echo parser-wrapper-diagnostic >&2\n")
+    with pytest.raises(ValueError):
+        from kdm6.obs.rttov_runner import run_rttov_k
+        run_rttov_k(case, nchannels=1, expected_nprofiles=1)
+    failure = (case / "run.failure.txt").read_text()
+    assert "ValueError" in failure
+    assert "parser-wrapper-diagnostic" in failure
+
+
 def test_case_lock_is_cross_process(tmp_path):
     case = tmp_path / "case"
     code = """
