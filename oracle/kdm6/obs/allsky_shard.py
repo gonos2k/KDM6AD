@@ -14,10 +14,14 @@ spawn-안전 모듈-레벨 워커, 워커당 torch 단일스레드, 명시적 �
 from __future__ import annotations
 
 import os
+import shutil
+import tempfile
+from pathlib import Path
 
 import numpy as np
 import torch
 
+from .rttov_runner import DEFAULT_RTTOV_TIMEOUT, validate_rttov_timeout
 from ..state import State, Forcing
 
 _F64 = dict(dtype=torch.float64)
@@ -48,6 +52,8 @@ def _allsky_columns_worker(args: dict) -> dict:
     from kdm6.obs.rttov_obs_operator import RttovObsOp
     from kdm6.state import Forcing, State
 
+    rttov_timeout = validate_rttov_timeout(
+        args.get("rttov_timeout", DEFAULT_RTTOV_TIMEOUT))
     st = torch.as_tensor(args["state"], **_F64)          # (12, n, K)
     fc = torch.as_tensor(args["forcing"], **_F64)        # (4, n, K)
     rho_d = torch.as_tensor(args["rho_d"], **_F64)      # frozen dry density (n,K)
@@ -87,18 +93,35 @@ def _allsky_columns_worker(args: dict) -> dict:
                                     p_top, octaves=1.0).squeeze(0)
         ql = _blend_above_model_top(prof.q_lay.unsqueeze(0), q_ref, prof.p_lay,
                                     p_top, octaves=4.0).squeeze(0)
-        case_dir = f"{args['case_root']}/w{args['worker_id']}_{i}"
-        try:
-            bt_i, rq_i = RttovObsOp.apply(
-                make_live_run_k(case_dir),
-                icfg, tl, ql, prof.p_lay, prof.p_half,
-                prof.clw, prof.ciw, prof.deff_liq, prof.deff_ice, prof.cfrac)
-        finally:
-            # 디스크 고갈 방지 — 실패 경로 포함(finally; 재검토 #6): K는
-            # forward에서 ctx.k_dict로 파싱 완료라 케이스(~14MB)는 즉시 삭제
-            # 가능 (실측: 20만 케이스 = 107GB → /tmp 고갈·크래시).
-            import shutil
-            shutil.rmtree(case_dir, ignore_errors=True)
+        # Each column gets a fresh parent, with the actual RTTOV case in an
+        # inner directory.  The parent runner's sibling lock therefore has a
+        # stable place to live and cannot collide with another column.
+        with tempfile.TemporaryDirectory(
+                dir=args["case_root"],
+                prefix=f"w{args['worker_id']}_{i}_") as case_parent:
+            case_dir = Path(case_parent) / "case"
+            try:
+                bt_i, rq_i = RttovObsOp.apply(
+                    make_live_run_k(case_dir, timeout=rttov_timeout),
+                    icfg, tl, ql, prof.p_lay, prof.p_half,
+                    prof.clw, prof.ciw, prof.deff_liq, prof.deff_ice, prof.cfrac)
+            except Exception:
+                # Preserve the runner's compact failure marker before the
+                # TemporaryDirectory workspace disappears; its cleanup then
+                # removes the large case files and lock.
+                failure = case_dir / "out" / "run.failure.txt"
+                if failure.is_file():
+                    try:
+                        failure_root = Path(args["case_root"]) / "failures"
+                        failure_root.mkdir(parents=True, exist_ok=True)
+                        target = failure_root / (
+                            f"w{args['worker_id']}_{i}_{Path(case_parent).name}.txt")
+                        shutil.copyfile(failure, target)
+                    except OSError:
+                        # Diagnostics are best-effort: preserve the original
+                        # runner exception when the destination is unavailable.
+                        pass
+                raise
         bt_v = bt_i.reshape(-1).to(torch.float64)
         bt_out[i] = bt_v.detach().numpy()
         rq_out[i] = rq_i.reshape(-1).numpy()
@@ -135,6 +158,7 @@ def sharded_allsky(state: "State", forcing: "Forcing", cidx: torch.Tensor,
                    xland: torch.Tensor, rttov_cfg: dict, case_root: str,
                    *, n_workers: int = 8, grad: bool = True,
                    huber_delta: "float | None" = None,
+                   rttov_timeout: float = DEFAULT_RTTOV_TIMEOUT,
                    pool=None) -> dict:
     """구름 컬럼 집합 cidx의 all-sky H(+adjoint)를 n_workers로 샤딩.
 
@@ -145,6 +169,7 @@ def sharded_allsky(state: "State", forcing: "Forcing", cidx: torch.Tensor,
     import multiprocessing as mp
     from ..rttov_bridge import require_dry_air_density
 
+    rttov_timeout = validate_rttov_timeout(rttov_timeout)
     n = int(cidx.numel())
     if "rho_d" not in rttov_cfg:
         raise ValueError("rttov_cfg requires frozen background rho_d on the full model grid")
@@ -164,7 +189,12 @@ def sharded_allsky(state: "State", forcing: "Forcing", cidx: torch.Tensor,
                          xland=xland[cidx][ch].numpy(),
                          y_bt=y_bt[cidx][ch].numpy(), mask=mask[cidx][ch].numpy(),
                          case_root=case_root, worker_id=w, grad=grad,
-                         huber_delta=huber_delta))
+                         huber_delta=huber_delta,
+                         rttov_timeout=rttov_timeout))
+    if jobs:
+        # Direct callers may provide a new case root.  Delay this mutation
+        # until all tensor/config validation and job construction succeeded.
+        Path(case_root).mkdir(parents=True, exist_ok=True)
     own = pool is None
     if own:
         ctx = mp.get_context("spawn")

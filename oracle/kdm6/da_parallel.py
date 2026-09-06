@@ -27,6 +27,7 @@ import torch
 
 from .da_window import WindowConfig
 from .state import State, Forcing
+from .obs.rttov_runner import DEFAULT_RTTOV_TIMEOUT, validate_rttov_timeout
 
 _F64 = dict(dtype=torch.float64)
 
@@ -58,8 +59,10 @@ class ShardSpec:
     xland: torch.Tensor | None = None
     ncmin_land: float = 0.0
     ncmin_sea: float = 0.0
+    rttov_timeout: float = DEFAULT_RTTOV_TIMEOUT
 
     def __post_init__(self):
+        self.rttov_timeout = validate_rttov_timeout(self.rttov_timeout)
         # Keep direct construction on the same fail-fast boundary as the
         # worker's OsseObsConfig; an invalid pair must never reach spawn.
         from .da_driver import _validate_profile_ref_pair
@@ -76,7 +79,8 @@ def _shard_worker(spec: ShardSpec) -> dict:
     from .obs.rttov_input_builder import RttovInputConfig
 
     obs_cfg = OsseObsConfig(
-        run_k=make_live_run_k(Path(spec.case_root)),    # 가드 1: 샤드 전용 dir
+        run_k=make_live_run_k(Path(spec.case_root),
+                              timeout=spec.rttov_timeout),  # 가드 1: 샤드 전용 dir
         profile_cfg=RttovProfileConfig(**spec.profile_kwargs),
         input_cfg=RttovInputConfig(**spec.input_kwargs),
         obs_sigma=spec.obs_sigma,
@@ -180,12 +184,14 @@ def build_shard_specs(x_truth: State, x_background: State, forcing: Forcing,
                       q_blend_octaves: float = 4.0,
                       xland: torch.Tensor | None = None,
                       ncmin_land: float = 0.0,
-                      ncmin_sea: float = 0.0) -> list:
+                      ncmin_sea: float = 0.0,
+                      rttov_timeout: float = DEFAULT_RTTOV_TIMEOUT) -> list:
     """(B_total, K) 입력 + 분할 인덱스 리스트(예: da_shard.compose_shards 출력)
     → ShardSpec 리스트. col_idx는 [0, B_total) 재조립 인덱스 그 자체."""
     from .da_driver import (_normalize_obs_times,
                             _validate_profile_ref_pair)
 
+    rttov_timeout = validate_rttov_timeout(rttov_timeout)
     _validate_profile_ref_pair(t_ref, q_ref)
     B, K = x_truth.th.shape
     obs_times_f = _normalize_obs_times(obs_times, n_steps)
@@ -276,7 +282,7 @@ def build_shard_specs(x_truth: State, x_background: State, forcing: Forcing,
             obs_sigma=obs_sigma, t_ref=shard_t_ref, q_ref=shard_q_ref,
             q_blend_octaves=q_blend_octaves,
             xland=shard_xland, ncmin_land=float(ncmin_land),
-            ncmin_sea=float(ncmin_sea)))
+            ncmin_sea=float(ncmin_sea), rttov_timeout=rttov_timeout))
     return specs
 
 

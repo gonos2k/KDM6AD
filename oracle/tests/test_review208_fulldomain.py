@@ -119,7 +119,7 @@ def test_allsky_auxiliary_reaches_each_actual_worker_column(monkeypatch):
 
     monkeypatch.setattr(builder, 'model_to_rttov_tensors', fake_profile)
     monkeypatch.setattr(operator.RttovObsOp, 'apply', fake_apply)
-    monkeypatch.setattr(writer, 'make_live_run_k', lambda root: None)
+    monkeypatch.setattr(writer, 'make_live_run_k', lambda root, **kw: None)
     monkeypatch.setattr(driver, '_blend_above_model_top', lambda value, *a, **kw: value)
     class InlinePool:
         def map(self, fn, jobs):

@@ -25,11 +25,49 @@ from __future__ import annotations
 import math
 import os
 import re
+import signal
 import subprocess
+from contextlib import contextmanager
+from numbers import Real
 from pathlib import Path
 from typing import NamedTuple
 
 from ._rttov_reference.rttov_ascii import parse_rttov_ascii_blocks
+
+DEFAULT_RTTOV_TIMEOUT = 300.0  # seconds per external call, not a cycle deadline
+
+
+def validate_rttov_timeout(value):
+    """Require a finite wall-clock limit; None does not opt out."""
+    if (isinstance(value, bool) or not isinstance(value, Real)
+            or not math.isfinite(value) or value <= 0):
+        raise ValueError("RTTOV timeout must be a positive finite number of seconds")
+    return float(value)
+
+
+@contextmanager
+def exclusive_rttov_case(case_dir):
+    """Reject overlapping writers/runners using the same canonical case path.
+
+    The lock lives beside the rewritten directory. Keep its inode after release:
+    unlinking an advisory lock allows two callers to lock different inodes.
+    Unique disposable workspaces should contain both the case and this lock.
+    """
+    if os.name != "posix":
+        raise RuntimeError("RTTOV external execution requires POSIX process groups")
+    import fcntl
+    case_dir = Path(case_dir).resolve()
+    case_dir.parent.mkdir(parents=True, exist_ok=True)
+    with (case_dir.parent / f".{case_dir.name}.rttov.lock").open("a") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError as exc:
+            raise RuntimeError(f"RTTOV case already in use: {case_dir}") from exc
+        try:
+            yield
+        finally:
+            fcntl.flock(lock, fcntl.LOCK_UN)
+
 
 _DEFAULT_AD_RTTOV_HOME = "/Users/yhlee/AD-RTTOV"
 _PK_PREFIX = re.compile(r"PROFILES_K\(\s*(\d+)\s*\)")
@@ -291,28 +329,81 @@ def _resolve_run_script(case_dir, run_script):
 
 
 def _run_case_fresh(script, targets, timeout):
-    """Run ``sh run.sh`` out-of-process with the OMP fence, after clearing the
-    output files we will parse, so a clean exit that does NOT rewrite them is
-    caught (clean exit != valid output; the libomp I/O-race / stale-output class)."""
+    """Bound a trusted POSIX wrapper and children remaining in its group.
+
+    File-backed logs avoid waiting on inherited pipes after a shell exits.
+    A wrapper must wait for its children; an early exit with group members is
+    rejected. Deliberately detached sessions and whole-worker/cycle deadlines
+    require the deployment supervisor and are outside this call boundary.
+    """
+    timeout = validate_rttov_timeout(timeout)
+    if os.name != "posix":
+        raise RuntimeError("RTTOV external execution requires POSIX process groups")
     for p in targets:
         if p.exists():
             p.unlink()
-    result = subprocess.run(
-        ["sh", script.name], cwd=str(script.parent),
-        capture_output=True, text=True, timeout=timeout, env=_child_env())
-    if result.returncode != 0:
-        raise RuntimeError(
-            f"RTTOV run failed (rc={result.returncode}) in {script.parent}: "
-            f"{(result.stderr or result.stdout)[-800:]}")
-    for p in targets:
-        if not p.is_file():
-            raise RuntimeError(
-                f"RTTOV exited 0 but did not write {p} -- invalid run (the prior "
-                "stale output was cleared; clean exit != valid output).")
+    stdout_path = script.parent / "run.stdout.log"
+    stderr_path = script.parent / "run.stderr.log"
+    failure_path = script.parent / "run.failure.txt"
+    failure_path.unlink(missing_ok=True)
+
+    def tail(path):
+        try:
+            with path.open("rb") as log:
+                log.seek(0, os.SEEK_END)
+                log.seek(max(0, log.tell() - 800))
+                return log.read().decode("utf-8", errors="replace")
+        except OSError:
+            return ""  # A log I/O failure must not mask the execution error.
+
+    try:
+        with stdout_path.open("wb") as stdout, stderr_path.open("wb") as stderr:
+            proc = subprocess.Popen(
+                ["sh", script.name], cwd=str(script.parent),
+                stdout=stdout, stderr=stderr, env=_child_env(),
+                start_new_session=True)
+            try:
+                returncode = proc.wait(timeout=timeout)
+                # wait() reaped the leader. Remaining group members have not
+                # finished writing, so their output cannot be accepted yet.
+                try:
+                    os.killpg(proc.pid, 0)
+                except ProcessLookupError:
+                    children_remain = False
+                else:
+                    children_remain = True
+            finally:
+                try:
+                    os.killpg(proc.pid, signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+                # Reap our direct child. The OS reaps orphan descendants;
+                # do not claim portable ownership of their wait status.
+                proc.wait(timeout=5.0)
+        if returncode != 0:
+            raise RuntimeError(f"RTTOV run failed (rc={returncode}) in {script.parent}")
+        if children_remain:
+            raise RuntimeError(f"RTTOV wrapper exited with unfinished children in {script.parent}")
+        for p in targets:
+            if not p.is_file():
+                raise RuntimeError(
+                    f"RTTOV exited 0 but did not write {p} -- invalid run (the prior "
+                    "stale output was cleared; clean exit != valid output).")
+    except BaseException as exc:
+        diagnostic = tail(stderr_path) or tail(stdout_path)
+        try:
+            failure_path.write_text(f"{type(exc).__name__}: {exc}\n{diagnostic}\n")
+        except OSError:
+            pass  # e.g. a full disk; still propagate the original failure
+        if isinstance(exc, subprocess.TimeoutExpired):
+            exc.output, exc.stderr = tail(stdout_path), tail(stderr_path)
+        elif isinstance(exc, RuntimeError):
+            raise RuntimeError(f"{exc}: {diagnostic}") from exc
+        raise
 
 
 def run_rttov_k(case_dir, *, nchannels, expected_nprofiles,
-                run_script="run.sh", timeout=None):
+                run_script="run.sh", timeout=DEFAULT_RTTOV_TIMEOUT):
     """Out-of-process single runK -> RttovKOutput (BT + K).
 
     Runs the prepared RTTOV case in a CHILD PROCESS (``sh run.sh`` in the case
@@ -322,27 +413,37 @@ def run_rttov_k(case_dir, *, nchannels, expected_nprofiles,
     ``k/profiles_k.txt``. Raises on non-zero exit, on un-refreshed output, and on
     a profile count != ``expected_nprofiles``.
 
+    ``timeout`` is a positive finite limit in seconds (default 300) for the
+    external process; None is rejected. On every exit the owned POSIX process
+    group is terminated and the direct child reaped. Timeout raises
+    ``subprocess.TimeoutExpired``; logs/failure text remain in the case.
+    This does not impose a deadline on preparation, parsing, or the DA cycle.
+
     ``expected_nprofiles`` is REQUIRED (no default): the caller packed the input
     and knows how many profiles RTTOV was asked to compute, so making it optional
     would re-open the silent-truncation hole this guard exists to close.
     """
+    timeout = validate_rttov_timeout(timeout)
     script = _resolve_run_script(case_dir, run_script)
     out_k = script.parent / "k"
-    _run_case_fresh(script, [out_k / "radiance.txt", out_k / "profiles_k.txt"], timeout)
-    return parse_rttov_k_case(script.parent, nchannels=nchannels,
-                              expected_nprofiles=expected_nprofiles)
+    with exclusive_rttov_case(script.parent):
+        _run_case_fresh(script, [out_k / "radiance.txt", out_k / "profiles_k.txt"], timeout)
+        return parse_rttov_k_case(script.parent, nchannels=nchannels,
+                                  expected_nprofiles=expected_nprofiles)
 
 
 def run_rttov_direct(case_dir, *, nchannels, expected_nprofiles,
-                     run_script="run.sh", timeout=None):
+                     run_script="run.sh", timeout=DEFAULT_RTTOV_TIMEOUT):
     """(Diagnostic, value-only -- NOT the adjoint path, design 7.) Out-of-process
     direct run -> BT from ``direct/radiance.txt``. Normally a single ``run_rttov_k``
     supplies BT too; use this only for a value-only smoke. ``expected_nprofiles``
     is REQUIRED (no silent-truncation opt-out)."""
+    timeout = validate_rttov_timeout(timeout)
     script = _resolve_run_script(case_dir, run_script)
     target = script.parent / "direct" / "radiance.txt"
-    _run_case_fresh(script, [target], timeout)
-    rad = parse_rttov_radiance(target, nchannels=nchannels)
+    with exclusive_rttov_case(script.parent):
+        _run_case_fresh(script, [target], timeout)
+        rad = parse_rttov_radiance(target, nchannels=nchannels)
     if rad["nprofiles"] != expected_nprofiles:
         raise ValueError(
             f"{target}: parsed {rad['nprofiles']} profiles, expected "

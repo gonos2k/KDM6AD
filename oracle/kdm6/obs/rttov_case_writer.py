@@ -24,7 +24,9 @@ import re
 import shutil
 from pathlib import Path
 
-from .rttov_runner import ad_rttov_home, rttov_runtime_root, run_rttov_k
+from .rttov_runner import (DEFAULT_RTTOV_TIMEOUT, ad_rttov_home,
+                           exclusive_rttov_case, rttov_runtime_root, run_rttov_k,
+                           validate_rttov_timeout)
 
 # The ami/501 GK2A AMI clear-sky fixture (6 profiles x 16 channels, 69 layers).
 _AMI501_FIXTURE = "external/rttov14/src/rttov_test/tests.1.gfortran-openmp/ami/501"
@@ -1047,7 +1049,8 @@ def merge_solar_observable(bt, refl, channels, solar_channels):
     return obs
 
 
-def make_live_run_k(out_case_dir, *, fixture_case_dir=None, solar_channels=(), timeout=None):
+def make_live_run_k(out_case_dir, *, fixture_case_dir=None, solar_channels=(),
+                    timeout=DEFAULT_RTTOV_TIMEOUT):
     """Build the live ``run_k(RttovInput) -> (observable, K, rad_quality)`` for RttovObsOp.
 
     Each call: write_rttov_case (overlay T/Q + cloud onto the fixture) -> out-of-process
@@ -1056,34 +1059,36 @@ def make_live_run_k(out_case_dir, *, fixture_case_dir=None, solar_channels=(), t
     ``out_case_dir`` is rewritten each call (overwrite=True). ``solar_channels`` (1-based
     ids) empty -> pure BT (IR-only / clear-sky, unchanged).
 
-    NOT concurrency-safe: ``out_case_dir`` is a single shared, rewritten directory,
-    so two overlapping calls on the SAME closure would clobber each other's case
-    mid-run (-> wrong BT/K -> wrong gradient). Sequential use (one DA-window backward
-    at a time) is fine; for concurrent callers give each its own ``out_case_dir``, or
-    use ``rttov_obs_operator.default_run_k`` which allocates a unique per-call dir.
+    Overlapping calls on the same canonical case path are rejected before
+    rewriting it. Sequential calls reuse it; independent jobs should use unique
+    directories. The timeout bounds each external run (default 300 seconds),
+    not preparation, parsing, or the complete DA cycle. No unbounded opt-out.
     """
+    timeout = validate_rttov_timeout(timeout)
     def _run_k(rttov_input):
-        case_out = write_rttov_case(rttov_input, out_case_dir,
-                                    fixture_case_dir=fixture_case_dir, overwrite=True,
-                                    solar_channels=solar_channels)
-        out = run_rttov_k(case_out, nchannels=len(rttov_input.config.channels),
-                          expected_nprofiles=rttov_input.nprofiles, timeout=timeout)
-        # Cloud K adapter: RTTOV emits the cloud K as flat PROFILES_K HYDRO/HYDRO_DEFF
-        # blocks ([nprof][nch][ntype*nlay]); RttovObsOp.backward wants per-slot
-        # HYDRO6/7 + HYDRO_DEFF6/7 ([nprof][nch][nlay]). No-op for clear-sky (no HYDRO).
-        nlay = len(out.k["T"][0][0])                    # authoritative layer count from T-K
-        add_cloud_k_slots(out.k, nlay=nlay)
-        # Per-channel observable: BT (thermal) / REFL (solar). The K is already
-        # per-channel-type, so the obs operator contracts it against this observable's
-        # cotangent unchanged. RttovKOutput field order is (bt, rad_quality, k, ...) ->
-        # reorder to the run_k contract (observable, K, rad_quality); never `tuple(out)`.
-        observable = merge_solar_observable(out.bt, out.refl,
-                                            rttov_input.config.channels, solar_channels)
-        return observable, out.k, out.rad_quality
+        with exclusive_rttov_case(out_case_dir):
+            case_out = write_rttov_case(rttov_input, out_case_dir,
+                                        fixture_case_dir=fixture_case_dir, overwrite=True,
+                                        solar_channels=solar_channels)
+            out = run_rttov_k(case_out, nchannels=len(rttov_input.config.channels),
+                              expected_nprofiles=rttov_input.nprofiles, timeout=timeout)
+            # Cloud K adapter: RTTOV emits the cloud K as flat PROFILES_K HYDRO/HYDRO_DEFF
+            # blocks ([nprof][nch][ntype*nlay]); RttovObsOp.backward wants per-slot
+            # HYDRO6/7 + HYDRO_DEFF6/7 ([nprof][nch][nlay]). No-op for clear-sky (no HYDRO).
+            nlay = len(out.k["T"][0][0])                    # authoritative layer count from T-K
+            add_cloud_k_slots(out.k, nlay=nlay)
+            # Per-channel observable: BT (thermal) / REFL (solar). The K is already
+            # per-channel-type, so the obs operator contracts it against this observable's
+            # cotangent unchanged. RttovKOutput field order is (bt, rad_quality, k, ...) ->
+            # reorder to the run_k contract (observable, K, rad_quality); never `tuple(out)`.
+            observable = merge_solar_observable(out.bt, out.refl,
+                                                rttov_input.config.channels, solar_channels)
+            return observable, out.k, out.rad_quality
 
     # Tag the closure with its solar set so a consumer (obs_adjoint_callback) can verify
     # it matches ObsOperatorConfig.solar_channels -- a mismatch (e.g. cfg says solar but
     # this run_k merges pure BT) would be a silent config-mismatch wrong gradient.
     _run_k.solar_channels = tuple(int(c) for c in solar_channels)
     _run_k.evidence_level = "wiring_only"
+    _run_k.timeout = timeout
     return _run_k
