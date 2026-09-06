@@ -155,3 +155,45 @@ def test_local_directional_evidence_does_not_hide_opposing_cells():
     assert broken["abs_error"] == 0.0
     assert broken["max_abs_error"] == 1.0
     assert broken["max_error_cell"] == [0]
+
+
+def test_reached_ice_budget_couples_deposition_and_collection():
+    """A conditional raw-rate partial, not a unique physical-control attribution."""
+    from kdm6.process_attribution import cold_fixture
+    from kdm6.coordinator import scale_rates_for_conservation_torch
+
+    state, forcing = cold_fixture()
+    state = state._replace(bg=state.qg / 450.0)
+    state = State(*(v.clone().requires_grad_(True) for v in state))
+    trace = SensitivityTrace()
+    _, handle = kdm6_step(state, forcing, dt=20.0, diagnostic_trace=trace)
+    try:
+        raw = trace.by_name("cold")[0]
+        limited = trace.by_name("cold_limited")[0]
+        warm = trace.by_name("warm")[0].rates
+        melt = trace.by_name("d5_melt")[0].rates
+        # Only the sign of supcol enters this local operator. Replay the
+        # captured cold gate and exact reached operands, including reservoir.
+        gate = torch.where(limited.branch, 1.0, -1.0).to(state.th)
+        def replay(pidep):
+            return scale_rates_for_conservation_torch(
+                limited.state_in, gate, warm, raw.rates._replace(pidep=pidep),
+                melt, dtcld=limited.dtcld)[1]
+        replayed = replay(raw.rates.pidep)
+        for name in limited.rates._fields:
+            assert torch.equal(getattr(replayed, name), getattr(limited.rates, name)), name
+        slope = torch.autograd.grad(limited.rates.pgaci.sum(), raw.rates.pidep,
+                                     retain_graph=True)[0]
+        assert bool((slope > 0).all())
+        direction = raw.rates.pidep.detach() * 0.05
+        tangent = slope * direction
+        assert bool((tangent != 0).all())
+        # Perturb only this local operator's reached operand. The original KDM
+        # state is not modified or asserted to realize this isolated intervention.
+        for eps in (1.0e-4, 1.0e-3):
+            p = replay(raw.rates.pidep.detach() + eps * direction).pgaci
+            m = replay(raw.rates.pidep.detach() - eps * direction).pgaci
+            fd = (p - m) / (2 * eps)
+            assert torch.allclose(fd, tangent, rtol=1e-6, atol=0)
+    finally:
+        handle.close()

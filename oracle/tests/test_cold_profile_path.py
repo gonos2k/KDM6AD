@@ -1,6 +1,7 @@
 """Meaningful acceptance checks for the bounded A4 cold profile probe."""
 from __future__ import annotations
 
+from kdm6.process_attribution import _run, cold_fixture
 from scripts.diagnose_cold_profile_path import run_probe
 
 
@@ -42,14 +43,47 @@ def test_named_controls_reach_postcap_rates_and_profile_cells():
     rows = {row["process"]: row for row in run_probe()["named_process_rows"]}
     for process in ("deposition", "riming"):
         row = rows[process]
-        assert row["same_tapped_topology"]
+        # The large deposition intervention crosses the ice budget cap; its
+        # binding mask is therefore an observed topology change, while riming
+        # remains smooth over all selected epsilons.
+        assert row["same_tapped_topology"] is (process == "riming")
+        if process == "deposition":
+            assert not row["epsilon_results"]["0.1"]["same_tapped_topology"]
         assert row["nonzero_postcap_rate_derivatives"]
         assert {"T", "Q", "HYDRO"}.issubset(row["verified_fields"])
         expected_status = ("verified_selected_intervention" if process == "riming"
                            else "partial_rate_or_profile_unresolved")
         assert row["status"] == expected_status
         for epsilon_result in row["epsilon_results"].values():
-            assert epsilon_result["same_tapped_topology"]
+            if process == "riming" or epsilon_result["epsilon"] != 0.1:
+                assert epsilon_result["same_tapped_topology"]
             assert epsilon_result["rate_fd"]
     assert rows["deposition"]["interpretation"].startswith("total named-control intervention")
     assert "pidep" in rows["deposition"]["unresolved_postcap_rate_derivatives"]
+
+
+def test_deposition_pidep_large_epsilon_crosses_ice_budget_cap():
+    """The unresolved ε=.1 pidep FD crosses the existing ice conservation cap."""
+    state, forcing = cold_fixture()
+    # Keep the cap probe on the smooth off-knot profile fixture used by the
+    # central-FD validation; density=500 is an intentional table-node probe.
+    state = state._replace(bg=state.qg / 450.0)
+    factors = {}
+    binding = {}
+    for alpha in (0.1, -0.1):
+        _, trace, handle = _run(state, forcing, "deposition", alpha,
+                                dt=20.0, graph=False)
+        budget = trace.by_name("ice_mass_budget")[0]
+        assert "pidep" in budget.metadata["rate_names"]
+        raw = trace.by_name("cold")[-1]
+        rates = raw.rates
+        source = (rates.psaut - rates.pinud - rates.pidep + rates.praci
+                  + rates.psaci + rates.pgaci - rates.pmulcs - rates.pmulrs
+                  - rates.pmulcg - rates.pmulrg - rates.piacw)
+        factors[alpha] = float((raw.state_in.qi / (source * raw.dtcld)).item())
+        assert budget.operands["source"].item() == source.item() * raw.dtcld
+        binding[alpha] = bool(budget.branch.item())
+        handle.close()
+    assert factors[0.1] < 1.0
+    assert factors[-0.1] > 1.0
+    assert binding == {0.1: True, -0.1: False}

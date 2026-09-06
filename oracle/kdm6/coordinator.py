@@ -838,6 +838,8 @@ def scale_rates_for_conservation_torch(
     *,
     dtcld: float,
     ncmin_tensor=None,   # per-cell ncmin floor for cloud/ice NUMBER budgets (1:1 fix #18)
+    budget_trace=None,   # optional SensitivityTrace; diagnostics only
+    diagnostic_step: int = 0,
 ):
     """F1d2 — Fortran group conservation budgets (module_mp_kdm6.F :2460-2597
     cold-arm + :2657-2728 warm-arm). 14 budgets: value=max(floor,reservoir);
@@ -896,6 +898,14 @@ def scale_rates_for_conservation_torch(
         source = torch.where(gate, source, torch.zeros_like(source))
         value = torch.where(gate, value, torch.ones_like(value))
         denominator = torch.maximum(source, value)
+        if budget_trace is not None and "pidep" in names:
+            # Record the pre-limit ice budget once; the branch mask is the
+            # actual source>reservoir decision used by both arithmetic paths.
+            budget_trace.record_stage(
+                "ice_mass_budget", diagnostic_step, dtcld, None, None,
+                branch=gate & (source > value),
+                operands={"source": source, "value": value},
+                metadata={"kind": "conservation_limiter", "rate_names": list(names)},)
         # This is an arithmetic choice, not an extra physical cap. Above
         # sqrt(max), reciprocal differentiation can lose B/S**2 although the
         # requested controlled derivative is representable. Keep the original
@@ -2221,6 +2231,8 @@ def kdm62d_one_step_torch(
         # The runtime also supplies this tensor to the connected rate-gate
         # parameter bundles; slope and DSD consumers receive it directly.
         ncmin_tensor=ncmin_tensor,
+        budget_trace=diagnostic_trace,
+        diagnostic_step=diagnostic_step,
     )
     if diagnostic_trace is not None:
         # Keep the rate-generation records above and add the rates that actually
@@ -2265,9 +2277,12 @@ def kdm62d_one_step_torch(
     if diagnostic_trace is not None:
         diagnostic_trace.record_stage(
             "state_update", diagnostic_step, dtcld, working, new_state, None,
-            branch=(pre2.supcol >= 0), metadata={
+            branch=(pre2.supcol >= 0),
+            operands={"cpm": pre_su.cpm, "xl": pre_su.xl, "supcol": pre_su.supcol},
+            metadata={
                 "kind": "applied_transfer",
                 "rates_are_conservation_limited": True,
+                "operands": "pre.cpm/pre.xl/pre.supcol captured for local thermal identity",
             })
     # BRS density re-clamp #4 (Fortran ProgB_param L2772/L2863 = the LAST ProgB of the
     # sub-cycle, AFTER the cold/warm graupel-volume adds at L2643/L2751). This is the

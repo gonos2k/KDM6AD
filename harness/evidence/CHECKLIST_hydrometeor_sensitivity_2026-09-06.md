@@ -27,11 +27,11 @@ establish `dK/dx` or a full second-order Hessian.
 
 | ID | Action and acceptance evidence | Status |
 | --- | --- | --- |
-| V1 | Selected hydrometeor process rates → applied transfers → later rates/states: graph-connected diagnostic records, independent AD/FD, active conditions and zero interpretation. Report untested processes/regimes. | Selected chain verified; cold-regime attribution coverage remains open |
-| V2 | Epsilon sweep and stage comparison: distinguish truncation, roundoff and changed recorded branches; masks/values, not just counts. Prove optional diagnostics preserve normal values and products. | Selected masks/epsilon checks verified; full internal branch coverage open |
-| V3 | Pin actual observation/assets and execute a connected KDM–RTTOV objective-gradient check; record input/profile/BT/K/J/gradient, mask/aux provenance and serialization resolution. Explicitly identify fixture geometry and missing real auxiliaries. | Connected live execution implemented; FD/actual auxiliary validation partial |
-| V4 | For selected actual applied transfers, evaluate residual and its directional derivative under an explicit fixed measure. Differentiate a legacy nonzero residual rather than impose a new conservation law. | Selected applied and whole-step residual derivatives verified; physical basis/enthalpy coverage open |
-| V5a | Execute Python ↔ built C ABI JVP/VJP regression on `.so` and `.dylib` paths; CI must not silently skip a missing required library. | Locally verified; see evidence below |
+| V1 | Selected hydrometeor process rates → applied transfers → later rates/states: graph-connected diagnostic records, independent AD/FD, active conditions and zero interpretation. Report untested processes/regimes. | Selected warm/cold controlled chains verified; representative process/regime coverage remains open |
+| V2 | Epsilon sweep and stage comparison: distinguish truncation, roundoff and changed recorded branches; masks/values, not just counts. Prove optional diagnostics preserve normal values and products. | Phase, ProgB knot and selected shared-cap checks verified; full internal branch coverage open |
+| V3 | Pin actual observation/assets and execute a connected KDM–RTTOV objective-gradient check; record input/profile/BT/K/J/gradient, mask/aux provenance and serialization resolution. Explicitly identify fixture geometry and missing real auxiliaries. | Selected actual-input clear/cloud first-order FD verified; actual auxiliary validation partial |
+| V4 | For selected actual applied transfers, evaluate residual and its directional derivative under an explicit fixed measure. Differentiate a legacy nonzero residual rather than impose a new conservation law. | Selected water and local thermal-work derivatives verified; full physical number/enthalpy budget open |
+| V5a | Execute Python ↔ built C ABI JVP/VJP regression on `.so` and `.dylib` paths; CI must not silently skip a missing required library. | Local and Ubuntu/macOS CI verified; see dated evidence below |
 | V5b | Fortran shim invokes JVP with asymmetric arrays and checks an independent expected product/layout. | Locally verified; see evidence below |
 | V6a | Reject fixture/output overlap before filesystem mutation. | Locally verified; see evidence below |
 | V6b | Live writer and prepared runner agree on workspace ownership and locking. | Locally verified; see evidence below |
@@ -285,9 +285,10 @@ and the packed ABI are unchanged in this follow-up.
   450; bg→T/Q/HYDRO now verifies at .01/.03/.1 (selected T relative error 8.9e-7).
 - [x] Cold-profile comparisons share a small local status/endpoint-ULP helper;
   named rate checks cannot inherit a pass from profile-only checks.
-- [ ] The selected tiny deposition pidep agrees with FD at epsilon <=.03
+- [x] Follow-up below identifies the ice-budget transition. At this earlier
+  checkpoint, the selected tiny deposition pidep agreed with FD at epsilon <=.03
   (relative error <=1.1e-4), but epsilon .1 differs by about82%. This larger
-  neighborhood is unresolved; it is not classified as output quantization or
+  neighborhood was unresolved at that checkpoint; it was not classified as output quantization or
   an established local AD defect. Tapped topology is not every internal branch.
 - Focused post-diagnostic validation: **15 passed** (ProgB + cold-profile),
   in addition to the overlapping earlier tests above.
@@ -297,3 +298,49 @@ and the packed ABI are unchanged in this follow-up.
   derivatives with respect to warm.prevp are zero in the selected state.
   These are different claims: this is a locally dormant connected edge, not
   a nonzero named-process causal validation. See `process/warm_prevp_cold_grid.*`.
+
+
+## Shared-budget and thermal-work follow-up (2026-09-07, baseline b1ee885)
+
+- [x] **V1 reachable cross-process partial:** in the admissible cold fixture at
+  qg/bg=450, raw `pidep` (negative: ice sublimation) changes the ice budget that
+  limits `pgaci` (ice collection by graupel). The traced conditional derivative
+  is positive (`0.0106928195`). Replaying the exact reached limiter operands
+  reproduces all limited rates bitwise; independent local-operand differences
+  at epsilon 1e-4/1e-3 agree within 1e-6 relative error. This conditional
+  partial is not an independently realizable physical-control intervention.
+  `test_reached_ice_budget_couples_deposition_and_collection` guards this link.
+- [x] `warm.prevp` diagnostics now include the later `psdep` and `pgdep`
+  consumers. A bounded 24-configuration actual-coordinator probe (36 substeps)
+  found these direct edges locally dormant; zeros are not general independence.
+- [x] **V4 selected local thermal identity:** actual `state_update` captures
+  graph-connected cpm/xl/supcol only when diagnostics are requested. Sensible
+  work `cpm*deltaT` and reconstructed latent/amount work are specific model
+  energy in J/kg, not J/m³. Their qv-direction derivatives are approximately
+  16.60761452 J/kg and agree with independent FD at .01/.03/.1. Residual is
+  approximately 2.09e-11 J/kg. Scope: first coordinator subcycle before satadj;
+  these coefficients do not establish a physically closed full-column enthalpy.
+- [ ] Actual auxiliary inventory confirms real surface/coordinate fields and
+  their units/hashes, but lacks verified RTTOV viewing geometry and several
+  surface ancillary quantities. No adapter with invented defaults was added.
+- [ ] Full physical energy/number budget still requires declared mass-reference
+  conventions, later satadj latent work and sedimentation enthalpy outflow.
+  Local applied-work agreement does not remove these missing terms.
+
+- [x] **V2 exact cap transition:** the existing ice-mass limiter now records
+  its actual `source`, `value` and `source > value` mask through the existing
+  optional stage trace. Deposition alpha +0.1 binds the cap and -0.1 releases
+  it at density 450. The diagnostic therefore reports changed tapped topology;
+  a cross-branch central difference is not certified as a local derivative.
+  Smaller same-branch perturbations retain their existing agreement. No new
+  limiter, physical formula, tolerance or parallel trace protocol was added.
+- [ ] **M1 applied transport:** read-only inventory found no paired applied
+  departure/arrival streams in the archived ten-minute runs. Their executable
+  identities also differ from the current binary. Those runs cannot close M1;
+  a source-attributed, isolated instrumented run is still required.
+
+Validation of this follow-up: **13 focused tests passed** (stage diagnostics,
+cold-profile cap transitions and local energy identity; overlapping earlier
+suites). Local thermal FD maximum relative error is 2.6896472278e-11. Artifacts:
+`graphify-out/goal-budget-20260907/parent/`. Prior full-oracle and CI results
+remain attached to their recorded commits until this head is checked.

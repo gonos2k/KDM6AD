@@ -52,6 +52,7 @@ class StageRecord:
     rates: Any = None
     branch: torch.Tensor | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
+    operands: dict[str, Any] = field(default_factory=dict)
 
     def branch_summary(self) -> dict[str, Any] | None:
         if self.branch is None:
@@ -93,6 +94,17 @@ class StageRecord:
         return out
 
     def as_dict(self) -> dict[str, Any]:
+        operand_summary = {}
+        for name, value in self.operands.items():
+            if isinstance(value, torch.Tensor):
+                x = value.detach()
+                operand_summary[name] = {
+                    "shape": list(x.shape),
+                    "finite": bool(torch.isfinite(x).all().item()),
+                    "max_abs": float(x.abs().max().item()) if x.numel() else 0.0,
+                }
+            else:
+                operand_summary[name] = value
         return {
             "name": self.name,
             "step": self.step,
@@ -100,6 +112,7 @@ class StageRecord:
             "branch": self.branch_summary(),
             "rates": self.rate_summary(),
             "applied_delta": self.applied_delta_summary(),
+            "operands": operand_summary,
             "metadata": dict(self.metadata),
         }
 
@@ -122,11 +135,13 @@ class SensitivityTrace:
     def record_stage(
         self, name: str, step: int, dtcld: float, state_in: Any, state_out: Any,
         rates: Any = None, *, branch: torch.Tensor | None = None,
+        operands: Mapping[str, Any] | None = None,
         metadata: Mapping[str, Any] | None = None,
     ) -> StageRecord:
         record = StageRecord(
             name=name, step=int(step), dtcld=float(dtcld), state_in=state_in,
             state_out=state_out, rates=rates, branch=branch,
+            operands=dict(operands or {}),
             metadata=dict(metadata or {}),
         )
         self.records.append(record)
@@ -395,26 +410,34 @@ def diagnose_step(
     warm_records = trace.by_name("warm")
     cold_records = trace.by_name("cold")
     update_records = trace.by_name("state_update")
-    if warm_records:
-        upstream = getattr(warm_records[0].rates, "prevp", None)
-        if upstream is not None:
-            for consumer_name, consumer, fields in (
-                ("cold", cold_records[0].rates if cold_records else None, ("pinud", "pidep")),
-                ("state_update", update_records[0].state_out if update_records else None, ("qv", "qr", "t")),
-            ):
-                if consumer is None:
-                    continue
-                for field_name in fields:
-                    value = getattr(consumer, field_name)
-                    grad = torch.autograd.grad(value.sum(), upstream, retain_graph=True,
-                                               allow_unused=True)[0] if value.requires_grad else None
-                    causal_links[f"warm.prevp->{consumer_name}.{field_name}"] = {
-                        "quantity": "VJP of consumer sum with respect to upstream rate; not a full Jacobian",
-                        "structurally_connected": grad is not None,
-                        "max_abs_derivative": 0.0 if grad is None else float(grad.detach().abs().max().item()),
-                        "zero_reason": ("fixture/branch yielded zero; cause not established"
-                                         if grad is not None and not bool((grad != 0).any().item()) else None),
-                    }
+    limited_cold = trace.by_name("cold_limited")
+    # Conditional graph partials at actual reached rate values. They are not
+    # total physical-control interventions or full inter-stage Jacobians.
+    edges = (
+        ("warm.prevp", warm_records[0].rates.prevp if warm_records else None,
+         "cold", cold_records[0].rates if cold_records else None,
+         ("pinud", "pidep", "psdep", "pgdep")),
+        ("warm.prevp", warm_records[0].rates.prevp if warm_records else None,
+         "state_update", update_records[0].state_out if update_records else None,
+         ("qv", "qr", "t")),
+        ("cold.pidep", cold_records[0].rates.pidep if cold_records else None,
+         "cold_limited", limited_cold[0].rates if limited_cold else None,
+         ("pgaci",)),
+    )
+    for producer_name, upstream, consumer_name, consumer, fields in edges:
+        if upstream is None or consumer is None:
+            continue
+        for field_name in fields:
+            value = getattr(consumer, field_name)
+            grad = torch.autograd.grad(value.sum(), upstream, retain_graph=True,
+                                       allow_unused=True)[0] if value.requires_grad else None
+            causal_links[f"{producer_name}->{consumer_name}.{field_name}"] = {
+                "quantity": "VJP of consumer sum with respect to upstream rate; not a full Jacobian",
+                "structurally_connected": grad is not None,
+                "max_abs_derivative": 0.0 if grad is None else float(grad.detach().abs().max().item()),
+                "zero_reason": ("fixture/branch yielded zero; cause not established"
+                                 if grad is not None and not bool((grad != 0).any().item()) else None),
+            }
     fd = {name: float((((getattr(plus, name) - getattr(minus, name)) / (2.0 * epsilon)).abs().max().item()))
           for name in State._fields}
     jv = {name: float(getattr(tangent, name).detach().abs().max().item()) for name in State._fields}
