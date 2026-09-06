@@ -478,13 +478,13 @@ def _kdm6_pure(
       - ``xland`` (None → maritime, the C++ no-xland branch) sets the land/sea ``sea_mask``,
         which drives the per-substep ``qcr`` override via ``diag_qcr_torch`` (Fortran :842-847).
       - ``ncmin_land``/``ncmin_sea`` build a per-cell ``ncmin_tensor`` (from ``sea_mask``) that
-        drives the CONSERVATION number-floor (#18, the path Python supports) — so they are
-        FUNCTIONAL, not no-op. The warm/cold rate-GATE ncmin stays scalar (#10, Python phase
-        params are scalar-typed). The per-cell tensor is floored at the scalar ``c.NCMIN``
-        safety minimum, so the default 0.0 collapses to ``c.NCMIN`` everywhere == the no-xland
-        (scalar) path — never a 0-floor (which would 0/0-NaN in the conservation scaling).
-      - ``params`` is currently baked into the default phase params (as in C++ ``kdm6_fn``),
-        not yet AD-trainable on this path.
+        drives the conservation number-floor and the autoconversion, number-accretion,
+        cloud-water-riming, contact-freezing and Bigg-cloud-freezing gates when ``xland``
+        is supplied. The tensor is floored at ``c.NCMIN``; default 0.0 therefore uses that
+        safety minimum. Without ``xland``, the floor and gates retain their scalar defaults.
+      - On this Python path, ``params`` with any ``requires_grad`` leaf or any value changed
+        from its default are passed to ``default_warm_phase_params``. Frozen parameters
+        equal to the defaults retain the existing constant path.
 
     Returns ``State`` only (no surface rain/snow/graupel increments — those are a C++ ABI
     concern; ``_kdm6_pure``'s job is the differentiable state evolution).
@@ -541,9 +541,8 @@ def _kdm6_pure(
     if _use_xland:
         xl_flat = xland.to(cs.qc.dtype).reshape(-1)
         sea_mask = (xl_flat >= 1.5).unsqueeze(1).expand_as(cs.qc).contiguous()
-        # Per-cell ncmin floor for the conservation NUMBER budgets (#18), from xland +
+        # Per-cell ncmin for conservation NUMBER budgets and the rate gates below, from xland +
         # ncmin_land/ncmin_sea (mirror C++ runtime.cpp:261-265: sea→ncmin_sea, land→ncmin_land).
-        # Feeds the conservation floor only; the warm/cold PHASE gates stay scalar (#10).
         # Floored at the scalar safety minimum c.NCMIN: a 0 (e.g. the default ncmin) must NOT
         # drop the conservation floor to 0, else limit_ncmin's value/max(source,value) hits 0/0
         # → NaN when a number reservoir AND its source are both 0. With the default 0.0 this
@@ -554,14 +553,11 @@ def _kdm6_pure(
             min=c.NCMIN)
     else:
         sea_mask = torch.ones_like(cs.qc, dtype=torch.bool)
-        ncmin_tensor = None  # → scalar c.NCMIN fallback inside the conservation floor
+        ncmin_tensor = None  # Conservation floor and rate gates retain scalar defaults.
 
-    # Inject the per-cell ncmin into the rate-GATE params too — NOT only the conservation floor.
-    # The C++/Fortran autoconv/number-accretion/riming/contact/Bigg gates use the operational
-    # per-cell ncmin (sea 10 / land 100 from xland); without this the Python oracle's gates used
-    # scalar c.NCMIN (1e-2), a qualitative C++↔Python divergence in low-nc cells on the live xland
-    # path (audit round-5). Mirrors C++ runtime.cpp:273-277. None (no-xland) → params keep their
-    # scalar ncmin (== the C++ no-xland branch), so the no-xland parity path is unchanged.
+    # Share the land/sea ncmin tensor with autoconversion, number accretion,
+    # cloud-water riming, contact freezing and Bigg-cloud freezing gates.
+    # Mirrors C++ runtime.cpp:273-277; no-xland keeps the scalar gate defaults.
     if ncmin_tensor is not None:
         warm_p = warm_p._replace(autoconv=warm_p.autoconv._replace(ncmin_tensor=ncmin_tensor))
         cold_p = cold_p._replace(
@@ -718,10 +714,10 @@ def kdm6_step(
         land/sea mask (xland>=1.5 → sea, else land). None이면 maritime (C++ no-xland branch).
         per-substep qcr override를 구동 — `_kdm6_pure` 참조. Handle의 VJP/JVP func에도 bind됨.
     ncmin_land, ncmin_sea : float
-        regime별 droplet-number floor. xland와 함께 per-cell ncmin_tensor를 만들어 conservation
-        number-floor(#18)를 구동 — FUNCTIONAL. 단 warm/cold rate-GATE ncmin은 scalar(#10).
-        default 0.0은 scalar c.NCMIN safety floor로 collapse (== no-xland scalar path) —
-        0-floor 0/0 NaN 방지.
+        xland가 주어지면 land/sea별 ncmin_tensor를 만들어 보존 예산의 number-floor와
+        autoconversion, number accretion, cloud-water riming, contact freezing,
+        Bigg-cloud freezing gate에 전달한다. c.NCMIN을 safety floor로 사용하므로
+        default 0.0도 0-floor가 되지 않는다. xland=None이면 기존 scalar 기본값을 유지한다.
 
     Returns
     -------
