@@ -105,7 +105,7 @@ def _allsky_columns_worker(args: dict) -> dict:
                     make_live_run_k(case_dir, timeout=rttov_timeout),
                     icfg, tl, ql, prof.p_lay, prof.p_half,
                     prof.clw, prof.ciw, prof.deff_liq, prof.deff_ice, prof.cfrac)
-            except Exception:
+            except BaseException:
                 # Preserve the runner's compact failure marker before the
                 # TemporaryDirectory workspace disappears; its cleanup then
                 # removes the large case files and lock.

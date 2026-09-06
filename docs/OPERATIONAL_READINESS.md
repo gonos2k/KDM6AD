@@ -62,6 +62,11 @@ test for those broader cases; do not infer whole-cycle guarantees from O1.
 written in the prepared case. Log recording is best effort if the filesystem
 itself fails; the original exception still propagates. All-sky disposable cases
 retain a small failure record outside the large temporary case before cleanup.
+This includes Python interruptions (`KeyboardInterrupt`/`SystemExit`) that reach
+the cleanup handler. The convenience `default_run_k` API intentionally removes
+all scratch files, including logs, while propagating the original exception;
+use an explicit `make_live_run_k` case for retained diagnostics. Its disposable
+workspace now contains both case and sibling lock, so neither is left behind.
 Failed runs do not produce an accepted analysis artifact. Disk quota, retention,
 and arbitrary wrapper output volume remain deployment responsibilities.
 
@@ -98,13 +103,11 @@ O–A or objective reduction on assimilated observations does not close O8.
 
 ## Verification record
 
-On macOS, Python 3.10.11 / PyTorch 2.13.0 / NumPy 2.2.6, the local oracle
-returned **1,110 passed / 26 skipped**. The focused lifecycle/parser run had
-35 passes, and the caller/related regression run had 25 passes. These subsets
-are included in the full count; do not add them to it.
-After that full run, one additional LC05 reader-failure regression passed:
-two invocations sharing a case root retain distinct run namespaces and release
-both output locks. It is not included in the 1,110 count.
+On macOS, Python 3.10.11 / PyTorch 2.13.0 / NumPy 2.2.6, the final local
+oracle returned **1,116 passed / 26 skipped**. The focused lifecycle/routing
+regressions returned **29 passed**, including interrupted all-sky diagnostics,
+convenience-case/lock cleanup, and two reader-failure runs sharing a case root.
+These tests are included in the full count; do not add them to it.
 
 The existing RTTOV case-writer suite returned **57 passed**, including actual
 clear/cloud executable calls, reference BT, and differentiation through the
@@ -113,7 +116,8 @@ live-library validation, not an operational real-observation assimilation,
 WRF/MPI cycle, forecast-skill comparison, or target-scale performance result.
 
 Independent Luna xhigh GREEN and RED agents reproduced surviving descendants
-before the fix. The RED post-fix probe confirmed group cleanup on timeout and
+before the fix. The final RED review closed the interruption-retention omission and clarified
+the convenience API's ephemeral diagnostics contract. The RED post-fix probe confirmed group cleanup on timeout and
 early wrapper exit, nonzero/freshness rejection, interruption cleanup, spawn
 and log-open errors, successful parsing, and separate-closure ownership.
 It also deliberately detached one synthetic child: that child escaped the

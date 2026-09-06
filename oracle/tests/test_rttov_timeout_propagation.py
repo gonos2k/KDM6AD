@@ -216,7 +216,7 @@ def _patch_allsky_doubles(monkeypatch, seen, *, fail=False):
             (case_dir / "out").mkdir(parents=True, exist_ok=True)
             (case_dir / "out" / "run.failure.txt").write_text(
                 "synthetic RTTOV tail\n", encoding="utf-8")
-            raise RuntimeError("synthetic RTTOV failure")
+            raise fail("synthetic RTTOV failure")
         return torch.ones(1, **F64), torch.zeros(1, **F64)
 
     monkeypatch.setattr(builder, "model_to_rttov_tensors", fake_profile)
@@ -225,7 +225,7 @@ def _patch_allsky_doubles(monkeypatch, seen, *, fail=False):
     monkeypatch.setattr(operator.RttovObsOp, "apply", fake_apply)
 
 
-@pytest.mark.parametrize("fail", [False, True])
+@pytest.mark.parametrize("fail", [False, RuntimeError, KeyboardInterrupt, SystemExit])
 def test_allsky_worker_uses_inner_case_and_preserves_failure_tail(
         monkeypatch, tmp_path, fail):
     import kdm6.obs.allsky_shard as shard
@@ -237,7 +237,7 @@ def test_allsky_worker_uses_inner_case_and_preserves_failure_tail(
     args = _allsky_args(root)
 
     if fail:
-        with pytest.raises(RuntimeError, match="synthetic RTTOV failure"):
+        with pytest.raises(fail, match="synthetic RTTOV failure"):
             shard._allsky_columns_worker(args)
         preserved = list((root / "failures").glob("*.txt"))
         assert len(preserved) == 1

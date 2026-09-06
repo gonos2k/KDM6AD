@@ -156,3 +156,31 @@ def test_interruption_cleans_up_child_before_propagating(tmp_path, monkeypatch):
         _run_case_fresh(script, [], 1)
     _assert_stopped(injected[0])
     assert "KeyboardInterrupt" in (tmp_path / "run.failure.txt").read_text()
+
+
+@pytest.mark.parametrize("failure", [None, RuntimeError, KeyboardInterrupt])
+def test_default_run_k_disposes_case_and_sibling_lock(monkeypatch, failure):
+    import kdm6.obs.rttov_case_writer as writer
+    from kdm6.obs.rttov_obs_operator import default_run_k
+
+    seen = []
+
+    def fake_live(case):
+        def run(value):
+            with exclusive_rttov_case(case):
+                case.mkdir()
+                (case / "run.failure.txt").write_text("ephemeral diagnostic")
+                seen.append(case.parent)
+                if failure:
+                    raise failure("unchanged exception")
+                return value
+        return run
+
+    monkeypatch.setattr(writer, "make_live_run_k", fake_live)
+    if failure:
+        with pytest.raises(failure, match="unchanged exception"):
+            default_run_k("result")
+    else:
+        assert default_run_k("result") == "result"
+    assert len(seen) == 1
+    assert not seen[0].exists()  # includes the persistent sibling lock inode
