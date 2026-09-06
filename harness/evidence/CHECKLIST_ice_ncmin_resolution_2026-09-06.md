@@ -32,7 +32,7 @@ The function name and arithmetic of the existing ice snap are retained.
 
 ## Regression evidence
 
-`oracle/tests/test_dsd_ncmin_contract.py` contains five portable tests:
+`oracle/tests/test_dsd_ncmin_contract.py` contains six portable tests:
 
 - Heterogeneous floors: identical `ni=50` is active under floor 10 and retained
   under floor 100; `ni=100` is active at equality. Non-ice fields are unchanged.
@@ -40,11 +40,13 @@ The function name and arithmetic of the existing ice snap are retained.
   derivatives and the tangent/adjoint dot product.
 - `None` and an explicit scalar-default tensor preserve the scalar contract.
 - The mass gate retains the input just below `qmin`, with equality active.
+- A wrapper observes the actual `kdm6_step` → final DSD call and verifies
+  delivery of distinct land/sea floors `[100, 10]`; it delegates to the real
+  consumer without replacing physical calculations.
 
-Before the source fix, the new suite returned **2 failed / 3 passed**: the
-value and derivative counterexamples failed. After the fix all five passed.
-The focused coordinator/parameter/window run returned **59 passed**, including
-those five; these are not additional independent counts.
+Before the source fix, the first five tests returned **2 failed / 3 passed**:
+the value and derivative counterexamples failed. All five passed after the
+fix. The sixth test subsequently protects actual runtime argument routing.
 
 The active branch expectations use the existing f32-derived initialization
 constant `PIDNI` with an independently stated lambda-bound reconstruction.
@@ -53,9 +55,8 @@ production gate implementation. No tolerance was relaxed to pass the change.
 
 ## Additional review and scope
 
-The full local oracle run returned **1,086 passed / 26 skipped** on
-Python 3.10.11 / PyTorch 2.13.0 / macOS CPU. The focused 59 tests are included
-in that total. Ruff and Python compilation pass.
+The full local oracle run returned **1,087 passed / 26 skipped** on
+Python 3.10.11 / PyTorch 2.13.0 / macOS CPU. The focused tests are included in that total. Ruff and Python compilation pass.
 
 A separate old/new-module comparison sampled 4,096 positive scalar-default
 cells with independently varied mass, number and density. All state outputs
@@ -64,8 +65,19 @@ This is sampled preservation evidence, not a guarantee for all finite inputs.
 
 Independent RED review reproduced all six value branches and identity/snap
 partials after the fix, with no additional finding in its bounded consumer
-scan. GREEN's full-step review is recorded below when complete. The two
-existing team agents use Luna xhigh; no new team was spawned.
+scan. GREEN traced the producer, all connected rate/slope/DSD consumers and
+the AD closure, finding no additional P1/P2. Actual one/two-step fixtures gave
+equal state fields (`torch.equal`) with zero/default versus land/sea floors,
+and a boundary VJP was finite. Final-call capture verified `[100, 10]` arrived.
+
+The full-step boundary fixture's ice number had already changed in preceding
+physics. It therefore did not exercise the newly corrected inactive snap.
+An initial prediction based on the initial ice number was rejected and
+corrected using the captured consumer input. These actual-step observations
+establish routing and bounded behavior, not real-case activation frequency.
+The direct tests provide the independent inactive-branch value/AD check.
+
+The two existing team agents use Luna xhigh; no new team was spawned.
 Graphify was updated. Raw review artifacts stay outside the wiki under
 `graphify-out/ice-ncmin-resolution-20260906/` in the development checkout.
 

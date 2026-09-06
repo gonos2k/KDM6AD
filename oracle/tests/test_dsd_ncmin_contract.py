@@ -72,3 +72,39 @@ def test_final_ice_ncmin_retains_mass_threshold():
     # Just below qmin is identity; equality is active with lambda above LAMDAIMAX.
     expected = torch.stack((ni[0, 0], qmin * c.LAMDAIMAX ** c.DMI / fconst.PIDNI)).reshape(1, 2)
     torch.testing.assert_close(out.ni, expected, rtol=0, atol=0)
+
+
+def test_runtime_delivers_land_sea_floors_to_final_dsd(monkeypatch):
+    """Observe the real runtime/consumer boundary without replacing its physics."""
+    from kdm6 import coordinator
+    from kdm6.runtime import kdm6_step
+    from kdm6.state import Forcing, State
+
+    def field(value):
+        return torch.full((2, 1), value, dtype=torch.float64)
+
+    state = State(
+        th=field(296.8), qv=field(0.014), qc=field(0.001), qr=field(0.0001),
+        qi=field(0.0002), qs=field(0.0), qg=field(0.0), nccn=field(1e9),
+        nc=field(1e8), ni=field(1e8), nr=field(1e4), bg=field(0.0),
+    )
+    forcing = Forcing(rho=field(1.0), pii=field(0.97), p=field(9e4), delz=field(500.0))
+    captured = []
+    original = coordinator.apply_dsd_number_limiters_torch
+
+    def observe(*args, **kwargs):
+        captured.append(kwargs.get("ncmin_tensor"))
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(coordinator, "apply_dsd_number_limiters_torch", observe)
+    _, handle = kdm6_step(
+        state, forcing, None, 20.0, value_only=True,
+        xland=torch.tensor([1.0, 2.0], dtype=torch.float64),
+        ncmin_land=100.0, ncmin_sea=10.0,
+    )
+    handle.close()
+    assert captured
+    expected = torch.tensor([[100.0], [10.0]], dtype=torch.float64)
+    for floor in captured:
+        assert floor is not None
+        torch.testing.assert_close(floor, expected, rtol=0, atol=0)
