@@ -2170,8 +2170,9 @@ def kdm62d_one_step_torch(
     # F1d2: group conservation limiters bound warm/cold/D5 sinks against the
     # WORKING (post-melt/freeze) reservoirs, gated by post-freeze supcol — exactly
     # Fortran's combined budget+mass-balance loop (:2449-2756, gate `t.le.t0c`).
-    # D1-D4 already committed to `working`; scale_rates only touches the D5 fields
-    # (pseml/pgeml/nseml/ngeml). Mirrors C++ scale_rates_for_conservation.
+    # D1-D4 are already committed to `working`. The limiter rescales warm,
+    # cold and D5 rates; within melt/freeze only the uncommitted D5 fields
+    # (pseml/pgeml/nseml/ngeml) remain. Mirrors C++ group-budget ordering.
     warm_out, cold_out, mf5 = scale_rates_for_conservation_torch(
         working, pre2.supcol, warm_out, cold_out, mf5, dtcld=dtcld,
         # 1:1 fix #18: per-cell ncmin floor for cloud/ice NUMBER budgets. The driver
