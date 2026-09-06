@@ -160,7 +160,13 @@ def apply_freeze_controls(mf_d234, controls: Optional[ProcessControls],
     boundary refuses overflow instead of silently losing a transfer.
     A binding cap distributes the budget by the unscaled amounts' shares;
     an unbound cap returns the scaled amounts directly. At exact equality,
-    AD follows the unbound branch (the cap kink has no unique derivative)."""
+    AD follows the unbound branch (the cap kink has no unique derivative).
+    Binding inputs outside the supported numerical AD domain are refused:
+    overflowing normalized reciprocal/source tangents, or a positive
+    subnormal smaller amount needing upward normalization. The latter is a
+    conservative restriction: its budget covector can lose precision before
+    being rescaled. These checks bound known failure modes, not arbitrary
+    higher derivatives. A finite forward value alone does not establish support."""
     if controls is None or controls.alpha_freeze is None:
         return mf_d234
     scaled = _scale(mf_d234, ("pinuc", "ninuc", "pfrzdtc", "nfrzdtc"),
@@ -207,22 +213,38 @@ def apply_freeze_controls(mf_d234, controls: Optional[ProcessControls],
         safe_base = torch.where(binding, base, torch.ones_like(base))
         safe_budget = torch.where(binding, budget, torch.ones_like(budget))
         # B >= S for this nonnegative freeze budget, and binding with finite
-        # scaled sums bounds B/S by exp(alpha). Compute this bounded ratio
+        # scaled sums bounds the FORWARD B/S by exp(alpha). Compute this ratio
         # before multiplying an amount: amount/S may underflow even when
-        # amount*(B/S) is representable. Normalizing BOTH B and S also avoids
-        # losing the denominator's first/higher derivatives inside division.
+        # amount*(B/S) is representable. Normalizing BOTH B and S reduces
+        # denominator derivative loss; the domain checks below are still needed.
         # Integer exponent selection is value-only; multiplication keeps the
         # live budget/base graph. Cap the shift so the multiplier stays finite
         # even when S itself is subnormal (no epsilon is added to the budget).
         exponent = torch.frexp(safe_base)[1]
         max_shift = -math.log2(torch.finfo(base.dtype).tiny)
         normalize = torch.exp2((-exponent).clamp(max=max_shift).to(base.dtype))
-        budget_ratio = (safe_budget * normalize) / (safe_base * normalize)
+        normalized_base = safe_base * normalize
+        budget_ratio = (safe_budget * normalize) / normalized_base
         first, second = fields
         a = torch.where(binding, getattr(mf_d234, first), torch.zeros_like(base))
         b = torch.where(binding, getattr(mf_d234, second), torch.zeros_like(base))
         first_is_small = a <= b
-        small = torch.where(first_is_small, a, b) * budget_ratio
+        smaller_amount = torch.where(first_is_small, a, b)
+        # Value-only numerical-domain refusal; none of these limits modifies
+        # the live operands below. With G=B/S and D=c*S, reverse division
+        # forms G/D, and a raw unit source tangent needs G/S. Compare against
+        # finite products instead of evaluating either overflowing quotient.
+        # D <= 1; clipping S at 1 only avoids overflow in the threshold itself
+        # (G is already finite, so S >= 1 cannot violate the second bound).
+        fmax = torch.finfo(base.dtype).max
+        unsafe_reverse = budget_ratio > fmax * normalized_base
+        unsafe_tangent = budget_ratio > fmax * torch.clamp(safe_base, max=1.0)
+        unsafe_budget = ((smaller_amount > 0)
+                         & (smaller_amount < torch.finfo(base.dtype).tiny)
+                         & (normalize > 1))
+        if bool((binding & (unsafe_reverse | unsafe_tangent | unsafe_budget)).any().item()):
+            raise ValueError("freeze allocation exceeds the supported AD numerical domain")
+        small = smaller_amount * budget_ratio
         # The larger share is the budget complement. Its direct quotient's
         # self-derivative subtracts nearly equal terms and can erase a finite
         # cross-process sensitivity even after denominator normalization.

@@ -351,7 +351,7 @@ def test_freeze_zero_and_tiny_draws_have_no_artificial_floor(rate, alpha_value):
         assert grad.item() == 0.
 
 
-def test_freeze_subnormal_amount_ratio_keeps_finite_rate_derivatives():
+def test_freeze_subnormal_source_outside_ad_domain_is_refused():
     from kdm6.coordinator import MeltFreezePhaseOutputs
     from kdm6.process_controls import apply_freeze_controls
 
@@ -362,10 +362,16 @@ def test_freeze_subnormal_amount_ratio_keeps_finite_rate_derivatives():
     mf = MeltFreezePhaseOutputs(*(z for _ in MeltFreezePhaseOutputs._fields))
     mf = mf._replace(pinuc=r1, pfrzdtc=r2)
     alpha = torch.tensor(3., dtype=torch.float64, requires_grad=True)
-    out = apply_freeze_controls(mf, ProcessControls(alpha_freeze=alpha), budget, z)
-    grads = torch.autograd.grad(out.pinuc.sum(), (r1,r2,budget,alpha))
-    for actual, expected in zip(grads, (.75, -.75, .5, 0.)):
-        assert actual.item() == pytest.approx(expected, rel=1e-12, abs=1e-14)
+    # The old VJP-only check passed (.75, -.75, .5, 0), but the raw unit
+    # source JVP of B/S overflows. This binding input is now explicitly
+    # outside the numerical AD domain, not repaired by a different value.
+    with pytest.raises(ValueError, match="supported AD numerical domain"):
+        apply_freeze_controls(mf, ProcessControls(alpha_freeze=alpha), budget, z)
+    # The same subnormal amounts remain valid when the cap is unbound.
+    zero = ProcessControls(alpha_freeze=torch.zeros_like(alpha))
+    out = apply_freeze_controls(mf, zero, budget, z)
+    assert torch.equal(out.pinuc, r1)
+    assert torch.equal(out.pfrzdtc, r2)
 
 
 def test_alpha_freeze_zero_bitwise_on_cap_saturated_ic():
