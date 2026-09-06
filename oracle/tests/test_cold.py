@@ -755,6 +755,31 @@ def test_hm_grad_finite():
         assert x.grad is not None and torch.isfinite(x.grad).all(), name
 
 
+def test_hm_offpeak_jvp_vjp_fd_regression():
+    """Off-peak HM temperature tangent agrees with its adjoint and central FD."""
+    params = default_hallett_mossop_params()
+    args = list(_hm_inputs(t_value=267.0))
+    temperature = args[7].clone()
+
+    def outputs(t):
+        local = list(args)
+        local[7] = t
+        result = hallett_mossop_torch(*local, params=params)
+        return torch.cat([v.reshape(-1) for v in result
+                          if isinstance(v, torch.Tensor) and v.is_floating_point()])
+
+    direction = torch.full_like(temperature, 0.01)
+    value, tangent = torch.autograd.functional.jvp(outputs, temperature, direction)
+    seed = torch.linspace(0.25, 1.25, value.numel(), dtype=value.dtype)
+    _, adjoint = torch.autograd.functional.vjp(outputs, temperature, v=seed)
+    assert torch.allclose((tangent * seed).sum(), (adjoint * direction).sum(),
+                          rtol=1e-12, atol=1e-12)
+    for eps in (1.0e-3, 1.0e-4):
+        fd = (outputs(temperature + eps * direction)
+              - outputs(temperature - eps * direction)) / (2.0 * eps)
+        assert torch.allclose(fd, tangent, rtol=1.0e-6, atol=1.0e-10)
+
+
 # ════ Step C3: Ice nucleation from vapor ══════════════════════════════════════
 
 

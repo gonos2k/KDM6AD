@@ -41,6 +41,17 @@ this holds through a **full 12-hour (2160-step) SS real-case integration under M
 — all 254 output variables bit-identical at every output frame (the campaign goal; see
 `wiki/concepts/KDM6AD Forward Parity.md`). Earlier milestones were SS step-1 and 10-step.
 
+## Differentiability Validation Goal
+
+The validation target is differentiable KDM microphysics, including sensitivities
+between hydrometeor processes, through the GK2A–RTTOV assimilation chain.
+Prioritize JVP/VJP correctness, independent directional differences, branch and
+numerical diagnostics, declared units and applied-process budgets. Distinguish
+state-to-state sensitivity, named process attribution and sensitivity of BT/cost.
+Forecast skill and unattended host cycling are separate objectives, not completion
+gates for this validation task. Keep first-order RTTOV K validation separate from
+unverified higher-order derivatives or parameter identifiability claims.
+
 ## Structure
 
 ```text
@@ -103,7 +114,7 @@ Generated or foreign areas are not source for normal KDM6AD work:
 
 ## Theory Before Patching
 
-Team agents use `gpt-5.6-luna` with reasoning effort `xhigh` by default,
+Team agents use `gpt-5.6-luna` with reasoning effort `high` by default,
 including Green/Red implementation and independent review teams. Apply this
 setting when spawning or restarting team agents unless the user explicitly
 requests a different model or reasoning effort.

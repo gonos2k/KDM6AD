@@ -24,6 +24,17 @@ full mathematical and AD-engineering writeup.
 
 To keep claims precise (see [`docs/STATUS.md`](docs/STATUS.md) for the capability matrix):
 
+The current validation goal is **differentiable KDM hydrometeor processes through
+GK2A–RTTOV assimilation**, including process interactions, JVP/VJP consistency,
+independent derivative checks and interpretable diagnostics. The
+[sensitivity checklist](harness/evidence/CHECKLIST_hydrometeor_sensitivity_2026-09-06.md)
+separates implemented checks, executed evidence and remaining coverage. Forecast
+skill and unattended cycling are separate objectives.
+
+Unattended observation assimilation, host writeback and repeated cycling are
+not approved. See the [operational readiness checklist](docs/OPERATIONAL_READINESS.md)
+for the distinction between library/evidence validation and deployment acceptance.
+
 - **Two distinct maps, not one at two precisions.** The operational **f32 forward**
   reproduces KDM6 bit-for-bit (raw divisions/sqrt, f32 rounding/underflow). The **f64 DA
   map** keeps smooth clamps on some denominators/roots so the adjoint stays finite. They are

@@ -338,15 +338,15 @@ program test_fortran_smoke
     integer, parameter :: nn = ti * tk * tj
     integer, parameter :: i0 = 2, k0 = 2, j0 = 3     ! 1-based; i0/=j0 (asymmetric); field qv = 2
     real(c_double), allocatable :: s_in(:,:,:,:), s_out(:,:,:,:), f_in(:,:,:,:)
-    real(c_double), allocatable :: u_pk(:), g_pk(:)
+    real(c_double), allocatable :: u_pk(:), g_pk(:), v_pk(:), t_pk(:)
     real(c_float),  allocatable :: xland2(:,:)
     type(c_ptr) :: th_handle
     integer :: i, k, j, fld, cell0, pidx
-    real(c_double) :: colf
-    logical :: any_in_col
+    real(c_double) :: colf, lhs, rhs, denom
+    logical :: any_in_col, any_jvp_in_col
 
     allocate(s_in(ti,tk,tj,nfld), s_out(ti,tk,tj,nfld), f_in(ti,tk,tj,4))
-    allocate(u_pk(nfld*nn), g_pk(nfld*nn), xland2(ti,tj))
+    allocate(u_pk(nfld*nn), g_pk(nfld*nn), v_pk(nfld*nn), t_pk(nfld*nn), xland2(ti,tj))
 
     ! distinct per-column warm-active state (field order th,qv,qc,qr,...,bg)
     do j = 1, tj
@@ -424,6 +424,65 @@ program test_fortran_smoke
     end if
     print *, "  PASS: kdm6_step_ad (2,3,4)-tile VJP support confined to source column (axis-swap sensitive)"
 
+    ! Tangent seed v = e_{qv at (i0,k0,j0)} — the same asymmetric Fortran cell.
+    ! This exercises the ISO_C_BINDING JVP wrapper at the actual 4D contiguous
+    ! boundary and checks the opposite packed direction from the VJP above:
+    ! JVP output support must remain in the source column. A Fortran/C axis
+    ! permutation can otherwise make a JVP call return plausible values in a
+    ! different column while the single-cell smoke still passes.
+    v_pk = 0.0_c_double
+    t_pk = -777.0_c_double
+    cell0 = (i0-1) + ti*((k0-1) + tk*(j0-1))
+    v_pk((2-1)*nn + cell0 + 1) = 1.0_c_double
+    rc = kdm6_handle_jvp(th_handle, v_pk, t_pk)
+    if (rc /= KDM6_OK) then
+       print *, "FAIL: kdm6_handle_jvp (tile) rc ", rc
+       stop 1
+    end if
+
+    any_jvp_in_col = .false.
+    do fld = 1, nfld
+      do j = 1, tj
+        do k = 1, tk
+          do i = 1, ti
+            cell0 = (i-1) + ti*((k-1) + tk*(j-1))
+            pidx  = (fld-1)*nn + cell0 + 1
+            if (t_pk(pidx) == -777.0_c_double) then
+               print *, "FAIL: kdm6_handle_jvp left tangent_out unwritten at index ", pidx
+               stop 1
+            end if
+            if (.not. ieee_is_finite(t_pk(pidx))) then
+               print *, "FAIL: non-finite (NaN/Inf) in fp64 tile JVP tangent at i,k,j,fld=", i, k, j, fld
+               stop 1
+            end if
+            if (t_pk(pidx) /= 0.0_c_double) then
+               if (i /= i0 .or. j /= j0) then
+                  print *, "FAIL: JVP support leaked outside column at i,k,j,fld=", i, k, j, fld
+                  stop 1
+               end if
+               any_jvp_in_col = .true.
+            end if
+          end do
+        end do
+      end do
+    end do
+    if (.not. any_jvp_in_col) then
+       print *, "FAIL: JVP support empty on tile (sensitivity/layout lost)"
+       stop 1
+    end if
+    ! The retained VJP and this JVP must remain an adjoint pair on the same
+    ! packed tile: <Jv,u> = <v,J^T u>. This catches a plausible-looking JVP
+    ! scalar/stride error that support confinement alone would not detect.
+    lhs = sum(t_pk * u_pk)
+    rhs = sum(v_pk * g_pk)
+    denom = max(abs(lhs), abs(rhs), 1.0e-30_c_double)
+    if (abs(lhs - rhs) / denom >= 1.0e-12_c_double) then
+       print *, "FAIL: JVP/VJP adjoint identity mismatch <Jv,u>,<v,JTu>=", lhs, rhs
+       stop 1
+    end if
+    print *, "  PASS: kdm6_handle_jvp (2,3,4)-tile tangent confined to source column (axis-swap sensitive)"
+    print *, "  PASS: asymmetric tile JVP/VJP adjoint identity"
+
     ! VALUE-LEVEL layout check: column (i0,j0) run STANDALONE (im=1) must reproduce
     ! the embedded tile's (i0,j0) column forward output (column independence).
     ! Because the inputs are authored through Fortran NATIVE x(i,k,j,field) assumed-shape
@@ -489,7 +548,7 @@ program test_fortran_smoke
        stop 1
     end if
 
-    deallocate(s_in, s_out, f_in, u_pk, g_pk, xland2)
+    deallocate(s_in, s_out, f_in, u_pk, g_pk, v_pk, t_pk, xland2)
   end block tile_test
 
   print *, "All Fortran ISO_C_BINDING tests passed."

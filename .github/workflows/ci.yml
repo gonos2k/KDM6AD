@@ -70,7 +70,7 @@ jobs:
             echo "port=true" >> "$GITHUB_OUTPUT"; exit 0
           fi
           printf '%s\n' "$changed" | sed 's/^/  /'
-          if printf '%s\n' "$changed" | grep -Eq '^(libtorch/|oracle/kdm6/|harness/g33_overlay/|harness/g33_[^/]*\.py$|\.github/workflows/|README\.md$|ENVIRONMENT\.md$|docs/HOST_INTEGRATION\.md$|oracle/tests/test_cpp_parity\.py$|oracle/tests/test_cpp_conservative_interface_parity\.py$|oracle/conftest\.py$)'; then
+          if printf '%s\n' "$changed" | grep -Eq '^(libtorch/|oracle/kdm6/|harness/g33_overlay/|harness/g33_[^/]*\.py$|\.github/workflows/|README\.md$|ENVIRONMENT\.md$|docs/HOST_INTEGRATION\.md$|oracle/tests/test_cpp_parity\.py$|oracle/tests/test_cpp_conservative_interface_parity\.py$|oracle/tests/test_cross_tree_adjoint_parity\.py$|oracle/conftest\.py$)'; then
             echo "port=true" >> "$GITHUB_OUTPUT"
           else
             echo "port=false" >> "$GITHUB_OUTPUT"
@@ -231,6 +231,17 @@ jobs:
           # controlled f32 (measured bitwise), full-step regression bound.
           cd oracle && python -m pytest tests/test_cpp_parity.py tests/test_cpp_conservative_interface_parity.py -rs -q
 
+      # V5: mandatory cross-tree AD gate. Unlike the forward dump checks above,
+      # this loads the shared library built by this job and compares its fp64
+      # VJP/JVP products with the Python handle on smooth and multi-subcycle
+      # fixtures. Keep the loader pointed at this build's artifact.
+      - name: cross-tree AD parity (built shared library)
+        run: |
+          export LD_LIBRARY_PATH="$(python -c 'import torch,os;print(os.path.join(os.path.dirname(torch.__file__),"lib"))'):${LD_LIBRARY_PATH:-}"
+          export KDM6_C_LIBRARY="$PWD/libtorch/build/libkdm6_c.so"
+          test -f "$KDM6_C_LIBRARY"
+          cd oracle && python -m pytest tests/test_cross_tree_adjoint_parity.py -rs -q
+
   # PR3: the symbol-visibility / export-allowlist work is platform-specific
   # (macOS exported_symbols_list vs Linux --version-script), so the export
   # surface must be gated on BOTH. This macOS/arm64 job mirrors the shipped
@@ -260,8 +271,9 @@ jobs:
           # macOS arm64 default wheel is CPU-only; pin to the ENVIRONMENT.md reference.
           pip install "torch==2.8.0"
           # numpy for the G3.3-M self-check reader (torch>=2.8 does not pull it in),
-          # pinned to the same version as the other jobs for a reproducible replay.
-          pip install "numpy==2.4.6"
+          # and pytest for the mandatory cross-tree AD gate, pinned to the same
+          # versions as the Ubuntu job for a reproducible replay.
+          pip install "numpy==2.4.6" "pytest==9.1.1"
 
       - name: Record toolchain versions
         run: |
@@ -288,6 +300,15 @@ jobs:
 
       - name: ctest (shipped, all 17)
         run: ctest --test-dir libtorch/build --output-on-failure
+
+      # V5: run the same cross-tree AD gate against the macOS artifact produced
+      # above, so both supported shared-library formats exercise the ABI.
+      - name: cross-tree AD parity (built shared library)
+        run: |
+          export DYLD_LIBRARY_PATH="$(python -c 'import torch,os;print(os.path.join(os.path.dirname(torch.__file__),"lib"))'):${DYLD_LIBRARY_PATH:-}"
+          export KDM6_C_LIBRARY="$PWD/libtorch/build/libkdm6_c.dylib"
+          test -f "$KDM6_C_LIBRARY"
+          cd oracle && python -m pytest tests/test_cross_tree_adjoint_parity.py -rs -q
 
       # Same G3.3-M gate as the ubuntu job, run here too so the cross-platform
       # build script (dylib link path) and the actual instrumented driver are

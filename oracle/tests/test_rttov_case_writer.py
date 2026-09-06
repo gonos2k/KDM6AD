@@ -14,6 +14,7 @@ RUN here (AD_RTTOV_HOME present).
 """
 import re
 import shutil
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -24,7 +25,8 @@ from kdm6.obs.model_profile_builder import (
     RttovProfileConfig, model_to_rttov_tensors, qv_to_q_ppmv_moist)
 from kdm6.obs.obs_loss import compute_obs_loss
 from kdm6.obs.rttov_case_writer import (
-    cloud_fixture_case_dir, default_fixture_case_dir, make_live_run_k, write_rttov_case)
+    _format_rttov_vector, _write_matrix, cloud_fixture_case_dir, default_fixture_case_dir,
+    make_live_run_k, write_rttov_case)
 from kdm6.obs.rttov_input_builder import (
     RttovInputConfig, RttovInput, pack_rttov_input)
 from kdm6.obs.rttov_obs_operator import RttovObsOp, _build_mask
@@ -144,10 +146,28 @@ def _cloud_rttov_input(channels=_CHANNELS, deff_liq=20.0, deff_ice=45.0, drop=No
 
 
 # ---------------------------------------------------------------- overlay (no run)
+def test_f64_profile_formatter_preserves_nontrivial_values():
+    values = np.asarray([273.12345678901237, 1.2345678901234567e-8,
+                         -0.9876543210987654], dtype=np.float64)
+    text = _format_rttov_vector(values)
+    back = np.asarray([float(line) for line in text.splitlines()], dtype=np.float64)
+    assert all("E" in line and "." in line for line in text.splitlines())
+    assert np.array_equal(back.view(np.uint64), values.view(np.uint64))
+
+
+def test_f64_cloud_matrix_formatter_preserves_nontrivial_values(tmp_path):
+    values = np.asarray([[273.12345678901237, 1.2345678901234567e-8,
+                          -0.9876543210987654]], dtype=np.float64)
+    path = tmp_path / "matrix.txt"
+    _write_matrix(path, values)
+    back = np.loadtxt(path).reshape(values.shape)
+    assert np.array_equal(back.view(np.uint64), values.view(np.uint64))
+
+
 @needs_fixture
 def test_overlay_roundtrips_fixture_tq(tmp_path):
     """write_rttov_case overlays atm/t.txt + q.txt with the RttovInput values
-    (%.6E), and trims the case to nprofiles=1 (channels/lprofiles + profile dirs)."""
+    (%.16E), and trims the case to nprofiles=1 (channels/lprofiles + profile dirs)."""
     t_vec, q_vec = _fixture_tq()
     rin = _rttov_input_from_arrays(t_vec, q_vec)
     case_out = write_rttov_case(rin, tmp_path / "case")
@@ -157,9 +177,9 @@ def test_overlay_roundtrips_fixture_tq(tmp_path):
     assert sorted(d.name for d in prof_root.iterdir() if d.is_dir()) == ["001"]  # trimmed 6 -> 1
     back_t = np.loadtxt(prof_root / "001" / "atm" / "t.txt")
     back_q = np.loadtxt(prof_root / "001" / "atm" / "q.txt")
-    # %.6E round-trip: ~6 sig digits.
-    assert np.allclose(back_t, t_vec, rtol=1e-6, atol=0)
-    assert np.allclose(back_q, q_vec, rtol=1e-6, atol=0)
+    # %.16E round-trip preserves f64 values to ASCII conversion precision.
+    assert np.array_equal(back_t.view(np.uint64), t_vec.view(np.uint64))
+    assert np.array_equal(back_q.view(np.uint64), q_vec.view(np.uint64))
     # channels.txt / lprofiles.txt authored from config (1 profile, 16 channels).
     chan = [ln for ln in (tmp_path / "case" / "in" / "channels.txt").read_text().splitlines() if ln.strip()]
     lpro = [ln for ln in (tmp_path / "case" / "in" / "lprofiles.txt").read_text().splitlines() if ln.strip()]
@@ -167,6 +187,8 @@ def test_overlay_roundtrips_fixture_tq(tmp_path):
     assert lpro == ["1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1"]
     # authoritative namelist counts patched to (nprofiles=1, nchannels=1*16).
     assert _namelist_counts(tmp_path / "case") == (1, 16)
+    assert re.search(r"(?m)^\s*defn%realprec\s*=\s*12\s*$",
+                     (tmp_path / "case" / "out" / "rttov_test.txt").read_text())
 
 
 @needs_fixture
@@ -215,6 +237,25 @@ def test_overlay_exists_without_overwrite_raises(tmp_path):
         write_rttov_case(rin, tmp_path / "case")
     # overwrite=True succeeds.
     write_rttov_case(rin, tmp_path / "case", overwrite=True)
+
+
+def test_writer_rejects_fixture_ancestor_and_descendant_without_mutation(tmp_path):
+    """The overwrite target and fixture may not contain one another."""
+    fixture = tmp_path / "fixture"
+    fixture.mkdir()
+    marker = fixture / "protected-source.txt"
+    marker.write_text("fixture\n")
+    inp = SimpleNamespace(
+        config=SimpleNamespace(channels=(1,), geometry=None, surface=None),
+        nprofiles=1, nlayers=1, profile={})
+
+    with pytest.raises(ValueError, match="overlapping RTTOV output and fixture"):
+        write_rttov_case(inp, tmp_path, fixture_case_dir=fixture, overwrite=True)
+    assert marker.read_text() == "fixture\n"
+
+    with pytest.raises(ValueError, match="overlapping RTTOV output and fixture"):
+        write_rttov_case(inp, fixture / "child", fixture_case_dir=fixture)
+    assert marker.read_text() == "fixture\n"
 
 
 @needs_fixture

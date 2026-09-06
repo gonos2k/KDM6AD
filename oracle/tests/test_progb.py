@@ -160,6 +160,29 @@ def test_progb_table_interp_midpoint():
     assert torch.allclose(out.bvtg, torch.full_like(qg, expected_b))
 
 
+def test_progb_table_node_ad_matches_selected_one_sided_fd():
+    """At rho=500, AD follows the right=True (upper-density) table segment."""
+    params = default_progb_params()
+    dtype = torch.float64
+    qg = torch.tensor([[1.0e-4]], dtype=dtype)
+    bg = torch.tensor([[2.0e-7]], dtype=dtype, requires_grad=True)  # qg/bg = 500
+    out = progb_param_torch(qg, bg, params=params)
+    direction = torch.tensor([[-1.0e-8]], dtype=dtype)  # decrease bg -> rho > 500
+    ad = torch.autograd.grad(out.avtg, bg, retain_graph=True)[0] * direction
+    epsilon = 1.0e-6
+    plus = progb_param_torch(qg, bg.detach() + epsilon * direction,
+                             params=params).avtg
+    fd = (plus - out.avtg.detach()) / epsilon
+    assert torch.allclose(ad, fd, rtol=1.0e-6, atol=1.0e-10)
+
+    # The opposite side is a different linear segment; central FD must not be
+    # used as the acceptance oracle at this exact table knot.
+    minus = progb_param_torch(qg, bg.detach() - epsilon * direction,
+                              params=params).avtg
+    opposite = (out.avtg.detach() - minus) / epsilon
+    assert not torch.allclose(fd, opposite, rtol=1.0e-2, atol=1.0e-3)
+
+
 # ─── grad finite (active 셀) ──────────────────────────────────────────────────
 
 

@@ -446,6 +446,7 @@ def _kdm6_pure(
     controls=None,   # [DA §5.2] ProcessControls — fp64 DA only; None → byte-identical oracle
     budget=None,     # [P0-4] opt-in water-budget ledger; None → byte-identical (no diagnostic)
     sed_substep_fns=None,  # [P0-4b.1] (substep_fn, ice_substep_fn) override; None → legacy (byte-identical)
+    diagnostic_trace=None,  # opt-in stage trace; None → no diagnostic work
 ) -> State:
     """[G1] One-step KDM6 — autograd dynamic graph가 통과할 pure function.
 
@@ -636,6 +637,10 @@ def _kdm6_pure(
             vmax_ice_col = torch.maximum(w1_qi, wn_qi).amax(dim=-1)
             mstep_col_ice = torch.clamp(torch.floor(vmax_ice_col * dtcld + 1.0), 1, 100)
             mstep_ice = int(mstep_col_ice.max().item())
+        if diagnostic_trace is not None:
+            diagnostic_trace.record_subcycle(
+                _, mstep_main=mstep_main, mstep_ice=mstep_ice,
+                main_by_column=mstep_col_main, ice_by_column=mstep_col_ice)
         sed = _coord.sedimentation_chain_torch(
             cur_flip, cf_flip, w1_qr, wn_qr, w1_qs, w1_qg, w1_qi, wn_qi,
             mstep_main=mstep_main, mstep_ice=mstep_ice, dtcld=dtcld,
@@ -665,12 +670,21 @@ def _kdm6_pure(
         # 8.0e-5 placeholder which autoconverted ~4.5% too early on the no-xland path (Codex round-4 F1).
         aux = aux._replace(qcr=_cdsd.diag_qcr_torch(sea_mask, params=cloud_p, ref=cur.qc))
         # 3. ONE microphysics pass over dtcld (melt → … → state_update), Fortran :1274+.
-        cur, cur_nccn = _coord.kdm62d_one_step_torch(
-            cur, cf, aux, sea_mask,
-            full_params=full_p, warm_params=warm_p, cold_params=cold_p, mf_params=mf_p,
-            dtcld=dtcld, ncmin_tensor=ncmin_tensor, nccn=cur_nccn,
-            controls=controls, budget=budget,
-        )
+        if diagnostic_trace is None:
+            cur, cur_nccn = _coord.kdm62d_one_step_torch(
+                cur, cf, aux, sea_mask,
+                full_params=full_p, warm_params=warm_p, cold_params=cold_p, mf_params=mf_p,
+                dtcld=dtcld, ncmin_tensor=ncmin_tensor, nccn=cur_nccn,
+                controls=controls, budget=budget,
+            )
+        else:
+            cur, cur_nccn = _coord.kdm62d_one_step_torch(
+                cur, cf, aux, sea_mask,
+                full_params=full_p, warm_params=warm_p, cold_params=cold_p, mf_params=mf_p,
+                dtcld=dtcld, ncmin_tensor=ncmin_tensor, nccn=cur_nccn,
+                controls=controls, budget=budget, diagnostic_trace=diagnostic_trace,
+                diagnostic_step=_,
+            )
         if budget is not None:
             budget.add_micro(_wb_pre_mic, cur, cf)  # [P0-4] ΔW_micro (≈0)
 
@@ -692,6 +706,7 @@ def kdm6_step(
     ncmin_land: float = 0.0,
     ncmin_sea: float = 0.0,
     controls=None,   # [DA §5.2] ProcessControls — None → byte-identical default path
+    diagnostic_trace=None,  # opt-in stage trace; None → no diagnostic work
 ) -> tuple[State, Handle]:
     """[G3] 슬롯 47 진입점 — Fortran forward와 *동반 구동*되어 derivative 정보 산출.
 
@@ -741,7 +756,15 @@ def kdm6_step(
 
     if value_only:
         with torch.no_grad():
-            state_out = kdm6_fn(state, forcing, params, dt, xland, ncmin_land, ncmin_sea, controls)
+            if diagnostic_trace is None:
+                # Keep the legacy call boundary byte-for-byte and friendly to
+                # callers that replace kdm6_fn with a positional test double.
+                state_out = kdm6_fn(state, forcing, params, dt, xland, ncmin_land,
+                                    ncmin_sea, controls)
+            else:
+                state_out = kdm6_fn(state, forcing, params, dt, xland, ncmin_land,
+                                    ncmin_sea, controls,
+                                    diagnostic_trace=diagnostic_trace)
         return state_out, Handle(
             state_in=state,
             state_out=state_out,
@@ -754,7 +777,12 @@ def kdm6_step(
         )
 
     # build dynamic graph
-    state_out = kdm6_fn(state, forcing, params, dt, xland, ncmin_land, ncmin_sea, controls)
+    if diagnostic_trace is None:
+        state_out = kdm6_fn(state, forcing, params, dt, xland, ncmin_land, ncmin_sea,
+                            controls)
+    else:
+        state_out = kdm6_fn(state, forcing, params, dt, xland, ncmin_land, ncmin_sea,
+                            controls, diagnostic_trace=diagnostic_trace)
     handle = Handle(
         state_in=state,
         state_out=state_out,
