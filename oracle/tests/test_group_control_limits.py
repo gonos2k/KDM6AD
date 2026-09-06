@@ -173,3 +173,25 @@ def test_small_normalized_numerator_keeps_value_and_rate_control_derivatives(tin
     assert g.item() == pytest.approx(expected, rel=1e-14)
     h, = torch.autograd.grad(g, a)
     assert h.item() == pytest.approx(expected, rel=1e-14)
+
+
+@pytest.mark.parametrize("mixed_gate", [False, True])
+def test_inactive_nan_source_does_not_contaminate_selected_finite_adjoint(mixed_gate):
+    shape = (1, 2) if mixed_gate else (1, 1)
+    z = torch.zeros(shape, **F64)
+    p = torch.tensor([[float("nan"), 0.]] if mixed_gate else [[float("nan")]],
+                     requires_grad=True, **F64)
+    g = torch.tensor([[1., 0.]] if mixed_gate else [[1.]],
+                     requires_grad=True, **F64)
+    gate = torch.tensor([[1., -1.]] if mixed_gate else [[1.]], **F64)
+    state = _zero(c.CoordinatorState, shape)
+    warm, cold = _zero(c.WarmPhaseOutputs, shape), _zero(c.ColdPhaseOutputs, shape)
+    mf = _zero(c.MeltFreezePhaseOutputs, shape)._replace(pseml=p, pgeml=g)
+    result = c.scale_rates_for_conservation_torch(
+        state, gate, warm, cold, mf, dtcld=1.)[2]
+    assert torch.equal(result.pgeml, g)
+    dp, dg = torch.autograd.grad(result.pgeml.sum(), (p, g))
+    assert torch.equal(dp, z)
+    assert torch.equal(dg, torch.ones_like(z))
+    # The inactive invalid rate itself is not silently repaired.
+    assert torch.isnan(result.pseml[0, 0])

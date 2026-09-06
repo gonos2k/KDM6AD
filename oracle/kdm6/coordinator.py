@@ -890,6 +890,11 @@ def scale_rates_for_conservation_torch(
         for label, amount in (("source sum", source_sum), ("source amount", source)):
             if not bool(torch.isfinite(amount[gate]).all()):
                 raise ValueError(f"conservation {label} must be finite for {names}")
+        # Inactive groups are identities, including when their unused sum is
+        # NaN. Mask operands before division so saved intermediates cannot
+        # contaminate an otherwise finite output's backward pass.
+        source = torch.where(gate, source, torch.zeros_like(source))
+        value = torch.where(gate, value, torch.ones_like(value))
         denominator = torch.maximum(source, value)
         # This is an arithmetic choice, not an extra physical cap. Above
         # sqrt(max), reciprocal differentiation can lose B/S**2 although the
