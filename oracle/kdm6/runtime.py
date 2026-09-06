@@ -1,13 +1,13 @@
 """
-KDM6 PyTorch runtime — 슬롯 47 진입점 + autograd handle.
+KDM6 Python oracle runtime and autograd handle.
 
-이 모듈은 *아키텍처 골격*. 실제 물리 계산은 slope/core/sedimentation 모듈이 차면
-`kdm6_fn(...)` 안에서 호출된다. 본 파일이 담당하는 것:
+`kdm6_fn(...)`이 slope/core/sedimentation/satadj 모듈을 연결한다.
+본 파일이 담당하는 것:
 
   1. 입력 state·forcing·params 준비 (state.from_fortran_arrays + Parameters 처리)
   2. dynamic graph 빌드용 pure function `kdm6_fn(state, forcing, params, dt) → State`
-  3. JVP / VJP / Jacobian 추출용 `Handle` 클래스
-  4. DA-친화 entry point `kdm6_step(...)` — Fortran-side에서 호출하는 함수
+  3. JVP / VJP / 파라미터 미분 추출용 `Handle` 클래스
+  4. Python 자료동화 진입점 `kdm6_step(...)`
 
 설계 결정은 wiki/concepts/pytorch-autograd-integration.md 참조 (G1-G7).
 
@@ -127,7 +127,7 @@ def _mask_inactive_fields(s: State, active_fields: tuple[str, ...]) -> State:
     ))
 
 
-# ─── Handle: JVP / VJP / Jacobian 추출 인터페이스 ──────────────────────────────
+# ─── Handle: JVP / VJP / parameter derivative interface ─────────────────────
 
 @dataclass
 class Handle:
@@ -140,8 +140,10 @@ class Handle:
     지원 연산:
       - vjp(u): J^T @ u — DA adjoint (4D-Var)
       - jvp(v): J @ v   — DA tangent (EnKF perturbation)
-      - jacobian(rows, cols): 부분 Jacobian 행렬 — 진단·디버깅
       - param_grad(scalar): 임의 스칼라 손실에 대한 ∂L/∂params
+      - param_vjp(u): 출력 상태 seed에 대한 파라미터 수반
+
+    jacobian(rows, cols)는 미구현이며 NotImplementedError를 발생시킨다.
 
     Notes
     -----
@@ -296,16 +298,9 @@ class Handle:
         rows: tuple[str, ...] | None = None,
         cols: tuple[str, ...] | None = None,
     ) -> dict[tuple[str, str], torch.Tensor]:
-        """[G3] 부분 Jacobian 추출.
+        """Reserved partial-Jacobian API; raises NotImplementedError.
 
-        Parameters
-        ----------
-        rows : 출력 필드 이름 tuple (e.g., ("qc", "qr")); None이면 전체
-        cols : 입력 필드 이름 tuple (e.g., ("qv", "th")); None이면 전체
-
-        Returns
-        -------
-        dict (out_field, in_field) → tensor (B, K_out, K_in)
+        Use vjp/jvp for the implemented state derivative products.
         """
         self._ensure_derivative_ready()
         raise NotImplementedError("[G3] Jacobian — implement using torch.func.jacrev")
@@ -347,9 +342,10 @@ class Handle:
 # TOP, so the flip is localised inside _kdm6_pure around the sediment call.
 
 def _state_to_coord(s: State, f: Forcing) -> "_coord.CoordinatorState":
-    """State → CoordinatorState. t = th·pii, brs = bg. nccn is NOT carried (the
-    Python CoordinatorState has no nccn field — CCN activation is deferred, Task #74);
-    nccn stays on the State and passes through unchanged."""
+    """State → CoordinatorState: t = th·pii, brs = bg.
+
+    The driver carries nccn separately across subcycles and CCN activation.
+    """
     return _coord.CoordinatorState(
         qv=s.qv, qc=s.qc, qr=s.qr, qs=s.qs, qg=s.qg, qi=s.qi,
         nc=s.nc, nr=s.nr, ni=s.ni, brs=s.bg, t=s.th * f.pii,
@@ -421,8 +417,11 @@ def _validate_state_forcing_boundary(state: State, forcing: Forcing) -> None:
 
 
 def _coord_to_state(cobj: "_coord.CoordinatorState", orig: State, f: Forcing) -> State:
-    """CoordinatorState → State (reverse). th = t/pii, bg = brs. nccn passes through
-    from `orig` unchanged (not processed by the Python coordinator — Task #74)."""
+    """CoordinatorState → State: th = t/pii, bg = brs.
+
+    This conversion preserves orig.nccn; the driver then installs its separately
+    updated CCN field in the returned State.
+    """
     return orig._replace(
         qv=cobj.qv, qc=cobj.qc, qr=cobj.qr, qs=cobj.qs, qg=cobj.qg, qi=cobj.qi,
         nc=cobj.nc, nr=cobj.nr, ni=cobj.ni, bg=cobj.brs, th=cobj.t / f.pii,
@@ -480,7 +479,8 @@ def _kdm6_pure(
       - ``ncmin_land``/``ncmin_sea`` build a per-cell ``ncmin_tensor`` (from ``sea_mask``) that
         drives the conservation number-floor and the autoconversion, number-accretion,
         cloud-water-riming, contact-freezing and Bigg-cloud-freezing gates when ``xland``
-        is supplied. The tensor is floored at ``c.NCMIN``; default 0.0 therefore uses that
+        is supplied. It also gates cloud slopes and the final cloud/ice DSD snaps.
+        The tensor is floored at ``c.NCMIN``; default 0.0 therefore uses that
         safety minimum. Without ``xland``, the floor and gates retain their scalar defaults.
       - On this Python path, ``params`` with any ``requires_grad`` leaf or any value changed
         from its default are passed to ``default_warm_phase_params``. Frozen parameters
@@ -716,7 +716,8 @@ def kdm6_step(
     ncmin_land, ncmin_sea : float
         xland가 주어지면 land/sea별 ncmin_tensor를 만들어 보존 예산의 number-floor와
         autoconversion, number accretion, cloud-water riming, contact freezing,
-        Bigg-cloud freezing gate에 전달한다. c.NCMIN을 safety floor로 사용하므로
+        Bigg-cloud freezing gate와 cloud slope·최종 cloud/ice DSD gate에 전달한다.
+        c.NCMIN을 safety floor로 사용하므로
         default 0.0도 0-floor가 되지 않는다. xland=None이면 기존 scalar 기본값을 유지한다.
 
     Returns
@@ -724,7 +725,7 @@ def kdm6_step(
     state_out : State
         갱신된 state. *forward 정합* 검증용으로 슬롯 37 출력과 비교.
     handle : Handle
-        VJP/JVP/Jacobian/param_grad 추출 인터페이스.
+        VJP/JVP/param_grad/param_vjp 추출 인터페이스. Jacobian 추출은 미지원.
 
     Notes
     -----
@@ -761,7 +762,7 @@ def kdm6_step(
         params=params,
         dt=dt,
         pullback=None,
-        # bind the control inputs so VJP/JVP/Jacobian respect xland/ncmin
+        # Bind the control inputs so VJP/JVP respect xland/ncmin.
         func=lambda s, f, p, d: kdm6_fn(s, f, p, d, xland, ncmin_land, ncmin_sea, controls),
     )
     return state_out, handle

@@ -107,11 +107,10 @@ DI600  = 6.0e-4   # rain self-collection medium → break-up transition
 DI2000 = 2.0e-3   # rain complete break-up threshold
 
 # ─── number concentration thresholds ────────────────────────────
-# review10#2 caveat: Fortran 본문은 `ncmin_land/ncmin_sea` 두 입력 스칼라를 별도로 받아
-# `slmsk` (sea/land mask)에 따라 분기 사용. 우리 oracle은 단일 NCMIN으로 단순화 —
-# 운영 KIM-meso wrapper에서 land/sea 값이 달라지면 warm/cold 전반 parity drift가 가능.
-# 현재는 wrapper 단계에서 처리할 simplified default. 향후 prognostic ncmin tensor로 승격 가능.
-NCMIN = 1.0e-2     # default minimum nc (sea/land 구분 없음 — wrapper 영역)
+# Scalar default and safety minimum. With xland, the Python runtime constructs
+# a land/sea ncmin tensor for number budgets and the connected rate/slope/DSD
+# gates. Calls without that tensor retain this default.
+NCMIN = 1.0e-2
 
 # ─── terminal velocity coefficients (graupel default) ──────────
 AVTG = 101.0411    # graupel — Park-Lim 2024 default (rho=400 kg/m^3)

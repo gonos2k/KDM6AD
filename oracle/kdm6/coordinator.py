@@ -1590,7 +1590,7 @@ def apply_dsd_number_limiters_torch(
     *,
     qmin: float = 1.0e-15,
     qcrmin: float = None,
-    ncmin_tensor: "torch.Tensor | None" = None,  # per-cell ncmin for the cloud snap (F:3132)
+    ncmin_tensor: "torch.Tensor | None" = None,  # per-cell ncmin for final cloud/ice snaps
 ) -> CoordinatorState:
     """Fortran 2972-3013: post-cleanup DSD number limiter.
 
@@ -1598,8 +1598,8 @@ def apply_dsd_number_limiters_torch(
     [lamda_min, lamda_max], snap and back-derive n. Plus rain/cloud absolute caps
     via NRMAX/NCMAX (Fortran 3007-3013).
 
-    Note: nccn clamp `min(max(nccn, 1e8), 2e10)` (Fortran 3006)는 nccn이 본 oracle의
-    CoordinatorState에 없어 미적용 (Task #74에서 KIM-meso 통합 단계에 처리).
+    CCN is carried separately by the driver; this helper updates the cloud,
+    rain and ice numbers stored in CoordinatorState.
     """
     if qcrmin is None:
         qcrmin = c.QCRMIN
@@ -1637,12 +1637,13 @@ def apply_dsd_number_limiters_torch(
     # — same qmin/ncmin pattern as the cloud snap (:2984) above. The prior 1e-14/0
     # gate mis-cited :1467 (the INLINE rate-phase snap, a different occurrence
     # with no n-gate). Adjudicated vs Fortran 2026-05-31; mirrors the C++ fix.
-    ni_new = _limit_number_for_lamda(
+    ni_snapped = _limit_number_for_lamda(
         state.qi, state.ni, den,
         pidn=pidni, dm=c.DMI,
         lamda_min=c.LAMDAIMIN, lamda_max=c.LAMDAIMAX,
-        q_thresh=qmin, n_thresh=c.NCMIN,
+        q_thresh=qmin, n_thresh=0.0,
     )
+    ni_new = torch.where(state.ni >= _ncmin_t, ni_snapped, state.ni)
 
     # Absolute number caps (Fortran 3007-3013): nrs > NRMAX → snap to lamdarmax.
     eps = 1.0e-30
@@ -1817,11 +1818,11 @@ def apply_satadj_step_torch(
     :2922-2943 sequence (mass balance → Picons/rain-cloud reclass → satadj), NOT
     before it (which was the C++↔Python divergence Codex flagged).
 
-    Scope vs C++: the C++ apply_satadj_step also runs pcact/ncact CCN activation
-    and a complete-evap NC→NCCN transfer. This oracle's CoordinatorState has no
-    `nccn` field, so those are deferred per Task #74 (same as warm_phase_torch,
-    which carries no ncact/pcact). qs1 is recomputed from the post-update t
-    (Fortran :2922-2926) since t may have changed. AD-safe: clamp + arithmetic only.
+    With nccn supplied, this step also runs pcact/ncact activation and the
+    complete-evaporation NC→NCCN transfer, returning (state, nccn). Without it,
+    only saturation adjustment runs and the return value is CoordinatorState.
+    qs1 is recomputed from post-update t (Fortran :2922-2926). Derivatives follow
+    the selected activation, evaporation and saturation branches.
     """
     cpm_safe = torch.clamp(cpm, min=c.QCRMIN)
 
@@ -1947,7 +1948,7 @@ def kdm62d_one_step_torch(
     cold_params: ColdPhaseParams,
     mf_params: MeltFreezePhaseParams,
     dtcld: float,
-    ncmin_tensor=None,   # per-cell ncmin floor for the conservation NUMBER budgets (#18);
+    ncmin_tensor=None,   # per-cell floor for number budgets and slope/DSD gates;
                          # None → scalar c.NCMIN fallback. Built from xland by the driver.
     nccn=None,           # CCN reservoir for activation in apply_satadj_step (Task #74);
                          # None → no activation (returns bare state). Threaded by the driver.
@@ -2183,8 +2184,8 @@ def kdm62d_one_step_torch(
         # 1:1 fix #18: per-cell ncmin floor for cloud/ice NUMBER budgets. The driver
         # (runtime._kdm6_pure) now builds this from xland + ncmin_land/ncmin_sea (mirroring
         # the C++ WRF path) and threads it here; None → scalar c.NCMIN fallback (no xland).
-        # Only the conservation floor takes the per-cell tensor — the warm/cold rate-gate
-        # ncmin stays scalar (#10, Python phase params are scalar-typed).
+        # The runtime also supplies this tensor to the connected rate-gate
+        # parameter bundles; slope and DSD consumers receive it directly.
         ncmin_tensor=ncmin_tensor,
     )
 
