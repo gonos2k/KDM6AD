@@ -173,9 +173,9 @@ def apply_freeze_controls(mf_d234, controls: Optional[ProcessControls],
     # exceed qc by ≲1 ULP; a plain qc-only budget would BIND there at α=0
     # (fac < 1), breaking the α=0 value-identity by ULPs (adversarial review
     # finding 1). Taking max(reservoir, unscaled draw) bounds only the EXCESS
-    # the control itself introduces: at α=0 the ratio is budget/draw ≥ 1
-    # → fac ≡ 1.0 exactly (clamp max=1.0, ×1.0 exact), and at α>0 the scaled
-    # draw is capped at the baseline's own draw — no control-introduced mass
+    # the control itself introduces: at α=0, draw <= budget and the scaled
+    # amounts are returned directly. At α>0 a binding cap distributes the
+    # budget by the baseline shares — no control-introduced mass
     # creation (Codex adversarial review 2026-06-13, finding 1 adjudication).
     base_q = mf_d234.pinuc + mf_d234.pfrzdtc
     base_n = mf_d234.ninuc + mf_d234.nfrzdtc

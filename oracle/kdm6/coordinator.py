@@ -855,7 +855,12 @@ def scale_rates_for_conservation_torch(
     value). factor=value/max(source,value) is an exact no-op (=1) where
     source≤value (the common case ⇒ existing tests unchanged). pgaut/pgacs ≡ 0
     (dropped, not invented); paacw/naacw appear ×2 in source but scaled once.
-    AD-safe: torch.where + maximum, no .item(). Returns scaled (warm, cold, mf).
+    For extreme binding sources, normalize numerator and denominator by the
+    same power of two before division: forming a tiny factor first can lose
+    its reverse derivative. Ordinary-source arithmetic is unchanged. Active
+    nonfinite sums/amounts are rejected by value-only checks; these checks
+    do not replace or detach any tensors used by the differentiable map.
+    Returns scaled (warm, cold, mf).
     """
     dtype = state.qc.dtype
     cold_gate = supcol >= 0         # Fortran F:2456 `t.le.t0c` ⇔ supcol>=0; == state_update cold_mask
@@ -880,24 +885,65 @@ def scale_rates_for_conservation_torch(
     r.update({nm: getattr(cold, nm) for nm in C})
     r.update({nm: getattr(mf, nm) for nm in M})
 
-    def limit(reservoir, floor, source_sum, gate, names):
-        value = torch.clamp(reservoir, min=floor)
+    def scale_group(value, source_sum, gate, names):
         source = source_sum * dtcld
-        factor = torch.where(gate, value / torch.maximum(source, value),
+        for label, amount in (("source sum", source_sum), ("source amount", source)):
+            if not bool(torch.isfinite(amount[gate]).all()):
+                raise ValueError(f"conservation {label} must be finite for {names}")
+        denominator = torch.maximum(source, value)
+        # This is an arithmetic choice, not an extra physical cap. Above
+        # sqrt(max), reciprocal differentiation can lose B/S**2 although the
+        # requested controlled derivative is representable. Keep the original
+        # expression (including its tie derivative) for ordinary sources.
+        large = gate & (source > value) & (source > torch.finfo(dtype).max ** .5)
+        if not bool(large.any()):
+            factor = torch.where(gate, value / denominator,
+                                 torch.ones_like(value))
+            for nm in names:
+                r[nm] = r[nm] * factor
+            return
+
+        ordinary_denominator = torch.where(large, torch.ones_like(source), denominator)
+        factor = torch.where(gate, value / ordinary_denominator,
                              torch.ones_like(value))
+        large_denominator = torch.where(large, source, torch.ones_like(source))
+        # The exponent is a value-only arithmetic choice. Multiplication by
+        # its power of two keeps the full rate/source AD paths; differentiable
+        # ldexp is avoided because its backward can lose subnormal factors.
+        exponent = torch.frexp(large_denominator)[1]
+        reciprocal_scale = torch.exp2(-exponent.to(dtype))
+        normalized_source = large_denominator * reciprocal_scale
         for nm in names:
-            r[nm] = r[nm] * factor
+            rate = r[nm]
+            ordinary_rate = torch.where(large, torch.zeros_like(rate), rate)
+            large_rate = torch.where(large, rate, torch.zeros_like(rate))
+            normalized_rate = large_rate * reciprocal_scale
+            ratio = normalized_rate / normalized_source
+            # A subnormal normalized numerator can lose significant bits even
+            # when the final result is ordinary. Normalize rate*budget instead.
+            # If that product would overflow, normalize the (then necessarily
+            # large) budget first. Mask operands before evaluating either form.
+            small = large & (normalized_rate.abs() < torch.finfo(dtype).tiny)
+            product_safe = value <= torch.finfo(dtype).max / rate.abs().clamp(min=1)
+            product_rate = torch.where(small & product_safe, large_rate,
+                                       torch.zeros_like(rate))
+            budget_first_rate = torch.where(small & ~product_safe, large_rate,
+                                            torch.zeros_like(rate))
+            small_numerator = ((product_rate * value) * reciprocal_scale
+                               + budget_first_rate * (value * reciprocal_scale))
+            limited = torch.where(small, small_numerator / normalized_source,
+                                  ratio * value)
+            r[nm] = torch.where(large, limited, ordinary_rate * factor)
+
+    def limit(reservoir, floor, source_sum, gate, names):
+        scale_group(torch.clamp(reservoir, min=floor), source_sum, gate, names)
 
     def limit_ncmin(reservoir, source_sum, gate, names):
         # Per-cell ncmin floor (xland-derived) for cloud/ice NUMBER budgets — Fortran
         # F:2554/2568/2706 max(ncmin,nci), ncmin=10/100, NOT hardcoded 0.01. 1:1 fix #18.
         value = (torch.maximum(reservoir, ncmin_tensor) if ncmin_tensor is not None
                  else torch.clamp(reservoir, min=c.NCMIN))
-        source = source_sum * dtcld
-        factor = torch.where(gate, value / torch.maximum(source, value),
-                             torch.ones_like(value))
-        for nm in names:
-            r[nm] = r[nm] * factor
+        scale_group(value, source_sum, gate, names)
 
     # ── PASS 1: cold arm (t<=t0c), gate=cold_gate ──────────────────────────
     limit(state.qc, EPS,                                              # cloud mass :2460
