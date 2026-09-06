@@ -224,3 +224,76 @@ Authoritative follow-up evidence: `clear/v3-relative20-30-live.json`,
 `cloud/diagnosis.json`, `cloud/full-mhj-admissible-42558.json`,
 `process/attribution.json`, and `parent/report_ko.md` under the directory above.
 Earlier live files are historical attempts, not additional successful cases.
+
+
+## Precision and connected first-order evidence (2026-09-07)
+
+Evidence: `graphify-out/goal-completion-20260906/`. These measurements extend
+selected coverage; they do not certify all processes, branches or meteorological
+regimes. Forecast skill/cycling are outside this checklist's completion gates.
+
+- [x] **A2 serialization boundary:** profile and cloud inputs use 17 significant
+  decimal digits (`%.16E`), with f64 bit-roundtrip tests. Copied RTTOV cases use
+  `defn%realprec=12` (`E21.12`, measured BT quantum `1e-9 K`). This is output
+  formatting, not a claim about the binary's internal arithmetic precision.
+- [x] **A2 selected actual cloudy column:** at column 42558, initial qc/qv/th
+  directions pass the existing 5% AD/actual-J FD and resolution criteria at
+  epsilon .008 and .01, preserving candidate quality masks. Direct HYDRO6
+  content and HYDRO_DEFF6 size K checks resolve channel indices 10–15 at the
+  tested scales. See `cloud/common-eps-mhj-42558.json`; no quality gate weakened.
+- [x] **A6 selected composed window:** two actual KDM steps, scalar initial-qv
+  transform, prior `0.5*z**2`, and fixed GK2A/RTTOV Huber objective. Retained
+  JVP/VJP and direct-unroll VJP give `-0.5473831819460413` (duality error
+  `4.44e-16`); total derivative including prior is `-0.4973831819460413`.
+  Actual total-J FD at epsilon .2/.3 differs by `4.0674e-5` / `3.9735e-5`,
+  with unchanged masks and output rounding bounds `2.25e-8` / `1.50e-8`.
+  This selected first-order check does not certify every state component or dK/dx.
+- [x] **A3 fixture correction:** earlier cold/melt fixtures had qg/bg=1000,
+  outside [100,900]. Their numerical measurements remain historical evidence;
+  an admissible-moment claim for those old fixtures is withdrawn. Diagnostic
+  fixtures now use qg/bg=500. The rerun 6-control × 3-regime matrix retains
+  9 verified selected directions, 8 inactive/zero pairs and 1 cold-freeze
+  output-resolution limitation. These are synthetic fixed-forcing fixtures.
+- [x] **Selected named-control → live J:** a declared synthetic transformation
+  of column 20709 scales hydrometeor masses/numbers by .1 and resets bg=qg/500.
+  With fixed background dry density and 7 usable channels, deposition alpha-J
+  AD=9.57672925 and riming AD=-.0113245275 agree with actual RTTOV FD at .03/.1
+  (maximum relative errors .00278/.00166). This is total group intervention,
+  not unique attribution to each raw rate. See `process/synthetic-live/`.
+- [ ] **Unmodified actual named-control case:** 42558 is inactive for these
+  controls; three active alternatives had no jointly usable RTTOV channels.
+  The synthetic result does not replace this open real-state coverage.
+- [ ] Internal-branch runtime coverage, full physical number/enthalpy contracts,
+  and representative upstream-process→downstream-process routes remain bounded
+  by the recorded tests. Static kernel/branch inventories are not coverage counts.
+- [ ] Fixture pressure/geometry/surface/time and loaded RTTOV source-build
+  identity remain explicit limitations; external K evidence is first-order only.
+
+Validation: full local oracle **1145 passed / 30 skipped / 51 warnings** (91.26 s),
+then focused writer/process/cold/window tests **138 passed** (13.46 s). Later
+small diagnostic/test changes require their own focused result below; counts
+are overlapping and must not be added. Prior five-check CI success belongs to
+`93b0f5d`, until a new head's checks are separately verified. Native f32 physics
+and the packed ABI are unchanged in this follow-up.
+
+### Table-knot and local-neighborhood diagnosis
+
+- [x] The density-500 bg central-FD mismatch is explained by the ProgB table
+  knot: AD agrees with the selected one-sided slope; the opposite slope differs.
+  The production interpolation is unchanged. A dedicated one-sided regression
+  preserves this boundary. The cold-profile smooth probe explicitly uses density
+  450; bg→T/Q/HYDRO now verifies at .01/.03/.1 (selected T relative error 8.9e-7).
+- [x] Cold-profile comparisons share a small local status/endpoint-ULP helper;
+  named rate checks cannot inherit a pass from profile-only checks.
+- [ ] The selected tiny deposition pidep agrees with FD at epsilon <=.03
+  (relative error <=1.1e-4), but epsilon .1 differs by about82%. This larger
+  neighborhood is unresolved; it is not classified as output quantization or
+  an established local AD defect. Tapped topology is not every internal branch.
+- Focused post-diagnostic validation: **15 passed** (ProgB + cold-profile),
+  in addition to the overlapping earlier tests above.
+
+- Reachable warm.prevp→cold investigation used an 18-state admissible grid.
+  Selected qv→pinud/pidep FD agrees, but direct traced pinud/pidep/psdep/pgdep
+  derivatives with respect to warm.prevp are zero in the selected state.
+  These are different claims: this is a locally dormant connected edge, not
+  a nonzero named-process causal validation. See `process/warm_prevp_cold_grid.*`.

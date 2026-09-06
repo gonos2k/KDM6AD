@@ -377,7 +377,7 @@ def cold_fixture() -> tuple[State, Forcing]:
     state = State(
         th=z(265.0), qv=z(2.0e-3), qc=z(1.0e-4), qr=z(1.0e-4),
         qi=z(1.0e-4), qs=z(1.0e-4), qg=z(1.0e-4), nccn=z(1.0e9),
-        nc=z(1.0e8), ni=z(1.0e7), nr=z(1.0e5), bg=z(1.0e-7),
+        nc=z(1.0e8), ni=z(1.0e7), nr=z(1.0e5), bg=z(2.0e-7),  # qg/bg = 500
     )
     forcing = Forcing(rho=z(1.0), pii=z(1.0), p=z(8.0e4), delz=z(500.0))
     return state, forcing
@@ -389,7 +389,7 @@ def melt_fixture() -> tuple[State, Forcing]:
     state = State(
         th=z(285.0), qv=z(1.0e-2), qc=z(1.0e-3), qr=z(1.0e-4),
         qi=z(1.0e-4), qs=z(1.0e-3), qg=z(1.0e-3), nccn=z(1.0e9),
-        nc=z(1.0e8), ni=z(1.0e7), nr=z(1.0e5), bg=z(1.0e-6),
+        nc=z(1.0e8), ni=z(1.0e7), nr=z(1.0e5), bg=z(2.0e-6),  # qg/bg = 500
     )
     forcing = Forcing(rho=z(1.0), pii=z(1.0), p=z(9.0e4), delz=z(500.0))
     return state, forcing

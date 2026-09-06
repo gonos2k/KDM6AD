@@ -38,6 +38,7 @@ _AMI501_FIXTURE = "external/rttov14/src/rttov_test/tests.1.gfortran-openmp/ami/5
 _AMI_CLOUD_FIXTURE = "external/rttov14/src/rttov_test/tests.1.gfortran-openmp/ami/cloud"
 _NHYDRO = 8            # hydro.txt columns (7 hydrotable types + Baran)
 _NHYDRO_DEFF = 7       # hydro_deff.txt columns (nhydro - 1, Baran has no Deff)
+_RTTOV_OUTPUT_REALPREC = 12  # copied test-driver decimal format; binary precision is independent
 _LIQ_COL = 5           # 0-based: slot 6 = CLW-Deff liquid
 _ICE_COL = 6           # 0-based: slot 7 = Baum ice
 # RttovInput.profile cloud keys -> (matrix, column). content [g/m^3], Deff [micron].
@@ -68,13 +69,14 @@ def cloud_fixture_case_dir() -> Path:
 
 
 def _format_rttov_vector(values) -> str:
-    """RTTOV ASCII profile vector: one ``%.6E`` value per line (matches the fixture
-    format + the AD-RTTOV overlay writer). %.6E is ~7 sig figs ~= RTTOV's internal
-    single precision, so it is not the precision floor for the run. NOTE for future
-    FD-through-RTTOV checks: a finite-difference T/Q perturbation must exceed this
-    ASCII resolution (and RTTOV's float32 input resolution) to survive the round-trip
-    -- bump the precision here if a tighter FD step is ever needed."""
-    return "".join(f"{float(v):.6E}\n" for v in values)
+    """RTTOV ASCII profile vector: one ``%.16E`` value per line.
+
+    The f64 round-trip preserves first-order profile sensitivities through the
+    ASCII boundary. ``defn%realprec`` separately controls only the test driver's
+    emitted decimal format; it does not establish the loaded binary's arithmetic
+    precision.
+    """
+    return "".join(f"{float(v):.16E}\n" for v in values)
 
 
 def _fixture_count(path: Path) -> int:
@@ -143,8 +145,8 @@ def _validate_cloud_domain(rttov_input) -> None:
 
 
 def _write_matrix(path: Path, rows) -> None:
-    """Write a [nlay, ncol] matrix as space-separated ``%.6E`` per layer row."""
-    path.write_text("".join(" ".join(f"{float(v):.6E}" for v in row) + "\n" for row in rows))
+    """Write a [nlay, ncol] matrix as space-separated ``%.16E`` values."""
+    path.write_text("".join(" ".join(f"{float(v):.16E}" for v in row) + "\n" for row in rows))
 
 
 def _overlay_cloud(profile_dir: Path, rttov_input, p: int, nlay: int) -> None:
@@ -693,20 +695,25 @@ def _check_grid_matches_fixture(profile_dir: Path, p_half_model, p_lay_model=Non
 
 
 def _patch_config_counts(config_path: Path, nprofiles: int, nchannels_total: int) -> None:
-    """Rewrite the authoritative ``defn%nprofiles`` / ``defn%nchannels`` in the
-    rttov_test namelist. RTTOV reads the profile/channel COUNT from this namelist
-    (not from the in/ dir listing), so a trimmed case whose namelist still says
-    nprofiles=6 fails ('Cannot read from channels.txt') -- the reader expects 6
-    lines. ``nchannels_total`` is the total chanprof (Σ channels over profiles)."""
+    """Rewrite copied-case counts and test-driver decimal output precision.
+
+    RTTOV reads the profile/channel count from this namelist (not from the
+    ``in/`` directory listing), so a trimmed case whose namelist still says
+    ``nprofiles=6`` fails because the reader expects six lines. ``realprec``
+    controls only emitted decimal formatting; 12 prevents live FD output from
+    being quantized at 0.001 K and does not change binary arithmetic precision.
+    """
     if not config_path.is_file():
         raise FileNotFoundError(f"fixture config missing {config_path}")
     text = config_path.read_text()
     text, n1 = re.subn(r"(?m)^(\s*defn%nprofiles\s*=\s*)\d+", rf"\g<1>{nprofiles}", text)
     text, n2 = re.subn(r"(?m)^(\s*defn%nchannels\s*=\s*)\d+", rf"\g<1>{nchannels_total}", text)
-    if n1 != 1 or n2 != 1:
+    text, n3 = re.subn(r"(?m)^(\s*defn%realprec\s*=\s*)\d+",
+                       rf"\g<1>{_RTTOV_OUTPUT_REALPREC}", text)
+    if n1 != 1 or n2 != 1 or n3 != 1:
         raise ValueError(
-            f"{config_path}: expected one defn%nprofiles and one defn%nchannels "
-            f"line (found {n1}/{n2}); cannot retarget the case profile count.")
+            f"{config_path}: expected one defn%nprofiles, defn%nchannels and "
+            f"defn%realprec line (found {n1}/{n2}/{n3}); cannot retarget copied case.")
     config_path.write_text(text)
 
 

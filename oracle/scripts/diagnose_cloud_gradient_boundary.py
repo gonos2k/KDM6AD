@@ -263,7 +263,10 @@ def _cloud_content_fd(frame, cols, column, clean, *, out_parent):
     return {"content": content, "size": deff,
             "baseline_rad_quality_values": base["rq"].cpu().tolist(),
             "baseline_radiance": base["root"] and _bt_resolution(base["root"] / "out/k/radiance.txt"),
-            "serialization_profile_format": "%.6E", "claim": "first-order HYDRO6 and HYDRO_DEFF6 K only"}
+            "serialization_profile_format": "%.16E",
+            "rttov_output_realprec": 12,
+            "rttov_output_format": "E21.12",
+            "claim": "first-order HYDRO6 and HYDRO_DEFF6 K only"}
 
 
 def main(argv=None):
