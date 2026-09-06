@@ -12,9 +12,9 @@ state_update -> satadj -> cleanup -> DSD limiter``.
 
 Warm ``prevp`` is explicitly named as the value consumed by cold nucleation and
 deposition.  A rate-generation record is not called an applied transfer until
-the post-conservation record is inspected.  Boolean records contain counts and
-are intentionally not presented as complete masks; integer ``mstep`` changes
-and branch crossings remain outside this first diagnostic version.
+the post-conservation record is inspected. Tapped phase masks and per-column
+integer ``mstep`` are compared exactly. Untapped internal limiter/PSD branches
+remain unverified. Rate-only boundaries do not claim an applied state delta.
 """
 from __future__ import annotations
 
@@ -62,7 +62,7 @@ class StageRecord:
             "total_count": int(b.numel()),
             "shape": list(b.shape),
             "mask_sha256": hashlib.sha256(b.cpu().contiguous().numpy().tobytes()).hexdigest(),
-            "meaning": "count only; this is not a complete branch mask certificate",
+            "meaning": "tapped phase mask count/hash; internal branch coverage is incomplete",
         }
 
     def rate_summary(self) -> dict[str, dict[str, Any]]:
@@ -80,7 +80,7 @@ class StageRecord:
         return out
 
     def applied_delta_summary(self) -> dict[str, dict[str, Any]]:
-        if self.state_in is None or self.state_out is None:
+        if self.state_in is None or self.state_out is None or self.state_in is self.state_out:
             return {}
         out: dict[str, dict[str, Any]] = {}
         names = getattr(self.state_in, "_fields", ())
@@ -166,6 +166,38 @@ def _directional(output: torch.Tensor, leaves: State, direction: State) -> float
         materialize_grads=True,
     )
     return float(state_dot(State(*grads), direction).detach().item())
+
+
+def _directional_values(output: torch.Tensor, leaves: State, direction: State) -> torch.Tensor:
+    """Jv at every output cell, without summing away opposite contributions.
+
+    This is the same double-VJP identity as Handle.jvp, used on an already
+    recorded intermediate tensor. Independent central FD remains the check.
+    """
+    if not output.requires_grad:
+        return torch.zeros_like(output, dtype=leaves.th.dtype)
+    seed = torch.zeros_like(output, requires_grad=True)
+    grads = torch.autograd.grad(output, tuple(leaves), grad_outputs=seed,
+                                create_graph=True, retain_graph=True, allow_unused=True)
+    dot = sum((g * v).sum() for g, v in zip(grads, direction) if g is not None)
+    if not isinstance(dot, torch.Tensor) or not dot.requires_grad:
+        return torch.zeros_like(output)
+    result = torch.autograd.grad(dot, seed, retain_graph=True, allow_unused=True)[0]
+    return torch.zeros_like(output) if result is None else result.detach()
+
+
+def _cell_fd_comparison(ad: torch.Tensor, fd: torch.Tensor) -> dict[str, Any]:
+    """Keep scalar summaries and the local evidence defining those summaries."""
+    error = (ad - fd).abs()
+    finite = bool(torch.isfinite(ad).all() and torch.isfinite(fd).all())
+    maximum = float(error.max().item()) if error.numel() else 0.0
+    locations = torch.nonzero(error == maximum, as_tuple=False) if finite else None
+    return {"ad_sum": float(ad.sum().item()), "fd_sum": float(fd.sum().item()),
+            "abs_error": float((ad.sum() - fd.sum()).abs().item()),
+            "ad_values": ad.cpu().tolist(), "fd_values": fd.cpu().tolist(),
+            "max_abs_error": maximum, "finite": finite,
+            "max_error_cell": (locations[0].cpu().tolist()
+                               if locations is not None and locations.numel() else None)}
 
 
 def _coord_water(state: Any, forcing: Forcing) -> torch.Tensor:
@@ -263,18 +295,25 @@ def diagnose_step(
 
     # Stage rates remain graph-connected until this function has completed.
     stage_data: dict[str, Any] = {}
+    rate_tangents: dict[tuple[int, str, str], torch.Tensor] = {}
+    applied_tangents: dict[tuple[int, str, str], torch.Tensor] = {}
     for record in trace.records:
         rates = {}
         for name, value in _tensor_items(record.rates):
+            local = _directional_values(value, leaves, direction)
+            rate_tangents[record.step, record.name, name] = local
             rates[name] = {
                 "value": record.rate_summary().get(name, {}),
-                "directional": _directional(value, leaves, direction),
+                "directional": float(local.sum().item()),
             }
         applied_directional = {}
-        if record.state_in is not None and record.state_out is not None:
+        if (record.state_in is not None and record.state_out is not None
+                and record.state_in is not record.state_out):
             for field_name in getattr(record.state_in, "_fields", ()):
                 delta = getattr(record.state_out, field_name) - getattr(record.state_in, field_name)
-                applied_directional[field_name] = _directional(delta, leaves, direction)
+                local = _directional_values(delta, leaves, direction)
+                applied_tangents[record.step, record.name, field_name] = local
+                applied_directional[field_name] = float(local.sum().item())
         stage_data[f"{record.step}:{record.name}"] = {
             "record": record.as_dict(), "rates": rates,
             "applied_directional": applied_directional,
@@ -337,18 +376,20 @@ def diagnose_step(
                 # Boolean gate outputs are compared through branch counts and
                 # are not differentiable rates.
                 continue
-            fd = float(((vp - vm).sum() / (2.0 * epsilon)).item())
-            ad = stage_data[f"{record.step}:{record.name}"]["rates"].get(name, {}).get("directional", 0.0)
-            one[name] = {"fd_sum": fd, "ad_sum": ad, "abs_error": abs(fd - ad)}
+            fd = (vp - vm) / (2.0 * epsilon)
+            ad = rate_tangents[record.step, record.name, name]
+            one[name] = _cell_fd_comparison(ad, fd)
         if one:
             stage_fd[f"{record.step}:{record.name}"] = one
         applied_one = {}
         for field_name in getattr(record.state_in, "_fields", ()):
+            if (record.step, record.name, field_name) not in applied_tangents:
+                continue
             dplus = getattr(rp.state_out, field_name) - getattr(rp.state_in, field_name)
             dminus = getattr(rm.state_out, field_name) - getattr(rm.state_in, field_name)
-            fd = float(((dplus - dminus).sum() / (2.0 * epsilon)).item())
-            ad = stage_data[f"{record.step}:{record.name}"]["applied_directional"].get(field_name, 0.0)
-            applied_one[field_name] = {"fd_sum": fd, "ad_sum": ad, "abs_error": abs(fd - ad)}
+            fd = (dplus - dminus) / (2.0 * epsilon)
+            ad = applied_tangents[record.step, record.name, field_name]
+            applied_one[field_name] = _cell_fd_comparison(ad, fd)
         if applied_one:
             applied_fd[f"{record.step}:{record.name}"] = applied_one
     warm_records = trace.by_name("warm")
@@ -368,6 +409,7 @@ def diagnose_step(
                     grad = torch.autograd.grad(value.sum(), upstream, retain_graph=True,
                                                allow_unused=True)[0] if value.requires_grad else None
                     causal_links[f"warm.prevp->{consumer_name}.{field_name}"] = {
+                        "quantity": "VJP of consumer sum with respect to upstream rate; not a full Jacobian",
                         "structurally_connected": grad is not None,
                         "max_abs_derivative": 0.0 if grad is None else float(grad.detach().abs().max().item()),
                         "zero_reason": ("fixture/branch yielded zero; cause not established"

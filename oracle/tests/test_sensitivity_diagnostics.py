@@ -52,6 +52,7 @@ def test_opt_in_trace_preserves_forward_and_records_applied_boundaries():
     assert warm.metadata["upstream_to_cold"] == "warm.prevp"
     assert warm.rate_summary()["praut"]["finite"]
     assert "qc" in trace.by_name("state_update")[0].applied_delta_summary()
+    assert trace.by_name("warm_limited")[0].applied_delta_summary() == {}
 
 
 def test_opt_in_trace_preserves_jvp_and_vjp_products_bitwise():
@@ -80,6 +81,10 @@ def test_process_trace_fd_and_duality_report_are_local_and_explicit():
         check = report.stage_fd["0:warm"][rate]
         assert abs(check["fd_sum"]) > 1.0e-14
         assert check["abs_error"] < abs(check["fd_sum"]) * 1.0e-4
+        assert check["finite"]
+        scale = torch.tensor(check["fd_values"]).abs().max().item()
+        assert check["max_abs_error"] < scale * 1.0e-4
+    assert "0:warm_limited" not in report.applied_fd
     assert report.branch_comparison["0:warm"]["counts_unchanged"]
     assert report.branch_comparison["0:warm"]["masks_equal"]
     assert report.applied_fd["0:d2_d4_freeze"]["qc"]["abs_error"] < 1.0e-8
@@ -132,3 +137,21 @@ def test_topology_record_distinguishes_equal_counts_in_different_cells():
     assert a["active_count"] == b["active_count"] == 1
     assert a["mask_sha256"] != b["mask_sha256"]
     assert traces[0].subcycles != traces[1].subcycles
+
+
+def test_local_directional_evidence_does_not_hide_opposing_cells():
+    from kdm6.sensitivity_diagnostics import _directional_values, _cell_fd_comparison
+
+    leaves = _state(True)
+    direction = State(*(torch.ones_like(x) if n == "qc" else torch.zeros_like(x)
+                        for n, x in zip(State._fields, leaves)))
+    x = leaves.qc[0, 0]
+    values = torch.stack((x, -x))
+    ad = _directional_values(values, leaves, direction)
+    expected = torch.tensor([1.0, -1.0], dtype=torch.float64)
+    assert torch.equal(ad, expected)
+    # A broken derivative returning two zeros would pass the old sum check.
+    broken = _cell_fd_comparison(torch.zeros_like(ad), expected)
+    assert broken["abs_error"] == 0.0
+    assert broken["max_abs_error"] == 1.0
+    assert broken["max_error_cell"] == [0]

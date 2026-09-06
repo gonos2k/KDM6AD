@@ -10,6 +10,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+import torch
 
 from scripts.v3_live_gradient_evidence import (  # noqa: E402
     DEFAULT_CAL,
@@ -18,14 +19,29 @@ from scripts.v3_live_gradient_evidence import (  # noqa: E402
     DEFAULT_STAMP,
     build_inventory,
     _direction_status,
+    _relative_positive_direction,
+    _select_columns,
 )
 
 
 _REAL_PRESENT = DEFAULT_KDM.is_file() and DEFAULT_GK2A.is_dir() and DEFAULT_CAL.is_file()
 
 
+def test_explicit_column_selection_preserves_validated_candidate_boundary():
+    ranked = [(9, 0.02), (3, 0.001)]
+    assert _select_columns(ranked, 1) == [9]
+    assert _select_columns(ranked, 1, 3) == [3]
+    with pytest.raises(ValueError, match="not an assigned"):
+        _select_columns(ranked, 1, 5)
+    with pytest.raises(ValueError, match="max_profiles=1"):
+        _select_columns(ranked, 2, 3)
+    with pytest.raises(ValueError, match="positive"):
+        _select_columns(ranked, 0)
+
+
 def test_direction_evidence_requires_observations_signal_and_output_resolution():
-    row = dict(same_mask=True, resolution_status="resolved", central_FD_J=2.0,
+    row = dict(same_mask=True, input_admissible=True,
+               resolution_status="resolved", central_FD_J=2.0,
                relative_error_vs_AD=0.0, fd_output_rounding_bound=0.001)
     assert _direction_status(2.0, [row], 1) == "pass"
     assert _direction_status(2.0, [row], 0) == "unresolved"
@@ -37,6 +53,17 @@ def test_direction_evidence_requires_observations_signal_and_output_resolution()
                    {"fd_output_rounding_bound": 1.0},
                    {"fd_output_rounding_bound": None}):
         assert _direction_status(2.0, [{**row, **change}], 1) == "unresolved"
+    assert _direction_status(2.0, [{k: v for k, v in row.items()
+                                    if k != "input_admissible"}], 1) == "unresolved"
+    assert _direction_status(2.0, [{**row, "input_admissible": False}], 1) == "unresolved"
+
+
+def test_relative_positive_direction_rejects_invalid_fraction_or_reference():
+    reference = torch.ones((2, 2), dtype=torch.float64)
+    with pytest.raises(ValueError, match=r"\[0, 1\]"):
+        _relative_positive_direction(reference, seed=1, fractional_max=1.1)
+    with pytest.raises(ValueError, match="nonnegative"):
+        _relative_positive_direction(-reference, seed=1, fractional_max=0.1)
 
 
 @pytest.mark.skipif(not _REAL_PRESENT, reason="private GK2A/KDM/calibration assets unavailable")

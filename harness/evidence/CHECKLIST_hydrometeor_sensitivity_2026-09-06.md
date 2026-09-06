@@ -160,3 +160,67 @@ for the target sensitivity experiment. Clear mode has 9 usable channels and
 `dJ/dε` for the selected initial qc direction is `-0.004329378946021511`.
 This establishes a nonzero indirect path; all three direction checks remain
 unresolved under the FD accuracy/output-resolution gate.
+
+## Goal-audit follow-up (2026-09-06, baseline `2a0afaee`)
+
+Evidence directory: `graphify-out/goal-resolution-20260906-2307/`.
+The work below extends selected diagnostic evidence. It does not reopen the
+previously resolved window projection, AMI decoding or freeze-domain issues.
+
+| ID | Bounded action | Completion boundary |
+| --- | --- | --- |
+| A1 | Separate the clear qv discrepancy into input-domain, KDM/profile and live H/J checks. | Invalid negative-mass FD endpoints cannot validate a physical tangent. A new admissible direction is a separate experiment, not a correction of old measurements. |
+| A2 | Preserve the zero-quality cloud case and find a nonzero-cloud case with usable channels; check content and effective-size K independently. | Output-quantization bounds must be small relative to the derivative signal before a numerical-accuracy pass. Fixture auxiliaries remain explicit. |
+| A3 | Record existing named ProcessControls across warm, mixed-phase and melt singleton fixtures. | An active controlled group is not every raw process; inactive or unresolved pairs remain visible. |
+| A4 | Check nonzero cold/moment indirect paths using physically admissible producer/consumer inputs. | A prescribed kernel operand alone cannot establish reachability from the upstream process. |
+| A5 | Compare stage rate and actual state-delta AD/FD per cell before reduction. | Fixed numerical water measure and tapped phase masks do not close physical number/enthalpy units or all internal branches. |
+| A6 | Compose verified M/P/H with a declared control transform, prior and fixed observation objective over a window. | Live one-step direct AD and portable window tests are separate evidence until the combined experiment is executed. |
+
+- [x] A5 diagnostic reduction gap: rate/state-delta JVPs and independent FD
+  now retain per-cell arrays and maximum local error. An opposing-cell
+  counterexample has zero aggregate error but nonzero local error.
+- [x] Rate-only records with identical input/output state objects no longer
+  emit an apparent applied-state delta. Actual state-update records retain it.
+- [x] Diagnostic comments now identify the exact tapped masks/subcycles and
+  the unverified internal-branch range.
+- [x] The live evidence runner can select an explicitly identified column from
+  the same quality-validated candidate set. The failed high-cloud case remains
+  a negative control rather than being overwritten by a successful selection.
+- [ ] Full internal-branch atlas, physically closed enthalpy/number budgets,
+  representative warm-to-cold attribution and combined live window/CVT/prior
+  evidence remain open unless explicitly supported by the results below.
+
+### Follow-up executed results
+
+- A1 selected clear qv: the historical absolute direction makes negative input
+  qv and reaches the state-update positivity cap. A separate relative direction
+  bounded by `0.1*qv` passes the unchanged 5% actual-J FD/resolution criterion
+  at epsilon `0.2,0.3`: AD `-0.60017974713`, FD `-0.5925,-0.59833333333`.
+  Observation masks and nonnegative qv/qc endpoints are preserved. This closes
+  this selected valid-neighborhood check, not every clear direction.
+- A2 actual column 42558 retains positive post-step cloud content and 8/9 usable
+  clean IR channels. Direct HYDRO6 K at epsilon `1e-4 g/m³` passes the unchanged
+  5% error/resolution criterion for zero-based channel indices 10,12,13.
+  Effective-size K and smaller epsilon checks remain resolution-limited.
+  Column 20004 still has no usable channels; column 23860 is cloud-free after
+  the KDM step. Neither is relabelled a successful cloud-sensitivity test.
+- The current admissible all-sky whole-chain run remains unresolved: qc has a
+  nonzero AD direction (`1.2213730e-5`) below BT text FD resolution, while qv/th
+  perturbations change the quality mask at the tested scales. Fixture auxiliary
+  inputs remain explicit. No quality flag or criterion was weakened.
+- A3 existing six controls × three singleton regimes: nine selected directions
+  verified, eight inactive pairs, one cold-freeze output-resolution limitation.
+  Cold deposition/riming affect mass, bg and actual temperature. Per-field
+  output-ULP bounds separate insufficient FD resolution from an unproven AD
+  defect. This table does not cover every raw process or internal branch.
+- A4 reachable coordinator warm.prevp→cold pinud/pidep is graph-connected but
+  zero in the selected case. A non-reachable prescribed-input candidate was
+  discarded; nonzero physical cross-process attribution remains open.
+- Parent full oracle: **1136 passed / 30 skipped / 51 warnings** (89.45 s).
+  The final helper-boundary selection passed **22 tests** (23.16 s),
+  including the data-driven boundary classifier and refusal guards. Production f32 physics and native ABI are unchanged.
+
+Authoritative follow-up evidence: `clear/v3-relative20-30-live.json`,
+`cloud/diagnosis.json`, `cloud/full-mhj-admissible-42558.json`,
+`process/attribution.json`, and `parent/report_ko.md` under the directory above.
+Earlier live files are historical attempts, not additional successful cases.

@@ -275,6 +275,25 @@ def _direction(shape: tuple[int, ...], *, seed: int, max_abs: float) -> torch.Te
     return v / v.abs().amax().clamp_min(1.0) * max_abs
 
 
+def _relative_positive_direction(reference: torch.Tensor, *, seed: int,
+                                 fractional_max: float) -> torch.Tensor:
+    """Generate a direction bounded by ``fractional_max * abs(reference)``.
+
+    For positive state variables this keeps both central-FD endpoints in the
+    same admissible domain for ``|epsilon| <= 1``.  It is an evidence helper;
+    it does not alter the KDM update or its positivity subgradient.
+    """
+    if not (math.isfinite(fractional_max) and 0.0 <= fractional_max <= 1.0):
+        raise ValueError("fractional_max must be finite and in [0, 1]")
+    if not bool(torch.isfinite(reference).all()) or not bool((reference >= 0).all()):
+        raise ValueError("relative-positive direction requires finite nonnegative reference")
+    gen = torch.Generator(device=reference.device).manual_seed(seed)
+    raw = torch.randn(tuple(reference.shape), generator=gen,
+                      dtype=torch.float64, device=reference.device)
+    scale = raw.abs().amax().clamp_min(1.0)
+    return reference.detach().to(torch.float64) * raw / scale * fractional_max
+
+
 def _profile_and_obs(state, forcing, cfg, *, run_k, xland=None, detach_state=True):
     from kdm6.da_driver import _blend_above_model_top, _flip
     from kdm6.obs.model_profile_builder import model_to_rttov_tensors
@@ -319,10 +338,26 @@ def _profile_and_obs(state, forcing, cfg, *, run_k, xland=None, detach_state=Tru
     return leaves, prof, t_lay, q_lay, bt, rq
 
 
+def _select_columns(ranked, max_profiles, column=None):
+    """Select only already collocated, usable, hydrometeor-bearing columns."""
+    if max_profiles < 1:
+        raise ValueError("max_profiles must be positive")
+    owners = [col for col, _ in ranked]
+    if column is not None:
+        if max_profiles != 1:
+            raise ValueError("an explicit column requires max_profiles=1")
+        if column not in owners:
+            raise ValueError("requested column is not an assigned usable hydrometeor column")
+        return [column]
+    if len(owners) < max_profiles:
+        raise RuntimeError(f"only {len(owners)} assigned usable columns; need {max_profiles}")
+    return owners[:max_profiles]
+
+
 def _run_live(kdm_path: Path, gk2a_root: Path, cal_path: Path, stamp: str,
               *, stride: int, max_dist_km: float, max_profiles: int,
               eps: tuple[float, ...], out_path: Path,
-              all_sky: bool = False) -> dict[str, Any]:
+              all_sky: bool = False, column: int | None = None) -> dict[str, Any]:
     """Run actual profile->K->BT->J and central FD for three state directions."""
     import numpy as np
     from kdm6.io.frame_reader import read_wrfout_frame
@@ -360,10 +395,7 @@ def _run_live(kdm_path: Path, gk2a_root: Path, cal_path: Path, stamp: str,
     qtot = (frame.state.qc + frame.state.qi + frame.state.qs)[owners].sum(dim=1)
     ranked = sorted(((col, float(amount)) for col, amount in zip(owners, qtot.tolist())
                      if amount > 1.0e-6), key=lambda item: (-item[1], item[0]))
-    owners = [col for col, _ in ranked]
-    if len(owners) < max_profiles:
-        raise RuntimeError(f"only {len(owners)} assigned usable columns; need {max_profiles}")
-    owners = owners[:max_profiles]
+    owners = _select_columns(ranked, max_profiles, column)
     hydrometeor_total = (frame.state.qc + frame.state.qi + frame.state.qs)[owners].sum(dim=1)
     state, forcing, xland = _state_subset(frame, owners)
     y = cols.bt[owners]
@@ -390,7 +422,8 @@ def _run_live(kdm_path: Path, gk2a_root: Path, cal_path: Path, stamp: str,
         "status": "live_started",
         "selection": {
             "columns": owners, "n_profiles": len(owners),
-            "selection_rule": "assigned clean-IR columns ranked by qc+qi+qs > 1e-6",
+            "selection_rule": ("explicit assigned usable hydrometeor column" if column is not None
+                               else "assigned clean-IR columns ranked by qc+qi+qs > 1e-6"),
             "hydrometeor_total": hydrometeor_total.detach().cpu().tolist(),
         },
         "observation_contract": {
@@ -486,6 +519,13 @@ def _run_live(kdm_path: Path, gk2a_root: Path, cal_path: Path, stamp: str,
                 "dt_seconds": 20.0,
                 "xland": xland.detach().cpu().tolist(),
                 "state_in": {k: _finite_stats(getattr(s, k)) for k in s._fields},
+                "state_input_domain": {
+                    "qv_min": float(s.qv.min()),
+                    "qv_negative_count": int((s.qv < 0).sum()),
+                    "qc_min": float(s.qc.min()),
+                    "qc_negative_count": int((s.qc < 0).sum()),
+                    "admissible_qv_qc": bool((s.qv >= 0).all() and (s.qc >= 0).all()),
+                },
                 "state_out": {k: _finite_stats(getattr(evolved, k)) for k in evolved._fields},
                 "derivative_scope": "initial KDM state -> evolved state -> RTTOV profile/H/J",
             },
@@ -519,8 +559,14 @@ def _run_live(kdm_path: Path, gk2a_root: Path, cal_path: Path, stamp: str,
         report["baseline"] = base
         directions = {
             "th": _direction(tuple(state.th.shape), seed=60409, max_abs=1.0),
-            "qv": _direction(tuple(state.qv.shape), seed=60410, max_abs=1.0e-4),
-            "qc": _direction(tuple(state.qc.shape), seed=60411, max_abs=1.0e-6),
+            # qv is positivity-limited in the model and profile bridge.  A
+            # relative direction keeps central-FD endpoints admissible for
+            # |epsilon|<=1; the old absolute probe remains in the bounded A1
+            # diagnostic as an explicit kink regression.
+            "qv": _relative_positive_direction(state.qv, seed=60410,
+                                                 fractional_max=1.0e-1),
+            "qc": _relative_positive_direction(state.qc, seed=60411,
+                                                 fractional_max=1.0e-1),
         }
         for name, direction in directions.items():
             g = base["gradient"][name + "_values"]
@@ -543,6 +589,9 @@ def _run_live(kdm_path: Path, gk2a_root: Path, cal_path: Path, stamp: str,
                     "relative_error_vs_AD": abs(fd - direction_dot) / max(abs(direction_dot), 1.0e-12),
                     "fd_relative_tolerance": FD_REL_TOL,
                     "same_mask": same_mask,
+                    "input_admissible": bool(
+                        p["kdm_step"]["state_input_domain"]["admissible_qv_qc"]
+                        and m["kdm_step"]["state_input_domain"]["admissible_qv_qc"]),
                     "rad_quality_changed_count": {
                         "plus": int(np.count_nonzero(
                             np.asarray(p["rad_quality_values"]) !=
@@ -603,7 +652,8 @@ def _direction_status(ad, rows, mask_kept):
         return "unresolved"
     for row in rows:
         bound = row.get("fd_output_rounding_bound")
-        if (not row["same_mask"] or row["resolution_status"] != "resolved"
+        if (not row["same_mask"] or not row.get("input_admissible", False)
+                or row["resolution_status"] != "resolved"
                 or not math.isfinite(row["central_FD_J"])
                 or not math.isfinite(row["relative_error_vs_AD"])
                 or row["relative_error_vs_AD"] > FD_REL_TOL
@@ -622,6 +672,7 @@ def main(argv=None) -> int:
     parser.add_argument("--stride", type=int, default=8)
     parser.add_argument("--max-dist-km", type=float, default=4.0)
     parser.add_argument("--max-profiles", type=int, default=1)
+    parser.add_argument("--column", type=int, help="explicit collocated hydrometeor column for a diagnosed case")
     parser.add_argument("--all-sky", action="store_true",
                         help="include the single-column hydrometeor bridge and cloud K fields")
     parser.add_argument("--eps", type=float, nargs="+", default=list(DEFAULT_EPS))
@@ -636,6 +687,11 @@ def main(argv=None) -> int:
         "status": inv["status"],
         "evidence_level": "actual_inventory_only",
         "claim": "first-order K^T gradient contract; no dK/dx/full Hessian claim",
+        "direction_contract": {
+            "qv": "relative-positive |direction| <= 0.1*qv; absolute negative-domain probe is separate A1 evidence",
+            "qc": "relative-positive |direction| <= 0.1*qc; zero qc cells remain zero and provide no qc direction",
+            "admissibility": "every plus/minus initial qv and qc value must be nonnegative",
+        },
         "runtime": {"python": platform.python_version(), "torch": torch.__version__,
                     "numpy": np.__version__, "platform": platform.platform()},
         "inputs": {"kdm": str(args.kdm), "gk2a_root": str(args.gk2a_root),
@@ -667,7 +723,7 @@ def main(argv=None) -> int:
             args.kdm, args.gk2a_root, args.calibration, args.stamp,
             stride=args.stride, max_dist_km=args.max_dist_km,
             max_profiles=args.max_profiles, eps=tuple(args.eps), out_path=args.out,
-            all_sky=args.all_sky)
+            all_sky=args.all_sky, column=args.column)
         report["status"] = report["live"]["status"]
         report["evidence_level"] = "actual_collocation_plus_fixture_geometry_live_rttov"
     args.out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
