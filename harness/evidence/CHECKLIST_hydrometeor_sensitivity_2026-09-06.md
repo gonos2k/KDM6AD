@@ -131,10 +131,11 @@ addition: **1123 passed / 30 skipped**. Parent earlier full run: **1122 passed /
 - [x] The actual all-sky bridge and cloud K execute on one hydrometeor-bearing
   column; the final result has **zero jointly usable IR channels** and is
   explicitly unresolved. Zero J/gradient is not derivative verification.
-- [ ] Resolve clear-path FD disagreement/output resolution for the selected
-  directions; a live execution alone does not close this derivative gate.
-- [ ] Establish usable all-sky profiles and first-order FD evidence; this run
-  does not establish all-sky hydrometeor sensitivity accuracy.
+- [x] Resolve the selected clear-path FD/output-resolution gap; see the
+  2026-09-07 precision and connected first-order evidence below.
+- [x] Establish selected usable all-sky first-order FD evidence; see the
+  2026-09-07 actual cloudy-column and 2026-09-19 named-control evidence below.
+  The historical zero-mask run remains unresolved and is not reused as proof.
 - [ ] Replace and validate fixture geometry/surface/datetime where actual
   auxiliary inputs are required. Current live results remain **wiring-only for
   those auxiliaries**, with actual geolocation/observation data distinguished.
@@ -260,9 +261,9 @@ regimes. Forecast skill/cycling are outside this checklist's completion gates.
   AD=9.57672925 and riming AD=-.0113245275 agree with actual RTTOV FD at .03/.1
   (maximum relative errors .00278/.00166). This is total group intervention,
   not unique attribution to each raw rate. See `process/synthetic-live/`.
-- [ ] **Unmodified actual named-control case:** 42558 is inactive for these
-  controls; three active alternatives had no jointly usable RTTOV channels.
-  The synthetic result does not replace this open real-state coverage.
+- [x] **Unmodified actual named-control case:** resolved for deposition and
+  riming on column 45577 in the 2026-09-19 follow-up below. The inactive 42558
+  and three zero-usable alternatives remain excluded; no synthetic replacement.
 - [ ] Internal-branch runtime coverage, full physical number/enthalpy contracts,
   and representative upstream-process→downstream-process routes remain bounded
   by the recorded tests. Static kernel/branch inventories are not coverage counts.
@@ -379,3 +380,50 @@ Counts overlap prior suites. Reproducible public-source artifacts live in
 `graphify-out/goal-applied-20260907/` (parent, energy, process). M1 copied-host
 instrumentation is separate work; no ten-minute applied residual is claimed
 by these portable tests. Operational f32 and packed ABI are unchanged.
+
+## Actual named controls and M1 build boundary (2026-09-19)
+
+- [x] **V3 selected actual process controls:** unmodified WRF column 45577,
+  `as_stored` CCN (no fallback), actual sea `xland=2`, one 20-second KDM step.
+  Nine clean IR channels remain jointly usable. Deposition and riming controls
+  are applied before the evolved state is passed to live RTTOV. The objective
+  is the same fixed-mask Huber sum, sigma=1 K and delta=1, effective bias zero.
+  This is total named-group sensitivity, not unique attribution to each rate.
+- [x] **Independent first-order connection:** genuine forward-mode KDM/profile
+  directions contracted with fixed baseline RTTOV K and the cost cotangent
+  agree with reverse VJP. Deposition dJ/dalpha=-0.03907693895509639;
+  riming=-1.926767776136752e-5. Independent scalar replay gives duality errors
+  4.85723e-17 and 6.77626e-21. Actual direct RTTOV differences at alpha
+  epsilon .03/.1 have maximum relative errors .000102080 and .00219655,
+  respectively. Signals exceed measured BT text-rounding bounds, serialized
+  profiles round-trip exactly, and observed stage masks remain unchanged.
+  Tapped masks do not constitute a complete internal branch atlas.
+- [ ] **V3 actual auxiliaries:** pressure/reference upper profiles, geometry,
+  surface and datetime retain fixture assumptions. The actual WRF/GK2A inputs
+  do not close this separate auxiliary-validation boundary. No dK/dx,
+  parameter identifiability, all-process or all-regime claim is made.
+- [ ] **M1 actual applied ledger:** one capture-enabled binary with runtime
+  capture OFF/ON completed matched 20-second runs. At t=0 and20s, all253
+  numeric common fields plus Times match raw bits (254/254, zero skipped).
+  The selected capture has76 samples and2 aggregates, all transport zero.
+  This proves runtime-capture neutrality only, not compiler-macro neutrality
+  or nonzero applied transport. Matched macro ON/OFF module objects were
+  produced in isolated copies; executable linking stopped at the unaccepted
+  Xcode license. No new matched executable or ten-minute run was produced.
+  The original deployed host was unchanged. Kernel `den*delz` ledger closure
+  is conditional on that measure; dry-air number units remain unresolved.
+
+Reproduction artifacts (local, actual-input assets required):
+`graphify-out/goal-completion-20260919/process/actual_live_control/` contains
+`run_actual_live_control.py`, retained raw cases, `actual_live_control.json`,
+and independent standard-library `parent_replay.py/json`. The latter recomputes
+Huber cost/seed and scalar K-direction products without another live call.
+M1 commands/hashes/failure evidence:
+`graphify-out/goal-applied-20260907/m1/m1-compile-off-prerequisite-20260919.json`.
+These local artifacts are not bundled private host assets in the public repo.
+
+This follow-up changes evidence/checklist state only. Existing five-check CI
+success is attached to source887d0ba; it is not a native rebuild on19September.
+No operational f32, AD ABI, physical formula or numerical acceptance tolerance
+was changed. Remaining representative process/branch, physical unit and full
+budget coverage must retain their individual open status; no100% claim.
