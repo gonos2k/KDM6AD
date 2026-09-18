@@ -114,10 +114,18 @@ Generated or foreign areas are not source for normal KDM6AD work:
 
 ## Theory Before Patching
 
-Team agents use `gpt-5.6-luna` with reasoning effort `high` by default,
-including Green/Red implementation and independent review teams. Apply this
-setting when spawning or restarting team agents unless the user explicitly
-requests a different model or reasoning effort.
+Actively use small sub-agent teams to reduce token usage. Delegate bounded,
+non-overlapping tasks, reuse completed agents and existing evidence, and return
+concise findings instead of duplicating the main agent's investigation.
+
+Organize sub-agent work into Green and Red teams. Both teams use
+`gpt-5.6-luna` with reasoning effort `high` by default. Apply this setting when
+spawning or restarting agents unless the user explicitly requests otherwise.
+Before ending a work session, have the Green and Red sub-agent teams review
+the final changes and evidence: Green checks consistency and demonstrated
+coverage; Red looks for counterexamples, missing paths and unsupported claims.
+Resolve actionable findings and record any remaining limitations before the
+final session report.
 
 Keep at most seven team agents active at once across the session, including
 follow-up reviews. Reuse completed agents and queue remaining work within this

@@ -1878,7 +1878,8 @@ def apply_satadj_step_torch(
     ncact = torch.minimum(ncact_raw, torch.clamp(nccn, min=0.0) / dtcld)
     # CCN gate on the DIVISION form sw_percent>0 (Fortran F:3051 `sw>0`), NOT qv-qs1 —
     # they flip oppositely in f32 near saturation, toggling activation (qc/nc residual).
-    ncact = torch.where(sw_percent > 0.0, ncact, torch.zeros_like(ncact))
+    activation_gate = sw_percent > 0.0
+    ncact = torch.where(activation_gate, ncact, torch.zeros_like(ncact))
     # SEED#3 (Fortran module_mp_kdm6.F:2908): build the pcact mass constant
     #   K = 4.*pi*denr*(actr*1.E-6)**3
     # with float32 stepwise rounding (gfortran REAL(4) left-to-right, cube = x*x*x),
@@ -1924,11 +1925,13 @@ def apply_satadj_step_torch(
     if diagnostic_trace is not None:
         diagnostic_trace.record_stage(
             "satadj", diagnostic_step, dtcld, state, new_state, None,
-            branch=(pcond != 0), operands={"pcact": pcact, "pcond": pcond,
+            branch=torch.stack((pcond != 0, activation_gate), dim=0),
+            operands={"pcact": pcact, "pcond": pcond,
                                            "xl": xl, "cpm": cpm_safe},
             metadata={"kind": "applied_latent_transfer", "pcond_units": "kg/kg/s",
                       "includes_pcact": True,
-                      "branch_scope": "pcond nonzero only; not all satadj branches"},)
+                      "branch_labels": ["pcond_nonzero", "ccn_activation_sw_positive"],
+                      "branch_scope": "pcond nonzero and CCN activation gate; not all satadj branches"},)
     return new_state, nccn_final
 
 

@@ -104,7 +104,8 @@ Parent validation: shipped local CTest **17/17 passed** (3.91 s),
 - [x] One 20-second versus two 10-second steps compare states and transported
   tangents under the same forcing; the result is a refinement diagnostic,
   not proof of convergence or branch stability.
-- [ ] Nonzero warm→cold rate attribution across representative cold regimes.
+- [x] Selected nonzero warm-control→later cold-rate sensitivity (2026-09-19
+  autoconversion case below). Representative cold-regime coverage remains open.
 - [ ] Internal limiter/reclassification/PSD/satadj mask and threshold atlas,
   including discontinuous topology changes; currently only selected phase masks.
 - [ ] Applied enthalpy/particle-number directional residuals with closed unit
@@ -437,3 +438,56 @@ Final local artifact identities (SHA-256):
 The standalone M1 ledger/producer artifact checks pass (2 pytest tests;
 producer module also validates its transformations at import). They are
 synthetic/source checks, not a completed host run.
+
+## Diagnostic interpretation and activation branch (2026-09-19)
+
+- [x] Reverse-AD scalar derivatives in `process_attribution` and the cold
+  profile probe are now labelled as reverse AD, including report fields.
+  Repeated scalar VJPs can assemble a Jacobian column, but do not constitute
+  an independently executed forward-mode check. Historical numerical values
+  remain valid within their recorded scope; their JVP labels are corrected.
+- [x] The basic two-level sensitivity fixture's graupel ratio was still 1000.
+  It now uses 450, inside [100,900] and away from the ProgB table node at 500.
+  Existing tests pass with unchanged error thresholds. Older fixture results
+  are not reclassified as admissible-moment measurements.
+- [x] The satadj trace now retains the actual `sw_percent > 0` activation
+  mask alongside `pcond != 0`, with an explicit leading mask axis and labels.
+  The same computed gate feeds the activation arithmetic and diagnostic.
+  A one-cell fixture at 290 K / 90000 Pa, qc=.001, nc=1e6, nccn=1e9 and
+  qv=qs_water±1e-8 changes activation while both pcond masks stay nonzero.
+  This formerly invisible switch is now distinguishable by existing exact
+  mask comparisons. The no-CCN component path keeps its pcond-only scope.
+- [ ] Complete-evaporation equality, all DSD gates and the remaining internal
+  branch atlas are still not exhaustively recorded or validated. This added
+  gate does not turn sampled endpoint agreement into a branch certificate.
+
+The conditional raw `prevp` injection probe in local
+`graphify-out/goal-cross-process-20260919/` is a cut-graph derivative experiment,
+not a paired, physically admissible process intervention. It cannot by itself
+close representative warm-process→cold-process control coverage.
+
+
+- [x] **V1 selected admissible warm→cold control route:** existing paired
+  `alpha_autoconv` control, cold fixture with only initial qr changed to 3e-4,
+  fixed forcing and 300 s step. Step 0 warm transfer changes the carried state;
+  step 1 signed `pgdep` responds. Baseline pgdep=-1.2778163266e-8 is sublimation
+  in this fixture. Forward-mode JVP=-7.204959215733750e-11 and reverse VJP=
+  -7.204959215733754e-11 agree (relative 5.382e-16); independent direct differences
+  at 1e-4/3e-5/1e-5/3e-6/1e-6 have maximum relative error 5.790e-6, unchanged
+  tapped masks and resolved output spacing. The parent reran the artifact and
+  confirmed identical scope/results. No raw-rate injection or model monkeypatch
+  is used by this control experiment. This synthetic route does not establish
+  a unique individual-rate causal contribution or actual-weather coverage.
+  Reproducer: `graphify-out/goal-cross-process-20260919/run_process_control_rate_check.py`;
+  parent result: `parent/control-replay.json` in the same directory.
+
+Parent focused regression after activation/metadata changes: 64 passed (14.47s),
+covering coordinator, sensitivity diagnostics, cold-profile and process
+attribution tests. Counts overlap earlier 18/8-test selections and are not additive.
+
+Final public warm-to-cold regression: **1 passed**, requiring nonzero
+producer/target response, exact forward primal, relative JVP/VJP agreement,
+two independent FD epsilons, matching tapped masks/subcycles and output
+spacing. Green/Red Luna high session-end reviews completed with no remaining
+blocking findings in this diff. Their bounded scope does not close the
+remaining physical units, actual auxiliaries or full branch atlas.

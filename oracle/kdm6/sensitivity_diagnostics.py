@@ -63,7 +63,7 @@ class StageRecord:
             "total_count": int(b.numel()),
             "shape": list(b.shape),
             "mask_sha256": hashlib.sha256(b.cpu().contiguous().numpy().tobytes()).hexdigest(),
-            "meaning": "tapped phase mask count/hash; internal branch coverage is incomplete",
+            "meaning": "tapped branch mask count/hash; internal branch coverage is incomplete",
         }
 
     def rate_summary(self) -> dict[str, dict[str, Any]]:

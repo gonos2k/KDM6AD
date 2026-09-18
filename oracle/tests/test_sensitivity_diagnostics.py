@@ -20,7 +20,7 @@ def _state(rg=False):
         qi=_t2(2.0e-5, 1.0e-6, rg), qs=_t2(5.0e-5, 5.0e-5, rg),
         qg=_t2(1.0e-5, 1.0e-5, rg), nccn=_t2(1.0e9, 1.0e9, rg),
         nc=_t2(1.0e8, 1.0e8, rg), ni=_t2(1.0e8, 1.0e8, rg),
-        nr=_t2(1.0e4, 1.0e3, rg), bg=_t2(1.0e-8, 1.0e-8, rg),
+        nr=_t2(1.0e4, 1.0e3, rg), bg=_t2(1.0e-5 / 450.0, 1.0e-5 / 450.0, rg),
     )
 
 
@@ -53,6 +53,48 @@ def test_opt_in_trace_preserves_forward_and_records_applied_boundaries():
     assert warm.rate_summary()["praut"]["finite"]
     assert "qc" in trace.by_name("state_update")[0].applied_delta_summary()
     assert trace.by_name("warm_limited")[0].applied_delta_summary() == {}
+
+
+def test_satadj_trace_exposes_activation_flip_with_same_pcond_mask():
+    """The CCN activation gate can change while the pcond endpoint mask stays on."""
+    from kdm6.coordinator import (CoordinatorForcing, CoordinatorState,
+                                  apply_satadj_step_torch,
+                                  default_coordinator_params,
+                                  default_warm_phase_params)
+    from kdm6.thermo import compute_qs_water
+
+    z = lambda value: torch.full((1, 1), value, dtype=torch.float64)
+    base = CoordinatorState(
+        qv=z(0.0), qc=z(1.0e-3), qr=z(0.0), qs=z(0.0), qg=z(0.0), qi=z(0.0),
+        nc=z(1.0e6), nr=z(0.0), ni=z(0.0), brs=z(0.0), t=z(290.0),
+    )
+    forcing = CoordinatorForcing(p=z(9.0e4), den=z(1.0), delz=z(500.0), dend=z(1.0))
+    coordinator_params = default_coordinator_params()
+    satadj_params = default_warm_phase_params().satadj
+    qs1 = compute_qs_water(base.t, forcing.p, params=coordinator_params.thermo)
+    records = []
+    outputs = []
+    for delta in (-1.0e-8, 1.0e-8):
+        trace = SensitivityTrace()
+        state = base._replace(qv=qs1 + delta)
+        out, _ = apply_satadj_step_torch(
+            state, forcing, z(2.5e6), z(1004.0), satadj_params,
+            coordinator_params.thermo, dtcld=6.0,
+            nccn=z(1.0e9), diagnostic_trace=trace,
+        )
+        records.append(trace.by_name("satadj")[0])
+        outputs.append(out)
+
+    assert records[0].metadata["branch_labels"] == [
+        "pcond_nonzero", "ccn_activation_sw_positive"
+    ]
+    assert torch.equal(records[0].branch[0], records[1].branch[0])
+    assert bool(records[0].branch[0].all())
+    assert not bool(records[0].branch[1].item())
+    assert bool(records[1].branch[1].item())
+    assert torch.equal(records[0].operands["pcact"], torch.zeros_like(records[0].operands["pcact"]))
+    assert bool((records[1].operands["pcact"] > 0).all())
+    assert bool((outputs[1].nc > outputs[0].nc + 1.0).all())
 
 
 def test_opt_in_trace_preserves_jvp_and_vjp_products_bitwise():

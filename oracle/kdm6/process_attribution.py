@@ -223,12 +223,12 @@ def attribute_process(
         state, forcing, process, -epsilon, dt=dt, graph=False)
     minus_handle.close()
 
-    # A separate graph evaluation supplies alpha JVPs.  This is a derivative
+    # A separate graph evaluation supplies reverse-AD alpha derivatives.  This is a derivative
     # of the admissible control, not of an independently altered rate field.
     graph_alpha = torch.tensor(0.0, dtype=state.qc.dtype, requires_grad=True)
     graph_out, graph_trace, graph_handle = _run(
         state, forcing, process, graph_alpha, dt=dt, graph=True)
-    # The same alpha leaf is retained by _run, so these are true control JVPs.
+    # The same alpha leaf is retained by _run; scalar metrics use reverse AD.
 
     base_rates = _stage_rates(base_trace, process)
     controlled_rates = _stage_rates(controlled_trace, process)
@@ -240,7 +240,7 @@ def attribute_process(
                if name in plus_rates and name in minus_rates}
     # At alpha=0, each controlled rate is R exp(alpha) before any shared cap;
     # after a cap the coordinator graph is the source of truth.  A dedicated
-    # autograd rerun with the actual alpha leaf gives the selected rate JVP.
+    # autograd evaluation with the actual alpha leaf gives the selected rate VJP.
     rate_alpha = graph_alpha
     ad_out, ad_trace, ad_handle = graph_out, graph_trace, graph_handle
     try:

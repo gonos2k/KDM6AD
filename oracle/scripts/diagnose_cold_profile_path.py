@@ -100,7 +100,7 @@ def _moment_pair_admissible(state) -> bool:
 
 
 def _alpha_cells(output: torch.Tensor, alpha: torch.Tensor) -> torch.Tensor:
-    """Per-cell scalar-alpha JVP, retaining the vector output cells."""
+    """Per-cell alpha derivatives assembled from scalar reverse-AD calls."""
     values = []
     flat = output.reshape(-1)
     for i in range(flat.numel()):
@@ -187,7 +187,7 @@ def run_process_probe(baseline, forcing, rho_d) -> list[dict[str, Any]]:
             "alpha_reference": 0.0, "epsilons": list(EPSILONS),
             "postcap_baseline_rates": {name: float(value.detach().reshape(-1)[0].item())
                                         for name, value in ad_rates.items()},
-            "postcap_rate_alpha_jvp": rate_ad,
+            "postcap_rate_alpha_reverse_ad": rate_ad,
             "nonzero_postcap_rate_derivatives": rate_names,
             "verified_postcap_rate_derivatives": verified_rates,
             "unresolved_postcap_rate_derivatives": unresolved_rates,
@@ -340,7 +340,7 @@ def write_artifacts(out_dir: Path) -> dict[str, Any]:
         "",
         "## Supported named controls",
         "",
-        "| process | post-cap stage | nonzero post-cap rate alpha-JVPs | unresolved post-cap rates | verified profile fields | status |",
+        "| process | post-cap stage | nonzero post-cap rate reverse-AD derivatives | unresolved post-cap rates | verified profile fields | status |",
         "|---|---|---|---|---|---|",
     ]
     for row in result["named_process_rows"]:

@@ -37,7 +37,7 @@ def main() -> int:
               for regime, row in matrix.items()}
     payload = {
         "contract": "dimensionless ProcessControls alpha; paired rates and existing donor caps",
-        "derivative": "alpha JVP and independent central FD at fixed tapped topology",
+        "derivative": "reverse-AD alpha derivative and independent central FD at fixed tapped topology",
         "dt": args.dt, "alpha": args.alpha, "epsilon": args.epsilon,
         "matrix": serial,
     }
