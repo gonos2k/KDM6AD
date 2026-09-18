@@ -123,8 +123,14 @@ Keep at most seven team agents active at once across the session, including
 follow-up reviews. Reuse completed agents and queue remaining work within this
 limit; the user's instruction forbids eight or more active team agents.
 
-Before changing KDM6/KDM6AD code, check consistency from all four perspectives.
-Prioritize a coherent mathematical and physical contract over a local symptom fix.
+Think mathematically and numerically before implementing or reviewing a change.
+First derive the intended map, its domain, invariants and derivative contract;
+then examine how the executed precision and operation order affect values,
+JVPs and VJPs. Validate with independent expectations or directional differences,
+and distinguish real-arithmetic identities from floating-point behavior.
+
+Check consistency from all four perspectives below. Prioritize a coherent
+mathematical and physical contract over a local symptom fix.
 
 - **Mathematical:** identify the variables, units, measure, assumptions and full
   quantity being computed. Derive the relevant identity or budget before changing
