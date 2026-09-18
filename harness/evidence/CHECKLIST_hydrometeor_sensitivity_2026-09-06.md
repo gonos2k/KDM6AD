@@ -427,3 +427,13 @@ success is attached to source887d0ba; it is not a native rebuild on19September.
 No operational f32, AD ABI, physical formula or numerical acceptance tolerance
 was changed. Remaining representative process/branch, physical unit and full
 budget coverage must retain their individual open status; no100% claim.
+
+Final local artifact identities (SHA-256):
+- `run_actual_live_control.py`: `249aaa27c8fa6ed046383508ce3abf3a8badd7afb222dc0ab3e9b07d62f49eac`
+- `actual_live_control.json`: `ed9ef9aa1e212fdd4fab294133f10103adcb811d20852c3a0d509038df5fa024`
+- `parent_replay.py`: `bfd6ba1080eef9d007da12be164ec3e0faadc575c52d78042f9330e3209a359b`
+- `parent_replay.json`: `f4e612ef94ff180ba7f0dc30696f66d2e1d8039ffe900919a11d7dbe2ca4bb3c`
+
+The standalone M1 ledger/producer artifact checks pass (2 pytest tests;
+producer module also validates its transformations at import). They are
+synthetic/source checks, not a completed host run.
