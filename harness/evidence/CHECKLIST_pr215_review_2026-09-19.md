@@ -14,8 +14,8 @@ code changes, test counts or unchanged divergence locations.
 | 1 / R1 | Cross-tree nonfinite rejection | NaN and ±Inf in either implementation's forward/VJP/JVP fail, including allowed-divergence slots; portable injection tests execute without a native build | Local verification passed; new-build CI pending |
 | 1 / R2 | Bounded divergence regression | Smooth parity and known divergence remain distinct; allowed slots have finite, measured signed values/scales and magnitude regression; remove unconditional subgradient claims | Local verification passed; new-build CI pending |
 | 1 / R3 | Independent LCC CI check | At least one CI job installs/imports pyproj and runs the existing synthetic 900×900 comparison without optional dependency skipping | Local check passed; CI pending |
-| 2 / R4 | Process state coverage | Explicit checked/unchecked outputs; include deposition qi, riming qc/qi/nc/ni, freeze qc/qi/nc/ni in selected checks; retain unresolved FD/branch classifications rather than weaken tolerances | Pending |
-| 3 / R5 | Melt→profile→BT/cost | Existing melt control and fixture, fixed-K mock, nonzero genuine forward AD/reverse AD/FD; state clearly synthetic, first order and separate from live RTTOV | Pending |
+| 2 / R4 | Process state coverage | Explicit checked/unchecked outputs; include deposition qi, riming qc/qi/nc/ni, freeze qc/qi/nc/ni in selected checks; retain unresolved FD/branch classifications rather than weaken tolerances | Locally verified reporting/gate correction; representative nonzero coverage still open |
+| 3 / R5 | Melt→profile→BT/cost | Existing melt control and fixture, fixed-K mock, nonzero genuine forward AD/reverse AD/FD; state clearly synthetic, first order and separate from live RTTOV | In progress |
 | 4 / R6 | Actual RTTOV auxiliaries | Source/applied pressure, upper profile, viewing geometry, surface and UTC; fixture substitutions remain explicitly partial | Open; existing asset inventory reused |
 | 5 / R7 | Physical number and mass measure | Resolve host/kernel unit boundary before physical number-budget claims; distinguish process source/sinks from transport conservation | Open scientific contract |
 | 5 / R8 | M1 nonzero applied transport | Matched-source binaries, nonzero departure/arrival, actual ledger and neutrality evidence; zero transport is insufficient | Open external prerequisite; existing Xcode license blocker retained |
@@ -83,3 +83,31 @@ retains its existing temperature output-resolution limitation.
   signed-zero bitwise requirement were not added. The one baseline table is
   the reviewed regression contract; the declared f64 absolute tolerance is
   retained. New source-build CI remains pending.
+
+### R4 — expanded selected output scope
+
+The actual error/ULP gates now include deposition qi, riming qc/qi/nc/ni and
+freeze qc/qi/nc/ni. Reports explicitly include checked/unchecked fields and
+per-field zero/nonzero/unresolved labels. Nonfinite products and changed tapped
+topology cannot receive a resolved-nonzero label. Graph AD state/rates and
+graph-trace topology participate in the same checks as direct differences.
+
+The cold-fixture added fields are zero responses; freeze th remains output
+resolution unresolved and nccn has a derivative mismatch. Neither is hidden
+by the aggregate status. Representative nonzero donor/receiver coverage is
+still open even after this reporting/gate correction.
+
+Parent combined cross-tree/process/warm→cold/profile selection: **54 passed /
+18 torch.jit deprecation warnings** (6.23s). Counts overlap earlier selections.
+
+### R8 — external prerequisite rechecked
+
+On 2026-09-19, `/usr/bin/xcodebuild -checkFirstLaunchStatus` returned 69.
+`/usr/bin/xcrun clang --version` also returned 69 and explicitly reported
+unaccepted Xcode/Apple SDK license agreements. No agreement was accepted and
+no build/retry or host mutation was performed. The prior matched-executable
+M1 gate remains open; zero-transfer capture evidence is not upgraded.
+
+R4 final focused verification: **15 passed** (2.42s), including deliberate
+nonfinite controlled/plus/minus/graph rate products and changed plus/graph AD
+trace masks. This verifies refusal/reporting behavior, not new physical cases.

@@ -7,6 +7,12 @@ hydrometeor process interactions, through GK2A–RTTOV data assimilation.
 Forecast skill, unattended cycling and a full host-model adjoint are not gates
 for this task. Team work uses Luna (`gpt-5.6-luna`), reasoning `high`.
 
+Follow-up review on merged main `ca23480b` is tracked in
+[the ordered PR #215 resolution checklist](CHECKLIST_pr215_review_2026-09-19.md).
+V5a execution evidence is retained, but its former NaN-blind comparison and
+unbounded allowed divergence required gate correction; fresh CI is tracked
+there separately from prior successful runs.
+
 ## Completion rules
 
 An implementation, an executed verification and a scientific interpretation
