@@ -8,11 +8,11 @@ records and the legacy call path is unchanged.
 The trace follows the owned boundaries in ``kdm62d_one_step_torch``:
 
 ``D1 -> D2-D4 -> warm/cold/D5 rates -> conservation-limited rates ->
-state_update -> satadj -> cleanup -> DSD limiter``.
+state_update -> ice-to-snow reclassification -> satadj -> cleanup -> DSD limiter``.
 
 Warm ``prevp`` is explicitly named as the value consumed by cold nucleation and
 deposition.  A rate-generation record is not called an applied transfer until
-the post-conservation record is inspected. Tapped phase masks and per-column
+the post-conservation record is inspected. Selected phase, reclassification, satadj and final DSD masks and per-column
 integer ``mstep`` are compared exactly. Untapped internal limiter/PSD branches
 remain unverified. Rate-only boundaries do not claim an applied state delta.
 """

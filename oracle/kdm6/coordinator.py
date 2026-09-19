@@ -1436,6 +1436,9 @@ def reclassify_large_ice_to_snow_torch(
     qmin: float = 1.0e-15,
     di_threshold: float = 200.0e-6,
     t0c: float = 273.15,
+    diagnostic_trace=None,
+    diagnostic_step: int = 0,
+    diagnostic_dtcld: float = 0.0,
 ) -> CoordinatorState:
     """Fortran 2807-2813 (Picons, Park-Lim 2023): 평균 직경이 임계값(200μm) 이상인
     cloud ice는 더 이상 ice이 아니라 snow로 재분류. T<0°C, qi>qmin 게이트.
@@ -1446,7 +1449,8 @@ def reclassify_large_ice_to_snow_torch(
     트리거되던 edge bug 수정. slope_kdm6 ice branch와 같은 mask + LAMDAIMAX/MIN clamp.
 
     Mass conservation: qs gains qi, qi → 0, ni → 0.
-    AD-friendly multiplicative mask (subgradient at boundary OK).
+    AD-friendly multiplicative mask on a fixed branch; threshold crossings are
+    discrete and are not treated as smooth derivative points.
     """
     # avedia_i = rslope_i · (Γ(4+MUI)/Γ(1+MUI))^(1/3)
     #   rslope_i = 1/lamdai, clamped to [1/LAMDAIMAX, 1/LAMDAIMIN]
@@ -1472,9 +1476,11 @@ def reclassify_large_ice_to_snow_torch(
                            torch.full_like(rslope_i_raw, rslopeimax))
     avedia_i = rslope_i * avedia_factor
 
-    mask = ice_active & (state.t < t0c) & (avedia_i >= di_threshold)
+    cold_temperature = state.t < t0c
+    large_diameter = avedia_i >= di_threshold
+    mask = ice_active & cold_temperature & large_diameter
     mask_f = mask.to(state.qc.dtype)
-    return CoordinatorState(
+    result = CoordinatorState(
         qv=state.qv, qc=state.qc, qr=state.qr,
         qs=state.qs + state.qi * mask_f,
         qg=state.qg,
@@ -1484,6 +1490,21 @@ def reclassify_large_ice_to_snow_torch(
         brs=state.brs,
         t=state.t,
     )
+    if diagnostic_trace is not None:
+        diagnostic_trace.record_stage(
+            "picons", diagnostic_step, diagnostic_dtcld, state, result, None,
+            branch=torch.stack((ice_active, cold_temperature,
+                                large_diameter, mask), dim=0),
+            operands={"qi": state.qi, "ni": state.ni, "den": den,
+                      "t": state.t, "avedia_i": avedia_i,
+                      "di_threshold": di_threshold, "t0c": t0c},
+            metadata={
+                "kind": "applied_transfer",
+                "branch_labels": ["ice_active", "cold_temperature",
+                                  "large_diameter", "reclassify"],
+                "branch_scope": "Picons qi→qs mass; qi/ni cleared",
+            })
+    return result
 
 
 # ─── Step F1g: Post-update rain→cloud reclassification (small-drop cutoff) ───
@@ -2389,7 +2410,9 @@ def kdm62d_one_step_torch(
     # state_update therefore sees nr=0 in those cells, matching the C++/Fortran
     # owning boundary without a second post-update subtraction.
     # review5#4 + review7#1: Picons (Fortran 2807-2813) qi→qs.
-    new_state = reclassify_large_ice_to_snow_torch(new_state, forcing.den)
+    new_state = reclassify_large_ice_to_snow_torch(
+        new_state, forcing.den, diagnostic_trace=diagnostic_trace,
+        diagnostic_step=diagnostic_step, diagnostic_dtcld=dtcld)
     # review8#3: rain→cloud reclassification (Fortran 2883-2892) when avedia_r ≤ 82μm.
     new_state = reclassify_small_rain_to_cloud_torch(new_state, forcing.den)
     # F1g+: satadj/pcond on the post-update + post-reclass state (Fortran

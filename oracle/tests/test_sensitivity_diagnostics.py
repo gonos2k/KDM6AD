@@ -47,12 +47,25 @@ def test_opt_in_trace_preserves_forward_and_records_applied_boundaries():
     names = [r.name for r in trace.records]
     assert {"d1_melt", "d2_d4_freeze", "warm", "cold", "warm_limited",
             "cold_limited", "d5_limited", "state_update", "satadj",
-            "cleanup", "dsd_limiter"}.issubset(names)
+            "cleanup", "dsd_limiter", "picons"}.issubset(names)
     warm = trace.by_name("warm")[0]
     assert warm.metadata["upstream_to_cold"] == "warm.prevp"
     assert warm.rate_summary()["praut"]["finite"]
     assert "qc" in trace.by_name("state_update")[0].applied_delta_summary()
     assert trace.by_name("warm_limited")[0].applied_delta_summary() == {}
+    picons = trace.by_name("picons")[0]
+    assert picons.metadata["branch_labels"] == [
+        "ice_active", "cold_temperature", "large_diameter", "reclassify"
+    ]
+    picons_mask = picons.branch[3].to(picons.state_in.qi.dtype)
+    assert torch.equal(
+        picons.state_out.qi,
+        picons.state_in.qi * (1.0 - picons_mask),
+    )
+    assert torch.equal(
+        picons.state_out.qs,
+        picons.state_in.qs + picons.state_in.qi * picons_mask,
+    )
 
 
 def test_satadj_trace_exposes_activation_flip_with_same_pcond_mask():

@@ -107,7 +107,8 @@ Parent validation: shipped local CTest **17/17 passed** (3.91 s),
 - [x] Selected nonzero warm-control→later cold-rate sensitivity (2026-09-19
   autoconversion case below). Representative cold-regime coverage remains open.
 - [ ] Internal limiter/reclassification/PSD/satadj mask and threshold atlas,
-  including discontinuous topology changes; currently only selected phase masks.
+  including discontinuous topology changes; selected phase, shared-cap, satadj
+  and final DSD decisions are recorded, not an exhaustive atlas.
 - [ ] Applied enthalpy/particle-number directional residuals with closed unit
   contracts; selected water residual checks do not substitute for these.
 
@@ -533,3 +534,40 @@ The legacy absolute-number trigger is a lambda_max back-derivation, not
 its output exceeds its input. This validates the executed diagnostic operands;
 it does not establish a physical upper-number bound or justify changing the
 inherited arithmetic. Operational f32 and ABI remain untouched.
+
+
+## Next bounded connection audit (2026-09-19)
+
+- [ ] `alpha_melt` → evolved profile → BT/cost: existing melt process/state
+  attribution and riming→D5 checks do not establish this observation edge.
+  Reuse the existing melt fixture and fixed-K mock for a nonzero first-order
+  JVP/VJP/FD regression; label it synthetic and keep live RTTOV and `dK/dx`
+  separate. This is a selected coverage gap, not a demonstrated core defect.
+
+## Selected Picons reclassification (2026-09-19)
+
+- [x] The existing ice→snow helper now optionally records its actual ice-active,
+  cold-temperature, diameter and applied gates. The caller passes the existing
+  trace/step/dtcld; no reclassification arithmetic, f32 code or ABI changed.
+- [x] Four direct cases cover active cold, small-diameter cold, warm and the
+  explicitly invalid ni=0 moment boundary. Independent real-arithmetic diameter
+  expectations are used away from the threshold; analytic d(qs_out)/d(qi_in)
+  is 1 for the applied branch and 0 for the other cases. Genuine forward AD,
+  reverse AD and direct differences agree. Endpoint recorded masks and forward
+  primals are checked explicitly.
+- [x] Equality/nextafter of the executed diameter threshold and T=t0c test
+  branch semantics separately. This discontinuous reclassification does not
+  have a general smooth derivative at its threshold. The legacy claim that a
+  subgradient there is automatically valid has been removed.
+- [x] The existing runtime regression now requires the Picons record and checks
+  the actual applied mass transfer. Existing trace/plain value and JVP/VJP
+  noninterference tests pass. Number is cleared, not transferred to an absent
+  snow-number state; no physical number-conservation claim is made.
+
+Parent combined selection: **78 passed /18 torch.jit deprecation warnings**
+(13.73s), covering Picons, coordinator, sensitivity diagnostics, final DSD,
+complete evaporation, warm→cold controls, process attribution and local energy.
+The subsequent primal/mask assertion-only strengthening passed the five direct
+Picons cases. Final Green/Red Luna high reviews found no blocking findings.
+These overlapping counts do not add to previous runs. Full branch/regime coverage
+and physical number/enthalpy contracts remain open.
