@@ -704,3 +704,17 @@ historical comparisons, not native-level validation completion.
 - [ ] Exact pixel navigation, upper/gas/bottom assumptions, representative active
   paths, physical number units/nonzero applied transport and timestep convergence
   remain open. Anchor spread is not a navigation uncertainty bound.
+
+### PR222 follow-up — same-model PSFC bottom assumption
+
+- [x] Read PSFC from the same pinned WRF column; independently prove only the
+  final P_HALF scalar changes by +5.91021293 Pa. Keep all 39 native P values,
+  other interfaces and inputs unchanged; strict interleaving passes.
+- [x] One new direct/K call reuses both retained process tangents, recomputes
+  Huber seeds and preserves seven-channel QC. Public raw BT/gradient/seed evidence
+  is in psfc_bottom_comparison_2026-09-19.json and REPORT_psfc_bottom_2026-09-19.md.
+- [x] Separate BT text spacing from internal/K precision: all seven BT changes
+  exceed the 1e-9 K text-difference bound; no total K-error claim or new FD check.
+- [ ] General surface-boundary choice, upper/gas effects, exact pixel navigation,
+  representative active paths, number units/nonzero transport and timestep
+  convergence remain open. This is one selected bottom-assumption measurement.
