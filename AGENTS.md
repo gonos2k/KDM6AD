@@ -1,8 +1,5 @@
-# PROJECT KNOWLEDGE BASE
+# KDM6AD Project Instructions
 
-Generated: 2026-06-25
-Commit: unavailable at this root
-Branch: unavailable at this root
 Scope: KDM6/KDM6AD only; this is not a general WRF/KIM-meso guide.
 
 ## Canonical Worktree
@@ -35,11 +32,10 @@ is self-contained and its `ctest`/`pytest` run from the repo alone.
 C++ libtorch f32/AD mirror, Fortran ISO_C bridge, and — in the full host tree — a
 KIM-meso/WRF host where `mp_physics=37` is KDM6 and `mp_physics=137` is KDM6AD.
 
-The load-bearing invariant is strict parity: mp37 vs mp137 raw-bit identical for all
-numeric common variables (only the non-numeric `Times` differs). As of **2026-07-04**
-this holds through a **full 12-hour (2160-step) SS real-case integration under MPI(np4)**
-— all 254 output variables bit-identical at every output frame (the campaign goal; see
-`wiki/concepts/KDM6AD Forward Parity.md`). Earlier milestones were SS step-1 and 10-step.
+Preserve raw-bit parity between mp37 and mp137 for numeric common outputs.
+Historical campaign results and their source/build attribution belong in
+`wiki/concepts/KDM6AD Forward Parity.md`; do not treat them as verification
+of a changed executable or host configuration.
 
 ## Differentiability Validation Goal
 
@@ -83,18 +79,6 @@ Generated or foreign areas are not source for normal KDM6AD work:
 | Python oracle | `oracle/kdm6/runtime.py`, `oracle/kdm6/coordinator.py` | f64 reference and AD checks |
 | Host build wiring | `host/KIM-meso_v1.0/apply_kdm6ad_config.sh`, `phys/Makefile` | re-inject link flags and build hook |
 | SS parity | `harness/strict_bitwise_nc.py`, host SS case runner | final raw-bit gate |
-
-## Code Map
-
-| Symbol | Type | Location | Role |
-| --- | --- | --- | --- |
-| `kdm6ad` | Fortran subroutine | `module_mp_kdm6ad.F` | mp137 wrapper into C++ ABI |
-| `module_mp_kdm6` | Fortran module | `module_mp_kdm6.F` | mp37 forward reference |
-| `kdm6_step_c` | C ABI | `libtorch/bridge/kdm6_c_api.cpp` | operational f32 forward path |
-| `kdm6_step_ad_c` | C ABI | `libtorch/bridge/kdm6_c_api.cpp` | fp64 DA forward/handle path |
-| `kdm6_handle_vjp_c` / `kdm6_handle_jvp_c` | C ABI | `libtorch/bridge/kdm6_c_api.cpp` | reverse/forward AD products |
-| `kdm6::kdm6_step` | C++ runtime | `libtorch/src/runtime.cpp` | main C++ step implementation |
-| `_kdm6_pure` / `kdm6_step` | Python oracle | `oracle/kdm6/runtime.py` | reference forward and handle logic |
 
 ## Conventions
 

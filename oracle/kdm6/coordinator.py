@@ -1567,7 +1567,7 @@ def _lamda_from_qn(q, n, den, *, pidn, dm, lamda_min, lamda_max):
 def _limit_number_for_lamda(
     q: torch.Tensor, n: torch.Tensor, den: torch.Tensor,
     *, pidn: float, dm: float, lamda_min: float, lamda_max: float,
-    q_thresh: float, n_thresh: float,
+    q_thresh: float, n_thresh: float, diagnostic: dict | None = None,
 ) -> torch.Tensor:
     """Generic per-species DSD limiter:
         if q >= q_thresh AND n >= n_thresh:
@@ -1591,6 +1591,14 @@ def _limit_number_for_lamda(
     too_large = active & (lamda >= lamda_max)
     n_new = torch.where(too_small, n_at_min,
                        torch.where(too_large, n_at_max, n))
+    if diagnostic is not None:
+        diagnostic.update({
+            "q": q, "n_in": n, "den": den, "qden": qden,
+            "ratio": ratio, "lamda": lamda,
+            "n_at_min": n_at_min, "n_at_max": n_at_max,
+            "n_after_lamda": n_new, "active": active,
+            "too_small": too_small, "too_large": too_large,
+        })
     return n_new
 
 
@@ -1601,6 +1609,9 @@ def apply_dsd_number_limiters_torch(
     qmin: float = 1.0e-15,
     qcrmin: float = None,
     ncmin_tensor: "torch.Tensor | None" = None,  # per-cell ncmin for final cloud/ice snaps
+    diagnostic_trace=None,
+    diagnostic_step: int = 0,
+    diagnostic_dtcld: float = 0.0,
 ) -> CoordinatorState:
     """Fortran 2972-3013: post-cleanup DSD number limiter.
 
@@ -1624,12 +1635,17 @@ def apply_dsd_number_limiters_torch(
     pidnc = _fc.PIDNC   # f32-stepwise (kdm6init F:3205)
     pidni = _fc.PIDNI   # f32-stepwise (kdm6init F:3263)
 
+    rain_decision = {} if diagnostic_trace is not None else None
+    cloud_decision = {} if diagnostic_trace is not None else None
+    ice_decision = {} if diagnostic_trace is not None else None
+
     # Rain
     nr_new = _limit_number_for_lamda(
         state.qr, state.nr, den,
         pidn=pidnr, dm=c.DMR,
         lamda_min=c.LAMDARMIN, lamda_max=c.LAMDARMAX,
         q_thresh=qcrmin, n_thresh=c.NRMIN,
+        diagnostic=rain_decision,
     )
     # Cloud — gate by PER-CELL ncmin (Fortran F:3132 `nci1>=ncmin`, sea=10/land=100),
     # NOT scalar NCMIN=1e-2: low-nc cells (nc<ncmin) must NOT be snapped (they were wrongly
@@ -1639,9 +1655,11 @@ def apply_dsd_number_limiters_torch(
         pidn=pidnc, dm=c.DMC,
         lamda_min=c.LAMDACMIN, lamda_max=c.LAMDACMAX,
         q_thresh=qmin, n_thresh=0.0,
+        diagnostic=cloud_decision,
     )
     _ncmin_t = ncmin_tensor if ncmin_tensor is not None else c.NCMIN
-    nc_new = torch.where(state.nc >= _ncmin_t, nc_snapped, state.nc)
+    cloud_final_gate = state.nc >= _ncmin_t
+    nc_new = torch.where(cloud_final_gate, nc_snapped, state.nc)
     # Ice — apply_dsd_number_limiters implements the FINAL kdm62d block, whose
     # ice snap is Fortran module_mp_kdm6.F:2995 `qci(i,k,2).ge.qmin .and. nci(i,k,2).ge.ncmin`
     # — same qmin/ncmin pattern as the cloud snap (:2984) above. The prior 1e-14/0
@@ -1652,25 +1670,70 @@ def apply_dsd_number_limiters_torch(
         pidn=pidni, dm=c.DMI,
         lamda_min=c.LAMDAIMIN, lamda_max=c.LAMDAIMAX,
         q_thresh=qmin, n_thresh=0.0,
+        diagnostic=ice_decision,
     )
-    ni_new = torch.where(state.ni >= _ncmin_t, ni_snapped, state.ni)
+    ice_final_gate = state.ni >= _ncmin_t
+    ni_new = torch.where(ice_final_gate, ni_snapped, state.ni)
 
-    # Absolute number caps (Fortran 3007-3013): nrs > NRMAX → snap to lamdarmax.
+    # Absolute-number threshold triggers (Fortran 3007-3013): rederive n at
+    # lambda_max. This is not min(n, NMAX); the rederived number can increase.
     eps = 1.0e-30
     qden_r = torch.clamp(state.qr * den, min=eps)
     nr_at_max = den * state.qr * (c.LAMDARMAX ** c.DMR) / pidnr
-    nr_new = torch.where(nr_new > c.NRMAX, nr_at_max, nr_new)
+    nr_before_absolute_cap = nr_new
+    rain_absolute_cap = nr_before_absolute_cap > c.NRMAX
+    nr_new = torch.where(rain_absolute_cap, nr_at_max, nr_before_absolute_cap)
     qden_c = torch.clamp(state.qc * den, min=eps)
     nc_at_max = den * state.qc * (c.LAMDACMAX ** c.DMC) / pidnc
-    nc_new = torch.where(nc_new > c.NCMAX, nc_at_max, nc_new)
+    nc_before_absolute_cap = nc_new
+    cloud_absolute_cap = nc_before_absolute_cap > c.NCMAX
+    nc_new = torch.where(cloud_absolute_cap, nc_at_max, nc_before_absolute_cap)
 
-    return CoordinatorState(
-        qv=state.qv,
-        qc=state.qc, qr=state.qr, qs=state.qs, qg=state.qg, qi=state.qi,
-        nc=nc_new, nr=nr_new, ni=ni_new,
-        brs=state.brs,
-        t=state.t,
+    if diagnostic_trace is not None:
+        assert rain_decision is not None and cloud_decision is not None
+        assert ice_decision is not None
+        operands = {}
+        for species, values in (("rain", rain_decision), ("cloud", cloud_decision),
+                                ("ice", ice_decision)):
+            operands.update({
+                f"{species}_{name}": value for name, value in values.items()
+                if name not in {"active", "too_small", "too_large"}
+            })
+        operands.update({
+            "rain_absolute_cap_input": nr_before_absolute_cap,
+            "cloud_absolute_cap_input": nc_before_absolute_cap,
+            "rain_absolute_cap_value": nr_at_max,
+            "cloud_absolute_cap_value": nc_at_max,
+        })
+        branch = torch.stack((
+            rain_decision["active"], rain_decision["too_small"], rain_decision["too_large"],
+            cloud_decision["active"], cloud_decision["too_small"], cloud_decision["too_large"],
+            cloud_final_gate,
+            ice_decision["active"], ice_decision["too_small"], ice_decision["too_large"],
+            ice_final_gate, rain_absolute_cap, cloud_absolute_cap,
+        ), dim=0)
+    result = CoordinatorState(
+        qv=state.qv, qc=state.qc, qr=state.qr, qs=state.qs, qg=state.qg,
+        qi=state.qi, nc=nc_new, nr=nr_new, ni=ni_new,
+        brs=state.brs, t=state.t,
     )
+    if diagnostic_trace is not None:
+        diagnostic_trace.record_stage(
+            "dsd_limiter", diagnostic_step, diagnostic_dtcld, state, result, None,
+            branch=branch, operands=operands,
+            metadata={
+                "kind": "applied_transfer",
+                "branch_labels": [
+                    "rain_active", "rain_too_small", "rain_too_large",
+                    "cloud_active", "cloud_too_small", "cloud_too_large",
+                    "cloud_final_ncmin_gate", "ice_active", "ice_too_small",
+                    "ice_too_large", "ice_final_ncmin_gate", "rain_absolute_cap",
+                    "cloud_absolute_cap",
+                ],
+                "branch_scope": "final DSD limiter active/snap/cap decisions",
+            })
+
+    return result
 
 
 # ─── Step F2: Sub-cycling wrapper ────────────────────────────────────────────
@@ -1925,13 +1988,14 @@ def apply_satadj_step_torch(
     if diagnostic_trace is not None:
         diagnostic_trace.record_stage(
             "satadj", diagnostic_step, dtcld, state, new_state, None,
-            branch=torch.stack((pcond != 0, activation_gate), dim=0),
+            branch=torch.stack((pcond != 0, activation_gate, cloud_complete_evap), dim=0),
             operands={"pcact": pcact, "pcond": pcond,
                                            "xl": xl, "cpm": cpm_safe},
             metadata={"kind": "applied_latent_transfer", "pcond_units": "kg/kg/s",
                       "includes_pcact": True,
-                      "branch_labels": ["pcond_nonzero", "ccn_activation_sw_positive"],
-                      "branch_scope": "pcond nonzero and CCN activation gate; not all satadj branches"},)
+                      "branch_labels": ["pcond_nonzero", "ccn_activation_sw_positive",
+                                        "cloud_complete_evaporation"],
+                      "branch_scope": "pcond nonzero, CCN activation and complete evaporation; not all satadj branches"},)
     return new_state, nccn_final
 
 
@@ -2354,12 +2418,10 @@ def kdm62d_one_step_torch(
             "cleanup", diagnostic_step, dtcld, _wb_pre_clean if _wb_pre_clean is not None else new_state,
             new_state, None, metadata={"kind": "applied_transfer"})
     # review9#2: DSD number limiters (Fortran 2972-3013) — lamda 범위를 벗어나면 number 재계산.
-    _pre_limit = new_state
-    new_state = apply_dsd_number_limiters_torch(new_state, forcing.den, ncmin_tensor=ncmin_tensor)
-    if diagnostic_trace is not None:
-        diagnostic_trace.record_stage(
-            "dsd_limiter", diagnostic_step, dtcld, _pre_limit, new_state, None,
-            metadata={"kind": "applied_transfer"})
+    new_state = apply_dsd_number_limiters_torch(
+        new_state, forcing.den, ncmin_tensor=ncmin_tensor,
+        diagnostic_trace=diagnostic_trace, diagnostic_step=diagnostic_step,
+        diagnostic_dtcld=dtcld)
     return (new_state, nccn) if _activate else new_state
 
 

@@ -86,7 +86,7 @@ def test_satadj_trace_exposes_activation_flip_with_same_pcond_mask():
         outputs.append(out)
 
     assert records[0].metadata["branch_labels"] == [
-        "pcond_nonzero", "ccn_activation_sw_positive"
+        "pcond_nonzero", "ccn_activation_sw_positive", "cloud_complete_evaporation"
     ]
     assert torch.equal(records[0].branch[0], records[1].branch[0])
     assert bool(records[0].branch[0].all())

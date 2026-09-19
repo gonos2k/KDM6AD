@@ -457,9 +457,9 @@ synthetic/source checks, not a completed host run.
   qv=qs_water±1e-8 changes activation while both pcond masks stay nonzero.
   This formerly invisible switch is now distinguishable by existing exact
   mask comparisons. The no-CCN component path keeps its pcond-only scope.
-- [ ] Complete-evaporation equality, all DSD gates and the remaining internal
-  branch atlas are still not exhaustively recorded or validated. This added
-  gate does not turn sampled endpoint agreement into a branch certificate.
+- [ ] The remaining internal branch atlas is not exhaustively validated.
+  Selected complete-evaporation and final DSD gates are addressed in the
+  follow-up below; sampled endpoints do not certify every internal branch.
 
 The conditional raw `prevp` injection probe in local
 `graphify-out/goal-cross-process-20260919/` is a cut-graph derivative experiment,
@@ -491,3 +491,45 @@ two independent FD epsilons, matching tapped masks/subcycles and output
 spacing. Green/Red Luna high session-end reviews completed with no remaining
 blocking findings in this diff. Their bounded scope does not close the
 remaining physical units, actual auxiliaries or full branch atlas.
+
+## Complete evaporation and final DSD decisions (2026-09-19)
+
+- [x] **Satadj complete-evaporation gate:** record the existing exact
+  `pcond == -qc_pp/dtcld` predicate as the third satadj mask. It is the same
+  predicate used for NC→NCCN transfer. With qv=qs_water−1e-5, qc=1e-6 versus
+  1e-3, the earlier pcond/activation masks are identical while transfer is
+  1e6 versus zero. At fixed branches, the analytic NC/NCCN derivatives with
+  respect to input NC are (0,1) versus (1,0). The exact-saturation qc=±0 case
+  separately verifies bare floating-point equality and signed zero. That
+  number-without-mass boundary probe is not a populated atmospheric state.
+- [x] **Final DSD decision capture:** the existing final `dsd_limiter` record
+  retains actual per-species active/lambda-low/lambda-high decisions, cloud
+  and ice ncmin selection, and rain/cloud absolute caps. Lambda decisions
+  discarded by an outer ncmin gate are explicitly distinguishable from an
+  applied snap. Absolute-cap input operands are captured before the cap;
+  the recorded final state is the same object returned by the helper.
+  Early slope calculations remain uninstrumented by this final-stage option.
+- [ ] These selected gates do not complete the full internal branch atlas,
+  numerical-domain coverage, physical number units or all-regime sensitivity.
+  In particular, a recorded DSD gate is evidence of the executed numerical
+  decision, not a resolution of the host/kernel number-unit contract.
+
+Independent complete-evaporation evidence and parent replay:
+`graphify-out/goal-branch-20260919/red/complete_evap_evidence.py`,
+`complete-evaporation-audit.json`, and `parent_complete_evap.json`.
+Parent satadj/sensitivity/local-energy selection: **13 passed** (9.77s).
+The new satadj tests check exact masks, actual transfer and analytic derivatives;
+no cross-switch central difference is labelled a local derivative.
+
+
+Final parent combined selection: **77 passed /18 torch.jit deprecation warnings**
+(14.72s), including existing analytic DSD JVP/VJP checks, exact trace/plain
+products, new evaporation/DSD tests and the warm→cold control regression.
+Selections overlap earlier tests and must not be summed. Green/Red review
+found no blocking issue in this bounded change.
+
+The legacy absolute-number trigger is a lambda_max back-derivation, not
+`min(n,NMAX)`. The cloud trigger regression deliberately records a case where
+its output exceeds its input. This validates the executed diagnostic operands;
+it does not establish a physical upper-number bound or justify changing the
+inherited arithmetic. Operational f32 and ABI remain untouched.
