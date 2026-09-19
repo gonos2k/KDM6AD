@@ -636,3 +636,36 @@ historical comparisons, not native-level validation completion.
 - [ ] Resolve host/kernel number units and measure nonzero applied transport on
   this model. Historical recovered-flux proxies and zero M1 capture do not close
   this requirement; source-matched instrumented executable remains unavailable.
+
+
+### PR219 review follow-up — pressure coordinate contract
+
+- [x] Confirm absent-P default against local RTTOV v14 consumer source: top
+  interface floored at 1e-12 hPa, then arithmetic means. Replace the historical
+  geometric Python fallback; retained historical results are not recomputed or
+  relabelled as correct-coordinate evidence.
+- [x] Keep explicit model P authoritative. With p.txt present, require exact
+  P/P_HALF witness equality; reject a one-ULP drift. Legacy no-P comparisons
+  retain compatibility tolerance. Optional P omission is not a native-grid
+  certification; the selected native runner supplies and checks both vectors.
+- [x] Check ten retained native cases against the stricter contract without
+  rerunning their radiative calculation. Writer suite: 69 passed, including
+  fixed arithmetic expectations, top-floor behavior, and explicit-grid drift.
+- [ ] Directly expose/compare RTTOV's internal consumed vectors if executable
+  provenance or profile construction changes. Current evidence combines exact
+  input files with local reader/population source, not a new internal dump.
+- [ ] Resolve actual viewing-angle provenance from existing local GK2A navigation;
+  a nominal orbit calculation must remain labelled as an assumption.
+- [ ] Repeat selected native sensitivity with justified viewing angles and retain
+  channel-wise derivatives; extend representative active process cases separately.
+- [ ] Quantify upper-background and P8W-versus-PSFC boundary assumptions separately.
+  Particle-number units/nonzero applied transport and sensitivity convergence
+  remain open. This fallback correction does not close those scientific items.
+
+- [x] CI interpreter policy: Python 3.12 only in all four setup-python entries;
+  automatic Python version matrices are on hold. Both OS native gates remain.
+  Prior Python 3.11 CI results are not evidence for the changed interpreter.
+- [x] Local scoped validation: writer 69 passed; profile/cloud/input/melt 59
+  passed (18 existing TorchScript deprecation warnings). These local Python
+  3.10 runs are distinct from pending Python 3.12 CI. Workflow syntax passes
+  actionlint with shellcheck disabled; existing shellcheck warnings are separate.

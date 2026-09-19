@@ -635,15 +635,17 @@ def _verify_cloud_hydrotable(case_root: Path) -> None:
 
 
 def _layer_pressure_from_half(ph):
-    """Canonical layer pressure from half-levels: log-midpoint (geometric mean) of
-    consecutive half-levels, with the TOA layer (p_half=0) falling back to the
-    arithmetic midpoint. This is the ONE convention the writer defines + validates,
-    so an interp caller must use the same (via fixture_layer_pressure())."""
+    """RTTOV v14 default full-level pressure when no explicit P is supplied.
+
+    Match rttov_populate_profiles_internal/rttov_calc_p_full: floor the
+    top interface at v14 pressure_top (1e-12 hPa), then use arithmetic means.
+    Explicit native model centres are read separately and never reconstructed.
+    """
     import numpy as np
-    ph = np.asarray(ph, dtype=float).reshape(-1)
-    lo, hi = ph[:-1], ph[1:]
-    lay = np.sqrt(np.clip(lo, 0.0, None) * hi)          # log-midpoint (geometric mean)
-    return np.where(lo <= 0.0, 0.5 * (lo + hi), lay)    # TOA (p_half=0): arithmetic midpoint
+    ph = np.asarray(ph, dtype=float).reshape(-1).copy()
+    ph[0] = max(ph[0], 1.0e-12)  # RTTOV v14 pressure_top, hPa
+    return 0.5 * (ph[:-1] + ph[1:])
+
 
 
 def fixture_layer_pressure(fixture_case_dir=None, *, profile: str = "001"):
@@ -652,8 +654,8 @@ def fixture_layer_pressure(fixture_case_dir=None, *, profile: str = "001"):
     When a profile carries ``atm/p.txt``, use that explicit RTTOV full-level grid
     after validating its size, finiteness, positivity, and interleaving with
     ``p_half``. This is the native-model contract: RTTOV reads ``p.txt`` when it
-    exists. Legacy fixtures without ``p.txt`` retain the historical
-    ``_layer_pressure_from_half`` midpoint convention.
+    exists. Fixtures without ``p.txt`` use RTTOV v14's arithmetic midpoint
+    default via ``_layer_pressure_from_half``.
 
     The live obs path sets ``cfg.rttov_layer_pressure`` to this so model T/Q are
     interpolated onto the selected fixture/native layers; the resulting
@@ -711,23 +713,30 @@ def _check_grid_matches_fixture(profile_dir: Path, p_half_model, p_lay_model=Non
 
     If a layer pressure ``p_lay_model`` (profile["P"], from cfg.rttov_layer_pressure)
     is present, it must equal the canonical layer grid. If this profile carries
-    ``atm/p.txt``, that explicit grid is canonical; otherwise the legacy midpoint
-    derived from p_half is used. This keeps the writer's witness identical to the
-    pressure vector the RTTOV test driver will actually read."""
+    ``atm/p.txt``, that explicit grid is canonical; otherwise the RTTOV arithmetic midpoint
+    derived from p_half is used. Explicit-file witnesses require exact equality after unit/order conversion;
+    legacy default-grid witnesses retain their compatibility tolerance."""
     import numpy as np
     fix = np.loadtxt(profile_dir / "atm" / "p_half.txt")
     model = np.asarray(p_half_model, dtype=float).reshape(-1)
-    if fix.shape != model.shape or not np.allclose(model, fix, rtol=1e-5, atol=1e-9):
+    explicit = profile_dir / "atm" / "p.txt"
+    has_explicit = explicit.is_file()
+    half_equal = fix.shape == model.shape and (
+        np.array_equal(model, fix) if has_explicit
+        else np.allclose(model, fix, rtol=1e-5, atol=1e-9))
+    if not half_equal:
         raise ValueError(
             f"{profile_dir}/atm/p_half.txt: RttovInput P_HALF does not match the "
             "fixture grid -- interpolate the model T/Q onto the fixture's p_half "
             "before overlay (cfg.rttov_level_pressure must be the fixture grid).")
-    explicit = profile_dir / "atm" / "p.txt"
     canon = (_explicit_layer_pressure(explicit, fix)
-             if explicit.is_file() else _layer_pressure_from_half(fix))
+             if has_explicit else _layer_pressure_from_half(fix))
     if p_lay_model is not None:
         p = np.asarray(p_lay_model, dtype=float).reshape(-1)
-        if p.shape != canon.shape or not np.allclose(p, canon, rtol=1e-5, atol=1e-9):
+        equal = p.shape == canon.shape and (
+            np.array_equal(p, canon) if has_explicit
+            else np.allclose(p, canon, rtol=1e-5, atol=1e-9))
+        if not equal:
             raise ValueError(
                 f"{profile_dir}/atm/p_half.txt: RttovInput layer pressure (profile['P'], "
                 "cfg.rttov_layer_pressure) does not match the fixture's canonical layer "

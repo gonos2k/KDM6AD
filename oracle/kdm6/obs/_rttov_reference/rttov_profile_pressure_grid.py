@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Summarise RTTOV test profile pressure grids for KDM6AD bridge design."""
+"""Historical bridge-design pressure summary, not the RTTOV v14 default.
+
+This retained reference derives geometric midpoints. Live input must use
+rttov_case_writer.fixture_layer_pressure: explicit P or the consumer's arithmetic
+fallback. Historical summaries are not native-model pressure contracts.
+"""
 
 from __future__ import annotations
 
