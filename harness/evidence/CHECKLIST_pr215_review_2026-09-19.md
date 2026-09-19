@@ -11,11 +11,11 @@ code changes, test counts or unchanged divergence locations.
 
 | Order / ID | Task | Acceptance evidence | Status |
 | --- | --- | --- | --- |
-| 1 / R1 | Cross-tree nonfinite rejection | NaN and ±Inf in either implementation's forward/VJP/JVP fail, including allowed-divergence slots; portable injection tests execute without a native build | Local verification passed; new-build CI pending |
-| 1 / R2 | Bounded divergence regression | Smooth parity and known divergence remain distinct; allowed slots have finite, measured signed values/scales and magnitude regression; remove unconditional subgradient claims | Local verification passed; new-build CI pending |
-| 1 / R3 | Independent LCC CI check | At least one CI job installs/imports pyproj and runs the existing synthetic 900×900 comparison without optional dependency skipping | Local check passed; CI pending |
+| 1 / R1 | Cross-tree nonfinite rejection | NaN and ±Inf in either implementation's forward/VJP/JVP fail, including allowed-divergence slots; portable injection tests execute without a native build | Verified locally and fresh Linux/macOS CI at b3d9620 |
+| 1 / R2 | Bounded divergence regression | Smooth parity and known divergence remain distinct; allowed slots have finite, measured signed values/scales and magnitude regression; remove unconditional subgradient claims | Verified locally and fresh Linux/macOS CI at b3d9620 |
+| 1 / R3 | Independent LCC CI check | At least one CI job installs/imports pyproj and runs the existing synthetic 900×900 comparison without optional dependency skipping | Verified locally and oracle CI at b3d9620 |
 | 2 / R4 | Process state coverage | Explicit checked/unchecked outputs; include deposition qi, riming qc/qi/nc/ni, freeze qc/qi/nc/ni in selected checks; retain unresolved FD/branch classifications rather than weaken tolerances | Locally verified reporting/gate correction; representative nonzero coverage still open |
-| 3 / R5 | Melt→profile→BT/cost | Existing melt control and fixture, fixed-K mock, nonzero genuine forward AD/reverse AD/FD; state clearly synthetic, first order and separate from live RTTOV | In progress |
+| 3 / R5 | Melt→profile→BT/cost | Existing melt control and fixture, fixed-K mock, nonzero genuine forward AD/reverse AD/FD; state clearly synthetic, first order and separate from live RTTOV | Locally verified synthetic clear T/Q case; live/cloud scope remains open |
 | 4 / R6 | Actual RTTOV auxiliaries | Source/applied pressure, upper profile, viewing geometry, surface and UTC; fixture substitutions remain explicitly partial | Open; existing asset inventory reused |
 | 5 / R7 | Physical number and mass measure | Resolve host/kernel unit boundary before physical number-budget claims; distinguish process source/sinks from transport conservation | Open scientific contract |
 | 5 / R8 | M1 nonzero applied transport | Matched-source binaries, nonzero departure/arrival, actual ledger and neutrality evidence; zero transport is insufficient | Open external prerequisite; existing Xcode license blocker retained |
@@ -111,3 +111,45 @@ M1 gate remains open; zero-transfer capture evidence is not upgraded.
 R4 final focused verification: **15 passed** (2.42s), including deliberate
 nonfinite controlled/plus/minus/graph rate products and changed plus/graph AD
 trace masks. This verifies refusal/reporting behavior, not new physical cases.
+
+### R1–R3 source-build CI closure
+
+PR #216 commit `b3d9620`: all five checks succeeded. Ubuntu build/CTest and
+required cross-tree step: 4m48s; macOS build/symbol/smoke and required cross-tree
+step: 5m16s. Oracle CI (including mandatory pyproj import/LCC comparison)
+passed in 1m58s; harness and path detection also passed. Runs:
+`35411601315` (port), `35411601320` (oracle), `35411601322` (harness).
+This closes the reviewed gate weaknesses for the tested fixture and products,
+not the existing cross-tree numerical divergence or project-wide science gaps.
+Later commits' CI is tracked independently.
+
+### R5 — selected synthetic first-order closure
+
+`oracle/tests/test_melt_profile_bt_cost.py` reuses `melt_fixture` and the actual
+D5 `alpha_melt` control (not D1 instantaneous melting). Reverse AD and direct
+FD traverse the supported `RttovObsOp` with an analytic constant K; forward AD
+traverses KDM/profile and the equivalent torch contraction. The custom bridge
+is backward-only; no native forward-mode RTTOV implementation is claimed.
+Primal state/profile/BT/cost, tapped masks and subcycles agree exactly. Applied
+D5 mass rates have a nonzero signal.
+
+Scope: clear-sky T/Q synthetic operator, fixed observations/mask/sigma. No
+live RTTOV, cloud-hydrometeor K, dK/dx or physical number-budget claim.
+RED independent values: baseline J=0.375, VJP=1.5544598917503096e-6,
+JVP=1.5544598917503092e-6. FD at eps=1e-4 is1.5544587839144697e-6 and
+at1e-3 is1.554461004360519e-6. Relative errors are approximately7.1e-7/7.2e-7;
+output-spacing derivative bounds2.78e-13/2.78e-14 are below the signal.
+
+Acceptance uses a preset relative1e-5 FD limit plus actual output-spacing
+checks; an intermediate draft's data-derived spread tolerance was rejected
+before commit. Parent broader selection:76passed/18warnings(6.14s), then
+final corrected R5 test:1passed/18warnings(1.31s). Counts overlap. The final
+test fixes eps=(1e-4,1e-3) and also requires forward/reverse relative1e-10.
+
+R6–R9 retain their documented partial/open evidence. None is closed by this
+synthetic observation regression, and no overall completion percentage is assigned.
+
+Final Green/Red Luna high reviews accepted the corrected fixed-tolerance R5
+and the bounded R1/R4 changes. No additional agents or production physics/ABI
+changes were introduced. Final source-head CI is reported separately from
+b3d9620; a passing earlier commit does not certify a later commit.

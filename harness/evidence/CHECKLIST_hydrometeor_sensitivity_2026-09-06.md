@@ -544,11 +544,11 @@ inherited arithmetic. Operational f32 and ABI remain untouched.
 
 ## Next bounded connection audit (2026-09-19)
 
-- [ ] `alpha_melt` → evolved profile → BT/cost: existing melt process/state
-  attribution and riming→D5 checks do not establish this observation edge.
-  Reuse the existing melt fixture and fixed-K mock for a nonzero first-order
-  JVP/VJP/FD regression; label it synthetic and keep live RTTOV and `dK/dx`
-  separate. This is a selected coverage gap, not a demonstrated core defect.
+- [x] Selected synthetic `alpha_melt` → evolved T/Q profile → fixed-K BT/cost:
+  `test_melt_profile_bt_cost.py` verifies nonzero genuine forward AD, reverse
+  bridge AD and two resolved direct differences at unchanged tapped topology.
+  See R5 in the ordered PR215 follow-up checklist. Live RTTOV/cloud-K and
+  `dK/dx` coverage are not established by this clear-sky synthetic case.
 
 ## Selected Picons reclassification (2026-09-19)
 
