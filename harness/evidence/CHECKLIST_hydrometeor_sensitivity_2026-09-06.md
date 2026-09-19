@@ -669,3 +669,22 @@ historical comparisons, not native-level validation completion.
   passed (18 existing TorchScript deprecation warnings). These local Python
   3.10 runs are distinct from pending Python 3.12 CI. Workflow syntax passes
   actionlint with shellcheck disabled; existing shellcheck warnings are separate.
+
+
+### PR220 follow-up — scene-anchor view, not exact pixel navigation
+
+- [x] Preserve closed pressure findings. PR220 merge e2854f80 has all five CI checks successful.
+- [x] Inventory existing KO/FD same-slot navigation. FD has first/centre/last
+  spacecraft ECEF anchors; KO lacks per-pixel navigation. No external model data.
+- [x] Derive centre-anchor view at the same native column, with independent
+  ECEF position check, explicit RTTOV azimuth convention and first/last angle
+  comparisons. No undocumented scan-time interpolation.
+- [x] Repeat native-layer deposition/riming with fixed paired geometry, unchanged
+  QC/cost, and record per-channel JVP/VJP/direct FD. Ten calls, seven usable IR;
+  cost maximum differences 0.527615% / 0.126333%; channel maxima
+  0.553005% / 0.646217%. See REPORT_scene_anchor_view_2026-09-19.md.
+- [ ] Exact target-pixel acquisition-time/view-vector mapping remains unavailable
+  in inspected local files. Scene-anchor-derived geometry is not a per-pixel
+  measured-angle completion claim.
+- [ ] Model-top/gas/bottom-boundary effects, broader active processes, physical
+  number units/nonzero transport, and timestep sensitivity remain separate.
