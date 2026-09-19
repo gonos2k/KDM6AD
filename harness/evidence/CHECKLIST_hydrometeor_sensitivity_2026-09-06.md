@@ -718,3 +718,21 @@ historical comparisons, not native-level validation completion.
 - [ ] General surface-boundary choice, upper/gas effects, exact pixel navigation,
   representative active paths, number units/nonzero transport and timestep
   convergence remain open. This is one selected bottom-assumption measurement.
+
+### PR223 follow-up — layer contributions and active liquid accretion
+
+- [x] Publish retained layer/field K tokens and fixed tangents with a Python 3.12
+  standard-library replay. Fourteen channel-gradient boundary differences exceed
+  conditional K-text rounding bounds; this is not a total numerical error bound.
+- [x] Select an active warm accretion column from the existing 5 km forecast by
+  declared state/rate criteria. Verify applied rates, native state/profile
+  JVP/VJP/FD and selected mass-transfer directional identities. No external
+  atmospheric data or production physics change.
+- [x] Execute five native RTTOV endpoints after two recorded setup failures.
+  All nine observation-clean IR channels have quality 32768 (Delta-Eddington
+  extinction limit); preserve raw channel diagnostics and the empty cost mask.
+- [ ] Accepted liquid-process observation/cost sensitivity remains open. Zero
+  masked cost is not a success. Physical number units, nonzero transport,
+  timestep convergence, upper/gas assumptions and exact pixel timing remain open.
+
+See CHECKLIST_pr223_followup_2026-09-19.md and its three linked reports.

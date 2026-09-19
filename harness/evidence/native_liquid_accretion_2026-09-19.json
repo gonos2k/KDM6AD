@@ -1,0 +1,838 @@
+{
+  "artifacts": {
+    "compact_manifest": "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/pr224-liquid/live/native_accretion_live_manifest.json",
+    "failure_records": [
+      "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/pr224-liquid/live/native_accretion_live_failure.json",
+      "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/pr224-liquid/live/native_accretion_live_retry.json"
+    ],
+    "full_local_report": "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/pr224-liquid/live/native_accretion_live_retry2.json"
+  },
+  "auxiliary": {
+    "model_geometry": {
+      "elevation_km": 0.5965975341796875,
+      "latitude": 38.51930618286133,
+      "longitude": 127.565673828125
+    },
+    "scene_anchor_caveat": "existing scene-center ECEF view anchor; exact KO pixel navigation is unresolved",
+    "solar_angles_deg": {
+      "azimuth": 94.87327996043538,
+      "sha256": "77b85c03d0c624a23ce8d16d51425cfdd9513fe86761c06cc79ddf71456f9077",
+      "zenith": 49.30700974446031
+    },
+    "times": {
+      "fd_scene_anchor_timing": "separate; exact KO pixel-time collocation unresolved",
+      "gk2a_nominal_slot": "202507190000",
+      "kdm_dt_seconds": 20.0,
+      "model_input_frame": "2025-07-19_00:00:20",
+      "post_kdm_state": "00:00:40 (time-contract label)",
+      "rttov_auxiliary_datetime": "2025-07-19_00:00:20"
+    },
+    "view_angles_deg": {
+      "azimuth": 178.92321194526843,
+      "sha256": "069e47c4a23bee2d575797132d335f14d412a780f3af358b7978567248ff5f92",
+      "zenith": 44.592985352568284
+    }
+  },
+  "candidate": {
+    "P_P_HALF_exact": true,
+    "flat_index": 35711,
+    "forecast_time_index": 1,
+    "i": 143,
+    "j": 152,
+    "native_pressure_half_levels": 40,
+    "native_pressure_levels": 39,
+    "process": "accretion",
+    "reader_policy": "as_stored"
+  },
+  "channel_diagnostics_0_based_7_to_15": [
+    {
+      "baseline_rad_quality": 32768,
+      "baseline_retained_mask": 0,
+      "channel_index_0_based": 7,
+      "classification": "observed_input_but_QC_excluded",
+      "epsilons": {
+        "0.03": {
+          "absolute_difference_vs_VJP": 2.8944335194870385e-10,
+          "central_FD_K_per_alpha": 0.0,
+          "classification": "diagnostic_only_text_bound_and_QC_excluded",
+          "relative_difference_vs_VJP": 1.0
+        },
+        "0.1": {
+          "absolute_difference_vs_VJP": 2.8944335194870385e-10,
+          "central_FD_K_per_alpha": 0.0,
+          "classification": "diagnostic_only_text_bound_and_QC_excluded",
+          "relative_difference_vs_VJP": 1.0
+        }
+      },
+      "forward_JVP_K_per_alpha": -2.8944335194870364e-10,
+      "observed_BT_K": 231.05044533926377,
+      "observed_quality_flag": 0,
+      "reverse_VJP_K_per_alpha": -2.8944335194870385e-10
+    },
+    {
+      "baseline_rad_quality": 32768,
+      "baseline_retained_mask": 0,
+      "channel_index_0_based": 8,
+      "classification": "observed_input_but_QC_excluded",
+      "epsilons": {
+        "0.03": {
+          "absolute_difference_vs_VJP": 7.612689037580946e-09,
+          "central_FD_K_per_alpha": -8.33333994402589e-08,
+          "classification": "diagnostic_only_text_bound_and_QC_excluded",
+          "relative_difference_vs_VJP": 0.08370551350799296
+        },
+        "0.1": {
+          "absolute_difference_vs_VJP": 9.461876126168214e-10,
+          "central_FD_K_per_alpha": -8.999990086522303e-08,
+          "classification": "diagnostic_only_text_bound_and_QC_excluded",
+          "relative_difference_vs_VJP": 0.010403829658351627
+        }
+      },
+      "forward_JVP_K_per_alpha": -9.094608847783987e-08,
+      "observed_BT_K": 241.13173086836898,
+      "observed_quality_flag": 0,
+      "reverse_VJP_K_per_alpha": -9.094608847783985e-08
+    },
+    {
+      "baseline_rad_quality": 32768,
+      "baseline_retained_mask": 0,
+      "channel_index_0_based": 9,
+      "classification": "observed_input_but_QC_excluded",
+      "epsilons": {
+        "0.03": {
+          "absolute_difference_vs_VJP": 1.0084455170803197e-08,
+          "central_FD_K_per_alpha": -4.6666646843126125e-07,
+          "classification": "diagnostic_only_text_bound_and_QC_excluded",
+          "relative_difference_vs_VJP": 0.021152460690816645
+        },
+        "0.1": {
+          "absolute_difference_vs_VJP": 3.2491161133136345e-09,
+          "central_FD_K_per_alpha": -4.800000397153781e-07,
+          "classification": "diagnostic_only_text_bound_and_QC_excluded",
+          "relative_difference_vs_VJP": 0.006815122850240379
+        }
+      },
+      "forward_JVP_K_per_alpha": -4.767509236020603e-07,
+      "observed_BT_K": 245.39440855342625,
+      "observed_quality_flag": 0,
+      "reverse_VJP_K_per_alpha": -4.7675092360206445e-07
+    },
+    {
+      "baseline_rad_quality": 32768,
+      "baseline_retained_mask": 0,
+      "channel_index_0_based": 10,
+      "classification": "observed_input_but_QC_excluded",
+      "epsilons": {
+        "0.03": {
+          "absolute_difference_vs_VJP": 1.5175663751142675e-08,
+          "central_FD_K_per_alpha": 7.833332915652136e-06,
+          "classification": "diagnostic_only_text_bound_and_QC_excluded",
+          "relative_difference_vs_VJP": 0.0019410793697520854
+        },
+        "0.1": {
+          "absolute_difference_vs_VJP": 1.1842649886239197e-08,
+          "central_FD_K_per_alpha": 7.829999901787232e-06,
+          "classification": "diagnostic_only_text_bound_and_QC_excluded",
+          "relative_difference_vs_VJP": 0.00151476230327289
+        }
+      },
+      "forward_JVP_K_per_alpha": 7.818157251901029e-06,
+      "observed_BT_K": 250.04092136316717,
+      "observed_quality_flag": 0,
+      "reverse_VJP_K_per_alpha": 7.818157251900993e-06
+    },
+    {
+      "baseline_rad_quality": 32768,
+      "baseline_retained_mask": 0,
+      "channel_index_0_based": 11,
+      "classification": "observed_input_but_QC_excluded",
+      "epsilons": {
+        "0.03": {
+          "absolute_difference_vs_VJP": 5.489413089351619e-10,
+          "central_FD_K_per_alpha": 2.9666670305535567e-06,
+          "classification": "diagnostic_only_text_bound_and_QC_excluded",
+          "relative_difference_vs_VJP": 0.00018500214144863777
+        },
+        "0.1": {
+          "absolute_difference_vs_VJP": 2.7840251864524575e-09,
+          "central_FD_K_per_alpha": 2.9699999970489444e-06,
+          "classification": "diagnostic_only_text_bound_and_QC_excluded",
+          "relative_difference_vs_VJP": 0.0009382617284528004
+        }
+      },
+      "forward_JVP_K_per_alpha": 2.967215971862512e-06,
+      "observed_BT_K": 240.7625594320713,
+      "observed_quality_flag": 0,
+      "reverse_VJP_K_per_alpha": 2.967215971862492e-06
+    },
+    {
+      "baseline_rad_quality": 32768,
+      "baseline_retained_mask": 0,
+      "channel_index_0_based": 12,
+      "classification": "observed_input_but_QC_excluded",
+      "epsilons": {
+        "0.03": {
+          "absolute_difference_vs_VJP": 4.844795492288086e-08,
+          "central_FD_K_per_alpha": 0.00041166666638522054,
+          "classification": "diagnostic_only_text_bound_and_QC_excluded",
+          "relative_difference_vs_VJP": 0.00011770119191428576
+        },
+        "0.1": {
+          "absolute_difference_vs_VJP": 7.067815262837957e-07,
+          "central_FD_K_per_alpha": 0.00041232499995658145,
+          "classification": "diagnostic_only_text_bound_and_QC_excluded",
+          "relative_difference_vs_VJP": 0.0017170802812837116
+        }
+      },
+      "forward_JVP_K_per_alpha": 0.0004116182184302976,
+      "observed_BT_K": 250.8851858648068,
+      "observed_quality_flag": 0,
+      "reverse_VJP_K_per_alpha": 0.00041161821843029765
+    },
+    {
+      "baseline_rad_quality": 32768,
+      "baseline_retained_mask": 0,
+      "channel_index_0_based": 13,
+      "classification": "observed_input_but_QC_excluded",
+      "epsilons": {
+        "0.03": {
+          "absolute_difference_vs_VJP": 5.188717292609578e-08,
+          "central_FD_K_per_alpha": 0.0002767166667657269,
+          "classification": "diagnostic_only_text_bound_and_QC_excluded",
+          "relative_difference_vs_VJP": 0.00018754527772730617
+        },
+        "0.1": {
+          "absolute_difference_vs_VJP": 4.7522038733522395e-07,
+          "central_FD_K_per_alpha": 0.00027713999998013605,
+          "classification": "diagnostic_only_text_bound_and_QC_excluded",
+          "relative_difference_vs_VJP": 0.0017176757664443595
+        }
+      },
+      "forward_JVP_K_per_alpha": 0.00027666477959280083,
+      "observed_BT_K": 252.60051398135155,
+      "observed_quality_flag": 0,
+      "reverse_VJP_K_per_alpha": 0.00027666477959280083
+    },
+    {
+      "baseline_rad_quality": 32768,
+      "baseline_retained_mask": 0,
+      "channel_index_0_based": 14,
+      "classification": "observed_input_but_QC_excluded",
+      "epsilons": {
+        "0.03": {
+          "absolute_difference_vs_VJP": 6.898379467041935e-09,
+          "central_FD_K_per_alpha": 1.1166671735433435e-06,
+          "classification": "diagnostic_only_text_bound_and_QC_excluded",
+          "relative_difference_vs_VJP": 0.0062160510404184605
+        },
+        "0.1": {
+          "absolute_difference_vs_VJP": 5.231067252822931e-09,
+          "central_FD_K_per_alpha": 1.1149998613291245e-06,
+          "classification": "diagnostic_only_text_bound_and_QC_excluded",
+          "relative_difference_vs_VJP": 0.004713655025033323
+        }
+      },
+      "forward_JVP_K_per_alpha": 1.1097687940763122e-06,
+      "observed_BT_K": 251.85079306728358,
+      "observed_quality_flag": 0,
+      "reverse_VJP_K_per_alpha": 1.1097687940763016e-06
+    },
+    {
+      "baseline_rad_quality": 32768,
+      "baseline_retained_mask": 0,
+      "channel_index_0_based": 15,
+      "classification": "observed_input_but_QC_excluded",
+      "epsilons": {
+        "0.03": {
+          "absolute_difference_vs_VJP": 7.321092488972936e-09,
+          "central_FD_K_per_alpha": 9.500003746628257e-07,
+          "classification": "diagnostic_only_text_bound_and_QC_excluded",
+          "relative_difference_vs_VJP": 0.007647475524344488
+        },
+        "0.1": {
+          "absolute_difference_vs_VJP": 2.6786122789575055e-09,
+          "central_FD_K_per_alpha": 9.600000794307562e-07,
+          "classification": "diagnostic_only_text_bound_and_QC_excluded",
+          "relative_difference_vs_VJP": 0.002798028009260936
+        }
+      },
+      "forward_JVP_K_per_alpha": 9.573214671518027e-07,
+      "observed_BT_K": 247.04841112317274,
+      "observed_quality_flag": 0,
+      "reverse_VJP_K_per_alpha": 9.573214671517987e-07
+    }
+  ],
+  "classification": {
+    "observed": "Nine collocated clean IR inputs (0-based channels 7-15) with observation quality 0; all were excluded by RTTOV radiance quality.",
+    "promotion": "diagnostic_only",
+    "text_bound": "RTTOV BT text uses E21.12; decimal quantum upper bound 1e-9 K. This bound is diagnostic-only and is not a validation gate."
+  },
+  "endpoints": [
+    {
+      "case_name": "accretion-alpha0",
+      "case_root": "graphify-out/pr224-liquid/live/actual-live-control-cases-9dc0rsrq/accretion-alpha0",
+      "f_simple_cloud": "''",
+      "label": "baseline",
+      "raw_BT_tokens_16ch": [
+        "0.000000000000E+00",
+        "0.000000000000E+00",
+        "0.000000000000E+00",
+        "0.000000000000E+00",
+        "0.000000000000E+00",
+        "0.000000000000E+00",
+        "0.278858690708E+03",
+        "0.233091143304E+03",
+        "0.240781984698E+03",
+        "0.249521428891E+03",
+        "0.265148476050E+03",
+        "0.241532667861E+03",
+        "0.266122612058E+03",
+        "0.265354209476E+03",
+        "0.264003861704E+03",
+        "0.256233594021E+03"
+      ],
+      "retained_mask_16ch": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "rttov_quality_16ch": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        32768,
+        32768,
+        32768,
+        32768,
+        32768,
+        32768,
+        32768,
+        32768,
+        32768,
+        32768
+      ],
+      "simple_cloud_file_present": false
+    },
+    {
+      "case_name": "accretion-minus-0.03",
+      "case_root": "graphify-out/pr224-liquid/live/actual-live-control-cases-9dc0rsrq/accretion-minus-0.03",
+      "f_simple_cloud": "''",
+      "label": "alpha_minus_0.03",
+      "raw_BT_tokens_16ch": [
+        "0.000000000000E+00",
+        "0.000000000000E+00",
+        "0.000000000000E+00",
+        "0.000000000000E+00",
+        "0.000000000000E+00",
+        "0.000000000000E+00",
+        "0.278858694567E+03",
+        "0.233091143304E+03",
+        "0.240781984701E+03",
+        "0.249521428905E+03",
+        "0.265148475818E+03",
+        "0.241532667773E+03",
+        "0.266122599895E+03",
+        "0.265354201300E+03",
+        "0.264003861671E+03",
+        "0.256233593993E+03"
+      ],
+      "retained_mask_16ch": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "rttov_quality_16ch": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        32768,
+        32768,
+        32768,
+        32768,
+        32768,
+        32768,
+        32768,
+        32768,
+        32768,
+        32768
+      ],
+      "simple_cloud_file_present": false
+    },
+    {
+      "case_name": "accretion-plus-0.03",
+      "case_root": "graphify-out/pr224-liquid/live/actual-live-control-cases-9dc0rsrq/accretion-plus-0.03",
+      "f_simple_cloud": "''",
+      "label": "alpha_plus_0.03",
+      "raw_BT_tokens_16ch": [
+        "0.000000000000E+00",
+        "0.000000000000E+00",
+        "0.000000000000E+00",
+        "0.000000000000E+00",
+        "0.000000000000E+00",
+        "0.000000000000E+00",
+        "0.278858686731E+03",
+        "0.233091143304E+03",
+        "0.240781984696E+03",
+        "0.249521428877E+03",
+        "0.265148476288E+03",
+        "0.241532667951E+03",
+        "0.266122624595E+03",
+        "0.265354217903E+03",
+        "0.264003861738E+03",
+        "0.256233594050E+03"
+      ],
+      "retained_mask_16ch": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "rttov_quality_16ch": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        32768,
+        32768,
+        32768,
+        32768,
+        32768,
+        32768,
+        32768,
+        32768,
+        32768,
+        32768
+      ],
+      "simple_cloud_file_present": false
+    },
+    {
+      "case_name": "accretion-minus-0.1",
+      "case_root": "graphify-out/pr224-liquid/live/actual-live-control-cases-9dc0rsrq/accretion-minus-0.1",
+      "f_simple_cloud": "''",
+      "label": "alpha_minus_0.1",
+      "raw_BT_tokens_16ch": [
+        "0.000000000000E+00",
+        "0.000000000000E+00",
+        "0.000000000000E+00",
+        "0.000000000000E+00",
+        "0.000000000000E+00",
+        "0.000000000000E+00",
+        "0.278858703128E+03",
+        "0.233091143304E+03",
+        "0.240781984707E+03",
+        "0.249521428937E+03",
+        "0.265148475306E+03",
+        "0.241532667579E+03",
+        "0.266122572907E+03",
+        "0.265354183161E+03",
+        "0.264003861598E+03",
+        "0.256233593930E+03"
+      ],
+      "retained_mask_16ch": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "rttov_quality_16ch": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        32768,
+        32768,
+        32768,
+        32768,
+        32768,
+        32768,
+        32768,
+        32768,
+        32768,
+        32768
+      ],
+      "simple_cloud_file_present": false
+    },
+    {
+      "case_name": "accretion-plus-0.1",
+      "case_root": "graphify-out/pr224-liquid/live/actual-live-control-cases-9dc0rsrq/accretion-plus-0.1",
+      "f_simple_cloud": "''",
+      "label": "alpha_plus_0.1",
+      "raw_BT_tokens_16ch": [
+        "0.000000000000E+00",
+        "0.000000000000E+00",
+        "0.000000000000E+00",
+        "0.000000000000E+00",
+        "0.000000000000E+00",
+        "0.000000000000E+00",
+        "0.278858676967E+03",
+        "0.233091143304E+03",
+        "0.240781984689E+03",
+        "0.249521428841E+03",
+        "0.265148476872E+03",
+        "0.241532668173E+03",
+        "0.266122655372E+03",
+        "0.265354238589E+03",
+        "0.264003861821E+03",
+        "0.256233594122E+03"
+      ],
+      "retained_mask_16ch": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "rttov_quality_16ch": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        32768,
+        32768,
+        32768,
+        32768,
+        32768,
+        32768,
+        32768,
+        32768,
+        32768,
+        32768
+      ],
+      "simple_cloud_file_present": false
+    }
+  ],
+  "evidence_id": "native-liquid-accretion-2026-09-19",
+  "execution_history": {
+    "completed_attempts": 5,
+    "completed_case_names": [
+      "accretion-alpha0",
+      "accretion-minus-0.03",
+      "accretion-plus-0.03",
+      "accretion-minus-0.1",
+      "accretion-plus-0.1"
+    ],
+    "completed_case_root": "graphify-out/pr224-liquid/live/actual-live-control-cases-9dc0rsrq",
+    "failed_attempts_preserved": [
+      {
+        "attempt": 1,
+        "calls": 1,
+        "case_root": "actual-live-control-cases-o1x4dx6d/accretion-alpha0",
+        "diagnostic": "rttov_check_profiles.F90:0207 cloud top pressure (ctp) must not exceed surface pressure",
+        "fixture": "simple_cloud.txt ctp=949.0 hPa"
+      },
+      {
+        "attempt": 2,
+        "calls": 1,
+        "case_root": "graphify-out/pr224-liquid/live/actual-live-control-cases-301lipps",
+        "diagnostic": "same ctp=949 hPa > native surface pressure rejection after f_simple_cloud blank; copied file still existed"
+      }
+    ],
+    "no_new_calls_after_completion": true,
+    "preflight_RTTOV_calls": 0
+  },
+  "external_data": false,
+  "local_runtime": {
+    "cwd": "/Users/yhlee/KDM6AD-audit-pr205",
+    "numpy": "2.2.6",
+    "pid": 77393,
+    "python": "3.10.11",
+    "torch": "2.13.0"
+  },
+  "pressure_hPa_top_to_bottom": {
+    "P_half_40": [
+      50.067056112960074,
+      55.590783140748606,
+      61.81554419596292,
+      68.75042511571027,
+      76.48223915565522,
+      85.10486091479751,
+      94.71041302528515,
+      105.38336460522966,
+      117.20802047556386,
+      130.29012141673445,
+      144.7865608907211,
+      160.90993145996055,
+      178.87663983603088,
+      198.86726960158921,
+      221.07399550743568,
+      245.72434002992873,
+      272.9954628601945,
+      303.0005868444867,
+      335.8497900405206,
+      371.7844486468623,
+      411.2811785928493,
+      454.7848928537137,
+      498.3903327975485,
+      541.2488117069952,
+      583.5651509260922,
+      625.1447148933672,
+      665.633687942146,
+      704.8797244656462,
+      741.7333310684754,
+      775.4972886199711,
+      806.4255034669382,
+      834.1898646215309,
+      858.0793094668907,
+      878.1957562486926,
+      895.6311449497268,
+      909.5925129687462,
+      920.5625839326713,
+      929.655502013037,
+      936.8312621586265,
+      942.4497952298235
+    ],
+    "P_layer_39": [
+      52.79400572180748,
+      58.70087072253227,
+      65.27912616729736,
+      72.61056452989578,
+      80.78761398792267,
+      89.90570902824402,
+      100.05333274841308,
+      111.31046712875366,
+      123.76618385314941,
+      137.5448554801941,
+      152.8394520187378,
+      169.88445817947388,
+      188.87610733032227,
+      209.9776268005371,
+      233.41338336467743,
+      259.41434502601624,
+      288.09788823127747,
+      319.57268714904785,
+      353.95017265319825,
+      391.6164934539795,
+      433.1485926818848,
+      476.75076126098634,
+      519.9772715759277,
+      562.2903704833984,
+      604.4489739990235,
+      645.3190444946289,
+      685.3112579345703,
+      723.4449981689453,
+      758.6340307617188,
+      790.6802294921876,
+      820.2551007080078,
+      846.1550476074219,
+      868.1146502685547,
+      886.5346313476563,
+      903.0469653320313,
+      914.8649572753907,
+      925.1074792480468,
+      933.2550170898437,
+      939.6440979003906
+    ]
+  },
+  "production_edits": false,
+  "quality_and_cost": {
+    "all_nine_IR_excluded": true,
+    "baseline_J": 0.0,
+    "baseline_mask_kept": 0,
+    "central_cost_FD": {
+      "0.03": 0.0,
+      "0.1": 0.0
+    },
+    "interpretation": "J=0 is an empty QC mask result, not cost validation.",
+    "observed_clean_IR_channels_0_based": [
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ],
+    "rttov_quality_flag": {
+      "bit": 15,
+      "meaning": "Delta-Eddington extinction limits exceeded",
+      "source": "rttov_const.F90:520; rttov_eddington_setup.F90:215-219",
+      "value": 32768
+    }
+  },
+  "scope": "native liveRTTOV wrapper for fixed candidate 35711, accretion control",
+  "source": {
+    "candidate_metadata": {
+      "path": "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/pr224-liquid/native_candidate.json",
+      "role": "native candidate metadata",
+      "sha256": "f4bfa7ea4e3e3549875ed96232461c0aa2a0fc506244282b2836b0122879301c"
+    },
+    "forecast_frame": {
+      "path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp37_abgate_1min_hist0_20260830_235602_p51635/klfs_lc05_fcst.202507190000",
+      "role": "actual KDM frame",
+      "sha256": "30ee8656cedf57cc827ad041e4ed8084d8bbf5afdbe0a21b28b33564544bca9f"
+    },
+    "observation_calibration_and_channels": {
+      "gk2a_ami_cal_202507190000.json": {
+        "path": "/Users/yhlee/KDM6AD-audit-pr205/oracle/kdm6/obs/data/gk2a_ami_cal_202507190000.json",
+        "role": "GK2A calibration",
+        "sha256": "f519149e3ea3538866bad9f3e28cc0ddef741b6b4cdbf8febb7988aff6c08d40"
+      },
+      "gk2a_ami_le1b_ir087_ko020lc_202507190000.nc": {
+        "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir087_ko020lc_202507190000.nc",
+        "role": "GK2A KO channel",
+        "sha256": "a4cec04e51982e7c0b8d4da7dd8cef3f244b692a51fa7c4a7e86b5ca16618f1e"
+      },
+      "gk2a_ami_le1b_ir096_ko020lc_202507190000.nc": {
+        "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir096_ko020lc_202507190000.nc",
+        "role": "GK2A KO channel",
+        "sha256": "e115d5e88eac27769fd43b79cdca51ea789ac4eab0cf3ea33a5622f7e7c14040"
+      },
+      "gk2a_ami_le1b_ir105_ko020lc_202507190000.nc": {
+        "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir105_ko020lc_202507190000.nc",
+        "role": "GK2A KO channel",
+        "sha256": "c50356a3614e16d12ff770820000a9e7a1657248b21b94c3a70f0db0e47947af"
+      },
+      "gk2a_ami_le1b_ir112_ko020lc_202507190000.nc": {
+        "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir112_ko020lc_202507190000.nc",
+        "role": "GK2A KO channel",
+        "sha256": "1df480537f95d25aa44236f65a52b9a8746354e6ae322ad154ecae5b84d149ca"
+      },
+      "gk2a_ami_le1b_ir123_ko020lc_202507190000.nc": {
+        "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir123_ko020lc_202507190000.nc",
+        "role": "GK2A KO channel",
+        "sha256": "74bed1daf0da6c1bfe4e2a321fc4c986e70083b76d50f6af60af9e97b366bf72"
+      },
+      "gk2a_ami_le1b_ir133_ko020lc_202507190000.nc": {
+        "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir133_ko020lc_202507190000.nc",
+        "role": "GK2A KO channel",
+        "sha256": "08729e98bcf155b9c52bcd679597799814aa967c6e250f1df00fe3d5d9adc600"
+      },
+      "gk2a_ami_le1b_wv063_ko020lc_202507190000.nc": {
+        "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_wv063_ko020lc_202507190000.nc",
+        "role": "GK2A KO channel",
+        "sha256": "ecd9d3ae1c899b3bef20a870f01393631365a694b802cd78dd2708130451e1d3"
+      },
+      "gk2a_ami_le1b_wv069_ko020lc_202507190000.nc": {
+        "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_wv069_ko020lc_202507190000.nc",
+        "role": "GK2A KO channel",
+        "sha256": "8bf7f25a5f8e5ecad17d8433bc835819c6a8ab5db06f7305e8d61139ec613cfb"
+      },
+      "gk2a_ami_le1b_wv073_ko020lc_202507190000.nc": {
+        "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_wv073_ko020lc_202507190000.nc",
+        "role": "GK2A KO channel",
+        "sha256": "37095ec9805eafa4d928e7e77c6906a1557d61d22c90c965fd758d07862f404c"
+      }
+    },
+    "offline_gate": {
+      "path": "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/pr224-liquid/first_passing_ad_fd.json",
+      "role": "offline accretion gate",
+      "sha256": "78d253a6dfdc6fc19d87799558a39d82ad2967b44d80fd9d961b8849a6551487"
+    },
+    "retained_runner": {
+      "evidence_level": "implementation",
+      "exists": true,
+      "path": "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/goal-completion-20260919/process/actual_live_control/run_actual_live_control.py",
+      "role": "reproduction script",
+      "sha256": "249aaa27c8fa6ed046383508ce3abf3a8badd7afb222dc0ab3e9b07d62f49eac",
+      "size_bytes": 27355
+    },
+    "rttov_executable": {
+      "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+      "role": "RTTOV executable",
+      "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+    },
+    "source_selection": {
+      "path": "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/pr224-liquid/selection_result_fallback_t001.json",
+      "role": "candidate selection record",
+      "sha256": "041d0676bafdb3d88a25bdde61b3a649ddf4a85739a8f51dd3b67c0e67cc82ed"
+    },
+    "valid_time_utc": "2025-07-19_00:00:20",
+    "wrapper": {
+      "path": "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/pr224-liquid/live/run_native_accretion_live.py",
+      "role": "candidate-local wrapper",
+      "sha256": "b3ebd9a041361ae75d07bd1651a38cf5747889b46150fb8dc13e9e2ddeb64724"
+    }
+  },
+  "status": "diagnostic_only_qc_excluded_no_cost_validation",
+  "surface": {
+    "actual_fields": [
+      "skin.t",
+      "near_surface.t2m",
+      "near_surface.q2m",
+      "near_surface.wind_u10m",
+      "near_surface.wind_v10m"
+    ],
+    "fixture_assumption": "cloud fixture salinity/foam/snow/fastem and wind_fetch are retained because the pinned model frame does not provide emissivity auxiliaries; they are not claimed as actual land emissivity observations",
+    "fixture_fastem_used_for_land_ir": false,
+    "land_IR_emissivity": "fixed 0.98 assumption for surftype_land; ir_sea_emis_model bypassed",
+    "q2_conversion": "actual Q2 dry kg/kg -> q2m ppmv moist via qv_to_q_ppmv_moist",
+    "surftype": 0,
+    "watertype": 0,
+    "xland": 1.0
+  }
+}
