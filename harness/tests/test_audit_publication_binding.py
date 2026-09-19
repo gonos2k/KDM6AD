@@ -27,8 +27,13 @@ def _sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def _deep_json_array(depth=2000) -> str:
-    return "[" * depth + "0" + "]" * depth
+def _deep_json_array(depth=10000) -> str:
+    # Python 3.12's C decoder accepts the former 2000-level input. These tests
+    # exercise RecursionError translation, not a fixed application depth limit.
+    payload = "[" * depth + "0" + "]" * depth
+    with pytest.raises(RecursionError):
+        json.loads(payload)
+    return payload
 
 
 def _rewrite_surface_payload(path: Path) -> None:
