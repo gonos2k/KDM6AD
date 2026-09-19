@@ -46,3 +46,11 @@ Local artifacts are `graphify-out/pr221-view/derive_view.py`, `view_geometry.jso
 Live JSON SHA256: `2974a251dd2ce295e578f01323e730323fdf37536b0ad946a1157f02caf8cdc5`.
 
 Exact pixel-time navigation, upper/bottom-boundary sensitivity, representative processes/columns, particle-number unit reconciliation, nonzero applied transport and timestep convergence remain open. This experiment reduces the arbitrary 45/0 view assumption using recorded spacecraft metadata, but does not close those broader items.
+
+## Subsequent precision audit
+
+The [retained-output audit](REPORT_anchor_precision_2026-09-19.md) publishes the
+anchor inputs and BT endpoint strings. Observed 5% agreement above is preserved,
+but riming/WV073 at epsilon .03 does not satisfy the stronger text-rounding-aware
+5% sufficient condition. Epsilon .1 does. This distinction does not imply an AD
+error or a total-error bound.
