@@ -74,6 +74,9 @@ class ProcessAttribution:
     controlled_rates: dict[str, float]
     rate_fd: dict[str, float]
     rate_ad: dict[str, float]
+    rate_fd_ulp_bound: dict[str, float]
+    rate_output_resolution_fields: tuple[str, ...]
+    rate_field_status: dict[str, str]
     state_effect: dict[str, float]
     state_fd: dict[str, float]
     state_ad: dict[str, float]
@@ -259,6 +262,10 @@ def attribute_process(
                             (2.0 * epsilon)).item())
                for name in PROCESS_RATE_FIELDS[process]
                if name in plus_rates and name in minus_rates}
+    rate_fd_ulp_bound = {
+        name: _fd_ulp_bound(plus_rates[name], minus_rates[name], epsilon)
+        for name in PROCESS_RATE_FIELDS[process]
+    }
     # At alpha=0, each controlled rate is R exp(alpha) before any shared cap;
     # after a cap the coordinator graph is the source of truth.  A dedicated
     # autograd evaluation with the actual alpha leaf gives the selected rate VJP.
@@ -312,6 +319,11 @@ def attribute_process(
         name for name in checked_state_fields
         if 0.0 < max(abs(state_fd[name]), abs(state_ad[name]))
         <= state_fd_ulp_bound[name]
+    )
+    rate_output_resolution_fields = tuple(
+        name for name in PROCESS_RATE_FIELDS[process]
+        if 0.0 < max(abs(rate_fd[name]), abs(rate_ad[name]))
+        <= rate_fd_ulp_bound[name]
     )
     state_effect = _state_abs_delta(controlled, baseline)
     baseline_rate_values = _rate_values(base_rates)
@@ -369,30 +381,39 @@ def attribute_process(
     # structural independence.  For nonzero fields, nonfinite products and a
     # changed recorded topology take precedence over numerical agreement, so a
     # matched FD cannot be called resolved across a branch switch.
+    def field_status(fd: float, ad: float, name: str,
+                     resolution_fields: tuple[str, ...], tolerance: float) -> str:
+        if not finite_outputs:
+            return "nonfinite_unresolved"
+        if not alpha0_primal_equal:
+            return "alpha0_primal_mismatch"
+        if fd == 0.0 and ad == 0.0:
+            return "zero_response"
+        if not tapped_topology_fixed:
+            return "topology_unresolved"
+        if name in resolution_fields:
+            return "output_resolution_unresolved"
+        scale = max(abs(fd), abs(ad))
+        return ("resolved_nonzero" if abs(fd - ad) / scale <= tolerance
+                else "derivative_mismatch_unresolved")
+
     state_field_status = {}
     for name in checked_state_fields:
         fd, ad = state_fd[name], state_ad[name]
-        if not finite_outputs:
-            state_field_status[name] = "nonfinite_unresolved"
-        elif not alpha0_primal_equal:
-            state_field_status[name] = "alpha0_primal_mismatch"
-        elif fd == 0.0 and ad == 0.0:
-            state_field_status[name] = "zero_response"
-        elif not tapped_topology_fixed:
-            state_field_status[name] = "topology_unresolved"
-        elif name in output_resolution_fields:
-            state_field_status[name] = "output_resolution_unresolved"
-        else:
-            scale = max(abs(fd), abs(ad))
-            state_field_status[name] = (
-                "resolved_nonzero" if abs(fd - ad) / scale <= 1.0e-4
-                else "derivative_mismatch_unresolved")
+        state_field_status[name] = field_status(
+            fd, ad, name, output_resolution_fields, 1.0e-4)
+    rate_field_status = {}
+    for name in PROCESS_RATE_FIELDS[process]:
+        fd, ad = rate_fd[name], rate_ad[name]
+        rate_field_status[name] = field_status(
+            fd, ad, name, rate_output_resolution_fields, 1.0e-6)
     derivative_ok = rate_error <= 1.0e-6 and state_error <= 1.0e-4
     if not finite_outputs:
         status = "nonfinite_unresolved"
     elif not alpha0_primal_equal:
         status = "alpha0_primal_mismatch"
-    elif active and nonzero_effect and output_resolution_fields:
+    elif active and nonzero_effect and (
+            output_resolution_fields or rate_output_resolution_fields):
         status = "unresolved_output_resolution"
     elif active and nonzero_effect and tapped_topology_fixed and derivative_ok:
         status = "verified_selected_direction"
@@ -403,7 +424,8 @@ def attribute_process(
         "nonfinite process rate, state, or derivative product" if not finite_outputs else
         "value-only and graph alpha=0 primals differ for state or applied rate" if not alpha0_primal_equal else
         "rate group inactive in this fixture" if not active else
-        "FD signal is at or below the per-field output-ULP bound" if output_resolution_fields else
+        "FD signal is at or below the per-field output-ULP bound" if (
+            output_resolution_fields or rate_output_resolution_fields) else
         "active intervention has unresolved derivative mismatch or topology; cause not established")
 
     return ProcessAttribution(
@@ -413,6 +435,9 @@ def attribute_process(
         controlled_rates=_rate_values(controlled_rates), rate_fd=rate_fd,
         rate_ad=rate_ad, state_effect=state_effect, state_fd=state_fd,
         state_ad=state_ad,
+        rate_fd_ulp_bound=rate_fd_ulp_bound,
+        rate_output_resolution_fields=rate_output_resolution_fields,
+        rate_field_status=rate_field_status,
         water_effect=controlled_water - base_water, water_fd=water_fd,
         water_ad=water_ad, temperature_effect=controlled_temp - base_temp,
         temperature_fd=temperature_fd, temperature_ad=temperature_ad,

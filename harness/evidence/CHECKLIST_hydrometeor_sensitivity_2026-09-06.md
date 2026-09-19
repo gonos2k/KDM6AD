@@ -586,3 +586,12 @@ primal equality, asymmetric channelwise melt sensitivities, and the selected
 freeze CCN-return discrepancy. Previously closed checks remain closed. Actual
 auxiliaries, physical number units, nonzero M1 transport and sensitivity
 convergence retain their existing open evidence requirements.
+
+## PR #217 follow-up — rate resolution
+
+The [ordered rate-resolution checklist](CHECKLIST_pr217_review_2026-09-19.md)
+records consumer-level rejection of one-spacing nonzero rate responses,
+unchanged existing 18-case products/classifications, report propagation and
+the selected post-evaporation zero-NC/nonzero-CCN sensitivity transfer.
+Representative applied-process coverage and physical-unit/actual-input gates
+remain open.

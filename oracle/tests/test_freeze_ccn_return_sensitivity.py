@@ -43,7 +43,8 @@ def test_freeze_ccn_return_boundary_and_epsilon_sweep(monkeypatch):
             assert torch.equal(nc_out, torch.zeros_like(nc_out))
             assert torch.equal(nccn_out, nccn_in + nc_in)
             assert torch.equal(out.nccn, nccn_out)
-            values = torch.stack((nc_in.sum(), nccn_in.sum(), nccn_out.sum()))
+            values = torch.stack((nc_in.sum(), nccn_in.sum(), nccn_out.sum(),
+                                  nc_out.sum()))
             gradients = None
             if graph:
                 gradients = [pa._metric_grad(v, alpha) for v in values]
@@ -55,6 +56,9 @@ def test_freeze_ccn_return_boundary_and_epsilon_sweep(monkeypatch):
     primal, baseline_trace, derivatives = run(alpha, True)
     assert derivatives[1] == 0.0
     assert derivatives[0] == derivatives[2] != 0.0
+    # Complete evaporation erases the final NC response but transfers its
+    # nonzero sensitivity to CCN; zero NC is not process independence.
+    assert derivatives[3] == 0.0
     zero, _, _ = run(0.0)
     assert torch.equal(primal, zero)
     with torch.autograd.forward_ad.dual_level():
