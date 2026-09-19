@@ -361,6 +361,17 @@ def test_native_40_39_explicit_full_pressure_is_authoritative(tmp_path):
     _check_grid_matches_fixture(profile_dir, p_half, p_full)
 
 
+@pytest.mark.parametrize("field", ["P", "P_HALF"])
+def test_explicit_grid_rejects_one_ulp_witness_drift(tmp_path, field):
+    p_half = np.array([50.0, 100.0, 200.0])
+    p_full = np.array([70.0, 130.0])
+    profile_dir = _write_pressure_profile(tmp_path, p_half, p_full).parent
+    drift = p_full if field == "P" else p_half
+    drift[-1] = np.nextafter(drift[-1], np.inf)
+    with pytest.raises(ValueError, match="does not match"):
+        _check_grid_matches_fixture(profile_dir, p_half, p_full)
+
+
 @pytest.mark.parametrize("bad_kind", ["nonfinite", "wrong_length", "not_interleaved"])
 def test_native_explicit_full_pressure_rejects_invalid_grid(tmp_path, bad_kind):
     """Malformed native P is rejected before it can become a grid witness."""
@@ -387,16 +398,19 @@ def test_grid_check_rejects_malformed_explicit_pressure_without_p_witness(tmp_pa
         _check_grid_matches_fixture(profile_dir, p_half)
 
 
-def test_legacy_fixture_without_explicit_full_pressure_keeps_midpoint_policy(tmp_path):
-    """A profile without p.txt remains on the historical midpoint-derived grid."""
-    p_half = np.linspace(0.0, 950.0, 40)
-    _write_pressure_profile(tmp_path, p_half)
-    expected = np.where(
-        p_half[:-1] <= 0.0,
-        0.5 * (p_half[:-1] + p_half[1:]),
-        np.sqrt(p_half[:-1] * p_half[1:]),
-    )
-    np.testing.assert_allclose(fixture_layer_pressure(tmp_path), expected)
+@pytest.mark.parametrize("p_half, expected", [
+    ([100.0, 200.0, 400.0], [150.0, 300.0]),
+    ([0.0, 100.0, 200.0], [50.0000000000005, 150.0]),
+])
+def test_missing_full_pressure_matches_rttov_arithmetic_default(tmp_path, p_half, expected):
+    """Independent fixed expectations match the consumer's no-P convention."""
+    profile_dir = _write_pressure_profile(tmp_path, p_half).parent
+    np.testing.assert_array_equal(fixture_layer_pressure(tmp_path), expected)
+    _check_grid_matches_fixture(profile_dir, p_half, expected)
+    # Former geometric grid must not qualify as the consumer's coordinates.
+    old = np.sqrt(np.asarray(p_half[:-1]) * p_half[1:])
+    with pytest.raises(ValueError, match="canonical layer"):
+        _check_grid_matches_fixture(profile_dir, p_half, old)
 
 
 @needs_fixture
