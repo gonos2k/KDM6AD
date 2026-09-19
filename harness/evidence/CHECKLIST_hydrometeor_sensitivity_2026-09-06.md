@@ -736,3 +736,15 @@ historical comparisons, not native-level validation completion.
   timestep convergence, upper/gas assumptions and exact pixel timing remain open.
 
 See CHECKLIST_pr223_followup_2026-09-19.md and its three linked reports.
+
+### PR224 follow-up — extinction definition and blocked layer measurement
+
+- [x] Correct the public nine-channel JVP/VJP report exponent to 5.4210e-20.
+- [x] Trace retained cloud input units, diameter conversion and installed
+  pre-delta extinction cap (20 km^-1), separately from optical-depth cap 30.
+- [ ] Measure exact channel/layer/combination cap masks and component causes.
+  Retained outputs omit them; isolated diagnostic executable linking failed.
+  Zero new diagnostic runs; no QC/solver/input changes or license acceptance.
+
+See CHECKLIST_pr224_followup_2026-09-20.md. The existing QC-excluded result
+and all broader physical-unit/transport/convergence limitations remain open.

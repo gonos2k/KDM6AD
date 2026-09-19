@@ -1,0 +1,154 @@
+{
+  "scope": "Installed RTTOV source contract and isolated build feasibility; no layer-cap measurement",
+  "column": 35711,
+  "original_endpoint_count": 5,
+  "diagnostic_run_count": 0,
+  "status": "layer_measurement_blocked_by_isolated_link",
+  "source_hashes": {
+    "rttov_eddington_setup.F90": "2ad4c3b56be35ef71378c51f72f544e00fcfed5dd01d10a27e96f9694e4aabaf",
+    "rttov_eddington_setup_tl.F90": "6d5aaa0fb3d06dd3029f83974daeabb69309b01f9386d36aeb9bff839c27bc23",
+    "rttov_eddington_setup_ad.F90": "b6bfd747964e81b05cd98d8562ec94f063b51038cadac0158abf9b9d0c4b0a79",
+    "rttov_iniedd.F90": "07f53d00fc1b394c55cd033082512c013479cee0fbac3e8460d7886e2e34b0e9",
+    "rttov_types.F90": "e461c9c90efdc5e43c0a3cb9de622a9807b34c55059453394e3a10fc3b2651be",
+    "rttov_const.F90": "53c1cc5e5f04eb4e4117d7deefc5a16095cf8fd2b92e49111aee8b8c1f046d55",
+    "rttov_populate_profiles_internal.F90": "f3e31f30c9822e23e48469a16da7526ed8e3f642ef10a6582ba19e980861d895",
+    "test/rttov_test.F90": "308d65c4ff85f0bcf70711d7fbe1a0ae05ac0be393bce466b0758b8667115b20"
+  },
+  "cap_contract": {
+    "quantity": "pre-delta-scaling extinction coefficient",
+    "unit": "km^-1",
+    "maximum": 20,
+    "predicate": "strict greater than",
+    "indices": [
+      "hydrometeor combination (0 is clear)",
+      "user layer",
+      "channel"
+    ],
+    "quality_reduction": "ANY over combination and layer",
+    "separate_later_optical_depth_maximum": 30,
+    "ad_tl_behavior": "extinction tangent/adjoint contribution zero above cap; not whole BT derivative"
+  },
+  "measurement": {
+    "pre_cap_values": null,
+    "cap_active_sets": null,
+    "five_endpoint_sets_equal": null,
+    "dominant_component": null,
+    "overlap_with_accretion_tangent": null
+  },
+  "build": {
+    "original_source_changed": false,
+    "installed_binary_changed": false,
+    "original_inputs_changed": false,
+    "object_probe": "gfortran15 assembly plus llvm-mc22 Mach-O arm64 object succeeded",
+    "link": "LLVM15 Darwin link failed on SDK/system symbols; SDK12.3 incomplete; SDK26.5 incompatible with this link path",
+    "license_accepted": false,
+    "logs": {
+      "relink-netcdf-m.stderr.log": {
+        "sha256": "3bdb4a2c2037b4b0cab0d1ba5e0de5eb1a8d04d46ef3dbc77609970a92e40a6b",
+        "excerpt": [
+          "lld: error: /Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk/usr/lib/libSystem.tbd(/usr/lib/libSystem.B.dylib) is incompatible with arm64 (macOS)",
+          "lld: warning: Option `-no_compact_unwind' is undocumented. Should lld implement it?",
+          "lld: error: undefined symbol: _free",
+          ">>> referenced by /Users/yhlee/AD-RTTOV/external/rttov14/src/obj/rttov_test.o:(symbol _read_hydro_frac_data.5+0x334)",
+          ">>> referenced by /Users/yhlee/AD-RTTOV/external/rttov14/src/obj/rttov_test.o:(symbol _read_hydro_frac_data.5+0x2c0)",
+          ">>> referenced by /Users/yhlee/AD-RTTOV/external/rttov14/src/obj/rttov_test.o:(symbol _read_hydro_frac_data.5+0x28c)",
+          ">>> referenced 4165 more times",
+          "",
+          "lld: error: undefined symbol: _memset"
+        ]
+      },
+      "relink-sdk12.stderr.log": {
+        "sha256": "7eb40adca6beaabc13f0926452348ef6af6f8247c90470dce3669f193f1ef312",
+        "excerpt": [
+          "lld: warning: directory not found for option -L/Library/Developer/CommandLineTools/SDKs/MacOSX12.3.sdk/usr/lib",
+          "lld: warning: /Users/yhlee/AD-RTTOV/external/rttov14/src/obj/rttov_test.o has version 26.0.0, which is newer than target minimum of 12.3",
+          "lld: warning: /Users/yhlee/AD-RTTOV/external/rttov14/src/lib/librttov14_test.a(rttov_lun.o) has version 26.0.0, which is newer than target minimum of 12.3",
+          "lld: warning: /Users/yhlee/AD-RTTOV/external/rttov14/src/lib/librttov14_test.a(rttov_test_copy_mod.o) has version 26.0.0, which is newer than target minimum of 12.3",
+          "lld: warning: /Users/yhlee/AD-RTTOV/external/rttov14/src/lib/librttov14_test.a(rttov_test_make_inc_mod.o) has version 26.0.0, which is newer than target minimum of 12.3",
+          "lld: warning: /Users/yhlee/AD-RTTOV/external/rttov14/src/lib/librttov14_test.a(rttov_test_mod.o) has version 26.0.0, which is newer than target minimum of 12.3",
+          "lld: warning: /Users/yhlee/AD-RTTOV/external/rttov14/src/lib/librttov14_test.a(rttov_chain.o) has version 26.0.0, which is newer than target minimum of 12.3",
+          "lld: warning: /Users/yhlee/AD-RTTOV/external/rttov14/src/lib/librttov14_test.a(rttov_test_scale_inc_mod.o) has version 26.0.0, which is newer than target minimum of 12.3",
+          "lld: warning: /Users/yhlee/AD-RTTOV/external/rttov14/src/lib/librttov14_test.a(rttov_k_ad.o) has version 26.0.0, which is newer than target minimum of 12.3"
+        ]
+      }
+    }
+  },
+  "input_file_audit": {
+    "scope": "retained files and inspected producer/Fortran reader source; no fresh internal-array dump",
+    "global_ranges": {
+      "hydro6_content_g_m3": {
+        "max": 0.19329763710725986,
+        "min": 0.0
+      },
+      "hydro7_content_g_m3": {
+        "max": 0.06374844667780123,
+        "min": 0.0
+      },
+      "hydro_deff6_um": {
+        "max": 11.301987176821353,
+        "min": 5.0200000000000005
+      },
+      "hydro_deff7_um": {
+        "max": 120.0,
+        "min": 10.0
+      },
+      "hydro_frac": {
+        "max": 0.999999,
+        "min": 0.0
+      },
+      "p_half_hpa": {
+        "max": 942.4497952298235,
+        "min": 50.067056112960074
+      },
+      "p_hpa": {
+        "max": 939.6440979003906,
+        "min": 52.79400572180748
+      },
+      "q_ppmv_moist": {
+        "max": 22849.212323298027,
+        "min": 1.5874689437838467
+      },
+      "t_k": {
+        "max": 291.6065692237815,
+        "min": 208.82749575509484
+      }
+    },
+    "source_hashes": {
+      "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/test/rttov_test.F90": {
+        "sha256": "308d65c4ff85f0bcf70711d7fbe1a0ae05ac0be393bce466b0758b8667115b20",
+        "source_lines": "L1668-L1696,L1892-L1936,L2035-L2118"
+      },
+      "oracle/kdm6/obs/model_profile_builder.py": {
+        "sha256": "7056191de133c5033e3852896ece43865a5f50382d94ccf4f1eb6564d228e451",
+        "source_lines": "294-344"
+      },
+      "oracle/kdm6/obs/rttov_case_writer.py": {
+        "sha256": "ff4652a1fe45e8395622d5c86dfe6792663c5a64b1d955fd9d11a9806357877d",
+        "source_lines": "34-45,152-223"
+      },
+      "oracle/kdm6/obs/rttov_input_builder.py": {
+        "sha256": "902e1554eb6e4f699d74cc770059daad847b3b35ad0dd9516d02cae35ad280a6",
+        "source_lines": "10-14,133-138,228-237"
+      },
+      "oracle/kdm6/obs/rttov_runner.py": {
+        "sha256": "100e39c6f56ab5e1ccadb59f6b439ebd20255d139b5d9965063bf0ed393fa441",
+        "source_lines": "243-311"
+      },
+      "oracle/kdm6/rttov_bridge.py": {
+        "sha256": "adf4d46749372c3282abecb7f43537af03e88711e3582b561bfa933e3e7bde0e",
+        "source_lines": "80-99,212-235"
+      }
+    },
+    "mapping": {
+      "liquid": "1000*rho_d*qc, g m^-3, slot6",
+      "ice": "1000*rho_d*(qi+qs), g m^-3, slot7",
+      "size": "effective diameter in micrometres; 2*effective radius then declared clamps; ice uses content-weighted radius",
+      "units_setting": "mmr_hydro=F",
+      "changing_files": [
+        "hydro.txt",
+        "hydro_deff.txt"
+      ],
+      "fixed_input_scope": "other retained profile inputs unchanged across five endpoints; not a complete physical number-unit proof"
+    }
+  }
+}
