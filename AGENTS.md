@@ -48,6 +48,13 @@ Forecast skill and unattended host cycling are separate objectives, not completi
 gates for this validation task. Keep first-order RTTOV K validation separate from
 unverified higher-order derivatives or parameter identifiability claims.
 
+Use the current 5 km model's native horizontal columns and vertical levels for
+this validation. Do not acquire or substitute external model/reanalysis data.
+Preserve native layer/interface pressures and model T/Q/hydrometeors through the
+observation interface; fixture-grid remapping is historical comparison evidence,
+not completion of native-model-level validation. Declare any RTTOV-internal
+background or model-top assumption separately from actual model data.
+
 ## Structure
 
 ```text

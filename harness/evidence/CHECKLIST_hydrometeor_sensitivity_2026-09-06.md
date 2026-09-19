@@ -608,3 +608,31 @@ unchanged existing 18-case products/classifications, report propagation and
 the selected post-evaporation zero-NC/nonzero-CCN sensitivity transfer.
 Representative applied-process coverage and physical-unit/actual-input gates
 remain open.
+
+## Native 5 km model-level requirement (2026-09-19)
+
+User clarification: use the current model, without external model/reanalysis
+inputs. Native horizontal columns and vertical levels define the calculation.
+Earlier fixture-grid and bottom-only PSFC substitution results are bounded
+historical comparisons, not native-level validation completion.
+
+- [x] Pin selected column45577's 39 native fp64 P+PB centres and 40 interfaces
+  replayed from the host P8W formula. These interleave without midpoint replacement;
+  stored P_HYD is a separate fp32 cross-check, not the fp64 forcing coordinate.
+- [x] Pass native T/Q/hydrometeors and explicit P/P_HALF through the input/writer
+  boundary. The writer honors p.txt as the actual RTTOV driver does; native target
+  equals model source, and reference upper T/Q blending is disabled.
+- [x] Identify model-top/gas treatment from the installed RTTOV: positive native
+  top is accepted, upper interpolation is internal, and disabled external gas-file
+  inputs use coefficient backgrounds. This is a declared operator assumption,
+  not verification of actual atmosphere above the model top or measured gases.
+- [x] Selected native-level first-order validation: ten live calls, two controls
+  and two epsilons; seven fixed jointly usable IR channels. WV063/WV069 retain
+  bit15 quality failure, with no QC relaxation. Maximum AD/FD relative differences
+  0.5263% deposition / 0.2314% riming; JVP/VJP agree. See
+  [native-model report](REPORT_native_model_levels_2026-09-19.md).
+- [ ] Broader representative native model columns/processes and actual satellite
+  view-angle provenance remain separate from this selected directional result.
+- [ ] Resolve host/kernel number units and measure nonzero applied transport on
+  this model. Historical recovered-flux proxies and zero M1 capture do not close
+  this requirement; source-matched instrumented executable remains unavailable.
