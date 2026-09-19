@@ -90,6 +90,11 @@ class ProcessAttribution:
     checked_state_fields: tuple[str, ...]
     unchecked_state_fields: tuple[str, ...]
     state_field_status: dict[str, str]
+    alpha0_state_primal_equal: bool
+    alpha0_rate_primal_equal: bool
+    alpha0_primal_equal: bool
+    alpha0_state_primal_delta: dict[str, float]
+    alpha0_rate_primal_delta: dict[str, float]
     numerical_domain: str
     active: bool
     finite_outputs: bool
@@ -172,13 +177,20 @@ def _state_abs_delta(a: State, b: State) -> dict[str, float]:
             for name in State._fields}
 
 
+def _rates_abs_delta(
+    a: dict[str, torch.Tensor], b: dict[str, torch.Tensor]
+) -> dict[str, float]:
+    return {name: float((a[name] - b[name]).detach().abs().max().item())
+            for name in a}
+
+
 def _state_sum_ad(out: State, alpha: torch.Tensor) -> dict[str, float]:
     return {name: _metric_grad(getattr(out, name).sum(), alpha)
             for name in State._fields}
 
 
 def _fd_ulp_bound(plus: torch.Tensor, minus: torch.Tensor, epsilon: float) -> float:
-    """Conservative output-roundoff scale for (plus-minus)/(2 epsilon)."""
+    """Final-output spacing scale for (plus-minus)/(2 epsilon)."""
     inf = torch.full_like(plus, float("inf"))
     plus_ulp = (torch.nextafter(plus, inf) - plus).abs()
     minus_ulp = (torch.nextafter(minus, inf) - minus).abs()
@@ -225,6 +237,11 @@ def attribute_process(
     minus, minus_trace, minus_handle = _run(
         state, forcing, process, -epsilon, dt=dt, graph=False)
     minus_handle.close()
+    # Keep a same-control alpha=0 value-only primal for an exact comparison
+    # against the graph evaluation below; controls=None is a separate baseline.
+    value_alpha0, value_alpha0_trace, value_alpha0_handle = _run(
+        state, forcing, process, 0.0, dt=dt, graph=False)
+    value_alpha0_handle.close()
 
     # A separate graph evaluation supplies reverse-AD alpha derivatives.  This is a derivative
     # of the admissible control, not of an independently altered rate field.
@@ -237,6 +254,7 @@ def attribute_process(
     controlled_rates = _stage_rates(controlled_trace, process)
     plus_rates = _stage_rates(plus_trace, process)
     minus_rates = _stage_rates(minus_trace, process)
+    value_alpha0_rates = _stage_rates(value_alpha0_trace, process)
     rate_fd = {name: float(((plus_rates[name] - minus_rates[name]).sum() /
                             (2.0 * epsilon)).item())
                for name in PROCESS_RATE_FIELDS[process]
@@ -275,26 +293,38 @@ def attribute_process(
         name: _fd_ulp_bound(getattr(plus, name), getattr(minus, name), epsilon)
         for name in State._fields
     }
+    alpha0_state_primal_delta = _state_abs_delta(value_alpha0, graph_out)
+    alpha0_rate_primal_delta = _rates_abs_delta(value_alpha0_rates, ad_rates)
+    alpha0_state_primal_equal = all(
+        torch.equal(getattr(value_alpha0, name), getattr(graph_out, name))
+        for name in State._fields
+    )
+    alpha0_rate_primal_equal = all(
+        torch.equal(value_alpha0_rates[name], ad_rates[name])
+        for name in value_alpha0_rates
+    )
+    alpha0_primal_equal = alpha0_state_primal_equal and alpha0_rate_primal_equal
     checked_state_fields = tuple(PROCESS_STATE_FIELDS[process])
     unchecked_state_fields = tuple(
         name for name in State._fields if name not in checked_state_fields
     )
     output_resolution_fields = tuple(
         name for name in checked_state_fields
-        if max(abs(state_fd[name]), abs(state_ad[name])) <= state_fd_ulp_bound[name]
-        and state_fd[name] != state_ad[name]
+        if 0.0 < max(abs(state_fd[name]), abs(state_ad[name]))
+        <= state_fd_ulp_bound[name]
     )
     state_effect = _state_abs_delta(controlled, baseline)
     baseline_rate_values = _rate_values(base_rates)
     finite_outputs = all(math.isfinite(value) for value in baseline_rate_values.values())
     finite_outputs = finite_outputs and all(
         bool(torch.isfinite(value).all())
-        for rates in (base_rates, controlled_rates, plus_rates, minus_rates, ad_rates)
+        for rates in (base_rates, controlled_rates, plus_rates, minus_rates,
+                      value_alpha0_rates, ad_rates)
         for value in rates.values()
     )
     finite_outputs = finite_outputs and all(
         bool(torch.isfinite(getattr(output, name)).all())
-        for output in (baseline, controlled, plus, minus, graph_out)
+        for output in (baseline, controlled, plus, minus, value_alpha0, graph_out)
         for name in State._fields
     )
     finite_outputs = finite_outputs and all(
@@ -333,7 +363,7 @@ def attribute_process(
         return True
 
     tapped_topology_fixed = same_topology(
-        base_trace, plus_trace, minus_trace, graph_trace)
+        base_trace, plus_trace, minus_trace, value_alpha0_trace, graph_trace)
     # Keep field-level evidence separate from the aggregate status.  An exact
     # zero here is a response of this selected fixture/gate; it does not prove
     # structural independence.  For nonzero fields, nonfinite products and a
@@ -344,6 +374,8 @@ def attribute_process(
         fd, ad = state_fd[name], state_ad[name]
         if not finite_outputs:
             state_field_status[name] = "nonfinite_unresolved"
+        elif not alpha0_primal_equal:
+            state_field_status[name] = "alpha0_primal_mismatch"
         elif fd == 0.0 and ad == 0.0:
             state_field_status[name] = "zero_response"
         elif not tapped_topology_fixed:
@@ -358,6 +390,8 @@ def attribute_process(
     derivative_ok = rate_error <= 1.0e-6 and state_error <= 1.0e-4
     if not finite_outputs:
         status = "nonfinite_unresolved"
+    elif not alpha0_primal_equal:
+        status = "alpha0_primal_mismatch"
     elif active and nonzero_effect and output_resolution_fields:
         status = "unresolved_output_resolution"
     elif active and nonzero_effect and tapped_topology_fixed and derivative_ok:
@@ -367,6 +401,7 @@ def attribute_process(
         "zero_inactive_or_unresolved" if not active else "partial_topology_or_zero_effect")
     reason = None if status == "verified_selected_direction" else (
         "nonfinite process rate, state, or derivative product" if not finite_outputs else
+        "value-only and graph alpha=0 primals differ for state or applied rate" if not alpha0_primal_equal else
         "rate group inactive in this fixture" if not active else
         "FD signal is at or below the per-field output-ULP bound" if output_resolution_fields else
         "active intervention has unresolved derivative mismatch or topology; cause not established")
@@ -388,6 +423,11 @@ def attribute_process(
         checked_state_fields=checked_state_fields,
         unchecked_state_fields=unchecked_state_fields,
         state_field_status=state_field_status,
+        alpha0_state_primal_equal=alpha0_state_primal_equal,
+        alpha0_rate_primal_equal=alpha0_rate_primal_equal,
+        alpha0_primal_equal=alpha0_primal_equal,
+        alpha0_state_primal_delta=alpha0_state_primal_delta,
+        alpha0_rate_primal_delta=alpha0_rate_primal_delta,
         numerical_domain=("singleton BxK; alpha central FD at fixed exact tapped "
                           "masks/subcycles; per-field selected-state checks"),
         active=active, finite_outputs=finite_outputs,
