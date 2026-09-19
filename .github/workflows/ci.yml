@@ -31,6 +31,11 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Superseded PR runs have no remaining merge evidence value. Keep every main run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   # Which paths actually feed the port. This was the `paths:` filter above;
   # as a job it can decide the same thing WITHOUT preventing the required
@@ -222,7 +227,7 @@ jobs:
       - name: oracle↔C++ parity regression bounds (test_cpp_parity + conservative-interface)
         run: |
           # pinned to the last green combo (torch 2.8.0 is already installed above)
-          pip install "numpy==2.4.6" "pytest==9.1.1"
+          pip install "pytest==9.1.1"
           # log them too — the "Record toolchain versions" step above runs before this install
           python -c 'import numpy, pytest; print("numpy", numpy.__version__, "| pytest", pytest.__version__)'
           # test_cpp_conservative_interface_parity drives the dump_conservative_interface

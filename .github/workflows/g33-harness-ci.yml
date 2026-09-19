@@ -25,6 +25,11 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Superseded PR runs have no remaining merge evidence value. Keep every main run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   g33-harness:
     name: g33 harness (op-provenance regression)
