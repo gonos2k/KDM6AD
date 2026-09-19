@@ -688,3 +688,19 @@ historical comparisons, not native-level validation completion.
   measured-angle completion claim.
 - [ ] Model-top/gas/bottom-boundary effects, broader active processes, physical
   number units/nonzero transport, and timestep sensitivity remain separate.
+
+### PR221 follow-up — reproducible endpoints and anchor comparison
+
+- [x] Publish ECEF anchors, ellipsoid, target coordinates, applied angles and
+  raw channel/epsilon BT strings in scene_anchor_precision_2026-09-19.json.
+  Standalone Python 3.12 replay checks three geometries and 28 comparisons.
+- [x] Separate observed agreement from text-rounding-aware 5% evidence: 28/28
+  observed, 27/28 stronger conditions. Riming WV073 epsilon .03 remains limited;
+  epsilon .1 satisfies the text-only bound. No tolerance/QC changes.
+- [x] Establish shared alpha-zero baseline (44/44 files identical), reuse both
+  profile tangents, evaluate first/last direct/K and recompute each Huber seed.
+  Two valid calls after two explicitly rejected auxiliary-key replacement attempts.
+  Channel QC unchanged; see REPORT_anchor_precision_2026-09-19.md.
+- [ ] Exact pixel navigation, upper/gas/bottom assumptions, representative active
+  paths, physical number units/nonzero applied transport and timestep convergence
+  remain open. Anchor spread is not a navigation uncertainty bound.
