@@ -9,6 +9,7 @@ live RTTOV execution or dK/dx.
 from __future__ import annotations
 
 import numpy as np
+import pytest
 import torch
 
 from kdm6.obs.model_profile_builder import RttovProfileConfig, model_to_rttov_tensors
@@ -24,10 +25,18 @@ from kdm6.state import Forcing, State
 
 F64 = torch.float64
 DT = 20.0
+# The original selected scalar test retains both perturbations below.
+# Asymmetric channel FD at 1e-4 is endpoint-roundoff limited, so its
+# channelwise regression uses two fixed resolved perturbations instead.
+ASYM_FD_EPSILONS = (1.0e-3, 3.0e-3)
 FD_EPSILONS = (1.0e-4, 1.0e-3)
 CHANNELS = (1, 2, 3)
 K_T = np.array([0.10, 0.20, 0.30], dtype=np.float64)
 K_Q = np.array([1.0e-4, 2.0e-4, 3.0e-4], dtype=np.float64)
+ASYM_K_T = np.array([0.07, -0.13, 0.29], dtype=np.float64)
+ASYM_K_Q = np.array([2.0e-4, -3.0e-4, 7.0e-4], dtype=np.float64)
+ASYM_RESIDUAL_OFFSETS = torch.tensor([[0.8, -1.0, 0.6]], dtype=F64)
+FD_REL_TOL = 1.0e-5
 
 
 def _column(state: State) -> State:
@@ -39,34 +48,46 @@ def _column_forcing(forcing: Forcing) -> Forcing:
                      for name in Forcing._fields))
 
 
-def _fixed_run_k(rttov_input):
+def _fixed_run_k(rttov_input, k_t=K_T, k_q=K_Q):
     t = rttov_input.profile["T"]
     q = rttov_input.profile["Q"]
     nprofiles, nlayers = t.shape
-    bt = (K_T[None, :] * t.sum(axis=1)[:, None]
-          + K_Q[None, :] * q.sum(axis=1)[:, None])
-    kt = np.broadcast_to(K_T[None, :, None],
+    bt = (k_t[None, :] * t.sum(axis=1)[:, None]
+          + k_q[None, :] * q.sum(axis=1)[:, None])
+    kt = np.broadcast_to(k_t[None, :, None],
                          (nprofiles, len(CHANNELS), nlayers)).copy()
-    kq = np.broadcast_to(K_Q[None, :, None],
+    kq = np.broadcast_to(k_q[None, :, None],
                          (nprofiles, len(CHANNELS), nlayers)).copy()
     quality = np.zeros((nprofiles, len(CHANNELS)), dtype=np.int64)
     return bt, {"T": kt, "Q": kq}, quality
+
+
+def _asymmetric_run_k(rttov_input):
+    return _fixed_run_k(rttov_input, ASYM_K_T, ASYM_K_Q)
+
+
+def _permuted_asymmetric_run_k(rttov_input):
+    bt, k, quality = _asymmetric_run_k(rttov_input)
+    # Keep forward BT unchanged while swapping K rows, which should corrupt
+    # channelwise reverse products and scalar cost adjoints.
+    permutation = np.array([1, 0, 2])
+    return bt, {name: value[:, permutation, :] for name, value in k.items()}, quality
 
 
 def _profile(state: State, forcing: Forcing, cfg: RttovProfileConfig):
     return model_to_rttov_tensors(_column(state), _column_forcing(forcing), cfg)
 
 
-def _fixed_bt(profile):
+def _fixed_bt(profile, k_t=K_T, k_q=K_Q):
     ts = profile.t_lay.sum()
     qs = profile.q_lay.sum()
-    return torch.stack([K_T[c] * ts + K_Q[c] * qs
+    return torch.stack([k_t[c] * ts + k_q[c] * qs
                         for c in range(len(CHANNELS))]).reshape(1, -1)
 
 
-def _bridge_bt(profile, input_cfg):
+def _bridge_bt(profile, input_cfg, run_k=_fixed_run_k):
     return RttovObsOp.apply(
-        _fixed_run_k, input_cfg, profile.t_lay, profile.q_lay,
+        run_k, input_cfg, profile.t_lay, profile.q_lay,
         profile.p_lay, profile.p_half,
     )[0]
 
@@ -204,3 +225,129 @@ def test_melt_profile_fixed_k_cost_forward_reverse_fd():
     for fd, fd_ulp_bound in fd_results:
         assert abs(fd) > fd_ulp_bound
         assert abs(fd - vjp_value) <= 1.0e-5 * abs(vjp_value)
+
+
+def test_asymmetric_fixed_k_channels_and_cost_reject_k_row_permutation():
+    """Unequal signed residuals expose channelwise K-row permutations."""
+    state, forcing = melt_fixture()
+    profile_cfg = RttovProfileConfig(
+        gas_units=2, qv_convention="mixing_ratio_kgkg_dry", cloud=False,
+    )
+    input_cfg = RttovInputConfig(coef_id="synthetic-asymmetric-fixed-k",
+                                 channels=CHANNELS)
+    assert np.linalg.matrix_rank(
+        np.column_stack((ASYM_K_T, ASYM_K_Q))) == 2
+
+    alpha = torch.tensor(0.0, dtype=F64, requires_grad=True)
+    reverse_state, reverse_trace, reverse_handle = _run_control(
+        state, forcing, alpha, graph=True)
+    reverse_profile = _profile(reverse_state, forcing, profile_cfg)
+    reverse_bt = _bridge_bt(reverse_profile, input_cfg, _asymmetric_run_k)
+    bt_obs = reverse_bt.detach() + ASYM_RESIDUAL_OFFSETS
+    residual = reverse_bt.detach() - bt_obs
+    assert residual[0, 0] < 0.0 < residual[0, 1]
+    assert residual[0, 2] < 0.0
+    assert len({abs(float(x)) for x in residual.reshape(-1)}) == len(CHANNELS)
+    reverse_cost = _cost(reverse_bt, bt_obs)
+    cost_vjp = torch.autograd.grad(reverse_cost, alpha, retain_graph=True)[0]
+    channel_vjp = torch.stack([
+        torch.autograd.grad(reverse_bt[0, c], alpha, retain_graph=True)[0]
+        for c in range(len(CHANNELS))
+    ])
+    reverse_handle.close()
+
+    from torch.autograd import forward_ad
+    with forward_ad.dual_level():
+        alpha_dual = forward_ad.make_dual(
+            torch.tensor(0.0, dtype=F64), torch.tensor(1.0, dtype=F64))
+        forward_state_dual, forward_trace, forward_handle = _run_control(
+            state, forcing, alpha_dual, graph=False)
+        forward_profile_dual = _profile(forward_state_dual, forcing, profile_cfg)
+        forward_bt_dual = _fixed_bt(
+            forward_profile_dual, ASYM_K_T, ASYM_K_Q)
+        forward_cost_dual = _cost(forward_bt_dual, bt_obs)
+        forward_bt, channel_jvp = forward_ad.unpack_dual(forward_bt_dual)
+        forward_cost, cost_jvp = forward_ad.unpack_dual(forward_cost_dual)
+        forward_handle.close()
+
+    assert torch.equal(reverse_bt, forward_bt)
+    assert torch.equal(reverse_cost, forward_cost)
+    _assert_trace_equal(reverse_trace, forward_trace)
+
+    fd_channels_by_epsilon = {}
+    fd_costs_by_epsilon = {}
+    fd_endpoint_values = {}
+    for epsilon in ASYM_FD_EPSILONS:
+        fd_channels = []
+        fd_costs = []
+        for signed_epsilon in (epsilon, -epsilon):
+            fd_state, fd_trace, fd_handle = _run_control(
+                state, forcing, torch.tensor(signed_epsilon, dtype=F64),
+                graph=False)
+            fd_profile = _profile(fd_state, forcing, profile_cfg)
+            fd_bt = _bridge_bt(fd_profile, input_cfg, _asymmetric_run_k)
+            fd_channels.append(fd_bt.detach())
+            fd_costs.append(float(_cost(fd_bt, bt_obs).detach()))
+            _assert_trace_equal(reverse_trace, fd_trace)
+            fd_handle.close()
+        fd_channels_by_epsilon[epsilon] = (
+            fd_channels[0] - fd_channels[1]) / (2.0 * epsilon)
+        fd_costs_by_epsilon[epsilon] = (
+            fd_costs[0] - fd_costs[1]) / (2.0 * epsilon)
+        fd_endpoint_values[epsilon] = (fd_channels[0], fd_channels[1],
+                                       fd_costs[0], fd_costs[1])
+
+    # Fixed, independent acceptance bounds for channel products and scalar
+    # cost.  The AD-vs-AD check keeps the original 1e-10 relative standard;
+    # FD checks retain the original 1e-5 relative tolerance with zero atol.
+    torch.testing.assert_close(channel_vjp, channel_jvp.reshape(-1),
+                               rtol=1.0e-10, atol=0.0)
+    torch.testing.assert_close(cost_vjp, cost_jvp,
+                               rtol=1.0e-10, atol=0.0)
+    inf = torch.tensor(float("inf"), dtype=F64)
+    for epsilon, channel_fd in fd_channels_by_epsilon.items():
+        torch.testing.assert_close(channel_vjp, channel_fd.reshape(-1),
+                                   rtol=FD_REL_TOL, atol=0.0)
+        plus_bt, minus_bt, plus_cost, minus_cost = fd_endpoint_values[epsilon]
+        bt_spacing = torch.maximum(
+            torch.nextafter(plus_bt, inf) - plus_bt,
+            torch.nextafter(minus_bt, inf) - minus_bt,
+        ) / (2.0 * epsilon)
+        assert bool(torch.all(channel_vjp.abs() > bt_spacing))
+        assert bool(torch.all(channel_fd.abs() > bt_spacing))
+        cost_spacing = max(
+            float(torch.nextafter(torch.tensor(value, dtype=F64), inf)
+                  - torch.tensor(value, dtype=F64))
+            for value in (plus_cost, minus_cost)
+        ) / (2.0 * epsilon)
+        cost_fd = fd_costs_by_epsilon[epsilon]
+        assert abs(cost_fd - float(cost_vjp)) <= (
+            FD_REL_TOL * abs(float(cost_vjp)))
+        assert abs(float(cost_vjp)) > cost_spacing
+        assert abs(cost_fd) > cost_spacing
+    assert bool(torch.isfinite(channel_vjp).all())
+    assert bool((channel_vjp.abs() > 0.0).all())
+    channel_fd = fd_channels_by_epsilon[ASYM_FD_EPSILONS[0]]
+
+    # The permuted K rows leave forward BT values unchanged, so a BT-only
+    # comparison would miss this ABI/consumer ordering error. Channelwise and
+    # scalar reverse products must reject it against the independent FD.
+    bad_alpha = torch.tensor(0.0, dtype=F64, requires_grad=True)
+    bad_state, _, bad_handle = _run_control(
+        state, forcing, bad_alpha, graph=True)
+    bad_profile = _profile(bad_state, forcing, profile_cfg)
+    bad_bt = _bridge_bt(bad_profile, input_cfg, _permuted_asymmetric_run_k)
+    assert torch.equal(bad_bt, reverse_bt.detach())
+    bad_channel_vjp = torch.stack([
+        torch.autograd.grad(bad_bt[0, c], bad_alpha, retain_graph=True)[0]
+        for c in range(len(CHANNELS))
+    ])
+    bad_cost_vjp = torch.autograd.grad(
+        _cost(bad_bt, bt_obs), bad_alpha)[0]
+    bad_handle.close()
+    with pytest.raises(AssertionError):
+        torch.testing.assert_close(bad_channel_vjp, channel_fd.reshape(-1),
+                                   rtol=FD_REL_TOL, atol=0.0)
+    with pytest.raises(AssertionError):
+        assert abs(float(bad_cost_vjp) - fd_costs_by_epsilon[ASYM_FD_EPSILONS[0]]) <= (
+            FD_REL_TOL * abs(fd_costs_by_epsilon[ASYM_FD_EPSILONS[0]]))

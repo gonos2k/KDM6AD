@@ -29,6 +29,9 @@ def test_autoconv_alpha_reaches_paired_limited_rates_and_state_fd():
     assert result.active and result.nonzero_state_effect
     assert result.paired_mass_number
     assert result.tapped_topology_fixed
+    assert result.alpha0_state_primal_equal
+    assert result.alpha0_rate_primal_equal
+    assert result.alpha0_primal_equal
     assert result.state_effect["qc"] > 0.0
     assert result.state_effect["qr"] > 0.0
     assert result.rate_max_relative_error < 1.0e-6
@@ -107,6 +110,84 @@ def test_freeze_case_reports_output_resolution_limit():
     assert "output-ULP" in (result.reason or "")
 
 
+def test_equal_nonzero_one_ulp_fd_and_ad_stay_unresolved(monkeypatch):
+    """The consumer must reject a matched derivative below output spacing."""
+    original_run = pa._run
+    calls = 0
+    baseline = None
+    epsilon = 1.0e-4
+
+    def run_with_one_ulp_response(*args, **kwargs):
+        nonlocal calls, baseline
+        calls += 1
+        output, trace, handle = original_run(*args, **kwargs)
+        if calls == 1:
+            baseline = output
+        elif calls == 3:
+            one_ulp = torch.nextafter(
+                baseline.th, torch.full_like(baseline.th, float("inf")))
+            output = output._replace(th=one_ulp)
+        elif calls == 4:
+            output = output._replace(th=baseline.th)
+        elif calls == 6:
+            one_ulp = torch.nextafter(
+                baseline.th, torch.full_like(baseline.th, float("inf")))
+            slope = (one_ulp - baseline.th).sum() / (2.0 * epsilon)
+            output = output._replace(th=baseline.th + args[3] * slope)
+        return output, trace, handle
+
+    monkeypatch.setattr(pa, "_run", run_with_one_ulp_response)
+    result = attribute_process(*cold_fixture(), "freeze", regime="cold",
+                               epsilon=epsilon)
+
+    assert result.state_fd["th"] == result.state_ad["th"] != 0.0
+    assert result.state_fd_ulp_bound["th"] == result.state_fd["th"]
+    assert "th" in result.output_resolution_fields
+    assert result.state_field_status["th"] == "output_resolution_unresolved"
+    assert result.status == "unresolved_output_resolution"
+
+
+@pytest.mark.parametrize("offset_kind", ["state", "rate"])
+def test_alpha0_graph_primal_offsets_are_detected(monkeypatch, offset_kind):
+    """Constant graph-only state/rate offsets cannot hide behind equal AD/FD."""
+    original_run = pa._run
+    calls = 0
+
+    def run_with_graph_offset(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        output, trace, handle = original_run(*args, **kwargs)
+        if calls == 6:
+            offset = torch.full_like(output.qc, 1.0e-12)
+            if offset_kind == "state":
+                output = output._replace(qc=output.qc + offset,
+                                         qr=output.qr - offset)
+            else:
+                record = trace.by_name("warm_limited")[-1]
+                record.rates = record.rates._replace(
+                    praut=record.rates.praut + offset)
+        return output, trace, handle
+
+    monkeypatch.setattr(pa, "_run", run_with_graph_offset)
+    result = attribute_process(*warm_fixture(), "autoconv", regime="warm")
+
+    assert result.alpha0_state_primal_equal is (offset_kind == "rate")
+    assert result.alpha0_rate_primal_equal is (offset_kind == "state")
+    assert not result.alpha0_primal_equal
+    assert result.rate_max_relative_error <= 1.0e-6
+    assert result.selected_state_max_relative_error <= 1.0e-4
+    if offset_kind == "state":
+        assert result.alpha0_state_primal_delta["qc"] == pytest.approx(1.0e-12)
+        assert result.alpha0_state_primal_delta["qr"] == pytest.approx(1.0e-12)
+    else:
+        assert result.alpha0_rate_primal_delta["praut"] == pytest.approx(1.0e-12)
+    assert all(status == "alpha0_primal_mismatch"
+               for status in result.state_field_status.values())
+    assert result.status == "alpha0_primal_mismatch"
+    assert result.reason == (
+        "value-only and graph alpha=0 primals differ for state or applied rate")
+
+
 @pytest.mark.parametrize(
     ("process", "expected_zero_fields"),
     [
@@ -139,7 +220,8 @@ def test_cold_gate_field_metadata_distinguishes_zero_and_resolution(
         assert result.state_field_status["th"] == "resolved_nonzero"
 
 
-@pytest.mark.parametrize("target_call", [3, 5], ids=["plus", "graph_ad"])
+@pytest.mark.parametrize("target_call", [3, 5, 6],
+                         ids=["plus", "value_alpha0", "graph_ad"])
 def test_changed_tapped_topology_blocks_resolved_nonzero_label(monkeypatch, target_call):
     original_run = pa._run
     calls = 0
@@ -163,11 +245,15 @@ def test_changed_tapped_topology_blocks_resolved_nonzero_label(monkeypatch, targ
     assert result.state_field_status["qc"] == "zero_response"
 
 
-@pytest.mark.parametrize("target", ["controlled", "plus", "minus", "graph"])
+@pytest.mark.parametrize(
+    "target", ["controlled", "plus", "minus", "value_alpha0", "graph"])
 def test_nonfinite_rate_at_each_product_boundary_is_unresolved(monkeypatch, target):
     original_run = pa._run
     calls = 0
-    target_call = {"controlled": 2, "plus": 3, "minus": 4, "graph": 5}[target]
+    target_call = {
+        "controlled": 2, "plus": 3, "minus": 4,
+        "value_alpha0": 5, "graph": 6,
+    }[target]
 
     def run_with_nonfinite_rate(*args, **kwargs):
         nonlocal calls

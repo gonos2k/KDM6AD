@@ -577,3 +577,12 @@ The subsequent primal/mask assertion-only strengthening passed the five direct
 Picons cases. Final Green/Red Luna high reviews found no blocking findings.
 These overlapping counts do not add to previous runs. Full branch/regime coverage
 and physical number/enthalpy contracts remain open.
+
+## PR #216 follow-up tracking — 2026-09-19
+
+The ordered [follow-up checklist](CHECKLIST_pr216_review_2026-09-19.md)
+tracks final-output resolution independent of derivative agreement, same-alpha
+primal equality, asymmetric channelwise melt sensitivities, and the selected
+freeze CCN-return discrepancy. Previously closed checks remain closed. Actual
+auxiliaries, physical number units, nonzero M1 transport and sensitivity
+convergence retain their existing open evidence requirements.
