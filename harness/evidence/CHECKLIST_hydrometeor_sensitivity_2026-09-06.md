@@ -145,8 +145,9 @@ addition: **1123 passed / 30 skipped**. Parent earlier full run: **1122 passed /
   2026-09-07 actual cloudy-column and 2026-09-19 named-control evidence below.
   The historical zero-mask run remains unresolved and is not reused as proof.
 - [ ] Replace and validate fixture geometry/surface/datetime where actual
-  auxiliary inputs are required. Current live results remain **wiring-only for
-  those auxiliaries**, with actual geolocation/observation data distinguished.
+  auxiliary inputs are required. These historical runs were wiring-only for
+  those auxiliaries. The PR #218-baseline follow-up below applies actual WRF
+  coordinates/skin/near-surface fields and UTC; full geometry remains open.
 
 Authoritative final artifacts are `live-gradient/clear-final.json` and
 `live-gradient/cloud-final.json` under the resolution directory. Earlier
@@ -275,8 +276,10 @@ regimes. Forecast skill/cycling are outside this checklist's completion gates.
 - [ ] Internal-branch runtime coverage, full physical number/enthalpy contracts,
   and representative upstream-process→downstream-process routes remain bounded
   by the recorded tests. Static kernel/branch inventories are not coverage counts.
-- [ ] Fixture pressure/geometry/surface/time and loaded RTTOV source-build
-  identity remain explicit limitations; external K evidence is first-order only.
+- [ ] These historical runs used fixture geometry/surface/time. The later partial
+  substitution applies actual coordinates, skin/near-surface fields and UTC;
+  viewing/solar angles, upper/gas assumptions and source-build identity retain
+  their declared limits. External K evidence remains first-order only.
 
 Validation: full local oracle **1145 passed / 30 skipped / 51 warnings** (91.26 s),
 then focused writer/process/cold/window tests **138 passed** (13.46 s). Later
@@ -397,7 +400,9 @@ by these portable tests. Operational f32 and packed ABI are unchanged.
   are applied before the evolved state is passed to live RTTOV. The objective
   is the same fixed-mask Huber sum, sigma=1 K and delta=1, effective bias zero.
   This is total named-group sensitivity, not unique attribution to each rate.
-- [x] **Independent first-order connection:** genuine forward-mode KDM/profile
+- [x] **Independent first-order connection (before partial auxiliary substitution):**
+  The following values belong to the earlier reference-auxiliary experiment.
+  Genuine forward-mode KDM/profile
   directions contracted with fixed baseline RTTOV K and the cost cotangent
   agree with reverse VJP. Deposition dJ/dalpha=-0.03907693895509639;
   riming=-1.926767776136752e-5. Independent scalar replay gives duality errors
@@ -406,10 +411,18 @@ by these portable tests. Operational f32 and packed ABI are unchanged.
   respectively. Signals exceed measured BT text-rounding bounds, serialized
   profiles round-trip exactly, and observed stage masks remain unchanged.
   Tapped masks do not constitute a complete internal branch atlas.
-- [ ] **V3 actual auxiliaries:** pressure/reference upper profiles, geometry,
-  surface and datetime retain fixture assumptions. The actual WRF/GK2A inputs
-  do not close this separate auxiliary-validation boundary. No dK/dx,
-  parameter identifiability, all-process or all-regime claim is made.
+- [x] **V3 partial actual-auxiliary follow-up (PR #218 baseline):** actual WRF
+  coordinates/elevation, skin and near-surface T/Q/winds, and slot UTC were
+  applied in ten live RTTOV evaluations. Applied auxiliary text hashes match
+  across all paired runs. Deposition/riming maximum AD–FD relative differences
+  are 0.0141%/0.1501%, with the previous acceptance rule unchanged. Requested
+  values and six-decimal applied values are distinguished. See
+  [partial actual-auxiliary report](REPORT_partial_actual_aux_2026-09-19.md).
+- [ ] **V3 full actual auxiliaries:** viewing/solar angles and upper T/Q/gases
+  remain reference or unverified. The fixed pressure grid is an interpolation
+  target, not evidence of actual upper-atmosphere conditions. The follow-up is
+  a mixed actual/reference operator; it does not close full actual-condition
+  validation. No dK/dx, identifiability, all-process or all-regime claim is made.
 - [ ] **M1 actual applied ledger:** one capture-enabled binary with runtime
   capture OFF/ON completed matched 20-second runs. At t=0 and20s, all253
   numeric common fields plus Times match raw bits (254/254, zero skipped).
@@ -595,3 +608,31 @@ unchanged existing 18-case products/classifications, report propagation and
 the selected post-evaporation zero-NC/nonzero-CCN sensitivity transfer.
 Representative applied-process coverage and physical-unit/actual-input gates
 remain open.
+
+## Native 5 km model-level requirement (2026-09-19)
+
+User clarification: use the current model, without external model/reanalysis
+inputs. Native horizontal columns and vertical levels define the calculation.
+Earlier fixture-grid and bottom-only PSFC substitution results are bounded
+historical comparisons, not native-level validation completion.
+
+- [x] Pin selected column45577's 39 native fp64 P+PB centres and 40 interfaces
+  replayed from the host P8W formula. These interleave without midpoint replacement;
+  stored P_HYD is a separate fp32 cross-check, not the fp64 forcing coordinate.
+- [x] Pass native T/Q/hydrometeors and explicit P/P_HALF through the input/writer
+  boundary. The writer honors p.txt as the actual RTTOV driver does; native target
+  equals model source, and reference upper T/Q blending is disabled.
+- [x] Identify model-top/gas treatment from the installed RTTOV: positive native
+  top is accepted, upper interpolation is internal, and disabled external gas-file
+  inputs use coefficient backgrounds. This is a declared operator assumption,
+  not verification of actual atmosphere above the model top or measured gases.
+- [x] Selected native-level first-order validation: ten live calls, two controls
+  and two epsilons; seven fixed jointly usable IR channels. WV063/WV069 retain
+  bit15 quality failure, with no QC relaxation. Maximum AD/FD relative differences
+  0.5263% deposition / 0.2314% riming; JVP/VJP agree. See
+  [native-model report](REPORT_native_model_levels_2026-09-19.md).
+- [ ] Broader representative native model columns/processes and actual satellite
+  view-angle provenance remain separate from this selected directional result.
+- [ ] Resolve host/kernel number units and measure nonzero applied transport on
+  this model. Historical recovered-flux proxies and zero M1 capture do not close
+  this requirement; source-matched instrumented executable remains unavailable.

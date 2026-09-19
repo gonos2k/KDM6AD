@@ -25,7 +25,8 @@ from kdm6.obs.model_profile_builder import (
     RttovProfileConfig, model_to_rttov_tensors, qv_to_q_ppmv_moist)
 from kdm6.obs.obs_loss import compute_obs_loss
 from kdm6.obs.rttov_case_writer import (
-    _format_rttov_vector, _write_matrix, cloud_fixture_case_dir, default_fixture_case_dir,
+    _check_grid_matches_fixture, _format_rttov_vector, _write_matrix,
+    cloud_fixture_case_dir, default_fixture_case_dir, fixture_layer_pressure,
     make_live_run_k, write_rttov_case)
 from kdm6.obs.rttov_input_builder import (
     RttovInputConfig, RttovInput, pack_rttov_input)
@@ -336,6 +337,66 @@ def test_fixture_layer_pressure_reference_grid(tmp_path):
     lay = fixture_layer_pressure()
     assert lay.shape == (len(ph) - 1,)
     assert np.all((lay > ph[:-1]) & (lay < ph[1:]))   # bracketed, TOA layer (0, ph[1]) included
+
+
+def _write_pressure_profile(root, p_half, p_full=None):
+    """Create the pressure-only portion of a fixture profile for grid-witness tests."""
+    atm = root / "in" / "profiles" / "001" / "atm"
+    atm.mkdir(parents=True)
+    np.savetxt(atm / "p_half.txt", np.asarray(p_half, dtype=float))
+    if p_full is not None:
+        np.savetxt(atm / "p.txt", np.asarray(p_full, dtype=float))
+    return atm
+
+
+def test_native_40_39_explicit_full_pressure_is_authoritative(tmp_path):
+    """A native 40-interface/39-layer grid accepts a non-midpoint explicit P."""
+    p_half = np.linspace(50.0, 950.0, 40)
+    p_full = p_half[:-1] + 0.37 * np.diff(p_half)  # deliberately not midpoint
+    profile_dir = _write_pressure_profile(tmp_path, p_half, p_full).parent
+
+    got = fixture_layer_pressure(tmp_path)
+    np.testing.assert_allclose(got, p_full)
+    assert not np.allclose(got, 0.5 * (p_half[:-1] + p_half[1:]))
+    _check_grid_matches_fixture(profile_dir, p_half, p_full)
+
+
+@pytest.mark.parametrize("bad_kind", ["nonfinite", "wrong_length", "not_interleaved"])
+def test_native_explicit_full_pressure_rejects_invalid_grid(tmp_path, bad_kind):
+    """Malformed native P is rejected before it can become a grid witness."""
+    p_half = np.linspace(50.0, 950.0, 40)
+    p_full = p_half[:-1] + 0.37 * np.diff(p_half)
+    if bad_kind == "nonfinite":
+        p_full[3] = np.nan
+    elif bad_kind == "wrong_length":
+        p_full = p_full[:-1]
+    else:
+        p_full[5] = p_half[5]
+    _write_pressure_profile(tmp_path, p_half, p_full)
+    with pytest.raises(ValueError, match="explicit|full-level|interleave"):
+        fixture_layer_pressure(tmp_path)
+
+
+def test_grid_check_rejects_malformed_explicit_pressure_without_p_witness(tmp_path):
+    """A present but malformed p.txt cannot be bypassed by omitting profile['P']."""
+    p_half = np.linspace(50.0, 950.0, 40)
+    p_full = p_half[:-1] + 0.37 * np.diff(p_half)
+    p_full[4] = p_half[4]
+    profile_dir = _write_pressure_profile(tmp_path, p_half, p_full).parent
+    with pytest.raises(ValueError, match="interleave"):
+        _check_grid_matches_fixture(profile_dir, p_half)
+
+
+def test_legacy_fixture_without_explicit_full_pressure_keeps_midpoint_policy(tmp_path):
+    """A profile without p.txt remains on the historical midpoint-derived grid."""
+    p_half = np.linspace(0.0, 950.0, 40)
+    _write_pressure_profile(tmp_path, p_half)
+    expected = np.where(
+        p_half[:-1] <= 0.0,
+        0.5 * (p_half[:-1] + p_half[1:]),
+        np.sqrt(p_half[:-1] * p_half[1:]),
+    )
+    np.testing.assert_allclose(fixture_layer_pressure(tmp_path), expected)
 
 
 @needs_fixture

@@ -649,18 +649,58 @@ def _layer_pressure_from_half(ph):
 def fixture_layer_pressure(fixture_case_dir=None, *, profile: str = "001"):
     """Canonical RTTOV layer pressure for a fixture profile (the interp TARGET).
 
-    The fixture is layer-based and exposes only p_half (no f_p), so there is no
-    authoritative layer-pressure file -- the writer DEFINES the canonical layer grid
-    here (`_layer_pressure_from_half`: log-midpoint, TOA arithmetic). The live obs
-    path sets ``cfg.rttov_layer_pressure`` to this so model T/Q are interpolated onto
-    the fixture layers; the resulting ``profile['P']`` IS sent to write_rttov_case,
-    which validates it equals this grid (an off-grid layer pressure is rejected).
+    When a profile carries ``atm/p.txt``, use that explicit RTTOV full-level grid
+    after validating its size, finiteness, positivity, and interleaving with
+    ``p_half``. This is the native-model contract: RTTOV reads ``p.txt`` when it
+    exists. Legacy fixtures without ``p.txt`` retain the historical
+    ``_layer_pressure_from_half`` midpoint convention.
+
+    The live obs path sets ``cfg.rttov_layer_pressure`` to this so model T/Q are
+    interpolated onto the selected fixture/native layers; the resulting
+    ``profile['P']`` is sent to ``write_rttov_case``, which validates it equals the
+    same grid (an off-grid layer pressure is rejected).
     Each fixture profile has its own p_half, so this is per-profile.
     """
     import numpy as np
     fixture = Path(fixture_case_dir) if fixture_case_dir is not None else default_fixture_case_dir()
-    ph = np.loadtxt(fixture / "in" / "profiles" / profile / "atm" / "p_half.txt")
+    atm = fixture / "in" / "profiles" / profile / "atm"
+    ph = np.loadtxt(atm / "p_half.txt")
+    explicit = atm / "p.txt"
+    if explicit.is_file():
+        return _explicit_layer_pressure(explicit, ph)
     return _layer_pressure_from_half(ph)
+
+
+def _explicit_layer_pressure(path: Path, p_half):
+    """Read and validate an RTTOV ``p.txt`` full-level pressure vector.
+
+    RTTOV's profile reader honors ``atm/p.txt`` when it exists. A native full-level
+    vector therefore must be finite, strictly positive, have exactly one fewer
+    value than ``p_half``, and lie strictly between each adjacent pair of
+    half-levels. Reject malformed files rather than silently falling back.
+    """
+    import numpy as np
+    ph = np.asarray(p_half, dtype=float)
+    try:
+        p = np.asarray(np.loadtxt(path), dtype=float).reshape(-1)
+    except (OSError, ValueError) as exc:
+        raise ValueError(f"{path}: cannot read explicit full-level pressure grid") from exc
+    if (ph.ndim != 1 or ph.size < 2 or not np.all(np.isfinite(ph)) or
+            np.any(ph < 0.0) or not np.all(ph[1:] > ph[:-1])):
+        raise ValueError(
+            f"{path}: p_half must be finite, nonnegative, and strictly increasing "
+            "from top to surface with at least two values")
+    if p.size != ph.size - 1:
+        raise ValueError(
+            f"{path}: explicit p has {p.size} values but p_half has {ph.size}; "
+            "expected one full-level value per adjacent half-level pair.")
+    if not np.all(np.isfinite(p)) or not np.all(p > 0.0):
+        raise ValueError(f"{path}: explicit full-level pressure must be finite and positive")
+    if not np.all(p > ph[:-1]) or not np.all(p < ph[1:]):
+        raise ValueError(
+            f"{path}: explicit full-level pressure must strictly interleave p_half "
+            "(p_half[i] < p[i] < p_half[i+1]).")
+    return p
 
 
 def _check_grid_matches_fixture(profile_dir: Path, p_half_model, p_lay_model=None) -> None:
@@ -670,10 +710,10 @@ def _check_grid_matches_fixture(profile_dir: Path, p_half_model, p_lay_model=Non
     cfg.rttov_level_pressure must BE the fixture grid (design 14.1).
 
     If a layer pressure ``p_lay_model`` (profile["P"], from cfg.rttov_layer_pressure)
-    is present, it must equal the canonical fixture layer grid (the log-midpoint of
-    THIS profile's p_half). This HONORS the interp path -- the caller interpolates
-    model T/Q onto ``fixture_layer_pressure()`` and the writer verifies it -- while
-    still rejecting an off-grid layer pressure (T/Q placed on the wrong layers)."""
+    is present, it must equal the canonical layer grid. If this profile carries
+    ``atm/p.txt``, that explicit grid is canonical; otherwise the legacy midpoint
+    derived from p_half is used. This keeps the writer's witness identical to the
+    pressure vector the RTTOV test driver will actually read."""
     import numpy as np
     fix = np.loadtxt(profile_dir / "atm" / "p_half.txt")
     model = np.asarray(p_half_model, dtype=float).reshape(-1)
@@ -682,16 +722,17 @@ def _check_grid_matches_fixture(profile_dir: Path, p_half_model, p_lay_model=Non
             f"{profile_dir}/atm/p_half.txt: RttovInput P_HALF does not match the "
             "fixture grid -- interpolate the model T/Q onto the fixture's p_half "
             "before overlay (cfg.rttov_level_pressure must be the fixture grid).")
+    explicit = profile_dir / "atm" / "p.txt"
+    canon = (_explicit_layer_pressure(explicit, fix)
+             if explicit.is_file() else _layer_pressure_from_half(fix))
     if p_lay_model is not None:
-        canon = _layer_pressure_from_half(fix)
         p = np.asarray(p_lay_model, dtype=float).reshape(-1)
         if p.shape != canon.shape or not np.allclose(p, canon, rtol=1e-5, atol=1e-9):
             raise ValueError(
                 f"{profile_dir}/atm/p_half.txt: RttovInput layer pressure (profile['P'], "
                 "cfg.rttov_layer_pressure) does not match the fixture's canonical layer "
-                "grid -- set cfg.rttov_layer_pressure = fixture_layer_pressure(...) so the "
-                "model T/Q are interpolated onto the fixture layers (the run derives layers "
-                "from the fixture p_half).")
+                "grid -- use fixture_layer_pressure(...) for the selected case, including "
+                "its explicit native p.txt when present.")
 
 
 def _patch_config_counts(config_path: Path, nprofiles: int, nchannels_total: int) -> None:
@@ -895,8 +936,8 @@ def _populate_case(out: Path, rttov_input, cfg, is_cloud: bool, solar_channels=(
     # half-level witness that the model T/Q were built for the fixture grid. Without
     # it the writer would blindly place possibly-mis-gridded T/Q on the fixture grid
     # (silent wrong BT). The layer witness is profile["P"] (validated below): RTTOV is
-    # layer-based and derives layers from p_half (the fixture has no f_p), so neither
-    # P_HALF nor P is written to the case -- both are grid witnesses for the T/Q.
+    # layer-based and reads explicit p.txt when present. The template retains both
+    # pressure files; P_HALF and P are grid witnesses for the overlaid T/Q.
     ph_all = rttov_input.profile.get("P_HALF")
     if ph_all is None:
         raise ValueError(
@@ -963,8 +1004,8 @@ def _populate_case(out: Path, rttov_input, cfg, is_cloud: bool, solar_channels=(
     # silently accepted: it must equal the fixture's canonical layer grid
     # (fixture_layer_pressure()). This honors the interp path (caller interpolates
     # model T/Q onto fixture_layer_pressure()) while rejecting an off-grid layer
-    # pressure. The layer pressure is not written to the case (the layer-based run
-    # derives layers from p_half) -- it is purely the grid witness for the T/Q.
+    # pressure. The template's explicit p.txt, when present, remains the pressure
+    # source consumed by RTTOV; this input is its witness for the overlaid T/Q.
     pl_all = rttov_input.profile.get("P")
     if pl_all is not None:
         # Same row-count normalization as P_HALF above: the batched builder emits

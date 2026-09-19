@@ -32,6 +32,11 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Superseded PR runs have no remaining merge evidence value. Keep every main run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   oracle-pytest:
     name: oracle pytest (f64 reference)
@@ -58,9 +63,7 @@ jobs:
           python -c 'import sys, torch, numpy, pytest, netCDF4, pyproj; print("python", sys.version.split()[0], "| torch", torch.__version__, "| numpy", numpy.__version__, "| pytest", pytest.__version__, "| netCDF4", netCDF4.__version__, "| pyproj", pyproj.__version__)'
           pip --version   # installer version (deps are pinned; pip itself is not)
 
-      # Import above is mandatory: missing pyproj must fail before importorskip.
-      - name: Independent LCC projection comparison (required)
-        run: cd oracle && python -m pytest -q tests/test_gk2a_l1b.py::test_lcc_matches_pyproj_if_available
-
+      # The mandatory pyproj import above prevents importorskip from hiding the
+      # independent LCC check. Run that test once, inside the complete suite.
       - name: pytest (oracle/, pure-Python subset)
         run: cd oracle && python -m pytest -rs -q
