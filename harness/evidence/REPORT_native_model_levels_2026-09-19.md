@@ -93,3 +93,58 @@ FD values exactly. This repeated ten-call verification is not additional case
 coverage. Portable validation: 66 writer tests and 59 profile/input/melt tests
 passed (18 existing TorchScript deprecation warnings in the latter suite).
 Green and Red final reviews found no remaining blocking issue in this scope.
+
+## Precision audit — native model boundary
+
+A follow-up probe reuses the retained native experiment without new live calls
+or external data. Source P/PB/T/QVAPOR/PH/PHB/QCLOUD/QICE are stored float32.
+The reader promotes each operand before derived fp64 arithmetic; promotion
+preserves stored values but cannot recover information lost before storage.
+P+PB in fp64 differs from adding in fp32 first by up to 0.0037841796875 Pa.
+The supplied native pressure matches the former exactly.
+
+For both baseline controls, all six T/Q/cloud-content/effective-size fields
+retain exact values on the identical native grid. Direct evaluation of the
+existing interpolation function gives an exact 39-by-39 identity Jacobian and
+identity JVP in all 12 checks. This establishes the field-transfer derivative
+with fixed pressure, not pressure sensitivity or the full KDM Jacobian.
+All ten retained P/P_HALF file pairs are bit-identical to the expected native
+fp64 vectors. The existing six-field serialization records have zero changed
+values with 17 significant decimal digits (`%.16E`).
+
+This does not imply bit-preserving precision throughout the radiative model:
+geometry and surface namelists use six decimal places. The selected skin T
+changes by 4.882812731921149e-7 K, T2 by 2.9296876391526894e-7 K, and solar
+azimuth by 3.3011488653755805e-7 degrees. These auxiliary values are identical
+across paired alpha runs, but are not fp64 round trips.
+
+The selected BT text spacing is 1e-9 K. Retained cost-FD output-spacing bounds
+are 1.1666666666666668e-7 at epsilon .03 and 3.5e-8 at .1; the riming derivative
+has magnitude 1.2971554274497282e-5. Thus the text-only bound is approximately
+0.90% and 0.27% of that signal. Observed smaller AD/FD discrepancies must not
+be presented as a guaranteed sub-percent total accuracy. Neither text spacing
+nor identity native-grid transfer bounds RTTOV internal interpolation,
+extrapolation, coefficient approximations, or full scientific error.
+
+Probe artifacts: `graphify-out/pr219-science-20260919/precision/probe.py`,
+`results.json`, and `auxiliary_decimal_loss.json`. The executed probe has 12
+identity-Jacobian/JVP checks and 10 paired pressure-file checks; these are not
+additional atmospheric cases. Current code commit 7aad359 has all five CI
+checks successful, including both native builds; no new physics change was
+needed for this audit.
+
+Green/Red follow-up reviews agree with this limited precision conclusion.
+Local RTTOV source, module and build records identify `jprv=8` and
+`REAL(jprv)` profile parsing/internal interpolation. This is source/build-record
+evidence; an executable-wide rebuild-to-hash precision attestation was not
+performed. Output `E21.12` precision is separate from binary arithmetic.
+
+## CI duplication cleanup
+
+Required check names and all test coverage remain unchanged. Independent LCC
+runs once in the complete oracle suite; mandatory pyproj import still prevents
+a missing dependency from turning it into a skip. Ubuntu no longer reinstalls
+already-pinned NumPy. Each workflow cancels superseded runs only for the same
+PR ref; main runs are not explicitly cancelled. Both platform-specific native
+builds and cross-tree AD gates remain intact. No speedup is claimed before
+measurement, and prior-head CI success is not attributed to this workflow edit.
