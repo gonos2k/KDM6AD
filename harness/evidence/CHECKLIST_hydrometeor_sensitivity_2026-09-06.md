@@ -145,8 +145,9 @@ addition: **1123 passed / 30 skipped**. Parent earlier full run: **1122 passed /
   2026-09-07 actual cloudy-column and 2026-09-19 named-control evidence below.
   The historical zero-mask run remains unresolved and is not reused as proof.
 - [ ] Replace and validate fixture geometry/surface/datetime where actual
-  auxiliary inputs are required. Current live results remain **wiring-only for
-  those auxiliaries**, with actual geolocation/observation data distinguished.
+  auxiliary inputs are required. These historical runs were wiring-only for
+  those auxiliaries. The PR #218-baseline follow-up below applies actual WRF
+  coordinates/skin/near-surface fields and UTC; full geometry remains open.
 
 Authoritative final artifacts are `live-gradient/clear-final.json` and
 `live-gradient/cloud-final.json` under the resolution directory. Earlier
@@ -275,8 +276,10 @@ regimes. Forecast skill/cycling are outside this checklist's completion gates.
 - [ ] Internal-branch runtime coverage, full physical number/enthalpy contracts,
   and representative upstream-process→downstream-process routes remain bounded
   by the recorded tests. Static kernel/branch inventories are not coverage counts.
-- [ ] Fixture pressure/geometry/surface/time and loaded RTTOV source-build
-  identity remain explicit limitations; external K evidence is first-order only.
+- [ ] These historical runs used fixture geometry/surface/time. The later partial
+  substitution applies actual coordinates, skin/near-surface fields and UTC;
+  viewing/solar angles, upper/gas assumptions and source-build identity retain
+  their declared limits. External K evidence remains first-order only.
 
 Validation: full local oracle **1145 passed / 30 skipped / 51 warnings** (91.26 s),
 then focused writer/process/cold/window tests **138 passed** (13.46 s). Later
@@ -397,7 +400,9 @@ by these portable tests. Operational f32 and packed ABI are unchanged.
   are applied before the evolved state is passed to live RTTOV. The objective
   is the same fixed-mask Huber sum, sigma=1 K and delta=1, effective bias zero.
   This is total named-group sensitivity, not unique attribution to each rate.
-- [x] **Independent first-order connection:** genuine forward-mode KDM/profile
+- [x] **Independent first-order connection (before partial auxiliary substitution):**
+  The following values belong to the earlier reference-auxiliary experiment.
+  Genuine forward-mode KDM/profile
   directions contracted with fixed baseline RTTOV K and the cost cotangent
   agree with reverse VJP. Deposition dJ/dalpha=-0.03907693895509639;
   riming=-1.926767776136752e-5. Independent scalar replay gives duality errors
