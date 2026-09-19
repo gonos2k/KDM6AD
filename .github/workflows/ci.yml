@@ -4,6 +4,9 @@ name: port-ci
 permissions:
   contents: read
 
+# Python multi-version automation is on hold: use only Python 3.12.
+# OS-specific native gates remain; do not add a Python version matrix.
+
 # Port-only reproducibility gate: build the C++/libtorch port + ISO_C ABI and run the
 # full ctest suite from the public repo ALONE (no WRF/KIM-meso host). The macOS/arm64
 # bitwise host parity is a separate, platform-pinned property (see ENVIRONMENT.md) and is
@@ -99,7 +102,7 @@ jobs:
       # second, different toolchain (Ubuntu/gcc) so the suite is exercised beyond clang/macOS.
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: Install gfortran + PyTorch (CPU)
         run: |
@@ -267,7 +270,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: Install gfortran + PyTorch (macOS arm64)
         run: |

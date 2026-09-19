@@ -4,6 +4,9 @@ name: oracle-ci
 permissions:
   contents: read
 
+# Python multi-version automation is on hold: use only Python 3.12.
+# OS-specific native gates remain; do not add a Python version matrix.
+
 # Gates the PORTABLE, pure-Python part of the oracle suite (oracle/kdm6 — the f64
 # algorithm-definition / parity reference) so an oracle refactor can't drift its values
 # without CI catching it. On this Python-only runner the pure-Python subset runs; the remainder SKIP by
@@ -47,14 +50,14 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: Install torch (CPU, pinned) + oracle verification dependencies
         run: |
           python -m pip install --upgrade pip
           pip install "torch==2.8.0" --index-url https://download.pytorch.org/whl/cpu
-          # numpy/pytest pinned to the last green combo (with torch 2.8.0 / py3.11) so the
-          # numeric suite is reproducible — a numpy major bump could shift float behavior.
+          # Keep numeric dependencies pinned while moving the single CI interpreter
+          # to Python 3.12; this interpreter change needs its own green run.
           # Exercise synthetic NetCDF ingestion/identity tests in CI, not only locally.
           pip install "numpy==2.4.6" "pytest==9.1.1" "netCDF4==1.7.4" "pyproj==3.7.1"
 
