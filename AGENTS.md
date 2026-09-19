@@ -179,6 +179,18 @@ cd /Users/yhlee/KDM6AD-k/oracle && python3 -m pytest
 
 ## Knowledge Graph
 
+Always use the `graphify` skill for every code-improvement task, including
+bug fixes, refactoring and verification changes. Apply this requirement to
+both the main agent and team agents; an explicit user invocation is not needed.
+Before editing, reuse the existing graph to inspect relevant dependencies and
+producer-to-consumer paths, then verify findings against authoritative source.
+After editing, refresh the affected graph and check the changed relationships.
+Prefer cached queries and incremental updates to avoid duplicate extraction.
+Use the skill's semantic update when documentation changes need extraction;
+a code-only `graphify update .` does not refresh documentation semantics.
+If Graphify is unavailable or incomplete, record the limitation explicitly and
+continue source-based checks without claiming graph coverage.
+
 This project has a derived graph at `graphify-out/` and an Obsidian vault at
 `wiki/`. For codebase questions, first run `graphify query "<question>"` when
 `graphify-out/graph.json` exists. Use `graphify path`, `graphify explain`, and
