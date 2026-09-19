@@ -46,7 +46,7 @@ Values are K per unit alpha. JVP/VJP are raw channel diagnostics; central FD use
 | 14 | 251.850793067 | 1.109768794076312e-06 | 1.109768794076302e-06 | 1.116667173543344e-06 | 1.114999861329125e-06 | 32768 | 0 |
 | 15 | 247.048411123 | 9.573214671518027e-07 | 9.573214671517987e-07 | 9.500003746628257e-07 | 9.600000794307562e-07 | 32768 | 0 |
 
-The maximum absolute JVP/VJP difference over these nine channels is `5.421010862427522e-19`; this does not promote the result because every observed channel is QC-excluded and the scalar cost mask is empty.
+The maximum absolute JVP/VJP difference over these nine channels is `5.421010862427522e-20`; this does not promote the result because every observed channel is QC-excluded and the scalar cost mask is empty.
 
 ## Failure history
 
