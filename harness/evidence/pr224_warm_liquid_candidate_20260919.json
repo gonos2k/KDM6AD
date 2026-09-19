@@ -1,0 +1,223 @@
+{
+  "evidence_id": "pr224-warm-liquid-candidate-20260919",
+  "status": "offline_ad_fd_verified_conditional_followup",
+  "scope": "existing local pinned 5 km WRF/KDM6 earliest noninitial frame only; no RTTOV call",
+  "source": {
+    "path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp37_abgate_1min_hist0_20260830_235602_p51635/klfs_lc05_fcst.202507190000",
+    "sha256": "30ee8656cedf57cc827ad041e4ed8084d8bbf5afdbe0a21b28b33564544bca9f",
+    "time_index": 1,
+    "valid_time_utc": "2025-07-19_00:00:20",
+    "native_levels": 39,
+    "xland": [
+      1.0
+    ]
+  },
+  "selection": {
+    "rate_scan_policy": "rate_scan_policy_cap32.json",
+    "scan_ordinal": 25,
+    "flat_index": 35711,
+    "j": 152,
+    "i": 143,
+    "levels": [
+      0,
+      1,
+      2,
+      4,
+      11,
+      12,
+      14
+    ],
+    "cloud_base_height_agl_m": 25.495536139251954,
+    "integrated_qc_kg_m2": 0.2577464724152907,
+    "rate_gate_process": "accretion",
+    "rate_gate_abs_max": {
+      "pracw": 5.380425492609302e-08,
+      "nracw": 364751.48659655335
+    },
+    "ranking_provenance": {
+      "corrected_height_formula": "(PH+PHB)/g once",
+      "corrected_density_measure": "reader rho/(1+qv)",
+      "superseded_exploratory_flat": 15763,
+      "superseded_reason": "historical exploratory scan divided geopotential by g twice; not used for candidate selection"
+    },
+    "active_rate_level_metadata": [
+      {
+        "native_level": 11,
+        "temperature_K": 282.78239612074736,
+        "pressure_Pa": 72344.49981689453,
+        "pressure_hPa": 723.4449981689453,
+        "height_AGL_m": 2257.5254839509266
+      },
+      {
+        "native_level": 12,
+        "temperature_K": 280.23918991234336,
+        "pressure_Pa": 68531.12579345703,
+        "pressure_hPa": 685.3112579345703,
+        "height_AGL_m": 2706.9672362534643
+      },
+      {
+        "native_level": 14,
+        "temperature_K": 275.33758857114015,
+        "pressure_Pa": 60444.897399902344,
+        "pressure_hPa": 604.4489739990235,
+        "height_AGL_m": 3730.5638756241633
+      }
+    ],
+    "rate_values_are": "maximum over native levels unless per-level arrays in the full graphify artifact"
+  },
+  "rate_scan": {
+    "policy": "rate_scan_policy_cap32.json",
+    "evaluated": 25,
+    "rejected_before_pass": 24,
+    "first_passing_flat": 35711,
+    "rejection_artifact": "graphify-out/pr224-liquid/rate_scan_cap32_result.json"
+  },
+  "process": "accretion",
+  "applied_rate_alpha0": {
+    "pracw": 5.380425492609302e-08,
+    "nracw": 364751.48659655335
+  },
+  "alpha0_primal": {
+    "state_equal_value_vs_graph": true,
+    "rate_equal_value_vs_graph": true,
+    "state_max_delta": {
+      "th": 0.0,
+      "qv": 0.0,
+      "qc": 0.0,
+      "qr": 0.0,
+      "qi": 0.0,
+      "qs": 0.0,
+      "qg": 0.0,
+      "nccn": 0.0,
+      "nc": 0.0,
+      "ni": 0.0,
+      "nr": 0.0,
+      "bg": 0.0
+    },
+    "rate_max_delta": {
+      "pracw": 0.0,
+      "nracw": 0.0
+    }
+  },
+  "ad_fd": {
+    "rate_jvp_max": {
+      "pracw": 5.380425492609302e-08,
+      "nracw": 364751.48659655335
+    },
+    "rate_vjp_max": {
+      "pracw": 5.380425492609302e-08,
+      "nracw": 364751.48659655335
+    },
+    "state_jvp_max": {
+      "qc": 1.0760850985218605e-06,
+      "qr": 1.0760850985218605e-06,
+      "nc": 7295029.731931067
+    },
+    "profile_jvp_max": {
+      "HYDRO": 0.0009433712487455072,
+      "DEFF": 9.871329716372164e-05
+    },
+    "epsilons": [
+      {
+        "epsilon": 0.03,
+        "rate_relative_error": {
+          "pracw": 0.00014998425149675927,
+          "nracw": 0.0001499842514980278
+        }
+      },
+      {
+        "epsilon": 0.1,
+        "rate_relative_error": {
+          "pracw": 0.0016647242703901107,
+          "nracw": 0.0016647242703897204
+        }
+      },
+      {
+        "epsilon": 0.0001,
+        "rate_relative_error": {
+          "pracw": 1.6670951082917828e-09,
+          "nracw": 1.6670995493460623e-09
+        }
+      }
+    ],
+    "active_rate_indices": [
+      11,
+      12,
+      14
+    ]
+  },
+  "checks": {
+    "finite": true,
+    "primal_exact": true,
+    "trace": "warm_limited->state_update->picons->satadj->cleanup->dsd_limiter",
+    "live_rttov_calls": 0,
+    "external_data": false,
+    "production_edits": false
+  },
+  "limitations": [
+    "conditional fallback forecast frame, not initial wrfinput evidence",
+    "native model state and profile mapping are offline; no BT/cost or RTTOV claim",
+    "reader-declared nc units retained; host/kernel physical-unit reconciliation remains open"
+  ],
+  "rate_units": {
+    "pracw": "kg kg-1 s-1 (mass rate; oracle warm.py and coordinator dtcld update contract)",
+    "nracw": "internal number-unit s-1 in oracle; source nc is reader-declared kg-1, host/kernel physical unit reconciliation open"
+  },
+  "reproducibility": {
+    "policy_ordering": {
+      "primary": "lowest native warm-liquid cloud-base AGL",
+      "secondary": "largest dry integrated qc rho_d*delz*qc",
+      "rate_gate": "serial alpha=0 actual warm_limited rates, stop first finite nonzero",
+      "flat_tiebreak": "smallest j*nx+i"
+    },
+    "source_code_sha256": {
+      "graphify-out/pr224-liquid/selection_policy.json": "67f06cbce46daaa6b5256fb97ae785a0be3ecbebc4090cbc85f7dcc62941401b",
+      "graphify-out/pr224-liquid/rate_scan_policy_cap32.json": "60cd9024bc063d68cd4f5c3202a5eca333c8c41896d4e5fa2bc6eab0fe7e5a8b",
+      "graphify-out/pr224-liquid/scan_rate_gate_cap32.py": "76c886e30f8a1340acb3cf6df538baec27a143e713b31065722d12a8be75eaa0",
+      "graphify-out/pr224-liquid/verify_first_passing.py": "12cad53f5e17d08aa9779ba3c64787acf10167d164e3109fce6b879076559c4a",
+      "oracle/kdm6/io/frame_reader.py": "232e54391e094cc04aee36a6de743d9b5b01328e298f0be1c41a566b47de6995",
+      "oracle/kdm6/process_attribution.py": "546a274ce60a85e2c92cf13de9997efc4cfaca11c247f947defaabf9dbdd34ee",
+      "oracle/kdm6/process_controls.py": "e47b0e5ed58e0fc8bdd40e3967315861ab1c44d83f95aac228df12c52d2142f8",
+      "oracle/kdm6/warm.py": "266bc6df51ca908aaa85008d208f84ec92e67ef4dc39a0252727a7047fcee282",
+      "oracle/kdm6/coordinator.py": "b1339ace1a12236d168bc5dd8cc1243dc88c6633f4d8e09e8a159c9997e17c42"
+    },
+    "update_dt_evidence": [
+      "oracle/kdm6/warm.py:113,227 rate declarations",
+      "oracle/kdm6/coordinator.py:1129-1165 dtcld multiplies warm rates in state updates"
+    ],
+    "correction_history": [
+      "initial exploratory ranking divided PH+PHB by g twice; corrected to (PH+PHB)/g before rate scan and AD/FD selection",
+      "first local AD/FD script broadcast level-0 gradients and stripped forward-mode duals; fixed to per-component reverse/JVP preservation before accepting evidence"
+    ],
+    "invalid_intermediate_outputs_excluded": true
+  },
+  "acceptance_gates": {
+    "alpha0_state_primal_exact": true,
+    "alpha0_rate_primal_exact": true,
+    "finite_endpoints": true,
+    "fixed_branch_masks_all_epsilons": true,
+    "rate_relative_error_at_1e-4_le_1e-6": true,
+    "state_relative_error_at_1e-4_le_1e-4": true,
+    "ad_duality_rate_state_profile_abs_le_1e-12": true
+  },
+  "acceptance_metrics_at_epsilon_1e-4": {
+    "rate_max_relative_error": 1.6670995493460623e-09,
+    "state_max_relative_error": 1.7297145675697472e-09,
+    "profile_max_relative_error": 1.976931571322569e-07,
+    "rate_jvp_vjp_max_abs_difference": 0.0,
+    "state_jvp_vjp_max_abs_difference": 0.0,
+    "profile_jvp_vjp_max_abs_difference": 1.0842021724855044e-18
+  },
+  "selected_one_step_transfer_identity": {
+    "scope": "selected flat35711 accretion control, one dt=20 s oracle step, all 39 native levels",
+    "direction": "alpha control derivative at alpha=0; applies the recorded warm_limited accretion rates through the existing state_update",
+    "identities_max_abs_residual": {
+      "dqc_plus_dqr": 0.0,
+      "dqc_plus_20s_times_dpracw": 0.0,
+      "dqr_minus_20s_times_dpracw": 0.0,
+      "dnc_plus_20s_times_dnracw": 0.0
+    },
+    "interpretation": "selected executed transfer identity only; internal number-unit meaning remains conditional and this is not a global budget or conservation claim",
+    "source": "forward JVP arrays in graphify-out/pr224-liquid/first_passing_ad_fd.json; coordinator dtcld state-update path"
+  }
+}
