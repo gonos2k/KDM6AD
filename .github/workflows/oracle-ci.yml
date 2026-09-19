@@ -44,19 +44,23 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install torch (CPU, pinned) + numpy + pytest + netCDF4
+      - name: Install torch (CPU, pinned) + oracle verification dependencies
         run: |
           python -m pip install --upgrade pip
           pip install "torch==2.8.0" --index-url https://download.pytorch.org/whl/cpu
           # numpy/pytest pinned to the last green combo (with torch 2.8.0 / py3.11) so the
           # numeric suite is reproducible — a numpy major bump could shift float behavior.
           # Exercise synthetic NetCDF ingestion/identity tests in CI, not only locally.
-          pip install "numpy==2.4.6" "pytest==9.1.1" "netCDF4==1.7.4"
+          pip install "numpy==2.4.6" "pytest==9.1.1" "netCDF4==1.7.4" "pyproj==3.7.1"
 
       - name: Record versions
         run: |
-          python -c 'import sys, torch, numpy, pytest, netCDF4; print("python", sys.version.split()[0], "| torch", torch.__version__, "| numpy", numpy.__version__, "| pytest", pytest.__version__, "| netCDF4", netCDF4.__version__)'
+          python -c 'import sys, torch, numpy, pytest, netCDF4, pyproj; print("python", sys.version.split()[0], "| torch", torch.__version__, "| numpy", numpy.__version__, "| pytest", pytest.__version__, "| netCDF4", netCDF4.__version__, "| pyproj", pyproj.__version__)'
           pip --version   # installer version (deps are pinned; pip itself is not)
+
+      # Import above is mandatory: missing pyproj must fail before importorskip.
+      - name: Independent LCC projection comparison (required)
+        run: cd oracle && python -m pytest -q tests/test_gk2a_l1b.py::test_lcc_matches_pyproj_if_available
 
       - name: pytest (oracle/, pure-Python subset)
         run: cd oracle && python -m pytest -rs -q
