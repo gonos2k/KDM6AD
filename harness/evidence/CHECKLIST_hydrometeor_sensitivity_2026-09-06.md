@@ -406,10 +406,18 @@ by these portable tests. Operational f32 and packed ABI are unchanged.
   respectively. Signals exceed measured BT text-rounding bounds, serialized
   profiles round-trip exactly, and observed stage masks remain unchanged.
   Tapped masks do not constitute a complete internal branch atlas.
-- [ ] **V3 actual auxiliaries:** pressure/reference upper profiles, geometry,
-  surface and datetime retain fixture assumptions. The actual WRF/GK2A inputs
-  do not close this separate auxiliary-validation boundary. No dK/dx,
-  parameter identifiability, all-process or all-regime claim is made.
+- [x] **V3 partial actual-auxiliary follow-up (PR #218 baseline):** actual WRF
+  coordinates/elevation, skin and near-surface T/Q/winds, and slot UTC were
+  applied in ten live RTTOV evaluations. Applied auxiliary text hashes match
+  across all paired runs. Deposition/riming maximum AD–FD relative differences
+  are 0.0141%/0.1501%, with the previous acceptance rule unchanged. Requested
+  values and six-decimal applied values are distinguished. See
+  [partial actual-auxiliary report](REPORT_partial_actual_aux_2026-09-19.md).
+- [ ] **V3 full actual auxiliaries:** viewing/solar angles and upper T/Q/gases
+  remain reference or unverified. The fixed pressure grid is an interpolation
+  target, not evidence of actual upper-atmosphere conditions. The follow-up is
+  a mixed actual/reference operator; it does not close full actual-condition
+  validation. No dK/dx, identifiability, all-process or all-regime claim is made.
 - [ ] **M1 actual applied ledger:** one capture-enabled binary with runtime
   capture OFF/ON completed matched 20-second runs. At t=0 and20s, all253
   numeric common fields plus Times match raw bits (254/254, zero skipped).
