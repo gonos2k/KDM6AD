@@ -56,9 +56,9 @@ PAIRED_PROCESS = {"autoconv", "accretion", "riming", "freeze", "melt"}
 PROCESS_STATE_FIELDS = {
     "autoconv": ("qc", "qr", "nc", "nr"),
     "accretion": ("qc", "qr", "nc", "nr"),
-    "deposition": ("qv", "qs", "qg", "bg", "th"),
-    "riming": ("qv", "qs", "qg", "bg", "th"),
-    "freeze": ("th", "nccn", "nr"),
+    "deposition": ("qv", "qs", "qg", "bg", "th", "qi"),
+    "riming": ("qv", "qs", "qg", "bg", "th", "qc", "qi", "nc", "ni"),
+    "freeze": ("th", "nccn", "nr", "qc", "qi", "nc", "ni"),
     "melt": ("qs", "qg", "qr", "qc", "nr", "bg", "th"),
 }
 
@@ -87,6 +87,9 @@ class ProcessAttribution:
     selected_state_max_relative_error: float
     state_fd_ulp_bound: dict[str, float]
     output_resolution_fields: tuple[str, ...]
+    checked_state_fields: tuple[str, ...]
+    unchecked_state_fields: tuple[str, ...]
+    state_field_status: dict[str, str]
     numerical_domain: str
     active: bool
     finite_outputs: bool
@@ -272,8 +275,12 @@ def attribute_process(
         name: _fd_ulp_bound(getattr(plus, name), getattr(minus, name), epsilon)
         for name in State._fields
     }
+    checked_state_fields = tuple(PROCESS_STATE_FIELDS[process])
+    unchecked_state_fields = tuple(
+        name for name in State._fields if name not in checked_state_fields
+    )
     output_resolution_fields = tuple(
-        name for name in PROCESS_STATE_FIELDS[process]
+        name for name in checked_state_fields
         if max(abs(state_fd[name]), abs(state_ad[name])) <= state_fd_ulp_bound[name]
         and state_fd[name] != state_ad[name]
     )
@@ -281,8 +288,13 @@ def attribute_process(
     baseline_rate_values = _rate_values(base_rates)
     finite_outputs = all(math.isfinite(value) for value in baseline_rate_values.values())
     finite_outputs = finite_outputs and all(
+        bool(torch.isfinite(value).all())
+        for rates in (base_rates, controlled_rates, plus_rates, minus_rates, ad_rates)
+        for value in rates.values()
+    )
+    finite_outputs = finite_outputs and all(
         bool(torch.isfinite(getattr(output, name)).all())
-        for output in (baseline, controlled, plus, minus)
+        for output in (baseline, controlled, plus, minus, graph_out)
         for name in State._fields
     )
     finite_outputs = finite_outputs and all(
@@ -302,7 +314,8 @@ def attribute_process(
         return max(errors) if errors else 0.0
 
     rate_error = relative_error(rate_fd, rate_ad, PROCESS_RATE_FIELDS[process])
-    state_error = relative_error(state_fd, state_ad, PROCESS_STATE_FIELDS[process])
+    state_error = relative_error(state_fd, state_ad, checked_state_fields)
+
     def same_topology(*traces: SensitivityTrace) -> bool:
         if not all(t.subcycles == traces[0].subcycles for t in traces[1:]):
             return False
@@ -319,7 +332,29 @@ def attribute_process(
                 return False
         return True
 
-    tapped_topology_fixed = same_topology(base_trace, plus_trace, minus_trace)
+    tapped_topology_fixed = same_topology(
+        base_trace, plus_trace, minus_trace, graph_trace)
+    # Keep field-level evidence separate from the aggregate status.  An exact
+    # zero here is a response of this selected fixture/gate; it does not prove
+    # structural independence.  For nonzero fields, nonfinite products and a
+    # changed recorded topology take precedence over numerical agreement, so a
+    # matched FD cannot be called resolved across a branch switch.
+    state_field_status = {}
+    for name in checked_state_fields:
+        fd, ad = state_fd[name], state_ad[name]
+        if not finite_outputs:
+            state_field_status[name] = "nonfinite_unresolved"
+        elif fd == 0.0 and ad == 0.0:
+            state_field_status[name] = "zero_response"
+        elif not tapped_topology_fixed:
+            state_field_status[name] = "topology_unresolved"
+        elif name in output_resolution_fields:
+            state_field_status[name] = "output_resolution_unresolved"
+        else:
+            scale = max(abs(fd), abs(ad))
+            state_field_status[name] = (
+                "resolved_nonzero" if abs(fd - ad) / scale <= 1.0e-4
+                else "derivative_mismatch_unresolved")
     derivative_ok = rate_error <= 1.0e-6 and state_error <= 1.0e-4
     if not finite_outputs:
         status = "nonfinite_unresolved"
@@ -331,7 +366,7 @@ def attribute_process(
         status = (
         "zero_inactive_or_unresolved" if not active else "partial_topology_or_zero_effect")
     reason = None if status == "verified_selected_direction" else (
-        "nonfinite baseline rate or state output" if not finite_outputs else
+        "nonfinite process rate, state, or derivative product" if not finite_outputs else
         "rate group inactive in this fixture" if not active else
         "FD signal is at or below the per-field output-ULP bound" if output_resolution_fields else
         "active intervention has unresolved derivative mismatch or topology; cause not established")
@@ -350,6 +385,9 @@ def attribute_process(
         selected_state_max_relative_error=state_error,
         state_fd_ulp_bound=state_fd_ulp_bound,
         output_resolution_fields=output_resolution_fields,
+        checked_state_fields=checked_state_fields,
+        unchecked_state_fields=unchecked_state_fields,
+        state_field_status=state_field_status,
         numerical_domain=("singleton BxK; alpha central FD at fixed exact tapped "
                           "masks/subcycles; per-field selected-state checks"),
         active=active, finite_outputs=finite_outputs,

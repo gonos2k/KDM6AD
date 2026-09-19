@@ -9,8 +9,10 @@ from __future__ import annotations
 import pytest
 import torch
 
+import kdm6.process_attribution as pa
 from kdm6.process_attribution import (
     PROCESS_CONTROL_FIELDS,
+    PROCESS_STATE_FIELDS,
     attribute_process,
     cold_fixture,
     coverage_matrix,
@@ -103,6 +105,87 @@ def test_freeze_case_reports_output_resolution_limit():
     assert result.status == "unresolved_output_resolution"
     assert "th" in result.output_resolution_fields
     assert "output-ULP" in (result.reason or "")
+
+
+@pytest.mark.parametrize(
+    ("process", "expected_zero_fields"),
+    [
+        ("deposition", ("qi",)),
+        ("riming", ("qc", "qi", "nc", "ni")),
+        ("freeze", ("qc", "qi", "nc", "ni")),
+    ],
+)
+def test_cold_gate_field_metadata_distinguishes_zero_and_resolution(
+        process, expected_zero_fields):
+    state, forcing = cold_fixture()
+    result = attribute_process(state, forcing, process, regime="cold")
+
+    expected_checked = PROCESS_STATE_FIELDS[process]
+    assert result.checked_state_fields == expected_checked
+    assert set(result.unchecked_state_fields) == set(state._fields) - set(expected_checked)
+    assert set(result.state_field_status) == set(expected_checked)
+
+    # These newly selected gate fields have AD=FD=0 in this fixture.  Record
+    # that as a selected zero response, without calling it independence.
+    for name in expected_zero_fields:
+        assert result.state_fd[name] == 0.0
+        assert result.state_ad[name] == 0.0
+        assert result.state_field_status[name] == "zero_response"
+
+    if process == "freeze":
+        assert result.state_field_status["th"] == "output_resolution_unresolved"
+        assert "th" in result.output_resolution_fields
+    else:
+        assert result.state_field_status["th"] == "resolved_nonzero"
+
+
+@pytest.mark.parametrize("target_call", [3, 5], ids=["plus", "graph_ad"])
+def test_changed_tapped_topology_blocks_resolved_nonzero_label(monkeypatch, target_call):
+    original_run = pa._run
+    calls = 0
+
+    def run_with_changed_plus(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        output, trace, handle = original_run(*args, **kwargs)
+        if calls == target_call:
+            for record in trace.records:
+                if record.branch is not None:
+                    record.branch = ~record.branch.to(torch.bool)
+                    break
+        return output, trace, handle
+
+    monkeypatch.setattr(pa, "_run", run_with_changed_plus)
+    result = attribute_process(*cold_fixture(), "riming", regime="cold")
+
+    assert not result.tapped_topology_fixed
+    assert result.state_field_status["th"] == "topology_unresolved"
+    assert result.state_field_status["qc"] == "zero_response"
+
+
+@pytest.mark.parametrize("target", ["controlled", "plus", "minus", "graph"])
+def test_nonfinite_rate_at_each_product_boundary_is_unresolved(monkeypatch, target):
+    original_run = pa._run
+    calls = 0
+    target_call = {"controlled": 2, "plus": 3, "minus": 4, "graph": 5}[target]
+
+    def run_with_nonfinite_rate(*args, **kwargs):
+        nonlocal calls
+        calls += 1
+        output, trace, handle = original_run(*args, **kwargs)
+        if calls == target_call:
+            record = trace.by_name("cold_limited")[0]
+            record.rates = record.rates._replace(
+                psacw=torch.full_like(record.rates.psacw, float("nan")))
+        return output, trace, handle
+
+    monkeypatch.setattr(pa, "_run", run_with_nonfinite_rate)
+    result = attribute_process(*cold_fixture(), "riming", regime="cold")
+
+    assert result.status == "nonfinite_unresolved"
+    assert result.reason == "nonfinite process rate, state, or derivative product"
+    assert all(status != "resolved_nonzero"
+               for status in result.state_field_status.values())
 
 
 def test_coverage_matrix_makes_inactive_and_unresolved_pairs_explicit():
