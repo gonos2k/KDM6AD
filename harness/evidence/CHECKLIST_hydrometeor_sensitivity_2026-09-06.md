@@ -748,3 +748,16 @@ See CHECKLIST_pr223_followup_2026-09-19.md and its three linked reports.
 
 See CHECKLIST_pr224_followup_2026-09-20.md. The existing QC-excluded result
 and all broader physical-unit/transport/convergence limitations remain open.
+
+### PR225 follow-up — measured cap arrays and column weights
+
+- [x] Resolve the isolated link path using installed CLT ld by absolute path;
+  preserve installed binaries, original inputs, QC and license state.
+- [x] Verify uninstrumented baseline and five instrumented endpoints against
+  archived direct/K outputs: byte-identical in all five compared files.
+- [x] Measure exact cap predicates and components: 62 active rows, identical
+  endpoint masks; publish column mappings/weights and selected tangent overlap.
+- [ ] The nine IR observations remain QC-excluded. This closes selected cap
+  diagnosis, not accepted BT/cost validation or full derivative attribution.
+
+See CHECKLIST_pr225_followup_2026-09-20.md and REPORT_extinction_layers_2026-09-20.md.
