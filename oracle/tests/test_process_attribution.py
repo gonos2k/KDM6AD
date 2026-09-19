@@ -39,6 +39,8 @@ def test_autoconv_alpha_reaches_paired_limited_rates_and_state_fd():
     assert result.rate_ad["praut"] > 0.0
     assert result.rate_fd["praut"] == pytest.approx(result.rate_ad["praut"], rel=1.0e-6)
     assert result.rate_fd["nraut"] == pytest.approx(result.rate_ad["nraut"], rel=1.0e-6)
+    assert result.rate_output_resolution_fields == ()
+    assert result.rate_field_status["praut"] == "resolved_nonzero"
 
 
 def test_cold_deposition_has_mass_and_latent_coupled_effect_without_number_claim():
@@ -147,6 +149,54 @@ def test_equal_nonzero_one_ulp_fd_and_ad_stay_unresolved(monkeypatch):
     assert result.status == "unresolved_output_resolution"
 
 
+def test_equal_nonzero_rate_fd_and_ad_at_output_ulp_stay_unresolved(monkeypatch):
+    """A one-ULP applied-rate response remains unresolved despite AD=FD."""
+    state, forcing = warm_fixture()
+    reference = attribute_process(state, forcing, "autoconv", regime="warm")
+    original_run = pa._run
+    epsilon = 1.0e-4
+    center_value = 1.0e-5
+
+    def run_with_rate_ulp(*args, **kwargs):
+        output, trace, handle = original_run(*args, **kwargs)
+        process = args[2]
+        alpha = args[3]
+        graph = kwargs.get("graph", False)
+        alpha_value = (float(alpha.detach().item())
+                       if isinstance(alpha, torch.Tensor) else float(alpha))
+        if process == "autoconv":
+            record = trace.by_name("warm_limited")[-1]
+            center = torch.full_like(record.rates.praut, center_value)
+            one_ulp = torch.nextafter(
+                center, torch.full_like(center, float("inf")))
+            if graph:
+                slope = (one_ulp - center).sum() / (2.0 * epsilon)
+                record.rates = record.rates._replace(
+                    praut=center + alpha * slope)
+            elif alpha_value == 0.0 or alpha_value == -epsilon:
+                record.rates = record.rates._replace(praut=center)
+            elif alpha_value == epsilon:
+                record.rates = record.rates._replace(praut=one_ulp)
+        return output, trace, handle
+
+    monkeypatch.setattr(pa, "_run", run_with_rate_ulp)
+    result = attribute_process(state, forcing, "autoconv", regime="warm",
+                               epsilon=epsilon)
+
+    assert result.rate_fd["praut"] == result.rate_ad["praut"] != 0.0
+    assert result.rate_fd["praut"] == pytest.approx(8.470329472543003e-18,
+                                                      abs=0.0)
+    assert result.rate_fd_ulp_bound["praut"] == result.rate_fd["praut"]
+    assert result.rate_output_resolution_fields == ("praut",)
+    assert result.rate_field_status["praut"] == "output_resolution_unresolved"
+    assert result.status == "unresolved_output_resolution"
+    assert result.finite_outputs and result.alpha0_primal_equal
+    assert result.tapped_topology_fixed
+    assert result.state_fd == reference.state_fd
+    assert result.state_ad == reference.state_ad
+    assert result.state_field_status == reference.state_field_status
+
+
 @pytest.mark.parametrize("offset_kind", ["state", "rate"])
 def test_alpha0_graph_primal_offsets_are_detected(monkeypatch, offset_kind):
     """Constant graph-only state/rate offsets cannot hide behind equal AD/FD."""
@@ -183,6 +233,8 @@ def test_alpha0_graph_primal_offsets_are_detected(monkeypatch, offset_kind):
         assert result.alpha0_rate_primal_delta["praut"] == pytest.approx(1.0e-12)
     assert all(status == "alpha0_primal_mismatch"
                for status in result.state_field_status.values())
+    assert all(status == "alpha0_primal_mismatch"
+               for status in result.rate_field_status.values())
     assert result.status == "alpha0_primal_mismatch"
     assert result.reason == (
         "value-only and graph alpha=0 primals differ for state or applied rate")
@@ -243,6 +295,7 @@ def test_changed_tapped_topology_blocks_resolved_nonzero_label(monkeypatch, targ
     assert not result.tapped_topology_fixed
     assert result.state_field_status["th"] == "topology_unresolved"
     assert result.state_field_status["qc"] == "zero_response"
+    assert result.rate_field_status["psacw"] == "topology_unresolved"
 
 
 @pytest.mark.parametrize(
@@ -272,6 +325,7 @@ def test_nonfinite_rate_at_each_product_boundary_is_unresolved(monkeypatch, targ
     assert result.reason == "nonfinite process rate, state, or derivative product"
     assert all(status != "resolved_nonzero"
                for status in result.state_field_status.values())
+    assert result.rate_field_status["psacw"] == "nonfinite_unresolved"
 
 
 def test_coverage_matrix_makes_inactive_and_unresolved_pairs_explicit():
@@ -284,3 +338,4 @@ def test_coverage_matrix_makes_inactive_and_unresolved_pairs_explicit():
     assert matrix["cold"]["freeze"].status == "unresolved_output_resolution"
     assert not matrix["warm"]["deposition"].active
     assert matrix["warm"]["deposition"].status == "zero_inactive_or_unresolved"
+    assert matrix["warm"]["deposition"].rate_field_status["pidep"] == "zero_response"

@@ -50,20 +50,24 @@ def main() -> int:
         f"alpha={args.alpha:g}, epsilon={args.epsilon:g}, dt={args.dt:g}s; "
         "all controls use existing ProcessControls and donor caps.",
         "",
-        "| regime | process | status | active | state effect | tapped masks/subcycles | water FD/AD | temperature FD/AD |",
-        "|---|---|---|---:|---:|---:|---:|---:|",
+        "| regime | process | status | active | state effect | tapped masks/subcycles | rate ULP fields | water FD/AD | temperature FD/AD |",
+        "|---|---|---|---:|---:|---:|---|---:|---:|",
     ]
     for regime, row in matrix.items():
         for process, result in row.items():
+            rate_resolution = ",".join(result.rate_output_resolution_fields) or "—"
             lines.append(
                 f"| {regime} | {process} | {result.status} | "
                 f"{int(result.active)} | {int(result.nonzero_state_effect)} | "
-                f"{int(result.tapped_topology_fixed)} | {result.water_fd:.6g}/{result.water_ad:.6g} | "
+                f"{int(result.tapped_topology_fixed)} | {rate_resolution} | "
+                f"{result.water_fd:.6g}/{result.water_ad:.6g} | "
                 f"{result.temperature_fd:.6g}/{result.temperature_ad:.6g} |"
             )
     lines.extend([
         "", "Inactive pairs are explicit zero/unresolved coverage, not evidence of process independence.",
         "Rate derivatives are for the named admissible alpha group; raw rates were not independently perturbed.",
+        "Rate ULP fields identify per-field output-resolution limits; attribution.json is authoritative for "
+        "per-field bounds, statuses, and reasons.",
     ])
     (args.out / "attribution.md").write_text("\n".join(lines) + "\n")
     print(args.out / "attribution.json")
