@@ -29,7 +29,7 @@ Provenance contract (review rounds):
 
 Usage:
     python oracle/scripts/run_fulldomain_lc05.py OUT_JSON CASE_ROOT
-        [--conserving] [--allow-dirty]
+        [--conserving] [--allow-dirty] [--rttov-timeout SECONDS]
 
 --conserving (v10): P1-1 conserving CVT — mass-hydro diagonal sigma zeroed,
 species move only through the signed partition channels; the artifact adds
@@ -43,6 +43,7 @@ import platform
 import re
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -50,6 +51,8 @@ _ORACLE = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(_ORACLE))
 # NOTE: production must NOT put oracle/tests on sys.path (external review P2-1)
 # — the RTTOV fixture accessors are imported from the kdm6.obs package below.
+from kdm6.obs.rttov_runner import (  # noqa: E402 - script path bootstrap above
+    DEFAULT_RTTOV_TIMEOUT, validate_rttov_timeout)
 
 WRFIN = ("/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/"
          "ss_real_case_20260619_063620/SS/wrfinput_d01")
@@ -598,7 +601,9 @@ def redact_manifest(manifest):
     return scrub(manifest)
 
 
-def main(out_json, case_root, conserving=False, allow_dirty=False):
+def main(out_json, case_root, conserving=False, allow_dirty=False,
+         rttov_timeout=DEFAULT_RTTOV_TIMEOUT):
+    rttov_timeout = validate_rttov_timeout(rttov_timeout)
     from kdm6.da_fulldomain import (evaluate_artifact_gates,
                                     run_fulldomain_analysis)
     from kdm6.io.frame_reader import read_wrfout_frame
@@ -611,6 +616,7 @@ def main(out_json, case_root, conserving=False, allow_dirty=False):
                                         fixture_tq as _fixture_tq)
 
     t0 = time.time()
+    run_case_root = None
     _assert_fresh_outputs(out_json)
     # the run lock spans the WHOLE run — without it two concurrent runners
     # over the same OUT_JSON would pass the freshness check together and
@@ -625,6 +631,11 @@ def main(out_json, case_root, conserving=False, allow_dirty=False):
             [out_json, case_root],
             [WRFIN, CAL, GK2A] + [e["path"] for e in manifest["rttov"].values()
                                   if isinstance(e, dict) and "path" in e])
+        Path(case_root).mkdir(parents=True, exist_ok=True)
+        run_case_root = tempfile.mkdtemp(prefix="run-", dir=case_root)
+        print(f"[run] case_root={Path(run_case_root).resolve()} "
+              f"rttov_timeout={rttov_timeout:g}s per external run",
+              flush=True)
         # This wrfinput seeds a DA window; initialize its empty CCN explicitly.
         fr = read_wrfout_frame(WRFIN, 0, nccn_policy="init_profile")
         cal = load_cal_table(CAL)
@@ -640,13 +651,15 @@ def main(out_json, case_root, conserving=False, allow_dirty=False):
                      t_ref=tr, q_ref=qr)
         staging_npz = out_json + ".fields.npz.staging"
         rep = run_fulldomain_analysis(
-            fr, co, grids, case_root, n_workers=8, max_iter=MAX_ITER,
+            fr, co, grids, run_case_root, n_workers=8, max_iter=MAX_ITER,
             channels=_CHANNELS, pseudo_rh=True, time_tolerance_s=300.0,
             qv_levels=int(fr.meta["kme"]), conserving=conserving,
-            save_fields=staging_npz)
+            save_fields=staging_npz, rttov_timeout=rttov_timeout)
 
         rep["artifact_role"] = ("conserving_stress" if conserving
                                 else "pathology_stress")
+        rep["case_root"] = str(Path(run_case_root).resolve())
+        rep["rttov_timeout"] = rttov_timeout
         # the runner-known mode is the external gate contract (fail-closed even
         # if every self-declaration marker regressed away)
         rep["gates"] = evaluate_artifact_gates(rep,
@@ -675,9 +688,21 @@ def main(out_json, case_root, conserving=False, allow_dirty=False):
     finally:
         _release_run_lock(out_json)
 
-if __name__ == "__main__":
+
+def _build_arg_parser():
     import argparse
-    # allow_abbrev=False: --conserv must not silently expand
+
+    def parse_timeout(text):
+        try:
+            value = float(text)
+        except (TypeError, ValueError) as exc:
+            raise argparse.ArgumentTypeError(
+                "RTTOV timeout must be a positive finite number of seconds") from exc
+        try:
+            return validate_rttov_timeout(value)
+        except ValueError as exc:
+            raise argparse.ArgumentTypeError(str(exc)) from exc
+
     ap = argparse.ArgumentParser(
         description="LC05 full-domain evidence runner", allow_abbrev=False)
     ap.add_argument("out_json")
@@ -689,6 +714,15 @@ if __name__ == "__main__":
                     help="record a dirty-tree run explicitly (the dirty "
                          "digest is a drift sentinel, not reproduction "
                          "data)")
-    args = ap.parse_args()
+    ap.add_argument("--rttov-timeout", type=parse_timeout,
+                    default=DEFAULT_RTTOV_TIMEOUT, metavar="SECONDS",
+                    help="positive finite timeout for each external RTTOV run "
+                         "(default: %(default)s; not a whole-cycle deadline)")
+    return ap
+
+
+if __name__ == "__main__":
+    # allow_abbrev=False: --conserv must not silently expand
+    args = _build_arg_parser().parse_args()
     main(args.out_json, args.case_root, conserving=args.conserving,
-         allow_dirty=args.allow_dirty)
+         allow_dirty=args.allow_dirty, rttov_timeout=args.rttov_timeout)

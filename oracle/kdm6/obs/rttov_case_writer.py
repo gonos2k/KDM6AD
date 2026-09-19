@@ -24,7 +24,10 @@ import re
 import shutil
 from pathlib import Path
 
-from .rttov_runner import ad_rttov_home, rttov_runtime_root, run_rttov_k
+from .rttov_runner import (DEFAULT_RTTOV_TIMEOUT, ad_rttov_home,
+                           exclusive_rttov_case, rttov_runtime_root,
+                           _resolve_run_script, _run_rttov_k_unlocked,
+                           validate_rttov_timeout)
 
 # The ami/501 GK2A AMI clear-sky fixture (6 profiles x 16 channels, 69 layers).
 _AMI501_FIXTURE = "external/rttov14/src/rttov_test/tests.1.gfortran-openmp/ami/501"
@@ -35,6 +38,7 @@ _AMI501_FIXTURE = "external/rttov14/src/rttov_test/tests.1.gfortran-openmp/ami/5
 _AMI_CLOUD_FIXTURE = "external/rttov14/src/rttov_test/tests.1.gfortran-openmp/ami/cloud"
 _NHYDRO = 8            # hydro.txt columns (7 hydrotable types + Baran)
 _NHYDRO_DEFF = 7       # hydro_deff.txt columns (nhydro - 1, Baran has no Deff)
+_RTTOV_OUTPUT_REALPREC = 12  # copied test-driver decimal format; binary precision is independent
 _LIQ_COL = 5           # 0-based: slot 6 = CLW-Deff liquid
 _ICE_COL = 6           # 0-based: slot 7 = Baum ice
 # RttovInput.profile cloud keys -> (matrix, column). content [g/m^3], Deff [micron].
@@ -65,13 +69,14 @@ def cloud_fixture_case_dir() -> Path:
 
 
 def _format_rttov_vector(values) -> str:
-    """RTTOV ASCII profile vector: one ``%.6E`` value per line (matches the fixture
-    format + the AD-RTTOV overlay writer). %.6E is ~7 sig figs ~= RTTOV's internal
-    single precision, so it is not the precision floor for the run. NOTE for future
-    FD-through-RTTOV checks: a finite-difference T/Q perturbation must exceed this
-    ASCII resolution (and RTTOV's float32 input resolution) to survive the round-trip
-    -- bump the precision here if a tighter FD step is ever needed."""
-    return "".join(f"{float(v):.6E}\n" for v in values)
+    """RTTOV ASCII profile vector: one ``%.16E`` value per line.
+
+    The f64 round-trip preserves first-order profile sensitivities through the
+    ASCII boundary. ``defn%realprec`` separately controls only the test driver's
+    emitted decimal format; it does not establish the loaded binary's arithmetic
+    precision.
+    """
+    return "".join(f"{float(v):.16E}\n" for v in values)
 
 
 def _fixture_count(path: Path) -> int:
@@ -140,8 +145,8 @@ def _validate_cloud_domain(rttov_input) -> None:
 
 
 def _write_matrix(path: Path, rows) -> None:
-    """Write a [nlay, ncol] matrix as space-separated ``%.6E`` per layer row."""
-    path.write_text("".join(" ".join(f"{float(v):.6E}" for v in row) + "\n" for row in rows))
+    """Write a [nlay, ncol] matrix as space-separated ``%.16E`` values."""
+    path.write_text("".join(" ".join(f"{float(v):.16E}" for v in row) + "\n" for row in rows))
 
 
 def _overlay_cloud(profile_dir: Path, rttov_input, p: int, nlay: int) -> None:
@@ -690,25 +695,52 @@ def _check_grid_matches_fixture(profile_dir: Path, p_half_model, p_lay_model=Non
 
 
 def _patch_config_counts(config_path: Path, nprofiles: int, nchannels_total: int) -> None:
-    """Rewrite the authoritative ``defn%nprofiles`` / ``defn%nchannels`` in the
-    rttov_test namelist. RTTOV reads the profile/channel COUNT from this namelist
-    (not from the in/ dir listing), so a trimmed case whose namelist still says
-    nprofiles=6 fails ('Cannot read from channels.txt') -- the reader expects 6
-    lines. ``nchannels_total`` is the total chanprof (Σ channels over profiles)."""
+    """Rewrite copied-case counts and test-driver decimal output precision.
+
+    RTTOV reads the profile/channel count from this namelist (not from the
+    ``in/`` directory listing), so a trimmed case whose namelist still says
+    ``nprofiles=6`` fails because the reader expects six lines. ``realprec``
+    controls only emitted decimal formatting; 12 prevents live FD output from
+    being quantized at 0.001 K and does not change binary arithmetic precision.
+    """
     if not config_path.is_file():
         raise FileNotFoundError(f"fixture config missing {config_path}")
     text = config_path.read_text()
     text, n1 = re.subn(r"(?m)^(\s*defn%nprofiles\s*=\s*)\d+", rf"\g<1>{nprofiles}", text)
     text, n2 = re.subn(r"(?m)^(\s*defn%nchannels\s*=\s*)\d+", rf"\g<1>{nchannels_total}", text)
-    if n1 != 1 or n2 != 1:
+    text, n3 = re.subn(r"(?m)^(\s*defn%realprec\s*=\s*)\d+",
+                       rf"\g<1>{_RTTOV_OUTPUT_REALPREC}", text)
+    if n1 != 1 or n2 != 1 or n3 != 1:
         raise ValueError(
-            f"{config_path}: expected one defn%nprofiles and one defn%nchannels "
-            f"line (found {n1}/{n2}); cannot retarget the case profile count.")
+            f"{config_path}: expected one defn%nprofiles, defn%nchannels and "
+            f"defn%realprec line (found {n1}/{n2}/{n3}); cannot retarget copied case.")
     config_path.write_text(text)
 
 
+def _selected_fixture_case_dir(rttov_input, fixture_case_dir=None) -> Path:
+    """Select the fixture path without touching the filesystem."""
+    if fixture_case_dir is not None:
+        return Path(fixture_case_dir)
+    profile = getattr(rttov_input, "profile", {})
+    if any(key in profile for key in _CLOUD_KEYS):
+        return cloud_fixture_case_dir()
+    return default_fixture_case_dir()
+
+
+def _validate_disjoint_case_paths(out: Path, fixture: Path) -> None:
+    """Reject equal, ancestor, and descendant output/fixture paths."""
+    out_resolved = out.resolve()
+    fixture_resolved = fixture.resolve()
+    if (out_resolved == fixture_resolved
+            or out_resolved in fixture_resolved.parents
+            or fixture_resolved in out_resolved.parents):
+        raise ValueError(
+            "refusing overlapping RTTOV output and fixture paths: output and fixture "
+            "must be disjoint (neither may contain the other).")
+
+
 def write_rttov_case(rttov_input, out_case_dir, *, fixture_case_dir=None, overwrite=False,
-                     solar_channels=()) -> Path:
+                     solar_channels=(), _lock=True) -> Path:
     """Copy the fixture case and overlay atm/t.txt + atm/q.txt from ``rttov_input``.
 
     If ``rttov_input`` carries the full all-sky cloud set (HYDRO6/7 content +
@@ -728,6 +760,16 @@ def write_rttov_case(rttov_input, out_case_dir, *, fixture_case_dir=None, overwr
     fixture whose namelist contradicts the forced K/gas-unit contract).
     """
     out = Path(out_case_dir)
+    if _lock:
+        # Check the relationship before acquiring the lock: opening a lock for a
+        # not-yet-created nested output can otherwise create directories inside
+        # the fixture before the reject-don't-delete guard runs.
+        fixture_for_lock = _selected_fixture_case_dir(rttov_input, fixture_case_dir)
+        _validate_disjoint_case_paths(out, fixture_for_lock)
+        with exclusive_rttov_case(out, role="root"):
+            return write_rttov_case(
+                rttov_input, out, fixture_case_dir=fixture_case_dir,
+                overwrite=overwrite, solar_channels=solar_channels, _lock=False)
     # Validate the RttovInput BEFORE any filesystem mutation (no leftover dir on reject).
     # The run uses the fixture's config/grid/gases/surface/geometry -- only T/Q (+ cloud)
     # + channels come from the RttovInput; reject fields the writer would silently ignore.
@@ -795,11 +837,10 @@ def write_rttov_case(rttov_input, out_case_dir, *, fixture_case_dir=None, overwr
     if not fixture.is_dir():
         raise FileNotFoundError(
             f"RTTOV fixture case not found: {fixture} (set AD_RTTOV_HOME / install ami/501).")
+    _validate_disjoint_case_paths(out, fixture)
     if out.exists():
         if not overwrite:
             raise FileExistsError(f"out_case_dir already exists: {out} (use overwrite=True).")
-        if out.resolve() == fixture.resolve():
-            raise ValueError("refusing to overwrite the fixture case in place.")
         shutil.rmtree(out)
     shutil.copytree(fixture, out)
     # Everything past copytree may reject (a bad fixture contract, an off-grid P_HALF,
@@ -1047,7 +1088,8 @@ def merge_solar_observable(bt, refl, channels, solar_channels):
     return obs
 
 
-def make_live_run_k(out_case_dir, *, fixture_case_dir=None, solar_channels=(), timeout=None):
+def make_live_run_k(out_case_dir, *, fixture_case_dir=None, solar_channels=(),
+                    timeout=DEFAULT_RTTOV_TIMEOUT):
     """Build the live ``run_k(RttovInput) -> (observable, K, rad_quality)`` for RttovObsOp.
 
     Each call: write_rttov_case (overlay T/Q + cloud onto the fixture) -> out-of-process
@@ -1056,34 +1098,42 @@ def make_live_run_k(out_case_dir, *, fixture_case_dir=None, solar_channels=(), t
     ``out_case_dir`` is rewritten each call (overwrite=True). ``solar_channels`` (1-based
     ids) empty -> pure BT (IR-only / clear-sky, unchanged).
 
-    NOT concurrency-safe: ``out_case_dir`` is a single shared, rewritten directory,
-    so two overlapping calls on the SAME closure would clobber each other's case
-    mid-run (-> wrong BT/K -> wrong gradient). Sequential use (one DA-window backward
-    at a time) is fine; for concurrent callers give each its own ``out_case_dir``, or
-    use ``rttov_obs_operator.default_run_k`` which allocates a unique per-call dir.
+    Overlapping calls on the same canonical case path are rejected before
+    rewriting it. Sequential calls reuse it; independent jobs should use unique
+    directories. The timeout bounds each external run (default 300 seconds),
+    not preparation, parsing, or the complete DA cycle. No unbounded opt-out.
     """
+    timeout = validate_rttov_timeout(timeout)
     def _run_k(rttov_input):
-        case_out = write_rttov_case(rttov_input, out_case_dir,
-                                    fixture_case_dir=fixture_case_dir, overwrite=True,
-                                    solar_channels=solar_channels)
-        out = run_rttov_k(case_out, nchannels=len(rttov_input.config.channels),
-                          expected_nprofiles=rttov_input.nprofiles, timeout=timeout)
-        # Cloud K adapter: RTTOV emits the cloud K as flat PROFILES_K HYDRO/HYDRO_DEFF
-        # blocks ([nprof][nch][ntype*nlay]); RttovObsOp.backward wants per-slot
-        # HYDRO6/7 + HYDRO_DEFF6/7 ([nprof][nch][nlay]). No-op for clear-sky (no HYDRO).
-        nlay = len(out.k["T"][0][0])                    # authoritative layer count from T-K
-        add_cloud_k_slots(out.k, nlay=nlay)
-        # Per-channel observable: BT (thermal) / REFL (solar). The K is already
-        # per-channel-type, so the obs operator contracts it against this observable's
-        # cotangent unchanged. RttovKOutput field order is (bt, rad_quality, k, ...) ->
-        # reorder to the run_k contract (observable, K, rad_quality); never `tuple(out)`.
-        observable = merge_solar_observable(out.bt, out.refl,
-                                            rttov_input.config.channels, solar_channels)
-        return observable, out.k, out.rad_quality
+        with exclusive_rttov_case(out_case_dir, role="root"):
+            case_out = write_rttov_case(rttov_input, out_case_dir,
+                                        fixture_case_dir=fixture_case_dir, overwrite=True,
+                                        solar_channels=solar_channels, _lock=False)
+            # The closure already owns CASE for the complete write/run/parse
+            # transaction. Use the runner's unlocked core here so macOS flock
+            # does not reject this intentional nested acquisition; direct
+            # run_rttov_k callers still acquire the same CASE lock themselves.
+            out = _run_rttov_k_unlocked(
+                _resolve_run_script(case_out, "run.sh"),
+                nchannels=len(rttov_input.config.channels),
+                expected_nprofiles=rttov_input.nprofiles, timeout=timeout)
+            # Cloud K adapter: RTTOV emits the cloud K as flat PROFILES_K HYDRO/HYDRO_DEFF
+            # blocks ([nprof][nch][ntype*nlay]); RttovObsOp.backward wants per-slot
+            # HYDRO6/7 + HYDRO_DEFF6/7 ([nprof][nch][nlay]). No-op for clear-sky (no HYDRO).
+            nlay = len(out.k["T"][0][0])                    # authoritative layer count from T-K
+            add_cloud_k_slots(out.k, nlay=nlay)
+            # Per-channel observable: BT (thermal) / REFL (solar). The K is already
+            # per-channel-type, so the obs operator contracts it against this observable's
+            # cotangent unchanged. RttovKOutput field order is (bt, rad_quality, k, ...) ->
+            # reorder to the run_k contract (observable, K, rad_quality); never `tuple(out)`.
+            observable = merge_solar_observable(out.bt, out.refl,
+                                                rttov_input.config.channels, solar_channels)
+            return observable, out.k, out.rad_quality
 
     # Tag the closure with its solar set so a consumer (obs_adjoint_callback) can verify
     # it matches ObsOperatorConfig.solar_channels -- a mismatch (e.g. cfg says solar but
     # this run_k merges pure BT) would be a silent config-mismatch wrong gradient.
     _run_k.solar_channels = tuple(int(c) for c in solar_channels)
     _run_k.evidence_level = "wiring_only"
+    _run_k.timeout = timeout
     return _run_k

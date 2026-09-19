@@ -3,6 +3,12 @@
 Single source of truth for **what is implemented and validated today**, separate from the
 chronological audit trail in the wiki/parity logs.
 
+The active validation work is tracked in the
+[hydrometeor sensitivity checklist](../harness/evidence/CHECKLIST_hydrometeor_sensitivity_2026-09-06.md):
+KDM process interactions, discrete JVP/VJP correctness and the GK2A–RTTOV
+first-order objective chain. Operational cycling and forecast skill are separate
+goals. Each checklist result states its tested processes, branches and assets.
+
 **`docs/c4_evidence_manifest.json` is an IMMUTABLE HISTORICAL SNAPSHOT** (owner §16-5).
 It pins the producer and private-host executions **as they were at that closeout** —
 `producer_commit a8cd83cd`, `main_commit abb470f1` — and is never updated in place.

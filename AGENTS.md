@@ -1,8 +1,5 @@
-# PROJECT KNOWLEDGE BASE
+# KDM6AD Project Instructions
 
-Generated: 2026-06-25
-Commit: unavailable at this root
-Branch: unavailable at this root
 Scope: KDM6/KDM6AD only; this is not a general WRF/KIM-meso guide.
 
 ## Canonical Worktree
@@ -35,11 +32,21 @@ is self-contained and its `ctest`/`pytest` run from the repo alone.
 C++ libtorch f32/AD mirror, Fortran ISO_C bridge, and — in the full host tree — a
 KIM-meso/WRF host where `mp_physics=37` is KDM6 and `mp_physics=137` is KDM6AD.
 
-The load-bearing invariant is strict parity: mp37 vs mp137 raw-bit identical for all
-numeric common variables (only the non-numeric `Times` differs). As of **2026-07-04**
-this holds through a **full 12-hour (2160-step) SS real-case integration under MPI(np4)**
-— all 254 output variables bit-identical at every output frame (the campaign goal; see
-`wiki/concepts/KDM6AD Forward Parity.md`). Earlier milestones were SS step-1 and 10-step.
+Preserve raw-bit parity between mp37 and mp137 for numeric common outputs.
+Historical campaign results and their source/build attribution belong in
+`wiki/concepts/KDM6AD Forward Parity.md`; do not treat them as verification
+of a changed executable or host configuration.
+
+## Differentiability Validation Goal
+
+The validation target is differentiable KDM microphysics, including sensitivities
+between hydrometeor processes, through the GK2A–RTTOV assimilation chain.
+Prioritize JVP/VJP correctness, independent directional differences, branch and
+numerical diagnostics, declared units and applied-process budgets. Distinguish
+state-to-state sensitivity, named process attribution and sensitivity of BT/cost.
+Forecast skill and unattended host cycling are separate objectives, not completion
+gates for this validation task. Keep first-order RTTOV K validation separate from
+unverified higher-order derivatives or parameter identifiability claims.
 
 ## Structure
 
@@ -73,18 +80,6 @@ Generated or foreign areas are not source for normal KDM6AD work:
 | Host build wiring | `host/KIM-meso_v1.0/apply_kdm6ad_config.sh`, `phys/Makefile` | re-inject link flags and build hook |
 | SS parity | `harness/strict_bitwise_nc.py`, host SS case runner | final raw-bit gate |
 
-## Code Map
-
-| Symbol | Type | Location | Role |
-| --- | --- | --- | --- |
-| `kdm6ad` | Fortran subroutine | `module_mp_kdm6ad.F` | mp137 wrapper into C++ ABI |
-| `module_mp_kdm6` | Fortran module | `module_mp_kdm6.F` | mp37 forward reference |
-| `kdm6_step_c` | C ABI | `libtorch/bridge/kdm6_c_api.cpp` | operational f32 forward path |
-| `kdm6_step_ad_c` | C ABI | `libtorch/bridge/kdm6_c_api.cpp` | fp64 DA forward/handle path |
-| `kdm6_handle_vjp_c` / `kdm6_handle_jvp_c` | C ABI | `libtorch/bridge/kdm6_c_api.cpp` | reverse/forward AD products |
-| `kdm6::kdm6_step` | C++ runtime | `libtorch/src/runtime.cpp` | main C++ step implementation |
-| `_kdm6_pure` / `kdm6_step` | Python oracle | `oracle/kdm6/runtime.py` | reference forward and handle logic |
-
 ## Conventions
 
 - Preserve `mp_physics=37` as Fortran KDM6 and `mp_physics=137` as KDM6AD.
@@ -103,17 +98,31 @@ Generated or foreign areas are not source for normal KDM6AD work:
 
 ## Theory Before Patching
 
-Team agents use `gpt-5.6-luna` with reasoning effort `xhigh` by default,
-including Green/Red implementation and independent review teams. Apply this
-setting when spawning or restarting team agents unless the user explicitly
-requests a different model or reasoning effort.
+Actively use small sub-agent teams to reduce token usage. Delegate bounded,
+non-overlapping tasks, reuse completed agents and existing evidence, and return
+concise findings instead of duplicating the main agent's investigation.
+
+Organize sub-agent work into Green and Red teams. Both teams use
+`gpt-5.6-luna` with reasoning effort `high` by default. Apply this setting when
+spawning or restarting agents unless the user explicitly requests otherwise.
+Before ending a work session, have the Green and Red sub-agent teams review
+the final changes and evidence: Green checks consistency and demonstrated
+coverage; Red looks for counterexamples, missing paths and unsupported claims.
+Resolve actionable findings and record any remaining limitations before the
+final session report.
 
 Keep at most seven team agents active at once across the session, including
 follow-up reviews. Reuse completed agents and queue remaining work within this
 limit; the user's instruction forbids eight or more active team agents.
 
-Before changing KDM6/KDM6AD code, check consistency from all four perspectives.
-Prioritize a coherent mathematical and physical contract over a local symptom fix.
+Think mathematically and numerically before implementing or reviewing a change.
+First derive the intended map, its domain, invariants and derivative contract;
+then examine how the executed precision and operation order affect values,
+JVPs and VJPs. Validate with independent expectations or directional differences,
+and distinguish real-arithmetic identities from floating-point behavior.
+
+Check consistency from all four perspectives below. Prioritize a coherent
+mathematical and physical contract over a local symptom fix.
 
 - **Mathematical:** identify the variables, units, measure, assumptions and full
   quantity being computed. Derive the relevant identity or budget before changing

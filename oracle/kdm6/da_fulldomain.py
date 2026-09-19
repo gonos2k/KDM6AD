@@ -35,6 +35,7 @@ from .da_driver import OsseObsConfig, batched_clear_bt
 from .da_dual import ObsEvalResult, default_param_prior, run_dual_minimizer
 from .da_window import WindowConfig
 from .obs.allsky_shard import sharded_allsky, take_profile_aux
+from .obs.rttov_runner import DEFAULT_RTTOV_TIMEOUT, validate_rttov_timeout
 from .state import Forcing, State
 
 _F64 = dict(dtype=torch.float64)
@@ -536,7 +537,8 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
                              obs_time: int = 1,
                              huber_delta: "float | None" = 3.0,
                              x_slot_bg: "State | None" = None,
-                             pseudo: "dict | None" = None):
+                             pseudo: "dict | None" = None,
+                             rttov_timeout: float = DEFAULT_RTTOV_TIMEOUT):
     """동결 mask 결합 obs_eval — 슬롯 t=obs_time, ObsEvalResult 반환.
 
     동결 기준은 배경 '슬롯 시각' 상태 x_slot_bg(기본 xb_sub — obs_time=0일 때):
@@ -552,6 +554,8 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
     from .da_regime2 import pseudo_rh_term
     from .rttov_bridge import freeze_dry_air_density, require_dry_air_density
 
+    # Validate before any clear/all-sky probe can construct or rewrite a case.
+    rttov_timeout = validate_rttov_timeout(rttov_timeout)
     nch = y_bt.shape[1]
     # Freeze the original background air-mass measure, NOT the slot/trial qv.
     # Every value consumed by H after this boundary is copied below.  In
@@ -582,7 +586,8 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
         probe = sharded_allsky(x_probe, fc_sub, cloudy_pos, y_bt,
                                torch.zeros_like(y_bt), xland_sub, rttov_cfg,
                                f"{case_root}/probe", n_workers=n_workers,
-                               grad=False, pool=pool)
+                               grad=False, pool=pool,
+                               rttov_timeout=rttov_timeout)
     mask = torch.zeros_like(y_bt)
     mask[cloudy_pos] = ((y_rq[cloudy_pos] == 0) & (probe["rq"] == 0)).to(torch.float64)
     mask[clear_pos] = ((y_rq[clear_pos] == 0) & (rq_clear == 0)).to(torch.float64)
@@ -609,7 +614,8 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
         out = sharded_allsky(x_t, fc_sub, cloudy_pos, y_bt, mask, xland_sub,
                              rttov_cfg, f"{case_root}/c{counters['call']}",
                              n_workers=n_workers, grad=True,
-                             huber_delta=huber_delta, pool=pool)
+                             huber_delta=huber_delta, pool=pool,
+                             rttov_timeout=rttov_timeout)
         x_cl, fc_cl = _take(x_t, clear_pos), _take(fc_sub, clear_pos)
         y_cl, m_cl = y_bt[clear_pos], mask[clear_pos]
         g_th = torch.zeros_like(x_cl.th)
@@ -689,7 +695,8 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
                             pseudo_rh: bool = False,
                             pseudo_sigma_p: float = 2.0e-4,
                             conserving: bool = False,
-                            save_fields: "str | None" = None) -> dict:
+                            save_fields: "str | None" = None,
+                            rttov_timeout: float = DEFAULT_RTTOV_TIMEOUT) -> dict:
     """전 도메인 분석 1회 — JSON 직렬화 가능한 보고 dict 반환.
 
     grids: dict(p_lay, p_half, t_ref, q_ref) — RTTOV 픽스처 격자/기준 프로파일
@@ -718,6 +725,9 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     import multiprocessing as mp
     import numpy as np
 
+    # This is the public execution boundary: reject invalid policy before the
+    # first input-dependent operation or RTTOV case construction.
+    rttov_timeout = validate_rttov_timeout(rttov_timeout)
     t0 = time.time()
     # Fixed nuisance inputs of H, in ORIGINAL model-column order. Absence
     # explicitly retains the reference fixture and is reported below; it is
@@ -744,7 +754,7 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     t_ref = torch.as_tensor(np.asarray(grids["t_ref"], dtype=float), **_F64)
     q_ref = torch.as_tensor(np.asarray(grids["q_ref"], dtype=float), **_F64)
     clear_cfg = OsseObsConfig(
-        run_k=make_live_run_k(f"{case_root}/clear"),
+        run_k=make_live_run_k(f"{case_root}/clear", timeout=rttov_timeout),
         profile_cfg=RttovProfileConfig(
             gas_units=2, qv_convention="mixing_ratio_kgkg_dry",
             rttov_layer_pressure=p_lay, rttov_level_pressure=p_half),
@@ -908,7 +918,8 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
             xb, fc, y_bt, y_rq, xland, allsky_pos, clear_op_pos,
             clear_cfg, rttov_cfg, case_root, n_workers=n_workers, pool=pool,
             obs_time=obs_time, huber_delta=huber_delta,
-            x_slot_bg=x_slot_bg, pseudo=pseudo)
+            x_slot_bg=x_slot_bg, pseudo=pseudo,
+            rttov_timeout=rttov_timeout)
         res = run_dual_minimizer(xb, [fc], obs_eval, cfg, b_sigma, prior,
                                  max_iter=max_iter, cvt=spec,
                                  partition=pspec)
@@ -922,7 +933,8 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
                 o = sharded_allsky(x_slot, fc, allsky_pos, y_bt,
                                    torch.zeros_like(y_bt), xland, rttov_cfg,
                                    f"{case_root}/rep", n_workers=n_workers,
-                                   grad=False, pool=pool)
+                                   grad=False, pool=pool,
+                                   rttov_timeout=rttov_timeout)
                 bt = torch.zeros_like(y_bt)
                 bt[allsky_pos] = o["bt"]
                 bt_cl, _ = _clear_bt_chunked(_take(x_slot, clear_op_pos),
@@ -1063,6 +1075,7 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
         obs_valid_time_utc=obs_vt, frame_valid_time_utc=frame_vt,
         offset_source=offset_source,
         time_tolerance_s=time_tolerance_s, huber_delta=huber_delta,
+        rttov_timeout=rttov_timeout,
         ncmin_land=ncmin_land, ncmin_sea=ncmin_sea, qv_levels=qv_levels,
         grad_norm_final=res.grad_norm_final,
         grad_theta_norm_final=res.grad_theta_norm_final,

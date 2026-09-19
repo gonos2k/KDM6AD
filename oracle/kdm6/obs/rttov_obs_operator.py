@@ -89,6 +89,10 @@ class ObsOperatorConfig(NamedTuple):
 class RttovObsOp(torch.autograd.Function):
     """forward: runK 1x -> (BT, rad_quality), cache K. backward: K^T·λ_BT.
 
+    K is recomputed at each forward profile. This is a first-order derivative
+    contract: the cached external K has no differentiable dependence on that
+    profile, so a second backward does not supply dK/dx or the full Hessian.
+
     Clear-sky: ``apply(run_k, rttov_config, t_lay, q_lay, p_lay, p_half)`` (6 args).
     All-sky (cloud): ``apply(..., p_half, clw, ciw, deff_liq, deff_ice, cfrac)`` (11
     args, all-or-nothing). ``run_k``/``rttov_config`` are non-tensor; ``t_lay``/
@@ -240,25 +244,28 @@ def default_run_k(rttov_input):
     """Live RTTOV runner (RttovInput -> (bt, K, rad_quality)) via a fresh case dir.
 
     Convenience over ``make_live_run_k`` (rttov_case_writer): each call allocates a
-    UNIQUE scratch case dir (``mkdtemp``), writes the rttov_test case (overlay model
+    UNIQUE scratch workspace, writes the rttov_test case (overlay model
     T/Q onto the AD-RTTOV fixture) -> out-of-process ``run_rttov_k`` (single runK) ->
-    reorders RttovKOutput to (bt, K, rad_quality), then removes the scratch dir. The
+    reorders RttovKOutput to (bt, K, rad_quality), then removes case and lock. The
     per-call unique dir makes concurrent calls race-free (a shared fixed dir would
     let one call clobber another's case mid-run -> silently wrong BT/K, hence wrong
     gradient). For an explicit/persistent case dir or a custom timeout/fixture,
     build your own via ``make_live_run_k(out_case_dir, ...)`` and inject it. Live run
     stays out-of-process (design 14.2); env-coupled (needs AD_RTTOV_HOME). The
     offline autograd closure is validated with an analytic mock runner.
+
+    This convenience API removes scratch files, including logs, on success and
+    failure. Exceptions propagate (TimeoutExpired carries output/stderr tails).
+    Use make_live_run_k with an explicit case path when retained diagnostics are
+    required, as in the supervised full-domain runner.
     """
-    import shutil
     import tempfile
+    from pathlib import Path
     from .rttov_case_writer import make_live_run_k
-    case_dir = tempfile.mkdtemp(prefix="kdm6_rttov_run_")
-    try:
-        # overwrite=True: mkdtemp pre-creates case_dir, so write_rttov_case must replace it.
+    # An inner case keeps its sibling advisory lock inside the disposable root.
+    with tempfile.TemporaryDirectory(prefix="kdm6_rttov_run_") as workspace:
+        case_dir = Path(workspace) / "case"
         return make_live_run_k(case_dir)(rttov_input)
-    finally:
-        shutil.rmtree(case_dir, ignore_errors=True)
 
 
 # default_run_k always builds a pure-BT (solar=()) observable -- tag it so the callback

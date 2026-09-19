@@ -23,7 +23,9 @@ DA 소비 규칙(이 계약의 실무 귀결): 입력-0 저장고 필드는 σ_b
 from __future__ import annotations
 
 import ctypes
+import os
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import pytest
@@ -33,9 +35,42 @@ from kdm6.runtime import kdm6_step, make_parameters
 from kdm6.state import Forcing, State
 
 _REPO = Path(__file__).resolve().parents[2]
-_DYLIB = _REPO / "libtorch" / "build" / "libkdm6_c.dylib"
-needs_dylib = pytest.mark.skipif(not _DYLIB.exists(),
-                                 reason="libkdm6_c.dylib not built")
+
+
+def _built_library() -> Optional[Path]:
+    """Return the real library produced by this checkout's CMake build.
+
+    The explicit override is useful for CI and for consumers with an out of
+    tree build.  Otherwise prefer the versioned real file over a development
+    symlink, on both ELF and Mach-O platforms; this keeps the test tied to the
+    artifact just built rather than an unrelated installed library.
+    """
+    override = os.environ.get("KDM6_C_LIBRARY")
+    if override:
+        path = Path(override).expanduser()
+        if not path.is_file():
+            raise RuntimeError(f"KDM6_C_LIBRARY does not name a file: {path}")
+        return path.resolve()
+
+    build = _REPO / "libtorch" / "build"
+    names = (
+        "libkdm6_c.so.2.0.0",       # Linux VERSION 2.0.0 real file
+        "libkdm6_c.2.0.0.dylib",    # macOS VERSION 2.0.0 real file
+        "libkdm6_c.so",
+        "libkdm6_c.dylib",
+    )
+    for name in names:
+        path = build / name
+        if path.is_file():
+            return path.resolve()
+    return None
+
+
+_LIBRARY = _built_library()
+needs_library = pytest.mark.skipif(
+    _LIBRARY is None,
+    reason="libkdm6_c shared library is not built (set KDM6_C_LIBRARY to override)",
+)
 
 FIELDS = State._fields
 G_BASE = dict(th=(296.8, 282.4), qv=(1.40e-2, 2.0e-3), qc=(1.0e-3, 5.0e-4),
@@ -50,7 +85,8 @@ TOL = 1.0e-6                       # forward regression bound와 동일 등급
 
 
 def _lib():
-    lib = ctypes.CDLL(str(_DYLIB))
+    assert _LIBRARY is not None
+    lib = ctypes.CDLL(str(_LIBRARY))
     d = ctypes.POINTER(ctypes.c_double)
     lib.kdm6_step_ad_c.restype = ctypes.c_int
     lib.kdm6_step_ad_c.argtypes = [
@@ -117,7 +153,7 @@ def _input_zero_mask() -> np.ndarray:
     return x == 0.0
 
 
-@needs_dylib
+@needs_library
 def test_cross_tree_parity_smooth_point():
     """dt=20 (단일 subcycle): 전 성분 VJP/JVP cross-tree < 1e-6 (실측 ~5e-8)."""
     rng = np.random.default_rng(7)
@@ -128,7 +164,7 @@ def test_cross_tree_parity_smooth_point():
     assert _rel(t_c, t_o).max() < TOL, f"jvp worst_rel {_rel(t_c, t_o).max():.3e}"
 
 
-@needs_dylib
+@needs_library
 def test_cross_tree_divergence_footprint_pinned():
     """dt=300 (3 subcycles): 미분-레벨 kink 발산의 **발자국 회귀 스냅샷**.
 
