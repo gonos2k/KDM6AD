@@ -761,3 +761,16 @@ and all broader physical-unit/transport/convergence limitations remain open.
   diagnosis, not accepted BT/cost validation or full derivative attribution.
 
 See CHECKLIST_pr225_followup_2026-09-20.md and REPORT_extinction_layers_2026-09-20.md.
+
+## PR227 follow-up: fixed-column optical derivative boundary
+
+The file-completeness P2 and selected cap-location diagnosis remain closed.
+See `CHECKLIST_radiance_boundary_2026-09-20.md` and
+`REPORT_radiance_boundary_2026-09-20.md` for five isolated boundary captures,
+exact retained-output comparisons, and baseline-adjoint × finite-width optical
+contractions. Maximum differences from retained channel JVPs are 0.0154858%
+(epsilon 0.03) and 0.171884% (epsilon 0.1). These measurements identify surviving
+SSA/asymmetry responses; they are not genuine intermediate JVPs or independent
+radiative-accuracy evidence. Existing QC still excludes all nine liquid-case IR
+channels. Number-unit reconciliation, transport and timestep convergence remain
+open; no production physics or QC change is made.
