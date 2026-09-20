@@ -801,3 +801,20 @@ change or accepted liquid observation is added.
   approval remain open (0/9). No new RTTOV calls.
 
 See `REPORT_number_boundary_2026-09-20.md` and its focused checklist/evidence.
+
+### PR230 follow-up — actual mp37 native number boundaries (2026-09-20)
+
+- [x] Existing 5 km inputs, fixed column 35711 and original 39 layers: complete
+  isolated control/capture runs, 40 s at dt=20 s, np1 and one thread.
+- [x] Actual entry/process/rate-update/return capture; nc/nr returned values
+  match history. All 254 common numeric variables match raw bits at 0/20/40 s.
+- [x] Actual nonzero rain/ice internal departures and arrivals measured at step 2.
+  This supersedes the earlier absence of native measurement for this mp37 scope.
+- [ ] Physical conservation is **not** approved: ice upper post-state caps the
+  next cell's incoming transfer, producing a large measured interface mismatch.
+  Number-unit basis, corrected paired transfers, mp137 ABI, other species/mass,
+  nonzero surface export and time-step convergence remain open.
+- [ ] Independent radiation accuracy and liquid BT/cost approval remain open
+  (0/9); zero new RTTOV calls. No operational physics/ABI/QC/CI changes.
+
+See `REPORT_native_number_2026-09-20.md`, its checklist and full public capture.
