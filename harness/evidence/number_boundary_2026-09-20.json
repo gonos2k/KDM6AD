@@ -1,0 +1,404 @@
+{
+  "scope": {
+    "column": 35711,
+    "j": 152,
+    "i": 143,
+    "time_index": 1,
+    "process": "accretion",
+    "alpha_accretion": 0.0,
+    "native_mass_levels": 39,
+    "selected_native_bottom_up": [
+      11,
+      12,
+      14
+    ],
+    "selected_user_layers": [
+      28,
+      27,
+      25
+    ]
+  },
+  "execution": {
+    "offline_kdm_baseline_steps": 1,
+    "rttov_calls": 0,
+    "wrapped_accretion_calls": 1,
+    "wrapper_restored": true,
+    "dt_seconds": 20.0,
+    "python": "3.10.11",
+    "torch": "2.13.0",
+    "numpy": "2.2.6"
+  },
+  "source_contract": {
+    "forecast_source": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp37_abgate_1min_hist0_20260830_235602_p51635/klfs_lc05_fcst.202507190000",
+    "forecast_source_sha256": "30ee8656cedf57cc827ad041e4ed8084d8bbf5afdbe0a21b28b33564544bca9f",
+    "candidate_metadata": "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/pr224-liquid/native_candidate.json",
+    "candidate_metadata_sha256": "f4bfa7ea4e3e3549875ed96232461c0aa2a0fc506244282b2836b0122879301c",
+    "selection_record": "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/pr224-liquid/selection_result_fallback_t001.json",
+    "selection_record_sha256": "041d0676bafdb3d88a25bdde61b3a649ddf4a85739a8f51dd3b67c0e67cc82ed",
+    "retained_trace": "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/pr224-liquid/first_passing_ad_fd.json",
+    "retained_trace_sha256": "78d253a6dfdc6fc19d87799558a39d82ad2967b44d80fd9d961b8849a6551487",
+    "retained_wrapper": "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/pr224-liquid/live/run_native_accretion_live.py",
+    "retained_wrapper_sha256": "b3ebd9a041361ae75d07bd1651a38cf5747889b46150fb8dc13e9e2ddeb64724",
+    "external_data": false,
+    "native_host_claim": false,
+    "pr229_measurement": "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/pr229-number-size/native_number_size_2026-09-20.json",
+    "pr229_measurement_sha256": "1be6c182195826ecca45596d76cc81eec276a0d456eb37884d6bf8c0bcd8c662",
+    "capture_script": "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/pr230-number-boundary/measure_boundary.py",
+    "capture_script_sha256": "3dbae5abd1c9fd582915c9deeaa7a54f9dcae9d94e7ddf9e7a1ac3d8e891a2b6"
+  },
+  "profile_verification": {
+    "retained_report": "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/pr224-liquid/live/native_accretion_live_retry2.json",
+    "retained_report_sha256": "8b5b484e9dace5f7c0b25236433bf193af8b8900c01e56335dd82ecb41fc28ff",
+    "pr228_ascii_root": "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/pr228-boundary/runs/accretion-alpha0/in/profiles/001/atm",
+    "json_profile_fields": {
+      "P": {
+        "shape": [
+          39
+        ],
+        "exact": true,
+        "max_abs": 0.0
+      },
+      "P_HALF": {
+        "shape": [
+          40
+        ],
+        "exact": true,
+        "max_abs": 0.0
+      },
+      "T": {
+        "shape": [
+          39
+        ],
+        "exact": true,
+        "max_abs": 0.0
+      },
+      "Q": {
+        "shape": [
+          39
+        ],
+        "exact": true,
+        "max_abs": 0.0
+      },
+      "HYDRO6": {
+        "shape": [
+          39
+        ],
+        "exact": true,
+        "max_abs": 0.0
+      },
+      "HYDRO7": {
+        "shape": [
+          39
+        ],
+        "exact": true,
+        "max_abs": 0.0
+      },
+      "HYDRO_DEFF6": {
+        "shape": [
+          39
+        ],
+        "exact": true,
+        "max_abs": 0.0
+      },
+      "HYDRO_DEFF7": {
+        "shape": [
+          39
+        ],
+        "exact": true,
+        "max_abs": 0.0
+      },
+      "CFRAC": {
+        "shape": [
+          39
+        ],
+        "exact": true,
+        "max_abs": 0.0
+      }
+    },
+    "pr228_ascii_fields": {
+      "HYDRO6": {
+        "shape": [
+          39
+        ],
+        "exact": true,
+        "max_abs": 0.0
+      },
+      "HYDRO7": {
+        "shape": [
+          39
+        ],
+        "exact": true,
+        "max_abs": 0.0
+      },
+      "HYDRO_DEFF6": {
+        "shape": [
+          39
+        ],
+        "exact": true,
+        "max_abs": 0.0
+      },
+      "HYDRO_DEFF7": {
+        "shape": [
+          39
+        ],
+        "exact": true,
+        "max_abs": 0.0
+      }
+    },
+    "all_json_profile_fields_exact": true,
+    "all_pr228_ascii_fields_exact": true
+  },
+  "schema": "number-boundary-v1",
+  "scope_kind": "offline_oracle_and_conditional_arithmetic",
+  "physical_number_basis_resolved": false,
+  "accepted_observation_cost": false,
+  "native_transport_measured": false,
+  "rows": [
+    {
+      "native_layer": 11,
+      "user_layer": 28,
+      "rho_d_frozen": 0.876670969616092,
+      "dz_m": 428.2907903984292,
+      "supcol": -9.632396120747387,
+      "operands": {
+        "qc": 0.00019051101116929203,
+        "nc": 1291516800.0,
+        "qr": 5.5094009042359565e-05,
+        "nr": 23.460088754720594,
+        "den": 0.8858269917571587,
+        "avedia_r": 0.0015838286282241687,
+        "rslopec3": 2.495570314507653e-16,
+        "rslope3_r": 1.6554400675268147e-10,
+        "lenconcr": 1e-09
+      },
+      "producer_outputs": {
+        "pracw": 5.380425492609302e-08,
+        "nracw": 364751.48659655335
+      },
+      "producer_gates": {
+        "rain_active_qr_ge_lenconcr": 1.0,
+        "big_drop_avedia_r_ge_di100": 1.0,
+        "mass_cap_qc_over_dtcld": 9.525550558464601e-06,
+        "number_cap_nc_over_dtcld": 64575840.0,
+        "output_equals_mass_cap": 0.0,
+        "output_equals_number_cap": 0.0
+      },
+      "warm": {
+        "nraut": 0.0,
+        "nccol": 538.1080651415972,
+        "nracw": 364751.48659655335,
+        "pracw": 5.380425492609302e-08
+      },
+      "cold": {
+        "niacw": 0.0,
+        "naacw": 0.0
+      },
+      "amounts": {
+        "ninuc": 0.0,
+        "nfrzdtc": 0.0,
+        "pimlt_ni": 0.0
+      },
+      "initial": {
+        "qc": 0.00019051101116929203,
+        "qr": 4.8671321565052494e-05,
+        "nc": 1291516800.0,
+        "nr": 0.0
+      },
+      "pre": {
+        "qc": 0.00019051101116929203,
+        "qr": 5.5094009042359565e-05,
+        "nc": 1291516800.0,
+        "nr": 23.460088754720594
+      },
+      "post": {
+        "qc": 0.00018943492607077016,
+        "qr": 5.6169211955825155e-05,
+        "nc": 1284211008.106766,
+        "nr": 23.44876271008003
+      },
+      "final": {
+        "qc": 0.0001880241370656167,
+        "qr": 5.6169211955825155e-05,
+        "nc": 1284211008.106766,
+        "nr": 23.44876271008003
+      },
+      "nc_selected_accretion_amount": -7295029.731931067,
+      "nc_full_amount": -7305791.893233899,
+      "pressure_hpa": 723.4449981689453,
+      "rho_forcing_moist_kg_m3": 0.8858269917571587,
+      "qv_initial_kgkg_dry": 0.010444080457091331
+    },
+    {
+      "native_layer": 12,
+      "user_layer": 27,
+      "rho_d_frozen": 0.8395712864128495,
+      "dz_m": 470.59271420664527,
+      "supcol": -7.089189912343386,
+      "operands": {
+        "qc": 0.0002334479650016874,
+        "nc": 1531038976.0,
+        "qr": 3.800860236291795e-05,
+        "nr": 256.4527345353426,
+        "den": 0.8473445942548123,
+        "avedia_r": 0.0006213150040395873,
+        "rslopec3": 2.467543332053109e-16,
+        "rslope3_r": 9.993656563981716e-12,
+        "lenconcr": 1e-09
+      },
+      "producer_outputs": {
+        "pracw": 4.350870054789804e-08,
+        "nracw": 285346.3480702281
+      },
+      "producer_gates": {
+        "rain_active_qr_ge_lenconcr": 1.0,
+        "big_drop_avedia_r_ge_di100": 1.0,
+        "mass_cap_qc_over_dtcld": 1.167239825008437e-05,
+        "number_cap_nc_over_dtcld": 76551948.8,
+        "output_equals_mass_cap": 0.0,
+        "output_equals_number_cap": 0.0
+      },
+      "warm": {
+        "nraut": 0.0,
+        "nccol": 739.3189349876922,
+        "nracw": 285346.3480702281,
+        "pracw": 4.350870054789804e-08
+      },
+      "cold": {
+        "niacw": 0.0,
+        "naacw": 0.0
+      },
+      "amounts": {
+        "ninuc": 0.0,
+        "nfrzdtc": 0.0,
+        "pimlt_ni": 0.0
+      },
+      "initial": {
+        "qc": 0.0002334479650016874,
+        "qr": 4.1467956179985777e-05,
+        "nc": 1531038976.0,
+        "nr": 237.92178344726562
+      },
+      "pre": {
+        "qc": 0.0002334479650016874,
+        "qr": 3.800860236291795e-05,
+        "nc": 1531038976.0,
+        "nr": 256.4527345353426
+      },
+      "post": {
+        "qc": 0.00023257779099072944,
+        "qr": 3.887540781402474e-05,
+        "nc": 1525317262.6598957,
+        "nr": 255.54641678978095
+      },
+      "final": {
+        "qc": 0.00023015093180356943,
+        "qr": 3.887540781402474e-05,
+        "nc": 1525317262.6598957,
+        "nr": 255.54641678978095
+      },
+      "nc_selected_accretion_amount": -5706926.961404562,
+      "nc_full_amount": -5721713.340104316,
+      "pressure_hpa": 685.3112579345703,
+      "rho_forcing_moist_kg_m3": 0.8473445942548123,
+      "qv_initial_kgkg_dry": 0.009258663281798363
+    },
+    {
+      "native_layer": 14,
+      "user_layer": 25,
+      "rho_d_frozen": 0.7558756532216079,
+      "dz_m": 555.3229500151315,
+      "supcol": -2.180807029138066,
+      "operands": {
+        "qc": 0.00018132111290469766,
+        "nc": 948517696.0,
+        "qr": 6.116987454392344e-05,
+        "nr": 1602.569311651972,
+        "den": 0.7614948481602648,
+        "avedia_r": 0.00038147217998915015,
+        "rslopec3": 2.7801663878300574e-16,
+        "rslope3_r": 2.313009997580468e-12,
+        "lenconcr": 1e-09
+      },
+      "producer_outputs": {
+        "pracw": 4.887653738530466e-08,
+        "nracw": 255679.44496796138
+      },
+      "producer_gates": {
+        "rain_active_qr_ge_lenconcr": 1.0,
+        "big_drop_avedia_r_ge_di100": 1.0,
+        "mass_cap_qc_over_dtcld": 9.066055645234882e-06,
+        "number_cap_nc_over_dtcld": 47425884.8,
+        "output_equals_mass_cap": 0.0,
+        "output_equals_number_cap": 0.0
+      },
+      "warm": {
+        "nraut": 0.0,
+        "nccol": 360.21534697657086,
+        "nracw": 255679.44496796138,
+        "pracw": 4.887653738530466e-08
+      },
+      "cold": {
+        "niacw": 0.0,
+        "naacw": 2.4714861674207986e-06
+      },
+      "amounts": {
+        "ninuc": 0.0,
+        "nfrzdtc": 0.0,
+        "pimlt_ni": 0.0
+      },
+      "initial": {
+        "qc": 0.00018132111290469766,
+        "qr": 4.778273796546273e-05,
+        "nc": 948517696.0,
+        "nr": 690.4109497070312
+      },
+      "pre": {
+        "qc": 0.00018132111290469766,
+        "qr": 6.116987454392344e-05,
+        "nc": 948517696.0,
+        "nr": 1602.569311651972
+      },
+      "post": {
+        "qc": 0.00018034358215697266,
+        "qr": 6.214387851368586e-05,
+        "nc": 943396902.7936023,
+        "nr": 1593.9296868383753
+      },
+      "final": {
+        "qc": 0.0001810914362181132,
+        "qr": 6.214387851368586e-05,
+        "nc": 943396902.7936023,
+        "nr": 1593.9296868383753
+      },
+      "nc_selected_accretion_amount": -5113588.899359227,
+      "nc_full_amount": -5120793.206397619,
+      "pressure_hpa": 604.4489739990235,
+      "rho_forcing_moist_kg_m3": 0.7614948481602648,
+      "qv_initial_kgkg_dry": 0.007434020284563303
+    }
+  ],
+  "accretion_params": {
+    "ncrk1": 3030.0,
+    "ncrk2": 2590000000000000.0,
+    "cmc": 523.5987755982989,
+    "g3pmc": 1.0,
+    "g6pmc": 2.0,
+    "g9pmc": 6.0,
+    "g1pmr": 1.0,
+    "g4pmr": 24.0,
+    "g7pmr": 5040.001953125,
+    "di100": 0.0001
+  },
+  "source_hashes": {
+    "host/KIM-meso_v1.0/phys/module_mp_kdm6.F": "fc0a72d33a5e61803fea56eb9118018039c6da8b5775813032b4861a2bd66eb5",
+    "host/KIM-meso_v1.0/phys/module_mp_kdm6ad.F": "c56499524c73bec4e5092e7aecfde244d072f9572733708226c7f6d743cc9e67",
+    "host/KIM-meso_v1.0/phys/module_microphysics_driver.F": "94db84c45b7422b62e04967cb3cd1362311abdb02fa3d374d881799c0bce7e84"
+  },
+  "limits": [
+    "Source inspection is not a native host entry/exit measurement.",
+    "Frozen initial dry density is a conditional representation measure, not an established number basis.",
+    "Selected nc ledger includes every state_update term; qc/qr/nr states are context, not complete budgets.",
+    "Producer outputs and limited rates are separately retained; no historical raw-rate equality claim.",
+    "Synthetic transfer test is not measured KDM transport."
+  ]
+}

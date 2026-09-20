@@ -787,3 +787,17 @@ See `CHECKLIST_number_size_2026-09-20.md` and `REPORT_number_size_2026-09-20.md`
 Physical number-unit reconciliation, independent radiation accuracy, nonzero
 transport and timestep convergence remain open. No new RTTOV run, production
 change or accepted liquid observation is added.
+
+### PR229 follow-up — selected number boundary (2026-09-20)
+
+- [x] Correct inactive-only cloud-slope docstring; executable physics unchanged.
+- [x] One offline baseline on existing column 35711: capture producer operands,
+  applied rates and actual state-update boundaries; replay complete selected nc
+  budgets including self-collection and the twice-applied naacw term.
+- [x] Conditional dry-mass/volume ledger, inverse and density-direction witnesses;
+  synthetic paired transfer is explicitly not native sedimentation evidence.
+- [ ] Physical number basis, matched native-host measurement and actual nonzero
+  transport remain open. Independent radiation accuracy and liquid BT/cost
+  approval remain open (0/9). No new RTTOV calls.
+
+See `REPORT_number_boundary_2026-09-20.md` and its focused checklist/evidence.

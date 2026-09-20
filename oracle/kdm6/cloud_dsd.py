@@ -92,8 +92,10 @@ def diag_cloud_slope_torch(
     params: CloudDsdParams,
     ncmin_tensor: "torch.Tensor | None" = None,
 ) -> torch.Tensor:
-    """rslopec = 1/lamdac, clamp to [1/lamdacmax, 1/lamdacmin], with the Fortran
-    inactive-cloud gate (nc<=ncmin → rslopecmax = 1/lamdacmax).
+    """Active-cloud rslopec = 1/lamdac, without slope limits.
+
+    The Fortran inactive-cloud gate (qc<=qmin or nc<=ncmin) substitutes
+    rslopecmax = 1/lamdacmax. Radiation radius limits are applied downstream.
 
     lamdac = (pidnc·nc / max(qc·den, 1e-30))^(1/dmc)
     """
