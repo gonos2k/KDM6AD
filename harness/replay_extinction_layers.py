@@ -6,6 +6,10 @@ import math
 from pathlib import Path
 
 DEFAULT = Path(__file__).parent / 'evidence/extinction_layers_2026-09-20.json'
+EXPECTED_FILES = {
+    'direct/radiance.txt', 'direct/transmission.txt',
+    'k/radiance.txt', 'k/transmission.txt', 'k/profiles_k.txt',
+}
 
 
 def replay(data):
@@ -67,6 +71,7 @@ def replay(data):
             assert len(totals) == 1
             summed = math.fsum(columns[q]['weight']*rad[ch, q][0] for q in columns)
             assert math.isclose(summed, totals.pop(), rel_tol=1e-14, abs_tol=1e-14)
+    assert set(data['build_and_noninterference']['compared_files']) == EXPECTED_FILES, 'Incomplete compared_files'
     manifest = data['build_and_noninterference']['manifest']['cases']
     assert set(manifest) == {c['name'] for c in data['cases']}
     for case in manifest.values():
@@ -75,6 +80,7 @@ def replay(data):
         assert len(case['quality_diagnostic']) == 16
         for ch in range(7, 17):
             assert bool(case['quality_diagnostic'][ch-1] & (1 << 15)) == any(k[0] == ch for k in baseline_mask)
+        assert set(case['raw_files']) == EXPECTED_FILES, 'Incomplete raw_files'
         for entry in case['raw_files'].values():
             assert entry['byte_equal'] and entry['original_sha256'] == entry['diagnostic_sha256']
     return {'scope': 'arithmetic_replay_only', 'endpoints': 5,

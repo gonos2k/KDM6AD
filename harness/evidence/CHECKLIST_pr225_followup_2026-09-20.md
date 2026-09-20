@@ -20,3 +20,13 @@ isolated baseline 1, instrumented endpoints 5. See REPORT_extinction_layers_2026
 - [ ] Accepted liquid-process BT/cost validation remains open under unchanged QC.
 - [ ] Full BT derivative causal attribution, number-unit contract, transport
   and time-step convergence remain separate open work.
+
+## PR226 review — required noninterference files
+
+- [x] Require the declared comparison set and every endpoint's `raw_files` keys
+  to equal the five fixed direct/K files, before checking their recorded hashes.
+- [x] Reuse the public measured evidence: Python 3.12 focused regression run
+  passed 13 tests (normal replay; all/single-file omission at each of five
+  endpoints; all/single-file omission in the declared comparison list).
+- [x] Preserve measured cap results and QC exclusion. No new RTTOV execution,
+  physical tolerance change, or independent original-file verification is claimed.
