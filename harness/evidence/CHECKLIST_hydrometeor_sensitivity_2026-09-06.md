@@ -774,3 +774,16 @@ SSA/asymmetry responses; they are not genuine intermediate JVPs or independent
 radiative-accuracy evidence. Existing QC still excludes all nine liquid-case IR
 channels. Number-unit reconciliation, transport and timestep convergence remain
 open; no production physics or QC change is made.
+
+## PR228 follow-up: conditional number-to-size contract
+
+One offline baseline reproduces the retained native 39-layer liquid profile.
+Public operands now distinguish raw-number execution, number-only conversion,
+and a coherent dry-moment pair. At the three accretion-active layers, the latter
+changes diagnostic diameters by +9.50762%, +5.67688% and +4.12389%; seven other
+cloud-active layers retain the lower diameter limit. These are conditional
+interpretation effects, not corrected model trajectories or new BT derivatives.
+See `CHECKLIST_number_size_2026-09-20.md` and `REPORT_number_size_2026-09-20.md`.
+Physical number-unit reconciliation, independent radiation accuracy, nonzero
+transport and timestep convergence remain open. No new RTTOV run, production
+change or accepted liquid observation is added.
