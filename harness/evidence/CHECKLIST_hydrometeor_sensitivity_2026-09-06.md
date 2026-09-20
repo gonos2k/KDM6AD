@@ -818,3 +818,15 @@ See `REPORT_number_boundary_2026-09-20.md` and its focused checklist/evidence.
   (0/9); zero new RTTOV calls. No operational physics/ABI/QC/CI changes.
 
 See `REPORT_native_number_2026-09-20.md`, its checklist and full public capture.
+
+### PR231 follow-up — existing conservative ice path (2026-09-20)
+
+The measured legacy ice transfer mismatch is a **P1 OPEN operational task**;
+unknown physical number units do not excuse positive departure with zero arrival.
+One additional noninterfering native run captures the original binary64 work
+coefficients and binary32 stores. Existing C++ legacy reproduces all 78 native
+ni outputs; existing Python/C++ promoted kernels agree. The conservative local
+substep closes the declared dz-number/rho-dz-mass budgets, with mixed-f32 number
+interface residual about 3.35e-9 relatively. This validates the existing opt-in
+alternative on these operands, not an operational fix or a full host trajectory.
+See `REPORT_native_ice_transfer_2026-09-20.md` and its focused checklist.
