@@ -830,3 +830,49 @@ substep closes the declared dz-number/rho-dz-mass budgets, with mixed-f32 number
 interface residual about 3.35e-9 relatively. This validates the existing opt-in
 alternative on these operands, not an operational fix or a full host trajectory.
 See `REPORT_native_ice_transfer_2026-09-20.md` and its focused checklist.
+
+
+### PR232 follow-up — formal time refinement and layer JVP (2026-09-20)
+
+- [x] Reuse the same captured 39-layer operands with fixed work and metrics;
+  compare m=1..128 at the same numerical final interval, including a surface
+  inventory counter and both mass/number distribution and total closure.
+- [x] Cross-check a matrix exponential with a positive Poisson series and known
+  two-cell solution. Check one nonuniform layer direction using true
+  `torch.func.jvp`, VJP and independent centered differences.
+- [x] Audit the coefficient handoff: first ice work is raw terminal velocity
+  after a main-loop reslope overwrite, not an established inverse-time rate.
+  The fixed numeric-coefficient curves are formal operator diagnostics;
+  `dt*work` is not a physical Courant number at this handoff.
+- [ ] Operational transfer P1, raw handoff normalization, physical number basis
+  and full coupled time accuracy remain open. No default or QC is changed;
+  liquid observation approval remains 0/9.
+
+See `REPORT_ice_time_accuracy_2026-09-20.md`.
+
+### Isolated mp237 trajectory follow-up (2026-09-21)
+
+- [x] Existing conservative Fortran variant on the same 5-km input, 39 layers,
+  40-s window with dt=20; current module compiled separately, host dependencies
+  reused. Not mp337 or C ABI validation.
+- [x] Control/capture have identical complete history bytes, 253 numeric fields
+  and Times at 0/20/40 s. Initial legacy state matches; later differences are
+  described, not required to match.
+- [x] Capture 156 ice before/after records; measured capped departures pair with
+  adjacent upper-departure records. Source-ordered receiver reconstruction
+  reproduces all qi/ni post stores; conditional f32 transfer residuals retained.
+- [ ] Whole-host positivity: small negative number history values in both
+  legacy and conservative tracks at 40 s; origin not localized by this capture.
+- [ ] Operational P1, physical number basis, raw ice work normalization, coupled
+  time convergence and representative number surface export remain open.
+
+Three completed runs (one initial-frame-only exploratory run, two accepted
+three-frame runs) and two MPI startup failures are distinguished. Historical
+source SHA pin fails while four permitted structural clusters match; no gate
+was weakened. See `REPORT_conservative_native_2026-09-21.md`.
+
+Final Green/Red reviews found no blocking arithmetic/scope issues after adding
+fail-closed run-validity and source-strip evidence checks. Focused Python 3.12
+checks: 4 formal-reference/layer-AD tests and 8 native-evidence tests. Graphify
+AST and focused semantic refresh completed; eight pre-existing graph metadata
+warnings remain, and full graph coverage is not claimed.
