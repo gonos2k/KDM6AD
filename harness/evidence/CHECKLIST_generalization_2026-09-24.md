@@ -18,9 +18,9 @@ with a separate PR for each. Prior captures and failed gates remain intact.
 | G3.2 | Partial; native open | Admissible moment pairs and inactive producer outputs | Explicit volume-pair validity and masked consumption tested; native ProgB conditional INTENT(OUT) read still needs policy and execution validation |
 | G3.3 | Open | Native-host physical number basis and threshold policy | Resolve Registry/kernel conflict and verify entry, producers, applied transfer and return in one declared physical basis; no default density factor inserted by assumption |
 | G3.4 | Demonstrated, isolated | Derivatives of representation/geometry transformations | The analysis-only, opt-in conservative ice function generates paired transfers matching an independent inventory recurrence; state/rho/dz/velocity JVP/VJP/FD include weight derivatives. Operational legacy/native transfer remains open |
-| G4.1 | Open | Execution ownership across MPI/tile decompositions | Unique complete global ownership; separate halos and physical boundaries; preserve fixed single-rank regression |
-| G4.2 | Open | Restart first handoff and cumulative transport | Compare equal final physical time with uninterrupted run; no stale or double normalization/export |
-| G4.3 | Open | Held-out meteorological inputs | Preselect native columns/time by input properties, not passing BT/cost; report inactive, liquid, mixed/ice and surface-export coverage |
+| G4.1 | Ownership demonstrated; trajectory failure open | Execution ownership across MPI/tile decompositions | G4 complete rank-territory/consumer census passes; 1×2 matches serial, 2×1 differs in 71 numeric fields at 40 s. Localize first upstream i-seam divergence before approval |
+| G4.2 | Measured failure; identity gap fixed | Restart first handoff and cumulative transport | Checkpoint is hashed and clock/step2 linked; restart logging control matches capture, but 60 fields differ from continuous at 40 s. Trace first post-restart physical-state divergence |
+| G4.3 | Demonstrated, bounded spatial sample | Held-out meteorological inputs | Five native input-property columns preselected before comparisons; full profiles retained. Samples miss the x-decomposition domain failure, so full-domain checks remain mandatory; no new time/observation validation |
 | G4.4 | Open | Physical time convergence | Separate normalized fixed-speed, reslope column and full host experiments; compare distribution, export, sizes, thermodynamics and branches |
 | AD.1 | Open | Full normalized state-dependent AD/ABI | Include actual velocity/size paths and declared controls; distinguish same-branch derivatives from threshold-crossing increments |
 | SRC.1 | Open | Historical source certification | Preserve failed old pin; independently authenticate new approved source/build, not replace SHA to obtain green |
@@ -39,3 +39,17 @@ G3 validation: 32 new + 29 retained focused tests passed on Python 3.12;
 Green/Red final review found no remaining blocker within the declared scope.
 Graphify code and semantic updates completed with the existing eight
 edge-metadata warnings; no full private-host graph coverage is claimed.
+
+G4 evidence: `REPORT_native_execution_2026-09-24.md` and
+`native_execution_2026-09-24.json` plus complete compressed rank logs. Seven
+native runs preserve within-configuration outputs. The x-decomposition and
+restart trajectory failures are **not resolved** by a complete execution census.
+Next actionable measurements: pre-KDM owned geometry/forcing at the i seam,
+and the first divergent update after restart restoration. Keep the measured
+failures and source attribution; do not relax their comparison to close rows.
+
+G4 validation: 67 focused checks passed (51 new, 16 retained). Final Green/Red
+review closed masked-input and metadata-consistency counterexamples; no reviewed
+blocker remains for the evidence/tooling PR. That review does not close the
+measured x-decomposition or restart trajectory failures. Graphify code and
+focused semantic refresh retains the eight existing edge-metadata warnings.
