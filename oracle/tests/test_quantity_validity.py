@@ -47,7 +47,7 @@ def test_moment_ids_basis_and_units_are_not_inferred_from_array_shape():
         classify_population_pair(spec,
                                  MomentInput("cloud_drops", "liquid", "mass", "volume", "kg/m3", []),
                                  MomentInput("cloud_drops", "liquid", "number", "volume", "#/m3", []))
-    with pytest.raises(ValueError, match="boolean.*masks"):
+    with pytest.raises(ValueError, match="real numeric"):
         classify_population_pair(spec,
                                  MomentInput("cloud_drops", "liquid", "mass", "volume", "kg/m3", [True]),
                                  MomentInput("cloud_drops", "liquid", "number", "volume", "#/m3", [True]))
@@ -62,10 +62,15 @@ def test_moment_ids_basis_and_units_are_not_inferred_from_array_shape():
                                              [True, 1e-4]),
                                  MomentInput("cloud_drops", "liquid", "number", "volume", "#/m3",
                                              [1e6, 1e6]))
-    with pytest.raises(ValueError, match="boolean.*masks"):
+    with pytest.raises(ValueError, match="real numeric"):
         classify_population_pair(spec,
                                  MomentInput("cloud_drops", "liquid", "mass", "volume", "kg/m3",
                                              np.array([True], dtype=object)),
+                                 MomentInput("cloud_drops", "liquid", "number", "volume", "#/m3", [1e5]))
+    with pytest.raises(ValueError, match="real numeric"):
+        classify_population_pair(spec,
+                                 MomentInput("cloud_drops", "liquid", "mass", "volume", "kg/m3",
+                                             np.array([1e-4 + 100j])),
                                  MomentInput("cloud_drops", "liquid", "number", "volume", "#/m3", [1e5]))
 
 
@@ -86,12 +91,15 @@ def test_actual_zero_inactive_and_undefined_are_different_producer_states():
     assert undefined.status is ProducerStatus.UNDEFINED and undefined.value is None
     with pytest.raises(ValueError, match="booleans"):
         classify_producer_sample(spec, 0., process_active="False", output_defined=True)
-    with pytest.raises(ValueError, match="boolean producer mask"):
+    with pytest.raises(ValueError, match="real numeric"):
         classify_producer_sample(spec, True, process_active=True, output_defined=True)
-    with pytest.raises(ValueError, match="boolean producer mask"):
+    with pytest.raises(ValueError, match="real numeric"):
         classify_producer_sample(spec, np.array(True), process_active=True, output_defined=True)
-    with pytest.raises(ValueError, match="boolean producer mask"):
+    with pytest.raises(ValueError, match="real numeric"):
         classify_producer_sample(spec, np.array(True, dtype=object),
+                                 process_active=True, output_defined=True)
+    with pytest.raises(ValueError, match="real numeric"):
+        classify_producer_sample(spec, 1.0 + 0j,
                                  process_active=True, output_defined=True)
     with pytest.raises(ValueError, match="masked producer"):
         classify_producer_sample(spec, np.ma.array(0., mask=True),
@@ -124,13 +132,15 @@ def test_observation_support_is_independent_of_process_and_real_zero():
         classify_observation(None, present=False, quality_passed=True)
     with pytest.raises(ValueError, match="booleans"):
         classify_observation(0., present=True, quality_passed="False")
-    with pytest.raises(ValueError, match="boolean quality mask"):
+    with pytest.raises(ValueError, match="real numeric"):
         classify_observation(np.bool_(True), present=True, quality_passed=True)
-    with pytest.raises(ValueError, match="boolean quality mask"):
+    with pytest.raises(ValueError, match="real numeric"):
         classify_observation(np.array(True), present=True, quality_passed=True)
-    with pytest.raises(ValueError, match="boolean quality mask"):
+    with pytest.raises(ValueError, match="real numeric"):
         classify_observation(np.array(True, dtype=object),
                              present=True, quality_passed=True)
+    with pytest.raises(ValueError, match="real numeric"):
+        classify_observation(1.0 + 0j, present=True, quality_passed=True)
     with pytest.raises(ValueError, match="masked observation"):
         classify_observation(np.ma.array(0., mask=True),
                              present=True, quality_passed=True)
@@ -168,7 +178,7 @@ def test_higher_moments_require_matching_population_and_declared_distribution():
     with pytest.raises(ValueError, match="declare one population"):
         check_nonnegative_m012(_distribution(), m0, m1,
                                MomentInput("dry_aerosol", "liquid", "M2", "volume", "#/m", [1.]))
-    with pytest.raises(ValueError, match="boolean.*masks"):
+    with pytest.raises(ValueError, match="real numeric"):
         check_nonnegative_m012(
             _distribution(),
             MomentInput("cloud_drops", "liquid", "M0", "volume", "#/m3", [True]),
@@ -188,11 +198,18 @@ def test_higher_moments_require_matching_population_and_declared_distribution():
             MomentInput("cloud_drops", "liquid", "M1", "volume", "#/m2", [1., 1.]),
             MomentInput("cloud_drops", "liquid", "M2", "volume", "#/m", [1., 1.]),
         )
-    with pytest.raises(ValueError, match="boolean.*masks"):
+    with pytest.raises(ValueError, match="real numeric"):
         check_nonnegative_m012(
             _distribution(),
             MomentInput("cloud_drops", "liquid", "M0", "volume", "#/m3",
                         np.array([True], dtype=object)),
+            m1, m2,
+        )
+    with pytest.raises(ValueError, match="real numeric"):
+        check_nonnegative_m012(
+            _distribution(),
+            MomentInput("cloud_drops", "liquid", "M0", "volume", "#/m3",
+                        np.array([1. + 100j])),
             m1, m2,
         )
     assert check_nonnegative_m012(_distribution(), *_m012(1e308, 1e308, 1e308))[0]

@@ -35,8 +35,8 @@ The synthetic positive triple `(1,2,1)` fails despite all components being
 positive. Passing this one condition does not construct or certify a full
 particle-size distribution. A distribution ID is required and tied to the
 same population/phase; higher-moment checks are not applied to unrelated
-quantities. The exact integer comparison is exact for the **stored binary64
-inputs**, not a bound on measurement or model uncertainty.
+quantities. The exact integer comparison is exact for the **binary64 values
+consumed by this validator**, not a bound on measurement or model uncertainty.
 
 Eight new tests and seven retained moment-validity tests passed locally
 (`15/15`, Python 3.10.11) with warnings treated as errors. They include
@@ -46,7 +46,8 @@ exact binary-rational M0/M1/M2 comparison, including underflow, overflow and
 near-equal rounded products. Raw mixed boolean/numeric sequences are inspected
 **before** NumPy can promote `True` to 1; consumed boolean payloads cannot
 become numeric 1 or 0, and masked arrays cannot silently lose their mask during
-`np.asarray` conversion. All examples are synthetic or public Python
+`np.asarray` conversion. Complex arrays are refused before float conversion
+can discard their imaginary component. All examples are synthetic or public Python
 contract checks. The native Fortran conditional `INTENT(OUT)` behavior,
 physical number basis, operational accepted states and actual observation
 support remain separate open items; no production physics or ABI changed.
