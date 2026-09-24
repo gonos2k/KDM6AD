@@ -943,3 +943,23 @@ Final Green/Red review approved the bounded G1 claims. The synthetic budget
 regression was tightened to 32 epsilon64 relative and zero absolute tolerance;
 its focused tests pass. Graphify code and semantic refresh retains the known
 metadata warnings and does not claim complete graph coverage.
+
+### G3 declared physical-moment contracts (2026-09-24)
+
+- [x] Track the generalization review item-by-item in
+  `CHECKLIST_generalization_2026-09-24.md`, including explicit completion domains.
+- [x] Recompute actual DSD/accretion rates in two declared representations and
+  compare with an independent volume equation; both modes, gates and reservoir
+  caps are covered. Near-EPS unconverted mass floors remain a recorded boundary.
+- [x] Execute existing conservative ice transfers on unequal rho/dz against an
+  independent inventory-coordinate recurrence, including nonzero surface export
+  and density/geometry/velocity directions. These are isolated synthetic runs.
+- [x] Separate inactive, inadmissible and valid declared moment pairs; only read
+  producer outputs under their valid mask. Python fallbacks are tested separately.
+- [ ] Native physical number basis, inactive ProgB INTENT(OUT) validity, full
+  normalized host/AD/ABI, operational P1 and independent observation accuracy.
+- [ ] G4 native decomposition, restart and held-out input coverage follows in
+  its own PR. No new native/RTTOV execution belongs to this G3 evidence.
+
+61 focused Python 3.12 tests passed (32 new, 29 retained). See
+`REPORT_moment_contract_2026-09-24.md`; inherited liquid acceptance stays 0/9.
