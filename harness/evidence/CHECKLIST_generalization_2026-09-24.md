@@ -48,7 +48,7 @@ Next actionable measurements: pre-KDM owned geometry/forcing at the i seam,
 and the first divergent update after restart restoration. Keep the measured
 failures and source attribution; do not relax their comparison to close rows.
 
-G4 validation: 66 focused checks passed (50 new, 16 retained). Final Green/Red
+G4 validation: 67 focused checks passed (51 new, 16 retained). Final Green/Red
 review closed masked-input and metadata-consistency counterexamples; no reviewed
 blocker remains for the evidence/tooling PR. That review does not close the
 measured x-decomposition or restart trajectory failures. Graphify code and

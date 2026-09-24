@@ -106,9 +106,7 @@ def _territory_owners(
                 f"configured territories cover column {(lat, i)} {len(owner_hits)} times"
             )
         owner_by_column[lat, i] = owner_hits[0]
-    return {
-        key: owner_by_column[key[1], key[2]] for key in columns
-    }
+    return {key: owner_by_column[key[1], key[2]] for key in columns}
 
 
 def validate_census(
@@ -186,19 +184,18 @@ def validate_census(
         if event.n > selection.mstep:
             raise ValueError(f"consumer ordinal exceeds finished mstep: {key}")
 
-    expected_consumers = {
-        (*key, n)
-        for key, selection in selected.items()
-        for n in range(1, selection.mstep + 1)
-    }
-    missing_consumers = expected_consumers - consumed.keys()
-    if missing_consumers:
-        first = min(missing_consumers)
-        raise ValueError(f"missing CONSUME ordinal {first}")
-    extra_consumers = consumed.keys() - expected_consumers
-    if extra_consumers:
-        first = min(extra_consumers)
-        raise ValueError(f"unexpected CONSUME ordinal {first}")
+    # Uniqueness and the bounded ordinal check above imply completeness when
+    # the number of consumers equals mstep. Avoid expanding a malformed huge
+    # mstep into a range before the evidence has been validated.
+    consumer_counts = {key: 0 for key in selected}
+    for step, lat, i, _n in consumed:
+        consumer_counts[step, lat, i] += 1
+    for key, selection in selected.items():
+        if consumer_counts[key] != selection.mstep:
+            raise ValueError(
+                f"missing CONSUME ordinal for {key}: expected {selection.mstep}, "
+                f"found {consumer_counts[key]}"
+            )
 
     msteps = [event.mstep for event in selected.values()]
     return {

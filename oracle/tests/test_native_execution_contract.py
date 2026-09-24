@@ -76,10 +76,7 @@ def test_duplicate_halo_or_global_owner_is_rejected():
 
 def test_swapped_rank_is_rejected_against_configured_territory():
     rows = census()
-    index = next(
-        i for i, row in enumerate(rows)
-        if row[0] == "SELECT" and row[3] == 4
-    )
+    index = next(i for i, row in enumerate(rows) if row[0] == "SELECT" and row[3] == 4)
     row = rows[index]
     rows[index] = (row[0], row[1], 1, *row[3:])
     with pytest.raises(ValueError, match="does not own configured column"):
@@ -133,3 +130,12 @@ def test_string_rows_and_comments_parse_without_changing_record_order():
     text = ["# native census", *(" ".join(map(str, row)) for row in rows)]
     result = validate(text, steps=(2,))
     assert result["selected_columns"] == 6
+
+
+def test_malformed_enormous_mstep_rejects_without_expanding_ordinals():
+    # One SELECT and one CONSUME cannot satisfy a billion-step declaration.
+    rows = ["SELECT 1 0 2 2 0 1000000000", "CONSUME 1 0 2 2 1 1000000000"]
+    with pytest.raises(ValueError, match="missing CONSUME ordinal"):
+        validate_census(
+            rows, steps=(1,), i_bounds=(2, 2), j_bounds=(2, 2), rank_count=1
+        )

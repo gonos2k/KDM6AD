@@ -74,7 +74,9 @@ claim 454,720 active physical-process observations.
 validator. Expected global coordinates, steps, ranks and territories come from
 the caller's configuration. Missing/duplicate owners, halo coordinates, wrong
 rank files, missing ordinals and work after a column finishes are rejected.
-The selected mstep itself is measured, not recomputed from velocity. Consistently
+The selected mstep itself is measured, not recomputed from velocity. A malformed
+large mstep is rejected from bounded observed ordinals without allocating a range
+of that size. Consistently
 falsifying SELECT and CONSUME counts is outside this arithmetic witness and is
 explicitly demonstrated as a limitation in a synthetic test.
 
@@ -194,7 +196,7 @@ native n≥2, coupled time accuracy, thread-count changes, full normalized AD/AB
 physical number units and independent radiative/observational validation remain
 open. No new RTTOV run was made; inherited liquid acceptance remains 0/9.
 
-Validation: **66 focused Python 3.12 tests passed** (50 new execution/selection/
+Validation: **67 focused Python 3.12 tests passed** (51 new execution/selection/
 restart/replay checks and 16 retained run-identity checks). One existing
 NetCDF/NumPy import warning appeared in the invalid-history test; no test failed.
 Ruff passed for new files and the runner's existing undefined-name gate. A green

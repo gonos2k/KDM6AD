@@ -982,6 +982,6 @@ metadata warnings and does not claim complete graph coverage.
 - [ ] First-divergence localization, physical unit policy, native n>=2, coupled
   time convergence, full normalized AD/ABI and independent radiative accuracy.
 
-66 focused tests passed (50 new, 16 retained); passing evidence replay preserves
+67 focused tests passed (51 new, 16 retained); passing evidence replay preserves
 failed trajectory gates. No operational P1 closure or new RTTOV measurement.
 See `REPORT_native_execution_2026-09-24.md` and the central generalization checklist.
