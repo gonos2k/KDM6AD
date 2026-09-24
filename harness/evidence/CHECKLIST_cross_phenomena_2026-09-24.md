@@ -12,7 +12,7 @@ remain unchanged.
 | X1 | **Bounded pilot complete** | Shared reservoir, applied phase extent, paired water transfer and local latent-temperature update | Seeded isolated phase amounts through KDM's freeze cap and inline applier, plus synthetic overdraw/heat/overflow/empty-grid counterexamples; five focused tests; fixed `cpm`, same declared q basis, no phase-rate regeneration or full enthalpy claim |
 | X2 | **Bounded native event complete** | Competing phase changes and other processes at one real coordinator stage | Input-selected 39-level mp37 cell: D2/D3 raw requests, sequential cap inputs and applied mass/number, source-ordered f32 water/number/T stores, later state-update/final stages; two 40 s runs have 254/254 raw-bit-equal numeric fields at 0/20/40 s. All four D2/D3 mass·number caps are unbound and the tiny thermal increments round away in stored f32 T; cap-active native and full enthalpy generality belong to later breadth/accuracy rows |
 | X3 | **Bounded synthetic pilot complete** | Signed two-cell diffusion or soil-water exchange | One declared face, positive left→right; water-depth inventory `theta*dz`; signed reversal, equal-head (zero-gradient) equilibrium of the toy law, donor and porosity capacity limits, external supply, invalid-state rejection. Thirteen synthetic tests; no operational soil/diffusion kernel or meteorological run |
-| X4 | Open | Rich admissibility for each population | Add explicit population/moment IDs and species-specific floors/bounds; distinguish valid zero, inactive, undefined, missing observation and inadmissible input; test higher moments only when a corresponding distribution is declared |
+| X4 | **Bounded declarative pilot complete** | Rich admissibility for each population | Explicit population/phase/moment IDs, volume units and species floors/bounds wrap the prior G3 C/N validator; valid zero, inactive, undefined, conditional, inadmissible, missing and QC-rejected statuses are separate. Declared M0/M1/M2 pass only a necessary realizability inequality; no native producer/unit or full DSD certification |
 | X5 | Open | Time-integrated exchange and cache validity | Sum each `flux_s × dt_s`; identify interval and restart cumulative origin; track state, geometry, parameter and optical dependencies where the phenomenon uses them |
 | X6 | Open | Geometry-dependent inventory and derivative | Declare (z=Gx), test (G\delta x+(\delta G)x); use a separate synthetic remap only where a changing-grid operator exists |
 | X7 | Open | Coupled operators and equilibrium | Compare same-final-time split/coupled outcomes, feedback and order; check a phenomenon-specific equilibrium, not only component conservation/nonnegativity |
@@ -31,4 +31,6 @@ changes or cap-binding branches are coupled correctly in the live host. Its
 report and lossless token evidence are `REPORT_cross_phenomena_real_phase_2026-09-24.md`
 and `native_phase_event_2026-09-24.json`; the separate 39-level fp64 oracle
 profile is `real_phase_profile_2026-09-24.json`. X3's verification-only pilot is
-reported in `REPORT_cross_phenomena_signed_face_2026-09-24.md`; X4 is next.
+reported in `REPORT_cross_phenomena_signed_face_2026-09-24.md`. X4's
+declarative adapter is `REPORT_cross_phenomena_validity_2026-09-24.md`; X5
+is next.
