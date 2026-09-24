@@ -18,7 +18,7 @@ contracts absent from those checks, without relaxing them.
 | ID | Status | New contract | Minimum completion evidence |
 | --- | --- | --- | --- |
 | F0 | **Branch reconstruction complete; PR #250 open, main merge pending** | Code/evidence provenance | X2–X12/G4 are rebased onto the actual PR #238 main commit with no duplicate X1 patch and all failed gates retained. Exact-head oracle/harness/port checks must pass for PR #250. Mainline inclusion remains pending merge. |
-| F1 | Open | Ordered applied transitions | A declared stage schedule with before/requested/applied/after values; same-stage competing draws share current availability, later stages consume the preceding accepted state. Reject intermediate overdraw even if a later stage repairs the final amount. Keep actual X2 trace as a separate bounded native witness. |
+| F1 | **Bounded sequence pilot complete** | Ordered applied transitions | An independent two-stage plan fixes stage/owner and expected transfer names/paths, then checks before/requested/applied/after on X1's single declared mass-mixing-ratio basis and fixed f64 tolerances; same-stage draws share current availability, later stages consume the exact preceding published state. Eight new synthetic tests reject intermediate overdraw above tolerance, missing/reordered stages or transfers, handoff gaps, cancelled heat errors, masked/raw-boolean amounts and caller-relaxed tolerance. Sub-`1e-14` mass deviations are outside this pilot's conservation resolution. The actual X2 trace remains a separate bounded native witness; no native vapour→liquid→ice chain was executed. |
 | F2 | Open | Thermodynamic path and state function | Check common-reference phase enthalpies and closed-cycle coefficient consistency. A declared state function must close its before/after budget against explicit external heat/work and mass-exchange energy within a prespecified, dimensioned residual tolerance; a finite but nonclosing residual fails. Distinguish fixed-`cpm` local temperature consistency from total enthalpy; do not assign an unmeasured KDM energy error. |
 | F3 | Open | Implicit solve and derivative acceptance | A small nonlinear pilot checks state residual, scaled/conditioned error, tangent residual and algorithmic-versus-converged sensitivity against separate norm, scaling and precision-aware thresholds fixed before examining results; finite but nonconverged residuals fail. Refused convergence/active-set states cannot be accepted as physical solutions. No claim for an uninstrumented native implicit solver. |
 | F4 | Open | Face constitutive law and thermodynamic direction | A declared two-material interface law checks serial-resistance flux against arithmetic-mean counterexample; paired face conservation and equal-head equilibrium are separately retained. A passive heat-transfer example must reject the energy-conserving but entropy-decreasing direction. No claim for a host soil/heat solver. |
@@ -34,3 +34,8 @@ the following system-level gates stay explicitly open: operational ice
 transport P1, physical number-unit basis, native `mstep>1`, 2×1 MPI and restart
 trajectory divergence, full normalized AD/ABI, physical time convergence,
 independent radiative accuracy and QC-accepted liquid observation cost (0/9).
+
+F1 evidence: `REPORT_further_generalization_sequence_2026-09-24.md`,
+`phase_sequence_contract.py` and its focused tests. The stage plan is a
+caller-supplied source-order and transfer-path declaration, not inferred from
+received records.
