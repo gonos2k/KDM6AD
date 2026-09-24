@@ -5,7 +5,7 @@
 The earlier boundary replay converted an already-generated rate. This experiment
 instead calls the existing cloud/rain DSD and `accretion_torch` producers again
 from declared physical moments, compares newly generated rates with a separately
-written volume-form equation, and executes the existing conservative ice kernel
+written volume-form equation, and executes the existing analysis-only, opt-in conservative ice function
 on unequal-density/unequal-thickness cells. Production equations, defaults, ABI,
 QC, tolerances and native sources are unchanged. There are **zero native-host
 or RTTOV runs** in this G3 experiment.
@@ -106,9 +106,10 @@ volume number. A successful conditional adapter does not determine which
 historical state interpretation and all upstream process thresholds should be
 adopted. G3.3 stays open.
 
-## Actual kernel transfer and derivative of the full measure
+## Opt-in conservative transfer and derivative of its declared measure
 
-The transport probe uses the **existing** conservative ice function. It supplies
+The transport probe uses the existing **analysis-only, opt-in**
+`conservative_ice_substep_advection_torch` function. It supplies
 separate mass/number velocities normalized once by dz, and lets the kernel
 compute limited departures. An independent recurrence in cell-inventory
 coordinates provides the expectation:
@@ -121,9 +122,11 @@ The same Q is used on both sides of each interface. Three synthetic experiments
 include one and three substeps, unequal rho/dz, uncapped and emptied donors, and
 nonzero bottom export. They agree across dry/volume encodings and with the
 independent recurrence within 32 epsilon64 relative, zero absolute tolerance.
-This uses generated transfers, unlike the earlier prescribed two-cell transfer
-identity. Velocities are held fixed through each run; no full reslope/host time
-accuracy or native surface-export measurement is claimed.
+The opt-in function generates these transfers, unlike the earlier prescribed
+two-cell transfer identity. This is a counterfactual operator test; it does not
+validate the operational legacy transport or close its P1. Velocities are held
+fixed through each run; no full reslope/host time accuracy or native
+surface-export measurement is claimed.
 
 The derivative tests perturb state, density, thickness and both velocities.
 They compare true `torch.func.jvp`, VJP and independent central differences for
