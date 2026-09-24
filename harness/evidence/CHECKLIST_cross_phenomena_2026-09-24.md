@@ -15,7 +15,7 @@ remain unchanged.
 | X4 | **Bounded declarative pilot complete** | Rich admissibility for each population | Explicit population/phase/moment IDs, volume units and species floors/bounds wrap the prior G3 C/N validator; valid zero, inactive, undefined, conditional, inadmissible, missing and QC-rejected statuses are separate. Declared M0/M1/M2 pass only a necessary realizability inequality; no native producer/unit or full DSD certification |
 | X5 | **Bounded synthetic pilot complete** | Time-integrated exchange and cache validity | Independent two-interval plan integrates each signed rate with its own duration, binds a restart checkpoint to the complete plan/revision digest and exact completed prefix, and permits intentional cached reuse only within a declared validity window and matching state/geometry/parameter/optical/unit revisions. Thirteen tests; no production radiation or restart run |
 | X6 | **Bounded existing derivative + synthetic remap complete** | Geometry-dependent inventory and derivative | G3's retained density/thickness/velocity JVP–VJP–FD tests verify `δ(rho*dz*x)` including measure directions; eleven synthetic remap tests check normalization-specific fraction-weighted conservation, constant behavior, tiny overlap scale and invalid tolerances. No native changing grid or real remapper |
-| X7 | Open | Coupled operators and equilibrium | Compare same-final-time split/coupled outcomes, feedback and order; check a phenomenon-specific equilibrium, not only component conservation/nonnegativity |
+| X7 | **Bounded synthetic coupling complete** | Coupled operators and equilibrium | Two exact nonnegative, conservative one-way maps are compared in AB/BA order against the analytic same-final-time coupled equation; order and coupled equilibrium differ despite both component passes. Eleven synthetic tests; no KDM/host coupling or physical time-error claim |
 | X8 | Open | Stage-aware accepted state | Distinguish internal solver stage, physical consumer input, accepted output and diagnostic-only values; check validity at the owning boundary |
 | X9 | Open | Branch and event-time derivatives | Separate same-branch JVP/VJP/FD, one-sided threshold behavior, finite branch-changing increments and continuous event-time sensitivities where an event model actually exists |
 | X10 | Open | Observation/analysis semantics | Specify average-before-transform, support/QC changes and analysis increment as separate terms; compare channel derivatives only on declared support |
@@ -35,4 +35,6 @@ reported in `REPORT_cross_phenomena_signed_face_2026-09-24.md`. X4's
 declarative adapter is `REPORT_cross_phenomena_validity_2026-09-24.md`.
 X5's interval/cache pilot is `REPORT_cross_phenomena_time_cache_2026-09-24.md`;
 X6's existing derivative/new synthetic remap evidence is
-`REPORT_cross_phenomena_geometry_2026-09-24.md`; X7 is next.
+`REPORT_cross_phenomena_geometry_2026-09-24.md`.
+X7's noncommuting synthetic pair is `REPORT_cross_phenomena_coupling_2026-09-24.md`;
+X8 is next.
