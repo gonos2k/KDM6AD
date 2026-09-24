@@ -1,0 +1,96 @@
+{
+  "audit": "PR233 follow-up: legacy source pin lineage",
+  "date": "2026-09-24",
+  "scope": {
+    "public_checkout": "/Users/yhlee/KDM6AD-audit-pr205",
+    "public_head": "9954af4",
+    "canonical_private_tree": "/Users/yhlee/KDM6AD-k",
+    "canonical_private_head": "0aa2c30",
+    "mode": "read-only audit; no gate, pin, or source changed"
+  },
+  "graphify": {
+    "skill": "/Users/yhlee/.agents/skills/graphify/SKILL.md",
+    "query_ran": true,
+    "query_result": "Cached BFS returned differentiability/operator wiki concepts, not source-pin nodes or producer-consumer edges; conclusions below are verified from source and evidence files."
+  },
+  "findings": [
+    {
+      "claim": "The legacy manifest's 9354141b\u2026 SHA matches an available historical deployed-tree source.",
+      "evidence": [
+        "/Users/yhlee/KDM6AD-audit-pr205/harness/cons_fortran_scope_manifest.json: legacy_sha256.module_mp_kdm6.F",
+        "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/phys/module_mp_kdm6.F: SHA-256 9354141b9e93aceb4a1c35e06bf673a5d4d916028877c0f84f729a301876b7dc",
+        "/Users/yhlee/KDM6AD-k/harness/evidence/gate_a_scope_report.json: historical Gate A report records the same legacy SHA and pass"
+      ]
+    },
+    {
+      "claim": "The active canonical source differs from that pinned historical source by exactly one deleted line: old line 863 `rhox(i,k) = max(rhox(i,k),0.0)`; current source SHA-256 is fc0a72d33a5e61803fea56eb9118018039c6da8b5775813032b4861a2bd66eb5.",
+      "evidence": [
+        "Direct byte comparison of the two named source files: one SequenceMatcher delete opcode, no other changed lines.",
+        "/Users/yhlee/KDM6AD-k/host_fortran/ARCHIVE_PROVENANCE.md: archive describes the rhox undefined-read cleanup and records the active-host witness"
+      ]
+    },
+    {
+      "claim": "The host_fortran archive is not the pinned legacy source: its module_mp_kdm6.F hash is 31302e886595670caf379ffbe880ac2f0c8ef974cfb1d44381cd5acdb304dbaa; it derives from tracked revision eb1c823 plus the rhox cleanup and is substantially older/different than current host source.",
+      "evidence": [
+        "/Users/yhlee/KDM6AD-k/host_fortran/ARCHIVE_PROVENANCE.md",
+        "Direct archive-versus-current comparison: 27 changed opcodes; do not use archive hash as the 9354141b witness."
+      ]
+    },
+    {
+      "claim": "Replaying Gate A against current canonical legacy and conservative files yields all four structural edit clusters matched, with the sole failure being the legacy source SHA pin.",
+      "evidence": [
+        "Read-only replay: harness/check_cons_fortran_scope.py --legacy host/KIM-meso_v1.0/phys/module_mp_kdm6.F --cons host/KIM-meso_v1.0/phys/module_mp_kdm6_cons.F --manifest harness/cons_fortran_scope_manifest.json",
+        "Observed: pass=false; one failure `legacy module_mp_kdm6.F sha256 does not match the pinned manifest`; 4/4 cluster matches. Replay output was kept in /tmp, not committed."
+      ]
+    },
+    {
+      "claim": "PR233 native source/build artifacts remain identifiable, but they do not repair the legacy-source pin mismatch or prove source-to-executable lineage for the current canonical executable.",
+      "evidence": [
+        "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/pr234-normalization/retained_identities.json: all listed PR233 identities remain equal",
+        "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/pr233-native-cons/source_manifest.json: conservative source/capture hashes",
+        "/Users/yhlee/KDM6AD-k/graphify-out/goal-completion-20260906/parent/m1-applied-transport-feasibility-20260907.md: records the source-to-executable build manifest as incomplete"
+      ]
+    }
+  ],
+  "remaining_unmeasured": [
+    "The historical source pin is explainable and its matching source is present, but the current canonical source does not satisfy that unchanged historical pin.",
+    "The recorded evidence does not establish that a current canonical executable was built from the exact fc0a72d\u2026 source; source identity alone is not executable lineage."
+  ],
+  "interpretation": "This is lineage evidence, not a source-pin recertification or executable certification. Preserve the historical pin and report the current mismatch explicitly.",
+  "rhox_removal_followup": {
+    "recorded_change_explanation": {
+      "private_archive": "/Users/yhlee/KDM6AD-k/host_fortran/ARCHIVE_PROVENANCE.md:9-14 calls it a one-line rhox undefined-read cleanup; gives no date, author, approval, PR/commit identifier, or before/after diff.",
+      "wiki": "/Users/yhlee/KDM6AD-k/wiki/sources/kdm6ad-ami-whole-audit-resolution-2026-09-05.md:89-95 records removal of the conservative rhox pre-read and the resulting module_mp_kdm6_cons.F SHA; says no new host build/install/WRF/MPI/live RTTOV run.",
+      "public_pr208_report": "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/lunar-resolution-pr208-20260906/host_green/report.md:9-10 says prior H01-H04 fixes were left intact; its exact delta table (lines 22-28) does not mention module_mp_kdm6.F or this removal. Lines 106-120 and parent/private-source-provenance.log show source-hash checks, not approval of this earlier change.",
+      "approval_status": "No explicit approval/owner authorization record for the rhox line removal was located in the bounded archive, wiki, PR208 report, checklist, and source-provenance records searched. The records support that the change was made and later hash-witnessed, not who approved it."
+    },
+    "source_producer_and_meaning": {
+      "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/phys/module_mp_kdm6.F",
+      "references": [
+        "kdm6 local rhox array: line 285; passed to kdm62D at line 398.",
+        "kdm62D rhox dummy is INTENT(OUT): line 682; it is initialized to zero inside kdm62D at line 1012 before its first ProgB_param call at lines 1153-1156.",
+        "ProgB_param rhox dummy is also INTENT(OUT): line 3646. It writes qrs(i,k,3)/brs(i,k) and clamps the result to [100,900] kg m-3 only under qrs(i,k,3)>qcrmin OR brs(i,k)>brs_min (lines 3653-3656, 3668-3675); the neither-active branch has no assignment.",
+        "This is graupel bulk density qg/brs (kg m-3), used with brs to derive cmg and graupel distribution/fall-speed parameters; the outer kdm6 path exports diag_rhog after kdm62D (lines 430-454)."
+      ],
+      "implication": "The nested INTENT(OUT) conditional producer makes the outer max(rhox,0) a read of a formally undefined element on the neither-active branch, despite the earlier zero initialization. This is a concrete rationale for removing the read. On producer-active cells, the density is bounded to [100,900]; the export writes zero when final qg<=qcrmin. These source facts alone do not establish runtime noninterference for all executions or toolchains."
+    },
+    "known_vs_unknown": {
+      "known": [
+        "The source edit is exactly deletion of the pre-read clamp line at historical line 863.",
+        "The archive and wiki explicitly label the change an undefined/pre-read cleanup and record resulting source hashes.",
+        "PR208 source checks attest current source hashes and limited preprocess/syntax checks; they do not certify a binary built from this change."
+      ],
+      "unknown": [
+        "No explicit approval record or attributable change event was found in the bounded records searched.",
+        "No line-specific executable-level noninterference or historical raw-bit comparison isolates this deletion; do not label it semantically harmless or a parity-preserving change on this evidence."
+      ]
+    },
+    "followup_scope": "Read-only document/source inspection only; no source edit, build, or new run."
+  },
+  "exact_byte_bridge": {
+    "removed_line": "       rhox(i,k) = max(rhox(i,k),0.0)\n",
+    "removal_reproduces_current_source_bytes": true,
+    "historical_pin_changed": false,
+    "historical_certification_passed": false
+  }
+}

@@ -830,3 +830,83 @@ substep closes the declared dz-number/rho-dz-mass budgets, with mixed-f32 number
 interface residual about 3.35e-9 relatively. This validates the existing opt-in
 alternative on these operands, not an operational fix or a full host trajectory.
 See `REPORT_native_ice_transfer_2026-09-20.md` and its focused checklist.
+
+
+### PR232 follow-up — formal time refinement and layer JVP (2026-09-20)
+
+- [x] Reuse the same captured 39-layer operands with fixed work and metrics;
+  compare m=1..128 at the same numerical final interval, including a surface
+  inventory counter and both mass/number distribution and total closure.
+- [x] Cross-check a matrix exponential with a positive Poisson series and known
+  two-cell solution. Check one nonuniform layer direction using true
+  `torch.func.jvp`, VJP and independent centered differences.
+- [x] Audit the coefficient handoff: first ice work is raw terminal velocity
+  after a main-loop reslope overwrite, not an established inverse-time rate.
+  The fixed numeric-coefficient curves are formal operator diagnostics;
+  `dt*work` is not a physical Courant number at this handoff.
+- [ ] Operational transfer P1, raw handoff normalization, physical number basis
+  and full coupled time accuracy remain open. No default or QC is changed;
+  liquid observation approval remains 0/9.
+
+See `REPORT_ice_time_accuracy_2026-09-20.md`.
+
+### Isolated mp237 trajectory follow-up (2026-09-21)
+
+- [x] Existing conservative Fortran variant on the same 5-km input, 39 layers,
+  40-s window with dt=20; current module compiled separately, host dependencies
+  reused. Not mp337 or C ABI validation.
+- [x] Control/capture have identical complete history bytes, 253 numeric fields
+  and Times at 0/20/40 s. Initial legacy state matches; later differences are
+  described, not required to match.
+- [x] Capture 156 ice before/after records; measured capped departures pair with
+  adjacent upper-departure records. Source-ordered receiver reconstruction
+  reproduces all qi/ni post stores; conditional f32 transfer residuals retained.
+- [ ] Whole-host positivity: small negative number history values in both
+  legacy and conservative tracks at 40 s; origin not localized by this capture.
+- [ ] Operational P1, physical number basis, raw ice work normalization, coupled
+  time convergence and representative number surface export remain open.
+
+Three completed runs (one initial-frame-only exploratory run, two accepted
+three-frame runs) and two MPI startup failures are distinguished. Historical
+source SHA pin fails while four permitted structural clusters match; no gate
+was weakened. See `REPORT_conservative_native_2026-09-21.md`.
+
+Final Green/Red reviews found no blocking arithmetic/scope issues after adding
+fail-closed run-validity and source-strip evidence checks. Focused Python 3.12
+checks: 4 formal-reference/layer-AD tests and 8 native-evidence tests. Graphify
+AST and focused semantic refresh completed; eight pre-existing graph metadata
+warnings remain, and full graph coverage is not claimed.
+
+
+### PR233 follow-up — normalization and negative-number origin (2026-09-24)
+
+- [x] Preserve legacy/original mp237. In an isolated source copy, add only the
+  two missing ice-slot divisions after main reslope; leave initial mstep and
+  later ice normalization unchanged. Execute normalized control/capture at the
+  same 5-km, 39-layer, 40-s input; all 253 numeric fields plus Times match.
+- [x] Record 702 coefficient/state rows. All 234 paired raw/dz transitions and
+  78 first-ice handoffs replay. Selected mstep is 1: later normalization is
+  measured preparation, not an executed n>=2 consumer or coupled time convergence.
+- [x] Independently trace original mp237's 11 final negative edge cells and their
+  11 donors. Capture 1188 records; replay 132 RK and 44 PD stores with the archived
+  host object's fused arithmetic. Inner RK negatives are copied by outflow BC;
+  microphysics changes inner cells while excluding the specified edge strip.
+- [x] Both read-only negative traces retain original mp237 history bytes.
+  No boundary clipping, transport setting or KDM strict-FP policy is changed.
+- [x] Locate matching historical pinned source and the exact one-line rhox
+  deletion leading to current source. Record rationale and approval gap.
+- [ ] Historical pin certification remains FAILED; no SHA replacement.
+- [ ] Operational P1/default adoption, physical number basis, full normalized
+  AD/ABI behavior, upstream advective flux/limiter cause, whole-host positivity,
+  coupled time accuracy and independent radiation accuracy remain open.
+  Liquid observation approval remains 0/9.
+
+See `REPORT_ice_normalization_2026-09-24.md`,
+`REPORT_negative_number_origin_2026-09-24.md` and the paired public JSON/replayers.
+Focused Python 3.12 tests: 8 normalization + 7 negative-trace tests passed; both
+replayers reject Python -O. Native executions and public arithmetic tests are
+separate evidence.
+
+Final Green/Red review approved the scoped arithmetic and evidence. Graphify
+code and focused semantic updates completed; eight pre-existing missing-edge
+metadata warnings remain, with no claim of complete graph coverage.
