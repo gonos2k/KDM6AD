@@ -69,12 +69,12 @@ def classify_population_pair(spec: PopulationSpec, mass: MomentInput,
     if np.ma.isMaskedArray(mass.values) or np.ma.isMaskedArray(number.values):
         raise ValueError("masked population moments need an explicit missing-data contract")
     if _contains_bool(mass.values) or _contains_bool(number.values):
-        raise ValueError("population moments cannot contain boolean masks")
+        raise ValueError("population moments must be real numeric, not boolean masks")
     mass_array, number_array = np.asarray(mass.values), np.asarray(number.values)
     if mass_array.size == 0 or number_array.size == 0:
         raise ValueError("population moment arrays must be nonempty")
-    if mass_array.dtype.kind in "bO" or number_array.dtype.kind in "bO":
-        raise ValueError("population moments cannot be boolean or object masks")
+    if mass_array.dtype.kind in "bOc" or number_array.dtype.kind in "bOc":
+        raise ValueError("population moments must be real numeric, not masks or complex")
     return PopulationValidity(
         spec,
         classify_volume_moments(
@@ -134,9 +134,9 @@ def classify_producer_sample(spec: SampleSpec, value: object, *,
         return SampleAssessment(ProducerStatus.UNDEFINED, None, None, None)
     if np.ma.isMaskedArray(value):
         raise ValueError("masked producer output needs an explicit validity state")
-    if _contains_bool(value) or (isinstance(value, np.ndarray)
-                                 and value.dtype.kind == "O"):
-        raise ValueError("boolean producer mask cannot be a physical output")
+    if (_contains_bool(value) or isinstance(value, (complex, np.complexfloating))
+            or (isinstance(value, np.ndarray) and value.dtype.kind in "Oc")):
+        raise ValueError("producer output must be real numeric, not a mask or complex")
     try:
         numeric = float(value)
     except (TypeError, ValueError) as exc:
@@ -172,9 +172,9 @@ def classify_observation(value: object, *, present: bool,
         return ObservationStatus.QUALITY_REJECTED
     if np.ma.isMaskedArray(value):
         raise ValueError("masked observation cannot be silently accepted")
-    if _contains_bool(value) or (isinstance(value, np.ndarray)
-                                 and value.dtype.kind == "O"):
-        raise ValueError("boolean quality mask cannot be an observation value")
+    if (_contains_bool(value) or isinstance(value, (complex, np.complexfloating))
+            or (isinstance(value, np.ndarray) and value.dtype.kind in "Oc")):
+        raise ValueError("observation value must be real numeric, not a mask or complex")
     try:
         numeric = float(value)
     except (TypeError, ValueError) as exc:
@@ -206,10 +206,10 @@ def check_nonnegative_m012(spec: PopulationSpec, m0: MomentInput,
     if any(np.ma.isMaskedArray(m.values) for m in (m0, m1, m2)):
         raise ValueError("masked higher moments need an explicit missing-data contract")
     if any(_contains_bool(m.values) for m in (m0, m1, m2)):
-        raise ValueError("moment values cannot contain boolean masks")
+        raise ValueError("moment values must be real numeric, not boolean masks")
     raw_arrays = tuple(np.asarray(m.values) for m in (m0, m1, m2))
-    if any(a.dtype.kind in "bO" for a in raw_arrays):
-        raise ValueError("moment values cannot be boolean or object masks")
+    if any(a.dtype.kind in "bOc" for a in raw_arrays):
+        raise ValueError("moment values must be real numeric, not masks or complex")
     arrays = tuple(np.asarray(a, dtype=np.float64) for a in raw_arrays)
     if (not arrays[0].size or len({a.shape for a in arrays}) != 1
             or any(not np.isfinite(a).all() or np.any(a < 0) for a in arrays)):
