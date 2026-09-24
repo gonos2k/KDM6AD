@@ -19,6 +19,9 @@ from pathlib import Path
 
 import numpy as np
 
+from evidence_spec import (EvidenceTier, ExpectedEvidence, EvidenceRecord,
+                           EvidencePlan, audit_evidence)
+
 STAGES = ("D2_PRE", "D2_POST", "D3_PRE", "D3_POST",
           "POST_STATE_UPDATE", "FINAL")
 SOURCE_SHA256 = "fc0a72d33a5e61803fea56eb9118018039c6da8b5775813032b4861a2bd66eb5"
@@ -201,6 +204,17 @@ def replay(data: dict) -> dict:
     if hashlib.sha256(("\n".join(lines) + "\n").encode()).hexdigest() != RAW_RECORDS_SHA256:
         raise ValueError("native phase token set changed")
     records = [parse_line(line) for line in lines]
+    expected = EvidencePlan(
+        "x2_selected_native_phase",
+        tuple(ExpectedEvidence((call, stage), EvidenceTier.MEASURED,
+                               source_sha256=RSL_OUT_SHA256)
+              for call in (1, 2) for stage in STAGES),
+    )
+    actual = tuple(EvidenceRecord((index // 6 + 1, row["stage"]),
+                                  EvidenceTier.MEASURED,
+                                  source_sha256=data["rsl_out_sha256"])
+                   for index, row in enumerate(records))
+    audit_evidence(expected, actual)
     events = []
     for call in range(2):
         rows = records[call * 6:(call + 1) * 6]
