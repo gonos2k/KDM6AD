@@ -910,3 +910,36 @@ separate evidence.
 Final Green/Red review approved the scoped arithmetic and evidence. Graphify
 code and focused semantic updates completed; eight pre-existing missing-edge
 metadata warnings remain, with no claim of complete graph coverage.
+
+
+### G1 generalization follow-up (2026-09-24)
+
+- [x] Keep the fixed PR233 regressions unchanged. Separate velocity/rate packets,
+  producer generations and independent cycle/column schedules in common helpers.
+  Reject double normalization, stale generation, missing/duplicate consumers and
+  rewritten selected/consumed counts; record-side declaration shrink is not trusted.
+- [x] Compose existing slope + conservative ice functions on synthetic 1/2/4-layer
+  two-column cases. Recompute velocity before consumption, hold [1,4] within the
+  first cycle and reselect [1,2] next cycle; preserve finished-column bytes and
+  cumulative fall. This is an isolated ice chain, not the full main coordinator.
+- [x] Verify true forward JVP/VJP/FD with velocity dependence, same selected plans
+  and observed branch masks; report conditional mass/number budgets plus bottom export.
+- [x] Record the prescribed C=0.8→2.4 insufficient-budget counterexample without
+  silently reselecting the consumed schedule. Test executed binary64 selection ties.
+- [x] One noninterfering native census: all 129,920 owned-column selection records
+  at model steps 1/2 are mstep=1. Publish compressed raw records and independent
+  expected ownership bounds; no native n>=2 success is inferred.
+- [ ] G1 native n>=2, full main/reslope/subcycle/AD/ABI coupling and restart behavior.
+- [ ] G2 upstream face-flux/limiter budgets and wider negative-event detection.
+- [ ] G3 physical number/mass/geometry/threshold contracts and inactive producer validity.
+- [ ] G4 held-out meteorology, MPI ownership, restart and coupled time accuracy.
+
+New focused checks: 15 passed; retained PR233 checks: 15 passed (30 combined).
+The native census is one separate execution. Operational P1 and historical source
+pin recertification remain open. No new RTTOV run; inherited liquid approval 0/9
+is not a new observation result. See `REPORT_dynamic_ice_contract_2026-09-24.md`.
+
+Final Green/Red review approved the bounded G1 claims. The synthetic budget
+regression was tightened to 32 epsilon64 relative and zero absolute tolerance;
+its focused tests pass. Graphify code and semantic refresh retains the known
+metadata warnings and does not claim complete graph coverage.
