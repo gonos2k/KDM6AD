@@ -47,7 +47,7 @@ def test_moment_ids_basis_and_units_are_not_inferred_from_array_shape():
         classify_population_pair(spec,
                                  MomentInput("cloud_drops", "liquid", "mass", "volume", "kg/m3", []),
                                  MomentInput("cloud_drops", "liquid", "number", "volume", "#/m3", []))
-    with pytest.raises(ValueError, match="boolean or object masks"):
+    with pytest.raises(ValueError, match="boolean.*masks"):
         classify_population_pair(spec,
                                  MomentInput("cloud_drops", "liquid", "mass", "volume", "kg/m3", [True]),
                                  MomentInput("cloud_drops", "liquid", "number", "volume", "#/m3", [True]))
@@ -56,7 +56,13 @@ def test_moment_ids_basis_and_units_are_not_inferred_from_array_shape():
                                  MomentInput("cloud_drops", "liquid", "mass", "volume", "kg/m3",
                                              np.ma.array([1e-4], mask=[True])),
                                  MomentInput("cloud_drops", "liquid", "number", "volume", "#/m3", [1e5]))
-    with pytest.raises(ValueError, match="boolean or object masks"):
+    with pytest.raises(ValueError, match="boolean.*masks"):
+        classify_population_pair(spec,
+                                 MomentInput("cloud_drops", "liquid", "mass", "volume", "kg/m3",
+                                             [True, 1e-4]),
+                                 MomentInput("cloud_drops", "liquid", "number", "volume", "#/m3",
+                                             [1e6, 1e6]))
+    with pytest.raises(ValueError, match="boolean.*masks"):
         classify_population_pair(spec,
                                  MomentInput("cloud_drops", "liquid", "mass", "volume", "kg/m3",
                                              np.array([True], dtype=object)),
@@ -162,7 +168,7 @@ def test_higher_moments_require_matching_population_and_declared_distribution():
     with pytest.raises(ValueError, match="declare one population"):
         check_nonnegative_m012(_distribution(), m0, m1,
                                MomentInput("dry_aerosol", "liquid", "M2", "volume", "#/m", [1.]))
-    with pytest.raises(ValueError, match="boolean or object masks"):
+    with pytest.raises(ValueError, match="boolean.*masks"):
         check_nonnegative_m012(
             _distribution(),
             MomentInput("cloud_drops", "liquid", "M0", "volume", "#/m3", [True]),
@@ -175,7 +181,14 @@ def test_higher_moments_require_matching_population_and_declared_distribution():
                         np.ma.array([1.], mask=[True])),
             m1, m2,
         )
-    with pytest.raises(ValueError, match="boolean or object masks"):
+    with pytest.raises(ValueError, match="boolean.*masks"):
+        check_nonnegative_m012(
+            _distribution(),
+            MomentInput("cloud_drops", "liquid", "M0", "volume", "#/m3", [True, 1.]),
+            MomentInput("cloud_drops", "liquid", "M1", "volume", "#/m2", [1., 1.]),
+            MomentInput("cloud_drops", "liquid", "M2", "volume", "#/m", [1., 1.]),
+        )
+    with pytest.raises(ValueError, match="boolean.*masks"):
         check_nonnegative_m012(
             _distribution(),
             MomentInput("cloud_drops", "liquid", "M0", "volume", "#/m3",
