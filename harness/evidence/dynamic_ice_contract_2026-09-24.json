@@ -1,0 +1,3091 @@
+{
+  "schema": "dynamic-ice-probe-v1",
+  "scope": "synthetic slope_kdm6_torch plus conservative_ice_substep_advection_torch; no main phase/native data",
+  "torch_version": "2.8.0",
+  "python_version": "3.12.13",
+  "platform": "macOS-26.7-arm64-arm-64bit",
+  "cases": [
+    {
+      "K": 1,
+      "synthetic_geometry_only": true,
+      "dt_seconds": 20.0,
+      "dz_m": [
+        [
+          100.0
+        ],
+        [
+          6.0
+        ]
+      ],
+      "initial_qi": [
+        [
+          1e-05
+        ],
+        [
+          1e-05
+        ]
+      ],
+      "initial_ni": [
+        [
+          10000.0
+        ],
+        [
+          10000.0
+        ]
+      ],
+      "rho": [
+        [
+          0.9
+        ],
+        [
+          0.9
+        ]
+      ],
+      "consumer_records": [
+        {
+          "cycle": 1,
+          "n": 1,
+          "column": 0,
+          "selected_mstep": 1,
+          "consumed_mstep": 1,
+          "producer_generation": [
+            1,
+            "ice_velocity",
+            1
+          ],
+          "expected_generation": [
+            1,
+            "ice_velocity",
+            1
+          ],
+          "mass_velocity": [
+            0.9003334088000157
+          ],
+          "number_velocity": [
+            0.22508335220000392
+          ],
+          "mass_rate": [
+            0.009003334088000157
+          ],
+          "number_rate": [
+            0.0022508335220000394
+          ],
+          "delta_v_mass": [
+            0.0
+          ],
+          "delta_v_number": [
+            0.0
+          ],
+          "branch_signature": [
+            [
+              false,
+              false,
+              false
+            ]
+          ],
+          "before": {
+            "qi": [
+              1e-05
+            ],
+            "ni": [
+              10000.0
+            ],
+            "fall_qi": [
+              0.0
+            ],
+            "fall_ni": [
+              0.0
+            ]
+          },
+          "after": {
+            "qi": [
+              8.19933318239997e-06
+            ],
+            "ni": [
+              9549.833295599992
+            ],
+            "fall_qi": [
+              8.103000679200142e-08
+            ],
+            "fall_ni": [
+              22.508335220000394
+            ]
+          }
+        },
+        {
+          "cycle": 1,
+          "n": 1,
+          "column": 1,
+          "selected_mstep": 4,
+          "consumed_mstep": 4,
+          "producer_generation": [
+            1,
+            "ice_velocity",
+            1
+          ],
+          "expected_generation": [
+            1,
+            "ice_velocity",
+            1
+          ],
+          "mass_velocity": [
+            0.9003334088000157
+          ],
+          "number_velocity": [
+            0.22508335220000392
+          ],
+          "mass_rate": [
+            0.15005556813333595
+          ],
+          "number_rate": [
+            0.03751389203333399
+          ],
+          "delta_v_mass": [
+            0.0
+          ],
+          "delta_v_number": [
+            0.0
+          ],
+          "branch_signature": [
+            [
+              false,
+              false,
+              false
+            ]
+          ],
+          "before": {
+            "qi": [
+              1e-05
+            ],
+            "ni": [
+              10000.0
+            ],
+            "fall_qi": [
+              0.0
+            ],
+            "fall_ni": [
+              0.0
+            ]
+          },
+          "after": {
+            "qi": [
+              2.4972215933332036e-06
+            ],
+            "ni": [
+              8124.3053983333
+            ],
+            "fall_qi": [
+              3.376250283000059e-07
+            ],
+            "fall_ni": [
+              93.78473008333498
+            ]
+          }
+        },
+        {
+          "cycle": 1,
+          "n": 2,
+          "column": 1,
+          "selected_mstep": 4,
+          "consumed_mstep": 4,
+          "producer_generation": [
+            1,
+            "ice_velocity",
+            2
+          ],
+          "expected_generation": [
+            1,
+            "ice_velocity",
+            2
+          ],
+          "mass_velocity": [
+            0.6076128844109472
+          ],
+          "number_velocity": [
+            0.1519032211027368
+          ],
+          "mass_rate": [
+            0.1012688140684912
+          ],
+          "number_rate": [
+            0.0253172035171228
+          ],
+          "delta_v_mass": [
+            -0.2927205243890685
+          ],
+          "delta_v_number": [
+            -0.07318013109726712
+          ],
+          "branch_signature": [
+            [
+              false,
+              false,
+              false
+            ]
+          ],
+          "before": {
+            "qi": [
+              2.4972215933332036e-06
+            ],
+            "ni": [
+              8124.3053983333
+            ],
+            "fall_qi": [
+              3.376250283000059e-07
+            ],
+            "fall_ni": [
+              93.78473008333498
+            ]
+          },
+          "after": {
+            "qi": [
+              1.2327682472177959e-06
+            ],
+            "ni": [
+              7095.881932308983
+            ],
+            "fall_qi": [
+              3.9452542887519924e-07
+            ],
+            "fall_ni": [
+              145.20590338455088
+            ]
+          }
+        },
+        {
+          "cycle": 1,
+          "n": 3,
+          "column": 1,
+          "selected_mstep": 4,
+          "consumed_mstep": 4,
+          "producer_generation": [
+            1,
+            "ice_velocity",
+            3
+          ],
+          "expected_generation": [
+            1,
+            "ice_velocity",
+            3
+          ],
+          "mass_velocity": [
+            0.5023754149918206
+          ],
+          "number_velocity": [
+            0.12559385374795515
+          ],
+          "mass_rate": [
+            0.0837292358319701
+          ],
+          "number_rate": [
+            0.020932308957992526
+          ],
+          "delta_v_mass": [
+            -0.1052374694191266
+          ],
+          "delta_v_number": [
+            -0.02630936735478165
+          ],
+          "branch_signature": [
+            [
+              false,
+              false,
+              false
+            ]
+          ],
+          "before": {
+            "qi": [
+              1.2327682472177959e-06
+            ],
+            "ni": [
+              7095.881932308983
+            ],
+            "fall_qi": [
+              3.9452542887519924e-07
+            ],
+            "fall_ni": [
+              145.20590338455088
+            ]
+          },
+          "after": {
+            "qi": [
+              7.166745307304796e-07
+            ],
+            "ni": [
+              6353.21596762634
+            ],
+            "fall_qi": [
+              4.177496461171285e-07
+            ],
+            "fall_ni": [
+              182.33920161868303
+            ]
+          }
+        },
+        {
+          "cycle": 1,
+          "n": 4,
+          "column": 1,
+          "selected_mstep": 4,
+          "consumed_mstep": 4,
+          "producer_generation": [
+            1,
+            "ice_velocity",
+            4
+          ],
+          "expected_generation": [
+            1,
+            "ice_velocity",
+            4
+          ],
+          "mass_velocity": [
+            0.4350235890606403
+          ],
+          "number_velocity": [
+            0.10875589726516008
+          ],
+          "mass_rate": [
+            0.07250393151010671
+          ],
+          "number_rate": [
+            0.01812598287752668
+          ],
+          "delta_v_mass": [
+            -0.06735182593118028
+          ],
+          "delta_v_number": [
+            -0.01683795648279507
+          ],
+          "branch_signature": [
+            [
+              false,
+              false,
+              false
+            ]
+          ],
+          "before": {
+            "qi": [
+              7.166745307304796e-07
+            ],
+            "ni": [
+              6353.21596762634
+            ],
+            "fall_qi": [
+              4.177496461171285e-07
+            ],
+            "fall_ni": [
+              182.33920161868303
+            ]
+          },
+          "after": {
+            "qi": [
+              4.5686592527487683e-07
+            ],
+            "ni": [
+              5777.4245483942195
+            ],
+            "fall_qi": [
+              4.2944103336263063e-07
+            ],
+            "fall_ni": [
+              211.12877258028908
+            ]
+          }
+        },
+        {
+          "cycle": 2,
+          "n": 1,
+          "column": 0,
+          "selected_mstep": 1,
+          "consumed_mstep": 1,
+          "producer_generation": [
+            2,
+            "ice_velocity",
+            1
+          ],
+          "expected_generation": [
+            2,
+            "ice_velocity",
+            1
+          ],
+          "mass_velocity": [
+            0.8557185498893594
+          ],
+          "number_velocity": [
+            0.21392963747233984
+          ],
+          "mass_rate": [
+            0.008557185498893593
+          ],
+          "number_rate": [
+            0.0021392963747233983
+          ],
+          "delta_v_mass": [
+            -0.04461485891065631
+          ],
+          "delta_v_number": [
+            -0.011153714727664077
+          ],
+          "branch_signature": [
+            [
+              false,
+              false,
+              false
+            ]
+          ],
+          "before": {
+            "qi": [
+              8.19933318239997e-06
+            ],
+            "ni": [
+              9549.833295599992
+            ],
+            "fall_qi": [
+              0.0
+            ],
+            "fall_ni": [
+              0.0
+            ]
+          },
+          "after": {
+            "qi": [
+              6.7960688822193684e-06
+            ],
+            "ni": [
+              9141.234820630194
+            ],
+            "fall_qi": [
+              6.314689350812707e-08
+            ],
+            "fall_ni": [
+              20.429923748489866
+            ]
+          }
+        },
+        {
+          "cycle": 2,
+          "n": 1,
+          "column": 1,
+          "selected_mstep": 2,
+          "consumed_mstep": 2,
+          "producer_generation": [
+            2,
+            "ice_velocity",
+            1
+          ],
+          "expected_generation": [
+            2,
+            "ice_velocity",
+            1
+          ],
+          "mass_velocity": [
+            0.38644543679480164
+          ],
+          "number_velocity": [
+            0.09661135919870041
+          ],
+          "mass_rate": [
+            0.0644075727991336
+          ],
+          "number_rate": [
+            0.0161018931997834
+          ],
+          "delta_v_mass": [
+            -0.04857815226583867
+          ],
+          "delta_v_number": [
+            -0.012144538066459667
+          ],
+          "branch_signature": [
+            [
+              false,
+              false,
+              false
+            ]
+          ],
+          "before": {
+            "qi": [
+              4.5686592527487683e-07
+            ],
+            "ni": [
+              5777.4245483942195
+            ],
+            "fall_qi": [
+              0.0
+            ],
+            "fall_ni": [
+              0.0
+            ]
+          },
+          "after": {
+            "qi": [
+              1.6260967185902516e-07
+            ],
+            "ni": [
+              4847.149817913714
+            ],
+            "fall_qi": [
+              1.3241531403713325e-08
+            ],
+            "fall_ni": [
+              46.51373652402528
+            ]
+          }
+        },
+        {
+          "cycle": 2,
+          "n": 2,
+          "column": 1,
+          "selected_mstep": 2,
+          "consumed_mstep": 2,
+          "producer_generation": [
+            2,
+            "ice_velocity",
+            2
+          ],
+          "expected_generation": [
+            2,
+            "ice_velocity",
+            2
+          ],
+          "mass_velocity": [
+            0.29037328732351647
+          ],
+          "number_velocity": [
+            0.07259332183087912
+          ],
+          "mass_rate": [
+            0.04839554788725275
+          ],
+          "number_rate": [
+            0.012098886971813187
+          ],
+          "delta_v_mass": [
+            -0.09607214947128517
+          ],
+          "delta_v_number": [
+            -0.024018037367821293
+          ],
+          "branch_signature": [
+            [
+              false,
+              false,
+              false
+            ]
+          ],
+          "before": {
+            "qi": [
+              1.6260967185902516e-07
+            ],
+            "ni": [
+              4847.149817913714
+            ],
+            "fall_qi": [
+              1.3241531403713325e-08
+            ],
+            "fall_ni": [
+              46.51373652402528
+            ]
+          },
+          "after": {
+            "qi": [
+              8.391383024518607e-08
+            ],
+            "ni": [
+              4260.698640089885
+            ],
+            "fall_qi": [
+              1.6782844276336084e-08
+            ],
+            "fall_ni": [
+              75.83629541521674
+            ]
+          }
+        }
+      ],
+      "inactive_columns_bitwise_unchanged": true,
+      "conditional_mass_residual": [
+        1.0842021724855044e-19,
+        2.0328790734103208e-20
+      ],
+      "conditional_number_residual": [
+        0.0,
+        0.0
+      ],
+      "mass_surface": [
+        0.00028835380060025697,
+        5.354686531667601e-05
+      ],
+      "number_surface": [
+        85876.51793698053,
+        34435.80815946069
+      ],
+      "cumulative_fall_qi": [
+        [
+          1.4417690030012849e-07
+        ],
+        [
+          4.4622387763896673e-07
+        ]
+      ],
+      "cumulative_fall_ni": [
+        [
+          42.93825896849026
+        ],
+        [
+          286.9650679955058
+        ]
+      ],
+      "plan_mstep_ice_by_cycle_column": [
+        [
+          1,
+          4
+        ],
+        [
+          1,
+          2
+        ]
+      ],
+      "scheduled_consumer_events": 8,
+      "max_consumed_cfl_per_substep": 0.7502778406666798,
+      "max_delta_v_mass_m_s": 0.2927205243890685,
+      "max_delta_v_number_m_s": 0.07318013109726712,
+      "branch_signatures": [
+        [
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        [
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        [
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        [
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        [
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        [
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        [
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        [
+          [
+            false,
+            false,
+            false
+          ]
+        ]
+      ],
+      "final_qi": [
+        [
+          6.7960688822193684e-06
+        ],
+        [
+          8.391383024518607e-08
+        ]
+      ],
+      "final_ni": [
+        [
+          9141.234820630194
+        ],
+        [
+          4260.698640089885
+        ]
+      ],
+      "derivatives": {
+        "epsilon": 0.001,
+        "max_fd_relative_error_including_velocity_trace": 1.142588215255198e-09,
+        "fd_relative_error_by_output": {
+          "qi": 5.378973056662549e-11,
+          "ni": 9.119015237092285e-12,
+          "fall_qi": 3.275649047068747e-11,
+          "fall_ni": 1.8603306048842228e-11,
+          "mass_rate": 6.564917890545248e-10,
+          "number_rate": 6.564917890545248e-10,
+          "delta_v_mass": 1.142588215255198e-09,
+          "delta_v_number": 1.142588215255198e-09
+        },
+        "jvp_vjp_relative_residual": 1.317092083876956e-16,
+        "mass_rate_tangent_norm": 0.00023599563475123483,
+        "number_rate_tangent_norm": 5.899890868780871e-05,
+        "delta_v_mass_tangent_norm": 0.0013452644909519942,
+        "delta_v_number_tangent_norm": 0.00033631612273799855,
+        "plus_minus_plan_stable": true,
+        "plus_minus_branch_signatures_stable": true
+      }
+    },
+    {
+      "K": 2,
+      "synthetic_geometry_only": true,
+      "dt_seconds": 20.0,
+      "dz_m": [
+        [
+          100.0,
+          110.0
+        ],
+        [
+          6.0,
+          7.0
+        ]
+      ],
+      "initial_qi": [
+        [
+          1e-05,
+          2e-05
+        ],
+        [
+          1e-05,
+          2e-05
+        ]
+      ],
+      "initial_ni": [
+        [
+          10000.0,
+          20000.0
+        ],
+        [
+          10000.0,
+          20000.0
+        ]
+      ],
+      "rho": [
+        [
+          0.9,
+          0.9
+        ],
+        [
+          0.9,
+          0.9
+        ]
+      ],
+      "consumer_records": [
+        {
+          "cycle": 1,
+          "n": 1,
+          "column": 0,
+          "selected_mstep": 1,
+          "consumed_mstep": 1,
+          "producer_generation": [
+            1,
+            "ice_velocity",
+            1
+          ],
+          "expected_generation": [
+            1,
+            "ice_velocity",
+            1
+          ],
+          "mass_velocity": [
+            0.9003334088000157,
+            0.9003334088000157
+          ],
+          "number_velocity": [
+            0.22508335220000392,
+            0.22508335220000392
+          ],
+          "mass_rate": [
+            0.009003334088000157,
+            0.008184849170909234
+          ],
+          "number_rate": [
+            0.0022508335220000394,
+            0.0020462122927273085
+          ],
+          "delta_v_mass": [
+            0.0,
+            0.0
+          ],
+          "delta_v_number": [
+            0.0,
+            0.0
+          ],
+          "branch_signature": [
+            [
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false
+            ]
+          ],
+          "before": {
+            "qi": [
+              1e-05,
+              2e-05
+            ],
+            "ni": [
+              10000.0,
+              20000.0
+            ],
+            "fall_qi": [
+              0.0,
+              0.0
+            ],
+            "fall_ni": [
+              0.0,
+              0.0
+            ]
+          },
+          "after": {
+            "qi": [
+              8.19933318239997e-06,
+              1.8363030165818157e-05
+            ],
+            "ni": [
+              9549.833295599992,
+              19590.75754145454
+            ],
+            "fall_qi": [
+              8.103000679200142e-08,
+              1.4732728507636622e-07
+            ],
+            "fall_ni": [
+              22.508335220000394,
+              40.92424585454617
+            ]
+          }
+        },
+        {
+          "cycle": 1,
+          "n": 1,
+          "column": 1,
+          "selected_mstep": 4,
+          "consumed_mstep": 4,
+          "producer_generation": [
+            1,
+            "ice_velocity",
+            1
+          ],
+          "expected_generation": [
+            1,
+            "ice_velocity",
+            1
+          ],
+          "mass_velocity": [
+            0.9003334088000157,
+            0.9003334088000157
+          ],
+          "number_velocity": [
+            0.22508335220000392,
+            0.22508335220000392
+          ],
+          "mass_rate": [
+            0.15005556813333595,
+            0.12861905840000223
+          ],
+          "number_rate": [
+            0.03751389203333399,
+            0.03215476460000056
+          ],
+          "delta_v_mass": [
+            0.0,
+            0.0
+          ],
+          "delta_v_number": [
+            0.0,
+            0.0
+          ],
+          "branch_signature": [
+            [
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false
+            ]
+          ],
+          "before": {
+            "qi": [
+              1e-05,
+              2e-05
+            ],
+            "ni": [
+              10000.0,
+              20000.0
+            ],
+            "fall_qi": [
+              0.0,
+              0.0
+            ],
+            "fall_ni": [
+              0.0,
+              0.0
+            ]
+          },
+          "after": {
+            "qi": [
+              2.4972215933332036e-06,
+              1.356904707999989e-05
+            ],
+            "ni": [
+              8124.3053983333,
+              18392.261769999972
+            ],
+            "fall_qi": [
+              3.376250283000059e-07,
+              5.787857628000101e-07
+            ],
+            "fall_ni": [
+              93.78473008333498,
+              160.7738230000028
+            ]
+          }
+        },
+        {
+          "cycle": 1,
+          "n": 2,
+          "column": 1,
+          "selected_mstep": 4,
+          "consumed_mstep": 4,
+          "producer_generation": [
+            1,
+            "ice_velocity",
+            2
+          ],
+          "expected_generation": [
+            1,
+            "ice_velocity",
+            2
+          ],
+          "mass_velocity": [
+            0.6076128844109472,
+            0.8135322386805386
+          ],
+          "number_velocity": [
+            0.1519032211027368,
+            0.20338305967013465
+          ],
+          "mass_rate": [
+            0.1012688140684912,
+            0.11621889124007694
+          ],
+          "number_rate": [
+            0.0253172035171228,
+            0.029054722810019234
+          ],
+          "delta_v_mass": [
+            -0.2927205243890685,
+            -0.08680117011947708
+          ],
+          "delta_v_number": [
+            -0.07318013109726712,
+            -0.02170029252986927
+          ],
+          "branch_signature": [
+            [
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false
+            ]
+          ],
+          "before": {
+            "qi": [
+              2.4972215933332036e-06,
+              1.356904707999989e-05
+            ],
+            "ni": [
+              8124.3053983333,
+              18392.261769999972
+            ],
+            "fall_qi": [
+              3.376250283000059e-07,
+              5.787857628000101e-07
+            ],
+            "fall_ni": [
+              93.78473008333498,
+              160.7738230000028
+            ]
+          },
+          "after": {
+            "qi": [
+              1.2327682472177959e-06,
+              6.767966199703144e-06
+            ],
+            "ni": [
+              7095.881932308983,
+              16601.8572601375
+            ],
+            "fall_qi": [
+              3.9452542887519924e-07,
+              9.33606174334958e-07
+            ],
+            "fall_ni": [
+              145.20590338455088,
+              294.36933989416855
+            ]
+          }
+        },
+        {
+          "cycle": 1,
+          "n": 3,
+          "column": 1,
+          "selected_mstep": 4,
+          "consumed_mstep": 4,
+          "producer_generation": [
+            1,
+            "ice_velocity",
+            3
+          ],
+          "expected_generation": [
+            1,
+            "ice_velocity",
+            3
+          ],
+          "mass_velocity": [
+            0.5023754149918206,
+            0.6675808402982076
+          ],
+          "number_velocity": [
+            0.12559385374795515,
+            0.1668952100745519
+          ],
+          "mass_rate": [
+            0.0837292358319701,
+            0.09536869147117252
+          ],
+          "number_rate": [
+            0.020932308957992526,
+            0.02384217286779313
+          ],
+          "delta_v_mass": [
+            -0.1052374694191266,
+            -0.14595139838233095
+          ],
+          "delta_v_number": [
+            -0.02630936735478165,
+            -0.03648784959558274
+          ],
+          "branch_signature": [
+            [
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false
+            ]
+          ],
+          "before": {
+            "qi": [
+              1.2327682472177959e-06,
+              6.767966199703144e-06
+            ],
+            "ni": [
+              7095.881932308983,
+              16601.8572601375
+            ],
+            "fall_qi": [
+              3.9452542887519924e-07,
+              9.33606174334958e-07
+            ],
+            "fall_ni": [
+              145.20590338455088,
+              294.36933989416855
+            ]
+          },
+          "after": {
+            "qi": [
+              7.166745307304796e-07,
+              3.983071840472492e-06
+            ],
+            "ni": [
+              6353.21596762634,
+              15259.306333395214
+            ],
+            "fall_qi": [
+              4.177496461171285e-07,
+              1.078832892421991e-06
+            ],
+            "fall_ni": [
+              182.33920161868303,
+              393.32542757482474
+            ]
+          }
+        },
+        {
+          "cycle": 1,
+          "n": 4,
+          "column": 1,
+          "selected_mstep": 4,
+          "consumed_mstep": 4,
+          "producer_generation": [
+            1,
+            "ice_velocity",
+            4
+          ],
+          "expected_generation": [
+            1,
+            "ice_velocity",
+            4
+          ],
+          "mass_velocity": [
+            0.4350235890606403,
+            0.5753928700652917
+          ],
+          "number_velocity": [
+            0.10875589726516008,
+            0.14384821751632293
+          ],
+          "mass_rate": [
+            0.07250393151010671,
+            0.08219898143789882
+          ],
+          "number_rate": [
+            0.01812598287752668,
+            0.020549745359474705
+          ],
+          "delta_v_mass": [
+            -0.06735182593118028,
+            -0.09218797023291592
+          ],
+          "delta_v_number": [
+            -0.01683795648279507,
+            -0.02304699255822898
+          ],
+          "branch_signature": [
+            [
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false
+            ]
+          ],
+          "before": {
+            "qi": [
+              7.166745307304796e-07,
+              3.983071840472492e-06
+            ],
+            "ni": [
+              6353.21596762634,
+              15259.306333395214
+            ],
+            "fall_qi": [
+              4.177496461171285e-07,
+              1.078832892421991e-06
+            ],
+            "fall_ni": [
+              182.33920161868303,
+              393.32542757482474
+            ]
+          },
+          "after": {
+            "qi": [
+              4.5686592527487683e-07,
+              2.5687426894589295e-06
+            ],
+            "ni": [
+              5777.4245483942195,
+              14184.967538026718
+            ],
+            "fall_qi": [
+              4.2944103336263063e-07,
+              1.1524988932851745e-06
+            ],
+            "fall_ni": [
+              211.12877258028908,
+              471.71914245319755
+            ]
+          }
+        },
+        {
+          "cycle": 2,
+          "n": 1,
+          "column": 0,
+          "selected_mstep": 1,
+          "consumed_mstep": 1,
+          "producer_generation": [
+            2,
+            "ice_velocity",
+            1
+          ],
+          "expected_generation": [
+            2,
+            "ice_velocity",
+            1
+          ],
+          "mass_velocity": [
+            0.8557185498893594,
+            0.8811186726342217
+          ],
+          "number_velocity": [
+            0.21392963747233984,
+            0.22027966815855543
+          ],
+          "mass_rate": [
+            0.008557185498893593,
+            0.008010169751220198
+          ],
+          "number_rate": [
+            0.0021392963747233983,
+            0.0020025424378050495
+          ],
+          "delta_v_mass": [
+            -0.04461485891065631,
+            -0.019214736165793944
+          ],
+          "delta_v_number": [
+            -0.011153714727664077,
+            -0.004803684041448486
+          ],
+          "branch_signature": [
+            [
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false
+            ]
+          ],
+          "before": {
+            "qi": [
+              8.19933318239997e-06,
+              1.8363030165818157e-05
+            ],
+            "ni": [
+              9549.833295599992,
+              19590.75754145454
+            ],
+            "fall_qi": [
+              0.0,
+              0.0
+            ],
+            "fall_ni": [
+              0.0,
+              0.0
+            ]
+          },
+          "after": {
+            "qi": [
+              6.7960688822193684e-06,
+              1.6696905208664544e-05
+            ],
+            "ni": [
+              9141.234820630194,
+              19177.58423320775
+            ],
+            "fall_qi": [
+              6.314689350812707e-08,
+              1.3238188989748257e-07
+            ],
+            "fall_ni": [
+              20.429923748489866,
+              39.23132336551203
+            ]
+          }
+        },
+        {
+          "cycle": 2,
+          "n": 1,
+          "column": 1,
+          "selected_mstep": 2,
+          "consumed_mstep": 2,
+          "producer_generation": [
+            2,
+            "ice_velocity",
+            1
+          ],
+          "expected_generation": [
+            2,
+            "ice_velocity",
+            1
+          ],
+          "mass_velocity": [
+            0.38644543679480164,
+            0.5093708770411487
+          ],
+          "number_velocity": [
+            0.09661135919870041,
+            0.12734271926028717
+          ],
+          "mass_rate": [
+            0.0644075727991336,
+            0.07276726814873553
+          ],
+          "number_rate": [
+            0.0161018931997834,
+            0.018191817037183883
+          ],
+          "delta_v_mass": [
+            -0.04857815226583867,
+            -0.06602199302414302
+          ],
+          "delta_v_number": [
+            -0.012144538066459667,
+            -0.016505498256035755
+          ],
+          "branch_signature": [
+            [
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false
+            ]
+          ],
+          "before": {
+            "qi": [
+              4.5686592527487683e-07,
+              2.5687426894589295e-06
+            ],
+            "ni": [
+              5777.4245483942195,
+              14184.967538026718
+            ],
+            "fall_qi": [
+              0.0,
+              0.0
+            ],
+            "fall_ni": [
+              0.0,
+              0.0
+            ]
+          },
+          "after": {
+            "qi": [
+              1.6260967185902516e-07,
+              9.517584543543252e-07
+            ],
+            "ni": [
+              4847.149817913714,
+              12401.842537136832
+            ],
+            "fall_qi": [
+              1.3241531403713325e-08,
+              8.411417464003291e-08
+            ],
+            "fall_ni": [
+              46.51373652402528,
+              129.0251670650874
+            ]
+          }
+        },
+        {
+          "cycle": 2,
+          "n": 2,
+          "column": 1,
+          "selected_mstep": 2,
+          "consumed_mstep": 2,
+          "producer_generation": [
+            2,
+            "ice_velocity",
+            2
+          ],
+          "expected_generation": [
+            2,
+            "ice_velocity",
+            2
+          ],
+          "mass_velocity": [
+            0.29037328732351647,
+            0.3826046097491104
+          ],
+          "number_velocity": [
+            0.07259332183087912,
+            0.0956511524372776
+          ],
+          "mass_rate": [
+            0.04839554788725275,
+            0.05465780139273006
+          ],
+          "number_rate": [
+            0.012098886971813187,
+            0.013664450348182516
+          ],
+          "delta_v_mass": [
+            -0.09607214947128517,
+            -0.12676626729203827
+          ],
+          "delta_v_number": [
+            -0.024018037367821293,
+            -0.03169156682300957
+          ],
+          "branch_signature": [
+            [
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false
+            ]
+          ],
+          "before": {
+            "qi": [
+              1.6260967185902516e-07,
+              9.517584543543252e-07
+            ],
+            "ni": [
+              4847.149817913714,
+              12401.842537136832
+            ],
+            "fall_qi": [
+              1.3241531403713325e-08,
+              8.411417464003291e-08
+            ],
+            "fall_ni": [
+              46.51373652402528,
+              129.0251670650874
+            ]
+          },
+          "after": {
+            "qi": [
+              8.391383024518607e-08,
+              4.990017871609686e-07
+            ],
+            "ni": [
+              4260.698640089885,
+              11209.8713595247
+            ],
+            "fall_qi": [
+              1.6782844276336084e-08,
+              1.0752363569741062e-07
+            ],
+            "fall_ni": [
+              75.83629541521674,
+              213.75734785242946
+            ]
+          }
+        }
+      ],
+      "inactive_columns_bitwise_unchanged": true,
+      "conditional_mass_residual": [
+        4.336808689942018e-19,
+        5.421010862427522e-20
+      ],
+      "conditional_number_residual": [
+        0.0,
+        0.0
+      ],
+      "mass_surface": [
+        0.0006153601849424673,
+        0.00017640315405756193
+      ],
+      "number_surface": [
+        176342.25228412802,
+        95966.7086427878
+      ],
+      "cumulative_fall_qi": [
+        [
+          1.4417690030012849e-07,
+          2.797091749738488e-07
+        ],
+        [
+          4.4622387763896673e-07,
+          1.260022528982585e-06
+        ]
+      ],
+      "cumulative_fall_ni": [
+        [
+          42.93825896849026,
+          80.1555692200582
+        ],
+        [
+          286.9650679955058,
+          685.4764903056271
+        ]
+      ],
+      "plan_mstep_ice_by_cycle_column": [
+        [
+          1,
+          4
+        ],
+        [
+          1,
+          2
+        ]
+      ],
+      "scheduled_consumer_events": 8,
+      "max_consumed_cfl_per_substep": 0.7502778406666798,
+      "max_delta_v_mass_m_s": 0.2927205243890685,
+      "max_delta_v_number_m_s": 0.07318013109726712,
+      "branch_signatures": [
+        [
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        [
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        [
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        [
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        [
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        [
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        [
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        [
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ]
+      ],
+      "final_qi": [
+        [
+          6.7960688822193684e-06,
+          1.6696905208664544e-05
+        ],
+        [
+          8.391383024518607e-08,
+          4.990017871609686e-07
+        ]
+      ],
+      "final_ni": [
+        [
+          9141.234820630194,
+          19177.58423320775
+        ],
+        [
+          4260.698640089885,
+          11209.8713595247
+        ]
+      ],
+      "derivatives": {
+        "epsilon": 0.001,
+        "max_fd_relative_error_including_velocity_trace": 6.95408647746535e-10,
+        "fd_relative_error_by_output": {
+          "qi": 1.1670523617806444e-11,
+          "ni": 1.3134374505724348e-11,
+          "fall_qi": 6.848682882611448e-12,
+          "fall_ni": 5.823081418076951e-11,
+          "mass_rate": 3.1738403098679913e-10,
+          "number_rate": 3.1738403098679913e-10,
+          "delta_v_mass": 6.95408647746535e-10,
+          "delta_v_number": 6.95408647746535e-10
+        },
+        "jvp_vjp_relative_residual": 0.0,
+        "mass_rate_tangent_norm": 0.0005581387345171354,
+        "number_rate_tangent_norm": 0.00013953468362928385,
+        "delta_v_mass_tangent_norm": 0.002750102460791094,
+        "delta_v_number_tangent_norm": 0.0006875256151977735,
+        "plus_minus_plan_stable": true,
+        "plus_minus_branch_signatures_stable": true
+      }
+    },
+    {
+      "K": 4,
+      "synthetic_geometry_only": true,
+      "dt_seconds": 20.0,
+      "dz_m": [
+        [
+          100.0,
+          110.0,
+          120.0,
+          130.0
+        ],
+        [
+          6.0,
+          7.0,
+          8.0,
+          9.0
+        ]
+      ],
+      "initial_qi": [
+        [
+          1e-05,
+          2e-05,
+          4e-06,
+          3e-05
+        ],
+        [
+          1e-05,
+          2e-05,
+          4e-06,
+          3e-05
+        ]
+      ],
+      "initial_ni": [
+        [
+          10000.0,
+          20000.0,
+          3000.0,
+          40000.0
+        ],
+        [
+          10000.0,
+          20000.0,
+          3000.0,
+          40000.0
+        ]
+      ],
+      "rho": [
+        [
+          0.9,
+          0.9,
+          0.9,
+          0.9
+        ],
+        [
+          0.9,
+          0.9,
+          0.9,
+          0.9
+        ]
+      ],
+      "consumer_records": [
+        {
+          "cycle": 1,
+          "n": 1,
+          "column": 0,
+          "selected_mstep": 1,
+          "consumed_mstep": 1,
+          "producer_generation": [
+            1,
+            "ice_velocity",
+            1
+          ],
+          "expected_generation": [
+            1,
+            "ice_velocity",
+            1
+          ],
+          "mass_velocity": [
+            0.9003334088000157,
+            0.9003334088000157,
+            0.99094514136764,
+            0.8180071864348798
+          ],
+          "number_velocity": [
+            0.22508335220000392,
+            0.22508335220000392,
+            0.24773628534191,
+            0.20450179660871995
+          ],
+          "mass_rate": [
+            0.009003334088000157,
+            0.008184849170909234,
+            0.008257876178063667,
+            0.006292362972575998
+          ],
+          "number_rate": [
+            0.0022508335220000394,
+            0.0020462122927273085,
+            0.0020644690445159168,
+            0.0015730907431439995
+          ],
+          "delta_v_mass": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_v_number": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "branch_signature": [
+            [
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false
+            ]
+          ],
+          "before": {
+            "qi": [
+              1e-05,
+              2e-05,
+              4e-06,
+              3e-05
+            ],
+            "ni": [
+              10000.0,
+              20000.0,
+              3000.0,
+              40000.0
+            ],
+            "fall_qi": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "fall_ni": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "after": {
+            "qi": [
+              8.19933318239997e-06,
+              1.8363030165818157e-05,
+              6.340481268421625e-06,
+              2.683439461114218e-05
+            ],
+            "ni": [
+              9549.833295599992,
+              19590.75754145454,
+              3626.409697995725,
+              38855.86722948876
+            ],
+            "fall_qi": [
+              8.103000679200142e-08,
+              1.4732728507636622e-07,
+              2.97283542410292e-08,
+              1.6989380025955195e-07
+            ],
+            "fall_ni": [
+              22.508335220000394,
+              40.92424585454617,
+              6.19340713354775,
+              62.92362972575997
+            ]
+          }
+        },
+        {
+          "cycle": 1,
+          "n": 1,
+          "column": 1,
+          "selected_mstep": 4,
+          "consumed_mstep": 4,
+          "producer_generation": [
+            1,
+            "ice_velocity",
+            1
+          ],
+          "expected_generation": [
+            1,
+            "ice_velocity",
+            1
+          ],
+          "mass_velocity": [
+            0.9003334088000157,
+            0.9003334088000157,
+            0.99094514136764,
+            0.8180071864348798
+          ],
+          "number_velocity": [
+            0.22508335220000392,
+            0.22508335220000392,
+            0.24773628534191,
+            0.20450179660871995
+          ],
+          "mass_rate": [
+            0.15005556813333595,
+            0.12861905840000223,
+            0.123868142670955,
+            0.09088968738165332
+          ],
+          "number_rate": [
+            0.03751389203333399,
+            0.03215476460000056,
+            0.03096703566773875,
+            0.02272242184541333
+          ],
+          "delta_v_mass": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "delta_v_number": [
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          "branch_signature": [
+            [
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false
+            ]
+          ],
+          "before": {
+            "qi": [
+              1e-05,
+              2e-05,
+              4e-06,
+              3e-05
+            ],
+            "ni": [
+              10000.0,
+              20000.0,
+              3000.0,
+              40000.0
+            ],
+            "fall_qi": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "fall_ni": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "after": {
+            "qi": [
+              2.4972215933332036e-06,
+              1.356904707999989e-05,
+              1.2776804756581094e-05,
+              1.8568647206902314e-05
+            ],
+            "ni": [
+              8124.3053983333,
+              18392.261769999972,
+              5349.036367483968,
+              35868.40943982051
+            ],
+            "fall_qi": [
+              3.376250283000059e-07,
+              5.787857628000101e-07,
+              1.114813284038595e-07,
+              6.135053898261599e-07
+            ],
+            "fall_ni": [
+              93.78473008333498,
+              160.7738230000028,
+              23.225276750804063,
+              227.22421845413328
+            ]
+          }
+        },
+        {
+          "cycle": 1,
+          "n": 2,
+          "column": 1,
+          "selected_mstep": 4,
+          "consumed_mstep": 4,
+          "producer_generation": [
+            1,
+            "ice_velocity",
+            2
+          ],
+          "expected_generation": [
+            1,
+            "ice_velocity",
+            2
+          ],
+          "mass_velocity": [
+            0.6076128844109472,
+            0.8135322386805386,
+            1.1938325991189427,
+            0.7229241701774319
+          ],
+          "number_velocity": [
+            0.1519032211027368,
+            0.20338305967013465,
+            0.29845814977973567,
+            0.18073104254435798
+          ],
+          "mass_rate": [
+            0.1012688140684912,
+            0.11621889124007694,
+            0.14922907488986784,
+            0.08032490779749243
+          ],
+          "number_rate": [
+            0.0253172035171228,
+            0.029054722810019234,
+            0.03730726872246696,
+            0.02008122694937311
+          ],
+          "delta_v_mass": [
+            -0.2927205243890685,
+            -0.08680117011947708,
+            0.20288745775130268,
+            -0.09508301625744786
+          ],
+          "delta_v_number": [
+            -0.07318013109726712,
+            -0.02170029252986927,
+            0.05072186443782567,
+            -0.023770754064361965
+          ],
+          "branch_signature": [
+            [
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              true
+            ],
+            [
+              false,
+              false,
+              false
+            ]
+          ],
+          "before": {
+            "qi": [
+              2.4972215933332036e-06,
+              1.356904707999989e-05,
+              1.2776804756581094e-05,
+              1.8568647206902314e-05
+            ],
+            "ni": [
+              8124.3053983333,
+              18392.261769999972,
+              5349.036367483968,
+              35868.40943982051
+            ],
+            "fall_qi": [
+              3.376250283000059e-07,
+              5.787857628000101e-07,
+              1.114813284038595e-07,
+              6.135053898261599e-07
+            ],
+            "fall_ni": [
+              93.78473008333498,
+              160.7738230000028,
+              23.225276750804063,
+              227.22421845413328
+            ]
+          },
+          "after": {
+            "qi": [
+              1.2327682472177959e-06,
+              6.767966199703144e-06,
+              1.0142736767062004e-05,
+              1.9585115072245166e-05
+            ],
+            "ni": [
+              7095.881932308983,
+              16601.8572601375,
+              6689.168227292004,
+              33153.925253641144
+            ],
+            "fall_qi": [
+              3.9452542887519924e-07,
+              9.33606174334958e-07,
+              5.404822480252979e-07,
+              9.490984866603436e-07
+            ],
+            "fall_ni": [
+              145.20590338455088,
+              294.36933989416855,
+              73.1147610427973,
+              407.2946360226514
+            ]
+          }
+        },
+        {
+          "cycle": 1,
+          "n": 3,
+          "column": 1,
+          "selected_mstep": 4,
+          "consumed_mstep": 4,
+          "producer_generation": [
+            1,
+            "ice_velocity",
+            3
+          ],
+          "expected_generation": [
+            1,
+            "ice_velocity",
+            3
+          ],
+          "mass_velocity": [
+            0.5023754149918206,
+            0.6675808402982076,
+            1.034342523811471,
+            0.755440773680202
+          ],
+          "number_velocity": [
+            0.12559385374795515,
+            0.1668952100745519,
+            0.25858563095286774,
+            0.1888601934200505
+          ],
+          "mass_rate": [
+            0.0837292358319701,
+            0.09536869147117252,
+            0.12929281547643387,
+            0.08393786374224467
+          ],
+          "number_rate": [
+            0.020932308957992526,
+            0.02384217286779313,
+            0.03232320386910847,
+            0.020984465935561167
+          ],
+          "delta_v_mass": [
+            -0.1052374694191266,
+            -0.14595139838233095,
+            -0.15949007530747172,
+            0.03251660350277008
+          ],
+          "delta_v_number": [
+            -0.02630936735478165,
+            -0.03648784959558274,
+            -0.03987251882686793,
+            0.00812915087569252
+          ],
+          "branch_signature": [
+            [
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false
+            ]
+          ],
+          "before": {
+            "qi": [
+              1.2327682472177959e-06,
+              6.767966199703144e-06,
+              1.0142736767062004e-05,
+              1.9585115072245166e-05
+            ],
+            "ni": [
+              7095.881932308983,
+              16601.8572601375,
+              6689.168227292004,
+              33153.925253641144
+            ],
+            "fall_qi": [
+              3.9452542887519924e-07,
+              9.33606174334958e-07,
+              5.404822480252979e-07,
+              9.490984866603436e-07
+            ],
+            "fall_ni": [
+              145.20590338455088,
+              294.36933989416855,
+              73.1147610427973,
+              407.2946360226514
+            ]
+          },
+          "after": {
+            "qi": [
+              7.166745307304796e-07,
+              3.983071840472492e-06,
+              6.409674652505366e-06,
+              1.7193820329581634e-05
+            ],
+            "ni": [
+              6353.21596762634,
+              15259.306333395214,
+              7339.823020075875,
+              30636.295281734263
+            ],
+            "fall_qi": [
+              4.177496461171285e-07,
+              1.078832892421991e-06,
+              8.355434215065004e-07,
+              1.3189833487301603e-06
+            ],
+            "fall_ni": [
+              182.33920161868303,
+              393.32542757482474,
+              127.16859812417789,
+              581.2239898014448
+            ]
+          }
+        },
+        {
+          "cycle": 1,
+          "n": 4,
+          "column": 1,
+          "selected_mstep": 4,
+          "consumed_mstep": 4,
+          "producer_generation": [
+            1,
+            "ice_velocity",
+            4
+          ],
+          "expected_generation": [
+            1,
+            "ice_velocity",
+            4
+          ],
+          "mass_velocity": [
+            0.4350235890606403,
+            0.5753928700652917,
+            0.8605712462163362,
+            0.7426463926856233
+          ],
+          "number_velocity": [
+            0.10875589726516008,
+            0.14384821751632293,
+            0.21514281155408405,
+            0.18566159817140582
+          ],
+          "mass_rate": [
+            0.07250393151010671,
+            0.08219898143789882,
+            0.10757140577704202,
+            0.08251626585395815
+          ],
+          "number_rate": [
+            0.01812598287752668,
+            0.020549745359474705,
+            0.026892851444260506,
+            0.020629066463489536
+          ],
+          "delta_v_mass": [
+            -0.06735182593118028,
+            -0.09218797023291592,
+            -0.17377127759513478,
+            -0.012794380994578747
+          ],
+          "delta_v_number": [
+            -0.01683795648279507,
+            -0.02304699255822898,
+            -0.043442819398783694,
+            -0.0031985952486446867
+          ],
+          "branch_signature": [
+            [
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false
+            ]
+          ],
+          "before": {
+            "qi": [
+              7.166745307304796e-07,
+              3.983071840472492e-06,
+              6.409674652505366e-06,
+              1.7193820329581634e-05
+            ],
+            "ni": [
+              6353.21596762634,
+              15259.306333395214,
+              7339.823020075875,
+              30636.295281734263
+            ],
+            "fall_qi": [
+              4.177496461171285e-07,
+              1.078832892421991e-06,
+              8.355434215065004e-07,
+              1.3189833487301603e-06
+            ],
+            "fall_ni": [
+              182.33920161868303,
+              393.32542757482474,
+              127.16859812417789,
+              581.2239898014448
+            ]
+          },
+          "after": {
+            "qi": [
+              4.5686592527487683e-07,
+              2.5687426894589295e-06,
+              4.394580549016558e-06,
+              1.3164405362525672e-05
+            ],
+            "ni": [
+              5777.4245483942195,
+              14184.967538026718,
+              7724.769179917079,
+              28353.587846617946
+            ],
+            "fall_qi": [
+              4.2944103336263063e-07,
+              1.1524988932851745e-06,
+              9.906804069187825e-07,
+              1.6382065648363738e-06
+            ],
+            "fall_ni": [
+              211.12877258028908,
+              471.71914245319755,
+              176.5157906506939,
+              739.2235326919415
+            ]
+          }
+        },
+        {
+          "cycle": 2,
+          "n": 1,
+          "column": 0,
+          "selected_mstep": 1,
+          "consumed_mstep": 1,
+          "producer_generation": [
+            2,
+            "ice_velocity",
+            1
+          ],
+          "expected_generation": [
+            2,
+            "ice_velocity",
+            1
+          ],
+          "mass_velocity": [
+            0.8557185498893594,
+            0.8811186726342217,
+            1.0846388441125887,
+            0.7958204521839621
+          ],
+          "number_velocity": [
+            0.21392963747233984,
+            0.22027966815855543,
+            0.2711597110281472,
+            0.19895511304599053
+          ],
+          "mass_rate": [
+            0.008557185498893593,
+            0.008010169751220198,
+            0.009038657034271572,
+            0.006121695786030478
+          ],
+          "number_rate": [
+            0.0021392963747233983,
+            0.0020025424378050495,
+            0.002259664258567893,
+            0.0015304239465076194
+          ],
+          "delta_v_mass": [
+            -0.04461485891065631,
+            -0.019214736165793944,
+            0.0936937027449487,
+            -0.02218673425091766
+          ],
+          "delta_v_number": [
+            -0.011153714727664077,
+            -0.004803684041448486,
+            0.023423425686237176,
+            -0.005546683562729415
+          ],
+          "branch_signature": [
+            [
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false
+            ]
+          ],
+          "before": {
+            "qi": [
+              8.19933318239997e-06,
+              1.8363030165818157e-05,
+              6.340481268421625e-06,
+              2.683439461114218e-05
+            ],
+            "ni": [
+              9549.833295599992,
+              19590.75754145454,
+              3626.409697995725,
+              38855.86722948876
+            ],
+            "fall_qi": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "fall_ni": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "after": {
+            "qi": [
+              6.7960688822193684e-06,
+              1.6696905208664544e-05,
+              7.890960683613212e-06,
+              2.4606974952769306e-05
+            ],
+            "ni": [
+              9141.234820630194,
+              19177.58423320775,
+              4181.761258733747,
+              37817.8307292788
+            ],
+            "fall_qi": [
+              6.314689350812707e-08,
+              1.3238188989748257e-07,
+              5.157849205573764e-08,
+              1.4784480037053724e-07
+            ],
+            "fall_ni": [
+              20.429923748489866,
+              39.23132336551203,
+              8.194468381484926,
+              59.46594967033027
+            ]
+          }
+        },
+        {
+          "cycle": 2,
+          "n": 1,
+          "column": 1,
+          "selected_mstep": 2,
+          "consumed_mstep": 2,
+          "producer_generation": [
+            2,
+            "ice_velocity",
+            1
+          ],
+          "expected_generation": [
+            2,
+            "ice_velocity",
+            1
+          ],
+          "mass_velocity": [
+            0.38644543679480164,
+            0.5093708770411487,
+            0.7460146155415539,
+            0.6971631723823031
+          ],
+          "number_velocity": [
+            0.09661135919870041,
+            0.12734271926028717,
+            0.18650365388538848,
+            0.17429079309557577
+          ],
+          "mass_rate": [
+            0.0644075727991336,
+            0.07276726814873553,
+            0.09325182694269424,
+            0.07746257470914479
+          ],
+          "number_rate": [
+            0.0161018931997834,
+            0.018191817037183883,
+            0.02331295673567356,
+            0.019365643677286198
+          ],
+          "delta_v_mass": [
+            -0.04857815226583867,
+            -0.06602199302414302,
+            -0.11455663067478228,
+            -0.04548322030332019
+          ],
+          "delta_v_number": [
+            -0.012144538066459667,
+            -0.016505498256035755,
+            -0.02863915766869557,
+            -0.011370805075830048
+          ],
+          "branch_signature": [
+            [
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false
+            ]
+          ],
+          "before": {
+            "qi": [
+              4.5686592527487683e-07,
+              2.5687426894589295e-06,
+              4.394580549016558e-06,
+              1.3164405362525672e-05
+            ],
+            "ni": [
+              5777.4245483942195,
+              14184.967538026718,
+              7724.769179917079,
+              28353.587846617946
+            ],
+            "fall_qi": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ],
+            "fall_ni": [
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          "after": {
+            "qi": [
+              1.6260967185902516e-07,
+              9.517584543543252e-07,
+              1.9321072963687527e-06,
+              6.609608377721202e-06
+            ],
+            "ni": [
+              4847.149817913714,
+              12401.842537136832,
+              8181.837506711394,
+              24463.50825171089
+            ],
+            "fall_qi": [
+              1.3241531403713325e-08,
+              8.411417464003291e-08,
+              1.8441119917918e-07,
+              4.588869302532501e-07
+            ],
+            "fall_ni": [
+              46.51373652402528,
+              129.0251670650874,
+              90.0436048422357,
+              274.5427396051178
+            ]
+          }
+        },
+        {
+          "cycle": 2,
+          "n": 2,
+          "column": 1,
+          "selected_mstep": 2,
+          "consumed_mstep": 2,
+          "producer_generation": [
+            2,
+            "ice_velocity",
+            2
+          ],
+          "expected_generation": [
+            2,
+            "ice_velocity",
+            2
+          ],
+          "mass_velocity": [
+            0.29037328732351647,
+            0.3826046097491104,
+            0.5564978487394768,
+            0.5820438304637038
+          ],
+          "number_velocity": [
+            0.07259332183087912,
+            0.0956511524372776,
+            0.1391244621848692,
+            0.14551095761592595
+          ],
+          "mass_rate": [
+            0.04839554788725275,
+            0.05465780139273006,
+            0.0695622310924346,
+            0.06467153671818932
+          ],
+          "number_rate": [
+            0.012098886971813187,
+            0.013664450348182516,
+            0.01739055777310865,
+            0.01616788417954733
+          ],
+          "delta_v_mass": [
+            -0.09607214947128517,
+            -0.12676626729203827,
+            -0.18951676680207707,
+            -0.1151193419185993
+          ],
+          "delta_v_number": [
+            -0.024018037367821293,
+            -0.03169156682300957,
+            -0.04737919170051927,
+            -0.028779835479649823
+          ],
+          "branch_signature": [
+            [
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false
+            ],
+            [
+              false,
+              false,
+              false
+            ]
+          ],
+          "before": {
+            "qi": [
+              1.6260967185902516e-07,
+              9.517584543543252e-07,
+              1.9321072963687527e-06,
+              6.609608377721202e-06
+            ],
+            "ni": [
+              4847.149817913714,
+              12401.842537136832,
+              8181.837506711394,
+              24463.50825171089
+            ],
+            "fall_qi": [
+              1.3241531403713325e-08,
+              8.411417464003291e-08,
+              1.8441119917918e-07,
+              4.588869302532501e-07
+            ],
+            "fall_ni": [
+              46.51373652402528,
+              129.0251670650874,
+              90.0436048422357,
+              274.5427396051178
+            ]
+          },
+          "after": {
+            "qi": [
+              8.391383024518607e-08,
+              4.990017871609686e-07,
+              1.0432743189194967e-06,
+              3.5297547954203377e-06
+            ],
+            "ni": [
+              4260.698640089885,
+              11209.8713595247,
+              8241.783491983362,
+              21773.047396659393
+            ],
+            "fall_qi": [
+              1.6782844276336084e-08,
+              1.0752363569741062e-07,
+              2.44891961589602e-07,
+              6.512410191549419e-07
+            ],
+            "fall_ni": [
+              75.83629541521674,
+              213.75734785242946,
+              161.18696376756156,
+              472.30432362464876
+            ]
+          }
+        }
+      ],
+      "inactive_columns_bitwise_unchanged": true,
+      "conditional_mass_residual": [
+        8.673617379884035e-19,
+        0.0
+      ],
+      "conditional_number_residual": [
+        0.0,
+        -1.1641532182693481e-10
+      ],
+      "mass_surface": [
+        0.0008261203616382318,
+        0.0004121005651184368
+      ],
+      "number_surface": [
+        318212.9064298346,
+        218075.01413698625
+      ],
+      "cumulative_fall_qi": [
+        [
+          1.4417690030012849e-07,
+          2.797091749738488e-07,
+          8.130684629676683e-08,
+          3.1773860063008916e-07
+        ],
+        [
+          4.4622387763896673e-07,
+          1.260022528982585e-06,
+          1.2355723685083845e-06,
+          2.2894475839913157e-06
+        ]
+      ],
+      "cumulative_fall_ni": [
+        [
+          42.93825896849026,
+          80.1555692200582,
+          14.387875515032675,
+          122.38957939609024
+        ],
+        [
+          286.9650679955058,
+          685.4764903056271,
+          337.7027544182555,
+          1211.5278563165903
+        ]
+      ],
+      "plan_mstep_ice_by_cycle_column": [
+        [
+          1,
+          4
+        ],
+        [
+          1,
+          2
+        ]
+      ],
+      "scheduled_consumer_events": 8,
+      "max_consumed_cfl_per_substep": 0.9325182694269424,
+      "max_delta_v_mass_m_s": 0.2927205243890685,
+      "max_delta_v_number_m_s": 0.07318013109726712,
+      "branch_signatures": [
+        [
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        [
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        [
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            true
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        [
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        [
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        [
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        [
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        [
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            false
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ]
+      ],
+      "final_qi": [
+        [
+          6.7960688822193684e-06,
+          1.6696905208664544e-05,
+          7.890960683613212e-06,
+          2.4606974952769306e-05
+        ],
+        [
+          8.391383024518607e-08,
+          4.990017871609686e-07,
+          1.0432743189194967e-06,
+          3.5297547954203377e-06
+        ]
+      ],
+      "final_ni": [
+        [
+          9141.234820630194,
+          19177.58423320775,
+          4181.761258733747,
+          37817.8307292788
+        ],
+        [
+          4260.698640089885,
+          11209.8713595247,
+          8241.783491983362,
+          21773.047396659393
+        ]
+      ],
+      "derivatives": {
+        "epsilon": 0.001,
+        "max_fd_relative_error_including_velocity_trace": 3.512320373012276e-10,
+        "fd_relative_error_by_output": {
+          "qi": 2.5397408987489848e-11,
+          "ni": 1.1687239665001983e-11,
+          "fall_qi": 1.682692974739666e-11,
+          "fall_ni": 1.7383757181247586e-11,
+          "mass_rate": 1.9132411718200963e-10,
+          "number_rate": 1.9132411718200963e-10,
+          "delta_v_mass": 3.512320373012276e-10,
+          "delta_v_number": 3.512320373012276e-10
+        },
+        "jvp_vjp_relative_residual": 2.351445776739136e-16,
+        "mass_rate_tangent_norm": 0.0011531253664487059,
+        "number_rate_tangent_norm": 0.00028828134161217647,
+        "delta_v_mass_tangent_norm": 0.007281656404263637,
+        "delta_v_number_tangent_norm": 0.0018204141010659093,
+        "plus_minus_plan_stable": true,
+        "plus_minus_branch_signatures_stable": true
+      }
+    }
+  ],
+  "selection_drift_witness": {
+    "scope": "prescribed synthetic velocity change; no native failure claim",
+    "initially_selected_mstep": [
+      1
+    ],
+    "consumed_mstep": [
+      1
+    ],
+    "consumed_C": [
+      [
+        2.4
+      ]
+    ],
+    "independently_reselected_mstep_not_applied": [
+      3
+    ],
+    "selected_budget_sufficient": false
+  },
+  "physical_number_basis_resolved": false,
+  "operational_fix_applied": false,
+  "accepted_observation_cost": false,
+  "source_sha256": {
+    "slope": "5121761c97390eb0348ad3ed1c2b8aec6ad697b839826fdcac1cd6437978e823",
+    "ice_kernel": "c716a5fb3bd3296650cf4cc3938d4b64b1d1d4d5ad60fd08fe2a9b435bb9fd7d",
+    "contract": "6c66c431dd1f395eec2206665c95387d64fabf3dded77bfa5ce1e04b0fcd9e3c",
+    "runner": "f61b7f4135e325eaf24c0da458fdaaf1e5d94a89de12ae1773b2eade8eb1810c"
+  }
+}

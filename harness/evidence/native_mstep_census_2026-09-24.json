@@ -1,0 +1,137 @@
+{
+  "run": "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/g1-native-census-20260924/case/runs/mp237_g1-mstep-census_0min40s_hist0_1x1_20260924_122306_p71860",
+  "census": {
+    "file": "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/g1-native-census-20260924/mstep_census.txt",
+    "sha256": "0ffe0c130485418236e3dac2a535584930aad10b9426830afc0a57bdef86570e",
+    "records": 129920,
+    "per_step": {
+      "1": 64960,
+      "2": 64960
+    },
+    "duplicate_keys": 0,
+    "missing_expected_keys": 0,
+    "unexpected_keys": 0,
+    "i_range": [
+      2,
+      233
+    ],
+    "lat_range": [
+      2,
+      281
+    ],
+    "mstep_histogram": {
+      "1": {
+        "1": 64960
+      },
+      "2": {
+        "1": 64960
+      }
+    },
+    "mstep_gt1_per_step": {
+      "1": 0,
+      "2": 0
+    },
+    "max_mstep_i": {
+      "1": 1,
+      "2": 1
+    },
+    "coverage_exact": true
+  },
+  "outputs": {
+    "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/g1-native-census-20260924/case/runs/mp237_g1-mstep-census_0min40s_hist0_1x1_20260924_122306_p71860/klfs_lc05_fcst.202507190000": {
+      "sha256": "a065598b870815220ba36f7b2fbcdc6f65f8d69910c2e261961203b78d6683d8",
+      "size": 953745068
+    },
+    "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/pr234-normalization/case-normalized/klfs_lc05_fcst.202507190000": {
+      "sha256": "a065598b870815220ba36f7b2fbcdc6f65f8d69910c2e261961203b78d6683d8",
+      "size": 953745068
+    },
+    "full_history_equal": true
+  },
+  "run_identity": {
+    "actual_proc_grid": "1x1",
+    "campaign_id": "144e3aa4958ce578deb6b5261e10e77421617b5080785adb1337f81554e5ed92",
+    "controls": {
+      "fixed_dt": true,
+      "history": 0,
+      "history_s": 20,
+      "input_canonical_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+      "label": "g1-mstep-census",
+      "minutes": 0,
+      "namelist_without_grid_sha256": "7779f4fdcce320b23ad72ae83eb8eb0f59caf87a12776dacfa7ab40a1f3ec198",
+      "np": 1,
+      "radt": null,
+      "runner_sha256": "5bafedb80fffc46830d8230526c489b16c7d4fe6324f1dd26ea211ed08de1365",
+      "seconds": 40
+    },
+    "exit_code": 0,
+    "experiment_valid": true,
+    "requested_proc_grid": "1x1",
+    "schema": 1,
+    "scheme": "237"
+  },
+  "experiment_valid": {
+    "experiment_valid": true,
+    "invalid_reasons": [],
+    "requested_proc_grid": "1x1",
+    "actual_proc_grid": "1x1",
+    "active_input_identity_complete": true,
+    "exit_code": 0,
+    "model_completed": true
+  },
+  "exit_code": "0",
+  "saved_times": {
+    "census_run": [
+      "2025-07-19_00:00:00",
+      "2025-07-19_00:00:20",
+      "2025-07-19_00:00:40"
+    ],
+    "normalized_reference": [
+      "2025-07-19_00:00:00",
+      "2025-07-19_00:00:20",
+      "2025-07-19_00:00:40"
+    ],
+    "expected": [
+      "2025-07-19_00:00:00",
+      "2025-07-19_00:00:20",
+      "2025-07-19_00:00:40"
+    ],
+    "match_expected": true,
+    "match_reference": true
+  },
+  "source_build": {
+    "source_manifest": {
+      "kind": "read_only_initial_ice_mstep_column_census",
+      "base_source": "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/pr234-normalization/module_mp_kdm6_cons_normalized.F",
+      "base_sha256": "405f543447b4185847d9615827b478e7b6c90064ca02b7226e4acfa7502a63c8",
+      "capture_source": "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/g1-native-census-20260924/module_mp_kdm6_cons_g1_census.F",
+      "capture_sha256": "45fd4064dc68df807bd721b24e79df9bb60fd81973a1ae7657f99944c80f6abf",
+      "capture_macro": "KDM6AD_NORMALIZATION_CAPTURE",
+      "instrumented_contract": "Records (outer itimestep, kdm62D lat, owned i, selected mstep_i(i)) after initial ice mstep selection for outer steps 1 and 2; no physics arithmetic altered.",
+      "strip_check": "make_census_source.py removes the four inserted preprocessor blocks and requires byte-exact recovery of normalized base."
+    },
+    "build_identity": {
+      "source": "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/g1-native-census-20260924/module_mp_kdm6_cons_g1_census.F",
+      "source_sha256": "45fd4064dc68df807bd721b24e79df9bb60fd81973a1ae7657f99944c80f6abf",
+      "executable_sha256": "a5fb8ceb3782889fcfd5257bc32228bc706c11679d139603b924be056c81a0fd"
+    },
+    "runner_sha256": "5bafedb80fffc46830d8230526c489b16c7d4fe6324f1dd26ea211ed08de1365",
+    "compile_returncode": 0,
+    "link_returncode": 0
+  },
+  "interpretation": {
+    "result": "negative census: no active column selected mstep_i >= 2 on either of the two model steps in this 40-second, fixed-dt, 1x1 mp237 case.",
+    "scope_limit": "This does not establish that natural mstep_i >= 2 never occurs at later model steps, another allowed timestep, or another decomposition; n>=2 was not selected in this run.",
+    "instrumentation_noninterference": "The full forecast history SHA-256 is identical to the existing normalized control, and the saved Times match 0/20/40 seconds.",
+    "source_identity": "Census source strips exactly to normalized source SHA 405f543447b4185847d9615827b478e7b6c90064ca02b7226e4acfa7502a63c8; no installed or canonical source changed."
+  },
+  "public_census": {
+    "path": "native_mstep_census_2026-09-24.txt.gz",
+    "compressed_sha256": "c74b84d388a253a0cdb0a6d875c6faf7785aa2dc6c81a6a124bc1ba3d598e339",
+    "raw_sha256": "0ffe0c130485418236e3dac2a535584930aad10b9426830afc0a57bdef86570e"
+  },
+  "scope": "Selected native initial mstep census, normalized mp237, model steps 1 and 2 only; not a measured n>=2 consumer",
+  "operational_fix_applied": false,
+  "physical_number_basis_resolved": false,
+  "accepted_observation_cost": false
+}
