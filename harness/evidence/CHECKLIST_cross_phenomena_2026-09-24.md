@@ -20,7 +20,7 @@ remain unchanged.
 | X9 | **Bounded existing KDM branch + synthetic event pilot complete** | Branch and event-time derivatives | Retained freeze-cap JVP/VJP/FD and one-sided branch checks are separate from a synthetic continuous cooling event's time derivative; an exact kink has code-selected tangent 1, left/right differences 1/0, centered 1/2, and finite crossing increment is not called a local JVP. No KDM continuous-event/saltation model |
 | X10 | **Bounded synthetic observation/analysis pilot complete** | Observation/analysis semantics | Monochromatic radiances are weighted before Planck inversion, with radiance and weight directions both included; a synthetic channel cost refuses support-changing comparisons and marks empty masks unaccepted; analysis inventory change is recorded separately. Eleven tests; inherited RTTOV liquid gate remains 0/9 |
 | X11 | **Bounded common manifest pilot complete** | Reusable execution/evidence specifications | Fixed X2 native 2-call × 6-stage manifest remains code-owned while a small common validator checks exact event keys, measured/derived/synthetic tiers, source/payload digests and derived ancestry; missing/extra/duplicate/relabeled events reject. Public replay still cannot authenticate private raw files independently |
-| X12 | Open | Independent input-state and environment breadth | Preselect different stored meteorological conditions and held-out times; distinguish native/MPI/restart/ABI, physical time accuracy and independent radiance verification |
+| X12 | **Bounded spatial/time and execution evidence complete; failed gates retained** | Independent input-state and environment breadth | G4's input-only selector fixes five distinct condensate categories before comparison; the same 39-level native profiles are followed at predeclared 0/20/40 s lead times. Seven isolated **normalized mp237** runs and the complete owner/consumer census distinguish within-configuration noninterference from MPI/restart trajectory equivalence. The 1×2 layout passes, while 2×1 (28/71 different numeric fields at 20/40 s) and restart (7/60) fail. These are spatial samples and lead times of one forecast; independent meteorological dates, native `mstep>1`, physical time accuracy, mp337 ABI and independent radiance accuracy remain OPEN. |
 
 X1 is only a local, verification-only pilot. `harness/phase_transfer_contract.py`
 does not allocate extents or change the KDM oracle, C++/Fortran, ABI, host,
@@ -43,4 +43,7 @@ X9's branch/event timing distinction is
 X10's nonlinear observation/support and analysis pilot is
 `REPORT_cross_phenomena_observation_2026-09-24.md`.
 X11's fixed-manifest/common-validator split is
-`REPORT_cross_phenomena_evidence_spec_2026-09-24.md`; X12 is next.
+`REPORT_cross_phenomena_evidence_spec_2026-09-24.md`.
+X12's bounded evidence and the retained failed gates are in
+`REPORT_cross_phenomena_execution_breadth_2026-09-24.md`; they do not close
+the G4 trajectory, physical-time, ABI or observation acceptance tasks.
