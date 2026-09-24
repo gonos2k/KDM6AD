@@ -43,8 +43,9 @@ Eight new tests and seven retained moment-validity tests passed locally
 unreadable inactive/undefined producer slots, missing/rejected observations,
 mixed-population/phase/unit refusal, conditional number-basis labeling and
 exact binary-rational M0/M1/M2 comparison, including underflow, overflow and
-near-equal rounded products. Consumed boolean payloads cannot become numeric
-1 or 0, and masked arrays cannot silently lose their missing-data mask during
+near-equal rounded products. Raw mixed boolean/numeric sequences are inspected
+**before** NumPy can promote `True` to 1; consumed boolean payloads cannot
+become numeric 1 or 0, and masked arrays cannot silently lose their mask during
 `np.asarray` conversion. All examples are synthetic or public Python
 contract checks. The native Fortran conditional `INTENT(OUT)` behavior,
 physical number basis, operational accepted states and actual observation

@@ -16,6 +16,18 @@ import numpy as np
 from moment_validity import MomentValidity, classify_volume_moments
 
 
+def _contains_bool(value: object) -> bool:
+    """Inspect raw numeric input before NumPy promotes mixed bool/float lists."""
+    if isinstance(value, (bool, np.bool_)):
+        return True
+    if isinstance(value, np.ndarray):
+        return value.dtype.kind == "b" or (value.dtype.kind == "O"
+                                           and any(_contains_bool(x) for x in value.flat))
+    if isinstance(value, (list, tuple)):
+        return any(_contains_bool(x) for x in value)
+    return False
+
+
 @dataclass(frozen=True)
 class MomentInput:
     population_id: str
@@ -56,6 +68,8 @@ def classify_population_pair(spec: PopulationSpec, mass: MomentInput,
         raise ValueError("declare matching population, mass/number IDs, volume basis and units")
     if np.ma.isMaskedArray(mass.values) or np.ma.isMaskedArray(number.values):
         raise ValueError("masked population moments need an explicit missing-data contract")
+    if _contains_bool(mass.values) or _contains_bool(number.values):
+        raise ValueError("population moments cannot contain boolean masks")
     mass_array, number_array = np.asarray(mass.values), np.asarray(number.values)
     if mass_array.size == 0 or number_array.size == 0:
         raise ValueError("population moment arrays must be nonempty")
@@ -120,8 +134,8 @@ def classify_producer_sample(spec: SampleSpec, value: object, *,
         return SampleAssessment(ProducerStatus.UNDEFINED, None, None, None)
     if np.ma.isMaskedArray(value):
         raise ValueError("masked producer output needs an explicit validity state")
-    if isinstance(value, (bool, np.bool_)) or (isinstance(value, np.ndarray)
-                                               and value.dtype.kind in "bO"):
+    if _contains_bool(value) or (isinstance(value, np.ndarray)
+                                 and value.dtype.kind == "O"):
         raise ValueError("boolean producer mask cannot be a physical output")
     try:
         numeric = float(value)
@@ -158,8 +172,8 @@ def classify_observation(value: object, *, present: bool,
         return ObservationStatus.QUALITY_REJECTED
     if np.ma.isMaskedArray(value):
         raise ValueError("masked observation cannot be silently accepted")
-    if isinstance(value, (bool, np.bool_)) or (isinstance(value, np.ndarray)
-                                               and value.dtype.kind in "bO"):
+    if _contains_bool(value) or (isinstance(value, np.ndarray)
+                                 and value.dtype.kind == "O"):
         raise ValueError("boolean quality mask cannot be an observation value")
     try:
         numeric = float(value)
@@ -191,6 +205,8 @@ def check_nonnegative_m012(spec: PopulationSpec, m0: MomentInput,
         raise ValueError("declare one population, M0/M1/M2, volume basis and diameter-moment units")
     if any(np.ma.isMaskedArray(m.values) for m in (m0, m1, m2)):
         raise ValueError("masked higher moments need an explicit missing-data contract")
+    if any(_contains_bool(m.values) for m in (m0, m1, m2)):
+        raise ValueError("moment values cannot contain boolean masks")
     raw_arrays = tuple(np.asarray(m.values) for m in (m0, m1, m2))
     if any(a.dtype.kind in "bO" for a in raw_arrays):
         raise ValueError("moment values cannot be boolean or object masks")
