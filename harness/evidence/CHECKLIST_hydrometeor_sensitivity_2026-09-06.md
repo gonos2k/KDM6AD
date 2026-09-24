@@ -944,6 +944,43 @@ regression was tightened to 32 epsilon64 relative and zero absolute tolerance;
 its focused tests pass. Graphify code and semantic refresh retains the known
 metadata warnings and does not claim complete graph coverage.
 
+### G2 face-budget and stage-wide discovery follow-up (2026-09-24)
+
+- [x] Preserve original and normalized mp237 trajectories in two read-only native
+  captures; each complete history file, input identity and effective namelist
+  matches its own retained control.
+- [x] Connect measured PRE/POST low/correction faces and neighboring donor
+  limiter budgets to Z/X/Y tendencies and actual caller stores: 384 face values,
+  192 directional stores, 192 ordinary RK and 64 PD preparation stores replay.
+- [x] Distinguish exact rational budgets of stored faces from executed binary32
+  updates. The representative normalized donor has a positive exact POST-face
+  numerator but a negative executed store; the original has a deficit already
+  in its stored POST faces. No blanket roundoff dismissal or clipping change.
+- [x] Scan all owned mass cells at named call boundaries for both trajectories,
+  including transient negatives and separate current/reference buffers. Preserve
+  384 summaries per run and bounded examples, not just final-negative targets.
+- [x] Match final flow-boundary transition coordinates/values and measured
+  adjacent donors to all original 11 and normalized 9 negative history cells.
+- [ ] Full upstream high-order stencil reconstruction, events wholly inside a
+  sampled call, all boundary branches, global positivity repair and its physical
+  conservation/AD contract remain open. Intermediate high-order RK values are
+  not automatically subject to the final-stage PD invariant.
+- [ ] G3 physical number basis and G4 MPI/restart/held-out coverage remain open.
+  Operational P1 and historical source pin recertification remain open; no new
+  RTTOV run and no change to inherited liquid observation approval 0/9.
+
+New face-budget checks: 18 passed; retained negative-trace and normalization
+checks: 15 passed (33 combined, Python 3.12). Public replay is arithmetic-only;
+the two native executions and private raw-file hash comparisons are separate
+recorded evidence. See `REPORT_number_face_flux_2026-09-24.md` and
+`SCHEMA_number_face_flux.md`.
+
+Final Green/Red review found and closed a scan/event metadata validation gap;
+wrong selected/rank/species labels are now rejected. Both reviews have no
+remaining blocker within this evidence scope. Graphify code and focused semantic
+refresh completed; eight existing edge-metadata warnings remain. No complete
+private-host graph coverage is claimed.
+
 ### G3 declared physical-moment contracts (2026-09-24)
 
 - [x] Track the generalization review item-by-item in
@@ -951,8 +988,8 @@ metadata warnings and does not claim complete graph coverage.
 - [x] Recompute actual DSD/accretion rates in two declared representations and
   compare with an independent volume equation; both modes, gates and reservoir
   caps are covered. Near-EPS unconverted mass floors remain a recorded boundary.
-- [x] Execute existing conservative ice transfers on unequal rho/dz against an
-  independent inventory-coordinate recurrence, including nonzero surface export
+- [x] Execute the analysis-only, opt-in conservative ice transfer on unequal
+  rho/dz against an independent inventory-coordinate recurrence, including nonzero surface export
   and density/geometry/velocity directions. These are isolated synthetic runs.
 - [x] Separate inactive, inadmissible and valid declared moment pairs; only read
   producer outputs under their valid mask. Python fallbacks are tested separately.
