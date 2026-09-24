@@ -963,3 +963,25 @@ metadata warnings and does not claim complete graph coverage.
 
 61 focused Python 3.12 tests passed (32 new, 29 retained). See
 `REPORT_moment_contract_2026-09-24.md`; inherited liquid acceptance stays 0/9.
+
+### G4 native execution and held-out spatial coverage (2026-09-24)
+
+- [x] Seven normalized mp237 native runs: serial, two MPI control/capture pairs,
+  restart control/capture. Within each tested configuration, logging preserves
+  complete history bytes. Serial also matches the retained normalized control.
+- [x] Independently configured territories and schedules validate 909,440 raw
+  SELECT/CONSUME records. Restart resumes at host step 2; all measured msteps=1.
+- [x] Preselect five native columns by input properties, before comparisons;
+  preserve their native input/output profiles and original-column exclusion.
+- [x] Fix restart input identity: resolve/hash the real checkpoint, support the
+  nocolons transformation, reject unauthenticated per-rank restart forms.
+- [ ] X-decomposition trajectory gate: 28/71 numeric fields differ at 20/40 s.
+  The y split matches serial; this does not close all decomposition behavior.
+- [ ] Restart trajectory gate: 7/60 fields differ at 20/40 s, including
+  prognostic state by 40 s. Logging-off control reproduces the same restart.
+- [ ] First-divergence localization, physical unit policy, native n>=2, coupled
+  time convergence, full normalized AD/ABI and independent radiative accuracy.
+
+66 focused tests passed (50 new, 16 retained); passing evidence replay preserves
+failed trajectory gates. No operational P1 closure or new RTTOV measurement.
+See `REPORT_native_execution_2026-09-24.md` and the central generalization checklist.
