@@ -876,3 +876,37 @@ fail-closed run-validity and source-strip evidence checks. Focused Python 3.12
 checks: 4 formal-reference/layer-AD tests and 8 native-evidence tests. Graphify
 AST and focused semantic refresh completed; eight pre-existing graph metadata
 warnings remain, and full graph coverage is not claimed.
+
+
+### PR233 follow-up — normalization and negative-number origin (2026-09-24)
+
+- [x] Preserve legacy/original mp237. In an isolated source copy, add only the
+  two missing ice-slot divisions after main reslope; leave initial mstep and
+  later ice normalization unchanged. Execute normalized control/capture at the
+  same 5-km, 39-layer, 40-s input; all 253 numeric fields plus Times match.
+- [x] Record 702 coefficient/state rows. All 234 paired raw/dz transitions and
+  78 first-ice handoffs replay. Selected mstep is 1: later normalization is
+  measured preparation, not an executed n>=2 consumer or coupled time convergence.
+- [x] Independently trace original mp237's 11 final negative edge cells and their
+  11 donors. Capture 1188 records; replay 132 RK and 44 PD stores with the archived
+  host object's fused arithmetic. Inner RK negatives are copied by outflow BC;
+  microphysics changes inner cells while excluding the specified edge strip.
+- [x] Both read-only negative traces retain original mp237 history bytes.
+  No boundary clipping, transport setting or KDM strict-FP policy is changed.
+- [x] Locate matching historical pinned source and the exact one-line rhox
+  deletion leading to current source. Record rationale and approval gap.
+- [ ] Historical pin certification remains FAILED; no SHA replacement.
+- [ ] Operational P1/default adoption, physical number basis, full normalized
+  AD/ABI behavior, upstream advective flux/limiter cause, whole-host positivity,
+  coupled time accuracy and independent radiation accuracy remain open.
+  Liquid observation approval remains 0/9.
+
+See `REPORT_ice_normalization_2026-09-24.md`,
+`REPORT_negative_number_origin_2026-09-24.md` and the paired public JSON/replayers.
+Focused Python 3.12 tests: 8 normalization + 7 negative-trace tests passed; both
+replayers reject Python -O. Native executions and public arithmetic tests are
+separate evidence.
+
+Final Green/Red review approved the scoped arithmetic and evidence. Graphify
+code and focused semantic updates completed; eight pre-existing missing-edge
+metadata warnings remain, with no claim of complete graph coverage.
