@@ -18,7 +18,7 @@ remain unchanged.
 | X7 | **Bounded synthetic coupling complete** | Coupled operators and equilibrium | Two exact nonnegative, conservative one-way maps are compared in AB/BA order against the analytic same-final-time coupled equation; order and coupled equilibrium differ despite both component passes. Eleven synthetic tests; no KDM/host coupling or physical time-error claim |
 | X8 | **Bounded declarative pilot complete** | Stage-aware accepted state | Independent event plan distinguishes solver-internal, physical-consumer-input, accepted-state and diagnostic-only roles; internal finite negatives are recorded, while negative physical-consumer/accepted values and diagnostic-to-physics links are rejected. Nine synthetic tests; actual host negativity repair remains OPEN |
 | X9 | **Bounded existing KDM branch + synthetic event pilot complete** | Branch and event-time derivatives | Retained freeze-cap JVP/VJP/FD and one-sided branch checks are separate from a synthetic continuous cooling event's time derivative; an exact kink has code-selected tangent 1, left/right differences 1/0, centered 1/2, and finite crossing increment is not called a local JVP. No KDM continuous-event/saltation model |
-| X10 | Open | Observation/analysis semantics | Specify average-before-transform, support/QC changes and analysis increment as separate terms; compare channel derivatives only on declared support |
+| X10 | **Bounded synthetic observation/analysis pilot complete** | Observation/analysis semantics | Monochromatic radiances are weighted before Planck inversion, with radiance and weight directions both included; a synthetic channel cost refuses support-changing comparisons and marks empty masks unaccepted; analysis inventory change is recorded separately. Eleven tests; inherited RTTOV liquid gate remains 0/9 |
 | X11 | Open | Reusable execution/evidence specifications | Split fixed legacy case manifests from small common validators; expected events must come from an independent run plan; preserve real/derived/synthetic provenance and missing-record rejection |
 | X12 | Open | Independent input-state and environment breadth | Preselect different stored meteorological conditions and held-out times; distinguish native/MPI/restart/ABI, physical time accuracy and independent radiance verification |
 
@@ -39,4 +39,6 @@ X6's existing derivative/new synthetic remap evidence is
 X7's noncommuting synthetic pair is `REPORT_cross_phenomena_coupling_2026-09-24.md`;
 X8's stage-role pilot is `REPORT_cross_phenomena_stage_validity_2026-09-24.md`;
 X9's branch/event timing distinction is
-`REPORT_cross_phenomena_event_derivatives_2026-09-24.md`; X10 is next.
+`REPORT_cross_phenomena_event_derivatives_2026-09-24.md`.
+X10's nonlinear observation/support and analysis pilot is
+`REPORT_cross_phenomena_observation_2026-09-24.md`; X11 is next.
