@@ -198,8 +198,24 @@ if(CMAKE_Fortran_COMPILER)
         bridge/kdm6_iso_c.f90
         tests/test_fortran_smoke.f90
     )
+    set(_fortran_smoke_mod_dir "${CMAKE_CURRENT_BINARY_DIR}/fortran-smoke-mod")
+    file(MAKE_DIRECTORY "${_fortran_smoke_mod_dir}")
+    set_target_properties(test_fortran_smoke PROPERTIES
+        Fortran_MODULE_DIRECTORY "${_fortran_smoke_mod_dir}")
+    target_include_directories(test_fortran_smoke PRIVATE "${_fortran_smoke_mod_dir}")
     target_link_libraries(test_fortran_smoke PRIVATE kdm6_c)
     add_test(NAME fortran_smoke COMMAND test_fortran_smoke)
+    add_executable(test_fortran_normalized_ad
+        bridge/kdm6_iso_c.f90
+        tests/test_fortran_normalized_ad.f90
+    )
+    set(_fortran_normalized_ad_mod_dir "${CMAKE_CURRENT_BINARY_DIR}/fortran-normalized-ad-mod")
+    file(MAKE_DIRECTORY "${_fortran_normalized_ad_mod_dir}")
+    set_target_properties(test_fortran_normalized_ad PROPERTIES
+        Fortran_MODULE_DIRECTORY "${_fortran_normalized_ad_mod_dir}")
+    target_include_directories(test_fortran_normalized_ad PRIVATE "${_fortran_normalized_ad_mod_dir}")
+    target_link_libraries(test_fortran_normalized_ad PRIVATE kdm6_c)
+    add_test(NAME fortran_normalized_ad COMMAND test_fortran_normalized_ad)
     message(STATUS "Fortran enabled — test_fortran_smoke will be built")
 else()
     message(STATUS "Fortran compiler not found — skipping test_fortran_smoke")
