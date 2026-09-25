@@ -10,11 +10,13 @@ blocked on process, density, threshold, and AD choices.
 
 ## Evidence identity and checks
 
-The public source is based on `origin/main` commit `3781084` (after PR #273; PR
-#274 is already present). The added checks are in
-[`test_replay_number_boundary.py`](../tests/test_replay_number_boundary.py):
+The public source is based on `main` at `2a635b60` after PR #275. The four synthetic
+number-value map cases remain in
+[`test_replay_number_boundary.py`](../tests/test_replay_number_boundary.py).
+The live oracle checks are in
+[`test_s2_conditional_layered_oracle.py`](../../oracle/tests/test_s2_conditional_layered_oracle.py):
 
-- Four synthetic number-value cases exercise the generic map
+- Four synthetic number-value cases in the torch-free harness suite exercise the generic map
   `N = rho_d * n_d` and inverse `n_d = N / rho_d` on three different densities.
   The names QNCCN, QNCLOUD, QNICE, and QNRAIN label the examples; they do not
   bind the test to Registry storage or ABI slots.
@@ -38,14 +40,14 @@ operation-order parity. The existing adjacent
 three-layer test checks paired `q`, `brs`, and number moments plus their density
 JVP/VJP algebra, but neither test validates an end-to-end corrected KDM6 map.
 
-The focused boundary suite passes 26 tests with warnings treated as errors;
-Ruff and `git diff --check` pass. Graphify's structural update completed with
-13,470 nodes, 23,117 edges, and 1,048 communities. A seven-node/seven-edge
-semantic fragment for this report was then merged; the resulting graph has
-13,477 nodes and 23,124 edges. HTML output was skipped over the 5,000-node
-limit. Post-update queries link the layered test to `accretion_torch`,
-`_fresh_dsd`, and the direct volume-rate helper, and link the candidate map to
-the dry host basis and density derivative contract.
+The harness boundary suite passes 24 tests with torch imports blocked, and the
+oracle suite passes the two live layered cases; both use warnings as errors.
+Ruff and `git diff --check` pass. Graphify refreshed the rebased source to
+13,535 nodes, 23,232 edges, and 1,059 communities, including the seven-node,
+seven-edge semantic fragment for this report. HTML output was skipped over the
+5,000-node limit. Post-update queries link the layered oracle tests to
+`accretion_torch`, `_fresh_dsd`, and the direct volume-rate helper, and link the
+candidate map to the dry host basis and density derivative contract.
 
 ## Source identity reviewed
 
