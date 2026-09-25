@@ -200,6 +200,12 @@ if(CMAKE_Fortran_COMPILER)
     )
     target_link_libraries(test_fortran_smoke PRIVATE kdm6_c)
     add_test(NAME fortran_smoke COMMAND test_fortran_smoke)
+    add_executable(test_fortran_normalized_ad
+        bridge/kdm6_iso_c.f90
+        tests/test_fortran_normalized_ad.f90
+    )
+    target_link_libraries(test_fortran_normalized_ad PRIVATE kdm6_c)
+    add_test(NAME fortran_normalized_ad COMMAND test_fortran_normalized_ad)
     message(STATUS "Fortran enabled — test_fortran_smoke will be built")
 else()
     message(STATUS "Fortran compiler not found — skipping test_fortran_smoke")

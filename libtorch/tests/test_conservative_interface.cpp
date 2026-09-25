@@ -31,6 +31,7 @@
 //
 #include "kdm6/runtime.h"
 #include "kdm6/sedimentation_conservative.h"
+#include "kdm6/slope.h"
 #include "kdm6/state.h"
 #include "kdm6_c_api.h"
 #include "legacy_signature_caller.h"
@@ -38,6 +39,7 @@
 #include <torch/torch.h>
 
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <cmath>
 #include <cstring>
@@ -975,6 +977,157 @@ void test_c35_public_v2_f32_graph_gate() {
     } END_TEST();
 }
 
+void test_c35_public_v2_f32_state_direction_abi() {
+    TEST(test_c35_public_v2_f32_state_direction_abi) {
+        // Exercise the actual normalized variant-1 ABI graph with directions
+        // in qi/ni. These inputs feed the internal DSD slope, fall velocity,
+        // and sedimentation rate recomputation. This is an operational-f32
+        // graph carried through the ABI's double packed buffers; it is not
+        // the separate fp64 legacy DA path.
+        constexpr int IM = 1, KME = 4, JME = 1;
+        constexpr size_t N = IM * KME * JME;
+        constexpr int QI = 4, NI = 9;
+        constexpr double DT = 60.0;
+        V2Tile base(IM, KME, JME);
+        base.fill_col(0, kClosureCols[2]);
+
+        auto forward = run_v2(base, KDM6_PHYSICS_CONSERVATIVE_INTERFACE,
+                              DT, /*value_only=*/1);
+        auto graph = run_v2(base, KDM6_PHYSICS_CONSERVATIVE_INTERFACE,
+                            DT, /*value_only=*/0);
+        assert(forward.rc == KDM6_OK && forward.h == nullptr);
+        assert(graph.rc == KDM6_OK && graph.h != nullptr);
+        for (int f = 0; f < 12; ++f)
+            assert(std::memcmp(forward.o[f].ptr(), graph.o[f].ptr(),
+                               N * sizeof(float)) == 0);
+
+        // Field-major packed layout: qi and ni directions are nonzero in each
+        // level, with unequal signs/magnitudes so the velocity dependence is
+        // exercised rather than reduced to a uniform scale perturbation.
+        std::vector<double> v(12 * N, 0.0), u(12 * N, 0.0);
+        const double pattern[N] = {0.5, 0.8, 1.1, 1.4};
+        for (size_t k = 0; k < N; ++k) {
+            const double qi = base.in[QI].data[k];
+            const double ni = base.in[NI].data[k];
+            v[QI * N + k] = qi * 0.03 * pattern[k];
+            v[NI * N + k] = ni * 0.02 * pattern[(k + 1) % N];
+            // Seed the mass/energy outputs, matching the smooth functional
+            // used by the independent internal derivative gate. This can see
+            // latent/rate effects even if a given ice inventory output is
+            // fully depleted in one step.
+            for (int field = 0; field < 7; ++field)
+                u[field * N + k] = static_cast<double>((field + 1) * (k + 1));
+        }
+
+        std::vector<double> jv(12 * N, -777.0), jt_u(12 * N, -777.0);
+        assert(kdm6_handle_jvp_c(graph.h, v.data(), jv.data()) == KDM6_OK);
+        assert(kdm6_handle_vjp_c(graph.h, u.data(), jt_u.data()) == KDM6_OK);
+        double lhs = 0.0, rhs = 0.0;
+        for (size_t i = 0; i < 12 * N; ++i) lhs += jv[i] * u[i];
+        for (size_t i = 0; i < 12 * N; ++i) rhs += v[i] * jt_u[i];
+        assert(std::isfinite(lhs) && std::isfinite(rhs));
+        assert(std::fabs(lhs) > 1.0e-12);
+        assert(std::fabs(lhs - rhs) <= 2.0e-5 * std::max({std::fabs(lhs), std::fabs(rhs), 1.0e-20}));
+
+        auto objective = [&](const V2Run& r) {
+            double value = 0.0;
+            for (size_t i = 0; i < 12 * N; ++i)
+                value += u[i] * r.o[i / N].data[i % N];
+            return value;
+        };
+        const double ad_directional = lhs;
+        double best_rel = std::numeric_limits<double>::infinity();
+        const double epsilons[] = {0.5, 0.1, 0.02};
+        auto slope_signature = [&](float qi_value, float ni_value, float rho_value) {
+            auto opts = torch::TensorOptions().dtype(torch::kFloat32);
+            auto q = torch::full({1, 1}, qi_value, opts);
+            auto n = torch::full({1, 1}, ni_value, opts);
+            auto zero = torch::zeros({1, 1}, opts);
+            auto den = torch::full({1, 1}, rho_value, opts);
+            auto params = slope::default_slope_params();
+            auto one = torch::ones({1, 1}, opts);
+            slope::SlopeKdm6Inputs in{zero, zero, zero, q, zero, n, den, one,
+                one * 260.0f, one * 2.5e5f, one * 95.0f, one * 0.5316f,
+                one * std::pow(params.rslopegmax, 0.5316)};
+            const float value = slope::slope_kdm6_torch(in, params).rslope_i.item<float>();
+            const float lower = static_cast<float>(1.0 / constants::LAMDAIMAX);
+            const float upper = static_cast<float>(1.0 / constants::LAMDAIMIN);
+            return std::array<bool, 3>{qi_value <= constants::EPS,
+                                       value == lower, value == upper};
+        };
+        std::array<bool, 3> base_branch[N];
+        for (size_t k = 0; k < N; ++k)
+            base_branch[k] = slope_signature(base.in[QI].data[k], base.in[NI].data[k],
+                                             base.in[12].data[k]);
+        for (size_t eidx = 0; eidx < 3; ++eidx) {
+            const double eps = epsilons[eidx];
+            V2Tile plus = base, minus = base;
+            for (size_t k = 0; k < N; ++k) {
+                plus.in[QI].data[k] = static_cast<float>(base.in[QI].data[k] + eps * v[QI * N + k]);
+                minus.in[QI].data[k] = static_cast<float>(base.in[QI].data[k] - eps * v[QI * N + k]);
+                plus.in[NI].data[k] = static_cast<float>(base.in[NI].data[k] + eps * v[NI * N + k]);
+                minus.in[NI].data[k] = static_cast<float>(base.in[NI].data[k] - eps * v[NI * N + k]);
+                assert(slope_signature(plus.in[QI].data[k], plus.in[NI].data[k],
+                                       plus.in[12].data[k]) == base_branch[k]);
+                assert(slope_signature(minus.in[QI].data[k], minus.in[NI].data[k],
+                                       minus.in[12].data[k]) == base_branch[k]);
+            }
+            auto rp = run_v2(plus, KDM6_PHYSICS_CONSERVATIVE_INTERFACE,
+                             DT, /*value_only=*/1);
+            auto rm = run_v2(minus, KDM6_PHYSICS_CONSERVATIVE_INTERFACE,
+                             DT, /*value_only=*/1);
+            assert(rp.rc == KDM6_OK && rp.h == nullptr);
+            assert(rm.rc == KDM6_OK && rm.h == nullptr);
+            const double fd = (objective(rp) - objective(rm)) / (2.0 * eps);
+            const double rel = std::fabs(fd - ad_directional) /
+                               std::max({std::fabs(fd), std::fabs(ad_directional), 1.0e-20});
+            std::cout << "    [C3.5 v2 f32 ABI] FD eps=" << eps
+                      << " fd=" << fd << " JVP=" << ad_directional
+                      << " rel=" << rel << "\n";
+            best_rel = std::min(best_rel, rel);
+        }
+        assert(best_rel < 3.0e-2);
+        assert(kdm6_handle_closep_c(&graph.h) == KDM6_OK);
+        assert(graph.h == nullptr);
+        assert(kdm6_handle_jvp_c(graph.h, v.data(), jv.data()) == KDM6_ERR_NULL_POINTER);
+
+        // Threshold crossing is a value/branch check, not a derivative claim.
+        // The production slope has an explicit qi <= EPS inactive branch.
+        // Verify its branch signature on the two representable sides, then
+        // run both states through the public normalized forward ABI with no
+        // handle. No derivative is compared across this discontinuity.
+        const auto slope_params = slope::default_slope_params();
+        const float nearest = static_cast<float>(constants::EPS);
+        const float below = std::nextafter(nearest, 0.0f);
+        const float above = std::nextafter(nearest, std::numeric_limits<float>::infinity());
+        const float inactive_slope = static_cast<float>(1.0 / constants::LAMDAIMAX);
+        const double target_lambda = constants::LAMDAIMAX * 0.5;
+        const float ni_below = static_cast<float>(
+            std::pow(target_lambda, constants::DMI) * below / slope_params.pidni);
+        const float ni_above = static_cast<float>(
+            std::pow(target_lambda, constants::DMI) * above / slope_params.pidni);
+        assert(slope_signature(below, ni_below, 1.0f)[0]);
+        assert(slope_signature(below, ni_below, 1.0f)[1]);
+        assert(!slope_signature(above, ni_above, 1.0f)[0]);
+        assert(!slope_signature(above, ni_above, 1.0f)[1]);
+        for (float qi_value : {below, above}) {
+            V2Tile crossing(IM, KME, JME);
+            crossing.fill_col(0, kClosureCols[2]);
+            const float ni_value = static_cast<float>(
+                std::pow(target_lambda, constants::DMI) * qi_value / slope_params.pidni);
+            for (size_t k = 0; k < N; ++k) {
+                crossing.in[QI].data[k] = qi_value;
+                crossing.in[NI].data[k] = ni_value;
+            }
+            auto value = run_v2(crossing, KDM6_PHYSICS_CONSERVATIVE_INTERFACE,
+                                DT, /*value_only=*/1);
+            assert(value.rc == KDM6_OK && value.h == nullptr);
+            for (int f = 0; f < 12; ++f)
+                for (float x : value.o[f].data) assert(std::isfinite(x));
+        }
+    } END_TEST();
+}
+
 void test_c35_pin_legacy_ad() {
     TEST(test_c35_pin_legacy_ad) {
         // kdm6_step_ad_c is PERMANENTLY Legacy: on an identical cap-active
@@ -1143,6 +1296,7 @@ int main() {
     test_c33_multisubcycle_closure_public_v2_f32();
     test_c35_ad_gates_internal_fp64();
     test_c35_public_v2_f32_graph_gate();
+    test_c35_public_v2_f32_state_direction_abi();
     test_c35_pin_legacy_ad();
     test_review208_conservative_shape_guards();
     test_c36_old_signature_fixture_bitwise_legacy();
