@@ -70,6 +70,17 @@ GROUPS = {
         ("ph_tend", "Z", "M"), ("t_tend", "M", "M"), ("mu_tend", "S", "M")],
     4: [("u_2", "M", "X"), ("muu", "S", "M"), ("mub", "S", "M"),
         ("msfuy", "S", "X")],
+    # S5 calc_ww_cp caller inputs. Kept in the shared reader schema so the
+    # same decoder can inspect emitted group-5 memory windows after capture.
+    5: [
+        ("u_2", "H", "X"), ("v_2", "H", "Y"),
+        ("mu_2", "HS", "M"), ("mub", "HS", "M"),
+        ("c1h", "V", "M"), ("c2h", "V", "M"), ("dnw", "V", "M"),
+        ("msftx", "HS", "M"), ("msfty", "HS", "M"),
+        ("msfux", "HS", "X"), ("msfuy", "HS", "X"),
+        ("msfvx", "HS", "Y"), ("msfvx_inv", "HS", "Y"),
+        ("msfvy", "HS", "M"), ("rdx", "C", "M"), ("rdy", "C", "M"),
+    ],
 }
 
 #: Groups dumped over the MEMORY window (halo copies included) rather than owned
@@ -164,7 +175,13 @@ CONTAINS
 !  arrived wrong (2) or was read stale (4). Everything else is owned cells.
          IF ( {halowin} ) THEN
             i0 = MAX( MAX( ims, ids ), win(1,w) )
-            i1 = MIN( MIN( ime, ide-1 ), win(2,w) )
+            i1 = MIN( ime, win(2,w) )
+            IF ( grp == 5 ) THEN
+               i1 = MIN( i1, ide )
+               IF ( win(2,w) >= ide-1 ) i1 = MIN( ime, ide )
+            ELSE
+               i1 = MIN( i1, ide-1 )
+            END IF
          ELSE
             i0 = MAX( ips, win(1,w) )
             i1 = MIN( iu, win(2,w) )
@@ -190,7 +207,14 @@ def _call(stage: int, grps) -> str:
 def _slice(kind: str) -> str:
     return {"M": "(i0:i1,kps:ku ,jps:ju)",
             "Z": "(i0:i1,kps:kpe,jps:ju)",
-            "S": "(i0:i1,        jps:ju)"}[kind]
+            "S": "(i0:i1,        jps:ju)",
+            # Verification-only extension for S5's exact calc_ww_cp inputs.
+            # These are shared vertical coefficients/scalars, replicated in
+            # each column record so ownership and stage coverage stay explicit.
+            "V": "(kps:ku)", "C": "",
+            # Full i/j memory window for the actual x/y neighbor operands.
+            "H": "(i0:i1,kps:ku,jlo:jhi)",
+            "HS": "(i0:i1,        jlo:jhi)"}[kind]
 
 
 def _cases() -> str:
@@ -322,7 +346,14 @@ def read_dump(path: Path) -> dict:
         off += 40
         ni, nj, nk = i1 - i0 + 1, ju - jps + 1, ku - kps + 1
         for name, kind, _ in GROUPS[grp]:
-            n = ni * nj * (1 if kind == "S" else nk + (1 if kind == "Z" else 0))
+            if kind in ("V", "C"):
+                n = nk if kind == "V" else 1
+            elif kind == "H":
+                n = ni * nk * nj
+            elif kind == "HS":
+                n = ni * nj
+            else:
+                n = ni * nj * (1 if kind == "S" else nk + (1 if kind == "Z" else 0))
             need = 4 * n
             remaining = raw.size - off
             if remaining < need:
@@ -332,11 +363,32 @@ def read_dump(path: Path) -> dict:
                     f"{remaining})")
             a = raw[off:off + need].view(">f4")
             off += need
-            a = a.reshape((ni, nj) if kind == "S" else
-                          (ni, nk + (1 if kind == "Z" else 0), nj), order="F")
-            for c in range(ni):
-                i = i0 + c
-                out.setdefault((stage, grp, i, ips <= i <= iu), {})[name] = a[c]
+            if kind == "V":
+                a = a.reshape((nk,))
+                for c in range(ni):
+                    i = i0 + c
+                    out.setdefault((stage, grp, i, ips <= i <= iu), {})[name] = a.copy()
+            elif kind == "C":
+                a = a.reshape((1,))
+                for c in range(ni):
+                    i = i0 + c
+                    out.setdefault((stage, grp, i, ips <= i <= iu), {})[name] = a.copy()
+            elif kind == "H":
+                a = a.reshape((ni, nk, nj), order="F")
+                for c in range(ni):
+                    i = i0 + c
+                    out.setdefault((stage, grp, i, ips <= i <= iu), {})[name] = a[c]
+            elif kind == "HS":
+                a = a.reshape((ni, nj), order="F")
+                for c in range(ni):
+                    i = i0 + c
+                    out.setdefault((stage, grp, i, ips <= i <= iu), {})[name] = a[c]
+            else:
+                a = a.reshape((ni, nj) if kind == "S" else
+                              (ni, nk + (1 if kind == "Z" else 0), nj), order="F")
+                for c in range(ni):
+                    i = i0 + c
+                    out.setdefault((stage, grp, i, ips <= i <= iu), {})[name] = a[c]
     return out
 
 

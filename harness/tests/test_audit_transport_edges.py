@@ -246,6 +246,57 @@ def test_dyn_read_normalizes_truncated_payload(tmp_path):
         dyn.read_dump(path)
 
 
+def _dyn_group5_record() -> bytes:
+    """Caller-memory window with one owned and one neighboring i column."""
+    stage, group, i0, i1 = 0, 5, 117, 118
+    j0, jhi, kps, ku = 0, 2, 1, 2
+    ips, iu = 117, 117
+    ni, nj, nk = i1 - i0 + 1, jhi - j0 + 1, ku - kps + 1
+    payload = []
+    for field_index, (_name, kind, _stagger) in enumerate(dyn.GROUPS[group]):
+        value = float(field_index + 1)
+        count = (ni * nk * nj if kind == "H" else
+                 ni * nj if kind == "HS" else
+                 nk if kind == "V" else 1)
+        payload.extend(value + 0.25 * offset for offset in range(count))
+    return (struct.pack(">10i", stage, group, i0, i1, j0, jhi,
+                        kps, ku, ips, iu)
+            + struct.pack(f">{len(payload)}f", *payload))
+
+
+def test_dyn_read_decodes_s5_stencil_window_from_jm1_through_jend(tmp_path):
+    path = tmp_path / "g33dyn_s5.bin"
+    path.write_bytes(_dyn_group5_record())
+    got = dyn.read_dump(path)
+
+    owner = got[(0, 5, 117, True)]
+    halo = got[(0, 5, 118, False)]
+    for field_index, (name, kind, _stagger) in enumerate(dyn.GROUPS[5]):
+        expected = float(field_index + 1)
+        if kind == "H":
+            assert owner[name].shape == (2, 3)  # k, j including j=0
+            assert np.array_equal(
+                owner[name], [[expected, expected + 1.0, expected + 2.0],
+                              [expected + 0.5, expected + 1.5, expected + 2.5]])
+            assert np.array_equal(
+                halo[name], [[expected + 0.25, expected + 1.25, expected + 2.25],
+                             [expected + 0.75, expected + 1.75, expected + 2.75]])
+        elif kind == "HS":
+            assert owner[name].shape == (3,)  # j including j=0
+            assert np.array_equal(owner[name], [expected, expected + 0.5,
+                                                expected + 1.0])
+            assert np.array_equal(halo[name], [expected + 0.25, expected + 0.75,
+                                               expected + 1.25])
+        elif kind == "V":
+            assert owner[name].shape == (2,)
+            assert np.array_equal(owner[name], [expected, expected + 0.25])
+            assert np.array_equal(halo[name], owner[name])
+        else:
+            assert owner[name].shape == (1,)
+            assert np.array_equal(owner[name], [expected])
+            assert np.array_equal(halo[name], owner[name])
+
+
 @pytest.mark.parametrize('pressure', [0.0, -1.0, float('nan'), float('inf')])
 def test_density_reports_refuse_invalid_pressure(tmp_path, pressure):
     path = _state_with_frames(tmp_path / 'invalid_pressure.nc',
