@@ -28,6 +28,9 @@
     "strip_exact_required": true,
     "capture_fields": "branch and assignment bits only; no OUT values",
     "runtime_output": "selected-column S10 event flags on stdout",
+    "event_payload_sha256": null,
+    "event_record_count": null,
+    "event_record_counts": null,
     "compile_or_native_run_done": false
   },
   "input": {

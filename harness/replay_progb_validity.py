@@ -7,6 +7,7 @@ zero, harmless, or physically acceptable.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 from typing import Any, Iterable
@@ -19,6 +20,16 @@ INITIAL_ACTIVE_LEVELS = set(range(1, 12))
 # Native traces show that gate active on levels 4..11 and inactive on 1..3.
 MIXED_COLUMN_ACTIVE_LEVELS = set(range(4, 12))
 LEVELS = set(range(1, 40))
+PROGB_CALL_CONTEXTS = {
+    (1, 73, 1, 0, 0),
+    (1, 73, 2, 1, 1),
+    (1, 73, 2, 1, 2),
+    (1, 73, 3, 1, 1),
+    (1, 73, 4, 1, 0),
+    (1, 73, 5, 1, 0),
+    (1, 73, 6, 1, 0),
+    (1, 73, 7, 1, 0),
+}
 RECORD_WIDTHS = {"S10CMG": 9, "S10PB": 12, "S10SLP": 18,
                  "S10RHO": 10, "S10DIAG": 7, "S10SCAN": 6,
                  "S10TRACE": 14, "S10TRS": 16}
@@ -30,6 +41,26 @@ INPUT_SHA256 = {
     "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
     "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
     "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3",
+}
+CAPTURE_GOLDENS = {
+    "mp37": {
+        "sha256": "63319cb120a1f16d46b5be1a56b800a7d0289ef67a9b2627284947b0878fd684",
+        "record_count": 5662,
+        "record_counts": {
+            "S10SCAN": 1974, "S10TRACE": 763, "S10TRS": 763,
+            "S10CMG": 624, "S10PB": 624, "S10SLP": 624,
+            "S10RHO": 212, "S10DIAG": 78,
+        },
+    },
+    "mp237": {
+        "sha256": "dc3d122fa9252a4c6bfd51db032d08223e0fc390a73f87ebdd866d3aeea922e0",
+        "record_count": 5678,
+        "record_counts": {
+            "S10SCAN": 1974, "S10TRACE": 771, "S10TRS": 771,
+            "S10CMG": 624, "S10PB": 624, "S10SLP": 624,
+            "S10RHO": 212, "S10DIAG": 78,
+        },
+    },
 }
 FLAG_INDICES = {
     "S10CMG": (7, 8),
@@ -83,11 +114,33 @@ def validate_events(records: list[dict[str, Any]]) -> dict[str, Any]:
     pb = {_site_key(row["values"]): row["values"] for row in by_tag["S10PB"]}
     cmg = {_site_key(row["values"]): row["values"] for row in by_tag["S10CMG"]}
     slope = {_site_key(row["values"]): row["values"] for row in by_tag["S10SLP"]}
-    if set(pb) != set(cmg) or set(pb) != set(slope):
-        raise ValueError("ProgB assignment, cmg-read, and immediate-slope records do not pair")
+    expected_producer_keys = {
+        (*context, i, k)
+        for context in PROGB_CALL_CONTEXTS
+        for i in (PRESELECT["active_i"], PRESELECT["inactive_i"])
+        for k in LEVELS
+    }
+    for tag, keyed in (("S10PB", pb), ("S10CMG", cmg), ("S10SLP", slope)):
+        if set(keyed) != expected_producer_keys:
+            missing = len(expected_producer_keys - set(keyed))
+            extra = len(set(keyed) - expected_producer_keys)
+            raise ValueError(f"{tag} producer/consumer universe mismatch: "
+                             f"missing={missing}, extra={extra}")
 
+    diag_keys = {tuple(row["values"][:4]) for row in by_tag["S10DIAG"]}
+    expected_diag_keys = {
+        (1, PRESELECT["lat"], i, k)
+        for i in (PRESELECT["active_i"], PRESELECT["inactive_i"])
+        for k in LEVELS
+    }
+    if diag_keys != expected_diag_keys:
+        raise ValueError(f"final diagnostic consumer universe mismatch: "
+                         f"missing={len(expected_diag_keys-diag_keys)}, "
+                         f"extra={len(diag_keys-expected_diag_keys)}")
+
+    first_call = (1, PRESELECT["lat"], 1, 0, 0)
     first = {key: values for key, values in pb.items()
-             if key[0] == 1 and key[1] == PRESELECT["lat"] and key[2] == 1}
+             if key[:5] == first_call}
     expected = {
         (1, PRESELECT["lat"], 1, 0, 0, PRESELECT["active_i"], k)
         for k in LEVELS
@@ -201,6 +254,32 @@ def validate_events(records: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
+def validate_capture_payload(manifest: dict[str, Any], lines: Iterable[str]) -> None:
+    """Pin the exact event census so deleting paired/conditional rows fails closed."""
+    variant = manifest.get("source", {}).get("variant")
+    if variant not in CAPTURE_GOLDENS:
+        raise ValueError("capture payload has no source-pinned golden")
+    golden = CAPTURE_GOLDENS[variant]
+    normalized = [line.rstrip("\r\n") for line in lines]
+    payload = ("\n".join(normalized) + "\n").encode("utf-8")
+    capture = manifest.get("capture", {})
+    if (capture.get("event_payload_sha256") != golden["sha256"]
+            or capture.get("event_record_count") != golden["record_count"]
+            or capture.get("event_record_counts") != golden["record_counts"]):
+        raise ValueError("manifest capture census differs from the code-pinned golden")
+    if hashlib.sha256(payload).hexdigest() != golden["sha256"]:
+        raise ValueError("capture event payload SHA-256 differs from the code-pinned golden")
+    records = parse_event_lines(normalized)
+    counts: dict[str, int] = {}
+    for record in records:
+        counts[record["tag"]] = counts.get(record["tag"], 0) + 1
+    expected_counts = capture.get("event_record_counts")
+    if counts != expected_counts:
+        raise ValueError("capture event record counts differ from the code-pinned golden")
+    if len(records) != golden["record_count"]:
+        raise ValueError("capture event record total differs from the code-pinned golden")
+
+
 def validate_manifest(manifest: dict[str, Any]) -> None:
     if manifest.get("schema") != "progb-validity-run-v1":
         raise ValueError("manifest schema must be progb-validity-run-v1")
@@ -214,6 +293,12 @@ def validate_manifest(manifest: dict[str, Any]) -> None:
         raise ValueError("unsupported Fortran variant")
     if source.get("canonical_source_sha256") != SOURCE_SHA256[variant]:
         raise ValueError("capture source is not the current canonical private source")
+    capture = manifest.get("capture", {})
+    golden = CAPTURE_GOLDENS[variant]
+    if (capture.get("event_payload_sha256") != golden["sha256"]
+            or capture.get("event_record_count") != golden["record_count"]
+            or capture.get("event_record_counts") != golden["record_counts"]):
+        raise ValueError("manifest capture census differs from the code-pinned golden")
     run = manifest.get("run", {})
     expected_scheme = 37 if variant == "mp37" else 237
     if (run.get("mp_physics") != expected_scheme or run.get("dt_s") != 20
@@ -252,9 +337,16 @@ def validate_manifest(manifest: dict[str, Any]) -> None:
 
 def replay(manifest: dict[str, Any], lines: Iterable[str]) -> dict[str, Any]:
     validate_manifest(manifest)
-    result = validate_events(parse_event_lines(lines))
+    event_lines = list(lines)
+    validate_capture_payload(manifest, event_lines)
+    result = validate_events(parse_event_lines(event_lines))
     result["source"] = manifest["source"]
     result["noninterference"] = manifest["noninterference"]
+    result["capture_payload"] = {
+        "event_payload_sha256": manifest["capture"]["event_payload_sha256"],
+        "event_record_count": manifest["capture"]["event_record_count"],
+        "event_record_counts": manifest["capture"]["event_record_counts"],
+    }
     result["execution_status"] = "completed"
     result["physical_validity_policy"] = "OPEN"
     return result

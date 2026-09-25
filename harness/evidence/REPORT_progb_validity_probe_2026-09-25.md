@@ -20,6 +20,8 @@ The call-time validity bits show why that distinction matters. On the first site
 
 The active input sample has zero input `QIB`; this exercises a branch, not an admissible physical moment pair or a density-value validation. The trace scanner also found positive-qg, below-threshold call-time cells with the producer gate inactive: 763 paired trace producer/consumer records for mp37 and 771 for mp237 across the bounded step.
 
+The event stream contains `S10CMG`, `S10PB`, `S10SLP`, `S10RHO`, `S10DIAG`, `S10SCAN`, `S10TRACE`, and `S10TRS` rows. The replayer requires an exact code-fixed eight-call-context × two-column × 39-level producer/cmg/slope key set, all 78 final-diagnostic cells, and the complete site-1 latitude census. Each variant manifest pins the event SHA-256, total rows, and per-tag counts, while the replay module independently hard-codes the matching SHA/count goldens. Thus a removed or relocated `S10RHO` row still fails when the manifest hash and counts are rewritten. Regression tests also remove a later site-2 paired producer/consumer key. Event fields contain only integer indices and validity/reach flags, never OUT values.
+
 ## Instrumentation and build
 
 `make_progb_validity_capture.py` created separate macro-guarded shadow sources for mp37 and mp237. It pinned each current private-source hash and verified byte-exact recovery after stripping capture blocks. The logger is compiled under `KDM6_PROGB_VALIDITY_CAPTURE`; a single executable per variant ran both arms, with `KDM6_PROGB_VALIDITY_CAPTURE_LOG` unset for control and `1` for capture. Events contain integer flags and indices only, never a `ProgB_param` OUT value.
@@ -30,7 +32,7 @@ The Fortran source followed WRF's explicit preprocessing sequence: comment strip
 
 Each variant used the retained real-data LC05 input, boundary, and chain files; `dt=20 s`; one MPI rank, one model thread, and actual `1x1` process grid; and `history_interval=0`, `history_interval_s=20`. Both arms saved exactly `2025-07-19_00:00:00` and `2025-07-19_00:00:20`. All four runner receipts have exit code 0 and `experiment_valid=true`.
 
-For each variant, the control and capture used the same executable SHA, input identity, and namelist SHA. Their 606 MB history files also have identical SHA-256. `strict_bitwise_nc.py` reports **253/253 numeric fields raw-bit equal plus exact `Times` equality** (254 common variables total) for each logging-off/on pair. The capture contains 5,662 records for mp37 and 5,678 for mp237. The replayer validates selected columns, all 39 levels, paired producer/cmg/slope rows, the complete site-1 latitude trace-scan census, and every trace producer/consumer pair without inspecting undefined output values.
+For each variant, the control and capture used the same executable SHA, input identity, and namelist SHA. Their 606 MB history files also have identical SHA-256. `strict_bitwise_nc.py` reports **253/253 numeric fields raw-bit equal plus exact `Times` equality** (254 common variables total) for each logging-off/on pair. The capture has 5,662 records for mp37 and 5,678 for mp237. Both variants have 624 rows each for `S10PB`, `S10CMG`, and `S10SLP`, 212 `S10RHO` rows, 78 `S10DIAG` rows, and 1,974 `S10SCAN` rows; mp37 has 763 paired trace rows and mp237 has 771. The event-payload SHA-256 values are `63319cb1…878fd684` and `dc3d122f…eea922e0`, respectively.
 
 ## Excluded setup attempts and limitations
 
@@ -45,4 +47,4 @@ The output-meaning policy for inactive and trace graupel remains open. This one-
 - [prepared manifest template](progb_validity_manifest_template_2026-09-25.json)
 - [source overlay builder](../make_progb_validity_capture.py), [record replayer](../replay_progb_validity.py)
 
-The focused generator/replayer suite passes 7 tests. The completed replay results deliberately keep `undefined_output_physical_impact` as `NOT_MEASURED` and `physical_validity_policy` as `OPEN`.
+The focused generator/replayer suite passes 10 tests. The completed replay results deliberately keep `undefined_output_physical_impact` as `NOT_MEASURED` and `physical_validity_policy` as `OPEN`. Graphify refreshed the structural graph and linked the replayer to its deletion-regression tests; LLM semantic extraction was unavailable because no Graphify semantic API credential is configured, so the report’s scientific interpretation is manually authored from the retained source and native receipts.

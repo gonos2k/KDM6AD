@@ -28,7 +28,19 @@
     "strip_exact_required": true,
     "capture_fields": "branch and assignment bits only; no OUT values",
     "runtime_output": "selected-column S10 event flags on stdout",
-    "compile_or_native_run_done": true
+    "compile_or_native_run_done": true,
+    "event_payload_sha256": "63319cb120a1f16d46b5be1a56b800a7d0289ef67a9b2627284947b0878fd684",
+    "event_record_count": 5662,
+    "event_record_counts": {
+      "S10SCAN": 1974,
+      "S10TRACE": 763,
+      "S10TRS": 763,
+      "S10CMG": 624,
+      "S10PB": 624,
+      "S10SLP": 624,
+      "S10RHO": 212,
+      "S10DIAG": 78
+    }
   },
   "input": {
     "role": "preselection only; no output inspected",
