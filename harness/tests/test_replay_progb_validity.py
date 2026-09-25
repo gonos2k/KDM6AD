@@ -94,7 +94,8 @@ def test_prepared_manifest_cannot_be_replayed_as_native_evidence():
         })
 
 
-def test_complete_later_call_producer_consumer_universe_is_required():
+@pytest.mark.parametrize("variant", ("mp37", "mp237"))
+def test_complete_later_call_producer_consumer_universe_is_required(variant):
     lines = _native_shape_event_lines()
     removed_key = (1, 73, 2, 1, 2, 113, 1)
     kept = [line for line in lines if not (
@@ -104,7 +105,7 @@ def test_complete_later_call_producer_consumer_universe_is_required():
     with pytest.raises(ValueError, match="producer/consumer universe mismatch"):
         validate_events(parse_event_lines(kept))
 
-    manifest, native_lines = _mp37_evidence()
+    manifest, native_lines = _native_evidence(variant)
     reduced = [line for line in native_lines if not (
         line.split()[0] in {"S10PB", "S10CMG", "S10SLP"}
         and tuple(map(int, line.split()[1:8])) == removed_key
@@ -114,8 +115,9 @@ def test_complete_later_call_producer_consumer_universe_is_required():
         replay(manifest, reduced)
 
 
-def test_capture_payload_anchor_rejects_deleted_conditional_rhox_row():
-    manifest, lines = _mp37_evidence()
+@pytest.mark.parametrize("variant", ("mp37", "mp237"))
+def test_capture_payload_anchor_rejects_deleted_conditional_rhox_row(variant):
+    manifest, lines = _native_evidence(variant)
     validate_capture_payload(manifest, lines)
     reduced = lines.copy()
     row = next(line for line in reduced if line.startswith("S10RHO "))
@@ -125,8 +127,9 @@ def test_capture_payload_anchor_rejects_deleted_conditional_rhox_row():
         replay(manifest, reduced)
 
 
-def test_capture_payload_anchor_rejects_relocated_rhox_row_with_same_count():
-    manifest, lines = _mp37_evidence()
+@pytest.mark.parametrize("variant", ("mp37", "mp237"))
+def test_capture_payload_anchor_rejects_relocated_rhox_row_with_same_count(variant):
+    manifest, lines = _native_evidence(variant)
     index = next(i for i, line in enumerate(lines) if line.startswith("S10RHO "))
     lines[index] = "S10RHO 1 73 99 9 77 199 38 3027 0 1"
     _shrink_manifest_capture_census(manifest, lines)
@@ -134,11 +137,11 @@ def test_capture_payload_anchor_rejects_relocated_rhox_row_with_same_count():
         replay(manifest, lines)
 
 
-def _mp37_evidence():
+def _native_evidence(variant):
     evidence = Path(__file__).resolve().parents[1] / "evidence"
     manifest = json.loads(
-        (evidence / "native_progb_validity_mp37_2026-09-25.json").read_text())
-    lines = (evidence / "progb_validity_events_mp37_2026-09-25.txt").read_text().splitlines()
+        (evidence / f"native_progb_validity_{variant}_2026-09-25.json").read_text())
+    lines = (evidence / f"progb_validity_events_{variant}_2026-09-25.txt").read_text().splitlines()
     return manifest, lines
 
 
