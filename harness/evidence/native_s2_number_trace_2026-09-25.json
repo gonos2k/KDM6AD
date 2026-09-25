@@ -2226,34 +2226,40 @@
     "common_numeric_fields_raw_bit_equal": true,
     "frames": [
       {
-        "bitwise_match": 254,
-        "common_numeric": 254,
+        "bitwise_match": 253,
+        "common_numeric": 253,
         "different": 0,
         "frame": 0,
         "result": "STRICT BITWISE PASS",
         "returncode": 0,
         "time_seconds": 0,
-        "unsupported_or_skipped": 0
+        "unsupported_or_skipped": 0,
+        "common_variables": 254,
+        "times_exact": true
       },
       {
-        "bitwise_match": 254,
-        "common_numeric": 254,
+        "bitwise_match": 253,
+        "common_numeric": 253,
         "different": 0,
         "frame": 1,
         "result": "STRICT BITWISE PASS",
         "returncode": 0,
         "time_seconds": 20,
-        "unsupported_or_skipped": 0
+        "unsupported_or_skipped": 0,
+        "common_variables": 254,
+        "times_exact": true
       },
       {
-        "bitwise_match": 254,
-        "common_numeric": 254,
+        "bitwise_match": 253,
+        "common_numeric": 253,
         "different": 0,
         "frame": 2,
         "result": "STRICT BITWISE PASS",
         "returncode": 0,
         "time_seconds": 40,
-        "unsupported_or_skipped": 0
+        "unsupported_or_skipped": 0,
+        "common_variables": 254,
+        "times_exact": true
       }
     ],
     "run_seconds": 40
@@ -4149,7 +4155,7 @@
     "instrumenter_path": "/Users/yhlee/KDM6AD-s2-number-basis/harness/instrument_s2_native_number.py",
     "instrumenter_sha256": "fe55ad3df507a5bb6e6415de6b35422445ce4e07fed669d89cf2a44df3650347",
     "replayer_path": "harness/replay_s2_number_trace.py",
-    "replayer_sha256": "bab47fd1eb46c1fcc687b08331f51e0dc7988250f8d97e1312f6c411436ab4f6",
+    "replayer_sha256": "5b9104ed036cd396be8503195722a1aadee3e8323c49c6608b32b97963763f88",
     "source_order_summary": "Fortran kdm6 copies NR to NRS and back, derives rain lambda using PIDNR*NRS/(DEN*QRS), forms rain-number sources including snow/graupel melting and applies NRMIN floors; number sedimentation uses falkn without DEND while mass falk includes DEND.",
     "units_observed_from_registry": "QNRAIN # kg(-1), with no host boundary density conversion"
   },
@@ -4168,14 +4174,14 @@
     "focused_pytest": {
       "command": "python3 -m pytest -q harness/tests/test_replay_s2_number_trace.py",
       "failed": 0,
-      "passed": 5
+      "passed": 13
     },
     "graphify": {
       "communities": 1033,
       "graph_edges": 22526,
       "graph_nodes": 13143,
       "html_viz": "skipped: graph exceeds 5000-node limit",
-      "semantic_document_refresh": "incomplete; public main omits the private host source and this worktree did not run the skill\u2019s semantic subagent extraction",
+      "semantic_document_refresh": "incomplete; public main omits the private host source and this worktree did not run the skill’s semantic subagent extraction",
       "structural_update": "complete"
     },
     "replayer": {
@@ -4183,19 +4189,19 @@
       "path": "harness/replay_s2_number_trace.py",
       "result_path": "harness/evidence/native_s2_number_replay_2026-09-25.json",
       "result_sha256": "16d6be813108a2d9407d9c005bec703f8093d3216ef7f7e593a958ee4e09d5c2",
-      "sha256": "bab47fd1eb46c1fcc687b08331f51e0dc7988250f8d97e1312f6c411436ab4f6",
+      "sha256": "5b9104ed036cd396be8503195722a1aadee3e8323c49c6608b32b97963763f88",
       "status": "pass"
     },
     "strict_bitwise": {
       "bitwise_match": [
-        254,
-        254,
-        254
+        253,
+        253,
+        253
       ],
       "common_numeric": [
-        254,
-        254,
-        254
+        253,
+        253,
+        253
       ],
       "different": [
         0,
@@ -4217,6 +4223,16 @@
         0,
         0,
         0
+      ],
+      "common_variables": [
+        254,
+        254,
+        254
+      ],
+      "times_exact": [
+        true,
+        true,
+        true
       ]
     }
   }

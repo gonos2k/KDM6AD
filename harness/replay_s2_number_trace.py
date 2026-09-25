@@ -12,7 +12,7 @@ import hashlib
 import json
 import math
 import struct
-from collections import Counter, defaultdict
+from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +22,61 @@ SOURCE_SCHEMA = "s2-mp37-number-capture-source-v1"
 CELL = {"host_j": 153, "host_i": 144}
 SOURCE_SHA256 = "fc0a72d33a5e61803fea56eb9118018039c6da8b5775813032b4861a2bd66eb5"
 INPUT_SHA256 = "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970"
+EXPECTED_CAPTURE_RECORDS = 1257
+EXPECTED_STEPS = (1, 2)
+EXPECTED_TRANSPORT_STEPS = (1, 2)
+EXPECTED_INTERNAL_FACE_LEVELS = tuple(range(1, 39))
+EXPECTED_TOP_LEVEL = 39
+EXPECTED_SOURCE_EVENT_LEVELS = {
+    "NR_SNOW_MELT_PRE": {1: (13, 14, 15), 2: (14, 15)},
+    "NR_SNOW_MELT_POST": {1: (13, 14, 15), 2: (14, 15)},
+    "NR_GRAUPEL_MELT_PRE": {2: (15,)},
+    "NR_GRAUPEL_MELT_POST": {2: (15,)},
+    "NR_FREEZE_PRE": {2: (16,)},
+    "NR_FREEZE_POST": {2: (16,)},
+}
+FULL_LEVELS = tuple(range(1, 40))
+WARM_LEVELS = tuple(range(16, 40))
+COLD_LEVELS = tuple(range(1, 16))
+EXPECTED_EVENT_CENSUS = {
+    # tag: (outer loop, substep, {step: expected levels}); pinned from the
+    # retained input's two-call instrumentation schedule, independently of the
+    # values subsequently replayed from the capture.
+    "DSD_FINAL_GATE": (1, 0, {1: FULL_LEVELS, 2: FULL_LEVELS}),
+    "DSD_FINAL_POST": (1, 0, {1: (1, 2, 3, 5, 12, 13, 15),
+                              2: (1, 2, 3, 4, 5, 11, 12, 13, 14, 15)}),
+    "DSD_FINAL_RAW": (1, 0, {1: (13, 14, 15), 2: (12, 13, 14, 15, 16)}),
+    "DSD_POSTFREEZE_GATE": (1, 0, {1: FULL_LEVELS, 2: FULL_LEVELS}),
+    "DSD_POSTFREEZE_POST": (1, 0, {2: tuple(range(1, 17))}),
+    "DSD_POSTFREEZE_RAW": (1, 0, {1: (13, 14, 15), 2: (12, 13, 14, 15, 16)}),
+    "DSD_PRE_GATE": (1, 0, {1: FULL_LEVELS, 2: FULL_LEVELS}),
+    "DSD_PRE_POST": (1, 0, {2: tuple(range(1, 17))}),
+    "DSD_PRE_RAW": (1, 0, {1: (13, 14, 15), 2: (12, 13, 14, 15, 16)}),
+    "HOST_ENTRY": (0, 0, {1: FULL_LEVELS, 2: FULL_LEVELS}),
+    "HOST_RETURN": (0, 0, {1: FULL_LEVELS, 2: FULL_LEVELS}),
+    "KERNEL_ENTRY": (0, 0, {1: FULL_LEVELS, 2: FULL_LEVELS}),
+    "KERNEL_RETURN": (0, 0, {1: FULL_LEVELS, 2: FULL_LEVELS}),
+    "NRAUT_GATE": (1, 0, {1: FULL_LEVELS, 2: FULL_LEVELS}),
+    "NR_FACE_POST": (1, 1, {1: tuple(range(1, 39)), 2: tuple(range(1, 39))}),
+    "NR_FACE_PRE": (1, 1, {1: tuple(range(1, 39)), 2: tuple(range(1, 39))}),
+    "NR_FREEZE_POST": (1, 0, {2: (16,)}),
+    "NR_FREEZE_PRE": (1, 0, {2: (16,)}),
+    "NR_GRAUPEL_MELT_POST": (1, 0, {2: (15,)}),
+    "NR_GRAUPEL_MELT_PRE": (1, 0, {2: (15,)}),
+    "NR_LIMIT_COLD_POST": (1, 0, {1: COLD_LEVELS, 2: COLD_LEVELS}),
+    "NR_LIMIT_COLD_PRE": (1, 0, {1: COLD_LEVELS, 2: COLD_LEVELS}),
+    "NR_LIMIT_POST": (1, 0, {1: WARM_LEVELS, 2: WARM_LEVELS}),
+    "NR_LIMIT_PRE": (1, 0, {1: WARM_LEVELS, 2: WARM_LEVELS}),
+    "NR_MAX_GATE": (1, 0, {1: FULL_LEVELS, 2: FULL_LEVELS}),
+    "NR_SNOW_MELT_POST": (1, 0, {1: (13, 14, 15), 2: (14, 15)}),
+    "NR_SNOW_MELT_PRE": (1, 0, {1: (13, 14, 15), 2: (14, 15)}),
+    "NR_TOP_POST": (1, 1, {1: (39,), 2: (39,)}),
+    "NR_TOP_PRE": (1, 1, {1: (39,), 2: (39,)}),
+    "NR_UPDATE_COLD_POST": (1, 0, {1: COLD_LEVELS, 2: COLD_LEVELS}),
+    "NR_UPDATE_COLD_PRE": (1, 0, {1: COLD_LEVELS, 2: COLD_LEVELS}),
+    "NR_UPDATE_WARM_POST": (1, 0, {1: WARM_LEVELS, 2: WARM_LEVELS}),
+    "NR_UPDATE_WARM_PRE": (1, 0, {1: WARM_LEVELS, 2: WARM_LEVELS}),
+}
 
 
 class TraceError(ValueError):
@@ -86,7 +141,7 @@ def parse_capture(text: str, tags: dict[str, dict[str, list[str]]]) -> list[dict
             raise TraceError(f"bad coordinates at S2 line {line_number}") from exc
         if (host_j, host_i) != (CELL["host_j"], CELL["host_i"]):
             raise TraceError(f"event escaped the fixed cell at line {line_number}")
-        if step < 1 or level < 1 or outer_loop < 0 or substep < 0:
+        if step not in EXPECTED_STEPS or level < 1 or outer_loop < 0 or substep < 0:
             raise TraceError(f"invalid step/loop/level at S2 line {line_number}")
         flags = list(schema.get("flags", []))
         real32 = list(schema.get("real32", []))
@@ -169,6 +224,26 @@ def _by_tag(rows: list[dict[str, Any]], tag: str) -> dict[tuple[int, int], dict[
             raise TraceError(f"multiple {tag} records at step/level {key}; narrow key lost loop")
         out[key] = row
     return out
+
+
+def _verify_event_census(rows: list[dict[str, Any]]) -> None:
+    """Require the code-pinned tag/step/level universe for this capture."""
+    actual_tags = {row["tag"] for row in rows}
+    expected_tags = set(EXPECTED_EVENT_CENSUS)
+    if actual_tags != expected_tags:
+        raise TraceError(
+            f"capture tag census differs; missing={sorted(expected_tags - actual_tags)}, "
+            f"extra={sorted(actual_tags - expected_tags)}")
+    for tag, (outer, substep, schedule) in EXPECTED_EVENT_CENSUS.items():
+        expected = {
+            (step, CELL["host_j"], CELL["host_i"], outer, substep, level)
+            for step, levels in schedule.items() for level in levels
+        }
+        actual = {row["key"][1:] for row in rows if row["tag"] == tag}
+        if actual != expected:
+            raise TraceError(
+                f"{tag} event-key census differs; missing={sorted(expected - actual)}, "
+                f"extra={sorted(actual - expected)}")
 
 
 def _verify_copy_pair(rows: list[dict[str, Any]], left: str, right: str,
@@ -370,6 +445,15 @@ def _verify_dsd_gates(rows: list[dict[str, Any]]) -> dict[str, int]:
         selected = [row for row in rows if row["tag"] == tag]
         if not selected:
             raise TraceError(f"missing executed DSD gate: {tag}")
+        expected_keys = {
+            (step, CELL["host_j"], CELL["host_i"], 1, 0, level)
+            for step in EXPECTED_STEPS for level in range(1, 40)
+        }
+        actual_keys = {row["key"][1:] for row in selected}
+        if actual_keys != expected_keys:
+            raise TraceError(
+                f"{tag} event-key census differs; missing={sorted(expected_keys - actual_keys)}, "
+                f"extra={sorted(actual_keys - expected_keys)}")
         for row in selected:
             v = row["f32"]
             expected = (v["qrs(i,k,1)"] >= v["qcrmin"]
@@ -381,6 +465,16 @@ def _verify_dsd_gates(rows: list[dict[str, Any]]) -> dict[str, int]:
 
 
 def _verify_rain_number_sources(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    for tag, steps in EXPECTED_SOURCE_EVENT_LEVELS.items():
+        expected = {
+            (step, CELL["host_j"], CELL["host_i"], 1, 0, level)
+            for step, levels in steps.items() for level in levels
+        }
+        actual = {row["key"][1:] for row in rows if row["tag"] == tag}
+        if actual != expected:
+            raise TraceError(
+                f"{tag} event-key census differs; missing={sorted(expected - actual)}, "
+                f"extra={sorted(actual - expected)}")
     positive: dict[str, list[dict[str, Any]]] = {"snow_melt": [], "graupel_melt": [],
                                                 "rain_freeze_sink": []}
     pairs = (
@@ -458,6 +552,9 @@ def _conditional_threshold_maps(rows: list[dict[str, Any]]) -> list[dict[str, An
         if not (dsd and maximum and autoconv):
             raise TraceError(f"predeclared K13 threshold records are incomplete at {key}")
         dv, mv, av = dsd["f32"], maximum["f32"], autoconv["f32"]
+        expected_nrmax_gate = mv["nrs(i,k,1)"] > mv["nrmax"]
+        if bool(maximum["flags"]["nrs(i,k,1).gt.nrmax"]) != expected_nrmax_gate:
+            raise TraceError(f"K13 nrmax threshold branch differs at {key}")
         item = {"step": step, "level": 13,
                 "rho_m_at_host_entry": h["den(i,k,j)"],
                 "qv_at_host_entry": h["q(i,k,j)"],
@@ -568,6 +665,28 @@ def _verify_transport(rows: list[dict[str, Any]]) -> dict[str, Any]:
     top_post = {row["key"][1:]: row for row in rows if row["tag"] == "NR_TOP_POST"}
     face_pre = {row["key"][1:]: row for row in rows if row["tag"] == "NR_FACE_PRE"}
     face_post = {row["key"][1:]: row for row in rows if row["tag"] == "NR_FACE_POST"}
+    expected_faces = {
+        (step, CELL["host_j"], CELL["host_i"], 1, 1, level)
+        for step in EXPECTED_TRANSPORT_STEPS
+        for level in EXPECTED_INTERNAL_FACE_LEVELS
+    }
+    expected_top = {
+        (step, CELL["host_j"], CELL["host_i"], 1, 1, EXPECTED_TOP_LEVEL)
+        for step in EXPECTED_TRANSPORT_STEPS
+    }
+    for tag, actual, expected in (
+            ("NR_FACE_PRE", face_pre, expected_faces),
+            ("NR_FACE_POST", face_post,
+             {(step, j, i, loop, sub, level)
+              for step, j, i, loop, sub, level in expected_faces}),
+            ("NR_TOP_PRE", top_pre, expected_top),
+            ("NR_TOP_POST", top_post,
+             {(step, j, i, loop, sub, level)
+              for step, j, i, loop, sub, level in expected_top})):
+        if set(actual) != expected:
+            missing = sorted(expected - set(actual))
+            extra = sorted(set(actual) - expected)
+            raise TraceError(f"{tag} event-key census differs; missing={missing}, extra={extra}")
     if not top_pre or set(top_pre) != set(top_post) or set(face_pre) != set(face_post):
         raise TraceError("rain sedimentation PRE/POST event sets are empty or unpaired")
     nonzero_out: list[tuple[int, int, float]] = []
@@ -590,7 +709,6 @@ def _verify_transport(rows: list[dict[str, Any]]) -> dict[str, Any]:
         for name, expected in (("dnr(i,k)", expect_out), ("dnr(i,k+1)", expect_in)):
             if struct.pack(">f", f32(expected)).hex().upper() != p["f32_bits"][name]:
                 raise TraceError(f"rain applied number cap {name} differs at {key}")
-        qf = q["f32"]
         expected_state = max(f32_add(f32_sub(f["nrs(i,k,1)"], expect_out), expect_in), 0.0)
         expected_qr_out = min(f32_div(f32_mul(f["falk(i,k,1)"], f["dtcld"]),
                                        f["dend(i,k)"]), f["qrs(i,k,1)"])
@@ -763,18 +881,29 @@ def replay(document: dict[str, Any], capture_text: str) -> dict[str, Any]:
     if [row.get("frame") for row in frames] != [0, 1, 2]:
         raise TraceError("noninterference evidence must cover the saved 0/20/40 s frames")
     for row in frames:
-        if (row.get("returncode") != 0 or row.get("common_numeric") != 254
-                or row.get("bitwise_match") != 254 or row.get("different") != 0
+        if (row.get("returncode") != 0 or row.get("common_numeric") != 253
+                or row.get("bitwise_match") != 253
+                or row.get("common_numeric") != 253
+                or row.get("common_variables") != 254
+                or row.get("times_exact") is not True
+                or row.get("different") != 0
                 or row.get("unsupported_or_skipped") != 0
                 or row.get("result") != "STRICT BITWISE PASS"):
             raise TraceError(f"noninterference frame record failed: {row}")
     capture_hash = hashlib.sha256(capture_text.encode()).hexdigest()
     if document.get("capture_sha256") != capture_hash:
         raise TraceError("capture payload SHA256 does not match the evidence manifest")
+    observed_records = sum(line.startswith("S2NR ") for line in capture_text.splitlines())
+    if (document.get("capture_payload_lines") != EXPECTED_CAPTURE_RECORDS
+            or observed_records != EXPECTED_CAPTURE_RECORDS):
+        raise TraceError(
+            f"capture record census differs from pinned {EXPECTED_CAPTURE_RECORDS}: "
+            f"manifest={document.get('capture_payload_lines')}, observed={observed_records}")
     schema = document.get("capture_source", {})
     if schema.get("schema") != SOURCE_SCHEMA or schema.get("stripped_exact") is not True:
         raise TraceError("instrumented source lacks its exact-stripping source proof")
     rows = parse_capture(capture_text, schema.get("tags", {}))
+    _verify_event_census(rows)
     boundary = _verify_boundary_chain(rows)
     history_return_checks = _verify_history_returns(
         rows, document.get("history_return", []))

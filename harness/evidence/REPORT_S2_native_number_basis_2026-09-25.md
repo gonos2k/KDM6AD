@@ -32,6 +32,10 @@ the canonical file byte for byte. Its SHA-256 is
 link, executable and input identities are recorded in
 `native_s2_number_trace_2026-09-25.json`. The canonical private source, installed
 executable and `libwrflib.a` stayed unchanged.
+The replay independently checks the pinned canonical source and `wrfinput`
+hashes, capture hash and event-key universe. The executable, boundary/chain
+input and history-file identities are preserved as run-receipt evidence; the
+arithmetic replayer does not reopen or independently authenticate those files.
 
 ## Executed QNR path
 
@@ -105,13 +109,17 @@ and WDM6 inheritance in `FINDING_number_basis_is_inherited_from_wdm6_v1.md`.
 
 ## Verification and scope
 
-The selected-column capture contains 1,257 typed REAL(4)/REAL(8) event records.
-The replayer checks host/local entry and return copies, actual DSD gates,
-source-ordered melt/autoconversion thresholds and number updates, each applied
-mass/number face cap, and conditional column ledgers. Five focused replay tests
-pass. The complete 910 MB control/capture history files have the same SHA-256;
-`strict_bitwise_nc.py` reports 254/254 common numeric fields raw-bit identical
-at 0, 20 and 40 s.
+The selected-column capture contains exactly 1,257 typed REAL(4)/REAL(8) event
+records. The replay pins that census in code and requires the expected 38
+internal face keys at levels 1–38 and top-cell key at level 39 for each of the
+two calls; deleting a face or source event cannot silently shorten the column
+or source census. It checks host/local entry and return copies, actual DSD
+gates, source-ordered melt/autoconversion thresholds and number updates, each
+applied mass/number face cap, and conditional column ledgers. Thirteen focused
+replay tests pass. The complete 910 MB control/capture history files have the
+same SHA-256; `strict_bitwise_nc.py` reports 253/253 common numeric fields
+raw-bit identical, plus exact equality for the `Times` character variable (254
+common variables in total) at 0, 20 and 40 s.
 After the history-file SHA equality and all three frame comparisons were
 recorded, the two 910 MB history copies were removed from the ignored scratch
 tree; run receipts, hashes, rank logs, selected capture and replay remain.
@@ -127,8 +135,11 @@ in the evidence manifest.
 This is one rain-number trace in one column of one retained forecast. It does
 not settle the physical number basis or threshold policy, the inter-call
 dynamics number budget, other number species, `mstep>1`, the mp137 ABI, forecast
-impact, or radiation/observation acceptance. `graphify update .` rebuilt the
-structural public graph (13,143 nodes, 22,526 edges and 1,033 communities;
+impact, or radiation/observation acceptance. The capture has no independent
+temperature operand at the warm/cold cap and update sites; the replay pins their
+observed per-step level sets and cross-stage keys, but does not independently
+reconstruct thermodynamic branch selection. `graphify update .` rebuilt the
+structural public graph (13,154 nodes, 22,557 edges and 1,025 communities;
 HTML visualization was skipped because the graph exceeds the 5,000-node
 limit). A follow-up query links the new replayer to its tests and local
 helpers, but the public worktree excludes the private host, so it cannot expose
