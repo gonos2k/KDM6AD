@@ -35,6 +35,9 @@ rsl.out.*
 rsl.error.*
 fort.*
 *.bin
+# Public S8 framing test data is synthetic and zero-filled; private captures
+# remain ignored in graphify-out/.
+!harness/tests/fixtures/s8_synthetic_v2_capture.bin
 
 # Personal / large docs excluded from the public repo
 docs/2002224004(졸업논문).hwp

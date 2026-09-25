@@ -1,0 +1,88 @@
+{
+  "abi_call": {
+    "abi_version": 2,
+    "copyback_matches_capture": true,
+    "count": 1,
+    "dimensions_im_kme_jme": [
+      232,
+      39,
+      139
+    ],
+    "dt_seconds": 20.0,
+    "field_counts": {
+      "c_return_f32": 16,
+      "host_copyback_f32": 13,
+      "input_f32": 17
+    },
+    "handle_before_after": [
+      0,
+      0
+    ],
+    "input_field_sha256": {
+      "bg": "e72b57ccb8608ee01ef11d9b8ed46c7b19f2c97805b3d00fab67bdc3823a19d8",
+      "delz": "94070a34eacfa64e68f7c23b71df29a40330c26e4d6a7848d1751e8f8bcc2ef6",
+      "nc": "e72b57ccb8608ee01ef11d9b8ed46c7b19f2c97805b3d00fab67bdc3823a19d8",
+      "nccn": "c31ec663c5dbe047b33ed794b55ef2b8d76a979c55adcf7c28c6e5b2b0af5f8b",
+      "ni": "e72b57ccb8608ee01ef11d9b8ed46c7b19f2c97805b3d00fab67bdc3823a19d8",
+      "nr": "e72b57ccb8608ee01ef11d9b8ed46c7b19f2c97805b3d00fab67bdc3823a19d8",
+      "p": "6cf22eb66f08ee91c41ca1dc7913cb16420d44220876a2be585471c4c081ceab",
+      "pii": "1ae8e6e57481f52c57687a605b4dc0c1691b04eefbe0be1b44f0a033ace3047a",
+      "qc": "e292c10b16899f2b1c8a19905b3a152c57302c8aa6e9a190d4e09e2c8a56aa0a",
+      "qg": "03966a641d8b197da752396b2a3697c31a3255df23083b2970d8413128e74fec",
+      "qi": "8b37d5d0ba3459a6266acb8b4bf31f691137f3b1098567f119c754541aae0d58",
+      "qr": "e76f6e75f14be3f2bf1d67db3c4cdbb3588888393da74ba75c0bd0a757446ef1",
+      "qs": "3198218b3f2e4753df512790749ab6a66fc528539c193c01fd7072b5c261a136",
+      "qv": "4796558e3d08ce6e9dc9840c7cdf4b1dfabd5085abbe319085106467cab43621",
+      "rho": "dbfeefba386ab641d5159640da8be88d455b83156d06b435f616997283fa9fc6",
+      "th": "f020f7602f8de65a5bc3392ba9c45c6f2dde0a29bca7096ec18437de9eb36e85",
+      "xland": "ff68ffa4af79dd578b118f90b6fa0bae9cae935f9e49a61f5265e03ed4921e71"
+    },
+    "physics_variant": 1,
+    "rc": 0,
+    "replay_matches_capture": true,
+    "return_field_sha256": {
+      "bg": "3a83178ae00908fa1c34cf65acabf2e837515b7e3cd5136694b92ff34f557c09",
+      "graupel_increment": "7b9f2ff212d51c537cd3a1ce823be9e7d91056fdef14c07258828ceaca817f34",
+      "nc": "cb8db0dc1ac629a1bc2172461f2399a52abebd6dc51218d8350b3bd156f0c100",
+      "nccn": "f38e03e065b88b98edf59a031ee21a4b9f0128112338bf4fac4db1589172a2c7",
+      "ni": "fb62c18f6674cfa8300ac40e66b0a10dd131abf530619deb06a68c292c913728",
+      "nr": "b60cf489ad7d81f430a83145bece8f6a78b969a95c0b6d69e8bc6891fc2a464d",
+      "qc": "2b0361a68f770d2529be360974f47108d05d5421f3b4b1cb3217db2fc7651f4e",
+      "qg": "102678cf3b20dc61b432458f6ba3a2b0fd3cc061b7c341210a3f1b5d19e785e9",
+      "qi": "75e9c213e8516b544889700e766f113cf9517393aae660c6e59c656ac87f9f36",
+      "qr": "54d471ccd5b5c520e109d2ca1fce0f48221646f407ab0514df26e4f3b6cacdf6",
+      "qs": "a2918daca9a987c2c7069d0c201c9907b3515b824145d4f59a4949e8a3ec5dae",
+      "qv": "433c3bb21d52584201df0c9b8505562d19212af18d6c0efd996c410c7b497773",
+      "rain_increment": "1b2bacd3e08bfa2c7fbe3d596990bfacc2922d846e66f268a99681047e39a2ab",
+      "rhog": "20561bf2acd0042f516c9d1333139531e30b2196007f7c2b0ad394ad43da2465",
+      "snow_increment": "290e6d5a8983a1a1b2fa74e1b50b59f658d86cfdfff832c5bb0b97a42ad4c42c",
+      "th": "e787283b0a88698631d05836f24cead15bd7a13256a5574c7268651eb393fc36"
+    },
+    "struct_size": 336,
+    "value_only": 1
+  },
+  "capture": {
+    "gzip_scratch_bytes": 59248645,
+    "gzip_scratch_sha256": "30b8be6e4d1e19d3517ec05cd5984e81b6b0d65e956bd7192f098cf6bedbccdb",
+    "raw_bytes": 211804960,
+    "raw_sha256": "ac543e94c6c9b9e5b3a099f6854c487a300dc3d6e568c3b5948599454d7801a6",
+    "scratch_location": "ignored graphify-out/s8_native/; neither representation is checked in"
+  },
+  "library_sha256": "a843ab775e53ebf61c38549dd5f32223d8e180ebefc07025b1cbad48df5935ff",
+  "pass": true,
+  "private_run_identity": {
+    "authentication": "Associated with local run_ss_case receipts; receipt files and host data are not included or authenticated in this public repository.",
+    "case_id": "LC05 retained 5 km full-domain case",
+    "forecast_sha256": "14dbf6067f552c2e1fbda3d8317f1492eb61639657e5f304bde0457a7d6837d2",
+    "run_id": "mp337_s8_mp337_capture3_0min20s_hist0_20260925_231740_p34969",
+    "saved_times": [
+      "2025-07-19_00:00:00",
+      "2025-07-19_00:00:20"
+    ],
+    "wrf_executable_sha256": "1b4184f7f19805b543d409b31ab5dc00b5417e0173164d7b59afb9eb783ada0b"
+  },
+  "replay_type": "C ABI arithmetic replay of captured private host arrays.",
+  "schema": 1,
+  "scope": "Private mp337 host value-only forward boundary replay; not host AD.",
+  "status": "RECORDED / LOCAL_VERIFIED"
+}
