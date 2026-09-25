@@ -1,0 +1,1531 @@
+{
+  "schema": "s10-policy-counterfactual-run-plan-v1",
+  "status": "NATIVE_PAIRS_COMPLETE_POLICY_REPLAY_FAIL_CLOSED",
+  "source_tree": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/phys (read only)",
+  "branch": "codex/s10-progb-counterfactual",
+  "base_at_plan": "e21ce235a83bf3c539e966ac4e3405d459b60ff0 (#271 current origin/main; rebase completed before native run)",
+  "owner_policy_approval": false,
+  "counterfactual_only": true,
+  "native_slot_owner": "RELEASED_TO_S8",
+  "common_inputs": {
+    "input_time": "2025-07-19_00:00:00",
+    "dx_dy_m": [
+      5000,
+      5000
+    ],
+    "sha256": {
+      "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+      "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+      "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3"
+    },
+    "run_setup": "retained LC05 5 km real-data set; no grid/data substitution"
+  },
+  "run_controls": {
+    "dt_s": 20,
+    "minutes": 0,
+    "seconds": 20,
+    "history_interval": 0,
+    "history_interval_s": 20,
+    "ranks": 1,
+    "threads_per_rank": 1,
+    "requested_proc_grid": "1x1",
+    "saved_times": [
+      "2025-07-19_00:00:00",
+      "2025-07-19_00:00:20"
+    ],
+    "runner": "harness/run_ss_case.py"
+  },
+  "arms": [
+    {
+      "scheme": "mp37",
+      "mp_physics": 37,
+      "policy": "retention",
+      "executable_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp37/retention/wrf.exe",
+      "executable_sha256": "593ba22c3653ca196f40f28c77c78ae86f749e2ab5789da1e610cbc8386fa0aa",
+      "control": {
+        "case_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/retention/control",
+        "logging_env": "UNSET",
+        "effective_namelist_sha256": "902f08998435e9772906c5adb3c8d3d5f877357500eccb08a12312d0a1743df6",
+        "executable_sha256": "593ba22c3653ca196f40f28c77c78ae86f749e2ab5789da1e610cbc8386fa0aa",
+        "input_sha256": {
+          "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+          "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+          "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3"
+        }
+      },
+      "capture": {
+        "case_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/retention/capture",
+        "logging_env": "1",
+        "effective_namelist_sha256": "902f08998435e9772906c5adb3c8d3d5f877357500eccb08a12312d0a1743df6",
+        "executable_sha256": "593ba22c3653ca196f40f28c77c78ae86f749e2ab5789da1e610cbc8386fa0aa",
+        "input_sha256": {
+          "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+          "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+          "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3"
+        }
+      },
+      "within_arm_requirements": [
+        "same executable sha",
+        "same input identity and namelist",
+        "same dt/rank/thread/process grid",
+        "raw-bit equal history numeric fields; exact Times"
+      ]
+    },
+    {
+      "scheme": "mp37",
+      "mp_physics": 37,
+      "policy": "midpoint",
+      "executable_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp37/midpoint/wrf.exe",
+      "executable_sha256": "846b3721d6db1a788d60ec72525323169df8717060020673e060c61807761cca",
+      "control": {
+        "case_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/midpoint/control",
+        "logging_env": "UNSET",
+        "effective_namelist_sha256": "902f08998435e9772906c5adb3c8d3d5f877357500eccb08a12312d0a1743df6",
+        "executable_sha256": "846b3721d6db1a788d60ec72525323169df8717060020673e060c61807761cca",
+        "input_sha256": {
+          "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+          "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+          "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3"
+        }
+      },
+      "capture": {
+        "case_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/midpoint/capture",
+        "logging_env": "1",
+        "effective_namelist_sha256": "902f08998435e9772906c5adb3c8d3d5f877357500eccb08a12312d0a1743df6",
+        "executable_sha256": "846b3721d6db1a788d60ec72525323169df8717060020673e060c61807761cca",
+        "input_sha256": {
+          "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+          "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+          "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3"
+        }
+      },
+      "within_arm_requirements": [
+        "same executable sha",
+        "same input identity and namelist",
+        "same dt/rank/thread/process grid",
+        "raw-bit equal history numeric fields; exact Times"
+      ]
+    },
+    {
+      "scheme": "mp237",
+      "mp_physics": 237,
+      "policy": "retention",
+      "executable_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp237/retention/wrf.exe",
+      "executable_sha256": "4c2febdad945d01f2ad81aaaa28dbcdc86c808b6e3476decec00df561b8e5bf3",
+      "control": {
+        "case_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/retention/control",
+        "logging_env": "UNSET",
+        "effective_namelist_sha256": "2896b69d2df232853a649c1f3b76ac2d234ef4cd855a912908ed42f0a8327508",
+        "executable_sha256": "4c2febdad945d01f2ad81aaaa28dbcdc86c808b6e3476decec00df561b8e5bf3",
+        "input_sha256": {
+          "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+          "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+          "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3"
+        }
+      },
+      "capture": {
+        "case_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/retention/capture",
+        "logging_env": "1",
+        "effective_namelist_sha256": "2896b69d2df232853a649c1f3b76ac2d234ef4cd855a912908ed42f0a8327508",
+        "executable_sha256": "4c2febdad945d01f2ad81aaaa28dbcdc86c808b6e3476decec00df561b8e5bf3",
+        "input_sha256": {
+          "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+          "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+          "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3"
+        }
+      },
+      "within_arm_requirements": [
+        "same executable sha",
+        "same input identity and namelist",
+        "same dt/rank/thread/process grid",
+        "raw-bit equal history numeric fields; exact Times"
+      ]
+    },
+    {
+      "scheme": "mp237",
+      "mp_physics": 237,
+      "policy": "midpoint",
+      "executable_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp237/midpoint/wrf.exe",
+      "executable_sha256": "afbe3768b1be3a6e8cb84986ff3907835854152473d269f04789598cd21402f1",
+      "control": {
+        "case_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/midpoint/control",
+        "logging_env": "UNSET",
+        "effective_namelist_sha256": "2896b69d2df232853a649c1f3b76ac2d234ef4cd855a912908ed42f0a8327508",
+        "executable_sha256": "afbe3768b1be3a6e8cb84986ff3907835854152473d269f04789598cd21402f1",
+        "input_sha256": {
+          "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+          "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+          "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3"
+        }
+      },
+      "capture": {
+        "case_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/midpoint/capture",
+        "logging_env": "1",
+        "effective_namelist_sha256": "2896b69d2df232853a649c1f3b76ac2d234ef4cd855a912908ed42f0a8327508",
+        "executable_sha256": "afbe3768b1be3a6e8cb84986ff3907835854152473d269f04789598cd21402f1",
+        "input_sha256": {
+          "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+          "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+          "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3"
+        }
+      },
+      "within_arm_requirements": [
+        "same executable sha",
+        "same input identity and namelist",
+        "same dt/rank/thread/process grid",
+        "raw-bit equal history numeric fields; exact Times"
+      ]
+    }
+  ],
+  "policy_definitions": {
+    "retention": "ProgB physical output dummies are INOUT; explicit zero seed from kdm62d each outer loop, then retain current-loop last values on inactive calls. No current-call fallback; may fail positive-qg denominator safety.",
+    "midpoint": "Per-call initialize all OUT arrays to zero. On inactive positive qg, use rhox=rho_mid=400 and set brs=qg/400; log signed delta. On inactive zero qg, zero local outputs and set brs=0; log signed delta. Active gate expression is snapshotted before any state correction; not approved for operational use."
+  },
+  "preselected_witnesses": {
+    "active_input_column": {
+      "j": 73,
+      "i": 113,
+      "input_qg_gate_levels": [
+        1,
+        11
+      ]
+    },
+    "inactive_input_candidate": {
+      "j": 73,
+      "i": 115,
+      "prior_calltime_gate_pattern": "inactive k1-3, active k4-11, inactive k12-39; remeasure for each arm"
+    },
+    "positive_trace_witness": {
+      "j": 2,
+      "i": 142,
+      "k": 17,
+      "prior_first_seen_call": "site 6, loop 1, substep 0",
+      "policy_measurement": "S10SHAPE emitted at this coordinate after every ProgB/slope call; S10VOL records each fallback/projection"
+    }
+  },
+  "source_output_validity": {
+    "retention": "defined by exact caller zero seed or current-loop retained value; assert finite outputs and rhox>0 at every reached qg>0 rhox consumer, otherwise fail arm",
+    "midpoint": "all outputs assigned per call; rhox=400 for positive trace inactive cells, rhox=0 only for qg=0; assert no invalid slope/melt/volume consumers"
+  },
+  "budget_capture": {
+    "S10SHAPE": "qg, brs, rhox, cmg, pidn0g, pvtg, bvtg, rslopegbmax, rslope, rslopeb, vt at selected active/inactive columns and the trace witness",
+    "S10VOL": "action 0 active density projection; A action 3 inactive retention/no direct brs update; B action 1 positive-trace midpoint brs projection; B action 2 zero-qg brs cleanup; capture qg, brs before/after/delta, rhox",
+    "other_consumers": "S10RHO read-reached consumer IDs and validity provenance; S10SLP validity/threshold masks; S10PB/CMG/DIAG full current event records"
+  },
+  "acceptance": {
+    "within_arm_instrumentation_noninterference": "strict raw-bit histories and exact saved times; same executable within each control/capture pair",
+    "between_policy": "report qg mass, brs volume correction, slope/fall-speed and phase-rate deltas separately; no raw-bit parity requirement",
+    "physical_acceptance": "not set; residual/budget tolerances require physics-owner review",
+    "failure_cases": [
+      "retention arm any nonfinite candidate shape/velocity",
+      "any qg>0 rhox read with rhox<=0 or nonfinite",
+      "missing key/consumer event or unmatched S10VOL correction",
+      "within-arm logger changes history"
+    ]
+  },
+  "build_receipt": "harness/evidence/s10_progb_policy_shadow_build_receipt_2026-09-25.json",
+  "build_summary": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/summary.json",
+  "native_results": {
+    "base_at_run": "e21ce235a83bf3c539e966ac4e3405d459b60ff0",
+    "slot": "RELEASED_TO_S8_AFTER_ALL_EIGHT_RUNS",
+    "runs": [
+      {
+        "scheme": "mp37",
+        "policy": "retention",
+        "mode": "control",
+        "run_id": "mp37_s10_mp37_retention_control_0min20s_hist0_1x1_20260925_213032_p44751",
+        "run_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/retention/control/runs/mp37_s10_mp37_retention_control_0min20s_hist0_1x1_20260925_213032_p44751",
+        "experiment_valid": {
+          "experiment_valid": true,
+          "invalid_reasons": [],
+          "requested_proc_grid": "1x1",
+          "actual_proc_grid": "1x1",
+          "active_input_identity_complete": true,
+          "exit_code": 0,
+          "model_completed": true
+        },
+        "history_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/retention/control/runs/mp37_s10_mp37_retention_control_0min20s_hist0_1x1_20260925_213032_p44751/klfs_lc05_fcst.202507190000",
+        "history_sha256": "ddded3a3760af2800ab7ee487fddbc658a0226c6e567bbf8ccbccb403478942e",
+        "stdout_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/retention/control/runs/mp37_s10_mp37_retention_control_0min20s_hist0_1x1_20260925_213032_p44751/rsl.out.0000",
+        "executable_sha256": "593ba22c3653ca196f40f28c77c78ae86f749e2ab5789da1e610cbc8386fa0aa",
+        "run_identity_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/retention/control/runs/mp37_s10_mp37_retention_control_0min20s_hist0_1x1_20260925_213032_p44751/run_identity.json"
+      },
+      {
+        "scheme": "mp37",
+        "policy": "retention",
+        "mode": "capture",
+        "run_id": "mp37_s10_mp37_retention_capture_0min20s_hist0_1x1_20260925_214548_p45277",
+        "run_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/retention/capture/runs/mp37_s10_mp37_retention_capture_0min20s_hist0_1x1_20260925_214548_p45277",
+        "experiment_valid": {
+          "experiment_valid": true,
+          "invalid_reasons": [],
+          "requested_proc_grid": "1x1",
+          "actual_proc_grid": "1x1",
+          "active_input_identity_complete": true,
+          "exit_code": 0,
+          "model_completed": true
+        },
+        "history_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/retention/capture/runs/mp37_s10_mp37_retention_capture_0min20s_hist0_1x1_20260925_214548_p45277/klfs_lc05_fcst.202507190000",
+        "history_sha256": "ddded3a3760af2800ab7ee487fddbc658a0226c6e567bbf8ccbccb403478942e",
+        "stdout_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/retention/capture/runs/mp37_s10_mp37_retention_capture_0min20s_hist0_1x1_20260925_214548_p45277/rsl.out.0000",
+        "executable_sha256": "593ba22c3653ca196f40f28c77c78ae86f749e2ab5789da1e610cbc8386fa0aa",
+        "run_identity_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/retention/capture/runs/mp37_s10_mp37_retention_capture_0min20s_hist0_1x1_20260925_214548_p45277/run_identity.json"
+      },
+      {
+        "scheme": "mp37",
+        "policy": "midpoint",
+        "mode": "control",
+        "run_id": "mp37_s10_mp37_midpoint_control_0min20s_hist0_1x1_20260925_214748_p46295",
+        "run_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/midpoint/control/runs/mp37_s10_mp37_midpoint_control_0min20s_hist0_1x1_20260925_214748_p46295",
+        "experiment_valid": {
+          "experiment_valid": true,
+          "invalid_reasons": [],
+          "requested_proc_grid": "1x1",
+          "actual_proc_grid": "1x1",
+          "active_input_identity_complete": true,
+          "exit_code": 0,
+          "model_completed": true
+        },
+        "history_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/midpoint/control/runs/mp37_s10_mp37_midpoint_control_0min20s_hist0_1x1_20260925_214748_p46295/klfs_lc05_fcst.202507190000",
+        "history_sha256": "888d894afe118bb96853aded2be8e55fcd9aa7d2d24ab296db9cd99769a199ab",
+        "stdout_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/midpoint/control/runs/mp37_s10_mp37_midpoint_control_0min20s_hist0_1x1_20260925_214748_p46295/rsl.out.0000",
+        "executable_sha256": "846b3721d6db1a788d60ec72525323169df8717060020673e060c61807761cca",
+        "run_identity_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/midpoint/control/runs/mp37_s10_mp37_midpoint_control_0min20s_hist0_1x1_20260925_214748_p46295/run_identity.json"
+      },
+      {
+        "scheme": "mp37",
+        "policy": "midpoint",
+        "mode": "capture",
+        "run_id": "mp37_s10_mp37_midpoint_capture_0min20s_hist0_1x1_20260925_214840_p46517",
+        "run_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/midpoint/capture/runs/mp37_s10_mp37_midpoint_capture_0min20s_hist0_1x1_20260925_214840_p46517",
+        "experiment_valid": {
+          "experiment_valid": true,
+          "invalid_reasons": [],
+          "requested_proc_grid": "1x1",
+          "actual_proc_grid": "1x1",
+          "active_input_identity_complete": true,
+          "exit_code": 0,
+          "model_completed": true
+        },
+        "history_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/midpoint/capture/runs/mp37_s10_mp37_midpoint_capture_0min20s_hist0_1x1_20260925_214840_p46517/klfs_lc05_fcst.202507190000",
+        "history_sha256": "888d894afe118bb96853aded2be8e55fcd9aa7d2d24ab296db9cd99769a199ab",
+        "stdout_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/midpoint/capture/runs/mp37_s10_mp37_midpoint_capture_0min20s_hist0_1x1_20260925_214840_p46517/rsl.out.0000",
+        "executable_sha256": "846b3721d6db1a788d60ec72525323169df8717060020673e060c61807761cca",
+        "run_identity_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/midpoint/capture/runs/mp37_s10_mp37_midpoint_capture_0min20s_hist0_1x1_20260925_214840_p46517/run_identity.json"
+      },
+      {
+        "scheme": "mp237",
+        "policy": "retention",
+        "mode": "control",
+        "run_id": "mp237_s10_mp237_retention_control_0min20s_hist0_1x1_20260925_215014_p48535",
+        "run_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/retention/control/runs/mp237_s10_mp237_retention_control_0min20s_hist0_1x1_20260925_215014_p48535",
+        "experiment_valid": {
+          "experiment_valid": true,
+          "invalid_reasons": [],
+          "requested_proc_grid": "1x1",
+          "actual_proc_grid": "1x1",
+          "active_input_identity_complete": true,
+          "exit_code": 0,
+          "model_completed": true
+        },
+        "history_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/retention/control/runs/mp237_s10_mp237_retention_control_0min20s_hist0_1x1_20260925_215014_p48535/klfs_lc05_fcst.202507190000",
+        "history_sha256": "cb92a3763b985a0c8ed7069028808b0083786c58e5382d6078e9b9150774b92e",
+        "stdout_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/retention/control/runs/mp237_s10_mp237_retention_control_0min20s_hist0_1x1_20260925_215014_p48535/rsl.out.0000",
+        "executable_sha256": "4c2febdad945d01f2ad81aaaa28dbcdc86c808b6e3476decec00df561b8e5bf3",
+        "run_identity_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/retention/control/runs/mp237_s10_mp237_retention_control_0min20s_hist0_1x1_20260925_215014_p48535/run_identity.json"
+      },
+      {
+        "scheme": "mp237",
+        "policy": "retention",
+        "mode": "capture",
+        "run_id": "mp237_s10_mp237_retention_capture_0min20s_hist0_1x1_20260925_215104_p49857",
+        "run_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/retention/capture/runs/mp237_s10_mp237_retention_capture_0min20s_hist0_1x1_20260925_215104_p49857",
+        "experiment_valid": {
+          "experiment_valid": true,
+          "invalid_reasons": [],
+          "requested_proc_grid": "1x1",
+          "actual_proc_grid": "1x1",
+          "active_input_identity_complete": true,
+          "exit_code": 0,
+          "model_completed": true
+        },
+        "history_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/retention/capture/runs/mp237_s10_mp237_retention_capture_0min20s_hist0_1x1_20260925_215104_p49857/klfs_lc05_fcst.202507190000",
+        "history_sha256": "cb92a3763b985a0c8ed7069028808b0083786c58e5382d6078e9b9150774b92e",
+        "stdout_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/retention/capture/runs/mp237_s10_mp237_retention_capture_0min20s_hist0_1x1_20260925_215104_p49857/rsl.out.0000",
+        "executable_sha256": "4c2febdad945d01f2ad81aaaa28dbcdc86c808b6e3476decec00df561b8e5bf3",
+        "run_identity_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/retention/capture/runs/mp237_s10_mp237_retention_capture_0min20s_hist0_1x1_20260925_215104_p49857/run_identity.json"
+      },
+      {
+        "scheme": "mp237",
+        "policy": "midpoint",
+        "mode": "control",
+        "run_id": "mp237_s10_mp237_midpoint_control_0min20s_hist0_1x1_20260925_215210_p52163",
+        "run_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/midpoint/control/runs/mp237_s10_mp237_midpoint_control_0min20s_hist0_1x1_20260925_215210_p52163",
+        "experiment_valid": {
+          "experiment_valid": true,
+          "invalid_reasons": [],
+          "requested_proc_grid": "1x1",
+          "actual_proc_grid": "1x1",
+          "active_input_identity_complete": true,
+          "exit_code": 0,
+          "model_completed": true
+        },
+        "history_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/midpoint/control/runs/mp237_s10_mp237_midpoint_control_0min20s_hist0_1x1_20260925_215210_p52163/klfs_lc05_fcst.202507190000",
+        "history_sha256": "4e743933a0a9e2038f37cd0564280724785c57a9e048ac6d18fa81d30ef7dc24",
+        "stdout_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/midpoint/control/runs/mp237_s10_mp237_midpoint_control_0min20s_hist0_1x1_20260925_215210_p52163/rsl.out.0000",
+        "executable_sha256": "afbe3768b1be3a6e8cb84986ff3907835854152473d269f04789598cd21402f1",
+        "run_identity_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/midpoint/control/runs/mp237_s10_mp237_midpoint_control_0min20s_hist0_1x1_20260925_215210_p52163/run_identity.json"
+      },
+      {
+        "scheme": "mp237",
+        "policy": "midpoint",
+        "mode": "capture",
+        "run_id": "mp237_s10_mp237_midpoint_capture_0min20s_hist0_1x1_20260925_215319_p58831",
+        "run_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/midpoint/capture/runs/mp237_s10_mp237_midpoint_capture_0min20s_hist0_1x1_20260925_215319_p58831",
+        "experiment_valid": {
+          "experiment_valid": true,
+          "invalid_reasons": [],
+          "requested_proc_grid": "1x1",
+          "actual_proc_grid": "1x1",
+          "active_input_identity_complete": true,
+          "exit_code": 0,
+          "model_completed": true
+        },
+        "history_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/midpoint/capture/runs/mp237_s10_mp237_midpoint_capture_0min20s_hist0_1x1_20260925_215319_p58831/klfs_lc05_fcst.202507190000",
+        "history_sha256": "4e743933a0a9e2038f37cd0564280724785c57a9e048ac6d18fa81d30ef7dc24",
+        "stdout_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/midpoint/capture/runs/mp237_s10_mp237_midpoint_capture_0min20s_hist0_1x1_20260925_215319_p58831/rsl.out.0000",
+        "executable_sha256": "afbe3768b1be3a6e8cb84986ff3907835854152473d269f04789598cd21402f1",
+        "run_identity_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/midpoint/capture/runs/mp237_s10_mp237_midpoint_capture_0min20s_hist0_1x1_20260925_215319_p58831/run_identity.json"
+      }
+    ],
+    "arms": [
+      {
+        "scheme": "mp37",
+        "policy": "retention",
+        "control": {
+          "run_id": "mp37_s10_mp37_retention_control_0min20s_hist0_1x1_20260925_213032_p44751",
+          "run_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/retention/control/runs/mp37_s10_mp37_retention_control_0min20s_hist0_1x1_20260925_213032_p44751",
+          "experiment_valid": {
+            "experiment_valid": true,
+            "invalid_reasons": [],
+            "requested_proc_grid": "1x1",
+            "actual_proc_grid": "1x1",
+            "active_input_identity_complete": true,
+            "exit_code": 0,
+            "model_completed": true
+          },
+          "history_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/retention/control/runs/mp37_s10_mp37_retention_control_0min20s_hist0_1x1_20260925_213032_p44751/klfs_lc05_fcst.202507190000",
+          "history_sha256": "ddded3a3760af2800ab7ee487fddbc658a0226c6e567bbf8ccbccb403478942e",
+          "stdout_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/retention/control/runs/mp37_s10_mp37_retention_control_0min20s_hist0_1x1_20260925_213032_p44751/rsl.out.0000",
+          "executable_sha256": "593ba22c3653ca196f40f28c77c78ae86f749e2ab5789da1e610cbc8386fa0aa",
+          "run_identity_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/retention/control/runs/mp37_s10_mp37_retention_control_0min20s_hist0_1x1_20260925_213032_p44751/run_identity.json"
+        },
+        "capture": {
+          "run_id": "mp37_s10_mp37_retention_capture_0min20s_hist0_1x1_20260925_214548_p45277",
+          "run_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/retention/capture/runs/mp37_s10_mp37_retention_capture_0min20s_hist0_1x1_20260925_214548_p45277",
+          "experiment_valid": {
+            "experiment_valid": true,
+            "invalid_reasons": [],
+            "requested_proc_grid": "1x1",
+            "actual_proc_grid": "1x1",
+            "active_input_identity_complete": true,
+            "exit_code": 0,
+            "model_completed": true
+          },
+          "history_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/retention/capture/runs/mp37_s10_mp37_retention_capture_0min20s_hist0_1x1_20260925_214548_p45277/klfs_lc05_fcst.202507190000",
+          "history_sha256": "ddded3a3760af2800ab7ee487fddbc658a0226c6e567bbf8ccbccb403478942e",
+          "stdout_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/retention/capture/runs/mp37_s10_mp37_retention_capture_0min20s_hist0_1x1_20260925_214548_p45277/rsl.out.0000",
+          "executable_sha256": "593ba22c3653ca196f40f28c77c78ae86f749e2ab5789da1e610cbc8386fa0aa",
+          "run_identity_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/retention/capture/runs/mp37_s10_mp37_retention_capture_0min20s_hist0_1x1_20260925_214548_p45277/run_identity.json"
+        },
+        "within_arm_history_comparison": {
+          "status": "PASS",
+          "variables_total": 254,
+          "numeric_variables": 253,
+          "exact_Times": true,
+          "bitwise_matches": 254,
+          "differences": 0
+        },
+        "event_stream": {
+          "path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/retention/capture/runs/mp37_s10_mp37_retention_capture_0min20s_hist0_1x1_20260925_214548_p45277/rsl.out.0000",
+          "sha256": "01782850db2340066be9c5fae61429a4d4b4328947413cbef92fa8ebf6ec8a57",
+          "counts": {
+            "S10CMG": 624,
+            "S10DIAG": 78,
+            "S10PB": 624,
+            "S10RHO": 212,
+            "S10SCAN": 1974,
+            "S10SHAPE": 631,
+            "S10SLP": 624,
+            "S10TRACE": 763,
+            "S10TRS": 763,
+            "S10VOL": 631
+          },
+          "volume_action_counts": {
+            "3": 526,
+            "0": 105
+          },
+          "finite_delta_sum_by_action_m3_per_kg_selected_cells": {
+            "3": 0.0,
+            "0": 1.446155807990207e-06
+          },
+          "nonfinite_shape_rows": 8,
+          "first_nonfinite_shape_row": {
+            "line": 4064,
+            "key": [
+              "1",
+              "73",
+              "4",
+              "1",
+              "0",
+              "115",
+              "1",
+              "0"
+            ],
+            "values": [
+              "0.0000000000000000E+000",
+              "-Infinity",
+              "0.0000000000000000E+000",
+              "0.0000000000000000E+000",
+              "0.0000000000000000E+000",
+              "0.0000000000000000E+000",
+              "0.0000000000000000E+000",
+              "0.0000000000000000E+000",
+              "5.5555556173203513E-006",
+              "0.0000000000000000E+000",
+              "0.0000000000000000E+000"
+            ]
+          },
+          "event_payload_sha256": "53ccfead2fe0a3db2ee02088840a5bb47ad2b8d2dbfc5eb180e53b0ce9d33224",
+          "event_payload_count": 6924,
+          "rho_key_sha256": "745fc1c0b9c9ff392f1e88c32c0e6f82b9d8030c8ca9963de5ed66aa6b7b64ed",
+          "rho_row_count": 212,
+          "event_record_count": 6924,
+          "event_record_counts": {
+            "S10CMG": 624,
+            "S10DIAG": 78,
+            "S10PB": 624,
+            "S10RHO": 212,
+            "S10SCAN": 1974,
+            "S10SHAPE": 631,
+            "S10SLP": 624,
+            "S10TRACE": 763,
+            "S10TRS": 763,
+            "S10VOL": 631
+          },
+          "event_payload_path": "harness/evidence/s10_policy_events/mp37_retention_capture.txt"
+        },
+        "validity_replay": {
+          "status": "FAIL_CLOSED",
+          "reason": "S10SHAPE contains nonfinite brs=-Infinity",
+          "first_row": {
+            "line": 4064,
+            "key": [
+              "1",
+              "73",
+              "4",
+              "1",
+              "0",
+              "115",
+              "1",
+              "0"
+            ],
+            "values": [
+              "0.0000000000000000E+000",
+              "-Infinity",
+              "0.0000000000000000E+000",
+              "0.0000000000000000E+000",
+              "0.0000000000000000E+000",
+              "0.0000000000000000E+000",
+              "0.0000000000000000E+000",
+              "0.0000000000000000E+000",
+              "5.5555556173203513E-006",
+              "0.0000000000000000E+000",
+              "0.0000000000000000E+000"
+            ]
+          }
+        }
+      },
+      {
+        "scheme": "mp37",
+        "policy": "midpoint",
+        "control": {
+          "run_id": "mp37_s10_mp37_midpoint_control_0min20s_hist0_1x1_20260925_214748_p46295",
+          "run_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/midpoint/control/runs/mp37_s10_mp37_midpoint_control_0min20s_hist0_1x1_20260925_214748_p46295",
+          "experiment_valid": {
+            "experiment_valid": true,
+            "invalid_reasons": [],
+            "requested_proc_grid": "1x1",
+            "actual_proc_grid": "1x1",
+            "active_input_identity_complete": true,
+            "exit_code": 0,
+            "model_completed": true
+          },
+          "history_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/midpoint/control/runs/mp37_s10_mp37_midpoint_control_0min20s_hist0_1x1_20260925_214748_p46295/klfs_lc05_fcst.202507190000",
+          "history_sha256": "888d894afe118bb96853aded2be8e55fcd9aa7d2d24ab296db9cd99769a199ab",
+          "stdout_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/midpoint/control/runs/mp37_s10_mp37_midpoint_control_0min20s_hist0_1x1_20260925_214748_p46295/rsl.out.0000",
+          "executable_sha256": "846b3721d6db1a788d60ec72525323169df8717060020673e060c61807761cca",
+          "run_identity_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/midpoint/control/runs/mp37_s10_mp37_midpoint_control_0min20s_hist0_1x1_20260925_214748_p46295/run_identity.json"
+        },
+        "capture": {
+          "run_id": "mp37_s10_mp37_midpoint_capture_0min20s_hist0_1x1_20260925_214840_p46517",
+          "run_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/midpoint/capture/runs/mp37_s10_mp37_midpoint_capture_0min20s_hist0_1x1_20260925_214840_p46517",
+          "experiment_valid": {
+            "experiment_valid": true,
+            "invalid_reasons": [],
+            "requested_proc_grid": "1x1",
+            "actual_proc_grid": "1x1",
+            "active_input_identity_complete": true,
+            "exit_code": 0,
+            "model_completed": true
+          },
+          "history_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/midpoint/capture/runs/mp37_s10_mp37_midpoint_capture_0min20s_hist0_1x1_20260925_214840_p46517/klfs_lc05_fcst.202507190000",
+          "history_sha256": "888d894afe118bb96853aded2be8e55fcd9aa7d2d24ab296db9cd99769a199ab",
+          "stdout_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/midpoint/capture/runs/mp37_s10_mp37_midpoint_capture_0min20s_hist0_1x1_20260925_214840_p46517/rsl.out.0000",
+          "executable_sha256": "846b3721d6db1a788d60ec72525323169df8717060020673e060c61807761cca",
+          "run_identity_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/midpoint/capture/runs/mp37_s10_mp37_midpoint_capture_0min20s_hist0_1x1_20260925_214840_p46517/run_identity.json"
+        },
+        "within_arm_history_comparison": {
+          "status": "PASS",
+          "variables_total": 254,
+          "numeric_variables": 253,
+          "exact_Times": true,
+          "bitwise_matches": 254,
+          "differences": 0
+        },
+        "event_stream": {
+          "path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/midpoint/capture/runs/mp37_s10_mp37_midpoint_capture_0min20s_hist0_1x1_20260925_214840_p46517/rsl.out.0000",
+          "sha256": "17e5b1be0bfd81d536029d994fba5ed4c1cf0433b2a6c8bcd599c722e5bb195c",
+          "counts": {
+            "S10CMG": 624,
+            "S10DIAG": 78,
+            "S10PB": 624,
+            "S10RHO": 212,
+            "S10SCAN": 1974,
+            "S10SHAPE": 631,
+            "S10SLP": 624,
+            "S10TRACE": 707,
+            "S10TRS": 707,
+            "S10VOL": 631
+          },
+          "volume_action_counts": {
+            "2": 501,
+            "1": 13,
+            "0": 117
+          },
+          "finite_delta_sum_by_action_m3_per_kg_selected_cells": {
+            "2": 0.0,
+            "1": 7.285737671632914e-12,
+            "0": 1.4461550265805478e-06
+          },
+          "nonfinite_shape_rows": 0,
+          "first_nonfinite_shape_row": null,
+          "event_payload_sha256": "295c8471873539d6197a3484cf949ec41ecd9cdb5bde118e692b61d444d050fa",
+          "event_payload_count": 6812,
+          "rho_key_sha256": "745fc1c0b9c9ff392f1e88c32c0e6f82b9d8030c8ca9963de5ed66aa6b7b64ed",
+          "rho_row_count": 212,
+          "event_record_count": 6812,
+          "event_record_counts": {
+            "S10CMG": 624,
+            "S10DIAG": 78,
+            "S10PB": 624,
+            "S10RHO": 212,
+            "S10SCAN": 1974,
+            "S10SHAPE": 631,
+            "S10SLP": 624,
+            "S10TRACE": 707,
+            "S10TRS": 707,
+            "S10VOL": 631
+          },
+          "event_payload_path": "harness/evidence/s10_policy_events/mp37_midpoint_capture.txt"
+        },
+        "validity_replay": {
+          "status": "FAIL_CLOSED",
+          "reason": "reached direct rhox division consumer at qg=0 and rhox=0",
+          "key": [
+            1,
+            73,
+            5,
+            1,
+            0,
+            113,
+            1
+          ],
+          "consumer_ids": [
+            "2915",
+            "2916"
+          ]
+        }
+      },
+      {
+        "scheme": "mp237",
+        "policy": "retention",
+        "control": {
+          "run_id": "mp237_s10_mp237_retention_control_0min20s_hist0_1x1_20260925_215014_p48535",
+          "run_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/retention/control/runs/mp237_s10_mp237_retention_control_0min20s_hist0_1x1_20260925_215014_p48535",
+          "experiment_valid": {
+            "experiment_valid": true,
+            "invalid_reasons": [],
+            "requested_proc_grid": "1x1",
+            "actual_proc_grid": "1x1",
+            "active_input_identity_complete": true,
+            "exit_code": 0,
+            "model_completed": true
+          },
+          "history_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/retention/control/runs/mp237_s10_mp237_retention_control_0min20s_hist0_1x1_20260925_215014_p48535/klfs_lc05_fcst.202507190000",
+          "history_sha256": "cb92a3763b985a0c8ed7069028808b0083786c58e5382d6078e9b9150774b92e",
+          "stdout_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/retention/control/runs/mp237_s10_mp237_retention_control_0min20s_hist0_1x1_20260925_215014_p48535/rsl.out.0000",
+          "executable_sha256": "4c2febdad945d01f2ad81aaaa28dbcdc86c808b6e3476decec00df561b8e5bf3",
+          "run_identity_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/retention/control/runs/mp237_s10_mp237_retention_control_0min20s_hist0_1x1_20260925_215014_p48535/run_identity.json"
+        },
+        "capture": {
+          "run_id": "mp237_s10_mp237_retention_capture_0min20s_hist0_1x1_20260925_215104_p49857",
+          "run_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/retention/capture/runs/mp237_s10_mp237_retention_capture_0min20s_hist0_1x1_20260925_215104_p49857",
+          "experiment_valid": {
+            "experiment_valid": true,
+            "invalid_reasons": [],
+            "requested_proc_grid": "1x1",
+            "actual_proc_grid": "1x1",
+            "active_input_identity_complete": true,
+            "exit_code": 0,
+            "model_completed": true
+          },
+          "history_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/retention/capture/runs/mp237_s10_mp237_retention_capture_0min20s_hist0_1x1_20260925_215104_p49857/klfs_lc05_fcst.202507190000",
+          "history_sha256": "cb92a3763b985a0c8ed7069028808b0083786c58e5382d6078e9b9150774b92e",
+          "stdout_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/retention/capture/runs/mp237_s10_mp237_retention_capture_0min20s_hist0_1x1_20260925_215104_p49857/rsl.out.0000",
+          "executable_sha256": "4c2febdad945d01f2ad81aaaa28dbcdc86c808b6e3476decec00df561b8e5bf3",
+          "run_identity_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/retention/capture/runs/mp237_s10_mp237_retention_capture_0min20s_hist0_1x1_20260925_215104_p49857/run_identity.json"
+        },
+        "within_arm_history_comparison": {
+          "status": "PASS",
+          "variables_total": 254,
+          "numeric_variables": 253,
+          "exact_Times": true,
+          "bitwise_matches": 254,
+          "differences": 0
+        },
+        "event_stream": {
+          "path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/retention/capture/runs/mp237_s10_mp237_retention_capture_0min20s_hist0_1x1_20260925_215104_p49857/rsl.out.0000",
+          "sha256": "16accfe902b35a37daf88524f1e35a73483e39ec20226ce1782354ab972bba92",
+          "counts": {
+            "S10CMG": 624,
+            "S10DIAG": 78,
+            "S10PB": 624,
+            "S10RHO": 212,
+            "S10SCAN": 1974,
+            "S10SHAPE": 631,
+            "S10SLP": 624,
+            "S10TRACE": 771,
+            "S10TRS": 771,
+            "S10VOL": 631
+          },
+          "volume_action_counts": {
+            "3": 526,
+            "0": 105
+          },
+          "finite_delta_sum_by_action_m3_per_kg_selected_cells": {
+            "3": 0.0,
+            "0": 1.446156275695075e-06
+          },
+          "nonfinite_shape_rows": 8,
+          "first_nonfinite_shape_row": {
+            "line": 4064,
+            "key": [
+              "1",
+              "73",
+              "4",
+              "1",
+              "0",
+              "115",
+              "1",
+              "0"
+            ],
+            "values": [
+              "0.0000000000000000E+000",
+              "-Infinity",
+              "0.0000000000000000E+000",
+              "0.0000000000000000E+000",
+              "0.0000000000000000E+000",
+              "0.0000000000000000E+000",
+              "0.0000000000000000E+000",
+              "0.0000000000000000E+000",
+              "5.5555556173203513E-006",
+              "0.0000000000000000E+000",
+              "0.0000000000000000E+000"
+            ]
+          },
+          "event_payload_sha256": "6b23c49c636dedf3fb9009b72a59a45dcfd137423e7123123d0b2d73965d52c6",
+          "event_payload_count": 6940,
+          "rho_key_sha256": "745fc1c0b9c9ff392f1e88c32c0e6f82b9d8030c8ca9963de5ed66aa6b7b64ed",
+          "rho_row_count": 212,
+          "event_record_count": 6940,
+          "event_record_counts": {
+            "S10CMG": 624,
+            "S10DIAG": 78,
+            "S10PB": 624,
+            "S10RHO": 212,
+            "S10SCAN": 1974,
+            "S10SHAPE": 631,
+            "S10SLP": 624,
+            "S10TRACE": 771,
+            "S10TRS": 771,
+            "S10VOL": 631
+          },
+          "event_payload_path": "harness/evidence/s10_policy_events/mp237_retention_capture.txt"
+        },
+        "validity_replay": {
+          "status": "FAIL_CLOSED",
+          "reason": "S10SHAPE contains nonfinite brs=-Infinity",
+          "first_row": {
+            "line": 4064,
+            "key": [
+              "1",
+              "73",
+              "4",
+              "1",
+              "0",
+              "115",
+              "1",
+              "0"
+            ],
+            "values": [
+              "0.0000000000000000E+000",
+              "-Infinity",
+              "0.0000000000000000E+000",
+              "0.0000000000000000E+000",
+              "0.0000000000000000E+000",
+              "0.0000000000000000E+000",
+              "0.0000000000000000E+000",
+              "0.0000000000000000E+000",
+              "5.5555556173203513E-006",
+              "0.0000000000000000E+000",
+              "0.0000000000000000E+000"
+            ]
+          }
+        }
+      },
+      {
+        "scheme": "mp237",
+        "policy": "midpoint",
+        "control": {
+          "run_id": "mp237_s10_mp237_midpoint_control_0min20s_hist0_1x1_20260925_215210_p52163",
+          "run_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/midpoint/control/runs/mp237_s10_mp237_midpoint_control_0min20s_hist0_1x1_20260925_215210_p52163",
+          "experiment_valid": {
+            "experiment_valid": true,
+            "invalid_reasons": [],
+            "requested_proc_grid": "1x1",
+            "actual_proc_grid": "1x1",
+            "active_input_identity_complete": true,
+            "exit_code": 0,
+            "model_completed": true
+          },
+          "history_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/midpoint/control/runs/mp237_s10_mp237_midpoint_control_0min20s_hist0_1x1_20260925_215210_p52163/klfs_lc05_fcst.202507190000",
+          "history_sha256": "4e743933a0a9e2038f37cd0564280724785c57a9e048ac6d18fa81d30ef7dc24",
+          "stdout_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/midpoint/control/runs/mp237_s10_mp237_midpoint_control_0min20s_hist0_1x1_20260925_215210_p52163/rsl.out.0000",
+          "executable_sha256": "afbe3768b1be3a6e8cb84986ff3907835854152473d269f04789598cd21402f1",
+          "run_identity_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/midpoint/control/runs/mp237_s10_mp237_midpoint_control_0min20s_hist0_1x1_20260925_215210_p52163/run_identity.json"
+        },
+        "capture": {
+          "run_id": "mp237_s10_mp237_midpoint_capture_0min20s_hist0_1x1_20260925_215319_p58831",
+          "run_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/midpoint/capture/runs/mp237_s10_mp237_midpoint_capture_0min20s_hist0_1x1_20260925_215319_p58831",
+          "experiment_valid": {
+            "experiment_valid": true,
+            "invalid_reasons": [],
+            "requested_proc_grid": "1x1",
+            "actual_proc_grid": "1x1",
+            "active_input_identity_complete": true,
+            "exit_code": 0,
+            "model_completed": true
+          },
+          "history_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/midpoint/capture/runs/mp237_s10_mp237_midpoint_capture_0min20s_hist0_1x1_20260925_215319_p58831/klfs_lc05_fcst.202507190000",
+          "history_sha256": "4e743933a0a9e2038f37cd0564280724785c57a9e048ac6d18fa81d30ef7dc24",
+          "stdout_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/midpoint/capture/runs/mp237_s10_mp237_midpoint_capture_0min20s_hist0_1x1_20260925_215319_p58831/rsl.out.0000",
+          "executable_sha256": "afbe3768b1be3a6e8cb84986ff3907835854152473d269f04789598cd21402f1",
+          "run_identity_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/midpoint/capture/runs/mp237_s10_mp237_midpoint_capture_0min20s_hist0_1x1_20260925_215319_p58831/run_identity.json"
+        },
+        "within_arm_history_comparison": {
+          "status": "PASS",
+          "variables_total": 254,
+          "numeric_variables": 253,
+          "exact_Times": true,
+          "bitwise_matches": 254,
+          "differences": 0
+        },
+        "event_stream": {
+          "path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/midpoint/capture/runs/mp237_s10_mp237_midpoint_capture_0min20s_hist0_1x1_20260925_215319_p58831/rsl.out.0000",
+          "sha256": "be1e018ed16e54192286dbf7fe6ab5456a0271168e2053f76094a38e60f4a9ae",
+          "counts": {
+            "S10CMG": 624,
+            "S10DIAG": 78,
+            "S10PB": 624,
+            "S10RHO": 212,
+            "S10SCAN": 1974,
+            "S10SHAPE": 631,
+            "S10SLP": 624,
+            "S10TRACE": 711,
+            "S10TRS": 711,
+            "S10VOL": 631
+          },
+          "volume_action_counts": {
+            "2": 501,
+            "1": 13,
+            "0": 117
+          },
+          "finite_delta_sum_by_action_m3_per_kg_selected_cells": {
+            "2": 0.0,
+            "1": 7.285912701197645e-12,
+            "0": 1.4461554942784768e-06
+          },
+          "nonfinite_shape_rows": 0,
+          "first_nonfinite_shape_row": null,
+          "event_payload_sha256": "e9a80474569c4b6026c3d3407ac426c72eaacffb867986c8288000152461e9b6",
+          "event_payload_count": 6820,
+          "rho_key_sha256": "745fc1c0b9c9ff392f1e88c32c0e6f82b9d8030c8ca9963de5ed66aa6b7b64ed",
+          "rho_row_count": 212,
+          "event_record_count": 6820,
+          "event_record_counts": {
+            "S10CMG": 624,
+            "S10DIAG": 78,
+            "S10PB": 624,
+            "S10RHO": 212,
+            "S10SCAN": 1974,
+            "S10SHAPE": 631,
+            "S10SLP": 624,
+            "S10TRACE": 711,
+            "S10TRS": 711,
+            "S10VOL": 631
+          },
+          "event_payload_path": "harness/evidence/s10_policy_events/mp237_midpoint_capture.txt"
+        },
+        "validity_replay": {
+          "status": "FAIL_CLOSED",
+          "reason": "reached direct rhox division consumer at qg=0 and rhox=0",
+          "key": [
+            1,
+            73,
+            5,
+            1,
+            0,
+            113,
+            1
+          ],
+          "consumer_ids": [
+            "2915",
+            "2916"
+          ]
+        }
+      }
+    ],
+    "within_arm_acceptance": "All four capture-on/off comparisons pass: 254 total history variables, 253 numeric raw-bit equal and Times exact; 2 frames at 00:00:00 and 00:00:20; all runner experiment_valid true, actual grid 1x1, exit 0.",
+    "policy_safety": "Both retention captures fail closed on nonfinite brs; both midpoint captures fail closed at a reached rhox consumer with qg=0,rhox=0. Neither policy satisfies all-consumer validity.",
+    "between_policy_history": "For each scheme, control retention vs control midpoint differs in 20 of 254 variables (234 bitwise match); treated as policy effect, not logger noninterference.",
+    "physics_status": "S10 remains OPEN; A and B are unapproved research counterfactuals. S10SHAPE rows are selected columns/call sites, and summed S10VOL deltas are diagnostic selected-cell sums, not whole-domain budgets.",
+    "between_policy_history_summary": {
+      "status": "CONTROL RETENTION VS MIDPOINT, SEPARATE FROM INSTRUMENTATION CHECK",
+      "mp37": {
+        "differing_variables": 20,
+        "bitwise_equal_variables": 234,
+        "selected_outputs": {
+          "QGRAUP": {
+            "differing_cells": 93,
+            "total_cells": 2573532,
+            "max_abs_difference": 3.274e-11
+          },
+          "QIB": {
+            "differing_cells": 52813,
+            "total_cells": 2573532,
+            "max_abs_difference": 6.22e-07
+          }
+        }
+      },
+      "mp237": {
+        "differing_variables": 20,
+        "bitwise_equal_variables": 234,
+        "selected_outputs": {
+          "QGRAUP": {
+            "differing_cells": 85,
+            "total_cells": 2573532,
+            "max_abs_difference": 4.366e-11
+          },
+          "QIB": {
+            "differing_cells": 52796,
+            "total_cells": 2573532,
+            "max_abs_difference": 1.461e-07
+          }
+        }
+      },
+      "selected_capture_shape_differences": {
+        "fields": [
+          "qg",
+          "brs",
+          "rhox",
+          "cmg",
+          "pidn0g",
+          "pvtg",
+          "bvtg",
+          "rslopegbmax",
+          "rslope",
+          "rslopeb",
+          "vt"
+        ],
+        "mp37_diffing_shape_row_counts_max_abs": {
+          "qg": [
+            18,
+            5.773159728050814e-11
+          ],
+          "brs": [
+            42,
+            2.3004976829749113e-12
+          ],
+          "rhox": [
+            114,
+            900.0
+          ],
+          "cmg": [
+            111,
+            471.2388916015625
+          ],
+          "pvtg": [
+            111,
+            293.4736633300781
+          ],
+          "bvtg": [
+            108,
+            0.5315999984741211
+          ],
+          "rslopegbmax": [
+            108,
+            0.0017249550437554717
+          ],
+          "rslopeb": [
+            110,
+            0.0017249550437554717
+          ],
+          "vt": [
+            31,
+            0.6038258473857481
+          ]
+        },
+        "mp237_diffing_shape_row_counts_max_abs": {
+          "qg": [
+            18,
+            5.773514999418694e-11
+          ],
+          "brs": [
+            42,
+            2.3005312932422584e-12
+          ],
+          "rhox": [
+            114,
+            900.0
+          ],
+          "cmg": [
+            111,
+            471.2388916015625
+          ],
+          "pvtg": [
+            111,
+            293.4736633300781
+          ],
+          "bvtg": [
+            108,
+            0.5315999984741211
+          ],
+          "rslopegbmax": [
+            108,
+            0.0017249550437554717
+          ],
+          "rslopeb": [
+            110,
+            0.0017249550437554717
+          ],
+          "vt": [
+            31,
+            0.6038258473857481
+          ]
+        }
+      },
+      "phase_rate_and_latent_heat_values_logged": false,
+      "caveat": "Selected columns/call sites only; no domain budget or melt/heat impact inference."
+    }
+  },
+  "replay_package": {
+    "schema": "s10-native-replay-package-v1",
+    "base_at_run": "e21ce235a83bf3c539e966ac4e3405d459b60ff0",
+    "run_controls": {
+      "dt_s": 20,
+      "minutes": 0,
+      "seconds": 20,
+      "history_interval": 0,
+      "history_interval_s": 20,
+      "ranks": 1,
+      "threads_per_rank": 1,
+      "requested_proc_grid": "1x1",
+      "saved_times": [
+        "2025-07-19_00:00:00",
+        "2025-07-19_00:00:20"
+      ],
+      "runner": "harness/run_ss_case.py"
+    },
+    "common_inputs": {
+      "input_time": "2025-07-19_00:00:00",
+      "dx_dy_m": [
+        5000,
+        5000
+      ],
+      "sha256": {
+        "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+        "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+        "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3"
+      },
+      "run_setup": "retained LC05 5 km real-data set; no grid/data substitution"
+    },
+    "arms": {
+      "mp37/retention": {
+        "scheme": "mp37",
+        "mp_physics": 37,
+        "policy": "retention",
+        "executable_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp37/retention/wrf.exe",
+        "executable_sha256": "593ba22c3653ca196f40f28c77c78ae86f749e2ab5789da1e610cbc8386fa0aa",
+        "effective_namelist_sha256": "902f08998435e9772906c5adb3c8d3d5f877357500eccb08a12312d0a1743df6",
+        "input_sha256": {
+          "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+          "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+          "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3"
+        },
+        "strict_pair_receipt": {
+          "status": "PASS",
+          "variables_total": 254,
+          "numeric_variables": 253,
+          "exact_Times": true,
+          "bitwise_matches": 254,
+          "differences": 0
+        },
+        "event_stream": {
+          "sha256": "01782850db2340066be9c5fae61429a4d4b4328947413cbef92fa8ebf6ec8a57",
+          "event_payload_sha256": "53ccfead2fe0a3db2ee02088840a5bb47ad2b8d2dbfc5eb180e53b0ce9d33224",
+          "event_payload_count": 6924,
+          "event_record_count": 6924,
+          "counts": {
+            "S10CMG": 624,
+            "S10DIAG": 78,
+            "S10PB": 624,
+            "S10RHO": 212,
+            "S10SCAN": 1974,
+            "S10SHAPE": 631,
+            "S10SLP": 624,
+            "S10TRACE": 763,
+            "S10TRS": 763,
+            "S10VOL": 631
+          },
+          "event_record_counts": {
+            "S10CMG": 624,
+            "S10DIAG": 78,
+            "S10PB": 624,
+            "S10RHO": 212,
+            "S10SCAN": 1974,
+            "S10SHAPE": 631,
+            "S10SLP": 624,
+            "S10TRACE": 763,
+            "S10TRS": 763,
+            "S10VOL": 631
+          },
+          "rho_key_sha256": "745fc1c0b9c9ff392f1e88c32c0e6f82b9d8030c8ca9963de5ed66aa6b7b64ed",
+          "rho_row_count": 212,
+          "path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/retention/capture/runs/mp37_s10_mp37_retention_capture_0min20s_hist0_1x1_20260925_214548_p45277/rsl.out.0000",
+          "event_payload_path": "harness/evidence/s10_policy_events/mp37_retention_capture.txt"
+        },
+        "runs": {
+          "control": {
+            "run_id": "mp37_s10_mp37_retention_control_0min20s_hist0_1x1_20260925_213032_p44751",
+            "run_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/retention/control/runs/mp37_s10_mp37_retention_control_0min20s_hist0_1x1_20260925_213032_p44751",
+            "history_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/retention/control/runs/mp37_s10_mp37_retention_control_0min20s_hist0_1x1_20260925_213032_p44751/klfs_lc05_fcst.202507190000",
+            "history_sha256": "ddded3a3760af2800ab7ee487fddbc658a0226c6e567bbf8ccbccb403478942e",
+            "event_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/retention/control/runs/mp37_s10_mp37_retention_control_0min20s_hist0_1x1_20260925_213032_p44751/rsl.out.0000",
+            "run_identity_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/retention/control/runs/mp37_s10_mp37_retention_control_0min20s_hist0_1x1_20260925_213032_p44751/run_identity.json",
+            "experiment_valid": {
+              "experiment_valid": true,
+              "invalid_reasons": [],
+              "requested_proc_grid": "1x1",
+              "actual_proc_grid": "1x1",
+              "active_input_identity_complete": true,
+              "exit_code": 0,
+              "model_completed": true
+            },
+            "executable_sha256": "593ba22c3653ca196f40f28c77c78ae86f749e2ab5789da1e610cbc8386fa0aa",
+            "effective_namelist_sha256": "902f08998435e9772906c5adb3c8d3d5f877357500eccb08a12312d0a1743df6",
+            "input_sha256": {
+              "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+              "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+              "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3"
+            },
+            "case_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/retention/control",
+            "logging_env": "UNSET",
+            "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e"
+          },
+          "capture": {
+            "run_id": "mp37_s10_mp37_retention_capture_0min20s_hist0_1x1_20260925_214548_p45277",
+            "run_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/retention/capture/runs/mp37_s10_mp37_retention_capture_0min20s_hist0_1x1_20260925_214548_p45277",
+            "history_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/retention/capture/runs/mp37_s10_mp37_retention_capture_0min20s_hist0_1x1_20260925_214548_p45277/klfs_lc05_fcst.202507190000",
+            "history_sha256": "ddded3a3760af2800ab7ee487fddbc658a0226c6e567bbf8ccbccb403478942e",
+            "event_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/retention/capture/runs/mp37_s10_mp37_retention_capture_0min20s_hist0_1x1_20260925_214548_p45277/rsl.out.0000",
+            "run_identity_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/retention/capture/runs/mp37_s10_mp37_retention_capture_0min20s_hist0_1x1_20260925_214548_p45277/run_identity.json",
+            "experiment_valid": {
+              "experiment_valid": true,
+              "invalid_reasons": [],
+              "requested_proc_grid": "1x1",
+              "actual_proc_grid": "1x1",
+              "active_input_identity_complete": true,
+              "exit_code": 0,
+              "model_completed": true
+            },
+            "executable_sha256": "593ba22c3653ca196f40f28c77c78ae86f749e2ab5789da1e610cbc8386fa0aa",
+            "effective_namelist_sha256": "902f08998435e9772906c5adb3c8d3d5f877357500eccb08a12312d0a1743df6",
+            "input_sha256": {
+              "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+              "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+              "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3"
+            },
+            "case_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/retention/capture",
+            "logging_env": "1",
+            "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e"
+          }
+        }
+      },
+      "mp37/midpoint": {
+        "scheme": "mp37",
+        "mp_physics": 37,
+        "policy": "midpoint",
+        "executable_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp37/midpoint/wrf.exe",
+        "executable_sha256": "846b3721d6db1a788d60ec72525323169df8717060020673e060c61807761cca",
+        "effective_namelist_sha256": "902f08998435e9772906c5adb3c8d3d5f877357500eccb08a12312d0a1743df6",
+        "input_sha256": {
+          "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+          "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+          "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3"
+        },
+        "strict_pair_receipt": {
+          "status": "PASS",
+          "variables_total": 254,
+          "numeric_variables": 253,
+          "exact_Times": true,
+          "bitwise_matches": 254,
+          "differences": 0
+        },
+        "event_stream": {
+          "sha256": "17e5b1be0bfd81d536029d994fba5ed4c1cf0433b2a6c8bcd599c722e5bb195c",
+          "event_payload_sha256": "295c8471873539d6197a3484cf949ec41ecd9cdb5bde118e692b61d444d050fa",
+          "event_payload_count": 6812,
+          "event_record_count": 6812,
+          "counts": {
+            "S10CMG": 624,
+            "S10DIAG": 78,
+            "S10PB": 624,
+            "S10RHO": 212,
+            "S10SCAN": 1974,
+            "S10SHAPE": 631,
+            "S10SLP": 624,
+            "S10TRACE": 707,
+            "S10TRS": 707,
+            "S10VOL": 631
+          },
+          "event_record_counts": {
+            "S10CMG": 624,
+            "S10DIAG": 78,
+            "S10PB": 624,
+            "S10RHO": 212,
+            "S10SCAN": 1974,
+            "S10SHAPE": 631,
+            "S10SLP": 624,
+            "S10TRACE": 707,
+            "S10TRS": 707,
+            "S10VOL": 631
+          },
+          "rho_key_sha256": "745fc1c0b9c9ff392f1e88c32c0e6f82b9d8030c8ca9963de5ed66aa6b7b64ed",
+          "rho_row_count": 212,
+          "path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/midpoint/capture/runs/mp37_s10_mp37_midpoint_capture_0min20s_hist0_1x1_20260925_214840_p46517/rsl.out.0000",
+          "event_payload_path": "harness/evidence/s10_policy_events/mp37_midpoint_capture.txt"
+        },
+        "runs": {
+          "control": {
+            "run_id": "mp37_s10_mp37_midpoint_control_0min20s_hist0_1x1_20260925_214748_p46295",
+            "run_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/midpoint/control/runs/mp37_s10_mp37_midpoint_control_0min20s_hist0_1x1_20260925_214748_p46295",
+            "history_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/midpoint/control/runs/mp37_s10_mp37_midpoint_control_0min20s_hist0_1x1_20260925_214748_p46295/klfs_lc05_fcst.202507190000",
+            "history_sha256": "888d894afe118bb96853aded2be8e55fcd9aa7d2d24ab296db9cd99769a199ab",
+            "event_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/midpoint/control/runs/mp37_s10_mp37_midpoint_control_0min20s_hist0_1x1_20260925_214748_p46295/rsl.out.0000",
+            "run_identity_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/midpoint/control/runs/mp37_s10_mp37_midpoint_control_0min20s_hist0_1x1_20260925_214748_p46295/run_identity.json",
+            "experiment_valid": {
+              "experiment_valid": true,
+              "invalid_reasons": [],
+              "requested_proc_grid": "1x1",
+              "actual_proc_grid": "1x1",
+              "active_input_identity_complete": true,
+              "exit_code": 0,
+              "model_completed": true
+            },
+            "executable_sha256": "846b3721d6db1a788d60ec72525323169df8717060020673e060c61807761cca",
+            "effective_namelist_sha256": "902f08998435e9772906c5adb3c8d3d5f877357500eccb08a12312d0a1743df6",
+            "input_sha256": {
+              "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+              "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+              "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3"
+            },
+            "case_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/midpoint/control",
+            "logging_env": "UNSET",
+            "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e"
+          },
+          "capture": {
+            "run_id": "mp37_s10_mp37_midpoint_capture_0min20s_hist0_1x1_20260925_214840_p46517",
+            "run_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/midpoint/capture/runs/mp37_s10_mp37_midpoint_capture_0min20s_hist0_1x1_20260925_214840_p46517",
+            "history_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/midpoint/capture/runs/mp37_s10_mp37_midpoint_capture_0min20s_hist0_1x1_20260925_214840_p46517/klfs_lc05_fcst.202507190000",
+            "history_sha256": "888d894afe118bb96853aded2be8e55fcd9aa7d2d24ab296db9cd99769a199ab",
+            "event_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/midpoint/capture/runs/mp37_s10_mp37_midpoint_capture_0min20s_hist0_1x1_20260925_214840_p46517/rsl.out.0000",
+            "run_identity_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/midpoint/capture/runs/mp37_s10_mp37_midpoint_capture_0min20s_hist0_1x1_20260925_214840_p46517/run_identity.json",
+            "experiment_valid": {
+              "experiment_valid": true,
+              "invalid_reasons": [],
+              "requested_proc_grid": "1x1",
+              "actual_proc_grid": "1x1",
+              "active_input_identity_complete": true,
+              "exit_code": 0,
+              "model_completed": true
+            },
+            "executable_sha256": "846b3721d6db1a788d60ec72525323169df8717060020673e060c61807761cca",
+            "effective_namelist_sha256": "902f08998435e9772906c5adb3c8d3d5f877357500eccb08a12312d0a1743df6",
+            "input_sha256": {
+              "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+              "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+              "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3"
+            },
+            "case_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp37/midpoint/capture",
+            "logging_env": "1",
+            "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e"
+          }
+        }
+      },
+      "mp237/retention": {
+        "scheme": "mp237",
+        "mp_physics": 237,
+        "policy": "retention",
+        "executable_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp237/retention/wrf.exe",
+        "executable_sha256": "4c2febdad945d01f2ad81aaaa28dbcdc86c808b6e3476decec00df561b8e5bf3",
+        "effective_namelist_sha256": "2896b69d2df232853a649c1f3b76ac2d234ef4cd855a912908ed42f0a8327508",
+        "input_sha256": {
+          "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+          "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+          "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3"
+        },
+        "strict_pair_receipt": {
+          "status": "PASS",
+          "variables_total": 254,
+          "numeric_variables": 253,
+          "exact_Times": true,
+          "bitwise_matches": 254,
+          "differences": 0
+        },
+        "event_stream": {
+          "sha256": "16accfe902b35a37daf88524f1e35a73483e39ec20226ce1782354ab972bba92",
+          "event_payload_sha256": "6b23c49c636dedf3fb9009b72a59a45dcfd137423e7123123d0b2d73965d52c6",
+          "event_payload_count": 6940,
+          "event_record_count": 6940,
+          "counts": {
+            "S10CMG": 624,
+            "S10DIAG": 78,
+            "S10PB": 624,
+            "S10RHO": 212,
+            "S10SCAN": 1974,
+            "S10SHAPE": 631,
+            "S10SLP": 624,
+            "S10TRACE": 771,
+            "S10TRS": 771,
+            "S10VOL": 631
+          },
+          "event_record_counts": {
+            "S10CMG": 624,
+            "S10DIAG": 78,
+            "S10PB": 624,
+            "S10RHO": 212,
+            "S10SCAN": 1974,
+            "S10SHAPE": 631,
+            "S10SLP": 624,
+            "S10TRACE": 771,
+            "S10TRS": 771,
+            "S10VOL": 631
+          },
+          "rho_key_sha256": "745fc1c0b9c9ff392f1e88c32c0e6f82b9d8030c8ca9963de5ed66aa6b7b64ed",
+          "rho_row_count": 212,
+          "path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/retention/capture/runs/mp237_s10_mp237_retention_capture_0min20s_hist0_1x1_20260925_215104_p49857/rsl.out.0000",
+          "event_payload_path": "harness/evidence/s10_policy_events/mp237_retention_capture.txt"
+        },
+        "runs": {
+          "control": {
+            "run_id": "mp237_s10_mp237_retention_control_0min20s_hist0_1x1_20260925_215014_p48535",
+            "run_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/retention/control/runs/mp237_s10_mp237_retention_control_0min20s_hist0_1x1_20260925_215014_p48535",
+            "history_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/retention/control/runs/mp237_s10_mp237_retention_control_0min20s_hist0_1x1_20260925_215014_p48535/klfs_lc05_fcst.202507190000",
+            "history_sha256": "cb92a3763b985a0c8ed7069028808b0083786c58e5382d6078e9b9150774b92e",
+            "event_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/retention/control/runs/mp237_s10_mp237_retention_control_0min20s_hist0_1x1_20260925_215014_p48535/rsl.out.0000",
+            "run_identity_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/retention/control/runs/mp237_s10_mp237_retention_control_0min20s_hist0_1x1_20260925_215014_p48535/run_identity.json",
+            "experiment_valid": {
+              "experiment_valid": true,
+              "invalid_reasons": [],
+              "requested_proc_grid": "1x1",
+              "actual_proc_grid": "1x1",
+              "active_input_identity_complete": true,
+              "exit_code": 0,
+              "model_completed": true
+            },
+            "executable_sha256": "4c2febdad945d01f2ad81aaaa28dbcdc86c808b6e3476decec00df561b8e5bf3",
+            "effective_namelist_sha256": "2896b69d2df232853a649c1f3b76ac2d234ef4cd855a912908ed42f0a8327508",
+            "input_sha256": {
+              "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+              "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+              "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3"
+            },
+            "case_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/retention/control",
+            "logging_env": "UNSET",
+            "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e"
+          },
+          "capture": {
+            "run_id": "mp237_s10_mp237_retention_capture_0min20s_hist0_1x1_20260925_215104_p49857",
+            "run_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/retention/capture/runs/mp237_s10_mp237_retention_capture_0min20s_hist0_1x1_20260925_215104_p49857",
+            "history_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/retention/capture/runs/mp237_s10_mp237_retention_capture_0min20s_hist0_1x1_20260925_215104_p49857/klfs_lc05_fcst.202507190000",
+            "history_sha256": "cb92a3763b985a0c8ed7069028808b0083786c58e5382d6078e9b9150774b92e",
+            "event_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/retention/capture/runs/mp237_s10_mp237_retention_capture_0min20s_hist0_1x1_20260925_215104_p49857/rsl.out.0000",
+            "run_identity_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/retention/capture/runs/mp237_s10_mp237_retention_capture_0min20s_hist0_1x1_20260925_215104_p49857/run_identity.json",
+            "experiment_valid": {
+              "experiment_valid": true,
+              "invalid_reasons": [],
+              "requested_proc_grid": "1x1",
+              "actual_proc_grid": "1x1",
+              "active_input_identity_complete": true,
+              "exit_code": 0,
+              "model_completed": true
+            },
+            "executable_sha256": "4c2febdad945d01f2ad81aaaa28dbcdc86c808b6e3476decec00df561b8e5bf3",
+            "effective_namelist_sha256": "2896b69d2df232853a649c1f3b76ac2d234ef4cd855a912908ed42f0a8327508",
+            "input_sha256": {
+              "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+              "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+              "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3"
+            },
+            "case_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/retention/capture",
+            "logging_env": "1",
+            "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e"
+          }
+        }
+      },
+      "mp237/midpoint": {
+        "scheme": "mp237",
+        "mp_physics": 237,
+        "policy": "midpoint",
+        "executable_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp237/midpoint/wrf.exe",
+        "executable_sha256": "afbe3768b1be3a6e8cb84986ff3907835854152473d269f04789598cd21402f1",
+        "effective_namelist_sha256": "2896b69d2df232853a649c1f3b76ac2d234ef4cd855a912908ed42f0a8327508",
+        "input_sha256": {
+          "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+          "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+          "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3"
+        },
+        "strict_pair_receipt": {
+          "status": "PASS",
+          "variables_total": 254,
+          "numeric_variables": 253,
+          "exact_Times": true,
+          "bitwise_matches": 254,
+          "differences": 0
+        },
+        "event_stream": {
+          "sha256": "be1e018ed16e54192286dbf7fe6ab5456a0271168e2053f76094a38e60f4a9ae",
+          "event_payload_sha256": "e9a80474569c4b6026c3d3407ac426c72eaacffb867986c8288000152461e9b6",
+          "event_payload_count": 6820,
+          "event_record_count": 6820,
+          "counts": {
+            "S10CMG": 624,
+            "S10DIAG": 78,
+            "S10PB": 624,
+            "S10RHO": 212,
+            "S10SCAN": 1974,
+            "S10SHAPE": 631,
+            "S10SLP": 624,
+            "S10TRACE": 711,
+            "S10TRS": 711,
+            "S10VOL": 631
+          },
+          "event_record_counts": {
+            "S10CMG": 624,
+            "S10DIAG": 78,
+            "S10PB": 624,
+            "S10RHO": 212,
+            "S10SCAN": 1974,
+            "S10SHAPE": 631,
+            "S10SLP": 624,
+            "S10TRACE": 711,
+            "S10TRS": 711,
+            "S10VOL": 631
+          },
+          "rho_key_sha256": "745fc1c0b9c9ff392f1e88c32c0e6f82b9d8030c8ca9963de5ed66aa6b7b64ed",
+          "rho_row_count": 212,
+          "path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/midpoint/capture/runs/mp237_s10_mp237_midpoint_capture_0min20s_hist0_1x1_20260925_215319_p58831/rsl.out.0000",
+          "event_payload_path": "harness/evidence/s10_policy_events/mp237_midpoint_capture.txt"
+        },
+        "runs": {
+          "control": {
+            "run_id": "mp237_s10_mp237_midpoint_control_0min20s_hist0_1x1_20260925_215210_p52163",
+            "run_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/midpoint/control/runs/mp237_s10_mp237_midpoint_control_0min20s_hist0_1x1_20260925_215210_p52163",
+            "history_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/midpoint/control/runs/mp237_s10_mp237_midpoint_control_0min20s_hist0_1x1_20260925_215210_p52163/klfs_lc05_fcst.202507190000",
+            "history_sha256": "4e743933a0a9e2038f37cd0564280724785c57a9e048ac6d18fa81d30ef7dc24",
+            "event_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/midpoint/control/runs/mp237_s10_mp237_midpoint_control_0min20s_hist0_1x1_20260925_215210_p52163/rsl.out.0000",
+            "run_identity_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/midpoint/control/runs/mp237_s10_mp237_midpoint_control_0min20s_hist0_1x1_20260925_215210_p52163/run_identity.json",
+            "experiment_valid": {
+              "experiment_valid": true,
+              "invalid_reasons": [],
+              "requested_proc_grid": "1x1",
+              "actual_proc_grid": "1x1",
+              "active_input_identity_complete": true,
+              "exit_code": 0,
+              "model_completed": true
+            },
+            "executable_sha256": "afbe3768b1be3a6e8cb84986ff3907835854152473d269f04789598cd21402f1",
+            "effective_namelist_sha256": "2896b69d2df232853a649c1f3b76ac2d234ef4cd855a912908ed42f0a8327508",
+            "input_sha256": {
+              "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+              "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+              "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3"
+            },
+            "case_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/midpoint/control",
+            "logging_env": "UNSET",
+            "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e"
+          },
+          "capture": {
+            "run_id": "mp237_s10_mp237_midpoint_capture_0min20s_hist0_1x1_20260925_215319_p58831",
+            "run_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/midpoint/capture/runs/mp237_s10_mp237_midpoint_capture_0min20s_hist0_1x1_20260925_215319_p58831",
+            "history_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/midpoint/capture/runs/mp237_s10_mp237_midpoint_capture_0min20s_hist0_1x1_20260925_215319_p58831/klfs_lc05_fcst.202507190000",
+            "history_sha256": "4e743933a0a9e2038f37cd0564280724785c57a9e048ac6d18fa81d30ef7dc24",
+            "event_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/midpoint/capture/runs/mp237_s10_mp237_midpoint_capture_0min20s_hist0_1x1_20260925_215319_p58831/rsl.out.0000",
+            "run_identity_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/midpoint/capture/runs/mp237_s10_mp237_midpoint_capture_0min20s_hist0_1x1_20260925_215319_p58831/run_identity.json",
+            "experiment_valid": {
+              "experiment_valid": true,
+              "invalid_reasons": [],
+              "requested_proc_grid": "1x1",
+              "actual_proc_grid": "1x1",
+              "active_input_identity_complete": true,
+              "exit_code": 0,
+              "model_completed": true
+            },
+            "executable_sha256": "afbe3768b1be3a6e8cb84986ff3907835854152473d269f04789598cd21402f1",
+            "effective_namelist_sha256": "2896b69d2df232853a649c1f3b76ac2d234ef4cd855a912908ed42f0a8327508",
+            "input_sha256": {
+              "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+              "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+              "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3"
+            },
+            "case_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/cases/mp237/midpoint/capture",
+            "logging_env": "1",
+            "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e"
+          }
+        }
+      }
+    }
+  },
+  "replay_package_sha256": "3a8a9b2d425c290419b8e7dc38412b4c4dad535db9c74bc28c9079cfbaf4941c"
+}

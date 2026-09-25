@@ -1,0 +1,1125 @@
+{
+  "schema": "s10-progb-policy-shadow-build-receipt-v3",
+  "status": "FOUR_SHADOWS_BUILT_AND_EIGHT_BOUNDED_NATIVE_RUNS_COMPLETE_POLICY_GATES_FAILED_CLOSED",
+  "branch": "codex/s10-progb-counterfactual",
+  "base_at_worktree_creation": "e21ce235a83bf3c539e966ac4e3405d459b60ff0 (rebased before native runs)",
+  "#269_rebase_pending": false,
+  "canonical_private_source_read_only": true,
+  "canonical_before_after_sha256": {
+    "before": {
+      "module_mp_kdm6.F": "fc0a72d33a5e61803fea56eb9118018039c6da8b5775813032b4861a2bd66eb5",
+      "module_mp_kdm6_cons.F": "4f0103c8a8321b8e854d3500f4ae567755e41eb78746fac54519eca2686a6648",
+      "main/wrf.exe": "676223e8d61d23456d4ac83713bff0283ea08b1e71776b7f8885b062d97f801b",
+      "main/libwrflib.a": "722f83c058ea1c43d5f23cc497aed1b218f33f90828a0e1dc51c6fe30203deba"
+    },
+    "after": {
+      "module_mp_kdm6.F": "fc0a72d33a5e61803fea56eb9118018039c6da8b5775813032b4861a2bd66eb5",
+      "module_mp_kdm6_cons.F": "4f0103c8a8321b8e854d3500f4ae567755e41eb78746fac54519eca2686a6648",
+      "main/wrf.exe": "676223e8d61d23456d4ac83713bff0283ea08b1e71776b7f8885b062d97f801b",
+      "main/libwrflib.a": "722f83c058ea1c43d5f23cc497aed1b218f33f90828a0e1dc51c6fe30203deba"
+    },
+    "unchanged": true
+  },
+  "preprocess_recipe_reference": "/Users/yhlee/KDM6AD-s10/graphify-out/s10-progb/build/preprocess-recipe-check/reproduction.json",
+  "link_recipe_reference": "/Users/yhlee/KDM6AD-s10/graphify-out/s10-progb/build/link-mp37.json",
+  "variants": [
+    {
+      "variant": "mp37",
+      "policy": "retention",
+      "approved_operational_policy": false,
+      "canonical_source_sha256": "fc0a72d33a5e61803fea56eb9118018039c6da8b5775813032b4861a2bd66eb5",
+      "policy_overlay_sha256": "af9524781ebcc216c1fa687887d376abb60c10be95a1058b2736c8b907874389",
+      "contract": {
+        "policy": "initialized_value_retention",
+        "fortran_change": "ProgB_param output dummies OUT -> INOUT",
+        "seed": "kdm62d sets every output group to zero at each outer loop before ProgB calls",
+        "inactive_rule": "retain the latest current-loop value; initial state is the explicit loop zero",
+        "volume_record": "S10VOL action 0 logs active density projection; action 3 logs retained inactive state with zero direct ProgB volume change",
+        "changes_qg_or_brs_inside_ProgB": false,
+        "caveat": "defined retention can be zero or stale; it is not asserted physically valid"
+      },
+      "compile": {
+        "sed_command": [
+          "sed",
+          "-e",
+          "s/^\\!.*'.*//",
+          "-e",
+          "s/^ *\\!.*'.*//",
+          "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/source/module_mp37_retention.F"
+        ],
+        "first_cpp_command": [
+          "cpp",
+          "-P",
+          "-nostdinc",
+          "-xassembler-with-cpp",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/inc",
+          "-DEM_CORE=1",
+          "-DNMM_CORE=0",
+          "-DNMM_MAX_DIM=2600",
+          "-DDA_CORE=0",
+          "-DWRFPLUS=0",
+          "-DIWORDSIZE=4",
+          "-DDWORDSIZE=8",
+          "-DRWORDSIZE=4",
+          "-DLWORDSIZE=4",
+          "-DNONSTANDARD_SYSTEM_SUBR",
+          "-DMACOS",
+          "-DWRF_USE_CLM",
+          "-DKDM6_SUBSTEP_DUMP",
+          "-DDM_PARALLEL",
+          "-DNETCDF",
+          "-DLANDREAD_STUB=1",
+          "-DUSE_ALLOCATABLES",
+          "-Dwrfmodel",
+          "-DGRIB1",
+          "-DINTIO",
+          "-DKEEP_INT_AROUND",
+          "-DLIMIT_ARGS",
+          "-DBUILD_RRTMG_FAST=0",
+          "-DBUILD_RRTMK=0",
+          "-DBUILD_SBM_FAST=1",
+          "-DSHOW_ALL_VARS_USED=0",
+          "-DCONFIG_BUF_LEN=65536",
+          "-DMAX_DOMAINS_F=21",
+          "-DMAX_HISTORY=25",
+          "-DNMM_NEST=0",
+          "-I.",
+          "-traditional-cpp",
+          "-DKDM6_PROGB_VALIDITY_CAPTURE",
+          "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp37/retention/module_mp_kdm6.F.G"
+        ],
+        "standard_command": [
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/tools/standard.exe",
+          "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp37/retention/module_mp_kdm6.F.bb"
+        ],
+        "final_cpp_command": [
+          "cpp",
+          "-P",
+          "-nostdinc",
+          "-xassembler-with-cpp",
+          "-traditional-cpp"
+        ],
+        "compile_command": [
+          "/opt/homebrew/bin/mpif90",
+          "-o",
+          "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp37/retention/module.o",
+          "-c",
+          "-O2",
+          "-ftree-vectorize",
+          "-funroll-loops",
+          "-w",
+          "-ffree-form",
+          "-ffree-line-length-none",
+          "-fconvert=big-endian",
+          "-frecord-marker=4",
+          "-fallow-argument-mismatch",
+          "-fallow-invalid-boz",
+          "-ffp-contract=off",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/dyn_em",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/esmf_time_f90",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_netcdf",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_int",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/frame",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/share",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/phys",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/wrftladj",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/chem",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/inc",
+          "-I/opt/homebrew/include",
+          "-J/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp37/retention/mod",
+          "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp37/retention/module_mp_kdm6.F.f90"
+        ],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "",
+        "source_sha256": "af9524781ebcc216c1fa687887d376abb60c10be95a1058b2736c8b907874389",
+        "preprocessed_sha256": "a423433fd7b2b370ca9b3427c727bc73f73ec6c76cd8da623079b596d1c1dca2",
+        "object_sha256": "4f3b49d75a9d9b02ba6374462159b933d28de057764cbcc096fe8e060f975929",
+        "ffp_contract_off": true
+      },
+      "link": {
+        "command": [
+          "/opt/homebrew/bin/mpif90",
+          "-B/Users/yhlee/KDM6AD-audit-pr205/graphify-out/pr231-native/build/ldshim",
+          "-isysroot",
+          "/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk",
+          "-o",
+          "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp37/retention/wrf.exe",
+          "-O2",
+          "-ftree-vectorize",
+          "-funroll-loops",
+          "-w",
+          "-ffree-form",
+          "-ffree-line-length-none",
+          "-fconvert=big-endian",
+          "-frecord-marker=4",
+          "-fallow-argument-mismatch",
+          "-fallow-invalid-boz",
+          "-ffp-contract=off",
+          "-Wl,-rpath,@loader_path/../../../libtorch/install/lib",
+          "-Wl,-rpath,/Users/yhlee/KDM6AD-k/libtorch/install/lib",
+          "-Wl,-rpath,/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/wrf.o",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/wrf_kdm6ad_exit.o",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/module_wrf_top.o",
+          "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp37/retention/module.o",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/libwrflib.a",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/fftpack/fftpack5/libfftpack.a",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_grib1/libio_grib1.a",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_grib_share/libio_grib_share.a",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_int/libwrfio_int.a",
+          "-L/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/esmf_time_f90",
+          "-lesmf_time",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/RSL_LITE/librsl_lite.a",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/frame/module_internal_header_util.o",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/frame/pack_utils.o",
+          "-L/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_netcdf",
+          "-lwrfio_nf",
+          "-L/opt/homebrew/lib",
+          "-lnetcdff",
+          "-lnetcdf",
+          "/Users/yhlee/KDM6AD-k/libtorch/install/lib/libkdm6_c.dylib",
+          "/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib/libtorch.dylib",
+          "/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib/libtorch_cpu.dylib",
+          "/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib/libc10.dylib"
+        ],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "",
+        "shadow_object_sha256": "4f3b49d75a9d9b02ba6374462159b933d28de057764cbcc096fe8e060f975929",
+        "executable_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp37/retention/wrf.exe",
+        "executable_sha256": "593ba22c3653ca196f40f28c77c78ae86f749e2ab5789da1e610cbc8386fa0aa",
+        "linker_shim": {
+          "path": "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/pr231-native/build/ldshim/ld",
+          "sha256": "0f53ad6ee3fef4674782a1a90d423850f15ba0bf7709eaadedb4cd526978743d"
+        },
+        "link_file_inputs": [
+          {
+            "path": "/opt/homebrew/bin/mpif90",
+            "sha256": "91865d113f579bbf8e14c7d696266fdcf87f5e4845aa75966ad4e31531ebae5d",
+            "size_bytes": 245904
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp37/retention/wrf.exe",
+            "sha256": "593ba22c3653ca196f40f28c77c78ae86f749e2ab5789da1e610cbc8386fa0aa",
+            "size_bytes": 50516200
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/wrf.o",
+            "sha256": "b51e734b5d590c144a24d8908a772241a2ced38c796078520aeeb23d550fffb2",
+            "size_bytes": 1784
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/wrf_kdm6ad_exit.o",
+            "sha256": "b98600a5015fedb1d391c38fce614625b7f5a3e535b543e8c4eb815c0eae35e1",
+            "size_bytes": 568
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/module_wrf_top.o",
+            "sha256": "db72d0e2440392b47b34d422721e29d759a9bd72f60bd58fae5d1ed4b5b258bf",
+            "size_bytes": 12792
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp37/retention/module.o",
+            "sha256": "4f3b49d75a9d9b02ba6374462159b933d28de057764cbcc096fe8e060f975929",
+            "size_bytes": 240280
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/libwrflib.a",
+            "sha256": "722f83c058ea1c43d5f23cc497aed1b218f33f90828a0e1dc51c6fe30203deba",
+            "size_bytes": 59152032
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/fftpack/fftpack5/libfftpack.a",
+            "sha256": "72863a6320b3dacca7ee171cde37aee5d1df0f9df3f780abc0d250c42c428952",
+            "size_bytes": 769840
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_grib1/libio_grib1.a",
+            "sha256": "b9b0730e28bac098d32246ac690d1cf9bb10ca3649be4296dac87a7c36c64cf2",
+            "size_bytes": 387192
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_grib_share/libio_grib_share.a",
+            "sha256": "04a6162ce671651b64bdc252e705ed11a45541945667e717c0e321739c6e09c0",
+            "size_bytes": 33168
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_int/libwrfio_int.a",
+            "sha256": "aeb9c1c53d809eabaa73b45da165578911426b8fcea6daa333407af5a035ecb0",
+            "size_bytes": 85760
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/RSL_LITE/librsl_lite.a",
+            "sha256": "360ed60ba3be71b7cf483a8c5b5336cc832fb26ceb3c831cc201a5f0013d0a85",
+            "size_bytes": 106920
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/frame/module_internal_header_util.o",
+            "sha256": "99b29f732f620200111b598a33aa9e3c055741f618cf7c0a3578771102301484",
+            "size_bytes": 16752
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/frame/pack_utils.o",
+            "sha256": "e5ef7538a6449573642da9d6f470536eb63e302b0df145d69cefdb5a3e6cdd3f",
+            "size_bytes": 7112
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/libtorch/install/lib/libkdm6_c.dylib",
+            "sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+            "size_bytes": 1996680
+          },
+          {
+            "path": "/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib/libtorch.dylib",
+            "sha256": "6d36d4b9a84b40cc91b45d5549aecd656113eacc21f6e7b331398cda73af8190",
+            "size_bytes": 16736
+          },
+          {
+            "path": "/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib/libtorch_cpu.dylib",
+            "sha256": "5630bd318812b8d11d5eaad407930cd1486586fc4155b6ce16449380a9c03565",
+            "size_bytes": 213290816
+          },
+          {
+            "path": "/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib/libc10.dylib",
+            "sha256": "f1950c7193efef69dd5a3115c3e885142d9a7fe3723290905e12bf02781cce6f",
+            "size_bytes": 1063472
+          }
+        ],
+        "native_run": "NOT_RUN_S14_OWNS_SLOT"
+      },
+      "native_run": "COMPLETE_VALID",
+      "native_runs": {
+        "control": "mp37_s10_mp37_retention_control_0min20s_hist0_1x1_20260925_213032_p44751",
+        "capture": "mp37_s10_mp37_retention_capture_0min20s_hist0_1x1_20260925_214548_p45277"
+      }
+    },
+    {
+      "variant": "mp37",
+      "policy": "midpoint",
+      "approved_operational_policy": false,
+      "canonical_source_sha256": "fc0a72d33a5e61803fea56eb9118018039c6da8b5775813032b4861a2bd66eb5",
+      "policy_overlay_sha256": "70f101d9160d07af8a318d552ad317c05e7d46219fb0e4233da49979bd84a935",
+      "contract": {
+        "policy": "per_call_rho_mid_with_brs_projection",
+        "rho_mid_kg_m3": 400.0,
+        "inactive_gate": "qg<=qcrmin and brs<=brs_min, evaluated from the pre-call state",
+        "inactive_positive_trace": "rhox=rho_mid; brs=qg/rho_mid; build the rho_mid table bundle",
+        "inactive_zero_qg": "zero local output bundle and set brs=0",
+        "volume_record": "S10VOL action 0 logs active density projection; 1 logs positive-trace rho_mid projection; 2 logs zero-qg volume cleanup",
+        "state_change": "delta_brs is an explicit volume-state correction; qg mass is unchanged in ProgB_param",
+        "active_branch_changed": false,
+        "not_approved": true
+      },
+      "compile": {
+        "sed_command": [
+          "sed",
+          "-e",
+          "s/^\\!.*'.*//",
+          "-e",
+          "s/^ *\\!.*'.*//",
+          "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/source/module_mp37_midpoint.F"
+        ],
+        "first_cpp_command": [
+          "cpp",
+          "-P",
+          "-nostdinc",
+          "-xassembler-with-cpp",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/inc",
+          "-DEM_CORE=1",
+          "-DNMM_CORE=0",
+          "-DNMM_MAX_DIM=2600",
+          "-DDA_CORE=0",
+          "-DWRFPLUS=0",
+          "-DIWORDSIZE=4",
+          "-DDWORDSIZE=8",
+          "-DRWORDSIZE=4",
+          "-DLWORDSIZE=4",
+          "-DNONSTANDARD_SYSTEM_SUBR",
+          "-DMACOS",
+          "-DWRF_USE_CLM",
+          "-DKDM6_SUBSTEP_DUMP",
+          "-DDM_PARALLEL",
+          "-DNETCDF",
+          "-DLANDREAD_STUB=1",
+          "-DUSE_ALLOCATABLES",
+          "-Dwrfmodel",
+          "-DGRIB1",
+          "-DINTIO",
+          "-DKEEP_INT_AROUND",
+          "-DLIMIT_ARGS",
+          "-DBUILD_RRTMG_FAST=0",
+          "-DBUILD_RRTMK=0",
+          "-DBUILD_SBM_FAST=1",
+          "-DSHOW_ALL_VARS_USED=0",
+          "-DCONFIG_BUF_LEN=65536",
+          "-DMAX_DOMAINS_F=21",
+          "-DMAX_HISTORY=25",
+          "-DNMM_NEST=0",
+          "-I.",
+          "-traditional-cpp",
+          "-DKDM6_PROGB_VALIDITY_CAPTURE",
+          "-DKDM6_PROGB_POLICY_MIDPOINT",
+          "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp37/midpoint/module_mp_kdm6.F.G"
+        ],
+        "standard_command": [
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/tools/standard.exe",
+          "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp37/midpoint/module_mp_kdm6.F.bb"
+        ],
+        "final_cpp_command": [
+          "cpp",
+          "-P",
+          "-nostdinc",
+          "-xassembler-with-cpp",
+          "-traditional-cpp"
+        ],
+        "compile_command": [
+          "/opt/homebrew/bin/mpif90",
+          "-o",
+          "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp37/midpoint/module.o",
+          "-c",
+          "-O2",
+          "-ftree-vectorize",
+          "-funroll-loops",
+          "-w",
+          "-ffree-form",
+          "-ffree-line-length-none",
+          "-fconvert=big-endian",
+          "-frecord-marker=4",
+          "-fallow-argument-mismatch",
+          "-fallow-invalid-boz",
+          "-ffp-contract=off",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/dyn_em",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/esmf_time_f90",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_netcdf",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_int",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/frame",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/share",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/phys",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/wrftladj",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/chem",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/inc",
+          "-I/opt/homebrew/include",
+          "-J/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp37/midpoint/mod",
+          "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp37/midpoint/module_mp_kdm6.F.f90"
+        ],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "",
+        "source_sha256": "70f101d9160d07af8a318d552ad317c05e7d46219fb0e4233da49979bd84a935",
+        "preprocessed_sha256": "8a5b68be7edf580bfac5cc1cebe160349a51b2c0c6fefe177498fe5c26c555df",
+        "object_sha256": "09b25c07e02109352c8f432395fe823940edb0c9308ca055127609b6aa5e92df",
+        "ffp_contract_off": true
+      },
+      "link": {
+        "command": [
+          "/opt/homebrew/bin/mpif90",
+          "-B/Users/yhlee/KDM6AD-audit-pr205/graphify-out/pr231-native/build/ldshim",
+          "-isysroot",
+          "/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk",
+          "-o",
+          "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp37/midpoint/wrf.exe",
+          "-O2",
+          "-ftree-vectorize",
+          "-funroll-loops",
+          "-w",
+          "-ffree-form",
+          "-ffree-line-length-none",
+          "-fconvert=big-endian",
+          "-frecord-marker=4",
+          "-fallow-argument-mismatch",
+          "-fallow-invalid-boz",
+          "-ffp-contract=off",
+          "-Wl,-rpath,@loader_path/../../../libtorch/install/lib",
+          "-Wl,-rpath,/Users/yhlee/KDM6AD-k/libtorch/install/lib",
+          "-Wl,-rpath,/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/wrf.o",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/wrf_kdm6ad_exit.o",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/module_wrf_top.o",
+          "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp37/midpoint/module.o",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/libwrflib.a",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/fftpack/fftpack5/libfftpack.a",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_grib1/libio_grib1.a",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_grib_share/libio_grib_share.a",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_int/libwrfio_int.a",
+          "-L/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/esmf_time_f90",
+          "-lesmf_time",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/RSL_LITE/librsl_lite.a",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/frame/module_internal_header_util.o",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/frame/pack_utils.o",
+          "-L/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_netcdf",
+          "-lwrfio_nf",
+          "-L/opt/homebrew/lib",
+          "-lnetcdff",
+          "-lnetcdf",
+          "/Users/yhlee/KDM6AD-k/libtorch/install/lib/libkdm6_c.dylib",
+          "/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib/libtorch.dylib",
+          "/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib/libtorch_cpu.dylib",
+          "/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib/libc10.dylib"
+        ],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "",
+        "shadow_object_sha256": "09b25c07e02109352c8f432395fe823940edb0c9308ca055127609b6aa5e92df",
+        "executable_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp37/midpoint/wrf.exe",
+        "executable_sha256": "846b3721d6db1a788d60ec72525323169df8717060020673e060c61807761cca",
+        "linker_shim": {
+          "path": "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/pr231-native/build/ldshim/ld",
+          "sha256": "0f53ad6ee3fef4674782a1a90d423850f15ba0bf7709eaadedb4cd526978743d"
+        },
+        "link_file_inputs": [
+          {
+            "path": "/opt/homebrew/bin/mpif90",
+            "sha256": "91865d113f579bbf8e14c7d696266fdcf87f5e4845aa75966ad4e31531ebae5d",
+            "size_bytes": 245904
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp37/midpoint/wrf.exe",
+            "sha256": "846b3721d6db1a788d60ec72525323169df8717060020673e060c61807761cca",
+            "size_bytes": 50516200
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/wrf.o",
+            "sha256": "b51e734b5d590c144a24d8908a772241a2ced38c796078520aeeb23d550fffb2",
+            "size_bytes": 1784
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/wrf_kdm6ad_exit.o",
+            "sha256": "b98600a5015fedb1d391c38fce614625b7f5a3e535b543e8c4eb815c0eae35e1",
+            "size_bytes": 568
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/module_wrf_top.o",
+            "sha256": "db72d0e2440392b47b34d422721e29d759a9bd72f60bd58fae5d1ed4b5b258bf",
+            "size_bytes": 12792
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp37/midpoint/module.o",
+            "sha256": "09b25c07e02109352c8f432395fe823940edb0c9308ca055127609b6aa5e92df",
+            "size_bytes": 240312
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/libwrflib.a",
+            "sha256": "722f83c058ea1c43d5f23cc497aed1b218f33f90828a0e1dc51c6fe30203deba",
+            "size_bytes": 59152032
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/fftpack/fftpack5/libfftpack.a",
+            "sha256": "72863a6320b3dacca7ee171cde37aee5d1df0f9df3f780abc0d250c42c428952",
+            "size_bytes": 769840
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_grib1/libio_grib1.a",
+            "sha256": "b9b0730e28bac098d32246ac690d1cf9bb10ca3649be4296dac87a7c36c64cf2",
+            "size_bytes": 387192
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_grib_share/libio_grib_share.a",
+            "sha256": "04a6162ce671651b64bdc252e705ed11a45541945667e717c0e321739c6e09c0",
+            "size_bytes": 33168
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_int/libwrfio_int.a",
+            "sha256": "aeb9c1c53d809eabaa73b45da165578911426b8fcea6daa333407af5a035ecb0",
+            "size_bytes": 85760
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/RSL_LITE/librsl_lite.a",
+            "sha256": "360ed60ba3be71b7cf483a8c5b5336cc832fb26ceb3c831cc201a5f0013d0a85",
+            "size_bytes": 106920
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/frame/module_internal_header_util.o",
+            "sha256": "99b29f732f620200111b598a33aa9e3c055741f618cf7c0a3578771102301484",
+            "size_bytes": 16752
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/frame/pack_utils.o",
+            "sha256": "e5ef7538a6449573642da9d6f470536eb63e302b0df145d69cefdb5a3e6cdd3f",
+            "size_bytes": 7112
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/libtorch/install/lib/libkdm6_c.dylib",
+            "sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+            "size_bytes": 1996680
+          },
+          {
+            "path": "/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib/libtorch.dylib",
+            "sha256": "6d36d4b9a84b40cc91b45d5549aecd656113eacc21f6e7b331398cda73af8190",
+            "size_bytes": 16736
+          },
+          {
+            "path": "/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib/libtorch_cpu.dylib",
+            "sha256": "5630bd318812b8d11d5eaad407930cd1486586fc4155b6ce16449380a9c03565",
+            "size_bytes": 213290816
+          },
+          {
+            "path": "/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib/libc10.dylib",
+            "sha256": "f1950c7193efef69dd5a3115c3e885142d9a7fe3723290905e12bf02781cce6f",
+            "size_bytes": 1063472
+          }
+        ],
+        "native_run": "NOT_RUN_S14_OWNS_SLOT"
+      },
+      "native_run": "COMPLETE_VALID",
+      "native_runs": {
+        "control": "mp37_s10_mp37_midpoint_control_0min20s_hist0_1x1_20260925_214748_p46295",
+        "capture": "mp37_s10_mp37_midpoint_capture_0min20s_hist0_1x1_20260925_214840_p46517"
+      }
+    },
+    {
+      "variant": "mp237",
+      "policy": "retention",
+      "approved_operational_policy": false,
+      "canonical_source_sha256": "4f0103c8a8321b8e854d3500f4ae567755e41eb78746fac54519eca2686a6648",
+      "policy_overlay_sha256": "0366707acec57942589599bb93ce61b0fadbf43a7dd7f0685779473b2d396cb6",
+      "contract": {
+        "policy": "initialized_value_retention",
+        "fortran_change": "ProgB_param output dummies OUT -> INOUT",
+        "seed": "kdm62d sets every output group to zero at each outer loop before ProgB calls",
+        "inactive_rule": "retain the latest current-loop value; initial state is the explicit loop zero",
+        "volume_record": "S10VOL action 0 logs active density projection; action 3 logs retained inactive state with zero direct ProgB volume change",
+        "changes_qg_or_brs_inside_ProgB": false,
+        "caveat": "defined retention can be zero or stale; it is not asserted physically valid"
+      },
+      "compile": {
+        "sed_command": [
+          "sed",
+          "-e",
+          "s/^\\!.*'.*//",
+          "-e",
+          "s/^ *\\!.*'.*//",
+          "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/source/module_mp237_retention.F"
+        ],
+        "first_cpp_command": [
+          "cpp",
+          "-P",
+          "-nostdinc",
+          "-xassembler-with-cpp",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/inc",
+          "-DEM_CORE=1",
+          "-DNMM_CORE=0",
+          "-DNMM_MAX_DIM=2600",
+          "-DDA_CORE=0",
+          "-DWRFPLUS=0",
+          "-DIWORDSIZE=4",
+          "-DDWORDSIZE=8",
+          "-DRWORDSIZE=4",
+          "-DLWORDSIZE=4",
+          "-DNONSTANDARD_SYSTEM_SUBR",
+          "-DMACOS",
+          "-DWRF_USE_CLM",
+          "-DKDM6_SUBSTEP_DUMP",
+          "-DDM_PARALLEL",
+          "-DNETCDF",
+          "-DLANDREAD_STUB=1",
+          "-DUSE_ALLOCATABLES",
+          "-Dwrfmodel",
+          "-DGRIB1",
+          "-DINTIO",
+          "-DKEEP_INT_AROUND",
+          "-DLIMIT_ARGS",
+          "-DBUILD_RRTMG_FAST=0",
+          "-DBUILD_RRTMK=0",
+          "-DBUILD_SBM_FAST=1",
+          "-DSHOW_ALL_VARS_USED=0",
+          "-DCONFIG_BUF_LEN=65536",
+          "-DMAX_DOMAINS_F=21",
+          "-DMAX_HISTORY=25",
+          "-DNMM_NEST=0",
+          "-I.",
+          "-traditional-cpp",
+          "-DKDM6_PROGB_VALIDITY_CAPTURE",
+          "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp237/retention/module_mp_kdm6_cons.F.G"
+        ],
+        "standard_command": [
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/tools/standard.exe",
+          "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp237/retention/module_mp_kdm6_cons.F.bb"
+        ],
+        "final_cpp_command": [
+          "cpp",
+          "-P",
+          "-nostdinc",
+          "-xassembler-with-cpp",
+          "-traditional-cpp"
+        ],
+        "compile_command": [
+          "/opt/homebrew/bin/mpif90",
+          "-o",
+          "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp237/retention/module.o",
+          "-c",
+          "-O2",
+          "-ftree-vectorize",
+          "-funroll-loops",
+          "-w",
+          "-ffree-form",
+          "-ffree-line-length-none",
+          "-fconvert=big-endian",
+          "-frecord-marker=4",
+          "-fallow-argument-mismatch",
+          "-fallow-invalid-boz",
+          "-ffp-contract=off",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/dyn_em",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/esmf_time_f90",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_netcdf",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_int",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/frame",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/share",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/phys",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/wrftladj",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/chem",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/inc",
+          "-I/opt/homebrew/include",
+          "-J/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp237/retention/mod",
+          "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp237/retention/module_mp_kdm6_cons.F.f90"
+        ],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "",
+        "source_sha256": "0366707acec57942589599bb93ce61b0fadbf43a7dd7f0685779473b2d396cb6",
+        "preprocessed_sha256": "f356041940a5768d4c3e51336139757190610b515f42f2f9193eb0eb03831768",
+        "object_sha256": "26e9506689203d0a14ab217a555a0c1d72c67644acd305e9979baff774aeaa7a",
+        "ffp_contract_off": true
+      },
+      "link": {
+        "command": [
+          "/opt/homebrew/bin/mpif90",
+          "-B/Users/yhlee/KDM6AD-audit-pr205/graphify-out/pr231-native/build/ldshim",
+          "-isysroot",
+          "/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk",
+          "-o",
+          "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp237/retention/wrf.exe",
+          "-O2",
+          "-ftree-vectorize",
+          "-funroll-loops",
+          "-w",
+          "-ffree-form",
+          "-ffree-line-length-none",
+          "-fconvert=big-endian",
+          "-frecord-marker=4",
+          "-fallow-argument-mismatch",
+          "-fallow-invalid-boz",
+          "-ffp-contract=off",
+          "-Wl,-rpath,@loader_path/../../../libtorch/install/lib",
+          "-Wl,-rpath,/Users/yhlee/KDM6AD-k/libtorch/install/lib",
+          "-Wl,-rpath,/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/wrf.o",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/wrf_kdm6ad_exit.o",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/module_wrf_top.o",
+          "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp237/retention/module.o",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/libwrflib.a",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/fftpack/fftpack5/libfftpack.a",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_grib1/libio_grib1.a",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_grib_share/libio_grib_share.a",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_int/libwrfio_int.a",
+          "-L/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/esmf_time_f90",
+          "-lesmf_time",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/RSL_LITE/librsl_lite.a",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/frame/module_internal_header_util.o",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/frame/pack_utils.o",
+          "-L/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_netcdf",
+          "-lwrfio_nf",
+          "-L/opt/homebrew/lib",
+          "-lnetcdff",
+          "-lnetcdf",
+          "/Users/yhlee/KDM6AD-k/libtorch/install/lib/libkdm6_c.dylib",
+          "/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib/libtorch.dylib",
+          "/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib/libtorch_cpu.dylib",
+          "/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib/libc10.dylib"
+        ],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "",
+        "shadow_object_sha256": "26e9506689203d0a14ab217a555a0c1d72c67644acd305e9979baff774aeaa7a",
+        "executable_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp237/retention/wrf.exe",
+        "executable_sha256": "4c2febdad945d01f2ad81aaaa28dbcdc86c808b6e3476decec00df561b8e5bf3",
+        "linker_shim": {
+          "path": "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/pr231-native/build/ldshim/ld",
+          "sha256": "0f53ad6ee3fef4674782a1a90d423850f15ba0bf7709eaadedb4cd526978743d"
+        },
+        "link_file_inputs": [
+          {
+            "path": "/opt/homebrew/bin/mpif90",
+            "sha256": "91865d113f579bbf8e14c7d696266fdcf87f5e4845aa75966ad4e31531ebae5d",
+            "size_bytes": 245904
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp237/retention/wrf.exe",
+            "sha256": "4c2febdad945d01f2ad81aaaa28dbcdc86c808b6e3476decec00df561b8e5bf3",
+            "size_bytes": 50516200
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/wrf.o",
+            "sha256": "b51e734b5d590c144a24d8908a772241a2ced38c796078520aeeb23d550fffb2",
+            "size_bytes": 1784
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/wrf_kdm6ad_exit.o",
+            "sha256": "b98600a5015fedb1d391c38fce614625b7f5a3e535b543e8c4eb815c0eae35e1",
+            "size_bytes": 568
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/module_wrf_top.o",
+            "sha256": "db72d0e2440392b47b34d422721e29d759a9bd72f60bd58fae5d1ed4b5b258bf",
+            "size_bytes": 12792
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp237/retention/module.o",
+            "sha256": "26e9506689203d0a14ab217a555a0c1d72c67644acd305e9979baff774aeaa7a",
+            "size_bytes": 241096
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/libwrflib.a",
+            "sha256": "722f83c058ea1c43d5f23cc497aed1b218f33f90828a0e1dc51c6fe30203deba",
+            "size_bytes": 59152032
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/fftpack/fftpack5/libfftpack.a",
+            "sha256": "72863a6320b3dacca7ee171cde37aee5d1df0f9df3f780abc0d250c42c428952",
+            "size_bytes": 769840
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_grib1/libio_grib1.a",
+            "sha256": "b9b0730e28bac098d32246ac690d1cf9bb10ca3649be4296dac87a7c36c64cf2",
+            "size_bytes": 387192
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_grib_share/libio_grib_share.a",
+            "sha256": "04a6162ce671651b64bdc252e705ed11a45541945667e717c0e321739c6e09c0",
+            "size_bytes": 33168
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_int/libwrfio_int.a",
+            "sha256": "aeb9c1c53d809eabaa73b45da165578911426b8fcea6daa333407af5a035ecb0",
+            "size_bytes": 85760
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/RSL_LITE/librsl_lite.a",
+            "sha256": "360ed60ba3be71b7cf483a8c5b5336cc832fb26ceb3c831cc201a5f0013d0a85",
+            "size_bytes": 106920
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/frame/module_internal_header_util.o",
+            "sha256": "99b29f732f620200111b598a33aa9e3c055741f618cf7c0a3578771102301484",
+            "size_bytes": 16752
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/frame/pack_utils.o",
+            "sha256": "e5ef7538a6449573642da9d6f470536eb63e302b0df145d69cefdb5a3e6cdd3f",
+            "size_bytes": 7112
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/libtorch/install/lib/libkdm6_c.dylib",
+            "sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+            "size_bytes": 1996680
+          },
+          {
+            "path": "/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib/libtorch.dylib",
+            "sha256": "6d36d4b9a84b40cc91b45d5549aecd656113eacc21f6e7b331398cda73af8190",
+            "size_bytes": 16736
+          },
+          {
+            "path": "/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib/libtorch_cpu.dylib",
+            "sha256": "5630bd318812b8d11d5eaad407930cd1486586fc4155b6ce16449380a9c03565",
+            "size_bytes": 213290816
+          },
+          {
+            "path": "/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib/libc10.dylib",
+            "sha256": "f1950c7193efef69dd5a3115c3e885142d9a7fe3723290905e12bf02781cce6f",
+            "size_bytes": 1063472
+          }
+        ],
+        "native_run": "NOT_RUN_S14_OWNS_SLOT"
+      },
+      "native_run": "COMPLETE_VALID",
+      "native_runs": {
+        "control": "mp237_s10_mp237_retention_control_0min20s_hist0_1x1_20260925_215014_p48535",
+        "capture": "mp237_s10_mp237_retention_capture_0min20s_hist0_1x1_20260925_215104_p49857"
+      }
+    },
+    {
+      "variant": "mp237",
+      "policy": "midpoint",
+      "approved_operational_policy": false,
+      "canonical_source_sha256": "4f0103c8a8321b8e854d3500f4ae567755e41eb78746fac54519eca2686a6648",
+      "policy_overlay_sha256": "6be24e8ca0ab651429e40c1924a5897ed54557f0b3d4942bdbdecee3411c7eca",
+      "contract": {
+        "policy": "per_call_rho_mid_with_brs_projection",
+        "rho_mid_kg_m3": 400.0,
+        "inactive_gate": "qg<=qcrmin and brs<=brs_min, evaluated from the pre-call state",
+        "inactive_positive_trace": "rhox=rho_mid; brs=qg/rho_mid; build the rho_mid table bundle",
+        "inactive_zero_qg": "zero local output bundle and set brs=0",
+        "volume_record": "S10VOL action 0 logs active density projection; 1 logs positive-trace rho_mid projection; 2 logs zero-qg volume cleanup",
+        "state_change": "delta_brs is an explicit volume-state correction; qg mass is unchanged in ProgB_param",
+        "active_branch_changed": false,
+        "not_approved": true
+      },
+      "compile": {
+        "sed_command": [
+          "sed",
+          "-e",
+          "s/^\\!.*'.*//",
+          "-e",
+          "s/^ *\\!.*'.*//",
+          "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/source/module_mp237_midpoint.F"
+        ],
+        "first_cpp_command": [
+          "cpp",
+          "-P",
+          "-nostdinc",
+          "-xassembler-with-cpp",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/inc",
+          "-DEM_CORE=1",
+          "-DNMM_CORE=0",
+          "-DNMM_MAX_DIM=2600",
+          "-DDA_CORE=0",
+          "-DWRFPLUS=0",
+          "-DIWORDSIZE=4",
+          "-DDWORDSIZE=8",
+          "-DRWORDSIZE=4",
+          "-DLWORDSIZE=4",
+          "-DNONSTANDARD_SYSTEM_SUBR",
+          "-DMACOS",
+          "-DWRF_USE_CLM",
+          "-DKDM6_SUBSTEP_DUMP",
+          "-DDM_PARALLEL",
+          "-DNETCDF",
+          "-DLANDREAD_STUB=1",
+          "-DUSE_ALLOCATABLES",
+          "-Dwrfmodel",
+          "-DGRIB1",
+          "-DINTIO",
+          "-DKEEP_INT_AROUND",
+          "-DLIMIT_ARGS",
+          "-DBUILD_RRTMG_FAST=0",
+          "-DBUILD_RRTMK=0",
+          "-DBUILD_SBM_FAST=1",
+          "-DSHOW_ALL_VARS_USED=0",
+          "-DCONFIG_BUF_LEN=65536",
+          "-DMAX_DOMAINS_F=21",
+          "-DMAX_HISTORY=25",
+          "-DNMM_NEST=0",
+          "-I.",
+          "-traditional-cpp",
+          "-DKDM6_PROGB_VALIDITY_CAPTURE",
+          "-DKDM6_PROGB_POLICY_MIDPOINT",
+          "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp237/midpoint/module_mp_kdm6_cons.F.G"
+        ],
+        "standard_command": [
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/tools/standard.exe",
+          "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp237/midpoint/module_mp_kdm6_cons.F.bb"
+        ],
+        "final_cpp_command": [
+          "cpp",
+          "-P",
+          "-nostdinc",
+          "-xassembler-with-cpp",
+          "-traditional-cpp"
+        ],
+        "compile_command": [
+          "/opt/homebrew/bin/mpif90",
+          "-o",
+          "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp237/midpoint/module.o",
+          "-c",
+          "-O2",
+          "-ftree-vectorize",
+          "-funroll-loops",
+          "-w",
+          "-ffree-form",
+          "-ffree-line-length-none",
+          "-fconvert=big-endian",
+          "-frecord-marker=4",
+          "-fallow-argument-mismatch",
+          "-fallow-invalid-boz",
+          "-ffp-contract=off",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/dyn_em",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/esmf_time_f90",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_netcdf",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_int",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/frame",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/share",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/phys",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/wrftladj",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/chem",
+          "-I/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/inc",
+          "-I/opt/homebrew/include",
+          "-J/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp237/midpoint/mod",
+          "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp237/midpoint/module_mp_kdm6_cons.F.f90"
+        ],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "",
+        "source_sha256": "6be24e8ca0ab651429e40c1924a5897ed54557f0b3d4942bdbdecee3411c7eca",
+        "preprocessed_sha256": "d929ed1e865f98ea5b7aac752114c8f6d22dec44f66c75dff762249f4876ffb6",
+        "object_sha256": "28e5a517c1ac49e1f921e54927324b7a3e7f972f5f5b1741763c41846e7cde4b",
+        "ffp_contract_off": true
+      },
+      "link": {
+        "command": [
+          "/opt/homebrew/bin/mpif90",
+          "-B/Users/yhlee/KDM6AD-audit-pr205/graphify-out/pr231-native/build/ldshim",
+          "-isysroot",
+          "/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk",
+          "-o",
+          "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp237/midpoint/wrf.exe",
+          "-O2",
+          "-ftree-vectorize",
+          "-funroll-loops",
+          "-w",
+          "-ffree-form",
+          "-ffree-line-length-none",
+          "-fconvert=big-endian",
+          "-frecord-marker=4",
+          "-fallow-argument-mismatch",
+          "-fallow-invalid-boz",
+          "-ffp-contract=off",
+          "-Wl,-rpath,@loader_path/../../../libtorch/install/lib",
+          "-Wl,-rpath,/Users/yhlee/KDM6AD-k/libtorch/install/lib",
+          "-Wl,-rpath,/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/wrf.o",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/wrf_kdm6ad_exit.o",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/module_wrf_top.o",
+          "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp237/midpoint/module.o",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/libwrflib.a",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/fftpack/fftpack5/libfftpack.a",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_grib1/libio_grib1.a",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_grib_share/libio_grib_share.a",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_int/libwrfio_int.a",
+          "-L/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/esmf_time_f90",
+          "-lesmf_time",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/RSL_LITE/librsl_lite.a",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/frame/module_internal_header_util.o",
+          "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/frame/pack_utils.o",
+          "-L/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_netcdf",
+          "-lwrfio_nf",
+          "-L/opt/homebrew/lib",
+          "-lnetcdff",
+          "-lnetcdf",
+          "/Users/yhlee/KDM6AD-k/libtorch/install/lib/libkdm6_c.dylib",
+          "/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib/libtorch.dylib",
+          "/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib/libtorch_cpu.dylib",
+          "/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib/libc10.dylib"
+        ],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "",
+        "shadow_object_sha256": "28e5a517c1ac49e1f921e54927324b7a3e7f972f5f5b1741763c41846e7cde4b",
+        "executable_path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp237/midpoint/wrf.exe",
+        "executable_sha256": "afbe3768b1be3a6e8cb84986ff3907835854152473d269f04789598cd21402f1",
+        "linker_shim": {
+          "path": "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/pr231-native/build/ldshim/ld",
+          "sha256": "0f53ad6ee3fef4674782a1a90d423850f15ba0bf7709eaadedb4cd526978743d"
+        },
+        "link_file_inputs": [
+          {
+            "path": "/opt/homebrew/bin/mpif90",
+            "sha256": "91865d113f579bbf8e14c7d696266fdcf87f5e4845aa75966ad4e31531ebae5d",
+            "size_bytes": 245904
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp237/midpoint/wrf.exe",
+            "sha256": "afbe3768b1be3a6e8cb84986ff3907835854152473d269f04789598cd21402f1",
+            "size_bytes": 50516200
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/wrf.o",
+            "sha256": "b51e734b5d590c144a24d8908a772241a2ced38c796078520aeeb23d550fffb2",
+            "size_bytes": 1784
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/wrf_kdm6ad_exit.o",
+            "sha256": "b98600a5015fedb1d391c38fce614625b7f5a3e535b543e8c4eb815c0eae35e1",
+            "size_bytes": 568
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/module_wrf_top.o",
+            "sha256": "db72d0e2440392b47b34d422721e29d759a9bd72f60bd58fae5d1ed4b5b258bf",
+            "size_bytes": 12792
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-s10-counterfactual/graphify-out/s10-policy/build/mp237/midpoint/module.o",
+            "sha256": "28e5a517c1ac49e1f921e54927324b7a3e7f972f5f5b1741763c41846e7cde4b",
+            "size_bytes": 241144
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/libwrflib.a",
+            "sha256": "722f83c058ea1c43d5f23cc497aed1b218f33f90828a0e1dc51c6fe30203deba",
+            "size_bytes": 59152032
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/fftpack/fftpack5/libfftpack.a",
+            "sha256": "72863a6320b3dacca7ee171cde37aee5d1df0f9df3f780abc0d250c42c428952",
+            "size_bytes": 769840
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_grib1/libio_grib1.a",
+            "sha256": "b9b0730e28bac098d32246ac690d1cf9bb10ca3649be4296dac87a7c36c64cf2",
+            "size_bytes": 387192
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_grib_share/libio_grib_share.a",
+            "sha256": "04a6162ce671651b64bdc252e705ed11a45541945667e717c0e321739c6e09c0",
+            "size_bytes": 33168
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_int/libwrfio_int.a",
+            "sha256": "aeb9c1c53d809eabaa73b45da165578911426b8fcea6daa333407af5a035ecb0",
+            "size_bytes": 85760
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/RSL_LITE/librsl_lite.a",
+            "sha256": "360ed60ba3be71b7cf483a8c5b5336cc832fb26ceb3c831cc201a5f0013d0a85",
+            "size_bytes": 106920
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/frame/module_internal_header_util.o",
+            "sha256": "99b29f732f620200111b598a33aa9e3c055741f618cf7c0a3578771102301484",
+            "size_bytes": 16752
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/frame/pack_utils.o",
+            "sha256": "e5ef7538a6449573642da9d6f470536eb63e302b0df145d69cefdb5a3e6cdd3f",
+            "size_bytes": 7112
+          },
+          {
+            "path": "/Users/yhlee/KDM6AD-k/libtorch/install/lib/libkdm6_c.dylib",
+            "sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+            "size_bytes": 1996680
+          },
+          {
+            "path": "/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib/libtorch.dylib",
+            "sha256": "6d36d4b9a84b40cc91b45d5549aecd656113eacc21f6e7b331398cda73af8190",
+            "size_bytes": 16736
+          },
+          {
+            "path": "/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib/libtorch_cpu.dylib",
+            "sha256": "5630bd318812b8d11d5eaad407930cd1486586fc4155b6ce16449380a9c03565",
+            "size_bytes": 213290816
+          },
+          {
+            "path": "/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib/libc10.dylib",
+            "sha256": "f1950c7193efef69dd5a3115c3e885142d9a7fe3723290905e12bf02781cce6f",
+            "size_bytes": 1063472
+          }
+        ],
+        "native_run": "NOT_RUN_S14_OWNS_SLOT"
+      },
+      "native_run": "COMPLETE_VALID",
+      "native_runs": {
+        "control": "mp237_s10_mp237_midpoint_control_0min20s_hist0_1x1_20260925_215210_p52163",
+        "capture": "mp237_s10_mp237_midpoint_capture_0min20s_hist0_1x1_20260925_215319_p58831"
+      }
+    }
+  ],
+  "excluded_attempts": [
+    "Build attempts omitted capture/policy CPP macros or had incomplete/duplicated volume/shape event instrumentation; excluded artifacts are under build-excluded."
+  ],
+  "native_slot": "RELEASED_TO_S8",
+  "operational_adoption": false,
+  "#271_rebase_pending": false,
+  "native_results": "harness/evidence/s10_policy_counterfactual_native_results_2026-09-25.json",
+  "policy_outcome": "Neither retention nor midpoint satisfies the all-consumer finite-positive-rhox validity gate; both remain unapproved."
+}
