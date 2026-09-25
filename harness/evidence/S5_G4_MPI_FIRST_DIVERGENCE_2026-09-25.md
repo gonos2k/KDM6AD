@@ -32,6 +32,12 @@ The stage snapshot is taken at the RK entry before `rk_step_prep`. Source inspec
 
 S5 therefore remains **OPEN**. The next causal experiment should vary one factor at a time on the exact same input/object pipeline: first the `calc_ww_cp` vectorization/contraction option, then call-loop bounds if necessary. Preserve the original G4 failure and do not change operational defaults. The full-domain MPI failure and other first-divergence locations remain broader than the selected trace projection.
 
+### Bounded counterfactual plan (not executed)
+
+First, build a small driver around the pinned `calc_ww_cp` source and the published selected caller words. Use identical values at i=116–118 and i=233–235, j=0–283, and the recorded vertical vectors/scalars. Compare the selected `ww` outputs while changing only `its:ite`: serial 1–235; x2 rank 0 1–117 for i=117; x2 rank 1 118–235 for i=234. Keep j tile bounds fixed to 1–142 and 143–283, and keep the Fortran source, compiler object, and call values identical. Fill non-stencil i cells only if needed by the driver and verify from source that the selected columns have no cross-i reduction. This determines whether call extents alone reproduce the selected differences in the local routine.
+
+If the call-bound driver is insufficient, run separate shadow-host variants built through the same WRF preprocessing pipeline: first add only `-fno-tree-vectorize` to the `module_big_step_utilities_em.o` compile; in a distinct arm add only `-ffp-contract=off`. Do not combine flags. For each arm, retain the same input, KDM object and other host archive members, capture the same group-5 caller window and stage-2 `ww`, and compare dump-on to that arm’s dump-off control in both layouts. A result can support a compiler-option mechanism only if the relevant caller words still match and the corresponding selected `ww` mismatch changes. No counterfactual has been run yet; the S14 native lane has priority.
+
 ## Local validation and graph coverage
 
 The synthetic group-5 parser regression, the C2 selected-trace replayer, the exact2 halo-trace replayer, and six trace-completeness regressions pass. The latter reject same-count coordinate relocation, omitted record/NPZ pairs with recomputed manifest hashes/counts, and uint64 widening in both consumers. The last focused run passed 53 tests across the audit, probe, selected-trace, halo-trace and trace-completeness suites on Python 3.13.5; Ruff and diff checks pass.
