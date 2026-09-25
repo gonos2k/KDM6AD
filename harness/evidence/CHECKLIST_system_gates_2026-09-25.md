@@ -1,6 +1,6 @@
 # KDM6AD system-level gates after bounded F0–F7 pilots
 
-Baseline: `main` at `2dcb290e`, which contains X1–X12/G4 and the bounded
+Baseline: `main` at `2fe984c1`, which contains X1–X12/G4 and the bounded
 F1–F7 verification pilots. A synthetic property, public arithmetic replay,
 local C++ function, isolated native run and operational host trajectory are
 different evidence levels. This checklist tracks the remaining **system**
