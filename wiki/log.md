@@ -5,6 +5,10 @@ date_modified: 2026-06-25
 ---
 # Wiki Log
 
+## [2026-09-25] S16 freeze-heat replay — bounded evidence; gate remains OPEN
+- Replayed the retained v14 loop-2/column-3/level-0 `t` chain from exact captured f32/f64 operands; the three applied rates and incoming `t` match, while `xlf`/`cpm` differ. Given those operands and the declared source-order model, the independent replay reproduces the stored one-ULP results; production intermediates were not emitted. The trace is in [[kdm6ad-s16-freeze-heat-replay-2026-09-25]].
+- Current debug-only validation rejects the retained Fortran bundles because they lack `evidence_tree_sha256`; their legacy module hash also differs from the current private host source hash. The Gate A report is in the source tree with its pinned SHA. No rebuild or native campaign ran; no replacement decision artifact was written. S16 remains OPEN, separate from C4 G3.3.
+
 ## [2026-06-25] init | local Obsidian vault bootstrapped
 - Wiki root: `/Users/yhlee/KDM6AD-k/wiki`
 - Mode: local Obsidian vault initialization

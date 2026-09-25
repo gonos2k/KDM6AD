@@ -256,16 +256,47 @@ def replay_freeze_t(operands: dict, as_f32_rates: bool = False) -> int:
     backend would have if it treated the reference's DOUBLE rate as f32. It is
     here so the difference between the two forms is measurable rather than argued.
     """
-    import numpy as _np
+    return replay_freeze_t_trace(operands, as_f32_rates=as_f32_rates)["t_bits"]
+
+
+def replay_freeze_t_trace(operands: dict, as_f32_rates: bool = False) -> dict:
+    """Return each source-ordered intermediate for one freeze heat chain.
+
+    The production statement stores `t` after every addition. The quotient is
+    therefore f32, each rate is f64 by the Fortran declarations, each product
+    and sum is f64, and each `t` store rounds back to f32. When
+    `as_f32_rates=True`, the rate and product are narrowed to reproduce the
+    discarded precision hypothesis for comparison.
+    """
     c = np.float32(np.float32(operands["xlf"]) / np.float32(operands["cpm"]))
     t = np.float32(operands["t_pre_freeze"])
+    steps = []
     for name in FREEZE_TERMS:
-        r = operands[name]
-        r = np.float32(r) if as_f32_rates else np.float64(r)
-        step = np.float32(c) * r          # f32*f64 -> f64 (or f32*f32 -> f32)
-        t = np.float32(np.float64(t) + step) if not as_f32_rates \
-            else np.float32(t + np.float32(step))
-    return bits32(t)
+        r = np.float32(operands[name]) if as_f32_rates else np.float64(operands[name])
+        step = np.float32(c) * r  # f32*f64 -> f64 (or f32*f32 -> f32)
+        wide_sum = (np.float64(t) + np.float64(step) if not as_f32_rates
+                    else np.float32(t + np.float32(step)))
+        t = np.float32(wide_sum)
+        steps.append({
+            "rate": float(r),
+            "rate_bits": (int(np.asarray(r, dtype=np.float32).view(np.uint32))
+                          if as_f32_rates else
+                          int(np.asarray(r, dtype=np.float64).view(np.uint64))),
+            "product": float(step),
+            "product_bits": (int(np.asarray(step, dtype=np.float32).view(np.uint32))
+                             if as_f32_rates else
+                             int(np.asarray(step, dtype=np.float64).view(np.uint64))),
+            "sum_bits_f64": (int(np.asarray(wide_sum, dtype=np.float64).view(np.uint64))
+                             if not as_f32_rates else None),
+            "t_bits_f32": bits32(t),
+        })
+    return {
+        "c_f32": float(c),
+        "c_bits_f32": bits32(c),
+        "t_pre_bits_f32": bits32(np.float32(operands["t_pre_freeze"])),
+        "steps": steps,
+        "t_bits": bits32(t),
+    }
 
 
 def verify_freeze_heat(operands: dict, post_t: dict, expected_cells=None) -> list[dict]:

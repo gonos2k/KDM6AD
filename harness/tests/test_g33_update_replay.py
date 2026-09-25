@@ -242,6 +242,57 @@ def test_verify_freeze_heat_catches_a_one_ULP_base():
     assert rp.verify_freeze_heat(operands, post)
 
 
+def test_v14_seed_replay_exposes_source_ordered_heat_intermediates():
+    """Retained v14 seed operands: equal bases/rates, different xlf and cpm.
+
+    These exact bits are from the four captured Fortran/C++ legs at loop 2,
+    col 3, k 0. The trace is an independent source-ordered replay, not a claim
+    that those intermediates were separately emitted by the old executables.
+    """
+    def f32_from_bits(bits):
+        return np.array(bits, dtype=np.uint32).view(np.float32).item()
+
+    def f64_from_bits(bits):
+        return np.array(bits, dtype=np.uint64).view(np.float64).item()
+
+    shared = {
+        "t_pre_freeze": f32_from_bits(0x43739698),
+        "pinuc": f64_from_bits(0x3E1C30E25582CD5D),
+        "pfrzdtc": f64_from_bits(0x3EBEFAE7A7F5767D),
+        "pfrzdtr": f64_from_bits(0x3E61E05D0E2E83BD),
+    }
+    fortran = rp.replay_freeze_t_trace({
+        **shared, "xlf": f32_from_bits(0x488740A0), "cpm": f32_from_bits(0x447B5809)})
+    cpp = rp.replay_freeze_t_trace({
+        **shared, "xlf": f32_from_bits(0x488911E0), "cpm": f32_from_bits(0x447B36A5)})
+
+    assert fortran["c_bits_f32"] == 0x4389C20B
+    assert cpp["c_bits_f32"] == 0x438BAE78
+    assert [s["rate_bits"] for s in fortran["steps"]] == [
+        0x3E1C30E25582CD5D, 0x3EBEFAE7A7F5767D, 0x3E61E05D0E2E83BD]
+    assert [s["rate_bits"] for s in cpp["steps"]] == [
+        s["rate_bits"] for s in fortran["steps"]]
+    assert [s["t_bits_f32"] for s in fortran["steps"]] == [
+        0x43739698, 0x437396B9, 0x437396BA]
+    assert [s["t_bits_f32"] for s in cpp["steps"]] == [
+        0x43739698, 0x437396BA, 0x437396BB]
+    assert [s["product_bits"] for s in fortran["steps"]] == [
+        0x3E9E570EC2C30D66, 0x3F40ABC1713798A4, 0x3EE33D3D2F7F46B8]
+    assert [s["product_bits"] for s in cpp["steps"]] == [
+        0x3E9EC382AA5C78FD, 0x3F40E758D74306E7, 0x3EE38202CE3D0796]
+    assert [s["sum_bits_f64"] for s in fortran["steps"]] == [
+        0x406E72D300F2B876, 0x406E72D72AF05C4E, 0x406E72D7333D3D2F]
+    assert [s["sum_bits_f64"] for s in cpp["steps"]] == [
+        0x406E72D300F61C15, 0x406E72D739D635D1, 0x406E72D7538202CE]
+
+    # Source branch witnesses at this cell: D2-D4 are on the cold side;
+    # the < T0C-40 homogeneous-freeze arm is off, and phom is zero.
+    assert rp.is_cold(rp.bits32(shared["t_pre_freeze"]))
+    assert shared["t_pre_freeze"] > np.float32(rp.T0C - np.float32(40.0))
+    assert fortran["t_bits"] == 0x437396BA
+    assert cpp["t_bits"] == 0x437396BB
+
+
 def test_a_nonzero_phom_raises_rather_than_comparing_two_chains():
     """The C++ has no homogeneous-freeze term here. A fixture that reaches −40 °C
     must stop the replay, not pass it."""

@@ -1,7 +1,7 @@
 ---
 title: Sources Index
 type: folder-index
-date_modified: 2026-06-25
+date_modified: 2026-09-25
 ---
 # Sources
 
@@ -16,3 +16,4 @@ Paper-level pages live in [[papers/_index]]. The source pages below are collecti
 - [[kdm6ad-differentiable-mathematics-2026-07-04]] — 미분가능 KDM6AD 수학·공학 보고서(연산그래프·VJP/JVP/HVP·AD-safe·검증)
 - [[abi-v2-hardening-roadmap-2026-07-14]] — 2026-07-13/14 frozen-code hardening arc (PR1-A thread fail-closed, PR2 ABI v2, PR3 hidden-visibility/9-symbol/SOVERSION2, PR#6) → abi-v2-hardened @ a53503e.
 - [[kdm6ad-deep-review-2026-07-15]] — 외부 심층 검토(math/기상/공학) @ e1c701e; 핵심 주장 코드 대조 검증, prescribed-forcing microphysics-window 재프레이밍, P0/P1/P2 우선순위.
+- [[kdm6ad-s16-freeze-heat-replay-2026-09-25]] — S16 D2–D4 freeze-heat seed replay; retained operands explain the one-ULP stored-temperature difference, while current bundle attestation keeps the gate open.
