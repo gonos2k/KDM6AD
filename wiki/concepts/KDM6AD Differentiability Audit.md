@@ -1,7 +1,7 @@
 ---
 title: KDM6AD Differentiability Audit
 type: concept
-date_modified: 2026-06-25
+date_modified: 2026-09-25
 ---
 # KDM6AD Differentiability Audit
 
@@ -63,3 +63,21 @@ Derived from [[kdm6plus-collection-mathematical-deep-ingest-2026-06-25]] and con
 - [[KDM6AD Mathematical Microphysics Operators]]
 - [[KDM6AD Forward Parity]]
 - [[Differentiable Bulk Microphysics Research Gap]]
+
+## Update (2026-09-25): S16 freeze-heat replay remains open
+
+The retained v14 four-case capture reports a one-ULP stored-temperature
+difference after freeze. Given its identical pre-heat `t` and f64 rates, its
+differing `xlf`/`cpm`, and the declared source-order model, an independent replay
+reproduces both stored results. Production intermediates were not emitted, so
+this establishes sufficiency under that model, not the actual executables'
+operation order. The v14 source finding traces the operands to kernel-entry
+`xl`/`cpm` values in Fortran and per-subcycle recomputation in C++, but it is a
+conditional explanation from a withdrawn artifact, not a decision-grade
+current-source conclusion. See [[kdm6ad-s16-freeze-heat-replay-2026-09-25]].
+
+S16 remains OPEN because the v14 result is withdrawn, the retained Fortran
+bundles fail the current evidence-tree attestation check, and the archived
+legacy module hash differs from the current private host source. The bounded
+replay does not certify a current-source host run or close C4 G3.3's separate
+legacy ULP envelope.
