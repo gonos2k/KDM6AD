@@ -1,0 +1,153 @@
+{
+  "schema": "progb-validity-replay-v1",
+  "records": {
+    "S10CMG": 624,
+    "S10PB": 624,
+    "S10SLP": 624,
+    "S10RHO": 212,
+    "S10DIAG": 78,
+    "S10SCAN": 1974,
+    "S10TRACE": 763,
+    "S10TRS": 763
+  },
+  "site1_selected_cells": 2,
+  "site1_levels_per_cell": 39,
+  "site1_expected_active_levels": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11
+  ],
+  "site1_observed_active_levels_by_i": {
+    "113": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "115": [
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ]
+  },
+  "trace_qg_nonzero_inactive_gate_records": 763,
+  "source_level_p2": {
+    "cmg_intent_out_test_reached_without_assignment": true,
+    "slope_parameter_read_reached_without_defined_producer_chain": true,
+    "rhox_read_reached_without_assignment": true,
+    "final_diagnostic_read_reached_without_assignment": false,
+    "unsafe_record_counts": {
+      "cmg": 59,
+      "slope": 59,
+      "rhox": 192,
+      "diag": 0
+    },
+    "undefined_output_physical_impact": "NOT_MEASURED"
+  },
+  "undefined_output_values_serialized": false,
+  "undefined_output_physical_impact": "NOT_MEASURED",
+  "physical_number_or_trace_policy": "OPEN",
+  "source": {
+    "variant": "mp37",
+    "canonical_source": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/phys/module_mp_kdm6.F",
+    "canonical_source_sha256": "fc0a72d33a5e61803fea56eb9118018039c6da8b5775813032b4861a2bd66eb5",
+    "capture_source_sha256": "bd1dae70ee094971787e7771c8851aa2ff2074ad635ab7388f5049099771c9ae",
+    "strip_exact": true,
+    "overlay_path": "/Users/yhlee/KDM6AD-s10/graphify-out/s10-progb/build/module_mp_kdm6.F",
+    "object_path": "/Users/yhlee/KDM6AD-s10/graphify-out/s10-progb/build/mp37-mod/module.o",
+    "object_sha256": "712d54a7e9330986946ded7ef7504731f93a11c15c1c2a985b958ceccfcbb3aa",
+    "preprocessed_sha256": "7ca3a9580811ce0acdf76984c4e80a58d8f3b8cf0f4c08f594a9d7572eadac9f",
+    "executable_path": "/Users/yhlee/KDM6AD-s10/graphify-out/s10-progb/build/wrf_s10_mp37.exe",
+    "executable_sha256": "e2aaaee80493de83eac708c55044c95a97d2aa6a542f7f82dbdc95ad6e1c8256",
+    "link_command_receipt": "/Users/yhlee/KDM6AD-s10/graphify-out/s10-progb/build/link-mp37.json"
+  },
+  "noninterference": {
+    "numeric_raw_bits_equal": true,
+    "strict_compare_numeric_variables": "253/253 bitwise equal; Times exact-equal (254 variables total)",
+    "strict_compare_stdout": "# klfs_lc05_fcst.202507190000 (frames=2) vs klfs_lc05_fcst.202507190000 (frames=2)\n# strict uint-bitwise compare at last common frame index 1\n\nVARIABLES: 254 common, 254 BITWISE-MATCH, 0 DIFFER, 0 unsupported/skipped\n\nRESULT: STRICT BITWISE PASS\n",
+    "saved_times_equal": true,
+    "history_sha256": {
+      "control": "ddded3a3760af2800ab7ee487fddbc658a0226c6e567bbf8ccbccb403478942e",
+      "capture": "ddded3a3760af2800ab7ee487fddbc658a0226c6e567bbf8ccbccb403478942e"
+    },
+    "executable_sha256": {
+      "control": "e2aaaee80493de83eac708c55044c95a97d2aa6a542f7f82dbdc95ad6e1c8256",
+      "capture": "e2aaaee80493de83eac708c55044c95a97d2aa6a542f7f82dbdc95ad6e1c8256"
+    },
+    "input_identity_sha256": {
+      "control": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+      "capture": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf"
+    },
+    "namelist_sha256": {
+      "control": "064b6f5ea5683ee3dc68d408c08bf4cbf588be06dbc7d99bb3529be8ba61554a",
+      "capture": "064b6f5ea5683ee3dc68d408c08bf4cbf588be06dbc7d99bb3529be8ba61554a"
+    },
+    "logging_enabled": {
+      "control": false,
+      "capture": true
+    }
+  },
+  "capture_payload": {
+    "event_payload_sha256": "63319cb120a1f16d46b5be1a56b800a7d0289ef67a9b2627284947b0878fd684",
+    "event_record_count": 5662,
+    "event_record_counts": {
+      "S10SCAN": 1974,
+      "S10TRACE": 763,
+      "S10TRS": 763,
+      "S10CMG": 624,
+      "S10PB": 624,
+      "S10SLP": 624,
+      "S10RHO": 212,
+      "S10DIAG": 78
+    },
+    "rhox_consumer_id_contract": {
+      "1418": {
+        "operation": "pgmlt/rhox",
+        "source_line_mp37": 1418,
+        "source_line_mp237": 1456
+      },
+      "2824": {
+        "operation": "pgdep/rhox",
+        "source_line_mp37": 2824,
+        "source_line_mp237": 2862
+      },
+      "2915": {
+        "operation": "pgevp/rhox",
+        "source_line_mp37": 2915,
+        "source_line_mp237": 2953
+      },
+      "2916": {
+        "operation": "pgeml/rhox",
+        "source_line_mp37": 2916,
+        "source_line_mp237": 2954
+      },
+      "3027": {
+        "operation": "preProgB max/rhox",
+        "source_line_mp37": 3027,
+        "source_line_mp237": 3065
+      }
+    }
+  },
+  "execution_status": "completed",
+  "physical_validity_policy": "OPEN"
+}
