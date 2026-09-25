@@ -105,6 +105,22 @@ def test_three_layer_dry_and_volume_number_q_br_s_moments_match():
     assert volume_after == pytest.approx(volume_column)
 
 
+@pytest.mark.parametrize('species', ['QNCCN', 'QNCLOUD', 'QNICE', 'QNRAIN'])
+def test_synthetic_species_values_roundtrip_through_generic_density_map(species):
+    """Probe representative values, not actual fields or ABI packing."""
+    rho_d = (0.55, 0.90, 1.30)
+    stored = {
+        'QNCCN': (2.1e8, 1.8e8, 1.2e8),
+        'QNCLOUD': (1.1e8, 8.0e7, 5.0e7),
+        'QNICE': (4.0e6, 3.0e6, 2.0e6),
+        'QNRAIN': (2.4e5, 1.7e5, 9.0e4),
+    }[species]
+    volume = tuple(to_volume(n, rho)[0] for n, rho in zip(stored, rho_d))
+    returned = tuple(to_mass(n, rho)[0] for n, rho in zip(volume, rho_d))
+    assert returned == pytest.approx(stored, rel=2e-15)
+    assert tuple(n/rho for n, rho in zip(volume, rho_d)) == pytest.approx(stored)
+
+
 def test_three_layer_number_q_br_s_density_jvp_and_vjp_duality():
     rho = (0.5, 1.0, 2.0)
     n = (0.015, 0.020, 0.008)
