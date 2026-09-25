@@ -35,6 +35,115 @@ def test_threshold_and_applied_cap_convert_together():
     assert to_mass(volume-volume_amount, rho)[0] == n-amount
 
 
+def test_three_layer_dry_and_volume_number_q_br_s_moments_match():
+    """Representation algebra only; this is not a KDM6 or WRF transport test."""
+    rho_d = (0.5, 1.0, 2.0)
+    qv = (0.02, 0.009, 0.001)
+    rho_m = tuple(rho * (1.0 + vapor) for rho, vapor in zip(rho_d, qv))
+    n_d = (0.015, 0.020, 0.008)
+    q_d = (2.0e-4, 1.0e-4, 3.0e-5)
+    b_d = (4.0e-7, 2.0e-7, 1.0e-7)
+    dz = (100.0, 250.0, 500.0)
+
+    # Independent defining map: volume moment = dry mass-specific moment × rho_d.
+    n_v = tuple(rho*n for n, rho in zip(n_d, rho_d))
+    q_v = tuple(rho*q for q, rho in zip(q_d, rho_d))
+    b_v = tuple(rho*b for b, rho in zip(b_d, rho_d))
+
+    # These moment ratios determine the same mean particle mass, graupel
+    # volume, and bulk density under either representation.
+    for i in range(3):
+        assert q_v[i] / n_v[i] == pytest.approx(q_d[i] / n_d[i])
+        assert b_v[i] / n_v[i] == pytest.approx(b_d[i] / n_d[i])
+        assert q_v[i] / b_v[i] == pytest.approx(q_d[i] / b_d[i])
+
+    # The KDM6 rain closure's concentration form and the transformed dry-mass
+    # form give the same lambda^3 when the paired mass moment uses rho_d*q_d.
+    pidnr = 4.0e-3
+    for i in range(3):
+        lambda3_v = pidnr * n_v[i] / q_v[i]
+        lambda3_d = pidnr * n_d[i] / q_d[i]
+        assert lambda3_v == pytest.approx(lambda3_d)
+        # Current host DEN is rho_m, not the dry mass density paired with q_d.
+        lambda3_with_current_den = pidnr * n_v[i] / (rho_m[i] * q_d[i])
+        assert lambda3_with_current_den == pytest.approx(
+            lambda3_d / (1.0 + qv[i]))
+        assert lambda3_with_current_den != pytest.approx(lambda3_d)
+
+    # A physical concentration threshold must transform with density. These
+    # values intentionally make the raw per-kg and per-m^3 branch vectors differ.
+    nrmin_v, nrmax_v = 1.0e-2, 1.8e-2
+    volume_gate = tuple(n >= nrmin_v and n <= nrmax_v for n in n_v)
+    dry_gate = tuple(n >= nrmin_v/rho and n <= nrmax_v/rho
+                     for n, rho in zip(n_d, rho_d))
+    raw_gate = tuple(n >= nrmin_v and n <= nrmax_v for n in n_d)
+    assert volume_gate == dry_gate == (False, False, True)
+    assert raw_gate != volume_gate
+
+    # Prescribe the same two interface transfers F [#/m^2] in both forms.
+    # This is a representation identity, not KDM6's fall-rate calculation.
+    transfers = (0.3, 0.5)
+    n_v_after = (
+        n_v[0] - transfers[0]/dz[0],
+        n_v[1] + transfers[0]/dz[1] - transfers[1]/dz[1],
+        n_v[2] + transfers[1]/dz[2],
+    )
+    n_d_after = (
+        n_d[0] - transfers[0]/(rho_d[0]*dz[0]),
+        n_d[1] + transfers[0]/(rho_d[1]*dz[1])
+        - transfers[1]/(rho_d[1]*dz[1]),
+        n_d[2] + transfers[1]/(rho_d[2]*dz[2]),
+    )
+    assert n_v_after == pytest.approx(
+        tuple(rho*n for rho, n in zip(rho_d, n_d_after)))
+    volume_column = sum(n * z for n, z in zip(n_v, dz))
+    dry_mass_column = sum(rho * n * z for n, rho, z in zip(n_d, rho_d, dz))
+    assert volume_column == pytest.approx(dry_mass_column)
+    volume_after = sum(n*z for n, z in zip(n_v_after, dz))
+    dry_mass_after = sum(rho*n*z for n, rho, z in zip(n_d_after, rho_d, dz))
+    assert volume_after == pytest.approx(dry_mass_after)
+    assert volume_after == pytest.approx(volume_column)
+
+
+def test_three_layer_number_q_br_s_density_jvp_and_vjp_duality():
+    rho = (0.5, 1.0, 2.0)
+    n = (0.015, 0.020, 0.008)
+    q = (2.0e-4, 1.0e-4, 3.0e-5)
+    b = (4.0e-7, 2.0e-7, 1.0e-7)
+    drho = (0.02, -0.01, 0.03)
+    dn = (0.001, 0.002, -0.001)
+    dq = (1.0e-6, -2.0e-6, 1.0e-6)
+    db = (1.0e-9, -2.0e-9, 1.0e-9)
+    seed_n, seed_q, seed_b = (2.0, -3.0, 0.5), (1.5, 2.0, -1.0), (-2.0, 0.5, 4.0)
+
+    dn_v = tuple(r*dx + x*dr for x, r, dx, dr in zip(n, rho, dn, drho))
+    dq_v = tuple(r*dx + x*dr for x, r, dx, dr in zip(q, rho, dq, drho))
+    db_v = tuple(r*dx + x*dr for x, r, dx, dr in zip(b, rho, db, drho))
+
+    jvp = sum(a*x + c*y + e*z for a, c, e, x, y, z in
+              zip(seed_n, seed_q, seed_b, dn_v, dq_v, db_v))
+    vjp_dot = sum(
+        (a*r)*dx + (c*r)*dy + (e*r)*dz + (a*x + c*y + e*z)*dr
+        for a, c, e, x, y, z, r, dx, dy, dz, dr in
+        zip(seed_n, seed_q, seed_b, n, q, b, rho, dn, dq, db, drho)
+    )
+    assert jvp == pytest.approx(vjp_dot, rel=0, abs=1e-14)
+
+    # Independent central difference of the seeded physical-moment objective.
+    h = 2.0**-12
+    def objective(sign):
+        total = 0.0
+        for i in range(3):
+            r = rho[i] + sign*h*drho[i]
+            total += seed_n[i]*r*(n[i] + sign*h*dn[i])
+            total += seed_q[i]*r*(q[i] + sign*h*dq[i])
+            total += seed_b[i]*r*(b[i] + sign*h*db[i])
+        return total
+
+    fd = (objective(1.0) - objective(-1.0)) / (2.0*h)
+    assert fd == pytest.approx(jvp, rel=2e-9, abs=1e-14)
+
+
 def test_nonzero_prescribed_transfer_same_inventory_in_two_representations():
     number, density, thickness, amount = [8., 2.], [.5, 2.], [2., 4.], 4.
     direct, roundtrip = paired_transfer(number, density, thickness, amount)
