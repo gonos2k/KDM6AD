@@ -1,0 +1,151 @@
+{
+  "binary_sha256": "3197df4dcdcf9c1af4132e15662531bc28be4c61892fac54cf7a015311c24140",
+  "checkpoint_sha256": "2ad545592a9a2a29afbaeb6eab7dcbca636f749c9060e814e8168470373b6a44",
+  "environment_note": "MPI interface and thread variables are the explicitly set values used for both launches; this receipt does not claim they exhaust every inherited process environment variable.",
+  "host_tree_modified": false,
+  "probe_comparison": {
+    "differences": 682,
+    "first_relevant_difference_stage": 3,
+    "interpretation": "bounded five-profile first observed surface-driver outputs; causal operands incomplete; no full-domain first-divergence claim",
+    "path": "harness/evidence/g4_restart_trace_comparison_2026-09-25.json",
+    "records_compared": 48120
+  },
+  "runs": [
+    {
+      "command": [
+        "/opt/local/bin/python3",
+        "$WORKTREE/harness/run_ss_case.py",
+        "--mp",
+        "237",
+        "--minutes",
+        "0",
+        "--seconds",
+        "40",
+        "--history",
+        "0",
+        "--history-s",
+        "20",
+        "--np",
+        "1",
+        "--label",
+        "g4-s6-continuous",
+        "--case",
+        "$WORKTREE/graphify-out/s6-g4-relink/case-continuous",
+        "--fixed-dt",
+        "--proc-grid",
+        "1x1"
+      ],
+      "command_paths_sanitized": "absolute local worktree paths replaced with $WORKTREE; all arguments otherwise retained",
+      "exit_code": 0,
+      "experiment_valid": true,
+      "finished_utc": "2026-09-25T08:52:02Z",
+      "input_identity_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+      "instrumentation_environment": {
+        "KDM6AD_G4_CENSUS_PREFIX": "$WORKTREE/graphify-out/s6-g4-relink/census-continuous",
+        "KDM6AD_G4_RESTART_PROBE_PREFIX": "$WORKTREE/graphify-out/s6-g4-relink/trace-continuous"
+      },
+      "mpi_interface_environment": {
+        "PMIX_MCA_ptl_base_if_include": "en0",
+        "PRTE_MCA_oob_tcp_if_include": "en0"
+      },
+      "mpi_ranks": 1,
+      "name": "continuous",
+      "namelist_without_grid_sha256": "a661df774cf043d7ccd7ceb3b87374860f7c33c6875d20d3061f035bfc1b4aac",
+      "requested_and_actual_proc_grid": "1x1",
+      "returncode": 0,
+      "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+      "saved_history": {
+        "common_numeric_fields_raw_bit_equal": "253/253 at every saved frame",
+        "g4_reference_sha256": "a065598b870815220ba36f7b2fbcdc6f65f8d69910c2e261961203b78d6683d8",
+        "path": "graphify-out/s6-g4-relink/case-continuous/runs/mp237_g4-s6-continuous_0min40s_hist0_1x1_20260925_175103_p81169/klfs_lc05_fcst.202507190000",
+        "raw_bit_equal_to_reference": true,
+        "sha256": "a065598b870815220ba36f7b2fbcdc6f65f8d69910c2e261961203b78d6683d8",
+        "times_string_equal": true,
+        "total_fields_equal": "254/254 at every saved frame (253 numeric + Times)"
+      },
+      "shadow_executable_sha256": "3197df4dcdcf9c1af4132e15662531bc28be4c61892fac54cf7a015311c24140",
+      "started_utc": "2026-09-25T08:51:03Z",
+      "threads": {
+        "MKL_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OMP_THREAD_LIMIT": "1"
+      },
+      "trace": {
+        "compressed_path": "harness/evidence/g4_restart_continuous_step2_2026-09-25.log.gz",
+        "compressed_sha256": "ffb0df6e03c30478ca6b691e3e73faa5268b8731654996d8d0fe344556742b31",
+        "raw_path": "graphify-out/s6-g4-relink/trace-continuous.domain1.log",
+        "raw_sha256": "df6417ff026f3b171c7307da4b128713c99b406f3340808d806ccc4ec7a32fd5"
+      },
+      "window": "0\u219240 s"
+    },
+    {
+      "command": [
+        "/opt/local/bin/python3",
+        "$WORKTREE/harness/run_ss_case.py",
+        "--mp",
+        "237",
+        "--minutes",
+        "0",
+        "--seconds",
+        "20",
+        "--history",
+        "0",
+        "--history-s",
+        "20",
+        "--np",
+        "1",
+        "--label",
+        "g4-s6-restart",
+        "--case",
+        "$WORKTREE/graphify-out/s6-g4-relink/case-restart",
+        "--fixed-dt",
+        "--proc-grid",
+        "1x1"
+      ],
+      "command_paths_sanitized": "absolute local worktree paths replaced with $WORKTREE; all arguments otherwise retained",
+      "exit_code": 0,
+      "experiment_valid": true,
+      "finished_utc": "2026-09-25T08:53:30Z",
+      "input_identity_sha256": "1b3585d0492d0c158017f7dbc4aa0700c61c8e5b992c742681f9d1c5a5f50152",
+      "instrumentation_environment": {
+        "KDM6AD_G4_CENSUS_PREFIX": "$WORKTREE/graphify-out/s6-g4-relink/census-restart",
+        "KDM6AD_G4_RESTART_PROBE_PREFIX": "$WORKTREE/graphify-out/s6-g4-relink/trace-restart"
+      },
+      "mpi_interface_environment": {
+        "PMIX_MCA_ptl_base_if_include": "en0",
+        "PRTE_MCA_oob_tcp_if_include": "en0"
+      },
+      "mpi_ranks": 1,
+      "name": "restart",
+      "namelist_without_grid_sha256": "4c9c34a501636752e7df8e60bbf57753285bea80d5c8d8f03b724228a008a1a8",
+      "requested_and_actual_proc_grid": "1x1",
+      "returncode": 0,
+      "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+      "saved_history": {
+        "common_numeric_fields_raw_bit_equal": "253/253 at every saved frame",
+        "g4_reference_sha256": "c67ec492da28edbb1b95f3eef8ffa6ba137672703ef40509ea482af43ee51cbe",
+        "path": "graphify-out/s6-g4-relink/case-restart/runs/mp237_g4-s6-restart_0min20s_hist0_1x1_20260925_175316_p86644/klfs_lc05_fcst.202507190000",
+        "raw_bit_equal_to_reference": true,
+        "sha256": "c67ec492da28edbb1b95f3eef8ffa6ba137672703ef40509ea482af43ee51cbe",
+        "times_string_equal": true,
+        "total_fields_equal": "254/254 at every saved frame (253 numeric + Times)"
+      },
+      "shadow_executable_sha256": "3197df4dcdcf9c1af4132e15662531bc28be4c61892fac54cf7a015311c24140",
+      "started_utc": "2026-09-25T08:53:16Z",
+      "threads": {
+        "MKL_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OMP_THREAD_LIMIT": "1"
+      },
+      "trace": {
+        "compressed_path": "harness/evidence/g4_restart_restart_step2_2026-09-25.log.gz",
+        "compressed_sha256": "5695f51bf93cf349dec94b86e633e90d0ae1a2e195c5c7beba895cefd4cc492c",
+        "raw_path": "graphify-out/s6-g4-relink/trace-restart.domain1.log",
+        "raw_sha256": "706b62ef36a3c2e6ac3bb81a99cf74ef1532824bd32c7f215c4c5d2d6040058e"
+      },
+      "window": "20\u219240 s"
+    }
+  ],
+  "schema": "g4-restart-shadow-runs-v1",
+  "status": "diagnostic_only"
+}

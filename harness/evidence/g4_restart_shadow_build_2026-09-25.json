@@ -1,0 +1,23 @@
+{
+  "canonical_host_modified": false,
+  "changed_archive_payload_members": [
+    "__.SYMDEF",
+    "module_first_rk_step_part1.o"
+  ],
+  "compile_command_sha256": "b76a4291deac29a2ddaafb6b646e51bec3c5f18fc545d0dd0b83ffddc116f0fe",
+  "exact_baseline_relink_matches_g4": true,
+  "exact_baseline_relink_sha256": "799e389e4a5ae3e032607cb4bba59d881184d74798e90e63ee77f426381d6e3c",
+  "first_rk_object_sha256": "c7b5eb9310a2c82ce065f7f5975a4755480a6f4458532553b56807e076bc4038",
+  "first_rk_overlay_sha256": "a811a02b32bd070220467a1cabf54c040d70b82a771ce1a7f0b304ee34a0f387",
+  "first_rk_source_sha256": "108a82b213c423acf916b91a0dd5f8084dc79288a01ca82d9f8d0ccb8febd53f",
+  "g4_executable_sha256": "799e389e4a5ae3e032607cb4bba59d881184d74798e90e63ee77f426381d6e3c",
+  "instrumentation": "compile-time guarded; environment-gated; five input-preselected profiles; target itimestep=2",
+  "link_command_sha256": "526e0205719ce0327f40968b412d95f6b9d08e15eaf678559e613b63b42a13ab",
+  "native_execution_performed_during_build_receipt": false,
+  "note": "This receipt covers the shadow compile/link and does not describe the separate native executions recorded in g4_restart_shadow_runs_2026-09-25.json.",
+  "only_changed_code_member": "module_first_rk_step_part1.o",
+  "original_archive_member_sha256": "2109ae9ab0d6f45d4e41c5cd1d50db41ef8c0dc6363be9e87b1a8dfffc8b0391",
+  "schema": "g4-restart-shadow-build-v1",
+  "shadow_executable_sha256": "3197df4dcdcf9c1af4132e15662531bc28be4c61892fac54cf7a015311c24140",
+  "solve_em_overlay": "deferred"
+}
