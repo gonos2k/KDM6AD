@@ -1,9 +1,11 @@
 # S2: bounded mp37 rain-number trace; physical basis remains OPEN
 
-This evidence closes one executed-path measurement within S2. It does not
-resolve whether stored QNR represents particles per dry-air kilogram or per
-cubic metre, so **S2 remains OPEN**. The operational mp37 physics was not
-changed.
+This evidence closes one executed-path measurement within S2. A later source
+audit resolves the host prognostic contract as number per dry-air mass and
+documents the missing conversion at the KDM6 boundary in
+[`REPORT_S2_number_unit_contract_design_2026-09-25.md`](REPORT_S2_number_unit_contract_design_2026-09-25.md).
+The kernel moment-density choice and corrected-variant policy remain open. The
+operational mp37 physics was not changed.
 
 ## Run and input
 
