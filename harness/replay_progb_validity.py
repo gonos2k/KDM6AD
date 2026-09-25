@@ -62,6 +62,13 @@ CAPTURE_GOLDENS = {
         },
     },
 }
+RHO_CONSUMER_ID_CONTRACT = {
+    "1418": {"operation": "pgmlt/rhox", "source_line_mp37": 1418, "source_line_mp237": 1456},
+    "2824": {"operation": "pgdep/rhox", "source_line_mp37": 2824, "source_line_mp237": 2862},
+    "2915": {"operation": "pgevp/rhox", "source_line_mp37": 2915, "source_line_mp237": 2953},
+    "2916": {"operation": "pgeml/rhox", "source_line_mp37": 2916, "source_line_mp237": 2954},
+    "3027": {"operation": "preProgB max/rhox", "source_line_mp37": 3027, "source_line_mp237": 3065},
+}
 FLAG_INDICES = {
     "S10CMG": (7, 8),
     "S10PB": (7, 8, 9, 10, 11),
@@ -194,6 +201,10 @@ def validate_events(records: list[dict[str, Any]]) -> dict[str, Any]:
                     and row["values"][13] == 1]
     unassigned_rhox_reads = [row for row in by_tag["S10RHO"]
                              if row["values"][8] == 0 and row["values"][9] == 1]
+    unknown_rhox_consumer_ids = sorted({str(row["values"][7]) for row in by_tag["S10RHO"]}
+                                       - set(RHO_CONSUMER_ID_CONTRACT))
+    if unknown_rhox_consumer_ids:
+        raise ValueError(f"S10RHO contains unknown semantic consumer IDs: {unknown_rhox_consumer_ids}")
     diag_bad = [row for row in by_tag["S10DIAG"]
                 if row["values"][4] == 1 and row["values"][5] == 0 and row["values"][6] == 1]
     scans = {tuple(row["values"][:5]): row["values"] for row in by_tag["S10SCAN"]}
@@ -299,6 +310,8 @@ def validate_manifest(manifest: dict[str, Any]) -> None:
             or capture.get("event_record_count") != golden["record_count"]
             or capture.get("event_record_counts") != golden["record_counts"]):
         raise ValueError("manifest capture census differs from the code-pinned golden")
+    if capture.get("rhox_consumer_id_contract") != RHO_CONSUMER_ID_CONTRACT:
+        raise ValueError("manifest S10RHO consumer-ID meanings differ from the code-pinned contract")
     run = manifest.get("run", {})
     expected_scheme = 37 if variant == "mp37" else 237
     if (run.get("mp_physics") != expected_scheme or run.get("dt_s") != 20
@@ -346,6 +359,7 @@ def replay(manifest: dict[str, Any], lines: Iterable[str]) -> dict[str, Any]:
         "event_payload_sha256": manifest["capture"]["event_payload_sha256"],
         "event_record_count": manifest["capture"]["event_record_count"],
         "event_record_counts": manifest["capture"]["event_record_counts"],
+        "rhox_consumer_id_contract": manifest["capture"]["rhox_consumer_id_contract"],
     }
     result["execution_status"] = "completed"
     result["physical_validity_policy"] = "OPEN"

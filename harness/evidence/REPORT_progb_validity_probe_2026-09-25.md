@@ -20,6 +20,8 @@ The call-time validity bits show why that distinction matters. On the first site
 
 The active input sample has zero input `QIB`; this exercises a branch, not an admissible physical moment pair or a density-value validation. The trace scanner also found positive-qg, below-threshold call-time cells with the producer gate inactive: 763 paired trace producer/consumer records for mp37 and 771 for mp237 across the bounded step.
 
+The `S10RHO` numeric `consumer_id` is a stable semantic tag, not a source-line claim for both variants. Its integer spellings match the mp37 legacy anchor locations; the manifest maps each to the current mp237 source location: `1418` pgmlt (mp237 line 1456), `2824` pgdep (2862), `2915` pgevp (2953), `2916` pgeml (2954), and `3027` pre-ProgB max (3065). The generator and replayer pin that mapping.
+
 The event stream contains `S10CMG`, `S10PB`, `S10SLP`, `S10RHO`, `S10DIAG`, `S10SCAN`, `S10TRACE`, and `S10TRS` rows. The replayer requires an exact code-fixed eight-call-context × two-column × 39-level producer/cmg/slope key set, all 78 final-diagnostic cells, and the complete site-1 latitude census. Each variant manifest pins the event SHA-256, total rows, and per-tag counts, while the replay module independently hard-codes the matching SHA/count goldens. Thus a removed or relocated `S10RHO` row still fails when the manifest hash and counts are rewritten. Regression tests also remove a later site-2 paired producer/consumer key. Event fields contain only integer indices and validity/reach flags, never OUT values.
 
 ## Instrumentation and build

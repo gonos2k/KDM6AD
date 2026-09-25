@@ -18,6 +18,15 @@ SOURCE_SHA = {
     "mp237": "4f0103c8a8321b8e854d3500f4ae567755e41eb78746fac54519eca2686a6648",
 }
 TARGETS = {"lat": 73, "active_i": 113, "inactive_i": 115}
+# Stable S10RHO logical IDs. The integer values match legacy mp37 line anchors;
+# mp237 source-line locations differ and are recorded in each run manifest.
+RHO_CONSUMER_IDS = {
+    1418: "pgmlt/rhox",
+    2824: "pgdep/rhox",
+    2915: "pgevp/rhox",
+    2916: "pgeml/rhox",
+    3027: "preProgB max/rhox",
+}
 
 
 def sha256(data: bytes) -> str:
@@ -173,13 +182,15 @@ def _add_rhox_read_events(text: str) -> str:
         ("rhox_pgeml", "            bgeml(i,k)=pgeml(i,k)/rhox(i,k)", 2916),
         ("rhox_preprogB", "         rhox(i,k) = max(rhox(i,k) ,0.)", 3027),
     )
-    for label, anchor, code in sites:
+    if {consumer_id for _, _, consumer_id in sites} != set(RHO_CONSUMER_IDS):
+        raise ValueError("S10RHO semantic consumer-ID contract does not match its anchors")
+    for label, anchor, consumer_id in sites:
         event = (
             "#ifdef " + MACRO + "\n"
             "         if (capture_enabled .and. capture_step.eq.1 .and. lat.eq.73 .and. "
             "(i.eq.113 .or. i.eq.115)) then\n"
             "           write(*,'(A,10(1X,I0))') 'S10RHO', capture_step, lat, &\n"
-            "             capture_last_site,capture_last_loop,capture_last_substep,i,k, " + str(code) + ", &\n"
+            "             capture_last_site,capture_last_loop,capture_last_substep,i,k, " + str(consumer_id) + ", &\n"
             "             merge(1,0,capture_rhox_assigned(i,k)), 1\n"
             "         endif\n"
             "#endif\n"

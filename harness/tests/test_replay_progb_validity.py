@@ -8,7 +8,8 @@ import hashlib
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from replay_progb_validity import (CAPTURE_GOLDENS, parse_event_lines, replay,
+from replay_progb_validity import (CAPTURE_GOLDENS, RHO_CONSUMER_ID_CONTRACT,
+                                   parse_event_lines, replay,
                                    validate_capture_payload, validate_events,
                                    validate_manifest)  # noqa: E402
 
@@ -170,6 +171,7 @@ def test_completed_manifest_requires_same_build_inputs_namelist_and_log_switch()
             "event_payload_sha256": CAPTURE_GOLDENS["mp37"]["sha256"],
             "event_record_count": CAPTURE_GOLDENS["mp37"]["record_count"],
             "event_record_counts": CAPTURE_GOLDENS["mp37"]["record_counts"],
+            "rhox_consumer_id_contract": json.loads(json.dumps(RHO_CONSUMER_ID_CONTRACT)),
         },
         "run": {
             "mp_physics": 37, "dt_s": 20, "actual_proc_grid": "1x1",
@@ -195,4 +197,8 @@ def test_completed_manifest_requires_same_build_inputs_namelist_and_log_switch()
     validate_manifest(manifest)
     manifest["noninterference"]["executable_sha256"]["capture"] = "other-exe"
     with pytest.raises(ValueError, match="same executable"):
+        validate_manifest(manifest)
+    manifest["noninterference"]["executable_sha256"]["capture"] = "exe"
+    manifest["capture"]["rhox_consumer_id_contract"]["1418"]["source_line_mp237"] = 1418
+    with pytest.raises(ValueError, match="consumer-ID meanings"):
         validate_manifest(manifest)

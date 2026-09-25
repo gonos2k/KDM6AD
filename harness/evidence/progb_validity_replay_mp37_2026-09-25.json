@@ -61,7 +61,8 @@
       "slope": 59,
       "rhox": 192,
       "diag": 0
-    }
+    },
+    "undefined_output_physical_impact": "NOT_MEASURED"
   },
   "undefined_output_values_serialized": false,
   "undefined_output_physical_impact": "NOT_MEASURED",
@@ -118,6 +119,33 @@
       "S10SLP": 624,
       "S10RHO": 212,
       "S10DIAG": 78
+    },
+    "rhox_consumer_id_contract": {
+      "1418": {
+        "operation": "pgmlt/rhox",
+        "source_line_mp37": 1418,
+        "source_line_mp237": 1456
+      },
+      "2824": {
+        "operation": "pgdep/rhox",
+        "source_line_mp37": 2824,
+        "source_line_mp237": 2862
+      },
+      "2915": {
+        "operation": "pgevp/rhox",
+        "source_line_mp37": 2915,
+        "source_line_mp237": 2953
+      },
+      "2916": {
+        "operation": "pgeml/rhox",
+        "source_line_mp37": 2916,
+        "source_line_mp237": 2954
+      },
+      "3027": {
+        "operation": "preProgB max/rhox",
+        "source_line_mp37": 3027,
+        "source_line_mp237": 3065
+      }
     }
   },
   "execution_status": "completed",
