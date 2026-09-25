@@ -1,0 +1,51 @@
+# KDM6AD system-level gates after bounded F0–F7 pilots
+
+Baseline: `main` at `e2da673e`, which contains X1–X12/G4 and the bounded
+F1–F7 verification pilots. A synthetic property, public arithmetic replay,
+local C++ function, isolated native run and operational host trajectory are
+different evidence levels. This checklist tracks the remaining **system**
+conditions. Do not relabel an earlier bounded pilot as operational approval,
+erase a failed comparison, change QC, or choose a physical number unit from
+whichever conditional residual is smallest.
+
+Use retained 5 km native inputs, source/build hashes and matched configurations.
+For an intentionally changed operator, compare instrumentation within each arm
+and quantify changes between arms; legacy bitwise parity remains its own track.
+Every row needs its stated executed-path evidence before it can close. The
+following order follows dependencies, not a project completion percentage.
+This is the critical path for KDM6AD physics/DA validation, not the complete
+operational rollout checklist. `docs/OPERATIONAL_READINESS.md` keeps O4–O8
+(target deployment, actual observations, writeback/cycling, job resources and
+independent forecast skill) at **NO-GO**; a default/release decision must
+separately satisfy those gates. Forecast skill is not a completion condition
+for the narrower differentiability validation.
+
+| ID | Status | System gate | Completion condition |
+| --- | --- | --- | --- |
+| S1 | **OPEN — operational P1** | Ice-number departure/arrival conservation and default-path disposition | On a separately identified native conservative+normalized path, record actual capped departure, next-cell arrival and bottom export at each face for nonempty upper layers, unequal `dz` and multiple substeps. Predeclare the operator number measure (`dz` while physical basis is unresolved), `rho*dz` mass measure and source-order f32/ULP residual budget; report every signed interface residual, not a generic tolerance pass. Preserve legacy reproduction separately. Closing this numerical gate does **not** switch the default; any default/release decision needs applicable S2–S15 and the separate O4–O8 operational gates. |
+| S2 | **OPEN** | Physical number/mass basis and thresholds | Resolve Registry/host/kernel population meanings at the actual ABI or mp37 entry. For one active species, trace host value and density → DSD/producers → cap threshold/applied number amount → sedimentation departure/arrival → return in one declared basis, with both mass and number measures and transformed thresholds. Independently check dry versus volume interpretation; no guessed density insertion. The `make_RainNumber` initialization fallback is guarded for Thompson/Thompson-Aero, not mp37, so its many input candidates cannot be counted as KDM6 execution evidence. |
+| S3 | **OPEN** | Whole-host accepted-state nonnegativity | Find first negative number creation across RK face/limiter, boundary, microphysics input/return and saved history for both legacy and normalized conservative paths; include physical owner coordinates and source-ordered f32 operations. Validate a conservation-aware repair at the producing step and all affected boundaries, with no blanket post-hoc clipping. |
+| S4 | **OPEN** | Native dynamic `mstep ≥ 2` consumption | Keep the retained 5 km input, normalized mp237 source and 20 s timestep fixed; predeclare a longer run horizon and census all owned columns until an active-ice column naturally selects at least two ice substeps, or report no witness by that horizon. Capture each consumer's latest `v/dz` generation, changed post-reslope velocity where present, actual departures/arrivals/export, finished-column inactivity and restart reuse. The full 0–40 s G4 census found `mstep=1` everywhere; changing dt or prescribing speed would be a different experiment. |
+| S5 | **OPEN** | MPI/tile trajectory across i split | On the exact normalized mp237 build/input, localize the first owned-cell divergence between serial and 2×1 before and after RK/halo/KDM handoffs; retain full-domain 28/71-field failure at 20/40 s. Existing G33 code-generation experiments are a candidate mechanism on another build; verify applicability rather than silently importing their result. Validate any arithmetic/toolchain remedy on identical inputs, both decompositions and saved times. |
+| S6 | **OPEN** | Restart trajectory equivalence | Parent checkpoint and child input identities already match. Compare all next-step-relevant restored prognostic, timer, surface/PBL/radiation cache and boundary states before the first RK call; find first divergent producer between 20 and 40 s. Distinguish the seven immediate diagnostic-only differences from the later prognostic divergence, then validate a corrected continuation against uninterrupted history without relaxing bitwise rules. |
+| S7 | **OPEN** | Physical time accuracy | After normalized producer/consumer units are established, compare same-final-time vertical distribution, bottom export, size and thermal state across time steps/substeps with speeds and sizes recomputed at the declared cadence. Keep formal raw-work fixed-coefficient curves separate from the physical operator; predeclare a reference and error budget. |
+| S8 | **OPEN** | Full normalized AD and host ABI | Separately verify mp337 **forward** C/Fortran host entry/return and a named normalized AD-capable ABI path for actual state-dependent size/velocity and active controls. The current mp337 wrapper sets `value_only=1`, returns a null handle and cannot by itself test JVP/VJP; a distinct `value_only=0` handle lifecycle or explicit test wrapper must exercise packed tangent/adjoint fields. Require same-branch independent differences and threshold-crossing tests; preserve operational f32 versus fp64 DA contracts. |
+| S9 | **OPEN** | Historical source/build certification | Preserve the failed old SHA pin and the documented one-line `rhox` difference. Authenticate the approved current source and executable chain with explicit review of inactive-output validity and rebuild/install identity; do not make the old pin pass by replacing it. |
+| S10 | **OPEN** | Native inactive-output validity | On active and inactive ProgB/other conditional `INTENT(OUT)` branches, establish which outputs are defined, which consumer reads them, and whether a validity mask or branch-specific value is required. Verify the chosen contract in a native boundary without adding arbitrary zero physics. |
+| S11 | **OPEN** | Independent radiative accuracy and liquid observation gate | Resolve number→size→optical input units before comparing a fixed state/geometry/cloud-overlap case with an independent, convergence-checked radiative reference. Compare BT and process direction separately, retain the RTTOV extinction-cap/QC mask, and require at least one genuinely accepted liquid observation for nonempty cost validation; inherited 0/9 remains unapproved. |
+| S12 | **OPEN** | Meteorological and execution breadth | Preselect at least one **separately initialized** retained 5 km forecast/UTC or date before output inspection, then repeat applicable gates across cold/clear/mixed/rain columns, nontrivial MPI/tile and thread-count layouts and restart. Verify expected global owner/event sets from run configuration, not received records. If no independent retained case exists, record that blocker; do not acquire or substitute external model/reanalysis data. One 40 s forecast with five spatial samples does not certify other weather. |
+| S13 | **OPEN / FAIL — C4 Gate B G3.3** | Legacy ULP envelope and conservative-variant attribution | The current C4 package reports `closure3` conservative max 77,852 ULP above legacy 77,312 and species-isolation 2,188 above 1,164 after the shared `piacw` fix. Reproduce exact first divergence and mechanism on pinned C4 Fortran/C++ builds and inputs, separate ordinary f32 evaluation from physical-map change, and establish an approved precision-aware disposition before C4/C5 or host/default promotion. Do not replace the failed gate with the withdrawn relative envelope. |
+| S14 | **OPEN — M1** | Ten-minute applied number-transfer ledger | On one source-attributed, matched ten-minute native case, record actual limited `dn_out` and paired `dn_in` with `dz`, moist/dry density and bottom export at every active interface. Decompose the residual into metric/density contrast, independent cap or unmatched transfer, and source-order f32 store rounding. The old zero-transfer 20 s capture and reconstructed-flux proxies cannot close this. |
+| S15 | **OPEN — M2 / trace-moment policy** | First negative ice-volume and trace-graupel admissibility | Capture the first negative `QIB`/volume-moment operands and their source update, then classify active, trace and invalid `qg/bg` states at the actual melt consumer. Compare candidate skip/cleanup/producer-repair policies against mass, number, volume and latent-work budgets; require a declared physical policy before changing default behavior. Existing g1/g3/g4/g5 counterexamples do not settle the policy. |
+
+Current evidence links: `CHECKLIST_generalization_2026-09-24.md`,
+`REPORT_native_execution_2026-09-24.md`,
+`REPORT_ice_normalization_2026-09-24.md`,
+`FINDING_i_seam_is_code_generation_v1.md`,
+`docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md`, and the separate F0–F7 checklist.
+`CHECKLIST_hydrometeor_sensitivity_2026-09-06.md`,
+`SCIENCE_STATUS.md`, and `docs/OPERATIONAL_READINESS.md` retain detailed M1/M2,
+trace-moment and rollout boundaries not promoted by a synthetic pass.
+The legacy ice departure/arrival loss and the normalized G4 MPI/restart failures
+remain measured negative results. A new row is closed only with its own scope,
+raw or lossless inputs, executed artifact and replay/independent check.
