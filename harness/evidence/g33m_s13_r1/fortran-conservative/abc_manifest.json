@@ -1,0 +1,99 @@
+{
+  "abc_equal": true,
+  "algorithm": "conservative",
+  "architecture": "arm64",
+  "build_provenance_sha256": {
+    "A": "4e6cd718cf05a40b2c0970d669ac34b7870ba0763cf8fbac3e9d93d4c9c75c57",
+    "B": "c8d1687c4733675b98a018653fab40bff56bbd5e41d7817ca6aa3475a3063859",
+    "C": "61baff4c30c1c54aa050f65e6cab077025eff314821539c8179dcc5a3f3d81aa"
+  },
+  "compiler_binary_sha256": "0019c2383f399c1ba6aed1dc060191e793caf963c1066d254194883581098bb2",
+  "compiler_path": "/opt/homebrew/Cellar/gcc/15.2.0/bin/gfortran-15",
+  "compiler_version": "GNU Fortran (Homebrew GCC 15.2.0) 15.2.0",
+  "entry_boundary": "kdm62d_kernel_entry_v1",
+  "executable_sha256": {
+    "A": "496fae5850325661becc33448a4582751ae6c622a0e77eb7959c38cee37e0873",
+    "B": "e9ed5710120769e3afd68edbfca968b7522baaac008e2d4a0fd1f09b8a3692c9",
+    "C": "bbd06c7e3ec663edda7a67661d950ac8f8ea4634ef54c35fd30e4060e2d0e6d6"
+  },
+  "fixture_id": "arithmetic_multisubcycle_v1",
+  "fixture_manifest_sha256": "290ddce105b60deec9fbfa6d097842405b24c6aa920632e552572bd7b17aa271",
+  "fixture_sha256": "71083cb34efacc112010d11a2365113cde00dca0810d8be882a812089e118d93",
+  "fortran_parameter_sha256": "f1008f2ec5629d7dcaa0e5305771163c7b7651cc112b3ceea6a4ad4b06caf39b",
+  "g33f_protocol_version": 14,
+  "harness_source_sha256": {
+    "fixture.f90": "54b0d7437f21407b9c857d080da9d0e7b4740b9c6870805fc799f39d99182363",
+    "fixture.h": "edf4c8c8ea4841d88b17297b67810882e0ccaa12f35bdb574630afa77189adbd",
+    "fortran_build.sh": "2c44ebc54522e95b4f6aa6e5534d97de4348571e205c1e7897ee7e3fc4439558",
+    "g33_expectation.py": "5df26ec137e8c8f68a6666fab521cc318159875cad9cea2352bb3139a9893189",
+    "g33_fixture_v1.json": "8aadebb8a5aa31549f0483d86b8efc5fe87e23150ea17ff2a865b6fde3bc0a72",
+    "g33_fixture_v1.py": "152c63e01888d31335dad8170f02c96db850dc027e1c6c150e19322668162e0a",
+    "g33_fortran_bindings.py": "e9840849812458e678fc5d5168c10ece09aebdaf9bb6ed8e140b603be732b004",
+    "g33_fortran_driver.f90": "6a7d2752346d51e18a351746715e438da5a3eb47eef2b94af115bf0d37c1d326",
+    "g33_fortran_dump.py": "db510117760a6e0d01e1353d14c670a55788caa2eefab015fcc820b7c273754b",
+    "g33_fourcase_fixture_check.py": "d031358894a6f293c6445b6f66982089e64d48a9242702a9eaef083b4048ec58",
+    "g33_provenance.py": "1e31baf01faffadd0f424a6410a039202d8bec0d51de5e6d277787717476f002",
+    "g33_schema.py": "6cb49775b5b02adaecbae900000c158c3cc0244bc9c733f93b2b1d471ecf923b",
+    "make_fortran_overlay.py": "30c0197bbaeed05640d58482b773cc6ab430035f2fe2b7ddf0ef419b0313ca80",
+    "run_fortran_case.py": "bd708e7ebdd68b85a4870c9103f144561c288432860376c9b254ae5b5e942d9a",
+    "stub_wrf_error.f90": "d03d8973a2da4ef2612127fb15dd9ca43cb64e352fc167bca7a02ef245024f4b"
+  },
+  "host_source_sha256": {
+    "libmassv.F": "449be0d252beba8c5a42ade42fceb2e582239d1a36db79ef3ad902f0ed82ede1",
+    "module_model_constants.F": "5b80377fecdc18a5f0ad38d3b6c15cfc86ad5d76701adbbbb08a08698d0f7062",
+    "module_mp_kdm6[_cons].F": "364a1319d0099bdb474a752a2a017defaf008babbe85dd03da872c603b2e7e3e",
+    "module_mp_radar.F": "aa99da858be41efa579966680708d230123a7417560af0eb2e24f4c94e253688"
+  },
+  "module_canonical_sha256": "364a1319d0099bdb474a752a2a017defaf008babbe85dd03da872c603b2e7e3e",
+  "module_compiled_sha256": {
+    "A": "364a1319d0099bdb474a752a2a017defaf008babbe85dd03da872c603b2e7e3e",
+    "BC": "dd1fcfe1eca5335a99c06e3f4c8871f43f17eef55a6e83acb4cd408e352abc20"
+  },
+  "mstep_per_column": {
+    "L1/main/col1": 1,
+    "L1/main/col2": 5,
+    "L1/main/col3": 9,
+    "L2/main/col1": 1,
+    "L2/main/col2": 2,
+    "L2/main/col3": 10,
+    "L3/main/col1": 1,
+    "L3/main/col2": 1,
+    "L3/main/col3": 7
+  },
+  "normalized_ops_sha256": "974deca16df293783d69036c985c7d69b80347ee7e4deefedea5b61b3096a044",
+  "normalized_ops_source_stdout_sha256": "e30aa29bb58d3b47b82006247e7f500f40e519a2c8620bf0dc6acaeda69f052c",
+  "op_record_count": 6956,
+  "os": "macOS-26.7-arm64-arm-64bit-Mach-O",
+  "parameter_sha256": "a55565ff31003b562d92b81f636e523630bb7b15272e829b4f24688c9f81c2cf",
+  "python_version": "3.14.4",
+  "repo_commit": "955d8f2a088364ad4833a0068df693271b900a50",
+  "repo_dirty": false,
+  "run_input_sha256": {
+    "A": {
+      "fixture": "71083cb34efacc112010d11a2365113cde00dca0810d8be882a812089e118d93",
+      "fortran_parameter": "f1008f2ec5629d7dcaa0e5305771163c7b7651cc112b3ceea6a4ad4b06caf39b",
+      "parameter": "a55565ff31003b562d92b81f636e523630bb7b15272e829b4f24688c9f81c2cf"
+    },
+    "B": {
+      "fixture": "71083cb34efacc112010d11a2365113cde00dca0810d8be882a812089e118d93",
+      "fortran_parameter": "f1008f2ec5629d7dcaa0e5305771163c7b7651cc112b3ceea6a4ad4b06caf39b",
+      "parameter": "a55565ff31003b562d92b81f636e523630bb7b15272e829b4f24688c9f81c2cf"
+    },
+    "C": {
+      "fixture": "71083cb34efacc112010d11a2365113cde00dca0810d8be882a812089e118d93",
+      "fortran_parameter": "f1008f2ec5629d7dcaa0e5305771163c7b7651cc112b3ceea6a4ad4b06caf39b",
+      "parameter": "a55565ff31003b562d92b81f636e523630bb7b15272e829b4f24688c9f81c2cf"
+    }
+  },
+  "schema_version": 2,
+  "stderr_sha256": {
+    "A": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "B": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "C": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "stdout_sha256": {
+    "A": "9c2983f79803454fba169b44e4a79dca8f7d0e22a98493df522679594419239a",
+    "B": "9c2983f79803454fba169b44e4a79dca8f7d0e22a98493df522679594419239a",
+    "C": "e30aa29bb58d3b47b82006247e7f500f40e519a2c8620bf0dc6acaeda69f052c"
+  }
+}

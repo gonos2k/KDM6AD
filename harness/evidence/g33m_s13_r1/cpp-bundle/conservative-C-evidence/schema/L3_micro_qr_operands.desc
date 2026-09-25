@@ -1,0 +1,12 @@
+5957|micro_qr_operands|-|-1|-|-|praut|f32|3,4
+5958|micro_qr_operands|-|-1|-|-|pracw|f32|3,4
+5959|micro_qr_operands|-|-1|-|-|prevp|f32|3,4
+5960|micro_qr_operands|-|-1|-|-|piacr|f32|3,4
+5961|micro_qr_operands|-|-1|-|-|pgacr|f32|3,4
+5962|micro_qr_operands|-|-1|-|-|psacr|f32|3,4
+5963|micro_qr_operands|-|-1|-|-|pmulrs|f32|3,4
+5964|micro_qr_operands|-|-1|-|-|pmulrg|f32|3,4
+5965|micro_qr_operands|-|-1|-|-|paacw|f32|3,4
+5966|micro_qr_operands|-|-1|-|-|pseml|f32|3,4
+5967|micro_qr_operands|-|-1|-|-|pgeml|f32|3,4
+5968|micro_qr_operands|-|-1|-|-|cold_gate|f32|3,4

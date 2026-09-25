@@ -1,0 +1,15 @@
+2147|outer_pre_sed|-|-1|-|-|qr|f32|3,4
+2148|outer_pre_sed|-|-1|-|-|nr|f32|3,4
+2149|outer_pre_sed|-|-1|-|-|qv|f32|3,4
+2150|outer_pre_sed|-|-1|-|-|t|f32|3,4
+2151|outer_pre_sed|-|-1|-|-|qc|f32|3,4
+2152|outer_pre_sed|-|-1|-|-|qi|f32|3,4
+2153|outer_pre_sed|-|-1|-|-|qs|f32|3,4
+2154|outer_pre_sed|-|-1|-|-|qg|f32|3,4
+2155|outer_pre_sed|-|-1|-|-|nc|f32|3,4
+2156|outer_pre_sed|-|-1|-|-|ni|f32|3,4
+2157|outer_pre_sed|-|-1|-|-|nccn|f32|3,4
+2158|outer_pre_sed|-|-1|-|-|brs|f32|3,4
+2159|outer_pre_sed|-|-1|-|-|p|f32|3,4
+2160|outer_pre_sed|-|-1|-|-|rho|f32|3,4
+2161|outer_pre_sed|-|-1|-|-|delz|f32|3,4

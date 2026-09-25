@@ -1,0 +1,7 @@
+2016|micro_freeze_heat|-|-1|-|-|t_pre_freeze|f32|3,4
+2017|micro_freeze_heat|-|-1|-|-|xlf|f32|3,4
+2018|micro_freeze_heat|-|-1|-|-|cpm|f32|3,4
+2019|micro_freeze_heat|-|-1|-|-|phom|f32|3,4
+2020|micro_freeze_heat|-|-1|-|-|pinuc|f64|3,4
+2021|micro_freeze_heat|-|-1|-|-|pfrzdtc|f64|3,4
+2022|micro_freeze_heat|-|-1|-|-|pfrzdtr|f64|3,4

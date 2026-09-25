@@ -1,0 +1,15 @@
+0|kernel_call_input|-|-1|-|-|qr|f32|3,4
+1|kernel_call_input|-|-1|-|-|nr|f32|3,4
+2|kernel_call_input|-|-1|-|-|qv|f32|3,4
+3|kernel_call_input|-|-1|-|-|t|f32|3,4
+4|kernel_call_input|-|-1|-|-|qc|f32|3,4
+5|kernel_call_input|-|-1|-|-|qi|f32|3,4
+6|kernel_call_input|-|-1|-|-|qs|f32|3,4
+7|kernel_call_input|-|-1|-|-|qg|f32|3,4
+8|kernel_call_input|-|-1|-|-|nc|f32|3,4
+9|kernel_call_input|-|-1|-|-|ni|f32|3,4
+10|kernel_call_input|-|-1|-|-|nccn|f32|3,4
+11|kernel_call_input|-|-1|-|-|brs|f32|3,4
+12|kernel_call_input|-|-1|-|-|p|f32|3,4
+13|kernel_call_input|-|-1|-|-|rho|f32|3,4
+14|kernel_call_input|-|-1|-|-|delz|f32|3,4

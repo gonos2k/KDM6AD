@@ -1,0 +1,399 @@
+{
+  "cpp": {
+    "build": {
+      "cache_path": "libtorch/build/CMakeCache.txt",
+      "cache_sha256": "893464fc74598ab1946502eda4a95e1ca9117dd92ece560e683a9488b9e2da3f",
+      "cmake_version": "cmake version 3.24.4",
+      "compile_contract_note": "A default clean C++ build fails at coordinator.cpp:1176 because kdm6_dump_on is passed unconditionally but declared only under KDM6_SUBSTEP_DUMP. The isolated build added -DKDM6_SUBSTEP_DUMP in CMAKE_CXX_FLAGS; C++ runs used KDM6_DUMP_CALL=0 so those shared diagnostic hooks emitted no output. KDM6_G33_OP_DUMP stayed the separate G3.3 overlay macro. Source files were unchanged.",
+      "compiler": {
+        "binary_sha256": "5b1ddb7e9c11b87a034fc88b212e8ac243cfe2b4db696d767aa44c79595fc09a",
+        "configured_path": "/usr/bin/clang++",
+        "resolved_path": "/usr/bin/clang++",
+        "version": "Apple clang version 21.0.0 (clang-2100.3.34.2)"
+      },
+      "configured": {
+        "CMAKE_BUILD_TYPE:STRING": "Release",
+        "CMAKE_CXX_COMPILER:UNINITIALIZED": "/usr/bin/clang++",
+        "CMAKE_CXX_FLAGS:STRING": "-DKDM6_SUBSTEP_DUMP",
+        "CMAKE_PREFIX_PATH:UNINITIALIZED": "/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/share/cmake"
+      },
+      "flags_path": "libtorch/build/CMakeFiles/kdm6.dir/flags.make",
+      "flags_sha256": "30e4065e27f56a0925f31bb22e6e5075da5e2fc1d1e81e8f9793576e86c54fc6",
+      "static_library_sha256": "7d217331204bd97d052fde6e2b3e032d116ce7193cac5b8e39bece0ff1abfb6f",
+      "target_flags": {
+        "CXX_DEFINES": "-DUSE_C10D_GLOO -DUSE_DISTRIBUTED -DUSE_RPC -DUSE_TENSORPIPE",
+        "CXX_FLAGS": "-DKDM6_SUBSTEP_DUMP -O3 -DNDEBUG -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -mmacosx-version-min=26.7 -fPIC -fvisibility=hidden -fvisibility-inlines-hidden -ffp-contract=off -Wall -Wextra -Wpedantic -std=c++17",
+        "CXX_INCLUDES": "-I/Users/yhlee/KDM6AD-g33-s13-run/libtorch/include -isystem /Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/include -isystem /Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/include/torch/csrc/api/include"
+      },
+      "torch_version": "2.13.0"
+    },
+    "canonical_driver_sha256": "b26df148f6ad2cdacb47cfdce6fba33978b6e84abcff6416316d6b065660e8cb",
+    "diagnostic_driver_sha256": "ef6619dce06aaf8d8284533df1bc304140f3f6f7732e27a7bfe91f63d0dc3015",
+    "driver_sha256s": {
+      "canonical": "b26df148f6ad2cdacb47cfdce6fba33978b6e84abcff6416316d6b065660e8cb",
+      "diagnostic": "ef6619dce06aaf8d8284533df1bc304140f3f6f7732e27a7bfe91f63d0dc3015"
+    },
+    "fixture_manifest_sha256": "290ddce105b60deec9fbfa6d097842405b24c6aa920632e552572bd7b17aa271",
+    "per_algorithm": {
+      "conservative": {
+        "abc_equal": true,
+        "containers": 62,
+        "evidence_tree_sha256": "508449e693225a699b25b43c37962a3b3e3f1e01bbce36bd7bde93dcd636bc5e",
+        "mstep_max": 10,
+        "mstep_min": 1,
+        "probe_stream_sha256": "524b1694ea2d4513defdbba4865d062177a483e5661bbb22d40706211f0e9fd8",
+        "schedule_sha256": "f0011e162889c3fff63a79b8cd4588531bc82da5173ea5fad25464fad5500232"
+      },
+      "legacy": {
+        "abc_equal": true,
+        "containers": 62,
+        "evidence_tree_sha256": "866ce90dccff0f6c828e02f0a440301e94f206a4ce8acfee19045416ed28af3a",
+        "mstep_max": 10,
+        "mstep_min": 1,
+        "probe_stream_sha256": "4f159ca2432c58e9b7f45c5390d568c705ac7109fd89a83ff1be0ff38ab46abe",
+        "schedule_sha256": "d9bc3ce165eae8b15f8719352347c4981d17ebc20a6de87476ecbe22e1a9adc6"
+      }
+    },
+    "root_manifest_path": "cpp-bundle/cpp_abc_manifest.json",
+    "root_manifest_sha256": "3389172b99bc3f9799535bb8b7f9977f30e1f78a7f99d77287570f70e37cac9c",
+    "run_environment": {
+      "KDM6_DUMP_CALL": "0",
+      "KDM6_G33_OP_DUMP": "compile-time overlay macro, independent"
+    }
+  },
+  "fixture": {
+    "B": 3,
+    "K": 4,
+    "entry_boundary": "kdm62d_kernel_entry_v1",
+    "fixture_json_sha256": "8aadebb8a5aa31549f0483d86b8efc5fe87e23150ea17ff2a865b6fde3bc0a72",
+    "fixture_manifest_sha256": "290ddce105b60deec9fbfa6d097842405b24c6aa920632e552572bd7b17aa271",
+    "fixture_sha256": "71083cb34efacc112010d11a2365113cde00dca0810d8be882a812089e118d93",
+    "fortran_local_parameter_sha256": "f1008f2ec5629d7dcaa0e5305771163c7b7651cc112b3ceea6a4ad4b06caf39b",
+    "id": "arithmetic_multisubcycle_v1",
+    "parameter_sha256": "a55565ff31003b562d92b81f636e523630bb7b15272e829b4f24688c9f81c2cf",
+    "scope": "arithmetic synthetic, dt=300 s, three outer loops, dtcld=100 s; not a meteorological replay"
+  },
+  "fortran": {
+    "boundary": "kdm62d_kernel_entry_v1",
+    "build_environment": {
+      "SDKROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk",
+      "linker_path": "/usr/bin/ld (Xcode ld 27037.1; PATH puts /usr/bin before /opt/local/bin)",
+      "purpose": "MacOS toolchain selection only. It resolved an initial libSystem lookup failure and avoided Apple Bash 3.2 empty-array behavior. Numeric compiler flags are the exact commands in each Fortran lane provenance.",
+      "shell_path": "/Users/yhlee/KDM6AD-g33-bin/bash (symlink to /opt/local/bin/bash 5.2.15)"
+    },
+    "conservative": {
+      "abc_equal": true,
+      "bundle": "fortran-conservative",
+      "compiler": "GNU Fortran (Homebrew GCC 15.2.0) 15.2.0",
+      "compiler_binary_sha256": "0019c2383f399c1ba6aed1dc060191e793caf963c1066d254194883581098bb2",
+      "compiler_path": "/opt/homebrew/Cellar/gcc/15.2.0/bin/gfortran-15",
+      "harness_source_sha256": {
+        "fixture.f90": "54b0d7437f21407b9c857d080da9d0e7b4740b9c6870805fc799f39d99182363",
+        "fixture.h": "edf4c8c8ea4841d88b17297b67810882e0ccaa12f35bdb574630afa77189adbd",
+        "fortran_build.sh": "2c44ebc54522e95b4f6aa6e5534d97de4348571e205c1e7897ee7e3fc4439558",
+        "g33_expectation.py": "5df26ec137e8c8f68a6666fab521cc318159875cad9cea2352bb3139a9893189",
+        "g33_fixture_v1.json": "8aadebb8a5aa31549f0483d86b8efc5fe87e23150ea17ff2a865b6fde3bc0a72",
+        "g33_fixture_v1.py": "152c63e01888d31335dad8170f02c96db850dc027e1c6c150e19322668162e0a",
+        "g33_fortran_bindings.py": "e9840849812458e678fc5d5168c10ece09aebdaf9bb6ed8e140b603be732b004",
+        "g33_fortran_driver.f90": "6a7d2752346d51e18a351746715e438da5a3eb47eef2b94af115bf0d37c1d326",
+        "g33_fortran_dump.py": "db510117760a6e0d01e1353d14c670a55788caa2eefab015fcc820b7c273754b",
+        "g33_fourcase_fixture_check.py": "d031358894a6f293c6445b6f66982089e64d48a9242702a9eaef083b4048ec58",
+        "g33_provenance.py": "1e31baf01faffadd0f424a6410a039202d8bec0d51de5e6d277787717476f002",
+        "g33_schema.py": "6cb49775b5b02adaecbae900000c158c3cc0244bc9c733f93b2b1d471ecf923b",
+        "make_fortran_overlay.py": "30c0197bbaeed05640d58482b773cc6ab430035f2fe2b7ddf0ef419b0313ca80",
+        "run_fortran_case.py": "bd708e7ebdd68b85a4870c9103f144561c288432860376c9b254ae5b5e942d9a",
+        "stub_wrf_error.f90": "d03d8973a2da4ef2612127fb15dd9ca43cb64e352fc167bca7a02ef245024f4b"
+      },
+      "host_source_sha256": {
+        "libmassv.F": "449be0d252beba8c5a42ade42fceb2e582239d1a36db79ef3ad902f0ed82ede1",
+        "module_model_constants.F": "5b80377fecdc18a5f0ad38d3b6c15cfc86ad5d76701adbbbb08a08698d0f7062",
+        "module_mp_kdm6[_cons].F": "364a1319d0099bdb474a752a2a017defaf008babbe85dd03da872c603b2e7e3e",
+        "module_mp_radar.F": "aa99da858be41efa579966680708d230123a7417560af0eb2e24f4c94e253688"
+      },
+      "host_sources": {
+        "libmassv.F": "449be0d252beba8c5a42ade42fceb2e582239d1a36db79ef3ad902f0ed82ede1",
+        "module_model_constants.F": "5b80377fecdc18a5f0ad38d3b6c15cfc86ad5d76701adbbbb08a08698d0f7062",
+        "module_mp_kdm6[_cons].F": "364a1319d0099bdb474a752a2a017defaf008babbe85dd03da872c603b2e7e3e",
+        "module_mp_radar.F": "aa99da858be41efa579966680708d230123a7417560af0eb2e24f4c94e253688"
+      },
+      "lane_build_commands": {
+        "A": [
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -ffp-contract=off -Wall harness/g33_fortran/g33_fixture_multisubcycle_v1.f90 -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/A -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/A -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/A/g33_fixture_v1.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w -cpp -DRWORDSIZE=4 -DEM_CORE=1 host/KIM-meso_v1.0/frame/libmassv.F -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/A -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/A -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/A/libmassv.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w harness/g33_fortran/stub_wrf_error.f90 -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/A -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/A -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/A/stub_wrf_error.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w -cpp -DRWORDSIZE=4 -DEM_CORE=1 host/KIM-meso_v1.0/share/module_model_constants.F -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/A -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/A -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/A/module_model_constants.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w -cpp -DRWORDSIZE=4 -DEM_CORE=1 host/KIM-meso_v1.0/phys/module_mp_radar.F -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/A -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/A -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/A/module_mp_radar.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w -ffp-contract=off -cpp -DRWORDSIZE=4 -DEM_CORE=1 host/KIM-meso_v1.0/phys/module_mp_kdm6_cons.F -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/A -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/A -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/A/module_mp.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -ffp-contract=off -Wall -cpp -DRWORDSIZE=4 -DEM_CORE=1 -DKDM6_CONS harness/g33_fortran/g33_fortran_driver.f90 -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/A -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/A -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/A/g33_fortran_driver.o ",
+          "/opt/homebrew/bin/gfortran -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/A/g33_fortran_driver /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/A/g33_fortran_driver.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/A/g33_fixture_v1.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/A/module_mp.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/A/module_mp_radar.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/A/module_model_constants.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/A/stub_wrf_error.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/A/libmassv.o "
+        ],
+        "B": [
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -ffp-contract=off -Wall harness/g33_fortran/g33_fixture_multisubcycle_v1.f90 -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/B -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/B -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/B/g33_fixture_v1.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w -cpp -DRWORDSIZE=4 -DEM_CORE=1 host/KIM-meso_v1.0/frame/libmassv.F -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/B -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/B -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/B/libmassv.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w harness/g33_fortran/stub_wrf_error.f90 -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/B -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/B -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/B/stub_wrf_error.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w -cpp -DRWORDSIZE=4 -DEM_CORE=1 host/KIM-meso_v1.0/share/module_model_constants.F -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/B -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/B -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/B/module_model_constants.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w -cpp -DRWORDSIZE=4 -DEM_CORE=1 host/KIM-meso_v1.0/phys/module_mp_radar.F -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/B -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/B -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/B/module_mp_radar.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w -ffp-contract=off -cpp -DRWORDSIZE=4 -DEM_CORE=1 /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/B/module_mp_ovl.F -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/B -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/B -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/B/module_mp.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -ffp-contract=off -Wall -cpp -DRWORDSIZE=4 -DEM_CORE=1 -DKDM6_CONS harness/g33_fortran/g33_fortran_driver.f90 -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/B -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/B -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/B/g33_fortran_driver.o ",
+          "/opt/homebrew/bin/gfortran -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/B/g33_fortran_driver /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/B/g33_fortran_driver.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/B/g33_fixture_v1.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/B/module_mp.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/B/module_mp_radar.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/B/module_model_constants.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/B/stub_wrf_error.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/B/libmassv.o "
+        ],
+        "C": [
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -ffp-contract=off -Wall harness/g33_fortran/g33_fixture_multisubcycle_v1.f90 -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/C -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/C -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/C/g33_fixture_v1.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w -cpp -DRWORDSIZE=4 -DEM_CORE=1 host/KIM-meso_v1.0/frame/libmassv.F -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/C -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/C -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/C/libmassv.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w harness/g33_fortran/stub_wrf_error.f90 -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/C -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/C -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/C/stub_wrf_error.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w -cpp -DRWORDSIZE=4 -DEM_CORE=1 host/KIM-meso_v1.0/share/module_model_constants.F -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/C -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/C -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/C/module_model_constants.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w -cpp -DRWORDSIZE=4 -DEM_CORE=1 host/KIM-meso_v1.0/phys/module_mp_radar.F -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/C -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/C -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/C/module_mp_radar.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w -ffp-contract=off -cpp -DRWORDSIZE=4 -DEM_CORE=1 -DKDM6_G33_FORTRAN_DUMP /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/C/module_mp_ovl.F -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/C -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/C -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/C/module_mp.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -ffp-contract=off -Wall -cpp -DRWORDSIZE=4 -DEM_CORE=1 -DKDM6_CONS -DKDM6_G33_FORTRAN_DUMP harness/g33_fortran/g33_fortran_driver.f90 -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/C -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/C -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/C/g33_fortran_driver.o ",
+          "/opt/homebrew/bin/gfortran -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/C/g33_fortran_driver /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/C/g33_fortran_driver.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/C/g33_fixture_v1.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/C/module_mp.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/C/module_mp_radar.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/C/module_model_constants.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/C/stub_wrf_error.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-conservative-r4/C/libmassv.o "
+        ]
+      },
+      "manifest_sha256": "cc6282cb639a655466ab5b35749ecf6b28c85a32799828cc6731e6e2e5f7d2b0",
+      "module_sha256": "364a1319d0099bdb474a752a2a017defaf008babbe85dd03da872c603b2e7e3e",
+      "op_records": 6956,
+      "repo_clean": true,
+      "repo_commit": "955d8f2a088364ad4833a0068df693271b900a50"
+    },
+    "g33f_protocol_version": 14,
+    "lane_contract": "Within each algorithm, canonical A, macro-off overlay B, and macro-on overlay C were raw-bit equal on state and precipitation; the current verifier re-read all lane files and provenance.",
+    "legacy": {
+      "abc_equal": true,
+      "bundle": "fortran-legacy",
+      "compiler": "GNU Fortran (Homebrew GCC 15.2.0) 15.2.0",
+      "compiler_binary_sha256": "0019c2383f399c1ba6aed1dc060191e793caf963c1066d254194883581098bb2",
+      "compiler_path": "/opt/homebrew/Cellar/gcc/15.2.0/bin/gfortran-15",
+      "harness_source_sha256": {
+        "fixture.f90": "54b0d7437f21407b9c857d080da9d0e7b4740b9c6870805fc799f39d99182363",
+        "fixture.h": "edf4c8c8ea4841d88b17297b67810882e0ccaa12f35bdb574630afa77189adbd",
+        "fortran_build.sh": "2c44ebc54522e95b4f6aa6e5534d97de4348571e205c1e7897ee7e3fc4439558",
+        "g33_expectation.py": "5df26ec137e8c8f68a6666fab521cc318159875cad9cea2352bb3139a9893189",
+        "g33_fixture_v1.json": "8aadebb8a5aa31549f0483d86b8efc5fe87e23150ea17ff2a865b6fde3bc0a72",
+        "g33_fixture_v1.py": "152c63e01888d31335dad8170f02c96db850dc027e1c6c150e19322668162e0a",
+        "g33_fortran_bindings.py": "e9840849812458e678fc5d5168c10ece09aebdaf9bb6ed8e140b603be732b004",
+        "g33_fortran_driver.f90": "6a7d2752346d51e18a351746715e438da5a3eb47eef2b94af115bf0d37c1d326",
+        "g33_fortran_dump.py": "db510117760a6e0d01e1353d14c670a55788caa2eefab015fcc820b7c273754b",
+        "g33_fourcase_fixture_check.py": "d031358894a6f293c6445b6f66982089e64d48a9242702a9eaef083b4048ec58",
+        "g33_provenance.py": "1e31baf01faffadd0f424a6410a039202d8bec0d51de5e6d277787717476f002",
+        "g33_schema.py": "6cb49775b5b02adaecbae900000c158c3cc0244bc9c733f93b2b1d471ecf923b",
+        "make_fortran_overlay.py": "30c0197bbaeed05640d58482b773cc6ab430035f2fe2b7ddf0ef419b0313ca80",
+        "run_fortran_case.py": "bd708e7ebdd68b85a4870c9103f144561c288432860376c9b254ae5b5e942d9a",
+        "stub_wrf_error.f90": "d03d8973a2da4ef2612127fb15dd9ca43cb64e352fc167bca7a02ef245024f4b"
+      },
+      "host_source_sha256": {
+        "libmassv.F": "449be0d252beba8c5a42ade42fceb2e582239d1a36db79ef3ad902f0ed82ede1",
+        "module_model_constants.F": "5b80377fecdc18a5f0ad38d3b6c15cfc86ad5d76701adbbbb08a08698d0f7062",
+        "module_mp_kdm6[_cons].F": "9354141b9e93aceb4a1c35e06bf673a5d4d916028877c0f84f729a301876b7dc",
+        "module_mp_radar.F": "aa99da858be41efa579966680708d230123a7417560af0eb2e24f4c94e253688"
+      },
+      "host_sources": {
+        "libmassv.F": "449be0d252beba8c5a42ade42fceb2e582239d1a36db79ef3ad902f0ed82ede1",
+        "module_model_constants.F": "5b80377fecdc18a5f0ad38d3b6c15cfc86ad5d76701adbbbb08a08698d0f7062",
+        "module_mp_kdm6[_cons].F": "9354141b9e93aceb4a1c35e06bf673a5d4d916028877c0f84f729a301876b7dc",
+        "module_mp_radar.F": "aa99da858be41efa579966680708d230123a7417560af0eb2e24f4c94e253688"
+      },
+      "lane_build_commands": {
+        "A": [
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -ffp-contract=off -Wall harness/g33_fortran/g33_fixture_multisubcycle_v1.f90 -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A/g33_fixture_v1.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w -cpp -DRWORDSIZE=4 -DEM_CORE=1 host/KIM-meso_v1.0/frame/libmassv.F -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A/libmassv.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w harness/g33_fortran/stub_wrf_error.f90 -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A/stub_wrf_error.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w -cpp -DRWORDSIZE=4 -DEM_CORE=1 host/KIM-meso_v1.0/share/module_model_constants.F -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A/module_model_constants.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w -cpp -DRWORDSIZE=4 -DEM_CORE=1 host/KIM-meso_v1.0/phys/module_mp_radar.F -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A/module_mp_radar.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w -ffp-contract=off -cpp -DRWORDSIZE=4 -DEM_CORE=1 host/KIM-meso_v1.0/phys/module_mp_kdm6.F -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A/module_mp.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -ffp-contract=off -Wall -cpp -DRWORDSIZE=4 -DEM_CORE=1 harness/g33_fortran/g33_fortran_driver.f90 -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A/g33_fortran_driver.o ",
+          "/opt/homebrew/bin/gfortran -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A/g33_fortran_driver /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A/g33_fortran_driver.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A/g33_fixture_v1.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A/module_mp.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A/module_mp_radar.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A/module_model_constants.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A/stub_wrf_error.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A/libmassv.o "
+        ],
+        "B": [
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -ffp-contract=off -Wall harness/g33_fortran/g33_fixture_multisubcycle_v1.f90 -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/B -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/B -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/B/g33_fixture_v1.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w -cpp -DRWORDSIZE=4 -DEM_CORE=1 host/KIM-meso_v1.0/frame/libmassv.F -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/B -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/B -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/B/libmassv.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w harness/g33_fortran/stub_wrf_error.f90 -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/B -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/B -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/B/stub_wrf_error.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w -cpp -DRWORDSIZE=4 -DEM_CORE=1 host/KIM-meso_v1.0/share/module_model_constants.F -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/B -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/B -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/B/module_model_constants.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w -cpp -DRWORDSIZE=4 -DEM_CORE=1 host/KIM-meso_v1.0/phys/module_mp_radar.F -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/B -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/B -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/B/module_mp_radar.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w -ffp-contract=off -cpp -DRWORDSIZE=4 -DEM_CORE=1 /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/B/module_mp_ovl.F -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/B -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/B -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/B/module_mp.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -ffp-contract=off -Wall -cpp -DRWORDSIZE=4 -DEM_CORE=1 harness/g33_fortran/g33_fortran_driver.f90 -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/B -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/B -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/B/g33_fortran_driver.o ",
+          "/opt/homebrew/bin/gfortran -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/B/g33_fortran_driver /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/B/g33_fortran_driver.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/B/g33_fixture_v1.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/B/module_mp.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/B/module_mp_radar.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/B/module_model_constants.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/B/stub_wrf_error.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/B/libmassv.o "
+        ],
+        "C": [
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -ffp-contract=off -Wall harness/g33_fortran/g33_fixture_multisubcycle_v1.f90 -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/C -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/C -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/C/g33_fixture_v1.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w -cpp -DRWORDSIZE=4 -DEM_CORE=1 host/KIM-meso_v1.0/frame/libmassv.F -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/C -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/C -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/C/libmassv.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w harness/g33_fortran/stub_wrf_error.f90 -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/C -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/C -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/C/stub_wrf_error.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w -cpp -DRWORDSIZE=4 -DEM_CORE=1 host/KIM-meso_v1.0/share/module_model_constants.F -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/C -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/C -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/C/module_model_constants.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w -cpp -DRWORDSIZE=4 -DEM_CORE=1 host/KIM-meso_v1.0/phys/module_mp_radar.F -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/C -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/C -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/C/module_mp_radar.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w -ffp-contract=off -cpp -DRWORDSIZE=4 -DEM_CORE=1 -DKDM6_G33_FORTRAN_DUMP /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/C/module_mp_ovl.F -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/C -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/C -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/C/module_mp.o ",
+          "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -ffp-contract=off -Wall -cpp -DRWORDSIZE=4 -DEM_CORE=1 -DKDM6_G33_FORTRAN_DUMP harness/g33_fortran/g33_fortran_driver.f90 -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/C -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/C -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/C/g33_fortran_driver.o ",
+          "/opt/homebrew/bin/gfortran -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/C/g33_fortran_driver /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/C/g33_fortran_driver.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/C/g33_fixture_v1.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/C/module_mp.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/C/module_mp_radar.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/C/module_model_constants.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/C/stub_wrf_error.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/C/libmassv.o "
+        ]
+      },
+      "manifest_sha256": "dd0fd4b85c56f960071b20624db45dc4982865bff26bfc6aa058d63afb4036f4",
+      "module_sha256": "9354141b9e93aceb4a1c35e06bf673a5d4d916028877c0f84f729a301876b7dc",
+      "op_records": 7141,
+      "repo_clean": true,
+      "repo_commit": "955d8f2a088364ad4833a0068df693271b900a50"
+    }
+  },
+  "gate_a": {
+    "active_private_host_modules_not_used": {
+      "conservative": {
+        "sha256": "4f0103c8a8321b8e854d3500f4ae567755e41eb78746fac54519eca2686a6648",
+        "source_path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/phys/module_mp_kdm6_cons.F"
+      },
+      "legacy": {
+        "sha256": "fc0a72d33a5e61803fea56eb9118018039c6da8b5775813032b4861a2bd66eb5",
+        "source_path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/phys/module_mp_kdm6.F"
+      }
+    },
+    "pinned_historical_fortran_modules": {
+      "conservative": {
+        "sha256": "364a1319d0099bdb474a752a2a017defaf008babbe85dd03da872c603b2e7e3e",
+        "source_path": "/Users/yhlee/KDM6AD-audit-pr205/graphify-out/lunar-resolution-1a40d11-1822/private-before/module_mp_kdm6_cons.F"
+      },
+      "legacy": {
+        "sha256": "9354141b9e93aceb4a1c35e06bf673a5d4d916028877c0f84f729a301876b7dc",
+        "source_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/phys/module_mp_kdm6.F"
+      }
+    },
+    "report_path": "harness/evidence/gate_a_scope_report.json",
+    "report_sha256": "cff6cb64f36f818f4eeb655ab8e5ffe3423195bdd4509b88bf4c128d0564dbd2"
+  },
+  "graphify": {
+    "code_graph_refresh": {
+      "command": "graphify update . --no-cluster",
+      "derived_output": "graphify-out/ (ignored; not part of evidence diff)",
+      "edges": 65545,
+      "graph_json_sha256": "95a8d5a715640ebde471a3d5ec63df1e90f53207343264e1b00aaf59f2399c4e",
+      "manifest_sha256": "0ca8e5f4316719b4c54d4e7d2d2d526d840aac75390dd639c1bfdf6e158e55b2",
+      "nodes": 13340
+    },
+    "documentation_semantic_extraction": "NOT RUN: no MOONSHOT_API_KEY, GEMINI_API_KEY, GOOGLE_API_KEY, or OPENAI_API_KEY is present. The code-only refresh does not add doc semantic edges. The report records the source-checked semantic relation and exact supporting raw-bundle replay; graph coverage for the new report remains incomplete.",
+    "query_context": "Existing Graphify query traced the G3.3 comparator and QR replay source path; the post-refresh query resolved compare_pair/_events and replay_qr\u2192rate_sum/is_cold/coverage."
+  },
+  "limitations": [
+    "The decision-grade mechanism verdict is INCONCLUSIVE: the shared first divergence is a coefficient operand, and xlf also feeds melt heat and state_update xlwork2 consumers not sealed by the freeze-only counterfactual.",
+    "The run uses exact historical Gate A module hashes; active private host module hashes differ and were not certified by this result.",
+    "The fixture is arithmetic synthetic. No meteorological replay or host/native WRF case was run.",
+    "Original conservative-vs-legacy ULP-envelope failures remain 77,852>77,312 and 2,188>1,164; no relative envelope, threshold relaxation, default change, PASS_MECHANISM, or S13 closure is claimed.",
+    "The S16 D4 replay is not used as a substitute for this S13 run."
+  ],
+  "package_policy": {
+    "omitted": "82 transient Fortran build files: generated .o/.mod intermediates and four generated module_mp_ovl.F overlay source copies; six commands.txt duplicates; and 48 zero-byte compiler/linker diagnostic logs. The overlay copies derive from private host source; exact compiler command arrays remain in each lane provenance. These files are unnecessary to the current verifier re-load.",
+    "post_trim_verification": "Current load_verified_fourcase.py reloaded all four packaged legs after omission of build intermediates, overlays, duplicate commands, and empty logs under the pinned runtime; it returned attested=True, verdict=INCONCLUSIVE, and unchanged first-divergence identities.",
+    "purpose": "Preserve every file the current four-case verifier consumes while avoiding publication of private host source.",
+    "retained": "C++ evidence tree and probes; Fortran A/B/C raw streams, stderr, provenance, executable, normalized C records, and root manifests; Gate A report; decision JSON; replay JSON."
+  },
+  "purpose": "Fresh decision-grade historical-source four-leg G3.3-M run for S13. This package preserves the existing S13 ULP-envelope failure and does not certify current active host modules or change defaults/gates.",
+  "replay": {
+    "freeze_cell_miss_counts": {
+      "conservative_cpp": 0,
+      "conservative_fortran": 0,
+      "legacy_cpp": 0,
+      "legacy_fortran": 0
+    },
+    "json": "qr_update_replay.json",
+    "qr_updates_exact": {
+      "conservative_cpp": true,
+      "conservative_fortran": true,
+      "legacy_cpp": true,
+      "legacy_fortran": true
+    },
+    "replayer_sha256": "0541fdb061dbb0e120552e752885d8dc191515d069fe663c6f3dc2f6f7fdc13f",
+    "replayer_source": "harness/g33_update_replay.py",
+    "sha256": "5ba8afe859277da06e5d82271d7ac4453a466b18c36509110cea1fcc225a82ad"
+  },
+  "run_id": "g33m_s13_r1",
+  "schema_version": 1,
+  "source": {
+    "base_main_commit": "90727ff98b462a0b69524af91c5d0bba0ea453cb",
+    "current_main_recheck_commit": "336c70f4421e9a00b4dda96a13190bb3677c28af",
+    "decision_verifier_commit": "955d8f2a088364ad4833a0068df693271b900a50",
+    "producer_commit": "955d8f2a088364ad4833a0068df693271b900a50",
+    "source_tree_clean_at_decision_run": true,
+    "verifier_commit": "336c70f4421e9a00b4dda96a13190bb3677c28af",
+    "verifier_runtime": {
+      "byteorder": "little",
+      "numpy_version": "2.4.6",
+      "python_implementation": "CPython",
+      "python_version": "3.11.14"
+    },
+    "verifier_semantics_sha256": "8922fef089a96ecf453c1f2b919686354cbca0d34eaf436e0d913ffe762ea4ca"
+  },
+  "status": {
+    "S13": "OPEN / FAIL",
+    "anchored": true,
+    "attested": true,
+    "decision_valid": true,
+    "gate_or_default_changed": false,
+    "historical_ulp_exceedances": {
+      "closure3_qr": {
+        "conservative_max_ulp": 77852,
+        "exceeds": true,
+        "legacy_envelope_ulp": 77312
+      },
+      "species_iso_qr": {
+        "conservative_max_ulp": 2188,
+        "exceeds": true,
+        "legacy_envelope_ulp": 1164
+      }
+    },
+    "verdict": "INCONCLUSIVE"
+  },
+  "verifier": {
+    "attestation": {
+      "conservative_cpp": {
+        "external_manifest": true,
+        "fixture": true,
+        "source_commit": true,
+        "verdict_ready": true
+      },
+      "conservative_fortran": {
+        "external_manifest": true,
+        "fixture": true,
+        "source_commit": true,
+        "verdict_ready": true
+      },
+      "legacy_cpp": {
+        "external_manifest": true,
+        "fixture": true,
+        "source_commit": true,
+        "verdict_ready": true
+      },
+      "legacy_fortran": {
+        "external_manifest": true,
+        "fixture": true,
+        "source_commit": true,
+        "verdict_ready": true
+      }
+    },
+    "cpp_manifest_sha256": "3389172b99bc3f9799535bb8b7f9977f30e1f78a7f99d77287570f70e37cac9c",
+    "current_main_recheck": {
+      "artifact_path_local": "/Users/yhlee/KDM6AD-g33-s13-evidence/gateb_g33m_s13_recheck_336c.json",
+      "artifact_sha256": "f434408d63819dc9ff12c05a4bae50744c049859ba1807fe3f4c502278e61315",
+      "decision_valid": true,
+      "note": "Separate recheck of the same immutable four-leg package after the S13 branch rebased onto origin/main 90727ff9. Canonical decision.json remains pinned to the original verifier commit 955d8f2a.",
+      "producer_commit": "955d8f2a088364ad4833a0068df693271b900a50",
+      "same_first_divergence": [
+        "micro_freeze_heat",
+        2,
+        "-",
+        0,
+        3,
+        0,
+        "xlf",
+        "f32"
+      ],
+      "verdict": "INCONCLUSIVE",
+      "verifier_commit": "336c70f4421e9a00b4dda96a13190bb3677c28af",
+      "verifier_tree_dirty": false
+    },
+    "decision_json": "decision.json",
+    "decision_sha256": "6e9607c055e20431a7c2c0db51427c317f5c6a663b8b4b8a08ebb302e65b2c52",
+    "fixture_manifest_sha256": "290ddce105b60deec9fbfa6d097842405b24c6aa920632e552572bd7b17aa271",
+    "fortran_manifest_sha256s": {
+      "conservative": "cc6282cb639a655466ab5b35749ecf6b28c85a32799828cc6731e6e2e5f7d2b0",
+      "legacy": "dd0fd4b85c56f960071b20624db45dc4982865bff26bfc6aa058d63afb4036f4"
+    },
+    "gate_a_report_sha256": "cff6cb64f36f818f4eeb655ab8e5ffe3423195bdd4509b88bf4c128d0564dbd2",
+    "gate_result": "INCONCLUSIVE",
+    "producer_commit": "955d8f2a088364ad4833a0068df693271b900a50",
+    "verifier_commit": "955d8f2a088364ad4833a0068df693271b900a50",
+    "verifier_semantics_sha256": "8922fef089a96ecf453c1f2b919686354cbca0d34eaf436e0d913ffe762ea4ca"
+  }
+}

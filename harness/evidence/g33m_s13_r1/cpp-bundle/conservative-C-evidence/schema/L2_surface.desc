@@ -1,0 +1,10 @@
+4247|surface|-|-1|-|-|bottom_fall_qr|f32|3
+4248|surface|-|-1|-|-|bottom_fall_qs|f32|3
+4249|surface|-|-1|-|-|bottom_fall_qg|f32|3
+4250|surface|-|-1|-|-|bottom_fall_qi|f32|3
+4251|surface|-|-1|-|-|bottom_fall_total|f32|3
+4252|surface|-|-1|-|-|delz_bottom|f32|3
+4253|surface|-|-1|-|-|surface_denr|f32|3
+4254|surface|-|-1|-|-|rain_increment|f32|3
+4255|surface|-|-1|-|-|snow_increment|f32|3
+4256|surface|-|-1|-|-|graupel_increment|f32|3

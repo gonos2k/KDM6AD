@@ -1,0 +1,7 @@
+4376|micro_freeze_heat|-|-1|-|-|t_pre_freeze|f32|3,4
+4377|micro_freeze_heat|-|-1|-|-|xlf|f32|3,4
+4378|micro_freeze_heat|-|-1|-|-|cpm|f32|3,4
+4379|micro_freeze_heat|-|-1|-|-|phom|f32|3,4
+4380|micro_freeze_heat|-|-1|-|-|pinuc|f64|3,4
+4381|micro_freeze_heat|-|-1|-|-|pfrzdtc|f64|3,4
+4382|micro_freeze_heat|-|-1|-|-|pfrzdtr|f64|3,4
