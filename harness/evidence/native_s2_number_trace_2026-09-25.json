@@ -1,0 +1,4239 @@
+{
+  "accepted_observation_cost": false,
+  "baseline_main_sha": "955d8f2a088364ad4833a0068df693271b900a50",
+  "build": {
+    "capture_executable": {
+      "path": "/Users/yhlee/KDM6AD-s2-number-basis/graphify-out/s2-number/build/wrf_s2_capture.exe",
+      "sha256": "1fad13519d90729a3eccdad47051dcc7f05c55967abcb8df46b49e5d6169f5b5"
+    },
+    "capture_extra_flag": "-DKDM6_S2_NUMBER_CAPTURE",
+    "capture_object": {
+      "path": "/Users/yhlee/KDM6AD-s2-number-basis/graphify-out/s2-number/build/module_mp_kdm6_s2_capture.o",
+      "sha256": "3ad39a136afc3101569359b537e513790a63ff4d7905d2bae5a03a273814751e"
+    },
+    "common_link_inputs": {
+      "ad_exit_object": {
+        "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/wrf_kdm6ad_exit.o",
+        "sha256": "b98600a5015fedb1d391c38fce614625b7f5a3e535b543e8c4eb815c0eae35e1",
+        "size_bytes": 568
+      },
+      "c10_lib": {
+        "path": "/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib/libc10.dylib",
+        "sha256": "f1950c7193efef69dd5a3115c3e885142d9a7fe3723290905e12bf02781cce6f",
+        "size_bytes": 1063472
+      },
+      "canonical_libwrflib": {
+        "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/libwrflib.a",
+        "sha256": "722f83c058ea1c43d5f23cc497aed1b218f33f90828a0e1dc51c6fe30203deba",
+        "size_bytes": 59152032
+      },
+      "esmf_time_archive": {
+        "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/esmf_time_f90/libesmf_time.a",
+        "sha256": "671b9594b58071fafc517c7d415c29db6da821612aa1a2fd2efeaba2025f1206",
+        "size_bytes": 112632
+      },
+      "fftpack_archive": {
+        "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/fftpack/fftpack5/libfftpack.a",
+        "sha256": "72863a6320b3dacca7ee171cde37aee5d1df0f9df3f780abc0d250c42c428952",
+        "size_bytes": 769840
+      },
+      "header_util_object": {
+        "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/frame/module_internal_header_util.o",
+        "sha256": "99b29f732f620200111b598a33aa9e3c055741f618cf7c0a3578771102301484",
+        "size_bytes": 16752
+      },
+      "io_grib1_archive": {
+        "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_grib1/libio_grib1.a",
+        "sha256": "b9b0730e28bac098d32246ac690d1cf9bb10ca3649be4296dac87a7c36c64cf2",
+        "size_bytes": 387192
+      },
+      "io_grib_share_archive": {
+        "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_grib_share/libio_grib_share.a",
+        "sha256": "04a6162ce671651b64bdc252e705ed11a45541945667e717c0e321739c6e09c0",
+        "size_bytes": 33168
+      },
+      "io_int_archive": {
+        "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_int/libwrfio_int.a",
+        "sha256": "aeb9c1c53d809eabaa73b45da165578911426b8fcea6daa333407af5a035ecb0",
+        "size_bytes": 85760
+      },
+      "kdm6_c_dylib": {
+        "path": "/Users/yhlee/KDM6AD-k/libtorch/install/lib/libkdm6_c.dylib",
+        "sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+        "size_bytes": 1996680
+      },
+      "linker_shim": {
+        "path": "/Users/yhlee/KDM6AD-s2-number-basis/graphify-out/s2-number/build/ldshim/ld",
+        "sha256": "0f53ad6ee3fef4674782a1a90d423850f15ba0bf7709eaadedb4cd526978743d",
+        "size_bytes": 67
+      },
+      "module_wrf_top_object": {
+        "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/module_wrf_top.o",
+        "sha256": "db72d0e2440392b47b34d422721e29d759a9bd72f60bd58fae5d1ed4b5b258bf",
+        "size_bytes": 12792
+      },
+      "netcdf_io_archive": {
+        "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/io_netcdf/libwrfio_nf.a",
+        "sha256": "cf8157d520a032d0e02357f8eac4a8dc1f87336e62ee3c82805ee74a83c26a21",
+        "size_bytes": 384464
+      },
+      "pack_utils_object": {
+        "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/frame/pack_utils.o",
+        "sha256": "e5ef7538a6449573642da9d6f470536eb63e302b0df145d69cefdb5a3e6cdd3f",
+        "size_bytes": 7112
+      },
+      "rsl_lite_archive": {
+        "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/external/RSL_LITE/librsl_lite.a",
+        "sha256": "360ed60ba3be71b7cf483a8c5b5336cc832fb26ceb3c831cc201a5f0013d0a85",
+        "size_bytes": 106920
+      },
+      "torch_cpu_lib": {
+        "path": "/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib/libtorch_cpu.dylib",
+        "sha256": "5630bd318812b8d11d5eaad407930cd1486586fc4155b6ce16449380a9c03565",
+        "size_bytes": 213290816
+      },
+      "torch_lib": {
+        "path": "/opt/homebrew/Caskroom/miniforge/base/lib/python3.9/site-packages/torch/lib/libtorch.dylib",
+        "sha256": "6d36d4b9a84b40cc91b45d5549aecd656113eacc21f6e7b331398cda73af8190",
+        "size_bytes": 16736
+      },
+      "wrf_main_object": {
+        "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/wrf.o",
+        "sha256": "b51e734b5d590c144a24d8908a772241a2ced38c796078520aeeb23d550fffb2",
+        "size_bytes": 1784
+      }
+    },
+    "compiler_versions": {
+      "gfortran": "GNU Fortran (Homebrew GCC 15.2.0) 15.2.0",
+      "llvm-mc": "Homebrew LLVM version 22.1.4",
+      "mpif90": "GNU Fortran (Homebrew GCC 15.2.0) 15.2.0"
+    },
+    "control_executable": {
+      "path": "/Users/yhlee/KDM6AD-s2-number-basis/graphify-out/s2-number/build/wrf_s2_control.exe",
+      "sha256": "36bdabe26a1b5613bc25e9107f2118766dafb393dc49ba19027864da57492cd7"
+    },
+    "control_object": {
+      "path": "/Users/yhlee/KDM6AD-s2-number-basis/graphify-out/s2-number/build/module_mp_kdm6_s2_control.o",
+      "sha256": "8d0778eb3a97ad2ab596bd6c95c0b8e7597962b6fb2a1e56eb974ff93f45f26e"
+    },
+    "flags": [
+      "-O2",
+      "-ftree-vectorize",
+      "-funroll-loops",
+      "-ffree-form",
+      "-ffree-line-length-none",
+      "-fconvert=big-endian",
+      "-frecord-marker=4",
+      "-fallow-argument-mismatch",
+      "-fallow-invalid-boz",
+      "-ffp-contract=off",
+      "IWORDSIZE=4",
+      "DWORDSIZE=8",
+      "RWORDSIZE=4",
+      "LWORDSIZE=4",
+      "DM_PARALLEL",
+      "NETCDF",
+      "NONSTANDARD_SYSTEM_SUBR",
+      "MACOS",
+      "WRF_USE_CLM",
+      "KDM6_SUBSTEP_DUMP"
+    ],
+    "instrumented_source_strips_exactly_to_canonical": true,
+    "link_order": "same WRF main objects, explicit per-lane mp37 module object, canonical libwrflib.a and external archives/libs; the explicit object is ahead of the archive; only the capture object has S2 macro code.",
+    "module_canonical_source_unchanged_pre_and_post": true
+  },
+  "capture_payload_lines": 1257,
+  "capture_payload_path": "harness/evidence/native_s2_number_trace_2026-09-25.txt",
+  "capture_payload_sha256": "d04f854f17f4d5afd282c4a31367a281bc78c1074ec74aa43445e852fa15d59a",
+  "capture_rsl_out_full_sha256": "7d5893dfb1130c2ca92ba5576566a64134aa19ed6f433b41f63361b23a5ddfa1",
+  "capture_sha256": "d04f854f17f4d5afd282c4a31367a281bc78c1074ec74aa43445e852fa15d59a",
+  "capture_source": {
+    "canonical_source": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/phys/module_mp_kdm6.F",
+    "canonical_source_sha256": "fc0a72d33a5e61803fea56eb9118018039c6da8b5775813032b4861a2bd66eb5",
+    "capture_source": "/Users/yhlee/KDM6AD-s2-number-basis/graphify-out/s2-number/sha-shadow/module_mp_kdm6_s2.F",
+    "capture_source_sha256": "5ceca0627c5be831f47c958e85b1ff2612fd9a50fd9bf1c3c40bf0ac6eb951c0",
+    "macro": "KDM6_S2_NUMBER_CAPTURE",
+    "schema": "s2-mp37-number-capture-source-v1",
+    "selected_host_cell_1_based": {
+      "host_i": 144,
+      "host_j": 153
+    },
+    "stripped_exact": true,
+    "tags": {
+      "DSD_FINAL_GATE": {
+        "flags": [
+          "qrs(i,k,1).ge.qcrmin .and. nrs(i,k,1).ge.nrmin"
+        ],
+        "integer32": [],
+        "real32": [
+          "nrs(i,k,1)",
+          "qrs(i,k,1)",
+          "den(i,k)",
+          "qcrmin",
+          "nrmin",
+          "lamdarmin",
+          "lamdarmax",
+          "pidnr",
+          "dmr"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "den(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qcrmin",
+            "kind": "f32"
+          },
+          {
+            "expr": "nrmin",
+            "kind": "f32"
+          },
+          {
+            "expr": "lamdarmin",
+            "kind": "f32"
+          },
+          {
+            "expr": "lamdarmax",
+            "kind": "f32"
+          },
+          {
+            "expr": "pidnr",
+            "kind": "f32"
+          },
+          {
+            "expr": "dmr",
+            "kind": "f32"
+          }
+        ]
+      },
+      "DSD_FINAL_POST": {
+        "flags": [
+          "qrs(i,k,1).ge.qcrmin .and. nrs(i,k,1).ge.nrmin"
+        ],
+        "integer32": [],
+        "real32": [
+          "nrs(i,k,1)",
+          "qrs(i,k,1)",
+          "den(i,k)",
+          "qcrmin",
+          "nrmin",
+          "nrmax"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "den(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qcrmin",
+            "kind": "f32"
+          },
+          {
+            "expr": "nrmin",
+            "kind": "f32"
+          },
+          {
+            "expr": "nrmax",
+            "kind": "f32"
+          }
+        ]
+      },
+      "DSD_FINAL_RAW": {
+        "flags": [
+          "qrs(i,k,1).ge.qcrmin .and. nrs(i,k,1).ge.nrmin"
+        ],
+        "integer32": [],
+        "real32": [
+          "nrs(i,k,1)",
+          "qrs(i,k,1)",
+          "den(i,k)",
+          "qcrmin",
+          "nrmin",
+          "lamdarmin",
+          "lamdarmax",
+          "pidnr",
+          "dmr",
+          "lamdr_tmp(i,k)"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "den(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qcrmin",
+            "kind": "f32"
+          },
+          {
+            "expr": "nrmin",
+            "kind": "f32"
+          },
+          {
+            "expr": "lamdarmin",
+            "kind": "f32"
+          },
+          {
+            "expr": "lamdarmax",
+            "kind": "f32"
+          },
+          {
+            "expr": "pidnr",
+            "kind": "f32"
+          },
+          {
+            "expr": "dmr",
+            "kind": "f32"
+          },
+          {
+            "expr": "lamdr_tmp(i,k)",
+            "kind": "f32"
+          }
+        ]
+      },
+      "DSD_POSTFREEZE_GATE": {
+        "flags": [
+          "qrs(i,k,1).ge.qcrmin .and. nrs(i,k,1).ge.nrmin"
+        ],
+        "integer32": [],
+        "real32": [
+          "nrs(i,k,1)",
+          "qrs(i,k,1)",
+          "den(i,k)",
+          "qcrmin",
+          "nrmin",
+          "lamdarmin",
+          "lamdarmax",
+          "pidnr",
+          "dmr"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "den(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qcrmin",
+            "kind": "f32"
+          },
+          {
+            "expr": "nrmin",
+            "kind": "f32"
+          },
+          {
+            "expr": "lamdarmin",
+            "kind": "f32"
+          },
+          {
+            "expr": "lamdarmax",
+            "kind": "f32"
+          },
+          {
+            "expr": "pidnr",
+            "kind": "f32"
+          },
+          {
+            "expr": "dmr",
+            "kind": "f32"
+          }
+        ]
+      },
+      "DSD_POSTFREEZE_POST": {
+        "flags": [
+          "qrs(i,k,1).ge.qcrmin .and. nrs(i,k,1).ge.nrmin"
+        ],
+        "integer32": [],
+        "real32": [
+          "nrs(i,k,1)",
+          "qrs(i,k,1)",
+          "den(i,k)",
+          "qcrmin",
+          "nrmin",
+          "nrmax"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "den(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qcrmin",
+            "kind": "f32"
+          },
+          {
+            "expr": "nrmin",
+            "kind": "f32"
+          },
+          {
+            "expr": "nrmax",
+            "kind": "f32"
+          }
+        ]
+      },
+      "DSD_POSTFREEZE_RAW": {
+        "flags": [],
+        "integer32": [],
+        "real32": [
+          "nrs(i,k,1)",
+          "qrs(i,k,1)",
+          "den(i,k)",
+          "lamdr_tmp(i,k)"
+        ],
+        "real64": [
+          "n0r(i,k)"
+        ],
+        "value_order": [
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "den(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "lamdr_tmp(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "n0r(i,k)",
+            "kind": "f64"
+          }
+        ]
+      },
+      "DSD_PRE_GATE": {
+        "flags": [
+          "qrs(i,k,1).ge.qcrmin .and. nrs(i,k,1).ge.nrmin"
+        ],
+        "integer32": [],
+        "real32": [
+          "nrs(i,k,1)",
+          "qrs(i,k,1)",
+          "den(i,k)",
+          "qcrmin",
+          "nrmin",
+          "lamdarmin",
+          "lamdarmax",
+          "pidnr",
+          "dmr"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "den(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qcrmin",
+            "kind": "f32"
+          },
+          {
+            "expr": "nrmin",
+            "kind": "f32"
+          },
+          {
+            "expr": "lamdarmin",
+            "kind": "f32"
+          },
+          {
+            "expr": "lamdarmax",
+            "kind": "f32"
+          },
+          {
+            "expr": "pidnr",
+            "kind": "f32"
+          },
+          {
+            "expr": "dmr",
+            "kind": "f32"
+          }
+        ]
+      },
+      "DSD_PRE_POST": {
+        "flags": [
+          "qrs(i,k,1).ge.qcrmin .and. nrs(i,k,1).ge.nrmin"
+        ],
+        "integer32": [],
+        "real32": [
+          "nrs(i,k,1)",
+          "qrs(i,k,1)",
+          "den(i,k)",
+          "qcrmin",
+          "nrmin",
+          "nrmax"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "den(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qcrmin",
+            "kind": "f32"
+          },
+          {
+            "expr": "nrmin",
+            "kind": "f32"
+          },
+          {
+            "expr": "nrmax",
+            "kind": "f32"
+          }
+        ]
+      },
+      "DSD_PRE_RAW": {
+        "flags": [],
+        "integer32": [],
+        "real32": [
+          "nrs(i,k,1)",
+          "qrs(i,k,1)",
+          "den(i,k)",
+          "lamdr_tmp(i,k)"
+        ],
+        "real64": [
+          "n0r(i,k)"
+        ],
+        "value_order": [
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "den(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "lamdr_tmp(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "n0r(i,k)",
+            "kind": "f64"
+          }
+        ]
+      },
+      "HOST_ENTRY": {
+        "flags": [],
+        "integer32": [],
+        "real32": [
+          "nr(i,k,j)",
+          "qr(i,k,j)",
+          "qc(i,k,j)",
+          "q(i,k,j)",
+          "den(i,k,j)",
+          "delz(i,k,j)"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "nr(i,k,j)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qr(i,k,j)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qc(i,k,j)",
+            "kind": "f32"
+          },
+          {
+            "expr": "q(i,k,j)",
+            "kind": "f32"
+          },
+          {
+            "expr": "den(i,k,j)",
+            "kind": "f32"
+          },
+          {
+            "expr": "delz(i,k,j)",
+            "kind": "f32"
+          }
+        ]
+      },
+      "HOST_RETURN": {
+        "flags": [],
+        "integer32": [],
+        "real32": [
+          "nr(i,k,j)",
+          "qr(i,k,j)",
+          "qc(i,k,j)",
+          "q(i,k,j)",
+          "den(i,k,j)",
+          "delz(i,k,j)"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "nr(i,k,j)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qr(i,k,j)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qc(i,k,j)",
+            "kind": "f32"
+          },
+          {
+            "expr": "q(i,k,j)",
+            "kind": "f32"
+          },
+          {
+            "expr": "den(i,k,j)",
+            "kind": "f32"
+          },
+          {
+            "expr": "delz(i,k,j)",
+            "kind": "f32"
+          }
+        ]
+      },
+      "KERNEL_ENTRY": {
+        "flags": [],
+        "integer32": [],
+        "real32": [
+          "nrs(i,k,1)",
+          "qrs(i,k,1)",
+          "qci(i,k,1)",
+          "q(i,k)",
+          "den(i,k)",
+          "delz(i,k)"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qci(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "q(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "den(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "delz(i,k)",
+            "kind": "f32"
+          }
+        ]
+      },
+      "KERNEL_RETURN": {
+        "flags": [],
+        "integer32": [],
+        "real32": [
+          "nrs(i,k,1)",
+          "qrs(i,k,1)",
+          "qci(i,k,1)",
+          "q(i,k,j)",
+          "den(i,k,j)",
+          "delz(i,k,j)"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qci(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "q(i,k,j)",
+            "kind": "f32"
+          },
+          {
+            "expr": "den(i,k,j)",
+            "kind": "f32"
+          },
+          {
+            "expr": "delz(i,k,j)",
+            "kind": "f32"
+          }
+        ]
+      },
+      "NRAUT_BASE": {
+        "flags": [],
+        "integer32": [],
+        "real32": [
+          "praut(i,k)",
+          "nraut(i,k)",
+          "den(i,k)",
+          "nrs(i,k,1)",
+          "qrs(i,k,1)"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "praut(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nraut(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "den(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qrs(i,k,1)",
+            "kind": "f32"
+          }
+        ]
+      },
+      "NRAUT_DONOR_CAP": {
+        "flags": [],
+        "integer32": [],
+        "real32": [
+          "nraut(i,k)",
+          "nci(i,k,1)",
+          "dtcld"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "nraut(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nci(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "dtcld",
+            "kind": "f32"
+          }
+        ]
+      },
+      "NRAUT_DSD_BRANCH": {
+        "flags": [
+          "qrs(i,k,1).gt.lenconcr"
+        ],
+        "integer32": [],
+        "real32": [
+          "praut(i,k)",
+          "nraut(i,k)",
+          "nrs(i,k,1)",
+          "qrs(i,k,1)",
+          "lenconcr"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "praut(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nraut(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "lenconcr",
+            "kind": "f32"
+          }
+        ]
+      },
+      "NRAUT_GATE": {
+        "flags": [
+          "qci(i,k,1).gt.qcr(i,k)",
+          "nci(i,k,1).gt.ncmin"
+        ],
+        "integer32": [],
+        "real32": [
+          "nrs(i,k,1)",
+          "qrs(i,k,1)",
+          "qci(i,k,1)",
+          "nci(i,k,1)",
+          "den(i,k)",
+          "dtcld",
+          "qcr(i,k)",
+          "ncmin",
+          "nrmin",
+          "qcrmin",
+          "lenconcr"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qci(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nci(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "den(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "dtcld",
+            "kind": "f32"
+          },
+          {
+            "expr": "qcr(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "ncmin",
+            "kind": "f32"
+          },
+          {
+            "expr": "nrmin",
+            "kind": "f32"
+          },
+          {
+            "expr": "qcrmin",
+            "kind": "f32"
+          },
+          {
+            "expr": "lenconcr",
+            "kind": "f32"
+          }
+        ]
+      },
+      "NR_FACE_POST": {
+        "flags": [],
+        "integer32": [
+          "mstep(i)"
+        ],
+        "real32": [
+          "nrs(i,k,1)",
+          "dnr(i,k)",
+          "dnr(i,k+1)",
+          "nrs(i,k+1,1)",
+          "qrs(i,k,1)",
+          "dqr(i,k)",
+          "dqr(i,k+1)",
+          "qrs(i,k+1,1)",
+          "falkn(i,k,1)",
+          "falkn(i,k+1,1)",
+          "falk(i,k,1)",
+          "falk(i,k+1,1)",
+          "den(i,k)",
+          "den(i,k+1)",
+          "dend(i,k)",
+          "dend(i,k+1)",
+          "q(i,k)",
+          "q(i,k+1)",
+          "delz(i,k)",
+          "delz(i,k+1)",
+          "dtcld"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "dnr(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "dnr(i,k+1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nrs(i,k+1,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "dqr(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "dqr(i,k+1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qrs(i,k+1,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "falkn(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "falkn(i,k+1,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "falk(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "falk(i,k+1,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "den(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "den(i,k+1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "dend(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "dend(i,k+1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "q(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "q(i,k+1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "delz(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "delz(i,k+1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "mstep(i)",
+            "kind": "i32"
+          },
+          {
+            "expr": "dtcld",
+            "kind": "f32"
+          }
+        ]
+      },
+      "NR_FACE_PRE": {
+        "flags": [],
+        "integer32": [
+          "mstep(i)"
+        ],
+        "real32": [
+          "nrs(i,k,1)",
+          "dnr(i,k)",
+          "dnr(i,k+1)",
+          "nrs(i,k+1,1)",
+          "qrs(i,k,1)",
+          "dqr(i,k)",
+          "dqr(i,k+1)",
+          "qrs(i,k+1,1)",
+          "falkn(i,k,1)",
+          "falkn(i,k+1,1)",
+          "falk(i,k,1)",
+          "falk(i,k+1,1)",
+          "den(i,k)",
+          "den(i,k+1)",
+          "dend(i,k)",
+          "dend(i,k+1)",
+          "q(i,k)",
+          "q(i,k+1)",
+          "delz(i,k)",
+          "delz(i,k+1)",
+          "dtcld"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "dnr(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "dnr(i,k+1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nrs(i,k+1,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "dqr(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "dqr(i,k+1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qrs(i,k+1,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "falkn(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "falkn(i,k+1,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "falk(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "falk(i,k+1,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "den(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "den(i,k+1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "dend(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "dend(i,k+1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "q(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "q(i,k+1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "delz(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "delz(i,k+1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "mstep(i)",
+            "kind": "i32"
+          },
+          {
+            "expr": "dtcld",
+            "kind": "f32"
+          }
+        ]
+      },
+      "NR_FREEZE_POST": {
+        "flags": [],
+        "integer32": [],
+        "real32": [
+          "nrs(i,k,1)",
+          "qrs(i,k,1)",
+          "den(i,k)",
+          "nrmin",
+          "q(i,k)"
+        ],
+        "real64": [
+          "nfrzdtr",
+          "n0r(i,k)"
+        ],
+        "value_order": [
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "den(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nrmin",
+            "kind": "f32"
+          },
+          {
+            "expr": "q(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nfrzdtr",
+            "kind": "f64"
+          },
+          {
+            "expr": "n0r(i,k)",
+            "kind": "f64"
+          }
+        ]
+      },
+      "NR_FREEZE_PRE": {
+        "flags": [],
+        "integer32": [],
+        "real32": [
+          "nrs(i,k,1)",
+          "qrs(i,k,1)",
+          "den(i,k)",
+          "nrmin",
+          "q(i,k)"
+        ],
+        "real64": [
+          "nfrzdtr",
+          "n0r(i,k)"
+        ],
+        "value_order": [
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "den(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nrmin",
+            "kind": "f32"
+          },
+          {
+            "expr": "q(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nfrzdtr",
+            "kind": "f64"
+          },
+          {
+            "expr": "n0r(i,k)",
+            "kind": "f64"
+          }
+        ]
+      },
+      "NR_GRAUPEL_MELT_POST": {
+        "flags": [],
+        "integer32": [],
+        "real32": [
+          "nrs(i,k,1)",
+          "gfac",
+          "pgmlt(i,k)",
+          "qrs(i,k,3)",
+          "qcrmin",
+          "den(i,k)",
+          "q(i,k)"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "gfac",
+            "kind": "f32"
+          },
+          {
+            "expr": "pgmlt(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qrs(i,k,3)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qcrmin",
+            "kind": "f32"
+          },
+          {
+            "expr": "den(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "q(i,k)",
+            "kind": "f32"
+          }
+        ]
+      },
+      "NR_GRAUPEL_MELT_PRE": {
+        "flags": [],
+        "integer32": [],
+        "real32": [
+          "nrs(i,k,1)",
+          "gfac",
+          "pgmlt(i,k)",
+          "qrs(i,k,3)",
+          "qcrmin",
+          "den(i,k)",
+          "q(i,k)"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "gfac",
+            "kind": "f32"
+          },
+          {
+            "expr": "pgmlt(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qrs(i,k,3)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qcrmin",
+            "kind": "f32"
+          },
+          {
+            "expr": "den(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "q(i,k)",
+            "kind": "f32"
+          }
+        ]
+      },
+      "NR_LIMIT_COLD_POST": {
+        "flags": [
+          "source.gt.value"
+        ],
+        "integer32": [],
+        "real32": [
+          "nrs(i,k,1)",
+          "nrmin",
+          "value",
+          "source",
+          "dtcld",
+          "nraut(i,k)",
+          "nrcol(i,k)",
+          "nseml(i,k)",
+          "ngeml(i,k)"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nrmin",
+            "kind": "f32"
+          },
+          {
+            "expr": "value",
+            "kind": "f32"
+          },
+          {
+            "expr": "source",
+            "kind": "f32"
+          },
+          {
+            "expr": "dtcld",
+            "kind": "f32"
+          },
+          {
+            "expr": "nraut(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nrcol(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nseml(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "ngeml(i,k)",
+            "kind": "f32"
+          }
+        ]
+      },
+      "NR_LIMIT_COLD_PRE": {
+        "flags": [
+          "source.gt.value"
+        ],
+        "integer32": [],
+        "real32": [
+          "nrs(i,k,1)",
+          "nrmin",
+          "value",
+          "source",
+          "dtcld",
+          "nraut(i,k)",
+          "nrcol(i,k)",
+          "nseml(i,k)",
+          "ngeml(i,k)"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nrmin",
+            "kind": "f32"
+          },
+          {
+            "expr": "value",
+            "kind": "f32"
+          },
+          {
+            "expr": "source",
+            "kind": "f32"
+          },
+          {
+            "expr": "dtcld",
+            "kind": "f32"
+          },
+          {
+            "expr": "nraut(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nrcol(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nseml(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "ngeml(i,k)",
+            "kind": "f32"
+          }
+        ]
+      },
+      "NR_LIMIT_POST": {
+        "flags": [
+          "source.gt.value"
+        ],
+        "integer32": [],
+        "real32": [
+          "nrs(i,k,1)",
+          "nrmin",
+          "value",
+          "source",
+          "dtcld",
+          "nraut(i,k)",
+          "nraci(i,k)",
+          "nrcol(i,k)",
+          "niacr(i,k)",
+          "nsacr(i,k)",
+          "ngacr(i,k)"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nrmin",
+            "kind": "f32"
+          },
+          {
+            "expr": "value",
+            "kind": "f32"
+          },
+          {
+            "expr": "source",
+            "kind": "f32"
+          },
+          {
+            "expr": "dtcld",
+            "kind": "f32"
+          },
+          {
+            "expr": "nraut(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nraci(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nrcol(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "niacr(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nsacr(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "ngacr(i,k)",
+            "kind": "f32"
+          }
+        ]
+      },
+      "NR_LIMIT_PRE": {
+        "flags": [
+          "source.gt.value"
+        ],
+        "integer32": [],
+        "real32": [
+          "nrs(i,k,1)",
+          "nrmin",
+          "value",
+          "source",
+          "dtcld",
+          "nraut(i,k)",
+          "nraci(i,k)",
+          "nrcol(i,k)",
+          "niacr(i,k)",
+          "nsacr(i,k)",
+          "ngacr(i,k)"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nrmin",
+            "kind": "f32"
+          },
+          {
+            "expr": "value",
+            "kind": "f32"
+          },
+          {
+            "expr": "source",
+            "kind": "f32"
+          },
+          {
+            "expr": "dtcld",
+            "kind": "f32"
+          },
+          {
+            "expr": "nraut(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nraci(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nrcol(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "niacr(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nsacr(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "ngacr(i,k)",
+            "kind": "f32"
+          }
+        ]
+      },
+      "NR_MAX_GATE": {
+        "flags": [
+          "nrs(i,k,1).gt.nrmax"
+        ],
+        "integer32": [],
+        "real32": [
+          "nrs(i,k,1)",
+          "nrmax",
+          "qrs(i,k,1)",
+          "den(i,k)",
+          "lamdarmax",
+          "pidnr",
+          "dmr"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nrmax",
+            "kind": "f32"
+          },
+          {
+            "expr": "qrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "den(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "lamdarmax",
+            "kind": "f32"
+          },
+          {
+            "expr": "pidnr",
+            "kind": "f32"
+          },
+          {
+            "expr": "dmr",
+            "kind": "f32"
+          }
+        ]
+      },
+      "NR_SNOW_MELT_POST": {
+        "flags": [],
+        "integer32": [],
+        "real32": [
+          "nrs(i,k,1)",
+          "sfac",
+          "psmlt(i,k)",
+          "qrs(i,k,2)",
+          "qcrmin",
+          "den(i,k)",
+          "q(i,k)"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "sfac",
+            "kind": "f32"
+          },
+          {
+            "expr": "psmlt(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qrs(i,k,2)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qcrmin",
+            "kind": "f32"
+          },
+          {
+            "expr": "den(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "q(i,k)",
+            "kind": "f32"
+          }
+        ]
+      },
+      "NR_SNOW_MELT_PRE": {
+        "flags": [],
+        "integer32": [],
+        "real32": [
+          "nrs(i,k,1)",
+          "sfac",
+          "psmlt(i,k)",
+          "qrs(i,k,2)",
+          "qcrmin",
+          "den(i,k)",
+          "q(i,k)"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "sfac",
+            "kind": "f32"
+          },
+          {
+            "expr": "psmlt(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qrs(i,k,2)",
+            "kind": "f32"
+          },
+          {
+            "expr": "qcrmin",
+            "kind": "f32"
+          },
+          {
+            "expr": "den(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "q(i,k)",
+            "kind": "f32"
+          }
+        ]
+      },
+      "NR_TOP_POST": {
+        "flags": [],
+        "integer32": [
+          "mstep(i)"
+        ],
+        "real32": [
+          "nrs(i,k,1)",
+          "falkn(i,k,1)",
+          "falk(i,k,1)",
+          "den(i,k)",
+          "dend(i,k)",
+          "q(i,k)",
+          "delz(i,k)",
+          "dtcld",
+          "qrs(i,k,1)"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "falkn(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "falk(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "den(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "dend(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "q(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "delz(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "mstep(i)",
+            "kind": "i32"
+          },
+          {
+            "expr": "dtcld",
+            "kind": "f32"
+          },
+          {
+            "expr": "qrs(i,k,1)",
+            "kind": "f32"
+          }
+        ]
+      },
+      "NR_TOP_PRE": {
+        "flags": [],
+        "integer32": [
+          "mstep(i)"
+        ],
+        "real32": [
+          "nrs(i,k,1)",
+          "falkn(i,k,1)",
+          "falk(i,k,1)",
+          "den(i,k)",
+          "dend(i,k)",
+          "q(i,k)",
+          "delz(i,k)",
+          "dtcld",
+          "qrs(i,k,1)"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "falkn(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "falk(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "den(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "dend(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "q(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "delz(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "mstep(i)",
+            "kind": "i32"
+          },
+          {
+            "expr": "dtcld",
+            "kind": "f32"
+          },
+          {
+            "expr": "qrs(i,k,1)",
+            "kind": "f32"
+          }
+        ]
+      },
+      "NR_UPDATE_COLD_POST": {
+        "flags": [],
+        "integer32": [],
+        "real32": [
+          "nrs(i,k,1)",
+          "nraut(i,k)",
+          "nrcol(i,k)",
+          "nseml(i,k)",
+          "ngeml(i,k)",
+          "dtcld"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nraut(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nrcol(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nseml(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "ngeml(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "dtcld",
+            "kind": "f32"
+          }
+        ]
+      },
+      "NR_UPDATE_COLD_PRE": {
+        "flags": [],
+        "integer32": [],
+        "real32": [
+          "nrs(i,k,1)",
+          "nraut(i,k)",
+          "nrcol(i,k)",
+          "nseml(i,k)",
+          "ngeml(i,k)",
+          "dtcld"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nraut(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nrcol(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nseml(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "ngeml(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "dtcld",
+            "kind": "f32"
+          }
+        ]
+      },
+      "NR_UPDATE_WARM_POST": {
+        "flags": [],
+        "integer32": [],
+        "real32": [
+          "nrs(i,k,1)",
+          "nraut(i,k)",
+          "nrcol(i,k)",
+          "niacr(i,k)",
+          "nraci(i,k)",
+          "nsacr(i,k)",
+          "ngacr(i,k)",
+          "dtcld"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nraut(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nrcol(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "niacr(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nraci(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nsacr(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "ngacr(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "dtcld",
+            "kind": "f32"
+          }
+        ]
+      },
+      "NR_UPDATE_WARM_PRE": {
+        "flags": [],
+        "integer32": [],
+        "real32": [
+          "nrs(i,k,1)",
+          "nraut(i,k)",
+          "nrcol(i,k)",
+          "niacr(i,k)",
+          "nraci(i,k)",
+          "nsacr(i,k)",
+          "ngacr(i,k)",
+          "dtcld"
+        ],
+        "real64": [],
+        "value_order": [
+          {
+            "expr": "nrs(i,k,1)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nraut(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nrcol(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "niacr(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nraci(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "nsacr(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "ngacr(i,k)",
+            "kind": "f32"
+          },
+          {
+            "expr": "dtcld",
+            "kind": "f32"
+          }
+        ]
+      }
+    }
+  },
+  "excluded_attempts": [
+    {
+      "experiment_valid": true,
+      "reason": "only first KDM6 call; no applied nonzero QNR transfer witness, excluded from S2 completion evidence.",
+      "run_seconds": 20,
+      "type": "insufficient horizon"
+    },
+    {
+      "experiment_valid": true,
+      "reason": "history_interval_s remained 0 and no standard history frames were saved; excluded from noninterference evidence.",
+      "run_seconds": 40,
+      "type": "history setup omitted history_interval_s"
+    },
+    {
+      "model_started": false,
+      "reason": "first isolated capture link used a stale Torch path and failed before model start; corrected link used canonical Python 3.9 Torch library and produced the capture executable.",
+      "type": "capture-link setup error"
+    }
+  ],
+  "execution": {
+    "capture": {
+      "effective_namelist_sha256": "0a15ec2da86dd4b057e5d0d517a4dcd404a84b22e47738304014428b23cbd9cd",
+      "executable_identity": "1fad13519d90729a3eccdad47051dcc7f05c55967abcb8df46b49e5d6169f5b5\nbefore 1fad13519d90729a3eccdad47051dcc7f05c55967abcb8df46b49e5d6169f5b5\nafter  1fad13519d90729a3eccdad47051dcc7f05c55967abcb8df46b49e5d6169f5b5\nstable yes\npath   /Users/yhlee/KDM6AD-s2-number-basis/graphify-out/s2-number/build/wrf_s2_capture.exe\n",
+      "experiment_valid": {
+        "active_input_identity_complete": true,
+        "actual_proc_grid": "1x1",
+        "exit_code": 0,
+        "experiment_valid": true,
+        "invalid_reasons": [],
+        "model_completed": true,
+        "requested_proc_grid": "1x1"
+      },
+      "history_path": "/Users/yhlee/KDM6AD-s2-number-basis/graphify-out/s2-number/case-capture/runs/mp37_s2_number_40_capture_hist20_0min40s_hist0_1x1_20260925_172214_p22793/klfs_lc05_fcst.202507190000",
+      "history_sha256": "49bbda101a367d5eeb9c460e21c2304767311d274dddecb17a4ec39fe14f1d04",
+      "input_identity": {
+        "canonical_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+        "complete": true,
+        "declared": true,
+        "parser_scope": "ordinary WRF assignments; no include/macro expansion",
+        "records": [
+          {
+            "domain": "d01",
+            "kind": "init",
+            "name": "wrfinput_d01",
+            "resolved_path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfinput_d01",
+            "sha256": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+            "sha256_after": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+            "sha256_before": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+            "stable": true,
+            "status": "ok",
+            "status_after": "ok"
+          },
+          {
+            "domain": "d01",
+            "kind": "boundary",
+            "name": "wrfbdy_d01",
+            "resolved_path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfbdy_d01",
+            "sha256": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+            "sha256_after": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+            "sha256_before": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+            "stable": true,
+            "status": "ok",
+            "status_after": "ok"
+          },
+          {
+            "domain": "d01",
+            "kind": "auxinput24",
+            "name": "wrfchainp_d01",
+            "resolved_path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfchainp_d01",
+            "sha256": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3",
+            "sha256_after": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3",
+            "sha256_before": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3",
+            "stable": true,
+            "status": "ok",
+            "status_after": "ok"
+          }
+        ],
+        "schema": 1
+      },
+      "rank_log_sha256": "7d5893dfb1130c2ca92ba5576566a64134aa19ed6f433b41f63361b23a5ddfa1",
+      "run_dir": "/Users/yhlee/KDM6AD-s2-number-basis/graphify-out/s2-number/case-capture/runs/mp37_s2_number_40_capture_hist20_0min40s_hist0_1x1_20260925_172214_p22793",
+      "runner_identity": "runner 175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e\npath   /Users/yhlee/KDM6AD-s2-number-basis/harness/run_ss_case.py\n"
+    },
+    "control": {
+      "effective_namelist_sha256": "0a15ec2da86dd4b057e5d0d517a4dcd404a84b22e47738304014428b23cbd9cd",
+      "executable_identity": "36bdabe26a1b5613bc25e9107f2118766dafb393dc49ba19027864da57492cd7\nbefore 36bdabe26a1b5613bc25e9107f2118766dafb393dc49ba19027864da57492cd7\nafter  36bdabe26a1b5613bc25e9107f2118766dafb393dc49ba19027864da57492cd7\nstable yes\npath   /Users/yhlee/KDM6AD-s2-number-basis/graphify-out/s2-number/build/wrf_s2_control.exe\n",
+      "experiment_valid": {
+        "active_input_identity_complete": true,
+        "actual_proc_grid": "1x1",
+        "exit_code": 0,
+        "experiment_valid": true,
+        "invalid_reasons": [],
+        "model_completed": true,
+        "requested_proc_grid": "1x1"
+      },
+      "history_path": "/Users/yhlee/KDM6AD-s2-number-basis/graphify-out/s2-number/case-control/runs/mp37_s2_number_40_control_hist20_0min40s_hist0_1x1_20260925_150644_p19523/klfs_lc05_fcst.202507190000",
+      "history_sha256": "49bbda101a367d5eeb9c460e21c2304767311d274dddecb17a4ec39fe14f1d04",
+      "input_identity": {
+        "canonical_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+        "complete": true,
+        "declared": true,
+        "parser_scope": "ordinary WRF assignments; no include/macro expansion",
+        "records": [
+          {
+            "domain": "d01",
+            "kind": "init",
+            "name": "wrfinput_d01",
+            "resolved_path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfinput_d01",
+            "sha256": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+            "sha256_after": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+            "sha256_before": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+            "stable": true,
+            "status": "ok",
+            "status_after": "ok"
+          },
+          {
+            "domain": "d01",
+            "kind": "boundary",
+            "name": "wrfbdy_d01",
+            "resolved_path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfbdy_d01",
+            "sha256": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+            "sha256_after": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+            "sha256_before": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+            "stable": true,
+            "status": "ok",
+            "status_after": "ok"
+          },
+          {
+            "domain": "d01",
+            "kind": "auxinput24",
+            "name": "wrfchainp_d01",
+            "resolved_path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfchainp_d01",
+            "sha256": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3",
+            "sha256_after": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3",
+            "sha256_before": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3",
+            "stable": true,
+            "status": "ok",
+            "status_after": "ok"
+          }
+        ],
+        "schema": 1
+      },
+      "rank_log_sha256": "effd0ec110a2fcb17aa3b1f53bea582cd13b2466b190b0691334a0b71f7b7c0a",
+      "run_dir": "/Users/yhlee/KDM6AD-s2-number-basis/graphify-out/s2-number/case-control/runs/mp37_s2_number_40_control_hist20_0min40s_hist0_1x1_20260925_150644_p19523",
+      "runner_identity": "runner 175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e\npath   /Users/yhlee/KDM6AD-s2-number-basis/harness/run_ss_case.py\n"
+    }
+  },
+  "history_files": {
+    "byte_identical": true,
+    "capture_sha256": "49bbda101a367d5eeb9c460e21c2304767311d274dddecb17a4ec39fe14f1d04",
+    "control_sha256": "49bbda101a367d5eeb9c460e21c2304767311d274dddecb17a4ec39fe14f1d04",
+    "scratch_cleanup_reason": "The two 910 MB paired histories were removed after SHA-256 equality and strict frame checks were recorded; run identities, rank logs, selected capture and full replay remain.",
+    "scratch_copies_removed_after_checks": true,
+    "times": [
+      "2025-07-19_00:00:00",
+      "2025-07-19_00:00:20",
+      "2025-07-19_00:00:40"
+    ]
+  },
+  "history_return": [
+    {
+      "host_i": 144,
+      "host_j": 153,
+      "host_step": 1,
+      "k": 13,
+      "qnr": 237.92178344726562,
+      "qnr_f32_bits": "436DEBFA",
+      "time_seconds": 20
+    },
+    {
+      "host_i": 144,
+      "host_j": 153,
+      "host_step": 2,
+      "k": 13,
+      "qnr": 234.44650268554688,
+      "qnr_f32_bits": "436A724E",
+      "time_seconds": 40
+    }
+  ],
+  "input_identity": {
+    "hydrometeor_fields_positive_counts": {
+      "QCLOUD": 681831,
+      "QRAIN": 163530
+    },
+    "number_fields_positive_counts": {
+      "QNCCN": 0,
+      "QNCLOUD": 0,
+      "QNICE": 0,
+      "QNRAIN": 0
+    },
+    "selected_fortran_i_j_k": {
+      "i": 144,
+      "j": 153,
+      "k": 13
+    },
+    "selected_wrfinput_units": {
+      "QCLOUD": "kg kg-1",
+      "QNCCN": "  kg(-1)",
+      "QNCLOUD": "  kg(-1)",
+      "QNRAIN": "  kg(-1)",
+      "QRAIN": "kg kg-1",
+      "QVAPOR": "kg kg-1"
+    },
+    "selected_wrfinput_values": {
+      "QCLOUD": 0.0002318694459972903,
+      "QNCCN": 0.0,
+      "QNCLOUD": 0.0,
+      "QNRAIN": 0.0,
+      "QRAIN": 4.324407200329006e-05,
+      "QVAPOR": 0.00924956239759922
+    },
+    "selection_rule": "The 39-level column and K13 were retained from prior native-number capture; current input has positive QC/QR and zero QNR/QNCLOUD/QNCCN/QNICE there. No output-driven column switching was done.",
+    "wrfbdy_d01_sha256": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+    "wrfchainp_d01_sha256": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3",
+    "wrfinput_d01_sha256": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+    "wrfinput_sha256": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+    "wrfinput_shape_k_j_i": [
+      39,
+      282,
+      234
+    ]
+  },
+  "limits": [
+    "one retained 5 km forecast/input and one 39-level column",
+    "mstep=1 for observed rain transport; no mstep>1 evidence",
+    "the host dynamics interval between first-call return and second-call entry is not a complete number ledger",
+    "not all species, mp137 ABI or threshold policies are closed",
+    "no forecast impact or radiation/observation acceptance claim"
+  ],
+  "noninterference": {
+    "common_numeric_fields_raw_bit_equal": true,
+    "frames": [
+      {
+        "bitwise_match": 253,
+        "common_numeric": 253,
+        "different": 0,
+        "frame": 0,
+        "result": "STRICT BITWISE PASS",
+        "returncode": 0,
+        "time_seconds": 0,
+        "unsupported_or_skipped": 0,
+        "common_variables": 254,
+        "times_exact": true
+      },
+      {
+        "bitwise_match": 253,
+        "common_numeric": 253,
+        "different": 0,
+        "frame": 1,
+        "result": "STRICT BITWISE PASS",
+        "returncode": 0,
+        "time_seconds": 20,
+        "unsupported_or_skipped": 0,
+        "common_variables": 254,
+        "times_exact": true
+      },
+      {
+        "bitwise_match": 253,
+        "common_numeric": 253,
+        "different": 0,
+        "frame": 2,
+        "result": "STRICT BITWISE PASS",
+        "returncode": 0,
+        "time_seconds": 40,
+        "unsupported_or_skipped": 0,
+        "common_variables": 254,
+        "times_exact": true
+      }
+    ],
+    "run_seconds": 40
+  },
+  "physical_number_basis_resolved": false,
+  "replay_result_sha256": "16d6be813108a2d9407d9c005bec703f8093d3216ef7f7e593a958ee4e09d5c2",
+  "schema": "s2-native-number-v1",
+  "scope": {
+    "dt_seconds": 20,
+    "duration_seconds": 40,
+    "history_interval_minutes": 0,
+    "history_interval_seconds": 20,
+    "host_i": 144,
+    "host_j": 153,
+    "host_levels": 39,
+    "mp_physics": 37,
+    "mpi_ranks": 1,
+    "predeclared_active_transport_level_k": 13,
+    "proc_grid": "1x1",
+    "species": "rain number QNR/NR",
+    "threads": 1
+  },
+  "source": {
+    "canonical_module_capture": {
+      "canonical_source": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/phys/module_mp_kdm6.F",
+      "canonical_source_sha256": "fc0a72d33a5e61803fea56eb9118018039c6da8b5775813032b4861a2bd66eb5",
+      "capture_source": "/Users/yhlee/KDM6AD-s2-number-basis/graphify-out/s2-number/sha-shadow/module_mp_kdm6_s2.F",
+      "capture_source_sha256": "5ceca0627c5be831f47c958e85b1ff2612fd9a50fd9bf1c3c40bf0ac6eb951c0",
+      "macro": "KDM6_S2_NUMBER_CAPTURE",
+      "schema": "s2-mp37-number-capture-source-v1",
+      "selected_host_cell_1_based": {
+        "host_i": 144,
+        "host_j": 153
+      },
+      "stripped_exact": true,
+      "tags": {
+        "DSD_FINAL_GATE": {
+          "flags": [
+            "qrs(i,k,1).ge.qcrmin .and. nrs(i,k,1).ge.nrmin"
+          ],
+          "integer32": [],
+          "real32": [
+            "nrs(i,k,1)",
+            "qrs(i,k,1)",
+            "den(i,k)",
+            "qcrmin",
+            "nrmin",
+            "lamdarmin",
+            "lamdarmax",
+            "pidnr",
+            "dmr"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "den(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qcrmin",
+              "kind": "f32"
+            },
+            {
+              "expr": "nrmin",
+              "kind": "f32"
+            },
+            {
+              "expr": "lamdarmin",
+              "kind": "f32"
+            },
+            {
+              "expr": "lamdarmax",
+              "kind": "f32"
+            },
+            {
+              "expr": "pidnr",
+              "kind": "f32"
+            },
+            {
+              "expr": "dmr",
+              "kind": "f32"
+            }
+          ]
+        },
+        "DSD_FINAL_POST": {
+          "flags": [
+            "qrs(i,k,1).ge.qcrmin .and. nrs(i,k,1).ge.nrmin"
+          ],
+          "integer32": [],
+          "real32": [
+            "nrs(i,k,1)",
+            "qrs(i,k,1)",
+            "den(i,k)",
+            "qcrmin",
+            "nrmin",
+            "nrmax"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "den(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qcrmin",
+              "kind": "f32"
+            },
+            {
+              "expr": "nrmin",
+              "kind": "f32"
+            },
+            {
+              "expr": "nrmax",
+              "kind": "f32"
+            }
+          ]
+        },
+        "DSD_FINAL_RAW": {
+          "flags": [
+            "qrs(i,k,1).ge.qcrmin .and. nrs(i,k,1).ge.nrmin"
+          ],
+          "integer32": [],
+          "real32": [
+            "nrs(i,k,1)",
+            "qrs(i,k,1)",
+            "den(i,k)",
+            "qcrmin",
+            "nrmin",
+            "lamdarmin",
+            "lamdarmax",
+            "pidnr",
+            "dmr",
+            "lamdr_tmp(i,k)"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "den(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qcrmin",
+              "kind": "f32"
+            },
+            {
+              "expr": "nrmin",
+              "kind": "f32"
+            },
+            {
+              "expr": "lamdarmin",
+              "kind": "f32"
+            },
+            {
+              "expr": "lamdarmax",
+              "kind": "f32"
+            },
+            {
+              "expr": "pidnr",
+              "kind": "f32"
+            },
+            {
+              "expr": "dmr",
+              "kind": "f32"
+            },
+            {
+              "expr": "lamdr_tmp(i,k)",
+              "kind": "f32"
+            }
+          ]
+        },
+        "DSD_POSTFREEZE_GATE": {
+          "flags": [
+            "qrs(i,k,1).ge.qcrmin .and. nrs(i,k,1).ge.nrmin"
+          ],
+          "integer32": [],
+          "real32": [
+            "nrs(i,k,1)",
+            "qrs(i,k,1)",
+            "den(i,k)",
+            "qcrmin",
+            "nrmin",
+            "lamdarmin",
+            "lamdarmax",
+            "pidnr",
+            "dmr"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "den(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qcrmin",
+              "kind": "f32"
+            },
+            {
+              "expr": "nrmin",
+              "kind": "f32"
+            },
+            {
+              "expr": "lamdarmin",
+              "kind": "f32"
+            },
+            {
+              "expr": "lamdarmax",
+              "kind": "f32"
+            },
+            {
+              "expr": "pidnr",
+              "kind": "f32"
+            },
+            {
+              "expr": "dmr",
+              "kind": "f32"
+            }
+          ]
+        },
+        "DSD_POSTFREEZE_POST": {
+          "flags": [
+            "qrs(i,k,1).ge.qcrmin .and. nrs(i,k,1).ge.nrmin"
+          ],
+          "integer32": [],
+          "real32": [
+            "nrs(i,k,1)",
+            "qrs(i,k,1)",
+            "den(i,k)",
+            "qcrmin",
+            "nrmin",
+            "nrmax"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "den(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qcrmin",
+              "kind": "f32"
+            },
+            {
+              "expr": "nrmin",
+              "kind": "f32"
+            },
+            {
+              "expr": "nrmax",
+              "kind": "f32"
+            }
+          ]
+        },
+        "DSD_POSTFREEZE_RAW": {
+          "flags": [],
+          "integer32": [],
+          "real32": [
+            "nrs(i,k,1)",
+            "qrs(i,k,1)",
+            "den(i,k)",
+            "lamdr_tmp(i,k)"
+          ],
+          "real64": [
+            "n0r(i,k)"
+          ],
+          "value_order": [
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "den(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "lamdr_tmp(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "n0r(i,k)",
+              "kind": "f64"
+            }
+          ]
+        },
+        "DSD_PRE_GATE": {
+          "flags": [
+            "qrs(i,k,1).ge.qcrmin .and. nrs(i,k,1).ge.nrmin"
+          ],
+          "integer32": [],
+          "real32": [
+            "nrs(i,k,1)",
+            "qrs(i,k,1)",
+            "den(i,k)",
+            "qcrmin",
+            "nrmin",
+            "lamdarmin",
+            "lamdarmax",
+            "pidnr",
+            "dmr"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "den(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qcrmin",
+              "kind": "f32"
+            },
+            {
+              "expr": "nrmin",
+              "kind": "f32"
+            },
+            {
+              "expr": "lamdarmin",
+              "kind": "f32"
+            },
+            {
+              "expr": "lamdarmax",
+              "kind": "f32"
+            },
+            {
+              "expr": "pidnr",
+              "kind": "f32"
+            },
+            {
+              "expr": "dmr",
+              "kind": "f32"
+            }
+          ]
+        },
+        "DSD_PRE_POST": {
+          "flags": [
+            "qrs(i,k,1).ge.qcrmin .and. nrs(i,k,1).ge.nrmin"
+          ],
+          "integer32": [],
+          "real32": [
+            "nrs(i,k,1)",
+            "qrs(i,k,1)",
+            "den(i,k)",
+            "qcrmin",
+            "nrmin",
+            "nrmax"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "den(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qcrmin",
+              "kind": "f32"
+            },
+            {
+              "expr": "nrmin",
+              "kind": "f32"
+            },
+            {
+              "expr": "nrmax",
+              "kind": "f32"
+            }
+          ]
+        },
+        "DSD_PRE_RAW": {
+          "flags": [],
+          "integer32": [],
+          "real32": [
+            "nrs(i,k,1)",
+            "qrs(i,k,1)",
+            "den(i,k)",
+            "lamdr_tmp(i,k)"
+          ],
+          "real64": [
+            "n0r(i,k)"
+          ],
+          "value_order": [
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "den(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "lamdr_tmp(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "n0r(i,k)",
+              "kind": "f64"
+            }
+          ]
+        },
+        "HOST_ENTRY": {
+          "flags": [],
+          "integer32": [],
+          "real32": [
+            "nr(i,k,j)",
+            "qr(i,k,j)",
+            "qc(i,k,j)",
+            "q(i,k,j)",
+            "den(i,k,j)",
+            "delz(i,k,j)"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "nr(i,k,j)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qr(i,k,j)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qc(i,k,j)",
+              "kind": "f32"
+            },
+            {
+              "expr": "q(i,k,j)",
+              "kind": "f32"
+            },
+            {
+              "expr": "den(i,k,j)",
+              "kind": "f32"
+            },
+            {
+              "expr": "delz(i,k,j)",
+              "kind": "f32"
+            }
+          ]
+        },
+        "HOST_RETURN": {
+          "flags": [],
+          "integer32": [],
+          "real32": [
+            "nr(i,k,j)",
+            "qr(i,k,j)",
+            "qc(i,k,j)",
+            "q(i,k,j)",
+            "den(i,k,j)",
+            "delz(i,k,j)"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "nr(i,k,j)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qr(i,k,j)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qc(i,k,j)",
+              "kind": "f32"
+            },
+            {
+              "expr": "q(i,k,j)",
+              "kind": "f32"
+            },
+            {
+              "expr": "den(i,k,j)",
+              "kind": "f32"
+            },
+            {
+              "expr": "delz(i,k,j)",
+              "kind": "f32"
+            }
+          ]
+        },
+        "KERNEL_ENTRY": {
+          "flags": [],
+          "integer32": [],
+          "real32": [
+            "nrs(i,k,1)",
+            "qrs(i,k,1)",
+            "qci(i,k,1)",
+            "q(i,k)",
+            "den(i,k)",
+            "delz(i,k)"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qci(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "q(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "den(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "delz(i,k)",
+              "kind": "f32"
+            }
+          ]
+        },
+        "KERNEL_RETURN": {
+          "flags": [],
+          "integer32": [],
+          "real32": [
+            "nrs(i,k,1)",
+            "qrs(i,k,1)",
+            "qci(i,k,1)",
+            "q(i,k,j)",
+            "den(i,k,j)",
+            "delz(i,k,j)"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qci(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "q(i,k,j)",
+              "kind": "f32"
+            },
+            {
+              "expr": "den(i,k,j)",
+              "kind": "f32"
+            },
+            {
+              "expr": "delz(i,k,j)",
+              "kind": "f32"
+            }
+          ]
+        },
+        "NRAUT_BASE": {
+          "flags": [],
+          "integer32": [],
+          "real32": [
+            "praut(i,k)",
+            "nraut(i,k)",
+            "den(i,k)",
+            "nrs(i,k,1)",
+            "qrs(i,k,1)"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "praut(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nraut(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "den(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qrs(i,k,1)",
+              "kind": "f32"
+            }
+          ]
+        },
+        "NRAUT_DONOR_CAP": {
+          "flags": [],
+          "integer32": [],
+          "real32": [
+            "nraut(i,k)",
+            "nci(i,k,1)",
+            "dtcld"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "nraut(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nci(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "dtcld",
+              "kind": "f32"
+            }
+          ]
+        },
+        "NRAUT_DSD_BRANCH": {
+          "flags": [
+            "qrs(i,k,1).gt.lenconcr"
+          ],
+          "integer32": [],
+          "real32": [
+            "praut(i,k)",
+            "nraut(i,k)",
+            "nrs(i,k,1)",
+            "qrs(i,k,1)",
+            "lenconcr"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "praut(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nraut(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "lenconcr",
+              "kind": "f32"
+            }
+          ]
+        },
+        "NRAUT_GATE": {
+          "flags": [
+            "qci(i,k,1).gt.qcr(i,k)",
+            "nci(i,k,1).gt.ncmin"
+          ],
+          "integer32": [],
+          "real32": [
+            "nrs(i,k,1)",
+            "qrs(i,k,1)",
+            "qci(i,k,1)",
+            "nci(i,k,1)",
+            "den(i,k)",
+            "dtcld",
+            "qcr(i,k)",
+            "ncmin",
+            "nrmin",
+            "qcrmin",
+            "lenconcr"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qci(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nci(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "den(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "dtcld",
+              "kind": "f32"
+            },
+            {
+              "expr": "qcr(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "ncmin",
+              "kind": "f32"
+            },
+            {
+              "expr": "nrmin",
+              "kind": "f32"
+            },
+            {
+              "expr": "qcrmin",
+              "kind": "f32"
+            },
+            {
+              "expr": "lenconcr",
+              "kind": "f32"
+            }
+          ]
+        },
+        "NR_FACE_POST": {
+          "flags": [],
+          "integer32": [
+            "mstep(i)"
+          ],
+          "real32": [
+            "nrs(i,k,1)",
+            "dnr(i,k)",
+            "dnr(i,k+1)",
+            "nrs(i,k+1,1)",
+            "qrs(i,k,1)",
+            "dqr(i,k)",
+            "dqr(i,k+1)",
+            "qrs(i,k+1,1)",
+            "falkn(i,k,1)",
+            "falkn(i,k+1,1)",
+            "falk(i,k,1)",
+            "falk(i,k+1,1)",
+            "den(i,k)",
+            "den(i,k+1)",
+            "dend(i,k)",
+            "dend(i,k+1)",
+            "q(i,k)",
+            "q(i,k+1)",
+            "delz(i,k)",
+            "delz(i,k+1)",
+            "dtcld"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "dnr(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "dnr(i,k+1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nrs(i,k+1,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "dqr(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "dqr(i,k+1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qrs(i,k+1,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "falkn(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "falkn(i,k+1,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "falk(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "falk(i,k+1,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "den(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "den(i,k+1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "dend(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "dend(i,k+1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "q(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "q(i,k+1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "delz(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "delz(i,k+1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "mstep(i)",
+              "kind": "i32"
+            },
+            {
+              "expr": "dtcld",
+              "kind": "f32"
+            }
+          ]
+        },
+        "NR_FACE_PRE": {
+          "flags": [],
+          "integer32": [
+            "mstep(i)"
+          ],
+          "real32": [
+            "nrs(i,k,1)",
+            "dnr(i,k)",
+            "dnr(i,k+1)",
+            "nrs(i,k+1,1)",
+            "qrs(i,k,1)",
+            "dqr(i,k)",
+            "dqr(i,k+1)",
+            "qrs(i,k+1,1)",
+            "falkn(i,k,1)",
+            "falkn(i,k+1,1)",
+            "falk(i,k,1)",
+            "falk(i,k+1,1)",
+            "den(i,k)",
+            "den(i,k+1)",
+            "dend(i,k)",
+            "dend(i,k+1)",
+            "q(i,k)",
+            "q(i,k+1)",
+            "delz(i,k)",
+            "delz(i,k+1)",
+            "dtcld"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "dnr(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "dnr(i,k+1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nrs(i,k+1,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "dqr(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "dqr(i,k+1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qrs(i,k+1,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "falkn(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "falkn(i,k+1,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "falk(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "falk(i,k+1,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "den(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "den(i,k+1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "dend(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "dend(i,k+1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "q(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "q(i,k+1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "delz(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "delz(i,k+1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "mstep(i)",
+              "kind": "i32"
+            },
+            {
+              "expr": "dtcld",
+              "kind": "f32"
+            }
+          ]
+        },
+        "NR_FREEZE_POST": {
+          "flags": [],
+          "integer32": [],
+          "real32": [
+            "nrs(i,k,1)",
+            "qrs(i,k,1)",
+            "den(i,k)",
+            "nrmin",
+            "q(i,k)"
+          ],
+          "real64": [
+            "nfrzdtr",
+            "n0r(i,k)"
+          ],
+          "value_order": [
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "den(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nrmin",
+              "kind": "f32"
+            },
+            {
+              "expr": "q(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nfrzdtr",
+              "kind": "f64"
+            },
+            {
+              "expr": "n0r(i,k)",
+              "kind": "f64"
+            }
+          ]
+        },
+        "NR_FREEZE_PRE": {
+          "flags": [],
+          "integer32": [],
+          "real32": [
+            "nrs(i,k,1)",
+            "qrs(i,k,1)",
+            "den(i,k)",
+            "nrmin",
+            "q(i,k)"
+          ],
+          "real64": [
+            "nfrzdtr",
+            "n0r(i,k)"
+          ],
+          "value_order": [
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "den(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nrmin",
+              "kind": "f32"
+            },
+            {
+              "expr": "q(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nfrzdtr",
+              "kind": "f64"
+            },
+            {
+              "expr": "n0r(i,k)",
+              "kind": "f64"
+            }
+          ]
+        },
+        "NR_GRAUPEL_MELT_POST": {
+          "flags": [],
+          "integer32": [],
+          "real32": [
+            "nrs(i,k,1)",
+            "gfac",
+            "pgmlt(i,k)",
+            "qrs(i,k,3)",
+            "qcrmin",
+            "den(i,k)",
+            "q(i,k)"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "gfac",
+              "kind": "f32"
+            },
+            {
+              "expr": "pgmlt(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qrs(i,k,3)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qcrmin",
+              "kind": "f32"
+            },
+            {
+              "expr": "den(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "q(i,k)",
+              "kind": "f32"
+            }
+          ]
+        },
+        "NR_GRAUPEL_MELT_PRE": {
+          "flags": [],
+          "integer32": [],
+          "real32": [
+            "nrs(i,k,1)",
+            "gfac",
+            "pgmlt(i,k)",
+            "qrs(i,k,3)",
+            "qcrmin",
+            "den(i,k)",
+            "q(i,k)"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "gfac",
+              "kind": "f32"
+            },
+            {
+              "expr": "pgmlt(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qrs(i,k,3)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qcrmin",
+              "kind": "f32"
+            },
+            {
+              "expr": "den(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "q(i,k)",
+              "kind": "f32"
+            }
+          ]
+        },
+        "NR_LIMIT_COLD_POST": {
+          "flags": [
+            "source.gt.value"
+          ],
+          "integer32": [],
+          "real32": [
+            "nrs(i,k,1)",
+            "nrmin",
+            "value",
+            "source",
+            "dtcld",
+            "nraut(i,k)",
+            "nrcol(i,k)",
+            "nseml(i,k)",
+            "ngeml(i,k)"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nrmin",
+              "kind": "f32"
+            },
+            {
+              "expr": "value",
+              "kind": "f32"
+            },
+            {
+              "expr": "source",
+              "kind": "f32"
+            },
+            {
+              "expr": "dtcld",
+              "kind": "f32"
+            },
+            {
+              "expr": "nraut(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nrcol(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nseml(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "ngeml(i,k)",
+              "kind": "f32"
+            }
+          ]
+        },
+        "NR_LIMIT_COLD_PRE": {
+          "flags": [
+            "source.gt.value"
+          ],
+          "integer32": [],
+          "real32": [
+            "nrs(i,k,1)",
+            "nrmin",
+            "value",
+            "source",
+            "dtcld",
+            "nraut(i,k)",
+            "nrcol(i,k)",
+            "nseml(i,k)",
+            "ngeml(i,k)"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nrmin",
+              "kind": "f32"
+            },
+            {
+              "expr": "value",
+              "kind": "f32"
+            },
+            {
+              "expr": "source",
+              "kind": "f32"
+            },
+            {
+              "expr": "dtcld",
+              "kind": "f32"
+            },
+            {
+              "expr": "nraut(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nrcol(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nseml(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "ngeml(i,k)",
+              "kind": "f32"
+            }
+          ]
+        },
+        "NR_LIMIT_POST": {
+          "flags": [
+            "source.gt.value"
+          ],
+          "integer32": [],
+          "real32": [
+            "nrs(i,k,1)",
+            "nrmin",
+            "value",
+            "source",
+            "dtcld",
+            "nraut(i,k)",
+            "nraci(i,k)",
+            "nrcol(i,k)",
+            "niacr(i,k)",
+            "nsacr(i,k)",
+            "ngacr(i,k)"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nrmin",
+              "kind": "f32"
+            },
+            {
+              "expr": "value",
+              "kind": "f32"
+            },
+            {
+              "expr": "source",
+              "kind": "f32"
+            },
+            {
+              "expr": "dtcld",
+              "kind": "f32"
+            },
+            {
+              "expr": "nraut(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nraci(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nrcol(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "niacr(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nsacr(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "ngacr(i,k)",
+              "kind": "f32"
+            }
+          ]
+        },
+        "NR_LIMIT_PRE": {
+          "flags": [
+            "source.gt.value"
+          ],
+          "integer32": [],
+          "real32": [
+            "nrs(i,k,1)",
+            "nrmin",
+            "value",
+            "source",
+            "dtcld",
+            "nraut(i,k)",
+            "nraci(i,k)",
+            "nrcol(i,k)",
+            "niacr(i,k)",
+            "nsacr(i,k)",
+            "ngacr(i,k)"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nrmin",
+              "kind": "f32"
+            },
+            {
+              "expr": "value",
+              "kind": "f32"
+            },
+            {
+              "expr": "source",
+              "kind": "f32"
+            },
+            {
+              "expr": "dtcld",
+              "kind": "f32"
+            },
+            {
+              "expr": "nraut(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nraci(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nrcol(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "niacr(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nsacr(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "ngacr(i,k)",
+              "kind": "f32"
+            }
+          ]
+        },
+        "NR_MAX_GATE": {
+          "flags": [
+            "nrs(i,k,1).gt.nrmax"
+          ],
+          "integer32": [],
+          "real32": [
+            "nrs(i,k,1)",
+            "nrmax",
+            "qrs(i,k,1)",
+            "den(i,k)",
+            "lamdarmax",
+            "pidnr",
+            "dmr"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nrmax",
+              "kind": "f32"
+            },
+            {
+              "expr": "qrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "den(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "lamdarmax",
+              "kind": "f32"
+            },
+            {
+              "expr": "pidnr",
+              "kind": "f32"
+            },
+            {
+              "expr": "dmr",
+              "kind": "f32"
+            }
+          ]
+        },
+        "NR_SNOW_MELT_POST": {
+          "flags": [],
+          "integer32": [],
+          "real32": [
+            "nrs(i,k,1)",
+            "sfac",
+            "psmlt(i,k)",
+            "qrs(i,k,2)",
+            "qcrmin",
+            "den(i,k)",
+            "q(i,k)"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "sfac",
+              "kind": "f32"
+            },
+            {
+              "expr": "psmlt(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qrs(i,k,2)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qcrmin",
+              "kind": "f32"
+            },
+            {
+              "expr": "den(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "q(i,k)",
+              "kind": "f32"
+            }
+          ]
+        },
+        "NR_SNOW_MELT_PRE": {
+          "flags": [],
+          "integer32": [],
+          "real32": [
+            "nrs(i,k,1)",
+            "sfac",
+            "psmlt(i,k)",
+            "qrs(i,k,2)",
+            "qcrmin",
+            "den(i,k)",
+            "q(i,k)"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "sfac",
+              "kind": "f32"
+            },
+            {
+              "expr": "psmlt(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qrs(i,k,2)",
+              "kind": "f32"
+            },
+            {
+              "expr": "qcrmin",
+              "kind": "f32"
+            },
+            {
+              "expr": "den(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "q(i,k)",
+              "kind": "f32"
+            }
+          ]
+        },
+        "NR_TOP_POST": {
+          "flags": [],
+          "integer32": [
+            "mstep(i)"
+          ],
+          "real32": [
+            "nrs(i,k,1)",
+            "falkn(i,k,1)",
+            "falk(i,k,1)",
+            "den(i,k)",
+            "dend(i,k)",
+            "q(i,k)",
+            "delz(i,k)",
+            "dtcld",
+            "qrs(i,k,1)"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "falkn(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "falk(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "den(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "dend(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "q(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "delz(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "mstep(i)",
+              "kind": "i32"
+            },
+            {
+              "expr": "dtcld",
+              "kind": "f32"
+            },
+            {
+              "expr": "qrs(i,k,1)",
+              "kind": "f32"
+            }
+          ]
+        },
+        "NR_TOP_PRE": {
+          "flags": [],
+          "integer32": [
+            "mstep(i)"
+          ],
+          "real32": [
+            "nrs(i,k,1)",
+            "falkn(i,k,1)",
+            "falk(i,k,1)",
+            "den(i,k)",
+            "dend(i,k)",
+            "q(i,k)",
+            "delz(i,k)",
+            "dtcld",
+            "qrs(i,k,1)"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "falkn(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "falk(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "den(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "dend(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "q(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "delz(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "mstep(i)",
+              "kind": "i32"
+            },
+            {
+              "expr": "dtcld",
+              "kind": "f32"
+            },
+            {
+              "expr": "qrs(i,k,1)",
+              "kind": "f32"
+            }
+          ]
+        },
+        "NR_UPDATE_COLD_POST": {
+          "flags": [],
+          "integer32": [],
+          "real32": [
+            "nrs(i,k,1)",
+            "nraut(i,k)",
+            "nrcol(i,k)",
+            "nseml(i,k)",
+            "ngeml(i,k)",
+            "dtcld"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nraut(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nrcol(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nseml(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "ngeml(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "dtcld",
+              "kind": "f32"
+            }
+          ]
+        },
+        "NR_UPDATE_COLD_PRE": {
+          "flags": [],
+          "integer32": [],
+          "real32": [
+            "nrs(i,k,1)",
+            "nraut(i,k)",
+            "nrcol(i,k)",
+            "nseml(i,k)",
+            "ngeml(i,k)",
+            "dtcld"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nraut(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nrcol(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nseml(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "ngeml(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "dtcld",
+              "kind": "f32"
+            }
+          ]
+        },
+        "NR_UPDATE_WARM_POST": {
+          "flags": [],
+          "integer32": [],
+          "real32": [
+            "nrs(i,k,1)",
+            "nraut(i,k)",
+            "nrcol(i,k)",
+            "niacr(i,k)",
+            "nraci(i,k)",
+            "nsacr(i,k)",
+            "ngacr(i,k)",
+            "dtcld"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nraut(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nrcol(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "niacr(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nraci(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nsacr(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "ngacr(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "dtcld",
+              "kind": "f32"
+            }
+          ]
+        },
+        "NR_UPDATE_WARM_PRE": {
+          "flags": [],
+          "integer32": [],
+          "real32": [
+            "nrs(i,k,1)",
+            "nraut(i,k)",
+            "nrcol(i,k)",
+            "niacr(i,k)",
+            "nraci(i,k)",
+            "nsacr(i,k)",
+            "ngacr(i,k)",
+            "dtcld"
+          ],
+          "real64": [],
+          "value_order": [
+            {
+              "expr": "nrs(i,k,1)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nraut(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nrcol(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "niacr(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nraci(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "nsacr(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "ngacr(i,k)",
+              "kind": "f32"
+            },
+            {
+              "expr": "dtcld",
+              "kind": "f32"
+            }
+          ]
+        }
+      }
+    },
+    "canonical_private_source_hashes": {
+      "Registry.EM_COMMON": {
+        "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/Registry/Registry.EM_COMMON",
+        "sha256": "6741720cba12ad7ee1c172339bd8def5973b22f4e88ab9cd152f3ba3df456e37"
+      },
+      "libwrflib.a": {
+        "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/libwrflib.a",
+        "sha256": "722f83c058ea1c43d5f23cc497aed1b218f33f90828a0e1dc51c6fe30203deba"
+      },
+      "module_microphysics_driver.F": {
+        "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/phys/module_microphysics_driver.F",
+        "sha256": "94db84c45b7422b62e04967cb3cd1362311abdb02fa3d374d881799c0bce7e84"
+      },
+      "module_mp_kdm6.F": {
+        "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/phys/module_mp_kdm6.F",
+        "sha256": "fc0a72d33a5e61803fea56eb9118018039c6da8b5775813032b4861a2bd66eb5"
+      },
+      "wrf.exe": {
+        "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/wrf.exe",
+        "sha256": "676223e8d61d23456d4ac83713bff0283ea08b1e71776b7f8885b062d97f801b"
+      }
+    },
+    "canonical_source_sha256": "fc0a72d33a5e61803fea56eb9118018039c6da8b5775813032b4861a2bd66eb5",
+    "instrumenter_path": "/Users/yhlee/KDM6AD-s2-number-basis/harness/instrument_s2_native_number.py",
+    "instrumenter_sha256": "fe55ad3df507a5bb6e6415de6b35422445ce4e07fed669d89cf2a44df3650347",
+    "replayer_path": "harness/replay_s2_number_trace.py",
+    "replayer_sha256": "5b9104ed036cd396be8503195722a1aadee3e8323c49c6608b32b97963763f88",
+    "source_order_summary": "Fortran kdm6 copies NR to NRS and back, derives rain lambda using PIDNR*NRS/(DEN*QRS), forms rain-number sources including snow/graupel melting and applies NRMIN floors; number sedimentation uses falkn without DEND while mass falk includes DEND.",
+    "units_observed_from_registry": "QNRAIN # kg(-1), with no host boundary density conversion"
+  },
+  "unit_contract": {
+    "density_factors_added": false,
+    "kernel_slope_requirement": "volume number m^-3 under the source dimensional reading of PIDNR*NRS/(DEN*QRS), with no boundary conversion",
+    "physical_number_basis_resolved": false,
+    "registry_and_host_population_basis": "# per kg (host dry-air mixing-ratio interpretation is supported by Registry/dynamics but historical stored values are not independently assigned)",
+    "transformed_thresholds": "Reported only as rho_d*n_min (conditional dry-to-volume map); no field or branch was rescaled."
+  },
+  "validation": {
+    "diff_check": {
+      "command": "git diff --check",
+      "returncode": 0
+    },
+    "focused_pytest": {
+      "command": "python3 -m pytest -q harness/tests/test_replay_s2_number_trace.py",
+      "failed": 0,
+      "passed": 13
+    },
+    "graphify": {
+      "communities": 1033,
+      "graph_edges": 22526,
+      "graph_nodes": 13143,
+      "html_viz": "skipped: graph exceeds 5000-node limit",
+      "semantic_document_refresh": "incomplete; public main omits the private host source and this worktree did not run the skill’s semantic subagent extraction",
+      "structural_update": "complete"
+    },
+    "replayer": {
+      "capture_records": 1257,
+      "path": "harness/replay_s2_number_trace.py",
+      "result_path": "harness/evidence/native_s2_number_replay_2026-09-25.json",
+      "result_sha256": "16d6be813108a2d9407d9c005bec703f8093d3216ef7f7e593a958ee4e09d5c2",
+      "sha256": "5b9104ed036cd396be8503195722a1aadee3e8323c49c6608b32b97963763f88",
+      "status": "pass"
+    },
+    "strict_bitwise": {
+      "bitwise_match": [
+        253,
+        253,
+        253
+      ],
+      "common_numeric": [
+        253,
+        253,
+        253
+      ],
+      "different": [
+        0,
+        0,
+        0
+      ],
+      "frames": [
+        0,
+        1,
+        2
+      ],
+      "history_files_byte_identical": true,
+      "returncodes": [
+        0,
+        0,
+        0
+      ],
+      "unsupported_or_skipped": [
+        0,
+        0,
+        0
+      ],
+      "common_variables": [
+        254,
+        254,
+        254
+      ],
+      "times_exact": [
+        true,
+        true,
+        true
+      ]
+    }
+  }
+}

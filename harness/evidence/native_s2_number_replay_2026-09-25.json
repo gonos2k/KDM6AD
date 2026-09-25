@@ -1,0 +1,319 @@
+{
+  "capture_records": 1257,
+  "conditional_column_measures": [
+    {
+      "basis_resolved": false,
+      "internal_faces": 38,
+      "levels": 39,
+      "mass_measures": {
+        "rho_d_conditional": {
+          "bottom_export": 8.434758440461072e-05,
+          "delta": -8.884631904477395e-05,
+          "interface_mismatch": -4.498564178405775e-06,
+          "ledger_closure": -1.7046175746166046e-10,
+          "transported_departure": 0.009371769905685348
+        },
+        "rho_m_operator": {
+          "bottom_export": 8.555747144020654e-05,
+          "delta": -8.555759406474925e-05,
+          "interface_mismatch": 5.3061815595225665e-11,
+          "ledger_closure": -1.756863582971736e-10,
+          "transported_departure": 0.009491478904276015
+        }
+      },
+      "number_measures": {
+        "dz_volume": {
+          "bottom_export": 0.0,
+          "delta": 0.0,
+          "interface_mismatch": 0.0,
+          "ledger_closure": 0.0,
+          "transported_departure": 0.0
+        },
+        "rho_d_conditional": {
+          "bottom_export": 0.0,
+          "delta": 0.0,
+          "interface_mismatch": 0.0,
+          "ledger_closure": 0.0,
+          "transported_departure": 0.0
+        },
+        "rho_m_operator": {
+          "bottom_export": 0.0,
+          "delta": 0.0,
+          "interface_mismatch": 0.0,
+          "ledger_closure": 0.0,
+          "transported_departure": 0.0
+        }
+      },
+      "outer_loop": 1,
+      "step": 1,
+      "substep": 1
+    },
+    {
+      "basis_resolved": false,
+      "internal_faces": 38,
+      "levels": 39,
+      "mass_measures": {
+        "rho_d_conditional": {
+          "bottom_export": 0.0001236677027296915,
+          "delta": -0.00013168392128521032,
+          "interface_mismatch": -8.01546229275851e-06,
+          "ledger_closure": -7.562627603145688e-10,
+          "transported_departure": 0.008851540515127706
+        },
+        "rho_m_operator": {
+          "bottom_export": 0.0001254425531905449,
+          "delta": -0.00012544287773932425,
+          "interface_mismatch": 4.378018117366658e-10,
+          "ledger_closure": -7.623505910749062e-10,
+          "transported_departure": 0.008934094872689778
+        }
+      },
+      "number_measures": {
+        "dz_volume": {
+          "bottom_export": 0.0,
+          "delta": 0.004023080400656909,
+          "interface_mismatch": 0.002348708254430676,
+          "ledger_closure": 0.0016743721462262329,
+          "transported_departure": 49835.83761279426
+        },
+        "rho_d_conditional": {
+          "bottom_export": 0.0,
+          "delta": 1988.2717617061292,
+          "interface_mismatch": 1988.2700102827903,
+          "ledger_closure": 0.001751423338873792,
+          "transported_departure": 38891.94634393401
+        },
+        "rho_m_operator": {
+          "bottom_export": 0.0,
+          "delta": 2043.6828594051947,
+          "interface_mismatch": 2043.6810873946965,
+          "ledger_closure": 0.0017720104981435725,
+          "transported_departure": 39206.9318378124
+        }
+      },
+      "outer_loop": 1,
+      "step": 2,
+      "substep": 1
+    }
+  ],
+  "conditional_threshold_maps": [
+    {
+      "basis_choice": "conditional diagnostic only; no source field was rescaled",
+      "dsd_gate_flags": {
+        "qrs(i,k,1).ge.qcrmin .and. nrs(i,k,1).ge.nrmin": 1
+      },
+      "level": 13,
+      "ncmin_raw": 10.0,
+      "ncmin_volume_threshold_if_host_is_dry_kg": 8.31856785642843,
+      "nraut_gate_flags": {
+        "nci(i,k,1).gt.ncmin": 0,
+        "qci(i,k,1).gt.qcr(i,k)": 0
+      },
+      "nrmax_gate_flags": {
+        "nrs(i,k,1).gt.nrmax": 0
+      },
+      "nrmax_raw": 50000000.0,
+      "nrmax_volume_threshold_if_host_is_dry_kg": 41592839.28214215,
+      "nrmin_raw": 0.009999999776482582,
+      "nrmin_volume_threshold_if_host_is_dry_kg": 0.00831856767049395,
+      "number_at_volume_basis_if_host_is_dry_kg": 0.0,
+      "qcrmin_raw_mixing_ratio": 9.999999717180685e-10,
+      "qcrmin_volume_mass_threshold_if_dry_mixing_ratio": 8.318567621163263e-10,
+      "qv_at_host_entry": 0.00927391741424799,
+      "raw_host_nr": 0.0,
+      "rho_d_conditional": 0.8318567856428429,
+      "rho_m_at_host_entry": 0.8395713567733765,
+      "step": 1
+    },
+    {
+      "basis_choice": "conditional diagnostic only; no source field was rescaled",
+      "dsd_gate_flags": {
+        "qrs(i,k,1).ge.qcrmin .and. nrs(i,k,1).ge.nrmin": 1
+      },
+      "level": 13,
+      "ncmin_raw": 10.0,
+      "ncmin_volume_threshold_if_host_is_dry_kg": 8.314188389344144,
+      "nraut_gate_flags": {
+        "nci(i,k,1).gt.ncmin": 1,
+        "qci(i,k,1).gt.qcr(i,k)": 0
+      },
+      "nrmax_gate_flags": {
+        "nrs(i,k,1).gt.nrmax": 0
+      },
+      "nrmax_raw": 50000000.0,
+      "nrmax_volume_threshold_if_host_is_dry_kg": 41570941.94672073,
+      "nrmin_raw": 0.009999999776482582,
+      "nrmin_volume_threshold_if_host_is_dry_kg": 0.008314188203507553,
+      "number_at_volume_basis_if_host_is_dry_kg": 180.20587218517736,
+      "qcrmin_raw_mixing_ratio": 9.999999717180685e-10,
+      "qcrmin_volume_mass_threshold_if_dry_mixing_ratio": 8.314188154202839e-10,
+      "qv_at_host_entry": 0.009284288622438908,
+      "raw_host_nr": 216.7449951171875,
+      "rho_d_conditional": 0.8314188389344145,
+      "rho_m_at_host_entry": 0.8391379714012146,
+      "step": 2
+    }
+  ],
+  "dsd_gate_records": {
+    "DSD_FINAL_GATE": 78,
+    "DSD_POSTFREEZE_GATE": 78,
+    "DSD_PRE_GATE": 78
+  },
+  "focus_path": {
+    "between_call_entry_minus_prior_return": -21.176788330078125,
+    "intercall_dynamics_number_budget_measured": false,
+    "physical_basis_resolved": false,
+    "selected_level": 13,
+    "step1_host_entry_qnr": 0.0,
+    "step1_host_return_qnr": 237.92178344726562,
+    "step1_snow_dsd_number_factor": 1570686592.0,
+    "step1_snow_mass_melt_amount": -1.520126318155235e-07,
+    "step1_snow_melt_number_increment": 238.7642059326172,
+    "step2_active_rain_dsd_gate": 1,
+    "step2_autoconversion_gate_flags": {
+      "nci(i,k,1).gt.ncmin": 1,
+      "qci(i,k,1).gt.qcr(i,k)": 0
+    },
+    "step2_face_k13_to_k12": {
+      "lower_dz": 428.544189453125,
+      "lower_qv": 0.010459588840603828,
+      "lower_rho_m": 0.8762190937995911,
+      "mass_arrival": 7.710135832894593e-06,
+      "mass_departure": 7.3271589826617856e-06,
+      "number_arrival": 21.470430374145508,
+      "number_departure": 19.540470123291016,
+      "upper_dz": 470.870361328125,
+      "upper_qv": 0.009284288622438908,
+      "upper_rho_m": 0.8391379714012146
+    },
+    "step2_face_k14_to_k13": {
+      "lower_dz": 470.870361328125,
+      "lower_qv": 0.009284288622438908,
+      "lower_rho_m": 0.8391379714012146,
+      "mass_arrival": 4.200938747089822e-06,
+      "mass_departure": 4.067502231919207e-06,
+      "number_arrival": 38.00294876098633,
+      "number_departure": 35.04592514038086,
+      "upper_dz": 510.600341796875,
+      "upper_qv": 0.008258244022727013,
+      "upper_rho_m": 0.799230694770813
+    },
+    "step2_host_entry_qnr": 216.7449951171875,
+    "step2_host_return_qnr": 234.44650268554688,
+    "step2_mstep": 1,
+    "step2_rain_lambda": 4648.4990234375,
+    "step2_rain_n0r": 5082491045.76123
+  },
+  "history_return_checks": 2,
+  "host_kernel_boundary": {
+    "host_entry_layers": 78,
+    "host_return_layers": 78,
+    "steps": 2
+  },
+  "mass_measures": [
+    "rho_m*dz*q [operator measure]",
+    "rho_d*dz*q [conditional dry-mass interpretation]"
+  ],
+  "measured_rain_number_sources": {
+    "events": {
+      "graupel_melt": [
+        {
+          "applied_mass_melt_rate": -3.3209783367738055e-08,
+          "applied_nr_increment": 154.4371337890625,
+          "level": 15,
+          "number_factor": 4650350592.0,
+          "reservoir_above_qcrmin": 3.3209783367738055e-08,
+          "step": 2
+        }
+      ],
+      "rain_freeze_sink": [
+        {
+          "applied_nr_decrement": 1.1920928955078125e-07,
+          "level": 16,
+          "step": 2
+        }
+      ],
+      "snow_melt": [
+        {
+          "applied_mass_melt_rate": -3.629877755884081e-05,
+          "applied_nr_increment": 692.97216796875,
+          "level": 15,
+          "number_factor": 19090786.0,
+          "reservoir_above_qcrmin": 5.2524872444337234e-05,
+          "step": 1
+        },
+        {
+          "applied_mass_melt_rate": -6.3035158746060915e-06,
+          "applied_nr_increment": 598.4561157226562,
+          "level": 14,
+          "number_factor": 94940048.0,
+          "reservoir_above_qcrmin": 6.3035158746060915e-06,
+          "step": 1
+        },
+        {
+          "applied_mass_melt_rate": -1.520126318155235e-07,
+          "applied_nr_increment": 238.7642059326172,
+          "level": 13,
+          "number_factor": 1570686592.0,
+          "reservoir_above_qcrmin": 1.520126318155235e-07,
+          "step": 1
+        },
+        {
+          "applied_mass_melt_rate": -1.8036542314803228e-05,
+          "applied_nr_increment": 761.9468994140625,
+          "level": 15,
+          "number_factor": 42244624.0,
+          "reservoir_above_qcrmin": 1.8214368537883274e-05,
+          "step": 2
+        },
+        {
+          "applied_mass_melt_rate": -5.698544214283174e-07,
+          "applied_nr_increment": 328.16619873046875,
+          "level": 14,
+          "number_factor": 575877248.0,
+          "reservoir_above_qcrmin": 5.698544214283174e-07,
+          "step": 2
+        }
+      ]
+    },
+    "positive_source_or_sink_counts": {
+      "graupel_melt": 1,
+      "rain_freeze_sink": 1,
+      "snow_melt": 5
+    }
+  },
+  "nraut": {
+    "autoconversion_records": 0,
+    "gate_records": 78,
+    "positive_rate_records": 0
+  },
+  "number_floor_caps_active": {
+    "cold": 0,
+    "warm": 0
+  },
+  "number_measures": [
+    "dz*n [conditional volume-basis interpretation]",
+    "rho_m*dz*n [operator measure]",
+    "rho_d*dz*n [conditional dry-mass interpretation]"
+  ],
+  "physical_number_basis_resolved": false,
+  "rain_applied_transport": {
+    "face_rows_replayed": 76,
+    "first_nonzero_departure": [
+      2,
+      13,
+      19.540470123291016
+    ],
+    "mstep_values": [
+      1
+    ],
+    "nonzero_departures": 4,
+    "top_rows_replayed": 2
+  },
+  "schema": "s2-number-replay-v1",
+  "source_ordered_rain_number_updates": {
+    "cold": 30,
+    "warm": 48
+  },
+  "threshold_maps_are_conditional_only": true
+}
