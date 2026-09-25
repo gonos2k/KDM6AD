@@ -1,0 +1,46 @@
+{
+  "algorithm": "legacy",
+  "commands": [
+    "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -ffp-contract=off -Wall harness/g33_fortran/g33_fixture_multisubcycle_v1.f90 -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A/g33_fixture_v1.o ",
+    "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w -cpp -DRWORDSIZE=4 -DEM_CORE=1 host/KIM-meso_v1.0/frame/libmassv.F -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A/libmassv.o ",
+    "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w harness/g33_fortran/stub_wrf_error.f90 -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A/stub_wrf_error.o ",
+    "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w -cpp -DRWORDSIZE=4 -DEM_CORE=1 host/KIM-meso_v1.0/share/module_model_constants.F -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A/module_model_constants.o ",
+    "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w -cpp -DRWORDSIZE=4 -DEM_CORE=1 host/KIM-meso_v1.0/phys/module_mp_radar.F -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A/module_mp_radar.o ",
+    "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -w -ffp-contract=off -cpp -DRWORDSIZE=4 -DEM_CORE=1 host/KIM-meso_v1.0/phys/module_mp_kdm6.F -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A/module_mp.o ",
+    "/opt/homebrew/bin/gfortran -c -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -ffp-contract=off -Wall -cpp -DRWORDSIZE=4 -DEM_CORE=1 harness/g33_fortran/g33_fortran_driver.f90 -J/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A -I/Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A/g33_fortran_driver.o ",
+    "/opt/homebrew/bin/gfortran -O2 -ftree-vectorize -funroll-loops -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A/g33_fortran_driver /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A/g33_fortran_driver.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A/g33_fixture_v1.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A/module_mp.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A/module_mp_radar.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A/module_model_constants.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A/stub_wrf_error.o /Users/yhlee/KDM6AD-g33-s13-evidence/fortran-legacy-r4/A/libmassv.o "
+  ],
+  "compiler_binary_sha256": "0019c2383f399c1ba6aed1dc060191e793caf963c1066d254194883581098bb2",
+  "compiler_path": "/opt/homebrew/Cellar/gcc/15.2.0/bin/gfortran-15",
+  "compiler_version": "GNU Fortran (Homebrew GCC 15.2.0) 15.2.0",
+  "dump_instrumented": false,
+  "executable_sha256": "0c3401766634462c6ce502382d9e8cf28d1692019ad3479566a37b50748843b7",
+  "fixture_id": "g33_fixture_multisubcycle_v1",
+  "harness_source_sha256": {
+    "fixture.f90": "54b0d7437f21407b9c857d080da9d0e7b4740b9c6870805fc799f39d99182363",
+    "fixture.h": "edf4c8c8ea4841d88b17297b67810882e0ccaa12f35bdb574630afa77189adbd",
+    "fortran_build.sh": "2c44ebc54522e95b4f6aa6e5534d97de4348571e205c1e7897ee7e3fc4439558",
+    "g33_expectation.py": "5df26ec137e8c8f68a6666fab521cc318159875cad9cea2352bb3139a9893189",
+    "g33_fixture_v1.json": "8aadebb8a5aa31549f0483d86b8efc5fe87e23150ea17ff2a865b6fde3bc0a72",
+    "g33_fixture_v1.py": "152c63e01888d31335dad8170f02c96db850dc027e1c6c150e19322668162e0a",
+    "g33_fortran_bindings.py": "e9840849812458e678fc5d5168c10ece09aebdaf9bb6ed8e140b603be732b004",
+    "g33_fortran_driver.f90": "6a7d2752346d51e18a351746715e438da5a3eb47eef2b94af115bf0d37c1d326",
+    "g33_fortran_dump.py": "db510117760a6e0d01e1353d14c670a55788caa2eefab015fcc820b7c273754b",
+    "g33_fourcase_fixture_check.py": "d031358894a6f293c6445b6f66982089e64d48a9242702a9eaef083b4048ec58",
+    "g33_provenance.py": "1e31baf01faffadd0f424a6410a039202d8bec0d51de5e6d277787717476f002",
+    "g33_schema.py": "6cb49775b5b02adaecbae900000c158c3cc0244bc9c733f93b2b1d471ecf923b",
+    "make_fortran_overlay.py": "30c0197bbaeed05640d58482b773cc6ab430035f2fe2b7ddf0ef419b0313ca80",
+    "run_fortran_case.py": "bd708e7ebdd68b85a4870c9103f144561c288432860376c9b254ae5b5e942d9a",
+    "stub_wrf_error.f90": "d03d8973a2da4ef2612127fb15dd9ca43cb64e352fc167bca7a02ef245024f4b"
+  },
+  "host_source_sha256": {
+    "libmassv.F": "449be0d252beba8c5a42ade42fceb2e582239d1a36db79ef3ad902f0ed82ede1",
+    "module_model_constants.F": "5b80377fecdc18a5f0ad38d3b6c15cfc86ad5d76701adbbbb08a08698d0f7062",
+    "module_mp_kdm6[_cons].F": "9354141b9e93aceb4a1c35e06bf673a5d4d916028877c0f84f729a301876b7dc",
+    "module_mp_radar.F": "aa99da858be41efa579966680708d230123a7417560af0eb2e24f4c94e253688"
+  },
+  "module_canonical_sha256": "9354141b9e93aceb4a1c35e06bf673a5d4d916028877c0f84f729a301876b7dc",
+  "module_compiled_sha256": "9354141b9e93aceb4a1c35e06bf673a5d4d916028877c0f84f729a301876b7dc",
+  "note": "fixture, parameter and stdout identities are bound by run_manifest.json",
+  "schema_version": 2
+}

@@ -1,0 +1,15 @@
+35|kernel_after_entry_clamp|-|-1|-|-|qr|f32|3,4
+36|kernel_after_entry_clamp|-|-1|-|-|nr|f32|3,4
+37|kernel_after_entry_clamp|-|-1|-|-|qv|f32|3,4
+38|kernel_after_entry_clamp|-|-1|-|-|t|f32|3,4
+39|kernel_after_entry_clamp|-|-1|-|-|qc|f32|3,4
+40|kernel_after_entry_clamp|-|-1|-|-|qi|f32|3,4
+41|kernel_after_entry_clamp|-|-1|-|-|qs|f32|3,4
+42|kernel_after_entry_clamp|-|-1|-|-|qg|f32|3,4
+43|kernel_after_entry_clamp|-|-1|-|-|nc|f32|3,4
+44|kernel_after_entry_clamp|-|-1|-|-|ni|f32|3,4
+45|kernel_after_entry_clamp|-|-1|-|-|nccn|f32|3,4
+46|kernel_after_entry_clamp|-|-1|-|-|brs|f32|3,4
+47|kernel_after_entry_clamp|-|-1|-|-|p|f32|3,4
+48|kernel_after_entry_clamp|-|-1|-|-|rho|f32|3,4
+49|kernel_after_entry_clamp|-|-1|-|-|delz|f32|3,4

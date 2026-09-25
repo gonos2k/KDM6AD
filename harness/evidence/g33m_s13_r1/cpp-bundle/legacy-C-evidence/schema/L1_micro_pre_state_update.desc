@@ -1,0 +1,12 @@
+2099|micro_pre_state_update|-|-1|-|-|qr|f32|3,4
+2100|micro_pre_state_update|-|-1|-|-|nr|f32|3,4
+2101|micro_pre_state_update|-|-1|-|-|qv|f32|3,4
+2102|micro_pre_state_update|-|-1|-|-|t|f32|3,4
+2103|micro_pre_state_update|-|-1|-|-|qc|f32|3,4
+2104|micro_pre_state_update|-|-1|-|-|qi|f32|3,4
+2105|micro_pre_state_update|-|-1|-|-|qs|f32|3,4
+2106|micro_pre_state_update|-|-1|-|-|qg|f32|3,4
+2107|micro_pre_state_update|-|-1|-|-|nc|f32|3,4
+2108|micro_pre_state_update|-|-1|-|-|ni|f32|3,4
+2109|micro_pre_state_update|-|-1|-|-|nccn|f32|3,4
+2110|micro_pre_state_update|-|-1|-|-|brs|f32|3,4

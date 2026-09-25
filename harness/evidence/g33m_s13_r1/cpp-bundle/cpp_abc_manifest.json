@@ -1,0 +1,50 @@
+{
+  "algorithms": {
+    "conservative": {
+      "abc_equal": true,
+      "containers": 62,
+      "evidence_dir": "conservative-C-evidence",
+      "evidence_tree_sha256": "508449e693225a699b25b43c37962a3b3e3f1e01bbce36bd7bde93dcd636bc5e",
+      "fixture_sha256": "71083cb34efacc112010d11a2365113cde00dca0810d8be882a812089e118d93",
+      "mstep_max": 10,
+      "mstep_min": 1,
+      "parameter_sha256": "a55565ff31003b562d92b81f636e523630bb7b15272e829b4f24688c9f81c2cf",
+      "probe_dir": "conservative-probe",
+      "probe_manifest_sha256": "212d38ed846847396ed1b17dfecc28ee2bbf5ad85934c1d392e781f21e02a556",
+      "probe_stream_sha256": "524b1694ea2d4513defdbba4865d062177a483e5661bbb22d40706211f0e9fd8",
+      "schedule_sha256": "f0011e162889c3fff63a79b8cd4588531bc82da5173ea5fad25464fad5500232",
+      "stdout_sha256": {
+        "A": "087bd1f8c423dfd65e82ef0f4e993c66ee4aae16001dedf9f399186ef2bdb718",
+        "B": "087bd1f8c423dfd65e82ef0f4e993c66ee4aae16001dedf9f399186ef2bdb718",
+        "C": "087bd1f8c423dfd65e82ef0f4e993c66ee4aae16001dedf9f399186ef2bdb718"
+      }
+    },
+    "legacy": {
+      "abc_equal": true,
+      "containers": 62,
+      "evidence_dir": "legacy-C-evidence",
+      "evidence_tree_sha256": "866ce90dccff0f6c828e02f0a440301e94f206a4ce8acfee19045416ed28af3a",
+      "fixture_sha256": "71083cb34efacc112010d11a2365113cde00dca0810d8be882a812089e118d93",
+      "mstep_max": 10,
+      "mstep_min": 1,
+      "parameter_sha256": "a55565ff31003b562d92b81f636e523630bb7b15272e829b4f24688c9f81c2cf",
+      "probe_dir": "legacy-probe",
+      "probe_manifest_sha256": "2bafe4a722abfaf63d6ad452f8ca32bd72c1926188694e533531ff0aaa148eb3",
+      "probe_stream_sha256": "4f159ca2432c58e9b7f45c5390d568c705ac7109fd89a83ff1be0ff38ab46abe",
+      "schedule_sha256": "d9bc3ce165eae8b15f8719352347c4981d17ebc20a6de87476ecbe22e1a9adc6",
+      "stdout_sha256": {
+        "A": "51b9fe9f1e44373bddfb1a38fceae30afa30cf7432bc94764847ce2a94f61ccf",
+        "B": "51b9fe9f1e44373bddfb1a38fceae30afa30cf7432bc94764847ce2a94f61ccf",
+        "C": "51b9fe9f1e44373bddfb1a38fceae30afa30cf7432bc94764847ce2a94f61ccf"
+      }
+    }
+  },
+  "architecture": "arm64",
+  "canonical_driver_sha256": "b26df148f6ad2cdacb47cfdce6fba33978b6e84abcff6416316d6b065660e8cb",
+  "diagnostic_driver_sha256": "ef6619dce06aaf8d8284533df1bc304140f3f6f7732e27a7bfe91f63d0dc3015",
+  "fixture_id": "arithmetic_multisubcycle_v1",
+  "fixture_manifest_sha256": "290ddce105b60deec9fbfa6d097842405b24c6aa920632e552572bd7b17aa271",
+  "os": "macOS-26.7-arm64-arm-64bit",
+  "python_version": "3.10.11",
+  "schema_version": 1
+}

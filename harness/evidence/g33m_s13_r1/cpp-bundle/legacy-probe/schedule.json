@@ -1,0 +1,44 @@
+{
+  "B": 3,
+  "K": 4,
+  "algorithm": "legacy",
+  "backend": "cpp",
+  "case_id": "abc-fourcase_v1",
+  "dtcld": 100.0,
+  "instrumented_stages": [
+    "kernel_call_input",
+    "kernel_init_constants",
+    "kernel_after_entry_clamp",
+    "outer_pre_sed",
+    "substep_pre",
+    "surface",
+    "outer_post_sed",
+    "micro_post_melt",
+    "micro_freeze_heat",
+    "micro_call_progb_aux",
+    "micro_post_freeze",
+    "micro_pre_state_update",
+    "micro_qr_operands",
+    "micro_post_state_update",
+    "outer_post_micro",
+    "op",
+    "substep_post"
+  ],
+  "loops": 3,
+  "mstepmax_ice": [
+    1,
+    1,
+    1
+  ],
+  "mstepmax_main": [
+    9,
+    10,
+    7
+  ],
+  "pair_id": "abc-legacy",
+  "qcrmin": 1e-09,
+  "species_scope": [
+    "qr",
+    "nr"
+  ]
+}

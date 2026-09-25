@@ -1,0 +1,339 @@
+{
+  "coefficient_counterfactual": {
+    "comparator_counterfactual": {
+      "bits": {
+        "CC": "0x437396bb",
+        "CF": "0x437396bb",
+        "FC": "0x437396ba",
+        "FF": "0x437396ba"
+      },
+      "note": "exact f32 replay of the three sequential stores; base and rates held at the reference and bitwise equal on both legs",
+      "shapley_delta_T_K": {
+        "cpm": 0.0,
+        "xlf": 1.52587890625e-05
+      },
+      "total_delta_T_K": 1.52587890625e-05
+    },
+    "outputs": {
+      "CC_xlfC_cpmC": "0x437396bb",
+      "CF_xlfC_cpmF": "0x437396bb",
+      "FC_xlfF_cpmC": "0x437396ba",
+      "FF_xlfF_cpmF": "0x437396ba"
+    },
+    "shared_base_and_rates": "Fortran-recorded target values; verified bit-identical in all four legs",
+    "source_order": "t2=f32(t1+f32(xlf/cpm*pinuc)); t3=f32(t2+f32(xlf/cpm*pfrzdtc)); t4=f32(t3+f32(xlf/cpm*pfrzdtr))"
+  },
+  "fixture": {
+    "fixture_id": "arithmetic_multisubcycle_v1",
+    "fixture_manifest_sha256": "290ddce105b60deec9fbfa6d097842405b24c6aa920632e552572bd7b17aa271",
+    "fixture_sha256": "71083cb34efacc112010d11a2365113cde00dca0810d8be882a812089e118d93",
+    "fortran_parameter_sha256": "f1008f2ec5629d7dcaa0e5305771163c7b7651cc112b3ceea6a4ad4b06caf39b",
+    "parameter_sha256": "a55565ff31003b562d92b81f636e523630bb7b15272e829b4f24688c9f81c2cf"
+  },
+  "freeze_heat_replay": {
+    "conservative_cpp": {
+      "cells_checked": 12,
+      "cells_expected": 12,
+      "loop": 2,
+      "mismatch_count": 0,
+      "mismatches": []
+    },
+    "conservative_fortran": {
+      "cells_checked": 12,
+      "cells_expected": 12,
+      "loop": 2,
+      "mismatch_count": 0,
+      "mismatches": []
+    },
+    "legacy_cpp": {
+      "cells_checked": 12,
+      "cells_expected": 12,
+      "loop": 2,
+      "mismatch_count": 0,
+      "mismatches": []
+    },
+    "legacy_fortran": {
+      "cells_checked": 12,
+      "cells_expected": 12,
+      "loop": 2,
+      "mismatch_count": 0,
+      "mismatches": []
+    }
+  },
+  "input_manifests": {
+    "cpp_root_manifest_sha256": "3389172b99bc3f9799535bb8b7f9977f30e1f78a7f99d77287570f70e37cac9c",
+    "fortran_conservative_manifest_sha256": "cc6282cb639a655466ab5b35749ecf6b28c85a32799828cc6731e6e2e5f7d2b0",
+    "fortran_legacy_manifest_sha256": "dd0fd4b85c56f960071b20624db45dc4982865bff26bfc6aa058d63afb4036f4",
+    "gate_a_scope_report_sha256": "cff6cb64f36f818f4eeb655ab8e5ffe3423195bdd4509b88bf4c128d0564dbd2"
+  },
+  "kind": "g33_s13_target_cell_replay",
+  "legs": {
+    "conservative_cpp": {
+      "algorithm": "conservative",
+      "backend": "cpp",
+      "freeze_heat": {
+        "cpm_bits": "0x447b36a5",
+        "cpm_value": 1004.8538208007812,
+        "post_freeze_t_bits": "0x437396bb",
+        "rates": {
+          "pfrzdtc": {
+            "bits": "0x3ebefae7a7f5767d",
+            "value": 1.8465576941609613e-06
+          },
+          "pfrzdtr": {
+            "bits": "0x3e61e05d0e2e83bd",
+            "value": 3.329742683596511e-08
+          },
+          "pinuc": {
+            "bits": "0x3e1c30e25582cd5d",
+            "value": 1.640929466996906e-09
+          }
+        },
+        "t_pre_freeze_bits": "0x43739698",
+        "xlf_bits": "0x488911e0",
+        "xlf_value": 280719.0
+      },
+      "qr_update_replay": {
+        "branch": "cold",
+        "cold_gate_bits": "0x3f800000",
+        "dtcld_f32": 100.0,
+        "input_qr_bits": "0x31959f04",
+        "matches": true,
+        "predicted_qr_bits": "0x31974463",
+        "recorded_qr_bits": "0x31974463"
+      },
+      "stages": {
+        "micro_post_freeze_t": "0x437396bb",
+        "micro_post_melt_qr": "0x3321b6c9",
+        "micro_post_state_update_qr": "0x31974463",
+        "micro_pre_state_update_qr": "0x31959f04",
+        "micro_pre_state_update_t": "0x437396bb",
+        "micro_qr_operands": {
+          "cold_gate": "0x3f800000",
+          "paacw": "0x29dd8877",
+          "pgacr": "0x2605fda0",
+          "pgeml": "0x00000000",
+          "piacr": "0x2b593cc6",
+          "pmulrg": "0x00000000",
+          "pmulrs": "0x00000000",
+          "pracw": "0x2bb88394",
+          "praut": "0x00000000",
+          "prevp": "0xa985531c",
+          "psacr": "0x261f8b6e",
+          "pseml": "0x00000000"
+        },
+        "outer_post_micro_qr": "0x31974463",
+        "outer_post_sed_qr": "0x3321b6c9"
+      },
+      "target": {
+        "column": 3,
+        "k": 0,
+        "loop": 2
+      }
+    },
+    "conservative_fortran": {
+      "algorithm": "conservative",
+      "backend": "fortran",
+      "freeze_heat": {
+        "cpm_bits": "0x447b5809",
+        "cpm_value": 1005.3755493164062,
+        "post_freeze_t_bits": "0x437396ba",
+        "rates": {
+          "pfrzdtc": {
+            "bits": "0x3ebefae7a7f5767d",
+            "value": 1.8465576941609613e-06
+          },
+          "pfrzdtr": {
+            "bits": "0x3e61e05d0e2e83bd",
+            "value": 3.329742683596511e-08
+          },
+          "pinuc": {
+            "bits": "0x3e1c30e25582cd5d",
+            "value": 1.640929466996906e-09
+          }
+        },
+        "t_pre_freeze_bits": "0x43739698",
+        "xlf_bits": "0x488740a0",
+        "xlf_value": 276997.0
+      },
+      "qr_update_replay": {
+        "branch": "cold",
+        "cold_gate_bits": "0x3f800000",
+        "dtcld_f32": 100.0,
+        "input_qr_bits": "0x31959f04",
+        "matches": true,
+        "predicted_qr_bits": "0x31974466",
+        "recorded_qr_bits": "0x31974466"
+      },
+      "stages": {
+        "micro_post_freeze_t": "0x437396ba",
+        "micro_post_melt_qr": "0x3321b6c9",
+        "micro_post_state_update_qr": "0x31974466",
+        "micro_pre_state_update_qr": "0x31959f04",
+        "micro_pre_state_update_t": "0x437396ba",
+        "micro_qr_operands": {
+          "cold_gate": "0x3f800000",
+          "paacw": "0x29dd8893",
+          "pgacr": "0x2605fda0",
+          "pgeml": "0x00000000",
+          "piacr": "0x2b593cc6",
+          "pmulrg": "0x00000000",
+          "pmulrs": "0x00000000",
+          "pracw": "0x2bb88394",
+          "praut": "0x00000000",
+          "prevp": "0xa9854a33",
+          "psacr": "0x261f8b83",
+          "pseml": "0x00000000"
+        },
+        "outer_post_micro_qr": "0x31974466",
+        "outer_post_sed_qr": "0x3321b6c9"
+      },
+      "target": {
+        "column": 3,
+        "k": 0,
+        "loop": 2
+      }
+    },
+    "legacy_cpp": {
+      "algorithm": "legacy",
+      "backend": "cpp",
+      "freeze_heat": {
+        "cpm_bits": "0x447b36a5",
+        "cpm_value": 1004.8538208007812,
+        "post_freeze_t_bits": "0x437396bb",
+        "rates": {
+          "pfrzdtc": {
+            "bits": "0x3ebefae7a7f5767d",
+            "value": 1.8465576941609613e-06
+          },
+          "pfrzdtr": {
+            "bits": "0x3e61e05d0e2e83bd",
+            "value": 3.329742683596511e-08
+          },
+          "pinuc": {
+            "bits": "0x3e1c30e25582cd5d",
+            "value": 1.640929466996906e-09
+          }
+        },
+        "t_pre_freeze_bits": "0x43739698",
+        "xlf_bits": "0x488911e0",
+        "xlf_value": 280719.0
+      },
+      "qr_update_replay": {
+        "branch": "cold",
+        "cold_gate_bits": "0x3f800000",
+        "dtcld_f32": 100.0,
+        "input_qr_bits": "0x31959f04",
+        "matches": true,
+        "predicted_qr_bits": "0x31974463",
+        "recorded_qr_bits": "0x31974463"
+      },
+      "stages": {
+        "micro_post_freeze_t": "0x437396bb",
+        "micro_post_melt_qr": "0x3321b6c9",
+        "micro_post_state_update_qr": "0x31974463",
+        "micro_pre_state_update_qr": "0x31959f04",
+        "micro_pre_state_update_t": "0x437396bb",
+        "micro_qr_operands": {
+          "cold_gate": "0x3f800000",
+          "paacw": "0x29dd8877",
+          "pgacr": "0x2605fda0",
+          "pgeml": "0x00000000",
+          "piacr": "0x2b593cc6",
+          "pmulrg": "0x00000000",
+          "pmulrs": "0x00000000",
+          "pracw": "0x2bb88394",
+          "praut": "0x00000000",
+          "prevp": "0xa985531c",
+          "psacr": "0x261f8b6e",
+          "pseml": "0x00000000"
+        },
+        "outer_post_micro_qr": "0x31974463",
+        "outer_post_sed_qr": "0x3321b6c9"
+      },
+      "target": {
+        "column": 3,
+        "k": 0,
+        "loop": 2
+      }
+    },
+    "legacy_fortran": {
+      "algorithm": "legacy",
+      "backend": "fortran",
+      "freeze_heat": {
+        "cpm_bits": "0x447b5809",
+        "cpm_value": 1005.3755493164062,
+        "post_freeze_t_bits": "0x437396ba",
+        "rates": {
+          "pfrzdtc": {
+            "bits": "0x3ebefae7a7f5767d",
+            "value": 1.8465576941609613e-06
+          },
+          "pfrzdtr": {
+            "bits": "0x3e61e05d0e2e83bd",
+            "value": 3.329742683596511e-08
+          },
+          "pinuc": {
+            "bits": "0x3e1c30e25582cd5d",
+            "value": 1.640929466996906e-09
+          }
+        },
+        "t_pre_freeze_bits": "0x43739698",
+        "xlf_bits": "0x488740a0",
+        "xlf_value": 276997.0
+      },
+      "qr_update_replay": {
+        "branch": "cold",
+        "cold_gate_bits": "0x3f800000",
+        "dtcld_f32": 100.0,
+        "input_qr_bits": "0x31959f04",
+        "matches": true,
+        "predicted_qr_bits": "0x31974466",
+        "recorded_qr_bits": "0x31974466"
+      },
+      "stages": {
+        "micro_post_freeze_t": "0x437396ba",
+        "micro_post_melt_qr": "0x3321b6c9",
+        "micro_post_state_update_qr": "0x31974466",
+        "micro_pre_state_update_qr": "0x31959f04",
+        "micro_pre_state_update_t": "0x437396ba",
+        "micro_qr_operands": {
+          "cold_gate": "0x3f800000",
+          "paacw": "0x29dd8893",
+          "pgacr": "0x2605fda0",
+          "pgeml": "0x00000000",
+          "piacr": "0x2b593cc6",
+          "pmulrg": "0x00000000",
+          "pmulrs": "0x00000000",
+          "pracw": "0x2bb88394",
+          "praut": "0x00000000",
+          "prevp": "0xa9854a33",
+          "psacr": "0x261f8b83",
+          "pseml": "0x00000000"
+        },
+        "outer_post_micro_qr": "0x31974466",
+        "outer_post_sed_qr": "0x3321b6c9"
+      },
+      "target": {
+        "column": 3,
+        "k": 0,
+        "loop": 2
+      }
+    }
+  },
+  "replayer": {
+    "numpy": "2.4.6",
+    "path": "harness/g33_update_replay.py",
+    "python": "3.11.14",
+    "sha256": "0541fdb061dbb0e120552e752885d8dc191515d069fe663c6f3dc2f6f7fdc13f"
+  },
+  "result": "INCONCLUSIVE",
+  "schema_version": 1,
+  "source_commit": "955d8f2a088364ad4833a0068df693271b900a50",
+  "target": {
+    "column": 3,
+    "dtcld_s": 100.0,
+    "k": 0,
+    "loop": 2
+  }
+}

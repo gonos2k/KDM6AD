@@ -1,0 +1,10 @@
+{
+  "algorithm": "conservative",
+  "diagnostic_driver_sha256": "ef6619dce06aaf8d8284533df1bc304140f3f6f7732e27a7bfe91f63d0dc3015",
+  "fixture_id": "arithmetic_multisubcycle_v1",
+  "fixture_manifest_sha256": "290ddce105b60deec9fbfa6d097842405b24c6aa920632e552572bd7b17aa271",
+  "noninvasiveness_checked": true,
+  "probe_stream_sha256": "524b1694ea2d4513defdbba4865d062177a483e5661bbb22d40706211f0e9fd8",
+  "schedule_sha256": "f0011e162889c3fff63a79b8cd4588531bc82da5173ea5fad25464fad5500232",
+  "schema_version": 1
+}
