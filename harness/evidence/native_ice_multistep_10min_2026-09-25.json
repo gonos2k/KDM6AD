@@ -1,0 +1,97 @@
+{
+  "baseline": {
+    "executable_sha256": "799e389e4a5ae3e032607cb4bba59d881184d74798e90e63ee77f426381d6e3c",
+    "instrumented_source_sha256": "d362bc846b30119cc0b4f14f2e5088f9ab7c3e40205dde641aba83fb5a75e5d2",
+    "normalized_source_sha256": "405f543447b4185847d9615827b478e7b6c90064ca02b7226e4acfa7502a63c8",
+    "source": "G4 isolated normalized mp237 census executable"
+  },
+  "census": {
+    "audit": {
+      "consumed_rows": 1948800,
+      "expected_columns": 1948800,
+      "first_multistep": null,
+      "maximum_mstep": 1,
+      "mstep_histogram": {
+        "1": 1948800
+      },
+      "multistep_selected": 0,
+      "selected_rows": 1948800
+    },
+    "compressed_sha256": "7f35dd1ccc4cc61ecb68198350472f44014fb7d0735d4483c6cf4756b2f5ffb6",
+    "file": "native_ice_census_10min_rank0_2026-09-25.txt.xz",
+    "raw_sha256": "f1c78e2275bde538aa55db902dd3633d4f3b0e7c8ee8ec406fc85f22a1ffb4c9"
+  },
+  "noninterference": {
+    "numeric_field_count": 253,
+    "raw_numeric_field_byte_equal": true,
+    "same_executable": true,
+    "same_history_sha256": true,
+    "same_input_identity": true,
+    "times_equal": true
+  },
+  "run_plan": {
+    "candidate_policy": "all owned columns; no posthoc success selection",
+    "history_interval_seconds": 600,
+    "horizon_seconds": 600,
+    "input_case": "retained canonical 5 km SS",
+    "model_dt_seconds": 20,
+    "mpi_ranks": 1,
+    "outer_steps": 30,
+    "owned_i_1_based": [
+      2,
+      233
+    ],
+    "owned_j_1_based": [
+      2,
+      281
+    ],
+    "restart_interval_minutes": 999,
+    "threads_per_rank": 1
+  },
+  "runs": {
+    "capture": {
+      "actual_proc_grid": "1x1",
+      "campaign_id": "92d68dd81dd777ee587f020013a6df0ac29981f791631260c931b7f863b2a5e4",
+      "canonical_input_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+      "effective_namelist_sha256": "2078469623770e6a8b9a7a86b6a456ea3f8f8ef26c67c59acea07d4adab4eaa2",
+      "exit_code": 0,
+      "experiment_valid": true,
+      "history_sha256": "f1a45c7b8293994ce17fb6a7c1699f454dbb9e03f3a46cae3c269eac7efaf963",
+      "history_times": [
+        "2025-07-19_00:00:00",
+        "2025-07-19_00:10:00"
+      ],
+      "model_completed": true,
+      "run_id": "mp237_s4-capture_10min_hist10_1x1_20260925_120747_p5313",
+      "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+      "wrf_executable_sha256": "799e389e4a5ae3e032607cb4bba59d881184d74798e90e63ee77f426381d6e3c"
+    },
+    "control": {
+      "actual_proc_grid": "1x1",
+      "campaign_id": "f7c4160a600c6578a8eefe3e20e7305b0d57f1b946d80f0fd9f956ba4992565b",
+      "canonical_input_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+      "effective_namelist_sha256": "2078469623770e6a8b9a7a86b6a456ea3f8f8ef26c67c59acea07d4adab4eaa2",
+      "exit_code": 0,
+      "experiment_valid": true,
+      "history_sha256": "f1a45c7b8293994ce17fb6a7c1699f454dbb9e03f3a46cae3c269eac7efaf963",
+      "history_times": [
+        "2025-07-19_00:00:00",
+        "2025-07-19_00:10:00"
+      ],
+      "model_completed": true,
+      "run_id": "mp237_s4-control_10min_hist10_1x1_20260925_120250_p1878",
+      "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+      "wrf_executable_sha256": "799e389e4a5ae3e032607cb4bba59d881184d74798e90e63ee77f426381d6e3c"
+    }
+  },
+  "schema": "native-ice-multistep-search-v1",
+  "scope": {
+    "active_ice_multistep_witness": false,
+    "actual_native_run": true,
+    "native_mstep_ge_2_measured": false,
+    "note": "complete SELECT/CONSUME coverage on 600s horizon; mstep=1 everywhere; no detailed velocity or flux operands captured",
+    "operational_transport_p1_closed": false,
+    "physical_number_basis_resolved": false,
+    "rttov_runs": 0
+  }
+}

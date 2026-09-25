@@ -1,0 +1,15 @@
+{
+  "schema": "s4-hour-recon-v1",
+  "baseline_executable_sha256": "799e389e4a5ae3e032607cb4bba59d881184d74798e90e63ee77f426381d6e3c",
+  "input_source": "canonical retained 5 km SS",
+  "horizon_seconds": 3600,
+  "model_dt_seconds": 20,
+  "history_seconds": 3600,
+  "restart_interval_minutes": 999,
+  "mpi_ranks": 1,
+  "threads": 1,
+  "expected_outer_steps": 180,
+  "selection_rule": "all owned columns; first naturally observed mstep_i>=2 after run; no speed or dt perturbation",
+  "capture_prefix": "/Users/yhlee/KDM6AD-cross-phase/graphify-out/s4-native-20260925/s4-hour-census",
+  "control_deferred_until_positive_witness": true
+}

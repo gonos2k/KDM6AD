@@ -1,0 +1,109 @@
+{
+  "baseline": {
+    "executable_sha256": "799e389e4a5ae3e032607cb4bba59d881184d74798e90e63ee77f426381d6e3c",
+    "instrumented_source_sha256": "d362bc846b30119cc0b4f14f2e5088f9ab7c3e40205dde641aba83fb5a75e5d2",
+    "normalized_source_sha256": "405f543447b4185847d9615827b478e7b6c90064ca02b7226e4acfa7502a63c8",
+    "source": "G4 isolated normalized mp237 census executable"
+  },
+  "census": {
+    "audit": {
+      "consumed_rows": 11692800,
+      "expected_columns": 11692800,
+      "first_multistep": null,
+      "maximum_mstep": 1,
+      "mstep_histogram": {
+        "1": 11692800
+      },
+      "multistep_selected": 0,
+      "selected_rows": 11692800
+    },
+    "compressed_sha256": "f7a4d6666f69b8f217eb5e6c4307f4441dabb46ad9d86e00a0985f432b33c4ad",
+    "file": "native_ice_census_1hour_rank0_2026-09-25.txt.xz",
+    "first_10min_initial_history_raw_equal": true,
+    "first_10min_raw_prefix_matches_600s_log": true,
+    "raw_sha256": "6ab8eba23cb7234cf330a92418ea95e8205dc10b8e1dfac5fb28fd8933657ef1"
+  },
+  "noninterference": {
+    "numeric_field_count": 253,
+    "raw_numeric_field_byte_equal": true,
+    "same_executable": true,
+    "same_history_sha256": true,
+    "same_input_identity": true,
+    "times_equal": true
+  },
+  "run_plan": {
+    "candidate_policy": "all owned columns; no posthoc success selection",
+    "control_addendum_file": "native_ice_1hour_control_addendum_2026-09-25.json",
+    "control_addendum_sha256": "81067f39145123ff9ac00f6aea9e46b324b258a183bca0728ab5d20e7e6b7cc4",
+    "history_interval_seconds": 3600,
+    "horizon_seconds": 3600,
+    "input_case": "retained canonical 5 km SS",
+    "model_dt_seconds": 20,
+    "mpi_ranks": 1,
+    "outer_steps": 180,
+    "owned_i_1_based": [
+      2,
+      233
+    ],
+    "owned_j_1_based": [
+      2,
+      281
+    ],
+    "plan_file": "native_ice_1hour_plan_2026-09-25.json",
+    "plan_sha256": "af350b25a75eb373a172d4b4e06ac58404b9c86b0a0ab360b8fb50cc03d51bf3",
+    "restart_interval_minutes": 999,
+    "threads_per_rank": 1
+  },
+  "runs": {
+    "capture": {
+      "actual_proc_grid": "1x1",
+      "campaign_id": "a1c3ace40ed2286d925fd9f570a3a7fd1fe604ca5242b95823e0c9496f64a6b7",
+      "canonical_input_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+      "effective_namelist_sha256": "a78e448d4db0588c1f5e1b339fa5cbd72deb92d6cca09eef942e0159667ce72c",
+      "exit_code": 0,
+      "experiment_valid": true,
+      "history_sha256": "ddf3931dd7bd514d43455b4c83540e00e0cc14c258cbeab40148dbd4e17c639c",
+      "history_times": [
+        "2025-07-19_00:00:00",
+        "2025-07-19_01:00:00"
+      ],
+      "model_completed": true,
+      "run_id": "mp237_s4-hour-capture_60min_hist60_1x1_20260925_122729_p44174",
+      "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+      "wrf_executable_sha256": "799e389e4a5ae3e032607cb4bba59d881184d74798e90e63ee77f426381d6e3c"
+    },
+    "control": {
+      "actual_proc_grid": "1x1",
+      "campaign_id": "844c90090e9423582a60207984eee9304db920bf2e52d990ccf5475ecb557c15",
+      "canonical_input_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+      "effective_namelist_sha256": "a78e448d4db0588c1f5e1b339fa5cbd72deb92d6cca09eef942e0159667ce72c",
+      "exit_code": 0,
+      "experiment_valid": true,
+      "history_sha256": "ddf3931dd7bd514d43455b4c83540e00e0cc14c258cbeab40148dbd4e17c639c",
+      "history_times": [
+        "2025-07-19_00:00:00",
+        "2025-07-19_01:00:00"
+      ],
+      "model_completed": true,
+      "run_id": "mp237_s4-hour-control_60min_hist60_1x1_20260925_125324_p69506",
+      "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+      "wrf_executable_sha256": "799e389e4a5ae3e032607cb4bba59d881184d74798e90e63ee77f426381d6e3c"
+    }
+  },
+  "schema": "native-ice-multistep-1hour-search-v1",
+  "scope": {
+    "active_ice_multistep_witness": false,
+    "actual_native_run": true,
+    "native_mstep_ge_2_measured": false,
+    "note": "complete SELECT/CONSUME coverage on 3600s horizon; mstep=1 everywhere; no detailed velocity or flux operands captured",
+    "operational_transport_p1_closed": false,
+    "physical_number_basis_resolved": false,
+    "rttov_runs": 0
+  },
+  "terminal_ice_snapshot": {
+    "interpretation": "saved terminal cells, not a per-substep activity witness",
+    "qice_and_qnice_positive_cells": 238956,
+    "qice_positive_cells": 240111,
+    "qnice_positive_cells": 341804
+  }
+}
