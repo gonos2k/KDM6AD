@@ -1,11 +1,12 @@
 # Further cross-phenomenon generalization: resolution checklist
 
-This checklist responds to the PR #238 review. The baseline `main` commit is
-`e52fd069`; it contains X1 but not the subsequent X2–X12/G4 feature-branch
-work. The integration branch was rebased onto that main commit while omitting
-the patch-equivalent X1 commit. A reviewable PR to `main` is required before
-describing the later evidence as mainline code. A PR alone is not a merge or a
-new scientific acceptance result.
+This checklist responds to the PR #238 review. The original `main` baseline
+was `e52fd069`, containing X1 but not the subsequent X2–X12/G4 feature-branch
+work. PR #250 rebased those changes onto that baseline without duplicating the
+patch-equivalent X1 commit. PRs #251–#257 were then merged into #250 in
+descending order, and #250 was merged into `main` as `bbdc6f4f`. Its tree
+matches the previously reviewed final F7 head. Mainline inclusion changes
+code provenance, not the separately declared scientific acceptance limits.
 
 The previous [X1–X12 checklist](CHECKLIST_cross_phenomena_2026-09-24.md)
 retains its bounded evidence and limitations. In particular, X2 measured an
@@ -17,7 +18,7 @@ contracts absent from those checks, without relaxing them.
 
 | ID | Status | New contract | Minimum completion evidence |
 | --- | --- | --- | --- |
-| F0 | **Branch reconstruction complete; PR #250 open, main merge pending** | Code/evidence provenance | X2–X12/G4 are rebased onto the actual PR #238 main commit with no duplicate X1 patch and all failed gates retained. Exact-head oracle/harness/port checks must pass for PR #250. Mainline inclusion remains pending merge. |
+| F0 | **Main integration and post-merge checks complete** | Code/evidence provenance | X2–X12/G4 and F1–F7 are on `main` through PR #250 / `bbdc6f4f`; no duplicate X1 patch or changed final tree. The final #250 head passed PR-context oracle/harness/Ubuntu/macOS checks, and distinct post-merge oracle, harness, Ubuntu CTest and macOS arm64 smoke all passed on `bbdc6f4f`. All failed scientific gates remain explicit. |
 | F1 | **Bounded sequence pilot complete** | Ordered applied transitions | An independent two-stage plan fixes stage/owner and expected transfer names/paths, then checks before/requested/applied/after on X1's single declared mass-mixing-ratio basis and fixed f64 tolerances; same-stage draws share current availability, later stages consume the exact preceding published state. Eight new synthetic tests reject intermediate overdraw above tolerance, missing/reordered stages or transfers, handoff gaps, cancelled heat errors, masked/raw-boolean amounts and caller-relaxed tolerance. Sub-`1e-14` mass deviations are outside this pilot's conservation resolution. The actual X2 trace remains a separate bounded native witness; no native vapour→liquid→ice chain was executed. |
 | F2 | **Bounded constant-cp state-function pilot complete** | Thermodynamic path and state function | One fixed-pressure, common-reference synthetic model checks phase heat capacities, declared latent-edge cycle and `H_after-H_before=Q+W+H_mass` at fixed `1e-8 J kg_d^-1` residual tolerance. Five new tests show that X1's local fixed-`cpm` update can pass while this model's total enthalpy fails by about `-71.5451 J kg_d^-1`; the state-function solution and explicit external heat/work/mass inputs close. No KDM enthalpy-error measurement or full pressure-work certification. |
 | F3 | **Bounded scalar implicit pilot complete** | Implicit solve and derivative acceptance | Dimensionless positive-root Newton pilot fixes state residual, linearized-error, tangent residual and Jacobian lower-bound gates before evaluation, and replays the recorded initial iterate/iteration count to bind value and algorithmic tangent to execution. Six new tests show one step's correct algorithmic `dy/dp=0.5` but wrong root (`R=2.25`) versus converged root `y=2`, derivative `0.25`; forged trajectories, false status, changed active set and near-singular Jacobian fail. No KDM native implicit solver or general nonlinear error bound is certified. |
@@ -63,3 +64,12 @@ in-memory verification record, not a KDM host restart file.
 F7 evidence: `REPORT_further_generalization_representation_2026-09-25.md`,
 `resolution_stochastic_contract.py` and its focused tests. A named closure
 and realization plan are caller declarations, not independent native proofs.
+
+F0 integration evidence: [PR #250](https://github.com/gonos2k/KDM6AD/pull/250)
+and its separately reviewed child PRs #251–#257. The earlier X2–X12/G4
+individual PRs remain attributed in their own reports. The final #250
+PR-context oracle, harness, Ubuntu and macOS checks passed on head `845e852d`;
+post-merge runs on the distinct `main` merge commit `bbdc6f4f` also passed:
+[oracle](https://github.com/gonos2k/KDM6AD/actions/runs/36082868658),
+[harness](https://github.com/gonos2k/KDM6AD/actions/runs/36082868715) and
+[Ubuntu/macOS port](https://github.com/gonos2k/KDM6AD/actions/runs/36082868631).
