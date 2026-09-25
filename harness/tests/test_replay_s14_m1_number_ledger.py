@@ -16,16 +16,18 @@ from harness.replay_s14_m1_number_ledger import (
 ROOT = Path(__file__).resolve().parents[1]
 EVIDENCE = ROOT / "evidence/native_s14_m1_number_transfer_2026-09-25.json"
 CAPTURE = ROOT / "evidence/native_s14_m1_number_transfer_2026-09-25.txt"
+STRICT_REPORT = ROOT / "evidence/native_s14_m1_strict_bitwise_2026-09-25.txt"
 
 
 @pytest.fixture(scope="module")
 def bundle():
-    return json.loads(EVIDENCE.read_text()), CAPTURE.read_text()
+    return (json.loads(EVIDENCE.read_text()), CAPTURE.read_text(),
+            STRICT_REPORT.read_text())
 
 
 def test_matched_600s_mp37_ledger_replays_and_keeps_basis_open(bundle):
-    evidence, text = bundle
-    result = replay(evidence, text)
+    evidence, text, strict_report = bundle
+    result = replay(evidence, text, strict_report)
 
     assert result["physical_number_basis_resolved"] is False
     assert result["capture_records"] == 25235
@@ -63,7 +65,7 @@ def test_matched_600s_mp37_ledger_replays_and_keeps_basis_open(bundle):
 
 
 def test_deleted_face_cannot_be_hidden_by_updating_manifest_sha(bundle):
-    evidence, text = bundle
+    evidence, text, strict_report = bundle
     changed = "".join(line for line in text.splitlines(keepends=True)
                       if not (line.startswith("S2NR NR_FACE_PRE 30 ")
                               and int(line.split()[7]) <= 6))
@@ -74,11 +76,11 @@ def test_deleted_face_cannot_be_hidden_by_updating_manifest_sha(bundle):
         and int(line.split()[7]) <= 6 for line in text.splitlines())
 
     with pytest.raises(TraceError, match="capture payload SHA"):
-        replay(altered, changed)
+        replay(altered, changed, strict_report)
 
 
 def test_same_count_event_outside_600s_schedule_is_rejected(bundle):
-    evidence, text = bundle
+    evidence, text, strict_report = bundle
     lines = text.splitlines()
     index = next(i for i, line in enumerate(lines)
                  if line.startswith("S2NR DSD_PRE_GATE 30 "))
@@ -90,11 +92,11 @@ def test_same_count_event_outside_600s_schedule_is_rejected(bundle):
     altered["capture"]["sha256"] = hashlib.sha256(changed.encode()).hexdigest()
 
     with pytest.raises(TraceError, match="capture payload SHA"):
-        replay(altered, changed)
+        replay(altered, changed, strict_report)
 
 
 def test_late_mstep_group_face_deletion_is_rejected(bundle):
-    evidence, text = bundle
+    evidence, text, strict_report = bundle
     changed = "".join(line for line in text.splitlines(keepends=True)
                       if not (line.startswith("S2NR NR_FACE_PRE 30 ")
                               and int(line.split()[6]) == 3
@@ -103,11 +105,11 @@ def test_late_mstep_group_face_deletion_is_rejected(bundle):
     altered["capture"]["sha256"] = hashlib.sha256(changed.encode()).hexdigest()
 
     with pytest.raises(TraceError, match="capture payload SHA"):
-        replay(altered, changed)
+        replay(altered, changed, strict_report)
 
 
 def test_warm_update_branch_cannot_be_relocated_into_cold_levels(bundle):
-    evidence, text = bundle
+    evidence, text, strict_report = bundle
     lines = text.splitlines()
     index = next(i for i, line in enumerate(lines)
                  if line.startswith("S2NR NR_UPDATE_WARM_PRE 30 ")
@@ -123,3 +125,56 @@ def test_warm_update_branch_cannot_be_relocated_into_cold_levels(bundle):
 
     with pytest.raises(TraceError, match="warm branch event census"):
         _verify_branch_event_census(rows)
+
+
+def test_lane_history_hash_and_size_cannot_be_shrunk_in_manifest(bundle):
+    evidence, text, strict_report = bundle
+    altered = copy.deepcopy(evidence)
+    altered["lanes"]["control"]["history_sha256"] = "0" * 64
+    altered["lanes"]["capture"]["history_sha256"] = "1" * 64
+    altered["lanes"]["control"]["history_bytes"] = 1
+    altered["lanes"]["capture"]["history_bytes"] = 1
+
+    with pytest.raises(TraceError, match="control lane lacks the pinned valid run receipt"):
+        replay(altered, text, strict_report)
+
+
+def test_strict_comparison_receipt_digest_is_code_pinned(bundle):
+    evidence, text, strict_report = bundle
+    altered = copy.deepcopy(evidence)
+    altered["noninterference"]["strict_report_sha256"] = "0" * 64
+
+    with pytest.raises(TraceError, match="strict control/capture report digest"):
+        replay(altered, text, strict_report)
+
+
+def test_run_contract_and_lane_receipts_cannot_be_relaxed_by_manifest(bundle):
+    evidence, text, strict_report = bundle
+    relaxed = copy.deepcopy(evidence)
+    relaxed["run_contract"].update({
+        "mpi_ranks": 8, "actual_proc_grid": "4x2", "threads": 32,
+        "history_interval_minutes": 77, "history_interval_seconds": 77,
+    })
+    with pytest.raises(TraceError, match="predeclared 600 s / 30 step"):
+        replay(relaxed, text, strict_report)
+
+    forged = copy.deepcopy(evidence)
+    for lane in forged["lanes"].values():
+        lane.update({
+            "scheme": "137", "minutes": 1, "seconds": 999, "np": 8,
+            "run_id": "forged", "campaign_id": "forged",
+            "runner_sha256": "0" * 64,
+        })
+    with pytest.raises(TraceError, match="control lane lacks the pinned valid run receipt"):
+        replay(forged, text, strict_report)
+
+
+def test_strict_comparison_report_content_cannot_be_changed_with_manifest(bundle):
+    evidence, text, strict_report = bundle
+    altered = copy.deepcopy(evidence)
+    changed_report = strict_report.replace("254 BITWISE-MATCH", "253 BITWISE-MATCH")
+    altered["noninterference"]["strict_report_sha256"] = hashlib.sha256(
+        changed_report.encode()).hexdigest()
+
+    with pytest.raises(TraceError, match="strict control/capture report digest"):
+        replay(altered, text, changed_report)

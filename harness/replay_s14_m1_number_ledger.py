@@ -31,6 +31,7 @@ CELL = {"host_j": 153, "host_i": 144}
 EXPECTED_STEPS = tuple(range(1, 31))
 EXPECTED_CAPTURE_SHA256 = "56b4d91c4a4e4b35d7324ebc1b3a8e836427fa87db6533976ddf4c43ba68f6f4"
 EXPECTED_CAPTURE_RECORDS = 25235
+EXPECTED_CAPTURE_TAG_SCHEMA_SHA256 = "537de99a429d067c06c492ceaa1761ea8987a30b0975aaf6b1e89b4d901df641"
 EXPECTED_TRANSPORT_GROUPS = 95
 EXPECTED_ACTIVE_INTERFACE_OCCURRENCES = 1480
 EXPECTED_MSTEP_BY_STEP = {
@@ -41,6 +42,21 @@ EXPECTED_MSTEP_BY_STEP = {
 }
 EXPECTED_CONTROL_EXE = "36bdabe26a1b5613bc25e9107f2118766dafb393dc49ba19027864da57492cd7"
 EXPECTED_CAPTURE_EXE = "1fad13519d90729a3eccdad47051dcc7f05c55967abcb8df46b49e5d6169f5b5"
+EXPECTED_HISTORY_SHA256 = "154ab800148c98fb16abb143665ad7d737b1537af87bab3fb5638803cbc705c9"
+EXPECTED_HISTORY_BYTES = 635852228
+EXPECTED_STRICT_REPORT_SHA256 = "d3150c00643e63cd0a733a80b3506b300245b77ff8ccab168a46677610966085"
+EXPECTED_RUNNER_SHA256 = "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e"
+EXPECTED_NAMELIST_SHA256 = "f452ca5161987852c78e1bbdf3f00457f6f0f080e3f515e49783527e38f71f10"
+EXPECTED_RUNS = {
+    "control": {
+        "run_id": "mp37_s14_m1_600_control_10min_hist10_20260925_193113_p15708",
+        "campaign_id": "3bd06d32ca797fd7211bc8158c9ad11d978a025e29101e9469a3ccaaba628377",
+    },
+    "capture": {
+        "run_id": "mp37_s14_m1_600_capture_10min_hist10_20260925_193504_p21441",
+        "campaign_id": "4dceaccf65e3a4fe74d1c4c6786b2749bcbe95806bc2ce3b4143cff3b7f8d67b",
+    },
+}
 EXPECTED_BDY_SHA256 = "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c"
 EXPECTED_CHAIN_SHA256 = "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3"
 EXPECTED_INPUT_SET = {
@@ -508,7 +524,8 @@ def _call_process_ledger(rows: list[dict[str, Any]],
     return output
 
 
-def replay(evidence: dict[str, Any], capture_text: str) -> dict[str, Any]:
+def replay(evidence: dict[str, Any], capture_text: str,
+           strict_report_text: str) -> dict[str, Any]:
     if evidence.get("schema") != SCHEMA:
         raise TraceError("wrong S14 M1 evidence schema")
     if evidence.get("physical_number_basis_resolved") is not False:
@@ -516,7 +533,12 @@ def replay(evidence: dict[str, Any], capture_text: str) -> dict[str, Any]:
     contract = evidence.get("run_contract", {})
     if (contract.get("mp_physics") != 37 or contract.get("run_seconds") != 600
             or contract.get("timestep_seconds") != 20
-            or contract.get("expected_steps") != [1, 30]):
+            or contract.get("expected_steps") != [1, 30]
+            or contract.get("mpi_ranks") != 1
+            or contract.get("actual_proc_grid") != "1x1"
+            or contract.get("threads") != 1
+            or contract.get("history_interval_minutes") != 10
+            or contract.get("history_interval_seconds") != 0):
         raise TraceError("S14 requires the predeclared 600 s / 30 step mp37 run")
     if any(evidence.get("input_identity", {}).get(key) != value
            for key, value in (("wrfinput_d01_sha256", INPUT_SHA256),
@@ -536,19 +558,40 @@ def replay(evidence: dict[str, Any], capture_text: str) -> dict[str, Any]:
     for lane, expected_exe in (("control", EXPECTED_CONTROL_EXE),
                                ("capture", EXPECTED_CAPTURE_EXE)):
         run = evidence.get("lanes", {}).get(lane, {})
+        expected_ids = EXPECTED_RUNS[lane]
         if (run.get("experiment_valid") is not True or run.get("exit_code") != 0
                 or run.get("actual_proc_grid") != "1x1"
                 or run.get("executable_sha256") != expected_exe
+                or run.get("run_id") != expected_ids["run_id"]
+                or run.get("campaign_id") != expected_ids["campaign_id"]
+                or run.get("scheme") != "37"
+                or run.get("minutes") != 10 or run.get("seconds") != 0
+                or run.get("history_interval") != 10
+                or run.get("history_interval_s") != 0
+                or run.get("np") != 1 or run.get("threads") != 1
+                or run.get("fixed_dt") is not False or run.get("radt") is not None
+                or run.get("runner_sha256") != EXPECTED_RUNNER_SHA256
+                or run.get("namelist_without_grid_sha256") != EXPECTED_NAMELIST_SHA256
                 or run.get("active_inputs_complete") is not True
                 or run.get("active_input_hashes_stable") is not True
                 or run.get("input_canonical_sha256") !=
                     "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf"
                 or run.get("active_input_hashes") != EXPECTED_INPUT_SET
                 or run.get("saved_times") != EXPECTED_HISTORY_TIMES
-                or run.get("numeric_variables") != 253):
+                or run.get("numeric_variables") != 253
+                or run.get("history_sha256") != EXPECTED_HISTORY_SHA256
+                or run.get("history_bytes") != EXPECTED_HISTORY_BYTES):
             raise TraceError(f"{lane} lane lacks the pinned valid run receipt")
     if evidence.get("noninterference", {}).get("history_files_byte_identical") is not True:
         raise TraceError("control/capture history files are not byte-identical")
+    if evidence["lanes"]["control"].get("history_sha256") != \
+            evidence["lanes"]["capture"].get("history_sha256"):
+        raise TraceError("control/capture history hashes differ")
+    strict_report_sha = hashlib.sha256(strict_report_text.encode()).hexdigest()
+    if (strict_report_sha != EXPECTED_STRICT_REPORT_SHA256
+            or evidence.get("noninterference", {}).get("strict_report_sha256")
+            != strict_report_sha):
+        raise TraceError("strict control/capture report digest differs from the code pin")
     frames = evidence.get("noninterference", {}).get("frames", [])
     if [f.get("time_seconds") for f in frames] != [0, 600]:
         raise TraceError("control/capture comparison must cover t=0 and t=600")
@@ -563,6 +606,9 @@ def replay(evidence: dict[str, Any], capture_text: str) -> dict[str, Any]:
     tags = evidence.get("capture_source_tags")
     if not isinstance(tags, dict):
         raise TraceError("missing capture tag schema")
+    schema_bytes = json.dumps(tags, sort_keys=True, separators=(",", ":")).encode()
+    if hashlib.sha256(schema_bytes).hexdigest() != EXPECTED_CAPTURE_TAG_SCHEMA_SHA256:
+        raise TraceError("capture source tag schema differs from the code-pinned schema")
     rows = parse_capture(capture_text, tags, allowed_steps=EXPECTED_STEPS)
     if len(rows) != records:
         raise TraceError("parsed and raw capture counts differ")
@@ -639,10 +685,11 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--evidence", type=Path, required=True)
     ap.add_argument("--capture", type=Path, required=True)
+    ap.add_argument("--strict-report", type=Path, required=True)
     ap.add_argument("--out", type=Path)
     args = ap.parse_args()
     rendered = json.dumps(replay(json.loads(args.evidence.read_text()),
-                                 args.capture.read_text()),
+                                 args.capture.read_text(), args.strict_report.read_text()),
                           indent=2, sort_keys=True) + "\n"
     if args.out:
         args.out.write_text(rendered)

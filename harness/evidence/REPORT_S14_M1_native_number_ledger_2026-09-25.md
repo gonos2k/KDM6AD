@@ -1,10 +1,12 @@
 # S14 M1: matched 600 s mp37 applied rain-number ledger
 
-S14 M1 is closed for the declared retained-input witness: a matched 600 s
-mp37 control/capture pair now records actual limited rain-number departures,
+S14 M1 is closed for this declared mp37 selected-column 600 s witness. The
+matched control/capture pair records actual limited rain-number departures,
 paired arrivals, bottom export, and a per-substep ledger on the selected 39-level
-column. The separate physical number basis remains unresolved; no density
-factor or units interpretation was applied.
+column. Green and Red review found no remaining scoped P1/P2 issue, including
+the fixed capture schema, schedule, history receipt and late-group mutation
+checks. The physical number basis remains unresolved; no density factor or
+units interpretation was applied.
 
 ## Run identity and scope
 
@@ -33,7 +35,8 @@ native_s14_m1_number_transfer_2026-09-25.json.
 The two full history files each contain exactly t=0 and t=600 s and have the
 same SHA-256 (154ab800148c98fb16abb143665ad7d737b1537af87bab3fb5638803cbc705c9).
 At each saved frame, strict comparison found 253/253 common numeric variables
-raw-bit equal plus exact equality for Times (254 common variables total).
+raw-bit equal plus exact equality for Times (254 common variables total). The
+comparator stdout receipt is retained and its digest is code-pinned by the replay.
 
 ## Applied-transfer witness
 
@@ -106,19 +109,25 @@ declaration, the kernel's dimensional number-density equation and the stored
 QNR physical basis remain unresolved; dz·n, rho_m·dz·n and conditional
 rho_d·dz·n are reported only as separate diagnostics.
 
-## Reproduction and limits
+## Review, reproduction and limits
+
+Green and Red rechecked the replay schema and run receipt guards; the final
+focused suite passes 23 tests, including capture-schema remapping, altered
+history hash/size, strict-comparator report mutation, forged run-contract, late
+face deletion and warm/cold relocation regressions.
 
 The paired runner commands, input/build hashes, saved-time checks, selected
 capture, replay JSON and full local run receipts are identified in
 native_s14_m1_number_transfer_2026-09-25.json. Focused checks pass:
 
-- python3 -m pytest -q -W error harness/tests/test_replay_s2_number_trace.py harness/tests/test_replay_s14_m1_number_ledger.py — 19 passed.
+- python3 -m pytest -q -W error harness/tests/test_replay_s2_number_trace.py harness/tests/test_replay_s14_m1_number_ledger.py — 23 passed.
 - ruff check harness/replay_s2_number_trace.py harness/replay_s14_m1_number_ledger.py harness/tests/test_replay_s2_number_trace.py harness/tests/test_replay_s14_m1_number_ledger.py — passed.
 - git diff --check — passed.
 
-This closes the requested single-column ten-minute applied-transfer witness.
-It does not establish a domain-wide budget, choose a physical particle-number
-unit, validate mp137, or certify forecast impact or cycling.
+This closure applies only to the declared retained-input, selected-column
+mp37 witness. S2 physical number basis, S4 normalized mp237, other columns and
+schemes, the operational default, domain-wide budgets, mp137 validation and
+forecast impact remain separate and open.
 ## Knowledge graph
 
 Graphify refreshed the public structural graph and merged semantic extraction

@@ -1,0 +1,12 @@
+# klfs_lc05_fcst.202507190000 (frames=2) vs klfs_lc05_fcst.202507190000 (frames=2)
+# strict uint-bitwise compare at selected frame index 0
+
+VARIABLES: 254 common, 254 BITWISE-MATCH, 0 DIFFER, 0 unsupported/skipped
+
+RESULT: STRICT BITWISE PASS
+# klfs_lc05_fcst.202507190000 (frames=2) vs klfs_lc05_fcst.202507190000 (frames=2)
+# strict uint-bitwise compare at selected frame index 1
+
+VARIABLES: 254 common, 254 BITWISE-MATCH, 0 DIFFER, 0 unsupported/skipped
+
+RESULT: STRICT BITWISE PASS

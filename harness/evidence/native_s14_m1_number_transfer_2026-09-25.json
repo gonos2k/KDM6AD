@@ -142,7 +142,11 @@
       "numeric_variables": 253,
       "rsl_out_sha256": "163c1f1c5c9ac4cc622eeafcb21547efcb9fbc1458196ac2c52fc509be075677",
       "rsl_error_sha256": "9c873c6ee71e3117fa976d9d479f3022eb06c1bcc41b8dc4ee95ce07064e286a",
-      "runner_stdout_sha256": "1436a6db28418193df4284b9053b9c954343fd5b90dda1e6ab25a6423ffd58df"
+      "runner_stdout_sha256": "1436a6db28418193df4284b9053b9c954343fd5b90dda1e6ab25a6423ffd58df",
+      "fixed_dt": false,
+      "radt": null,
+      "threads": 1,
+      "namelist_without_grid_sha256": "f452ca5161987852c78e1bbdf3f00457f6f0f080e3f515e49783527e38f71f10"
     },
     "capture": {
       "run_id": "mp37_s14_m1_600_capture_10min_hist10_20260925_193504_p21441",
@@ -176,7 +180,11 @@
       "numeric_variables": 253,
       "rsl_out_sha256": "d1b2642c1efad148ce46bfdf840c3f02225122cca36256c6fbd5641f0253dbfd",
       "rsl_error_sha256": "ee24ee76eacb8ecd8926123f1881f3d271335aa7b8b78118f7358c625f2920cc",
-      "runner_stdout_sha256": "1436a6db28418193df4284b9053b9c954343fd5b90dda1e6ab25a6423ffd58df"
+      "runner_stdout_sha256": "1436a6db28418193df4284b9053b9c954343fd5b90dda1e6ab25a6423ffd58df",
+      "fixed_dt": false,
+      "radt": null,
+      "threads": 1,
+      "namelist_without_grid_sha256": "f452ca5161987852c78e1bbdf3f00457f6f0f080e3f515e49783527e38f71f10"
     }
   },
   "noninterference": {
@@ -208,7 +216,9 @@
         "unsupported_or_skipped": 0,
         "result": "STRICT BITWISE PASS"
       }
-    ]
+    ],
+    "strict_report_path": "harness/evidence/native_s14_m1_strict_bitwise_2026-09-25.txt",
+    "strict_report_sha256": "d3150c00643e63cd0a733a80b3506b300245b77ff8ccab168a46677610966085"
   },
   "capture": {
     "path": "harness/evidence/native_s14_m1_number_transfer_2026-09-25.txt",
@@ -2059,31 +2069,31 @@
     "strict_bitwise_status": "both saved frames pass; 253 numeric raw-bit + exact Times",
     "focused_pytest": {
       "command": "python3 -m pytest -q -W error harness/tests/test_replay_s2_number_trace.py harness/tests/test_replay_s14_m1_number_ledger.py",
-      "passed": 19,
+      "passed": 23,
       "failed": 0
     },
     "ruff_status": "pass",
     "diff_check_status": "pass",
-    "replayer_sha256": "b48f3b9032ec8e42427043898bc0c0530ecf71f16751dd2f328e12fc00342b55",
+    "replayer_sha256": "e4ab35a1e616d52faaf69d60f63055200df3a92b691939df1999b547b9f560c7",
     "replay_result_sha256": "731b40da9543b2f9f8ee1ca5e2aa749af18c7aff29621893fceb7011d2a6b4f6",
-    "replayer_command": "python3 -m harness.replay_s14_m1_number_ledger --evidence harness/evidence/native_s14_m1_number_transfer_2026-09-25.json --capture harness/evidence/native_s14_m1_number_transfer_2026-09-25.txt --out harness/evidence/native_s14_m1_number_replay_2026-09-25.json",
+    "replayer_command": "python3 -m harness.replay_s14_m1_number_ledger --evidence harness/evidence/native_s14_m1_number_transfer_2026-09-25.json --capture harness/evidence/native_s14_m1_number_transfer_2026-09-25.txt --strict-report harness/evidence/native_s14_m1_strict_bitwise_2026-09-25.txt --out harness/evidence/native_s14_m1_number_replay_2026-09-25.json",
     "replay_status": "pass",
     "graphify": {
       "structural_update": {
-        "nodes": 13405,
-        "edges": 23027,
-        "communities": 1045
+        "nodes": 13418,
+        "edges": 23044,
+        "communities": 1051
       },
       "semantic_markdown_files": 3,
       "semantic_fragment": {
-        "nodes": 46,
-        "edges": 63,
+        "nodes": 49,
+        "edges": 68,
         "hyperedges": 0
       },
       "merged_public_graph": {
-        "nodes": 13414,
-        "edges": 23036,
-        "communities": 1020
+        "nodes": 13421,
+        "edges": 23049,
+        "communities": 1043
       },
       "html_visualization": "skipped because graph exceeds 5000-node limit",
       "private_host_graph_coverage": "not available; private host absent from public corpus, source-trace evidence remains separate"
@@ -2091,5 +2101,11 @@
     "current_review_base_sha": "6047bdeee0b1ea31ed73ff6db93c7654cd017025"
   },
   "replayer_path": "harness/replay_s14_m1_number_ledger.py",
-  "replay_result_path": "harness/evidence/native_s14_m1_number_replay_2026-09-25.json"
+  "replay_result_path": "harness/evidence/native_s14_m1_number_replay_2026-09-25.json",
+  "review_signoff": {
+    "green": "PASS: selected-column M1 evidence matches the declared scope and conditional-unit limits",
+    "red": "PASS: fixed capture schema, complete 30-call schedule, history receipt and late-event mutations reject false accepts",
+    "scoped_actionable_p1_p2_remaining": 0,
+    "closure_scope": "declared retained-input single-column mp37 600 s M1 witness only"
+  }
 }
