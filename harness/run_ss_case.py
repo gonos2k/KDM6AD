@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 import argparse
+from datetime import datetime
 import hashlib
 import json
 import os
@@ -264,8 +265,127 @@ def _parse_max_dom(assignments: dict[str, list[str]]) -> int:
     return max_dom
 
 
+def _parse_restart_flag(assignments: dict[str, list[str]]) -> bool:
+    """Read an explicit WRF logical, defaulting only the registry's false value."""
+    values = assignments.get("restart")
+    if values is None:
+        return False
+    if len(values) != 1:
+        raise NamelistInputError("restart must have exactly one logical value")
+    value = _unquote_namelist_value(values[0]).strip().lower()
+    if value == ".true.":
+        return True
+    if value == ".false.":
+        return False
+    raise NamelistInputError("restart must be .true. or .false.")
+
+
+def _parse_nocolons_flag(assignments: dict[str, list[str]]) -> bool:
+    """Mirror the Registry default and strict Fortran logical for filenames."""
+    values = assignments.get("nocolons")
+    if values is None:
+        return False
+    if len(values) != 1:
+        raise NamelistInputError("nocolons must have exactly one logical value")
+    value = _unquote_namelist_value(values[0]).strip().lower()
+    if value == ".true.":
+        return True
+    if value == ".false.":
+        return False
+    raise NamelistInputError("nocolons must be .true. or .false.")
+
+
+def _validate_single_file_restart_io(assignments: dict[str, list[str]]) -> None:
+    """Reject per-rank restart files until rank-specific identity is modeled."""
+    values = assignments.get("io_form_restart", ["2"])
+    if len(values) != 1:
+        raise NamelistInputError("io_form_restart must have exactly one integer value")
+    raw = _unquote_namelist_value(values[0]).strip()
+    if not re.fullmatch(r"[+-]?\d+", raw):
+        raise NamelistInputError("io_form_restart must be an integer")
+    io_form = int(raw)
+    if io_form <= 0:
+        raise NamelistInputError("restart identity requires positive io_form_restart")
+    # WRF frame/module_io.F multi_files() predicate: with DM_PARALLEL,
+    # 100..199 appends a four-digit processor id to each restart filename.
+    if 100 <= io_form < 200:
+        raise NamelistInputError(
+            f"multi-file io_form_restart={io_form} needs rank-specific restart identities"
+        )
+
+
+_RESTART_DATE_FIELDS = (
+    "start_year",
+    "start_month",
+    "start_day",
+    "start_hour",
+    "start_minute",
+    "start_second",
+)
+_REGISTRY_RST_INNAME = "wrfrst_d<domain>_<date>"
+_RST_TOKEN = re.compile(r"<([^<>]+)>")
+
+
+def _restart_dates(assignments: dict[str, list[str]], max_dom: int) -> list[str]:
+    """Build WRF's YYYY-MM-DD_HH:MM:SS stamp from explicit domain start fields."""
+    missing = [key for key in _RESTART_DATE_FIELDS if key not in assignments]
+    if missing:
+        raise NamelistInputError(
+            "restart input identity requires explicit start components: "
+            + ", ".join(missing)
+        )
+    dates = []
+    for domain in range(1, max_dom + 1):
+        parts: dict[str, int] = {}
+        for key in _RESTART_DATE_FIELDS:
+            raw = _domain_value(
+                assignments[key], domain, max_dom=max_dom, key=key
+            ).strip()
+            if not re.fullmatch(r"\d+", raw):
+                raise NamelistInputError(f"{key} must be an explicit integer")
+            parts[key] = int(raw)
+        try:
+            stamp = datetime(
+                parts["start_year"],
+                parts["start_month"],
+                parts["start_day"],
+                parts["start_hour"],
+                parts["start_minute"],
+                parts["start_second"],
+            )
+        except ValueError as exc:
+            raise NamelistInputError(
+                f"invalid restart start date for domain d{domain:02d}: {exc}"
+            ) from exc
+        # Build fixed-width WRF fields directly: strftime('%Y') is not required
+        # to zero-pad years below 1000 on every platform.
+        dates.append(
+            f"{stamp.year:04d}-{stamp.month:02d}-{stamp.day:02d}_"
+            f"{stamp.hour:02d}:{stamp.minute:02d}:{stamp.second:02d}"
+        )
+    return dates
+
+
+def _resolve_restart_name(
+    template: str, domain: int, date: str
+) -> str:
+    """Expand only WRF's domain/date restart filename tokens, fail closed otherwise."""
+    if any(ch in template for ch in "*?"):
+        raise NamelistInputError(f"wildcard rst_inname value is unsupported: {template!r}")
+    tokens = _RST_TOKEN.findall(template)
+    unsupported = [token for token in tokens if token.lower() not in {"domain", "date"}]
+    if unsupported or template.count("<") != len(tokens) or template.count(">") != len(tokens):
+        bad = f"unsupported token(s) {unsupported}" if unsupported else "malformed token"
+        raise NamelistInputError(f"rst_inname has {bad}: {template!r}")
+    name = re.sub(r"<domain>", f"{domain:02d}", template, flags=re.IGNORECASE)
+    name = re.sub(r"<date>", date, name, flags=re.IGNORECASE)
+    if not name:
+        raise NamelistInputError(f"active rst_inname is empty for domain d{domain:02d}")
+    return name
+
+
 def resolve_active_namelist_inputs(text: str) -> list[dict[str, str]]:
-    """Resolve active initial, boundary, and auxiliary input files.
+    """Resolve declared initial/restart, boundary, and auxiliary input files.
 
     The returned paths are the names WRF receives after ``<domain>`` expansion.
     Only ordinary WRF namelists are supported: one assignment per line, no
@@ -275,6 +395,8 @@ def resolve_active_namelist_inputs(text: str) -> list[dict[str, str]]:
     """
     assignments = _namelist_assignments(text)
     max_dom = _parse_max_dom(assignments)
+    restart = _parse_restart_flag(assignments)
+    nocolons = _parse_nocolons_flag(assignments)
 
     specs: list[dict[str, str]] = []
 
@@ -300,7 +422,22 @@ def resolve_active_namelist_inputs(text: str) -> list[dict[str, str]]:
             specs.append({"kind": kind, "domain": f"d{domain:02d}",
                           "name": resolved_name})
 
-    add_names("input_inname", "init")
+    if restart:
+        _validate_single_file_restart_io(assignments)
+        dates = _restart_dates(assignments, max_dom)
+        templates = assignments.get("rst_inname", [_REGISTRY_RST_INNAME])
+        for domain, date in enumerate(dates, start=1):
+            template = _domain_value(
+                templates, domain, max_dom=max_dom, key="rst_inname"
+            )
+            name = _resolve_restart_name(template, domain, date)
+            if nocolons:
+                # WRF maybe_remove_colons() preserves characters 1-2 (a
+                # possible drive prefix) and changes every later ':' to '_'.
+                name = name[:2] + name[2:].replace(":", "_")
+            specs.append({"kind": "restart", "domain": f"d{domain:02d}", "name": name})
+    else:
+        add_names("input_inname", "init")
     add_names("bdy_inname", "boundary")
     for key in sorted(k for k in assignments if re.fullmatch(r"auxinput\d+_inname", k)):
         number = key[len("auxinput"): -len("_inname")]

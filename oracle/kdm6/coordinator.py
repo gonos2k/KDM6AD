@@ -2190,19 +2190,29 @@ def kdm62d_one_step_torch(
 
     # 3. D2-D4 freeze on the post-melt+homog/re-sloped state → working. (homog zeroed
     # qc in supcol>40 cells, so D2/D3 inactive there — Fortran-exact.)
-    mf_d234 = melt_freeze_d2_d4_torch(
+    mf_d234_raw = melt_freeze_d2_d4_torch(
         working1b, forcing, pre1,
         aux1.n0c, aux1.n0r, pre1.rslopec, aux1.rslopecmu, aux1.rslopecd,
         params=mf_params, dtcld=dtcld)
     # [DA §5.2] no-op when None; caps the scaled D2+D3 draw against the qc/nc
     # reservoirs the clamp-free inline applier is about to debit (Codex fix).
-    mf_d234 = apply_freeze_controls(mf_d234, controls, working1b.qc, working1b.nc)
+    mf_d234 = apply_freeze_controls(mf_d234_raw, controls, working1b.qc, working1b.nc)
     working = apply_melt_freeze_inline_torch(
         working1b, mf_d234, pre, dtcld=dtcld, xls=full_params.thermo.xls)
     if diagnostic_trace is not None:
         diagnostic_trace.record_stage(
             "d2_d4_freeze", diagnostic_step, dtcld, working1b, working, mf_d234,
-            branch=(pre1.supcol >= 0), metadata={"kind": "applied_transfer"})
+            branch=(pre1.supcol >= 0),
+            operands={
+                "pre_control_pinuc": mf_d234_raw.pinuc,
+                "pre_control_pfrzdtc": mf_d234_raw.pfrzdtc,
+                "pre_control_ninuc": mf_d234_raw.ninuc,
+                "pre_control_nfrzdtc": mf_d234_raw.nfrzdtc,
+                "consumed_cpm": pre.cpm,
+                "consumed_xlf": full_params.thermo.xls - pre.xl,
+            },
+            metadata={"kind": "applied_transfer",
+                      "pre_control_scope": "producer outputs after per-process caps; before optional DA group control"})
 
     # 4. rebuild on the post-freeze state (re-slope; the prior STEP-2 rebuild).
     pre2, aux2 = rebuild_aux_torch(
