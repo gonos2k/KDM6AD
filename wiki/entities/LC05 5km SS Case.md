@@ -1,7 +1,7 @@
 ---
 title: LC05 5km SS Case
 type: entity
-date_modified: 2026-07-14
+date_modified: 2026-09-25
 ---
 # LC05 5km SS Case
 
@@ -22,6 +22,17 @@ assimilation. Full disambiguation map: `docs/HOST_RUN_LAYOUT.md`.
   (3.6 GB, 37 frames, 5-min), produced by `../KIM-meso_v1.0/main/wrf.exe`.
 - Evidence: `docs/reports/v10_fulldomain_lc05.json` (`n_domain = 65 988 = 234×282`
   confirms 5 km; input `wrfinput_d01` SHA-256 in the manifest).
+
+## Case breadth as of 2026-09-25
+
+The canonical private host inventory supports this one 2025-07-19 real-data
+5 km initialization. Other canonical `wrfinput*` files are 1 km or 2 km ideal
+cases. A separate adjacent 2023-02-16 ERA5-derived 5 km pair has a different
+199×249×40 grid, incomplete demonstrated boundary-time coverage, and a
+different host lineage; it is a provenance lead, not an interchangeable
+second LC05 validation case. Therefore the system checklist's S12
+independent-initialization gate remains **OPEN**. Evidence and exact hashes:
+`harness/evidence/REPORT_retained_input_inventory_2026-09-25.md`.
 
 ## Connections
 
