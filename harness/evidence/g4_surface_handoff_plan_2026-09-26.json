@@ -1,0 +1,1340 @@
+{
+  "anchors": {
+    "first_rk": {
+      "surface_driver_call": {
+        "expected_count": 1,
+        "text": "CALL surface_driver("
+      },
+      "surface_driver_return": {
+        "expected_count": 1,
+        "text": ",pert_noah_tslb=config_flags%pert_noah_tslb                            &\n     &                                                           )"
+      }
+    },
+    "noahmp_driver": {
+      "water_category_branch": {
+        "expected_count": 1,
+        "text": "IVGTYP(I,J) == ISWATER_TABLE"
+      }
+    },
+    "noahmp_lsm": {
+      "noahmp_entry": {
+        "expected_count": 1,
+        "text": "SUBROUTINE NOAHMP_SFLX (parameters,"
+      }
+    },
+    "noahmp_mptable": {},
+    "sfclay": {
+      "sfclay_entry": {
+        "expected_count": 1,
+        "text": "SUBROUTINE SFCLAY(U3D,V3D,T3D,QV3D,P3D,dz8w,"
+      }
+    },
+    "surface_driver": {
+      "noahmp_call": {
+        "expected_count": 1,
+        "text": "CALL noahmplsm(ITIMESTEP,"
+      },
+      "noahmp_call_return": {
+        "expected_count": 1,
+        "text": "MP_HAIL = HAILNCV )"
+      },
+      "noahmp_dispatch_entry": {
+        "expected_count": 1,
+        "text": "CASE (NOAHMPSCHEME)"
+      },
+      "noahmp_urban_call": {
+        "expected_count": 1,
+        "text": "call noahmp_urban (sf_urban_physics,"
+      },
+      "noahmp_urban_call_return": {
+        "expected_count": 1,
+        "text": "dl_u_bep,         sf_bep,         vl_bep)"
+      },
+      "seaice_adjustment_post": {
+        "expected_count": 1,
+        "text": "!for NoahMP irrigation scheme"
+      },
+      "sfclay_call": {
+        "expected_count": 1,
+        "text": "CALL SFCLAY(u_phytmp,v_phytmp,t_phy,qv_curr,"
+      },
+      "sfclay_call_return": {
+        "expected_count": 1,
+        "text": "ustm,ck,cka,cd,cda,isftcflx,iz0tlnd,scm_force_flux  ) "
+      },
+      "sfclay_seaice_call": {
+        "expected_count": 1,
+        "text": "CALL SFCLAY_SEAICE_WRAPPER(u_phytmp,v_phytmp,t_phy,qv_curr,"
+      },
+      "sfclay_seaice_call_return": {
+        "expected_count": 1,
+        "text": "sf_surface_physics  )"
+      }
+    }
+  },
+  "capture_schedule_ready": false,
+  "classification_limit": "Capture fields are a selected diagnostic operand subset, not proof that all active callee reads or module state have been observed. Any reported producer boundary is a candidate; cause_established always remains false.",
+  "current_live_source_audit": {
+    "schema": "g4-surface-handoff-source-audit-v1",
+    "sources": {
+      "first_rk": {
+        "anchor_counts": {
+          "surface_driver_call": 1,
+          "surface_driver_return": 1
+        },
+        "sha256": "108a82b213c423acf916b91a0dd5f8084dc79288a01ca82d9f8d0ccb8febd53f"
+      },
+      "noahmp_driver": {
+        "anchor_counts": {
+          "water_category_branch": 1
+        },
+        "sha256": "9010a757da994ed8796c63ca97da354eaf60c5c732df4ea9acad5bc62a973890"
+      },
+      "noahmp_lsm": {
+        "anchor_counts": {
+          "noahmp_entry": 1
+        },
+        "sha256": "bd592a5b7db29000e715250e3a7c779ffb5e0dcc356f6b5a7d9e1c9f69c55282"
+      },
+      "noahmp_mptable": {
+        "anchor_counts": {},
+        "sha256": "7fae6a77660c90ad80845565ecfb057093c100de41f35f25a7ffa63f41c19e5d"
+      },
+      "sfclay": {
+        "anchor_counts": {
+          "sfclay_entry": 1
+        },
+        "sha256": "dfd7aae5ef1f0bd979246480af5276a1ee956bc216ec8dc6e82eb963ded761dc"
+      },
+      "surface_driver": {
+        "anchor_counts": {
+          "noahmp_call": 1,
+          "noahmp_call_return": 1,
+          "noahmp_dispatch_entry": 1,
+          "noahmp_urban_call": 1,
+          "noahmp_urban_call_return": 1,
+          "seaice_adjustment_post": 1,
+          "sfclay_call": 1,
+          "sfclay_call_return": 1,
+          "sfclay_seaice_call": 1,
+          "sfclay_seaice_call_return": 1
+        },
+        "sha256": "45543da3d3842985053d3d35cadccbd897aa4655c5f155d514133ce34f5524d5"
+      }
+    }
+  },
+  "event_source_selection": {
+    "noahmp_dispatch_entry": "surface_driver.F NOAHMPSCHEME case entry before the fractional-ice conversion",
+    "noahmp_pre_post": [
+      "surface_driver.F noahmp_call",
+      "surface_driver.F noahmp_call_return"
+    ],
+    "noahmp_urban_pre_post": [
+      "surface_driver.F noahmp_urban_call",
+      "surface_driver.F noahmp_urban_call_return"
+    ],
+    "seaice_adjustment_post": "surface_driver.F after the conditional Noah-MP sea-ice input conversion",
+    "sfclay_pre_post": {
+      "fractional_seaice_0": [
+        "surface_driver.F sfclay_call",
+        "surface_driver.F sfclay_call_return"
+      ],
+      "fractional_seaice_1": [
+        "surface_driver.F sfclay_seaice_call",
+        "surface_driver.F sfclay_seaice_call_return"
+      ]
+    },
+    "surface_call_pre": "module_first_rk_step_part1.F before surface_driver call",
+    "surface_return": "module_first_rk_step_part1.F after surface_driver call"
+  },
+  "evidence_boundary": "Current live private-source pins do not by themselves prove those exact sources produced the retained G4 executable; verify source/object identity before any causal interpretation.",
+  "fixed_event_plan_requires_explicit": [
+    "fractional_seaice"
+  ],
+  "noninterference_gate": "Run the same event-dump executable once with its dump switch off and once on; require retained-history raw-bit identity before interpreting traces.",
+  "observed_surface_classes": {
+    "clear": {
+      "IVGTYP": 17,
+      "VEGFRA": 0.0,
+      "XLAND": 2.0
+    },
+    "ice": {
+      "IVGTYP": 17,
+      "VEGFRA": 0.0,
+      "XLAND": 2.0
+    },
+    "mixed": {
+      "IVGTYP": 12,
+      "VEGFRA": 62.852149963378906,
+      "XLAND": 1.0
+    },
+    "rain": {
+      "IVGTYP": 17,
+      "VEGFRA": 0.0,
+      "XLAND": 2.0
+    },
+    "warm_liquid": {
+      "IVGTYP": 12,
+      "VEGFRA": 60.35637283325195,
+      "XLAND": 1.0
+    }
+  },
+  "operand_contract": {
+    "noahmp_dispatch_entry": {
+      "ALBEDO": [
+        0
+      ],
+      "EMISS": [
+        0
+      ],
+      "FRACTIONAL_SEAICE": [
+        0
+      ],
+      "HFX": [
+        0
+      ],
+      "ISLTYP": [
+        0
+      ],
+      "IVGTYP": [
+        0
+      ],
+      "LH": [
+        0
+      ],
+      "QFX": [
+        0
+      ],
+      "TSK": [
+        0
+      ],
+      "XICE": [
+        0
+      ],
+      "XLAND": [
+        0
+      ]
+    },
+    "noahmp_post": {
+      "ALBEDO": [
+        0
+      ],
+      "CANWAT": [
+        0
+      ],
+      "EMISS": [
+        0
+      ],
+      "GRDFLX": [
+        0
+      ],
+      "HFX": [
+        0
+      ],
+      "LH": [
+        0
+      ],
+      "QFX": [
+        0
+      ],
+      "QSFC": [
+        0
+      ],
+      "SFCRUNOFF": [
+        0
+      ],
+      "SH2O": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "SMOIS": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "SMSTAV": [
+        0
+      ],
+      "SMSTOT": [
+        0
+      ],
+      "SNOW": [
+        0
+      ],
+      "SNOWC": [
+        0
+      ],
+      "SNOWH": [
+        0
+      ],
+      "TSK": [
+        0
+      ],
+      "TSLB": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "UDRUNOFF": [
+        0
+      ],
+      "Z0": [
+        0
+      ],
+      "ZNT": [
+        0
+      ]
+    },
+    "noahmp_pre": {
+      "ACSNOM": [
+        0
+      ],
+      "ACSNOW": [
+        0
+      ],
+      "ALBEDO": [
+        0
+      ],
+      "CANWAT": [
+        0
+      ],
+      "DTBL": [
+        0
+      ],
+      "DZ8W": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ],
+      "EMISS": [
+        0
+      ],
+      "GLW": [
+        0
+      ],
+      "GRDFLX": [
+        0
+      ],
+      "HFX": [
+        0
+      ],
+      "ISLTYP": [
+        0
+      ],
+      "ITIMESTEP": [
+        0
+      ],
+      "IVGTYP": [
+        0
+      ],
+      "LAI": [
+        0
+      ],
+      "LH": [
+        0
+      ],
+      "P8W": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ],
+      "QFX": [
+        0
+      ],
+      "QSFC": [
+        0
+      ],
+      "QV_CURR": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ],
+      "RAINBL": [
+        0
+      ],
+      "SFCRUNOFF": [
+        0
+      ],
+      "SF_URBAN_PHYSICS": [
+        0
+      ],
+      "SH2O": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "SHDMAX": [
+        0
+      ],
+      "SMOIS": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "SMSTAV": [
+        0
+      ],
+      "SMSTOT": [
+        0
+      ],
+      "SNOW": [
+        0
+      ],
+      "SNOWC": [
+        0
+      ],
+      "SNOWH": [
+        0
+      ],
+      "SR": [
+        0
+      ],
+      "SWDDIF": [
+        0
+      ],
+      "SWDDIR": [
+        0
+      ],
+      "SWDOWN": [
+        0
+      ],
+      "TMN": [
+        0
+      ],
+      "TSK": [
+        0
+      ],
+      "TSLB": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "T_PHY": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ],
+      "UDRUNOFF": [
+        0
+      ],
+      "U_PHY": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ],
+      "VEGFRA": [
+        0
+      ],
+      "V_PHY": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ],
+      "XICE": [
+        0
+      ],
+      "XICE_THRESHOLD": [
+        0
+      ],
+      "XLAND": [
+        0
+      ],
+      "Z0": [
+        0
+      ],
+      "ZNT": [
+        0
+      ]
+    },
+    "noahmp_urban_post": {
+      "ALBEDO": [
+        0
+      ],
+      "EMISS": [
+        0
+      ],
+      "HFX": [
+        0
+      ],
+      "LH": [
+        0
+      ],
+      "QFX": [
+        0
+      ],
+      "TSK": [
+        0
+      ],
+      "UST": [
+        0
+      ],
+      "Z0": [
+        0
+      ],
+      "ZNT": [
+        0
+      ]
+    },
+    "noahmp_urban_pre": {
+      "ALBEDO": [
+        0
+      ],
+      "EMISS": [
+        0
+      ],
+      "HFX": [
+        0
+      ],
+      "IVGTYP": [
+        0
+      ],
+      "LH": [
+        0
+      ],
+      "QFX": [
+        0
+      ],
+      "SF_URBAN_PHYSICS": [
+        0
+      ],
+      "TSK": [
+        0
+      ],
+      "UST": [
+        0
+      ],
+      "Z0": [
+        0
+      ],
+      "ZNT": [
+        0
+      ]
+    },
+    "seaice_adjustment_post": {
+      "ALBEDO": [
+        0
+      ],
+      "EMISS": [
+        0
+      ],
+      "FRACTIONAL_SEAICE": [
+        0
+      ],
+      "HFX": [
+        0
+      ],
+      "LH": [
+        0
+      ],
+      "QFX": [
+        0
+      ],
+      "TSK": [
+        0
+      ],
+      "XICE": [
+        0
+      ],
+      "XICE_THRESHOLD": [
+        0
+      ]
+    },
+    "sfclay_post": {
+      "CHS": [
+        0
+      ],
+      "CHS2": [
+        0
+      ],
+      "CQS2": [
+        0
+      ],
+      "FLHC": [
+        0
+      ],
+      "FLQC": [
+        0
+      ],
+      "HFX": [
+        0
+      ],
+      "LH": [
+        0
+      ],
+      "Q2": [
+        0
+      ],
+      "QFX": [
+        0
+      ],
+      "QGH": [
+        0
+      ],
+      "QSFC": [
+        0
+      ],
+      "T2": [
+        0
+      ],
+      "TSK": [
+        0
+      ],
+      "U10": [
+        0
+      ],
+      "UST": [
+        0
+      ],
+      "V10": [
+        0
+      ],
+      "ZNT": [
+        0
+      ]
+    },
+    "sfclay_pre": {
+      "BR": [
+        0
+      ],
+      "CHS": [
+        0
+      ],
+      "CHS2": [
+        0
+      ],
+      "CPM": [
+        0
+      ],
+      "CQS2": [
+        0
+      ],
+      "DX2D": [
+        0
+      ],
+      "DZ8W": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ],
+      "FHH": [
+        0
+      ],
+      "FLHC": [
+        0
+      ],
+      "FLQC": [
+        0
+      ],
+      "FM": [
+        0
+      ],
+      "GZ1OZ0": [
+        0
+      ],
+      "HFX": [
+        0
+      ],
+      "ISFFLX": [
+        0
+      ],
+      "LAKEMASK": [
+        0
+      ],
+      "LH": [
+        0
+      ],
+      "MAVAIL": [
+        0
+      ],
+      "MOL": [
+        0
+      ],
+      "PBLH": [
+        0
+      ],
+      "PSFC": [
+        0
+      ],
+      "PSIH": [
+        0
+      ],
+      "PSIM": [
+        0
+      ],
+      "P_PHY": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ],
+      "Q2": [
+        0
+      ],
+      "QFX": [
+        0
+      ],
+      "QGH": [
+        0
+      ],
+      "QSFC": [
+        0
+      ],
+      "QV_CURR": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ],
+      "REGIME": [
+        0
+      ],
+      "RMOL": [
+        0
+      ],
+      "T2": [
+        0
+      ],
+      "TH2": [
+        0
+      ],
+      "TSK": [
+        0
+      ],
+      "T_PHY": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ],
+      "U10": [
+        0
+      ],
+      "UST": [
+        0
+      ],
+      "U_PHYTEMP": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ],
+      "V10": [
+        0
+      ],
+      "V_PHYTEMP": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39
+      ],
+      "WSPD": [
+        0
+      ],
+      "XLAND": [
+        0
+      ],
+      "ZNT": [
+        0
+      ],
+      "ZOL": [
+        0
+      ]
+    },
+    "surface_call_pre": {
+      "ALBEDO": [
+        0
+      ],
+      "BLDT": [
+        0
+      ],
+      "BLDTACTTIME": [
+        0
+      ],
+      "CURR_SECS": [
+        0
+      ],
+      "EMISS": [
+        0
+      ],
+      "FRACTIONAL_SEAICE": [
+        0
+      ],
+      "HFX": [
+        0
+      ],
+      "ISFFLX": [
+        0
+      ],
+      "ISLTYP": [
+        0
+      ],
+      "IVGTYP": [
+        0
+      ],
+      "LH": [
+        0
+      ],
+      "QFX": [
+        0
+      ],
+      "SF_SFCLAY_PHYSICS": [
+        0
+      ],
+      "SF_SURFACE_PHYSICS": [
+        0
+      ],
+      "SF_URBAN_PHYSICS": [
+        0
+      ],
+      "SST": [
+        0
+      ],
+      "SST_INPUT": [
+        0
+      ],
+      "SST_UPDATE": [
+        0
+      ],
+      "STEPBL": [
+        0
+      ],
+      "TSK": [
+        0
+      ],
+      "UOCE": [
+        0
+      ],
+      "UST": [
+        0
+      ],
+      "VEGFRA": [
+        0
+      ],
+      "VOCE": [
+        0
+      ],
+      "XICE": [
+        0
+      ],
+      "XLAND": [
+        0
+      ],
+      "ZNT": [
+        0
+      ]
+    },
+    "surface_return": {
+      "GRDFLX": [
+        0
+      ],
+      "HFX": [
+        0
+      ],
+      "LH": [
+        0
+      ],
+      "PBLH": [
+        0
+      ],
+      "QFX": [
+        0
+      ],
+      "TSK": [
+        0
+      ],
+      "UST": [
+        0
+      ]
+    }
+  },
+  "retained_input_sha256": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+  "retained_namelist_switches": {
+    "adaptive_timestep": false,
+    "bldt_minutes": 0,
+    "fractional_seaice": null,
+    "isfflx": 1,
+    "sf_sfclay_physics": 1,
+    "sf_surface_physics": 2,
+    "sf_urban_physics": 1
+  },
+  "schedule_blocker": "fractional_seaice is not explicit in retained S6 run receipt; record its runtime value before freezing conditional events.",
+  "schema": "g4-surface-handoff-plan-v1",
+  "selected_profiles": [
+    {
+      "i_fortran_1based": 11,
+      "j_fortran_1based": 145,
+      "name": "clear"
+    },
+    {
+      "i_fortran_1based": 106,
+      "j_fortran_1based": 139,
+      "name": "warm_liquid"
+    },
+    {
+      "i_fortran_1based": 144,
+      "j_fortran_1based": 124,
+      "name": "mixed"
+    },
+    {
+      "i_fortran_1based": 209,
+      "j_fortran_1based": 130,
+      "name": "ice"
+    },
+    {
+      "i_fortran_1based": 212,
+      "j_fortran_1based": 112,
+      "name": "rain"
+    }
+  ],
+  "source_paths_root_relative": {
+    "first_rk": "dyn_em/module_first_rk_step_part1.F",
+    "noahmp_driver": "phys/module_sf_noahmpdrv.F",
+    "noahmp_lsm": "phys/module_sf_noahmplsm.F",
+    "noahmp_mptable": "phys/noahmp/parameters/MPTABLE.TBL",
+    "sfclay": "phys/module_sf_sfclay.F",
+    "surface_driver": "phys/module_surface_driver.F"
+  },
+  "source_pins": {
+    "first_rk": "108a82b213c423acf916b91a0dd5f8084dc79288a01ca82d9f8d0ccb8febd53f",
+    "noahmp_driver": "9010a757da994ed8796c63ca97da354eaf60c5c732df4ea9acad5bc62a973890",
+    "noahmp_lsm": "bd592a5b7db29000e715250e3a7c779ffb5e0dcc356f6b5a7d9e1c9f69c55282",
+    "noahmp_mptable": "7fae6a77660c90ad80845565ecfb057093c100de41f35f25a7ffa63f41c19e5d",
+    "sfclay": "dfd7aae5ef1f0bd979246480af5276a1ee956bc216ec8dc6e82eb963ded761dc",
+    "surface_driver": "45543da3d3842985053d3d35cadccbd897aa4655c5f155d514133ce34f5524d5"
+  },
+  "status": "plan_only_no_native_capture"
+}
