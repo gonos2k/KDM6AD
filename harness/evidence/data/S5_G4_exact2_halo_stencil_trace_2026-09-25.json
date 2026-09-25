@@ -1,0 +1,8622 @@
+{
+  "claims_scope": "Complete calc_ww_cp caller fields are compared over the selected i neighborhoods and j=0..283 at RK entry. Tile bounds are also recorded; 1x1 and 2x1 call extents differ. No result here proves code generation as the cause because call bounds differ.",
+  "executable_sha256": "e3f5d13309a5bbebc54db64e1445f8675303e800b7e36d2077c45c4be8c43f48",
+  "full_raw_capture_sha256": {
+    "serial_dynamics": [
+      {
+        "bytes": 228659744,
+        "file": "g33dyn_i1-235_j1-283.bin",
+        "sha256": "c02cd3f7022b0c20ae959aaa02d7680efd6f0a2a33f7edfbd704e7408088dee3"
+      }
+    ],
+    "serial_kdm_entry": [],
+    "x2_dynamics": [
+      {
+        "bytes": 88287808,
+        "file": "g33dyn_i1-117_j1-283.bin",
+        "sha256": "1e5ba9416dfeb0c609313397adf5e321b16108fc8e7a8906fafee868d5ef749c"
+      },
+      {
+        "bytes": 172656152,
+        "file": "g33dyn_i118-235_j1-283.bin",
+        "sha256": "9f0faa6499a6095273115c5f25051ce3b57f35f3e86b60ea0eb6731a0f186cc2"
+      }
+    ],
+    "x2_kdm_entry": []
+  },
+  "input_canonical_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+  "namelist_without_grid_sha256": "a4c66fe3727b6048c58a119a89af0e4021369fd67700a9fe605df8f826c6bee2",
+  "preprocessed_f90_sha256": "a0085cc20d2d29e8f96b38a8894653178d907138f6cf4bd1ee9b75759e688c4c",
+  "private_source_sha256": {
+    "module_big_step_utilities_em.F": "27ce690b27b24c80247a5551b48d37fc32fc47470d806cbef1bb859d58edc31c",
+    "module_em.F": "7695bfb05a7f99763334a6e69523bbcc1de0f2c659177a18c10a6e1cf530a0c7",
+    "solve_em.F": "d66e9db1bba8f37e3f46d30c2fd74bdf8def411adf233376a69e0b401c6d3d1f"
+  },
+  "rank_tile_bounds": [
+    {
+      "file": "g33dyn_i1-235_j1-283.bin.meta",
+      "grid": "1x1",
+      "memory_i": [
+        -4,
+        240
+      ],
+      "memory_j": [
+        -4,
+        288
+      ],
+      "patch_i": [
+        1,
+        235
+      ],
+      "patch_j": [
+        1,
+        283
+      ],
+      "tiles": [
+        [
+          1,
+          235,
+          1,
+          142
+        ],
+        [
+          1,
+          235,
+          143,
+          283
+        ]
+      ]
+    },
+    {
+      "file": "g33dyn_i1-117_j1-283.bin.meta",
+      "grid": "2x1",
+      "memory_i": [
+        -4,
+        124
+      ],
+      "memory_j": [
+        -4,
+        288
+      ],
+      "patch_i": [
+        1,
+        117
+      ],
+      "patch_j": [
+        1,
+        283
+      ],
+      "tiles": [
+        [
+          1,
+          117,
+          1,
+          142
+        ],
+        [
+          1,
+          117,
+          143,
+          283
+        ]
+      ]
+    },
+    {
+      "file": "g33dyn_i118-235_j1-283.bin.meta",
+      "grid": "2x1",
+      "memory_i": [
+        111,
+        240
+      ],
+      "memory_j": [
+        -4,
+        288
+      ],
+      "patch_i": [
+        118,
+        235
+      ],
+      "patch_j": [
+        1,
+        283
+      ],
+      "tiles": [
+        [
+          118,
+          235,
+          1,
+          142
+        ],
+        [
+          118,
+          235,
+          143,
+          283
+        ]
+      ]
+    }
+  ],
+  "run_identities": {
+    "serial_capture": {
+      "actual_proc_grid": "1x1",
+      "campaign_id": "01d17b6803db1488d02281e0246edf49f2375586fc6340907ed888cdf82336ca",
+      "controls": {
+        "fixed_dt": true,
+        "history": 0,
+        "history_s": 20,
+        "input_canonical_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+        "label": "s5-exact2-serial-capture",
+        "minutes": 0,
+        "namelist_without_grid_sha256": "a4c66fe3727b6048c58a119a89af0e4021369fd67700a9fe605df8f826c6bee2",
+        "np": 1,
+        "radt": null,
+        "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+        "seconds": 20
+      },
+      "exit_code": 0,
+      "experiment_valid": true,
+      "requested_proc_grid": "1x1",
+      "schema": 1,
+      "scheme": "237"
+    },
+    "serial_env_off": {
+      "actual_proc_grid": "1x1",
+      "campaign_id": "9dda7300e077b426e5b9b8474785d16532bde1d8f89adb5e72a8c6fe1dd8db4b",
+      "controls": {
+        "fixed_dt": true,
+        "history": 0,
+        "history_s": 20,
+        "input_canonical_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+        "label": "s5-exact2-serial-env-off",
+        "minutes": 0,
+        "namelist_without_grid_sha256": "a4c66fe3727b6048c58a119a89af0e4021369fd67700a9fe605df8f826c6bee2",
+        "np": 1,
+        "radt": null,
+        "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+        "seconds": 20
+      },
+      "exit_code": 0,
+      "experiment_valid": true,
+      "requested_proc_grid": "1x1",
+      "schema": 1,
+      "scheme": "237"
+    },
+    "x2_capture": {
+      "actual_proc_grid": "2x1",
+      "campaign_id": "1109cd15345e00429cbec11cc7ba0ade6842f0eda485232962551d165c69a624",
+      "controls": {
+        "fixed_dt": true,
+        "history": 0,
+        "history_s": 20,
+        "input_canonical_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+        "label": "s5-exact2-x2-capture",
+        "minutes": 0,
+        "namelist_without_grid_sha256": "a4c66fe3727b6048c58a119a89af0e4021369fd67700a9fe605df8f826c6bee2",
+        "np": 2,
+        "radt": null,
+        "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+        "seconds": 20
+      },
+      "exit_code": 0,
+      "experiment_valid": true,
+      "requested_proc_grid": "2x1",
+      "schema": 1,
+      "scheme": "237"
+    },
+    "x2_env_off": {
+      "actual_proc_grid": "2x1",
+      "campaign_id": "26838e544ce9c478e9e80e7446ca8351c5e19467b8d887104e2cb0777e8905be",
+      "controls": {
+        "fixed_dt": true,
+        "history": 0,
+        "history_s": 20,
+        "input_canonical_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+        "label": "s5-exact2-x2-env-off",
+        "minutes": 0,
+        "namelist_without_grid_sha256": "a4c66fe3727b6048c58a119a89af0e4021369fd67700a9fe605df8f826c6bee2",
+        "np": 2,
+        "radt": null,
+        "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+        "seconds": 20
+      },
+      "exit_code": 0,
+      "experiment_valid": true,
+      "requested_proc_grid": "2x1",
+      "schema": 1,
+      "scheme": "237"
+    }
+  },
+  "run_receipts": {
+    "serial_capture": {
+      "executable_receipt": "e3f5d13309a5bbebc54db64e1445f8675303e800b7e36d2077c45c4be8c43f48\nbefore e3f5d13309a5bbebc54db64e1445f8675303e800b7e36d2077c45c4be8c43f48\nafter  e3f5d13309a5bbebc54db64e1445f8675303e800b7e36d2077c45c4be8c43f48\nstable yes\npath   /Users/yhlee/KDM6AD-s5-g4-mpi/graphify-out/s5-g4-first-divergence/build/wrf-s5-halo-exact2.exe\n",
+      "exit_code": "0",
+      "experiment_valid": true,
+      "history_sha256": "80f055ad4f245c10052668b7020a45b08ecf7bc3778d5376eb42b7ac896d4cc9",
+      "input_sha256": "schema 1\ndeclared yes\ncomplete yes\ncanonical_sha256 12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf\ninit d01 wrfinput_d01 5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970 after=5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970 stable=yes\nboundary d01 wrfbdy_d01 d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c after=d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c stable=yes\nauxinput24 d01 wrfchainp_d01 c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3 after=c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3 stable=yes\n",
+      "proc_grid": "requested 1x1\nactual    1x1\nmatches   yes\nnp        1\n",
+      "run_id": "mp237_s5-exact2-serial-capture_0min20s_hist0_1x1_20260925_185819_p43249",
+      "runner_sha256": "runner 175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e\npath   /Users/yhlee/KDM6AD-s5-g4-mpi/harness/run_ss_case.py\n"
+    },
+    "serial_env_off": {
+      "executable_receipt": "e3f5d13309a5bbebc54db64e1445f8675303e800b7e36d2077c45c4be8c43f48\nbefore e3f5d13309a5bbebc54db64e1445f8675303e800b7e36d2077c45c4be8c43f48\nafter  e3f5d13309a5bbebc54db64e1445f8675303e800b7e36d2077c45c4be8c43f48\nstable yes\npath   /Users/yhlee/KDM6AD-s5-g4-mpi/graphify-out/s5-g4-first-divergence/build/wrf-s5-halo-exact2.exe\n",
+      "exit_code": "0",
+      "experiment_valid": true,
+      "history_sha256": "80f055ad4f245c10052668b7020a45b08ecf7bc3778d5376eb42b7ac896d4cc9",
+      "input_sha256": "schema 1\ndeclared yes\ncomplete yes\ncanonical_sha256 12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf\ninit d01 wrfinput_d01 5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970 after=5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970 stable=yes\nboundary d01 wrfbdy_d01 d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c after=d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c stable=yes\nauxinput24 d01 wrfchainp_d01 c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3 after=c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3 stable=yes\n",
+      "proc_grid": "requested 1x1\nactual    1x1\nmatches   yes\nnp        1\n",
+      "run_id": "mp237_s5-exact2-serial-env-off_0min20s_hist0_1x1_20260925_185704_p41868",
+      "runner_sha256": "runner 175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e\npath   /Users/yhlee/KDM6AD-s5-g4-mpi/harness/run_ss_case.py\n"
+    },
+    "x2_capture": {
+      "executable_receipt": "e3f5d13309a5bbebc54db64e1445f8675303e800b7e36d2077c45c4be8c43f48\nbefore e3f5d13309a5bbebc54db64e1445f8675303e800b7e36d2077c45c4be8c43f48\nafter  e3f5d13309a5bbebc54db64e1445f8675303e800b7e36d2077c45c4be8c43f48\nstable yes\npath   /Users/yhlee/KDM6AD-s5-g4-mpi/graphify-out/s5-g4-first-divergence/build/wrf-s5-halo-exact2.exe\n",
+      "exit_code": "0",
+      "experiment_valid": true,
+      "history_sha256": "d01ffc8c41d7f47f4a694c5c622711047306f90d7cbe8fd1bbfca14eec579e9e",
+      "input_sha256": "schema 1\ndeclared yes\ncomplete yes\ncanonical_sha256 12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf\ninit d01 wrfinput_d01 5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970 after=5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970 stable=yes\nboundary d01 wrfbdy_d01 d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c after=d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c stable=yes\nauxinput24 d01 wrfchainp_d01 c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3 after=c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3 stable=yes\n",
+      "proc_grid": "requested 2x1\nactual    2x1\nmatches   yes\nnp        2\n",
+      "run_id": "mp237_s5-exact2-x2-capture_0min20s_hist0_np2_2x1_20260925_185915_p46355",
+      "runner_sha256": "runner 175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e\npath   /Users/yhlee/KDM6AD-s5-g4-mpi/harness/run_ss_case.py\n"
+    },
+    "x2_env_off": {
+      "executable_receipt": "e3f5d13309a5bbebc54db64e1445f8675303e800b7e36d2077c45c4be8c43f48\nbefore e3f5d13309a5bbebc54db64e1445f8675303e800b7e36d2077c45c4be8c43f48\nafter  e3f5d13309a5bbebc54db64e1445f8675303e800b7e36d2077c45c4be8c43f48\nstable yes\npath   /Users/yhlee/KDM6AD-s5-g4-mpi/graphify-out/s5-g4-first-divergence/build/wrf-s5-halo-exact2.exe\n",
+      "exit_code": "0",
+      "experiment_valid": true,
+      "history_sha256": "d01ffc8c41d7f47f4a694c5c622711047306f90d7cbe8fd1bbfca14eec579e9e",
+      "input_sha256": "schema 1\ndeclared yes\ncomplete yes\ncanonical_sha256 12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf\ninit d01 wrfinput_d01 5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970 after=5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970 stable=yes\nboundary d01 wrfbdy_d01 d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c after=d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c stable=yes\nauxinput24 d01 wrfchainp_d01 c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3 after=c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3 stable=yes\n",
+      "proc_grid": "requested 2x1\nactual    2x1\nmatches   yes\nnp        2\n",
+      "run_id": "mp237_s5-exact2-x2-env-off_0min20s_hist0_np2_2x1_20260925_185610_p40558",
+      "runner_sha256": "runner 175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e\npath   /Users/yhlee/KDM6AD-s5-g4-mpi/harness/run_ss_case.py\n"
+    }
+  },
+  "schema": "s5-g4-exact2-halo-stencil-trace-v1",
+  "scope": "Exact WRF source-generation build. Lossless selected projection of first RK caller inputs and output records; not a full-domain/all-timestep trace.",
+  "seam_halo_record_count": 64,
+  "selected_caller_input_records": [
+    {
+      "field": "u_2",
+      "i": 116,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s0_i116_u_2",
+      "owned": true,
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "v_2",
+      "i": 116,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s0_i116_v_2",
+      "owned": true,
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "mu_2",
+      "i": 116,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i116_mu_2",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "mub",
+      "i": 116,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i116_mub",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "c1h",
+      "i": 116,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s0_i116_c1h",
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 0
+    },
+    {
+      "field": "c2h",
+      "i": 116,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s0_i116_c2h",
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 0
+    },
+    {
+      "field": "dnw",
+      "i": 116,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s0_i116_dnw",
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msftx",
+      "i": 116,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i116_msftx",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfty",
+      "i": 116,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i116_msfty",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfux",
+      "i": 116,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i116_msfux",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfuy",
+      "i": 116,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i116_msfuy",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfvx",
+      "i": 116,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i116_msfvx",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfvx_inv",
+      "i": 116,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i116_msfvx_inv",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfvy",
+      "i": 116,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i116_msfvy",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "rdx",
+      "i": 116,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "arg_s0_i116_rdx",
+      "owned": true,
+      "shape": [
+        1
+      ],
+      "stage": 0
+    },
+    {
+      "field": "rdy",
+      "i": 116,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "arg_s0_i116_rdy",
+      "owned": true,
+      "shape": [
+        1
+      ],
+      "stage": 0
+    },
+    {
+      "field": "u_2",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s0_i117_u_2",
+      "owned": true,
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "v_2",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s0_i117_v_2",
+      "owned": true,
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "mu_2",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i117_mu_2",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "mub",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i117_mub",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "c1h",
+      "i": 117,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s0_i117_c1h",
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 0
+    },
+    {
+      "field": "c2h",
+      "i": 117,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s0_i117_c2h",
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 0
+    },
+    {
+      "field": "dnw",
+      "i": 117,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s0_i117_dnw",
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msftx",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i117_msftx",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfty",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i117_msfty",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfux",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i117_msfux",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfuy",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i117_msfuy",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfvx",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i117_msfvx",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfvx_inv",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i117_msfvx_inv",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfvy",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i117_msfvy",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "rdx",
+      "i": 117,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "arg_s0_i117_rdx",
+      "owned": true,
+      "shape": [
+        1
+      ],
+      "stage": 0
+    },
+    {
+      "field": "rdy",
+      "i": 117,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "arg_s0_i117_rdy",
+      "owned": true,
+      "shape": [
+        1
+      ],
+      "stage": 0
+    },
+    {
+      "field": "u_2",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s0_i118_u_2",
+      "owned": true,
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "v_2",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s0_i118_v_2",
+      "owned": true,
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "mu_2",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i118_mu_2",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "mub",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i118_mub",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "c1h",
+      "i": 118,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s0_i118_c1h",
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 0
+    },
+    {
+      "field": "c2h",
+      "i": 118,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s0_i118_c2h",
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 0
+    },
+    {
+      "field": "dnw",
+      "i": 118,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s0_i118_dnw",
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msftx",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i118_msftx",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfty",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i118_msfty",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfux",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i118_msfux",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfuy",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i118_msfuy",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfvx",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i118_msfvx",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfvx_inv",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i118_msfvx_inv",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfvy",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i118_msfvy",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "rdx",
+      "i": 118,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "arg_s0_i118_rdx",
+      "owned": true,
+      "shape": [
+        1
+      ],
+      "stage": 0
+    },
+    {
+      "field": "rdy",
+      "i": 118,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "arg_s0_i118_rdy",
+      "owned": true,
+      "shape": [
+        1
+      ],
+      "stage": 0
+    },
+    {
+      "field": "u_2",
+      "i": 233,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s0_i233_u_2",
+      "owned": true,
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "v_2",
+      "i": 233,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s0_i233_v_2",
+      "owned": true,
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "mu_2",
+      "i": 233,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i233_mu_2",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "mub",
+      "i": 233,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i233_mub",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "c1h",
+      "i": 233,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s0_i233_c1h",
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 0
+    },
+    {
+      "field": "c2h",
+      "i": 233,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s0_i233_c2h",
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 0
+    },
+    {
+      "field": "dnw",
+      "i": 233,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s0_i233_dnw",
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msftx",
+      "i": 233,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i233_msftx",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfty",
+      "i": 233,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i233_msfty",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfux",
+      "i": 233,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i233_msfux",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfuy",
+      "i": 233,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i233_msfuy",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfvx",
+      "i": 233,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i233_msfvx",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfvx_inv",
+      "i": 233,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i233_msfvx_inv",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfvy",
+      "i": 233,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i233_msfvy",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "rdx",
+      "i": 233,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "arg_s0_i233_rdx",
+      "owned": true,
+      "shape": [
+        1
+      ],
+      "stage": 0
+    },
+    {
+      "field": "rdy",
+      "i": 233,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "arg_s0_i233_rdy",
+      "owned": true,
+      "shape": [
+        1
+      ],
+      "stage": 0
+    },
+    {
+      "field": "u_2",
+      "i": 234,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s0_i234_u_2",
+      "owned": true,
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "v_2",
+      "i": 234,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s0_i234_v_2",
+      "owned": true,
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "mu_2",
+      "i": 234,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i234_mu_2",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "mub",
+      "i": 234,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i234_mub",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "c1h",
+      "i": 234,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s0_i234_c1h",
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 0
+    },
+    {
+      "field": "c2h",
+      "i": 234,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s0_i234_c2h",
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 0
+    },
+    {
+      "field": "dnw",
+      "i": 234,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s0_i234_dnw",
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msftx",
+      "i": 234,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i234_msftx",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfty",
+      "i": 234,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i234_msfty",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfux",
+      "i": 234,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i234_msfux",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfuy",
+      "i": 234,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i234_msfuy",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfvx",
+      "i": 234,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i234_msfvx",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfvx_inv",
+      "i": 234,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i234_msfvx_inv",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfvy",
+      "i": 234,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i234_msfvy",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "rdx",
+      "i": 234,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "arg_s0_i234_rdx",
+      "owned": true,
+      "shape": [
+        1
+      ],
+      "stage": 0
+    },
+    {
+      "field": "rdy",
+      "i": 234,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "arg_s0_i234_rdy",
+      "owned": true,
+      "shape": [
+        1
+      ],
+      "stage": 0
+    },
+    {
+      "field": "u_2",
+      "i": 235,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s0_i235_u_2",
+      "owned": false,
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "v_2",
+      "i": 235,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s0_i235_v_2",
+      "owned": false,
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "mu_2",
+      "i": 235,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i235_mu_2",
+      "owned": false,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "mub",
+      "i": 235,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i235_mub",
+      "owned": false,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "c1h",
+      "i": 235,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s0_i235_c1h",
+      "owned": false,
+      "shape": [
+        39
+      ],
+      "stage": 0
+    },
+    {
+      "field": "c2h",
+      "i": 235,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s0_i235_c2h",
+      "owned": false,
+      "shape": [
+        39
+      ],
+      "stage": 0
+    },
+    {
+      "field": "dnw",
+      "i": 235,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s0_i235_dnw",
+      "owned": false,
+      "shape": [
+        39
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msftx",
+      "i": 235,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i235_msftx",
+      "owned": false,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfty",
+      "i": 235,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i235_msfty",
+      "owned": false,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfux",
+      "i": 235,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i235_msfux",
+      "owned": false,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfuy",
+      "i": 235,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i235_msfuy",
+      "owned": false,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfvx",
+      "i": 235,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i235_msfvx",
+      "owned": false,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfvx_inv",
+      "i": 235,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i235_msfvx_inv",
+      "owned": false,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfvy",
+      "i": 235,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s0_i235_msfvy",
+      "owned": false,
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "rdx",
+      "i": 235,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "arg_s0_i235_rdx",
+      "owned": false,
+      "shape": [
+        1
+      ],
+      "stage": 0
+    },
+    {
+      "field": "rdy",
+      "i": 235,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "arg_s0_i235_rdy",
+      "owned": false,
+      "shape": [
+        1
+      ],
+      "stage": 0
+    },
+    {
+      "field": "u_2",
+      "i": 116,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s1_i116_u_2",
+      "owned": true,
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "v_2",
+      "i": 116,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s1_i116_v_2",
+      "owned": true,
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "mu_2",
+      "i": 116,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i116_mu_2",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "mub",
+      "i": 116,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i116_mub",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "c1h",
+      "i": 116,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s1_i116_c1h",
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 1
+    },
+    {
+      "field": "c2h",
+      "i": 116,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s1_i116_c2h",
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 1
+    },
+    {
+      "field": "dnw",
+      "i": 116,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s1_i116_dnw",
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msftx",
+      "i": 116,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i116_msftx",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfty",
+      "i": 116,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i116_msfty",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfux",
+      "i": 116,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i116_msfux",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfuy",
+      "i": 116,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i116_msfuy",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfvx",
+      "i": 116,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i116_msfvx",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfvx_inv",
+      "i": 116,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i116_msfvx_inv",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfvy",
+      "i": 116,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i116_msfvy",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "rdx",
+      "i": 116,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "arg_s1_i116_rdx",
+      "owned": true,
+      "shape": [
+        1
+      ],
+      "stage": 1
+    },
+    {
+      "field": "rdy",
+      "i": 116,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "arg_s1_i116_rdy",
+      "owned": true,
+      "shape": [
+        1
+      ],
+      "stage": 1
+    },
+    {
+      "field": "u_2",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s1_i117_u_2",
+      "owned": true,
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "v_2",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s1_i117_v_2",
+      "owned": true,
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "mu_2",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i117_mu_2",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "mub",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i117_mub",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "c1h",
+      "i": 117,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s1_i117_c1h",
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 1
+    },
+    {
+      "field": "c2h",
+      "i": 117,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s1_i117_c2h",
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 1
+    },
+    {
+      "field": "dnw",
+      "i": 117,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s1_i117_dnw",
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msftx",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i117_msftx",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfty",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i117_msfty",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfux",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i117_msfux",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfuy",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i117_msfuy",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfvx",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i117_msfvx",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfvx_inv",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i117_msfvx_inv",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfvy",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i117_msfvy",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "rdx",
+      "i": 117,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "arg_s1_i117_rdx",
+      "owned": true,
+      "shape": [
+        1
+      ],
+      "stage": 1
+    },
+    {
+      "field": "rdy",
+      "i": 117,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "arg_s1_i117_rdy",
+      "owned": true,
+      "shape": [
+        1
+      ],
+      "stage": 1
+    },
+    {
+      "field": "u_2",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s1_i118_u_2",
+      "owned": true,
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "v_2",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s1_i118_v_2",
+      "owned": true,
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "mu_2",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i118_mu_2",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "mub",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i118_mub",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "c1h",
+      "i": 118,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s1_i118_c1h",
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 1
+    },
+    {
+      "field": "c2h",
+      "i": 118,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s1_i118_c2h",
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 1
+    },
+    {
+      "field": "dnw",
+      "i": 118,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s1_i118_dnw",
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msftx",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i118_msftx",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfty",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i118_msfty",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfux",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i118_msfux",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfuy",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i118_msfuy",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfvx",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i118_msfvx",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfvx_inv",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i118_msfvx_inv",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfvy",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i118_msfvy",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "rdx",
+      "i": 118,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "arg_s1_i118_rdx",
+      "owned": true,
+      "shape": [
+        1
+      ],
+      "stage": 1
+    },
+    {
+      "field": "rdy",
+      "i": 118,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "arg_s1_i118_rdy",
+      "owned": true,
+      "shape": [
+        1
+      ],
+      "stage": 1
+    },
+    {
+      "field": "u_2",
+      "i": 233,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s1_i233_u_2",
+      "owned": true,
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "v_2",
+      "i": 233,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s1_i233_v_2",
+      "owned": true,
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "mu_2",
+      "i": 233,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i233_mu_2",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "mub",
+      "i": 233,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i233_mub",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "c1h",
+      "i": 233,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s1_i233_c1h",
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 1
+    },
+    {
+      "field": "c2h",
+      "i": 233,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s1_i233_c2h",
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 1
+    },
+    {
+      "field": "dnw",
+      "i": 233,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s1_i233_dnw",
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msftx",
+      "i": 233,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i233_msftx",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfty",
+      "i": 233,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i233_msfty",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfux",
+      "i": 233,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i233_msfux",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfuy",
+      "i": 233,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i233_msfuy",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfvx",
+      "i": 233,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i233_msfvx",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfvx_inv",
+      "i": 233,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i233_msfvx_inv",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfvy",
+      "i": 233,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i233_msfvy",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "rdx",
+      "i": 233,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "arg_s1_i233_rdx",
+      "owned": true,
+      "shape": [
+        1
+      ],
+      "stage": 1
+    },
+    {
+      "field": "rdy",
+      "i": 233,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "arg_s1_i233_rdy",
+      "owned": true,
+      "shape": [
+        1
+      ],
+      "stage": 1
+    },
+    {
+      "field": "u_2",
+      "i": 234,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s1_i234_u_2",
+      "owned": true,
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "v_2",
+      "i": 234,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s1_i234_v_2",
+      "owned": true,
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "mu_2",
+      "i": 234,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i234_mu_2",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "mub",
+      "i": 234,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i234_mub",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "c1h",
+      "i": 234,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s1_i234_c1h",
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 1
+    },
+    {
+      "field": "c2h",
+      "i": 234,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s1_i234_c2h",
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 1
+    },
+    {
+      "field": "dnw",
+      "i": 234,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s1_i234_dnw",
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msftx",
+      "i": 234,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i234_msftx",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfty",
+      "i": 234,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i234_msfty",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfux",
+      "i": 234,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i234_msfux",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfuy",
+      "i": 234,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i234_msfuy",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfvx",
+      "i": 234,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i234_msfvx",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfvx_inv",
+      "i": 234,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i234_msfvx_inv",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfvy",
+      "i": 234,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i234_msfvy",
+      "owned": true,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "rdx",
+      "i": 234,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "arg_s1_i234_rdx",
+      "owned": true,
+      "shape": [
+        1
+      ],
+      "stage": 1
+    },
+    {
+      "field": "rdy",
+      "i": 234,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "arg_s1_i234_rdy",
+      "owned": true,
+      "shape": [
+        1
+      ],
+      "stage": 1
+    },
+    {
+      "field": "u_2",
+      "i": 235,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s1_i235_u_2",
+      "owned": false,
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "v_2",
+      "i": 235,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s1_i235_v_2",
+      "owned": false,
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "mu_2",
+      "i": 235,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i235_mu_2",
+      "owned": false,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "mub",
+      "i": 235,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i235_mub",
+      "owned": false,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "c1h",
+      "i": 235,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s1_i235_c1h",
+      "owned": false,
+      "shape": [
+        39
+      ],
+      "stage": 1
+    },
+    {
+      "field": "c2h",
+      "i": 235,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s1_i235_c2h",
+      "owned": false,
+      "shape": [
+        39
+      ],
+      "stage": 1
+    },
+    {
+      "field": "dnw",
+      "i": 235,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "arg_s1_i235_dnw",
+      "owned": false,
+      "shape": [
+        39
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msftx",
+      "i": 235,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i235_msftx",
+      "owned": false,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfty",
+      "i": 235,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i235_msfty",
+      "owned": false,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfux",
+      "i": 235,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i235_msfux",
+      "owned": false,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfuy",
+      "i": 235,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i235_msfuy",
+      "owned": false,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfvx",
+      "i": 235,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i235_msfvx",
+      "owned": false,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfvx_inv",
+      "i": 235,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i235_msfvx_inv",
+      "owned": false,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfvy",
+      "i": 235,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "arg_s1_i235_msfvy",
+      "owned": false,
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "rdx",
+      "i": 235,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "arg_s1_i235_rdx",
+      "owned": false,
+      "shape": [
+        1
+      ],
+      "stage": 1
+    },
+    {
+      "field": "rdy",
+      "i": 235,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "arg_s1_i235_rdy",
+      "owned": false,
+      "shape": [
+        1
+      ],
+      "stage": 1
+    }
+  ],
+  "selected_input_record_count": 192,
+  "selected_output_record_count": 230,
+  "selected_output_records": [
+    {
+      "field": "u_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s0_g1_i117_u_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "field": "t_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s0_g1_i117_t_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "field": "ph_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s0_g1_i117_ph_2",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "field": "w_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s0_g1_i117_w_2",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "field": "mu_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s0_g1_i117_mu_2",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "field": "u_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s0_g1_i234_u_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "field": "t_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s0_g1_i234_t_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "field": "ph_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s0_g1_i234_ph_2",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "field": "w_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s0_g1_i234_w_2",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "field": "mu_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s0_g1_i234_mu_2",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "field": "u_2",
+      "group": 4,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s0_g4_i117_u_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "field": "muu",
+      "group": 4,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s0_g4_i117_muu",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "field": "mub",
+      "group": 4,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s0_g4_i117_mub",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfuy",
+      "group": 4,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s0_g4_i117_msfuy",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "field": "u_2",
+      "group": 4,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s0_g4_i234_u_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "field": "muu",
+      "group": 4,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s0_g4_i234_muu",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "field": "mub",
+      "group": 4,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s0_g4_i234_mub",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfuy",
+      "group": 4,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s0_g4_i234_msfuy",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "field": "u_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s1_g1_i117_u_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "field": "t_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s1_g1_i117_t_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "field": "ph_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s1_g1_i117_ph_2",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "field": "w_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s1_g1_i117_w_2",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "field": "mu_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s1_g1_i117_mu_2",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "field": "u_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s1_g1_i234_u_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "field": "t_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s1_g1_i234_t_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "field": "ph_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s1_g1_i234_ph_2",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "field": "w_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s1_g1_i234_w_2",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "field": "mu_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s1_g1_i234_mu_2",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "field": "u_2",
+      "group": 4,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s1_g4_i117_u_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "field": "muu",
+      "group": 4,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s1_g4_i117_muu",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "field": "mub",
+      "group": 4,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s1_g4_i117_mub",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfuy",
+      "group": 4,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s1_g4_i117_msfuy",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "field": "u_2",
+      "group": 4,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s1_g4_i234_u_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "field": "muu",
+      "group": 4,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s1_g4_i234_muu",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "field": "mub",
+      "group": 4,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s1_g4_i234_mub",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfuy",
+      "group": 4,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s1_g4_i234_msfuy",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "field": "u_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s2_g1_i117_u_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "t_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s2_g1_i117_t_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "ph_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s2_g1_i117_ph_2",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "w_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s2_g1_i117_w_2",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "mu_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s2_g1_i117_mu_2",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "u_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s2_g1_i234_u_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "t_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s2_g1_i234_t_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "ph_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s2_g1_i234_ph_2",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "w_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s2_g1_i234_w_2",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "mu_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s2_g1_i234_mu_2",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "ru",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s2_g2_i117_ru",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "rv",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s2_g2_i117_rv",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "rw",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s2_g2_i117_rw",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "ww",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s2_g2_i117_ww",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "php",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s2_g2_i117_php",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "alt",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s2_g2_i117_alt",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "al",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s2_g2_i117_al",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "p",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s2_g2_i117_p",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "rho",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s2_g2_i117_rho",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "muu",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s2_g2_i117_muu",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "muv",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s2_g2_i117_muv",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "mut",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s2_g2_i117_mut",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "ru",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s2_g2_i234_ru",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "rv",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s2_g2_i234_rv",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "rw",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s2_g2_i234_rw",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "ww",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s2_g2_i234_ww",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "php",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s2_g2_i234_php",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "alt",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s2_g2_i234_alt",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "al",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s2_g2_i234_al",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "p",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s2_g2_i234_p",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "rho",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s2_g2_i234_rho",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "muu",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s2_g2_i234_muu",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "muv",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s2_g2_i234_muv",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "mut",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s2_g2_i234_mut",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "field": "ru",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s31_g2_i117_ru",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "field": "rv",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s31_g2_i117_rv",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "field": "rw",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s31_g2_i117_rw",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "field": "ww",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s31_g2_i117_ww",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "field": "php",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s31_g2_i117_php",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "field": "alt",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s31_g2_i117_alt",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "field": "al",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s31_g2_i117_al",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "field": "p",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s31_g2_i117_p",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "field": "rho",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s31_g2_i117_rho",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "field": "muu",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s31_g2_i117_muu",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "field": "muv",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s31_g2_i117_muv",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "field": "mut",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s31_g2_i117_mut",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "field": "ru",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s31_g2_i234_ru",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "field": "rv",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s31_g2_i234_rv",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "field": "rw",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s31_g2_i234_rw",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "field": "ww",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s31_g2_i234_ww",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "field": "php",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s31_g2_i234_php",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "field": "alt",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s31_g2_i234_alt",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "field": "al",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s31_g2_i234_al",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "field": "p",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s31_g2_i234_p",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "field": "rho",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s31_g2_i234_rho",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "field": "muu",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s31_g2_i234_muu",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "field": "muv",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s31_g2_i234_muv",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "field": "mut",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s31_g2_i234_mut",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "field": "ru",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s32_g2_i117_ru",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "field": "rv",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s32_g2_i117_rv",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "field": "rw",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s32_g2_i117_rw",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "field": "ww",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s32_g2_i117_ww",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "field": "php",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s32_g2_i117_php",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "field": "alt",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s32_g2_i117_alt",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "field": "al",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s32_g2_i117_al",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "field": "p",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s32_g2_i117_p",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "field": "rho",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s32_g2_i117_rho",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "field": "muu",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s32_g2_i117_muu",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "field": "muv",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s32_g2_i117_muv",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "field": "mut",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s32_g2_i117_mut",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "field": "ru",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s32_g2_i234_ru",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "field": "rv",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s32_g2_i234_rv",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "field": "rw",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s32_g2_i234_rw",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "field": "ww",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s32_g2_i234_ww",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "field": "php",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s32_g2_i234_php",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "field": "alt",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s32_g2_i234_alt",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "field": "al",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s32_g2_i234_al",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "field": "p",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s32_g2_i234_p",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "field": "rho",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s32_g2_i234_rho",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "field": "muu",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s32_g2_i234_muu",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "field": "muv",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s32_g2_i234_muv",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "field": "mut",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s32_g2_i234_mut",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "field": "u_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s4_g1_i117_u_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 4
+    },
+    {
+      "field": "t_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s4_g1_i117_t_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 4
+    },
+    {
+      "field": "ph_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s4_g1_i117_ph_2",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 4
+    },
+    {
+      "field": "w_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s4_g1_i117_w_2",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 4
+    },
+    {
+      "field": "mu_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s4_g1_i117_mu_2",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 4
+    },
+    {
+      "field": "u_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s4_g1_i234_u_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 4
+    },
+    {
+      "field": "t_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s4_g1_i234_t_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 4
+    },
+    {
+      "field": "ph_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s4_g1_i234_ph_2",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 4
+    },
+    {
+      "field": "w_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s4_g1_i234_w_2",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 4
+    },
+    {
+      "field": "mu_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s4_g1_i234_mu_2",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 4
+    },
+    {
+      "field": "u_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s5_g1_i117_u_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "field": "t_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s5_g1_i117_t_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "field": "ph_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s5_g1_i117_ph_2",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "field": "w_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s5_g1_i117_w_2",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "field": "mu_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s5_g1_i117_mu_2",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "field": "u_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s5_g1_i234_u_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "field": "t_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s5_g1_i234_t_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "field": "ph_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s5_g1_i234_ph_2",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "field": "w_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s5_g1_i234_w_2",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "field": "mu_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s5_g1_i234_mu_2",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "field": "ru_tend",
+      "group": 3,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s5_g3_i117_ru_tend",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "field": "rv_tend",
+      "group": 3,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s5_g3_i117_rv_tend",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "field": "rw_tend",
+      "group": 3,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s5_g3_i117_rw_tend",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "field": "ph_tend",
+      "group": 3,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s5_g3_i117_ph_tend",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "field": "t_tend",
+      "group": 3,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s5_g3_i117_t_tend",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "field": "mu_tend",
+      "group": 3,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s5_g3_i117_mu_tend",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "field": "ru_tend",
+      "group": 3,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s5_g3_i234_ru_tend",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "field": "rv_tend",
+      "group": 3,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s5_g3_i234_rv_tend",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "field": "rw_tend",
+      "group": 3,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s5_g3_i234_rw_tend",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "field": "ph_tend",
+      "group": 3,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s5_g3_i234_ph_tend",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "field": "t_tend",
+      "group": 3,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s5_g3_i234_t_tend",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "field": "mu_tend",
+      "group": 3,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s5_g3_i234_mu_tend",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "field": "u_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s6_g1_i117_u_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "t_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s6_g1_i117_t_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "ph_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s6_g1_i117_ph_2",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "w_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s6_g1_i117_w_2",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "mu_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s6_g1_i117_mu_2",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "u_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s6_g1_i234_u_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "t_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s6_g1_i234_t_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "ph_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s6_g1_i234_ph_2",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "w_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s6_g1_i234_w_2",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "mu_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s6_g1_i234_mu_2",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "ru",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s6_g2_i117_ru",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "rv",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s6_g2_i117_rv",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "rw",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s6_g2_i117_rw",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "ww",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s6_g2_i117_ww",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "php",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s6_g2_i117_php",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "alt",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s6_g2_i117_alt",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "al",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s6_g2_i117_al",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "p",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s6_g2_i117_p",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "rho",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s6_g2_i117_rho",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "muu",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s6_g2_i117_muu",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "muv",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s6_g2_i117_muv",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "mut",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s6_g2_i117_mut",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "ru",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s6_g2_i234_ru",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "rv",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s6_g2_i234_rv",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "rw",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s6_g2_i234_rw",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "ww",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s6_g2_i234_ww",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "php",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s6_g2_i234_php",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "alt",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s6_g2_i234_alt",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "al",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s6_g2_i234_al",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "p",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s6_g2_i234_p",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "rho",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s6_g2_i234_rho",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "muu",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s6_g2_i234_muu",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "muv",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s6_g2_i234_muv",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "mut",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s6_g2_i234_mut",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "ru_tend",
+      "group": 3,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s6_g3_i117_ru_tend",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "rv_tend",
+      "group": 3,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s6_g3_i117_rv_tend",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "rw_tend",
+      "group": 3,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s6_g3_i117_rw_tend",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "ph_tend",
+      "group": 3,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s6_g3_i117_ph_tend",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "t_tend",
+      "group": 3,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s6_g3_i117_t_tend",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "mu_tend",
+      "group": 3,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s6_g3_i117_mu_tend",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "ru_tend",
+      "group": 3,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s6_g3_i234_ru_tend",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "rv_tend",
+      "group": 3,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s6_g3_i234_rv_tend",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "rw_tend",
+      "group": 3,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s6_g3_i234_rw_tend",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "ph_tend",
+      "group": 3,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s6_g3_i234_ph_tend",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "t_tend",
+      "group": 3,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s6_g3_i234_t_tend",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "mu_tend",
+      "group": 3,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s6_g3_i234_mu_tend",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "field": "u_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s7_g1_i117_u_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "t_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s7_g1_i117_t_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "ph_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s7_g1_i117_ph_2",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "w_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s7_g1_i117_w_2",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "mu_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s7_g1_i117_mu_2",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "u_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s7_g1_i234_u_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "t_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s7_g1_i234_t_2",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "ph_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s7_g1_i234_ph_2",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "w_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s7_g1_i234_w_2",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "mu_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s7_g1_i234_mu_2",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "ru",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s7_g2_i117_ru",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "rv",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s7_g2_i117_rv",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "rw",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s7_g2_i117_rw",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "ww",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s7_g2_i117_ww",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "php",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s7_g2_i117_php",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "alt",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s7_g2_i117_alt",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "al",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s7_g2_i117_al",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "p",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s7_g2_i117_p",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "rho",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s7_g2_i117_rho",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "muu",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s7_g2_i117_muu",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "muv",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s7_g2_i117_muv",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "mut",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s7_g2_i117_mut",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "ru",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s7_g2_i234_ru",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "rv",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s7_g2_i234_rv",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "rw",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s7_g2_i234_rw",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "ww",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s7_g2_i234_ww",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "php",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "key": "out_s7_g2_i234_php",
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "alt",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s7_g2_i234_alt",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "al",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s7_g2_i234_al",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "p",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s7_g2_i234_p",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "rho",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "out_s7_g2_i234_rho",
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "muu",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s7_g2_i234_muu",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "muv",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s7_g2_i234_muv",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "field": "mut",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "key": "out_s7_g2_i234_mut",
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 7
+    }
+  ],
+  "selected_x2_seam_halo_records": [
+    {
+      "field": "u_2",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "halo_s0_i117_u_2",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "v_2",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "halo_s0_i117_v_2",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "mu_2",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s0_i117_mu_2",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "mub",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s0_i117_mub",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "c1h",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "halo_s0_i117_c1h",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        39
+      ],
+      "stage": 0
+    },
+    {
+      "field": "c2h",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "halo_s0_i117_c2h",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        39
+      ],
+      "stage": 0
+    },
+    {
+      "field": "dnw",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "halo_s0_i117_dnw",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        39
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msftx",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s0_i117_msftx",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfty",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s0_i117_msfty",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfux",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s0_i117_msfux",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfuy",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s0_i117_msfuy",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfvx",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s0_i117_msfvx",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfvx_inv",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s0_i117_msfvx_inv",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfvy",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s0_i117_msfvy",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "rdx",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "halo_s0_i117_rdx",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        1
+      ],
+      "stage": 0
+    },
+    {
+      "field": "rdy",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "halo_s0_i117_rdy",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        1
+      ],
+      "stage": 0
+    },
+    {
+      "field": "u_2",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "halo_s0_i118_u_2",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "v_2",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "halo_s0_i118_v_2",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "mu_2",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s0_i118_mu_2",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "mub",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s0_i118_mub",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "c1h",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "halo_s0_i118_c1h",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        39
+      ],
+      "stage": 0
+    },
+    {
+      "field": "c2h",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "halo_s0_i118_c2h",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        39
+      ],
+      "stage": 0
+    },
+    {
+      "field": "dnw",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "halo_s0_i118_dnw",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        39
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msftx",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s0_i118_msftx",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfty",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s0_i118_msfty",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfux",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s0_i118_msfux",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfuy",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s0_i118_msfuy",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfvx",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s0_i118_msfvx",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfvx_inv",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s0_i118_msfvx_inv",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "msfvy",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s0_i118_msfvy",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 0
+    },
+    {
+      "field": "rdx",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "halo_s0_i118_rdx",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        1
+      ],
+      "stage": 0
+    },
+    {
+      "field": "rdy",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "halo_s0_i118_rdy",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        1
+      ],
+      "stage": 0
+    },
+    {
+      "field": "u_2",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "halo_s1_i117_u_2",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "v_2",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "halo_s1_i117_v_2",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "mu_2",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s1_i117_mu_2",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "mub",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s1_i117_mub",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "c1h",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "halo_s1_i117_c1h",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        39
+      ],
+      "stage": 1
+    },
+    {
+      "field": "c2h",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "halo_s1_i117_c2h",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        39
+      ],
+      "stage": 1
+    },
+    {
+      "field": "dnw",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "halo_s1_i117_dnw",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        39
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msftx",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s1_i117_msftx",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfty",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s1_i117_msfty",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfux",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s1_i117_msfux",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfuy",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s1_i117_msfuy",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfvx",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s1_i117_msfvx",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfvx_inv",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s1_i117_msfvx_inv",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfvy",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s1_i117_msfvy",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "rdx",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "halo_s1_i117_rdx",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        1
+      ],
+      "stage": 1
+    },
+    {
+      "field": "rdy",
+      "halo_rank": "i118-235_j1-283",
+      "i": 117,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "halo_s1_i117_rdy",
+      "owner_rank": "i1-117_j1-283",
+      "shape": [
+        1
+      ],
+      "stage": 1
+    },
+    {
+      "field": "u_2",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "halo_s1_i118_u_2",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "v_2",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "halo_s1_i118_v_2",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        39,
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "mu_2",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s1_i118_mu_2",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "mub",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s1_i118_mub",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "c1h",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "halo_s1_i118_c1h",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        39
+      ],
+      "stage": 1
+    },
+    {
+      "field": "c2h",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "halo_s1_i118_c2h",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        39
+      ],
+      "stage": 1
+    },
+    {
+      "field": "dnw",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "key": "halo_s1_i118_dnw",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        39
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msftx",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s1_i118_msftx",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfty",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s1_i118_msfty",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfux",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s1_i118_msfux",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfuy",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s1_i118_msfuy",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfvx",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s1_i118_msfvx",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfvx_inv",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s1_i118_msfvx_inv",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "msfvy",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": [
+        0,
+        283
+      ],
+      "k_bounds": null,
+      "key": "halo_s1_i118_msfvy",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        284
+      ],
+      "stage": 1
+    },
+    {
+      "field": "rdx",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "halo_s1_i118_rdx",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        1
+      ],
+      "stage": 1
+    },
+    {
+      "field": "rdy",
+      "halo_rank": "i1-117_j1-283",
+      "i": 118,
+      "j_bounds": null,
+      "k_bounds": null,
+      "key": "halo_s1_i118_rdy",
+      "owner_rank": "i118-235_j1-283",
+      "shape": [
+        1
+      ],
+      "stage": 1
+    }
+  ],
+  "solve_object_sha256": "7ba833c4a0dca10e6c60d4355d08fe710047695eaedb3914027aee1f4ba21b44",
+  "solve_overlay_sha256": "bf07ce040bf6b60c5806ac39112d17e13074f73146054a2d89fe1b016069508e",
+  "strict_comparisons": {
+    "serial_noenv_vs_capture": {
+      "character_variables": [
+        "Times"
+      ],
+      "common_variables": 254,
+      "numeric_variables": 253,
+      "result_line": "RESULT: STRICT BITWISE PASS",
+      "returncode": 0
+    },
+    "serial_vs_g4": {
+      "character_variables": [
+        "Times"
+      ],
+      "common_variables": 254,
+      "numeric_variables": 253,
+      "result_line": "RESULT: STRICT BITWISE PASS",
+      "returncode": 0
+    },
+    "x2_noenv_vs_capture": {
+      "character_variables": [
+        "Times"
+      ],
+      "common_variables": 254,
+      "numeric_variables": 253,
+      "result_line": "RESULT: STRICT BITWISE PASS",
+      "returncode": 0
+    },
+    "x2_vs_g4": {
+      "character_variables": [
+        "Times"
+      ],
+      "common_variables": 254,
+      "numeric_variables": 253,
+      "result_line": "RESULT: STRICT BITWISE PASS",
+      "returncode": 0
+    }
+  },
+  "strict_output_checks": "all 4 comparisons passed: each layout dump-off vs archived G4, and same-executable dump-off vs capture; 254 common variables = 253 numeric plus exact Times",
+  "trace_bytes": 14621446,
+  "trace_file": "S5_G4_exact2_halo_stencil_trace_2026-09-25.npz",
+  "trace_sha256": "64488506cfb144a2383107ba250660deb2868b9d8fb7f0f7c7131528842ed1d7"
+}

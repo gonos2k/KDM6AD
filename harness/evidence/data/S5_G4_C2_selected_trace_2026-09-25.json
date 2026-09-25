@@ -1,0 +1,5507 @@
+{
+  "full_dump_limit": "Original private/raw C2 dumps were not included; their SHA-256 and byte counts are recorded. The public replayer recomputes first differing field/stage and word counts only over these published selected columns.",
+  "g4_kdm_input_overlay_source_sha256": "0f2b161f86c1294fcbb4fb335e8a083bf0d56325d5c66f4a824c492a5290328c",
+  "input_canonical_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+  "kdm_reported_first_difference": {
+    "difference_kelvin": 3.0517578125e-05,
+    "field": "TH",
+    "flat_endian_uint32": {
+      "serial": 1139747349,
+      "x2": 1139747350
+    },
+    "fortran_index_1based": {
+      "i": 110,
+      "j": 83,
+      "k": 39
+    },
+    "scope": "selected local word from the accepted KDM-entry comparison; global first difference/counts remain in private ignored receipt and are not independently recomputed by this bounded artifact",
+    "values_kelvin": {
+      "serial": 478.3287658691406,
+      "x2": 478.32879638671875
+    }
+  },
+  "namelist_without_grid_sha256": "a4c66fe3727b6048c58a119a89af0e4021369fd67700a9fe605df8f826c6bee2",
+  "normalized_mp237_executable_sha256": "ae57caaf7d282c1ddc39a44581ae187a2a883947aa556885269b7d4585ed26b8",
+  "npz_bytes": 12394426,
+  "npz_file": "S5_G4_C2_selected_trace_2026-09-25.npz",
+  "npz_sha256": "782ab65f310a571a77be854aa932ba9da5633f91403049d089b216d713a50872",
+  "raw_word_count": 4007610,
+  "run_seconds": 20,
+  "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+  "schema": "s5-g4-c2-selected-trace-v1",
+  "scope": "Lossless projection of accepted C2 raw dynamics records at owned i=117 and i=234 for every declared stage/group/field, plus the recorded first KDM-entry TH difference. Not a replay of the full-domain dump.",
+  "selected_record_count": 294,
+  "selected_records": [
+    {
+      "array_key": "s0_g1_i117_u_2",
+      "field": "u_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g1_i117_t_2",
+      "field": "t_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g1_i117_ph_2",
+      "field": "ph_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g1_i117_w_2",
+      "field": "w_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g1_i117_mu_2",
+      "field": "mu_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g1_i234_u_2",
+      "field": "u_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g1_i234_t_2",
+      "field": "t_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g1_i234_ph_2",
+      "field": "ph_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g1_i234_w_2",
+      "field": "w_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g1_i234_mu_2",
+      "field": "mu_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g4_i117_u_2",
+      "field": "u_2",
+      "group": 4,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g4_i117_muu",
+      "field": "muu",
+      "group": 4,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g4_i117_mub",
+      "field": "mub",
+      "group": 4,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g4_i117_msfuy",
+      "field": "msfuy",
+      "group": 4,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g4_i234_u_2",
+      "field": "u_2",
+      "group": 4,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g4_i234_muu",
+      "field": "muu",
+      "group": 4,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g4_i234_mub",
+      "field": "mub",
+      "group": 4,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g4_i234_msfuy",
+      "field": "msfuy",
+      "group": 4,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i117_u_2",
+      "field": "u_2",
+      "group": 5,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i117_v_2",
+      "field": "v_2",
+      "group": 5,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i117_mu_2",
+      "field": "mu_2",
+      "group": 5,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i117_mub",
+      "field": "mub",
+      "group": 5,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i117_c1h",
+      "field": "c1h",
+      "group": 5,
+      "i": 117,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i117_c2h",
+      "field": "c2h",
+      "group": 5,
+      "i": 117,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i117_dnw",
+      "field": "dnw",
+      "group": 5,
+      "i": 117,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i117_msftx",
+      "field": "msftx",
+      "group": 5,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i117_msfty",
+      "field": "msfty",
+      "group": 5,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i117_msfux",
+      "field": "msfux",
+      "group": 5,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i117_msfuy",
+      "field": "msfuy",
+      "group": 5,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i117_msfvx",
+      "field": "msfvx",
+      "group": 5,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i117_msfvx_inv",
+      "field": "msfvx_inv",
+      "group": 5,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i117_msfvy",
+      "field": "msfvy",
+      "group": 5,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i117_rdx",
+      "field": "rdx",
+      "group": 5,
+      "i": 117,
+      "j_bounds": null,
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        1
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i117_rdy",
+      "field": "rdy",
+      "group": 5,
+      "i": 117,
+      "j_bounds": null,
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        1
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i234_u_2",
+      "field": "u_2",
+      "group": 5,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i234_v_2",
+      "field": "v_2",
+      "group": 5,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i234_mu_2",
+      "field": "mu_2",
+      "group": 5,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i234_mub",
+      "field": "mub",
+      "group": 5,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i234_c1h",
+      "field": "c1h",
+      "group": 5,
+      "i": 234,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i234_c2h",
+      "field": "c2h",
+      "group": 5,
+      "i": 234,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i234_dnw",
+      "field": "dnw",
+      "group": 5,
+      "i": 234,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i234_msftx",
+      "field": "msftx",
+      "group": 5,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i234_msfty",
+      "field": "msfty",
+      "group": 5,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i234_msfux",
+      "field": "msfux",
+      "group": 5,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i234_msfuy",
+      "field": "msfuy",
+      "group": 5,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i234_msfvx",
+      "field": "msfvx",
+      "group": 5,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i234_msfvx_inv",
+      "field": "msfvx_inv",
+      "group": 5,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i234_msfvy",
+      "field": "msfvy",
+      "group": 5,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i234_rdx",
+      "field": "rdx",
+      "group": 5,
+      "i": 234,
+      "j_bounds": null,
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        1
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s0_g5_i234_rdy",
+      "field": "rdy",
+      "group": 5,
+      "i": 234,
+      "j_bounds": null,
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        1
+      ],
+      "stage": 0
+    },
+    {
+      "array_key": "s1_g1_i117_u_2",
+      "field": "u_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g1_i117_t_2",
+      "field": "t_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g1_i117_ph_2",
+      "field": "ph_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g1_i117_w_2",
+      "field": "w_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g1_i117_mu_2",
+      "field": "mu_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g1_i234_u_2",
+      "field": "u_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g1_i234_t_2",
+      "field": "t_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g1_i234_ph_2",
+      "field": "ph_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g1_i234_w_2",
+      "field": "w_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g1_i234_mu_2",
+      "field": "mu_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g4_i117_u_2",
+      "field": "u_2",
+      "group": 4,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g4_i117_muu",
+      "field": "muu",
+      "group": 4,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g4_i117_mub",
+      "field": "mub",
+      "group": 4,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g4_i117_msfuy",
+      "field": "msfuy",
+      "group": 4,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g4_i234_u_2",
+      "field": "u_2",
+      "group": 4,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g4_i234_muu",
+      "field": "muu",
+      "group": 4,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g4_i234_mub",
+      "field": "mub",
+      "group": 4,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g4_i234_msfuy",
+      "field": "msfuy",
+      "group": 4,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i117_u_2",
+      "field": "u_2",
+      "group": 5,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i117_v_2",
+      "field": "v_2",
+      "group": 5,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i117_mu_2",
+      "field": "mu_2",
+      "group": 5,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i117_mub",
+      "field": "mub",
+      "group": 5,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i117_c1h",
+      "field": "c1h",
+      "group": 5,
+      "i": 117,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i117_c2h",
+      "field": "c2h",
+      "group": 5,
+      "i": 117,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i117_dnw",
+      "field": "dnw",
+      "group": 5,
+      "i": 117,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i117_msftx",
+      "field": "msftx",
+      "group": 5,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i117_msfty",
+      "field": "msfty",
+      "group": 5,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i117_msfux",
+      "field": "msfux",
+      "group": 5,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i117_msfuy",
+      "field": "msfuy",
+      "group": 5,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i117_msfvx",
+      "field": "msfvx",
+      "group": 5,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i117_msfvx_inv",
+      "field": "msfvx_inv",
+      "group": 5,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i117_msfvy",
+      "field": "msfvy",
+      "group": 5,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i117_rdx",
+      "field": "rdx",
+      "group": 5,
+      "i": 117,
+      "j_bounds": null,
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        1
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i117_rdy",
+      "field": "rdy",
+      "group": 5,
+      "i": 117,
+      "j_bounds": null,
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        1
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i234_u_2",
+      "field": "u_2",
+      "group": 5,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i234_v_2",
+      "field": "v_2",
+      "group": 5,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i234_mu_2",
+      "field": "mu_2",
+      "group": 5,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i234_mub",
+      "field": "mub",
+      "group": 5,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i234_c1h",
+      "field": "c1h",
+      "group": 5,
+      "i": 234,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i234_c2h",
+      "field": "c2h",
+      "group": 5,
+      "i": 234,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i234_dnw",
+      "field": "dnw",
+      "group": 5,
+      "i": 234,
+      "j_bounds": null,
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i234_msftx",
+      "field": "msftx",
+      "group": 5,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i234_msfty",
+      "field": "msfty",
+      "group": 5,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i234_msfux",
+      "field": "msfux",
+      "group": 5,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i234_msfuy",
+      "field": "msfuy",
+      "group": 5,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i234_msfvx",
+      "field": "msfvx",
+      "group": 5,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i234_msfvx_inv",
+      "field": "msfvx_inv",
+      "group": 5,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i234_msfvy",
+      "field": "msfvy",
+      "group": 5,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i234_rdx",
+      "field": "rdx",
+      "group": 5,
+      "i": 234,
+      "j_bounds": null,
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        1
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s1_g5_i234_rdy",
+      "field": "rdy",
+      "group": 5,
+      "i": 234,
+      "j_bounds": null,
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        1
+      ],
+      "stage": 1
+    },
+    {
+      "array_key": "s2_g1_i117_u_2",
+      "field": "u_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g1_i117_t_2",
+      "field": "t_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g1_i117_ph_2",
+      "field": "ph_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g1_i117_w_2",
+      "field": "w_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g1_i117_mu_2",
+      "field": "mu_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g1_i234_u_2",
+      "field": "u_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g1_i234_t_2",
+      "field": "t_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g1_i234_ph_2",
+      "field": "ph_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g1_i234_w_2",
+      "field": "w_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g1_i234_mu_2",
+      "field": "mu_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g2_i117_ru",
+      "field": "ru",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g2_i117_rv",
+      "field": "rv",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g2_i117_rw",
+      "field": "rw",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g2_i117_ww",
+      "field": "ww",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g2_i117_php",
+      "field": "php",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g2_i117_alt",
+      "field": "alt",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g2_i117_al",
+      "field": "al",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g2_i117_p",
+      "field": "p",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g2_i117_rho",
+      "field": "rho",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g2_i117_muu",
+      "field": "muu",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g2_i117_muv",
+      "field": "muv",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g2_i117_mut",
+      "field": "mut",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g2_i234_ru",
+      "field": "ru",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g2_i234_rv",
+      "field": "rv",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g2_i234_rw",
+      "field": "rw",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g2_i234_ww",
+      "field": "ww",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g2_i234_php",
+      "field": "php",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g2_i234_alt",
+      "field": "alt",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g2_i234_al",
+      "field": "al",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g2_i234_p",
+      "field": "p",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g2_i234_rho",
+      "field": "rho",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g2_i234_muu",
+      "field": "muu",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g2_i234_muv",
+      "field": "muv",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s2_g2_i234_mut",
+      "field": "mut",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 2
+    },
+    {
+      "array_key": "s31_g2_i117_ru",
+      "field": "ru",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "array_key": "s31_g2_i117_rv",
+      "field": "rv",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "array_key": "s31_g2_i117_rw",
+      "field": "rw",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "array_key": "s31_g2_i117_ww",
+      "field": "ww",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "array_key": "s31_g2_i117_php",
+      "field": "php",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "array_key": "s31_g2_i117_alt",
+      "field": "alt",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "array_key": "s31_g2_i117_al",
+      "field": "al",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "array_key": "s31_g2_i117_p",
+      "field": "p",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "array_key": "s31_g2_i117_rho",
+      "field": "rho",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "array_key": "s31_g2_i117_muu",
+      "field": "muu",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "array_key": "s31_g2_i117_muv",
+      "field": "muv",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "array_key": "s31_g2_i117_mut",
+      "field": "mut",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "array_key": "s31_g2_i234_ru",
+      "field": "ru",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "array_key": "s31_g2_i234_rv",
+      "field": "rv",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "array_key": "s31_g2_i234_rw",
+      "field": "rw",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "array_key": "s31_g2_i234_ww",
+      "field": "ww",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "array_key": "s31_g2_i234_php",
+      "field": "php",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "array_key": "s31_g2_i234_alt",
+      "field": "alt",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "array_key": "s31_g2_i234_al",
+      "field": "al",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "array_key": "s31_g2_i234_p",
+      "field": "p",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "array_key": "s31_g2_i234_rho",
+      "field": "rho",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "array_key": "s31_g2_i234_muu",
+      "field": "muu",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "array_key": "s31_g2_i234_muv",
+      "field": "muv",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "array_key": "s31_g2_i234_mut",
+      "field": "mut",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 31
+    },
+    {
+      "array_key": "s32_g2_i117_ru",
+      "field": "ru",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "array_key": "s32_g2_i117_rv",
+      "field": "rv",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "array_key": "s32_g2_i117_rw",
+      "field": "rw",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "array_key": "s32_g2_i117_ww",
+      "field": "ww",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "array_key": "s32_g2_i117_php",
+      "field": "php",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "array_key": "s32_g2_i117_alt",
+      "field": "alt",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "array_key": "s32_g2_i117_al",
+      "field": "al",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "array_key": "s32_g2_i117_p",
+      "field": "p",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "array_key": "s32_g2_i117_rho",
+      "field": "rho",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "array_key": "s32_g2_i117_muu",
+      "field": "muu",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "array_key": "s32_g2_i117_muv",
+      "field": "muv",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "array_key": "s32_g2_i117_mut",
+      "field": "mut",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "array_key": "s32_g2_i234_ru",
+      "field": "ru",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "array_key": "s32_g2_i234_rv",
+      "field": "rv",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "array_key": "s32_g2_i234_rw",
+      "field": "rw",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "array_key": "s32_g2_i234_ww",
+      "field": "ww",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "array_key": "s32_g2_i234_php",
+      "field": "php",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "array_key": "s32_g2_i234_alt",
+      "field": "alt",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "array_key": "s32_g2_i234_al",
+      "field": "al",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "array_key": "s32_g2_i234_p",
+      "field": "p",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "array_key": "s32_g2_i234_rho",
+      "field": "rho",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "array_key": "s32_g2_i234_muu",
+      "field": "muu",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "array_key": "s32_g2_i234_muv",
+      "field": "muv",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "array_key": "s32_g2_i234_mut",
+      "field": "mut",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 32
+    },
+    {
+      "array_key": "s4_g1_i117_u_2",
+      "field": "u_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 4
+    },
+    {
+      "array_key": "s4_g1_i117_t_2",
+      "field": "t_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 4
+    },
+    {
+      "array_key": "s4_g1_i117_ph_2",
+      "field": "ph_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 4
+    },
+    {
+      "array_key": "s4_g1_i117_w_2",
+      "field": "w_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 4
+    },
+    {
+      "array_key": "s4_g1_i117_mu_2",
+      "field": "mu_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 4
+    },
+    {
+      "array_key": "s4_g1_i234_u_2",
+      "field": "u_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 4
+    },
+    {
+      "array_key": "s4_g1_i234_t_2",
+      "field": "t_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 4
+    },
+    {
+      "array_key": "s4_g1_i234_ph_2",
+      "field": "ph_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 4
+    },
+    {
+      "array_key": "s4_g1_i234_w_2",
+      "field": "w_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 4
+    },
+    {
+      "array_key": "s4_g1_i234_mu_2",
+      "field": "mu_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 4
+    },
+    {
+      "array_key": "s5_g1_i117_u_2",
+      "field": "u_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "array_key": "s5_g1_i117_t_2",
+      "field": "t_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "array_key": "s5_g1_i117_ph_2",
+      "field": "ph_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "array_key": "s5_g1_i117_w_2",
+      "field": "w_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "array_key": "s5_g1_i117_mu_2",
+      "field": "mu_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "array_key": "s5_g1_i234_u_2",
+      "field": "u_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "array_key": "s5_g1_i234_t_2",
+      "field": "t_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "array_key": "s5_g1_i234_ph_2",
+      "field": "ph_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "array_key": "s5_g1_i234_w_2",
+      "field": "w_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "array_key": "s5_g1_i234_mu_2",
+      "field": "mu_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "array_key": "s5_g3_i117_ru_tend",
+      "field": "ru_tend",
+      "group": 3,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "array_key": "s5_g3_i117_rv_tend",
+      "field": "rv_tend",
+      "group": 3,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "array_key": "s5_g3_i117_rw_tend",
+      "field": "rw_tend",
+      "group": 3,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "array_key": "s5_g3_i117_ph_tend",
+      "field": "ph_tend",
+      "group": 3,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "array_key": "s5_g3_i117_t_tend",
+      "field": "t_tend",
+      "group": 3,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "array_key": "s5_g3_i117_mu_tend",
+      "field": "mu_tend",
+      "group": 3,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "array_key": "s5_g3_i234_ru_tend",
+      "field": "ru_tend",
+      "group": 3,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "array_key": "s5_g3_i234_rv_tend",
+      "field": "rv_tend",
+      "group": 3,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "array_key": "s5_g3_i234_rw_tend",
+      "field": "rw_tend",
+      "group": 3,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "array_key": "s5_g3_i234_ph_tend",
+      "field": "ph_tend",
+      "group": 3,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "array_key": "s5_g3_i234_t_tend",
+      "field": "t_tend",
+      "group": 3,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "array_key": "s5_g3_i234_mu_tend",
+      "field": "mu_tend",
+      "group": 3,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 5
+    },
+    {
+      "array_key": "s6_g1_i117_u_2",
+      "field": "u_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g1_i117_t_2",
+      "field": "t_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g1_i117_ph_2",
+      "field": "ph_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g1_i117_w_2",
+      "field": "w_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g1_i117_mu_2",
+      "field": "mu_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g1_i234_u_2",
+      "field": "u_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g1_i234_t_2",
+      "field": "t_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g1_i234_ph_2",
+      "field": "ph_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g1_i234_w_2",
+      "field": "w_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g1_i234_mu_2",
+      "field": "mu_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g2_i117_ru",
+      "field": "ru",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g2_i117_rv",
+      "field": "rv",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g2_i117_rw",
+      "field": "rw",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g2_i117_ww",
+      "field": "ww",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g2_i117_php",
+      "field": "php",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g2_i117_alt",
+      "field": "alt",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g2_i117_al",
+      "field": "al",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g2_i117_p",
+      "field": "p",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g2_i117_rho",
+      "field": "rho",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g2_i117_muu",
+      "field": "muu",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g2_i117_muv",
+      "field": "muv",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g2_i117_mut",
+      "field": "mut",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g2_i234_ru",
+      "field": "ru",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g2_i234_rv",
+      "field": "rv",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g2_i234_rw",
+      "field": "rw",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g2_i234_ww",
+      "field": "ww",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g2_i234_php",
+      "field": "php",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g2_i234_alt",
+      "field": "alt",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g2_i234_al",
+      "field": "al",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g2_i234_p",
+      "field": "p",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g2_i234_rho",
+      "field": "rho",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g2_i234_muu",
+      "field": "muu",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g2_i234_muv",
+      "field": "muv",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g2_i234_mut",
+      "field": "mut",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g3_i117_ru_tend",
+      "field": "ru_tend",
+      "group": 3,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g3_i117_rv_tend",
+      "field": "rv_tend",
+      "group": 3,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g3_i117_rw_tend",
+      "field": "rw_tend",
+      "group": 3,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g3_i117_ph_tend",
+      "field": "ph_tend",
+      "group": 3,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g3_i117_t_tend",
+      "field": "t_tend",
+      "group": 3,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g3_i117_mu_tend",
+      "field": "mu_tend",
+      "group": 3,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g3_i234_ru_tend",
+      "field": "ru_tend",
+      "group": 3,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g3_i234_rv_tend",
+      "field": "rv_tend",
+      "group": 3,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g3_i234_rw_tend",
+      "field": "rw_tend",
+      "group": 3,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g3_i234_ph_tend",
+      "field": "ph_tend",
+      "group": 3,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g3_i234_t_tend",
+      "field": "t_tend",
+      "group": 3,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s6_g3_i234_mu_tend",
+      "field": "mu_tend",
+      "group": 3,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 6
+    },
+    {
+      "array_key": "s7_g1_i117_u_2",
+      "field": "u_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g1_i117_t_2",
+      "field": "t_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g1_i117_ph_2",
+      "field": "ph_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g1_i117_w_2",
+      "field": "w_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g1_i117_mu_2",
+      "field": "mu_2",
+      "group": 1,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g1_i234_u_2",
+      "field": "u_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g1_i234_t_2",
+      "field": "t_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g1_i234_ph_2",
+      "field": "ph_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g1_i234_w_2",
+      "field": "w_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g1_i234_mu_2",
+      "field": "mu_2",
+      "group": 1,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g2_i117_ru",
+      "field": "ru",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g2_i117_rv",
+      "field": "rv",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g2_i117_rw",
+      "field": "rw",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g2_i117_ww",
+      "field": "ww",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g2_i117_php",
+      "field": "php",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g2_i117_alt",
+      "field": "alt",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g2_i117_al",
+      "field": "al",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g2_i117_p",
+      "field": "p",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g2_i117_rho",
+      "field": "rho",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g2_i117_muu",
+      "field": "muu",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g2_i117_muv",
+      "field": "muv",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g2_i117_mut",
+      "field": "mut",
+      "group": 2,
+      "i": 117,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g2_i234_ru",
+      "field": "ru",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g2_i234_rv",
+      "field": "rv",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g2_i234_rw",
+      "field": "rw",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g2_i234_ww",
+      "field": "ww",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g2_i234_php",
+      "field": "php",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        40
+      ],
+      "owned": true,
+      "shape": [
+        40,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g2_i234_alt",
+      "field": "alt",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g2_i234_al",
+      "field": "al",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g2_i234_p",
+      "field": "p",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g2_i234_rho",
+      "field": "rho",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": [
+        1,
+        39
+      ],
+      "owned": true,
+      "shape": [
+        39,
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g2_i234_muu",
+      "field": "muu",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g2_i234_muv",
+      "field": "muv",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 7
+    },
+    {
+      "array_key": "s7_g2_i234_mut",
+      "field": "mut",
+      "group": 2,
+      "i": 234,
+      "j_bounds": [
+        1,
+        282
+      ],
+      "k_bounds": null,
+      "owned": true,
+      "shape": [
+        282
+      ],
+      "stage": 7
+    }
+  ],
+  "serial_grid": "1x1",
+  "solve_em_c2_object_sha256": "e44592a150c0b85320fb49c0c50f1e43837a105037e76b3ff4d912e26ea7a8e6",
+  "solve_em_c2_overlay_source_sha256": "3474ad673eed423b92755b76ef6cc27b15dd966bd97b8a004c5f72629f1992b5",
+  "source_raw_capture_hashes": {
+    "serial_dynamics": [
+      {
+        "bytes": 480805408,
+        "file": "g33dyn_i1-235_j1-283.bin",
+        "sha256": "6c95ce473cb8d8bf7343770b95dcc977b75d9f58c08f57f4615333a25659bf7d"
+      }
+    ],
+    "serial_kdm_inputs": [
+      {
+        "bytes": 11467696,
+        "file": "s5.rank0.step1.w1.i101-133.j143-281.bin",
+        "sha256": "3d7a9957aabe00f02d89da0da6a6e7da9e97bc22e0b9274e0edf183485e72b02"
+      },
+      {
+        "bytes": 11632696,
+        "file": "s5.rank0.step1.w1.i101-133.j2-142.bin",
+        "sha256": "498e86cbe4d6d32d617141a4c722e28058da2b157b651a40e4a97082b5dca4b4"
+      },
+      {
+        "bytes": 6950196,
+        "file": "s5.rank0.step1.w2.i214-233.j143-281.bin",
+        "sha256": "2bc05355195b4bde3f0a46418ab9e1aec1e369eae5fc40182ded6ddbbb31723a"
+      },
+      {
+        "bytes": 7050196,
+        "file": "s5.rank0.step1.w2.i214-233.j2-142.bin",
+        "sha256": "5e2cc0f7e80bd0de03f6c4081f165e4d5bf23196d119bf40bcc76ffcd4914891"
+      }
+    ],
+    "x2_dynamics": [
+      {
+        "bytes": 215093768,
+        "file": "g33dyn_i1-117_j1-283.bin",
+        "sha256": "7cedb5658975c4a845e409df1cdfee6ba75aab5498ed97b20d4bc184228766eb"
+      },
+      {
+        "bytes": 295228560,
+        "file": "g33dyn_i118-235_j1-283.bin",
+        "sha256": "70d815911345418d19eaedf06ed589b5f4de151faee684e7de0da98bceb4359d"
+      }
+    ],
+    "x2_kdm_inputs": [
+      {
+        "bytes": 5907696,
+        "file": "s5.rank0.step1.w1.i101-117.j143-281.bin",
+        "sha256": "2409a22af652c8bff6872517b8eb2e2bcbd14427c0285afec661f6da828600af"
+      },
+      {
+        "bytes": 5992696,
+        "file": "s5.rank0.step1.w1.i101-117.j2-142.bin",
+        "sha256": "745c8390e9189717c9d399406fd46fd829cfa0960794e9b337167d5616ac777c"
+      },
+      {
+        "bytes": 5560196,
+        "file": "s5.rank1.step1.w1.i118-133.j143-281.bin",
+        "sha256": "7170d0f3d0f85e26090446a914d43091ce9346bdb283f2d561b3cf7774d94826"
+      },
+      {
+        "bytes": 5640196,
+        "file": "s5.rank1.step1.w1.i118-133.j2-142.bin",
+        "sha256": "f5a8f3f08689b686ad96dea86c69b096b3732e69fb0de887545ca6ef6e92b0ba"
+      },
+      {
+        "bytes": 6950196,
+        "file": "s5.rank1.step1.w2.i214-233.j143-281.bin",
+        "sha256": "0edd18206b4650f7105a2a9f94eb6c3826f756628527b3b6d6bdaf25f524361d"
+      },
+      {
+        "bytes": 7050196,
+        "file": "s5.rank1.step1.w2.i214-233.j2-142.bin",
+        "sha256": "d09ecd1efdb82305ebeb86dd39dd323abd14d799c80ffa95223e4a9c8d8a4b2b"
+      }
+    ]
+  },
+  "x2_grid": "2x1"
+}
