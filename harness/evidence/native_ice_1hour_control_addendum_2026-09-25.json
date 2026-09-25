@@ -1,0 +1,12 @@
+{
+  "schema": "s4-hour-control-addendum-v1",
+  "created_utc": "2026-09-25T03:53:07.440424+00:00",
+  "reason": "The fixed 3600s census completed with no mstep>=2; add same-configuration logging-off control so the negative execution and full-hour history have within-variant noninterference evidence. Original hour-plan.json remains retained.",
+  "same_input_executable_dt_horizon_output_controls": true,
+  "logging_enabled": false,
+  "minutes": 60,
+  "history_minutes": 60,
+  "restart_interval_minutes": 999,
+  "rank_count": 1,
+  "thread_count": 1
+}
