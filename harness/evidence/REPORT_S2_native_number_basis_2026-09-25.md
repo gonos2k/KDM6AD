@@ -115,7 +115,7 @@ internal face keys at levels 1–38 and top-cell key at level 39 for each of the
 two calls; deleting a face or source event cannot silently shorten the column
 or source census. It checks host/local entry and return copies, actual DSD
 gates, source-ordered melt/autoconversion thresholds and number updates, each
-applied mass/number face cap, and conditional column ledgers. Thirteen focused
+applied mass/number face cap, and conditional column ledgers. Fourteen focused
 replay tests pass. The complete 910 MB control/capture history files have the
 same SHA-256; `strict_bitwise_nc.py` reports 253/253 common numeric fields
 raw-bit identical, plus exact equality for the `Times` character variable (254

@@ -4155,7 +4155,7 @@
     "instrumenter_path": "/Users/yhlee/KDM6AD-s2-number-basis/harness/instrument_s2_native_number.py",
     "instrumenter_sha256": "fe55ad3df507a5bb6e6415de6b35422445ce4e07fed669d89cf2a44df3650347",
     "replayer_path": "harness/replay_s2_number_trace.py",
-    "replayer_sha256": "5b9104ed036cd396be8503195722a1aadee3e8323c49c6608b32b97963763f88",
+    "replayer_sha256": "ae0255357c04d4d7e61a64ac67fdf3da34363c51a5da20636f120fd382eac0af",
     "source_order_summary": "Fortran kdm6 copies NR to NRS and back, derives rain lambda using PIDNR*NRS/(DEN*QRS), forms rain-number sources including snow/graupel melting and applies NRMIN floors; number sedimentation uses falkn without DEND while mass falk includes DEND.",
     "units_observed_from_registry": "QNRAIN # kg(-1), with no host boundary density conversion"
   },
@@ -4174,7 +4174,7 @@
     "focused_pytest": {
       "command": "python3 -m pytest -q harness/tests/test_replay_s2_number_trace.py",
       "failed": 0,
-      "passed": 13
+      "passed": 14
     },
     "graphify": {
       "communities": 1033,
@@ -4189,7 +4189,7 @@
       "path": "harness/replay_s2_number_trace.py",
       "result_path": "harness/evidence/native_s2_number_replay_2026-09-25.json",
       "result_sha256": "16d6be813108a2d9407d9c005bec703f8093d3216ef7f7e593a958ee4e09d5c2",
-      "sha256": "5b9104ed036cd396be8503195722a1aadee3e8323c49c6608b32b97963763f88",
+      "sha256": "ae0255357c04d4d7e61a64ac67fdf3da34363c51a5da20636f120fd382eac0af",
       "status": "pass"
     },
     "strict_bitwise": {

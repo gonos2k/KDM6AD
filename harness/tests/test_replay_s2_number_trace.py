@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from harness.replay_s2_number_trace import TraceError, replay
+from harness.replay_s2_number_trace import TraceError, parse_capture, replay
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -241,3 +241,20 @@ def test_warm_number_update_and_cap_keys_cannot_move_into_cold_levels(bundle):
 
     with pytest.raises(TraceError, match="NR_LIMIT_POST event-key census"):
         replay(altered, changed)
+
+
+def test_parser_allows_only_explicitly_predeclared_extended_step_domain(bundle):
+    evidence, text = bundle
+    lines = text.splitlines()
+    row = next(i for i, line in enumerate(lines)
+               if line.startswith("S2NR HOST_ENTRY 2 "))
+    parts = lines[row].split()
+    parts[2] = "3"
+    lines[row] = " ".join(parts)
+    changed = "\n".join(lines) + "\n"
+    tags = evidence["capture_source"]["tags"]
+
+    with pytest.raises(TraceError, match="invalid step/loop/level"):
+        parse_capture(changed, tags)
+    rows = parse_capture(changed, tags, allowed_steps=range(1, 31))
+    assert any(row["tag"] == "HOST_ENTRY" and row["step"] == 3 for row in rows)

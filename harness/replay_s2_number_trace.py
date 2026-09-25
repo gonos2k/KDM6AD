@@ -13,6 +13,7 @@ import json
 import math
 import struct
 from collections import defaultdict
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
@@ -121,10 +122,12 @@ def _hex_f64(token: str) -> float:
     return value
 
 
-def parse_capture(text: str, tags: dict[str, dict[str, list[str]]]) -> list[dict[str, Any]]:
+def parse_capture(text: str, tags: dict[str, dict[str, list[str]]], *,
+                  allowed_steps: Iterable[int] | None = None) -> list[dict[str, Any]]:
     """Decode fixed-width hex stdout records emitted by instrument_s2_native_number.py."""
     rows: list[dict[str, Any]] = []
     unique: set[tuple[Any, ...]] = set()
+    step_domain = EXPECTED_STEPS if allowed_steps is None else set(allowed_steps)
     for line_number, line in enumerate(text.splitlines(), 1):
         if not line.startswith("S2NR "):
             continue
@@ -141,7 +144,7 @@ def parse_capture(text: str, tags: dict[str, dict[str, list[str]]]) -> list[dict
             raise TraceError(f"bad coordinates at S2 line {line_number}") from exc
         if (host_j, host_i) != (CELL["host_j"], CELL["host_i"]):
             raise TraceError(f"event escaped the fixed cell at line {line_number}")
-        if step not in EXPECTED_STEPS or level < 1 or outer_loop < 0 or substep < 0:
+        if step not in step_domain or level < 1 or outer_loop < 0 or substep < 0:
             raise TraceError(f"invalid step/loop/level at S2 line {line_number}")
         flags = list(schema.get("flags", []))
         real32 = list(schema.get("real32", []))
