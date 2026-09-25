@@ -19,7 +19,7 @@ with a separate PR for each. Prior captures and failed gates remain intact.
 | G3.3 | Open | Native-host physical number basis and threshold policy | Resolve Registry/kernel conflict and verify entry, producers, applied transfer and return in one declared physical basis; no default density factor inserted by assumption |
 | G3.4 | Demonstrated, isolated | Derivatives of representation/geometry transformations | The analysis-only, opt-in conservative ice function generates paired transfers matching an independent inventory recurrence; state/rho/dz/velocity JVP/VJP/FD include weight derivatives. Operational legacy/native transfer remains open |
 | G4.1 | Ownership demonstrated; trajectory failure open | Execution ownership across MPI/tile decompositions | G4 complete rank-territory/consumer census passes; 1×2 matches serial, 2×1 differs in 71 numeric fields at 40 s. Localize first upstream i-seam divergence before approval |
-| G4.2 | Measured failure; identity gap fixed | Restart first handoff and cumulative transport | Checkpoint is hashed and clock/step2 linked; restart logging control matches capture, but 60 fields differ from continuous at 40 s. Trace first post-restart physical-state divergence |
+| G4.2 | Bounded producer localized; cause open | Restart first handoff and cumulative transport | Checkpoint matches parent/child saved common fields 235/235. Same shadow binary reproduces both retained G4 histories bitwise; five preselected profiles match through `phy_prep` and radiation, then surface outputs first differ for clear/ice/rain. Surface inputs are incomplete and five profiles cannot establish a full-domain first divergence or causal source; add missing surface operands and trace their producer. |
 | G4.3 | Demonstrated, bounded spatial sample | Held-out meteorological inputs | Five native input-property columns preselected before comparisons; full profiles retained. Samples miss the x-decomposition domain failure, so full-domain checks remain mandatory; no new time/observation validation |
 | G4.4 | Open | Physical time convergence | Separate normalized fixed-speed, reslope column and full host experiments; compare distribution, export, sizes, thermodynamics and branches |
 | AD.1 | Open | Full normalized state-dependent AD/ABI | Include actual velocity/size paths and declared controls; distinguish same-branch derivatives from threshold-crossing increments |
@@ -45,8 +45,16 @@ G4 evidence: `REPORT_native_execution_2026-09-24.md` and
 native runs preserve within-configuration outputs. The x-decomposition and
 restart trajectory failures are **not resolved** by a complete execution census.
 Next actionable measurements: pre-KDM owned geometry/forcing at the i seam,
-and the first divergent update after restart restoration. Keep the measured
+and complete the bounded restart producer trace beyond its first surface
+output difference. Keep the measured
 failures and source attribution; do not relax their comparison to close rows.
+
+G4.2 bounded restart evidence: `REPORT_g4_restart_checkpoint_2026-09-25.md`,
+`g4_restart_shadow_runs_2026-09-25.json`, and the compressed step-2 traces.
+The comparison rules out a mismatch in common saved checkpoint fields and
+localizes the first observed selected-profile output difference to the surface
+driver, but does not capture its complete input dependency set or establish a
+domain-wide earliest cause. The restart trajectory gate remains open.
 
 G4 validation: 67 focused checks passed (51 new, 16 retained). Final Green/Red
 review closed masked-input and metadata-consistency counterexamples; no reviewed

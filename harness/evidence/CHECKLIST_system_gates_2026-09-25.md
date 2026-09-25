@@ -1,6 +1,6 @@
 # KDM6AD system-level gates after bounded F0–F7 pilots
 
-Baseline: `main` at `e2da673e`, which contains X1–X12/G4 and the bounded
+Baseline: `main` at `2fe984c1`, which contains X1–X12/G4 and the bounded
 F1–F7 verification pilots. A synthetic property, public arithmetic replay,
 local C++ function, isolated native run and operational host trajectory are
 different evidence levels. This checklist tracks the remaining **system**
@@ -27,7 +27,7 @@ for the narrower differentiability validation.
 | S3 | **OPEN** | Whole-host accepted-state nonnegativity | Find first negative number creation across RK face/limiter, boundary, microphysics input/return and saved history for both legacy and normalized conservative paths; include physical owner coordinates and source-ordered f32 operations. Validate a conservation-aware repair at the producing step and all affected boundaries, with no blanket post-hoc clipping. The bounded replay candidate in [REPORT_S3_face_budget_backoff_candidate_2026-09-25.md](REPORT_S3_face_budget_backoff_candidate_2026-09-25.md) repairs two captured donor stores with synthetic receivers only; it supplies no native or physical-unit evidence and does not close this gate. |
 | S4 | **OPEN — 600 s and 3,600 s negative witnesses** | Native dynamic `mstep ≥ 2` consumption | Keep the retained 5 km input, normalized mp237 source and 20 s timestep fixed; predeclare a longer run horizon and census all owned columns until an active-ice column naturally selects at least two ice substeps, or report no witness by that horizon **without closing S4**. The 600 s control/capture pair has 1,948,800 selected owned column-steps, and the separately planned 3,600 s pair has 11,692,800; both are all `mstep=1`, with matching saved control/capture bytes in each pair. A qualifying witness still needs each consumer's latest `v/dz` generation, changed post-reslope velocity where present, actual departures/arrivals/export, finished-column inactivity and restart reuse. Changing dt or prescribing speed would be a different experiment. |
 | S5 | **OPEN** | MPI/tile trajectory across i split | On the exact normalized mp237 build/input, localize the first owned-cell divergence between serial and 2×1 before and after RK/halo/KDM handoffs; retain full-domain 28/71-field failure at 20/40 s. Existing G33 code-generation experiments are a candidate mechanism on another build; verify applicability rather than silently importing their result. Validate any arithmetic/toolchain remedy on identical inputs, both decompositions and saved times. |
-| S6 | **OPEN** | Restart trajectory equivalence | Parent checkpoint and child input identities already match. Compare all next-step-relevant restored prognostic, timer, surface/PBL/radiation cache and boundary states before the first RK call; find first divergent producer between 20 and 40 s. Distinguish the seven immediate diagnostic-only differences from the later prognostic divergence, then validate a corrected continuation against uninterrupted history without relaxing bitwise rules. |
+| S6 | **OPEN — bounded first producer only** | Restart trajectory equivalence | Checkpoint/common saved fields match parent and child 235/235; same shadow binary reproduces both retained histories bitwise. Five preselected step-2 profiles match after `phy_prep` and radiation; the first observed relevant output differences are surface `HFX/LH/QFX/UST` for clear/ice/rain, followed by PBL tendencies. The surface input dependency set and full-domain earliest divergence remain unmeasured, so causal attribution stays open. Add missing surface operands and trace their producer; preserve the seven history-only diagnostic differences separately. |
 | S7 | **OPEN** | Physical time accuracy | After normalized producer/consumer units are established, compare same-final-time vertical distribution, bottom export, size and thermal state across time steps/substeps with speeds and sizes recomputed at the declared cadence. Keep formal raw-work fixed-coefficient curves separate from the physical operator; predeclare a reference and error budget. |
 | S8 | **OPEN** | Full normalized AD and host ABI | Separately verify mp337 **forward** C/Fortran host entry/return and a named normalized AD-capable ABI path for actual state-dependent size/velocity and active controls. The current mp337 wrapper sets `value_only=1`, returns a null handle and cannot by itself test JVP/VJP; a distinct `value_only=0` handle lifecycle or explicit test wrapper must exercise packed tangent/adjoint fields. Require same-branch independent differences and threshold-crossing tests; preserve operational f32 versus fp64 DA contracts. |
 | S9 | **OPEN** | Historical source/build certification | Preserve the failed old SHA pin and the documented one-line `rhox` difference. Authenticate the approved current source and executable chain with explicit review of inactive-output validity and rebuild/install identity; do not make the old pin pass by replacing it. |
@@ -52,6 +52,11 @@ rollout boundaries not promoted by a synthetic pass.
 The legacy ice departure/arrival loss and the normalized G4 MPI/restart failures
 remain measured negative results. A new row is closed only with its own scope,
 raw or lossless inputs, executed artifact and replay/independent check.
+
+S6 bounded shadow evidence: `REPORT_g4_restart_checkpoint_2026-09-25.md`,
+`g4_restart_shadow_runs_2026-09-25.json`, and the compressed continuous/restart
+step-2 traces. This localizes a bounded first observed producer, not a causal
+root or domain-wide earliest difference; S6 remains OPEN.
 
 S4's 600 s and 3,600 s negative native searches are in
 `REPORT_native_ice_multistep_search_2026-09-25.md`, its lossless rank log and
