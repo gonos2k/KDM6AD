@@ -2080,25 +2080,25 @@
     "replay_status": "pass",
     "graphify": {
       "structural_update": {
-        "nodes": 13418,
-        "edges": 23044,
-        "communities": 1051
+        "nodes": 13428,
+        "edges": 23055,
+        "communities": 1052
       },
       "semantic_markdown_files": 3,
       "semantic_fragment": {
-        "nodes": 49,
-        "edges": 68,
+        "nodes": 51,
+        "edges": 72,
         "hyperedges": 0
       },
       "merged_public_graph": {
-        "nodes": 13421,
-        "edges": 23049,
-        "communities": 1043
+        "nodes": 13433,
+        "edges": 23064,
+        "communities": 1057
       },
       "html_visualization": "skipped because graph exceeds 5000-node limit",
       "private_host_graph_coverage": "not available; private host absent from public corpus, source-trace evidence remains separate"
     },
-    "current_review_base_sha": "6047bdeee0b1ea31ed73ff6db93c7654cd017025"
+    "current_review_base_sha": "dfc5e288510e43c6ef3f199851be2038331b13fe"
   },
   "replayer_path": "harness/replay_s14_m1_number_ledger.py",
   "replay_result_path": "harness/evidence/native_s14_m1_number_replay_2026-09-25.json",
