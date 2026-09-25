@@ -486,6 +486,83 @@ def _conditional_threshold_maps(rows: list[dict[str, Any]]) -> list[dict[str, An
     return maps
 
 
+def _focus_path(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Summarize the input-predeclared K13 producer-to-transport path."""
+    def one(tag: str, step: int, level: int) -> dict[str, Any]:
+        found = [r for r in rows if r["tag"] == tag and r["step"] == step
+                 and r["level"] == level]
+        if not found:
+            raise TraceError(f"missing predeclared K13 trace event {tag} at step {step}")
+        return found[0]
+
+    entry1 = one("HOST_ENTRY", 1, 13)["f32"]
+    entry2 = one("HOST_ENTRY", 2, 13)["f32"]
+    return1 = one("HOST_RETURN", 1, 13)["f32"]
+    return2 = one("HOST_RETURN", 2, 13)["f32"]
+    melt_pre = one("NR_SNOW_MELT_PRE", 1, 13)
+    melt_post = one("NR_SNOW_MELT_POST", 1, 13)
+    dsd_gate = one("DSD_PRE_GATE", 2, 13)
+    dsd_raw = one("DSD_PRE_RAW", 2, 13)
+    auto = one("NRAUT_GATE", 2, 13)
+    upper_k14 = one("NR_FACE_PRE", 2, 14)["f32"]
+    lower_k13 = one("NR_FACE_PRE", 2, 13)["f32"]
+    upper_k13 = lower_k13
+    lower_k12 = one("NR_FACE_PRE", 2, 12)["f32"]
+    if not dsd_gate["flags"].get("qrs(i,k,1).ge.qcrmin .and. nrs(i,k,1).ge.nrmin"):
+        raise TraceError("predeclared K13 active rain DSD gate did not execute")
+    source_increment = (melt_post["f32"]["nrs(i,k,1)"]
+                        - melt_pre["f32"]["nrs(i,k,1)"])
+    if source_increment <= 0:
+        raise TraceError("predeclared K13 has no positive measured rain-number source")
+    out14 = upper_k14["dnr(i,k)"]
+    in13 = lower_k13["dnr(i,k+1)"]
+    out13 = upper_k13["dnr(i,k)"]
+    in12 = lower_k12["dnr(i,k+1)"]
+    if out14 <= 0 or in13 <= 0 or out13 <= 0 or in12 <= 0:
+        raise TraceError("predeclared K13 face lacks applied outflow and inflow")
+    return {
+        "selected_level": 13,
+        "step1_host_entry_qnr": entry1["nr(i,k,j)"],
+        "step1_snow_melt_number_increment": source_increment,
+        "step1_snow_dsd_number_factor": melt_pre["f32"]["sfac"],
+        "step1_snow_mass_melt_amount": melt_pre["f32"]["psmlt(i,k)"],
+        "step1_host_return_qnr": return1["nr(i,k,j)"],
+        "step2_host_entry_qnr": entry2["nr(i,k,j)"],
+        "step2_active_rain_dsd_gate": dsd_gate["flags"]["qrs(i,k,1).ge.qcrmin .and. nrs(i,k,1).ge.nrmin"],
+        "step2_rain_lambda": dsd_raw["f32"]["lamdr_tmp(i,k)"],
+        "step2_rain_n0r": dsd_raw["f64"]["n0r(i,k)"],
+        "step2_autoconversion_gate_flags": auto["flags"],
+        "step2_face_k14_to_k13": {
+            "number_departure": out14, "number_arrival": in13,
+            "mass_departure": upper_k14["dqr(i,k)"],
+            "mass_arrival": lower_k13["dqr(i,k+1)"],
+            "upper_dz": upper_k14["delz(i,k)"],
+            "lower_dz": lower_k13["delz(i,k)"],
+            "upper_rho_m": upper_k14["den(i,k)"],
+            "lower_rho_m": lower_k13["den(i,k)"],
+            "upper_qv": upper_k14["q(i,k)"],
+            "lower_qv": lower_k13["q(i,k)"],
+        },
+        "step2_face_k13_to_k12": {
+            "number_departure": out13, "number_arrival": in12,
+            "mass_departure": upper_k13["dqr(i,k)"],
+            "mass_arrival": lower_k12["dqr(i,k+1)"],
+            "upper_dz": upper_k13["delz(i,k)"],
+            "lower_dz": lower_k12["delz(i,k)"],
+            "upper_rho_m": upper_k13["den(i,k)"],
+            "lower_rho_m": lower_k12["den(i,k)"],
+            "upper_qv": upper_k13["q(i,k)"],
+            "lower_qv": lower_k12["q(i,k)"],
+        },
+        "step2_mstep": one("NR_FACE_PRE", 2, 13)["i32"]["mstep(i)"],
+        "step2_host_return_qnr": return2["nr(i,k,j)"],
+        "between_call_entry_minus_prior_return":
+            entry2["nr(i,k,j)"] - return1["nr(i,k,j)"],
+        "intercall_dynamics_number_budget_measured": False,
+        "physical_basis_resolved": False,
+    }
+
+
 def _verify_transport(rows: list[dict[str, Any]]) -> dict[str, Any]:
     top_pre = {row["key"][1:]: row for row in rows if row["tag"] == "NR_TOP_PRE"}
     top_post = {row["key"][1:]: row for row in rows if row["tag"] == "NR_TOP_POST"}
@@ -709,6 +786,7 @@ def replay(document: dict[str, Any], capture_text: str) -> dict[str, Any]:
     number_sources = _verify_rain_number_sources(rows)
     conditional_measures = _conditional_column_measures(rows)
     threshold_maps = _conditional_threshold_maps(rows)
+    focus = _focus_path(rows)
     return {
         "schema": "s2-number-replay-v1",
         "capture_records": len(rows),
@@ -722,6 +800,7 @@ def replay(document: dict[str, Any], capture_text: str) -> dict[str, Any]:
         "rain_applied_transport": transport,
         "conditional_column_measures": conditional_measures,
         "conditional_threshold_maps": threshold_maps,
+        "focus_path": focus,
         "physical_number_basis_resolved": False,
         "number_measures": ["dz*n [conditional volume-basis interpretation]",
                             "rho_m*dz*n [operator measure]",
