@@ -1,0 +1,109 @@
+{
+  "schema": "progb-validity-run-v1",
+  "status": "PREPARED_NOT_RUN",
+  "execution_status": "PREPARED_NOT_RUN",
+  "gate": "S10_OPEN",
+  "source_level_severity": "P2",
+  "measured_physical_impact": "NOT_MEASURED",
+  "physical_validity_policy": "OPEN",
+  "canonical_private_root": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/phys",
+  "private_source_is_read_only": true,
+  "variants": {
+    "mp37": {
+      "source": "module_mp_kdm6.F",
+      "sha256": "fc0a72d33a5e61803fea56eb9118018039c6da8b5775813032b4861a2bd66eb5"
+    },
+    "mp237": {
+      "source": "module_mp_kdm6_cons.F",
+      "sha256": "4f0103c8a8321b8e854d3500f4ae567755e41eb78746fac54519eca2686a6648"
+    }
+  },
+  "capture": {
+    "generator": "harness/make_progb_validity_capture.py",
+    "replayer": "harness/replay_progb_validity.py",
+    "macro": "KDM6_PROGB_VALIDITY_CAPTURE",
+    "logging_environment": "KDM6_PROGB_VALIDITY_CAPTURE_LOG",
+    "control_environment": "unset",
+    "capture_environment": "1",
+    "strip_exact_required": true,
+    "capture_fields": "branch and assignment bits only; no OUT values",
+    "runtime_output": "selected-column S10 event flags on stdout",
+    "compile_or_native_run_done": false
+  },
+  "input": {
+    "role": "preselection only; no output inspected",
+    "path": "/Users/yhlee/KDM6AD-k/host/lc05_da_run/wrfinput_d01",
+    "sha256": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+    "valid_time": "2025-07-19_00:00:00",
+    "dx_m": 5000,
+    "dy_m": 5000,
+    "mass_grid": [234, 282, 39],
+    "qcrmin": 1e-9,
+    "brs_min": 1e-15,
+    "observed_input_preselection": {
+      "active_cell": {
+        "fortran_j": 73,
+        "fortran_i": 113,
+        "active_levels_for_qg_gt_qcrmin": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+        "qg_level_1": 4.2269810364814475e-5,
+        "qib_all_levels": 0.0
+      },
+      "inactive_cell": {
+        "fortran_j": 73,
+        "fortran_i": 115,
+        "qg_all_levels": 0.0,
+        "qib_all_levels": 0.0
+      },
+      "interpretation": "The active branch sample has qg>qcrmin and qib=0; qg/qib therefore exercises the rho_max clamp path. It is branch coverage only, not an admissible physical moment pair."
+    }
+  },
+  "execution_plan": {
+    "baseline": "retained LC05 5 km initialization and boundaries, dt=20 s, one MPI rank, one thread",
+    "capture": "one macro-enabled executable reused for both arms; only KDM6_PROGB_VALIDITY_CAPTURE_LOG changes from unset to 1",
+    "native_window": "WAIT_FOR_S2_THEN_S6_RELEASE",
+    "required_run_identity": {
+      "mp37_or_mp237": true,
+      "dt_s": 20,
+      "actual_proc_grid": "1x1",
+      "ranks": 1,
+      "threads_per_rank": 1,
+      "saved_times": ["2025-07-19_00:00:00", "2025-07-19_00:00:20"],
+      "source_variants_run_separately": true
+    },
+    "noninterference_fields_not_yet_measured": {
+      "numeric_raw_bits_equal": null,
+      "saved_times_equal": null,
+      "same_executable_sha256": null,
+      "same_input_identity_sha256": null,
+      "same_namelist_sha256": null,
+      "control_logging_enabled": null,
+      "capture_logging_enabled": null,
+      "history_sha256": null
+    },
+    "first_call_expected_coverage": {
+      "site": 1,
+      "outer_step": 1,
+      "lat": 73,
+      "columns": [113, 115],
+      "mass_levels": [1, 39]
+    },
+    "required_noninterference": [
+      "control and capture use identical active input/boundary and namelist identities",
+      "saved Times match",
+      "all numeric history fields compare equal at raw-bit precision"
+    ]
+  },
+  "source_findings": {
+    "conditional_intent_out_gate": "qrs(i,k,3)>qcrmin OR brs(i,k)>brs_min",
+    "known_unassigned_internal_read": "cmg is tested after the active gate even when this call did not assign it",
+    "known_slope_consumers": ["pvtg", "pidn0g", "bvtg", "rslopegbmax"],
+    "known_rhox_consumers": ["pgmlt/rhox", "pgdep/rhox", "pgevp/rhox", "pgeml/rhox", "pre-ProgB max read", "final diag export under qg gate"],
+    "no_output_value_or_physical_policy_change": true
+  },
+  "native_results": null,
+  "impact_results": null,
+  "run": null,
+  "source": null,
+  "input_sha256": null,
+  "noninterference": null
+}
