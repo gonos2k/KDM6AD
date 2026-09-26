@@ -13,9 +13,11 @@ from s3_accepted_state_events import (
     SCHEMA,
     SOURCE_HASHES,
     _first_qn_candidate,
+    _replay_advect_scalar_yxz,
     attribute_event,
     first_qn_candidate,
 )
+from replay_negative_number_trace import rk_value
 
 
 EVIDENCE = Path(__file__).parents[1] / "evidence/number_face_flux_2026-09-24.json"
@@ -158,13 +160,28 @@ def test_raw_face_fluxes_reconstruct_the_rk1_face_pair_crossing():
 
 def test_y_then_x_face_replay_preserves_a_half_ulp_x_remainder():
     large = float(2**24)
-    result = attribute_event(
-        _raw_event(x_right=0.5, y_south=large, y_north=large, value_before=0.25)
-    )
+    y_prefix = large + 2.0
+    flux = {"yS": y_prefix, "yN": 0.0, "xL": 0.0, "xR": 1.0, "zB": 0.0, "zT": large}
+    metrics = dict.fromkeys(("msftx", "msfty", "rdx", "rdy", "rdzw", "dt"), 1.0)
+    tendency, prefixes = _replay_advect_scalar_yxz(flux, metrics)
 
-    assert result.status == "UNVERIFIED_RECEIPT"
-    assert result.replay_group == "x_pair"
-    assert result.accepted_value == -0.25
+    assert prefixes["y_pair"] == y_prefix
+    assert prefixes["x_pair"] == large  # f32((2**24 + 2) - 1) ties back to 2**24.
+    assert prefixes["z_pair"] == 0.0
+    assert tendency == 0.0
+    assert rk_value({
+        "old": 1.0, "rk": 1, "value": 1.0, "mu_old": 0.0,
+        "mu_new": 0.0, "mu_base": 0.0, "c1": 0.0, "c2": 1.0,
+        "advect_tend": tendency, "msfty": 1.0, "sc_tend": 0.0,
+        "dt": 1.0, "i": 46, "j": 2,
+    }) == 1.0
+
+    # Reversing the first two directional updates creates a distinct prefix:
+    # X stores -1 before Y's +(2**24 + 2) term swallows it at the half-ULP tie.
+    reversed_first = _f32(0.0 - _f32(flux["xR"] - flux["xL"]))
+    reversed_after_y = _f32(reversed_first - _f32(flux["yN"] - flux["yS"]))
+    assert reversed_first == -1.0
+    assert reversed_after_y == large
 
 
 def test_y_x_z_prefix_identifies_the_crossing_after_mixed_axis_cancellation():

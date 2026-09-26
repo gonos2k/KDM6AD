@@ -19,6 +19,8 @@ axis-pair numerator prefix after the source's grouped Y→X→Z differences and
 checks the fused RK store against its observed word. The event's native build
 and history hashes are not externally receipt-pinned yet, so the raw replay
 remains `UNVERIFIED_RECEIPT`; it is not a physical cause or conservation claim.
+The source-order regression includes a Y=`2^24+2`, X=`−1`, Z=`−2^24` tie
+that distinguishes the Y→X prefix from reversed X→Y evaluation.
 Accepted STEP_ACCEPTED states receive classification only because microphysics
 and boundary changes intervene after RK3. No physical particle-number
 interpretation or cause is established; S3 remains open.

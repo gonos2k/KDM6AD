@@ -207,6 +207,26 @@ def _word(value: float) -> str:
     return "0x" + struct.pack("!f", f32(value)).hex()
 
 
+def _replay_advect_scalar_yxz(
+    flux: dict[str, float], metrics: dict[str, float]
+) -> tuple[float, dict[str, float]]:
+    """Replay ordinary h-order-5/v-order-3 tendency stores in source order."""
+    mrdy = f32(metrics["msftx"] * metrics["rdy"])
+    y_difference = f32(flux["yN"] - flux["yS"])
+    tendency = f32(0.0 - f32(mrdy * y_difference))
+    prefixes = {"y_pair": tendency}
+
+    mrdx = f32(metrics["msftx"] * metrics["rdx"])
+    x_difference = f32(flux["xR"] - flux["xL"])
+    tendency = f32(tendency - f32(mrdx * x_difference))
+    prefixes["x_pair"] = tendency
+
+    z_difference = f32(flux["zT"] - flux["zB"])
+    tendency = f32(tendency - f32(metrics["rdzw"] * z_difference))
+    prefixes["z_pair"] = tendency
+    return tendency, prefixes
+
+
 def _identity(event: dict[str, Any]) -> tuple[str, int, int]:
     """Check the source-pinned candidate identity shared by trace states."""
     identity = event.get("identity")
@@ -316,16 +336,7 @@ def attribute_event(event: dict[str, Any]) -> Attribution:
     q = {name: _raw_f32(rk_words[name], f"rk_bits.{name}") for name in rk_words}
 
     # module_advect_em.F: ordinary advect_scalar updates y, then x, then z.
-    # Each difference, metric product, and tendency store is rounded to REAL4.
-    tendency = 0.0
-    mrdy = f32(m["msftx"] * m["rdy"])
-    y_difference = f32(flux["yN"] - flux["yS"])
-    tendency = f32(tendency - f32(mrdy * y_difference))
-    mrdx = f32(m["msftx"] * m["rdx"])
-    x_difference = f32(flux["xR"] - flux["xL"])
-    tendency = f32(tendency - f32(mrdx * x_difference))
-    z_difference = f32(flux["zT"] - flux["zB"])
-    tendency = f32(tendency - f32(_raw_f32(metrics["rdzw"], "rdzw") * z_difference))
+    tendency, tendency_prefixes = _replay_advect_scalar_yxz(flux, m)
     if _word(tendency) != rk_words["observed_advect_tend"]:
         raise ValueError("source-order REAL4 face replay does not match observed advective tendency")
 
@@ -354,17 +365,10 @@ def attribute_event(event: dict[str, Any]) -> Attribution:
         total_tendency = f32(mapped + q["scalar_tend"])
         return fma32(base_weight, value, f32(m["dt"] * total_tendency))
 
-    prefix_tendency = 0.0
-    previous_numerator = prefix_numerator(prefix_tendency)
+    previous_numerator = prefix_numerator(0.0)
     replay_group = None
-    directional_terms = (
-        ("y_pair", mrdy, y_difference),
-        ("x_pair", mrdx, x_difference),
-        ("z_pair", m["rdzw"], z_difference),
-    )
-    for group, metric, difference in directional_terms:
-        prefix_tendency = f32(prefix_tendency - f32(metric * difference))
-        current_numerator = prefix_numerator(prefix_tendency)
+    for group in ("y_pair", "x_pair", "z_pair"):
+        current_numerator = prefix_numerator(tendency_prefixes[group])
         if replay_group is None and previous_numerator >= 0.0 and current_numerator < 0.0:
             replay_group = group
         previous_numerator = current_numerator

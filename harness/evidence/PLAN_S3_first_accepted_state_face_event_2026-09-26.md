@@ -139,6 +139,10 @@ diagnostic, not a physical cause. The build/history hashes are supplied in the
 event but no external receipt manifest currently authenticates them, so every
 internal replay returns `UNVERIFIED_RECEIPT` and never claims source execution
 or exchange conservation. No adjacent-cell shared-face words are present.
+The focused regression suite includes the Y=`2^24+2`, X=`−1`, Z=`−2^24`
+half-ULP tie (Y→X retains a `2^24` prefix, while reversed X→Y first records
+`−1`) and a mixed-sign Y/X/Z case whose first source-order negative prefix is
+Z; these check the grouped tendency stores and RK result, not native physics.
 
 The candidate replay scope is step 2, RK1, QNCLOUD `(46,1,2)`;
 ordinary advection has no PD limiter there. RK3 PD limiter owner/scale
