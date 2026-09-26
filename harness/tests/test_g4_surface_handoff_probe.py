@@ -230,6 +230,17 @@ def test_plan_does_not_claim_profile_branch_activity() -> None:
                for outcomes in branch_activity["profiles"].values())
 
 
+def test_retained_run_plan_uses_verified_fractional_seaice_zero() -> None:
+    plan = surface_probe.g4_source_plan()
+    assert plan["retained_namelist_switches"]["fractional_seaice"] == 0
+    assert "seaice_adjustment_post" not in plan["configured_event_schedule"]
+    assert plan["capture_schedule_ready"] is True
+    assert plan["schedule_blocker"] is None
+    assert plan["fractional_seaice_observation"]["value"] == 0
+    assert plan["fractional_seaice_observation"]["status"] == "local_run_artifact_verified"
+    assert "not cryptographically" in plan["fractional_seaice_observation"]["provenance_limit"]
+
+
 def test_cardinality_replacement_by_extra_event_cannot_pass() -> None:
     config = _config()
     rows = list(_rows("continuous", config))
