@@ -1,0 +1,109 @@
+{
+  "executable_original": false,
+  "kind": "source-declared owner/tile/RK schedule",
+  "original_artifact": {
+    "filename": "s15_native_owner_schedule_2026-09-26.json",
+    "sha256": "34d671cefcbad485a3d3ccf276e91c60933cce86394485574080dbcd1e58cf8c"
+  },
+  "path_aliases": {
+    "case": "$LC05_CASE",
+    "source_tree": "$CANONICAL_HOST"
+  },
+  "redacted_projection": true,
+  "schedule": {
+    "expected_summary_cardinality": 6,
+    "expected_summary_keys": [
+      [
+        1,
+        1,
+        5,
+        1,
+        235,
+        1,
+        142
+      ],
+      [
+        1,
+        1,
+        5,
+        1,
+        235,
+        143,
+        283
+      ],
+      [
+        1,
+        2,
+        5,
+        1,
+        235,
+        1,
+        142
+      ],
+      [
+        1,
+        2,
+        5,
+        1,
+        235,
+        143,
+        283
+      ],
+      [
+        1,
+        3,
+        5,
+        1,
+        235,
+        1,
+        142
+      ],
+      [
+        1,
+        3,
+        5,
+        1,
+        235,
+        143,
+        283
+      ]
+    ],
+    "geometry_basis": "The retained 1-rank Control A log supplies tile geometry only; its unowned P_QIB event rows are excluded.",
+    "input_hashes": {
+      "namelist.input": "064b6f5ea5683ee3dc68d408c08bf4cbf588be06dbc7d99bb3529be8ba61554a",
+      "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+      "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3",
+      "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970"
+    },
+    "owner_name": "scalar_tile_loop_2",
+    "owner_site": 5,
+    "rk_stages": [
+      1,
+      2,
+      3
+    ],
+    "schema": "KDM6AD-S15-OWNER-SCHEDULE-v1",
+    "source_call": "solve_em.F scalar_tile_loop_2: scalar_old/scalar -> rk_update_scalar",
+    "status": "predeclared_source_owner_tile_rk_schedule",
+    "step_window": {
+      "first_timestep": 1,
+      "last_timestep": 1
+    },
+    "tile_bounds": [
+      [
+        1,
+        235,
+        1,
+        142
+      ],
+      [
+        1,
+        235,
+        143,
+        283
+      ]
+    ]
+  },
+  "schema": "KDM6AD-S15-PUBLIC-PROJECTION-v1",
+  "use_limit": "Informational projection only; it does not replace the pinned original schedule receipt."
+}
