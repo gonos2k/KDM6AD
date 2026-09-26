@@ -2,7 +2,7 @@
   "schema": "s10-czeroqg-prelink-plan-v1",
   "status": "PRELINK_GUARD_FAILS_CLOSED_PENDING_CONFIG_PINS_REVIEWED_ARGV_AND_EXTERNAL_RELEASE_TRUST",
   "supersedes": "harness/evidence/s10_czeroqg_native_plan_2026-09-26.json",
-  "base_commit": "9ac2b1d9396896c4c9aec425cfe29ba2935bf31e",
+  "base_commit": "e2f6b5a16e1e30c1c9a01c24272179141d731f5b",
   "policy_approved": false,
   "s10_status": "OPEN",
   "gates": {
