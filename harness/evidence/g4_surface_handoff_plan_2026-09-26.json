@@ -72,8 +72,19 @@
       }
     }
   },
-  "capture_schedule_ready": false,
+  "capture_schedule_ready": true,
   "classification_limit": "Capture fields are a selected diagnostic operand subset, not proof that all active callee reads or module state have been observed. Any reported producer boundary is a candidate; cause_established always remains false.",
+  "configured_event_schedule": [
+    "surface_call_pre",
+    "sfclay_pre",
+    "sfclay_post",
+    "noahmp_dispatch_entry",
+    "noahmp_pre",
+    "noahmp_post",
+    "noahmp_urban_pre",
+    "noahmp_urban_post",
+    "surface_return"
+  ],
   "current_live_source_audit": {
     "schema": "g4-surface-handoff-source-audit-v1",
     "sources": {
@@ -151,6 +162,59 @@
   "fixed_event_plan_requires_explicit": [
     "fractional_seaice"
   ],
+  "fractional_seaice_observation": {
+    "portable_run_receipt_path": "harness/evidence/g4_restart_shadow_runs_2026-09-25.json",
+    "provenance_limit": "run_ss_case launches with cwd=case directory but does not clean, hash, or archive namelist.output. Birth/mtime fall inside each recorded run. Relative to stdout mtime, output birth is 0.983 ms (continuous) and 0.821 ms (restart) later; output mtime is 5.877 ms and 5.531 ms later, respectively. These local filesystem facts support attribution but are not cryptographically bound by the portable run receipt. Instrumented reruns must preserve and hash their own namelist.output.",
+    "runs": {
+      "continuous": {
+        "base_namelist_input_sha256_before_after": "db3938789305aee81a65eef1a906df5d88ff3cc13d6c30cca472eef604d00755",
+        "campaign_id": "e1fe6e30e3ea27fa95ab40add6204580e0d9738ebbdc29a3f8360eb5fcf3b8f3",
+        "effective_run_namelist_sha256": "eb9328308e03553f1e24700d19e9d1d91c7b7b042039938e91cd4a0062242948",
+        "experiment_valid_sha256": "e824ff6bdda31c666e5a5c5b161258dbfc94f46cd0fc8d65f2f2e04980ba205b",
+        "finished_utc": "2026-09-25T08:52:02Z",
+        "input_identity_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+        "input_sha256_json_sha256": "d53940dc621f368cf1ce4ae4a770def8598dfa912cef48e412b6316b60800017",
+        "namelist_output_birth_utc": "2026-09-25T08:51:05.131477Z",
+        "namelist_output_mtime_utc": "2026-09-25T08:51:05.136371Z",
+        "namelist_output_path": "graphify-out/s6-g4-relink/case-continuous/namelist.output",
+        "namelist_output_sha256": "e1d3654124ec150515dcc7341509ac8d4cc892d4338236cd408e5ae9e7ad0a50",
+        "namelist_output_size_bytes": 89987,
+        "run_id": "mp237_g4-s6-continuous_0min40s_hist0_1x1_20260925_175103_p81169",
+        "run_identity_sha256": "935c04384fbbd0c100203142d90c46362726a97747b9ce1e6852f413d4946780",
+        "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+        "started_utc": "2026-09-25T08:51:03Z",
+        "stdout_birth_utc": "2026-09-25T08:51:03.754749Z",
+        "stdout_mtime_utc": "2026-09-25T08:51:05.130494Z",
+        "stdout_sha256": "1436a6db28418193df4284b9053b9c954343fd5b90dda1e6ab25a6423ffd58df",
+        "wrf_executable_sha256": "3197df4dcdcf9c1af4132e15662531bc28be4c61892fac54cf7a015311c24140"
+      },
+      "restart": {
+        "base_namelist_input_sha256_before_after": "b1749c4ed14883783452b85dff0979a73892fb5764797d65f055807f69675a19",
+        "campaign_id": "0482f049ac6dbbfc17bea8272a2ffedfbedf7c28d8e9f91fbb619eacb0617963",
+        "effective_run_namelist_sha256": "a670c0bba108916a2eaad34a90071ecb5368f4a0766102a1f4a7eaf7910f7a9c",
+        "experiment_valid_sha256": "e824ff6bdda31c666e5a5c5b161258dbfc94f46cd0fc8d65f2f2e04980ba205b",
+        "finished_utc": "2026-09-25T08:53:30Z",
+        "input_identity_sha256": "1b3585d0492d0c158017f7dbc4aa0700c61c8e5b992c742681f9d1c5a5f50152",
+        "input_sha256_json_sha256": "16a47ebdcae4b59f4b17b69c38e7393f23c928a9a1ab906ba67d6c93cbd85ddc",
+        "namelist_output_birth_utc": "2026-09-25T08:53:17.356787Z",
+        "namelist_output_mtime_utc": "2026-09-25T08:53:17.361497Z",
+        "namelist_output_path": "graphify-out/s6-g4-relink/case-restart/namelist.output",
+        "namelist_output_sha256": "be495c496fde053dd4cb445a1b5476589ab1828deaec7e6af83f7ecc34408bcd",
+        "namelist_output_size_bytes": 89999,
+        "run_id": "mp237_g4-s6-restart_0min20s_hist0_1x1_20260925_175316_p86644",
+        "run_identity_sha256": "6058cf76b3bffe5461b17b8dfa8744ec2a4354abfbf99e763f8045e696280fb7",
+        "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+        "started_utc": "2026-09-25T08:53:16Z",
+        "stdout_birth_utc": "2026-09-25T08:53:17.101442Z",
+        "stdout_mtime_utc": "2026-09-25T08:53:17.355966Z",
+        "stdout_sha256": "1436a6db28418193df4284b9053b9c954343fd5b90dda1e6ab25a6423ffd58df",
+        "wrf_executable_sha256": "3197df4dcdcf9c1af4132e15662531bc28be4c61892fac54cf7a015311c24140"
+      }
+    },
+    "source": "WRF-generated namelist.output in each run_ss_case working directory, line 1496",
+    "status": "local_run_artifact_verified",
+    "value": 0
+  },
   "noninterference_gate": "Run the same event-dump executable once with its dump switch off and once on; require retained-history raw-bit identity before interpreting traces.",
   "observed_surface_classes": {
     "clear": {
@@ -1312,13 +1376,14 @@
   "retained_namelist_switches": {
     "adaptive_timestep": false,
     "bldt_minutes": 0,
-    "fractional_seaice": null,
+    "fractional_seaice": 0,
     "isfflx": 1,
     "sf_sfclay_physics": 1,
     "sf_surface_physics": 2,
     "sf_urban_physics": 1
   },
-  "schedule_blocker": "fractional_seaice is not explicit in retained S6 run receipt; record its runtime value before freezing conditional events.",
+  "schedule_blocker": null,
+  "schedule_caveat": "The retained-run schedule uses the locally verified fractional_seaice=0. An instrumented rerun must independently record and match 0 before its capture can be validated.",
   "schema": "g4-surface-handoff-plan-v1",
   "selected_profiles": [
     {

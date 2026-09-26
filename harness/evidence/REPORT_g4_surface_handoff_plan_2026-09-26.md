@@ -55,9 +55,27 @@ positive. The Noah-MP driver has a separate `IVGTYP == ISWATER_TABLE` path
 (`module_sf_noahmpdrv.F`, line 2166). These source facts make a water-path
 input difference worth testing. They do not prove which branch produced the
 three observed differences. `fractional_seaice` is not explicit in the
-retained `namelist.input` text or current S6 run receipt, so the next event
-schedule must obtain and record its actual configured value rather than
-assuming a default.
+retained `namelist.input` text or the run receipt. A follow-up audit of each
+WRF-generated `namelist.output` found `FRACTIONAL_SEAICE=0` at line 1496 for
+both retained S6 arms. The files were created directly in their respective
+`run_ss_case` working directories during the recorded launch windows.
+`run_ss_case` launches WRF with the case directory as `cwd`; its source
+archives the effective `namelist.input` and other selected outputs, but does
+not clean, hash, or archive `namelist.output`. Each output's filesystem birth
+and modification times fall inside its run and within milliseconds of the run
+stdout's modification time: output birth follows stdout mtime by 0.983 ms for
+continuous and 0.821 ms for restart; output mtime follows it by 5.877 ms and
+5.531 ms, respectively. The local files and hashes are recorded in the
+machine-readable plan. This supports attributing the value to these exact
+retained runs, with a local-filesystem provenance limit: it is not
+cryptographically bound into the portable receipt. The retained-run event
+schedule is therefore fixed at `fractional_seaice=0`; every future
+instrumented rerun must independently record and match its runtime value.
+
+| Arm | Run directory ID | Run window UTC | `namelist.output` SHA-256 | Birth / mtime UTC |
+| --- | --- | --- | --- | --- |
+| Continuous | `mp237_g4-s6-continuous_0min40s_hist0_1x1_20260925_175103_p81169` | 08:51:03–08:52:02 | `e1d3654124ec150515dcc7341509ac8d4cc892d4338236cd408e5ae9e7ad0a50` | 08:51:05.131477 / 08:51:05.136371 |
+| Restart | `mp237_g4-s6-restart_0min20s_hist0_1x1_20260925_175316_p86644` | 08:53:16–08:53:30 | `be495c496fde053dd4cb445a1b5476589ab1828deaec7e6af83f7ecc34408bcd` | 08:53:17.356787 / 08:53:17.361497 |
 
 ## Source pins and provenance limit
 
@@ -99,8 +117,10 @@ configuration. The base events are:
 2. Immediately before and after the selected SFCLAY call (the standard call
    or sea-ice wrapper, chosen from the declared config).
 3. Noah-MP dispatch entry, before any fractional-sea-ice conversion.
-4. After that conversion only when fractional sea ice is configured, then
-   immediately before and after the Noah-MP call.
+4. The retained configuration is `fractional_seaice=0`, so no post-conversion
+   event is scheduled; capture immediately before and after the Noah-MP call.
+   A future instrumented run must verify its own value before using this
+   schedule.
 5. Before and after the Noah-MP urban call for the pinned `sf_urban_physics=1`
    configuration. The current plan records `urban_branch_active` and
    `seaice_adjustment_branch_active` as null for every profile, meaning those
@@ -152,8 +172,9 @@ separately. Do not alter the operational path or default, and do not call a
 bounded selected-profile result a full-domain first cause.
 
 The machine-readable source and operand plan is
-`g4_surface_handoff_plan_2026-09-26.json`. It marks the schedule not ready
-because the retained S6 run receipt does not record `fractional_seaice`; obtain
-its runtime value before freezing the conditional event universe. The Python checker is
+`g4_surface_handoff_plan_2026-09-26.json`. It marks the retained-run schedule
+ready at `fractional_seaice=0` based on the two local `namelist.output` files;
+the provenance limit above applies, and an instrumented rerun must record and
+match its own runtime value before capture validation. The Python checker is
 `harness/g4_surface_handoff_probe.py`; its synthetic tests do not represent a
 new host run.
