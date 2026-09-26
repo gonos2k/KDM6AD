@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import hashlib
 import json
 import os
@@ -48,7 +49,45 @@ CPP_CORE_SOURCES = (
 CPP_BRIDGE_SOURCE = "libtorch/bridge/kdm6_c_api.cpp"
 CPP_CORE_OBJECTS = tuple(Path(path).name + ".o" for path in CPP_CORE_SOURCES)
 CAPTURE_TOOL_PATH = "harness/capture_s9_dyld.py"
-CAPTURE_TOOL_SHA256 = "d28e080b134163be4a348f600640b5b20fccc1e789780e41baf6035daa52edb5"
+CAPTURE_TOOL_SHA256 = "74329e3bd6560d0bdb74c4ecd3d699fd77905f4e0a3b178a500f1e8dfcc03348"
+CAPTURE_ENV_ALLOWLIST = {
+    "PATH", "DYLD_PRINT_LIBRARIES", "DYLD_PRINT_RPATHS", "DYLD_LIBRARY_PATH",
+    "DYLD_FALLBACK_LIBRARY_PATH", "DYLD_FRAMEWORK_PATH", "DYLD_FALLBACK_FRAMEWORK_PATH",
+    "DYLD_INSERT_LIBRARIES", "SDKROOT", "MACOSX_DEPLOYMENT_TARGET", "OMP_NUM_THREADS",
+    "MKL_NUM_THREADS", "OMP_THREAD_LIMIT",
+}
+CAPTURE_PATH_ENV = {
+    "PATH", "DYLD_LIBRARY_PATH", "DYLD_FALLBACK_LIBRARY_PATH", "DYLD_FRAMEWORK_PATH",
+    "DYLD_FALLBACK_FRAMEWORK_PATH", "DYLD_INSERT_LIBRARIES", "SDKROOT",
+}
+CAPTURE_ENV_ALLOWLIST = {
+    "PATH", "DYLD_PRINT_LIBRARIES", "DYLD_PRINT_RPATHS", "DYLD_LIBRARY_PATH",
+    "DYLD_FALLBACK_LIBRARY_PATH", "DYLD_FRAMEWORK_PATH", "DYLD_FALLBACK_FRAMEWORK_PATH",
+    "DYLD_INSERT_LIBRARIES", "SDKROOT", "MACOSX_DEPLOYMENT_TARGET", "OMP_NUM_THREADS",
+    "MKL_NUM_THREADS", "OMP_THREAD_LIMIT",
+}
+CAPTURE_PATH_ENV = {
+    "PATH", "DYLD_LIBRARY_PATH", "DYLD_FALLBACK_LIBRARY_PATH", "DYLD_FRAMEWORK_PATH",
+    "DYLD_FALLBACK_FRAMEWORK_PATH", "DYLD_INSERT_LIBRARIES", "SDKROOT",
+}
+
+
+def _public_capture_environment(raw: dict[str, str]) -> dict[str, str]:
+    return {
+        key: f"<redacted-path-sha256:{hashlib.sha256(raw[key].encode()).hexdigest()}>" if key in CAPTURE_PATH_ENV else raw[key]
+        for key in sorted(raw)
+    }
+
+
+def _public_capture_argv(manifest_id: str, exe_id: str, library_id: str) -> list[str]:
+    return [
+        CAPTURE_TOOL_PATH, "--root", "<BUILD_ROOT>", "--manifest-id", manifest_id,
+        "--executable", "<WRF_EXE>", "--executable-id", exe_id,
+        "--library", "<INSTALLED_KDM6_C_ABI_DYLIB>", "--library-id", library_id,
+        "--cwd", "<RUN_DIR>", "--launcher", "<MPI_LAUNCHER>",
+        "--receipt", "<PUBLIC_CAPTURE_RECEIPT>", "--private-receipt", "<PRIVATE_RAW_RECEIPT>",
+        "--stdout", "<PRIVATE_STDOUT>", "--stderr", "<PRIVATE_STDERR>",
+    ]
 
 
 def _key(ref: dict[str, Any]) -> tuple[str, str, str]:
@@ -307,8 +346,14 @@ def verify_manifest_semantics(manifest: dict[str, Any], root: Path | None = None
             extra = sorted(member_names - expected_members)
             if extra:
                 errors.append(f"{name} archive member inventory has unexpected objects: {', '.join(extra)}")
-        if len(member_name_list) != len(member_names):
-            errors.append(f"{name} archive member inventory repeats an object member")
+        physical = archive.get("member_inventory", [])
+        physical_pairs = Counter((row.get("name"), row.get("sha256")) for row in physical if isinstance(row, dict))
+        used_pairs: Counter = Counter()
+        for ref in members:
+            key = (PurePosixPath(ref.get("path", "")).name, ref.get("sha256"))
+            used_pairs[key] += 1
+            if used_pairs[key] > physical_pairs[key]:
+                errors.append(f"{name} source/object member is absent from the ordered physical inventory: {key[0]}")
         edge_object_ids = set()
         for edge, src, dst in edge_nodes:
             if edge.get("relation") == "archives_into" and dst.get("artifact_id") == archive.get("artifact_id"):
@@ -500,6 +545,8 @@ def verify_loader_capture(manifest: dict[str, Any], root: Path) -> list[str]:
         errors.append("loader capture receipt is not bound to a receipt artifact")
         receipt_payload = None
     else:
+        if PurePosixPath(capture_artifact.get("path", "")).parts[:1] == ("host",):
+            errors.append("public loader projection receipt must not be stored under private host/")
         try:
             receipt_path = root.joinpath(*PurePosixPath(capture_artifact["path"]).parts)
             verify_local_bytes(capture_artifact, "loader capture receipt")
@@ -510,69 +557,173 @@ def verify_loader_capture(manifest: dict[str, Any], root: Path) -> list[str]:
     if receipt_payload is not None and receipt_payload != capture:
         errors.append("parsed loader capture receipt differs from manifest capture fields")
 
+    manifest_id = capture.get("manifest_id", "")
+    private_path = root / "host" / "s9-captures" / f"{manifest_id}.raw.json"
+    try:
+        private_bytes = private_path.read_bytes()
+        raw = json.loads(private_bytes)
+    except (OSError, json.JSONDecodeError):
+        errors.append("ignored host raw loader receipt is missing or invalid JSON")
+        return errors
+    if hashlib.sha256(private_bytes).hexdigest() != capture.get("private_receipt_sha256"):
+        errors.append("private raw receipt bytes do not match the public receipt digest")
+    if raw.get("schema_version") != "s9-dyld-raw-capture/v1" or raw.get("manifest_id") != manifest_id:
+        errors.append("private raw receipt schema/manifest identity mismatch")
+    if raw.get("capture_tool_sha256") != CAPTURE_TOOL_SHA256:
+        errors.append("private raw receipt does not identify the pinned capture tool")
+    if capture.get("manifest_id") != manifest_id or capture.get("private_receipt_sha256") != hashlib.sha256(private_bytes).hexdigest():
+        errors.append("public capture projection does not bind its private receipt digest")
+    if capture.get("process_argv") != ["<MPI_LAUNCHER>", "-n", "1", "<WRF_EXE>"] or capture.get("process_cwd") != "<RUN_DIR>":
+        errors.append("public capture projection contains non-aliased process paths")
+    capture_json = json.dumps(capture, sort_keys=True)
+    if any(token in capture_json for token in ("/Users/", "/private/tmp/", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", '"HOME"', '"PWD"', '"TMPDIR"')):
+        errors.append("public capture projection contains private path or credential identifiers")
+
     exe = next((a for a in artifacts.values() if a.get("kind") == "executable" and PurePosixPath(a.get("path", "")).name == "wrf.exe"), None)
     installed = next((a for a in artifacts.values() if a.get("kind") == "shared_library" and a.get("path", "").endswith("libtorch/install/lib/" + PurePosixPath(a.get("path", "")).name) and PurePosixPath(a.get("path", "")).name.startswith("libkdm6_c")), None)
     verify_local_bytes(exe, "captured WRF executable")
     verify_local_bytes(installed, "captured installed dylib")
     if not ref_matches(capture.get("executable"), exe) or not ref_matches(loader.get("observed_resolution"), installed):
         errors.append("capture executable/loaded-library references do not match the inventoried WRF and installed dylib")
-    if len(capture.get("process_argv", [])) != 4:
-        errors.append("loader process argv must be exactly mpirun -n 1 wrf.exe")
+
+    launcher_identity = manifest.get("toolchain", {}).get("mpi_launcher", {})
+    if launcher_identity.get("path") != "<MPI_LAUNCHER>" or capture.get("process_argv") != ["<MPI_LAUNCHER>", "-n", "1", "<WRF_EXE>"]:
+        errors.append("public loader command projection is not the path-aliased mpirun -n 1 WRF form")
+    raw_argv = raw.get("raw_process_argv", [])
+    if len(raw_argv) != 4 or Path(raw_argv[0]).name != "mpirun" or raw_argv[1:3] != ["-n", "1"]:
+        errors.append("private loader command is outside allowlist: mpirun -n 1 <wrf.exe>")
     else:
-        argv = capture["process_argv"]
-        launcher_identity = manifest.get("toolchain", {}).get("mpi_launcher", {})
-        if argv[0] != launcher_identity.get("path"):
-            errors.append("loader launcher path differs from the recorded MPI launcher identity")
-        if Path(argv[0]).name != "mpirun" or argv[1:3] != ["-n", "1"]:
-            errors.append("loader process command is outside allowlist: mpirun -n 1 <wrf.exe>")
         if exe is not None:
             try:
                 expected_exe = str(root.joinpath(*PurePosixPath(exe["path"]).parts).resolve(strict=True))
-                if argv[3] != expected_exe:
-                    errors.append("loader process argv does not name the exact inventoried WRF executable")
+                if raw_argv[3] != expected_exe or raw.get("raw_executable_path") != expected_exe:
+                    errors.append("private process argv does not name the exact WRF executable")
             except OSError:
                 errors.append("inventoried WRF executable is missing during loader receipt validation")
         try:
-            launcher_sha = hashlib.sha256(Path(argv[0]).resolve(strict=True).read_bytes()).hexdigest()
-            if launcher_sha != capture.get("launcher_sha256") or launcher_sha != launcher_identity.get("sha256"):
-                errors.append("mpirun executable hash differs from capture and toolchain identities")
+            launcher_sha = hashlib.sha256(Path(raw_argv[0]).resolve(strict=True).read_bytes()).hexdigest()
+            if launcher_sha != raw.get("launcher_sha256") or launcher_sha != capture.get("launcher_sha256") or launcher_sha != launcher_identity.get("sha256"):
+                errors.append("private mpirun identity differs from public/toolchain launcher digests")
         except OSError:
-            errors.append("captured mpirun executable is unavailable for identity validation")
+            errors.append("private mpirun executable is unavailable for identity validation")
 
-    environment = capture.get("process_environment", {})
-    if not isinstance(environment, dict):
-        errors.append("captured process_environment must be an object")
-        environment = {}
-    env_bytes = b"\0".join(f"{key}={environment[key]}".encode() for key in sorted(environment))
+    raw_cwd = Path(raw.get("raw_process_cwd", ""))
+    try:
+        raw_cwd_resolved = raw_cwd.resolve(strict=True)
+        if not raw_cwd_resolved.is_relative_to(root):
+            errors.append("private run directory is outside the artifact root")
+            raw_cwd_relative = "<OUTSIDE_ROOT>"
+        else:
+            raw_cwd_relative = raw_cwd_resolved.relative_to(root).as_posix()
+    except OSError:
+        raw_cwd_resolved = root
+        raw_cwd_relative = "<MISSING_RUN_DIR>"
+        errors.append("private run directory is unavailable")
+
+    raw_capture_argv = raw.get("raw_capture_argv", [])
+    if len(raw_capture_argv) < 4 or not Path(raw_capture_argv[0]).name.startswith("python"):
+        errors.append("private collector argv does not name its Python launcher and script")
+    else:
+        expected_script = str((root / CAPTURE_TOOL_PATH).resolve(strict=True))
+        if str(Path(raw_capture_argv[1]).resolve(strict=True)) != expected_script:
+            errors.append("private collector argv does not invoke the pinned capture script")
+        options = raw_capture_argv[2:]
+        if len(options) % 2:
+            errors.append("private collector argv has malformed option/value pairs")
+        else:
+            raw_options = dict(zip(options[::2], options[1::2]))
+            stdout_artifact = artifacts.get(loader.get("capture_stdout", {}).get("artifact_id"))
+            stderr_artifact = artifacts.get(loader.get("capture_stderr", {}).get("artifact_id"))
+            expected_options = {
+                "--manifest-id": manifest_id,
+                "--executable": exe.get("path") if exe else "",
+                "--executable-id": exe.get("artifact_id") if exe else "",
+                "--library": installed.get("path") if installed else "",
+                "--library-id": installed.get("artifact_id") if installed else "",
+                "--cwd": raw_cwd_relative,
+                "--launcher": raw_argv[0] if raw_argv else "",
+                "--receipt": capture_artifact.get("path") if capture_artifact else "",
+                "--private-receipt": f"host/s9-captures/{manifest_id}.raw.json",
+                "--stdout": stdout_artifact.get("path") if stdout_artifact else "",
+                "--stderr": stderr_artifact.get("path") if stderr_artifact else "",
+            }
+            if set(raw_options) != set(expected_options) | {"--root"} or any(raw_options.get(key) != value for key, value in expected_options.items()):
+                errors.append("private collector argv arguments do not match the manifest artifacts")
+            try:
+                if Path(raw_options.get("--root", "")).resolve(strict=True) != root:
+                    errors.append("private collector root argv differs from verification root")
+            except OSError:
+                errors.append("private collector root argv is unavailable")
+            expected_public_argv = _public_capture_argv(
+                manifest_id,
+                exe.get("artifact_id", "") if exe else "",
+                installed.get("artifact_id", "") if installed else "",
+            )
+            if capture.get("capture_argv") != expected_public_argv:
+                errors.append("public collector argv is not the path-aliased allowlisted projection")
+
+    raw_env = raw.get("raw_process_environment", {})
+    if not isinstance(raw_env, dict) or set(raw_env) - CAPTURE_ENV_ALLOWLIST:
+        errors.append("private raw receipt environment contains variables outside the allowlist")
+        raw_env = {}
+    public_env = _public_capture_environment(raw_env)
+    if capture.get("process_environment") != public_env:
+        errors.append("public process environment projection differs from the allowlisted raw environment")
+    if set(capture.get("process_environment", {})) - CAPTURE_ENV_ALLOWLIST:
+        errors.append("public process environment includes a variable outside the allowlist")
+    for key, value in capture.get("process_environment", {}).items():
+        if key in CAPTURE_PATH_ENV and not re.fullmatch(r"<redacted-path-sha256:[a-f0-9]{64}>", str(value)):
+            errors.append(f"public process environment path value is not redacted: {key}")
+        elif key not in CAPTURE_PATH_ENV and isinstance(value, str) and value.startswith("/"):
+            errors.append(f"public process environment contains an absolute path: {key}")
+    if set(capture.get("process_environment", {})) - CAPTURE_ENV_ALLOWLIST:
+        errors.append("public process environment includes a variable outside the allowlist")
+    for key, value in capture.get("process_environment", {}).items():
+        if key in CAPTURE_PATH_ENV and not re.fullmatch(r"<redacted-path-sha256:[a-f0-9]{64}>", str(value)):
+            errors.append(f"public process environment path value is not redacted: {key}")
+        elif key not in CAPTURE_PATH_ENV and isinstance(value, str) and value.startswith("/"):
+            errors.append(f"public process environment contains an absolute path: {key}")
+    env_bytes = b"\0".join(f"{key}={public_env[key]}".encode() for key in sorted(public_env))
     if hashlib.sha256(env_bytes).hexdigest() != capture.get("process_environment_sha256"):
-        errors.append("captured process environment map does not match its SHA-256")
+        errors.append("public process environment map does not match its SHA-256")
+    if set(capture.get("process_environment", {})) & {"HOME", "PWD", "TMPDIR", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"}:
+        errors.append("public environment projection contains a private or credential variable")
     for key in ("DYLD_PRINT_LIBRARIES", "DYLD_PRINT_RPATHS", "OMP_NUM_THREADS", "MKL_NUM_THREADS", "OMP_THREAD_LIMIT"):
-        expected = "1"
-        if environment.get(key) != expected:
-            errors.append(f"captured process environment lacks required {key}=1")
-    if capture.get("process_exit_code") != 0:
-        errors.append("captured WRF process did not exit successfully")
+        if raw_env.get(key) != "1":
+            errors.append(f"private process environment lacks required {key}=1")
+    if raw.get("process_exit_code") != 0 or capture.get("process_exit_code") != raw.get("process_exit_code"):
+        errors.append("captured WRF process did not exit successfully or projection mismatch")
     if exe is not None and loader.get("executable_sha256") != exe.get("sha256"):
         errors.append("runtime_loader executable_sha256 differs from exact captured WRF executable")
 
     output_paths: dict[str, bytes] = {}
-    for field in ("capture_stdout", "capture_stderr"):
+    raw_outputs = (("capture_stdout", "raw_stdout_path", "stdout_sha256"), ("capture_stderr", "raw_stderr_path", "stderr_sha256"))
+    for field, raw_field, digest_field in raw_outputs:
         log_ref = loader.get(field)
         log = artifacts.get(log_ref.get("artifact_id")) if isinstance(log_ref, dict) else None
         if not ref_matches(log_ref, log) or not isinstance(log, dict) or log.get("kind") != "receipt":
             errors.append(f"{field} is not bound to a retained receipt artifact")
             continue
+        if PurePosixPath(log.get("path", "")).parts[:1] != ("host",):
+            errors.append(f"raw child output {field} must be stored only under ignored host/")
         try:
-            log_path = root.joinpath(*PurePosixPath(log["path"]).parts)
+            log_path = root.joinpath(*PurePosixPath(log["path"]).parts).resolve(strict=True)
+            if not log_path.is_relative_to(root):
+                raise OSError("raw output escapes the build root")
             output_paths[field] = log_path.read_bytes()
             if hashlib.sha256(output_paths[field]).hexdigest() != log.get("sha256"):
                 errors.append(f"{field} bytes do not match artifact SHA-256")
+            raw_path = str(log_path)
+            if raw.get(raw_field) != raw_path:
+                errors.append(f"private raw receipt {raw_field} differs from local output path")
         except OSError:
             errors.append(f"{field} bytes are missing")
     if isinstance(loader.get("capture_stdout"), dict) and capture.get("stdout_sha256") != loader["capture_stdout"].get("sha256"):
         errors.append("captured stdout bytes/hash do not match the retained stdout artifact")
     if isinstance(loader.get("capture_stderr"), dict) and capture.get("stderr_sha256") != loader["capture_stderr"].get("sha256"):
         errors.append("captured stderr bytes/hash do not match the retained stderr artifact")
+    if raw.get("stdout_sha256") != capture.get("stdout_sha256") or raw.get("stderr_sha256") != capture.get("stderr_sha256"):
+        errors.append("private/public child output hashes differ")
 
     if installed is not None:
         try:
@@ -580,14 +731,16 @@ def verify_loader_capture(manifest: dict[str, Any], root: Path) -> list[str]:
         except OSError:
             expected_lib = ""
             errors.append("installed KDM6 C ABI dylib is missing during loader receipt validation")
+        raw_lines = raw.get("dyld_image_lines", [])
         actual_lines = []
         for output in output_paths.values():
             actual_lines.extend(line for line in output.decode("utf-8", errors="replace").splitlines() if "dyld[" in line and "libkdm6_c" in line)
-        lines = capture.get("dyld_image_lines", [])
-        if lines != actual_lines:
-            errors.append("dyld_image_lines do not match the captured stdout/stderr bytes")
-        if not any(isinstance(line, str) and expected_lib in line for line in actual_lines):
+        if raw_lines != actual_lines:
+            errors.append("private dyld_image_lines do not match raw stdout/stderr bytes")
+        if not any(expected_lib in line for line in actual_lines):
             errors.append("captured dyld output does not name the exact installed KDM6 C ABI dylib path")
+        if capture.get("dyld_image_lines") != ["dyld: loaded <INSTALLED_KDM6_C_ABI_DYLIB>" for _ in raw_lines if "dyld[" in _ and "libkdm6_c" in _]:
+            errors.append("public dyld image projection is not path-redacted or differs from raw output")
 
     steps = manifest.get("build_steps", [])
     observation_steps = [s for s in steps if isinstance(s, dict) and s.get("kind") == "loader_observation"]
@@ -595,8 +748,8 @@ def verify_loader_capture(manifest: dict[str, Any], root: Path) -> list[str]:
         errors.append("loader capture must be produced by exactly one loader_observation build step")
     elif isinstance(capture_ref, dict):
         step = observation_steps[0]
-        if step.get("argv") != capture.get("capture_argv"):
-            errors.append("loader_observation argv differs from captured collector argv")
+        if step.get("argv") != capture.get("capture_argv") or step.get("argv") != _public_capture_argv(manifest_id, capture.get("executable", {}).get("artifact_id", ""), capture.get("loaded_library", {}).get("artifact_id", "")):
+            errors.append("loader_observation argv is not the path-redacted pinned collector command")
         if not step.get("argv") or step["argv"][0] != CAPTURE_TOOL_PATH:
             errors.append("loader_observation command is not the allowlisted capture tool")
         if tool_artifact is not None and not any(ref_matches(ref, tool_artifact) for ref in step.get("inputs", [])):
@@ -605,7 +758,71 @@ def verify_loader_capture(manifest: dict[str, Any], root: Path) -> list[str]:
             errors.append("loader_observation step does not output the retained capture receipt")
         if not ref_matches(step.get("stdout_receipt"), artifacts.get(loader.get("capture_stdout", {}).get("artifact_id"))) or not ref_matches(step.get("stderr_receipt"), artifacts.get(loader.get("capture_stderr", {}).get("artifact_id"))):
             errors.append("loader_observation step stdout/stderr refs differ from captured process outputs")
+
+    raw_args = raw.get("raw_capture_argv", [])
+    if len(raw_args) < 2 or not Path(raw_args[0]).name.startswith("python"):
+        errors.append("private collector invocation does not record a Python interpreter argv")
+    else:
+        try:
+            expected_tool = str((root / CAPTURE_TOOL_PATH).resolve(strict=True))
+            if str(Path(raw_args[1]).resolve(strict=True)) != expected_tool:
+                errors.append("private collector invocation did not execute the pinned capture script")
+        except OSError:
+            errors.append("private capture script is unavailable for invocation validation")
     return errors
+
+
+def read_archive_member_inventory(archive_path: Path) -> list[dict[str, str]]:
+    """Return physical ar members in order, preserving duplicate names."""
+    data = archive_path.read_bytes()
+    if data[:8] != b"!<arch>\n":
+        raise ValueError("unsupported archive magic (thin archives are not accepted)")
+    pos = 8
+    long_names = b""
+    members: list[dict[str, str]] = []
+    while pos < len(data):
+        header = data[pos : pos + 60]
+        if len(header) != 60 or header[58:60] != b"`\n":
+            raise ValueError(f"invalid ar member header at byte {pos}")
+        name_field = header[:16].decode("ascii", errors="strict").strip()
+        size = int(header[48:58].decode("ascii").strip())
+        body_start = pos + 60
+        body_end = body_start + size
+        if body_end > len(data):
+            raise ValueError(f"truncated ar member at byte {pos}")
+        body = data[body_start:body_end]
+        name = name_field
+        payload = body
+        if name_field.startswith("#1/"):
+            name_size = int(name_field[3:])
+            name = body[:name_size].decode("utf-8", errors="surrogateescape").rstrip("\0")
+            payload = body[name_size:]
+        elif name_field == "//":
+            long_names = body
+            name = "//"
+        elif name_field in {"/", "/SYM64/"}:
+            name = name_field
+        elif name_field.startswith("/") and name_field[1:].isdigit():
+            offset = int(name_field[1:])
+            end = long_names.find(b"/\n", offset)
+            if end < 0:
+                end = long_names.find(b"\n", offset)
+            if end < 0:
+                raise ValueError(f"invalid GNU ar long-name offset: {name_field}")
+            name = long_names[offset:end].decode("utf-8", errors="surrogateescape")
+        if name not in {"//", "/", "/SYM64/"}:
+            members.append({"name": name, "sha256": hashlib.sha256(payload).hexdigest()})
+        pos = body_end + (size & 1)
+
+    listed = subprocess.run(["ar", "-t", str(archive_path)], capture_output=True, check=True, text=True).stdout.splitlines()
+    if len([member for member in members]) != len(listed) or any(
+        parsed.rstrip("/") != actual.rstrip("/")
+        for parsed, actual in zip((member["name"] for member in members), listed)
+    ):
+        raise ValueError("parsed archive member order/names disagree with `ar -t`")
+    for member, displayed_name in zip(members, listed):
+        member["name"] = displayed_name
+    return members
 
 
 def verify_artifact_bytes(manifest: dict[str, Any], root: Path) -> list[str]:
@@ -646,17 +863,22 @@ def verify_artifact_bytes(manifest: dict[str, Any], root: Path) -> list[str]:
         archive_path = resolved_paths.get(archive["artifact_id"])
         if archive_path is None:
             continue
+        try:
+            actual_members = read_archive_member_inventory(archive_path)
+        except (OSError, ValueError, subprocess.SubprocessError) as exc:
+            errors.append(f"cannot enumerate archive members for {archive.get('path')}: {exc}")
+            continue
+        declared_members = archive.get("member_inventory", [])
+        normalized_declared = [{"name": item.get("name"), "sha256": item.get("sha256")} for item in declared_members if isinstance(item, dict)]
+        if actual_members != normalized_declared:
+            errors.append(f"physical archive member inventory/order/hash mismatch: {archive.get('path')}")
+        actual_pairs = Counter((member["name"].rstrip("/"), member["sha256"]) for member in actual_members)
+        required_pairs: Counter = Counter()
         for ref in archive.get("archive_members", []):
-            member = by_id.get(ref.get("artifact_id"))
-            if member is None or _key(ref) != _key({k: member.get(k) for k in ("artifact_id", "path", "sha256")}):
-                continue
-            try:
-                result = subprocess.run(["ar", "-p", str(archive_path), PurePosixPath(member["path"]).name], capture_output=True, check=False)
-            except OSError as exc:
-                errors.append(f"cannot inspect archive member {member.get('path')}: {exc}")
-                continue
-            if result.returncode != 0 or hashlib.sha256(result.stdout).hexdigest() != member.get("sha256"):
-                errors.append(f"archive member bytes differ from object inventory: {member.get('path')}")
+            required_pairs[(PurePosixPath(ref.get("path", "")).name, ref.get("sha256"))] += 1
+        for pair, count in required_pairs.items():
+            if actual_pairs[pair] < count:
+                errors.append(f"archive member bytes differ from inventoried object: {pair[0]}")
     return errors
 
 

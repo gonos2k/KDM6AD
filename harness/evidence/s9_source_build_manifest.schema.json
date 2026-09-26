@@ -97,9 +97,10 @@
         "capture": {
           "type": "object",
           "additionalProperties": false,
-            "required": ["schema_version", "capture_tool_path", "capture_tool_sha256", "capture_argv", "process_argv", "launcher_sha256", "process_cwd", "process_environment", "process_environment_sha256", "process_exit_code", "executable", "loaded_library", "stdout_sha256", "stderr_sha256", "dyld_image_lines"],
+          "required": ["schema_version", "manifest_id", "capture_tool_path", "capture_tool_sha256", "capture_argv", "process_argv", "launcher_sha256", "process_cwd", "process_environment", "process_environment_sha256", "process_exit_code", "executable", "loaded_library", "stdout_sha256", "stderr_sha256", "dyld_image_lines", "private_receipt_sha256"],
           "properties": {
             "schema_version": { "const": "s9-dyld-capture/v1" },
+            "manifest_id": { "type": "string", "minLength": 1 },
             "capture_tool_path": { "const": "harness/capture_s9_dyld.py" },
             "capture_tool_sha256": { "$ref": "#/$defs/sha256" },
             "capture_argv": { "type": "array", "minItems": 1, "items": { "type": "string" } },
@@ -113,7 +114,8 @@
             "loaded_library": { "$ref": "#/$defs/artifactRef" },
             "stdout_sha256": { "$ref": "#/$defs/sha256" },
             "stderr_sha256": { "$ref": "#/$defs/sha256" },
-            "dyld_image_lines": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+            "dyld_image_lines": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+            "private_receipt_sha256": { "$ref": "#/$defs/sha256" }
           }
         }
       },
@@ -272,8 +274,26 @@
         "sha256": { "$ref": "#/$defs/sha256" },
         "mtime_utc": { "type": ["string", "null"], "format": "date-time" },
         "symlink_target": { "type": "string" },
-        "archive_members": { "type": "array", "items": { "$ref": "#/$defs/artifactRef" } }
-      }
+        "archive_members": { "type": "array", "items": { "$ref": "#/$defs/artifactRef" } },
+        "member_inventory": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "sha256"],
+            "properties": {
+              "name": { "type": "string", "minLength": 1 },
+              "sha256": { "$ref": "#/$defs/sha256" }
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "archive" } } },
+          "then": { "required": ["archive_members", "member_inventory"] }
+        }
+      ]
     }
   }
 }

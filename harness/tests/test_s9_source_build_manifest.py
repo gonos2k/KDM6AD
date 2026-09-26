@@ -14,6 +14,7 @@ import pytest
 HARNESS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HARNESS))
 import verify_s9_source_build_manifest as verifier  # noqa: E402
+import capture_s9_dyld as capture_tool  # noqa: E402
 
 try:
     from jsonschema import Draft202012Validator
@@ -25,13 +26,20 @@ def _sha(value: str) -> str:
     return hashlib.sha256(value.encode()).hexdigest()
 
 
+def _ar_record(name: str, payload: bytes) -> bytes:
+    fields = (f"{name}/", "0", "0", "0", "100644", str(len(payload)))
+    widths = (16, 12, 6, 6, 8, 10)
+    header = "".join(value.ljust(width) for value, width in zip(fields, widths)).encode() + b"`\n"
+    return header + payload + (b"\n" if len(payload) % 2 else b"")
+
+
 def _manifest() -> dict:
     artifacts: list[dict] = []
     source_files: list[dict] = []
     edges: list[dict] = []
     steps: list[dict] = []
 
-    def add(kind: str, path: str, *, role: str | None = None, members: list | None = None) -> dict:
+    def add(kind: str, path: str, *, role: str | None = None, members: list | None = None, member_inventory: list | None = None) -> dict:
         artifact = {
             "artifact_id": f"a{len(artifacts)}",
             "kind": kind,
@@ -43,6 +51,8 @@ def _manifest() -> dict:
             artifact["role"] = role
         if members is not None:
             artifact["archive_members"] = copy.deepcopy(members)
+        if member_inventory is not None:
+            artifact["member_inventory"] = copy.deepcopy(member_inventory)
         artifacts.append(artifact)
         return artifact
 
@@ -113,12 +123,13 @@ def _manifest() -> dict:
     step("configure", [cmake], [cmake_cache])
 
     fortran_objects = [a for a in artifacts if a["kind"] == "object" and a["path"].startswith("phys/")]
-    archive = add("archive", "main/libwrflib.a", members=[ref(a) for a in fortran_objects])
+    archive = add("archive", "main/libwrflib.a", members=[ref(a) for a in fortran_objects], member_inventory=[{"name":Path(a["path"]).name,"sha256":a["sha256"]} for a in fortran_objects])
     _, archive_receipt = step("archive", fortran_objects, [archive])
     for obj in fortran_objects:
         edge("archives_into", obj, archive, archive_receipt)
 
-    core_archive = add("archive", "libtorch/build/libkdm6.a", members=[ref(obj) for obj in core_objects])
+    core_members = [{"name":Path(obj["path"]).name,"sha256":obj["sha256"]} for obj in core_objects]
+    core_archive = add("archive", "libtorch/build/libkdm6.a", members=[ref(obj) for obj in core_objects], member_inventory=core_members)
     _, core_archive_receipt = step("archive", core_objects, [core_archive])
     for obj in core_objects:
         edge("archives_into", obj, core_archive, core_archive_receipt)
@@ -127,7 +138,7 @@ def _manifest() -> dict:
     edge("links_into", core_archive, build_dylib, cpp_link_receipt)
     edge("links_into", bridge_obj, build_dylib, cpp_link_receipt)
 
-    installed_core = add("archive", "libtorch/install/lib/libkdm6.a", members=[ref(obj) for obj in core_objects])
+    installed_core = add("archive", "libtorch/install/lib/libkdm6.a", members=[ref(obj) for obj in core_objects], member_inventory=core_members)
     installed = add("shared_library", "libtorch/install/lib/libkdm6_c.2.0.0.dylib")
     _, install_receipt = step("install", [core_archive, build_dylib], [installed_core, installed])
     edge("installs_as", core_archive, installed_core, install_receipt)
@@ -156,7 +167,7 @@ def _manifest() -> dict:
             "compiler": {"path": "/tool/fc", "version": "fc 1", "sha256": _sha("fc")},
             "linker": {"path": "/tool/ld", "version": "ld 1", "sha256": _sha("ld")},
             "build_system": {"path": "/tool/make", "version": "make 1", "sha256": _sha("make")},
-            "mpi_launcher": {"path": "/opt/open-mpi/bin/mpirun", "version": "Open MPI 5", "sha256": _sha("mpirun")},
+            "mpi_launcher": {"path": "<MPI_LAUNCHER>", "version": "Open MPI 5", "sha256": _sha("mpirun")},
             "environment": {},
         },
         "build_steps": steps,
@@ -231,8 +242,35 @@ def _attach_echo_loader_capture(manifest: dict, root: Path) -> None:
 
     run_dir = root / "run"
     run_dir.mkdir(parents=True, exist_ok=True)
-    stdout = next(a for a in manifest["artifacts"] if a["artifact_id"] == next(s for s in manifest["build_steps"] if s["kind"] == "loader_inspection")["stdout_receipt"]["artifact_id"])
-    stderr = next(a for a in manifest["artifacts"] if a["artifact_id"] == next(s for s in manifest["build_steps"] if s["kind"] == "loader_inspection")["stderr_receipt"]["artifact_id"])
+    loader_step = next(s for s in manifest["build_steps"] if s["kind"] == "loader_inspection")
+    stdout = next(a for a in manifest["artifacts"] if a["artifact_id"] == loader_step["stdout_receipt"]["artifact_id"])
+    stderr = next(a for a in manifest["artifacts"] if a["artifact_id"] == loader_step["stderr_receipt"]["artifact_id"])
+    stdout["path"] = "host/s9-captures/fake.stdout.log"
+    stderr["path"] = "host/s9-captures/fake.stderr.log"
+    for container in (manifest["source_tree"]["files"], *(step[key] for step in manifest["build_steps"] for key in ("inputs", "outputs")), manifest["lineage_gate"]["edge_results"]):
+        for value in container:
+            for ref_field in ("artifact_id", "from_artifact", "to_artifact"):
+                ref = value if ref_field == "artifact_id" else value.get(ref_field) if isinstance(value, dict) else None
+                if isinstance(ref, dict) and ref.get("artifact_id") == stdout["artifact_id"]:
+                    ref["path"] = stdout["path"]
+                if isinstance(ref, dict) and ref.get("artifact_id") == stderr["artifact_id"]:
+                    ref["path"] = stderr["path"]
+        if container is manifest["source_tree"]["files"]:
+            continue
+    for step in manifest["build_steps"]:
+        for key in ("stdout_receipt", "stderr_receipt"):
+            ref = step[key]
+            if ref["artifact_id"] == stdout["artifact_id"]:
+                ref["path"] = stdout["path"]
+            if ref["artifact_id"] == stderr["artifact_id"]:
+                ref["path"] = stderr["path"]
+    for edge in manifest["lineage_gate"]["edge_results"]:
+        for field in ("from_artifact", "to_artifact"):
+            if edge[field]["artifact_id"] == stdout["artifact_id"]:
+                edge[field]["path"] = stdout["path"]
+            if edge[field]["artifact_id"] == stderr["artifact_id"]:
+                edge[field]["path"] = stderr["path"]
+
     expected_library_path = str((root / library["path"]).resolve())
     fake_line = f"dyld[4242]: FABRICATED: loaded {expected_library_path} "
     stdout_bytes = (fake_line + "\n").encode()
@@ -247,15 +285,18 @@ def _attach_echo_loader_capture(manifest: dict, root: Path) -> None:
     library = next(a for a in manifest["artifacts"] if a["path"] == "libtorch/install/lib/libkdm6_c.2.0.0.dylib")
     stdout = next(a for a in manifest["artifacts"] if a["artifact_id"] == stdout["artifact_id"])
     stderr = next(a for a in manifest["artifacts"] if a["artifact_id"] == stderr["artifact_id"])
-    env = {
+    raw_env = {
+        "PATH": "/Users/example-user/bin:/usr/bin",
         "DYLD_PRINT_LIBRARIES": "1",
         "DYLD_PRINT_RPATHS": "1",
+        "DYLD_LIBRARY_PATH": "/private/tmp/example-project/libtorch/install/lib",
         "OMP_NUM_THREADS": "1",
         "MKL_NUM_THREADS": "1",
         "OMP_THREAD_LIMIT": "1",
     }
-    env_digest = hashlib.sha256(b"\0".join(f"{key}={env[key]}".encode() for key in sorted(env))).hexdigest()
-    receipt_path = "receipts/fabricated-loader-capture.json"
+    public_env = capture_tool._public_environment(raw_env)
+    env_digest = capture_tool._environment_digest(public_env)
+    receipt_path = "harness/evidence/fabricated-loader-capture.json"
     receipt_artifact = {
         "artifact_id": "fabricated-loader-capture",
         "kind": "receipt",
@@ -265,34 +306,63 @@ def _attach_echo_loader_capture(manifest: dict, root: Path) -> None:
     }
     process_argv = ["/bin/echo", "dyld[4242]: FABRICATED: loaded", expected_library_path, ""]
     manifest["toolchain"]["mpi_launcher"] = {
-        "path": "/bin/echo",
+        "path": "<MPI_LAUNCHER>",
         "version": "echo fake launcher",
         "sha256": hashlib.sha256(Path("/bin/echo").resolve().read_bytes()).hexdigest(),
     }
-    capture_argv = [
-        verifier.CAPTURE_TOOL_PATH, "--root", str(root),
-        "--executable", exe["path"], "--executable-id", exe["artifact_id"],
-        "--library", library["path"], "--library-id", library["artifact_id"],
-        "--cwd", "run", "--launcher", "/bin/echo",
-        "--receipt", receipt_path, "--stdout", stdout["path"], "--stderr", stderr["path"],
-    ]
+    manifest_id = manifest["manifest_id"]
+    private_path = f"host/s9-captures/{manifest_id}.raw.json"
+    capture_argv = capture_tool._public_capture_argv(manifest_id, exe["artifact_id"], library["artifact_id"])
     capture = {
         "schema_version": "s9-dyld-capture/v1",
         "capture_tool_path": verifier.CAPTURE_TOOL_PATH,
         "capture_tool_sha256": verifier.CAPTURE_TOOL_SHA256,
+        "manifest_id": manifest_id,
         "capture_argv": capture_argv,
-        "process_argv": process_argv,
+        "process_argv": capture_tool._public_process_argv(),
         "launcher_sha256": hashlib.sha256(Path("/bin/echo").resolve().read_bytes()).hexdigest(),
-        "process_cwd": "run",
-        "process_environment": env,
+        "process_cwd": "<RUN_DIR>",
+        "process_environment": public_env,
         "process_environment_sha256": env_digest,
         "process_exit_code": 0,
         "executable": _ref(exe),
         "loaded_library": _ref(library),
         "stdout_sha256": stdout["sha256"],
         "stderr_sha256": stderr["sha256"],
+        "dyld_image_lines": capture_tool._public_dyld_lines([fake_line]),
+    }
+    raw_argv = [
+        "--root", str(root), "--manifest-id", manifest_id,
+        "--executable", exe["path"], "--executable-id", exe["artifact_id"],
+        "--library", library["path"], "--library-id", library["artifact_id"],
+        "--cwd", "run", "--launcher", "/bin/echo",
+        "--receipt", receipt_path, "--private-receipt", private_path,
+        "--stdout", stdout["path"], "--stderr", stderr["path"],
+    ]
+    raw_capture = {
+        "schema_version": "s9-dyld-raw-capture/v1",
+        "manifest_id": manifest_id,
+        "capture_tool_sha256": verifier.CAPTURE_TOOL_SHA256,
+        "raw_capture_argv": [sys.executable, str(copied_tool.resolve()), *raw_argv],
+        "raw_process_argv": process_argv,
+        "raw_process_cwd": str(run_dir.resolve()),
+        "raw_process_environment": raw_env,
+        "process_exit_code": 0,
+        "raw_executable_path": str((root / exe["path"]).resolve()),
+        "raw_executable_sha256": exe["sha256"],
+        "raw_loaded_library_path": str((root / library["path"]).resolve()),
+        "raw_loaded_library_sha256": library["sha256"],
+        "raw_stdout_path": str((root / stdout["path"]).resolve()),
+        "raw_stderr_path": str((root / stderr["path"]).resolve()),
+        "stdout_sha256": stdout["sha256"],
+        "stderr_sha256": stderr["sha256"],
         "dyld_image_lines": [fake_line],
     }
+    private_path_full = root / private_path
+    private_path_full.parent.mkdir(parents=True, exist_ok=True)
+    raw_receipt_bytes = (json.dumps(raw_capture, sort_keys=True, indent=2) + "\n").encode()
+    private_path_full.write_bytes(raw_receipt_bytes)
+    capture["private_receipt_sha256"] = hashlib.sha256(raw_receipt_bytes).hexdigest()
     receipt_bytes = (json.dumps(capture, sort_keys=True, indent=2) + "\n").encode()
     receipt_artifact["sha256"] = hashlib.sha256(receipt_bytes).hexdigest()
     receipt_file = root / receipt_path
@@ -303,6 +373,7 @@ def _attach_echo_loader_capture(manifest: dict, root: Path) -> None:
     step = next(s for s in manifest["build_steps"] if s["kind"] == "loader_inspection")
     step["kind"] = "loader_observation"
     step["argv"] = capture_argv
+    step["cwd"] = "<BUILD_ROOT>"
     step["inputs"].append(_ref(tool_artifact))
     step["outputs"] = [_ref(receipt_artifact), _ref(stdout), _ref(stderr)]
     step["capture_receipt"] = _ref(receipt_artifact)
@@ -333,9 +404,33 @@ def test_echo_dyld_transcript_cannot_claim_a_proven_loader(tmp_path: Path):
     manifest = _manifest()
     _attach_echo_loader_capture(manifest, tmp_path)
     assert not _schema_errors(manifest), "fabricated transcript is shape-valid so semantic checks must reject it"
+    public_receipt = json.dumps(manifest["runtime_loader"]["capture"], sort_keys=True)
+    assert "/Users/example-user" not in public_receipt
+    assert "/private/tmp/example-project" not in public_receipt
+    assert "AWS_ACCESS_KEY_ID" not in public_receipt
+    assert "raw_process_argv" not in public_receipt
     errors = verifier.verify_manifest_semantics(manifest, tmp_path)
-    assert any("process command is outside allowlist" in error for error in errors)
+    assert any("private loader command is outside allowlist" in error for error in errors)
     assert any("disabled without an independent signed loader attestation" in error for error in errors)
+
+
+def test_environment_projection_drops_credentials_and_aliases_paths():
+    public = capture_tool._public_environment({
+        "HOME": "/Users/example-user",
+        "PWD": "/private/tmp/example-project/run",
+        "TMPDIR": "/var/folders/private",
+        "AWS_ACCESS_KEY_ID": "AKIA-DO-NOT-SERIALIZE",
+        "AWS_SECRET_ACCESS_KEY": "secret-do-not-serialize",
+        "PATH": "/Users/example-user/bin:/usr/bin",
+        "DYLD_LIBRARY_PATH": "/Users/example-user/project/libtorch/install/lib",
+        "DYLD_PRINT_LIBRARIES": "1",
+        "OMP_NUM_THREADS": "1",
+    })
+    serialized = json.dumps(public, sort_keys=True)
+    assert set(public) == {"PATH", "DYLD_LIBRARY_PATH", "DYLD_PRINT_LIBRARIES", "OMP_NUM_THREADS"}
+    assert public["PATH"].startswith("<redacted-path-sha256:")
+    assert public["DYLD_LIBRARY_PATH"].startswith("<redacted-path-sha256:")
+    assert all(token not in serialized for token in ("/Users/example-user", "/private/tmp", "var/folders", "AKIA-DO-NOT-SERIALIZE", "secret-do-not-serialize", "HOME", "PWD", "TMPDIR", "AWS_ACCESS_KEY_ID"))
 
 
 def test_cmake_static_and_shared_targets_match_manifest_contract():
@@ -459,6 +554,45 @@ def test_altered_core_archive_member_bytes_are_rejected(tmp_path: Path):
         "sha256": hashlib.sha256(archive_path.read_bytes()).hexdigest(),
         "mtime_utc": None,
         "archive_members": [{key: object[key] for key in ("artifact_id", "path", "sha256")}],
+        "member_inventory": verifier.read_archive_member_inventory(archive_path),
     }
     errors = verifier.verify_artifact_bytes({"artifacts": [object, archive]}, tmp_path)
-    assert any("archive member bytes differ from object inventory" in error for error in errors)
+    assert any("archive member bytes differ from inventoried object" in error for error in errors)
+
+
+def test_unlisted_physical_archive_member_is_rejected(tmp_path: Path):
+    archive_path = tmp_path / "libkdm6.a"
+    archive_bytes = b"!<arch>\n" + _ar_record("ops.cpp.o", b"ops") + _ar_record("hidden-extra.o", b"extra")
+    archive_path.write_bytes(archive_bytes)
+    actual = verifier.read_archive_member_inventory(archive_path)
+    declared = [actual[0]]
+    manifest = {"artifacts": [{
+        "artifact_id": "core-archive",
+        "kind": "archive",
+        "path": "libkdm6.a",
+        "sha256": hashlib.sha256(archive_bytes).hexdigest(),
+        "mtime_utc": None,
+        "archive_members": [],
+        "member_inventory": declared,
+    }]}
+    errors = verifier.verify_artifact_bytes(manifest, tmp_path)
+    assert any("physical archive member inventory/order/hash mismatch" in error for error in errors)
+
+
+def test_ordered_physical_inventory_preserves_duplicate_member_names(tmp_path: Path):
+    archive_path = tmp_path / "duplicates.a"
+    archive_bytes = b"!<arch>\n" + _ar_record("same.o", b"first") + _ar_record("same.o", b"second")
+    archive_path.write_bytes(archive_bytes)
+    actual = verifier.read_archive_member_inventory(archive_path)
+    assert [member["name"] for member in actual] == ["same.o/", "same.o/"]
+    assert actual[0]["sha256"] != actual[1]["sha256"]
+    manifest = {"artifacts": [{
+        "artifact_id": "duplicate-archive",
+        "kind": "archive",
+        "path": "duplicates.a",
+        "sha256": hashlib.sha256(archive_bytes).hexdigest(),
+        "mtime_utc": None,
+        "archive_members": [],
+        "member_inventory": actual,
+    }]}
+    assert verifier.verify_artifact_bytes(manifest, tmp_path) == []

@@ -71,6 +71,16 @@ newer than `CMakeFiles/kdm6.dir/src/sedimentation_conservative.cpp.o`
 (`59daf628…`, Jul 17 21:56). The archive members match those older objects.
 Their July 17 archive mtimes also predate the Aug 23 WRF executable; neither
 mtime nor matching members reconstructs the executable link command.
+The ordered `ar -t` inventory contains fifteen physical entries in each
+`libkdm6.a` (one `__.SYMDEF` plus fourteen objects) and 376 entries in the
+current `libwrflib.a`, including one repeated member name. The schema retains
+the full ordered name/hash multiset; the verifier compares it with parsed
+physical archive entries so an unlisted extra or duplicate cannot pass.
+The ordered `ar -t` inventory contains fifteen physical entries in each
+`libkdm6.a` (one `__.SYMDEF` plus fourteen objects) and 376 entries in the
+current `libwrflib.a`, including one repeated member name. The schema retains
+the full ordered name/hash multiset; the verifier compares it with parsed
+physical archive entries so an unlisted extra or duplicate cannot pass.
 
 The CMake source establishes two distinct targets: fourteen `src/*.cpp`
 translation units form the STATIC `kdm6` target; `kdm6_c` is a SHARED target
@@ -170,6 +180,13 @@ the paired comparison.
   its unsigned local receipt still cannot promote the lineage gate to proven.
   Proven status needs an independent trusted execution attestation, which this
   workspace does not currently define.
+- Collector JSON is a path-redacted projection: argv and cwd use aliases, and
+  only allowlisted loader/thread environment keys are serialized, with
+  path-valued settings replaced by digests. Exact command paths, allowlisted
+  raw values, absolute dyld output, and stdout/stderr are written only under
+  ignored `host/s9-captures/`; the public projection records their digest, not
+  their local path. A regression test injects user paths and AWS credential
+  variables and scans the serialized projection.
 - A source/build lineage pass is separate from owner approval, scientific
   acceptance, raw-bit parity, JVP/VJP validation, and native fixture results.
 
