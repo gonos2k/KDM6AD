@@ -16,6 +16,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 from typing import Any, Mapping
 
@@ -410,7 +411,13 @@ def validate_guarded_configuration_run(plan: dict[str, Any], *,
         if row.get("output_root_absent_before") is not True \
                 or row.get("output_root_absent_after") is not True:
             raise PrelinkError("configure/apply touched the native build output root")
-        if row.get("script_sha256") != requirements["configuration_inputs_sha256"][script_key]:
+        base_sha = requirements["configuration_inputs_sha256"][script_key]
+        shadow_sha = expected_configuration_source_sha256(plan, script_key, shadow=True)
+        patch_record = requirements.get("shadow_configuration_source_patches", {}).get(script_key)
+        patch_sha = patch_record.get("patch_sha256") if isinstance(patch_record, dict) else None
+        if (row.get("script_sha256") != shadow_sha
+                or row.get("canonical_script_sha256") != base_sha
+                or row.get("script_patch_sha256") != patch_sha):
             raise PrelinkError("guarded configure/apply script hash differs from the plan")
         for capture_field, digest_field in (("stdout_path", "stdout_sha256"),
                                             ("stderr_path", "stderr_sha256")):
@@ -949,17 +956,187 @@ def validate_configure_menu_pin(plan: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def expected_configuration_source_sha256(plan: dict[str, Any], source_name: str, *,
+                                         shadow: bool) -> str:
+    requirements = plan.get("prelink_requirements", {})
+    base = requirements.get("configuration_inputs_sha256", {}).get(source_name)
+    overlays = requirements.get("shadow_configuration_source_patches", {})
+    overlay = overlays.get(source_name) if isinstance(overlays, dict) else None
+    if isinstance(overlay, dict) and shadow:
+        result = overlay.get("shadow_sha256")
+    else:
+        result = base
+    if not isinstance(result, str) or not re.fullmatch(r"[0-9a-f]{64}", result):
+        raise PrelinkError(f"configuration source hash is missing or malformed: {source_name}")
+    return result
+
+
+def validate_single_file_configuration_patch(patch_bytes: bytes,
+                                             expected_name: str) -> None:
+    """Accept one exact-path unified diff, with no file creation/deletion or traversal."""
+    try:
+        lines = patch_bytes.decode("utf-8").splitlines()
+    except UnicodeDecodeError as exc:
+        raise PrelinkError("configuration patch is not UTF-8 text") from exc
+    if len(lines) < 3 or lines[0] != f"--- original/{expected_name}" \
+            or lines[1] != f"+++ patched/{expected_name}":
+        raise PrelinkError("configuration patch headers do not name the single pinned hook")
+    if (Path(lines[0][4:]).is_absolute() or Path(lines[1][4:]).is_absolute()
+            or ".." in Path(lines[0][4:]).parts or ".." in Path(lines[1][4:]).parts):
+        raise PrelinkError("configuration patch contains an absolute or traversing path")
+    forbidden = (
+        "diff --git ", "Index: ", "rename from ", "rename to ",
+        "new file mode ", "deleted file mode ", "GIT binary patch", "Binary files ",
+    )
+    if any(line.startswith(forbidden) for line in lines):
+        raise PrelinkError("configuration patch contains a rename, extra file, or binary section")
+
+    hunk_pattern = re.compile(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@(?: .*)?$")
+    hunk_count = 0
+    old_ranges: list[tuple[int, int]] = []
+    new_ranges: list[tuple[int, int]] = []
+    old_seen = new_seen = 0
+    for line in lines[2:]:
+        match = hunk_pattern.match(line)
+        if match:
+            if hunk_count and (old_seen != old_ranges[-1][1] or new_seen != new_ranges[-1][1]):
+                raise PrelinkError("configuration patch hunk line counts are inconsistent")
+            old_start = int(match.group(1))
+            old_count = int(match.group(2) or "1")
+            new_start = int(match.group(3))
+            new_count = int(match.group(4) or "1")
+            old_ranges.append((old_start, old_count))
+            new_ranges.append((new_start, new_count))
+            if len(set(old_ranges)) != len(old_ranges) or len(set(new_ranges)) != len(new_ranges):
+                raise PrelinkError("configuration patch contains duplicate hunks")
+            if len(old_ranges) > 1:
+                prev_old_start, prev_old_count = old_ranges[-2]
+                prev_new_start, prev_new_count = new_ranges[-2]
+                if (old_start < prev_old_start + prev_old_count
+                        or new_start < prev_new_start + prev_new_count):
+                    raise PrelinkError("configuration patch hunks overlap or are out of order")
+            old_seen = new_seen = 0
+            hunk_count += 1
+            continue
+        if hunk_count == 0:
+            raise PrelinkError("configuration patch contains data before its first hunk")
+        if line.startswith("\\ No newline at end of file"):
+            continue
+        if not line or line[0] not in " +-":
+            raise PrelinkError("configuration patch contains an unsupported or extra file section")
+        if line[0] in " -":
+            old_seen += 1
+        if line[0] in " +":
+            new_seen += 1
+        if old_seen > old_ranges[-1][1] or new_seen > new_ranges[-1][1]:
+            raise PrelinkError("configuration patch hunk has more lines than declared")
+    if hunk_count == 0 or old_seen != old_ranges[-1][1] or new_seen != new_ranges[-1][1]:
+        raise PrelinkError("configuration patch hunk line counts are inconsistent")
+
+
+def _verify_shadow_configuration_patch(plan: dict[str, Any], *, source_name: str,
+                                       canonical_source: Path,
+                                       shadow_source: Path,
+                                       workspace: Path,
+                                       environment: Mapping[str, str]) -> dict[str, str]:
+    requirements = plan["prelink_requirements"]
+    source_hashes = requirements["configuration_inputs_sha256"]
+    overlay = requirements.get("shadow_configuration_source_patches", {}).get(source_name)
+    if not isinstance(overlay, dict):
+        raise PrelinkError(f"shadow configuration patch record is malformed: {source_name}")
+    base_sha = source_hashes.get(source_name)
+    if (not isinstance(base_sha, str) or overlay.get("canonical_sha256") != base_sha
+            or sha256_file(canonical_source) != base_sha):
+        raise PrelinkError(f"canonical configuration source differs from patch base: {source_name}")
+    if canonical_source.is_symlink() or shadow_source.is_symlink():
+        raise PrelinkError(f"configuration patch source must not be a symlink: {source_name}")
+    relative_patch = overlay.get("patch_relative_path")
+    if not isinstance(relative_patch, str) or not relative_patch:
+        raise PrelinkError("private configuration patch path is missing")
+    patch_path = (workspace / relative_patch).resolve()
+    private_root = (workspace / "S10").resolve()
+    if not _is_relative_to(patch_path, private_root):
+        raise PrelinkError("private configuration patch escaped the S10 evidence root")
+    patch_sha = overlay.get("patch_sha256")
+    if not isinstance(patch_sha, str) or sha256_file(patch_path) != patch_sha:
+        raise PrelinkError(f"private configuration patch hash differs from its plan pin: {source_name}")
+    patch_tool_name = overlay.get("patch_tool_name")
+    patch_argv = overlay.get("patch_argv")
+    if patch_tool_name != "patch" or patch_argv != ["-s", "-p1"]:
+        raise PrelinkError("configuration patch executable/argv is not the reviewed patch policy")
+    patch_tool = plan.get("toolchain", {}).get("tools", {}).get("patch")
+    if not isinstance(patch_tool, dict):
+        raise PrelinkError("pinned patch utility is missing from the toolchain")
+    patch_executable = Path(patch_tool.get("path", ""))
+    if (not patch_executable.is_absolute()
+            or sha256_file(patch_executable) != patch_tool.get("sha256")):
+        raise PrelinkError("pinned patch utility path/hash is invalid")
+    base_bytes = canonical_source.read_bytes()
+    patch_bytes = patch_path.read_bytes()
+    validate_single_file_configuration_patch(patch_bytes, source_name)
+    expected_shadow_sha = overlay.get("shadow_sha256")
+    if not isinstance(expected_shadow_sha, str):
+        raise PrelinkError("patched shadow configuration hash is missing")
+    with tempfile.TemporaryDirectory(prefix="s10-config-hook-patch-") as temp_dir:
+        target = Path(temp_dir) / source_name
+        target.write_bytes(base_bytes)
+        result = subprocess.run(
+            [str(patch_executable), *patch_argv], cwd=temp_dir,
+            input=patch_bytes, capture_output=True, shell=False,
+            env=dict(environment), check=False)
+        if result.returncode != 0:
+            raise PrelinkError(f"pinned patch did not apply to canonical source: {source_name}")
+        temporary_files = list(Path(temp_dir).iterdir())
+        if temporary_files != [target]:
+            raise PrelinkError("configuration patch wrote unplanned temporary files")
+        reconstructed = target.read_bytes()
+    shadow_bytes = shadow_source.read_bytes()
+    if (sha256_bytes(reconstructed) != expected_shadow_sha
+            or reconstructed != shadow_bytes
+            or sha256_file(shadow_source) != expected_shadow_sha):
+        raise PrelinkError(f"shadow configuration source differs from exact patched bytes: {source_name}")
+    return {
+        "canonical_sha256": base_sha,
+        "patch_sha256": patch_sha,
+        "shadow_sha256": expected_shadow_sha,
+    }
+
+
 def validate_configuration_sources(plan: dict[str, Any], *,
                                    canonical_host: Path,
-                                   shadow_host: Path) -> dict[str, str]:
-    """Require configure inputs to match reviewed bytes in canonical and shadow hosts."""
+                                   shadow_host: Path,
+                                   workspace: Path | None = None,
+                                   environment: Mapping[str, str] | None = None) -> dict[str, str]:
+    """Require canonical config inputs and any sole reviewed shadow patch to match."""
+    requirements = plan["prelink_requirements"]
+    hashes = requirements["configuration_inputs_sha256"]
+    overlays = requirements.get("shadow_configuration_source_patches", {})
+    if not isinstance(overlays, dict):
+        raise PrelinkError("shadow configuration patch map is malformed")
+    if set(overlays) - {"apply_kdm6ad_config.sh"}:
+        raise PrelinkError("only apply_kdm6ad_config.sh may have a shadow patch overlay")
     checked: dict[str, str] = {}
-    for rel, expected in plan["prelink_requirements"]["configuration_inputs_sha256"].items():
+    for rel, expected in hashes.items():
         if sha256_file(canonical_host / rel) != expected:
             raise PrelinkError(f"private host configuration source changed: {rel}")
-        if sha256_file(shadow_host / rel) != expected:
-            raise PrelinkError(f"disposable shadow configuration source changed: {rel}")
-        checked[rel] = expected
+        overlay = overlays.get(rel)
+        if overlay is None:
+            if sha256_file(shadow_host / rel) != expected:
+                raise PrelinkError(f"disposable shadow configuration source changed: {rel}")
+            checked[rel] = expected
+        else:
+            if workspace is None:
+                raise PrelinkError("workspace is required to verify the pinned shadow source patch")
+            if environment is None:
+                environment = planned_tool_environment(plan)
+            verified = _verify_shadow_configuration_patch(
+                plan, source_name=rel,
+                canonical_source=canonical_host / rel,
+                shadow_source=shadow_host / rel,
+                workspace=workspace, environment=environment)
+            checked[rel] = verified["shadow_sha256"]
+    if set(overlays) - set(hashes):
+        raise PrelinkError("shadow configuration patch names an unpinned source")
     return checked
 
 
@@ -981,7 +1158,8 @@ def validate_static_pins(plan: dict[str, Any], *, workspace: Path,
             overlay_path=overlay_paths[scheme])
 
     validate_configuration_sources(
-        plan, canonical_host=canonical_host, shadow_host=shadow_host)
+        plan, canonical_host=canonical_host, shadow_host=shadow_host,
+        workspace=workspace, environment=environment)
 
     trusted_s15 = plan.get("trusted_s15_release", {})
     manifest_path = workspace / trusted_s15.get("evidence_manifest_path", "")
@@ -1523,6 +1701,8 @@ def _configuration_command_signature(record: dict[str, Any]) -> dict[str, Any]:
         "stdin_path": record.get("stdin_path"),
         "stdin_sha256": record.get("stdin_sha256"),
         "script_sha256": record.get("script_sha256"),
+        "canonical_script_sha256": record.get("canonical_script_sha256"),
+        "script_patch_sha256": record.get("script_patch_sha256"),
         "returncode": record.get("returncode"),
         "shell": record.get("shell"),
         "netcdf_tool_probes": record.get("netcdf_tool_probes"),
@@ -1752,9 +1932,16 @@ def _validate_configure_pipeline(execution: dict[str, Any], shadow_host: Path,
             stdin_path = Path(row.get("stdin_path", "")).resolve()
             if stdin_path != expected_capture or sha256_file(stdin_path) != expected_input_sha:
                 raise PrelinkError(f"configuration stage {stage} stdin capture differs from its exact pin")
-        if row.get("script_sha256") != script_hashes[script_name]:
+        expected_shadow_sha = expected_configuration_source_sha256(
+            plan, script_name, shadow=True)
+        patch_record = plan["prelink_requirements"].get(
+            "shadow_configuration_source_patches", {}).get(script_name)
+        expected_patch_sha = patch_record.get("patch_sha256") if isinstance(patch_record, dict) else None
+        if (row.get("script_sha256") != expected_shadow_sha
+                or row.get("canonical_script_sha256") != script_hashes[script_name]
+                or row.get("script_patch_sha256") != expected_patch_sha):
             raise PrelinkError(f"configuration stage {stage} script hash mismatch")
-        if sha256_file(shadow_host / script_name) != script_hashes[script_name]:
+        if sha256_file(shadow_host / script_name) != expected_shadow_sha:
             raise PrelinkError(f"configuration stage {stage} shadow script changed")
         _ensure_output_target(argv, expected=None, output_root=output_root,
                               require_output=False, label=f"configuration {stage}")

@@ -331,7 +331,11 @@ def _execute_config_command(*, stage: str, plan_path: Path,
     if (argv != [str(bash), relative_argv]
             or bash_sha != plan["toolchain"]["tools"]["bash"]["sha256"]):
         raise guard.PrelinkError("guarded configure command differs from its exact plan/tool pin")
-    script_sha = plan["prelink_requirements"]["configuration_inputs_sha256"][script_name]
+    script_base_sha = plan["prelink_requirements"]["configuration_inputs_sha256"][script_name]
+    script_sha = guard.expected_configuration_source_sha256(plan, script_name, shadow=True)
+    patch_record = plan["prelink_requirements"].get(
+        "shadow_configuration_source_patches", {}).get(script_name)
+    script_patch_sha = patch_record.get("patch_sha256") if isinstance(patch_record, dict) else None
     if guard.sha256_file(shadow_host / script_name) != script_sha:
         raise guard.PrelinkError(f"guarded configuration script changed: {script_name}")
     stdin_rel = plan["prelink_requirements"]["configuration_stdin_capture_paths"][receipt_stage]
@@ -393,7 +397,10 @@ def _execute_config_command(*, stage: str, plan_path: Path,
     row = {
         "stage": receipt_stage,
         "tool_name": "bash", "tool_path": str(bash), "tool_sha256": bash_sha,
-        "script_sha256": script_sha, "argv": argv,
+        "script_sha256": script_sha,
+        "canonical_script_sha256": script_base_sha,
+        "script_patch_sha256": script_patch_sha,
+        "argv": argv,
         "flags": guard._argv_option_tokens(argv), "cwd": str(shadow_host.resolve()),
         "environment_sha256": plan["toolchain"]["environment_sha256"],
         "shell": False, "returncode": result.returncode,

@@ -2,7 +2,7 @@
   "schema": "s10-czeroqg-prelink-plan-v1",
   "status": "PRELINK_GUARD_FAILS_CLOSED_PENDING_CONFIG_PINS_REVIEWED_ARGV_AND_EXTERNAL_RELEASE_TRUST",
   "supersedes": "harness/evidence/s10_czeroqg_native_plan_2026-09-26.json",
-  "base_commit": "55d7b05840ef9269fe4383e580399aeea5c5d6c2",
+  "base_commit": "9130d64354392362f1dc6ab6d80ba34f7b5a1960",
   "policy_approved": false,
   "s10_status": "OPEN",
   "gates": {
@@ -110,7 +110,7 @@
     ],
     "configure_selection_stdin_sha256": "5cc0efdbfc6bf3e9208a52ed10e3cb5edac3bb961635ac89b2af48d3463d3639",
     "configuration_apply_stdin_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "configuration_pin_status": "Configure argv, exact option 35/nesting 1 stdin bytes and both SHA fields, pinned SDKROOT/xcrun path and SDKSettings identity, and Homebrew NetCDF roots/tools are required; generated configure.wrf SHA remains null until a reviewed successful attempt.",
+    "configuration_pin_status": "Configure menu bytes/options, SDKROOT, NetCDF roots/tools, and the single private shadow apply-hook patch are pinned; generated configure.wrf remains unset pending reviewed attempt-three configure/apply.",
     "netcdf_config_invocation_policy": {
       "selection": "Homebrew NetCDF 4.9.3 and NetCDF-Fortran 4.6.2; explicit NETCDF and NETCDF_C roots bypass PATH selection",
       "environment": {
@@ -184,7 +184,21 @@
     "configuration_ledger_plan_sha256": null,
     "configure_failure_log_markers": [
       "One of compilers testing failed!"
-    ]
+    ],
+    "shadow_configuration_source_patches": {
+      "apply_kdm6ad_config.sh": {
+        "canonical_sha256": "346b8fe4286088e9707f73251bfaff58a94b55ad357f49a185732a8b8ecf067c",
+        "patch_relative_path": "S10/hook_patches/apply_kdm6ad_config.patch",
+        "patch_sha256": "cc8a7b02e530850637f1dd7bccea0822de985052a797ac317aaa26ef50b2adf8",
+        "shadow_sha256": "591519d512db1b722a56215d6a837d94e5f163f61c91f9b7f24778f76f370209",
+        "patch_tool_name": "patch",
+        "patch_argv": [
+          "-s",
+          "-p1"
+        ],
+        "policy": "Only this shadow hook may differ from canonical. The pinned one-file diff must apply to a temporary canonical copy and reproduce exact shadow bytes; existing LIB_LOCAL is replaced, or one definition is inserted after the sole LIB assignment that references $(LIB_LOCAL)."
+      }
+    }
   },
   "build_matrix": {
     "schemes": [
@@ -394,6 +408,10 @@
           "--version"
         ],
         "version_stdout": "Python 3.10.11"
+      },
+      "patch": {
+        "path": "/usr/bin/patch",
+        "sha256": "6dd09f87fcdb55f5f51b0784f4245898a3d2b32d13f27f67714cddc48079e618"
       }
     },
     "environment_keys": [
@@ -494,7 +512,7 @@
       "OMPI_HOME"
     ],
     "environment_sha256": "a38035e854093c7bda06b123fd09e1e5d6fe56277dd364a51a9bbc49508e4af3",
-    "toolchain_sha256": "29072b3fdf4952ca04b5ff934948dc8b974ef4160ad049e73115c1a5b6cd9b41",
+    "toolchain_sha256": "cbba4e1ec9e93be23f64901cdc4aa7584b384a662c95305227270f363d54faf0",
     "mpif90_underlying_command": "gfortran",
     "gfortran_subcommands": [
       "f951",
@@ -504,7 +522,7 @@
     ],
     "linker_name_reported_by_gfortran": "ld",
     "linker_resolved_path": "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld",
-    "toolchain_scope": "Pinned direct compiler/configuration helpers, xcrun SDKROOT resolution and SDKSettings identity, GCC/Xcode subordinate executables, Homebrew NetCDF config tools, and the sanitized child environment; not a hermetic build claim.",
+    "toolchain_scope": "Pinned direct compiler/configuration helpers, xcrun SDKROOT resolution and SDKSettings identity, GCC/Xcode subordinate executables, Homebrew NetCDF config tools, the pinned patch utility, and sanitized child environment; not a hermetic build claim.",
     "argv_policy": "absolute pinned executable path must be argv[0] for every command; hashes and subordinate resolution are rechecked at prelink",
     "configuration_environment": {
       "NETCDF": "/opt/homebrew",
@@ -598,7 +616,7 @@
     "pr_number": 281,
     "evidence_manifest_path": "harness/evidence/s15_b20_public/s15_native_B_20S_public_manifest.json",
     "evidence_manifest_sha256": "02e7cfc7b0c0362f496eedad6705abeaa2b76c42808dd92092de5b0ac8580276",
-    "empty_output_root_snapshot_sha256": "8011edd2cff33aff9b6e4c35da7e3a0f8a197cb3722f7350ff28f704f6825484",
+    "empty_output_root_snapshot_sha256": "c4cac9cb4d9c1a6d0c08455350ea44185d61f2d6216e98d93bbb10d0621efd5d",
     "receipt_gate": "coordinator must sign a release record binding final plan SHA, both S15 merge/evidence pins, and reviewed empty-root snapshot SHA; coordinator release SHA remains external.",
     "manifest_and_merge_are_rehashed_from_worktree": true,
     "coordinator_release_receipt_present": false,

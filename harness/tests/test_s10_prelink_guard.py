@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import difflib
 from pathlib import Path
 import sys
+import shutil
 from types import SimpleNamespace
 
 import pytest
@@ -37,6 +39,8 @@ from s10_prelink_guard import (  # noqa: E402
     validate_build_resource_preflight,
     validate_configure_menu_pin,
     validate_configure_failure_markers,
+    expected_configuration_source_sha256,
+    validate_single_file_configuration_patch,
     validate_sdkroot_resolution,
     validate_toolchain,
 )
@@ -310,6 +314,138 @@ def test_configuration_source_pins_cover_shadow_configure_inputs(tmp_path: Path)
     (shadow / "arch/configure.defaults").write_text("mutated-menu-v1\n")
     with pytest.raises(PrelinkError, match="disposable shadow configuration source changed: arch/configure.defaults"):
         validate_configuration_sources(plan, canonical_host=canonical, shadow_host=shadow)
+
+
+def _configuration_patch_fixture(workspace: Path):
+    canonical = workspace / "canonical"
+    shadow = workspace / "shadow"
+    patch_path = workspace / "S10/hook_patches/apply_kdm6ad_config.patch"
+    for root in (canonical, shadow):
+        root.mkdir(parents=True)
+    base = b"#!/bin/sh\necho original hook\n"
+    patched = b"#!/bin/sh\necho patched hook\n"
+    canonical_script = canonical / "apply_kdm6ad_config.sh"
+    shadow_script = shadow / "apply_kdm6ad_config.sh"
+    canonical_script.write_bytes(base)
+    shadow_script.write_bytes(patched)
+    configure = b"configure source\n"
+    (canonical / "configure").write_bytes(configure)
+    (shadow / "configure").write_bytes(configure)
+    patch_path.parent.mkdir(parents=True)
+    patch_data = "".join(difflib.unified_diff(
+        base.decode().splitlines(keepends=True),
+        patched.decode().splitlines(keepends=True),
+        fromfile="original/apply_kdm6ad_config.sh",
+        tofile="patched/apply_kdm6ad_config.sh",
+    )).encode()
+    patch_path.write_bytes(patch_data)
+    patch_executable = Path(shutil.which("patch") or "/usr/bin/patch").resolve()
+    plan = {
+        "toolchain": {"tools": {"patch": {
+            "path": str(patch_executable),
+            "sha256": hashlib.sha256(patch_executable.read_bytes()).hexdigest(),
+        }}},
+        "prelink_requirements": {
+            "configuration_inputs_sha256": {
+                "configure": hashlib.sha256(configure).hexdigest(),
+                "apply_kdm6ad_config.sh": hashlib.sha256(base).hexdigest(),
+            },
+            "shadow_configuration_source_patches": {
+                "apply_kdm6ad_config.sh": {
+                    "canonical_sha256": hashlib.sha256(base).hexdigest(),
+                    "patch_relative_path": "S10/hook_patches/apply_kdm6ad_config.patch",
+                    "patch_sha256": hashlib.sha256(patch_data).hexdigest(),
+                    "shadow_sha256": hashlib.sha256(patched).hexdigest(),
+                    "patch_tool_name": "patch",
+                    "patch_argv": ["-s", "-p1"],
+                },
+            },
+        },
+    }
+    return plan, canonical, shadow, patch_path
+
+
+def test_shadow_hook_patch_reconstructs_exactly_one_allowed_source(tmp_path: Path):
+    plan, canonical, shadow, patch_path = _configuration_patch_fixture(tmp_path)
+    result = validate_configuration_sources(
+        plan, canonical_host=canonical, shadow_host=shadow,
+        workspace=tmp_path, environment={"PATH": "/usr/bin:/bin"})
+    assert result["configure"] == plan["prelink_requirements"][
+        "configuration_inputs_sha256"]["configure"]
+    assert result["apply_kdm6ad_config.sh"] == plan["prelink_requirements"][
+        "shadow_configuration_source_patches"]["apply_kdm6ad_config.sh"]["shadow_sha256"]
+    assert expected_configuration_source_sha256(
+        plan, "apply_kdm6ad_config.sh", shadow=False) == plan["prelink_requirements"][
+            "configuration_inputs_sha256"]["apply_kdm6ad_config.sh"]
+    assert expected_configuration_source_sha256(
+        plan, "apply_kdm6ad_config.sh", shadow=True) == result[
+            "apply_kdm6ad_config.sh"]
+    assert patch_path.is_file()
+
+
+@pytest.mark.parametrize(
+    "patch_bytes",
+    [
+        b"--- original/../outside\n+++ patched/../outside\n@@ -1 +1 @@\n-a\n+b\n",
+        b"--- /outside\n+++ /outside\n@@ -1 +1 @@\n-a\n+b\n",
+        b"--- original/hook.sh\n+++ patched/hook.sh\n"
+        b"@@ -1 +1 @@\n-a\n+b\n@@ -1 +1 @@\n-a\n+b\n",
+        b"--- original/hook.sh\n+++ patched/hook.sh\n"
+        b"@@ -1 +1 @@\n-a\n+b\n--- original/extra\n+++ patched/extra\n"
+        b"@@ -0,0 +1 @@\n+extra\n",
+        b"diff --git a/hook.sh b/hook.sh\n--- a/hook.sh\n+++ b/hook.sh\n"
+        b"@@ -1 +1 @@\n-a\n+b\n",
+        b"--- original/hook.sh\n+++ patched/hook.sh\n"
+        b"new file mode 100644\n@@ -0,0 +1 @@\n+new\n",
+    ],
+)
+def test_single_hook_patch_rejects_traversal_extra_files_renames_and_duplicate_hunks(
+    patch_bytes: bytes,
+):
+    with pytest.raises(PrelinkError, match="configuration patch"):
+        validate_single_file_configuration_patch(patch_bytes, "hook.sh")
+
+
+@pytest.mark.parametrize(
+    ("mutation", "message"),
+    [
+        ("patch_bytes", "patch hash differs"),
+        ("shadow_bytes", "differs from exact patched bytes"),
+        ("canonical_bytes", "private host configuration source changed"),
+        ("escaped_patch", "escaped the S10 evidence root"),
+        ("extra_patch_file", "configuration patch"),
+        ("second_overlay", "only apply_kdm6ad_config.sh may have a shadow patch"),
+        ("patch_tool", "pinned patch utility is missing"),
+    ],
+)
+def test_shadow_hook_patch_mutations_fail_closed(
+    tmp_path: Path, mutation: str, message: str,
+):
+    plan, canonical, shadow, patch_path = _configuration_patch_fixture(tmp_path)
+    if mutation == "patch_bytes":
+        patch_path.write_bytes(patch_path.read_bytes() + b"# tampered\n")
+    elif mutation == "shadow_bytes":
+        (shadow / "apply_kdm6ad_config.sh").write_bytes(b"different hook\n")
+    elif mutation == "canonical_bytes":
+        (canonical / "apply_kdm6ad_config.sh").write_bytes(b"different base\n")
+    elif mutation == "escaped_patch":
+        plan["prelink_requirements"]["shadow_configuration_source_patches"][
+            "apply_kdm6ad_config.sh"]["patch_relative_path"] = "../escape.patch"
+    elif mutation == "second_overlay":
+        plan["prelink_requirements"]["shadow_configuration_source_patches"][
+            "configure"] = {}
+    elif mutation == "patch_tool":
+        plan["toolchain"]["tools"].pop("patch")
+    elif mutation == "extra_patch_file":
+        patch_path.write_bytes(patch_path.read_bytes() +
+            b"--- original/extra\n+++ patched/extra\n@@ -0,0 +1 @@\n+extra\n")
+        plan["prelink_requirements"]["shadow_configuration_source_patches"][
+            "apply_kdm6ad_config.sh"]["patch_sha256"] = hashlib.sha256(
+                patch_path.read_bytes()).hexdigest()
+    with pytest.raises(PrelinkError, match=message):
+        validate_configuration_sources(
+            plan, canonical_host=canonical, shadow_host=shadow,
+            workspace=tmp_path, environment={"PATH": "/usr/bin:/bin"})
 
 
 def _resource_plan(workspace: Path, snapshot_sha: str, *, approved: bool = False):
@@ -1205,6 +1341,7 @@ def test_configure_command_stdin_and_generated_config_are_plan_pinned(tmp_path: 
         return {
             "stage": stage, "tool_name": "bash", "tool_path": str(bash),
             "tool_sha256": bash_sha, "script_sha256": script_sha,
+            "canonical_script_sha256": script_sha, "script_patch_sha256": None,
             "argv": argv, "flags": _argv_option_tokens(argv),
             "cwd": str(shadow), "shell": False, "returncode": 0,
             "stdin_sha256": stdin_hash,
@@ -1320,7 +1457,8 @@ def test_configure_pipeline_requires_resolved_netcdf_tool_receipt(tmp_path: Path
                 else "./apply_kdm6ad_config.sh"]
         row = {
             "stage": stage, "tool_name": "bash", "tool_path": str(bash),
-            "tool_sha256": bash_sha, "script_sha256": script_sha,
+                "tool_sha256": bash_sha, "script_sha256": script_sha,
+                "canonical_script_sha256": script_sha, "script_patch_sha256": None,
             "argv": argv, "flags": _argv_option_tokens(argv),
             "cwd": str(shadow), "shell": False, "returncode": 0,
             "stdin_sha256": stdin_hash, "stdin_path": str(stdin_path),

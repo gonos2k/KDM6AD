@@ -1,0 +1,53 @@
+{
+  "schema": "s10-attempt2-lib-local-hook-report-v1",
+  "scope": "path-redacted attempt-two apply failure and copy-only private-hook patch verification; no raw hook, patch, configure.wrf, or receipts are included",
+  "attempt2": {
+    "plan_sha256": "10d77a48ddce932c6b09a150dd2a731d3b240310dbe84e623a2948667fc2817c",
+    "snapshot_sha256": "8011edd2cff33aff9b6e4c35da7e3a0f8a197cb3722f7350ff28f704f6825484",
+    "preflight_status": "ALLOW_CONFIGURE_ONLY",
+    "configure_exit_code": 0,
+    "apply_exit_code": 1,
+    "pipeline_exit_code": 2,
+    "apply_failure": "The generated configure.wrf referenced $(LIB_LOCAL) from LIB but had no LIB_LOCAL definition for the hook to replace.",
+    "consumed_marker": true,
+    "build_output_root_absent": true,
+    "preprocess_object_link_model_invoked": false
+  },
+  "attempt2_private_artifact_sha256": {
+    "preflight_receipt": "ce6b875b61c86d5f79da72d9f7e93f7030c005ece0ba9217f021d59a9a1e6bae",
+    "ledger": "7988491ff7f1df08c8997a5d931f12d14c0871577b8ef01cf20c2317167af6f2",
+    "consumed_marker": "fce94443704a15ebf9a9d52e5a6ee0f5be9b1ee4e19bcff3fcada66ad0571ef7",
+    "configure_stdout": "74698c8c09199674e3308cb110965282e68bf4ed2be15fb0a3c353b6c5c19d56",
+    "configure_stderr": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "apply_stdout": "ef56b3240c2bc23ec001f8e78df3a37895be8388aa251b740108842b469f2f37",
+    "apply_stderr": "e19398e5e38944089c3f0f674027e14a49d049087faec86c037890417d9e60fd",
+    "generated_configure_wrf": "9fa2bc8cf713a6be980fd126727688aa7a5e297a9df1e0144f2050a721697d66"
+  },
+  "copy_only_hook_patch": {
+    "canonical_hook_base_sha256": "346b8fe4286088e9707f73251bfaff58a94b55ad357f49a185732a8b8ecf067c",
+    "private_patch_sha256": "cc8a7b02e530850637f1dd7bccea0822de985052a797ac317aaa26ef50b2adf8",
+    "patched_hook_sha256": "591519d512db1b722a56215d6a837d94e5f163f61c91f9b7f24778f76f370209",
+    "patch_tool_sha256": "6dd09f87fcdb55f5f51b0784f4245898a3d2b32d13f27f67714cddc48079e618",
+    "attempt2_configure_wrf_input_sha256": "9fa2bc8cf713a6be980fd126727688aa7a5e297a9df1e0144f2050a721697d66",
+    "patched_copy_configure_wrf_sha256": "0776b705e65683f93583a7c294ab1d83d7208e96d4461cba435183ecfdec059f",
+    "resulting_LIB_LOCAL_definition_count": 1,
+    "repeat_application_idempotent": true,
+    "existing_anchor_output_matches_unpatched_hook": true,
+    "missing_reference_rejected_without_input_change": true,
+    "malformed_local_definition_rejected_without_input_change": true,
+    "duplicate_local_definition_rejected_without_input_change": true,
+    "canonical_hook_changed": false,
+    "attempt2_config_or_captures_changed": false
+  },
+  "attempt3": {
+    "status": "PRIVATE_SOURCE_STAGING_PREPARED",
+    "plan_sha256": "bf287e97c0c31467d156d8e20008e51f0bce323d11030c0511b1141289f72d75",
+    "snapshot_sha256": "c4cac9cb4d9c1a6d0c08455350ea44185d61f2d6216e98d93bbb10d0621efd5d",
+    "hook_patch_policy": "Only apply_kdm6ad_config.sh may differ from canonical; the guard applies the pinned private diff to a temporary canonical copy and requires exact equality with the shadow script. All other configuration files remain canonical-equal.",
+    "static_pins_passed": true,
+    "clean_shadow_passed": true,
+    "preflight_or_configure_invoked": false,
+    "s10_status": "OPEN"
+  },
+  "evidence_boundary": "The private hook patch was tested only on disposable copies. Canonical hook, attempt-one evidence, and attempt-two captures/configuration remain unchanged. No preprocessing, build, link, or model run occurred."
+}

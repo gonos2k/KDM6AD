@@ -10,6 +10,7 @@ oracle/**/*.txt
 # gitignored WRF host integration tree (~4.7k Fortran/C files) — not knowledge content
 host/
 host_fortran/
+S10/
 
 # tool caches, agent state, editor + graph artifacts (filtered in the 07-05 build)
 .omo/
