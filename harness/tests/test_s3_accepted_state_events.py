@@ -25,7 +25,12 @@ def _word(value):
     return "0x" + struct.pack("!f", value).hex()
 
 
-def _raw_event(*, x_right=2.0, rk=1, state_class="solver_internal"):
+def _f32(value):
+    return struct.unpack("!f", struct.pack("!f", value))[0]
+
+
+def _raw_event(*, x_right=2.0, y_south=0.0, y_north=0.0, z_top=0.0,
+               value_before=1.0, rk=1, state_class="solver_internal"):
     checkpoint, producer = {
         "solver_internal": ("RK_AFTER", "rk_update_scalar"),
         "model_step_accepted": ("STEP_ACCEPTED", "step_acceptance_scan"),
@@ -44,7 +49,7 @@ def _raw_event(*, x_right=2.0, rk=1, state_class="solver_internal"):
         "copy_only": False,
         "identity": identity,
         "rk": rk,
-        "value_before_bits": _word(1.0),
+        "value_before_bits": _word(value_before),
         "value_after_bits": _word(-1.0),
         "native_build_sha256": "a" * 64,
         "module_em_object_sha256": HOST_MODULE_EM_OBJECT_SHA256,
@@ -60,14 +65,23 @@ def _raw_event(*, x_right=2.0, rk=1, state_class="solver_internal"):
         return event
     flux = dict.fromkeys(FACE_ORDER, _word(0.0))
     flux["xR"] = _word(x_right)
+    flux["yS"] = _word(y_south)
+    flux["yN"] = _word(y_north)
+    flux["zT"] = _word(z_top)
+    tendency = _f32(0.0)
+    tendency = _f32(tendency - _f32(_f32(y_north - y_south)))
+    tendency = _f32(tendency - _f32(_f32(x_right)))
+    tendency = _f32(tendency - _f32(_f32(z_top)))
+    event["value_after_bits"] = _word(_f32(value_before + tendency))
     event.update(
         limiter="none_at_this_stage",
+        advection_orders={"horizontal": 5, "vertical": 3},
         face_flux_bits=flux,
         metric_bits={name: _word(1.0) for name in ("msftx", "msfty", "rdx", "rdy", "rdzw", "dt")},
         rk_bits={
             "c1": _word(0.0), "c2": _word(1.0), "mu_old": _word(0.0),
             "mu_new": _word(0.0), "mu_base": _word(0.0),
-            "scalar_tend": _word(0.0), "observed_advect_tend": _word(-x_right),
+            "scalar_tend": _word(0.0), "observed_advect_tend": _word(tendency),
         },
     )
     return event
@@ -135,11 +149,29 @@ def test_file_reader_rejects_mutated_evidence_bytes(tmp_path):
 def test_raw_face_fluxes_reconstruct_the_rk1_face_pair_crossing():
     result = attribute_event(_raw_event())
 
-    assert result.status == "ARITHMETIC_REPLAY_MATCHED"
-    assert result.cause == "RK1_FACE_PAIR_BUDGET_CROSSING"
-    assert result.crossing_group == "x_pair"
-    assert result.budget_before_store == -1
+    assert result.status == "UNVERIFIED_RECEIPT"
+    assert result.cause == "native_receipt_not_externally_pinned"
+    assert result.replay_group == "x_pair"
+    assert result.rk_numerator == -1
     assert result.accepted_value == -1.0
+
+
+def test_y_then_x_face_replay_preserves_a_half_ulp_x_remainder():
+    large = float(2**24)
+    result = attribute_event(
+        _raw_event(x_right=0.5, y_south=large, y_north=large, value_before=0.25)
+    )
+
+    assert result.status == "UNVERIFIED_RECEIPT"
+    assert result.replay_group == "x_pair"
+    assert result.accepted_value == -0.25
+
+
+def test_y_x_z_prefix_identifies_the_crossing_after_mixed_axis_cancellation():
+    result = attribute_event(_raw_event(x_right=1.2, y_south=0.5, z_top=0.4))
+
+    assert result.status == "UNVERIFIED_RECEIPT"
+    assert result.replay_group == "z_pair"
 
 
 def test_missing_raw_face_operand_fails_closed():
@@ -195,13 +227,33 @@ def test_rk1_cannot_claim_a_pd_limiter_owner_or_scale():
         attribute_event(event)
 
 
+def test_raw_replay_requires_the_captured_advection_order():
+    event = _raw_event()
+    event["advection_orders"]["horizontal"] = 6
+
+    with pytest.raises(ValueError, match="5th/3rd order"):
+        attribute_event(event)
+
+
+@pytest.mark.parametrize("field", ["rk", "identity.rk"])
+def test_rk_stage_rejects_boolean_aliases(field):
+    event = _raw_event()
+    if field == "rk":
+        event["rk"] = True
+    else:
+        event["identity"]["rk"] = True
+
+    with pytest.raises(ValueError, match="integer"):
+        attribute_event(event)
+
+
 def test_accepted_state_is_classification_only_without_intervening_ledger():
     result = attribute_event(_raw_event(rk=3, state_class="model_step_accepted"))
 
     assert result.status == "UNVERIFIED_ARITHMETIC"
     assert result.cause == "accepted_state_classification_only"
-    assert result.budget_before_store is None
-    assert result.crossing_group is None
+    assert result.rk_numerator is None
+    assert result.replay_group is None
 
 
 def test_accepted_state_rejects_attached_pre_microphysics_face_attribution():

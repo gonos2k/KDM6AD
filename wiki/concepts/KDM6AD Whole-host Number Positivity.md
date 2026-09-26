@@ -24,12 +24,14 @@ negative. Those stages must be traced separately from `STEP_ACCEPTED`, which
 follows final RK, microphysics, and boundary processing.
 
 The S3 event parser requires raw REAL4 face fluxes, metrics, RK operands, and
-observed advective-tendency and scalar-store bits before it reports an
-arithmetic match. A face-pair result remains conditional on exact closure of
-the mapped advection amount and RK store. Accepted-state classification stays
-`UNVERIFIED_ARITHMETIC` until the intervening process and boundary deltas are
-recorded. The captured QN unit basis is unresolved, so dry-mass-weighted scalar
-amounts are not absolute particle counts. The S3 gate remains open.
+observed advective-tendency and scalar-store bits before replaying the ordinary
+Y→X→Z face-pair operations. It evaluates numerator prefixes using each
+source-grouped face difference. Its build/history hashes are currently
+caller-supplied without an external receipt manifest, so the replay returns
+`UNVERIFIED_RECEIPT`; accepted-step values after microphysics and boundary
+processing receive classification only. The trace lacks adjacent shared-face
+words, so it establishes no exchange conservation. QN units remain unresolved,
+and S3 remains open.
 
 See [[kdm6ad-s3-first-negative-face-plan-2026-09-26]],
 [[REPORT_number_face_flux_2026-09-24]],

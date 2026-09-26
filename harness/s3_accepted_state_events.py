@@ -17,7 +17,7 @@ from replay_negative_number_trace import fma32, rk_value
 
 
 SCHEMA = "s3-first-negative-face-event-v2"
-FACE_ORDER = ("xL", "xR", "yS", "yN", "zB", "zT")
+FACE_ORDER = ("yS", "yN", "xL", "xR", "zB", "zT")
 G2_EVIDENCE_SHA256 = "fcb0cb61b3dcdeded0705d4de8f5161aeae0f071041f9ffd5c4a0f310c2a6596"
 OWNED_GRID = {"i0": 1, "i1": 234, "j0": 1, "j1": 282, "k0": 1, "k1": 39}
 TILE_EXTENTS = {
@@ -51,14 +51,14 @@ PRIOR_SCAN_STAGES = tuple(
 
 @dataclass(frozen=True)
 class Attribution:
-    """Budget attribution from one newly negative QN donor store."""
+    """Raw RK arithmetic replay; receipt status controls interpretation."""
 
     state_class: str
-    budget_before_store: Fraction | None
+    rk_numerator: Fraction | None
     accepted_value: float
     status: str
     cause: str
-    crossing_group: str | None
+    replay_group: str | None
 
 
 @dataclass(frozen=True)
@@ -218,9 +218,11 @@ def _identity(event: dict[str, Any]) -> tuple[str, int, int]:
     }
     if any(identity.get(key) != value for key, value in expected.items()):
         raise ValueError("event owner/field/coordinate differs from pinned RK1 candidate")
-    if any(isinstance(identity.get(key), bool) or not isinstance(identity.get(key), int)
-           for key in ("species", "step", "rank", "tile", "i", "k", "j")):
+    if any(type(identity.get(key)) is not int
+           for key in ("species", "step", "rank", "tile", "i", "k", "j", "rk")):
         raise ValueError("event identity fields must be integer Fortran indices")
+    if identity["rk"] not in (1, 2, 3):
+        raise ValueError("event identity has an invalid RK stage")
     return identity["field"], identity["step"], identity.get("rk")
 
 
@@ -259,6 +261,8 @@ def attribute_event(event: dict[str, Any]) -> Attribution:
         raise ValueError("RK store replay requires the source-pinned retained module_em object")
     _, step, identity_rk = _identity(event)
     rk = event.get("rk")
+    if type(rk) is not int or rk not in (1, 2, 3):
+        raise ValueError("event RK stage must be a non-boolean integer in [1, 3]")
     if rk != identity_rk or step != event.get("identity", {}).get("step"):
         raise ValueError("event stage differs from its owner identity")
     if state_class == "model_step_accepted":
@@ -280,7 +284,7 @@ def attribute_event(event: dict[str, Any]) -> Attribution:
     internal_keys = {
         "schema", "source_hashes", "layout", "state_class", "checkpoint", "producer",
         "copy_only", "identity", "rk", "value_before_bits", "value_after_bits", "limiter",
-        "face_flux_bits", "metric_bits", "rk_bits", "native_build_sha256",
+        "face_flux_bits", "metric_bits", "rk_bits", "advection_orders", "native_build_sha256",
         "control_history_sha256", "capture_history_sha256", "module_em_object_sha256",
     }
     if set(event) != internal_keys:
@@ -293,6 +297,8 @@ def attribute_event(event: dict[str, Any]) -> Attribution:
         raise ValueError("event is not the pinned nonnegative-to-negative transition")
     if event.get("limiter") != "none_at_this_stage":
         raise ValueError("RK1 uses ordinary advection; PD limiter attribution is invalid")
+    if event.get("advection_orders") != {"horizontal": 5, "vertical": 3}:
+        raise ValueError("source replay is pinned to the captured 5th/3rd order advection configuration")
 
     faces = event.get("face_flux_bits")
     metrics = event.get("metric_bits")
@@ -309,15 +315,15 @@ def attribute_event(event: dict[str, Any]) -> Attribution:
     m = {name: _raw_f32(metrics[name], f"metric_bits.{name}") for name in metrics}
     q = {name: _raw_f32(rk_words[name], f"rk_bits.{name}") for name in rk_words}
 
-    # module_advect_em.F: ordinary advect_scalar updates x, then y, then z.
+    # module_advect_em.F: ordinary advect_scalar updates y, then x, then z.
     # Each difference, metric product, and tendency store is rounded to REAL4.
     tendency = 0.0
-    mrdx = f32(m["msftx"] * m["rdx"])
-    x_difference = f32(flux["xR"] - flux["xL"])
-    tendency = f32(tendency - f32(mrdx * x_difference))
     mrdy = f32(m["msftx"] * m["rdy"])
     y_difference = f32(flux["yN"] - flux["yS"])
     tendency = f32(tendency - f32(mrdy * y_difference))
+    mrdx = f32(m["msftx"] * m["rdx"])
+    x_difference = f32(flux["xR"] - flux["xL"])
+    tendency = f32(tendency - f32(mrdx * x_difference))
     z_difference = f32(flux["zT"] - flux["zB"])
     tendency = f32(tendency - f32(_raw_f32(metrics["rdzw"], "rdzw") * z_difference))
     if _word(tendency) != rk_words["observed_advect_tend"]:
@@ -333,38 +339,44 @@ def attribute_event(event: dict[str, Any]) -> Attribution:
     if _word(replayed) != event.get("value_after_bits"):
         raise ValueError("fused REAL4 RK numerator/store does not match observed output")
 
-    # Only report a face crossing when independently computed face terms close
-    # to the executed mapped tendency in source order. Otherwise preserve the
-    # negative store with an unverified status.
-    weighted_dt = f32(m["dt"] * m["msfty"])
-    face_metrics = {"xL": mrdx, "xR": mrdx, "yS": mrdy,
-                    "yN": mrdy, "zB": m["rdzw"], "zT": m["rdzw"]}
-    signs = {"xL": 1, "xR": -1, "yS": 1, "yN": -1, "zB": 1, "zT": -1}
-    deltas = {
-        name: f32(signs[name] * f32(f32(weighted_dt * face_metrics[name]) * flux[name]))
-        for name in FACE_ORDER
-    }
-    face_total = 0.0
-    for name in FACE_ORDER:
-        face_total = f32(face_total + deltas[name])
-    expected_advective_amount = f32(m["dt"] * f32(tendency * m["msfty"]))
-    if _word(face_total) != _word(expected_advective_amount):
-        return Attribution(state_class, None, after, "UNVERIFIED_ARITHMETIC",
-                           "per_face_amounts_do_not_close", None)
-
-    # The source evaluates opposing faces as a pair. Report the first axis
-    # group that crosses zero, never a fabricated single-face execution order.
+    # Replay the RK numerator after each source-ordered directional update.
+    # The Fortran computes the opposing face difference first, so do not round
+    # independent face amounts and then add them as if that were source order.
     base_weight = fma32(q["c1"], f32(q["mu_old"] + q["mu_base"]), q["c2"])
+    new_weight = fma32(q["c1"], f32(q["mu_new"] + q["mu_base"]), q["c2"])
     if base_weight <= 0.0:
         raise ValueError("source mass coefficient must be positive")
-    available = Fraction(base_weight) * Fraction(value) + Fraction(m["dt"]) * Fraction(q["scalar_tend"])
-    remaining = available
-    crossing_group = None
-    for group, pair in (("x_pair", ("xL", "xR")), ("y_pair", ("yS", "yN")),
-                        ("z_pair", ("zB", "zT"))):
-        remaining += Fraction(deltas[pair[0]]) + Fraction(deltas[pair[1]])
-        if crossing_group is None and remaining < 0:
-            crossing_group = group
-    status = "ARITHMETIC_REPLAY_MATCHED" if crossing_group is not None else "UNVERIFIED_ARITHMETIC"
-    cause = "RK1_FACE_PAIR_BUDGET_CROSSING" if crossing_group is not None else "no_face_pair_crossing"
-    return Attribution(state_class, remaining, after, status, cause, crossing_group)
+    if new_weight <= 0.0:
+        raise ValueError("new source mass coefficient must be positive")
+
+    def prefix_numerator(prefix_advect_tend: float) -> float:
+        mapped = f32(prefix_advect_tend * m["msfty"])
+        total_tendency = f32(mapped + q["scalar_tend"])
+        return fma32(base_weight, value, f32(m["dt"] * total_tendency))
+
+    prefix_tendency = 0.0
+    previous_numerator = prefix_numerator(prefix_tendency)
+    replay_group = None
+    directional_terms = (
+        ("y_pair", mrdy, y_difference),
+        ("x_pair", mrdx, x_difference),
+        ("z_pair", m["rdzw"], z_difference),
+    )
+    for group, metric, difference in directional_terms:
+        prefix_tendency = f32(prefix_tendency - f32(metric * difference))
+        current_numerator = prefix_numerator(prefix_tendency)
+        if replay_group is None and previous_numerator >= 0.0 and current_numerator < 0.0:
+            replay_group = group
+        previous_numerator = current_numerator
+
+    # Build/build-history hashes are caller-supplied pending a separately
+    # pinned native receipt, so the axis result is only a replay diagnostic.
+    final_numerator = previous_numerator
+    return Attribution(
+        state_class,
+        Fraction(final_numerator),
+        after,
+        "UNVERIFIED_RECEIPT",
+        "native_receipt_not_externally_pinned",
+        replay_group,
+    )

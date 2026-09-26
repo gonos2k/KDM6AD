@@ -95,55 +95,52 @@ plan document has no semantic graph edges yet.
 ## Parser contract and interpretation
 
 `harness/s3_accepted_state_events.py` fails closed on schema, source hashes,
-1-rank/1-thread layout, QN identity, producer/copy classification, transition
-signs, six-face completeness/order, finite operands, and paired limiter owner /
-scale fields. It reduces the widened REAL4 per-face signed amount changes in
-the source order `zB,zT,xL,xR,yS,yN`. The first prefix crossing below the
-available amount names the face and limiter owner. If all six face terms leave
-a nonnegative budget while the recorded store is negative, it reports
-other-tendency or RK-rounding attribution instead of blaming a face. An
-internal event must pair `RK_AFTER` with `rk_update_scalar`; an accepted event
-must pair `STEP_ACCEPTED` with `step_acceptance_scan`. Boundary-copy events are
-rejected as producers.
+1-rank/1-thread layout, QN identity, producer/checkpoint class, transition
+signs, six raw face words, finite operands, and RK-stage types. The G2 scan
+reader pins exact rank/tile extents and cell counts at each preceding
+checkpoint and verifies candidate membership in its owning tile.
 
 The v2 internal event schema carries raw REAL4 face words in Fortran order
-`xL,xR,yS,yN,zB,zT`, all local map metrics, RK mass coefficients, scalar
+`yS,yN,xL,xR,zB,zT`, all local map metrics, RK mass coefficients, scalar
 tendency, observed advective tendency, observed before/after words, and
-matching control/capture history receipts. It rejects caller-supplied
-`available` or `amount_delta` fields. At RK1 it replays the ordinary
-`advect_scalar` source order:
+control/capture history hash fields. It rejects caller-supplied `available` or
+`amount_delta` fields. At RK1 it replays the ordinary `advect_scalar` source
+order Y→X→Z, rounding each pair difference, metric product, and tendency store
+to REAL4. It also requires the recorded horizontal/vertical orders to match
+the retained `5/3` advection configuration:
 
 ```text
-mrdx = f32(msftx * rdx)
-tend = f32(0 - f32(mrdx * f32(xR - xL)))
 mrdy = f32(msftx * rdy)
-tend = f32(tend - f32(mrdy * f32(yN - yS)))
+tend = f32(0 - f32(mrdy * f32(yN - yS)))
+mrdx = f32(msftx * rdx)
+tend = f32(tend - f32(mrdx * f32(xR - xL)))
 tend = f32(tend - f32(rdzw * f32(zT - zB)))
 ```
 
 It requires that result to match the native `advect_tend`, reconstructs the
 fused RK store from `c1/c2`, `mu_old/mu_new/mu_base`, `dt`, `msfty`, scalar
-reference and `scalar_tend`, and requires the output bits to match. It computes
-the signed source-metric face terms itself:
+reference and `scalar_tend`, and requires the output bits to match. To find a
+directional crossing, it replays the RK numerator after each *grouped*
+source-order pair update Y→X→Z; the source forms each opposing-face difference
+before applying its metric, so separate per-face rounding is not a valid
+crossing ledger:
 
 ```text
-weight_dt = f32(dt * msfty)
-dxL = +f32(f32(weight_dt * mrdx) * xL)
-dxR = -f32(f32(weight_dt * mrdx) * xR)
-dyS = +f32(f32(weight_dt * mrdy) * yS)
-dyN = -f32(f32(weight_dt * mrdy) * yN)
-dzB = +f32(f32(weight_dt * rdzw) * zB)
-dzT = -f32(f32(weight_dt * rdzw) * zT)
+Y = f32(0 - f32(mrdy * f32(yN - yS)))
+N_Y = fma32(M_old, q_before, f32(dt * f32(f32(Y * msfty) + scalar_tend)))
+X = f32(Y - f32(mrdx * f32(xR - xL)))
+N_X = fma32(M_old, q_before, f32(dt * f32(f32(X * msfty) + scalar_tend)))
+Z = f32(X - f32(rdzw * f32(zT - zB)))
+N_Z = fma32(M_old, q_before, f32(dt * f32(f32(Z * msfty) + scalar_tend)))
 ```
 
-The parser requires their ordered REAL4 sum to match the mapped RK advection
-amount; otherwise it returns `UNVERIFIED_ARITHMETIC`. It names an axis pair
-only when its raw operands close to the mapped amount. Since the Fortran applies
-each opposing pair as one difference, the parser does not invent a single-face
-execution order. QN number units remain unresolved: any amount is a
-dry-mass-weighted scalar amount, not an absolute particle count.
+The first nonnegative-to-negative prefix is stored as a directional replay
+diagnostic, not a physical cause. The build/history hashes are supplied in the
+event but no external receipt manifest currently authenticates them, so every
+internal replay returns `UNVERIFIED_RECEIPT` and never claims source execution
+or exchange conservation. No adjacent-cell shared-face words are present.
 
-The current verified arithmetic scope is step 2, RK1, QNCLOUD `(46,1,2)`;
+The candidate replay scope is step 2, RK1, QNCLOUD `(46,1,2)`;
 ordinary advection has no PD limiter there. RK3 PD limiter owner/scale
 attribution remains unsupported until its source-derived donor neighborhood,
 `ph_low`, `flux_out`, scale and post-limit face words are captured and replayed.

@@ -15,12 +15,13 @@ The source-pinned plan selects the RK1 cell for a one-rank/one-thread/one-tile
 capture. Its parser validates exact G2 tile census and candidate ownership,
 then requires raw face flux, map metrics, RK coefficients and measured tendency
 and store bits before attempting source-order REAL4 replay. It reports an
-axis-pair budget crossing only when the six source-derived face terms close to
-the mapped advective amount and the fused RK store matches its observed word.
-Without those native operands, accepted STEP_ACCEPTED states receive only
-`UNVERIFIED_ARITHMETIC` classification because microphysics and boundary
-changes intervene after RK3. No physical particle-number interpretation or
-cause is established; S3 remains open.
+axis-pair numerator prefix after the source's grouped Y→X→Z differences and
+checks the fused RK store against its observed word. The event's native build
+and history hashes are not externally receipt-pinned yet, so the raw replay
+remains `UNVERIFIED_RECEIPT`; it is not a physical cause or conservation claim.
+Accepted STEP_ACCEPTED states receive classification only because microphysics
+and boundary changes intervene after RK3. No physical particle-number
+interpretation or cause is established; S3 remains open.
 
 Evidence and implementation: `harness/evidence/REPORT_number_face_flux_2026-09-24.md`,
 `harness/evidence/REPORT_negative_number_origin_2026-09-24.md`,
