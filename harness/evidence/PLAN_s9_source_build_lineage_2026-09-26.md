@@ -8,11 +8,18 @@ link, or model process was run for this plan.
 
 The accompanying
 [`s9_source_build_manifest.schema.json`](s9_source_build_manifest.schema.json)
-defines the minimum machine-readable record. JSON Schema validation checks the
-record's shape; a separate verifier must compare bytes across every edge and
-refuse `lineage_gate.status: proven` if a source, command receipt, dependency,
-output, archive member, install copy, or observed loader target is missing or
-mismatched. File mtimes are supporting chronology only, never proof of origin.
+defines the minimum machine-readable record. JSON Schema checks record shape;
+[`verify_s9_source_build_manifest.py`](../verify_s9_source_build_manifest.py)
+adds semantic and byte checks. It requires exactly the six relation types,
+rejects duplicate edges and unknown or path/hash-mismatched artifact references,
+binds each edge to exactly one correctly typed build step and retained stdout or
+stderr receipt, checks the required KDM6 source/object paths and archive-member
+coverage, and verifies the observed loader's executable and dylib identities.
+Run it as `python harness/verify_s9_source_build_manifest.py MANIFEST.json
+--root BUILD_ROOT` with the `jsonschema` Python package installed. It hashes the
+recorded artifacts and extracts the six KDM6 members from `libwrflib.a` for
+byte comparison. File mtimes remain supporting chronology only, never proof
+of origin.
 
 ## Current evidence and exact build graph
 
@@ -47,16 +54,21 @@ The intended lineage is a converging build graph, not a serial
 source → archive → dylib chain:
 
 ```text
-KDM6 Fortran source → preprocessed source → KDM6 object ─┐
-  → KDM6AD wrapper / bridge / driver objects ────────────┼→ libwrflib.a → wrf.exe
-                                                        │
-C++/C ABI source → build-tree dylib → installed dylib ──┴→ Mach-O dependency
-                                                           → observed dyld resolution
+Each KDM6/KDM6AD/bridge/driver Fortran source
+  → its preprocessed source → its own object ─────────────┐
+                                                          ├→ libwrflib.a → wrf.exe
+C++ entry sources → their objects → build-tree dylib ─────┤
+  → installed dylib ──────────────────────────────────────┴→ Mach-O dependency
+                                                             → observed dyld resolution
 ```
 
 `phys/Makefile` lists the KDM6 objects in the physics object set, declares the
 wrapper dependencies, and compiles the KDM6 Fortran objects with
 `-ffp-contract=off`. `main/Makefile` links `libwrflib.a` into `wrf.exe`.
+The KDM6AD wrapper rules depend on the corresponding KDM6 module object for
+Fortran module/build ordering. Each wrapper, ABI shim, and dispatch object is
+compiled from its own source; a dependency rule does not make one object the
+producer of another.
 `configure.wrf` links `$(KDM6AD_PREFIX)/lib/libkdm6_c.dylib`, while the WRF
 binary records `@rpath/libkdm6_c.2.dylib` and several RPATHs. Static Mach-O
 inspection records candidate loader paths only. No process was launched, so

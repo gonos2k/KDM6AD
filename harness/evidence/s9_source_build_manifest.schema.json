@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:kdm6ad:s9-source-build-manifest:v1",
   "title": "KDM6AD S9 source-to-build lineage manifest",
-  "description": "Evidence contract for binding declared host source bytes through preprocessing, compilation, archive/link, installation, and optional observed runtime loader resolution. Schema validation checks shape only; the verifier must compare the recorded SHA-256 edges before setting a gate to proven.",
+  "description": "Evidence shape contract for the S9 source/build verifier. Schema validation alone is never certification; harness/verify_s9_source_build_manifest.py checks completeness, path/hash-bound edges, archive membership, build receipts, and observed loader identity before accepting a proven gate.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -113,10 +113,10 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["from_artifact_id", "to_artifact_id", "relation", "status", "receipt_sha256"],
+            "required": ["from_artifact", "to_artifact", "relation", "status", "receipt_sha256"],
             "properties": {
-              "from_artifact_id": { "type": "string", "minLength": 1 },
-              "to_artifact_id": { "type": "string", "minLength": 1 },
+              "from_artifact": { "$ref": "#/$defs/artifactRef" },
+              "to_artifact": { "$ref": "#/$defs/artifactRef" },
               "relation": { "enum": ["preprocesses_to", "compiles_to", "archives_into", "links_into", "installs_as", "resolves_to"] },
               "status": { "enum": ["unproven", "failed", "proven"] },
               "receipt_sha256": { "$ref": "#/$defs/sha256" },
@@ -198,15 +198,15 @@
     "buildStep": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["step_id", "kind", "cwd", "argv", "environment", "stdout_sha256", "stderr_sha256", "inputs", "outputs"],
+      "required": ["step_id", "kind", "cwd", "argv", "environment", "stdout_receipt", "stderr_receipt", "inputs", "outputs"],
       "properties": {
         "step_id": { "type": "string", "minLength": 1 },
         "kind": { "enum": ["preprocess", "compile", "archive", "link", "install", "loader_observation"] },
         "cwd": { "type": "string", "minLength": 1 },
         "argv": { "type": "array", "minItems": 1, "items": { "type": "string" } },
         "environment": { "type": "object", "additionalProperties": { "type": "string" } },
-        "stdout_sha256": { "$ref": "#/$defs/sha256" },
-        "stderr_sha256": { "$ref": "#/$defs/sha256" },
+        "stdout_receipt": { "$ref": "#/$defs/artifactRef" },
+        "stderr_receipt": { "$ref": "#/$defs/artifactRef" },
         "inputs": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/artifactRef" } },
         "outputs": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/artifactRef" } }
       }
