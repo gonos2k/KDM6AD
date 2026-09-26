@@ -4,6 +4,7 @@ import hashlib
 import json
 from pathlib import Path
 import sys
+from types import SimpleNamespace
 
 import pytest
 
@@ -17,18 +18,22 @@ from s10_prelink_guard import (  # noqa: E402
     _validate_preprocess_pipeline,
     _validate_tool_command,
     _response_file_refs,
+    create_resource_preflight_receipt,
     create_empty_root_snapshot,
     require_fresh_output_root,
     require_s15_release,
     sha256_bytes,
     validate_archive_link,
     validate_clean_shadow,
+    validate_configuration_sources,
     validate_normalized_command_pair,
     validate_output_inventory,
     validate_prebuild_snapshot,
     validate_preprocess_macro_delta,
     validate_source_overlay,
     tool_environment_snapshot,
+    validate_build_output_estimate,
+    validate_build_resource_preflight,
     validate_toolchain,
 )
 
@@ -45,6 +50,9 @@ def _release(plan: dict, plan_sha: str, snapshot_sha: str) -> dict:
         "s15_merge_commit": trusted["s15_merge_commit"],
         "evidence_manifest_path": trusted["evidence_manifest_path"],
         "evidence_manifest_sha256": trusted["evidence_manifest_sha256"],
+        "s15_step2_merge_commit": trusted["s15_step2_merge_commit"],
+        "s15_step2_evidence_manifest_path": trusted["s15_step2_evidence_manifest_path"],
+        "s15_step2_evidence_manifest_sha256": trusted["s15_step2_evidence_manifest_sha256"],
         "empty_output_root_snapshot_sha256": snapshot_sha,
     }
 
@@ -55,6 +63,9 @@ def test_s15_release_requires_coordinator_pinned_receipt_and_evidence():
             "s15_merge_commit": "1" * 40,
             "evidence_manifest_path": "harness/evidence/S15.json",
             "evidence_manifest_sha256": "2" * 64,
+            "s15_step2_merge_commit": "3" * 40,
+            "s15_step2_evidence_manifest_path": "harness/evidence/S15_step2.json",
+            "s15_step2_evidence_manifest_sha256": "4" * 64,
             "empty_output_root_snapshot_sha256": "3" * 64,
         }
     }
@@ -197,6 +208,304 @@ def test_tool_environment_snapshot_covers_apple_sdk_resolution_inputs():
         assert name in environment
 
 
+def test_configuration_source_pins_cover_shadow_configure_inputs(tmp_path: Path):
+    canonical = tmp_path / "canonical"
+    shadow = tmp_path / "shadow"
+    for host in (canonical, shadow):
+        (host / "arch").mkdir(parents=True)
+        (host / "phys").mkdir()
+        (host / "configure").write_text("configure-v1\n")
+        (host / "arch/Config.pl").write_text("menu-v1\n")
+        (host / "arch/configure.defaults").write_text("options-v1\n")
+        (host / "phys/Makefile").write_text("make-v1\n")
+    inputs = ("configure", "arch/Config.pl", "arch/configure.defaults", "phys/Makefile")
+    pins = {name: hashlib.sha256((canonical / name).read_bytes()).hexdigest()
+            for name in inputs}
+    plan = {"prelink_requirements": {"configuration_inputs_sha256": pins}}
+    validate_configuration_sources(plan, canonical_host=canonical, shadow_host=shadow)
+    (shadow / "arch/configure.defaults").write_text("mutated-menu-v1\n")
+    with pytest.raises(PrelinkError, match="disposable shadow configuration source changed: arch/configure.defaults"):
+        validate_configuration_sources(plan, canonical_host=canonical, shadow_host=shadow)
+
+
+def _resource_plan(workspace: Path, snapshot_sha: str, *, approved: bool = False):
+    estimate = {
+        "schema": "s10-build-output-estimate-v1",
+        "logging_modes": ["off", "on"],
+        "retention_strategy": "reviewed sequential arms with all result evidence retained",
+        "shared_staging_components": {
+            "selected_case_tree_copy_bytes": 1000,
+            "shared_run_support_bytes": 0,
+        },
+        "shared_staging_bytes": 1000,
+        "variants": {},
+    }
+    component_names = (
+        "preprocessed_sources_bytes", "object_module_bytes", "linked_executable_bytes",
+        "temporary_build_peak_bytes", "logging_off_input_copy_bytes",
+        "logging_off_run_staging_bytes", "logging_off_run_output_bytes",
+        "logging_off_log_bytes", "logging_on_input_copy_bytes",
+        "logging_on_run_staging_bytes", "logging_on_run_output_bytes",
+        "logging_on_log_bytes",
+    )
+    for name in ("mp37_B", "mp37_C", "mp237_B", "mp237_C"):
+        components = {key: 100 for key in component_names}
+        estimate["variants"][name] = {
+            "components": components,
+            "estimated_bytes": sum(components.values()),
+        }
+    estimate["total_estimated_bytes"] = estimate["shared_staging_bytes"] + sum(
+        row["estimated_bytes"] for row in estimate["variants"].values())
+    estimate["peak_concurrent_bytes"] = 2400
+    estimate_path = workspace / "S10/build_output_estimate.json"
+    estimate_path.parent.mkdir(parents=True, exist_ok=True)
+    estimate_path.write_text(json.dumps(estimate, indent=2) + "\n")
+    estimate_sha = hashlib.sha256(estimate_path.read_bytes()).hexdigest()
+    snapshot_sha256 = snapshot_sha
+    plan = {
+        "clean_shadow": {
+            "fresh_build_output_root": "S10/build-clean",
+            "empty_root_snapshot_relative_path": "S10/prebuild_output_root_snapshot.json",
+        },
+        "trusted_s15_release": {
+            "s15_merge_commit": "1" * 40,
+            "evidence_manifest_path": "harness/evidence/S15.json",
+            "evidence_manifest_sha256": "2" * 64,
+            "s15_step2_merge_commit": "3" * 40,
+            "s15_step2_evidence_manifest_path": "harness/evidence/S15_step2.json",
+            "s15_step2_evidence_manifest_sha256": "4" * 64,
+            "empty_output_root_snapshot_sha256": snapshot_sha256,
+        },
+        "resource_gate": {
+            "status": "READY_PENDING_COORDINATOR_RELEASE" if approved
+            else "BLOCKED_PENDING_ESTIMATE_AND_REVIEW",
+            "full_matrix_build_or_link_allowed": False,
+            "configure_only": {
+                "allowed": True,
+                "allowed_commands": ["./configure", "./apply_kdm6ad_config.sh"],
+                "maximum_transient_bytes": 512 * 1024 * 1024,
+                "minimum_free_bytes_after_reserve": 2 * 1024 * 1024 * 1024,
+                "output_root_must_remain_absent": True,
+                "capture_root_relative_to_workspace": "S10/configuration_capture",
+                "preflight_receipt_relative_path": "S10/configuration_capture/configure_resource_preflight.json",
+            },
+            "build": {
+                "status": "READY_PENDING_COORDINATOR_RELEASE" if approved
+                else "BLOCKED_PENDING_ESTIMATE_AND_REVIEW",
+                "prebuild_gate_receipt_required": True,
+                "prebuild_gate_receipt_relative_path": "S10/build_resource_preflight.json",
+                "measurement_receipt_relative_path": "S10/build_resource_measurement.json",
+                "coordinator_approval_relative_path": "S10/coordinator_resource_approval.json",
+                "output_size_estimate_relative_path": "S10/build_output_estimate.json",
+                "output_size_estimate_sha256": estimate_sha,
+                "estimated_total_bytes": estimate["total_estimated_bytes"],
+                "safety_factor": 2,
+                "reserve_free_bytes": 500,
+                "minimum_free_bytes": 1000,
+                "prebuild_receipt_max_age_seconds": 3600,
+                "coordinator_resource_approval_required": True,
+                "s15_release_receipt_required": True,
+                "allowed_build_stages": ["preprocessing", "object_compilation", "link"],
+            },
+        },
+    }
+    plan_bytes = json.dumps(plan, sort_keys=True, separators=(",", ":")).encode()
+    return plan, estimate, estimate_path, hashlib.sha256(plan_bytes).hexdigest()
+
+
+def test_build_resource_gate_fails_closed_while_plan_is_blocked(tmp_path: Path,
+                                                                monkeypatch):
+    workspace = tmp_path
+    output_root = workspace / "S10/build-clean"
+    snapshot_path = workspace / "S10/prebuild_output_root_snapshot.json"
+    snapshot_path.parent.mkdir(parents=True)
+    snapshot = create_empty_root_snapshot(output_root, snapshot_path)
+    plan, _, _, plan_sha = _resource_plan(workspace, snapshot["snapshot_sha256"])
+    with pytest.raises(PrelinkError, match="resource gate is blocked"):
+        create_resource_preflight_receipt(
+            plan, plan_sha256=plan_sha, workspace=workspace,
+            canonical_host=workspace / "canonical", shadow_host=workspace / "shadow",
+            overlay_paths={}, output_root=output_root, snapshot_path=snapshot_path,
+            phase="build", receipt_path=workspace / "S10/build_resource_preflight.json")
+
+
+def test_prelink_rejects_fabricated_build_receipt_while_plan_is_blocked(tmp_path: Path):
+    workspace = tmp_path
+    output_root = workspace / "S10/build-clean"
+    snapshot_path = workspace / "S10/prebuild_output_root_snapshot.json"
+    snapshot_path.parent.mkdir(parents=True)
+    snapshot = create_empty_root_snapshot(output_root, snapshot_path)
+    plan, _, _, plan_sha = _resource_plan(workspace, snapshot["snapshot_sha256"])
+    fabricated = {
+        "schema": "s10-resource-preflight-receipt-v1",
+        "phase": "build",
+        "status": "READY_FOR_REVIEWED_BUILD",
+    }
+    with pytest.raises(PrelinkError, match="resource gate is blocked"):
+        validate_build_resource_preflight(
+            plan, fabricated, plan_sha256=plan_sha,
+            snapshot_sha256=snapshot["snapshot_sha256"], output_root=output_root,
+            trusted_approval_sha256="f" * 64)
+
+
+def test_configure_only_resource_gate_is_bounded_and_keeps_build_root_absent(
+        tmp_path: Path, monkeypatch):
+    import s10_prelink_guard as guard_module
+
+    monkeypatch.setattr(guard_module, "validate_static_pins", lambda *a, **k: {})
+    monkeypatch.setattr(guard_module.shutil, "disk_usage", lambda _path: SimpleNamespace(
+        total=10 * 1024**3, used=7 * 1024**3, free=3 * 1024**3))
+    workspace = tmp_path
+    output_root = workspace / "S10/build-clean"
+    snapshot_path = workspace / "S10/prebuild_output_root_snapshot.json"
+    snapshot_path.parent.mkdir(parents=True)
+    snapshot = create_empty_root_snapshot(output_root, snapshot_path)
+    plan, _, _, plan_sha = _resource_plan(workspace, snapshot["snapshot_sha256"])
+    receipt_path = workspace / plan["resource_gate"]["configure_only"][
+        "preflight_receipt_relative_path"]
+    receipt = create_resource_preflight_receipt(
+        plan, plan_sha256=plan_sha, workspace=workspace,
+        canonical_host=workspace / "canonical", shadow_host=workspace / "shadow",
+        overlay_paths={}, output_root=output_root, snapshot_path=snapshot_path,
+        phase="configure", receipt_path=receipt_path,
+    )
+    assert receipt["status"] == "ALLOW_CONFIGURE_ONLY"
+    assert receipt["allowed_commands"] == ["./configure", "./apply_kdm6ad_config.sh"]
+    assert receipt["required_free_bytes"] == 512 * 1024 * 1024 + 2 * 1024 * 1024 * 1024
+    assert not output_root.exists()
+    monkeypatch.setattr(guard_module.shutil, "disk_usage", lambda _path: SimpleNamespace(
+        total=10 * 1024**3, used=10 * 1024**3 - receipt["required_free_bytes"] + 1,
+        free=receipt["required_free_bytes"] - 1))
+    with pytest.raises(PrelinkError, match="below the configure-only reserve"):
+        create_resource_preflight_receipt(
+            plan, plan_sha256=plan_sha, workspace=workspace,
+            canonical_host=workspace / "canonical", shadow_host=workspace / "shadow",
+            overlay_paths={}, output_root=output_root, snapshot_path=snapshot_path,
+            phase="configure", receipt_path=receipt_path)
+    output_root.mkdir()
+    with pytest.raises(PrelinkError, match="output root to remain absent"):
+        create_resource_preflight_receipt(
+            plan, plan_sha256=plan_sha, workspace=workspace,
+            canonical_host=workspace / "canonical", shadow_host=workspace / "shadow",
+            overlay_paths={}, output_root=output_root, snapshot_path=snapshot_path,
+            phase="configure", receipt_path=receipt_path)
+
+
+def test_build_output_estimate_requires_all_arms_and_both_logging_modes(tmp_path: Path):
+    _, estimate, _, _ = _resource_plan(tmp_path, "a" * 64)
+    total, arms = validate_build_output_estimate(estimate)
+    assert set(arms) == {"mp37_B", "mp37_C", "mp237_B", "mp237_C"}
+    assert total == estimate["total_estimated_bytes"]
+    estimate["logging_modes"] = ["off"]
+    with pytest.raises(PrelinkError, match="logging off and on"):
+        validate_build_output_estimate(estimate)
+    estimate["logging_modes"] = ["off", "on"]
+    del estimate["variants"]["mp37_C"]["components"]["logging_on_run_output_bytes"]
+    with pytest.raises(PrelinkError, match="components are incomplete"):
+        validate_build_output_estimate(estimate)
+
+
+def test_resource_preflight_requires_coordinator_release_and_approval(tmp_path: Path,
+                                                                     monkeypatch):
+    import s10_prelink_guard as guard_module
+
+    monkeypatch.setattr(guard_module, "validate_static_pins", lambda *a, **k: {})
+    monkeypatch.setattr(guard_module.shutil, "disk_usage", lambda _path: SimpleNamespace(
+        total=100_000, used=80_000, free=20_000))
+    monkeypatch.setattr(guard_module.time, "time_ns", lambda: 10_000_000_000)
+    workspace = tmp_path
+    output_root = workspace / "S10/build-clean"
+    snapshot_path = workspace / "S10/prebuild_output_root_snapshot.json"
+    snapshot_path.parent.mkdir(parents=True)
+    snapshot = create_empty_root_snapshot(output_root, snapshot_path)
+    plan, estimate, estimate_path, plan_sha = _resource_plan(
+        workspace, snapshot["snapshot_sha256"], approved=True)
+    estimate_sha = hashlib.sha256(estimate_path.read_bytes()).hexdigest()
+    measurement_path = workspace / plan["resource_gate"]["build"][
+        "measurement_receipt_relative_path"]
+    measurement = create_resource_preflight_receipt(
+        plan, plan_sha256=plan_sha, workspace=workspace,
+        canonical_host=workspace / "canonical", shadow_host=workspace / "shadow",
+        overlay_paths={}, output_root=output_root, snapshot_path=snapshot_path,
+        phase="measure", receipt_path=measurement_path,
+        estimate_path=estimate_path)
+    release = _release(plan, plan_sha, snapshot["snapshot_sha256"])
+    approval = {
+        "schema": "s10-resource-gate-approval-v1",
+        "owner": "coordinator",
+        "status": "APPROVED_FOR_S10_BUILD",
+        "plan_sha256": plan_sha,
+        "output_size_estimate_sha256": estimate_sha,
+        "empty_output_root_snapshot_sha256": snapshot["snapshot_sha256"],
+        "resource_measurement_receipt_sha256": hashlib.sha256(
+            measurement_path.read_bytes()).hexdigest(),
+        "measured_free_bytes": measurement["observed_free_bytes"],
+        "measured_at_unix_ns": measurement["observed_at_unix_ns"],
+        "required_free_bytes": measurement["required_free_bytes"],
+        "s15_release_receipt_sha256": "4" * 64,
+        "minimum_free_bytes": 1000,
+        "safety_factor": 2,
+        "full_matrix_build_or_link_allowed": True,
+    }
+    approval_sha = "5" * 64
+    release_sha = "4" * 64
+    receipt = create_resource_preflight_receipt(
+        plan, plan_sha256=plan_sha, workspace=workspace,
+        canonical_host=workspace / "canonical", shadow_host=workspace / "shadow",
+        overlay_paths={}, output_root=output_root, snapshot_path=snapshot_path,
+        phase="build", receipt_path=workspace / "S10/build_resource_preflight.json",
+        estimate_path=estimate_path, approval=approval,
+        approval_sha256=approval_sha, trusted_approval_sha256=approval_sha,
+        s15_release=release, s15_release_sha256=release_sha,
+        trusted_s15_release_sha256=release_sha)
+    assert receipt["status"] == "READY_FOR_REVIEWED_BUILD"
+    validate_build_resource_preflight(
+        plan, receipt, plan_sha256=plan_sha,
+        snapshot_sha256=snapshot["snapshot_sha256"], output_root=output_root,
+        trusted_approval_sha256=approval_sha)
+    with pytest.raises(PrelinkError, match="coordinator S15 release receipt SHA-256 mismatch"):
+        create_resource_preflight_receipt(
+            plan, plan_sha256=plan_sha, workspace=workspace,
+            canonical_host=workspace / "canonical", shadow_host=workspace / "shadow",
+            overlay_paths={}, output_root=output_root, snapshot_path=snapshot_path,
+            phase="build", receipt_path=workspace / "S10/build_resource_preflight.json",
+            estimate_path=estimate_path, approval=approval,
+            approval_sha256=approval_sha, trusted_approval_sha256=approval_sha,
+            s15_release=release, s15_release_sha256=release_sha,
+            trusted_s15_release_sha256="6" * 64)
+    wrong_measurement = {**approval,
+                         "resource_measurement_receipt_sha256": "0" * 64}
+    with pytest.raises(PrelinkError, match="receipt mismatch for resource_measurement_receipt_sha256"):
+        create_resource_preflight_receipt(
+            plan, plan_sha256=plan_sha, workspace=workspace,
+            canonical_host=workspace / "canonical", shadow_host=workspace / "shadow",
+            overlay_paths={}, output_root=output_root, snapshot_path=snapshot_path,
+            phase="build", receipt_path=workspace / "S10/build_resource_preflight.json",
+            estimate_path=estimate_path, approval=wrong_measurement,
+            approval_sha256=approval_sha, trusted_approval_sha256=approval_sha,
+            s15_release=release, s15_release_sha256=release_sha,
+            trusted_s15_release_sha256=release_sha)
+    stale = {**receipt, "resource_measurement_observed_at_unix_ns":
+             receipt["resource_gate_checked_at_unix_ns"] - 3601 * 1_000_000_000}
+    with pytest.raises(PrelinkError, match="fresh capacity measurement"):
+        validate_build_resource_preflight(
+            plan, stale, plan_sha256=plan_sha,
+            snapshot_sha256=snapshot["snapshot_sha256"], output_root=output_root,
+            trusted_approval_sha256=approval_sha)
+    monkeypatch.setattr(guard_module.shutil, "disk_usage", lambda _path: SimpleNamespace(
+        total=100_000, used=99_900, free=100))
+    with pytest.raises(PrelinkError, match="below the reviewed build-size requirement"):
+        create_resource_preflight_receipt(
+            plan, plan_sha256=plan_sha, workspace=workspace,
+            canonical_host=workspace / "canonical", shadow_host=workspace / "shadow",
+            overlay_paths={}, output_root=output_root, snapshot_path=snapshot_path,
+            phase="build", receipt_path=workspace / "S10/build_resource_preflight.json",
+            estimate_path=estimate_path, approval=approval,
+            approval_sha256=approval_sha, trusted_approval_sha256=approval_sha,
+            s15_release=release, s15_release_sha256=release_sha,
+            trusted_s15_release_sha256=release_sha)
+
+
 def test_netcdf_toolchain_roots_paths_hashes_and_versions_are_pinned(tmp_path: Path,
                                                                      monkeypatch):
     root = tmp_path / "homebrew-netcdf"
@@ -269,7 +578,8 @@ def test_netcdf_config_receipt_replays_pinned_homebrew_invocations(tmp_path: Pat
     records = {}
     for name, version, outputs in (
         ("nc-config", "netCDF 4.9.3", {
-            "--version": "netCDF 4.9.3", "--libs": "-L/netcdf/lib -lnetcdf"}),
+            "--version": "netCDF 4.9.3", "--libs": "-L/netcdf/lib -lnetcdf",
+            "--has-nc4": "yes", "--has-pnetcdf": "no"}),
         ("nf-config", "4.6.2", {
             "--has-nc4": "yes", "--flibs": "-L/netcdf/lib -lnetcdff -lnetcdf"}),
     ):
@@ -750,7 +1060,8 @@ def test_configure_pipeline_requires_resolved_netcdf_tool_receipt(tmp_path: Path
     netcdf_receipt = {}
     for name, version, outputs in (
         ("nc-config", "netCDF 4.9.3", {
-            "--version": "netCDF 4.9.3", "--libs": "-L/netcdf/lib -lnetcdf"}),
+            "--version": "netCDF 4.9.3", "--libs": "-L/netcdf/lib -lnetcdf",
+            "--has-nc4": "yes", "--has-pnetcdf": "no"}),
         ("nf-config", "4.6.2", {
             "--has-nc4": "yes", "--flibs": "-L/netcdf/lib -lnetcdff -lnetcdf"}),
     ):
@@ -776,7 +1087,9 @@ def test_configure_pipeline_requires_resolved_netcdf_tool_receipt(tmp_path: Path
     configure_wrf = shadow / "configure.wrf"
     configure_wrf.write_text(f"NETCDFPATH      =    {netcdf_root}\n")
     stdout = output / "configure.stdout"
-    stdout.write_text(f"Will use NETCDF in dir: {netcdf_root}\n")
+    stdout.write_text(
+        f"Will use NETCDF in dir: {netcdf_root}\n"
+        "Enabled NetCDF-4/HDF-5: yes\nNetCDF built with PnetCDF: no\n")
     stderr = output / "configure.stderr"
     stderr.write_text("")
     apply_stdout = output / "apply.stdout"
@@ -819,6 +1132,10 @@ def test_configure_pipeline_requires_resolved_netcdf_tool_receipt(tmp_path: Path
         "environment": {"NETCDF": str(netcdf_root), "NETCDF_C": str(netcdf_root)},
         "invocations": netcdf_tools,
         "forbidden_mixed_prefixes": ["/macports/"],
+        "configure_log_assertions": [
+            "Enabled NetCDF-4/HDF-5: yes",
+            "NetCDF built with PnetCDF: no",
+        ],
     }
     plan = {
         "toolchain": {"tools": {"bash": {"path": str(bash), "sha256": bash_sha}}},

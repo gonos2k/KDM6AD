@@ -29,7 +29,7 @@ date_modified: 2026-09-27
 - [[kdm6ad-kdm6plus-literature-set-2026-06-25]] - Curated KDM6+ Zotero collection ledger after removing non-KDM6 collected papers.
 - [[kdm6plus-collection-mathematical-deep-ingest-2026-06-25]] - Mathematical deep ingest of KDM6+ papers for manuscript drafting.
 - [[kdm6ad-20260610-presentation-adversarial-review]] - June 10 presentation review, including stale C-ABI status correction and adversarial manuscript cautions.
-- [[kdm6ad-czeroqg-prelink-preparation-2026-09-26]] - S10 exact-zero qg/rate guard identities, Homebrew NetCDF/configure pins, shadow quarantine, and resource gates; S10 remains OPEN.
+- [[kdm6ad-czeroqg-prelink-preparation-2026-09-26]] - S10 exact-zero qg/rate identities, Homebrew configure pins, canonical/shadow checks, S15 #281/#283 provenance, and blocked prebuild resource gate; S10 remains OPEN.
 
 ## Entities
 - [[KDM6]] - mp37 Fortran reference microphysics scheme.

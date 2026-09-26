@@ -2,7 +2,7 @@
   "schema": "s10-czeroqg-prelink-plan-v1",
   "status": "PRELINK_GUARD_FAILS_CLOSED_PENDING_CONFIG_PINS_REVIEWED_ARGV_AND_EXTERNAL_RELEASE_TRUST",
   "supersedes": "harness/evidence/s10_czeroqg_native_plan_2026-09-26.json",
-  "base_commit": "27152cca910c21e268a34db620ba10e28f2683bf",
+  "base_commit": "9ac2b1d9396896c4c9aec425cfe29ba2935bf31e",
   "policy_approved": false,
   "s10_status": "OPEN",
   "gates": {
@@ -13,7 +13,12 @@
     "canonical_archive_exact_path_and_hash_required": true,
     "full_link_or_native_run_performed": false,
     "coordinator_s15_release_receipt_sha256_required": true,
-    "trusted_s15_release_receipt_sha256": null
+    "trusted_s15_release_receipt_sha256": null,
+    "coordinator_resource_approval_required_before_build": true,
+    "trusted_resource_approval_sha256": null,
+    "resource_preflight_before_configure_or_build": true,
+    "configure_only_isolated_from_build_clean": true,
+    "build_and_run_stages_require_coordinator_resource_approval": true
   },
   "host_source_pins": {
     "mp37": {
@@ -119,7 +124,9 @@
           "version": "netCDF 4.9.3",
           "argv_outputs": {
             "--version": "netCDF 4.9.3",
-            "--libs": "-L/opt/homebrew/Cellar/netcdf/4.9.3_2/lib -lnetcdf"
+            "--libs": "-L/opt/homebrew/Cellar/netcdf/4.9.3_2/lib -lnetcdf",
+            "--has-nc4": "yes",
+            "--has-pnetcdf": "no"
           }
         },
         "nf-config": {
@@ -139,6 +146,10 @@
       },
       "forbidden_mixed_prefixes": [
         "/opt/local"
+      ],
+      "configure_log_assertions": [
+        "Enabled NetCDF-4/HDF-5: yes",
+        "NetCDF built with PnetCDF: no"
       ]
     },
     "configuration_stdin_capture_paths": {
@@ -436,21 +447,109 @@
     "evidence_manifest_path": "harness/evidence/s15_b20_public/s15_native_B_20S_public_manifest.json",
     "evidence_manifest_sha256": "02e7cfc7b0c0362f496eedad6705abeaa2b76c42808dd92092de5b0ac8580276",
     "empty_output_root_snapshot_sha256": "396361f796e2ef4edd85461b073b607686269fa74d1ceed5a69d99a43ebca602",
-    "receipt_gate": "coordinator must sign a release record binding this final plan SHA, S15 merge/evidence pins, and this reviewed empty-root snapshot SHA; the coordinator release SHA remains an external CLI trust root",
+    "receipt_gate": "coordinator must sign a release record binding final plan SHA, both S15 merge/evidence pins, and reviewed empty-root snapshot SHA; coordinator release SHA remains external.",
     "manifest_and_merge_are_rehashed_from_worktree": true,
     "coordinator_release_receipt_present": false,
     "coordinator_release_sha256_source": "root coordinator delivers the fixed --trusted-release-sha256 out of band after review; never accept an arbitrary CLI value",
-    "external_trust_root": "coordinator-issued record digest delivered out of band by the coordinating agent; current value unavailable"
+    "external_trust_root": "coordinator-issued record digest delivered out of band by the coordinating agent; current value unavailable",
+    "s15_step2_merge_commit": "9ac2b1d9396896c4c9aec425cfe29ba2935bf31e",
+    "s15_step2_pr_number": 283,
+    "s15_step2_evidence_manifest_path": "harness/evidence/s15_step2_public/s15_native_step2_40s_public_manifest_2026-09-26.json",
+    "s15_step2_evidence_manifest_sha256": "80cf3d8153a89ec5c736f48a09f8bb667c336ce42a1ae377ced0ae6778a6591e",
+    "release_evidence_scope": "S15 B20 control/capture from PR 281 plus completed S15 step-two native result from PR 283; release receipt must bind both merged manifests and the reviewed empty-root snapshot."
   },
   "resource_gate": {
     "status": "BLOCKED_PENDING_ESTIMATE_AND_REVIEW",
     "coordinator_observed_free_kib": 11942032,
     "filesystem_use_percent_at_observation": 100,
+    "configure_only": {
+      "allowed": true,
+      "allowed_commands": [
+        "./configure",
+        "./apply_kdm6ad_config.sh"
+      ],
+      "maximum_transient_bytes": 536870912,
+      "minimum_free_bytes_after_reserve": 2147483648,
+      "output_root_must_remain_absent": true,
+      "capture_root_relative_to_workspace": "S10/configuration_capture",
+      "preflight_receipt_relative_path": "S10/configuration_capture/configure_resource_preflight.json",
+      "phase_scope": "configure and apply script only; no WRF preprocessing, object compilation, linking or model runs"
+    },
+    "build": {
+      "status": "BLOCKED_PENDING_ESTIMATE_AND_REVIEW",
+      "prebuild_gate_receipt_required": true,
+      "prebuild_gate_receipt_relative_path": "S10/build_resource_preflight.json",
+      "output_size_estimate_relative_path": "S10/build_output_estimate.json",
+      "output_size_estimate_sha256": null,
+      "estimated_total_bytes": null,
+      "safety_factor": 2,
+      "reserve_free_bytes": null,
+      "minimum_free_bytes": null,
+      "prebuild_receipt_max_age_seconds": 3600,
+      "coordinator_resource_approval_required": true,
+      "s15_release_receipt_required": true,
+      "estimate_scope": [
+        "preprocessed sources for all four B/C arms",
+        "object and module outputs for all four B/C arms",
+        "linked executables for all four B/C arms",
+        "input copies, run staging, run outputs and logs for logging off and on in each arm",
+        "temporary build and run copy peaks",
+        "retained evidence for all completed variants"
+      ],
+      "retention_strategy_review_required": true,
+      "logging_modes_in_estimate": [
+        "off",
+        "on"
+      ],
+      "allowed_build_stages": [
+        "preprocessing",
+        "object_compilation",
+        "link"
+      ],
+      "estimate_component_schema": [
+        "preprocessed_sources_bytes",
+        "object_module_bytes",
+        "linked_executable_bytes",
+        "temporary_build_peak_bytes",
+        "logging_off_input_copy_bytes",
+        "logging_off_run_staging_bytes",
+        "logging_off_run_output_bytes",
+        "logging_off_log_bytes",
+        "logging_on_input_copy_bytes",
+        "logging_on_run_staging_bytes",
+        "logging_on_run_output_bytes",
+        "logging_on_log_bytes"
+      ],
+      "measurement_receipt_relative_path": "S10/build_resource_measurement.json",
+      "coordinator_approval_relative_path": "S10/coordinator_resource_approval.json",
+      "measurement_required_before_coordinator_approval": true,
+      "measurement_policy": "The measure phase records fresh OS disk_usage values and a CSPRNG nonce before coordinator release. The coordinator approval binds the exact plan, estimate, snapshot and measurement-receipt SHA/free bytes/time. The build phase independently remeasures free space before any preprocess/object/link command; prelink rechecks the post-build reserve.",
+      "shared_staging_component_schema": [
+        "selected_case_tree_copy_bytes",
+        "shared_run_support_bytes"
+      ],
+      "planned_run_layout_reference": {
+        "selected_case_relative_path": "test/ss_real_case_20260619_063620/SS",
+        "selected_case_logical_bytes": 481816226,
+        "selected_case_regular_file_count": 4,
+        "active_input_logical_bytes": {
+          "wrfinput_d01": 374429080,
+          "wrfbdy_d01": 103922656,
+          "wrfchainp_d01": 3458043
+        },
+        "run_output_pattern": "runs/mp<mp>_<label>_<duration>_hist<history>_<stamp>_p<pid>",
+        "run_count": 8,
+        "retention": "retain all four arms x logging off/on run directories; no cleanup or hardlink assumption",
+        "prior_s15_40s_reference": "coordinator reports about 912 MB per 40-second run directory; use as conservative reference only, not S10 output evidence",
+        "runner_copy_semantics": "harness/run_ss_case.py archives run outputs with shutil.copy2; one staged full case tree must be charged to shared_staging_components"
+      }
+    },
     "full_matrix_build_or_link_allowed": false,
     "required_before_any_multi_arm_build": [
-      "estimate preprocessing/object/link output size for all four arms",
-      "review retention and cleanup plan for disposable artifacts",
-      "fresh free-space check and coordinator authorization"
+      "measure all preprocess/object/link output for four arms and temporary build peaks",
+      "measure all eight 20-second logging-off/on run directories and logs; include the selected SS case clone and retained outputs",
+      "review retention strategy and any cleanup policy without deleting existing evidence",
+      "fresh OS disk_usage check and coordinator release/approval before first build command"
     ]
   }
 }

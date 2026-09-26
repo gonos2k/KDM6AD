@@ -16,6 +16,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -105,6 +106,11 @@ def require_s15_release(plan: dict[str, Any], release: dict[str, Any],
         "s15_merge_commit": trusted.get("s15_merge_commit"),
         "evidence_manifest_path": trusted.get("evidence_manifest_path"),
         "evidence_manifest_sha256": trusted.get("evidence_manifest_sha256"),
+        "s15_step2_merge_commit": trusted.get("s15_step2_merge_commit"),
+        "s15_step2_evidence_manifest_path": trusted.get(
+            "s15_step2_evidence_manifest_path"),
+        "s15_step2_evidence_manifest_sha256": trusted.get(
+            "s15_step2_evidence_manifest_sha256"),
         "empty_output_root_snapshot_sha256": snapshot_sha,
     }
     for key, value in expected.items():
@@ -169,6 +175,370 @@ def validate_prebuild_snapshot(snapshot_path: Path, expected_sha256: str,
             or snapshot.get("nonce_sha256") != sha256_bytes(nonce.encode())):
         raise PrelinkError("empty-output-root snapshot fields or nonce are invalid")
     return snapshot
+
+
+def require_resource_gate_approval(plan: dict[str, Any], approval: dict[str, Any], *,
+                                   plan_sha256: str, estimate_sha256: str,
+                                   snapshot_sha256: str,
+                                   measurement_receipt_sha256: str,
+                                   measured_free_bytes: int,
+                                   measured_at_unix_ns: int,
+                                   required_free_bytes: int,
+                                   s15_release_sha256: str,
+                                   approval_sha256: str,
+                                   trusted_approval_sha256: str) -> None:
+    if (not isinstance(trusted_approval_sha256, str)
+            or not re.fullmatch(r"[0-9a-f]{64}", trusted_approval_sha256)):
+        raise PrelinkError("coordinator resource-approval SHA-256 must be supplied out of band")
+    if approval_sha256 != trusted_approval_sha256:
+        raise PrelinkError("coordinator resource-approval SHA-256 mismatch")
+    build_gate = plan.get("resource_gate", {}).get("build", {})
+    required = {
+        "schema": "s10-resource-gate-approval-v1",
+        "owner": "coordinator",
+        "status": "APPROVED_FOR_S10_BUILD",
+        "plan_sha256": plan_sha256,
+        "output_size_estimate_sha256": estimate_sha256,
+        "empty_output_root_snapshot_sha256": snapshot_sha256,
+        "resource_measurement_receipt_sha256": measurement_receipt_sha256,
+        "measured_free_bytes": measured_free_bytes,
+        "measured_at_unix_ns": measured_at_unix_ns,
+        "required_free_bytes": required_free_bytes,
+        "s15_release_receipt_sha256": s15_release_sha256,
+        "minimum_free_bytes": build_gate.get("minimum_free_bytes"),
+        "safety_factor": build_gate.get("safety_factor"),
+        "full_matrix_build_or_link_allowed": True,
+    }
+    for key, expected in required.items():
+        if approval.get(key) != expected:
+            raise PrelinkError(f"coordinator resource-approval receipt mismatch for {key}")
+
+
+_BUILD_ESTIMATE_COMPONENTS = (
+    "preprocessed_sources_bytes", "object_module_bytes", "linked_executable_bytes",
+    "temporary_build_peak_bytes", "logging_off_input_copy_bytes",
+    "logging_off_run_staging_bytes", "logging_off_run_output_bytes",
+    "logging_off_log_bytes", "logging_on_input_copy_bytes",
+    "logging_on_run_staging_bytes", "logging_on_run_output_bytes",
+    "logging_on_log_bytes",
+)
+
+
+def validate_build_output_estimate(estimate: dict[str, Any]) -> tuple[int, dict[str, int]]:
+    if estimate.get("schema") != "s10-build-output-estimate-v1":
+        raise PrelinkError("output-size estimate schema mismatch")
+    if estimate.get("logging_modes") != ["off", "on"]:
+        raise PrelinkError("output-size estimate must cover logging off and on")
+    if estimate.get("retention_strategy") in (None, "", "todo", "unknown", "n/a"):
+        raise PrelinkError("output-size estimate lacks a reviewed retention strategy")
+    variants = estimate.get("variants")
+    expected_variants = {"mp37_B", "mp37_C", "mp237_B", "mp237_C"}
+    if not isinstance(variants, dict) or set(variants) != expected_variants:
+        raise PrelinkError("output-size estimate must cover all four B/C arms")
+    arm_totals: dict[str, int] = {}
+    for key, row in variants.items():
+        components = row.get("components") if isinstance(row, dict) else None
+        if not isinstance(components, dict) or set(components) != set(_BUILD_ESTIMATE_COMPONENTS):
+            raise PrelinkError(f"output-size estimate components are incomplete for {key}")
+        values = list(components.values())
+        if any(not isinstance(value, int) or isinstance(value, bool) or value < 0
+               for value in values):
+            raise PrelinkError(f"output-size estimate component is invalid for {key}")
+        if not any(components[name] > 0 for name in _BUILD_ESTIMATE_COMPONENTS):
+            raise PrelinkError(f"output-size estimate has no bytes for {key}")
+        arm_total = sum(values)
+        if row.get("estimated_bytes") != arm_total:
+            raise PrelinkError(f"output-size estimate subtotal is invalid for {key}")
+        arm_totals[key] = arm_total
+    shared = estimate.get("shared_staging_components")
+    if (not isinstance(shared, dict)
+            or set(shared) != {"selected_case_tree_copy_bytes", "shared_run_support_bytes"}):
+        raise PrelinkError("output-size estimate lacks shared staged-case costs")
+    shared_values = list(shared.values())
+    if any(not isinstance(value, int) or isinstance(value, bool) or value < 0
+           for value in shared_values):
+        raise PrelinkError("shared staging estimate contains an invalid byte count")
+    if shared.get("selected_case_tree_copy_bytes", 0) <= 0:
+        raise PrelinkError("estimate must include a full selected-case staging copy")
+    shared_total = sum(shared_values)
+    if estimate.get("shared_staging_bytes") != shared_total:
+        raise PrelinkError("shared staging subtotal is invalid")
+    total = sum(arm_totals.values()) + shared_total
+    if estimate.get("total_estimated_bytes") != total:
+        raise PrelinkError("output-size estimate total does not equal all arms")
+    peak = estimate.get("peak_concurrent_bytes")
+    if not isinstance(peak, int) or isinstance(peak, bool) or peak <= 0 or peak > total:
+        raise PrelinkError("output-size estimate peak concurrency is invalid")
+    return total, arm_totals
+
+
+def validate_build_resource_preflight(plan: dict[str, Any], receipt: dict[str, Any], *,
+                                      plan_sha256: str, snapshot_sha256: str,
+                                      output_root: Path,
+                                      trusted_approval_sha256: str) -> None:
+    gate = plan.get("resource_gate", {})
+    build = gate.get("build", {})
+    if (gate.get("status") != "READY_PENDING_COORDINATOR_RELEASE"
+            or gate.get("full_matrix_build_or_link_allowed") is not False
+            or build.get("status") != "READY_PENDING_COORDINATOR_RELEASE"
+            or build.get("prebuild_gate_receipt_required") is not True):
+        raise PrelinkError("resource gate is blocked; preprocessing, compilation and linking are prohibited")
+    if receipt.get("schema") != "s10-resource-preflight-receipt-v1" \
+            or receipt.get("phase") != "build" \
+            or receipt.get("status") != "READY_FOR_REVIEWED_BUILD":
+        raise PrelinkError("resource preflight receipt is not an approved build-phase receipt")
+    if receipt.get("plan_sha256") != plan_sha256:
+        raise PrelinkError("resource preflight receipt is bound to a different plan")
+    if receipt.get("empty_output_root_snapshot_sha256") != snapshot_sha256:
+        raise PrelinkError("resource preflight receipt is bound to a different empty-root snapshot")
+    if receipt.get("output_root_path") != str(output_root.resolve()):
+        raise PrelinkError("resource preflight receipt names a different build output root")
+    estimate_sha = build.get("output_size_estimate_sha256")
+    if (not isinstance(estimate_sha, str) or len(estimate_sha) != 64
+            or receipt.get("output_size_estimate_sha256") != estimate_sha):
+        raise PrelinkError("resource preflight receipt lacks the plan-pinned output-size estimate")
+    if receipt.get("coordinator_resource_approval_sha256") != trusted_approval_sha256:
+        raise PrelinkError("resource preflight receipt lacks the trusted coordinator approval")
+    measurement_sha = receipt.get("resource_measurement_receipt_sha256")
+    if not isinstance(measurement_sha, str) or not re.fullmatch(r"[0-9a-f]{64}", measurement_sha):
+        raise PrelinkError("resource preflight receipt is not bound to its approved space measurement")
+    estimated_total = build.get("estimated_total_bytes")
+    safety_factor = build.get("safety_factor")
+    reserve = build.get("reserve_free_bytes")
+    minimum = build.get("minimum_free_bytes")
+    if (not isinstance(estimated_total, int) or isinstance(estimated_total, bool)
+            or not isinstance(safety_factor, int) or isinstance(safety_factor, bool)
+            or not isinstance(reserve, int) or isinstance(reserve, bool)
+            or not isinstance(minimum, int) or isinstance(minimum, bool)):
+        raise PrelinkError("reviewed resource estimate and reserve are malformed")
+    expected_required = max(minimum, estimated_total * safety_factor + reserve)
+    if (receipt.get("estimated_total_bytes") != estimated_total
+            or receipt.get("required_free_bytes") != expected_required):
+        raise PrelinkError("resource preflight byte estimate or required reserve differs from the plan")
+    required_free = receipt.get("required_free_bytes")
+    observed_free = receipt.get("observed_free_bytes")
+    if (not isinstance(required_free, int) or isinstance(required_free, bool)
+            or not isinstance(observed_free, int) or isinstance(observed_free, bool)
+            or observed_free < required_free):
+        raise PrelinkError("resource preflight did not meet the pinned free-space requirement")
+    timestamp = receipt.get("resource_measurement_observed_at_unix_ns")
+    checked_at = receipt.get("resource_gate_checked_at_unix_ns")
+    now = time.time_ns()
+    max_age = build.get("prebuild_receipt_max_age_seconds")
+    if (not isinstance(timestamp, int) or isinstance(timestamp, bool)
+            or not isinstance(checked_at, int) or isinstance(checked_at, bool)
+            or not isinstance(max_age, int) or isinstance(max_age, bool)
+            or timestamp > checked_at or checked_at > now
+            or checked_at - timestamp > max_age * 1_000_000_000):
+        raise PrelinkError("build resource preflight did not use a fresh capacity measurement")
+    nonce = receipt.get("nonce")
+    if (not isinstance(nonce, str) or not re.fullmatch(r"[0-9a-f]{64}", nonce)
+            or receipt.get("nonce_sha256") != sha256_bytes(nonce.encode())):
+        raise PrelinkError("build resource preflight nonce is invalid")
+    if receipt.get("free_space_probe_path") != str(output_root.parent.resolve()):
+        raise PrelinkError("resource preflight free-space probe path is not the output filesystem")
+    current_usage = shutil.disk_usage(output_root.parent)
+    post_build_reserve = build.get("reserve_free_bytes")
+    if (not isinstance(post_build_reserve, int) or isinstance(post_build_reserve, bool)
+            or current_usage.free < post_build_reserve):
+        raise PrelinkError("fresh prelink free space is below the reviewed post-build reserve")
+
+
+def create_resource_preflight_receipt(
+        plan: dict[str, Any], *, plan_sha256: str,
+        workspace: Path, canonical_host: Path, shadow_host: Path,
+        overlay_paths: dict[str, Path], output_root: Path,
+        snapshot_path: Path, phase: str, receipt_path: Path,
+        estimate_path: Path | None = None,
+        approval: dict[str, Any] | None = None,
+        approval_sha256: str | None = None,
+        trusted_approval_sha256: str | None = None,
+        s15_release: dict[str, Any] | None = None,
+        s15_release_sha256: str | None = None,
+        trusted_s15_release_sha256: str | None = None) -> dict[str, Any]:
+    if phase not in ("configure", "measure", "build"):
+        raise PrelinkError("resource preflight phase must be configure, measure or build")
+    expected_root = (workspace / plan["clean_shadow"]["fresh_build_output_root"]).resolve()
+    if output_root.resolve() != expected_root:
+        raise PrelinkError("resource preflight output root differs from the plan")
+    snapshot_sha = plan.get("trusted_s15_release", {}).get(
+        "empty_output_root_snapshot_sha256")
+    expected_snapshot = workspace / plan["clean_shadow"]["empty_root_snapshot_relative_path"]
+    snapshot = validate_prebuild_snapshot(
+        snapshot_path, snapshot_sha, output_root, expected_snapshot)
+    if output_root.exists():
+        raise PrelinkError("resource preflight requires the build output root to remain absent")
+    if receipt_path.resolve() == output_root.resolve() or _is_relative_to(
+            receipt_path.resolve(), output_root.resolve()):
+        raise PrelinkError("resource preflight receipt must be outside the build output root")
+    if phase == "build":
+        expected_receipt_path = workspace / plan["resource_gate"]["build"][
+            "prebuild_gate_receipt_relative_path"]
+        if receipt_path.resolve() != expected_receipt_path.resolve():
+            raise PrelinkError("build resource preflight receipt path differs from the plan")
+
+    gate = plan.get("resource_gate", {})
+    if phase == "build" and (
+            gate.get("status") != "READY_PENDING_COORDINATOR_RELEASE"
+            or gate.get("full_matrix_build_or_link_allowed") is not False
+            or gate.get("build", {}).get("status") != "READY_PENDING_COORDINATOR_RELEASE"):
+        raise PrelinkError("resource gate is blocked; build preflight fails closed")
+    if phase == "configure" and gate.get("configure_only", {}).get("allowed") is not True:
+        raise PrelinkError("configure-only resource allowance is not reviewed")
+    if phase == "measure" and not gate.get("build", {}).get("output_size_estimate_sha256"):
+        raise PrelinkError("build resource measurement requires a plan-pinned output-size estimate")
+
+    # Check every pinned source/config input and canonical archive before either
+    # configure-only preparation or the first build stage.
+    validate_static_pins(
+        plan, workspace=workspace, canonical_host=canonical_host,
+        shadow_host=shadow_host, overlay_paths=overlay_paths)
+
+    usage = shutil.disk_usage(output_root.parent)
+    measured_free = usage.free
+    now = time.time_ns()
+    required_free: int
+    receipt_status: str
+    estimated_bytes: int | None = None
+    estimate_sha: str | None = None
+    coordinator_approval_sha: str | None = None
+    release_sha: str | None = None
+    measurement_sha: str | None = None
+    measurement_observed_at: int | None = None
+    if phase == "configure":
+        configure_gate = gate.get("configure_only", {})
+        if configure_gate.get("allowed") is not True:
+            raise PrelinkError("configure-only resource allowance is not reviewed")
+        if configure_gate.get("output_root_must_remain_absent") is not True:
+            raise PrelinkError("configure-only phase must keep build output root absent")
+        expected_capture_root = workspace / configure_gate.get(
+            "capture_root_relative_to_workspace", "")
+        if not _is_relative_to(receipt_path.resolve(), expected_capture_root.resolve()):
+            raise PrelinkError("configure-only resource receipt must be stored in its capture root")
+        max_transient = configure_gate.get("maximum_transient_bytes")
+        min_free = configure_gate.get("minimum_free_bytes_after_reserve")
+        if (not isinstance(max_transient, int) or isinstance(max_transient, bool)
+                or not isinstance(min_free, int) or isinstance(min_free, bool)):
+            raise PrelinkError("configure-only transient-space bound is not pinned")
+        required_free = max_transient + min_free
+        if measured_free < required_free:
+            raise PrelinkError("fresh free space is below the configure-only reserve")
+        receipt_status = "ALLOW_CONFIGURE_ONLY"
+        allowed_commands = configure_gate.get("allowed_commands")
+        if allowed_commands != ["./configure", "./apply_kdm6ad_config.sh"]:
+            raise PrelinkError("configure-only command allowlist is not exact")
+    else:
+        build_gate = gate.get("build", {})
+        if estimate_path is None:
+            raise PrelinkError("reviewed output-size estimate file is required")
+        expected_estimate_path = workspace / build_gate.get(
+            "output_size_estimate_relative_path", "")
+        if estimate_path.resolve() != expected_estimate_path.resolve():
+            raise PrelinkError("output-size estimate path differs from the plan")
+        estimate_sha = sha256_file(estimate_path)
+        if estimate_sha != build_gate.get("output_size_estimate_sha256"):
+            raise PrelinkError("output-size estimate SHA differs from the reviewed plan")
+        estimate = load_json(estimate_path)
+        if estimate.get("schema") != "s10-build-output-estimate-v1":
+            raise PrelinkError("output-size estimate schema mismatch")
+        estimated_bytes, _arm_totals = validate_build_output_estimate(estimate)
+        if estimated_bytes != build_gate.get("estimated_total_bytes"):
+            raise PrelinkError("output-size estimate total differs from the reviewed plan")
+        safety_factor = build_gate.get("safety_factor")
+        reserve = build_gate.get("reserve_free_bytes")
+        min_free = build_gate.get("minimum_free_bytes")
+        if (not isinstance(safety_factor, int) or isinstance(safety_factor, bool)
+                or safety_factor < 1 or not isinstance(reserve, int)
+                or isinstance(reserve, bool) or not isinstance(min_free, int)
+                or isinstance(min_free, bool)):
+            raise PrelinkError("reviewed build free-space requirements are incomplete")
+        required_free = max(min_free, estimated_bytes * safety_factor + reserve)
+        if measured_free < required_free:
+            raise PrelinkError("fresh free space is below the reviewed build-size requirement")
+        if phase == "measure":
+            if gate.get("status") != "READY_PENDING_COORDINATOR_RELEASE":
+                raise PrelinkError("capacity measurement requires a reviewed, unapproved plan")
+            expected_measurement_path = workspace / build_gate.get(
+                "measurement_receipt_relative_path", "")
+            if receipt_path.resolve() != expected_measurement_path.resolve():
+                raise PrelinkError("capacity measurement receipt path differs from the plan")
+            measurement_observed_at = now
+            receipt_status = "MEASURED_BUILD_CAPACITY"
+        else:
+            if build_gate.get("status") != "READY_PENDING_COORDINATOR_RELEASE":
+                raise PrelinkError("build resource gate approval is missing")
+            if (s15_release is None or s15_release_sha256 is None
+                    or trusted_s15_release_sha256 is None):
+                raise PrelinkError("coordinator S15 lane release is required before any build stage")
+            require_s15_release(plan, s15_release, plan_sha256,
+                                s15_release_sha256, trusted_s15_release_sha256)
+            measurement_path = workspace / build_gate.get(
+                "measurement_receipt_relative_path", "")
+            measurement_sha = sha256_file(measurement_path)
+            measurement = load_json(measurement_path)
+            if (measurement.get("schema") != "s10-resource-preflight-receipt-v1"
+                    or measurement.get("phase") != "measure"
+                    or measurement.get("status") != "MEASURED_BUILD_CAPACITY"
+                    or measurement.get("plan_sha256") != plan_sha256
+                    or measurement.get("empty_output_root_snapshot_sha256") != snapshot_sha
+                    or measurement.get("output_size_estimate_sha256") != estimate_sha
+                    or measurement.get("required_free_bytes") != required_free):
+                raise PrelinkError("fresh capacity measurement receipt does not match this plan/estimate")
+            measured_at = measurement.get("observed_at_unix_ns")
+            measurement_observed_at = measured_at
+            max_age = build_gate.get("prebuild_receipt_max_age_seconds")
+            if (not isinstance(measured_at, int) or isinstance(measured_at, bool)
+                    or not isinstance(max_age, int) or isinstance(max_age, bool)
+                    or measured_at > now or now - measured_at > max_age * 1_000_000_000):
+                raise PrelinkError("capacity measurement receipt is stale")
+            if approval is None or approval_sha256 is None or trusted_approval_sha256 is None:
+                raise PrelinkError("coordinator resource approval is required before any build stage")
+            require_resource_gate_approval(
+                plan, approval, plan_sha256=plan_sha256,
+                estimate_sha256=estimate_sha, snapshot_sha256=snapshot_sha,
+                measurement_receipt_sha256=measurement_sha,
+                measured_free_bytes=measurement.get("observed_free_bytes"),
+                measured_at_unix_ns=measured_at,
+                required_free_bytes=required_free,
+                s15_release_sha256=s15_release_sha256,
+                approval_sha256=approval_sha256,
+                trusted_approval_sha256=trusted_approval_sha256)
+            coordinator_approval_sha = approval_sha256
+            release_sha = s15_release_sha256
+            receipt_status = "READY_FOR_REVIEWED_BUILD"
+
+    nonce = secrets.token_hex(32)
+    result = {
+        "schema": "s10-resource-preflight-receipt-v1",
+        "phase": phase,
+        "status": receipt_status,
+        "plan_sha256": plan_sha256,
+        "output_root_path": str(output_root.resolve()),
+        "empty_output_root_snapshot_sha256": snapshot_sha,
+        "empty_output_root_snapshot_nonce_sha256": snapshot["nonce_sha256"],
+        "free_space_probe_path": str(output_root.parent.resolve()),
+        "free_space_total_bytes": usage.total,
+        "free_space_used_bytes": usage.used,
+        "observed_free_bytes": measured_free,
+        "required_free_bytes": required_free,
+        "observed_at_unix_ns": now,
+        "resource_measurement_observed_at_unix_ns": measurement_observed_at,
+        "resource_gate_checked_at_unix_ns": now if phase == "build" else None,
+        "output_size_estimate_sha256": estimate_sha,
+        "estimated_total_bytes": estimated_bytes,
+        "resource_measurement_receipt_sha256": measurement_sha,
+        "coordinator_resource_approval_sha256": coordinator_approval_sha,
+        "s15_release_receipt_sha256": release_sha,
+        "allowed_commands": (
+            gate["configure_only"]["allowed_commands"] if phase == "configure"
+            else [] if phase == "measure" else gate["build"]["allowed_build_stages"]
+        ),
+        "nonce": nonce,
+        "nonce_sha256": sha256_bytes(nonce.encode()),
+    }
+    receipt_path.parent.mkdir(parents=True, exist_ok=True)
+    receipt_path.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    return result
 
 
 def _effective_namelist(pristine: str, mp: str) -> str:
@@ -298,6 +668,20 @@ def validate_toolchain(plan: dict[str, Any], shadow_host: Path) -> dict[str, dic
     return resolved
 
 
+def validate_configuration_sources(plan: dict[str, Any], *,
+                                   canonical_host: Path,
+                                   shadow_host: Path) -> dict[str, str]:
+    """Require configure inputs to match reviewed bytes in canonical and shadow hosts."""
+    checked: dict[str, str] = {}
+    for rel, expected in plan["prelink_requirements"]["configuration_inputs_sha256"].items():
+        if sha256_file(canonical_host / rel) != expected:
+            raise PrelinkError(f"private host configuration source changed: {rel}")
+        if sha256_file(shadow_host / rel) != expected:
+            raise PrelinkError(f"disposable shadow configuration source changed: {rel}")
+        checked[rel] = expected
+    return checked
+
+
 def validate_static_pins(plan: dict[str, Any], *, workspace: Path,
                          canonical_host: Path, shadow_host: Path,
                          overlay_paths: dict[str, Path]) -> dict[str, Any]:
@@ -311,20 +695,26 @@ def validate_static_pins(plan: dict[str, Any], *, workspace: Path,
             item, scheme=scheme, canonical_source=canonical,
             overlay_path=overlay_paths[scheme])
 
-    for rel, expected in plan["prelink_requirements"]["configuration_inputs_sha256"].items():
-        if sha256_file(canonical_host / rel) != expected:
-            raise PrelinkError(f"private host configuration source changed: {rel}")
+    validate_configuration_sources(
+        plan, canonical_host=canonical_host, shadow_host=shadow_host)
 
     trusted_s15 = plan.get("trusted_s15_release", {})
     manifest_path = workspace / trusted_s15.get("evidence_manifest_path", "")
     if sha256_file(manifest_path) != trusted_s15.get("evidence_manifest_sha256"):
         raise PrelinkError("merged S15 evidence manifest hash differs from the public pin")
-    merge = trusted_s15.get("s15_merge_commit")
-    ancestry = subprocess.run(
-        ["git", "-C", str(workspace), "merge-base", "--is-ancestor", str(merge), "HEAD"],
-        capture_output=True, text=True)
-    if ancestry.returncode != 0:
-        raise PrelinkError("worktree HEAD does not contain the pinned S15 B20s merge")
+    step2_manifest_path = workspace / trusted_s15.get("s15_step2_evidence_manifest_path", "")
+    if sha256_file(step2_manifest_path) != trusted_s15.get(
+            "s15_step2_evidence_manifest_sha256"):
+        raise PrelinkError("merged S15 step-two evidence manifest hash differs from the public pin")
+    for merge, label in (
+        (trusted_s15.get("s15_merge_commit"), "S15 B20s"),
+        (trusted_s15.get("s15_step2_merge_commit"), "S15 step-two"),
+    ):
+        ancestry = subprocess.run(
+            ["git", "-C", str(workspace), "merge-base", "--is-ancestor", str(merge), "HEAD"],
+            capture_output=True, text=True)
+        if ancestry.returncode != 0:
+            raise PrelinkError(f"worktree HEAD does not contain the pinned {label} merge")
 
     archive_pin = plan["build_matrix"]["link_input_archive"]
     archive = (canonical_host / archive_pin["path_relative_to_private_host"]).resolve()
@@ -920,6 +1310,8 @@ def validate_arm_argv_parity(plan: dict[str, Any], execution: dict[str, Any], *,
         "environment_sha256": sha256_bytes(json.dumps(
             execution.get("tool_environment"), sort_keys=True,
             separators=(",", ":")).encode()),
+        "resource_preflight_receipt_sha256": execution.get(
+            "resource_preflight_receipt_sha256"),
     }
     for scheme in ("mp37", "mp237"):
         b, c = variants[f"{scheme}_B"], variants[f"{scheme}_C"]
@@ -1027,6 +1419,9 @@ def _validate_configure_pipeline(execution: dict[str, Any], shadow_host: Path,
         netcdf_root = netcdf_policy["environment"]["NETCDF"]
         if f"Will use NETCDF in dir: {netcdf_root}" not in configure_stdout:
             raise PrelinkError("configure output does not confirm the pinned NETCDF root")
+        for marker in netcdf_policy.get("configure_log_assertions", []):
+            if marker not in configure_stdout:
+                raise PrelinkError(f"configure output omits pinned NetCDF report: {marker}")
 
 
 def _validate_preprocess_pipeline(pp: dict[str, Any], *, key: str,
@@ -1108,6 +1503,9 @@ def _check_file_record(record: dict[str, Any], field: str, root: Path) -> Path:
 def validate_execution(plan: dict[str, Any], execution: dict[str, Any], *,
                        plan_sha256: str,
                        snapshot_sha256: str,
+                       resource_preflight_receipt: dict[str, Any],
+                       resource_preflight_receipt_sha256: str,
+                       trusted_resource_approval_sha256: str,
                        workspace: Path, canonical_host: Path,
                        shadow_host: Path, output_root: Path,
                        overlay_paths: dict[str, Path]) -> dict[str, Any]:
@@ -1117,6 +1515,20 @@ def validate_execution(plan: dict[str, Any], execution: dict[str, Any], *,
         raise PrelinkError("execution receipt is not bound to this plan")
     if execution.get("prebuild_output_root_snapshot_sha256") != snapshot_sha256:
         raise PrelinkError("execution receipt is not bound to the coordinator-pinned empty-root snapshot")
+    expected_resource_path = plan.get("resource_gate", {}).get("build", {}).get(
+        "prebuild_gate_receipt_relative_path")
+    expected_resource_file = (workspace / expected_resource_path).resolve()
+    recorded_resource_path = Path(execution.get("resource_preflight_receipt_path", ""))
+    if not recorded_resource_path.is_absolute():
+        recorded_resource_path = workspace / recorded_resource_path
+    if (recorded_resource_path.resolve() != expected_resource_file
+            or execution.get("resource_preflight_receipt_sha256")
+            != resource_preflight_receipt_sha256):
+        raise PrelinkError("execution receipt lacks the exact plan-pinned prebuild resource gate receipt")
+    validate_build_resource_preflight(
+        plan, resource_preflight_receipt, plan_sha256=plan_sha256,
+        snapshot_sha256=snapshot_sha256, output_root=output_root,
+        trusted_approval_sha256=trusted_resource_approval_sha256)
     configure_sha = execution.get("configure_wrf_sha256")
     configure_path = shadow_host / "configure.wrf"
     if not isinstance(configure_sha, str) or sha256_file(configure_path) != configure_sha:
@@ -1257,6 +1669,7 @@ def make_prelink_receipt(plan_path: Path, release_path: Path, execution_path: Pa
                          canonical_host: Path, shadow_host: Path, workspace: Path,
                          overlay_paths: dict[str, Path], snapshot_path: Path,
                          trusted_release_sha256: str,
+                         trusted_resource_approval_sha256: str,
                          receipt_path: Path) -> dict[str, Any]:
     plan = load_json(plan_path)
     release = load_json(release_path)
@@ -1270,6 +1683,40 @@ def make_prelink_receipt(plan_path: Path, release_path: Path, execution_path: Pa
         snapshot_path, expected_snapshot_sha,
         workspace / plan["clean_shadow"]["fresh_build_output_root"],
         expected_snapshot_path)
+    resource_rel = plan["resource_gate"]["build"]["prebuild_gate_receipt_relative_path"]
+    resource_path = workspace / resource_rel
+    resource_sha = sha256_file(resource_path)
+    if execution.get("resource_preflight_receipt_sha256") != resource_sha:
+        raise PrelinkError("execution receipt resource-gate digest does not match the prebuild receipt")
+    resource_receipt = load_json(resource_path)
+    build_gate = plan["resource_gate"]["build"]
+    measurement_path = workspace / build_gate["measurement_receipt_relative_path"]
+    measurement_sha = sha256_file(measurement_path)
+    measurement = load_json(measurement_path)
+    approval_path = workspace / build_gate["coordinator_approval_relative_path"]
+    approval_sha = sha256_file(approval_path)
+    if approval_sha != trusted_resource_approval_sha256:
+        raise PrelinkError("coordinator resource-approval receipt SHA mismatch")
+    require_resource_gate_approval(
+        plan, load_json(approval_path), plan_sha256=plan_sha,
+        estimate_sha256=build_gate["output_size_estimate_sha256"],
+        snapshot_sha256=expected_snapshot_sha,
+        measurement_receipt_sha256=measurement_sha,
+        measured_free_bytes=measurement.get("observed_free_bytes"),
+        measured_at_unix_ns=measurement.get("observed_at_unix_ns"),
+        required_free_bytes=measurement.get("required_free_bytes"),
+        s15_release_sha256=release_sha,
+        approval_sha256=approval_sha,
+        trusted_approval_sha256=trusted_resource_approval_sha256)
+    if resource_receipt.get("resource_measurement_receipt_sha256") != measurement_sha:
+        raise PrelinkError("build preflight receipt is bound to a different capacity measurement")
+    validate_build_resource_preflight(
+        plan, resource_receipt, plan_sha256=plan_sha,
+        snapshot_sha256=expected_snapshot_sha,
+        output_root=workspace / plan["clean_shadow"]["fresh_build_output_root"],
+        trusted_approval_sha256=trusted_resource_approval_sha256)
+    if resource_receipt.get("s15_release_receipt_sha256") != release_sha:
+        raise PrelinkError("resource gate was cleared against a different S15 lane release receipt")
     pins = validate_static_pins(plan, workspace=workspace,
                                 canonical_host=canonical_host,
                                 shadow_host=shadow_host,
@@ -1277,6 +1724,9 @@ def make_prelink_receipt(plan_path: Path, release_path: Path, execution_path: Pa
     output_root = workspace / plan["clean_shadow"]["fresh_build_output_root"]
     checked = validate_execution(plan, execution, plan_sha256=plan_sha,
                                  snapshot_sha256=expected_snapshot_sha,
+                                 resource_preflight_receipt=resource_receipt,
+                                 resource_preflight_receipt_sha256=resource_sha,
+                                 trusted_resource_approval_sha256=trusted_resource_approval_sha256,
                                  workspace=workspace,
                                  canonical_host=canonical_host,
                                  shadow_host=shadow_host,
@@ -1288,6 +1738,8 @@ def make_prelink_receipt(plan_path: Path, release_path: Path, execution_path: Pa
         "plan_sha256": plan_sha,
         "release_receipt_sha256": sha256_file(release_path),
         "coordinator_trusted_release_sha256": trusted_release_sha256,
+        "resource_preflight_receipt_sha256": resource_sha,
+        "coordinator_trusted_resource_approval_sha256": trusted_resource_approval_sha256,
         "empty_output_root_snapshot_sha256": expected_snapshot_sha,
         "empty_output_root_snapshot_nonce_sha256": snapshot["nonce_sha256"],
         "execution_receipt_sha256": sha256_file(execution_path),
@@ -1317,7 +1769,68 @@ def _overlay_args(values: list[str]) -> dict[str, Path]:
     return result
 
 
+def resource_preflight_main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(
+        description="Fresh disk-space and coordinator gate before S10 configure/build stages")
+    parser.add_argument("--phase", choices=("configure", "measure", "build"), required=True)
+    parser.add_argument("--plan", type=Path, required=True)
+    parser.add_argument("--workspace", type=Path, required=True)
+    parser.add_argument("--canonical-host", type=Path, required=True)
+    parser.add_argument("--shadow-host", type=Path, required=True)
+    parser.add_argument("--overlay", action="append", default=[])
+    parser.add_argument("--estimate", type=Path)
+    parser.add_argument("--resource-approval", type=Path)
+    parser.add_argument("--trusted-resource-approval-sha256")
+    parser.add_argument("--s15-release", type=Path)
+    parser.add_argument("--trusted-s15-release-sha256")
+    args = parser.parse_args(argv)
+    try:
+        plan = load_json(args.plan)
+        plan_sha = sha256_file(args.plan)
+        workspace = args.workspace.resolve()
+        output_root = workspace / plan["clean_shadow"]["fresh_build_output_root"]
+        snapshot_path = workspace / plan["clean_shadow"]["empty_root_snapshot_relative_path"]
+        if args.phase == "configure":
+            receipt_rel = plan["resource_gate"]["configure_only"][
+                "preflight_receipt_relative_path"]
+        elif args.phase == "measure":
+            receipt_rel = plan["resource_gate"]["build"][
+                "measurement_receipt_relative_path"]
+        else:
+            receipt_rel = plan["resource_gate"]["build"][
+                "prebuild_gate_receipt_relative_path"]
+        if args.phase == "build":
+            expected_approval = workspace / plan["resource_gate"]["build"][
+                "coordinator_approval_relative_path"]
+            if (args.resource_approval is None
+                    or args.resource_approval.resolve() != expected_approval.resolve()):
+                raise PrelinkError("coordinator resource approval path differs from the plan")
+        approval = load_json(args.resource_approval) if args.resource_approval else None
+        approval_sha = sha256_file(args.resource_approval) if args.resource_approval else None
+        s15_release = load_json(args.s15_release) if args.s15_release else None
+        s15_release_sha = sha256_file(args.s15_release) if args.s15_release else None
+        result = create_resource_preflight_receipt(
+            plan, plan_sha256=plan_sha, workspace=workspace,
+            canonical_host=args.canonical_host, shadow_host=args.shadow_host,
+            overlay_paths=_overlay_args(args.overlay), output_root=output_root,
+            snapshot_path=snapshot_path, phase=args.phase,
+            receipt_path=workspace / receipt_rel,
+            estimate_path=args.estimate, approval=approval,
+            approval_sha256=approval_sha,
+            trusted_approval_sha256=args.trusted_resource_approval_sha256,
+            s15_release=s15_release, s15_release_sha256=s15_release_sha,
+            trusted_s15_release_sha256=args.trusted_s15_release_sha256,
+        )
+    except (PrelinkError, KeyError, TypeError, ValueError, OSError) as exc:
+        print(f"RESOURCE PREFLIGHT BLOCKED: {exc}", file=sys.stderr)
+        return 2
+    print(json.dumps(result, indent=2))
+    return 0
+
+
 def main() -> int:
+    if len(sys.argv) > 1 and sys.argv[1] == "resource-preflight":
+        return resource_preflight_main(sys.argv[2:])
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--plan", type=Path, required=True)
     parser.add_argument("--release", type=Path, required=True)
@@ -1329,13 +1842,16 @@ def main() -> int:
     parser.add_argument("--snapshot", type=Path, required=True)
     parser.add_argument("--trusted-release-sha256", required=True,
                         help="coordinator-supplied receipt hash, kept outside the plan to avoid circular hashing")
+    parser.add_argument("--trusted-resource-approval-sha256", required=True,
+                        help="coordinator resource-approval hash supplied outside the plan")
     parser.add_argument("--receipt", type=Path, required=True)
     args = parser.parse_args()
     try:
         result = make_prelink_receipt(
             args.plan, args.release, args.execution, args.canonical_host,
             args.shadow_host, args.workspace, _overlay_args(args.overlay),
-            args.snapshot, args.trusted_release_sha256, args.receipt,
+            args.snapshot, args.trusted_release_sha256,
+            args.trusted_resource_approval_sha256, args.receipt,
         )
     except (PrelinkError, KeyError, TypeError, ValueError) as exc:
         print(f"PRELINK BLOCKED: {exc}", file=sys.stderr)
