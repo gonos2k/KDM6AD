@@ -26,7 +26,11 @@ GUARD_SITES = (
         "consumer_id": 1418,
         "rate": "pgmlt(i,k)",
         "anchor": "              brs(i,k) = brs(i,k) + (pgmlt(i,k)/rhox(i,k))\n",
-        "zero_statement": "",
+        # Keep the source store in the exact-zero arm. The stage-1 producer
+        # guard makes this arm unreachable (qg starts positive and pgmlt=0
+        # cannot reduce it to zero), but retaining the store avoids changing
+        # control flow semantics if that producer contract ever changes.
+        "zero_statement": "              brs(i,k) = brs(i,k) + (0.)\n",
     },
     {
         "label": "rhox_pgdep",
@@ -346,7 +350,7 @@ def add_zero_qg_guard(text: str) -> tuple[str, dict[str, Any]]:
         "guard_predicate": "qrs(i,k,3)==0 AND same process rate==0, in binary32",
         "guard_action_zero": "set only the zero quotient to 0; keep other volume additions",
         "guard_action_one": "execute the exact original inline process_rate/rhox statement, including nonzero rate at qg==0",
-        "diagnostic_quotient": "capture-only S10 value; never feeds the physical action-1 state update",
+        "diagnostic_quotient": "capture-only S10 value; never feeds the physical state update",
         "altered_physical_terms": ["exact-zero qg / exact-zero numerator density quotients only"],
         "captured_ledgers": ["S10ZG", "S10MASS", "S10VOLUME", "S10HEAT"],
         "not_approved": True,

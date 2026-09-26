@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 import math
+import hashlib
+import re
+import struct
 from collections import Counter
 from typing import Any, Iterable
 
@@ -65,13 +68,30 @@ def _unique(rows: list[dict[str, Any]], key_width: int, tag: str) -> dict[tuple[
     return result
 
 
+def _word32(value: float) -> bytes:
+    return struct.pack(">f", f32(value))
+
+
 def _eq32(actual: float, expected: float, where: str) -> None:
-    if f32(actual) != f32(expected):
+    if _word32(actual) != _word32(expected):
         raise ValueError(f"{where}: source-order f32 mismatch: actual={actual!r} expected={expected!r}")
 
 
+def event_log_sha256(lines: Iterable[str]) -> str:
+    """Hash the complete normalized event stream for receipt-bound replay."""
+    payload = "".join(line.rstrip("\r\n") + "\n" for line in lines).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
 def _replay_event_rows(lines: list[str], *,
+                      expected_log_sha256: str,
+                      expected_stage1_keys: set[tuple[int, ...]],
                       expected_gate_keys: set[tuple[int, ...]] | None = None) -> dict[str, Any]:
+    if not re.fullmatch(r"[0-9a-fA-F]{64}", expected_log_sha256):
+        raise ValueError("expected trusted event-log SHA-256 must be 64 hexadecimal characters")
+    actual_log_sha256 = event_log_sha256(lines)
+    if actual_log_sha256.lower() != expected_log_sha256.lower():
+        raise ValueError("C-arm event stream differs from trusted event-log SHA-256")
     parsed = {tag: _parse(lines, tag, *widths) for tag, widths in EVENT_WIDTHS.items()}
     if any(not parsed[tag] for tag in EVENT_WIDTHS):
         raise ValueError("C-arm event stream is missing one of S10ZG/MASS/VOLUME/HEAT")
@@ -103,6 +123,8 @@ def _replay_event_rows(lines: list[str], *,
             stage2_expected.add((*key, 2))
         else:
             stage3_expected.add((*key, 3))
+    if stage1_expected != expected_stage1_keys:
+        raise ValueError("stage-1 source gate keys differ from separately pinned discovery census")
     zgs = parsed["S10ZG"]
     mass_rows = _unique(parsed["S10MASS"], 8, "S10MASS")
     volume_rows = _unique(parsed["S10VOLUME"], 8, "S10VOLUME")
@@ -152,10 +174,14 @@ def _replay_event_rows(lines: list[str], *,
             if set(guards) != {1418} or len(m) != 5 or len(v) != 6 or len(h) != 7:
                 raise ValueError(f"stage-1 event schema/census error at {key}")
             qg_before, pgmlt, qg_after, qr_before, qr_after = m
+            melt_qg_before = melt_gates[key[:7]]["reals"][0]
+            _eq32(qg_before, melt_qg_before, f"stage-1 melt gate qg before at {key}")
             _eq32(qg_after, qg_mass_stage1(qg_before, pgmlt), f"stage-1 qg at {key}")
             _eq32(qr_after, f32(qr_before - pgmlt), f"stage-1 qr at {key}")
             z = guards[1418]["reals"]
             qg_use, rate, rho = z
+            if guards[1418]["ints"][8] == 0:
+                raise ValueError(f"stage-1 zero guard is unreachable under positive-qg producer gate at {key}")
             _eq32(qg_use, qg_after, f"stage-1 guarded qg at {key}")
             _eq32(rate, pgmlt, f"stage-1 guarded rate at {key}")
             guard_event = next(row for row in zgs if row["ints"][:7] == key[:7]
@@ -263,10 +289,11 @@ def _replay_event_rows(lines: list[str], *,
                   f"stage-3 heat store at {key}")
 
     return {
-        "schema": "s10-czeroqg-ledger-replay-v1",
+        "schema": "s10-czeroqg-ledger-replay-v2",
         "policy_approved": False,
         "guard_action_counts": dict(action_counts),
         "guard_rows": len(zgs),
+        "trusted_event_log_sha256": actual_log_sha256,
         "mass_volume_heat_call_stages": len(mass_rows),
         "source_ordered_f32_budgets_passed": True,
         "nonzero_rate_suppressed": False,
@@ -275,6 +302,8 @@ def _replay_event_rows(lines: list[str], *,
     }
 
 
-def replay_events(lines: list[str]) -> dict[str, Any]:
-    """Production default uses the fixed S10 call context×column×level universe."""
-    return _replay_event_rows(lines)
+def replay_events(lines: list[str], *, expected_log_sha256: str,
+                  expected_stage1_keys: set[tuple[int, ...]]) -> dict[str, Any]:
+    """Replay against predeclared stage-1 keys and the capture-run receipt digest."""
+    return _replay_event_rows(lines, expected_log_sha256=expected_log_sha256,
+                              expected_stage1_keys=expected_stage1_keys)

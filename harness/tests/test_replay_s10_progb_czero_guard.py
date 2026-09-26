@@ -6,7 +6,11 @@ import sys
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from replay_s10_progb_czero_guard import _replay_event_rows  # noqa: E402
+from replay_s10_progb_czero_guard import (  # noqa: E402
+    _eq32,
+    _replay_event_rows,
+    event_log_sha256,
+)
 from s10_progb_zero_qg_guard import (  # noqa: E402
     brs_volume_stage1,
     brs_volume_stage2,
@@ -24,6 +28,7 @@ from s10_progb_zero_qg_guard import (  # noqa: E402
 
 CALL = (1, 73, 3, 1, 0, 113, 1)
 CALL3 = (1, 73, 4, 1, 0, 113, 2)
+EXPECTED_STAGE1_KEYS = {(*CALL, 1)}
 
 def _record(tag, ints, reals):
     return " ".join([tag, *(str(x) for x in ints), *(format(f32(x), ".17e") for x in reals)])
@@ -133,8 +138,17 @@ def _valid_event_rows():
     return events
 
 
+def _replay(rows, *, expected_gate_keys=None, expected_log_sha256=None):
+    return _replay_event_rows(
+        rows,
+        expected_log_sha256=expected_log_sha256 or event_log_sha256(rows),
+        expected_stage1_keys=EXPECTED_STAGE1_KEYS,
+        expected_gate_keys=expected_gate_keys,
+    )
+
+
 def test_replay_keeps_non_density_volume_and_heat_when_zero_division_is_skipped():
-    result = _replay_event_rows(_valid_event_rows(),
+    result = _replay(_valid_event_rows(),
         expected_gate_keys={CALL, CALL3})
     assert result["nonzero_rate_suppressed"] is False
     assert result["guard_action_counts"] == {"0": 1, "1": 3}
@@ -150,14 +164,14 @@ def test_replay_rejects_zero_guard_action_on_a_nonzero_rate():
             rows[index] = " ".join(fields)
             break
     with pytest.raises(ValueError, match="guard action mismatch"):
-        _replay_event_rows(rows, expected_gate_keys={CALL, CALL3})
+        _replay(rows, expected_gate_keys={CALL, CALL3})
 
 
 def test_replay_rejects_incomplete_or_nonfinite_guard_events():
     rows = _valid_event_rows()
     rows = [line for line in rows if not (line.startswith("S10ZG ") and " 2824 " in line)]
     with pytest.raises(ValueError, match="missing one|guard and budget"):
-        _replay_event_rows(rows, expected_gate_keys={CALL, CALL3})
+        _replay(rows, expected_gate_keys={CALL, CALL3})
 
     rows = _valid_event_rows()
     for index, line in enumerate(rows):
@@ -167,7 +181,7 @@ def test_replay_rejects_incomplete_or_nonfinite_guard_events():
             rows[index] = " ".join(fields)
             break
     with pytest.raises(ValueError, match="non-finite"):
-        _replay_event_rows(rows, expected_gate_keys={CALL, CALL3})
+        _replay(rows, expected_gate_keys={CALL, CALL3})
 
 
 def test_stage2_zg_operands_must_match_mass_and_volume_ledger():
@@ -181,7 +195,7 @@ def test_stage2_zg_operands_must_match_mass_and_volume_ledger():
             rows[index] = " ".join(fields)
             break
     with pytest.raises(ValueError, match="stage-2 ZG qg operand"):
-        _replay_event_rows(rows, expected_gate_keys={CALL, CALL3})
+        _replay(rows, expected_gate_keys={CALL, CALL3})
 
 
 def test_stage3_zg_operands_must_match_mass_ledger():
@@ -193,7 +207,7 @@ def test_stage3_zg_operands_must_match_mass_ledger():
             rows[index] = " ".join(fields)
             break
     with pytest.raises(ValueError, match="stage-3 ZG 2915 (qg|rate)"):
-        _replay_event_rows(rows, expected_gate_keys={CALL, CALL3})
+        _replay(rows, expected_gate_keys={CALL, CALL3})
 
 
 def test_stage3_zg_uses_preupdate_qg_not_postmass_qg():
@@ -205,10 +219,44 @@ def test_stage3_zg_uses_preupdate_qg_not_postmass_qg():
             rows[index] = " ".join(fields)
             break
     with pytest.raises(ValueError, match="stage-3 ZG 2915 qg"):
-        _replay_event_rows(rows, expected_gate_keys={CALL, CALL3})
+        _replay(rows, expected_gate_keys={CALL, CALL3})
 
 
 def test_default_replay_uses_code_fixed_gate_schedule_not_received_rows():
     # The two-row synthetic census cannot define its own expected universe.
     with pytest.raises(ValueError, match="independent melt/phase gate census"):
-        _replay_event_rows(_valid_event_rows())
+        _replay(_valid_event_rows())
+
+
+def test_replay_rejects_gate_and_ledger_shrink_against_trusted_run_digest():
+    rows = _valid_event_rows()
+    trusted_digest = event_log_sha256(rows)
+    mutated = []
+    for line in rows:
+        fields = line.split()
+        if fields[0] == "S10MELTGATE" and fields[1:8] == [str(x) for x in CALL]:
+            fields[9] = "0.0"  # qg gate no longer expects stage 1
+            line = " ".join(fields)
+        if fields[0] in {"S10ZG", "S10MASS", "S10VOLUME", "S10HEAT"} and (
+            fields[1:8] == [str(x) for x in CALL]
+            and (fields[0] != "S10ZG" or fields[8] == "1418")
+            and (fields[0] == "S10ZG" or fields[8] == "1")
+        ):
+            continue
+        mutated.append(line)
+    with pytest.raises(ValueError, match="trusted event-log SHA-256"):
+        _replay(mutated, expected_gate_keys={CALL, CALL3},
+                expected_log_sha256=trusted_digest)
+    with pytest.raises(ValueError, match="stage-1 source gate keys"):
+        _replay(mutated, expected_gate_keys={CALL, CALL3})
+
+
+def test_production_replay_requires_predeclared_stage1_census():
+    rows = _valid_event_rows()
+    with pytest.raises(TypeError, match="expected_stage1_keys"):
+        _replay_event_rows(rows, expected_log_sha256=event_log_sha256(rows))
+
+
+def test_f32_comparison_distinguishes_signed_zero_words():
+    with pytest.raises(ValueError, match="source-order f32 mismatch"):
+        _eq32(0.0, -0.0, "signed zero")
