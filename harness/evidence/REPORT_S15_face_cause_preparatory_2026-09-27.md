@@ -10,7 +10,17 @@ digests separately from its six-row schedule. It requires one producer and one
 RK-consumer record for every complete stage/tile/cell key. Synthetic replay
 checks oriented face differences, ordinary Y/X/Z and RK3 POSITIVEDEF Z/X/Y
 prefix order, conditional PD limiter operands, the separate
-`advect_tend * msfty` then `sc_tend` tendency, and the RK store. These tests
+`advect_tend * msfty` then `sc_tend` tendency, and the RK store. The PD face
+replay preserves the left-associated binary32 sequence for each high/low face
+expression; a signed-word regression distinguishes it from grouped face
+differences. The active limiter contract checks its captured outflow/available
+state predicate, scale from available state divided by outflow plus epsilon,
+and the sign-selected high-order face scaling, including the reversed Z signs.
+The source-pinned `module_advect_em.F` basis is SHA-256
+`58253bdbeb188dd47ed0579fcd2891086be1889b75c0c7d3696c9ad1d213559d` at the
+limiter (lines 7764–7775) and PD divergence expressions (7795–7829, 7863–7865).
+`flux_out` itself remains a captured operand; this candidate does not rebuild
+it from all surrounding velocity, metric, and donor-state inputs. These tests
 validate the declared record and arithmetic contract; they do not show that a
 native executable emitted those operands.
 

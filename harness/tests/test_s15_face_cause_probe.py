@@ -30,15 +30,22 @@ def _synthetic() -> tuple[list[dict], list[dict]]:
         acc = "00000000"
         prefixes = []
         for axis in order:
+            faces = (
+                {"minus": "00000000", "plus": "00000000"}
+                if pd
+                else {"minus": "BF800000", "plus": "3F800000"}
+            )
+            contribution = "00000000" if pd else "C0000000"
             axes[axis] = {
-                "face_fluxes": {"minus": "BF800000", "plus": "3F800000"},
+                "face_fluxes": faces,
                 "metric_factor": "3F800000",
                 "inverse_spacing": "3F800000",
-                "flux_difference": "40000000",
-                "directional_contribution": "C0000000",
-                "tendency_prefix": probe._sub(acc, "40000000"),
+                "flux_difference": "40000000" if not pd else "00000000",
+                "directional_contribution": contribution,
+                "tendency_prefix": (acc if pd else probe._sub(acc, "40000000")),
             }
-            acc = probe._sub(acc, "40000000")
+            if not pd:
+                acc = probe._sub(acc, "40000000")
             prefixes.append(acc)
         producer = {
             **identity,
@@ -57,12 +64,14 @@ def _synthetic() -> tuple[list[dict], list[dict]]:
         if pd:
             producer.update(
                 {
-                    "pd_limiter_active": True,
-                    "pd_flux_out": "40000000",
+                    "pd_limiter_active": False,
+                    "pd_flux_out": "00000000",
                     "pd_available_state": "3F800000",
-                    "pd_scale": "3F000000",
                     "pd_low_order_fluxes": {
                         a: {"minus": "00000000", "plus": "00000000"} for a in probe.AXES
+                    },
+                    "pd_unlimited_high_order_fluxes": {
+                        a: dict(axes[a]["face_fluxes"]) for a in probe.AXES
                     },
                     "pd_high_order_fluxes": {
                         a: dict(axes[a]["face_fluxes"]) for a in probe.AXES
@@ -77,7 +86,7 @@ def _synthetic() -> tuple[list[dict], list[dict]]:
                 **identity,
                 "advect_tend": acc,
                 "msfty": "3F800000",
-                "sc_tend": "40C00000",
+                "sc_tend": "00000000" if schedule[1] == 3 else "40C00000",
                 "tendency": "00000000",
                 "before": "3F800000",
                 "after": "3F800000",
@@ -97,6 +106,83 @@ def test_exact_six_face_and_rk_rows_replay_from_raw_f32_words() -> None:
     assert len(pairs) == 6
     assert pairs[0][0]["axes"]["y"]["face_fluxes"]["minus"] == "BF800000"
     assert pairs[4][0]["branch"] == "positive_definite"
+
+    # Discriminate the Fortran source's left-associated
+    # high_plus-high_minus+low_plus-low_minus expression from grouped
+    # (high_plus-high_minus)+(low_plus-low_minus) arithmetic.
+    pd = producers[4]
+    for axis in ("z", "y"):
+        zero_faces = {"minus": "00000000", "plus": "00000000"}
+        pd["pd_high_order_fluxes"][axis] = dict(zero_faces)
+        pd["pd_low_order_fluxes"][axis] = dict(zero_faces)
+        pd["axes"][axis].update(
+            face_fluxes=dict(zero_faces),
+            flux_difference="00000000",
+            directional_contribution="00000000",
+            tendency_prefix="00000000",
+        )
+    high_x = {"minus": "3F3FD48F", "plus": "3FF41F55"}
+    low_x = {"minus": "3FA01BB4", "plus": "3F842B77"}
+    grouped = probe._add(
+        probe._sub(high_x["plus"], high_x["minus"]),
+        probe._sub(low_x["plus"], low_x["minus"]),
+    )
+    assert grouped == "3F7089A2"
+    assert (
+        probe._sub(
+            probe._add(
+                probe._sub(high_x["plus"], high_x["minus"]),
+                low_x["plus"],
+            ),
+            low_x["minus"],
+        )
+        == "3F7089A0"
+    )
+    pd["pd_high_order_fluxes"]["x"] = high_x
+    pd["pd_unlimited_high_order_fluxes"]["x"] = high_x
+    pd["pd_low_order_fluxes"]["x"] = low_x
+    pd["axes"]["x"].update(
+        face_fluxes=dict(high_x),
+        flux_difference="3F7089A0",
+        directional_contribution="BF7089A0",
+        tendency_prefix="BF7089A0",
+    )
+    pd["axes"]["y"]["tendency_prefix"] = "BF7089A0"
+    pd["prefixes"] = ["00000000", "BF7089A0", "BF7089A0"]
+    pd["advect_tend"] = "BF7089A0"
+    assert probe.replay_producer(pd, CONFIG)["advect_tend"] == "BF7089A0"
+
+    active = _synthetic()[0][4]
+    active.update(
+        pd_limiter_active=True,
+        pd_flux_out="40000000",
+        pd_available_state="3F800000",
+        pd_scale="3F000000",
+        pd_eps="00000000",
+    )
+    raw = {
+        "x": {"minus": "C0000000", "plus": "40800000"},
+        "y": {"minus": "C0800000", "plus": "40C00000"},
+        "z": {"minus": "40800000", "plus": "C0C00000"},
+    }
+    final = {
+        "x": {"minus": "BF800000", "plus": "40000000"},
+        "y": {"minus": "C0000000", "plus": "40400000"},
+        "z": {"minus": "40000000", "plus": "C0400000"},
+    }
+    active["pd_unlimited_high_order_fluxes"] = raw
+    active["pd_high_order_fluxes"] = final
+    active["pd_low_order_fluxes"] = {
+        "x": {"minus": "3F000000", "plus": "3F800000"},
+        "y": {"minus": "3F800000", "plus": "3F000000"},
+        "z": {"minus": "3F000000", "plus": "3F800000"},
+    }
+    for axis in probe.AXES:
+        active["axes"][axis]["face_fluxes"] = dict(final[axis])
+    probe._validate_pd(active)
+    active["pd_scale"] = "00000000"
+    with pytest.raises(probe.ProbeError, match="scale"):
+        probe._validate_pd(active)
 
 
 @pytest.mark.parametrize(
@@ -140,7 +226,7 @@ def test_fail_closed_replay_rejects_identity_face_stage_and_rk_mutations(
     elif mutation == "missing_pd":
         producers[4].pop("pd_low_order_fluxes")
     elif mutation == "pd_flag":
-        producers[4]["pd_limiter_active"] = False
+        producers[4]["pd_limiter_active"] = True
     with pytest.raises(probe.ProbeError):
         probe.validate_capture(producers, consumers, ROOT, CONFIG)
 
@@ -165,6 +251,15 @@ def test_jsonl_parser_rejects_unknown_tags_and_wrong_cardinality(
     path = tmp_path / "events.jsonl"
     path.write_text(json.dumps({"tag": "S15UNKNOWN"}) + "\n", encoding="utf-8")
     with pytest.raises(probe.ProbeError, match="unknown"):
+        probe.read_jsonl(path)
+    path.write_text('{"tag":"S15FACE","tag":"S15RK"}\n', encoding="utf-8")
+    with pytest.raises(probe.ProbeError, match="duplicate JSON object key"):
+        probe.read_jsonl(path)
+    path.write_text(
+        '{"tag":"S15FACE","outer":{"field":1,"field":2}}\n',
+        encoding="utf-8",
+    )
+    with pytest.raises(probe.ProbeError, match="duplicate JSON object key"):
         probe.read_jsonl(path)
 
 

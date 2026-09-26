@@ -96,6 +96,13 @@ def _mul(a: str, b: str) -> str:
     return value_word(word_value(a) * word_value(b))
 
 
+def _div(a: str, b: str) -> str:
+    denominator = word_value(b)
+    if denominator == 0.0:
+        raise ProbeError("binary32 replay division by zero")
+    return value_word(word_value(a) / denominator)
+
+
 def _identity(row: dict[str, Any]) -> tuple[int, ...]:
     key = []
     for name in KEY_FIELDS:
@@ -240,17 +247,21 @@ def _validate_pd(row: dict[str, Any]) -> None:
         "pd_limiter_active",
         "pd_flux_out",
         "pd_available_state",
-        "pd_scale",
         "pd_low_order_fluxes",
+        "pd_unlimited_high_order_fluxes",
         "pd_high_order_fluxes",
     )
     if any(name not in row for name in required):
         raise ProbeError("RK3 POSITIVEDEF producer lacks captured limiter operands")
     if type(row["pd_limiter_active"]) is not bool:
         raise ProbeError("pd_limiter_active must be boolean")
-    for name in ("pd_flux_out", "pd_available_state", "pd_scale"):
+    for name in ("pd_flux_out", "pd_available_state"):
         _word(row[name], name)
-    for name in ("pd_low_order_fluxes", "pd_high_order_fluxes"):
+    for name in (
+        "pd_low_order_fluxes",
+        "pd_unlimited_high_order_fluxes",
+        "pd_high_order_fluxes",
+    ):
         group = row[name]
         if not isinstance(group, dict) or set(group) != set(AXES):
             raise ProbeError(f"{name} must retain Y/X/Z flux groups")
@@ -263,6 +274,73 @@ def _validate_pd(row: dict[str, Any]) -> None:
     )
     if row["pd_limiter_active"] != expected_active:
         raise ProbeError("PD limiter branch flag disagrees with its captured operands")
+    if expected_active:
+        if "pd_scale" not in row or "pd_eps" not in row:
+            raise ProbeError("active PD limiter lacks scale or epsilon operands")
+        scale = _word(row["pd_scale"], "pd_scale")
+        epsilon = _word(row["pd_eps"], "pd_eps")
+        denominator = _add(row["pd_flux_out"], epsilon)
+        ratio = _div(row["pd_available_state"], denominator)
+        expected_scale = ratio if word_value(ratio) > 0.0 else "00000000"
+        if scale != expected_scale:
+            raise ProbeError(
+                "PD scale does not replay from available state, outflow, and epsilon"
+            )
+    elif "pd_scale" in row or "pd_eps" in row:
+        raise ProbeError("inactive PD limiter must omit unexecuted scale operands")
+
+    axes = row.get("axes")
+    if not isinstance(axes, dict) or set(axes) != set(AXES):
+        raise ProbeError("PD producer must include all final directional face pairs")
+    # Source-pinned module_advect_em.F applies scale only to faces selected by
+    # the outflow signs (lines 7764-7775); vertical mass-coordinate signs are
+    # reversed. `pd_high_order_fluxes` is post-limit and must be the same pair
+    # consumed by directional divergence; `pd_unlimited...` is pre-limit.
+    for axis in AXES:
+        original = row["pd_unlimited_high_order_fluxes"][axis]
+        limited = row["pd_high_order_fluxes"][axis]
+        final_axis_faces = _face_group(
+            axes[axis].get("face_fluxes"), f"axes.{axis}.face_fluxes"
+        )
+        for side in ("minus", "plus"):
+            before = _word(
+                original[side], f"pd_unlimited_high_order_fluxes.{axis}.{side}"
+            )
+            after = _word(limited[side], f"pd_high_order_fluxes.{axis}.{side}")
+            if axis == "z":
+                selected = (
+                    word_value(before) > 0.0
+                    if side == "minus"
+                    else word_value(before) < 0.0
+                )
+            else:
+                selected = (
+                    word_value(before) < 0.0
+                    if side == "minus"
+                    else word_value(before) > 0.0
+                )
+            expected_face = (
+                _mul(row["pd_scale"], before)
+                if expected_active and selected
+                else before
+            )
+            if after != expected_face:
+                raise ProbeError(
+                    f"PD {axis}.{side} final high-order face disagrees with limiter sign branch"
+                )
+            if final_axis_faces[side] != after:
+                raise ProbeError(
+                    f"PD {axis}.{side} divergence face differs from its post-limit value"
+                )
+
+
+def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ProbeError(f"duplicate JSON object key: {key}")
+        result[key] = value
+    return result
 
 
 def replay_producer(row: dict[str, Any], config: dict[str, Any]) -> dict[str, str]:
@@ -304,24 +382,32 @@ def replay_producer(row: dict[str, Any], config: dict[str, Any]) -> dict[str, st
         metric = _word(part.get("metric_factor"), f"axes.{axis}.metric_factor")
         spacing = _word(part.get("inverse_spacing"), f"axes.{axis}.inverse_spacing")
         if should_pd:
-            high = row["pd_high_order_fluxes"][axis]
-            low = row["pd_low_order_fluxes"][axis]
+            high = _face_group(
+                row["pd_high_order_fluxes"][axis], f"pd_high_order_fluxes.{axis}"
+            )
+            low = _face_group(
+                row["pd_low_order_fluxes"][axis], f"pd_low_order_fluxes.{axis}"
+            )
             if faces != high:
                 raise ProbeError(
                     f"{axis} final high-order face operands differ from PD face record"
                 )
-            high_diff = _sub(high["plus"], high["minus"])
-            low_diff = _sub(low["plus"], low["minus"])
-            dflux = _add(high_diff, low_diff)
+            # Fortran evaluates `high_plus - high_minus + low_plus - low_minus`
+            # left-to-right in the source expression. Preserve each f32
+            # rounding point; grouping the two differences changes bit patterns.
+            dflux = _sub(
+                _add(_sub(high["plus"], high["minus"]), low["plus"]),
+                low["minus"],
+            )
             scaled = _mul(spacing, dflux)
             delta = _mul(metric, scaled)
         else:
             dflux = _sub(faces["plus"], faces["minus"])
             coefficient = _mul(metric, spacing)
             delta = _mul(coefficient, dflux)
-        # The PD source accumulates high-order and low-order face differences
-        # before spacing and map factors.  Ordinary advection has one flux
-        # difference and precomputes its directional coefficient.
+        # PD retains the source's left-associated high/low face expression;
+        # ordinary advection has one flux difference and a precomputed
+        # directional coefficient.
         contribution = _sub("00000000", delta)
         if part.get("flux_difference") != dflux:
             raise ProbeError(f"{axis} face difference does not replay in binary32")
@@ -449,7 +535,7 @@ def read_jsonl(path: Path) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         if not line:
             raise ProbeError(f"blank event line {line_no}")
         try:
-            row = json.loads(line)
+            row = json.loads(line, object_pairs_hook=_unique_object)
         except json.JSONDecodeError as exc:
             raise ProbeError(f"malformed JSON event at line {line_no}") from exc
         if not isinstance(row, dict) or row.get("tag") not in {"S15FACE", "S15RK"}:
