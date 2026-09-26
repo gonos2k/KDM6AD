@@ -1,0 +1,61 @@
+{
+  "schema": "s10-configure-attempt-failure-report-v1",
+  "scope": "path-redacted summary of the bounded configure-only attempt; source, raw logs, and private receipts are not included",
+  "attempt": {
+    "plan_sha256": "bab73ce292d05f1ea3924f7f9d15f590709dbe5923a2045c7991feca721d3ecf",
+    "snapshot_sha256": "396361f796e2ef4edd85461b073b607686269fa74d1ceed5a69d99a43ebca602",
+    "status": "CONFIGURE_PIPELINE_FAILED_BEFORE_APPLY",
+    "s10_status": "OPEN"
+  },
+  "preflight": {
+    "exit_code": 0,
+    "status": "ALLOW_CONFIGURE_ONLY",
+    "receipt_sha256": "a3e30a264222fcabe50bfc9e4b9151657ddb9b1bd51be8576f406abb7e6d4911",
+    "observed_free_bytes": 12487827456,
+    "required_free_bytes": 2684354560,
+    "snapshot_sha256": "396361f796e2ef4edd85461b073b607686269fa74d1ceed5a69d99a43ebca602"
+  },
+  "wrf_configure": {
+    "subprocess_exit_code": 0,
+    "stdout_marker": "One of compilers testing failed!",
+    "pipeline_exit_code": 2,
+    "pipeline_error": "configure output omitted the pinned NetCDF report because configure stopped at its internal compiler test",
+    "apply_invoked": false,
+    "generated_configure_wrf_sha256": "2544f1e7169068cf90bc331783bccf650acffd5fc01debe1f92f0a22f4cd4463",
+    "consumed_marker": true
+  },
+  "native_stages": {
+    "preprocess_invoked": false,
+    "object_compile_invoked": false,
+    "link_invoked": false,
+    "model_run_invoked": false,
+    "build_output_root_absent_after_attempt": true
+  },
+  "private_artifact_hashes": {
+    "preflight_receipt_sha256": "a3e30a264222fcabe50bfc9e4b9151657ddb9b1bd51be8576f406abb7e6d4911",
+    "configuration_ledger_sha256": "4a4e080e619f53eafdcb98305493d3befa5487b82061cbb28f424b002742f11c",
+    "consumed_marker_sha256": "848b28fb54980d9b8cf093f5d65f0c5bad4cc8149661514ee5f43e4afcdd5ced",
+    "configure_stdout_sha256": "f10dd80ed56197c74a55c10328bbfdf4f00256978230dcc099df9dbf95af9b95",
+    "configure_stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configure_stdin_sha256": "5cc0efdbfc6bf3e9208a52ed10e3cb5edac3bb961635ac89b2af48d3463d3639",
+    "apply_stdin_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configure_wrf_sha256": "2544f1e7169068cf90bc331783bccf650acffd5fc01debe1f92f0a22f4cd4463"
+  },
+  "separate_standalone_compiler_diagnostic": {
+    "performed_outside_wrf_configure": true,
+    "with_sdkroot_unset": {
+      "fortran_link_exit_code": 1,
+      "linker_error": "ld: library 'System' not found",
+      "c_link_exit_code": 0,
+      "c_file_description": "Mach-O 64-bit arm64"
+    },
+    "with_pinned_sdkroot": {
+      "sdk_version": "27.0",
+      "sdk_settings_sha256": "7b93ad7e534cc4b31c6a4e39d19b5e0288acf2168c2649479a796d1cb51939fb",
+      "fortran_link_exit_code": 0,
+      "fortran_file_description": "Mach-O 64-bit arm64"
+    },
+    "interpretation": "separate compiler smoke implicates an unset SDKROOT; it is not WRF configure, a WRF build, or native acceptance"
+  },
+  "evidence_boundary": "Attempt-one private captures and partial configuration remain preserved. This report does not claim configure completion, native compilation, linking, execution, or acceptance."
+}

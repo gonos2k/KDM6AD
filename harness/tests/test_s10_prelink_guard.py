@@ -36,6 +36,8 @@ from s10_prelink_guard import (  # noqa: E402
     validate_build_output_estimate,
     validate_build_resource_preflight,
     validate_configure_menu_pin,
+    validate_configure_failure_markers,
+    validate_sdkroot_resolution,
     validate_toolchain,
 )
 
@@ -112,6 +114,17 @@ def test_configure_menu_pin_rejects_either_hash_drift():
     plan["prelink_requirements"]["configure_menu_selection"]["stdin_sha256"] = "0" * 64
     with pytest.raises(PrelinkError, match="both plan-pinned"):
         validate_configure_menu_pin(plan)
+
+
+def test_configure_failure_marker_policy_is_code_fixed():
+    plan = {"prelink_requirements": {
+        "configure_failure_log_markers": ["One of compilers testing failed!"]}}
+    assert validate_configure_failure_markers(plan) == [
+        "One of compilers testing failed!"
+    ]
+    plan["prelink_requirements"]["configure_failure_log_markers"] = []
+    with pytest.raises(PrelinkError, match="differ from the code-fixed"):
+        validate_configure_failure_markers(plan)
     plan = _configure_menu_plan()
     plan["prelink_requirements"]["configure_selection_stdin_sha256"] = "0" * 64
     with pytest.raises(PrelinkError, match="both plan-pinned"):
@@ -606,6 +619,88 @@ def test_resource_preflight_requires_coordinator_release_and_approval(tmp_path: 
             trusted_s15_release_sha256=release_sha)
 
 
+def _sdkroot_test_plan(tmp_path: Path) -> tuple[dict, dict[str, str], Path]:
+    sdk = tmp_path / "MacOSX.sdk"
+    sdk.mkdir()
+    settings = sdk / "SDKSettings.json"
+    settings.write_text('{"Version":"27.0"}\n')
+    xcrun = tmp_path / "xcrun"
+    xcrun.write_text(f'''#!/bin/sh
+if [ "$1" = "--show-sdk-path" ]; then
+  printf '%s\\n' '{sdk}'
+elif [ "$1" = "--sdk" ] && [ "$2" = "macosx" ]; then
+  printf '27.0\\n'
+else
+  exit 9
+fi
+''')
+    xcrun.chmod(0o755)
+    tools = {"xcrun": {
+        "path": str(xcrun),
+        "sha256": hashlib.sha256(xcrun.read_bytes()).hexdigest(),
+    }}
+    pin = {
+        "xcrun_path": str(xcrun),
+        "path_argv": ["--show-sdk-path"],
+        "version_argv": ["--sdk", "macosx", "--show-sdk-version"],
+        "sdkroot": str(sdk),
+        "version": "27.0",
+        "settings_relative_path": "SDKSettings.json",
+        "settings_sha256": hashlib.sha256(settings.read_bytes()).hexdigest(),
+    }
+    environment = {"SDKROOT": str(sdk)}
+    env_sha = sha256_bytes(json.dumps(
+        tool_environment_snapshot(environment), sort_keys=True,
+        separators=(",", ":")).encode())
+    plan = {"toolchain": {
+        "tools": tools,
+        "configuration_environment": {"SDKROOT": str(sdk)},
+        "environment_sha256": env_sha,
+        "sdkroot_resolution": pin,
+    }}
+    plan["toolchain"]["toolchain_sha256"] = sha256_bytes(json.dumps(
+        {"tools": tools, "environment_sha256": env_sha,
+         "sdkroot_resolution": pin}, sort_keys=True,
+        separators=(",", ":")).encode())
+    return plan, environment, sdk
+
+
+def test_sdkroot_pin_checks_xcrun_path_version_and_settings_hash(tmp_path: Path):
+    plan, environment, sdk = _sdkroot_test_plan(tmp_path)
+    result = validate_sdkroot_resolution(plan, environment=environment)
+    assert result == {
+        "sdkroot": str(sdk),
+        "sdk_version": "27.0",
+        "sdk_settings_sha256": plan["toolchain"]["sdkroot_resolution"]["settings_sha256"],
+    }
+    resolved = validate_toolchain(plan, tmp_path, environment=environment)
+    assert resolved["sdkroot"]["sdkroot"] == str(sdk)
+
+
+@pytest.mark.parametrize("environment_kind", ["unset", "different"])
+def test_sdkroot_pin_rejects_unset_or_different_value_before_xcrun(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, environment_kind: str,
+):
+    plan, environment, _sdk = _sdkroot_test_plan(tmp_path)
+    monkeypatch.setattr(
+        "s10_prelink_guard.subprocess.run",
+        lambda *args, **kwargs: pytest.fail("xcrun must not run for an invalid SDKROOT"),
+    )
+    if environment_kind == "unset":
+        environment = {}
+    else:
+        environment = {"SDKROOT": str(tmp_path / "different.sdk")}
+    with pytest.raises(PrelinkError, match="SDKROOT is unset or differs"):
+        validate_sdkroot_resolution(plan, environment=environment)
+
+
+def test_toolchain_digest_binds_sdk_resolution_outputs(tmp_path: Path):
+    plan, environment, _sdk = _sdkroot_test_plan(tmp_path)
+    plan["toolchain"]["sdkroot_resolution"]["version"] = "26.0"
+    with pytest.raises(PrelinkError, match="toolchain manifest digest is inconsistent"):
+        validate_toolchain(plan, tmp_path, environment=environment)
+
+
 def test_netcdf_toolchain_roots_paths_hashes_and_versions_are_pinned(tmp_path: Path,
                                                                      monkeypatch):
     root = tmp_path / "homebrew-netcdf"
@@ -1090,6 +1185,7 @@ def test_configure_command_stdin_and_generated_config_are_plan_pinned(tmp_path: 
     plan = {
         "toolchain": {"tools": {"bash": {"path": str(bash), "sha256": bash_sha}}},
         "prelink_requirements": {
+            "configure_failure_log_markers": ["One of compilers testing failed!"],
             "configuration_inputs_sha256": {
                 "configure": configure_sha,
                 "apply_kdm6ad_config.sh": apply_sha,
@@ -1126,6 +1222,12 @@ def test_configure_command_stdin_and_generated_config_are_plan_pinned(tmp_path: 
     ]
     execution = {"configuration_commands": commands}
     _validate_configure_pipeline(execution, shadow, output, plan, generated_sha)
+    stdout.write_text("One of compilers testing failed!\n")
+    commands[0]["stdout_sha256"] = hashlib.sha256(stdout.read_bytes()).hexdigest()
+    with pytest.raises(PrelinkError, match="WRF configure reported compiler failure"):
+        _validate_configure_pipeline(execution, shadow, output, plan, generated_sha)
+    stdout.write_text("")
+    commands[0]["stdout_sha256"] = hashlib.sha256(stdout.read_bytes()).hexdigest()
     mutation = {**commands[0], "argv": [str(bash), "./configure", "--alternate-menu"]}
     mutation["flags"] = _argv_option_tokens(mutation["argv"])
     execution["configuration_commands"] = [mutation, commands[1]]
@@ -1247,8 +1349,9 @@ def test_configure_pipeline_requires_resolved_netcdf_tool_receipt(tmp_path: Path
     }
     plan = {
         "toolchain": {"tools": {"bash": {"path": str(bash), "sha256": bash_sha}}},
-        "prelink_requirements": {
-            "configuration_inputs_sha256": {
+            "prelink_requirements": {
+                "configure_failure_log_markers": ["One of compilers testing failed!"],
+                "configuration_inputs_sha256": {
                 "configure": configure_sha,
                 "apply_kdm6ad_config.sh": apply_sha,
             },

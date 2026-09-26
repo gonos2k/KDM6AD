@@ -2,7 +2,7 @@
   "schema": "s10-czeroqg-prelink-plan-v1",
   "status": "PRELINK_GUARD_FAILS_CLOSED_PENDING_CONFIG_PINS_REVIEWED_ARGV_AND_EXTERNAL_RELEASE_TRUST",
   "supersedes": "harness/evidence/s10_czeroqg_native_plan_2026-09-26.json",
-  "base_commit": "e2f6b5a16e1e30c1c9a01c24272179141d731f5b",
+  "base_commit": "55d7b05840ef9269fe4383e580399aeea5c5d6c2",
   "policy_approved": false,
   "s10_status": "OPEN",
   "gates": {
@@ -110,7 +110,7 @@
     ],
     "configure_selection_stdin_sha256": "5cc0efdbfc6bf3e9208a52ed10e3cb5edac3bb961635ac89b2af48d3463d3639",
     "configuration_apply_stdin_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "configuration_pin_status": "Configure argv, exact menu stdin, selected GNU/Open MPI dmpar option 35, basic nesting option 1, Homebrew NetCDF roots and config tools are pinned; generated configure.wrf SHA remains null until fresh configure/apply capture and review.",
+    "configuration_pin_status": "Configure argv, exact option 35/nesting 1 stdin bytes and both SHA fields, pinned SDKROOT/xcrun path and SDKSettings identity, and Homebrew NetCDF roots/tools are required; generated configure.wrf SHA remains null until a reviewed successful attempt.",
     "netcdf_config_invocation_policy": {
       "selection": "Homebrew NetCDF 4.9.3 and NetCDF-Fortran 4.6.2; explicit NETCDF and NETCDF_C roots bypass PATH selection",
       "environment": {
@@ -181,7 +181,10 @@
     "configure_preflight_receipt_max_age_seconds": 3600,
     "configuration_preflight_consumption_marker_relative_path": "S10/configuration_capture/configure_preflight_consumed.json",
     "configuration_preflight_one_shot_policy": "Guarded configure pipeline creates the marker exclusively before subprocess launch; a failed or completed attempt consumes that plan/preflight nonce and same-plan retries fail. Marker is local workflow state, not cryptographic proof against a privileged actor who can delete local files.",
-    "configuration_ledger_plan_sha256": null
+    "configuration_ledger_plan_sha256": null,
+    "configure_failure_log_markers": [
+      "One of compilers testing failed!"
+    ]
   },
   "build_matrix": {
     "schemes": [
@@ -490,8 +493,8 @@
       "MPICH",
       "OMPI_HOME"
     ],
-    "environment_sha256": "569c077d63d522255c99066bca14cb61d56278c254bc1b20d1bcbc58b396ff4d",
-    "toolchain_sha256": "1b2cb467c3d864dad6984aa739fc8e6fbc2b14fe9e211a30f0de16fa56614fc7",
+    "environment_sha256": "a38035e854093c7bda06b123fd09e1e5d6fe56277dd364a51a9bbc49508e4af3",
+    "toolchain_sha256": "29072b3fdf4952ca04b5ff934948dc8b974ef4160ad049e73115c1a5b6cd9b41",
     "mpif90_underlying_command": "gfortran",
     "gfortran_subcommands": [
       "f951",
@@ -501,7 +504,7 @@
     ],
     "linker_name_reported_by_gfortran": "ld",
     "linker_resolved_path": "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld",
-    "toolchain_scope": "Pinned direct compiler/configuration helpers, GCC/Xcode subordinate executables, Homebrew NetCDF config tools, and the sanitized child environment; not a hermetic build claim.",
+    "toolchain_scope": "Pinned direct compiler/configuration helpers, xcrun SDKROOT resolution and SDKSettings identity, GCC/Xcode subordinate executables, Homebrew NetCDF config tools, and the sanitized child environment; not a hermetic build claim.",
     "argv_policy": "absolute pinned executable path must be argv[0] for every command; hashes and subordinate resolution are rechecked at prelink",
     "configuration_environment": {
       "NETCDF": "/opt/homebrew",
@@ -569,16 +572,33 @@
       "WRF_CORE": null,
       "MPI_HOME": null,
       "MPICH": null,
-      "OMPI_HOME": null
+      "OMPI_HOME": null,
+      "SDKROOT": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk"
     },
-    "path_selection_policy": "The child environment is a sanitized allowlist equal to the hashed tool environment plus pinned configuration variables; unlisted ambient variables are not inherited. PATH is hash-pinned, and Perl, m4, Python, nc-config and nf-config binaries are individually pinned and resolved."
+    "path_selection_policy": "The child environment is a sanitized allowlist equal to the hashed tool environment plus pinned configuration variables; unlisted ambient variables are not inherited. PATH is hash-pinned, and Perl, m4, Python, nc-config and nf-config binaries are individually pinned and resolved.",
+    "sdkroot_resolution": {
+      "xcrun_path": "/usr/bin/xcrun",
+      "path_argv": [
+        "--show-sdk-path"
+      ],
+      "sdkroot": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk",
+      "version_argv": [
+        "--sdk",
+        "macosx",
+        "--show-sdk-version"
+      ],
+      "version": "27.0",
+      "settings_relative_path": "SDKSettings.json",
+      "settings_sha256": "7b93ad7e534cc4b31c6a4e39d19b5e0288acf2168c2649479a796d1cb51939fb",
+      "resolution_scope": "verify exact xcrun path and SDK version, then hash SDKSettings.json before configure"
+    }
   },
   "trusted_s15_release": {
     "s15_merge_commit": "27152cca910c21e268a34db620ba10e28f2683bf",
     "pr_number": 281,
     "evidence_manifest_path": "harness/evidence/s15_b20_public/s15_native_B_20S_public_manifest.json",
     "evidence_manifest_sha256": "02e7cfc7b0c0362f496eedad6705abeaa2b76c42808dd92092de5b0ac8580276",
-    "empty_output_root_snapshot_sha256": "396361f796e2ef4edd85461b073b607686269fa74d1ceed5a69d99a43ebca602",
+    "empty_output_root_snapshot_sha256": "8011edd2cff33aff9b6e4c35da7e3a0f8a197cb3722f7350ff28f704f6825484",
     "receipt_gate": "coordinator must sign a release record binding final plan SHA, both S15 merge/evidence pins, and reviewed empty-root snapshot SHA; coordinator release SHA remains external.",
     "manifest_and_merge_are_rehashed_from_worktree": true,
     "coordinator_release_receipt_present": false,

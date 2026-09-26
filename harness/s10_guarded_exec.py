@@ -37,6 +37,7 @@ def _read_json(path: Path) -> dict[str, Any]:
 
 
 def _planned_environment(plan: dict[str, Any]) -> dict[str, str]:
+    guard.validate_configure_failure_markers(plan)
     pinned_snapshot = guard.tool_environment_snapshot()
     environment = {name: value for name, value in pinned_snapshot.items()
                    if value is not None}
@@ -54,6 +55,8 @@ def _planned_environment(plan: dict[str, Any]) -> dict[str, str]:
     digest = _digest(json.dumps(snapshot, sort_keys=True, separators=(",", ":")).encode())
     if digest != plan.get("toolchain", {}).get("environment_sha256"):
         raise guard.PrelinkError("guarded command environment differs from the reviewed toolchain pin")
+    if "sdkroot_resolution" in plan.get("toolchain", {}):
+        guard.validate_sdkroot_resolution(plan, environment=environment)
     return environment
 
 
@@ -414,6 +417,8 @@ def _execute_config_command(*, stage: str, plan_path: Path,
     _write_ledger(ledger_path, ledger)
     try:
         if stage == "configure" and result.returncode == 0:
+            configure_stdout = result.stdout.decode(errors="replace")
+            guard.validate_configure_success_stdout(configure_stdout)
             row["netcdf_tool_probes"] = _netcdf_post_config_probes(plan)
             ledger["commands"][-1]["netcdf_tool_probes"] = row[
                 "netcdf_tool_probes"]

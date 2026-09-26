@@ -71,6 +71,7 @@ def guarded_case(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         },
         "prelink_requirements": {
             "configure_preflight_receipt_max_age_seconds": 3600,
+            "configure_failure_log_markers": list(guard.CONFIGURE_FAILURE_MARKERS),
             "configuration_execution_ledger_relative_path": (
                 "S10/configuration_capture/command_ledger.json"
             ),
@@ -222,6 +223,36 @@ def test_configure_pipeline_runs_exact_commands_and_persists_ledger(guarded_case
     assert ledger["configuration_preflight_consumption_nonce"] == result[
         "configuration_preflight_consumption_nonce"
     ]
+
+
+def test_configure_pipeline_rejects_internal_compiler_failure_marker_with_rc0(
+    guarded_case, monkeypatch: pytest.MonkeyPatch,
+):
+    case = guarded_case
+
+    def fake_configure_failure(argv, **kwargs):
+        case.calls.append({"argv": list(argv), "marker_exists_before": case.marker_path.exists(), **kwargs})
+        assert argv[-1] == "./configure"
+        (case.shadow / "configure.wrf").write_text("synthetic configuration\n")
+        return SimpleNamespace(
+            returncode=0,
+            stdout=b"One of compilers testing failed!\n",
+            stderr=b"",
+        )
+
+    monkeypatch.setattr(guarded.subprocess, "run", fake_configure_failure)
+    with pytest.raises(guard.PrelinkError, match="WRF configure reported compiler failure"):
+        _execute(case, "configure-pipeline")
+
+    assert len(case.calls) == 1
+    assert case.calls[0]["marker_exists_before"] is True
+    assert case.calls[0]["shell"] is False
+    ledger = json.loads((case.capture / "command_ledger.json").read_text())
+    assert ledger["status"] == "FAILED"
+    assert ledger["commands"][0]["returncode"] == 0
+    assert (case.capture / "configure_preflight_consumed.json").is_file()
+    assert not (case.capture / "apply.stdout").exists()
+    assert not (case.capture / "apply.stderr").exists()
 
 
 def test_standalone_apply_is_rejected_before_subprocess(guarded_case):

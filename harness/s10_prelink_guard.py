@@ -37,6 +37,9 @@ class PrelinkError(ValueError):
     """A prelink requirement failed; linking must not proceed."""
 
 
+CONFIGURE_FAILURE_MARKERS = ("One of compilers testing failed!",)
+
+
 _TOOLCHAIN_ENV_KEYS = (
     "PATH", "OMPI_FC", "OMPI_FCFLAGS", "OMPI_F90", "OMPI_F90FLAGS",
     "GCC_EXEC_PREFIX", "COMPILER_PATH", "LIBRARY_PATH", "CPATH",
@@ -89,6 +92,71 @@ def planned_tool_environment(plan: dict[str, Any]) -> dict[str, str]:
 
 def sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
+
+def validate_configure_success_stdout(stdout: str) -> None:
+    """Reject configure's known compiler self-test failure, even with rc=0."""
+    for marker in CONFIGURE_FAILURE_MARKERS:
+        if marker in stdout:
+            raise PrelinkError(f"WRF configure reported compiler failure: {marker}")
+
+
+def validate_configure_failure_markers(plan: dict[str, Any]) -> list[str]:
+    markers = plan.get("prelink_requirements", {}).get(
+        "configure_failure_log_markers")
+    if markers != list(CONFIGURE_FAILURE_MARKERS):
+        raise PrelinkError("configure failure markers differ from the code-fixed WRF guard")
+    return list(CONFIGURE_FAILURE_MARKERS)
+
+
+def validate_sdkroot_resolution(plan: dict[str, Any], *,
+                                environment: Mapping[str, str]) -> dict[str, str]:
+    """Bind SDKROOT to the pinned xcrun output, SDK version, and settings file."""
+    toolchain = plan.get("toolchain", {})
+    configured = toolchain.get("configuration_environment", {})
+    pin = toolchain.get("sdkroot_resolution")
+    if not isinstance(configured, dict) or not isinstance(pin, dict):
+        raise PrelinkError("Apple SDKROOT resolution pin is missing")
+    expected_sdkroot = pin.get("sdkroot")
+    if (not isinstance(expected_sdkroot, str) or not expected_sdkroot
+            or configured.get("SDKROOT") != expected_sdkroot
+            or environment.get("SDKROOT") != expected_sdkroot):
+        raise PrelinkError("SDKROOT is unset or differs from the pinned configuration value")
+    tools = toolchain.get("tools", {})
+    xcrun = tools.get("xcrun")
+    if not isinstance(xcrun, dict):
+        raise PrelinkError("pinned xcrun tool is missing for SDKROOT resolution")
+    xcrun_path = xcrun.get("path")
+    path_argv = pin.get("path_argv")
+    version_argv = pin.get("version_argv")
+    if (not isinstance(xcrun_path, str) or not Path(xcrun_path).is_absolute()
+            or pin.get("xcrun_path") != xcrun_path
+            or path_argv != ["--show-sdk-path"]
+            or version_argv != ["--sdk", "macosx", "--show-sdk-version"]):
+        raise PrelinkError("SDKROOT xcrun argv/path differs from its pin")
+    result = subprocess.run([xcrun_path, *path_argv], check=False,
+                            capture_output=True, text=True, shell=False,
+                            env=dict(environment))
+    if result.returncode != 0 or result.stdout.strip() != expected_sdkroot:
+        raise PrelinkError("xcrun --show-sdk-path differs from pinned SDKROOT")
+    version = subprocess.run([xcrun_path, *version_argv], check=False,
+                             capture_output=True, text=True, shell=False,
+                             env=dict(environment))
+    expected_version = pin.get("version")
+    if version.returncode != 0 or version.stdout.strip() != expected_version:
+        raise PrelinkError("xcrun SDK version differs from the pinned macOS SDK")
+    settings_rel = pin.get("settings_relative_path")
+    settings_sha = pin.get("settings_sha256")
+    if settings_rel != "SDKSettings.json" or not isinstance(settings_sha, str):
+        raise PrelinkError("SDKSettings path/hash pin is malformed")
+    settings_path = Path(expected_sdkroot) / settings_rel
+    if sha256_file(settings_path) != settings_sha:
+        raise PrelinkError("pinned macOS SDKSettings.json hash changed")
+    return {
+        "sdkroot": expected_sdkroot,
+        "sdk_version": expected_version,
+        "sdk_settings_sha256": settings_sha,
+    }
 
 
 def _is_relative_to(path: Path, root: Path) -> bool:
@@ -313,6 +381,7 @@ def validate_guarded_configuration_run(plan: dict[str, Any], *,
                                        workspace: Path,
                                        shadow_host: Path) -> dict[str, str]:
     """Revalidate the guarded configure/apply ledger before any native build."""
+    validate_configure_failure_markers(plan)
     requirements = plan["prelink_requirements"]
     ledger_path = workspace / requirements["configuration_execution_ledger_relative_path"]
     ledger_sha = sha256_file(ledger_path)
@@ -347,6 +416,8 @@ def validate_guarded_configuration_run(plan: dict[str, Any], *,
                                             ("stderr_path", "stderr_sha256")):
             if sha256_file(Path(row[capture_field])) != row.get(digest_field):
                 raise PrelinkError(f"guarded configure/apply {capture_field} hash mismatch")
+    configure_stdout = Path(commands[0]["stdout_path"]).read_text(encoding="utf-8")
+    validate_configure_success_stdout(configure_stdout)
     if commands[-1].get("configure_wrf_sha256_after") != expected_config_sha \
             or sha256_file(shadow_host / "configure.wrf") != expected_config_sha:
         raise PrelinkError("guarded configure.wrf output differs from the reviewed final pin")
@@ -745,8 +816,16 @@ def validate_toolchain(plan: dict[str, Any], shadow_host: Path, *,
     for name, expected in configured_environment.items():
         if name not in environment_snapshot or environment_snapshot[name] != expected:
             raise PrelinkError(f"configuration environment differs from its pin: {name}")
-    canonical = json.dumps({"tools": specs, "environment_sha256": environment_sha},
-                           sort_keys=True, separators=(",", ":")).encode()
+    canonical_fields = {"tools": specs, "environment_sha256": environment_sha}
+    sdkroot_pin = toolchain.get("sdkroot_resolution")
+    if "SDKROOT" in configured_environment:
+        if not isinstance(sdkroot_pin, dict):
+            raise PrelinkError("SDKROOT environment requires a toolchain resolution pin")
+        canonical_fields["sdkroot_resolution"] = sdkroot_pin
+    elif sdkroot_pin is not None:
+        raise PrelinkError("SDKROOT resolution pin exists without a pinned SDKROOT environment")
+    canonical = json.dumps(canonical_fields, sort_keys=True,
+                           separators=(",", ":")).encode()
     if sha256_bytes(canonical) != toolchain.get("toolchain_sha256"):
         raise PrelinkError("pinned toolchain manifest digest is inconsistent")
     child_environment = dict(environment) if environment is not None else None
@@ -828,6 +907,13 @@ def validate_toolchain(plan: dict[str, Any], shadow_host: Path, *,
                 env=child_environment).stdout.strip()
             if child not in resolved or Path(reported).resolve() != Path(resolved[child]["path"]).resolve():
                 raise PrelinkError(f"gfortran's {child} subordinate binary is not pinned")
+    if "SDKROOT" in configured_environment:
+        sdk_environment = (dict(environment) if environment is not None else {
+            name: value for name, value in environment_snapshot.items()
+            if value is not None
+        })
+        sdkroot = validate_sdkroot_resolution(plan, environment=sdk_environment)
+        resolved["sdkroot"] = sdkroot
     return resolved
 
 
@@ -883,6 +969,7 @@ def validate_static_pins(plan: dict[str, Any], *, workspace: Path,
                          environment: Mapping[str, str] | None = None) -> dict[str, Any]:
     """Rehash current canonical sources, local overlays, config, inputs, and archive."""
     configure_menu = validate_configure_menu_pin(plan)
+    validate_configure_failure_markers(plan)
     environment = planned_tool_environment(plan) if environment is None else environment
     pins = plan["host_source_pins"]
     sources: dict[str, Any] = {}
@@ -1622,6 +1709,7 @@ def _validate_configure_pipeline(execution: dict[str, Any], shadow_host: Path,
                                  configure_sha: str, *,
                                  plan_sha256: str | None = None,
                                  workspace: Path | None = None) -> None:
+    validate_configure_failure_markers(plan)
     commands = execution.get("configuration_commands")
     if not isinstance(commands, list) or [r.get("stage") for r in commands if isinstance(r, dict)] != [
         "configure", "apply_kdm6ad_config"
@@ -1682,6 +1770,11 @@ def _validate_configure_pipeline(execution: dict[str, Any], shadow_host: Path,
                 hash_field = f"{capture_field.removesuffix('_path')}_sha256"
                 if sha256_file(capture) != row.get(hash_field):
                     raise PrelinkError(f"configuration {stage} {capture_field} hash mismatch")
+    configure_stdout_path = Path(first["stdout_path"])
+    if not configure_stdout_path.is_absolute():
+        configure_stdout_path = output_root / configure_stdout_path
+    validate_configure_success_stdout(
+        configure_stdout_path.read_text(encoding="utf-8"))
     expected_configure_sha = plan["prelink_requirements"].get("generated_configure_wrf_sha256")
     if not isinstance(expected_configure_sha, str) or len(expected_configure_sha) != 64:
         raise PrelinkError("fresh configure.wrf SHA-256 is not independently pinned in the plan")
