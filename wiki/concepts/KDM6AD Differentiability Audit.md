@@ -81,3 +81,17 @@ bundles fail the current evidence-tree attestation check, and the archived
 legacy module hash differs from the current private host source. The bounded
 replay does not certify a current-source host run or close C4 G3.3's separate
 legacy ULP envelope.
+
+## Update (2026-09-27): S15 upstream attribution remains open
+
+The step-2 owner-5 capture exactly replays six first QIB transitions at the RK
+store, but it does not expose upstream Y/X/Z face operands. The next measurement
+is limited to six source-scheduled owner/RK/tile witnesses, with ordinary RK1/2
+advection separated from RK3 positive-definite dispatch and `sc_tend` retained
+apart from `advect_tend`. Discovery coordinates have a separate
+repeatability-only projection. The synthetic contract validates identity and
+directional-term accumulation but leaves face-divergence and RK-store numerical
+replay open. See [[kdm6ad-s15-upstream-attribution-plan-2026-09-27]] and the
+[bounded implementation contract](../../harness/evidence/S15_UPSTREAM_ATTRIBUTION_PLAN.md).
+This plan does not attribute a physical cause or change graupel policy; S15
+remains OPEN.

@@ -1,0 +1,110 @@
+{
+  "purpose": "repeatability_targets_only",
+  "schema": "KDM6AD-S15-UPSTREAM-COORDINATE-PROJECTION-v1",
+  "slots": [
+    {
+      "coordinate": [
+        143,
+        2,
+        16
+      ],
+      "schedule_key": [
+        2,
+        1,
+        5,
+        1,
+        235,
+        1,
+        142
+      ],
+      "slot": 1
+    },
+    {
+      "coordinate": [
+        144,
+        143,
+        14
+      ],
+      "schedule_key": [
+        2,
+        1,
+        5,
+        1,
+        235,
+        143,
+        283
+      ],
+      "slot": 2
+    },
+    {
+      "coordinate": [
+        111,
+        2,
+        16
+      ],
+      "schedule_key": [
+        2,
+        2,
+        5,
+        1,
+        235,
+        1,
+        142
+      ],
+      "slot": 3
+    },
+    {
+      "coordinate": [
+        146,
+        143,
+        13
+      ],
+      "schedule_key": [
+        2,
+        2,
+        5,
+        1,
+        235,
+        143,
+        283
+      ],
+      "slot": 4
+    },
+    {
+      "coordinate": [
+        141,
+        2,
+        17
+      ],
+      "schedule_key": [
+        2,
+        3,
+        5,
+        1,
+        235,
+        1,
+        142
+      ],
+      "slot": 5
+    },
+    {
+      "coordinate": [
+        141,
+        143,
+        16
+      ],
+      "schedule_key": [
+        2,
+        3,
+        5,
+        1,
+        235,
+        143,
+        283
+      ],
+      "slot": 6
+    }
+  ],
+  "source_artifact": "harness/evidence/s15_step2_public/s15_native_step2_qib_witnesses_public_2026-09-26.json",
+  "source_artifact_sha256": "6faed36e9f16354d117a8227fecff3a44d6f33839fb58782547f87b431cbc2aa"
+}
