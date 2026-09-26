@@ -835,9 +835,14 @@ def validate_toolchain(plan: dict[str, Any], shadow_host: Path, *,
                            separators=(",", ":")).encode()
     if sha256_bytes(canonical) != toolchain.get("toolchain_sha256"):
         raise PrelinkError("pinned toolchain manifest digest is inconsistent")
-    child_environment = dict(environment) if environment is not None else None
+    child_environment = (dict(environment) if environment is not None else {
+        name: value for name, value in environment_snapshot.items()
+        if value is not None
+    })
     resolved: dict[str, dict[str, str]] = {}
     for name, spec in specs.items():
+        if not isinstance(spec, dict):
+            raise PrelinkError(f"toolchain record is malformed for {name}")
         if "path" in spec:
             path = Path(spec["path"])
         elif "path_relative_to_shadow_host" in spec:
@@ -854,6 +859,13 @@ def validate_toolchain(plan: dict[str, Any], shadow_host: Path, *,
             if (not isinstance(version_argv, list) or not version_argv
                     or not isinstance(version_stdout, str)):
                 raise PrelinkError(f"version probe pin is malformed for {name}")
+    # No plan-selected executable is invoked until every binary path and digest
+    # in the aggregate manifest has been validated.
+    for name, spec in specs.items():
+        path = Path(resolved[name]["path"])
+        version_argv = spec.get("version_argv")
+        version_stdout = spec.get("version_stdout")
+        if version_argv is not None:
             result = subprocess.run(
                 [str(path), *version_argv], check=True, capture_output=True,
                 text=True, shell=False, env=child_environment)
@@ -1157,10 +1169,6 @@ def validate_static_pins(plan: dict[str, Any], *, workspace: Path,
             item, scheme=scheme, canonical_source=canonical,
             overlay_path=overlay_paths[scheme])
 
-    validate_configuration_sources(
-        plan, canonical_host=canonical_host, shadow_host=shadow_host,
-        workspace=workspace, environment=environment)
-
     trusted_s15 = plan.get("trusted_s15_release", {})
     manifest_path = workspace / trusted_s15.get("evidence_manifest_path", "")
     if sha256_file(manifest_path) != trusted_s15.get("evidence_manifest_sha256"):
@@ -1187,6 +1195,11 @@ def validate_static_pins(plan: dict[str, Any], *, workspace: Path,
         raise PrelinkError("shadow archive exists; link must use the pinned canonical archive")
 
     toolchain = validate_toolchain(plan, shadow_host, environment=environment)
+    # A shadow-only configuration patch launches the pinned patch binary. Check
+    # the complete plan-bound toolchain manifest before any such subprocess.
+    validate_configuration_sources(
+        plan, canonical_host=canonical_host, shadow_host=shadow_host,
+        workspace=workspace, environment=environment)
 
     nml_rel = Path(plan["prelink_requirements"]["selected_case_relative_path"]) / "namelist.input"
     nml_path = shadow_host / nml_rel
@@ -2357,6 +2370,8 @@ def resource_preflight_main(argv: list[str]) -> int:
         description="Fresh disk-space and coordinator gate before S10 configure/build stages")
     parser.add_argument("--phase", choices=("configure", "measure", "build"), required=True)
     parser.add_argument("--plan", type=Path, required=True)
+    parser.add_argument("--trusted-plan-sha256", required=True,
+                        help="coordinator-supplied plan hash verified before any plan-directed action")
     parser.add_argument("--workspace", type=Path, required=True)
     parser.add_argument("--canonical-host", type=Path, required=True)
     parser.add_argument("--shadow-host", type=Path, required=True)
@@ -2368,8 +2383,10 @@ def resource_preflight_main(argv: list[str]) -> int:
     parser.add_argument("--trusted-s15-release-sha256")
     args = parser.parse_args(argv)
     try:
-        plan = load_json(args.plan)
         plan_sha = sha256_file(args.plan)
+        if plan_sha != args.trusted_plan_sha256:
+            raise PrelinkError("resource preflight plan SHA differs from coordinator-trusted pin")
+        plan = load_json(args.plan)
         workspace = args.workspace.resolve()
         output_root = workspace / plan["clean_shadow"]["fresh_build_output_root"]
         snapshot_path = workspace / plan["clean_shadow"]["empty_root_snapshot_relative_path"]

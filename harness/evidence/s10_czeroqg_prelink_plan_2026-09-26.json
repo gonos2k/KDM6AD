@@ -643,7 +643,9 @@
       "output_root_must_remain_absent": true,
       "capture_root_relative_to_workspace": "S10/configuration_capture",
       "preflight_receipt_relative_path": "S10/configuration_capture/configure_resource_preflight.json",
-      "phase_scope": "configure and apply script only; no WRF preprocessing, object compilation, linking or model runs"
+      "phase_scope": "configure and apply script only; no WRF preprocessing, object compilation, linking or model runs",
+      "coordinator_plan_sha256_required": true,
+      "coordinator_plan_sha256_policy": "The resource-preflight CLI requires an out-of-band coordinator SHA-256 and checks raw plan bytes before JSON parsing or any plan-directed command."
     },
     "build": {
       "status": "BLOCKED_PENDING_ESTIMATE_AND_REVIEW",

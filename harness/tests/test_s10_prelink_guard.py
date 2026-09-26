@@ -24,6 +24,7 @@ from s10_prelink_guard import (  # noqa: E402
     create_empty_root_snapshot,
     require_fresh_output_root,
     require_s15_release,
+    resource_preflight_main,
     sha256_bytes,
     validate_archive_link,
     validate_clean_shadow,
@@ -448,6 +449,140 @@ def test_shadow_hook_patch_mutations_fail_closed(
             workspace=tmp_path, environment={"PATH": "/usr/bin:/bin"})
 
 
+def test_resource_preflight_rejects_mutated_patch_plan_before_wrapper_or_receipt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
+):
+    marker = tmp_path / "patch-wrapper-was-called"
+    wrapper = tmp_path / "patch-wrapper"
+    wrapper.write_text(f"#!/bin/sh\nprintf called > '{marker}'\nexec /usr/bin/patch \"$@\"\n")
+    wrapper.chmod(0o755)
+    original = {
+        "toolchain": {
+            "tools": {"patch": {"path": "/usr/bin/patch", "sha256": "a" * 64}},
+            "toolchain_sha256": "b" * 64,
+        },
+        "prelink_requirements": {
+            "shadow_configuration_source_patches": {
+                "apply_kdm6ad_config.sh": {
+                    "patch_sha256": "c" * 64,
+                },
+            },
+        },
+    }
+    trusted_sha = sha256_bytes(json.dumps(original, sort_keys=True).encode())
+    mutated = json.loads(json.dumps(original))
+    mutated["toolchain"]["tools"]["patch"] = {
+        "path": str(wrapper),
+        "sha256": hashlib.sha256(wrapper.read_bytes()).hexdigest(),
+    }
+    mutated["prelink_requirements"]["shadow_configuration_source_patches"][
+        "apply_kdm6ad_config.sh"]["patch_sha256"] = hashlib.sha256(
+            b"changed private patch payload").hexdigest()
+    plan_path = tmp_path / "mutated-plan.json"
+    plan_path.write_text(json.dumps(mutated, sort_keys=True))
+    calls = []
+    monkeypatch.setattr(
+        "s10_prelink_guard.subprocess.run",
+        lambda *args, **kwargs: calls.append((args, kwargs)),
+    )
+    receipt = tmp_path / "S10/configuration_capture/configure_resource_preflight.json"
+    result = resource_preflight_main([
+        "--phase", "configure", "--plan", str(plan_path),
+        "--trusted-plan-sha256", trusted_sha,
+        "--workspace", str(tmp_path), "--canonical-host", str(tmp_path / "canonical"),
+        "--shadow-host", str(tmp_path / "shadow"),
+        "--overlay", f"mp37={tmp_path / 'mp37-overlay'}",
+        "--overlay", f"mp237={tmp_path / 'mp237-overlay'}",
+    ])
+    captured = capsys.readouterr()
+    assert result == 2
+    assert "coordinator-trusted pin" in captured.err
+    assert calls == []
+    assert not marker.exists()
+    assert not receipt.exists()
+
+
+def test_static_pins_checks_toolchain_digest_before_shadow_patch_subprocess(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+):
+    import s10_prelink_guard as guard_module
+
+    plan, canonical, shadow, _patch_path = _configuration_patch_fixture(tmp_path)
+    marker = tmp_path / "patch-wrapper-called-before-toolchain-check"
+    wrapper = tmp_path / "patch-wrapper"
+    wrapper.write_text(f"#!/bin/sh\nprintf called > '{marker}'\nexit 0\n")
+    wrapper.chmod(0o755)
+    tools = plan["toolchain"]["tools"]
+    tools["patch"] = {
+        "path": str(wrapper),
+        "sha256": hashlib.sha256(wrapper.read_bytes()).hexdigest(),
+    }
+    empty_environment = {}
+    env_sha = sha256_bytes(json.dumps(
+        tool_environment_snapshot(empty_environment), sort_keys=True,
+        separators=(",", ":")).encode())
+    plan["toolchain"]["environment_sha256"] = env_sha
+    plan["toolchain"]["configuration_environment"] = {}
+    plan["toolchain"]["toolchain_sha256"] = "0" * 64
+    menu_stdin = b"35\n1\n"
+    menu_sha = hashlib.sha256(menu_stdin).hexdigest()
+    plan["prelink_requirements"].update({
+        "configure_selection_stdin_sha256": menu_sha,
+        "configure_menu_selection": {
+            "stdin_bytes": menu_stdin.decode(), "stdin_sha256": menu_sha,
+            "architecture_option": 35, "nesting_option": 1,
+        },
+        "configure_failure_log_markers": ["One of compilers testing failed!"],
+    })
+    plan["host_source_pins"] = {
+        "mp37": {"source_relative_to_private_host": "phys/mp37.F"},
+        "mp237": {"source_relative_to_private_host": "phys/mp237.F"},
+    }
+    trusted = plan["trusted_s15_release"] = {
+        "evidence_manifest_path": "harness/evidence/s15.json",
+        "evidence_manifest_sha256": "",
+        "s15_step2_evidence_manifest_path": "harness/evidence/s15-step2.json",
+        "s15_step2_evidence_manifest_sha256": "",
+        "s15_merge_commit": "1" * 40,
+        "s15_step2_merge_commit": "2" * 40,
+    }
+    for rel in (trusted["evidence_manifest_path"], trusted["s15_step2_evidence_manifest_path"]):
+        path = tmp_path / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(rel)
+        digest = hashlib.sha256(path.read_bytes()).hexdigest()
+        if rel == trusted["evidence_manifest_path"]:
+            trusted["evidence_manifest_sha256"] = digest
+        else:
+            trusted["s15_step2_evidence_manifest_sha256"] = digest
+    archive = canonical / "main/libwrflib.a"
+    archive.parent.mkdir(parents=True, exist_ok=True)
+    archive.write_bytes(b"archive")
+    (shadow / "main").mkdir(parents=True, exist_ok=True)
+    plan["build_matrix"] = {"link_input_archive": {
+        "path_relative_to_private_host": "main/libwrflib.a",
+        "sha256": hashlib.sha256(archive.read_bytes()).hexdigest(),
+    }}
+    monkeypatch.setattr(guard_module, "validate_source_overlay", lambda *a, **k: {})
+    calls = []
+
+    def fake_run(argv, **kwargs):
+        calls.append(list(argv))
+        if Path(argv[0]).resolve() == wrapper.resolve():
+            marker.write_text("called")
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(guard_module.subprocess, "run", fake_run)
+    with pytest.raises(PrelinkError, match="toolchain manifest digest is inconsistent"):
+        validate_static_pins(
+            plan, workspace=tmp_path, canonical_host=canonical,
+            shadow_host=shadow,
+            overlay_paths={"mp37": tmp_path / "mp37", "mp237": tmp_path / "mp237"},
+            environment=empty_environment)
+    assert not marker.exists()
+    assert all(argv[0] == "git" for argv in calls)
+
+
 def _resource_plan(workspace: Path, snapshot_sha: str, *, approved: bool = False):
     estimate = {
         "schema": "s10-build-output-estimate-v1",
@@ -835,6 +970,65 @@ def test_toolchain_digest_binds_sdk_resolution_outputs(tmp_path: Path):
     plan["toolchain"]["sdkroot_resolution"]["version"] = "26.0"
     with pytest.raises(PrelinkError, match="toolchain manifest digest is inconsistent"):
         validate_toolchain(plan, tmp_path, environment=environment)
+
+
+def test_toolchain_digest_rejects_mutated_xcrun_path_before_invocation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+):
+    plan, environment, _sdk = _sdkroot_test_plan(tmp_path)
+    marker = tmp_path / "xcrun-wrapper-called"
+    wrapper = tmp_path / "xcrun-wrapper"
+    wrapper.write_text(f"#!/bin/sh\nprintf called > '{marker}'\nexit 0\n")
+    wrapper.chmod(0o755)
+    plan["toolchain"]["tools"]["xcrun"] = {
+        "path": str(wrapper),
+        "sha256": hashlib.sha256(wrapper.read_bytes()).hexdigest(),
+    }
+    calls = []
+    monkeypatch.setattr("s10_prelink_guard.subprocess.run",
+                        lambda *args, **kwargs: calls.append((args, kwargs)))
+    with pytest.raises(PrelinkError, match="toolchain manifest digest is inconsistent"):
+        validate_toolchain(plan, tmp_path, environment=environment)
+    assert calls == []
+    assert not marker.exists()
+
+
+def test_validate_toolchain_hashes_all_binaries_before_version_probe(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+):
+    marker = tmp_path / "early-version-probe-called"
+    first = tmp_path / "probe-tool"
+    first.write_text(f"#!/bin/sh\nprintf called > '{marker}'\nprintf 'v1\\n'\n")
+    first.chmod(0o755)
+    later = tmp_path / "later-tool"
+    later.write_text("not the pinned binary\n")
+    tools = {
+        "probe": {"path": str(first),
+                  "sha256": hashlib.sha256(first.read_bytes()).hexdigest(),
+                  "version_argv": ["--version"], "version_stdout": "v1"},
+        "later": {"path": str(later), "sha256": "0" * 64},
+    }
+    environment = {}
+    environment_sha = sha256_bytes(json.dumps(
+        tool_environment_snapshot(environment), sort_keys=True,
+        separators=(",", ":")).encode())
+    plan = {"toolchain": {
+        "tools": tools,
+        "configuration_environment": {},
+        "environment_sha256": environment_sha,
+        "toolchain_sha256": sha256_bytes(json.dumps(
+            {"tools": tools, "environment_sha256": environment_sha},
+            sort_keys=True, separators=(",", ":")).encode()),
+    }}
+    calls = []
+    monkeypatch.setattr(
+        "s10_prelink_guard.subprocess.run",
+        lambda *args, **kwargs: calls.append((args, kwargs)),
+    )
+    with pytest.raises(PrelinkError, match="toolchain binary hash changed for later"):
+        validate_toolchain(plan, tmp_path, environment=environment)
+    assert calls == []
+    assert not marker.exists()
 
 
 def test_netcdf_toolchain_roots_paths_hashes_and_versions_are_pinned(tmp_path: Path,

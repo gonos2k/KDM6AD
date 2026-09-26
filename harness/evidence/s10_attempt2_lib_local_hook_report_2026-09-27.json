@@ -41,7 +41,7 @@
   },
   "attempt3": {
     "status": "PRIVATE_SOURCE_STAGING_PREPARED",
-    "plan_sha256": "bf287e97c0c31467d156d8e20008e51f0bce323d11030c0511b1141289f72d75",
+    "plan_sha256": "6f7517e61707ba3d325c13637d97d35ac31b76eb6f513bfc3e554fa62c783af2",
     "snapshot_sha256": "c4cac9cb4d9c1a6d0c08455350ea44185d61f2d6216e98d93bbb10d0621efd5d",
     "hook_patch_policy": "Only apply_kdm6ad_config.sh may differ from canonical; the guard applies the pinned private diff to a temporary canonical copy and requires exact equality with the shadow script. All other configuration files remain canonical-equal.",
     "static_pins_passed": true,
