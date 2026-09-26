@@ -1,6 +1,6 @@
 # S10 C-arm: exact-zero qg/rate denominator guard
 
-**Status: source overlays and synthetic replay are prepared; no host compile or native run has occurred.** This branch is rebased onto current public main `6b88ec58` after PR #275. The canonical private host tree was read only. S15 owns the native slot, so the planned disposable host build and paired runs remain queued. S10 is OPEN; no policy or operational default is selected.
+**Status: source overlays and synthetic replay are prepared; no host compile or native run has occurred.** This branch is rebased onto public main `fe6cdc83` after PR #278. The canonical private host tree was read only. S15 owns the native slot, so the planned disposable host build and paired runs remain queued. S10 is OPEN; no policy or operational default is selected.
 
 ## One-factor contract
 
