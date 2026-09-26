@@ -4,13 +4,13 @@
 from __future__ import annotations
 
 import argparse
-from collections import Counter
 import hashlib
 import json
 import os
 import re
 import subprocess
 import sys
+from collections import Counter
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -49,7 +49,7 @@ CPP_CORE_SOURCES = (
 CPP_BRIDGE_SOURCE = "libtorch/bridge/kdm6_c_api.cpp"
 CPP_CORE_OBJECTS = tuple(Path(path).name + ".o" for path in CPP_CORE_SOURCES)
 CAPTURE_TOOL_PATH = "harness/capture_s9_dyld.py"
-CAPTURE_TOOL_SHA256 = "74329e3bd6560d0bdb74c4ecd3d699fd77905f4e0a3b178a500f1e8dfcc03348"
+CAPTURE_TOOL_SHA256 = "03426c9df0e849ad6fcbd3820eb7f7fc872a15e725039e2bb4f935100a6d9569"
 CAPTURE_ENV_ALLOWLIST = {
     "PATH", "DYLD_PRINT_LIBRARIES", "DYLD_PRINT_RPATHS", "DYLD_LIBRARY_PATH",
     "DYLD_FALLBACK_LIBRARY_PATH", "DYLD_FRAMEWORK_PATH", "DYLD_FALLBACK_FRAMEWORK_PATH",
@@ -127,6 +127,15 @@ def verify_manifest_semantics(manifest: dict[str, Any], root: Path | None = None
     artifacts = manifest.get("artifacts", [])
     if not isinstance(artifacts, list):
         return ["artifacts must be an array"]
+    toolchain = manifest.get("toolchain", {})
+    if isinstance(toolchain, dict):
+        for name in ("compiler", "linker", "build_system", "mpi_launcher"):
+            tool = toolchain.get(name, {})
+            if isinstance(tool, dict) and not re.fullmatch(r"<[^<>/\\]+>", str(tool.get("path", ""))):
+                errors.append(f"public toolchain.{name}.path must be a path-redacted alias")
+    gate_identity = manifest.get("lineage_gate", {}).get("verifier", {}) if isinstance(manifest.get("lineage_gate"), dict) else {}
+    if isinstance(gate_identity, dict) and not re.fullmatch(r"<[^<>/\\]+>", str(gate_identity.get("path", ""))):
+        errors.append("public lineage_gate.verifier.path must be a path-redacted alias")
     by_id: dict[str, dict[str, Any]] = {}
     by_name: dict[str, list[dict[str, Any]]] = {}
     path_ids: dict[str, str] = {}
@@ -225,13 +234,16 @@ def verify_manifest_semantics(manifest: dict[str, Any], root: Path | None = None
                     if side == "inputs":
                         step_input_ids.add(artifact["artifact_id"])
         step_records.append((step, refs["inputs"], refs["outputs"]))
-        for field in ("stdout_receipt", "stderr_receipt"):
-            receipt = inventory_ref(step.get(field), f"build_steps[{index}].{field}")
-            if receipt is not None:
-                if receipt.get("kind") != "receipt":
-                    errors.append(f"build_steps[{index}].{field} must reference kind=receipt")
-                receipts.add(receipt.get("sha256", ""))
-                referenced_ids.add(receipt["artifact_id"])
+        if step.get("kind") == "loader_observation":
+            receipts.update((step.get("stdout_sha256", ""), step.get("stderr_sha256", "")))
+        else:
+            for field in ("stdout_receipt", "stderr_receipt"):
+                receipt = inventory_ref(step.get(field), f"build_steps[{index}].{field}")
+                if receipt is not None:
+                    if receipt.get("kind") != "receipt":
+                        errors.append(f"build_steps[{index}].{field} must reference kind=receipt")
+                    receipts.add(receipt.get("sha256", ""))
+                    referenced_ids.add(receipt["artifact_id"])
         if step.get("capture_receipt") is not None:
             capture_receipt = inventory_ref(step["capture_receipt"], f"build_steps[{index}].capture_receipt")
             if capture_receipt is not None:
@@ -347,6 +359,22 @@ def verify_manifest_semantics(manifest: dict[str, Any], root: Path | None = None
             if extra:
                 errors.append(f"{name} archive member inventory has unexpected objects: {', '.join(extra)}")
         physical = archive.get("member_inventory", [])
+        if exact:
+            physical_objects = [
+                {"name": row.get("name"), "sha256": row.get("sha256")}
+                for row in physical
+                if isinstance(row, dict) and row.get("name") not in {"__.SYMDEF", "__.SYMDEF SORTED"}
+            ]
+            declared_objects = [
+                {"name": PurePosixPath(ref.get("path", "")).name, "sha256": ref.get("sha256")}
+                for ref in members
+                if isinstance(ref, dict)
+            ]
+            if physical_objects != declared_objects or len(members) != len(expected_members):
+                errors.append(f"{name} archive_members must exactly match physical object members in order and multiplicity")
+            symbol_tables = [row for row in physical if isinstance(row, dict) and row.get("name") in {"__.SYMDEF", "__.SYMDEF SORTED"}]
+            if len(symbol_tables) > 1:
+                errors.append(f"{name} physical inventory contains duplicate archive symbol tables")
         physical_pairs = Counter((row.get("name"), row.get("sha256")) for row in physical if isinstance(row, dict))
         used_pairs: Counter = Counter()
         for ref in members:
@@ -385,9 +413,10 @@ def verify_manifest_semantics(manifest: dict[str, Any], root: Path | None = None
     if len(build_shared_list) != 1 or len(installed_shared_list) != 1:
         errors.append("inventory must identify one build and one installed libkdm6_c shared library")
 
-    if len(core_archive_list) == 1 and len(build_shared_list) == 1:
-        if not edge_exists("links_into", core_archive_list[0]["artifact_id"], build_shared_list[0]["artifact_id"]):
-            errors.append("libkdm6.a must link into the build-tree libkdm6_c shared library")
+    if len(core_archive_list) == 1 and len(build_shared_list) == 1 and not edge_exists(
+        "links_into", core_archive_list[0]["artifact_id"], build_shared_list[0]["artifact_id"]
+    ):
+        errors.append("libkdm6.a must link into the build-tree libkdm6_c shared library")
 
     core_object_ids: set[str] = set()
     actual_core_sources = {path for path in source_by_path if path.startswith("libtorch/src/") and PurePosixPath(path).suffix.lower() == ".cpp"}
@@ -602,7 +631,7 @@ def verify_loader_capture(manifest: dict[str, Any], root: Path) -> list[str]:
                 errors.append("inventoried WRF executable is missing during loader receipt validation")
         try:
             launcher_sha = hashlib.sha256(Path(raw_argv[0]).resolve(strict=True).read_bytes()).hexdigest()
-            if launcher_sha != raw.get("launcher_sha256") or launcher_sha != capture.get("launcher_sha256") or launcher_sha != launcher_identity.get("sha256"):
+            if launcher_sha != raw.get("raw_launcher_sha256") or launcher_sha != capture.get("launcher_sha256") or launcher_sha != launcher_identity.get("sha256"):
                 errors.append("private mpirun identity differs from public/toolchain launcher digests")
         except OSError:
             errors.append("private mpirun executable is unavailable for identity validation")
@@ -632,8 +661,6 @@ def verify_loader_capture(manifest: dict[str, Any], root: Path) -> list[str]:
             errors.append("private collector argv has malformed option/value pairs")
         else:
             raw_options = dict(zip(options[::2], options[1::2]))
-            stdout_artifact = artifacts.get(loader.get("capture_stdout", {}).get("artifact_id"))
-            stderr_artifact = artifacts.get(loader.get("capture_stderr", {}).get("artifact_id"))
             expected_options = {
                 "--manifest-id": manifest_id,
                 "--executable": exe.get("path") if exe else "",
@@ -644,8 +671,8 @@ def verify_loader_capture(manifest: dict[str, Any], root: Path) -> list[str]:
                 "--launcher": raw_argv[0] if raw_argv else "",
                 "--receipt": capture_artifact.get("path") if capture_artifact else "",
                 "--private-receipt": f"host/s9-captures/{manifest_id}.raw.json",
-                "--stdout": stdout_artifact.get("path") if stdout_artifact else "",
-                "--stderr": stderr_artifact.get("path") if stderr_artifact else "",
+                "--stdout": f"host/s9-captures/{manifest_id}.stdout.log",
+                "--stderr": f"host/s9-captures/{manifest_id}.stderr.log",
             }
             if set(raw_options) != set(expected_options) | {"--root"} or any(raw_options.get(key) != value for key, value in expected_options.items()):
                 errors.append("private collector argv arguments do not match the manifest artifacts")
@@ -678,11 +705,6 @@ def verify_loader_capture(manifest: dict[str, Any], root: Path) -> list[str]:
             errors.append(f"public process environment contains an absolute path: {key}")
     if set(capture.get("process_environment", {})) - CAPTURE_ENV_ALLOWLIST:
         errors.append("public process environment includes a variable outside the allowlist")
-    for key, value in capture.get("process_environment", {}).items():
-        if key in CAPTURE_PATH_ENV and not re.fullmatch(r"<redacted-path-sha256:[a-f0-9]{64}>", str(value)):
-            errors.append(f"public process environment path value is not redacted: {key}")
-        elif key not in CAPTURE_PATH_ENV and isinstance(value, str) and value.startswith("/"):
-            errors.append(f"public process environment contains an absolute path: {key}")
     env_bytes = b"\0".join(f"{key}={public_env[key]}".encode() for key in sorted(public_env))
     if hashlib.sha256(env_bytes).hexdigest() != capture.get("process_environment_sha256"):
         errors.append("public process environment map does not match its SHA-256")
@@ -697,33 +719,19 @@ def verify_loader_capture(manifest: dict[str, Any], root: Path) -> list[str]:
         errors.append("runtime_loader executable_sha256 differs from exact captured WRF executable")
 
     output_paths: dict[str, bytes] = {}
-    raw_outputs = (("capture_stdout", "raw_stdout_path", "stdout_sha256"), ("capture_stderr", "raw_stderr_path", "stderr_sha256"))
+    raw_outputs = (("capture_stdout_sha256", "raw_stdout_path", "stdout_sha256"), ("capture_stderr_sha256", "raw_stderr_path", "stderr_sha256"))
     for field, raw_field, digest_field in raw_outputs:
-        log_ref = loader.get(field)
-        log = artifacts.get(log_ref.get("artifact_id")) if isinstance(log_ref, dict) else None
-        if not ref_matches(log_ref, log) or not isinstance(log, dict) or log.get("kind") != "receipt":
-            errors.append(f"{field} is not bound to a retained receipt artifact")
-            continue
-        if PurePosixPath(log.get("path", "")).parts[:1] != ("host",):
-            errors.append(f"raw child output {field} must be stored only under ignored host/")
+        expected_rel = f"host/s9-captures/{manifest_id}.{'stdout' if field == 'capture_stdout_sha256' else 'stderr'}.log"
         try:
-            log_path = root.joinpath(*PurePosixPath(log["path"]).parts).resolve(strict=True)
-            if not log_path.is_relative_to(root):
-                raise OSError("raw output escapes the build root")
-            output_paths[field] = log_path.read_bytes()
-            if hashlib.sha256(output_paths[field]).hexdigest() != log.get("sha256"):
-                errors.append(f"{field} bytes do not match artifact SHA-256")
-            raw_path = str(log_path)
-            if raw.get(raw_field) != raw_path:
-                errors.append(f"private raw receipt {raw_field} differs from local output path")
+            raw_path = Path(raw.get(raw_field, "")).resolve(strict=True)
+            if not raw_path.is_relative_to(root / "host") or raw_path != (root / expected_rel).resolve(strict=True):
+                raise OSError("raw output does not match the ignored host receipt path")
+            output_paths[field] = raw_path.read_bytes()
+            digest = hashlib.sha256(output_paths[field]).hexdigest()
+            if digest != loader.get(field) or digest != capture.get(digest_field) or digest != raw.get(digest_field):
+                errors.append(f"{field} bytes do not match public/private capture hashes")
         except OSError:
-            errors.append(f"{field} bytes are missing")
-    if isinstance(loader.get("capture_stdout"), dict) and capture.get("stdout_sha256") != loader["capture_stdout"].get("sha256"):
-        errors.append("captured stdout bytes/hash do not match the retained stdout artifact")
-    if isinstance(loader.get("capture_stderr"), dict) and capture.get("stderr_sha256") != loader["capture_stderr"].get("sha256"):
-        errors.append("captured stderr bytes/hash do not match the retained stderr artifact")
-    if raw.get("stdout_sha256") != capture.get("stdout_sha256") or raw.get("stderr_sha256") != capture.get("stderr_sha256"):
-        errors.append("private/public child output hashes differ")
+            errors.append(f"private raw {field} file is missing or not under ignored host/")
 
     if installed is not None:
         try:
@@ -756,8 +764,8 @@ def verify_loader_capture(manifest: dict[str, Any], root: Path) -> list[str]:
             errors.append("loader_observation step does not bind the capture tool source input")
         if not ref_matches(step.get("capture_receipt"), capture_artifact):
             errors.append("loader_observation step does not output the retained capture receipt")
-        if not ref_matches(step.get("stdout_receipt"), artifacts.get(loader.get("capture_stdout", {}).get("artifact_id"))) or not ref_matches(step.get("stderr_receipt"), artifacts.get(loader.get("capture_stderr", {}).get("artifact_id"))):
-            errors.append("loader_observation step stdout/stderr refs differ from captured process outputs")
+        if step.get("stdout_sha256") != loader.get("capture_stdout_sha256") or step.get("stderr_sha256") != loader.get("capture_stderr_sha256"):
+            errors.append("loader_observation step output hashes differ from the private child output hashes")
 
     raw_args = raw.get("raw_capture_argv", [])
     if len(raw_args) < 2 or not Path(raw_args[0]).name.startswith("python"):
@@ -893,7 +901,7 @@ def verify_cmake_target_contract(root: Path) -> list[str]:
 
     def sources_for(target: str, target_kind: str) -> list[str] | None:
         pattern = rf"add_library\s*\(\s*{re.escape(target)}\s+{re.escape(target_kind)}\s+(.*?)\)"
-        match = re.search(pattern, content, re.S)
+        match = re.search(pattern, content, re.DOTALL)
         if not match:
             return None
         return re.findall(r"(?m)^\s*((?:src|bridge)/[A-Za-z0-9_.-]+\.cpp)\s*$", match.group(1))

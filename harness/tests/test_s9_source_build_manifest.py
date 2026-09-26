@@ -13,8 +13,8 @@ import pytest
 
 HARNESS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HARNESS))
-import verify_s9_source_build_manifest as verifier  # noqa: E402
-import capture_s9_dyld as capture_tool  # noqa: E402
+import capture_s9_dyld as capture_tool
+import verify_s9_source_build_manifest as verifier
 
 try:
     from jsonschema import Draft202012Validator
@@ -164,9 +164,9 @@ def _manifest() -> dict:
         "toolchain": {
             "platform": "darwin",
             "architecture": "arm64",
-            "compiler": {"path": "/tool/fc", "version": "fc 1", "sha256": _sha("fc")},
-            "linker": {"path": "/tool/ld", "version": "ld 1", "sha256": _sha("ld")},
-            "build_system": {"path": "/tool/make", "version": "make 1", "sha256": _sha("make")},
+            "compiler": {"path": "<FC>", "version": "fc 1", "sha256": _sha("fc")},
+            "linker": {"path": "<LD>", "version": "ld 1", "sha256": _sha("ld")},
+            "build_system": {"path": "<BUILD_SYSTEM>", "version": "make 1", "sha256": _sha("make")},
             "mpi_launcher": {"path": "<MPI_LAUNCHER>", "version": "Open MPI 5", "sha256": _sha("mpirun")},
             "environment": {},
         },
@@ -181,7 +181,7 @@ def _manifest() -> dict:
         },
         "lineage_gate": {
             "status": "unverified_loader",
-            "verifier": {"path": "/tool/verifier", "version": "verifier 1", "sha256": _sha("verifier")},
+            "verifier": {"path": "<S9_VERIFIER>", "version": "verifier 1", "sha256": _sha("verifier")},
             "required_edges": list(verifier.REQUIRED_RELATIONS),
             "edge_results": [dict(edge, status="unproven") if edge["relation"] == "resolves_to" else edge for edge in edges],
             "failures": [],
@@ -245,46 +245,24 @@ def _attach_echo_loader_capture(manifest: dict, root: Path) -> None:
     loader_step = next(s for s in manifest["build_steps"] if s["kind"] == "loader_inspection")
     stdout = next(a for a in manifest["artifacts"] if a["artifact_id"] == loader_step["stdout_receipt"]["artifact_id"])
     stderr = next(a for a in manifest["artifacts"] if a["artifact_id"] == loader_step["stderr_receipt"]["artifact_id"])
-    stdout["path"] = "host/s9-captures/fake.stdout.log"
-    stderr["path"] = "host/s9-captures/fake.stderr.log"
-    for container in (manifest["source_tree"]["files"], *(step[key] for step in manifest["build_steps"] for key in ("inputs", "outputs")), manifest["lineage_gate"]["edge_results"]):
-        for value in container:
-            for ref_field in ("artifact_id", "from_artifact", "to_artifact"):
-                ref = value if ref_field == "artifact_id" else value.get(ref_field) if isinstance(value, dict) else None
-                if isinstance(ref, dict) and ref.get("artifact_id") == stdout["artifact_id"]:
-                    ref["path"] = stdout["path"]
-                if isinstance(ref, dict) and ref.get("artifact_id") == stderr["artifact_id"]:
-                    ref["path"] = stderr["path"]
-        if container is manifest["source_tree"]["files"]:
-            continue
-    for step in manifest["build_steps"]:
-        for key in ("stdout_receipt", "stderr_receipt"):
-            ref = step[key]
-            if ref["artifact_id"] == stdout["artifact_id"]:
-                ref["path"] = stdout["path"]
-            if ref["artifact_id"] == stderr["artifact_id"]:
-                ref["path"] = stderr["path"]
-    for edge in manifest["lineage_gate"]["edge_results"]:
-        for field in ("from_artifact", "to_artifact"):
-            if edge[field]["artifact_id"] == stdout["artifact_id"]:
-                edge[field]["path"] = stdout["path"]
-            if edge[field]["artifact_id"] == stderr["artifact_id"]:
-                edge[field]["path"] = stderr["path"]
+    manifest["artifacts"] = [a for a in manifest["artifacts"] if a["artifact_id"] not in {stdout["artifact_id"], stderr["artifact_id"]}]
+    loader_step.pop("stdout_receipt")
+    loader_step.pop("stderr_receipt")
 
     expected_library_path = str((root / library["path"]).resolve())
     fake_line = f"dyld[4242]: FABRICATED: loaded {expected_library_path} "
     stdout_bytes = (fake_line + "\n").encode()
     stderr_bytes = b""
-    for artifact, payload in ((stdout, stdout_bytes), (stderr, stderr_bytes)):
-        path = root / artifact["path"]
+    manifest_id = manifest["manifest_id"]
+    stdout_rel = f"host/s9-captures/{manifest_id}.stdout.log"
+    stderr_rel = f"host/s9-captures/{manifest_id}.stderr.log"
+    for relative, payload in ((stdout_rel, stdout_bytes), (stderr_rel, stderr_bytes)):
+        path = root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(payload)
-        _set_artifact_hash(manifest, artifact["artifact_id"], hashlib.sha256(payload).hexdigest())
 
     exe = next(a for a in manifest["artifacts"] if a["path"] == "main/wrf.exe")
     library = next(a for a in manifest["artifacts"] if a["path"] == "libtorch/install/lib/libkdm6_c.2.0.0.dylib")
-    stdout = next(a for a in manifest["artifacts"] if a["artifact_id"] == stdout["artifact_id"])
-    stderr = next(a for a in manifest["artifacts"] if a["artifact_id"] == stderr["artifact_id"])
     raw_env = {
         "PATH": "/Users/example-user/bin:/usr/bin",
         "DYLD_PRINT_LIBRARIES": "1",
@@ -310,7 +288,6 @@ def _attach_echo_loader_capture(manifest: dict, root: Path) -> None:
         "version": "echo fake launcher",
         "sha256": hashlib.sha256(Path("/bin/echo").resolve().read_bytes()).hexdigest(),
     }
-    manifest_id = manifest["manifest_id"]
     private_path = f"host/s9-captures/{manifest_id}.raw.json"
     capture_argv = capture_tool._public_capture_argv(manifest_id, exe["artifact_id"], library["artifact_id"])
     capture = {
@@ -327,8 +304,8 @@ def _attach_echo_loader_capture(manifest: dict, root: Path) -> None:
         "process_exit_code": 0,
         "executable": _ref(exe),
         "loaded_library": _ref(library),
-        "stdout_sha256": stdout["sha256"],
-        "stderr_sha256": stderr["sha256"],
+        "stdout_sha256": hashlib.sha256(stdout_bytes).hexdigest(),
+        "stderr_sha256": hashlib.sha256(stderr_bytes).hexdigest(),
         "dyld_image_lines": capture_tool._public_dyld_lines([fake_line]),
     }
     raw_argv = [
@@ -337,7 +314,7 @@ def _attach_echo_loader_capture(manifest: dict, root: Path) -> None:
         "--library", library["path"], "--library-id", library["artifact_id"],
         "--cwd", "run", "--launcher", "/bin/echo",
         "--receipt", receipt_path, "--private-receipt", private_path,
-        "--stdout", stdout["path"], "--stderr", stderr["path"],
+        "--stdout", stdout_rel, "--stderr", stderr_rel,
     ]
     raw_capture = {
         "schema_version": "s9-dyld-raw-capture/v1",
@@ -345,6 +322,7 @@ def _attach_echo_loader_capture(manifest: dict, root: Path) -> None:
         "capture_tool_sha256": verifier.CAPTURE_TOOL_SHA256,
         "raw_capture_argv": [sys.executable, str(copied_tool.resolve()), *raw_argv],
         "raw_process_argv": process_argv,
+        "raw_launcher_sha256": hashlib.sha256(Path("/bin/echo").resolve().read_bytes()).hexdigest(),
         "raw_process_cwd": str(run_dir.resolve()),
         "raw_process_environment": raw_env,
         "process_exit_code": 0,
@@ -352,10 +330,10 @@ def _attach_echo_loader_capture(manifest: dict, root: Path) -> None:
         "raw_executable_sha256": exe["sha256"],
         "raw_loaded_library_path": str((root / library["path"]).resolve()),
         "raw_loaded_library_sha256": library["sha256"],
-        "raw_stdout_path": str((root / stdout["path"]).resolve()),
-        "raw_stderr_path": str((root / stderr["path"]).resolve()),
-        "stdout_sha256": stdout["sha256"],
-        "stderr_sha256": stderr["sha256"],
+        "raw_stdout_path": str((root / stdout_rel).resolve()),
+        "raw_stderr_path": str((root / stderr_rel).resolve()),
+        "stdout_sha256": hashlib.sha256(stdout_bytes).hexdigest(),
+        "stderr_sha256": hashlib.sha256(stderr_bytes).hexdigest(),
         "dyld_image_lines": [fake_line],
     }
     private_path_full = root / private_path
@@ -375,15 +353,17 @@ def _attach_echo_loader_capture(manifest: dict, root: Path) -> None:
     step["argv"] = capture_argv
     step["cwd"] = "<BUILD_ROOT>"
     step["inputs"].append(_ref(tool_artifact))
-    step["outputs"] = [_ref(receipt_artifact), _ref(stdout), _ref(stderr)]
+    step["outputs"] = [_ref(receipt_artifact)]
+    step["stdout_sha256"] = hashlib.sha256(stdout_bytes).hexdigest()
+    step["stderr_sha256"] = hashlib.sha256(stderr_bytes).hexdigest()
     step["capture_receipt"] = _ref(receipt_artifact)
     runtime_loader = manifest["runtime_loader"]
     runtime_loader["evidence_level"] = "observed_loader_resolution"
     runtime_loader["observed_resolution"] = _ref(library)
     runtime_loader["observation_receipt_sha256"] = receipt_artifact["sha256"]
     runtime_loader["capture_receipt"] = _ref(receipt_artifact)
-    runtime_loader["capture_stdout"] = _ref(stdout)
-    runtime_loader["capture_stderr"] = _ref(stderr)
+    runtime_loader["capture_stdout_sha256"] = hashlib.sha256(stdout_bytes).hexdigest()
+    runtime_loader["capture_stderr_sha256"] = hashlib.sha256(stderr_bytes).hexdigest()
     runtime_loader["capture"] = capture
     gate = manifest["lineage_gate"]
     gate["status"] = "proven"
@@ -433,9 +413,122 @@ def test_environment_projection_drops_credentials_and_aliases_paths():
     assert all(token not in serialized for token in ("/Users/example-user", "/private/tmp", "var/folders", "AKIA-DO-NOT-SERIALIZE", "secret-do-not-serialize", "HOME", "PWD", "TMPDIR", "AWS_ACCESS_KEY_ID"))
 
 
+def test_collector_produces_path_redacted_public_and_private_raw_receipts(tmp_path: Path, monkeypatch):
+    root = tmp_path / "build-root"
+    tool_path = root / verifier.CAPTURE_TOOL_PATH
+    exe_rel = "host/KIM-meso_v1.0/main/wrf.exe"
+    library_rel = "libtorch/install/lib/libkdm6_c.2.0.0.dylib"
+    cwd_rel = "host/KIM-meso_v1.0/run"
+    launcher = tmp_path / "bin/mpirun"
+    for path in (tool_path, root / exe_rel, root / library_rel, root / cwd_rel, launcher):
+        path.parent.mkdir(parents=True, exist_ok=True)
+    (root / cwd_rel).mkdir(parents=True, exist_ok=True)
+    tool_path.write_bytes((HARNESS / "capture_s9_dyld.py").read_bytes())
+    tool_bytes = tool_path.read_bytes()
+    (root / exe_rel).write_bytes(b"fake wrf executable")
+    (root / library_rel).write_bytes(b"fake kdm6 dylib")
+    launcher.write_text("trusted launcher placeholder; subprocess is mocked")
+    launcher.chmod(0o755)
+    for key, value in {
+        "PATH": "/Users/example-user/bin:/usr/bin",
+        "HOME": "/Users/example-user",
+        "PWD": "/private/tmp/example-project",
+        "TMPDIR": "/var/folders/private",
+        "AWS_ACCESS_KEY_ID": "AKIA-DO-NOT-SERIALIZE",
+        "AWS_SECRET_ACCESS_KEY": "secret-do-not-serialize",
+        "DYLD_LIBRARY_PATH": "/Users/example-user/KDM6AD/libtorch/install/lib",
+    }.items():
+        monkeypatch.setenv(key, value)
+    library_abs = str((root / library_rel).resolve())
+    stdout = b"fake WRF stdout\n"
+    stderr = f"dyld[777]: loaded {library_abs}\n".encode()
+    child_argv = [str(launcher.resolve()), "-n", "1", str((root / exe_rel).resolve())]
+
+    def fake_run(argv, *, cwd, env, capture_output, check):
+        assert argv == child_argv
+        assert cwd == (root / cwd_rel).resolve()
+        assert capture_output and not check
+        assert "AWS_ACCESS_KEY_ID" not in env and "HOME" not in env and "TMPDIR" not in env
+        assert env["DYLD_PRINT_LIBRARIES"] == "1" and env["OMP_NUM_THREADS"] == "1"
+        return subprocess.CompletedProcess(argv, 0, stdout=stdout, stderr=stderr)
+
+    monkeypatch.setattr(capture_tool.subprocess, "run", fake_run)
+    manifest_id = "collector-projection-test"
+    public_receipt = "harness/evidence/collector-projection.json"
+    private_receipt = f"host/s9-captures/{manifest_id}.raw.json"
+    stdout_path = f"host/s9-captures/{manifest_id}.stdout.log"
+    stderr_path = f"host/s9-captures/{manifest_id}.stderr.log"
+    monkeypatch.setattr(sys, "argv", [
+        str(tool_path), "--root", str(root), "--manifest-id", manifest_id,
+        "--executable", exe_rel, "--executable-id", "wrf-exe",
+        "--library", library_rel, "--library-id", "kdm6-c-dylib",
+        "--cwd", cwd_rel, "--launcher", str(launcher), "--receipt", public_receipt,
+        "--private-receipt", private_receipt, "--stdout", stdout_path, "--stderr", stderr_path,
+    ])
+
+    assert capture_tool.main() == 0
+    public_path = root / public_receipt
+    public = json.loads(public_path.read_text())
+    public_json = public_path.read_text()
+    private_path = root / private_receipt
+    private = json.loads(private_path.read_text())
+    assert hashlib.sha256(private_path.read_bytes()).hexdigest() == public["private_receipt_sha256"]
+    assert private["raw_process_argv"] == child_argv
+    assert public["process_argv"] == ["<MPI_LAUNCHER>", "-n", "1", "<WRF_EXE>"]
+    assert public["process_cwd"] == "<RUN_DIR>"
+    assert public["dyld_image_lines"] == ["dyld: loaded <INSTALLED_KDM6_C_ABI_DYLIB>"]
+    assert all(token not in public_json for token in ("/Users/example-user", "/private/tmp/example-project", "/var/folders/private", "AKIA-DO-NOT-SERIALIZE", "secret-do-not-serialize", "HOME", "PWD", "TMPDIR", "AWS_ACCESS_KEY_ID"))
+    assert (root / stdout_path).is_relative_to(root / "host")
+    assert (root / stderr_path).is_relative_to(root / "host")
+
+    def artifact(artifact_id: str, kind: str, path: str, payload: bytes) -> dict:
+        return {"artifact_id": artifact_id, "kind": kind, "path": path, "sha256": hashlib.sha256(payload).hexdigest(), "mtime_utc": None}
+
+    exe_ref = {"artifact_id": "wrf-exe", "path": exe_rel, "sha256": hashlib.sha256((root / exe_rel).read_bytes()).hexdigest()}
+    library_ref = {"artifact_id": "kdm6-c-dylib", "path": library_rel, "sha256": hashlib.sha256((root / library_rel).read_bytes()).hexdigest()}
+    tool_ref = {"artifact_id": "capture-tool", "path": verifier.CAPTURE_TOOL_PATH, "sha256": hashlib.sha256(tool_path.read_bytes()).hexdigest()}
+    capture_ref = {"artifact_id": "capture-receipt", "path": public_receipt, "sha256": hashlib.sha256(public_path.read_bytes()).hexdigest()}
+    manifest = {
+        "artifacts": [
+            artifact("wrf-exe", "executable", exe_rel, (root / exe_rel).read_bytes()),
+            artifact("kdm6-c-dylib", "shared_library", library_rel, (root / library_rel).read_bytes()),
+            artifact("capture-tool", "source", verifier.CAPTURE_TOOL_PATH, tool_bytes),
+            artifact("capture-receipt", "receipt", public_receipt, public_path.read_bytes()),
+        ],
+        "toolchain": {"mpi_launcher": {"path": "<MPI_LAUNCHER>", "version": "mpirun fake fixture", "sha256": hashlib.sha256(launcher.read_bytes()).hexdigest()}},
+        "runtime_loader": {
+            "evidence_level": "observed_loader_resolution",
+            "executable_sha256": exe_ref["sha256"],
+            "observed_resolution": library_ref,
+            "capture_receipt": capture_ref,
+            "capture_stdout_sha256": public["stdout_sha256"],
+            "capture_stderr_sha256": public["stderr_sha256"],
+            "capture": public,
+        },
+        "build_steps": [{
+            "kind": "loader_observation",
+            "argv": public["capture_argv"],
+            "inputs": [exe_ref, library_ref, tool_ref],
+            "outputs": [capture_ref],
+            "capture_receipt": capture_ref,
+            "stdout_sha256": public["stdout_sha256"],
+            "stderr_sha256": public["stderr_sha256"],
+        }],
+    }
+    assert verifier.verify_loader_capture(manifest, root) == []
+
+
 def test_cmake_static_and_shared_targets_match_manifest_contract():
     assert len(verifier.CPP_CORE_SOURCES) == 14
     assert verifier.verify_cmake_target_contract(HARNESS.parent) == []
+
+
+def test_public_toolchain_rejects_absolute_executable_paths():
+    manifest = _manifest()
+    manifest["toolchain"]["compiler"]["path"] = "/Users/example-user/bin/gfortran"
+    errors = verifier.verify_manifest_semantics(manifest)
+    assert any("toolchain.compiler.path must be a path-redacted alias" in error for error in errors)
+    assert _schema_errors(manifest)
 
 
 def test_schema_valid_single_ghost_resolves_edge_cannot_prove_lineage(tmp_path: Path):
@@ -507,6 +600,21 @@ def test_missing_core_cpp_member_is_rejected():
     archive["archive_members"] = [r for r in archive["archive_members"] if not r["path"].endswith("ops.cpp.o")]
     errors = verifier.verify_manifest_semantics(manifest)
     assert any("libkdm6.a archive member inventory omits required objects: ops.cpp.o" in error for error in errors)
+
+
+@pytest.mark.parametrize("mutation", ["reverse", "extra_physical", "duplicate_pair"])
+def test_core_archive_members_are_an_exact_ordered_bijection(mutation: str):
+    manifest = _manifest()
+    archive = next(a for a in manifest["artifacts"] if a.get("path") == "libtorch/build/libkdm6.a")
+    if mutation == "reverse":
+        archive["archive_members"].reverse()
+    elif mutation == "extra_physical":
+        archive["member_inventory"].append({"name": "hidden-extra.o", "sha256": _sha("hidden-extra")})
+    else:
+        archive["archive_members"].append(copy.deepcopy(archive["archive_members"][0]))
+        archive["member_inventory"].append(copy.deepcopy(archive["member_inventory"][0]))
+    errors = verifier.verify_manifest_semantics(manifest)
+    assert any("archive_members must exactly match physical object members in order and multiplicity" in error for error in errors)
 
 
 def test_edge_endpoint_hash_must_match_inventory():

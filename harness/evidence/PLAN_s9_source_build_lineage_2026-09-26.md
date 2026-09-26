@@ -76,11 +76,6 @@ The ordered `ar -t` inventory contains fifteen physical entries in each
 current `libwrflib.a`, including one repeated member name. The schema retains
 the full ordered name/hash multiset; the verifier compares it with parsed
 physical archive entries so an unlisted extra or duplicate cannot pass.
-The ordered `ar -t` inventory contains fifteen physical entries in each
-`libkdm6.a` (one `__.SYMDEF` plus fourteen objects) and 376 entries in the
-current `libwrflib.a`, including one repeated member name. The schema retains
-the full ordered name/hash multiset; the verifier compares it with parsed
-physical archive entries so an unlisted extra or duplicate cannot pass.
 
 The CMake source establishes two distinct targets: fourteen `src/*.cpp`
 translation units form the STATIC `kdm6` target; `kdm6_c` is a SHARED target
@@ -151,11 +146,11 @@ install directory, executable, or run directory.
    exact flags and commands, environment, symlink targets, Mach-O install
    names/RPATHs, and output locations. The verifier must check each
    source-to-output edge, not infer one from matching mtimes.
-5. Only after both manifests pass structural and byte-edge verification may a
-   separately authorized native comparison run the declared one-rank,
-   one-thread fixture and compare saved times and numeric fields. Record that
-   result as bounded fixture evidence; do not convert it into universal
-   equivalence, approval, or a revised historical Gate A result.
+5. After both manifests pass structural and byte-edge verification, a scoped
+   one-rank, one-thread comparison can run the declared fixture and compare
+   saved times and numeric fields. Record the result as bounded fixture
+   evidence; it does not establish universal equivalence or revise the
+   historical Gate A result.
 
 This is the minimum defensible paired build for attributing an observed
 between-arm difference to the one source line. A single rebuild of the active
@@ -192,8 +187,10 @@ the paired comparison.
 
 ## Provenance of this plan
 
-The plan was prepared in an isolated public worktree from `origin/main` at
-`1956acd` (2026-09-26). Canonical `host/` inputs were read-only. No private
+The plan was first prepared in an isolated public worktree from `origin/main`
+at `1956acd` (2026-09-26), then the S9 branch was rebased onto `origin/main`
+at `9ac2b1d` after PR #283 merged (2026-09-27). Canonical `host/` inputs were
+read-only. No private
 source, object, archive, dylib, executable, or run input was modified, and no
 native compile, link, or model run was performed. Read-only hash checks
 confirmed all fourteen `libkdm6.a` members match their build objects in both

@@ -119,8 +119,8 @@ def main() -> int:
         parser.error("raw stdout/stderr/private receipt outputs must be inside ignored host/")
     if private_receipt_path != _relative(root, f"host/s9-captures/{args.manifest_id}.raw.json"):
         parser.error("private receipt must use host/s9-captures/<manifest-id>.raw.json")
-    if private_receipt_path != _relative(root, f"host/s9-captures/{args.manifest_id}.raw.json"):
-        parser.error("private receipt must use host/s9-captures/<manifest-id>.raw.json")
+    if stdout_path != _relative(root, f"host/s9-captures/{args.manifest_id}.stdout.log") or stderr_path != _relative(root, f"host/s9-captures/{args.manifest_id}.stderr.log"):
+        parser.error("raw stdout/stderr must use the manifest-id-specific ignored host/s9-captures paths")
     if receipt_path.is_relative_to(root / "host"):
         parser.error("public receipt projection must be outside ignored host/")
     stdout_path.parent.mkdir(parents=True, exist_ok=True)
@@ -145,6 +145,7 @@ def main() -> int:
         "capture_tool_sha256": tool_sha,
         "raw_capture_argv": [sys.executable, str(Path(sys.argv[0]).resolve()), *sys.argv[1:]],
         "raw_process_argv": command,
+        "raw_launcher_sha256": _sha(launcher.read_bytes()),
         "raw_process_cwd": str(cwd),
         "raw_process_environment": env,
         "process_exit_code": child.returncode,
