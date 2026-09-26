@@ -1,0 +1,456 @@
+{
+  "schema": "s10-czeroqg-prelink-plan-v1",
+  "status": "PRELINK_GUARD_FAILS_CLOSED_PENDING_CONFIG_PINS_REVIEWED_ARGV_AND_EXTERNAL_RELEASE_TRUST",
+  "supersedes": "harness/evidence/s10_czeroqg_native_plan_2026-09-26.json",
+  "base_commit": "27152cca910c21e268a34db620ba10e28f2683bf",
+  "policy_approved": false,
+  "s10_status": "OPEN",
+  "gates": {
+    "s15_release_receipt_required": true,
+    "green_red_review_required": true,
+    "source_rehash_before_prelink": true,
+    "fresh_shadow_output_required": true,
+    "canonical_archive_exact_path_and_hash_required": true,
+    "full_link_or_native_run_performed": false,
+    "coordinator_s15_release_receipt_sha256_required": true,
+    "trusted_s15_release_receipt_sha256": null
+  },
+  "host_source_pins": {
+    "mp37": {
+      "source_relative_to_private_host": "phys/module_mp_kdm6.F",
+      "source_sha256": "fc0a72d33a5e61803fea56eb9118018039c6da8b5775813032b4861a2bd66eb5",
+      "c_overlay_sha256": "d1c16f3af440f35c38146e02f4ad350ce62a3a43c541e924d46143b5b30467a3",
+      "macro_off_b_midpoint_sha256": "70f101d9160d07af8a318d552ad317c05e7d46219fb0e4233da49979bd84a935",
+      "overlay_macro": "KDM6_PROGB_ZERO_QG_DIV_GUARD",
+      "b_guard_macro_defined": false,
+      "c_guard_macro_defined": true,
+      "source_capture_strips_to_canonical": true,
+      "macro_off_is_exact_b_midpoint": true,
+      "object_target": "module_mp_kdm6.o",
+      "preprocessed_relative_path": "S10/build-clean/mp37/{B,C}/module_mp_kdm6.F.f90",
+      "object_relative_path": "S10/build-clean/mp37/{B,C}/module_mp_kdm6.o",
+      "executable_relative_path": "S10/build-clean/mp37/{B,C}/wrf.exe",
+      "module_output_relative_path": "S10/build-clean/mp37/{B,C}/mod",
+      "dependency_file_relative_path": null
+    },
+    "mp237": {
+      "source_relative_to_private_host": "phys/module_mp_kdm6_cons.F",
+      "source_sha256": "4f0103c8a8321b8e854d3500f4ae567755e41eb78746fac54519eca2686a6648",
+      "c_overlay_sha256": "f32cc1c7a98a98bb81341d635c2cd65f2bfb50328821afd50a700a6bb76174f5",
+      "macro_off_b_midpoint_sha256": "6be24e8ca0ab651429e40c1924a5897ed54557f0b3d4942bdbdecee3411c7eca",
+      "overlay_macro": "KDM6_PROGB_ZERO_QG_DIV_GUARD",
+      "b_guard_macro_defined": false,
+      "c_guard_macro_defined": true,
+      "source_capture_strips_to_canonical": true,
+      "macro_off_is_exact_b_midpoint": true,
+      "object_target": "module_mp_kdm6_cons.o",
+      "preprocessed_relative_path": "S10/build-clean/mp237/{B,C}/module_mp_kdm6_cons.F.f90",
+      "object_relative_path": "S10/build-clean/mp237/{B,C}/module_mp_kdm6_cons.o",
+      "executable_relative_path": "S10/build-clean/mp237/{B,C}/wrf.exe",
+      "module_output_relative_path": "S10/build-clean/mp237/{B,C}/mod",
+      "dependency_file_relative_path": null
+    }
+  },
+  "prelink_requirements": {
+    "source_and_overlay_paths_are_local_receipt_bound": true,
+    "selected_case_relative_path": "test/ss_real_case_20260619_063620/SS",
+    "input_names": [
+      "wrfinput_d01",
+      "wrfbdy_d01",
+      "wrfchainp_d01"
+    ],
+    "active_input_sha256": {
+      "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+      "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+      "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3"
+    },
+    "active_input_canonical_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+    "pristine_namelist_sha256": "064b6f5ea5683ee3dc68d408c08bf4cbf588be06dbc7d99bb3529be8ba61554a",
+    "effective_namelist_sha256": {
+      "mp37": "902f08998435e9772906c5adb3c8d3d5f877357500eccb08a12312d0a1743df6",
+      "mp237": "2896b69d2df232853a649c1f3b76ac2d234ef4cd855a912908ed42f0a8327508"
+    },
+    "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+    "configuration_inputs_sha256": {
+      "configure": "ac372373098891eb28bf1f2dbc754d0c4d85338e9306a04d9f9f5748ef62bbfc",
+      "apply_kdm6ad_config.sh": "346b8fe4286088e9707f73251bfaff58a94b55ad357f49a185732a8b8ecf067c",
+      "phys/Makefile": "e9e1d95afccf0aa5c88668adb5b43ca835aada3eaaae1cd97f8f628bb6482893",
+      "arch/Config.pl": "8501605a0fc8592f4916985f446e702467dbb476d780989834f6062e0769375f",
+      "arch/configure.defaults": "24b3ebfce685d28ebc3eb17657562acf443876be42a86af252edd49f66d556c7"
+    },
+    "generated_configure_wrf_sha256": null,
+    "configuration_generation_command": [
+      "/bin/bash",
+      "./configure"
+    ],
+    "configuration_pipeline": [
+      "./configure",
+      "./apply_kdm6ad_config.sh"
+    ],
+    "run_controls": {
+      "seconds": 20,
+      "history_interval": 0,
+      "history_interval_s": 20,
+      "ranks": 1,
+      "threads": 1,
+      "proc_grid": "1x1",
+      "saved_times": [
+        "2025-07-19_00:00:00",
+        "2025-07-19_00:00:20"
+      ]
+    },
+    "configuration_apply_command": [
+      "/bin/bash",
+      "./apply_kdm6ad_config.sh"
+    ],
+    "configure_selection_stdin_sha256": "5cc0efdbfc6bf3e9208a52ed10e3cb5edac3bb961635ac89b2af48d3463d3639",
+    "configuration_apply_stdin_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "configuration_pin_status": "Configure argv, exact menu stdin, selected GNU/Open MPI dmpar option 35, basic nesting option 1, Homebrew NetCDF roots and config tools are pinned; generated configure.wrf SHA remains null until fresh configure/apply capture and review.",
+    "netcdf_config_invocation_policy": {
+      "selection": "Homebrew NetCDF 4.9.3 and NetCDF-Fortran 4.6.2; explicit NETCDF and NETCDF_C roots bypass PATH selection",
+      "environment": {
+        "NETCDF": "/opt/homebrew",
+        "NETCDF_C": "/opt/homebrew"
+      },
+      "invocations": {
+        "nc-config": {
+          "path": "/opt/homebrew/bin/nc-config",
+          "sha256": "6e20feedbde2cb60ea0fc87cdf2a0eaeb440d06e661f7e618d3cc8ea4bdd44c5",
+          "version": "netCDF 4.9.3",
+          "argv_outputs": {
+            "--version": "netCDF 4.9.3",
+            "--libs": "-L/opt/homebrew/Cellar/netcdf/4.9.3_2/lib -lnetcdf"
+          }
+        },
+        "nf-config": {
+          "path": "/opt/homebrew/bin/nf-config",
+          "sha256": "0e210fbd02790bfd7d000d90d605df739607c90f95651a77769d008bb7e91457",
+          "version": "4.6.2",
+          "argv_outputs": {
+            "--has-nc4": "yes",
+            "--flibs": "-L/opt/homebrew/Cellar/netcdf-fortran/4.6.2/lib -lnetcdff -lnetcdf"
+          }
+        }
+      },
+      "configure_source_resolution": {
+        "nc_config": "NETCDF_C/bin/nc-config",
+        "nf_config": "NETCDF/bin/nf-config",
+        "source_sha256": "ac372373098891eb28bf1f2dbc754d0c4d85338e9306a04d9f9f5748ef62bbfc"
+      },
+      "forbidden_mixed_prefixes": [
+        "/opt/local"
+      ]
+    },
+    "configuration_stdin_capture_paths": {
+      "configure": "configuration_capture/configure.stdin",
+      "apply_kdm6ad_config": "configuration_capture/apply_kdm6ad_config.stdin"
+    },
+    "configure_menu_selection": {
+      "stdin_bytes": "35\\n1\\n",
+      "stdin_sha256": "5cc0efdbfc6bf3e9208a52ed10e3cb5edac3bb961635ac89b2af48d3463d3639",
+      "architecture_option": 35,
+      "architecture_description": "GNU gfortran/gcc with Open MPI, dmpar",
+      "nesting_option": 1,
+      "nesting_description": "basic nesting",
+      "basis": "the current canonical configure.wrf is DMPARALLEL=1 with GNU Open MPI; option ordering is pinned by arch/configure.defaults SHA-256"
+    }
+  },
+  "build_matrix": {
+    "schemes": [
+      "mp37",
+      "mp237"
+    ],
+    "variants": [
+      "B",
+      "C"
+    ],
+    "logging_modes_per_executable": [
+      "off",
+      "on"
+    ],
+    "same_source_toolchain_inputs_and_flags_within_scheme": true,
+    "only_preprocessing_macro_difference": "-DKDM6_PROGB_ZERO_QG_DIV_GUARD absent in B, present in C",
+    "common_required_compile_macros": [
+      "KDM6_PROGB_VALIDITY_CAPTURE",
+      "KDM6_PROGB_POLICY_MIDPOINT"
+    ],
+    "required_compile_and_link_flag": "-ffp-contract=off",
+    "compile_flags_recorded_from_fresh_configure": true,
+    "execution_receipt_schema": "s10-czeroqg-prelink-execution-v1",
+    "execution_record_fields_per_scheme_and_arm": {
+      "preprocessing": [
+        "four ordered commands: stage, pinned tool name/path/SHA, exhaustive argv-derived flags, cwd, shell=false, return code, input SHA, output path/SHA, stdout/stderr path"
+      ],
+      "object": [
+        "pinned tool name/path/SHA, exhaustive argv-derived flags, cwd, argv, object path/SHA"
+      ],
+      "link": [
+        "pinned tool name/path/SHA, exhaustive argv-derived flags, cwd, argv, exact canonical archive path/SHA, unique fresh -o executable path"
+      ],
+      "shared_identity": [
+        "source_overlay_sha256",
+        "runner_sha256",
+        "effective_namelist_sha256",
+        "named active_input_sha256",
+        "configure_wrf_sha256",
+        "complete toolchain_sha256"
+      ]
+    },
+    "fresh_configuration_record_fields": [
+      "./configure argv and flags",
+      "./apply_kdm6ad_config.sh argv and flags",
+      "return codes",
+      "new configure.wrf SHA-256"
+    ],
+    "executed_argv_and_artifact_hashes": "pending; must be recorded from this fresh build, never imported from the 2025-09-25 historical receipt",
+    "complete_build_output_inventory": "required at prelink; every file under S10/build-clean must be listed and SHA-256 checked, with no symlinks or unrecorded files",
+    "link_argv_contains_exact_canonical_archive": true,
+    "link_input_archive": {
+      "path_relative_to_private_host": "main/libwrflib.a",
+      "sha256": "722f83c058ea1c43d5f23cc497aed1b218f33f90828a0e1dc51c6fe30203deba",
+      "shadow_copy_allowed": false
+    },
+    "fresh_executable_paths": [
+      "S10/build-clean/mp37/B/wrf.exe",
+      "S10/build-clean/mp37/C/wrf.exe",
+      "S10/build-clean/mp237/B/wrf.exe",
+      "S10/build-clean/mp237/C/wrf.exe"
+    ],
+    "executable_sha256": null,
+    "normalized_argv_sha256": null,
+    "normalized_argv_pin_status": "pending independent WRF command-line capture after fresh configuration; prelink guard blocks until reviewed value is committed",
+    "argv_normalization": "include configure/apply argv, stdin hashes and generated configure.wrf SHA; normalize only B/C arm output-root path and strip the single bare C guard define; all other argument tokens compare exactly",
+    "output_inventory_sha256": null,
+    "linker_map_output_policy": "all -Map/--Map forms are forbidden, including -Wl and -Xlinker encodings",
+    "fortran_module_output_policy": "exactly one -J target per object, equal to the arm-specific module_output_relative_path; -MF is forbidden unless a later reviewed plan pins one exact arm-local file",
+    "configuration_generation_command_template": [
+      "/bin/bash",
+      "./configure"
+    ],
+    "configuration_apply_command_template": [
+      "/bin/bash",
+      "./apply_kdm6ad_config.sh"
+    ],
+    "configure_option_input": "captured stdin bytes with SHA-256 pin; no placeholder configure arguments",
+    "configure_argv_sha256": null,
+    "response_file_policy": "reject @file in direct argv, -Wl comma segments, or -Xlinker forms; response contents cannot be independently normalized/pinned",
+    "prohibited_macro_inputs": [
+      "-include",
+      "-imacros",
+      "-Wp",
+      "-Xpreprocessor",
+      "@response-file"
+    ]
+  },
+  "clean_shadow": {
+    "local_shadow_path_is_receipt_bound": true,
+    "historic_logs_and_configure_wrf_quarantined": true,
+    "stale_shadow_main_wrf_exe_quarantined": true,
+    "stale_main_wrf_exe_sha256": "676223e8d61d23456d4ac83713bff0283ea08b1e71776b7f8885b062d97f801b",
+    "canonical_libwrflib_archive_present_in_shadow": false,
+    "fresh_build_output_root": "S10/build-clean",
+    "output_root_must_be_absent_or_empty_before_build": true,
+    "reject_any_preexisting_target_executable": true,
+    "prelink_requires_complete_output_file_inventory": true,
+    "reject_root_rsl_logs": true,
+    "reject_stale_object_module_outputs": true,
+    "reject_generated_f90_shadowed_by_same_name_F": true,
+    "empty_root_snapshot": "pre-build absent/empty root observation with CSPRNG nonce; coordinator release must pin the exact snapshot SHA-256 before prelink",
+    "empty_root_snapshot_relative_path": "S10/prebuild_output_root_snapshot.json"
+  },
+  "replay_trust": {
+    "independent_stage1_discovery_keys": null,
+    "stage1_discovery_key_digest": null,
+    "independent_final_event_log_sha256": null,
+    "final_replay_status": "OPEN"
+  },
+  "historical_receipts": {
+    "s10_progb_policy_shadow_build_receipt_2026-09-25.json": "historical recipe and prior campaign evidence only; not this build's argv or hash receipt",
+    "s10_policy_counterfactual_native_results_2026-09-25.json": "preserved A/B failures; not C acceptance"
+  },
+  "toolchain": {
+    "tools": {
+      "bash": {
+        "path": "/bin/bash",
+        "sha256": "67e853b740606c0cb92fc8b7186a98d327d783f7e7cd911773bb83f73f3d6583"
+      },
+      "cpp": {
+        "path": "/usr/bin/cpp",
+        "sha256": "5b1ddb7e9c11b87a034fc88b212e8ac243cfe2b4db696d767aa44c79595fc09a"
+      },
+      "gfortran": {
+        "path": "/opt/homebrew/bin/gfortran",
+        "sha256": "0019c2383f399c1ba6aed1dc060191e793caf963c1066d254194883581098bb2"
+      },
+      "f951": {
+        "path": "/opt/homebrew/Cellar/gcc/15.2.0/libexec/gcc/aarch64-apple-darwin24/15/f951",
+        "sha256": "d87e0783875768fd1e44d0c45fe3de97b9bfae28c6db611728a7f5d22e57ae6b"
+      },
+      "collect2": {
+        "path": "/opt/homebrew/Cellar/gcc/15.2.0/libexec/gcc/aarch64-apple-darwin24/15/collect2",
+        "sha256": "ea305ff82d5f8a59924ef637111a8f4603dc3ae0f853463251309d0c9ab1bdd0"
+      },
+      "as": {
+        "path": "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/as",
+        "sha256": "06770364632b454317238e79d670c094e27301c7322c3a488323bd42e4d0bcbc"
+      },
+      "as_wrapper": {
+        "path": "/opt/local/bin/as",
+        "sha256": "49cb56eae1c558f85e0c34571232f22e473cc170f266c12f52e0131b82617e99"
+      },
+      "ld": {
+        "path": "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld",
+        "sha256": "374d9f0713bce2c8a9e1e82bde51615d5433516a10d99b63107eb6ee70542e4c"
+      },
+      "ld_wrapper": {
+        "path": "/opt/local/bin/ld",
+        "sha256": "833e2f53e97ba9fc78d966169fee20a6793de162003f7321fe576fb1a0dc2a13"
+      },
+      "mpif90": {
+        "path": "/opt/homebrew/bin/mpif90",
+        "sha256": "91865d113f579bbf8e14c7d696266fdcf87f5e4845aa75966ad4e31531ebae5d"
+      },
+      "sed": {
+        "path": "/usr/bin/sed",
+        "sha256": "c22008f570205b508cd80adecc06c5332aead6b45228ca436bf1615c39adf0f6"
+      },
+      "standard": {
+        "path_relative_to_shadow_host": "tools/standard.exe",
+        "sha256": "21848b3d6e1680a2221753f06afef1c2d3043b542cf7ac0062c542470786cf19"
+      },
+      "xcrun": {
+        "path": "/usr/bin/xcrun",
+        "sha256": "c4159434cb2d59ae563fb2a8c7a8594b24445e8790df278e03b2e1860141497b"
+      },
+      "nc-config": {
+        "path": "/opt/homebrew/bin/nc-config",
+        "sha256": "6e20feedbde2cb60ea0fc87cdf2a0eaeb440d06e661f7e618d3cc8ea4bdd44c5",
+        "version_argv": [
+          "--version"
+        ],
+        "version_stdout": "netCDF 4.9.3"
+      },
+      "nf-config": {
+        "path": "/opt/homebrew/bin/nf-config",
+        "sha256": "0e210fbd02790bfd7d000d90d605df739607c90f95651a77769d008bb7e91457",
+        "version_argv": [
+          "--version"
+        ],
+        "version_stdout": "4.6.2"
+      }
+    },
+    "environment_keys": [
+      "PATH",
+      "OMPI_FC",
+      "OMPI_FCFLAGS",
+      "OMPI_F90",
+      "OMPI_F90FLAGS",
+      "GCC_EXEC_PREFIX",
+      "COMPILER_PATH",
+      "LIBRARY_PATH",
+      "CPATH",
+      "C_INCLUDE_PATH",
+      "CPLUS_INCLUDE_PATH",
+      "LD_LIBRARY_PATH",
+      "DYLD_LIBRARY_PATH",
+      "FC",
+      "F90",
+      "FFLAGS",
+      "FCFLAGS",
+      "LDFLAGS",
+      "CPPFLAGS",
+      "SDKROOT",
+      "MACOSX_DEPLOYMENT_TARGET",
+      "DEVELOPER_DIR",
+      "NETCDF",
+      "NETCDF_C",
+      "NETCDFPAR",
+      "PNETCDF",
+      "HDF5",
+      "PHDF5",
+      "ADIOS2",
+      "NETCDF_classic",
+      "HDF5_PATH",
+      "ZLIB_PATH",
+      "CURL_PATH",
+      "JASPERLIB",
+      "JASPERINC",
+      "GPFS_PATH",
+      "COMMLIB",
+      "OMP",
+      "WRF_OS",
+      "WRF_MACH",
+      "WRF_NMM_CORE",
+      "WRFPLUS",
+      "WRF_CHEM",
+      "WRF_KPP",
+      "WRF_DFI_RADAR",
+      "WRF_CMAQ",
+      "TERRAIN_AND_LANDUSE"
+    ],
+    "environment_sha256": "9b0152cac7ff77c93848f4a787714f90f4bb37b95c2bb058c947005374e530b2",
+    "toolchain_sha256": "cfcf7129f07e2d07ef6b4a318d26050bc82f85be610af9142b5d719833389336",
+    "mpif90_underlying_command": "gfortran",
+    "gfortran_subcommands": [
+      "f951",
+      "collect2",
+      "as",
+      "ld"
+    ],
+    "linker_name_reported_by_gfortran": "ld",
+    "linker_resolved_path": "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld",
+    "toolchain_scope": "Pinned direct commands, resolved GCC/Xcode subordinate executables, explicit Homebrew NetCDF config tools, and resolution environment; not a hermetic build claim.",
+    "argv_policy": "absolute pinned executable path must be argv[0] for every command; hashes and subordinate resolution are rechecked at prelink",
+    "configuration_environment": {
+      "NETCDF": "/opt/homebrew",
+      "NETCDF_C": "/opt/homebrew",
+      "NETCDFPAR": null,
+      "PNETCDF": null,
+      "HDF5": null,
+      "PHDF5": null,
+      "ADIOS2": null,
+      "NETCDF_classic": null,
+      "HDF5_PATH": null,
+      "ZLIB_PATH": null,
+      "CURL_PATH": null,
+      "JASPERLIB": null,
+      "JASPERINC": null,
+      "GPFS_PATH": null,
+      "COMMLIB": null,
+      "OMP": null,
+      "WRF_OS": null,
+      "WRF_MACH": null,
+      "WRF_NMM_CORE": null,
+      "WRFPLUS": null,
+      "WRF_CHEM": null,
+      "WRF_KPP": null,
+      "WRF_DFI_RADAR": null,
+      "WRF_CMAQ": null,
+      "TERRAIN_AND_LANDUSE": null
+    },
+    "path_selection_policy": "PATH is exact-hash pinned. NetCDF tool resolution is independent of PATH: NETCDF_C=/opt/homebrew and NETCDF=/opt/homebrew require the corresponding absolute bin tools; nc-config/nf-config binary SHA-256 and version outputs are checked."
+  },
+  "trusted_s15_release": {
+    "s15_merge_commit": "27152cca910c21e268a34db620ba10e28f2683bf",
+    "pr_number": 281,
+    "evidence_manifest_path": "harness/evidence/s15_b20_public/s15_native_B_20S_public_manifest.json",
+    "evidence_manifest_sha256": "02e7cfc7b0c0362f496eedad6705abeaa2b76c42808dd92092de5b0ac8580276",
+    "empty_output_root_snapshot_sha256": "396361f796e2ef4edd85461b073b607686269fa74d1ceed5a69d99a43ebca602",
+    "receipt_gate": "coordinator must sign a release record binding this final plan SHA, S15 merge/evidence pins, and this reviewed empty-root snapshot SHA; the coordinator release SHA remains an external CLI trust root",
+    "manifest_and_merge_are_rehashed_from_worktree": true,
+    "coordinator_release_receipt_present": false,
+    "coordinator_release_sha256_source": "root coordinator delivers the fixed --trusted-release-sha256 out of band after review; never accept an arbitrary CLI value",
+    "external_trust_root": "coordinator-issued record digest delivered out of band by the coordinating agent; current value unavailable"
+  },
+  "resource_gate": {
+    "status": "BLOCKED_PENDING_ESTIMATE_AND_REVIEW",
+    "coordinator_observed_free_kib": 11942032,
+    "filesystem_use_percent_at_observation": 100,
+    "full_matrix_build_or_link_allowed": false,
+    "required_before_any_multi_arm_build": [
+      "estimate preprocessing/object/link output size for all four arms",
+      "review retention and cleanup plan for disposable artifacts",
+      "fresh free-space check and coordinator authorization"
+    ]
+  }
+}

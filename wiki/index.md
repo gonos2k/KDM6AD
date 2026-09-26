@@ -1,7 +1,7 @@
 ---
 title: KDM6AD-k Wiki Index
 type: meta
-date_modified: 2026-07-14
+date_modified: 2026-09-27
 ---
 # KDM6AD-k Wiki
 
@@ -12,7 +12,7 @@ date_modified: 2026-07-14
 - [[papers/_index|KDM6AD 논문 페이지 색인]]
 
 ## Content
-- [[sources/_index|Sources]] - 9 pages
+- [[sources/_index|Sources]] - 10 pages
 - [[entities/_index|Entities]] - 4 pages
 - [[concepts/_index|Concepts]] - 10 pages
 - [[papers/_index|Papers]] - 42 pages
@@ -29,6 +29,7 @@ date_modified: 2026-07-14
 - [[kdm6ad-kdm6plus-literature-set-2026-06-25]] - Curated KDM6+ Zotero collection ledger after removing non-KDM6 collected papers.
 - [[kdm6plus-collection-mathematical-deep-ingest-2026-06-25]] - Mathematical deep ingest of KDM6+ papers for manuscript drafting.
 - [[kdm6ad-20260610-presentation-adversarial-review]] - June 10 presentation review, including stale C-ABI status correction and adversarial manuscript cautions.
+- [[kdm6ad-czeroqg-prelink-preparation-2026-09-26]] - S10 exact-zero qg/rate guard identities, Homebrew NetCDF/configure pins, shadow quarantine, and resource gates; S10 remains OPEN.
 
 ## Entities
 - [[KDM6]] - mp37 Fortran reference microphysics scheme.
