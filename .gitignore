@@ -5,6 +5,9 @@
 /host/
 /host_fortran/
 
+# Isolated private S10 attempt shadows, snapshots, captures, and receipts
+/S10/
+
 # libtorch prebuilt + build tree (binaries, GBs)
 /libtorch/install/
 /libtorch/build/
