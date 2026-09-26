@@ -13,13 +13,18 @@ defines the minimum machine-readable record. JSON Schema checks record shape;
 adds semantic and byte checks. It requires exactly the six relation types,
 rejects duplicate edges and unknown or path/hash-mismatched artifact references,
 binds each edge to exactly one correctly typed build step and retained stdout or
-stderr receipt, checks the required KDM6 source/object paths and archive-member
-coverage, and verifies the observed loader's executable and dylib identities.
+stderr receipt, checks all six KDM6 Fortran object paths, all fourteen CMake
+core C++ translation units, both static archive member sets, and the bridge
+object's separate shared-library link. It parses loader-capture content and
+checks the pinned collector and `mpirun -n 1 <wrf.exe>` allowlist.
 Run it as `python harness/verify_s9_source_build_manifest.py MANIFEST.json
 --root BUILD_ROOT` with the `jsonschema` Python package installed. It hashes the
-recorded artifacts and extracts the six KDM6 members from `libwrflib.a` for
-byte comparison. File mtimes remain supporting chronology only, never proof
-of origin.
+recorded artifacts and extracts members from both `libwrflib.a` and
+`libkdm6.a` for byte comparison. Because this checkout has no independent
+signed loader-execution attestation, a complete graph remains
+`unverified_loader`; the verifier rejects `lineage_gate.status: proven` even
+when a local receipt claims runtime resolution. File mtimes remain chronology
+only, never proof of origin.
 
 ## Current evidence and exact build graph
 
@@ -40,6 +45,8 @@ receipts:
 | `phys/module_microphysics_driver.o` | `a89608fd8dcda6bbb71713efdd9da9e5eeec1585bb3cc1b08161c80e171a081e` | Aug 23 00:18:35 | Listed dispatch object; its input/source lineage has no retained compile receipt. |
 | `main/libwrflib.a` | `722f83c058ea1c43d5f23cc497aed1b218f33f90828a0e1dc51c6fe30203deba` | Aug 23 00:21:51 | Contains the same bytes as the two listed stale scheme objects and the listed KDM6AD bridge/driver objects. |
 | `main/wrf.exe` | `676223e8d61d23456d4ac83713bff0283ea08b1e71776b7f8885b062d97f801b` | Aug 23 00:21:51 | Predates both active scheme source files. `run/wrf.exe` and `test/em_real/wrf.exe` are symlinks to this file. |
+| `libtorch/build/libkdm6.a` | `22015aba2e2eab4e6ccca8610a317caf2eebf8374abab64314d51bde62bad56c` | Jul 17 23:42:01 | CMake static core archive; its fourteen named members each match the corresponding `CMakeFiles/kdm6.dir/src/*.cpp.o` bytes. |
+| `libtorch/install/lib/libkdm6.a` | `4f083272ea3efb7a4f2cbfccbba94463f232117b3d9529bc6a73b13038a40409` | Jul 17 23:44:04 | Installed static archive; the same fourteen members match those build object bytes. The whole-archive hash differs from the build archive; no install receipt is retained. |
 | `libtorch/build/libkdm6_c.2.0.0.dylib` | `82c9fffe18c1fcbcb41aeec85b5430ce103b57b285089953ecdea7341dc1103e` | Jul 17 23:42:16 | Build-tree library bytes. |
 | `libtorch/install/lib/libkdm6_c.2.0.0.dylib` | `7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7` | Jul 17 23:44:04 | Installed bytes differ from the build-tree hash; no install receipt explains the difference. |
 
@@ -50,16 +57,33 @@ match their corresponding listed `phys/*.o` hashes for all six objects.
 This identifies which object bytes are in the present archive; it does not
 identify which source bytes or compiler commands produced them.
 
-The intended lineage is a converging build graph, not a serial
-source → archive → dylib chain:
+The CMake archives were also checked read-only on 2026-09-26. Both contain
+exactly the fourteen `kdm6` core members named in `libtorch/CMakeLists.txt`,
+and every member extracted from both build and install archives matches its
+`libtorch/build/CMakeFiles/kdm6.dir/src/*.cpp.o` file. The archive-level hashes
+still differ (`22015a…` build, `4f0832…` install), so the member check proves
+payload equality for these fourteen objects while an install receipt remains
+absent. Two of the fourteen source/object pairs are stale by mtime: active
+`libtorch/src/cold.cpp` (`9ee34fc1…`, Jul 18 12:44 JST) is newer than
+`CMakeFiles/kdm6.dir/src/cold.cpp.o` (`bd8c7835…`, Jul 17 23:42), and active
+`libtorch/src/sedimentation_conservative.cpp` (`38adc7f9…`, Jul 21 16:43) is
+newer than `CMakeFiles/kdm6.dir/src/sedimentation_conservative.cpp.o`
+(`59daf628…`, Jul 17 21:56). The archive members match those older objects.
+Their July 17 archive mtimes also predate the Aug 23 WRF executable; neither
+mtime nor matching members reconstructs the executable link command.
+
+The CMake source establishes two distinct targets: fourteen `src/*.cpp`
+translation units form the STATIC `kdm6` target; `kdm6_c` is a SHARED target
+whose direct source is the C ABI bridge and which links `kdm6`. CMake installs
+both libraries. The WRF Fortran objects take a separate archive branch:
 
 ```text
-Each KDM6/KDM6AD/bridge/driver Fortran source
-  → its preprocessed source → its own object ─────────────┐
-                                                          ├→ libwrflib.a → wrf.exe
-C++ entry sources → their objects → build-tree dylib ─────┤
-  → installed dylib ──────────────────────────────────────┴→ Mach-O dependency
-                                                             → observed dyld resolution
+14 libtorch/src/*.cpp sources → 14 objects → libkdm6.a ─┐
+                                                       ├→ build libkdm6_c → installed dylib ─┐
+kdm6_c_api.cpp → bridge object ────────────────────────┘                                      │
+                                                                                              ├→ WRF Mach-O dependency
+KDM6 Fortran sources → own objects → libwrflib.a ─────────────────────────────────────────────┴→ wrf.exe
+                                                                                                 → loader target UNVERIFIED
 ```
 
 `phys/Makefile` lists the KDM6 objects in the physics object set, declares the
@@ -69,12 +93,16 @@ The KDM6AD wrapper rules depend on the corresponding KDM6 module object for
 Fortran module/build ordering. Each wrapper, ABI shim, and dispatch object is
 compiled from its own source; a dependency rule does not make one object the
 producer of another.
-`configure.wrf` links `$(KDM6AD_PREFIX)/lib/libkdm6_c.dylib`, while the WRF
-binary records `@rpath/libkdm6_c.2.dylib` and several RPATHs. Static Mach-O
-inspection records candidate loader paths only. No process was launched, so
-the census does not observe which dylib dyld resolved. The installed
-`libkdm6_c.dylib`/`libkdm6_c.2.dylib` aliases point to the versioned installed
-file, but this symlink identity is not a runtime resolution receipt.
+`configure.wrf` links `$(KDM6AD_PREFIX)/lib/libkdm6_c.dylib`, and WRF records
+`@rpath/libkdm6_c.2.dylib` plus Torch dependencies. A read-only check matched
+all fourteen build and installed `libkdm6.a` members to their CMake object
+files. That proves member-byte identity only; compile and install receipts do
+not tie those objects to current source bytes. Static Mach-O records candidate
+loader paths only. No WRF process was launched and dyld resolution remains
+unobserved. `kdm6` also links `${TORCH_LIBRARIES}`; `libtorch`, `libtorch_cpu`,
+and `libc10` are separate dynamic dependencies, not members of `libkdm6.a`.
+The future manifest must retain their exact link/load identities as external
+inputs. `@rpath` and `otool -L` records alone do not prove their loaded paths.
 
 Gate A is still intentionally unchanged and still fails the current legacy
 source SHA pin. The historical pin is
@@ -106,12 +134,13 @@ install directory, executable, or run directory.
    rebuild the same full dependency closure. Capture expanded preprocessing,
    compile, archive, dylib build/install, and final link argv plus stdout and
    stderr.
-4. Capture SHA-256 for every source/config input, preprocessed KDM6 source,
-   dependent `.mod`, KDM6 and bridge/driver object, archive and relevant
-   archive member, build/install dylib, and WRF executable. Record tool binary
-   identities and versions, exact flags, environment, symlink targets,
-   Mach-O install names/RPATHs, and the output location. The verifier must
-   check every source-to-output edge, not infer one from matching mtimes.
+4. Capture SHA-256 for every source/config input, preprocessed KDM6 Fortran
+   source, all six KDM6 Fortran objects, all fourteen CMake `kdm6` objects,
+   the bridge object, both archives and every listed member, build/install
+   static/shared libraries, and the WRF executable. Record tool identities,
+   exact flags and commands, environment, symlink targets, Mach-O install
+   names/RPATHs, and output locations. The verifier must check each
+   source-to-output edge, not infer one from matching mtimes.
 5. Only after both manifests pass structural and byte-edge verification may a
    separately authorized native comparison run the declared one-rank,
    one-thread fixture and compare saved times and numeric fields. Record that
@@ -134,10 +163,13 @@ the paired comparison.
 - Any recorded edge whose input digest does not match the upstream artifact or
   whose output digest does not match the retained artifact makes the lineage
   `failed`; do not repair a mismatch by changing the historical pin.
-- `static_macho_only` can document install names and RPATHs but cannot satisfy
-  `resolves_to`. A full source/build/install/runtime lineage claim requires an
-  observed loader receipt tied to the exact executable hash and resolved
-  dylib hash.
+- `static_macho_only` records candidate install names and RPATHs only.
+  `unverified_loader` records the expected installed dylib while keeping the
+  `resolves_to` edge OPEN. A pinned collector checks actual argv, environment,
+  exit code, dyld output bytes, executable hash, and loaded dylib path/hash;
+  its unsigned local receipt still cannot promote the lineage gate to proven.
+  Proven status needs an independent trusted execution attestation, which this
+  workspace does not currently define.
 - A source/build lineage pass is separate from owner approval, scientific
   acceptance, raw-bit parity, JVP/VJP validation, and native fixture results.
 
@@ -146,10 +178,13 @@ the paired comparison.
 The plan was prepared in an isolated public worktree from `origin/main` at
 `1956acd` (2026-09-26). Canonical `host/` inputs were read-only. No private
 source, object, archive, dylib, executable, or run input was modified, and no
-native compile, link, or model run was performed. The pre-edit Graphify query
-returned unrelated cached wiki nodes. A code-only `graphify update .` created
-the worktree graph, but the subsequent query still returned unrelated wiki
-nodes; semantic refresh for this new Markdown plan was unavailable because
-`OPENAI_API_KEY` is unset. Dependency statements above were checked against
-the source census, local Makefiles, archive member identities, and Mach-O
-records.
+native compile, link, or model run was performed. Read-only hash checks
+confirmed all fourteen `libkdm6.a` members match their build objects in both
+the build and install archives. The pre-edit Graphify query returned unrelated
+cached wiki nodes. A post-edit code-only update rebuilt the graph; Graphify
+`explain` now resolves `verify_manifest_semantics()` and the C ABI bridge.
+HTML output was skipped because the graph exceeds the visualization node
+limit. Semantic extraction for this Markdown plan remains unavailable because
+no Gemini/OpenAI API key is configured. Dependency statements above were
+checked against the source census, current CMake/Makefiles, archive member
+bytes, and Mach-O records.
