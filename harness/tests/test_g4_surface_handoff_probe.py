@@ -28,13 +28,15 @@ def _config(*, fractional_seaice: int | None = 0) -> surface_probe.G4SurfaceConf
 
 
 def _rows(arm: str, config: surface_probe.G4SurfaceConfig):
-    for sample, _, _ in surface_probe.PROFILES:
+    for sample, j, i in surface_probe.PROFILES:
         for event in surface_probe.event_schedule(config):
             for field, levels in surface_probe.EVENT_FIELDS[event].items():
                 for level in levels:
                     yield surface_probe.CaptureRow(
                         arm=arm,
                         sample=sample,
+                        j_fortran_1based=j,
+                        i_fortran_1based=i,
                         event=event,
                         field=field,
                         level=level,
@@ -60,6 +62,34 @@ def test_event_schedule_comes_from_declared_config_not_received_events() -> None
     )
     with pytest.raises(surface_probe.SurfaceProbeError, match="must be declared"):
         surface_probe.event_schedule(_config(fractional_seaice=None))
+    with pytest.raises(surface_probe.SurfaceProbeError, match="pinned G4 surface path"):
+        surface_probe.event_schedule(surface_probe.G4SurfaceConfig(
+            timestep=2, sf_sfclay_physics=1, sf_surface_physics=2,
+            sf_urban_physics=2, isfflx=1, bldt_minutes=0,
+            adaptive_timestep=False, fractional_seaice=0,
+        ))
+
+
+def test_operand_contract_matches_independent_golden_schema() -> None:
+    # Independently pinned in review; it does not derive from EVENT_FIELDS.
+    assert {
+        event: sum(len(levels) for levels in fields.values())
+        for event, fields in surface_probe.EVENT_FIELDS.items()
+    } == {
+        "surface_call_pre": 27, "sfclay_pre": 271, "sfclay_post": 17,
+        "noahmp_dispatch_entry": 11, "seaice_adjustment_post": 9,
+        "noahmp_pre": 285, "noahmp_post": 30, "noahmp_urban_pre": 11,
+        "noahmp_urban_post": 9, "surface_return": 7,
+    }
+    canonical = __import__("json").dumps(
+        {event: {field: list(levels) for field, levels in fields.items()}
+         for event, fields in surface_probe.EVENT_FIELDS.items()},
+        sort_keys=True, separators=(",", ":"),
+    )
+    assert hashlib.sha256(canonical.encode()).hexdigest() == (
+        "895d77cb90772ce79179ebafb04b5e9a15395c252e2480ac323f9d35e6264026"
+    )
+    assert surface_probe.EVENT_FIELDS["noahmp_pre"]["P8W"] == tuple(range(1, 41))
 
 
 def test_source_audit_requires_pins_and_unique_anchors(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -121,11 +151,27 @@ def test_capture_validator_rejects_cardinality_preserving_substitution() -> None
                   if row.sample == "clear" and row.event == "sfclay_pre"
                   and row.field == "UST" and row.level == 0)
     rows[target] = surface_probe.CaptureRow(
-        arm="continuous", sample="clear", event="sfclay_pre",
+        arm="continuous", sample="clear", j_fortran_1based=145,
+        i_fortran_1based=11, event="sfclay_pre",
         field="UNPLANNED", level=0, word="3F800000",
     )
 
     with pytest.raises(surface_probe.SurfaceProbeError, match="out-of-plan"):
+        surface_probe.validate_capture(rows, arm="continuous", config=config)
+
+
+def test_capture_validator_binds_sample_name_to_fixed_coordinates() -> None:
+    config = _config()
+    rows = list(_rows("continuous", config))
+    target = next(i for i, row in enumerate(rows)
+                  if row.sample == "clear" and row.event == "surface_call_pre")
+    row = rows[target]
+    rows[target] = surface_probe.CaptureRow(
+        arm=row.arm, sample=row.sample, j_fortran_1based=12,
+        i_fortran_1based=row.i_fortran_1based, event=row.event,
+        field=row.field, level=row.level, word=row.word,
+    )
+    with pytest.raises(surface_probe.SurfaceProbeError, match="coordinates"):
         surface_probe.validate_capture(rows, arm="continuous", config=config)
 
 
@@ -139,6 +185,8 @@ def test_classifier_reports_earliest_boundary_without_claiming_cause() -> None:
         if row.sample == "clear" and row.event == "sfclay_post" and row.field == "UST":
             restart_rows[i] = surface_probe.CaptureRow(
                 arm="restart", sample=row.sample, event=row.event,
+                j_fortran_1based=row.j_fortran_1based,
+                i_fortran_1based=row.i_fortran_1based,
                 field=row.field, level=row.level, word="3F800001",
             )
             break
@@ -152,9 +200,34 @@ def test_classifier_reports_earliest_boundary_without_claiming_cause() -> None:
     assert result["classification"] == "producer_output_or_unobserved_dependency_difference"
     assert result["cause_established"] is False
     assert result["mismatches"] == [{
-        "sample": "clear", "field": "UST", "level": 0,
+        "sample": "clear", "j_fortran_1based": 145,
+        "i_fortran_1based": 11, "field": "UST", "level": 0,
         "continuous_word": "3F800000", "restart_word": "3F800001",
     }]
+
+
+def test_classifier_fails_closed_on_incomplete_or_malformed_maps() -> None:
+    config = _config()
+    complete = surface_probe.validate_capture(
+        _rows("continuous", config), arm="continuous", config=config
+    )
+    with pytest.raises(surface_probe.SurfaceProbeError, match="incomplete or extra"):
+        surface_probe.classify_pair(complete, {}, config=config)
+    malformed = dict(complete)
+    key = next(iter(malformed))
+    malformed[key] = "3f800000"
+    with pytest.raises(surface_probe.SurfaceProbeError, match="invalid raw"):
+        surface_probe.classify_pair(complete, malformed, config=config)
+
+
+def test_plan_does_not_claim_profile_branch_activity() -> None:
+    branch_activity = surface_probe.g4_source_plan()["profile_branch_activity"]
+    assert branch_activity["status"] == "not_observed_by_this_plan"
+    assert set(branch_activity["profiles"]) == {
+        name for name, _, _ in surface_probe.PROFILES
+    }
+    assert all(all(value is None for value in outcomes.values())
+               for outcomes in branch_activity["profiles"].values())
 
 
 def test_cardinality_replacement_by_extra_event_cannot_pass() -> None:
@@ -165,7 +238,8 @@ def test_cardinality_replacement_by_extra_event_cannot_pass() -> None:
                   and row.field == "UST" and row.level == 0)
     rows.pop(victim)
     rows.append(surface_probe.CaptureRow(
-        arm="continuous", sample="clear", event="unplanned_stage9",
+        arm="continuous", sample="clear", j_fortran_1based=145,
+        i_fortran_1based=11, event="unplanned_stage9",
         field="UST", level=0, word="3F800000",
     ))
 

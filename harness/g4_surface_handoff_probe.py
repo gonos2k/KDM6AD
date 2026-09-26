@@ -81,6 +81,7 @@ PROFILES = (
 )
 
 MASS_LEVELS = tuple(range(1, 40))
+INTERFACE_LEVELS = tuple(range(1, 41))
 SOIL_LEVELS = tuple(range(1, 5))
 SCALAR_LEVEL = (0,)
 
@@ -107,6 +108,8 @@ class G4SurfaceConfig:
 class CaptureRow:
     arm: str
     sample: str
+    j_fortran_1based: int
+    i_fortran_1based: int
     event: str
     field: str
     level: int
@@ -154,8 +157,8 @@ def event_schedule(config: G4SurfaceConfig) -> tuple[str, ...]:
     """
     if config.timestep != 2:
         raise SurfaceProbeError("G4 handoff plan is pinned to itimestep=2")
-    if (config.sf_sfclay_physics, config.sf_surface_physics, config.isfflx,
-            config.bldt_minutes, config.adaptive_timestep) != (1, 2, 1, 0, False):
+    if (config.sf_sfclay_physics, config.sf_surface_physics, config.sf_urban_physics,
+            config.isfflx, config.bldt_minutes, config.adaptive_timestep) != (1, 2, 1, 1, 0, False):
         raise SurfaceProbeError("run switches do not select the pinned G4 surface path")
     if config.fractional_seaice not in (0, 1):
         raise SurfaceProbeError("fractional_seaice must be declared as 0 or 1")
@@ -166,8 +169,7 @@ def event_schedule(config: G4SurfaceConfig) -> tuple[str, ...]:
     if config.fractional_seaice == 1:
         events.append("seaice_adjustment_post")
     events.extend(("noahmp_pre", "noahmp_post"))
-    if config.sf_urban_physics > 0:
-        events.extend(("noahmp_urban_pre", "noahmp_urban_post"))
+    events.extend(("noahmp_urban_pre", "noahmp_urban_post"))
     events.append("surface_return")
     return tuple(events)
 
@@ -217,8 +219,11 @@ EVENT_FIELDS: dict[str, dict[str, tuple[int, ...]]] = {
     },
     "noahmp_pre": {
         **{field: MASS_LEVELS for field in (
-            "T_PHY", "QV_CURR", "U_PHY", "V_PHY", "P8W", "DZ8W",
+            "T_PHY", "QV_CURR", "U_PHY", "V_PHY", "DZ8W",
         )},
+        # P8W is interface pressure (bottom_top_stag), hence 40 values for
+        # this 39-layer case. It is kept distinct from mass-level state.
+        "P8W": INTERFACE_LEVELS,
         **{field: SOIL_LEVELS for field in ("SMOIS", "SH2O", "TSLB")},
         **{field: SCALAR_LEVEL for field in (
             "ITIMESTEP", "DTBL", "IVGTYP", "ISLTYP", "VEGFRA", "SHDMAX",
@@ -278,6 +283,7 @@ def validate_capture(
     expected = expected_capture_keys(arm, config)
     received: dict[tuple[str, str, str, int], str] = {}
     expected_profiles = {name for name, _, _ in PROFILES}
+    profile_coordinates = {name: (j, i) for name, j, i in PROFILES}
     for row in rows:
         if row.arm != arm:
             raise SurfaceProbeError(f"row arm {row.arm!r} does not match {arm!r}")
@@ -288,6 +294,8 @@ def validate_capture(
             raise SurfaceProbeError(f"out-of-plan capture row: {key}")
         if row.sample not in expected_profiles:
             raise SurfaceProbeError(f"unknown selected profile: {row.sample}")
+        if (row.j_fortran_1based, row.i_fortran_1based) != profile_coordinates[row.sample]:
+            raise SurfaceProbeError(f"profile coordinates do not match selected point: {row.sample}")
         if re.fullmatch(r"[0-9A-F]{8}", row.word) is None:
             raise SurfaceProbeError(f"invalid raw binary32 word for {key}: {row.word!r}")
         received[key] = row.word
@@ -307,8 +315,15 @@ def classify_pair(
     config: G4SurfaceConfig,
 ) -> dict[str, Any]:
     """Report the earliest observed capture boundary without claiming cause."""
-    if set(continuous) != set(restart):
-        raise SurfaceProbeError("continuous/restart capture key universes differ")
+    expected = expected_capture_keys("continuous", config)
+    for arm_name, values in (("continuous", continuous), ("restart", restart)):
+        if set(values) != expected:
+            raise SurfaceProbeError(f"{arm_name} classifier map has incomplete or extra capture keys")
+        for key, word in values.items():
+            if not isinstance(key, tuple) or len(key) != 4:
+                raise SurfaceProbeError(f"malformed classifier key: {key!r}")
+            if not isinstance(word, str) or re.fullmatch(r"[0-9A-F]{8}", word) is None:
+                raise SurfaceProbeError(f"invalid raw binary32 word for {key}: {word!r}")
     schedule = event_schedule(config)
     mismatches: list[dict[str, Any]] = []
     first_event = None
@@ -319,6 +334,8 @@ def classify_pair(
             if key_event == event and continuous[key] != restart[key]:
                 event_rows.append({
                     "sample": sample,
+                    "j_fortran_1based": next(j for name, j, _ in PROFILES if name == sample),
+                    "i_fortran_1based": next(i for name, _, i in PROFILES if name == sample),
                     "field": field,
                     "level": level,
                     "continuous_word": continuous[key],
@@ -383,6 +400,17 @@ def g4_source_plan() -> dict[str, Any]:
             {"name": name, "j_fortran_1based": j, "i_fortran_1based": i}
             for name, j, i in PROFILES
         ],
+        "profile_branch_activity": {
+            "status": "not_observed_by_this_plan",
+            "claim_limit": "No per-profile urban or sea-ice branch-active outcome is asserted; native capture must record these outcomes before profile-specific branch coverage can be claimed.",
+            "profiles": {
+                name: {
+                    "urban_branch_active": None,
+                    "seaice_adjustment_branch_active": None,
+                }
+                for name, _, _ in PROFILES
+            },
+        },
         "retained_input_sha256": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
         "observed_surface_classes": {
             "clear": {"XLAND": 2.0, "IVGTYP": 17, "VEGFRA": 0.0},

@@ -412,7 +412,8 @@
         36,
         37,
         38,
-        39
+        39,
+        40
       ],
       "QFX": [
         0
@@ -1280,6 +1281,32 @@
         0
       ]
     }
+  },
+  "profile_branch_activity": {
+    "claim_limit": "No per-profile urban or sea-ice branch-active outcome is asserted; native capture must record these outcomes before profile-specific branch coverage can be claimed.",
+    "profiles": {
+      "clear": {
+        "seaice_adjustment_branch_active": null,
+        "urban_branch_active": null
+      },
+      "ice": {
+        "seaice_adjustment_branch_active": null,
+        "urban_branch_active": null
+      },
+      "mixed": {
+        "seaice_adjustment_branch_active": null,
+        "urban_branch_active": null
+      },
+      "rain": {
+        "seaice_adjustment_branch_active": null,
+        "urban_branch_active": null
+      },
+      "warm_liquid": {
+        "seaice_adjustment_branch_active": null,
+        "urban_branch_active": null
+      }
+    },
+    "status": "not_observed_by_this_plan"
   },
   "retained_input_sha256": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
   "retained_namelist_switches": {

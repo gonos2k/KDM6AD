@@ -101,9 +101,12 @@ configuration. The base events are:
 3. Noah-MP dispatch entry, before any fractional-sea-ice conversion.
 4. After that conversion only when fractional sea ice is configured, then
    immediately before and after the Noah-MP call.
-5. Before and after the Noah-MP urban call when its configured option is
-   positive. Each sample also needs an explicit active/inactive mask from the
-   routine's land-use checks.
+5. Before and after the Noah-MP urban call for the pinned `sf_urban_physics=1`
+   configuration. The current plan records `urban_branch_active` and
+   `seaice_adjustment_branch_active` as null for every profile, meaning those
+   outcomes are unobserved. A future native capture must add and validate a
+   per-profile active/inactive mask from the routine's branch conditions;
+   this plan's `EVENT_FIELDS` and `CaptureRow` do not validate branch coverage.
 6. Surface-driver return.
 
 The declared selected-operand set is grouped around each step's actual inputs:
@@ -112,7 +115,7 @@ The declared selected-operand set is grouped around each step's actual inputs:
 | --- | --- |
 | SFCLAY | Low-level `u_phytmp/v_phytmp`, temperature, vapor, pressure and layer thickness; `XLAND`/land-use class; skin temperature and the SST/ice inputs when present; roughness and stability inputs; existing fluxes; surface exchange coefficients and the `UST/HFX/LH/QFX` outputs. |
 | Noah-MP | The SFCLAY handoff fluxes; atmospheric forcing; land/soil/snow/canopy state; land-use and soil categories; albedo/emissivity; water/ice and timestep controls; and the post-call flux and state fields. |
-| Urban / fractional sea ice | The configured activation flags and per-profile active mask; incoming/outgoing fluxes, skin temperature, albedo/emissivity, roughness, and ice fraction at the associated boundary. |
+| Urban / fractional sea ice | Current plan: configured activation flags, incoming/outgoing fluxes, skin temperature, albedo/emissivity, roughness, and ice fraction at the associated boundary. Per-profile branch-active outcomes are explicitly unobserved/null; a native capture must add and validate that mask before claiming branch coverage. |
 
 `EVENT_FIELDS` in the verifier gives a fixed diagnostic subset and exact
 levels. It is not a proof of the entire callee read set. If all declared
@@ -122,7 +125,8 @@ next capture must widen the read set or inspect module/static state.
 
 ## Mismatch classification and validity gates
 
-The verifier distinguishes these outcomes:
+The verifier distinguishes these outcomes within its current operand schema; it
+does not validate per-profile urban or sea-ice branch activity:
 
 | Earliest differing record | Result label | Interpretation |
 | --- | --- | --- |
