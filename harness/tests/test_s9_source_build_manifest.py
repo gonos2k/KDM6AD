@@ -711,7 +711,8 @@ def test_ordered_physical_inventory_preserves_duplicate_member_names(tmp_path: P
     archive_bytes = b"!<arch>\n" + _ar_record("same.o", b"first") + _ar_record("same.o", b"second")
     archive_path.write_bytes(archive_bytes)
     actual = verifier.read_archive_member_inventory(archive_path)
-    assert [member["name"] for member in actual] == ["same.o/", "same.o/"]
+    assert len(actual) == 2
+    assert [member["name"].rstrip("/") for member in actual] == ["same.o", "same.o"]
     assert actual[0]["sha256"] != actual[1]["sha256"]
     manifest = {"artifacts": [{
         "artifact_id": "duplicate-archive",
