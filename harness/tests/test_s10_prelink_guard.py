@@ -30,10 +30,12 @@ from s10_prelink_guard import (  # noqa: E402
     validate_output_inventory,
     validate_prebuild_snapshot,
     validate_preprocess_macro_delta,
+    validate_static_pins,
     validate_source_overlay,
     tool_environment_snapshot,
     validate_build_output_estimate,
     validate_build_resource_preflight,
+    validate_configure_menu_pin,
     validate_toolchain,
 )
 
@@ -55,6 +57,75 @@ def _release(plan: dict, plan_sha: str, snapshot_sha: str) -> dict:
         "s15_step2_evidence_manifest_sha256": trusted["s15_step2_evidence_manifest_sha256"],
         "empty_output_root_snapshot_sha256": snapshot_sha,
     }
+
+
+def _configure_menu_plan() -> dict:
+    stdin = b"35\n1\n"
+    digest = sha256_bytes(stdin)
+    return {
+        "prelink_requirements": {
+            "configure_selection_stdin_sha256": digest,
+            "configure_menu_selection": {
+                "stdin_bytes": stdin.decode(),
+                "stdin_sha256": digest,
+                "architecture_option": 35,
+                "nesting_option": 1,
+            },
+        }
+    }
+
+
+def test_configure_menu_pin_binds_bytes_hashes_and_exact_options():
+    plan = _configure_menu_plan()
+    assert validate_configure_menu_pin(plan) == {
+        "architecture_option": 35,
+        "nesting_option": 1,
+        "stdin_sha256": "5cc0efdbfc6bf3e9208a52ed10e3cb5edac3bb961635ac89b2af48d3463d3639",
+    }
+
+
+def test_configure_menu_pin_rejects_literal_backslash_n_payload():
+    plan = _configure_menu_plan()
+    plan["prelink_requirements"]["configure_menu_selection"]["stdin_bytes"] = r"35\n1\n"
+    with pytest.raises(PrelinkError, match="do not encode the pinned options"):
+        validate_configure_menu_pin(plan)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("architecture_option", True),
+        ("architecture_option", 34),
+        ("nesting_option", False),
+        ("nesting_option", 2),
+    ],
+)
+def test_configure_menu_pin_rejects_wrong_or_boolean_options(field: str, value: object):
+    plan = _configure_menu_plan()
+    plan["prelink_requirements"]["configure_menu_selection"][field] = value
+    with pytest.raises(PrelinkError, match="option must be pinned integer"):
+        validate_configure_menu_pin(plan)
+
+
+def test_configure_menu_pin_rejects_either_hash_drift():
+    plan = _configure_menu_plan()
+    plan["prelink_requirements"]["configure_menu_selection"]["stdin_sha256"] = "0" * 64
+    with pytest.raises(PrelinkError, match="both plan-pinned"):
+        validate_configure_menu_pin(plan)
+    plan = _configure_menu_plan()
+    plan["prelink_requirements"]["configure_selection_stdin_sha256"] = "0" * 64
+    with pytest.raises(PrelinkError, match="both plan-pinned"):
+        validate_configure_menu_pin(plan)
+
+
+def test_static_pins_reject_menu_mismatch_before_host_reads(tmp_path: Path):
+    plan = _configure_menu_plan()
+    plan["prelink_requirements"]["configure_menu_selection"]["stdin_bytes"] = r"35\n1\n"
+    with pytest.raises(PrelinkError, match="do not encode the pinned options"):
+        validate_static_pins(
+            plan, workspace=tmp_path,
+            canonical_host=tmp_path / "canonical",
+            shadow_host=tmp_path / "shadow", overlay_paths={})
 
 
 def test_s15_release_requires_coordinator_pinned_receipt_and_evidence():
