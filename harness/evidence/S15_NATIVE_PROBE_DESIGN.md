@@ -26,9 +26,14 @@ latent ledger.
 
 ## Capture points and bounded output
 
-The declared capture window is **the first model timestep only**. The generated
-patch plan and replay require that window; these records make no claim about
-later timesteps.
+The merged B20 probe keeps **model timestep 1 as its default** for replay and
+overlay generation. A new step-2 overlay must pass `--capture-step 2`; replay
+selects the window from its hash-pinned plan and accepts only exact timestep-1
+or timestep-2 windows. The next investigation targets **S15-tagged records at
+model timestep 2**. The merged 20-second owner-scoped B capture completed six
+owner-5 summaries with zero QIB transitions and 51 trace-melt records. It
+cannot observe transitions in the second 20-second dynamics step, so its event
+keys and counts are not reused as step-2 expectations.
 
 At `module_em.F::rk_update_scalar`, capture only finite `P_QIB` transitions
 owned by solve-em call 5, `scalar_tile_loop_2`, whose prognostics are the
@@ -70,10 +75,11 @@ cause to terms inside `sc_tend` or to the wider scalar-update interval.
 
 At the graupel melt consumer, capture the first trace-graupel matching cell per
 timestep, Fortran `lat` row (`j`), and microphysics substep (`loop`) in source
-`i/k` loop order, satisfying `qg > 0`, `qg <= qcrmin`, `brs <= brs_min`, and
-applied `pgmlt < 0`. This is one witness per row/substep, not a census of all
-matching columns. Record the actual selected `i/k` cell and last ProgB owner
-site alongside raw f32 words for melt-time and ProgB-gate QG/QIB values, plus post QG/QR/QIB,
+`k`-outer descending, `i`-inner ascending order, satisfying `qg > 0`,
+`qg <= qcrmin`, `brs <= brs_min`, and applied `pgmlt < 0`. This is one witness
+per row/substep, not a census of all matching columns. Record the actual
+selected `i/k` cell and last ProgB owner site alongside raw f32 words for
+melt-time and ProgB-gate QG/QIB values, plus post QG/QR/QIB,
 temperature, `cpm`, `xlf`, `pgmlt`, `den`, and `delz`. Replay verifies the
 validity flag against the captured gate operands using
 `qg_gate > qcrmin OR brs_gate > brs_min`. Also record the exact thresholds,
@@ -100,9 +106,15 @@ The QIB owner and owner-by-tile/RK summary keys are fixed before a B run. A
 separate, hashed owner-scoped discovery capture provides only the first-cell
 and first-melt key census for a later same-binary confirmation capture; those
 discovered cells are a repeatability reference, not an independent physical
-expectation. Its plan SHA is pinned out-of-band before confirmation and
-includes the expected diagnostic-stream digest, so confirmation must reproduce
-the entire bounded stream byte-for-byte. The parser checks each positive
+expectation. The shared runtime switch can also emit inherited `S10*`
+diagnostics for step 1. Preserve and hash full rank stdout, then deterministically
+extract only exact `S15Q`, `S15QC`, and `S15M` lines in their original order into
+the selected S15 event stream. Hash both files separately. S10 lines remain
+visible in the full stdout hash and do not contribute to step-2 S15 counts.
+Unknown `S15*` tags are refused. The selected event plan SHA is pinned
+out-of-band before confirmation and includes the expected S15 event-stream
+digest, so confirmation must reproduce the entire selected stream byte-for-byte.
+The parser checks each positive
 summary's first QIB cell and first-melt keys per timestep/latitude-row/substep. It
 cannot prove when the external pin was created; a trusted pre-capture record is
 required. It rejects missing owner/tile/RK summaries, wrong owner keys,
@@ -157,7 +169,18 @@ discovery stream byte-for-byte.
 The initial A capture is excluded from owner-5 evidence: its six `P_QIB` rows
 had no call-owner field and came from generic scalar call sites. The public-safe
 result and hashes are recorded in `S15_NATIVE_B_20S_RESULT.md`. S15 remains
-OPEN; no graupel policy was selected, and the missing owner-5 QIB transition
-does not resolve attribution. Any step-2 investigation needs a separate
-source-pinned plan and new overlay/build; it is tracked separately and is not
-evidence from this 20-second run.
+OPEN; no graupel policy was selected, and the missing step-1 owner-5 QIB
+transition does not resolve attribution. The separate step-2 plan requires a
+new guard, source/preprocess/object/link/executable pins, a 40-second run, and
+a same-executable control/capture pair. It is not evidence from the 20-second
+run.
+
+The executed 40-second step-2 discovery and same-executable pair are reported
+in [`REPORT_S15_step2_40s_native_2026-09-26.md`](REPORT_S15_step2_40s_native_2026-09-26.md).
+The discovery found 87,937 owner-5 transition occurrences across its six
+source-pinned RK/tile summaries. They are stage/tile occurrences, not distinct
+cells or accepted-state particle loss. Six bounded first-event rows replay
+exactly in f32. The 258 melt rows all have invalid `rhox`; no melt thermodynamic
+attribution or graupel policy is claimed. Populated forecast frames passed the
+control/capture bitwise comparison, while empty auxiliary outputs are marked
+insufficient. S15 remains OPEN pending process attribution and physical policy.

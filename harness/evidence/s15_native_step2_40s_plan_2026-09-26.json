@@ -1,0 +1,309 @@
+{
+  "schema": "KDM6AD-S15-STEP2-40S-NATIVE-PLAN-v1",
+  "status": "rebased-pre-run-plan-awaiting-parent-green-red-review",
+  "scope": {
+    "purpose": "Capture actual QIB owner-5 sign transitions at completed model timestep 2 after timestep 1 produced none.",
+    "case": "retained LC05 5 km native full-domain case",
+    "physics": "mp_physics=37 (Fortran KDM6)",
+    "dt_seconds": 20,
+    "duration_seconds": 40,
+    "capture_timestep": 2,
+    "fixed_dt": true,
+    "ranks": 1,
+    "threads": 1,
+    "expected_saved_times": [
+      "2025-07-19_00:00:00",
+      "2025-07-19_00:00:20",
+      "2025-07-19_00:00:40"
+    ],
+    "input_hashes": {
+      "namelist.input": "064b6f5ea5683ee3dc68d408c08bf4cbf588be06dbc7d99bb3529be8ba61554a",
+      "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+      "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3",
+      "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970"
+    }
+  },
+  "source_pins": {
+    "dyn_em/module_em.F": "7695bfb05a7f99763334a6e69523bbcc1de0f2c659177a18c10a6e1cf530a0c7",
+    "dyn_em/solve_em.F": "d66e9db1bba8f37e3f46d30c2fd74bdf8def411adf233376a69e0b401c6d3d1f",
+    "phys/module_mp_kdm6.F": "fc0a72d33a5e61803fea56eb9118018039c6da8b5775813032b4861a2bd66eb5"
+  },
+  "probe": {
+    "path": "harness/g33_s15_probe.py",
+    "sha256": "1622c27c70d59be0e64b92f379a93525192bb6487919acb86ba307d0368222ad",
+    "capture_window": {
+      "first_timestep": 2,
+      "last_timestep": 2,
+      "selection": "second model timestep only"
+    },
+    "qib_owner": {
+      "site": 5,
+      "name": "scalar_tile_loop_2",
+      "array_pair": "scalar_old/scalar",
+      "selector": "s15_owner=5"
+    },
+    "call_owner_order": [
+      {
+        "site": 1,
+        "loop": "moist_tile_loop_2",
+        "arrays": "moist_old/moist"
+      },
+      {
+        "site": 2,
+        "loop": "tke_tile_loop_2",
+        "arrays": "grid%tke_1/grid%tke_2"
+      },
+      {
+        "site": 3,
+        "loop": "chem_tile_loop_2",
+        "arrays": "chem_old/chem"
+      },
+      {
+        "site": 4,
+        "loop": "tracer_tile_loop_2",
+        "arrays": "tracer_old/tracer"
+      },
+      {
+        "site": 5,
+        "loop": "scalar_tile_loop_2",
+        "arrays": "scalar_old/scalar"
+      }
+    ],
+    "default_capture_step": 1,
+    "default_capture_window": {
+      "first_timestep": 1,
+      "last_timestep": 1,
+      "selection": "first model timestep only; preserves merged B20 compatibility"
+    },
+    "step2_overlay_invocation": "g33_s15_probe.py prepare <source-root> <fresh-shadow-root> --capture-step 2",
+    "replay_window_contract": "Verifier selects the exact capture window and owner summary schedule from the externally pinned plan; only timestep 1 or timestep 2 is accepted.",
+    "selected_stream_tool": "extract-events preserves the full rank-0 stdout separately and filters exact S15Q/S15QC/S15M lines for replay; the S10 step-1 diagnostics remain only in full stdout.",
+    "step2_launch_gate": "Step2 prelink/launch must validate this externally pinned public plan, exact capture_window_for_step(2), owner5, and six code-fixed summary keys; generic B20 default remains step1."
+  },
+  "stdout_event_contract": {
+    "full_stdout_source": "rank-0 rsl.out.0000 from each instrumented run",
+    "shared_logging_effect": "KDM6_S15_NATIVE_CAPTURE_LOG also enables inherited S10 diagnostics, which may include step-1 S10* rows.",
+    "selected_stream": "g33_s15_probe.py extract-events FULL_STDOUT SELECTED_STREAM; exact S15Q/S15QC/S15M lines only, original order preserved; destination must be new and is created exclusively.",
+    "hashes": "Record full stdout hash before and after extraction plus selected stream SHA-256 and byte size; refuse if full stdout changes during extraction.",
+    "step2_census": "Require all six timestep-2 owner-5 S15QC summaries; S10* rows do not contribute.",
+    "confirmation": "Compare the selected confirmation S15 stream byte-for-byte with the frozen discovery S15 stream. Full stdout is hashed separately, not compared byte-for-byte."
+  },
+  "owner_schedule": {
+    "source_call": "solve_em.F scalar_tile_loop_2 -> rk_update_scalar(scalar_old, scalar)",
+    "owner_site": 5,
+    "rk_stages": [
+      1,
+      2,
+      3
+    ],
+    "tile_bounds": [
+      [
+        1,
+        235,
+        1,
+        142
+      ],
+      [
+        1,
+        235,
+        143,
+        283
+      ]
+    ],
+    "expected_summary_cardinality": 6,
+    "expected_summary_keys": [
+      [
+        2,
+        1,
+        5,
+        1,
+        235,
+        1,
+        142
+      ],
+      [
+        2,
+        1,
+        5,
+        1,
+        235,
+        143,
+        283
+      ],
+      [
+        2,
+        2,
+        5,
+        1,
+        235,
+        1,
+        142
+      ],
+      [
+        2,
+        2,
+        5,
+        1,
+        235,
+        143,
+        283
+      ],
+      [
+        2,
+        3,
+        5,
+        1,
+        235,
+        1,
+        142
+      ],
+      [
+        2,
+        3,
+        5,
+        1,
+        235,
+        143,
+        283
+      ]
+    ],
+    "summary_key_order": "RK stage ascending, then tile order as source-reported"
+  },
+  "melt_schedule": {
+    "source": "module_mp_kdm6.F graupel melt consumer",
+    "capture_timestep": 2,
+    "selection": "first matching applied trace-graupel melt per Fortran latitude row and microphysics substep, with source loop order k=kte..kts descending then i=its..ite ascending",
+    "predicate": "qg>0 AND qg<=qcrmin AND brs<=brs_min AND applied pgmlt<0",
+    "event_keys": "data-dependent; freeze a separate hashed discovery census before confirmation, do not infer from step 1",
+    "rhox": "serialize only when the ProgB assignment-validity mask is true"
+  },
+  "arithmetic_replay": {
+    "source": "module_em.F rk_update_scalar source and compiled step-2 object disassembly",
+    "before_reference": "scalar_1 is the source formula input for both RK arms; reject records where captured before word differs from scalar_1 reference word",
+    "tendency": "f32(f32(advect_tend * msfty) + sc_tend); keep multiply and add separately rounded",
+    "mass": "old_mass=fma32(c1,muold,c2); new_mass=fma32(c1,munew,c2)",
+    "numerator": "fma32(old_mass,scalar_1, f32(dt*tendency)); then f32 divide by new_mass",
+    "fresh_object_audit_required": true,
+    "audit_rule": "Repeat disassembly for the newly compiled step-2 module_em.o; do not reuse the step-1 object receipt as step-2 evidence."
+  },
+  "pair_acceptance": {
+    "control_capture": "same fresh executable, same retained inputs and namelist; control logging off, capture logging on",
+    "required": [
+      "completed 40 s integrations",
+      "saved Times exactly 0/20/40 s",
+      "complete six-key step-2 owner-5 S15QC census",
+      "replay all rows with exact raw-f32 arithmetic",
+      "frame-by-frame raw-bit equality at saved frames 0, 1, and 2 for populated common numeric forecast variables and exact Times",
+      "separate full rank-0 stdout and selected S15 event-stream hashes for each run",
+      "byte-identical discovery and pinned confirmation selected S15 event streams"
+    ],
+    "empty_unpopulated_streams": "report insufficient evidence, never parity pass"
+  },
+  "prior_step1_boundary": {
+    "receipt": "s15_native_B_noninterference_receipt_2026-09-26_r10.json",
+    "owner5_summary_counts": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "trace_melt_events": 51,
+    "use_as_step2_expected_values": false,
+    "A_discovery": "excluded: lacked owner field; generic P_QIB alias rows do not establish owner-5 QIB transitions"
+  },
+  "not_done": [
+    "fresh step-2 overlay generation audit",
+    "step-2 preprocess and compile receipts",
+    "fresh module_em.o disassembly audit",
+    "link and executable hashes",
+    "step-2 40-second native discovery",
+    "separate pinned confirmation event plan",
+    "full-stdout and selected-S15-stream hash receipts",
+    "same-executable control/capture pair",
+    "QIB attribution or graupel policy decision"
+  ],
+  "public_evidence_policy": "Publish source/input hashes, plan, digest sidecar, selected event keys, and hash-only receipts; keep private host source, object files, executables, full-domain NetCDF, raw arrays, and stdout logs private.",
+  "run_stdout_placeholders": {
+    "discovery_full_stdout_sha256": null,
+    "discovery_selected_s15_stream_sha256": null,
+    "control_full_stdout_sha256": null,
+    "capture_full_stdout_sha256": null,
+    "capture_selected_s15_stream_sha256": null,
+    "confirmation_full_stdout_sha256": null,
+    "confirmation_selected_s15_stream_sha256": null
+  },
+  "merged_base": {
+    "main_commit": "27152cca910c21e268a34db620ba10e28f2683bf",
+    "pr": 281,
+    "pr_head_commit": "e9a198e03d95aabfc7c59b3c572bb3453b949968",
+    "ci": "all required G33, oracle, Ubuntu, and macOS checks passed",
+    "owner5_b20_public_manifest": {
+      "path": "harness/evidence/s15_b20_public/s15_native_B_20S_public_manifest.json",
+      "sha256": "02e7cfc7b0c0362f496eedad6705abeaa2b76c42808dd92092de5b0ac8580276"
+    },
+    "r6_compile_receipt_projection": {
+      "path": "harness/evidence/s15_b20_public/s15_native_compile_receipt_2026-09-26_r6_public.json",
+      "sha256": "f8c05d592215721253e899a51dc69fd09b872b10eea803496be7ca686550aa8c",
+      "original_local_receipt_sha256": "67183b38e001a5137159778823c4b5032d475b72d9cbf05d572fca16cbfecf3b"
+    },
+    "owner_schedule_projection_sha256": "aee5d350572c3753f0d6caf2f6671a4be45005edb3c7f8d15d04411b5bd53da8",
+    "step1_executable_reference_only": {
+      "sha256": "d20e716a5e27c88782f9e60d628e4b53f33939664e255d2a9d85c9336d8ec953",
+      "link_receipt_sha256": "557f28d61c1923a97b88496426922e5ba07966f02123753a341fc8f8a7351e73",
+      "reuse_for_step2": false
+    },
+    "step1_result_boundary": {
+      "owner5_qib_transitions": 0,
+      "trace_melt_events": 51,
+      "valid_rhox_rows": 0,
+      "forecast_numeric_variables": 253,
+      "bitwise_frames": [
+        0,
+        1
+      ],
+      "saved_times": [
+        "2025-07-19_00:00:00",
+        "2025-07-19_00:00:20"
+      ]
+    }
+  },
+  "fresh_step2_build_pins": {
+    "policy": "Generate new values after Green/Red plan review; no step-1 overlay/object/link/executable may be reused.",
+    "compiler_target": "GNU Fortran 15.2.0 via mpif90, arm64; record the resolved compiler path, version output, full command, and SHA-256 of the compiler binary in the new compile receipt.",
+    "macro": "KDM6_PROGB_VALIDITY_CAPTURE",
+    "required_compile_flags": [
+      "-c",
+      "-O2",
+      "-ftree-vectorize",
+      "-funroll-loops",
+      "-w",
+      "-ffree-form",
+      "-ffree-line-length-none",
+      "-fconvert=big-endian",
+      "-frecord-marker=4",
+      "-fallow-argument-mismatch",
+      "-fallow-invalid-boz"
+    ],
+    "required_kdm6_mp_extra_flags": [
+      "-ffp-contract=off"
+    ],
+    "source_overlay_sha256": null,
+    "preprocessed_fortran_sha256": null,
+    "object_sha256": null,
+    "fresh_module_em_disassembly_sha256": null,
+    "fresh_operation_audit_sha256": null,
+    "untouched_s8_archive_sha256": "f27a3633cae66c412123296eed3ebc3caeb3080ab7e8c9f224c18ab55c987a94",
+    "link_command_and_receipt_sha256": null,
+    "step2_executable_sha256": null,
+    "native_receipts": null,
+    "launch_allowed_before_fresh_pins": false
+  },
+  "step1_compatibility_regression": {
+    "public_reference": "harness/evidence/s15_b20_public/s15_native_discovery_b_event_reference_2026-09-26_public.json",
+    "public_manifest": "harness/evidence/s15_b20_public/s15_native_B_20S_public_manifest.json",
+    "regression_test": "test_public_b20_step1_projection_still_replays_with_synthetic_event_operands",
+    "retained_expectations": "six step-1 owner-5/RK/tile summary keys with zero transitions and 51 published trace-melt keys; synthetic raw operands are labeled test fixtures, not additional native evidence"
+  }
+}
