@@ -42,7 +42,7 @@ GUARD_SITES = (
             "                           +baacw(i,k)+bgacr(i,k))*dtcld,0.)\n"
         ),
         "zero_statement": (
-            "            brs(i,k) = max(brs(i,k)+(biacr(i,k)           &\n"
+            "            brs(i,k) = max(brs(i,k)+(0.+biacr(i,k)         &\n"
             "                           +braci(i,k)+bsacr(i,k)+bracs(i,k)+bgaci(i,k)        &\n"
             "                           +baacw(i,k)+bgacr(i,k))*dtcld,0.)\n"
         ),

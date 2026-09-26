@@ -76,6 +76,7 @@ def test_guard_arm_wraps_all_four_density_consumers_and_logs_explicit_actions():
     assert rendered.count("if (qrs(i,k,3).eq.0. .and.") == 4
     assert rendered.count("'S10ZG'") == 4
     assert "brs(i,k) = brs(i,k) + (0.)" in rendered
+    assert "brs(i,k) = max(brs(i,k)+(0.+biacr(i,k)" in rendered
     assert "if(qrs(i,k,3).gt.0.) then" in rendered
     assert "s10_guard_term = pgmlt(i,k)/rhox(i,k)" in rendered
     assert "s10_guard_term = pgdep(i,k)/rhox(i,k)" in rendered

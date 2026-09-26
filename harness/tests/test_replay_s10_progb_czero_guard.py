@@ -34,7 +34,7 @@ def _record(tag, ints, reals):
     return " ".join([tag, *(str(x) for x in ints), *(format(f32(x), ".17e") for x in reals)])
 
 
-def _valid_event_rows():
+def _valid_event_rows(*, stage2_signed_zero=False):
     step1_qg = f32(1.0e-9)
     pgmlt = f32(-step1_qg)
     step1_qg_after = qg_mass_stage1(step1_qg, pgmlt)
@@ -51,8 +51,12 @@ def _valid_event_rows():
                         pgaci=0.0, paacw=0.0, pgacr=0.0, pgacs=0.0, dtcld=20.0)
     stage2_qg_after = qg_mass_stage2(0.0, **stage2_terms)
     action2, div_pgdep = guarded_rate_over_density(stage2_qg_after, 0.0, 0.0)
-    other_volume = [1.0e-8, -2.0e-9, 3.0e-9, 0.0, 0.0, 0.0, 0.0]
-    stage2_brs_before = step1_brs_after
+    if stage2_signed_zero:
+        other_volume = [-0.0] * 7
+        stage2_brs_before = f32(-0.0)
+    else:
+        other_volume = [1.0e-8, -2.0e-9, 3.0e-9, 0.0, 0.0, 0.0, 0.0]
+        stage2_brs_before = step1_brs_after
     stage2_brs_after = brs_volume_stage2(stage2_brs_before,
         pgdep_volume=div_pgdep, other_rates=other_volume, dtcld=20.0)
     stage2_heat_args = dict(xls=2.0e5, xl=3.0e5, xlf=1.0e5,
@@ -260,3 +264,18 @@ def test_production_replay_requires_predeclared_stage1_census():
 def test_f32_comparison_distinguishes_signed_zero_words():
     with pytest.raises(ValueError, match="source-order f32 mismatch"):
         _eq32(0.0, -0.0, "signed zero")
+
+
+def test_stage2_zero_guard_preserves_explicit_leading_zero_signed_zero_order():
+    rows = _valid_event_rows(stage2_signed_zero=True)
+    _replay(rows, expected_gate_keys={CALL, CALL3})
+
+    mutated = []
+    for line in rows:
+        fields = line.split()
+        if fields[0] == "S10VOLUME" and fields[8] == "2":
+            fields[-1] = "-0.00000000000000000e+00"
+            line = " ".join(fields)
+        mutated.append(line)
+    with pytest.raises(ValueError, match="stage-2 brs source order.*f32 mismatch"):
+        _replay(mutated, expected_gate_keys={CALL, CALL3})

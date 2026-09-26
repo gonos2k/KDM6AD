@@ -112,7 +112,7 @@
   ],
   "acceptance": {
     "within_arm": "253 numeric raw-bit equality + exact Times (254 total variables)",
-    "guard_replay": "Require the fixed 624-key melt/phase gate census, a separately pinned stage-1 key set from B midpoint discovery, and the trusted full event-log SHA-256 from the run receipt; then validate exact-zero S10ZG actions and source-ordered binary32-word S10MASS/S10VOLUME/S10HEAT budgets. Missing external expectations fail closed.",
+    "guard_replay": "Require the fixed 624-key melt/phase gate census plus caller-supplied stage-1 key set and event-log SHA-256; validate exact-zero S10ZG actions and source-ordered binary32-word S10MASS/S10VOLUME/S10HEAT budgets. Replay checks supplied values against rows but does not authenticate them through an independent native receipt binding, which remains OPEN.",
     "between_arm": "report B midpoint vs C guard changes separately; no parity requirement",
     "fail_closed": [
       "any nonzero rate bypass",
@@ -124,7 +124,7 @@
     "full_domain_arrays_published": false,
     "nonzero_path_identity": "Action-1 keeps the exact original inline rate/rhox source statement; replay checks f32 quotient and source-order budget words. After build, compare matched action-1 site operands/quotients between B and C wherever their input words match.",
     "gate_schedule": "Require the code-fixed PROGB_CALL_CONTEXTS \u00d7 {i=113,115} \u00d7 k=1..39 MELTGATE/PHASE key universe before validating stage-specific ledger keys. Stage-1 keys depend on data and must be frozen from B midpoint discovery before final B/C capture; the source schedule alone does not determine them.",
-    "trusted_log_commitment": "Replay requires a separately recorded capture-run event-log SHA-256 and predeclared stage-1 key set. Neither native commitment exists yet; preliminary discovery evidence cannot be used as final B/C acceptance."
+    "trusted_log_commitment": "Replay requires caller-supplied event-log SHA-256 and predeclared stage-1 key set. No independent native receipt binding authenticates these inputs yet; neither native value exists, preliminary discovery evidence cannot be used as final B/C acceptance, and S10 remains OPEN."
   },
   "native_results": null
 }
