@@ -159,7 +159,7 @@
       "apply_kdm6ad_config": "configuration_capture/apply_kdm6ad_config.stdin"
     },
     "configure_menu_selection": {
-      "stdin_bytes": "35\\n1\\n",
+      "stdin_bytes": "35\n1\n",
       "stdin_sha256": "5cc0efdbfc6bf3e9208a52ed10e3cb5edac3bb961635ac89b2af48d3463d3639",
       "architecture_option": 35,
       "architecture_description": "GNU gfortran/gcc with Open MPI, dmpar",

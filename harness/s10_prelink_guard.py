@@ -831,6 +831,38 @@ def validate_toolchain(plan: dict[str, Any], shadow_host: Path, *,
     return resolved
 
 
+def validate_configure_menu_pin(plan: dict[str, Any]) -> dict[str, Any]:
+    """Require the configure menu bytes, menu choices, and both hashes to agree."""
+    requirements = plan.get("prelink_requirements", {})
+    menu = requirements.get("configure_menu_selection")
+    if not isinstance(menu, dict):
+        raise PrelinkError("configure menu selection pin is missing or malformed")
+    architecture = menu.get("architecture_option")
+    nesting = menu.get("nesting_option")
+    if type(architecture) is not int or architecture != 35:
+        raise PrelinkError("configure architecture option must be pinned integer 35")
+    if type(nesting) is not int or nesting != 1:
+        raise PrelinkError("configure nesting option must be pinned integer 1")
+    stdin_text = menu.get("stdin_bytes")
+    if not isinstance(stdin_text, str):
+        raise PrelinkError("configure menu stdin bytes must be a text string")
+    stdin_bytes = stdin_text.encode("utf-8")
+    expected_bytes = f"{architecture}\n{nesting}\n".encode("ascii")
+    if stdin_bytes != expected_bytes:
+        raise PrelinkError("configure menu stdin bytes do not encode the pinned options")
+    digest = sha256_bytes(stdin_bytes)
+    nested_digest = menu.get("stdin_sha256")
+    top_level_digest = requirements.get("configure_selection_stdin_sha256")
+    if digest != nested_digest or digest != top_level_digest:
+        raise PrelinkError(
+            "configure menu stdin SHA must match both plan-pinned configure stdin hashes")
+    return {
+        "architecture_option": architecture,
+        "nesting_option": nesting,
+        "stdin_sha256": digest,
+    }
+
+
 def validate_configuration_sources(plan: dict[str, Any], *,
                                    canonical_host: Path,
                                    shadow_host: Path) -> dict[str, str]:
@@ -850,6 +882,7 @@ def validate_static_pins(plan: dict[str, Any], *, workspace: Path,
                          overlay_paths: dict[str, Path],
                          environment: Mapping[str, str] | None = None) -> dict[str, Any]:
     """Rehash current canonical sources, local overlays, config, inputs, and archive."""
+    configure_menu = validate_configure_menu_pin(plan)
     environment = planned_tool_environment(plan) if environment is None else environment
     pins = plan["host_source_pins"]
     sources: dict[str, Any] = {}
@@ -921,6 +954,7 @@ def validate_static_pins(plan: dict[str, Any], *, workspace: Path,
         raise PrelinkError("native run runner hash changed")
     return {
         "sources": sources,
+        "configure_menu": configure_menu,
         "canonical_archive_path": str(archive),
         "canonical_archive_sha256": archive_pin["sha256"],
         "toolchain": toolchain,
