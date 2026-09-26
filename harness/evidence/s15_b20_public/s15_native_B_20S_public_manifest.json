@@ -1,0 +1,195 @@
+{
+  "A_correction": "A six unowned P_QIB rows from generic scalar call sites are excluded; they are not owner-5 QIB witnesses.",
+  "build": {
+    "fresh_B_executable_sha256": "d20e716a5e27c88782f9e60d628e4b53f33939664e255d2a9d85c9336d8ec953",
+    "link_receipt_sha256": "557f28d61c1923a97b88496426922e5ba07966f02123753a341fc8f8a7351e73",
+    "owner_name": "scalar_tile_loop_2",
+    "owner_site": 5,
+    "summary_keys": [
+      [
+        1,
+        1,
+        5,
+        1,
+        235,
+        1,
+        142
+      ],
+      [
+        1,
+        1,
+        5,
+        1,
+        235,
+        143,
+        283
+      ],
+      [
+        1,
+        2,
+        5,
+        1,
+        235,
+        1,
+        142
+      ],
+      [
+        1,
+        2,
+        5,
+        1,
+        235,
+        143,
+        283
+      ],
+      [
+        1,
+        3,
+        5,
+        1,
+        235,
+        1,
+        142
+      ],
+      [
+        1,
+        3,
+        5,
+        1,
+        235,
+        143,
+        283
+      ]
+    ],
+    "untouched_S8_archive_sha256": "f27a3633cae66c412123296eed3ebc3caeb3080ab7e8c9f224c18ab55c987a94"
+  },
+  "control_capture": {
+    "confirmation_stream_equals_discovery": true,
+    "energy_numeric_variables": 4,
+    "energy_raw_bitwise_frames": {
+      "0": "PASS",
+      "1": "PASS"
+    },
+    "executable_sha256": "d20e716a5e27c88782f9e60d628e4b53f33939664e255d2a9d85c9336d8ec953",
+    "forecast_numeric_variables": 253,
+    "forecast_raw_bitwise_frames": {
+      "0": "PASS",
+      "1": "PASS"
+    },
+    "prcp_ocean": "INSUFFICIENT: zero frames and no populated numeric variables",
+    "saved_times": [
+      "2025-07-19_00:00:00",
+      "2025-07-19_00:00:20"
+    ]
+  },
+  "discovery": {
+    "brs1_undefined_rhox_untrusted": 51,
+    "brs1_values_measured": 51,
+    "brs1_volume_updates_validated": 0,
+    "duration_seconds": 20,
+    "event_stream_sha256": "b48f4f39d67db2cc19f1acf95d23f19f183e48d8c778693d2c8c5dc995a74bf6",
+    "gate_mass_temperature_rows_replayed": 51,
+    "owner5_summary_counts": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "qib_transition_rows": 0,
+    "saved_times": [
+      "2025-07-19_00:00:00",
+      "2025-07-19_00:00:20"
+    ],
+    "trace_melt_rows": 51,
+    "valid_rhox_rows": 0
+  },
+  "executable_original": false,
+  "other_original_receipt_pins": [
+    {
+      "filename": "s15_native_run_plan_2026-09-26_r10.json",
+      "sha256": "0d912755e84c19f12928296b92178875cd8c6d5a09eefaaaa8ffebdaf5aef9e6"
+    },
+    {
+      "filename": "s15_native_prelink_guard_receipt_2026-09-26_r10.json",
+      "sha256": "8c069b9d292b2e1244721ef18680237cd772c70578391aa2747a9e342bf250fd"
+    },
+    {
+      "filename": "s15_native_f32_operation_audit_2026-09-26_r10.json",
+      "sha256": "478970e9b67128057ac843011493380b7fffc579109b66b4ebf97251513c7aaf"
+    },
+    {
+      "filename": "s15_native_link_receipt_2026-09-26_r10.json",
+      "sha256": "557f28d61c1923a97b88496426922e5ba07966f02123753a341fc8f8a7351e73"
+    },
+    {
+      "filename": "s15_native_B_pre_run_plan_2026-09-26_r10.json",
+      "sha256": "dff8eb63b665149e4aa8f44c8a54407b2f21a89d68ffa83902f90fbc6e370165"
+    },
+    {
+      "filename": "s15_native_B_control_capture_plan_2026-09-26_r10.json",
+      "sha256": "624abe45625c4ca1e432e13d573d02863d365a09e87a33ed8d3c04c59003aee1"
+    },
+    {
+      "filename": "s15_native_discovery_b_event_plan_2026-09-26.json",
+      "sha256": "69c9dbcee15afae247ed34dd661a5a2b7531279178e30f4faf92e87205b60184"
+    },
+    {
+      "filename": "s15_native_discovery_b_receipt_2026-09-26.json",
+      "sha256": "d940484b499aee3c026aa420545396a491d5e6cf642dfcc035415ee8f5202257"
+    },
+    {
+      "filename": "s15_native_B_noninterference_receipt_2026-09-26_r10.json",
+      "sha256": "d015c6b7fb7b2f9a00cbbd449ac57fe3ad0faf4655e3387611f93868ad085fe9"
+    }
+  ],
+  "path_aliases": {
+    "canonical_private_host": "$CANONICAL_HOST",
+    "disposable_shadow": "$SHADOW",
+    "fresh_B_executable": "$B_EXECUTABLE",
+    "private_event_stream": "$DISCOVERY_EVENT_STREAM",
+    "retained_native_case": "$LC05_CASE",
+    "untouched_S8_archive": "$S8_ARCHIVE"
+  },
+  "privacy": {
+    "alias_policy": "Private absolute prefixes were replaced recursively with the symbolic aliases above; original SHA values identify the path-bearing local records.",
+    "contains_full_domain_netcdf": false,
+    "contains_private_absolute_paths": false,
+    "contains_private_source_or_executable": false,
+    "contains_raw_field_arrays": false,
+    "note": "Original hashes refer to path-bearing local receipts. Public projections are redacted, path-normalized summaries and must not be used as executable plans or receipts."
+  },
+  "public_projections": [
+    {
+      "filename": "harness/evidence/s15_b20_public/s15_native_compile_receipt_2026-09-26_r6_public.json",
+      "original_sha256": "67183b38e001a5137159778823c4b5032d475b72d9cbf05d572fca16cbfecf3b",
+      "represents_original": "s15_native_compile_receipt_2026-09-26_r6.json",
+      "sha256": "f8c05d592215721253e899a51dc69fd09b872b10eea803496be7ca686550aa8c"
+    },
+    {
+      "filename": "harness/evidence/s15_b20_public/s15_native_owner_schedule_2026-09-26_public.json",
+      "original_sha256": "34d671cefcbad485a3d3ccf276e91c60933cce86394485574080dbcd1e58cf8c",
+      "represents_original": "s15_native_owner_schedule_2026-09-26.json",
+      "sha256": "aee5d350572c3753f0d6caf2f6671a4be45005edb3c7f8d15d04411b5bd53da8"
+    },
+    {
+      "filename": "harness/evidence/s15_b20_public/s15_native_discovery_b_event_reference_2026-09-26_public.json",
+      "original_sha256": "b28204f00124d5f4e7358e9f0e554c75b541acdf1113526f6ccc0907d869078b",
+      "represents_original": "s15_native_discovery_b_event_reference_2026-09-26.json",
+      "sha256": "4e04d743f89ea33057f5adcb65701abee33899c8d8c6283addba0e4fc765c034"
+    }
+  ],
+  "redacted_projection": true,
+  "schema": "KDM6AD-S15-PUBLIC-EVIDENCE-MANIFEST-v1",
+  "scope_limits": [
+    "QIB owner-5 attribution remains OPEN because the first 20-second window has zero transitions.",
+    "No actual valid-rhox brs1 volume update was validated; all captured brs1 values are untrusted.",
+    "This package establishes instrument noninterference/repeatability only, not physical conservation, graupel policy, or host AD acceptance."
+  ],
+  "status": "redacted_summary_for_review_only",
+  "verification_status": {
+    "original_private_evidence": "LOCAL_VERIFIED using the unredacted hash-pinned receipt/run chain; original SHA values are preserved here.",
+    "public_projection_files": "PUBLIC_REDACTED path-normalized views; new projection SHA values are distinct from original receipt SHA values."
+  }
+}

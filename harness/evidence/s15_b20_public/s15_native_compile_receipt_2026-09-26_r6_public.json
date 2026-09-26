@@ -1,0 +1,93 @@
+{
+  "executable_original": false,
+  "kind": "owner-scoped r6 compile receipt",
+  "original_artifact": {
+    "filename": "s15_native_compile_receipt_2026-09-26_r6.json",
+    "sha256": "67183b38e001a5137159778823c4b5032d475b72d9cbf05d572fca16cbfecf3b"
+  },
+  "path_aliases": {
+    "baseline_archive": "$S8_ARCHIVE",
+    "canonical_source_root": "$CANONICAL_HOST",
+    "overlay_objects_root": "$SHADOW/focused-objects-r6",
+    "shadow_host_root": "$SHADOW"
+  },
+  "receipt": {
+    "common_flags": [
+      "-c",
+      "-O2",
+      "-ftree-vectorize",
+      "-funroll-loops",
+      "-w",
+      "-ffree-form",
+      "-ffree-line-length-none",
+      "-fconvert=big-endian",
+      "-frecord-marker=4",
+      "-fallow-argument-mismatch",
+      "-fallow-invalid-boz"
+    ],
+    "compiler": "GNU Fortran 15.2.0 via /opt/homebrew/bin/mpif90; arm64",
+    "fma_disassembly": {
+      "meaning": "FMADD c1*muold+c2; FMADD c1*munew+c2; FMADD old_mass*reference+dt*tendency; replay uses exact rational binary32 FMA.",
+      "mnemonic_lines": [
+        "bfe0:\t3c 6b 1b 1f\tfmadd\ts28, s25, s27, s26",
+        "bfe8:\t22 6b 01 1f\tfmadd\ts2, s25, s1, s26",
+        "bfec:\t80 7f 18 1f\tfmadd\ts0, s28, s24, s31"
+      ],
+      "object_sha256": "1b894196acc4b9636c3a022b1a77251377ab89565d9180badd6735fd98aeaf84"
+    },
+    "generated_shadow_source_sha256": {
+      "dyn_em/module_em.F": "81ead82fd79c70ac213aad59545f916c44e5b3d0d7b067437f9f8985bc988411",
+      "dyn_em/solve_em.F": "c11b87a2d24446c73884d806cd40b60e939ba0636899d2df3c20ff702bd543e9",
+      "phys/module_mp_kdm6.F": "8ec5f55f15611acbfc6009c7de9d4a8b2564ebc32d457196a6b25999d4bf67df"
+    },
+    "macro": "KDM6_PROGB_VALIDITY_CAPTURE",
+    "module_mp_kdm6_extra_flags": [
+      "-ffp-contract=off"
+    ],
+    "objects": {
+      "module_em.o": {
+        "bytes": 103144,
+        "sha256": "1b894196acc4b9636c3a022b1a77251377ab89565d9180badd6735fd98aeaf84"
+      },
+      "module_mp_kdm6.o": {
+        "bytes": 250160,
+        "sha256": "9b172b708151d3033ab39fbfa66a1a875c97f7c3f1cd6fa10aa68feb4d01f66e"
+      },
+      "solve_em.o": {
+        "bytes": 1656896,
+        "sha256": "b2c0ce5a3b6d8b41899a6263c51371deccc45305ff86ad38fd19a5c0aed827d8"
+      }
+    },
+    "owner_name": "scalar_tile_loop_2",
+    "owner_site": 5,
+    "preprocessed_fortran": {
+      "module_em.f90": {
+        "bytes": 118904,
+        "sha256": "2b11d50e82b7718467072d3328e7b56c7faa77d01437317f38e0a49f21c869d3"
+      },
+      "module_mp_kdm6.f90": {
+        "bytes": 175514,
+        "sha256": "f93461682f36a2436ddd566368cd29e6f5c333578624bf21d67838b2a99ed6dc"
+      },
+      "solve_em.f90": {
+        "bytes": 251260,
+        "sha256": "c9c1b1a2d9d4f7b5240578f187255614c4ecad99ccb39a300619d3bfb1a3577b"
+      }
+    },
+    "private_source_sha256": {
+      "dyn_em/module_em.F": "7695bfb05a7f99763334a6e69523bbcc1de0f2c659177a18c10a6e1cf530a0c7",
+      "dyn_em/solve_em.F": "d66e9db1bba8f37e3f46d30c2fd74bdf8def411adf233376a69e0b401c6d3d1f",
+      "phys/module_mp_kdm6.F": "fc0a72d33a5e61803fea56eb9118018039c6da8b5775813032b4861a2bd66eb5"
+    },
+    "schema": "KDM6AD-S15-FOCUSED-COMPILE-RECEIPT-v2",
+    "source_strip_audit_status": "PASS",
+    "status": "owner_scoped_macro_on_preprocess_and_object_compile_pass",
+    "untouched_s8_archive": {
+      "bytes": 59157824,
+      "sha256": "f27a3633cae66c412123296eed3ebc3caeb3080ab7e8c9f224c18ab55c987a94"
+    }
+  },
+  "redacted_projection": true,
+  "schema": "KDM6AD-S15-PUBLIC-PROJECTION-v1",
+  "use_limit": "Informational projection only. Its SHA differs from the original receipt and it must not be used by prelink-check, launch-check, a linker, or a run."
+}
