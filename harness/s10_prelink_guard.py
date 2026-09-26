@@ -409,13 +409,66 @@ def validate_guarded_configuration_run(plan: dict[str, Any], *,
             or [row.get("stage") for row in commands]
             != ["configure", "apply_kdm6ad_config"]):
         raise PrelinkError("guarded configuration ledger must contain configure then apply")
-    for row, script_key in zip(
-            commands, ("configure", "apply_kdm6ad_config.sh")):
+    expected_argv = {
+        "configure": requirements.get("configuration_generation_command"),
+        "apply_kdm6ad_config": requirements.get("configuration_apply_command"),
+    }
+    expected_stdin = {
+        "configure": validate_configure_menu_pin(plan)["stdin_sha256"],
+        "apply_kdm6ad_config": requirements.get("configuration_apply_stdin_sha256"),
+    }
+    stdin_capture_paths = requirements.get("configuration_stdin_capture_paths")
+    log_capture_paths = requirements.get("configuration_log_capture_paths")
+    if not isinstance(stdin_capture_paths, dict) or not isinstance(log_capture_paths, dict):
+        raise PrelinkError("configure/apply stdin and log capture paths must be plan-pinned")
+    expected_environment_sha = plan.get("toolchain", {}).get("environment_sha256")
+    output_root = workspace / plan.get("clean_shadow", {}).get(
+        "fresh_build_output_root", "S10/build-clean")
+    capture_root = shadow_host.parent.parent / "configuration_capture"
+    for row, stage, script_key in zip(
+            commands, ("configure", "apply_kdm6ad_config"),
+            ("configure", "apply_kdm6ad_config.sh")):
         if row.get("returncode") != 0:
             raise PrelinkError("guarded configure/apply command did not complete successfully")
+        if row.get("configuration_pipeline_id") != ledger.get("configuration_pipeline_id"):
+            raise PrelinkError("configure/apply row is not bound to the ledger pipeline")
         if row.get("output_root_absent_before") is not True \
                 or row.get("output_root_absent_after") is not True:
             raise PrelinkError("configure/apply touched the native build output root")
+        argv, _flags = _validate_tool_command(
+            row, expected_name="bash", plan=plan, shadow_host=shadow_host,
+            output_root=output_root, cwd_root=shadow_host,
+            capture_root=capture_root, label=f"guarded configuration {stage}")
+        if (not isinstance(expected_argv[stage], list)
+                or argv != expected_argv[stage]
+                or Path(row.get("cwd", "")).resolve() != shadow_host.resolve()):
+            raise PrelinkError(f"guarded configuration {stage} argv or cwd differs from the plan")
+        if row.get("environment_sha256") != expected_environment_sha:
+            raise PrelinkError(f"guarded configuration {stage} environment differs from the plan")
+        for capture_field, digest_field in (("stdout_path", "stdout_sha256"),
+                                            ("stderr_path", "stderr_sha256")):
+            capture_rel = log_capture_paths.get(stage, {}).get(
+                capture_field.removesuffix("_path"))
+            if not isinstance(capture_rel, str):
+                raise PrelinkError(f"guarded configuration {stage} log path is not plan-pinned")
+            expected_capture = (workspace / capture_rel).resolve()
+            recorded_capture = Path(row[capture_field]).resolve()
+            if recorded_capture != expected_capture:
+                raise PrelinkError(f"guarded configuration {stage} {capture_field} differs from the plan")
+            if sha256_file(recorded_capture) != row.get(digest_field):
+                raise PrelinkError(f"guarded configuration {stage} {capture_field} hash mismatch")
+        expected_stdin_sha = expected_stdin[stage]
+        stdin_rel = stdin_capture_paths.get(stage)
+        if (not isinstance(expected_stdin_sha, str)
+                or not re.fullmatch(r"[0-9a-f]{64}", expected_stdin_sha)
+                or not isinstance(stdin_rel, str)
+                or row.get("stdin_sha256") != expected_stdin_sha):
+            raise PrelinkError(f"guarded configuration {stage} stdin/options are not plan-pinned")
+        expected_stdin_path = (shadow_host.parent.parent / stdin_rel).resolve()
+        recorded_stdin_path = Path(row.get("stdin_path", "")).resolve()
+        if (recorded_stdin_path != expected_stdin_path
+                or sha256_file(recorded_stdin_path) != expected_stdin_sha):
+            raise PrelinkError(f"guarded configuration {stage} stdin capture differs from its exact pin")
         base_sha = requirements["configuration_inputs_sha256"][script_key]
         shadow_sha = expected_configuration_source_sha256(plan, script_key, shadow=True)
         patch_record = requirements.get("shadow_configuration_source_patches", {}).get(script_key)
