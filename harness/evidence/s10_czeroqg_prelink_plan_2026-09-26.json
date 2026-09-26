@@ -2,7 +2,7 @@
   "schema": "s10-czeroqg-prelink-plan-v1",
   "status": "PRELINK_GUARD_FAILS_CLOSED_PENDING_CONFIG_PINS_REVIEWED_ARGV_AND_EXTERNAL_RELEASE_TRUST",
   "supersedes": "harness/evidence/s10_czeroqg_native_plan_2026-09-26.json",
-  "base_commit": "9130d64354392362f1dc6ab6d80ba34f7b5a1960",
+  "base_commit": "ee1310a35e3674b49b7f7fa14036ed938b8fbc9b",
   "policy_approved": false,
   "s10_status": "OPEN",
   "gates": {
@@ -83,7 +83,7 @@
       "arch/Config.pl": "8501605a0fc8592f4916985f446e702467dbb476d780989834f6062e0769375f",
       "arch/configure.defaults": "24b3ebfce685d28ebc3eb17657562acf443876be42a86af252edd49f66d556c7"
     },
-    "generated_configure_wrf_sha256": null,
+    "generated_configure_wrf_sha256": "0776b705e65683f93583a7c294ab1d83d7208e96d4461cba435183ecfdec059f",
     "configuration_generation_command": [
       "/bin/bash",
       "./configure"
@@ -110,7 +110,7 @@
     ],
     "configure_selection_stdin_sha256": "5cc0efdbfc6bf3e9208a52ed10e3cb5edac3bb961635ac89b2af48d3463d3639",
     "configuration_apply_stdin_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "configuration_pin_status": "Configure menu bytes/options, SDKROOT, NetCDF roots/tools, and the single private shadow apply-hook patch are pinned; generated configure.wrf remains unset pending reviewed attempt-three configure/apply.",
+    "configuration_pin_status": "Attempt-three guarded configure/apply completed; execution-plan SHA, ledger SHA, and generated configure.wrf SHA are pinned. Build resource, S15 release, preprocessing, link, and native-run gates remain blocked/open.",
     "netcdf_config_invocation_policy": {
       "selection": "Homebrew NetCDF 4.9.3 and NetCDF-Fortran 4.6.2; explicit NETCDF and NETCDF_C roots bypass PATH selection",
       "environment": {
@@ -181,7 +181,7 @@
     "configure_preflight_receipt_max_age_seconds": 3600,
     "configuration_preflight_consumption_marker_relative_path": "S10/configuration_capture/configure_preflight_consumed.json",
     "configuration_preflight_one_shot_policy": "Guarded configure pipeline creates the marker exclusively before subprocess launch; a failed or completed attempt consumes that plan/preflight nonce and same-plan retries fail. Marker is local workflow state, not cryptographic proof against a privileged actor who can delete local files.",
-    "configuration_ledger_plan_sha256": null,
+    "configuration_ledger_plan_sha256": "6f7517e61707ba3d325c13637d97d35ac31b76eb6f513bfc3e554fa62c783af2",
     "configure_failure_log_markers": [
       "One of compilers testing failed!"
     ],
@@ -198,7 +198,8 @@
         ],
         "policy": "Only this shadow hook may differ from canonical. The pinned one-file diff must apply to a temporary canonical copy and reproduce exact shadow bytes; existing LIB_LOCAL is replaced, or one definition is inserted after the sole LIB assignment that references $(LIB_LOCAL)."
       }
-    }
+    },
+    "configuration_execution_ledger_sha256": "1ea245bd70c3eb6669ce83bb75295207a662532814cfb045c29284059fc03452"
   },
   "build_matrix": {
     "schemes": [

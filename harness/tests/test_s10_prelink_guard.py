@@ -16,6 +16,7 @@ from s10_prelink_guard import (  # noqa: E402
     _argv_option_tokens,
     _ensure_output_target,
     _validate_configure_pipeline,
+    _validate_configuration_ledger,
     _validate_netcdf_config_probes,
     _validate_preprocess_pipeline,
     _validate_tool_command,
@@ -500,6 +501,264 @@ def test_resource_preflight_rejects_mutated_patch_plan_before_wrapper_or_receipt
     assert calls == []
     assert not marker.exists()
     assert not receipt.exists()
+
+
+def test_guarded_configuration_run_requires_final_ledger_sha_pin(tmp_path: Path):
+    import s10_prelink_guard as guard_module
+
+    ledger_path = tmp_path / "S10/configuration_capture/command_ledger.json"
+    ledger_path.parent.mkdir(parents=True)
+    ledger_path.write_text("{}\n")
+    plan = {"prelink_requirements": {
+        "configure_failure_log_markers": ["One of compilers testing failed!"],
+        "configuration_execution_ledger_relative_path": "S10/configuration_capture/command_ledger.json",
+        "configuration_execution_ledger_sha256": "0" * 64,
+    }}
+    with pytest.raises(PrelinkError, match="ledger differs from its final plan pin"):
+        guard_module.validate_guarded_configuration_run(
+            plan, workspace=tmp_path, shadow_host=tmp_path / "shadow")
+
+
+def _guarded_configuration_run_fixture(tmp_path: Path):
+    from s10_prelink_guard import sha256_bytes
+
+    workspace = tmp_path / "workspace"
+    s10 = workspace / "S10"
+    shadow = s10 / "shadow_host" / "KIM-meso_v1.0"
+    captures = s10 / "configuration_capture"
+    shadow.mkdir(parents=True)
+    captures.mkdir(parents=True)
+    configure = shadow / "configure"
+    apply_script = shadow / "apply_kdm6ad_config.sh"
+    configure.write_text("configure source\n")
+    apply_script.write_text("apply source\n")
+    configure_wrf = shadow / "configure.wrf"
+    configure_wrf.write_text("generated configure output\n")
+    stdout_paths = {
+        "configure": captures / "configure.stdout",
+        "apply_kdm6ad_config": captures / "apply_kdm6ad_config.stdout",
+    }
+    stderr_paths = {
+        "configure": captures / "configure.stderr",
+        "apply_kdm6ad_config": captures / "apply_kdm6ad_config.stderr",
+    }
+    for path in (*stdout_paths.values(), *stderr_paths.values()):
+        path.write_text("")
+    stdin_paths = {
+        "configure": captures / "configure.stdin",
+        "apply_kdm6ad_config": captures / "apply_kdm6ad_config.stdin",
+    }
+    stdin_paths["configure"].write_bytes(b"35\n1\n")
+    stdin_paths["apply_kdm6ad_config"].write_bytes(b"")
+    configure_stdin_sha = sha256_bytes(b"35\n1\n")
+    apply_stdin_sha = sha256_bytes(b"")
+    bash = Path("/bin/bash")
+    bash_sha = hashlib.sha256(bash.read_bytes()).hexdigest()
+    environment_sha = "e" * 64
+    pipeline_id = "d" * 64
+    ledger_nonce = "a" * 64
+    marker_nonce = "b" * 64
+    preflight_nonce = "c" * 64
+    snapshot_sha = "f" * 64
+    parent_plan_sha = "1" * 64
+    configure_sha = hashlib.sha256(configure.read_bytes()).hexdigest()
+    apply_sha = hashlib.sha256(apply_script.read_bytes()).hexdigest()
+    configure_wrf_sha = hashlib.sha256(configure_wrf.read_bytes()).hexdigest()
+    plan = {
+        "toolchain": {
+            "tools": {"bash": {"path": str(bash), "sha256": bash_sha}},
+            "toolchain_sha256": "2" * 64,
+            "environment_sha256": environment_sha,
+        },
+        "trusted_s15_release": {"empty_output_root_snapshot_sha256": snapshot_sha},
+        "clean_shadow": {"fresh_build_output_root": "S10/build-clean"},
+        "resource_gate": {"configure_only": {
+            "preflight_receipt_relative_path":
+                "S10/configuration_capture/configure_resource_preflight.json",
+        }},
+        "prelink_requirements": {
+            "configure_failure_log_markers": ["One of compilers testing failed!"],
+            "configuration_execution_ledger_relative_path":
+                "S10/configuration_capture/command_ledger.json",
+            "configuration_execution_ledger_sha256": None,
+            "configuration_ledger_plan_sha256": parent_plan_sha,
+            "generated_configure_wrf_sha256": configure_wrf_sha,
+            "configuration_inputs_sha256": {
+                "configure": configure_sha,
+                "apply_kdm6ad_config.sh": apply_sha,
+            },
+            "configuration_generation_command": [str(bash), "./configure"],
+            "configuration_apply_command": [str(bash), "./apply_kdm6ad_config.sh"],
+            "configure_selection_stdin_sha256": configure_stdin_sha,
+            "configure_menu_selection": {
+                "stdin_bytes": "35\n1\n",
+                "stdin_sha256": configure_stdin_sha,
+                "architecture_option": 35,
+                "nesting_option": 1,
+            },
+            "configuration_apply_stdin_sha256": apply_stdin_sha,
+            "configuration_stdin_capture_paths": {
+                "configure": "configuration_capture/configure.stdin",
+                "apply_kdm6ad_config": "configuration_capture/apply_kdm6ad_config.stdin",
+            },
+            "configuration_log_capture_paths": {
+                stage: {
+                    "stdout": f"S10/configuration_capture/{stage}.stdout",
+                    "stderr": f"S10/configuration_capture/{stage}.stderr",
+                }
+                for stage in ("configure", "apply_kdm6ad_config")
+            },
+            "configuration_preflight_consumption_marker_relative_path":
+                "S10/configuration_capture/configure_preflight_consumed.json",
+        },
+    }
+    preflight_path = captures / "configure_resource_preflight.json"
+    preflight = {
+        "schema": "s10-resource-preflight-receipt-v1",
+        "phase": "configure",
+        "status": "ALLOW_CONFIGURE_ONLY",
+        "plan_sha256": parent_plan_sha,
+        "empty_output_root_snapshot_sha256": snapshot_sha,
+        "nonce": preflight_nonce,
+    }
+    preflight_path.write_text(json.dumps(preflight, sort_keys=True) + "\n")
+    preflight_sha = hashlib.sha256(preflight_path.read_bytes()).hexdigest()
+    marker = {
+        "schema": "s10-configure-preflight-consumption-v1",
+        "status": "CONSUMED",
+        "plan_sha256": parent_plan_sha,
+        "resource_preflight_receipt_sha256": preflight_sha,
+        "resource_preflight_nonce": preflight_nonce,
+        "configuration_ledger_nonce": ledger_nonce,
+        "pipeline_id": pipeline_id,
+        "nonce": marker_nonce,
+        "nonce_sha256": sha256_bytes(marker_nonce.encode()),
+    }
+    marker_path = captures / "configure_preflight_consumed.json"
+    marker_path.write_text(json.dumps(marker, sort_keys=True) + "\n")
+    marker_sha = hashlib.sha256(marker_path.read_bytes()).hexdigest()
+
+    commands = []
+    for stage, script, script_sha, stdin_path, stdin_sha in (
+        ("configure", "configure", configure_sha,
+         stdin_paths["configure"], configure_stdin_sha),
+        ("apply_kdm6ad_config", "apply_kdm6ad_config.sh", apply_sha,
+         stdin_paths["apply_kdm6ad_config"], apply_stdin_sha),
+    ):
+        commands.append({
+            "stage": stage,
+            "tool_name": "bash",
+            "tool_path": str(bash),
+            "tool_sha256": bash_sha,
+            "script_sha256": script_sha,
+            "canonical_script_sha256": script_sha,
+            "script_patch_sha256": None,
+            "argv": [str(bash), f"./{script}"],
+            "flags": [],
+            "cwd": str(shadow),
+            "shell": False,
+            "returncode": 0,
+            "environment_sha256": environment_sha,
+            "stdin_path": str(stdin_path),
+            "stdin_sha256": stdin_sha,
+            "stdout_path": str(stdout_paths[stage]),
+            "stdout_sha256": hashlib.sha256(stdout_paths[stage].read_bytes()).hexdigest(),
+            "stderr_path": str(stderr_paths[stage]),
+            "stderr_sha256": hashlib.sha256(stderr_paths[stage].read_bytes()).hexdigest(),
+            "configuration_pipeline_id": pipeline_id,
+            "output_root_absent_before": True,
+            "output_root_absent_after": True,
+            "configure_wrf_sha256_after": configure_wrf_sha,
+        })
+    ledger = {
+        "schema": "s10-guarded-configuration-ledger-v1",
+        "status": "COMPLETE",
+        "plan_sha256": parent_plan_sha,
+        "toolchain_sha256": plan["toolchain"]["toolchain_sha256"],
+        "tool_environment_sha256": environment_sha,
+        "commands": commands,
+        "empty_output_root_snapshot_sha256": snapshot_sha,
+        "configure_resource_preflight_receipt_sha256": preflight_sha,
+        "configuration_preflight_consumption_marker_sha256": marker_sha,
+        "configuration_preflight_consumption_nonce": marker_nonce,
+        "configuration_pipeline_id": pipeline_id,
+        "nonce": ledger_nonce,
+        "nonce_sha256": sha256_bytes(ledger_nonce.encode()),
+    }
+    ledger_path = captures / "command_ledger.json"
+    ledger_path.write_text(json.dumps(ledger, sort_keys=True) + "\n")
+    plan["prelink_requirements"]["configuration_execution_ledger_sha256"] = \
+        hashlib.sha256(ledger_path.read_bytes()).hexdigest()
+    return plan, workspace, shadow, ledger_path
+
+
+@pytest.mark.parametrize("mutation", ["ledger_stdin_hash", "stdin_capture_bytes",
+                                        "log_capture_path", "argv", "cwd", "tool_sha"])
+def test_guarded_run_rejects_repinned_configuration_command_tampering(
+        tmp_path: Path, mutation: str):
+    import s10_prelink_guard as guard_module
+
+    plan, workspace, shadow, ledger_path = _guarded_configuration_run_fixture(tmp_path)
+    guard_module.validate_guarded_configuration_run(
+        plan, workspace=workspace, shadow_host=shadow)
+    ledger = json.loads(ledger_path.read_text())
+    row = ledger["commands"][0]
+    if mutation == "ledger_stdin_hash":
+        row["stdin_sha256"] = "9" * 64
+    elif mutation == "stdin_capture_bytes":
+        (workspace / "S10/configuration_capture/configure.stdin").write_bytes(b"different\n")
+    elif mutation == "log_capture_path":
+        row["stdout_path"] = str(workspace / "S10/configuration_capture/apply_kdm6ad_config.stdout")
+    elif mutation == "argv":
+        row["argv"] = ["/bin/bash", "./configure", "--different-menu"]
+        row["flags"] = ["--different-menu"]
+    elif mutation == "cwd":
+        row["cwd"] = str(shadow.parent)
+    elif mutation == "tool_sha":
+        row["tool_sha256"] = "8" * 64
+    ledger_path.write_text(json.dumps(ledger, sort_keys=True) + "\n")
+    plan["prelink_requirements"]["configuration_execution_ledger_sha256"] = \
+        hashlib.sha256(ledger_path.read_bytes()).hexdigest()
+    with pytest.raises(PrelinkError):
+        guard_module.validate_guarded_configuration_run(
+            plan, workspace=workspace, shadow_host=shadow)
+
+
+def test_prelink_ledger_gate_requires_plan_pinned_ledger_sha(tmp_path: Path):
+    ledger_path = tmp_path / "S10/configuration_capture/command_ledger.json"
+    ledger_path.parent.mkdir(parents=True)
+    ledger_path.write_text("{}\n")
+    ledger_sha = hashlib.sha256(ledger_path.read_bytes()).hexdigest()
+    plan = {"prelink_requirements": {
+        "configuration_execution_ledger_relative_path": "S10/configuration_capture/command_ledger.json",
+        "configuration_execution_ledger_sha256": "0" * 64,
+    }}
+    execution = {"configuration_command_ledger_sha256": ledger_sha}
+    with pytest.raises(PrelinkError, match="differs from its final plan pin"):
+        _validate_configuration_ledger(
+            execution, plan, workspace=tmp_path,
+            plan_sha256="1" * 64, configure_sha256="2" * 64)
+
+
+def test_attempt3_configure_result_report_binds_current_plan_pins():
+    plan_path = Path(__file__).resolve().parents[1] / "evidence/s10_czeroqg_prelink_plan_2026-09-26.json"
+    report_path = Path(__file__).resolve().parents[1] / "evidence/s10_attempt3_configure_only_result_2026-09-27.json"
+    plan = json.loads(plan_path.read_text())
+    report = json.loads(report_path.read_text())
+    result_sha = hashlib.sha256(plan_path.read_bytes()).hexdigest()
+    requirements = plan["prelink_requirements"]
+    assert report["attempt"]["result_plan_sha256"] == result_sha
+    assert report["attempt"]["execution_plan_sha256"] == requirements[
+        "configuration_ledger_plan_sha256"]
+    assert report["configuration_result_pins"][
+        "configuration_execution_ledger_sha256"] == requirements[
+            "configuration_execution_ledger_sha256"]
+    assert report["configuration_result_pins"][
+        "generated_configure_wrf_sha256"] == requirements[
+            "generated_configure_wrf_sha256"]
+    assert plan["resource_gate"]["full_matrix_build_or_link_allowed"] is False
+    assert report["resource_and_execution_boundary"]["preprocess_invoked"] is False
+    assert report["resource_and_execution_boundary"]["link_invoked"] is False
 
 
 def test_static_pins_checks_toolchain_digest_before_shadow_patch_subprocess(
