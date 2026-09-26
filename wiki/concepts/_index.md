@@ -13,5 +13,6 @@ date_modified: 2026-06-25
 - [[KDM6AD Mathematical Microphysics Operators]] - Operator-level formulation of KDM6AD as a differentiable bulk microphysics map with PSD moment and tendency equations.
 - [[KDM6AD Differentiability Audit]] - Smoothness, diagnostic-boundary, and adjoint-consistency checks required before derivative claims.
 - [[KDM6AD Forward Parity]] - Requirement and evidence for mp137 matching mp37 forward behavior.
+- [[KDM6AD Whole-host Number Positivity]] — Separate accepted-state nonnegativity gate across advection, boundary copies, and microphysics.
 - [[Operational-Raw vs DA-Clamped Dual Path]] — 작동 f32(raw 비트정합)/DA f64(clamped 유한수반) dtype 조건부 이중경로 idiom
 - [[KDM6AD C ABI Hardening]] — thread fail-closed + stable additive ABI v2 + hidden-visibility 9-symbol export allowlist + SOVERSION 2 (abi-v2-hardened, export surface 1342→9).

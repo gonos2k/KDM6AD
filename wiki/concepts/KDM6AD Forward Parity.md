@@ -51,6 +51,7 @@ Forward parity is enforced at multiple layers rather than by a single direct tra
 
 ## Evidence
 
+- [[KDM6AD Whole-host Number Positivity]] — Accepted-state nonnegativity is a separate scientific gate; matching a host negative bitwise does not establish positivity.
 - [[kdm6ad-10step-bitwise-achieved-2026-07-02]] — fix ladder, method, caveats (full 10-step/12h bitwise)
 - [[kdm6ad-frame2-rain-sed-bitwise-fix-2026-06-30]] — rain-sed root cause (superseded "floor" framing)
 - [[kdm6-vs-kdm6ad-code-comparison-2026-06-25]]
