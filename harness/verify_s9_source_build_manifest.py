@@ -474,7 +474,9 @@ def verify_manifest_semantics(manifest: dict[str, Any], root: Path | None = None
     resolves = [e for e, _, _ in edge_nodes if e.get("relation") == "resolves_to"]
     if len(resolves) != 1:
         errors.append("exactly one KDM6 C ABI resolves_to edge is required")
-    elif resolution is not None:
+    elif resolves[0].get("status") == "proven":
+        errors.append("resolves_to cannot be proven without an independent signed loader attestation")
+    if len(resolves) == 1 and resolution is not None:
         if _key(resolves[0].get("to_artifact", {})) != _key({k: resolution.get(k) for k in ("artifact_id", "path", "sha256")}):
             errors.append("loader target differs from resolves_to target path/hash")
         if len(exe_list) == 1 and resolves[0].get("from_artifact", {}).get("artifact_id") != exe_list[0].get("artifact_id"):

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import hashlib
+import importlib
 import json
 import subprocess
 import sys
@@ -13,8 +14,8 @@ import pytest
 
 HARNESS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(HARNESS))
-import capture_s9_dyld as capture_tool
-import verify_s9_source_build_manifest as verifier
+capture_tool = importlib.import_module("capture_s9_dyld")
+verifier = importlib.import_module("verify_s9_source_build_manifest")
 
 try:
     from jsonschema import Draft202012Validator
@@ -378,6 +379,24 @@ def test_complete_s9_graph_has_one_hash_bound_step_per_edge():
     assert verifier.verify_manifest_semantics(manifest) == []
     assert manifest["lineage_gate"]["status"] == "unverified_loader"
     assert manifest["lineage_gate"]["edge_results"][-1]["status"] == "unproven"
+
+
+def test_unproven_gate_cannot_accept_proven_resolves_edge_without_capture():
+    manifest = _manifest()
+    loader_step = next(step for step in manifest["build_steps"] if step["kind"] == "loader_inspection")
+    stdout = next(a for a in manifest["artifacts"] if a["artifact_id"] == loader_step["stdout_receipt"]["artifact_id"])
+    stderr = next(a for a in manifest["artifacts"] if a["artifact_id"] == loader_step["stderr_receipt"]["artifact_id"])
+    loader_step["kind"] = "loader_observation"
+    loader_step["capture_receipt"] = _ref(stdout)
+    loader_step["stdout_sha256"] = stdout["sha256"]
+    loader_step["stderr_sha256"] = stderr["sha256"]
+    edge = next(edge for edge in manifest["lineage_gate"]["edge_results"] if edge["relation"] == "resolves_to")
+    edge["status"] = "proven"
+    manifest["lineage_gate"]["status"] = "unproven"
+
+    assert not _schema_errors(manifest), "the counterexample is shape-valid without a runtime_loader.capture"
+    errors = verifier.verify_manifest_semantics(manifest)
+    assert any("resolves_to cannot be proven without an independent signed loader attestation" in error for error in errors)
 
 
 def test_echo_dyld_transcript_cannot_claim_a_proven_loader(tmp_path: Path):
