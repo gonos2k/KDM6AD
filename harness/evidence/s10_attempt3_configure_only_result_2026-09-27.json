@@ -1,0 +1,54 @@
+{
+  "schema": "s10-attempt3-configure-only-result-v1",
+  "scope": "path-redacted result; private receipts, raw logs, patched hook, shadow host, and generated configure.wrf are not included",
+  "attempt": {
+    "status": "CONFIGURE_AND_APPLY_COMPLETE_ONLY",
+    "execution_plan_sha256": "6f7517e61707ba3d325c13637d97d35ac31b76eb6f513bfc3e554fa62c783af2",
+    "result_plan_sha256": "6bfaee343979a4b6995496053523a86e57f3423978cba34eafeda45164f99a82",
+    "empty_output_root_snapshot_sha256": "c4cac9cb4d9c1a6d0c08455350ea44185d61f2d6216e98d93bbb10d0621efd5d",
+    "preflight_exit_code": 0,
+    "preflight_status": "ALLOW_CONFIGURE_ONLY",
+    "guarded_pipeline_exit_code": 0,
+    "s10_status": "OPEN"
+  },
+  "configuration_commands": [
+    {
+      "stage": "configure",
+      "exit_code": 0,
+      "stdout_sha256": "74698c8c09199674e3308cb110965282e68bf4ed2be15fb0a3c353b6c5c19d56",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdin_sha256": "5cc0efdbfc6bf3e9208a52ed10e3cb5edac3bb961635ac89b2af48d3463d3639",
+      "netcdf4_hdf5_report": "yes",
+      "pnetcdf_report": "no"
+    },
+    {
+      "stage": "apply_kdm6ad_config",
+      "exit_code": 0,
+      "stdout_sha256": "7fc2b09b48aced42ba7537ec168d74c6a0ea120ed0cbd10fe835998d334e3f69",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdin_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "canonical_hook_sha256": "346b8fe4286088e9707f73251bfaff58a94b55ad357f49a185732a8b8ecf067c",
+      "private_patch_sha256": "cc8a7b02e530850637f1dd7bccea0822de985052a797ac317aaa26ef50b2adf8",
+      "patched_shadow_hook_sha256": "591519d512db1b722a56215d6a837d94e5f163f61c91f9b7f24778f76f370209"
+    }
+  ],
+  "configuration_result_pins": {
+    "preflight_receipt_sha256": "a06d2243ae6b854deea19d4adfa12a1e4bfbf9aabbee7bc568e0dbcd4d315b57",
+    "configuration_execution_ledger_sha256": "1ea245bd70c3eb6669ce83bb75295207a662532814cfb045c29284059fc03452",
+    "consumed_one_shot_marker_sha256": "25415f04e6a788e40d7d0e63cfdb4fb5f1a74ba948af01c9c1c57618b747aaaf",
+    "generated_configure_wrf_sha256": "0776b705e65683f93583a7c294ab1d83d7208e96d4461cba435183ecfdec059f"
+  },
+  "resource_and_execution_boundary": {
+    "build_output_root_absent": true,
+    "preprocess_invoked": false,
+    "object_compile_invoked": false,
+    "link_invoked": false,
+    "model_run_invoked": false,
+    "build_resource_estimate_sha256": null,
+    "coordinator_resource_approval_sha256": null,
+    "coordinator_release_sha256": null,
+    "final_replay_keys_and_digest": null,
+    "s10_status": "OPEN"
+  },
+  "evidence_boundary": "This records configure-only completion. It is not native build, link, model, experiment acceptance, or release evidence. Raw receipts and logs remain private."
+}

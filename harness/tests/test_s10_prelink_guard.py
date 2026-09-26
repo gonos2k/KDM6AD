@@ -16,6 +16,7 @@ from s10_prelink_guard import (  # noqa: E402
     _argv_option_tokens,
     _ensure_output_target,
     _validate_configure_pipeline,
+    _validate_configuration_ledger,
     _validate_netcdf_config_probes,
     _validate_preprocess_pipeline,
     _validate_tool_command,
@@ -500,6 +501,59 @@ def test_resource_preflight_rejects_mutated_patch_plan_before_wrapper_or_receipt
     assert calls == []
     assert not marker.exists()
     assert not receipt.exists()
+
+
+def test_guarded_configuration_run_requires_final_ledger_sha_pin(tmp_path: Path):
+    import s10_prelink_guard as guard_module
+
+    ledger_path = tmp_path / "S10/configuration_capture/command_ledger.json"
+    ledger_path.parent.mkdir(parents=True)
+    ledger_path.write_text("{}\n")
+    plan = {"prelink_requirements": {
+        "configure_failure_log_markers": ["One of compilers testing failed!"],
+        "configuration_execution_ledger_relative_path": "S10/configuration_capture/command_ledger.json",
+        "configuration_execution_ledger_sha256": "0" * 64,
+    }}
+    with pytest.raises(PrelinkError, match="ledger differs from its final plan pin"):
+        guard_module.validate_guarded_configuration_run(
+            plan, workspace=tmp_path, shadow_host=tmp_path / "shadow")
+
+
+def test_prelink_ledger_gate_requires_plan_pinned_ledger_sha(tmp_path: Path):
+    ledger_path = tmp_path / "S10/configuration_capture/command_ledger.json"
+    ledger_path.parent.mkdir(parents=True)
+    ledger_path.write_text("{}\n")
+    ledger_sha = hashlib.sha256(ledger_path.read_bytes()).hexdigest()
+    plan = {"prelink_requirements": {
+        "configuration_execution_ledger_relative_path": "S10/configuration_capture/command_ledger.json",
+        "configuration_execution_ledger_sha256": "0" * 64,
+    }}
+    execution = {"configuration_command_ledger_sha256": ledger_sha}
+    with pytest.raises(PrelinkError, match="differs from its final plan pin"):
+        _validate_configuration_ledger(
+            execution, plan, workspace=tmp_path,
+            plan_sha256="1" * 64, configure_sha256="2" * 64)
+
+
+def test_attempt3_configure_result_report_binds_current_plan_pins():
+    plan_path = Path(__file__).resolve().parents[1] / "evidence/s10_czeroqg_prelink_plan_2026-09-26.json"
+    report_path = Path(__file__).resolve().parents[1] / "evidence/s10_attempt3_configure_only_result_2026-09-27.json"
+    plan = json.loads(plan_path.read_text())
+    report = json.loads(report_path.read_text())
+    result_sha = hashlib.sha256(plan_path.read_bytes()).hexdigest()
+    requirements = plan["prelink_requirements"]
+    assert report["attempt"]["result_plan_sha256"] == result_sha
+    assert report["attempt"]["execution_plan_sha256"] == requirements[
+        "configuration_ledger_plan_sha256"]
+    assert report["configuration_result_pins"][
+        "configuration_execution_ledger_sha256"] == requirements[
+            "configuration_execution_ledger_sha256"]
+    assert report["configuration_result_pins"][
+        "generated_configure_wrf_sha256"] == requirements[
+            "generated_configure_wrf_sha256"]
+    assert plan["resource_gate"]["full_matrix_build_or_link_allowed"] is False
+    assert report["resource_and_execution_boundary"]["preprocess_invoked"] is False
+    assert report["resource_and_execution_boundary"]["link_invoked"] is False
 
 
 def test_static_pins_checks_toolchain_digest_before_shadow_patch_subprocess(

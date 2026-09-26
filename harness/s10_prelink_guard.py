@@ -386,6 +386,11 @@ def validate_guarded_configuration_run(plan: dict[str, Any], *,
     requirements = plan["prelink_requirements"]
     ledger_path = workspace / requirements["configuration_execution_ledger_relative_path"]
     ledger_sha = sha256_file(ledger_path)
+    expected_ledger_sha = requirements.get("configuration_execution_ledger_sha256")
+    if (not isinstance(expected_ledger_sha, str)
+            or not re.fullmatch(r"[0-9a-f]{64}", expected_ledger_sha)
+            or ledger_sha != expected_ledger_sha):
+        raise PrelinkError("configure execution ledger differs from its final plan pin")
     ledger = load_json(ledger_path)
     parent_plan_sha = requirements.get("configuration_ledger_plan_sha256")
     expected_config_sha = requirements.get("generated_configure_wrf_sha256")
@@ -1734,8 +1739,13 @@ def _validate_configuration_ledger(execution: dict[str, Any], plan: dict[str, An
         return
     ledger_path = workspace / ledger_rel
     recorded_sha = execution.get("configuration_command_ledger_sha256")
-    if not isinstance(recorded_sha, str) or sha256_file(ledger_path) != recorded_sha:
-        raise PrelinkError("configuration execution ledger is missing or its digest differs")
+    expected_ledger_sha = plan["prelink_requirements"].get(
+        "configuration_execution_ledger_sha256")
+    if (not isinstance(expected_ledger_sha, str)
+            or not re.fullmatch(r"[0-9a-f]{64}", expected_ledger_sha)
+            or recorded_sha != expected_ledger_sha
+            or sha256_file(ledger_path) != recorded_sha):
+        raise PrelinkError("configuration execution ledger is missing or differs from its final plan pin")
     ledger = load_json(ledger_path)
     ledger_nonce = ledger.get("nonce")
     if (ledger.get("schema") != "s10-guarded-configuration-ledger-v1"
