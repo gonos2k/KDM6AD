@@ -17,7 +17,7 @@ import shutil
 import subprocess
 import sys
 import time
-from typing import Any
+from typing import Any, Mapping
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from make_progb_czero_guard import (  # noqa: E402
@@ -48,12 +48,43 @@ _TOOLCHAIN_ENV_KEYS = (
     "ZLIB_PATH", "CURL_PATH", "JASPERLIB", "JASPERINC", "GPFS_PATH",
     "COMMLIB", "OMP", "WRF_OS", "WRF_MACH", "WRF_NMM_CORE",
     "WRFPLUS", "WRF_CHEM", "WRF_KPP", "WRF_DFI_RADAR", "WRF_CMAQ",
-    "TERRAIN_AND_LANDUSE",
+    "TERRAIN_AND_LANDUSE", "HOME", "TMPDIR", "TMP", "LANG", "LC_ALL",
+    "LC_CTYPE", "TERM", "BASH_ENV", "ENV", "PYTHONPATH", "PYTHONHOME",
+    "PYTHONWARNINGS", "PERL5LIB", "PERLLIB", "PERL5OPT", "CFLAGS", "CXX",
+    "CXXFLAGS", "DYLD_FALLBACK_LIBRARY_PATH", "DYLD_INSERT_LIBRARIES",
+    "LD_PRELOAD", "MAKEFLAGS", "MFLAGS", "NETCDF4", "USENETCDFPAR",
+    "GREP_OPTIONS", "WRF_EM_CORE", "OMP_NUM_THREADS", "MKL_NUM_THREADS",
+    "OMP_THREAD_LIMIT", "PKG_CONFIG_PATH", "PKG_CONFIG_LIBDIR", "CC",
+    "CPP", "F77", "PERL", "PYTHON", "AR", "ARFLAGS", "RANLIB", "M4",
+    "MAKE", "TFL", "CFL", "WRF_CORE", "MPI_HOME", "MPICH", "OMPI_HOME",
 )
 
 
-def tool_environment_snapshot() -> dict[str, str | None]:
-    return {name: os.environ.get(name) for name in _TOOLCHAIN_ENV_KEYS}
+def tool_environment_snapshot(environment: Mapping[str, str] | None = None) -> dict[str, str | None]:
+    source = os.environ if environment is None else environment
+    return {name: source.get(name) for name in _TOOLCHAIN_ENV_KEYS}
+
+
+def planned_tool_environment(plan: dict[str, Any]) -> dict[str, str]:
+    """Return only allowlisted environment variables, with plan-pinned overrides."""
+    environment = {name: value for name, value in tool_environment_snapshot().items()
+                   if value is not None}
+    configured = plan.get("toolchain", {}).get("configuration_environment", {})
+    if not isinstance(configured, dict):
+        raise PrelinkError("pinned configuration environment is malformed")
+    for name, value in configured.items():
+        if value is None:
+            environment.pop(name, None)
+        elif isinstance(value, str):
+            environment[name] = value
+        else:
+            raise PrelinkError(f"configuration environment value is invalid: {name}")
+    actual = tool_environment_snapshot(environment)
+    digest = sha256_bytes(json.dumps(
+        actual, sort_keys=True, separators=(",", ":")).encode())
+    if digest != plan.get("toolchain", {}).get("environment_sha256"):
+        raise PrelinkError("sanitized guarded environment differs from its plan pin")
+    return environment
 
 
 def sha256_bytes(data: bytes) -> str:
@@ -390,9 +421,11 @@ def create_resource_preflight_receipt(
 
     # Check every pinned source/config input and canonical archive before either
     # configure-only preparation or the first build stage.
+    environment = planned_tool_environment(plan)
     validate_static_pins(
         plan, workspace=workspace, canonical_host=canonical_host,
-        shadow_host=shadow_host, overlay_paths=overlay_paths)
+        shadow_host=shadow_host, overlay_paths=overlay_paths,
+        environment=environment)
 
     usage = shutil.disk_usage(output_root.parent)
     measured_free = usage.free
@@ -516,6 +549,8 @@ def create_resource_preflight_receipt(
         "output_root_path": str(output_root.resolve()),
         "empty_output_root_snapshot_sha256": snapshot_sha,
         "empty_output_root_snapshot_nonce_sha256": snapshot["nonce_sha256"],
+        "toolchain_sha256": plan["toolchain"]["toolchain_sha256"],
+        "tool_environment_sha256": plan["toolchain"]["environment_sha256"],
         "free_space_probe_path": str(output_root.parent.resolve()),
         "free_space_total_bytes": usage.total,
         "free_space_used_bytes": usage.used,
@@ -580,26 +615,28 @@ def validate_source_overlay(pin: dict[str, Any], *, scheme: str,
     }
 
 
-def validate_toolchain(plan: dict[str, Any], shadow_host: Path) -> dict[str, dict[str, str]]:
+def validate_toolchain(plan: dict[str, Any], shadow_host: Path, *,
+                       environment: Mapping[str, str] | None = None) -> dict[str, dict[str, str]]:
     toolchain = plan.get("toolchain", {})
     specs = toolchain.get("tools")
     if not isinstance(specs, dict) or not specs:
         raise PrelinkError("toolchain binary pins are missing")
-    environment = tool_environment_snapshot()
+    environment_snapshot = tool_environment_snapshot(environment)
     environment_sha = sha256_bytes(json.dumps(
-        environment, sort_keys=True, separators=(",", ":")).encode())
+        environment_snapshot, sort_keys=True, separators=(",", ":")).encode())
     if environment_sha != toolchain.get("environment_sha256"):
         raise PrelinkError("toolchain resolution environment differs from its pin")
     configured_environment = toolchain.get("configuration_environment", {})
     if not isinstance(configured_environment, dict):
         raise PrelinkError("pinned configuration environment is malformed")
     for name, expected in configured_environment.items():
-        if name not in environment or environment[name] != expected:
+        if name not in environment_snapshot or environment_snapshot[name] != expected:
             raise PrelinkError(f"configuration environment differs from its pin: {name}")
     canonical = json.dumps({"tools": specs, "environment_sha256": environment_sha},
                            sort_keys=True, separators=(",", ":")).encode()
     if sha256_bytes(canonical) != toolchain.get("toolchain_sha256"):
         raise PrelinkError("pinned toolchain manifest digest is inconsistent")
+    child_environment = dict(environment) if environment is not None else None
     resolved: dict[str, dict[str, str]] = {}
     for name, spec in specs.items():
         if "path" in spec:
@@ -620,20 +657,30 @@ def validate_toolchain(plan: dict[str, Any], shadow_host: Path) -> dict[str, dic
                 raise PrelinkError(f"version probe pin is malformed for {name}")
             result = subprocess.run(
                 [str(path), *version_argv], check=True, capture_output=True,
-                text=True, shell=False)
-            if result.stdout.strip() != version_stdout:
+                text=True, shell=False, env=child_environment)
+            first_version_line = result.stdout.strip().splitlines()[0]
+            if first_version_line != version_stdout:
                 raise PrelinkError(f"pinned tool version output changed for {name}")
             resolved[name]["version_stdout"] = version_stdout
     for env_name, tool_name in (("NETCDF_C", "nc-config"), ("NETCDF", "nf-config")):
         if tool_name in resolved:
-            root = environment.get(env_name)
+            root = environment_snapshot.get(env_name)
             expected_path = (Path(root) / "bin" / tool_name).resolve() if root else None
             if expected_path is None or Path(resolved[tool_name]["path"]).resolve() != expected_path:
                 raise PrelinkError(f"{tool_name} is not resolved from pinned {env_name}")
+    pinned_path = environment_snapshot.get("PATH")
+    for executable in ("perl5", "m4", "python3"):
+        if executable not in resolved:
+            continue
+        selected = shutil.which(executable, path=pinned_path)
+        if (selected is None
+                or Path(selected).resolve() != Path(resolved[executable]["path"]).resolve()):
+            raise PrelinkError(f"configure helper {executable} is not the pinned PATH resolution")
     if {"mpif90", "gfortran", "ld"}.issubset(resolved):
         mpif90_command = subprocess.run(
             [resolved["mpif90"]["path"], "--showme:command"],
-            check=True, capture_output=True, text=True).stdout.strip()
+            check=True, capture_output=True, text=True,
+            env=child_environment).stdout.strip()
         if mpif90_command != toolchain.get("mpif90_underlying_command"):
             raise PrelinkError("mpif90 resolved to an unexpected Fortran compiler")
         compiler_path = shutil.which(mpif90_command)
@@ -641,13 +688,15 @@ def validate_toolchain(plan: dict[str, Any], shadow_host: Path) -> dict[str, dic
             raise PrelinkError("mpif90's Fortran compiler path is not the pinned gfortran binary")
         reported_ld = subprocess.run(
             [resolved["gfortran"]["path"], "-print-prog-name=ld"],
-            check=True, capture_output=True, text=True).stdout.strip()
+            check=True, capture_output=True, text=True,
+            env=child_environment).stdout.strip()
         if reported_ld != toolchain.get("linker_name_reported_by_gfortran"):
             raise PrelinkError("gfortran reported an unexpected linker name")
         for child, wrapper in (("as", "as_wrapper"), ("ld", "ld_wrapper")):
             reported = subprocess.run(
                 [resolved["gfortran"]["path"], f"-print-prog-name={child}"],
-                check=True, capture_output=True, text=True).stdout.strip()
+                check=True, capture_output=True, text=True,
+                env=child_environment).stdout.strip()
             wrapper_path = shutil.which(reported)
             if (wrapper_path is None or wrapper not in resolved
                     or Path(wrapper_path).resolve() != Path(resolved[wrapper]["path"]).resolve()):
@@ -655,14 +704,15 @@ def validate_toolchain(plan: dict[str, Any], shadow_host: Path) -> dict[str, dic
             xcrun_path = resolved.get("xcrun", {}).get("path")
             actual_child = subprocess.run(
                 [xcrun_path, "--find", child], check=True,
-                capture_output=True, text=True).stdout.strip() if xcrun_path else ""
+                capture_output=True, text=True, env=child_environment).stdout.strip() if xcrun_path else ""
             if (not actual_child or child not in resolved
                     or Path(actual_child).resolve() != Path(resolved[child]["path"]).resolve()):
                 raise PrelinkError(f"xcrun's {child} subordinate binary is not pinned")
         for child in ("f951", "collect2"):
             reported = subprocess.run(
                 [resolved["gfortran"]["path"], f"-print-prog-name={child}"],
-                check=True, capture_output=True, text=True).stdout.strip()
+                check=True, capture_output=True, text=True,
+                env=child_environment).stdout.strip()
             if child not in resolved or Path(reported).resolve() != Path(resolved[child]["path"]).resolve():
                 raise PrelinkError(f"gfortran's {child} subordinate binary is not pinned")
     return resolved
@@ -684,8 +734,10 @@ def validate_configuration_sources(plan: dict[str, Any], *,
 
 def validate_static_pins(plan: dict[str, Any], *, workspace: Path,
                          canonical_host: Path, shadow_host: Path,
-                         overlay_paths: dict[str, Path]) -> dict[str, Any]:
+                         overlay_paths: dict[str, Path],
+                         environment: Mapping[str, str] | None = None) -> dict[str, Any]:
     """Rehash current canonical sources, local overlays, config, inputs, and archive."""
+    environment = planned_tool_environment(plan) if environment is None else environment
     pins = plan["host_source_pins"]
     sources: dict[str, Any] = {}
     for scheme in ("mp37", "mp237"):
@@ -723,7 +775,7 @@ def validate_static_pins(plan: dict[str, Any], *, workspace: Path,
     if (shadow_host / "main/libwrflib.a").exists():
         raise PrelinkError("shadow archive exists; link must use the pinned canonical archive")
 
-    toolchain = validate_toolchain(plan, shadow_host)
+    toolchain = validate_toolchain(plan, shadow_host, environment=environment)
 
     nml_rel = Path(plan["prelink_requirements"]["selected_case_relative_path"]) / "namelist.input"
     nml_path = shadow_host / nml_rel
@@ -760,7 +812,7 @@ def validate_static_pins(plan: dict[str, Any], *, workspace: Path,
         "canonical_archive_sha256": archive_pin["sha256"],
         "toolchain": toolchain,
         "toolchain_sha256": plan["toolchain"]["toolchain_sha256"],
-        "tool_environment": tool_environment_snapshot(),
+        "tool_environment": tool_environment_snapshot(environment),
         "tool_environment_sha256": plan["toolchain"]["environment_sha256"],
         "pristine_namelist_sha256": pristine_sha,
         "active_inputs": active_inputs,
@@ -1229,18 +1281,90 @@ def _configuration_command_signature(record: dict[str, Any]) -> dict[str, Any]:
         "argv": record.get("argv"),
         "flags": record.get("flags"),
         "cwd": record.get("cwd"),
+        "environment_sha256": record.get("environment_sha256"),
         "stdout_path": record.get("stdout_path"),
+        "stdout_sha256": record.get("stdout_sha256"),
         "stderr_path": record.get("stderr_path"),
+        "stderr_sha256": record.get("stderr_sha256"),
         "stdin_path": record.get("stdin_path"),
         "stdin_sha256": record.get("stdin_sha256"),
         "script_sha256": record.get("script_sha256"),
         "returncode": record.get("returncode"),
         "shell": record.get("shell"),
-        "netcdf_tool_invocations": record.get("netcdf_tool_invocations"),
+        "netcdf_tool_probes": record.get("netcdf_tool_probes"),
+        "configure_wrf_sha256_after": record.get("configure_wrf_sha256_after"),
+        "output_root_absent_before": record.get("output_root_absent_before"),
+        "output_root_absent_after": record.get("output_root_absent_after"),
     }
 
 
-def _validate_netcdf_config_invocations(
+def _validate_configuration_ledger(execution: dict[str, Any], plan: dict[str, Any], *,
+                                   workspace: Path, plan_sha256: str,
+                                   configure_sha256: str) -> None:
+    ledger_rel = plan["prelink_requirements"].get(
+        "configuration_execution_ledger_relative_path")
+    if ledger_rel is None:
+        return
+    ledger_path = workspace / ledger_rel
+    recorded_sha = execution.get("configuration_command_ledger_sha256")
+    if not isinstance(recorded_sha, str) or sha256_file(ledger_path) != recorded_sha:
+        raise PrelinkError("configuration execution ledger is missing or its digest differs")
+    ledger = load_json(ledger_path)
+    ledger_nonce = ledger.get("nonce")
+    if (ledger.get("schema") != "s10-guarded-configuration-ledger-v1"
+            or ledger.get("plan_sha256") != plan_sha256
+            or ledger.get("status") != "COMPLETE"
+            or ledger.get("toolchain_sha256") != plan["toolchain"]["toolchain_sha256"]
+            or ledger.get("tool_environment_sha256") != plan["toolchain"]["environment_sha256"]
+            or not isinstance(ledger_nonce, str)
+            or not re.fullmatch(r"[0-9a-f]{64}", ledger_nonce)
+            or ledger.get("nonce_sha256") != sha256_bytes(ledger_nonce.encode())):
+        raise PrelinkError("configuration execution ledger is not complete or plan-bound")
+    recorded_ledger_path = execution.get("configuration_command_ledger_path")
+    if Path(recorded_ledger_path or "").resolve() != ledger_path.resolve():
+        raise PrelinkError("execution receipt ledger path differs from the plan-pinned path")
+    expected_snapshot = plan["trusted_s15_release"]["empty_output_root_snapshot_sha256"]
+    if ledger.get("empty_output_root_snapshot_sha256") != expected_snapshot:
+        raise PrelinkError("configuration execution ledger is bound to a different snapshot")
+    expected_commands = execution.get("configuration_commands")
+    commands = ledger.get("commands")
+    if not isinstance(commands, list) or not isinstance(expected_commands, list) \
+            or len(commands) != 2 or len(expected_commands) != 2:
+        raise PrelinkError("configuration ledger must record configure then apply")
+    for recorded, expected in zip(commands, expected_commands):
+        if (_configuration_command_signature(recorded)
+                != _configuration_command_signature(expected)):
+            raise PrelinkError("configuration execution receipt differs from guarded-command ledger")
+        if (recorded.get("output_root_absent_before") is not True
+                or recorded.get("output_root_absent_after") is not True):
+            raise PrelinkError("configure-only command touched the WRF build output root")
+        for output_name, digest_name in (("stdout_path", "stdout_sha256"),
+                                         ("stderr_path", "stderr_sha256")):
+            if sha256_file(Path(recorded[output_name])) != recorded.get(digest_name):
+                raise PrelinkError(f"guarded configuration {output_name} hash differs")
+    if commands[-1].get("configure_wrf_sha256_after") != configure_sha256:
+        raise PrelinkError("configuration ledger final configure.wrf hash differs")
+    expected_preflight_sha = execution.get("configuration_resource_preflight_receipt_sha256")
+    if ledger.get("configure_resource_preflight_receipt_sha256") != expected_preflight_sha:
+        raise PrelinkError("configuration ledger is not bound to its configure-only preflight receipt")
+    preflight_path = workspace / plan["resource_gate"]["configure_only"][
+        "preflight_receipt_relative_path"]
+    if not isinstance(expected_preflight_sha, str) or sha256_file(preflight_path) != expected_preflight_sha:
+        raise PrelinkError("configure-only resource preflight receipt digest is missing or changed")
+    preflight = load_json(preflight_path)
+    if (preflight.get("schema") != "s10-resource-preflight-receipt-v1"
+            or preflight.get("phase") != "configure"
+            or preflight.get("status") != "ALLOW_CONFIGURE_ONLY"
+            or preflight.get("plan_sha256") != plan_sha256
+            or preflight.get("toolchain_sha256") != plan["toolchain"]["toolchain_sha256"]
+            or preflight.get("tool_environment_sha256") != plan["toolchain"]["environment_sha256"]
+            or preflight.get("empty_output_root_snapshot_sha256") != expected_snapshot
+            or preflight.get("output_root_path") != ledger.get("output_root_path")
+            or preflight.get("allowed_commands") != ["./configure", "./apply_kdm6ad_config.sh"]):
+        raise PrelinkError("configure-only resource preflight receipt is not plan-bound")
+
+
+def _validate_netcdf_config_probes(
         configure_record: dict[str, Any], plan: dict[str, Any],
         shadow_host: Path) -> None:
     policy = plan["prelink_requirements"].get("netcdf_config_invocation_policy")
@@ -1249,7 +1373,7 @@ def _validate_netcdf_config_invocations(
     expected_tools = policy.get("invocations")
     if not isinstance(expected_tools, dict) or set(expected_tools) != {"nc-config", "nf-config"}:
         raise PrelinkError("pinned NetCDF config-tool invocation policy is incomplete")
-    recorded = configure_record.get("netcdf_tool_invocations")
+    recorded = configure_record.get("netcdf_tool_probes")
     if not isinstance(recorded, dict) or set(recorded) != set(expected_tools):
         raise PrelinkError("configure receipt lacks the resolved NetCDF tool invocations")
     observed_output = ""
@@ -1261,7 +1385,9 @@ def _validate_netcdf_config_invocations(
         if "/opt/local/" in str(tool_path):
             raise PrelinkError(f"mixed MacPorts NetCDF config tool is forbidden: {name}")
         row = recorded[name]
-        if (not isinstance(row, dict) or row.get("path") != str(tool_path)
+        if (not isinstance(row, dict)
+                or row.get("probe_scope") != "post_config_pinned_tool_probes"
+                or row.get("path") != str(tool_path)
                 or row.get("sha256") != tool_sha
                 or row.get("version") != expected.get("version")):
             raise PrelinkError(f"resolved NetCDF config tool identity mismatch: {name}")
@@ -1346,7 +1472,9 @@ def validate_arm_argv_parity(plan: dict[str, Any], execution: dict[str, Any], *,
 
 def _validate_configure_pipeline(execution: dict[str, Any], shadow_host: Path,
                                  output_root: Path, plan: dict[str, Any],
-                                 configure_sha: str) -> None:
+                                 configure_sha: str, *,
+                                 plan_sha256: str | None = None,
+                                 workspace: Path | None = None) -> None:
     commands = execution.get("configuration_commands")
     if not isinstance(commands, list) or [r.get("stage") for r in commands if isinstance(r, dict)] != [
         "configure", "apply_kdm6ad_config"
@@ -1404,14 +1532,23 @@ def _validate_configure_pipeline(execution: dict[str, Any], shadow_host: Path,
                 if not (_is_relative_to(capture.resolve(), output_root.resolve())
                         or _is_relative_to(capture.resolve(), capture_root.resolve())):
                     raise PrelinkError(f"configuration {stage} {capture_field} escaped output root")
+                hash_field = f"{capture_field.removesuffix('_path')}_sha256"
+                if sha256_file(capture) != row.get(hash_field):
+                    raise PrelinkError(f"configuration {stage} {capture_field} hash mismatch")
     expected_configure_sha = plan["prelink_requirements"].get("generated_configure_wrf_sha256")
     if not isinstance(expected_configure_sha, str) or len(expected_configure_sha) != 64:
         raise PrelinkError("fresh configure.wrf SHA-256 is not independently pinned in the plan")
     if configure_sha != expected_configure_sha or sha256_file(shadow_host / "configure.wrf") != expected_configure_sha:
         raise PrelinkError("fresh configure.wrf differs from the reviewed plan pin")
+    if plan.get("prelink_requirements", {}).get("configuration_execution_ledger_relative_path"):
+        if plan_sha256 is None or workspace is None:
+            raise PrelinkError("guarded configuration ledger requires workspace and plan digest")
+        _validate_configuration_ledger(
+            execution, plan, workspace=workspace,
+            plan_sha256=plan_sha256, configure_sha256=configure_sha)
     netcdf_policy = plan["prelink_requirements"].get("netcdf_config_invocation_policy")
     if isinstance(netcdf_policy, dict):
-        _validate_netcdf_config_invocations(first, plan, shadow_host)
+        _validate_netcdf_config_probes(first, plan, shadow_host)
         stdout_path = Path(first["stdout_path"])
         if not stdout_path.is_absolute():
             stdout_path = output_root / stdout_path
@@ -1537,8 +1674,15 @@ def validate_execution(plan: dict[str, Any], execution: dict[str, Any], *,
         raise PrelinkError("execution toolchain digest is not pinned")
     if execution.get("tool_environment") != tool_environment_snapshot():
         raise PrelinkError("execution environment differs from the pinned compiler/tool resolution environment")
-    validate_toolchain(plan, shadow_host)
-    _validate_configure_pipeline(execution, shadow_host, output_root, plan, configure_sha)
+    recorded_environment = execution.get("tool_environment")
+    if not isinstance(recorded_environment, dict):
+        raise PrelinkError("execution receipt lacks the guarded environment snapshot")
+    child_environment = {name: value for name, value in recorded_environment.items()
+                         if isinstance(value, str)}
+    validate_toolchain(plan, shadow_host, environment=child_environment)
+    _validate_configure_pipeline(
+        execution, shadow_host, output_root, plan, configure_sha,
+        plan_sha256=plan_sha256, workspace=workspace)
     validate_clean_shadow(shadow_host, output_root, workspace)
 
     variants = execution.get("variants")

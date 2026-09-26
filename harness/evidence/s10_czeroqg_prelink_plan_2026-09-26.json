@@ -150,7 +150,9 @@
       "configure_log_assertions": [
         "Enabled NetCDF-4/HDF-5: yes",
         "NetCDF built with PnetCDF: no"
-      ]
+      ],
+      "receipt_semantics": "post_config_pinned_tool_probes; the ledger does not claim an operating-system trace of configure internal subprocesses",
+      "source_callsite_evidence": "the pinned configure source and NETCDF/NETCDF_C roots identify the configure call sites; generated configure.wrf SHA and stdout markers bind the result"
     },
     "configuration_stdin_capture_paths": {
       "configure": "configuration_capture/configure.stdin",
@@ -164,7 +166,19 @@
       "nesting_option": 1,
       "nesting_description": "basic nesting",
       "basis": "the current canonical configure.wrf is DMPARALLEL=1 with GNU Open MPI; option ordering is pinned by arch/configure.defaults SHA-256"
-    }
+    },
+    "configuration_log_capture_paths": {
+      "configure": {
+        "stdout": "S10/configuration_capture/configure.stdout",
+        "stderr": "S10/configuration_capture/configure.stderr"
+      },
+      "apply_kdm6ad_config": {
+        "stdout": "S10/configuration_capture/apply_kdm6ad_config.stdout",
+        "stderr": "S10/configuration_capture/apply_kdm6ad_config.stderr"
+      }
+    },
+    "configuration_execution_ledger_relative_path": "S10/configuration_capture/command_ledger.json",
+    "configure_preflight_receipt_max_age_seconds": 3600
   },
   "build_matrix": {
     "schemes": [
@@ -251,7 +265,13 @@
       "-Wp",
       "-Xpreprocessor",
       "@response-file"
-    ]
+    ],
+    "guarded_command_templates": null,
+    "guarded_command_templates_sha256": null,
+    "guarded_command_order": null,
+    "guarded_command_template_status": "BLOCKED_PENDING_CONFIGURE_AND_DRY_RUN_COMMAND_ENUMERATION",
+    "execution_entrypoint": "harness/s10_guarded_exec.py; direct unmanaged shell invocations are outside certified S10 evidence",
+    "guarded_execution_scope": "harness/s10_guarded_exec.py is the only certified configure/apply entry point. Preprocess/object/link stages remain unsupported and fail closed until a later reviewed plan pins exact guarded command templates and approvals."
   },
   "clean_shadow": {
     "local_shadow_path_is_receipt_bound": true,
@@ -348,6 +368,26 @@
           "--version"
         ],
         "version_stdout": "4.6.2"
+      },
+      "perl5": {
+        "path": "/opt/local/bin/perl5",
+        "sha256": "b98a352e88075df776c099c1d0188615634291df4caafb597ba5d40b071d1f77"
+      },
+      "m4": {
+        "path": "/usr/bin/m4",
+        "sha256": "5b1ddb7e9c11b87a034fc88b212e8ac243cfe2b4db696d767aa44c79595fc09a",
+        "version_argv": [
+          "--version"
+        ],
+        "version_stdout": "GNU M4 1.4.6"
+      },
+      "python3": {
+        "path": "/opt/local/bin/python3",
+        "sha256": "c06459ab038bac893e8711387d50005e2308249cdfdeba98a09b9c4c7971d931",
+        "version_argv": [
+          "--version"
+        ],
+        "version_stdout": "Python 3.10.11"
       }
     },
     "environment_keys": [
@@ -397,10 +437,58 @@
       "WRF_KPP",
       "WRF_DFI_RADAR",
       "WRF_CMAQ",
-      "TERRAIN_AND_LANDUSE"
+      "TERRAIN_AND_LANDUSE",
+      "HOME",
+      "TMPDIR",
+      "TMP",
+      "LANG",
+      "LC_ALL",
+      "LC_CTYPE",
+      "TERM",
+      "BASH_ENV",
+      "ENV",
+      "PYTHONPATH",
+      "PYTHONHOME",
+      "PYTHONWARNINGS",
+      "PERL5LIB",
+      "PERLLIB",
+      "PERL5OPT",
+      "CFLAGS",
+      "CXX",
+      "CXXFLAGS",
+      "DYLD_FALLBACK_LIBRARY_PATH",
+      "DYLD_INSERT_LIBRARIES",
+      "LD_PRELOAD",
+      "MAKEFLAGS",
+      "MFLAGS",
+      "NETCDF4",
+      "USENETCDFPAR",
+      "GREP_OPTIONS",
+      "WRF_EM_CORE",
+      "OMP_NUM_THREADS",
+      "MKL_NUM_THREADS",
+      "OMP_THREAD_LIMIT",
+      "PKG_CONFIG_PATH",
+      "PKG_CONFIG_LIBDIR",
+      "CC",
+      "CPP",
+      "F77",
+      "PERL",
+      "PYTHON",
+      "AR",
+      "ARFLAGS",
+      "RANLIB",
+      "M4",
+      "MAKE",
+      "TFL",
+      "CFL",
+      "WRF_CORE",
+      "MPI_HOME",
+      "MPICH",
+      "OMPI_HOME"
     ],
-    "environment_sha256": "9b0152cac7ff77c93848f4a787714f90f4bb37b95c2bb058c947005374e530b2",
-    "toolchain_sha256": "cfcf7129f07e2d07ef6b4a318d26050bc82f85be610af9142b5d719833389336",
+    "environment_sha256": "569c077d63d522255c99066bca14cb61d56278c254bc1b20d1bcbc58b396ff4d",
+    "toolchain_sha256": "1b2cb467c3d864dad6984aa739fc8e6fbc2b14fe9e211a30f0de16fa56614fc7",
     "mpif90_underlying_command": "gfortran",
     "gfortran_subcommands": [
       "f951",
@@ -410,7 +498,7 @@
     ],
     "linker_name_reported_by_gfortran": "ld",
     "linker_resolved_path": "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld",
-    "toolchain_scope": "Pinned direct commands, resolved GCC/Xcode subordinate executables, explicit Homebrew NetCDF config tools, and resolution environment; not a hermetic build claim.",
+    "toolchain_scope": "Pinned direct compiler/configuration helpers, GCC/Xcode subordinate executables, Homebrew NetCDF config tools, and the sanitized child environment; not a hermetic build claim.",
     "argv_policy": "absolute pinned executable path must be argv[0] for every command; hashes and subordinate resolution are rechecked at prelink",
     "configuration_environment": {
       "NETCDF": "/opt/homebrew",
@@ -437,9 +525,50 @@
       "WRF_KPP": null,
       "WRF_DFI_RADAR": null,
       "WRF_CMAQ": null,
-      "TERRAIN_AND_LANDUSE": null
+      "TERRAIN_AND_LANDUSE": null,
+      "BASH_ENV": null,
+      "ENV": null,
+      "PYTHONPATH": null,
+      "PYTHONHOME": null,
+      "PYTHONWARNINGS": null,
+      "PERL5LIB": null,
+      "PERLLIB": null,
+      "PERL5OPT": null,
+      "CFLAGS": null,
+      "CXX": null,
+      "CXXFLAGS": null,
+      "DYLD_FALLBACK_LIBRARY_PATH": null,
+      "DYLD_INSERT_LIBRARIES": null,
+      "LD_PRELOAD": null,
+      "MAKEFLAGS": null,
+      "MFLAGS": null,
+      "NETCDF4": null,
+      "USENETCDFPAR": null,
+      "GREP_OPTIONS": null,
+      "WRF_EM_CORE": null,
+      "OMP_NUM_THREADS": null,
+      "MKL_NUM_THREADS": null,
+      "OMP_THREAD_LIMIT": null,
+      "PKG_CONFIG_PATH": null,
+      "PKG_CONFIG_LIBDIR": null,
+      "CC": null,
+      "CPP": null,
+      "F77": null,
+      "PERL": null,
+      "PYTHON": null,
+      "AR": null,
+      "ARFLAGS": null,
+      "RANLIB": null,
+      "M4": null,
+      "MAKE": null,
+      "TFL": null,
+      "CFL": null,
+      "WRF_CORE": null,
+      "MPI_HOME": null,
+      "MPICH": null,
+      "OMPI_HOME": null
     },
-    "path_selection_policy": "PATH is exact-hash pinned. NetCDF tool resolution is independent of PATH: NETCDF_C=/opt/homebrew and NETCDF=/opt/homebrew require the corresponding absolute bin tools; nc-config/nf-config binary SHA-256 and version outputs are checked."
+    "path_selection_policy": "The child environment is a sanitized allowlist equal to the hashed tool environment plus pinned configuration variables; unlisted ambient variables are not inherited. PATH is hash-pinned, and Perl, m4, Python, nc-config and nf-config binaries are individually pinned and resolved."
   },
   "trusted_s15_release": {
     "s15_merge_commit": "27152cca910c21e268a34db620ba10e28f2683bf",

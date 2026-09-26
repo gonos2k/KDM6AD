@@ -14,7 +14,7 @@ from s10_prelink_guard import (  # noqa: E402
     _argv_option_tokens,
     _ensure_output_target,
     _validate_configure_pipeline,
-    _validate_netcdf_config_invocations,
+    _validate_netcdf_config_probes,
     _validate_preprocess_pipeline,
     _validate_tool_command,
     _response_file_refs,
@@ -262,7 +262,16 @@ def _resource_plan(workspace: Path, snapshot_sha: str, *, approved: bool = False
     estimate_path.write_text(json.dumps(estimate, indent=2) + "\n")
     estimate_sha = hashlib.sha256(estimate_path.read_bytes()).hexdigest()
     snapshot_sha256 = snapshot_sha
+    environment = tool_environment_snapshot()
+    environment_sha = sha256_bytes(json.dumps(
+        environment, sort_keys=True, separators=(",", ":")).encode())
+    toolchain = {"tools": {}, "configuration_environment": {},
+                 "environment_sha256": environment_sha}
+    toolchain["toolchain_sha256"] = sha256_bytes(json.dumps(
+        {"tools": toolchain["tools"], "environment_sha256": environment_sha},
+        sort_keys=True, separators=(",", ":")).encode())
     plan = {
+        "toolchain": toolchain,
         "clean_shadow": {
             "fresh_build_output_root": "S10/build-clean",
             "empty_root_snapshot_relative_path": "S10/prebuild_output_root_snapshot.json",
@@ -595,7 +604,8 @@ def test_netcdf_config_receipt_replays_pinned_homebrew_invocations(tmp_path: Pat
         for argument, output in outputs.items():
             commands.append({"argv": [argument], "returncode": 0,
                              "stdout": output, "stderr": ""})
-        records[name] = {"path": str(tool), "sha256": digest,
+        records[name] = {"probe_scope": "post_config_pinned_tool_probes",
+                         "path": str(tool), "sha256": digest,
                          "version": version, "commands": commands}
     (tmp_path / "configure.wrf").write_text(
         f"NETCDFPATH      =    {root}\n")
@@ -604,22 +614,22 @@ def test_netcdf_config_receipt_replays_pinned_homebrew_invocations(tmp_path: Pat
         "invocations": tool_rows,
         "forbidden_mixed_prefixes": ["/macports/"],
     }}}
-    _validate_netcdf_config_invocations(
-        {"netcdf_tool_invocations": records}, plan, tmp_path)
+    _validate_netcdf_config_probes(
+        {"netcdf_tool_probes": records}, plan, tmp_path)
     records["nf-config"]["commands"][0]["argv"] = ["--version"]
     with pytest.raises(PrelinkError, match="argv differs from its pin"):
-        _validate_netcdf_config_invocations(
-            {"netcdf_tool_invocations": records}, plan, tmp_path)
+        _validate_netcdf_config_probes(
+            {"netcdf_tool_probes": records}, plan, tmp_path)
     records["nf-config"]["commands"][0]["argv"] = ["--has-nc4"]
     records["nc-config"]["commands"][1]["stdout"] = "-L/opt/local/lib -lnetcdf"
     with pytest.raises(PrelinkError, match="output differs from its pinned invocation"):
-        _validate_netcdf_config_invocations(
-            {"netcdf_tool_invocations": records}, plan, tmp_path)
+        _validate_netcdf_config_probes(
+            {"netcdf_tool_probes": records}, plan, tmp_path)
     records["nc-config"]["commands"][1]["stdout"] = "-L/netcdf/lib -lnetcdf"
     records["nf-config"]["path"] = "/opt/local/bin/nf-config"
     with pytest.raises(PrelinkError, match="identity mismatch"):
-        _validate_netcdf_config_invocations(
-            {"netcdf_tool_invocations": records}, plan, tmp_path)
+        _validate_netcdf_config_probes(
+            {"netcdf_tool_probes": records}, plan, tmp_path)
 
 
 def test_response_file_escapes_are_rejected_in_direct_wl_and_xlinker_args(tmp_path: Path):
@@ -1012,7 +1022,10 @@ def test_configure_command_stdin_and_generated_config_are_plan_pinned(tmp_path: 
             "cwd": str(shadow), "shell": False, "returncode": 0,
             "stdin_sha256": stdin_hash,
             "stdin_path": str(configure_stdin if stage == "configure" else apply_stdin),
-            "stdout_path": str(out), "stderr_path": str(err),
+            "stdout_path": str(out),
+            "stdout_sha256": hashlib.sha256(out.read_bytes()).hexdigest(),
+            "stderr_path": str(err),
+            "stderr_sha256": hashlib.sha256(err.read_bytes()).hexdigest(),
         }
     commands = [
         command("configure", configure_sha,
@@ -1077,6 +1090,7 @@ def test_configure_pipeline_requires_resolved_netcdf_tool_receipt(tmp_path: Path
             "version": version, "argv_outputs": outputs,
         }
         netcdf_receipt[name] = {
+            "probe_scope": "post_config_pinned_tool_probes",
             "path": str(tool), "sha256": digest, "version": version,
             "commands": [
                 {"argv": [argument], "returncode": 0,
@@ -1117,10 +1131,13 @@ def test_configure_pipeline_requires_resolved_netcdf_tool_receipt(tmp_path: Path
             "argv": argv, "flags": _argv_option_tokens(argv),
             "cwd": str(shadow), "shell": False, "returncode": 0,
             "stdin_sha256": stdin_hash, "stdin_path": str(stdin_path),
-            "stdout_path": str(out), "stderr_path": str(err),
+            "stdout_path": str(out),
+            "stdout_sha256": hashlib.sha256(out.read_bytes()).hexdigest(),
+            "stderr_path": str(err),
+            "stderr_sha256": hashlib.sha256(err.read_bytes()).hexdigest(),
         }
         if stage == "configure":
-            row["netcdf_tool_invocations"] = netcdf_receipt
+            row["netcdf_tool_probes"] = netcdf_receipt
         return row
 
     commands = [
@@ -1158,7 +1175,7 @@ def test_configure_pipeline_requires_resolved_netcdf_tool_receipt(tmp_path: Path
     }
     execution = {"configuration_commands": commands}
     _validate_configure_pipeline(execution, shadow, output, plan, config_sha)
-    commands[0]["netcdf_tool_invocations"]["nf-config"]["commands"][1]["stdout"] = "-L/opt/local/lib"
+    commands[0]["netcdf_tool_probes"]["nf-config"]["commands"][1]["stdout"] = "-L/opt/local/lib"
     with pytest.raises(PrelinkError, match="output differs from its pinned invocation"):
         _validate_configure_pipeline(execution, shadow, output, plan, config_sha)
 
