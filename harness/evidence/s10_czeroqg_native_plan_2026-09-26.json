@@ -1,0 +1,130 @@
+{
+  "schema": "s10-czeroqg-native-plan-v1",
+  "status": "SOURCE_AND_SYNTHETIC_READY_WAITING_FOR_S15_SLOT",
+  "base_main": "6b88ec58edffc39bc83fbe5c651e70126741799b",
+  "native_slot_owner": "S15",
+  "canonical_host_read_only": true,
+  "no_host_build_or_native_run": true,
+  "counterfactual_only": true,
+  "policy_approved": false,
+  "positive_trace_policy": {
+    "name": "B_midpoint",
+    "rho_mid_kg_m3": 400,
+    "approved": false
+  },
+  "guard": {
+    "macro": "KDM6_PROGB_ZERO_QG_DIV_GUARD",
+    "predicate": "qrs(i,k,3)==0 AND same process-rate numerator==0 in binary32 at the exact division consumer",
+    "action_zero": "set only the quotient to zero; retain all other source terms",
+    "action_otherwise": "execute the original rate/rhox division, including nonzero rate at qg==0",
+    "consumer_ids": [
+      1418,
+      2824,
+      2915,
+      2916
+    ],
+    "source_anchors": {
+      "pgmlt": "module_mp_kdm6.F:1398-1418 (qg mass and T update precede the rhox volume term)",
+      "pgdep": "module_mp_kdm6.F:2557-2570 producer, 2715-2721 limiter, 2819-2835 mass/volume/heat updates",
+      "pgevp": "module_mp_kdm6.F:2616-2622 producer, 2877-2882 limiter, 2911-2935 volume/mass/heat updates",
+      "pgeml": "module_mp_kdm6.F:2472-2481 producer, 2877-2882 limiter, 2911-2935 volume/mass/heat updates"
+    },
+    "capture_census": {
+      "gate_tags": [
+        "S10MELTGATE",
+        "S10PHASE"
+      ],
+      "expected_keys": "code-fixed replay_progb_validity.PROGB_CALL_CONTEXTS \u00d7 i={113,115} \u00d7 k=1..39",
+      "rows_per_gate_tag": 624,
+      "branch_mapping": "S10MELTGATE (t>t0c and qg>0) determines stage-1 melt rows; S10PHASE (supcol<0) independently selects stage 2 cold or stage 3 warm ledger rows."
+    }
+  },
+  "source_hashes": {
+    "mp37": {
+      "canonical": "fc0a72d33a5e61803fea56eb9118018039c6da8b5775813032b4861a2bd66eb5",
+      "s10_capture_base": "e0f7773feb252514b4d6ec492b71540f6373c98be8e7413dbd4138c6011c32b0",
+      "b_midpoint_overlay": "70f101d9160d07af8a318d552ad317c05e7d46219fb0e4233da49979bd84a935",
+      "macro_off_equals_b_midpoint": true,
+      "capture_base": "e0f7773feb252514b4d6ec492b71540f6373c98be8e7413dbd4138c6011c32b0",
+      "pre_stage1_store_fix_c_guard_overlay": "c00f89eae0d17e50ba48e5102e0a18adee328149f862f15f696ecd7f6699692f",
+      "current_c_guard_overlay": null
+    },
+    "mp237": {
+      "canonical": "4f0103c8a8321b8e854d3500f4ae567755e41eb78746fac54519eca2686a6648",
+      "s10_capture_base": "6fc4a68daecc695099f2f5d1cb398593d15f1530f318eba97471184bda8a7a49",
+      "b_midpoint_overlay": "6be24e8ca0ab651429e40c1924a5897ed54557f0b3d4942bdbdecee3411c7eca",
+      "macro_off_equals_b_midpoint": true,
+      "capture_base": "6fc4a68daecc695099f2f5d1cb398593d15f1530f318eba97471184bda8a7a49",
+      "pre_stage1_store_fix_c_guard_overlay": "cd059c5e5d93874b9e0f883b6be38ffdc15740a7e292a016427ad6ff2581c7c0",
+      "current_c_guard_overlay": null
+    },
+    "overlay_hash_note": "Legacy C overlay hashes predate the stage-1 zero-arm brs store fix. Current overlays were not regenerated because this isolated public worktree does not contain the private canonical Fortran sources."
+  },
+  "compile_plan": {
+    "recipe_receipt": "harness/evidence/s10_progb_policy_shadow_build_receipt_2026-09-25.json",
+    "pipeline": [
+      "comment cleanup",
+      "WRF macro cpp",
+      "tools/standard.exe",
+      "final cpp",
+      "mpif90 compile .f90",
+      "shadow relink"
+    ],
+    "required_macros": [
+      "KDM6_PROGB_VALIDITY_CAPTURE",
+      "KDM6_PROGB_POLICY_MIDPOINT",
+      "KDM6_PROGB_ZERO_QG_DIV_GUARD"
+    ],
+    "required_flag": "-ffp-contract=off",
+    "link_order": "shadow KDM6 object before unchanged canonical libwrflib.a",
+    "build_started": false,
+    "variant_matrix": {
+      "B_instrumented": "compile the generated C overlay with KDM6_PROGB_ZERO_QG_DIV_GUARD undefined; S10 capture/budget events remain enabled",
+      "C_instrumented": "compile the same generated C overlay with KDM6_PROGB_ZERO_QG_DIV_GUARD defined; all other source/macros/flags identical"
+    }
+  },
+  "common_inputs": {
+    "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+    "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+    "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3"
+  },
+  "run_controls": {
+    "seconds": 20,
+    "history_interval": 0,
+    "history_interval_s": 20,
+    "ranks": 1,
+    "threads": 1,
+    "proc_grid": "1x1",
+    "saved_times": [
+      "2025-07-19_00:00:00",
+      "2025-07-19_00:00:20"
+    ]
+  },
+  "run_arms": [
+    "mp37/B midpoint guard-off/logging-off",
+    "mp37/B midpoint guard-off/logging-on",
+    "mp37/C guard-on/logging-off",
+    "mp37/C guard-on/logging-on",
+    "mp237/B midpoint guard-off/logging-off",
+    "mp237/B midpoint guard-off/logging-on",
+    "mp237/C guard-on/logging-off",
+    "mp237/C guard-on/logging-on"
+  ],
+  "acceptance": {
+    "within_arm": "253 numeric raw-bit equality + exact Times (254 total variables)",
+    "guard_replay": "Require the fixed 624-key melt/phase gate census plus caller-supplied stage-1 key set and event-log SHA-256; validate exact-zero S10ZG actions and source-ordered binary32-word S10MASS/S10VOLUME/S10HEAT budgets. Replay checks supplied values against rows but does not authenticate them through an independent native receipt binding, which remains OPEN.",
+    "between_arm": "report B midpoint vs C guard changes separately; no parity requirement",
+    "fail_closed": [
+      "any nonzero rate bypass",
+      "any action-1 nonpositive/nonfinite rhox",
+      "missing/duplicate event or ledger",
+      "nonfinite mass/volume/heat operand",
+      "capture changes history"
+    ],
+    "full_domain_arrays_published": false,
+    "nonzero_path_identity": "Action-1 keeps the exact original inline rate/rhox source statement; replay checks f32 quotient and source-order budget words. After build, compare matched action-1 site operands/quotients between B and C wherever their input words match.",
+    "gate_schedule": "Require the code-fixed PROGB_CALL_CONTEXTS \u00d7 {i=113,115} \u00d7 k=1..39 MELTGATE/PHASE key universe before validating stage-specific ledger keys. Stage-1 keys depend on data and must be frozen from B midpoint discovery before final B/C capture; the source schedule alone does not determine them.",
+    "trusted_log_commitment": "Replay requires caller-supplied event-log SHA-256 and predeclared stage-1 key set. No independent native receipt binding authenticates these inputs yet; neither native value exists, preliminary discovery evidence cannot be used as final B/C acceptance, and S10 remains OPEN."
+  },
+  "native_results": null
+}
