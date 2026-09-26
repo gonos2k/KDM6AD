@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import json
+import os
 import struct
 import sys
+import copy
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -202,10 +205,89 @@ def test_s15_public_packet_paths_are_redacted_and_original_pins_are_listed() -> 
     public_files = [repo_root / "harness/g33_s15_probe.py", Path(__file__),
                     evidence / "S15_NATIVE_B_20S_RESULT.md",
                     evidence / "S15_NATIVE_PROBE_DESIGN.md",
+                    evidence / "REPORT_S15_step2_40s_native_2026-09-26.md",
+                    evidence / "CHECKLIST_S15_step2_40s_native_2026-09-26.md",
+                    evidence / "s15_native_step2_40s_plan_2026-09-26.json",
+                    evidence / "s15_native_step2_40s_plan_2026-09-26.json.sha256",
                     manifest_path, Path(str(manifest_path) + ".sha256")]
     for item in projections:
         projection_path = repo_root / item["filename"]
         public_files.extend([projection_path, Path(str(projection_path) + ".sha256")])
+    slash = chr(47)
+    private_path_patterns = (
+        re.compile(slash + "Users" + slash + r"[^/]+" + slash),
+        re.compile(slash + "private" + slash + r"[^/]+" + slash),
+    )
+    for path in public_files:
+        text = path.read_text()
+        assert not any(pattern.search(text) for pattern in private_path_patterns), path
+
+
+def test_s15_step2_public_qib_witness_rows_replay_exactly() -> None:
+    evidence = Path(__file__).resolve().parents[1] / "evidence"
+    public_dir = evidence / "s15_step2_public"
+    witness_path = public_dir / "s15_native_step2_qib_witnesses_public_2026-09-26.json"
+    witness = json.loads(witness_path.read_text())
+    summaries = witness["owner_schedule"]
+    assert summaries["step"] == 2
+    assert summaries["owner_site"] == s15.QIB_OWNER_SITE
+    assert summaries["total_transition_occurrences"] == 87937
+    assert summaries["transition_counts"] == [18356, 11017, 36182, 20849, 1038, 495]
+    assert summaries["summary_keys"] == s15.expected_qib_summary_keys(2)
+    assert len(witness["first_qib_events"]) == 6
+    observed_keys = []
+    for item in witness["first_qib_events"]:
+        row = item["record"]
+        replay = s15.replay_qib(row)
+        assert item["replay"]["status"] == "exact_f32_replay_pass"
+        assert item["replay"]["matches"] is True
+        assert replay["before_bits"] == item["replay"]["before_bits"]
+        assert replay["after_bits"] == item["replay"]["captured_after_bits"]
+        assert replay["replayed_after_bits"] == item["replay"]["replayed_after_bits"]
+        observed_keys.append(list(replay["key"]))
+    expected_positive = [
+        [2, 1, 5, 143, 2, 16], [2, 1, 5, 144, 143, 14],
+        [2, 2, 5, 111, 2, 16], [2, 2, 5, 146, 143, 13],
+        [2, 3, 5, 141, 2, 17], [2, 3, 5, 141, 143, 16],
+    ]
+    assert observed_keys == expected_positive
+
+
+def test_s15_step2_public_packet_is_path_free_and_original_receipts_are_pinned() -> None:
+    import re
+
+    evidence = Path(__file__).resolve().parents[1] / "evidence"
+    public_dir = evidence / "s15_step2_public"
+    manifest_path = public_dir / "s15_native_step2_40s_public_manifest_2026-09-26.json"
+    manifest = json.loads(manifest_path.read_text())
+    assert manifest["redacted_projection"] is True
+    assert manifest["executable_original"] is False
+    assert manifest["native_summary"]["qib_transition_occurrences"] == 87937
+    assert manifest["native_summary"]["qib_rk_stage_transition_occurrences"] == {
+        "1": 29373, "2": 57031, "3": 1533,
+    }
+    assert manifest["native_summary"]["trace_melt_rows"] == 258
+    assert manifest["native_summary"]["trace_melt_rhox_valid_rows"] == 0
+    originals = manifest["original_private_receipt_sha256"]
+    assert originals["step2_link_receipt_2026-09-26.json"] == \
+        "ce1a8f7f14845a09062644b16f6d41bfd7a2279c2a7caeac7f5e68b9b35e0b2d"
+    assert originals["step2_same_exe_pair_receipt_2026-09-26.json"] == \
+        "3adb2957fe0300a42b11430d13e5ebddc67ccd01e70973d156afa1c580141b6a"
+    assert manifest["redacted_receipt_projections"]["link"]["represents_original_private_receipt"]["sha256"] == \
+        "ce1a8f7f14845a09062644b16f6d41bfd7a2279c2a7caeac7f5e68b9b35e0b2d"
+    assert manifest["redacted_receipt_projections"]["compile"]["objects"]["module_em.o"]["sha256"] == \
+        "f0b0ed1ccec81bdd53826a38cd2e88c6ad5b016199c72ef7bfcd7e05f5d258cc"
+    repo_root = Path(__file__).resolve().parents[2]
+    public_files = [manifest_path, Path(str(manifest_path) + ".sha256")]
+    for item in manifest["public_supporting_files"]:
+        path = repo_root / item["filename"]
+        assert s15.sha256(path) == item["sha256"]
+        public_files.append(path)
+    for item in manifest["public_projections"]:
+        path = evidence / item["filename"]
+        assert s15.sha256(path) == item["sha256"]
+        assert path.with_suffix(path.suffix + ".sha256").read_text().split()[0] == item["sha256"]
+        public_files.extend([path, path.with_suffix(path.suffix + ".sha256")])
     slash = chr(47)
     private_path_patterns = (
         re.compile(slash + "Users" + slash + r"[^/]+" + slash),
@@ -308,6 +390,274 @@ def test_postlink_guard_binds_r6_objects_inputs_and_fresh_executable(tmp_path: P
     link_path.write_text(json.dumps(link))
     with pytest.raises(s15.ProbeError, match="object digest differs from r6"):
         s15.verify_postlink_binding(plan_path, plan_sha, link_path, s15.sha256(link_path))
+
+    # The historical B20 plan remains valid as step 1, but cannot be promoted
+    # into the step-2 native lane with the same receipts.
+    with pytest.raises(s15.ProbeError, match="step-2 launch requires an immutable step-2 B pre-run plan"):
+        s15.verify_postlink_binding(
+            plan_path, plan_sha, link_path, s15.sha256(link_path),
+            required_capture_step=2,
+        )
+
+
+def _step2_build_plan_fixture(evidence: Path) -> dict[str, object]:
+    step2_public = evidence / "s15_native_step2_40s_plan_2026-09-26.json"
+    step2_sha = s15.sha256(step2_public)
+    public_plan = json.loads(step2_public.read_text())
+    runner_path = Path(__file__).resolve().parents[2] / "harness" / "run_ss_case.py"
+    return {
+        "schema": "KDM6AD-S15-STEP2-BUILD-PLAN-v1",
+        "capture_step": 2,
+        "capture_window": s15.capture_window_for_step(2),
+        "qib_summary_keys": s15.expected_qib_summary_keys(2),
+        "owner_schedule": {
+            "owner_site": s15.QIB_OWNER_SITE,
+            "owner_name": s15.QIB_OWNER_NAME,
+            "expected_summary_keys": s15.expected_qib_summary_keys(2),
+            "expected_summary_cardinality": 6,
+            "input_hashes": public_plan["scope"]["input_hashes"],
+        },
+        "run_contract": {
+            "step_seconds": 20, "dt_seconds": 20, "duration_seconds": 40,
+            "run_minutes": 0, "run_seconds": 40,
+            "history_interval": 0, "history_interval_s": 20,
+            "physics": "mp_physics=37 (Fortran KDM6)",
+            "ranks": 1, "threads": 1, "fixed_dt": True,
+            "history_times": [
+                "2025-07-19_00:00:00",
+                "2025-07-19_00:00:20",
+                "2025-07-19_00:00:40",
+            ],
+            "expected_frame_indices": [0, 1, 2],
+            "use_adaptive_time_step": False,
+            "step_to_output_time": False,
+            "effective_namelist_sha256": "a" * 64,
+            "base_namelist_sha256": public_plan["scope"]["input_hashes"]["namelist.input"],
+            "runner": {"path": str(runner_path), "sha256": s15.sha256(runner_path)},
+        },
+        "step2_schedule": {
+            "capture_step": 2,
+            "summary_keys": s15.expected_qib_summary_keys(2),
+        },
+        "trusted_step2_plan": {"path": str(step2_public), "sha256": step2_sha},
+    }
+
+
+def test_step2_launch_contract_requires_trusted_public_plan_and_fixed_schedule() -> None:
+    evidence = Path(__file__).resolve().parents[1] / "evidence"
+    step2_public = evidence / "s15_native_step2_40s_plan_2026-09-26.json"
+    build_plan = _step2_build_plan_fixture(evidence)
+    assert s15.verify_step2_build_contract(build_plan, step2_public.parent)
+
+    step1_window = dict(build_plan, capture_window=s15.CAPTURE_WINDOW)
+    with pytest.raises(s15.ProbeError, match="window or summary keys"):
+        s15.verify_step2_build_contract(step1_window, step2_public.parent)
+
+    step1_keys = dict(build_plan, qib_summary_keys=s15.expected_qib_summary_keys(1))
+    with pytest.raises(s15.ProbeError, match="window or summary keys"):
+        s15.verify_step2_build_contract(step1_keys, step2_public.parent)
+
+    bad_duration = dict(build_plan, run_contract=dict(build_plan["run_contract"], duration_seconds=20))
+    with pytest.raises(s15.ProbeError, match="dt=20s/40s/1-rank run contract"):
+        s15.verify_step2_build_contract(bad_duration, step2_public.parent)
+
+    b20_ref = evidence / "s15_b20_public" / \
+        "s15_native_discovery_b_event_reference_2026-09-26_public.json"
+    wrong_public = dict(build_plan,
+                        trusted_step2_plan={"path": str(b20_ref), "sha256": s15.sha256(b20_ref)})
+    with pytest.raises(s15.ProbeError, match="step-2 plan schema"):
+        s15.verify_step2_build_contract(wrong_public, b20_ref.parent)
+
+
+@pytest.mark.parametrize("path", [
+    ("capture_step",),
+    ("capture_window", "first_timestep"),
+    ("capture_window", "last_timestep"),
+    ("qib_summary_keys", 0, 1),  # RK stage 1 is numerically equal to True.
+    ("qib_summary_keys", 0, 3),  # tile lower bound 1 is numerically equal to True.
+    ("owner_schedule", "owner_site"),
+    ("owner_schedule", "expected_summary_cardinality"),
+    ("owner_schedule", "expected_summary_keys", 0, 1),
+    ("owner_schedule", "expected_summary_keys", 0, 3),
+    ("step2_schedule", "capture_step"),
+    ("step2_schedule", "summary_keys", 0, 1),
+    ("step2_schedule", "summary_keys", 0, 3),
+    ("run_contract", "step_seconds"),
+    ("run_contract", "dt_seconds"),
+    ("run_contract", "duration_seconds"),
+    ("run_contract", "run_minutes"),
+    ("run_contract", "run_seconds"),
+    ("run_contract", "history_interval"),
+    ("run_contract", "history_interval_s"),
+    ("run_contract", "ranks"),
+    ("run_contract", "threads"),
+    ("run_contract", "expected_frame_indices", 1),
+])
+def test_step2_build_contract_rejects_json_boolean_in_every_numeric_class(
+        path: tuple[object, ...]) -> None:
+    evidence = Path(__file__).resolve().parents[1] / "evidence"
+    plan = copy.deepcopy(_step2_build_plan_fixture(evidence))
+    target: object = plan
+    for part in path[:-1]:
+        target = target[part]  # type: ignore[index]
+    target[path[-1]] = True  # type: ignore[index]
+    with pytest.raises(s15.ProbeError, match="JSON integer"):
+        s15.verify_step2_build_contract(
+            plan, evidence / "s15_native_step2_40s_plan_2026-09-26.json"
+        )
+
+
+@pytest.mark.parametrize("path", [
+    ("scope", "capture_timestep"),
+    ("scope", "dt_seconds"),
+    ("scope", "duration_seconds"),
+    ("scope", "ranks"),
+    ("scope", "threads"),
+    ("probe", "default_capture_step"),
+    ("probe", "capture_window", "first_timestep"),
+    ("probe", "capture_window", "last_timestep"),
+    ("probe", "default_capture_window", "first_timestep"),
+    ("probe", "default_capture_window", "last_timestep"),
+    ("probe", "qib_owner", "site"),
+    ("probe", "call_owner_order", 0, "site"),
+    ("probe", "call_owner_order", 1, "site"),
+    ("probe", "call_owner_order", 2, "site"),
+    ("probe", "call_owner_order", 3, "site"),
+    ("probe", "call_owner_order", 4, "site"),
+    ("owner_schedule", "owner_site"),
+    ("owner_schedule", "rk_stages", 0),
+    ("owner_schedule", "rk_stages", 1),
+    ("owner_schedule", "rk_stages", 2),
+    ("owner_schedule", "tile_bounds", 0, 0),
+    ("owner_schedule", "tile_bounds", 0, 2),
+    ("owner_schedule", "tile_bounds", 1, 0),
+    ("owner_schedule", "expected_summary_cardinality"),
+    ("owner_schedule", "expected_summary_keys", 0, 1),
+    ("owner_schedule", "expected_summary_keys", 0, 3),
+    ("melt_schedule", "capture_timestep"),
+    ("scope", "dt_seconds"),
+    ("scope", "duration_seconds"),
+    ("scope", "ranks"),
+    ("scope", "threads"),
+])
+def test_trusted_public_plan_rejects_boolean_numeric_mutations(path: tuple[object, ...]) -> None:
+    evidence = Path(__file__).resolve().parents[1] / "evidence"
+    original = evidence / "s15_native_step2_40s_plan_2026-09-26.json"
+    plan = json.loads(original.read_text())
+    target: object = plan
+    for part in path[:-1]:
+        target = target[part]  # type: ignore[index]
+    target[path[-1]] = True  # type: ignore[index]
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", dir=evidence,
+                                     prefix=".s15_step2_bad_type_") as stream:
+        stream.write(json.dumps(plan))
+        stream.flush()
+        with pytest.raises(s15.ProbeError, match="code-fixed contract|JSON integer"):
+            s15.verify_step2_public_plan(Path(stream.name), s15.sha256(Path(stream.name)))
+
+
+@pytest.mark.parametrize(("path", "replacement"), [
+    (("melt_schedule", "capture_timestep"), 1),
+    (("probe", "default_capture_window", "first_timestep"), 2),
+    (("owner_schedule", "rk_stages"), [1, 2]),
+    (("owner_schedule", "tile_bounds", 0), [1, 235, 1, 141]),
+    (("probe", "call_owner_order", 4, "site"), 6),
+    (("probe", "call_owner_order", 4, "loop"), "other_owner_loop"),
+    (("scope", "input_hashes", "wrfinput_d01"), "0" * 64),
+    (("fresh_step2_build_pins", "macro"), "OTHER_CAPTURE_MACRO"),
+    (("pair_acceptance", "empty_unpopulated_streams"), "pass empty captures"),
+])
+def test_trusted_public_plan_rejects_operational_tree_mutations(
+        path: tuple[object, ...], replacement: object) -> None:
+    evidence = Path(__file__).resolve().parents[1] / "evidence"
+    original = evidence / "s15_native_step2_40s_plan_2026-09-26.json"
+    plan = json.loads(original.read_text())
+    target: object = plan
+    for part in path[:-1]:
+        target = target[part]  # type: ignore[index]
+    target[path[-1]] = replacement  # type: ignore[index]
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", dir=evidence,
+                                     prefix=".s15_step2_bad_contract_") as stream:
+        stream.write(json.dumps(plan))
+        stream.flush()
+        with pytest.raises(s15.ProbeError, match="code-fixed contract"):
+            s15.verify_step2_public_plan(Path(stream.name), s15.sha256(Path(stream.name)))
+
+
+@pytest.mark.parametrize(("schema", "pinned_step", "requested_step"), [
+    ("KDM6AD-S15-STEP2-BUILD-PLAN-v1", 2, 1),
+    ("KDM6AD-S15-B20-BUILD-PLAN-v1", 1, 2),
+])
+def test_explicit_cli_capture_step_must_match_plan(schema: str, pinned_step: int,
+                                                   requested_step: int) -> None:
+    if pinned_step == 2:
+        plan = {"schema": schema, "capture_step": pinned_step}
+    else:
+        plan = {"schema": schema, "capture_window": s15.capture_window_for_step(pinned_step)}
+    with pytest.raises(s15.ProbeError, match="differs from plan-pinned step"):
+        s15.require_capture_step_matches(plan, requested_step)
+
+
+@pytest.mark.parametrize(("pinned_step", "requested_step"), [(2, 1), (1, 2)])
+def test_prelink_cli_rejects_explicit_step_mismatch(tmp_path: Path,
+                                                   pinned_step: int,
+                                                   requested_step: int) -> None:
+    evidence = Path(__file__).resolve().parents[1] / "evidence"
+    if pinned_step == 2:
+        plan = _step2_build_plan_fixture(evidence)
+    else:
+        plan = {"schema": "KDM6AD-S15-B20-BUILD-PLAN-v1",
+                "capture_window": s15.capture_window_for_step(1)}
+    # Reach the mismatch guard before prelink inputs are examined.
+    plan_path = tmp_path / f"step{pinned_step}.json"
+    plan_path.write_text(json.dumps(plan))
+    rc = s15._main([
+        "prelink-check", "--plan", str(plan_path), "--plan-sha256", s15.sha256(plan_path),
+        "--capture-step", str(requested_step),
+    ])
+    assert rc == 2
+
+
+@pytest.mark.parametrize(("schema", "pinned_step", "requested_step"), [
+    ("KDM6AD-S15-STEP2-BUILD-PLAN-v1", 2, 1),
+    ("KDM6AD-S15-B20-BUILD-PLAN-v1", 1, 2),
+])
+def test_launch_gate_rejects_explicit_step_mismatch_before_receipt_validation(
+        tmp_path: Path, schema: str, pinned_step: int, requested_step: int) -> None:
+    if pinned_step == 2:
+        plan = {"schema": schema, "capture_step": pinned_step}
+    else:
+        plan = {"schema": schema, "capture_window": s15.capture_window_for_step(pinned_step)}
+    plan_path = tmp_path / "build.json"
+    link_path = tmp_path / "link.json"
+    plan_path.write_text(json.dumps(plan))
+    link_path.write_text("{}")
+    with pytest.raises(s15.ProbeError, match="differs from plan-pinned step"):
+        s15.verify_postlink_binding(
+            plan_path, s15.sha256(plan_path), link_path, s15.sha256(link_path),
+            required_capture_step=requested_step,
+        )
+
+
+@pytest.mark.parametrize(("pinned_step", "requested_step"), [(2, 1), (1, 2)])
+def test_launch_cli_rejects_explicit_step_mismatch(tmp_path: Path,
+                                                  pinned_step: int,
+                                                  requested_step: int) -> None:
+    if pinned_step == 2:
+        plan = {"schema": "KDM6AD-S15-STEP2-BUILD-PLAN-v1", "capture_step": 2}
+    else:
+        plan = {"schema": "KDM6AD-S15-B20-BUILD-PLAN-v1",
+                "capture_window": s15.capture_window_for_step(1)}
+    plan_path = tmp_path / "build.json"
+    link_path = tmp_path / "link.json"
+    plan_path.write_text(json.dumps(plan))
+    link_path.write_text("{}")
+    rc = s15._main([
+        "launch-check", "--plan", str(plan_path), "--plan-sha256", s15.sha256(plan_path),
+        "--link-receipt", str(link_path), "--link-receipt-sha256", s15.sha256(link_path),
+        "--capture-step", str(requested_step),
+    ])
+    assert rc == 2
 
 
 def test_strip_audit_restores_original_base_arm_byte_for_byte() -> None:
@@ -819,3 +1169,241 @@ def test_melt_replayer_checks_gate_cap_temperature_and_positive_measure() -> Non
     nonfinite = dict(valid, qg0="7F800000", qcrmin="7F800000", qg1="7F800000")
     with pytest.raises(s15.ProbeError, match="non-finite required melt operand"):
         s15.replay_melt(nonfinite)
+
+
+def _write_window_plan(tmp_path: Path, capture: Path, capture_step: int,
+                       expected: dict[str, object], method: str) -> tuple[Path, str]:
+    expected = {"qib_owner_site": s15.QIB_OWNER_SITE,
+                "qib_owner_name": s15.QIB_OWNER_NAME,
+                "capture_window": s15.capture_window_for_step(capture_step),
+                **expected}
+    schedule = s15.expected_qib_summary_keys(capture_step)
+    expected["qib_summary_keys"] = schedule
+    owner_schedule = {
+        "owner_site": s15.QIB_OWNER_SITE,
+        "owner_name": s15.QIB_OWNER_NAME,
+        "expected_summary_keys": schedule,
+        "expected_summary_cardinality": len(schedule),
+    }
+    reference_path = tmp_path / f"step{capture_step}_reference.json"
+    reference_path.write_text(json.dumps(
+        {"schema": s15.REFERENCE_SCHEMA, **expected}, sort_keys=True
+    ))
+    plan_path = tmp_path / f"step{capture_step}_plan.json"
+    plan = {
+        "protocol": s15.PROTOCOL,
+        "status": "independent_expected_plan",
+        **expected,
+        "owner_schedule": owner_schedule,
+        "capture_sha256": s15.sha256(capture),
+        "independent_reference": {
+            "path": reference_path.name,
+            "sha256": s15.sha256(reference_path),
+            "method": method,
+        },
+    }
+    plan_path.write_text(json.dumps(plan, sort_keys=True))
+    return plan_path, s15.sha256(plan_path)
+
+
+def test_public_b20_step1_projection_still_replays_with_synthetic_event_operands(
+    tmp_path: Path,
+) -> None:
+    evidence = Path(__file__).resolve().parents[1] / "evidence" / "s15_b20_public"
+    manifest_path = evidence / "s15_native_B_20S_public_manifest.json"
+    reference_path = evidence / "s15_native_discovery_b_event_reference_2026-09-26_public.json"
+    manifest = json.loads(manifest_path.read_text())
+    projected_ref = json.loads(reference_path.read_text())["reference"]
+    manifest_projection = next(
+        item for item in manifest["public_projections"]
+        if item["filename"].endswith("s15_native_discovery_b_event_reference_2026-09-26_public.json")
+    )
+    assert s15.sha256(manifest_path) == manifest_path.with_name(
+        manifest_path.name + ".sha256"
+    ).read_text().split()[0]
+    assert s15.sha256(reference_path) == manifest_projection["sha256"]
+    assert s15.CAPTURE_WINDOW == s15.capture_window_for_step(1)
+    assert projected_ref["capture_window"] == s15.CAPTURE_WINDOW
+    assert projected_ref["qib_summary_keys"] == s15.expected_qib_summary_keys()
+    assert projected_ref["qib_transition_count"] == 0
+    assert manifest["discovery"]["owner5_summary_counts"] == [0] * 6
+    assert manifest["discovery"]["trace_melt_rows"] == 51
+
+    summaries = _summary_lines()
+    melt_lines = []
+    for step, lat, substep, owner, i, k in projected_ref["melt_first_event_keys"]:
+        row = dict(_melt_row(), step=str(step), lat=str(lat), substep=str(substep),
+                   progb_site=str(owner), i=str(i), k=str(k))
+        melt_lines.append(_native_melt_line(row))
+    capture = tmp_path / "synthetic_b20_step1_stream.txt"
+    capture.write_text("\n".join(summaries + melt_lines) + "\n")
+    expected = {field: projected_ref[field] for field in s15.REFERENCE_FIELDS}
+    plan, pin = _write_window_plan(
+        tmp_path, capture, 1, expected, projected_ref["method"]
+    )
+    rows, parsed_summaries = s15.parse_capture(capture)
+    assert s15.verify_plan(rows, plan, parsed_summaries, pin, capture) == {
+        "qib_transitions": 0,
+        "trace_melt_first_events": 51,
+    }
+
+
+def test_step2_window_is_explicit_and_restricts_the_allowed_steps(tmp_path: Path) -> None:
+    assert s15.CAPTURE_WINDOW["first_timestep"] == 1
+    assert s15.expected_qib_summary_keys()[0][0] == 1
+    assert s15.capture_window_for_step(2)["first_timestep"] == 2
+    assert s15.expected_qib_summary_keys(2) == [
+        [2, 1, 5, 1, 235, 1, 142], [2, 1, 5, 1, 235, 143, 283],
+        [2, 2, 5, 1, 235, 1, 142], [2, 2, 5, 1, 235, 143, 283],
+        [2, 3, 5, 1, 235, 1, 142], [2, 3, 5, 1, 235, 143, 283],
+    ]
+    with pytest.raises(s15.ProbeError, match="choose 1 or 2"):
+        s15.capture_window_for_step(3)
+    with pytest.raises(s15.ProbeError, match="exactly pin supported timestep"):
+        s15.capture_step_for_window({"first_timestep": 3, "last_timestep": 3})
+
+
+def test_step2_plan_rejects_step1_event_rows(tmp_path: Path) -> None:
+    words = ["00000000", "BF800000", "00000000", "00000000", "3F800000",
+             "BF800000", "3F800000", "00000000", "3F800000", "3F800000",
+             "3F800000"]
+    q_line = "S15Q " + " ".join(map(str, [1, 2, s15.QIB_OWNER_SITE,
+                                             1, 235, 1, 142, 1, 3, 8])) + " " + \
+        " ".join(map(str, map(_signed, words)))
+    summaries = [f"S15QC {' '.join(map(str, key))} 0"
+                 for key in s15.expected_qib_summary_keys(2)]
+    capture = tmp_path / "step1_row_in_step2_window.txt"
+    capture.write_text("\n".join([q_line, *summaries]) + "\n")
+    expected = {
+        "qib_transition_count": 0,
+        "qib_first_event_keys": [None] * 6,
+        "melt_first_event_count": 0,
+        "melt_first_event_keys": [],
+        "first_qib_key": None,
+        "first_melt_key": None,
+    }
+    plan, pin = _write_window_plan(tmp_path, capture, 2, expected, "pinned test fixture")
+    rows, parsed_summaries = s15.parse_capture(capture)
+    with pytest.raises(s15.ProbeError, match="outside the pinned timestep-2 window"):
+        s15.verify_plan(rows, plan, parsed_summaries, pin, capture)
+
+
+def test_prepare_generates_distinct_step1_default_and_explicit_step2_guards() -> None:
+    use = (
+        "  USE module_state_description, only: param_first_scalar, p_qr, p_qv, p_qc, "
+        "p_qg, p_qi, p_qs, tiedtkescheme,ntiedtkescheme, heldsuarez, &\n"
+    )
+    signature = "                             rk_step, dt, spec_zone,        &\n"
+    declaration = "   INTEGER ,                INTENT(IN   ) :: scs, sce, rk_step, spec_zone\n"
+    anchor = "    IF ( rk_step == 1 ) THEN\n"
+    formula = (
+        "        scalar_2(i,k,j,im) = ((c1(k)*muold(i)+c2(k))*scalar_1(i,k,j,im)   &\n"
+        "                             + dt*tendency(i,k,j))/(c1(k)*munew(i)+c2(k))\n"
+    )
+    source = use + signature * 2 + declaration * 2 + anchor + formula * 2 + \
+        "END SUBROUTINE rk_update_scalar\n"
+    step1 = s15.instrument_module_em(source)
+    step2 = s15.instrument_module_em(source, capture_step=2)
+    assert "s15_step.eq.1" in step1 and "s15_step.eq.2" not in step1
+    assert "s15_step.eq.2" in step2 and "s15_step.eq.1" not in step2
+    assert s15._s15_strip(step1) == source
+    assert s15._s15_strip(step2) == source
+
+
+def test_melt_overlay_step_is_explicit_and_step1_remains_default() -> None:
+    gate = (
+        "     kdm6_progb_capture_env = ''\n"
+        "     call get_environment_variable('KDM6_PROGB_VALIDITY_CAPTURE_LOG', &\n"
+        "          kdm6_progb_capture_env)\n"
+        "     capture_enabled = (trim(kdm6_progb_capture_env) == '1')\n"
+    )
+    calls = "".join(
+        f"   call ProgB_param({site}, &\n"
+        f"! S10_CAPTURE_BEGIN:progb_call_{site}\n#ifdef {s15.S10_MACRO}\n"
+        "                   c)\n#else\n                   c)\n#endif\n"
+        f"! S10_CAPTURE_END:progb_call_{site}\n"
+        for site in range(1, 8)
+    )
+    declaration = (
+        "   integer                            :: i, j, k, mstepmax,mstepmax_i,         &\n"
+        "                                         iprt, latd, lond, loop, loops, ifsat, &\n"
+        "                                         n, idim, kdim\n"
+    )
+    melt_anchor = (
+        "            if(qrs(i,k,3).gt.0.) then\n"
+        "! revised \n"
+        "              coeres = (rslope2(i,k,3))*sqrt(rslope(i,k,3)*rslopeb(i,k,3))           &\n"
+    )
+    brs_update = "              brs(i,k) = brs(i,k) + (pgmlt(i,k)/rhox(i,k))\n"
+    source = gate + calls + declaration + "   do loop = 1,loops\n" + melt_anchor + brs_update
+    step1 = s15.instrument_module_mp(source)
+    step2 = s15.instrument_module_mp(source, capture_step=2)
+    assert "capture_step.eq.1" in step1 and "capture_step.eq.2" not in step1
+    assert "capture_step.eq.2" in step2 and "capture_step.eq.1" not in step2
+    assert s15._s15_strip(step1) == source
+    assert s15._s15_strip(step2) == source
+
+
+def test_native_stream_rejects_unknown_s15_event_tag(tmp_path: Path) -> None:
+    capture = tmp_path / "unknown_s15_record.txt"
+    capture.write_text("ordinary WRF output\nS15QX 2 1 5\n")
+    with pytest.raises(s15.ProbeError, match="unknown S15 event record 'S15QX'"):
+        s15.parse_capture(capture)
+    with pytest.raises(s15.ProbeError, match="unknown S15 event record 'S15QX'"):
+        s15.extract_s15_event_stream(capture, tmp_path / "unknown_s15_selected.txt")
+
+
+def test_step2_filter_excludes_step1_s10_rows_and_preserves_s15_schedule(
+    tmp_path: Path,
+) -> None:
+    summaries = [f"S15QC {' '.join(map(str, key))} 0"
+                 for key in s15.expected_qib_summary_keys(2)]
+    full_stdout = tmp_path / "full-rank0.stdout"
+    full_stdout.write_text("WRF startup\nS10SLP 1 73 113 5\n" +
+                           "S10DIAG 1 73 113 5 0 1 0\n" +
+                           "\n".join(summaries) + "\n")
+    full_rows, full_summaries = s15.parse_capture(full_stdout)
+    assert full_rows == []
+    assert full_summaries == [tuple(key + [0])
+                              for key in s15.expected_qib_summary_keys(2)]
+    selected = tmp_path / "selected-s15.events"
+    receipt = s15.extract_s15_event_stream(full_stdout, selected)
+    assert receipt["selected_record_count"] == 6
+    assert receipt["s10_records_excluded_from_replay"] is True
+    assert receipt["full_stdout"]["sha256"] == s15.sha256(full_stdout)
+    assert receipt["selected_s15_stream"]["sha256"] == s15.sha256(selected)
+    assert b"S10" not in selected.read_bytes()
+    rows, parsed = s15.parse_capture(selected)
+    expected = {
+        "qib_transition_count": 0,
+        "qib_first_event_keys": [None] * 6,
+        "melt_first_event_count": 0,
+        "melt_first_event_keys": [],
+        "first_qib_key": None,
+        "first_melt_key": None,
+    }
+    plan, pin = _write_window_plan(tmp_path, selected, 2, expected, "pinned step2 fixture")
+    assert s15.verify_plan(rows, plan, parsed, pin, selected) == {
+        "qib_transitions": 0,
+        "trace_melt_first_events": 0,
+    }
+
+
+def test_s15_event_extraction_refuses_full_stdout_hardlink_without_mutation(
+    tmp_path: Path,
+) -> None:
+    full_stdout = tmp_path / "full.stdout"
+    full_stdout.write_bytes(b"S10SLP 1 73 113 5\nS15QC 2 1 5 1 235 1 142 0\n")
+    original = full_stdout.read_bytes()
+    selected_hardlink = tmp_path / "selected.events"
+    os.link(full_stdout, selected_hardlink)
+    with pytest.raises(s15.ProbeError, match="aliases full stdout"):
+        s15.extract_s15_event_stream(full_stdout, selected_hardlink)
+    assert full_stdout.read_bytes() == original
+    assert selected_hardlink.read_bytes() == original
+
+    existing_output = tmp_path / "existing.events"
+    existing_output.write_bytes(b"preserve this existing output\n")
+    with pytest.raises(s15.ProbeError, match="output must not already exist"):
+        s15.extract_s15_event_stream(full_stdout, existing_output)
+    assert full_stdout.read_bytes() == original

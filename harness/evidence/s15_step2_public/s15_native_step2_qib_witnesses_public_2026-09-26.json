@@ -1,0 +1,286 @@
+{
+  "first_qib_events": [
+    {
+      "record": {
+        "advect": "ACA67BDC",
+        "after": "A5BCD5F9",
+        "before": "00000000",
+        "c1": "3FC8496C",
+        "c2": "C751925E",
+        "dt": "40D55555",
+        "i": "143",
+        "j": "2",
+        "k": "16",
+        "kind": "QIB",
+        "msfty": "3F7E4E29",
+        "munew": "47BA5F00",
+        "muold": "47BA5F2C",
+        "other_tend": "00000000",
+        "owner": "5",
+        "reference": "00000000",
+        "rk": "1",
+        "step": "2",
+        "tile_i0": "1",
+        "tile_i1": "235",
+        "tile_j0": "1",
+        "tile_j1": "142"
+      },
+      "replay": {
+        "before_bits": "00000000",
+        "captured_after_bits": "A5BCD5F9",
+        "matches": true,
+        "replayed_after_bits": "A5BCD5F9",
+        "status": "exact_f32_replay_pass"
+      }
+    },
+    {
+      "record": {
+        "advect": "B144EDEF",
+        "after": "AA73FBF4",
+        "before": "00000000",
+        "c1": "3FD61784",
+        "c2": "C779984D",
+        "dt": "40D55555",
+        "i": "144",
+        "j": "143",
+        "k": "14",
+        "kind": "QIB",
+        "msfty": "3F7952C1",
+        "munew": "47AEE047",
+        "muold": "47AEE4BD",
+        "other_tend": "00000000",
+        "owner": "5",
+        "reference": "00000000",
+        "rk": "1",
+        "step": "2",
+        "tile_i0": "1",
+        "tile_i1": "235",
+        "tile_j0": "143",
+        "tile_j1": "283"
+      },
+      "replay": {
+        "before_bits": "00000000",
+        "captured_after_bits": "AA73FBF4",
+        "matches": true,
+        "replayed_after_bits": "AA73FBF4",
+        "status": "exact_f32_replay_pass"
+      }
+    },
+    {
+      "record": {
+        "advect": "A916BC7B",
+        "after": "A280A08B",
+        "before": "00000000",
+        "c1": "3FC8496C",
+        "c2": "C751925E",
+        "dt": "41200000",
+        "i": "111",
+        "j": "2",
+        "k": "16",
+        "kind": "QIB",
+        "msfty": "3F7E4BD3",
+        "munew": "47B9FFA6",
+        "muold": "47B9FF24",
+        "other_tend": "00000000",
+        "owner": "5",
+        "reference": "00000000",
+        "rk": "2",
+        "step": "2",
+        "tile_i0": "1",
+        "tile_i1": "235",
+        "tile_j0": "1",
+        "tile_j1": "142"
+      },
+      "replay": {
+        "before_bits": "00000000",
+        "captured_after_bits": "A280A08B",
+        "matches": true,
+        "replayed_after_bits": "A280A08B",
+        "status": "exact_f32_replay_pass"
+      }
+    },
+    {
+      "record": {
+        "advect": "A8A29A0C",
+        "after": "A20ED94D",
+        "before": "00000000",
+        "c1": "3FD6BAF2",
+        "c2": "C77B721B",
+        "dt": "41200000",
+        "i": "146",
+        "j": "143",
+        "k": "13",
+        "kind": "QIB",
+        "msfty": "3F795303",
+        "munew": "47B4AD02",
+        "muold": "47B4B67C",
+        "other_tend": "00000000",
+        "owner": "5",
+        "reference": "00000000",
+        "rk": "2",
+        "step": "2",
+        "tile_i0": "1",
+        "tile_i1": "235",
+        "tile_j0": "143",
+        "tile_j1": "283"
+      },
+      "replay": {
+        "before_bits": "00000000",
+        "captured_after_bits": "A20ED94D",
+        "matches": true,
+        "replayed_after_bits": "A20ED94D",
+        "status": "exact_f32_replay_pass"
+      }
+    },
+    {
+      "record": {
+        "advect": "9F32A1F1",
+        "after": "991817B7",
+        "before": "00000000",
+        "c1": "3FBAAA2A",
+        "c2": "C72A1436",
+        "dt": "41A00000",
+        "i": "141",
+        "j": "2",
+        "k": "17",
+        "kind": "QIB",
+        "msfty": "3F7E4DC9",
+        "munew": "47BA51FB",
+        "muold": "47BA535B",
+        "other_tend": "00000000",
+        "owner": "5",
+        "reference": "00000000",
+        "rk": "3",
+        "step": "2",
+        "tile_i0": "1",
+        "tile_i1": "235",
+        "tile_j0": "1",
+        "tile_j1": "142"
+      },
+      "replay": {
+        "before_bits": "00000000",
+        "captured_after_bits": "991817B7",
+        "matches": true,
+        "replayed_after_bits": "991817B7",
+        "status": "exact_f32_replay_pass"
+      }
+    },
+    {
+      "record": {
+        "advect": "A2212757",
+        "after": "9C121BA4",
+        "before": "00000000",
+        "c1": "3FC8496C",
+        "c2": "C751925E",
+        "dt": "41A00000",
+        "i": "141",
+        "j": "143",
+        "k": "16",
+        "kind": "QIB",
+        "msfty": "3F795265",
+        "munew": "47B0CED1",
+        "muold": "47B0CBC1",
+        "other_tend": "00000000",
+        "owner": "5",
+        "reference": "00000000",
+        "rk": "3",
+        "step": "2",
+        "tile_i0": "1",
+        "tile_i1": "235",
+        "tile_j0": "143",
+        "tile_j1": "283"
+      },
+      "replay": {
+        "before_bits": "00000000",
+        "captured_after_bits": "9C121BA4",
+        "matches": true,
+        "replayed_after_bits": "9C121BA4",
+        "status": "exact_f32_replay_pass"
+      }
+    }
+  ],
+  "original_private_census_receipt_sha256": "b2aaab1e42e222687b5b8fc90191fc2a260ae7e84560455e1748f8c3eb75ac47",
+  "owner_schedule": {
+    "count_interpretation": "Occurrences over RK stages and tiles, not distinct cells or final negative count.",
+    "owner_name": "scalar_tile_loop_2",
+    "owner_site": 5,
+    "step": 2,
+    "summary_keys": [
+      [
+        2,
+        1,
+        5,
+        1,
+        235,
+        1,
+        142
+      ],
+      [
+        2,
+        1,
+        5,
+        1,
+        235,
+        143,
+        283
+      ],
+      [
+        2,
+        2,
+        5,
+        1,
+        235,
+        1,
+        142
+      ],
+      [
+        2,
+        2,
+        5,
+        1,
+        235,
+        143,
+        283
+      ],
+      [
+        2,
+        3,
+        5,
+        1,
+        235,
+        1,
+        142
+      ],
+      [
+        2,
+        3,
+        5,
+        1,
+        235,
+        143,
+        283
+      ]
+    ],
+    "total_transition_occurrences": 87937,
+    "transition_counts": [
+      18356,
+      11017,
+      36182,
+      20849,
+      1038,
+      495
+    ]
+  },
+  "probe_sha256": "1622c27c70d59be0e64b92f379a93525192bb6487919acb86ba307d0368222ad",
+  "public_plan_sha256": "e14cd636665d880816a7fa8a87e672670de832bd7c7eb167bdaeb169b00d0267",
+  "raw_data_scope": "Six bounded first-event S15Q rows only; the full event stream, stdout, arrays, NetCDF, source, objects, and executable remain local.",
+  "replay_scope": "The six first-event rows establish exact source-order RK update replay for these emitted witnesses. They do not identify upstream face cause, a physical unit, or accepted-state particle loss.",
+  "schema": "KDM6AD-S15-STEP2-QIB-FIRST-WITNESSES-v1",
+  "selected_stream_sha256": "992f51208d4b32fd835a0d468c861e3c7bbb01a28480f45d92cd075c2c396a0b",
+  "source_pins": {
+    "dyn_em/module_em.F": "7695bfb05a7f99763334a6e69523bbcc1de0f2c659177a18c10a6e1cf530a0c7",
+    "dyn_em/solve_em.F": "d66e9db1bba8f37e3f46d30c2fd74bdf8def411adf233376a69e0b401c6d3d1f",
+    "phys/module_mp_kdm6.F": "fc0a72d33a5e61803fea56eb9118018039c6da8b5775813032b4861a2bd66eb5"
+  },
+  "status": "bounded_public_projection_six_first_event_rows_only"
+}

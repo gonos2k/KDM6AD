@@ -14,6 +14,7 @@ from fractions import Fraction
 import hashlib
 import json
 import math
+import os
 import re
 import shutil
 import struct
@@ -29,26 +30,91 @@ REFERENCE_FIELDS = (
     "qib_transition_count", "qib_first_event_keys",
     "melt_first_event_count", "melt_first_event_keys", "first_qib_key", "first_melt_key",
 )
-CAPTURE_WINDOW = {
-    "first_timestep": 1,
-    "last_timestep": 1,
-    "selection": "first model timestep only",
+CAPTURE_WINDOWS = {
+    1: {
+        "first_timestep": 1,
+        "last_timestep": 1,
+        "selection": "first model timestep only",
+    },
+    2: {
+        "first_timestep": 2,
+        "last_timestep": 2,
+        "selection": "second model timestep only",
+    },
 }
+# Keep the original B20 behavior as the public default. Step 2 must be explicit.
+CAPTURE_WINDOW = CAPTURE_WINDOWS[1]
+QIB_CAPTURE_STEP = 1
 QIB_OWNER_SITE = 5
 QIB_OWNER_NAME = "scalar_tile_loop_2"  # scalar_old/scalar fields, the actual QIB owner.
 QIB_EXPECTED_RK_STAGES = (1, 2, 3)
 QIB_EXPECTED_TILE_BOUNDS = ((1, 235, 1, 142), (1, 235, 143, 283))
 
 
-def expected_qib_summary_keys() -> list[list[int]]:
-    """Pinned step-1 owner/tile/RK census for the retained LC05 1-rank layout."""
-    return [[1, rk, QIB_OWNER_SITE, *tile]
+def capture_window_for_step(capture_step: int = QIB_CAPTURE_STEP) -> dict[str, object]:
+    if type(capture_step) is not int or capture_step not in CAPTURE_WINDOWS:
+        raise ProbeError(f"unsupported S15 capture step {capture_step!r}; choose 1 or 2")
+    return dict(CAPTURE_WINDOWS[capture_step])
+
+
+def capture_step_for_window(window: object) -> int:
+    for capture_step, expected in CAPTURE_WINDOWS.items():
+        if window == expected:
+            return capture_step
+    raise ProbeError("capture window must exactly pin supported timestep 1 or timestep 2")
+
+
+def expected_qib_summary_keys(capture_step: int = QIB_CAPTURE_STEP) -> list[list[int]]:
+    """Pinned owner/tile/RK census; step 1 remains the compatibility default."""
+    capture_window_for_step(capture_step)
+    return [[capture_step, rk, QIB_OWNER_SITE, *tile]
             for rk in QIB_EXPECTED_RK_STAGES for tile in QIB_EXPECTED_TILE_BOUNDS]
 SOURCE_PINS = {
     "dyn_em/module_em.F": "7695bfb05a7f99763334a6e69523bbcc1de0f2c659177a18c10a6e1cf530a0c7",
     "dyn_em/solve_em.F": "d66e9db1bba8f37e3f46d30c2fd74bdf8def411adf233376a69e0b401c6d3d1f",
     "phys/module_mp_kdm6.F": "fc0a72d33a5e61803fea56eb9118018039c6da8b5775813032b4861a2bd66eb5",
 }
+STEP2_INPUT_HASHES = {
+    "namelist.input": "064b6f5ea5683ee3dc68d408c08bf4cbf588be06dbc7d99bb3529be8ba61554a",
+    "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+    "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3",
+    "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+}
+STEP2_HISTORY_TIMES = [
+    "2025-07-19_00:00:00",
+    "2025-07-19_00:00:20",
+    "2025-07-19_00:00:40",
+]
+STEP2_CALL_OWNER_ORDER = [
+    {"site": 1, "loop": "moist_tile_loop_2", "arrays": "moist_old/moist"},
+    {"site": 2, "loop": "tke_tile_loop_2", "arrays": "grid%tke_1/grid%tke_2"},
+    {"site": 3, "loop": "chem_tile_loop_2", "arrays": "chem_old/chem"},
+    {"site": 4, "loop": "tracer_tile_loop_2", "arrays": "tracer_old/tracer"},
+    {"site": 5, "loop": "scalar_tile_loop_2", "arrays": "scalar_old/scalar"},
+]
+STEP2_OWNER_SCHEDULE = {
+    "source_call": "solve_em.F scalar_tile_loop_2 -> rk_update_scalar(scalar_old, scalar)",
+    "owner_site": 5,
+    "rk_stages": [1, 2, 3],
+    "tile_bounds": [[1, 235, 1, 142], [1, 235, 143, 283]],
+    "expected_summary_cardinality": 6,
+    "expected_summary_keys": expected_qib_summary_keys(2),
+    "summary_key_order": "RK stage ascending, then tile order as source-reported",
+}
+STEP2_MELT_SCHEDULE = {
+    "source": "module_mp_kdm6.F graupel melt consumer",
+    "capture_timestep": 2,
+    "selection": "first matching applied trace-graupel melt per Fortran latitude row and microphysics substep, with source loop order k=kte..kts descending then i=its..ite ascending",
+    "predicate": "qg>0 AND qg<=qcrmin AND brs<=brs_min AND applied pgmlt<0",
+    "event_keys": "data-dependent; freeze a separate hashed discovery census before confirmation, do not infer from step 1",
+    "rhox": "serialize only when the ProgB assignment-validity mask is true",
+}
+STEP2_OPERATIONAL_PUBLIC_SECTIONS = (
+    "scope", "probe", "stdout_event_contract", "owner_schedule", "melt_schedule",
+    "arithmetic_replay", "pair_acceptance", "prior_step1_boundary",
+    "fresh_step2_build_pins", "step1_compatibility_regression",
+    "run_stdout_placeholders", "public_evidence_policy",
+)
 SHADOW_TAG = "! KDM6AD-S15-PROBE"
 S10_MACRO = "KDM6_PROGB_VALIDITY_CAPTURE"
 
@@ -351,12 +417,20 @@ def replay_melt(row: dict[str, str], line: int = 0) -> dict[str, object]:
 
 def parse_capture(path: Path) -> tuple[list[dict[str, str]], list[tuple[int, ...]] | None]:
     raw_lines = path.read_text(encoding="ascii").splitlines()
-    event_lines = [line.split() for line in raw_lines
-                   if line.split() and line.split()[0] in {"S15Q", "S15QC", "S15M"}]
+    known_tags = {"S15Q", "S15QC", "S15M"}
+    event_lines: list[tuple[int, list[str]]] = []
+    for line_no, line in enumerate(raw_lines, start=1):
+        fields = line.split()
+        if not fields:
+            continue
+        if fields[0].startswith("S15") and fields[0] not in known_tags:
+            raise ProbeError(f"native line {line_no}: unknown S15 event record {fields[0]!r}")
+        if fields[0] in known_tags:
+            event_lines.append((line_no, fields))
     if event_lines and not raw_lines[0].startswith("kind,"):
         rows: list[dict[str, str]] = []
         summaries: list[tuple[int, ...]] = []
-        for line_no, fields in enumerate(event_lines, start=1):
+        for line_no, fields in event_lines:
             tag, values = fields[0], fields[1:]
             try:
                 ints = [int(value, 10) for value in values]
@@ -454,18 +528,19 @@ def verify_plan(rows: list[dict[str, str]], plan_path: Path,
             raise ProbeError(f"plan field {field} differs from the pinned independent reference")
     if capture_path is None or plan.get("capture_sha256") != sha256(capture_path):
         raise ProbeError("plan is not bound to this captured event stream")
-    if plan.get("capture_window") != CAPTURE_WINDOW:
-        raise ProbeError("independent plan does not pin the timestep-1 capture window")
+    capture_step = capture_step_for_window(plan.get("capture_window"))
+    if plan.get("capture_window") != capture_window_for_step(capture_step):
+        raise ProbeError("independent plan does not pin an allowed S15 capture window")
     if not summaries:
         raise ProbeError("native plan verification requires the complete S15QC summary census")
     qrows = [r for r in rows if r["kind"] == "QIB"]
     mrows = [r for r in rows if r["kind"] == "MELT"]
-    if any(int(row[0]) != CAPTURE_WINDOW["first_timestep"] for row in summaries):
-        raise ProbeError("S15QC contains rows outside the pinned timestep-1 window")
+    if any(int(row[0]) != capture_step for row in summaries):
+        raise ProbeError(f"S15QC contains rows outside the pinned timestep-{capture_step} window")
     if any(row[7] < 0 for row in summaries):
         raise ProbeError("S15QC transition counts cannot be negative")
-    if any(int(row["step"]) != CAPTURE_WINDOW["first_timestep"] for row in qrows + mrows):
-        raise ProbeError("S15 event contains a row outside the pinned timestep-1 window")
+    if any(int(row["step"]) != capture_step for row in qrows + mrows):
+        raise ProbeError(f"S15 event contains a row outside the pinned timestep-{capture_step} window")
     transition_count = sum(row[7] for row in summaries)
     summary_keys = [list(row[:7]) for row in summaries]
     if len(set(map(tuple, summary_keys))) != len(summary_keys):
@@ -483,7 +558,7 @@ def verify_plan(rows: list[dict[str, str]], plan_path: Path,
     if (owner_schedule.get("owner_site") != QIB_OWNER_SITE or
             owner_schedule.get("owner_name") != QIB_OWNER_NAME):
         raise ProbeError("source-declared QIB owner schedule does not match the pinned owner")
-    pinned_summary_keys = expected_qib_summary_keys()
+    pinned_summary_keys = expected_qib_summary_keys(capture_step)
     if expected_summary_keys != pinned_summary_keys:
         raise ProbeError("QIB summary census was shrunk or changed from the pinned source schedule")
     if owner_schedule.get("expected_summary_keys") != pinned_summary_keys:
@@ -557,6 +632,55 @@ def sha256(path: Path) -> str:
     return h.hexdigest()
 
 
+def extract_s15_event_stream(full_stdout: Path, selected_stream: Path) -> dict[str, object]:
+    """Write exact S15 event lines while retaining separate full-stdout identity.
+
+    S10 diagnostics may share the runtime logging switch and may describe step 1.
+    They remain in the hashed original stdout but are excluded from the selected
+    S15Q/S15QC/S15M replay stream.
+    """
+    if full_stdout.exists() and selected_stream.exists():
+        if os.path.samefile(full_stdout, selected_stream):
+            raise ProbeError("selected S15 stream aliases full stdout")
+    if selected_stream.exists() or selected_stream.is_symlink():
+        raise ProbeError("selected S15 stream output must not already exist")
+    full_sha_before = sha256(full_stdout)
+    full_bytes = full_stdout.read_bytes()
+    if hashlib.sha256(full_bytes).hexdigest() != full_sha_before:
+        raise ProbeError("full stdout changed while reading for S15 extraction")
+    tags = {b"S15Q", b"S15QC", b"S15M"}
+    selected: list[bytes] = []
+    for line_no, raw_line in enumerate(full_bytes.splitlines(keepends=True), start=1):
+        fields = raw_line.split()
+        if not fields:
+            continue
+        tag = fields[0]
+        if tag.startswith(b"S15") and tag not in tags:
+            raise ProbeError(f"native line {line_no}: unknown S15 event record {tag.decode('ascii', 'replace')!r}")
+        if tag in tags:
+            selected.append(raw_line)
+    selected_stream.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        with selected_stream.open("xb") as stream:
+            stream.write(b"".join(selected))
+    except FileExistsError as exc:
+        raise ProbeError("selected S15 stream output appeared during extraction") from exc
+    full_sha_after = sha256(full_stdout)
+    if full_sha_after != full_sha_before:
+        raise ProbeError("full stdout changed during S15 event extraction")
+    return {
+        "full_stdout": {"path": str(full_stdout), "bytes": full_stdout.stat().st_size,
+                        "sha256": full_sha_after},
+        "selected_s15_stream": {"path": str(selected_stream),
+                                 "bytes": selected_stream.stat().st_size,
+                                 "sha256": sha256(selected_stream)},
+        "selected_record_count": len(selected),
+        "selected_tags": sorted({line.split()[0].decode("ascii") for line in selected}),
+        "s10_records_excluded_from_replay": True,
+        "selection_contract": "exact S15Q/S15QC/S15M lines in original order; all other lines retained only in full stdout",
+    }
+
+
 def verify_pre_link_binding(binding: dict[str, object]) -> dict[str, int]:
     """Verify plan-bound S15 compile inputs against the r6 receipt and disk.
 
@@ -622,12 +746,343 @@ def verify_plan_pin(plan_path: Path, expected_sha256: str) -> str:
     return actual
 
 
+def _canonical_json(value: object) -> str:
+    """Canonical JSON preserves bool-versus-int distinctions in trusted plans."""
+    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+
+def step2_public_contract() -> dict[str, object]:
+    """Code-fixed public declarations that determine or qualify the step-2 run."""
+    probe = {
+        "path": "harness/g33_s15_probe.py",
+        "sha256": sha256(Path(__file__).resolve()),
+        "capture_window": capture_window_for_step(2),
+        "qib_owner": {
+            "site": 5, "name": "scalar_tile_loop_2",
+            "array_pair": "scalar_old/scalar", "selector": "s15_owner=5",
+        },
+        "call_owner_order": STEP2_CALL_OWNER_ORDER,
+        "default_capture_step": 1,
+        "default_capture_window": {
+            "first_timestep": 1, "last_timestep": 1,
+            "selection": "first model timestep only; preserves merged B20 compatibility",
+        },
+        "step2_overlay_invocation": "g33_s15_probe.py prepare <source-root> <fresh-shadow-root> --capture-step 2",
+        "replay_window_contract": "Verifier selects the exact capture window and owner summary schedule from the externally pinned plan; only timestep 1 or timestep 2 is accepted.",
+        "selected_stream_tool": "extract-events preserves the full rank-0 stdout separately and filters exact S15Q/S15QC/S15M lines for replay; the S10 step-1 diagnostics remain only in full stdout.",
+        "step2_launch_gate": "Step2 prelink/launch must validate this externally pinned public plan, exact capture_window_for_step(2), owner5, and six code-fixed summary keys; generic B20 default remains step1.",
+    }
+    return {
+        "scope": {
+            "purpose": "Capture actual QIB owner-5 sign transitions at completed model timestep 2 after timestep 1 produced none.",
+            "case": "retained LC05 5 km native full-domain case",
+            "physics": "mp_physics=37 (Fortran KDM6)",
+            "dt_seconds": 20, "duration_seconds": 40, "capture_timestep": 2,
+            "fixed_dt": True, "ranks": 1, "threads": 1,
+            "expected_saved_times": STEP2_HISTORY_TIMES,
+            "input_hashes": STEP2_INPUT_HASHES,
+        },
+        "probe": probe,
+        "stdout_event_contract": {
+            "full_stdout_source": "rank-0 rsl.out.0000 from each instrumented run",
+            "shared_logging_effect": "KDM6_S15_NATIVE_CAPTURE_LOG also enables inherited S10 diagnostics, which may include step-1 S10* rows.",
+            "selected_stream": "g33_s15_probe.py extract-events FULL_STDOUT SELECTED_STREAM; exact S15Q/S15QC/S15M lines only, original order preserved; destination must be new and is created exclusively.",
+            "hashes": "Record full stdout hash before and after extraction plus selected stream SHA-256 and byte size; refuse if full stdout changes during extraction.",
+            "step2_census": "Require all six timestep-2 owner-5 S15QC summaries; S10* rows do not contribute.",
+            "confirmation": "Compare the selected confirmation S15 stream byte-for-byte with the frozen discovery S15 stream. Full stdout is hashed separately, not compared byte-for-byte.",
+        },
+        "owner_schedule": STEP2_OWNER_SCHEDULE,
+        "melt_schedule": STEP2_MELT_SCHEDULE,
+        "arithmetic_replay": {
+            "source": "module_em.F rk_update_scalar source and compiled step-2 object disassembly",
+            "before_reference": "scalar_1 is the source formula input for both RK arms; reject records where captured before word differs from scalar_1 reference word",
+            "tendency": "f32(f32(advect_tend * msfty) + sc_tend); keep multiply and add separately rounded",
+            "mass": "old_mass=fma32(c1,muold,c2); new_mass=fma32(c1,munew,c2)",
+            "numerator": "fma32(old_mass,scalar_1, f32(dt*tendency)); then f32 divide by new_mass",
+            "fresh_object_audit_required": True,
+            "audit_rule": "Repeat disassembly for the newly compiled step-2 module_em.o; do not reuse the step-1 object receipt as step-2 evidence.",
+        },
+        "pair_acceptance": {
+            "control_capture": "same fresh executable, same retained inputs and namelist; control logging off, capture logging on",
+            "required": [
+                "completed 40 s integrations", "saved Times exactly 0/20/40 s",
+                "complete six-key step-2 owner-5 S15QC census",
+                "replay all rows with exact raw-f32 arithmetic",
+                "frame-by-frame raw-bit equality at saved frames 0, 1, and 2 for populated common numeric forecast variables and exact Times",
+                "separate full rank-0 stdout and selected S15 event-stream hashes for each run",
+                "byte-identical discovery and pinned confirmation selected S15 event streams",
+            ],
+            "empty_unpopulated_streams": "report insufficient evidence, never parity pass",
+        },
+        "prior_step1_boundary": {
+            "receipt": "s15_native_B_noninterference_receipt_2026-09-26_r10.json",
+            "owner5_summary_counts": [0, 0, 0, 0, 0, 0],
+            "trace_melt_events": 51,
+            "use_as_step2_expected_values": False,
+            "A_discovery": "excluded: lacked owner field; generic P_QIB alias rows do not establish owner-5 QIB transitions",
+        },
+        "fresh_step2_build_pins": {
+            "policy": "Generate new values after Green/Red plan review; no step-1 overlay/object/link/executable may be reused.",
+            "compiler_target": "GNU Fortran 15.2.0 via mpif90, arm64; record the resolved compiler path, version output, full command, and SHA-256 of the compiler binary in the new compile receipt.",
+            "macro": "KDM6_PROGB_VALIDITY_CAPTURE",
+            "required_compile_flags": [
+                "-c", "-O2", "-ftree-vectorize", "-funroll-loops", "-w", "-ffree-form",
+                "-ffree-line-length-none", "-fconvert=big-endian", "-frecord-marker=4",
+                "-fallow-argument-mismatch", "-fallow-invalid-boz",
+            ],
+            "required_kdm6_mp_extra_flags": ["-ffp-contract=off"],
+            "source_overlay_sha256": None, "preprocessed_fortran_sha256": None,
+            "object_sha256": None, "fresh_module_em_disassembly_sha256": None,
+            "fresh_operation_audit_sha256": None,
+            "untouched_s8_archive_sha256": "f27a3633cae66c412123296eed3ebc3caeb3080ab7e8c9f224c18ab55c987a94",
+            "link_command_and_receipt_sha256": None, "step2_executable_sha256": None,
+            "native_receipts": None, "launch_allowed_before_fresh_pins": False,
+        },
+        "step1_compatibility_regression": {
+            "public_reference": "harness/evidence/s15_b20_public/s15_native_discovery_b_event_reference_2026-09-26_public.json",
+            "public_manifest": "harness/evidence/s15_b20_public/s15_native_B_20S_public_manifest.json",
+            "regression_test": "test_public_b20_step1_projection_still_replays_with_synthetic_event_operands",
+            "retained_expectations": "six step-1 owner-5/RK/tile summary keys with zero transitions and 51 published trace-melt keys; synthetic raw operands are labeled test fixtures, not additional native evidence",
+        },
+        "run_stdout_placeholders": {
+            "discovery_full_stdout_sha256": None,
+            "discovery_selected_s15_stream_sha256": None,
+            "control_full_stdout_sha256": None,
+            "capture_full_stdout_sha256": None,
+            "capture_selected_s15_stream_sha256": None,
+            "confirmation_full_stdout_sha256": None,
+            "confirmation_selected_s15_stream_sha256": None,
+        },
+        "public_evidence_policy": "Publish source/input hashes, plan, digest sidecar, selected event keys, and hash-only receipts; keep private host source, object files, executables, full-domain NetCDF, raw arrays, and stdout logs private.",
+    }
+
+
+def verify_step2_public_plan(public_plan_path: Path,
+                            expected_sha256: str) -> dict[str, object]:
+    """Require the trusted, source-declared public S15 step-2 plan."""
+    verify_plan_pin(public_plan_path, expected_sha256)
+    public_plan = json.loads(public_plan_path.read_text(encoding="utf-8"))
+    if not isinstance(public_plan, dict):
+        raise ProbeError("trusted public step-2 plan must be a JSON object")
+    expected_window = capture_window_for_step(2)
+    expected_keys = expected_qib_summary_keys(2)
+    probe = public_plan.get("probe", {})
+    if not isinstance(probe, dict):
+        raise ProbeError("trusted public step-2 probe declaration must be an object")
+    owner = probe.get("qib_owner", {})
+    schedule = public_plan.get("owner_schedule", {})
+    scope = public_plan.get("scope", {})
+    if not isinstance(owner, dict) or not isinstance(schedule, dict) or not isinstance(scope, dict):
+        raise ProbeError("trusted public owner, schedule, and scope declarations must be objects")
+    if public_plan.get("schema") != "KDM6AD-S15-STEP2-40S-NATIVE-PLAN-v1":
+        raise ProbeError("step-2 gate requires the trusted public S15 step-2 plan schema")
+    expected_contract = step2_public_contract()
+    for section in STEP2_OPERATIONAL_PUBLIC_SECTIONS:
+        if _canonical_json(public_plan.get(section)) != _canonical_json(expected_contract[section]):
+            raise ProbeError(f"trusted public step-2 {section} differs from the code-fixed contract")
+    if public_plan.get("source_pins") != SOURCE_PINS:
+        raise ProbeError("trusted public step-2 plan source pins differ from the instrumented code")
+    _require_exact_ints(scope, ("capture_timestep", "dt_seconds", "duration_seconds", "ranks", "threads"),
+                        "trusted public step-2 scope")
+    _require_exact_int(probe.get("default_capture_step"),
+                       "trusted public default_capture_step")
+    _require_capture_window(probe.get("capture_window"),
+                            "trusted public probe capture window")
+    if (scope.get("capture_timestep") != 2 or scope.get("dt_seconds") != 20 or
+            scope.get("duration_seconds") != 40 or scope.get("fixed_dt") is not True or
+            scope.get("ranks") != 1 or scope.get("threads") != 1 or
+            scope.get("physics") != "mp_physics=37 (Fortran KDM6)" or
+            probe.get("default_capture_step") != 1 or
+            probe.get("capture_window") != expected_window):
+        raise ProbeError("trusted public plan does not pin the exact timestep-2 capture window")
+    _require_exact_int(owner.get("site"), "trusted public owner site")
+    _require_exact_int(schedule.get("owner_site"), "trusted public schedule owner site")
+    _require_exact_ints(schedule, ("expected_summary_cardinality",), "trusted public owner schedule")
+    _require_exact_int_matrix(schedule.get("expected_summary_keys"), "trusted public summary keys")
+    if (owner.get("site") != QIB_OWNER_SITE or owner.get("name") != QIB_OWNER_NAME or
+            schedule.get("owner_site") != QIB_OWNER_SITE):
+        raise ProbeError("trusted public step-2 plan does not pin owner 5")
+    if (schedule.get("expected_summary_keys") != expected_keys or
+            schedule.get("expected_summary_cardinality") != 6):
+        raise ProbeError("trusted public plan does not pin the code-fixed six-key step-2 schedule")
+    fresh_pins = public_plan.get("fresh_step2_build_pins", {})
+    if not isinstance(fresh_pins, dict):
+        raise ProbeError("trusted step-2 fresh-build pins must be an object")
+    if fresh_pins.get("launch_allowed_before_fresh_pins") is not False:
+        raise ProbeError("trusted step-2 public plan must keep launch blocked until fresh pins exist")
+    probe_rel = Path(str(probe.get("path", "")))
+    probe_path = public_plan_path.resolve().parents[2] / probe_rel
+    if (not probe_path.is_file() or
+            sha256(probe_path) != probe.get("sha256")):
+        raise ProbeError("trusted public step-2 plan does not pin the current probe source")
+    return public_plan
+
+
+def verify_step2_build_contract(build_plan: dict[str, object],
+                                base_directory: Path) -> dict[str, object]:
+    """Bind a build/prelink plan to the exact public step-2 window and census."""
+    if not isinstance(build_plan, dict):
+        raise ProbeError("step-2 build plan must be a JSON object")
+    if build_plan.get("schema") != "KDM6AD-S15-STEP2-BUILD-PLAN-v1":
+        raise ProbeError("step-2 launch gate requires a step-2-specific build plan")
+    public_binding = build_plan.get("trusted_step2_plan")
+    if not isinstance(public_binding, dict):
+        raise ProbeError("step-2 build plan lacks its trusted public plan binding")
+    public_path = Path(str(public_binding.get("path", "")))
+    if not public_path.is_absolute():
+        public_path = base_directory / public_path
+    public_plan = verify_step2_public_plan(public_path, str(public_binding.get("sha256", "")))
+    expected_window = capture_window_for_step(2)
+    expected_keys = expected_qib_summary_keys(2)
+    _require_exact_int(build_plan.get("capture_step"), "step-2 build capture_step")
+    _require_capture_window(build_plan.get("capture_window"), "step-2 build capture window")
+    _require_exact_int_matrix(build_plan.get("qib_summary_keys"), "step-2 summary keys")
+    owner_schedule = build_plan.get("owner_schedule", {})
+    if not isinstance(owner_schedule, dict):
+        raise ProbeError("step-2 owner schedule must be a JSON object")
+    _require_exact_int(owner_schedule.get("owner_site"), "step-2 owner site")
+    _require_exact_int(owner_schedule.get("expected_summary_cardinality"), "step-2 summary cardinality")
+    _require_exact_int_matrix(owner_schedule.get("expected_summary_keys"), "step-2 owner summary keys")
+    step2_schedule = build_plan.get("step2_schedule", {})
+    if not isinstance(step2_schedule, dict):
+        raise ProbeError("step-2 duplicate schedule must be a JSON object")
+    _require_exact_int(step2_schedule.get("capture_step"), "step2_schedule.capture_step")
+    _require_exact_int_matrix(step2_schedule.get("summary_keys"), "step2_schedule.summary_keys")
+    if (build_plan.get("capture_step") != 2 or
+            build_plan.get("capture_window") != expected_window or
+            build_plan.get("qib_summary_keys") != expected_keys):
+        raise ProbeError("step-2 build plan window or summary keys differ from the code-fixed contract")
+    if (owner_schedule.get("owner_site") != QIB_OWNER_SITE or
+            owner_schedule.get("owner_name") != QIB_OWNER_NAME or
+            owner_schedule.get("expected_summary_keys") != expected_keys or
+            owner_schedule.get("expected_summary_cardinality") != 6):
+        raise ProbeError("step-2 build plan owner schedule is incomplete or changed")
+    if (step2_schedule.get("capture_step") != 2 or
+            step2_schedule.get("summary_keys") != expected_keys):
+        raise ProbeError("step-2 duplicate schedule differs from the code-fixed window or summary keys")
+    expected_inputs = public_plan.get("scope", {}).get("input_hashes", {})
+    if (not isinstance(owner_schedule.get("input_hashes"), dict) or
+            owner_schedule.get("input_hashes") != expected_inputs or
+            set(expected_inputs) != {"namelist.input", "wrfinput_d01", "wrfbdy_d01", "wrfchainp_d01"}):
+        raise ProbeError("step-2 build plan inputs differ from the trusted retained LC05 identities")
+    run_contract = build_plan.get("run_contract")
+    if not isinstance(run_contract, dict):
+        raise ProbeError("step-2 build plan lacks its 40-second run contract")
+    required_run_values = {
+        "step_seconds": 20,
+        "dt_seconds": 20,
+        "duration_seconds": 40,
+        "run_minutes": 0,
+        "run_seconds": 40,
+        "history_interval": 0,
+        "history_interval_s": 20,
+        "physics": "mp_physics=37 (Fortran KDM6)",
+        "ranks": 1,
+        "threads": 1,
+        "fixed_dt": True,
+        "history_times": [
+            "2025-07-19_00:00:00",
+            "2025-07-19_00:00:20",
+            "2025-07-19_00:00:40",
+        ],
+    }
+    _require_exact_ints(run_contract, tuple(
+        key for key, value in required_run_values.items() if type(value) is int
+    ), "step-2 run contract")
+    expected_frame_indices = run_contract.get("expected_frame_indices")
+    if not isinstance(expected_frame_indices, list):
+        raise ProbeError("step-2 expected_frame_indices must be an integer list")
+    for index, value in enumerate(expected_frame_indices):
+        _require_exact_int(value, f"step-2 expected_frame_indices[{index}]")
+    if expected_frame_indices != [0, 1, 2]:
+        raise ProbeError("step-2 run contract must pin frame indices [0, 1, 2]")
+    if any(run_contract.get(key) != value for key, value in required_run_values.items()):
+        raise ProbeError("step-2 build plan does not pin the required dt=20s/40s/1-rank run contract")
+    if (run_contract.get("use_adaptive_time_step") is not False or
+            run_contract.get("step_to_output_time") is not False):
+        raise ProbeError("step-2 run must use fixed dt and must not alter the scheduled final step")
+    effective_nml_sha = run_contract.get("effective_namelist_sha256")
+    if (not isinstance(effective_nml_sha, str) or len(effective_nml_sha) != 64 or
+            any(c not in "0123456789abcdefABCDEF" for c in effective_nml_sha)):
+        raise ProbeError("step-2 build plan lacks a pinned effective 40-second namelist hash")
+    if run_contract.get("base_namelist_sha256") != expected_inputs["namelist.input"]:
+        raise ProbeError("step-2 base namelist pin differs from the retained LC05 input")
+    runner = run_contract.get("runner", {})
+    if not isinstance(runner, dict):
+        raise ProbeError("step-2 runner pin must be a JSON object")
+    runner_path = Path(str(runner.get("path", "")))
+    if not runner_path.is_absolute():
+        runner_path = public_path.resolve().parents[2] / runner_path
+    if not runner_path.is_file() or sha256(runner_path) != runner.get("sha256"):
+        raise ProbeError("step-2 build plan run_ss_case runner pin is missing or changed")
+    return public_plan
+
+
+def _require_exact_int(value: object, label: str) -> None:
+    """JSON booleans are Python ints; reject them in numeric evidence contracts."""
+    if type(value) is not int:
+        raise ProbeError(f"{label} must be a JSON integer, not a boolean or other type")
+
+
+def _require_exact_ints(mapping: object, keys: tuple[str, ...], label: str) -> None:
+    if not isinstance(mapping, dict):
+        raise ProbeError(f"{label} must be an object containing integer fields")
+    for key in keys:
+        _require_exact_int(mapping.get(key), f"{label}.{key}")
+
+
+def _require_exact_int_matrix(value: object, label: str) -> None:
+    if not isinstance(value, list):
+        raise ProbeError(f"{label} must be a list of integer key rows")
+    for row_index, row in enumerate(value):
+        if not isinstance(row, list):
+            raise ProbeError(f"{label}[{row_index}] must be an integer key row")
+        for column_index, item in enumerate(row):
+            _require_exact_int(item, f"{label}[{row_index}][{column_index}]")
+
+
+def _require_capture_window(value: object, label: str) -> None:
+    if not isinstance(value, dict):
+        raise ProbeError(f"{label} must be an object")
+    _require_exact_ints(value, ("first_timestep", "last_timestep"), label)
+    if type(value.get("selection")) is not str:
+        raise ProbeError(f"{label}.selection must be a string")
+
+
+def require_capture_step_matches(plan: dict[str, object], requested_step: int | None) -> None:
+    """Reject explicit CLI window selection that conflicts with its pinned plan."""
+    if requested_step is None:
+        if not isinstance(plan, dict):
+            raise ProbeError("capture plan must be a JSON object")
+        return
+    if not isinstance(plan, dict):
+        raise ProbeError("capture plan must be a JSON object")
+    if type(requested_step) is not int or requested_step not in CAPTURE_WINDOWS:
+        raise ProbeError("requested capture step must be integer 1 or 2")
+    if plan.get("schema") == "KDM6AD-S15-STEP2-BUILD-PLAN-v1":
+        pinned_step = plan.get("capture_step")
+        _require_exact_int(pinned_step, "step-2 build capture_step")
+    else:
+        window = plan.get("capture_window")
+        if window is None:
+            scope = plan.get("scope", {})
+            window = scope.get("capture_window") if isinstance(scope, dict) else None
+        try:
+            _require_capture_window(window, "plan capture window")
+            pinned_step = capture_step_for_window(window)
+        except (ProbeError, AttributeError, TypeError):
+            raise ProbeError("explicit capture step cannot be matched to the plan's pinned window")
+    if pinned_step != requested_step:
+        raise ProbeError(f"requested capture step {requested_step} differs from plan-pinned step {pinned_step}")
+
+
 STALE_A_EXECUTABLE_SHA256 = "a2e5af8d8f32561ee06f81f6b3a2cf5539cb15c869cf8630b4fdda813ea3c1a1"
 
 
 def verify_postlink_binding(plan_path: Path, expected_plan_sha256: str,
                             link_receipt_path: Path,
-                            expected_link_receipt_sha256: str) -> dict[str, int]:
+                            expected_link_receipt_sha256: str,
+                            required_capture_step: int | None = None) -> dict[str, int]:
     """Read-only launch gate for a B run plan or its original link plan."""
     plan_sha = verify_plan_pin(plan_path, expected_plan_sha256)
     if len(expected_link_receipt_sha256) != 64 or any(
@@ -637,6 +1092,8 @@ def verify_postlink_binding(plan_path: Path, expected_plan_sha256: str,
         raise ProbeError("link receipt is missing or differs from its external SHA-256 pin")
     plan = json.loads(plan_path.read_text(encoding="utf-8"))
     link = json.loads(link_receipt_path.read_text(encoding="utf-8"))
+    if not isinstance(plan, dict) or not isinstance(link, dict):
+        raise ProbeError("launch plan and link receipt must be JSON objects")
     if plan.get("schema") == "KDM6AD-S15-NATIVE-B-PRE-RUN-PLAN-v1":
         link_meta = plan.get("link_receipt", {})
         planned_link_path = Path(str(link_meta.get("path", "")))
@@ -651,6 +1108,7 @@ def verify_postlink_binding(plan_path: Path, expected_plan_sha256: str,
             build_path = plan_path.parent / build_path
         build_sha = verify_plan_pin(build_path, str(build_meta.get("sha256", "")))
         build_plan = json.loads(build_path.read_text(encoding="utf-8"))
+        build_directory = build_path.parent
         contract = build_plan.get("post_link_guard_contract", {})
         binding = build_plan.get("pre_link_binding", {})
         expected_inputs = build_plan.get("owner_schedule", {}).get("input_hashes", {})
@@ -667,11 +1125,40 @@ def verify_postlink_binding(plan_path: Path, expected_plan_sha256: str,
     else:
         build_sha = plan_sha
         build_plan = plan
+        build_directory = plan_path.parent
         contract = plan.get("post_link_guard_contract", {})
         binding = plan.get("pre_link_binding", {})
         expected_inputs = plan.get("owner_schedule", {}).get("input_hashes", {})
         launch_inputs = None
         expected_executable = None
+    if (required_capture_step == 2 and
+            plan.get("schema") != "KDM6AD-S15-NATIVE-B-PRE-RUN-PLAN-v1" and
+            build_plan.get("schema") != "KDM6AD-S15-STEP2-BUILD-PLAN-v1" and
+            not isinstance(build_plan.get("capture_window", build_plan.get("scope", {}).get("capture_window")), dict)):
+        raise ProbeError("step-2 launch requires an immutable step-2 B pre-run plan")
+    require_capture_step_matches(build_plan, required_capture_step)
+    if required_capture_step == 2 and plan.get("schema") != "KDM6AD-S15-NATIVE-B-PRE-RUN-PLAN-v1":
+        raise ProbeError("step-2 launch requires an immutable step-2 B pre-run plan")
+    step2_required = (required_capture_step == 2 or
+                      build_plan.get("schema") == "KDM6AD-S15-STEP2-BUILD-PLAN-v1")
+    if required_capture_step not in {None, 1, 2}:
+        raise ProbeError("capture-step launch requirement must be 1 or 2")
+    if step2_required:
+        if required_capture_step == 1:
+            raise ProbeError("step-2 build plan conflicts with required timestep 1")
+        verify_step2_build_contract(build_plan, build_directory)
+        if plan_path != build_path and (
+                plan.get("capture_step") != 2 or
+                plan.get("capture_window") != capture_window_for_step(2) or
+                plan.get("qib_summary_keys") != expected_qib_summary_keys(2) or
+                plan.get("run_contract") != build_plan.get("run_contract") or
+                plan.get("trusted_step2_plan") != build_plan.get("trusted_step2_plan")):
+            raise ProbeError("B pre-run plan does not preserve the trusted step-2 capture contract")
+    elif required_capture_step == 1:
+        scoped = build_plan.get("scope", {})
+        window = build_plan.get("capture_window", scoped.get("capture_window"))
+        if window != capture_window_for_step(1):
+            raise ProbeError("requested step-1 launch does not pin the B20 timestep-1 window")
     if link.get("schema") != contract.get("schema") or link.get("status") != contract.get("status"):
         raise ProbeError("link receipt does not satisfy the plan's owner-scoped B-link contract")
     if link.get("plan_sha256") != build_sha:
@@ -791,7 +1278,8 @@ def add_qib_index_import(text: str) -> str:
                          "Registry QIB index import")
 
 
-def instrument_module_em(text: str) -> str:
+def instrument_module_em(text: str, capture_step: int = QIB_CAPTURE_STEP) -> str:
+    capture_window_for_step(capture_step)
     text = add_qib_index_import(text)
     signature = "                             rk_step, dt, spec_zone,        &\n"
     sig_new = ("                             rk_step, s15_step, s15_owner, dt, spec_zone, &\n")
@@ -818,7 +1306,7 @@ def instrument_module_em(text: str) -> str:
         "      s15_log_env = ''\n"
         "      call get_environment_variable('KDM6_S15_NATIVE_CAPTURE_LOG', &\n"
         "                                   s15_log_env, status=s15_log_status)\n"
-        "      s15_enabled = s15_log_status.eq.0 .and. trim(s15_log_env).eq.'1' .and. s15_step.eq.1\n"
+        f"      s15_enabled = s15_log_status.eq.0 .and. trim(s15_log_env).eq.'1' .and. s15_step.eq.{capture_step}\n"
         "    endif\n")
     text = _replace_once(text, anchor, init + anchor, "rk stage initialization")
     formula = (
@@ -930,7 +1418,8 @@ def _insert_s15_mp_locals(text: str) -> str:
                          "kdm62D S15 locals")
 
 
-def instrument_module_mp(text: str) -> str:
+def instrument_module_mp(text: str, capture_step: int = QIB_CAPTURE_STEP) -> str:
+    capture_window_for_step(capture_step)
     # `capture_rhox_assigned` comes from the guarded S10 mask. False means the
     # S15 logger must emit only the flag and must not read rhox.
     text = unify_capture_gate(text)
@@ -958,7 +1447,7 @@ def instrument_module_mp(text: str) -> str:
         "graupel melt pre-operands")
     brs_update = "              brs(i,k) = brs(i,k) + (pgmlt(i,k)/rhox(i,k))\n"
     event = _s15_guard("trace_melt_event",
-        "              if (capture_enabled .and. capture_step.eq.1) then\n"
+        f"              if (capture_enabled .and. capture_step.eq.{capture_step}) then\n"
         "              if (.not.s15_trace_seen .and. s15_qg0.gt.0. .and. &\n"
         "                  s15_qg0.le.qcrmin .and. s15_brs0.le.1.e-15 .and. &\n"
         "                  pgmlt(i,k).lt.0.) then\n"
@@ -984,8 +1473,10 @@ def instrument_module_mp(text: str) -> str:
     return _replace_once(text, brs_update, brs_update + event, "trace melt event record")
 
 
-def prepare_shadow(source_root: Path, shadow_root: Path) -> None:
+def prepare_shadow(source_root: Path, shadow_root: Path,
+                   capture_step: int = QIB_CAPTURE_STEP) -> None:
     """Generate guarded overlays in a disposable tree; never write source_root."""
+    capture_window = capture_window_for_step(capture_step)
     staged = shadow_root / "host"
     if staged.exists():
         raise ProbeError(f"shadow source directory already exists: {staged}")
@@ -1004,7 +1495,9 @@ def prepare_shadow(source_root: Path, shadow_root: Path) -> None:
         if sha256(dst) != SOURCE_PINS[rel]:
             raise ProbeError(f"copy digest mismatch for {rel}")
     em_path = staged / "dyn_em/module_em.F"
-    em_path.write_text(instrument_module_em(em_path.read_text(encoding="latin1")), encoding="latin1")
+    em_path.write_text(instrument_module_em(
+        em_path.read_text(encoding="latin1"), capture_step=capture_step
+    ), encoding="latin1")
     solve_path = staged / "dyn_em/solve_em.F"
     solve_path.write_text(instrument_solve_em(solve_path.read_text(encoding="latin1")), encoding="latin1")
     mp_path = staged / "phys/module_mp_kdm6.F"
@@ -1016,11 +1509,14 @@ def prepare_shadow(source_root: Path, shadow_root: Path) -> None:
         raise ProbeError("S10 overlay generator is unavailable in this checkout") from exc
     s10_manifest = shadow_root / "s10_validity_overlay_manifest.json"
     build_s10_overlay(source_root / "phys/module_mp_kdm6.F", mp_path, s10_manifest, "mp37")
-    mp_path.write_text(instrument_module_mp(mp_path.read_text(encoding="utf-8")), encoding="utf-8")
+    mp_path.write_text(instrument_module_mp(
+        mp_path.read_text(encoding="utf-8"), capture_step=capture_step
+    ), encoding="utf-8")
     manifest = {
         "protocol": PROTOCOL,
         "status": "guarded_shadow_overlay_generated_not_compiled",
-        "capture_window": CAPTURE_WINDOW,
+        "capture_window": capture_window,
+        "capture_step": capture_step,
         "source_root": str(source_root.resolve()),
         "sources": SOURCE_PINS,
         "shadow_sources": {
@@ -1062,7 +1558,8 @@ def prepare_shadow(source_root: Path, shadow_root: Path) -> None:
     patch_plan = {
         "protocol": PROTOCOL,
         "status": "generated_guarded_shadow_patch_uncompiled",
-        "capture_window": CAPTURE_WINDOW,
+        "capture_window": capture_window,
+        "capture_step": capture_step,
         "runtime_environment": "KDM6_S15_NATIVE_CAPTURE_LOG controls both QIB records and S10 validity-mask production",
         "source_sha256": SOURCE_PINS,
         "anchor_counts": anchor_counts,
@@ -1127,6 +1624,8 @@ def _main(argv: list[str]) -> int:
     prep = sub.add_parser("prepare")
     prep.add_argument("source_root", type=Path)
     prep.add_argument("shadow_root", type=Path)
+    prep.add_argument("--capture-step", type=int, choices=(1, 2), default=QIB_CAPTURE_STEP,
+                      help="capture timestep (default 1 preserves the merged B20 overlay contract)")
     audit = sub.add_parser("audit")
     audit.add_argument("source_root", type=Path)
     audit.add_argument("shadow_root", type=Path)
@@ -1135,11 +1634,18 @@ def _main(argv: list[str]) -> int:
     replay.add_argument("--plan", type=Path, required=True)
     replay.add_argument("--plan-sha256", required=True,
                         help="out-of-band SHA-256 of the independently prepared expected plan")
+    extract = sub.add_parser("extract-events")
+    extract.add_argument("full_stdout", type=Path,
+                         help="preserved full rank stdout/RSL output from the instrumented run")
+    extract.add_argument("selected_stream", type=Path,
+                         help="new file for exact S15Q/S15QC/S15M rows only")
     prelink = sub.add_parser("prelink-check")
     prelink.add_argument("--plan", type=Path, required=True,
                          help="predeclared S15 run plan containing its r6 input binding")
     prelink.add_argument("--plan-sha256", required=True,
                          help="external SHA-256 pin of the complete run plan")
+    prelink.add_argument("--capture-step", type=int, choices=(1, 2), default=None,
+                         help="require this source-pinned capture window; use 2 for the step-2 native lane")
     launch = sub.add_parser("launch-check")
     launch.add_argument("--plan", type=Path, required=True)
     launch.add_argument("--plan-sha256", required=True,
@@ -1147,24 +1653,40 @@ def _main(argv: list[str]) -> int:
     launch.add_argument("--link-receipt", type=Path, required=True)
     launch.add_argument("--link-receipt-sha256", required=True,
                          help="external SHA-256 pin of the B link receipt")
+    launch.add_argument("--capture-step", type=int, choices=(1, 2), default=None,
+                        help="require this source-pinned capture window; use 2 for the step-2 native lane")
     args = parser.parse_args(argv)
     try:
         if args.cmd == "prepare":
-            prepare_shadow(args.source_root, args.shadow_root)
+            prepare_shadow(args.source_root, args.shadow_root,
+                           capture_step=args.capture_step)
             print("S15 shadow sources staged; no instrumentation or host run was performed")
         elif args.cmd == "audit":
             audit_shadow(args.source_root, args.shadow_root)
             print("S15 source/strip audit PASS")
+        elif args.cmd == "extract-events":
+            receipt = extract_s15_event_stream(args.full_stdout, args.selected_stream)
+            print(json.dumps(receipt, sort_keys=True))
         elif args.cmd == "prelink-check":
             plan_sha = verify_plan_pin(args.plan, args.plan_sha256)
             plan = json.loads(args.plan.read_text(encoding="utf-8"))
+            if not isinstance(plan, dict):
+                raise ProbeError("prelink plan must be a JSON object")
+            require_capture_step_matches(plan, args.capture_step)
+            if args.capture_step == 2 or plan.get("schema") == "KDM6AD-S15-STEP2-BUILD-PLAN-v1":
+                verify_step2_build_contract(plan, args.plan.parent)
+            elif args.capture_step == 1:
+                window = plan.get("capture_window", plan.get("scope", {}).get("capture_window"))
+                if window != capture_window_for_step(1):
+                    raise ProbeError("prelink plan does not pin the requested B20 timestep-1 window")
             counts = verify_pre_link_binding(plan.get("pre_link_binding", {}))
             print(json.dumps({"status": "PASS_current_snapshot_only",
                               "plan_sha256": plan_sha, **counts}, sort_keys=True))
         elif args.cmd == "launch-check":
             counts = verify_postlink_binding(args.plan, args.plan_sha256,
                                              args.link_receipt,
-                                             args.link_receipt_sha256)
+                                             args.link_receipt_sha256,
+                                             required_capture_step=args.capture_step)
             print(json.dumps({"status": "PASS_read_only_launch_gate",
                               **counts}, sort_keys=True))
         else:
