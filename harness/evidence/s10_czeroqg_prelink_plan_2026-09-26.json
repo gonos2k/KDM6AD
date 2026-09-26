@@ -178,7 +178,10 @@
       }
     },
     "configuration_execution_ledger_relative_path": "S10/configuration_capture/command_ledger.json",
-    "configure_preflight_receipt_max_age_seconds": 3600
+    "configure_preflight_receipt_max_age_seconds": 3600,
+    "configuration_preflight_consumption_marker_relative_path": "S10/configuration_capture/configure_preflight_consumed.json",
+    "configuration_preflight_one_shot_policy": "Guarded configure pipeline creates the marker exclusively before subprocess launch; a failed or completed attempt consumes that plan/preflight nonce and same-plan retries fail. Marker is local workflow state, not cryptographic proof against a privileged actor who can delete local files.",
+    "configuration_ledger_plan_sha256": null
   },
   "build_matrix": {
     "schemes": [
@@ -270,8 +273,8 @@
     "guarded_command_templates_sha256": null,
     "guarded_command_order": null,
     "guarded_command_template_status": "BLOCKED_PENDING_CONFIGURE_AND_DRY_RUN_COMMAND_ENUMERATION",
-    "execution_entrypoint": "harness/s10_guarded_exec.py; direct unmanaged shell invocations are outside certified S10 evidence",
-    "guarded_execution_scope": "harness/s10_guarded_exec.py is the only certified configure/apply entry point. Preprocess/object/link stages remain unsupported and fail closed until a later reviewed plan pins exact guarded command templates and approvals."
+    "execution_entrypoint": "python3 harness/s10_guarded_exec.py --stage configure-pipeline; direct unmanaged shell invocations are outside certified S10 evidence",
+    "guarded_execution_scope": "The configure-pipeline stage is the only certified configure/apply entry point and launches both commands consecutively in one process. Standalone configure/apply stages are unavailable. Preprocess/object/link stages remain unsupported and fail closed until a later reviewed plan pins exact guarded command templates and approvals."
   },
   "clean_shadow": {
     "local_shadow_path_is_receipt_bound": true,
@@ -671,7 +674,18 @@
         "retention": "retain all four arms x logging off/on run directories; no cleanup or hardlink assumption",
         "prior_s15_40s_reference": "coordinator reports about 912 MB per 40-second run directory; use as conservative reference only, not S10 output evidence",
         "runner_copy_semantics": "harness/run_ss_case.py archives run outputs with shutil.copy2; one staged full case tree must be charged to shared_staging_components"
-      }
+      },
+      "coordinator_run_receipt_fields": [
+        "final_plan_sha256",
+        "configuration_ledger_sha256",
+        "configure_wrf_sha256",
+        "configuration_ledger_plan_sha256",
+        "output_estimate_sha256",
+        "fresh_measurement_sha256",
+        "snapshot_sha256",
+        "S15_release_receipt_sha256"
+      ],
+      "native_evidence_requires_external_run_receipt": true
     },
     "full_matrix_build_or_link_allowed": false,
     "required_before_any_multi_arm_build": [

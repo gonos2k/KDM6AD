@@ -276,6 +276,11 @@ def _resource_plan(workspace: Path, snapshot_sha: str, *, approved: bool = False
             "fresh_build_output_root": "S10/build-clean",
             "empty_root_snapshot_relative_path": "S10/prebuild_output_root_snapshot.json",
         },
+        "prelink_requirements": {
+            "configuration_execution_ledger_relative_path": "S10/configuration_capture/command_ledger.json",
+            "configuration_ledger_plan_sha256": "b" * 64,
+            "generated_configure_wrf_sha256": "a" * 64,
+        },
         "trusted_s15_release": {
             "s15_merge_commit": "1" * 40,
             "evidence_manifest_path": "harness/evidence/S15.json",
@@ -362,6 +367,12 @@ def test_configure_only_resource_gate_is_bounded_and_keeps_build_root_absent(
     import s10_prelink_guard as guard_module
 
     monkeypatch.setattr(guard_module, "validate_static_pins", lambda *a, **k: {})
+    monkeypatch.setattr(guard_module, "validate_guarded_configuration_run",
+                        lambda *a, **k: {
+                            "configuration_command_ledger_sha256": "d" * 64,
+                            "configure_wrf_sha256": "a" * 64,
+                            "configuration_ledger_plan_sha256": "b" * 64,
+                        })
     monkeypatch.setattr(guard_module.shutil, "disk_usage", lambda _path: SimpleNamespace(
         total=10 * 1024**3, used=7 * 1024**3, free=3 * 1024**3))
     workspace = tmp_path
@@ -419,6 +430,12 @@ def test_resource_preflight_requires_coordinator_release_and_approval(tmp_path: 
     import s10_prelink_guard as guard_module
 
     monkeypatch.setattr(guard_module, "validate_static_pins", lambda *a, **k: {})
+    monkeypatch.setattr(guard_module, "validate_guarded_configuration_run",
+                        lambda *a, **k: {
+                            "configuration_command_ledger_sha256": "d" * 64,
+                            "configure_wrf_sha256": "a" * 64,
+                            "configuration_ledger_plan_sha256": "b" * 64,
+                        })
     monkeypatch.setattr(guard_module.shutil, "disk_usage", lambda _path: SimpleNamespace(
         total=100_000, used=80_000, free=20_000))
     monkeypatch.setattr(guard_module.time, "time_ns", lambda: 10_000_000_000)
@@ -452,6 +469,9 @@ def test_resource_preflight_requires_coordinator_release_and_approval(tmp_path: 
         "measured_at_unix_ns": measurement["observed_at_unix_ns"],
         "required_free_bytes": measurement["required_free_bytes"],
         "s15_release_receipt_sha256": "4" * 64,
+        "configuration_ledger_sha256": "d" * 64,
+        "configure_wrf_sha256": "a" * 64,
+        "configuration_ledger_plan_sha256": "b" * 64,
         "minimum_free_bytes": 1000,
         "safety_factor": 2,
         "full_matrix_build_or_link_allowed": True,

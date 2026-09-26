@@ -216,6 +216,9 @@ def require_resource_gate_approval(plan: dict[str, Any], approval: dict[str, Any
                                    measured_at_unix_ns: int,
                                    required_free_bytes: int,
                                    s15_release_sha256: str,
+                                   configuration_ledger_sha256: str,
+                                   configure_wrf_sha256: str,
+                                   configuration_ledger_plan_sha256: str,
                                    approval_sha256: str,
                                    trusted_approval_sha256: str) -> None:
     if (not isinstance(trusted_approval_sha256, str)
@@ -236,6 +239,9 @@ def require_resource_gate_approval(plan: dict[str, Any], approval: dict[str, Any
         "measured_at_unix_ns": measured_at_unix_ns,
         "required_free_bytes": required_free_bytes,
         "s15_release_receipt_sha256": s15_release_sha256,
+        "configuration_ledger_sha256": configuration_ledger_sha256,
+        "configure_wrf_sha256": configure_wrf_sha256,
+        "configuration_ledger_plan_sha256": configuration_ledger_plan_sha256,
         "minimum_free_bytes": build_gate.get("minimum_free_bytes"),
         "safety_factor": build_gate.get("safety_factor"),
         "full_matrix_build_or_link_allowed": True,
@@ -303,6 +309,90 @@ def validate_build_output_estimate(estimate: dict[str, Any]) -> tuple[int, dict[
     return total, arm_totals
 
 
+def validate_guarded_configuration_run(plan: dict[str, Any], *,
+                                       workspace: Path,
+                                       shadow_host: Path) -> dict[str, str]:
+    """Revalidate the guarded configure/apply ledger before any native build."""
+    requirements = plan["prelink_requirements"]
+    ledger_path = workspace / requirements["configuration_execution_ledger_relative_path"]
+    ledger_sha = sha256_file(ledger_path)
+    ledger = load_json(ledger_path)
+    parent_plan_sha = requirements.get("configuration_ledger_plan_sha256")
+    expected_config_sha = requirements.get("generated_configure_wrf_sha256")
+    if (not isinstance(parent_plan_sha, str) or not re.fullmatch(r"[0-9a-f]{64}", parent_plan_sha)
+            or not isinstance(expected_config_sha, str)
+            or not re.fullmatch(r"[0-9a-f]{64}", expected_config_sha)):
+        raise PrelinkError("final plan lacks the configure-run parent plan or configure.wrf pin")
+    if (ledger.get("schema") != "s10-guarded-configuration-ledger-v1"
+            or ledger.get("status") != "COMPLETE"
+            or ledger.get("plan_sha256") != parent_plan_sha
+            or ledger.get("toolchain_sha256") != plan["toolchain"]["toolchain_sha256"]
+            or ledger.get("tool_environment_sha256") != plan["toolchain"]["environment_sha256"]):
+        raise PrelinkError("configure/apply ledger is not bound to its reviewed configuration plan")
+    commands = ledger.get("commands")
+    if (not isinstance(commands, list) or len(commands) != 2
+            or [row.get("stage") for row in commands]
+            != ["configure", "apply_kdm6ad_config"]):
+        raise PrelinkError("guarded configuration ledger must contain configure then apply")
+    for row, script_key in zip(
+            commands, ("configure", "apply_kdm6ad_config.sh")):
+        if row.get("returncode") != 0:
+            raise PrelinkError("guarded configure/apply command did not complete successfully")
+        if row.get("output_root_absent_before") is not True \
+                or row.get("output_root_absent_after") is not True:
+            raise PrelinkError("configure/apply touched the native build output root")
+        if row.get("script_sha256") != requirements["configuration_inputs_sha256"][script_key]:
+            raise PrelinkError("guarded configure/apply script hash differs from the plan")
+        for capture_field, digest_field in (("stdout_path", "stdout_sha256"),
+                                            ("stderr_path", "stderr_sha256")):
+            if sha256_file(Path(row[capture_field])) != row.get(digest_field):
+                raise PrelinkError(f"guarded configure/apply {capture_field} hash mismatch")
+    if commands[-1].get("configure_wrf_sha256_after") != expected_config_sha \
+            or sha256_file(shadow_host / "configure.wrf") != expected_config_sha:
+        raise PrelinkError("guarded configure.wrf output differs from the reviewed final pin")
+
+    snapshot_sha = plan["trusted_s15_release"]["empty_output_root_snapshot_sha256"]
+    preflight_sha = ledger.get("configure_resource_preflight_receipt_sha256")
+    preflight_path = workspace / plan["resource_gate"]["configure_only"][
+        "preflight_receipt_relative_path"]
+    if not isinstance(preflight_sha, str) or sha256_file(preflight_path) != preflight_sha:
+        raise PrelinkError("guarded configuration receipt preflight SHA mismatch")
+    preflight = load_json(preflight_path)
+    if (preflight.get("schema") != "s10-resource-preflight-receipt-v1"
+            or preflight.get("phase") != "configure"
+            or preflight.get("status") != "ALLOW_CONFIGURE_ONLY"
+            or preflight.get("plan_sha256") != parent_plan_sha
+            or preflight.get("empty_output_root_snapshot_sha256") != snapshot_sha):
+        raise PrelinkError("guarded configuration preflight receipt is not plan/snapshot bound")
+    marker_rel = requirements.get("configuration_preflight_consumption_marker_relative_path")
+    marker_path = workspace / marker_rel if isinstance(marker_rel, str) else None
+    marker_sha = ledger.get("configuration_preflight_consumption_marker_sha256")
+    if (marker_path is None or not isinstance(marker_sha, str)
+            or sha256_file(marker_path) != marker_sha):
+        raise PrelinkError("guarded configure one-shot marker is missing or changed")
+    marker = load_json(marker_path)
+    marker_nonce = marker.get("nonce")
+    if (marker.get("schema") != "s10-configure-preflight-consumption-v1"
+            or marker.get("status") != "CONSUMED"
+            or marker.get("plan_sha256") != parent_plan_sha
+            or marker.get("resource_preflight_receipt_sha256") != preflight_sha
+            or marker.get("resource_preflight_nonce") != preflight.get("nonce")
+            or marker.get("configuration_ledger_nonce") != ledger.get("nonce")
+            or not isinstance(marker_nonce, str)
+            or ledger.get("configuration_preflight_consumption_nonce") != marker_nonce
+            or marker.get("pipeline_id") != ledger.get("configuration_pipeline_id")
+            or marker.get("nonce_sha256") != sha256_bytes(marker_nonce.encode())):
+        raise PrelinkError("guarded configure one-shot marker is not bound to the run ledger")
+    return {
+        "configuration_command_ledger_path": str(ledger_path.resolve()),
+        "configuration_command_ledger_sha256": ledger_sha,
+        "configuration_ledger_plan_sha256": parent_plan_sha,
+        "configure_wrf_sha256": expected_config_sha,
+        "configure_preflight_receipt_sha256": preflight_sha,
+        "configure_consumption_marker_sha256": marker_sha,
+    }
+
+
 def validate_build_resource_preflight(plan: dict[str, Any], receipt: dict[str, Any], *,
                                       plan_sha256: str, snapshot_sha256: str,
                                       output_root: Path,
@@ -330,6 +420,14 @@ def validate_build_resource_preflight(plan: dict[str, Any], receipt: dict[str, A
         raise PrelinkError("resource preflight receipt lacks the plan-pinned output-size estimate")
     if receipt.get("coordinator_resource_approval_sha256") != trusted_approval_sha256:
         raise PrelinkError("resource preflight receipt lacks the trusted coordinator approval")
+    if (receipt.get("configure_wrf_sha256")
+            != plan["prelink_requirements"].get("generated_configure_wrf_sha256")
+            or receipt.get("configuration_ledger_plan_sha256")
+            != plan["prelink_requirements"].get("configuration_ledger_plan_sha256")
+            or not isinstance(receipt.get("configuration_command_ledger_sha256"), str)
+            or not re.fullmatch(r"[0-9a-f]{64}", receipt[
+                "configuration_command_ledger_sha256"])):
+        raise PrelinkError("resource preflight is not bound to a guarded configure ledger and config SHA")
     measurement_sha = receipt.get("resource_measurement_receipt_sha256")
     if not isinstance(measurement_sha, str) or not re.fullmatch(r"[0-9a-f]{64}", measurement_sha):
         raise PrelinkError("resource preflight receipt is not bound to its approved space measurement")
@@ -505,6 +603,8 @@ def create_resource_preflight_receipt(
                 raise PrelinkError("coordinator S15 lane release is required before any build stage")
             require_s15_release(plan, s15_release, plan_sha256,
                                 s15_release_sha256, trusted_s15_release_sha256)
+            configuration_run = validate_guarded_configuration_run(
+                plan, workspace=workspace, shadow_host=shadow_host)
             measurement_path = workspace / build_gate.get(
                 "measurement_receipt_relative_path", "")
             measurement_sha = sha256_file(measurement_path)
@@ -534,6 +634,11 @@ def create_resource_preflight_receipt(
                 measured_at_unix_ns=measured_at,
                 required_free_bytes=required_free,
                 s15_release_sha256=s15_release_sha256,
+                configuration_ledger_sha256=configuration_run[
+                    "configuration_command_ledger_sha256"],
+                configure_wrf_sha256=configuration_run["configure_wrf_sha256"],
+                configuration_ledger_plan_sha256=configuration_run[
+                    "configuration_ledger_plan_sha256"],
                 approval_sha256=approval_sha256,
                 trusted_approval_sha256=trusted_approval_sha256)
             coordinator_approval_sha = approval_sha256
@@ -562,6 +667,14 @@ def create_resource_preflight_receipt(
         "output_size_estimate_sha256": estimate_sha,
         "estimated_total_bytes": estimated_bytes,
         "resource_measurement_receipt_sha256": measurement_sha,
+        "configuration_command_ledger_sha256": (
+            configuration_run["configuration_command_ledger_sha256"]
+            if phase == "build" else None),
+        "configuration_ledger_plan_sha256": (
+            configuration_run["configuration_ledger_plan_sha256"]
+            if phase == "build" else None),
+        "configure_wrf_sha256": (
+            configuration_run["configure_wrf_sha256"] if phase == "build" else None),
         "coordinator_resource_approval_sha256": coordinator_approval_sha,
         "s15_release_receipt_sha256": release_sha,
         "allowed_commands": (
@@ -1834,6 +1947,8 @@ def make_prelink_receipt(plan_path: Path, release_path: Path, execution_path: Pa
         raise PrelinkError("execution receipt resource-gate digest does not match the prebuild receipt")
     resource_receipt = load_json(resource_path)
     build_gate = plan["resource_gate"]["build"]
+    configuration_run = validate_guarded_configuration_run(
+        plan, workspace=workspace, shadow_host=shadow_host)
     measurement_path = workspace / build_gate["measurement_receipt_relative_path"]
     measurement_sha = sha256_file(measurement_path)
     measurement = load_json(measurement_path)
@@ -1850,6 +1965,11 @@ def make_prelink_receipt(plan_path: Path, release_path: Path, execution_path: Pa
         measured_at_unix_ns=measurement.get("observed_at_unix_ns"),
         required_free_bytes=measurement.get("required_free_bytes"),
         s15_release_sha256=release_sha,
+        configuration_ledger_sha256=configuration_run[
+            "configuration_command_ledger_sha256"],
+        configure_wrf_sha256=configuration_run["configure_wrf_sha256"],
+        configuration_ledger_plan_sha256=configuration_run[
+            "configuration_ledger_plan_sha256"],
         approval_sha256=approval_sha,
         trusted_approval_sha256=trusted_resource_approval_sha256)
     if resource_receipt.get("resource_measurement_receipt_sha256") != measurement_sha:
@@ -1861,6 +1981,11 @@ def make_prelink_receipt(plan_path: Path, release_path: Path, execution_path: Pa
         trusted_approval_sha256=trusted_resource_approval_sha256)
     if resource_receipt.get("s15_release_receipt_sha256") != release_sha:
         raise PrelinkError("resource gate was cleared against a different S15 lane release receipt")
+    if (resource_receipt.get("configuration_command_ledger_sha256")
+            != configuration_run["configuration_command_ledger_sha256"]
+            or resource_receipt.get("configure_wrf_sha256")
+            != configuration_run["configure_wrf_sha256"]):
+        raise PrelinkError("resource gate receipt is not bound to the guarded configure run")
     pins = validate_static_pins(plan, workspace=workspace,
                                 canonical_host=canonical_host,
                                 shadow_host=shadow_host,

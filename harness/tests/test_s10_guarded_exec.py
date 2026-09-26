@@ -74,6 +74,9 @@ def guarded_case(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
             "configuration_execution_ledger_relative_path": (
                 "S10/configuration_capture/command_ledger.json"
             ),
+            "configuration_preflight_consumption_marker_relative_path": (
+                "S10/configuration_capture/configure_preflight_consumed.json"
+            ),
             "configuration_generation_command": [str(bash.resolve()), "./configure"],
             "configuration_apply_command": [
                 str(bash.resolve()), "./apply_kdm6ad_config.sh"
@@ -133,25 +136,37 @@ def guarded_case(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(guard, "validate_static_pins", lambda *args, **kwargs: None)
     monkeypatch.setattr(guard, "validate_clean_shadow", lambda *args, **kwargs: None)
     calls: list[dict] = []
+    returncodes = [0, 0]
+    marker_path = capture / "configure_preflight_consumed.json"
 
     def fake_run(argv, **kwargs):
-        calls.append({"argv": list(argv), **kwargs})
+        calls.append({"argv": list(argv), "marker_exists_before": marker_path.exists(), **kwargs})
         if argv[-1] == "./configure":
             (shadow / "configure.wrf").write_text("synthetic configuration\n")
         index = len(calls)
-        return SimpleNamespace(returncode=0, stdout=f"out-{index}".encode(),
-                               stderr=f"err-{index}".encode())
+        return SimpleNamespace(
+            returncode=returncodes[index - 1] if index <= len(returncodes) else 0,
+            stdout=f"out-{index}".encode(),
+            stderr=f"err-{index}".encode(),
+        )
 
     monkeypatch.setattr(guarded.subprocess, "run", fake_run)
     return SimpleNamespace(
         workspace=workspace, shadow=shadow, canonical=canonical, plan=plan,
         plan_path=plan_path, plan_sha=plan_sha, calls=calls,
-        capture=capture,
+        capture=capture, returncodes=returncodes, marker_path=marker_path,
     )
 
 
 def _execute(case, stage: str, *, plan_sha: str | None = None,
              build_command_key: str | None = None):
+    if stage == "configure-pipeline":
+        return guarded.execute_guarded_configuration_pipeline(
+            plan_path=case.plan_path,
+            trusted_plan_sha256=plan_sha or case.plan_sha,
+            workspace=case.workspace, canonical_host=case.canonical,
+            shadow_host=case.shadow, overlay_paths={},
+        )
     return guarded.execute_guarded_stage(
         stage=stage, plan_path=case.plan_path,
         trusted_plan_sha256=plan_sha or case.plan_sha,
@@ -161,10 +176,9 @@ def _execute(case, stage: str, *, plan_sha: str | None = None,
     )
 
 
-def test_configure_then_apply_capture_exact_commands_and_resumable_ledger(guarded_case):
+def test_configure_pipeline_runs_exact_commands_and_persists_ledger(guarded_case):
     case = guarded_case
-    configure_row = _execute(case, "configure")
-    apply_row = _execute(case, "apply_kdm6ad_config")
+    result = _execute(case, "configure-pipeline")
 
     assert [call["argv"] for call in case.calls] == [
         [case.plan["toolchain"]["tools"]["bash"]["path"], "./configure"],
@@ -172,10 +186,12 @@ def test_configure_then_apply_capture_exact_commands_and_resumable_ledger(guarde
     ]
     assert [call["cwd"] for call in case.calls] == [case.shadow, case.shadow]
     assert all(call["shell"] is False for call in case.calls)
+    assert len(case.calls) == 2
+    assert all(call["marker_exists_before"] for call in case.calls)
     assert case.calls[0]["input"] == b"35\n1\n"
     assert case.calls[1]["input"] == b""
 
-    ledger_path = Path(apply_row["configuration_command_ledger_path"])
+    ledger_path = case.capture / "command_ledger.json"
     ledger = json.loads(ledger_path.read_text())
     assert ledger["status"] == "COMPLETE"
     assert [row["stage"] for row in ledger["commands"]] == [
@@ -185,12 +201,98 @@ def test_configure_then_apply_capture_exact_commands_and_resumable_ledger(guarde
     assert ledger["configure_resource_preflight_receipt_sha256"] == guard.sha256_file(
         case.capture / "configure_resource_preflight.json"
     )
-    assert configure_row["stdin_sha256"] == _sha(b"35\n1\n")
     assert ledger["commands"][0]["stdout_sha256"] == _sha(b"out-1")
     assert ledger["commands"][0]["stderr_sha256"] == _sha(b"err-1")
     assert ledger["commands"][1]["stdout_sha256"] == _sha(b"out-2")
     assert ledger["commands"][1]["stderr_sha256"] == _sha(b"err-2")
-    assert apply_row["configuration_command_ledger_sha256"] == guard.sha256_file(ledger_path)
+    assert ledger["commands"][0]["stdin_sha256"] == _sha(b"35\n1\n")
+    assert ledger["commands"][1]["stdin_sha256"] == _sha(b"")
+    assert ledger["commands"][0]["environment_sha256"] == case.plan["toolchain"][
+        "environment_sha256"
+    ]
+    assert ledger["toolchain_sha256"] == case.plan["toolchain"]["toolchain_sha256"]
+    assert ledger["tool_environment_sha256"] == case.plan["toolchain"]["environment_sha256"]
+    assert ledger["nonce_sha256"] == _sha(ledger["nonce"].encode())
+    marker_sha = guard.sha256_file(case.marker_path)
+    assert result["configuration_preflight_consumption_marker_path"] == str(
+        case.marker_path
+    )
+    assert result["configuration_preflight_consumption_marker_sha256"] == marker_sha
+    assert ledger["configuration_preflight_consumption_marker_sha256"] == marker_sha
+    assert ledger["configuration_preflight_consumption_nonce"] == result[
+        "configuration_preflight_consumption_nonce"
+    ]
+
+
+def test_standalone_apply_is_rejected_before_subprocess(guarded_case):
+    case = guarded_case
+    with pytest.raises(
+        guard.PrelinkError, match="pipeline|standalone|unsupported|not allowed"
+    ):
+        _execute(case, "apply_kdm6ad_config")
+    assert case.calls == []
+
+
+def test_forged_ledger_and_configure_wrf_cannot_authorize_standalone_apply(guarded_case):
+    case = guarded_case
+    configure_wrf = case.shadow / "configure.wrf"
+    configure_wrf.write_bytes(b"forged configuration\n")
+    ledger = {
+        "schema": "s10-guarded-configuration-ledger-v1",
+        "status": "IN_PROGRESS",
+        "plan_sha256": case.plan_sha,
+        "empty_output_root_snapshot_sha256": case.plan["trusted_s15_release"][
+            "empty_output_root_snapshot_sha256"
+        ],
+        "configure_resource_preflight_receipt_sha256": guard.sha256_file(
+            case.capture / "configure_resource_preflight.json"
+        ),
+        "toolchain_sha256": case.plan["toolchain"]["toolchain_sha256"],
+        "tool_environment_sha256": case.plan["toolchain"]["environment_sha256"],
+        "output_root_path": str((case.workspace / "S10/build-clean").resolve()),
+        "commands": [{
+            "stage": "configure",
+            "returncode": 0,
+            "configure_wrf_sha256_after": _sha(configure_wrf.read_bytes()),
+        }],
+        "nonce": "forged but self-consistent",
+        "nonce_sha256": _sha(b"forged but self-consistent"),
+    }
+    _write_json(case.capture / "command_ledger.json", ledger)
+    with pytest.raises(
+        guard.PrelinkError, match="pipeline|standalone|unsupported|not allowed"
+    ):
+        _execute(case, "apply_kdm6ad_config")
+    with pytest.raises(
+        guard.PrelinkError,
+        match="already invoked|ledger|configure.wrf|pipeline|forged|not resumable",
+    ):
+        _execute(case, "configure-pipeline")
+    assert case.calls == []
+
+
+def test_failed_configure_does_not_launch_apply(guarded_case):
+    case = guarded_case
+    case.returncodes[0] = 1
+    with pytest.raises(guard.PrelinkError, match="exited with status 1"):
+        _execute(case, "configure-pipeline")
+    assert len(case.calls) == 1
+    assert case.calls[0]["argv"][-1] == "./configure"
+    assert case.marker_path.is_file()
+
+
+def test_failed_configure_consumes_preflight_for_same_plan_retry(guarded_case):
+    case = guarded_case
+    case.returncodes[0] = 1
+    with pytest.raises(guard.PrelinkError, match="exited with status 1"):
+        _execute(case, "configure-pipeline")
+    for name in ("command_ledger.json", "configure.stdout", "configure.stderr"):
+        (case.capture / name).unlink(missing_ok=True)
+    (case.shadow / "configure.wrf").unlink(missing_ok=True)
+
+    with pytest.raises(guard.PrelinkError, match="consum|used|marker"):
+        _execute(case, "configure-pipeline")
+    assert len(case.calls) == 1
 
 
 @pytest.mark.parametrize("reason", ["wrong_plan_pin", "stale_preflight"])
@@ -198,14 +300,14 @@ def test_wrong_plan_or_stale_preflight_is_rejected_before_subprocess(guarded_cas
     case = guarded_case
     if reason == "wrong_plan_pin":
         with pytest.raises(guard.PrelinkError, match="plan SHA"):
-            _execute(case, "configure", plan_sha="0" * 64)
+            _execute(case, "configure-pipeline", plan_sha="0" * 64)
     else:
         receipt_path = case.capture / "configure_resource_preflight.json"
         receipt = json.loads(receipt_path.read_text())
         receipt["observed_at_unix_ns"] = 1
         _write_json(receipt_path, receipt)
         with pytest.raises(guard.PrelinkError, match="preflight is stale"):
-            _execute(case, "configure")
+            _execute(case, "configure-pipeline")
     assert case.calls == []
     assert not (case.capture / "command_ledger.json").exists()
 
@@ -214,7 +316,7 @@ def test_changed_shadow_configuration_source_is_rejected_before_subprocess(guard
     case = guarded_case
     (case.shadow / "configure").write_bytes(b"changed synthetic configure\n")
     with pytest.raises(guard.PrelinkError, match="script changed: configure"):
-        _execute(case, "configure")
+        _execute(case, "configure-pipeline")
     assert case.calls == []
     assert not (case.capture / "command_ledger.json").exists()
 
@@ -229,19 +331,104 @@ def test_build_stages_stay_blocked_before_subprocess_even_with_command_key(guard
 
 def test_configure_retry_is_rejected_without_new_command(guarded_case):
     case = guarded_case
-    _execute(case, "configure")
+    _execute(case, "configure-pipeline")
     # Remove synthetic logs to reach the independent ledger duplicate guard.
     (case.capture / "configure.stdout").unlink()
     (case.capture / "configure.stderr").unlink()
-    with pytest.raises(guard.PrelinkError, match="already invoked"):
-        _execute(case, "configure")
-    assert len(case.calls) == 1
+    (case.capture / "apply.stdout").unlink()
+    (case.capture / "apply.stderr").unlink()
+    with pytest.raises(
+        guard.PrelinkError, match="already invoked|configure.wrf|ledger|not resumable"
+    ):
+        _execute(case, "configure-pipeline")
+    assert len(case.calls) == 2
+
+
+def test_deleting_workspace_ledger_logs_and_configure_wrf_does_not_reauthorize_pipeline(
+    guarded_case,
+):
+    case = guarded_case
+    _execute(case, "configure-pipeline")
+    for name in (
+        "command_ledger.json", "configure.stdout", "configure.stderr",
+        "apply.stdout", "apply.stderr",
+    ):
+        (case.capture / name).unlink()
+    (case.shadow / "configure.wrf").unlink()
+
+    with pytest.raises(guard.PrelinkError):
+        _execute(case, "configure-pipeline")
+    assert len(case.calls) == 2
 
 
 def test_preexisting_log_path_is_rejected_without_subprocess(guarded_case):
     case = guarded_case
     (case.capture / "configure.stdout").write_bytes(b"preserve me")
     with pytest.raises(guard.PrelinkError, match="log path already exists"):
-        _execute(case, "configure")
+        _execute(case, "configure-pipeline")
     assert case.calls == []
     assert (case.capture / "configure.stdout").read_bytes() == b"preserve me"
+
+
+def _cli_argv(case, stage: str) -> list[str]:
+    return [
+        "s10_guarded_exec.py", "--stage", stage,
+        "--plan", str(case.plan_path),
+        "--trusted-plan-sha256", case.plan_sha,
+        "--workspace", str(case.workspace),
+        "--canonical-host", str(case.canonical),
+        "--shadow-host", str(case.shadow),
+        "--overlay", f"mp37={case.workspace / 'overlay-mp37.json'}",
+        "--overlay", f"mp237={case.workspace / 'overlay-mp237.json'}",
+    ]
+
+
+def test_cli_dispatches_configure_pipeline_to_single_pipeline_entrypoint(
+    guarded_case, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
+):
+    case = guarded_case
+    observed: list[dict] = []
+
+    def pipeline(**kwargs):
+        observed.append(kwargs)
+        return {"schema": "synthetic-pipeline-result"}
+
+    monkeypatch.setattr(guarded, "execute_guarded_configuration_pipeline", pipeline)
+    monkeypatch.setattr(guarded.sys, "argv", _cli_argv(case, "configure-pipeline"))
+
+    assert guarded.main() == 0
+    assert observed == [{
+        "plan_path": case.plan_path,
+        "trusted_plan_sha256": case.plan_sha,
+        "workspace": case.workspace.resolve(),
+        "canonical_host": case.canonical,
+        "shadow_host": case.shadow,
+        "overlay_paths": {
+            "mp37": case.workspace / "overlay-mp37.json",
+            "mp237": case.workspace / "overlay-mp237.json",
+        },
+    }]
+    assert json.loads(capsys.readouterr().out) == {"schema": "synthetic-pipeline-result"}
+    assert case.calls == []
+
+
+@pytest.mark.parametrize("stage", ["configure", "apply_kdm6ad_config"])
+def test_cli_rejects_standalone_configure_and_apply_before_subprocess(
+    guarded_case, monkeypatch: pytest.MonkeyPatch, stage: str,
+):
+    case = guarded_case
+    monkeypatch.setattr(guarded.sys, "argv", _cli_argv(case, stage))
+    with pytest.raises(SystemExit) as error:
+        guarded.main()
+    assert error.value.code == 2
+    assert case.calls == []
+
+
+@pytest.mark.parametrize("stage", ["preprocess", "object", "link"])
+def test_cli_keeps_build_commands_blocked_before_subprocess(
+    guarded_case, monkeypatch: pytest.MonkeyPatch, stage: str,
+):
+    case = guarded_case
+    monkeypatch.setattr(guarded.sys, "argv", _cli_argv(case, stage))
+    assert guarded.main() == 2
+    assert case.calls == []

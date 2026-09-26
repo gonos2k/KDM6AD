@@ -22,6 +22,8 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import s10_prelink_guard as guard  # noqa: E402
 
+_CONFIG_PIPELINE_TOKEN = object()
+
 
 def _digest(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
@@ -222,32 +224,71 @@ def _write_ledger(path: Path, ledger: dict[str, Any]) -> str:
     return guard.sha256_file(path)
 
 
-def execute_guarded_stage(*, stage: str, plan_path: Path,
-                          trusted_plan_sha256: str,
-                          workspace: Path, canonical_host: Path,
-                          shadow_host: Path, overlay_paths: dict[str, Path],
-                          build_command_key: str | None = None,
-                          trusted_s15_release_sha256: str | None = None,
-                          trusted_resource_approval_sha256: str | None = None) -> dict[str, Any]:
+def _consume_configure_preflight(plan: dict[str, Any], *, plan_sha256: str,
+                                 workspace: Path, preflight: dict[str, Any],
+                                 preflight_sha256: str,
+                                 ledger: dict[str, Any]) -> dict[str, Any]:
+    relative = plan["prelink_requirements"].get(
+        "configuration_preflight_consumption_marker_relative_path")
+    if not isinstance(relative, str) or not relative:
+        raise guard.PrelinkError("one-shot configure preflight marker path is not plan-pinned")
+    marker_path = _resolve_workspace_path(workspace, relative)
+    capture_root = (workspace / "S10/configuration_capture").resolve()
+    if not marker_path.is_relative_to(capture_root):
+        raise guard.PrelinkError("configure preflight consumption marker escaped its private capture root")
+    if marker_path.exists():
+        raise guard.PrelinkError("configure preflight nonce was already consumed; refusing retry")
+    nonce = secrets.token_hex(32)
+    pipeline_id = secrets.token_hex(32)
+    payload = {
+        "schema": "s10-configure-preflight-consumption-v1",
+        "status": "CONSUMED",
+        "plan_sha256": plan_sha256,
+        "resource_preflight_receipt_sha256": preflight_sha256,
+        "resource_preflight_nonce": preflight.get("nonce"),
+        "configuration_ledger_nonce": ledger["nonce"],
+        "pipeline_id": pipeline_id,
+        "nonce": nonce,
+        "nonce_sha256": _digest(nonce.encode()),
+        "consumed_at_unix_ns": time.time_ns(),
+    }
+    marker_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        fd = os.open(marker_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    except FileExistsError as exc:
+        raise guard.PrelinkError("configure preflight nonce was already consumed") from exc
+    with os.fdopen(fd, "w", encoding="utf-8") as stream:
+        stream.write(json.dumps(payload, indent=2) + "\n")
+        stream.flush()
+        os.fsync(stream.fileno())
+    marker_sha = guard.sha256_file(marker_path)
+    ledger["configuration_preflight_consumption_marker_path"] = str(marker_path)
+    ledger["configuration_preflight_consumption_marker_sha256"] = marker_sha
+    ledger["configuration_preflight_consumption_nonce"] = nonce
+    ledger["configuration_pipeline_id"] = pipeline_id
+    return {
+        "configuration_preflight_consumption_marker_path": str(marker_path),
+        "configuration_preflight_consumption_marker_sha256": marker_sha,
+        "configuration_preflight_consumption_nonce": nonce,
+        "configuration_pipeline_id": pipeline_id,
+    }
+
+
+def _execute_config_command(*, stage: str, plan_path: Path,
+                             trusted_plan_sha256: str,
+                             workspace: Path, canonical_host: Path,
+                             shadow_host: Path, overlay_paths: dict[str, Path],
+                             pipeline_token: object,
+                             expected_ledger_sha256: str | None = None,
+                             consumption_marker: dict[str, Any] | None = None) -> dict[str, Any]:
+    if pipeline_token is not _CONFIG_PIPELINE_TOKEN:
+        raise guard.PrelinkError("configure/apply commands require the in-process pipeline")
     plan = _read_json(plan_path)
     plan_sha256 = guard.sha256_file(plan_path)
     if plan_sha256 != trusted_plan_sha256:
         raise guard.PrelinkError("guarded command plan SHA differs from the coordinator-reviewed pin")
-    if stage not in ("configure", "apply_kdm6ad_config", "preprocess", "object", "link"):
-        raise guard.PrelinkError(f"unsupported S10 guarded stage: {stage}")
-    if stage in ("preprocess", "object", "link"):
-        gate = plan.get("resource_gate", {})
-        if (gate.get("status") == "BLOCKED_PENDING_ESTIMATE_AND_REVIEW"
-                or gate.get("full_matrix_build_or_link_allowed") is not True):
-            raise guard.PrelinkError(
-                "resource gate is blocked; no preprocess/object/link command was launched")
-        templates = plan.get("build_matrix", {}).get("guarded_command_templates")
-        if not isinstance(templates, dict) or not build_command_key \
-                or build_command_key not in templates:
-            raise guard.PrelinkError(
-                "build command templates are unsupported/unpinned; no subprocess was launched")
-        raise guard.PrelinkError(
-            "guarded build execution remains unsupported until an independently reviewed runner is added")
+    if stage not in ("configure", "apply_kdm6ad_config"):
+        raise guard.PrelinkError(f"unsupported configuration pipeline stage: {stage}")
 
     environment = _planned_environment(plan)
     output_root = workspace / plan["clean_shadow"]["fresh_build_output_root"]
@@ -316,7 +357,25 @@ def execute_guarded_stage(*, stage: str, plan_path: Path,
         stage=stage)
     if stage == "configure" and configure_wrf.exists():
         raise guard.PrelinkError("configure.wrf already exists; refusing to overwrite stale configuration")
+    if stage == "configure":
+        if consumption_marker is not None:
+            raise guard.PrelinkError("configure pipeline received a reused preflight marker")
+        consumption_marker = _consume_configure_preflight(
+            plan, plan_sha256=plan_sha256, workspace=workspace,
+            preflight=preflight, preflight_sha256=preflight_sha,
+            ledger=ledger)
     if stage == "apply_kdm6ad_config":
+        if not isinstance(consumption_marker, dict):
+            raise guard.PrelinkError("apply requires the one-shot marker from this pipeline invocation")
+        if (not isinstance(expected_ledger_sha256, str)
+                or guard.sha256_file(ledger_path) != expected_ledger_sha256):
+            raise guard.PrelinkError("apply lacks the configure ledger produced in this pipeline")
+        marker_path = Path(consumption_marker["configuration_preflight_consumption_marker_path"])
+        if (guard.sha256_file(marker_path)
+                != consumption_marker["configuration_preflight_consumption_marker_sha256"]
+                or ledger.get("configuration_preflight_consumption_marker_sha256")
+                != consumption_marker["configuration_preflight_consumption_marker_sha256"]):
+            raise guard.PrelinkError("apply marker differs from the in-process configure invocation")
         prior_sha = ledger["commands"][0].get("configure_wrf_sha256_after")
         if (not isinstance(prior_sha, str) or guard.sha256_file(configure_wrf) != prior_sha):
             raise guard.PrelinkError("configure.wrf changed since guarded ./configure")
@@ -342,6 +401,11 @@ def execute_guarded_stage(*, stage: str, plan_path: Path,
         "configure_wrf_sha256_after": configure_wrf_sha,
         "output_root_absent_before": True,
         "output_root_absent_after": not output_root.exists(),
+        "configuration_preflight_consumption_marker_sha256": ledger.get(
+            "configuration_preflight_consumption_marker_sha256"),
+        "configuration_preflight_consumption_nonce": ledger.get(
+            "configuration_preflight_consumption_nonce"),
+        "configuration_pipeline_id": ledger.get("configuration_pipeline_id"),
     }
     ledger["commands"].append(row)
     ledger["last_command_returncode"] = result.returncode
@@ -384,8 +448,94 @@ def execute_guarded_stage(*, stage: str, plan_path: Path,
         "configuration_command_ledger_path": str(ledger_path),
         "configuration_command_ledger_sha256": ledger_sha,
         "configuration_resource_preflight_receipt_sha256": preflight_sha,
+        "configuration_preflight_consumption_marker_path": ledger.get(
+            "configuration_preflight_consumption_marker_path"),
+        "configuration_preflight_consumption_marker_sha256": ledger.get(
+            "configuration_preflight_consumption_marker_sha256"),
+        "configuration_preflight_consumption_nonce": ledger.get(
+            "configuration_preflight_consumption_nonce"),
+        "configuration_pipeline_id": ledger.get("configuration_pipeline_id"),
         "plan_sha256": plan_sha256,
     }
+
+
+def execute_guarded_configuration_pipeline(*, plan_path: Path,
+                                            trusted_plan_sha256: str,
+                                            workspace: Path,
+                                            canonical_host: Path,
+                                            shadow_host: Path,
+                                            overlay_paths: dict[str, Path]) -> dict[str, Any]:
+    """Run configure and apply consecutively in one in-process invocation."""
+    first = _execute_config_command(
+        stage="configure", plan_path=plan_path,
+        trusted_plan_sha256=trusted_plan_sha256, workspace=workspace,
+        canonical_host=canonical_host, shadow_host=shadow_host,
+        overlay_paths=overlay_paths, pipeline_token=_CONFIG_PIPELINE_TOKEN)
+    second = _execute_config_command(
+        stage="apply_kdm6ad_config", plan_path=plan_path,
+        trusted_plan_sha256=trusted_plan_sha256, workspace=workspace,
+        canonical_host=canonical_host, shadow_host=shadow_host,
+        overlay_paths=overlay_paths, pipeline_token=_CONFIG_PIPELINE_TOKEN,
+        expected_ledger_sha256=first["configuration_command_ledger_sha256"],
+        consumption_marker={
+            key: first[key] for key in (
+                "configuration_preflight_consumption_marker_path",
+                "configuration_preflight_consumption_marker_sha256",
+                "configuration_preflight_consumption_nonce",
+                "configuration_pipeline_id",
+            )
+        })
+    plan = _read_json(plan_path)
+    return {
+        "schema": "s10-guarded-configuration-execution-v1",
+        "plan_sha256": trusted_plan_sha256,
+        "configuration_commands": [first, second],
+        "configuration_command_ledger_path": second["configuration_command_ledger_path"],
+        "configuration_command_ledger_sha256": second["configuration_command_ledger_sha256"],
+        "configuration_resource_preflight_receipt_sha256": (
+            second["configuration_resource_preflight_receipt_sha256"]),
+        "configuration_preflight_consumption_marker_path": (
+            second["configuration_preflight_consumption_marker_path"]),
+        "configuration_preflight_consumption_marker_sha256": (
+            second["configuration_preflight_consumption_marker_sha256"]),
+        "configuration_preflight_consumption_nonce": (
+            second["configuration_preflight_consumption_nonce"]),
+        "configuration_pipeline_id": second["configuration_pipeline_id"],
+        "configure_wrf_sha256": second["configure_wrf_sha256_after"],
+        "toolchain_sha256": plan["toolchain"]["toolchain_sha256"],
+        "tool_environment": guard.tool_environment_snapshot(
+            _planned_environment(plan)),
+    }
+
+
+def execute_guarded_stage(*, stage: str, plan_path: Path,
+                          trusted_plan_sha256: str,
+                          workspace: Path, canonical_host: Path,
+                          shadow_host: Path, overlay_paths: dict[str, Path],
+                          build_command_key: str | None = None,
+                          trusted_s15_release_sha256: str | None = None,
+                          trusted_resource_approval_sha256: str | None = None) -> dict[str, Any]:
+    if stage in ("configure", "apply_kdm6ad_config"):
+        raise guard.PrelinkError(
+            "configure/apply are only available through execute_guarded_configuration_pipeline")
+    plan = _read_json(plan_path)
+    plan_sha256 = guard.sha256_file(plan_path)
+    if plan_sha256 != trusted_plan_sha256:
+        raise guard.PrelinkError("guarded command plan SHA differs from the coordinator-reviewed pin")
+    if stage not in ("preprocess", "object", "link"):
+        raise guard.PrelinkError(f"unsupported S10 guarded stage: {stage}")
+    gate = plan.get("resource_gate", {})
+    if (gate.get("status") == "BLOCKED_PENDING_ESTIMATE_AND_REVIEW"
+            or gate.get("full_matrix_build_or_link_allowed") is not True):
+        raise guard.PrelinkError(
+            f"resource gate is blocked; no {stage} command was launched")
+    templates = plan.get("build_matrix", {}).get("guarded_command_templates")
+    if not isinstance(templates, dict) or not build_command_key \
+            or build_command_key not in templates:
+        raise guard.PrelinkError(
+            "build command templates are unsupported/unpinned; no subprocess was launched")
+    raise guard.PrelinkError(
+        "guarded build execution remains unsupported until an independently reviewed runner is added")
 
 
 def _build_stage_cli_block(plan: dict[str, Any], stage: str,
@@ -404,8 +554,8 @@ def _build_stage_cli_block(plan: dict[str, Any], stage: str,
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--stage", choices=("configure", "apply_kdm6ad_config",
-                                              "preprocess", "object", "link"), required=True)
+    parser.add_argument("--stage", choices=("configure-pipeline", "preprocess",
+                                              "object", "link"), required=True)
     parser.add_argument("--plan", type=Path, required=True)
     parser.add_argument("--trusted-plan-sha256", required=True,
                         help="plan digest delivered by the reviewing coordinator")
@@ -421,15 +571,22 @@ def main() -> int:
         plan = _read_json(args.plan)
         if args.stage in ("preprocess", "object", "link"):
             _build_stage_cli_block(plan, args.stage, args.build_command_key)
-        result = execute_guarded_stage(
-            stage=args.stage, plan_path=args.plan,
-            trusted_plan_sha256=args.trusted_plan_sha256,
-            workspace=args.workspace.resolve(), canonical_host=args.canonical_host,
-            shadow_host=args.shadow_host,
-            overlay_paths=guard._overlay_args(args.overlay),
-            build_command_key=args.build_command_key,
-            trusted_s15_release_sha256=args.trusted_s15_release_sha256,
-            trusted_resource_approval_sha256=args.trusted_resource_approval_sha256)
+        command_args = {
+            "plan_path": args.plan,
+            "trusted_plan_sha256": args.trusted_plan_sha256,
+            "workspace": args.workspace.resolve(),
+            "canonical_host": args.canonical_host,
+            "shadow_host": args.shadow_host,
+            "overlay_paths": guard._overlay_args(args.overlay),
+        }
+        if args.stage == "configure-pipeline":
+            result = execute_guarded_configuration_pipeline(**command_args)
+        else:
+            result = execute_guarded_stage(
+                stage=args.stage, **command_args,
+                build_command_key=args.build_command_key,
+                trusted_s15_release_sha256=args.trusted_s15_release_sha256,
+                trusted_resource_approval_sha256=args.trusted_resource_approval_sha256)
     except (guard.PrelinkError, KeyError, TypeError, ValueError, OSError) as exc:
         print(f"GUARDED S10 COMMAND BLOCKED: {exc}", file=sys.stderr)
         return 2
