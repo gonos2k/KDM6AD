@@ -18,3 +18,4 @@ Paper-level pages live in [[papers/_index]]. The source pages below are collecti
 - [[kdm6ad-deep-review-2026-07-15]] — 외부 심층 검토(math/기상/공학) @ e1c701e; 핵심 주장 코드 대조 검증, prescribed-forcing microphysics-window 재프레이밍, P0/P1/P2 우선순위.
 - [[kdm6ad-s16-freeze-heat-replay-2026-09-25]] — S16 D2–D4 freeze-heat seed replay; retained operands explain the one-ULP stored-temperature difference, while current bundle attestation keeps the gate open.
 - [[kdm6ad-s3-first-negative-face-plan-2026-09-26]] — G2's earliest sampled QN transition is an RK1 internal state; source-order raw face/RK replay and accepted-state separation remain required for open S3.
+- [[kdm6ad-s15-upstream-attribution-plan-2026-09-27]] — Bounded next-step contract for six owner-5 QIB witnesses; synthetic identity and tendency-sum checks do not close face-divergence or RK numerical replay.
