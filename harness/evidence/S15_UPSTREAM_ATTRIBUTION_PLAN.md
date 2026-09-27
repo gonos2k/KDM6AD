@@ -112,9 +112,12 @@ omit a face operand.
   the `advect_tend * msfty + sc_tend` operation against captured operands, or
   the RK-store equation.
 
-Full face-divergence and RK source-order numerical replay remains OPEN and is a
-required acceptance gate before treating a native capture as upstream
-attribution. Structural contract success alone is not attribution evidence.
+The source-order replay has now been checked against one logging-on native
+discovery stream. It preserves the configured binary32 contraction at the
+directional prefix and RK denominator, validates the exact six joins, and
+replays the captured face, limiter, and store operands. This is provisional
+selected-cell arithmetic evidence; it does not establish instrumentation
+noninterference or global physical cause.
 
 ## Disposable overlay check status
 
@@ -137,15 +140,12 @@ it. Macro-off `.f90` files are byte-identical for all three pinned modules.
 Focused GNU Fortran 15.2 syntax-only checks pass for the macro-on files with no
 object or executable output. Details and hashes are in the
 [preprocess/syntax report](REPORT_S15_face_fortran_compile_only_2026-09-27.md).
-These checks do not verify runtime capture behavior. `sc_tend` remains a
-separate captured consumer operand and has not been numerically attributed
-against the producer.
+The compile-only checks above do not verify runtime capture behavior. A single
+post-link discovery and its limits are recorded in the
+[provisional discovery replay report](REPORT_S15_face_discovery_replay_2026-09-27.md).
+`sc_tend` remains a separate consumer operand; it was zero at the six selected
+cells in that run.
 
-Only after the contract is reviewed should a separate native plan pin fresh
-source/preprocess/object/link/executable identities, exact step-2 inputs and
-run settings, the six discovery-coordinate targets, and a same-executable
-logging-off control plus capture. Compare populated outputs bit-for-bit and
-require byte-identical confirmation records. A passing capture can attribute
-the observed store transition to recorded upstream terms; it does not by
-itself establish mass conservation, thermal closure, a physical cause, or a
-graupel policy.
+The provisional run has no same-executable logging-off control or confirmation.
+Capture noninterference is unmeasured, so the six arithmetic joins do not close
+S15 or support a global physical-cause or graupel-policy claim.

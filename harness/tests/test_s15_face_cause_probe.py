@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import json
 import hashlib
 import sys
@@ -180,9 +181,86 @@ def test_exact_six_face_and_rk_rows_replay_from_raw_f32_words() -> None:
     for axis in probe.AXES:
         active["axes"][axis]["face_fluxes"] = dict(final[axis])
     probe._validate_pd(active)
+
+    # An incoming shared face may be limited later by its neighboring cell;
+    # the selected cell's local post tap need not equal the final divergence tap.
+    neighbor_limited = copy.deepcopy(active)
+    neighbor_limited["pd_unlimited_high_order_fluxes"]["y"]["plus"] = "BF800000"
+    neighbor_limited["pd_high_order_fluxes"]["y"]["plus"] = "BF800000"
+    neighbor_limited["axes"]["y"]["face_fluxes"]["plus"] = "BF400000"
+    probe._validate_pd(neighbor_limited)
+
+    inactive_selected = _synthetic()[0][4]
+    inactive_selected["pd_unlimited_high_order_fluxes"]["x"]["minus"] = "BF800000"
+    inactive_selected["pd_high_order_fluxes"]["x"]["minus"] = "BF800000"
+    inactive_selected["axes"]["x"]["face_fluxes"]["minus"] = "BF400000"
+    with pytest.raises(probe.ProbeError, match="target outflow"):
+        probe._validate_pd(inactive_selected)
+
+    selected_face_changed = copy.deepcopy(active)
+    selected_face_changed["axes"]["y"]["face_fluxes"]["minus"] = "00000000"
+    with pytest.raises(probe.ProbeError, match="target outflow"):
+        probe._validate_pd(selected_face_changed)
+
     active["pd_scale"] = "00000000"
     with pytest.raises(probe.ProbeError, match="scale"):
         probe._validate_pd(active)
+
+
+def test_contracted_prefix_replays_a_synthetic_one_ulp_counterexample() -> None:
+    producers, _ = _synthetic()
+    row = producers[0]
+    before = "C0935D4A"
+    flux_difference = "C0A3D948"
+    coefficient = "409D9C21"
+    fused_prefix = probe._fma32("C09D9C21", flux_difference, before)
+    separate_delta = probe._mul(coefficient, flux_difference)
+    separate_prefix = probe._add(before, probe._sub("00000000", separate_delta))
+    assert separate_prefix == "41A4E90A"
+    assert fused_prefix == "41A4E90B"
+
+    row["initial_tendency"] = before
+    for axis in probe.AXES:
+        is_y = axis == "y"
+        row["axes"][axis].update(
+            face_fluxes={
+                "minus": "00000000",
+                "plus": flux_difference if is_y else "00000000",
+            },
+            metric_factor=coefficient if is_y else "3F800000",
+            inverse_spacing="3F800000",
+            flux_difference=flux_difference if is_y else "00000000",
+            directional_contribution=(
+                probe._sub("00000000", separate_delta) if is_y else "00000000"
+            ),
+            tendency_prefix=fused_prefix,
+        )
+    row["prefixes"] = [fused_prefix] * 3
+    row["advect_tend"] = fused_prefix
+    assert probe.replay_producer(row, CONFIG)["advect_tend"] == fused_prefix
+
+
+def test_rk_store_replays_with_contracted_new_mass_denominator() -> None:
+    _, consumers = _synthetic()
+    row = consumers[0]
+    row.update(
+        advect_tend="00000000",
+        msfty="3F800000",
+        sc_tend="3F800000",
+        tendency="3F800000",
+        before="00000000",
+        dt="3F800000",
+        c1="3FEDF1A9",
+        c2="400901EC",
+        muold="3F800000",
+        munew="4008875D",
+    )
+    separate_mass = probe._add(probe._mul(row["c1"], row["munew"]), row["c2"])
+    fused_mass = probe._fma32(row["c1"], row["munew"], row["c2"])
+    assert probe._div("3F800000", separate_mass) == "3E27B1CB"
+    row["after"] = probe._div("3F800000", fused_mass)
+    assert row["after"] == "3E27B1CA"
+    assert probe.replay_consumer(row)["after"] == row["after"]
 
 
 @pytest.mark.parametrize(
