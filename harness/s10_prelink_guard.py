@@ -262,14 +262,32 @@ def sha256_file(path: Path) -> str:
         raise PrelinkError(f"required file unavailable: {path}: {exc}") from exc
 
 
+def parse_json_bytes(payload: bytes, source: Path | str) -> dict[str, Any]:
+    """Parse one immutable byte buffer; callers may hash the same bytes."""
+    try:
+        value = json.loads(payload.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise PrelinkError(f"cannot read JSON receipt {source}: {exc}") from exc
+    if not isinstance(value, dict):
+        raise PrelinkError(f"JSON receipt must be an object: {source}")
+    return value
+
+
+def read_hashed_json(path: Path) -> tuple[dict[str, Any], str]:
+    """Read a JSON file once and return its parsed value and matching digest."""
+    try:
+        payload = path.read_bytes()
+    except OSError as exc:
+        raise PrelinkError(f"cannot read JSON receipt {path}: {exc}") from exc
+    return parse_json_bytes(payload, path), sha256_bytes(payload)
+
+
 def load_json(path: Path) -> dict[str, Any]:
     try:
-        value = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
+        payload = path.read_bytes()
+    except OSError as exc:
         raise PrelinkError(f"cannot read JSON receipt {path}: {exc}") from exc
-    if not isinstance(value, dict):
-        raise PrelinkError(f"JSON receipt must be an object: {path}")
-    return value
+    return parse_json_bytes(payload, path)
 
 
 def require_s15_release(plan: dict[str, Any], release: dict[str, Any],
@@ -351,9 +369,9 @@ def validate_prebuild_snapshot(snapshot_path: Path, expected_sha256: str,
         pass
     else:
         raise PrelinkError("empty-root snapshot cannot be stored inside the output root")
-    if sha256_file(snapshot_path) != expected_sha256:
+    snapshot, snapshot_sha256 = read_hashed_json(snapshot_path)
+    if snapshot_sha256 != expected_sha256:
         raise PrelinkError("empty-output-root snapshot SHA is not coordinator-pinned")
-    snapshot = load_json(snapshot_path)
     nonce = snapshot.get("nonce")
     if (snapshot.get("schema") != "s10-empty-output-root-snapshot-v1"
             or snapshot.get("root_path") != str(output_root.resolve())
@@ -753,13 +771,12 @@ def validate_guarded_configuration_run(plan: dict[str, Any], *,
     validate_configure_failure_markers(plan)
     requirements = plan["prelink_requirements"]
     ledger_path = workspace / requirements["configuration_execution_ledger_relative_path"]
-    ledger_sha = sha256_file(ledger_path)
+    ledger, ledger_sha = read_hashed_json(ledger_path)
     expected_ledger_sha = requirements.get("configuration_execution_ledger_sha256")
     if (not isinstance(expected_ledger_sha, str)
             or not re.fullmatch(r"[0-9a-f]{64}", expected_ledger_sha)
             or ledger_sha != expected_ledger_sha):
         raise PrelinkError("configure execution ledger differs from its final plan pin")
-    ledger = load_json(ledger_path)
     parent_plan_sha = requirements.get("configuration_ledger_plan_sha256")
     expected_config_sha = requirements.get("generated_configure_wrf_sha256")
     if (not isinstance(parent_plan_sha, str) or not re.fullmatch(r"[0-9a-f]{64}", parent_plan_sha)
@@ -859,9 +876,11 @@ def validate_guarded_configuration_run(plan: dict[str, Any], *,
     preflight_sha = ledger.get("configure_resource_preflight_receipt_sha256")
     preflight_path = workspace / plan["resource_gate"]["configure_only"][
         "preflight_receipt_relative_path"]
-    if not isinstance(preflight_sha, str) or sha256_file(preflight_path) != preflight_sha:
+    if not isinstance(preflight_sha, str):
         raise PrelinkError("guarded configuration receipt preflight SHA mismatch")
-    preflight = load_json(preflight_path)
+    preflight, actual_preflight_sha = read_hashed_json(preflight_path)
+    if actual_preflight_sha != preflight_sha:
+        raise PrelinkError("guarded configuration receipt preflight SHA mismatch")
     if (preflight.get("schema") != "s10-resource-preflight-receipt-v1"
             or preflight.get("phase") != "configure"
             or preflight.get("status") != "ALLOW_CONFIGURE_ONLY"
@@ -871,10 +890,11 @@ def validate_guarded_configuration_run(plan: dict[str, Any], *,
     marker_rel = requirements.get("configuration_preflight_consumption_marker_relative_path")
     marker_path = workspace / marker_rel if isinstance(marker_rel, str) else None
     marker_sha = ledger.get("configuration_preflight_consumption_marker_sha256")
-    if (marker_path is None or not isinstance(marker_sha, str)
-            or sha256_file(marker_path) != marker_sha):
+    if marker_path is None or not isinstance(marker_sha, str):
         raise PrelinkError("guarded configure one-shot marker is missing or changed")
-    marker = load_json(marker_path)
+    marker, actual_marker_sha = read_hashed_json(marker_path)
+    if actual_marker_sha != marker_sha:
+        raise PrelinkError("guarded configure one-shot marker is missing or changed")
     marker_nonce = marker.get("nonce")
     if (marker.get("schema") != "s10-configure-preflight-consumption-v1"
             or marker.get("status") != "CONSUMED"
@@ -1093,10 +1113,9 @@ def create_resource_preflight_receipt(
             workspace, estimate_path, prep_gate.get("estimate_relative_path", ""),
             "build-preparation estimate")
         _require_regular_file(estimate_path, "build-preparation estimate")
-        estimate_sha = sha256_file(estimate_path)
+        estimate, estimate_sha = read_hashed_json(estimate_path)
         if estimate_sha != prep_gate.get("estimate_sha256"):
             raise PrelinkError("build-preparation estimate SHA differs from the plan pin")
-        estimate = load_json(estimate_path)
         estimated_bytes, _arm_totals = validate_build_preparation_estimate(estimate)
         if estimated_bytes != estimate.get("total_estimated_bytes"):
             raise PrelinkError("build-preparation estimate total is inconsistent")
@@ -1128,10 +1147,9 @@ def create_resource_preflight_receipt(
             "output_size_estimate_relative_path", "")
         if estimate_path.resolve() != expected_estimate_path.resolve():
             raise PrelinkError("output-size estimate path differs from the plan")
-        estimate_sha = sha256_file(estimate_path)
+        estimate, estimate_sha = read_hashed_json(estimate_path)
         if estimate_sha != build_gate.get("output_size_estimate_sha256"):
             raise PrelinkError("output-size estimate SHA differs from the reviewed plan")
-        estimate = load_json(estimate_path)
         if estimate.get("schema") != "s10-build-output-estimate-v1":
             raise PrelinkError("output-size estimate schema mismatch")
         estimated_bytes, _arm_totals = validate_build_output_estimate(estimate)
@@ -1169,8 +1187,7 @@ def create_resource_preflight_receipt(
                 plan, workspace=workspace, shadow_host=shadow_host)
             measurement_path = workspace / build_gate.get(
                 "measurement_receipt_relative_path", "")
-            measurement_sha = sha256_file(measurement_path)
-            measurement = load_json(measurement_path)
+            measurement, measurement_sha = read_hashed_json(measurement_path)
             if (measurement.get("schema") != "s10-resource-preflight-receipt-v1"
                     or measurement.get("phase") != "measure"
                     or measurement.get("status") != "MEASURED_BUILD_CAPACITY"
@@ -2245,12 +2262,12 @@ def _validate_configuration_ledger(execution: dict[str, Any], plan: dict[str, An
     recorded_sha = execution.get("configuration_command_ledger_sha256")
     expected_ledger_sha = plan["prelink_requirements"].get(
         "configuration_execution_ledger_sha256")
+    ledger, ledger_sha = read_hashed_json(ledger_path)
     if (not isinstance(expected_ledger_sha, str)
             or not re.fullmatch(r"[0-9a-f]{64}", expected_ledger_sha)
             or recorded_sha != expected_ledger_sha
-            or sha256_file(ledger_path) != recorded_sha):
+            or ledger_sha != recorded_sha):
         raise PrelinkError("configuration execution ledger is missing or differs from its final plan pin")
-    ledger = load_json(ledger_path)
     ledger_nonce = ledger.get("nonce")
     if (ledger.get("schema") != "s10-guarded-configuration-ledger-v1"
             or ledger.get("plan_sha256") != plan_sha256
@@ -2290,9 +2307,11 @@ def _validate_configuration_ledger(execution: dict[str, Any], plan: dict[str, An
         raise PrelinkError("configuration ledger is not bound to its configure-only preflight receipt")
     preflight_path = workspace / plan["resource_gate"]["configure_only"][
         "preflight_receipt_relative_path"]
-    if not isinstance(expected_preflight_sha, str) or sha256_file(preflight_path) != expected_preflight_sha:
+    if not isinstance(expected_preflight_sha, str):
         raise PrelinkError("configure-only resource preflight receipt digest is missing or changed")
-    preflight = load_json(preflight_path)
+    preflight, actual_preflight_sha = read_hashed_json(preflight_path)
+    if actual_preflight_sha != expected_preflight_sha:
+        raise PrelinkError("configure-only resource preflight receipt digest is missing or changed")
     if (preflight.get("schema") != "s10-resource-preflight-receipt-v1"
             or preflight.get("phase") != "configure"
             or preflight.get("status") != "ALLOW_CONFIGURE_ONLY"
@@ -2769,11 +2788,9 @@ def make_prelink_receipt(plan_path: Path, release_path: Path, execution_path: Pa
                          trusted_release_sha256: str,
                          trusted_resource_approval_sha256: str,
                          receipt_path: Path) -> dict[str, Any]:
-    plan = load_json(plan_path)
-    release = load_json(release_path)
-    execution = load_json(execution_path)
-    plan_sha = sha256_file(plan_path)
-    release_sha = sha256_file(release_path)
+    plan, plan_sha = read_hashed_json(plan_path)
+    release, release_sha = read_hashed_json(release_path)
+    execution, execution_sha = read_hashed_json(execution_path)
     require_s15_release(plan, release, plan_sha, release_sha, trusted_release_sha256)
     expected_snapshot_sha = plan["trusted_s15_release"]["empty_output_root_snapshot_sha256"]
     expected_snapshot_path = workspace / plan["clean_shadow"]["empty_root_snapshot_relative_path"]
@@ -2783,22 +2800,20 @@ def make_prelink_receipt(plan_path: Path, release_path: Path, execution_path: Pa
         expected_snapshot_path)
     resource_rel = plan["resource_gate"]["build"]["prebuild_gate_receipt_relative_path"]
     resource_path = workspace / resource_rel
-    resource_sha = sha256_file(resource_path)
+    resource_receipt, resource_sha = read_hashed_json(resource_path)
     if execution.get("resource_preflight_receipt_sha256") != resource_sha:
         raise PrelinkError("execution receipt resource-gate digest does not match the prebuild receipt")
-    resource_receipt = load_json(resource_path)
     build_gate = plan["resource_gate"]["build"]
     configuration_run = validate_guarded_configuration_run(
         plan, workspace=workspace, shadow_host=shadow_host)
     measurement_path = workspace / build_gate["measurement_receipt_relative_path"]
-    measurement_sha = sha256_file(measurement_path)
-    measurement = load_json(measurement_path)
+    measurement, measurement_sha = read_hashed_json(measurement_path)
     approval_path = workspace / build_gate["coordinator_approval_relative_path"]
-    approval_sha = sha256_file(approval_path)
+    approval, approval_sha = read_hashed_json(approval_path)
     if approval_sha != trusted_resource_approval_sha256:
         raise PrelinkError("coordinator resource-approval receipt SHA mismatch")
     require_resource_gate_approval(
-        plan, load_json(approval_path), plan_sha256=plan_sha,
+        plan, approval, plan_sha256=plan_sha,
         estimate_sha256=build_gate["output_size_estimate_sha256"],
         snapshot_sha256=expected_snapshot_sha,
         measurement_receipt_sha256=measurement_sha,
@@ -2846,13 +2861,13 @@ def make_prelink_receipt(plan_path: Path, release_path: Path, execution_path: Pa
         "schema": "s10-czeroqg-prelink-receipt-v1",
         "status": "READY_TO_LINK",
         "plan_sha256": plan_sha,
-        "release_receipt_sha256": sha256_file(release_path),
+        "release_receipt_sha256": release_sha,
         "coordinator_trusted_release_sha256": trusted_release_sha256,
         "resource_preflight_receipt_sha256": resource_sha,
         "coordinator_trusted_resource_approval_sha256": trusted_resource_approval_sha256,
         "empty_output_root_snapshot_sha256": expected_snapshot_sha,
         "empty_output_root_snapshot_nonce_sha256": snapshot["nonce_sha256"],
-        "execution_receipt_sha256": sha256_file(execution_path),
+        "execution_receipt_sha256": execution_sha,
         "static_pins": pins,
         "validated_variants": checked,
         "build_outputs": execution["build_outputs"],
@@ -2898,10 +2913,14 @@ def resource_preflight_main(argv: list[str]) -> int:
     parser.add_argument("--trusted-s15-release-sha256")
     args = parser.parse_args(argv)
     try:
-        plan_sha = sha256_file(args.plan)
+        try:
+            plan_bytes = args.plan.read_bytes()
+        except OSError as exc:
+            raise PrelinkError(f"cannot read plan bytes: {exc}") from exc
+        plan_sha = sha256_bytes(plan_bytes)
         if plan_sha != args.trusted_plan_sha256:
             raise PrelinkError("resource preflight plan SHA differs from coordinator-trusted pin")
-        plan = load_json(args.plan)
+        plan = parse_json_bytes(plan_bytes, args.plan)
         workspace = args.workspace.resolve()
         output_root = workspace / plan["clean_shadow"]["fresh_build_output_root"]
         snapshot_path = workspace / plan["clean_shadow"]["empty_root_snapshot_relative_path"]
@@ -2927,10 +2946,14 @@ def resource_preflight_main(argv: list[str]) -> int:
                 args.resource_approval is not None or args.trusted_resource_approval_sha256 is not None
                 or args.s15_release is not None or args.trusted_s15_release_sha256 is not None):
             raise PrelinkError("measurement-only phase does not accept coordinator approval or release inputs")
-        approval = load_json(args.resource_approval) if args.resource_approval else None
-        approval_sha = sha256_file(args.resource_approval) if args.resource_approval else None
-        s15_release = load_json(args.s15_release) if args.s15_release else None
-        s15_release_sha = sha256_file(args.s15_release) if args.s15_release else None
+        if args.resource_approval:
+            approval, approval_sha = read_hashed_json(args.resource_approval)
+        else:
+            approval, approval_sha = None, None
+        if args.s15_release:
+            s15_release, s15_release_sha = read_hashed_json(args.s15_release)
+        else:
+            s15_release, s15_release_sha = None, None
         result = create_resource_preflight_receipt(
             plan, plan_sha256=plan_sha, workspace=workspace,
             canonical_host=args.canonical_host, shadow_host=args.shadow_host,

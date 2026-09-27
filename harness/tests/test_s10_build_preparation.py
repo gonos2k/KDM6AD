@@ -451,6 +451,136 @@ def test_prep_measurement_requires_snapshot_to_observe_absent_root(
     assert not receipt_path.exists()
 
 
+def test_snapshot_hash_and_fields_are_parsed_from_the_same_read(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    plan, workspace, output_root, snapshot_path, _receipt_path = _measurement_fixture(tmp_path)
+    original_bytes = snapshot_path.read_bytes()
+    original_sha = guard.sha256_bytes(original_bytes)
+    tampered = json.loads(original_bytes)
+    tampered["observed_absent"] = False
+    tampered["nonce"] = "0" * 64
+    tampered["nonce_sha256"] = guard.sha256_bytes(tampered["nonce"].encode())
+    tampered_bytes = (json.dumps(tampered, indent=2) + "\n").encode()
+    original_read_bytes = Path.read_bytes
+    swapped = False
+
+    def swap_after_read(path: Path) -> bytes:
+        nonlocal swapped
+        payload = original_read_bytes(path)
+        if path == snapshot_path and not swapped:
+            path.write_bytes(tampered_bytes)
+            swapped = True
+        return payload
+
+    monkeypatch.setattr(Path, "read_bytes", swap_after_read)
+    parsed = guard.validate_prebuild_snapshot(
+        snapshot_path, original_sha, output_root,
+        workspace / plan["clean_shadow"]["empty_root_snapshot_relative_path"])
+    assert swapped
+    assert parsed["observed_absent"] is True
+    assert parsed["nonce"] != "0" * 64
+    assert guard.sha256_file(snapshot_path) != original_sha
+
+
+def test_prep_estimate_hash_and_fields_are_parsed_from_the_same_read(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    plan, workspace, output_root, snapshot_path, receipt_path = _measurement_fixture(tmp_path)
+    estimate_path = workspace / plan["resource_gate"]["build_preparation"][
+        "estimate_relative_path"]
+    original_bytes = estimate_path.read_bytes()
+    original_estimate = json.loads(original_bytes)
+    original_sha = guard.sha256_bytes(original_bytes)
+    tampered = json.loads(original_bytes)
+    row = tampered["variants"]["mp37_B"]
+    row["components"]["object_module_bytes"] += 1_000_000
+    row["estimated_bytes"] = sum(row["components"].values())
+    total = sum(arm["estimated_bytes"] for arm in tampered["variants"].values())
+    total += tampered["shared_build_staging_bytes"]
+    tampered["total_estimated_bytes"] = total
+    tampered["peak_concurrent_bytes"] = total
+    tampered["required_free_bytes"] = max(
+        tampered["minimum_free_bytes"],
+        total * tampered["safety_factor"] + tampered["reserve_free_bytes"])
+    tampered_bytes = (json.dumps(tampered, indent=2) + "\n").encode()
+    original_read_bytes = Path.read_bytes
+    swapped = False
+
+    def swap_after_read(path: Path) -> bytes:
+        nonlocal swapped
+        payload = original_read_bytes(path)
+        if path == estimate_path and not swapped:
+            path.write_bytes(tampered_bytes)
+            swapped = True
+        return payload
+
+    monkeypatch.setattr(Path, "read_bytes", swap_after_read)
+    monkeypatch.setattr(guard.shutil, "disk_usage", lambda _path: SimpleNamespace(
+        total=100 * 1024**3, used=40 * 1024**3, free=60 * 1024**3))
+    receipt = guard.create_resource_preflight_receipt(
+        plan, plan_sha256="4" * 64, workspace=workspace,
+        canonical_host=workspace / "canonical", shadow_host=workspace / "shadow",
+        overlay_paths={"mp37": workspace / "mp37", "mp237": workspace / "mp237"},
+        output_root=output_root, snapshot_path=snapshot_path,
+        phase="build-preparation-measure", receipt_path=receipt_path,
+        estimate_path=estimate_path)
+    assert swapped
+    assert receipt["output_size_estimate_sha256"] == original_sha
+    assert receipt["estimated_total_bytes"] == original_estimate["total_estimated_bytes"]
+    assert guard.sha256_file(estimate_path) != original_sha
+
+
+def test_resource_preflight_hashes_and_parses_trusted_plan_bytes_once(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]):
+    plan, workspace, output_root, _snapshot_path, receipt_path = _measurement_fixture(tmp_path)
+    plan_path = workspace / "plan.json"
+    original_bytes = json.dumps(plan, sort_keys=True).encode()
+    plan_path.write_bytes(original_bytes)
+    original_sha = guard.sha256_bytes(original_bytes)
+    tampered = json.loads(original_bytes)
+    tampered["resource_gate"]["build_preparation"]["safety_factor"] = 99
+    tampered_bytes = json.dumps(tampered, sort_keys=True).encode()
+    original_read_bytes = Path.read_bytes
+    swapped = False
+
+    def swap_after_read(path: Path) -> bytes:
+        nonlocal swapped
+        payload = original_read_bytes(path)
+        if path == plan_path and not swapped:
+            path.write_bytes(tampered_bytes)
+            swapped = True
+        return payload
+
+    monkeypatch.setattr(Path, "read_bytes", swap_after_read)
+    monkeypatch.setattr(guard, "planned_tool_environment",
+                        lambda _plan: pytest.fail("measurement must not inspect tool environment"))
+    monkeypatch.setattr(guard, "validate_static_pins",
+                        lambda *args, **kwargs: pytest.fail("measurement must not run static probes"))
+    monkeypatch.setattr(guard.shutil, "disk_usage", lambda _path: SimpleNamespace(
+        total=100 * 1024**3, used=40 * 1024**3, free=60 * 1024**3))
+    estimate_path = workspace / plan["resource_gate"]["build_preparation"][
+        "estimate_relative_path"]
+    result = guard.resource_preflight_main([
+        "--phase", "build-preparation-measure", "--plan", str(plan_path),
+        "--trusted-plan-sha256", original_sha, "--workspace", str(workspace),
+        "--canonical-host", str(workspace / "canonical"),
+        "--shadow-host", str(workspace / "shadow"),
+        "--overlay", f"mp37={workspace / 'mp37-overlay'}",
+        "--overlay", f"mp237={workspace / 'mp237-overlay'}",
+        "--estimate", str(estimate_path),
+    ])
+    receipt = json.loads(capsys.readouterr().out)
+    assert result == 0
+    assert swapped
+    assert receipt["plan_sha256"] == original_sha
+    assert receipt["required_free_bytes"] == max(
+        plan["resource_gate"]["build_preparation"]["minimum_free_bytes"],
+        receipt["estimated_total_bytes"]
+        * plan["resource_gate"]["build_preparation"]["safety_factor"]
+        + plan["resource_gate"]["build_preparation"]["reserve_free_bytes"])
+    assert receipt_path.is_file()
+    assert not output_root.exists()
+
+
 def test_build_gate_rejects_even_forged_ready_prep_measurement_receipt(tmp_path: Path):
     plan, workspace, _output_root, snapshot_path, _receipt_path = _measurement_fixture(tmp_path)
     plan["resource_gate"]["status"] = "READY_PENDING_COORDINATOR_RELEASE"
