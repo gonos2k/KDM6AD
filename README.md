@@ -58,6 +58,10 @@ for the distinction between library/evidence validation and deployment acceptanc
 
 ## Public-repo quickstart (port-only, no host needed)
 
+The first [0.9 research/regression candidate](docs/RESEARCH_RC_0_9.md) has a
+smaller, single-command Python oracle path and a single JSON result. It is not
+a host, RTTOV, or operational release.
+
 Builds the C++ port + ISO_C ABI library and runs the unit / ABI / autograd test suite.
 Requires a local **libtorch/PyTorch** install and a C++17 compiler + CMake (see
 [ENVIRONMENT.md](ENVIRONMENT.md) for pinned versions).
