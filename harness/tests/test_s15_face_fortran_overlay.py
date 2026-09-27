@@ -307,6 +307,8 @@ def test_dual_stream_extractor_rejects_fifo_without_blocking(tmp_path: Path) -> 
             "        swapped[0] = True",
             "        os.unlink(path, dir_fd=dir_fd)",
             "        os.mkfifo(path, dir_fd=dir_fd)",
+            "    if dir_fd is None:",
+            "        return original_open(path, flags, mode)",
             "    return original_open(path, flags, mode, dir_fd=dir_fd)",
             "os.open = race_open",
             "try:",
