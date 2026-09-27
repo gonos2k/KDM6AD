@@ -69,6 +69,7 @@ def test_build_preparation_estimate_rejects_incomplete_or_run_entangled_data(mut
             ("build_gate_ready", "measurement-only with build/run blocked"),
         ("measurement_disabled", "measurement-only"),
         ("estimate_sha_malformed", "measurement-only"),
+        ("measurement_scope_drift", "measurement-only"),
         ("common_macro_guard_drift", "common CPP define set/order"),
         ("guard_macro_in_fixed_cppflags", "preprocessing stages differ"),
         ("guard_macro_in_cpp_template", "preprocessing stages differ"),
@@ -98,6 +99,9 @@ def test_build_preparation_plan_mutations_fail_closed(mutation: str, message: st
         plan["resource_gate"]["build_preparation"]["measurement_only_allowed"] = False
     elif mutation == "estimate_sha_malformed":
         plan["resource_gate"]["build_preparation"]["estimate_sha256"] = "not-a-hash"
+    elif mutation == "measurement_scope_drift":
+        plan["resource_gate"]["build_preparation"]["measurement_subprocess_scope"] = (
+            "static pin subprocesses are run")
     elif mutation == "common_macro_guard_drift":
         macros = plan["build_matrix"]["common_required_compile_macros"] + [
             "KDM6_PROGB_ZERO_QG_DIV_GUARD"]
@@ -164,9 +168,11 @@ def test_build_preparation_measurement_is_receipt_only_and_run_free(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     plan, workspace, output_root, snapshot_path, receipt_path = _measurement_fixture(tmp_path)
     static_pin_calls = []
-    monkeypatch.setattr(guard, "planned_tool_environment", lambda _plan: {})
+    monkeypatch.setattr(guard, "planned_tool_environment",
+                        lambda _plan: pytest.fail("measurement must not inspect tool environment"))
     monkeypatch.setattr(guard, "validate_static_pins",
-                        lambda *args, **kwargs: static_pin_calls.append((args, kwargs)) or {})
+                        lambda *args, **kwargs: static_pin_calls.append((args, kwargs))
+                        or pytest.fail("measurement must not run static probes"))
     monkeypatch.setattr(guard.shutil, "disk_usage", lambda _path: SimpleNamespace(
         total=100 * 1024**3, used=40 * 1024**3, free=60 * 1024**3))
     estimate_path = workspace / plan["resource_gate"]["build_preparation"][
@@ -179,13 +185,18 @@ def test_build_preparation_measurement_is_receipt_only_and_run_free(
         phase="build-preparation-measure", receipt_path=receipt_path,
         estimate_path=estimate_path)
 
-    assert len(static_pin_calls) == 1
+    assert static_pin_calls == []
     assert receipt["status"] == "MEASURED_BUILD_PREPARATION_CAPACITY_ONLY"
     assert receipt["build_preparation_measurement_only"] is True
     assert receipt["build_preparation_capacity_status"] == "MEASURED_ONLY_INCOMPLETE_COMMAND_INPUTS"
     assert receipt["build_execution_allowed"] is False
     assert receipt["model_execution_allowed"] is False
     assert receipt["allowed_commands"] == []
+    assert receipt["static_pin_validation_completed"] is False
+    assert receipt["toolchain_validation_completed"] is False
+    assert receipt["environment_validation_completed"] is False
+    assert receipt["toolchain_sha256"] is None
+    assert receipt["tool_environment_sha256"] is None
     assert receipt["coordinator_resource_approval_sha256"] is None
     assert receipt["s15_release_receipt_sha256"] is None
     assert not output_root.exists()
@@ -216,9 +227,13 @@ def test_build_preparation_cli_writes_measurement_receipt_without_wrf_commands(
     plan_sha = guard.sha256_file(plan_path)
     static_pin_calls = []
     subprocess_calls = []
-    monkeypatch.setattr(guard, "planned_tool_environment", lambda _plan: {})
+    monkeypatch.setenv("SDKROOT", "/poisoned/unpinned/sdk")
+    monkeypatch.setenv("PATH", "/poisoned/unpinned/path")
+    monkeypatch.setattr(guard, "planned_tool_environment",
+                        lambda _plan: pytest.fail("measurement must not inspect tool environment"))
     monkeypatch.setattr(guard, "validate_static_pins",
-                        lambda *args, **kwargs: static_pin_calls.append(True) or {})
+                        lambda *args, **kwargs: static_pin_calls.append(True)
+                        or pytest.fail("measurement must not run static probes"))
     monkeypatch.setattr(guard.subprocess, "run",
                         lambda *args, **kwargs: subprocess_calls.append(args) or None)
     monkeypatch.setattr(guard.shutil, "disk_usage", lambda _path: SimpleNamespace(
@@ -253,11 +268,15 @@ def test_build_preparation_cli_writes_measurement_receipt_without_wrf_commands(
     assert result["build_execution_allowed"] is False
     assert result["model_execution_allowed"] is False
     assert result["status"] == "MEASURED_BUILD_PREPARATION_CAPACITY_ONLY"
-    assert result["static_pin_validation_completed"] is True
+    assert result["static_pin_validation_completed"] is False
+    assert result["toolchain_validation_completed"] is False
+    assert result["environment_validation_completed"] is False
+    assert result["toolchain_sha256"] is None
+    assert result["tool_environment_sha256"] is None
     assert result["measurement_subprocess_scope"] == plan["resource_gate"][
         "build_preparation"]["measurement_subprocess_scope"]
     assert result["wrf_preprocess_object_link_or_model_commands_launched"] is False
-    assert len(static_pin_calls) == 1
+    assert static_pin_calls == []
     assert subprocess_calls == []
     assert receipt_path.is_file()
     assert not output_root.exists()
@@ -278,15 +297,17 @@ def test_build_preparation_cli_writes_measurement_receipt_without_wrf_commands(
     ])
     assert blocked == 2
     assert not receipt_path.exists()
-    assert len(static_pin_calls) == 1
+    assert static_pin_calls == []
     assert subprocess_calls == []
 
 
 def test_build_preparation_measurement_reports_low_capacity_without_authorizing(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     plan, workspace, output_root, snapshot_path, receipt_path = _measurement_fixture(tmp_path)
-    monkeypatch.setattr(guard, "planned_tool_environment", lambda _plan: {})
-    monkeypatch.setattr(guard, "validate_static_pins", lambda *args, **kwargs: {})
+    monkeypatch.setattr(guard, "planned_tool_environment",
+                        lambda _plan: pytest.fail("measurement must not inspect tool environment"))
+    monkeypatch.setattr(guard, "validate_static_pins",
+                        lambda *args, **kwargs: pytest.fail("measurement must not run static probes"))
     estimate = json.loads((workspace / plan["resource_gate"]["build_preparation"][
         "estimate_relative_path"]).read_text())
     required = estimate["total_estimated_bytes"] * plan["resource_gate"][
@@ -306,6 +327,134 @@ def test_build_preparation_measurement_reports_low_capacity_without_authorizing(
     assert receipt["allowed_commands"] == []
     assert receipt["build_execution_allowed"] is False
     assert not output_root.exists()
+
+
+def test_prep_measurement_receipt_symlink_cannot_overwrite_external_file(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    plan, workspace, output_root, snapshot_path, receipt_path = _measurement_fixture(tmp_path)
+    sentinel = tmp_path / "outside-sentinel.json"
+    sentinel.write_text("do not overwrite\n", encoding="utf-8")
+    receipt_path.symlink_to(sentinel)
+    monkeypatch.setattr(guard.shutil, "disk_usage", lambda _path: SimpleNamespace(
+        total=100 * 1024**3, used=40 * 1024**3, free=60 * 1024**3))
+    with pytest.raises(guard.PrelinkError, match="symlink or dangling"):
+        guard.create_resource_preflight_receipt(
+            plan, plan_sha256="e" * 64, workspace=workspace,
+            canonical_host=workspace / "canonical", shadow_host=workspace / "shadow",
+            overlay_paths={"mp37": workspace / "mp37", "mp237": workspace / "mp237"},
+            output_root=output_root, snapshot_path=snapshot_path,
+            phase="build-preparation-measure", receipt_path=receipt_path,
+            estimate_path=workspace / plan["resource_gate"]["build_preparation"][
+                "estimate_relative_path"])
+    assert sentinel.read_text(encoding="utf-8") == "do not overwrite\n"
+
+
+def test_prep_measurement_rejects_symlinked_receipt_parent(tmp_path: Path):
+    plan, workspace, output_root, snapshot_path, receipt_path = _measurement_fixture(tmp_path)
+    original_s10 = workspace / "S10"
+    saved_s10 = workspace / "S10-original"
+    external = tmp_path / "external-target"
+    external.mkdir()
+    sentinel = external / "build_preparation_measurement.json"
+    sentinel.write_text("do not overwrite\n", encoding="utf-8")
+    original_s10.rename(saved_s10)
+    original_s10.symlink_to(external, target_is_directory=True)
+    with pytest.raises(guard.PrelinkError, match="symlink or dangling"):
+        guard.create_resource_preflight_receipt(
+            plan, plan_sha256="d" * 64, workspace=workspace,
+            canonical_host=workspace / "canonical", shadow_host=workspace / "shadow",
+            overlay_paths={"mp37": workspace / "mp37", "mp237": workspace / "mp237"},
+            output_root=output_root, snapshot_path=snapshot_path,
+            phase="build-preparation-measure", receipt_path=receipt_path,
+            estimate_path=saved_s10 / plan["resource_gate"]["build_preparation"][
+                "estimate_relative_path"].removeprefix("S10/"))
+    assert sentinel.read_text(encoding="utf-8") == "do not overwrite\n"
+
+
+def test_prep_measurement_rejects_symlinked_output_root(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    plan, workspace, output_root, snapshot_path, receipt_path = _measurement_fixture(tmp_path)
+    outside = tmp_path / "outside-build-output"
+    outside.mkdir()
+    (outside / "sentinel").write_text("preserve\n", encoding="utf-8")
+    output_root.symlink_to(outside, target_is_directory=True)
+    monkeypatch.setattr(guard.shutil, "disk_usage", lambda _path: SimpleNamespace(
+        total=100 * 1024**3, used=40 * 1024**3, free=60 * 1024**3))
+    with pytest.raises(guard.PrelinkError, match="symlink or dangling"):
+        guard.create_resource_preflight_receipt(
+            plan, plan_sha256="a" * 64, workspace=workspace,
+            canonical_host=workspace / "canonical", shadow_host=workspace / "shadow",
+            overlay_paths={"mp37": workspace / "mp37", "mp237": workspace / "mp237"},
+            output_root=output_root, snapshot_path=snapshot_path,
+            phase="build-preparation-measure", receipt_path=receipt_path,
+            estimate_path=workspace / plan["resource_gate"]["build_preparation"][
+                "estimate_relative_path"])
+    assert (outside / "sentinel").read_text(encoding="utf-8") == "preserve\n"
+    assert not receipt_path.exists()
+
+
+@pytest.mark.parametrize("input_kind", ["estimate", "snapshot"])
+def test_prep_measurement_rejects_symlinked_estimate_or_snapshot(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch, input_kind: str):
+    plan, workspace, output_root, snapshot_path, receipt_path = _measurement_fixture(tmp_path)
+    estimate_path = workspace / plan["resource_gate"]["build_preparation"][
+        "estimate_relative_path"]
+    original = tmp_path / f"{input_kind}-original.json"
+    selected = estimate_path if input_kind == "estimate" else snapshot_path
+    original.write_bytes(selected.read_bytes())
+    selected.unlink()
+    selected.symlink_to(original)
+    monkeypatch.setattr(guard.shutil, "disk_usage", lambda _path: SimpleNamespace(
+        total=100 * 1024**3, used=40 * 1024**3, free=60 * 1024**3))
+    with pytest.raises(guard.PrelinkError, match="symlink or dangling"):
+        guard.create_resource_preflight_receipt(
+            plan, plan_sha256="f" * 64, workspace=workspace,
+            canonical_host=workspace / "canonical", shadow_host=workspace / "shadow",
+            overlay_paths={"mp37": workspace / "mp37", "mp237": workspace / "mp237"},
+            output_root=output_root, snapshot_path=snapshot_path,
+            phase="build-preparation-measure", receipt_path=receipt_path,
+            estimate_path=estimate_path)
+    assert not receipt_path.exists()
+
+
+def test_prep_measurement_requires_snapshot_to_observe_absent_root(
+        tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    plan, workspace, output_root, snapshot_path, receipt_path = _measurement_fixture(tmp_path)
+    snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+    snapshot["observed_absent"] = False
+    snapshot_path.write_text(json.dumps(snapshot, indent=2) + "\n", encoding="utf-8")
+    plan["trusted_s15_release"]["empty_output_root_snapshot_sha256"] = \
+        guard.sha256_file(snapshot_path)
+    monkeypatch.setattr(guard.shutil, "disk_usage", lambda _path: SimpleNamespace(
+        total=100 * 1024**3, used=40 * 1024**3, free=60 * 1024**3))
+    with pytest.raises(guard.PrelinkError, match="snapshot fields or nonce"):
+        guard.create_resource_preflight_receipt(
+            plan, plan_sha256="1" * 64, workspace=workspace,
+            canonical_host=workspace / "canonical", shadow_host=workspace / "shadow",
+            overlay_paths={"mp37": workspace / "mp37", "mp237": workspace / "mp237"},
+            output_root=output_root, snapshot_path=snapshot_path,
+            phase="build-preparation-measure", receipt_path=receipt_path,
+            estimate_path=workspace / plan["resource_gate"]["build_preparation"][
+                "estimate_relative_path"])
+    assert not receipt_path.exists()
+
+
+def test_build_gate_rejects_even_forged_ready_prep_measurement_receipt(tmp_path: Path):
+    plan, workspace, _output_root, snapshot_path, _receipt_path = _measurement_fixture(tmp_path)
+    plan["resource_gate"]["status"] = "READY_PENDING_COORDINATOR_RELEASE"
+    plan["resource_gate"]["build"]["status"] = "READY_PENDING_COORDINATOR_RELEASE"
+    forged = {
+        "schema": "s10-resource-preflight-receipt-v1",
+        "phase": "build-preparation-measure",
+        "status": "READY_FOR_REVIEWED_BUILD",
+        "plan_sha256": "2" * 64,
+    }
+    with pytest.raises(guard.PrelinkError, match="not an approved build-phase receipt"):
+        guard.validate_build_resource_preflight(
+            plan, forged, plan_sha256="2" * 64,
+            snapshot_sha256=guard.sha256_file(snapshot_path),
+            output_root=workspace / plan["clean_shadow"]["fresh_build_output_root"],
+            trusted_approval_sha256="3" * 64)
 
 
 @pytest.mark.parametrize("stage", ["preprocess", "object", "link"])
