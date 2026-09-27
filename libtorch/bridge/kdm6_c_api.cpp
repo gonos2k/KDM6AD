@@ -398,6 +398,7 @@ extern "C" int kdm6_step_v2_c(const kdm6_step_v2_args* args) {
     const uint32_t physics_variant =
         KDM6_V2_HAS(physics_variant) ? args->physics_variant
                                      : (uint32_t)KDM6_PHYSICS_LEGACY;
+    const int64_t dry_number = KDM6_V2_HAS(dry_number) ? args->dry_number : 0;
 #undef KDM6_V2_HAS
 
     const int im = args->im, kme = args->kme, jme = args->jme;
@@ -434,6 +435,8 @@ extern "C" int kdm6_step_v2_c(const kdm6_step_v2_args* args) {
     if (physics_variant != (uint32_t)KDM6_PHYSICS_LEGACY &&
         physics_variant != (uint32_t)KDM6_PHYSICS_CONSERVATIVE_INTERFACE)
         return KDM6_ERR_INVALID_ARG;
+    if (dry_number < 0 || dry_number > 1) return KDM6_ERR_INVALID_ARG;
+    if (dry_number == 1 && value_only == 0) return KDM6_ERR_NOT_IMPLEMENTED;
     // Validated selector → C++ PhysicsOptions, threaded into kdm6::kdm6_step
     // below. 0 keeps the legacy default (bitwise-identical); 1 swaps the
     // sedimentation substeps for the conservative-interface pair.
@@ -469,7 +472,8 @@ extern "C" int kdm6_step_v2_c(const kdm6_step_v2_args* args) {
 
         auto result = kdm6::kdm6_step(state_in, forcing, params, args->dt,
                                       value_only != 0, xland_t,
-                                      ncmin_land, ncmin_sea, physics);
+                                      ncmin_land, ncmin_sea, physics,
+                                      dry_number == 1);
 
         // Reserve the fallible handle allocation before touching any caller
         // output.  This keeps the common allocation failure path fully
