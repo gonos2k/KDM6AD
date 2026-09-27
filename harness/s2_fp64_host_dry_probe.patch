@@ -1,0 +1,157 @@
+--- a/phys/kdm6_iso_c.F
++++ b/phys/kdm6_iso_c.F
+@@ -27,9 +27,9 @@
+   integer(c_int), parameter, public :: KDM6_GRAD_NCRK2  = 4
+   integer(c_int), parameter, public :: KDM6_GRAD_ECCBRK = 8
+   integer(c_int), parameter, public :: KDM6_GRAD_ALL    = 15
+ 
+-  public :: kdm6_step, kdm6_step_ad, kdm6_step_ad_variant
++  public :: kdm6_step, kdm6_step_ad, kdm6_step_ad_variant, kdm6_step_ad_number
+   public :: kdm6_handle_vjp, kdm6_handle_jvp, kdm6_handle_close
+ 
+   ! ── C ABI interfaces ───────────────────────────────────────────────────────
+   interface
+@@ -114,8 +114,29 @@
+       real(c_double), value       :: ncmin_land, ncmin_sea
+       integer(c_int32_t), value   :: physics_variant
+       integer(c_int)              :: rc
+     end function kdm6_step_ad_variant_c
++
++    function kdm6_step_ad_number_c( &
++        state_in_packed, forcing_packed, &
++        im, kme, jme, dt, value_only, &
++        state_out_packed, handle, &
++        xland, ncmin_land, ncmin_sea, physics_variant, dry_number &
++      ) bind(C, name="kdm6_step_ad_number_c") result(rc)
++      import :: c_int, c_int32_t, c_int64_t, c_double, c_float, c_ptr
++      real(c_double), intent(in)  :: state_in_packed(*)
++      real(c_double), intent(in)  :: forcing_packed(*)
++      integer(c_int), value       :: im, kme, jme
++      real(c_double), value       :: dt
++      integer(c_int), value       :: value_only
++      real(c_double), intent(out) :: state_out_packed(*)
++      type(c_ptr), intent(out)    :: handle
++      real(c_float), intent(in)  :: xland(*)
++      real(c_double), value       :: ncmin_land, ncmin_sea
++      integer(c_int32_t), value   :: physics_variant
++      integer(c_int64_t), value   :: dry_number
++      integer(c_int)              :: rc
++    end function kdm6_step_ad_number_c
+ 
+     function kdm6_handle_vjp_c(h, u_packed, grad_out_packed) &
+         bind(C, name="kdm6_handle_vjp_c") result(rc)
+       import :: c_int, c_double, c_float, c_ptr
+@@ -296,8 +317,9 @@
+     rc = kdm6_step_ad_c(state_in, forcing, im, kme, jme, dt, value_only, &
+                         state_out, handle, xland, ncmin_land, ncmin_sea)
+   end function kdm6_step_ad
+ 
++  ! Keep each AD entry as a separate module procedure.
+   function kdm6_step_ad_variant( &
+       state_in, forcing, im, kme, jme, dt, value_only, &
+       state_out, handle, xland, ncmin_land, ncmin_sea, physics_variant &
+     ) result(rc)
+@@ -312,8 +334,31 @@
+     rc = kdm6_step_ad_variant_c(state_in, forcing, im, kme, jme, dt, value_only, &
+                                 state_out, handle, xland, ncmin_land, ncmin_sea, physics_variant)
+   end function kdm6_step_ad_variant
+ 
++  function kdm6_step_ad_number( &
++      state_in, forcing, &
++      im, kme, jme, dt, value_only, &
++      state_out, handle, &
++      xland, ncmin_land, ncmin_sea, physics_variant, dry_number &
++    ) result(rc)
++    real(c_double), intent(in),  contiguous :: state_in(:,:,:,:)
++    real(c_double), intent(in),  contiguous :: forcing(:,:,:,:)
++    integer(c_int), intent(in)              :: im, kme, jme
++    real(c_double), intent(in)              :: dt
++    integer(c_int), intent(in)              :: value_only
++    real(c_double), intent(out), contiguous :: state_out(:,:,:,:)
++    type(c_ptr),    intent(out)             :: handle
++    real(c_float),  intent(in),  contiguous :: xland(:,:)
++    real(c_double), intent(in)              :: ncmin_land, ncmin_sea
++    integer(c_int32_t), intent(in)          :: physics_variant
++    integer(c_int64_t), intent(in)          :: dry_number
++    integer(c_int)                          :: rc
++    rc = kdm6_step_ad_number_c(state_in, forcing, im, kme, jme, dt, value_only, &
++                               state_out, handle, xland, ncmin_land, ncmin_sea, &
++                               physics_variant, dry_number)
++  end function kdm6_step_ad_number
++
+   function kdm6_handle_vjp(h, u_packed, grad_out_packed) result(rc)
+     type(c_ptr),    intent(in)              :: h
+     real(c_double), intent(in),  contiguous :: u_packed(:)
+     real(c_double), intent(out), contiguous :: grad_out_packed(:)
+--- a/phys/module_mp_kdm6ad_cons.F
++++ b/phys/module_mp_kdm6ad_cons.F
+@@ -22,8 +22,9 @@
+   USE module_wrf_error
+   USE kdm6_iso_c, ONLY: kdm6_step_v2_c, kdm6_step_v2_args,               &
+                         kdm6_get_abi_version_c, kdm6_step_v2_args_size_c,&
+                         kdm6_handle_close, kdm6_step_ad_variant,          &
++                        kdm6_step_ad_number,                              &
+                         kdm6_handle_jvp, kdm6_handle_vjp,                 &
+                         KDM6_OK, KDM6_ERR_INTERNAL, KDM6_ABI_VERSION,     &
+                         KDM6_PHYSICS_CONSERVATIVE_INTERFACE
+   ! Effective-radius / reflectivity diagnostics: reuse the conservative
+@@ -379,8 +380,9 @@
+       INTEGER :: ISEL, JSEL, ENV_STATUS, ENV_LENGTH
+       INTEGER(c_int) :: AD_RC, CLOSE_RC
+       LOGICAL :: PROBE_ENABLED, TARGET_IN_TILE
+       TYPE(c_ptr) :: AD_HANDLE
++      CHARACTER(LEN=12) :: PROBE_LABEL
+       REAL(c_double), ALLOCATABLE :: STATE64(:,:,:,:), FORCE64(:,:,:,:), OUT64(:,:,:,:)
+       REAL(c_double), ALLOCATABLE :: V(:), JV(:), JTU(:)
+       REAL(c_float) :: XLAND_ONE(1,1)
+       REAL(c_double) :: LEFT_DOT, RIGHT_DOT, REL_DUAL, NORM_V, NORM_JV, NORM_JTU, NORM_OUT
+@@ -414,12 +416,21 @@
+         FORCE64(1,:,1,3)=REAL(P_IN(ISEL,:,JSEL),c_double)
+         FORCE64(1,:,1,4)=REAL(DELZ_IN(ISEL,:,JSEL),c_double)
+         XLAND_ONE(1,1)=XLAND_IN(ISEL,JSEL)
+         AD_HANDLE = C_NULL_PTR
+-        AD_RC = kdm6_step_ad_variant(STATE64, FORCE64, 1_c_int, INT(KM,c_int), 1_c_int, &
+-             REAL(DELT,c_double), 0_c_int, OUT64, AD_HANDLE, XLAND_ONE, &
+-             REAL(ncmin_land,c_double), REAL(ncmin_sea,c_double), &
+-             KDM6_PHYSICS_CONSERVATIVE_INTERFACE)
++        IF (DRY_NUMBER_MODE) THEN
++          PROBE_LABEL = 'S2S8HAD_v1'
++          AD_RC = kdm6_step_ad_number(STATE64, FORCE64, 1_c_int, INT(KM,c_int), 1_c_int, &
++               REAL(DELT,c_double), 0_c_int, OUT64, AD_HANDLE, XLAND_ONE, &
++               REAL(ncmin_land,c_double), REAL(ncmin_sea,c_double), &
++               KDM6_PHYSICS_CONSERVATIVE_INTERFACE, 1_c_int64_t)
++        ELSE
++          PROBE_LABEL = 'S8HAD_v1'
++          AD_RC = kdm6_step_ad_variant(STATE64, FORCE64, 1_c_int, INT(KM,c_int), 1_c_int, &
++               REAL(DELT,c_double), 0_c_int, OUT64, AD_HANDLE, XLAND_ONE, &
++               REAL(ncmin_land,c_double), REAL(ncmin_sea,c_double), &
++               KDM6_PHYSICS_CONSERVATIVE_INTERFACE)
++        END IF
+         IF (AD_RC == KDM6_OK) THEN
+           IF (ANY(.NOT. ieee_is_finite(OUT64))) THEN
+             AD_RC = KDM6_ERR_INTERNAL
+           ELSE
+@@ -436,8 +447,12 @@
+           CALL wrf_error_fatal('S8HAD: fp64 conservative forward failed')
+         END IF
+         V = 0.0_c_double
+         V(4*KM+1:5*KM) = STATE64(1,:,1,5)
++        IF (DRY_NUMBER_MODE) THEN
++          V(KM+1:2*KM) = 0.01_c_double*STATE64(1,:,1,2)
++          V(8*KM+1:9*KM) = 0.01_c_double*STATE64(1,:,1,9)
++        END IF
+         NORM_V = NORM2(V)
+         IF (ieee_is_finite(NORM_V)) THEN
+           IF (NORM_V <= 0.0_c_double) AD_RC = KDM6_ERR_INTERNAL
+         ELSE
+@@ -472,9 +487,9 @@
+         IF (RIGHT_DOT == 0.0_c_double) CALL wrf_error_fatal('S8HAD: zero right dot')
+         REL_DUAL = ABS(LEFT_DOT-RIGHT_DOT)/MAX(ABS(LEFT_DOT),ABS(RIGHT_DOT),TINY(LEFT_DOT))
+         IF (.NOT. ieee_is_finite(REL_DUAL)) CALL wrf_error_fatal('S8HAD: nonfinite duality')
+         IF (REL_DUAL > 1.0e-10_c_double) CALL wrf_error_fatal('S8HAD: duality failed')
+-        WRITE(*,*) 'S8HAD_v1', 'physics_variant=1', 'value_only=0', KDM6_ABI_VERSION, &
++        WRITE(*,*) TRIM(PROBE_LABEL), 'physics_variant=1', 'value_only=0', KDM6_ABI_VERSION, &
+                    'ad_dims', 1, KM, 1, 'tile_dims', IM, KM, JM, &
+                    'global_cell', 200, 152, 'tile_local', ISEL, JSEL, &
+                    NORM_OUT, NORM_V, NORM_JV, NORM_JTU, LEFT_DOT, RIGHT_DOT, REL_DUAL
+         S8_FP64_PROBE_DONE = .TRUE.
