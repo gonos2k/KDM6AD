@@ -20,10 +20,22 @@ published here, never private source text or runtime operand values.
 
 | Private source anchor | SHA-256 | Capture purpose |
 | --- | --- | --- |
-| `dyn_em/solve_em.F:2847-2863` | `d66e9db1bba8f37e3f46d30c2fd74bdf8def411adf233376a69e0b401c6d3d1f` | Owner-5 call site and RK-store handoff |
-| `dyn_em/module_em.F:1265-1344, 1680-1724, 1750-1774` | `7695bfb05a7f99763334a6e69523bbcc1de0f2c659177a18c10a6e1cf530a0c7` | Advection dispatch, source-order tendency construction, and RK update |
+| `dyn_em/solve_em.F:2776-2801` | `d66e9db1bba8f37e3f46d30c2fd74bdf8def411adf233376a69e0b401c6d3d1f` | Owner-5 producer call in `scalar_tile_loop_1`; supplies step, RK, tile slot and tile bounds to the tendency/advection path |
+| `dyn_em/module_em.F:1096-1344` | `7695bfb05a7f99763334a6e69523bbcc1de0f2c659177a18c10a6e1cf530a0c7` | `rk_scalar_tend` and ordinary/positive-definite advection dispatch |
+| `dyn_em/solve_em.F:2851-2868` | `d66e9db1bba8f37e3f46d30c2fd74bdf8def411adf233376a69e0b401c6d3d1f` | Owner-5 consumer call in `scalar_tile_loop_2`; carries the same step/RK/tile identity to the RK store |
+| `dyn_em/module_em.F:1587-1799` | `7695bfb05a7f99763334a6e69523bbcc1de0f2c659177a18c10a6e1cf530a0c7` | `rk_update_scalar` tendency assembly and RK update/store |
 | `dyn_em/module_advect_em.F:3452-3547, 3549-3649, 4230-4346` | `58253bdbeb188dd47ed0579fcd2891086be1889b75c0c7d3696c9ad1d213559d` | Ordinary Y, X, and Z face fluxes and divergence contributions |
 | `dyn_em/module_advect_em.F:7733-7779, 7790-7885` | same file pin above | Positive-definite branch low-order flux limiter and Z/X/Y tendencies |
+
+The producer and consumer are separate source traversals. Within each scalar
+stage, `solve_em.F::scalar_tile_loop_1` calls `rk_scalar_tend`, which dispatches
+to `advect_scalar` or `advect_scalar_pd`; later,
+`solve_em.F::scalar_tile_loop_2` calls `rk_update_scalar` for the RK consumer.
+The overlay must carry the same owner-5 step/RK/tile identity through both
+callsites. Adding metadata only to the update loop cannot observe the upstream
+face producer. The earlier draft's single-path wording is corrected here; the
+prior owner-5 RK-store discovery and its evidence remain valid for the fields it
+captured.
 
 The overlay should carry one witness from each already pinned step-2
 owner/RK/tile slot into the upstream producer and back to the RK store. Record
