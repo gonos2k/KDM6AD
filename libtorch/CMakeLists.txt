@@ -167,6 +167,9 @@ add_test(NAME c_abi COMMAND test_c_abi)
 add_executable(test_autograd_endtoend tests/test_autograd_endtoend.cpp)
 target_link_libraries(test_autograd_endtoend PRIVATE kdm6)
 add_test(NAME autograd_endtoend COMMAND test_autograd_endtoend)
+add_executable(test_dry_number tests/test_dry_number.cpp)
+target_link_libraries(test_dry_number PRIVATE kdm6)
+add_test(NAME dry_number COMMAND test_dry_number)
 add_executable(test_handle_vjp tests/test_handle_vjp.cpp)
 target_link_libraries(test_handle_vjp PRIVATE kdm6)
 add_test(NAME handle_vjp COMMAND test_handle_vjp)
@@ -233,6 +236,7 @@ foreach(t IN ITEMS
         test_smoke test_slope test_progb test_warm test_satadj test_aux_placeholder_gap
         test_cold test_melt_freeze test_sedimentation test_thermo test_coordinator
         test_cloud_dsd test_c_abi test_autograd_endtoend test_handle_vjp
+        test_dry_number
         test_conservative_interface)
     if(TARGET ${t})
         target_compile_options(${t} PRIVATE -UNDEBUG)

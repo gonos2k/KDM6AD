@@ -105,6 +105,19 @@ FnResult kdm6_fn(const State& state,
                  double ncmin_sea,
                  const PhysicsOptions& physics);
 
+// Separate symbol: preserves the size of PhysicsOptions for compiled callers.
+// The caller supplies all four QN fields per kg dry air, including any
+// timestep-one CCN profile. Number thresholds remain volume-valued.
+FnResult kdm6_fn(const State& state,
+                 const Forcing& forcing,
+                 const Parameters& params,
+                 double dt,
+                 const c10::optional<torch::Tensor>& xland,
+                 double ncmin_land,
+                 double ncmin_sea,
+                 const PhysicsOptions& physics,
+                 bool dry_number);
+
 // ── [G3] GraphOptions — DA derivative-call options (kdm6ad+da.md §8.1/§8.2) ──
 //
 // active_field_mask: bit i = State::fields()[i] (packed order th,qv,qc,qr,qi,
@@ -232,5 +245,17 @@ StepResult kdm6_step(const State& state,
                      double ncmin_land,
                      double ncmin_sea,
                      const PhysicsOptions& physics);
+
+// Opt-in C++ entry. The frozen C ABI and old C++ overloads remain unchanged.
+StepResult kdm6_step(const State& state,
+                     const Forcing& forcing,
+                     const Parameters& params,
+                     double dt,
+                     bool value_only,
+                     const c10::optional<torch::Tensor>& xland,
+                     double ncmin_land,
+                     double ncmin_sea,
+                     const PhysicsOptions& physics,
+                     bool dry_number);
 
 }  // namespace kdm6

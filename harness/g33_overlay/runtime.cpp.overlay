@@ -107,10 +107,9 @@ State coord_to_state(const CoordinatorState& c, const State& orig, const Forcing
 }
 
 CoordinatorForcing build_forcing(const Forcing& f) {
-    // `dend` is air density rho [kg m^-3], matching Fortran F:812 and the
-    // Python CoordinatorForcing contract. Sedimentation forms the volumetric
-    // fall flux falk = rho*q*(vt/delz); surface accumulation applies the
-    // bottom-layer delz exactly once.
+    // Legacy `dend` is air density rho [kg m^-3], not rho*delz. The dry-number
+    // path replaces it with entry dry density after this builder returns.
+    // Sedimentation applies bottom-layer delz exactly once.
     return CoordinatorForcing{
         /*p=*/f.p,
         /*den=*/f.rho,
@@ -251,7 +250,7 @@ CoordinatorAuxDiagnostics build_default_aux(
 
     // Rain / ice clamped DSD slopes (Fortran rslope(:,1) / rslope(:,4)).
     auto rslope_r = cloud_dsd::diag_species_slope_torch(
-        cs.qr, cs.nr, cf.den, pidnr, constants::DMR,
+        cs.qr, cs.nr, cf.dend, pidnr, constants::DMR,
         constants::LAMDARMAX, constants::LAMDARMIN);
     // Fortran F:3482-3483 inactive-rain branch: (qr<=qcrmin .or. nr<=nrmin) → rslope=rslopermax
     // = 1/LAMDARMAX. The clamp maps qr≈0 → 1/LAMDARMAX, but nr<=nrmin with qr>qcrmin would hit
@@ -261,7 +260,7 @@ CoordinatorAuxDiagnostics build_default_aux(
     rslope_r = torch::where(rain_inactive,
                             torch::full_like(rslope_r, 1.0 / constants::LAMDARMAX), rslope_r);
     auto rslope_i = cloud_dsd::diag_species_slope_torch(
-        cs.qi, cs.ni, cf.den, pidni, constants::DMI,
+        cs.qi, cs.ni, cf.dend, pidni, constants::DMI,
         constants::LAMDAIMAX, constants::LAMDAIMIN);
     // Fortran slope_kdm6 F:3559-3565 ice INACTIVE branch: qi<=qmin -> rslope4 =
     // rslopeimax = 1/LAMDAIMAX regardless of lamdai. The clamp alone leaves
@@ -297,7 +296,7 @@ CoordinatorAuxDiagnostics build_default_aux(
     {
         const double inv_dmr_f32 = static_cast<double>(1.0f / static_cast<float>(constants::DMR));
         auto lamdr_raw = ops::libm_exp(ops::libm_log(torch::clamp(
-            pidnr * cs.nr / torch::clamp(cs.qr * cf.den, 1.0e-30), 1.0e-30)) * inv_dmr_f32);
+            pidnr * cs.nr / torch::clamp(cs.qr * cf.dend, 1.0e-30), 1.0e-30)) * inv_dmr_f32);
         auto lamdr_cl = torch::clamp(lamdr_raw, constants::LAMDARMIN, constants::LAMDARMAX);  // f32, like Fortran lamdr_tmp
         // §44 x**2.0=MULT: gfortran compiles lamdr_tmp**(mur+1) with mur+1=2.0 as x*x (verified:
         // x**(mur+1)≡x*x≡x**2 hex-identical at -O2), NOT powf — so lamdr^2 must be lamdr*lamdr, not
@@ -322,7 +321,7 @@ CoordinatorAuxDiagnostics build_default_aux(
     {
         const double inv_dmi_f32 = static_cast<double>(1.0f / static_cast<float>(constants::DMI));
         auto lamdai_raw = ops::libm_exp(ops::libm_log(torch::clamp(
-            pidni * cs.ni / torch::clamp(cs.qi * cf.den, 1.0e-30), 1.0e-30)) * inv_dmi_f32);
+            pidni * cs.ni / torch::clamp(cs.qi * cf.dend, 1.0e-30), 1.0e-30)) * inv_dmi_f32);
         auto lamdai_cl = torch::clamp(lamdai_raw, constants::LAMDAIMIN, constants::LAMDAIMAX);
         n0i = torch::where(cs.qi >= 1.0e-14,
                            cs.ni.to(torch::kFloat64) * lamdai_cl.to(torch::kFloat64), n0i);
@@ -382,7 +381,7 @@ CoordinatorAuxDiagnostics build_default_aux_for_test(
     auto cs = state_to_coord(s, f);
     auto cf = build_forcing(f);
     auto cloud_p = cloud_dsd::default_cloud_dsd_params();
-    auto rslopec = cloud_dsd::diag_cloud_slope_torch(cs.qc, cs.nc, cf.den, cloud_p);
+    auto rslopec = cloud_dsd::diag_cloud_slope_torch(cs.qc, cs.nc, cf.dend, cloud_p);
     auto full_p = default_coordinator_params();
     return build_default_aux(cs, cf, rslopec, full_p.thermo);
 }
@@ -437,7 +436,8 @@ FnResult kdm6_fn(const State& state,
                  const c10::optional<torch::Tensor>& xland,
                  double ncmin_land,
                  double ncmin_sea,
-                 const PhysicsOptions& physics) {
+                 const PhysicsOptions& physics,
+                 bool dry_number) {
     // Fail-loud variant gate FIRST — before any State/Forcing work and before
     // the dt<=0 no-op early return below, so an invalid variant can never
     // silently succeed as a no-op.
@@ -461,6 +461,32 @@ FnResult kdm6_fn(const State& state,
     // baked-in 상수로 사용됨. AD-trainable parameters로 활용하려면 별도 plumbing 필요.
     auto cs = state_to_coord(state, forcing);
     auto cf = build_forcing(forcing);
+    torch::Tensor rho_dry;
+    if (dry_number) {
+        // Validation is value-only; the successful conversion remains live in the AD graph.
+        {
+            torch::NoGradGuard check;
+            TORCH_CHECK(torch::isfinite(forcing.rho).all().item<bool>() &&
+                        torch::isfinite(state.qv).all().item<bool>() &&
+                        (forcing.rho > 0).all().item<bool>() &&
+                        (state.qv > -1).all().item<bool>(),
+                        "dry-number density inputs must be finite and positive");
+        }
+        rho_dry = forcing.rho / (1.0 + state.qv);
+        {
+            torch::NoGradGuard check;
+            TORCH_CHECK(torch::isfinite(rho_dry).all().item<bool>() &&
+                        (rho_dry > 0).all().item<bool>(),
+                        "dry-number density must be finite and positive");
+        }
+        State volume_state = state;
+        volume_state.nccn = state.nccn * rho_dry;
+        volume_state.nc = state.nc * rho_dry;
+        volume_state.ni = state.ni * rho_dry;
+        volume_state.nr = state.nr * rho_dry;
+        cs = state_to_coord(volume_state, forcing);
+        cf.dend = rho_dry;
+    }
 
     // Coordinator params first — build_default_aux needs thermo params for the
     // diffac (work1) computation.
@@ -835,7 +861,7 @@ FnResult kdm6_fn(const State& state,
         graup_inc = (i == 0) ? sed.graupel_increment : graup_inc + sed.graupel_increment;
 
         // 2. Re-slope + aux on the POST-FALL state (Fortran :1422-1480 / :1679-1680).
-        auto rslopec = cloud_dsd::diag_cloud_slope_torch(cur.qc, cur.nc, cf.den, cloud_p, ncmin_for_slope);
+        auto rslopec = cloud_dsd::diag_cloud_slope_torch(cur.qc, cur.nc, cf.dend, cloud_p, ncmin_for_slope);
         auto aux = build_default_aux(cur, cf, rslopec, full_p.thermo);
         // qcr UNCONDITIONALLY from land/sea (Fortran :842-847): no-xland ⇒ sea_mask=all-sea ⇒ qc0
         // (maritime ≈8.3776e-5), replacing build_default_aux's 8.0e-5 placeholder (Codex round-4 F1).
@@ -880,11 +906,30 @@ FnResult kdm6_fn(const State& state,
 
     // Surface increments accumulated across the sub-cycles (1-D per column [mm]) ⇒
     // FnResult ⇒ kdm6_step_c ⇒ WRF RAINNCV/SNOWNCV/GRAUPELNCV.
+    auto state_out = coord_to_state(cur, state, forcing);
+    if (dry_number) {
+        state_out.nccn = state_out.nccn / rho_dry;
+        state_out.nc = state_out.nc / rho_dry;
+        state_out.ni = state_out.ni / rho_dry;
+        state_out.nr = state_out.nr / rho_dry;
+    }
     return FnResult{
-        /*state_out=*/coord_to_state(cur, state, forcing),
+        /*state_out=*/std::move(state_out),
         /*rain_increment=*/rain_inc, /*snow_increment=*/snow_inc, /*graupel_increment=*/graup_inc,
         /*rhog=*/rhog_final,
     };
+}
+
+FnResult kdm6_fn(const State& state,
+                 const Forcing& forcing,
+                 const Parameters& params,
+                 double dt,
+                 const c10::optional<torch::Tensor>& xland,
+                 double ncmin_land,
+                 double ncmin_sea,
+                 const PhysicsOptions& physics) {
+    return kdm6_fn(state, forcing, params, dt, xland, ncmin_land, ncmin_sea,
+                   physics, /*dry_number=*/false);
 }
 
 // Legacy-signature overload (pre-variant mangled symbol) — thin forwarder to
@@ -1083,7 +1128,7 @@ StepResult kdm6_step(const State& state, const Forcing& forcing,
                      const Parameters& params, double dt, bool value_only,
                      const c10::optional<torch::Tensor>& xland,
                      double ncmin_land, double ncmin_sea,
-                     const PhysicsOptions& physics) {
+                     const PhysicsOptions& physics, bool dry_number) {
     // Fail-loud variant gate FIRST (C3) — shared helper, identical behavior to
     // the previous inline switch (see validate_physics_variant above).
     validate_physics_variant(physics.variant, "kdm6_step");
@@ -1100,7 +1145,8 @@ StepResult kdm6_step(const State& state, const Forcing& forcing,
                 "differentiable. See runtime.h.");
     if (value_only) {
         torch::NoGradGuard no_grad;
-        auto fn_out = kdm6_fn(state, forcing, params, dt, xland, ncmin_land, ncmin_sea, physics);
+        auto fn_out = kdm6_fn(state, forcing, params, dt, xland, ncmin_land, ncmin_sea, physics,
+                             dry_number);
         return StepResult{
             /*state_out=*/std::move(fn_out.state_out), /*handle=*/nullptr,
             /*rain_increment=*/std::move(fn_out.rain_increment),
@@ -1109,7 +1155,8 @@ StepResult kdm6_step(const State& state, const Forcing& forcing,
             /*rhog=*/std::move(fn_out.rhog),
         };
     }
-    auto fn_out = kdm6_fn(state, forcing, params, dt, xland, ncmin_land, ncmin_sea, physics);
+    auto fn_out = kdm6_fn(state, forcing, params, dt, xland, ncmin_land, ncmin_sea, physics,
+                         dry_number);
     auto handle = std::make_unique<Handle>(
         state, fn_out.state_out, forcing, params, dt, /*value_only=*/false);
     return StepResult{
@@ -1119,6 +1166,15 @@ StepResult kdm6_step(const State& state, const Forcing& forcing,
         /*graupel_increment=*/std::move(fn_out.graupel_increment),
         /*rhog=*/std::move(fn_out.rhog),
     };
+}
+
+StepResult kdm6_step(const State& state, const Forcing& forcing,
+                     const Parameters& params, double dt, bool value_only,
+                     const c10::optional<torch::Tensor>& xland,
+                     double ncmin_land, double ncmin_sea,
+                     const PhysicsOptions& physics) {
+    return kdm6_step(state, forcing, params, dt, value_only, xland,
+                     ncmin_land, ncmin_sea, physics, /*dry_number=*/false);
 }
 
 // Legacy-signature overload (pre-variant mangled symbol) — thin forwarder to

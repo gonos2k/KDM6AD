@@ -39,9 +39,9 @@ struct CoordinatorState {
 
 struct CoordinatorForcing {
     torch::Tensor p;     // pressure [Pa]
-    torch::Tensor den;   // air density
+    torch::Tensor den;   // moist air density for air properties
     torch::Tensor delz;  // layer thickness
-    torch::Tensor dend;  // legacy name; air density rho [kg m^-3], NOT rho*delz (runtime.cpp:66, Fortran F:812 dend=den)
+    torch::Tensor dend;  // mass-moment density (legacy: den; dry-number: rho_d), NOT rho*delz
 };
 
 // Subset of PreambleOutputs that state_update actually consumes. Full preamble

@@ -187,7 +187,7 @@ ColdPhaseOutputs cold_phase(
     // C1: ice accretion
     cold::IceAccretionInputs c1_in{
         state.qi, state.qr,
-        forcing.den, n0i, n0r,
+        forcing.dend, n0i, n0r,
         s.vt2r, s.vt2i,   // §53k UNCONDITIONAL cold-rate fall speeds (F:1952/1955) — missed sibling (§40 sweep)
         s.rslope_r, s.rslope2_r, s.rslope3_r, s.rslopemu_r, s.rsloped_r,
         s.rslope_i, s.rslope2_i, s.rslope3_i, s.rslopemu_i, s.rsloped_i,
@@ -197,7 +197,7 @@ ColdPhaseOutputs cold_phase(
     // C2: ice → snow/graupel
     cold::IceToSnowGraupelInputs c2_in{
         state.qi, state.qs, state.qg,
-        forcing.den,
+        forcing.dend,
         n0i, n0so, n0go, s.n0sfac_field,
         pre.supcol,
         s.vt2s, s.vt2g, s.vt2i,   // §53k UNCONDITIONAL cold-rate fall speeds (F:1952-1955); vt2g f32 (F:725 REAL)
@@ -239,7 +239,7 @@ ColdPhaseOutputs cold_phase(
     // C2d: rain-snow-graupel collection
     cold::RainSnowGraupelCollectionInputs c2d_in{
         state.qr, state.qs, state.qg, state.nr,
-        forcing.den,
+        forcing.dend,
         n0r, n0so, n0go, s.n0sfac_field,
         pre.supcol,
         s.vt2r, s.vt2s, s.vt2g,   // §53k UNCONDITIONAL cold-rate fall speeds (F:1952-1956)
@@ -253,14 +253,14 @@ ColdPhaseOutputs cold_phase(
     cold::HallettMossopInputs c2e_in{
         cwr.paacw, rsgc.psacr, rsgc.pgacr,
         state.qc, state.qr, state.qs, state.qg,
-        state.t, forcing.den,
+        state.t, forcing.dend,
     };
     auto hm = cold::hallett_mossop_torch(c2e_in, params.hallett_mossop);
 
     // C3: ice nucleation
     cold::IceNucleationInputs c3_in{
         pre.supcol, pre.supsat, pre.rh_ice, prevp,
-        state.ni, forcing.den,
+        state.ni, forcing.dend,
     };
     auto icenuc = cold::ice_nucleation_torch(c3_in, params.ice_nucleation, dtcld);
 
@@ -280,7 +280,7 @@ ColdPhaseOutputs cold_phase(
 
     // C5: ice aggregation (no Inputs struct — takes tensors directly)
     auto agg = cold::ice_aggregation_torch(
-        state.qi, state.ni, state.t, forcing.den, pre.supcol,
+        state.qi, state.ni, state.t, forcing.dend, pre.supcol,
         params.ice_aggregation, dtcld
     );
 
@@ -351,13 +351,13 @@ WarmPhaseOutputs warm_phase(
 
     // B1: Autoconversion (qc → qr mass+number)
     auto b1 = warm::autoconv_torch(
-        state.qc, state.nc, state.qr, state.nr, forcing.den,
+        state.qc, state.nc, state.qr, state.nr, forcing.dend,
         qcr, pre.lenconcr, params.autoconv, dtcld
     );
 
     // B2: Accretion (qc ← rain mass+number)
     auto b2 = warm::accretion_torch(
-        state.qc, state.nc, state.qr, state.nr, forcing.den,
+        state.qc, state.nc, state.qr, state.nr, forcing.dend,
         pre.avedia_r, rslopec3, pre.rslope3_r, pre.lenconcr,
         params.accretion, dtcld
     );
@@ -433,11 +433,11 @@ PreambleOutputs preamble(
 
     // ── Cloud DSD ───────────────────────────────────────────────────────────
     auto rslopec = cloud_dsd::diag_cloud_slope_torch(
-        state.qc, state.nc, forcing.den, params.cloud_dsd, ncmin_for_slope
+        state.qc, state.nc, forcing.dend, params.cloud_dsd, ncmin_for_slope
     );
     auto avedia_c = cloud_dsd::diag_avedia_cloud_torch(rslopec, params.cloud_dsd);
     auto sigma_c = cloud_dsd::diag_sigma_cloud_torch(rslopec, params.cloud_dsd);
-    auto lencon_out = cloud_dsd::diag_lencon_torch(state.qc, forcing.den, avedia_c, sigma_c);
+    auto lencon_out = cloud_dsd::diag_lencon_torch(state.qc, forcing.dend, avedia_c, sigma_c);
 
     // ── ProgB (graupel density 진단) ────────────────────────────────────────
     auto progb_out = progb::progb_param_torch(state.qg, state.brs, params.progb,
@@ -480,7 +480,7 @@ PreambleOutputs preamble(
     slope::SlopeKdm6Inputs slope_in{
         state.qr, state.qs, state.qg, state.qi,
         state.nr, state.ni,
-        forcing.den, denfac, state.t,
+        forcing.dend, denfac, state.t,
         progb_out.pidn0g, progb_out.pvtg, progb_out.bvtg, progb_out.rslopegbmax,
     };
     auto slope_out = slope::slope_kdm6_torch(slope_in, params.slope);
@@ -765,7 +765,7 @@ CoordinatorState kdm62d_one_step(
     // (F:1638). Tensor-ops only ⇒ autograd-safe.
     auto nc_orig1 = working1b.nc;
     auto nc_snap1 = limit_number_for_lamda(
-        working1b.qc, nc_orig1, forcing.den,
+        working1b.qc, nc_orig1, forcing.dend,
         pidnc_snap, constants::DMC, constants::LAMDACMIN, constants::LAMDACMAX,
         constants::EPS, constants::NCMIN);
     // Fortran F:1638 gates this re-slope snap on the PER-CELL ncmin (ncmin_sea=10 /
@@ -797,7 +797,7 @@ CoordinatorState kdm62d_one_step(
         auto pidnc1_f = torch::full_like(nc_o1_f, pidnc_snap);
         auto lamdc = torch::clamp(
             ops::libm_exp(ops::libm_log(torch::clamp(pidnc1_f * nc_o1_f /
-                torch::clamp(working1b.qc.to(cdt1) * forcing.den, 1.0e-30), 1.0e-30)) * INV_DMC_F32),
+                torch::clamp(working1b.qc.to(cdt1) * forcing.dend, 1.0e-30), 1.0e-30)) * INV_DMC_F32),
             constants::LAMDACMIN, constants::LAMDACMAX);
         // Fortran n0c is DOUBLE (F:697): (muc+1)*DBLE(nc_POST)*powf(lamdc,muc+1) — lamdc f32, then DBLE.
         auto n0c_active = (constants::MUC + 1.0) * working1b.nc.to(cdt1).to(torch::kFloat64) *
@@ -817,7 +817,7 @@ CoordinatorState kdm62d_one_step(
     {
         auto ni_orig1 = working1b.ni;
         working1b.ni = limit_number_for_lamda(
-            working1b.qi, ni_orig1, forcing.den,
+            working1b.qi, ni_orig1, forcing.dend,
             fconst::get().pidni, constants::DMI,
             constants::LAMDAIMIN, constants::LAMDAIMAX,
             /*q_thresh=*/1.0e-14, /*n_thresh=*/0.0);
@@ -829,7 +829,7 @@ CoordinatorState kdm62d_one_step(
         auto pidni1_f = torch::full_like(ni_o1_f, fconst::get().pidni);
         auto lamdi1 = torch::clamp(
             ops::libm_exp(ops::libm_log(torch::clamp(pidni1_f * ni_o1_f /
-                torch::clamp(working1b.qi.to(idt1) * forcing.den, 1.0e-30), 1.0e-30)) * INV_DMI_F32),
+                torch::clamp(working1b.qi.to(idt1) * forcing.dend, 1.0e-30), 1.0e-30)) * INV_DMI_F32),
             constants::LAMDAIMIN, constants::LAMDAIMAX);
         aux1.n0i = torch::where(working1b.qi >= 1.0e-14,
             working1b.ni.to(idt1).to(torch::kFloat64) * lamdi1.to(torch::kFloat64), aux1.n0i);
@@ -843,7 +843,7 @@ CoordinatorState kdm62d_one_step(
     {
         auto nr_orig1 = working1b.nr;
         working1b.nr = limit_number_for_lamda(
-            working1b.qr, nr_orig1, forcing.den,
+            working1b.qr, nr_orig1, forcing.dend,
             fconst::get().pidnr, constants::DMR,
             constants::LAMDARMIN, constants::LAMDARMAX,
             /*q_thresh=*/constants::QCRMIN, /*n_thresh=*/constants::NRMIN);
@@ -857,7 +857,7 @@ CoordinatorState kdm62d_one_step(
         auto pidnr1_f = torch::full_like(nr_o1_f, fconst::get().pidnr);
         auto lamdr1 = torch::clamp(
             ops::libm_exp(ops::libm_log(torch::clamp(pidnr1_f * nr_o1_f /
-                torch::clamp(qr1_f * forcing.den, 1.0e-30), 1.0e-30)) * INV_DMR_F32),
+                torch::clamp(qr1_f * forcing.dend, 1.0e-30), 1.0e-30)) * INV_DMR_F32),
             constants::LAMDARMIN, constants::LAMDARMAX);
         auto active_r = (working1b.qr >= constants::QCRMIN) & (nr_orig1 >= constants::NRMIN);
         aux1.n0r = torch::where(active_r,
@@ -948,7 +948,7 @@ CoordinatorState kdm62d_one_step(
     // (F:1638, supcol-independent ⇒ fires for warm onset cells). autograd-safe.
     auto nc_orig2 = working.nc;
     auto nc_snap2 = limit_number_for_lamda(
-        working.qc, nc_orig2, forcing.den,
+        working.qc, nc_orig2, forcing.dend,
         pidnc_snap, constants::DMC, constants::LAMDACMIN, constants::LAMDACMAX,
         constants::EPS, constants::NCMIN);
     // Per-cell ncmin gate (Fortran F:1638, ncmin_sea/land=10/100), not scalar NCMIN.
@@ -969,7 +969,7 @@ CoordinatorState kdm62d_one_step(
         auto pidnc2_f = torch::full_like(nc_o2_f, pidnc_snap);
         auto lamdc = torch::clamp(
             ops::libm_exp(ops::libm_log(torch::clamp(pidnc2_f * nc_o2_f /
-                torch::clamp(working.qc.to(cdt2) * forcing.den, 1.0e-30), 1.0e-30)) * INV_DMC_F32),
+                torch::clamp(working.qc.to(cdt2) * forcing.dend, 1.0e-30), 1.0e-30)) * INV_DMC_F32),
             constants::LAMDACMIN, constants::LAMDACMAX);
         auto n0c_active = (constants::MUC + 1.0) * working.nc.to(cdt2).to(torch::kFloat64) *
             ops::safe_pow(lamdc, constants::MUC + 1.0);
@@ -986,7 +986,7 @@ CoordinatorState kdm62d_one_step(
     {
         auto nr_orig2 = working.nr;
         working.nr = limit_number_for_lamda(
-            working.qr, nr_orig2, forcing.den,
+            working.qr, nr_orig2, forcing.dend,
             fconst::get().pidnr, constants::DMR,
             constants::LAMDARMIN, constants::LAMDARMAX,
             /*q_thresh=*/constants::QCRMIN, /*n_thresh=*/constants::NRMIN);
@@ -1002,7 +1002,7 @@ CoordinatorState kdm62d_one_step(
         auto pidnr_f = torch::full_like(nr_f2, fconst::get().pidnr);
         auto lamdr2 = torch::clamp(
             ops::libm_exp(ops::libm_log(torch::clamp(pidnr_f * nr_f2 /
-                torch::clamp(qr_f2 * forcing.den, 1.0e-30), 1.0e-30)) * INV_DMR_F32),
+                torch::clamp(qr_f2 * forcing.dend, 1.0e-30), 1.0e-30)) * INV_DMR_F32),
             constants::LAMDARMIN, constants::LAMDARMAX);
         auto active_r2 = (working.qr >= constants::QCRMIN) & (nr_orig2 >= constants::NRMIN);
         // n0r multiply uses POST-rewrite nrs (Fortran F:1696 in-range==pre, F:1700 clamped==post; working.nr
@@ -1015,8 +1015,8 @@ CoordinatorState kdm62d_one_step(
 #ifdef KDM6_SUBSTEP_DUMP
         if (kdm6_dump_on) {
             auto arg2 = torch::clamp(pidnr_f * nr_f2 /
-                torch::clamp(qr_f2 * forcing.den, 1.0e-30), 1.0e-30);
-            kdm6_dump_n0rdiag(nr_f2, lamdr2, arg2, forcing.den, qr_f2, aux2.n0r);
+                torch::clamp(qr_f2 * forcing.dend, 1.0e-30), 1.0e-30);
+            kdm6_dump_n0rdiag(nr_f2, lamdr2, arg2, forcing.dend, qr_f2, aux2.n0r);
         }
 #endif
     }
@@ -1027,7 +1027,7 @@ CoordinatorState kdm62d_one_step(
     {
         auto ni_orig2 = working.ni;
         working.ni = limit_number_for_lamda(
-            working.qi, ni_orig2, forcing.den,
+            working.qi, ni_orig2, forcing.dend,
             fconst::get().pidni, constants::DMI,
             constants::LAMDAIMIN, constants::LAMDAIMAX,
             /*q_thresh=*/1.0e-14, /*n_thresh=*/0.0);
@@ -1038,7 +1038,7 @@ CoordinatorState kdm62d_one_step(
         auto pidni2_f = torch::full_like(ni_o2_f, fconst::get().pidni);
         auto lamdi2 = torch::clamp(
             ops::libm_exp(ops::libm_log(torch::clamp(pidni2_f * ni_o2_f /
-                torch::clamp(working.qi.to(idt2) * forcing.den, 1.0e-30), 1.0e-30)) * INV_DMI_F32),
+                torch::clamp(working.qi.to(idt2) * forcing.dend, 1.0e-30), 1.0e-30)) * INV_DMI_F32),
             constants::LAMDAIMIN, constants::LAMDAIMAX);
         aux2.n0i = torch::where(working.qi >= 1.0e-14,
             working.ni.to(idt2).to(torch::kFloat64) * lamdi2.to(torch::kFloat64), aux2.n0i);
@@ -1253,10 +1253,10 @@ CoordinatorState kdm62d_one_step(
 #endif
 
     // F1f: Picons (qi → qs at avedia_i ≥ 200μm).
-    new_state = reclassify_large_ice_to_snow(new_state, forcing.den);
+    new_state = reclassify_large_ice_to_snow(new_state, forcing.dend);
 
     // F1g: rain → cloud (avedia_r ≤ 82μm).
-    new_state = reclassify_small_rain_to_cloud(new_state, forcing.den);
+    new_state = reclassify_small_rain_to_cloud(new_state, forcing.dend);
 
     // F1g+: pcact activation + satadj on post-state-update + post-reclass
     // state. Mirrors Fortran module_mp_kdm6.F:2903-2943 sequence. The
@@ -1285,7 +1285,7 @@ CoordinatorState kdm62d_one_step(
     new_state = apply_threshold_cleanup(new_state);
 
     // F1i: DSD number limiters (lamda boundary snap + NRMAX/NCMAX caps).
-    new_state = apply_dsd_number_limiters(new_state, forcing.den, /*qmin=*/1.0e-15,
+    new_state = apply_dsd_number_limiters(new_state, forcing.dend, /*qmin=*/1.0e-15,
                                           /*qcrmin=*/1.0e-9, /*ncmin_tensor=*/ncmin_for_slope);
 #ifdef KDM6_SUBSTEP_DUMP
     if (kdm6_dump_on) kdm6_dump_state_substep(new_state, "final");
@@ -1397,7 +1397,7 @@ MeltFreezePhaseOutputs melt_freeze_d1(
         s.rslope_s, s.rslope2_s, s.rslopeb_s, s.rslopemu_s,
         s.rslope_g, s.rslope2_g, s.rslopeb_g, s.rslopemu_g,
     };
-    auto d1 = melt::melting_torch(d1_in, params.melting, dtcld);
+    auto d1 = melt::melting_torch(d1_in, params.melting, dtcld, forcing.dend);
     return MeltFreezePhaseOutputs{
         /*psmlt=*/d1.psmlt, /*pgmlt=*/d1.pgmlt,
         /*pimlt_qi=*/d1.pimlt_qi, /*pimlt_ni=*/d1.pimlt_ni,
@@ -1435,7 +1435,7 @@ MeltFreezePhaseOutputs melt_freeze_d2_d4(
         rslopec, rslopec2, rslopec3, rslopecmu,
         pre.supcol,
     };
-    auto d2 = melt::contact_freezing_torch(d2_in, params.contact, dtcld);
+    auto d2 = melt::contact_freezing_torch(d2_in, params.contact, dtcld, forcing.dend);
 
     // D3: Bigg cloud freezing (cold cells). STEP 4: caps against the POST-D2 cloud
     // reservoir — Fortran subtracts pinuc/ninuc (:1533/:1536) BEFORE :1545/:1557 cap
@@ -1447,7 +1447,7 @@ MeltFreezePhaseOutputs melt_freeze_d2_d4(
     auto nc_post_d2 = (state.nc - d2.ninuc).to(state.nc.scalar_type());
     melt::BiggCloudInputs d3_in{
         qc_post_d2, nc_post_d2,
-        forcing.den,
+        forcing.dend,
         n0c,
         rslopec, rslopecd, rslopecmu,
         pre.supcol,
@@ -1457,7 +1457,7 @@ MeltFreezePhaseOutputs melt_freeze_d2_d4(
     // D4: Bigg rain freezing (cold cells)
     melt::BiggRainInputs d4_in{
         state.qr, state.nr,
-        forcing.den,
+        forcing.dend,
         n0r,
         s.rslope_r, s.rsloped_r, s.rslopemu_r,
         pre.supcol,
@@ -2218,7 +2218,7 @@ CoordinatorState apply_satadj_step(
         return static_cast<double>(k_f);
     }();
     // Fortran groups K*ncact/(3.*den): keep `3.0*den` separate (already float32, 0 ULP).
-    auto pcact_raw = PCACT_MASS_CONST * ncact / (3.0 * forcing.den);
+    auto pcact_raw = PCACT_MASS_CONST * ncact / (3.0 * forcing.dend);
     auto pcact = torch::minimum(pcact_raw, torch::clamp(state.qv, /*min=*/0.0) / dtcld);
 
     // Step 3 + 4: apply pcact + ncact to (q, qc, t, nc, nccn) — rate*dtcld rounds, then
