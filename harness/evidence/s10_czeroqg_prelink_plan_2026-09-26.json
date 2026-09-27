@@ -893,7 +893,7 @@
       "coordinator_build_approval_sha256": null,
       "s15_build_release_sha256": null,
       "command_templates_status": "DECLARED_UNEXECUTED_INCOMPLETE",
-      "measurement_subprocess_scope": "Static pin verification only, including pinned tool-version, SDK and patch reconstruction probes; no WRF preprocessing, object compilation, link or model command may run.",
+      "measurement_subprocess_scope": "No subprocesses or static/tool/environment probes run in this phase. It validates the coordinator-trusted plan hash, pinned estimate and empty-root snapshot, absent output root, and fresh OS disk_usage only. The receipt is capacity-only and cannot authorize build or model execution.",
       "measurement_status_policy": "A receipt may report MEASURED_COMPONENTS_ONLY_INCOMPLETE, but it is not a build allowance and cannot be consumed by prelink or execution validation."
     },
     "model_runs": {

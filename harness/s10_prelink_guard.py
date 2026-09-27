@@ -11,6 +11,7 @@ import hashlib
 import json
 import os
 import secrets
+import stat
 from pathlib import Path
 import re
 import shutil
@@ -168,6 +169,92 @@ def _is_relative_to(path: Path, root: Path) -> bool:
         return False
 
 
+def _lexical_absolute(path: Path) -> Path:
+    """Normalize ``.``/``..`` without following a symlink."""
+    return Path(os.path.abspath(os.fspath(path)))
+
+
+def _reject_symlink_components(path: Path) -> None:
+    """Reject symlinks from the filesystem root through an existing path."""
+    absolute = _lexical_absolute(path)
+    for component in reversed((absolute, *absolute.parents)):
+        try:
+            component.lstat()
+        except FileNotFoundError:
+            continue
+        if component.is_symlink() or not component.exists():
+            # A dangling symlink also has lstat metadata while exists() is false.
+            raise PrelinkError(f"symlink or dangling path component is forbidden: {component.name}")
+
+
+def _require_regular_file(path: Path, label: str) -> None:
+    try:
+        mode = path.lstat().st_mode
+    except OSError as exc:
+        raise PrelinkError(f"{label} is missing or unreadable") from exc
+    if not stat.S_ISREG(mode):
+        raise PrelinkError(f"{label} must be a regular file")
+
+
+def _require_regular_file_if_present(path: Path, label: str) -> None:
+    try:
+        mode = path.lstat().st_mode
+    except FileNotFoundError:
+        return
+    except OSError as exc:
+        raise PrelinkError(f"{label} target is unreadable") from exc
+    if not stat.S_ISREG(mode):
+        raise PrelinkError(f"{label} target must be a regular file when present")
+
+
+def _require_exact_workspace_path(workspace: Path, candidate: Path,
+                                  relative: str, label: str, *,
+                                  target_must_be_absent: bool = False) -> Path:
+    """Bind a path lexically under workspace and reject symlink traversal."""
+    rel = Path(relative)
+    if rel.is_absolute() or ".." in rel.parts or not rel.parts:
+        raise PrelinkError(f"{label} relative path is unsafe")
+    workspace_abs = _lexical_absolute(workspace)
+    expected = workspace_abs / rel
+    candidate_abs = _lexical_absolute(candidate)
+    if candidate_abs != expected:
+        raise PrelinkError(f"{label} path differs from the exact plan-pinned location")
+    _reject_symlink_components(expected)
+    if target_must_be_absent and os.path.lexists(expected):
+        raise PrelinkError(f"{label} target must be absent before measurement")
+    return expected
+
+
+def _write_new_workspace_receipt(workspace: Path, relative: str, payload: bytes) -> None:
+    """Create a new receipt through no-follow directory descriptors."""
+    rel = Path(relative)
+    if rel.is_absolute() or ".." in rel.parts or not rel.parts:
+        raise PrelinkError("measurement receipt relative path is unsafe")
+    if not hasattr(os, "O_NOFOLLOW") or not hasattr(os, "O_DIRECTORY"):
+        raise PrelinkError("platform lacks no-follow directory/file creation flags")
+    flags_dir = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+    flags_file = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW
+    workspace_abs = _lexical_absolute(workspace)
+    if not workspace_abs.is_absolute():
+        raise PrelinkError("measurement workspace must be absolute")
+    directory_fd = os.open(workspace_abs.anchor, flags_dir)
+    try:
+        # Open every absolute workspace component relative to the preceding
+        # directory descriptor. O_NOFOLLOW on a single absolute open protects
+        # only its final component and leaves ancestor swaps vulnerable.
+        for component in (*workspace_abs.parts[1:], *rel.parts[:-1]):
+            next_fd = os.open(component, flags_dir, dir_fd=directory_fd)
+            os.close(directory_fd)
+            directory_fd = next_fd
+        receipt_fd = os.open(rel.parts[-1], flags_file, 0o600, dir_fd=directory_fd)
+        with os.fdopen(receipt_fd, "wb") as stream:
+            stream.write(payload)
+            stream.flush()
+            os.fsync(stream.fileno())
+    finally:
+        os.close(directory_fd)
+
+
 def sha256_file(path: Path) -> str:
     try:
         return sha256_bytes(path.read_bytes())
@@ -175,14 +262,32 @@ def sha256_file(path: Path) -> str:
         raise PrelinkError(f"required file unavailable: {path}: {exc}") from exc
 
 
+def parse_json_bytes(payload: bytes, source: Path | str) -> dict[str, Any]:
+    """Parse one immutable byte buffer; callers may hash the same bytes."""
+    try:
+        value = json.loads(payload.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise PrelinkError(f"cannot read JSON receipt {source}: {exc}") from exc
+    if not isinstance(value, dict):
+        raise PrelinkError(f"JSON receipt must be an object: {source}")
+    return value
+
+
+def read_hashed_json(path: Path) -> tuple[dict[str, Any], str]:
+    """Read a JSON file once and return its parsed value and matching digest."""
+    try:
+        payload = path.read_bytes()
+    except OSError as exc:
+        raise PrelinkError(f"cannot read JSON receipt {path}: {exc}") from exc
+    return parse_json_bytes(payload, path), sha256_bytes(payload)
+
+
 def load_json(path: Path) -> dict[str, Any]:
     try:
-        value = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
+        payload = path.read_bytes()
+    except OSError as exc:
         raise PrelinkError(f"cannot read JSON receipt {path}: {exc}") from exc
-    if not isinstance(value, dict):
-        raise PrelinkError(f"JSON receipt must be an object: {path}")
-    return value
+    return parse_json_bytes(payload, path)
 
 
 def require_s15_release(plan: dict[str, Any], release: dict[str, Any],
@@ -254,20 +359,23 @@ def create_empty_root_snapshot(output_root: Path, snapshot_path: Path) -> dict[s
 
 def validate_prebuild_snapshot(snapshot_path: Path, expected_sha256: str,
                                output_root: Path, expected_snapshot_path: Path) -> dict[str, Any]:
-    if snapshot_path.resolve() != expected_snapshot_path.resolve():
+    if _lexical_absolute(snapshot_path) != _lexical_absolute(expected_snapshot_path):
         raise PrelinkError("empty-root snapshot path differs from the plan-pinned external location")
+    _reject_symlink_components(snapshot_path)
+    _require_regular_file(snapshot_path, "empty-root snapshot")
     try:
         snapshot_path.resolve().relative_to(output_root.resolve())
     except ValueError:
         pass
     else:
         raise PrelinkError("empty-root snapshot cannot be stored inside the output root")
-    if sha256_file(snapshot_path) != expected_sha256:
+    snapshot, snapshot_sha256 = read_hashed_json(snapshot_path)
+    if snapshot_sha256 != expected_sha256:
         raise PrelinkError("empty-output-root snapshot SHA is not coordinator-pinned")
-    snapshot = load_json(snapshot_path)
     nonce = snapshot.get("nonce")
     if (snapshot.get("schema") != "s10-empty-output-root-snapshot-v1"
             or snapshot.get("root_path") != str(output_root.resolve())
+            or snapshot.get("observed_absent") is not True
             or snapshot.get("observed_empty") is not True
             or snapshot.get("observed_file_count") != 0
             or not isinstance(nonce, str)
@@ -381,6 +489,12 @@ def validate_build_output_estimate(estimate: dict[str, Any]) -> tuple[int, dict[
 _BUILD_PREPARATION_COMPONENTS = (
     "preprocessed_sources_bytes", "object_module_bytes", "linked_executable_bytes",
 )
+_BUILD_PREPARATION_MEASUREMENT_SCOPE = (
+    "No subprocesses or static/tool/environment probes run in this phase. It validates the "
+    "coordinator-trusted plan hash, pinned estimate and empty-root snapshot, absent output "
+    "root, and fresh OS disk_usage only. The receipt is capacity-only and cannot authorize "
+    "build or model execution."
+)
 _S10_BUILD_COMMON_CPP_DEFINES = (
     "KDM6_PROGB_VALIDITY_CAPTURE", "KDM6_PROGB_POLICY_MIDPOINT",
 )
@@ -474,6 +588,8 @@ def validate_build_preparation_command_plan(plan: dict[str, Any]) -> None:
             or prep_gate.get("build_execution_allowed") is not False
             or prep_gate.get("preprocess_object_link_execution_supported") is not False
             or prep_gate.get("allowed_commands") != []
+            or prep_gate.get("measurement_subprocess_scope")
+            != _BUILD_PREPARATION_MEASUREMENT_SCOPE
             or run_gate.get("status") != "BLOCKED_PENDING_LOG_BOUND_AND_RETENTION"
             or run_gate.get("allowed") is not False):
         raise PrelinkError("build-preparation gate must stay measurement-only with build/run blocked")
@@ -655,13 +771,12 @@ def validate_guarded_configuration_run(plan: dict[str, Any], *,
     validate_configure_failure_markers(plan)
     requirements = plan["prelink_requirements"]
     ledger_path = workspace / requirements["configuration_execution_ledger_relative_path"]
-    ledger_sha = sha256_file(ledger_path)
+    ledger, ledger_sha = read_hashed_json(ledger_path)
     expected_ledger_sha = requirements.get("configuration_execution_ledger_sha256")
     if (not isinstance(expected_ledger_sha, str)
             or not re.fullmatch(r"[0-9a-f]{64}", expected_ledger_sha)
             or ledger_sha != expected_ledger_sha):
         raise PrelinkError("configure execution ledger differs from its final plan pin")
-    ledger = load_json(ledger_path)
     parent_plan_sha = requirements.get("configuration_ledger_plan_sha256")
     expected_config_sha = requirements.get("generated_configure_wrf_sha256")
     if (not isinstance(parent_plan_sha, str) or not re.fullmatch(r"[0-9a-f]{64}", parent_plan_sha)
@@ -761,9 +876,11 @@ def validate_guarded_configuration_run(plan: dict[str, Any], *,
     preflight_sha = ledger.get("configure_resource_preflight_receipt_sha256")
     preflight_path = workspace / plan["resource_gate"]["configure_only"][
         "preflight_receipt_relative_path"]
-    if not isinstance(preflight_sha, str) or sha256_file(preflight_path) != preflight_sha:
+    if not isinstance(preflight_sha, str):
         raise PrelinkError("guarded configuration receipt preflight SHA mismatch")
-    preflight = load_json(preflight_path)
+    preflight, actual_preflight_sha = read_hashed_json(preflight_path)
+    if actual_preflight_sha != preflight_sha:
+        raise PrelinkError("guarded configuration receipt preflight SHA mismatch")
     if (preflight.get("schema") != "s10-resource-preflight-receipt-v1"
             or preflight.get("phase") != "configure"
             or preflight.get("status") != "ALLOW_CONFIGURE_ONLY"
@@ -773,10 +890,11 @@ def validate_guarded_configuration_run(plan: dict[str, Any], *,
     marker_rel = requirements.get("configuration_preflight_consumption_marker_relative_path")
     marker_path = workspace / marker_rel if isinstance(marker_rel, str) else None
     marker_sha = ledger.get("configuration_preflight_consumption_marker_sha256")
-    if (marker_path is None or not isinstance(marker_sha, str)
-            or sha256_file(marker_path) != marker_sha):
+    if marker_path is None or not isinstance(marker_sha, str):
         raise PrelinkError("guarded configure one-shot marker is missing or changed")
-    marker = load_json(marker_path)
+    marker, actual_marker_sha = read_hashed_json(marker_path)
+    if actual_marker_sha != marker_sha:
+        raise PrelinkError("guarded configure one-shot marker is missing or changed")
     marker_nonce = marker.get("nonce")
     if (marker.get("schema") != "s10-configure-preflight-consumption-v1"
             or marker.get("status") != "CONSUMED"
@@ -894,30 +1012,36 @@ def create_resource_preflight_receipt(
     if phase not in ("configure", "measure", "build", "build-preparation-measure"):
         raise PrelinkError(
             "resource preflight phase must be configure, measure, build or build-preparation-measure")
-    expected_root = (workspace / plan["clean_shadow"]["fresh_build_output_root"]).resolve()
-    if output_root.resolve() != expected_root:
-        raise PrelinkError("resource preflight output root differs from the plan")
+    root_rel = plan["clean_shadow"]["fresh_build_output_root"]
+    _require_exact_workspace_path(workspace, output_root, root_rel, "build output root")
     snapshot_sha = plan.get("trusted_s15_release", {}).get(
         "empty_output_root_snapshot_sha256")
-    expected_snapshot = workspace / plan["clean_shadow"]["empty_root_snapshot_relative_path"]
+    snapshot_rel = plan["clean_shadow"]["empty_root_snapshot_relative_path"]
+    expected_snapshot = _require_exact_workspace_path(
+        workspace, snapshot_path, snapshot_rel, "empty-root snapshot")
     snapshot = validate_prebuild_snapshot(
         snapshot_path, snapshot_sha, output_root, expected_snapshot)
-    if output_root.exists():
+    if os.path.lexists(output_root):
         raise PrelinkError("resource preflight requires the build output root to remain absent")
-    if receipt_path.resolve() == output_root.resolve() or _is_relative_to(
-            receipt_path.resolve(), output_root.resolve()):
+    if _is_relative_to(_lexical_absolute(receipt_path), _lexical_absolute(output_root)):
         raise PrelinkError("resource preflight receipt must be outside the build output root")
-    if phase == "build":
-        expected_receipt_path = workspace / plan["resource_gate"]["build"][
-            "prebuild_gate_receipt_relative_path"]
-        if receipt_path.resolve() != expected_receipt_path.resolve():
-            raise PrelinkError("build resource preflight receipt path differs from the plan")
+    if phase == "configure":
+        receipt_rel = plan["resource_gate"]["configure_only"][
+            "preflight_receipt_relative_path"]
+    elif phase == "build-preparation-measure":
+        receipt_rel = plan["resource_gate"]["build_preparation"][
+            "measurement_only_receipt_relative_path"]
+    elif phase == "measure":
+        receipt_rel = plan["resource_gate"]["build"]["measurement_receipt_relative_path"]
+    else:
+        receipt_rel = plan["resource_gate"]["build"]["prebuild_gate_receipt_relative_path"]
+    receipt_path = _require_exact_workspace_path(
+        workspace, receipt_path, receipt_rel, "resource preflight receipt",
+        target_must_be_absent=phase == "build-preparation-measure")
+    if phase != "build-preparation-measure":
+        _require_regular_file_if_present(receipt_path, "resource preflight receipt")
     if phase == "build-preparation-measure":
         prep_gate = plan.get("resource_gate", {}).get("build_preparation", {})
-        expected_receipt_path = workspace / prep_gate.get(
-            "measurement_only_receipt_relative_path", "")
-        if receipt_path.resolve() != expected_receipt_path.resolve():
-            raise PrelinkError("build-preparation measurement receipt path differs from the plan")
         if approval is not None or approval_sha256 is not None or trusted_approval_sha256 is not None \
                 or s15_release is not None or s15_release_sha256 is not None \
                 or trusted_s15_release_sha256 is not None:
@@ -936,13 +1060,16 @@ def create_resource_preflight_receipt(
     if phase == "measure" and not gate.get("build", {}).get("output_size_estimate_sha256"):
         raise PrelinkError("build resource measurement requires a plan-pinned output-size estimate")
 
-    # Check every pinned source/config input and canonical archive before either
-    # configure-only preparation or the first build stage.
-    environment = planned_tool_environment(plan)
-    validate_static_pins(
-        plan, workspace=workspace, canonical_host=canonical_host,
-        shadow_host=shadow_host, overlay_paths=overlay_paths,
-        environment=environment)
+    # Capacity-only preparation has no compiler, SDK, patch, or WRF execution
+    # semantics. Its trusted plan/estimate/snapshot and OS disk usage are the
+    # complete measurement inputs. Configure/measure/build retain full tool and
+    # static-source validation.
+    if phase != "build-preparation-measure":
+        environment = planned_tool_environment(plan)
+        validate_static_pins(
+            plan, workspace=workspace, canonical_host=canonical_host,
+            shadow_host=shadow_host, overlay_paths=overlay_paths,
+            environment=environment)
 
     usage = shutil.disk_usage(output_root.parent)
     measured_free = usage.free
@@ -980,13 +1107,15 @@ def create_resource_preflight_receipt(
             raise PrelinkError("configure-only command allowlist is not exact")
     elif phase == "build-preparation-measure":
         prep_gate = gate["build_preparation"]
-        estimate_path_expected = workspace / prep_gate.get("estimate_relative_path", "")
-        if estimate_path is None or estimate_path.resolve() != estimate_path_expected.resolve():
-            raise PrelinkError("build-preparation estimate path differs from the reviewed plan")
-        estimate_sha = sha256_file(estimate_path)
+        if estimate_path is None:
+            raise PrelinkError("build-preparation estimate path is required")
+        _require_exact_workspace_path(
+            workspace, estimate_path, prep_gate.get("estimate_relative_path", ""),
+            "build-preparation estimate")
+        _require_regular_file(estimate_path, "build-preparation estimate")
+        estimate, estimate_sha = read_hashed_json(estimate_path)
         if estimate_sha != prep_gate.get("estimate_sha256"):
             raise PrelinkError("build-preparation estimate SHA differs from the plan pin")
-        estimate = load_json(estimate_path)
         estimated_bytes, _arm_totals = validate_build_preparation_estimate(estimate)
         if estimated_bytes != estimate.get("total_estimated_bytes"):
             raise PrelinkError("build-preparation estimate total is inconsistent")
@@ -1018,10 +1147,9 @@ def create_resource_preflight_receipt(
             "output_size_estimate_relative_path", "")
         if estimate_path.resolve() != expected_estimate_path.resolve():
             raise PrelinkError("output-size estimate path differs from the plan")
-        estimate_sha = sha256_file(estimate_path)
+        estimate, estimate_sha = read_hashed_json(estimate_path)
         if estimate_sha != build_gate.get("output_size_estimate_sha256"):
             raise PrelinkError("output-size estimate SHA differs from the reviewed plan")
-        estimate = load_json(estimate_path)
         if estimate.get("schema") != "s10-build-output-estimate-v1":
             raise PrelinkError("output-size estimate schema mismatch")
         estimated_bytes, _arm_totals = validate_build_output_estimate(estimate)
@@ -1059,8 +1187,7 @@ def create_resource_preflight_receipt(
                 plan, workspace=workspace, shadow_host=shadow_host)
             measurement_path = workspace / build_gate.get(
                 "measurement_receipt_relative_path", "")
-            measurement_sha = sha256_file(measurement_path)
-            measurement = load_json(measurement_path)
+            measurement, measurement_sha = read_hashed_json(measurement_path)
             if (measurement.get("schema") != "s10-resource-preflight-receipt-v1"
                     or measurement.get("phase") != "measure"
                     or measurement.get("status") != "MEASURED_BUILD_CAPACITY"
@@ -1106,8 +1233,12 @@ def create_resource_preflight_receipt(
         "output_root_path": str(output_root.resolve()),
         "empty_output_root_snapshot_sha256": snapshot_sha,
         "empty_output_root_snapshot_nonce_sha256": snapshot["nonce_sha256"],
-        "toolchain_sha256": plan["toolchain"]["toolchain_sha256"],
-        "tool_environment_sha256": plan["toolchain"]["environment_sha256"],
+        "toolchain_sha256": (
+            None if phase == "build-preparation-measure"
+            else plan["toolchain"]["toolchain_sha256"]),
+        "tool_environment_sha256": (
+            None if phase == "build-preparation-measure"
+            else plan["toolchain"]["environment_sha256"]),
         "free_space_probe_path": str(output_root.parent.resolve()),
         "free_space_total_bytes": usage.total,
         "free_space_used_bytes": usage.used,
@@ -1121,7 +1252,12 @@ def create_resource_preflight_receipt(
         "resource_measurement_receipt_sha256": measurement_sha,
         "build_preparation_measurement_only": phase == "build-preparation-measure",
         "build_preparation_capacity_status": build_preparation_capacity_status,
-        "static_pin_validation_completed": phase == "build-preparation-measure",
+        "static_pin_validation_completed": (
+            False if phase == "build-preparation-measure" else None),
+        "toolchain_validation_completed": (
+            False if phase == "build-preparation-measure" else None),
+        "environment_validation_completed": (
+            False if phase == "build-preparation-measure" else None),
         "measurement_subprocess_scope": (
             plan["resource_gate"]["build_preparation"]["measurement_subprocess_scope"]
             if phase == "build-preparation-measure" else None),
@@ -1147,8 +1283,13 @@ def create_resource_preflight_receipt(
         "nonce": nonce,
         "nonce_sha256": sha256_bytes(nonce.encode()),
     }
-    receipt_path.parent.mkdir(parents=True, exist_ok=True)
-    receipt_path.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    payload = (json.dumps(result, indent=2) + "\n").encode()
+    if phase == "build-preparation-measure":
+        _write_new_workspace_receipt(
+            workspace, receipt_rel, payload)
+    else:
+        receipt_path.parent.mkdir(parents=True, exist_ok=True)
+        receipt_path.write_bytes(payload)
     return result
 
 
@@ -2121,12 +2262,12 @@ def _validate_configuration_ledger(execution: dict[str, Any], plan: dict[str, An
     recorded_sha = execution.get("configuration_command_ledger_sha256")
     expected_ledger_sha = plan["prelink_requirements"].get(
         "configuration_execution_ledger_sha256")
+    ledger, ledger_sha = read_hashed_json(ledger_path)
     if (not isinstance(expected_ledger_sha, str)
             or not re.fullmatch(r"[0-9a-f]{64}", expected_ledger_sha)
             or recorded_sha != expected_ledger_sha
-            or sha256_file(ledger_path) != recorded_sha):
+            or ledger_sha != recorded_sha):
         raise PrelinkError("configuration execution ledger is missing or differs from its final plan pin")
-    ledger = load_json(ledger_path)
     ledger_nonce = ledger.get("nonce")
     if (ledger.get("schema") != "s10-guarded-configuration-ledger-v1"
             or ledger.get("plan_sha256") != plan_sha256
@@ -2166,9 +2307,11 @@ def _validate_configuration_ledger(execution: dict[str, Any], plan: dict[str, An
         raise PrelinkError("configuration ledger is not bound to its configure-only preflight receipt")
     preflight_path = workspace / plan["resource_gate"]["configure_only"][
         "preflight_receipt_relative_path"]
-    if not isinstance(expected_preflight_sha, str) or sha256_file(preflight_path) != expected_preflight_sha:
+    if not isinstance(expected_preflight_sha, str):
         raise PrelinkError("configure-only resource preflight receipt digest is missing or changed")
-    preflight = load_json(preflight_path)
+    preflight, actual_preflight_sha = read_hashed_json(preflight_path)
+    if actual_preflight_sha != expected_preflight_sha:
+        raise PrelinkError("configure-only resource preflight receipt digest is missing or changed")
     if (preflight.get("schema") != "s10-resource-preflight-receipt-v1"
             or preflight.get("phase") != "configure"
             or preflight.get("status") != "ALLOW_CONFIGURE_ONLY"
@@ -2645,11 +2788,9 @@ def make_prelink_receipt(plan_path: Path, release_path: Path, execution_path: Pa
                          trusted_release_sha256: str,
                          trusted_resource_approval_sha256: str,
                          receipt_path: Path) -> dict[str, Any]:
-    plan = load_json(plan_path)
-    release = load_json(release_path)
-    execution = load_json(execution_path)
-    plan_sha = sha256_file(plan_path)
-    release_sha = sha256_file(release_path)
+    plan, plan_sha = read_hashed_json(plan_path)
+    release, release_sha = read_hashed_json(release_path)
+    execution, execution_sha = read_hashed_json(execution_path)
     require_s15_release(plan, release, plan_sha, release_sha, trusted_release_sha256)
     expected_snapshot_sha = plan["trusted_s15_release"]["empty_output_root_snapshot_sha256"]
     expected_snapshot_path = workspace / plan["clean_shadow"]["empty_root_snapshot_relative_path"]
@@ -2659,22 +2800,20 @@ def make_prelink_receipt(plan_path: Path, release_path: Path, execution_path: Pa
         expected_snapshot_path)
     resource_rel = plan["resource_gate"]["build"]["prebuild_gate_receipt_relative_path"]
     resource_path = workspace / resource_rel
-    resource_sha = sha256_file(resource_path)
+    resource_receipt, resource_sha = read_hashed_json(resource_path)
     if execution.get("resource_preflight_receipt_sha256") != resource_sha:
         raise PrelinkError("execution receipt resource-gate digest does not match the prebuild receipt")
-    resource_receipt = load_json(resource_path)
     build_gate = plan["resource_gate"]["build"]
     configuration_run = validate_guarded_configuration_run(
         plan, workspace=workspace, shadow_host=shadow_host)
     measurement_path = workspace / build_gate["measurement_receipt_relative_path"]
-    measurement_sha = sha256_file(measurement_path)
-    measurement = load_json(measurement_path)
+    measurement, measurement_sha = read_hashed_json(measurement_path)
     approval_path = workspace / build_gate["coordinator_approval_relative_path"]
-    approval_sha = sha256_file(approval_path)
+    approval, approval_sha = read_hashed_json(approval_path)
     if approval_sha != trusted_resource_approval_sha256:
         raise PrelinkError("coordinator resource-approval receipt SHA mismatch")
     require_resource_gate_approval(
-        plan, load_json(approval_path), plan_sha256=plan_sha,
+        plan, approval, plan_sha256=plan_sha,
         estimate_sha256=build_gate["output_size_estimate_sha256"],
         snapshot_sha256=expected_snapshot_sha,
         measurement_receipt_sha256=measurement_sha,
@@ -2722,13 +2861,13 @@ def make_prelink_receipt(plan_path: Path, release_path: Path, execution_path: Pa
         "schema": "s10-czeroqg-prelink-receipt-v1",
         "status": "READY_TO_LINK",
         "plan_sha256": plan_sha,
-        "release_receipt_sha256": sha256_file(release_path),
+        "release_receipt_sha256": release_sha,
         "coordinator_trusted_release_sha256": trusted_release_sha256,
         "resource_preflight_receipt_sha256": resource_sha,
         "coordinator_trusted_resource_approval_sha256": trusted_resource_approval_sha256,
         "empty_output_root_snapshot_sha256": expected_snapshot_sha,
         "empty_output_root_snapshot_nonce_sha256": snapshot["nonce_sha256"],
-        "execution_receipt_sha256": sha256_file(execution_path),
+        "execution_receipt_sha256": execution_sha,
         "static_pins": pins,
         "validated_variants": checked,
         "build_outputs": execution["build_outputs"],
@@ -2774,10 +2913,14 @@ def resource_preflight_main(argv: list[str]) -> int:
     parser.add_argument("--trusted-s15-release-sha256")
     args = parser.parse_args(argv)
     try:
-        plan_sha = sha256_file(args.plan)
+        try:
+            plan_bytes = args.plan.read_bytes()
+        except OSError as exc:
+            raise PrelinkError(f"cannot read plan bytes: {exc}") from exc
+        plan_sha = sha256_bytes(plan_bytes)
         if plan_sha != args.trusted_plan_sha256:
             raise PrelinkError("resource preflight plan SHA differs from coordinator-trusted pin")
-        plan = load_json(args.plan)
+        plan = parse_json_bytes(plan_bytes, args.plan)
         workspace = args.workspace.resolve()
         output_root = workspace / plan["clean_shadow"]["fresh_build_output_root"]
         snapshot_path = workspace / plan["clean_shadow"]["empty_root_snapshot_relative_path"]
@@ -2803,10 +2946,14 @@ def resource_preflight_main(argv: list[str]) -> int:
                 args.resource_approval is not None or args.trusted_resource_approval_sha256 is not None
                 or args.s15_release is not None or args.trusted_s15_release_sha256 is not None):
             raise PrelinkError("measurement-only phase does not accept coordinator approval or release inputs")
-        approval = load_json(args.resource_approval) if args.resource_approval else None
-        approval_sha = sha256_file(args.resource_approval) if args.resource_approval else None
-        s15_release = load_json(args.s15_release) if args.s15_release else None
-        s15_release_sha = sha256_file(args.s15_release) if args.s15_release else None
+        if args.resource_approval:
+            approval, approval_sha = read_hashed_json(args.resource_approval)
+        else:
+            approval, approval_sha = None, None
+        if args.s15_release:
+            s15_release, s15_release_sha = read_hashed_json(args.s15_release)
+        else:
+            s15_release, s15_release_sha = None, None
         result = create_resource_preflight_receipt(
             plan, plan_sha256=plan_sha, workspace=workspace,
             canonical_host=args.canonical_host, shadow_host=args.shadow_host,
