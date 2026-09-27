@@ -767,6 +767,91 @@ void test_c_abi_step_ad_fp64_vjp_finite_and_adjoint() {
     } END_TEST();
 }
 
+void test_c_abi_step_ad_dry_number() {
+    TEST(test_c_abi_step_ad_dry_number) {
+        const int im = 1, kme = 3, jme = 1;
+        constexpr size_t BK = 3, NF = 12, N = BK * NF;
+        std::vector<double> state(N, 0.0), forcing(4 * BK, 0.0);
+        for (size_t k = 0; k < BK; ++k) {
+            state[0*BK+k] = 290.0; state[1*BK+k] = 0.014;
+            state[2*BK+k] = 0.001; state[3*BK+k] = 0.0001;
+            state[7*BK+k] = 1e9; state[8*BK+k] = 1e8;
+            state[10*BK+k] = 1e4;
+            forcing[0*BK+k] = 1.0; forcing[1*BK+k] = 0.97;
+            forcing[2*BK+k] = 9e4; forcing[3*BK+k] = 500.0;
+        }
+        float xland[1] = {2.0f};
+        auto call = [&](const std::vector<double>& input, std::vector<double>& output,
+                        kdm6_handle_t** handle, int value_only,
+                        uint32_t variant, int64_t dry_number) {
+            return kdm6_step_ad_number_c(input.data(), forcing.data(),
+                im, kme, jme, 20.0, value_only, output.data(), handle,
+                xland, 100.0, 10.0, variant, dry_number);
+        };
+
+        std::vector<double> old(N, -777.0), selected(N, -777.0);
+        kdm6_handle_t* handle = nullptr;
+        assert(kdm6_step_ad_variant_c(state.data(), forcing.data(), im, kme, jme,
+               20.0, 1, old.data(), &handle, xland, 100.0, 10.0,
+               KDM6_PHYSICS_LEGACY) == KDM6_OK);
+        assert(call(state, selected, &handle, 1, KDM6_PHYSICS_LEGACY, 0) == KDM6_OK);
+        assert(handle == nullptr);
+        assert(std::memcmp(old.data(), selected.data(), N*sizeof(double)) == 0);
+
+        std::vector<double> output(N, -777.0);
+        assert(call(state, output, &handle, 0, KDM6_PHYSICS_LEGACY, 1) == KDM6_OK);
+        assert(handle != nullptr);
+        for (double value : output) assert(std::isfinite(value));
+        std::vector<double> direction(N, 0.0), seed(N, 0.0), jvp(N), vjp(N);
+        for (size_t k = 0; k < BK; ++k) {
+            direction[1*BK+k] = 1e-3;
+            direction[7*BK+k] = 1e4; direction[8*BK+k] = 1e4;
+            direction[9*BK+k] = 1e2; direction[10*BK+k] = 1.0;
+        }
+        for (size_t f = 0; f < NF; ++f)
+            for (size_t k = 0; k < BK; ++k)
+                seed[f*BK+k] = (f >= 7 && f <= 10) ? 1e-9 : 1e-2;
+        assert(kdm6_handle_jvp_c(handle, direction.data(), jvp.data()) == KDM6_OK);
+        assert(kdm6_handle_vjp_c(handle, seed.data(), vjp.data()) == KDM6_OK);
+        double lhs = 0.0, rhs = 0.0;
+        for (size_t i = 0; i < N; ++i) {
+            assert(std::isfinite(jvp[i]) && std::isfinite(vjp[i]));
+            lhs += jvp[i] * seed[i]; rhs += direction[i] * vjp[i];
+        }
+        assert(std::abs(lhs-rhs) <= 1e-10 * std::max({1.0,std::abs(lhs),std::abs(rhs)}));
+        assert(kdm6_handle_closep_c(&handle) == KDM6_OK && handle == nullptr);
+
+        const double h = 1e-4;
+        std::vector<double> upper = state, lower = state;
+        for (size_t i = 0; i < N; ++i) {
+            upper[i] += h * direction[i]; lower[i] -= h * direction[i];
+        }
+        std::vector<double> out_upper(N), out_lower(N), value(N);
+        assert(call(upper, out_upper, &handle, 1, KDM6_PHYSICS_LEGACY, 1) == KDM6_OK);
+        assert(call(lower, out_lower, &handle, 1, KDM6_PHYSICS_LEGACY, 1) == KDM6_OK);
+        assert(call(state, value, &handle, 1, KDM6_PHYSICS_LEGACY, 1) == KDM6_OK);
+        assert(std::memcmp(output.data(), value.data(), N*sizeof(double)) == 0);
+        for (size_t f : {7u, 8u, 9u, 10u}) for (size_t k = 0; k < BK; ++k) {
+            const size_t i = f*BK+k;
+            const double fd = (out_upper[i]-out_lower[i])/(2*h);
+            assert(std::abs(jvp[i]-fd) <= 1e-4 * std::max(1.0,std::abs(jvp[i])));
+        }
+
+        for (int64_t invalid : {int64_t{-1}, int64_t{2}, int64_t{INT64_MAX}}) {
+            std::vector<double> untouched(N, -777.0);
+            handle = reinterpret_cast<kdm6_handle_t*>(0x1);
+            assert(call(state, untouched, &handle, 0, KDM6_PHYSICS_LEGACY,
+                        invalid) == KDM6_ERR_INVALID_ARG);
+            assert(handle == nullptr);
+            for (double v : untouched) assert(v == -777.0);
+        }
+        std::vector<double> conservative(N);
+        assert(call(state, conservative, &handle, 1,
+                    KDM6_PHYSICS_CONSERVATIVE_INTERFACE, 1) == KDM6_OK);
+        for (double v : conservative) assert(std::isfinite(v));
+    } END_TEST();
+}
+
 void test_c_abi_fp64_packed_layout_nontrivial_tile() {
     TEST(test_c_abi_fp64_packed_layout_nontrivial_tile) {
         // fp64 twin of test_c_abi_vjp_packed_layout_nontrivial_tile, via kdm6_step_ad_c. The
@@ -1965,6 +2050,7 @@ int main() {
     test_c_abi_vjp_value_only_refused();
     test_c_abi_vjp_packed_layout_nontrivial_tile();
     test_c_abi_step_ad_fp64_vjp_finite_and_adjoint();
+    test_c_abi_step_ad_dry_number();
     test_c_abi_fp64_packed_layout_nontrivial_tile();
     test_c_abi_invalid_value_only();
     std::cout << "All C ABI tests passed.\n";

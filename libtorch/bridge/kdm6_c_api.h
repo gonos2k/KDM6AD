@@ -307,6 +307,25 @@ KDM6_C_API int kdm6_step_ad_variant_c(
     double ncmin_sea,
     uint32_t physics_variant);
 
+/* Additive fp64 entry for dry-specific host QN coordinates. dry_number=0
+ * matches kdm6_step_ad_variant_c; dry_number=1 interprets all four packed QN
+ * input/output blocks as number per kg dry air. rho forcing stays fixed; qv
+ * is a state block, so its derivative includes the entry rho_d conversion.
+ * Values outside 0/1 fail before tensor work with NULL handle and untouched
+ * output. Existing fp64 and f32 C symbols keep their signatures. */
+KDM6_C_API int kdm6_step_ad_number_c(
+    const double* state_in_packed,
+    const double* forcing_packed,
+    int im, int kme, int jme, double dt,
+    int value_only,
+    double* state_out_packed,
+    kdm6_handle_t** handle,
+    const float* xland,
+    double ncmin_land,
+    double ncmin_sea,
+    uint32_t physics_variant,
+    int64_t dry_number);
+
 /**
  * VJP — J^T @ u. 4D-Var adjoint 용.
  *
