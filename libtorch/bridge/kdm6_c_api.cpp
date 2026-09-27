@@ -616,7 +616,7 @@ kdm6::Forcing unpack_packed_forcing(const double* packed, int im, int kme, int j
 // a prognostic state variable and not an adjoint quantity — 4D-Var never needs its
 // gradient. It is exposed solely on the forward operational path (kdm6_step_c's
 // rhog_out). state_out_packed here carries only the prognostic state.
-extern "C" int kdm6_step_ad_variant_c(
+static int kdm6_step_ad_variant_impl(
     const double* state_in_packed,
     const double* forcing_packed,
     int im, int kme, int jme, double dt,
@@ -626,7 +626,8 @@ extern "C" int kdm6_step_ad_variant_c(
     const float* xland,
     double ncmin_land,
     double ncmin_sea,
-    uint32_t physics_variant) {
+    uint32_t physics_variant,
+    int64_t dry_number) {
     if (handle) *handle = nullptr;   // NULL output handle on every error path (see kdm6_step_c)
     if (im <= 0 || kme <= 0 || jme <= 0 ||
         !kdm6::fortran_packed_shape_fits(im, kme, jme, sizeof(double),
@@ -646,6 +647,7 @@ extern "C" int kdm6_step_ad_variant_c(
     if (physics_variant != (uint32_t)KDM6_PHYSICS_LEGACY &&
         physics_variant != (uint32_t)KDM6_PHYSICS_CONSERVATIVE_INTERFACE)
         return KDM6_ERR_INVALID_ARG;
+    if (dry_number < 0 || dry_number > 1) return KDM6_ERR_INVALID_ARG;
     kdm6::PhysicsOptions physics;
     physics.variant = (physics_variant == (uint32_t)KDM6_PHYSICS_CONSERVATIVE_INTERFACE)
         ? kdm6::PhysicsVariant::ConservativeInterface
@@ -683,7 +685,8 @@ extern "C" int kdm6_step_ad_variant_c(
 
         auto result = kdm6::kdm6_step(state_in, forcing, params, dt,
                                       value_only != 0, xland_t,
-                                      ncmin_land, ncmin_sea, physics);
+                                      ncmin_land, ncmin_sea, physics,
+                                      dry_number == 1);
         pack_packed_state(result.state_out, state_out_packed, im, kme, jme);
 
         if (value_only != 0) {
@@ -704,6 +707,30 @@ extern "C" int kdm6_step_ad_variant_c(
     } catch (...) {
         return KDM6_ERR_INTERNAL;
     }
+}
+
+extern "C" int kdm6_step_ad_variant_c(
+    const double* state_in_packed, const double* forcing_packed,
+    int im, int kme, int jme, double dt, int value_only,
+    double* state_out_packed, kdm6_handle_t** handle,
+    const float* xland, double ncmin_land, double ncmin_sea,
+    uint32_t physics_variant) {
+    return kdm6_step_ad_variant_impl(
+        state_in_packed, forcing_packed, im, kme, jme, dt, value_only,
+        state_out_packed, handle, xland, ncmin_land, ncmin_sea,
+        physics_variant, /*dry_number=*/0);
+}
+
+extern "C" int kdm6_step_ad_number_c(
+    const double* state_in_packed, const double* forcing_packed,
+    int im, int kme, int jme, double dt, int value_only,
+    double* state_out_packed, kdm6_handle_t** handle,
+    const float* xland, double ncmin_land, double ncmin_sea,
+    uint32_t physics_variant, int64_t dry_number) {
+    return kdm6_step_ad_variant_impl(
+        state_in_packed, forcing_packed, im, kme, jme, dt, value_only,
+        state_out_packed, handle, xland, ncmin_land, ncmin_sea,
+        physics_variant, dry_number);
 }
 
 extern "C" int kdm6_step_ad_c(

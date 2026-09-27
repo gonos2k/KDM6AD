@@ -68,10 +68,10 @@ target_include_directories(kdm6_c
 target_link_libraries(kdm6_c PUBLIC kdm6)
 
 # ── PR3: symbol visibility / export allowlist (docs/PR3_VISIBILITY_DESIGN.md) ─
-# The shipped dylib must export ONLY the 10 C ABI functions (kdm6_c_api.h), not
+# The shipped dylib must export ONLY the 11 C ABI functions (kdm6_c_api.h), not
 # its ~1342-symbol internal world (kdm6::/libtorch/std). Two layers:
 #  (1) compiler visibility hidden on BOTH this bridge and the static kdm6 core
-#      above — each of the 10 is opted back in via KDM6_C_API in the header;
+#      above — each of the 11 is opted back in via KDM6_C_API in the header;
 #  (2) a linker export allowlist as the load-bearing backstop (macOS
 #      exported_symbols_list / Linux --version-script), which the symbol-surface
 #      CI gate measures. KDM6_C_BUILD makes KDM6_C_API take the producer branch
@@ -175,7 +175,7 @@ target_link_libraries(test_handle_vjp PRIVATE kdm6)
 add_test(NAME handle_vjp COMMAND test_handle_vjp)
 # conservative-interface-v1 C3 certification gates. Links BOTH kdm6 (direct
 # substep + internal fp64/AD gates) and kdm6_c (public v2 f32 + kdm6_step_ad_c
-# pin) — the dylib exports only the 10 C symbols, so no kdm6:: duplication.
+# pin) — the dylib exports only the 11 C symbols, so no kdm6:: duplication.
 # legacy_signature_caller.cpp is a SEPARATE TU calling the pre-PR22 signatures
 # (kdm6_step 8-param / kdm6_fn 7-param): linking it proves the old mangled
 # symbols still resolve, like a real already-compiled consumer (C3.6).

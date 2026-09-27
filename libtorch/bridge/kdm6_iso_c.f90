@@ -65,7 +65,7 @@ module kdm6_iso_c
      integer(c_int64_t) :: dry_number
   end type kdm6_step_v2_args_t
 
-  public :: kdm6_step, kdm6_step_ad, kdm6_step_ad_variant
+  public :: kdm6_step, kdm6_step_ad, kdm6_step_ad_variant, kdm6_step_ad_number
   public :: kdm6_handle_vjp, kdm6_handle_jvp, kdm6_handle_close
   public :: kdm6_get_abi_version_c, kdm6_step_v2_args_size_c, kdm6_step_v2_c
 
@@ -172,6 +172,27 @@ module kdm6_iso_c
       integer(c_int32_t), value   :: physics_variant
       integer(c_int)              :: rc
     end function kdm6_step_ad_variant_c
+
+    function kdm6_step_ad_number_c( &
+        state_in_packed, forcing_packed, &
+        im, kme, jme, dt, value_only, &
+        state_out_packed, handle, &
+        xland, ncmin_land, ncmin_sea, physics_variant, dry_number &
+      ) bind(C, name="kdm6_step_ad_number_c") result(rc)
+      import :: c_int, c_int32_t, c_int64_t, c_double, c_float, c_ptr
+      real(c_double), intent(in)  :: state_in_packed(*)
+      real(c_double), intent(in)  :: forcing_packed(*)
+      integer(c_int), value       :: im, kme, jme
+      real(c_double), value       :: dt
+      integer(c_int), value       :: value_only
+      real(c_double), intent(out) :: state_out_packed(*)
+      type(c_ptr), intent(out)    :: handle
+      real(c_float), intent(in)  :: xland(*)
+      real(c_double), value       :: ncmin_land, ncmin_sea
+      integer(c_int32_t), value   :: physics_variant
+      integer(c_int64_t), value   :: dry_number
+      integer(c_int)              :: rc
+    end function kdm6_step_ad_number_c
 
     function kdm6_handle_vjp_c(h, u_packed, grad_out_packed) &
         bind(C, name="kdm6_handle_vjp_c") result(rc)
@@ -313,6 +334,29 @@ contains
                                 state_out, handle, xland, ncmin_land, ncmin_sea, &
                                 physics_variant)
   end function kdm6_step_ad_variant
+
+  function kdm6_step_ad_number( &
+      state_in, forcing, &
+      im, kme, jme, dt, value_only, &
+      state_out, handle, &
+      xland, ncmin_land, ncmin_sea, physics_variant, dry_number &
+    ) result(rc)
+    real(c_double), intent(in),  contiguous :: state_in(:,:,:,:)
+    real(c_double), intent(in),  contiguous :: forcing(:,:,:,:)
+    integer(c_int), intent(in)              :: im, kme, jme
+    real(c_double), intent(in)              :: dt
+    integer(c_int), intent(in)              :: value_only
+    real(c_double), intent(out), contiguous :: state_out(:,:,:,:)
+    type(c_ptr),    intent(out)             :: handle
+    real(c_float),  intent(in),  contiguous :: xland(:,:)
+    real(c_double), intent(in)              :: ncmin_land, ncmin_sea
+    integer(c_int32_t), intent(in)          :: physics_variant
+    integer(c_int64_t), intent(in)          :: dry_number
+    integer(c_int)                          :: rc
+    rc = kdm6_step_ad_number_c(state_in, forcing, im, kme, jme, dt, value_only, &
+                               state_out, handle, xland, ncmin_land, ncmin_sea, &
+                               physics_variant, dry_number)
+  end function kdm6_step_ad_number
 
   function kdm6_handle_vjp(h, u_packed, grad_out_packed) result(rc)
     type(c_ptr),    intent(in)              :: h

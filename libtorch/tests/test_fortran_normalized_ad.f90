@@ -146,5 +146,14 @@ program test_fortran_normalized_ad
   rc = kdm6_step_ad_variant(state64, forcing64, im, kme, jme, dt, 1_c_int, &
        value64, handle, xland, 100.0_c_double, 10.0_c_double, KDM6_PHYSICS_CONSERVATIVE_INTERFACE)
   if (rc /= KDM6_OK .or. c_associated(handle) .or. any(out64 /= value64)) stop 1
+  rc = kdm6_step_ad_number(state64, forcing64, im, kme, jme, dt, 0_c_int, &
+       out64, handle, xland, 100.0_c_double, 10.0_c_double, &
+       KDM6_PHYSICS_CONSERVATIVE_INTERFACE, 1_c_int64_t)
+  if (rc /= KDM6_OK .or. .not. c_associated(handle) .or. &
+      any(.not. ieee_is_finite(out64))) stop 1
+  rc = kdm6_handle_jvp(handle, v, jv)
+  if (rc /= KDM6_OK .or. any(.not. ieee_is_finite(jv))) stop 1
+  rc = kdm6_handle_close(handle)
+  if (rc /= KDM6_OK .or. c_associated(handle)) stop 1
   print *, 'PASS: Fortran normalized f32 and fp64 forward, JVP/VJP, duality, close, value-only parity'
 end program test_fortran_normalized_ad
