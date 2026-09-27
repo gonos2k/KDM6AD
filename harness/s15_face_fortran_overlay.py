@@ -41,6 +41,13 @@ MAX_FACE_STREAM_BYTES = 64 * 1024
 MAX_LEGACY_STREAM_BYTES = 1024 * 1024
 MAX_LEGACY_RECORDS = 100_000
 EXPECTED_FACE_TAG_COUNTS = {"S15AX": 18, "S15PD": 2, "S15RK": 6}
+WRF_CPP_BASE = ("-P", "-nostdinc", "-xassembler-with-cpp")
+WRF_TRADITIONAL_CPP = ("-traditional-cpp",)
+
+
+def wrf_suffix_final_cpp_argv(cpp: str | Path, input_file: str | Path) -> list[str]:
+    """Build the configured .F.o final pass: CPP base plus TRADFLAG only."""
+    return [str(cpp), *WRF_CPP_BASE, *WRF_TRADITIONAL_CPP, str(input_file)]
 
 
 def sha256(data: bytes) -> str:

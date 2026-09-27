@@ -152,6 +152,21 @@ def test_fortran_emitters_enforce_the_26_event_family_caps() -> None:
     assert "S15LIMIT S15PD event cap exceeded" in advect_helpers
 
 
+def test_wrf_final_suffix_cpp_pass_uses_only_cpp_base_and_tradflag() -> None:
+    argv = overlay.wrf_suffix_final_cpp_argv("cpp-15", "module_mp_kdm6.H")
+    assert argv == [
+        "cpp-15",
+        "-P",
+        "-nostdinc",
+        "-xassembler-with-cpp",
+        "-traditional-cpp",
+        "module_mp_kdm6.H",
+    ]
+    assert "-I" not in argv
+    assert not any(arg.startswith("-D") for arg in argv)
+    assert overlay.MACRO not in argv
+
+
 def test_macro_off_call_rewrite_preserves_the_original_closing_line() -> None:
     original = "                                  kts=k_start, kte=k_end )"
     guarded = overlay._wrap_closing_line(
