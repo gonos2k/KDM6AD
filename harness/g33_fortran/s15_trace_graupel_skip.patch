@@ -1,0 +1,94 @@
+--- a/phys/module_mp_kdm6.F
++++ b/phys/module_mp_kdm6.F
+@@ -567,0 +568 @@
++    use, intrinsic :: ieee_arithmetic, only : ieee_is_finite
+@@ -694,0 +696,3 @@
++   logical, dimension(its:ite,kts:kte) :: s15_rhox_valid
++   real :: s15_rhox_denom
++   logical :: s15_rhox_bad
+@@ -756,0 +761 @@
++   real, parameter :: melt_brs_min = 1.e-15   ! = ProgB_param's brs_min
+@@ -1323,0 +1329,5 @@
++      do k = kts, kte
++        do i = its, ite
++          s15_rhox_valid(i,k) = qrs_tmp(i,k,3).gt.qcrmin .or. brs(i,k).gt.melt_brs_min
++        enddo
++      enddo
+@@ -1399 +1409,3 @@
+-            if(qrs(i,k,3).gt.0.) then
++            if (qrs(i,k,3).gt.0. .and. s15_rhox_valid(i,k)) then
++! G1: the SAME existence test ProgB_param uses before computing rhox.
++! Where the density was not computed, the melt does not run either.
+@@ -1418 +1430,16 @@
+-              brs(i,k) = brs(i,k) + (pgmlt(i,k)/rhox(i,k))
++              s15_rhox_denom = 1.
++              s15_rhox_bad = .not.s15_rhox_valid(i,k)
++              if (s15_rhox_valid(i,k)) then
++                if (ieee_is_finite(rhox(i,k))) then
++                  s15_rhox_denom = rhox(i,k)
++                  s15_rhox_bad = s15_rhox_denom.le.0.
++                else
++                  s15_rhox_bad = .true.
++                endif
++              endif
++              if (s15_rhox_bad) then
++                write(*,'(a,4(1x,i0),1(1x,z8.8))') 'S15G1_BAD_RHOX pgmlt',lat,loop,i,k, &
++                     transfer(pgmlt(i,k),0)
++                error stop 'S15G1 invalid rhox for pgmlt'
++              endif
++              brs(i,k) = brs(i,k) + (pgmlt(i,k)/s15_rhox_denom)
+@@ -1705,0 +1733,5 @@
++      do k = kts, kte
++        do i = its, ite
++          s15_rhox_valid(i,k) = qrs_tmp(i,k,3).gt.qcrmin .or. brs(i,k).gt.melt_brs_min
++        enddo
++      enddo
+@@ -2472 +2504 @@
+-            if(qrs(i,k,3).gt.0.)                                               &
++            if(qrs(i,k,3).gt.0. .and. s15_rhox_valid(i,k))                  &
+@@ -2557 +2589 @@
+-            if(qrs(i,k,3).gt.0. .and. ifsat.ne.1) then
++            if(qrs(i,k,3).gt.0. .and. s15_rhox_valid(i,k) .and. ifsat.ne.1) then
+@@ -2616 +2648 @@
+-            if(qrs(i,k,3).gt.0. .and. rh(i,k,1).lt.1.) then
++            if(qrs(i,k,3).gt.0. .and. s15_rhox_valid(i,k) .and. rh(i,k,1).lt.1.) then
+@@ -2824,2 +2856,17 @@
+-            brs(i,k) = max(brs(i,k)+(pgdep(i,k)/rhox(i,k)+biacr(i,k)           &
+-                           +braci(i,k)+bsacr(i,k)+bracs(i,k)+bgaci(i,k)        &
++            s15_rhox_denom = 1.
++            s15_rhox_bad = pgdep(i,k).ne.0.
++            if (s15_rhox_valid(i,k)) then
++              if (ieee_is_finite(rhox(i,k))) then
++                s15_rhox_denom = rhox(i,k)
++                s15_rhox_bad = s15_rhox_denom.le.0.
++              else
++                s15_rhox_bad = .true.
++              endif
++            endif
++            if (s15_rhox_bad) then
++              write(*,'(a,4(1x,i0),1(1x,z8.8))') 'S15G1_BAD_RHOX pgdep',lat,loop,i,k, &
++                   transfer(pgdep(i,k),0)
++              error stop 'S15G1 invalid rhox for pgdep'
++            endif
++            brs(i,k) = max(brs(i,k)+(pgdep(i,k)/s15_rhox_denom+biacr(i,k)    &
++                           +braci(i,k)+bsacr(i,k)+bracs(i,k)+bgaci(i,k)      &
+@@ -2915,2 +2962,17 @@
+-            bgevp(i,k)=pgevp(i,k)/rhox(i,k)
+-            bgeml(i,k)=pgeml(i,k)/rhox(i,k)
++            s15_rhox_denom = 1.
++            s15_rhox_bad = pgevp(i,k).ne.0. .or. pgeml(i,k).ne.0.
++            if (s15_rhox_valid(i,k)) then
++              if (ieee_is_finite(rhox(i,k))) then
++                s15_rhox_denom = rhox(i,k)
++                s15_rhox_bad = s15_rhox_denom.le.0.
++              else
++                s15_rhox_bad = .true.
++              endif
++            endif
++            if (s15_rhox_bad) then
++              write(*,'(a,4(1x,i0),2(1x,z8.8))') 'S15G1_BAD_RHOX graupel',lat,loop,i,k, &
++                   transfer(pgevp(i,k),0),transfer(pgeml(i,k),0)
++              error stop 'S15G1 invalid rhox for pgevp/pgeml'
++            endif
++            bgevp(i,k)=pgevp(i,k)/s15_rhox_denom
++            bgeml(i,k)=pgeml(i,k)/s15_rhox_denom
