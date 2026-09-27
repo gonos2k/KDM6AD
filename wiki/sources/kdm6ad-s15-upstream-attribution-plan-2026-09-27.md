@@ -28,9 +28,19 @@ prior owner-5 RK-store discovery, which remains evidence for the operands it
 actually captured; no upstream face values were present in that discovery.
 
 The standalone synthetic contract checks identities and record shape, plus
-binary32 accumulation of directional terms. Full face-divergence and RK-store
-numerical replay remain OPEN acceptance gates; synthetic success is not
-attribution evidence.
+binary32 accumulation of directional terms. A macro-gated runtime overlay now
+shares the capture latch and step/RK/owner/tile context across both producer
+and consumer paths. The configured WRF suffix preprocessing chain and focused
+Fortran syntax checks pass, with macro-off preprocessed byte identity. Its
+bounded extractor separates face/RK records from legacy S15 records and fails
+closed on unknown tags or size/path violations. These are implementation and
+compile checks only; no executable was linked or run. Full face-divergence and
+RK-store numerical replay remain OPEN acceptance gates.
+
+The [candidate report](../../harness/evidence/REPORT_S15_face_fortran_compile_only_2026-09-27.md)
+records the checks. The separate `sc_tend`
+operand is captured as a consumer input but is not yet numerically attributed
+to the producer.
 
 This note records a future measurement contract, not native evidence. S15
 remains OPEN; no physical cause or graupel policy is assigned.

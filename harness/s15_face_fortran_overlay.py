@@ -8,8 +8,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import difflib
+import stat
 from pathlib import Path
 from typing import Any
 
@@ -31,6 +33,14 @@ PRODUCER_ANCHOR = ("scalar_tile_loop_1", "rk_scalar_tend")
 CONSUMER_ANCHOR = ("scalar_tile_loop_2", "rk_update_scalar")
 CONTEXT_NAMES = ("s15_step", "s15_rk", "s15_owner", "s15_tile")
 PD_EPS_F32 = "1E3CE508"
+FACE_TAGS = frozenset({b"S15AX", b"S15PD", b"S15RK"})
+LEGACY_TAGS = frozenset({b"S15Q", b"S15QC", b"S15M"})
+MAX_FULL_STDOUT_BYTES = 1024 * 1024
+MAX_CAPTURE_LINE_BYTES = 64 * 1024
+MAX_FACE_STREAM_BYTES = 64 * 1024
+MAX_LEGACY_STREAM_BYTES = 1024 * 1024
+MAX_LEGACY_RECORDS = 100_000
+EXPECTED_FACE_TAG_COUNTS = {"S15AX": 18, "S15PD": 2, "S15RK": 6}
 
 
 def sha256(data: bytes) -> str:
@@ -170,7 +180,7 @@ def _owner_call_args() -> list[str]:
     return [
         "s15_step=grid%itimestep",
         "s15_rk=rk_step",
-        "s15_owner=MERGE(5,0,is==P_QIB)",
+        "s15_owner=MERGE(5,0,is==P_QIB .and. s15_capture_enabled)",
         "s15_tile=ij",
     ]
 
@@ -178,6 +188,49 @@ def _owner_call_args() -> list[str]:
 def _patch_solve(text: str) -> str:
     lines = text.splitlines()
     anchors = find_dual_owner_calls(text)
+    solve_start, solve_end = _find_proc(lines, "solve_em")
+    implicit = next(
+        (
+            i
+            for i in range(solve_start, solve_end)
+            if re.match(r"\s*IMPLICIT\s+NONE", lines[i], re.I)
+        ),
+        None,
+    )
+    if implicit is None:
+        raise OverlayError("solve_em lacks IMPLICIT NONE anchor")
+    declarations = _guard(
+        [
+            "LOGICAL :: s15_capture_enabled",
+            "INTEGER :: s15_log_status",
+            "CHARACTER(LEN=8) :: s15_log_env",
+        ]
+    )
+    lines[implicit + 1 : implicit + 1] = declarations
+    solve_start, solve_end = _find_proc(lines, "solve_em")
+    scalar_gate = [
+        i
+        for i in range(solve_start, solve_end)
+        if re.search(r"^\s*other_scalar_advance\s*:\s*IF\b", lines[i], re.I)
+    ]
+    if len(scalar_gate) != 1:
+        raise OverlayError(
+            "solve_em scalar-advance latch anchor is missing or ambiguous"
+        )
+    i = scalar_gate[0]
+    env_latch = _guard(
+        [
+            "s15_capture_enabled=.false.",
+            "s15_log_env=' '",
+            "s15_log_status=1",
+            "CALL GET_ENVIRONMENT_VARIABLE('KDM6_S15_NATIVE_CAPTURE_LOG', &",
+            "     s15_log_env, STATUS=s15_log_status)",
+            "if (s15_log_status.eq.0 .and. trim(s15_log_env).eq.'1') &",
+            "     s15_capture_enabled=.true.",
+        ],
+        lines[i][: len(lines[i]) - len(lines[i].lstrip())],
+    )
+    lines[i:i] = env_latch
     # Locate each loop again, then re-find its call after each prior insertion.
     for loop_label, call_name in (PRODUCER_ANCHOR, CONSUMER_ANCHOR):
         loop_start_pat = re.compile(rf"^\s*{loop_label}\s*:\s*DO\b", re.I)
@@ -373,7 +426,13 @@ def _append_module_em_helpers(lines: list[str]) -> list[str]:
             "END SUBROUTINE s15_rk_match",
             "SUBROUTINE s15_emit_rk(step,rk,owner,tile,its,ite,jts,jte,i,j,k,advect,msfty,sc_tend,tendency,reference,dt,c1,c2,muold,munew,after)",
             "INTEGER, INTENT(IN) :: step,rk,owner,tile,its,ite,jts,jte,i,j,k",
+            "INTEGER, SAVE :: s15_count=0",
             "REAL, INTENT(IN) :: advect,msfty,sc_tend,tendency,reference,dt,c1,c2,muold,munew,after",
+            "if (s15_count.ge.6) then",
+            " write(6,'(A)') 'S15LIMIT S15RK event cap exceeded'",
+            " stop 91",
+            "endif",
+            "s15_count=s15_count+1",
             "WRITE(6,'(A,1X,11(I0,1X),11(Z8.8,1X))') 'S15RK', &",
             " step,rk,owner,tile,its,ite,jts,jte,i,j,k, &",
             " transfer(advect,0),transfer(msfty,0),transfer(sc_tend,0), &",
@@ -688,7 +747,13 @@ def _append_advect_helpers(lines: list[str]) -> list[str]:
             "END SUBROUTINE s15_face_match",
             "SUBROUTINE s15_emit_axis(step,rk,owner,tile,its,ite,jts,jte,i,j,k,branch,axis,fm,fp,lm,lp,metric,spacing,before,after)",
             "INTEGER, INTENT(IN) :: step,rk,owner,tile,its,ite,jts,jte,i,j,k,branch,axis",
+            "INTEGER, SAVE :: s15_count=0",
             "REAL, INTENT(IN) :: fm,fp,lm,lp,metric,spacing,before,after",
+            "if (s15_count.ge.18) then",
+            " write(6,'(A)') 'S15LIMIT S15AX event cap exceeded'",
+            " stop 91",
+            "endif",
+            "s15_count=s15_count+1",
             "WRITE(6,'(A,1X,11(I0,1X),2(I0,1X),8(Z8.8,1X))') 'S15AX', &",
             " step,rk,owner,tile,its,ite,jts,jte,i,j,k,axis,branch, &",
             " transfer(fm,0),transfer(fp,0),transfer(lm,0),transfer(lp,0), &",
@@ -696,7 +761,13 @@ def _append_advect_helpers(lines: list[str]) -> list[str]:
             "END SUBROUTINE s15_emit_axis",
             "SUBROUTINE s15_emit_pd(step,rk,owner,tile,its,ite,jts,jte,i,j,k,active,fluxout,available,eps,scale,low,pre,post)",
             "INTEGER, INTENT(IN) :: step,rk,owner,tile,its,ite,jts,jte,i,j,k,active",
+            "INTEGER, SAVE :: s15_count=0",
             "REAL, INTENT(IN) :: fluxout,available,eps,scale,low(6),pre(6),post(6)",
+            "if (s15_count.ge.2) then",
+            " write(6,'(A)') 'S15LIMIT S15PD event cap exceeded'",
+            " stop 91",
+            "endif",
+            "s15_count=s15_count+1",
             "WRITE(6,'(A,1X,11(I0,1X),I0,1X,22(Z8.8,1X))') 'S15PD', &",
             " step,rk,owner,tile,its,ite,jts,jte,i,j,k,active, &",
             " transfer(fluxout,0),transfer(available,0),transfer(eps,0),transfer(scale,0), &",
@@ -966,5 +1037,213 @@ def parse_fortran_capture(
                 producer["pd_eps"] = pd["pd_eps"]
         producers.append(producer)
 
-    replay.validate_capture(producers, list(consumers.values()), public_root, config)
-    return producers, list(consumers.values())
+    consumer_rows = list(consumers.values())
+    pairs = replay.validate_capture(producers, consumer_rows, public_root, config)
+    for _, consumer in pairs:
+        if (
+            replay.word_value(consumer["before"], "QIB before") < 0.0
+            or replay.word_value(consumer["after"], "QIB after") >= 0.0
+        ):
+            raise OverlayError(
+                "selected QIB target did not execute the pinned nonnegative-to-negative RK transition"
+            )
+    return producers, consumer_rows
+
+
+def extract_s15_streams(
+    full_stdout: Path, face_stream: Path, legacy_stream: Path
+) -> dict[str, Any]:
+    """Split new face records from legacy S15 records, refusing unknown tags.
+
+    The full rank stdout remains byte-for-byte intact. Both selected outputs are
+    created exclusively and preserve the source order of their own tag family.
+    """
+    # Keep output path checks lexical. Path.resolve() follows a dangling output
+    # symlink and could redirect exclusive creation outside the requested tree.
+    source = Path(os.path.abspath(full_stdout))
+    face = Path(os.path.abspath(face_stream))
+    legacy = Path(os.path.abspath(legacy_stream))
+    if face == legacy or face == source or legacy == source:
+        raise OverlayError("full stdout and selected S15 stream paths must be distinct")
+    digest = hashlib.sha256()
+    total_bytes = 0
+    face_bytes = bytearray()
+    legacy_bytes = bytearray()
+    legacy_records = 0
+    counts = {tag.decode("ascii"): 0 for tag in FACE_TAGS | LEGACY_TAGS}
+    source_fd = _open_regular_nofollow(source)
+    with os.fdopen(source_fd, "rb") as stream:
+        line_no = 0
+        while line := stream.readline(MAX_CAPTURE_LINE_BYTES + 1):
+            line_no += 1
+            total_bytes += len(line)
+            if total_bytes > MAX_FULL_STDOUT_BYTES:
+                raise OverlayError("full stdout exceeds the configured size cap")
+            if len(line) > MAX_CAPTURE_LINE_BYTES:
+                raise OverlayError(f"line {line_no}: full stdout line exceeds size cap")
+            digest.update(line)
+            fields = line.lstrip().split(None, 1)
+            if not fields or not fields[0].startswith(b"S15"):
+                continue
+            tag = fields[0]
+            if tag in FACE_TAGS:
+                face_bytes.extend(line)
+                if len(face_bytes) > MAX_FACE_STREAM_BYTES:
+                    raise OverlayError("face stream exceeds the configured size cap")
+            elif tag in LEGACY_TAGS:
+                legacy_bytes.extend(line)
+                if len(legacy_bytes) > MAX_LEGACY_STREAM_BYTES:
+                    raise OverlayError("legacy stream exceeds the configured size cap")
+                if legacy_records >= MAX_LEGACY_RECORDS:
+                    raise OverlayError(
+                        "legacy stream exceeds the configured record cap"
+                    )
+                legacy_records += 1
+            else:
+                raise OverlayError(
+                    f"line {line_no}: unknown S15 record tag {tag.decode('ascii', 'replace')}"
+                )
+            counts[tag.decode("ascii")] += 1
+    before_hash = digest.hexdigest()
+    if _hash_file_bounded(source) != before_hash:
+        raise OverlayError("full stdout changed during S15 stream extraction")
+    if {
+        tag: counts[tag] for tag in EXPECTED_FACE_TAG_COUNTS
+    } != EXPECTED_FACE_TAG_COUNTS:
+        raise OverlayError(
+            "face stream must contain exactly 18 AX, 2 PD, and 6 RK events"
+        )
+    face_payload = bytes(face_bytes)
+    legacy_payload = bytes(legacy_bytes)
+    created: list[tuple[int, str]] = []
+    try:
+        created.append(_exclusive_write_no_symlinks(face, face_payload))
+        created.append(_exclusive_write_no_symlinks(legacy, legacy_payload))
+        if _hash_file_bounded(source) != before_hash:
+            raise OverlayError("full stdout changed during selected-stream writes")
+    except BaseException:
+        _rollback_created_outputs(created)
+        raise
+    else:
+        for parent_fd, _ in created:
+            os.close(parent_fd)
+    return {
+        "schema": "KDM6AD-S15-DUAL-STREAM-EXTRACTION-v1",
+        "full_stdout_sha256": before_hash,
+        "full_stdout_bytes": total_bytes,
+        "face_stream_sha256": hashlib.sha256(face_payload).hexdigest(),
+        "face_stream_bytes": len(face_payload),
+        "legacy_stream_sha256": hashlib.sha256(legacy_payload).hexdigest(),
+        "legacy_stream_bytes": len(legacy_payload),
+        "tag_counts": counts,
+    }
+
+
+def _hash_file_bounded(path: Path) -> str:
+    digest = hashlib.sha256()
+    total = 0
+    fd = _open_regular_nofollow(path)
+    with os.fdopen(fd, "rb") as stream:
+        while chunk := stream.read(1024 * 1024):
+            total += len(chunk)
+            if total > MAX_FULL_STDOUT_BYTES:
+                raise OverlayError("full stdout exceeds the configured size cap")
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _exclusive_write_no_symlinks(path: Path, data: bytes) -> tuple[int, str]:
+    """Create a new output without following a target symlink.
+
+    Reject symlinks in every existing parent component before creation, then
+    request O_NOFOLLOW and O_EXCL from the kernel for the leaf. This fails
+    closed for dangling leaf symlinks and ordinary existing files alike. Keep
+    the parent descriptor open so transaction rollback cannot be redirected by
+    a later pathname swap.
+    """
+    absolute = Path(os.path.abspath(path))
+    parent_fd = _open_parent_dirfd(absolute)
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+    flags |= getattr(os, "O_NOFOLLOW", 0)
+    try:
+        fd = os.open(absolute.name, flags, 0o666, dir_fd=parent_fd)
+    except FileExistsError as exc:
+        os.close(parent_fd)
+        raise OverlayError("selected S15 stream destinations must be new") from exc
+    except OSError as exc:
+        os.close(parent_fd)
+        raise OverlayError(f"cannot safely create selected stream: {absolute}") from exc
+    try:
+        with os.fdopen(fd, "wb") as out:
+            out.write(data)
+    except BaseException:
+        try:
+            os.unlink(absolute.name, dir_fd=parent_fd)
+        finally:
+            os.close(parent_fd)
+        raise
+    return parent_fd, absolute.name
+
+
+def _rollback_created_outputs(created: list[tuple[int, str]]) -> None:
+    for parent_fd, name in reversed(created):
+        try:
+            os.unlink(name, dir_fd=parent_fd)
+        except FileNotFoundError:
+            pass
+        except OSError:
+            # Preserve the extraction failure; leaving a partial file is safer
+            # than resolving the pathname again and risking a wrong deletion.
+            pass
+        finally:
+            os.close(parent_fd)
+
+
+def _open_parent_dirfd(absolute: Path) -> int:
+    """Walk an absolute path's parents with descriptor-relative no-follow opens."""
+    directory_flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+    directory_flags |= getattr(os, "O_NOFOLLOW", 0)
+    try:
+        current_fd = os.open(absolute.anchor, directory_flags)
+    except OSError as exc:
+        raise OverlayError(f"cannot safely open path root: {absolute.anchor}") from exc
+    try:
+        for component in absolute.parts[1:-1]:
+            next_fd = os.open(component, directory_flags, dir_fd=current_fd)
+            os.close(current_fd)
+            current_fd = next_fd
+        return current_fd
+    except OSError as exc:
+        os.close(current_fd)
+        raise OverlayError(
+            f"path has a missing or symlinked parent: {absolute}"
+        ) from exc
+
+
+def _open_regular_nofollow(path: Path) -> int:
+    """Open a regular input file using a no-follow parent walk and leaf open."""
+    absolute = Path(os.path.abspath(path))
+    parent_fd = _open_parent_dirfd(absolute)
+    try:
+        before = os.stat(absolute.name, dir_fd=parent_fd, follow_symlinks=False)
+    except OSError as exc:
+        os.close(parent_fd)
+        raise OverlayError(f"cannot safely stat regular input: {absolute}") from exc
+    if not stat.S_ISREG(before.st_mode):
+        os.close(parent_fd)
+        raise OverlayError(f"input is not a regular file: {absolute}")
+    flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+    flags |= getattr(os, "O_NONBLOCK", 0)
+    try:
+        fd = os.open(absolute.name, flags, dir_fd=parent_fd)
+    except OSError as exc:
+        os.close(parent_fd)
+        raise OverlayError(f"cannot safely open regular input: {absolute}") from exc
+    os.close(parent_fd)
+    after = os.fstat(fd)
+    identity_before = (before.st_dev, before.st_ino, stat.S_IFMT(before.st_mode))
+    identity_after = (after.st_dev, after.st_ino, stat.S_IFMT(after.st_mode))
+    if not stat.S_ISREG(after.st_mode) or identity_after != identity_before:
+        os.close(fd)
+        raise OverlayError(f"input changed while opening or is not regular: {absolute}")
+    return fd

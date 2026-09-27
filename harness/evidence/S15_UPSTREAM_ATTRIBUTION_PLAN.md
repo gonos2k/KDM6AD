@@ -1,8 +1,9 @@
 # S15 upstream attribution: bounded confirmation plan
 
-**Status: OPEN. Plan only.** This defines the next public-side capture contract
-after PR #283. It records no native operands, changes no host defaults, and
-makes no physical-cause claim.
+**Status: OPEN. Disposable overlay preprocessing/syntax checked only.** This
+defines the public-side capture contract after PR #283. It records no native
+operands, changes no host defaults, and makes no physical-cause claim. No
+executable was linked or run; the overlay is not native-capture-ready.
 
 ## Evidence boundary
 
@@ -114,6 +115,26 @@ omit a face operand.
 Full face-divergence and RK source-order numerical replay remains OPEN and is a
 required acceptance gate before treating a native capture as upstream
 attribution. Structural contract success alone is not attribution evidence.
+
+## Disposable overlay check status
+
+The candidate overlay latches `KDM6_S15_NATIVE_CAPTURE_LOG=1` in the shared
+step path and propagates its context through both producer and consumer
+callsites. It emits source-oriented face/prefix, conditional PD limiter, and RK
+consumer records. The runtime logger caps the event families at 18 `S15AX`, 2
+`S15PD`, and 6 `S15RK` rows. Its streaming extractor separates those tags from
+legacy `S15Q`, `S15QC`, and `S15M`, rejects unknown `S15*` tags, and enforces
+1 MiB full-output, 64 KiB line/face-stream, and 1 MiB legacy-stream limits.
+The parser separately checks the six-key schedule and exact event counts.
+
+The configured WRF `.F.o` suffix sequence (`sed -> CPP -> standard.exe ->
+traditional CPP`) produced byte-identical macro-off `.f90` files for all three
+pinned modules. Focused GNU Fortran 15.2 syntax-only checks passed for the
+macro-on files, with no object or executable output. Details and hashes are in
+the [preprocess/syntax report](REPORT_S15_face_fortran_compile_only_2026-09-27.md).
+These checks do not verify runtime capture behavior. `sc_tend` remains a
+separate captured consumer operand and has not been numerically attributed
+against the producer.
 
 Only after the contract is reviewed should a separate native plan pin fresh
 source/preprocess/object/link/executable identities, exact step-2 inputs and
