@@ -29,10 +29,17 @@ The generated, macro-gated overlay source hashes for this candidate are:
 | `module_em.F` | `7a768de4a72733409ce73bac8f34b84d1216a254d11948a9cfd5650c95289d9a` |
 | `solve_em.F` | `f8d57b06e60dbebf966267606a26a984f3172f5dfbfa84b3c0303b92b1d008e7` |
 
-For all three pinned sources, the configured suffix sequence was executed in a
-disposable shadow: comment-cleaning `sed`, GNU CPP, `standard.exe`, then GNU CPP
-with the configured traditional mode. Macro-off final `.f90` files were
-byte-identical between pinned source and overlay. Their SHA-256 values, in
+The earlier #297 `suffix4` receipt did not match WRF's `.F.o` recipe: its first
+pass put `TRADFLAG` before CPPFLAGS and omitted `-I.`, while its final pass
+reused CPPFLAGS and the capture define. This receipt supersedes those command
+and intermediate claims. The command variables were expanded from pinned
+`configure.wrf` with a read-only Make print target. For all three pinned
+sources, the corrected sequence ran in a disposable `dyn_em` include shadow:
+comment-cleaning `sed`; first CPP with `<WRF>/inc`, ARCHFLAGS, `-I.` and
+`TRADFLAG`; `standard.exe`; final CPP with CPP base plus `TRADFLAG` only. The
+capture define is applied only to first CPP for the macro-on overlay. Macro-off
+final `.f90` files were byte-identical between pinned source and overlay. Their
+SHA-256 values, in
 `module_advect_em.F`, `module_em.F`, `solve_em.F` order, were
 `1f6d10ba7b44870fb6ac324cea8a613758db0a6991dafa46c9b9afd8231495dc`,
 `e00d4b4131e179c2e59aa2cf282965bed1aef5c449202405e93b2e43e8e9e804`, and
@@ -41,18 +48,29 @@ Macro-on final `.f90` SHA-256 values in the same order were
 `6b2c541fc62ec0cd7f56d243bf68dc4692c782371752ec033187318db1c36bd7`,
 `53207a03dba5b3a42edb43891368f09318a59d44ced480f8ef982184a9e0034e`, and
 `f2b6748ea4b2fc02881a085bd33f8d1fdcd3a2aac233d6ca7492fd25d0694a36`.
+These six final-file hashes happen to match the earlier suffix4 text; this
+corrected receipt independently remeasures them with the configured argv. The
+superseded claim concerns the old command provenance and intermediate hashes.
 
 GNU Fortran 15.2.0 syntax-only checks passed in dependency order for
 `module_advect_em`, `module_em`, and `solve_em`: **3 attempted, 3 passed, 0
 failed**. No object files were produced. The private receipt SHA-256 is
-`afee12b9f034ecd2b8c1772f83bc844e2febe8727896effcd990d958c94de05e`.
+`6d1542c3ec98a9c2c4d08c71f5aaf1fbf4b533cc918e055c483bcc44502031b0`.
 It records full redacted-at-publication argv, working directories, file hashes,
-tool identities, and zero object output. Tool SHA-256 values are GNU CPP 15.2
+tool identities, intermediate/output hashes, and zero object output. One
+intermediate syntax-only attempt failed on `module_em` because the temporary
+include farm exposed an older `module_advect_em.mod`; no canonical host path was
+written. The corrected run excluded stale module/object files from the private
+include farm and compiled copied preprocessed inputs against the fresh scratch
+module directory. Tool SHA-256 values are GNU CPP 15.2
 `da93121aee7a566976e57fcebdc19f5b3cdd3aaa94469ff4bde61ff44f199e03`, GNU
 Fortran 15.2 `0019c2383f399c1ba6aed1dc060191e793caf963c1066d254194883581098bb2`,
 `sed` `c22008f570205b508cd80adecc06c5332aead6b45228ca436bf1615c39adf0f6`,
 `standard.exe` `21848b3d6e1680a2221753f06afef1c2d3043b542cf7ac0062c542470786cf19`,
 and `configure.wrf` `490a164e853e4d1f28ff79c9dfc36843d00db9c8bd6aaae6bd47afd70ffc9292`.
+The read-only Make variable print helper SHA-256 is
+`4cd1fbd4e5659c70019b36292ff0275b9d72f99ea12ac6df847d72fa23af866e`; configured
+`cpp` resolved to the pinned GNU CPP 15.2 binary.
 The receipt, intermediates, and diagnostics remain outside the public tree.
 
 The runtime logger has hard caps of 18 `S15AX`, 2 `S15PD`, and 6 `S15RK`
@@ -67,7 +85,9 @@ is exclusive, and rollback unlinks relative to the retained parent descriptor.
 The parser independently enforces the declared six-key schedule and exact
 18/2/6 record counts.
 
-Synthetic tests cover stream separation, exact event counts, size limits,
+The focused test pins the final CPP helper to CPP base plus `TRADFLAG` only and
+rejects include flags, architecture defines, or the capture macro on that
+pass. Synthetic tests cover stream separation, exact event counts, size limits,
 unknown tags, symlinked source/output paths, FIFO timeout, parent-swap rollback,
 unterminated oversized lines, and producer/consumer transition contracts.
 They are protocol checks, not native evidence. The separate

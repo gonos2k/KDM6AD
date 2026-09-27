@@ -100,11 +100,13 @@ face-divergence and RK-store numerical replay open. See
 This plan does not attribute a physical cause or change graupel policy; S15
 remains OPEN.
 
-The disposable Fortran overlay now passes the configured WRF suffix
-preprocessing sequence and focused syntax-only checks. Macro-off suffix output
-is byte-identical for all three pinned modules. The runtime latch carries the
-same identity across producer and consumer paths; extraction is bounded and
-rejects unknown S15 tags. This remains compile evidence only: no executable
-link/run or six-row native capture has occurred, and `sc_tend` has not been
-numerically attributed against the producer. See the
+The disposable Fortran overlay passes the corrected WRF suffix preprocessing
+sequence and focused syntax-only checks. First CPP receives CPPFLAGS/ARCHFLAGS;
+the final CPP receives only CPP base and TRADFLAG. This corrects the earlier
+suffix4 receipt's argument placement. Macro-off output is byte-identical for
+all three pinned modules. The runtime latch carries the same identity across
+producer and consumer paths; extraction is bounded and rejects unknown S15
+tags. This remains compile evidence only: no executable link/run or six-row
+native capture has occurred, and `sc_tend` has not been numerically attributed
+against the producer. See the
 [preprocess/syntax report](../../harness/evidence/REPORT_S15_face_fortran_compile_only_2026-09-27.md).

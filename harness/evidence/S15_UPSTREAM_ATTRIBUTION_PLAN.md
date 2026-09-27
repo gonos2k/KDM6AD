@@ -127,11 +127,16 @@ legacy `S15Q`, `S15QC`, and `S15M`, rejects unknown `S15*` tags, and enforces
 1 MiB full-output, 64 KiB line/face-stream, and 1 MiB legacy-stream limits.
 The parser separately checks the six-key schedule and exact event counts.
 
-The configured WRF `.F.o` suffix sequence (`sed -> CPP -> standard.exe ->
-traditional CPP`) produced byte-identical macro-off `.f90` files for all three
-pinned modules. Focused GNU Fortran 15.2 syntax-only checks passed for the
-macro-on files, with no object or executable output. Details and hashes are in
-the [preprocess/syntax report](REPORT_S15_face_fortran_compile_only_2026-09-27.md).
+The configured WRF `.F.o` sequence is `sed -> first CPP -> standard.exe ->
+final CPP`. The first pass receives `<WRF>/inc`, CPPFLAGS/ARCHFLAGS, `-I.` and
+TRADFLAG. The final pass uses only the CPP base plus TRADFLAG; it does not
+receive CPPFLAGS, ARCHFLAGS, include paths, or the capture define. The earlier
+`suffix4` receipt misplaced/omitted first-pass flags and repeated CPPFLAGS and
+the capture define on final CPP; the corrected make-expanded receipt supersedes
+it. Macro-off `.f90` files are byte-identical for all three pinned modules.
+Focused GNU Fortran 15.2 syntax-only checks pass for the macro-on files with no
+object or executable output. Details and hashes are in the
+[preprocess/syntax report](REPORT_S15_face_fortran_compile_only_2026-09-27.md).
 These checks do not verify runtime capture behavior. `sc_tend` remains a
 separate captured consumer operand and has not been numerically attributed
 against the producer.
