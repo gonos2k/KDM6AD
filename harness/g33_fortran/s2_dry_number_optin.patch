@@ -1,0 +1,487 @@
+--- a/phys/module_mp_kdm6.F
++++ b/phys/module_mp_kdm6.F
+@@ -13,2 +13,3 @@
+    use module_model_constants, only : RE_QC_BG, RE_QI_BG, RE_QS_BG
++   use, intrinsic :: ieee_arithmetic, only : ieee_is_finite
+ !
+@@ -285,2 +286,3 @@
+    real, dimension(its:ite,kts:kte) :: rhox
++   real, dimension(ims:ime,kms:kme) :: rho_dry
+    real, dimension(its:ite,kts:kte) :: cmg
+@@ -322,6 +324,17 @@
+            z_sum = z_sum + delz(i,k,j)
++           if (.not. ieee_is_finite(den(i,k,j)) .or. &
++               .not. ieee_is_finite(q(i,k,j))) &
++             error stop 'KDM6 S2: nonfinite dry-air density inputs'
++           if (den(i,k,j) <= 0. .or. q(i,k,j) <= -1.) &
++             error stop 'KDM6 S2: invalid dry-air density inputs'
++           rho_dry(i,k) = den(i,k,j)/(1.+q(i,k,j))
++           if (.not. ieee_is_finite(rho_dry(i,k))) &
++             error stop 'KDM6 S2: nonfinite dry-air density'
++           if (rho_dry(i,k) <= 0.) error stop 'KDM6 S2: invalid dry-air density'
+            if (xland(i,j)==1) then
+-             nn(i,k,j) = (5000.* exp(-0.4*z_sum/1000.)+100.)*1.e6
++             nn(i,k,j) = (5000.* exp(-0.4*z_sum/1000.)+100.)*1.e6 &
++                       / rho_dry(i,k)
+            else
+-             nn(i,k,j) = (150.*exp(-0.35*z_sum/1000.)+10.)*1.e6
++             nn(i,k,j) = (150.*exp(-0.35*z_sum/1000.)+10.)*1.e6 &
++                       / rho_dry(i,k)
+            endif
+@@ -379,2 +392,11 @@
+          t(i,k) = th(i,k,j)*pii(i,k,j)
++         if (.not. ieee_is_finite(den(i,k,j)) .or. &
++             .not. ieee_is_finite(q(i,k,j))) &
++           error stop 'KDM6 S2: nonfinite dry-air density inputs'
++         if (den(i,k,j) <= 0. .or. q(i,k,j) <= -1.) &
++           error stop 'KDM6 S2: invalid dry-air density inputs'
++         rho_dry(i,k) = den(i,k,j)/(1.+q(i,k,j))
++         if (.not. ieee_is_finite(rho_dry(i,k))) &
++           error stop 'KDM6 S2: nonfinite dry-air density'
++         if (rho_dry(i,k) <= 0.) error stop 'KDM6 S2: invalid dry-air density'
+          qci(i,k,1) = qc(i,k,j)
+@@ -384,6 +406,6 @@
+          qrs(i,k,3) = qg(i,k,j)
+-         nci(i,k,1) = nc(i,k,j)
+-         nci(i,k,2) = ni(i,k,j)
+-         nci(i,k,3) = nn(i,k,j)
+-         nrs(i,k,1) = nr(i,k,j)     
++         nci(i,k,1) = rho_dry(i,k)*nc(i,k,j)
++         nci(i,k,2) = rho_dry(i,k)*ni(i,k,j)
++         nci(i,k,3) = rho_dry(i,k)*nn(i,k,j)
++         nrs(i,k,1) = rho_dry(i,k)*nr(i,k,j)
+          nrs(i,k,2) = 0. 
+@@ -398,3 +420,3 @@
+      call kdm62D(t, q(ims,kms,j), qci, qrs, nci, nrs, brs, rhox, cmg  &
+-                ,den(ims,kms,j)                               &
++                ,den(ims,kms,j),rho_dry                       &
+                 ,p(ims,kms,j), delz(ims,kms,j)                &
+@@ -424,6 +446,6 @@
+          qg(i,k,j) = qrs(i,k,3)
+-         nr(i,k,j) = nrs(i,k,1)   
+-         nc(i,k,j) = nci(i,k,1)
+-         ni(i,k,j) = nci(i,k,2)
+-         nn(i,k,j) = nci(i,k,3)
++         nr(i,k,j) = nrs(i,k,1)/rho_dry(i,k)
++         nc(i,k,j) = nci(i,k,1)/rho_dry(i,k)
++         ni(i,k,j) = nci(i,k,2)/rho_dry(i,k)
++         nn(i,k,j) = nci(i,k,3)/rho_dry(i,k)
+          bg(i,k,j) = brs(i,k)
+@@ -496,3 +518,3 @@
+            t1d(k)  = th(i,k,j)*pii(i,k,j)
+-           den1d(k)= den(i,k,j)
++           den1d(k)= rho_dry(i,k)
+            qc1d(k) = qc(i,k,j)
+@@ -550,3 +572,3 @@
+    subroutine kdm62D(t, q, qci, qrs, nci, nrs                     &
+-                   ,brs, rhox, cmg, den, p, delz                  &
++                   ,brs, rhox, cmg, den, rho_dry, p, delz         &
+                    ,delt,g, cpd, cpv, ccn0, rd, rv, t0c           &
+@@ -676,2 +698,3 @@
+    real, dimension(ims:ime,kms:kme)       , intent(in   ) :: den
++   real, dimension(ims:ime,kms:kme)       , intent(in   ) :: rho_dry
+    real, dimension(its:ite,kts:kte)       , intent(inout) :: t
+@@ -811,3 +834,3 @@
+ ! Nc minimum for conversion processes
+-   real                                :: ncmin
++   real, dimension(its:ite)            :: ncmin
+ ! ------------------------------------------------------------------------------
+@@ -868,3 +891,3 @@
+      do i = its,ite
+-       dend(i,k) = den(i,k)
++       dend(i,k) = rho_dry(i,k)
+      enddo
+@@ -876,5 +899,5 @@
+      if(slmsk(i).eq.2) then ! land
+-        ncmin = ncmin_sea
++        ncmin(i) = ncmin_sea
+      else
+-       ncmin = ncmin_land
++       ncmin(i) = ncmin_land
+      endif
+@@ -908,3 +931,3 @@
+        delz_tmp(i,k) = delz(i,k)
+-       den_tmp(i,k) = den(i,k)
++       den_tmp(i,k) = rho_dry(i,k)
+      enddo
+@@ -1122,3 +1145,3 @@
+         do i = its, ite
+-          if(qci(i,k,1).le.qmin .or. nci(i,k,1).le.ncmin ) then
++          if(qci(i,k,1).le.qmin .or. nci(i,k,1).le.ncmin(i) ) then
+             rslopec(i,k) = rslopecmax
+@@ -1129,3 +1152,3 @@
+           else
+-            rslopec(i,k) = 1./lamdac(qci(i,k,1),den(i,k),nci(i,k,1))
++            rslopec(i,k) = 1./lamdac(qci(i,k,1),rho_dry(i,k),nci(i,k,1))
+             rslopec2(i,k) = (rslopec(i,k))*rslopec(i,k)
+@@ -1380,3 +1403,3 @@
+                          *pi/2.*((precs1)*n0so(i,k)*rslope2(i,k,2)*rslopemu(i,k,2)  &
+-                         +(precs2)*n0so(i,k)*work2(i,k)*coeres)/den(i,k)
++                         +(precs2)*n0so(i,k)*work2(i,k)*coeres)/rho_dry(i,k)
+               psmlt(i,k) = min(max(psmlt(i,k)*dtcld,-qrs(i,k,2)),0.)
+@@ -1404,3 +1427,3 @@
+                            *pi/2.*((precg1)*n0go(i,k)*rslope2(i,k,3)*rslopemu(i,k,3) &
+-                           +(precg2(i,k))*n0go(i,k)*work2(i,k)*coeres)/den(i,k)
++                           +(precg2(i,k))*n0go(i,k)*work2(i,k)*coeres)/rho_dry(i,k)
+               pgmlt(i,k) = min(max(pgmlt(i,k)*dtcld,-qrs(i,k,3)),0.)
+@@ -1532,3 +1555,3 @@
+ 
+-          if(qci(i,k,1).le.qmin .or. nci(i,k,1).le.ncmin ) then
++          if(qci(i,k,1).le.qmin .or. nci(i,k,1).le.ncmin(i) ) then
+             rslopecmu(i,k) = rslopecmmax
+@@ -1539,3 +1562,3 @@
+           else
+-            rslopec(i,k) = 1./lamdac(qci(i,k,1),den(i,k),nci(i,k,1))
++            rslopec(i,k) = 1./lamdac(qci(i,k,1),rho_dry(i,k),nci(i,k,1))
+             rslopec2(i,k) = (rslopec(i,k))*rslopec(i,k)
+@@ -1551,3 +1574,3 @@
+             lamdr_tmp(i,k) = exp(log((((pidnr)*nrs(i,k,1))                       &
+-                         /(den(i,k)*qrs(i,k,1))))*(1./dmr))
++                         /(rho_dry(i,k)*qrs(i,k,1))))*(1./dmr))
+             n0r(i,k) = (1./g1pmr)*DBLE(nrs(i,k,1))*lamdr_tmp(i,k)**(mur+1)
+@@ -1555,3 +1578,3 @@
+               lamdr_tmp(i,k) = lamdarmin
+-              nrs(i,k,1) = den(i,k)*qrs(i,k,1)*lamdr_tmp(i,k)**dmr/pidnr
++              nrs(i,k,1) = rho_dry(i,k)*qrs(i,k,1)*lamdr_tmp(i,k)**dmr/pidnr
+               n0r(i,k) = (1./g1pmr)*DBLE(nrs(i,k,1))*lamdr_tmp(i,k)**(mur+1)
+@@ -1559,3 +1582,3 @@
+               lamdr_tmp(i,k) = lamdarmax
+-              nrs(i,k,1) = den(i,k)*qrs(i,k,1)*lamdr_tmp(i,k)**dmr/pidnr
++              nrs(i,k,1) = rho_dry(i,k)*qrs(i,k,1)*lamdr_tmp(i,k)**dmr/pidnr
+               n0r(i,k) = (1./g1pmr)*DBLE(nrs(i,k,1))*lamdr_tmp(i,k)**(mur+1)
+@@ -1563,5 +1586,5 @@
+           endif
+-          if(qci(i,k,1).ge.qmin .and. nci(i,k,1) .ge. ncmin ) then
++          if(qci(i,k,1).ge.qmin .and. nci(i,k,1) .ge. ncmin(i) ) then
+             lamdc_tmp(i,k) = exp(log((((pidnc)*nci(i,k,1))                       &
+-                         /(den(i,k)*qci(i,k,1))))*(1./dmc))
++                         /(rho_dry(i,k)*qci(i,k,1))))*(1./dmc))
+               n0c(i,k) = (muc+1)*DBLE(nci(i,k,1))*lamdc_tmp(i,k)**(muc+1)
+@@ -1569,3 +1592,3 @@
+               lamdc_tmp(i,k) = lamdacmin
+-              nci(i,k,1) = den(i,k)*qci(i,k,1)*lamdc_tmp(i,k)**dmc/pidnc
++              nci(i,k,1) = rho_dry(i,k)*qci(i,k,1)*lamdc_tmp(i,k)**dmc/pidnc
+               n0c(i,k) = (muc+1)*DBLE(nci(i,k,1))*lamdc_tmp(i,k)**(muc+1)
+@@ -1573,3 +1596,3 @@
+               lamdc_tmp(i,k) = lamdacmax
+-              nci(i,k,1) = den(i,k)*qci(i,k,1)*lamdc_tmp(i,k)**dmc/pidnc
++              nci(i,k,1) = rho_dry(i,k)*qci(i,k,1)*lamdc_tmp(i,k)**dmc/pidnc
+               n0c(i,k) = (muc+1)*DBLE(nci(i,k,1))*lamdc_tmp(i,k)**(muc+1)
+@@ -1579,3 +1602,3 @@
+             lamdi_tmp(i,k) = exp(log((((pidni)*nci(i,k,2))                       &
+-                         /(den(i,k)*qci(i,k,2))))*(1./dmi))
++                         /(rho_dry(i,k)*qci(i,k,2))))*(1./dmi))
+             n0i(i,k) = (1./g1pmi)*DBLE(nci(i,k,2))*lamdi_tmp(i,k)**(mui+1)
+@@ -1583,3 +1606,3 @@
+               lamdi_tmp(i,k) = lamdaimin
+-              nci(i,k,2) = den(i,k)*qci(i,k,2)*(lamdi_tmp(i,k)**dmi)/pidni
++              nci(i,k,2) = rho_dry(i,k)*qci(i,k,2)*(lamdi_tmp(i,k)**dmi)/pidni
+               n0i(i,k) = (1./g1pmi)*DBLE(nci(i,k,2))*lamdi_tmp(i,k)**(mui+1)
+@@ -1587,3 +1610,3 @@
+               lamdi_tmp(i,k) = lamdaimax
+-              nci(i,k,2) = den(i,k)*qci(i,k,2)*(lamdi_tmp(i,k)**dmi)/pidni
++              nci(i,k,2) = rho_dry(i,k)*qci(i,k,2)*(lamdi_tmp(i,k)**dmi)/pidni
+               n0i(i,k) = (1./g1pmi)*DBLE(nci(i,k,2))*lamdi_tmp(i,k)**(mui+1)
+@@ -1602,3 +1625,3 @@
+             difa(i,k) = ele2*t(i,k)*(1.+ele1/Rcn)/(viscos(t(i,k),den(i,k))*den(i,k))
+-            pinuc = min((cmc)*difa(i,k)*2.*pi*Nic*n0c(i,k)/den(i,k)/(muc+1) &
++            pinuc = min((cmc)*difa(i,k)*2.*pi*Nic*n0c(i,k)/rho_dry(i,k)/(muc+1) &
+                 *g4pmc*rslopecmu(i,k)*rslopec3(i,k)*rslopec2(i,k)*dtcld,qci(i,k,1))
+@@ -1608,3 +1631,3 @@
+ !---------------------------------------------------------------
+-            if (nci(i,k,1) .gt. ncmin) then
++            if (nci(i,k,1) .gt. ncmin(i)) then
+               ninuc = min((difa(i,k))*2.*pi*Nic*n0c(i,k)/(muc+1) &
+@@ -1624,3 +1647,3 @@
+             supcolt=min(supcol,70.)
+-            pfrzdtc = min((cmc)*cmc*pfrz1*n0c(i,k)/den(i,k)/denr/(muc+1)       &
++            pfrzdtc = min((cmc)*cmc*pfrz1*n0c(i,k)/rho_dry(i,k)/denr/(muc+1)       &
+                     *(exp(pfrz2*supcolt)-1.)*g1p2dcomuc1*rslopecmu(i,k)        &
+@@ -1634,3 +1657,3 @@
+ !---------------------------------------------------------------
+-            if(nci(i,k,1).gt.ncmin) then
++            if(nci(i,k,1).gt.ncmin(i)) then
+ !revised
+@@ -1654,3 +1677,3 @@
+             supcolt=min(supcol,70.)
+-            pfrzdtr = min((cmr)*cmr*pfrz1*n0r(i,k)/den(i,k)/denr          &
++            pfrzdtr = min((cmr)*cmr*pfrz1*n0r(i,k)/rho_dry(i,k)/denr          &
+                   *(exp(pfrz2*supcolt)-1.)*rsloped(i,k,1)*rsloped(i,k,1)       & 
+@@ -1751,3 +1774,3 @@
+ !
+-          if(qci(i,k,1).le.qmin .or. nci(i,k,1).le.ncmin) then
++          if(qci(i,k,1).le.qmin .or. nci(i,k,1).le.ncmin(i)) then
+             rslopec(i,k) = rslopecmax
+@@ -1758,3 +1781,3 @@
+           else
+-            rslopec(i,k) = 1./lamdac(qci(i,k,1),den(i,k),nci(i,k,1))
++            rslopec(i,k) = 1./lamdac(qci(i,k,1),rho_dry(i,k),nci(i,k,1))
+             rslopec2(i,k) = (rslopec(i,k))*rslopec(i,k)
+@@ -1774,3 +1797,3 @@
+             lamdr_tmp(i,k) = exp(log((((pidnr)*nrs(i,k,1))                       &
+-                         /(den(i,k)*qrs(i,k,1))))*(1./dmr))
++                         /(rho_dry(i,k)*qrs(i,k,1))))*(1./dmr))
+             n0r(i,k) = (1./g1pmr)*DBLE(nrs(i,k,1))*lamdr_tmp(i,k)**(mur+1)
+@@ -1778,3 +1801,3 @@
+               lamdr_tmp(i,k) = lamdarmin
+-              nrs(i,k,1) = den(i,k)*qrs(i,k,1)*lamdr_tmp(i,k)**dmr/pidnr
++              nrs(i,k,1) = rho_dry(i,k)*qrs(i,k,1)*lamdr_tmp(i,k)**dmr/pidnr
+               n0r(i,k) = (1./g1pmr)*DBLE(nrs(i,k,1))*lamdr_tmp(i,k)**(mur+1)
+@@ -1782,3 +1805,3 @@
+               lamdr_tmp(i,k) = lamdarmax
+-              nrs(i,k,1) = den(i,k)*qrs(i,k,1)*lamdr_tmp(i,k)**dmr/pidnr
++              nrs(i,k,1) = rho_dry(i,k)*qrs(i,k,1)*lamdr_tmp(i,k)**dmr/pidnr
+               n0r(i,k) = (1./g1pmr)*DBLE(nrs(i,k,1))*lamdr_tmp(i,k)**(mur+1)
+@@ -1786,5 +1809,5 @@
+           endif
+-          if(qci(i,k,1).ge.qmin .and. nci(i,k,1) .ge. ncmin ) then
++          if(qci(i,k,1).ge.qmin .and. nci(i,k,1) .ge. ncmin(i) ) then
+             lamdc_tmp(i,k) = exp(log((((pidnc)*nci(i,k,1))                       &
+-                         /(den(i,k)*qci(i,k,1))))*(1./dmc))
++                         /(rho_dry(i,k)*qci(i,k,1))))*(1./dmc))
+               n0c(i,k) = (muc+1)*DBLE(nci(i,k,1))*lamdc_tmp(i,k)**(muc+1)
+@@ -1792,3 +1815,3 @@
+               lamdc_tmp(i,k) = lamdacmin
+-              nci(i,k,1) = den(i,k)*qci(i,k,1)*lamdc_tmp(i,k)**dmc/pidnc
++              nci(i,k,1) = rho_dry(i,k)*qci(i,k,1)*lamdc_tmp(i,k)**dmc/pidnc
+               n0c(i,k) = (muc+1)*DBLE(nci(i,k,1))*lamdc_tmp(i,k)**(muc+1)
+@@ -1796,3 +1819,3 @@
+               lamdc_tmp(i,k) = lamdacmax
+-              nci(i,k,1) = den(i,k)*qci(i,k,1)*lamdc_tmp(i,k)**dmc/pidnc
++              nci(i,k,1) = rho_dry(i,k)*qci(i,k,1)*lamdc_tmp(i,k)**dmc/pidnc
+               n0c(i,k) = (muc+1)*DBLE(nci(i,k,1))*lamdc_tmp(i,k)**(muc+1)
+@@ -1802,3 +1825,3 @@
+             lamdi_tmp(i,k) = exp(log((((pidni)*nci(i,k,2))                       &
+-                         /(den(i,k)*qci(i,k,2))))*(1./dmi))
++                         /(rho_dry(i,k)*qci(i,k,2))))*(1./dmi))
+             n0i(i,k) = (1./g1pmi)*DBLE(nci(i,k,2))*lamdi_tmp(i,k)**(mui+1)
+@@ -1806,3 +1829,3 @@
+               lamdi_tmp(i,k) = lamdaimin
+-              nci(i,k,2) = den(i,k)*qci(i,k,2)*(lamdi_tmp(i,k)**dmi)/pidni
++              nci(i,k,2) = rho_dry(i,k)*qci(i,k,2)*(lamdi_tmp(i,k)**dmi)/pidni
+               n0i(i,k) = (1./g1pmi)*DBLE(nci(i,k,2))*lamdi_tmp(i,k)**(mui+1)
+@@ -1810,3 +1833,3 @@
+               lamdi_tmp(i,k) = lamdaimax
+-              nci(i,k,2) = den(i,k)*qci(i,k,2)*(lamdi_tmp(i,k)**dmi)/pidni
++              nci(i,k,2) = rho_dry(i,k)*qci(i,k,2)*(lamdi_tmp(i,k)**dmi)/pidni
+               n0i(i,k) = (1./g1pmi)*DBLE(nci(i,k,2))*lamdi_tmp(i,k)**(mui+1)
+@@ -1833,4 +1856,4 @@
+      write(9106) lamdr_tmp(its:ite,kts:kte)
+-     write(9106) real((pidnr*nrs_pre_diag(its:ite,kts:kte))/(den(its:ite,kts:kte)*qrs(its:ite,kts:kte,1)))
+-     write(9106) den(its:ite,kts:kte)
++     write(9106) real((pidnr*nrs_pre_diag(its:ite,kts:kte))/(rho_dry(its:ite,kts:kte)*qrs(its:ite,kts:kte,1)))
++     write(9106) rho_dry(its:ite,kts:kte)
+      write(9106) qrs(its:ite,kts:kte,1)
+@@ -1867,6 +1890,6 @@
+ !                  *rslopec2(i,k)-0.4)
+-         lencon  = 2.7e-2*den(i,k)*qci(i,k,1)*(1.e20/16.*avedia(i,k,1) &
++         lencon  = 2.7e-2*rho_dry(i,k)*qci(i,k,1)*(1.e20/16.*avedia(i,k,1) &
+                   *(sigma(i,k,1)**3)-0.4)
+          lenconcr = max(1.2*lencon, qcrmin)
+-         if(qci(i,k,1).gt.qcr(i,k) .and. nci(i,k,1).gt.ncmin) then
++         if(qci(i,k,1).gt.qcr(i,k) .and. nci(i,k,1).gt.ncmin(i)) then
+            praut(i,k) = (qck1)*qci(i,k,1)**(7./3.)*nci(i,k,1)**(-1./3.)
+@@ -1877,3 +1900,3 @@
+ !------------------------------------------------------------------------
+-           nraut(i,k) = (3.5e9)*den(i,k)*praut(i,k)
++           nraut(i,k) = (3.5e9)*rho_dry(i,k)*praut(i,k)
+            if(qrs(i,k,1).gt.lenconcr)                                           &
+@@ -1893,3 +1916,3 @@
+                          ,nci(i,k,1)/dtcld)
+-              pracw(i,k) = min(((cmc)/den(i,k))*ncrk1*nci(i,k,1)                      &
++              pracw(i,k) = min(((cmc)/rho_dry(i,k))*ncrk1*nci(i,k,1)                      &
+                          *nrs(i,k,1)*rslopec3(i,k)*((rslopec3(i,k))*g6pmc             &
+@@ -1901,3 +1924,3 @@
+                          ,nci(i,k,1)/dtcld)
+-              pracw(i,k) = min(((cmc)/den(i,k))*ncrk2*nci(i,k,1)                      &
++              pracw(i,k) = min(((cmc)/rho_dry(i,k))*ncrk2*nci(i,k,1)                      &
+                          *nrs(i,k,1)*rslopec3(i,k)*((rslopec3(i,k))*rslopec3(i,k)     &
+@@ -2014,3 +2037,3 @@
+ !
+-                praci(i,k)=(pi)*cmi*n0i(i,k)*n0r(i,k)*abs(vt2r-vt2i)/(4*den(i,k))*acrfac*eacri
++                praci(i,k)=(pi)*cmi*n0i(i,k)*n0r(i,k)*abs(vt2r-vt2i)/(4*rho_dry(i,k))*acrfac*eacri
+ 
+@@ -2029,3 +2052,3 @@
+ !
+-                piacr(i,k)=(pi)*cmr*n0i(i,k)*n0r(i,k)*abs(vt2i-vt2r)/(4*den(i,k))*acrfac*eacir
++                piacr(i,k)=(pi)*cmr*n0i(i,k)*n0r(i,k)*abs(vt2i-vt2r)/(4*rho_dry(i,k))*acrfac*eacir
+ 
+@@ -2044,3 +2067,3 @@
+ !
+-                psaci(i,k)=(pi)*cmi*n0i(i,k)*n0so(i,k)*n0sfac(i,k)*abs(vt2s-vt2i)/(4*den(i,k))*acrfac*eacsi
++                psaci(i,k)=(pi)*cmi*n0i(i,k)*n0so(i,k)*n0sfac(i,k)*abs(vt2s-vt2i)/(4*rho_dry(i,k))*acrfac*eacsi
+                 psaci(i,k)=psaci(i,k)*min(max(0.0,qrs(i,k,2)/qci(i,k,2)),1.)**2
+@@ -2058,3 +2081,3 @@
+ 
+-                pgaci(i,k)=(pi)*cmi*n0i(i,k)*n0go(i,k)*abs(vt2g(i,k)-vt2i)/(4*den(i,k))*acrfac*eacgi
++                pgaci(i,k)=(pi)*cmi*n0i(i,k)*n0go(i,k)*abs(vt2g(i,k)-vt2i)/(4*rho_dry(i,k))*acrfac*eacgi
+                 pgaci(i,k)=pgaci(i,k)*min(max(0.0,qrs(i,k,3)/qci(i,k,2)),1.)**2
+@@ -2068,3 +2091,3 @@
+ ! revised
+-          if(supcol.gt.0. .and. nci(i,k,2).gt.ncmin) then
++          if(supcol.gt.0. .and. nci(i,k,2).gt.ncmin(i)) then
+           if(nrs(i,k,1).gt.nrmin) then
+@@ -2142,3 +2165,3 @@
+ !-------------------------------------------------------------
+-         if(qrs(i,k,2).gt.qcrmin .and. nci(i,k,1).gt.ncmin) then
++         if(qrs(i,k,2).gt.qcrmin .and. nci(i,k,1).gt.ncmin(i)) then
+ !           nsacw(i,k) = min(pacrc*n0sfac(i,k)*rslope3(i,k,2)*rslopeb(i,k,2)    &
+@@ -2167,3 +2190,3 @@
+ !-------------------------------------------------------------
+-          if(qrs(i,k,3).gt.qcrmin .and. nci(i,k,1).gt.ncmin) then
++          if(qrs(i,k,3).gt.qcrmin .and. nci(i,k,1).gt.ncmin(i)) then
+            ngacw(i,k) = min((pi)*avtg(i,k)*.25*eacgc*n0go(i,k)*n0c(i,k)/(muc+1)&
+@@ -2204,3 +2227,3 @@
+ !-------------------------------------------------------------
+-          if(nci(i,k,1).gt.ncmin .and. avedia(i,k,3).GE. di50) then
++          if(nci(i,k,1).gt.ncmin(i) .and. avedia(i,k,3).GE. di50) then
+              niacw(i,k) = min(pi*avti*.25*eacic*n0i(i,k)*n0c(i,k)/(muc+1)&
+@@ -2231,3 +2254,3 @@
+               pracs(i,k) =(pi)*cms*n0so(i,k)*n0sfac(i,k)*n0r(i,k)*abs(vt2r-vt2s)&
+-                        /(4*den(i,k))*acrfac*eacrs
++                        /(4*rho_dry(i,k))*acrfac*eacrs
+               ! reduce collection efficiency (suggested by B. Wilt)
+@@ -2267,3 +2290,3 @@
+             psacr(i,k) = (pi)*cmr*n0r(i,k)*n0so(i,k)*n0sfac(i,k)*abs(vt2s-vt2r)&
+-                        /(4*den(i,k))*acrfac*eacsr
++                        /(4*rho_dry(i,k))*acrfac*eacsr
+               ! reduce collection efficiency (suggested by B. Wilt)
+@@ -2308,3 +2331,3 @@
+             pgacr(i,k) = (pi)*cmr*n0r(i,k)*n0go(i,k)*abs(vt2g(i,k)-vt2r)     &
+-                        /(4*den(i,k))*acrfac*eacgr
++                        /(4*rho_dry(i,k))*acrfac*eacgr
+ !            pgacr(i,k) = pi*pi*ncr(i,k,3)*n0g*abs(vt2ave-vt2r)*(denr/den(i,k))  &
+@@ -2367,3 +2390,3 @@
+                   paacw(i,k) = paacw(i,k)-pmulcs(i,k)
+-                  nmulcs(i,k) = nmulcs(i,k)*den(i,k)
++                  nmulcs(i,k) = nmulcs(i,k)*rho_dry(i,k)
+ 
+@@ -2382,3 +2405,3 @@
+                    psacr(i,k) = psacr(i,k)-pmulrs(i,k)
+-                   nmulrs(i,k) = nmulrs(i,k)*den(i,k)
++                   nmulrs(i,k) = nmulrs(i,k)*rho_dry(i,k)
+ 
+@@ -2419,3 +2442,3 @@
+                   paacw(i,k) = paacw(i,k)-pmulcg(i,k)
+-                  nmulcg(i,k) = nmulcg(i,k)*den(i,k)
++                  nmulcg(i,k) = nmulcg(i,k)*rho_dry(i,k)
+ 
+@@ -2435,3 +2458,3 @@
+                    pgacr(i,k) = pgacr(i,k)-pmulrg(i,k)
+-                   nmulrg(i,k) = nmulrg(i,k)*den(i,k)
++                   nmulrg(i,k) = nmulrg(i,k)*rho_dry(i,k)
+ 
+@@ -2502,5 +2525,5 @@
+                 ninud(i,k) = ((Nid)-(nci(i,k,2)))/dtcld
+-                pinud(i,k) = ninud(i,k)/den(i,k)*Minud
++                pinud(i,k) = ninud(i,k)/rho_dry(i,k)*Minud
+                 pinud(i,k) = min(min(pinud(i,k),(satdt)/2),supice)
+-                ninud(i,k) = pinud(i,k)*den(i,k)/Minud
++                ninud(i,k) = pinud(i,k)*rho_dry(i,k)/Minud
+               endif
+@@ -2579,5 +2602,5 @@
+               IF (t(i,k).GT.255.66) THEN
+-                qi0 = 0.4632*10**(-6.0-0.0413*(-supcol))*den(i,k)
++                qi0 = 0.4632*10**(-6.0-0.0413*(-supcol))*rho_dry(i,k)
+               ELSE 
+-                qi0 = 0.2316*10**(-4.0+0.0519*(-supcol))*den(i,k)
++                qi0 = 0.2316*10**(-4.0+0.0519*(-supcol))*rho_dry(i,k)
+               END IF
+@@ -2586,3 +2609,3 @@
+               psaut(i,k) = min(max(0.,alpha1*(qci(i,k,2)-qi0)),qci(i,k,2)/dtcld)
+-              nsaut(i,k) = min((psaut(i,k))*den(i,k)/Miaut,nci(i,k,2)/dtcld)  
++              nsaut(i,k) = min((psaut(i,k))*rho_dry(i,k)/Miaut,nci(i,k,2)/dtcld)  
+             endif
+@@ -2734,3 +2757,3 @@
+ !
+-            value = max(ncmin,nci(i,k,1))
++            value = max(ncmin(i),nci(i,k,1))
+             source = (nraut(i,k)+nccol(i,k)+nracw(i,k)                         &
+@@ -2748,3 +2771,3 @@
+ !
+-            value = max(ncmin,nci(i,k,2))
++            value = max(ncmin(i),nci(i,k,2))
+             source = (nraci(i,k)+nsaci(i,k)+ngaci(i,k)+niacr(i,k)+nsaut(i,k)        &
+@@ -2886,3 +2909,3 @@
+ !
+-            value = max(ncmin,nci(i,k,1))
++            value = max(ncmin(i),nci(i,k,1))
+             source = (+nraut(i,k)+nccol(i,k)+nracw(i,k)+naacw(i,k)             &
+@@ -3068,3 +3091,3 @@
+ !--------------------------------------------------------------------
+-          if(qci(i,k,1).le.qmin .or. nci(i,k,1).le.ncmin ) then
++          if(qci(i,k,1).le.qmin .or. nci(i,k,1).le.ncmin(i) ) then
+             rslopecmu(i,k) = rslopecmmax
+@@ -3074,3 +3097,3 @@
+           else
+-            rslopec(i,k) = 1./lamdac(qci(i,k,1),den(i,k),nci(i,k,1))
++            rslopec(i,k) = 1./lamdac(qci(i,k,1),rho_dry(i,k),nci(i,k,1))
+             rslopec2(i,k) = (rslopec(i,k))*rslopec(i,k)
+@@ -3190,3 +3213,3 @@
+             pcact(i,k) = min(4.*pi*denr*(actr*1.E-6)**3*ncact(i,k)/            &
+-                         (3.*den(i,k)),max(q(i,k),0.)/dtcld)
++                         (3.*rho_dry(i,k)),max(q(i,k),0.)/dtcld)
+             q(i,k) = max(q(i,k)-pcact(i,k)*dtcld,0.)
+@@ -3256,31 +3279,31 @@
+             lamdr_tmp(i,k) = exp(log((((pidnr)*nrs(i,k,1))                       &
+-                         /(den(i,k)*qrs(i,k,1))))*(1./dmr))
++                         /(rho_dry(i,k)*qrs(i,k,1))))*(1./dmr))
+             if(lamdr_tmp(i,k) .le. lamdarmin) then
+               lamdr_tmp(i,k) = lamdarmin
+-              nrs(i,k,1) = den(i,k)*qrs(i,k,1)*lamdr_tmp(i,k)**dmr/pidnr
++              nrs(i,k,1) = rho_dry(i,k)*qrs(i,k,1)*lamdr_tmp(i,k)**dmr/pidnr
+             elseif(lamdr_tmp(i,k) .ge. lamdarmax) then
+               lamdr_tmp(i,k) = lamdarmax 
+-              nrs(i,k,1) = den(i,k)*qrs(i,k,1)*lamdr_tmp(i,k)**dmr/pidnr
++              nrs(i,k,1) = rho_dry(i,k)*qrs(i,k,1)*lamdr_tmp(i,k)**dmr/pidnr
+             endif
+           endif
+-          if(qci(i,k,1).ge.qmin .and. nci(i,k,1) .ge. ncmin ) then
++          if(qci(i,k,1).ge.qmin .and. nci(i,k,1) .ge. ncmin(i) ) then
+             lamdc_tmp(i,k) = exp(log((((pidnc)*nci(i,k,1))                       &
+-                         /(den(i,k)*qci(i,k,1))))*(1./dmc))
++                         /(rho_dry(i,k)*qci(i,k,1))))*(1./dmc))
+             if(lamdc_tmp(i,k) .le. lamdacmin) then
+               lamdc_tmp(i,k) = lamdacmin
+-              nci(i,k,1) = den(i,k)*qci(i,k,1)*lamdc_tmp(i,k)**dmc/pidnc
++              nci(i,k,1) = rho_dry(i,k)*qci(i,k,1)*lamdc_tmp(i,k)**dmc/pidnc
+             elseif(lamdc_tmp(i,k) .ge. lamdacmax) then
+               lamdc_tmp(i,k) = lamdacmax
+-              nci(i,k,1) = den(i,k)*qci(i,k,1)*lamdc_tmp(i,k)**dmc/pidnc
++              nci(i,k,1) = rho_dry(i,k)*qci(i,k,1)*lamdc_tmp(i,k)**dmc/pidnc
+             endif
+           endif
+-          if(qci(i,k,2).ge. qmin .and. nci(i,k,2) .ge. ncmin ) then
++          if(qci(i,k,2).ge. qmin .and. nci(i,k,2) .ge. ncmin(i) ) then
+             lamdi_tmp(i,k) = exp(log((((pidni)*nci(i,k,2))                       &
+-                         /(den(i,k)*qci(i,k,2))))*(1./dmi))
++                         /(rho_dry(i,k)*qci(i,k,2))))*(1./dmi))
+             if(lamdi_tmp(i,k) .le. lamdaimin) then
+               lamdi_tmp(i,k) = lamdaimin
+-              nci(i,k,2) = den(i,k)*qci(i,k,2)*lamdi_tmp(i,k)**dmi/pidni
++              nci(i,k,2) = rho_dry(i,k)*qci(i,k,2)*lamdi_tmp(i,k)**dmi/pidni
+             elseif(lamdi_tmp(i,k) .ge. lamdaimax) then
+               lamdi_tmp(i,k) = lamdaimax
+-              nci(i,k,2) = den(i,k)*qci(i,k,2)*lamdi_tmp(i,k)**dmi/pidni
++              nci(i,k,2) = rho_dry(i,k)*qci(i,k,2)*lamdi_tmp(i,k)**dmi/pidni
+             endif
+@@ -3290,3 +3313,3 @@
+               lamdr_tmp(i,k) = lamdarmax
+-              nrs(i,k,1) = den(i,k)*qrs(i,k,1)*lamdr_tmp(i,k)**dmr/pidnr
++              nrs(i,k,1) = rho_dry(i,k)*qrs(i,k,1)*lamdr_tmp(i,k)**dmr/pidnr
+             endif
+@@ -3294,3 +3317,3 @@
+               lamdc_tmp(i,k) = lamdacmax
+-              nci(i,k,1) = den(i,k)*qci(i,k,1)*lamdc_tmp(i,k)**dmc/pidnc
++              nci(i,k,1) = rho_dry(i,k)*qci(i,k,1)*lamdc_tmp(i,k)**dmc/pidnc
+             endif
+@@ -4421,3 +4444,3 @@
+ !          lamc = 2.*cdm2*(pidnc*nc(k)/rqc(k))**obmr
+-          lamc = (pidnc*nc(k)/rqc(k))**(1./xbm_r)
++          lamc = (pidnc*rnc(k)/rqc(k))**(1./xbm_r)
+           lamco =  lamc*2*cdm2/cdm3
+@@ -4430,3 +4453,3 @@
+           if (rqi(k).le.R1 .or. rni(k).le.R2) CYCLE
+-           lami = (pidni*ni(k)/rqi(k))**(1./xbm_i) 
++           lami = (pidni*rni(k)/rqi(k))**(1./xbm_i) 
+            lamio = lami*2*idm4/idm3
