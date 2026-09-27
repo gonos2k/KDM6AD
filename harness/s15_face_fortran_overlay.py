@@ -30,6 +30,7 @@ SOURCE_PINS = {
 PRODUCER_ANCHOR = ("scalar_tile_loop_1", "rk_scalar_tend")
 CONSUMER_ANCHOR = ("scalar_tile_loop_2", "rk_update_scalar")
 CONTEXT_NAMES = ("s15_step", "s15_rk", "s15_owner", "s15_tile")
+PD_EPS_F32 = "1E3CE508"
 
 
 def sha256(data: bytes) -> str:
@@ -801,6 +802,14 @@ def parse_fortran_capture(
             values = words(tokens[13:], 22, tag)
             floats = values[:4]
             groups = [values[n : n + 6] for n in (4, 10, 16)]
+            if floats[2] != PD_EPS_F32:
+                raise OverlayError(
+                    "PD epsilon differs from the source-pinned binary32 parameter"
+                )
+            if active == 0 and floats[3] != "00000000":
+                raise OverlayError(
+                    "inactive PD limiter must retain the initialized zero scale"
+                )
             if event_key in pds:
                 raise OverlayError(f"line {line_no}: duplicate PD limiter record")
             pds[event_key] = {

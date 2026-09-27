@@ -71,7 +71,8 @@ inputs, and compiler diagnostics stay outside the public tree; no private source
 text or raw event operands are published.
 
 The synthetic parser checks exact six-key coverage, source-ordered axes,
-ordinary versus positive-definite dispatch, PD limiter record shape, duplicate
+ordinary versus positive-definite dispatch, PD limiter record shape, the
+source-pinned epsilon word, zero scale when the limiter is inactive, duplicate
 and unknown tags, and producer/consumer identity. They are synthetic protocol
 checks only. A same-executable macro-off control, native capture, output
 noninterference comparison, and the six actual producer/consumer rows remain

@@ -65,7 +65,7 @@ def _raw_stream() -> str:
             words = [
                 producer["pd_flux_out"],
                 producer["pd_available_state"],
-                "00000000",
+                overlay.PD_EPS_F32,
                 "00000000",
                 *[low[a][s] for a in ("x", "y", "z") for s in ("minus", "plus")],
                 *[pre[a][s] for a in ("x", "y", "z") for s in ("minus", "plus")],
@@ -143,6 +143,22 @@ def test_synthetic_s15_records_parse_and_join_to_the_six_pinned_slots() -> None:
     assert len(producers) == len(consumers) == 6
     assert producers[4]["pd_limiter_active"] is False
     assert producers[4]["tendency_order"] == ["z", "x", "y"]
+
+    rows = stream.splitlines()
+    pd_index = next(i for i, row in enumerate(rows) if row.startswith("S15PD "))
+    bad_scale = rows.copy()
+    pd_words = bad_scale[pd_index].split()
+    pd_words[16] = "3F000000"
+    bad_scale[pd_index] = " ".join(pd_words)
+    with pytest.raises(overlay.OverlayError, match="inactive PD limiter.*zero scale"):
+        overlay.parse_fortran_capture("\n".join(bad_scale) + "\n", ROOT, CONFIG)
+
+    bad_eps = rows.copy()
+    pd_words = bad_eps[pd_index].split()
+    pd_words[15] = "00000000"
+    bad_eps[pd_index] = " ".join(pd_words)
+    with pytest.raises(overlay.OverlayError, match="epsilon differs"):
+        overlay.parse_fortran_capture("\n".join(bad_eps) + "\n", ROOT, CONFIG)
 
 
 @pytest.mark.parametrize(
