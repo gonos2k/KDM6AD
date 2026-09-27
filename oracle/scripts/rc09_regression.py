@@ -19,6 +19,7 @@ from kdm6.state import Forcing, State, state_dot
 
 DT = 20.0
 REFERENCE = Path(__file__).with_name("rc09_reference.json")
+REFERENCE_SHA256 = "2e191ec6250961e003f961f186255d794a485a028bfc26d60e93e8648444477f"
 
 
 def pair(a: float, b: float, *, grad: bool = False) -> torch.Tensor:
@@ -85,6 +86,8 @@ def run(reference: dict[str, object]) -> dict[str, object]:
         raise RuntimeError("forward reference identity mismatch")
     if reference["dt_seconds"] != DT:
         raise RuntimeError("forward reference timestep mismatch")
+    if reference["atol"] != 1e-18 or reference["rtol"] != 1e-11:
+        raise RuntimeError("forward reference tolerance mismatch")
     max_forward_ratio = 0.0
     for name, actual in zip(State._fields, output):
         expected = torch.tensor(
@@ -92,6 +95,8 @@ def run(reference: dict[str, object]) -> dict[str, object]:
         ).reshape(1, 2)
         tolerance = reference["atol"] + reference["rtol"] * expected.abs()
         ratio = float(((actual.detach() - expected).abs() / tolerance).max())
+        if not math.isfinite(ratio):
+            raise RuntimeError(f"nonfinite forward reference: {name}")
         max_forward_ratio = max(max_forward_ratio, ratio)
     if not math.isfinite(max_forward_ratio) or max_forward_ratio >= 1.0:
         raise RuntimeError(f"forward reference mismatch: ratio={max_forward_ratio:.3e}")
@@ -159,7 +164,6 @@ def provenance() -> dict[str, object]:
         "runtime_sha256": hashlib.sha256(
             (root / "oracle/kdm6/runtime.py").read_bytes()
         ).hexdigest(),
-        "reference_sha256": hashlib.sha256(REFERENCE.read_bytes()).hexdigest(),
         "python": sys.version.split()[0],
         "torch": torch.__version__,
         "platform": sys.platform,
@@ -176,7 +180,11 @@ def main() -> int:
     result: dict[str, object] = {"schema": "kdm6ad-rc09-regression-v1"}
     try:
         result.update(provenance())
-        reference = json.loads(REFERENCE.read_text(encoding="utf-8"))
+        reference_bytes = REFERENCE.read_bytes()
+        result["reference_sha256"] = hashlib.sha256(reference_bytes).hexdigest()
+        if result["reference_sha256"] != REFERENCE_SHA256:
+            raise RuntimeError("forward reference SHA mismatch")
+        reference = json.loads(reference_bytes)
         if not result["source_clean"]:
             raise RuntimeError("source checkout is not clean")
         for key in ("python", "torch", "platform", "arch"):

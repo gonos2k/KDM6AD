@@ -34,7 +34,8 @@ checkout and environment:
 
 ```sh
 PYTHONPATH=oracle python3 -m pytest -q \
-  oracle/tests/test_handle_vjp_jvp.py oracle/tests/test_runtime_validation.py
+  oracle/tests/test_handle_vjp_jvp.py oracle/tests/test_runtime_validation.py \
+  oracle/tests/test_rc09_regression.py
 ```
 
 These are **numerical implementation checks**. The candidate does not run a
