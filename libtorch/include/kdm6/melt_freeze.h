@@ -52,6 +52,12 @@ MeltingOutputs melting_torch(
     const MeltingParams& params,
     double dtcld
 );
+MeltingOutputs melting_torch(
+    const MeltingInputs& inputs,
+    const MeltingParams& params,
+    double dtcld,
+    const torch::Tensor& mass_den
+);
 
 // ─── Step D2: Contact freezing (Meyers) ──────────────────────────────────────
 
@@ -84,6 +90,12 @@ ContactFreezingOutputs contact_freezing_torch(
     const ContactFreezingInputs& inputs,
     const ContactFreezingParams& params,
     double dtcld
+);
+ContactFreezingOutputs contact_freezing_torch(
+    const ContactFreezingInputs& inputs,
+    const ContactFreezingParams& params,
+    double dtcld,
+    const torch::Tensor& mass_den
 );
 
 // ─── Step D3: Bigg cloud freezing ────────────────────────────────────────────

@@ -59,11 +59,12 @@ MeltingParams default_melting_params(double xlf) {
 MeltingOutputs melting_torch(
     const MeltingInputs& in,
     const MeltingParams& p,
-    double dtcld
+    double dtcld,
+    const torch::Tensor& mass_den
 ) {
     auto zero = torch::zeros_like(in.qs);
     auto warm = in.t > p.t0c;
-    auto den_safe = torch::clamp(in.den, /*min=*/p.qcrmin);
+    auto den_safe = torch::clamp(mass_den, /*min=*/p.qcrmin);
 
     auto xka_val = xka(in.t, in.den);
 
@@ -154,6 +155,11 @@ MeltingOutputs melting_torch(
     };
 }
 
+MeltingOutputs melting_torch(const MeltingInputs& in, const MeltingParams& p,
+                             double dtcld) {
+    return melting_torch(in, p, dtcld, in.den);
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // D2: Contact freezing (Meyers)
 // ═══════════════════════════════════════════════════════════════════════════
@@ -176,7 +182,8 @@ ContactFreezingParams default_contact_freezing_params(double xlf) {
 ContactFreezingOutputs contact_freezing_torch(
     const ContactFreezingInputs& in,
     const ContactFreezingParams& p,
-    double dtcld
+    double dtcld,
+    const torch::Tensor& mass_den
 ) {
     // STEP-67 SEED: Fortran pinuc/ninuc are DOUBLE PRECISION scalars (F:738) and
     // n0c/rslopecmu are DOUBLE arrays (F:696-697), so the rate chain promotes to
@@ -186,7 +193,7 @@ ContactFreezingOutputs contact_freezing_torch(
     // promotion (f64 tensor ⊗ f32 tensor → f64) mirrors gfortran exactly; in.n0c
     // is the f64 intercept (runtime.cpp/coordinator.cpp).
     auto active = torch::logical_and(in.supcol > p.supcol_threshold, in.qc > p.qmin);
-    auto den_safe = torch::clamp(in.den, /*min=*/p.qmin);
+    auto den_safe = torch::clamp(mass_den, /*min=*/p.qmin);
     auto supcolt = torch::clamp(in.supcol, /*min=*/-1e30, /*max=*/70.0);
     // Nic = exp(-2.80+0.262*supcolt)*1000 (F:1519): strict IEEE two-rounding in
     // source order — 0.262*supcolt rounds, then -2.80 + (.) rounds (was an fma
@@ -221,6 +228,12 @@ ContactFreezingOutputs contact_freezing_torch(
                      * p.g1pmc * in.rslopecmu * in.rslopec2 * dtcld;
     auto ninuc = torch::where(nc_active, torch::minimum(ninuc_raw, in.nc.to(ninuc_raw.dtype())), zero_d);
     return ContactFreezingOutputs{/*pinuc=*/pinuc, /*ninuc=*/ninuc};
+}
+
+ContactFreezingOutputs contact_freezing_torch(const ContactFreezingInputs& in,
+                                             const ContactFreezingParams& p,
+                                             double dtcld) {
+    return contact_freezing_torch(in, p, dtcld, in.den);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
