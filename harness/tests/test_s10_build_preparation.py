@@ -371,6 +371,18 @@ def test_prep_measurement_rejects_symlinked_receipt_parent(tmp_path: Path):
     assert sentinel.read_text(encoding="utf-8") == "do not overwrite\n"
 
 
+def test_exclusive_receipt_writer_walks_absolute_workspace_without_following_symlinks(
+        tmp_path: Path):
+    real_workspace = tmp_path / "real-workspace"
+    (real_workspace / "S10").mkdir(parents=True)
+    workspace_alias = tmp_path / "workspace-alias"
+    workspace_alias.symlink_to(real_workspace, target_is_directory=True)
+    with pytest.raises(OSError):
+        guard._write_new_workspace_receipt(
+            workspace_alias, "S10/build_preparation_measurement.json", b"{}\n")
+    assert not (real_workspace / "S10/build_preparation_measurement.json").exists()
+
+
 def test_prep_measurement_rejects_symlinked_output_root(
         tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     plan, workspace, output_root, snapshot_path, receipt_path = _measurement_fixture(tmp_path)

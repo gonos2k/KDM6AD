@@ -234,9 +234,15 @@ def _write_new_workspace_receipt(workspace: Path, relative: str, payload: bytes)
         raise PrelinkError("platform lacks no-follow directory/file creation flags")
     flags_dir = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
     flags_file = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW
-    directory_fd = os.open(_lexical_absolute(workspace), flags_dir)
+    workspace_abs = _lexical_absolute(workspace)
+    if not workspace_abs.is_absolute():
+        raise PrelinkError("measurement workspace must be absolute")
+    directory_fd = os.open(workspace_abs.anchor, flags_dir)
     try:
-        for component in rel.parts[:-1]:
+        # Open every absolute workspace component relative to the preceding
+        # directory descriptor. O_NOFOLLOW on a single absolute open protects
+        # only its final component and leaves ancestor swaps vulnerable.
+        for component in (*workspace_abs.parts[1:], *rel.parts[:-1]):
             next_fd = os.open(component, flags_dir, dir_fd=directory_fd)
             os.close(directory_fd)
             directory_fd = next_fd
