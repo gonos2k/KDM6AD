@@ -357,7 +357,8 @@ def _build_coord_forcing(f: Forcing) -> "_coord.CoordinatorForcing":
     NOT density × delz)** — see C++ build_forcing comment + project memory
     `project_kdm6_dend_must_be_density_only`. The `coordinator.py:63` "density × delz"
     label is the mis-documentation that comment flags (falk = dend·q·work1/mstep with
-    work1 = vt/delz cancels delz only when dend = ρ; an extra delz gives ~250× RAINNC)."""
+    work1 = vt/delz cancels delz only when dend = ρ; an extra delz gives ~250× RAINNC).
+    The opt-in dry-number path replaces dend with entry dry density afterward."""
     return _coord.CoordinatorForcing(p=f.p, den=f.rho, delz=f.delz, dend=f.rho)
 
 
@@ -447,6 +448,7 @@ def _kdm6_pure(
     budget=None,     # [P0-4] opt-in water-budget ledger; None → byte-identical (no diagnostic)
     sed_substep_fns=None,  # [P0-4b.1] (substep_fn, ice_substep_fn) override; None → legacy (byte-identical)
     diagnostic_trace=None,  # opt-in stage trace; None → no diagnostic work
+    dry_number: bool = False,
 ) -> State:
     """[G1] One-step KDM6 — autograd dynamic graph가 통과할 pure function.
 
@@ -489,6 +491,11 @@ def _kdm6_pure(
 
     Returns ``State`` only (no surface rain/snow/graupel increments — those are a C++ ABI
     concern; ``_kdm6_pure``'s job is the differentiable state evolution).
+
+    ``dry_number=True`` expects all four input numbers per kg dry air, including
+    any first-step CCN profile prepared by the caller. It uses volume numbers
+    inside the kernel and returns dry-specific numbers. The existing numerical
+    number thresholds are treated as volume concentrations in this experiment.
     """
     _validate_state_forcing_boundary(state, forcing)
     # Input-validation contract (external review P1-2/P1-3, Python boundary —
@@ -509,6 +516,10 @@ def _kdm6_pure(
                 "land/sea regime over the whole domain")
         if not bool(torch.isfinite(xland).all()):
             raise ValueError("xland must be finite")
+    if dry_number and budget is not None:
+        raise ValueError("dry-number water budget requires a dry-density ledger")
+    if dry_number and diagnostic_trace is not None:
+        raise ValueError("dry-number diagnostic trace requires a number-basis label")
 
     # delt<=0 → EXACT no-op: return the input state unchanged. (The former
     # _coord_to_state round-trip recomputed th = (th*pii)/pii, which is not
@@ -517,8 +528,30 @@ def _kdm6_pure(
     if dt <= 0.0:
         return state
 
-    cs = _state_to_coord(state, forcing)
+    dry_density = None
+    state_kernel = state
+    if dry_number:
+        # Validation alone is value-only; successful input arithmetic stays in the AD graph.
+        with torch.no_grad():
+            if not bool(torch.isfinite(forcing.rho).all()) or not bool(torch.isfinite(state.qv).all()):
+                raise ValueError("dry-number density inputs must be finite")
+            if bool((forcing.rho <= 0).any()) or bool((state.qv <= -1).any()):
+                raise ValueError("dry-number density inputs must give positive dry density")
+        dry_density = forcing.rho / (1.0 + state.qv)
+        with torch.no_grad():
+            if not bool(torch.isfinite(dry_density).all()) or bool((dry_density <= 0).any()):
+                raise ValueError("dry-number density must be finite and positive")
+        state_kernel = state._replace(
+            nccn=state.nccn * dry_density,
+            nc=state.nc * dry_density,
+            ni=state.ni * dry_density,
+            nr=state.nr * dry_density,
+        )
+
+    cs = _state_to_coord(state_kernel, forcing)
     cf = _build_coord_forcing(forcing)
+    if dry_number:
+        cf = cf._replace(dend=dry_density)
 
     full_p = _coord.default_coordinator_params()
     # G4: 파라미터가 "살아 있으면" warm 번들에 연결 — live = requires_grad 켜짐
@@ -584,7 +617,7 @@ def _kdm6_pure(
 
     # CCN reservoir: clamp once at entry (Fortran :801; C++ runtime.cpp:297), then carry +
     # deplete it across the sub-cycles through kdm62d_one_step → apply_satadj_step activation.
-    cur_nccn = torch.clamp(state.nccn, min=c.NCCN_MIN, max=c.NCCN_MAX)
+    cur_nccn = torch.clamp(state_kernel.nccn, min=c.NCCN_MIN, max=c.NCCN_MAX)
 
     # Fortran entry padding (F:822-839): zero the dynamics-generated negative
     # prognostics ONCE per kernel call (mirror of C++ runtime.cpp; the step-46 nn
@@ -662,7 +695,7 @@ def _kdm6_pure(
             budget.add_sed(_wb_pre_sed, cur, sed.rain_increment, cf)
             _wb_pre_mic = cur  # column water before the microphysics pass
         # 2. Re-slope + aux on the POST-FALL state (WRF order), Fortran :1422-1480.
-        rslopec = _cdsd.diag_cloud_slope_torch(cur.qc, cur.nc, cf.den, params=cloud_p,
+        rslopec = _cdsd.diag_cloud_slope_torch(cur.qc, cur.nc, cf.dend, params=cloud_p,
                                                ncmin_tensor=ncmin_tensor)
         aux = _coord.build_default_aux_torch(cur, cf, rslopec, thermo_params=full_p.thermo)
         # qcr from land/sea (Fortran :842-847). Applied UNCONDITIONALLY: no-xland ⇒ sea_mask=all-sea
@@ -688,7 +721,15 @@ def _kdm6_pure(
         if budget is not None:
             budget.add_micro(_wb_pre_mic, cur, cf)  # [P0-4] ΔW_micro (≈0)
 
-    return _coord_to_state(cur, state, forcing)._replace(nccn=cur_nccn)
+    result = _coord_to_state(cur, state, forcing)._replace(nccn=cur_nccn)
+    if dry_number:
+        result = result._replace(
+            nccn=result.nccn / dry_density,
+            nc=result.nc / dry_density,
+            ni=result.ni / dry_density,
+            nr=result.nr / dry_density,
+        )
+    return result
 
 
 kdm6_fn = _kdm6_pure
@@ -707,6 +748,7 @@ def kdm6_step(
     ncmin_sea: float = 0.0,
     controls=None,   # [DA §5.2] ProcessControls — None → byte-identical default path
     diagnostic_trace=None,  # opt-in stage trace; None → no diagnostic work
+    dry_number: bool = False,
 ) -> tuple[State, Handle]:
     """[G3] 슬롯 47 진입점 — Fortran forward와 *동반 구동*되어 derivative 정보 산출.
 
@@ -734,6 +776,9 @@ def kdm6_step(
         Bigg-cloud freezing gate와 cloud slope·최종 cloud/ice DSD gate에 전달한다.
         c.NCMIN을 safety floor로 사용하므로
         default 0.0도 0-floor가 되지 않는다. xland=None이면 기존 scalar 기본값을 유지한다.
+    dry_number : bool, default False
+        Opt-in dry-mass QN boundary. The caller must provide the first-step CCN
+        profile in dry-specific units; the kernel uses volume thresholds.
 
     Returns
     -------
@@ -753,6 +798,7 @@ def kdm6_step(
     """
     if params is None:
         params = make_parameters()
+    extra = {"dry_number": True} if dry_number else {}
 
     if value_only:
         with torch.no_grad():
@@ -760,11 +806,11 @@ def kdm6_step(
                 # Keep the legacy call boundary byte-for-byte and friendly to
                 # callers that replace kdm6_fn with a positional test double.
                 state_out = kdm6_fn(state, forcing, params, dt, xland, ncmin_land,
-                                    ncmin_sea, controls)
+                                    ncmin_sea, controls, **extra)
             else:
                 state_out = kdm6_fn(state, forcing, params, dt, xland, ncmin_land,
                                     ncmin_sea, controls,
-                                    diagnostic_trace=diagnostic_trace)
+                                    diagnostic_trace=diagnostic_trace, **extra)
         return state_out, Handle(
             state_in=state,
             state_out=state_out,
@@ -779,10 +825,10 @@ def kdm6_step(
     # build dynamic graph
     if diagnostic_trace is None:
         state_out = kdm6_fn(state, forcing, params, dt, xland, ncmin_land, ncmin_sea,
-                            controls)
+                            controls, **extra)
     else:
         state_out = kdm6_fn(state, forcing, params, dt, xland, ncmin_land, ncmin_sea,
-                            controls, diagnostic_trace=diagnostic_trace)
+                            controls, diagnostic_trace=diagnostic_trace, **extra)
     handle = Handle(
         state_in=state,
         state_out=state_out,
@@ -791,7 +837,7 @@ def kdm6_step(
         dt=dt,
         pullback=None,
         # Bind the control inputs so VJP/JVP respect xland/ncmin.
-        func=lambda s, f, p, d: kdm6_fn(s, f, p, d, xland, ncmin_land, ncmin_sea, controls),
+        func=lambda s, f, p, d: kdm6_fn(s, f, p, d, xland, ncmin_land, ncmin_sea, controls, **extra),
     )
     return state_out, handle
 
