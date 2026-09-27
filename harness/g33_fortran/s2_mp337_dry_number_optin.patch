@@ -1,0 +1,111 @@
+--- a/phys/kdm6_iso_c.F
++++ b/phys/kdm6_iso_c.F
+@@ -163,2 +163,4 @@
+     integer(c_int32_t) :: physics_variant
++    ! S2 dry-specific QN selector (C int64_t; 0=legacy, 1=dry-number value-only).
++    integer(c_int64_t) :: dry_number
+   end type kdm6_step_v2_args
+--- a/phys/module_mp_kdm6ad_cons.F
++++ b/phys/module_mp_kdm6ad_cons.F
+@@ -18,3 +18,3 @@
+   USE, INTRINSIC :: iso_c_binding, ONLY: c_double, c_float, c_int,       &
+-                                         c_int32_t, c_ptr, c_loc,        &
++                                         c_int32_t, c_int64_t, c_ptr, c_loc, &
+                                          c_sizeof, C_NULL_PTR
+@@ -132,3 +132,3 @@
+     INTEGER :: I, J, K, II, JJ, KK
+-    INTEGER :: IM, KM, JM
++    INTEGER :: IM, KM, JM, DRY_ENV_STATUS, DRY_ENV_LENGTH
+     INTEGER(c_int) :: RC
+@@ -136,3 +136,6 @@
+     TYPE(kdm6_step_v2_args) :: ARGS
+-    REAL :: Z_SUM
++    REAL :: Z_SUM, RHO_DRY_CELL
++    LOGICAL :: DRY_NUMBER_MODE
++    CHARACTER(LEN=8) :: DRY_NUMBER_ENV
++    REAL(c_float), ALLOCATABLE :: RHO_DRY_IN(:,:,:)
+ 
+@@ -181,2 +184,18 @@
+ 
++    DRY_NUMBER_ENV = ''
++    CALL get_environment_variable('KDM6_S2_DRY_NUMBER', DRY_NUMBER_ENV, &
++                                  LENGTH=DRY_ENV_LENGTH, STATUS=DRY_ENV_STATUS)
++    IF (DRY_ENV_LENGTH == 0 .AND. &
++        (DRY_ENV_STATUS == 0 .OR. DRY_ENV_STATUS == 1)) THEN
++      DRY_NUMBER_MODE = .FALSE.
++    ELSE IF (DRY_ENV_STATUS == 0 .AND. DRY_ENV_LENGTH == 1 .AND. &
++             DRY_NUMBER_ENV(1:1) == '0') THEN
++      DRY_NUMBER_MODE = .FALSE.
++    ELSE IF (DRY_ENV_STATUS == 0 .AND. DRY_ENV_LENGTH == 1 .AND. &
++             DRY_NUMBER_ENV(1:1) == '1') THEN
++      DRY_NUMBER_MODE = .TRUE.
++    ELSE
++      CALL wrf_error_fatal('kdm6ad_cons: KDM6_S2_DRY_NUMBER must be 0 or 1')
++    END IF
++
+     CALL wrf_debug(100, 'module_mp_kdm6ad_cons: entering kdm6ad_cons wrapper')
+@@ -208,2 +227,29 @@
+     RHOG_OUT = 0.0_c_float   ! never copy uninitialized memory into diag_rhog
++
++    IF (DRY_NUMBER_MODE) THEN
++      ALLOCATE(RHO_DRY_IN(IM, KM, JM))
++      DO J = JTS, JTE
++        JJ = J - JTS + 1
++        DO K = KTS, KTE
++          KK = K - KTS + 1
++          DO I = ITS, ITE
++            II = I - ITS + 1
++            IF (.NOT. ieee_is_finite(DEN(I,K,J)) .OR. &
++                .NOT. ieee_is_finite(Q(I,K,J))) THEN
++              CALL wrf_error_fatal('kdm6ad_cons: nonfinite dry-density inputs')
++            END IF
++            IF (DEN(I,K,J) <= 0.0 .OR. Q(I,K,J) <= -1.0) THEN
++              CALL wrf_error_fatal('kdm6ad_cons: invalid dry-density inputs')
++            END IF
++            RHO_DRY_IN(II,KK,JJ) = DEN(I,K,J)/(1.0+Q(I,K,J))
++            IF (.NOT. ieee_is_finite(RHO_DRY_IN(II,KK,JJ))) THEN
++              CALL wrf_error_fatal('kdm6ad_cons: nonfinite dry density')
++            END IF
++            IF (RHO_DRY_IN(II,KK,JJ) <= 0.0) THEN
++              CALL wrf_error_fatal('kdm6ad_cons: nonpositive dry density')
++            END IF
++          END DO
++        END DO
++      END DO
++    END IF
+ 
+@@ -222,2 +268,5 @@
+               NN(I, K, J) = (150.0 * EXP(-0.35 * Z_SUM / 1000.0) + 10.0) * 1.0E6
++            END IF
++            IF (DRY_NUMBER_MODE) THEN
++              NN(I,K,J) = NN(I,K,J)/RHO_DRY_IN(I-ITS+1,K-KTS+1,J-JTS+1)
+             END IF
+@@ -316,2 +365,3 @@
+     ARGS%physics_variant = KDM6_PHYSICS_CONSERVATIVE_INTERFACE
++    ARGS%dry_number = MERGE(1_c_int64_t, 0_c_int64_t, DRY_NUMBER_MODE)
+ 
+@@ -378,8 +428,18 @@
+             t1d(K)   = TH(I, K, J) * PII(I, K, J)
+-            den1d(K) = DEN(I, K, J)
+-            qc1d(K)  = QC(I, K, J)
+-            qi1d(K)  = QI(I, K, J)
+-            qs1d(K)  = QS(I, K, J)
+-            nc1d(K)  = NC(I, K, J)
+-            ni1d(K)  = NI(I, K, J)
++            IF (DRY_NUMBER_MODE) THEN
++              RHO_DRY_CELL = RHO_DRY_IN(I-ITS+1,K-KTS+1,J-JTS+1)
++              den1d(K) = 1.0
++              qc1d(K) = QC(I,K,J)*RHO_DRY_CELL
++              qi1d(K) = QI(I,K,J)*RHO_DRY_CELL
++              qs1d(K) = QS(I,K,J)*RHO_DRY_CELL
++              nc1d(K) = NC(I,K,J)*RHO_DRY_CELL
++              ni1d(K) = NI(I,K,J)*RHO_DRY_CELL
++            ELSE
++              den1d(K) = DEN(I, K, J)
++              qc1d(K)  = QC(I, K, J)
++              qi1d(K)  = QI(I, K, J)
++              qs1d(K)  = QS(I, K, J)
++              nc1d(K)  = NC(I, K, J)
++              ni1d(K)  = NI(I, K, J)
++            END IF
+           END DO
