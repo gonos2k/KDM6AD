@@ -15,7 +15,13 @@ def test_s10_resource_report_arithmetic_and_blocked_gates_are_consistent():
     estimate = report["component_estimate_proposal"]
     capacity = estimate["capacity_calculation"]
 
-    assert report["prelink_plan_sha256"] == hashlib.sha256(plan_bytes).hexdigest()
+    current_plan_sha = hashlib.sha256(plan_bytes).hexdigest()
+    assert report["prelink_plan_sha256"] == plan["resource_gate"][
+        "resource_report_parent_plan_sha256"]
+    assert report["prelink_plan_sha256"] != current_plan_sha
+    estimate_path = ROOT / "evidence/s10_build_preparation_estimate_2026-09-27.json"
+    assert plan["resource_gate"]["build_preparation"]["estimate_sha256"] == \
+        hashlib.sha256(estimate_path.read_bytes()).hexdigest()
     component_total = sum(estimate["components_across_all_four_variants"].values())
     shared_total = sum(estimate["shared_staging_components"].values())
     assert component_total + shared_total == estimate["estimated_total_bytes_including_existing_case_tree"]

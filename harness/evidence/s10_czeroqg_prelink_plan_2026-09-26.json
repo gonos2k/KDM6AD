@@ -182,6 +182,7 @@
     "configuration_preflight_consumption_marker_relative_path": "S10/configuration_capture/configure_preflight_consumed.json",
     "configuration_preflight_one_shot_policy": "Guarded configure pipeline creates the marker exclusively before subprocess launch; a failed or completed attempt consumes that plan/preflight nonce and same-plan retries fail. Marker is local workflow state, not cryptographic proof against a privileged actor who can delete local files.",
     "configuration_ledger_plan_sha256": "6f7517e61707ba3d325c13637d97d35ac31b76eb6f513bfc3e554fa62c783af2",
+    "configuration_result_parent_plan_sha256": "6bfaee343979a4b6995496053523a86e57f3423978cba34eafeda45164f99a82",
     "configure_failure_log_markers": [
       "One of compilers testing failed!"
     ],
@@ -214,6 +215,231 @@
       "off",
       "on"
     ],
+    "build_command_templates": {
+      "schema": "s10-standalone-build-command-plan-v1",
+      "status": "DECLARED_UNEXECUTED_INCOMPLETE",
+      "shell": false,
+      "generic_make_execution_allowed": false,
+      "build_executor_supported": false,
+      "build_executor_sha256": null,
+      "arms": {
+        "mp37_B": {
+          "source_sha256": "70f101d9160d07af8a318d552ad317c05e7d46219fb0e4233da49979bd84a935",
+          "source_relative_path": null,
+          "source_materialization_required": true,
+          "source_macro": "KDM6_PROGB_VALIDITY_CAPTURE",
+          "common_preprocessor_defines": [
+            "KDM6_PROGB_VALIDITY_CAPTURE",
+            "KDM6_PROGB_POLICY_MIDPOINT"
+          ],
+          "guard_macro_defined": false,
+          "preprocessed_relative_path": "S10/build-clean/mp37/B/module_mp_kdm6.F.f90",
+          "object_relative_path": "S10/build-clean/mp37/B/module_mp_kdm6.o",
+          "module_output_relative_path": "S10/build-clean/mp37/B/mod",
+          "executable_relative_path": "S10/build-clean/mp37/B/wrf.exe",
+          "object_working_directory_relative_path": "S10/build-clean/mp37/B",
+          "object_command_argv": ["<pinned-mpif90>", "-o", "module_mp_kdm6.o", "-c", "-O2", "-ftree-vectorize", "-funroll-loops", "-w", "-ffree-form", "-ffree-line-length-none", "-fconvert=big-endian", "-frecord-marker=4", "-fallow-argument-mismatch", "-fallow-invalid-boz", "-ffp-contract=off", "-J", "mod", "-I", "mod", "module_mp_kdm6.F.f90"]
+        },
+        "mp37_C": {
+          "source_sha256": "d1c16f3af440f35c38146e02f4ad350ce62a3a43c541e924d46143b5b30467a3",
+          "source_relative_path": "S10/overlays/module_mp_kdm6_mp37_C.F",
+          "source_materialization_required": true,
+          "source_macro": "KDM6_PROGB_VALIDITY_CAPTURE",
+          "common_preprocessor_defines": [
+            "KDM6_PROGB_VALIDITY_CAPTURE",
+            "KDM6_PROGB_POLICY_MIDPOINT"
+          ],
+          "guard_macro_defined": true,
+          "guard_macro": "KDM6_PROGB_ZERO_QG_DIV_GUARD",
+          "preprocessed_relative_path": "S10/build-clean/mp37/C/module_mp_kdm6.F.f90",
+          "object_relative_path": "S10/build-clean/mp37/C/module_mp_kdm6.o",
+          "module_output_relative_path": "S10/build-clean/mp37/C/mod",
+          "executable_relative_path": "S10/build-clean/mp37/C/wrf.exe",
+          "object_working_directory_relative_path": "S10/build-clean/mp37/C",
+          "object_command_argv": ["<pinned-mpif90>", "-o", "module_mp_kdm6.o", "-c", "-O2", "-ftree-vectorize", "-funroll-loops", "-w", "-ffree-form", "-ffree-line-length-none", "-fconvert=big-endian", "-frecord-marker=4", "-fallow-argument-mismatch", "-fallow-invalid-boz", "-ffp-contract=off", "-J", "mod", "-I", "mod", "module_mp_kdm6.F.f90"]
+        },
+        "mp237_B": {
+          "source_sha256": "6be24e8ca0ab651429e40c1924a5897ed54557f0b3d4942bdbdecee3411c7eca",
+          "source_relative_path": null,
+          "source_materialization_required": true,
+          "source_macro": "KDM6_PROGB_VALIDITY_CAPTURE",
+          "common_preprocessor_defines": [
+            "KDM6_PROGB_VALIDITY_CAPTURE",
+            "KDM6_PROGB_POLICY_MIDPOINT"
+          ],
+          "guard_macro_defined": false,
+          "preprocessed_relative_path": "S10/build-clean/mp237/B/module_mp_kdm6_cons.F.f90",
+          "object_relative_path": "S10/build-clean/mp237/B/module_mp_kdm6_cons.o",
+          "module_output_relative_path": "S10/build-clean/mp237/B/mod",
+          "executable_relative_path": "S10/build-clean/mp237/B/wrf.exe",
+          "object_working_directory_relative_path": "S10/build-clean/mp237/B",
+          "object_command_argv": ["<pinned-mpif90>", "-o", "module_mp_kdm6_cons.o", "-c", "-O2", "-ftree-vectorize", "-funroll-loops", "-w", "-ffree-form", "-ffree-line-length-none", "-fconvert=big-endian", "-frecord-marker=4", "-fallow-argument-mismatch", "-fallow-invalid-boz", "-ffp-contract=off", "-J", "mod", "-I", "mod", "module_mp_kdm6_cons.F.f90"]
+        },
+        "mp237_C": {
+          "source_sha256": "f32cc1c7a98a98bb81341d635c2cd65f2bfb50328821afd50a700a6bb76174f5",
+          "source_relative_path": "S10/overlays/module_mp_kdm6_cons_mp237_C.F",
+          "source_materialization_required": true,
+          "source_macro": "KDM6_PROGB_VALIDITY_CAPTURE",
+          "common_preprocessor_defines": [
+            "KDM6_PROGB_VALIDITY_CAPTURE",
+            "KDM6_PROGB_POLICY_MIDPOINT"
+          ],
+          "guard_macro_defined": true,
+          "guard_macro": "KDM6_PROGB_ZERO_QG_DIV_GUARD",
+          "preprocessed_relative_path": "S10/build-clean/mp237/C/module_mp_kdm6_cons.F.f90",
+          "object_relative_path": "S10/build-clean/mp237/C/module_mp_kdm6_cons.o",
+          "module_output_relative_path": "S10/build-clean/mp237/C/mod",
+          "executable_relative_path": "S10/build-clean/mp237/C/wrf.exe",
+          "object_working_directory_relative_path": "S10/build-clean/mp237/C",
+          "object_command_argv": ["<pinned-mpif90>", "-o", "module_mp_kdm6_cons.o", "-c", "-O2", "-ftree-vectorize", "-funroll-loops", "-w", "-ffree-form", "-ffree-line-length-none", "-fconvert=big-endian", "-frecord-marker=4", "-fallow-argument-mismatch", "-fallow-invalid-boz", "-ffp-contract=off", "-J", "mod", "-I", "mod", "module_mp_kdm6_cons.F.f90"]
+        }
+      },
+      "preprocessing_command_stages": [
+        {
+          "tool": "sed",
+          "shell": false,
+          "argv_template": [
+            "<pinned-sed>",
+            "-e",
+            "s/^\\!.*'.*//",
+            "-e",
+            "s/^ *\\!.*'.*//",
+            "<arm-source>"
+          ],
+          "stdout_relative_path_template": "<arm-work>/module.G"
+        },
+        {
+          "tool": "cpp",
+          "shell": false,
+          "fixed_configure_wrf_cppflags_tokens": [
+            "-DEM_CORE=",
+            "-DNMM_CORE=",
+            "-DNMM_MAX_DIM=2600",
+            "-DDA_CORE=",
+            "-DWRFPLUS=",
+            "-DIWORDSIZE=4",
+            "-DDWORDSIZE=8",
+            "-DRWORDSIZE=4",
+            "-DLWORDSIZE=4",
+            "-DNONSTANDARD_SYSTEM_SUBR",
+            "-DMACOS",
+            "-DWRF_USE_CLM",
+            "-DUSE_NETCDF4_FEATURES",
+            "-DWRFIO_NCD_LARGE_FILE_SUPPORT",
+            "-DKDM6_SUBSTEP_DUMP",
+            "-DDM_PARALLEL",
+            "-DNETCDF",
+            "-DLANDREAD_STUB=1",
+            "-DUSE_ALLOCATABLES",
+            "-Dwrfmodel",
+            "-DGRIB1",
+            "-DINTIO",
+            "-DKEEP_INT_AROUND",
+            "-DLIMIT_ARGS",
+            "-DBUILD_RRTMG_FAST=0",
+            "-DBUILD_RRTMK=0",
+            "-DBUILD_SBM_FAST=1",
+            "-DSHOW_ALL_VARS_USED=0",
+            "-DCONFIG_BUF_LEN=65536",
+            "-DMAX_DOMAINS_F=21",
+            "-DMAX_HISTORY=25",
+            "-DNMM_NEST=",
+            "-I.",
+            "-traditional-cpp",
+            "-DUSE_NETCDF4_FEATURES",
+            "-DWRFIO_NCD_LARGE_FILE_SUPPORT"
+          ],
+          "argv_template": [
+            "<pinned-cpp>",
+            "-P",
+            "-nostdinc",
+            "-xassembler-with-cpp",
+            "-I<shadow-host>/inc",
+            "<fixed-configure-wrf-cppflags-tokens>",
+            "-DKDM6_PROGB_VALIDITY_CAPTURE",
+            "-DKDM6_PROGB_POLICY_MIDPOINT",
+            "<C-only-guard-token-if-defined>",
+            "<arm-work>/module.G"
+          ],
+          "stdout_relative_path_template": "<arm-work>/module.bb"
+        },
+        {
+          "tool": "standard",
+          "shell": false,
+          "argv_template": [
+            "<pinned-standard.exe>",
+            "<arm-work>/module.bb"
+          ],
+          "stdout_handoff": "direct-pipe-to-final-cpp; shell=false; subprocess tool identity still requires pin review"
+        },
+        {
+          "tool": "cpp",
+          "shell": false,
+          "argv_template": [
+            "<pinned-cpp>",
+            "-P",
+            "-nostdinc",
+            "-xassembler-with-cpp",
+            "-traditional-cpp",
+            "-DUSE_NETCDF4_FEATURES",
+            "-DWRFIO_NCD_LARGE_FILE_SUPPORT",
+            "<arm-work>/module.bb"
+          ],
+          "stdout_relative_path_template": "<arm-output>/module.f90"
+        }
+      ],
+      "object_command_template": {
+        "tool": "mpif90",
+        "shell": false,
+        "generic_make_execution_allowed": false,
+        "argv": [
+          "<pinned-mpif90>",
+          "-o",
+          "<arm-output>/module.o",
+          "-c",
+          "-O2",
+          "-ftree-vectorize",
+          "-funroll-loops",
+          "-w",
+          "-ffree-form",
+          "-ffree-line-length-none",
+          "-fconvert=big-endian",
+          "-frecord-marker=4",
+          "-fallow-argument-mismatch",
+          "-fallow-invalid-boz",
+          "-ffp-contract=off",
+          "-J",
+          "<arm-output>/mod",
+          "-I",
+          "<arm-output>/mod",
+          "<arm-output>/module.f90"
+        ],
+        "common_b_c_tokens": true,
+        "guard_macro_in_object_argv": false,
+        "additional_module_include_inputs": null
+      },
+      "link_command_template": null,
+      "link_inputs": {
+        "canonical_archive_relative_to_private_host": "main/libwrflib.a",
+        "canonical_archive_sha256": "722f83c058ea1c43d5f23cc497aed1b218f33f90828a0e1dc51c6fe30203deba",
+        "canonical_archive_copy_allowed": false,
+        "canonical_archive_absolute_path_policy": "A future guarded runner must resolve (canonical_host / main/libwrflib.a) to an absolute real path, verify this SHA-256, and place that exact absolute token in link argv; the relative shadow-local archive is forbidden.",
+        "canonical_main_wrf_object": null,
+        "canonical_kdm6ad_exit_object": null,
+        "canonical_module_wrf_top_object": null,
+        "private_libkdm6_c_dylib": null,
+        "complete_configure_wrf_external_library_inputs": null,
+        "complete_link_argv": null
+      },
+      "incomplete_reasons": [
+        "B midpoint source payload paths are not materialized in the private overlay bundle.",
+        "Canonical main link-object inputs are not pinned in this command plan.",
+        "The private libkdm6_c.dylib and its isolated CMake build outputs are absent/unpinned.",
+        "The complete configure.wrf static/dynamic link-input expansion has not been bound to per-file hashes.",
+        "No guarded build executor consumes these declarations; generic Make remains prohibited."
+      ],
+      "runner_execution_allowed": false
+    },
     "same_source_toolchain_inputs_and_flags_within_scheme": true,
     "only_preprocessing_macro_difference": "-DKDM6_PROGB_ZERO_QG_DIV_GUARD absent in B, present in C",
     "common_required_compile_macros": [
@@ -264,7 +490,7 @@
     ],
     "executable_sha256": null,
     "normalized_argv_sha256": null,
-    "normalized_argv_pin_status": "pending independent WRF command-line capture after fresh configuration; prelink guard blocks until reviewed value is committed",
+    "normalized_argv_pin_status": "unexecuted; declared standalone templates remain incomplete until every canonical link input and a guarded build runner are reviewed",
     "argv_normalization": "include configure/apply argv, stdin hashes and generated configure.wrf SHA; normalize only B/C arm output-root path and strip the single bare C guard define; all other argument tokens compare exactly",
     "output_inventory_sha256": null,
     "linker_map_output_policy": "all -Map/--Map forms are forbidden, including -Wl and -Xlinker encodings",
@@ -290,7 +516,7 @@
     "guarded_command_templates": null,
     "guarded_command_templates_sha256": null,
     "guarded_command_order": null,
-    "guarded_command_template_status": "BLOCKED_PENDING_CONFIGURE_AND_DRY_RUN_COMMAND_ENUMERATION",
+    "guarded_command_template_status": "BLOCKED_PENDING_COMPLETE_LINK_INPUTS_AND_BUILD_RUNNER",
     "execution_entrypoint": "python3 harness/s10_guarded_exec.py --stage configure-pipeline; direct unmanaged shell invocations are outside certified S10 evidence",
     "guarded_execution_scope": "The configure-pipeline stage is the only certified configure/apply entry point and launches both commands consecutively in one process. Standalone configure/apply stages are unavailable. Preprocess/object/link stages remain unsupported and fail closed until a later reviewed plan pins exact guarded command templates and approvals."
   },
@@ -631,6 +857,7 @@
   },
   "resource_gate": {
     "status": "BLOCKED_PENDING_ESTIMATE_AND_REVIEW",
+    "resource_report_parent_plan_sha256": "6bfaee343979a4b6995496053523a86e57f3423978cba34eafeda45164f99a82",
     "coordinator_observed_free_kib": 11942032,
     "filesystem_use_percent_at_observation": 100,
     "configure_only": {
@@ -647,6 +874,38 @@
       "phase_scope": "configure and apply script only; no WRF preprocessing, object compilation, linking or model runs",
       "coordinator_plan_sha256_required": true,
       "coordinator_plan_sha256_policy": "The resource-preflight CLI requires an out-of-band coordinator SHA-256 and checks raw plan bytes before JSON parsing or any plan-directed command."
+    },
+    "build_preparation": {
+      "status": "MEASUREMENT_ONLY_PROPOSAL",
+      "measurement_only_allowed": true,
+      "measurement_only_receipt_relative_path": "S10/build_preparation_measurement.json",
+      "estimate_relative_path": "harness/evidence/s10_build_preparation_estimate_2026-09-27.json",
+      "estimate_sha256": "82f2b43c3de2e8f72f50f58aefaa7fee14c3acebb5021115581abf66ec96c7d3",
+      "estimate_schema": "s10-build-preparation-estimate-v1",
+      "safety_factor": 2,
+      "reserve_free_bytes": 4294967296,
+      "minimum_free_bytes": 2147483648,
+      "measurement_max_age_seconds": 3600,
+      "allowed_commands": [],
+      "build_execution_allowed": false,
+      "preprocess_object_link_execution_supported": false,
+      "model_execution_allowed": false,
+      "coordinator_build_approval_sha256": null,
+      "s15_build_release_sha256": null,
+      "command_templates_status": "DECLARED_UNEXECUTED_INCOMPLETE",
+      "measurement_subprocess_scope": "Static pin verification only, including pinned tool-version, SDK and patch reconstruction probes; no WRF preprocessing, object compilation, link or model command may run.",
+      "measurement_status_policy": "A receipt may report MEASURED_COMPONENTS_ONLY_INCOMPLETE, but it is not a build allowance and cannot be consumed by prelink or execution validation."
+    },
+    "model_runs": {
+      "status": "BLOCKED_PENDING_LOG_BOUND_AND_RETENTION",
+      "allowed": false,
+      "run_count": 8,
+      "logging_modes": ["off", "on"],
+      "logging_on_max_bytes_per_run": null,
+      "archive_restore_contract_sha256": null,
+      "output_size_estimate_sha256": null,
+      "coordinator_run_approval_sha256": null,
+      "run_command_entrypoint": null
     },
     "build": {
       "status": "BLOCKED_PENDING_ESTIMATE_AND_REVIEW",

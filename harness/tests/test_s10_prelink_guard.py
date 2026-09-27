@@ -745,9 +745,11 @@ def test_attempt3_configure_result_report_binds_current_plan_pins():
     report_path = Path(__file__).resolve().parents[1] / "evidence/s10_attempt3_configure_only_result_2026-09-27.json"
     plan = json.loads(plan_path.read_text())
     report = json.loads(report_path.read_text())
-    result_sha = hashlib.sha256(plan_path.read_bytes()).hexdigest()
+    current_plan_sha = hashlib.sha256(plan_path.read_bytes()).hexdigest()
     requirements = plan["prelink_requirements"]
-    assert report["attempt"]["result_plan_sha256"] == result_sha
+    parent_plan_sha = requirements["configuration_result_parent_plan_sha256"]
+    assert report["attempt"]["result_plan_sha256"] == parent_plan_sha
+    assert parent_plan_sha != current_plan_sha
     assert report["attempt"]["execution_plan_sha256"] == requirements[
         "configuration_ledger_plan_sha256"]
     assert report["configuration_result_pins"][
@@ -759,6 +761,19 @@ def test_attempt3_configure_result_report_binds_current_plan_pins():
     assert plan["resource_gate"]["full_matrix_build_or_link_allowed"] is False
     assert report["resource_and_execution_boundary"]["preprocess_invoked"] is False
     assert report["resource_and_execution_boundary"]["link_invoked"] is False
+
+
+def test_attempt3_report_binding_rejects_repointing_parent_to_current_plan():
+    plan_path = Path(__file__).resolve().parents[1] / "evidence/s10_czeroqg_prelink_plan_2026-09-26.json"
+    report_path = Path(__file__).resolve().parents[1] / "evidence/s10_attempt3_configure_only_result_2026-09-27.json"
+    plan = json.loads(plan_path.read_text())
+    report = json.loads(report_path.read_text())
+    current_plan_sha = hashlib.sha256(plan_path.read_bytes()).hexdigest()
+    recorded_result_sha = report["attempt"]["result_plan_sha256"]
+    altered_parent_sha = current_plan_sha
+    assert plan["prelink_requirements"][
+        "configuration_result_parent_plan_sha256"] == recorded_result_sha
+    assert altered_parent_sha != recorded_result_sha
 
 
 def test_static_pins_checks_toolchain_digest_before_shadow_patch_subprocess(

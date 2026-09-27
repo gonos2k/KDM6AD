@@ -378,6 +378,276 @@ def validate_build_output_estimate(estimate: dict[str, Any]) -> tuple[int, dict[
     return total, arm_totals
 
 
+_BUILD_PREPARATION_COMPONENTS = (
+    "preprocessed_sources_bytes", "object_module_bytes", "linked_executable_bytes",
+)
+_S10_BUILD_COMMON_CPP_DEFINES = (
+    "KDM6_PROGB_VALIDITY_CAPTURE", "KDM6_PROGB_POLICY_MIDPOINT",
+)
+_S10_BUILD_GUARD_CPP_DEFINE = "KDM6_PROGB_ZERO_QG_DIV_GUARD"
+
+
+def validate_build_preparation_estimate(estimate: dict[str, Any]) -> tuple[int, dict[str, int]]:
+    """Validate a measurement-only estimate that excludes every model run."""
+    if (estimate.get("schema") != "s10-build-preparation-estimate-v1"
+            or estimate.get("status") != "PROPOSAL_ONLY_INCOMPLETE_COMMAND_INPUTS"
+            or estimate.get("build_command_execution_allowed") is not False
+            or estimate.get("model_run_components_included") is not False
+            or estimate.get("logging_modes") != []):
+        raise PrelinkError("build-preparation estimate must remain a run-free proposal")
+    variants = estimate.get("variants")
+    expected_variants = {"mp37_B", "mp37_C", "mp237_B", "mp237_C"}
+    if not isinstance(variants, dict) or set(variants) != expected_variants:
+        raise PrelinkError("build-preparation estimate must cover exactly four B/C arms")
+    arm_totals: dict[str, int] = {}
+    for key, row in variants.items():
+        components = row.get("components") if isinstance(row, dict) else None
+        if not isinstance(components, dict) or set(components) != set(
+                _BUILD_PREPARATION_COMPONENTS):
+            raise PrelinkError(f"build-preparation estimate components are incomplete for {key}")
+        values = list(components.values())
+        if any(not isinstance(value, int) or isinstance(value, bool) or value < 0
+               for value in values):
+            raise PrelinkError(f"build-preparation estimate contains invalid bytes for {key}")
+        subtotal = sum(values)
+        if row.get("estimated_bytes") != subtotal:
+            raise PrelinkError(f"build-preparation estimate subtotal is invalid for {key}")
+        arm_totals[key] = subtotal
+    shared = estimate.get("shared_build_staging_components")
+    if not isinstance(shared, dict) or set(shared) != {
+            "private_kdm6_cmake_build_peak_bytes", "private_kdm6_library_install_bytes"}:
+        raise PrelinkError("build-preparation estimate lacks private KDM library build staging")
+    shared_values = list(shared.values())
+    if any(not isinstance(value, int) or isinstance(value, bool) or value < 0
+           for value in shared_values):
+        raise PrelinkError("build-preparation shared staging has invalid byte counts")
+    shared_total = sum(shared_values)
+    if estimate.get("shared_build_staging_bytes") != shared_total:
+        raise PrelinkError("build-preparation shared staging subtotal is invalid")
+    total = sum(arm_totals.values()) + shared_total
+    if (estimate.get("total_estimated_bytes") != total
+            or estimate.get("peak_concurrent_bytes") != total):
+        raise PrelinkError("build-preparation estimate total or peak is inconsistent")
+    safety = estimate.get("safety_factor")
+    reserve = estimate.get("reserve_free_bytes")
+    minimum = estimate.get("minimum_free_bytes")
+    if (not isinstance(safety, int) or isinstance(safety, bool) or safety < 1
+            or not isinstance(reserve, int) or isinstance(reserve, bool)
+            or not isinstance(minimum, int) or isinstance(minimum, bool)):
+        raise PrelinkError("build-preparation estimate safety factor/reserve are malformed")
+    expected_required = max(minimum, total * safety + reserve)
+    if estimate.get("required_free_bytes") != expected_required:
+        raise PrelinkError("build-preparation estimate required free-space total is inconsistent")
+    missing = estimate.get("missing_link_inputs")
+    if (not isinstance(missing, dict) or set(missing) != {
+                "canonical_standard_objects", "private_libkdm6_c_dylib",
+                "complete_configure_wrf_library_input_list", "complete_link_argv"}
+            or missing.get("canonical_standard_objects") is not None
+            or missing.get("private_libkdm6_c_dylib") is not None
+            or missing.get("complete_configure_wrf_library_input_list") is not None
+            or missing.get("complete_link_argv") is not None
+            or estimate.get("approval_eligible") is not False):
+        raise PrelinkError("build-preparation proposal must expose missing link inputs and remain unapproved")
+    return total, arm_totals
+
+
+def validate_build_preparation_command_plan(plan: dict[str, Any]) -> None:
+    """Check the declared B/C outputs and macro delta; never authorize execution."""
+    gate = plan.get("resource_gate", {})
+    prep_gate = gate.get("build_preparation", {})
+    run_gate = gate.get("model_runs", {})
+    templates = plan.get("build_matrix", {}).get("build_command_templates", {})
+    estimate_rel = prep_gate.get("estimate_relative_path")
+    receipt_rel = prep_gate.get("measurement_only_receipt_relative_path")
+    if (gate.get("status") != "BLOCKED_PENDING_ESTIMATE_AND_REVIEW"
+            or gate.get("full_matrix_build_or_link_allowed") is not False
+            or gate.get("build", {}).get("status") != "BLOCKED_PENDING_ESTIMATE_AND_REVIEW"
+            or prep_gate.get("status") != "MEASUREMENT_ONLY_PROPOSAL"
+            or prep_gate.get("measurement_only_allowed") is not True
+            or prep_gate.get("measurement_only_receipt_relative_path") != "S10/build_preparation_measurement.json"
+            or not isinstance(estimate_rel, str) or Path(estimate_rel).is_absolute()
+            or ".." in Path(estimate_rel).parts
+            or not isinstance(prep_gate.get("estimate_sha256"), str)
+            or not re.fullmatch(r"[0-9a-f]{64}", prep_gate["estimate_sha256"])
+            or not isinstance(receipt_rel, str) or Path(receipt_rel).is_absolute()
+            or ".." in Path(receipt_rel).parts
+            or prep_gate.get("build_execution_allowed") is not False
+            or prep_gate.get("preprocess_object_link_execution_supported") is not False
+            or prep_gate.get("allowed_commands") != []
+            or run_gate.get("status") != "BLOCKED_PENDING_LOG_BOUND_AND_RETENTION"
+            or run_gate.get("allowed") is not False):
+        raise PrelinkError("build-preparation gate must stay measurement-only with build/run blocked")
+    if (templates.get("schema") != "s10-standalone-build-command-plan-v1"
+            or templates.get("status") != "DECLARED_UNEXECUTED_INCOMPLETE"
+            or templates.get("shell") is not False
+            or templates.get("build_executor_supported") is not False
+            or templates.get("runner_execution_allowed") is not False):
+        raise PrelinkError("build command declarations must remain standalone, incomplete and unexecuted")
+    if templates.get("generic_make_execution_allowed") is not False:
+        raise PrelinkError("generic Make execution is forbidden by the build command plan")
+    arms = templates.get("arms")
+    if not isinstance(arms, dict) or set(arms) != {"mp37_B", "mp37_C", "mp237_B", "mp237_C"}:
+        raise PrelinkError("build command declarations must enumerate all four arms")
+    common_defines = list(_S10_BUILD_COMMON_CPP_DEFINES)
+    if (plan.get("build_matrix", {}).get("common_required_compile_macros")
+            != common_defines
+            or _S10_BUILD_GUARD_CPP_DEFINE in common_defines):
+        raise PrelinkError("S10 common CPP define set/order is code-fixed and excludes the C guard")
+    for key, row in arms.items():
+        scheme, arm = key.split("_")
+        source_pin = plan["host_source_pins"][scheme]
+        expected_source_sha = (source_pin["macro_off_b_midpoint_sha256"]
+                              if arm == "B" else source_pin["c_overlay_sha256"])
+        expected_guard = arm == "C"
+        if (row.get("source_sha256") != expected_source_sha
+                or row.get("guard_macro_defined") is not expected_guard
+                or row.get("common_preprocessor_defines") != common_defines
+                or (_S10_BUILD_GUARD_CPP_DEFINE in row.get("common_preprocessor_defines", []))
+                or (arm == "B" and row.get("guard_macro") is not None)
+                or (arm == "C" and row.get("guard_macro") != _S10_BUILD_GUARD_CPP_DEFINE)):
+            raise PrelinkError(f"build command macro/source pins are inconsistent for {key}")
+        expected_paths = {
+            "preprocessed_relative_path": source_pin["preprocessed_relative_path"].replace(
+                "{B,C}", arm),
+            "object_relative_path": source_pin["object_relative_path"].replace("{B,C}", arm),
+            "module_output_relative_path": source_pin["module_output_relative_path"].replace(
+                "{B,C}", arm),
+            "executable_relative_path": source_pin["executable_relative_path"].replace(
+                "{B,C}", arm),
+        }
+        if any(row.get(name) != value for name, value in expected_paths.items()):
+            raise PrelinkError(f"build command output paths differ from arm plan for {key}")
+        object_argv = row.get("object_command_argv")
+        if (not isinstance(object_argv, list)
+                or any(not isinstance(token, str) for token in object_argv)
+                or any(object_argv.count(flag) != 1 for flag in ("-o", "-J", "-I"))
+                or any(object_argv.index(flag) + 1 >= len(object_argv)
+                       for flag in ("-o", "-J", "-I") if flag in object_argv)):
+            raise PrelinkError(f"object command path options are malformed for {key}")
+        if (row.get("object_working_directory_relative_path")
+                != Path(row["object_relative_path"]).parent.as_posix()
+                or object_argv[0] != "<pinned-mpif90>"
+                or object_argv[object_argv.index("-o") + 1]
+                != Path(row["object_relative_path"]).name
+                or object_argv[object_argv.index("-J") + 1]
+                != Path(row["module_output_relative_path"]).name
+                or object_argv[object_argv.index("-I") + 1]
+                != Path(row["module_output_relative_path"]).name
+                or object_argv[-1] != Path(row["preprocessed_relative_path"]).name):
+            raise PrelinkError(f"object command paths are not uniquely pinned for {key}")
+        normalized_object_argv = list(object_argv)
+        normalized_object_argv[0] = "<pinned-mpif90>"
+        normalized_object_argv[normalized_object_argv.index("-o") + 1] = \
+            "<arm-output>/module.o"
+        normalized_object_argv[normalized_object_argv.index("-J") + 1] = \
+            "<arm-output>/mod"
+        normalized_object_argv[normalized_object_argv.index("-I") + 1] = \
+            "<arm-output>/mod"
+        normalized_object_argv[-1] = "<arm-output>/module.f90"
+        if normalized_object_argv != templates.get("object_command_template", {}).get("argv"):
+            raise PrelinkError(f"object command options drift from the pinned template for {key}")
+        source_path = row.get("source_relative_path")
+        if source_path is not None and (not isinstance(source_path, str)
+                                        or source_path.startswith("/")
+                                        or ".." in Path(source_path).parts):
+            raise PrelinkError(f"build command source path is unsafe for {key}")
+    expected_guard = _S10_BUILD_GUARD_CPP_DEFINE
+    if (arms["mp37_B"].get("guard_macro_defined") is not False
+            or arms["mp237_B"].get("guard_macro_defined") is not False
+            or arms["mp37_C"].get("guard_macro") != expected_guard
+            or arms["mp237_C"].get("guard_macro") != expected_guard):
+        raise PrelinkError("build command declarations do not encode the exact one-factor guard delta")
+    preprocessing = templates.get("preprocessing_command_stages")
+    if (not isinstance(preprocessing, list)
+            or [stage.get("tool") for stage in preprocessing]
+            != ["sed", "cpp", "standard", "cpp"]
+            or any(stage.get("shell") is not False for stage in preprocessing)):
+        raise PrelinkError("preprocessing declaration must be four ordered shell-free stages")
+    for stage in preprocessing:
+        argv = stage.get("argv_template")
+        if (not isinstance(argv, list) or not argv
+                or any(not isinstance(token, str) or not token for token in argv)
+                or any(token.lower() in ("make", "gmake") for token in argv)):
+            raise PrelinkError("preprocessing command template is malformed or invokes Make")
+    configure_wrf_cppflags = [
+        "-DEM_CORE=", "-DNMM_CORE=", "-DNMM_MAX_DIM=2600", "-DDA_CORE=",
+        "-DWRFPLUS=", "-DIWORDSIZE=4", "-DDWORDSIZE=8", "-DRWORDSIZE=4",
+        "-DLWORDSIZE=4", "-DNONSTANDARD_SYSTEM_SUBR", "-DMACOS",
+        "-DWRF_USE_CLM", "-DUSE_NETCDF4_FEATURES",
+        "-DWRFIO_NCD_LARGE_FILE_SUPPORT", "-DKDM6_SUBSTEP_DUMP",
+        "-DDM_PARALLEL", "-DNETCDF", "-DLANDREAD_STUB=1",
+        "-DUSE_ALLOCATABLES", "-Dwrfmodel", "-DGRIB1", "-DINTIO",
+        "-DKEEP_INT_AROUND", "-DLIMIT_ARGS", "-DBUILD_RRTMG_FAST=0",
+        "-DBUILD_RRTMK=0", "-DBUILD_SBM_FAST=1", "-DSHOW_ALL_VARS_USED=0",
+        "-DCONFIG_BUF_LEN=65536", "-DMAX_DOMAINS_F=21", "-DMAX_HISTORY=25",
+        "-DNMM_NEST=", "-I.", "-traditional-cpp", "-DUSE_NETCDF4_FEATURES",
+        "-DWRFIO_NCD_LARGE_FILE_SUPPORT",
+    ]
+    if (preprocessing[0].get("argv_template") != [
+            "<pinned-sed>", "-e", "s/^\\!.*'.*//", "-e", "s/^ *\\!.*'.*//",
+            "<arm-source>"]
+            or preprocessing[0].get("stdout_relative_path_template") != "<arm-work>/module.G"
+            or preprocessing[1].get("fixed_configure_wrf_cppflags_tokens")
+            != configure_wrf_cppflags
+            or preprocessing[1].get("argv_template") != [
+                "<pinned-cpp>", "-P", "-nostdinc", "-xassembler-with-cpp",
+                "-I<shadow-host>/inc", "<fixed-configure-wrf-cppflags-tokens>",
+                "-DKDM6_PROGB_VALIDITY_CAPTURE", "-DKDM6_PROGB_POLICY_MIDPOINT",
+                "<C-only-guard-token-if-defined>", "<arm-work>/module.G"]
+            or preprocessing[1].get("fixed_configure_wrf_cppflags_tokens", []).count(
+                f"-D{_S10_BUILD_GUARD_CPP_DEFINE}")
+            or preprocessing[1].get("argv_template", []).count(
+                f"-D{_S10_BUILD_GUARD_CPP_DEFINE}")
+            or preprocessing[1].get("stdout_relative_path_template") != "<arm-work>/module.bb"
+            or preprocessing[2].get("argv_template") != [
+                "<pinned-standard.exe>", "<arm-work>/module.bb"]
+            or preprocessing[2].get("stdout_handoff")
+            != "direct-pipe-to-final-cpp; shell=false; subprocess tool identity still requires pin review"
+            or preprocessing[3].get("argv_template") != [
+                "<pinned-cpp>", "-P", "-nostdinc", "-xassembler-with-cpp",
+                "-traditional-cpp", "-DUSE_NETCDF4_FEATURES",
+                "-DWRFIO_NCD_LARGE_FILE_SUPPORT", "<arm-work>/module.bb"]
+            or preprocessing[3].get("stdout_relative_path_template")
+            != "<arm-output>/module.f90"):
+        raise PrelinkError("preprocessing stages differ from the declared Make recipe templates")
+    object_template = templates.get("object_command_template")
+    if (not isinstance(object_template, dict)
+            or object_template.get("tool") != "mpif90"
+            or object_template.get("shell") is not False
+            or object_template.get("generic_make_execution_allowed") is not False
+            or object_template.get("common_b_c_tokens") is not True
+            or object_template.get("guard_macro_in_object_argv") is not False
+            or any(_S10_BUILD_GUARD_CPP_DEFINE in token
+                   for token in object_template.get("argv", [])
+                   if isinstance(token, str))
+            or "-ffp-contract=off" not in object_template.get("argv", [])):
+        raise PrelinkError("object command template lacks pinned strict flags or B/C parity")
+    argv = object_template["argv"]
+    for output_flag, path_fragment in (("-o", "<arm-output>/module.o"),
+                                       ("-J", "<arm-output>/mod"),
+                                       ("-I", "<arm-output>/mod")):
+        if argv.count(output_flag) != 1 or argv[argv.index(output_flag) + 1] != path_fragment:
+            raise PrelinkError(f"object command template must pin exactly one arm-local {output_flag}")
+    link_inputs = templates.get("link_inputs")
+    expected_archive = plan["build_matrix"]["link_input_archive"]
+    if (templates.get("link_command_template") is not None
+            or not isinstance(link_inputs, dict)
+            or link_inputs.get("canonical_archive_relative_to_private_host")
+            != expected_archive["path_relative_to_private_host"]
+            or link_inputs.get("canonical_archive_sha256") != expected_archive["sha256"]
+            or link_inputs.get("canonical_archive_copy_allowed") is not False
+            or not isinstance(link_inputs.get("canonical_archive_absolute_path_policy"), str)
+            or "absolute real path" not in link_inputs[
+                "canonical_archive_absolute_path_policy"]
+            or link_inputs.get("canonical_main_wrf_object") is not None
+            or link_inputs.get("canonical_kdm6ad_exit_object") is not None
+            or link_inputs.get("canonical_module_wrf_top_object") is not None
+            or link_inputs.get("private_libkdm6_c_dylib") is not None
+            or link_inputs.get("complete_configure_wrf_external_library_inputs") is not None
+            or link_inputs.get("complete_link_argv") is not None):
+        raise PrelinkError("link template must remain absent until every exact input is pinned")
+
+
 def validate_guarded_configuration_run(plan: dict[str, Any], *,
                                        workspace: Path,
                                        shadow_host: Path) -> dict[str, str]:
@@ -621,8 +891,9 @@ def create_resource_preflight_receipt(
         s15_release: dict[str, Any] | None = None,
         s15_release_sha256: str | None = None,
         trusted_s15_release_sha256: str | None = None) -> dict[str, Any]:
-    if phase not in ("configure", "measure", "build"):
-        raise PrelinkError("resource preflight phase must be configure, measure or build")
+    if phase not in ("configure", "measure", "build", "build-preparation-measure"):
+        raise PrelinkError(
+            "resource preflight phase must be configure, measure, build or build-preparation-measure")
     expected_root = (workspace / plan["clean_shadow"]["fresh_build_output_root"]).resolve()
     if output_root.resolve() != expected_root:
         raise PrelinkError("resource preflight output root differs from the plan")
@@ -641,6 +912,16 @@ def create_resource_preflight_receipt(
             "prebuild_gate_receipt_relative_path"]
         if receipt_path.resolve() != expected_receipt_path.resolve():
             raise PrelinkError("build resource preflight receipt path differs from the plan")
+    if phase == "build-preparation-measure":
+        prep_gate = plan.get("resource_gate", {}).get("build_preparation", {})
+        expected_receipt_path = workspace / prep_gate.get(
+            "measurement_only_receipt_relative_path", "")
+        if receipt_path.resolve() != expected_receipt_path.resolve():
+            raise PrelinkError("build-preparation measurement receipt path differs from the plan")
+        if approval is not None or approval_sha256 is not None or trusted_approval_sha256 is not None \
+                or s15_release is not None or s15_release_sha256 is not None \
+                or trusted_s15_release_sha256 is not None:
+            raise PrelinkError("measurement-only phase cannot consume a coordinator approval or release")
 
     gate = plan.get("resource_gate", {})
     if phase == "build" and (
@@ -648,6 +929,8 @@ def create_resource_preflight_receipt(
             or gate.get("full_matrix_build_or_link_allowed") is not False
             or gate.get("build", {}).get("status") != "READY_PENDING_COORDINATOR_RELEASE"):
         raise PrelinkError("resource gate is blocked; build preflight fails closed")
+    if phase == "build-preparation-measure":
+        validate_build_preparation_command_plan(plan)
     if phase == "configure" and gate.get("configure_only", {}).get("allowed") is not True:
         raise PrelinkError("configure-only resource allowance is not reviewed")
     if phase == "measure" and not gate.get("build", {}).get("output_size_estimate_sha256"):
@@ -672,6 +955,7 @@ def create_resource_preflight_receipt(
     release_sha: str | None = None
     measurement_sha: str | None = None
     measurement_observed_at: int | None = None
+    build_preparation_capacity_status: str | None = None
     if phase == "configure":
         configure_gate = gate.get("configure_only", {})
         if configure_gate.get("allowed") is not True:
@@ -694,6 +978,38 @@ def create_resource_preflight_receipt(
         allowed_commands = configure_gate.get("allowed_commands")
         if allowed_commands != ["./configure", "./apply_kdm6ad_config.sh"]:
             raise PrelinkError("configure-only command allowlist is not exact")
+    elif phase == "build-preparation-measure":
+        prep_gate = gate["build_preparation"]
+        estimate_path_expected = workspace / prep_gate.get("estimate_relative_path", "")
+        if estimate_path is None or estimate_path.resolve() != estimate_path_expected.resolve():
+            raise PrelinkError("build-preparation estimate path differs from the reviewed plan")
+        estimate_sha = sha256_file(estimate_path)
+        if estimate_sha != prep_gate.get("estimate_sha256"):
+            raise PrelinkError("build-preparation estimate SHA differs from the plan pin")
+        estimate = load_json(estimate_path)
+        estimated_bytes, _arm_totals = validate_build_preparation_estimate(estimate)
+        if estimated_bytes != estimate.get("total_estimated_bytes"):
+            raise PrelinkError("build-preparation estimate total is inconsistent")
+        safety_factor = prep_gate.get("safety_factor")
+        reserve = prep_gate.get("reserve_free_bytes")
+        minimum = prep_gate.get("minimum_free_bytes")
+        if (not isinstance(safety_factor, int) or isinstance(safety_factor, bool)
+                or safety_factor < 1 or not isinstance(reserve, int)
+                or isinstance(reserve, bool) or not isinstance(minimum, int)
+                or isinstance(minimum, bool)):
+            raise PrelinkError("build-preparation safety factor and reserve are malformed")
+        if (estimate.get("safety_factor") != safety_factor
+                or estimate.get("reserve_free_bytes") != reserve
+                or estimate.get("minimum_free_bytes") != minimum):
+            raise PrelinkError("build-preparation estimate safety/reserve differs from plan")
+        required_free = max(minimum, estimated_bytes * safety_factor + reserve)
+        if estimate.get("required_free_bytes") != required_free:
+            raise PrelinkError("build-preparation required free-space total differs from plan")
+        measurement_observed_at = now
+        receipt_status = "MEASURED_BUILD_PREPARATION_CAPACITY_ONLY"
+        build_preparation_capacity_status = (
+            "INSUFFICIENT_FOR_PROPOSAL" if measured_free < required_free
+            else "MEASURED_ONLY_INCOMPLETE_COMMAND_INPUTS")
     else:
         build_gate = gate.get("build", {})
         if estimate_path is None:
@@ -803,6 +1119,16 @@ def create_resource_preflight_receipt(
         "output_size_estimate_sha256": estimate_sha,
         "estimated_total_bytes": estimated_bytes,
         "resource_measurement_receipt_sha256": measurement_sha,
+        "build_preparation_measurement_only": phase == "build-preparation-measure",
+        "build_preparation_capacity_status": build_preparation_capacity_status,
+        "static_pin_validation_completed": phase == "build-preparation-measure",
+        "measurement_subprocess_scope": (
+            plan["resource_gate"]["build_preparation"]["measurement_subprocess_scope"]
+            if phase == "build-preparation-measure" else None),
+        "wrf_preprocess_object_link_or_model_commands_launched": (
+            False if phase == "build-preparation-measure" else None),
+        "build_execution_allowed": False if phase == "build-preparation-measure" else None,
+        "model_execution_allowed": False if phase == "build-preparation-measure" else None,
         "configuration_command_ledger_sha256": (
             configuration_run["configuration_command_ledger_sha256"]
             if phase == "build" else None),
@@ -815,7 +1141,8 @@ def create_resource_preflight_receipt(
         "s15_release_receipt_sha256": release_sha,
         "allowed_commands": (
             gate["configure_only"]["allowed_commands"] if phase == "configure"
-            else [] if phase == "measure" else gate["build"]["allowed_build_stages"]
+            else [] if phase in ("measure", "build-preparation-measure")
+            else gate["build"]["allowed_build_stages"]
         ),
         "nonce": nonce,
         "nonce_sha256": sha256_bytes(nonce.encode()),
@@ -2431,7 +2758,8 @@ def _overlay_args(values: list[str]) -> dict[str, Path]:
 def resource_preflight_main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(
         description="Fresh disk-space and coordinator gate before S10 configure/build stages")
-    parser.add_argument("--phase", choices=("configure", "measure", "build"), required=True)
+    parser.add_argument("--phase", choices=(
+        "configure", "measure", "build", "build-preparation-measure"), required=True)
     parser.add_argument("--plan", type=Path, required=True)
     parser.add_argument("--trusted-plan-sha256", required=True,
                         help="coordinator-supplied plan hash verified before any plan-directed action")
@@ -2456,6 +2784,9 @@ def resource_preflight_main(argv: list[str]) -> int:
         if args.phase == "configure":
             receipt_rel = plan["resource_gate"]["configure_only"][
                 "preflight_receipt_relative_path"]
+        elif args.phase == "build-preparation-measure":
+            receipt_rel = plan["resource_gate"]["build_preparation"][
+                "measurement_only_receipt_relative_path"]
         elif args.phase == "measure":
             receipt_rel = plan["resource_gate"]["build"][
                 "measurement_receipt_relative_path"]
@@ -2468,6 +2799,10 @@ def resource_preflight_main(argv: list[str]) -> int:
             if (args.resource_approval is None
                     or args.resource_approval.resolve() != expected_approval.resolve()):
                 raise PrelinkError("coordinator resource approval path differs from the plan")
+        if args.phase == "build-preparation-measure" and (
+                args.resource_approval is not None or args.trusted_resource_approval_sha256 is not None
+                or args.s15_release is not None or args.trusted_s15_release_sha256 is not None):
+            raise PrelinkError("measurement-only phase does not accept coordinator approval or release inputs")
         approval = load_json(args.resource_approval) if args.resource_approval else None
         approval_sha = sha256_file(args.resource_approval) if args.resource_approval else None
         s15_release = load_json(args.s15_release) if args.s15_release else None
