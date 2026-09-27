@@ -211,6 +211,25 @@ void test_progb_grad_finite_inactive_cells() {
     } END_TEST();
 }
 
+void test_progb_f32_zero_denominator_backward() {
+    TEST(test_progb_f32_zero_denominator_backward) {
+        auto p = default_progb_params();
+        auto opts = torch::TensorOptions().dtype(torch::kFloat32).requires_grad(true);
+        auto qg = torch::tensor({{0.0f, 3.0e-4f, 3.0e-4f, 3.0e-4f}}, opts);
+        auto bg = torch::tensor({{0.0f, 1.0e-6f, 0.0f, -0.0f}}, opts);
+        auto out = progb_param_torch(qg, bg, p, torch::kFloat32);
+        assert(out.rhox.select(1, 0).item<float>() == static_cast<float>(RHO_MID));
+        assert(out.bg.select(1, 0).item<float>() == 0.0f);
+        assert(out.rhox.select(1, 2).item<float>() == static_cast<float>(RHO_MAX));
+        assert(out.rhox.select(1, 3).item<float>() == static_cast<float>(RHO_MIN));
+        auto loss = torch::zeros({}, torch::kFloat32);
+        for (const auto& t : output_tensors(out)) loss = loss + t.sum();
+        loss.backward();
+        assert(torch::isfinite(qg.grad()).all().item<bool>());
+        assert(torch::isfinite(bg.grad()).all().item<bool>());
+    } END_TEST();
+}
+
 void test_progb_bg_consistency_after_update() {
     TEST(test_progb_bg_consistency_after_update) {
         auto p = default_progb_params();
@@ -246,6 +265,7 @@ int main() {
     test_progb_table_interp_midpoint();
     test_progb_grad_finite_active_cells();
     test_progb_grad_finite_inactive_cells();
+    test_progb_f32_zero_denominator_backward();
     test_progb_bg_consistency_after_update();
     test_progb_rgmma_tensor_returns_gamma();
     std::cout << "All progb tests passed.\n";

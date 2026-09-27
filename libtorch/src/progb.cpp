@@ -105,11 +105,19 @@ ProgBOutputs progb_param_torch(
     // The f64 DA path keeps the smooth clamped divisor + clamp (finite adjoint, no Inf/NaN).
     const bool op_f32 = (odt == torch::kFloat32);
     auto bg_den = op_f32 ? bg.to(odt) : torch::clamp(bg.to(odt), /*min=*/BRS_MIN);
-    auto rhox_op = qg_op / bg_den;
+    // A zero bg has a clamped endpoint in the f32 forward map. Avoid Inf in
+    // its backward graph, then restore that endpoint (including signed zero).
+    auto zero_den = bg_den == 0;
+    auto rhox_op = qg_op / torch::where(zero_den, torch::ones_like(bg_den), bg_den);
     auto rhox_c = op_f32
         ? torch::fmin(torch::full_like(rhox_op, RHO_MAX),
                       torch::fmax(torch::full_like(rhox_op, RHO_MIN), rhox_op))
         : torch::clamp(rhox_op, /*min=*/RHO_MIN, /*max=*/RHO_MAX);
+    if (op_f32) {
+        auto zero_endpoint = torch::where(torch::signbit(bg_den),
+            torch::full_like(rhox_c, RHO_MIN), torch::full_like(rhox_c, RHO_MAX));
+        rhox_c = torch::where(torch::logical_and(active, zero_den), zero_endpoint, rhox_c);
+    }
     auto bg_new_op = qg_op / rhox_c;
     auto rhox = torch::where(active, rhox_c.to(qg.scalar_type()), scalar_like(RHO_MID, qg));
     auto bg_new = torch::where(active, bg_new_op.to(qg.scalar_type()), bg);
