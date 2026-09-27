@@ -88,11 +88,12 @@ One logging-on discovery run now captures the six source-scheduled owner-5
 producer/RK consumer pairs, with ordinary RK1/2 advection separated from RK3
 positive-definite dispatch and `sc_tend` retained apart from `advect_tend`.
 The source-order replay accounts for the configured compiler's binary32 fused
-prefix and RK denominator operations; all six selected stores replay from the
-captured operands. At these cells `sc_tend` is zero and advection yields the
-negative store. The run has no same-executable logging-off control or
-confirmation, so capture noninterference and broader cause attribution remain
-open. See [[kdm6ad-s15-upstream-attribution-plan-2026-09-27]] and the
+prefix update and RK old-mass, numerator, and denominator operations; all six
+selected stores replay from the captured operands. At these cells `sc_tend` is
+zero and advection yields the negative store. The run has no same-executable
+logging-off control or confirmation, so capture noninterference and broader
+cause attribution remain open. See
+[[kdm6ad-s15-upstream-attribution-plan-2026-09-27]] and the
 [provisional discovery replay report](../../harness/evidence/REPORT_S15_face_discovery_replay_2026-09-27.md).
 S15 and the trace-graupel policy remain OPEN.
 

@@ -8,8 +8,10 @@ producer/consumer joins, face-prefix replay, conditional limiter checks, RK
 store replay, and six nonnegative-to-negative QIB transitions all passed.
 
 The replay models the pinned GCC 15.2 `-O2` executable's binary32 contraction
-at the face-prefix update and `c1*munew+c2` RK denominator; the remaining terms
-retain the existing source-order replay. For the RK3 limiter tap, the local
+at the face-prefix update and in the RK old-mass sum, numerator accumulation,
+and new-mass denominator. The `dt*tendency` product is rounded before the
+numerator FMA. These changes leave this run's six stored words unchanged
+because all six incoming values are zero. For the RK3 limiter tap, the local
 post-limit value is kept distinct from the later divergence face: an adjacent
 cell can scale a shared incoming face after the selected cell's local limiter
 record.

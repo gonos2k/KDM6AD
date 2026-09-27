@@ -480,12 +480,12 @@ def replay_consumer(row: dict[str, Any]) -> dict[str, str]:
         raise ProbeError(
             "RK consumer tendency does not replay advect_tend*msfty + sc_tend"
         )
-    old_mass = _add(_mul(words["c1"], words["muold"]), words["c2"])
-    # The pinned O2 build emits a fused c1*munew+c2 denominator before the
-    # RK store. The old-mass and numerator terms retain their established
-    # separately rounded source-order replay.
+    old_mass = _fma32(words["c1"], words["muold"], words["c2"])
+    dt_tendency = _mul(words["dt"], tendency)
+    numerator = _fma32(old_mass, words["before"], dt_tendency)
+    # The pinned O2 build contracts both mass sums and the numerator, while
+    # dt*tendency remains a separately rounded binary32 product.
     new_mass = _fma32(words["c1"], words["munew"], words["c2"])
-    numerator = _add(_mul(old_mass, words["before"]), _mul(words["dt"], tendency))
     if word_value(new_mass) == 0.0:
         raise ProbeError("RK consumer new mass denominator is zero")
     stored = value_word(word_value(numerator) / word_value(new_mass))

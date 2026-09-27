@@ -263,6 +263,37 @@ def test_rk_store_replays_with_contracted_new_mass_denominator() -> None:
     assert probe.replay_consumer(row)["after"] == row["after"]
 
 
+def test_rk_store_replays_contracted_old_mass_and_numerator_with_nonzero_before() -> (
+    None
+):
+    _, consumers = _synthetic()
+    row = consumers[0]
+    row.update(
+        advect_tend="00000000",
+        msfty="3F800000",
+        sc_tend="3FAE8527",
+        tendency="3FAE8527",
+        before="3F816504",
+        dt="3FC5BA03",
+        c1="3FBD3BBA",
+        c2="3F366F26",
+        muold="3FF06C4B",
+        munew="3F54780F",
+    )
+    separate_old_mass = probe._add(probe._mul(row["c1"], row["muold"]), row["c2"])
+    fused_old_mass = probe._fma32(row["c1"], row["muold"], row["c2"])
+    dt_tendency = probe._mul(row["dt"], row["tendency"])
+    separate_numerator = probe._add(
+        probe._mul(separate_old_mass, row["before"]), dt_tendency
+    )
+    fused_numerator = probe._fma32(fused_old_mass, row["before"], dt_tendency)
+    new_mass = probe._fma32(row["c1"], row["munew"], row["c2"])
+    assert probe._div(separate_numerator, new_mass) == "4039E370"
+    row["after"] = probe._div(fused_numerator, new_mass)
+    assert row["after"] == "4039E371"
+    assert probe.replay_consumer(row)["after"] == row["after"]
+
+
 @pytest.mark.parametrize(
     "mutation",
     [

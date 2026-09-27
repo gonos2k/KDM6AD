@@ -114,10 +114,10 @@ omit a face operand.
 
 The source-order replay has now been checked against one logging-on native
 discovery stream. It preserves the configured binary32 contraction at the
-directional prefix and RK denominator, validates the exact six joins, and
-replays the captured face, limiter, and store operands. This is provisional
-selected-cell arithmetic evidence; it does not establish instrumentation
-noninterference or global physical cause.
+directional prefix and RK old-mass, numerator, and denominator, validates the
+exact six joins, and replays the captured face, limiter, and store operands.
+This is provisional selected-cell arithmetic evidence; it does not establish
+instrumentation noninterference or global physical cause.
 
 ## Disposable overlay check status
 
