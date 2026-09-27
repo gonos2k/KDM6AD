@@ -13,6 +13,8 @@ program test_fortran_normalized_ad
   real(c_float), target :: rho(im,kme,jme), pii(im,kme,jme), p(im,kme,jme), delz(im,kme,jme)
   real(c_float), target :: xland(im,jme)
   real(c_float), target :: out(n,nf), value_out(n,nf)
+  real(c_double) :: state64(im,kme,jme,nf), forcing64(im,kme,jme,4)
+  real(c_double) :: out64(im,kme,jme,nf), value64(im,kme,jme,nf)
   real(c_double) :: v(nf*n), u(nf*n), jv(nf*n), jt_u(nf*n)
   real(c_double) :: lhs, rhs, denom
   type(kdm6_step_v2_args_t) :: args
@@ -114,5 +116,34 @@ program test_fortran_normalized_ad
     print *, 'FAIL: normalized v2 value-only and graph forwards differ'
     stop 1
   end if
-  print *, 'PASS: Fortran normalized v2 forward, packed qi/ni JVP/VJP, duality, close, value-only parity'
+
+  ! The separate fp64 DA entry selects the same conservative operator without
+  ! changing the operational f32 wrapper or its packed field order.
+  state64(:,:,:,1)=real(th,c_double);   state64(:,:,:,2)=real(qv,c_double)
+  state64(:,:,:,3)=real(qc,c_double);   state64(:,:,:,4)=real(qr,c_double)
+  state64(:,:,:,5)=real(qi,c_double);   state64(:,:,:,6)=real(qs,c_double)
+  state64(:,:,:,7)=real(qg,c_double);   state64(:,:,:,8)=real(nccn,c_double)
+  state64(:,:,:,9)=real(nc,c_double);   state64(:,:,:,10)=real(ni,c_double)
+  state64(:,:,:,11)=real(nr,c_double); state64(:,:,:,12)=real(bg,c_double)
+  forcing64(:,:,:,1)=real(rho,c_double);  forcing64(:,:,:,2)=real(pii,c_double)
+  forcing64(:,:,:,3)=real(p,c_double);    forcing64(:,:,:,4)=real(delz,c_double)
+  handle = c_null_ptr
+  rc = kdm6_step_ad_variant(state64, forcing64, im, kme, jme, dt, 0_c_int, &
+       out64, handle, xland, 100.0_c_double, 10.0_c_double, KDM6_PHYSICS_CONSERVATIVE_INTERFACE)
+  if (rc /= KDM6_OK .or. .not. c_associated(handle) .or. any(.not. ieee_is_finite(out64))) then
+    print *, 'FAIL: fp64 conservative forward/live handle', rc
+    stop 1
+  end if
+  rc = kdm6_handle_jvp(handle, v, jv)
+  if (rc /= KDM6_OK .or. any(.not. ieee_is_finite(jv))) stop 1
+  rc = kdm6_handle_vjp(handle, u, jt_u)
+  if (rc /= KDM6_OK .or. any(.not. ieee_is_finite(jt_u))) stop 1
+  lhs = sum(jv*u); rhs = sum(v*jt_u); denom = max(abs(lhs),abs(rhs),1.0e-20_c_double)
+  if (abs(lhs-rhs)/denom > 1.0e-12_c_double) stop 1
+  rc = kdm6_handle_close(handle)
+  if (rc /= KDM6_OK .or. c_associated(handle)) stop 1
+  rc = kdm6_step_ad_variant(state64, forcing64, im, kme, jme, dt, 1_c_int, &
+       value64, handle, xland, 100.0_c_double, 10.0_c_double, KDM6_PHYSICS_CONSERVATIVE_INTERFACE)
+  if (rc /= KDM6_OK .or. c_associated(handle) .or. any(out64 /= value64)) stop 1
+  print *, 'PASS: Fortran normalized f32 and fp64 forward, JVP/VJP, duality, close, value-only parity'
 end program test_fortran_normalized_ad
