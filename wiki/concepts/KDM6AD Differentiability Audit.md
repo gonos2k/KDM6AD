@@ -88,10 +88,14 @@ The step-2 owner-5 capture exactly replays six first QIB transitions at the RK
 store, but it does not expose upstream Y/X/Z face operands. The next measurement
 is limited to six source-scheduled owner/RK/tile witnesses, with ordinary RK1/2
 advection separated from RK3 positive-definite dispatch and `sc_tend` retained
-apart from `advect_tend`. Discovery coordinates have a separate
-repeatability-only projection. The synthetic contract validates identity and
-directional-term accumulation but leaves face-divergence and RK-store numerical
-replay open. See [[kdm6ad-s15-upstream-attribution-plan-2026-09-27]] and the
+apart from `advect_tend`. The producer path is
+`scalar_tile_loop_1 -> rk_scalar_tend -> advect_scalar[_pd]`; the consumer path
+is the later `scalar_tile_loop_2 -> rk_update_scalar`. The bounded overlay must
+carry the same owner-5 step/RK/tile identity through both callsites. Discovery
+coordinates have a separate repeatability-only projection. The synthetic
+contract validates identity and directional-term accumulation but leaves
+face-divergence and RK-store numerical replay open. See
+[[kdm6ad-s15-upstream-attribution-plan-2026-09-27]] and the
 [bounded implementation contract](../../harness/evidence/S15_UPSTREAM_ATTRIBUTION_PLAN.md).
 This plan does not attribute a physical cause or change graupel policy; S15
 remains OPEN.
