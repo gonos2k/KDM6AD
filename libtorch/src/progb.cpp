@@ -105,7 +105,8 @@ ProgBOutputs progb_param_torch(
     // The f64 DA path keeps the smooth clamped divisor + clamp (finite adjoint, no Inf/NaN).
     const bool op_f32 = (odt == torch::kFloat32);
     auto bg_den = op_f32 ? bg.to(odt) : torch::clamp(bg.to(odt), /*min=*/BRS_MIN);
-    auto rhox_op = qg_op / bg_den;
+    // The inactive result is selected below; avoid a hidden 0/0 backward path.
+    auto rhox_op = qg_op / torch::where(active, bg_den, torch::ones_like(bg_den));
     auto rhox_c = op_f32
         ? torch::fmin(torch::full_like(rhox_op, RHO_MAX),
                       torch::fmax(torch::full_like(rhox_op, RHO_MIN), rhox_op))
