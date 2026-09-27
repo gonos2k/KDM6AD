@@ -130,6 +130,7 @@ def melting_torch(
     *,
     params: MeltingParams,
     dtcld: float,
+    mass_den: torch.Tensor | None = None,
 ) -> MeltingOutputs:
     """Fortran 1284-1342 — psmlt + pgmlt + pimlt.
 
@@ -151,7 +152,7 @@ def melting_torch(
     """
     zero = torch.zeros_like(qs)
     warm = t > params.t0c
-    den_safe = torch.clamp(den, min=params.qcrmin)
+    den_safe = torch.clamp(den if mass_den is None else mass_den, min=params.qcrmin)
 
     # ── psmlt ──────────────────────────────────────────────────────────
     snow_active = warm & (qs > 0)
@@ -269,6 +270,7 @@ def contact_freezing_torch(
     *,
     params: ContactFreezingParams,
     dtcld: float,
+    mass_den: torch.Tensor | None = None,
 ) -> ContactFreezingOutputs:
     """Fortran 1485-1507 — Meyers contact freezing of cloud water → cloud ice.
 
@@ -277,7 +279,7 @@ def contact_freezing_torch(
     zero = torch.zeros_like(qc)
     active = (supcol > params.supcol_threshold) & (qc > params.qmin)
 
-    den_safe = torch.clamp(den, min=params.qmin)
+    den_safe = torch.clamp(den if mass_den is None else mass_den, min=params.qmin)
     supcolt = torch.clamp(supcol, max=70.0)
     # Nic = exp(-2.80+0.262*supcolt)*1000 (F:1487): strict IEEE two-rounding in
     # plain source order — 0.262*supcolt rounds, then -2.80 + (.) rounds (was an

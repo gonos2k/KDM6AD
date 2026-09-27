@@ -62,9 +62,9 @@ class CoordinatorState(NamedTuple):
 class CoordinatorForcing(NamedTuple):
     """Microphysics forcing (외부 진단)."""
     p: torch.Tensor    # pressure [Pa]
-    den: torch.Tensor  # air density
+    den: torch.Tensor  # moist air density for air properties
     delz: torch.Tensor # layer thickness
-    dend: torch.Tensor # air density rho [kg m^-3], NOT rho × delz
+    dend: torch.Tensor # density for dry-mass moments (legacy: den), NOT rho × delz
 
 
 class CoordinatorParams(NamedTuple):
@@ -145,11 +145,11 @@ def preamble_torch(
     work2 = _thermo.compute_work2_venfac(forcing.p, state.t, forcing.den, params=params.thermo)
 
     # ── Cloud DSD ──────────────────────────────────────────────────────
-    rslopec = _dsd.diag_cloud_slope_torch(state.qc, state.nc, forcing.den, params=params.cloud_dsd,
+    rslopec = _dsd.diag_cloud_slope_torch(state.qc, state.nc, forcing.dend, params=params.cloud_dsd,
                                           ncmin_tensor=ncmin_tensor)
     avedia_c = _dsd.diag_avedia_cloud_torch(rslopec, params=params.cloud_dsd)
     sigma_c = _dsd.diag_sigma_cloud_torch(rslopec, params=params.cloud_dsd)
-    lencon, lenconcr = _dsd.diag_lencon_torch(state.qc, forcing.den, avedia_c, sigma_c)
+    lencon, lenconcr = _dsd.diag_lencon_torch(state.qc, forcing.dend, avedia_c, sigma_c)
     # qcr is computed by caller via diag_qcr_torch(sea_mask).
 
     # ── ProgB (graupel density 진단) ────────────────────────────────────
@@ -159,7 +159,7 @@ def preamble_torch(
     slope_out = _slope.slope_kdm6_torch(
         qr=state.qr, qs=state.qs, qg=state.qg, qi=state.qi,
         nr=state.nr, ni=state.ni,
-        den=forcing.den, denfac=denfac, t=state.t,
+        den=forcing.dend, denfac=denfac, t=state.t,
         pidn0g=progb_out.pidn0g, pvtg=progb_out.pvtg, bvtg=progb_out.bvtg,
         rslopegbmax=progb_out.rslopegbmax,
         params=params.slope,
@@ -255,14 +255,14 @@ def warm_phase_torch(
 
     # ── B1: Autoconversion ─────────────────────────────────────────────
     praut, nraut = _warm.autoconv_torch(
-        state.qc, state.nc, state.qr, state.nr, forcing.den,
+        state.qc, state.nc, state.qr, state.nr, forcing.dend,
         qcr, pre.lenconcr,
         params=params.autoconv, dtcld=dtcld,
     )
 
     # ── B2: Accretion ──────────────────────────────────────────────────
     pracw, nracw = _warm.accretion_torch(
-        state.qc, state.nc, state.qr, state.nr, forcing.den,
+        state.qc, state.nc, state.qr, state.nr, forcing.dend,
         pre.avedia_r, rslopec3, pre.slope.rslope3_r, pre.lenconcr,
         params=params.accretion, dtcld=dtcld,
     )
@@ -440,7 +440,7 @@ def cold_phase_torch(
     # ── C1: ice accretion ──────────────────────────────────────────────
     # Fix [codex#3]: aux.n0r 사용 (이전 zeros placeholder는 cold-rain coupling 무효화)
     praci, piacr = _cold.ice_accretion_torch(
-        state.qi, state.qr, forcing.den, n0i,
+        state.qi, state.qr, forcing.dend, n0i,
         n0r=n0r,  # codex#3 fix
         vt2r=s.vt_r, vt2i=s.vt_i,
         rslope_r=s.rslope_r, rslope2_r=s.rslope2_r, rslope3_r=s.rslope3_r,
@@ -452,7 +452,7 @@ def cold_phase_torch(
 
     # ── C2: ice → snow/graupel ────────────────────────────────────────
     psaci, pgaci = _cold.ice_to_snow_graupel_torch(
-        state.qi, state.qs, state.qg, forcing.den,
+        state.qi, state.qs, state.qg, forcing.dend,
         n0i, n0so, n0go, s.n0sfac,
         pre.supcol, s.vt_s, s.vt_g, s.vt_i,
         s.rslope_s, s.rslope2_s, s.rslope3_s, s.rslopemu_s,
@@ -464,7 +464,7 @@ def cold_phase_torch(
     # ── C2b: number accretion ────────────────────────────────────────
     nraci, niacr, nsaci, ngaci = _cold.number_accretion_torch(
         state.qi, state.qs, state.qg, state.qr, state.ni, state.nr,
-        forcing.den, n0i,
+        forcing.dend, n0i,
         n0r=n0r,  # codex#3 fix
         n0sfac=s.n0sfac, supcol=pre.supcol,
         vt2r=s.vt_r, vt2s=s.vt_s, vt2g=s.vt_g, vt2i=s.vt_i,
@@ -478,7 +478,7 @@ def cold_phase_torch(
     # ── C2c: cloud water riming ──────────────────────────────────────
     cwr = _cold.cloud_water_riming_torch(
         state.qc, state.nc, state.qs, state.qg, state.qi,
-        forcing.den, pre.denfac,
+        forcing.dend, pre.denfac,
         n0so, n0go, n0i, n0c, s.n0sfac,
         avtg=pre.progb.avtg, g3pbg=pre.progb.g3pbg,
         avedia_i=avedia_i, supcol=pre.supcol,
@@ -492,7 +492,7 @@ def cold_phase_torch(
     # ── C2d: rain-snow-graupel collection ────────────────────────────
     rsgc = _cold.rain_snow_graupel_collection_torch(
         state.qr, state.qs, state.qg, state.nr,
-        forcing.den,
+        forcing.dend,
         n0r=n0r,  # codex#3 fix
         n0so=n0so, n0go=n0go, n0sfac=s.n0sfac,
         supcol=pre.supcol,
@@ -510,14 +510,14 @@ def cold_phase_torch(
     hm = _cold.hallett_mossop_torch(
         cwr.paacw, rsgc.psacr, rsgc.pgacr,
         state.qc, state.qr, state.qs, state.qg,
-        state.t, forcing.den,
+        state.t, forcing.dend,
         params=params.hallett_mossop,
     )
 
     # ── C3: ice nucleation ───────────────────────────────────────────
     icenuc = _cold.ice_nucleation_torch(
         pre.supcol, supsat_ice, pre.rh_ice, prevp,
-        state.ni, forcing.den,
+        state.ni, forcing.dend,
         params=params.ice_nucleation, dtcld=dtcld,
     )
 
@@ -537,7 +537,7 @@ def cold_phase_torch(
 
     # ── C5: ice aggregation ──────────────────────────────────────────
     psaut, nsaut = _cold.ice_aggregation_torch(
-        state.qi, state.ni, state.t, forcing.den, pre.supcol,
+        state.qi, state.ni, state.t, forcing.dend, pre.supcol,
         params=params.ice_aggregation, dtcld=dtcld,
     )
 
@@ -656,7 +656,7 @@ def melt_freeze_d1_torch(
         n0so, n0go, s.n0sfac, pre.work2, pre.progb.precg2,
         s.rslope_s, s.rslope2_s, s.rslopeb_s, s.rslopemu_s,
         s.rslope_g, s.rslope2_g, s.rslopeb_g, s.rslopemu_g,
-        params=params.melting, dtcld=dtcld,
+        params=params.melting, dtcld=dtcld, mass_den=forcing.dend,
     )
     return MeltFreezePhaseOutputs(
         psmlt=melt.psmlt, pgmlt=melt.pgmlt,
@@ -696,21 +696,21 @@ def melt_freeze_d2_d4_torch(
         state.qc, state.nc, state.t, forcing.p, forcing.den,
         n0c, rslopec, rslopec2, rslopec3, rslopecmu,
         pre.supcol,
-        params=params.contact, dtcld=dtcld,
+        params=params.contact, dtcld=dtcld, mass_den=forcing.dend,
     )
 
     # ── D3: Bigg cloud (STEP 4: caps vs POST-D2 qc/nc; Fortran :1512-1537) ──
     qc_post_d2 = state.qc - contact.pinuc
     nc_post_d2 = state.nc - contact.ninuc
     bigg_c = _mf.bigg_cloud_freezing_torch(
-        qc_post_d2, nc_post_d2, forcing.den, n0c,
+        qc_post_d2, nc_post_d2, forcing.dend, n0c,
         rslopec, rslopecd, rslopecmu, pre.supcol,
         params=params.bigg_cloud, dtcld=dtcld,
     )
 
     # ── D4: Bigg rain ──────────────────────────────────────────────────
     bigg_r = _mf.bigg_rain_freezing_torch(
-        state.qr, state.nr, forcing.den, n0r,
+        state.qr, state.nr, forcing.dend, n0r,
         s.rslope_r, s.rsloped_r, s.rslopemu_r, pre.supcol,
         params=params.bigg_rain, dtcld=dtcld,
     )
@@ -1801,7 +1801,7 @@ def build_default_aux_torch(
     pidni = _fc.PIDNI   # f32-stepwise (kdm6init F:3263)
 
     rslope_r = _dsd.diag_species_slope_torch(
-        state.qr, state.nr, forcing.den, pidnr, c.DMR, c.LAMDARMAX, c.LAMDARMIN)
+        state.qr, state.nr, forcing.dend, pidnr, c.DMR, c.LAMDARMAX, c.LAMDARMIN)
     # Fortran F:3482-3483 inactive-rain branch: (qr<=qcrmin .or. nr<=nrmin) → rslope=rslopermax
     # = 1/LAMDARMAX. The clamp inside diag_species_slope maps qr≈0 → 1/LAMDARMAX, but a nr<=nrmin
     # cell WITH qr>qcrmin would wrongly hit 1/LAMDARMIN; the nr<=nrmin gate forces 1/LAMDARMAX so
@@ -1811,7 +1811,7 @@ def build_default_aux_torch(
     rslope_r = torch.where(rain_inactive,
                            torch.full_like(rslope_r, 1.0 / c.LAMDARMAX), rslope_r)
     rslope_i = _dsd.diag_species_slope_torch(
-        state.qi, state.ni, forcing.den, pidni, c.DMI, c.LAMDAIMAX, c.LAMDAIMIN)
+        state.qi, state.ni, forcing.dend, pidni, c.DMI, c.LAMDAIMAX, c.LAMDAIMIN)
     rslopemu_r = rslope_r ** c.MUR
     rslopemu_i = torch.ones_like(rslope_i) if c.MUI == 0.0 else rslope_i ** c.MUI
     # STEP-69 SEED mirror: Fortran rslopecmu = DBLE(rslopec)**muc (DOUBLE, F:696) —
@@ -1825,7 +1825,7 @@ def build_default_aux_torch(
     # the post-freeze aux2 adds the F:1700 nr-clamp rewrite on top. mur=1 ⇒ g1pmr=Γ(2)=1.
     _inv_dmr_n0r = _fc._f32(1.0 / _fc._f32(c.DMR))
     _lamdr_cl_n0r = torch.clamp(torch.exp(torch.log(torch.clamp(
-        pidnr * state.nr / torch.clamp(state.qr * forcing.den, min=1e-30), min=1e-30)) * _inv_dmr_n0r),
+        pidnr * state.nr / torch.clamp(state.qr * forcing.dend, min=1e-30), min=1e-30)) * _inv_dmr_n0r),
         min=c.LAMDARMIN, max=c.LAMDARMAX)
     # §44 x**2.0=MULT (gfortran compiles lamdr**(mur+1), mur+1=2.0, as x*x not powf) — mirror C++.
     _n0r_active = (1.0 / g1pmr) * state.nr * (_lamdr_cl_n0r * _lamdr_cl_n0r)
@@ -1977,7 +1977,7 @@ def apply_satadj_step_torch(
     _ax3_f = _f32(_f32(_ax_f * _ax_f) * _ax_f)          # (ax*ax)*ax, float32 x*x*x
     _pi_f  = _f32(math.pi)                               # == static_cast<float>(PI)
     _PCACT_MASS_CONST = _f32(_f32(_f32(4.0 * _pi_f) * _f32(c.DENR)) * _ax3_f)  # 4.2411505487031584e-14
-    pcact_raw = _PCACT_MASS_CONST * ncact / (3.0 * forcing.den)
+    pcact_raw = _PCACT_MASS_CONST * ncact / (3.0 * forcing.dend)
     pcact = torch.minimum(pcact_raw, torch.clamp(state.qv, min=0.0) / dtcld)
 
     # apply pcact + ncact (pre-satadj snapshot)
@@ -2136,7 +2136,7 @@ def kdm62d_one_step_torch(
     # F:1500-1501/1524-1531). Inert in unclamped cells; gated qc≥qmin & nc≥ncmin (F:1638).
     _nc_orig1 = working1b.nc
     _nc_snap1 = _limit_number_for_lamda(
-        working1b.qc, _nc_orig1, forcing.den,
+        working1b.qc, _nc_orig1, forcing.dend,
         pidn=pidnc_snap, dm=c.DMC, lamda_min=c.LAMDACMIN, lamda_max=c.LAMDACMAX,
         q_thresh=c.EPS, n_thresh=c.NCMIN)
     # Fortran F:1638 gates on the PER-CELL ncmin (10/100), not scalar NCMIN — restore
@@ -2151,7 +2151,7 @@ def kdm62d_one_step_torch(
     # at nci==ncmin — Codex stop-review). nci_raw=_nc_orig1; nci_final=snapped working1b.nc.
     _active1 = (working1b.qc >= c.EPS) & (
         (_nc_orig1 >= ncmin_tensor) if ncmin_tensor is not None else (_nc_orig1 >= c.NCMIN))
-    _lamdc1 = _lamda_from_qn(working1b.qc, _nc_orig1, forcing.den,
+    _lamdc1 = _lamda_from_qn(working1b.qc, _nc_orig1, forcing.dend,
                              pidn=pidnc_snap, dm=c.DMC, lamda_min=c.LAMDACMIN, lamda_max=c.LAMDACMAX)
     _n0c1 = (c.MUC + 1.0) * working1b.nc * (_lamdc1 ** (c.MUC + 1.0))
     aux1 = aux1._replace(n0c=torch.where(_active1, _n0c1, aux1.n0c))
@@ -2163,10 +2163,10 @@ def kdm62d_one_step_torch(
     # Picons fire by construction (avedia at the bound >= 200um) — catastrophic qi wipe.
     _ni_orig1 = working1b.ni
     working1b = working1b._replace(ni=_limit_number_for_lamda(
-        working1b.qi, _ni_orig1, forcing.den,
+        working1b.qi, _ni_orig1, forcing.dend,
         pidn=_fc.PIDNI, dm=c.DMI, lamda_min=c.LAMDAIMIN, lamda_max=c.LAMDAIMAX,
         q_thresh=1.0e-14, n_thresh=0.0))
-    _lamdi1 = _lamda_from_qn(working1b.qi, _ni_orig1, forcing.den,
+    _lamdi1 = _lamda_from_qn(working1b.qi, _ni_orig1, forcing.dend,
                              pidn=_fc.PIDNI, dm=c.DMI, lamda_min=c.LAMDAIMIN, lamda_max=c.LAMDAIMAX)
     aux1 = aux1._replace(n0i=torch.where(working1b.qi >= 1.0e-14,
                                          working1b.ni * _lamdi1, aux1.n0i))
@@ -2179,10 +2179,10 @@ def kdm62d_one_step_torch(
     # re-slope (Codex stop-review: active n0r change not mirrored). mur=1 ⇒ exponent 2, g1pmr=Γ(2)=1.
     _nr_orig1 = working1b.nr
     working1b = working1b._replace(nr=_limit_number_for_lamda(
-        working1b.qr, _nr_orig1, forcing.den,
+        working1b.qr, _nr_orig1, forcing.dend,
         pidn=_fc.PIDNR, dm=c.DMR, lamda_min=c.LAMDARMIN, lamda_max=c.LAMDARMAX,
         q_thresh=c.QCRMIN, n_thresh=c.NRMIN))
-    _lamdr1 = _lamda_from_qn(working1b.qr, _nr_orig1, forcing.den,
+    _lamdr1 = _lamda_from_qn(working1b.qr, _nr_orig1, forcing.dend,
                              pidn=_fc.PIDNR, dm=c.DMR, lamda_min=c.LAMDARMIN, lamda_max=c.LAMDARMAX)
     _active_r1 = (working1b.qr >= c.QCRMIN) & (_nr_orig1 >= c.NRMIN)
     aux1 = aux1._replace(n0r=torch.where(
@@ -2230,7 +2230,7 @@ def kdm62d_one_step_torch(
     # AND state_update consume — the frame-3 QNCLOUD seed. Gate supcol-independent (F:1638).
     _nc_orig2 = working.nc
     _nc_snap2 = _limit_number_for_lamda(
-        working.qc, _nc_orig2, forcing.den,
+        working.qc, _nc_orig2, forcing.dend,
         pidn=pidnc_snap, dm=c.DMC, lamda_min=c.LAMDACMIN, lamda_max=c.LAMDACMAX,
         q_thresh=c.EPS, n_thresh=c.NCMIN)
     # Per-cell ncmin gate (Fortran F:1638, ncmin_sea/land=10/100), not scalar NCMIN.
@@ -2241,7 +2241,7 @@ def kdm62d_one_step_torch(
     # (boundary mismatch at nci==ncmin — Codex stop-review). cold_phase riming reads aux2.n0c.
     _active2 = (working.qc >= c.EPS) & (
         (_nc_orig2 >= ncmin_tensor) if ncmin_tensor is not None else (_nc_orig2 >= c.NCMIN))
-    _lamdc2 = _lamda_from_qn(working.qc, _nc_orig2, forcing.den,
+    _lamdc2 = _lamda_from_qn(working.qc, _nc_orig2, forcing.dend,
                              pidn=pidnc_snap, dm=c.DMC, lamda_min=c.LAMDACMIN, lamda_max=c.LAMDACMAX)
     _n0c2 = (c.MUC + 1.0) * working.nc * (_lamdc2 ** (c.MUC + 1.0))
     aux2 = aux2._replace(n0c=torch.where(_active2, _n0c2, aux2.n0c))
@@ -2252,10 +2252,10 @@ def kdm62d_one_step_torch(
     # Fixes the post-freeze n0r → warm prevp (F:1851). mur=1 ⇒ g1pmr=Γ(2)=1.
     _nr_orig2 = working.nr
     working = working._replace(nr=_limit_number_for_lamda(
-        working.qr, _nr_orig2, forcing.den,
+        working.qr, _nr_orig2, forcing.dend,
         pidn=_fc.PIDNR, dm=c.DMR, lamda_min=c.LAMDARMIN, lamda_max=c.LAMDARMAX,
         q_thresh=c.QCRMIN, n_thresh=c.NRMIN))
-    _lamdr2 = _lamda_from_qn(working.qr, _nr_orig2, forcing.den,
+    _lamdr2 = _lamda_from_qn(working.qr, _nr_orig2, forcing.dend,
                              pidn=_fc.PIDNR, dm=c.DMR, lamda_min=c.LAMDARMIN, lamda_max=c.LAMDARMAX)
     _active_r2 = (working.qr >= c.QCRMIN) & (_nr_orig2 >= c.NRMIN)
     aux2 = aux2._replace(n0r=torch.where(
@@ -2264,10 +2264,10 @@ def kdm62d_one_step_torch(
     # STEP-79 SEED (block-B ice P3, F:1684-1697) — same rewrite as block-A above.
     _ni_orig2 = working.ni
     working = working._replace(ni=_limit_number_for_lamda(
-        working.qi, _ni_orig2, forcing.den,
+        working.qi, _ni_orig2, forcing.dend,
         pidn=_fc.PIDNI, dm=c.DMI, lamda_min=c.LAMDAIMIN, lamda_max=c.LAMDAIMAX,
         q_thresh=1.0e-14, n_thresh=0.0))
-    _lamdi2 = _lamda_from_qn(working.qi, _ni_orig2, forcing.den,
+    _lamdi2 = _lamda_from_qn(working.qi, _ni_orig2, forcing.dend,
                              pidn=_fc.PIDNI, dm=c.DMI, lamda_min=c.LAMDAIMIN, lamda_max=c.LAMDAIMAX)
     aux2 = aux2._replace(n0i=torch.where(working.qi >= 1.0e-14,
                                          working.ni * _lamdi2, aux2.n0i))
@@ -2421,10 +2421,10 @@ def kdm62d_one_step_torch(
     # owning boundary without a second post-update subtraction.
     # review5#4 + review7#1: Picons (Fortran 2807-2813) qi→qs.
     new_state = reclassify_large_ice_to_snow_torch(
-        new_state, forcing.den, diagnostic_trace=diagnostic_trace,
+        new_state, forcing.dend, diagnostic_trace=diagnostic_trace,
         diagnostic_step=diagnostic_step, diagnostic_dtcld=dtcld)
     # review8#3: rain→cloud reclassification (Fortran 2883-2892) when avedia_r ≤ 82μm.
-    new_state = reclassify_small_rain_to_cloud_torch(new_state, forcing.den)
+    new_state = reclassify_small_rain_to_cloud_torch(new_state, forcing.dend)
     # F1g+: satadj/pcond on the post-update + post-reclass state (Fortran
     # :2922-2943). Mirrors C++ apply_satadj_step; pcond was deferred OUT of
     # state_update_torch so condensation fires on the proper post-mass-balance,
@@ -2452,7 +2452,7 @@ def kdm62d_one_step_torch(
             new_state, None, metadata={"kind": "applied_transfer"})
     # review9#2: DSD number limiters (Fortran 2972-3013) — lamda 범위를 벗어나면 number 재계산.
     new_state = apply_dsd_number_limiters_torch(
-        new_state, forcing.den, ncmin_tensor=ncmin_tensor,
+        new_state, forcing.dend, ncmin_tensor=ncmin_tensor,
         diagnostic_trace=diagnostic_trace, diagnostic_step=diagnostic_step,
         diagnostic_dtcld=dtcld)
     return (new_state, nccn) if _activate else new_state
