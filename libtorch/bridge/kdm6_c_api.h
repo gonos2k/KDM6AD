@@ -283,6 +283,23 @@ KDM6_C_API int kdm6_step_ad_c(
     double ncmin_land,
     double ncmin_sea);
 
+/* fp64 DA entry with an explicit physics selector. The original
+ * kdm6_step_ad_c remains the Legacy ABI; this additive symbol selects the
+ * same conservative-interface operator as kdm6_step_v2_c when variant=1.
+ * Unknown variants return INVALID_ARG with a null handle and untouched output
+ * before the thread fence or tensor work. */
+KDM6_C_API int kdm6_step_ad_variant_c(
+    const double* state_in_packed,
+    const double* forcing_packed,
+    int im, int kme, int jme, double dt,
+    int value_only,
+    double* state_out_packed,
+    kdm6_handle_t** handle,
+    const float* xland,
+    double ncmin_land,
+    double ncmin_sea,
+    uint32_t physics_variant);
+
 /**
  * VJP — J^T @ u. 4D-Var adjoint 용.
  *
@@ -322,8 +339,10 @@ KDM6_C_API int kdm6_step_ad_c(
  *     backward can underflow at inactive-ice corners and the NaN propagates to whatever
  *     inputs are graph-connected (which fields exactly is f32-rounding/toolchain dependent).
  *     Do NOT rely on these gradients for assimilation.
- *   - For reliable, fully-finite fp64 adjoints/tangents use a handle from kdm6_step_ad_c
- *     (the DA design default, kdm6ad+da.md §0.1.A) — same VJP/JVP calls, fp64 graph.
+ *   - For fp64 DA adjoints/tangents on supported branches, use a handle from
+ *     kdm6_step_ad_c (Legacy) or kdm6_step_ad_variant_c (explicit variant).
+ *     Both use the same VJP/JVP calls and an fp64 graph; neither certifies
+ *     derivatives across branch changes.
  */
 KDM6_C_API int kdm6_handle_vjp_c(kdm6_handle_t* h,
                       const double* u_packed,

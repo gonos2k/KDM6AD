@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """PR3 symbol-surface gate (docs/PR3_VISIBILITY_DESIGN.md §7).
 
-Assert a built libkdm6_c exports EXACTLY the 9 C ABI functions and leaks zero
+Assert a built libkdm6_c exports EXACTLY the 10 C ABI functions and leaks zero
 internal (kdm6::/libtorch/std) symbols. `nm` gives the same `addr TYPE name`
 output on both platforms, so one parser covers both:
 
@@ -15,10 +15,10 @@ filtered out. The ONLY exclusion is the Linux `--version-script` node
 (`KDM6_2`), removed BY NAME (not by skipping the whole absolute class, which
 would also hide a genuine absolute leak). Per-platform quirks normalized: the
 macOS leading underscore (`_kdm6_step_c`) and the Linux version suffix
-(`kdm6_step_c@@KDM6_2`). Comparing the exported set for exact equality with the 9
+(`kdm6_step_c@@KDM6_2`). Comparing the exported set for exact equality with the 10
 IS the zero-leak check: any leaked symbol makes the set differ.
 
-Usage: check_c_abi_exports.py <libkdm6_c.{dylib,so,so.N}>   (exit 0 iff == the 9)
+Usage: check_c_abi_exports.py <libkdm6_c.{dylib,so,so.N}>   (exit 0 iff == the 10)
 """
 import platform
 import subprocess
@@ -27,7 +27,7 @@ import sys
 # The entire public surface — must match kdm6_c_api.h and the linker allowlists
 # (kdm6_c.exports / kdm6_c.map). Growing this set requires a separate approval.
 ALLOW = {
-    "kdm6_step_c", "kdm6_step_ad_c", "kdm6_step_v2_c",
+    "kdm6_step_c", "kdm6_step_ad_c", "kdm6_step_ad_variant_c", "kdm6_step_v2_c",
     "kdm6_get_abi_version_c", "kdm6_step_v2_args_size_c",
     "kdm6_handle_vjp_c", "kdm6_handle_jvp_c",
     "kdm6_handle_close_c", "kdm6_handle_closep_c",
@@ -84,8 +84,8 @@ def main():
     for s in leaked:
         print(f"  LEAKED   {s}")
     if missing or leaked:
-        sys.exit("FAIL: exported surface is not exactly the 9 C ABI functions")
-    print("OK: exported set == the 9 C ABI symbols, zero internal leakage")
+        sys.exit("FAIL: exported surface is not exactly the 10 C ABI functions")
+    print("OK: exported set == the 10 C ABI symbols, zero internal leakage")
 
 
 if __name__ == "__main__":

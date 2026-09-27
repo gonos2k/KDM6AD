@@ -720,6 +720,49 @@ void test_c_abi_step_ad_fp64_vjp_finite_and_adjoint() {
         assert(h2 == nullptr);
         for (size_t i = 0; i < N; ++i)
             assert(out2[i] == out[i]);   // fp64 forward-determinism through the ABI
+
+        // The additive selector keeps the old fp64 symbol on Legacy while
+        // allowing the same fp64 graph to use conservative sedimentation.
+        std::vector<double> selected(N, -777.0);
+        kdm6_handle_t* selected_h = nullptr;
+        rc = kdm6_step_ad_variant_c(st, fz, im, kme, jme, 20.0, 0,
+                                    selected.data(), &selected_h, nullptr, 0.0, 0.0,
+                                    KDM6_PHYSICS_CONSERVATIVE_INTERFACE);
+        assert(rc == KDM6_OK && selected_h != nullptr);
+        for (double x : selected) assert(std::isfinite(x));
+        std::vector<double> selected_jv(N), selected_jtu(N);
+        assert(kdm6_handle_jvp_c(selected_h, v.data(), selected_jv.data()) == KDM6_OK);
+        assert(kdm6_handle_vjp_c(selected_h, u.data(), selected_jtu.data()) == KDM6_OK);
+        double selected_lhs = 0.0, selected_rhs = 0.0;
+        for (size_t i = 0; i < N; ++i) {
+            assert(std::isfinite(selected_jv[i]) && std::isfinite(selected_jtu[i]));
+            selected_lhs += selected_jv[i] * u[i];
+            selected_rhs += v[i] * selected_jtu[i];
+        }
+        const double selected_den = std::max(std::abs(selected_lhs), std::abs(selected_rhs));
+        assert(selected_den > 0.0 && std::abs(selected_lhs - selected_rhs) / selected_den < 1e-12);
+        assert(kdm6_handle_closep_c(&selected_h) == KDM6_OK && selected_h == nullptr);
+
+        std::vector<double> selected_value(N, -777.0);
+        rc = kdm6_step_ad_variant_c(st, fz, im, kme, jme, 20.0, 1,
+                                    selected_value.data(), &selected_h, nullptr, 0.0, 0.0,
+                                    KDM6_PHYSICS_CONSERVATIVE_INTERFACE);
+        assert(rc == KDM6_OK && selected_h == nullptr);
+        assert(std::memcmp(selected.data(), selected_value.data(), N * sizeof(double)) == 0);
+
+        std::vector<double> legacy_selected(N, -777.0);
+        rc = kdm6_step_ad_variant_c(st, fz, im, kme, jme, 20.0, 1,
+                                    legacy_selected.data(), &selected_h, nullptr, 0.0, 0.0,
+                                    KDM6_PHYSICS_LEGACY);
+        assert(rc == KDM6_OK && selected_h == nullptr);
+        assert(std::memcmp(out2.data(), legacy_selected.data(), N * sizeof(double)) == 0);
+
+        const auto before_invalid = selected_value;
+        selected_h = reinterpret_cast<kdm6_handle_t*>(0x1);
+        rc = kdm6_step_ad_variant_c(st, fz, im, kme, jme, 20.0, 1,
+                                    selected_value.data(), &selected_h, nullptr, 0.0, 0.0, 99);
+        assert(rc == KDM6_ERR_INVALID_ARG && selected_h == nullptr);
+        assert(std::memcmp(before_invalid.data(), selected_value.data(), N * sizeof(double)) == 0);
     } END_TEST();
 }
 

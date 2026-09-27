@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """PR1-B2 fresh-process contract: the shipped dylib must NOT inject
 KMP_DUPLICATE_LIB_OK. In a fresh process, loading the library leaves an UNSET
-value unset and preserves an explicit FALSE/TRUE. Also asserts the 9 C ABI
+value unset and preserves an explicit FALSE/TRUE. Also asserts the 10 C ABI
 symbols resolve and the ABI version is 2.
 
 usage: check_kmp_duplicate_env.py <path-to libkdm6_c .dylib/.so>
@@ -24,8 +24,8 @@ v = libc.getenv(b"KMP_DUPLICATE_LIB_OK")
 sys.stdout.write("" if v is None else "SET:" + v.decode())
 """
 
-NINE = [
-    "kdm6_step_c", "kdm6_step_ad_c", "kdm6_step_v2_c", "kdm6_get_abi_version_c",
+SYMBOLS = [
+    "kdm6_step_c", "kdm6_step_ad_c", "kdm6_step_ad_variant_c", "kdm6_step_v2_c", "kdm6_get_abi_version_c",
     "kdm6_step_v2_args_size_c", "kdm6_handle_vjp_c", "kdm6_handle_jvp_c",
     "kdm6_handle_close_c", "kdm6_handle_closep_c",
 ]
@@ -50,9 +50,9 @@ def main():
         print(f"  {name}: parent={parent!r} after_load={got!r} expect={expect!r} {'OK' if ok else 'FAIL'}")
         if not ok:
             failures.append(name)
-    # 2. the 9 C ABI symbols resolve, ABI version == 2.
+    # 2. the C ABI symbols resolve, ABI version == 2.
     lib = ctypes.CDLL(LIB)
-    for s in NINE:
+    for s in SYMBOLS:
         try:
             getattr(lib, s)
         except AttributeError:
@@ -67,7 +67,7 @@ def main():
     if failures:
         print("FAIL:", ", ".join(failures))
         return 1
-    print("OK: fresh-process KMP env contract + 9 symbols + abi==2")
+    print(f"OK: fresh-process KMP env contract + {len(SYMBOLS)} symbols + abi==2")
     return 0
 
 
