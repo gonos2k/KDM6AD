@@ -1,0 +1,52 @@
+{
+  "schema": "s10-build-preparation-capacity-measurement-public-v1",
+  "scope": "Path-redacted summary of one private capacity-only measurement receipt; it is not build authorization.",
+  "merge_commit": "6cc6e5d586b60f16f05b90f2dc191e9c95342d3c",
+  "measurement": {
+    "observed_at_utc": "2026-09-27T03:41:08.782248+00:00",
+    "phase": "build-preparation-measure",
+    "preflight_exit_code": 0,
+    "status": "MEASURED_BUILD_PREPARATION_CAPACITY_ONLY",
+    "capacity_status": "MEASURED_ONLY_INCOMPLETE_COMMAND_INPUTS",
+    "plan_sha256": "3cebf313f6229efdcd4e61983fb656fa490161a966d5efef7b2d761b50a958f7",
+    "estimate_sha256": "82f2b43c3de2e8f72f50f58aefaa7fee14c3acebb5021115581abf66ec96c7d3",
+    "snapshot_sha256": "c4cac9cb4d9c1a6d0c08455350ea44185d61f2d6216e98d93bbb10d0621efd5d",
+    "private_receipt_sha256": "c0ecfcdc67b5116fa658a54d7d888c2fc814a66c204b53d3bbd0a02f397c39b9",
+    "estimated_total_bytes": 717666816,
+    "safety_factor": 2,
+    "reserve_free_bytes": 4294967296,
+    "minimum_free_bytes": 2147483648,
+    "required_free_bytes": 5730300928,
+    "observed_free_bytes": 19817902080,
+    "output_root_absent_after": true
+  },
+  "validation_scope": {
+    "allowed_commands": [],
+    "static_pin_validation_completed": false,
+    "toolchain_validation_completed": false,
+    "environment_validation_completed": false,
+    "toolchain_sha256": null,
+    "tool_environment_sha256": null,
+    "wrf_preprocess_object_link_or_model_commands_launched": false,
+    "build_execution_allowed": false,
+    "model_execution_allowed": false,
+    "coordinator_resource_approval_sha256": null,
+    "s15_release_receipt_sha256": null
+  },
+  "prior_environment_mismatch_attempt": {
+    "exit_code": 2,
+    "outcome": "BLOCKED_BEFORE_MEASUREMENT_RECEIPT",
+    "reason": "Under the preceding plan revision, the inherited sanitized environment did not match its historical tool-environment pin.",
+    "receipt_created": false,
+    "attempt3_configuration_evidence_preserved": true,
+    "failure_receipt_sha256": null,
+    "raw_private_environment_values_included": false
+  },
+  "gate_state": {
+    "s10_status": "OPEN",
+    "aggregate_build_gate": "BLOCKED_PENDING_ESTIMATE_AND_REVIEW",
+    "full_matrix_build_or_link_allowed": false,
+    "model_runs_gate": "BLOCKED_PENDING_LOG_BOUND_AND_RETENTION",
+    "interpretation": "Capacity was measured against the proposal; incomplete command inputs and separate coordinator gates remain unresolved."
+  }
+}
