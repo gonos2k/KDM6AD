@@ -212,6 +212,36 @@ def test_synthetic_s15_records_parse_and_join_to_the_six_pinned_slots() -> None:
         overlay.parse_fortran_capture("\n".join(nontransition) + "\n", ROOT, CONFIG)
 
 
+def test_pd_incoming_shared_face_may_change_before_divergence_tap() -> None:
+    rows = _raw_stream().splitlines()
+    pd_index = next(
+        i
+        for i, row in enumerate(rows)
+        if row.startswith("S15PD ") and row.split()[1:5] == ["2", "3", "5", "1"]
+    )
+    pd = rows[pd_index].split()
+    pd[26] = "BF800000"  # selected cell's local pre-limiter Y-plus face
+    pd[32] = "BF800000"  # unchanged at that cell; neighbor owns this inflow
+    rows[pd_index] = " ".join(pd)
+
+    y_axis_index = next(
+        i
+        for i, row in enumerate(rows)
+        if row.startswith("S15AX ")
+        and row.split()[1:5] == ["2", "3", "5", "1"]
+        and row.split()[12] == "1"
+    )
+    y_axis = rows[y_axis_index].split()
+    y_axis[15] = "BF400000"  # final divergence face after neighboring limiter
+    y_axis[18] = "00000000"  # synthetic zero metric isolates the face ownership
+    rows[y_axis_index] = " ".join(y_axis)
+
+    producers, consumers = overlay.parse_fortran_capture(
+        "\n".join(rows) + "\n", ROOT, CONFIG
+    )
+    assert len(producers) == len(consumers) == 6
+
+
 def _bounded_extractor_fixture() -> bytes:
     return (
         b"WRF banner\nS15Q legacy\n"

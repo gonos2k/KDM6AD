@@ -897,6 +897,7 @@ def parse_fortran_capture(
                 "pd_available_state": floats[1],
                 "pd_low_order_fluxes": groups[0],
                 "pd_unlimited_high_order_fluxes": groups[1],
+                "pd_high_order_fluxes": groups[2],
                 "pd_scale": floats[3] if active else None,
                 "pd_eps": floats[2] if active else None,
             }
@@ -1027,7 +1028,11 @@ def parse_fortran_capture(
                         for a, n in (("x", 0), ("y", 2), ("z", 4))
                     },
                     "pd_high_order_fluxes": {
-                        a: axis_rows[a]["face_fluxes"] for a in replay.AXES
+                        a: {
+                            "minus": pd["pd_high_order_fluxes"][n],
+                            "plus": pd["pd_high_order_fluxes"][n + 1],
+                        }
+                        for a, n in (("x", 0), ("y", 2), ("z", 4))
                     },
                 }
             )

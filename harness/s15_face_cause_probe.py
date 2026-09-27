@@ -8,6 +8,8 @@ and captured runtime operands stay outside the repository.
 
 from __future__ import annotations
 
+import ctypes
+import ctypes.util
 import hashlib
 import json
 import math
@@ -59,6 +61,21 @@ ORDINARY_ORDER = ("y", "x", "z")
 PD_ORDER = ("z", "x", "y")
 WORD = re.compile(r"[0-9a-fA-F]{8}\Z")
 
+_LIBM = None
+_FMAF = None
+try:
+    _libm_name = ctypes.util.find_library("m")
+    if not _libm_name:
+        raise OSError("system libm was not found")
+    _LIBM = ctypes.CDLL(_libm_name)
+    _FMAF = _LIBM.fmaf
+    _FMAF.argtypes = [ctypes.c_float, ctypes.c_float, ctypes.c_float]
+    _FMAF.restype = ctypes.c_float
+except (AttributeError, OSError) as exc:
+    _FMAF_ERROR = str(exc)
+else:
+    _FMAF_ERROR = ""
+
 
 def _word(value: Any, label: str) -> str:
     if not isinstance(value, str) or not WORD.fullmatch(value):
@@ -101,6 +118,17 @@ def _div(a: str, b: str) -> str:
     if denominator == 0.0:
         raise ProbeError("binary32 replay division by zero")
     return value_word(word_value(a) / denominator)
+
+
+def _fma32(a: str, b: str, c: str) -> str:
+    """Return one correctly rounded binary32 fused multiply-add word."""
+    if _FMAF is None:
+        raise ProbeError(f"system libm fmaf is unavailable: {_FMAF_ERROR}")
+    return value_word(_FMAF(word_value(a), word_value(b), word_value(c)))
+
+
+def _negate_word(value: str) -> str:
+    return f"{int(_word(value, 'word'), 16) ^ 0x80000000:08X}"
 
 
 def _identity(row: dict[str, Any]) -> tuple[int, ...]:
@@ -294,8 +322,9 @@ def _validate_pd(row: dict[str, Any]) -> None:
         raise ProbeError("PD producer must include all final directional face pairs")
     # Source-pinned module_advect_em.F applies scale only to faces selected by
     # the outflow signs (lines 7764-7775); vertical mass-coordinate signs are
-    # reversed. `pd_high_order_fluxes` is post-limit and must be the same pair
-    # consumed by directional divergence; `pd_unlimited...` is pre-limit.
+    # reversed. A face shared with the adjacent cell may be changed later by
+    # that cell's limiter, so the local S15PD post value is final only when this
+    # cell owns that face's outflow. S15AX carries the later divergence value.
     for axis in AXES:
         original = row["pd_unlimited_high_order_fluxes"][axis]
         limited = row["pd_high_order_fluxes"][axis]
@@ -326,11 +355,11 @@ def _validate_pd(row: dict[str, Any]) -> None:
             )
             if after != expected_face:
                 raise ProbeError(
-                    f"PD {axis}.{side} final high-order face disagrees with limiter sign branch"
+                    f"PD {axis}.{side} local post-limit face disagrees with limiter sign branch"
                 )
-            if final_axis_faces[side] != after:
+            if selected and final_axis_faces[side] != after:
                 raise ProbeError(
-                    f"PD {axis}.{side} divergence face differs from its post-limit value"
+                    f"PD {axis}.{side} target outflow differs from its post-limit value"
                 )
 
 
@@ -382,16 +411,10 @@ def replay_producer(row: dict[str, Any], config: dict[str, Any]) -> dict[str, st
         metric = _word(part.get("metric_factor"), f"axes.{axis}.metric_factor")
         spacing = _word(part.get("inverse_spacing"), f"axes.{axis}.inverse_spacing")
         if should_pd:
-            high = _face_group(
-                row["pd_high_order_fluxes"][axis], f"pd_high_order_fluxes.{axis}"
-            )
+            high = _face_group(faces, f"axes.{axis}.face_fluxes")
             low = _face_group(
                 row["pd_low_order_fluxes"][axis], f"pd_low_order_fluxes.{axis}"
             )
-            if faces != high:
-                raise ProbeError(
-                    f"{axis} final high-order face operands differ from PD face record"
-                )
             # Fortran evaluates `high_plus - high_minus + low_plus - low_minus`
             # left-to-right in the source expression. Preserve each f32
             # rounding point; grouping the two differences changes bit patterns.
@@ -401,13 +424,19 @@ def replay_producer(row: dict[str, Any], config: dict[str, Any]) -> dict[str, st
             )
             scaled = _mul(spacing, dflux)
             delta = _mul(metric, scaled)
+            # The pinned Fortran O2 build contracts the outer metric multiply
+            # with the incoming tendency. Keep the inner spacing product and
+            # the left-associated face expression rounded as source does.
+            next_acc = _fma32(_negate_word(metric), scaled, acc)
         else:
             dflux = _sub(faces["plus"], faces["minus"])
             coefficient = _mul(metric, spacing)
             delta = _mul(coefficient, dflux)
-        # PD retains the source's left-associated high/low face expression;
-        # ordinary advection has one flux difference and a precomputed
-        # directional coefficient.
+            # Ordinary advection stores its directional coefficient, then the
+            # O2 build contracts coefficient*flux with the incoming tendency.
+            next_acc = _fma32(_negate_word(coefficient), dflux, acc)
+        # The directional contribution is retained as a separately rounded
+        # diagnostic; the source tendency prefix follows the contracted store.
         contribution = _sub("00000000", delta)
         if part.get("flux_difference") != dflux:
             raise ProbeError(f"{axis} face difference does not replay in binary32")
@@ -415,7 +444,7 @@ def replay_producer(row: dict[str, Any], config: dict[str, Any]) -> dict[str, st
             raise ProbeError(
                 f"{axis} directional contribution does not replay in binary32"
             )
-        acc = _add(acc, contribution)
+        acc = next_acc
         prefix = _word(part.get("tendency_prefix"), f"axes.{axis}.tendency_prefix")
         if prefix != acc:
             raise ProbeError(f"{axis} source-order tendency prefix does not replay")
@@ -451,9 +480,12 @@ def replay_consumer(row: dict[str, Any]) -> dict[str, str]:
         raise ProbeError(
             "RK consumer tendency does not replay advect_tend*msfty + sc_tend"
         )
-    old_mass = _add(_mul(words["c1"], words["muold"]), words["c2"])
-    new_mass = _add(_mul(words["c1"], words["munew"]), words["c2"])
-    numerator = _add(_mul(old_mass, words["before"]), _mul(words["dt"], tendency))
+    old_mass = _fma32(words["c1"], words["muold"], words["c2"])
+    dt_tendency = _mul(words["dt"], tendency)
+    numerator = _fma32(old_mass, words["before"], dt_tendency)
+    # The pinned O2 build contracts both mass sums and the numerator, while
+    # dt*tendency remains a separately rounded binary32 product.
+    new_mass = _fma32(words["c1"], words["munew"], words["c2"])
     if word_value(new_mass) == 0.0:
         raise ProbeError("RK consumer new mass denominator is zero")
     stored = value_word(word_value(numerator) / word_value(new_mass))
