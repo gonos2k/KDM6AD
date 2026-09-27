@@ -1,0 +1,68 @@
+{
+  "schema": "s10-build-preparation-estimate-v1",
+  "status": "PROPOSAL_ONLY_INCOMPLETE_COMMAND_INPUTS",
+  "build_command_execution_allowed": false,
+  "model_run_components_included": false,
+  "logging_modes": [],
+  "logging_modes_included": [],
+  "variants": {
+    "mp37_B": {
+      "components": {
+        "preprocessed_sources_bytes": 200000,
+        "object_module_bytes": 250000,
+        "linked_executable_bytes": 100966704
+      },
+      "estimated_bytes": 101416704
+    },
+    "mp37_C": {
+      "components": {
+        "preprocessed_sources_bytes": 200000,
+        "object_module_bytes": 250000,
+        "linked_executable_bytes": 100966704
+      },
+      "estimated_bytes": 101416704
+    },
+    "mp237_B": {
+      "components": {
+        "preprocessed_sources_bytes": 200000,
+        "object_module_bytes": 250000,
+        "linked_executable_bytes": 100966704
+      },
+      "estimated_bytes": 101416704
+    },
+    "mp237_C": {
+      "components": {
+        "preprocessed_sources_bytes": 200000,
+        "object_module_bytes": 250000,
+        "linked_executable_bytes": 100966704
+      },
+      "estimated_bytes": 101416704
+    }
+  },
+  "shared_build_staging_components": {
+    "private_kdm6_cmake_build_peak_bytes": 300000000,
+    "private_kdm6_library_install_bytes": 12000000
+  },
+  "shared_build_staging_bytes": 312000000,
+  "total_estimated_bytes": 717666816,
+  "peak_concurrent_bytes": 717666816,
+  "safety_factor": 2,
+  "reserve_free_bytes": 4294967296,
+  "minimum_free_bytes": 2147483648,
+  "required_free_bytes": 5730300928,
+  "provenance": {
+    "preprocessed_sources_bytes": "200000 bytes per arm rounded upward from existing generated target source references (mp37 175513 B; mp237 147169 B); C-arm output is not yet produced.",
+    "object_module_bytes": "250000 bytes per arm rounded upward from existing target object+module references (mp37 203024 B; mp237 204056 B); B/C output is not yet produced.",
+    "linked_executable_bytes": "Two times the measured canonical executable size per arm as a conservative proxy; fresh S10 executables do not exist.",
+    "private_kdm6_cmake_build_peak_bytes": "300000000-byte allowance rounded upward from twice the existing C++ build tree size; the S10 private library target is absent.",
+    "private_kdm6_library_install_bytes": "12000000-byte rounded allowance from the existing install-tree reference size; the S10 private library target is absent."
+  },
+  "missing_link_inputs": {
+    "canonical_standard_objects": null,
+    "private_libkdm6_c_dylib": null,
+    "complete_configure_wrf_library_input_list": null,
+    "complete_link_argv": null
+  },
+  "measurement_boundary": "This proposal contains build-output size references only. It is not a complete upper bound, approval, release, executable identity, or model-run estimate.",
+  "approval_eligible": false
+}
