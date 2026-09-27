@@ -15,6 +15,7 @@
 #include <cstring>
 #include <iostream>
 #include <limits>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -1482,6 +1483,67 @@ void test_c_abi_v2_large_struct_size_ignores_tail() {
     } END_TEST();
 }
 
+// ── S2 dry-specific number selector (append-only v2 field) ─────────────────
+void test_c_abi_v2_dry_number_gate() {
+    TEST(test_c_abi_v2_dry_number_gate) {
+        const int im = 1, kme = 3, jme = 1;
+        FortranBuf th(im,kme,jme,290.0f), qv(im,kme,jme,0.014f);
+        FortranBuf qc(im,kme,jme,0.001f), qr(im,kme,jme,0.0001f);
+        FortranBuf qi(im,kme,jme), qs(im,kme,jme), qg(im,kme,jme);
+        FortranBuf nccn(im,kme,jme,1e9f), nc(im,kme,jme,1e8f);
+        FortranBuf ni(im,kme,jme), nr(im,kme,jme,1e4f), bg(im,kme,jme);
+        FortranBuf rho(im,kme,jme,1.0f), pii(im,kme,jme,0.97f);
+        FortranBuf p(im,kme,jme,9e4f), delz(im,kme,jme,500.0f);
+        auto outputs = [&]() { return std::vector<FortranBuf>(12, FortranBuf(im,kme,jme,-777.0f)); };
+        auto call = [&](std::vector<FortranBuf>& o, kdm6_handle_t** handle,
+                        uint32_t size, int64_t dry, int value_only) {
+            auto a = mk_v2_args(
+                th.ptr(),qv.ptr(),qc.ptr(),qr.ptr(),qi.ptr(),qs.ptr(),qg.ptr(),
+                nccn.ptr(),nc.ptr(),ni.ptr(),nr.ptr(),bg.ptr(),
+                rho.ptr(),pii.ptr(),p.ptr(),delz.ptr(),im,kme,jme,20.0,value_only,
+                o[0].ptr(),o[1].ptr(),o[2].ptr(),o[3].ptr(),o[4].ptr(),o[5].ptr(),
+                o[6].ptr(),o[7].ptr(),o[8].ptr(),o[9].ptr(),o[10].ptr(),o[11].ptr(),handle);
+            a.struct_size = size;
+            a.dry_number = dry;
+            return kdm6_step_v2_c(&a);
+        };
+
+        const uint32_t full = kdm6_step_v2_args_size_c();
+        const uint32_t tail = (uint32_t)offsetof(kdm6_step_v2_args, dry_number);
+        assert(full > tail + sizeof(uint32_t));  // beyond old 4-byte C/Fortran padding
+        auto legacy = outputs();
+        kdm6_handle_t* h = nullptr;
+        assert(call(legacy, &h, full, 0, 1) == KDM6_OK);
+        assert(h == nullptr);
+        for (uint32_t size : {tail, tail + 7u}) {
+            auto old = outputs();
+            assert(call(old, &h, size, 1, 1) == KDM6_OK); // poison is outside size
+            for (int field = 0; field < 12; ++field)
+                assert(std::memcmp(old[field].ptr(), legacy[field].ptr(),
+                                   old[field].size()*sizeof(float)) == 0);
+        }
+
+        auto dry = outputs();
+        assert(call(dry, &h, full, 1, 1) == KDM6_OK);
+        for (const auto& field : dry)
+            for (float value : field.data) assert(std::isfinite(value));
+        assert(std::memcmp(dry[10].ptr(), legacy[10].ptr(),
+                           dry[10].size()*sizeof(float)) != 0); // selector reached physics
+
+        for (auto [selector, value_only, expected] : {
+                 std::tuple<int64_t,int,int>{2,1,KDM6_ERR_INVALID_ARG},
+                 {-1,1,KDM6_ERR_INVALID_ARG},
+                 {1,0,KDM6_ERR_NOT_IMPLEMENTED}}) {
+            auto rejected = outputs();
+            h = reinterpret_cast<kdm6_handle_t*>(0x1);
+            assert(call(rejected, &h, full, selector, value_only) == expected);
+            assert(h == nullptr);
+            for (const auto& field : rejected)
+                for (float value : field.data) assert(value == -777.0f);
+        }
+    } END_TEST();
+}
+
 // ── conservative-interface-v1 freeze-lift: physics_variant selector ─────────
 // (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md). The selector is an
 // append-only v2 tail field with a LEGACY default; every legacy access path
@@ -1885,6 +1947,7 @@ int main() {
     test_c_abi_nonpositive_dt_is_bitwise_identity();
     test_c_abi_v2_precedence();
     test_c_abi_v2_physics_variant_gate();
+    test_c_abi_v2_dry_number_gate();
     test_c_abi_conservative_c2_minimal_gates();
     test_c_abi_v2_small_struct_size_runs_with_defaults();
     test_c_abi_v2_large_struct_size_ignores_tail();

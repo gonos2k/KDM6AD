@@ -198,6 +198,13 @@ typedef struct {
      * kdm6_physics_variant enum ⇒ KDM6_ERR_INVALID_ARG. ── */
     uint32_t     physics_variant;
 
+    /* Independent S2 number-basis selector. Absent/0 keeps the legacy raw
+     * number contract; 1 expects all four host QN fields per kg dry air.
+     * This is int64_t so the v2 struct GROWS beyond the prior 4-byte tail
+     * padding: an old Fortran mirror then fails its c_sizeof layout gate.
+     * Only value_only=1 is supported for selector 1 at this C ABI entry. */
+    int64_t      dry_number;
+
     /* Future fields are APPENDED here only; a smaller struct_size means the
      * caller did not supply them and the library uses their documented
      * NULL/zero default. */

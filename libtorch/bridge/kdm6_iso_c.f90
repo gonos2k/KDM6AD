@@ -60,6 +60,9 @@ module kdm6_iso_c
      ! conservative-interface-v1 selector: 0 = legacy (default), 1 =
      ! conservative interface variant; other values are rejected by the C side.
      integer(c_int32_t) :: physics_variant
+     ! Independent S2 selector (64-bit to grow past the old C tail padding).
+     ! 0 = legacy raw numbers, 1 = host dry-specific QN (value-only here).
+     integer(c_int64_t) :: dry_number
   end type kdm6_step_v2_args_t
 
   public :: kdm6_step, kdm6_step_ad, kdm6_step_ad_variant

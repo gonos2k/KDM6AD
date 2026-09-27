@@ -55,6 +55,7 @@ program test_fortran_normalized_ad
   args%rain_increment=c_null_ptr; args%snow_increment=c_null_ptr
   args%graupel_increment=c_null_ptr; args%rhog_out=c_null_ptr
   args%physics_variant=KDM6_PHYSICS_CONSERVATIVE_INTERFACE
+  args%dry_number=0_c_int64_t
 
   rc = kdm6_step_v2_c(args)
   if (rc /= KDM6_OK .or. .not. c_associated(handle)) then
