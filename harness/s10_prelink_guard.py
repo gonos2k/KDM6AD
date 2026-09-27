@@ -381,6 +381,10 @@ def validate_build_output_estimate(estimate: dict[str, Any]) -> tuple[int, dict[
 _BUILD_PREPARATION_COMPONENTS = (
     "preprocessed_sources_bytes", "object_module_bytes", "linked_executable_bytes",
 )
+_S10_BUILD_COMMON_CPP_DEFINES = (
+    "KDM6_PROGB_VALIDITY_CAPTURE", "KDM6_PROGB_POLICY_MIDPOINT",
+)
+_S10_BUILD_GUARD_CPP_DEFINE = "KDM6_PROGB_ZERO_QG_DIV_GUARD"
 
 
 def validate_build_preparation_estimate(estimate: dict[str, Any]) -> tuple[int, dict[str, int]]:
@@ -484,6 +488,11 @@ def validate_build_preparation_command_plan(plan: dict[str, Any]) -> None:
     arms = templates.get("arms")
     if not isinstance(arms, dict) or set(arms) != {"mp37_B", "mp37_C", "mp237_B", "mp237_C"}:
         raise PrelinkError("build command declarations must enumerate all four arms")
+    common_defines = list(_S10_BUILD_COMMON_CPP_DEFINES)
+    if (plan.get("build_matrix", {}).get("common_required_compile_macros")
+            != common_defines
+            or _S10_BUILD_GUARD_CPP_DEFINE in common_defines):
+        raise PrelinkError("S10 common CPP define set/order is code-fixed and excludes the C guard")
     for key, row in arms.items():
         scheme, arm = key.split("_")
         source_pin = plan["host_source_pins"][scheme]
@@ -492,8 +501,10 @@ def validate_build_preparation_command_plan(plan: dict[str, Any]) -> None:
         expected_guard = arm == "C"
         if (row.get("source_sha256") != expected_source_sha
                 or row.get("guard_macro_defined") is not expected_guard
-                or row.get("common_preprocessor_defines")
-                != plan["build_matrix"]["common_required_compile_macros"]):
+                or row.get("common_preprocessor_defines") != common_defines
+                or (_S10_BUILD_GUARD_CPP_DEFINE in row.get("common_preprocessor_defines", []))
+                or (arm == "B" and row.get("guard_macro") is not None)
+                or (arm == "C" and row.get("guard_macro") != _S10_BUILD_GUARD_CPP_DEFINE)):
             raise PrelinkError(f"build command macro/source pins are inconsistent for {key}")
         expected_paths = {
             "preprocessed_relative_path": source_pin["preprocessed_relative_path"].replace(
@@ -540,7 +551,7 @@ def validate_build_preparation_command_plan(plan: dict[str, Any]) -> None:
                                         or source_path.startswith("/")
                                         or ".." in Path(source_path).parts):
             raise PrelinkError(f"build command source path is unsafe for {key}")
-    expected_guard = "KDM6_PROGB_ZERO_QG_DIV_GUARD"
+    expected_guard = _S10_BUILD_GUARD_CPP_DEFINE
     if (arms["mp37_B"].get("guard_macro_defined") is not False
             or arms["mp237_B"].get("guard_macro_defined") is not False
             or arms["mp37_C"].get("guard_macro") != expected_guard
@@ -583,6 +594,10 @@ def validate_build_preparation_command_plan(plan: dict[str, Any]) -> None:
                 "-I<shadow-host>/inc", "<fixed-configure-wrf-cppflags-tokens>",
                 "-DKDM6_PROGB_VALIDITY_CAPTURE", "-DKDM6_PROGB_POLICY_MIDPOINT",
                 "<C-only-guard-token-if-defined>", "<arm-work>/module.G"]
+            or preprocessing[1].get("fixed_configure_wrf_cppflags_tokens", []).count(
+                f"-D{_S10_BUILD_GUARD_CPP_DEFINE}")
+            or preprocessing[1].get("argv_template", []).count(
+                f"-D{_S10_BUILD_GUARD_CPP_DEFINE}")
             or preprocessing[1].get("stdout_relative_path_template") != "<arm-work>/module.bb"
             or preprocessing[2].get("argv_template") != [
                 "<pinned-standard.exe>", "<arm-work>/module.bb"]
@@ -602,6 +617,9 @@ def validate_build_preparation_command_plan(plan: dict[str, Any]) -> None:
             or object_template.get("generic_make_execution_allowed") is not False
             or object_template.get("common_b_c_tokens") is not True
             or object_template.get("guard_macro_in_object_argv") is not False
+            or any(_S10_BUILD_GUARD_CPP_DEFINE in token
+                   for token in object_template.get("argv", [])
+                   if isinstance(token, str))
             or "-ffp-contract=off" not in object_template.get("argv", [])):
         raise PrelinkError("object command template lacks pinned strict flags or B/C parity")
     argv = object_template["argv"]

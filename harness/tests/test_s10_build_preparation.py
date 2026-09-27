@@ -67,8 +67,13 @@ def test_build_preparation_estimate_rejects_incomplete_or_run_entangled_data(mut
             ("aggregate_ready", "measurement-only with build/run blocked"),
             ("run_allowed", "measurement-only with build/run blocked"),
             ("build_gate_ready", "measurement-only with build/run blocked"),
-            ("measurement_disabled", "measurement-only"),
-            ("estimate_sha_malformed", "measurement-only"),
+        ("measurement_disabled", "measurement-only"),
+        ("estimate_sha_malformed", "measurement-only"),
+        ("common_macro_guard_drift", "common CPP define set/order"),
+        ("guard_macro_in_fixed_cppflags", "preprocessing stages differ"),
+        ("guard_macro_in_cpp_template", "preprocessing stages differ"),
+        ("guard_macro_in_object_argv", "object command template lacks"),
+        ("b_guard_name_present", "macro/source pins"),
         ("make_allowed", "generic Make"),
         ("b_guard_on", "macro/source pins"),
         ("c_guard_off", "macro/source pins"),
@@ -93,6 +98,27 @@ def test_build_preparation_plan_mutations_fail_closed(mutation: str, message: st
         plan["resource_gate"]["build_preparation"]["measurement_only_allowed"] = False
     elif mutation == "estimate_sha_malformed":
         plan["resource_gate"]["build_preparation"]["estimate_sha256"] = "not-a-hash"
+    elif mutation == "common_macro_guard_drift":
+        macros = plan["build_matrix"]["common_required_compile_macros"] + [
+            "KDM6_PROGB_ZERO_QG_DIV_GUARD"]
+        plan["build_matrix"]["common_required_compile_macros"] = macros
+        for arm in commands["arms"].values():
+            arm["common_preprocessor_defines"] = macros
+    elif mutation == "guard_macro_in_fixed_cppflags":
+        commands["preprocessing_command_stages"][1][
+            "fixed_configure_wrf_cppflags_tokens"].append(
+                "-DKDM6_PROGB_ZERO_QG_DIV_GUARD")
+    elif mutation == "guard_macro_in_cpp_template":
+        commands["preprocessing_command_stages"][1]["argv_template"].insert(
+            -1, "-DKDM6_PROGB_ZERO_QG_DIV_GUARD")
+    elif mutation == "guard_macro_in_object_argv":
+        template = commands["object_command_template"]
+        template["guard_macro_in_object_argv"] = True
+        template["argv"].insert(-1, "-DKDM6_PROGB_ZERO_QG_DIV_GUARD")
+        for arm in commands["arms"].values():
+            arm["object_command_argv"].insert(-1, "-DKDM6_PROGB_ZERO_QG_DIV_GUARD")
+    elif mutation == "b_guard_name_present":
+        commands["arms"]["mp37_B"]["guard_macro"] = "KDM6_PROGB_ZERO_QG_DIV_GUARD"
     elif mutation == "make_allowed":
         commands["generic_make_execution_allowed"] = True
     elif mutation == "b_guard_on":
