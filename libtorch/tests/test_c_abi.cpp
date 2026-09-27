@@ -837,7 +837,7 @@ void test_c_abi_step_ad_dry_number() {
             assert(std::abs(jvp[i]-fd) <= 1e-4 * std::max(1.0,std::abs(jvp[i])));
         }
 
-        for (int64_t invalid : {-1LL, 2LL, INT64_MAX}) {
+        for (int64_t invalid : {int64_t{-1}, int64_t{2}, int64_t{INT64_MAX}}) {
             std::vector<double> untouched(N, -777.0);
             handle = reinterpret_cast<kdm6_handle_t*>(0x1);
             assert(call(state, untouched, &handle, 0, KDM6_PHYSICS_LEGACY,
