@@ -1,0 +1,204 @@
+{
+  "schema": "s10-resource-capacity-command-gap-v1",
+  "title": "S10 four-arm/eight-run capacity and command-gap proposal",
+  "measured_at_utc": "2026-09-26T21:42:02Z",
+  "base_main_commit": "d737e5a4a395cf49a3eb689e65becb98675cbce6",
+  "prelink_plan_sha256": "6bfaee343979a4b6995496053523a86e57f3423978cba34eafeda45164f99a82",
+  "attempt3_configure_only_result_sha256": "fadf57ed6924a90d2eaa09c1a99fc870d396a8ac49a80a91a032ecfcfffece35",
+  "status": {
+    "s10": "OPEN",
+    "resource_gate": "BLOCKED_PENDING_ESTIMATE_AND_REVIEW",
+    "full_matrix_build_or_link_allowed": false,
+    "estimate_is_approval_ready": false,
+    "preprocess_build_link_or_model_run_executed": false,
+    "evidence_deleted_or_modified": false
+  },
+  "filesystem_measurement": {
+    "filesystem_available_kib": 15206980,
+    "filesystem_available_bytes": 15571947520,
+    "filesystem_available_gib": 14.502506256103516,
+    "reported_use_percent": 100,
+    "filesystem_identity": "the current local scratch filesystem; mount path redacted"
+  },
+  "selected_case_tree": {
+    "regular_file_count": 103,
+    "logical_bytes": 693130416,
+    "du_allocated_kib": 677116,
+    "du_allocated_bytes": 693366784,
+    "plan_active_inputs_and_namelist_file_count": 4,
+    "plan_active_inputs_and_namelist_logical_bytes": 481816226,
+    "additional_auxiliary_tree_logical_bytes": 211314190,
+    "measurement_scope": "entire selected SS tree staged in the attempt-three shadow; includes auxiliary tables and support files",
+    "copy_semantics": "run_ss_case.py operates in the selected SS tree in place; active input binaries are not copied per run",
+    "already_present_before_free_space_measurement": true
+  },
+  "retained_s15_20_second_run_reference": {
+    "run_count_measured": 3,
+    "files_per_run": 16,
+    "evidence_paths_redacted": true,
+    "runs": [
+      {
+        "role": "control_reference",
+        "logical_bytes": 638081176,
+        "allocated_bytes": 638132224,
+        "model_output_payload_bytes": 637977800,
+        "log_bytes": 93087,
+        "metadata_bytes": 10289
+      },
+      {
+        "role": "discovery_reference",
+        "logical_bytes": 638466117,
+        "allocated_bytes": 638517248,
+        "model_output_payload_bytes": 637977800,
+        "log_bytes": 478026,
+        "metadata_bytes": 10291
+      },
+      {
+        "role": "capture_reference",
+        "logical_bytes": 638466131,
+        "allocated_bytes": 638517248,
+        "model_output_payload_bytes": 637977800,
+        "log_bytes": 478042,
+        "metadata_bytes": 10289
+      }
+    ],
+    "limits": "These are measured S15 references, not S10 output evidence or a finite upper bound for S10 capture logs."
+  },
+  "existing_build_artifacts": {
+    "canonical_read_only_wrf_executable_bytes": 50483352,
+    "canonical_read_only_wrf_executable_sha256": "676223e8d61d23456d4ac83713bff0283ea08b1e71776b7f8885b062d97f801b",
+    "canonical_read_only_libwrflib_archive_bytes": 59152032,
+    "canonical_read_only_libwrflib_archive_sha256": "722f83c058ea1c43d5f23cc497aed1b218f33f90828a0e1dc51c6fe30203deba",
+    "canonical_main_object_count": 9,
+    "canonical_main_object_bytes": 1365894,
+    "canonical_phys_object_and_module_count": 641,
+    "canonical_phys_object_and_module_bytes": 24267465,
+    "attempt3_shadow_build_clean_root_present": false,
+    "attempt3_shadow_wrf_executable_present": false,
+    "attempt3_shadow_libwrflib_archive_present": false,
+    "attempt3_shadow_kdm6_target_object_or_module_present": false,
+    "attempt3_local_kdm6_c_dylib_present": false
+  },
+  "component_estimate_proposal": {
+    "schema": "s10-build-output-estimate-v1 component names; proposal only",
+    "logging_modes": ["off", "on"],
+    "variants": ["mp37_B", "mp37_C", "mp237_B", "mp237_C"],
+    "components_across_all_four_variants": {
+      "preprocessed_sources_bytes": 800000,
+      "object_module_bytes": 1000000,
+      "linked_executable_bytes": 403866816,
+      "temporary_build_peak_bytes": 300000000,
+      "logging_off_input_copy_bytes": 0,
+      "logging_off_run_staging_bytes": 0,
+      "logging_off_run_output_bytes": 2551911200,
+      "logging_off_log_bytes": 372348,
+      "logging_on_input_copy_bytes": 0,
+      "logging_on_run_staging_bytes": 637977800,
+      "logging_on_run_output_bytes": 2551911200,
+      "logging_on_log_bytes": 1912168
+    },
+    "shared_staging_components": {
+      "selected_case_tree_copy_bytes": 693366784,
+      "shared_run_support_bytes": 82328
+    },
+    "provenance": {
+      "preprocessed_sources_bytes": "Rounded to 200000 bytes per arm from observed generated target source sizes of 175513 bytes (mp37) and 147169 bytes (mp237), each duplicated across B/C.",
+      "object_module_bytes": "Rounded to 250000 bytes per arm from observed target object+module pairs of 203024 bytes (mp37) and 204056 bytes (mp237).",
+      "linked_executable_bytes": "Two times the measured canonical WRF executable size per arm, four arms total.",
+      "temporary_build_peak_bytes": "300000000-byte planning allowance; twice the measured canonical libtorch build-tree size (127167824 bytes) rounded upward for intermediate build files. This is not an observed S10 build peak.",
+      "input_copy_bytes": "Zero per-run copies, based on run_ss_case.py reading the three active inputs from the shared SS tree in place.",
+      "run_staging_bytes": "One measured maximum model-output payload during the final logging-on run while run_ss_case.py archives it with copy2.",
+      "run_output_bytes": "Four copies per logging mode of the largest measured 20-second S15 model-output payload (637977800 bytes/run).",
+      "logging_off_log_bytes": "Four times the measured 93087-byte S15 control-run logs.",
+      "logging_on_log_bytes": "Four times the largest measured 478042-byte S15 capture-run logs; S10 event logging has no established maximum, so this is only a proxy and not an upper bound.",
+      "shared_staging_components": "The entire measured attempt-three SS tree plus eight times the largest measured per-run metadata bundle. The SS tree is already staged and is included in current free-space measurement."
+    },
+    "estimated_total_bytes_including_existing_case_tree": 7143200644,
+    "estimated_total_gib_including_existing_case_tree": 6.652624014765024,
+    "estimated_future_incremental_bytes_excluding_already_staged_case_tree": 6449833860,
+    "estimated_future_incremental_gib_excluding_already_staged_case_tree": 6.007214697450399,
+    "estimator_contract_nuance": {
+      "current_guard_requires_selected_case_tree_copy_bytes_positive": true,
+      "current_case_tree_clone_already_allocated_before_free_space_measurement": true,
+      "literal_schema_total_double_counts_existing_clone_against_current_free": true,
+      "incremental_comparison_shown_for_analysis_only": true,
+      "do_not_set_case_copy_component_to_zero_or_relax_safety_factor": true,
+      "required_resolution": "A reviewed estimator-contract change must distinguish already-present, hash-bound staged case bytes from future incremental allocations before capacity approval."
+    },
+    "capacity_calculation": {
+      "safety_factor": 2,
+      "proposed_reserve_free_bytes": 4294967296,
+      "proposed_reserve_free_gib": 4,
+      "required_free_bytes_using_total": 18581368584,
+      "required_free_gib_using_total": 17.30524802953005,
+      "shortfall_bytes_using_total": 3009421064,
+      "shortfall_gib_using_total": 2.8027417734265327,
+      "required_free_bytes_using_future_incremental": 17194635016,
+      "required_free_gib_using_future_incremental": 16.01375175267458,
+      "shortfall_bytes_using_future_incremental": 1622687496,
+      "shortfall_gib_using_future_incremental": 1.511245496571064,
+      "observed_free_bytes": 15571947520,
+      "observed_free_gib": 14.502506256103516
+    },
+    "approval_readiness": {
+      "finite_s10_logging_on_upper_bound": false,
+      "build_command_templates_reviewed": false,
+      "retention_strategy_approved": false,
+      "capacity_sufficient_for_current_known_incremental_estimate": false,
+      "final_estimate_valid_for_resource_gate": false,
+      "resource_gate_must_remain_blocked": true
+    }
+  },
+  "lossless_compression_diagnostic": {
+    "operation": "stream-only tar to zstd level 1 to byte counter; no archive file created",
+    "sample_scope": "one retained 20-second S15 capture-reference run directory",
+    "uncompressed_tar_bytes": 638484480,
+    "zstd_bytes": 212383579,
+    "ratio": 0.33263702666664663,
+    "reduction_percent": 66.73629733333534,
+    "hypothetical_eight_run_archive_bytes_at_same_ratio": 1699068632,
+    "hypothetical_eight_run_archive_gib": 1.582380972802639,
+    "diagnostic_only": true,
+    "s10_log_growth_bound": false,
+    "restore_and_reverify_workflow_approved": false,
+    "source_evidence_modified": false
+  },
+  "duplicate_inventory": {
+    "scope": "output/log files in one retained S15 case tree compared by SHA-256 with its archived run directories",
+    "root_files_identical_to_archived_files": 6,
+    "potential_duplicate_allocated_bytes": 638472192,
+    "potential_reclamation_status": "owner review required; no files removed",
+    "distinct_archived_run_directories_preserved": true
+  },
+  "read_only_make_dry_run_inventory": {
+    "source": "successful attempt-three configure.wrf plus current shadow Makefiles; paths redacted",
+    "mode": "make -n command enumeration only",
+    "recipes_executed": false,
+    "preprocess_template": [
+      "sed comment cleanup: <module>.F -> <module>.G",
+      "cpp -P -nostdinc -xassembler-with-cpp -I<WRF_SRC_ROOT_DIR>/inc <CPPFLAGS> <OMPCPP> <module>.G > <module>.bb",
+      "<tools/standard.exe> <module>.bb | cpp -P -nostdinc -xassembler-with-cpp -traditional-cpp -DUSE_NETCDF4_FEATURES -DWRFIO_NCD_LARGE_FILE_SUPPORT > <module>.f90"
+    ],
+    "target_object_template": "time mpif90 -o <module>.o -c -O2 -ftree-vectorize -funroll-loops -w -ffree-form -ffree-line-length-none -fconvert=big-endian -frecord-marker=4 -fallow-argument-mismatch -fallow-invalid-boz -ffp-contract=off <OMP/MODULE_DIRS/PROMOTION/FCSUFFIX> <module>.f90",
+    "target_sources": {
+      "mp37": "module_mp_kdm6.F",
+      "mp237": "module_mp_kdm6_cons.F"
+    },
+    "default_link_template": "time mpif90 -o wrf.exe $(LDFLAGS) wrf.o wrf_kdm6ad_exit.o ../main/module_wrf_top.o libwrflib.a $(CMAQLIB) $(LIB)",
+    "mismatches_that_block_normalized_argv_review": [
+      "Default link output is relative main/wrf.exe, not the arm-specific S10/build-clean executable path.",
+      "Default LIBWRFLIB resolves to a shadow-local relative libwrflib.a, not the exact canonical archive path and SHA required by the plan.",
+      "Required standard link objects are absent from the fresh shadow.",
+      "Default preprocessor/compile flags do not include KDM6_PROGB_VALIDITY_CAPTURE or KDM6_PROGB_POLICY_MIDPOINT, and do not express the B-absent/C-present ZERO_QG_DIV_GUARD one-factor delta.",
+      "Default LDFLAGS omit the plan-required -ffp-contract=off.",
+      "The local KDM6 C library is absent; make -n exposes a CMake build/install prerequisite that must be included in a reviewed resource/command plan."
+    ],
+    "normalized_argv_and_output_plan_reviewed": false
+  },
+  "safe_next_step_options": [
+    "Measure a separate volume and place the disposable build/run workspace there under a revised reviewed path-bound plan, preserving the current S15/S10 evidence.",
+    "Alternatively propose lossless per-run archives with a per-file size/SHA manifest and a tested exact restore-and-reverify path; revise the runner/plan and review it before any retention change.",
+    "Sequential execution reduces transient duplicate output peaks but does not reduce the total eight-run retained output requirement.",
+    "Do not reclaim the exact duplicate working-tree files or alter any archived run directory without a separate evidence-owner review."
+  ]
+}
