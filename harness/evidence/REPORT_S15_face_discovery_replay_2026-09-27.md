@@ -49,6 +49,19 @@ The link map places the three fresh dyn_em objects and the pinned reused
 `module_mp_kdm6.o` before the unchanged S8 archive; no stale copies of those
 four modules are selected.
 
-No same-executable logging-off control or confirmation run was made, so
-instrumentation noninterference is unmeasured. S15 remains OPEN; the trace-
-graupel policy remains OPEN.
+## Same-executable logging-off control
+
+One capture-off run used the same executable, active input identity, 40-second
+settings, 1x1 grid, and thread limits. It emitted no `S15AX`, `S15PD`, or
+`S15RK` records. `strict_bitwise_nc.py` compared frames 0, 1, and 2; each frame
+had 254 common variables (253 numeric variables plus `Times`), all raw-bit
+equal, with zero differences and zero skipped variables. The capture and
+control forecast files are both 953,745,068 bytes with SHA-256
+`49bbda101a367d5eeb9c460e21c2304767311d274dddecb17a4ec39fe14f1d04`.
+
+The first comparator invocation used `/usr/bin/python3`, which lacked
+`netCDF4` and performed no comparison; its failure output is preserved. The
+second invocation used `/opt/local/bin/python3` and passed all three frames.
+This is forecast-output noninterference evidence for one run pair. Auxiliary
+outputs were not compared, no confirmation run was made, and S15 plus the
+trace-graupel policy remain OPEN.

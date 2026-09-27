@@ -90,9 +90,11 @@ positive-definite dispatch and `sc_tend` retained apart from `advect_tend`.
 The source-order replay accounts for the configured compiler's binary32 fused
 prefix update and RK old-mass, numerator, and denominator operations; all six
 selected stores replay from the captured operands. At these cells `sc_tend` is
-zero and advection yields the negative store. The run has no same-executable
-logging-off control or confirmation, so capture noninterference and broader
-cause attribution remain open. See
+zero and advection yields the negative store. A same-executable logging-off
+control is bitwise-equal on 253 numeric forecast variables plus `Times` at
+00:00:00/20/40, with no face/RK records. This is one forecast-only run pair;
+auxiliary outputs and a confirmation repeat remain untested. Broader cause
+attribution remains open. See
 [[kdm6ad-s15-upstream-attribution-plan-2026-09-27]] and the
 [provisional discovery replay report](../../harness/evidence/REPORT_S15_face_discovery_replay_2026-09-27.md).
 S15 and the trace-graupel policy remain OPEN.

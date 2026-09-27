@@ -146,6 +146,9 @@ post-link discovery and its limits are recorded in the
 `sc_tend` remains a separate consumer operand; it was zero at the six selected
 cells in that run.
 
-The provisional run has no same-executable logging-off control or confirmation.
-Capture noninterference is unmeasured, so the six arithmetic joins do not close
-S15 or support a global physical-cause or graupel-policy claim.
+A same-executable logging-off control is now bitwise-identical to the capture
+run for all 253 populated numeric forecast variables and `Times` at 0/20/40
+seconds; the control emitted no face/RK records. This is one forecast-only
+run pair. Auxiliary outputs were not compared and there was no confirmation
+repeat, so it does not close S15 or support a global physical-cause or
+graupel-policy claim.
