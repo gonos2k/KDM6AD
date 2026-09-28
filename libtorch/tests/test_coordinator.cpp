@@ -932,6 +932,52 @@ void test_s10_midpoint_trace_mixed_one_step() {
     } END_TEST();
 }
 
+void test_s10_midpoint_trace_selected_direction_against_fd() {
+    TEST(test_s10_midpoint_trace_selected_direction_against_fd) {
+        const int B = 1, K = 3;
+        auto opts = f64();
+        auto grad_opts = f64().requires_grad(true);
+        auto s = make_zero_state(B, K);
+        auto p = default_coordinator_params();
+        p.midpoint_trace = true;
+        auto qg = torch::tensor({{0.5 * p.progb.qcrmin, 5.0e-5, 0.0}}, grad_opts);
+        s.qg = qg;
+        s.nccn = torch::zeros({B, K}, opts);
+        s.brs = torch::tensor({{0.0, 1.0e-7, 0.0}}, opts);
+        s.t = torch::full({B, K}, 263.15, opts);
+        CoordinatorForcing f{
+            torch::full({B, K}, 8.0e4, opts), torch::full({B, K}, 1.1, opts),
+            torch::full({B, K}, 500.0, opts), torch::full({B, K}, 1.1, opts),
+        };
+        auto aux = make_test_aux(B, K);
+        auto sea = torch::zeros({B, K}, torch::dtype(torch::kBool));
+        auto wp = default_warm_phase_params();
+        auto cp = default_cold_phase_params();
+        auto mp = default_melt_freeze_phase_params();
+        auto eval = [&](const torch::Tensor& x) {
+            auto state = s;
+            state.qg = x;
+            return kdm62d_one_step(state, f, aux, sea, p, wp, cp, mp, 1.0e-6);
+        };
+
+        auto center = eval(qg);
+        auto y = center.brs[0][0];
+        auto dy_dqg = torch::autograd::grad({y}, {qg})[0];
+        auto direction = torch::tensor({{1.0e-12, 0.0, 0.0}}, opts);
+        constexpr double eps = 1.0e-3;
+        auto plus = eval(qg.detach() + eps * direction);
+        auto minus = eval(qg.detach() - eps * direction);
+        auto adjoint_direction = (dy_dqg * direction).sum().item<double>();
+        auto fd = ((plus.brs[0][0] - minus.brs[0][0]) / (2.0 * eps)).item<double>();
+        assert(qg[0][0].item<double>() - eps * direction[0][0].item<double>() > 0.0);
+        assert(qg[0][0].item<double>() + eps * direction[0][0].item<double>() < p.progb.qcrmin);
+        assert(torch::isfinite(center.brs).all().item<bool>());
+        assert(std::abs(y.item<double>() - 1.2499999643046253e-12) < 1.0e-22);
+        assert(std::abs(adjoint_direction - 2.5e-15) < 1.0e-23);
+        assert(std::abs(adjoint_direction - fd) <= 1.0e-6 * std::abs(fd) + 1.0e-22);
+    } END_TEST();
+}
+
 void test_kdm62d_one_step_grad_propagates() {
     TEST(test_kdm62d_one_step_grad_propagates) {
         // qv/qc/t leaf → new_state.qv backward → grad finite.
@@ -1688,6 +1734,7 @@ int main() {
     test_preamble_grad_propagates();
     test_kdm62d_one_step_runs_finite_warm();
     test_s10_midpoint_trace_mixed_one_step();
+    test_s10_midpoint_trace_selected_direction_against_fd();
     test_kdm62d_one_step_grad_propagates();
     test_compute_loops_max_basic();
     test_kdm62d_step_matches_one_step_when_delt_le_dtcldcr();
