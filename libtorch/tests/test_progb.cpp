@@ -240,6 +240,73 @@ void test_progb_bg_consistency_after_update() {
     } END_TEST();
 }
 
+void test_progb_midpoint_trace_optin() {
+    TEST(test_progb_midpoint_trace_optin) {
+        auto p = default_progb_params();
+        auto opts = torch::TensorOptions().dtype(torch::kFloat64).requires_grad(true);
+        auto qg = torch::tensor({{2.0e-10, 0.0, 3.0e-4}}, opts);
+        auto bg = torch::tensor({{0.0, 0.0, 1.0e-6}}, torch::kFloat64);
+        auto baseline = progb_param_torch(qg, bg, p);
+        auto out = progb_param_torch(qg, bg, p, c10::nullopt, /*midpoint_trace=*/true);
+
+        assert(baseline.bg[0][0].item<double>() == 0.0);
+        assert(out.rhox[0][0].item<double>() == RHO_MID);
+        assert(out.bg[0][0].item<double>() == qg[0][0].item<double>() / RHO_MID);
+        assert(out.cmg[0][0].item<double>() > 0.0);
+        assert(std::abs(out.avtg[0][0].item<double>() - AVTG_NODES[3]) < 1e-12);
+        assert(out.rhox[0][1].item<double>() == 0.0);
+        assert(out.bg[0][1].item<double>() == 0.0);
+        assert(out.cmg[0][1].item<double>() == 0.0);
+        assert(out.avtg[0][1].item<double>() == 0.0);
+        assert(out.rhox[0][2].item<double>() == baseline.rhox[0][2].item<double>());
+        assert(out.bg[0][2].item<double>() == baseline.bg[0][2].item<double>());
+
+        out.bg[0][0].backward();
+        assert(std::abs(qg.grad()[0][0].item<double>() - 1.0 / RHO_MID) < 1e-15);
+        assert(torch::isfinite(qg.grad()).all().item<bool>());
+
+        auto empty = torch::zeros({1, 1}, opts);
+        auto empty_out = progb_param_torch(empty, torch::zeros_like(empty), p,
+                                           c10::nullopt, /*midpoint_trace=*/true);
+        auto empty_loss = torch::zeros({}, torch::kFloat64);
+        for (const auto& value : output_tensors(empty_out)) empty_loss = empty_loss + value.sum();
+        empty_loss.backward();
+        assert(torch::isfinite(empty.grad()).all().item<bool>());
+
+        auto f32_opts = torch::TensorOptions().dtype(torch::kFloat32).requires_grad(true);
+        auto qg_f32 = torch::tensor({{1.0e-10f, 0.0f}}, f32_opts);
+        auto f32_out = progb_param_torch(qg_f32, torch::zeros_like(qg_f32), p,
+                                         torch::kFloat32, /*midpoint_trace=*/true);
+        assert(f32_out.rhox[0][0].item<float>() == 400.0f);
+        assert(f32_out.bg[0][0].item<float>() == qg_f32[0][0].item<float>() / 400.0f);
+        assert(f32_out.cmg[0][0].item<float>() > 0.0f);
+        assert(f32_out.avtg[0][0].item<float>() == static_cast<float>(AVTG_NODES[3]));
+        for (const auto& value : output_tensors(f32_out)) {
+            assert(value[0][1].item<float>() == 0.0f);
+        }
+        auto f32_loss = torch::zeros({}, torch::kFloat32);
+        for (const auto& value : output_tensors(f32_out)) f32_loss = f32_loss + value.sum();
+        f32_loss.backward();
+        assert(torch::isfinite(qg_f32.grad()).all().item<bool>());
+
+        for (auto dtype : {torch::kFloat32, torch::kFloat64}) {
+            auto nan_opts = torch::TensorOptions().dtype(dtype).requires_grad(true);
+            auto trace_qg = torch::tensor({{0.5 * p.qcrmin, 0.0}}, nan_opts);
+            auto nan_bg = torch::full({1, 2}, NAN, nan_opts);
+            auto cleaned = progb_param_torch(trace_qg, nan_bg, p, dtype,
+                                             /*midpoint_trace=*/true);
+            auto loss = torch::zeros({}, torch::TensorOptions().dtype(dtype));
+            for (const auto& value : output_tensors(cleaned)) {
+                assert(torch::isfinite(value).all().item<bool>());
+                loss = loss + value.sum();
+            }
+            loss.backward();
+            assert(torch::isfinite(trace_qg.grad()).all().item<bool>());
+            assert(torch::isfinite(nan_bg.grad()).all().item<bool>());
+        }
+    } END_TEST();
+}
+
 // review7#5 parallel regression: anchor the tensor rgmma against Γ-truth.
 // Mirrors Python `test_progb_rgmma_tensor_returns_gamma`. If the C++ rgmma sign
 // ever drifts back to 1/Γ, this test fails immediately.
@@ -267,6 +334,7 @@ int main() {
     test_progb_grad_finite_inactive_cells();
     test_progb_f32_zero_denominator_backward();
     test_progb_bg_consistency_after_update();
+    test_progb_midpoint_trace_optin();
     test_progb_rgmma_tensor_returns_gamma();
     std::cout << "All progb tests passed.\n";
     return 0;

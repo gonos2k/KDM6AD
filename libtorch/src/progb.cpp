@@ -75,7 +75,8 @@ ProgBOutputs progb_param_torch(
     const torch::Tensor& qg,
     const torch::Tensor& bg,
     const ProgBParams& params,
-    c10::optional<c10::ScalarType> op_dtype
+    c10::optional<c10::ScalarType> op_dtype,
+    bool midpoint_trace
 ) {
     TORCH_CHECK(qg.sizes() == bg.sizes(),
                 "qg shape ", qg.sizes(), " != bg shape ", bg.sizes());
@@ -88,6 +89,11 @@ ProgBOutputs progb_param_torch(
     // ── 외부 게이트 ──────────────────────────────────────────────────────
     auto active = torch::logical_or(qg > params.qcrmin, bg > BRS_MIN);
     auto zero = torch::zeros_like(qg);
+    // Opt-in native B policy: a positive trace graupel mass gets fresh
+    // midpoint outputs and volume; an empty cell gets a zero output bundle.
+    auto trace = midpoint_trace ? torch::logical_and(torch::logical_not(active), qg > 0)
+                                : torch::zeros_like(active);
+    auto produced = midpoint_trace ? torch::logical_or(active, trace) : active;
 
     // ── rhox 진단 + clamp ───────────────────────────────────────────────
     // DTYPE-CONDITIONAL (the brs AD-limit fix): compute rhox/bg in op_dtype. On the OP path
@@ -108,7 +114,11 @@ ProgBOutputs progb_param_torch(
     // A zero bg has a clamped endpoint in the f32 forward map. Avoid Inf in
     // its backward graph, then restore that endpoint (including signed zero).
     auto zero_den = bg_den == 0;
-    auto rhox_op = qg_op / torch::where(zero_den, torch::ones_like(bg_den), bg_den);
+    auto density_divisor = torch::where(zero_den, torch::ones_like(bg_den), bg_den);
+    if (midpoint_trace) {
+        density_divisor = torch::where(active, density_divisor, torch::ones_like(bg_den));
+    }
+    auto rhox_op = qg_op / density_divisor;
     auto rhox_c = op_f32
         ? torch::fmin(torch::full_like(rhox_op, RHO_MAX),
                       torch::fmax(torch::full_like(rhox_op, RHO_MIN), rhox_op))
@@ -119,12 +129,18 @@ ProgBOutputs progb_param_torch(
         rhox_c = torch::where(torch::logical_and(active, zero_den), zero_endpoint, rhox_c);
     }
     auto bg_new_op = qg_op / rhox_c;
-    auto rhox = torch::where(active, rhox_c.to(qg.scalar_type()), scalar_like(RHO_MID, qg));
-    auto bg_new = torch::where(active, bg_new_op.to(qg.scalar_type()), bg);
+    auto rhox = midpoint_trace
+        ? torch::where(active, rhox_c.to(qg.scalar_type()),
+                       torch::where(trace, scalar_like(RHO_MID, qg), zero))
+        : torch::where(active, rhox_c.to(qg.scalar_type()), scalar_like(RHO_MID, qg));
+    auto bg_new = midpoint_trace
+        ? torch::where(active, bg_new_op.to(qg.scalar_type()),
+                       torch::where(trace, qg / scalar_like(RHO_MID, qg), zero))
+        : torch::where(active, bg_new_op.to(qg.scalar_type()), bg);
 
     // ── cmg, pidn0g ─────────────────────────────────────────────────────
     auto cmg_raw = PI * rhox / 6.0;
-    auto cmg = torch::where(active, cmg_raw, zero);
+    auto cmg = torch::where(produced, cmg_raw, zero);
     auto pidn0g = cmg * params.n0g * params.g1pdgmg / params.g1pmg;
 
     // ── 9-point linear interpolation: rhox → (avtg, bvtg) ──────────────
@@ -163,8 +179,8 @@ ProgBOutputs progb_param_torch(
     avtg_raw = torch::where(rhox == Tbl[last], aTbl[last], avtg_raw);
     bvtg_raw = torch::where(rhox == Tbl[last], bTbl[last], bvtg_raw);
 
-    auto avtg = torch::where(active, avtg_raw, zero);
-    auto bvtg = torch::where(active, bvtg_raw, zero);
+    auto avtg = torch::where(produced, avtg_raw, zero);
+    auto bvtg = torch::where(produced, bvtg_raw, zero);
 
     // ── derived sums ────────────────────────────────────────────────────
     auto bvtg1 = 1.0 + bvtg;
@@ -187,30 +203,30 @@ ProgBOutputs progb_param_torch(
     // (libm pow). Base rslopegmax = 1/LAMDAGMAX > 0, so the EPS clamp is harmless (no value change).
     auto rslopegmax_t = scalar_like(params.rslopegmax, qg);
     auto rslopegbmax_raw = ops::safe_pow(rslopegmax_t, bvtg);
-    auto rslopegbmax = torch::where(active, rslopegbmax_raw, zero);
+    auto rslopegbmax = torch::where(produced, rslopegbmax_raw, zero);
 
     // pvtg, precg2 ─ sqrt(0)의 backward는 inf → EPS clamp + mask zero
     auto pvtg_raw = avtg * g1pdgbgmg / params.g1pdgmg;
-    auto pvtg = torch::where(active, pvtg_raw, zero);
+    auto pvtg = torch::where(produced, pvtg_raw, zero);
 
     // (A) transcendental: Fortran F:3400 `4.*.31*avtg**.5*g5pbgo2`. `avtg**.5` compiles to libm
     // pow(avtg,0.5); route through ops::safe_pow (libm pow, base already EPS-clamped) instead of
     // torch::sqrt (Sleef) for gfortran bit-match. Pure multiply chain, each op individually
     // rounded (nothing is fused under -ffp-contract=off).
     auto precg2_raw = 4.0 * 0.31 * ops::safe_pow(avtg, 0.5) * g5pbgo2;
-    auto precg2 = torch::where(active, precg2_raw, zero);
+    auto precg2 = torch::where(produced, precg2_raw, zero);
 
     // 비활성 셀의 derived 출력은 zero로 mask (downstream graupel mask와 일관)
-    g1pbg     = torch::where(active, g1pbg,     zero);
-    g3pbg     = torch::where(active, g3pbg,     zero);
-    g4pbg     = torch::where(active, g4pbg,     zero);
-    g5pbgo2   = torch::where(active, g5pbgo2,   zero);
-    g1pdgbgmg = torch::where(active, g1pdgbgmg, zero);
-    bvtg1     = torch::where(active, bvtg1,     zero);
-    bvtg2     = torch::where(active, bvtg2,     zero);
-    bvtg3     = torch::where(active, bvtg3,     zero);
-    bvtg4     = torch::where(active, bvtg4,     zero);
-    dgbgmug1  = torch::where(active, dgbgmug1,  zero);
+    g1pbg     = torch::where(produced, g1pbg,     zero);
+    g3pbg     = torch::where(produced, g3pbg,     zero);
+    g4pbg     = torch::where(produced, g4pbg,     zero);
+    g5pbgo2   = torch::where(produced, g5pbgo2,   zero);
+    g1pdgbgmg = torch::where(produced, g1pdgbgmg, zero);
+    bvtg1     = torch::where(produced, bvtg1,     zero);
+    bvtg2     = torch::where(produced, bvtg2,     zero);
+    bvtg3     = torch::where(produced, bvtg3,     zero);
+    bvtg4     = torch::where(produced, bvtg4,     zero);
+    dgbgmug1  = torch::where(produced, dgbgmug1,  zero);
 
     return ProgBOutputs{
         /*rhox=*/rhox, /*bg=*/bg_new, /*cmg=*/cmg, /*pidn0g=*/pidn0g,

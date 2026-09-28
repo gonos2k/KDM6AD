@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import math
 
+import pytest
 import torch
 
 from kdm6.progb import (
@@ -96,6 +97,100 @@ def test_progb_inactive_branches_to_zero():
     # bg는 입력 보존 (Fortran: INTENT(INOUT) 미갱신).
     assert torch.allclose(out.rhox, torch.full_like(qg, RHO_MID))
     assert torch.allclose(out.bg, bg)
+
+
+def test_progb_midpoint_trace_positive_bundle_and_branch_derivative():
+    """Opt-in positive inactive trace uses the midpoint bundle and local AD branch."""
+    params = default_progb_params()
+    qg = torch.tensor([[0.5 * params.qcrmin]], dtype=torch.float64, requires_grad=True)
+    bg = torch.zeros_like(qg)
+
+    out = progb_param_torch(qg, bg, params=params, midpoint_trace=True)
+
+    assert out.rhox.item() == RHO_MID
+    assert out.bg.item() == qg.item() / RHO_MID
+    assert out.cmg.item() == math.pi * RHO_MID / 6.0
+    assert out.avtg.item() == AVTG_TABLE[3]
+    assert out.bvtg.item() == BVTG_TABLE[3]
+    assert out.pidn0g.item() > 0.0
+    assert out.precg2.item() > 0.0
+
+    dqg = torch.autograd.grad(out.bg.sum(), qg, retain_graph=True)[0]
+    drhox = torch.autograd.grad(out.rhox.sum(), qg)[0]
+    assert dqg.item() == 1.0 / RHO_MID
+    assert drhox.item() == 0.0
+
+
+def test_progb_midpoint_trace_empty_clears_bundle_without_hidden_zero_division():
+    """Opt-in inactive nonpositive qg returns an all-zero bundle and finite backward."""
+    params = default_progb_params()
+    qg = torch.tensor([[0.0, -1.0e-16]], dtype=torch.float64, requires_grad=True)
+    bg = torch.zeros_like(qg)
+
+    out = progb_param_torch(qg, bg, params=params, midpoint_trace=True)
+
+    for value in out:
+        assert torch.isfinite(value).all()
+    assert torch.equal(out.rhox, torch.zeros_like(qg))
+    assert torch.equal(out.bg, torch.zeros_like(qg))
+    for name, value in zip(out._fields[2:], out[2:]):
+        assert torch.equal(value, torch.zeros_like(qg)), name
+    sum(value.sum() for value in out).backward()
+    assert qg.grad is not None and torch.isfinite(qg.grad).all()
+
+
+def test_progb_midpoint_trace_nan_takes_native_empty_branch():
+    """Fortran's `qg > 0` is false for NaN in the inactive branch."""
+    params = default_progb_params()
+    qg = torch.tensor([[float("nan")]], dtype=torch.float64)
+    out = progb_param_torch(qg, torch.zeros_like(qg), params=params,
+                            midpoint_trace=True)
+    assert out.rhox.item() == 0.0
+    assert out.bg.item() == 0.0
+    assert all(torch.isfinite(value).all() for value in out)
+
+
+@pytest.mark.parametrize("dtype", [torch.float32, torch.float64])
+def test_progb_midpoint_trace_cleans_inactive_nan_volume_without_hidden_grad(dtype):
+    params = default_progb_params()
+    qg = torch.tensor([[0.5 * params.qcrmin, 0.0]], dtype=dtype, requires_grad=True)
+    bg = torch.full_like(qg, float("nan"), requires_grad=True)
+    out = progb_param_torch(qg, bg, params=params, midpoint_trace=True)
+    assert all(torch.isfinite(value).all() for value in out)
+    assert out.rhox[0, 0].item() == RHO_MID
+    assert out.rhox[0, 1].item() == 0.0
+    loss = sum(value.sum() for value in out)
+    dqg, dbg = torch.autograd.grad(loss, (qg, bg))
+    assert torch.isfinite(dqg).all()
+    assert torch.isfinite(dbg).all()
+
+
+def test_progb_midpoint_trace_keeps_active_path_identical():
+    """The opt-in affects only the inactive gate; active outputs stay exact."""
+    params = default_progb_params()
+    qg, bg = _active_inputs()
+    legacy = progb_param_torch(qg, bg, params=params)
+    opted = progb_param_torch(qg, bg, params=params, midpoint_trace=True)
+
+    for name, expected, actual in zip(legacy._fields, legacy, opted):
+        assert torch.equal(actual, expected), name
+
+
+def test_progb_midpoint_trace_tiny_positive_depends_on_input_dtype():
+    """A positive f64 trace can underflow to the empty f32 branch at input storage."""
+    params = default_progb_params()
+    qg64 = torch.tensor([[1.0e-50]], dtype=torch.float64)
+    bg64 = torch.zeros_like(qg64)
+    out64 = progb_param_torch(qg64, bg64, params=params, midpoint_trace=True)
+    assert out64.rhox.item() == RHO_MID
+    assert out64.bg.item() > 0.0
+
+    qg32 = torch.tensor([[1.0e-50]], dtype=torch.float32)
+    bg32 = torch.zeros_like(qg32)
+    out32 = progb_param_torch(qg32, bg32, params=params, midpoint_trace=True)
+    assert qg32.item() == 0.0
+    assert out32.rhox.item() == 0.0
+    assert out32.bg.item() == 0.0
 
 
 # ─── density clamp ────────────────────────────────────────────────────────────
