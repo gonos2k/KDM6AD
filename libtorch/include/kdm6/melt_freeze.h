@@ -56,7 +56,8 @@ MeltingOutputs melting_torch(
     const MeltingInputs& inputs,
     const MeltingParams& params,
     double dtcld,
-    const torch::Tensor& mass_den
+    const torch::Tensor& mass_den,
+    bool midpoint_trace = false
 );
 
 // ─── Step D2: Contact freezing (Meyers) ──────────────────────────────────────

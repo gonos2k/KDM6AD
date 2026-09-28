@@ -466,6 +466,7 @@ CoordinatorParams default_coordinator_params(double den0) {
         cloud_dsd::default_cloud_dsd_params(den0),
         progb::default_progb_params(),
         slope::default_slope_params(),
+        /*midpoint_trace=*/false,
     };
 }
 
@@ -504,7 +505,8 @@ PreambleOutputs preamble(
 
     // ── ProgB (graupel density 진단) ────────────────────────────────────────
     auto progb_out = progb::progb_param_torch(state.qg, state.brs, params.progb,
-                                              /*op_dtype=*/forcing.den.scalar_type());
+                                              /*op_dtype=*/forcing.den.scalar_type(),
+                                              /*midpoint_trace=*/params.midpoint_trace);
     // §53d persistent-ProgB merge (Fortran F:973-990 zero-init + F:3567 active-only writes):
     // every per-cell ProgB output array RETAINS its previous value in inactive cells —
     // slope_kdm6 (F:3446-3448 takes pidn0g/pvtg/bvtg/rslopegbmax as the PERSISTENT arrays)
@@ -516,7 +518,9 @@ PreambleOutputs preamble(
         auto act = torch::logical_or(state.qg > params.progb.qcrmin,
                                      state.brs > progb::BRS_MIN);
         auto mrg = [&](torch::Tensor& fresh, torch::Tensor& ret) {
-            ret = torch::where(act, fresh, ret);
+            // The S10 policy's leaf outputs are freshly assigned for every cell.
+            // Legacy retains inactive values; opt-in replaces even trace/empty cells.
+            ret = params.midpoint_trace ? fresh : torch::where(act, fresh, ret);
             fresh = ret;
         };
         mrg(progb_out.rhox,        progb_ret->rhox);
@@ -796,7 +800,8 @@ CoordinatorState kdm62d_one_step(
     // §53d: pre.progb.rhox is the merged persistent rhox (F:1384 pgmlt/rhox semantics,
     // = 0 in never-active cells → ±Inf on the op path inside melt_freeze).
     auto mf_d1 = melt_freeze_d1(
-        state_pre, forcing, pre_mf_view(pre), aux.n0so, aux.n0go, mf_params, dtcld);
+        state_pre, forcing, pre_mf_view(pre), aux.n0so, aux.n0go, mf_params, dtcld,
+        full_params.midpoint_trace);
     auto working1 = apply_melt_freeze_inline(
         state_pre, mf_d1, pre_core, dtcld, full_params.thermo.xls);
 #ifdef KDM6_SUBSTEP_DUMP
@@ -1452,7 +1457,8 @@ CoordinatorState kdm62d_one_step(
 #endif
     auto new_state = state_update(
         working, pre_core_su, scaled.warm, scaled.cold, scaled.mf, dtcld,
-        full_params.thermo.xls, /*delta_src=*/nullptr, /*dump_graupel=*/kdm6_dump_on
+        full_params.thermo.xls, /*delta_src=*/nullptr, /*dump_graupel=*/kdm6_dump_on,
+        /*midpoint_trace=*/full_params.midpoint_trace
     );
     // BRS density re-clamp #4 (Fortran ProgB_param L2772/L2863 = LAST ProgB, AFTER the
     // cold/warm graupel-volume adds L2643/L2751 — the reclamp that produces the OUTPUT bg).
@@ -1463,14 +1469,36 @@ CoordinatorState kdm62d_one_step(
     // graupel-empty cells; the f64 mirror leaves a tiny power-of-2 residue. zero it.
     {
         auto progb4 = progb::progb_param_torch(new_state.qg, new_state.brs, full_params.progb,
-                                               /*op_dtype=*/forcing.den.scalar_type());
+                                               /*op_dtype=*/forcing.den.scalar_type(),
+                                               /*midpoint_trace=*/full_params.midpoint_trace);
         auto bg4 = progb4.bg;
         // §53d: merge the LAST ProgB (F:2930) into the persistent arrays — inactive cells retain;
         // the merged rhox is what diag_rhog (F:423 reads the persistent rhox array) exports.
         {
-            auto act4 = torch::logical_or(new_state.qg > full_params.progb.qcrmin,
-                                          new_state.brs > progb::BRS_MIN);
-            PR->rhox = torch::where(act4, progb4.rhox, PR->rhox);
+            if (full_params.midpoint_trace) {
+                PR->rhox = progb4.rhox;
+                PR->cmg = progb4.cmg;
+                PR->pidn0g = progb4.pidn0g;
+                PR->avtg = progb4.avtg;
+                PR->bvtg = progb4.bvtg;
+                PR->bvtg1 = progb4.bvtg1;
+                PR->bvtg2 = progb4.bvtg2;
+                PR->bvtg3 = progb4.bvtg3;
+                PR->bvtg4 = progb4.bvtg4;
+                PR->g1pbg = progb4.g1pbg;
+                PR->g3pbg = progb4.g3pbg;
+                PR->g4pbg = progb4.g4pbg;
+                PR->g5pbgo2 = progb4.g5pbgo2;
+                PR->g1pdgbgmg = progb4.g1pdgbgmg;
+                PR->dgbgmug1 = progb4.dgbgmug1;
+                PR->rslopegbmax = progb4.rslopegbmax;
+                PR->pvtg = progb4.pvtg;
+                PR->precg2 = progb4.precg2;
+            } else {
+                auto act4 = torch::logical_or(new_state.qg > full_params.progb.qcrmin,
+                                              new_state.brs > progb::BRS_MIN);
+                PR->rhox = torch::where(act4, progb4.rhox, PR->rhox);
+            }
             progb4.rhox = PR->rhox;
         }
         // diag_rhog (RHOPO3D) source: this is the LAST ProgB graupel density, matching
@@ -1698,7 +1726,8 @@ MeltFreezePhaseOutputs melt_freeze_d1(
     const torch::Tensor& n0so,
     const torch::Tensor& n0go,
     const MeltFreezePhaseParams& params,
-    double dtcld
+    double dtcld,
+    bool midpoint_trace
 ) {
     const auto& s = pre.slope;
     auto zero = torch::zeros_like(state.qc);
@@ -1712,7 +1741,8 @@ MeltFreezePhaseOutputs melt_freeze_d1(
         s.rslope_s, s.rslope2_s, s.rslopeb_s, s.rslopemu_s,
         s.rslope_g, s.rslope2_g, s.rslopeb_g, s.rslopemu_g,
     };
-    auto d1 = melt::melting_torch(d1_in, params.melting, dtcld, forcing.dend);
+    auto d1 = melt::melting_torch(d1_in, params.melting, dtcld, forcing.dend,
+                                  midpoint_trace);
     return MeltFreezePhaseOutputs{
         /*psmlt=*/d1.psmlt, /*pgmlt=*/d1.pgmlt,
         /*pimlt_qi=*/d1.pimlt_qi, /*pimlt_ni=*/d1.pimlt_ni,
@@ -2062,7 +2092,8 @@ CoordinatorState state_update(
     double dtcld,
     double xls,
     const CoordinatorState* delta_src,
-    bool dump_graupel
+    bool dump_graupel,
+    bool midpoint_trace
 ) {
     auto dtype = state.qc.dtype();
     auto cold_mask = (pre.supcol >= 0).to(dtype);  // Fortran F:2456 `t.le.t0c` ⇔ supcol>=0
@@ -2320,7 +2351,46 @@ CoordinatorState state_update(
     // 52709-cell regression). where()-gate so warm cells never see 0×NaN. f32 op path only;
     // the f64 DA path keeps the clamped-safe smooth divisors (finite adjoint).
     torch::Tensor dbrs_cold_sum;
-    if (state.qc.scalar_type() == torch::kFloat32) {
+    torch::Tensor dbrs_warm_sum;
+    if (midpoint_trace) {
+        auto exact_zero_over_rhox = [&](const torch::Tensor& numerator, const char* label) {
+            // Explicit value-only precondition checks: .item() only selects an
+            // exception path; no detached scalar enters the returned AD value.
+            TORCH_CHECK(torch::isfinite(numerator).all().item<bool>(),
+                        "S10 ", label, ": rate must be finite");
+            auto zero_rate = numerator == 0.0;
+            auto invalid_rhox = torch::logical_and(
+                torch::logical_not(zero_rate),
+                torch::logical_or(torch::logical_not(torch::isfinite(pre.rhox)), pre.rhox <= 0.0));
+            TORCH_CHECK(!invalid_rhox.any().item<bool>(),
+                        "S10 ", label, ": nonzero rate requires finite-positive rhox");
+            auto safe_rhox = torch::where(zero_rate, torch::ones_like(pre.rhox), pre.rhox);
+            auto quotient = numerator / safe_rhox;
+            // Executed zero arm returns the signed numerator (local rate derivative 1).
+            // Across rate=0 the derivative is discontinuous, even for positive rhox.
+            return torch::where(zero_rate, numerator, quotient);
+        };
+        auto pgdep_rate = torch::where(pre.supcol >= 0, cold.pgdep,
+                                       torch::zeros_like(cold.pgdep));
+        auto pgevp_rate = torch::where(pre.supcol < 0, cold.pgevp,
+                                       torch::zeros_like(cold.pgevp));
+        auto pgeml_rate = torch::where(pre.supcol < 0, mf.pgeml,
+                                       torch::zeros_like(mf.pgeml));
+        auto pgdep_div = exact_zero_over_rhox(pgdep_rate, "pgdep");
+        auto pgevp_div = exact_zero_over_rhox(pgevp_rate, "pgevp");
+        auto pgeml_div = exact_zero_over_rhox(pgeml_rate, "pgeml");
+        dbrs_cold_sum = cold_mask * (
+            pgdep_div
+            + cold.piacr / constants::DENR        // biacr
+            + cold.praci / constants::DENI        // braci
+            + cold.psacr_adj / constants::DENR    // bsacr
+            + cold.pracs / constants::DENS        // bracs
+            + cold.pgaci / constants::DENI        // bgaci
+            + cold.paacw_adj / constants::DENR    // baacw
+            + cold.pgacr_adj / constants::DENR    // bgacr
+        );
+        dbrs_warm_sum = warm_mask * (pgevp_div + pgeml_div);
+    } else if (state.qc.scalar_type() == torch::kFloat32) {
         dbrs_cold_sum = torch::where(
             pre.supcol >= 0,
             cold.pgdep / pre.rhox
@@ -2350,12 +2420,11 @@ CoordinatorState state_update(
     // or qNaN (0/0), which the fmaxnm-style max below collapses to 0 exactly like gfortran.
     // where()-gate (not mask-multiply) so cold cells never form 0×Inf=NaN. f32 op path only;
     // the f64 DA path keeps the clamped-safe smooth divisor.
-    torch::Tensor dbrs_warm_sum;
-    if (state.qc.scalar_type() == torch::kFloat32) {
+    if (!midpoint_trace && state.qc.scalar_type() == torch::kFloat32) {
         dbrs_warm_sum = torch::where(pre.supcol < 0,
                                      cold.pgevp / pre.rhox + mf.pgeml / pre.rhox,
                                      torch::zeros_like(pre.rhox));
-    } else {
+    } else if (!midpoint_trace) {
         dbrs_warm_sum = warm_mask * (
             cold.pgevp / rhox_safe
             + mf.pgeml / rhox_safe
