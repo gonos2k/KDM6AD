@@ -1,0 +1,63 @@
+--- a/phys/module_mp_kdm6ad_cons.F
++++ b/phys/module_mp_kdm6ad_cons.F
+@@ -135,8 +135,9 @@
+     REAL, INTENT(INOUT) :: re_snow(IMS:IME, KMS:KME, JMS:JME)
+ 
+     INTEGER :: I, J, K, II, JJ, KK
+     INTEGER :: IM, KM, JM, DRY_ENV_STATUS, DRY_ENV_LENGTH
++    INTEGER, SAVE :: S1_TILE_CALL = 0
+     INTEGER(c_int) :: RC
+     TYPE(c_ptr), TARGET :: HANDLE
+     TYPE(kdm6_step_v2_args) :: ARGS
+     REAL :: Z_SUM, RHO_DRY_CELL
+@@ -369,8 +370,50 @@
+     ARGS%rhog_out = C_LOC(RHOG_OUT)
+     ARGS%physics_variant = KDM6_PHYSICS_CONSERVATIVE_INTERFACE
+     ARGS%dry_number = MERGE(1_c_int64_t, 0_c_int64_t, DRY_NUMBER_MODE)
+ 
++    ! S1 diagnostic: identify each host tile call without changing C++ inputs.
++    BLOCK
++      CHARACTER(LEN=8) :: REQUEST, THREADS
++      CHARACTER(LEN=16) :: TRACE_B
++      CHARACTER(LEN=512) :: TRACE_FILE
++      CHARACTER(LEN=16), PARAMETER :: THREAD_VAR(3) = [CHARACTER(LEN=16) :: &
++          'OMP_NUM_THREADS', 'OMP_THREAD_LIMIT', 'MKL_NUM_THREADS']
++      INTEGER :: ENV_STATUS, ENV_LENGTH, V, FILE_STATUS, FILE_LENGTH, B_STATUS, B_LENGTH
++      REQUEST = ''
++      CALL GET_ENVIRONMENT_VARIABLE('KDM6_S1_TILE_LOG', REQUEST, &
++                                    LENGTH=ENV_LENGTH, STATUS=ENV_STATUS)
++      TRACE_FILE = ''
++      TRACE_B = ''
++      CALL GET_ENVIRONMENT_VARIABLE('KDM6_S1_TRACE_FILE', TRACE_FILE, &
++                                    LENGTH=FILE_LENGTH, STATUS=FILE_STATUS)
++      CALL GET_ENVIRONMENT_VARIABLE('KDM6_S1_TRACE_B', TRACE_B, &
++                                    LENGTH=B_LENGTH, STATUS=B_STATUS)
++      IF (ENV_STATUS == 0 .AND. ENV_LENGTH == 1 .AND. REQUEST(1:1) == '1') THEN
++        IF (FILE_STATUS /= 0 .OR. FILE_LENGTH <= 0 .OR. &
++            FILE_LENGTH > LEN(TRACE_FILE) .OR. TRACE_FILE(1:1) /= '/' .OR. &
++            B_STATUS /= 0 .OR. B_LENGTH /= 5 .OR. TRACE_B(1:5) /= '19748' .OR. &
++            IM*JM <= 19748) CALL wrf_error_fatal('S1 trace controls or tile shape invalid')
++        DO V = 1, 3
++          THREADS = ''
++          CALL GET_ENVIRONMENT_VARIABLE(TRIM(THREAD_VAR(V)), THREADS, &
++                                        LENGTH=ENV_LENGTH, STATUS=ENV_STATUS)
++          IF (ENV_STATUS /= 0 .OR. ENV_LENGTH /= 1 .OR. THREADS(1:1) /= '1') &
++            CALL wrf_error_fatal('S1 tile log requires one thread')
++        END DO
++        S1_TILE_CALL = S1_TILE_CALL + 1
++        WRITE(*,'(A,9(1X,I0))') 'S1_TILE_CALL', S1_TILE_CALL, ITS, ITE, &
++                               JTS, JTE, IM, JM, ITIMESTEP, 19748
++      ELSE IF ((ENV_STATUS == 1 .AND. ENV_LENGTH == 0) .OR. &
++               (ENV_STATUS == 0 .AND. ENV_LENGTH == 1 .AND. &
++                REQUEST(1:1) == '0')) THEN
++        IF (.NOT. (FILE_STATUS == 1 .AND. FILE_LENGTH == 0 .AND. &
++                   B_STATUS == 1 .AND. B_LENGTH == 0)) &
++          CALL wrf_error_fatal('S1 trace vars require tile log')
++      ELSE
++        CALL wrf_error_fatal('S1 tile log must be unset, 0 or 1')
++      END IF
++    END BLOCK
+     RC = kdm6_step_v2_c(ARGS)
+     IF (RC /= KDM6_OK) THEN
+       CALL wrf_error_fatal('kdm6ad_cons: kdm6_step_v2_c failed')
+     END IF

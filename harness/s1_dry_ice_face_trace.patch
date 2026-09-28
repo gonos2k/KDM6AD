@@ -1,0 +1,113 @@
+--- a/libtorch/src/sedimentation_conservative.cpp
++++ b/libtorch/src/sedimentation_conservative.cpp
+@@ -1,7 +1,12 @@
+ #include "kdm6/sedimentation_conservative.h"
+ 
+ #include <initializer_list>
++#ifdef KDM6_S1_FACE_TRACE
++#include <cerrno>
++#include <cstdlib>
++#include <fstream>
++#endif
+ 
+ //
+ // Conservative-interface sedimentation substeps — 1:1 port of
+ // oracle/kdm6/sed_conservative.py (the AUTHORITATIVE numerical semantics).
+@@ -181,10 +186,58 @@
+     auto ni_cols = split_columns(in.state.ni, K);
+     auto fall_qi_cols = split_columns(in.fall_qi_in, K);
+     auto fall_ni_cols = split_columns(in.fall_ni_in, K);
+     torch::Tensor prev_out_qi, prev_out_ni;
++#ifdef KDM6_S1_FACE_TRACE
++    // Diagnostic-only scalar extraction. The host trace is value-only; reject AD.
++    std::ofstream s1_file;
++    static unsigned long long s1_call_seq = 0;  // one-rank/one-thread diagnostic
++    int64_t s1_b = -1;
++    const char* s1_path = std::getenv("KDM6_S1_TRACE_FILE");
++    const char* s1_index = std::getenv("KDM6_S1_TRACE_B");
++    if (s1_path || s1_index) {
++        TORCH_CHECK(s1_path && *s1_path && s1_index && *s1_index,
++                    "S1 trace requires both file and column index");
++        TORCH_CHECK(!in.state.qi.requires_grad() && !in.state.ni.requires_grad() &&
++                    !in.fall_qi_in.requires_grad() && !in.fall_ni_in.requires_grad() &&
++                    !in.work1_qi.requires_grad() && !in.workn_qi.requires_grad() &&
++                    !in.delz.requires_grad() && !in.dend.requires_grad() &&
++                    !mstep_col.requires_grad(),
++                    "S1 trace requires non-AD inputs");
++        char* end = nullptr;
++        errno = 0;
++        const long long parsed = std::strtoll(s1_index, &end, 10);
++        TORCH_CHECK(errno == 0 && end != s1_index && *end == '\0' &&
++                    parsed >= 0 && parsed < in.state.ni.size(0),
++                    "S1 trace column index is invalid");
++        s1_b = parsed;
++        s1_file.open(s1_path, std::ios::app);
++        TORCH_CHECK(s1_file.is_open(), "S1 trace file cannot be opened");
++        s1_file << std::hexfloat << "BEGIN ice " << ++s1_call_seq << ' '
++                << n << ' ' << s1_b << ' ' << K << ' ' << dtcld << '\n';
++    }
++    auto s1_emit = [&](int64_t k, const torch::Tensor& q_before,
++                       const torch::Tensor& n_before, const torch::Tensor& falk_q,
++                       const torch::Tensor& falk_n, const torch::Tensor& dq_out,
++                       const torch::Tensor& dn_out, double dq_in, double dn_in,
++                       const torch::Tensor& q_after, const torch::Tensor& n_after) {
++        if (!s1_file.is_open()) return;
++        auto at_b = [&](const torch::Tensor& t) { return t.select(0, s1_b).item<double>(); };
++        s1_file << "ROW " << k << ' ' << at_b(q_before) << ' ' << at_b(falk_q)
++                << ' ' << at_b(dq_out) << ' ' << dq_in << ' ' << at_b(q_after)
++                << ' ' << at_b(n_before) << ' ' << at_b(falk_n)
++                << ' ' << at_b(dn_out) << ' ' << dn_in << ' ' << at_b(n_after)
++                << ' ' << at_b(delz_col(k)) << ' ' << at_b(delz_safe_col(k))
++                << ' ' << at_b(dend_col(k)) << ' ' << at_b(dend_safe_col(k))
++                << ' ' << at_b(mstep_col_safe) << ' ' << at_b(gate_col) << '\n';
++    };
++#endif
+ 
+     for (int64_t k = 0; k < K; ++k) {
++#ifdef KDM6_S1_FACE_TRACE
++        auto s1_q_before = qi_cols[k];
++        auto s1_n_before = ni_cols[k];
++#endif
+         // falk/falkn: ONE f32 rounding of the f64-vt chain — as legacy ice.
+         auto falk_qi = (dend_col(k) * qi_cols[k] * in.work1_qi.select(-1, k)
+                         / mstep_col_safe * gate_col).to(in.state.qi.scalar_type());
+         auto falk_ni = (ni_cols[k] * in.workn_qi.select(-1, k)
+@@ -197,19 +250,38 @@
+         fall_ni_cols[k] = fall_ni_cols[k] + dni_out / dtcld;
+         if (k == 0) {
+             qi_cols[k] = qi_cols[k] - dqi_out;
+             ni_cols[k] = ni_cols[k] - dni_out;
++#ifdef KDM6_S1_FACE_TRACE
++            s1_emit(k, s1_q_before, s1_n_before, falk_qi, falk_ni,
++                    dqi_out, dni_out, 0.0, 0.0, qi_cols[k], ni_cols[k]);
++#endif
+         } else {
+             // mass: ρΔz-conserving transfer; number: legacy Δz-only measure.
+             auto dqi_in = prev_out_qi * (dend_safe_col(k - 1) * delz_col(k - 1))
+                           / (dend_safe_col(k) * delz_safe_col(k));
+             auto dni_in = prev_out_ni * delz_col(k - 1) / delz_safe_col(k);
+             qi_cols[k] = qi_cols[k] - dqi_out + dqi_in;
+             ni_cols[k] = ni_cols[k] - dni_out + dni_in;
++#ifdef KDM6_S1_FACE_TRACE
++            if (s1_file.is_open())
++                s1_emit(k, s1_q_before, s1_n_before, falk_qi, falk_ni,
++                        dqi_out, dni_out, dqi_in.select(0, s1_b).item<double>(),
++                        dni_in.select(0, s1_b).item<double>(), qi_cols[k], ni_cols[k]);
++#endif
+         }
+         prev_out_qi = dqi_out;
+         prev_out_ni = dni_out;
+     }
++#ifdef KDM6_S1_FACE_TRACE
++    if (s1_file.is_open()) {
++        s1_file << "END ice\n";
++        s1_file.flush();
++        TORCH_CHECK(s1_file.good(), "S1 trace flush failed");
++        s1_file.close();
++        TORCH_CHECK(!s1_file.fail(), "S1 trace close failed");
++    }
++#endif
+ 
+     return IceSubstepOutputs{
+         IceSubstepState{
+             torch::stack(qi_cols, /*dim=*/-1),
