@@ -101,6 +101,37 @@ def _raw_stream() -> str:
             consumer["after"],
         ]
         rows.append("S15RK " + " ".join(map(str, identity + words)))
+
+    return "\n".join(rows) + "\n"
+
+
+def _neighbor_stream() -> str:
+    rows = _raw_stream().splitlines()
+    coordinates = replay._projection(ROOT)
+    for tile, coordinate in replay.NEIGHBOR_RECEIVERS:
+        donor = coordinates[4 if tile == 1 else 5]
+        for raw in tuple(rows):
+            parts = raw.split()
+            if (
+                parts[0] not in {"S15AX", "S15PD", "S15RK"}
+                or parts[1:5] != ["2", "3", "5", str(tile)]
+                or tuple(map(int, parts[9:12])) != donor
+            ):
+                continue
+            parts[9:12] = list(map(str, coordinate))
+            if parts[0] == "S15RK":
+                parts[14] = "3F800000"  # synthetic positive source tendency
+                parts[15] = replay._add(replay._mul(parts[12], parts[13]), parts[14])
+                parts[16] = "00000000"
+                old_mass = replay._fma32(parts[18], parts[20], parts[19])
+                dt_tendency = replay._mul(parts[17], parts[15])
+                numerator = replay._fma32(old_mass, parts[16], dt_tendency)
+                new_mass = replay._fma32(parts[18], parts[21], parts[19])
+                parts[22] = replay.value_word(
+                    replay.word_value(numerator) / replay.word_value(new_mass)
+                )
+                assert replay.word_value(parts[22]) > 0.0
+            rows.append(" ".join(parts))
     return "\n".join(rows) + "\n"
 
 
@@ -150,6 +181,20 @@ def test_fortran_emitters_enforce_the_26_event_family_caps() -> None:
     assert "S15LIMIT S15AX event cap exceeded" in advect_helpers
     assert "if (s15_count.ge.2) then" in advect_helpers
     assert "S15LIMIT S15PD event cap exceeded" in advect_helpers
+
+    em_neighbor_helpers = "\n".join(
+        overlay._append_module_em_helpers(["END MODULE module_em"], neighbors=True)
+    )
+    advect_neighbor_helpers = "\n".join(
+        overlay._append_advect_helpers(["END MODULE module_advect_em"], neighbors=True)
+    )
+    assert "if (s15_count.ge.14) then" in em_neighbor_helpers
+    assert "if (s15_count.ge.42) then" in advect_neighbor_helpers
+    assert "if (s15_count.ge.10) then" in advect_neighbor_helpers
+    assert (
+        "tile.eq.1 .and. i.eq.141 .and. j.eq.142 .and. k.eq.16) hit=.true."
+        in advect_neighbor_helpers
+    )
 
 
 def test_wrf_final_suffix_cpp_pass_uses_only_cpp_base_and_tradflag() -> None:
@@ -212,6 +257,58 @@ def test_synthetic_s15_records_parse_and_join_to_the_six_pinned_slots() -> None:
         overlay.parse_fortran_capture("\n".join(nontransition) + "\n", ROOT, CONFIG)
 
 
+def test_synthetic_neighbor_mode_validates_six_targets_and_eight_receivers() -> None:
+    assert replay.NEIGHBOR_RECEIVERS == (
+        (1, (140, 2, 17)),
+        (1, (142, 2, 17)),
+        (1, (141, 2, 16)),
+        (1, (141, 142, 16)),
+        (2, (140, 143, 16)),
+        (2, (142, 143, 16)),
+        (2, (141, 144, 16)),
+        (2, (141, 143, 17)),
+    )
+    stream = _neighbor_stream()
+    producers, consumers = overlay.parse_fortran_capture(
+        stream, ROOT, CONFIG, neighbors=True
+    )
+    assert len(producers) == len(consumers) == 14
+    coordinates = replay._projection(ROOT)
+    target_keys = {
+        (*schedule, *coordinate)
+        for schedule, coordinate in zip(replay.SCHEDULE, coordinates)
+    }
+    receiver_keys = {
+        (*replay.NEIGHBOR_SCHEDULE_BY_TILE[tile], *coordinate)
+        for tile, coordinate in replay.NEIGHBOR_RECEIVERS
+    }
+    assert target_keys.isdisjoint(receiver_keys)
+    assert {replay._identity(row) for row in producers} == target_keys | receiver_keys
+    receiver_after = {
+        replay._identity(row): row["after"]
+        for row in consumers
+        if replay._identity(row) in receiver_keys
+    }
+    assert len(receiver_after) == 8
+    assert any(replay.word_value(word) > 0.0 for word in receiver_after.values())
+
+    with pytest.raises(overlay.OverlayError, match="six-slot schedule"):
+        overlay.parse_fortran_capture(stream, ROOT, CONFIG)
+
+    rows = stream.splitlines()
+    missing_receiver = next(
+        i
+        for i, row in enumerate(rows)
+        if row.startswith("S15RK ")
+        and tuple(map(int, row.split()[9:12])) == replay.NEIGHBOR_RECEIVERS[0][1]
+    )
+    del rows[missing_receiver]
+    with pytest.raises(overlay.OverlayError, match="exactly 14 producer keys"):
+        overlay.parse_fortran_capture(
+            "\n".join(rows) + "\n", ROOT, CONFIG, neighbors=True
+        )
+
+
 def test_pd_incoming_shared_face_may_change_before_divergence_tap() -> None:
     rows = _raw_stream().splitlines()
     pd_index = next(
@@ -242,12 +339,17 @@ def test_pd_incoming_shared_face_may_change_before_divergence_tap() -> None:
     assert len(producers) == len(consumers) == 6
 
 
-def _bounded_extractor_fixture() -> bytes:
+def _bounded_extractor_fixture(*, neighbors: bool = False) -> bytes:
+    counts = (
+        overlay.EXPECTED_NEIGHBOR_FACE_TAG_COUNTS
+        if neighbors
+        else overlay.EXPECTED_FACE_TAG_COUNTS
+    )
     return (
         b"WRF banner\nS15Q legacy\n"
-        + b"S15AX axis\n" * 18
-        + b"S15PD limiter\n" * 2
-        + b"S15RK consumer\n" * 6
+        + b"S15AX axis\n" * counts["S15AX"]
+        + b"S15PD limiter\n" * counts["S15PD"]
+        + b"S15RK consumer\n" * counts["S15RK"]
     )
 
 
@@ -433,6 +535,30 @@ def test_dual_stream_extractor_requires_exact_face_event_count(tmp_path: Path) -
     full.write_bytes(_bounded_extractor_fixture().replace(b"S15AX axis\n", b"", 1))
     with pytest.raises(overlay.OverlayError, match="exactly 18 AX, 2 PD, and 6 RK"):
         overlay.extract_s15_streams(full, tmp_path / "face", tmp_path / "legacy")
+
+    full_neighbors = tmp_path / "rank0-neighbors.stdout"
+    full_neighbors.write_bytes(_bounded_extractor_fixture(neighbors=True))
+    receipt = overlay.extract_s15_streams(
+        full_neighbors,
+        tmp_path / "face-neighbors",
+        tmp_path / "legacy-neighbors",
+        neighbors=True,
+    )
+    assert receipt["tag_counts"]["S15AX"] == 42
+    assert receipt["tag_counts"]["S15PD"] == 10
+    assert receipt["tag_counts"]["S15RK"] == 14
+
+    full_neighbors_missing = tmp_path / "rank0-neighbors-missing.stdout"
+    full_neighbors_missing.write_bytes(
+        _bounded_extractor_fixture(neighbors=True).replace(b"S15PD limiter\n", b"", 1)
+    )
+    with pytest.raises(overlay.OverlayError, match="42 AX, 10 PD, and 14 RK"):
+        overlay.extract_s15_streams(
+            full_neighbors_missing,
+            tmp_path / "face-neighbors-missing",
+            tmp_path / "legacy-neighbors-missing",
+            neighbors=True,
+        )
 
 
 @pytest.mark.parametrize(

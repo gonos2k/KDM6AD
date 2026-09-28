@@ -1,0 +1,262 @@
+{
+  "schema": "KDM6AD-S15-native-neighbor-capture-v1",
+  "status": "PASS_BOUNDED_CAPTURE_AND_NONINTERFERENCE",
+  "claim_limit": "Captures selected producer/consumer and eight receiver states; does not establish shared-face equality, physical cause closure, or trace-graupel policy.",
+  "capture_config": {
+    "mp_physics": "37",
+    "duration_seconds": 40,
+    "history_times_seconds": [
+      0,
+      20,
+      40
+    ],
+    "mpi_ranks": 1,
+    "proc_grid": "1x1",
+    "threads": 1,
+    "capture_off_on_same_executable": true
+  },
+  "public_overlay": {
+    "worktree_head": "4ff43121773d1fe8f8056e3d00bcc30433fec17e",
+    "generator_sha256": "a1d78a6b587750e3f5753ab3364964d27bd0a393df91bd714528575d62543f8a",
+    "neighbors": true,
+    "source_pins_sha256": {
+      "dyn_em/module_advect_em.F": "58253bdbeb188dd47ed0579fcd2891086be1889b75c0c7d3696c9ad1d213559d",
+      "dyn_em/module_em.F": "7695bfb05a7f99763334a6e69523bbcc1de0f2c659177a18c10a6e1cf530a0c7",
+      "dyn_em/solve_em.F": "d66e9db1bba8f37e3f46d30c2fd74bdf8def411adf233376a69e0b401c6d3d1f"
+    }
+  },
+  "build": {
+    "exe_sha256": "137237b2a5410b88e4a828cf0a789de1f830c21790b3f840f8933f993f6535eb",
+    "exe_bytes": 50567336,
+    "map_sha256": "71e74c877c6ed0bff3a06fda3973409f34976f4a6d93673853fb1c4b52fcf63d",
+    "compile_receipt_sha256": "902928a855ba9522c4858cce03f3b3dafb98583fd4c81951e1a43d33d6251358",
+    "fresh_dyn_em_objects": {
+      "module_advect_em.o": "b42a21020bdf0156f4a9b023880aca981511da4cf280c297be036c7060b803d3",
+      "module_em.o": "40847bb26e587c80b19f2f6f86d27ad3035212c29e38a800d0dfb558f133cb78",
+      "solve_em.o": "e6f02a1d7303fd33226781665ddade0d7b742585d88b6014bec97c8256234d11"
+    },
+    "reused_mp37_object_sha256": "27b3814509b2b55fc9d3b1fd372982f5fe05f3e179106cce9fdcfaa839e81ef9",
+    "unchanged_host_archive_sha256": "f27a3633cae66c412123296eed3ebc3caeb3080ab7e8c9f224c18ab55c987a94",
+    "kdm6_library_sha256": "a843ab775e53ebf61c38549dd5f32223d8e180ebefc07025b1cbad48df5935ff",
+    "mpif90_version_sha256": "de2d03a5409480692e1c8d494a81d9b9ce20b2e0176342f04664c264cd45357f"
+  },
+  "inputs": {
+    "namelist_sha256": "064b6f5ea5683ee3dc68d408c08bf4cbf588be06dbc7d99bb3529be8ba61554a",
+    "wrfinput_sha256": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+    "wrfbdy_sha256": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+    "wrfchainp_sha256": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3",
+    "static_physics_symlinks": 78
+  },
+  "runs": [
+    {
+      "mode": "off",
+      "returncode": 0,
+      "elapsed_seconds": 49.581233978271484,
+      "argv": [
+        "python3",
+        "harness/run_ss_case.py",
+        "--mp",
+        "37",
+        "--minutes",
+        "0",
+        "--seconds",
+        "40",
+        "--history",
+        "0",
+        "--history-s",
+        "20",
+        "--np",
+        "1",
+        "--proc-grid",
+        "1x1",
+        "--label",
+        "s15_neighbors_run4_off",
+        "--case",
+        "<isolated-case>",
+        "--fixed-dt"
+      ],
+      "environment": {
+        "capture_log": "unset",
+        "OMP_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OMP_THREAD_LIMIT": "1",
+        "VECLIB_MAXIMUM_THREADS": "1"
+      },
+      "exe_sha256": "137237b2a5410b88e4a828cf0a789de1f830c21790b3f840f8933f993f6535eb",
+      "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+      "stdout_sha256": "4d191ca673898f8e4a3251fa8c80cf6b56219db059ae88a92604c7dccc32a9d2",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "mode": "on",
+      "returncode": 0,
+      "elapsed_seconds": 48.469680070877075,
+      "argv": [
+        "python3",
+        "harness/run_ss_case.py",
+        "--mp",
+        "37",
+        "--minutes",
+        "0",
+        "--seconds",
+        "40",
+        "--history",
+        "0",
+        "--history-s",
+        "20",
+        "--np",
+        "1",
+        "--proc-grid",
+        "1x1",
+        "--label",
+        "s15_neighbors_run4_on",
+        "--case",
+        "<isolated-case>",
+        "--fixed-dt"
+      ],
+      "environment": {
+        "capture_log": "1",
+        "OMP_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OMP_THREAD_LIMIT": "1",
+        "VECLIB_MAXIMUM_THREADS": "1"
+      },
+      "exe_sha256": "137237b2a5410b88e4a828cf0a789de1f830c21790b3f840f8933f993f6535eb",
+      "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+      "stdout_sha256": "b8979babcef4f6740bb17e0bfca2e7cf26350556bdb8551c955a4999baa94077",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "saved_times": [
+    "2025-07-19_00:00:00",
+    "2025-07-19_00:00:20",
+    "2025-07-19_00:00:40"
+  ],
+  "capture": {
+    "tag_counts": {
+      "S15AX": 42,
+      "S15PD": 10,
+      "S15RK": 14
+    },
+    "producer_count": 14,
+    "consumer_count": 14,
+    "witness_count": 6,
+    "receiver_count": 8,
+    "face_stream_sha256": "be71e8c8f43bac58b44f5e1610d095e1caa89a20dda163d64f1981f57596d817",
+    "face_stream_bytes": 9030,
+    "legacy_tag_counts": {
+      "S15M": 258
+    },
+    "legacy_stream_sha256": "efc51e882d487e8d8f4bff3805cbec0b8ac5fa5d4ab8b1970babf74bce2e8900",
+    "legacy_stream_bytes": 49417,
+    "full_on_stdout_sha256": "3ed7bc7238027958c12eaa43a01376745b56e1f469aa1aac733582c3cb350c99",
+    "full_on_stdout_bytes": 480977,
+    "full_stdout_retained_only_in_private_scratch": true,
+    "witness_before_after": [
+      {
+        "rk": 1,
+        "tile": 1,
+        "cell": [
+          143,
+          2,
+          16
+        ],
+        "before": "00000000",
+        "after": "A5BCD5F9",
+        "sc_tend": "00000000"
+      },
+      {
+        "rk": 1,
+        "tile": 2,
+        "cell": [
+          144,
+          143,
+          14
+        ],
+        "before": "00000000",
+        "after": "AA73FBF4",
+        "sc_tend": "00000000"
+      },
+      {
+        "rk": 2,
+        "tile": 1,
+        "cell": [
+          111,
+          2,
+          16
+        ],
+        "before": "00000000",
+        "after": "A280A08B",
+        "sc_tend": "00000000"
+      },
+      {
+        "rk": 2,
+        "tile": 2,
+        "cell": [
+          146,
+          143,
+          13
+        ],
+        "before": "00000000",
+        "after": "A20ED94D",
+        "sc_tend": "00000000"
+      },
+      {
+        "rk": 3,
+        "tile": 1,
+        "cell": [
+          141,
+          2,
+          17
+        ],
+        "before": "00000000",
+        "after": "991817B7",
+        "sc_tend": "00000000"
+      },
+      {
+        "rk": 3,
+        "tile": 2,
+        "cell": [
+          141,
+          143,
+          16
+        ],
+        "before": "00000000",
+        "after": "9C121BA4",
+        "sc_tend": "00000000"
+      }
+    ]
+  },
+  "off_on_comparison": {
+    "forecast_sha256_off": "49bbda101a367d5eeb9c460e21c2304767311d274dddecb17a4ec39fe14f1d04",
+    "forecast_sha256_on": "49bbda101a367d5eeb9c460e21c2304767311d274dddecb17a4ec39fe14f1d04",
+    "forecast_bytes": 953745068,
+    "frames": [
+      {
+        "time_index": 0,
+        "variables_common": 254,
+        "bitwise_matches": 254,
+        "differences": 0,
+        "skips": 0,
+        "status": "PASS"
+      },
+      {
+        "time_index": 1,
+        "variables_common": 254,
+        "bitwise_matches": 254,
+        "differences": 0,
+        "skips": 0,
+        "status": "PASS"
+      },
+      {
+        "time_index": 2,
+        "variables_common": 254,
+        "bitwise_matches": 254,
+        "differences": 0,
+        "skips": 0,
+        "status": "PASS"
+      }
+    ]
+  },
+  "superseded_runs_excluded": "Previous six-key discovery run and the yN-roster run are not included in this evidence."
+}

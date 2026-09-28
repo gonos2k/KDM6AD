@@ -1,7 +1,7 @@
 ---
 title: KDM6AD S15 upstream attribution plan
 type: source-note
-date_modified: 2026-09-27
+date_modified: 2026-09-28
 ---
 # S15 upstream attribution plan
 
@@ -47,3 +47,14 @@ to the producer.
 
 This note records a future measurement contract, not native evidence. S15
 remains OPEN; no physical cause or graupel policy is assigned.
+
+## Later native face-neighbor result (2026-09-28)
+
+The earlier compile-only status above is historical. A selected mp37 40-second
+run now captures the six QIB witnesses and eight RK3 interior receivers. Their
+stored high/low face words agree across all eight paired interfaces, including
+the tile seam; same-executable capture OFF/ON history agrees raw-bit at
+0/20/40 s. The first donor also has an outgoing face into the specified
+boundary zone, for which this capture has no accepted RK receiver. The
+measurement neither repairs QIB negativity nor resolves trace-graupel policy.
+See [the bounded native report](../../harness/evidence/REPORT_S15_native_face_neighbors_2026-09-28.md).

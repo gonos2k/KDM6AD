@@ -16,7 +16,12 @@ from pathlib import Path
 from typing import Any
 
 import s15_face_cause_probe as replay
-from s15_face_cause_probe import SCHEDULE, _projection
+from s15_face_cause_probe import (
+    NEIGHBOR_RECEIVERS,
+    SCHEDULE,
+    _capture_roster,
+    _projection,
+)
 
 
 class OverlayError(ValueError):
@@ -41,6 +46,7 @@ MAX_FACE_STREAM_BYTES = 64 * 1024
 MAX_LEGACY_STREAM_BYTES = 1024 * 1024
 MAX_LEGACY_RECORDS = 100_000
 EXPECTED_FACE_TAG_COUNTS = {"S15AX": 18, "S15PD": 2, "S15RK": 6}
+EXPECTED_NEIGHBOR_FACE_TAG_COUNTS = {"S15AX": 42, "S15PD": 10, "S15RK": 14}
 WRF_CPP_BASE = ("-P", "-nostdinc", "-xassembler-with-cpp")
 WRF_TRADITIONAL_CPP = ("-traditional-cpp",)
 
@@ -251,7 +257,7 @@ def _patch_solve(text: str) -> str:
     return "\n".join(lines) + "\n"
 
 
-def _patch_module_em(text: str) -> str:
+def _patch_module_em(text: str, *, neighbors: bool = False) -> str:
     lines = text.splitlines()
     # Producer context: rk_scalar_tend dispatches to ordinary or PD advection.
     for proc_name in ("rk_scalar_tend", "rk_update_scalar"):
@@ -267,11 +273,11 @@ def _patch_module_em(text: str) -> str:
         lines = _append_actuals(lines, cstart, cend, actuals)
         start, end = _find_proc(lines, "rk_scalar_tend")
     lines = _patch_rk_store_taps(lines)
-    lines = _append_module_em_helpers(lines)
+    lines = _append_module_em_helpers(lines, neighbors=neighbors)
     return "\n".join(lines) + "\n"
 
 
-def _patch_advect(text: str) -> str:
+def _patch_advect(text: str, *, neighbors: bool = False) -> str:
     lines = text.splitlines()
     for proc_name in ("advect_scalar", "advect_scalar_pd"):
         lines = _extend_signature(lines, proc_name, [*CONTEXT_NAMES, "s15_branch"])
@@ -295,7 +301,7 @@ def _patch_advect(text: str) -> str:
             )
         lines[implicit + 1 : implicit + 1] = _guard(local)
         lines = _tap_advection_procedure(lines, proc_name)
-    lines = _append_advect_helpers(lines)
+    lines = _append_advect_helpers(lines, neighbors=neighbors)
     return "\n".join(lines) + "\n"
 
 
@@ -324,7 +330,11 @@ def _patch_module_em_rk_calls(module_em_text: str) -> str:
 
 
 def prepare_overlay(
-    source_root: Path, shadow_root: Path, public_root: Path
+    source_root: Path,
+    shadow_root: Path,
+    public_root: Path,
+    *,
+    neighbors: bool = False,
 ) -> dict[str, Any]:
     sources = _source_bytes(source_root)
     projection = _projection(public_root)
@@ -334,8 +344,14 @@ def prepare_overlay(
     patched = {}
     for relative, patcher in (
         ("dyn_em/solve_em.F", _patch_solve),
-        ("dyn_em/module_em.F", _patch_module_em),
-        ("dyn_em/module_advect_em.F", _patch_advect),
+        (
+            "dyn_em/module_em.F",
+            lambda text: _patch_module_em(text, neighbors=neighbors),
+        ),
+        (
+            "dyn_em/module_advect_em.F",
+            lambda text: _patch_advect(text, neighbors=neighbors),
+        ),
     ):
         original = sources[relative].decode()
         patched[relative] = _restore_cpp_line_numbers(
@@ -364,6 +380,11 @@ def prepare_overlay(
         "coordinates": [list(x) for x in projection],
         "status": "macro-gated producer/consumer and directional/limiter taps; compile-only pending",
     }
+    if neighbors:
+        manifest["neighbor_receivers"] = [
+            {"tile": tile, "coordinate": list(coordinate)}
+            for tile, coordinate in NEIGHBOR_RECEIVERS
+        ]
     (shadow_root / "s15_face_overlay_manifest.json").write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
@@ -401,7 +422,9 @@ def _guard(body: list[str], indent: str = "   ") -> list[str]:
     return [f"#ifdef {MACRO}", *(indent + line for line in body), "#endif"]
 
 
-def _append_module_em_helpers(lines: list[str]) -> list[str]:
+def _append_module_em_helpers(
+    lines: list[str], *, neighbors: bool = False
+) -> list[str]:
     end_module = next(
         (
             i
@@ -412,6 +435,13 @@ def _append_module_em_helpers(lines: list[str]) -> list[str]:
     )
     if end_module is None:
         raise OverlayError("module_em end anchor was not found")
+    neighbor_rk_match = []
+    if neighbors:
+        neighbor_rk_match = [
+            f" if(tile.eq.{tile} .and. i.eq.{i} .and. j.eq.{j} .and. k.eq.{k}) hit=.true."
+            for tile, (i, j, k) in NEIGHBOR_RECEIVERS
+        ]
+    rk_cap = 14 if neighbors else 6
     helper = _guard(
         [
             "SUBROUTINE s15_rk_match(step,rk,owner,tile,i,j,k,hit)",
@@ -429,13 +459,14 @@ def _append_module_em_helpers(lines: list[str]) -> list[str]:
             "case(3)",
             " if(tile.eq.1 .and. i.eq.141 .and. j.eq.2 .and. k.eq.17) hit=.true.",
             " if(tile.eq.2 .and. i.eq.141 .and. j.eq.143 .and. k.eq.16) hit=.true.",
+            *neighbor_rk_match,
             "end select",
             "END SUBROUTINE s15_rk_match",
             "SUBROUTINE s15_emit_rk(step,rk,owner,tile,its,ite,jts,jte,i,j,k,advect,msfty,sc_tend,tendency,reference,dt,c1,c2,muold,munew,after)",
             "INTEGER, INTENT(IN) :: step,rk,owner,tile,its,ite,jts,jte,i,j,k",
             "INTEGER, SAVE :: s15_count=0",
             "REAL, INTENT(IN) :: advect,msfty,sc_tend,tendency,reference,dt,c1,c2,muold,munew,after",
-            "if (s15_count.ge.6) then",
+            f"if (s15_count.ge.{rk_cap}) then",
             " write(6,'(A)') 'S15LIMIT S15RK event cap exceeded'",
             " stop 91",
             "endif",
@@ -722,7 +753,7 @@ def _tap_pd_limiter(lines: list[str]) -> list[str]:
     return lines
 
 
-def _append_advect_helpers(lines: list[str]) -> list[str]:
+def _append_advect_helpers(lines: list[str], *, neighbors: bool = False) -> list[str]:
     end_module = next(
         (
             i
@@ -733,6 +764,14 @@ def _append_advect_helpers(lines: list[str]) -> list[str]:
     )
     if end_module is None:
         raise OverlayError("module_advect_em end anchor was not found")
+    neighbor_face_match = []
+    if neighbors:
+        neighbor_face_match = [
+            f" if(tile.eq.{tile} .and. i.eq.{i} .and. j.eq.{j} .and. k.eq.{k}) hit=.true."
+            for tile, (i, j, k) in NEIGHBOR_RECEIVERS
+        ]
+    face_cap = 42 if neighbors else 18
+    pd_cap = 10 if neighbors else 2
     helper = _guard(
         [
             "SUBROUTINE s15_face_match(step,rk,owner,tile,i,j,k,hit)",
@@ -750,13 +789,14 @@ def _append_advect_helpers(lines: list[str]) -> list[str]:
             "case(3)",
             " if(tile.eq.1 .and. i.eq.141 .and. j.eq.2 .and. k.eq.17) hit=.true.",
             " if(tile.eq.2 .and. i.eq.141 .and. j.eq.143 .and. k.eq.16) hit=.true.",
+            *neighbor_face_match,
             "end select",
             "END SUBROUTINE s15_face_match",
             "SUBROUTINE s15_emit_axis(step,rk,owner,tile,its,ite,jts,jte,i,j,k,branch,axis,fm,fp,lm,lp,metric,spacing,before,after)",
             "INTEGER, INTENT(IN) :: step,rk,owner,tile,its,ite,jts,jte,i,j,k,branch,axis",
             "INTEGER, SAVE :: s15_count=0",
             "REAL, INTENT(IN) :: fm,fp,lm,lp,metric,spacing,before,after",
-            "if (s15_count.ge.18) then",
+            f"if (s15_count.ge.{face_cap}) then",
             " write(6,'(A)') 'S15LIMIT S15AX event cap exceeded'",
             " stop 91",
             "endif",
@@ -770,7 +810,7 @@ def _append_advect_helpers(lines: list[str]) -> list[str]:
             "INTEGER, INTENT(IN) :: step,rk,owner,tile,its,ite,jts,jte,i,j,k,active",
             "INTEGER, SAVE :: s15_count=0",
             "REAL, INTENT(IN) :: fluxout,available,eps,scale,low(6),pre(6),post(6)",
-            "if (s15_count.ge.2) then",
+            f"if (s15_count.ge.{pd_cap}) then",
             " write(6,'(A)') 'S15LIMIT S15PD event cap exceeded'",
             " stop 91",
             "endif",
@@ -788,12 +828,16 @@ def _append_advect_helpers(lines: list[str]) -> list[str]:
 
 
 def parse_fortran_capture(
-    text: str, public_root: Path, config: dict[str, Any]
+    text: str,
+    public_root: Path,
+    config: dict[str, Any],
+    *,
+    neighbors: bool = False,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    """Parse the bounded raw-word Fortran stream and validate all six joins."""
-    coordinates = _projection(public_root)
-    schedule_to_slot = {
-        key: (index % 2 + 1, coordinates[index]) for index, key in enumerate(SCHEDULE)
+    """Parse the bounded stream against six witnesses and optional eight receivers."""
+    roster = _capture_roster(public_root, neighbors=neighbors)
+    target_keys = {
+        key for key, identity in roster.items() if identity["role"] == "witness"
     }
     axes: dict[tuple[int, ...], dict[str, dict[str, str]]] = {}
     pds: dict[tuple[int, ...], dict[str, Any]] = {}
@@ -814,15 +858,12 @@ def parse_fortran_capture(
             raise OverlayError(f"{label} must carry the full tile/cell identity")
         step, rk, owner, tile, ti0, ti1, tj0, tj1, i, j, k = ints
         event_key = (step, rk, owner, tile, ti0, ti1, tj0, tj1, i, j, k)
-        schedule_key = (step, rk, owner, ti0, ti1, tj0, tj1)
-        if schedule_key not in schedule_to_slot:
+        roster_key = (step, rk, owner, ti0, ti1, tj0, tj1, i, j, k)
+        expected = roster.get(roster_key)
+        if expected is None or tile != expected["tile"]:
+            scope = "witness/receiver roster" if neighbors else "six-slot schedule"
             raise OverlayError(
-                f"{label} key is outside the independent six-slot schedule"
-            )
-        expected_tile, coordinate = schedule_to_slot[schedule_key]
-        if tile != expected_tile or (i, j, k) != coordinate:
-            raise OverlayError(
-                f"{label} tile slot or coordinate differs from the pinned projection"
+                f"{label} tile slot or coordinate differs from the pinned {scope}"
             )
         row = dict(
             zip(replay.KEY_FIELDS, (step, rk, owner, ti0, ti1, tj0, tj1, i, j, k))
@@ -924,16 +965,18 @@ def parse_fortran_capture(
                 raise OverlayError(f"line {line_no}: duplicate RK consumer record")
             consumers[event_key] = {**row, **dict(zip(fields, values))}
 
-    if len(axes) != 6 or len(consumers) != 6:
+    expected_count = 14 if neighbors else 6
+    if len(axes) != expected_count or len(consumers) != expected_count:
         raise OverlayError(
-            "Fortran stream must contain exactly six producer keys and six consumers"
+            f"Fortran stream must contain exactly {expected_count} producer keys and consumers"
         )
     if set(axes) != set(consumers):
         raise OverlayError("producer and consumer full tile/cell keys differ")
     expected_pd_keys = {key for key in axes if key[1] == 3}
-    if set(pds) != expected_pd_keys:
+    expected_pd_count = 10 if neighbors else 2
+    if set(pds) != expected_pd_keys or len(pds) != expected_pd_count:
         raise OverlayError(
-            "exactly the two RK3 selected PD limiter records are required"
+            f"exactly the {expected_pd_count} RK3 selected PD limiter records are required"
         )
 
     producers: list[dict[str, Any]] = []
@@ -943,13 +986,13 @@ def parse_fortran_capture(
             raise OverlayError(
                 "each selected producer must contain exactly Y/X/Z records"
             )
-        schedule_key = event_key[:3] + event_key[4:8]
-        expected_slot = schedule_to_slot[schedule_key][0]
         identity_row = {
             name: value
             for name, value in by_axis[replay.ORDINARY_ORDER[0]].items()
             if name in replay.KEY_FIELDS
         }
+        roster_key = tuple(identity_row[name] for name in replay.KEY_FIELDS)
+        expected_slot = roster[roster_key]["tile"]
         order = list(
             replay.PD_ORDER if identity_row["rk"] == 3 else replay.ORDINARY_ORDER
         )
@@ -1050,8 +1093,13 @@ def parse_fortran_capture(
         producers.append(producer)
 
     consumer_rows = list(consumers.values())
-    pairs = replay.validate_capture(producers, consumer_rows, public_root, config)
+    pairs = replay.validate_capture(
+        producers, consumer_rows, public_root, config, neighbors=neighbors
+    )
     for _, consumer in pairs:
+        consumer_key = tuple(consumer[name] for name in replay.KEY_FIELDS)
+        if neighbors and consumer_key not in target_keys:
+            continue
         if (
             replay.word_value(consumer["before"], "QIB before") < 0.0
             or replay.word_value(consumer["after"], "QIB after") >= 0.0
@@ -1063,7 +1111,11 @@ def parse_fortran_capture(
 
 
 def extract_s15_streams(
-    full_stdout: Path, face_stream: Path, legacy_stream: Path
+    full_stdout: Path,
+    face_stream: Path,
+    legacy_stream: Path,
+    *,
+    neighbors: bool = False,
 ) -> dict[str, Any]:
     """Split new face records from legacy S15 records, refusing unknown tags.
 
@@ -1119,11 +1171,15 @@ def extract_s15_streams(
     before_hash = digest.hexdigest()
     if _hash_file_bounded(source) != before_hash:
         raise OverlayError("full stdout changed during S15 stream extraction")
-    if {
-        tag: counts[tag] for tag in EXPECTED_FACE_TAG_COUNTS
-    } != EXPECTED_FACE_TAG_COUNTS:
+    expected_counts = (
+        EXPECTED_NEIGHBOR_FACE_TAG_COUNTS if neighbors else EXPECTED_FACE_TAG_COUNTS
+    )
+    if {tag: counts[tag] for tag in expected_counts} != expected_counts:
+        expected_message = (
+            "42 AX, 10 PD, and 14 RK" if neighbors else "18 AX, 2 PD, and 6 RK"
+        )
         raise OverlayError(
-            "face stream must contain exactly 18 AX, 2 PD, and 6 RK events"
+            f"face stream must contain exactly {expected_message} events"
         )
     face_payload = bytes(face_bytes)
     legacy_payload = bytes(legacy_bytes)
