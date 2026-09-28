@@ -50,3 +50,12 @@ returns a zero bundle. The checked derivatives are local to a fixed branch.
 The coordinator and four process quotients are not yet connected to this
 option, so this leaf check does not replay the native hybrid trajectory or
 close S10.
+
+The Python oracle now threads the same default-off option through its own
+ProgB preambles, sedimentation reslopes and four rate/density quotients. A
+small mixed-state one-step check remains finite and preserves a separately
+recorded default-off f64 baseline. The oracle has an extra post-D1 `pre1`
+re-slope, so this is a port-specific experimental trajectory, not an exact
+replay of all seven native ProgB call sites. The validity check is eager and
+value-only; checked derivatives remain local to unchanged branches. C++
+coordinator routing and physical policy approval remain open.

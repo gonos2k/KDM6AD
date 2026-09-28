@@ -23,6 +23,32 @@ from . import constants as c
 from . import fconst as _fc
 
 
+def _s10_exact_zero_rate_over_rhox(
+    rate: torch.Tensor,
+    rhox: torch.Tensor,
+    *,
+    context: str,
+) -> torch.Tensor:
+    """S10 opt-in quotient extension, with a value-only density precondition check.
+
+    Exact-zero rates return themselves, preserving signed zero and selecting the
+    branch-local derivative d(rate)/d(rate)=1, d(rate)/d(rhox)=0. Nonzero rates
+    require finite-positive density; the scalar check only fail-closes and is not
+    used to form the returned AD value.
+    """
+    zero_rate = rate == 0.0
+    # Explicit value-only guard: this synchronization selects an exception path
+    # only; the result below stays in the tensor graph and has no detached values.
+    if bool((~torch.isfinite(rate)).any().detach().cpu().item()):
+        raise ValueError(f"S10 {context}: rate must be finite")
+    invalid_rhox = (~zero_rate) & (~torch.isfinite(rhox) | (rhox <= 0.0))
+    if bool(invalid_rhox.any().detach().cpu().item()):
+        raise ValueError(f"S10 {context}: nonzero rate requires finite-positive rhox")
+    safe_rhox = torch.where(zero_rate, torch.ones_like(rhox), rhox)
+    quotient = rate / safe_rhox
+    return torch.where(zero_rate, rate, quotient)
+
+
 def _rgmma(x: float) -> float:
     """Fortran `rgmma(x) = exp(GAMMLN(x)) = Γ(x)` 직역. review6 audit에서 부호 수정."""
     # Fortran rgmma = f32 expf(f32 gammln) — differs from exp(lgamma) at non-integer args (step-67 class)
@@ -131,6 +157,7 @@ def melting_torch(
     params: MeltingParams,
     dtcld: float,
     mass_den: torch.Tensor | None = None,
+    midpoint_trace: bool = False,
 ) -> MeltingOutputs:
     """Fortran 1284-1342 — psmlt + pgmlt + pimlt.
 
@@ -199,7 +226,11 @@ def melting_torch(
 
     # delta_brs = pgmlt / max(rhox, dens) (Fortran 1325-1328)
     rhox_safe = torch.clamp(rhox, min=c.DENS)
-    delta_brs = torch.where(graupel_active, pgmlt / rhox_safe, zero)
+    pgmlt_over_rhox = (
+        _s10_exact_zero_rate_over_rhox(pgmlt, rhox, context="pgmlt")
+        if midpoint_trace else pgmlt / rhox_safe
+    )
+    delta_brs = torch.where(graupel_active, pgmlt_over_rhox, zero)
 
     # ── pimlt: instantaneous melting (T > T0c AND qi > 0) ──────────────
     ice_active = warm & (qi > 0)
