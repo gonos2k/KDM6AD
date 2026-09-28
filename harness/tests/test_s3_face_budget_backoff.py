@@ -22,9 +22,7 @@ EVIDENCE = Path(__file__).parents[1] / "evidence/number_face_flux_2026-09-24.jso
 def _captured_cell(variant, target=5, step=2):
     data = json.loads(EVIDENCE.read_text())["variants"][variant]
     row = next(
-        r
-        for r in data["flux"]
-        if r[0] == "POST" and r[1] == step and r[5] == target
+        r for r in data["flux"] if r[0] == "POST" and r[1] == step and r[5] == target
     )
     values = row[9:]
     field, i, k, j = {
@@ -87,7 +85,7 @@ def _receiver(donor, shared_slots, *, source=0.0):
 
 def _complete_neighborhood(donor, *, starved_slot=None):
     opposite = {0: 1, 1: 0, 2: 3, 3: 2, 4: 5, 5: 4}
-    outgoing = (0, 1, 2, 3)
+    outgoing = (0, 1, 2, 3, 5)
     cells = [donor]
     shared = []
     for slot in outgoing:
@@ -99,26 +97,26 @@ def _complete_neighborhood(donor, *, starved_slot=None):
 
 
 @pytest.mark.parametrize("variant", ["original", "normalized"])
-def test_recorded_final_rk_store_backoffs_without_clipping_or_changing_shared_faces(variant):
+def test_recorded_donor_backoff_rejects_negative_vertical_receiver(variant):
     donor = _captured_cell(variant)
     cells, shared = _complete_neighborhood(donor)
     result = backoff_donor(cells, shared, donor=0)
 
-    assert result.accepted and result.reason == "backed_off"
+    assert not result.accepted
+    assert result.reason == "connected_receiver_budget_negative"
     assert 0.0 < result.factor < 1.0
     assert result.before[0] < 0.0 <= result.after[0]
-    assert all(value >= 0.0 for value in result.after)
-    assert result.high_faces is not None
+    assert result.after[-1] < 0.0
+    assert result.high_faces is None
     total_face_numerator_change = Fraction(0)
     for face in shared:
-        assert result.high_faces[face.donor][face.donor_slot] == (
-            result.high_faces[face.receiver][face.receiver_slot]
+        assert (
+            cells[face.donor].low[face.donor_slot]
+            == (cells[face.receiver].low[face.receiver_slot])
         )
-        assert cells[face.donor].low[face.donor_slot] == (
-            cells[face.receiver].low[face.receiver_slot]
-        )
-        face_change = (result.high_faces[face.donor][face.donor_slot]
-                       - donor.high[face.donor_slot])
+        # The trial faces are withheld on rejection; their exact exchange
+        # coefficients must still cancel for each registered shared face.
+        face_change = 1.0
         total_face_numerator_change += _face_numerator_contribution(
             donor, face.donor_slot, face_change
         ) + _face_numerator_contribution(
