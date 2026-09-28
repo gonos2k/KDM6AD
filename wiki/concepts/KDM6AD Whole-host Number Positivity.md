@@ -1,7 +1,7 @@
 ---
 title: KDM6AD Whole-host Number Positivity
 type: concept
-date_modified: 2026-09-26
+date_modified: 2026-09-28
 ---
 # KDM6AD Whole-host Number Positivity
 
@@ -32,6 +32,16 @@ caller-supplied without an external receipt manifest, so the replay returns
 processing receive classification only. The trace lacks adjacent shared-face
 words, so it establishes no exchange conservation. QN units remain unresolved,
 and S3 remains open.
+
+The bounded face-backoff prototype was corrected after the Fortran PD limiter
+showed that vertical `fqz(k+1)<0` and `fqz(k)>0` are outgoing. The earlier
+four-face synthetic acceptance claim is withdrawn: the fifth, vertical
+receiver is negative in the six-cell replay, so the candidate rejects the
+change. Measured neighboring operands, not a donor-only replay, are needed
+before judging a conservative correction.
+
+The separate S15 native face-neighbor capture concerns QIB rime-ice volume,
+not a particle-number field; it does not supply S3 number evidence.
 
 See [[kdm6ad-s3-first-negative-face-plan-2026-09-26]],
 [[REPORT_number_face_flux_2026-09-24]],

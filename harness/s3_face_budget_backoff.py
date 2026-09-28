@@ -51,11 +51,10 @@ class BackoffResult:
     high_faces: tuple[tuple[float, ...], ...] | None
 
 
-# xL, xR, yS, yN, zB, zT. The z orientation follows module_advect_em.F:
-# increasing k points down in mass coordinates, so the signs reverse there.
+# xL, xR, yS, yN, zB=fqz(k), zT=fqz(k+1). Match the source PD limiter.
 _OUTGOING = (lambda q: q < 0, lambda q: q > 0,
              lambda q: q < 0, lambda q: q > 0,
-             lambda q: q < 0, lambda q: q > 0)
+             lambda q: q > 0, lambda q: q < 0)
 
 
 def _bits(value: float) -> int:
@@ -87,7 +86,7 @@ def _face_numerator_contribution(cell: Cell, slot: int, delta: float) -> Fractio
     vertical_metric = Fraction(cell.rdzw)
     # Signs follow -div(F): left/south and bottom face terms enter positively;
     # right/north and top face terms enter negatively in their coordinate form.
-    sign = (1, -1, 1, -1, -1, 1)[slot]
+    sign = (1, -1, 1, -1, 1, -1)[slot]
     metric = vertical_metric if slot >= 4 else horizontal_metric
     return (
         sign

@@ -1,8 +1,11 @@
 # S3 final-RK face-budget backoff prototype
 
-**S3 remains OPEN.** This report records a bounded arithmetic prototype for the
-captured donor cells. It is not a native execution of a repair and does not
-close whole-host accepted-state nonnegativity.
+**S3 remains OPEN. The earlier synthetic-neighborhood acceptance claim in this
+report is withdrawn.** The vertical outgoing-face signs in the prototype were
+reversed. With the source signs restored, the captured donor has five outgoing
+correction faces, and the six-cell synthetic neighborhood is rejected because
+its vertical receiver becomes negative. This is not a native execution of a
+repair and does not close whole-host accepted-state nonnegativity.
 
 ## Fixed seeds
 
@@ -37,12 +40,13 @@ and Graphify's incremental scan treated 322 docs and 9 papers as changed. No
 full-corpus semantic extraction was attempted. This report links the supporting
 source reports directly and keeps its synthesis within their measured scope.
 
-| Capture | RK value before | `scalar_old` | `advect_tend` | `scalar_tend` | xL correction before → after | Backoff factor | Replayed RK value after |
+| Capture | RK value before | `scalar_old` | `advect_tend` | `scalar_tend` | Donor-only trial xL correction before → after | Donor-only factor | Donor-only RK value after |
 | --- | ---: | ---: | ---: | ---: | --- | ---: | ---: |
-| Original | −0.0285397433 (`0xbce9cc2e`) | 0 (`0x00000000`) | −140.5644684 (`0xc30c9081`) | 0 | −3,069,114,843,136 (`0xd432a560`) → −3,069,114,056,704 (`0xd432a55d`) | 0.9999997616 (`0x3f7ffffc`) | +0.0098270038 (`0x3c210171`) |
-| Normalized | −0.0018450511 (`0xbaf1d5a4`) | 0 (`0x00000000`) | −9.0869264603 (`0xc111640d`) | 0 | −3,028,194,426,880 (`0xd430439d`) → −3,028,194,164,736 (`0xd430439c`) | 0.9999999404 (`0x3f7fffff`) | +0.0108452346 (`0x3c31b036`) |
+| Original | −0.0285397433 (`0xbce9cc2e`) | 0 (`0x00000000`) | −140.5644684 (`0xc30c9081`) | 0 | −3,069,114,843,136 (`0xd432a560`) → −3,069,114,318,848 (`0xd432a55e`) | 0.9999998212 (`0x3f7ffffd`) | +0.0101315593 (`0x3c25fed7`) |
+| Normalized | −0.0018450511 (`0xbaf1d5a4`) | 0 (`0x00000000`) | −9.0869264603 (`0xc111640d`) | 0 | −3,028,194,426,880 (`0xd430439d`) → −3,028,194,164,736 (`0xd430439c`) | 0.9999999404 (`0x3f7fffff`) | +0.0238400865 (`0x3cc34c49`) |
 
-Both use `dt_rk=20` (`0x41a00000`). The low-order xL operands remain fixed:
+These donor-only trials are not accepted connected-face results. Both use
+`dt_rk=20` (`0x41a00000`). The low-order xL operands remain fixed:
 original `9,717,785,600` (`0x5010ce69`) and normalized `9,720,164,352`
 (`0x5010d77c`). The result is sensitive to the executed arithmetic: the
 normalized capture's exact-rational POST-face numerator is positive while its
@@ -65,17 +69,20 @@ do not cancel for the shared face; equal face bits alone are insufficient for
 conservation when metrics differ.
 It never changes a scalar after the RK update.
 
-The captured donor has four outgoing correction faces. The five-cell test
-pairs **all four** with synthetic receivers at their opposite face slots,
-copies each low-order face and donor metric, and seeds each receiver's `value`
-and `scalar_old` to 1. Exact pre-rounding RK-numerator contributions cancel
-face by face in this equal-metric construction, while the tests check each
-shared stored face bit and the donor's source-ordered accepted store. A
-three-cell version that omits two receivers is rejected rather than silently
-changing unmatched faces. A deliberately source-starved receiver is also
-rejected. G2 contains no adjacent target pair, so these receiver operands
-and metric symmetries are constructed examples, not measured neighboring cells.
-An unequal-metric receiver is rejected rather than being called conservative.
+The limiter in the captured `module_advect_em.F` scales vertical `fqz(k+1)<0`
+and `fqz(k)>0` as outgoing. The RK divergence uses
+`-rdzw(k)*(fqz(k+1)-fqz(k))`. The prototype previously reversed both vertical
+sign conventions and omitted the large negative top-face correction from its
+receiver set. The corrected donor has five outgoing correction faces. The
+six-cell test pairs all five with opposite slots and equal synthetic metrics;
+the exact pre-rounding RK-numerator contributions cancel face by face. The
+donor becomes nonnegative in both variants, but the newly included synthetic
+vertical receiver remains negative (original about −123,349; normalized about
+−121,630). The prototype therefore returns `connected_receiver_budget_negative`
+and does not publish changed faces. A partial topology is rejected, as is an
+unequal-metric receiver. These receivers are synthetic; the captured G2 data
+contain no measured adjacent target pair. Actual neighboring RK and face
+operands are required before evaluating a repair.
 
 Reproduce with:
 
@@ -89,8 +96,9 @@ python harness/replay_number_face_flux.py
 
 - No candidate host executable was built or run. There is no new native positive
   state, whole-grid face ledger, or boundary closure.
-- The tests cover a five-cell connected neighborhood with equal synthetic
-  metrics; they do not establish conservation across the real grid, tile halos,
+- The tests cover a six-cell connected neighborhood with equal synthetic
+  metrics and **reject** its donor-only backoff. They do not establish a viable
+  correction or conservation across the real grid, tile halos,
   MPI seams, or boundary exports.
 - This is stored-number arithmetic only. It makes no physical number-unit,
   absolute particle-count, dry/moist basis, or volume-moment claim.
