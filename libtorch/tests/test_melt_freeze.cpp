@@ -93,6 +93,37 @@ void test_melt_grad_finite() {
     } END_TEST();
 }
 
+void test_s10_midpoint_trace_guards_d1_rate_and_capped_amount() {
+    TEST(test_s10_midpoint_trace_guards_d1_rate_and_capped_amount) {
+        auto p = default_melting_params();
+        auto in = make_melt_inputs(/*t=*/280.0, /*grad=*/true);
+        in.rhox = torch::full({1, 2}, 400.0, f64().requires_grad(true));
+        auto out = melting_torch(in, p, 60.0, in.den, /*midpoint_trace=*/true);
+        assert(torch::all(out.pgmlt_capped < 0.0).item<bool>());
+        assert(torch::allclose(out.delta_brs_capped, out.pgmlt_capped / in.rhox));
+        assert(torch::allclose(out.delta_brs, out.pgmlt / in.rhox));
+        out.delta_brs_capped.sum().backward();
+        auto expected_rho_grad = -out.pgmlt_capped.detach() / (in.rhox.detach() * in.rhox.detach());
+        assert(torch::allclose(in.rhox.grad(), expected_rho_grad, 1e-10, 1e-14));
+
+        auto empty = make_melt_inputs(/*t=*/270.0);
+        empty.rhox = torch::zeros_like(empty.rhox);
+        auto empty_out = melting_torch(empty, p, 60.0, empty.den, /*midpoint_trace=*/true);
+        assert(torch::equal(empty_out.pgmlt_capped, torch::zeros_like(empty.qg)));
+        assert(torch::equal(empty_out.delta_brs_capped, torch::zeros_like(empty.qg)));
+
+        auto bad = make_melt_inputs(/*t=*/280.0);
+        bad.rhox = torch::zeros_like(bad.rhox);
+        bool rejected = false;
+        try {
+            (void)melting_torch(bad, p, 60.0, bad.den, /*midpoint_trace=*/true);
+        } catch (const c10::Error&) {
+            rejected = true;
+        }
+        assert(rejected);
+    } END_TEST();
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // D2 / D3 / D4 / D5
 // ═══════════════════════════════════════════════════════════════════════════
@@ -243,6 +274,7 @@ int main() {
     test_melt_warm_psmlt_negative();
     test_melt_pimlt_full_transfer();
     test_melt_grad_finite();
+    test_s10_midpoint_trace_guards_d1_rate_and_capped_amount();
     test_contact_inactive_when_supcol_low();
     test_contact_qc_gate_regression();
     test_bigg_cloud_qc_gate_regression();

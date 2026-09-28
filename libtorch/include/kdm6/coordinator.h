@@ -335,7 +335,8 @@ MeltFreezePhaseOutputs melt_freeze_d1(
     const torch::Tensor& n0so,
     const torch::Tensor& n0go,
     const MeltFreezePhaseParams& params,
-    double dtcld
+    double dtcld,
+    bool midpoint_trace = false
 );
 
 // Stage-A STEP 3 split: D2 contact + D3 Bigg-cloud (post-D2 cap) + D4 Bigg-rain,
@@ -412,6 +413,7 @@ struct CoordinatorParams {
     cloud_dsd::CloudDsdParams cloud_dsd;
     progb::ProgBParams progb;
     slope::SlopeParams slope;
+    bool midpoint_trace = false;
 };
 
 CoordinatorParams default_coordinator_params(double den0 = constants::DEN0);
@@ -630,7 +632,8 @@ CoordinatorState state_update(
     const CoordinatorState* delta_src = nullptr, // Stage-A STEP 1: state to compute
                             // delta2/delta3 from (the ENTRY state) when `state` is a
                             // post-melt/freeze working base; nullptr → use `state`.
-    bool dump_graupel = false                    // KDM6_SUBSTEP_DUMP graupel-rate dump gate (= kdm6_dump_on)
+    bool dump_graupel = false,                   // KDM6_SUBSTEP_DUMP graupel-rate dump gate (= kdm6_dump_on)
+    bool midpoint_trace = false                  // S10 opt-in; no C ABI threading
 );
 
 // ─── Step F1h: paired threshold cleanup (Fortran 2949-2970) ─────────────────

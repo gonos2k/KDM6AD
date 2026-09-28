@@ -57,5 +57,13 @@ small mixed-state one-step check remains finite and preserves a separately
 recorded default-off f64 baseline. The oracle has an extra post-D1 `pre1`
 re-slope, so this is a port-specific experimental trajectory, not an exact
 replay of all seven native ProgB call sites. The validity check is eager and
-value-only; checked derivatives remain local to unchanged branches. C++
-coordinator routing and physical policy approval remain open.
+value-only; checked derivatives remain local to unchanged branches. Physical
+policy approval remains open.
+
+The C++ coordinator now has the same default-off experimental path at its
+existing ProgB calls. It replaces the persistent inactive-output bundle only
+when opted in and guards the four density quotients, including the D1 capped
+volume amount used by the inline state update. Selected f32/f64 value and
+local-gradient checks pass. This does not establish equality with the native
+seven-call schedule, full applied budgets, transformed AD, or approval of the
+midpoint density; S10 remains OPEN.

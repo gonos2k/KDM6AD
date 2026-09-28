@@ -8,6 +8,8 @@
 #include <torch/torch.h>
 #include <cassert>
 #include <cmath>
+#include <cstdint>
+#include <cstring>
 #include <iostream>
 
 using namespace kdm6;
@@ -229,18 +231,19 @@ PreambleCore make_zero_pre(int B, int K) {
     };
 }
 
-WarmPhaseOutputs make_zero_warm(int B, int K) {
-    auto z = torch::zeros({B, K}, f64());
-    auto z_bool = torch::zeros({B, K}, torch::dtype(torch::kBool));
+WarmPhaseOutputs make_zero_warm_like(const torch::Tensor& z) {
+    auto z_bool = torch::zeros_like(z, z.options().dtype(torch::kBool));
     return WarmPhaseOutputs{
         z, z, z, z, z, z,   // praut,nraut,pracw,nracw,nccol,nrcol
         z, z_bool,          // prevp, rain_complete_evap
     };
 }
+WarmPhaseOutputs make_zero_warm(int B, int K) {
+    return make_zero_warm_like(torch::zeros({B, K}, f64()));
+}
 
-ColdPhaseOutputs make_zero_cold(int B, int K) {
-    auto z = torch::zeros({B, K}, f64());
-    auto z_bool = torch::zeros({B, K}, torch::dtype(torch::kBool));
+ColdPhaseOutputs make_zero_cold_like(const torch::Tensor& z) {
+    auto z_bool = torch::zeros_like(z, z.options().dtype(torch::kBool));
     return ColdPhaseOutputs{
         z, z, z, z,                              // C1, C2
         z, z, z, z,                              // C2b
@@ -254,9 +257,11 @@ ColdPhaseOutputs make_zero_cold(int B, int K) {
         z, z,                                    // C6 / C6'
     };
 }
+ColdPhaseOutputs make_zero_cold(int B, int K) {
+    return make_zero_cold_like(torch::zeros({B, K}, f64()));
+}
 
-MeltFreezePhaseOutputs make_zero_mf(int B, int K) {
-    auto z = torch::zeros({B, K}, f64());
+MeltFreezePhaseOutputs make_zero_mf_like(const torch::Tensor& z) {
     return MeltFreezePhaseOutputs{
         z, z, z, z, z, z, z,     // D1 (psmlt, pgmlt, pimlt_qi, pimlt_ni, sfac_melt, gfac_melt, delta_brs_melt)
         z, z, z,                 // psmlt_capped, pgmlt_capped, delta_brs_capped (round-trip fix)
@@ -265,6 +270,9 @@ MeltFreezePhaseOutputs make_zero_mf(int B, int K) {
         z, z, z,                 // D4
         z, z, z, z,              // D5
     };
+}
+MeltFreezePhaseOutputs make_zero_mf(int B, int K) {
+    return make_zero_mf_like(torch::zeros({B, K}, f64()));
 }
 
 }  // namespace
@@ -305,6 +313,115 @@ void test_state_update_zero_rates_identity() {
         assert(torch::allclose(out.ni, s.ni));
         assert(torch::allclose(out.brs, s.brs));
         assert(torch::allclose(out.t, s.t));
+    } END_TEST();
+}
+
+void test_s10_exact_zero_rhox_state_update_guard_and_local_gradient() {
+    TEST(test_s10_exact_zero_rhox_state_update_guard_and_local_gradient) {
+        auto opts = f64().requires_grad(true);
+        auto s = make_zero_state(1, 1);
+        s.brs = torch::full({1, 1}, 1.0, f64());
+        auto pre = make_zero_pre(1, 1);
+        pre.supcol = torch::full({1, 1}, 10.0, f64());  // cold owner arm
+        auto rho = torch::full({1, 1}, 2.0, opts);
+        pre.rhox = rho;
+        auto warm = make_zero_warm(1, 1);
+        auto cold = make_zero_cold(1, 1);
+        auto rate = torch::full({1, 1}, 0.4, opts);
+        cold.pgdep = rate;
+        auto mf = make_zero_mf(1, 1);
+
+        constexpr double dtcld = 3.0;
+        auto out = state_update(s, pre, warm, cold, mf, dtcld,
+                                2.85e6, nullptr, /*dump_graupel=*/false,
+                                /*midpoint_trace=*/true);
+        assert(std::abs(out.brs.item<double>() - 1.6) < 1e-14);
+        out.brs.sum().backward();
+        const double grad_rate = rate.grad().item<double>();
+        const double grad_rho = rho.grad().item<double>();
+        assert(std::abs(grad_rate - 1.5) < 1e-14);
+        assert(std::abs(grad_rho + 0.3) < 1e-14);
+
+        auto eval = [&](double r, double h) {
+            auto s_eval = s;
+            auto pre_eval = make_zero_pre(1, 1);
+            pre_eval.supcol = torch::full({1, 1}, 10.0, f64());
+            pre_eval.rhox = torch::full({1, 1}, h, f64());
+            auto cold_eval = make_zero_cold(1, 1);
+            cold_eval.pgdep = torch::full({1, 1}, r, f64());
+            return state_update(s_eval, pre_eval, warm, cold_eval, mf, dtcld,
+                                2.85e6, nullptr, false, true).brs.item<double>();
+        };
+        constexpr double eps = 1.0e-5, dr = 0.1, dh = 0.2;
+        const double fd = (eval(0.4 + eps * dr, 2.0 + eps * dh)
+                           - eval(0.4 - eps * dr, 2.0 - eps * dh)) / (2.0 * eps);
+        assert(std::abs(fd - (grad_rate * dr + grad_rho * dh)) < 1e-8);
+
+        auto zero_pre = make_zero_pre(1, 1);
+        zero_pre.supcol = torch::full({1, 1}, 10.0, f64());
+        zero_pre.rhox = torch::zeros({1, 1}, opts);
+        auto zero_cold = make_zero_cold(1, 1);
+        auto zero_rate = torch::full({1, 1}, -0.0, opts);
+        zero_cold.pgdep = zero_rate;
+        auto zero_out = state_update(s, zero_pre, warm, zero_cold, mf, dtcld,
+                                     2.85e6, nullptr, false, true);
+        zero_out.brs.sum().backward();
+        assert(zero_out.brs.item<double>() == 1.0);
+        assert(zero_rate.grad().item<double>() == dtcld);
+        assert(zero_pre.rhox.grad().item<double>() == 0.0);
+
+        auto bad_pre = make_zero_pre(1, 1);
+        bad_pre.supcol = torch::full({1, 1}, 10.0, f64());
+        bad_pre.rhox = torch::zeros({1, 1}, f64());
+        auto bad_cold = make_zero_cold(1, 1);
+        bad_cold.pgdep = torch::ones({1, 1}, f64());
+        bool rejected = false;
+        try {
+            (void)state_update(s, bad_pre, warm, bad_cold, mf, dtcld,
+                               2.85e6, nullptr, false, true);
+        } catch (const c10::Error&) {
+            rejected = true;
+        }
+        assert(rejected);
+    } END_TEST();
+}
+
+void test_s10_warm_f32_exact_zero_rhox_mixed_lanes() {
+    TEST(test_s10_warm_f32_exact_zero_rhox_mixed_lanes) {
+        auto f32 = torch::TensorOptions().dtype(torch::kFloat32);
+        auto z = torch::zeros({1, 2}, f32);
+        auto s = make_zero_state(1, 2);
+        s.qv = z.clone(); s.qc = z.clone(); s.qr = z.clone(); s.qs = z.clone();
+        s.qg = z.clone(); s.qi = z.clone(); s.nc = z.clone(); s.nr = z.clone();
+        s.ni = z.clone(); s.nccn = torch::full({1, 2}, 1.0e9, f32);
+        s.brs = torch::ones({1, 2}, f32); s.t = torch::full({1, 2}, 280.0, f32);
+        PreambleCore pre{
+            torch::full({1, 2}, 1004.5, f32), torch::full({1, 2}, 2.5e6, f32),
+            torch::tensor({{-5.0f, -5.0f}}, f32), torch::tensor({{0.0f, 2.0f}}, f32),
+        };
+        auto warm = make_zero_warm_like(z);
+        auto cold = make_zero_cold_like(z);
+        auto mf = make_zero_mf_like(z);
+        cold.pgdep = torch::tensor({{0.3f, 0.2f}}, f32);  // non-owner rates are masked
+        cold.pgevp = torch::tensor({{-0.0f, 0.3f}}, f32);
+        mf.pgeml = torch::tensor({{0.0f, -0.1f}}, f32);
+
+        auto out = state_update(s, pre, warm, cold, mf, /*dtcld=*/1.0,
+                                2.85e6, nullptr, false, /*midpoint_trace=*/true);
+        assert(std::abs(out.brs[0][0].item<float>() - 1.0f) < 1e-6f);
+        assert(std::abs(out.brs[0][1].item<float>() - 1.1f) < 1e-6f);
+        assert(torch::isfinite(out.brs).all().item<bool>());
+
+        // A consumed nonzero warm rate cannot divide by missing density.
+        pre.rhox = torch::zeros({1, 2}, f32);
+        bool rejected = false;
+        try {
+            (void)state_update(s, pre, warm, cold, mf, /*dtcld=*/1.0,
+                               2.85e6, nullptr, false, true);
+        } catch (const c10::Error&) {
+            rejected = true;
+        }
+        assert(rejected);
     } END_TEST();
 }
 
@@ -757,6 +874,61 @@ void test_kdm62d_one_step_runs_finite_warm() {
         assert(torch::all(new_state.brs >= 0).item<bool>());
         // T finite (no clamp; physical plausibility checked elsewhere).
         assert(torch::all(torch::isfinite(new_state.t)).item<bool>());
+    } END_TEST();
+}
+
+void test_s10_midpoint_trace_mixed_one_step() {
+    TEST(test_s10_midpoint_trace_mixed_one_step) {
+        const int B = 1, K = 3;
+        auto opts = f64();
+        auto s = make_zero_state(B, K);
+        auto full_p = default_coordinator_params();
+        assert(!full_p.midpoint_trace);
+        s.qg = torch::tensor({{0.5 * full_p.progb.qcrmin, 5.0e-5, 0.0}}, opts);
+        s.brs = torch::tensor({{0.0, 1.0e-7, 0.0}}, opts);
+        s.t = torch::full({B, K}, 263.15, opts);  // cold, no D1 melt
+        CoordinatorForcing f{
+            torch::full({B, K}, 8.0e4, opts), torch::full({B, K}, 1.1, opts),
+            torch::full({B, K}, 500.0, opts), torch::full({B, K}, 550.0, opts),
+        };
+        auto aux = make_test_aux(B, K);
+        auto sea = torch::zeros({B, K}, torch::dtype(torch::kBool));
+        auto wp = default_warm_phase_params();
+        auto cp = default_cold_phase_params();
+        auto mp = default_melt_freeze_phase_params();
+
+        auto baseline = kdm62d_one_step(s, f, aux, sea, full_p, wp, cp, mp, 1.0e-6);
+        auto word = [](const torch::Tensor& value, int64_t i) {
+            const double x = value.reshape({-1})[i].item<double>();
+            std::uint64_t bits;
+            std::memcpy(&bits, &x, sizeof(bits));
+            return bits;
+        };
+        // Independently captured raw f64 words from clean main 63ac8d4 with this
+        // exact fixture (before the CoordinatorParams opt-in existed).
+        assert(word(baseline.brs, 0) == 0x0000000000000000ULL);
+        assert(word(baseline.brs, 1) == 0x3e7ad7f244cfa9d8ULL);
+        assert(word(baseline.brs, 2) == 0x0000000000000000ULL);
+        assert(word(baseline.qg, 0) == 0x0000000000000000ULL);
+        assert(word(baseline.qg, 1) == 0x3f0a36e29732cbdeULL);
+        assert(word(baseline.qg, 2) == 0x0000000000000000ULL);
+        assert(word(baseline.t, 0) == 0x4070726666666665ULL);
+        assert(word(baseline.t, 1) == 0x40707266665f226aULL);
+        assert(word(baseline.t, 2) == 0x4070726666666666ULL);
+        auto optin = full_p;
+        optin.midpoint_trace = true;
+        auto persistent = progb::make_zero_progb_state(s.qg);
+        auto out = kdm62d_one_step(s, f, aux, sea, optin, wp, cp, mp, 1.0e-6,
+                                  c10::nullopt, nullptr, &persistent);
+        assert(out.brs[0][0].item<double>() > 0.0);  // positive trace projected at rho_mid
+        assert(out.brs[0][2].item<double>() == 0.0); // empty bundle remains empty
+        assert(persistent.rhox[0][0].item<double>() == progb::RHO_MID);
+        assert(persistent.rhox[0][2].item<double>() == 0.0);
+        assert(persistent.avtg[0][0].item<double>() > 0.0);
+        assert(persistent.avtg[0][2].item<double>() == 0.0);
+        for (auto* x : {&out.qg, &out.brs, &out.t}) {
+            assert(torch::isfinite(*x).all().item<bool>());
+        }
     } END_TEST();
 }
 
@@ -1497,6 +1669,8 @@ int main() {
     test_dsd_limiter_passes_through_inactive();
     test_threshold_cleanup_grad_flows();
     test_state_update_zero_rates_identity();
+    test_s10_exact_zero_rhox_state_update_guard_and_local_gradient();
+    test_s10_warm_f32_exact_zero_rhox_mixed_lanes();
     test_state_update_pcond_warms_and_moves_qv_to_qc();
     test_state_update_does_not_clamp_nccn_to_max();
     test_state_update_piacr_routes_to_qs_when_qr_small();
@@ -1513,6 +1687,7 @@ int main() {
     test_preamble_runs_finite();
     test_preamble_grad_propagates();
     test_kdm62d_one_step_runs_finite_warm();
+    test_s10_midpoint_trace_mixed_one_step();
     test_kdm62d_one_step_grad_propagates();
     test_compute_loops_max_basic();
     test_kdm62d_step_matches_one_step_when_delt_le_dtcldcr();

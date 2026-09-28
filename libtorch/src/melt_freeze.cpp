@@ -60,7 +60,8 @@ MeltingOutputs melting_torch(
     const MeltingInputs& in,
     const MeltingParams& p,
     double dtcld,
-    const torch::Tensor& mass_den
+    const torch::Tensor& mass_den,
+    bool midpoint_trace
 ) {
     auto zero = torch::zeros_like(in.qs);
     auto warm = in.t > p.t0c;
@@ -139,8 +140,35 @@ MeltingOutputs melting_torch(
     auto rhox_div = (in.rhox.scalar_type() == torch::kFloat32)
         ? in.rhox
         : torch::clamp(in.rhox, /*min=*/constants::DENS);
-    auto delta_brs = torch::where(graupel_active, pgmlt / rhox_div, zero);
-    auto delta_brs_capped = torch::where(graupel_active, pgmlt_capped_g / rhox_div, zero);  // AMOUNT (Fortran F:1351 brs+=pgmlt/rhox)
+    torch::Tensor delta_brs, delta_brs_capped;
+    if (midpoint_trace) {
+        auto exact_zero_over_rhox = [&](const torch::Tensor& numerator, const char* label) {
+            // Explicit value-only precondition checks: .item() only selects an
+            // exception path; no detached scalar enters the returned AD value.
+            const bool finite_rate = torch::isfinite(numerator).all().item<bool>();
+            TORCH_CHECK(finite_rate, "S10 ", label, ": rate/amount must be finite");
+            auto zero_rate = numerator == 0.0;
+            auto invalid_rhox = torch::logical_and(
+                torch::logical_not(zero_rate),
+                torch::logical_or(torch::logical_not(torch::isfinite(in.rhox)), in.rhox <= 0.0));
+            TORCH_CHECK(!invalid_rhox.any().item<bool>(),
+                        "S10 ", label, ": nonzero rate/amount requires finite-positive rhox");
+            auto safe_rhox = torch::where(zero_rate, torch::ones_like(in.rhox), in.rhox);
+            auto quotient = numerator / safe_rhox;
+            // Executed zero arm returns the signed numerator (local rate derivative 1).
+            // Across rate=0 the derivative is discontinuous, even for positive rhox.
+            return torch::where(zero_rate, numerator, quotient);
+        };
+        delta_brs = torch::where(graupel_active,
+                                 exact_zero_over_rhox(pgmlt, "pgmlt"), zero);
+        // C++ inline D1 brs mutation consumes this CAPPED AMOUNT directly, so it
+        // needs the same zero branch independently of the rate output above.
+        delta_brs_capped = torch::where(graupel_active,
+                                        exact_zero_over_rhox(pgmlt_capped_g, "pgmlt_capped"), zero);
+    } else {
+        delta_brs = torch::where(graupel_active, pgmlt / rhox_div, zero);
+        delta_brs_capped = torch::where(graupel_active, pgmlt_capped_g / rhox_div, zero);
+    }
 
     // ── pimlt: instantaneous ───────────────────────────────────────────
     auto ice_active = torch::logical_and(warm, in.qi > 0);
