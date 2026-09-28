@@ -44,6 +44,22 @@ SCHEDULE = (
     (2, 3, 5, 1, 235, 1, 142),
     (2, 3, 5, 1, 235, 143, 283),
 )
+# Fixed RK3 face receivers for the two projected negative-store donors.  These
+# extend the six witness targets only in the explicit neighbors capture mode.
+NEIGHBOR_RECEIVERS = (
+    (1, (140, 2, 17)),
+    (1, (142, 2, 17)),
+    (1, (141, 2, 16)),
+    (1, (141, 142, 16)),
+    (2, (140, 143, 16)),
+    (2, (142, 143, 16)),
+    (2, (141, 144, 16)),
+    (2, (141, 143, 17)),
+)
+NEIGHBOR_SCHEDULE_BY_TILE = {
+    1: (2, 3, 5, 1, 235, 1, 142),
+    2: (2, 3, 5, 1, 235, 143, 283),
+}
 KEY_FIELDS = (
     "step",
     "rk",
@@ -180,6 +196,25 @@ def _projection(root: Path) -> list[tuple[int, int, int]]:
             raise ProbeError("coordinate target falls outside its owner tile")
         coordinates.append((i, j, k))
     return coordinates
+
+
+def _capture_roster(
+    public_root: Path, *, neighbors: bool = False
+) -> dict[tuple[int, ...], dict[str, Any]]:
+    """Return independently pinned witness identities plus optional fixed receivers."""
+    coordinates = _projection(public_root)
+    roster: dict[tuple[int, ...], dict[str, Any]] = {}
+    for index, (schedule, coordinate) in enumerate(zip(SCHEDULE, coordinates)):
+        key = (*schedule, *coordinate)
+        roster[key] = {"tile": index % 2 + 1, "role": "witness"}
+    if neighbors:
+        for tile, coordinate in NEIGHBOR_RECEIVERS:
+            schedule = NEIGHBOR_SCHEDULE_BY_TILE[tile]
+            key = (*schedule, *coordinate)
+            if key in roster:
+                raise ProbeError("neighbor receiver duplicates a projected witness")
+            roster[key] = {"tile": tile, "role": "receiver"}
+    return roster
 
 
 def _safe_source_root(source_root: Path) -> dict[str, bytes]:
@@ -499,15 +534,24 @@ def validate_capture(
     consumers: list[dict[str, Any]],
     public_root: Path,
     config: dict[str, Any],
+    *,
+    neighbors: bool = False,
 ) -> list[tuple[dict[str, Any], dict[str, Any]]]:
-    coordinates = _projection(public_root)
-    if len(producers) != 6 or len(consumers) != 6:
+    roster = _capture_roster(public_root, neighbors=neighbors)
+    witness_keys = {key for key, item in roster.items() if item["role"] == "witness"}
+    receiver_keys = {key for key, item in roster.items() if item["role"] == "receiver"}
+    if len(witness_keys) != 6 or len(receiver_keys) != (8 if neighbors else 0):
         raise ProbeError(
-            "capture must contain exactly six producer and six consumer records"
+            "capture roster must contain six witnesses and the selected receiver set"
         )
-    expected = {
-        (*schedule, *coordinate) for schedule, coordinate in zip(SCHEDULE, coordinates)
-    }
+    if witness_keys & receiver_keys:
+        raise ProbeError("neighbor receiver identities overlap witness identities")
+    expected = witness_keys | receiver_keys
+    expected_count = len(expected)
+    if len(producers) != expected_count or len(consumers) != expected_count:
+        raise ProbeError(
+            f"capture must contain exactly {expected_count} producer and consumer records"
+        )
     producer_map: dict[tuple[int, ...], dict[str, Any]] = {}
     consumer_map: dict[tuple[int, ...], dict[str, Any]] = {}
     for rows, mapping, label in (
@@ -521,9 +565,12 @@ def validate_capture(
             if key in mapping:
                 raise ProbeError(f"duplicate {label} identity")
             if key not in expected:
-                raise ProbeError(
-                    f"{label} key differs from the six projected identities"
+                scope = (
+                    "witness/receiver roster"
+                    if neighbors
+                    else "six projected identities"
                 )
+                raise ProbeError(f"{label} key differs from the {scope}")
             mapping[key] = row
     if set(producer_map) != expected or set(consumer_map) != expected:
         raise ProbeError("capture is missing a scheduled producer or RK consumer")
