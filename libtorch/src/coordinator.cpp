@@ -677,6 +677,8 @@ CoordinatorState kdm62d_one_step(
     static const long kdm6_dump_target = []{ const char* e = std::getenv("KDM6_DUMP_CALL"); return e ? std::atol(e) : 1L; }();
     const bool kdm6_dump_on = (kdm6_substep_call == kdm6_dump_target);
     if (kdm6_dump_on) kdm6_dump_state_substep(state, "entry");
+#else
+    constexpr bool kdm6_dump_on = false;
 #endif
 
     // F1a: preamble (full diagnostics) on the ENTRY state.
