@@ -135,6 +135,44 @@ def _neighbor_stream() -> str:
     return "\n".join(rows) + "\n"
 
 
+def _qn_stream() -> str:
+    rows = _raw_stream().splitlines()
+    donor = replay._projection(ROOT)[4]
+    selected = []
+    for raw in rows:
+        parts = raw.split()
+        if (
+            parts[0] not in {"S15AX", "S15PD", "S15RK"}
+            or parts[1:5] != ["2", "3", "5", "1"]
+            or tuple(map(int, parts[9:12])) != donor
+        ):
+            continue
+        selected.append(parts)
+    assert len(selected) == 5  # Z/X/Y, one PD limiter, one RK store.
+    result = []
+    for coordinate in (replay.QN_DONOR, *replay.QN_RECEIVERS):
+        for raw_parts in selected:
+            parts = raw_parts.copy()
+            parts[0] = {"S15AX": "S3QNAX", "S15PD": "S3QNPD", "S15RK": "S3QNRK"}[
+                parts[0]
+            ]
+            parts[1:12] = [2, 3, 3, 1, 1, 235, 1, 142, *coordinate]
+            if parts[0] == "S3QNRK" and coordinate != replay.QN_DONOR:
+                parts[14] = "41000000"  # positive synthetic sc_tend for receivers
+                parts[15] = replay._add(replay._mul(parts[12], parts[13]), parts[14])
+                parts[16] = "00000000"
+                old_mass = replay._fma32(parts[18], parts[20], parts[19])
+                dt_tendency = replay._mul(parts[17], parts[15])
+                numerator = replay._fma32(old_mass, parts[16], dt_tendency)
+                new_mass = replay._fma32(parts[18], parts[21], parts[19])
+                parts[22] = replay.value_word(
+                    replay.word_value(numerator) / replay.word_value(new_mass)
+                )
+                assert replay.word_value(parts[22]) > 0.0
+            result.append(" ".join(map(str, parts)))
+    return "\n".join(result) + "\n"
+
+
 def test_source_pins_and_both_owner_call_anchors_are_independent() -> None:
     assert overlay.SOURCE_PINS == {
         "dyn_em/solve_em.F": "d66e9db1bba8f37e3f46d30c2fd74bdf8def411adf233376a69e0b401c6d3d1f",
@@ -181,7 +219,6 @@ def test_fortran_emitters_enforce_the_26_event_family_caps() -> None:
     assert "S15LIMIT S15AX event cap exceeded" in advect_helpers
     assert "if (s15_count.ge.2) then" in advect_helpers
     assert "S15LIMIT S15PD event cap exceeded" in advect_helpers
-
     em_neighbor_helpers = "\n".join(
         overlay._append_module_em_helpers(["END MODULE module_em"], neighbors=True)
     )
@@ -195,6 +232,58 @@ def test_fortran_emitters_enforce_the_26_event_family_caps() -> None:
         "tile.eq.1 .and. i.eq.141 .and. j.eq.142 .and. k.eq.16) hit=.true."
         in advect_neighbor_helpers
     )
+
+
+def test_qn_overlay_has_separate_p_qnc_owner_roster_and_exact_caps() -> None:
+    solve = overlay._convert_qn_overlay(
+        overlay._patch_solve(
+            """SUBROUTINE solve_em()\nIMPLICIT NONE\nother_scalar_advance: IF (num_3d_s >= 1) THEN\nscalar_tile_loop_1: DO ij=1,n\n CALL rk_scalar_tend(x)\nENDDO scalar_tile_loop_1\nscalar_tile_loop_2: DO ij=1,n\n CALL rk_update_scalar(x)\nENDDO scalar_tile_loop_2\nEND IF\nEND SUBROUTINE solve_em\n"""
+        )
+    )
+    em_helpers = overlay._convert_qn_overlay(
+        "\n".join(
+            overlay._append_module_em_helpers(["END MODULE module_em"], neighbors=True)
+        )
+    )
+    advect_helpers = overlay._convert_qn_overlay(
+        "\n".join(
+            overlay._append_advect_helpers(
+                ["END MODULE module_advect_em"], neighbors=True
+            )
+        )
+    )
+    assert solve.count("s15_owner=MERGE(3,0,is==P_QNC .and. s15_capture_enabled)") == 2
+    assert "P_QIB" not in solve and "P_QIB" not in em_helpers + advect_helpers
+    assert "owner.ne.3" in em_helpers + advect_helpers
+    assert "S3QNAX" in advect_helpers and "S3QNPD" in advect_helpers
+    assert "S3QNRK" in em_helpers
+    assert "if (s15_count.ge.15) then" in advect_helpers
+    assert advect_helpers.count("if (s15_count.ge.5) then") == 1
+    assert "if (s15_count.ge.5) then" in em_helpers
+    assert "i.eq.234" not in advect_helpers + em_helpers
+
+
+def test_synthetic_qn_stream_joins_exact_five_with_only_donor_transition() -> None:
+    stream = _qn_stream()
+    producers, consumers = overlay.parse_fortran_capture(stream, ROOT, CONFIG, qn=True)
+    assert len(producers) == len(consumers) == 5
+    expected = {
+        (*replay.QN_SCHEDULE, *coord)
+        for coord in (replay.QN_DONOR, *replay.QN_RECEIVERS)
+    }
+    assert {replay._identity(row) for row in producers} == expected
+    after = {replay._identity(row): row["after"] for row in consumers}
+    donor_key = (*replay.QN_SCHEDULE, *replay.QN_DONOR)
+    assert replay.word_value(after[donor_key]) < 0.0
+    assert all(
+        replay.word_value(value) > 0.0
+        for key, value in after.items()
+        if key != donor_key
+    )
+    with pytest.raises(overlay.OverlayError, match="exactly 5 producer keys"):
+        overlay.parse_fortran_capture(
+            stream.rsplit("\n", 2)[0] + "\n", ROOT, CONFIG, qn=True
+        )
 
 
 def test_wrf_final_suffix_cpp_pass_uses_only_cpp_base_and_tradflag() -> None:
@@ -371,6 +460,43 @@ def test_dual_stream_extractor_preserves_legacy_and_face_lines(tmp_path: Path) -
     assert receipt["tag_counts"]["S15AX"] == 18
     with pytest.raises(overlay.OverlayError, match="destinations must be new"):
         overlay.extract_s15_streams(full, face, tmp_path / "legacy-new")
+
+
+def test_qn_dual_stream_extractor_requires_exact_s3qn_counts(tmp_path: Path) -> None:
+    full = tmp_path / "rank0.stdout"
+    face = tmp_path / "qn-face.records"
+    legacy = tmp_path / "legacy.records"
+    raw = (
+        b"WRF banner\nS15Q legacy\n"
+        + b"S3QNAX axis\n" * 15
+        + b"S3QNPD limiter\n" * 5
+        + b"S3QNRK consumer\n" * 5
+    )
+    full.write_bytes(raw)
+    receipt = overlay.extract_s15_streams(full, face, legacy, qn=True)
+    assert receipt["schema"] == "KDM6AD-S3-QNCLOUD-DUAL-STREAM-EXTRACTION-v1"
+    assert receipt["capture_mode"] == "S3_QNCLOUD_OWNER3"
+    assert receipt["tag_counts"] == {
+        "S3QNAX": 15,
+        "S3QNPD": 5,
+        "S3QNRK": 5,
+        "S15Q": 1,
+        "S15QC": 0,
+        "S15M": 0,
+    }
+    assert face.read_bytes() == (
+        b"S3QNAX axis\n" * 15 + b"S3QNPD limiter\n" * 5 + b"S3QNRK consumer\n" * 5
+    )
+    assert legacy.read_bytes() == b"S15Q legacy\n"
+
+    mixed = tmp_path / "mixed.stdout"
+    mixed_face = tmp_path / "mixed-face.records"
+    mixed_legacy = tmp_path / "mixed-legacy.records"
+    mixed.write_bytes(raw + b"S15AX wrong mode\n")
+    with pytest.raises(overlay.OverlayError, match="unexpected S15 tap in QNCLOUD"):
+        overlay.extract_s15_streams(mixed, mixed_face, mixed_legacy, qn=True)
+    assert not mixed_face.exists()
+    assert not mixed_legacy.exists()
 
 
 def test_dual_stream_extractor_rejects_unknown_s15_tag_without_outputs(

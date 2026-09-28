@@ -1,0 +1,446 @@
+{
+  "schema": "KDM6AD-S3-QNCLOUD-native-face-neighbor-capture-v1",
+  "status": "PASS_BOUNDED_CAPTURE_AND_NONINTERFERENCE",
+  "claim_scope": "Captures selected QNCLOUD producer/RK records for one donor plus four adjacent receiver cells. Four selected interior adjacent pairs had high/low shared-face words checked for equality. No global or every-face equality claim, and no metric-weighted conservation claim.",
+  "instrumentation": {
+    "kind": "macro-gated read-only Fortran taps",
+    "macro": "KDM6AD_S15_FACE_CAPTURE",
+    "runtime_on_env": "KDM6_S15_NATIVE_CAPTURE_LOG=1",
+    "runtime_off_env": "unset",
+    "owner_gate": "is==P_QNC",
+    "qn_mode": "mp_physics=237; QNCLOUD runtime index is P_QNC"
+  },
+  "public_source_tool_hashes": {
+    "overlay_generator_at_generation_sha256": "c8c095d6514e966d955c324d7fb8fb65a33486afbd8a978b6aea3811064e0222",
+    "overlay_generator_current_sha256": "abed97978cb834483bf38da6ef00086bb8da539c22a5d7fd5de0e76c76491826",
+    "replay_parser_sha256": "e0f0553ed244d9278d71abc3debbf54d9b9a3c1e3ef87262f43a6f84c86aa96e",
+    "source_worktree_head_at_generation": "b6cf4b39587ebbae343f6469563ac5e266dd72e5",
+    "fortran_source_pins": {
+      "dyn_em/solve_em.F": "d66e9db1bba8f37e3f46d30c2fd74bdf8def411adf233376a69e0b401c6d3d1f",
+      "dyn_em/module_em.F": "7695bfb05a7f99763334a6e69523bbcc1de0f2c659177a18c10a6e1cf530a0c7",
+      "dyn_em/module_advect_em.F": "58253bdbeb188dd47ed0579fcd2891086be1889b75c0c7d3696c9ad1d213559d",
+      "phys/module_mp_kdm6_cons.F": "4f0103c8a8321b8e854d3500f4ae567755e41eb78746fac54519eca2686a6648"
+    },
+    "generated_overlay_source_sha256": {
+      "dyn_em/module_advect_em.F": "e2c72c89affd0f0ebd70bb9243539210af995a0adb136270c53ab7480c5f1615",
+      "dyn_em/module_em.F": "9d521b872b1767232c4f8564b4f49ead2a7fdd3a29ddfd61360a178021dc8839",
+      "dyn_em/solve_em.F": "3efc9477b168dd72d1c740eec564519441ebe233ff9cc71cbcb6ce482589214a"
+    },
+    "parser_only_refresh_kept_generated_fortran_identical": true
+  },
+  "preprocess": {
+    "configured_wrf_suffix": "sed \u2192 CPP(first pass with configured flags) \u2192 standard.exe \u2192 CPP(final pass)",
+    "configure_wrf_sha256": "490a164e853e4d1f28ff79c9dfc36843d00db9c8bd6aaae6bd47afd70ffc9292",
+    "cpp_binary_sha256": "da93121aee7a566976e57fcebdc19f5b3cdd3aaa94469ff4bde61ff44f199e03",
+    "standard_exe_sha256": "21848b3d6e1680a2221753f06afef1c2d3043b542cf7ac0062c542470786cf19",
+    "macro_off_byte_equal_to_unmodified_source_outputs": true,
+    "macro_off_final_f90_sha256": {
+      "module_advect_em": "1f6d10ba7b44870fb6ac324cea8a613758db0a6991dafa46c9b9afd8231495dc",
+      "module_em": "e00d4b4131e179c2e59aa2cf282965bed1aef5c449202405e93b2e43e8e9e804",
+      "solve_em": "2155b1c46883d23434bc7bd0f90f9e2570e764beeba159ae26ab1d759851a22d"
+    },
+    "macro_on_final_f90_sha256": {
+      "module_advect_em": "72110e93afda10f65c41aaaba242aae4a8e647479a2549285c4ba396f809bd75",
+      "module_em": "a341cdb9dbf56c293f47691b83ddb50f66709130b46276cc7de8257025c606b4",
+      "solve_em": "f0925db42b0bf00ebb5df93c3780d22fe3301851d05c71d19cd4081c2dfe6ef7"
+    }
+  },
+  "build": {
+    "exe_sha256": "e12e973cf903e431f2a893e610c19cb3f5fcd188d47a6a569a8f9e07c56408b5",
+    "map_sha256": "fb638f3895e4aaac688d7408b961cf50ed2c7253b45cfcf0926cc3c6f78dd94d",
+    "direct_objects_before_unchanged_archive": {
+      "module_advect_em.o": "d7745544179b24e05a763d25cf2deef4fae89d21155ad8b62a1efa70423c6a33",
+      "module_em.o": "be1c95f3d94e88cb7b92c432ee967857f26fc9fb997f1714ffbfdaf5ea9e531b",
+      "module_mp_kdm6_cons.o": "7265b13e86be6a47f6d35e95b57466e44d75cdb90e5d474e5fb73d13783df0f7",
+      "solve_em.o": "9bf629f4b73935bf8705e4008a800f079fa93bf7a4acda2298bffba02ba8383a"
+    },
+    "module_mp_kdm6_cons_source_sha256": "4f0103c8a8321b8e854d3500f4ae567755e41eb78746fac54519eca2686a6648",
+    "module_mp_kdm6_cons_archive_member_identical": true,
+    "unchanged_host_archive_sha256": "f27a3633cae66c412123296eed3ebc3caeb3080ab7e8c9f224c18ab55c987a94",
+    "kdm6_runtime_library_sha256": "a843ab775e53ebf61c38549dd5f32223d8e180ebefc07025b1cbad48df5935ff",
+    "mpif90_wrapper_sha256": "91865d113f579bbf8e14c7d696266fdcf87f5e4845aa75966ad4e31531ebae5d",
+    "fresh_object_compile_receipt_sha256": "532f9ef79bd1591c8f9ba4dfd2dd143393c3741d4395cbee466f4842964fc1e3",
+    "link_map_proves_direct_object_order": true
+  },
+  "inputs": {
+    "input_canonical_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+    "namelist_without_grid_sha256": "7779f4fdcce320b23ad72ae83eb8eb0f59caf87a12776dacfa7ab40a1f3ec198",
+    "namelist_file_sha256": "064b6f5ea5683ee3dc68d408c08bf4cbf588be06dbc7d99bb3529be8ba61554a",
+    "wrfinput_sha256": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+    "wrfbdy_sha256": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+    "wrfchainp_sha256": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3",
+    "static_physics_symlink_count": 78
+  },
+  "runs": {
+    "duration_seconds": 40,
+    "saved_times": [
+      "2025-07-19_00:00:00",
+      "2025-07-19_00:00:20",
+      "2025-07-19_00:00:40"
+    ],
+    "mpi_ranks": 1,
+    "actual_proc_grid": "1x1",
+    "threads": 1,
+    "same_executable_off_on": true,
+    "records": [
+      {
+        "mode": "off",
+        "returncode": 0,
+        "elapsed_seconds": 63.336885929107666,
+        "argv": [
+          "python3",
+          "harness/run_ss_case.py",
+          "--mp",
+          "237",
+          "--minutes",
+          "0",
+          "--seconds",
+          "40",
+          "--history",
+          "0",
+          "--history-s",
+          "20",
+          "--np",
+          "1",
+          "--proc-grid",
+          "1x1",
+          "--label",
+          "s3_qncloud_overlay_run1_off",
+          "--case",
+          "<isolated-case>",
+          "--fixed-dt"
+        ],
+        "env": {
+          "KDM6_S15_NATIVE_CAPTURE_LOG": "unset",
+          "OMP_NUM_THREADS": "1",
+          "MKL_NUM_THREADS": "1",
+          "OMP_THREAD_LIMIT": "1",
+          "VECLIB_MAXIMUM_THREADS": "1"
+        },
+        "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+        "exe_sha256": "e12e973cf903e431f2a893e610c19cb3f5fcd188d47a6a569a8f9e07c56408b5",
+        "stdout_sha256": "5e5b500c2c67fa15eb277bf1265d2b34ad0b8deaf0c4dd26c9d0979ab4a4448a",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "mode": "on",
+        "returncode": 0,
+        "elapsed_seconds": 62.933682918548584,
+        "argv": [
+          "python3",
+          "harness/run_ss_case.py",
+          "--mp",
+          "237",
+          "--minutes",
+          "0",
+          "--seconds",
+          "40",
+          "--history",
+          "0",
+          "--history-s",
+          "20",
+          "--np",
+          "1",
+          "--proc-grid",
+          "1x1",
+          "--label",
+          "s3_qncloud_overlay_run1_on",
+          "--case",
+          "<isolated-case>",
+          "--fixed-dt"
+        ],
+        "env": {
+          "KDM6_S15_NATIVE_CAPTURE_LOG": "1",
+          "OMP_NUM_THREADS": "1",
+          "MKL_NUM_THREADS": "1",
+          "OMP_THREAD_LIMIT": "1",
+          "VECLIB_MAXIMUM_THREADS": "1"
+        },
+        "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+        "exe_sha256": "e12e973cf903e431f2a893e610c19cb3f5fcd188d47a6a569a8f9e07c56408b5",
+        "stdout_sha256": "23f96edda0010314ff6c111386837fc01fb375f554050b431887bf1e27b5ecec",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ]
+  },
+  "capture": {
+    "expected_and_observed_tag_counts": {
+      "S3QNAX": 15,
+      "S3QNPD": 5,
+      "S3QNRK": 5
+    },
+    "producer_count": 5,
+    "consumer_count": 5,
+    "source_order_replay": "PASS for all five selected producer/consumer pairs",
+    "selected_cells": [
+      {
+        "role": "receiver",
+        "tile": 1,
+        "stage": [
+          2,
+          3
+        ],
+        "before": "4696AC1A",
+        "after": "495954F4",
+        "advect_tend": "4F7FAC2A",
+        "sc_tend": "00000000",
+        "source_order": [
+          "z",
+          "x",
+          "y"
+        ],
+        "coordinate_i_j_k": [
+          232,
+          124,
+          12
+        ]
+      },
+      {
+        "role": "receiver",
+        "tile": 1,
+        "stage": [
+          2,
+          3
+        ],
+        "before": "00000000",
+        "after": "4543A4F3",
+        "advect_tend": "4B6B4738",
+        "sc_tend": "00000000",
+        "source_order": [
+          "z",
+          "x",
+          "y"
+        ],
+        "coordinate_i_j_k": [
+          233,
+          123,
+          12
+        ]
+      },
+      {
+        "role": "witness",
+        "tile": 1,
+        "stage": [
+          2,
+          3
+        ],
+        "before": "00000000",
+        "after": "BAEC299F",
+        "advect_tend": "C10DFC7F",
+        "sc_tend": "00000000",
+        "source_order": [
+          "z",
+          "x",
+          "y"
+        ],
+        "coordinate_i_j_k": [
+          233,
+          124,
+          12
+        ]
+      },
+      {
+        "role": "receiver",
+        "tile": 1,
+        "stage": [
+          2,
+          3
+        ],
+        "before": "4C135297",
+        "after": "4C13B223",
+        "advect_tend": "4DE7FEED",
+        "sc_tend": "00000000",
+        "source_order": [
+          "z",
+          "x",
+          "y"
+        ],
+        "coordinate_i_j_k": [
+          233,
+          124,
+          13
+        ]
+      },
+      {
+        "role": "receiver",
+        "tile": 1,
+        "stage": [
+          2,
+          3
+        ],
+        "before": "00000000",
+        "after": "47EEE329",
+        "advect_tend": "4E0FA026",
+        "sc_tend": "00000000",
+        "source_order": [
+          "z",
+          "x",
+          "y"
+        ],
+        "coordinate_i_j_k": [
+          233,
+          125,
+          12
+        ]
+      }
+    ],
+    "face_stream": {
+      "file": "S3QN_face.stream",
+      "bytes": 3585,
+      "sha256": "848eae8889159d880640134581f29b3e830638cfb5f68cd6c3219ae3969747dd"
+    },
+    "legacy_stream": {
+      "file": "S3QN_legacy.stream",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "records": 0
+    },
+    "full_capture_stdout": {
+      "bytes": 50334,
+      "sha256": "63821e319dcc95b12ceb4496f856800c693f1fc26d51217d2a73504b57362f2c",
+      "kept_outside_public_evidence": true
+    },
+    "saved_history_at_40s": {
+      "donor_233_124_12": {
+        "word": "00000000",
+        "value": 0.0
+      },
+      "east_boundary_234_124_12": {
+        "word": "BAEC299F",
+        "value": -0.001801777514629066
+      },
+      "qNCLOUD_frame40": {
+        "finite": 2573532,
+        "total": 2573532,
+        "negative": 3
+      }
+    }
+  },
+  "history_comparison": {
+    "capture_off_sha256": "59b8a0abd7a027a546414f51b5c30f10fa10e22f4a470cb95d9380824afdd3e9",
+    "capture_on_sha256": "59b8a0abd7a027a546414f51b5c30f10fa10e22f4a470cb95d9380824afdd3e9",
+    "current_uninstrumented_baseline_sha256": "59b8a0abd7a027a546414f51b5c30f10fa10e22f4a470cb95d9380824afdd3e9",
+    "current_baseline_capture_off_equal": true,
+    "historical_G2_original_sha256": "7d2afb3236ea6ea53a1df5c75f17b2b1da27f963ace697a8a912eda871c0f750",
+    "historical_G2_original_equal": false,
+    "raw_bitwise_frames": [
+      {
+        "pair": "capture_off_on",
+        "frame_index": 0,
+        "variables_common": 254,
+        "bitwise_matches": 254,
+        "differences": 0,
+        "skips": 0,
+        "status": "PASS"
+      },
+      {
+        "pair": "capture_off_on",
+        "frame_index": 1,
+        "variables_common": 254,
+        "bitwise_matches": 254,
+        "differences": 0,
+        "skips": 0,
+        "status": "PASS"
+      },
+      {
+        "pair": "capture_off_on",
+        "frame_index": 2,
+        "variables_common": 254,
+        "bitwise_matches": 254,
+        "differences": 0,
+        "skips": 0,
+        "status": "PASS"
+      },
+      {
+        "pair": "baseline_off",
+        "frame_index": 0,
+        "variables_common": 254,
+        "bitwise_matches": 254,
+        "differences": 0,
+        "skips": 0,
+        "status": "PASS"
+      },
+      {
+        "pair": "baseline_off",
+        "frame_index": 1,
+        "variables_common": 254,
+        "bitwise_matches": 254,
+        "differences": 0,
+        "skips": 0,
+        "status": "PASS"
+      },
+      {
+        "pair": "baseline_off",
+        "frame_index": 2,
+        "variables_common": 254,
+        "bitwise_matches": 254,
+        "differences": 0,
+        "skips": 0,
+        "status": "PASS"
+      }
+    ],
+    "current_uninstrumented_baseline_run": {
+      "run_label": "s3_qncloud_original_mp237_baseline",
+      "mp_physics": 237,
+      "instrumented": false,
+      "returncode": 0,
+      "executable_sha256": "1b4184f7f19805b543d409b31ab5dc00b5417e0173164d7b59afb9eb783ada0b",
+      "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+      "argv": [
+        "python3",
+        "harness/run_ss_case.py",
+        "--mp",
+        "237",
+        "--minutes",
+        "0",
+        "--seconds",
+        "40",
+        "--history",
+        "0",
+        "--history-s",
+        "20",
+        "--np",
+        "1",
+        "--proc-grid",
+        "1x1",
+        "--label",
+        "s3_qncloud_original_mp237_baseline",
+        "--case",
+        "<isolated-baseline-case>",
+        "--fixed-dt"
+      ],
+      "env": {
+        "OMP_NUM_THREADS": "1",
+        "MKL_NUM_THREADS": "1",
+        "OMP_THREAD_LIMIT": "1",
+        "VECLIB_MAXIMUM_THREADS": "1"
+      },
+      "input_canonical_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+      "namelist_without_grid_sha256": "7779f4fdcce320b23ad72ae83eb8eb0f59caf87a12776dacfa7ab40a1f3ec198",
+      "saved_times": [
+        "2025-07-19_00:00:00",
+        "2025-07-19_00:00:20",
+        "2025-07-19_00:00:40"
+      ],
+      "history_file_sha256": "59b8a0abd7a027a546414f51b5c30f10fa10e22f4a470cb95d9380824afdd3e9",
+      "history_file_bytes": 953745068,
+      "host_archive_sha256": "f27a3633cae66c412123296eed3ebc3caeb3080ab7e8c9f224c18ab55c987a94",
+      "module_mp_kdm6_cons_object_sha256": "7265b13e86be6a47f6d35e95b57466e44d75cdb90e5d474e5fb73d13783df0f7",
+      "module_mp_kdm6_cons_source_sha256": "4f0103c8a8321b8e854d3500f4ae567755e41eb78746fac54519eca2686a6648",
+      "configure_wrf_sha256": "490a164e853e4d1f28ff79c9dfc36843d00db9c8bd6aaae6bd47afd70ffc9292",
+      "preflight_receipt_sha256": "ba4180a2b90c151744a1aaf87301efced3c8feffb9f31bf7a1273fe3af98642d",
+      "case_manifest_sha256": "bb0d1a767790570bac40d6da8f57a95868ed650da305627e41c17d752ee90975",
+      "launch_receipt_sha256": "975b14488289f015ab516a844a0217b5a8c5e8042fc6e45fb6c5f4cebca75aeb",
+      "baseline_result_receipt_sha256": "0985e0cebd71e55799e8f93684ed956756075d18c5a8cf7fba4d454ae32598a2",
+      "matches_capture_off_history": true,
+      "matches_historical_g2_history": false
+    }
+  },
+  "boundary_word_crosscheck": {
+    "captured_donor_RK3_after": "BAEC299F",
+    "saved_history_east_boundary_QNCLOUD_at_40s": "BAEC299F",
+    "exactly_equal": true,
+    "scope": "RK3 selected-store word versus saved history boundary word only; no direct flow_dep_bdy tap."
+  },
+  "superseded_or_historical_runs": "Historical G2 output is retained only as a reference hash. This run is compared against the current uninstrumented baseline and does not claim the old G2 trajectory."
+}

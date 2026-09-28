@@ -60,6 +60,14 @@ NEIGHBOR_SCHEDULE_BY_TILE = {
     1: (2, 3, 5, 1, 235, 1, 142),
     2: (2, 3, 5, 1, 235, 143, 283),
 }
+QN_SCHEDULE = (2, 3, 3, 1, 235, 1, 142)
+QN_DONOR = (233, 124, 12)
+QN_RECEIVERS = (
+    (232, 124, 12),
+    (233, 123, 12),
+    (233, 125, 12),
+    (233, 124, 13),
+)
 KEY_FIELDS = (
     "step",
     "rk",
@@ -199,9 +207,20 @@ def _projection(root: Path) -> list[tuple[int, int, int]]:
 
 
 def _capture_roster(
-    public_root: Path, *, neighbors: bool = False
+    public_root: Path, *, neighbors: bool = False, qn: bool = False
 ) -> dict[tuple[int, ...], dict[str, Any]]:
-    """Return independently pinned witness identities plus optional fixed receivers."""
+    """Return one fixed witness roster, optionally with its fixed face receivers."""
+    if neighbors and qn:
+        raise ProbeError("S15 neighbor and S3 QNCLOUD capture modes are exclusive")
+    if qn:
+        roster = {(*QN_SCHEDULE, *QN_DONOR): {"tile": 1, "role": "witness"}}
+        roster.update(
+            {
+                (*QN_SCHEDULE, *coordinate): {"tile": 1, "role": "receiver"}
+                for coordinate in QN_RECEIVERS
+            }
+        )
+        return roster
     coordinates = _projection(public_root)
     roster: dict[tuple[int, ...], dict[str, Any]] = {}
     for index, (schedule, coordinate) in enumerate(zip(SCHEDULE, coordinates)):
@@ -407,11 +426,14 @@ def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     return result
 
 
-def replay_producer(row: dict[str, Any], config: dict[str, Any]) -> dict[str, str]:
+def replay_producer(
+    row: dict[str, Any], config: dict[str, Any], *, qn: bool = False
+) -> dict[str, str]:
     key = _identity(row)
-    if key[:7] not in SCHEDULE:
+    schedule = (QN_SCHEDULE,) if qn else SCHEDULE
+    if key[:7] not in schedule:
         raise ProbeError(
-            "producer key is outside the independently declared six-slot schedule"
+            "producer key is outside the independently declared capture schedule"
         )
     branch = row.get("branch")
     order = PD_ORDER if branch == "positive_definite" else ORDINARY_ORDER
@@ -536,14 +558,20 @@ def validate_capture(
     config: dict[str, Any],
     *,
     neighbors: bool = False,
+    qn: bool = False,
 ) -> list[tuple[dict[str, Any], dict[str, Any]]]:
-    roster = _capture_roster(public_root, neighbors=neighbors)
+    if neighbors and qn:
+        raise ProbeError("S15 neighbor and S3 QNCLOUD capture modes are exclusive")
+    roster = _capture_roster(public_root, neighbors=neighbors, qn=qn)
     witness_keys = {key for key, item in roster.items() if item["role"] == "witness"}
     receiver_keys = {key for key, item in roster.items() if item["role"] == "receiver"}
-    if len(witness_keys) != 6 or len(receiver_keys) != (8 if neighbors else 0):
-        raise ProbeError(
-            "capture roster must contain six witnesses and the selected receiver set"
-        )
+    expected_witnesses = 1 if qn else 6
+    expected_receivers = 4 if qn else (8 if neighbors else 0)
+    if (
+        len(witness_keys) != expected_witnesses
+        or len(receiver_keys) != expected_receivers
+    ):
+        raise ProbeError("capture roster has the wrong witness or receiver set")
     if witness_keys & receiver_keys:
         raise ProbeError("neighbor receiver identities overlap witness identities")
     expected = witness_keys | receiver_keys
@@ -567,6 +595,8 @@ def validate_capture(
             if key not in expected:
                 scope = (
                     "witness/receiver roster"
+                    if qn
+                    else "witness/receiver roster"
                     if neighbors
                     else "six projected identities"
                 )
@@ -577,7 +607,7 @@ def validate_capture(
     pairs = []
     for key in sorted(expected):
         producer, consumer = producer_map[key], consumer_map[key]
-        produced = replay_producer(producer, config)
+        produced = replay_producer(producer, config, qn=qn)
         if _identity(producer) != _identity(consumer):
             raise ProbeError("producer/consumer identity join failed")
         if (

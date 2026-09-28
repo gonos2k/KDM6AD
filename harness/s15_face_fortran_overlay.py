@@ -47,6 +47,8 @@ MAX_LEGACY_STREAM_BYTES = 1024 * 1024
 MAX_LEGACY_RECORDS = 100_000
 EXPECTED_FACE_TAG_COUNTS = {"S15AX": 18, "S15PD": 2, "S15RK": 6}
 EXPECTED_NEIGHBOR_FACE_TAG_COUNTS = {"S15AX": 42, "S15PD": 10, "S15RK": 14}
+QN_FACE_TAGS = frozenset({b"S3QNAX", b"S3QNPD", b"S3QNRK"})
+EXPECTED_QN_FACE_TAG_COUNTS = {"S3QNAX": 15, "S3QNPD": 5, "S3QNRK": 5}
 WRF_CPP_BASE = ("-P", "-nostdinc", "-xassembler-with-cpp")
 WRF_TRADITIONAL_CPP = ("-traditional-cpp",)
 
@@ -335,9 +337,12 @@ def prepare_overlay(
     public_root: Path,
     *,
     neighbors: bool = False,
+    qn: bool = False,
 ) -> dict[str, Any]:
+    if neighbors and qn:
+        raise OverlayError("S15 neighbor and S3 QNCLOUD modes are exclusive")
     sources = _source_bytes(source_root)
-    projection = _projection(public_root)
+    projection = [] if qn else _projection(public_root)
     dual_calls = find_dual_owner_calls(sources["dyn_em/solve_em.F"].decode())
     if shadow_root.exists():
         raise OverlayError("overlay shadow directory must be new")
@@ -346,24 +351,31 @@ def prepare_overlay(
         ("dyn_em/solve_em.F", _patch_solve),
         (
             "dyn_em/module_em.F",
-            lambda text: _patch_module_em(text, neighbors=neighbors),
+            lambda text: _patch_module_em(text, neighbors=(neighbors or qn)),
         ),
         (
             "dyn_em/module_advect_em.F",
-            lambda text: _patch_advect(text, neighbors=neighbors),
+            lambda text: _patch_advect(text, neighbors=(neighbors or qn)),
         ),
     ):
         original = sources[relative].decode()
         patched[relative] = _restore_cpp_line_numbers(
             original, patcher(original), relative
         )
+    if qn:
+        patched = {name: _convert_qn_overlay(text) for name, text in patched.items()}
+        _validate_qn_overlay(patched)
     shadow_root.mkdir(parents=True)
     for relative, output in patched.items():
         path = shadow_root / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(output, encoding="utf-8", newline="")
     manifest = {
-        "schema": "KDM6AD-S15-FACE-FORTRAN-OVERLAY-v1",
+        "schema": (
+            "KDM6AD-S3-QNCLOUD-FACE-FORTRAN-OVERLAY-v1"
+            if qn
+            else "KDM6AD-S15-FACE-FORTRAN-OVERLAY-v1"
+        ),
         "macro": MACRO,
         "source_pins": SOURCE_PINS,
         "producer_call_anchor": {
@@ -376,8 +388,14 @@ def prepare_overlay(
         },
         "producer_call_extent_1based": list(dual_calls["producer"]),
         "consumer_call_extent_1based": list(dual_calls["consumer"]),
-        "schedule": [list(key) for key in SCHEDULE],
-        "coordinates": [list(x) for x in projection],
+        "schedule": (
+            [list(replay.QN_SCHEDULE)] if qn else [list(key) for key in SCHEDULE]
+        ),
+        "coordinates": (
+            [list(replay.QN_DONOR), *[list(x) for x in replay.QN_RECEIVERS]]
+            if qn
+            else [list(x) for x in projection]
+        ),
         "status": "macro-gated producer/consumer and directional/limiter taps; compile-only pending",
     }
     if neighbors:
@@ -385,10 +403,92 @@ def prepare_overlay(
             {"tile": tile, "coordinate": list(coordinate)}
             for tile, coordinate in NEIGHBOR_RECEIVERS
         ]
-    (shadow_root / "s15_face_overlay_manifest.json").write_text(
+    if qn:
+        manifest["capture_mode"] = "S3_QNCLOUD_OWNER3"
+        manifest["tile_bounds"] = {"tile": 1, "i": [1, 235], "j": [1, 142]}
+    manifest_name = (
+        "s3_qn_face_overlay_manifest.json" if qn else "s15_face_overlay_manifest.json"
+    )
+    (shadow_root / manifest_name).write_text(
         json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
     return manifest
+
+
+def _convert_qn_overlay(text: str) -> str:
+    """Give the fixed QNCLOUD tap its own runtime owner and record namespace."""
+    qib_owner = "s15_owner=MERGE(5,0,is==P_QIB .and. s15_capture_enabled)"
+    owner_count = text.count(qib_owner)
+    if owner_count not in (0, 2):
+        raise OverlayError(
+            "expected zero or both QIB owner call predicates in one source"
+        )
+    text = text.replace(
+        qib_owner,
+        "s15_owner=MERGE(3,0,is==P_QNC .and. s15_capture_enabled)",
+    )
+    for old, new in (
+        ("s15_face_match", "s3qn_face_match"),
+        ("s15_rk_match", "s3qn_rk_match"),
+        ("s15_emit_axis", "s3qn_emit_axis"),
+        ("s15_emit_pd", "s3qn_emit_pd"),
+        ("s15_emit_rk", "s3qn_emit_rk"),
+        ("S15LIMIT", "S3QN_LIMIT"),
+        ("S15AX", "S3QNAX"),
+        ("S15PD", "S3QNPD"),
+        ("S15RK", "S3QNRK"),
+    ):
+        text = text.replace(old, new)
+    for matcher in ("face", "rk"):
+        name = f"s3qn_{matcher}_match"
+        pattern = re.compile(
+            rf"(?ms)^(\s*SUBROUTINE {name}\([^\n]+\).*?^\s*END SUBROUTINE {name}\s*)$",
+            re.I,
+        )
+        body = [
+            f"SUBROUTINE {name}(step,rk,owner,tile,i,j,k,hit)",
+            "INTEGER, INTENT(IN) :: step,rk,owner,tile,i,j,k",
+            "LOGICAL, INTENT(OUT) :: hit",
+            "hit=.false.",
+            "if (step.ne.2 .or. rk.ne.3 .or. owner.ne.3 .or. tile.ne.1) return",
+            "if (i.lt.1 .or. i.gt.235 .or. j.lt.1 .or. j.gt.142) return",
+            "if ((i.eq.233 .and. j.eq.124 .and. k.eq.12) .or. &",
+            "    (i.eq.232 .and. j.eq.124 .and. k.eq.12) .or. &",
+            "    (i.eq.233 .and. j.eq.123 .and. k.eq.12) .or. &",
+            "    (i.eq.233 .and. j.eq.125 .and. k.eq.12) .or. &",
+            "    (i.eq.233 .and. j.eq.124 .and. k.eq.13)) hit=.true.",
+            f"END SUBROUTINE {name}",
+        ]
+        text, count = pattern.subn("\n".join(body), text)
+        if count > 1:
+            raise OverlayError(f"expected one generated {name} helper")
+    text = text.replace("if (s15_count.ge.42)", "if (s15_count.ge.15)")
+    text = text.replace("if (s15_count.ge.10)", "if (s15_count.ge.5)")
+    text = text.replace("if (s15_count.ge.14)", "if (s15_count.ge.5)")
+    return text
+
+
+def _validate_qn_overlay(patched: dict[str, str]) -> None:
+    text = "\n".join(patched.values())
+    if text.count("s15_owner=MERGE(3,0,is==P_QNC .and. s15_capture_enabled)") != 2:
+        raise OverlayError("QNCLOUD overlay must gate both producer and RK owner calls")
+    if re.search(r"s15_owner\s*=\s*MERGE\([^\n]*P_QIB", text) or any(
+        tag in text for tag in ("'S15AX'", "'S15PD'", "'S15RK'")
+    ):
+        raise OverlayError("QNCLOUD overlay retains a QIB tap owner or S15 record tag")
+    for name in ("face", "rk"):
+        if text.count(f"SUBROUTINE s3qn_{name}_match(") != 1:
+            raise OverlayError(f"QNCLOUD overlay must define one s3qn_{name}_match")
+        if f"SUBROUTINE s15_{name}_match(" in text:
+            raise OverlayError(f"QNCLOUD overlay retains the S15 {name} matcher")
+    if (
+        "'S3QNAX'" not in text
+        or "'S3QNPD'" not in text
+        or "'S3QNRK'" not in text
+        or text.count("if (s15_count.ge.15) then") != 1
+        or text.count("if (s15_count.ge.5) then") != 2
+    ):
+        raise OverlayError("QNCLOUD overlay tags or 15/5/5 caps are incomplete")
 
 
 def strip_capture_macro(text: str) -> str:
@@ -833,9 +933,12 @@ def parse_fortran_capture(
     config: dict[str, Any],
     *,
     neighbors: bool = False,
+    qn: bool = False,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Parse the bounded stream against six witnesses and optional eight receivers."""
-    roster = _capture_roster(public_root, neighbors=neighbors)
+    if neighbors and qn:
+        raise OverlayError("S15 neighbor and S3 QNCLOUD capture modes are exclusive")
+    roster = _capture_roster(public_root, neighbors=neighbors, qn=qn)
     target_keys = {
         key for key, identity in roster.items() if identity["role"] == "witness"
     }
@@ -861,7 +964,13 @@ def parse_fortran_capture(
         roster_key = (step, rk, owner, ti0, ti1, tj0, tj1, i, j, k)
         expected = roster.get(roster_key)
         if expected is None or tile != expected["tile"]:
-            scope = "witness/receiver roster" if neighbors else "six-slot schedule"
+            scope = (
+                "five-cell QNCLOUD roster"
+                if qn
+                else "witness/receiver roster"
+                if neighbors
+                else "six-slot schedule"
+            )
             raise OverlayError(
                 f"{label} tile slot or coordinate differs from the pinned {scope}"
             )
@@ -872,12 +981,23 @@ def parse_fortran_capture(
 
     for line_no, raw in enumerate(text.splitlines(), 1):
         tokens = raw.split()
-        if not tokens or not tokens[0].startswith("S15"):
+        if tokens and (
+            (qn and tokens[0].startswith(("S15AX", "S15PD", "S15RK")))
+            or (not qn and tokens[0].startswith(("S3QNAX", "S3QNPD", "S3QNRK")))
+        ):
+            raise OverlayError(
+                f"line {line_no}: face record belongs to the other capture mode"
+            )
+        prefix = "S3QN" if qn else "S15"
+        if not tokens or not tokens[0].startswith(prefix):
             continue
         tag = tokens[0]
-        if tag not in {"S15AX", "S15PD", "S15RK"}:
-            raise OverlayError(f"line {line_no}: unknown S15 record tag {tag}")
-        if tag == "S15AX":
+        axis_tag, pd_tag, rk_tag = (
+            ("S3QNAX", "S3QNPD", "S3QNRK") if qn else ("S15AX", "S15PD", "S15RK")
+        )
+        if tag not in {axis_tag, pd_tag, rk_tag}:
+            raise OverlayError(f"line {line_no}: unknown {prefix} record tag {tag}")
+        if tag == axis_tag:
             if len(tokens) != 22:
                 raise OverlayError(f"line {line_no}: S15AX width mismatch")
             ints = [exact_int(x, "S15AX identity") for x in tokens[1:12]]
@@ -908,7 +1028,7 @@ def parse_fortran_capture(
             if axis in group:
                 raise OverlayError(f"line {line_no}: duplicate {axis} face record")
             group[axis] = record
-        elif tag == "S15PD":
+        elif tag == pd_tag:
             if len(tokens) != 35:
                 raise OverlayError(f"line {line_no}: S15PD width mismatch")
             ints = [exact_int(x, "S15PD identity") for x in tokens[1:12]]
@@ -965,7 +1085,7 @@ def parse_fortran_capture(
                 raise OverlayError(f"line {line_no}: duplicate RK consumer record")
             consumers[event_key] = {**row, **dict(zip(fields, values))}
 
-    expected_count = 14 if neighbors else 6
+    expected_count = 5 if qn else (14 if neighbors else 6)
     if len(axes) != expected_count or len(consumers) != expected_count:
         raise OverlayError(
             f"Fortran stream must contain exactly {expected_count} producer keys and consumers"
@@ -973,7 +1093,7 @@ def parse_fortran_capture(
     if set(axes) != set(consumers):
         raise OverlayError("producer and consumer full tile/cell keys differ")
     expected_pd_keys = {key for key in axes if key[1] == 3}
-    expected_pd_count = 10 if neighbors else 2
+    expected_pd_count = 5 if qn else (10 if neighbors else 2)
     if set(pds) != expected_pd_keys or len(pds) != expected_pd_count:
         raise OverlayError(
             f"exactly the {expected_pd_count} RK3 selected PD limiter records are required"
@@ -1094,18 +1214,19 @@ def parse_fortran_capture(
 
     consumer_rows = list(consumers.values())
     pairs = replay.validate_capture(
-        producers, consumer_rows, public_root, config, neighbors=neighbors
+        producers, consumer_rows, public_root, config, neighbors=neighbors, qn=qn
     )
     for _, consumer in pairs:
         consumer_key = tuple(consumer[name] for name in replay.KEY_FIELDS)
-        if neighbors and consumer_key not in target_keys:
+        if (neighbors or qn) and consumer_key not in target_keys:
             continue
+        scalar_name = "QNCLOUD" if qn else "QIB"
         if (
-            replay.word_value(consumer["before"], "QIB before") < 0.0
-            or replay.word_value(consumer["after"], "QIB after") >= 0.0
+            replay.word_value(consumer["before"], f"{scalar_name} before") < 0.0
+            or replay.word_value(consumer["after"], f"{scalar_name} after") >= 0.0
         ):
             raise OverlayError(
-                "selected QIB target did not execute the pinned nonnegative-to-negative RK transition"
+                f"selected {scalar_name} witness did not execute the pinned nonnegative-to-negative RK transition"
             )
     return producers, consumer_rows
 
@@ -1116,25 +1237,38 @@ def extract_s15_streams(
     legacy_stream: Path,
     *,
     neighbors: bool = False,
+    qn: bool = False,
 ) -> dict[str, Any]:
-    """Split new face records from legacy S15 records, refusing unknown tags.
+    """Split bounded S15 or S3QN face records from legacy output.
 
     The full rank stdout remains byte-for-byte intact. Both selected outputs are
     created exclusively and preserve the source order of their own tag family.
     """
     # Keep output path checks lexical. Path.resolve() follows a dangling output
     # symlink and could redirect exclusive creation outside the requested tree.
+    if neighbors and qn:
+        raise OverlayError("S15 neighbor and S3 QNCLOUD modes are exclusive")
+    active_face_tags = QN_FACE_TAGS if qn else FACE_TAGS
+    active_face_counts = (
+        EXPECTED_QN_FACE_TAG_COUNTS
+        if qn
+        else EXPECTED_NEIGHBOR_FACE_TAG_COUNTS
+        if neighbors
+        else EXPECTED_FACE_TAG_COUNTS
+    )
     source = Path(os.path.abspath(full_stdout))
     face = Path(os.path.abspath(face_stream))
     legacy = Path(os.path.abspath(legacy_stream))
     if face == legacy or face == source or legacy == source:
-        raise OverlayError("full stdout and selected S15 stream paths must be distinct")
+        raise OverlayError(
+            "full stdout and selected face/legacy stream paths must be distinct"
+        )
     digest = hashlib.sha256()
     total_bytes = 0
     face_bytes = bytearray()
     legacy_bytes = bytearray()
     legacy_records = 0
-    counts = {tag.decode("ascii"): 0 for tag in FACE_TAGS | LEGACY_TAGS}
+    counts = {tag.decode("ascii"): 0 for tag in active_face_tags | LEGACY_TAGS}
     source_fd = _open_regular_nofollow(source)
     with os.fdopen(source_fd, "rb") as stream:
         line_no = 0
@@ -1147,10 +1281,23 @@ def extract_s15_streams(
                 raise OverlayError(f"line {line_no}: full stdout line exceeds size cap")
             digest.update(line)
             fields = line.lstrip().split(None, 1)
-            if not fields or not fields[0].startswith(b"S15"):
+            if not fields:
                 continue
             tag = fields[0]
-            if tag in FACE_TAGS:
+            if qn and tag.startswith(b"S15") and tag not in LEGACY_TAGS:
+                raise OverlayError(
+                    f"line {line_no}: unexpected S15 tap in QNCLOUD extraction"
+                )
+            belongs = (
+                tag.startswith(b"S3QN") or tag in LEGACY_TAGS
+                if qn
+                else tag.startswith(b"S15") or tag.startswith(b"S3QN")
+            )
+            if not belongs:
+                continue
+            if not qn and tag.startswith(b"S3QN"):
+                raise OverlayError(f"line {line_no}: S3QN record in S15 extraction")
+            if tag in active_face_tags:
                 face_bytes.extend(line)
                 if len(face_bytes) > MAX_FACE_STREAM_BYTES:
                     raise OverlayError("face stream exceeds the configured size cap")
@@ -1165,18 +1312,20 @@ def extract_s15_streams(
                 legacy_records += 1
             else:
                 raise OverlayError(
-                    f"line {line_no}: unknown S15 record tag {tag.decode('ascii', 'replace')}"
+                    f"line {line_no}: unknown {'S3QN' if qn else 'S15'} record tag {tag.decode('ascii', 'replace')}"
                 )
             counts[tag.decode("ascii")] += 1
     before_hash = digest.hexdigest()
     if _hash_file_bounded(source) != before_hash:
         raise OverlayError("full stdout changed during S15 stream extraction")
-    expected_counts = (
-        EXPECTED_NEIGHBOR_FACE_TAG_COUNTS if neighbors else EXPECTED_FACE_TAG_COUNTS
-    )
+    expected_counts = active_face_counts
     if {tag: counts[tag] for tag in expected_counts} != expected_counts:
         expected_message = (
-            "42 AX, 10 PD, and 14 RK" if neighbors else "18 AX, 2 PD, and 6 RK"
+            "15 S3QNAX, 5 S3QNPD, and 5 S3QNRK"
+            if qn
+            else "42 AX, 10 PD, and 14 RK"
+            if neighbors
+            else "18 AX, 2 PD, and 6 RK"
         )
         raise OverlayError(
             f"face stream must contain exactly {expected_message} events"
@@ -1195,8 +1344,12 @@ def extract_s15_streams(
     else:
         for parent_fd, _ in created:
             os.close(parent_fd)
-    return {
-        "schema": "KDM6AD-S15-DUAL-STREAM-EXTRACTION-v1",
+    receipt = {
+        "schema": (
+            "KDM6AD-S3-QNCLOUD-DUAL-STREAM-EXTRACTION-v1"
+            if qn
+            else "KDM6AD-S15-DUAL-STREAM-EXTRACTION-v1"
+        ),
         "full_stdout_sha256": before_hash,
         "full_stdout_bytes": total_bytes,
         "face_stream_sha256": hashlib.sha256(face_payload).hexdigest(),
@@ -1205,6 +1358,9 @@ def extract_s15_streams(
         "legacy_stream_bytes": len(legacy_payload),
         "tag_counts": counts,
     }
+    if qn:
+        receipt["capture_mode"] = "S3_QNCLOUD_OWNER3"
+    return receipt
 
 
 def _hash_file_bounded(path: Path) -> str:
