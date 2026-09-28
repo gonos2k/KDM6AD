@@ -32,3 +32,13 @@ The experiment has no completed guarded history or OFF/ON parity. A physical
 rule for nonzero deposition/sublimation in that state remains open, alongside
 other ProgB outputs and the full moment/AD path. See [the stopping-witness
 report](../../harness/evidence/REPORT_S10_exact_zero_pgdep_2026-09-29.md).
+
+A later opt-in experiment combined the existing midpoint ProgB policy with
+exact-zero-rate bypasses at all four graupel-density quotient consumers. Its
+one-rank, 20-second mp237 logging-OFF/ON pair completed with identical raw-bit
+histories and finite saved fields. Against the earlier midpoint-only control,
+only QIB differs at 20 seconds; QGRAUP does not. This establishes a bounded
+executable candidate, not the physical validity of 400 kg m⁻³, a process
+budget, or a differentiable contract. The action counts and applied heat/volume
+terms were not captured for this run, so S10 remains OPEN. See [the hybrid
+report](../../harness/evidence/REPORT_S10_midpoint_rate_zero_2026-09-29.md).

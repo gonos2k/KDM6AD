@@ -1,0 +1,97 @@
+{
+  "schema": "s10-midpoint-rate-zero-paired-logging-receipt-v1",
+  "status": "PAIRED_LOG_NONINTERFERENCE_PASS_S10_OPEN",
+  "scope": "One 20-second mp237 hybrid execution with logging OFF and one with only KDM6_PROGB_VALIDITY_CAPTURE_LOG=1; both use the same executable, source, inputs, and effective namelist.",
+  "source_and_build": {
+    "public_main_commit": "200b6150151292474e4aec73695833819ab1c7a4",
+    "canonical_source_sha256": "4f0103c8a8321b8e854d3500f4ae567755e41eb78746fac54519eca2686a6648",
+    "hybrid_overlay_sha256": "7c0e8cf35b2babaee38767de870b2b34de4e975b2a5dd748241409ccd48ae0d8",
+    "hybrid_generator_sha256": "22109ee70920f4cd16d25a401e78803d28075d940a0ad1e9343c9317f209f335",
+    "b_only_midpoint_base_sha256": "6be24e8ca0ab651429e40c1924a5897ed54557f0b3d4942bdbdecee3411c7eca",
+    "macro_off_preprocess": {
+      "strict_generated_source_byte_identity": "FAIL",
+      "difference": "12 additional blank lines; all 3,763 nonblank lines identical",
+      "preprocess_receipt_sha256": "ccf954bc198dd1e9f536c2258986b23982d0e6934a8a619850b6a19b345530b9"
+    },
+    "compile_ffp_contract_off": true,
+    "object_sha256": "bdc478176e81e033a29db33eb8c3d381d10031af693ebcc1365c1c952658396c",
+    "archive_sha256": "722f83c058ea1c43d5f23cc497aed1b218f33f90828a0e1dc51c6fe30203deba",
+    "executable_sha256": "7f32eb4b0c79d09f145ed425ee2c90e63c55cd999bafed8ca37348c1aeac7157"
+  },
+  "shared_run_inputs": {
+    "effective_namelist_sha256": "2896b69d2df232853a649c1f3b76ac2d234ef4cd855a912908ed42f0a8327508",
+    "wrfinput_d01_sha256": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+    "wrfbdy_d01_sha256": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+    "wrfchainp_d01_sha256": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3",
+    "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+    "duration_seconds": 20,
+    "process_grid": "1x1",
+    "saved_times": ["2025-07-19_00:00:00", "2025-07-19_00:00:20"]
+  },
+  "runs": {
+    "logging_off": {
+      "returncode": 0,
+      "run_identity_sha256": "76ede58daaa363f20fcaa07d2930d78817f734b15ab46bbb0cf6720ee675c0bc",
+      "history_sha256": "e0a54b635aceda029341fc8c0ff4a0c6a7ba11dd41f7c7a4123db385257273ff",
+      "rsl_sha256": "113d10a3c48c62f0aa2938b6f595b61635867d23c167fa7dfcfc99963ea1e0ef",
+      "S10HYFAIL_rows": 0
+    },
+    "logging_on": {
+      "only_environment_delta": "KDM6_PROGB_VALIDITY_CAPTURE_LOG=1",
+      "returncode": 0,
+      "run_identity_sha256": "f017df3844a78dc3b9024f0eac9b55bbb50392765ff1d3997c125669edf32bfc",
+      "history_sha256": "e0a54b635aceda029341fc8c0ff4a0c6a7ba11dd41f7c7a4123db385257273ff",
+      "rsl_sha256": "a9a709ffd93890743d0bb1f9e271714de3c2a5e14a62babc6b4aad5a22b0c047",
+      "S10HYFAIL_rows": 0
+    }
+  },
+  "logging_noninterference": {
+    "history_sha256_equal": true,
+    "strict_raw_bit_frames": [
+      {"frame": 0, "result": "PASS"},
+      {"frame": 1, "result": "PASS"}
+    ],
+    "finite_scan_each_run": {
+      "numeric_variables": 253,
+      "numeric_cells_checked": 158946410,
+      "nonfinite_findings": 0
+    }
+  },
+  "logging_on_tag_counts": {
+    "S10SHAPE": 631,
+    "S10SLP": 624,
+    "S10PAIR": 0,
+    "S10TRS": 711,
+    "S10RHO": 212,
+    "S10PB": 624,
+    "S10CMG": 624,
+    "S10DIAG": 78,
+    "S10HYFAIL": 0,
+    "invalid_assignment_or_validity_rows": 0,
+    "nonfinite_numeric_shape_rows": 0
+  },
+  "event_scope": "S10PAIR=0 is expected for this builder because it has no S10PAIR action logger. No successful action row is measured; this receipt makes no process-attribution claim. Raw numeric S10SHAPE values and full RSL files are excluded.",
+  "between_variant_observation": {
+    "comparison": "This hybrid history versus the retained B-only midpoint control; not the logging OFF/ON comparison.",
+    "B_only_control": {
+      "retained_results_file": "../s10_policy_counterfactual_native_results_2026-09-25.json",
+      "retained_results_sha256": "d58bd197855b26c3cf3381bfea2f8e7be396dce58b23843549c2da6e25511c6e",
+      "executable_sha256": "afbe3768b1be3a6e8cb84986ff3907835854152473d269f04789598cd21402f1",
+      "history_sha256": "4e743933a0a9e2038f37cd0564280724785c57a9e048ac6d18fa81d30ef7dc24"
+    },
+    "frame_0": "STRICT_BITWISE_PASS",
+    "frame_1": "FAIL",
+    "first_differing_variable": "QIB",
+    "frame1_differing_cells": 26978,
+    "frame1_total_cells": 2573532,
+    "frame1_max_abs_delta": 1.3887282166238912e-12,
+    "QGRAUP_frame1_differing_cells": 0,
+    "interpretation": "Between-variant observation only; it is not a causal acceptance result."
+  },
+  "limitations": [
+    "The strict macro-off generated-source byte-identity check failed; do not count it as a pass.",
+    "Same-executable logging OFF/ON noninterference passed for this single 20-second pair only.",
+    "S10 remains OPEN; the midpoint rate-zero policy is not approved.",
+    "No full RSL, private absolute paths, or raw numeric S10SHAPE values are included."
+  ]
+}
