@@ -68,6 +68,8 @@ QN_RECEIVERS = (
     (233, 125, 12),
     (233, 124, 13),
 )
+QN_XR_SHADOW_INPUT_WORD = "502AB870"
+QN_XR_SHADOW_FACTOR_WORD = "3F7FFE97"
 KEY_FIELDS = (
     "step",
     "rk",
@@ -324,7 +326,9 @@ def _face_group(value: Any, label: str) -> dict[str, str]:
     return {side: _word(value[side], f"{label}.{side}") for side in ("minus", "plus")}
 
 
-def _validate_pd(row: dict[str, Any]) -> None:
+def _validate_pd(
+    row: dict[str, Any], *, qn: bool = False, shadow: bool = False
+) -> None:
     required = (
         "pd_limiter_active",
         "pd_flux_out",
@@ -379,6 +383,12 @@ def _validate_pd(row: dict[str, Any]) -> None:
     # reversed. A face shared with the adjacent cell may be changed later by
     # that cell's limiter, so the local S15PD post value is final only when this
     # cell owns that face's outflow. S15AX carries the later divergence value.
+    shadow_donor = (
+        shadow
+        and qn
+        and row.get("tile_slot") == 1
+        and tuple(row.get(name) for name in KEY_FIELDS) == (*QN_SCHEDULE, *QN_DONOR)
+    )
     for axis in AXES:
         original = row["pd_unlimited_high_order_fluxes"][axis]
         limited = row["pd_high_order_fluxes"][axis]
@@ -407,6 +417,12 @@ def _validate_pd(row: dict[str, Any]) -> None:
                 if expected_active and selected
                 else before
             )
+            if shadow_donor and axis == "x" and side == "plus":
+                if expected_face != QN_XR_SHADOW_INPUT_WORD:
+                    raise ProbeError(
+                        "QNCLOUD xR shadow input differs from its pinned f32 face word"
+                    )
+                expected_face = _mul(QN_XR_SHADOW_FACTOR_WORD, expected_face)
             if after != expected_face:
                 raise ProbeError(
                     f"PD {axis}.{side} local post-limit face disagrees with limiter sign branch"
@@ -427,8 +443,14 @@ def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
 
 
 def replay_producer(
-    row: dict[str, Any], config: dict[str, Any], *, qn: bool = False
+    row: dict[str, Any],
+    config: dict[str, Any],
+    *,
+    qn: bool = False,
+    shadow: bool = False,
 ) -> dict[str, str]:
+    if shadow and not qn:
+        raise ProbeError("the xR shadow replay mode requires QNCLOUD")
     key = _identity(row)
     schedule = (QN_SCHEDULE,) if qn else SCHEDULE
     if key[:7] not in schedule:
@@ -448,7 +470,7 @@ def replay_producer(
     if dispatch != {"rk_order": 3, "adv_opt": "POSITIVEDEF", "selected_branch": branch}:
         raise ProbeError("dispatch record is missing or inconsistent")
     if should_pd:
-        _validate_pd(row)
+        _validate_pd(row, qn=qn, shadow=shadow)
     elif any(name.startswith("pd_") for name in row):
         raise ProbeError("ordinary stage contains positive-definite-only operands")
 
@@ -559,9 +581,12 @@ def validate_capture(
     *,
     neighbors: bool = False,
     qn: bool = False,
+    shadow: bool = False,
 ) -> list[tuple[dict[str, Any], dict[str, Any]]]:
     if neighbors and qn:
         raise ProbeError("S15 neighbor and S3 QNCLOUD capture modes are exclusive")
+    if shadow and not qn:
+        raise ProbeError("the xR shadow capture mode requires QNCLOUD")
     roster = _capture_roster(public_root, neighbors=neighbors, qn=qn)
     witness_keys = {key for key, item in roster.items() if item["role"] == "witness"}
     receiver_keys = {key for key, item in roster.items() if item["role"] == "receiver"}
@@ -607,7 +632,7 @@ def validate_capture(
     pairs = []
     for key in sorted(expected):
         producer, consumer = producer_map[key], consumer_map[key]
-        produced = replay_producer(producer, config, qn=qn)
+        produced = replay_producer(producer, config, qn=qn, shadow=shadow)
         if _identity(producer) != _identity(consumer):
             raise ProbeError("producer/consumer identity join failed")
         if (

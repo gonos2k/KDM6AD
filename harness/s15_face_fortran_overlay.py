@@ -49,6 +49,9 @@ EXPECTED_FACE_TAG_COUNTS = {"S15AX": 18, "S15PD": 2, "S15RK": 6}
 EXPECTED_NEIGHBOR_FACE_TAG_COUNTS = {"S15AX": 42, "S15PD": 10, "S15RK": 14}
 QN_FACE_TAGS = frozenset({b"S3QNAX", b"S3QNPD", b"S3QNRK"})
 EXPECTED_QN_FACE_TAG_COUNTS = {"S3QNAX": 15, "S3QNPD": 5, "S3QNRK": 5}
+QN_XR_SHADOW_FACTOR_WORD = replay.QN_XR_SHADOW_FACTOR_WORD
+QN_XR_SHADOW_INPUT_WORD = replay.QN_XR_SHADOW_INPUT_WORD
+QN_XR_SHADOW_FACTOR_LITERAL = "0.9999784827232361"
 WRF_CPP_BASE = ("-P", "-nostdinc", "-xassembler-with-cpp")
 WRF_TRADITIONAL_CPP = ("-traditional-cpp",)
 
@@ -170,7 +173,11 @@ def _extend_signature(lines: list[str], name: str, args: list[str]) -> list[str]
 
 
 def _add_optional_declarations(
-    lines: list[str], proc_name: str, names: tuple[str, ...]
+    lines: list[str],
+    proc_name: str,
+    names: tuple[str, ...],
+    *,
+    declaration_type: str = "INTEGER",
 ) -> list[str]:
     start, end = _find_proc(lines, proc_name)
     implicit = next(
@@ -185,7 +192,7 @@ def _add_optional_declarations(
         raise OverlayError(f"procedure {proc_name} lacks IMPLICIT NONE anchor")
     decl = [
         f"#ifdef {MACRO}",
-        "   INTEGER, OPTIONAL, INTENT(IN) :: " + ", ".join(names),
+        f"   {declaration_type}, OPTIONAL, INTENT(IN) :: " + ", ".join(names),
         "#endif",
     ]
     return [*lines[: implicit + 1], *decl, *lines[implicit + 1 :]]
@@ -200,7 +207,7 @@ def _owner_call_args() -> list[str]:
     ]
 
 
-def _patch_solve(text: str) -> str:
+def _patch_solve(text: str, *, shadow: bool = False) -> str:
     lines = text.splitlines()
     anchors = find_dual_owner_calls(text)
     solve_start, solve_end = _find_proc(lines, "solve_em")
@@ -214,13 +221,20 @@ def _patch_solve(text: str) -> str:
     )
     if implicit is None:
         raise OverlayError("solve_em lacks IMPLICIT NONE anchor")
-    declarations = _guard(
-        [
-            "LOGICAL :: s15_capture_enabled",
-            "INTEGER :: s15_log_status",
-            "CHARACTER(LEN=8) :: s15_log_env",
-        ]
-    )
+    declaration_body = [
+        "LOGICAL :: s15_capture_enabled",
+        "INTEGER :: s15_log_status",
+        "CHARACTER(LEN=8) :: s15_log_env",
+    ]
+    if shadow:
+        declaration_body.extend(
+            [
+                "LOGICAL :: s3qn_xr_shadow_latched",
+                "INTEGER :: s3qn_xr_shadow_status",
+                "CHARACTER(LEN=8) :: s3qn_xr_shadow_env",
+            ]
+        )
+    declarations = _guard(declaration_body)
     lines[implicit + 1 : implicit + 1] = declarations
     solve_start, solve_end = _find_proc(lines, "solve_em")
     scalar_gate = [
@@ -233,16 +247,29 @@ def _patch_solve(text: str) -> str:
             "solve_em scalar-advance latch anchor is missing or ambiguous"
         )
     i = scalar_gate[0]
+    env_latch_body = [
+        "s15_capture_enabled=.false.",
+        "s15_log_env=' '",
+        "s15_log_status=1",
+        "CALL GET_ENVIRONMENT_VARIABLE('KDM6_S15_NATIVE_CAPTURE_LOG', &",
+        "     s15_log_env, STATUS=s15_log_status)",
+        "if (s15_log_status.eq.0 .and. trim(s15_log_env).eq.'1') &",
+        "     s15_capture_enabled=.true.",
+    ]
+    if shadow:
+        env_latch_body.extend(
+            [
+                "s3qn_xr_shadow_latched=.false.",
+                "s3qn_xr_shadow_env=' '",
+                "s3qn_xr_shadow_status=1",
+                "CALL GET_ENVIRONMENT_VARIABLE('KDM6_S3_QN_XR_SHADOW', &",
+                "     s3qn_xr_shadow_env, STATUS=s3qn_xr_shadow_status)",
+                "if (s3qn_xr_shadow_status.eq.0 .and. &",
+                "    trim(s3qn_xr_shadow_env).eq.'1') s3qn_xr_shadow_latched=.true.",
+            ]
+        )
     env_latch = _guard(
-        [
-            "s15_capture_enabled=.false.",
-            "s15_log_env=' '",
-            "s15_log_status=1",
-            "CALL GET_ENVIRONMENT_VARIABLE('KDM6_S15_NATIVE_CAPTURE_LOG', &",
-            "     s15_log_env, STATUS=s15_log_status)",
-            "if (s15_log_status.eq.0 .and. trim(s15_log_env).eq.'1') &",
-            "     s15_capture_enabled=.true.",
-        ],
+        env_latch_body,
         lines[i][: len(lines[i]) - len(lines[i].lstrip())],
     )
     lines[i:i] = env_latch
@@ -253,18 +280,36 @@ def _patch_solve(text: str) -> str:
         start = next(i for i, line in enumerate(lines) if loop_start_pat.search(line))
         end = next(i for i, line in enumerate(lines) if loop_end_pat.search(line))
         call_start, call_end = _call_span(lines, start, end, call_name)
-        lines = _append_actuals(lines, call_start, call_end, _owner_call_args())
+        actuals = _owner_call_args()
+        if shadow and call_name == PRODUCER_ANCHOR[1]:
+            actuals.append(
+                "s3qn_xr_shadow_enabled=(is==P_QNC.and.grid%itimestep.eq.2"
+                ".and.rk_step.eq.3.and.ij.eq.1.and.s3qn_xr_shadow_latched)"
+            )
+        lines = _append_actuals(lines, call_start, call_end, actuals)
     if not anchors["producer"] or not anchors["consumer"]:
         raise OverlayError("dual owner-call regression anchors are empty")
     return "\n".join(lines) + "\n"
 
 
-def _patch_module_em(text: str, *, neighbors: bool = False) -> str:
+def _patch_module_em(
+    text: str, *, neighbors: bool = False, shadow: bool = False
+) -> str:
     lines = text.splitlines()
     # Producer context: rk_scalar_tend dispatches to ordinary or PD advection.
     for proc_name in ("rk_scalar_tend", "rk_update_scalar"):
-        lines = _extend_signature(lines, proc_name, list(CONTEXT_NAMES))
+        signature_names = list(CONTEXT_NAMES)
+        if shadow and proc_name == "rk_scalar_tend":
+            signature_names.append("s3qn_xr_shadow_enabled")
+        lines = _extend_signature(lines, proc_name, signature_names)
         lines = _add_optional_declarations(lines, proc_name, CONTEXT_NAMES)
+        if shadow and proc_name == "rk_scalar_tend":
+            lines = _add_optional_declarations(
+                lines,
+                "rk_scalar_tend",
+                ("s3qn_xr_shadow_enabled",),
+                declaration_type="LOGICAL",
+            )
 
     start, end = _find_proc(lines, "rk_scalar_tend")
     for call_name, branch in (("advect_scalar_pd", 2), ("advect_scalar", 1)):
@@ -272,6 +317,8 @@ def _patch_module_em(text: str, *, neighbors: bool = False) -> str:
         actuals = [f"{name}={name}" for name in CONTEXT_NAMES] + [
             f"s15_branch={branch}"
         ]
+        if shadow and call_name == "advect_scalar_pd":
+            actuals.append("s3qn_xr_shadow_enabled=s3qn_xr_shadow_enabled")
         lines = _append_actuals(lines, cstart, cend, actuals)
         start, end = _find_proc(lines, "rk_scalar_tend")
     lines = _patch_rk_store_taps(lines)
@@ -279,13 +326,22 @@ def _patch_module_em(text: str, *, neighbors: bool = False) -> str:
     return "\n".join(lines) + "\n"
 
 
-def _patch_advect(text: str, *, neighbors: bool = False) -> str:
+def _patch_advect(text: str, *, neighbors: bool = False, shadow: bool = False) -> str:
     lines = text.splitlines()
     for proc_name in ("advect_scalar", "advect_scalar_pd"):
-        lines = _extend_signature(lines, proc_name, [*CONTEXT_NAMES, "s15_branch"])
-        lines = _add_optional_declarations(
-            lines, proc_name, (*CONTEXT_NAMES, "s15_branch")
-        )
+        optional_names = [*CONTEXT_NAMES, "s15_branch"]
+        signature_names = list(optional_names)
+        if shadow and proc_name == "advect_scalar_pd":
+            signature_names.append("s3qn_xr_shadow_enabled")
+        lines = _extend_signature(lines, proc_name, signature_names)
+        lines = _add_optional_declarations(lines, proc_name, optional_names)
+        if shadow and proc_name == "advect_scalar_pd":
+            lines = _add_optional_declarations(
+                lines,
+                proc_name,
+                ("s3qn_xr_shadow_enabled",),
+                declaration_type="LOGICAL",
+            )
         start, _ = _find_proc(lines, proc_name)
         implicit = next(
             i
@@ -302,7 +358,7 @@ def _patch_advect(text: str, *, neighbors: bool = False) -> str:
                 ]
             )
         lines[implicit + 1 : implicit + 1] = _guard(local)
-        lines = _tap_advection_procedure(lines, proc_name)
+        lines = _tap_advection_procedure(lines, proc_name, shadow=shadow)
     lines = _append_advect_helpers(lines, neighbors=neighbors)
     return "\n".join(lines) + "\n"
 
@@ -338,9 +394,12 @@ def prepare_overlay(
     *,
     neighbors: bool = False,
     qn: bool = False,
+    shadow: bool = False,
 ) -> dict[str, Any]:
     if neighbors and qn:
         raise OverlayError("S15 neighbor and S3 QNCLOUD modes are exclusive")
+    if shadow and not qn:
+        raise OverlayError("the fixed xR shadow is available only in S3 QNCLOUD mode")
     sources = _source_bytes(source_root)
     projection = [] if qn else _projection(public_root)
     dual_calls = find_dual_owner_calls(sources["dyn_em/solve_em.F"].decode())
@@ -348,14 +407,21 @@ def prepare_overlay(
         raise OverlayError("overlay shadow directory must be new")
     patched = {}
     for relative, patcher in (
-        ("dyn_em/solve_em.F", _patch_solve),
+        (
+            "dyn_em/solve_em.F",
+            lambda text: _patch_solve(text, shadow=shadow),
+        ),
         (
             "dyn_em/module_em.F",
-            lambda text: _patch_module_em(text, neighbors=(neighbors or qn)),
+            lambda text: _patch_module_em(
+                text, neighbors=(neighbors or qn), shadow=shadow
+            ),
         ),
         (
             "dyn_em/module_advect_em.F",
-            lambda text: _patch_advect(text, neighbors=(neighbors or qn)),
+            lambda text: _patch_advect(
+                text, neighbors=(neighbors or qn), shadow=shadow
+            ),
         ),
     ):
         original = sources[relative].decode()
@@ -364,7 +430,7 @@ def prepare_overlay(
         )
     if qn:
         patched = {name: _convert_qn_overlay(text) for name, text in patched.items()}
-        _validate_qn_overlay(patched)
+        _validate_qn_overlay(patched, shadow=shadow)
     shadow_root.mkdir(parents=True)
     for relative, output in patched.items():
         path = shadow_root / relative
@@ -406,6 +472,10 @@ def prepare_overlay(
     if qn:
         manifest["capture_mode"] = "S3_QNCLOUD_OWNER3"
         manifest["tile_bounds"] = {"tile": 1, "i": [1, 235], "j": [1, 142]}
+        if shadow:
+            manifest["shadow_mode"] = "S3_QNCLOUD_XR_HIGH_FACTOR_OPT_IN"
+            manifest["physics_enable_env"] = "KDM6_S3_QN_XR_SHADOW=1"
+            manifest["physics_factor_f32_word"] = QN_XR_SHADOW_FACTOR_WORD
     manifest_name = (
         "s3_qn_face_overlay_manifest.json" if qn else "s15_face_overlay_manifest.json"
     )
@@ -468,7 +538,7 @@ def _convert_qn_overlay(text: str) -> str:
     return text
 
 
-def _validate_qn_overlay(patched: dict[str, str]) -> None:
+def _validate_qn_overlay(patched: dict[str, str], *, shadow: bool = False) -> None:
     text = "\n".join(patched.values())
     if text.count("s15_owner=MERGE(3,0,is==P_QNC .and. s15_capture_enabled)") != 2:
         raise OverlayError("QNCLOUD overlay must gate both producer and RK owner calls")
@@ -489,6 +559,48 @@ def _validate_qn_overlay(patched: dict[str, str]) -> None:
         or text.count("if (s15_count.ge.5) then") != 2
     ):
         raise OverlayError("QNCLOUD overlay tags or 15/5/5 caps are incomplete")
+    physics_tokens = (
+        "s3qn_xr_shadow_latched",
+        "s3qn_xr_shadow_enabled",
+        "KDM6_S3_QN_XR_SHADOW",
+    )
+    if shadow:
+        if any(token not in text for token in physics_tokens):
+            raise OverlayError("opt-in QNCLOUD xR physics gate is incomplete")
+        if text.count("KDM6_S3_QN_XR_SHADOW") != 1:
+            raise OverlayError("expected one independent QNCLOUD physics env latch")
+        if (
+            text.count(
+                "s3qn_xr_shadow_enabled=(is==P_QNC.and.grid%itimestep.eq.2.and.rk_step.eq.3.and.ij.eq.1.and.s3qn_xr_shadow_latched)"
+            )
+            != 1
+        ):
+            raise OverlayError("physics gate must be QNCLOUD/tile1/step2/RK3 qualified")
+        if f"fqx(i+1,k,j)={QN_XR_SHADOW_FACTOR_LITERAL}*fqx(i+1,k,j)" not in text:
+            raise OverlayError("fixed xR high-face factor is missing")
+        if (
+            text.count(
+                f"transfer(fqx(i+1,k,j),0).ne.int(z'{QN_XR_SHADOW_INPUT_WORD}',kind=4)"
+            )
+            != 1
+        ):
+            raise OverlayError("opt-in physics path must change one xR face operand")
+        if (
+            "fqx(i+1,k,j).le.0." not in text
+            or "S3QN_SHADOW xR f32 input mismatch" not in text
+            or "stop 92" not in text
+        ):
+            raise OverlayError(
+                "xR shadow must stop unless its captured input word matches"
+            )
+        if text.index("s3qn_xr_shadow_enabled .and. i.eq.233") > text.index(
+            "s15_pd_post(2)=fqx(i+1,k,j)"
+        ):
+            raise OverlayError("xR shadow must precede the PD post tap")
+    elif any(token in text for token in physics_tokens):
+        raise OverlayError(
+            "default QNCLOUD overlay unexpectedly contains xR physics shadow"
+        )
 
 
 def strip_capture_macro(text: str) -> str:
@@ -728,7 +840,9 @@ def _statement_end(lines: list[str], index: int, limit: int) -> int:
     return end
 
 
-def _tap_advection_procedure(lines: list[str], proc_name: str) -> list[str]:
+def _tap_advection_procedure(
+    lines: list[str], proc_name: str, *, shadow: bool = False
+) -> list[str]:
     start, end = _find_proc(lines, proc_name)
     assignment = re.compile(
         r"^\s*tendency\s*\(\s*i\s*,\s*k\s*,\s*j(?:\s*-\s*1)?\s*\)\s*=", re.I
@@ -771,11 +885,11 @@ def _tap_advection_procedure(lines: list[str], proc_name: str) -> list[str]:
         last += len(before)
         lines[last + 1 : last + 1] = after
     if proc_name == "advect_scalar_pd":
-        lines = _tap_pd_limiter(lines)
+        lines = _tap_pd_limiter(lines, shadow=shadow)
     return lines
 
 
-def _tap_pd_limiter(lines: list[str]) -> list[str]:
+def _tap_pd_limiter(lines: list[str], *, shadow: bool = False) -> list[str]:
     start, end = _find_proc(lines, "advect_scalar_pd")
     predicate = re.compile(r"IF\s*\(\s*flux_out\(i,k,j\).*ph_low\(i,k,j\).*THEN", re.I)
     gate = next((i for i in range(start, end) if predicate.search(lines[i])), None)
@@ -833,6 +947,24 @@ def _tap_pd_limiter(lines: list[str]) -> list[str]:
         i for i in range(scale, end) if re.match(r"^\s*END\s*IF\s*$", lines[i], re.I)
     )
     post_indent = lines[endif][: len(lines[endif]) - len(lines[endif].lstrip())]
+    shadow_lines = []
+    if shadow:
+        shadow_lines = _guard(
+            [
+                "if (present(s3qn_xr_shadow_enabled)) then",
+                " if (s3qn_xr_shadow_enabled .and. i.eq.233 .and. &",
+                "     j.eq.124 .and. k.eq.12) then",
+                "  if (fqx(i+1,k,j).le.0. .or. &",
+                f"      transfer(fqx(i+1,k,j),0).ne.int(z'{QN_XR_SHADOW_INPUT_WORD}',kind=4)) then",
+                "   write(6,'(A)') 'S3QN_SHADOW xR f32 input mismatch'",
+                "   stop 92",
+                "  endif",
+                f"  fqx(i+1,k,j)={QN_XR_SHADOW_FACTOR_LITERAL}*fqx(i+1,k,j)",
+                " endif",
+                "endif",
+            ],
+            post_indent,
+        )
     post = _guard(
         [
             "if (s15_here) then",
@@ -849,7 +981,7 @@ def _tap_pd_limiter(lines: list[str]) -> list[str]:
         ],
         post_indent,
     )
-    lines[endif + 1 : endif + 1] = post
+    lines[endif + 1 : endif + 1] = [*shadow_lines, *post]
     return lines
 
 
@@ -934,10 +1066,13 @@ def parse_fortran_capture(
     *,
     neighbors: bool = False,
     qn: bool = False,
+    shadow: bool = False,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Parse the bounded stream against six witnesses and optional eight receivers."""
     if neighbors and qn:
         raise OverlayError("S15 neighbor and S3 QNCLOUD capture modes are exclusive")
+    if shadow and not qn:
+        raise OverlayError("the xR shadow parser mode requires S3 QNCLOUD capture mode")
     roster = _capture_roster(public_root, neighbors=neighbors, qn=qn)
     target_keys = {
         key for key, identity in roster.items() if identity["role"] == "witness"
@@ -1214,19 +1349,30 @@ def parse_fortran_capture(
 
     consumer_rows = list(consumers.values())
     pairs = replay.validate_capture(
-        producers, consumer_rows, public_root, config, neighbors=neighbors, qn=qn
+        producers,
+        consumer_rows,
+        public_root,
+        config,
+        neighbors=neighbors,
+        qn=qn,
+        shadow=shadow,
     )
     for _, consumer in pairs:
         consumer_key = tuple(consumer[name] for name in replay.KEY_FIELDS)
         if (neighbors or qn) and consumer_key not in target_keys:
             continue
         scalar_name = "QNCLOUD" if qn else "QIB"
-        if (
-            replay.word_value(consumer["before"], f"{scalar_name} before") < 0.0
-            or replay.word_value(consumer["after"], f"{scalar_name} after") >= 0.0
-        ):
+        before = replay.word_value(consumer["before"], f"{scalar_name} before")
+        after = replay.word_value(consumer["after"], f"{scalar_name} after")
+        failed_transition = (
+            before < 0.0 or after <= 0.0 if shadow else before < 0.0 or after >= 0.0
+        )
+        if failed_transition:
+            transition = (
+                "nonnegative-to-positive" if shadow else "nonnegative-to-negative"
+            )
             raise OverlayError(
-                f"selected {scalar_name} witness did not execute the pinned nonnegative-to-negative RK transition"
+                f"selected {scalar_name} witness did not execute the pinned {transition} RK transition"
             )
     return producers, consumer_rows
 
