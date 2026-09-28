@@ -23,22 +23,29 @@ the positive-definite flux limiter is scheduled at the final RK stage. Later,
 negative. Those stages must be traced separately from `STEP_ACCEPTED`, which
 follows final RK, microphysics, and boundary processing.
 
-The S3 event parser requires raw REAL4 face fluxes, metrics, RK operands, and
-observed advective-tendency and scalar-store bits before replaying the ordinary
-Y→X→Z face-pair operations. It evaluates numerator prefixes using each
-source-grouped face difference. Its build/history hashes are currently
-caller-supplied without an external receipt manifest, so the replay returns
-`UNVERIFIED_RECEIPT`; accepted-step values after microphysics and boundary
-processing receive classification only. The trace lacks adjacent shared-face
-words, so it establishes no exchange conservation. QN units remain unresolved,
-and S3 remains open.
+The earlier G2/S3 replay required raw REAL4 face fluxes, metrics, RK operands,
+and observed advective-tendency and scalar-store bits for ordinary Y→X→Z
+face-pair operations. It evaluated numerator prefixes using each source-grouped
+face difference. Its build/history hashes were caller-supplied without an
+external receipt manifest, so it returned `UNVERIFIED_RECEIPT`; accepted-step
+values after microphysics and boundary processing received classification only.
+That trace lacked adjacent shared-face words and established no exchange
+conservation. QN units remain unresolved, and S3 remains open.
 
 The bounded face-backoff prototype was corrected after the Fortran PD limiter
 showed that vertical `fqz(k+1)<0` and `fqz(k)>0` are outgoing. The earlier
 four-face synthetic acceptance claim is withdrawn: the fifth, vertical
 receiver is negative in the six-cell replay, so the candidate rejects the
-change. Measured neighboring operands, not a donor-only replay, are needed
-before judging a conservative correction.
+change. That old synthetic replay alone cannot judge a conservative correction.
+
+A later mp237 capture on the same retained input, but a **different executable
+trajectory** from G2, measures one selected QNCLOUD RK3 donor and its four
+interior outgoing-face receivers. All five stores replay and each interior
+face's high/low words match on both sides. The donor RK word matches the saved
+east-boundary QNCLOUD word, while the donor itself is zero in history. No
+direct boundary-copy tap or corrected trajectory was run. These operands
+support the next local repair test; whole-host positivity and the physical
+number basis remain open. See [[REPORT_S3_native_qn_neighbors_2026-09-28]].
 
 The separate S15 native face-neighbor capture concerns QIB rime-ice volume,
 not a particle-number field; it does not supply S3 number evidence.
