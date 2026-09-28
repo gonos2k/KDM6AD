@@ -1,0 +1,126 @@
+{
+  "schema": "s10-exact-zero-guard-first-fatal-public-receipt-v1",
+  "scope": "One logging-off native mp237 attempt with the opt-in exact-zero guard; captured first fatal and stopped.",
+  "status": "DIAGNOSTIC_FATAL_NONZERO_RATE_WITH_UNASSIGNED_DENSITY",
+  "public_main_commit": "d7bda67b237b2746ac697f9cde1462912943a777",
+  "s10_status": "OPEN",
+  "previous_attempts": {
+    "#318_baseline_receipt_sha256": "67f18487f68a6a544a7e40b9d5b8412d1d686ce405f5878c83c8558ee0f8da63",
+    "baseline_control_history_sha256": "cb92a3763b985a0c8ed7069028808b0083786c58e5382d6078e9b9150774b92e",
+    "baseline_was_reused_read_only": true,
+    "older_diagnostic_only_failed_runs_included": false
+  },
+  "source_and_build": {
+    "canonical_module_mp_kdm6_cons_F_sha256": "4f0103c8a8321b8e854d3500f4ae567755e41eb78746fac54519eca2686a6648",
+    "S10_pair_overlay_sha256": "37013f0d885632d5843ffd7fe240cfa2b4d04873aad4ca796aba57afcdb14235",
+    "exact_zero_guard_overlay_sha256": "a6cc3e7aebf34a10e74f49f5dc15a17abf3edb813d97d4a9c5ba0039a5e37225",
+    "guard_macro": "KDM6_S10_EXACT_ZERO_PGDEP",
+    "guard_generator_sha256": "6b0b5649b056b0c7f31a3e013b8cfebdcc3a93001053f6c6d080a0bde7618ff0",
+    "macro_off_source_pin": "FAIL_RECORDED: 6 blank lines plus the generated S10PAIR fatal-location literal differs 3086\u21923092; all other nonblank statements match.",
+    "preprocess_macro_on": "PASS",
+    "compile_returncode": 0,
+    "compiler_mpif90_sha256": "91865d113f579bbf8e14c7d696266fdcf87f5e4845aa75966ad4e31531ebae5d",
+    "compiler_gfortran_sha256": "0019c2383f399c1ba6aed1dc060191e793caf963c1066d254194883581098bb2",
+    "shadow_object_sha256": "d3838eeea1f5030d1ecafe11910a43b51e4219cf9dee3ccfc3d6d3177a2fdb45",
+    "link_returncode": 0,
+    "shadow_executable_sha256": "220e0e04200b1524db05ad10fb701c569460ec35003a54cfe3bb496dc067a445",
+    "shadow_object_before_unchanged_archive": true,
+    "canonical_archive_sha256": "722f83c058ea1c43d5f23cc497aed1b218f33f90828a0e1dc51c6fe30203deba",
+    "compile_ffp_contract_off": true
+  },
+  "inputs": {
+    "wrfinput_d01_sha256": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+    "wrfbdy_d01_sha256": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+    "wrfchainp_d01_sha256": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3",
+    "effective_namelist_sha256": "2896b69d2df232853a649c1f3b76ac2d234ef4cd855a912908ed42f0a8327508",
+    "static_input_links": 78
+  },
+  "run": {
+    "logging": "OFF (validity logging variable unset)",
+    "mp_physics": 237,
+    "requested_duration_seconds": 20,
+    "history_interval": 0,
+    "history_interval_s": 20,
+    "mpi_ranks": 1,
+    "proc_grid": "1x1",
+    "threads": 1,
+    "returncode": 1,
+    "experiment_valid": false,
+    "model_completed": false,
+    "elapsed_seconds": 42.758,
+    "run_identity_sha256": "465b0dff97514d484e88227a43293f68c7a8a5fe0b4e1f8727f000901d603b79",
+    "stdout_sha256": "5bac192cbc32252639a93e0968c62a8143776c032ef8739ddf0e03fe4892292e",
+    "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "history_partial_sha256": "e7a5bc3acda3ccb8623ce402727f631258d02f41c358a3aa1caa1c49ab9006e5",
+    "history_partial_bytes": 317959388,
+    "saved_times": [
+      "2025-07-19_00:00:00"
+    ],
+    "rsl_out_sha256": "f83008059e82c2354d9eb2b207f156f90ebc96b7f04f3689e2a22cf8c4c6c21d",
+    "rsl_error_sha256": "1ffd78b822e579a5ca0748e3496ae40590c467ca7bf46baaa96c71337e6a533c",
+    "fatal_message": "S10 nonzero pgdep has unassigned rhox",
+    "fatal_generated_line": 3110,
+    "logging_on_run_launched": false
+  },
+  "first_fatal_row": {
+    "file": "first_fatal_row.txt",
+    "sha256": "da3cb3deb821748edc2f291034fc905705fa855a43962dad1003f7dba6844b92",
+    "count": 1,
+    "fields": [
+      "step",
+      "lat_j",
+      "preceding_ProgB_site",
+      "loop",
+      "substep",
+      "i",
+      "k",
+      "reason_code",
+      "assignment_bit",
+      "pgdep_word",
+      "qg_post_mass_update_word",
+      "brs_post_mass_update_word",
+      "qcrmin_word",
+      "brs_min_word"
+    ],
+    "decoded_context": {
+      "step": 1,
+      "lat_j": 84,
+      "preceding_ProgB_site": 5,
+      "loop": 1,
+      "substep": 0,
+      "i": 117,
+      "k": 17,
+      "reason_code": 2,
+      "density_assignment_bit": 0
+    },
+    "raw_words": {
+      "pgdep": "AD189462",
+      "qg_post_mass_update": "37E758D5",
+      "brs_post_mass_update": "00000000",
+      "qcrmin": "3089705F",
+      "brs_min": "26901D7D"
+    },
+    "unassigned_density_numeric_value_emitted": false,
+    "flush_before_fatal": true
+  },
+  "interpretation_limits": [
+    "The assignment-validity bit is zero at ProgB site 5; canonical ProgB source assigns its density output only inside the active moment gate. The row identifies the cell, while its post-mass state words do not recover the pre-ProgB gate operands.",
+    "The run did not complete the 20-second interval; no history parity or logger noninterference claim is made.",
+    "No threshold, physical formula, canonical source, or operational install was changed.",
+    "No S10PAIR/S10ZG logging-on run was launched."
+  ],
+  "canonical_after": {
+    "module_mp_kdm6_cons_F_sha256": "4f0103c8a8321b8e854d3500f4ae567755e41eb78746fac54519eca2686a6648",
+    "libwrflib_a_sha256": "722f83c058ea1c43d5f23cc497aed1b218f33f90828a0e1dc51c6fe30203deba",
+    "main_wrf_exe_sha256": "676223e8d61d23456d4ac83713bff0283ea08b1e71776b7f8885b062d97f801b",
+    "libkdm6_c_dylib_sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+    "unchanged_from_pins": true
+  },
+  "redaction": "No absolute host, scratch, user, case, or toolchain paths are present.",
+  "validation": {
+    "focused_generator_tests": "6 passed",
+    "ruff": "passed",
+    "green_red_review": "passed before diagnostic run",
+    "source_pin_macro_off": "FAIL_RECORDED: diagnostic line change and blank lines"
+  }
+}
