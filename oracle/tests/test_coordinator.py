@@ -779,6 +779,80 @@ def test_s10_exact_zero_rhox_quotient_rejects_invalid_nonzero_density():
             torch.tensor([2.0], dtype=torch.float64), context="test")
 
 
+def test_s10_midpoint_trace_selected_direction_against_fd():
+    """One direct f64 coordinator direction; keep the initial trace mask fixed."""
+    dtype = torch.float64
+    zero = torch.zeros((1, 3), dtype=dtype)
+    params = default_coordinator_params()._replace(midpoint_trace=True)
+    qg_center = torch.tensor(
+        [[0.5 * params.progb.qcrmin, 5.0e-5, 0.0]], dtype=dtype)
+    brs = torch.tensor([[0.0, 1.0e-7, 0.0]], dtype=dtype)
+    state = CoordinatorState(
+        qv=zero.clone(), qc=zero.clone(), qr=zero.clone(), qs=zero.clone(),
+        qg=qg_center, qi=zero.clone(), nc=zero.clone(), nr=zero.clone(),
+        ni=zero.clone(), brs=brs, t=torch.full((1, 3), 263.15, dtype=dtype),
+    )
+    forcing = CoordinatorForcing(
+        p=torch.full((1, 3), 8.0e4, dtype=dtype),
+        den=torch.full((1, 3), 1.1, dtype=dtype),
+        delz=torch.full((1, 3), 500.0, dtype=dtype),
+        dend=torch.full((1, 3), 1.1, dtype=dtype),
+    )
+    aux = CoordinatorAuxDiagnostics(
+        n0r=torch.full((1, 3), 8.0e6, dtype=dtype),
+        n0i=torch.full((1, 3), 1.0e6, dtype=dtype),
+        n0c=torch.full((1, 3), 1.0e8, dtype=dtype),
+        n0so=torch.full((1, 3), 2.0e6, dtype=dtype),
+        n0go=torch.full((1, 3), 4.0e6, dtype=dtype),
+        work1_r=torch.full((1, 3), 1.0e-3, dtype=dtype),
+        work1_ice=torch.full((1, 3), 1.0e-3, dtype=dtype),
+        work1_water=torch.full((1, 3), 1.0e-3, dtype=dtype),
+        qcr=torch.full((1, 3), 8.0e-5, dtype=dtype),
+        avedia_i=torch.full((1, 3), 1.0e-4, dtype=dtype),
+        rslopecmu=torch.full((1, 3), 1.0e-5, dtype=dtype),
+        rslopecd=torch.full((1, 3), 1.0e-15, dtype=dtype),
+    )
+    sea_mask = torch.zeros((1, 3), dtype=torch.bool)
+    nccn = torch.zeros((1, 3), dtype=dtype)
+    warm_params = default_warm_phase_params()
+    cold_params = default_cold_phase_params()
+    mf_params = default_melt_freeze_phase_params()
+
+    def run(qg):
+        out = kdm62d_one_step_torch(
+            state._replace(qg=qg), forcing, aux, sea_mask,
+            full_params=params, warm_params=warm_params, cold_params=cold_params,
+            mf_params=mf_params, dtcld=1.0e-6, nccn=nccn)
+        new_state = out[0] if isinstance(out, tuple) else out
+        return new_state
+
+    direction = torch.tensor([[1.0e-12, 0.0, 0.0]], dtype=dtype)
+    epsilon = 1.0e-3
+    qg_plus = qg_center + epsilon * direction
+    qg_minus = qg_center - epsilon * direction
+
+    def is_initial_trace(qg):
+        return (qg > 0.0) & (qg <= params.progb.qcrmin) & (brs <= 1.0e-15)
+
+    assert is_initial_trace(qg_center)[0, 0].item()
+    assert is_initial_trace(qg_plus)[0, 0].item()
+    assert is_initial_trace(qg_minus)[0, 0].item()
+    assert qg_minus[0, 0].item() / 400.0 > 1.0e-15
+
+    center_state = run(qg_center)
+    for selected in (center_state.qg, center_state.brs, center_state.t):
+        assert torch.isfinite(selected).all()
+    center, jvp = torch.func.jvp(
+        lambda q: run(q).brs[0, 0], (qg_center,), (direction,))
+    finite_difference = (
+        run(qg_plus).brs[0, 0] - run(qg_minus).brs[0, 0]) / (2.0 * epsilon)
+    assert torch.isfinite(center) and torch.isfinite(jvp) and torch.isfinite(finite_difference)
+    assert torch.allclose(center, center_state.brs[0, 0], rtol=0.0, atol=0.0)
+    assert abs(center.item() - 1.2499999643046253e-12) < 1.0e-22
+    assert abs(jvp.item() - 2.5e-15) < 1.0e-23
+    assert torch.allclose(jvp, finite_difference, rtol=1.0e-5, atol=1.0e-20)
+
+
 def test_kdm62d_step_subcycling_consistency():
     """delt=120 (loops_max=1) 와 delt=120 dtcldcr=60 (loops_max=2) 호출이 다름 (sub-cycle 효과)."""
     state, forcing, sea_mask = _state_forcing()
