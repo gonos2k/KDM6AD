@@ -17,7 +17,11 @@ volume budget.
 The corrected logger removed inherited numeric S10SHAPE writes of unassigned
 outputs. Log OFF/ON histories match raw-bit on both saved frames. The earlier
 unsafe-logger runs are diagnostic only. The next opt-in correction should
-bypass an exact-zero numerator without dropping the positive `baacw` transfer,
-then check the resulting mass, volume and downstream process path. S10 and
+bypass an exact-zero numerator without dropping the positive `baacw` transfer.
+The old C-arm predicate also requires current `qg==0`; it misses this event
+because the mass store makes qg positive before the volume quotient. A
+nonzero rate still requires a produced, finite positive density. The opt-in
+variant must then check the resulting mass, volume and downstream process
+path. S10 and
 physical trace-graupel policy remain open. See
 [the native report](../../harness/evidence/REPORT_S10_stage2_pair_2026-09-29.md).

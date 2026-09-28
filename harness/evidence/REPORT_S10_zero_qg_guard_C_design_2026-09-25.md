@@ -1,5 +1,16 @@
 # S10 C-arm design: zero-rate graupel density guards
 
+**2026-09-29 correction:** The proposed `qg==0 AND rate==0` test does not
+protect the measured cold stage-2 `pgdep/rhox` consumer. The qg mass store
+runs first and makes qg positive through `paacw`, while `pgdep` remains zero;
+the later volume expression therefore takes the old division arm. The
+existing C-arm generator is not an accepted fix for this event. A subsequent
+opt-in change must test the exact-zero numerator at the consumer, preserve its
+signed-zero term and all other volume/heat terms, and fail closed for a
+nonzero rate without a produced finite positive density. Its logger must not
+read an unassigned `rhox`. See
+[the native pair trace](REPORT_S10_stage2_pair_2026-09-29.md).
+
 **Status: source-level design only; no implementation build or native run.** The S10 A/B counterfactuals are isolated research variants and both fail their all-consumer validity replay. Retention reaches nonfinite `brs=-Infinity`; midpoint reaches `rhox=0` at a direct consumer with `qg=0`. S10 remains OPEN, and the native lane is released to S8.
 
 ## Question this arm isolates

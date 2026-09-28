@@ -69,3 +69,12 @@ algorithm change is an exact-zero-rate bypass of that quotient, followed by
 the same source-order mass/volume and latent-heat comparison. Positive trace
 states, other density consumers, full moment validity, and the operational
 default remain unapproved.
+
+The previously prepared C-arm guard checks **current** `qg==0` together with
+`pgdep==0`. At this volume consumer, the mass store has already made `qg`
+positive (`2BC851A6`), so that guard would take the original division and
+miss this event. The next opt-in guard must not rely on the post-mass `qg==0`
+predicate for an exactly zero process numerator. It must also avoid printing
+an unassigned density in its own logger and reject any nonzero rate with an
+invalid divisor. These are requirements for a future change, not validated
+behavior of this capture.
