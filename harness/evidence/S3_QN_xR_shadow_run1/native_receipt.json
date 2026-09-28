@@ -1,0 +1,829 @@
+{
+  "schema": "KDM6AD-S3-QNCLOUD-xR-shadow-four-run-v1",
+  "status": "PASS_BOUNDED_XR_SHADOW_AND_LOGGING_MATRIX",
+  "claim_scope": "An opt-in high-order xR face perturbation was exercised for one QNCLOUD donor at step 2/RK3 on tile 1. Four selected internal receivers had identical captured RK stores and high/low face words across physics gate states. No global/every-face equality or metric-weighted conservation claim.",
+  "scope_limits": [
+    "One donor and four selected adjacent receivers only.",
+    "No particle-number, mass, or metric-weighted conservation claim.",
+    "No direct flow_dep_bdy tap; east-cell outcome is compared from saved history.",
+    "Historical G2 output hash remains different from the current baseline."
+  ],
+  "gate_contract": {
+    "physics_change_env": "KDM6_S3_QN_XR_SHADOW",
+    "capture_logging_env": "KDM6_S15_NATIVE_CAPTURE_LOG",
+    "on_value": "1",
+    "off_semantics": "variable unset",
+    "independence": "verified by all four completed env combinations on one executable"
+  },
+  "overlay": {
+    "source_worktree_head": "5ba1bbe21e042ca54b4b06a3d2de9d42ce68a182",
+    "worktree_dirty": true,
+    "generator_sha256": "e60fc258324392164e4259943f1f8174a7775df98711948df423cdde49db228d",
+    "replay_sha256": "4c1b6e341e9701508874b789503a324255d51cf00e54c876ab6fe93e35024fd5",
+    "canonical_source_pins": {
+      "dyn_em/solve_em.F": "d66e9db1bba8f37e3f46d30c2fd74bdf8def411adf233376a69e0b401c6d3d1f",
+      "dyn_em/module_em.F": "7695bfb05a7f99763334a6e69523bbcc1de0f2c659177a18c10a6e1cf530a0c7",
+      "dyn_em/module_advect_em.F": "58253bdbeb188dd47ed0579fcd2891086be1889b75c0c7d3696c9ad1d213559d"
+    },
+    "shadow_overlay_source_sha256": {
+      "dyn_em/solve_em.F": "5a31dd8e9e9ac8f6a0e3274375b425f692762a2b63334a15c3bcd8692f050d29",
+      "dyn_em/module_em.F": "44da8f28529eccb2acabdf6ecd42eeecebd9b0f87e678ba50a7850d79241f85c",
+      "dyn_em/module_advect_em.F": "6cdf81b146281cfb4b17507f60f67d7ee916b719a450af61b18598a6d18d1d0d"
+    },
+    "capture_macro": "KDM6AD_S15_FACE_CAPTURE",
+    "shadow_mode": "S3_QNCLOUD_XR_HIGH_FACTOR_OPT_IN",
+    "xR_positive_input_guard_word": "502AB870",
+    "xR_factor_word": "3F7FFE97",
+    "xR_factor_literal": "0.9999784827232361",
+    "guard_stop92_mismatch_not_triggered": true
+  },
+  "build": {
+    "exe_sha256": "ec150a046ad750c6729e53c656ef1095295705b7d5f9092b187e3b26ff642e93",
+    "map_sha256": "0565c64f34afd1f331bc321f766b1fa1f5d1c2c3083048a7b0d7f47dcc0dafef",
+    "fresh_objects": {
+      "module_advect_em.o": "cae166ef0e76f61f3c42f0f0ead180187cf9c79f79399ccfc87de60627ddb83b",
+      "module_em.o": "131dfc8718655ddf2f75812884bc0833422b862d19cf39a19ef8208ed3874b21",
+      "solve_em.o": "9f1699482cc22a1ebd75f173f4a0fbc930186296bb02f501bdd6e4a339c6f026"
+    },
+    "reused_mp237_object_sha256": "7265b13e86be6a47f6d35e95b57466e44d75cdb90e5d474e5fb73d13783df0f7",
+    "unchanged_host_archive_sha256": "f27a3633cae66c412123296eed3ebc3caeb3080ab7e8c9f224c18ab55c987a94",
+    "runtime_library_sha256": "a843ab775e53ebf61c38549dd5f32223d8e180ebefc07025b1cbad48df5935ff",
+    "configure_wrf_sha256": "490a164e853e4d1f28ff79c9dfc36843d00db9c8bd6aaae6bd47afd70ffc9292",
+    "macro_off_configured_suffix_byte_identity": {
+      "module_advect_em": true,
+      "module_em": true,
+      "solve_em": true
+    },
+    "macro_on_f90_sha256": {
+      "module_advect_em": "9130a04988483d4b64bcbb2142cca2b910e5898d23443afa1a2d59eaa383dcc4",
+      "module_em": "63b50609a19f2a91389e99b61b94ef2702d53cc2c355f03986ba4efa41728b80",
+      "solve_em": "700fcec731010466c39aa075c77d75bcb91006fa7c4bad62dec8cd5574100848"
+    },
+    "fresh_compile_receipt_sha256": "a8b1e2bebcbdfb57a96e994b8d32ad010418fbc4cef46cfbb64dfb82935e01e2",
+    "link_receipt_sha256": "8d0d16336967d48568495ab969d788f4437a384bfe5623ec3db64c6b27cf0738",
+    "direct_objects_before_unchanged_archive": {
+      "module_advect_em.o": true,
+      "module_em.o": true,
+      "solve_em.o": true,
+      "module_mp_kdm6_cons.o": true
+    },
+    "stale_archive_members_extracted": {
+      "module_advect_em.o": false,
+      "module_em.o": false,
+      "solve_em.o": false,
+      "module_mp_kdm6_cons.o": false
+    }
+  },
+  "inputs": {
+    "input_canonical_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+    "effective_namelist_sha256": "7779f4fdcce320b23ad72ae83eb8eb0f59caf87a12776dacfa7ab40a1f3ec198",
+    "namelist_file_sha256": "064b6f5ea5683ee3dc68d408c08bf4cbf588be06dbc7d99bb3529be8ba61554a",
+    "wrfinput_sha256": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+    "wrfbdy_sha256": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+    "wrfchainp_sha256": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3",
+    "static_physics_links": 78
+  },
+  "runs": {
+    "mp_physics": 237,
+    "duration_seconds": 40,
+    "saved_times": [
+      "2025-07-19_00:00:00",
+      "2025-07-19_00:00:20",
+      "2025-07-19_00:00:40"
+    ],
+    "mpi_ranks": 1,
+    "proc_grid": "1x1",
+    "threads": 1,
+    "same_executable_all_runs": "ec150a046ad750c6729e53c656ef1095295705b7d5f9092b187e3b26ff642e93",
+    "records": [
+      {
+        "id": "physics_off_log_off",
+        "returncode": 0,
+        "elapsed_seconds": 49.346764087677,
+        "physics_gate": "unset",
+        "capture_log_gate": "unset",
+        "argv": [
+          "python3",
+          "harness/run_ss_case.py",
+          "--mp",
+          "237",
+          "--minutes",
+          "0",
+          "--seconds",
+          "40",
+          "--history",
+          "0",
+          "--history-s",
+          "20",
+          "--np",
+          "1",
+          "--proc-grid",
+          "1x1",
+          "--label",
+          "s3_qn_xr_physics_off_log_off",
+          "--case",
+          "<isolated-case>",
+          "--fixed-dt"
+        ],
+        "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+        "exe_sha256": "ec150a046ad750c6729e53c656ef1095295705b7d5f9092b187e3b26ff642e93",
+        "stdout_sha256": "7daa5d5c5b822b01e1b04686b010a078ad9b35a03bb4c7a958a832d222822ae0",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "id": "physics_off_log_on",
+        "returncode": 0,
+        "elapsed_seconds": 48.13690900802612,
+        "physics_gate": "unset",
+        "capture_log_gate": "1",
+        "argv": [
+          "python3",
+          "harness/run_ss_case.py",
+          "--mp",
+          "237",
+          "--minutes",
+          "0",
+          "--seconds",
+          "40",
+          "--history",
+          "0",
+          "--history-s",
+          "20",
+          "--np",
+          "1",
+          "--proc-grid",
+          "1x1",
+          "--label",
+          "s3_qn_xr_physics_off_log_on",
+          "--case",
+          "<isolated-case>",
+          "--fixed-dt"
+        ],
+        "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+        "exe_sha256": "ec150a046ad750c6729e53c656ef1095295705b7d5f9092b187e3b26ff642e93",
+        "stdout_sha256": "5215475995fc1cea544d7d2dbeb2f50584888a67fd4e0cab95da9ce809a23a23",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "id": "physics_on_log_off",
+        "returncode": 0,
+        "elapsed_seconds": 48.516265869140625,
+        "physics_gate": "1",
+        "capture_log_gate": "unset",
+        "argv": [
+          "python3",
+          "harness/run_ss_case.py",
+          "--mp",
+          "237",
+          "--minutes",
+          "0",
+          "--seconds",
+          "40",
+          "--history",
+          "0",
+          "--history-s",
+          "20",
+          "--np",
+          "1",
+          "--proc-grid",
+          "1x1",
+          "--label",
+          "s3_qn_xr_physics_on_log_off",
+          "--case",
+          "<isolated-case>",
+          "--fixed-dt"
+        ],
+        "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+        "exe_sha256": "ec150a046ad750c6729e53c656ef1095295705b7d5f9092b187e3b26ff642e93",
+        "stdout_sha256": "c574b0a1f1742c3669f61fb094e682c3bdc42517b3c6dad1044f349166485e4a",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "id": "physics_on_log_on",
+        "returncode": 0,
+        "elapsed_seconds": 49.034241914749146,
+        "physics_gate": "1",
+        "capture_log_gate": "1",
+        "argv": [
+          "python3",
+          "harness/run_ss_case.py",
+          "--mp",
+          "237",
+          "--minutes",
+          "0",
+          "--seconds",
+          "40",
+          "--history",
+          "0",
+          "--history-s",
+          "20",
+          "--np",
+          "1",
+          "--proc-grid",
+          "1x1",
+          "--label",
+          "s3_qn_xr_physics_on_log_on",
+          "--case",
+          "<isolated-case>",
+          "--fixed-dt"
+        ],
+        "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+        "exe_sha256": "ec150a046ad750c6729e53c656ef1095295705b7d5f9092b187e3b26ff642e93",
+        "stdout_sha256": "4dec7815de0a50a4141a9cbaf1b8444c90c09119ee4a57e450a78f0cbb593daf",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ]
+  },
+  "capture": {
+    "expected_and_observed_tag_counts_per_log_on_run": {
+      "S3QNAX": 15,
+      "S3QNPD": 5,
+      "S3QNRK": 5
+    },
+    "parser_and_source_order_replay": "PASS 5/5 rows both physics modes; shadow ON validates the factor and positive donor store",
+    "cells_i_k_j": [
+      [
+        233,
+        12,
+        124
+      ],
+      [
+        232,
+        12,
+        124
+      ],
+      [
+        233,
+        12,
+        123
+      ],
+      [
+        233,
+        12,
+        125
+      ],
+      [
+        233,
+        13,
+        124
+      ]
+    ],
+    "donor_xR_rk_operands": {
+      "coordinate_i_j_k": [
+        233,
+        124,
+        12
+      ],
+      "rk_before": "00000000",
+      "sc_tend_off_on": [
+        "00000000",
+        "00000000"
+      ],
+      "advect_tend_off_on": [
+        "C10DFC7F",
+        "425680E0"
+      ],
+      "rk_tendency_off_on": [
+        "C10AA2CE",
+        "42517122"
+      ],
+      "rk_after_off_on": [
+        "BAEC299F",
+        "3C3263AA"
+      ],
+      "rk_dt": "41A00000",
+      "rk_c1": "3FD3B139",
+      "rk_c2": "C772A35C",
+      "rk_muold": "47BAF00E",
+      "rk_munew": "47BAF0BE",
+      "xR_face": {
+        "orientation": "donor xR face from i=233 to east cell i=234",
+        "raw_input_word_expected": "502AB870",
+        "raw_input_word_measured_off": "502AB870",
+        "raw_input_word_measured_on": "502AB77F",
+        "low_xR_word_off_on": [
+          "00000000",
+          "00000000"
+        ],
+        "unlimited_high_xR_word_off_on": [
+          "502ED159",
+          "502ED159"
+        ],
+        "post_limiter_high_xR_word_off_on": [
+          "502AB870",
+          "502AB77F"
+        ],
+        "factor_word": "3F7FFE97",
+        "pd_scale_off_on": [
+          "3F79FFFE",
+          "3F79FFFE"
+        ],
+        "pd_flux_out_off_on": [
+          "50A39DBE",
+          "50A39DBE"
+        ],
+        "pd_available_state_off_on": [
+          "509FC80A",
+          "509FC80A"
+        ],
+        "metric_x_off_on": [
+          "3F79F597",
+          "3F79F597"
+        ],
+        "inverse_spacing_x_off_on": [
+          "3951B717",
+          "3951B717"
+        ],
+        "flux_difference_x_off_on": [
+          "543237C2",
+          "543237C1"
+        ],
+        "directional_contribution_x_off_on": [
+          "CE0E8D11",
+          "CE0E8D10"
+        ],
+        "tendency_prefix_after_x_off_on": [
+          "4AED325D",
+          "4AED32DA"
+        ]
+      }
+    },
+    "four_internal_receivers": [
+      {
+        "coordinate_i_j_k": [
+          232,
+          124,
+          12
+        ],
+        "rk_after_off": "495954F4",
+        "rk_after_on": "495954F4",
+        "rk_after_equal": true,
+        "advect_tend_off": "4F7FAC2A",
+        "advect_tend_on": "4F7FAC2A",
+        "all_high_low_faces_equal_off_on": true,
+        "high_low_face_words_off": {
+          "x": {
+            "high_minus": "D4A81B62",
+            "high_plus": "D4366408",
+            "low_minus": "559DFB6E",
+            "low_plus": "5010A3FD",
+            "same_on_off": true
+          },
+          "y": {
+            "high_minus": "5222CA2D",
+            "high_plus": "523B6D14",
+            "low_minus": "00000000",
+            "low_plus": "50271563",
+            "same_on_off": true
+          },
+          "z": {
+            "high_minus": "C6928352",
+            "high_plus": "CB6FE007",
+            "low_minus": "4693C756",
+            "low_plus": "4C1D8B5E",
+            "same_on_off": true
+          }
+        }
+      },
+      {
+        "coordinate_i_j_k": [
+          233,
+          123,
+          12
+        ],
+        "rk_after_off": "4543A4F3",
+        "rk_after_on": "4543A4F3",
+        "rk_after_equal": true,
+        "advect_tend_off": "4B6B4738",
+        "advect_tend_on": "4B6B4738",
+        "all_high_low_faces_equal_off_on": true,
+        "high_low_face_words_off": {
+          "x": {
+            "high_minus": "5147DC47",
+            "high_plus": "D06CC1A0",
+            "low_minus": "00000000",
+            "low_plus": "00000000",
+            "same_on_off": true
+          },
+          "y": {
+            "high_minus": "CC1E3BC6",
+            "high_plus": "D00F9D6D",
+            "low_minus": "00000000",
+            "low_plus": "00000000",
+            "same_on_off": true
+          },
+          "z": {
+            "high_minus": "80000000",
+            "high_plus": "C7991628",
+            "low_minus": "80000000",
+            "low_plus": "4799C60D",
+            "same_on_off": true
+          }
+        }
+      },
+      {
+        "coordinate_i_j_k": [
+          233,
+          125,
+          12
+        ],
+        "rk_after_off": "47EEE329",
+        "rk_after_on": "47EEE329",
+        "rk_after_equal": true,
+        "advect_tend_off": "4E0FA026",
+        "advect_tend_on": "4E0FA026",
+        "all_high_low_faces_equal_off_on": true,
+        "high_low_face_words_off": {
+          "x": {
+            "high_minus": "CE302674",
+            "high_plus": "51246E0E",
+            "low_minus": "00000000",
+            "low_plus": "00000000",
+            "same_on_off": true
+          },
+          "y": {
+            "high_minus": "50E26B86",
+            "high_plus": "51975F39",
+            "low_minus": "00000000",
+            "low_plus": "00000000",
+            "same_on_off": true
+          },
+          "z": {
+            "high_minus": "80000000",
+            "high_plus": "CB961A45",
+            "low_minus": "80000000",
+            "low_plus": "4C31EFB7",
+            "same_on_off": true
+          }
+        }
+      },
+      {
+        "coordinate_i_j_k": [
+          233,
+          124,
+          13
+        ],
+        "rk_after_off": "4C13B223",
+        "rk_after_on": "4C13B223",
+        "rk_after_equal": true,
+        "advect_tend_off": "4DE7FEED",
+        "advect_tend_on": "4DE7FEED",
+        "all_high_low_faces_equal_off_on": true,
+        "high_low_face_words_off": {
+          "x": {
+            "high_minus": "D4D27AE6",
+            "high_plus": "5145FECC",
+            "low_minus": "563BEB7B",
+            "low_plus": "55E73D91",
+            "same_on_off": true
+          },
+          "y": {
+            "high_minus": "54A3E2BF",
+            "high_plus": "5466A3A7",
+            "low_minus": "50831F07",
+            "low_plus": "5557FD73",
+            "same_on_off": true
+          },
+          "z": {
+            "high_minus": "CBA28A2D",
+            "high_plus": "CB66CEB2",
+            "low_minus": "4C359948",
+            "low_plus": "4C832C42",
+            "same_on_off": true
+          }
+        }
+      }
+    ],
+    "log_on_bounded_streams": {
+      "physics_off": {
+        "counts": {
+          "S3QNAX": 15,
+          "S3QNPD": 5,
+          "S3QNRK": 5
+        },
+        "producer_consumer_rows": 5,
+        "source_order_replay": "PASS",
+        "face_file": "physics_off.face.stream",
+        "face_bytes": 3585,
+        "face_sha256": "848eae8889159d880640134581f29b3e830638cfb5f68cd6c3219ae3969747dd",
+        "legacy_file": "physics_off.legacy.stream",
+        "legacy_bytes": 0,
+        "legacy_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "full_on_stdout_bytes": 50354,
+        "full_on_stdout_sha256": "7e3994a38fcda861e4e0466652e09e90e084ac086632881b4bfbb7427df4ed7f",
+        "full_RSL_kept_private": true
+      },
+      "physics_on": {
+        "counts": {
+          "S3QNAX": 15,
+          "S3QNPD": 5,
+          "S3QNRK": 5
+        },
+        "producer_consumer_rows": 5,
+        "source_order_replay": "PASS",
+        "face_file": "physics_on.face.stream",
+        "face_bytes": 3585,
+        "face_sha256": "6d963521afd381aeab6e3caaf0efc81139b3ad3de581d5c7443f5f826b2449d4",
+        "legacy_file": "physics_on.legacy.stream",
+        "legacy_bytes": 0,
+        "legacy_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "full_on_stdout_bytes": 50354,
+        "full_on_stdout_sha256": "165751e89d829fc70c1a670e9c2bb1efc09d0cc5a05b70cbca97b135b414661a",
+        "full_RSL_kept_private": true
+      }
+    },
+    "history_words": {
+      "physics_off_log_off": {
+        "sha256": "59b8a0abd7a027a546414f51b5c30f10fa10e22f4a470cb95d9380824afdd3e9",
+        "bytes": 953745068,
+        "times": [
+          "2025-07-19_00:00:00",
+          "2025-07-19_00:00:20",
+          "2025-07-19_00:00:40"
+        ],
+        "qnc_stats": [
+          {
+            "time": "2025-07-19_00:00:00",
+            "finite": 2573532,
+            "total": 2573532,
+            "nonfinite": 0,
+            "negative": 0
+          },
+          {
+            "time": "2025-07-19_00:00:20",
+            "finite": 2573532,
+            "total": 2573532,
+            "nonfinite": 0,
+            "negative": 0
+          },
+          {
+            "time": "2025-07-19_00:00:40",
+            "finite": 2573532,
+            "total": 2573532,
+            "nonfinite": 0,
+            "negative": 3
+          }
+        ],
+        "selected_qnc_words": {
+          "donor_233_124_12": {
+            "t20": {
+              "word": "00000000",
+              "value": 0.0
+            },
+            "t40": {
+              "word": "00000000",
+              "value": 0.0
+            }
+          },
+          "east_cell_234_124_12": {
+            "t20": {
+              "word": "00000000",
+              "value": 0.0
+            },
+            "t40": {
+              "word": "BAEC299F",
+              "value": -0.001801777514629066
+            }
+          }
+        }
+      },
+      "physics_off_log_on": {
+        "sha256": "59b8a0abd7a027a546414f51b5c30f10fa10e22f4a470cb95d9380824afdd3e9",
+        "bytes": 953745068,
+        "times": [
+          "2025-07-19_00:00:00",
+          "2025-07-19_00:00:20",
+          "2025-07-19_00:00:40"
+        ],
+        "qnc_stats": [
+          {
+            "time": "2025-07-19_00:00:00",
+            "finite": 2573532,
+            "total": 2573532,
+            "nonfinite": 0,
+            "negative": 0
+          },
+          {
+            "time": "2025-07-19_00:00:20",
+            "finite": 2573532,
+            "total": 2573532,
+            "nonfinite": 0,
+            "negative": 0
+          },
+          {
+            "time": "2025-07-19_00:00:40",
+            "finite": 2573532,
+            "total": 2573532,
+            "nonfinite": 0,
+            "negative": 3
+          }
+        ],
+        "selected_qnc_words": {
+          "donor_233_124_12": {
+            "t20": {
+              "word": "00000000",
+              "value": 0.0
+            },
+            "t40": {
+              "word": "00000000",
+              "value": 0.0
+            }
+          },
+          "east_cell_234_124_12": {
+            "t20": {
+              "word": "00000000",
+              "value": 0.0
+            },
+            "t40": {
+              "word": "BAEC299F",
+              "value": -0.001801777514629066
+            }
+          }
+        }
+      },
+      "physics_on_log_off": {
+        "sha256": "ac7ee62bdc0abe244ecb8fec094a44eca24f907f43d853633f7519559ecf2262",
+        "bytes": 953745068,
+        "times": [
+          "2025-07-19_00:00:00",
+          "2025-07-19_00:00:20",
+          "2025-07-19_00:00:40"
+        ],
+        "qnc_stats": [
+          {
+            "time": "2025-07-19_00:00:00",
+            "finite": 2573532,
+            "total": 2573532,
+            "nonfinite": 0,
+            "negative": 0
+          },
+          {
+            "time": "2025-07-19_00:00:20",
+            "finite": 2573532,
+            "total": 2573532,
+            "nonfinite": 0,
+            "negative": 0
+          },
+          {
+            "time": "2025-07-19_00:00:40",
+            "finite": 2573532,
+            "total": 2573532,
+            "nonfinite": 0,
+            "negative": 2
+          }
+        ],
+        "selected_qnc_words": {
+          "donor_233_124_12": {
+            "t20": {
+              "word": "00000000",
+              "value": 0.0
+            },
+            "t40": {
+              "word": "00000000",
+              "value": 0.0
+            }
+          },
+          "east_cell_234_124_12": {
+            "t20": {
+              "word": "00000000",
+              "value": 0.0
+            },
+            "t40": {
+              "word": "3C3263AA",
+              "value": 0.01088801957666874
+            }
+          }
+        }
+      },
+      "physics_on_log_on": {
+        "sha256": "ac7ee62bdc0abe244ecb8fec094a44eca24f907f43d853633f7519559ecf2262",
+        "bytes": 953745068,
+        "times": [
+          "2025-07-19_00:00:00",
+          "2025-07-19_00:00:20",
+          "2025-07-19_00:00:40"
+        ],
+        "qnc_stats": [
+          {
+            "time": "2025-07-19_00:00:00",
+            "finite": 2573532,
+            "total": 2573532,
+            "nonfinite": 0,
+            "negative": 0
+          },
+          {
+            "time": "2025-07-19_00:00:20",
+            "finite": 2573532,
+            "total": 2573532,
+            "nonfinite": 0,
+            "negative": 0
+          },
+          {
+            "time": "2025-07-19_00:00:40",
+            "finite": 2573532,
+            "total": 2573532,
+            "nonfinite": 0,
+            "negative": 2
+          }
+        ],
+        "selected_qnc_words": {
+          "donor_233_124_12": {
+            "t20": {
+              "word": "00000000",
+              "value": 0.0
+            },
+            "t40": {
+              "word": "00000000",
+              "value": 0.0
+            }
+          },
+          "east_cell_234_124_12": {
+            "t20": {
+              "word": "00000000",
+              "value": 0.0
+            },
+            "t40": {
+              "word": "3C3263AA",
+              "value": 0.01088801957666874
+            }
+          }
+        }
+      }
+    }
+  },
+  "comparisons": {
+    "capture_log_off_on_within_physics": [
+      {
+        "physics": "OFF",
+        "frames": [
+          0,
+          20,
+          40
+        ],
+        "variables_per_frame": "254/254",
+        "different": 0,
+        "status": "PASS"
+      },
+      {
+        "physics": "ON",
+        "frames": [
+          0,
+          20,
+          40
+        ],
+        "variables_per_frame": "254/254",
+        "different": 0,
+        "status": "PASS"
+      }
+    ],
+    "physical_gate_off_vs_on": [
+      {
+        "frames": [
+          0,
+          20
+        ],
+        "variables_per_frame": "254/254",
+        "different": 0,
+        "status": "PASS"
+      },
+      {
+        "frame": 40,
+        "variables_common": 254,
+        "matching": 253,
+        "different": 1,
+        "different_variable": "QNCLOUD",
+        "changed_cell_count": 1,
+        "changed_cell": {
+          "coordinate_i_j_k": [
+            234,
+            124,
+            12
+          ],
+          "off_word": "BAEC299F",
+          "on_word": "3C3263AA"
+        }
+      }
+    ]
+  },
+  "baseline_identity": {
+    "current_uninstrumented_exe_sha256": "1b4184f7f19805b543d409b31ab5dc00b5417e0173164d7b59afb9eb783ada0b",
+    "current_uninstrumented_history_sha256": "59b8a0abd7a027a546414f51b5c30f10fa10e22f4a470cb95d9380824afdd3e9",
+    "physics_off_capture_history_sha256": "59b8a0abd7a027a546414f51b5c30f10fa10e22f4a470cb95d9380824afdd3e9",
+    "physics_off_matches_current_baseline": true,
+    "base_qn_capture_exe_sha256": "e12e973cf903e431f2a893e610c19cb3f5fcd188d47a6a569a8f9e07c56408b5",
+    "historical_g2_original_history_sha256": "7d2afb3236ea6ea53a1df5c75f17b2b1da27f963ace697a8a912eda871c0f750",
+    "historical_g2_matches_current_baseline": false
+  },
+  "east_cell_crosscheck": {
+    "coordinate_i_j_k": [
+      234,
+      124,
+      12
+    ],
+    "history_t40_off_word": "BAEC299F",
+    "history_t40_on_word": "3C3263AA",
+    "matches_donor_rk_after_word": true,
+    "scope": "saved history cross-check; no direct boundary update tap"
+  },
+  "private_artifact_note": "Full RSL and full NetCDF forecast files remain in private scratch. Only the two bounded log-on face/legacy stream pairs and this path-redacted receipt are public."
+}

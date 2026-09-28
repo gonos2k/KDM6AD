@@ -263,6 +263,55 @@ def test_qn_overlay_has_separate_p_qnc_owner_roster_and_exact_caps() -> None:
     assert "i.eq.234" not in advect_helpers + em_helpers
 
 
+def test_qn_xr_shadow_uses_independent_physics_latch_and_pre_tap_factor() -> None:
+    solve_source = """SUBROUTINE solve_em()
+IMPLICIT NONE
+other_scalar_advance: IF (num_3d_s >= 1) THEN
+scalar_tile_loop_1: DO ij=1,n
+ CALL rk_scalar_tend(x)
+ENDDO scalar_tile_loop_1
+scalar_tile_loop_2: DO ij=1,n
+ CALL rk_update_scalar(x)
+ENDDO scalar_tile_loop_2
+END IF
+END SUBROUTINE solve_em
+"""
+    solve = overlay._convert_qn_overlay(overlay._patch_solve(solve_source, shadow=True))
+    gate = "s3qn_xr_shadow_enabled=(is==P_QNC.and.grid%itimestep.eq.2.and.rk_step.eq.3.and.ij.eq.1.and.s3qn_xr_shadow_latched)"
+    assert "KDM6_S3_QN_XR_SHADOW" in solve
+    assert "trim(s3qn_xr_shadow_env).eq.'1'" in solve
+    assert gate in solve
+    assert "s15_owner=MERGE(3,0,is==P_QNC .and. s15_capture_enabled)" in solve
+    assert "s15_capture_enabled" not in gate
+    declarations = "\n".join(
+        overlay._add_optional_declarations(
+            ["SUBROUTINE sample()", "IMPLICIT NONE", "END SUBROUTINE sample"],
+            "sample",
+            ("s3qn_xr_shadow_enabled",),
+            declaration_type="LOGICAL",
+        )
+    )
+    assert "LOGICAL, OPTIONAL, INTENT(IN) :: s3qn_xr_shadow_enabled" in declarations
+
+    pd_source = """SUBROUTINE advect_scalar_pd()
+IMPLICIT NONE
+IF( flux_out(i,k,j) .gt. ph_low(i,k,j)) THEN
+ scale = max(0.,ph_low(i,k,j)/(flux_out(i,k,j)+eps))
+END IF
+END SUBROUTINE advect_scalar_pd
+"""
+    tapped = "\n".join(overlay._tap_pd_limiter(pd_source.splitlines(), shadow=True))
+    assert "0.9999784827232361*fqx(i+1,k,j)" in tapped
+    assert "transfer(fqx(i+1,k,j),0).ne.int(z'502AB870',kind=4)" in tapped
+    assert tapped.index("s3qn_xr_shadow_enabled .and. i.eq.233") < tapped.index(
+        "s15_pd_post(2)=fqx(i+1,k,j)"
+    )
+    assert tapped.count("fqx(i+1,k,j)=0.9999784827232361*fqx(i+1,k,j)") == 1
+    assert replay.value_word(float(overlay.QN_XR_SHADOW_FACTOR_LITERAL)) == (
+        overlay.QN_XR_SHADOW_FACTOR_WORD
+    )
+
+
 def test_synthetic_qn_stream_joins_exact_five_with_only_donor_transition() -> None:
     stream = _qn_stream()
     producers, consumers = overlay.parse_fortran_capture(stream, ROOT, CONFIG, qn=True)
@@ -284,6 +333,88 @@ def test_synthetic_qn_stream_joins_exact_five_with_only_donor_transition() -> No
         overlay.parse_fortran_capture(
             stream.rsplit("\n", 2)[0] + "\n", ROOT, CONFIG, qn=True
         )
+
+
+def test_qn_shadow_replays_factorized_xr_and_positive_store_from_native_stream() -> (
+    None
+):
+    rows = (
+        (ROOT / "harness/evidence/S3_QN_face_neighbors_run1/S3QN_face.stream")
+        .read_text(encoding="ascii")
+        .splitlines()
+    )
+    donor_identity = [2, 3, 3, 1, 1, 235, 1, 142, *replay.QN_DONOR]
+    pd_index = next(
+        index
+        for index, row in enumerate(rows)
+        if row.startswith("S3QNPD ")
+        and list(map(int, row.split()[1:12])) == donor_identity
+    )
+    pd = rows[pd_index].split()
+    assert pd[30] == replay.QN_XR_SHADOW_INPUT_WORD
+    pd[30] = replay._mul(replay.QN_XR_SHADOW_FACTOR_WORD, pd[30])
+    assert pd[30] == "502AB77F"
+    rows[pd_index] = " ".join(pd)
+
+    x_index = next(
+        index
+        for index, row in enumerate(rows)
+        if row.startswith("S3QNAX ")
+        and list(map(int, row.split()[1:12])) == donor_identity
+        and row.split()[12] == "2"
+    )
+    x = rows[x_index].split()
+    x[15] = pd[30]
+    x_difference = replay._sub(replay._add(replay._sub(x[15], x[14]), x[17]), x[16])
+    x_scaled = replay._mul(x[19], x_difference)
+    x_prefix = replay._fma32(replay._negate_word(x[18]), x_scaled, x[20])
+    x[21] = x_prefix
+    rows[x_index] = " ".join(x)
+
+    y_index = next(
+        index
+        for index, row in enumerate(rows)
+        if row.startswith("S3QNAX ")
+        and list(map(int, row.split()[1:12])) == donor_identity
+        and row.split()[12] == "1"
+    )
+    y = rows[y_index].split()
+    y[20] = x_prefix
+    y_difference = replay._sub(replay._add(replay._sub(y[15], y[14]), y[17]), y[16])
+    y_scaled = replay._mul(y[19], y_difference)
+    advect_tend = replay._fma32(replay._negate_word(y[18]), y_scaled, y[20])
+    y[21] = advect_tend
+    rows[y_index] = " ".join(y)
+
+    rk_index = next(
+        index
+        for index, row in enumerate(rows)
+        if row.startswith("S3QNRK ")
+        and list(map(int, row.split()[1:12])) == donor_identity
+    )
+    rk = rows[rk_index].split()
+    rk[12] = advect_tend
+    rk[15] = replay._add(replay._mul(rk[12], rk[13]), rk[14])
+    old_mass = replay._fma32(rk[18], rk[20], rk[19])
+    numerator = replay._fma32(old_mass, rk[16], replay._mul(rk[17], rk[15]))
+    new_mass = replay._fma32(rk[18], rk[21], rk[19])
+    rk[22] = replay.value_word(
+        replay.word_value(numerator) / replay.word_value(new_mass)
+    )
+    assert rk[22] == "3C3263AA"
+    rows[rk_index] = " ".join(rk)
+    native_shadow_stream = "\n".join(rows) + "\n"
+
+    producers, consumers = overlay.parse_fortran_capture(
+        native_shadow_stream, ROOT, CONFIG, qn=True, shadow=True
+    )
+    assert len(producers) == len(consumers) == 5
+    parsed_donor = next(
+        row for row in consumers if replay._identity(row)[-3:] == replay.QN_DONOR
+    )
+    assert parsed_donor["after"] == "3C3263AA"
+    with pytest.raises(replay.ProbeError, match="PD x.plus local post-limit face"):
+        overlay.parse_fortran_capture(native_shadow_stream, ROOT, CONFIG, qn=True)
 
 
 def test_wrf_final_suffix_cpp_pass_uses_only_cpp_base_and_tradflag() -> None:

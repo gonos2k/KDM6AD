@@ -47,6 +47,15 @@ direct boundary-copy tap or corrected trajectory was run. These operands
 support the next local repair test; whole-host positivity and the physical
 number basis remain open. See [[REPORT_S3_native_qn_neighbors_2026-09-28]].
 
+An isolated opt-in follow-up reduces only that donor's positive east xR face
+correction after the ordinary PD limiter. In the selected 40-s mp237 run, its
+RK store and saved east-boundary QNCLOUD word both change from negative to
+positive, while four interior receiver records remain unchanged; the 40-s
+QNCLOUD negative count falls from three to two. Logging OFF/ON is raw-bit
+identical within each physics mode. This is one fixed external-face experiment,
+not a general positivity rule or a closed physical number budget. See
+[[REPORT_S3_QN_xr_shadow_2026-09-28]].
+
 The separate S15 native face-neighbor capture concerns QIB rime-ice volume,
 not a particle-number field; it does not supply S3 number evidence.
 
