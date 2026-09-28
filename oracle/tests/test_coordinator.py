@@ -673,6 +673,112 @@ def test_kdm62d_one_step_runs():
         assert torch.isfinite(v).all(), field
 
 
+def test_s10_midpoint_trace_mixed_one_step_and_default_off_identity():
+    """Coordinator opt-in projects trace/active/empty cells; default-off stays exact."""
+    import struct
+    from kdm6 import progb as _progb
+
+    state, forcing, sea_mask = _state_forcing(B=1, K=3)
+    params = default_coordinator_params()
+    qg = torch.tensor([[0.5 * params.progb.qcrmin, 5.0e-5, 0.0]], dtype=torch.float64)
+    state = state._replace(
+        qv=torch.zeros_like(state.qv), qc=torch.zeros_like(state.qc),
+        qr=torch.zeros_like(state.qr), qs=torch.zeros_like(state.qs),
+        qg=qg, qi=torch.zeros_like(state.qi), nc=torch.zeros_like(state.nc),
+        nr=torch.zeros_like(state.nr), ni=torch.zeros_like(state.ni),
+        brs=torch.tensor([[0.0, 1.0e-7, 0.0]], dtype=torch.float64),
+        t=torch.full_like(state.t, 263.15),
+    )
+    aux = _make_aux(state, sea_mask, params)
+
+    assert params.midpoint_trace is False
+    out_default = kdm62d_one_step_torch(
+        state, forcing, aux, sea_mask, full_params=params,
+        warm_params=default_warm_phase_params(),
+        cold_params=default_cold_phase_params(),
+        mf_params=default_melt_freeze_phase_params(), dtcld=1.0e-6,
+    )
+    def f64_words(value):
+        return tuple(
+            f"{struct.unpack('<Q', struct.pack('<d', x))[0]:016x}"
+            for x in value.reshape(-1).tolist()
+        )
+
+    # Golden outputs captured by running this identical fixture at base ea0a721,
+    # before the coordinator opt-in existed; these pin the legacy false path.
+    assert f64_words(out_default.brs) == (
+        "0000000000000000", "3e7ad7f29953e376", "0000000000000000")
+    assert f64_words(out_default.qg) == (
+        "0000000000000000", "3f0a36e2e9bbec22", "0000000000000000")
+    assert f64_words(out_default.t) == (
+        "4070726666666665", "40707266666647e4", "4070726666666666")
+
+    zero_work = torch.zeros_like(state.qg)
+    sed = sedimentation_chain_torch(
+        state, forcing, zero_work, zero_work, zero_work, zero_work, zero_work, zero_work,
+        mstep_main=1, mstep_ice=1, dtcld=1.0e-6,
+        params=default_substep_advection_params(),
+        reslope_params=params._replace(midpoint_trace=True), sea_mask=sea_mask,
+    )
+    assert sed.state.brs[0, 0].item() > 0.0
+    assert sed.state.brs[0, 2].item() == 0.0
+
+    pre = preamble_torch(state, forcing, sea_mask,
+                         params=params._replace(midpoint_trace=True))
+    assert pre.progb.rhox[0, 0].item() == _progb.RHO_MID
+    assert pre.progb.bg[0, 0].item() == qg[0, 0].item() / _progb.RHO_MID
+    assert math.isclose(pre.progb.rhox[0, 1].item(), 500.0, rel_tol=0.0, abs_tol=1e-12)
+    assert pre.progb.rhox[0, 2].item() == 0.0
+    assert pre.progb.bg[0, 2].item() == 0.0
+
+    out_midpoint = kdm62d_one_step_torch(
+        state, forcing, aux, sea_mask,
+        full_params=params._replace(midpoint_trace=True),
+        warm_params=default_warm_phase_params(),
+        cold_params=default_cold_phase_params(),
+        mf_params=default_melt_freeze_phase_params(), dtcld=1.0e-6,
+    )
+    for field in out_midpoint._fields:
+        assert torch.isfinite(getattr(out_midpoint, field)).all(), field
+    assert out_midpoint.brs[0, 0].item() > 0.0
+    assert out_default.brs[0, 0].item() == 0.0
+    assert out_midpoint.brs[0, 2].item() == 0.0
+
+
+def test_s10_exact_zero_rhox_quotient_branch_derivative_and_signed_zero():
+    from kdm6.melt_freeze import _s10_exact_zero_rate_over_rhox
+
+    zero_rate = torch.tensor([-0.0], dtype=torch.float64, requires_grad=True)
+    zero_rho = torch.tensor([0.0], dtype=torch.float64, requires_grad=True)
+    zero_out = _s10_exact_zero_rate_over_rhox(zero_rate, zero_rho, context="test")
+    assert torch.signbit(zero_out).item()
+    gz_rate, gz_rho = torch.autograd.grad(zero_out.sum(), (zero_rate, zero_rho))
+    assert gz_rate.item() == 1.0
+    assert gz_rho.item() == 0.0
+
+    rate = torch.tensor([0.4], dtype=torch.float64, requires_grad=True)
+    rho = torch.tensor([2.0], dtype=torch.float64, requires_grad=True)
+    assert torch.autograd.gradcheck(
+        lambda r, h: _s10_exact_zero_rate_over_rhox(r, h, context="test"),
+        (rate, rho), eps=1.0e-6, atol=1.0e-8, rtol=1.0e-6,
+    )
+
+
+def test_s10_exact_zero_rhox_quotient_rejects_invalid_nonzero_density():
+    import pytest
+    from kdm6.melt_freeze import _s10_exact_zero_rate_over_rhox
+
+    for invalid_rhox in (0.0, -1.0, float("nan"), float("inf")):
+        with pytest.raises(ValueError, match="nonzero rate requires finite-positive rhox"):
+            _s10_exact_zero_rate_over_rhox(
+                torch.tensor([1.0], dtype=torch.float64),
+                torch.tensor([invalid_rhox], dtype=torch.float64), context="test")
+    with pytest.raises(ValueError, match="rate must be finite"):
+        _s10_exact_zero_rate_over_rhox(
+            torch.tensor([float("inf")], dtype=torch.float64),
+            torch.tensor([2.0], dtype=torch.float64), context="test")
+
+
 def test_kdm62d_step_subcycling_consistency():
     """delt=120 (loops_max=1) 와 delt=120 dtcldcr=60 (loops_max=2) 호출이 다름 (sub-cycle 효과)."""
     state, forcing, sea_mask = _state_forcing()

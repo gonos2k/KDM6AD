@@ -73,6 +73,7 @@ class CoordinatorParams(NamedTuple):
     cloud_dsd: _dsd.CloudDsdParams
     progb: _progb.ProgBParams
     slope: _slope.SlopeParams
+    midpoint_trace: bool = False  # unapproved rho_mid=400 S10 oracle counterfactual; default unchanged
 
 
 def default_coordinator_params() -> CoordinatorParams:
@@ -153,7 +154,8 @@ def preamble_torch(
     # qcr is computed by caller via diag_qcr_torch(sea_mask).
 
     # ── ProgB (graupel density 진단) ────────────────────────────────────
-    progb_out = _progb.progb_param_torch(state.qg, state.brs, params=params.progb)
+    progb_out = _progb.progb_param_torch(
+        state.qg, state.brs, params=params.progb, midpoint_trace=params.midpoint_trace)
 
     # ── Slope (4-species) ───────────────────────────────────────────────
     slope_out = _slope.slope_kdm6_torch(
@@ -641,6 +643,7 @@ def melt_freeze_d1_torch(
     *,
     params: MeltFreezePhaseParams,
     dtcld: float,
+    midpoint_trace: bool = False,
 ) -> MeltFreezePhaseOutputs:
     """Stage-A STEP 3 split: D1 melt only (warm cells). Applied inline first; a
     rebuild then re-slopes before D2-D4 (Fortran module_mp_kdm6.F melt :1274-1345 →
@@ -657,6 +660,7 @@ def melt_freeze_d1_torch(
         s.rslope_s, s.rslope2_s, s.rslopeb_s, s.rslopemu_s,
         s.rslope_g, s.rslope2_g, s.rslopeb_g, s.rslopemu_g,
         params=params.melting, dtcld=dtcld, mass_den=forcing.dend,
+        midpoint_trace=midpoint_trace,
     )
     return MeltFreezePhaseOutputs(
         psmlt=melt.psmlt, pgmlt=melt.pgmlt,
@@ -1104,6 +1108,7 @@ def state_update_torch(
     delta_src: CoordinatorState = None,  # Stage-A STEP 1: state to compute delta2/delta3
                            # from (the ENTRY state) when `state` is a post-melt/freeze
                            # working base; None → use `state`. Mirrors C++ delta_src.
+    midpoint_trace: bool = False,
 ) -> CoordinatorState:
     """F1e — 모든 phase rate를 state에 적용해 새 state 산출.
 
@@ -1294,8 +1299,27 @@ def state_update_torch(
     #   기존 mf.delta_brs_melt (pgmlt/rhox), mf.delta_brs_freeze (pfrzdtr/denr) 외에
     #   cold-branch 8 항 + warm-branch pgevp 추가.
     rhox_safe = torch.clamp(pre.progb.rhox, min=c.DENS)  # Fortran 2768 max(rhox, dens)
+    if midpoint_trace:
+        # Tensorize the Fortran arm gates before validating/dividing: a producer
+        # may emit a rate that this cold/warm state-update arm does not consume.
+        pgdep_rate = torch.where(cold_mask.to(torch.bool), cold.pgdep,
+                                 torch.zeros_like(cold.pgdep))
+        pgevp_rate = torch.where(warm_mask.to(torch.bool), cold.pgevp,
+                                 torch.zeros_like(cold.pgevp))
+        pgeml_rate = torch.where(warm_mask.to(torch.bool), mf.pgeml,
+                                 torch.zeros_like(mf.pgeml))
+        pgdep_over_rho = _mf._s10_exact_zero_rate_over_rhox(
+            pgdep_rate, pre.progb.rhox, context="pgdep")
+        pgevp_over_rho = _mf._s10_exact_zero_rate_over_rhox(
+            pgevp_rate, pre.progb.rhox, context="pgevp")
+        pgeml_over_rho = _mf._s10_exact_zero_rate_over_rhox(
+            pgeml_rate, pre.progb.rhox, context="pgeml")
+    else:
+        pgdep_over_rho = cold.pgdep / rhox_safe
+        pgevp_over_rho = cold.pgevp / rhox_safe
+        pgeml_over_rho = mf.pgeml / rhox_safe
     dbrs_cold_riming = cold_mask * dtcld * (
-        cold.pgdep / rhox_safe                # 2643 graupel deposition
+        pgdep_over_rho                         # 2643 graupel deposition
         + cold.piacr / c.DENR                  # biacr
         + cold.praci / c.DENI                  # braci
         + cold.psacr_adj / c.DENR              # bsacr (post-HM adj)
@@ -1305,8 +1329,8 @@ def state_update_torch(
         + cold.pgacr_adj / c.DENR              # bgacr (post-HM adj)
     )
     dbrs_warm_evap = warm_mask * dtcld * (
-        cold.pgevp / rhox_safe                 # 2734 bgevp (pgevp<0 → brs 감소)
-        + mf.pgeml / rhox_safe                 # 2735 bgeml (pgeml<0 → brs 감소)
+        pgevp_over_rho                         # 2734 bgevp (pgevp<0 → brs 감소)
+        + pgeml_over_rho                       # 2735 bgeml (pgeml<0 → brs 감소)
     )
     # delta_brs_melt = pgmlt/rhox (rate, *dtcld 필요), delta_brs_freeze = pfrzdtr/denr (amount, 그대로)
     dbrs = (
@@ -2086,8 +2110,12 @@ def kdm62d_one_step_torch(
     # adopt the entry-state ProgB-reclamped graupel volume so downstream brs accumulation
     # starts from the density-[100,900]-capped base. progb.bg is already computed (dead
     # output before this fix); functional ._replace, autograd-safe (where+clamp+divide).
-    state = state._replace(brs=torch.where(  # OR-gate (brs Group-B): match ProgB active (qg>qcrmin OR brs>brs_min)
-        (state.qg > full_params.progb.qcrmin) | (state.brs > _progb.BRS_MIN), pre.progb.bg, torch.zeros_like(pre.progb.bg)))
+    if full_params.midpoint_trace:
+        state = state._replace(brs=pre.progb.bg)
+    else:
+        state = state._replace(brs=torch.where(  # OR-gate (brs Group-B): match ProgB active (qg>qcrmin OR brs>brs_min)
+            (state.qg > full_params.progb.qcrmin) | (state.brs > _progb.BRS_MIN),
+            pre.progb.bg, torch.zeros_like(pre.progb.bg)))
 
     # ─── Stage-A STEP 2+3: SEQUENTIAL melt → re-slope → freeze → re-slope → warm/cold ──
     # Mirror of C++ kdm62d_one_step. Fortran module_mp_kdm6.F order: D1 melt (:1274-1345) →
@@ -2098,6 +2126,12 @@ def kdm62d_one_step_torch(
     #   3. D2-D4 freeze from working1 + pre1/aux1 (cold cells); apply inline → working.
     #   4. rebuild_aux_torch(working) → pre2/aux2 (post-freeze re-slope).
     #   5. warm/cold/D5 read `working` + pre2/aux2.
+    # `midpoint_trace` is an oracle-only counterfactual applied at each port ProgB
+    # evaluation (`pre`, the extra split-stage `pre1`, `pre2`, final `progb4`, and
+    # sedimentation reslopes). The post-D1 `pre1` has no one-to-one host ProgB call;
+    # this flag does not claim native seven-call source-order parity. Derivatives
+    # are local to the selected masks; qg=0 and the original active-gate edges are
+    # nonsmooth.
     # STEP 3 (this split) is bit-identical to the prior STEP-2 single-apply modulo
     # float reassociation (melt warm / freeze cold are per-cell mutually exclusive,
     # so D2-D4-on-post-melt ≡ D2-D4-on-entry). Hosts the (disabled) homog freeze
@@ -2109,7 +2143,8 @@ def kdm62d_one_step_torch(
 
     # 1. D1 melt → working1.
     mf_d1 = melt_freeze_d1_torch(
-        state, forcing, pre, aux.n0so, aux.n0go, params=mf_params, dtcld=dtcld)
+        state, forcing, pre, aux.n0so, aux.n0go, params=mf_params, dtcld=dtcld,
+        midpoint_trace=full_params.midpoint_trace)
     working1 = apply_melt_freeze_inline_torch(
         state, mf_d1, pre, dtcld=dtcld, xls=full_params.thermo.xls)
     if diagnostic_trace is not None:
@@ -2129,8 +2164,12 @@ def kdm62d_one_step_torch(
     # BRS density re-clamp #2 (Fortran ProgB_param L1392 post-melt re-slope): adopt the
     # post-melt ProgB-reclamped graupel volume so the D2-D4 freeze inline (which adds
     # pfrzdtr/denr at density 1000) accumulates onto the [100,900]-capped base.
-    working1b = working1b._replace(brs=torch.where(  # OR-gate (brs Group-B)
-        (working1b.qg > full_params.progb.qcrmin) | (working1b.brs > _progb.BRS_MIN), pre1.progb.bg, torch.zeros_like(pre1.progb.bg)))
+    if full_params.midpoint_trace:
+        working1b = working1b._replace(brs=pre1.progb.bg)
+    else:
+        working1b = working1b._replace(brs=torch.where(  # OR-gate (brs Group-B)
+            (working1b.qg > full_params.progb.qcrmin) | (working1b.brs > _progb.BRS_MIN),
+            pre1.progb.bg, torch.zeros_like(pre1.progb.bg)))
     # SEED#2 (post-melt re-slope, Fortran module_mp_kdm6.F:1453-1466): clamp-rewrite the
     # prognostic cloud number before D2-D4 reads it (ninuc/nfrzdtc caps min() against it,
     # F:1500-1501/1524-1531). Inert in unclamped cells; gated qc≥qmin & nc≥ncmin (F:1638).
@@ -2222,8 +2261,12 @@ def kdm62d_one_step_torch(
     # post-freeze ProgB-reclamped graupel volume so state_update_torch (L1245) accumulates
     # the cold/warm dbrs (Fortran L2643/L2751) onto the [100,900]-capped base — this is the
     # site that fixes newly-frozen-rain graupel (pfrzdtr/denr density 1000 → reclamp 900).
-    working = working._replace(brs=torch.where(  # OR-gate (brs Group-B)
-        (working.qg > full_params.progb.qcrmin) | (working.brs > _progb.BRS_MIN), pre2.progb.bg, torch.zeros_like(pre2.progb.bg)))
+    if full_params.midpoint_trace:
+        working = working._replace(brs=pre2.progb.bg)
+    else:
+        working = working._replace(brs=torch.where(  # OR-gate (brs Group-B)
+            (working.qg > full_params.progb.qcrmin) | (working.brs > _progb.BRS_MIN),
+            pre2.progb.bg, torch.zeros_like(pre2.progb.bg)))
     # SEED#2 (post-freeze re-slope, Fortran module_mp_kdm6.F:1638-1651): clamp-rewrite the
     # prognostic cloud number BEFORE the warm loop. The rewritten nci(1) is what warm
     # praut/nraut (F:1706-1716) AND the CCN activation ncact (F:2905, reads nci1 twice)
@@ -2390,6 +2433,7 @@ def kdm62d_one_step_torch(
     new_state = state_update_torch(
         working, pre_su, warm_out, cold_out, mf5,
         dtcld=dtcld, xls=full_params.thermo.xls, delta_src=None,
+        midpoint_trace=full_params.midpoint_trace,
     )
     if diagnostic_trace is not None:
         diagnostic_trace.record_stage(
@@ -2410,12 +2454,17 @@ def kdm62d_one_step_torch(
     # cells, 0 exceptions): Fortran's f32 graupel-volume b-terms underflow to EXACTLY 0
     # in graupel-empty cells, but the f64 oracle/C++ leave a tiny power-of-2 residue
     # (~2^-53..2^-63). where(qg>qcrmin, ...) zeroes it — graupel-empty cells have no volume.
-    _bg4 = _progb.progb_param_torch(new_state.qg, new_state.brs, params=full_params.progb).bg
+    _bg4 = _progb.progb_param_torch(
+        new_state.qg, new_state.brs, params=full_params.progb,
+        midpoint_trace=full_params.midpoint_trace).bg
     # FINAL output re-clamp: qg-only zeroing (NOT the OR-gate). The OR-gate here regresses brs ~14k cells —
     # C++'s f32 brs flow does NOT underflow to 0 like Fortran's in empty cells. The OR-gate is applied UPSTREAM
     # (sites #0-#3, #resed) to fix the qg cascade; genuine Group-B cells grow qg>qcrmin by the final stage.
-    new_state = new_state._replace(
-        brs=torch.where(new_state.qg > full_params.progb.qcrmin, _bg4, torch.zeros_like(_bg4)))
+    if full_params.midpoint_trace:
+        new_state = new_state._replace(brs=_bg4)
+    else:
+        new_state = new_state._replace(
+            brs=torch.where(new_state.qg > full_params.progb.qcrmin, _bg4, torch.zeros_like(_bg4)))
     # Complete-rain-evap NR→NCCN was transferred immediately after B4 above;
     # state_update therefore sees nr=0 in those cells, matching the C++/Fortran
     # owning boundary without a second post-update subtraction.
@@ -2633,9 +2682,12 @@ def sedimentation_chain_torch(
             # stay bitwise — brs is the unique round-tripped prognostic). Fortran re-runs ProgB every
             # substep, overwriting brs = qg/rhox. C++/oracle previously carried adv_state.brs raw. Same
             # qg>qcrmin+zero staging as the pre-sed reset (OR-gate measured worse: f64 empty residue).
-            adv_state = adv_state._replace(brs=torch.where(  # OR-gate (brs Group-B)
-                (adv_state.qg > reslope_params.progb.qcrmin) | (adv_state.brs > _progb.BRS_MIN),
-                pre.progb.bg, torch.zeros_like(pre.progb.bg)))
+            if reslope_params.midpoint_trace:
+                adv_state = adv_state._replace(brs=pre.progb.bg)
+            else:
+                adv_state = adv_state._replace(brs=torch.where(  # OR-gate (brs Group-B)
+                    (adv_state.qg > reslope_params.progb.qcrmin) | (adv_state.brs > _progb.BRS_MIN),
+                    pre.progb.bg, torch.zeros_like(pre.progb.bg)))
             w1_qr = pre.slope.vt_r / dz   # F:1198-1205 normalizes work1(1,2,3)/workn(1) /delz
             wn_qr = pre.slope.vtn_r / dz
             w1_qs = pre.slope.vt_s / dz
