@@ -1,0 +1,186 @@
+{
+  "schema": "s10-stage2-pair-public-run-receipt-v1",
+  "scope": "One selected cold stage-2 qg/brs tap and one same-executable 20-second logging off/on instrumentation check for canonical mp237.",
+  "status": "BOUNDED_RUNS_COMPLETE_S10_REMAINS_OPEN",
+  "previous_diagnostic_only_runs_included": false,
+  "previous_diagnostic_only_runs_excluded_reason": "Their inherited numeric shape logger emitted unassigned fields; this evidence uses the revised overlay with those writes removed.",
+  "canonical_source_sha256": "4f0103c8a8321b8e854d3500f4ae567755e41eb78746fac54519eca2686a6648",
+  "validity_overlay_sha256": "6fc4a68daecc695099f2f5d1cb398593d15f1530f318eba97471184bda8a7a49",
+  "pair_overlay_sha256": "37013f0d885632d5843ffd7fe240cfa2b4d04873aad4ca796aba57afcdb14235",
+  "overlay_behavior": {
+    "S10SHAPE_numeric_source_writes": 0,
+    "S10SLP_source_sites": 7,
+    "S10PAIR_rows_expected_per_selected_call": 1,
+    "pair_tap_reads_unassigned_density_output": false,
+    "physical_updates_changed": false
+  },
+  "macro_off_preprocessing": {
+    "strict_f90_byte_identity": "FAIL_BLANK_ONLY_DIFFERENCE",
+    "nonblank_lines_equal": true,
+    "difference": "Only blank lines at instrument blocks; failure retained, not promoted to pass."
+  },
+  "build": {
+    "configure_wrf_sha256": "490a164e853e4d1f28ff79c9dfc36843d00db9c8bd6aaae6bd47afd70ffc9292",
+    "phys_makefile_sha256": "e9e1d95afccf0aa5c88668adb5b43ca835aada3eaaae1cd97f8f628bb6482893",
+    "compile_returncode": 0,
+    "compile_flags_include_ffp_contract_off": true,
+    "shadow_object_sha256": "e44d65a8a008304268231f3e3e67c62ab2677a34c1bc35053889ac473e3328d7",
+    "link_returncode": 0,
+    "linked_shadow_object_precedes_unchanged_archive": true,
+    "unchanged_archive_sha256": "722f83c058ea1c43d5f23cc497aed1b218f33f90828a0e1dc51c6fe30203deba",
+    "shadow_executable_sha256": "7e3965bc13af22520cdc011ed54931382d732d0ab31c6d35751e04feed89c392",
+    "mpif90_tool_sha256": "91865d113f579bbf8e14c7d696266fdcf87f5e4845aa75966ad4e31531ebae5d",
+    "gfortran_tool_sha256": "0019c2383f399c1ba6aed1dc060191e793caf963c1066d254194883581098bb2",
+    "link_receipt_sha256": "a2b784469e02f4b211e0431011ae73b9ce41eda2ef0f7d86d5af78ca68d49c53",
+    "macro_on_preprocessed_source_sha256": "7dd9a11aad909839d3b9dfc7a858e3b6433986017a0fd43f7ed8e376c4b7f8ad",
+    "link_environment_identity": "Pinned prior S10 mp237 recipe; path-redacted in this receipt."
+  },
+  "inputs": {
+    "wrfinput_d01_sha256": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+    "wrfbdy_d01_sha256": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+    "wrfchainp_d01_sha256": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3",
+    "pristine_namelist_sha256": "064b6f5ea5683ee3dc68d408c08bf4cbf588be06dbc7d99bb3529be8ba61554a",
+    "effective_namelist_sha256": "2896b69d2df232853a649c1f3b76ac2d234ef4cd855a912908ed42f0a8327508",
+    "static_physics_input_links": 78
+  },
+  "run_controls": {
+    "mp_physics": 237,
+    "duration_seconds": 20,
+    "history_interval": 0,
+    "history_interval_s": 20,
+    "saved_times": [
+      "2025-07-19_00:00:00",
+      "2025-07-19_00:00:20"
+    ],
+    "mpi_ranks": 1,
+    "actual_proc_grid": "1x1",
+    "threads_per_rank": 1,
+    "same_executable_and_inputs_within_pair": true,
+    "logging_off_env": "KDM6_PROGB_VALIDITY_CAPTURE_LOG unset",
+    "logging_on_env": "KDM6_PROGB_VALIDITY_CAPTURE_LOG=1"
+  },
+  "runs": [
+    {
+      "logging": "logging_off",
+      "returncode": 0,
+      "elapsed_seconds": 44.548,
+      "stdout_sha256": "73e96aa0cbfac5c1185f8f0414e1e07b8e350c5255bbfa9dff50701447dd69e1",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "run_identity_sha256": "9d2c25bc9a8ed767d7e94183306134ce377d3e7b792765874f67d1678ab46815",
+      "experiment_valid": true,
+      "actual_proc_grid": "1x1",
+      "executable_sha256": "7e3965bc13af22520cdc011ed54931382d732d0ab31c6d35751e04feed89c392",
+      "effective_namelist_sha256": "2896b69d2df232853a649c1f3b76ac2d234ef4cd855a912908ed42f0a8327508",
+      "history_sha256": "cb92a3763b985a0c8ed7069028808b0083786c58e5382d6078e9b9150774b92e",
+      "history_bytes": 635852228,
+      "rsl_sha256": "cba8f1059cca8b433427114d87674aaca0f74d29979842ee118d26e258a22782",
+      "rsl_bytes": 46578,
+      "event_counts": {
+        "S10SHAPE": 0,
+        "S10SLP": 0,
+        "S10PAIR": 0,
+        "S10TRS": 0,
+        "S10RHO": 0,
+        "S10VOL": 0,
+        "S10PB": 0,
+        "S10CMG": 0,
+        "S10DIAG": 0
+      },
+      "full_rsl_unassigned_numeric_payload_count": 0
+    },
+    {
+      "logging": "logging_on",
+      "returncode": 0,
+      "elapsed_seconds": 44.205,
+      "stdout_sha256": "451bd4cad7a87a317d9b5074fe996faa66149ced99558d766e4a8fc7fb768faa",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "run_identity_sha256": "a83ae884cf0ae079a95b9044e553c280d01c6ee268821b64ea8aa60a67a87908",
+      "experiment_valid": true,
+      "actual_proc_grid": "1x1",
+      "executable_sha256": "7e3965bc13af22520cdc011ed54931382d732d0ab31c6d35751e04feed89c392",
+      "effective_namelist_sha256": "2896b69d2df232853a649c1f3b76ac2d234ef4cd855a912908ed42f0a8327508",
+      "history_sha256": "cb92a3763b985a0c8ed7069028808b0083786c58e5382d6078e9b9150774b92e",
+      "history_bytes": 635852228,
+      "rsl_sha256": "a287dc9df6c83c694681cd5d4935ecc05da091267e84067086476fddc2a9ee5d",
+      "rsl_bytes": 231623,
+      "event_counts": {
+        "S10SHAPE": 0,
+        "S10SLP": 624,
+        "S10PAIR": 1,
+        "S10TRS": 771,
+        "S10RHO": 212,
+        "S10VOL": 0,
+        "S10PB": 624,
+        "S10CMG": 624,
+        "S10DIAG": 78
+      },
+      "full_rsl_unassigned_numeric_payload_count": 0
+    }
+  ],
+  "history_noninterference": {
+    "strict_bitwise_nc_frame0": "PASS",
+    "strict_bitwise_nc_frame1": "PASS",
+    "history_sha256_identical": true,
+    "history_sha256": "cb92a3763b985a0c8ed7069028808b0083786c58e5382d6078e9b9150774b92e",
+    "history_bytes": 635852228,
+    "strict_bitwise_tool_sha256": "e073e1a7146b28498eff78a2673cc7302059d407cd6f89b15d71907db0dd9177"
+  },
+  "validity_output_check": {
+    "full_logging_on_rsl_sha256": "a287dc9df6c83c694681cd5d4935ecc05da091267e84067086476fddc2a9ee5d",
+    "numeric_shape_records": 0,
+    "runtime_S10SLP_rows": 624,
+    "runtime_S10PAIR_rows": 1,
+    "unassigned_numeric_payloads_emitted": 0
+  },
+  "selected_pair_event": {
+    "raw_row_file": "s10pair_selected_row.txt",
+    "raw_row_sha256": "d6ddd23a07be6bc7d1a47f97e4f38ab0a21cbe6a02baa60f2d76906aaba10c2b",
+    "context_integer_fields": [
+      1,
+      2,
+      418,
+      5,
+      2857,
+      2862,
+      1,
+      1,
+      0,
+      1,
+      142,
+      17
+    ],
+    "qg_before": 0.0,
+    "brs_before": 0.0,
+    "qg_after": 1.4233516709011296e-12,
+    "brs_after": 0.0,
+    "dtcld": 20.0,
+    "nonzero_mass_rates": {
+      "paacw": 7.116758625556191e-14
+    },
+    "nonzero_recorded_volume_rates": {
+      "baacw": 7.116758911429811e-17
+    },
+    "delta2": 1.0,
+    "delta3": 1.0,
+    "unrecorded_term_note": "A density-divided source term is intentionally omitted from this tap; no corresponding value is reported.",
+    "raw_row_line_sha256": "817ce232a52262ee1a901f4e26ed73cd9a020acb4fcd3c72e390e85ebf86c805",
+    "coordinate_i_j_k": [
+      142,
+      2,
+      17
+    ]
+  },
+  "claim_limits": [
+    "One selected column/event only.",
+    "The emitted rate row does not close the full volume budget because one source term is intentionally not recorded.",
+    "No scientific or operational policy approval; S10 remains OPEN."
+  ],
+  "path_redaction": "No absolute host, scratch, user, or worktree paths are included.",
+  "gate_state": {
+    "s10_status": "OPEN",
+    "full_matrix_build_or_link_allowed": false,
+    "model_runs_gate": "not advanced by this bounded diagnostic",
+    "interpretation": "A single selected event and logger noninterference do not establish the full S10 physical acceptance criteria."
+  },
+  "row_payload_sha256": "d6ddd23a07be6bc7d1a47f97e4f38ab0a21cbe6a02baa60f2d76906aaba10c2b"
+}
