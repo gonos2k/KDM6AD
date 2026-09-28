@@ -42,3 +42,11 @@ executable candidate, not the physical validity of 400 kg m⁻³, a process
 budget, or a differentiable contract. The action counts and applied heat/volume
 terms were not captured for this run, so S10 remains OPEN. See [the hybrid
 report](../../harness/evidence/REPORT_S10_midpoint_rate_zero_2026-09-29.md).
+
+The Python oracle and C++ ProgB leaf now have a default-off form of this
+midpoint trace rule. For inactive positive qg it returns `rhox=400`, projects
+`brs=qg/400`, and creates the density-derived bundle; for inactive zero qg it
+returns a zero bundle. The checked derivatives are local to a fixed branch.
+The coordinator and four process quotients are not yet connected to this
+option, so this leaf check does not replay the native hybrid trajectory or
+close S10.

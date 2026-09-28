@@ -73,7 +73,10 @@ ProgBOutputs progb_param_torch(
     // rhox/bg computed in op_dtype: f32 op-path = Fortran REAL(4) (the [100,900] clamp tips
     // faithfully) / f64 DA-path = smooth (no staircase ⇒ VJP/FD/ABI-determinism intact).
     // nullopt → bg.scalar_type() (no cast; backward-compatible for direct test callers).
-    c10::optional<c10::ScalarType> op_dtype = c10::nullopt
+    c10::optional<c10::ScalarType> op_dtype = c10::nullopt,
+    // Experimental native-B trace policy; default unchanged. AD is branch-local:
+    // qg=0 and the active-gate transition are nonsmooth.
+    bool midpoint_trace = false
 );
 
 // Public access to the tensor rgmma helper.

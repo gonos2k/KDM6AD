@@ -171,6 +171,7 @@ def progb_param_torch(
     bg: torch.Tensor,
     *,
     params: ProgBParams,
+    midpoint_trace: bool = False,
 ) -> ProgBOutputs:
     """ProgB_param Fortran 직역 — graupel density + DSD parameter diagnosis.
 
@@ -182,6 +183,12 @@ def progb_param_torch(
         graupel bulk volume mixing ratio [m³/kg]. Fortran의 `brs(i,k)`.
     params : ProgBParams
         시간 불변 스칼라 묶음 — `default_progb_params()`로 생성.
+    midpoint_trace : bool, default False
+        Opt-in source counterfactual. For cells inactive under the original entry
+        gate, positive qg uses RHO_MID and projects bg=qg/RHO_MID; nonpositive qg
+        clears the local volume and diagnostic bundle. Derivatives are local to
+        a fixed branch; the qg=0 and active-gate transitions are nonsmooth.
+        The default path is unchanged.
 
     Returns
     -------
@@ -200,26 +207,44 @@ def progb_param_torch(
     # ── 외부 게이트: graupel가 의미있게 존재하는가 ───────────────────────────
     # Fortran: if (qrs(i,k,3) > qcrmin .or. brs(i,k) > brs_min) ...
     active = (qg > params.qcrmin) | (bg > BRS_MIN)
+    trace_positive = (~active) & (qg > 0.0) if midpoint_trace else torch.zeros_like(active)
+    trace_empty = (~active) & ~(qg > 0.0) if midpoint_trace else torch.zeros_like(active)
+    bundle_active = active | trace_positive
     zero = torch.zeros_like(qg)
 
     # ── rhox 진단 + clamp ─────────────────────────────────────────────────
     # Fortran: rhox = qg / max(bg, brs_min);  rhox = clamp(rhox, [100, 900])
     bg_safe = torch.clamp(bg, min=BRS_MIN)
-    rhox_raw = qg / bg_safe
-    rhox = torch.clamp(rhox_raw, min=RHO_MIN, max=RHO_MAX)
+    # Inactive B cells overwrite bg; do not form a hidden NaN divide there.
+    density_divisor = (torch.where(active, bg_safe, torch.ones_like(bg_safe))
+                       if midpoint_trace else bg_safe)
+    rhox_raw = qg / density_divisor
+    rhox_active = torch.clamp(rhox_raw, min=RHO_MIN, max=RHO_MAX)
     # inactive cell은 RHO_MID로 채워 cmg=π·400/6 같은 spurious 계산 방지 후 zero gate.
-    rhox = torch.where(active, rhox, _scalar(RHO_MID, qg))
+    rhox = torch.where(active, rhox_active, _scalar(RHO_MID, qg))
+    if midpoint_trace:
+        rhox = torch.where(trace_positive, _scalar(RHO_MID, qg), rhox)
+        rhox = torch.where(trace_empty, zero, rhox)
 
     # bg 갱신 (consistency): bg = qg / rhox (active일 때만, 아니면 입력 보존).
     # §44/AD-LIMIT (mirror C++ progb.cpp): the f32-faithful brs fix for the ~137 qg>0 clamp-boundary cells
     # is unachievable without breaking AD (staircase VJP) or the ABI value_only==graph determinism. Kept
     # smooth f64 (AD-first); see memory brs-ad-vs-bitwise-conflict.
-    bg_new = torch.where(active, qg / rhox, bg)
+    # Protect the inactive zero-qg arm from an eagerly evaluated 0/0 in torch.where.
+    bg_divisor = torch.where(active, rhox, torch.ones_like(rhox))
+    bg_active = qg / bg_divisor
+    bg_new = torch.where(active, bg_active, bg)
+    if midpoint_trace:
+        midpoint_divisor = torch.where(trace_positive, _scalar(RHO_MID, qg),
+                                       torch.ones_like(rhox))
+        bg_midpoint = qg / midpoint_divisor
+        bg_new = torch.where(trace_positive, bg_midpoint, bg_new)
+        bg_new = torch.where(trace_empty, zero, bg_new)
 
     # ── cmg, pidn0g ──────────────────────────────────────────────────────
     # Fortran: cmg = pi * rhox / 6;  pidn0g = cmg * n0g * g1pdgmg / g1pmg
     cmg_raw = _pi * rhox / 6.0
-    cmg = torch.where(active, cmg_raw, zero)
+    cmg = torch.where(bundle_active, cmg_raw, zero)
     pidn0g = cmg * params.n0g * params.g1pdgmg / params.g1pmg
 
     # ── 9-point linear interpolation: rhox → (avtg, bvtg) ────────────────
@@ -253,8 +278,8 @@ def progb_param_torch(
     avtg_raw = torch.where(rhox == Tbl[-1], aTbl[-1], avtg_raw)
     bvtg_raw = torch.where(rhox == Tbl[-1], bTbl[-1], bvtg_raw)
 
-    avtg = torch.where(active, avtg_raw, zero)
-    bvtg = torch.where(active, bvtg_raw, zero)
+    avtg = torch.where(bundle_active, avtg_raw, zero)
+    bvtg = torch.where(bundle_active, bvtg_raw, zero)
 
     # ── derived sums (active 여부와 무관하게 산식 그대로; bvtg=0 → safe) ───
     bvtg1 = 1.0 + bvtg
@@ -274,28 +299,28 @@ def progb_param_torch(
     # ── rslopegbmax = rslopegmax ** bvtg (per-cell, since bvtg is a tensor) ─
     rslopegmax_t = _scalar(params.rslopegmax, qg)
     rslopegbmax_raw = rslopegmax_t.expand_as(bvtg).pow(bvtg)
-    rslopegbmax = torch.where(active, rslopegbmax_raw, zero)
+    rslopegbmax = torch.where(bundle_active, rslopegbmax_raw, zero)
 
     # ── pvtg, precg2 ─────────────────────────────────────────────────────
     pvtg_raw = avtg * g1pdgbgmg / params.g1pdgmg
-    pvtg = torch.where(active, pvtg_raw, zero)
+    pvtg = torch.where(bundle_active, pvtg_raw, zero)
 
     # precg2 = 4 * 0.31 * sqrt(avtg) * g5pbgo2; sqrt(0)의 backward는 inf →
     # 미분 보호: avtg를 EPS clamp 후 sqrt, 그리고 mask zero로 마무리.
     precg2_raw = 4.0 * 0.31 * torch.sqrt(torch.clamp(avtg, min=EPS)) * g5pbgo2
-    precg2 = torch.where(active, precg2_raw, zero)
+    precg2 = torch.where(bundle_active, precg2_raw, zero)
 
     # 비활성 셀의 derived 출력은 zero로 mask (downstream graupel mask와 일관)
-    g1pbg = torch.where(active, g1pbg, zero)
-    g3pbg = torch.where(active, g3pbg, zero)
-    g4pbg = torch.where(active, g4pbg, zero)
-    g5pbgo2 = torch.where(active, g5pbgo2, zero)
-    g1pdgbgmg = torch.where(active, g1pdgbgmg, zero)
-    bvtg1 = torch.where(active, bvtg1, zero)
-    bvtg2 = torch.where(active, bvtg2, zero)
-    bvtg3 = torch.where(active, bvtg3, zero)
-    bvtg4 = torch.where(active, bvtg4, zero)
-    dgbgmug1 = torch.where(active, dgbgmug1, zero)
+    g1pbg = torch.where(bundle_active, g1pbg, zero)
+    g3pbg = torch.where(bundle_active, g3pbg, zero)
+    g4pbg = torch.where(bundle_active, g4pbg, zero)
+    g5pbgo2 = torch.where(bundle_active, g5pbgo2, zero)
+    g1pdgbgmg = torch.where(bundle_active, g1pdgbgmg, zero)
+    bvtg1 = torch.where(bundle_active, bvtg1, zero)
+    bvtg2 = torch.where(bundle_active, bvtg2, zero)
+    bvtg3 = torch.where(bundle_active, bvtg3, zero)
+    bvtg4 = torch.where(bundle_active, bvtg4, zero)
+    dgbgmug1 = torch.where(bundle_active, dgbgmug1, zero)
 
     return ProgBOutputs(
         rhox=rhox,
