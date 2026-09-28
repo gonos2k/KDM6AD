@@ -54,7 +54,7 @@ module kdm6_iso_c
      type(c_ptr) :: nccn_out, nc_out, ni_out, nr_out, bg_out
      type(c_ptr) :: handle
      type(c_ptr) :: xland
-     real(c_double) :: ncmin_land, ncmin_sea
+     real(c_double) :: ncmin_land, ncmin_sea ! dry_number=1: numeric #/m^3 thresholds
      type(c_ptr) :: rain_increment, snow_increment, graupel_increment
      type(c_ptr) :: rhog_out
      ! conservative-interface-v1 selector: 0 = legacy (default), 1 =
@@ -62,6 +62,7 @@ module kdm6_iso_c
      integer(c_int32_t) :: physics_variant
      ! Independent S2 selector (64-bit to grow past the old C tail padding).
      ! 0 = legacy raw numbers, 1 = host dry-specific QN (value-only here).
+     ! Selector 1 keeps existing number thresholds/caps in internal #/m^3.
      integer(c_int64_t) :: dry_number
   end type kdm6_step_v2_args_t
 

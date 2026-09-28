@@ -188,7 +188,7 @@ typedef struct {
 
     /* ── OPTIONAL: NULL ⇒ "not provided", identical semantics to v1 ── */
     const float *xland;        /* NULL ⇒ maritime */
-    double       ncmin_land, ncmin_sea;
+    double       ncmin_land, ncmin_sea; /* dry_number=1: numeric #/m^3 thresholds */
     float       *rain_increment, *snow_increment, *graupel_increment; /* NULL ⇒ skip */
     float       *rhog_out;     /* NULL ⇒ skip */
 
@@ -202,6 +202,10 @@ typedef struct {
      * number contract; 1 expects all four host QN fields per kg dry air.
      * This is int64_t so the v2 struct GROWS beyond the prior 4-byte tail
      * padding: an old Fortran mirror then fails its c_sizeof layout gate.
+     * Internal QN is then rho_d * host_QN (#/m^3). Existing numeric number
+     * thresholds/caps, including ncmin_land/sea, are applied to that internal
+     * volume state without rho_d scaling. This is an experimental threshold
+     * interpretation, not approval of its physical calibration.
      * Only value_only=1 is supported for selector 1 at this C ABI entry. */
     int64_t      dry_number;
 
@@ -311,6 +315,8 @@ KDM6_C_API int kdm6_step_ad_variant_c(
  * matches kdm6_step_ad_variant_c; dry_number=1 interprets all four packed QN
  * input/output blocks as number per kg dry air. rho forcing stays fixed; qv
  * is a state block, so its derivative includes the entry rho_d conversion.
+ * The existing numeric number thresholds/caps (including ncmin_land/sea)
+ * remain on the internal #/m^3 state; they are not caller #/kg_d thresholds.
  * Values outside 0/1 fail before tensor work with NULL handle and untouched
  * output. Existing fp64 and f32 C symbols keep their signatures. */
 KDM6_C_API int kdm6_step_ad_number_c(
