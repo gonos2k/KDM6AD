@@ -1,0 +1,140 @@
+{
+  "build_sha256": {
+    "census_library": "80f1e38d4eaf2c53dbd5472887c0137b2758c94c370a5846f57c1f11bc07128e",
+    "executable": "4bb95668a2282669bf20a2d4808fec095ad3890770b4be4541c1260fbdaa0165",
+    "host_archive": "722f83c058ea1c43d5f23cc497aed1b218f33f90828a0e1dc51c6fe30203deba",
+    "iso_object": "c23c40acba907d5abaf56ecef0f1f7946f7a39e238aa75feb124e0326db8104b",
+    "link_map": "5966c823ebe6205d6b58fed0a9eb3ac674baef197446fd4484ad9e138135bdcb",
+    "wrapper_object": "7f1738fad6374da85f951c167fe0e9e1c0990578754b152634bc2c873cb7dca8"
+  },
+  "census": {
+    "bottom_number_positive": 0,
+    "column_calls": 129920,
+    "joint": 0,
+    "log_sha256": "b1f8dced9fcf9f2bd3a2e89b289e498b37eb1c1a66149d541f66832a49dbdd6c",
+    "max_mstep": 1,
+    "mstep_ge2": 0,
+    "owned_columns_per_step": 64960,
+    "records": 4,
+    "tile_log_sha256": "97ad7757681d5d0bd3ae183949a2271028385ce12d5955b245257e094c10358b"
+  },
+  "input_sha256": {
+    "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+    "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3",
+    "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970"
+  },
+  "instrumentation_noninterference": {
+    "auxiliary_file_sha_equal": true,
+    "common_variables_per_frame": 254,
+    "current_tile_log_matches_prior_sha": true,
+    "different_variables_by_seconds": {
+      "0": 0,
+      "20": 0,
+      "40": 0
+    },
+    "fixed_face_trace_matches_prior_sha": true
+  },
+  "limits": [
+    "40 s only; no claim for longer forecast",
+    "no selector-2 mstep>=2 or nonzero bottom-number witness in this time window",
+    "physical QN basis and acceptance unchanged"
+  ],
+  "local_artifact_root": "/private/tmp/KDM6AD-s1-census-exp",
+  "public_base_commit": "6a237aa5764102024f58b6137d1d64fbce389545",
+  "run_settings": {
+    "actual_grid": "1x1",
+    "dry_number": 1,
+    "dt_seconds": 20,
+    "duration_seconds": 40,
+    "mp_physics": 337,
+    "mpi_interface": "en0 local; no Tailscale",
+    "mpi_ranks": 1,
+    "physics_variant": 2,
+    "threads": 1
+  },
+  "runs": {
+    "off": {
+      "auxiliary_sha256": {
+        "klfs_lc05_energy.202507190000": "e8251c4bd2bf8556b66c81f9079371d176815ddbdd8b3752f9dd13601e90c72e",
+        "klfs_lc05_ocean.202507190000": "8cfb92ce8723ab801e5b564f58af1979f9901afd3b040cb374855f93b87eb924",
+        "klfs_lc05_prcp.202507190000": "8cfb92ce8723ab801e5b564f58af1979f9901afd3b040cb374855f93b87eb924"
+      },
+      "exe_receipt": "4bb95668a2282669bf20a2d4808fec095ad3890770b4be4541c1260fbdaa0165",
+      "forecast_sha256": "be0edb894d1ddc5996f925cf01d56d1d882b53d6ed0295566edac2cb60f31308",
+      "run_id": "mp337_s1_census_off_0min40s_hist0_20260930_062956_p38479",
+      "run_identity": {
+        "actual_proc_grid": "1x1",
+        "campaign_id": "8033ad0b807a7be6ccfd5581eb21108f03d4f7273e4af205ff48f44b368dd05e",
+        "controls": {
+          "fixed_dt": true,
+          "history": 0,
+          "history_s": 20,
+          "input_canonical_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+          "label": "s1_census_off",
+          "minutes": 0,
+          "namelist_without_grid_sha256": "1fb52e753b200e9b343749c83cd901447dcb47df356c921e48124a4ca8f8f609",
+          "np": 1,
+          "radt": null,
+          "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+          "seconds": 40
+        },
+        "exit_code": 0,
+        "experiment_valid": true,
+        "requested_proc_grid": null,
+        "schema": 1,
+        "scheme": "337"
+      },
+      "saved_times": [
+        "2025-07-19_00:00:00",
+        "2025-07-19_00:00:20",
+        "2025-07-19_00:00:40"
+      ]
+    },
+    "on": {
+      "auxiliary_sha256": {
+        "klfs_lc05_energy.202507190000": "e8251c4bd2bf8556b66c81f9079371d176815ddbdd8b3752f9dd13601e90c72e",
+        "klfs_lc05_ocean.202507190000": "8cfb92ce8723ab801e5b564f58af1979f9901afd3b040cb374855f93b87eb924",
+        "klfs_lc05_prcp.202507190000": "8cfb92ce8723ab801e5b564f58af1979f9901afd3b040cb374855f93b87eb924"
+      },
+      "exe_receipt": "4bb95668a2282669bf20a2d4808fec095ad3890770b4be4541c1260fbdaa0165",
+      "forecast_sha256": "be0edb894d1ddc5996f925cf01d56d1d882b53d6ed0295566edac2cb60f31308",
+      "run_id": "mp337_s1_census_on_0min40s_hist0_20260930_063152_p38684",
+      "run_identity": {
+        "actual_proc_grid": "1x1",
+        "campaign_id": "32fd36e82ad739f4a951c9bcdd05fdfa79892e2212bc5b9e548cad827bce2cdb",
+        "controls": {
+          "fixed_dt": true,
+          "history": 0,
+          "history_s": 20,
+          "input_canonical_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+          "label": "s1_census_on",
+          "minutes": 0,
+          "namelist_without_grid_sha256": "1fb52e753b200e9b343749c83cd901447dcb47df356c921e48124a4ca8f8f609",
+          "np": 1,
+          "radt": null,
+          "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+          "seconds": 40
+        },
+        "exit_code": 0,
+        "experiment_valid": true,
+        "requested_proc_grid": null,
+        "schema": 1,
+        "scheme": "337"
+      },
+      "saved_times": [
+        "2025-07-19_00:00:00",
+        "2025-07-19_00:00:20",
+        "2025-07-19_00:00:40"
+      ]
+    }
+  },
+  "scope": "bounded 40-second mp337 selector-2 full-tile ice mstep/bottom-number census; S1 remains open",
+  "source_sha256": {
+    "base_conservative_source": "53b13bc505b0e46327942b3b4070a541ce04f23f7a37d3b0bf60d731f8659694",
+    "composed_instrumented_source": "2de464c13307d7abe0ef092e62c70219f85ef66c5d4dbf0e42758947fba41626",
+    "new_census_patch": "b29a6b10c7586b8533fcfb39d2baaba2fc38fefc436a12ba378a2036ebc0d5ce",
+    "private_iso": "98379fed7c595fb577ed2528c361672bcc7613f9d15d7b4b9841e60e17c0ce3e",
+    "private_wrapper": "ce2655c3563f49de3708eb516b3b77c8298f3a15f0734b047cbb21424f8c60a2",
+    "s1_face_trace_patch": "8a01e53765fbbe64e454ebaad69276cd3f125a802f1a7958bbc605d550f45d38"
+  }
+}

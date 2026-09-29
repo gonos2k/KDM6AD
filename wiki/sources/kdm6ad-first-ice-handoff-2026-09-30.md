@@ -27,5 +27,12 @@ selector-1 comparison changes 22 variables at 20 s and 75 at 40 s, which
 establishes trajectory impact but not which path is more accurate. S1 stays
 OPEN. See the [native measurement](../../harness/evidence/REPORT_S1_normalized_ice_native_2026-09-30.md).
 
+A bounded follow-up examined both owned tiles in each of the two 20 s calls:
+129,920 column-calls in all. Every actual ice substep had `mstep_i=1`, and
+the bottom cell had no positive ice-number departure. The census logger did
+not change the saved trajectory. This only rules out a qualifying S1 witness
+in that 40 s window; it leaves other times and physical input states open.
+See the [full-tile census](../../harness/evidence/REPORT_S1_ice_census_2026-09-30.md).
+
 Evidence: [S1 first-ice report](../../harness/evidence/REPORT_S1_normalized_first_ice_2026-09-30.md).
 Related: [[KDM6AD]] and [[KDM6AD Differentiability Audit]].
