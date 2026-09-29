@@ -1,0 +1,245 @@
+{
+  "build_sha256": {
+    "executable": "7210bd3bb3bb79b081fa1f47a5f82a08f0b116439d43a13922356011856ceb04",
+    "host_archive": "722f83c058ea1c43d5f23cc497aed1b218f33f90828a0e1dc51c6fe30203deba",
+    "instrumented_library": "2a9557a7e53aa5bf264fbcb5cbadd1435ad510c0e78198b12b041f32a1e28bf4",
+    "iso_object": "c23c40acba907d5abaf56ecef0f1f7946f7a39e238aa75feb124e0326db8104b",
+    "link_map": "83af65ec0e1f7ece11ecd57718b999ec98cdab02b6ec63f99adb001e9b3b595a",
+    "wrapper_object": "7f1738fad6374da85f951c167fe0e9e1c0990578754b152634bc2c873cb7dca8"
+  },
+  "execution": {
+    "actual_proc_grid": "1x1",
+    "dry_number": 1,
+    "dt_seconds": 20,
+    "duration_seconds": 40,
+    "mp_physics": 337,
+    "mpi_interface": "en0 (local; no Tailscale)",
+    "mpi_ranks": 1,
+    "normalized_ice": {
+      "normalized_off": 1,
+      "normalized_on": 1,
+      "raw_control": 0
+    },
+    "normalized_saved_nonfinite_fields": 0,
+    "normalized_trace_noninterference": {
+      "auxiliary_file_sha_equal": true,
+      "different_variables_by_seconds": {
+        "0": 0,
+        "20": 0,
+        "40": 0
+      },
+      "saved_frame_common_variables": 254
+    },
+    "raw_vs_normalized": {
+      "different_variables_by_seconds": {
+        "0": 0,
+        "20": 22,
+        "40": 75
+      },
+      "same_executable": true
+    },
+    "runs": {
+      "normalized_off": {
+        "auxiliary_sha256": {
+          "klfs_lc05_energy.202507190000": "e8251c4bd2bf8556b66c81f9079371d176815ddbdd8b3752f9dd13601e90c72e",
+          "klfs_lc05_ocean.202507190000": "8cfb92ce8723ab801e5b564f58af1979f9901afd3b040cb374855f93b87eb924",
+          "klfs_lc05_prcp.202507190000": "8cfb92ce8723ab801e5b564f58af1979f9901afd3b040cb374855f93b87eb924"
+        },
+        "exe_receipt": "7210bd3bb3bb79b081fa1f47a5f82a08f0b116439d43a13922356011856ceb04",
+        "forecast_sha256": "be0edb894d1ddc5996f925cf01d56d1d882b53d6ed0295566edac2cb60f31308",
+        "run_id": "mp337_s1_normalized_off_0min40s_hist0_20260930_035327_p12264",
+        "run_identity": {
+          "actual_proc_grid": "1x1",
+          "campaign_id": "1562682b3ba2e4e6792a0a83d06335dfc95be9a090c2fa705fdd596d1279f156",
+          "controls": {
+            "fixed_dt": true,
+            "history": 0,
+            "history_s": 20,
+            "input_canonical_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+            "label": "s1_normalized_off",
+            "minutes": 0,
+            "namelist_without_grid_sha256": "1fb52e753b200e9b343749c83cd901447dcb47df356c921e48124a4ca8f8f609",
+            "np": 1,
+            "radt": null,
+            "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+            "seconds": 40
+          },
+          "exit_code": 0,
+          "experiment_valid": true,
+          "requested_proc_grid": null,
+          "schema": 1,
+          "scheme": "337"
+        },
+        "runner_receipt": "runner 175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+        "saved_times": [
+          "2025-07-19_00:00:00",
+          "2025-07-19_00:00:20",
+          "2025-07-19_00:00:40"
+        ]
+      },
+      "normalized_on": {
+        "auxiliary_sha256": {
+          "klfs_lc05_energy.202507190000": "e8251c4bd2bf8556b66c81f9079371d176815ddbdd8b3752f9dd13601e90c72e",
+          "klfs_lc05_ocean.202507190000": "8cfb92ce8723ab801e5b564f58af1979f9901afd3b040cb374855f93b87eb924",
+          "klfs_lc05_prcp.202507190000": "8cfb92ce8723ab801e5b564f58af1979f9901afd3b040cb374855f93b87eb924"
+        },
+        "exe_receipt": "7210bd3bb3bb79b081fa1f47a5f82a08f0b116439d43a13922356011856ceb04",
+        "forecast_sha256": "be0edb894d1ddc5996f925cf01d56d1d882b53d6ed0295566edac2cb60f31308",
+        "run_id": "mp337_s1_normalized_on_0min40s_hist0_20260930_035605_p12698",
+        "run_identity": {
+          "actual_proc_grid": "1x1",
+          "campaign_id": "bbac01df56917678e3441e620455568e8d46bd6c7a5b8b617cd57f699b1f3ffb",
+          "controls": {
+            "fixed_dt": true,
+            "history": 0,
+            "history_s": 20,
+            "input_canonical_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+            "label": "s1_normalized_on",
+            "minutes": 0,
+            "namelist_without_grid_sha256": "1fb52e753b200e9b343749c83cd901447dcb47df356c921e48124a4ca8f8f609",
+            "np": 1,
+            "radt": null,
+            "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+            "seconds": 40
+          },
+          "exit_code": 0,
+          "experiment_valid": true,
+          "requested_proc_grid": null,
+          "schema": 1,
+          "scheme": "337"
+        },
+        "runner_receipt": "runner 175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+        "saved_times": [
+          "2025-07-19_00:00:00",
+          "2025-07-19_00:00:20",
+          "2025-07-19_00:00:40"
+        ]
+      },
+      "raw_control": {
+        "auxiliary_sha256": {
+          "klfs_lc05_energy.202507190000": "e8251c4bd2bf8556b66c81f9079371d176815ddbdd8b3752f9dd13601e90c72e",
+          "klfs_lc05_ocean.202507190000": "8cfb92ce8723ab801e5b564f58af1979f9901afd3b040cb374855f93b87eb924",
+          "klfs_lc05_prcp.202507190000": "8cfb92ce8723ab801e5b564f58af1979f9901afd3b040cb374855f93b87eb924"
+        },
+        "exe_receipt": "7210bd3bb3bb79b081fa1f47a5f82a08f0b116439d43a13922356011856ceb04",
+        "forecast_sha256": "660b5af0c5ebeb46c5af2863dd2d76c4db237a0a11d3746de9b51f1810ea2a8f",
+        "run_id": "mp337_s1_raw_control_0min40s_hist0_20260930_040152_p13841",
+        "run_identity": {
+          "actual_proc_grid": "1x1",
+          "campaign_id": "4a984f7f7be0c1051fe3146026aa1712d863aa86dc956e2c5fd955a215e36518",
+          "controls": {
+            "fixed_dt": true,
+            "history": 0,
+            "history_s": 20,
+            "input_canonical_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+            "label": "s1_raw_control",
+            "minutes": 0,
+            "namelist_without_grid_sha256": "1fb52e753b200e9b343749c83cd901447dcb47df356c921e48124a4ca8f8f609",
+            "np": 1,
+            "radt": null,
+            "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+            "seconds": 40
+          },
+          "exit_code": 0,
+          "experiment_valid": true,
+          "requested_proc_grid": null,
+          "schema": 1,
+          "scheme": "337"
+        },
+        "runner_receipt": "runner 175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+        "saved_times": [
+          "2025-07-19_00:00:00",
+          "2025-07-19_00:00:20",
+          "2025-07-19_00:00:40"
+        ]
+      }
+    },
+    "same_executable_all_three": true,
+    "threads": 1
+  },
+  "input_sha256": {
+    "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+    "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3",
+    "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970"
+  },
+  "limits": [
+    "one selected column, two calls; ice mstep_i=1 in both",
+    "bottom ice-number export zero",
+    "physical QN basis unresolved",
+    "new selector has no independent physical accuracy or long-window derivative approval"
+  ],
+  "local_artifact_root": "/private/tmp/KDM6AD-s1-native-exp",
+  "public_base_commit": "02860f386c88614bc02c2ee2e0c09970a1bb0c80",
+  "replay": {
+    "s1_gate_closed": false,
+    "scope": "fixed_capture_arithmetic_replay_only",
+    "selected": [
+      {
+        "capped_n": 0,
+        "capped_q": 0,
+        "failures": [],
+        "gate": 1.0,
+        "host_call": 2,
+        "ice_seq": 2,
+        "mass_arrival": 0.005127224947998305,
+        "mass_bottom": 3.701967962223511e-17,
+        "mass_departure": 0.005127224944901803,
+        "mass_interface_relative": 6.039333666027064e-10,
+        "mass_inventory_residual": 6.86957272625464e-10,
+        "max_mass_face_residual": 1.4218293091861761e-11,
+        "max_number_face_residual": 0.0,
+        "mstep": 1.0,
+        "n": 1,
+        "number_arrival": 0.0,
+        "number_bottom": 0.0,
+        "number_departure": 0.0,
+        "number_interface_relative": 0.0,
+        "number_inventory_residual": 0.0,
+        "positive_ice_faces": 0,
+        "step": 1
+      },
+      {
+        "capped_n": 0,
+        "capped_q": 0,
+        "failures": [],
+        "gate": 1.0,
+        "host_call": 4,
+        "ice_seq": 4,
+        "mass_arrival": 0.0002346482021373425,
+        "mass_bottom": 0.0,
+        "mass_departure": 0.00023464820564735858,
+        "mass_interface_relative": -1.4958631723706088e-08,
+        "mass_inventory_residual": -8.400290272239397e-11,
+        "max_mass_face_residual": 4.955225510152144e-12,
+        "max_number_face_residual": 0.030342936515808105,
+        "mstep": 1.0,
+        "n": 1,
+        "number_arrival": 1148741.295044565,
+        "number_bottom": 0.0,
+        "number_departure": 1148741.238077597,
+        "number_interface_relative": 4.9590775007131e-08,
+        "number_inventory_residual": -4.660912742118749,
+        "positive_ice_faces": 14,
+        "step": 2
+      }
+    ],
+    "selected_ice_blocks": 2,
+    "total_host_calls": 4,
+    "total_ice_blocks": 4
+  },
+  "scope": "isolated mp337 selector-2 first-ice native 40-second measurement; S1 open",
+  "source_sha256": {
+    "base_private_iso": "0aef23e61cd0e1a31eda0d9213f48c838a119f0c8e0de6dcf1e8da76af6b55b3",
+    "base_private_wrapper": "940adce388dff58495710349a62a79dcc66506f3017cc089756d8f3992b7e9bb",
+    "composed_iso": "98379fed7c595fb577ed2528c361672bcc7613f9d15d7b4b9841e60e17c0ce3e",
+    "composed_wrapper": "ce2655c3563f49de3708eb516b3b77c8298f3a15f0734b047cbb21424f8c60a2",
+    "new_selector_patch": "3092c62eafe146e8534f565effabc0e43a86a8d21dbe625149d0c71442e664fc",
+    "public_s1_cpp_trace_patch": "8a01e53765fbbe64e454ebaad69276cd3f125a802f1a7958bbc605d550f45d38",
+    "public_s1_tile_patch": "68ff5a57886e18fae243cb245d2c68c6831178d23d4f86318ecd06718ada52f6",
+    "public_s2_patch": "0752005cf2dae1c2687a43655035aa9172bd403258cf4b4227aca09b71241a89"
+  },
+  "trace_sha256": {
+    "ice_faces": "63fe69e856bdbc7a8899d8fe6f8ee91452103304b0568aa058883e50441aa3e7",
+    "tile_calls": "97ad7757681d5d0bd3ae183949a2271028385ce12d5955b245257e094c10358b"
+  }
+}

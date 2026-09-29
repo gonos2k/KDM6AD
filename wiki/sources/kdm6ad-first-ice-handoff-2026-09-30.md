@@ -18,5 +18,14 @@ small first-step differences and remains outside this approval. S1 still
 needs a native selector-2 multi-substep departure/arrival and nonzero bottom
 number-export witness. Physical number units remain unresolved under S2.
 
+An isolated native mp337 selector-2 run now confirms the first-ice rate
+changes by approximately `1/delz` at two layers with the same pre-ice mass.
+The selected column has 14 paired positive number faces in the second call;
+both calls still use `mstep_i=1` and export no ice number at the bottom.
+Logging OFF/ON output is raw-bit identical at 0, 20 and 40 s. A same-executable
+selector-1 comparison changes 22 variables at 20 s and 75 at 40 s, which
+establishes trajectory impact but not which path is more accurate. S1 stays
+OPEN. See the [native measurement](../../harness/evidence/REPORT_S1_normalized_ice_native_2026-09-30.md).
+
 Evidence: [S1 first-ice report](../../harness/evidence/REPORT_S1_normalized_first_ice_2026-09-30.md).
 Related: [[KDM6AD]] and [[KDM6AD Differentiability Audit]].

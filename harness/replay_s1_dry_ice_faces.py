@@ -32,6 +32,7 @@ TARGET_I, TARGET_J, TARGET_B, EXPECTED_K = 144, 153, 19748, 39
 HERE = Path(__file__).resolve().parent / "evidence"
 TRACE_SHA = "c82053d25a423a444d725c98a0c9af4718eacdd6cebd21134d011b76b13b7ff3"
 TILE_SHA = "97ad7757681d5d0bd3ae183949a2271028385ce12d5955b245257e094c10358b"
+NORMALIZED_TRACE_SHA = "63fe69e856bdbc7a8899d8fe6f8ee91452103304b0568aa058883e50441aa3e7"
 
 
 def pinned(path, expected):
@@ -46,8 +47,8 @@ def f32(x):
     return struct.unpack(">f", bits(x))[0]
 
 
-def parse_trace(path):
-    pinned(path, TRACE_SHA)
+def parse_trace(path, expected_sha=TRACE_SHA):
+    pinned(path, expected_sha)
     blocks, block = [], None
     for lineno, raw in enumerate(Path(path).read_text().splitlines(), 1):
         tok = raw.split()
@@ -113,16 +114,19 @@ def main():
     if not __debug__:
         raise SystemExit("assertions are required for evidence replay")
     ap = argparse.ArgumentParser()
-    ap.add_argument(
-        "trace", nargs="?", default=HERE / "s1_dry_ice_face_trace_2026-09-28.log"
-    )
-    ap.add_argument(
-        "rsl", nargs="?", default=HERE / "s1_dry_ice_tile_calls_2026-09-28.txt"
-    )
+    ap.add_argument("trace", nargs="?")
+    ap.add_argument("rsl", nargs="?")
+    ap.add_argument("--case", choices=("historical", "normalized"),
+                    default="historical")
     ap.add_argument("--out")
     a = ap.parse_args()
-    blocks = parse_trace(a.trace)
-    calls = parse_host(a.rsl)
+    normalized = a.case == "normalized"
+    trace = a.trace or HERE / ("s1_normalized_ice_face_2026-09-30.log" if normalized
+                               else "s1_dry_ice_face_trace_2026-09-28.log")
+    rsl = a.rsl or HERE / ("s1_normalized_ice_tile_calls_2026-09-30.txt" if normalized
+                           else "s1_dry_ice_tile_calls_2026-09-28.txt")
+    blocks = parse_trace(trace, NORMALIZED_TRACE_SHA if normalized else TRACE_SHA)
+    calls = parse_host(rsl)
     groups = group_blocks(blocks)
     assert len(calls) == len(blocks) == len(groups) == 4
     assert [c["step"] for c in calls] == [1, 1, 2, 2]
