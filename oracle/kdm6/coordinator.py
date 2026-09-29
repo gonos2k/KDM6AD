@@ -2117,12 +2117,7 @@ def kdm62d_one_step_torch(
     # adopt the entry-state ProgB-reclamped graupel volume so downstream brs accumulation
     # starts from the density-[100,900]-capped base. progb.bg is already computed (dead
     # output before this fix); functional ._replace, autograd-safe (where+clamp+divide).
-    if full_params.midpoint_trace:
-        state = state._replace(brs=pre.progb.bg)
-    else:
-        state = state._replace(brs=torch.where(  # OR-gate (brs Group-B): match ProgB active (qg>qcrmin OR brs>brs_min)
-            (state.qg > full_params.progb.qcrmin) | (state.brs > _progb.BRS_MIN),
-            pre.progb.bg, torch.zeros_like(pre.progb.bg)))
+    state = state._replace(brs=pre.progb.bg)
 
     # ─── Stage-A STEP 2+3: SEQUENTIAL melt → re-slope → freeze → re-slope → warm/cold ──
     # Mirror of C++ kdm62d_one_step. Fortran module_mp_kdm6.F order: D1 melt (:1274-1345) →
@@ -2171,12 +2166,7 @@ def kdm62d_one_step_torch(
     # BRS density re-clamp #2 (Fortran ProgB_param L1392 post-melt re-slope): adopt the
     # post-melt ProgB-reclamped graupel volume so the D2-D4 freeze inline (which adds
     # pfrzdtr/denr at density 1000) accumulates onto the [100,900]-capped base.
-    if full_params.midpoint_trace:
-        working1b = working1b._replace(brs=pre1.progb.bg)
-    else:
-        working1b = working1b._replace(brs=torch.where(  # OR-gate (brs Group-B)
-            (working1b.qg > full_params.progb.qcrmin) | (working1b.brs > _progb.BRS_MIN),
-            pre1.progb.bg, torch.zeros_like(pre1.progb.bg)))
+    working1b = working1b._replace(brs=pre1.progb.bg)
     # SEED#2 (post-melt re-slope, Fortran module_mp_kdm6.F:1453-1466): clamp-rewrite the
     # prognostic cloud number before D2-D4 reads it (ninuc/nfrzdtc caps min() against it,
     # F:1500-1501/1524-1531). Inert in unclamped cells; gated qc≥qmin & nc≥ncmin (F:1638).
@@ -2268,12 +2258,7 @@ def kdm62d_one_step_torch(
     # post-freeze ProgB-reclamped graupel volume so state_update_torch (L1245) accumulates
     # the cold/warm dbrs (Fortran L2643/L2751) onto the [100,900]-capped base — this is the
     # site that fixes newly-frozen-rain graupel (pfrzdtr/denr density 1000 → reclamp 900).
-    if full_params.midpoint_trace:
-        working = working._replace(brs=pre2.progb.bg)
-    else:
-        working = working._replace(brs=torch.where(  # OR-gate (brs Group-B)
-            (working.qg > full_params.progb.qcrmin) | (working.brs > _progb.BRS_MIN),
-            pre2.progb.bg, torch.zeros_like(pre2.progb.bg)))
+    working = working._replace(brs=pre2.progb.bg)
     # SEED#2 (post-freeze re-slope, Fortran module_mp_kdm6.F:1638-1651): clamp-rewrite the
     # prognostic cloud number BEFORE the warm loop. The rewritten nci(1) is what warm
     # praut/nraut (F:1706-1716) AND the CCN activation ncact (F:2905, reads nci1 twice)

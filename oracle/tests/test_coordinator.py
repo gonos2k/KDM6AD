@@ -6,6 +6,7 @@ import math
 import torch
 
 from kdm6 import constants as c
+from kdm6 import coordinator as _coord
 from kdm6.coordinator import (
     ColdPhaseOutputs,
     ColdPhaseParams,
@@ -760,6 +761,34 @@ def test_sed_reslope_keeps_inactive_progb_volume():
     assert torch.equal(out.state.brs, brs)
     out.state.brs.sum().backward()
     assert torch.equal(brs.grad, torch.ones_like(brs))
+
+
+def test_one_step_keeps_inactive_progb_volume_at_process_handoffs(monkeypatch):
+    state, forcing, sea_mask = _state_forcing(B=1, K=3)
+    zero = torch.zeros_like(state.qg)
+    brs = torch.full_like(state.brs, 5.0e-16).requires_grad_()
+    state = state._replace(qc=zero, qr=zero, qs=zero, qg=zero,
+                           qi=zero, nc=zero, nr=zero, ni=zero, brs=brs)
+    params = default_coordinator_params()
+    seen = []
+    for name in ("melt_freeze_d1_torch", "melt_freeze_d2_d4_torch", "cold_phase_torch"):
+        original = getattr(_coord, name)
+
+        def observe(current, *args, _original=original, **kwargs):
+            seen.append(current.brs)
+            return _original(current, *args, **kwargs)
+
+        monkeypatch.setattr(_coord, name, observe)
+    kdm62d_one_step_torch(
+        state, forcing, _make_aux(state, sea_mask, params), sea_mask,
+        full_params=params, warm_params=default_warm_phase_params(),
+        cold_params=default_cold_phase_params(),
+        mf_params=default_melt_freeze_phase_params(), dtcld=1.0e-6,
+    )
+    assert len(seen) == 3
+    assert all(torch.equal(value, brs) for value in seen)
+    gradient = torch.autograd.grad(sum(value.sum() for value in seen), brs)[0]
+    assert torch.equal(gradient, 3.0 * torch.ones_like(brs))
 
 
 def test_s10_exact_zero_rhox_quotient_branch_derivative_and_signed_zero():
