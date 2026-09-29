@@ -75,13 +75,14 @@ CoordinatorForcing build_forcing(const Forcing& f) {
 
 // Fail-loud variant gate (C3), shared by the kdm6_fn/kdm6_step options
 // overloads: an explicit switch, never an if/else that silently maps unknown
-// values to legacy — a C++ caller passing e.g. static_cast<PhysicsVariant>(2)
+// values to legacy — a C++ caller passing e.g. static_cast<PhysicsVariant>(3)
 // must throw here. (The v2 C bridge validates the raw uint32 separately and
 // returns KDM6_ERR_INVALID_ARG before ever constructing PhysicsOptions.)
 void validate_physics_variant(PhysicsVariant variant, const char* caller) {
     switch (variant) {
         case PhysicsVariant::Legacy:
         case PhysicsVariant::ConservativeInterface:
+        case PhysicsVariant::ConservativeNormalized:
             return;
         default:
             TORCH_CHECK(false, caller, ": unsupported PhysicsVariant: ",
@@ -601,7 +602,7 @@ FnResult kdm6_fn(const State& state,
             mstep_col_main, mstepmax_main, mstep_col_ice, mstepmax_ice, dtcld, sed_params,
             /*reslope_params=*/&full_p,   // 1:1 fix #9: per-substep fall-speed re-slope (F:1189-1205)
             /*progb_ret=*/&progb_ret,     // §53d: F:1224/F:1290 per-substep ProgB retention
-            /*variant=*/physics.variant); // conservative-interface-v1 selector (default Legacy)
+            /*variant=*/physics.variant); // explicit physics selector (default Legacy)
         cur = CoordinatorState{
             flip_k(sed.state.qv), flip_k(sed.state.qc), flip_k(sed.state.qr),
             flip_k(sed.state.qs), flip_k(sed.state.qg), flip_k(sed.state.qi),

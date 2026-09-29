@@ -752,12 +752,12 @@ struct SedimentationOutputs {
 // Physics-variant selector (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md).
 // Mirrors the C ABI enum kdm6_physics_variant; Legacy is what every
 // pre-existing call path binds to, so it stays bitwise-identical.
-// ConservativeInterface swaps ONLY the sedimentation substep functions for the
-// conservative-interface pair (sedimentation_conservative.h) — selected once
-// per chain, never branched per-substep inside legacy code.
+// ConservativeInterface keeps the historical raw first-ice handoff;
+// ConservativeNormalized uses the same substeps with velocity/dz there.
 enum class PhysicsVariant : uint32_t {
     Legacy = 0,
     ConservativeInterface = 1,
+    ConservativeNormalized = 2,
 };
 
 // Legacy-signature overload — EXACT pre-variant signature (stable mangled

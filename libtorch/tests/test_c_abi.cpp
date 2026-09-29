@@ -751,6 +751,35 @@ void test_c_abi_step_ad_fp64_vjp_finite_and_adjoint() {
         assert(rc == KDM6_OK && selected_h == nullptr);
         assert(std::memcmp(selected.data(), selected_value.data(), N * sizeof(double)) == 0);
 
+        std::vector<double> normalized_value(N, -777.0);
+        rc = kdm6_step_ad_variant_c(st, fz, im, kme, jme, 20.0, 1,
+                                    normalized_value.data(), &selected_h,
+                                    nullptr, 0.0, 0.0,
+                                    KDM6_PHYSICS_CONSERVATIVE_NORMALIZED);
+        assert(rc == KDM6_OK && selected_h == nullptr);
+        for (double x : normalized_value) assert(std::isfinite(x));
+        assert(std::memcmp(selected_value.data(), normalized_value.data(), N * sizeof(double)) != 0);
+        std::vector<double> normalized_graph(N, -777.0);
+        rc = kdm6_step_ad_variant_c(st, fz, im, kme, jme, 20.0, 0,
+                                    normalized_graph.data(), &selected_h,
+                                    nullptr, 0.0, 0.0,
+                                    KDM6_PHYSICS_CONSERVATIVE_NORMALIZED);
+        assert(rc == KDM6_OK && selected_h != nullptr);
+        assert(std::memcmp(normalized_value.data(), normalized_graph.data(), N * sizeof(double)) == 0);
+        std::vector<double> normalized_jv(N), normalized_jtu(N);
+        assert(kdm6_handle_jvp_c(selected_h, v.data(), normalized_jv.data()) == KDM6_OK);
+        assert(kdm6_handle_vjp_c(selected_h, u.data(), normalized_jtu.data()) == KDM6_OK);
+        double normalized_lhs = 0.0, normalized_rhs = 0.0;
+        for (size_t i = 0; i < N; ++i) {
+            assert(std::isfinite(normalized_jv[i]) && std::isfinite(normalized_jtu[i]));
+            normalized_lhs += normalized_jv[i] * u[i];
+            normalized_rhs += v[i] * normalized_jtu[i];
+        }
+        const double normalized_den = std::max(std::abs(normalized_lhs), std::abs(normalized_rhs));
+        assert(normalized_den > 0.0 &&
+               std::abs(normalized_lhs - normalized_rhs) / normalized_den < 1e-12);
+        assert(kdm6_handle_closep_c(&selected_h) == KDM6_OK && selected_h == nullptr);
+
         std::vector<double> legacy_selected(N, -777.0);
         rc = kdm6_step_ad_variant_c(st, fz, im, kme, jme, 20.0, 1,
                                     legacy_selected.data(), &selected_h, nullptr, 0.0, 0.0,
@@ -837,7 +866,7 @@ void test_c_abi_step_ad_dry_number() {
             assert(std::abs(jvp[i]-fd) <= 1e-4 * std::max(1.0,std::abs(jvp[i])));
         }
 
-        for (int64_t invalid : {int64_t{-1}, int64_t{2}, int64_t{INT64_MAX}}) {
+        for (int64_t invalid : {int64_t{-1}, int64_t{3}, int64_t{INT64_MAX}}) {
             std::vector<double> untouched(N, -777.0);
             handle = reinterpret_cast<kdm6_handle_t*>(0x1);
             assert(call(state, untouched, &handle, 0, KDM6_PHYSICS_LEGACY,
@@ -1723,7 +1752,7 @@ void test_c_abi_v2_physics_variant_gate() {
             }
         };
         // unknown values fail loud.
-        expect_rejected(2u, KDM6_ERR_INVALID_ARG);
+        expect_rejected(3u, KDM6_ERR_INVALID_ARG);
         expect_rejected(UINT32_MAX, KDM6_ERR_INVALID_ARG);
 
         // ── conservative variant ACTIVE (freeze-lift commit 2) ───────────────
@@ -1770,6 +1799,11 @@ void test_c_abi_v2_physics_variant_gate() {
             assert(run_variant(ocons, KDM6_PHYSICS_CONSERVATIVE_INTERFACE,
                                rain.data()) == KDM6_OK);
             for (float r : rain) assert(r > 0.0f);   // sedimentation actually fired
+            auto onorm = couts();
+            assert(run_variant(onorm, KDM6_PHYSICS_CONSERVATIVE_NORMALIZED,
+                               nullptr) == KDM6_OK);
+            for (size_t f = 0; f < onorm.size(); ++f)
+                assert(onorm[f].data == ocons[f].data);  // no ice in this warm fixture
 
             // (b) it is a DIFFERENT physics: with the interface cap binding,
             // at least one state field must differ from the legacy run.

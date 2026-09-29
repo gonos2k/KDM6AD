@@ -80,12 +80,27 @@ counterfactual (`oracle/kdm6/sed_conservative.py`) is the numerical reference.
 - warm/cold/melt/freeze process changes
 - P0-4c energy work
 
+## Later opt-in first-ice normalization (2026-09-30)
+
+The exclusions above remain the contract for variant 1. Variant 2 uses the
+same conservative interface transfers but passes `vt_i/delz` and
+`vtn_i/delz` to the first ice substep, matching the units used for its
+`mstep_i` selection and later ice substeps. Legacy (0) and the historical
+conservative variant (1) keep their raw first-ice handoff. This is a changed
+physical map, not a parity correction to either earlier variant.
+
+The local single-subcycle value and derivative checks are not native-host or
+multi-subcycle acceptance. A mixed-phase three-subcycle fixture crosses a
+warm/cold rate branch after tiny first-step Python/C++ differences, so broad
+variant-2 cross-tree parity and S1 conservation approval remain open.
+
 ## ABI selection contract (append-only, v2)
 
 ```c
 typedef enum {
     KDM6_PHYSICS_LEGACY = 0,
-    KDM6_PHYSICS_CONSERVATIVE_INTERFACE = 1
+    KDM6_PHYSICS_CONSERVATIVE_INTERFACE = 1,
+    KDM6_PHYSICS_CONSERVATIVE_NORMALIZED = 2  /* later opt-in */
 } kdm6_physics_variant;
 
 /* appended at the end of kdm6_step_v2_args */
@@ -93,7 +108,8 @@ uint32_t physics_variant;
 ```
 
 - Callers with the smaller existing `struct_size` → automatically legacy
-- `physics_variant = 0` → legacy; `= 1` → conservative interface variant
+- `physics_variant = 0` → legacy; `= 1` → historical conservative interface;
+  `= 2` → conservative interface with normalized first ice handoff
 - Any other value → `KDM6_ERR_INVALID_ARG` (fail-loud)
 - v1 `kdm6_step_c` → permanently legacy
 - Exactly 9 exported symbols, ABI major and SOVERSION 2 unchanged

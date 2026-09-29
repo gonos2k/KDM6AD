@@ -567,6 +567,24 @@ void test_sedimentation_reslope_per_substep() {
         loss.backward();
         assert(state.qr.grad().defined()
                && torch::isfinite(state.qr.grad()).all().item<bool>());
+
+        // Variant 2 consumes ice velocity/dz on its first substep; the
+        // historical conservative variant retains Fortran's raw velocity.
+        auto one = torch::ones({B}, f64());
+        auto run = [&](PhysicsVariant variant) {
+            return sedimentation_chain(
+                state, forcing, w1_qr, wn_qr, w1_qs, w1_qg, w1_qi, wn_qi,
+                one, 1, one, 1, 20.0, sed_params, &full_p, nullptr, variant);
+        };
+        auto legacy = run(PhysicsVariant::Legacy);
+        auto conservative = run(PhysicsVariant::ConservativeNormalized);
+        const double qi0 = state.qi[0][0].item<double>();
+        const double vt = pre.slope.vt_i[0][0].item<double>();
+        const double depth = forcing.delz[0][0].item<double>();
+        const double expected = qi0 - std::min(qi0, qi0 * vt / depth * 20.0);
+        assert(std::fabs(conservative.state.qi[0][0].item<double>() - expected) < 1.0e-12);
+        assert(conservative.state.qi[0][0].item<double>() >
+               legacy.state.qi[0][0].item<double>());
     } END_TEST();
 }
 

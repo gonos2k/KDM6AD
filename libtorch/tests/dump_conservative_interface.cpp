@@ -134,7 +134,8 @@ struct FsCol {
     double qv, qc, qr, qi, qs, qg, nccn, nc, ni, nr, bg;
 };
 
-void run_full(const std::string& tag, const std::vector<FsCol>& cols, double dt) {
+void run_full(const std::string& tag, const std::vector<FsCol>& cols, double dt,
+              PhysicsVariant variant = PhysicsVariant::ConservativeInterface) {
     const int64_t B = static_cast<int64_t>(cols.size());
     const int64_t K = static_cast<int64_t>(cols[0].rho.size());
     auto o = torch::TensorOptions().dtype(torch::kFloat64);
@@ -163,7 +164,7 @@ void run_full(const std::string& tag, const std::vector<FsCol>& cols, double dt)
 
     auto res = kdm6_step(s, f, make_parameters(0), dt, /*value_only=*/true,
                          c10::nullopt, 0.0, 0.0,
-                         PhysicsOptions{PhysicsVariant::ConservativeInterface});
+                         PhysicsOptions{variant});
     const char* names[12] = {"th", "qv", "qc", "qr", "qi", "qs",
                              "qg", "nccn", "nc", "ni", "nr", "bg"};
     auto fp = res.state_out.fields();
@@ -261,6 +262,8 @@ int main() {
                           1.0e-3, 2.0e-4, 1.0e-3, 1.2e-3, 2.0e-3, 2.0e-3,
                           1.0e9, 1.0e8, 1.0e5, 1.0e4, 5.0e-6};
     run_full("FS64_MULTI", {light_rain, rain_cap, mixed_ice}, 300.0);
+    run_full("FS64_NORMALIZED", {mixed_ice}, 100.0,
+             PhysicsVariant::ConservativeNormalized);
 
     return 0;
 }

@@ -32,6 +32,9 @@ static_assert(static_cast<uint32_t>(kdm6::PhysicsVariant::Legacy) ==
 static_assert(static_cast<uint32_t>(kdm6::PhysicsVariant::ConservativeInterface) ==
                   (uint32_t)KDM6_PHYSICS_CONSERVATIVE_INTERFACE,
               "C/C++ physics-variant enum drift (ConservativeInterface)");
+static_assert(static_cast<uint32_t>(kdm6::PhysicsVariant::ConservativeNormalized) ==
+                  (uint32_t)KDM6_PHYSICS_CONSERVATIVE_NORMALIZED,
+              "C/C++ physics-variant enum drift (ConservativeNormalized)");
 
 extern "C" struct kdm6_handle_t {
     std::unique_ptr<kdm6::Handle> impl;
@@ -433,7 +436,8 @@ extern "C" int kdm6_step_v2_c(const kdm6_step_v2_args* args) {
     // work; *handle is already fail-closed to NULL above and no output has
     // been written. Unknown values must never fall back to legacy silently.
     if (physics_variant != (uint32_t)KDM6_PHYSICS_LEGACY &&
-        physics_variant != (uint32_t)KDM6_PHYSICS_CONSERVATIVE_INTERFACE)
+        physics_variant != (uint32_t)KDM6_PHYSICS_CONSERVATIVE_INTERFACE &&
+        physics_variant != (uint32_t)KDM6_PHYSICS_CONSERVATIVE_NORMALIZED)
         return KDM6_ERR_INVALID_ARG;
     if (dry_number < 0 || dry_number > 1) return KDM6_ERR_INVALID_ARG;
     if (dry_number == 1 && value_only == 0) return KDM6_ERR_NOT_IMPLEMENTED;
@@ -441,10 +445,7 @@ extern "C" int kdm6_step_v2_c(const kdm6_step_v2_args* args) {
     // below. 0 keeps the legacy default (bitwise-identical); 1 swaps the
     // sedimentation substeps for the conservative-interface pair.
     kdm6::PhysicsOptions physics;
-    physics.variant =
-        (physics_variant == (uint32_t)KDM6_PHYSICS_CONSERVATIVE_INTERFACE)
-            ? kdm6::PhysicsVariant::ConservativeInterface
-            : kdm6::PhysicsVariant::Legacy;
+    physics.variant = static_cast<kdm6::PhysicsVariant>(physics_variant);
 
     FpEnvGuard kdm6_fpenv_guard;
     if (!ensure_libtorch_singlethread()) return KDM6_ERR_THREAD_CONFIG;
@@ -645,13 +646,12 @@ static int kdm6_step_ad_variant_impl(
     if (invalid_operational_dt(dt) || invalid_ncmin(ncmin_land) || invalid_ncmin(ncmin_sea))
         return KDM6_ERR_INVALID_ARG;
     if (physics_variant != (uint32_t)KDM6_PHYSICS_LEGACY &&
-        physics_variant != (uint32_t)KDM6_PHYSICS_CONSERVATIVE_INTERFACE)
+        physics_variant != (uint32_t)KDM6_PHYSICS_CONSERVATIVE_INTERFACE &&
+        physics_variant != (uint32_t)KDM6_PHYSICS_CONSERVATIVE_NORMALIZED)
         return KDM6_ERR_INVALID_ARG;
     if (dry_number < 0 || dry_number > 1) return KDM6_ERR_INVALID_ARG;
     kdm6::PhysicsOptions physics;
-    physics.variant = (physics_variant == (uint32_t)KDM6_PHYSICS_CONSERVATIVE_INTERFACE)
-        ? kdm6::PhysicsVariant::ConservativeInterface
-        : kdm6::PhysicsVariant::Legacy;
+    physics.variant = static_cast<kdm6::PhysicsVariant>(physics_variant);
     // Same FP-env insulation as the operational kdm6_step_c: this fp64 DA entry also
     // calls into libtorch/BLAS, which could perturb FTZ/rounding and leak into host
     // dynamics when a DA workflow interleaves with the Fortran/WRF integration.

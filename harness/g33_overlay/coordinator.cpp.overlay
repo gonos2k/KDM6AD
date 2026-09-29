@@ -3047,9 +3047,14 @@ SedimentationOutputs sedimentation_chain(
     // an explicit switch, never an equality test that silently maps unknown
     // enum values to the legacy pair.
     bool conservative = false;
+    bool normalize_ice_handoff = false;
     switch (variant) {
         case PhysicsVariant::Legacy:                conservative = false; break;
         case PhysicsVariant::ConservativeInterface: conservative = true;  break;
+        case PhysicsVariant::ConservativeNormalized:
+            conservative = true;
+            normalize_ice_handoff = true;
+            break;
         default:
             TORCH_CHECK(false, "sedimentation_chain: unsupported PhysicsVariant: ",
                         static_cast<uint32_t>(variant));
@@ -3072,11 +3077,9 @@ SedimentationOutputs sedimentation_chain(
     // (Fortran F:1189-1205 ProgB+slope_kdm6 re-call after EVERY main substep). w1_qi/wn_qi are
     // ALSO updated by the main re-slope: Fortran's slope_kdm6 writes work1(4)/workn(2) [ice]
     // each main substep, and the ice loop below consumes the post-main-loop value — the
-    // main→ice HANDOFF (F:1194 → F:1215). Fortran's main loop normalizes only work1(1,2,3)/
-    // workn(1) (F:1198-1205) and leaves work1(4)/workn(2) RAW. The port runs the same flow but
-    // NORMALIZES the ice handoff /delz: the RAW value over-sediments ice (vt_i·dt≫1 ⇒ qi→0) and
-    // the depletion clamp zeroes ∂/∂qi, which breaks test_autograd_endtoend — the differentiable-
-    // port core goal. Deliberate AD-required deviation (cf. #6 cloud-rslopec); inert where QICE≈0.
+    // main→ice HANDOFF (F:1194 → F:1215). Legacy and historical conservative
+    // keep Fortran's raw ice velocity. The normalized variant divides by dz,
+    // matching its mstep selection and every later ice reslope.
     auto w1_qr = work1_qr, wn_qr = workn_qr, w1_qs = work1_qs, w1_qg = work1_qg;
     auto w1_qi = work1_qi, wn_qi = workn_qi;
 
@@ -3114,17 +3117,9 @@ SedimentationOutputs sedimentation_chain(
             wn_qr = pre.slope.vtn_r / delz_safe;
             w1_qs = pre.slope.vt_s  / delz_safe;
             w1_qg = pre.slope.vt_g  / delz_safe;
-            // main→ice handoff (F:1194 slope_kdm6 → work1(4) → F:1215). Fortran leaves work1(4)/
-            // workn(2) RAW here (F:1198-1205 normalizes only 1,2,3/workn1), so the ICE substep n=1
-            // consumes the UNDIVIDED vt (effective CFL = vt_i·dtcld, ~delz× stronger fall). This was
-            // tracker #9's deliberate /delz normalization (AD: full-depletion cells get ∂/∂qi=0) —
-            // measured as the step-68 qi/ni divergence seed once QICE>0 (mp37 loses 37%/step of qi
-            // here vs 0.07% normalized; "C-chain + RAW handoff" lands on mp37 bit-exactly, 0 ULP).
-            // Replicated per the Fortran-flow-fidelity directive; the depletion-clamp zero gradient
-            // is the TRUE one-sided subgradient of this flow (kink class — fix test ICs, not the
-            // forward). Substeps n>=2 use the re-divided values below (F:1296-1301), unchanged.
-            w1_qi = pre.slope.vt_i;
-            wn_qi = pre.slope.vtn_i;
+            // Only the normalized variant changes the first ice consumer.
+            w1_qi = normalize_ice_handoff ? pre.slope.vt_i / delz_safe : pre.slope.vt_i;
+            wn_qi = normalize_ice_handoff ? pre.slope.vtn_i / delz_safe : pre.slope.vtn_i;
         }
     }
 

@@ -448,6 +448,7 @@ def _kdm6_pure(
     controls=None,   # [DA §5.2] ProcessControls — fp64 DA only; None → byte-identical oracle
     budget=None,     # [P0-4] opt-in water-budget ledger; None → byte-identical (no diagnostic)
     sed_substep_fns=None,  # [P0-4b.1] (substep_fn, ice_substep_fn) override; None → legacy (byte-identical)
+    normalize_ice_handoff: bool = False,
     diagnostic_trace=None,  # opt-in stage trace; None → no diagnostic work
     dry_number: bool = False,
 ) -> State:
@@ -681,6 +682,7 @@ def _kdm6_pure(
             ledger=(getattr(budget, "sed_ledger", None) if budget is not None else None),
             substep_fn=(sed_substep_fns[0] if sed_substep_fns is not None else None),
             ice_substep_fn=(sed_substep_fns[1] if sed_substep_fns is not None else None),
+            normalize_ice_handoff=normalize_ice_handoff,
         )
         # flip back to WRF K-order
         cur = _coord.CoordinatorState(

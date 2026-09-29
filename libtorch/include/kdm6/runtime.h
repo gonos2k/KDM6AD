@@ -58,8 +58,9 @@ Parameters make_parameters(int grad_flags = 0,
 //
 // Physics options (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md).
 // `variant` selects the sedimentation interface-transfer physics: Legacy
-// (bitwise-identical to every pre-existing call path) or ConservativeInterface
-// (the freeze-lifted conservative variant; oracle reference
+// (bitwise-identical to every pre-existing call path), ConservativeInterface
+// (the historical conservative variant), or ConservativeNormalized
+// (the same interface transfer with normalized first ice handoff; oracle reference
 // oracle/kdm6/sed_conservative.py). Selection is a separate kdm6_fn/kdm6_step
 // OVERLOAD, not a defaulted trailing parameter: default arguments are
 // caller-compile-time, so already-compiled C++ objects linking the installed

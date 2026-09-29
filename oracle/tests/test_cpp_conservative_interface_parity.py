@@ -134,8 +134,9 @@ _MIXED_ICE = dict(th=282.4, pii=0.9031, p=7.0e4, rho=[1.2, 1.0, 0.8, 0.6],
                   qg=2.0e-3, nccn=1.0e9, nc=1.0e8, ni=1.0e5, nr=1.0e4, bg=5.0e-6)
 
 _FULL_FIXTURES = {
-    "FS64_CAP": ([_RAIN_CAP], 60.0),
-    "FS64_MULTI": ([_LIGHT_RAIN, _RAIN_CAP, _MIXED_ICE], 300.0),
+    "FS64_CAP": ([_RAIN_CAP], 60.0, False),
+    "FS64_MULTI": ([_LIGHT_RAIN, _RAIN_CAP, _MIXED_ICE], 300.0, False),
+    "FS64_NORMALIZED": ([_MIXED_ICE], 100.0, True),
 }
 
 
@@ -210,7 +211,7 @@ def _py_ice(fix):
     return {"qi": st.qi, "ni": st.ni, "fall_qi": f_qi, "fall_ni": f_ni}
 
 
-def _py_full(cols, dt):
+def _py_full(cols, dt, normalized=False):
     K = len(cols[0]["rho"])
 
     def field(name):
@@ -224,7 +225,8 @@ def _py_full(cols, dt):
               nr=field("nr"), bg=field("bg"))
     f = Forcing(rho=field("rho"), pii=field("pii"), p=field("p"),
                 delz=field("delz"))
-    return kdm6_step_conservative_experiment(s, f, None, dt)
+    return kdm6_step_conservative_experiment(
+        s, f, None, dt, normalize_ice_handoff=normalized)
 
 
 def _ulp64(a: float, b: float) -> float:
@@ -383,8 +385,8 @@ def test_full_step_conservative_parity():
     dumps = _run_cpp_dumps()
     worst_rel, where = 0.0, ""
     with torch.no_grad():
-        for tag, (cols, dt) in _FULL_FIXTURES.items():
-            out, budget, att = _py_full(cols, dt)
+        for tag, (cols, dt, normalized) in _FULL_FIXTURES.items():
+            out, budget, att = _py_full(cols, dt, normalized)
             fields = {n: getattr(out, n) for n in
                       ("th", "qv", "qc", "qr", "qi", "qs", "qg",
                        "nccn", "nc", "ni", "nr", "bg")}
