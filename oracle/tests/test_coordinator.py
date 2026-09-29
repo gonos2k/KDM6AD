@@ -745,6 +745,23 @@ def test_s10_midpoint_trace_mixed_one_step_and_default_off_identity():
     assert out_midpoint.brs[0, 2].item() == 0.0
 
 
+def test_sed_reslope_keeps_inactive_progb_volume():
+    state, forcing, sea_mask = _state_forcing(B=1, K=3)
+    zero = torch.zeros_like(state.qg)
+    brs = torch.full_like(state.brs, 5.0e-16).requires_grad_()
+    state = state._replace(qr=zero, nr=zero, qs=zero, qg=zero,
+                           brs=brs, qi=zero, ni=zero)
+    out = sedimentation_chain_torch(
+        state, forcing, zero, zero, zero, zero, zero, zero,
+        mstep_main=1, mstep_ice=1, dtcld=1.0e-6,
+        params=default_substep_advection_params(),
+        reslope_params=default_coordinator_params(), sea_mask=sea_mask,
+    )
+    assert torch.equal(out.state.brs, brs)
+    out.state.brs.sum().backward()
+    assert torch.equal(brs.grad, torch.ones_like(brs))
+
+
 def test_s10_exact_zero_rhox_quotient_branch_derivative_and_signed_zero():
     from kdm6.melt_freeze import _s10_exact_zero_rate_over_rhox
 

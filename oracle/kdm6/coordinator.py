@@ -2689,16 +2689,9 @@ def sedimentation_chain_torch(
             rs = state._replace(qr=adv_state.qr, nr=adv_state.nr, qs=adv_state.qs,
                                 qg=adv_state.qg, brs=adv_state.brs)
             pre = preamble_torch(rs, forcing, _sm, params=reslope_params)
-            # §20/F:1191 per-substep ProgB brs reset (brs INTENT(INOUT); qrs/qg INTENT(IN) so they
-            # stay bitwise — brs is the unique round-tripped prognostic). Fortran re-runs ProgB every
-            # substep, overwriting brs = qg/rhox. C++/oracle previously carried adv_state.brs raw. Same
-            # qg>qcrmin+zero staging as the pre-sed reset (OR-gate measured worse: f64 empty residue).
-            if reslope_params.midpoint_trace:
-                adv_state = adv_state._replace(brs=pre.progb.bg)
-            else:
-                adv_state = adv_state._replace(brs=torch.where(  # OR-gate (brs Group-B)
-                    (adv_state.qg > reslope_params.progb.qcrmin) | (adv_state.brs > _progb.BRS_MIN),
-                    pre.progb.bg, torch.zeros_like(pre.progb.bg)))
+            # ProgB has already applied its qg-or-brs activation gate. Its
+            # inactive branch keeps the incoming volume, including trace brs.
+            adv_state = adv_state._replace(brs=pre.progb.bg)
             w1_qr = pre.slope.vt_r / dz   # F:1198-1205 normalizes work1(1,2,3)/workn(1) /delz
             wn_qr = pre.slope.vtn_r / dz
             w1_qs = pre.slope.vt_s / dz
