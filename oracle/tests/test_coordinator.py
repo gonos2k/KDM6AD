@@ -791,6 +791,28 @@ def test_one_step_keeps_inactive_progb_volume_at_process_handoffs(monkeypatch):
     assert torch.equal(gradient, 3.0 * torch.ones_like(brs))
 
 
+def test_one_step_final_progb_handoff_keeps_active_trace_and_clears_empty():
+    state, forcing, sea_mask = _state_forcing(B=1, K=2)
+    zero = torch.zeros_like(state.qg)
+    params = default_coordinator_params()
+    qg = torch.tensor([[0.0, 0.5 * params.progb.qcrmin]], dtype=state.qg.dtype)
+    brs = torch.tensor([[5.0e-16, 0.5 * params.progb.qcrmin / 400.0]],
+                       dtype=state.brs.dtype, requires_grad=True)
+    state = state._replace(qc=zero, qr=zero, qs=zero, qg=qg,
+                           qi=zero, nc=zero, nr=zero, ni=zero, brs=brs)
+    out = kdm62d_one_step_torch(
+        state, forcing, _make_aux(state, sea_mask, params), sea_mask,
+        full_params=params, warm_params=default_warm_phase_params(),
+        cold_params=default_cold_phase_params(),
+        mf_params=default_melt_freeze_phase_params(), dtcld=1.0e-6,
+    )
+    assert out.brs[0, 0] == 0.0
+    assert out.brs[0, 1] > 0.0
+    gradient = torch.autograd.grad(out.brs.sum(), brs)[0]
+    assert gradient[0, 0] == 0.0
+    assert math.isclose(gradient[0, 1].item(), 1.0, rel_tol=1.0e-6)
+
+
 def test_s10_exact_zero_rhox_quotient_branch_derivative_and_signed_zero():
     from kdm6.melt_freeze import _s10_exact_zero_rate_over_rhox
 

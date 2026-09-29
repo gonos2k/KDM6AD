@@ -2442,21 +2442,17 @@ def kdm62d_one_step_torch(
     # reclamp that produces the OUTPUT bg (L406 bg=brs, no post-L2863 brs mod). It caps
     # newly-formed COLD-PHASE graupel (psaut/pgaut/pgaci snow→graupel sets brs at density
     # 1000) to [100,900] — sites #1-#3 are all BEFORE state_update so they miss it.
-    # ALSO enforce the verified Fortran invariant QG<=qcrmin => BG==0 (checked on 2.8M
-    # cells, 0 exceptions): Fortran's f32 graupel-volume b-terms underflow to EXACTLY 0
-    # in graupel-empty cells, but the f64 oracle/C++ leave a tiny power-of-2 residue
-    # (~2^-53..2^-63). where(qg>qcrmin, ...) zeroes it — graupel-empty cells have no volume.
+    # Keep ProgB's active low-qg result. The default output convention clears
+    # volume at exactly zero qg, including f64-only derivative residue absent
+    # from the measured f32/C++ output.
     _bg4 = _progb.progb_param_torch(
         new_state.qg, new_state.brs, params=full_params.progb,
         midpoint_trace=full_params.midpoint_trace).bg
-    # FINAL output re-clamp: qg-only zeroing (NOT the OR-gate). The OR-gate here regresses brs ~14k cells —
-    # C++'s f32 brs flow does NOT underflow to 0 like Fortran's in empty cells. The OR-gate is applied UPSTREAM
-    # (sites #0-#3, #resed) to fix the qg cascade; genuine Group-B cells grow qg>qcrmin by the final stage.
     if full_params.midpoint_trace:
         new_state = new_state._replace(brs=_bg4)
     else:
         new_state = new_state._replace(
-            brs=torch.where(new_state.qg > full_params.progb.qcrmin, _bg4, torch.zeros_like(_bg4)))
+            brs=torch.where(new_state.qg > 0.0, _bg4, torch.zeros_like(_bg4)))
     # Complete-rain-evap NR→NCCN was transferred immediately after B4 above;
     # state_update therefore sees nr=0 in those cells, matching the C++/Fortran
     # owning boundary without a second post-update subtraction.
