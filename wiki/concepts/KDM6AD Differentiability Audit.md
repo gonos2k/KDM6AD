@@ -74,7 +74,11 @@ this establishes sufficiency under that model, not the actual executables'
 operation order. The v14 source finding traces the operands to kernel-entry
 `xl`/`cpm` values in Fortran and per-subcycle recomputation in C++, but it is a
 conditional explanation from a withdrawn artifact, not a decision-grade
-current-source conclusion. See [[kdm6ad-s16-freeze-heat-replay-2026-09-25]].
+Gate B result. A later current-source audit confirmed this coefficient-lifetime
+difference and the public Python/C++ runtimes now hold `cpm/xl` fixed across
+outer subcycles; the historical ULP-envelope gate has not been rerun. See
+[[kdm6ad-s16-freeze-heat-replay-2026-09-25]] and
+[[kdm6ad-s13-entry-thermo-lifetime-2026-09-29]].
 
 S16 remains OPEN because the v14 result is withdrawn, the retained Fortran
 bundles fail the current evidence-tree attestation check, and the archived

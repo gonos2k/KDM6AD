@@ -881,6 +881,36 @@ def test_kdm62d_step_subcycling_consistency():
     assert torch.isfinite(out_2step.qv).all()
 
 
+def test_subcycles_keep_call_entry_heat_coefficients():
+    state, forcing, sea_mask = _state_forcing()
+    state = state._replace(t=torch.full_like(state.t, 275.0))
+    params = default_coordinator_params()
+    aux = _make_aux(state, sea_mask, params)
+    warm = default_warm_phase_params()
+    cold = default_cold_phase_params()
+    mf = default_melt_freeze_phase_params()
+    entry = preamble_torch(state, forcing, sea_mask, params=params)
+
+    def one(s, **kwargs):
+        return kdm62d_one_step_torch(
+            s, forcing, aux, sea_mask, full_params=params,
+            warm_params=warm, cold_params=cold, mf_params=mf,
+            dtcld=100.0, **kwargs)
+
+    fixed = dict(entry_cpm=entry.cpm, entry_xl=entry.xl)
+    first = one(state, **fixed)
+    frozen = one(first, **fixed)
+    dynamic = one(first)
+    wrapped = kdm62d_step_torch(
+        state, forcing, aux, sea_mask, full_params=params,
+        warm_params=warm, cold_params=cold, mf_params=mf,
+        delt=200.0, dtcldcr=100.0)
+    assert not torch.equal(first.t, state.t)
+    assert torch.equal(wrapped.t, frozen.t)
+    assert torch.equal(wrapped.qv, frozen.qv)
+    assert not torch.equal(frozen.t, dynamic.t)
+
+
 def test_kdm62d_step_grad_propagates():
     """outer step 후 backward 통과."""
     state, forcing, sea_mask = _state_forcing(requires_grad=True)

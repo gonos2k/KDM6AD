@@ -20,6 +20,7 @@ import torch
 
 from kdm6.runtime import _kdm6_pure, make_parameters
 from kdm6.state import Forcing, State
+from kdm6 import coordinator as _coord
 
 _F64 = dict(dtype=torch.float64)
 
@@ -31,6 +32,25 @@ def _mk(B=3, K=4):
               ni=mk(0.0), nr=mk(1e4), bg=mk(0.0))
     f = Forcing(rho=mk(1.0), pii=mk(0.97), p=mk(9e4), delz=mk(500.0))
     return s, f
+
+
+def test_runtime_keeps_call_entry_heat_coefficients_across_subcycles(monkeypatch):
+    state, forcing = _mk(B=1, K=2)
+    seen = []
+    original = _coord.kdm62d_one_step_torch
+
+    def observe(current, *args, **kwargs):
+        seen.append((current.qv.clone(), current.t.clone(),
+                     kwargs["entry_cpm"].clone(), kwargs["entry_xl"].clone()))
+        return original(current, *args, **kwargs)
+
+    monkeypatch.setattr(_coord, "kdm62d_one_step_torch", observe)
+    result = _kdm6_pure(state, forcing, make_parameters(), dt=240.0)
+    assert len(seen) == 2
+    assert not torch.equal(seen[0][1], seen[1][1])
+    assert torch.equal(seen[0][2], seen[1][2])
+    assert torch.equal(seen[0][3], seen[1][3])
+    assert torch.isfinite(result.th).all()
 
 
 @pytest.mark.parametrize("dt", [0.0, -1.0, -600.0])

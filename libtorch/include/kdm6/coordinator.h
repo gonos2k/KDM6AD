@@ -544,6 +544,25 @@ CoordinatorState kdm62d_one_step(
     progb::ProgBOutputs* progb_ret = nullptr  // §53d: persistent ProgB arrays carried in from the sed chain (F:1119/1224 retention); nullptr ⇒ F:990 zeros
 );
 
+// Internal outer-subcycle route; keep the original C++ symbol above for callers
+// that do not supply the Fortran call-entry heat coefficients.
+CoordinatorState kdm62d_one_step(
+    const CoordinatorState& state,
+    const CoordinatorForcing& forcing,
+    const CoordinatorAuxDiagnostics& aux,
+    const torch::Tensor& sea_mask,
+    const CoordinatorParams& full_params,
+    const WarmPhaseParams& warm_params,
+    const ColdPhaseParams& cold_params,
+    const MeltFreezePhaseParams& mf_params,
+    double dtcld,
+    const c10::optional<torch::Tensor>& ncmin_for_slope,
+    torch::Tensor* rhog_out,
+    progb::ProgBOutputs* progb_ret,
+    const torch::Tensor& entry_cpm,
+    const torch::Tensor& entry_xl
+);
+
 // Fortran kdm62D entry: loops_max = max(nint(delt/dtcldcr + 0.5), 1).
 // Integer arithmetic — non-differentiable (caller decides delt).  `delt` must
 // be finite; `dtcldcr` must be finite and strictly positive.  Non-positive

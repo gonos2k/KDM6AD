@@ -350,11 +350,10 @@ CoordinatorAuxDiagnostics build_default_aux_for_test(
 //
 // THERMO STAGING (Codex stop-review fix): Fortran's re-slope after melt/freeze
 // (kdm6.F:1422-1480,:1596-1683,:1677-1683) recomputes the GEOMETRY (rslope*/
-// n0*/ProgB/work2/n0sfac) and supcol on the post-freeze state, but does NOT
-// recompute the saturation/latent-heat thermo: cpm(:835), xl(:836), qs1/qs2/
-// rh/sw(:910-928) are computed ONCE (entry/substep-top) and the rate loop reads
-// those entry-staged values (supsat=q-qs at :1695/:1822 uses entry qs; q=qv is
-// melt/freeze-invariant). So we SPLICE the entry-staged thermo back into the
+// n0*/ProgB/work2/n0sfac) and supcol on the post-freeze state. It does not
+// recompute staged thermo: cpm/xl are fixed at kdm62D call entry; qs/rh/sw are
+// staged at the current subcycle top (supsat=q-qs uses entry qs; q=qv is
+// melt/freeze-invariant). So we SPLICE the staged thermo back into the
 // rebuilt preamble — otherwise warm/cold would see post-freeze qs (exponential
 // in t ⇒ materially wrong supersaturation) and post-freeze xl. work1=diffac(xl,
 // p,t,den,qs) is re-slope-recomputed with POST-FREEZE t but ENTRY xl/qs
@@ -529,6 +528,8 @@ FnResult kdm6_fn(const State& state,
     cur.ni = torch::clamp(cur.ni, 0.0, 1.0e6);             // F:836 [0, 1e6]
     cur.brs = torch::clamp(cur.brs, /*min=*/0.0);          // F:838
     cur.nccn = torch::clamp(cur.nccn, constants::NCCN_MIN, constants::NCCN_MAX);  // F:833, ONCE
+    const auto entry_cpm = thermo::compute_cpm(cur.qv, full_p.thermo);
+    const auto entry_xl = thermo::compute_xl(cur.t, full_p.thermo);
     torch::Tensor rain_inc, snow_inc, graup_inc;
     torch::Tensor rhog_final;  // diag_rhog/RHOPO3D — LAST sub-cycle's last-ProgB graupel density
 
@@ -644,7 +645,8 @@ FnResult kdm6_fn(const State& state,
             flip_k(progb_ret.pvtg),        flip_k(progb_ret.precg2)};
         cur = kdm62d_one_step(cur, cf, aux, sea_mask, full_p, warm_p, cold_p, mf_p, dtcld, ncmin_for_slope,
                               /*rhog_out=*/&rhog_final,
-                              /*progb_ret=*/&progb_ret_host);
+                              /*progb_ret=*/&progb_ret_host,
+                              entry_cpm, entry_xl);
     }
 
     // Surface increments accumulated across the sub-cycles (1-D per column [mm]) ⇒
