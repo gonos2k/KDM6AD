@@ -7,15 +7,11 @@
 
   1. SMOOTH 점 (dt=20, 단일 subcycle, _G_BASE IC): VJP/JVP 전 성분 cross-tree
      worst_rel < 1e-6 (실측 ~5e-8).
-  2. 다중 subcycle (dt=300, loops=3): 미분-레벨 kink 발산이 존재하며 그
-     **발자국을 회귀 스냅샷으로 고정**한다 — VJP는 입력-0 저장고 {ni,bg}@cell0,
-     JVP는 cell0의 {qc,qr,nc,nr}(rel~1) + {th,qv}(knock-on ~1e-4). 원인: 중간
-     상태의 ~1e-8 차이가 내부 게이트 분기를 트리별로 뒤집음(forward 출력은
-     zero-패턴까지 일치 — 순수 도함수-레벨 현상, 각 트리는 자기 경로의
-     branch-local derivative를 반환한다. 이는 cross-tree subgradient 동등성의
-     증거가 아니다.)
-     이 fixture에서 발자국 밖 성분은 < 1e-6이다. 발자국의 축소·확대와
-     허용 슬롯의 측정 부호·크기 변화 모두 회귀 실패로 재검토한다.
+  2. 다중 subcycle (dt=300, loops=3): 같은 고정 fixture의 VJP/JVP 전 성분
+     cross-tree worst_rel < 1e-6. Python runtime이 ProgB의 volume-only 활성
+     출력을 침강 전에 버리던 중복 게이트를 제거한 뒤, 이전에 별도 허용했던
+     cell0 발자국도 이 fixture에서는 사라졌다. 다른 분기나 입력의 미분
+     동등성으로 확대하지 않는다.
 
 DA 소비 규칙(이 계약의 실무 귀결): 입력-0 저장고 필드는 σ_b=0/active_fields로
 제어에서 제외하거나 one-sided임을 감수한다 — da_minimizer의 CVT σ=0 제외가
@@ -86,33 +82,6 @@ G_F = dict(rho=(1.089, 0.9567), pii=(0.9704, 0.9031),
 IM, KME, JME = 1, 2, 1
 N = IM * KME * JME
 TOL = 1.0e-6                       # forward regression bound와 동일 등급
-
-# Read-only RED baseline for this exact fixture, seed and dylib. These values
-# are the measured branch footprint, not a physical tolerance or subgradient
-# claim. Keep signs and scales pinned so a changed allowed branch is reviewed.
-MEASURED_ALLOWED = {
-    "vjp": {
-        ("ni", 0): {"cpp": 0.0, "oracle": 0.0, "rel": 0.0},
-        ("bg", 0): {"cpp": 48909012656227.367, "oracle": 0.0, "rel": 1.0},
-    },
-    "jvp": {
-        ("th", 0): {"cpp": -2064.7637176736998,
-                    "oracle": -2064.3603927861709,
-                    "rel": 9.76780733007e-5},
-        ("qv", 0): {"cpp": -1.7256476757600541,
-                    "oracle": -1.7258090294048347,
-                    "rel": 4.67494332290e-5},
-        ("qc", 0): {"cpp": -57.059103455550733,
-                    "oracle": 1.095935318867403, "rel": 1.0},
-        ("qr", 0): {"cpp": 36.013513299170562,
-                    "oracle": -2.3314739195509091, "rel": 1.0},
-        ("nc", 0): {"cpp": -30127576170664.391,
-                    "oracle": 1097406933682.425, "rel": 1.0},
-        ("nr", 0): {"cpp": -30725291808.421814,
-                    "oracle": 1028575867.3942978, "rel": 1.0},
-    },
-}
-
 
 def _lib():
     assert _LIBRARY is not None
@@ -239,19 +208,6 @@ def test_relative_gate_scales_finite_extremes_before_subtraction():
     assert relative[3] == 0.0
 
 
-@pytest.mark.parametrize("bad", [np.nan, np.inf, -np.inf],
-                         ids=["nan", "posinf", "neginf"])
-@pytest.mark.parametrize("side", ["cpp", "oracle"])
-def test_allowed_huge_slot_injection_is_rejected(bad, side):
-    """Non-finite values cannot hide in the measured large VJP footprint."""
-    measured = MEASURED_ALLOWED["vjp"][("bg", 0)]
-    left = np.array([measured["cpp"]], dtype=np.float64)
-    right = np.array([measured["oracle"]], dtype=np.float64)
-    (left if side == "cpp" else right)[0] = bad
-    with pytest.raises(AssertionError, match="relative"):
-        _rel(left, right)
-
-
 class _FakeCppLibrary:
     def __init__(self, kind, bad):
         self.kind = kind
@@ -350,79 +306,11 @@ def test_cross_tree_parity_smooth_point():
 
 
 @needs_library
-def test_cross_tree_divergence_footprint_pinned():
-    """dt=300 (3 subcycles): 미분-레벨 kink 발산의 **발자국 회귀 스냅샷**.
-
-    실측 사실(이 IC/시드): forward 출력은 zero-패턴까지 두 트리 일치하지만,
-    내부 subcycle 게이트의 분기 선택이 트리별로 달라(값 영향은 무시 가능,
-    도함수 구조는 상이) 파생 산물이 cell 0에서 갈라진다:
-      - VJP: 입력-0 저장고 성분 {ni, bg}@cell0 만 (one-sided branch derivative).
-      - JVP: cell0의 {qc, qr, nc, nr} (이 snapshot에서 유한한 비영값끼리
-        부호가 달라 rel=1) + {th, qv} (rel ~ 1e-4 — 셀 내 knock-on).
-    forward-관측 가능한 판별자는 없다(zero-패턴 일치 확인됨) — 그래서 이
-    테스트는 물리 법칙이 아니라 **발자국 고정**이다: 집합이 줄면(개선) 통과,
-    늘거나 줄면(회귀) 실패해 재검토를 강제한다. 허용 슬롯의 측정 부호와
-    크기도 함께 고정하며, 이 결과를 다른 fixture나 일반 subgradient 계약으로
-    확장하지 않는다. 발자국 밖 전 성분은 이 fixture에서 < 1e-6이다.
-
-    DA 소비 규칙: 사이클은 한 트리로 자기일관되게 (증분 계산과 적용을 같은
-    트리에서); 이 fixture의 dt=20 smooth 측정만 cross-tree rel<1e-6으로
-    확인되었으며, 다른 branch나 fixture에 대한 안전성 주장은 하지 않는다.
-    """
+def test_cross_tree_parity_three_subcycles():
+    """All state VJP/JVP components agree on the fixed dt=300 fixture."""
     rng = np.random.default_rng(7)
     u, v = rng.standard_normal(12 * N), rng.standard_normal(12 * N)
     g_c, t_c = _cpp_products(300.0, u, v)
     g_o, t_o = _oracle_products(300.0, u, v)
-
-    ALLOWED = {tag: set(values) for tag, values in MEASURED_ALLOWED.items()}
-    for tag, a, b in (("vjp", g_c, g_o), ("jvp", t_c, t_o)):
-        r = _rel(a, b)
-        divergent = {(FIELDS[i // N], i % N) for i in np.where(r > TOL)[0]}
-        extra = divergent - ALLOWED[tag]
-        assert not extra, (
-            f"{tag}: divergence footprint GREW beyond the pinned kink set — "
-            f"new components {sorted(extra)} (re-review required; "
-            f"full rel map {[(FIELDS[i // N], i % N, float(r[i])) for i in np.where(r > TOL)[0]]})")
-        ok = np.ones_like(r, dtype=bool)
-        for i in range(r.size):
-            if (FIELDS[i // N], i % N) in ALLOWED[tag]:
-                ok[i] = False
-        assert r[ok].max() < TOL, f"{tag} smooth-part worst {r[ok].max():.3e}"
-        for (field, cell), expected in MEASURED_ALLOWED[tag].items():
-            index = FIELDS.index(field) * N + cell
-            np.testing.assert_allclose(
-                a[index], expected["cpp"], rtol=TOL, atol=1.0e-12,
-                err_msg=f"{tag} {field}[{cell}] C++ measured magnitude changed")
-            np.testing.assert_allclose(
-                b[index], expected["oracle"], rtol=TOL, atol=1.0e-12,
-                err_msg=f"{tag} {field}[{cell}] oracle measured magnitude changed")
-            if expected["cpp"] != 0.0:
-                assert np.signbit(a[index]) == np.signbit(expected["cpp"]), (
-                    f"{tag} {field}[{cell}] C++ sign changed")
-            if expected["oracle"] != 0.0:
-                assert np.signbit(b[index]) == np.signbit(expected["oracle"]), (
-                    f"{tag} {field}[{cell}] oracle sign changed")
-            np.testing.assert_allclose(
-                r[index], expected["rel"], rtol=TOL, atol=1.0e-12,
-                err_msg=f"{tag} {field}[{cell}] measured relative scale changed")
-
-
-@pytest.mark.parametrize("bad", [1.0e300, -48909422578990.82, 97818845157981.64],
-                         ids=["huge_finite", "sign_flip", "double_magnitude"])
-@pytest.mark.parametrize("backend", ["cpp", "oracle"])
-def test_allowed_finite_corruption_fails_actual_footprint_gate(monkeypatch, bad, backend):
-    """An unchanged allowed location cannot hide a changed finite product."""
-    products = {name: {tag: np.zeros(12 * N) for tag in MEASURED_ALLOWED}
-                for name in ("cpp", "oracle")}
-    for tag, entries in MEASURED_ALLOWED.items():
-        for (field, cell), values in entries.items():
-            index = FIELDS.index(field) * N + cell
-            for name in products:
-                products[name][tag][index] = values[name]
-    products[backend]["vjp"][FIELDS.index("bg") * N] = bad
-    for name in products:
-        monkeypatch.setattr(sys.modules[__name__], f"_{name}_products",
-                            lambda *_args, name=name: (
-                                products[name]["vjp"], products[name]["jvp"]))
-    with pytest.raises(AssertionError, match="measured magnitude changed"):
-        test_cross_tree_divergence_footprint_pinned()
+    assert _rel(g_c, g_o).max() < TOL, f"vjp worst_rel {_rel(g_c, g_o).max():.3e}"
+    assert _rel(t_c, t_o).max() < TOL, f"jvp worst_rel {_rel(t_c, t_o).max():.3e}"

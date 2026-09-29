@@ -53,6 +53,25 @@ def test_runtime_keeps_call_entry_heat_coefficients_across_subcycles(monkeypatch
     assert torch.isfinite(result.th).all()
 
 
+def test_presed_keeps_progb_volume_when_volume_gate_is_active(monkeypatch):
+    state, forcing = _mk(B=1, K=4)
+    state = state._replace(qg=torch.full_like(state.qg, 5e-10).requires_grad_(),
+                           bg=torch.full_like(state.bg, 1e-13))
+    seen = []
+    original = _coord.sedimentation_chain_torch
+
+    def observe(current, *args, **kwargs):
+        seen.append(current.brs.clone())
+        return original(current, *args, **kwargs)
+
+    monkeypatch.setattr(_coord, "sedimentation_chain_torch", observe)
+    _kdm6_pure(state, forcing, make_parameters(), dt=20.0)
+    assert len(seen) == 1
+    assert torch.equal(seen[0], state.qg / 900.0)
+    seen[0].sum().backward()
+    assert torch.equal(state.qg.grad, torch.full_like(state.qg, 1.0 / 900.0))
+
+
 @pytest.mark.parametrize("dt", [0.0, -1.0, -600.0])
 def test_dt_nonpositive_is_exact_bitwise_noop(dt):
     """dt<=0 returns the input state UNCHANGED — every field bitwise equal.
