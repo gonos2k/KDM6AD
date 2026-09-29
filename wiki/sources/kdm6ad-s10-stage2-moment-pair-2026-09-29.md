@@ -79,3 +79,15 @@ producer site 6 or 7. These facts identify executed branches in selected cells, 
 density choice, all applied mass–volume–heat terms, native seven-call parity
 and AD remain open. See [the success-action report](../../harness/evidence/REPORT_S10_hybrid_success_2026-09-29.md)
 and its [path-redacted receipt](../../harness/evidence/S10_midpoint_rate_zero_run2/receipt.json).
+
+At host entry, `qg` and prognostic graupel volume `bg` are copied into the
+microphysics call before any current-call process can supply a paired volume.
+The source clamps negative `brs` to zero before ProgB. The selected first
+ProgB calls include 24 `qg>0`, post-clamp `brs=0` cells: 19 active and
+five trace. The original active branch divides `qg/bg`, obtains infinity and
+clamps to 900; the earlier midpoint variant gives trace cells 400. Neither
+value is inferred from the missing volume. An opt-in experiment now applies
+the source-declared 400 density to **both** groups at the first subcycle of
+each call. A local-MPI 20-second OFF/ON pair is internally raw-bit identical,
+but 23/254 fields differ from the previous hybrid at 20 seconds. The physical
+entry-density policy remains open. See [the entry-volume report](../../harness/evidence/REPORT_S10_entry_rho_init_2026-09-29.md).
