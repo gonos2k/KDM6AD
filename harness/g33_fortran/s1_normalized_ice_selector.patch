@@ -1,0 +1,72 @@
+--- a/phys/kdm6_iso_c.F
++++ b/phys/kdm6_iso_c.F
+@@ -135,6 +135,7 @@
+   ! physics_variant values (docs/FREEZE_LIFT_CONSERVATIVE_INTERFACE_V1.md)
+   integer(c_int32_t), parameter, public :: KDM6_PHYSICS_LEGACY = 0
+   integer(c_int32_t), parameter, public :: KDM6_PHYSICS_CONSERVATIVE_INTERFACE = 1
++  integer(c_int32_t), parameter, public :: KDM6_PHYSICS_CONSERVATIVE_NORMALIZED = 2
+ 
+   type, bind(C), public :: kdm6_step_v2_args
+     ! ABI framing — first two fields, never reordered/removed.
+--- a/phys/module_mp_kdm6ad_cons.F
++++ b/phys/module_mp_kdm6ad_cons.F
+@@ -23,7 +23,8 @@
+   USE kdm6_iso_c, ONLY: kdm6_step_v2_c, kdm6_step_v2_args,               &
+                         kdm6_get_abi_version_c, kdm6_step_v2_args_size_c,&
+                         kdm6_handle_close, KDM6_OK, KDM6_ABI_VERSION,    &
+-                        KDM6_PHYSICS_CONSERVATIVE_INTERFACE
++                        KDM6_PHYSICS_CONSERVATIVE_INTERFACE,             &
++                        KDM6_PHYSICS_CONSERVATIVE_NORMALIZED
+   ! Effective-radius / reflectivity diagnostics: reuse the conservative
+   ! Fortran reference module's routines (byte-identical to module_mp_kdm6's;
+   ! kdm6init_cons is called for mp337 in module_physics_init.F).
+@@ -131,13 +132,15 @@
+ 
+     INTEGER :: I, J, K, II, JJ, KK
+     INTEGER :: IM, KM, JM, DRY_ENV_STATUS, DRY_ENV_LENGTH
++    INTEGER :: NORM_ENV_STATUS, NORM_ENV_LENGTH
+     INTEGER, SAVE :: S1_TILE_CALL = 0
+     INTEGER(c_int) :: RC
+     TYPE(c_ptr), TARGET :: HANDLE
+     TYPE(kdm6_step_v2_args) :: ARGS
+     REAL :: Z_SUM, RHO_DRY_CELL
+-    LOGICAL :: DRY_NUMBER_MODE
++    LOGICAL :: DRY_NUMBER_MODE, NORMALIZED_ICE_MODE
+     CHARACTER(LEN=8) :: DRY_NUMBER_ENV
++    CHARACTER(LEN=8) :: NORMALIZED_ICE_ENV
+     REAL(c_float), ALLOCATABLE :: RHO_DRY_IN(:,:,:)
+ 
+     ! Staged f32 buffers for the C ABI (TARGET: their c_loc feeds ARGS).
+@@ -197,6 +200,22 @@
+       DRY_NUMBER_MODE = .TRUE.
+     ELSE
+       CALL wrf_error_fatal('kdm6ad_cons: KDM6_S2_DRY_NUMBER must be 0 or 1')
++    END IF
++
++    NORMALIZED_ICE_ENV = ''
++    CALL get_environment_variable('KDM6_S1_NORMALIZED_ICE', NORMALIZED_ICE_ENV, &
++                                  LENGTH=NORM_ENV_LENGTH, STATUS=NORM_ENV_STATUS)
++    IF (NORM_ENV_LENGTH == 0 .AND. &
++        (NORM_ENV_STATUS == 0 .OR. NORM_ENV_STATUS == 1)) THEN
++      NORMALIZED_ICE_MODE = .FALSE.
++    ELSE IF (NORM_ENV_STATUS == 0 .AND. NORM_ENV_LENGTH == 1 .AND. &
++             NORMALIZED_ICE_ENV(1:1) == '0') THEN
++      NORMALIZED_ICE_MODE = .FALSE.
++    ELSE IF (NORM_ENV_STATUS == 0 .AND. NORM_ENV_LENGTH == 1 .AND. &
++             NORMALIZED_ICE_ENV(1:1) == '1') THEN
++      NORMALIZED_ICE_MODE = .TRUE.
++    ELSE
++      CALL wrf_error_fatal('kdm6ad_cons: KDM6_S1_NORMALIZED_ICE must be 0 or 1')
+     END IF
+ 
+     CALL wrf_debug(100, 'module_mp_kdm6ad_cons: entering kdm6ad_cons wrapper')
+@@ -363,7 +382,8 @@
+     ARGS%snow_increment    = C_LOC(SNOW_INC)
+     ARGS%graupel_increment = C_LOC(GRAUPEL_INC)
+     ARGS%rhog_out = C_LOC(RHOG_OUT)
+-    ARGS%physics_variant = KDM6_PHYSICS_CONSERVATIVE_INTERFACE
++    ARGS%physics_variant = MERGE(KDM6_PHYSICS_CONSERVATIVE_NORMALIZED, &
++                                 KDM6_PHYSICS_CONSERVATIVE_INTERFACE, NORMALIZED_ICE_MODE)
+     ARGS%dry_number = MERGE(1_c_int64_t, 0_c_int64_t, DRY_NUMBER_MODE)
+ 
+     ! S1 diagnostic: identify each host tile call without changing C++ inputs.
