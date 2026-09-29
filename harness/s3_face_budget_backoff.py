@@ -10,6 +10,7 @@ both adjacent cell divergences before replaying the observed f32/FMA store.
 
 from __future__ import annotations
 
+import math
 import struct
 from dataclasses import dataclass
 from fractions import Fraction
@@ -97,6 +98,19 @@ def _face_numerator_contribution(cell: Cell, slot: int, delta: float) -> Fractio
     )
 
 
+def _operator_weight(cell: Cell) -> Fraction:
+    """Measure that pairs the source RK face coefficients across cells.
+
+    This is the advect/RK operator measure, not an approved physical QN unit.
+    """
+    msfty = cell.rk["msfty"]
+    positive = (cell.msftx, msfty, cell.rdx, cell.rdy, cell.rk["dt"])
+    if (any(not math.isfinite(x) or x <= 0 for x in positive)
+            or not math.isfinite(cell.rdzw) or cell.rdzw == 0):
+        raise ValueError("invalid RK metric or timestep for shared-face exchange")
+    return 1 / (Fraction(cell.msftx) * Fraction(msfty) * abs(Fraction(cell.rdzw)))
+
+
 def _validate_topology(cells: tuple[Cell, ...], shared: tuple[SharedFace, ...]) -> None:
     if not 2 <= len(cells) <= 7:
         raise ValueError("prototype accepts two to seven cells")
@@ -117,8 +131,10 @@ def _validate_topology(cells: tuple[Cell, ...], shared: tuple[SharedFace, ...]) 
             raise ValueError("shared high correction must start from one stored value")
         if cells[face.donor].low[face.donor_slot] != cells[face.receiver].low[face.receiver_slot]:
             raise ValueError("shared low-order face must start from one stored value")
-        if (_face_numerator_contribution(cells[face.donor], face.donor_slot, 1.0)
-                + _face_numerator_contribution(cells[face.receiver], face.receiver_slot, 1.0)
+        if (_operator_weight(cells[face.donor])
+                * _face_numerator_contribution(cells[face.donor], face.donor_slot, 1.0)
+                + _operator_weight(cells[face.receiver])
+                * _face_numerator_contribution(cells[face.receiver], face.receiver_slot, 1.0)
                 != 0):
             raise ValueError("shared face has incompatible metric-weighted RK exchange")
 

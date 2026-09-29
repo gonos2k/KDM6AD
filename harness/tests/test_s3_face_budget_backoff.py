@@ -12,6 +12,7 @@ from s3_face_budget_backoff import (
     Cell,
     SharedFace,
     _face_numerator_contribution,
+    _validate_topology,
     backoff_donor,
 )
 
@@ -149,11 +150,35 @@ def test_candidate_rejects_when_connected_receiver_cannot_accept_any_reduced_fac
     assert result.high_faces is None
 
 
-def test_candidate_rejects_unequal_metric_weight_on_a_shared_face():
+def test_candidate_accepts_grid_metric_variation_on_a_shared_face():
     donor = _captured_cell("normalized")
-    cells, shared = _complete_neighborhood(donor)
-    altered = list(cells)
-    altered[1] = replace(altered[1], msftx=altered[1].msftx * 2.0)
+    west = replace(_receiver(donor, ((0, 1),)), msftx=donor.msftx * 2.0)
+    upper = replace(_receiver(donor, ((5, 4),)), rdzw=donor.rdzw * 2.0)
+
+    _validate_topology((donor, west), (SharedFace(0, 0, 1, 1),))
+    _validate_topology((donor, upper), (SharedFace(0, 5, 1, 4),))
+
+
+def test_candidate_rejects_incompatible_face_spacing():
+    donor = _captured_cell("normalized")
+    west = replace(_receiver(donor, ((0, 1),)), rdx=donor.rdx * 2.0)
 
     with pytest.raises(ValueError, match="incompatible metric-weighted RK exchange"):
-        backoff_donor(tuple(altered), shared, donor=0)
+        _validate_topology((donor, west), (SharedFace(0, 0, 1, 1),))
+
+
+@pytest.mark.parametrize("field", ["rdx", "rdy"])
+@pytest.mark.parametrize("value", [0.0, -1.0, float("nan"), float("inf")])
+def test_candidate_rejects_invalid_horizontal_spacing(field, value):
+    donor = _captured_cell("normalized")
+    west = replace(_receiver(donor, ((0, 1),)), **{field: value})
+    with pytest.raises(ValueError, match="invalid RK metric"):
+        _validate_topology((donor, west), (SharedFace(0, 0, 1, 1),))
+
+
+def test_candidate_rejects_zero_timestep():
+    donor = _captured_cell("normalized")
+    west = _receiver(donor, ((0, 1),))
+    west = replace(west, rk={**west.rk, "dt": 0.0})
+    with pytest.raises(ValueError, match="invalid RK metric or timestep"):
+        _validate_topology((donor, west), (SharedFace(0, 0, 1, 1),))
