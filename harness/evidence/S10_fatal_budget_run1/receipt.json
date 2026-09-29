@@ -1,0 +1,168 @@
+{
+  "schema": "s10-fatal-budget-public-v1",
+  "status": "DIAGNOSTIC_FATAL_NO_COMPLETED_TRAJECTORY",
+  "scope": "one failed opt-in mp237 local-MPI rank/thread 20-s attempt; rate/input snapshot at first fatal",
+  "public_base": "910045c999a3abffb9be858b69a67cbb62b25116",
+  "canonical_private_source_sha256": "4f0103c8a8321b8e854d3500f4ae567755e41eb78746fac54519eca2686a6648",
+  "generator_sha256": "9fc16bb0ca52df53acbf1a0242982dbec7b814f48fa78c53cc2ada852b63e278",
+  "overlay_sha256": "00fc49d71223f1cca9e3b1e05d64b7485409a3886c43a7881267f9c8dec6d8ef",
+  "compiled_f90_sha256": "4ca56957019a29b7869d61ff5a3b3f82c0d8e0c37b66822afcbb2c6a2dc3d44d",
+  "object_sha256": "f775dd2d7619bc7eee5a1af83935c65d14f2b57e91cdd69b1c9e3d1af39c2962",
+  "executable_sha256": "46df687ba656530d242233a5dade5d07f5261ba3389afa7088f18b3a53b9d34c",
+  "host_archive_sha256": "722f83c058ea1c43d5f23cc497aed1b218f33f90828a0e1dc51c6fe30203deba",
+  "original_host_object_sha256": "415799b05c05133f08cd2ae13c9e199c31138145b927e0b77ef6cf894ec0bcf1",
+  "canonical_generated_mod_sha256_after": "00ed289b5f2df4a19b20b4ae8c2679512247f5d6a5813c1d5e9d9443ea2f5ad8",
+  "canonical_generated_mod_matches_two_preserved_shadow_copies": true,
+  "inputs_sha256": {
+    "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+    "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+    "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3",
+    "namelist.input": "2896b69d2df232853a649c1f3b76ac2d234ef4cd855a912908ed42f0a8327508"
+  },
+  "run": {
+    "requested_seconds": 20,
+    "fixed_dt": true,
+    "ranks": 1,
+    "threads": 1,
+    "local_mpi_interface": "en0",
+    "actual_proc_grid": "requested 1x1\nactual    1x1\nmatches   yes\nnp        1",
+    "exit_code": 1,
+    "experiment_valid": false,
+    "saved_times": [
+      "2025-07-19_00:00:00"
+    ],
+    "rsl_out_sha256": "cc8c0ebb5bdc3f97c10f4bf1cbe90f9f9e17e2626ba92152f72c06d2e0491f3b",
+    "rsl_error_sha256": "48979e11e0d383919af9b6563886390b4f8ed1eaeaa4d9157f68e5945870de5d",
+    "later_s10zg_target_reached": false
+  },
+  "fatal_rows_sha256": "4bf2006cf1a71080888ca3c6cd6d41de3e1de18ac956b1f8965c78cf852770c4",
+  "field_names": [
+    "qg_before",
+    "brs_before",
+    "qg_after_mass",
+    "brs_before_volume",
+    "dt",
+    "pgdep",
+    "pgaut",
+    "piacr",
+    "praci",
+    "psacr",
+    "pracs",
+    "pgaci",
+    "paacw",
+    "pgacr",
+    "pgacs",
+    "delta2",
+    "delta3",
+    "biacr",
+    "braci",
+    "bsacr",
+    "bracs",
+    "bgaci",
+    "baacw",
+    "bgacr"
+  ],
+  "decoded_selected": {
+    "qg_before": 1.73462938457547e-10,
+    "brs_before": 0.0,
+    "qg_after_mass": 2.7578711524256505e-05,
+    "dt": 20.0,
+    "pgdep": -8.673147269822046e-12,
+    "paacw": 1.3789356216875603e-06,
+    "baacw": 1.3789356323457014e-09
+  },
+  "interpretation_limits": [
+    "No rhox numeric value was read or logged",
+    "Stopped before brs update; no completed history parity",
+    "Single selected first-fatal cell, not whole-domain budget",
+    "No graupel-density or number-basis policy approved"
+  ],
+  "link_input_sha256_after_run": [
+    {
+      "name": "mpif90",
+      "sha256": "91865d113f579bbf8e14c7d696266fdcf87f5e4845aa75966ad4e31531ebae5d",
+      "previously_pinned_match": true
+    },
+    {
+      "name": "wrf.o",
+      "sha256": "b51e734b5d590c144a24d8908a772241a2ced38c796078520aeeb23d550fffb2",
+      "previously_pinned_match": true
+    },
+    {
+      "name": "wrf_kdm6ad_exit.o",
+      "sha256": "b98600a5015fedb1d391c38fce614625b7f5a3e535b543e8c4eb815c0eae35e1",
+      "previously_pinned_match": true
+    },
+    {
+      "name": "module_wrf_top.o",
+      "sha256": "db72d0e2440392b47b34d422721e29d759a9bd72f60bd58fae5d1ed4b5b258bf",
+      "previously_pinned_match": true
+    },
+    {
+      "name": "module_mp_kdm6_cons.o",
+      "sha256": "f775dd2d7619bc7eee5a1af83935c65d14f2b57e91cdd69b1c9e3d1af39c2962",
+      "previously_pinned_match": false
+    },
+    {
+      "name": "libwrflib.a",
+      "sha256": "722f83c058ea1c43d5f23cc497aed1b218f33f90828a0e1dc51c6fe30203deba",
+      "previously_pinned_match": true
+    },
+    {
+      "name": "libfftpack.a",
+      "sha256": "72863a6320b3dacca7ee171cde37aee5d1df0f9df3f780abc0d250c42c428952",
+      "previously_pinned_match": true
+    },
+    {
+      "name": "libio_grib1.a",
+      "sha256": "b9b0730e28bac098d32246ac690d1cf9bb10ca3649be4296dac87a7c36c64cf2",
+      "previously_pinned_match": true
+    },
+    {
+      "name": "libio_grib_share.a",
+      "sha256": "04a6162ce671651b64bdc252e705ed11a45541945667e717c0e321739c6e09c0",
+      "previously_pinned_match": true
+    },
+    {
+      "name": "libwrfio_int.a",
+      "sha256": "aeb9c1c53d809eabaa73b45da165578911426b8fcea6daa333407af5a035ecb0",
+      "previously_pinned_match": true
+    },
+    {
+      "name": "librsl_lite.a",
+      "sha256": "360ed60ba3be71b7cf483a8c5b5336cc832fb26ceb3c831cc201a5f0013d0a85",
+      "previously_pinned_match": true
+    },
+    {
+      "name": "module_internal_header_util.o",
+      "sha256": "99b29f732f620200111b598a33aa9e3c055741f618cf7c0a3578771102301484",
+      "previously_pinned_match": true
+    },
+    {
+      "name": "pack_utils.o",
+      "sha256": "e5ef7538a6449573642da9d6f470536eb63e302b0df145d69cefdb5a3e6cdd3f",
+      "previously_pinned_match": true
+    },
+    {
+      "name": "libkdm6_c.dylib",
+      "sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+      "previously_pinned_match": true
+    },
+    {
+      "name": "libtorch.dylib",
+      "sha256": "6d36d4b9a84b40cc91b45d5549aecd656113eacc21f6e7b331398cda73af8190",
+      "previously_pinned_match": true
+    },
+    {
+      "name": "libtorch_cpu.dylib",
+      "sha256": "5630bd318812b8d11d5eaad407930cd1486586fc4155b6ce16449380a9c03565",
+      "previously_pinned_match": true
+    },
+    {
+      "name": "libc10.dylib",
+      "sha256": "f1950c7193efef69dd5a3115c3e885142d9a7fe3723290905e12bf02781cce6f",
+      "previously_pinned_match": true
+    }
+  ],
+  "prior_pinned_link_input_matches": 16
+}
