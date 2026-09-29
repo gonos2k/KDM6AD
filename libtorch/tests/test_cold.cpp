@@ -95,6 +95,30 @@ void test_ice_accretion_grad_finite() {
     } END_TEST();
 }
 
+void test_ice_accretion_masked_zero_ratio_backward() {
+    TEST(test_ice_accretion_masked_zero_ratio_backward) {
+        auto p = default_ice_accretion_params();
+        auto in = make_inputs(/*qi=*/0.0, /*qr=*/0.0);
+        auto opts = torch::TensorOptions().dtype(torch::kFloat32).requires_grad(true);
+        in.qi = torch::tensor({{0.0f, 1.0e-5f}}, opts);
+        in.qr = torch::tensor({{0.0f, 1.0e-4f}}, opts);
+        in.den = in.den.to(torch::kFloat32);
+        auto out = ice_accretion_torch(in, p, 60.0);
+        auto value_inputs = in;
+        value_inputs.qi = in.qi.detach();
+        value_inputs.qr = in.qr.detach();
+        auto value_out = ice_accretion_torch(value_inputs, p, 60.0);
+        assert(torch::equal(out.praci, value_out.praci));
+        assert(torch::equal(out.piacr, value_out.piacr));
+        assert(out.praci[0][1].item<float>() > 0.0f);
+        assert(torch::isfinite(out.praci).all().item<bool>());
+        assert(torch::isfinite(out.piacr).all().item<bool>());
+        (out.praci.sum() + out.piacr.sum()).backward();
+        assert(torch::isfinite(in.qi.grad()).all().item<bool>());
+        assert(torch::isfinite(in.qr.grad()).all().item<bool>());
+    } END_TEST();
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // C2 Ice → snow / graupel
 // ═══════════════════════════════════════════════════════════════════════════
@@ -266,6 +290,37 @@ void test_na_grad_finite() {
         assert(in.qi.grad().defined() && torch::isfinite(in.qi.grad()).all().item<bool>());
         assert(in.ni.grad().defined() && torch::isfinite(in.ni.grad()).all().item<bool>());
         assert(in.nr.grad().defined() && torch::isfinite(in.nr.grad()).all().item<bool>());
+    } END_TEST();
+}
+
+void test_na_active_zero_mass_denominator_backward() {
+    TEST(test_na_active_zero_mass_denominator_backward) {
+        auto p = default_number_accretion_params();
+        auto in = make_na_inputs(/*supcol=*/10.0, /*ni=*/1.0e5, /*nr=*/1.0e4);
+        auto opts = torch::TensorOptions().dtype(torch::kFloat32).requires_grad(true);
+        in.qi = torch::tensor({{0.0f, 1.0e-5f}}, opts);
+        in.qr = torch::tensor({{1.0e-4f, 1.0e-4f}}, opts);
+        in.den = in.den.to(torch::kFloat32);
+        auto out = number_accretion_torch(in, p, 60.0);
+        auto value_inputs = in;
+        value_inputs.qi = in.qi.detach();
+        value_inputs.qr = in.qr.detach();
+        auto value_out = number_accretion_torch(value_inputs, p, 60.0);
+        assert(torch::equal(out.nraci, value_out.nraci));
+        assert(torch::equal(out.niacr, value_out.niacr));
+        assert(out.nraci[0][0].item<double>() > 0.0);
+        assert(out.niacr[0][1].item<double>() > 0.0);
+        (out.nraci.sum() + out.niacr.sum()).backward();
+        assert(torch::isfinite(in.qi.grad()).all().item<bool>());
+        assert(torch::isfinite(in.qr.grad()).all().item<bool>());
+        assert(in.qi.grad()[0][0].item<float>() == 0.0f);
+        const double rate = out.niacr[0][1].item<double>();
+        const double grad_qi = in.qi.grad()[0][1].item<float>();
+        const double grad_qr = in.qr.grad()[0][1].item<float>();
+        const double expected_qi = 2.0 * rate / in.qi[0][1].item<float>();
+        const double expected_qr = -2.0 * rate / in.qr[0][1].item<float>();
+        assert(std::abs(grad_qi - expected_qi) < 1.0e-4 * expected_qi);
+        assert(std::abs(grad_qr - expected_qr) < 1.0e-4 * -expected_qr);
     } END_TEST();
 }
 
@@ -941,6 +996,7 @@ int main() {
     test_ice_accretion_params_finite_and_positive();
     test_ice_accretion_inactive_below_thresholds();
     test_ice_accretion_grad_finite();
+    test_ice_accretion_masked_zero_ratio_backward();
     test_isg_params_finite();
     test_isg_inactive_when_qi_low();
     test_isg_eacgi_temperature_direction();
@@ -948,6 +1004,7 @@ int main() {
     test_na_inactive_when_warm();
     test_na_capped_by_ni_per_dt();
     test_na_grad_finite();
+    test_na_active_zero_mass_denominator_backward();
     test_cwr_inactive_when_qc_low();
     test_cwr_piacw_pk97_di50_threshold();
     test_cwr_paacw_weighted_average();

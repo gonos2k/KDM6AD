@@ -49,7 +49,20 @@ torch::Tensor wilt_reduction(const torch::Tensor& ratio) {
 inline torch::Tensor wilt_arg(bool raw,
                               const torch::Tensor& num, const torch::Tensor& den,
                               const torch::Tensor& num_safe, const torch::Tensor& den_safe) {
-    return raw ? num / den : num_safe / den_safe;
+    if (!raw) return num_safe / den_safe;
+    if (!num.requires_grad() && !den.requires_grad()) return num / den;
+    // Invalid raw ratios retain their Fortran-facing value, but are value-only:
+    // a masked 0/0 must not send NaN gradients into otherwise valid rates.
+    torch::Tensor raw_value;
+    {
+        torch::NoGradGuard no_grad;
+        raw_value = num / den;
+    }
+    auto valid = torch::isfinite(num) & torch::isfinite(den) &
+                 torch::isfinite(raw_value) & (den != 0);
+    auto safe_num = torch::where(valid, num, torch::zeros_like(num));
+    auto safe_den = torch::where(valid, den, torch::ones_like(den));
+    return torch::where(valid, safe_num / safe_den, raw_value);
 }
 
 }  // namespace
