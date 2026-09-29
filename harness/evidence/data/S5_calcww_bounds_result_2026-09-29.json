@@ -1,0 +1,75 @@
+{
+  "commands": {
+    "baseline": [
+      "/opt/homebrew/bin/gfortran",
+      "-O2",
+      "-ftree-vectorize",
+      "-funroll-loops",
+      "-ffree-line-length-none",
+      "/private/tmp/kdm6ad_s5_bounds_replay_run2/calc_ww_cp.f90",
+      "/private/tmp/KDM6AD-s5-calcww-counterfactual/harness/s5_calcww_bounds_driver.f90",
+      "-o",
+      "/private/tmp/kdm6ad_s5_bounds_replay_run2/baseline/probe"
+    ],
+    "nocontract": [
+      "/opt/homebrew/bin/gfortran",
+      "-O2",
+      "-ftree-vectorize",
+      "-funroll-loops",
+      "-ffp-contract=off",
+      "-ffree-line-length-none",
+      "/private/tmp/kdm6ad_s5_bounds_replay_run2/calc_ww_cp.f90",
+      "/private/tmp/KDM6AD-s5-calcww-counterfactual/harness/s5_calcww_bounds_driver.f90",
+      "-o",
+      "/private/tmp/kdm6ad_s5_bounds_replay_run2/nocontract/probe"
+    ],
+    "novec": [
+      "/opt/homebrew/bin/gfortran",
+      "-O2",
+      "-ftree-vectorize",
+      "-funroll-loops",
+      "-fno-tree-vectorize",
+      "-ffree-line-length-none",
+      "/private/tmp/kdm6ad_s5_bounds_replay_run2/calc_ww_cp.f90",
+      "/private/tmp/KDM6AD-s5-calcww-counterfactual/harness/s5_calcww_bounds_driver.f90",
+      "-o",
+      "/private/tmp/kdm6ad_s5_bounds_replay_run2/novec/probe"
+    ]
+  },
+  "compiler": "/opt/homebrew/bin/gfortran",
+  "compiler_version": "GNU Fortran (Homebrew GCC 15.2.0) 15.2.0",
+  "driver_sha256": "5f720f38838cc1dbdb0369019801b2640030e8ac058d51f04449a517f1faaa9e",
+  "extracted_sha256": "84bace844c76e755e5592f06c73395994a249bed97237a0d034f4b97535f51fd",
+  "input_sha256": "e47eff42bc310473ffba954dfaf59ea34b070df52a0c521126da1e3844852d7b",
+  "results": {
+    "117": {
+      "baseline_bound_diffs": 9890,
+      "nocontract": {
+        "bound_diffs": 0,
+        "serial_vs_baseline": 10161,
+        "x2_vs_baseline": 10153
+      },
+      "novec": {
+        "bound_diffs": 0,
+        "serial_vs_baseline": 9890,
+        "x2_vs_baseline": 0
+      }
+    },
+    "234": {
+      "baseline_bound_diffs": 9970,
+      "nocontract": {
+        "bound_diffs": 0,
+        "serial_vs_baseline": 10274,
+        "x2_vs_baseline": 10295
+      },
+      "novec": {
+        "bound_diffs": 0,
+        "serial_vs_baseline": 9970,
+        "x2_vs_baseline": 0
+      }
+    }
+  },
+  "scope": "isolated_extracted_routine",
+  "source_sha256": "27ce690b27b24c80247a5551b48d37fc32fc47470d806cbef1bb859d58edc31c",
+  "trace_sha256": "64488506cfb144a2383107ba250660deb2868b9d8fb7f0f7c7131528842ed1d7"
+}
