@@ -1,0 +1,2152 @@
+{
+  "build_script_sha256": "51e9e828ae55231cdcfadaa9ad319c530aa385ca0a6794f5cda7e60f07b43b88",
+  "candidate_no_contract": {
+    "build_receipt": {
+      "builds": {
+        "baseline": {
+          "argv": [
+            "/opt/homebrew/bin/mpif90",
+            "-o",
+            "module_small_step_em.o",
+            "-c",
+            "-O2",
+            "-ftree-vectorize",
+            "-funroll-loops",
+            "-w",
+            "-ffree-form",
+            "-ffree-line-length-none",
+            "-fconvert=big-endian",
+            "-frecord-marker=4",
+            "-fallow-argument-mismatch",
+            "-fallow-invalid-boz",
+            "-I../dyn_em",
+            "-I../external/esmf_time_f90",
+            "-I../main",
+            "-I../external/io_netcdf",
+            "-I../external/io_int",
+            "-I../frame",
+            "-I../share",
+            "-I../phys",
+            "-I../wrftladj",
+            "-I../chem",
+            "-I../inc",
+            "-I/opt/homebrew/include",
+            "module_small_step_em.f90"
+          ],
+          "exit_code": 0,
+          "object_sha256": "923c7be0501a15da720b009035631be0c6493970f059f5039b1858cf5b5d558a",
+          "stderr": "",
+          "stdout": ""
+        },
+        "no_contract": {
+          "argv": [
+            "/opt/homebrew/bin/mpif90",
+            "-o",
+            "module_small_step_em.o",
+            "-c",
+            "-O2",
+            "-ftree-vectorize",
+            "-funroll-loops",
+            "-ffp-contract=off",
+            "-w",
+            "-ffree-form",
+            "-ffree-line-length-none",
+            "-fconvert=big-endian",
+            "-frecord-marker=4",
+            "-fallow-argument-mismatch",
+            "-fallow-invalid-boz",
+            "-I../dyn_em",
+            "-I../external/esmf_time_f90",
+            "-I../main",
+            "-I../external/io_netcdf",
+            "-I../external/io_int",
+            "-I../frame",
+            "-I../share",
+            "-I../phys",
+            "-I../wrftladj",
+            "-I../chem",
+            "-I../inc",
+            "-I/opt/homebrew/include",
+            "module_small_step_em.f90"
+          ],
+          "exit_code": 0,
+          "object_sha256": "6828d84841d7b2d15e8f8de69ebcd57466390bcbbb89590b6f16935de2331c4c",
+          "stderr": "",
+          "stdout": ""
+        }
+      },
+      "compiler": "/opt/homebrew/bin/mpif90",
+      "schema": 1,
+      "source_f90_sha256": "a6f4b9243e83e40dd356920d5d92b89fb72233541613eaab197ff3c45b4028d9"
+    },
+    "build_receipt_sha256": "ad85a969447b9888f04787732a0a43de54a984f3c3d74b66cced8b147cfa040d",
+    "files": {
+      "serial": 16,
+      "sha256": {
+        "serial.MU_TEND_AFTER.r0.i1-235.j1-142.txt": "cc838bff680c6bcc4106ae46b71589a243310b2a0123daba5d0e0b5c52161dcd",
+        "serial.MU_TEND_AFTER.r0.i1-235.j143-283.txt": "64393adc6b21e42d1de3ba6ecd87a1481fad5275b99bc78fb6547942b96c17ee",
+        "serial.MU_TEND_BEFORE.r0.i1-235.j1-142.txt": "69aaa94d2f7511ee4ab99ac1e3085ecc8124ec15dfec6da7dafbb709bc1d1b0a",
+        "serial.MU_TEND_BEFORE.r0.i1-235.j143-283.txt": "a6c9a493f0efcb08fb0dfb8996b55a816f5060cf07fde79fab87f8160b0a885b",
+        "serial.PREP_AFTER.r0.i1-235.j1-142.txt": "3de428ec5f5f171229be454c98a99b904e9564be6586a8071feffc6fb8bd95ab",
+        "serial.PREP_AFTER.r0.i1-235.j143-283.txt": "e4282dc81e8434c7ec912811618ee3ad41b261de2c7b5f902360b674aead1d87",
+        "serial.PREP_BEFORE.r0.i1-235.j1-142.txt": "207290f5b063ffd946f5bbb244c64f21241d84ece8cb27f8ca38c08ec785e19d",
+        "serial.PREP_BEFORE.r0.i1-235.j143-283.txt": "9d25374790504888c00841491631018c111b0978f8feab84be8b4dcacb04ebea",
+        "serial.SMALL_AFTER.r0.i1-235.j1-142.txt": "98774ae98d7da85a1551d981fbae827bce13fc5386644631ae536e86be41c08b",
+        "serial.SMALL_AFTER.r0.i1-235.j143-283.txt": "5acab6a4c404d44c4d10a6782d66db2bd479b060fc14a9873d0535faf10543cf",
+        "serial.SMALL_BEFORE.r0.i1-235.j1-142.txt": "b1de29a93766b5eb5fd4d95ee47f1f57187b11243852de2c9694b35ac6fd7eec",
+        "serial.SMALL_BEFORE.r0.i1-235.j143-283.txt": "3f2ae44d6637f0e28fb8f8c44cf0f275dfa1927cbb12f0af29d25a3be0676774",
+        "serial.UV_AFTER.r0.i1-235.j1-142.txt": "a3adc1fd0c1347910e503977fcbc8640b050d6980dd24e566d81135d0914194f",
+        "serial.UV_AFTER.r0.i1-235.j143-283.txt": "cfe718a1b6d821ad3316a6262e57c5fcd4a2bf26352c3d203832e2cee0b7c45e",
+        "serial.UV_BEFORE.r0.i1-235.j1-142.txt": "3e72d6346f2c061d1b2807916163dddb5eea902f152b959e44aa5e5936e98694",
+        "serial.UV_BEFORE.r0.i1-235.j143-283.txt": "052e0522cdd1c56fdc25f17c06f5a645191faa4cca81859441e3dc882749ffbc",
+        "x2.MU_TEND_AFTER.r0.i1-117.j1-142.txt": "5e1e66a3a7716649ab088a6b5692ff154cb48a3b6bc2de14fdcc307e849fcd2b",
+        "x2.MU_TEND_AFTER.r0.i1-117.j143-283.txt": "8984fa20ef4cad7cff5d2a0423711a6f1d9960a8bc089dda76c4253a43dbb6fa",
+        "x2.MU_TEND_AFTER.r1.i118-235.j1-142.txt": "e270d4914a2b14ca8960902c83f97a0f90ee44debdca418f39eb3f66aba2e54f",
+        "x2.MU_TEND_AFTER.r1.i118-235.j143-283.txt": "5a3bec952e7369da33ea17f66b47b973ac4126c3de32bfb1bb73ebe667add78c",
+        "x2.MU_TEND_BEFORE.r0.i1-117.j1-142.txt": "34dfe3f03495fb1f9c762a666514e66f39980b6fc102be79c3eb45bd930c4d77",
+        "x2.MU_TEND_BEFORE.r0.i1-117.j143-283.txt": "4baed782f2093a14a3457727fe9cfe88ab35502f8a70f7f8800a1f6fe2b80fd9",
+        "x2.MU_TEND_BEFORE.r1.i118-235.j1-142.txt": "7bec283f08808cf5d8c598c5c5bff37498d63794200122dac2cbcca43b7fdf1d",
+        "x2.MU_TEND_BEFORE.r1.i118-235.j143-283.txt": "b6d760c5a32219d6809d652edb5d8de91f552fffdad42917f70af6a1df41efa0",
+        "x2.PREP_AFTER.r0.i1-117.j1-142.txt": "42f34fe9ceca234de3ffa4c39441aea2e2c755c12c3512ba9de7419c454275ee",
+        "x2.PREP_AFTER.r0.i1-117.j143-283.txt": "a1d0ac967c12b412cb3a3dadcb9e4853f71644e3223e488eaf17100f5d77562a",
+        "x2.PREP_AFTER.r1.i118-235.j1-142.txt": "6da415cf83b734ca95be8969b7cb294f34d71a8f0d2ad32a2747eed11714bdd3",
+        "x2.PREP_AFTER.r1.i118-235.j143-283.txt": "5398d84b3266cb9bf96d850a0326060636ef2bd032a91f924e2702adaf3713b3",
+        "x2.PREP_BEFORE.r0.i1-117.j1-142.txt": "a05882adce3055199df042fc175f7144285fd13aa89edbb1c38834afbfba2bcd",
+        "x2.PREP_BEFORE.r0.i1-117.j143-283.txt": "58d0d61eb6aec705cb6bc58407a4fc3c34b11dc4d6d144eecef10ba519ba0632",
+        "x2.PREP_BEFORE.r1.i118-235.j1-142.txt": "0c6f70eab6f9072d6e477bd5c9bfc3158f31da683ceb48016678b7c6b4e449e3",
+        "x2.PREP_BEFORE.r1.i118-235.j143-283.txt": "5ba7758f3321733bf9c589bccd1216fff4a2671033d6d9c577919dbb2ae3a54b",
+        "x2.SMALL_AFTER.r0.i1-117.j1-142.txt": "1c86b4ca409bed957cd353dafe007a9acface34cd3483a7228ef60fceaaa04f5",
+        "x2.SMALL_AFTER.r0.i1-117.j143-283.txt": "ccdf5c5df802573051083efc398d125808361519b8b489e1d37959b338cabc1b",
+        "x2.SMALL_AFTER.r1.i118-235.j1-142.txt": "28b66be0d3b384c0c5d52244b5b7196eb7b0333f99ccf9d4c366c098827d7fbf",
+        "x2.SMALL_AFTER.r1.i118-235.j143-283.txt": "ef00b89cd78c8c02f61ac7483e19b0638d9ef5fd32d55f11d35e295f2b6b0c33",
+        "x2.SMALL_BEFORE.r0.i1-117.j1-142.txt": "64fe1c4cd71128878537d2a78ca3a0a1389cc93a6ec918278320b00034826588",
+        "x2.SMALL_BEFORE.r0.i1-117.j143-283.txt": "f29911bbf6ce71612a83657138be7aa7614846e7b7df43f049b3821a966f824f",
+        "x2.SMALL_BEFORE.r1.i118-235.j1-142.txt": "d7acf01d9b59104c1a2bcb689d633d6228cce7e9065d58d420e3f67a2cfceb67",
+        "x2.SMALL_BEFORE.r1.i118-235.j143-283.txt": "b1215414a46be4c8a223419fdd39298a13d0c1db4af9098837ec597438ee0358",
+        "x2.UV_AFTER.r0.i1-117.j1-142.txt": "f7e83ffd351052bbe7fac9062ef9102b6b2f5c67149c2a09f570e55afa6a16b3",
+        "x2.UV_AFTER.r0.i1-117.j143-283.txt": "da4bdc2d99c8f6b0e5c2db9004d56b3a572d95ea37503b5b6ee548fdb43fbe7d",
+        "x2.UV_AFTER.r1.i118-235.j1-142.txt": "9efdafba55ecfe583d667f116db69a4814fd06c27f7e3f8390d0efe9ee4708ef",
+        "x2.UV_AFTER.r1.i118-235.j143-283.txt": "deb2a4eeef2c70119a974d3bdd6da9bfc56f9eecbff2e9f718fa0e5362998593",
+        "x2.UV_BEFORE.r0.i1-117.j1-142.txt": "f1c23a0a93e6f75ec59fb57f8d226384c9c57ea3a70b729a7d3d7553061e3822",
+        "x2.UV_BEFORE.r0.i1-117.j143-283.txt": "2ab0b9a74755a4b9ea6842d6ff955866417408410fe93c740d03dfc2203c6536",
+        "x2.UV_BEFORE.r1.i118-235.j1-142.txt": "fd4b0b8777d44d5db249de971016c3a32b9f419e7d46a172e2261215fddec871",
+        "x2.UV_BEFORE.r1.i118-235.j143-283.txt": "6f1ff442b45e4c35357223dcd913f8cd6b98b13ff9fab6878e41f21764bf9f6e"
+      },
+      "x2": 32
+    },
+    "history_comparisons": {
+      "off_on_serial": {
+        "bitwise_match": 254,
+        "common": 254,
+        "differ": 0,
+        "uvw_different_words": {}
+      },
+      "off_on_x2": {
+        "bitwise_match": 254,
+        "common": 254,
+        "differ": 0,
+        "uvw_different_words": {}
+      },
+      "serial_vs_x2": {
+        "bitwise_match": 226,
+        "common": 254,
+        "differ": 28,
+        "uvw_different_words": {
+          "U": 29687,
+          "V": 23946,
+          "W": 81442
+        }
+      }
+    },
+    "limitations": [
+      "one-object compiler counterfactual only",
+      "full host still has 28 differing saved variables",
+      "no default or source change"
+    ],
+    "probe_executable_sha256": "34d306682c45019e6dde5f27f932fa992f3d7ef8ab0f994cb31911e34b879eb8",
+    "raw_words": [
+      {
+        "field": "MU2",
+        "i": 116,
+        "j": 119,
+        "k": 0,
+        "serial_bits": "0x43494a00",
+        "stage": "PREP_BEFORE",
+        "x2_bits": "0x43494a00",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 119,
+        "k": 0,
+        "serial_bits": "0x4346c800",
+        "stage": "PREP_BEFORE",
+        "x2_bits": "0x4346c800",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 157,
+        "k": 0,
+        "serial_bits": "0x439caa00",
+        "stage": "PREP_BEFORE",
+        "x2_bits": "0x439caa00",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 158,
+        "k": 0,
+        "serial_bits": "0x43ad6800",
+        "stage": "PREP_BEFORE",
+        "x2_bits": "0x43ad6800",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 193,
+        "k": 0,
+        "serial_bits": "0x4428ee80",
+        "stage": "PREP_BEFORE",
+        "x2_bits": "0x4428ee80",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 118,
+        "j": 193,
+        "k": 0,
+        "serial_bits": "0x44256300",
+        "stage": "PREP_BEFORE",
+        "x2_bits": "0x44256300",
+        "x2_owner_i": false,
+        "x2_rank": 0
+      },
+      {
+        "field": "U2",
+        "i": 117,
+        "j": 2,
+        "k": 1,
+        "serial_bits": "0x3ee41342",
+        "stage": "PREP_BEFORE",
+        "x2_bits": "0x3ee41342",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "U2",
+        "i": 118,
+        "j": 2,
+        "k": 1,
+        "serial_bits": "0x3eda5ed0",
+        "stage": "PREP_BEFORE",
+        "x2_bits": "0x3eda5ed0",
+        "x2_owner_i": false,
+        "x2_rank": 0
+      },
+      {
+        "field": "V2",
+        "i": 117,
+        "j": 3,
+        "k": 1,
+        "serial_bits": "0xc0c59fce",
+        "stage": "PREP_BEFORE",
+        "x2_bits": "0xc0c59fce",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "V2",
+        "i": 234,
+        "j": 1,
+        "k": 1,
+        "serial_bits": "0xc00f5a32",
+        "stage": "PREP_BEFORE",
+        "x2_bits": "0xc00f5a32",
+        "x2_owner_i": true,
+        "x2_rank": 1
+      },
+      {
+        "field": "MU2",
+        "i": 116,
+        "j": 119,
+        "k": 0,
+        "serial_bits": "0x00000000",
+        "stage": "PREP_AFTER",
+        "x2_bits": "0x00000000",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 119,
+        "k": 0,
+        "serial_bits": "0x00000000",
+        "stage": "PREP_AFTER",
+        "x2_bits": "0x00000000",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 157,
+        "k": 0,
+        "serial_bits": "0x00000000",
+        "stage": "PREP_AFTER",
+        "x2_bits": "0x00000000",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 158,
+        "k": 0,
+        "serial_bits": "0x00000000",
+        "stage": "PREP_AFTER",
+        "x2_bits": "0x00000000",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 193,
+        "k": 0,
+        "serial_bits": "0x00000000",
+        "stage": "PREP_AFTER",
+        "x2_bits": "0x00000000",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 118,
+        "j": 193,
+        "k": 0,
+        "serial_bits": "0x00000000",
+        "stage": "PREP_AFTER",
+        "x2_bits": "0x44256300",
+        "x2_owner_i": false,
+        "x2_rank": 0
+      },
+      {
+        "field": "U2",
+        "i": 117,
+        "j": 2,
+        "k": 1,
+        "serial_bits": "0x00000000",
+        "stage": "PREP_AFTER",
+        "x2_bits": "0x00000000",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "U2",
+        "i": 118,
+        "j": 2,
+        "k": 1,
+        "serial_bits": "0x00000000",
+        "stage": "PREP_AFTER",
+        "x2_bits": "0x3eda5ed0",
+        "x2_owner_i": false,
+        "x2_rank": 0
+      },
+      {
+        "field": "V2",
+        "i": 117,
+        "j": 3,
+        "k": 1,
+        "serial_bits": "0x00000000",
+        "stage": "PREP_AFTER",
+        "x2_bits": "0x00000000",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "V2",
+        "i": 234,
+        "j": 1,
+        "k": 1,
+        "serial_bits": "0x00000000",
+        "stage": "PREP_AFTER",
+        "x2_bits": "0x00000000",
+        "x2_owner_i": true,
+        "x2_rank": 1
+      },
+      {
+        "field": "MU2",
+        "i": 116,
+        "j": 119,
+        "k": 0,
+        "serial_bits": "0x00000000",
+        "stage": "UV_BEFORE",
+        "x2_bits": "0x00000000",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 119,
+        "k": 0,
+        "serial_bits": "0x00000000",
+        "stage": "UV_BEFORE",
+        "x2_bits": "0x00000000",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 157,
+        "k": 0,
+        "serial_bits": "0x00000000",
+        "stage": "UV_BEFORE",
+        "x2_bits": "0x00000000",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 158,
+        "k": 0,
+        "serial_bits": "0x00000000",
+        "stage": "UV_BEFORE",
+        "x2_bits": "0x00000000",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 193,
+        "k": 0,
+        "serial_bits": "0x00000000",
+        "stage": "UV_BEFORE",
+        "x2_bits": "0x00000000",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 118,
+        "j": 193,
+        "k": 0,
+        "serial_bits": "0x00000000",
+        "stage": "UV_BEFORE",
+        "x2_bits": "0x00000000",
+        "x2_owner_i": false,
+        "x2_rank": 0
+      },
+      {
+        "field": "U2",
+        "i": 117,
+        "j": 2,
+        "k": 1,
+        "serial_bits": "0x00000000",
+        "stage": "UV_BEFORE",
+        "x2_bits": "0x00000000",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "U2",
+        "i": 118,
+        "j": 2,
+        "k": 1,
+        "serial_bits": "0x00000000",
+        "stage": "UV_BEFORE",
+        "x2_bits": "0x3eda5ed0",
+        "x2_owner_i": false,
+        "x2_rank": 0
+      },
+      {
+        "field": "V2",
+        "i": 117,
+        "j": 3,
+        "k": 1,
+        "serial_bits": "0x00000000",
+        "stage": "UV_BEFORE",
+        "x2_bits": "0x00000000",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "V2",
+        "i": 234,
+        "j": 1,
+        "k": 1,
+        "serial_bits": "0x00000000",
+        "stage": "UV_BEFORE",
+        "x2_bits": "0x00000000",
+        "x2_owner_i": true,
+        "x2_rank": 1
+      },
+      {
+        "field": "MU2",
+        "i": 116,
+        "j": 119,
+        "k": 0,
+        "serial_bits": "0x00000000",
+        "stage": "UV_AFTER",
+        "x2_bits": "0x00000000",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 119,
+        "k": 0,
+        "serial_bits": "0x00000000",
+        "stage": "UV_AFTER",
+        "x2_bits": "0x00000000",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 157,
+        "k": 0,
+        "serial_bits": "0x00000000",
+        "stage": "UV_AFTER",
+        "x2_bits": "0x00000000",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 158,
+        "k": 0,
+        "serial_bits": "0x00000000",
+        "stage": "UV_AFTER",
+        "x2_bits": "0x00000000",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 193,
+        "k": 0,
+        "serial_bits": "0x00000000",
+        "stage": "UV_AFTER",
+        "x2_bits": "0x00000000",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 118,
+        "j": 193,
+        "k": 0,
+        "serial_bits": "0x00000000",
+        "stage": "UV_AFTER",
+        "x2_bits": "0x00000000",
+        "x2_owner_i": false,
+        "x2_rank": 0
+      },
+      {
+        "field": "U2",
+        "i": 117,
+        "j": 2,
+        "k": 1,
+        "serial_bits": "0xc4999f59",
+        "stage": "UV_AFTER",
+        "x2_bits": "0xc4999f59",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "U2",
+        "i": 118,
+        "j": 2,
+        "k": 1,
+        "serial_bits": "0xc4acdfef",
+        "stage": "UV_AFTER",
+        "x2_bits": "0x3eda5ed0",
+        "x2_owner_i": false,
+        "x2_rank": 0
+      },
+      {
+        "field": "V2",
+        "i": 117,
+        "j": 3,
+        "k": 1,
+        "serial_bits": "0x4438a972",
+        "stage": "UV_AFTER",
+        "x2_bits": "0x4438a971",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "V2",
+        "i": 234,
+        "j": 1,
+        "k": 1,
+        "serial_bits": "0x00000000",
+        "stage": "UV_AFTER",
+        "x2_bits": "0x00000000",
+        "x2_owner_i": true,
+        "x2_rank": 1
+      },
+      {
+        "field": "MU2",
+        "i": 116,
+        "j": 119,
+        "k": 0,
+        "serial_bits": "0x00000000",
+        "stage": "MU_TEND_BEFORE",
+        "x2_bits": "0x00000000",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 119,
+        "k": 0,
+        "serial_bits": "0x00000000",
+        "stage": "MU_TEND_BEFORE",
+        "x2_bits": "0x00000000",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 157,
+        "k": 0,
+        "serial_bits": "0x00000000",
+        "stage": "MU_TEND_BEFORE",
+        "x2_bits": "0x00000000",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 158,
+        "k": 0,
+        "serial_bits": "0x00000000",
+        "stage": "MU_TEND_BEFORE",
+        "x2_bits": "0x00000000",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 193,
+        "k": 0,
+        "serial_bits": "0x00000000",
+        "stage": "MU_TEND_BEFORE",
+        "x2_bits": "0x00000000",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 118,
+        "j": 193,
+        "k": 0,
+        "serial_bits": "0x00000000",
+        "stage": "MU_TEND_BEFORE",
+        "x2_bits": "0x00000000",
+        "x2_owner_i": false,
+        "x2_rank": 0
+      },
+      {
+        "field": "U2",
+        "i": 117,
+        "j": 2,
+        "k": 1,
+        "serial_bits": "0xc4999f59",
+        "stage": "MU_TEND_BEFORE",
+        "x2_bits": "0xc4999f59",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "U2",
+        "i": 118,
+        "j": 2,
+        "k": 1,
+        "serial_bits": "0xc4acdfef",
+        "stage": "MU_TEND_BEFORE",
+        "x2_bits": "0xc4acdfef",
+        "x2_owner_i": false,
+        "x2_rank": 0
+      },
+      {
+        "field": "V2",
+        "i": 117,
+        "j": 3,
+        "k": 1,
+        "serial_bits": "0x4438a972",
+        "stage": "MU_TEND_BEFORE",
+        "x2_bits": "0x4438a971",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "V2",
+        "i": 234,
+        "j": 1,
+        "k": 1,
+        "serial_bits": "0x4374caaa",
+        "stage": "MU_TEND_BEFORE",
+        "x2_bits": "0x4374caaa",
+        "x2_owner_i": true,
+        "x2_rank": 1
+      },
+      {
+        "field": "MU2",
+        "i": 116,
+        "j": 119,
+        "k": 0,
+        "serial_bits": "0xc1268fc9",
+        "stage": "MU_TEND_AFTER",
+        "x2_bits": "0xc1268fc9",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 119,
+        "k": 0,
+        "serial_bits": "0xc0fda00f",
+        "stage": "MU_TEND_AFTER",
+        "x2_bits": "0xc0fda00f",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 157,
+        "k": 0,
+        "serial_bits": "0xc19b97e3",
+        "stage": "MU_TEND_AFTER",
+        "x2_bits": "0xc19b97e3",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 158,
+        "k": 0,
+        "serial_bits": "0xc1bb578b",
+        "stage": "MU_TEND_AFTER",
+        "x2_bits": "0xc1bb578e",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 193,
+        "k": 0,
+        "serial_bits": "0xbed6b25d",
+        "stage": "MU_TEND_AFTER",
+        "x2_bits": "0xbed6b25d",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 118,
+        "j": 193,
+        "k": 0,
+        "serial_bits": "0xc088a04c",
+        "stage": "MU_TEND_AFTER",
+        "x2_bits": "0x00000000",
+        "x2_owner_i": false,
+        "x2_rank": 0
+      },
+      {
+        "field": "U2",
+        "i": 117,
+        "j": 2,
+        "k": 1,
+        "serial_bits": "0xc4999f59",
+        "stage": "MU_TEND_AFTER",
+        "x2_bits": "0xc4999f59",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "U2",
+        "i": 118,
+        "j": 2,
+        "k": 1,
+        "serial_bits": "0xc4acdfef",
+        "stage": "MU_TEND_AFTER",
+        "x2_bits": "0xc4acdfef",
+        "x2_owner_i": false,
+        "x2_rank": 0
+      },
+      {
+        "field": "V2",
+        "i": 117,
+        "j": 3,
+        "k": 1,
+        "serial_bits": "0x4438a972",
+        "stage": "MU_TEND_AFTER",
+        "x2_bits": "0x4438a971",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "V2",
+        "i": 234,
+        "j": 1,
+        "k": 1,
+        "serial_bits": "0x4374caaa",
+        "stage": "MU_TEND_AFTER",
+        "x2_bits": "0x4374caaa",
+        "x2_owner_i": true,
+        "x2_rank": 1
+      },
+      {
+        "field": "MU2",
+        "i": 116,
+        "j": 119,
+        "k": 0,
+        "serial_bits": "0xc1268fc9",
+        "stage": "SMALL_BEFORE",
+        "x2_bits": "0xc1268fc9",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 119,
+        "k": 0,
+        "serial_bits": "0xc0fda00f",
+        "stage": "SMALL_BEFORE",
+        "x2_bits": "0xc0fda00f",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 157,
+        "k": 0,
+        "serial_bits": "0xc19b97e3",
+        "stage": "SMALL_BEFORE",
+        "x2_bits": "0xc19b97e3",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 158,
+        "k": 0,
+        "serial_bits": "0xc1bb578b",
+        "stage": "SMALL_BEFORE",
+        "x2_bits": "0xc1bb578e",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 193,
+        "k": 0,
+        "serial_bits": "0xbed6b25d",
+        "stage": "SMALL_BEFORE",
+        "x2_bits": "0xbed6b25d",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 118,
+        "j": 193,
+        "k": 0,
+        "serial_bits": "0xc088a04c",
+        "stage": "SMALL_BEFORE",
+        "x2_bits": "0xc088a04c",
+        "x2_owner_i": false,
+        "x2_rank": 0
+      },
+      {
+        "field": "U2",
+        "i": 117,
+        "j": 2,
+        "k": 1,
+        "serial_bits": "0xc4999f59",
+        "stage": "SMALL_BEFORE",
+        "x2_bits": "0xc4999f59",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "U2",
+        "i": 118,
+        "j": 2,
+        "k": 1,
+        "serial_bits": "0xc4acdfef",
+        "stage": "SMALL_BEFORE",
+        "x2_bits": "0xc4acdfef",
+        "x2_owner_i": false,
+        "x2_rank": 0
+      },
+      {
+        "field": "V2",
+        "i": 117,
+        "j": 3,
+        "k": 1,
+        "serial_bits": "0x4438a972",
+        "stage": "SMALL_BEFORE",
+        "x2_bits": "0x4438a971",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "V2",
+        "i": 234,
+        "j": 1,
+        "k": 1,
+        "serial_bits": "0x4374caaa",
+        "stage": "SMALL_BEFORE",
+        "x2_bits": "0x4374caaa",
+        "x2_owner_i": true,
+        "x2_rank": 1
+      },
+      {
+        "field": "MU2",
+        "i": 116,
+        "j": 119,
+        "k": 0,
+        "serial_bits": "0x433ee103",
+        "stage": "SMALL_AFTER",
+        "x2_bits": "0x433ee103",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 119,
+        "k": 0,
+        "serial_bits": "0x433edb00",
+        "stage": "SMALL_AFTER",
+        "x2_bits": "0x433edb00",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 157,
+        "k": 0,
+        "serial_bits": "0x4392f082",
+        "stage": "SMALL_AFTER",
+        "x2_bits": "0x4392f082",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 158,
+        "k": 0,
+        "serial_bits": "0x43a1b287",
+        "stage": "SMALL_AFTER",
+        "x2_bits": "0x43a1b287",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 117,
+        "j": 193,
+        "k": 0,
+        "serial_bits": "0x4428d3aa",
+        "stage": "SMALL_AFTER",
+        "x2_bits": "0x4428d3aa",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "MU2",
+        "i": 118,
+        "j": 193,
+        "k": 0,
+        "serial_bits": "0x442451bf",
+        "stage": "SMALL_AFTER",
+        "x2_bits": "0xc088a04c",
+        "x2_owner_i": false,
+        "x2_rank": 0
+      },
+      {
+        "field": "U2",
+        "i": 117,
+        "j": 2,
+        "k": 1,
+        "serial_bits": "0x3edd812f",
+        "stage": "SMALL_AFTER",
+        "x2_bits": "0x3edd812f",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "U2",
+        "i": 118,
+        "j": 2,
+        "k": 1,
+        "serial_bits": "0x3ed2fa56",
+        "stage": "SMALL_AFTER",
+        "x2_bits": "0xc4acdfef",
+        "x2_owner_i": false,
+        "x2_rank": 0
+      },
+      {
+        "field": "V2",
+        "i": 117,
+        "j": 3,
+        "k": 1,
+        "serial_bits": "0xc0c55ec3",
+        "stage": "SMALL_AFTER",
+        "x2_bits": "0xc0c55ec3",
+        "x2_owner_i": true,
+        "x2_rank": 0
+      },
+      {
+        "field": "V2",
+        "i": 234,
+        "j": 1,
+        "k": 1,
+        "serial_bits": "0xc00f309e",
+        "stage": "SMALL_AFTER",
+        "x2_bits": "0xc00f309e",
+        "x2_owner_i": true,
+        "x2_rank": 1
+      }
+    ],
+    "run_identities": {
+      "off_serial": {
+        "exe_sha256": "34d306682c45019e6dde5f27f932fa992f3d7ef8ab0f994cb31911e34b879eb8",
+        "grid": "1x1",
+        "history_sha256": "7f3ae301a8b0c40b4e5ea2201a11817cf3f677ad2c25597ce6efbbc54ff048ff",
+        "input_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+        "namelist_without_grid_sha256": "0ea0f4d94860c6f2cb23c737bb0caab97f2cc7368a73d2aa15e323abc8c363d1"
+      },
+      "off_x2": {
+        "exe_sha256": "34d306682c45019e6dde5f27f932fa992f3d7ef8ab0f994cb31911e34b879eb8",
+        "grid": "2x1",
+        "history_sha256": "285e710f49ff2140e5d82881b95ba472f02661cf6bd17e950dc0d8230bf99b4f",
+        "input_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+        "namelist_without_grid_sha256": "0ea0f4d94860c6f2cb23c737bb0caab97f2cc7368a73d2aa15e323abc8c363d1"
+      },
+      "on_serial": {
+        "exe_sha256": "34d306682c45019e6dde5f27f932fa992f3d7ef8ab0f994cb31911e34b879eb8",
+        "grid": "1x1",
+        "history_sha256": "7f3ae301a8b0c40b4e5ea2201a11817cf3f677ad2c25597ce6efbbc54ff048ff",
+        "input_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+        "namelist_without_grid_sha256": "0ea0f4d94860c6f2cb23c737bb0caab97f2cc7368a73d2aa15e323abc8c363d1"
+      },
+      "on_x2": {
+        "exe_sha256": "34d306682c45019e6dde5f27f932fa992f3d7ef8ab0f994cb31911e34b879eb8",
+        "grid": "2x1",
+        "history_sha256": "285e710f49ff2140e5d82881b95ba472f02661cf6bd17e950dc0d8230bf99b4f",
+        "input_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+        "namelist_without_grid_sha256": "0ea0f4d94860c6f2cb23c737bb0caab97f2cc7368a73d2aa15e323abc8c363d1"
+      }
+    },
+    "source_F_sha256": "cabf1a177d50fb0096db79644af20cfe6d75217dbe63ab406a7e29bb54c17634",
+    "source_f90_sha256": "a6f4b9243e83e40dd356920d5d92b89fb72233541613eaab197ff3c45b4028d9",
+    "stage_differences": {
+      "MU_TEND_AFTER": {
+        "different": 3,
+        "total": 10
+      },
+      "MU_TEND_BEFORE": {
+        "different": 1,
+        "total": 10
+      },
+      "PREP_AFTER": {
+        "different": 2,
+        "total": 10
+      },
+      "PREP_BEFORE": {
+        "different": 0,
+        "total": 10
+      },
+      "SMALL_AFTER": {
+        "different": 2,
+        "total": 10
+      },
+      "SMALL_BEFORE": {
+        "different": 2,
+        "total": 10
+      },
+      "UV_AFTER": {
+        "different": 2,
+        "total": 10
+      },
+      "UV_BEFORE": {
+        "different": 1,
+        "total": 10
+      }
+    }
+  },
+  "files": {
+    "serial": 16,
+    "sha256": {
+      "serial.MU_TEND_AFTER.r0.i1-235.j1-142.txt": "478408c8297f8ddc387c8e448bf7e500a88747f5418df65e4c0728e2ffeeab09",
+      "serial.MU_TEND_AFTER.r0.i1-235.j143-283.txt": "59e2a902a02b55e8b469b6b4f4b76e9a35d7d9b1f9b48bafad894b01ed4ee0d0",
+      "serial.MU_TEND_BEFORE.r0.i1-235.j1-142.txt": "5373a0dedf7cda983d68474f2b68982d136b1953a7fc3ba18cafa16722b6e412",
+      "serial.MU_TEND_BEFORE.r0.i1-235.j143-283.txt": "a6c9a493f0efcb08fb0dfb8996b55a816f5060cf07fde79fab87f8160b0a885b",
+      "serial.PREP_AFTER.r0.i1-235.j1-142.txt": "9ad0a15cec9165223d2b33fbb656f935831ccdc50f87024b1e5c2c76d7989b46",
+      "serial.PREP_AFTER.r0.i1-235.j143-283.txt": "e4282dc81e8434c7ec912811618ee3ad41b261de2c7b5f902360b674aead1d87",
+      "serial.PREP_BEFORE.r0.i1-235.j1-142.txt": "207290f5b063ffd946f5bbb244c64f21241d84ece8cb27f8ca38c08ec785e19d",
+      "serial.PREP_BEFORE.r0.i1-235.j143-283.txt": "9d25374790504888c00841491631018c111b0978f8feab84be8b4dcacb04ebea",
+      "serial.SMALL_AFTER.r0.i1-235.j1-142.txt": "8fc04d3f5a05090a189d73169f690c24271d9dce925ddc33df9680498ab32fe1",
+      "serial.SMALL_AFTER.r0.i1-235.j143-283.txt": "f4c4700985f043c625766fd2a81ed651932586113a482811feb56fc5b4bb76b5",
+      "serial.SMALL_BEFORE.r0.i1-235.j1-142.txt": "cfbaf8b349efb7e2d662dbb6a7056e9be4cb3c43f991a8d6ea00fc719bb93e2b",
+      "serial.SMALL_BEFORE.r0.i1-235.j143-283.txt": "623b7d1b1f1dcbc4c686168ba4f6c8317382a9b4b063691143d69b9d382ef92d",
+      "serial.UV_AFTER.r0.i1-235.j1-142.txt": "35f25999fca0d0b5816c3e614d7d2c4a07c55775784c3453b55f519490344542",
+      "serial.UV_AFTER.r0.i1-235.j143-283.txt": "cfe718a1b6d821ad3316a6262e57c5fcd4a2bf26352c3d203832e2cee0b7c45e",
+      "serial.UV_BEFORE.r0.i1-235.j1-142.txt": "6d65f907b3683a7c5aec3304f6f4cf1f5ec0471fcda83ac5581bdf247b5438a2",
+      "serial.UV_BEFORE.r0.i1-235.j143-283.txt": "052e0522cdd1c56fdc25f17c06f5a645191faa4cca81859441e3dc882749ffbc",
+      "x2.MU_TEND_AFTER.r0.i1-117.j1-142.txt": "841616f1ec7d340fa570d6d7e223acb068263b3a3c23aa6c314e143162b16161",
+      "x2.MU_TEND_AFTER.r0.i1-117.j143-283.txt": "2af7db56b537de7a9e090ccbcbe2ac9a91e12dc0ebf3467bf82115a4dde6afe5",
+      "x2.MU_TEND_AFTER.r1.i118-235.j1-142.txt": "244d7289abdce2e39d629cd0ec2ca99f3607d8e09c714bbddacad9b22e811d50",
+      "x2.MU_TEND_AFTER.r1.i118-235.j143-283.txt": "5a3bec952e7369da33ea17f66b47b973ac4126c3de32bfb1bb73ebe667add78c",
+      "x2.MU_TEND_BEFORE.r0.i1-117.j1-142.txt": "5e2eada31326853ff814eae0d5458015ae7f69d20d039a7f95d0a63903132b46",
+      "x2.MU_TEND_BEFORE.r0.i1-117.j143-283.txt": "4baed782f2093a14a3457727fe9cfe88ab35502f8a70f7f8800a1f6fe2b80fd9",
+      "x2.MU_TEND_BEFORE.r1.i118-235.j1-142.txt": "1183e43e860e58e7349b9e038c8bf84e4beca7b53fdcd6f0725253b96a1bd680",
+      "x2.MU_TEND_BEFORE.r1.i118-235.j143-283.txt": "b6d760c5a32219d6809d652edb5d8de91f552fffdad42917f70af6a1df41efa0",
+      "x2.PREP_AFTER.r0.i1-117.j1-142.txt": "1047fee8baf7860623d9c6bc93ea8db34087bf78ba90ed0fd6866ef69fedcd7d",
+      "x2.PREP_AFTER.r0.i1-117.j143-283.txt": "a1d0ac967c12b412cb3a3dadcb9e4853f71644e3223e488eaf17100f5d77562a",
+      "x2.PREP_AFTER.r1.i118-235.j1-142.txt": "447bca6f91ce0492e3073c6aae46d3a6b4b95c9bbf3d60ff741969f3eae69588",
+      "x2.PREP_AFTER.r1.i118-235.j143-283.txt": "5398d84b3266cb9bf96d850a0326060636ef2bd032a91f924e2702adaf3713b3",
+      "x2.PREP_BEFORE.r0.i1-117.j1-142.txt": "a05882adce3055199df042fc175f7144285fd13aa89edbb1c38834afbfba2bcd",
+      "x2.PREP_BEFORE.r0.i1-117.j143-283.txt": "58d0d61eb6aec705cb6bc58407a4fc3c34b11dc4d6d144eecef10ba519ba0632",
+      "x2.PREP_BEFORE.r1.i118-235.j1-142.txt": "0c6f70eab6f9072d6e477bd5c9bfc3158f31da683ceb48016678b7c6b4e449e3",
+      "x2.PREP_BEFORE.r1.i118-235.j143-283.txt": "5ba7758f3321733bf9c589bccd1216fff4a2671033d6d9c577919dbb2ae3a54b",
+      "x2.SMALL_AFTER.r0.i1-117.j1-142.txt": "b256fe4820eda07a13832274233030690f7c9bd54a4642299a4417ed5740519b",
+      "x2.SMALL_AFTER.r0.i1-117.j143-283.txt": "616546210fcb1c47c8f38ac9b1b5bd6d268b823874828b20ea97b22a7ddebefd",
+      "x2.SMALL_AFTER.r1.i118-235.j1-142.txt": "28b66be0d3b384c0c5d52244b5b7196eb7b0333f99ccf9d4c366c098827d7fbf",
+      "x2.SMALL_AFTER.r1.i118-235.j143-283.txt": "ef00b89cd78c8c02f61ac7483e19b0638d9ef5fd32d55f11d35e295f2b6b0c33",
+      "x2.SMALL_BEFORE.r0.i1-117.j1-142.txt": "5dc8747e6fb9c7350d3813eebc1a9c8b069a5e3db53a2bab96361a6fb2c74842",
+      "x2.SMALL_BEFORE.r0.i1-117.j143-283.txt": "d47ec41e0af612ed7140be2b78a537e6d9852eaea624fb0068bd6e689ff39d33",
+      "x2.SMALL_BEFORE.r1.i118-235.j1-142.txt": "b9a75e5a66ce7e727f41ae8b1e448a615660be9b1e8df8a99e98ed3978bb7c23",
+      "x2.SMALL_BEFORE.r1.i118-235.j143-283.txt": "b1215414a46be4c8a223419fdd39298a13d0c1db4af9098837ec597438ee0358",
+      "x2.UV_AFTER.r0.i1-117.j1-142.txt": "4fe63445a77a5d4166ddf018d5851aa25953b91ba8d9009f0301be4bd5d97259",
+      "x2.UV_AFTER.r0.i1-117.j143-283.txt": "da4bdc2d99c8f6b0e5c2db9004d56b3a572d95ea37503b5b6ee548fdb43fbe7d",
+      "x2.UV_AFTER.r1.i118-235.j1-142.txt": "baea54194f29374a683bd81a669b3a5f3a7b5df553ffe09c0b3510af9fd40de1",
+      "x2.UV_AFTER.r1.i118-235.j143-283.txt": "deb2a4eeef2c70119a974d3bdd6da9bfc56f9eecbff2e9f718fa0e5362998593",
+      "x2.UV_BEFORE.r0.i1-117.j1-142.txt": "35466d00bc6a14689c0824fc753b787633c460593e8d1eb98014772515272667",
+      "x2.UV_BEFORE.r0.i1-117.j143-283.txt": "2ab0b9a74755a4b9ea6842d6ff955866417408410fe93c740d03dfc2203c6536",
+      "x2.UV_BEFORE.r1.i118-235.j1-142.txt": "b21c2808e6278bffb605a3d581920bed9a01f723bafe065a324d7437ff1a7831",
+      "x2.UV_BEFORE.r1.i118-235.j143-283.txt": "6f1ff442b45e4c35357223dcd913f8cd6b98b13ff9fab6878e41f21764bf9f6e"
+    },
+    "x2": 32
+  },
+  "history_comparisons": {
+    "off_on_serial": {
+      "bitwise_match": 254,
+      "common": 254,
+      "differ": 0
+    },
+    "off_on_x2": {
+      "bitwise_match": 254,
+      "common": 254,
+      "differ": 0
+    },
+    "serial_vs_x2": {
+      "bitwise_match": 226,
+      "common": 254,
+      "differ": 28,
+      "uvw_different_words": {
+        "U": 122708,
+        "V": 105672,
+        "W": 202079
+      }
+    }
+  },
+  "limitations": [
+    "selected RK1 coordinates only",
+    "rank0 i118 is a halo and changes again before call2",
+    "small_step_prep inputs beyond the selected state words are not fully captured",
+    "not a whole-domain first divergence or default fix"
+  ],
+  "overlay_sha256": "ae45197c89c997836cff9c99102c260ef681ad5ce9e6529400f12745f731cefc",
+  "preprocessed_f90_sha256": "076737c1f34acfd9ab235b173f4b3f0170143f835026046e070dc2a1b4da9f26",
+  "private_solve_source_sha256": "d66e9db1bba8f37e3f46d30c2fd74bdf8def411adf233376a69e0b401c6d3d1f",
+  "probe_executable_sha256": "95f81ff4c629d359f8b517fc1339eb9382fc4ba7d712e96338376b81c05a5ebc",
+  "public_base_commit": "11cf5c0e1b052781ce66c6cab2b6454ce5491951",
+  "raw_words": [
+    {
+      "field": "MU2",
+      "i": 116,
+      "j": 119,
+      "k": 0,
+      "serial_bits": "0x43494a00",
+      "stage": "PREP_BEFORE",
+      "x2_bits": "0x43494a00",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 119,
+      "k": 0,
+      "serial_bits": "0x4346c800",
+      "stage": "PREP_BEFORE",
+      "x2_bits": "0x4346c800",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 157,
+      "k": 0,
+      "serial_bits": "0x439caa00",
+      "stage": "PREP_BEFORE",
+      "x2_bits": "0x439caa00",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 158,
+      "k": 0,
+      "serial_bits": "0x43ad6800",
+      "stage": "PREP_BEFORE",
+      "x2_bits": "0x43ad6800",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 193,
+      "k": 0,
+      "serial_bits": "0x4428ee80",
+      "stage": "PREP_BEFORE",
+      "x2_bits": "0x4428ee80",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 118,
+      "j": 193,
+      "k": 0,
+      "serial_bits": "0x44256300",
+      "stage": "PREP_BEFORE",
+      "x2_bits": "0x44256300",
+      "x2_owner_i": false,
+      "x2_rank": 0
+    },
+    {
+      "field": "U2",
+      "i": 117,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0x3ee41342",
+      "stage": "PREP_BEFORE",
+      "x2_bits": "0x3ee41342",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "U2",
+      "i": 118,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0x3eda5ed0",
+      "stage": "PREP_BEFORE",
+      "x2_bits": "0x3eda5ed0",
+      "x2_owner_i": false,
+      "x2_rank": 0
+    },
+    {
+      "field": "V2",
+      "i": 117,
+      "j": 3,
+      "k": 1,
+      "serial_bits": "0xc0c59fce",
+      "stage": "PREP_BEFORE",
+      "x2_bits": "0xc0c59fce",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "V2",
+      "i": 234,
+      "j": 1,
+      "k": 1,
+      "serial_bits": "0xc00f5a32",
+      "stage": "PREP_BEFORE",
+      "x2_bits": "0xc00f5a32",
+      "x2_owner_i": true,
+      "x2_rank": 1
+    },
+    {
+      "field": "MU2",
+      "i": 116,
+      "j": 119,
+      "k": 0,
+      "serial_bits": "0x00000000",
+      "stage": "PREP_AFTER",
+      "x2_bits": "0x00000000",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 119,
+      "k": 0,
+      "serial_bits": "0x00000000",
+      "stage": "PREP_AFTER",
+      "x2_bits": "0x00000000",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 157,
+      "k": 0,
+      "serial_bits": "0x00000000",
+      "stage": "PREP_AFTER",
+      "x2_bits": "0x00000000",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 158,
+      "k": 0,
+      "serial_bits": "0x00000000",
+      "stage": "PREP_AFTER",
+      "x2_bits": "0x00000000",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 193,
+      "k": 0,
+      "serial_bits": "0x00000000",
+      "stage": "PREP_AFTER",
+      "x2_bits": "0x00000000",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 118,
+      "j": 193,
+      "k": 0,
+      "serial_bits": "0x00000000",
+      "stage": "PREP_AFTER",
+      "x2_bits": "0x44256300",
+      "x2_owner_i": false,
+      "x2_rank": 0
+    },
+    {
+      "field": "U2",
+      "i": 117,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0xb9a4b2b8",
+      "stage": "PREP_AFTER",
+      "x2_bits": "0x39a4b2b8",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "U2",
+      "i": 118,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0x3ad3e58c",
+      "stage": "PREP_AFTER",
+      "x2_bits": "0x3eda5ed0",
+      "x2_owner_i": false,
+      "x2_rank": 0
+    },
+    {
+      "field": "V2",
+      "i": 117,
+      "j": 3,
+      "k": 1,
+      "serial_bits": "0x3c31112b",
+      "stage": "PREP_AFTER",
+      "x2_bits": "0xbc31112b",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "V2",
+      "i": 234,
+      "j": 1,
+      "k": 1,
+      "serial_bits": "0x3be59d77",
+      "stage": "PREP_AFTER",
+      "x2_bits": "0xbbe59d77",
+      "x2_owner_i": true,
+      "x2_rank": 1
+    },
+    {
+      "field": "MU2",
+      "i": 116,
+      "j": 119,
+      "k": 0,
+      "serial_bits": "0x00000000",
+      "stage": "UV_BEFORE",
+      "x2_bits": "0x00000000",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 119,
+      "k": 0,
+      "serial_bits": "0x00000000",
+      "stage": "UV_BEFORE",
+      "x2_bits": "0x00000000",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 157,
+      "k": 0,
+      "serial_bits": "0x00000000",
+      "stage": "UV_BEFORE",
+      "x2_bits": "0x00000000",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 158,
+      "k": 0,
+      "serial_bits": "0x00000000",
+      "stage": "UV_BEFORE",
+      "x2_bits": "0x00000000",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 193,
+      "k": 0,
+      "serial_bits": "0x00000000",
+      "stage": "UV_BEFORE",
+      "x2_bits": "0x00000000",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 118,
+      "j": 193,
+      "k": 0,
+      "serial_bits": "0x00000000",
+      "stage": "UV_BEFORE",
+      "x2_bits": "0x00000000",
+      "x2_owner_i": false,
+      "x2_rank": 0
+    },
+    {
+      "field": "U2",
+      "i": 117,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0xb9a4b2b8",
+      "stage": "UV_BEFORE",
+      "x2_bits": "0x39a4b2b8",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "U2",
+      "i": 118,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0x3ad3e58c",
+      "stage": "UV_BEFORE",
+      "x2_bits": "0x3eda5ed0",
+      "x2_owner_i": false,
+      "x2_rank": 0
+    },
+    {
+      "field": "V2",
+      "i": 117,
+      "j": 3,
+      "k": 1,
+      "serial_bits": "0x3c31112b",
+      "stage": "UV_BEFORE",
+      "x2_bits": "0xbc31112b",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "V2",
+      "i": 234,
+      "j": 1,
+      "k": 1,
+      "serial_bits": "0x3be59d77",
+      "stage": "UV_BEFORE",
+      "x2_bits": "0xbbe59d77",
+      "x2_owner_i": true,
+      "x2_rank": 1
+    },
+    {
+      "field": "MU2",
+      "i": 116,
+      "j": 119,
+      "k": 0,
+      "serial_bits": "0x00000000",
+      "stage": "UV_AFTER",
+      "x2_bits": "0x00000000",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 119,
+      "k": 0,
+      "serial_bits": "0x00000000",
+      "stage": "UV_AFTER",
+      "x2_bits": "0x00000000",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 157,
+      "k": 0,
+      "serial_bits": "0x00000000",
+      "stage": "UV_AFTER",
+      "x2_bits": "0x00000000",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 158,
+      "k": 0,
+      "serial_bits": "0x00000000",
+      "stage": "UV_AFTER",
+      "x2_bits": "0x00000000",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 193,
+      "k": 0,
+      "serial_bits": "0x00000000",
+      "stage": "UV_AFTER",
+      "x2_bits": "0x00000000",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 118,
+      "j": 193,
+      "k": 0,
+      "serial_bits": "0x00000000",
+      "stage": "UV_AFTER",
+      "x2_bits": "0x00000000",
+      "x2_owner_i": false,
+      "x2_rank": 0
+    },
+    {
+      "field": "U2",
+      "i": 117,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0xc4999fca",
+      "stage": "UV_AFTER",
+      "x2_bits": "0xc4999ee9",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "U2",
+      "i": 118,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0xc4acdf1d",
+      "stage": "UV_AFTER",
+      "x2_bits": "0x3eda5ed0",
+      "x2_owner_i": false,
+      "x2_rank": 0
+    },
+    {
+      "field": "V2",
+      "i": 117,
+      "j": 3,
+      "k": 1,
+      "serial_bits": "0x4438ab32",
+      "stage": "UV_AFTER",
+      "x2_bits": "0x4438a7b0",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "V2",
+      "i": 234,
+      "j": 1,
+      "k": 1,
+      "serial_bits": "0x3be59d77",
+      "stage": "UV_AFTER",
+      "x2_bits": "0xbbe59d77",
+      "x2_owner_i": true,
+      "x2_rank": 1
+    },
+    {
+      "field": "MU2",
+      "i": 116,
+      "j": 119,
+      "k": 0,
+      "serial_bits": "0x00000000",
+      "stage": "MU_TEND_BEFORE",
+      "x2_bits": "0x00000000",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 119,
+      "k": 0,
+      "serial_bits": "0x00000000",
+      "stage": "MU_TEND_BEFORE",
+      "x2_bits": "0x00000000",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 157,
+      "k": 0,
+      "serial_bits": "0x00000000",
+      "stage": "MU_TEND_BEFORE",
+      "x2_bits": "0x00000000",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 158,
+      "k": 0,
+      "serial_bits": "0x00000000",
+      "stage": "MU_TEND_BEFORE",
+      "x2_bits": "0x00000000",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 193,
+      "k": 0,
+      "serial_bits": "0x00000000",
+      "stage": "MU_TEND_BEFORE",
+      "x2_bits": "0x00000000",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 118,
+      "j": 193,
+      "k": 0,
+      "serial_bits": "0x00000000",
+      "stage": "MU_TEND_BEFORE",
+      "x2_bits": "0x00000000",
+      "x2_owner_i": false,
+      "x2_rank": 0
+    },
+    {
+      "field": "U2",
+      "i": 117,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0xc4999fca",
+      "stage": "MU_TEND_BEFORE",
+      "x2_bits": "0xc4999ee9",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "U2",
+      "i": 118,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0xc4acdf1d",
+      "stage": "MU_TEND_BEFORE",
+      "x2_bits": "0xc4acdff9",
+      "x2_owner_i": false,
+      "x2_rank": 0
+    },
+    {
+      "field": "V2",
+      "i": 117,
+      "j": 3,
+      "k": 1,
+      "serial_bits": "0x4438ab32",
+      "stage": "MU_TEND_BEFORE",
+      "x2_bits": "0x4438a7b0",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "V2",
+      "i": 234,
+      "j": 1,
+      "k": 1,
+      "serial_bits": "0x4374cc76",
+      "stage": "MU_TEND_BEFORE",
+      "x2_bits": "0x4374c8df",
+      "x2_owner_i": true,
+      "x2_rank": 1
+    },
+    {
+      "field": "MU2",
+      "i": 116,
+      "j": 119,
+      "k": 0,
+      "serial_bits": "0xc1268f9c",
+      "stage": "MU_TEND_AFTER",
+      "x2_bits": "0xc1268f98",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 119,
+      "k": 0,
+      "serial_bits": "0xc0fda07a",
+      "stage": "MU_TEND_AFTER",
+      "x2_bits": "0xc0fd9fcc",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 157,
+      "k": 0,
+      "serial_bits": "0xc19b97e5",
+      "stage": "MU_TEND_AFTER",
+      "x2_bits": "0xc19b980e",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 158,
+      "k": 0,
+      "serial_bits": "0xc1bb578c",
+      "stage": "MU_TEND_AFTER",
+      "x2_bits": "0xc1bb5769",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 193,
+      "k": 0,
+      "serial_bits": "0xbed6aa6a",
+      "stage": "MU_TEND_AFTER",
+      "x2_bits": "0xbed6b161",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 118,
+      "j": 193,
+      "k": 0,
+      "serial_bits": "0xc088a064",
+      "stage": "MU_TEND_AFTER",
+      "x2_bits": "0x00000000",
+      "x2_owner_i": false,
+      "x2_rank": 0
+    },
+    {
+      "field": "U2",
+      "i": 117,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0xc4999fca",
+      "stage": "MU_TEND_AFTER",
+      "x2_bits": "0xc4999ee9",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "U2",
+      "i": 118,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0xc4acdf1d",
+      "stage": "MU_TEND_AFTER",
+      "x2_bits": "0xc4acdff9",
+      "x2_owner_i": false,
+      "x2_rank": 0
+    },
+    {
+      "field": "V2",
+      "i": 117,
+      "j": 3,
+      "k": 1,
+      "serial_bits": "0x4438ab32",
+      "stage": "MU_TEND_AFTER",
+      "x2_bits": "0x4438a7b0",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "V2",
+      "i": 234,
+      "j": 1,
+      "k": 1,
+      "serial_bits": "0x4374cc76",
+      "stage": "MU_TEND_AFTER",
+      "x2_bits": "0x4374c8df",
+      "x2_owner_i": true,
+      "x2_rank": 1
+    },
+    {
+      "field": "MU2",
+      "i": 116,
+      "j": 119,
+      "k": 0,
+      "serial_bits": "0xc1268f9c",
+      "stage": "SMALL_BEFORE",
+      "x2_bits": "0xc1268f98",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 119,
+      "k": 0,
+      "serial_bits": "0xc0fda07a",
+      "stage": "SMALL_BEFORE",
+      "x2_bits": "0xc0fd9fcc",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 157,
+      "k": 0,
+      "serial_bits": "0xc19b97e5",
+      "stage": "SMALL_BEFORE",
+      "x2_bits": "0xc19b980e",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 158,
+      "k": 0,
+      "serial_bits": "0xc1bb578c",
+      "stage": "SMALL_BEFORE",
+      "x2_bits": "0xc1bb5769",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 193,
+      "k": 0,
+      "serial_bits": "0xbed6aa6a",
+      "stage": "SMALL_BEFORE",
+      "x2_bits": "0xbed6b161",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 118,
+      "j": 193,
+      "k": 0,
+      "serial_bits": "0xc088a064",
+      "stage": "SMALL_BEFORE",
+      "x2_bits": "0xc088a039",
+      "x2_owner_i": false,
+      "x2_rank": 0
+    },
+    {
+      "field": "U2",
+      "i": 117,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0xc4999fca",
+      "stage": "SMALL_BEFORE",
+      "x2_bits": "0xc4999ee9",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "U2",
+      "i": 118,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0xc4acdf1d",
+      "stage": "SMALL_BEFORE",
+      "x2_bits": "0xc4acdff9",
+      "x2_owner_i": false,
+      "x2_rank": 0
+    },
+    {
+      "field": "V2",
+      "i": 117,
+      "j": 3,
+      "k": 1,
+      "serial_bits": "0x4438ab32",
+      "stage": "SMALL_BEFORE",
+      "x2_bits": "0x4438a7b0",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "V2",
+      "i": 234,
+      "j": 1,
+      "k": 1,
+      "serial_bits": "0x4374cc76",
+      "stage": "SMALL_BEFORE",
+      "x2_bits": "0x4374c8df",
+      "x2_owner_i": true,
+      "x2_rank": 1
+    },
+    {
+      "field": "MU2",
+      "i": 116,
+      "j": 119,
+      "k": 0,
+      "serial_bits": "0x433ee106",
+      "stage": "SMALL_AFTER",
+      "x2_bits": "0x433ee106",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 119,
+      "k": 0,
+      "serial_bits": "0x433edafc",
+      "stage": "SMALL_AFTER",
+      "x2_bits": "0x433edb02",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 157,
+      "k": 0,
+      "serial_bits": "0x4392f082",
+      "stage": "SMALL_AFTER",
+      "x2_bits": "0x4392f07f",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 158,
+      "k": 0,
+      "serial_bits": "0x43a1b287",
+      "stage": "SMALL_AFTER",
+      "x2_bits": "0x43a1b289",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 117,
+      "j": 193,
+      "k": 0,
+      "serial_bits": "0x4428d3ab",
+      "stage": "SMALL_AFTER",
+      "x2_bits": "0x4428d3aa",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "MU2",
+      "i": 118,
+      "j": 193,
+      "k": 0,
+      "serial_bits": "0x442451bf",
+      "stage": "SMALL_AFTER",
+      "x2_bits": "0xc088a039",
+      "x2_owner_i": false,
+      "x2_rank": 0
+    },
+    {
+      "field": "U2",
+      "i": 117,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0x3edd812a",
+      "stage": "SMALL_AFTER",
+      "x2_bits": "0x3edd8133",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "U2",
+      "i": 118,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0x3ed2fa5e",
+      "stage": "SMALL_AFTER",
+      "x2_bits": "0xc4acdff9",
+      "x2_owner_i": false,
+      "x2_rank": 0
+    },
+    {
+      "field": "V2",
+      "i": 117,
+      "j": 3,
+      "k": 1,
+      "serial_bits": "0xc0c55ec3",
+      "stage": "SMALL_AFTER",
+      "x2_bits": "0xc0c55ec4",
+      "x2_owner_i": true,
+      "x2_rank": 0
+    },
+    {
+      "field": "V2",
+      "i": 234,
+      "j": 1,
+      "k": 1,
+      "serial_bits": "0xc00f309d",
+      "stage": "SMALL_AFTER",
+      "x2_bits": "0xc00f309e",
+      "x2_owner_i": true,
+      "x2_rank": 1
+    }
+  ],
+  "run_identities": {
+    "off_serial": {
+      "exe_sha256": "95f81ff4c629d359f8b517fc1339eb9382fc4ba7d712e96338376b81c05a5ebc",
+      "grid": "1x1",
+      "history_sha256": "4441a9f1f057615aad02d15875acc88f2cfdd69236cce0410bdf12d23cf085e5",
+      "input_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+      "namelist_without_grid_sha256": "0ea0f4d94860c6f2cb23c737bb0caab97f2cc7368a73d2aa15e323abc8c363d1"
+    },
+    "off_x2": {
+      "exe_sha256": "95f81ff4c629d359f8b517fc1339eb9382fc4ba7d712e96338376b81c05a5ebc",
+      "grid": "2x1",
+      "history_sha256": "8359adc82e1d80a0e6a7a47e85ec7e769213f594af3b87781a06a0c46efcfa3a",
+      "input_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+      "namelist_without_grid_sha256": "0ea0f4d94860c6f2cb23c737bb0caab97f2cc7368a73d2aa15e323abc8c363d1"
+    },
+    "on_serial": {
+      "exe_sha256": "95f81ff4c629d359f8b517fc1339eb9382fc4ba7d712e96338376b81c05a5ebc",
+      "grid": "1x1",
+      "history_sha256": "4441a9f1f057615aad02d15875acc88f2cfdd69236cce0410bdf12d23cf085e5",
+      "input_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+      "namelist_without_grid_sha256": "0ea0f4d94860c6f2cb23c737bb0caab97f2cc7368a73d2aa15e323abc8c363d1"
+    },
+    "on_x2": {
+      "exe_sha256": "95f81ff4c629d359f8b517fc1339eb9382fc4ba7d712e96338376b81c05a5ebc",
+      "grid": "2x1",
+      "history_sha256": "8359adc82e1d80a0e6a7a47e85ec7e769213f594af3b87781a06a0c46efcfa3a",
+      "input_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+      "namelist_without_grid_sha256": "0ea0f4d94860c6f2cb23c737bb0caab97f2cc7368a73d2aa15e323abc8c363d1"
+    }
+  },
+  "schema": 1,
+  "scope": "selected_RK1_state_stores_at_eight_boundaries",
+  "solve_object_sha256": "314c168951b49c1b86a218c1706adcf46203a7d14e08e9e63ee406614260caec",
+  "stage_differences": {
+    "MU_TEND_AFTER": {
+      "different": 10,
+      "total": 10
+    },
+    "MU_TEND_BEFORE": {
+      "different": 4,
+      "total": 10
+    },
+    "PREP_AFTER": {
+      "different": 5,
+      "total": 10
+    },
+    "PREP_BEFORE": {
+      "different": 0,
+      "total": 10
+    },
+    "SMALL_AFTER": {
+      "different": 9,
+      "total": 10
+    },
+    "SMALL_BEFORE": {
+      "different": 10,
+      "total": 10
+    },
+    "UV_AFTER": {
+      "different": 4,
+      "total": 10
+    },
+    "UV_BEFORE": {
+      "different": 4,
+      "total": 10
+    }
+  }
+}
