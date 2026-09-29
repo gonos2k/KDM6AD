@@ -1,4 +1,5 @@
 #include "kdm6/progb.h"
+#include "kdm6/ops.h"
 
 #include <torch/torch.h>
 
@@ -230,6 +231,33 @@ void test_progb_f32_zero_denominator_backward() {
     } END_TEST();
 }
 
+void test_masked_libm_exp_overflow_backward() {
+    TEST(test_masked_libm_exp_overflow_backward) {
+        auto opts = torch::TensorOptions().dtype(torch::kFloat32).requires_grad(true);
+        auto x = torch::tensor({0.0f, 100.0f}, opts);
+        auto y = ops::libm_exp(x);
+        assert(torch::isinf(y[1]).item<bool>());
+        auto mask = torch::tensor({true, false}, torch::dtype(torch::kBool));
+        auto loss = torch::where(mask, y, torch::zeros_like(y)).sum();
+        assert(torch::isfinite(loss).item<bool>());
+        loss.backward();
+        assert(x.grad()[0].item<float>() == 1.0f);
+        assert(x.grad()[1].item<float>() == 0.0f);
+
+        auto x2 = torch::tensor({0.0f, 100.0f}, opts);
+        auto masked = torch::where(mask, ops::libm_exp(x2), torch::zeros_like(x2));
+        auto first = torch::autograd::grad({masked.sum()}, {x2}, {}, true, true)[0];
+        auto second = torch::autograd::grad({first.sum()}, {x2})[0];
+        assert(first[1].item<float>() == 0.0f);
+        assert(second[0].item<float>() == 1.0f);
+        assert(second[1].item<float>() == 0.0f);
+
+        auto active = torch::tensor({100.0f}, opts);
+        ops::libm_exp(active).sum().backward();
+        assert(torch::isinf(active.grad()).all().item<bool>());
+    } END_TEST();
+}
+
 void test_progb_bg_consistency_after_update() {
     TEST(test_progb_bg_consistency_after_update) {
         auto p = default_progb_params();
@@ -333,6 +361,7 @@ int main() {
     test_progb_grad_finite_active_cells();
     test_progb_grad_finite_inactive_cells();
     test_progb_f32_zero_denominator_backward();
+    test_masked_libm_exp_overflow_backward();
     test_progb_bg_consistency_after_update();
     test_progb_midpoint_trace_optin();
     test_progb_rgmma_tensor_returns_gamma();
