@@ -161,6 +161,7 @@ DECISION_LOGIC = (
     "g33_expectation.py",
     "g33_arms.py",
     "g33_fixture_v1.py",
+    "g33_fortran/g33_fortran_bindings.py",
     "g33_fortran/g33_fortran_dump.py",
     "g33_fortran/g33_fortran_semantics.py",
     "g33_fortran_bundle_io.py",

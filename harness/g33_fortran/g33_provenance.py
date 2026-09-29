@@ -8,7 +8,7 @@ import os
 import subprocess
 import sys
 
-HOST = "host/KIM-meso_v1.0"
+HOST = os.environ.get("KDM6_G33_HOST_ROOT", "host/KIM-meso_v1.0")
 HERE = "harness/g33_fortran"
 
 
@@ -37,7 +37,8 @@ def main() -> None:
             "make_fortran_overlay.py", "g33_fortran_bindings.py",
             "g33_fortran_driver.f90",
             "stub_wrf_error.f90", "fortran_build.sh", "g33_provenance.py",
-            "g33_fortran_dump.py", "run_fortran_case.py")},
+            "g33_fortran_dump.py", "g33_fortran_semantics.py",
+            "run_fortran_case.py", "run_fortran_abc.py")},
         # keyed by ROLE, valued by the file this build actually used
         "fixture.f90": fixture_src,
         "fixture.h": f"harness/g33_overlay/g33_fixture_{fixture_stem}.h",

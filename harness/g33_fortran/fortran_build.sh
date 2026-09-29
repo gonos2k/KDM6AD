@@ -5,13 +5,13 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
-HOST=host/KIM-meso_v1.0
+HOST=${KDM6_G33_HOST_ROOT:-host/KIM-meso_v1.0}
 HERE=harness/g33_fortran
 FC=$(command -v gfortran || true)
 [ -n "$FC" ] || { echo "gfortran not found" >&2; exit 2; }
 
 # A canonical, B generated overlay/macro OFF, C same overlay/macro ON.
-OUT=""; DUMP=0; OVERLAY=0; ALGO=legacy; OVERLAY_FILE_ARG=""
+OUT=""; DUMP=0; OVERLAY=0; ALGO=legacy; SOURCE_SCOPE=historical; OVERLAY_FILE_ARG=""
 AUXDEF=""          # set by --aux-sentinel below; must precede the parse loop
 for a in "$@"; do
     case "$a" in
@@ -19,6 +19,7 @@ for a in "$@"; do
         --overlay) OVERLAY=1 ;;
         --overlay-file=*) OVERLAY_FILE_ARG="${a#--overlay-file=}"; OVERLAY=1; DUMP=1 ;;
         --algo=*) ALGO="${a#--algo=}" ;;
+        --source-scope=*) SOURCE_SCOPE="${a#--source-scope=}" ;;
         --fixture=*) FIXTURE_NAME="${a#--fixture=}" ;;
         # DIAGNOSTIC ONLY: pre-fill the kdm62D auxiliary arguments that carry
         # no intent, so two builds with different values can be compared.
@@ -31,6 +32,10 @@ case "$ALGO" in
     legacy)       MODULE="$HOST/phys/module_mp_kdm6.F";      DRVDEF=() ;;
     conservative) MODULE="$HOST/phys/module_mp_kdm6_cons.F"; DRVDEF=(-DKDM6_CONS) ;;
     *) echo "--algo must be legacy or conservative, got $ALGO" >&2; exit 2 ;;
+esac
+case "$SOURCE_SCOPE" in
+    historical|active-20260929) ;;
+    *) echo "unsupported source scope: $SOURCE_SCOPE" >&2; exit 2 ;;
 esac
 
 LIBMASSV="$HOST/frame/libmassv.F"
@@ -81,7 +86,8 @@ if [ -n "$OVERLAY_FILE_ARG" ]; then
     MODULE_SRC="$OVERLAY_FILE_ARG"
 elif [ "$OVERLAY" = 1 ]; then
     OVERLAY_FILE="$OUT/module_mp_ovl.F"
-    python3 "$HERE/make_fortran_overlay.py" "$MODULE" "$OVERLAY_FILE" --algo="$ALGO" >/dev/null
+    python3 "$HERE/make_fortran_overlay.py" "$MODULE" "$OVERLAY_FILE" \
+        --algo="$ALGO" --source-scope="$SOURCE_SCOPE" >/dev/null
     MODULE_SRC="$OVERLAY_FILE"
 else
     MODULE_SRC="$MODULE"

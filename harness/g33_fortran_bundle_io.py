@@ -39,6 +39,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
 import g33_fixture_v1 as gfx           # noqa: E402
 import g33_fortran_dump as fd          # noqa: E402
 import g33_fortran_semantics as sem    # noqa: E402
+import g33_fortran_bindings as fb       # noqa: E402
 
 LANES = ("A", "B", "C")
 _HEX64 = frozenset("0123456789abcdef")
@@ -116,6 +117,9 @@ EXPECTED_HARNESS_SOURCES = frozenset((
     "g33_fixture_v1.json", "g33_fixture_v1.py",
     "g33_fourcase_fixture_check.py", "g33_schema.py", "g33_expectation.py",
 ))
+EXPECTED_HARNESS_SOURCES_WITH_RUNNER = EXPECTED_HARNESS_SOURCES | {
+    "g33_fortran_semantics.py", "run_fortran_abc.py",
+}
 
 
 #: The single normalized key under which provenance records whichever microphysics
@@ -573,6 +577,19 @@ def verify_fortran_bundle(bundle_dir, algorithm: str, *,
     if manifest.get("schema_version") != 2:
         raise FortranBundleError(
             f"unsupported manifest schema_version {manifest.get('schema_version')!r}")
+    source_scope = manifest.get("source_scope")
+    if source_scope is None:  # historical bundles produced before this selector
+        harness_sources = EXPECTED_HARNESS_SOURCES
+    elif source_scope in ("historical", "active-20260929"):
+        harness_sources = EXPECTED_HARNESS_SOURCES_WITH_RUNNER
+        expected_module = (fb.VARIANTS[algorithm]["sha"] if source_scope == "historical"
+                           else fb.ACTIVE_20260929_SHA[algorithm])
+        if manifest.get("expected_module_sha256") != expected_module:
+            raise FortranBundleError("manifest expected_module_sha256 != selected source pin")
+    else:
+        raise FortranBundleError(f"unknown source_scope {source_scope!r}")
+    if source_scope is not None and manifest.get("module_canonical_sha256") != expected_module:
+        raise FortranBundleError("manifest module_canonical_sha256 != selected source pin")
 
     # A dirty producer tree means the recorded commit does not describe the source
     # the evidence came from — the anchor would point at the wrong thing.
@@ -692,7 +709,7 @@ def verify_fortran_bundle(bundle_dir, algorithm: str, *,
                 f"lane {lane} provenance.compiler_version must be a non-empty string")
         # EXACT source universe, not merely "the map is present"
         for field, expected in (("host_source_sha256", EXPECTED_HOST_SOURCES),
-                                ("harness_source_sha256", EXPECTED_HARNESS_SOURCES)):
+                                ("harness_source_sha256", harness_sources)):
             _require_digest_map(prov[field], f"lane {lane} provenance.{field}",
                                 expected)
             got = frozenset(prov[field])
@@ -739,7 +756,7 @@ def verify_fortran_bundle(bundle_dir, algorithm: str, *,
     _require_digest_map(manifest.get("host_source_sha256"),
                         "manifest.host_source_sha256", EXPECTED_HOST_SOURCES)
     _require_digest_map(manifest.get("harness_source_sha256"),
-                        "manifest.harness_source_sha256", EXPECTED_HARNESS_SOURCES)
+                        "manifest.harness_source_sha256", harness_sources)
     for key in ("module_canonical_sha256", "compiler_binary_sha256",
                 "compiler_version", "host_source_sha256", "harness_source_sha256"):
         declared = manifest.get(key)

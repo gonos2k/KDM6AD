@@ -456,6 +456,9 @@ def main():
     ap.add_argument("src", help="canonical reference module (.F)")
     ap.add_argument("dst", help="output overlay path (.F)")
     ap.add_argument("--algo", default="legacy", choices=sorted(fb.VARIANTS))
+    ap.add_argument("--source-scope", default="historical",
+                    choices=("historical", "active-20260929"),
+                    help="select the pinned Fortran source; historical remains the default")
     # Must MATCH the compile. An overlay generated for f32 and compiled with
     # -fdefault-real-8 is the wrong-number path D6 names, so the build script
     # passes this from the same variable that adds the flag, and the stream
@@ -470,9 +473,11 @@ def main():
     _validate_against_schema(args.algo)
     raw = open(args.src, "rb").read()
     got = hashlib.sha256(raw).hexdigest()
-    if got != fb.VARIANTS[args.algo]["sha"]:
+    expected = (fb.VARIANTS[args.algo]["sha"] if args.source_scope == "historical"
+                else fb.ACTIVE_20260929_SHA[args.algo])
+    if got != expected:
         raise SystemExit(
-            f"canonical {args.algo} SHA {got} != pinned {fb.VARIANTS[args.algo]['sha']} "
+            f"canonical {args.algo} SHA {got} != pinned {expected} "
             f"— the reference changed; re-verify anchors and re-pin")
 
     open(args.dst, "w", encoding="utf-8").write(build_overlay(args.algo, raw.decode("utf-8")))
