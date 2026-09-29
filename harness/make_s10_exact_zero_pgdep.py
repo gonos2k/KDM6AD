@@ -61,6 +61,25 @@ def _replace_once(text: str, old: str, new: str, label: str) -> str:
 
 
 def _guard_block() -> str:
+    budget_words = [
+        "s10zf_qg_before", "s10zf_brs_before", "qrs(i,k,3)", "brs(i,k)",
+        "dtcld", *(f"{name}(i,k)" for name in pair.MASS_RATES),
+        "delta2", "delta3", *(f"{name}(i,k)" for name in pair.BRS_RATES),
+    ]
+    if len(budget_words) != 24:
+        raise ValueError("S10ZFB must contain exactly 24 REAL4 fields")
+    budget_fields = [f"transfer({value},0_s10_pgdep_word_kind)" for value in budget_words]
+    budget_lines = []
+    for start in range(0, len(budget_fields), 2):
+        fields = ", ".join(budget_fields[start:start + 2])
+        ending = ", &\n" if start + 2 < len(budget_fields) else "\n"
+        budget_lines.append("                  " + fields + ending)
+    budget_log = (
+        "                write(*,'(A,7(1X,I0),24(1X,Z8.8))') 'S10ZFB', &\n"
+        "                  capture_step,lat,capture_last_loop, &\n"
+        "                  capture_last_substep,i,k,capture_last_site, &\n"
+        + "".join(budget_lines)
+    )
     zero_store = (
         "            brs(i,k) = max(brs(i,k)+(pgdep(i,k)+biacr(i,k)           &\n"
         "                           +braci(i,k)+bsacr(i,k)+bracs(i,k)+bgaci(i,k)        &\n"
@@ -87,7 +106,8 @@ def _guard_block() -> str:
         "                  transfer(brs(i,k),0_s10_pgdep_word_kind), &\n"
         "                  transfer(qcrmin,0_s10_pgdep_word_kind), &\n"
         "                  transfer(1.e-15,0_s10_pgdep_word_kind)\n"
-        "                flush(6)\n"
+        + budget_log
+        + "                flush(6)\n"
         "                call wrf_error_fatal('S10 nonzero pgdep has unassigned rhox')\n"
         "              else if (.not.ieee_is_finite(rhox(i,k))) then\n"
         "                call wrf_error_fatal('S10 nonzero pgdep has nonfinite rhox')\n"
@@ -139,10 +159,18 @@ def inject_guard(pair_overlay: str) -> str:
     declarations = (
         "   integer, parameter :: s10_pgdep_word_kind = selected_int_kind(9)\n"
         "   integer :: s10_pgdep_action,s10_pgdep_density_valid\n"
+        "   real :: s10zf_qg_before,s10zf_brs_before\n"
     )
     text = _replace_once(text, pair._DECL_ANCHOR,
                          pair._DECL_ANCHOR + _mark("declarations", declarations),
                          "kdm62D declarations")
+    before_mass = (
+        "            s10zf_qg_before = qrs(i,k,3)\n"
+        "            s10zf_brs_before = brs(i,k)\n"
+    )
+    text = _replace_once(text, pair.COLD_QG_ANCHOR,
+                         _mark("before_mass", before_mass) + pair.COLD_QG_ANCHOR,
+                         "stage2 graupel mass input")
     if text.count(BRS_MIN_ANCHOR) != 1:
         raise ValueError("ProgB brs_min source pin changed; refusing copied S10ZF threshold")
     text = _replace_once(
@@ -195,7 +223,7 @@ def build(source: Path, output: Path, manifest: Path) -> dict:
         "zero_arm_term": "pgdep numerator signed zero, followed by unchanged brs terms/order",
         "nonzero_arm": "requires preceding ProgB site 5 rhox assignment and finite-positive rhox before division",
         "action_log": "S10ZG action, raw pgdep word, density-valid bit; no numeric rhox",
-        "first_fatal_log": "S10ZF logs unassigned-rhox fatal without capture or coordinate gate: step/site/loop/substep/lat/i/k, reason=2, assignment=0, pgdep/qg/brs/qcrmin/brs_min raw words",
+        "first_fatal_log": "S10ZF records the fatal; S10ZFB records 24 defined rate/input REAL4 words, including qg after its mass store but brs before its volume store, without reading rhox",
         "s10pair_safe_logger_preserved": True,
         "other_rhox_consumers_changed": False,
         "native_build_or_run": False,

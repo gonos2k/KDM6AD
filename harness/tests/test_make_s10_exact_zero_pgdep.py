@@ -18,6 +18,7 @@ def pair_overlay_fixture() -> str:
         + "contains\nsubroutine kdm62d\n"
         + pair._DECL_ANCHOR
         + guard.BRS_MIN_ANCHOR
+        + pair.COLD_QG_ANCHOR
         + pair.COLD_BRS_ANCHOR
         + "end subroutine\nend module\n"
     )
@@ -60,6 +61,13 @@ def test_stage2_guard_is_exact_zero_only_preserves_other_terms_and_fail_closes()
     )
     assert "ifsat" not in zf
     assert "rhox" not in zf
+    budget = unassigned[unassigned.index("'S10ZFB'"):unassigned.index("flush(6)")]
+    assert "7(1X,I0),24(1X,Z8.8)" in unassigned
+    assert budget.count("transfer(") == 24
+    assert "s10zf_qg_before" in budget and "s10zf_brs_before" in budget
+    assert all(f"transfer({name}(i,k),0_s10_pgdep_word_kind)" in budget
+               for name in pair.MASS_RATES + pair.BRS_RATES)
+    assert "transfer(rhox" not in budget
 
     log = guarded[guarded.index("'S10ZG'") - 300:guarded.index("'S10ZG'") + 500]
     assert "s10_pgdep_action" in log
