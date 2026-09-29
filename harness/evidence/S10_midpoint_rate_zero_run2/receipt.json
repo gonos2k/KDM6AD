@@ -1,0 +1,149 @@
+{
+  "schema": "s10-midpoint-rate-zero-success-ledger-paired-run-v1",
+  "status": "PAIRED_20S_NONINTERFERENCE_PASS_S10_OPEN",
+  "scope": "One mp237 20-second midpoint-plus-exact-zero-quotient hybrid OFF/ON pair. The same linked executable, active inputs, effective namelist, process grid, and runner settings were used; the only environment change was enabling KDM6_PROGB_VALIDITY_CAPTURE_LOG=1 for the ON run.",
+  "source_and_build": {
+    "public_main_base": "a8eaae8",
+    "canonical_source_sha256": "4f0103c8a8321b8e854d3500f4ae567755e41eb78746fac54519eca2686a6648",
+    "midpoint_base_sha256": "6be24e8ca0ab651429e40c1924a5897ed54557f0b3d4942bdbdecee3411c7eca",
+    "hybrid_overlay_sha256": "97bf5a717c223a93ca6b2e485ce0149fb173172aa29169f7f532fd8fafb7bc7e",
+    "macro_off_restores_midpoint_source": true,
+    "macro_off_preprocessed_f90_sha256": "e17e90c026a099193670da03f4087342292d10f6b87fcb40e13c90f457909fa1",
+    "macro_on_preprocessed_f90_sha256": "176b60059243cdfd1254b2acea90250296fe1e8b547d90906638bc3da0f2c70d",
+    "macro_off_object_sha256": "a77434cd842f47bb693564a569f7c109b90f124a81d558f032d4de20d7191c48",
+    "macro_on_object_sha256": "bee52633a3d7c6be414175ab5bd0db3049337f7bc42b96b6aed3d1b3107ad201",
+    "compile_ffp_contract_off": true,
+    "link_returncode": 0,
+    "linked_executable_sha256": "80e4aace5f2618eae1f82726a93c05615b2dc0dc3b328afd755e83ce5cfba9de",
+    "canonical_archive_sha256": "722f83c058ea1c43d5f23cc497aed1b218f33f90828a0e1dc51c6fe30203deba",
+    "canonical_operational_executable_sha256_after": "676223e8d61d23456d4ac83713bff0283ea08b1e71776b7f8885b062d97f801b",
+    "canonical_kdm6_library_sha256_after": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7"
+  },
+  "shared_run_inputs": {
+    "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+    "effective_namelist_sha256": "2896b69d2df232853a649c1f3b76ac2d234ef4cd855a912908ed42f0a8327508",
+    "wrfinput_d01_sha256": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+    "wrfbdy_d01_sha256": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+    "wrfchainp_d01_sha256": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3",
+    "mp": 237,
+    "duration_seconds": 20,
+    "process_grid": "1x1",
+    "mpi_ranks": 1,
+    "fixed_dt": false,
+    "saved_times": [
+      "2025-07-19_00:00:00",
+      "2025-07-19_00:00:20"
+    ]
+  },
+  "runs": {
+    "logging_off": {
+      "returncode": 0,
+      "experiment_valid": true,
+      "run_identity_sha256": "b476b1db0d9bf7f1a42b455397e025b231c8a7a58618b4b02a0f490623c08a99",
+      "history_sha256": "e0a54b635aceda029341fc8c0ff4a0c6a7ba11dd41f7c7a4123db385257273ff",
+      "rsl_out_sha256": "a20d831ff3242ab670608c16f37b6d0032b4a715f69b86ece6a0df7d7dedb2f2",
+      "rsl_error_sha256": "a90a4c536a642cc77a35381d8326dd1342c5778dca82513952341a6552ffe771",
+      "complete_count": 1,
+      "S10HYFAIL_rows": 0,
+      "S10HYACT_rows": 0
+    },
+    "logging_on": {
+      "only_environment_delta": "KDM6_PROGB_VALIDITY_CAPTURE_LOG unset -> 1",
+      "returncode": 0,
+      "experiment_valid": true,
+      "run_identity_sha256": "a650a463b667e9d029df54bd1714a684ec77f4380df101c5cd06dde0bf0f4f25",
+      "history_sha256": "e0a54b635aceda029341fc8c0ff4a0c6a7ba11dd41f7c7a4123db385257273ff",
+      "rsl_out_sha256": "0430479247fcdf182a6968d272303c4c717ae2444905f5984ea8828eeb9a1783",
+      "rsl_error_sha256": "ad18c7ab7f93e3810fdd3a8b9d4781db067da7333e22a063e0504c4d4482dd92",
+      "complete_count": 1,
+      "S10HYFAIL_rows": 0,
+      "S10HYACT_rows": 135,
+      "other_S10_tag_counts": {
+        "S10VOL": 631,
+        "S10SCAN": 1974,
+        "S10SHAPE": 631,
+        "S10TRACE": 711,
+        "S10TRS": 711,
+        "S10CMG": 624,
+        "S10PB": 624,
+        "S10SLP": 624,
+        "S10RHO": 212,
+        "S10DIAG": 78
+      }
+    }
+  },
+  "logging_noninterference": {
+    "history_sha256_equal": true,
+    "strict_raw_bit_frames": {
+      "frame_0": "PASS",
+      "frame_1": "PASS"
+    },
+    "common_variables": 254,
+    "bitwise_matched_variables_each_frame": 254,
+    "differing_variables_each_frame": 0,
+    "finite_history_scan_each_run": {
+      "numeric_variables": 253,
+      "numeric_cells_checked": 158946410,
+      "nonfinite_variables": 0,
+      "nonfinite_cells": 0
+    }
+  },
+  "success_action_ledger": {
+    "tag": "S10HYACT",
+    "raw_selected_rows_sha256": "cac5ceed5325c37fa3510cbd0000dacc192c7c5272006e33e369b1b38dc8a863",
+    "raw_rows_included": true,
+    "row_count": 135,
+    "consumer_action_counts": {
+      "1418_pgmlt": {
+        "divide_action_0": 24
+      },
+      "2824_pgdep": {
+        "exact_zero_bypass_action_1": 47
+      },
+      "2915_pgevp": {
+        "exact_zero_bypass_action_1": 32
+      },
+      "2916_pgeml": {
+        "exact_zero_bypass_action_1": 32
+      }
+    },
+    "row_validation": {
+      "selected_key_only": true,
+      "invalid_action_density_or_bypass_rows": 0,
+      "unassigned_density_numeric_reads": 0,
+      "nonfinite_raw_fields": 0
+    },
+    "selected_lat2_i142_k17": {
+      "row_count": 1,
+      "consumer": "pgdep",
+      "action": "exact_zero_bypass",
+      "latest_progb_site": 5
+    },
+    "pgmlt_quantity_semantics": "capped mass amount; no additional dtcld factor in its brs store",
+    "pgdep_pgevp_pgeml_quantity_semantics": "mass rates; corresponding stores multiply by dtcld",
+    "raw_selected_rows_file": "S10HYACT_selected_rows.txt",
+    "site_key_meaning": "latest preceding ProgB producer call (capture_last_site), not a guarded consumer site",
+    "latest_progb_site_row_counts": {
+      "3": 24,
+      "5": 111
+    },
+    "latest_progb_sites_observed": [
+      3,
+      5
+    ],
+    "latest_progb_sites_without_success_rows": [
+      1,
+      2,
+      4,
+      6,
+      7
+    ],
+    "public_replay_test": "harness/tests/test_make_s10_midpoint_rate_zero.py::test_selected_native_success_rows_replay"
+  },
+  "scope_and_limits": [
+    "The log-on action ledger covers only selected cells and reached consumer sites; it is not complete seven-call/domain accounting.",
+    "The 135 selected S10HYACT rows are included; full RSL and full-domain event streams are not included.",
+    "This establishes one same-executable logging noninterference pair and bounded action observations only; it does not establish the full mass-volume-heat budget or causal physics acceptance.",
+    "The midpoint rate-zero policy remains unapproved and S10 remains OPEN."
+  ]
+}

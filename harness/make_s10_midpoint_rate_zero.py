@@ -34,6 +34,24 @@ SITES = (
      "            bgeml(i,k)=pgeml(i,k)\n"),
 )
 
+# Snapshot qg immediately before each mass-store group that contains one of the
+# guarded consumers.  The guard itself runs at the later volume store, after
+# the mass update has already changed qrs(:,:,3).
+QG_MASS_SNAPSHOTS = (
+    "              qrs(i,k,3) = qrs(i,k,3) + pgmlt(i,k)\n",
+    "            qrs(i,k,3) = max(qrs(i,k,3)+(pgdep(i,k)+pgaut(i,k)                 &\n"
+    "                           +piacr(i,k)*(1.-delta3)                             &\n"
+    "                           +praci(i,k)*(1.-delta3)+psacr(i,k)*(1.-delta2)      &\n"
+    "                           +pracs(i,k)*(1.-delta2)+pgaci(i,k)+paacw(i,k)       &\n"
+    "                           +pgacr(i,k)+pgacs(i,k))*dtcld,0.)\n",
+    "            qrs(i,k,3) = max(qrs(i,k,3)+(pgacs(i,k)+pgevp(i,k)                 &\n"
+    "                    +pgeml(i,k))*dtcld,0.)\n",
+)
+
+WARM_BRS_STORE = (
+    "            brs(i,k) = max(brs(i,k)+(bgevp(i,k)+bgeml(i,k))*dtcld,0.)\n"
+)
+
 
 def _once(text: str, old: str, new: str) -> str:
     if text.count(old) != 1:
@@ -80,7 +98,43 @@ def _failure(consumer_id: int, rate: str, reason: int, message: str) -> str:
     )
 
 
-def _guard(consumer_id: int, rate: str, original: str, zero: str) -> str:
+def _event_row(consumer_id: int, rate_slot: str) -> str:
+    """Bounded selected-cell REAL4 receipt for the actual guarded store."""
+    return (
+        "              if (capture_enabled .and. capture_step.eq.1 .and. &\n"
+        "                  ((lat.eq.73 .and. (i.eq.113 .or. i.eq.115)) .or. &\n"
+        "                   (lat.eq.2 .and. i.eq.142 .and. k.eq.17))) then\n"
+        "                if (storage_size(0_s10_hybrid_word_kind).ne.32 .or. &\n"
+        "                    storage_size(qrs(i,k,3)).ne.32 .or. &\n"
+        "                    storage_size(brs(i,k)).ne.32 .or. &\n"
+        "                    storage_size(" + rate_slot + "_rate).ne.32 .or. &\n"
+        "                    storage_size(" + rate_slot + "_rhox).ne.32 .or. &\n"
+        "                    storage_size(dtcld).ne.32) &\n"
+        "                  call wrf_error_fatal('S10HYACT requires REAL4 words')\n"
+        "                write(*,'(A,10(1X,I0),8(1X,Z8.8))') 'S10HYACT', &\n"
+        "                  capture_step,lat,capture_last_site,capture_last_loop, &\n"
+        "                  capture_last_substep,i,k," + str(consumer_id) + ", &\n"
+        "                  " + rate_slot + "_action," + rate_slot + "_rhox_assigned, &\n"
+        "                  transfer(s10_hybrid_qg_before,0_s10_hybrid_word_kind), &\n"
+        "                  transfer(qrs(i,k,3),0_s10_hybrid_word_kind), &\n"
+        "                  transfer(" + rate_slot + "_rate,0_s10_hybrid_word_kind), &\n"
+        "                  transfer(" + rate_slot + "_rhox,0_s10_hybrid_word_kind), &\n"
+        "                  transfer(" + rate_slot + "_term,0_s10_hybrid_word_kind), &\n"
+        "                  transfer(s10_hybrid_brs_before,0_s10_hybrid_word_kind), &\n"
+        "                  transfer(brs(i,k),0_s10_hybrid_word_kind), &\n"
+        "                  transfer(dtcld,0_s10_hybrid_word_kind)\n"
+        "                flush(6)\n"
+        "              endif\n"
+    )
+
+
+def _guard(consumer_id: int, rate: str, original: str, zero: str,
+           *, slot: str, log_after_store: bool) -> str:
+    log_gate = (
+        "capture_enabled .and. capture_step.eq.1 .and. &\n"
+        "                  ((lat.eq.73 .and. (i.eq.113 .or. i.eq.115)) .or. &\n"
+        "                   (lat.eq.2 .and. i.eq.142 .and. k.eq.17))"
+    )
     density_check = (
         "              s10_hybrid_density_valid = .false.\n"
         "              if (capture_rhox_assigned(i,k)) then\n"
@@ -94,13 +148,44 @@ def _guard(consumer_id: int, rate: str, original: str, zero: str) -> str:
     )
     # B defines rhox on every branch, including zero. The first predicate is
     # still retained so the producer/consumer provenance must agree.
-    return _wrap(str(consumer_id),
-                 f"            if (.not.ieee_is_finite({rate})) then\n"
-                 + _failure(consumer_id, rate, 1, "S10 nonfinite process rate")
-                 + "            endif\n"
-                 + f"            if ({rate}.eq.0.) then\n" + zero
-                 + "            else\n" + density_check + original
-                 + "            endif\n", original)
+    density_snapshot = (
+        "            if (" + log_gate + ") then\n"
+        "              s10_hybrid_brs_before = brs(i,k)\n"
+        "              " + slot + "_rate = " + rate + "\n"
+        "              " + slot + "_rhox = 0.\n"
+        "              " + slot + "_rhox_assigned = 0\n"
+        "              if (capture_rhox_assigned(i,k)) then\n"
+        "                " + slot + "_rhox = rhox(i,k)\n"
+        "                " + slot + "_rhox_assigned = 1\n"
+        "              endif\n"
+        "            endif\n"
+    )
+    event_save = (
+        "            if (" + log_gate + ") then\n"
+        f"              if ({rate}.eq.0.) then\n"
+        "                " + slot + "_action = 1\n"
+        "                " + slot + "_term = " + rate + "\n"
+        "              else\n"
+        "                " + slot + "_action = 0\n"
+        "                " + slot + "_term = " + rate + "/rhox(i,k)\n"
+        "              endif\n"
+        "            endif\n"
+    )
+    guard = (
+        f"            if (.not.ieee_is_finite({rate})) then\n"
+        + _failure(consumer_id, rate, 1, "S10 nonfinite process rate")
+        + "            endif\n"
+        + density_snapshot
+        + f"            if ({rate}.eq.0.) then\n"
+        + zero
+        + "            else\n" + density_check
+        + original
+        + "            endif\n"
+        + event_save
+    )
+    if not log_after_store:
+        guard += _event_row(consumer_id, slot)
+    return _wrap(str(consumer_id), guard, original)
 
 
 def inject_hybrid(midpoint_source: str) -> str:
@@ -116,9 +201,42 @@ def inject_hybrid(midpoint_source: str) -> str:
     text = _once(midpoint_source, USE_ANCHOR, USE_ANCHOR + _wrap("uses", uses))
     text = _once(text, DECL_ANCHOR, DECL_ANCHOR + _wrap(
         "word_kind", "   integer, parameter :: s10_hybrid_word_kind = selected_int_kind(9)\n"
-        "   logical :: s10_hybrid_density_valid\n"))
+        "   logical :: s10_hybrid_density_valid\n"
+        "   integer :: pgmlt_action, pgdep_action\n"
+        "   integer :: pgevp_action, pgeml_action\n"
+        "   integer :: pgmlt_rhox_assigned, pgdep_rhox_assigned\n"
+        "   integer :: pgevp_rhox_assigned, pgeml_rhox_assigned\n"
+        "   real :: s10_hybrid_qg_before, s10_hybrid_brs_before\n"
+        "   real :: pgmlt_rate, pgmlt_rhox, pgmlt_term\n"
+        "   real :: pgdep_rate, pgdep_rhox, pgdep_term\n"
+        "   real :: pgevp_rate, pgevp_rhox, pgevp_term\n"
+        "   real :: pgeml_rate, pgeml_rhox, pgeml_term\n"))
+    for index, anchor in enumerate(QG_MASS_SNAPSHOTS, 1):
+        text = _once(
+            text, anchor,
+            _wrap(f"qg_mass_snapshot_{index}",
+                  "            if (capture_enabled .and. capture_step.eq.1 .and. &\n"
+                  "                ((lat.eq.73 .and. (i.eq.113 .or. i.eq.115)) .or. &\n"
+                  "                 (lat.eq.2 .and. i.eq.142 .and. k.eq.17))) then\n"
+                  "              s10_hybrid_qg_before = qrs(i,k,3)\n"
+                  "            endif\n" + anchor, anchor),
+        )
     for consumer_id, rate, original, zero in SITES:
-        text = _once(text, original, _guard(consumer_id, rate, original, zero))
+        slot = {1418: "pgmlt", 2824: "pgdep", 2915: "pgevp", 2916: "pgeml"}[consumer_id]
+        text = _once(text, original, _guard(
+            consumer_id, rate, original, zero, slot=slot,
+            log_after_store=consumer_id in {2915, 2916}))
+    warm_store = WARM_BRS_STORE
+    warm_rows = (
+        "            if (capture_enabled .and. capture_step.eq.1 .and. &\n"
+        "                ((lat.eq.73 .and. (i.eq.113 .or. i.eq.115)) .or. &\n"
+        "                 (lat.eq.2 .and. i.eq.142 .and. k.eq.17))) then\n"
+        "              s10_hybrid_brs_before = brs(i,k)\n"
+        "            endif\n" + warm_store
+        + _event_row(2915, "pgevp")
+        + _event_row(2916, "pgeml")
+    )
+    text = _once(text, warm_store, _wrap("warm_success_ledger", warm_rows, warm_store))
     if strip_hybrid(text) != midpoint_source:
         raise ValueError("hybrid macro-off source differs from B-only source")
     return text
@@ -145,6 +263,13 @@ def build(source: Path, output: Path, manifest: Path) -> dict:
         "operational_default_changed": False,
         "macro_off_restores_midpoint_source": True,
         "consumers": [site[0] for site in SITES],
+        "success_tag": "S10HYACT",
+        "success_quantities": {
+            "1418": "pgmlt is a capped mass amount; its qg/qr/temperature stores already used it without another dtcld",
+            "2824": "pgdep is a mass rate; the qg/brs stores multiply the rate by dtcld",
+            "2915": "pgevp is a mass rate; the later qg/brs/temperature stores multiply it by dtcld",
+            "2916": "pgeml is a mass rate; the later qg/brs/temperature stores multiply it by dtcld",
+        },
     }
     manifest.parent.mkdir(parents=True, exist_ok=True)
     manifest.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")

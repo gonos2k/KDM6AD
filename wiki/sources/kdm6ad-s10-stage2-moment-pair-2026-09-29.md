@@ -47,9 +47,8 @@ The Python oracle and C++ ProgB leaf now have a default-off form of this
 midpoint trace rule. For inactive positive qg it returns `rhox=400`, projects
 `brs=qg/400`, and creates the density-derived bundle; for inactive zero qg it
 returns a zero bundle. The checked derivatives are local to a fixed branch.
-The coordinator and four process quotients are not yet connected to this
-option, so this leaf check does not replay the native hybrid trajectory or
-close S10.
+The later coordinator extensions below carry this option beyond the leaf,
+but the leaf check itself does not replay the native hybrid trajectory.
 
 The Python oracle now threads the same default-off option through its own
 ProgB preambles, sedimentation reslopes and four rate/density quotients. A
@@ -67,3 +66,16 @@ volume amount used by the inline state update. Selected f32/f64 value and
 local-gradient checks pass. This does not establish equality with the native
 seven-call schedule, full applied budgets, transformed AD, or approval of the
 midpoint density; S10 remains OPEN.
+
+A subsequent isolated mp237 pair added bounded success-action records to the
+same hybrid. Its 0 and 20-second logging-OFF/ON histories remain raw-bit equal;
+all saved numeric cells are finite. The selected stream contains 135 guarded
+actions: 24 nonzero `pgmlt` divisions and 111 exact-zero bypasses across
+`pgdep`, `pgevp` and `pgeml`. One `pgdep` bypass after ProgB producer site 5
+at the cold pair `(j,i,k)=(2,142,17)` has zero density before the stage-2 mass gain. The
+recorded numerator is zero, so this bypass does not cause the positive mass
+or volume change in that row. No action row was observed there after ProgB
+producer site 6 or 7. These facts identify executed branches in selected cells, while physical
+density choice, all applied mass–volume–heat terms, native seven-call parity
+and AD remain open. See [the success-action report](../../harness/evidence/REPORT_S10_hybrid_success_2026-09-29.md)
+and its [path-redacted receipt](../../harness/evidence/S10_midpoint_rate_zero_run2/receipt.json).
