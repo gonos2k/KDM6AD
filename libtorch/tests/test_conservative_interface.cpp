@@ -979,7 +979,7 @@ void test_c35_public_v2_f32_graph_gate() {
 
 void test_c35_public_v2_f32_state_direction_abi() {
     TEST(test_c35_public_v2_f32_state_direction_abi) {
-        // Exercise the actual normalized variant-1 ABI graph with directions
+        // Exercise the historical conservative variant-1 ABI graph with directions
         // in qi/ni. These inputs feed the internal DSD slope, fall velocity,
         // and sedimentation rate recomputation. This is an operational-f32
         // graph carried through the ABI's double packed buffers; it is not

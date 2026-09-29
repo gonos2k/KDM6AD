@@ -315,7 +315,7 @@ void test_kdm6_step_xland_direct_cpp_caller() {
 
 // C3 fail-loud gate: the installed C++ options overload must throw (TORCH_CHECK)
 // on any PhysicsVariant value it does not know — a caller passing
-// static_cast<PhysicsVariant>(2) must never silently run legacy. The C bridge
+// static_cast<PhysicsVariant>(3) must never silently run legacy. The C bridge
 // has its own uint32 validation (v2 returns KDM6_ERR_INVALID_ARG before
 // constructing PhysicsOptions); this covers the direct C++ surface the bridge
 // cannot reach. Also checks the defensive gate inside sedimentation_chain.
@@ -351,7 +351,7 @@ void test_unknown_physics_variant_throws() {
 
         // (a) kdm6_step options overload rejects an unknown selector at entry.
         PhysicsOptions bad;
-        bad.variant = static_cast<PhysicsVariant>(2);
+        bad.variant = static_cast<PhysicsVariant>(3);
         bool threw = false;
         try {
             (void)kdm6_step(s, f, params, /*dt=*/60.0, /*value_only=*/true,

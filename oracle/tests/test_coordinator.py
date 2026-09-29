@@ -1132,6 +1132,36 @@ def test_sedimentation_reslope_per_substep():
     assert state.qr.grad is not None and torch.isfinite(state.qr.grad).all()
 
 
+def test_conservative_first_ice_handoff_uses_velocity_per_depth():
+    from kdm6 import sed_conservative as cons
+
+    state, forcing, sea_mask = _state_forcing(K=2)
+    forcing = forcing._replace(delz=torch.tensor([[300.0, 700.0]], dtype=state.qi.dtype))
+    cp = default_coordinator_params()
+    pre = preamble_torch(state, forcing, sea_mask, params=cp)
+    dz = forcing.delz
+    work = (pre.slope.vt_r / dz, pre.slope.vtn_r / dz,
+            pre.slope.vt_s / dz, pre.slope.vt_g / dz,
+            pre.slope.vt_i / dz, pre.slope.vtn_i / dz)
+    seen = []
+
+    def record(*args, **kwargs):
+        seen.append((args[3], args[4]))
+        return cons.conservative_ice_substep_advection_torch(*args, **kwargs)
+
+    for normalized in (False, True):
+        sedimentation_chain_torch(
+            state, forcing, *work, mstep_main=1, mstep_ice=1,
+            dtcld=20.0, params=default_substep_advection_params(),
+            reslope_params=cp, sea_mask=sea_mask,
+            substep_fn=cons.conservative_substep_advection_torch,
+            ice_substep_fn=record, normalize_ice_handoff=normalized,
+        )
+    for raw, rate in zip(seen[0], seen[1]):
+        assert torch.equal(rate, raw / dz)
+        assert torch.all(rate > 0)
+
+
 # ── F1d2: group conservation limiters ────────────────────────────────────────
 
 def _zero_phase_struct(cls, ref):

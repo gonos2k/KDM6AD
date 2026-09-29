@@ -181,16 +181,19 @@ CONSERVATIVE_SED_FNS = (conservative_substep_advection_torch,
 def kdm6_step_conservative_experiment(
     state, forcing, params=None, dt: float = 60.0, *,
     xland=None, ncmin_land: float = 0.0, ncmin_sea: float = 0.0, controls=None,
+    normalize_ice_handoff: bool = False,
 ):
     """Run one step with the CONSERVATIVE sedimentation experiment (explicit
     opt-in; the default kdm6_step path is untouched). Returns
     ``(State, ColumnWaterBudget, SedimentationAttribution)`` — under this
-    variant the budget must close as W_out − W_in + P_actual = O(ε64)."""
+    variant the budget must close as W_out − W_in + P_actual = O(ε64).
+    normalize_ice_handoff=True selects the separate first-ice velocity/dz map."""
     from .water_budget import SedimentationLedger, _run_with_budget
 
     sed = SedimentationLedger()
     out, budget = _run_with_budget(state, forcing, params, dt, xland=xland,
                                    ncmin_land=ncmin_land, ncmin_sea=ncmin_sea,
                                    controls=controls, sed_ledger=sed,
-                                   sed_substep_fns=CONSERVATIVE_SED_FNS)
+                                   sed_substep_fns=CONSERVATIVE_SED_FNS,
+                                   normalize_ice_handoff=normalize_ice_handoff)
     return out, budget, sed.finalize(like=state.qr if dt <= 0.0 else None)

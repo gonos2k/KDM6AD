@@ -152,7 +152,8 @@ KDM6_C_API int kdm6_step_c(
  * is PERMANENTLY legacy. Unknown values → KDM6_ERR_INVALID_ARG (fail-loud). */
 typedef enum {
     KDM6_PHYSICS_LEGACY = 0,
-    KDM6_PHYSICS_CONSERVATIVE_INTERFACE = 1
+    KDM6_PHYSICS_CONSERVATIVE_INTERFACE = 1,
+    KDM6_PHYSICS_CONSERVATIVE_NORMALIZED = 2
 } kdm6_physics_variant;
 /* the two framing fields a valid caller MUST allocate. struct_size is copied
  * first into a uint32_t without requiring a full options object; a value below
@@ -192,7 +193,8 @@ typedef struct {
     float       *rain_increment, *snow_increment, *graupel_increment; /* NULL ⇒ skip */
     float       *rhog_out;     /* NULL ⇒ skip */
 
-    /* ── OPTIONAL (conservative-interface-v1 freeze-lift): physics variant.
+    /* ── OPTIONAL physics variant (0 legacy, 1 historical conservative,
+     * 2 conservative with normalized first ice handoff).
      * Absent (smaller struct_size) or 0 ⇒ KDM6_PHYSICS_LEGACY, bitwise-
      * identical to every pre-existing call. Values outside the
      * kdm6_physics_variant enum ⇒ KDM6_ERR_INVALID_ARG. ── */
@@ -295,8 +297,8 @@ KDM6_C_API int kdm6_step_ad_c(
     double ncmin_sea);
 
 /* fp64 DA entry with an explicit physics selector. The original
- * kdm6_step_ad_c remains the Legacy ABI; this additive symbol selects the
- * same conservative-interface operator as kdm6_step_v2_c when variant=1.
+ * kdm6_step_ad_c remains the Legacy ABI; this additive symbol accepts the
+ * same selector values and corresponding operators as kdm6_step_v2_c.
  * Unknown variants return INVALID_ARG with a null handle and untouched output
  * before the thread fence or tensor work. */
 KDM6_C_API int kdm6_step_ad_variant_c(

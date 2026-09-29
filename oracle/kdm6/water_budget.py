@@ -106,7 +106,8 @@ class _WaterBudgetLedger:
 
 
 def _run_with_budget(state, forcing, params, dt, *, xland, ncmin_land, ncmin_sea,
-                     controls, sed_ledger=None, sed_substep_fns=None):
+                     controls, sed_ledger=None, sed_substep_fns=None,
+                     normalize_ice_handoff=False):
     from .runtime import _kdm6_pure, make_parameters
 
     if params is None:
@@ -117,7 +118,8 @@ def _run_with_budget(state, forcing, params, dt, *, xland, ncmin_land, ncmin_sea
     out = _kdm6_pure(state, forcing, params, dt, xland=xland,
                      ncmin_land=ncmin_land, ncmin_sea=ncmin_sea,
                      controls=controls, budget=ledger,
-                     sed_substep_fns=sed_substep_fns)
+                     sed_substep_fns=sed_substep_fns,
+                     normalize_ice_handoff=normalize_ice_handoff)
     wout = column_water_kg_m2(out, forcing).detach()
 
     z = torch.zeros_like(win)

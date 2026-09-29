@@ -2606,6 +2606,7 @@ def sedimentation_chain_torch(
     ledger=None,   # [P0-4b] duck-typed SedimentationLedger; threading only, None → byte-identical
     substep_fn=None,       # [P0-4b.1] main-substep override (None → legacy _sed.substep_advection_torch)
     ice_substep_fn=None,   # [P0-4b.1] ice-substep override (None → legacy); analysis-only injection
+    normalize_ice_handoff: bool = False,
 ) -> SedimentationOutputs:
     """F2b — sedimentation 통합 chain.
 
@@ -2642,9 +2643,8 @@ def sedimentation_chain_torch(
     # ALSO updated by the main re-slope — Fortran's slope_kdm6 writes work1(4)/workn(2) [ice]
     # each main substep and the ice loop below consumes the post-main value (main→ice handoff,
     # F:1194→F:1215). Fortran leaves work1(4)/workn(2) RAW (F:1198-1205 normalizes only
-    # 1,2,3/workn1); the port NORMALIZES the ice handoff /delz because the RAW value
-    # over-sediments ice and the depletion clamp zeroes ∂/∂qi, breaking the differentiable-port
-    # core goal (test_autograd_endtoend). Deliberate AD-required deviation (cf. #6); inert where QICE≈0.
+    # 1,2,3/workn1). The normalized opt-in divides the first ice handoff by dz,
+    # matching the mstep selector and later ice reslopes; older paths keep raw vt.
     w1_qr, wn_qr, w1_qs, w1_qg = work1_qr, workn_qr, work1_qs, work1_qg
     w1_qi, wn_qi = work1_qi, workn_qi
     _sm = sea_mask if sea_mask is not None else torch.zeros_like(state.qr, dtype=torch.bool)
@@ -2677,14 +2677,10 @@ def sedimentation_chain_torch(
             wn_qr = pre.slope.vtn_r / dz
             w1_qs = pre.slope.vt_s / dz
             w1_qg = pre.slope.vt_g / dz
-            # main→ice handoff (F:1194 → F:1215). Fortran leaves work1(4)/workn(2) RAW here
-            # (F:1198-1205 normalizes only 1,2,3/workn1) — ice substep n=1 consumes UNDIVIDED vt
-            # (CFL = vt_i·dtcld). Tracker #9's /delz normalization was the step-68 qi/ni seed once
-            # QICE>0 (mp37 loses 37%/step of qi here; RAW handoff == mp37 bit-exact, 0 ULP).
-            # Replicated per Fortran-flow fidelity; depletion-clamp zero grad = true one-sided
-            # subgradient (kink class — fix test ICs, not the forward). n>=2 stays divided (F:1296).
-            w1_qi = pre.slope.vt_i
-            wn_qi = pre.slope.vtn_i
+            # The normalized opt-in matches its first ice consumer to the
+            # mstep selector; older paths retain Fortran's raw handoff.
+            w1_qi = pre.slope.vt_i / dz if normalize_ice_handoff else pre.slope.vt_i
+            wn_qi = pre.slope.vtn_i / dz if normalize_ice_handoff else pre.slope.vtn_i
 
     # ── Ice substepping ──────────────────────────────────────────────
     ice_state = _sed.IceSubstepState(qi=state.qi, ni=state.ni)
