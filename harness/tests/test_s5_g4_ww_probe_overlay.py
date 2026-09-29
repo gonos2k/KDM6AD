@@ -35,9 +35,10 @@ def test_guarded_overlay_strips_to_exact_input_bytes():
     overlay = probe.render_overlay_text(source)
 
     assert probe.strip_guarded_blocks(overlay) == source
-    assert overlay.count(f"#ifdef {probe.GUARD}") == 6
+    assert overlay.count(f"#ifdef {probe.GUARD}") == 7
     assert "TRANSFER(ww(s5_i,s5_k,j),0)" in overlay
     assert "TRANSFER(divv(s5_i,s5_k),0)" in overlay
+    assert "TRANSFER(mup(s5_i,119),0)" in overlay
     assert "s5_tile_calls(s5_slot) <= 3" in overlay
 
 
@@ -220,3 +221,22 @@ def test_capture_parser_rejects_an_unexpected_fifth_tile(tmp_path, monkeypatch):
 
     with pytest.raises(ValueError, match="unexpected tile metadata"):
         probe.parse_capture_files("2x1", [capture])
+
+
+def test_input_witness_rejects_missing_file_or_record(tmp_path):
+    keys = probe.expected_input_keys("1x1")
+    files = []
+    for call, rank, its, ite, jts, jte in sorted(probe.expected_headers("1x1")):
+        path = tmp_path / f"w.r{rank}.c{call}.i{its}-{ite}.j{jts}-{jte}.txt.inputs"
+        rows = sorted(key for key in keys if key[:6] == (call, rank, its, ite, jts, jte))
+        path.write_text("".join(
+            f"INPUT {name} {call} {target} {i} {j} {k} 0\n"
+            for _, _, _, _, _, _, name, target, i, j, k in rows))
+        files.append(path)
+    assert len(probe.parse_input_files("1x1", files)) == len(keys) == 120
+    with pytest.raises(ValueError, match="file/record set"):
+        probe.parse_input_files("1x1", files[:-1])
+    first = files[0]
+    first.write_text("\n".join(first.read_text().splitlines()[1:]) + "\n")
+    with pytest.raises(ValueError, match="file/record set"):
+        probe.parse_input_files("1x1", files)

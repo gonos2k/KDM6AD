@@ -83,10 +83,10 @@ DECL_BLOCK = f"""#ifdef {GUARD}
    INTEGER, SAVE :: s5_tile_count = 0
    INTEGER, SAVE :: s5_tile_bounds(4,4) = 0
    INTEGER, SAVE :: s5_tile_calls(4) = 0
-   INTEGER :: s5_enabled, s5_status, s5_unit, s5_rank, s5_slot
+   INTEGER :: s5_enabled, s5_status, s5_unit, s5_input_unit, s5_rank, s5_slot
    INTEGER :: s5_t, s5_target, s5_i, s5_j, s5_k, s5_bits
    INTEGER :: s5_real_bits, s5_integer_bits
-   CHARACTER(LEN=512) :: s5_prefix, s5_file
+   CHARACTER(LEN=512) :: s5_prefix, s5_file, s5_input_file
    CHARACTER(LEN=32) :: s5_rank_text
 ! S5_WW_PROBE_END:DECL
 #endif
@@ -149,6 +149,92 @@ CALL_BLOCK = f"""#ifdef {GUARD}
          ENDIF
       ENDIF
 ! S5_WW_PROBE_END:CALL
+#endif
+"""
+
+INPUT_BLOCK = f"""#ifdef {GUARD}
+! S5_WW_PROBE_BEGIN:INPUTS
+      IF (s5_enabled == 1) THEN
+         s5_input_file = TRIM(s5_file)//'.inputs'
+         OPEN(NEWUNIT=s5_input_unit, FILE=TRIM(s5_input_file), &
+              STATUS='REPLACE', ACTION='WRITE', IOSTAT=s5_status)
+         IF (s5_status /= 0) STOP 18
+         DO s5_target = 117, 234, 117
+            IF (s5_target < its .OR. s5_target > itf) CYCLE
+            IF (s5_target == 117) THEN
+               IF (119 >= jts .AND. 119 <= jtf) THEN
+                  DO s5_i = 116, 117
+                     s5_bits = TRANSFER(mup(s5_i,119),0)
+                     WRITE(s5_input_unit,'(A,1X,A,1X,6(I0,1X))') &
+                          'INPUT','MUP',s5_tile_calls(s5_slot),117,s5_i,119,0,s5_bits
+                     s5_bits = TRANSFER(mub(s5_i,119),0)
+                     WRITE(s5_input_unit,'(A,1X,A,1X,6(I0,1X))') &
+                          'INPUT','MUB',s5_tile_calls(s5_slot),117,s5_i,119,0,s5_bits
+                  ENDDO
+               ENDIF
+               IF (158 >= jts .AND. 158 <= jtf) THEN
+                  DO s5_j = 157, 158
+                     s5_bits = TRANSFER(mup(117,s5_j),0)
+                     WRITE(s5_input_unit,'(A,1X,A,1X,6(I0,1X))') &
+                          'INPUT','MUP',s5_tile_calls(s5_slot),117,117,s5_j,0,s5_bits
+                     s5_bits = TRANSFER(mub(117,s5_j),0)
+                     WRITE(s5_input_unit,'(A,1X,A,1X,6(I0,1X))') &
+                          'INPUT','MUB',s5_tile_calls(s5_slot),117,117,s5_j,0,s5_bits
+                  ENDDO
+               ENDIF
+               IF (193 >= jts .AND. 193 <= jtf) THEN
+                  DO s5_i = 117, 118
+                     s5_bits = TRANSFER(mup(s5_i,193),0)
+                     WRITE(s5_input_unit,'(A,1X,A,1X,6(I0,1X))') &
+                          'INPUT','MUP',s5_tile_calls(s5_slot),117,s5_i,193,0,s5_bits
+                     s5_bits = TRANSFER(mub(s5_i,193),0)
+                     WRITE(s5_input_unit,'(A,1X,A,1X,6(I0,1X))') &
+                          'INPUT','MUB',s5_tile_calls(s5_slot),117,s5_i,193,0,s5_bits
+                  ENDDO
+               ENDIF
+               s5_j = 2
+            ELSE
+               s5_j = 1
+            ENDIF
+            IF (s5_j < jts .OR. s5_j > jtf) CYCLE
+            s5_bits = TRANSFER(msftx(s5_target,s5_j),0)
+            WRITE(s5_input_unit,'(A,1X,A,1X,6(I0,1X))') &
+                 'INPUT','MSFTX',s5_tile_calls(s5_slot),s5_target,s5_target,s5_j,0,s5_bits
+            DO s5_i = s5_target, s5_target+1
+               s5_bits = TRANSFER(u(s5_i,1,s5_j),0)
+               WRITE(s5_input_unit,'(A,1X,A,1X,6(I0,1X))') &
+                    'INPUT','U',s5_tile_calls(s5_slot),s5_target,s5_i,s5_j,1,s5_bits
+               s5_bits = TRANSFER(msfuy(s5_i,s5_j),0)
+               WRITE(s5_input_unit,'(A,1X,A,1X,6(I0,1X))') &
+                    'INPUT','MSFUY',s5_tile_calls(s5_slot),s5_target,s5_i,s5_j,0,s5_bits
+            ENDDO
+            DO s5_i = s5_j, s5_j+1
+               s5_bits = TRANSFER(v(s5_target,1,s5_i),0)
+               WRITE(s5_input_unit,'(A,1X,A,1X,6(I0,1X))') &
+                    'INPUT','V',s5_tile_calls(s5_slot),s5_target,s5_target,s5_i,1,s5_bits
+               s5_bits = TRANSFER(msfvx_inv(s5_target,s5_i),0)
+               WRITE(s5_input_unit,'(A,1X,A,1X,6(I0,1X))') &
+                    'INPUT','MSFVX_INV',s5_tile_calls(s5_slot),s5_target,s5_target,s5_i,0,s5_bits
+            ENDDO
+            s5_bits = TRANSFER(c1h(1),0)
+            WRITE(s5_input_unit,'(A,1X,A,1X,6(I0,1X))') &
+                 'INPUT','C1H',s5_tile_calls(s5_slot),s5_target,s5_target,s5_j,1,s5_bits
+            s5_bits = TRANSFER(c2h(1),0)
+            WRITE(s5_input_unit,'(A,1X,A,1X,6(I0,1X))') &
+                 'INPUT','C2H',s5_tile_calls(s5_slot),s5_target,s5_target,s5_j,1,s5_bits
+            s5_bits = TRANSFER(dnw(1),0)
+            WRITE(s5_input_unit,'(A,1X,A,1X,6(I0,1X))') &
+                 'INPUT','DNW',s5_tile_calls(s5_slot),s5_target,s5_target,s5_j,1,s5_bits
+            s5_bits = TRANSFER(rdx,0)
+            WRITE(s5_input_unit,'(A,1X,A,1X,6(I0,1X))') &
+                 'INPUT','RDX',s5_tile_calls(s5_slot),s5_target,s5_target,s5_j,0,s5_bits
+            s5_bits = TRANSFER(rdy,0)
+            WRITE(s5_input_unit,'(A,1X,A,1X,6(I0,1X))') &
+                 'INPUT','RDY',s5_tile_calls(s5_slot),s5_target,s5_target,s5_j,0,s5_bits
+         ENDDO
+         CLOSE(s5_input_unit)
+      ENDIF
+! S5_WW_PROBE_END:INPUTS
 #endif
 """
 
@@ -235,6 +321,7 @@ CLOSE_BLOCK = f"""#ifdef {GUARD}
 BLOCKS = {
     "DECL": DECL_BLOCK,
     "CALL": CALL_BLOCK,
+    "INPUTS": INPUT_BLOCK,
     "MU_ARRAYS": MU_ARRAYS_BLOCK,
     "DIVV": DIVV_BLOCK,
     "WW": WW_BLOCK,
@@ -261,7 +348,8 @@ def render_overlay_text(source_text: str) -> str:
     start, end = routines[0].span()
     routine = source_text[start:end]
     text = _insert_once(routine, DECL_ANCHOR, DECL_BLOCK, "local declarations")
-    text = _insert_once(text, BOUNDS_ANCHOR, CALL_BLOCK, "computed call bounds")
+    text = _insert_once(text, BOUNDS_ANCHOR, CALL_BLOCK + INPUT_BLOCK,
+                        "computed call bounds")
     text = _insert_once(text, MU_ARRAYS_ANCHOR, MU_ARRAYS_BLOCK,
                         "local muu/muv completion")
     text = _insert_once(text, DIVV_ANCHOR, DIVV_BLOCK,
@@ -357,6 +445,73 @@ def expected_sample_keys(
                 for k in range(1, 41):
                     keys.add((call, rank, its, ite, jts, jte, "WW", i, i, j, k))
     return keys
+
+
+def expected_input_keys(layout: str) -> set[tuple]:
+    """The few actual caller operands needed for the first call-2 differences."""
+    keys = set()
+    for call, rank, its, ite, jts, jte in expected_headers(layout):
+        tile = (call, rank, its, ite, jts, jte)
+        itf, jtf = min(ite, 234), min(jte, 282)
+        if its <= 117 <= itf:
+            if jts <= 119 <= jtf:
+                for i in (116, 117):
+                    for name in ("MUP", "MUB"):
+                        keys.add((*tile, name, 117, i, 119, 0))
+            if jts <= 158 <= jtf:
+                for j in (157, 158):
+                    for name in ("MUP", "MUB"):
+                        keys.add((*tile, name, 117, 117, j, 0))
+            if jts <= 193 <= jtf:
+                for i in (117, 118):
+                    for name in ("MUP", "MUB"):
+                        keys.add((*tile, name, 117, i, 193, 0))
+        for target, j in ((117, 2), (234, 1)):
+            if not (its <= target <= itf and jts <= j <= jtf):
+                continue
+            keys.add((*tile, "MSFTX", target, target, j, 0))
+            for i in (target, target + 1):
+                for name, k in (("U", 1), ("MSFUY", 0)):
+                    keys.add((*tile, name, target, i, j, k))
+            for vj in (j, j + 1):
+                for name, k in (("V", 1), ("MSFVX_INV", 0)):
+                    keys.add((*tile, name, target, target, vj, k))
+            for name, k in (("C1H", 1), ("C2H", 1), ("DNW", 1),
+                            ("RDX", 0), ("RDY", 0)):
+                keys.add((*tile, name, target, target, j, k))
+    return keys
+
+
+def parse_input_files(layout: str, paths: list[Path]) -> dict[tuple, int]:
+    """Reject missing, relocated or changed caller-input witness records."""
+    expected_files = expected_headers(layout)
+    files, rows = set(), {}
+    pattern = re.compile(r"\.r(-?\d+)\.c(\d+)\.i(-?\d+)-(-?\d+)"
+                         r"\.j(-?\d+)-(-?\d+)\.txt\.inputs$")
+    for path in paths:
+        match = pattern.search(path.name)
+        if match is None:
+            raise ValueError(f"invalid input witness filename: {path.name}")
+        rank, call, its, ite, jts, jte = map(int, match.groups())
+        tile = (call, rank, its, ite, jts, jte)
+        if tile not in expected_files or tile in files:
+            raise ValueError(f"unexpected or duplicate input witness tile: {tile}")
+        files.add(tile)
+        for line in path.read_text(encoding="ascii").splitlines():
+            fields = line.split()
+            if len(fields) != 8 or fields[0] != "INPUT":
+                raise ValueError(f"malformed input witness in {path.name}")
+            name = fields[1]
+            sample_call, target, i, j, k, bits = map(int, fields[2:])
+            if sample_call != call or not -(2**31) <= bits < 2**31:
+                raise ValueError(f"input witness call or raw word differs in {path.name}")
+            key = (*tile, name, target, i, j, k)
+            if key in rows:
+                raise ValueError(f"duplicate input witness: {key}")
+            rows[key] = bits
+    if files != expected_files or set(rows) != expected_input_keys(layout):
+        raise ValueError("input witness file/record set differs from the declared schedule")
+    return rows
 
 
 def validate_declared_capture(
