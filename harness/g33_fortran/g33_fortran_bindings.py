@@ -735,6 +735,11 @@ CAP_BLOCK = [
 # SPECIES: the conservative source runs the qr chain (incl. its update) before
 # the nr chain, so no single anchor sees both species pre-update. The capture
 # anchors are the substep guards (top: 9-space `if`, interior: 11-space `if`).
+ACTIVE_20260929_SHA = {
+    "legacy": "fc0a72d33a5e61803fea56eb9118018039c6da8b5775813032b4861a2bd66eb5",
+    "conservative": "4f0103c8a8321b8e854d3500f4ae567755e41eb78746fac54519eca2686a6648",
+}
+
 VARIANTS = {
     "legacy": {
         "sha": "9354141b9e93aceb4a1c35e06bf673a5d4d916028877c0f84f729a301876b7dc",

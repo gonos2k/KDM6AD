@@ -33,6 +33,7 @@ sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(ROOT, "harness"))
 import g33_fortran_dump as fd          # noqa: E402
 import g33_fortran_semantics as sem    # noqa: E402
+import g33_fortran_bindings as fb       # noqa: E402
 import g33_fixture_v1 as fixture       # noqa: E402
 
 
@@ -81,6 +82,9 @@ def _write(path, data):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--algo", required=True, choices=["legacy", "conservative"])
+    ap.add_argument("--source-scope", default="historical",
+                    choices=["historical", "active-20260929"],
+                    help="select the pinned Fortran source; historical is the default")
     ap.add_argument("--out", required=True, help="fresh output directory")
     ap.add_argument("--entry", default="wrapper", choices=["wrapper", "kernel"],
                     help="which comparison boundary. `kernel` calls kdm62D directly, "
@@ -95,8 +99,18 @@ def main():
 
     _, authority = fixture.load_fixture(args.fixture_id)
     B, K = authority["B"], authority["K"]
+    expected_source = (fb.VARIANTS[args.algo]["sha"] if args.source_scope == "historical"
+                       else fb.ACTIVE_20260929_SHA[args.algo])
+    module_name = "module_mp_kdm6.F" if args.algo == "legacy" else "module_mp_kdm6_cons.F"
+    host_root = os.environ.get("KDM6_G33_HOST_ROOT", os.path.join(ROOT, "host", "KIM-meso_v1.0"))
+    if not os.path.isabs(host_root):
+        raise SystemExit("KDM6_G33_HOST_ROOT must be an absolute path")
+    module_path = os.path.join(host_root, "phys", module_name)
+    if not os.path.isfile(module_path) or _sha_path(module_path) != expected_source:
+        raise SystemExit(f"{args.source_scope} {args.algo} source SHA mismatch before build")
     os.makedirs(args.out)
-    fixture_flag = [f"--fixture={fixture.spec(args.fixture_id).fortran_build_name}"]
+    fixture_flag = [f"--fixture={fixture.spec(args.fixture_id).fortran_build_name}",
+                    f"--source-scope={args.source_scope}"]
     cases = {"A": fixture_flag, "B": [*fixture_flag, "--overlay"],
              "C": [*fixture_flag, "--dump"]}
     out = {}
@@ -150,6 +164,8 @@ def main():
                   "host_source_sha256", "harness_source_sha256"):
         if not (prov["A"][field] == prov["B"][field] == prov["C"][field]):
             raise SystemExit(f"A/B/C differ in {field}")
+    if prov["A"]["module_canonical_sha256"] != expected_source:
+        raise SystemExit(f"{args.source_scope} source SHA mismatch")
 
     # normalized_ops is a DEBUG cache, not the authority (the comparator re-reads
     # C/stdout.g33f); bits are dtype-width hex (JSON decimals lose f64 precision).
@@ -164,6 +180,8 @@ def main():
     manifest = {
         "schema_version": 2,
         "algorithm": args.algo,
+        "source_scope": args.source_scope,
+        "expected_module_sha256": expected_source,
         # from the PARSED STREAM, not from the flag: the flag is a mode word
         # (`kernel`) and the stream declares a versioned contract id, so
         # recording the flag made the manifest disagree with its own evidence.
