@@ -26,14 +26,14 @@ are:
 | Fortran mp237 A/B/C | `580de0fe73a61f9c067a22b06cc8599968bccca4fe99c798744f239847728f64` |
 
 The current-source four-leg **debug-only, unanchored** comparison at verifier
-commit `ca728c819c25eede65e98fdd678a7c92b39b7e01` is **INCONCLUSIVE**.
+commit `2cd7e85a1935b9617c81debe2ad037c1b3fc892a` is **INCONCLUSIVE**.
 Both pairs first flag outer loop 1 `micro_freeze_heat.xlf`. Only `xlf` differs
 in the selected operand group; `cpm` agrees. The C++/Fortran derived
 `xlf/cpm` values in that cell are 387.4201965/348.1402893, while
 the three sequential freeze-temperature stores all round to the same f32
 word `0x43910000`; this observation does not resolve the later `xlf` consumers.
 The debug result SHA-256 is
-`81e568c21f1cdf1a5f9000e283e1c6eccbfbe8004131f6146d16ed4cc7f1f13a`.
+`a1e9da7b416855275646793464597cb18e3e56a5f386149213792a620d361791`.
 
 The unchanged historical Gate A manifest fails against the active private
 mp37 and wrapper SHA pins. Its four allowed edit clusters and two handoff
@@ -42,7 +42,8 @@ Thus the debug result is **not** a Gate B decision, and the original
 77,852 > 77,312 and 2,188 > 1,164 ULP failures remain open. No production
 physics, QC, tolerance, default path or physical number basis changed here.
 
-Local verification ran the existing Fortran bundle verifier suite (62 passed)
+Local verification ran the Fortran bundle, gate and verifier-identity focused
+tests (115 passed)
 and replayed the retained historical Fortran bundle plus both new active
 bundles through the updated verifier. The private builds and raw bundles are
 local and are not independently reproduced by public CI. The current-source
