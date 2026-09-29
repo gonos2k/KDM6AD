@@ -1,0 +1,1385 @@
+{
+  "files": {
+    "serial_inputs": 6,
+    "serial_output": 6,
+    "sha256": {
+      "serial.r0.c1.i1-235.j1-142.txt": "cd10cb8f0b588e883deb689a1ddb8b0b0b2230a0ba70dd484b314c77de0bb2c4",
+      "serial.r0.c1.i1-235.j1-142.txt.inputs": "329a102a2187da72606ea13d98154d59fb2c1bf6eaac4c5bc7f6e2d396c258d9",
+      "serial.r0.c1.i1-235.j143-283.txt": "a63064fd83ce13e0be189a29e7d18b246e113c550b44363b49674b7348a2f6a8",
+      "serial.r0.c1.i1-235.j143-283.txt.inputs": "0f9df6caf8d70e70fe176d7f5d1a1095a332ea508591a22776390f57b829e1dd",
+      "serial.r0.c2.i1-235.j1-142.txt": "7443f6b58ef1b9ec568cf4846321e12c403d229839547c82095f882726faf45a",
+      "serial.r0.c2.i1-235.j1-142.txt.inputs": "e174e7b84557090973793a1b80073b4bb5dfb1e2a227a72f4a883512b003c2a4",
+      "serial.r0.c2.i1-235.j143-283.txt": "649669e0a1fcb4733ba0b835be6dcb3dc295389e82815c766a184a10f4ac5734",
+      "serial.r0.c2.i1-235.j143-283.txt.inputs": "60deeb349a772d5156764274d8c3b92cb78205cc3ecf464cc03b3b6818de2e38",
+      "serial.r0.c3.i1-235.j1-142.txt": "5ea5187a3a28f89e142b8e09ffa997f34f0c7c1cdaa89d38143f84f52982419c",
+      "serial.r0.c3.i1-235.j1-142.txt.inputs": "98dcf8116634ff96723029ef4901901111feb99fad64e6a07c27a08861ec0f65",
+      "serial.r0.c3.i1-235.j143-283.txt": "e29e4967a3aff4d6459744e13673dd9619481033817b41bab7d94a749140a552",
+      "serial.r0.c3.i1-235.j143-283.txt.inputs": "c91dacd19e251bdc7a0fa36adc5cca5b0dbb5c0b5d14c795cd1dd80b3d6f7ab1",
+      "x2.r0.c1.i1-117.j1-142.txt": "7ccda884d281f09f7746b2facd59ec7996bfe68602f01a650add30ee0b3906ab",
+      "x2.r0.c1.i1-117.j1-142.txt.inputs": "5a2b97f9d089e4b69e458c8360a704728a873fb2dd1e4a8d4fea05e9d6ad7173",
+      "x2.r0.c1.i1-117.j143-283.txt": "c9b9ea60da56574b4c0c404ecbc2bae5345111a8c85003f851473c16928408f8",
+      "x2.r0.c1.i1-117.j143-283.txt.inputs": "0f9df6caf8d70e70fe176d7f5d1a1095a332ea508591a22776390f57b829e1dd",
+      "x2.r0.c2.i1-117.j1-142.txt": "172be2fb93ce71672704df5c7164319416ee6bc37fcc27c4f766c32a56bca003",
+      "x2.r0.c2.i1-117.j1-142.txt.inputs": "e5bfee8883e4a34f712237eb010c4d08c36115a6a03bc112ae5fbde91832e287",
+      "x2.r0.c2.i1-117.j143-283.txt": "d8db72d0b96464d74d204a66051d00cf168dff0cc91ae1b17c65446477879ae2",
+      "x2.r0.c2.i1-117.j143-283.txt.inputs": "85d0de5cf809e3ecff89bf91bc6c88d1d580a6d79cfc1fdda163f8196741b33c",
+      "x2.r0.c3.i1-117.j1-142.txt": "af600693c1e9ee6f4d0ee66e6c97135555a75b13bf1d3270ac99b0a2fe59d0a0",
+      "x2.r0.c3.i1-117.j1-142.txt.inputs": "36b017a9fc911782c3991b2da43aa7d50eb3ea5e367db82bfc842ed341c86cd5",
+      "x2.r0.c3.i1-117.j143-283.txt": "0718061dade2745bcc863f94e779a18b8045fd0ea0f1e1df63097251ae7a58e2",
+      "x2.r0.c3.i1-117.j143-283.txt.inputs": "09dfdd2ee956bf440877cf90ff846b1acb6d134ff69826e8f74af93882a63954",
+      "x2.r1.c1.i118-235.j1-142.txt": "9d9f46e922977abb2d43d6e646363493e4611e99aa2504a35797e3baf182ce8a",
+      "x2.r1.c1.i118-235.j1-142.txt.inputs": "9975224efadecb1fcdc2d03b803d1a157dbfd80fb2a5bd3cf6acfd263552f320",
+      "x2.r1.c1.i118-235.j143-283.txt": "bba110e70e2b1a5aaf064d73dd5be305eecc936fec0e7168052dce678e791349",
+      "x2.r1.c1.i118-235.j143-283.txt.inputs": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "x2.r1.c2.i118-235.j1-142.txt": "27ec4452f8c2e9d62690745770fe1b0a9a894353d97b879436cdd8225de003a9",
+      "x2.r1.c2.i118-235.j1-142.txt.inputs": "fe618e6aca17749da1f527a817c45faf9cc676c14c72c456155e9dea0e73e576",
+      "x2.r1.c2.i118-235.j143-283.txt": "93153d1eff64e0d1014665d4cfffea1dbad253e5b45f3016f4481b763f3bb11e",
+      "x2.r1.c2.i118-235.j143-283.txt.inputs": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "x2.r1.c3.i118-235.j1-142.txt": "d7d4ab88cad05fa525dfaf1094cf76cf4bee3bc5e27eaa0405eda19ed9d35715",
+      "x2.r1.c3.i118-235.j1-142.txt.inputs": "eca0403d10665aa12d24ac3134f75660784c8f0e271add07646e755e24ff08ba",
+      "x2.r1.c3.i118-235.j143-283.txt": "b31454549e2f2e83f0d7141b251f26b8827f78ae542cfc1ab715bd7a32a7db59",
+      "x2.r1.c3.i118-235.j143-283.txt.inputs": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "x2_inputs": 12,
+    "x2_output": 12
+  },
+  "history_comparisons": {
+    "off_on_serial": {
+      "bitwise_match": 254,
+      "common": 254,
+      "differ": 0
+    },
+    "off_on_x2": {
+      "bitwise_match": 254,
+      "common": 254,
+      "differ": 0
+    },
+    "unprobed_off_serial": {
+      "bitwise_match": 254,
+      "common": 254,
+      "differ": 0
+    },
+    "unprobed_off_x2": {
+      "bitwise_match": 254,
+      "common": 254,
+      "differ": 0
+    }
+  },
+  "input_differences": {
+    "call1_i117": {
+      "different": 0,
+      "total": 26
+    },
+    "call1_i234": {
+      "different": 0,
+      "total": 14
+    },
+    "call2_i117": {
+      "different": 8,
+      "total": 26
+    },
+    "call2_i234": {
+      "different": 1,
+      "total": 14
+    },
+    "call3_i117": {
+      "different": 8,
+      "total": 26
+    },
+    "call3_i234": {
+      "different": 1,
+      "total": 14
+    }
+  },
+  "input_word_count_per_layout": 120,
+  "input_words": [
+    {
+      "call": 1,
+      "field": "C1H",
+      "i": 117,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0x3f81b8d2",
+      "target_i": 117,
+      "x2_bits": "0x3f81b8d2"
+    },
+    {
+      "call": 1,
+      "field": "C1H",
+      "i": 234,
+      "j": 1,
+      "k": 1,
+      "serial_bits": "0x3f81b8d2",
+      "target_i": 234,
+      "x2_bits": "0x3f81b8d2"
+    },
+    {
+      "call": 1,
+      "field": "C2H",
+      "i": 117,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0xc49fc043",
+      "target_i": 117,
+      "x2_bits": "0xc49fc043"
+    },
+    {
+      "call": 1,
+      "field": "C2H",
+      "i": 234,
+      "j": 1,
+      "k": 1,
+      "serial_bits": "0xc49fc043",
+      "target_i": 234,
+      "x2_bits": "0xc49fc043"
+    },
+    {
+      "call": 1,
+      "field": "DNW",
+      "i": 117,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0xbbcaad80",
+      "target_i": 117,
+      "x2_bits": "0xbbcaad80"
+    },
+    {
+      "call": 1,
+      "field": "DNW",
+      "i": 234,
+      "j": 1,
+      "k": 1,
+      "serial_bits": "0xbbcaad80",
+      "target_i": 234,
+      "x2_bits": "0xbbcaad80"
+    },
+    {
+      "call": 1,
+      "field": "MSFTX",
+      "i": 117,
+      "j": 2,
+      "k": 0,
+      "serial_bits": "0x3f7e4baa",
+      "target_i": 117,
+      "x2_bits": "0x3f7e4baa"
+    },
+    {
+      "call": 1,
+      "field": "MSFTX",
+      "i": 234,
+      "j": 1,
+      "k": 0,
+      "serial_bits": "0x3f7e8bb8",
+      "target_i": 234,
+      "x2_bits": "0x3f7e8bb8"
+    },
+    {
+      "call": 1,
+      "field": "MSFUY",
+      "i": 117,
+      "j": 2,
+      "k": 0,
+      "serial_bits": "0x3f7e4baa",
+      "target_i": 117,
+      "x2_bits": "0x3f7e4baa"
+    },
+    {
+      "call": 1,
+      "field": "MSFUY",
+      "i": 118,
+      "j": 2,
+      "k": 0,
+      "serial_bits": "0x3f7e4ba8",
+      "target_i": 117,
+      "x2_bits": "0x3f7e4ba8"
+    },
+    {
+      "call": 1,
+      "field": "MSFUY",
+      "i": 234,
+      "j": 1,
+      "k": 0,
+      "serial_bits": "0x3f7e8b43",
+      "target_i": 234,
+      "x2_bits": "0x3f7e8b43"
+    },
+    {
+      "call": 1,
+      "field": "MSFUY",
+      "i": 235,
+      "j": 1,
+      "k": 0,
+      "serial_bits": "0x3f7e8c2c",
+      "target_i": 234,
+      "x2_bits": "0x3f7e8c2c"
+    },
+    {
+      "call": 1,
+      "field": "MSFVX_INV",
+      "i": 117,
+      "j": 2,
+      "k": 0,
+      "serial_bits": "0x3f80d8b3",
+      "target_i": 117,
+      "x2_bits": "0x3f80d8b3"
+    },
+    {
+      "call": 1,
+      "field": "MSFVX_INV",
+      "i": 117,
+      "j": 3,
+      "k": 0,
+      "serial_bits": "0x3f80de8e",
+      "target_i": 117,
+      "x2_bits": "0x3f80de8e"
+    },
+    {
+      "call": 1,
+      "field": "MSFVX_INV",
+      "i": 234,
+      "j": 1,
+      "k": 0,
+      "serial_bits": "0x3f80b83d",
+      "target_i": 234,
+      "x2_bits": "0x3f80b83d"
+    },
+    {
+      "call": 1,
+      "field": "MSFVX_INV",
+      "i": 234,
+      "j": 2,
+      "k": 0,
+      "serial_bits": "0x3f80be2a",
+      "target_i": 234,
+      "x2_bits": "0x3f80be2a"
+    },
+    {
+      "call": 1,
+      "field": "MUB",
+      "i": 116,
+      "j": 119,
+      "k": 0,
+      "serial_bits": "0x47b98b98",
+      "target_i": 117,
+      "x2_bits": "0x47b98b98"
+    },
+    {
+      "call": 1,
+      "field": "MUB",
+      "i": 117,
+      "j": 119,
+      "k": 0,
+      "serial_bits": "0x47b98a5b",
+      "target_i": 117,
+      "x2_bits": "0x47b98a5b"
+    },
+    {
+      "call": 1,
+      "field": "MUB",
+      "i": 117,
+      "j": 157,
+      "k": 0,
+      "serial_bits": "0x47b72403",
+      "target_i": 117,
+      "x2_bits": "0x47b72403"
+    },
+    {
+      "call": 1,
+      "field": "MUB",
+      "i": 117,
+      "j": 158,
+      "k": 0,
+      "serial_bits": "0x47b652e0",
+      "target_i": 117,
+      "x2_bits": "0x47b652e0"
+    },
+    {
+      "call": 1,
+      "field": "MUB",
+      "i": 117,
+      "j": 193,
+      "k": 0,
+      "serial_bits": "0x47ad3628",
+      "target_i": 117,
+      "x2_bits": "0x47ad3628"
+    },
+    {
+      "call": 1,
+      "field": "MUB",
+      "i": 118,
+      "j": 193,
+      "k": 0,
+      "serial_bits": "0x47ac7754",
+      "target_i": 117,
+      "x2_bits": "0x47ac7754"
+    },
+    {
+      "call": 1,
+      "field": "MUP",
+      "i": 116,
+      "j": 119,
+      "k": 0,
+      "serial_bits": "0x43494a00",
+      "target_i": 117,
+      "x2_bits": "0x43494a00"
+    },
+    {
+      "call": 1,
+      "field": "MUP",
+      "i": 117,
+      "j": 119,
+      "k": 0,
+      "serial_bits": "0x4346c800",
+      "target_i": 117,
+      "x2_bits": "0x4346c800"
+    },
+    {
+      "call": 1,
+      "field": "MUP",
+      "i": 117,
+      "j": 157,
+      "k": 0,
+      "serial_bits": "0x439caa00",
+      "target_i": 117,
+      "x2_bits": "0x439caa00"
+    },
+    {
+      "call": 1,
+      "field": "MUP",
+      "i": 117,
+      "j": 158,
+      "k": 0,
+      "serial_bits": "0x43ad6800",
+      "target_i": 117,
+      "x2_bits": "0x43ad6800"
+    },
+    {
+      "call": 1,
+      "field": "MUP",
+      "i": 117,
+      "j": 193,
+      "k": 0,
+      "serial_bits": "0x4428ee80",
+      "target_i": 117,
+      "x2_bits": "0x4428ee80"
+    },
+    {
+      "call": 1,
+      "field": "MUP",
+      "i": 118,
+      "j": 193,
+      "k": 0,
+      "serial_bits": "0x44256300",
+      "target_i": 117,
+      "x2_bits": "0x44256300"
+    },
+    {
+      "call": 1,
+      "field": "RDX",
+      "i": 117,
+      "j": 2,
+      "k": 0,
+      "serial_bits": "0x3951b717",
+      "target_i": 117,
+      "x2_bits": "0x3951b717"
+    },
+    {
+      "call": 1,
+      "field": "RDX",
+      "i": 234,
+      "j": 1,
+      "k": 0,
+      "serial_bits": "0x3951b717",
+      "target_i": 234,
+      "x2_bits": "0x3951b717"
+    },
+    {
+      "call": 1,
+      "field": "RDY",
+      "i": 117,
+      "j": 2,
+      "k": 0,
+      "serial_bits": "0x3951b717",
+      "target_i": 117,
+      "x2_bits": "0x3951b717"
+    },
+    {
+      "call": 1,
+      "field": "RDY",
+      "i": 234,
+      "j": 1,
+      "k": 0,
+      "serial_bits": "0x3951b717",
+      "target_i": 234,
+      "x2_bits": "0x3951b717"
+    },
+    {
+      "call": 1,
+      "field": "U",
+      "i": 117,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0x3ee41342",
+      "target_i": 117,
+      "x2_bits": "0x3ee41342"
+    },
+    {
+      "call": 1,
+      "field": "U",
+      "i": 118,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0x3eda5ed0",
+      "target_i": 117,
+      "x2_bits": "0x3eda5ed0"
+    },
+    {
+      "call": 1,
+      "field": "U",
+      "i": 234,
+      "j": 1,
+      "k": 1,
+      "serial_bits": "0xc0f8615f",
+      "target_i": 234,
+      "x2_bits": "0xc0f8615f"
+    },
+    {
+      "call": 1,
+      "field": "U",
+      "i": 235,
+      "j": 1,
+      "k": 1,
+      "serial_bits": "0xc0f762c9",
+      "target_i": 234,
+      "x2_bits": "0xc0f762c9"
+    },
+    {
+      "call": 1,
+      "field": "V",
+      "i": 117,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0xc0e841b5",
+      "target_i": 117,
+      "x2_bits": "0xc0e841b5"
+    },
+    {
+      "call": 1,
+      "field": "V",
+      "i": 117,
+      "j": 3,
+      "k": 1,
+      "serial_bits": "0xc0c59fce",
+      "target_i": 117,
+      "x2_bits": "0xc0c59fce"
+    },
+    {
+      "call": 1,
+      "field": "V",
+      "i": 234,
+      "j": 1,
+      "k": 1,
+      "serial_bits": "0xc00f5a32",
+      "target_i": 234,
+      "x2_bits": "0xc00f5a32"
+    },
+    {
+      "call": 1,
+      "field": "V",
+      "i": 234,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0xc0069dd8",
+      "target_i": 234,
+      "x2_bits": "0xc0069dd8"
+    },
+    {
+      "call": 2,
+      "field": "C1H",
+      "i": 117,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0x3f81b8d2",
+      "target_i": 117,
+      "x2_bits": "0x3f81b8d2"
+    },
+    {
+      "call": 2,
+      "field": "C1H",
+      "i": 234,
+      "j": 1,
+      "k": 1,
+      "serial_bits": "0x3f81b8d2",
+      "target_i": 234,
+      "x2_bits": "0x3f81b8d2"
+    },
+    {
+      "call": 2,
+      "field": "C2H",
+      "i": 117,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0xc49fc043",
+      "target_i": 117,
+      "x2_bits": "0xc49fc043"
+    },
+    {
+      "call": 2,
+      "field": "C2H",
+      "i": 234,
+      "j": 1,
+      "k": 1,
+      "serial_bits": "0xc49fc043",
+      "target_i": 234,
+      "x2_bits": "0xc49fc043"
+    },
+    {
+      "call": 2,
+      "field": "DNW",
+      "i": 117,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0xbbcaad80",
+      "target_i": 117,
+      "x2_bits": "0xbbcaad80"
+    },
+    {
+      "call": 2,
+      "field": "DNW",
+      "i": 234,
+      "j": 1,
+      "k": 1,
+      "serial_bits": "0xbbcaad80",
+      "target_i": 234,
+      "x2_bits": "0xbbcaad80"
+    },
+    {
+      "call": 2,
+      "field": "MSFTX",
+      "i": 117,
+      "j": 2,
+      "k": 0,
+      "serial_bits": "0x3f7e4baa",
+      "target_i": 117,
+      "x2_bits": "0x3f7e4baa"
+    },
+    {
+      "call": 2,
+      "field": "MSFTX",
+      "i": 234,
+      "j": 1,
+      "k": 0,
+      "serial_bits": "0x3f7e8bb8",
+      "target_i": 234,
+      "x2_bits": "0x3f7e8bb8"
+    },
+    {
+      "call": 2,
+      "field": "MSFUY",
+      "i": 117,
+      "j": 2,
+      "k": 0,
+      "serial_bits": "0x3f7e4baa",
+      "target_i": 117,
+      "x2_bits": "0x3f7e4baa"
+    },
+    {
+      "call": 2,
+      "field": "MSFUY",
+      "i": 118,
+      "j": 2,
+      "k": 0,
+      "serial_bits": "0x3f7e4ba8",
+      "target_i": 117,
+      "x2_bits": "0x3f7e4ba8"
+    },
+    {
+      "call": 2,
+      "field": "MSFUY",
+      "i": 234,
+      "j": 1,
+      "k": 0,
+      "serial_bits": "0x3f7e8b43",
+      "target_i": 234,
+      "x2_bits": "0x3f7e8b43"
+    },
+    {
+      "call": 2,
+      "field": "MSFUY",
+      "i": 235,
+      "j": 1,
+      "k": 0,
+      "serial_bits": "0x3f7e8c2c",
+      "target_i": 234,
+      "x2_bits": "0x3f7e8c2c"
+    },
+    {
+      "call": 2,
+      "field": "MSFVX_INV",
+      "i": 117,
+      "j": 2,
+      "k": 0,
+      "serial_bits": "0x3f80d8b3",
+      "target_i": 117,
+      "x2_bits": "0x3f80d8b3"
+    },
+    {
+      "call": 2,
+      "field": "MSFVX_INV",
+      "i": 117,
+      "j": 3,
+      "k": 0,
+      "serial_bits": "0x3f80de8e",
+      "target_i": 117,
+      "x2_bits": "0x3f80de8e"
+    },
+    {
+      "call": 2,
+      "field": "MSFVX_INV",
+      "i": 234,
+      "j": 1,
+      "k": 0,
+      "serial_bits": "0x3f80b83d",
+      "target_i": 234,
+      "x2_bits": "0x3f80b83d"
+    },
+    {
+      "call": 2,
+      "field": "MSFVX_INV",
+      "i": 234,
+      "j": 2,
+      "k": 0,
+      "serial_bits": "0x3f80be2a",
+      "target_i": 234,
+      "x2_bits": "0x3f80be2a"
+    },
+    {
+      "call": 2,
+      "field": "MUB",
+      "i": 116,
+      "j": 119,
+      "k": 0,
+      "serial_bits": "0x47b98b98",
+      "target_i": 117,
+      "x2_bits": "0x47b98b98"
+    },
+    {
+      "call": 2,
+      "field": "MUB",
+      "i": 117,
+      "j": 119,
+      "k": 0,
+      "serial_bits": "0x47b98a5b",
+      "target_i": 117,
+      "x2_bits": "0x47b98a5b"
+    },
+    {
+      "call": 2,
+      "field": "MUB",
+      "i": 117,
+      "j": 157,
+      "k": 0,
+      "serial_bits": "0x47b72403",
+      "target_i": 117,
+      "x2_bits": "0x47b72403"
+    },
+    {
+      "call": 2,
+      "field": "MUB",
+      "i": 117,
+      "j": 158,
+      "k": 0,
+      "serial_bits": "0x47b652e0",
+      "target_i": 117,
+      "x2_bits": "0x47b652e0"
+    },
+    {
+      "call": 2,
+      "field": "MUB",
+      "i": 117,
+      "j": 193,
+      "k": 0,
+      "serial_bits": "0x47ad3628",
+      "target_i": 117,
+      "x2_bits": "0x47ad3628"
+    },
+    {
+      "call": 2,
+      "field": "MUB",
+      "i": 118,
+      "j": 193,
+      "k": 0,
+      "serial_bits": "0x47ac7754",
+      "target_i": 117,
+      "x2_bits": "0x47ac7754"
+    },
+    {
+      "call": 2,
+      "field": "MUP",
+      "i": 116,
+      "j": 119,
+      "k": 0,
+      "serial_bits": "0x433ee106",
+      "target_i": 117,
+      "x2_bits": "0x433ee106"
+    },
+    {
+      "call": 2,
+      "field": "MUP",
+      "i": 117,
+      "j": 119,
+      "k": 0,
+      "serial_bits": "0x433edafc",
+      "target_i": 117,
+      "x2_bits": "0x433edb02"
+    },
+    {
+      "call": 2,
+      "field": "MUP",
+      "i": 117,
+      "j": 157,
+      "k": 0,
+      "serial_bits": "0x4392f082",
+      "target_i": 117,
+      "x2_bits": "0x4392f07f"
+    },
+    {
+      "call": 2,
+      "field": "MUP",
+      "i": 117,
+      "j": 158,
+      "k": 0,
+      "serial_bits": "0x43a1b287",
+      "target_i": 117,
+      "x2_bits": "0x43a1b289"
+    },
+    {
+      "call": 2,
+      "field": "MUP",
+      "i": 117,
+      "j": 193,
+      "k": 0,
+      "serial_bits": "0x4428d3ab",
+      "target_i": 117,
+      "x2_bits": "0x4428d3aa"
+    },
+    {
+      "call": 2,
+      "field": "MUP",
+      "i": 118,
+      "j": 193,
+      "k": 0,
+      "serial_bits": "0x442451bf",
+      "target_i": 117,
+      "x2_bits": "0x442451c0"
+    },
+    {
+      "call": 2,
+      "field": "RDX",
+      "i": 117,
+      "j": 2,
+      "k": 0,
+      "serial_bits": "0x3951b717",
+      "target_i": 117,
+      "x2_bits": "0x3951b717"
+    },
+    {
+      "call": 2,
+      "field": "RDX",
+      "i": 234,
+      "j": 1,
+      "k": 0,
+      "serial_bits": "0x3951b717",
+      "target_i": 234,
+      "x2_bits": "0x3951b717"
+    },
+    {
+      "call": 2,
+      "field": "RDY",
+      "i": 117,
+      "j": 2,
+      "k": 0,
+      "serial_bits": "0x3951b717",
+      "target_i": 117,
+      "x2_bits": "0x3951b717"
+    },
+    {
+      "call": 2,
+      "field": "RDY",
+      "i": 234,
+      "j": 1,
+      "k": 0,
+      "serial_bits": "0x3951b717",
+      "target_i": 234,
+      "x2_bits": "0x3951b717"
+    },
+    {
+      "call": 2,
+      "field": "U",
+      "i": 117,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0x3edd812a",
+      "target_i": 117,
+      "x2_bits": "0x3edd8133"
+    },
+    {
+      "call": 2,
+      "field": "U",
+      "i": 118,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0x3ed2fa5e",
+      "target_i": 117,
+      "x2_bits": "0x3ed2fa55"
+    },
+    {
+      "call": 2,
+      "field": "U",
+      "i": 234,
+      "j": 1,
+      "k": 1,
+      "serial_bits": "0xc0f85aa0",
+      "target_i": 234,
+      "x2_bits": "0xc0f85aa0"
+    },
+    {
+      "call": 2,
+      "field": "U",
+      "i": 235,
+      "j": 1,
+      "k": 1,
+      "serial_bits": "0xc0f75c30",
+      "target_i": 234,
+      "x2_bits": "0xc0f75c30"
+    },
+    {
+      "call": 2,
+      "field": "V",
+      "i": 117,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0xc0e7f9f5",
+      "target_i": 117,
+      "x2_bits": "0xc0e7f9f5"
+    },
+    {
+      "call": 2,
+      "field": "V",
+      "i": 117,
+      "j": 3,
+      "k": 1,
+      "serial_bits": "0xc0c55ec3",
+      "target_i": 117,
+      "x2_bits": "0xc0c55ec4"
+    },
+    {
+      "call": 2,
+      "field": "V",
+      "i": 234,
+      "j": 1,
+      "k": 1,
+      "serial_bits": "0xc00f309d",
+      "target_i": 234,
+      "x2_bits": "0xc00f309e"
+    },
+    {
+      "call": 2,
+      "field": "V",
+      "i": 234,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0xc006751e",
+      "target_i": 234,
+      "x2_bits": "0xc006751e"
+    },
+    {
+      "call": 3,
+      "field": "C1H",
+      "i": 117,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0x3f81b8d2",
+      "target_i": 117,
+      "x2_bits": "0x3f81b8d2"
+    },
+    {
+      "call": 3,
+      "field": "C1H",
+      "i": 234,
+      "j": 1,
+      "k": 1,
+      "serial_bits": "0x3f81b8d2",
+      "target_i": 234,
+      "x2_bits": "0x3f81b8d2"
+    },
+    {
+      "call": 3,
+      "field": "C2H",
+      "i": 117,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0xc49fc043",
+      "target_i": 117,
+      "x2_bits": "0xc49fc043"
+    },
+    {
+      "call": 3,
+      "field": "C2H",
+      "i": 234,
+      "j": 1,
+      "k": 1,
+      "serial_bits": "0xc49fc043",
+      "target_i": 234,
+      "x2_bits": "0xc49fc043"
+    },
+    {
+      "call": 3,
+      "field": "DNW",
+      "i": 117,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0xbbcaad80",
+      "target_i": 117,
+      "x2_bits": "0xbbcaad80"
+    },
+    {
+      "call": 3,
+      "field": "DNW",
+      "i": 234,
+      "j": 1,
+      "k": 1,
+      "serial_bits": "0xbbcaad80",
+      "target_i": 234,
+      "x2_bits": "0xbbcaad80"
+    },
+    {
+      "call": 3,
+      "field": "MSFTX",
+      "i": 117,
+      "j": 2,
+      "k": 0,
+      "serial_bits": "0x3f7e4baa",
+      "target_i": 117,
+      "x2_bits": "0x3f7e4baa"
+    },
+    {
+      "call": 3,
+      "field": "MSFTX",
+      "i": 234,
+      "j": 1,
+      "k": 0,
+      "serial_bits": "0x3f7e8bb8",
+      "target_i": 234,
+      "x2_bits": "0x3f7e8bb8"
+    },
+    {
+      "call": 3,
+      "field": "MSFUY",
+      "i": 117,
+      "j": 2,
+      "k": 0,
+      "serial_bits": "0x3f7e4baa",
+      "target_i": 117,
+      "x2_bits": "0x3f7e4baa"
+    },
+    {
+      "call": 3,
+      "field": "MSFUY",
+      "i": 118,
+      "j": 2,
+      "k": 0,
+      "serial_bits": "0x3f7e4ba8",
+      "target_i": 117,
+      "x2_bits": "0x3f7e4ba8"
+    },
+    {
+      "call": 3,
+      "field": "MSFUY",
+      "i": 234,
+      "j": 1,
+      "k": 0,
+      "serial_bits": "0x3f7e8b43",
+      "target_i": 234,
+      "x2_bits": "0x3f7e8b43"
+    },
+    {
+      "call": 3,
+      "field": "MSFUY",
+      "i": 235,
+      "j": 1,
+      "k": 0,
+      "serial_bits": "0x3f7e8c2c",
+      "target_i": 234,
+      "x2_bits": "0x3f7e8c2c"
+    },
+    {
+      "call": 3,
+      "field": "MSFVX_INV",
+      "i": 117,
+      "j": 2,
+      "k": 0,
+      "serial_bits": "0x3f80d8b3",
+      "target_i": 117,
+      "x2_bits": "0x3f80d8b3"
+    },
+    {
+      "call": 3,
+      "field": "MSFVX_INV",
+      "i": 117,
+      "j": 3,
+      "k": 0,
+      "serial_bits": "0x3f80de8e",
+      "target_i": 117,
+      "x2_bits": "0x3f80de8e"
+    },
+    {
+      "call": 3,
+      "field": "MSFVX_INV",
+      "i": 234,
+      "j": 1,
+      "k": 0,
+      "serial_bits": "0x3f80b83d",
+      "target_i": 234,
+      "x2_bits": "0x3f80b83d"
+    },
+    {
+      "call": 3,
+      "field": "MSFVX_INV",
+      "i": 234,
+      "j": 2,
+      "k": 0,
+      "serial_bits": "0x3f80be2a",
+      "target_i": 234,
+      "x2_bits": "0x3f80be2a"
+    },
+    {
+      "call": 3,
+      "field": "MUB",
+      "i": 116,
+      "j": 119,
+      "k": 0,
+      "serial_bits": "0x47b98b98",
+      "target_i": 117,
+      "x2_bits": "0x47b98b98"
+    },
+    {
+      "call": 3,
+      "field": "MUB",
+      "i": 117,
+      "j": 119,
+      "k": 0,
+      "serial_bits": "0x47b98a5b",
+      "target_i": 117,
+      "x2_bits": "0x47b98a5b"
+    },
+    {
+      "call": 3,
+      "field": "MUB",
+      "i": 117,
+      "j": 157,
+      "k": 0,
+      "serial_bits": "0x47b72403",
+      "target_i": 117,
+      "x2_bits": "0x47b72403"
+    },
+    {
+      "call": 3,
+      "field": "MUB",
+      "i": 117,
+      "j": 158,
+      "k": 0,
+      "serial_bits": "0x47b652e0",
+      "target_i": 117,
+      "x2_bits": "0x47b652e0"
+    },
+    {
+      "call": 3,
+      "field": "MUB",
+      "i": 117,
+      "j": 193,
+      "k": 0,
+      "serial_bits": "0x47ad3628",
+      "target_i": 117,
+      "x2_bits": "0x47ad3628"
+    },
+    {
+      "call": 3,
+      "field": "MUB",
+      "i": 118,
+      "j": 193,
+      "k": 0,
+      "serial_bits": "0x47ac7754",
+      "target_i": 117,
+      "x2_bits": "0x47ac7754"
+    },
+    {
+      "call": 3,
+      "field": "MUP",
+      "i": 116,
+      "j": 119,
+      "k": 0,
+      "serial_bits": "0x433b5af8",
+      "target_i": 117,
+      "x2_bits": "0x433b5b2f"
+    },
+    {
+      "call": 3,
+      "field": "MUP",
+      "i": 117,
+      "j": 119,
+      "k": 0,
+      "serial_bits": "0x433eaa40",
+      "target_i": 117,
+      "x2_bits": "0x433ea8a9"
+    },
+    {
+      "call": 3,
+      "field": "MUP",
+      "i": 117,
+      "j": 157,
+      "k": 0,
+      "serial_bits": "0x438deac8",
+      "target_i": 117,
+      "x2_bits": "0x438deb2e"
+    },
+    {
+      "call": 3,
+      "field": "MUP",
+      "i": 117,
+      "j": 158,
+      "k": 0,
+      "serial_bits": "0x439bac55",
+      "target_i": 117,
+      "x2_bits": "0x439bac9e"
+    },
+    {
+      "call": 3,
+      "field": "MUP",
+      "i": 117,
+      "j": 193,
+      "k": 0,
+      "serial_bits": "0x44283fa6",
+      "target_i": 117,
+      "x2_bits": "0x44283fa6"
+    },
+    {
+      "call": 3,
+      "field": "MUP",
+      "i": 118,
+      "j": 193,
+      "k": 0,
+      "serial_bits": "0x4423ca65",
+      "target_i": 117,
+      "x2_bits": "0x4423ca6d"
+    },
+    {
+      "call": 3,
+      "field": "RDX",
+      "i": 117,
+      "j": 2,
+      "k": 0,
+      "serial_bits": "0x3951b717",
+      "target_i": 117,
+      "x2_bits": "0x3951b717"
+    },
+    {
+      "call": 3,
+      "field": "RDX",
+      "i": 234,
+      "j": 1,
+      "k": 0,
+      "serial_bits": "0x3951b717",
+      "target_i": 234,
+      "x2_bits": "0x3951b717"
+    },
+    {
+      "call": 3,
+      "field": "RDY",
+      "i": 117,
+      "j": 2,
+      "k": 0,
+      "serial_bits": "0x3951b717",
+      "target_i": 117,
+      "x2_bits": "0x3951b717"
+    },
+    {
+      "call": 3,
+      "field": "RDY",
+      "i": 234,
+      "j": 1,
+      "k": 0,
+      "serial_bits": "0x3951b717",
+      "target_i": 234,
+      "x2_bits": "0x3951b717"
+    },
+    {
+      "call": 3,
+      "field": "U",
+      "i": 117,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0x3eda333c",
+      "target_i": 117,
+      "x2_bits": "0x3eda3349"
+    },
+    {
+      "call": 3,
+      "field": "U",
+      "i": 118,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0x3ecfae7e",
+      "target_i": 117,
+      "x2_bits": "0x3ecfae70"
+    },
+    {
+      "call": 3,
+      "field": "U",
+      "i": 234,
+      "j": 1,
+      "k": 1,
+      "serial_bits": "0xc0f85741",
+      "target_i": 234,
+      "x2_bits": "0xc0f85741"
+    },
+    {
+      "call": 3,
+      "field": "U",
+      "i": 235,
+      "j": 1,
+      "k": 1,
+      "serial_bits": "0xc0f758e4",
+      "target_i": 234,
+      "x2_bits": "0xc0f758e4"
+    },
+    {
+      "call": 3,
+      "field": "V",
+      "i": 117,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0xc0e734ef",
+      "target_i": 117,
+      "x2_bits": "0xc0e734ef"
+    },
+    {
+      "call": 3,
+      "field": "V",
+      "i": 117,
+      "j": 3,
+      "k": 1,
+      "serial_bits": "0xc0c5ca09",
+      "target_i": 117,
+      "x2_bits": "0xc0c5ca08"
+    },
+    {
+      "call": 3,
+      "field": "V",
+      "i": 234,
+      "j": 1,
+      "k": 1,
+      "serial_bits": "0xc00f1bd3",
+      "target_i": 234,
+      "x2_bits": "0xc00f1bd4"
+    },
+    {
+      "call": 3,
+      "field": "V",
+      "i": 234,
+      "j": 2,
+      "k": 1,
+      "serial_bits": "0xc00660c1",
+      "target_i": 234,
+      "x2_bits": "0xc00660c1"
+    }
+  ],
+  "limitations": [
+    "selected coordinates and calls only",
+    "first whole-domain divergence unlocated",
+    "raw private capture stays local"
+  ],
+  "output_sample_count_per_layout": 140448,
+  "output_unique_coordinate_count_per_layout": 140442,
+  "overlay_sha256": "aade2bcd0da9083da96d6261c85866357da19d5444c202b8b6909329f11ec5a5",
+  "private_source_sha256": "27ce690b27b24c80247a5551b48d37fc32fc47470d806cbef1bb859d58edc31c",
+  "probe_executable_sha256": "26494c17bb40438ea7665fec4bdeae301346cc100f59f696dbf565c4ab7d2741",
+  "public_base_commit": "e8d4b10b86b46d111f86f0c368af4b3919d7b7e3",
+  "runs": {
+    "off_serial": {
+      "exe_sha256": "26494c17bb40438ea7665fec4bdeae301346cc100f59f696dbf565c4ab7d2741",
+      "grid": "1x1",
+      "history_sha256": "4441a9f1f057615aad02d15875acc88f2cfdd69236cce0410bdf12d23cf085e5",
+      "input_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+      "namelist_without_grid_sha256": "0ea0f4d94860c6f2cb23c737bb0caab97f2cc7368a73d2aa15e323abc8c363d1"
+    },
+    "off_x2": {
+      "exe_sha256": "26494c17bb40438ea7665fec4bdeae301346cc100f59f696dbf565c4ab7d2741",
+      "grid": "2x1",
+      "history_sha256": "8359adc82e1d80a0e6a7a47e85ec7e769213f594af3b87781a06a0c46efcfa3a",
+      "input_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+      "namelist_without_grid_sha256": "0ea0f4d94860c6f2cb23c737bb0caab97f2cc7368a73d2aa15e323abc8c363d1"
+    },
+    "on_serial": {
+      "exe_sha256": "26494c17bb40438ea7665fec4bdeae301346cc100f59f696dbf565c4ab7d2741",
+      "grid": "1x1",
+      "history_sha256": "4441a9f1f057615aad02d15875acc88f2cfdd69236cce0410bdf12d23cf085e5",
+      "input_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+      "namelist_without_grid_sha256": "0ea0f4d94860c6f2cb23c737bb0caab97f2cc7368a73d2aa15e323abc8c363d1"
+    },
+    "on_x2": {
+      "exe_sha256": "26494c17bb40438ea7665fec4bdeae301346cc100f59f696dbf565c4ab7d2741",
+      "grid": "2x1",
+      "history_sha256": "8359adc82e1d80a0e6a7a47e85ec7e769213f594af3b87781a06a0c46efcfa3a",
+      "input_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+      "namelist_without_grid_sha256": "0ea0f4d94860c6f2cb23c737bb0caab97f2cc7368a73d2aa15e323abc8c363d1"
+    },
+    "unprobed_serial": {
+      "exe_sha256": "a809332081cd33a51518a4bb662436d9e295b944b09084a801e78c85847e2ea4",
+      "grid": "1x1",
+      "history_sha256": "4441a9f1f057615aad02d15875acc88f2cfdd69236cce0410bdf12d23cf085e5",
+      "input_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+      "namelist_without_grid_sha256": "0ea0f4d94860c6f2cb23c737bb0caab97f2cc7368a73d2aa15e323abc8c363d1"
+    },
+    "unprobed_x2": {
+      "exe_sha256": "a809332081cd33a51518a4bb662436d9e295b944b09084a801e78c85847e2ea4",
+      "grid": "2x1",
+      "history_sha256": "8359adc82e1d80a0e6a7a47e85ec7e769213f594af3b87781a06a0c46efcfa3a",
+      "input_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+      "namelist_without_grid_sha256": "0ea0f4d94860c6f2cb23c737bb0caab97f2cc7368a73d2aa15e323abc8c363d1"
+    }
+  },
+  "same_executable_history": "254/254 raw-bit equal in 1x1 and 2x1 off/on pairs",
+  "schema": 1,
+  "scope": "three_selected_call2_mass_outputs_and_first_DIVV_input",
+  "source_order_checks": {
+    "DIVV_target234_i234_j1_k1": {
+      "serial_bits": "0xbca270c7",
+      "x2_bits": "0xbca270d1"
+    },
+    "MUU_target117_i117_j119_k0": {
+      "serial_bits": "0x47b9ea68",
+      "source_order_replay_bits": {
+        "serial": "0x47b9ea68",
+        "x2": "0x47b9ea69"
+      },
+      "x2_bits": "0x47b9ea69"
+    },
+    "MUU_target117_i118_j193_k0": {
+      "serial_bits": "0x47ae23e3",
+      "source_order_replay_bits": {
+        "serial": "0x47ae23e3",
+        "x2": "0x47ae23e4"
+      },
+      "x2_bits": "0x47ae23e4"
+    },
+    "MUV_target117_i117_j158_k0": {
+      "serial_bits": "0x47b755c4",
+      "source_order_replay_bits": {
+        "serial": "0x47b755c4",
+        "x2": "0x47b755c3"
+      },
+      "x2_bits": "0x47b755c3"
+    }
+  }
+}
