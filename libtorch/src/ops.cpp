@@ -63,7 +63,12 @@ struct LibmExp : public torch::autograd::Function<LibmExp> {
     }
     static torch::autograd::tensor_list backward(torch::autograd::AutogradContext* ctx,
                                                  torch::autograd::tensor_list go) {
-        return {go[0] * ctx->get_saved_variables()[0].exp()};
+        auto x = ctx->get_saved_variables()[0];
+        // A masked lane has zero cotangent. Avoid 0*Inf there without changing
+        // the active overflow path; this is a branch-local AD convention.
+        auto masked_invalid = (go[0] == 0) & ~torch::isfinite(x.exp());
+        auto safe_x = torch::where(masked_invalid, torch::zeros_like(x), x);
+        return {go[0] * safe_x.exp()};
     }
 };
 inline torch::Tensor rgmma_fwd(const torch::Tensor& x) {
