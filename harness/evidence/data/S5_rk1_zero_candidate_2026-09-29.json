@@ -1,0 +1,183 @@
+{
+  "baseline_executable_sha256": "95f81ff4c629d359f8b517fc1339eb9382fc4ba7d712e96338376b81c05a5ebc",
+  "candidate_executable_sha256": "463c60cc5b3dd63523456f63813a49d69001167174aad5048574fba5fecffdb8",
+  "candidate_object_sha256": "4560f30d1eef108cc96eb269a93642a4ad0d63bc687a44c038bce7eb4a7f1baf",
+  "comparisons": {
+    "off_on_serial": {
+      "bitwise_match": 254,
+      "common": 254,
+      "differ": 0,
+      "uvw_different_words": {}
+    },
+    "off_on_x2": {
+      "bitwise_match": 254,
+      "common": 254,
+      "differ": 0,
+      "uvw_different_words": {}
+    },
+    "serial_vs_x2": {
+      "bitwise_match": 226,
+      "common": 254,
+      "differ": 28,
+      "uvw_different_words": {
+        "U": 122539,
+        "V": 105470,
+        "W": 202034
+      }
+    }
+  },
+  "compile_log_sha256": "e51ee78c0ff13a5a69b57a7311e0c180326d380a3e39a37c37b6a42d0326e32d",
+  "files": {
+    "serial": 16,
+    "sha256": {
+      "serial.MU_TEND_AFTER.r0.i1-235.j1-142.txt": "3094a81257d7f60ad55e72c02456dd1d8bb7f80d0efbb6772e3bd9154309e91a",
+      "serial.MU_TEND_AFTER.r0.i1-235.j143-283.txt": "467809c7ed104489b8c73fe8b90ca7f4f7ea2a5c6434774db86ccf471a0a2a01",
+      "serial.MU_TEND_BEFORE.r0.i1-235.j1-142.txt": "c26ec61ecc6304e37ebaa6163f175756ab4551919a668d3a8d51d9644a8926ab",
+      "serial.MU_TEND_BEFORE.r0.i1-235.j143-283.txt": "a6c9a493f0efcb08fb0dfb8996b55a816f5060cf07fde79fab87f8160b0a885b",
+      "serial.PREP_AFTER.r0.i1-235.j1-142.txt": "3de428ec5f5f171229be454c98a99b904e9564be6586a8071feffc6fb8bd95ab",
+      "serial.PREP_AFTER.r0.i1-235.j143-283.txt": "e4282dc81e8434c7ec912811618ee3ad41b261de2c7b5f902360b674aead1d87",
+      "serial.PREP_BEFORE.r0.i1-235.j1-142.txt": "207290f5b063ffd946f5bbb244c64f21241d84ece8cb27f8ca38c08ec785e19d",
+      "serial.PREP_BEFORE.r0.i1-235.j143-283.txt": "9d25374790504888c00841491631018c111b0978f8feab84be8b4dcacb04ebea",
+      "serial.SMALL_AFTER.r0.i1-235.j1-142.txt": "4ce78e5cbd0445dfb720fc398c6610fbb534d70229751aaa8d9a8209a7787795",
+      "serial.SMALL_AFTER.r0.i1-235.j143-283.txt": "56a5973ff69441aa0356f58337c30a0184e323a4407db63f228b7f768970f98c",
+      "serial.SMALL_BEFORE.r0.i1-235.j1-142.txt": "513815536beb787849fc2b04034aa233ad011d3855390a6a3f66f12061d24c41",
+      "serial.SMALL_BEFORE.r0.i1-235.j143-283.txt": "78cbd6a52be58eb855b08fe56eda3cc15c707d8528a01b989e0e405a8444935c",
+      "serial.UV_AFTER.r0.i1-235.j1-142.txt": "98802c2241fbaed86e19d7c38b6d23f0ce1fb6e1803ca9e0054ceb5d63716a22",
+      "serial.UV_AFTER.r0.i1-235.j143-283.txt": "cfe718a1b6d821ad3316a6262e57c5fcd4a2bf26352c3d203832e2cee0b7c45e",
+      "serial.UV_BEFORE.r0.i1-235.j1-142.txt": "3e72d6346f2c061d1b2807916163dddb5eea902f152b959e44aa5e5936e98694",
+      "serial.UV_BEFORE.r0.i1-235.j143-283.txt": "052e0522cdd1c56fdc25f17c06f5a645191faa4cca81859441e3dc882749ffbc",
+      "x2.MU_TEND_AFTER.r0.i1-117.j1-142.txt": "63a4ded750b9b93165804f30ad84fe3ad9c1420c8d013bd753fefa74f17ec1b6",
+      "x2.MU_TEND_AFTER.r0.i1-117.j143-283.txt": "aba8b8d29c54e02f19b2c1cb8e4bd74ecd16fa005ec900cce2480d4dced41f7a",
+      "x2.MU_TEND_AFTER.r1.i118-235.j1-142.txt": "e270d4914a2b14ca8960902c83f97a0f90ee44debdca418f39eb3f66aba2e54f",
+      "x2.MU_TEND_AFTER.r1.i118-235.j143-283.txt": "5a3bec952e7369da33ea17f66b47b973ac4126c3de32bfb1bb73ebe667add78c",
+      "x2.MU_TEND_BEFORE.r0.i1-117.j1-142.txt": "95dbc762d48463323eeb988b88eea62ff473e6b2549c0db62c93dcf3ab7397e3",
+      "x2.MU_TEND_BEFORE.r0.i1-117.j143-283.txt": "4baed782f2093a14a3457727fe9cfe88ab35502f8a70f7f8800a1f6fe2b80fd9",
+      "x2.MU_TEND_BEFORE.r1.i118-235.j1-142.txt": "7bec283f08808cf5d8c598c5c5bff37498d63794200122dac2cbcca43b7fdf1d",
+      "x2.MU_TEND_BEFORE.r1.i118-235.j143-283.txt": "b6d760c5a32219d6809d652edb5d8de91f552fffdad42917f70af6a1df41efa0",
+      "x2.PREP_AFTER.r0.i1-117.j1-142.txt": "42f34fe9ceca234de3ffa4c39441aea2e2c755c12c3512ba9de7419c454275ee",
+      "x2.PREP_AFTER.r0.i1-117.j143-283.txt": "a1d0ac967c12b412cb3a3dadcb9e4853f71644e3223e488eaf17100f5d77562a",
+      "x2.PREP_AFTER.r1.i118-235.j1-142.txt": "6da415cf83b734ca95be8969b7cb294f34d71a8f0d2ad32a2747eed11714bdd3",
+      "x2.PREP_AFTER.r1.i118-235.j143-283.txt": "5398d84b3266cb9bf96d850a0326060636ef2bd032a91f924e2702adaf3713b3",
+      "x2.PREP_BEFORE.r0.i1-117.j1-142.txt": "a05882adce3055199df042fc175f7144285fd13aa89edbb1c38834afbfba2bcd",
+      "x2.PREP_BEFORE.r0.i1-117.j143-283.txt": "58d0d61eb6aec705cb6bc58407a4fc3c34b11dc4d6d144eecef10ba519ba0632",
+      "x2.PREP_BEFORE.r1.i118-235.j1-142.txt": "0c6f70eab6f9072d6e477bd5c9bfc3158f31da683ceb48016678b7c6b4e449e3",
+      "x2.PREP_BEFORE.r1.i118-235.j143-283.txt": "5ba7758f3321733bf9c589bccd1216fff4a2671033d6d9c577919dbb2ae3a54b",
+      "x2.SMALL_AFTER.r0.i1-117.j1-142.txt": "1739470aa64867d761c88677bb63c09ead91c6805ebed42c1d9f66016390dc55",
+      "x2.SMALL_AFTER.r0.i1-117.j143-283.txt": "0d745208c6bad1a4ee6e3091d53c0bb868916d8a619ee9d6820d15b4597aa601",
+      "x2.SMALL_AFTER.r1.i118-235.j1-142.txt": "28b66be0d3b384c0c5d52244b5b7196eb7b0333f99ccf9d4c366c098827d7fbf",
+      "x2.SMALL_AFTER.r1.i118-235.j143-283.txt": "ef00b89cd78c8c02f61ac7483e19b0638d9ef5fd32d55f11d35e295f2b6b0c33",
+      "x2.SMALL_BEFORE.r0.i1-117.j1-142.txt": "4e561dfe6188f701a2227783f7f683c9ef88fd4df74fdb997ad9d6e28f52e5a0",
+      "x2.SMALL_BEFORE.r0.i1-117.j143-283.txt": "d19e2df4a72e7313ffb06043729ab49d5364fa97d73ee7eea42749749c47a128",
+      "x2.SMALL_BEFORE.r1.i118-235.j1-142.txt": "d7acf01d9b59104c1a2bcb689d633d6228cce7e9065d58d420e3f67a2cfceb67",
+      "x2.SMALL_BEFORE.r1.i118-235.j143-283.txt": "b1215414a46be4c8a223419fdd39298a13d0c1db4af9098837ec597438ee0358",
+      "x2.UV_AFTER.r0.i1-117.j1-142.txt": "30da718e16ddf2955777e7095daf14ae81c0f0c82c10a3b07fdb1dc6c5d93535",
+      "x2.UV_AFTER.r0.i1-117.j143-283.txt": "da4bdc2d99c8f6b0e5c2db9004d56b3a572d95ea37503b5b6ee548fdb43fbe7d",
+      "x2.UV_AFTER.r1.i118-235.j1-142.txt": "9efdafba55ecfe583d667f116db69a4814fd06c27f7e3f8390d0efe9ee4708ef",
+      "x2.UV_AFTER.r1.i118-235.j143-283.txt": "deb2a4eeef2c70119a974d3bdd6da9bfc56f9eecbff2e9f718fa0e5362998593",
+      "x2.UV_BEFORE.r0.i1-117.j1-142.txt": "f1c23a0a93e6f75ec59fb57f8d226384c9c57ea3a70b729a7d3d7553061e3822",
+      "x2.UV_BEFORE.r0.i1-117.j143-283.txt": "2ab0b9a74755a4b9ea6842d6ff955866417408410fe93c740d03dfc2203c6536",
+      "x2.UV_BEFORE.r1.i118-235.j1-142.txt": "fd4b0b8777d44d5db249de971016c3a32b9f419e7d46a172e2261215fddec871",
+      "x2.UV_BEFORE.r1.i118-235.j143-283.txt": "6f1ff442b45e4c35357223dcd913f8cd6b98b13ff9fab6878e41f21764bf9f6e"
+    },
+    "x2": 32
+  },
+  "limitations": [
+    "full host remains 28/254 different",
+    "source expression altered only opt-in in a private shadow",
+    "selected probe words do not certify forecast accuracy or whole-domain MPI parity"
+  ],
+  "link_log_sha256": "6e33fd0cb03196b7514d7b05e22ce32438dbc112023b48a753edd8aea47650ff",
+  "macro_off_stripped_sha256": "cabf1a177d50fb0096db79644af20cfe6d75217dbe63ab406a7e29bb54c17634",
+  "overlay_sha256": "54db8ea6b0ac66cc0b52e04ce66ca97bcf86df1dfe1c21e7896c91c34a0c185a",
+  "preprocessed_f90_sha256": "a7d615361daddb74caba8f1575a1a6c21b365b2f208441b6d054089df4697959",
+  "private_source_sha256": "cabf1a177d50fb0096db79644af20cfe6d75217dbe63ab406a7e29bb54c17634",
+  "public_base_commit": "5fd2a48605c9aac22988dcbee596fa99d9f4d623",
+  "run_identities": {
+    "off_serial": {
+      "exe_sha256": "463c60cc5b3dd63523456f63813a49d69001167174aad5048574fba5fecffdb8",
+      "grid": "1x1",
+      "history_sha256": "c7c832c35e2699b05ce5c2a42166b782e2b635cba24b3e5b054e52544f78ed91",
+      "input_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+      "namelist_without_grid_sha256": "0ea0f4d94860c6f2cb23c737bb0caab97f2cc7368a73d2aa15e323abc8c363d1"
+    },
+    "off_x2": {
+      "exe_sha256": "463c60cc5b3dd63523456f63813a49d69001167174aad5048574fba5fecffdb8",
+      "grid": "2x1",
+      "history_sha256": "4638e9052185abfbe879dc342bd118f0a0b373b78ac2023d3a3f697399b1c815",
+      "input_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+      "namelist_without_grid_sha256": "0ea0f4d94860c6f2cb23c737bb0caab97f2cc7368a73d2aa15e323abc8c363d1"
+    },
+    "on_serial": {
+      "exe_sha256": "463c60cc5b3dd63523456f63813a49d69001167174aad5048574fba5fecffdb8",
+      "grid": "1x1",
+      "history_sha256": "c7c832c35e2699b05ce5c2a42166b782e2b635cba24b3e5b054e52544f78ed91",
+      "input_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+      "namelist_without_grid_sha256": "0ea0f4d94860c6f2cb23c737bb0caab97f2cc7368a73d2aa15e323abc8c363d1"
+    },
+    "on_x2": {
+      "exe_sha256": "463c60cc5b3dd63523456f63813a49d69001167174aad5048574fba5fecffdb8",
+      "grid": "2x1",
+      "history_sha256": "4638e9052185abfbe879dc342bd118f0a0b373b78ac2023d3a3f697399b1c815",
+      "input_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+      "namelist_without_grid_sha256": "0ea0f4d94860c6f2cb23c737bb0caab97f2cc7368a73d2aa15e323abc8c363d1"
+    }
+  },
+  "schema": 1,
+  "scope": "opt_in_RK1_exact_zero_two_stores_local_mp237_20s",
+  "selected_words": {
+    "MU_TEND_AFTER|MU2|117|158|0": {
+      "serial_bits": "0xc1bb578e",
+      "x2_bits": "0xc1bb5764"
+    },
+    "PREP_AFTER|U2|117|2|1": {
+      "serial_bits": "0x00000000",
+      "x2_bits": "0x00000000"
+    },
+    "PREP_AFTER|V2|117|3|1": {
+      "serial_bits": "0x00000000",
+      "x2_bits": "0x00000000"
+    },
+    "PREP_AFTER|V2|234|1|1": {
+      "serial_bits": "0x00000000",
+      "x2_bits": "0x00000000"
+    },
+    "UV_AFTER|V2|117|3|1": {
+      "serial_bits": "0x4438aa81",
+      "x2_bits": "0x4438a862"
+    }
+  },
+  "stage_differences": {
+    "MU_TEND_AFTER": {
+      "different": 9,
+      "total": 10
+    },
+    "MU_TEND_BEFORE": {
+      "different": 3,
+      "total": 10
+    },
+    "PREP_AFTER": {
+      "different": 2,
+      "total": 10
+    },
+    "PREP_BEFORE": {
+      "different": 0,
+      "total": 10
+    },
+    "SMALL_AFTER": {
+      "different": 8,
+      "total": 10
+    },
+    "SMALL_BEFORE": {
+      "different": 9,
+      "total": 10
+    },
+    "UV_AFTER": {
+      "different": 3,
+      "total": 10
+    },
+    "UV_BEFORE": {
+      "different": 1,
+      "total": 10
+    }
+  }
+}
