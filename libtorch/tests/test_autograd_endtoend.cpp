@@ -237,6 +237,13 @@ void selftest_kink_decision() {
 int main() {
     std::cout << "RUN test_autograd_endtoend\n";
 
+    // Two outer subcycles: the source freezes cpm/xl at call entry. Recomputing
+    // them from the second subcycle's changed qv/t gives 298.5760303665694.
+    auto long_case = build(/*grad=*/false);
+    auto long_out = kdm6_fn(long_case.s, long_case.f, make_parameters(0), 240.0);
+    if (std::abs(long_out.state_out.th[0][0].item<double>() - 298.5760408668088) > 5.0e-6)
+        fail("outer subcycles did not retain call-entry cpm/xl");
+
     // ── Forward + backward once on the grad-enabled leaves ────────────────────
     auto in = build(/*grad=*/true);
     auto res = kdm6_fn(in.s, in.f, make_parameters(0), DT);

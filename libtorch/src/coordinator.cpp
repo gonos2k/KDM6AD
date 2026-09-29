@@ -657,7 +657,9 @@ CoordinatorState kdm62d_one_step(
     double dtcld,
     const c10::optional<torch::Tensor>& ncmin_for_slope,
     torch::Tensor* rhog_out,
-    progb::ProgBOutputs* progb_ret
+    progb::ProgBOutputs* progb_ret,
+    const torch::Tensor& entry_cpm,
+    const torch::Tensor& entry_xl
 ) {
     // §53d: persistent ProgB bundle — callers thread the sed-era bundle in; standalone
     // callers (tests, kdm62d_step) get a fresh F:990-zeros bundle for this step.
@@ -687,6 +689,8 @@ CoordinatorState kdm62d_one_step(
 
     // F1a: preamble (full diagnostics) on the ENTRY state.
     auto pre = preamble(state_pre, forcing, full_params, ncmin_for_slope, PR);  // §53d merged ProgB (F:1290)
+    if (entry_cpm.defined()) pre.cpm = entry_cpm;
+    if (entry_xl.defined()) pre.xl = entry_xl;
     // §35 diag_rhog (RHOPO3D) shadow rhox lifecycle: Fortran ProgB_param (the graupel reslope,
     // called 7×) has INTENT(OUT) rhox — it WRITES rhox=clamp(qg/brs) ONLY for active cells and
     // RETAINS the prior array value for inactive cells; diag_rhog=rhox at exit (module_mp_kdm6.F
@@ -1323,6 +1327,25 @@ CoordinatorState kdm62d_one_step(
     return new_state;
 }
 
+CoordinatorState kdm62d_one_step(
+    const CoordinatorState& state,
+    const CoordinatorForcing& forcing,
+    const CoordinatorAuxDiagnostics& aux,
+    const torch::Tensor& sea_mask,
+    const CoordinatorParams& full_params,
+    const WarmPhaseParams& warm_params,
+    const ColdPhaseParams& cold_params,
+    const MeltFreezePhaseParams& mf_params,
+    double dtcld,
+    const c10::optional<torch::Tensor>& ncmin_for_slope,
+    torch::Tensor* rhog_out,
+    progb::ProgBOutputs* progb_ret
+) {
+    return kdm62d_one_step(state, forcing, aux, sea_mask, full_params,
+                           warm_params, cold_params, mf_params, dtcld,
+                           ncmin_for_slope, rhog_out, progb_ret, {}, {});
+}
+
 // ─── F2: sub-cycling wrapper ────────────────────────────────────────────────
 
 int compute_loops_max(double delt, double dtcldcr) {
@@ -1374,12 +1397,15 @@ CoordinatorState kdm62d_step(
 
     const int loops_max = compute_loops_max(delt, dtcldcr);
     const double dtcld = delt / static_cast<double>(loops_max);
+    const auto entry_cpm = thermo::compute_cpm(cur.qv, full_params.thermo);
+    const auto entry_xl = thermo::compute_xl(cur.t, full_params.thermo);
 
     for (int i = 0; i < loops_max; ++i) {
         cur = kdm62d_one_step(
             cur, forcing, aux, sea_mask,
             full_params, warm_params, cold_params, mf_params,
-            dtcld
+            dtcld, /*ncmin=*/{}, /*rhog_out=*/nullptr, /*progb_ret=*/nullptr,
+            entry_cpm, entry_xl
         );
     }
     return cur;

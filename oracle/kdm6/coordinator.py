@@ -1894,8 +1894,8 @@ def rebuild_aux_torch(
 
     THERMO STAGING (Codex stop-review fix): Fortran's re-slope after melt/freeze
     recomputes GEOMETRY (rslope*/n0*/ProgB/work2/supcol) but NOT the saturation/
-    latent-heat thermo — cpm(:835)/xl(:836)/qs1/qs2/rh/sw(:910-928) are computed
-    once (entry/substep-top) and the rate loop reads those entry-staged values
+    latent-heat thermo — cpm/xl are fixed at kdm62D call entry; qs1/qs2/rh/sw
+    are staged at the current subcycle entry and the rate loop reads them
     (supsat=q-qs at :1695/:1822 uses entry qs; q=qv is melt/freeze-invariant). So
     splice the entry thermo from `entry_pre`; recompute work1=diffac(xl,p,t,den,qs)
     with ENTRY xl/qs + the POST-FREEZE t (Fortran :1679-1680).
@@ -2098,6 +2098,8 @@ def kdm62d_one_step_torch(
     budget=None,         # [P0-4] opt-in water-budget ledger; None → byte-identical (no diagnostic)
     diagnostic_trace=None,  # opt-in stage trace; None → no diagnostic work
     diagnostic_step: int = 0,
+    entry_cpm=None,     # kdm62d-call entry coefficient; None for a standalone one-step call
+    entry_xl=None,
 ) -> "CoordinatorState | tuple[CoordinatorState, torch.Tensor]":
     """F1 chain을 *single timestep*에 대해 한 번 호출 → new state 반환.
 
@@ -2106,6 +2108,11 @@ def kdm62d_one_step_torch(
     ``(new_state, nccn_out)``; otherwise it returns a bare ``CoordinatorState``.
     """
     pre = preamble_torch(state, forcing, sea_mask, params=full_params, ncmin_tensor=ncmin_tensor)
+    if entry_cpm is not None or entry_xl is not None:
+        pre = pre._replace(
+            cpm=entry_cpm if entry_cpm is not None else pre.cpm,
+            xl=entry_xl if entry_xl is not None else pre.xl,
+        )
     # BRS density re-clamp #1 (Fortran ProgB_param INTENT(INOUT) brs=qg/rhox, L1084/L3376):
     # adopt the entry-state ProgB-reclamped graupel volume so downstream brs accumulation
     # starts from the density-[100,900]-capped base. progb.bg is already computed (dead
@@ -2568,6 +2575,8 @@ def kdm62d_step_torch(
 
     loops_max = compute_loops_max(delt, dtcldcr)
     dtcld = delt / float(loops_max)
+    entry_cpm = _thermo.compute_cpm(state.qv, params=full_params.thermo)
+    entry_xl = _thermo.compute_xl(state.t, params=full_params.thermo)
 
     cur_state = state
     for _ in range(loops_max):
@@ -2578,6 +2587,8 @@ def kdm62d_step_torch(
             cold_params=cold_params,
             mf_params=mf_params,
             dtcld=dtcld,
+            entry_cpm=entry_cpm,
+            entry_xl=entry_xl,
         )
     return cur_state
 

@@ -36,6 +36,7 @@ from . import coordinator as _coord
 from . import cloud_dsd as _cdsd
 from . import sedimentation as _sed
 from . import fconst as _fc
+from . import thermo as _thermo
 
 
 # ─── Parameters: opt-in differentiable model parameters ────────────────────────
@@ -632,6 +633,8 @@ def _kdm6_pure(
     )
 
     cur = cs  # WRF K-order, evolves across sub-cycles
+    entry_cpm = _thermo.compute_cpm(cur.qv, params=full_p.thermo)
+    entry_xl = _thermo.compute_xl(cur.t, params=full_p.thermo)
     _wb_pre_sed = _wb_pre_mic = None  # [P0-4] budget-hook locals (static-analysis init)
     for _ in range(loops):
         if budget is not None:
@@ -709,6 +712,7 @@ def _kdm6_pure(
                 full_params=full_p, warm_params=warm_p, cold_params=cold_p, mf_params=mf_p,
                 dtcld=dtcld, ncmin_tensor=ncmin_tensor, nccn=cur_nccn,
                 controls=controls, budget=budget,
+                entry_cpm=entry_cpm, entry_xl=entry_xl,
             )
         else:
             cur, cur_nccn = _coord.kdm62d_one_step_torch(
@@ -717,6 +721,7 @@ def _kdm6_pure(
                 dtcld=dtcld, ncmin_tensor=ncmin_tensor, nccn=cur_nccn,
                 controls=controls, budget=budget, diagnostic_trace=diagnostic_trace,
                 diagnostic_step=_,
+                entry_cpm=entry_cpm, entry_xl=entry_xl,
             )
         if budget is not None:
             budget.add_micro(_wb_pre_mic, cur, cf)  # [P0-4] ΔW_micro (≈0)

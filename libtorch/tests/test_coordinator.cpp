@@ -1250,6 +1250,46 @@ void test_kdm62d_step_sub_cycling_runs() {
     } END_TEST();
 }
 
+void test_subcycles_keep_entry_heat_coefficients() {
+    TEST(test_subcycles_keep_entry_heat_coefficients) {
+        auto opts = f64();
+        auto s = make_zero_state(1, 1);
+        s.qv = torch::full({1, 1}, 8.0e-3, opts);
+        s.qc = torch::full({1, 1}, 5.0e-4, opts);
+        s.qr = torch::full({1, 1}, 1.0e-4, opts);
+        s.qs = torch::full({1, 1}, 1.0e-5, opts);
+        s.qg = torch::full({1, 1}, 1.0e-5, opts);
+        s.qi = torch::full({1, 1}, 1.0e-5, opts);
+        s.nc = torch::full({1, 1}, 1.0e8, opts);
+        s.nr = torch::full({1, 1}, 1.0e5, opts);
+        s.ni = torch::full({1, 1}, 1.0e6, opts);
+        s.brs = torch::full({1, 1}, 1.0e-9, opts);
+        s.t = torch::full({1, 1}, 285.0, opts);
+        CoordinatorForcing f{
+            torch::full({1, 1}, 8.0e4, opts), torch::full({1, 1}, 1.1, opts),
+            torch::full({1, 1}, 500.0, opts), torch::full({1, 1}, 550.0, opts),
+        };
+        auto aux = make_test_aux(1, 1);
+        auto sea = torch::ones({1, 1}, torch::dtype(torch::kBool));
+        auto p = default_coordinator_params();
+        auto warm = default_warm_phase_params();
+        auto cold = default_cold_phase_params();
+        auto mf = default_melt_freeze_phase_params();
+        auto cpm0 = thermo::compute_cpm(s.qv, p.thermo);
+        auto xl0 = thermo::compute_xl(s.t, p.thermo);
+        auto first = kdm62d_one_step(s, f, aux, sea, p, warm, cold, mf, 100.0,
+                                     {}, nullptr, nullptr, cpm0, xl0);
+        auto frozen = kdm62d_one_step(first, f, aux, sea, p, warm, cold, mf, 100.0,
+                                      {}, nullptr, nullptr, cpm0, xl0);
+        auto dynamic = kdm62d_one_step(first, f, aux, sea, p, warm, cold, mf, 100.0);
+        auto wrapped = kdm62d_step(s, f, aux, sea, p, warm, cold, mf, 200.0, 100.0);
+        assert(torch::equal(wrapped.t, frozen.t));
+        assert(torch::equal(wrapped.qv, frozen.qv));
+        assert(!torch::equal(first.t, s.t));
+        assert(!torch::equal(frozen.t, dynamic.t));
+    } END_TEST();
+}
+
 // ─── preamble orchestration ─────────────────────────────────────────────────
 
 void test_preamble_runs_finite() {
@@ -1740,6 +1780,7 @@ int main() {
     test_kdm62d_step_matches_one_step_when_delt_le_dtcldcr();
     test_kdm62d_step_delt_zero_is_noop_and_no_nan();
     test_kdm62d_step_sub_cycling_runs();
+    test_subcycles_keep_entry_heat_coefficients();
     test_sedimentation_chain_runs_and_accumulates();
     test_group_limiter_caps_oversubscribed_ice_mass();
     test_group_limiter_inactive_on_warm_cell();
