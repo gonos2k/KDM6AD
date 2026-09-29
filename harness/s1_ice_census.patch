@@ -1,0 +1,50 @@
+--- a/libtorch/src/sedimentation_conservative.cpp
++++ b/libtorch/src/sedimentation_conservative.cpp
+@@ -3,6 +3,10 @@
+ #include <initializer_list>
+ #ifdef KDM6_S1_FACE_TRACE
+ #include <cerrno>
++#include <cstdlib>
++#include <fstream>
++#endif
++#ifdef KDM6_S1_ICE_CENSUS
+ #include <cstdlib>
+ #include <fstream>
+ #endif
+@@ -282,6 +286,36 @@
+     }
+ #endif
+ 
++#ifdef KDM6_S1_ICE_CENSUS
++    if (const char* path = std::getenv("KDM6_S1_CENSUS_FILE")) {
++        TORCH_CHECK(*path == '/', "S1 census requires an absolute output path");
++        TORCH_CHECK(!in.state.ni.requires_grad() && !in.workn_qi.requires_grad() &&
++                    !in.delz.requires_grad() && !mstep_col.requires_grad(),
++                    "S1 census requires value-only inputs");
++        torch::NoGradGuard no_grad;
++        static unsigned long long group_seq = 0; // one rank, one thread
++        if (n == 1) ++group_seq;
++        auto m2 = mstep_col_safe >= 2.0;
++        auto active_m2 = torch::logical_and(m2, in.state.ni.gt(0).any(-1));
++        auto bottom = prev_out_ni > 0.0; // actual capped departure at k=K-1
++        auto both = torch::logical_and(m2, bottom);
++        const auto joint_count = both.sum().item<int64_t>();
++        const auto first_b = joint_count
++            ? torch::nonzero(both).select(0, 0).item<int64_t>() : -1;
++        std::ofstream file(path, std::ios::app);
++        TORCH_CHECK(file.is_open(), "S1 census file cannot be opened");
++        file << "CENSUS " << group_seq << ' ' << n << ' ' << mstep_col.size(0)
++             << ' ' << K << ' ' << m2.sum().item<int64_t>()
++             << ' ' << active_m2.sum().item<int64_t>()
++             << ' ' << bottom.sum().item<int64_t>()
++             << ' ' << joint_count << ' ' << first_b
++             << ' ' << mstep_col_safe.max().item<double>()
++             << ' ' << std::hexfloat << prev_out_ni.max().item<double>() << '\n';
++        file.flush();
++        TORCH_CHECK(file.good(), "S1 census write failed");
++    }
++#endif
++
+     return IceSubstepOutputs{
+         IceSubstepState{
+             torch::stack(qi_cols, /*dim=*/-1),
