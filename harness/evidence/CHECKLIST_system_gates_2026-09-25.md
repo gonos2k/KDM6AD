@@ -62,3 +62,10 @@ S4's 600 s and 3,600 s negative native searches are in
 `REPORT_native_ice_multistep_search_2026-09-25.md`, its lossless rank log and
 fixed replay. The status stays OPEN until a genuinely executed active-ice
 `mstep>=2` consumer is measured.
+
+S3's [selected applied-face ledger](REPORT_S3_applied_face_budget_2026-10-01.md)
+now replays five measured RK stores and a prescribed face backoff. Four internal
+operator-weighted changes pair exactly, but rounded RK numerator changes sum to
+56.4597924 against an exact external-face term of 0.1778633. The replay separates
+divergence/RK rounding from final-store rounding; it does not approve a native
+repair, physical QN basis, tile/MPI sharing or external-boundary budget. S3 stays OPEN.
