@@ -1,0 +1,12 @@
+{
+  "source": "PR348 retained actual input, zero-based level10",
+  "source_npz_sha256": "5fc0148b8d6553028efec15fc27cf31e2bd5a1189fc75fe3b2ce4a04f1ae5e27",
+  "level": 10,
+  "n": 2720941312.0,
+  "rho_m": 0.885217158768995,
+  "qv": 0.008063695393502712,
+  "dqv": 8.063695393502713e-05,
+  "h": 0.0001,
+  "plus_hex": "0x1.445c8a0000000p+31",
+  "minus_hex": "0x1.445c89fffffffp+31"
+}

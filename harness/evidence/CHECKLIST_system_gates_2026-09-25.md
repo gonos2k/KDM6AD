@@ -84,3 +84,11 @@ the same executable uses those options for its f32 value-only forecast. Both
 the single probe has finite nonzero JVP/VJP with relative duality 4.37e-16.
 This resolves that selected selector mismatch only. Independent FD accuracy,
 general DA routing, physical policy and observation approval remain OPEN.
+
+S8's [isolated NCCN return candidate](REPORT_nccn_return_candidate_2026-10-01.md)
+now passes the unchanged column command on the original input-selected case in
+two clean client worktrees; baseline failure is preserved. A synthetic active
+CCN kernel direction also passes. The production runtime is unchanged; the
+half-change arithmetic switch has a recorded rounding counterexample. This is
+bounded candidate evidence, not adoption or general derivative/observation
+approval. S8 remains OPEN.
