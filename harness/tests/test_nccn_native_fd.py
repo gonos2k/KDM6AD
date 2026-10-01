@@ -28,7 +28,7 @@ def test_actual_native_trace_replays_numerically_but_is_not_admitted():
     assert result["accepted"] is False
     assert result["status"] == "NUMERICAL_PASS_UNADMITTED_STATE"
     assert result["worst_field"] == 8
-    assert result["duality_relative"] == 4.3721970729192387e-16
+    assert 0.0 <= result["duality_relative"] <= result["duality_threshold"] == 1e-12
     assert len(result["field_metrics"]) == 12
     parsed = parse_trace(DEFAULT_TRACE)
     assert set(parsed["arrays"]) == {

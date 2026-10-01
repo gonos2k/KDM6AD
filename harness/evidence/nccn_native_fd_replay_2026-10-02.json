@@ -52,9 +52,10 @@
     ]
   },
   "compressed_sha256": "d46746a88225529c81902b0ec927b7b421f1f6dbe898887303d94c19144d9bc6",
-  "duality_left_jv_squared": 2.927589901946864e+17,
-  "duality_relative": 4.3721970729192387e-16,
-  "duality_right_v_jtu": 2.927589901946863e+17,
+  "duality_left_jv_squared": 2.9275899019468634e+17,
+  "duality_reduction": "math.fsum of individually rounded binary64 products; not native SUM operation-order replay",
+  "duality_relative": 0.0,
+  "duality_right_v_jtu": 2.9275899019468634e+17,
   "duality_threshold": 1e-12,
   "fd_threshold": 1e-05,
   "field_metrics": {

@@ -57,7 +57,11 @@ source, objects, library, executable, inputs, controls and actual run folders.
 Root independently verified those source/library/executable hashes, forecast
 and energy files, variable counts and saved Times. The trace replay independently
 reconstructs both staged endpoint inputs, every FD value and all 12 reported
-error triples; it compares SUM(JV*JV) with SUM(V*JTU). Six focused public tests
+error triples; it independently compares the two dot products with explicit
+`math.fsum` reductions of binary64 products. This yields residual 0 on the saved
+arrays, while the measured native SUM residual stays 4.37220e-16. [Python 3.12 changed builtin float `sum`](https://docs.python.org/3/library/functions.html#sum); neither an independent reduction nor a different
+Python version is required to match native SUM in its final bit. Both use the
+unchanged 1e-12 acceptance limit. Six focused public tests
 cover the actual result plus missing/duplicate/nonfinite/changed records and
 inconsistent success flags. They do not execute a new model forecast.
 

@@ -273,8 +273,13 @@ def replay(path: str | Path = DEFAULT_TRACE) -> dict:
     jv = [value for row in a["JV"] for value in row]
     v = [value for row in a["V"] for value in row]
     jtu = [value for row in a["JTU"] for value in row]
-    left_dot = sum(value * value for value in jv)
-    right_dot = sum(x * y for x, y in zip(v, jtu))
+    # Specify the independent reduction: builtin sum changed for floats in
+    # Python 3.12. Native SUM's measured residue remains in the run receipt.
+    try:
+        left_dot = math.fsum(value * value for value in jv)
+        right_dot = math.fsum(x * y for x, y in zip(v, jtu))
+    except (OverflowError, ValueError) as exc:
+        raise TraceError("nonfinite or overflowing duality reduction") from exc
     if not all(math.isfinite(x) and x != 0.0 for x in (left_dot, right_dot)):
         raise TraceError("duality products must be finite and nonzero")
     duality = abs(left_dot - right_dot) / max(abs(left_dot), abs(right_dot))
@@ -311,6 +316,7 @@ def replay(path: str | Path = DEFAULT_TRACE) -> dict:
         "worst_field": worst_field,
         "fd_threshold": FD_REL_LIMIT,
         "duality_relative": duality,
+        "duality_reduction": "math.fsum of individually rounded binary64 products; not native SUM operation-order replay",
         "duality_threshold": DUALITY_LIMIT,
         "duality_left_jv_squared": left_dot,
         "duality_right_v_jtu": right_dot,
