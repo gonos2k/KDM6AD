@@ -27,9 +27,10 @@ the patch to `f9493de`; it is not adopted main source.
 
 ## Observed comparison
 
-All comparisons keep the retained input-selected column `(3,272)`, frame 1,
+Retained-column comparisons keep the input-selected column `(3,272)`, frame 1,
 39 levels, selector 2/dry-number 1, existing direction, h=1e-4 and thresholds.
-They do not reinterpret the production baseline failure as a pass.
+The separate synthetic probe uses its declared warm-column inputs. Neither
+comparison reinterprets the production baseline failure as a pass.
 
 | Return | Retained identity case | Synthetic nonzero CCN kernel FD relative | Extra arithmetic selection |
 | --- | --- | --- | --- |
