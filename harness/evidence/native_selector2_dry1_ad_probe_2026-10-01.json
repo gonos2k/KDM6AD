@@ -1,0 +1,255 @@
+{
+  "schema": "s8-normalized-dry-native-probe-v2",
+  "scope": "One native 5 km mp337 column fp64 AD probe; selector2 dry_number1; paired OFF/ON instrumentation noninterference only.",
+  "source_base": {
+    "path": "/private/tmp/KDM6AD-s8-normalized-dry-native/phys.clean_base",
+    "kdm6_iso_c.F_sha256": "98379fed7c595fb577ed2528c361672bcc7613f9d15d7b4b9841e60e17c0ce3e",
+    "module_mp_kdm6ad_cons.F_sha256": "ce2655c3563f49de3708eb516b3b77c8298f3a15f0734b047cbb21424f8c60a2"
+  },
+  "source_patched": {
+    "kdm6_iso_c.F_sha256": "5e8a38b4c24d47a89d8c108014dc0e4073cff236db19f19a21913cbfb1cc6dea",
+    "module_mp_kdm6ad_cons.F_sha256": "89bfed39a80d9a2189a621609c4a9d32f8792ee365cd8d696c18b2a8c515b24a",
+    "public_patch": "/Users/yhlee/KDM6AD-k/harness/s8_normalized_dry_host_probe.patch",
+    "public_patch_sha256": "97529fabd0e37f3735632c8a0a39e91af502b67c9f298c668e1c98253accf2fa"
+  },
+  "build": {
+    "compile_script": "/private/tmp/KDM6AD-s8-normalized-dry-native/plan_compile.py",
+    "link_script": "/private/tmp/KDM6AD-s8-normalized-dry-native/plan_link.py",
+    "compile_contract": "mpif90 flags from saved native recipe include -ffp-contract=off; fresh ISO and wrapper objects.",
+    "iso_object_sha256": "e4108901afdc3e49ba43c3f704a581a5a0a60dc47258c90a18c476a99ed0158c",
+    "wrapper_object_sha256": "f3087f1e4899c75b6197005a408be59390fb70a9f311f09af42502704b18f17e",
+    "executable": "/private/tmp/KDM6AD-s8-normalized-dry-native/build/wrf_s1_normalized_dry_probe.exe",
+    "executable_sha256": "cff4cb63c8fd53a0ca3bf6e49d1821c12c9f44e747c99544f57f8174be982976",
+    "library": "/private/tmp/KDM6AD-normalized-dry-column-build/libkdm6_c.2.0.0.dylib",
+    "library_sha256": "9e1aac3167eeea40a52ab09f4ee1b99e948a164fcf1d354a0575627ae32d0aff",
+    "library_symlinked_prefix": "/private/tmp/KDM6AD-s8-normalized-dry-native/prefix/lib/libkdm6_c.2.dylib",
+    "link_rpath": "/private/tmp/KDM6AD-s8-normalized-dry-native/prefix/lib",
+    "previous_executable_sha256": "b0d0ee79e794755c6a5376eb3b6187465321965cb656f1312e6cd8d6a10c2702"
+  },
+  "input_sha256": {
+    "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+    "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+    "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3"
+  },
+  "run_controls": {
+    "scheme": "mp337",
+    "KDM6_S1_NORMALIZED_ICE": "1",
+    "KDM6_S2_DRY_NUMBER": "1",
+    "KDM6_S8_FP64_PROBE": "off=0,on=1",
+    "dt_s": 20,
+    "run_seconds": 40,
+    "history_times_utc": [
+      "2025-07-19_00:00:00",
+      "2025-07-19_00:00:20",
+      "2025-07-19_00:00:40"
+    ],
+    "mpi_ranks": 1,
+    "actual_proc_grid": "1x1",
+    "threads": 1,
+    "en0": "inactive",
+    "local_mpi_interface": "lo0 (OMPI_MCA_btl_tcp_if_include and OMPI_MCA_oob_tcp_if_include)",
+    "no_S1_tile_trace_vars": "true"
+  },
+  "runs": {
+    "off": {
+      "run_id": "mp337_s8normdry_v2_off_0min40s_hist0_20261001_134247_p34200",
+      "experiment_valid": {
+        "experiment_valid": true,
+        "invalid_reasons": [],
+        "requested_proc_grid": null,
+        "actual_proc_grid": "1x1",
+        "exit_code": 0,
+        "model_completed": true
+      },
+      "proc_grid": "requested (unset -- WRF chose)\nactual    1x1\nmatches   n/a\nnp        1\n",
+      "executable_record": "cff4cb63c8fd53a0ca3bf6e49d1821c12c9f44e747c99544f57f8174be982976\nbefore cff4cb63c8fd53a0ca3bf6e49d1821c12c9f44e747c99544f57f8174be982976\nafter  cff4cb63c8fd53a0ca3bf6e49d1821c12c9f44e747c99544f57f8174be982976\nstable yes\npath   /private/tmp/KDM6AD-s8-normalized-dry-native/build/wrf_s1_normalized_dry_probe.exe\n",
+      "rsl_out_sha256": "c1d4e38e3f5f0b64e56ae02c848b85443f382bfc56143469212a6907ae87bfda",
+      "effective_namelist_sha256": "8d73a01a827b5b3980b4440592b31dd801ddc659611b2d25651bd4f11e7ea2bc",
+      "runner_sha256": "runner fc92f1eff06fb0a5b4d417a6ef24aecfb1fdeee029fa4d848838de69845ad49f\npath   /Users/yhlee/KDM6AD-k/harness/run_ss_case.py\n"
+    },
+    "on": {
+      "run_id": "mp337_s8normdry_v2_on_0min40s_hist0_20261001_134415_p36127",
+      "experiment_valid": {
+        "experiment_valid": true,
+        "invalid_reasons": [],
+        "requested_proc_grid": null,
+        "actual_proc_grid": "1x1",
+        "exit_code": 0,
+        "model_completed": true
+      },
+      "proc_grid": "requested (unset -- WRF chose)\nactual    1x1\nmatches   n/a\nnp        1\n",
+      "executable_record": "cff4cb63c8fd53a0ca3bf6e49d1821c12c9f44e747c99544f57f8174be982976\nbefore cff4cb63c8fd53a0ca3bf6e49d1821c12c9f44e747c99544f57f8174be982976\nafter  cff4cb63c8fd53a0ca3bf6e49d1821c12c9f44e747c99544f57f8174be982976\nstable yes\npath   /private/tmp/KDM6AD-s8-normalized-dry-native/build/wrf_s1_normalized_dry_probe.exe\n",
+      "rsl_out_sha256": "4bfb7eef92a745ecb169bc1262150f233e1d2ae426a800aa9751efe66d57076c",
+      "effective_namelist_sha256": "8d73a01a827b5b3980b4440592b31dd801ddc659611b2d25651bd4f11e7ea2bc",
+      "runner_sha256": "runner fc92f1eff06fb0a5b4d417a6ef24aecfb1fdeee029fa4d848838de69845ad49f\npath   /Users/yhlee/KDM6AD-k/harness/run_ss_case.py\n"
+    }
+  },
+  "outputs": {
+    "off": {
+      "fcst": {
+        "path": "/private/tmp/KDM6AD-s8-normalized-dry-native/case/runs/mp337_s8normdry_v2_off_0min40s_hist0_20261001_134247_p34200/klfs_lc05_fcst.202507190000",
+        "sha256": "be0edb894d1ddc5996f925cf01d56d1d882b53d6ed0295566edac2cb60f31308",
+        "bytes": 953745068,
+        "time_frames": 3,
+        "times": [
+          "2025-07-19_00:00:00",
+          "2025-07-19_00:00:20",
+          "2025-07-19_00:00:40"
+        ],
+        "variable_count": 254
+      },
+      "energy": {
+        "path": "/private/tmp/KDM6AD-s8-normalized-dry-native/case/runs/mp337_s8normdry_v2_off_0min40s_hist0_20261001_134247_p34200/klfs_lc05_energy.202507190000",
+        "sha256": "e8251c4bd2bf8556b66c81f9079371d176815ddbdd8b3752f9dd13601e90c72e",
+        "bytes": 2116980,
+        "time_frames": 2,
+        "times": [
+          "2025-07-19_00:00:00",
+          "2025-07-19_00:00:20"
+        ],
+        "variable_count": 5
+      },
+      "prcp": {
+        "path": "/private/tmp/KDM6AD-s8-normalized-dry-native/case/runs/mp337_s8normdry_v2_off_0min40s_hist0_20261001_134247_p34200/klfs_lc05_prcp.202507190000",
+        "sha256": "8cfb92ce8723ab801e5b564f58af1979f9901afd3b040cb374855f93b87eb924",
+        "bytes": 4296,
+        "time_frames": 0,
+        "times": [],
+        "variable_count": 1
+      },
+      "ocean": {
+        "path": "/private/tmp/KDM6AD-s8-normalized-dry-native/case/runs/mp337_s8normdry_v2_off_0min40s_hist0_20261001_134247_p34200/klfs_lc05_ocean.202507190000",
+        "sha256": "8cfb92ce8723ab801e5b564f58af1979f9901afd3b040cb374855f93b87eb924",
+        "bytes": 4296,
+        "time_frames": 0,
+        "times": [],
+        "variable_count": 1
+      }
+    },
+    "on": {
+      "fcst": {
+        "path": "/private/tmp/KDM6AD-s8-normalized-dry-native/case/runs/mp337_s8normdry_v2_on_0min40s_hist0_20261001_134415_p36127/klfs_lc05_fcst.202507190000",
+        "sha256": "be0edb894d1ddc5996f925cf01d56d1d882b53d6ed0295566edac2cb60f31308",
+        "bytes": 953745068,
+        "time_frames": 3,
+        "times": [
+          "2025-07-19_00:00:00",
+          "2025-07-19_00:00:20",
+          "2025-07-19_00:00:40"
+        ],
+        "variable_count": 254
+      },
+      "energy": {
+        "path": "/private/tmp/KDM6AD-s8-normalized-dry-native/case/runs/mp337_s8normdry_v2_on_0min40s_hist0_20261001_134415_p36127/klfs_lc05_energy.202507190000",
+        "sha256": "e8251c4bd2bf8556b66c81f9079371d176815ddbdd8b3752f9dd13601e90c72e",
+        "bytes": 2116980,
+        "time_frames": 2,
+        "times": [
+          "2025-07-19_00:00:00",
+          "2025-07-19_00:00:20"
+        ],
+        "variable_count": 5
+      },
+      "prcp": {
+        "path": "/private/tmp/KDM6AD-s8-normalized-dry-native/case/runs/mp337_s8normdry_v2_on_0min40s_hist0_20261001_134415_p36127/klfs_lc05_prcp.202507190000",
+        "sha256": "8cfb92ce8723ab801e5b564f58af1979f9901afd3b040cb374855f93b87eb924",
+        "bytes": 4296,
+        "time_frames": 0,
+        "times": [],
+        "variable_count": 1
+      },
+      "ocean": {
+        "path": "/private/tmp/KDM6AD-s8-normalized-dry-native/case/runs/mp337_s8normdry_v2_on_0min40s_hist0_20261001_134415_p36127/klfs_lc05_ocean.202507190000",
+        "sha256": "8cfb92ce8723ab801e5b564f58af1979f9901afd3b040cb374855f93b87eb924",
+        "bytes": 4296,
+        "time_frames": 0,
+        "times": [],
+        "variable_count": 1
+      }
+    }
+  },
+  "history_comparison": {
+    "forecast": "strict_bitwise_nc.py; frames 0,1,2 each 254 common variables, 254 bitwise-match and 0 differ.",
+    "energy": "strict_bitwise_nc.py; frames 0,1 each 5 common variables, 5 bitwise-match and 0 differ.",
+    "prcp_ocean": "zero saved frames; no numeric comparison claim."
+  },
+  "probe": {
+    "row_count": 1,
+    "row": "S2S8HAD_v2physics_variant=2dry_number=1value_only=0           2 ad_dims           1          39           1 tile_dims         232          39         139 global_cell         200         152 tile_local         199          10   2665263712.2747979        2.4626287809534266E-003   541072074.86127615        9.0266356724817684E+020   2.9275899019468640E+017   2.9275899019468627E+017   4.3721970729192387E-016",
+    "row_sha256": "7dd3efdf0b2b90826066f654b71bb4d88ecf8cb6de4de0be8a64f4fa279b90c6",
+    "off_run_row_count": 0,
+    "fields": {
+      "tag": "S2S8HAD_v2",
+      "physics_variant": 2,
+      "dry_number": 1,
+      "value_only": 0,
+      "abi_version": 2,
+      "ad_dims": [
+        1,
+        39,
+        1
+      ],
+      "host_tile_dims": [
+        232,
+        39,
+        139
+      ],
+      "global_cell": [
+        200,
+        152
+      ],
+      "tile_local": [
+        199,
+        10
+      ],
+      "norm_out": 2665263712.274798,
+      "norm_v": 0.0024626287809534266,
+      "norm_jv": 541072074.8612761,
+      "norm_jtu": 9.026635672481768e+20,
+      "left_dot": 2.927589901946864e+17,
+      "right_dot": 2.927589901946863e+17,
+      "relative_duality": 4.3721970729192387e-16
+    },
+    "status_checks": "JV and JTU finite checks are reached only after successful JVP/VJP respectively; no short-circuit assumption."
+  },
+  "limitations": [
+    "This is a bounded fp64 AD call on one column using host-staged f32 values.",
+    "The duality check uses u=Jv and is an AD self-consistency check.",
+    "No independent finite-difference claim; root separately observed/reproduced NCCN finite-difference quantization failure.",
+    "No derivative of Fortran ITIMESTEP=1 NN profile initialization.",
+    "No multi-rank or en0 active-interface evidence."
+  ],
+  "excluded_attempt": {
+    "path": "phys.failed_s2_order",
+    "status": "preserved_failed_patch_composition; never compiled or run; excluded from result",
+    "reason": "Historical zero-context S8 insertion shifted against S1/S2 wrapper; subsequent historical S2 AD ISO hunk had rejected hunks. The in-memory final experiment was rebuilt standalone from source_base instead.",
+    "artifacts": {
+      "kdm6_iso_c.F": "c4baa9679aad6da6a38ac689590134ba792f1ef6dd7c1fcd3921425c69c7d62e",
+      "kdm6_iso_c.F.orig": "b79105da70cccdbc903b6eaa4171dcb66f599c9bae81bedba3156da8a64bae0e",
+      "kdm6_iso_c.F.rej": "65e2b51deccc36e5454a6f5b4fb8a5c002acd61aa978d5748c7492d2be9ae91e",
+      "module_mp_kdm6ad_cons.F": "e17f1d4f0875f6a0647676e8e331de1a8859bee65f3f0c8411ca18b9291c03e4",
+      "module_mp_kdm6ad_cons.F.orig": "12f94db98e9fb23bc4d4db37dfbd072d9dfa4c4e952a28c7efa558055d749255"
+    }
+  },
+  "source_transition": {
+    "change": "Guard JV and JTU finiteness reductions with nested AD_RC==KDM6_OK IF blocks; Fortran .AND. is not short-circuiting.",
+    "corrected_wrapper_sha256": "89bfed39a80d9a2189a621609c4a9d32f8792ee365cd8d696c18b2a8c515b24a",
+    "corrected_iso_sha256": "5e8a38b4c24d47a89d8c108014dc0e4073cff236db19f19a21913cbfb1cc6dea",
+    "patch_sha256": "97529fabd0e37f3735632c8a0a39e91af502b67c9f298c668e1c98253accf2fa",
+    "patch_applies_to_clean_base": true,
+    "patch_reverse_restores_clean_base": true,
+    "source_diff_scope": "Only the two JV/JTU status checks changed from v1; loop structure and all other probe logic are unchanged."
+  },
+  "previous_version": {
+    "receipt": "/private/tmp/KDM6AD-s8-normalized-dry-native/evidence/native_selector2_dry1_ad_probe_v1_2026-10-01.json",
+    "receipt_sha256": "bf58c93e817e1d8c1d6f3a550349bb775bd16aa4340572fe278a86f6279052bf",
+    "patch_backup": "/private/tmp/KDM6AD-s8-normalized-dry-native/evidence/s8_normalized_dry_host_probe_v1.patch",
+    "patch_backup_sha256": "c30290974b8b1fedf455bb80944ede3f3148467bc5f31e0001be2da5591a55d7",
+    "executable_backup": "/private/tmp/KDM6AD-s8-normalized-dry-native/evidence/wrf_s1_normalized_dry_probe_v1.exe",
+    "executable_backup_sha256": "b0d0ee79e794755c6a5376eb3b6187465321965cb656f1312e6cd8d6a10c2702",
+    "run_ids": [
+      "mp337_s8normdry_off_0min40s_hist0_20261001_131941_p23265",
+      "mp337_s8normdry_on_0min40s_hist0_20261001_132248_p24047"
+    ]
+  }
+}

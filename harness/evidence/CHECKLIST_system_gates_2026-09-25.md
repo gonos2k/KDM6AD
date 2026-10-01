@@ -76,3 +76,11 @@ path. Two clean executions reproduce the saved arrays. Graph/value equality and
 duality pass, but `nccn` FD remains unresolved at output precision, with a nonzero
 failure exit. This offline snapshot call does not certify a selector-2 in-host
 derivative, full Jacobian agreement or observation approval. S8 remains OPEN.
+
+S8's [same-candidate host probe](REPORT_S8_normalized_dry_host_probe_2026-10-01.md)
+now executes selector 2 / dry-number 1 fp64 AD at one staged mp337 column while
+the same executable uses those options for its f32 value-only forecast. Both
+40 s OFF/ON runs complete and match all 254 forecast variables at 0/20/40 s;
+the single probe has finite nonzero JVP/VJP with relative duality 4.37e-16.
+This resolves that selected selector mismatch only. Independent FD accuracy,
+general DA routing, physical policy and observation approval remain OPEN.
