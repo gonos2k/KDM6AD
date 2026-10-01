@@ -69,3 +69,10 @@ operator-weighted changes pair exactly, but rounded RK numerator changes sum to
 56.4597924 against an exact external-face term of 0.1778633. The replay separates
 divergence/RK rounding from final-store rounding; it does not approve a native
 repair, physical QN basis, tile/MPI sharing or external-boundary budget. S3 stays OPEN.
+
+S8's [same-candidate column command](REPORT_S8_same_candidate_column_2026-10-01.md)
+now executes selector 2 / dry-number 1 in one fp64 input→forward→JVP/VJP→FD→save
+path. Two clean executions reproduce the saved arrays. Graph/value equality and
+duality pass, but `nccn` FD remains unresolved at output precision, with a nonzero
+failure exit. This offline snapshot call does not certify a selector-2 in-host
+derivative, full Jacobian agreement or observation approval. S8 remains OPEN.

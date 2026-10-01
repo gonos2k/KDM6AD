@@ -1,0 +1,81 @@
+{
+  "configuration": {
+    "physics_variant": 2,
+    "dry_number": 1,
+    "precision": "float64",
+    "dt_seconds": 20.0,
+    "ncmin_land_volume": 10.0,
+    "ncmin_sea_volume": 10.0,
+    "nccn_policy": "as_stored",
+    "finite_difference_width": 0.0001,
+    "density_policy": "existing_ProgB",
+    "observations": "not_evaluated"
+  },
+  "source_revision": "8efff854ce959fb3cafbd0aa64eab82ebd54e4d4",
+  "source_dirty": false,
+  "status": "NUMERICAL_CHECK_FAILED",
+  "input_sha256": "be0edb894d1ddc5996f925cf01d56d1d882b53d6ed0295566edac2cb60f31308",
+  "library_sha256": "9e1aac3167eeea40a52ab09f4ee1b99e948a164fcf1d354a0575627ae32d0aff",
+  "runner_sha256": "95dbd30f6743c7871b3dd575196386c3774f6f64bd7f8b9df91fba2b1c3c84bc",
+  "python": "3.10.11",
+  "column": {
+    "i": 3,
+    "j": 272,
+    "time_index": 1,
+    "xland": 1.0,
+    "native_levels": 39,
+    "valid_time": "2025-07-19_00:00:20"
+  },
+  "checks": {
+    "graph_value_bits_equal": true,
+    "duality_relative": 1.7898345672809642e-16,
+    "finite_difference_max_abs": {
+      "th": 4.2030396603227557e-10,
+      "qv": 7.920327262968263e-15,
+      "qc": 0.0,
+      "qr": 9.105802706330741e-18,
+      "qi": 6.4543910580777686e-15,
+      "qs": 4.3154020497825334e-16,
+      "qg": 3.1721497612007774e-20,
+      "nccn": 0.002384185791015625,
+      "nc": 0.0,
+      "ni": 3.9177403863277505e-06,
+      "nr": 2.3294634485249155e-09,
+      "bg": 8.044392041595715e-23
+    },
+    "finite_difference_relative": {
+      "th": 5.583113428056277e-08,
+      "qv": 6.803067930565842e-11,
+      "qc": 0.0,
+      "qr": 2.9557887864602357e-10,
+      "qi": 3.0748809398602706e-11,
+      "qs": 4.3578704655297795e-11,
+      "qg": 3.733998850451432e-11,
+      "nccn": 1.0,
+      "nc": 0.0,
+      "ni": 2.0517929937481174e-10,
+      "nr": 4.7448712788918405e-08,
+      "bg": 8.522288279714079e-11
+    },
+    "endpoint_quantization_estimate": {
+      "th": 5.684341886080801e-10,
+      "qv": 1.734723475976807e-14,
+      "qc": 4.9407e-320,
+      "qr": 8.470329472543003e-18,
+      "qi": 2.710505431213761e-16,
+      "qs": 5.421010862427522e-16,
+      "qg": 1.3234889800848443e-19,
+      "nccn": 0.0095367431640625,
+      "nc": 4.9407e-320,
+      "ni": 2.3283064365386963e-06,
+      "nr": 2.2737367544323206e-09,
+      "bg": 1.2924697071141057e-22
+    },
+    "finite_difference_passed": false,
+    "numerical_checks_passed": false
+  },
+  "physical_number_basis_resolved": false,
+  "accepted_observation_cost": false,
+  "operational_approval": false,
+  "branch_certification": "not_measured"
+}
