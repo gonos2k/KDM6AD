@@ -1,3 +1,4 @@
+import json
 import numpy as np
 from pathlib import Path
 import sys
@@ -10,6 +11,7 @@ from harness.nccn_return_candidate import (
     delta_return,
     delta_return_with_direct_fallback,
     direct_return,
+    exact_zero_return,
 )
 
 
@@ -21,6 +23,37 @@ def test_zero_applied_volume_is_identity_for_delta_return():
     n, rho, applied = t(3.7e9), t(0.88731), t(0.0)
     assert delta_return(n, applied, rho).item() == n.item()
     assert direct_return(n, applied, rho).item() == n.item()
+
+
+def test_exact_zero_selector_keeps_live_applied_amount_tangent():
+    rho0 = 0.88731
+    n0 = 3.7e9
+    amount0 = 0.0
+
+    def exact(n, amount, rho):
+        nin = n * rho
+        nout = nin - amount
+        return exact_zero_return(n, nin, nout, rho)
+
+    def direct(n, amount, rho):
+        return direct_return(n, amount, rho)
+
+    def naive_bzero(n, amount, rho):
+        nin = n * rho
+        nout = nin - amount
+        delta = nout - nin
+        # Counterexample only: this value-only zero branch erases the live
+        # applied-amount derivative at amount == 0.
+        return torch.where(delta == 0.0, n, nout / rho)
+
+    args = (t(n0), t(amount0), t(rho0))
+    tangents = (t(0.0), t(1.0), t(0.0))
+    exact_value, exact_jvp = torch.func.jvp(exact, args, tangents)
+    direct_value, direct_jvp = torch.func.jvp(direct, args, tangents)
+    naive_value, naive_jvp = torch.func.jvp(naive_bzero, args, tangents)
+    assert exact_value.item() == direct_value.item() == naive_value.item() == n0
+    assert exact_jvp.item() == direct_jvp.item() == -1.0 / rho0
+    assert naive_jvp.item() == 0.0
 
 
 def test_positive_and_negative_applied_volume_match_closed_form():
@@ -212,3 +245,37 @@ def test_level10_extracted_fixture_replays_qv_endpoints():
     # subtraction differs from the saved minus endpoint by one float64 ULP.
     assert result["plus_delta_ulp_error"] == 0
     assert result["minus_delta_ulp_error"] == 1
+
+
+def test_exact_zero_fixture_replays_direct_plus_minus_endpoints():
+    fixture = Path(__file__).resolve().parents[2] / "harness/evidence/nccn_return_level10_2026-10-01.json"
+    result = baseline_level10(fixture)
+    n_hex = float(json.loads(fixture.read_text())["n"]).hex()
+    for side in ("plus", "minus"):
+        assert result[f"{side}_direct_hex"] == result[f"{side}_expected_hex"]
+        assert result[f"{side}_exact_zero_hex"] == n_hex
+        assert result[f"{side}_hybrid_hex"] == n_hex
+
+
+def test_extracted_endpoint_quantization_is_not_a_universal_fd_pass():
+    fixture = Path(__file__).resolve().parents[2] / "harness/evidence/nccn_return_level10_2026-10-01.json"
+    result = baseline_level10(fixture)
+    # The saved direct endpoints differ by one binary64 ULP: their central FD
+    # is nonzero although the zero-increment live JVP is zero. Exact-zero and
+    # magnitude-hybrid values instead stay at n and have a zero endpoint FD.
+    assert result["expected_fd"] == 0.002384185791015625
+    assert result["exact_zero_fd"] == 0.0
+    assert result["hybrid_fd"] == 0.0
+
+
+def test_exact_zero_formula_is_bitwise_direct_for_nonzero_and_near_removal():
+    n, rho = t(2.4e9), t(0.875)
+    cases = (t(2.3e8), t(-4.1e8), t(np.nextafter(n.item() * rho.item(), 0.0)))
+    for applied in cases:
+        nin = n * rho
+        nout = nin - applied
+        assert (nout - nin).item() != 0.0
+        assert torch.equal(
+            exact_zero_return(n, nin, nout, rho),
+            direct_return(n, applied, rho),
+        )
