@@ -1,0 +1,157 @@
+--- a/phys/module_mp_kdm6ad_cons.F
++++ b/phys/module_mp_kdm6ad_cons.F
+@@ -358,12 +358,19 @@
+     ! staged for the value-only host forecast immediately below.
+     BLOCK
+       CHARACTER(LEN=16) :: ENABLED
+-      INTEGER :: ISEL, JSEL, ENV_STATUS, ENV_LENGTH
+-      INTEGER(c_int) :: AD_RC, CLOSE_RC
++      INTEGER :: ISEL, JSEL, ENV_STATUS, ENV_LENGTH, F, K, IDX, WORST_FIELD, FD_PASS
++      INTEGER :: TRACE_UNIT, TRACE_IOS
++      INTEGER(c_int) :: AD_RC, CLOSE_RC, RC_PLUS, RC_MINUS
+       LOGICAL :: PROBE_ENABLED, TARGET_IN_TILE
+-      TYPE(c_ptr) :: AD_HANDLE
++      TYPE(c_ptr) :: AD_HANDLE, HANDLE_PLUS, HANDLE_MINUS
+       REAL(c_double), ALLOCATABLE :: STATE64(:,:,:,:), FORCE64(:,:,:,:), OUT64(:,:,:,:)
+-      REAL(c_double), ALLOCATABLE :: V(:), JV(:), JTU(:)
++      REAL(c_double), ALLOCATABLE :: STATE64_PLUS(:,:,:,:), STATE64_MINUS(:,:,:,:)
++      REAL(c_double), ALLOCATABLE :: OUT64_PLUS(:,:,:,:), OUT64_MINUS(:,:,:,:)
++      REAL(c_double), ALLOCATABLE :: V(:), JV(:), JTU(:), FD(:)
++      REAL(c_double) :: FD_MAXABS(12), FD_SCALE(12), FD_REL(12), FD_VALUE, FD_ERR
++      REAL(c_double), PARAMETER :: H_FD = 1.0e-4_c_double
++      CHARACTER(LEN=512), PARAMETER :: TRACE_FILE = &
++        '/private/tmp/KDM6AD-nccn-zero-native/evidence/staged_nccn_fd_probe.tsv'
+       REAL(c_float) :: XLAND_ONE(1,1)
+       REAL(c_double) :: LEFT_DOT, RIGHT_DOT, REL_DUAL, NORM_V, NORM_JV, NORM_JTU, NORM_OUT
+       ENABLED = ''
+@@ -386,7 +393,9 @@
+         ISEL = 200 - ITS + 1
+         JSEL = 152 - JTS + 1
+         ALLOCATE(STATE64(1,KM,1,12), FORCE64(1,KM,1,4), OUT64(1,KM,1,12))
+-        ALLOCATE(V(12*KM), JV(12*KM), JTU(12*KM))
++        ALLOCATE(STATE64_PLUS(1,KM,1,12), STATE64_MINUS(1,KM,1,12))
++        ALLOCATE(OUT64_PLUS(1,KM,1,12), OUT64_MINUS(1,KM,1,12))
++        ALLOCATE(V(12*KM), JV(12*KM), JTU(12*KM), FD(12*KM))
+         STATE64(1,:,1,1)=REAL(TH_IN(ISEL,:,JSEL),c_double)
+         STATE64(1,:,1,2)=REAL(Q_IN(ISEL,:,JSEL),c_double)
+         STATE64(1,:,1,3)=REAL(QC_IN(ISEL,:,JSEL),c_double)
+@@ -454,13 +463,118 @@
+         IF (.NOT. ieee_is_finite(RIGHT_DOT) .OR. RIGHT_DOT == 0.0_c_double) &
+           CALL wrf_error_fatal('S2S8HAD_v2: invalid right dot')
+         REL_DUAL = ABS(LEFT_DOT-RIGHT_DOT)/MAX(ABS(LEFT_DOT),ABS(RIGHT_DOT),TINY(LEFT_DOT))
+-        IF (.NOT. ieee_is_finite(REL_DUAL) .OR. REL_DUAL > 1.0e-10_c_double) &
++        IF (.NOT. ieee_is_finite(REL_DUAL) .OR. REL_DUAL > 1.0e-12_c_double) &
+           CALL wrf_error_fatal('S2S8HAD_v2: duality failed')
+         WRITE(*,*) 'S2S8HAD_v2', 'physics_variant=2', 'dry_number=1', &
+                    'value_only=0', KDM6_ABI_VERSION, 'ad_dims', 1, KM, 1, &
+                    'tile_dims', IM, KM, JM, 'global_cell', 200, 152, &
+                    'tile_local', ISEL, JSEL, NORM_OUT, NORM_V, NORM_JV, &
+                    NORM_JTU, LEFT_DOT, RIGHT_DOT, REL_DUAL
++
++        ! Independent centered FD through the same candidate's value-only C ABI.
++        STATE64_PLUS = STATE64 + H_FD*RESHAPE(V,SHAPE(STATE64))
++        STATE64_MINUS = STATE64 - H_FD*RESHAPE(V,SHAPE(STATE64))
++        HANDLE_PLUS = C_NULL_PTR
++        RC_PLUS = kdm6_step_ad_number(STATE64_PLUS, FORCE64, 1_c_int, INT(KM,c_int), 1_c_int, &
++             REAL(DELT,c_double), 1_c_int, OUT64_PLUS, HANDLE_PLUS, XLAND_ONE, &
++             REAL(ncmin_land,c_double), REAL(ncmin_sea,c_double), &
++             KDM6_PHYSICS_CONSERVATIVE_NORMALIZED, 1_c_int64_t)
++        IF (RC_PLUS /= KDM6_OK .OR. C_ASSOCIATED(HANDLE_PLUS)) &
++          CALL wrf_error_fatal('S2S8HAD_v2: fp64 FD plus value call failed')
++        HANDLE_MINUS = C_NULL_PTR
++        RC_MINUS = kdm6_step_ad_number(STATE64_MINUS, FORCE64, 1_c_int, INT(KM,c_int), 1_c_int, &
++             REAL(DELT,c_double), 1_c_int, OUT64_MINUS, HANDLE_MINUS, XLAND_ONE, &
++             REAL(ncmin_land,c_double), REAL(ncmin_sea,c_double), &
++             KDM6_PHYSICS_CONSERVATIVE_NORMALIZED, 1_c_int64_t)
++        IF (RC_MINUS /= KDM6_OK .OR. C_ASSOCIATED(HANDLE_MINUS)) &
++          CALL wrf_error_fatal('S2S8HAD_v2: fp64 FD minus value call failed')
++        IF (ANY(.NOT. ieee_is_finite(OUT64_PLUS)) .OR. &
++            ANY(.NOT. ieee_is_finite(OUT64_MINUS))) &
++          CALL wrf_error_fatal('S2S8HAD_v2: nonfinite fp64 FD endpoint')
++        FD = (RESHAPE(OUT64_PLUS,[12*KM])-RESHAPE(OUT64_MINUS,[12*KM])) / &
++             (2.0_c_double*H_FD)
++        IF (ANY(.NOT. ieee_is_finite(FD))) &
++          CALL wrf_error_fatal('S2S8HAD_v2: nonfinite centered FD')
++        FD_PASS = 1
++        FD_MAXABS = 0.0_c_double
++        FD_SCALE = 0.0_c_double
++        FD_REL = 0.0_c_double
++        WORST_FIELD = 1
++        DO F = 1, 12
++          DO K = 1, KM
++            IDX = (F-1)*KM + K
++            FD_ERR = ABS(FD(IDX)-JV(IDX))
++            FD_MAXABS(F) = MAX(FD_MAXABS(F), FD_ERR)
++            FD_SCALE(F) = MAX(FD_SCALE(F), ABS(FD(IDX)), ABS(JV(IDX)))
++          END DO
++          IF (FD_SCALE(F) == 0.0_c_double) THEN
++            IF (FD_MAXABS(F) == 0.0_c_double) THEN
++              FD_REL(F) = 0.0_c_double
++            ELSE
++              FD_REL(F) = HUGE(FD_REL(F))
++            END IF
++          ELSE
++            FD_REL(F) = FD_MAXABS(F)/FD_SCALE(F)
++          END IF
++          IF (.NOT. ieee_is_finite(FD_REL(F)) .OR. FD_REL(F) > 1.0e-5_c_double) FD_PASS = 0
++          IF (FD_REL(F) > FD_REL(WORST_FIELD)) WORST_FIELD = F
++        END DO
++
++        ! Preserve all staged values and endpoints as decimal doubles with
++        ! enough digits to round-trip; field blocks are State order, bottom-up K.
++        OPEN(NEWUNIT=TRACE_UNIT, FILE=TRACE_FILE, STATUS='NEW', ACTION='WRITE', IOSTAT=TRACE_IOS)
++        IF (TRACE_IOS /= 0) CALL wrf_error_fatal('S2S8HAD_v2: cannot open staged FD trace')
++        WRITE(TRACE_UNIT,'(A)') 'KDM6_NCCN_ZERO_FD_TRACE_V1'
++        WRITE(TRACE_UNIT,'(A,1X,I0)') 'kme', KM
++        WRITE(TRACE_UNIT,'(A,1X,ES26.17E3)') 'dt', REAL(DELT,c_double)
++        WRITE(TRACE_UNIT,'(A,1X,ES26.17E3)') 'h', H_FD
++        WRITE(TRACE_UNIT,'(A,1X,ES26.17E3)') 'ncmin_land', REAL(ncmin_land,c_double)
++        WRITE(TRACE_UNIT,'(A,1X,ES26.17E3)') 'ncmin_sea', REAL(ncmin_sea,c_double)
++        WRITE(TRACE_UNIT,'(A)') 'selectors physics_variant=2 dry_number=1 value_only_base=0 value_only_endpoints=1'
++        WRITE(TRACE_UNIT,'(A)') 'cell global_i=200 global_j=152 tile_i=199 tile_j=10'
++        WRITE(TRACE_UNIT,'(A,4(1X,I0))') 'STATE_SHAPE', 1, KM, 1, 12
++        WRITE(TRACE_UNIT,'(A,4(1X,I0))') 'FORCING_SHAPE', 1, KM, 1, 4
++        WRITE(TRACE_UNIT,'(A,2(1X,I0))') 'XLAND_SHAPE', 1, 1
++        WRITE(TRACE_UNIT,'(A)') 'state_order=th,qv,qc,qr,qi,qs,qg,nccn,nc,ni,nr,bg'
++        WRITE(TRACE_UNIT,'(A)') 'forcing_order=rho,pii,p,delz'
++        DO F = 1, 12
++          DO K = 1, KM
++            IDX = (F-1)*KM + K
++            WRITE(TRACE_UNIT,'(A,1X,I0,1X,I0,1X,ES26.17E3)') 'STATE_IN', F, K, STATE64(1,K,1,F)
++            WRITE(TRACE_UNIT,'(A,1X,I0,1X,I0,1X,ES26.17E3)') 'STATE_PLUS', F, K, STATE64_PLUS(1,K,1,F)
++            WRITE(TRACE_UNIT,'(A,1X,I0,1X,I0,1X,ES26.17E3)') 'STATE_MINUS', F, K, STATE64_MINUS(1,K,1,F)
++            WRITE(TRACE_UNIT,'(A,1X,I0,1X,I0,1X,ES26.17E3)') 'OUT_BASE', F, K, OUT64(1,K,1,F)
++            WRITE(TRACE_UNIT,'(A,1X,I0,1X,I0,1X,ES26.17E3)') 'OUT_PLUS', F, K, OUT64_PLUS(1,K,1,F)
++            WRITE(TRACE_UNIT,'(A,1X,I0,1X,I0,1X,ES26.17E3)') 'OUT_MINUS', F, K, OUT64_MINUS(1,K,1,F)
++            WRITE(TRACE_UNIT,'(A,1X,I0,1X,I0,1X,ES26.17E3)') 'V', F, K, V(IDX)
++            WRITE(TRACE_UNIT,'(A,1X,I0,1X,I0,1X,ES26.17E3)') 'JV', F, K, JV(IDX)
++            WRITE(TRACE_UNIT,'(A,1X,I0,1X,I0,1X,ES26.17E3)') 'JTU', F, K, JTU(IDX)
++            WRITE(TRACE_UNIT,'(A,1X,I0,1X,I0,1X,ES26.17E3)') 'FD', F, K, FD(IDX)
++          END DO
++        END DO
++        DO F = 1, 4
++          DO K = 1, KM
++            WRITE(TRACE_UNIT,'(A,1X,I0,1X,I0,1X,ES26.17E3)') &
++              'FORCING', F, K, FORCE64(1,K,1,F)
++          END DO
++        END DO
++        WRITE(TRACE_UNIT,'(A,2(1X,I0),1X,ES26.17E3)') 'XLAND', 1, 1, REAL(XLAND_ONE(1,1),c_double)
++        WRITE(TRACE_UNIT,'(A,1X,I0,1X,I0)') 'FD_PASS_WORST_FIELD', FD_PASS, WORST_FIELD
++        DO F = 1, 12
++          WRITE(TRACE_UNIT,'(A,1X,I0,3(1X,ES26.17E3))') &
++            'FD_FIELD', F, FD_MAXABS(F), FD_SCALE(F), FD_REL(F)
++        END DO
++        CLOSE(TRACE_UNIT, IOSTAT=TRACE_IOS)
++        IF (TRACE_IOS /= 0) CALL wrf_error_fatal('S2S8HAD_v2: cannot close staged FD trace')
++        DO F = 1, 12
++          WRITE(*,'(A,1X,I0,3(1X,ES26.17E3))') &
++            'S2S8NCCNFD_FIELD', F, FD_MAXABS(F), FD_SCALE(F), FD_REL(F)
++        END DO
++        WRITE(*,'(A,1X,I0,1X,I0,4(1X,ES26.17E3))') &
++          'S2S8NCCNFD_V1', FD_PASS, WORST_FIELD, H_FD, FD_MAXABS(WORST_FIELD), &
++          FD_SCALE(WORST_FIELD), FD_REL(WORST_FIELD)
++        IF (FD_PASS == 0) WRITE(*,*) 'S2S8NCCNFD_STATUS FD_FAILED'
++        WRITE(*,*) 'S2S8NCCNFD_TRACE', TRIM(TRACE_FILE)
+         S8_FP64_PROBE_DONE = .TRUE.
+       END IF
+     END BLOCK

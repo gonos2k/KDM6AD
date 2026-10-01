@@ -1,0 +1,15 @@
+{
+  "same_candidate_library_sha256": "08bf94881a8fbcded44c8b070f6f5350b281bf3b20da9f0cc2b99ffa6abb757b",
+  "direct_c_abi_arrays_raw_equal_to_native_trace": {
+    "OUT_BASE": true,
+    "JV": true,
+    "JTU": true,
+    "OUT_PLUS": true,
+    "OUT_MINUS": true
+  },
+  "input_source": "exact native staged trace, not offline history reconstruction",
+  "uses_low_level_step_not_validated_column_command": true,
+  "physical_moment_admission": false,
+  "operational_approval": false,
+  "accepted_observation_cost": false
+}
