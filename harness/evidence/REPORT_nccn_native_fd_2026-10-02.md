@@ -32,9 +32,14 @@ plus/minus pair counts match the corresponding base counts shown above.
 Input NC/NR/NI are zero alongside positive paired masses. Output qg/bg failures
 are qg=0 with positive bg. These counts apply the current command's exact-zero
 support rule; they do not declare every trace hydrometeor physically active or
-prove a new production defect. The first native input/initialization and the
-physical moment policy need resolution before this state is accepted as a
-supported diagnostic example. Selected historical numerical parity and the
+prove a new production defect. An independent [retained-input audit](nccn_native_input_number_audit_2026-10-02.json)
+finds QNCLOUD, QNRAIN and QNICE are all exactly zero across the original
+1x39x282x234 input arrays. The inspected first-call wrapper initializes NN, then
+copies NC/NR/NI; it does not fill those missing counts. The captured gap therefore
+exists before the return-arithmetic candidate or FD overlay. This observation
+does not define a replacement initialization policy. The first native
+input/initialization and physical moment policy need resolution before this
+state is accepted as a supported diagnostic example. Selected historical numerical parity and the
 operator's input-domain admission are distinct questions.
 
 ## Evidence and independent reconstruction
