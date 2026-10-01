@@ -1,6 +1,9 @@
 import numpy as np
 from pathlib import Path
+import sys
 import torch
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from harness.nccn_return_candidate import (
     baseline_level10,
@@ -194,7 +197,7 @@ def test_hybrid_threshold_counterexample_records_crossing_fd_roundoff():
 
 
 def test_level10_extracted_fixture_replays_qv_endpoints():
-    fixture = Path("harness/evidence/nccn_return_level10_2026-10-01.json")
+    fixture = Path(__file__).resolve().parents[2] / "harness/evidence/nccn_return_level10_2026-10-01.json"
     result = baseline_level10(fixture)
     assert result["level"] == 10
     assert result["qv_direction"] != 0.0

@@ -105,7 +105,7 @@ binary remain private local inputs; they are not included in the public clone.
 Run public scalar tests from the repository root:
 
 ```sh
-python3 -m pytest -q harness/tests/test_nccn_return_candidate.py
+python3 -m pytest -q oracle/tests/test_nccn_return_candidate.py
 ```
 
 The active-kernel probe is a small developer helper, not a new product entry
