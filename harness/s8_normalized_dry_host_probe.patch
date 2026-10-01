@@ -1,0 +1,234 @@
+--- a/phys/kdm6_iso_c.F
++++ b/phys/kdm6_iso_c.F
+@@ -27,7 +27,8 @@
+   integer(c_int), parameter, public :: KDM6_GRAD_ECCBRK = 8
+   integer(c_int), parameter, public :: KDM6_GRAD_ALL    = 15
+ 
+-  public :: kdm6_step, kdm6_step_ad, kdm6_handle_vjp, kdm6_handle_jvp, kdm6_handle_close
++  public :: kdm6_step, kdm6_step_ad, kdm6_step_ad_number
++  public :: kdm6_handle_vjp, kdm6_handle_jvp, kdm6_handle_close
+ 
+   ! ── C ABI interfaces ───────────────────────────────────────────────────────
+   interface
+@@ -95,6 +96,23 @@
+       integer(c_int)              :: rc
+     end function kdm6_step_ad_c
+ 
++    function kdm6_step_ad_number_c( &
++        state_in_packed, forcing_packed, im, kme, jme, dt, value_only, &
++        state_out_packed, handle, xland, ncmin_land, ncmin_sea, physics_variant, dry_number &
++      ) bind(C, name="kdm6_step_ad_number_c") result(rc)
++      import :: c_int, c_int32_t, c_int64_t, c_double, c_float, c_ptr
++      real(c_double), intent(in)  :: state_in_packed(*), forcing_packed(*)
++      integer(c_int), value       :: im, kme, jme, value_only
++      real(c_double), value       :: dt
++      real(c_double), intent(out) :: state_out_packed(*)
++      type(c_ptr), intent(out)    :: handle
++      real(c_float), intent(in)   :: xland(*)
++      real(c_double), value       :: ncmin_land, ncmin_sea
++      integer(c_int32_t), value   :: physics_variant
++      integer(c_int64_t), value   :: dry_number
++      integer(c_int)              :: rc
++    end function kdm6_step_ad_number_c
++
+     function kdm6_handle_vjp_c(h, u_packed, grad_out_packed) &
+         bind(C, name="kdm6_handle_vjp_c") result(rc)
+       import :: c_int, c_double, c_float, c_ptr
+@@ -121,6 +139,13 @@
+       type(c_ptr), value :: h
+       integer(c_int)     :: rc
+     end function kdm6_handle_close_c
++
++    function kdm6_handle_closep_c(hp) &
++        bind(C, name="kdm6_handle_closep_c") result(rc)
++      import :: c_int, c_ptr
++      type(c_ptr), intent(inout) :: hp
++      integer(c_int)             :: rc
++    end function kdm6_handle_closep_c
+   end interface
+ 
+   ! ══ Stable ABI v2 — append-only extension (kdm6_c_api.h) ════════════════════
+@@ -270,6 +295,24 @@
+                         state_out, handle, xland, ncmin_land, ncmin_sea)
+   end function kdm6_step_ad
+ 
++  function kdm6_step_ad_number( &
++      state_in, forcing, im, kme, jme, dt, value_only, &
++      state_out, handle, xland, ncmin_land, ncmin_sea, physics_variant, dry_number &
++    ) result(rc)
++    real(c_double), intent(in), contiguous :: state_in(:,:,:,:), forcing(:,:,:,:)
++    integer(c_int), intent(in)             :: im, kme, jme, value_only
++    real(c_double), intent(in)             :: dt, ncmin_land, ncmin_sea
++    real(c_double), intent(out), contiguous :: state_out(:,:,:,:)
++    type(c_ptr), intent(out)               :: handle
++    real(c_float), intent(in), contiguous  :: xland(:,:)
++    integer(c_int32_t), intent(in)         :: physics_variant
++    integer(c_int64_t), intent(in)         :: dry_number
++    integer(c_int)                         :: rc
++    rc = kdm6_step_ad_number_c(state_in, forcing, im, kme, jme, dt, value_only, &
++                               state_out, handle, xland, ncmin_land, ncmin_sea, &
++                               physics_variant, dry_number)
++  end function kdm6_step_ad_number
++
+   function kdm6_handle_vjp(h, u_packed, grad_out_packed) result(rc)
+     type(c_ptr),    intent(in)              :: h
+     real(c_double), intent(in),  contiguous :: u_packed(:)
+@@ -287,9 +330,9 @@
+   end function kdm6_handle_jvp
+ 
+   function kdm6_handle_close(h) result(rc)
+-    type(c_ptr), intent(in) :: h
+-    integer(c_int)          :: rc
+-    rc = kdm6_handle_close_c(h)
++    type(c_ptr), intent(inout) :: h
++    integer(c_int)              :: rc
++    rc = kdm6_handle_closep_c(h)
+   end function kdm6_handle_close
+ 
+ end module kdm6_iso_c
+--- a/phys/module_mp_kdm6ad_cons.F
++++ b/phys/module_mp_kdm6ad_cons.F
+@@ -17,12 +17,14 @@
+ !
+   USE, INTRINSIC :: iso_c_binding, ONLY: c_double, c_float, c_int,       &
+                                          c_int32_t, c_int64_t, c_ptr, c_loc, &
+-                                         c_sizeof, C_NULL_PTR
++                                         c_sizeof, c_associated, C_NULL_PTR
+   USE, INTRINSIC :: ieee_arithmetic, ONLY: ieee_is_finite
+   USE module_wrf_error
+   USE kdm6_iso_c, ONLY: kdm6_step_v2_c, kdm6_step_v2_args,               &
+                         kdm6_get_abi_version_c, kdm6_step_v2_args_size_c,&
+-                        kdm6_handle_close, KDM6_OK, KDM6_ABI_VERSION,    &
++                        kdm6_handle_close, kdm6_step_ad_number,          &
++                        kdm6_handle_jvp, kdm6_handle_vjp,                 &
++                        KDM6_OK, KDM6_ERR_INTERNAL, KDM6_ABI_VERSION,     &
+                         KDM6_PHYSICS_CONSERVATIVE_INTERFACE,             &
+                         KDM6_PHYSICS_CONSERVATIVE_NORMALIZED
+   ! Effective-radius / reflectivity diagnostics: reuse the conservative
+@@ -32,6 +34,8 @@
+   USE module_model_constants, ONLY: RE_QC_BG, RE_QI_BG, RE_QS_BG
+ 
+   IMPLICIT NONE
++
++  LOGICAL, SAVE :: S8_FP64_PROBE_DONE = .FALSE.
+ 
+ CONTAINS
+ 
+@@ -349,6 +353,117 @@
+     CALL kdm6ad_cons_check_finite_3d(P_IN,   'P input',    ITS, KTS, JTS)
+     CALL kdm6ad_cons_check_finite_3d(DELZ_IN,'DELZ input', ITS, KTS, JTS)
+     CALL kdm6ad_cons_check_finite_2d(XLAND_IN,'XLAND input',ITS,JTS)
++
++    ! One-column fp64 derivative probe on the same normalized/dry-number state
++    ! staged for the value-only host forecast immediately below.
++    BLOCK
++      CHARACTER(LEN=16) :: ENABLED
++      INTEGER :: ISEL, JSEL, ENV_STATUS, ENV_LENGTH
++      INTEGER(c_int) :: AD_RC, CLOSE_RC
++      LOGICAL :: PROBE_ENABLED, TARGET_IN_TILE
++      TYPE(c_ptr) :: AD_HANDLE
++      REAL(c_double), ALLOCATABLE :: STATE64(:,:,:,:), FORCE64(:,:,:,:), OUT64(:,:,:,:)
++      REAL(c_double), ALLOCATABLE :: V(:), JV(:), JTU(:)
++      REAL(c_float) :: XLAND_ONE(1,1)
++      REAL(c_double) :: LEFT_DOT, RIGHT_DOT, REL_DUAL, NORM_V, NORM_JV, NORM_JTU, NORM_OUT
++      ENABLED = ''
++      CALL GET_ENVIRONMENT_VARIABLE('KDM6_S8_FP64_PROBE', ENABLED, &
++                                    LENGTH=ENV_LENGTH, STATUS=ENV_STATUS)
++      PROBE_ENABLED = .FALSE.
++      IF (ENV_STATUS == 0 .AND. ENV_LENGTH == 1 .AND. ENABLED(1:1) == '1') THEN
++        PROBE_ENABLED = .TRUE.
++      ELSE IF (ENV_STATUS == 0 .AND. ENV_LENGTH == 1 .AND. ENABLED(1:1) == '0') THEN
++        PROBE_ENABLED = .FALSE.
++      ELSE IF (ENV_STATUS /= 1 .OR. ENV_LENGTH /= 0) THEN
++        CALL wrf_error_fatal('S8HAD: KDM6_S8_FP64_PROBE must be unset, 0 or 1')
++      END IF
++      IF (PROBE_ENABLED .AND. .NOT. (NORMALIZED_ICE_MODE .AND. DRY_NUMBER_MODE)) THEN
++        CALL wrf_error_fatal('S8HAD: probe requires normalized ice and dry number modes')
++      END IF
++      TARGET_IN_TILE = ITS <= 200 .AND. 200 <= ITE .AND. JTS <= 152 .AND. 152 <= JTE
++      IF (PROBE_ENABLED .AND. .NOT. S8_FP64_PROBE_DONE .AND. &
++          IM == 232 .AND. KM == 39 .AND. JM == 139 .AND. TARGET_IN_TILE) THEN
++        ISEL = 200 - ITS + 1
++        JSEL = 152 - JTS + 1
++        ALLOCATE(STATE64(1,KM,1,12), FORCE64(1,KM,1,4), OUT64(1,KM,1,12))
++        ALLOCATE(V(12*KM), JV(12*KM), JTU(12*KM))
++        STATE64(1,:,1,1)=REAL(TH_IN(ISEL,:,JSEL),c_double)
++        STATE64(1,:,1,2)=REAL(Q_IN(ISEL,:,JSEL),c_double)
++        STATE64(1,:,1,3)=REAL(QC_IN(ISEL,:,JSEL),c_double)
++        STATE64(1,:,1,4)=REAL(QR_IN(ISEL,:,JSEL),c_double)
++        STATE64(1,:,1,5)=REAL(QI_IN(ISEL,:,JSEL),c_double)
++        STATE64(1,:,1,6)=REAL(QS_IN(ISEL,:,JSEL),c_double)
++        STATE64(1,:,1,7)=REAL(QG_IN(ISEL,:,JSEL),c_double)
++        STATE64(1,:,1,8)=REAL(NN_IN(ISEL,:,JSEL),c_double)
++        STATE64(1,:,1,9)=REAL(NC_IN(ISEL,:,JSEL),c_double)
++        STATE64(1,:,1,10)=REAL(NI_IN(ISEL,:,JSEL),c_double)
++        STATE64(1,:,1,11)=REAL(NR_IN(ISEL,:,JSEL),c_double)
++        STATE64(1,:,1,12)=REAL(BG_IN(ISEL,:,JSEL),c_double)
++        FORCE64(1,:,1,1)=REAL(DEN_IN(ISEL,:,JSEL),c_double)
++        FORCE64(1,:,1,2)=REAL(PII_IN(ISEL,:,JSEL),c_double)
++        FORCE64(1,:,1,3)=REAL(P_IN(ISEL,:,JSEL),c_double)
++        FORCE64(1,:,1,4)=REAL(DELZ_IN(ISEL,:,JSEL),c_double)
++        XLAND_ONE(1,1)=XLAND_IN(ISEL,JSEL)
++        AD_HANDLE = C_NULL_PTR
++        AD_RC = kdm6_step_ad_number(STATE64, FORCE64, 1_c_int, INT(KM,c_int), 1_c_int, &
++             REAL(DELT,c_double), 0_c_int, OUT64, AD_HANDLE, XLAND_ONE, &
++             REAL(ncmin_land,c_double), REAL(ncmin_sea,c_double), &
++             KDM6_PHYSICS_CONSERVATIVE_NORMALIZED, 1_c_int64_t)
++        IF (AD_RC == KDM6_OK) THEN
++          IF (ANY(.NOT. ieee_is_finite(OUT64))) THEN
++            AD_RC = KDM6_ERR_INTERNAL
++          ELSE
++            NORM_OUT = NORM2(OUT64)
++            IF (.NOT. ieee_is_finite(NORM_OUT) .OR. NORM_OUT <= 0.0_c_double) &
++              AD_RC = KDM6_ERR_INTERNAL
++          END IF
++        END IF
++        IF (AD_RC /= KDM6_OK .OR. .NOT. C_ASSOCIATED(AD_HANDLE)) THEN
++          IF (C_ASSOCIATED(AD_HANDLE)) CLOSE_RC = kdm6_handle_close(AD_HANDLE)
++          CALL wrf_error_fatal('S2S8HAD_v2: fp64 normalized dry forward failed')
++        END IF
++        V = 0.0_c_double
++        V(4*KM+1:5*KM) = STATE64(1,:,1,5)
++        V(KM+1:2*KM) = 0.01_c_double*STATE64(1,:,1,2)
++        V(8*KM+1:9*KM) = 0.01_c_double*STATE64(1,:,1,9)
++        NORM_V = NORM2(V)
++        IF (.NOT. ieee_is_finite(NORM_V) .OR. NORM_V <= 0.0_c_double) &
++          AD_RC = KDM6_ERR_INTERNAL
++        IF (AD_RC == KDM6_OK) AD_RC = kdm6_handle_jvp(AD_HANDLE, V, JV)
++        IF (AD_RC == KDM6_OK) THEN
++          IF (ANY(.NOT. ieee_is_finite(JV))) AD_RC = KDM6_ERR_INTERNAL
++        END IF
++        IF (AD_RC == KDM6_OK) AD_RC = kdm6_handle_vjp(AD_HANDLE, JV, JTU)
++        IF (AD_RC == KDM6_OK) THEN
++          IF (ANY(.NOT. ieee_is_finite(JTU))) AD_RC = KDM6_ERR_INTERNAL
++        END IF
++        CLOSE_RC = kdm6_handle_close(AD_HANDLE)
++        IF (CLOSE_RC /= KDM6_OK .OR. C_ASSOCIATED(AD_HANDLE)) &
++          CALL wrf_error_fatal('S2S8HAD_v2: handle close failed')
++        IF (AD_RC /= KDM6_OK) CALL wrf_error_fatal('S2S8HAD_v2: JVP/VJP failed')
++        NORM_JV = NORM2(JV)
++        NORM_JTU = NORM2(JTU)
++        LEFT_DOT = SUM(JV*JV)
++        RIGHT_DOT = SUM(V*JTU)
++        IF (.NOT. ieee_is_finite(NORM_JV) .OR. NORM_JV <= 0.0_c_double) &
++          CALL wrf_error_fatal('S2S8HAD_v2: invalid JVP norm')
++        IF (.NOT. ieee_is_finite(NORM_JTU) .OR. NORM_JTU <= 0.0_c_double) &
++          CALL wrf_error_fatal('S2S8HAD_v2: invalid VJP norm')
++        IF (.NOT. ieee_is_finite(LEFT_DOT) .OR. LEFT_DOT == 0.0_c_double) &
++          CALL wrf_error_fatal('S2S8HAD_v2: invalid left dot')
++        IF (.NOT. ieee_is_finite(RIGHT_DOT) .OR. RIGHT_DOT == 0.0_c_double) &
++          CALL wrf_error_fatal('S2S8HAD_v2: invalid right dot')
++        REL_DUAL = ABS(LEFT_DOT-RIGHT_DOT)/MAX(ABS(LEFT_DOT),ABS(RIGHT_DOT),TINY(LEFT_DOT))
++        IF (.NOT. ieee_is_finite(REL_DUAL) .OR. REL_DUAL > 1.0e-10_c_double) &
++          CALL wrf_error_fatal('S2S8HAD_v2: duality failed')
++        WRITE(*,*) 'S2S8HAD_v2', 'physics_variant=2', 'dry_number=1', &
++                   'value_only=0', KDM6_ABI_VERSION, 'ad_dims', 1, KM, 1, &
++                   'tile_dims', IM, KM, JM, 'global_cell', 200, 152, &
++                   'tile_local', ISEL, JSEL, NORM_OUT, NORM_V, NORM_JV, &
++                   NORM_JTU, LEFT_DOT, RIGHT_DOT, REL_DUAL
++        S8_FP64_PROBE_DONE = .TRUE.
++      END IF
++    END BLOCK
+ 
+     ! ── v2 call: conservative-interface variant, forward-only ───────────────
+     HANDLE = C_NULL_PTR
