@@ -1,0 +1,39 @@
+{
+  "input_sha256": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+  "number_fields": {
+    "QNCLOUD": {
+      "shape": [
+        1,
+        39,
+        282,
+        234
+      ],
+      "min": 0.0,
+      "max": 0.0,
+      "nonzero": 0
+    },
+    "QNRAIN": {
+      "shape": [
+        1,
+        39,
+        282,
+        234
+      ],
+      "min": 0.0,
+      "max": 0.0,
+      "nonzero": 0
+    },
+    "QNICE": {
+      "shape": [
+        1,
+        39,
+        282,
+        234
+      ],
+      "min": 0.0,
+      "max": 0.0,
+      "nonzero": 0
+    }
+  },
+  "interpretation": "Retained input number arrays are zero; paired-positive mass is observed in the independently captured native probe. This does not define or approve a replacement initialization policy."
+}

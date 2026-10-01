@@ -92,3 +92,11 @@ CCN kernel direction also passes. The production runtime is unchanged; the
 half-change arithmetic switch has a recorded rounding counterexample. This is
 bounded candidate evidence, not adoption or general derivative/observation
 approval. S8 remains OPEN.
+
+S8's [zero-only candidate native FD](REPORT_nccn_native_fd_2026-10-02.md) now
+measures all 12 per-field centered differences and native OFF/ON noninterference
+with the same candidate. The serialized inputs/endpoints/AD arrays replay exactly.
+The first staged input and returned state violate the existing command's strict
+paired-moment support rule, so numerical PASS is explicitly not supported-state
+acceptance. N5 remains OPEN/FAIL and S8 stays OPEN; no production adoption or
+physical/observation approval is made.

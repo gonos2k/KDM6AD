@@ -1,0 +1,444 @@
+{
+  "fields": [
+    {
+      "field": 1,
+      "max_abs_error": 3.6919240086011893e-10,
+      "scale": 0.11652326697149178,
+      "relative_maxnorm_error": 3.168400701899685e-09
+    },
+    {
+      "field": 2,
+      "max_abs_error": 1.3649153964186145e-13,
+      "scale": 0.00017697608809170225,
+      "relative_maxnorm_error": 7.712428335015335e-10
+    },
+    {
+      "field": 3,
+      "max_abs_error": 1.2860827176440146e-13,
+      "scale": 0.00021205067698618654,
+      "relative_maxnorm_error": 6.064978126562609e-10
+    },
+    {
+      "field": 4,
+      "max_abs_error": 3.736174238912204e-15,
+      "scale": 7.978084085371055e-05,
+      "relative_maxnorm_error": 4.68304695580109e-11
+    },
+    {
+      "field": 5,
+      "max_abs_error": 5.411829157628184e-22,
+      "scale": 3.530390865582784e-10,
+      "relative_maxnorm_error": 1.5329263426288687e-12
+    },
+    {
+      "field": 6,
+      "max_abs_error": 1.4170522394385543e-15,
+      "scale": 0.0011699215141069582,
+      "relative_maxnorm_error": 1.2112370123565422e-12
+    },
+    {
+      "field": 7,
+      "max_abs_error": 7.767137495246175e-18,
+      "scale": 2.391485880598149e-10,
+      "relative_maxnorm_error": 3.247829125089164e-08
+    },
+    {
+      "field": 8,
+      "max_abs_error": 0.0010916376320686538,
+      "scale": 16188.188046216965,
+      "relative_maxnorm_error": 6.743420751921398e-08
+    },
+    {
+      "field": 9,
+      "max_abs_error": 9.628134161233902,
+      "scale": 213394181.65706098,
+      "relative_maxnorm_error": 4.511900974276314e-08
+    },
+    {
+      "field": 10,
+      "max_abs_error": 3.4852676300545227e-13,
+      "scale": 0.16864631624223683,
+      "relative_maxnorm_error": 2.0666135541605446e-12
+    },
+    {
+      "field": 11,
+      "max_abs_error": 6.567339255747484e-09,
+      "scale": 0.17158299019307913,
+      "relative_maxnorm_error": 3.827500178401939e-08
+    },
+    {
+      "field": 12,
+      "max_abs_error": 8.279747452579061e-21,
+      "scale": 2.6572065339979433e-13,
+      "relative_maxnorm_error": 3.1159593154099435e-08
+    }
+  ],
+  "runs": {
+    "off": {
+      "run_id": "mp337_nccn_zero_v1_off_0min40s_hist0_20261002_003400_p43978",
+      "experiment_valid": {
+        "experiment_valid": true,
+        "invalid_reasons": [],
+        "requested_proc_grid": null,
+        "actual_proc_grid": "1x1",
+        "exit_code": 0,
+        "model_completed": true
+      },
+      "proc_grid": "requested (unset -- WRF chose)\nactual    1x1\nmatches   n/a\nnp        1\n",
+      "executable_record": "1739ba0df4155bef1d304cf236f406b603880dee6afc92fc7f5febc647f71710\nbefore 1739ba0df4155bef1d304cf236f406b603880dee6afc92fc7f5febc647f71710\nafter  1739ba0df4155bef1d304cf236f406b603880dee6afc92fc7f5febc647f71710\nstable yes\npath   /private/tmp/KDM6AD-nccn-zero-native/build/wrf_nccn_zero_native_fd.exe\n",
+      "namelist_sha256": "8d73a01a827b5b3980b4440592b31dd801ddc659611b2d25651bd4f11e7ea2bc",
+      "rsl_out_sha256": "0dee353685eccb0b151687e17b2775699542631dbb1a3fb93415f6e548fa3c8f"
+    },
+    "on": {
+      "run_id": "mp337_nccn_zero_v1_on_0min40s_hist0_20261002_003534_p44471",
+      "experiment_valid": {
+        "experiment_valid": true,
+        "invalid_reasons": [],
+        "requested_proc_grid": null,
+        "actual_proc_grid": "1x1",
+        "exit_code": 0,
+        "model_completed": true
+      },
+      "proc_grid": "requested (unset -- WRF chose)\nactual    1x1\nmatches   n/a\nnp        1\n",
+      "executable_record": "1739ba0df4155bef1d304cf236f406b603880dee6afc92fc7f5febc647f71710\nbefore 1739ba0df4155bef1d304cf236f406b603880dee6afc92fc7f5febc647f71710\nafter  1739ba0df4155bef1d304cf236f406b603880dee6afc92fc7f5febc647f71710\nstable yes\npath   /private/tmp/KDM6AD-nccn-zero-native/build/wrf_nccn_zero_native_fd.exe\n",
+      "namelist_sha256": "8d73a01a827b5b3980b4440592b31dd801ddc659611b2d25651bd4f11e7ea2bc",
+      "rsl_out_sha256": "3f99f28fc29d1a0bca63673d30cc9002f9c250f57fca87f008bf27d93f2a9bb6"
+    }
+  },
+  "run_controls": {
+    "dt_s": 20,
+    "run_seconds": 40,
+    "saved_forecast_times_utc": [
+      "2025-07-19_00:00:00",
+      "2025-07-19_00:00:20",
+      "2025-07-19_00:00:40"
+    ],
+    "ncmin_land": 10.0,
+    "ncmin_sea": 10.0,
+    "xland": 2.0,
+    "mpi_ranks": 1,
+    "actual_proc_grid": "1x1",
+    "default_route_interface": "en0",
+    "btl_tcp_if_include": "en0",
+    "oob_tcp_if_include": "en0",
+    "threads": 1,
+    "time_step_namelist_s": 20,
+    "offline_config_match": {
+      "dt_s": true,
+      "ncmin_land": true,
+      "ncmin_sea": true,
+      "inputs_same": false,
+      "direction_same": false,
+      "xland_same": false,
+      "offline_column": [
+        3,
+        272
+      ],
+      "offline_xland": 1,
+      "native_column": [
+        200,
+        152
+      ],
+      "native_xland": 2
+    }
+  },
+  "candidate": {
+    "source_commit": "915c5b9",
+    "runtime_cpp_sha256": "3edaf0bc256910d97c26e6b8e6a343f0ed35216fe916f253bf4b0188f1f0303e",
+    "library_path": "/private/tmp/KDM6AD-nccn-zero-build/libkdm6_c.2.0.0.dylib",
+    "library_sha256": "08bf94881a8fbcded44c8b070f6f5350b281bf3b20da9f0cc2b99ffa6abb757b",
+    "executable_path": "/private/tmp/KDM6AD-nccn-zero-native/build/wrf_nccn_zero_native_fd.exe",
+    "executable_sha256": "1739ba0df4155bef1d304cf236f406b603880dee6afc92fc7f5febc647f71710",
+    "iso_wrapper_object_sha256": "e4108901afdc3e49ba43c3f704a581a5a0a60dc47258c90a18c476a99ed0158c",
+    "native_wrapper_object_sha256": "656b2db94de0f2ffa069fbea3f403b3749f90135ed00b0b0c4f39dce6cb40a70",
+    "native_wrapper_source_sha256": "f3e432ef77cb91443bd1968df6766a4cd34c8190d22279d6a24fc09f6cd82539",
+    "candidate_return_policy": "fp64 dry-number NCCN: where(delta==0, input_nccn + delta/rho_dry, output_volume/rho_dry); operational f32 and other number fields unchanged by candidate patch."
+  },
+  "input_sha256": {
+    "wrfinput_d01": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+    "wrfbdy_d01": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+    "wrfchainp_d01": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3"
+  },
+  "probe": {
+    "probe_rows_off": 0,
+    "probe_rows_on": 1,
+    "fd_trace": "/private/tmp/KDM6AD-nccn-zero-native/evidence/staged_nccn_fd_probe.tsv",
+    "fd_trace_sha256": "82f5173f022d9bc4bb708224ed799d18c4d779b99c696769c4a872254cd5ce59",
+    "fd_trace_bytes": 191360,
+    "format": "ES26.17E3 round-trip decimal values; arrays carry field and level indices",
+    "selector": 2,
+    "dry_number": 1,
+    "value_only_base": 0,
+    "value_only_endpoints": 1,
+    "direction": "the pre-existing S2S8HAD_v2 V unchanged: qi=entry qi, qv=0.01*entry qv, nc=0.01*entry nc, all other state coordinates zero",
+    "h": 0.0001,
+    "fieldwise_threshold": 1e-05,
+    "fd_pass": 1,
+    "worst_field_1based": 8,
+    "fields": [
+      {
+        "field": 1,
+        "max_abs_error": 3.6919240086011893e-10,
+        "scale": 0.11652326697149178,
+        "relative_maxnorm_error": 3.168400701899685e-09
+      },
+      {
+        "field": 2,
+        "max_abs_error": 1.3649153964186145e-13,
+        "scale": 0.00017697608809170225,
+        "relative_maxnorm_error": 7.712428335015335e-10
+      },
+      {
+        "field": 3,
+        "max_abs_error": 1.2860827176440146e-13,
+        "scale": 0.00021205067698618654,
+        "relative_maxnorm_error": 6.064978126562609e-10
+      },
+      {
+        "field": 4,
+        "max_abs_error": 3.736174238912204e-15,
+        "scale": 7.978084085371055e-05,
+        "relative_maxnorm_error": 4.68304695580109e-11
+      },
+      {
+        "field": 5,
+        "max_abs_error": 5.411829157628184e-22,
+        "scale": 3.530390865582784e-10,
+        "relative_maxnorm_error": 1.5329263426288687e-12
+      },
+      {
+        "field": 6,
+        "max_abs_error": 1.4170522394385543e-15,
+        "scale": 0.0011699215141069582,
+        "relative_maxnorm_error": 1.2112370123565422e-12
+      },
+      {
+        "field": 7,
+        "max_abs_error": 7.767137495246175e-18,
+        "scale": 2.391485880598149e-10,
+        "relative_maxnorm_error": 3.247829125089164e-08
+      },
+      {
+        "field": 8,
+        "max_abs_error": 0.0010916376320686538,
+        "scale": 16188.188046216965,
+        "relative_maxnorm_error": 6.743420751921398e-08
+      },
+      {
+        "field": 9,
+        "max_abs_error": 9.628134161233902,
+        "scale": 213394181.65706098,
+        "relative_maxnorm_error": 4.511900974276314e-08
+      },
+      {
+        "field": 10,
+        "max_abs_error": 3.4852676300545227e-13,
+        "scale": 0.16864631624223683,
+        "relative_maxnorm_error": 2.0666135541605446e-12
+      },
+      {
+        "field": 11,
+        "max_abs_error": 6.567339255747484e-09,
+        "scale": 0.17158299019307913,
+        "relative_maxnorm_error": 3.827500178401939e-08
+      },
+      {
+        "field": 12,
+        "max_abs_error": 8.279747452579061e-21,
+        "scale": 2.6572065339979433e-13,
+        "relative_maxnorm_error": 3.1159593154099435e-08
+      }
+    ],
+    "duality_relative": 4.3721970729192387e-16,
+    "duality_threshold": 1e-12,
+    "independent_recalc": "Python independently recomputed centered endpoint FD and all 12 per-field maxnorm error triples from the trace; all triples exactly match Fortran-reported decimal metrics at serialized precision.",
+    "raw_endpoint_pair_calls": 2
+  },
+  "history_comparison": {
+    "forecast": "strict_bitwise_nc.py: frames 0,1,2 each 254/254 common variables bitwise identical; actual Times verified.",
+    "energy": "strict_bitwise_nc.py: frames 0,1 each 5/5 common variables bitwise identical.",
+    "prcp_ocean": "zero saved frames; no numeric comparison claim."
+  },
+  "clamp_and_attribution_caveats": [
+    "Root independent trace review found entry-volume NCCN below NCCN_MIN at zero-based K indices 9..38; resulting NCCN endpoint changes include entry/final clamp effects.",
+    "K indices 4..8 are in the entry interior with a negative NCCN change. Downstream minimum/clamp contribution remains separately under review.",
+    "This state-to-state FD/JVP is not unconstrained or named-producer NCCN attribution; no physical-producer attribution claim is made.",
+    "Offline CONFIG(10,10,20) matches the native numeric dt/ncmin settings, but its source inputs, column (3,272), XLAND=1 and direction differ. Native sampled column is global (200,152), XLAND=2; this is same operator/config comparison, not input-parity evidence."
+  ],
+  "acceptance": {
+    "runs_complete": true,
+    "actual_grid_1x1": true,
+    "forecast_noninterference": true,
+    "native_ad_and_fd_fieldwise": true,
+    "failure_rule": "FD_PASS=0 is a numerical failure even if model forecast completes; no threshold/input/direction tuning performed.",
+    "physical_moment_admission": false,
+    "interpretation": "Numerical ABI state-to-state JVP/VJP/FD passes for this staged column. Physical process/producer attribution is not accepted because the staged moment pairs violate admissibility and entry/final clamps are active."
+  },
+  "output_files": {
+    "off": {
+      "fcst": {
+        "path": "/private/tmp/KDM6AD-nccn-zero-native/case/runs/mp337_nccn_zero_v1_off_0min40s_hist0_20261002_003400_p43978/klfs_lc05_fcst.202507190000",
+        "sha256": "be0edb894d1ddc5996f925cf01d56d1d882b53d6ed0295566edac2cb60f31308",
+        "bytes": 953745068,
+        "frame_count": 3,
+        "times": [
+          "2025-07-19_00:00:00",
+          "2025-07-19_00:00:20",
+          "2025-07-19_00:00:40"
+        ],
+        "variable_count": 254
+      },
+      "energy": {
+        "path": "/private/tmp/KDM6AD-nccn-zero-native/case/runs/mp337_nccn_zero_v1_off_0min40s_hist0_20261002_003400_p43978/klfs_lc05_energy.202507190000",
+        "sha256": "e8251c4bd2bf8556b66c81f9079371d176815ddbdd8b3752f9dd13601e90c72e",
+        "bytes": 2116980,
+        "frame_count": 2,
+        "times": [
+          "2025-07-19_00:00:00",
+          "2025-07-19_00:00:20"
+        ],
+        "variable_count": 5
+      },
+      "prcp": {
+        "path": "/private/tmp/KDM6AD-nccn-zero-native/case/runs/mp337_nccn_zero_v1_off_0min40s_hist0_20261002_003400_p43978/klfs_lc05_prcp.202507190000",
+        "sha256": "8cfb92ce8723ab801e5b564f58af1979f9901afd3b040cb374855f93b87eb924",
+        "bytes": 4296,
+        "frame_count": 0,
+        "times": [],
+        "variable_count": 1
+      },
+      "ocean": {
+        "path": "/private/tmp/KDM6AD-nccn-zero-native/case/runs/mp337_nccn_zero_v1_off_0min40s_hist0_20261002_003400_p43978/klfs_lc05_ocean.202507190000",
+        "sha256": "8cfb92ce8723ab801e5b564f58af1979f9901afd3b040cb374855f93b87eb924",
+        "bytes": 4296,
+        "frame_count": 0,
+        "times": [],
+        "variable_count": 1
+      }
+    },
+    "on": {
+      "fcst": {
+        "path": "/private/tmp/KDM6AD-nccn-zero-native/case/runs/mp337_nccn_zero_v1_on_0min40s_hist0_20261002_003534_p44471/klfs_lc05_fcst.202507190000",
+        "sha256": "be0edb894d1ddc5996f925cf01d56d1d882b53d6ed0295566edac2cb60f31308",
+        "bytes": 953745068,
+        "frame_count": 3,
+        "times": [
+          "2025-07-19_00:00:00",
+          "2025-07-19_00:00:20",
+          "2025-07-19_00:00:40"
+        ],
+        "variable_count": 254
+      },
+      "energy": {
+        "path": "/private/tmp/KDM6AD-nccn-zero-native/case/runs/mp337_nccn_zero_v1_on_0min40s_hist0_20261002_003534_p44471/klfs_lc05_energy.202507190000",
+        "sha256": "e8251c4bd2bf8556b66c81f9079371d176815ddbdd8b3752f9dd13601e90c72e",
+        "bytes": 2116980,
+        "frame_count": 2,
+        "times": [
+          "2025-07-19_00:00:00",
+          "2025-07-19_00:00:20"
+        ],
+        "variable_count": 5
+      },
+      "prcp": {
+        "path": "/private/tmp/KDM6AD-nccn-zero-native/case/runs/mp337_nccn_zero_v1_on_0min40s_hist0_20261002_003534_p44471/klfs_lc05_prcp.202507190000",
+        "sha256": "8cfb92ce8723ab801e5b564f58af1979f9901afd3b040cb374855f93b87eb924",
+        "bytes": 4296,
+        "frame_count": 0,
+        "times": [],
+        "variable_count": 1
+      },
+      "ocean": {
+        "path": "/private/tmp/KDM6AD-nccn-zero-native/case/runs/mp337_nccn_zero_v1_on_0min40s_hist0_20261002_003534_p44471/klfs_lc05_ocean.202507190000",
+        "sha256": "8cfb92ce8723ab801e5b564f58af1979f9901afd3b040cb374855f93b87eb924",
+        "bytes": 4296,
+        "frame_count": 0,
+        "times": [],
+        "variable_count": 1
+      }
+    }
+  },
+  "same_executable_and_config": {
+    "executable_sha256_off": "1739ba0df4155bef1d304cf236f406b603880dee6afc92fc7f5febc647f71710",
+    "executable_sha256_on": "1739ba0df4155bef1d304cf236f406b603880dee6afc92fc7f5febc647f71710",
+    "same_executable": true,
+    "effective_namelist_sha256_off": "8d73a01a827b5b3980b4440592b31dd801ddc659611b2d25651bd4f11e7ea2bc",
+    "effective_namelist_sha256_on": "8d73a01a827b5b3980b4440592b31dd801ddc659611b2d25651bd4f11e7ea2bc",
+    "same_effective_namelist": true
+  },
+  "physical_moment_admission": {
+    "admissible_for_named_physical_nccn_process": false,
+    "reason": "The exact staged pre-step moments contain positive condensate with zero paired number in multiple levels; report this as a numerical state-to-state probe, not unconstrained or named-producer NCCN sensitivity.",
+    "input_positive_mass_zero_number_level_counts": {
+      "qc_zero_nc": 31,
+      "qr_zero_nr": 17,
+      "qi_zero_ni": 32
+    },
+    "output_baseline_residual_level_counts": {
+      "qc_zero_nc": 5,
+      "qr_zero_nr": 8,
+      "qg_zero_bg": 4
+    },
+    "qg_zero_bg_output_1based_levels": [
+      21,
+      22,
+      23,
+      24
+    ],
+    "entry_volume_below_NCCN_MIN": {
+      "minimum": 100000000.0,
+      "zero_based_levels": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38
+      ],
+      "count": 30
+    },
+    "entry_interior_negative_nccn_change": {
+      "zero_based_levels": [
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "count": 5
+    },
+    "attribution_limit": "The finite-difference agreement includes entry/final clamps and candidate return handling; it does not isolate physical CCN production/consumption or certify admissible DSD moments."
+  },
+  "public_fd_overlay_sha256": "65a75a0a5103e13e17fca24d3cd682be04b1a5ad0bdfbc7c77804ac15cf4b4d3",
+  "public_trace_gzip_sha256": "d46746a88225529c81902b0ec927b7b421f1f6dbe898887303d94c19144d9bc6",
+  "operational_approval": false,
+  "accepted_observation_cost": false,
+  "physical_number_basis_resolved": false,
+  "main_runtime_modified": false,
+  "build_scope": "Fresh ISO/wrapper objects over the retained host archives; no complete host rebuild or historical source-pin reapproval.",
+  "prior_probe_wrapper_source_sha256": "89bfed39a80d9a2189a621609c4a9d32f8792ee365cd8d696c18b2a8c515b24a"
+}

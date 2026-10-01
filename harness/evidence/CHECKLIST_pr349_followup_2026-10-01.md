@@ -26,3 +26,11 @@ probe. It rejects a bare identity bypass and removes the arbitrary 50% switch.
 This is not production adoption or proof that the floating map is smooth.
 N5 remains OPEN until its own actual native per-field FD and noninterference
 records are inspected. N6 remains deferred accordingly.
+
+N5 measured result: [native FD and state-admission report](REPORT_nccn_native_fd_2026-10-02.md).
+The same zero-only library passes all 12 native-staged field FD gates and the
+OFF/ON noninterference comparison. However the staged input and returned state
+fail the existing column command's moment admission; the replay exits 1 as
+`NUMERICAL_PASS_UNADMITTED_STATE`. N5 remains OPEN/FAIL for supported-candidate
+acceptance, and N6 remains deferred. Counts are not synthesized, the sampled
+column/direction/h are not replaced, and no new system gate is added.
