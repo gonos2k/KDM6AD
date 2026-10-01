@@ -40,6 +40,12 @@ tests/                 — 정합·수반 항등식·DA·경계검증 스위트
 
 ## Reference
 
+한 native 5 km column을 같은 selector 2 / dry-number 1의 fp64 C ABI로
+실행하는 진입점은 [`scripts/run_normalized_dry_column.py`](scripts/run_normalized_dry_column.py)입니다.
+외부 입력·라이브러리 경로를 받아 전방, JVP/VJP, 독립 차분과 결과를 저장합니다.
+[고정 설정과 사용 범위](../docs/NORMALIZED_DRY_COLUMN.md)를 먼저 확인하세요.
+이 실험의 성공 여부는 물리 단위·관측·운영 승인을 대신하지 않습니다.
+
 프로젝트 위키 참조:
 - 패러다임: [[differentiable-microphysics-paradigm]]
 - 분기 처리: [[branch-semantics-physical-vs-numerical]]
