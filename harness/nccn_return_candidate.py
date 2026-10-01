@@ -27,6 +27,19 @@ def delta_return(n_in: torch.Tensor, applied: torch.Tensor,
     return n_in + (n_out_volume - n_in_volume) / rho
 
 
+def exact_zero_return(
+    n_in: torch.Tensor,
+    n_in_volume: torch.Tensor,
+    n_out_volume: torch.Tensor,
+    rho: torch.Tensor,
+) -> torch.Tensor:
+    """Use the live increment at exact zero, direct conversion otherwise."""
+    delta = n_out_volume - n_in_volume
+    incremented = n_in + delta / rho
+    direct = n_out_volume / rho
+    return torch.where(delta == 0.0, incremented, direct)
+
+
 def delta_return_with_direct_fallback(
     n_in: torch.Tensor, applied: torch.Tensor, rho: torch.Tensor
 ) -> torch.Tensor:
@@ -66,14 +79,20 @@ def baseline_level10(path: str | Path) -> dict:
         nout_volume = nin_volume - applied
         direct = nout_volume / rho_endpoint
         delta = n + (nout_volume - nin_volume) / rho_endpoint
+        zero_preserving = exact_zero_return(n, nin_volume, nout_volume, rho_endpoint)
+        hybrid = delta_return_with_direct_fallback(n, applied, rho_endpoint)
         expected = float.fromhex(fixture[f"{label}_hex"])
         endpoint[f"{label}_qv"] = qv_endpoint
         endpoint[f"{label}_rho_dry"] = float(rho_endpoint)
         endpoint[f"{label}_expected"] = expected
         endpoint[f"{label}_direct"] = float(direct)
         endpoint[f"{label}_delta"] = float(delta)
+        endpoint[f"{label}_exact_zero"] = float(zero_preserving)
+        endpoint[f"{label}_hybrid"] = float(hybrid)
         endpoint[f"{label}_direct_hex"] = float(direct).hex()
         endpoint[f"{label}_delta_hex"] = float(delta).hex()
+        endpoint[f"{label}_exact_zero_hex"] = float(zero_preserving).hex()
+        endpoint[f"{label}_hybrid_hex"] = float(hybrid).hex()
         endpoint[f"{label}_expected_hex"] = expected.hex()
 
     def ulps(a: float, b: float) -> int:
@@ -88,9 +107,17 @@ def baseline_level10(path: str | Path) -> dict:
         "source_npz_sha256": fixture["source_npz_sha256"],
         "qv": qv,
         "qv_direction": dqv,
+        "h": h,
+        "expected_fd": (endpoint["plus_expected"] - endpoint["minus_expected"]) / (2.0 * h),
+        "exact_zero_fd": (endpoint["plus_exact_zero"] - endpoint["minus_exact_zero"]) / (2.0 * h),
+        "hybrid_fd": (endpoint["plus_hybrid"] - endpoint["minus_hybrid"]) / (2.0 * h),
         **endpoint,
         "plus_direct_ulp_error": ulps(endpoint["plus_direct"], endpoint["plus_expected"]),
         "minus_direct_ulp_error": ulps(endpoint["minus_direct"], endpoint["minus_expected"]),
         "plus_delta_ulp_error": ulps(endpoint["plus_delta"], endpoint["plus_expected"]),
         "minus_delta_ulp_error": ulps(endpoint["minus_delta"], endpoint["minus_expected"]),
+        "plus_exact_zero_ulp_error": ulps(endpoint["plus_exact_zero"], endpoint["plus_expected"]),
+        "minus_exact_zero_ulp_error": ulps(endpoint["minus_exact_zero"], endpoint["minus_expected"]),
+        "plus_hybrid_ulp_error": ulps(endpoint["plus_hybrid"], endpoint["plus_expected"]),
+        "minus_hybrid_ulp_error": ulps(endpoint["minus_hybrid"], endpoint["minus_expected"]),
     }
