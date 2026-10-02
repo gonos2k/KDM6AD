@@ -43,7 +43,7 @@ remain preserved. No new system gates or deployment scope are added.
 
 - [x] N5.1: Report numerical input preconditions/executed numerical checks, strict paired-state admission, and unapproved observations separately. Inspect pre-step native inputs across calls; distinguish first-call missing number fields from later states.
 - [x] N5.2: Before any AD/FD result, select one active native input by a deterministic whole-owned-domain rule. Keep native levels and all species; no synthetic counts or output-based selection. Require the existing strict full-profile pair rule and an interior active ice level (`qi>1e-14`, `rho_d*ni>ncmin(xland)`). This is an active hydrometeor criterion, not evidence of a named rate.
-- [ ] N5.3: On the selected input run the unchanged mixed direction and a separate 1% NCCN-only direction, h=1e-4, same 12 field/duality gates. Capture raw NCCN volume delta and actual BASE/PLUS/MINUS zero masks inside the return before division; separate same-return-branch FD from crossing increments. Check OFF/ON forecast noninterference.
+- [x] N5.3: On the selected input run the unchanged mixed direction and a separate 1% NCCN-only direction, h=1e-4, same 12 field/duality gates. Capture raw NCCN volume delta and actual BASE/PLUS/MINUS zero masks inside the return before division; separate same-return-branch FD from crossing increments. Check OFF/ON forecast noninterference.
 - [ ] N5.4: Only after supported-state and numerical evidence pass, judge Python/C++ fp64 NCCN candidate adoption together; preserve f32 and other number fields. Rebuild the chosen main version and repeat the user command from a clean checkout. Release/deployment remains deferred.
 
 The source gates and the selected case's support boundaries must be recorded.
@@ -58,3 +58,11 @@ selects (142,50), XLAND=2 before AD/FD. This closes classification and input
 selection only; N5.3 branch/direct-NCCN native evidence and N5.4 adoption remain
 open. A positive pair is a necessary support check, not full DSD or observation
 approval; source-floor activity is not named-process attribution.
+
+N5.3: [supported native two-direction/mask evidence](REPORT_supported_native_nccn_2026-10-03.md)
+passes at the frozen input-only selected (142,50), call2. All ten input/output
+states satisfy strict pair support. Both 12-field FD/duality checks pass;
+BASE/MIX±/NCCN± share the same 39-level return mask. This closes the selected
+supported native numerical and return-branch condition, not all physical process
+branches, units or observations. N5.4 main adoption and clean user-command run
+remain open; N6 and deployment remain deferred.

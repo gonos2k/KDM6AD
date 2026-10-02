@@ -1,0 +1,86 @@
+diff --git a/libtorch/src/runtime.cpp b/libtorch/src/runtime.cpp
+index 2ec9258..b3d9dbb 100644
+--- a/libtorch/src/runtime.cpp
++++ b/libtorch/src/runtime.cpp
+@@ -1,3 +1,7 @@
++#include <atomic>
++#include <cstdio>
++#include <cstdlib>
++#include <cstring>
+ #include <iostream>
+ #include "kdm6/runtime.h"
+ #include "kdm6/fconst.h"
+@@ -416,7 +420,7 @@ FnResult kdm6_fn(const State& state,
+     // baked-in 상수로 사용됨. AD-trainable parameters로 활용하려면 별도 plumbing 필요.
+     auto cs = state_to_coord(state, forcing);
+     auto cf = build_forcing(forcing);
+-    torch::Tensor rho_dry;
++    torch::Tensor rho_dry, nccn_volume_entry;
+     if (dry_number) {
+         // Validation is value-only; the successful conversion remains live in the AD graph.
+         {
+@@ -436,6 +440,7 @@ FnResult kdm6_fn(const State& state,
+         }
+         State volume_state = state;
+         volume_state.nccn = state.nccn * rho_dry;
++        nccn_volume_entry = volume_state.nccn;
+         volume_state.nc = state.nc * rho_dry;
+         volume_state.ni = state.ni * rho_dry;
+         volume_state.nr = state.nr * rho_dry;
+@@ -654,7 +659,35 @@ FnResult kdm6_fn(const State& state,
+     // FnResult ⇒ kdm6_step_c ⇒ WRF RAINNCV/SNOWNCV/GRAUPELNCV.
+     auto state_out = coord_to_state(cur, state, forcing);
+     if (dry_number) {
+-        state_out.nccn = state_out.nccn / rho_dry;
++        // Isolated fp64 candidate: zero amount keeps identity AND its live tangent.
++        if (state.nccn.scalar_type() == torch::kFloat64) {
++            auto delta = state_out.nccn - nccn_volume_entry;
++            // Private value-only trace. Never substitutes tensors in the AD map.
++            const char* trace = std::getenv("KDM6_NCCN_RETURN_MASK_TRACE");
++            if (trace && std::strcmp(trace, "1") == 0) {
++                torch::NoGradGuard log_only;
++                TORCH_CHECK(state.nccn.device().is_cpu() && state.nccn.numel() == 39,
++                            "bounded NCCN return trace expects one CPU native column");
++                static std::atomic<unsigned> call{0};
++                const auto sequence = ++call;
++                auto nin = nccn_volume_entry.flatten().contiguous();
++                auto nout = state_out.nccn.flatten().contiguous();
++                auto change = delta.flatten().contiguous();
++                auto density = rho_dry.flatten().contiguous();
++                auto zero = (delta == 0).to(torch::kInt64).flatten().contiguous();
++                for (int k = 0; k < 39; ++k) {
++                    std::printf("NCCN_RETURN_RAW_V1 %u %d %a %a %a %a %lld\n",
++                        sequence, k + 1, nin.data_ptr<double>()[k], nout.data_ptr<double>()[k],
++                        change.data_ptr<double>()[k], density.data_ptr<double>()[k],
++                        static_cast<long long>(zero.data_ptr<int64_t>()[k]));
++                }
++                std::fflush(stdout);
++            }
++            state_out.nccn = torch::where(delta == 0,
++                state.nccn + delta / rho_dry, state_out.nccn / rho_dry);
++        } else {
++            state_out.nccn = state_out.nccn / rho_dry;
++        }
+         state_out.nc = state_out.nc / rho_dry;
+         state_out.ni = state_out.ni / rho_dry;
+         state_out.nr = state_out.nr / rho_dry;
+diff --git a/oracle/kdm6/runtime.py b/oracle/kdm6/runtime.py
+index a8641d0..8c1f42f 100644
+--- a/oracle/kdm6/runtime.py
++++ b/oracle/kdm6/runtime.py
+@@ -726,8 +726,14 @@ def _kdm6_pure(
+ 
+     result = _coord_to_state(cur, state, forcing)._replace(nccn=cur_nccn)
+     if dry_number:
++        nccn_return = result.nccn / dry_density
++        if state.nccn.dtype == torch.float64:
++            delta = result.nccn - state_kernel.nccn
++            nccn_return = torch.where(
++                delta == 0, state.nccn + delta / dry_density, nccn_return,
++            )
+         result = result._replace(
+-            nccn=result.nccn / dry_density,
++            nccn=nccn_return,
+             nc=result.nc / dry_density,
+             ni=result.ni / dry_density,
+             nr=result.nr / dry_density,

@@ -1,0 +1,408 @@
+{
+  "schema": "KDM6AD_N5_3_TWO_DIRECTION_NATIVE_RESULT_V1",
+  "root": "/private/tmp/KDM6AD-supported-native-nccn-fd",
+  "scope": "isolated private native evidence only; no canonical host or public repo edits",
+  "source": {
+    "base_path": "/private/tmp/KDM6AD-nccn-zero-native/phys/module_mp_kdm6ad_cons.F",
+    "base_sha256": "f3e432ef77cb91443bd1968df6766a4cd34c8190d22279d6a24fc09f6cd82539",
+    "final_path": "/private/tmp/KDM6AD-supported-native-nccn-fd/phys/module_mp_kdm6ad_cons.F",
+    "final_sha256": "3e2b282dcd8b00e41d23c8fd0365c09da5a60b7da47b0d6506330430573a2282",
+    "iso_sha256": "5e8a38b4c24d47a89d8c108014dc0e4073cff236db19f19a21913cbfb1cc6dea",
+    "preprocessed_wrapper_sha256": "ac2aa1a4c5dc098ffeb335d83c02c18a64439d6eed717db9a42018fccfb743c9",
+    "wrapper_object_sha256": "cd018f58462a0208cd5ebbafc4572c791192c30cbb636ead644f63826e4720ff",
+    "iso_object_sha256": "e4108901afdc3e49ba43c3f704a581a5a0a60dc47258c90a18c476a99ed0158c",
+    "library_path": "/private/tmp/KDM6AD-supported-native-nccn-build/libkdm6_c.2.0.0.dylib",
+    "library_sha256": "150d5fcabe30a053a155d5c357d78f89a0d78636876afd86f04532b8f4402ac6",
+    "executable_path": "/private/tmp/KDM6AD-supported-native-nccn-fd/build/wrf_supported_nccn_two_dir_fd.exe",
+    "executable_sha256": "a75512c3efee93103e54c6fda38614aa29f475a88a32b0407dcea523a68c0cbf",
+    "compile_link_recipe": "saved S1 native preprocess/link receipts retargeted to isolated root and fresh library; -ffp-contract=off"
+  },
+  "selection": {
+    "source": "frozen input-only census, before AD or FD",
+    "frozen_npz": "/private/tmp/KDM6AD-native-admission-selected-input.npz",
+    "frozen_npz_sha256": "1ceff2eb8e73381f9043fc3f7e89da14633bcfc835330e379cd4b80703d84115",
+    "frozen_arrays_roundtrip_bitwise_equal": true,
+    "global_ij_1based": [
+      142,
+      50
+    ],
+    "local_ij_1based": [
+      141,
+      49
+    ],
+    "itimestep": 2,
+    "owned_tile": "tile1",
+    "dims_im_km_jm": [
+      232,
+      39,
+      141
+    ],
+    "xland": 2.0
+  },
+  "probe": {
+    "physics_variant": 2,
+    "dry_number": 1,
+    "normalized_ice": 1,
+    "mp_physics": 337,
+    "dt_seconds": 20,
+    "fd_h": 0.0001,
+    "state_order": [
+      "th",
+      "qv",
+      "qc",
+      "qr",
+      "qi",
+      "qs",
+      "qg",
+      "nccn",
+      "nc",
+      "ni",
+      "nr",
+      "bg"
+    ],
+    "forcing_order": [
+      "rho",
+      "pii",
+      "p",
+      "delz"
+    ],
+    "directions": [
+      "unchanged mixed: qi + 1% qv + 1% nc",
+      "NCCN-only: 1% input NCCN"
+    ],
+    "one_base_graph_handle": true,
+    "c_abi_forward_calls": 5,
+    "forward_call_order": [
+      "BASE",
+      "MIX_PLUS",
+      "MIX_MINUS",
+      "NN_PLUS",
+      "NN_MINUS"
+    ],
+    "ad_rc_and_outputs_finite": true,
+    "fd_pass_mix_nn": [
+      1,
+      1
+    ],
+    "duality_left_right_mixed": [
+      888400243.9403895,
+      888400243.9403895
+    ],
+    "duality_left_right_nccn": [
+      61621669805659.234,
+      61621669805659.234
+    ],
+    "duality_relative_gate": 1e-12,
+    "fd_per_field_relative_gate": 1e-05,
+    "fd_fields": {
+      "1": {
+        "mix_absmax": 2.744931900408833e-10,
+        "mix_scale": 0.0006705718647026515,
+        "mix_relative": 4.093419430333548e-07,
+        "nn_absmax": 0.0,
+        "nn_scale": 0.0,
+        "nn_relative": 0.0
+      },
+      "2": {
+        "mix_absmax": 1.6417965077730745e-14,
+        "mix_scale": 0.00020124403761478948,
+        "mix_relative": 8.158236771793026e-11,
+        "nn_absmax": 0.0,
+        "nn_scale": 0.0,
+        "nn_relative": 0.0
+      },
+      "3": {
+        "mix_absmax": 0.0,
+        "mix_scale": 0.0,
+        "mix_relative": 0.0,
+        "nn_absmax": 0.0,
+        "nn_scale": 0.0,
+        "nn_relative": 0.0
+      },
+      "4": {
+        "mix_absmax": 0.0,
+        "mix_scale": 0.0,
+        "mix_relative": 0.0,
+        "nn_absmax": 0.0,
+        "nn_scale": 0.0,
+        "nn_relative": 0.0
+      },
+      "5": {
+        "mix_absmax": 6.209852646205452e-17,
+        "mix_scale": 3.428014510665233e-06,
+        "mix_relative": 1.8115012719127558e-11,
+        "nn_absmax": 0.0,
+        "nn_scale": 0.0,
+        "nn_relative": 0.0
+      },
+      "6": {
+        "mix_absmax": 4.519317820295718e-19,
+        "mix_scale": 1.213460297098818e-07,
+        "mix_relative": 3.724322774383848e-12,
+        "nn_absmax": 0.0,
+        "nn_scale": 0.0,
+        "nn_relative": 0.0
+      },
+      "7": {
+        "mix_absmax": 0.0,
+        "mix_scale": 0.0,
+        "mix_relative": 0.0,
+        "nn_absmax": 0.0,
+        "nn_scale": 0.0,
+        "nn_relative": 0.0
+      },
+      "8": {
+        "mix_absmax": 0.0010546428791258222,
+        "mix_scale": 12405.98477423191,
+        "mix_relative": 8.50108152088328e-08,
+        "nn_absmax": 0.00029602041468024254,
+        "nn_scale": 3091369.6002960205,
+        "nn_relative": 9.575704394967736e-11
+      },
+      "9": {
+        "mix_absmax": 0.0,
+        "mix_scale": 0.0,
+        "mix_relative": 0.0,
+        "nn_absmax": 0.0,
+        "nn_scale": 0.0,
+        "nn_relative": 0.0
+      },
+      "10": {
+        "mix_absmax": 5.673587395449431e-07,
+        "mix_scale": 231.5587259363383,
+        "mix_relative": 2.450172142080818e-09,
+        "nn_absmax": 0.0,
+        "nn_scale": 0.0,
+        "nn_relative": 0.0
+      },
+      "11": {
+        "mix_absmax": 0.0,
+        "mix_scale": 0.0,
+        "mix_relative": 0.0,
+        "nn_absmax": 0.0,
+        "nn_scale": 0.0,
+        "nn_relative": 0.0
+      },
+      "12": {
+        "mix_absmax": 0.0,
+        "mix_scale": 0.0,
+        "mix_relative": 0.0,
+        "nn_absmax": 0.0,
+        "nn_scale": 0.0,
+        "nn_relative": 0.0
+      }
+    },
+    "trace_path": "/private/tmp/KDM6AD-supported-native-nccn-fd/evidence/selected_two_direction_trace.tsv",
+    "trace_sha256": "ef6f6127a96124734b5cc08c9cff1222f0abd9fe32aa87a292558d60624d88fc",
+    "mask_logger_rows": 195,
+    "mask_calls": {
+      "1": {
+        "rows": 39,
+        "k_first": 1,
+        "k_last": 39,
+        "zero_mask_count": 18,
+        "changed_mask_count": 21,
+        "changed_levels": [
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39
+        ]
+      },
+      "2": {
+        "rows": 39,
+        "k_first": 1,
+        "k_last": 39,
+        "zero_mask_count": 18,
+        "changed_mask_count": 21,
+        "changed_levels": [
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39
+        ]
+      },
+      "3": {
+        "rows": 39,
+        "k_first": 1,
+        "k_last": 39,
+        "zero_mask_count": 18,
+        "changed_mask_count": 21,
+        "changed_levels": [
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39
+        ]
+      },
+      "4": {
+        "rows": 39,
+        "k_first": 1,
+        "k_last": 39,
+        "zero_mask_count": 18,
+        "changed_mask_count": 21,
+        "changed_levels": [
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39
+        ]
+      },
+      "5": {
+        "rows": 39,
+        "k_first": 1,
+        "k_last": 39,
+        "zero_mask_count": 18,
+        "changed_mask_count": 21,
+        "changed_levels": [
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          27,
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39
+        ]
+      }
+    },
+    "mask_trace_path": "/private/tmp/KDM6AD-supported-native-nccn-fd/evidence/nccn_return_raw_mask_trace.tsv",
+    "mask_trace_sha256": "e4eacccd11f691272cba43a12b7229fca439af846a924413bafdab05d46d79c5",
+    "note": "Branch masks describe exact-zero NCCN return map at the selected column; they do not attribute upstream physical producers."
+  },
+  "runs": {
+    "off": {
+      "path": "/private/tmp/KDM6AD-supported-native-nccn-fd/case/runs/mp337_nccn_two_dir_off_0min40s_hist0_20261002_235616_p76790",
+      "experiment_valid": {
+        "experiment_valid": true,
+        "invalid_reasons": [],
+        "requested_proc_grid": null,
+        "actual_proc_grid": "1x1",
+        "exit_code": 0,
+        "model_completed": true
+      },
+      "forecast_sha256": "be0edb894d1ddc5996f925cf01d56d1d882b53d6ed0295566edac2cb60f31308",
+      "energy_sha256": "e8251c4bd2bf8556b66c81f9079371d176815ddbdd8b3752f9dd13601e90c72e"
+    },
+    "on": {
+      "path": "/private/tmp/KDM6AD-supported-native-nccn-fd/case/runs/mp337_nccn_two_dir_on_0min40s_hist0_20261002_235752_p77360",
+      "experiment_valid": {
+        "experiment_valid": true,
+        "invalid_reasons": [],
+        "requested_proc_grid": null,
+        "actual_proc_grid": "1x1",
+        "exit_code": 0,
+        "model_completed": true
+      },
+      "forecast_sha256": "be0edb894d1ddc5996f925cf01d56d1d882b53d6ed0295566edac2cb60f31308",
+      "energy_sha256": "e8251c4bd2bf8556b66c81f9079371d176815ddbdd8b3752f9dd13601e90c72e"
+    },
+    "times": [
+      "2025-07-19_00:00:00",
+      "2025-07-19_00:00:20",
+      "2025-07-19_00:00:40"
+    ],
+    "settings": "np1, OMP/MKL/thread limit 1, dt fixed 20 s, history 0 min + history_interval_s=20, local en0 pinned TCP/OOB; ON adds KDM6_S8_FP64_PROBE=1 and KDM6_NCCN_RETURN_MASK_TRACE=1",
+    "strict_forecast_bitwise": {
+      "all_3_frames": true,
+      "numeric_vars": 253,
+      "char_vars": 1,
+      "variables_total": 254,
+      "times_equal": true
+    },
+    "forecast_noninterference_sha_equal": true,
+    "energy_noninterference_sha_equal": true
+  },
+  "limitations": [
+    "single frozen active-ice/NCCN column",
+    "single-rank local run",
+    "input admission is distinct from physical producer attribution",
+    "does not establish whole-host derivative or forecast acceptance"
+  ],
+  "main_runtime_modified": false,
+  "operational_approval": false,
+  "accepted_observation_cost": false,
+  "physical_number_basis_resolved": false,
+  "public_probe_overlay_sha256": "4abbc4fc955a5f02f5ed46633979135010bdd066c0968e4d48280dd0cdd356e0"
+}
