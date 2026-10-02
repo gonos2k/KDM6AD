@@ -51,6 +51,10 @@ def test_all_forward_and_ad_calls_use_one_configuration():
     lib = LinearABI()
     arrays, checks = runner.run_column(lib, *case(), 1.)
     assert checks["numerical_checks_passed"]
+    assert checks["numerical_input_checks_passed"]
+    assert checks["strict_pair_state_admitted"]
+    assert checks["observational_admission"] is False
+    assert checks["operator_executed"] and checks["operator_outputs_finite"]
     assert len(lib.calls) == 4
     assert all(call[:3] == (20., 2, 1) and call[4:] == (10., 10.) for call in lib.calls)
     assert [call[3] for call in lib.calls] == [0, 1, 1, 1]
@@ -85,10 +89,44 @@ def test_matching_jvp_vjp_does_not_hide_wrong_finite_difference():
 
 
 def test_invalid_state_is_rejected_before_native_call():
+    negative_pair, _ = case()
+    negative_pair[runner.PROG_FIELDS.index("qc"), 0] = -1e-3
+    negative_pair[runner.PROG_FIELDS.index("nc"), 0] = -1.0
+    assert not runner.classify_state(negative_pair)["strict_pair_state_admitted"]
+
     state, forcing = case()
     state[1, 0] = -1.
     lib = LinearABI()
     with pytest.raises(ValueError, match="nonnegative state"):
+        runner.run_column(lib, state, forcing, 1.)
+    assert not lib.calls
+
+
+def test_finite_unpaired_state_passes_numerical_inputs_but_fails_pair_admission():
+    state, _ = case()
+    state[runner.PROG_FIELDS.index("qc"), 0] = 1e-3
+    result = runner.classify_state(state, "finite unpaired sample")
+    assert result == dict(
+        state_label="finite unpaired sample",
+        numerical_input_checks_passed=True,
+        strict_pair_state_admitted=False,
+        observational_admission=False,
+    )
+    lib = LinearABI()
+    with pytest.raises(ValueError, match="unsupported qc/nc moment pair"):
+        runner.run_column(lib, state, case()[1], 1.)
+    assert not lib.calls
+
+
+def test_nonfinite_state_fails_numerical_input_checks_before_native_call():
+    state, forcing = case()
+    state[0, 0] = np.nan
+    result = runner.classify_state(state, "nonfinite sample")
+    assert result["numerical_input_checks_passed"] is False
+    assert result["strict_pair_state_admitted"] is False
+    assert result["observational_admission"] is False
+    lib = LinearABI()
+    with pytest.raises(ValueError, match="finite positive temperature"):
         runner.run_column(lib, state, forcing, 1.)
     assert not lib.calls
 

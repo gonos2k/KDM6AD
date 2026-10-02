@@ -34,3 +34,27 @@ fail the existing column command's moment admission; the replay exits 1 as
 `NUMERICAL_PASS_UNADMITTED_STATE`. N5 remains OPEN/FAIL for supported-candidate
 acceptance, and N6 remains deferred. Counts are not synthesized, the sampled
 column/direction/h are not replaced, and no new system gate is added.
+
+## PR #351–#352 review: next N5 steps (2026-10-02)
+
+Keep numerical execution evidence and strict pair-state support separate; neither
+is observation/DA science approval. Existing failures and admission rejection
+remain preserved. No new system gates or deployment scope are added.
+
+- [x] N5.1: Report numerical input preconditions/executed numerical checks, strict paired-state admission, and unapproved observations separately. Inspect pre-step native inputs across calls; distinguish first-call missing number fields from later states.
+- [x] N5.2: Before any AD/FD result, select one active native input by a deterministic whole-owned-domain rule. Keep native levels and all species; no synthetic counts or output-based selection. Require the existing strict full-profile pair rule and an interior active ice level (`qi>1e-14`, `rho_d*ni>ncmin(xland)`). This is an active hydrometeor criterion, not evidence of a named rate.
+- [ ] N5.3: On the selected input run the unchanged mixed direction and a separate 1% NCCN-only direction, h=1e-4, same 12 field/duality gates. Capture raw NCCN volume delta and actual BASE/PLUS/MINUS zero masks inside the return before division; separate same-return-branch FD from crossing increments. Check OFF/ON forecast noninterference.
+- [ ] N5.4: Only after supported-state and numerical evidence pass, judge Python/C++ fp64 NCCN candidate adoption together; preserve f32 and other number fields. Rebuild the chosen main version and repeat the user command from a clean checkout. Release/deployment remains deferred.
+
+The source gates and the selected case's support boundaries must be recorded.
+Clear columns and default/fallback branches cannot be counted as an active-case
+success. If no eligible input is measured, report that negative result without
+changing criteria to manufacture a pass.
+
+N5.1/N5.2: [admission axes and input-only selection](REPORT_native_admission_selection_2026-10-02.md)
+measured both complete owned domains at calls 1/2. First call has no eligible
+active-ice profile; the second has two. Earliest-call/global maximum input qi
+selects (142,50), XLAND=2 before AD/FD. This closes classification and input
+selection only; N5.3 branch/direct-NCCN native evidence and N5.4 adoption remain
+open. A positive pair is a necessary support check, not full DSD or observation
+approval; source-floor activity is not named-process attribution.
