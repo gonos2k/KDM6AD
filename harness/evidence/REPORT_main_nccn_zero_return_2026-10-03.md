@@ -44,6 +44,13 @@ through the actual oracle, requiring exact no-op NCCN identity. No production
 f32 change is inferred from a mock; source dtype gating and prior native
 forecast identity distinguish the precision contracts.
 
+The initial harness CI rejected the stale runtime overlay base after this
+intentional source change. The same three canonical hunks are now incorporated
+in the overlay before updating its source pin. The existing verifier requires
+macro-OFF textual identity, macro-ON in-order inclusion and a clean mutation
+tripwire; its acceptance is static evidence, not a new native noninterference
+run. No verifier rule or numerical threshold is relaxed.
+
 ## Remaining boundaries
 
 This closes selected NCCN return arithmetic adoption and the rebuilt diagnostic
