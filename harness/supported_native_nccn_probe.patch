@@ -1,0 +1,432 @@
+--- a/phys/module_mp_kdm6ad_cons.F
++++ b/phys/module_mp_kdm6ad_cons.F
+@@ -354,25 +354,32 @@
+     CALL kdm6ad_cons_check_finite_3d(DELZ_IN,'DELZ input', ITS, KTS, JTS)
+     CALL kdm6ad_cons_check_finite_2d(XLAND_IN,'XLAND input',ITS,JTS)
+ 
+-    ! One-column fp64 derivative probe on the same normalized/dry-number state
+-    ! staged for the value-only host forecast immediately below.
++    ! Selected input-only frozen candidate: global (142,50), ITIMESTEP=2.
++    ! The ON probe sees only the staged pre-physics input arrays in this tile.
+     BLOCK
+       CHARACTER(LEN=16) :: ENABLED
+-      INTEGER :: ISEL, JSEL, ENV_STATUS, ENV_LENGTH, F, K, IDX, WORST_FIELD, FD_PASS
+-      INTEGER :: TRACE_UNIT, TRACE_IOS
+-      INTEGER(c_int) :: AD_RC, CLOSE_RC, RC_PLUS, RC_MINUS
++      INTEGER :: ISEL, JSEL, ENV_STATUS, ENV_LENGTH, F, K, IDX
++      INTEGER :: WORST_MIX, WORST_NN, PASS_MIX, PASS_NN, TRACE_UNIT, TRACE_IOS
++      INTEGER(c_int) :: AD_RC, CLOSE_RC, RC_PLUS_MIX, RC_MINUS_MIX, RC_PLUS_NN, RC_MINUS_NN
+       LOGICAL :: PROBE_ENABLED, TARGET_IN_TILE
++      REAL(c_float) :: XLAND_ONE(1,1)
+       TYPE(c_ptr) :: AD_HANDLE, HANDLE_PLUS, HANDLE_MINUS
+       REAL(c_double), ALLOCATABLE :: STATE64(:,:,:,:), FORCE64(:,:,:,:), OUT64(:,:,:,:)
+-      REAL(c_double), ALLOCATABLE :: STATE64_PLUS(:,:,:,:), STATE64_MINUS(:,:,:,:)
+-      REAL(c_double), ALLOCATABLE :: OUT64_PLUS(:,:,:,:), OUT64_MINUS(:,:,:,:)
+-      REAL(c_double), ALLOCATABLE :: V(:), JV(:), JTU(:), FD(:)
+-      REAL(c_double) :: FD_MAXABS(12), FD_SCALE(12), FD_REL(12), FD_VALUE, FD_ERR
++      REAL(c_double), ALLOCATABLE :: STATE_PLUS_MIX(:,:,:,:), STATE_MINUS_MIX(:,:,:,:)
++      REAL(c_double), ALLOCATABLE :: OUT_PLUS_MIX(:,:,:,:), OUT_MINUS_MIX(:,:,:,:)
++      REAL(c_double), ALLOCATABLE :: STATE_PLUS_NN(:,:,:,:), STATE_MINUS_NN(:,:,:,:)
++      REAL(c_double), ALLOCATABLE :: OUT_PLUS_NN(:,:,:,:), OUT_MINUS_NN(:,:,:,:)
++      REAL(c_double), ALLOCATABLE :: V_MIX(:), JV_MIX(:), JTU_MIX(:), FD_MIX(:)
++      REAL(c_double), ALLOCATABLE :: V_NN(:), JV_NN(:), JTU_NN(:), FD_NN(:)
++      REAL(c_double) :: ERR_MIX(12), SCALE_MIX(12), REL_MIX(12)
++      REAL(c_double) :: ERR_NN(12), SCALE_NN(12), REL_NN(12)
++      REAL(c_double) :: LEFT_MIX, RIGHT_MIX, DUAL_MIX, LEFT_NN, RIGHT_NN, DUAL_NN
++      REAL(c_double) :: NORM_OUT, NORM_VMIX, NORM_JVMIX, NORM_JTUMIX, NORM_VNN, NORM_JVNN, NORM_JTUNN
++      REAL(c_double) :: SCALE_VALUE, ERROR_VALUE
+       REAL(c_double), PARAMETER :: H_FD = 1.0e-4_c_double
+       CHARACTER(LEN=512), PARAMETER :: TRACE_FILE = &
+-        '/private/tmp/KDM6AD-nccn-zero-native/evidence/staged_nccn_fd_probe.tsv'
+-      REAL(c_float) :: XLAND_ONE(1,1)
+-      REAL(c_double) :: LEFT_DOT, RIGHT_DOT, REL_DUAL, NORM_V, NORM_JV, NORM_JTU, NORM_OUT
++        '/private/tmp/KDM6AD-supported-native-nccn-fd/evidence/selected_two_direction_trace.tsv'
++
+       ENABLED = ''
+       CALL GET_ENVIRONMENT_VARIABLE('KDM6_S8_FP64_PROBE', ENABLED, &
+                                     LENGTH=ENV_LENGTH, STATUS=ENV_STATUS)
+@@ -384,18 +391,22 @@
+       ELSE IF (ENV_STATUS /= 1 .OR. ENV_LENGTH /= 0) THEN
+         CALL wrf_error_fatal('S8HAD: KDM6_S8_FP64_PROBE must be unset, 0 or 1')
+       END IF
+-      IF (PROBE_ENABLED .AND. .NOT. (NORMALIZED_ICE_MODE .AND. DRY_NUMBER_MODE)) THEN
++      IF (PROBE_ENABLED .AND. .NOT. (NORMALIZED_ICE_MODE .AND. DRY_NUMBER_MODE)) &
+         CALL wrf_error_fatal('S8HAD: probe requires normalized ice and dry number modes')
+-      END IF
+-      TARGET_IN_TILE = ITS <= 200 .AND. 200 <= ITE .AND. JTS <= 152 .AND. 152 <= JTE
+-      IF (PROBE_ENABLED .AND. .NOT. S8_FP64_PROBE_DONE .AND. &
+-          IM == 232 .AND. KM == 39 .AND. JM == 139 .AND. TARGET_IN_TILE) THEN
+-        ISEL = 200 - ITS + 1
+-        JSEL = 152 - JTS + 1
++      TARGET_IN_TILE = ITS <= 142 .AND. 142 <= ITE .AND. JTS <= 50 .AND. 50 <= JTE
++      IF (PROBE_ENABLED .AND. .NOT. S8_FP64_PROBE_DONE .AND. ITIMESTEP == 2 .AND. &
++          IM == 232 .AND. KM == 39 .AND. JM == 141 .AND. TARGET_IN_TILE) THEN
++        ISEL = 142 - ITS + 1
++        JSEL = 50 - JTS + 1
++        IF (ISEL /= 141 .OR. JSEL /= 49) &
++          CALL wrf_error_fatal('N5.3 selected global/local input coordinates disagree')
+         ALLOCATE(STATE64(1,KM,1,12), FORCE64(1,KM,1,4), OUT64(1,KM,1,12))
+-        ALLOCATE(STATE64_PLUS(1,KM,1,12), STATE64_MINUS(1,KM,1,12))
+-        ALLOCATE(OUT64_PLUS(1,KM,1,12), OUT64_MINUS(1,KM,1,12))
+-        ALLOCATE(V(12*KM), JV(12*KM), JTU(12*KM), FD(12*KM))
++        ALLOCATE(STATE_PLUS_MIX(1,KM,1,12), STATE_MINUS_MIX(1,KM,1,12))
++        ALLOCATE(OUT_PLUS_MIX(1,KM,1,12), OUT_MINUS_MIX(1,KM,1,12))
++        ALLOCATE(STATE_PLUS_NN(1,KM,1,12), STATE_MINUS_NN(1,KM,1,12))
++        ALLOCATE(OUT_PLUS_NN(1,KM,1,12), OUT_MINUS_NN(1,KM,1,12))
++        ALLOCATE(V_MIX(12*KM), JV_MIX(12*KM), JTU_MIX(12*KM), FD_MIX(12*KM))
++        ALLOCATE(V_NN(12*KM), JV_NN(12*KM), JTU_NN(12*KM), FD_NN(12*KM))
+         STATE64(1,:,1,1)=REAL(TH_IN(ISEL,:,JSEL),c_double)
+         STATE64(1,:,1,2)=REAL(Q_IN(ISEL,:,JSEL),c_double)
+         STATE64(1,:,1,3)=REAL(QC_IN(ISEL,:,JSEL),c_double)
+@@ -413,169 +424,220 @@
+         FORCE64(1,:,1,3)=REAL(P_IN(ISEL,:,JSEL),c_double)
+         FORCE64(1,:,1,4)=REAL(DELZ_IN(ISEL,:,JSEL),c_double)
+         XLAND_ONE(1,1)=XLAND_IN(ISEL,JSEL)
++
++        ! One graph forward at the frozen base input; both derivative directions use it.
+         AD_HANDLE = C_NULL_PTR
+         AD_RC = kdm6_step_ad_number(STATE64, FORCE64, 1_c_int, INT(KM,c_int), 1_c_int, &
+              REAL(DELT,c_double), 0_c_int, OUT64, AD_HANDLE, XLAND_ONE, &
+              REAL(ncmin_land,c_double), REAL(ncmin_sea,c_double), &
+              KDM6_PHYSICS_CONSERVATIVE_NORMALIZED, 1_c_int64_t)
+         IF (AD_RC == KDM6_OK) THEN
+-          IF (ANY(.NOT. ieee_is_finite(OUT64))) THEN
+-            AD_RC = KDM6_ERR_INTERNAL
+-          ELSE
+-            NORM_OUT = NORM2(OUT64)
+-            IF (.NOT. ieee_is_finite(NORM_OUT) .OR. NORM_OUT <= 0.0_c_double) &
+-              AD_RC = KDM6_ERR_INTERNAL
+-          END IF
++          IF (ANY(.NOT. ieee_is_finite(OUT64))) AD_RC = KDM6_ERR_INTERNAL
+         END IF
+         IF (AD_RC /= KDM6_OK .OR. .NOT. C_ASSOCIATED(AD_HANDLE)) THEN
+           IF (C_ASSOCIATED(AD_HANDLE)) CLOSE_RC = kdm6_handle_close(AD_HANDLE)
+-          CALL wrf_error_fatal('S2S8HAD_v2: fp64 normalized dry forward failed')
++          CALL wrf_error_fatal('N5.3: fp64 normalized dry base forward failed')
+         END IF
+-        V = 0.0_c_double
+-        V(4*KM+1:5*KM) = STATE64(1,:,1,5)
+-        V(KM+1:2*KM) = 0.01_c_double*STATE64(1,:,1,2)
+-        V(8*KM+1:9*KM) = 0.01_c_double*STATE64(1,:,1,9)
+-        NORM_V = NORM2(V)
+-        IF (.NOT. ieee_is_finite(NORM_V) .OR. NORM_V <= 0.0_c_double) &
+-          AD_RC = KDM6_ERR_INTERNAL
+-        IF (AD_RC == KDM6_OK) AD_RC = kdm6_handle_jvp(AD_HANDLE, V, JV)
+-        IF (AD_RC == KDM6_OK) THEN
+-          IF (ANY(.NOT. ieee_is_finite(JV))) AD_RC = KDM6_ERR_INTERNAL
+-        END IF
+-        IF (AD_RC == KDM6_OK) AD_RC = kdm6_handle_vjp(AD_HANDLE, JV, JTU)
+-        IF (AD_RC == KDM6_OK) THEN
+-          IF (ANY(.NOT. ieee_is_finite(JTU))) AD_RC = KDM6_ERR_INTERNAL
++        NORM_OUT = NORM2(OUT64)
++        IF (.NOT. ieee_is_finite(NORM_OUT) .OR. NORM_OUT <= 0.0_c_double) &
++          CALL wrf_error_fatal('N5.3: invalid base output norm')
++
++        ! Preserve the old mixed direction exactly: qi plus 1% qv and nc.
++        V_MIX = 0.0_c_double
++        V_MIX(4*KM+1:5*KM) = STATE64(1,:,1,5)
++        V_MIX(KM+1:2*KM) = 0.01_c_double*STATE64(1,:,1,2)
++        V_MIX(8*KM+1:9*KM) = 0.01_c_double*STATE64(1,:,1,9)
++        ! The new independent seed is 1% of the staged NCCN; all other entries are zero.
++        V_NN = 0.0_c_double
++        V_NN(7*KM+1:8*KM) = 0.01_c_double*STATE64(1,:,1,8)
++        NORM_VMIX = NORM2(V_MIX)
++        NORM_VNN = NORM2(V_NN)
++        IF (.NOT. ieee_is_finite(NORM_VMIX) .OR. NORM_VMIX <= 0.0_c_double) &
++          CALL wrf_error_fatal('N5.3: mixed direction must be finite and nonzero')
++        IF (.NOT. ieee_is_finite(NORM_VNN) .OR. NORM_VNN <= 0.0_c_double) &
++          CALL wrf_error_fatal('N5.3: NCCN seed direction must be finite and nonzero')
++
++        AD_RC = kdm6_handle_jvp(AD_HANDLE, V_MIX, JV_MIX)
++        IF (AD_RC /= KDM6_OK) CALL wrf_error_fatal('N5.3: mixed JVP failed')
++        IF (ANY(.NOT. ieee_is_finite(JV_MIX))) CALL wrf_error_fatal('N5.3: mixed JVP nonfinite')
++        AD_RC = kdm6_handle_vjp(AD_HANDLE, JV_MIX, JTU_MIX)
++        IF (AD_RC /= KDM6_OK) CALL wrf_error_fatal('N5.3: mixed VJP failed')
++        IF (ANY(.NOT. ieee_is_finite(JTU_MIX))) CALL wrf_error_fatal('N5.3: mixed VJP nonfinite')
++        AD_RC = kdm6_handle_jvp(AD_HANDLE, V_NN, JV_NN)
++        IF (AD_RC /= KDM6_OK) CALL wrf_error_fatal('N5.3: NCCN JVP failed')
++        IF (ANY(.NOT. ieee_is_finite(JV_NN))) CALL wrf_error_fatal('N5.3: NCCN JVP nonfinite')
++        AD_RC = kdm6_handle_vjp(AD_HANDLE, JV_NN, JTU_NN)
++        IF (AD_RC /= KDM6_OK) CALL wrf_error_fatal('N5.3: NCCN VJP failed')
++        IF (ANY(.NOT. ieee_is_finite(JTU_NN))) CALL wrf_error_fatal('N5.3: NCCN VJP nonfinite')
++
++        NORM_JVMIX = NORM2(JV_MIX); NORM_JTUMIX = NORM2(JTU_MIX)
++        NORM_JVNN = NORM2(JV_NN); NORM_JTUNN = NORM2(JTU_NN)
++        IF (.NOT. ieee_is_finite(NORM_JVMIX) .OR. NORM_JVMIX <= 0.0_c_double) &
++          CALL wrf_error_fatal('N5.3: mixed JVP must be nonzero')
++        IF (.NOT. ieee_is_finite(NORM_JTUMIX) .OR. NORM_JTUMIX <= 0.0_c_double) &
++          CALL wrf_error_fatal('N5.3: mixed VJP must be nonzero')
++        IF (.NOT. ieee_is_finite(NORM_JVNN) .OR. .NOT. ieee_is_finite(NORM_JTUNN)) &
++          CALL wrf_error_fatal('N5.3: NCCN derivative norms must be finite (zero is allowed)')
++        LEFT_MIX = SUM(JV_MIX*JV_MIX)
++        RIGHT_MIX = SUM(V_MIX*JTU_MIX)
++        IF (.NOT. ieee_is_finite(LEFT_MIX) .OR. .NOT. ieee_is_finite(RIGHT_MIX) .OR. &
++            LEFT_MIX <= 0.0_c_double .OR. RIGHT_MIX == 0.0_c_double) &
++          CALL wrf_error_fatal('N5.3: mixed duality products must be finite and nonzero')
++        DUAL_MIX = ABS(LEFT_MIX-RIGHT_MIX)/MAX(ABS(LEFT_MIX),ABS(RIGHT_MIX))
++        LEFT_NN = SUM(JV_NN*JV_NN)
++        RIGHT_NN = SUM(V_NN*JTU_NN)
++        IF (ALL(JV_NN == 0.0_c_double) .AND. ALL(JTU_NN == 0.0_c_double)) THEN
++          DUAL_NN = 0.0_c_double
++        ELSE
++          IF (.NOT. ieee_is_finite(LEFT_NN) .OR. .NOT. ieee_is_finite(RIGHT_NN) .OR. &
++              LEFT_NN <= 0.0_c_double .OR. RIGHT_NN == 0.0_c_double) &
++            CALL wrf_error_fatal('N5.3: NCCN duality products must be finite and nonzero unless both derivatives are zero')
++          DUAL_NN = ABS(LEFT_NN-RIGHT_NN)/MAX(ABS(LEFT_NN),ABS(RIGHT_NN))
+         END IF
++        IF (.NOT. ieee_is_finite(DUAL_MIX) .OR. DUAL_MIX > 1.0e-12_c_double) &
++          CALL wrf_error_fatal('N5.3: mixed JVP/VJP duality failed')
++        IF (.NOT. ieee_is_finite(DUAL_NN) .OR. DUAL_NN > 1.0e-12_c_double) &
++          CALL wrf_error_fatal('N5.3: NCCN JVP/VJP duality failed')
+         CLOSE_RC = kdm6_handle_close(AD_HANDLE)
+         IF (CLOSE_RC /= KDM6_OK .OR. C_ASSOCIATED(AD_HANDLE)) &
+-          CALL wrf_error_fatal('S2S8HAD_v2: handle close failed')
+-        IF (AD_RC /= KDM6_OK) CALL wrf_error_fatal('S2S8HAD_v2: JVP/VJP failed')
+-        NORM_JV = NORM2(JV)
+-        NORM_JTU = NORM2(JTU)
+-        LEFT_DOT = SUM(JV*JV)
+-        RIGHT_DOT = SUM(V*JTU)
+-        IF (.NOT. ieee_is_finite(NORM_JV) .OR. NORM_JV <= 0.0_c_double) &
+-          CALL wrf_error_fatal('S2S8HAD_v2: invalid JVP norm')
+-        IF (.NOT. ieee_is_finite(NORM_JTU) .OR. NORM_JTU <= 0.0_c_double) &
+-          CALL wrf_error_fatal('S2S8HAD_v2: invalid VJP norm')
+-        IF (.NOT. ieee_is_finite(LEFT_DOT) .OR. LEFT_DOT == 0.0_c_double) &
+-          CALL wrf_error_fatal('S2S8HAD_v2: invalid left dot')
+-        IF (.NOT. ieee_is_finite(RIGHT_DOT) .OR. RIGHT_DOT == 0.0_c_double) &
+-          CALL wrf_error_fatal('S2S8HAD_v2: invalid right dot')
+-        REL_DUAL = ABS(LEFT_DOT-RIGHT_DOT)/MAX(ABS(LEFT_DOT),ABS(RIGHT_DOT),TINY(LEFT_DOT))
+-        IF (.NOT. ieee_is_finite(REL_DUAL) .OR. REL_DUAL > 1.0e-12_c_double) &
+-          CALL wrf_error_fatal('S2S8HAD_v2: duality failed')
+-        WRITE(*,*) 'S2S8HAD_v2', 'physics_variant=2', 'dry_number=1', &
+-                   'value_only=0', KDM6_ABI_VERSION, 'ad_dims', 1, KM, 1, &
+-                   'tile_dims', IM, KM, JM, 'global_cell', 200, 152, &
+-                   'tile_local', ISEL, JSEL, NORM_OUT, NORM_V, NORM_JV, &
+-                   NORM_JTU, LEFT_DOT, RIGHT_DOT, REL_DUAL
++          CALL wrf_error_fatal('N5.3: handle close failed')
+ 
+-        ! Independent centered FD through the same candidate's value-only C ABI.
+-        STATE64_PLUS = STATE64 + H_FD*RESHAPE(V,SHAPE(STATE64))
+-        STATE64_MINUS = STATE64 - H_FD*RESHAPE(V,SHAPE(STATE64))
++        ! Four independent value-only endpoints on the exact same base/forcing.
++        STATE_PLUS_MIX = STATE64 + H_FD*RESHAPE(V_MIX,SHAPE(STATE64))
++        STATE_MINUS_MIX = STATE64 - H_FD*RESHAPE(V_MIX,SHAPE(STATE64))
++        STATE_PLUS_NN = STATE64 + H_FD*RESHAPE(V_NN,SHAPE(STATE64))
++        STATE_MINUS_NN = STATE64 - H_FD*RESHAPE(V_NN,SHAPE(STATE64))
+         HANDLE_PLUS = C_NULL_PTR
+-        RC_PLUS = kdm6_step_ad_number(STATE64_PLUS, FORCE64, 1_c_int, INT(KM,c_int), 1_c_int, &
+-             REAL(DELT,c_double), 1_c_int, OUT64_PLUS, HANDLE_PLUS, XLAND_ONE, &
++        RC_PLUS_MIX = kdm6_step_ad_number(STATE_PLUS_MIX, FORCE64, 1_c_int, INT(KM,c_int), 1_c_int, &
++             REAL(DELT,c_double), 1_c_int, OUT_PLUS_MIX, HANDLE_PLUS, XLAND_ONE, &
+              REAL(ncmin_land,c_double), REAL(ncmin_sea,c_double), &
+              KDM6_PHYSICS_CONSERVATIVE_NORMALIZED, 1_c_int64_t)
+-        IF (RC_PLUS /= KDM6_OK .OR. C_ASSOCIATED(HANDLE_PLUS)) &
+-          CALL wrf_error_fatal('S2S8HAD_v2: fp64 FD plus value call failed')
++        IF (RC_PLUS_MIX /= KDM6_OK .OR. C_ASSOCIATED(HANDLE_PLUS)) &
++          CALL wrf_error_fatal('N5.3: mixed plus value-only call failed')
+         HANDLE_MINUS = C_NULL_PTR
+-        RC_MINUS = kdm6_step_ad_number(STATE64_MINUS, FORCE64, 1_c_int, INT(KM,c_int), 1_c_int, &
+-             REAL(DELT,c_double), 1_c_int, OUT64_MINUS, HANDLE_MINUS, XLAND_ONE, &
++        RC_MINUS_MIX = kdm6_step_ad_number(STATE_MINUS_MIX, FORCE64, 1_c_int, INT(KM,c_int), 1_c_int, &
++             REAL(DELT,c_double), 1_c_int, OUT_MINUS_MIX, HANDLE_MINUS, XLAND_ONE, &
+              REAL(ncmin_land,c_double), REAL(ncmin_sea,c_double), &
+              KDM6_PHYSICS_CONSERVATIVE_NORMALIZED, 1_c_int64_t)
+-        IF (RC_MINUS /= KDM6_OK .OR. C_ASSOCIATED(HANDLE_MINUS)) &
+-          CALL wrf_error_fatal('S2S8HAD_v2: fp64 FD minus value call failed')
+-        IF (ANY(.NOT. ieee_is_finite(OUT64_PLUS)) .OR. &
+-            ANY(.NOT. ieee_is_finite(OUT64_MINUS))) &
+-          CALL wrf_error_fatal('S2S8HAD_v2: nonfinite fp64 FD endpoint')
+-        FD = (RESHAPE(OUT64_PLUS,[12*KM])-RESHAPE(OUT64_MINUS,[12*KM])) / &
+-             (2.0_c_double*H_FD)
+-        IF (ANY(.NOT. ieee_is_finite(FD))) &
+-          CALL wrf_error_fatal('S2S8HAD_v2: nonfinite centered FD')
+-        FD_PASS = 1
+-        FD_MAXABS = 0.0_c_double
+-        FD_SCALE = 0.0_c_double
+-        FD_REL = 0.0_c_double
+-        WORST_FIELD = 1
+-        DO F = 1, 12
+-          DO K = 1, KM
+-            IDX = (F-1)*KM + K
+-            FD_ERR = ABS(FD(IDX)-JV(IDX))
+-            FD_MAXABS(F) = MAX(FD_MAXABS(F), FD_ERR)
+-            FD_SCALE(F) = MAX(FD_SCALE(F), ABS(FD(IDX)), ABS(JV(IDX)))
++        IF (RC_MINUS_MIX /= KDM6_OK .OR. C_ASSOCIATED(HANDLE_MINUS)) &
++          CALL wrf_error_fatal('N5.3: mixed minus value-only call failed')
++        HANDLE_PLUS = C_NULL_PTR
++        RC_PLUS_NN = kdm6_step_ad_number(STATE_PLUS_NN, FORCE64, 1_c_int, INT(KM,c_int), 1_c_int, &
++             REAL(DELT,c_double), 1_c_int, OUT_PLUS_NN, HANDLE_PLUS, XLAND_ONE, &
++             REAL(ncmin_land,c_double), REAL(ncmin_sea,c_double), &
++             KDM6_PHYSICS_CONSERVATIVE_NORMALIZED, 1_c_int64_t)
++        IF (RC_PLUS_NN /= KDM6_OK .OR. C_ASSOCIATED(HANDLE_PLUS)) &
++          CALL wrf_error_fatal('N5.3: NCCN plus value-only call failed')
++        HANDLE_MINUS = C_NULL_PTR
++        RC_MINUS_NN = kdm6_step_ad_number(STATE_MINUS_NN, FORCE64, 1_c_int, INT(KM,c_int), 1_c_int, &
++             REAL(DELT,c_double), 1_c_int, OUT_MINUS_NN, HANDLE_MINUS, XLAND_ONE, &
++             REAL(ncmin_land,c_double), REAL(ncmin_sea,c_double), &
++             KDM6_PHYSICS_CONSERVATIVE_NORMALIZED, 1_c_int64_t)
++        IF (RC_MINUS_NN /= KDM6_OK .OR. C_ASSOCIATED(HANDLE_MINUS)) &
++          CALL wrf_error_fatal('N5.3: NCCN minus value-only call failed')
++        IF (ANY(.NOT. ieee_is_finite(OUT_PLUS_MIX)) .OR. ANY(.NOT. ieee_is_finite(OUT_MINUS_MIX)) .OR. &
++            ANY(.NOT. ieee_is_finite(OUT_PLUS_NN)) .OR. ANY(.NOT. ieee_is_finite(OUT_MINUS_NN))) &
++          CALL wrf_error_fatal('N5.3: nonfinite value-only endpoint')
++        FD_MIX=(RESHAPE(OUT_PLUS_MIX,[12*KM])-RESHAPE(OUT_MINUS_MIX,[12*KM]))/(2.0_c_double*H_FD)
++        FD_NN=(RESHAPE(OUT_PLUS_NN,[12*KM])-RESHAPE(OUT_MINUS_NN,[12*KM]))/(2.0_c_double*H_FD)
++        IF (ANY(.NOT. ieee_is_finite(FD_MIX)) .OR. ANY(.NOT. ieee_is_finite(FD_NN))) &
++          CALL wrf_error_fatal('N5.3: nonfinite centered finite difference')
++
++        PASS_MIX=1; PASS_NN=1; WORST_MIX=1; WORST_NN=1
++        ERR_MIX=0.0_c_double; SCALE_MIX=0.0_c_double; REL_MIX=0.0_c_double
++        ERR_NN=0.0_c_double; SCALE_NN=0.0_c_double; REL_NN=0.0_c_double
++        DO F=1,12
++          DO K=1,KM
++            IDX=(F-1)*KM+K
++            ERROR_VALUE=ABS(FD_MIX(IDX)-JV_MIX(IDX))
++            ERR_MIX(F)=MAX(ERR_MIX(F),ERROR_VALUE)
++            SCALE_MIX(F)=MAX(SCALE_MIX(F),ABS(FD_MIX(IDX)),ABS(JV_MIX(IDX)))
++            ERROR_VALUE=ABS(FD_NN(IDX)-JV_NN(IDX))
++            ERR_NN(F)=MAX(ERR_NN(F),ERROR_VALUE)
++            SCALE_NN(F)=MAX(SCALE_NN(F),ABS(FD_NN(IDX)),ABS(JV_NN(IDX)))
+           END DO
+-          IF (FD_SCALE(F) == 0.0_c_double) THEN
+-            IF (FD_MAXABS(F) == 0.0_c_double) THEN
+-              FD_REL(F) = 0.0_c_double
++          IF (SCALE_MIX(F)==0.0_c_double) THEN
++            IF (ERR_MIX(F)==0.0_c_double) THEN
++              REL_MIX(F)=0.0_c_double
+             ELSE
+-              FD_REL(F) = HUGE(FD_REL(F))
++              REL_MIX(F)=HUGE(REL_MIX(F))
+             END IF
+           ELSE
+-            FD_REL(F) = FD_MAXABS(F)/FD_SCALE(F)
++            REL_MIX(F)=ERR_MIX(F)/SCALE_MIX(F)
+           END IF
+-          IF (.NOT. ieee_is_finite(FD_REL(F)) .OR. FD_REL(F) > 1.0e-5_c_double) FD_PASS = 0
+-          IF (FD_REL(F) > FD_REL(WORST_FIELD)) WORST_FIELD = F
++          IF (SCALE_NN(F)==0.0_c_double) THEN
++            IF (ERR_NN(F)==0.0_c_double) THEN
++              REL_NN(F)=0.0_c_double
++            ELSE
++              REL_NN(F)=HUGE(REL_NN(F))
++            END IF
++          ELSE
++            REL_NN(F)=ERR_NN(F)/SCALE_NN(F)
++          END IF
++          IF (.NOT. ieee_is_finite(REL_MIX(F)) .OR. REL_MIX(F)>1.0e-5_c_double) PASS_MIX=0
++          IF (.NOT. ieee_is_finite(REL_NN(F)) .OR. REL_NN(F)>1.0e-5_c_double) PASS_NN=0
++          IF (REL_MIX(F)>REL_MIX(WORST_MIX)) WORST_MIX=F
++          IF (REL_NN(F)>REL_NN(WORST_NN)) WORST_NN=F
+         END DO
+ 
+-        ! Preserve all staged values and endpoints as decimal doubles with
+-        ! enough digits to round-trip; field blocks are State order, bottom-up K.
+-        OPEN(NEWUNIT=TRACE_UNIT, FILE=TRACE_FILE, STATUS='NEW', ACTION='WRITE', IOSTAT=TRACE_IOS)
+-        IF (TRACE_IOS /= 0) CALL wrf_error_fatal('S2S8HAD_v2: cannot open staged FD trace')
+-        WRITE(TRACE_UNIT,'(A)') 'KDM6_NCCN_ZERO_FD_TRACE_V1'
+-        WRITE(TRACE_UNIT,'(A,1X,I0)') 'kme', KM
+-        WRITE(TRACE_UNIT,'(A,1X,ES26.17E3)') 'dt', REAL(DELT,c_double)
+-        WRITE(TRACE_UNIT,'(A,1X,ES26.17E3)') 'h', H_FD
+-        WRITE(TRACE_UNIT,'(A,1X,ES26.17E3)') 'ncmin_land', REAL(ncmin_land,c_double)
+-        WRITE(TRACE_UNIT,'(A,1X,ES26.17E3)') 'ncmin_sea', REAL(ncmin_sea,c_double)
+-        WRITE(TRACE_UNIT,'(A)') 'selectors physics_variant=2 dry_number=1 value_only_base=0 value_only_endpoints=1'
+-        WRITE(TRACE_UNIT,'(A)') 'cell global_i=200 global_j=152 tile_i=199 tile_j=10'
+-        WRITE(TRACE_UNIT,'(A,4(1X,I0))') 'STATE_SHAPE', 1, KM, 1, 12
+-        WRITE(TRACE_UNIT,'(A,4(1X,I0))') 'FORCING_SHAPE', 1, KM, 1, 4
+-        WRITE(TRACE_UNIT,'(A,2(1X,I0))') 'XLAND_SHAPE', 1, 1
+-        WRITE(TRACE_UNIT,'(A)') 'state_order=th,qv,qc,qr,qi,qs,qg,nccn,nc,ni,nr,bg'
+-        WRITE(TRACE_UNIT,'(A)') 'forcing_order=rho,pii,p,delz'
+-        DO F = 1, 12
+-          DO K = 1, KM
+-            IDX = (F-1)*KM + K
+-            WRITE(TRACE_UNIT,'(A,1X,I0,1X,I0,1X,ES26.17E3)') 'STATE_IN', F, K, STATE64(1,K,1,F)
+-            WRITE(TRACE_UNIT,'(A,1X,I0,1X,I0,1X,ES26.17E3)') 'STATE_PLUS', F, K, STATE64_PLUS(1,K,1,F)
+-            WRITE(TRACE_UNIT,'(A,1X,I0,1X,I0,1X,ES26.17E3)') 'STATE_MINUS', F, K, STATE64_MINUS(1,K,1,F)
+-            WRITE(TRACE_UNIT,'(A,1X,I0,1X,I0,1X,ES26.17E3)') 'OUT_BASE', F, K, OUT64(1,K,1,F)
+-            WRITE(TRACE_UNIT,'(A,1X,I0,1X,I0,1X,ES26.17E3)') 'OUT_PLUS', F, K, OUT64_PLUS(1,K,1,F)
+-            WRITE(TRACE_UNIT,'(A,1X,I0,1X,I0,1X,ES26.17E3)') 'OUT_MINUS', F, K, OUT64_MINUS(1,K,1,F)
+-            WRITE(TRACE_UNIT,'(A,1X,I0,1X,I0,1X,ES26.17E3)') 'V', F, K, V(IDX)
+-            WRITE(TRACE_UNIT,'(A,1X,I0,1X,I0,1X,ES26.17E3)') 'JV', F, K, JV(IDX)
+-            WRITE(TRACE_UNIT,'(A,1X,I0,1X,I0,1X,ES26.17E3)') 'JTU', F, K, JTU(IDX)
+-            WRITE(TRACE_UNIT,'(A,1X,I0,1X,I0,1X,ES26.17E3)') 'FD', F, K, FD(IDX)
++        OPEN(NEWUNIT=TRACE_UNIT,FILE=TRIM(TRACE_FILE),STATUS='NEW',ACTION='WRITE',IOSTAT=TRACE_IOS)
++        IF (TRACE_IOS/=0) CALL wrf_error_fatal('N5.3: cannot open unique selected profile trace')
++        WRITE(TRACE_UNIT,'(A)') 'KDM6_NCCN_TWO_DIRECTION_TRACE_V1'
++        WRITE(TRACE_UNIT,'(A,1X,I0)') 'ITIMESTEP',ITIMESTEP
++        WRITE(TRACE_UNIT,'(A,2(1X,I0))') 'GLOBAL_CELL_IJ_1BASED',142,50
++        WRITE(TRACE_UNIT,'(A,2(1X,I0))') 'TILE_LOCAL_IJ_1BASED',141,49
++        WRITE(TRACE_UNIT,'(A,3(1X,I0))') 'DIMS_IM_KM_JM',IM,KM,JM
++        WRITE(TRACE_UNIT,'(A,1X,ES26.17E3)') 'DT',REAL(DELT,c_double)
++        WRITE(TRACE_UNIT,'(A,1X,ES26.17E3)') 'H_FD',H_FD
++        WRITE(TRACE_UNIT,'(A,2(1X,ES26.17E3))') 'NCMIN_LAND_SEA',REAL(ncmin_land,c_double),REAL(ncmin_sea,c_double)
++        WRITE(TRACE_UNIT,'(A,1X,ES26.17E3)') 'XLAND',REAL(XLAND_ONE(1,1),c_double)
++        WRITE(TRACE_UNIT,'(A)') 'SELECTORS variant=2 dry_number=1 state_order=th,qv,qc,qr,qi,qs,qg,nccn,nc,ni,nr,bg forcing_order=rho,pii,p,delz'
++        DO F=1,12
++          DO K=1,KM
++            IDX=(F-1)*KM+K
++            WRITE(TRACE_UNIT,'(A,2(1X,I0),1X,ES26.17E3)') 'STATE_IN',F,K,STATE64(1,K,1,F)
++            WRITE(TRACE_UNIT,'(A,2(1X,I0),1X,ES26.17E3)') 'V_MIX',F,K,V_MIX(IDX)
++            WRITE(TRACE_UNIT,'(A,2(1X,I0),1X,ES26.17E3)') 'JV_MIX',F,K,JV_MIX(IDX)
++            WRITE(TRACE_UNIT,'(A,2(1X,I0),1X,ES26.17E3)') 'JTU_MIX',F,K,JTU_MIX(IDX)
++            WRITE(TRACE_UNIT,'(A,2(1X,I0),1X,ES26.17E3)') 'FD_MIX',F,K,FD_MIX(IDX)
++            WRITE(TRACE_UNIT,'(A,2(1X,I0),1X,ES26.17E3)') 'V_NN',F,K,V_NN(IDX)
++            WRITE(TRACE_UNIT,'(A,2(1X,I0),1X,ES26.17E3)') 'JV_NN',F,K,JV_NN(IDX)
++            WRITE(TRACE_UNIT,'(A,2(1X,I0),1X,ES26.17E3)') 'JTU_NN',F,K,JTU_NN(IDX)
++            WRITE(TRACE_UNIT,'(A,2(1X,I0),1X,ES26.17E3)') 'FD_NN',F,K,FD_NN(IDX)
++            WRITE(TRACE_UNIT,'(A,2(1X,I0),1X,ES26.17E3)') 'BASE_OUT',F,K,OUT64(1,K,1,F)
++            WRITE(TRACE_UNIT,'(A,2(1X,I0),1X,ES26.17E3)') 'MIX_STATE_PLUS',F,K,STATE_PLUS_MIX(1,K,1,F)
++            WRITE(TRACE_UNIT,'(A,2(1X,I0),1X,ES26.17E3)') 'MIX_STATE_MINUS',F,K,STATE_MINUS_MIX(1,K,1,F)
++            WRITE(TRACE_UNIT,'(A,2(1X,I0),1X,ES26.17E3)') 'MIX_OUT_PLUS',F,K,OUT_PLUS_MIX(1,K,1,F)
++            WRITE(TRACE_UNIT,'(A,2(1X,I0),1X,ES26.17E3)') 'MIX_OUT_MINUS',F,K,OUT_MINUS_MIX(1,K,1,F)
++            WRITE(TRACE_UNIT,'(A,2(1X,I0),1X,ES26.17E3)') 'NN_STATE_PLUS',F,K,STATE_PLUS_NN(1,K,1,F)
++            WRITE(TRACE_UNIT,'(A,2(1X,I0),1X,ES26.17E3)') 'NN_STATE_MINUS',F,K,STATE_MINUS_NN(1,K,1,F)
++            WRITE(TRACE_UNIT,'(A,2(1X,I0),1X,ES26.17E3)') 'NN_OUT_PLUS',F,K,OUT_PLUS_NN(1,K,1,F)
++            WRITE(TRACE_UNIT,'(A,2(1X,I0),1X,ES26.17E3)') 'NN_OUT_MINUS',F,K,OUT_MINUS_NN(1,K,1,F)
+           END DO
+         END DO
+-        DO F = 1, 4
+-          DO K = 1, KM
+-            WRITE(TRACE_UNIT,'(A,1X,I0,1X,I0,1X,ES26.17E3)') &
+-              'FORCING', F, K, FORCE64(1,K,1,F)
++        DO F=1,4
++          DO K=1,KM
++            WRITE(TRACE_UNIT,'(A,2(1X,I0),1X,ES26.17E3)') 'FORCING',F,K,FORCE64(1,K,1,F)
+           END DO
+         END DO
+-        WRITE(TRACE_UNIT,'(A,2(1X,I0),1X,ES26.17E3)') 'XLAND', 1, 1, REAL(XLAND_ONE(1,1),c_double)
+-        WRITE(TRACE_UNIT,'(A,1X,I0,1X,I0)') 'FD_PASS_WORST_FIELD', FD_PASS, WORST_FIELD
+-        DO F = 1, 12
+-          WRITE(TRACE_UNIT,'(A,1X,I0,3(1X,ES26.17E3))') &
+-            'FD_FIELD', F, FD_MAXABS(F), FD_SCALE(F), FD_REL(F)
+-        END DO
+-        CLOSE(TRACE_UNIT, IOSTAT=TRACE_IOS)
+-        IF (TRACE_IOS /= 0) CALL wrf_error_fatal('S2S8HAD_v2: cannot close staged FD trace')
+-        DO F = 1, 12
+-          WRITE(*,'(A,1X,I0,3(1X,ES26.17E3))') &
+-            'S2S8NCCNFD_FIELD', F, FD_MAXABS(F), FD_SCALE(F), FD_REL(F)
++        WRITE(TRACE_UNIT,'(A,2(1X,I0),2(1X,ES26.17E3))') 'MIX_DUALITY',0,0,LEFT_MIX,RIGHT_MIX
++        WRITE(TRACE_UNIT,'(A,2(1X,I0),2(1X,ES26.17E3))') 'NN_DUALITY',0,0,LEFT_NN,RIGHT_NN
++        WRITE(TRACE_UNIT,'(A,2(1X,I0))') 'FD_PASS_MIX_NN',PASS_MIX,PASS_NN
++        DO F=1,12
++          WRITE(TRACE_UNIT,'(A,1X,I0,3(1X,ES26.17E3),1X,I0,3(1X,ES26.17E3))') &
++            'FD_FIELD',F,ERR_MIX(F),SCALE_MIX(F),REL_MIX(F),WORST_MIX,ERR_NN(F),SCALE_NN(F),REL_NN(F)
+         END DO
+-        WRITE(*,'(A,1X,I0,1X,I0,4(1X,ES26.17E3))') &
+-          'S2S8NCCNFD_V1', FD_PASS, WORST_FIELD, H_FD, FD_MAXABS(WORST_FIELD), &
+-          FD_SCALE(WORST_FIELD), FD_REL(WORST_FIELD)
+-        IF (FD_PASS == 0) WRITE(*,*) 'S2S8NCCNFD_STATUS FD_FAILED'
+-        WRITE(*,*) 'S2S8NCCNFD_TRACE', TRIM(TRACE_FILE)
+-        S8_FP64_PROBE_DONE = .TRUE.
++        CLOSE(TRACE_UNIT,IOSTAT=TRACE_IOS)
++        IF (TRACE_IOS/=0) CALL wrf_error_fatal('N5.3: trace close failed')
++        DO F=1,12
++          WRITE(*,'(A,1X,I0,3(1X,ES26.17E3),1X,3(1X,ES26.17E3))') &
++            'N5.3_FD_FIELD',F,ERR_MIX(F),SCALE_MIX(F),REL_MIX(F),ERR_NN(F),SCALE_NN(F),REL_NN(F)
++        END DO
++        WRITE(*,'(A,1X,I0,1X,I0,2(1X,ES26.17E3),1X,2(1X,I0))') &
++          'N5.3_FD_SUMMARY',PASS_MIX,PASS_NN,REL_MIX(WORST_MIX),REL_NN(WORST_NN),WORST_MIX,WORST_NN
++        IF (PASS_MIX==0 .OR. PASS_NN==0) WRITE(*,*) 'N5.3_FD_STATUS FD_FAILED'
++        WRITE(*,*) 'N5.3_FD_TRACE',TRIM(TRACE_FILE)
++        S8_FP64_PROBE_DONE=.TRUE.
+       END IF
+     END BLOCK
+ 
