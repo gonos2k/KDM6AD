@@ -35,3 +35,26 @@ graph/value-only outputs, both FD endpoints, direction, JVP/VJP/FD arrays) and
 `result.json` (configuration, artifact hashes and checks).
 A failed numerical check saves an explicit failure result and exits nonzero.
 No observation cost or operational approval is granted by a successful run.
+
+## fp64 NCCN return arithmetic
+
+Build the library from the same source revision used by this command. The
+opt-in dry-number fp64 path preserves an exact zero volume update with
+`n_in + (N_out-N_in)/rho_d`; its live delta keeps a nonzero process tangent at a
+zero-valued update. Every representably nonzero update still uses direct
+`N_out/rho_d`. This is a numerical representation change for NCCN only. f32,
+other number fields, selectors and physical process formulas are unchanged.
+
+A successful result requires the same strict paired-state admission and
+numerical gates as before. Results now expose numerical input preconditions,
+executed finite outputs, strict pairs and unapproved observations separately.
+KDM's defined fallback states may be numerically executable yet rejected by
+this diagnostic's support rule. The rule is not weakened to admit them.
+
+The original retained history column (i=3,j=272,time=1) passes after rebuilding
+this source, while its archived direct-return failure remains evidence for the
+older library. Library ABI version 2 alone cannot identify the return arithmetic;
+use source revision/library hash. The numerical selector still has neighboring
+floating quantization; return-mask locality measured in the selected native
+case does not certify every microphysics branch, physical number basis or
+observational/operational accuracy. No releases or deployment are included.
