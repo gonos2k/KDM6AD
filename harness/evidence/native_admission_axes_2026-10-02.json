@@ -1,0 +1,15 @@
+{
+  "previous_trace_sha256": "82f5173f022d9bc4bb708224ed799d18c4d779b99c696769c4a872254cd5ce59",
+  "state_assessment": {
+    "state_label": "PR352 native first-call input",
+    "numerical_input_checks_passed": true,
+    "strict_pair_state_admitted": false,
+    "observational_admission": false
+  },
+  "numerical_operator_pass": true,
+  "strict_pair_state_admitted": false,
+  "observational_admission": false,
+  "thresholds_unchanged": true,
+  "old_strict_rejection_preserved": true,
+  "observations": "not_evaluated"
+}

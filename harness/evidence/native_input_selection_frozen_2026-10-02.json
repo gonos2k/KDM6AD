@@ -1,0 +1,120 @@
+{
+  "selection_rule": "earliest complete timestep, maximum native sequential sum(qi) among strict-paired active-ice inputs, ties by global (j,i)",
+  "declared_before_ad_fd": true,
+  "expected_steps": [
+    1,
+    2
+  ],
+  "expected_boxes": [
+    [
+      2,
+      233,
+      2,
+      142
+    ],
+    [
+      2,
+      233,
+      143,
+      281
+    ]
+  ],
+  "input_only": true,
+  "observations_not_evaluated": true,
+  "records": [
+    {
+      "step": 1,
+      "box": [
+        2,
+        233,
+        2,
+        142
+      ],
+      "counts": [
+        32712,
+        21307,
+        7492,
+        0,
+        0,
+        0
+      ],
+      "sha256": "a4c7f9947d4452cd92d5ed72a2855e4cbfff2f20fb8d0b027b4d753dc1ae346e",
+      "best": null
+    },
+    {
+      "step": 1,
+      "box": [
+        2,
+        233,
+        143,
+        281
+      ],
+      "counts": [
+        32248,
+        23779,
+        6864,
+        0,
+        0,
+        0
+      ],
+      "sha256": "738c779026a8ee8e83d8a775bfa5594d16dc4a15cc77aa3993cc274361143ec9",
+      "best": null
+    },
+    {
+      "step": 2,
+      "box": [
+        2,
+        233,
+        2,
+        142
+      ],
+      "counts": [
+        32712,
+        12883,
+        3342,
+        1,
+        1,
+        1
+      ],
+      "sha256": "a4aec9401ae9295fbc98ee6f3d0cc275fea3fb9f2765a316d978903d7a3b5842",
+      "best": {
+        "i": 142,
+        "j": 50,
+        "score": 7.0181845816762345e-06,
+        "xland": 2.0
+      }
+    },
+    {
+      "step": 2,
+      "box": [
+        2,
+        233,
+        143,
+        281
+      ],
+      "counts": [
+        32248,
+        15763,
+        3780,
+        1,
+        1,
+        1
+      ],
+      "sha256": "a5d44d8b9003b08b02556301e363e89cd6feb02cc5f9eac0593706ebd6404c5c",
+      "best": {
+        "i": 150,
+        "j": 238,
+        "score": 2.2582367534845923e-10,
+        "xland": 1.0
+      }
+    }
+  ],
+  "chosen": {
+    "step": 2,
+    "i": 142,
+    "j": 50,
+    "score": 7.0181845816762345e-06,
+    "xland": 2.0
+  },
+  "operational_approval": false
+}

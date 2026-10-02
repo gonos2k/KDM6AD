@@ -31,6 +31,39 @@ def sha256(path):
     return digest.hexdigest()
 
 
+def classify_state(state, label="state"):
+    """Report runner input checks separately from strict pair-state admission.
+
+    These surface checks do not certify the full KDM6 numerical domain or a
+    physical/observational state. Defined finite operator outputs are checked
+    only after the caller actually executes the operator.
+    """
+    try:
+        values = np.asarray(state)
+        shape_ok = values.ndim == 2 and values.shape[0] == 12 and values.shape[1] > 0
+        finite = shape_ok and bool(np.isfinite(values).all())
+    except (TypeError, ValueError):
+        shape_ok = finite = False
+
+    numerical_inputs = bool(
+        shape_ok and finite and (values[0] > 0).all() and (values[1:] >= 0).all()
+    )
+    pair_admitted = False
+    if numerical_inputs:
+        pair_admitted = True
+        for mass, moment in (("qc", "nc"), ("qr", "nr"), ("qi", "ni"), ("qg", "bg")):
+            q, n = (values[PROG_FIELDS.index(name)] for name in (mass, moment))
+            if ((q > 0) & (n <= 0)).any() or ((q == 0) & (n > 0)).any():
+                pair_admitted = False
+                break
+    return dict(
+        state_label=str(label),
+        numerical_input_checks_passed=numerical_inputs,
+        strict_pair_state_admitted=bool(pair_admitted),
+        observational_admission=False,
+    )
+
+
 def validate_state(state, label):
     if state.ndim != 2 or state.shape[0] != 12 or state.shape[1] == 0:
         raise ValueError(f"{label}: expected 12 fields and nonempty native levels")
@@ -92,6 +125,7 @@ def step(lib, state, forcing, xland, value_only):
 def run_column(lib, state, forcing, xland):
     state = np.ascontiguousarray(state, dtype=np.float64)
     forcing = np.ascontiguousarray(forcing, dtype=np.float64)
+    input_assessment = classify_state(state, "input")
     validate_state(state, "input")
     if forcing.shape != (4, state.shape[1]) or not np.isfinite(forcing).all() or (forcing <= 0).any():
         raise ValueError("forcing: requires four finite positive native profiles")
@@ -148,6 +182,9 @@ def run_column(lib, state, forcing, xland):
                   finite_difference_relative=dict(zip(PROG_FIELDS, relative.tolist())),
                   endpoint_quantization_estimate=dict(zip(PROG_FIELDS, quantization.tolist())),
                   finite_difference_passed=bool(np.all(relative <= 1e-5)))
+    checks.update(input_assessment)
+    checks["operator_executed"] = True
+    checks["operator_outputs_finite"] = True
     checks["numerical_checks_passed"] = bool(checks["graph_value_bits_equal"]
         and checks["duality_relative"] <= 1e-12 and checks["finite_difference_passed"])
     arrays = dict(state_in=state, forcing=forcing, state_out=output, direction=direction,
@@ -195,7 +232,13 @@ def main(argv=None):
                   column=dict(i=args.i, j=args.j, time_index=args.time_index,
                               xland=float(frame.xland[index]), native_levels=state.shape[1],
                               valid_time=frame.meta.get("valid_time_utc")),
-                  checks=checks, physical_number_basis_resolved=False,
+                  checks=checks,
+                  numerical_input_checks_passed=checks["numerical_input_checks_passed"],
+                  strict_pair_state_admitted=checks["strict_pair_state_admitted"],
+                  observational_admission=False,
+                  operator_executed=checks["operator_executed"],
+                  operator_outputs_finite=checks["operator_outputs_finite"],
+                  physical_number_basis_resolved=False,
                   accepted_observation_cost=False, operational_approval=False,
                   branch_certification="not_measured")
     args.output.mkdir(parents=True, exist_ok=False)
