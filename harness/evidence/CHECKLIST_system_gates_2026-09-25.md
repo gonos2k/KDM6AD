@@ -100,3 +100,10 @@ The first staged input and returned state violate the existing command's strict
 paired-moment support rule, so numerical PASS is explicitly not supported-state
 acceptance. N5 remains OPEN/FAIL and S8 stays OPEN; no production adoption or
 physical/observation approval is made.
+
+The [bounded fp64 NCCN return adoption](REPORT_main_nccn_zero_return_2026-10-03.md)
+now follows supported input-only native selection, both derivative directions
+and actual local return masks. Python/C++ fp64 dry-number return agree; clean
+rebuilt user command passes. This closes the selected NCCN arithmetic diagnostic
+checklist, not the physical number-basis, general DA, upstream-branch, observation
+or operational system gate. S2/S8 remain OPEN; f32 remains unchanged.

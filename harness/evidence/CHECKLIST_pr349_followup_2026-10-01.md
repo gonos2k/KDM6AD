@@ -15,8 +15,8 @@ All three items are closed only for the isolated diagnostic experiment described
 Keep N1–N3 as bounded completed evidence. The remaining sequence is:
 
 - [x] N4: Compare direct, zero-change and hybrid returns; reject bare equality bypass if it drops a nonzero tangent. Select a bounded NCCN-only candidate and retain all rounding counterexamples.
-- [ ] N5: Execute the selected candidate with the same offline column command and a native-staged forward/JVP/VJP/independent-FD probe. Preserve support, h, direction and thresholds; require native instrumentation noninterference.
-- [ ] N6: Fix the supported diagnostic settings and successful/failed examples after N5. Deployment/release publication remains deferred until algorithm completion, as requested by the user.
+- [x] N5: Execute the selected candidate with the same offline column command and a native-staged forward/JVP/VJP/independent-FD probe. Preserve support, h, direction and thresholds; require native instrumentation noninterference.
+- [x] N6: Fix the supported diagnostic settings and successful/failed examples after N5. Deployment/release publication remains deferred until algorithm completion, as requested by the user.
 
 No generalization to NC/NI/NR, new framework or larger release prerequisites.
 
@@ -44,7 +44,7 @@ remain preserved. No new system gates or deployment scope are added.
 - [x] N5.1: Report numerical input preconditions/executed numerical checks, strict paired-state admission, and unapproved observations separately. Inspect pre-step native inputs across calls; distinguish first-call missing number fields from later states.
 - [x] N5.2: Before any AD/FD result, select one active native input by a deterministic whole-owned-domain rule. Keep native levels and all species; no synthetic counts or output-based selection. Require the existing strict full-profile pair rule and an interior active ice level (`qi>1e-14`, `rho_d*ni>ncmin(xland)`). This is an active hydrometeor criterion, not evidence of a named rate.
 - [x] N5.3: On the selected input run the unchanged mixed direction and a separate 1% NCCN-only direction, h=1e-4, same 12 field/duality gates. Capture raw NCCN volume delta and actual BASE/PLUS/MINUS zero masks inside the return before division; separate same-return-branch FD from crossing increments. Check OFF/ON forecast noninterference.
-- [ ] N5.4: Only after supported-state and numerical evidence pass, judge Python/C++ fp64 NCCN candidate adoption together; preserve f32 and other number fields. Rebuild the chosen main version and repeat the user command from a clean checkout. Release/deployment remains deferred.
+- [x] N5.4: Only after supported-state and numerical evidence pass, judge Python/C++ fp64 NCCN candidate adoption together; preserve f32 and other number fields. Rebuild the chosen main version and repeat the user command from a clean checkout. Release/deployment remains deferred.
 
 The source gates and the selected case's support boundaries must be recorded.
 Clear columns and default/fallback branches cannot be counted as an active-case
@@ -66,3 +66,15 @@ BASE/MIX±/NCCN± share the same 39-level return mask. This closes the selected
 supported native numerical and return-branch condition, not all physical process
 branches, units or observations. N5.4 main adoption and clean user-command run
 remain open; N6 and deployment remain deferred.
+
+N5.4/N5/N6 closure in this change: [adopted fp64 return and clean command](REPORT_main_nccn_zero_return_2026-10-03.md)
+changes Python/C++ together, preserves f32/other number fields, and uses a fresh
+uninstrumented library. The original fixed command passes in two clean
+workspaces with all fourteen arrays/metadata identical; the same library
+reconstructs nine supported-native forward/AD/endpoint arrays exactly. The
+existing command guide fixes configuration, success/failure interpretation and
+remaining science gates. Closure is limited to this NCCN diagnostic path; the
+prior first-call moment rejection remains recorded, and its initialization
+policy is not resolved by finding a later supported state. No deployment or
+release publication is performed; all broader S2/S8/physics/observation/operations
+approvals remain open.

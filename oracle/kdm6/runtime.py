@@ -726,8 +726,14 @@ def _kdm6_pure(
 
     result = _coord_to_state(cur, state, forcing)._replace(nccn=cur_nccn)
     if dry_number:
+        nccn_return = result.nccn / dry_density
+        if state.nccn.dtype == torch.float64:
+            delta = result.nccn - state_kernel.nccn
+            nccn_return = torch.where(
+                delta == 0, state.nccn + delta / dry_density, nccn_return,
+            )
         result = result._replace(
-            nccn=result.nccn / dry_density,
+            nccn=nccn_return,
             nc=result.nc / dry_density,
             ni=result.ni / dry_density,
             nr=result.nr / dry_density,
