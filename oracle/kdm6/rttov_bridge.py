@@ -21,7 +21,11 @@ scheme's own ``avedia_r``. The graupel diagnostic bg/qg is reciprocal bulk
 density [m^3/kg], not a rime-mass fraction. It is not wired to RTTOV HYDRO.
 
 Hydrometeor q is per dry-air mass. Contents therefore use an explicitly supplied
-frozen dry-air density, while the preamble retains the model's forcing.rho.
+frozen dry-air density. By default the preamble retains the legacy number/density
+mapping. With dry_number=True, QN is per kg dry air: the same frozen density
+converts number to volume concentration and supplies the DSD mass measure.
+Moist forcing.rho remains the air-property density. This observation measure is
+not the microphysics step's live rho/(1+entry_qv) conversion Jacobian.
 
 Differentiability: the operator is pure tensor ops on the scheme's
 AD-validated preamble — VJP/JVP compose through ``torch.autograd`` (the bridge
@@ -141,17 +145,32 @@ def _sea_mask_from_xland(xland, ref: torch.Tensor) -> torch.Tensor:
 def dsd_diagnostics(state: State, forcing: Forcing,
                     xland: "torch.Tensor | None" = None,
                     ncmin_land: float = 0.0,
-                    ncmin_sea: float = 0.0, *, rho_d=None) -> DsdDiagnostics:
+                    ncmin_sea: float = 0.0, *, rho_d=None,
+                    dry_number: bool = False) -> DsdDiagnostics:
     """Compute the scheme-consistent DSD diagnostics by RUNNING the scheme's
     own preamble (slopes, avedia) on the given state — no re-derivation.
 
     xland/ncmin_land/ncmin_sea must MATCH what the forward step was given:
     the per-cell ncmin feeds the cloud-slope inactive gate inside the
     preamble (1:1 fix #18), so omitting it would make the bridge's rslopec
-    diverge from the scheme's own on land cells (Codex stop-review)."""
+    diverge from the scheme's own on land cells (Codex stop-review).
+
+    dry_number=True declares stored QN per kg dry air and number thresholds
+    per m3. rho_d is the frozen observation measure; never infer it from trial
+    qv. This does not select a microphysics variant or certify its Jacobian.
+    """
+    if not isinstance(dry_number, bool):
+        raise ValueError("dry_number must be a bool")
     rho_d = require_dry_air_density(rho_d, state.qv)
-    cs = _state_to_coord(state, forcing)
+    moment_state = state
+    if dry_number:
+        moment_state = state._replace(
+            nc=state.nc * rho_d, ni=state.ni * rho_d, nr=state.nr * rho_d,
+        )
+    cs = _state_to_coord(moment_state, forcing)
     cf = _build_coord_forcing(forcing)
+    if dry_number:
+        cf = cf._replace(dend=rho_d)
     sea_mask = _sea_mask_from_xland(xland, cs.qc)
     if xland is not None:
         # EXACT mirror of runtime._kdm6_pure's per-cell ncmin construction
@@ -218,13 +237,15 @@ def dsd_diagnostics(state: State, forcing: Forcing,
 def rttov_cloud_profile(state: State, forcing: Forcing,
                         xland: "torch.Tensor | None" = None,
                         ncmin_land: float = 0.0,
-                        ncmin_sea: float = 0.0, *, rho_d=None) -> RttovCloudProfile:
+                        ncmin_sea: float = 0.0, *, rho_d=None,
+                        dry_number: bool = False) -> RttovCloudProfile:
     """Map the DSD diagnostics onto RTTOV VIS/IR all-sky cloud profile variables.
 
     Pure tensor ops — the RTTOV-K adjoint composes with this operator's VJP
     via torch.autograd (chain: lambda_BT -> RTTOV-K -> lambda_profile ->
     THIS operator's VJP -> lambda_{q*,n*} -> Handle.vjp; design §9.3)."""
-    d = dsd_diagnostics(state, forcing, xland, ncmin_land, ncmin_sea, rho_d=rho_d)
+    d = dsd_diagnostics(state, forcing, xland, ncmin_land, ncmin_sea,
+                        rho_d=rho_d, dry_number=dry_number)
     KG2G = 1.0e3      # kg/m^3 -> g/m^3
     M2UM = 1.0e6      # m -> micron
     return RttovCloudProfile(

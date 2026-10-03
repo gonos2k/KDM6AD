@@ -22,9 +22,14 @@ Do not extend that arithmetic to NC/NI/NR or add a new framework.
   rate/cap unit descriptions without changing any value. Dimensional inventory
   is complete; physical calibration/approval is not. The original basis of the
   host 10/100 gates and large-number safety limits is still undocumented.
-- [ ] C4: Resolve repository-actionable inconsistencies found by C3 in a
+- [x] C4: Resolve repository-actionable inconsistencies found by C3 in a
   separate bounded opt-in change; verify applied budgets and directional
   derivatives without relaxing f32 parity or substituting model data.
+  Unit comments are corrected without changing equations. The [explicit
+  dry-number optical adapter](REPORT_S2_dry_number_optics_2026-10-03.md) pairs
+  volume number/mass with the fixed observation measure and passes native-input
+  size JVP/VJP/FD and profile tests. This resolves the discovered representation
+  gap, not empirical calibration, all process budgets or a coupled qv Jacobian.
 - [ ] C5: With that physical contract, validate actual number-to-size/optical
   inputs and then S11 using retained native model/observation data. An empty
   liquid observation support is a failure, not accepted zero cost.
