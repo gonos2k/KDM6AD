@@ -1,0 +1,58 @@
+{
+  "status": "EMPTY_LIQUID_OBSERVATION_SUPPORT",
+  "accepted_channels": 0,
+  "requested_channels": 9,
+  "accepted_observation_cost": false,
+  "operational_approval": false,
+  "raw_masked_loss": 0.0,
+  "loss_interpretation": "empty-support masked algebraic value; not an accepted objective",
+  "bt_residual_K": [
+    [
+      2.224067680649995,
+      -2.5779682978993037,
+      -1.7236447021110735,
+      1.119660247851641,
+      -2.6457186257397325,
+      0.5624647633360951,
+      -0.9671119601244413,
+      -0.9180685203148755,
+      0.13590263515158085
+    ]
+  ],
+  "combined_mask": [
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  ],
+  "masked_loss_bt_gradient": [
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  ],
+  "source_hashes": {
+    "C5_baseline_receipt_2026-10-03.json": "c2fb92c889f9dfb763b6f986126d66aa1834c135b08fff96801e25ae2c9127cc",
+    "C5_baseline_input_2026-10-03.npz": "72d98d619a3a23e1ae933cac507d8fe12f0ed3df854437b2a3b234fe171f404b",
+    "C5_baseline_outputs_2026-10-03.npz": "193939dfea475d68d762fefca43e2296c1b2f5e17e0bf1a3d7db1b76cb872863",
+    "C5_native_background_profile_2026-10-03.npz": "e072840448657ab84aef3f5a98f5de7627f150c81f99ea50d5697770d03c76b2",
+    "C5_observation_pixel_2026-10-03.json": "a0d5ba8cec685d5bbd48d93ec7030863371acebc270d78baaadefbfe7c950ec5",
+    "C5_baseline_rttov_log_2026-10-03.txt": "d1dc08c27a85747ec6e73ac20899b3b990ad312c3089fe4c5eb2fbc310bdbcfa"
+  },
+  "python": "3.10.11 (main, Apr  9 2023, 15:10:32) [Clang 14.0.3 (clang-1403.0.22.14.1)]",
+  "torch": "2.13.0"
+}
