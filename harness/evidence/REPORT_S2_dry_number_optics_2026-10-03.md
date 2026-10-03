@@ -26,7 +26,7 @@ defines the fixed-air optical map; it does not settle that coupled DA contract.
 
 ## Direct validation
 
-Four new focused checks reuse the public supported native input selected before
+Four focused checks reuse the public supported native input selected before
 outputs (call 2, global one-based 142,50). Its native layers and snow are retained.
 Nine ice layers have `qi>1e-15`; the old raw mapping and paired dry mapping
 produce different reciprocal slopes in eight. The new diagnostics match the
@@ -38,9 +38,21 @@ difference and VJP duality with fixed density. The profile configuration keeps
 its flag through density selection; the profile's ice diameter changes while
 its content remains on the same dry measure. Missing or gradient-bearing
 observation density is rejected. The new and directly affected existing bridge,
-profile and density checks pass together: **31 tests**.
+profile and density checks pass together: **31 tests** before the liquid check.
 
-These are local profile/AD calculations on retained native inputs, not new
+A fifth check uses a [frozen native liquid input](native_liquid_input_2026-10-03.npz)
+selected before any DSD/RTTOV/FD result. The [selection receipt](native_liquid_input_selection_2026-10-03.json)
+records the complete owned-interior input scan at 20/40 s of the confirmed
+forecast (64,960 columns per frame). At 20 s, 10,907 profiles pass strict
+full-profile pairs and the configured liquid-activity gates. Select the median
+input sum(qc), with global (j,i) tie-breaks, at one-based (71,101); preserve the
+frame's maximum separately. The 40 s results cannot revise that selection.
+This is a history-derived downstream input, not an exactly staged host call.
+The selected profile retains 39 native levels, as-stored numbers and three
+active liquid layers. Its unclamped radii (3.02–3.49 micrometres) retain three
+nonzero NC tangents and pass JVP/VJP/independent FD. No count was synthesized.
+
+These five checks are local profile/AD calculations on retained native inputs, not new
 RTTOV calls or accepted liquid observations. Default legacy consistency and
 gradient checks remain in the same test set. Sharded all-sky and the existing
 DA-window physics are not automatically switched to dry-number mode. S2

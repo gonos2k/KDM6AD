@@ -22,8 +22,8 @@ Do not extend that arithmetic to NC/NI/NR or add a new framework.
   rate/cap unit descriptions without changing any value. Dimensional inventory
   is complete; physical calibration/approval is not. The original basis of the
   host 10/100 gates and large-number safety limits is still undocumented.
-- [x] C4: Resolve repository-actionable inconsistencies found by C3 in a
-  separate bounded opt-in change; verify applied budgets and directional
+- [x] C4: Resolve the unit-documentation and optical-representation gaps found
+  by C3 in a bounded opt-in change; verify paired DSD inputs and directional
   derivatives without relaxing f32 parity or substituting model data.
   Unit comments are corrected without changing equations. The [explicit
   dry-number optical adapter](REPORT_S2_dry_number_optics_2026-10-03.md) pairs
@@ -33,6 +33,10 @@ Do not extend that arithmetic to NC/NI/NR or add a new framework.
 - [ ] C5: With that physical contract, validate actual number-to-size/optical
   inputs and then S11 using retained native model/observation data. An empty
   liquid observation support is a failure, not accepted zero cost.
+  A liquid input is now frozen by the [input-only rule](native_liquid_input_selection_2026-10-03.json)
+  and its NC/size derivative is checked. This is readiness evidence, not an
+  RTTOV run, independent radiative reference or accepted observation. Empirical
+  threshold calibration and the coupled density/DA contract remain unresolved.
 
 Use mathematical dimensions and budgets, meteorological validity and native
 inputs, and source-ordered numerical/derivative checks as separate evidence.

@@ -1,6 +1,8 @@
 """Dry-specific moments in the fixed-density optical adapter, not RTTOV runs."""
 import pytest
 import torch
+import numpy as np
+from pathlib import Path
 
 from harness.replay_supported_native_nccn import parse_trace
 from kdm6 import coordinator as coord
@@ -93,3 +95,27 @@ def test_dry_basis_rejects_implicit_or_live_observation_density():
         dsd_diagnostics(state, forcing, dry_number=True)
     with pytest.raises(ValueError, match="frozen"):
         dsd_diagnostics(state, forcing, rho_d=rho.requires_grad_(), dry_number=True)
+
+
+def test_input_selected_native_liquid_retains_nc_size_sensitivity():
+    path = Path(__file__).resolve().parents[2] / "harness/evidence/native_liquid_input_2026-10-03.npz"
+    with np.load(path) as a:
+        assert int(a["global_i_1based"]) == 71 and int(a["global_j_1based"]) == 101
+        state = State(*(torch.tensor(x, dtype=torch.float64)[None, :] for x in a["state"]))
+        forcing = Forcing(*(torch.tensor(x, dtype=torch.float64)[None, :] for x in a["forcing"]))
+        rho = torch.tensor(a["rho_dry"], dtype=torch.float64)[None, :]
+    def radius(nc):
+        return dsd_diagnostics(state._replace(nc=nc), forcing, rho_d=rho,
+                               dry_number=True, xland=torch.tensor([2.]),
+                               ncmin_land=10, ncmin_sea=10).reff_c
+    direction = .01 * state.nc
+    value, jv = torch.func.jvp(radius, (state.nc,), (direction,))
+    assert int(torch.count_nonzero(jv)) == 3
+    assert torch.all(value[state.qc>1e-15] > 2.51e-6)
+    h = 1e-4
+    fd = (radius(state.nc+h*direction)-radius(state.nc-h*direction))/(2*h)
+    torch.testing.assert_close(jv, fd, rtol=1e-7, atol=1e-15)
+    seed = torch.linspace(-.7, .8, 39, dtype=torch.float64)[None, :]
+    _, pullback = torch.func.vjp(radius, state.nc)
+    (adj,) = pullback(seed)
+    torch.testing.assert_close((jv*seed).sum(), (direction*adj).sum(), rtol=1e-12, atol=1e-20)
