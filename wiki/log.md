@@ -426,3 +426,12 @@ S2 original threshold calibration and S11 physical/error-policy approval remain
 OPEN. See [[Independent IR105 Transport Check]]. Graphify code refresh and
 bounded semantic cache/merge completed; broad/private graph coverage remains
 partial, and large HTML export was skipped. Raw reports stay in graphify-out.
+
+## 2026-10-04 — Frozen optical density forward-AD guard
+
+Resolved the PR #362 first-order input-contract gap: a forward dual, including
+zero tangent, is rejected under a fixed-density declaration. Explicit live
+entry density and real frozen constants retain their tested derivatives. The
+[review checklist](../harness/evidence/CHECKLIST_pr362_review_2026-10-04.md)
+records focused tests and the unsupported nested-transform boundary. Previous
+native/RTTOV evidence and physical-policy OPEN states are unchanged.

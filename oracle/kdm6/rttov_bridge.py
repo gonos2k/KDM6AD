@@ -124,7 +124,10 @@ def freeze_dry_air_density(background: State, forcing: Forcing) -> torch.Tensor:
 
 
 def require_dry_air_density(rho_d, ref: torch.Tensor, *, live=False) -> torch.Tensor:
-    """Validate a fixed measure, or an explicitly supplied live entry measure."""
+    """Validate a fixed measure for first-order AD, or a live entry measure.
+
+    Nested forward transforms are outside this observation/DA contract.
+    """
     if not isinstance(live, bool):
         raise ValueError("live density selection must be a bool")
     if not isinstance(rho_d, torch.Tensor):
@@ -133,8 +136,10 @@ def require_dry_air_density(rho_d, ref: torch.Tensor, *, live=False) -> torch.Te
         raise ValueError("rho_d must match the model field shape, dtype and device")
     if live and rho_d.dtype != torch.float64:
         raise ValueError("live entry density is supported only in float64")
-    if rho_d.requires_grad and not live:
-        raise ValueError("rho_d must be frozen before the observation/DA evaluation")
+    if not live:
+        tangent = torch.autograd.forward_ad.unpack_dual(rho_d).tangent
+        if rho_d.requires_grad or tangent is not None:
+            raise ValueError("rho_d must be frozen before the observation/DA evaluation")
     # Value-only input validation; return the original live tensor unchanged.
     with torch.no_grad():
         if not bool(torch.isfinite(rho_d).all()) or bool((rho_d <= 0).any()):
