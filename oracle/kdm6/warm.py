@@ -48,7 +48,7 @@ class WarmAutoconvParams(NamedTuple):
     """Fortran kdm6init이 autoconv에 넘기는 시간불변 스칼라."""
 
     qck1: float       # .104 * 9.8 * peaut / denr^(1/3) / xmyu * den0^(4/3)
-    nraut_coeff: float  # 3.5e9 (number autoconv coefficient)
+    nraut_coeff: float  # 3.5e9 #/kg-water, maps rho*praut to # m^-3 s^-1
     qcrmin: float
     ncmin: float
     # Per-cell ncmin override (operational xland path; injected by _kdm6_pure, mirrors C++
@@ -84,7 +84,7 @@ def default_warm_autoconv_params(*, den0: float = DEFAULT_DEN0,
 
 def autoconv_torch(
     qc: torch.Tensor,    # qci(:,:,1) cloud water mixing ratio [kg/kg]
-    nc: torch.Tensor,    # nci(:,:,1) cloud number conc [#/m³ * scaling]
+    nc: torch.Tensor,    # nci(:,:,1) cloud number [m^-3] in the volume kernel
     qr: torch.Tensor,    # qrs(:,:,1) rain water mixing ratio
     nr: torch.Tensor,    # nrs(:,:,1) rain number conc
     den: torch.Tensor,
@@ -110,7 +110,7 @@ def autoconv_torch(
 
     Returns
     -------
-    (praut, nraut) : (B, K) tensors. Mass and number autoconversion rates [kg/kg/s, #/s].
+    (praut, nraut) : (B, K) tensors. Mass and number rates [kg/kg/s, # m^-3 s^-1].
     """
     # ── 외부 게이트 ──────────────────────────────────────────────────────
     # per-cell ncmin (xland operational path) overrides the scalar when present (mirrors C++).
@@ -224,7 +224,7 @@ def accretion_torch(
 
     Returns
     -------
-    (pracw, nracw) : mass and number accretion rates [kg/kg/s, #/s].
+    (pracw, nracw) : mass and number accretion rates [kg/kg/s, # m^-3 s^-1].
     """
     rain_active = qr >= lenconcr
     zero = torch.zeros_like(qc)

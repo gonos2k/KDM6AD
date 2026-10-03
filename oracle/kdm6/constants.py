@@ -56,9 +56,9 @@ LAMDAIMIN = 9.08e3  # 200 micron
 R0 = 0.8e-5
 PEAUT = 0.40       # Berry-Reinhardt autoconversion efficiency
                    # (yhlee 변경: 원본 0.55 → 0.40)
-XNCR = 3.0e8       # maritime CCN reference
-XNCR0 = 5.0e7
-XNCR1 = 5.0e8
+XNCR = 3.0e8       # CCN number-concentration reference [m^-3] in the volume kernel
+XNCR0 = 5.0e7      # sea/maritime CCN scale [m^-3] used to derive qc0
+XNCR1 = 5.0e8      # land/continental CCN scale [m^-3] used to derive qc1
 XMYU = 1.718e-5    # dynamic viscosity (kg m^-1 s^-1)
 DICON = 11.9       # cloud-ice diameter constant
 DIMAX = 500.0e-6   # max cloud-ice diameter
@@ -70,9 +70,9 @@ PFRZ2 = 0.66
 # ─── thresholds ─────────────────────────────────────────────────
 QCRMIN = 1.0e-9     # minimum mixing ratio (qr, qs) — div-safety clamp floor
 EPS    = 1.0e-15    # Fortran qmin=epsilon (model_constants.F:10) — GATE thresholds only
-NRMIN = 1.0e-2      # minimum rain number
-NRMAX = 5.0e7
-NCMAX = 5.0e10
+NRMIN = 1.0e-2      # minimum rain number [m^-3] in the volume-coordinate kernel
+NRMAX = 5.0e7       # rain-number limit [m^-3] in the volume-coordinate kernel
+NCMAX = 5.0e10      # cloud-number limit [m^-3] in the volume-coordinate kernel
 
 # ─── collection efficiencies (eacXY: X = collected, Y = collector) ──
 EACRC = 1.0
@@ -90,12 +90,15 @@ QS0 = 6.0e-4         # threshold for aggregation
 SATMAX = 1.0048      # max saturation for CCN activation (continental)
 ACTK = 0.6           # CCN activation parameter
 ACTR = 1.5           # activated CCN drop radius
-NCCN_MIN = 1.0e8     # CCN reservoir lower clamp (Fortran entry :801) — C++ constants::NCCN_MIN
-NCCN_MAX = 2.0e10    # CCN reservoir upper clamp                       — C++ constants::NCCN_MAX
+NCCN_MIN = 1.0e8     # CCN reservoir lower clamp [m^-3], volume-coordinate kernel
+NCCN_MAX = 2.0e10    # CCN reservoir upper clamp [m^-3], volume-coordinate kernel
 
 # ─── Long collection kernel coefficients (Cohard-Pinty 2000 / KCE 분석해) ──
-NCRK1 = 3.03e3
-NCRK2 = 2.59e15
+# In the implemented big/small-drop rate formulas, dimensions require K1 [s^-1]
+# and K2 [m^-3 s^-1] for N [m^-3] and slope lambda [m^-1]. This is formula-
+# derived; Table A1 of WDM6 labels both coefficients m^-3 s^-1, conflicting for K1.
+NCRK1 = 3.03e3      # K1 [s^-1], from implemented formula dimensions
+NCRK2 = 2.59e15     # K2 [m^-3 s^-1], from implemented formula dimensions
 ECCBRK = 1.0         # break-up efficiency
 
 # ─── characteristic diameters (autoconversion / accretion) ──────
@@ -110,7 +113,7 @@ DI2000 = 2.0e-3   # rain complete break-up threshold
 # Scalar default and safety minimum. With xland, the Python runtime constructs
 # a land/sea ncmin tensor for number budgets and the connected rate/slope/DSD
 # gates. Calls without that tensor retain this default.
-NCMIN = 1.0e-2
+NCMIN = 1.0e-2      # scalar cloud-number safety floor [m^-3] in volume-coordinate kernel
 
 # ─── terminal velocity coefficients (graupel default) ──────────
 AVTG = 101.0411    # graupel — Park-Lim 2024 default (rho=400 kg/m^3)

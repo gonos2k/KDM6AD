@@ -13,10 +13,15 @@ Do not extend that arithmetic to NC/NI/NR or add a new framework.
   [Exact-main host confirmation](REPORT_main603ea4a_host_confirmation_2026-10-03.md)
   records two completed runs, unchanged saved forecasts and explicit source/build
   provenance. This is normal f32 forecast confirmation; no new fp64 FD probe ran.
-- [ ] C3: Derive and source-anchor the S2 contract for stored dry-specific
+- [x] C3: Derive and source-anchor the S2 contract for stored dry-specific
   number, internal volume number, paired mass/volume moments, every number
   threshold/cap and representative empirical source/sink coefficients. Separate
   dimensional requirements, original calibration evidence and chosen policy.
+  [Source/unit inventory](REPORT_S2_number_dimensions_2026-10-03.md) distinguishes
+  the legacy boundary from the opt-in volume-coordinate kernel and corrects
+  rate/cap unit descriptions without changing any value. Dimensional inventory
+  is complete; physical calibration/approval is not. The original basis of the
+  host 10/100 gates and large-number safety limits is still undocumented.
 - [ ] C4: Resolve repository-actionable inconsistencies found by C3 in a
   separate bounded opt-in change; verify applied budgets and directional
   derivatives without relaxing f32 parity or substituting model data.

@@ -465,7 +465,7 @@ def number_accretion_torch(
 
     Returns
     -------
-    (nraci, niacr, nsaci, ngaci) : (B, K) tensors [#/s].
+    (nraci, niacr, nsaci, ngaci) : (B, K) tensors [# m^-3 s^-1] in the volume kernel.
     """
     zero = torch.zeros_like(qi)
 
@@ -1131,7 +1131,8 @@ class IceNucleationParams(NamedTuple):
     """Ice nucleation 시간불변 스칼라.
 
     Cooper (1986) curve: Nid = 0.005 · exp(0.304·supcol) · 1000 [m⁻³]
-    Capped to 500 cm⁻³ at very cold temperatures.
+    Source formula multiplies the empirical per-liter curve by 1000, then caps
+    at 500 L⁻¹ = 500e3 m⁻³ = 0.5 cm⁻³ (Fortran module_mp_kdm6.F:2495-2500).
     Outer gate: `(supcol > 8 AND supsat > 0) OR rh_ice > 1.08`.
     """
 
@@ -1139,8 +1140,8 @@ class IceNucleationParams(NamedTuple):
     deni: float
     cooper_a: float         # 0.005
     cooper_b: float         # 0.304
-    cooper_unit: float      # 1000 (1/L → 1/m³)
-    nid_max: float          # 500e3 m⁻³
+    cooper_unit: float      # 1000 (L^-1 → m^-3)
+    nid_max: float          # 500 L^-1 = 500e3 m^-3 = 0.5 cm^-3
     supcol_threshold: float # 8.0 K
     rh_ice_threshold: float # 1.08
 
@@ -1160,7 +1161,7 @@ def default_ice_nucleation_params() -> IceNucleationParams:
 
 class IceNucleationOutputs(NamedTuple):
     pinud: torch.Tensor   # mass nucleation rate [kg/kg/s]
-    ninud: torch.Tensor   # number nucleation rate [#/kg/s]
+    ninud: torch.Tensor   # number nucleation rate [# m^-3 s^-1] in the volume kernel
     ifsat: torch.Tensor   # boolean: |prevp + pinud| >= |satdt| (deposition saturation flag)
 
 
