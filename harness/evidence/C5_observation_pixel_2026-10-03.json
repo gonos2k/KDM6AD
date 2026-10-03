@@ -1,0 +1,101 @@
+{
+  "calibration_sha256": "f519149e3ea3538866bad9f3e28cc0ddef741b6b4cdbf8febb7988aff6c08d40",
+  "pixel_zero_based": [
+    551,
+    333
+  ],
+  "model_time_utc": "2025-07-19 00:00:20",
+  "nominal_observation_slot_utc": "2025-07-19 00:00:00",
+  "rows": [
+    {
+      "channel": "wv063",
+      "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_wv063_ko020lc_202507190000.nc",
+      "sha256": "ecd9d3ae1c899b3bef20a870f01393631365a694b802cd78dd2708130451e1d3",
+      "bt_K": 243.22501491235002,
+      "obs_quality": 0.0,
+      "latitude_deg": 36.09446118320224,
+      "longitude_deg": 123.34973678277078,
+      "time_attributes": {}
+    },
+    {
+      "channel": "wv069",
+      "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_wv069_ko020lc_202507190000.nc",
+      "sha256": "8bf7f25a5f8e5ecad17d8433bc835819c6a8ab5db06f7305e8d61139ec613cfb",
+      "bt_K": 258.7697611958993,
+      "obs_quality": 0.0,
+      "latitude_deg": 36.09446118320224,
+      "longitude_deg": 123.34973678277078,
+      "time_attributes": {}
+    },
+    {
+      "channel": "wv073",
+      "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_wv073_ko020lc_202507190000.nc",
+      "sha256": "37095ec9805eafa4d928e7e77c6906a1557d61d22c90c965fd758d07862f404c",
+      "bt_K": 267.6686148301111,
+      "obs_quality": 0.0,
+      "latitude_deg": 36.09446118320224,
+      "longitude_deg": 123.34973678277078,
+      "time_attributes": {}
+    },
+    {
+      "channel": "ir087",
+      "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir087_ko020lc_202507190000.nc",
+      "sha256": "a4cec04e51982e7c0b8d4da7dd8cef3f244b692a51fa7c4a7e86b5ca16618f1e",
+      "bt_K": 290.18657474514833,
+      "obs_quality": 0.0,
+      "latitude_deg": 36.09446118320224,
+      "longitude_deg": 123.34973678277078,
+      "time_attributes": {}
+    },
+    {
+      "channel": "ir096",
+      "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir096_ko020lc_202507190000.nc",
+      "sha256": "e115d5e88eac27769fd43b79cdca51ea789ac4eab0cf3ea33a5622f7e7c14040",
+      "bt_K": 263.77424382173973,
+      "obs_quality": 0.0,
+      "latitude_deg": 36.09446118320224,
+      "longitude_deg": 123.34973678277078,
+      "time_attributes": {}
+    },
+    {
+      "channel": "ir105",
+      "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir105_ko020lc_202507190000.nc",
+      "sha256": "c50356a3614e16d12ff770820000a9e7a1657248b21b94c3a70f0db0e47947af",
+      "bt_K": 293.0376459926639,
+      "obs_quality": 0.0,
+      "latitude_deg": 36.09446118320224,
+      "longitude_deg": 123.34973678277078,
+      "time_attributes": {}
+    },
+    {
+      "channel": "ir112",
+      "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir112_ko020lc_202507190000.nc",
+      "sha256": "1df480537f95d25aa44236f65a52b9a8746354e6ae322ad154ecae5b84d149ca",
+      "bt_K": 294.48047759512446,
+      "obs_quality": 0.0,
+      "latitude_deg": 36.09446118320224,
+      "longitude_deg": 123.34973678277078,
+      "time_attributes": {}
+    },
+    {
+      "channel": "ir123",
+      "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir123_ko020lc_202507190000.nc",
+      "sha256": "74bed1daf0da6c1bfe4e2a321fc4c986e70083b76d50f6af60af9e97b366bf72",
+      "bt_K": 291.8403200093149,
+      "obs_quality": 0.0,
+      "latitude_deg": 36.09446118320224,
+      "longitude_deg": 123.34973678277078,
+      "time_attributes": {}
+    },
+    {
+      "channel": "ir133",
+      "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir133_ko020lc_202507190000.nc",
+      "sha256": "08729e98bcf155b9c52bcd679597799814aa967c6e250f1df00fe3d5d9adc600",
+      "bt_K": 275.16264727484844,
+      "obs_quality": 0.0,
+      "latitude_deg": 36.09446118320224,
+      "longitude_deg": 123.34973678277078,
+      "time_attributes": {}
+    }
+  ]
+}

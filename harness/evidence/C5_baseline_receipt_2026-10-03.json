@@ -1,0 +1,198 @@
+{
+  "configuration": {
+    "adk_bt": true,
+    "background_levels": 24,
+    "config_hash": "ba8eaa2916e1dc6607530e4c798df0ff4bf60812d784fff2968e9cd09545d167",
+    "dry_number": true,
+    "gas_units": 2,
+    "interfaces": 64,
+    "layers": 63,
+    "mmr_hydro": false,
+    "native_levels": 39,
+    "ncmin_land": 10.0,
+    "ncmin_sea": 10.0,
+    "nlevels_namelist": 64,
+    "per_file_hashes": {
+      "angles.txt": "c78b771c441691353aa840375d4c202e62e6f6cb4bee19479eedbd340fbd987c",
+      "atm/co2.txt": "5465ccc1feed37604cc4135cdc776ffead7ca933b7ad20d15489c6496b06a6d4",
+      "atm/hydro.txt": "3683f83ed4540f66da6fa1bb1ad54eef093bbf96b3be7232f3e1788067ab1bd4",
+      "atm/hydro_deff.txt": "9d311d4732955c118bc720df0a67c5d949024eaf75fc950ed2892694ca4e0c07",
+      "atm/hydro_frac.txt": "9d7589519d546cf98e3357eb3a30f035edaf3c4d2f9be150a7f3b0f6f1bf1cb8",
+      "atm/mmr_hydro_aer.txt": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c",
+      "atm/o3.txt": "8ae110f8641a440f0a15b501725fc956436d82b41627c3e570fcd2acdab7a578",
+      "atm/p.txt": "4886edf78e3d528d031adf4315ccdf7307041bf6d451c050a910ebb08a7f4e8b",
+      "atm/p_half.txt": "e1ead302b8d7f4b644524511d03c6886ec1370eb60973c9f145c754f2bcfbca6",
+      "atm/q.txt": "0e5a051151783c314efb762a0dc910a6f61a982dfcb9277c4cd763e0c3712ae1",
+      "atm/t.txt": "c9b3d94faee9292a27c504f9381a62ddae31910bfd1b974313072956c8dd4b88",
+      "datetime.txt": "1cce235950984c72e4f8be8f5b6a7ff89f9b72ef9af97d4a3c5fd3d6cec86149",
+      "sfc/01/near_surface.txt": "1fa2b25a978431da37a23c650cbce92ef27b47da376ad1977c0e1f9e2a132a3d",
+      "sfc/01/skin.txt": "79c0dab102585fbf0a9beb3b6aee0f4fdad35c9be54904df4651fee65f51d124"
+    },
+    "store_rad": true
+  },
+  "engine_executed": true,
+  "failed_first_attempt": {
+    "fatal_cause": "missing ./direct/ and ./k/ output directories in direct binary runner; fixed by adding those empty standard test harness output dirs in the retry fixture only. No profile or physics input changed.",
+    "receipt": "/private/tmp/KDM6AD-c5-native39-prepared-2026-10-03/evidence/baseline_live_20261003/baseline_failure_receipt.json"
+  },
+  "global_s2_calibration_approval": false,
+  "outputs": {
+    "bt_kelvin": [
+      [
+        245.449082593,
+        256.191792898,
+        265.944970128,
+        291.306234993,
+        261.128525196,
+        293.600110756,
+        293.513365635,
+        290.922251489,
+        275.29854991
+      ]
+    ],
+    "internal_clipmask_available": false,
+    "k_fields": [
+      "CFRACTION",
+      "CO2",
+      "CTP",
+      "HYDRO",
+      "HYDRO6",
+      "HYDRO7",
+      "HYDRO_DEFF",
+      "HYDRO_DEFF6",
+      "HYDRO_DEFF7",
+      "HYDRO_FRAC",
+      "HYDRO_FRAC_EFF",
+      "NEAR_SURFACE(1)%Q2M",
+      "NEAR_SURFACE(1)%T2M",
+      "NEAR_SURFACE(1)%WIND_FETCH",
+      "NEAR_SURFACE(1)%WIND_U10M",
+      "NEAR_SURFACE(1)%WIND_V10M",
+      "O3",
+      "P",
+      "P_HALF",
+      "Q",
+      "SKIN(1)%FASTEM",
+      "SKIN(1)%FOAM_FRACTION",
+      "SKIN(1)%SALINITY",
+      "SKIN(1)%T",
+      "T"
+    ],
+    "output_quality_k_gate_npz": "/private/tmp/KDM6AD-c5-native39-prepared-2026-10-03/evidence/baseline_live_retry_20261003/outputs_quality_k_profile_gate_masks.npz",
+    "output_quality_k_gate_npz_sha256": "193939dfea475d68d762fefca43e2296c1b2f5e17e0bf1a3d7db1b76cb872863",
+    "raw_rttov_hashes": {
+      "diffuse_reflectance_k.txt": "af05c571b46c398a2e5b288c24e10da4ef854d867ba6646a285831114736d099",
+      "diffuse_reflectance_out.txt": "8e980f9a753be18ad8b53538c62b111a15c215da851b1f1f775f216e80510d5e",
+      "emissivity_k.txt": "3476f93e349396d9a4feabddb43c4700a01ef05b317e817bcf29eba16ffd2305",
+      "emissivity_out.txt": "9a0f48b81ba3c9d24a8fb49b93e80410f44ebe196893a2f7ce231c942666414e",
+      "profiles_k.txt": "9c00d3eeb095b23092cd4ca155a6c4a287a0974827b4f27966ebe02792f8d076",
+      "radiance.txt": "db8d3ea39a34853a5f5470030b9cfedc6ae8bebc25c272fb4b613554ddf34c7c",
+      "rttov_test.log": "d1dc08c27a85747ec6e73ac20899b3b990ad312c3089fe4c5eb2fbc310bdbcfa",
+      "transmission.txt": "4e6fd9be78f2ea8fd923c5cee09fce580e14fb5a0ef5538c83bf20dbc625c0aa"
+    },
+    "rttov_quality_flags_are_reported_unmodified": true,
+    "saved_cloud_input_boundary_masks": "serialized input Deff/CFRAC boundary/gate masks only; not RTTOV internal clipping flags"
+  },
+  "regression_limit_warning": {
+    "detail_from_first_attempt_log": "coefficient-layer pressure 61.4771 hPa, Q=7.7850 ppmv dry, pressure-dependent limit=7.6890 ppmv dry",
+    "input_unit_path": "Serialized Q is ppmv moist (run_gas_units=2); RTTOV converts to ppmv dry before coefficient-layer interpolation/check. No gas-unit mismatch found.",
+    "not_a_fatal_or_global_scalar_threshold": true,
+    "pressure_dependent_limit_derivation": {
+      "coefficient_profile_envelope_levels_hPa": [
+        55.4433,
+        67.5109
+      ],
+      "default_gas_scaling": 0.2,
+      "envelope_reader": "RTTOV v13 reader averages per-level envelope onto each coefficient layer",
+      "limit_ppmv_dry": 7.689,
+      "water_vapour_upper_envelope_ppmv_dry": [
+        5.174,
+        7.641
+      ]
+    },
+    "source": "installed rttov_check_reg_limits.F90; sets qflag_reg_limits, logs info, does not abort this run"
+  },
+  "run": {
+    "case_root": "/private/tmp/KDM6AD-c5-native39-prepared-2026-10-03/baseline_live_case_retry_20261003",
+    "channels": [
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "coefficient": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+    "coefficient_sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+    "elapsed_seconds": 0.12932300567626953,
+    "executable": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+    "executable_sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+    "fixture_root": "/private/tmp/KDM6AD-c5-native39-prepared-2026-10-03/runner_fixture_case_20261003",
+    "hydrotable": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/hydrotable_visir/rttov_hydrotable_gkompsat2_1_ami.dat",
+    "hydrotable_sha256": "fdbe99ea68fd750e146fb78a798ab72b8568e4a3d545a2d847263cb374746890",
+    "options_file_sha256": "f54b9f29f40e17f34ad709325346741de4961dc22b95dc1d103ddde76acb3577",
+    "quality_bit_definitions": {
+      "bit0": {
+        "constant": "qflag_reg_limits",
+        "meaning": "gas optical-depth regression min/max limits exceeded"
+      },
+      "bit15": {
+        "constant": "qflag_delta_edd_ext_limits",
+        "meaning": "Delta-Eddington extinction limit exceeded"
+      }
+    },
+    "return_quality": [
+      [
+        32769,
+        32769,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    ],
+    "return_quality_all_zero": false,
+    "return_quality_interpretation": {
+      "channels_10_16": {
+        "raw": 1,
+        "set_bits": [
+          0
+        ]
+      },
+      "channels_8_9": {
+        "raw": 32769,
+        "set_bits": [
+          0,
+          15
+        ]
+      },
+      "meaning": "Nonzero values are returned quality flags and are preserved. They reflect regression-limit and Delta-Eddington-extinction flags; BT/K were produced."
+    },
+    "run_script_sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+    "solar_enabled": false,
+    "threads": 1
+  },
+  "scope": "conditional single-column native-profile baseline; no FD/DOM/alternative run",
+  "selection": "earliest strict-supported liquid median input (71,101), t+20s; outputs not used in selection",
+  "source": {
+    "native_input_archive_sha256": "e072840448657ab84aef3f5a98f5de7627f150c81f99ea50d5697770d03c76b2",
+    "staged_input_arrays_sha256": "72d98d619a3a23e1ae933cac507d8fe12f0ed3df854437b2a3b234fe171f404b",
+    "writer_checkout": "/private/tmp/KDM6AD-dry-number-optics",
+    "writer_head": "9f883531482762a5ead0a937da14104f708e1c08"
+  },
+  "status": "BASELINE_RTTOV_K_COMPLETED",
+  "surface": {
+    "PSFC_Pa": 100578.0703125,
+    "difference_Pa": 12.296875,
+    "native_interface_preserved": true,
+    "reconstructed_P8W_bottom_Pa": 100590.3671875,
+    "wind_fetch": 0.0,
+    "wind_fetch_unconsumed_IR_IREMIS": true
+  }
+}

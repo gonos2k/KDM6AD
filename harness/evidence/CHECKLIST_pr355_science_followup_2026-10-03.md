@@ -34,8 +34,10 @@ Do not extend that arithmetic to NC/NI/NR or add a new framework.
   inputs and then S11 using retained native model/observation data. An empty
   liquid observation support is a failure, not accepted zero cost.
   A liquid input is now frozen by the [input-only rule](native_liquid_input_selection_2026-10-03.json)
-  and its NC/size derivative is checked. This is readiness evidence, not an
-  RTTOV run, independent radiative reference or accepted observation. Empirical
+  and its NC/size derivative is checked. The [actual RTTOV baseline](REPORT_C5_liquid_baseline_2026-10-03.md)
+  now executes and returns BT/K, but coefficient/solver flags leave **0/9**
+  accepted channels. No independent derivative/reference or accepted cost is
+  claimed. Empirical
   threshold calibration and the coupled density/DA contract remain unresolved.
 
 Use mathematical dimensions and budgets, meteorological validity and native

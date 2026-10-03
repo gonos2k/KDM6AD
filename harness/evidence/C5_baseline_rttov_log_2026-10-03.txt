@@ -1,0 +1,25 @@
+ 2026/10/03  13:49:00  rttov_check_reg_limits.F90
+     Input water vapour profile exceeds upper coef limit (profile number =        1)
+ 2026/10/03  13:49:00  Limit         =     7.6890
+ 2026/10/03  13:49:00  Layer p (hPa) =    61.4771
+ 2026/10/03  13:49:00  Value         =     7.7850
+Profile     1, channel     1
+Gas optical depth regression limits exceeded
+Delta-Eddington exinction limit exceeded
+Profile     1, channel     2
+Gas optical depth regression limits exceeded
+Delta-Eddington exinction limit exceeded
+Profile     1, channel     3
+Gas optical depth regression limits exceeded
+Profile     1, channel     4
+Gas optical depth regression limits exceeded
+Profile     1, channel     5
+Gas optical depth regression limits exceeded
+Profile     1, channel     6
+Gas optical depth regression limits exceeded
+Profile     1, channel     7
+Gas optical depth regression limits exceeded
+Profile     1, channel     8
+Gas optical depth regression limits exceeded
+Profile     1, channel     9
+Gas optical depth regression limits exceeded
