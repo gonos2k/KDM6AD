@@ -1,0 +1,85 @@
+--- a/src/main/rttov_dom.F90
++++ b/src/main/rttov_dom.F90
+@@ -293,0 +294,5 @@
++#ifdef KDM6AD_DOM_DUMP
++  CHARACTER(LEN=1024) :: dom_dump_path
++  INTEGER(jpim) :: dom_dump_status, dom_dump_unit, dom_dump_iu
++  LOGICAL :: dom_dump_on, dom_dump_thiscall
++#endif
+@@ -306,0 +312,6 @@
++#ifdef KDM6AD_DOM_DUMP
++  dom_dump_path = ''
++  CALL GET_ENVIRONMENT_VARIABLE('KDM6AD_RTTOV_DOM_DUMP', dom_dump_path, STATUS=dom_dump_status)
++  dom_dump_on = dom_dump_status == 0 .AND. LEN_TRIM(dom_dump_path) > 0
++  dom_dump_thiscall = .FALSE.
++#endif
+@@ -429,0 +441,4 @@
++#ifdef KDM6AD_DOM_DUMP
++    dom_dump_thiscall = dom_dump_on .AND. do_thermal .AND. &
++                        chanprof(i)%chan == 6 .AND. prof == 1
++#endif
+@@ -520,0 +536,12 @@
++#ifdef KDM6AD_DOM_DUMP
++      IF (dom_dump_thiscall .AND. icc == 0) THEN
++        OPEN(NEWUNIT=dom_dump_unit, FILE=TRIM(dom_dump_path), STATUS='REPLACE', ACTION='WRITE')
++        ! Frozen C5 channels.txt is 8:16; RTTOV renumbers declared IR105 channel 13 to index 6.
++        WRITE(dom_dump_unit,'(A,9(1X,I0),6(1X,ES25.17E3))') 'META', &
++          13, i, chanprof(i)%chan, prof, nstr, nmom, nlayers_user, cloud_columns%ncolumn(prof), opts%scatt%thermal_solver, &
++          musat, musatr, diffuse_refl(i), auxrad%skin(i), auxrad%cosmic(i), opts%scatt%dom_accuracy
++        DO dom_dump_iu = 1, nlayers_user + 1
++          WRITE(dom_dump_unit,'(A,1X,I0,1X,ES25.17E3)') 'AIR', dom_dump_iu, auxrad%air(dom_dump_iu,i)
++        ENDDO
++      ENDIF
++#endif
+@@ -646,0 +674,13 @@
++#ifdef KDM6AD_DOM_DUMP
++        IF (dom_dump_thiscall .AND. m == 0) THEN
++          IF (icc == 0) THEN
++            WRITE(dom_dump_unit,'(A,3(1X,I0),4(1X,ES25.17E3))') 'CLOUD', icc, prof, MERGE(1,0,inc_surface), &
++              cloud_columns%xcolclr(prof), -1._jprv, -1._jprv, MERGE(2._jprv*diffuse_refl(i),0._jprv,inc_surface)
++          ELSE
++            WRITE(dom_dump_unit,'(A,3(1X,I0),4(1X,ES25.17E3))') 'CLOUD', icc, prof, MERGE(1,0,inc_surface), &
++              cloud_columns%xcol(icc+1,prof)-cloud_columns%xcol(icc,prof), &
++              cloud_columns%xcol(icc,prof), cloud_columns%xcol(icc+1,prof), &
++              MERGE(2._jprv*diffuse_refl(i),0._jprv,inc_surface)
++          ENDIF
++        ENDIF
++#endif
+@@ -660,0 +701,7 @@
++#ifdef KDM6AD_DOM_DUMP
++          IF (dom_dump_thiscall .AND. m == 0) THEN
++            WRITE(dom_dump_unit,'(A,4(1X,I0),7(1X,ES25.17E3))') 'DOMLAYER', icc, lay, laymap, icci, &
++              layer_od_user(icci,lay,i), scatt_aux%opdpsca_nadir(icci,lay,i), ssa(icci,lay,i), &
++              f_lay(laymap), ftau(laymap), fssa(laymap), layer_od(lay)
++          ENDIF
++#endif
+@@ -683,0 +731,6 @@
++#ifdef KDM6AD_DOM_DUMP
++            IF (dom_dump_thiscall .AND. m == 0) THEN
++              WRITE(dom_dump_unit,'(A,5(1X,I0),6(1X,ES25.17E3))') 'SOURCE', icc, lay, laymap, icci, lev, &
++                opdep(lev-1), opdep(lev), auxrad%air(lev-1,i), auxrad%air(lev,i), b0(lay), b1(lay)
++            ENDIF
++#endif
+@@ -717,0 +771,6 @@
++#ifdef KDM6AD_DOM_DUMP
++                  IF (dom_dump_thiscall .AND. m == 0) THEN
++                    WRITE(dom_dump_unit,'(A,4(1X,I0),2(1X,ES25.17E3))') 'MOMENT', icc, laymap, icci, l, &
++                      scatt_aux_column%phasefn(i)%lcoef(l,icci,laymap), lcoef(l,laymap,icci)
++                  ENDIF
++#endif
+@@ -1399,0 +1459,7 @@
++#ifdef KDM6AD_DOM_DUMP
++#ifndef _RTTOV_MFASIS_TRAINING
++      IF (dom_dump_thiscall) THEN
++        WRITE(dom_dump_unit,'(A,2(1X,I0),1X,ES25.17E3)') 'FINALRAD', icc, prof, thisrad
++      ENDIF
++#endif
++#endif
+@@ -1425,0 +1492,7 @@
++#ifdef KDM6AD_DOM_DUMP
++    IF (dom_dump_thiscall) THEN
++      CLOSE(dom_dump_unit)
++      dom_dump_on = .FALSE.
++      dom_dump_thiscall = .FALSE.
++    ENDIF
++#endif

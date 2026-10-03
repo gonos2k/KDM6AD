@@ -1,0 +1,213 @@
+{
+  "status": "C-DISORT_THIN_SOURCE_VALUE_ONLY_BASE_PLUS_MINUS_COMPLETE",
+  "scope": "Isolated attribution experiment: RTTOV DOM thin-layer Planck source slope forced to zero when delta optical depth <=1e-4, matching C-DISORT XR1 thin-layer policy. Not production, no K, no physical/observation approval.",
+  "source_change": {
+    "before": "b1=(1-fssa)*(B_top-B_bottom)/(opdep_top-opdep_bottom)",
+    "experiment": "If opdep(lev)-opdep(lev-1) <= 1e-4_jprv then set b1=0 before computing b0; all other layer OD, SSA, phase, cloud weights, channel and level inputs held fixed."
+  },
+  "profile": {
+    "path": "/private/tmp/KDM6AD-c5-native39-sea-supported-retry1-20261003/evidence/c5_sea_iremis_selected_profile_20261003.npz",
+    "sha256": "7915ef9bc9fab4983ab47776c1a3345384c21f09bddc2a6d540d36c4755194d4",
+    "user_layers": 63
+  },
+  "cases": {
+    "base": {
+      "original_source_case": "/private/tmp/KDM6AD-c5-dom32-nc-bt-20261003/base",
+      "original_preexecution_receipt_sha256": "2bdbd0f6056cd17c92f7074065b79299d6d5d75a1c3e018640d68950e0265cdf",
+      "source_profile_sha256": "7915ef9bc9fab4983ab47776c1a3345384c21f09bddc2a6d540d36c4755194d4",
+      "do_k_false_namelist_sha256": "171177b26d7b1a2d83aa6c8c03bbd4e3b25205a44c4a7a66247c328f4b6cb175",
+      "k_output_files": {},
+      "inputs_still_match_manifest": true,
+      "direct_output_sha256": {
+        "diffuse_reflectance_out.txt": "8d38d0a439db122381ac533e8927aaf35e7ea7308361620888357700f698526f",
+        "emissivity_out.txt": "62105bc660dad45ff7418598a0dd72e1b1bef4db8a2993178734a878a39812be",
+        "radiance.txt": "e5d47dcb738be7cf2f0b3df7e253d7144bd7b70f6c7a19cfa3f914c78a2350d5",
+        "transmission.txt": "5350678f02eda8c23918a1308828567dce6780ea6248ff6f6fb3f56fb6ac1817"
+      },
+      "thin_source_capture": {
+        "path": "/private/tmp/KDM6AD-rttov-dom-boundary-capture-20261003/base_valueonly_thin.tsv",
+        "sha256": "c82dc5dac8f624fadbc4584d81c3295258422434351239ead8e7f605d3d1164c",
+        "record_counts": {
+          "META": 1,
+          "AIR": 64,
+          "CLOUD": 2,
+          "DOMLAYER": 126,
+          "SOURCE": 126,
+          "FINALRAD": 2,
+          "MOMENT": 32
+        },
+        "finalrad_rows": [
+          [
+            "FINALRAD",
+            "0",
+            "1",
+            "9.41299711628424376E+001"
+          ],
+          [
+            "FINALRAD",
+            "1",
+            "1",
+            "9.25714614638800271E+001"
+          ]
+        ],
+        "source_rows_changed_by_threshold": 14
+      },
+      "weighted_total_radiance": 92.57146302238972,
+      "weighted_total_BT_K": 291.8786061130311,
+      "cdisort32_weighted_total_radiance": 92.57146302238851,
+      "cdisort32_weighted_total_BT_K": 291.87860611303034,
+      "thin_source_minus_cdisort_radiance": 1.2079226507921703e-12,
+      "thin_source_minus_cdisort_BT_K": 7.389644451905042e-13,
+      "original_direct_equals_thin_source_direct": false,
+      "only_radiance_file_differs_from_original": true,
+      "unmodified_instrumented_equals_original_do_k_false": true,
+      "original_do_k_false_equals_retained_do_k_true_direct": true
+    },
+    "plus": {
+      "original_source_case": "/private/tmp/KDM6AD-c5-dom32-nc-bt-20261003/plus",
+      "original_preexecution_receipt_sha256": "2bdbd0f6056cd17c92f7074065b79299d6d5d75a1c3e018640d68950e0265cdf",
+      "source_profile_sha256": "7915ef9bc9fab4983ab47776c1a3345384c21f09bddc2a6d540d36c4755194d4",
+      "do_k_false_namelist_sha256": "171177b26d7b1a2d83aa6c8c03bbd4e3b25205a44c4a7a66247c328f4b6cb175",
+      "k_output_files": {},
+      "inputs_still_match_manifest": true,
+      "direct_output_sha256": {
+        "diffuse_reflectance_out.txt": "8d38d0a439db122381ac533e8927aaf35e7ea7308361620888357700f698526f",
+        "emissivity_out.txt": "62105bc660dad45ff7418598a0dd72e1b1bef4db8a2993178734a878a39812be",
+        "radiance.txt": "250f221a7beee59c01986abdb653334ff4969531420e5d97976338e184dff779",
+        "transmission.txt": "a221f7e9a92fb6ff3d89ea5fb0e77f475e9ee19e79394c0d1b0b9aa4b6c23c6d"
+      },
+      "thin_source_capture": {
+        "path": "/private/tmp/KDM6AD-rttov-dom-boundary-capture-20261003/plus_valueonly_thin.tsv",
+        "sha256": "a8d3f38de1d5e72ac04ab64618cf043aeb57ee3e9f2891a933969987c9664c7b",
+        "record_counts": {
+          "META": 1,
+          "AIR": 64,
+          "CLOUD": 2,
+          "DOMLAYER": 126,
+          "SOURCE": 126,
+          "FINALRAD": 2,
+          "MOMENT": 32
+        },
+        "finalrad_rows": [
+          [
+            "FINALRAD",
+            "0",
+            "1",
+            "9.41299711628424376E+001"
+          ],
+          [
+            "FINALRAD",
+            "1",
+            "1",
+            "9.25714613373763910E+001"
+          ]
+        ],
+        "source_rows_changed_by_threshold": 14
+      },
+      "weighted_total_radiance": 92.57146289588621,
+      "weighted_total_BT_K": 291.8786060299655,
+      "cdisort32_weighted_total_radiance": 92.57146289588496,
+      "cdisort32_weighted_total_BT_K": 291.8786060299646,
+      "thin_source_minus_cdisort_radiance": 1.2505552149377763e-12,
+      "thin_source_minus_cdisort_BT_K": 9.094947017729282e-13,
+      "original_direct_equals_thin_source_direct": false,
+      "only_radiance_file_differs_from_original": true
+    },
+    "minus": {
+      "original_source_case": "/private/tmp/KDM6AD-c5-dom32-nc-bt-20261003/minus",
+      "original_preexecution_receipt_sha256": "2bdbd0f6056cd17c92f7074065b79299d6d5d75a1c3e018640d68950e0265cdf",
+      "source_profile_sha256": "7915ef9bc9fab4983ab47776c1a3345384c21f09bddc2a6d540d36c4755194d4",
+      "do_k_false_namelist_sha256": "171177b26d7b1a2d83aa6c8c03bbd4e3b25205a44c4a7a66247c328f4b6cb175",
+      "k_output_files": {},
+      "inputs_still_match_manifest": true,
+      "direct_output_sha256": {
+        "diffuse_reflectance_out.txt": "8d38d0a439db122381ac533e8927aaf35e7ea7308361620888357700f698526f",
+        "emissivity_out.txt": "62105bc660dad45ff7418598a0dd72e1b1bef4db8a2993178734a878a39812be",
+        "radiance.txt": "121a2715512f43f22616179ec2119706cc29774fab2d316b1f988d48eec057dc",
+        "transmission.txt": "3dd57beb120f8c1530b529ac4cc7f9dc0c3c4c8b262e737c7f56c1b430fef091"
+      },
+      "thin_source_capture": {
+        "path": "/private/tmp/KDM6AD-rttov-dom-boundary-capture-20261003/minus_valueonly_thin.tsv",
+        "sha256": "ed83bc21aa7bd09f9691bf7bab3d4db32a2ca8473f411f5957765ab37dc22601",
+        "record_counts": {
+          "META": 1,
+          "AIR": 64,
+          "CLOUD": 2,
+          "DOMLAYER": 126,
+          "SOURCE": 126,
+          "FINALRAD": 2,
+          "MOMENT": 32
+        },
+        "finalrad_rows": [
+          [
+            "FINALRAD",
+            "0",
+            "1",
+            "9.41299711628424376E+001"
+          ],
+          [
+            "FINALRAD",
+            "1",
+            "1",
+            "9.25714615903840183E+001"
+          ]
+        ],
+        "source_rows_changed_by_threshold": 14
+      },
+      "weighted_total_radiance": 92.57146314889359,
+      "weighted_total_BT_K": 291.87860619609694,
+      "cdisort32_weighted_total_radiance": 92.57146314889239,
+      "cdisort32_weighted_total_BT_K": 291.8786061960962,
+      "thin_source_minus_cdisort_radiance": 1.1937117960769683e-12,
+      "thin_source_minus_cdisort_BT_K": 7.389644451905042e-13,
+      "original_direct_equals_thin_source_direct": false,
+      "only_radiance_file_differs_from_original": true
+    }
+  },
+  "fd": {
+    "h": 0.0001,
+    "rttov_thin_source_BT_fd": -0.0008306571430694021,
+    "cdisort32_BT_fd": -0.000830657995720685,
+    "difference": 8.526512829121202e-10,
+    "unit": "K per direction parameter"
+  },
+  "pydisort": {
+    "package": "pydisort 1.8.13",
+    "python": "3.13.7",
+    "torch": "2.10.0",
+    "script": "/private/tmp/KDM6AD-dry-number-optics/harness/compare_ir105_disort.py",
+    "script_sha256": "25d44310d59f5b22baaad2d0d5e7ab2e5827bd01c278c6a67538709c158322f1",
+    "result": "/private/tmp/KDM6AD-rttov-dom-boundary-capture-20261003/cdisort32_nc_fd.json",
+    "result_sha256": "8aacb056f78f46f4de565be03f49dfacff3f9917a1a9f2e0b6095818233c1ca5",
+    "streams": 32
+  },
+  "installed_rttov": {
+    "source": "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/main/rttov_dom.F90",
+    "source_sha256": "65ce017941c1b7b9175508655c04c3348fe746337eecd6c8dec5c210519f0c04",
+    "exe": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+    "exe_sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+    "main_archive": "/Users/yhlee/AD-RTTOV/external/rttov14/src/lib/librttov14_main.a",
+    "main_archive_sha256": "39b7d829f7e553a0225a634ad61a212fc90d31dddd1ca19cde252fb644283c8d",
+    "not_modified": true
+  },
+  "experimental_build": {
+    "source_copy": "/private/tmp/KDM6AD-rttov-dom-boundary-capture-20261003/src/rttov_dom_disort_thin_source.F90",
+    "source_sha256": "fb78b05215ad18b4b80f5248ec638aa42bb235648271c5990a14102139ba5833",
+    "patch": "/private/tmp/KDM6AD-dry-number-optics/harness/evidence/RTTOV_dom_disort_thin_source_experiment_2026-10-03.patch",
+    "patch_sha256": "09264f644a6297449550c309ffed76b27bc04480b063d0845c60113aeba62359",
+    "object": "/private/tmp/KDM6AD-rttov-dom-boundary-capture-20261003/obj_disort_thin/rttov_dom.o",
+    "object_sha256": "156fa247315f087dfd1c00f4b0f1b268c75a3d163565b30194a9445dc286e03d",
+    "archive": "/private/tmp/KDM6AD-rttov-dom-boundary-capture-20261003/lib_disort_thin/librttov14_main.a",
+    "archive_sha256": "bc42a43f446b8d340e3a369cf6d8883d2ca6aec9fe2bb6cc745fda99c7ac8f55",
+    "exe": "/private/tmp/KDM6AD-rttov-dom-boundary-capture-20261003/bin_disort_thin/rttov_test.exe",
+    "exe_sha256": "d461141cf8e446b4fc6424bc5e2e0e0bdbf66bc4ff75d66f20c9b9b4dd2fb650",
+    "compile_macro": "KDM6AD_DISORT_THIN_SOURCE",
+    "do_k": false
+  },
+  "v1_v2_capture_untouched": {
+    "v1_tsv_sha256": "20fb9ccce346ef17ab67bff83c0b5cdf6d31da641ea7e39b0b322f6db55bafda",
+    "v1_receipt_sha256": "c02b06445dd6c285986e0262701cfbfe254cb8e9bf7a43b4f40e402b1549966c",
+    "v2_tsv_sha256": "89aec2d5329182158962b77280b76d9d57f63c18740cafabf6e5c822ed21299f",
+    "v2_receipt_sha256": "bd5b3bce04efe0b22bd3e4681c18455d3db1afad41e41418fdee7bdfcd587675"
+  }
+}

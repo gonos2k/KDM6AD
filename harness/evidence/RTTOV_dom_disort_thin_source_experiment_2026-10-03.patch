@@ -1,0 +1,12 @@
+--- a/src/rttov_dom_capture_finalrad.F90
++++ b/src/rttov_dom_capture_finalrad.F90
+@@ -727,6 +727,9 @@
+           ! --------------------------------------------------------------------------
+           IF (do_thermal) THEN
+             b1(lay) = (1._jprv - fssa(laymap)) * (auxrad%air(lev-1,i) - auxrad%air(lev,i)) / (opdep(lev-1) - opdep(lev))
++#ifdef KDM6AD_DISORT_THIN_SOURCE
++            IF (opdep(lev) - opdep(lev-1) <= 1.e-4_jprv) b1(lay) = 0._jprv
++#endif
+             b0(lay) = (1._jprv - fssa(laymap)) * auxrad%air(lev-1,i) - b1(lay) * opdep(lev-1)
+ #ifdef KDM6AD_DOM_DUMP
+             IF (dom_dump_thiscall .AND. m == 0) THEN

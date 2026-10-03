@@ -1,0 +1,245 @@
+{
+  "status": "FINALRAD_CAPTURE_COMPLETE_FOR_FROZEN_C5_DOM32_BASE_PLUS_MINUS",
+  "purpose": "Read-only environment-gated RTTOV thermal DOM inputs and actual per-subcolumn thisrad for fixed IR105 channel; no installed source/object/executable edits.",
+  "profile": {
+    "path": "/private/tmp/KDM6AD-c5-native39-sea-supported-retry1-20261003/evidence/c5_sea_iremis_selected_profile_20261003.npz",
+    "sha256": "7915ef9bc9fab4983ab47776c1a3345384c21f09bddc2a6d540d36c4755194d4"
+  },
+  "selection": {
+    "declared_channel": 13,
+    "internal_chanprof_index": 6,
+    "profile_index": 1,
+    "native_plus_reference_top_layers": 63,
+    "nstr": 32,
+    "nmom": 31,
+    "number_of_cloud_columns": 1,
+    "channel_selection_not_changed": true
+  },
+  "installed_rttov": {
+    "source": "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/main/rttov_dom.F90",
+    "source_sha256": "65ce017941c1b7b9175508655c04c3348fe746337eecd6c8dec5c210519f0c04",
+    "executable": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+    "executable_sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+    "main_archive": "/Users/yhlee/AD-RTTOV/external/rttov14/src/lib/librttov14_main.a",
+    "main_archive_sha256": "39b7d829f7e553a0225a634ad61a212fc90d31dddd1ca19cde252fb644283c8d",
+    "coefficient_sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+    "hydrotable_sha256": "fdbe99ea68fd750e146fb78a798ab72b8568e4a3d545a2d847263cb374746890"
+  },
+  "instrumented_private_copy": {
+    "source": "/private/tmp/KDM6AD-rttov-dom-boundary-capture-20261003/src/rttov_dom_capture_finalrad.F90",
+    "source_sha256": "545aeb05e4a2c0fd8acedd59214866ec80b37eda8c864005de236630ae0e6eb7",
+    "patch": "/private/tmp/KDM6AD-dry-number-optics/harness/evidence/RTTOV_dom_boundary_capture_finalrad_2026-10-03.patch",
+    "patch_sha256": "bca28f85a071bd23af28727fb09b45a220e308363469a9fbf1edcf9c232bde37",
+    "object": "/private/tmp/KDM6AD-rttov-dom-boundary-capture-20261003/obj_finalrad2/rttov_dom.o",
+    "object_sha256": "6c0f0f5f36ab293c0f9290a9588734f881da458fb0b5bb14e464b2bc1c9036e7",
+    "archive": "/private/tmp/KDM6AD-rttov-dom-boundary-capture-20261003/lib_finalrad2/librttov14_main.a",
+    "archive_sha256": "779b09ac145bf3fd4b75c68efb762add910692f42c7abe269b17b1fb6c88ff1f",
+    "executable": "/private/tmp/KDM6AD-rttov-dom-boundary-capture-20261003/bin/rttov_test_finalrad2.exe",
+    "executable_sha256": "bd6b46d697666663b8a5b2476539bcba4ce1190c272dfcd5a4c2ea7fb4a1eebb",
+    "compile_command": "/opt/homebrew/bin/gfortran -I<RTTOV>/include -D_RTTOV_NETCDF -I/opt/local/include -fPIC -O3 -fopenmp -ffree-line-length-none -I<RTTOV>/mod -DKDM6AD_DOM_DUMP -c rttov_dom_capture_finalrad.F90 -o rttov_dom_finalrad.o; copied under member rttov_dom.o in private archive",
+    "runtime_gate": "KDM6AD_RTTOV_DOM_DUMP=<path>; KDM6AD_DOM_DUMP compile define",
+    "macro_off_and_env_on_outputs_equal_original": true
+  },
+  "captures": {
+    "base": {
+      "source_case": "/private/tmp/KDM6AD-c5-dom32-nc-bt-20261003/base",
+      "preexecution_provenance_sha256": "2bdbd0f6056cd17c92f7074065b79299d6d5d75a1c3e018640d68950e0265cdf",
+      "profile_sha256": "7915ef9bc9fab4983ab47776c1a3345384c21f09bddc2a6d540d36c4755194d4",
+      "input_file_manifest_sha256_off": "a60209a58747788905f2b8e537d13dcd299c7c3f214aac88afca0445e4a1fa4b",
+      "input_file_manifest_sha256_on": "a60209a58747788905f2b8e537d13dcd299c7c3f214aac88afca0445e4a1fa4b",
+      "inputs_unchanged": true,
+      "quality": "all 9 channel quality flags OK in off/on run",
+      "output_comparison": {
+        "direct": {
+          "original_equals_off": true,
+          "original_equals_on": true,
+          "off_equals_on": true,
+          "original_hashes": {
+            "diffuse_reflectance_out.txt": "8d38d0a439db122381ac533e8927aaf35e7ea7308361620888357700f698526f",
+            "emissivity_out.txt": "62105bc660dad45ff7418598a0dd72e1b1bef4db8a2993178734a878a39812be",
+            "radiance.txt": "623566425f8f5261d3dbf03271f81f4eb42977c8a30887f4846c03b9cb320073",
+            "transmission.txt": "5350678f02eda8c23918a1308828567dce6780ea6248ff6f6fb3f56fb6ac1817"
+          }
+        },
+        "k": {
+          "original_equals_off": true,
+          "original_equals_on": true,
+          "off_equals_on": true,
+          "original_hashes": {
+            "diffuse_reflectance_k.txt": "d2587f977982983659b7f4d8197f55775d27cef96755f85fe3a0d55381db1c7d",
+            "diffuse_reflectance_out.txt": "8d38d0a439db122381ac533e8927aaf35e7ea7308361620888357700f698526f",
+            "emissivity_k.txt": "d19fb6b6f7c9ab3ccd50699ff108174815f5d92c99421117e0d2c3628029aaef",
+            "emissivity_out.txt": "62105bc660dad45ff7418598a0dd72e1b1bef4db8a2993178734a878a39812be",
+            "profiles_k.txt": "8733bf0909a2cfe9285f861eab45b9d5203497d98e8a5d1a65681b054ccb9a7d",
+            "radiance.txt": "623566425f8f5261d3dbf03271f81f4eb42977c8a30887f4846c03b9cb320073",
+            "transmission.txt": "5350678f02eda8c23918a1308828567dce6780ea6248ff6f6fb3f56fb6ac1817"
+          }
+        }
+      },
+      "capture": {
+        "path": "/private/tmp/KDM6AD-rttov-dom-boundary-capture-20261003/base_dom32_ir105_finalrad.tsv",
+        "sha256": "89aec2d5329182158962b77280b76d9d57f63c18740cafabf6e5c822ed21299f",
+        "bytes": 51994,
+        "record_counts": {
+          "META": 1,
+          "AIR": 64,
+          "CLOUD": 2,
+          "DOMLAYER": 126,
+          "SOURCE": 126,
+          "FINALRAD": 2,
+          "MOMENT": 32
+        },
+        "finalrad_rows": [
+          [
+            "FINALRAD",
+            "0",
+            "1",
+            "9.41304082121889110E+001"
+          ],
+          [
+            "FINALRAD",
+            "1",
+            "1",
+            "9.25718990517922578E+001"
+          ]
+        ]
+      }
+    },
+    "plus": {
+      "source_case": "/private/tmp/KDM6AD-c5-dom32-nc-bt-20261003/plus",
+      "preexecution_provenance_sha256": "2bdbd0f6056cd17c92f7074065b79299d6d5d75a1c3e018640d68950e0265cdf",
+      "profile_sha256": "7915ef9bc9fab4983ab47776c1a3345384c21f09bddc2a6d540d36c4755194d4",
+      "input_file_manifest_sha256_off": "aa91cb27980deef100697fd3c5edc24fd844bd95425629f7d7063e9d04bd6d3a",
+      "input_file_manifest_sha256_on": "aa91cb27980deef100697fd3c5edc24fd844bd95425629f7d7063e9d04bd6d3a",
+      "inputs_unchanged": true,
+      "quality": "all 9 channel quality flags OK in off/on run",
+      "output_comparison": {
+        "direct": {
+          "original_equals_off": true,
+          "original_equals_on": true,
+          "off_equals_on": true,
+          "original_hashes": {
+            "diffuse_reflectance_out.txt": "8d38d0a439db122381ac533e8927aaf35e7ea7308361620888357700f698526f",
+            "emissivity_out.txt": "62105bc660dad45ff7418598a0dd72e1b1bef4db8a2993178734a878a39812be",
+            "radiance.txt": "18518b679d9d559f14aa91e5f43577dbbd9a774a1e6299d922be4d9560be1b0d",
+            "transmission.txt": "a221f7e9a92fb6ff3d89ea5fb0e77f475e9ee19e79394c0d1b0b9aa4b6c23c6d"
+          }
+        },
+        "k": {
+          "original_equals_off": true,
+          "original_equals_on": true,
+          "off_equals_on": true,
+          "original_hashes": {
+            "diffuse_reflectance_k.txt": "d2587f977982983659b7f4d8197f55775d27cef96755f85fe3a0d55381db1c7d",
+            "diffuse_reflectance_out.txt": "8d38d0a439db122381ac533e8927aaf35e7ea7308361620888357700f698526f",
+            "emissivity_k.txt": "d19fb6b6f7c9ab3ccd50699ff108174815f5d92c99421117e0d2c3628029aaef",
+            "emissivity_out.txt": "62105bc660dad45ff7418598a0dd72e1b1bef4db8a2993178734a878a39812be",
+            "profiles_k.txt": "f8d19f1b7c228ef69a58611321a1e07e227c18cef338c90cd4812feff8cadfa7",
+            "radiance.txt": "18518b679d9d559f14aa91e5f43577dbbd9a774a1e6299d922be4d9560be1b0d",
+            "transmission.txt": "a221f7e9a92fb6ff3d89ea5fb0e77f475e9ee19e79394c0d1b0b9aa4b6c23c6d"
+          }
+        }
+      },
+      "capture": {
+        "path": "/private/tmp/KDM6AD-rttov-dom-boundary-capture-20261003/plus_dom32_ir105_finalrad.tsv",
+        "sha256": "286f60827a35721fe42840a05ecb5a76fe7f7a92607fdba75c33fd641061b2a8",
+        "bytes": 51994,
+        "record_counts": {
+          "META": 1,
+          "AIR": 64,
+          "CLOUD": 2,
+          "DOMLAYER": 126,
+          "SOURCE": 126,
+          "FINALRAD": 2,
+          "MOMENT": 32
+        },
+        "finalrad_rows": [
+          [
+            "FINALRAD",
+            "0",
+            "1",
+            "9.41304082121889110E+001"
+          ],
+          [
+            "FINALRAD",
+            "1",
+            "1",
+            "9.25718989252890765E+001"
+          ]
+        ]
+      }
+    },
+    "minus": {
+      "source_case": "/private/tmp/KDM6AD-c5-dom32-nc-bt-20261003/minus",
+      "preexecution_provenance_sha256": "2bdbd0f6056cd17c92f7074065b79299d6d5d75a1c3e018640d68950e0265cdf",
+      "profile_sha256": "7915ef9bc9fab4983ab47776c1a3345384c21f09bddc2a6d540d36c4755194d4",
+      "input_file_manifest_sha256_off": "0ef8f27d1ea2098599c2f5c980615803aa289b61dacac4ed7fbb2b87fba6e5ae",
+      "input_file_manifest_sha256_on": "0ef8f27d1ea2098599c2f5c980615803aa289b61dacac4ed7fbb2b87fba6e5ae",
+      "inputs_unchanged": true,
+      "quality": "all 9 channel quality flags OK in off/on run",
+      "output_comparison": {
+        "direct": {
+          "original_equals_off": true,
+          "original_equals_on": true,
+          "off_equals_on": true,
+          "original_hashes": {
+            "diffuse_reflectance_out.txt": "8d38d0a439db122381ac533e8927aaf35e7ea7308361620888357700f698526f",
+            "emissivity_out.txt": "62105bc660dad45ff7418598a0dd72e1b1bef4db8a2993178734a878a39812be",
+            "radiance.txt": "5710e4052eee9cc3ae39a9015efa2836d1b1147c9d961c0c46b0edebeeb46429",
+            "transmission.txt": "3dd57beb120f8c1530b529ac4cc7f9dc0c3c4c8b262e737c7f56c1b430fef091"
+          }
+        },
+        "k": {
+          "original_equals_off": true,
+          "original_equals_on": true,
+          "off_equals_on": true,
+          "original_hashes": {
+            "diffuse_reflectance_k.txt": "d2587f977982983659b7f4d8197f55775d27cef96755f85fe3a0d55381db1c7d",
+            "diffuse_reflectance_out.txt": "8d38d0a439db122381ac533e8927aaf35e7ea7308361620888357700f698526f",
+            "emissivity_k.txt": "d19fb6b6f7c9ab3ccd50699ff108174815f5d92c99421117e0d2c3628029aaef",
+            "emissivity_out.txt": "62105bc660dad45ff7418598a0dd72e1b1bef4db8a2993178734a878a39812be",
+            "profiles_k.txt": "f6c1fbc6eb8a26d822c5ccc0a3b557827ab50dc9185d514a296f1de43c5bf90a",
+            "radiance.txt": "5710e4052eee9cc3ae39a9015efa2836d1b1147c9d961c0c46b0edebeeb46429",
+            "transmission.txt": "3dd57beb120f8c1530b529ac4cc7f9dc0c3c4c8b262e737c7f56c1b430fef091"
+          }
+        }
+      },
+      "capture": {
+        "path": "/private/tmp/KDM6AD-rttov-dom-boundary-capture-20261003/minus_dom32_ir105_finalrad.tsv",
+        "sha256": "cead6cca275cfc06ff2b1e441e8047a1b2bebebc8d8fd2331a1a34e2aa8ae0ae",
+        "bytes": 51994,
+        "record_counts": {
+          "META": 1,
+          "AIR": 64,
+          "CLOUD": 2,
+          "DOMLAYER": 126,
+          "SOURCE": 126,
+          "FINALRAD": 2,
+          "MOMENT": 32
+        },
+        "finalrad_rows": [
+          [
+            "FINALRAD",
+            "0",
+            "1",
+            "9.41304082121889110E+001"
+          ],
+          [
+            "FINALRAD",
+            "1",
+            "1",
+            "9.25718991782957801E+001"
+          ]
+        ]
+      }
+    }
+  },
+  "v1_preserved": {
+    "capture_path": "/private/tmp/KDM6AD-rttov-dom-boundary-capture-20261003/v1_dom32_ir105_boundary.tsv",
+    "capture_sha256": "20fb9ccce346ef17ab67bff83c0b5cdf6d31da641ea7e39b0b322f6db55bafda",
+    "receipt_path": "/private/tmp/KDM6AD-rttov-dom-boundary-capture-20261003/v1_capture_receipt.json",
+    "receipt_sha256": "c02b06445dd6c285986e0262701cfbfe254cb8e9bf7a43b4f40e402b1549966c",
+    "v1_tsv_not_rewritten": true
+  },
+  "public_patch_format": "Zero-context unified diff of the same captured source; source/object/executable unchanged"
+}

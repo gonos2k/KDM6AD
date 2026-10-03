@@ -1,0 +1,77 @@
+{
+  "scope": "same-optics independent RTE implementation; no physical/observation approval",
+  "results": [
+    {
+      "streams": 8,
+      "radiance": 92.56993802476465,
+      "columns": [
+        {
+          "column": 0,
+          "weight": 1.0000000000287557e-06,
+          "radiance": 94.1297996731846,
+          "tau": 0.5556550988044853,
+          "absorption_tau": 0.5556550988044853
+        },
+        {
+          "column": 1,
+          "weight": 0.999999,
+          "radiance": 92.56993646490145,
+          "tau": 0.9522992954766749,
+          "absorption_tau": 0.7886396579175616
+        }
+      ],
+      "bt_k": 291.87760475360216,
+      "nc_direction_bt_fd": -0.000833604474337335,
+      "plus_radiance": 92.5699378978135,
+      "minus_radiance": 92.5699381517161
+    },
+    {
+      "streams": 16,
+      "radiance": 92.57150321330847,
+      "columns": [
+        {
+          "column": 0,
+          "weight": 1.0000000000287557e-06,
+          "radiance": 94.12996834612079,
+          "tau": 0.5556550988044853,
+          "absorption_tau": 0.5556550988044853
+        },
+        {
+          "column": 1,
+          "weight": 0.999999,
+          "radiance": 92.57150165484178,
+          "tau": 0.9522992954766749,
+          "absorption_tau": 0.7886396579175616
+        }
+      ],
+      "bt_k": 291.8786325034682,
+      "nc_direction_bt_fd": -0.000830606552426616,
+      "plus_radiance": 92.5715030868126,
+      "minus_radiance": 92.57150333980461
+    },
+    {
+      "streams": 32,
+      "radiance": 92.57146302238851,
+      "columns": [
+        {
+          "column": 0,
+          "weight": 1.0000000000287557e-06,
+          "radiance": 94.12997116284224,
+          "tau": 0.5556550988044853,
+          "absorption_tau": 0.5556550988044853
+        },
+        {
+          "column": 1,
+          "weight": 0.999999,
+          "radiance": 92.57146146387882,
+          "tau": 0.9522992954766749,
+          "absorption_tau": 0.7886396579175616
+        }
+      ],
+      "bt_k": 291.87860611303034,
+      "nc_direction_bt_fd": -0.000830657995720685,
+      "plus_radiance": 92.57146289588496,
+      "minus_radiance": 92.57146314889239
+    }
+  ]
+}
