@@ -1,0 +1,16 @@
+{
+  "same_base_values": true,
+  "shared_minus_frozen_bt_jvp_K": [
+    1.6734557973022858e-28,
+    3.950735695397354e-22,
+    2.55950572235498e-10,
+    0.00011859041414083614,
+    5.95352238086594e-05,
+    0.00010432424108444223,
+    9.825146703770916e-05,
+    7.044928650478859e-05,
+    2.2357896683769116e-05
+  ],
+  "shared_minus_frozen_bt_jvp_maxnorm_K": 0.00011859041414083614,
+  "interpretation": "additional entry-density tangent at identical base; not scientific accuracy preference"
+}

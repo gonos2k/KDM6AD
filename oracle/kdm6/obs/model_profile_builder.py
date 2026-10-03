@@ -296,7 +296,7 @@ def interp_log_pressure(field: torch.Tensor, p_src: torch.Tensor, p_dst: torch.T
 
 
 def _cloud_profile_tensors(leaves, forcing, p_model, p_target, xland,
-                           ncmin_land, ncmin_sea, rho_d, dry_number=False):
+                           ncmin_land, ncmin_sea, rho_d, dry_number=False, live_density=False):
     """All-sky cloud fields on the RTTOV layer grid (pure-torch, differentiable).
 
     Wires the hydrometeor bridge (``rttov_cloud_profile``) into the obs path with the
@@ -310,7 +310,7 @@ def _cloud_profile_tensors(leaves, forcing, p_model, p_target, xland,
     gathered field). Returns (clw, ciw, deff_liq, deff_ice, cfrac) on the layer grid.
     """
     from ..rttov_bridge import rttov_cloud_profile, require_dry_air_density
-    rho_d = require_dry_air_density(rho_d, leaves.qv)
+    rho_d = require_dry_air_density(rho_d, leaves.qv, live=live_density)
     # xland feeds the bridge's per-cell sea/land ncmin gate (xland.view(-1,1)); the obs
     # path is ONE column, so require a single value (reject a multi-column/scalar-float
     # xland that would silently mis-mask -- reject-don't-drop).
@@ -326,7 +326,8 @@ def _cloud_profile_tensors(leaves, forcing, p_model, p_target, xland,
     forcing2d = type(forcing)(*(f.unsqueeze(0) for f in forcing))
     cp = rttov_cloud_profile(leaves2d, forcing2d, xland=xland,
                              ncmin_land=ncmin_land, ncmin_sea=ncmin_sea,
-                             rho_d=rho_d.unsqueeze(0), dry_number=dry_number)
+                             rho_d=rho_d.unsqueeze(0), dry_number=dry_number,
+                             live_density=live_density)
 
     # RTTOV content must be >= 0 (DA increments can drive q<0); clamp_min is the
     # clip_positive subgradient (0 in the unphysical region), not a graph break.
@@ -388,7 +389,7 @@ def _cloud_profile_tensors(leaves, forcing, p_model, p_target, xland,
 
 
 def model_to_rttov_tensors(leaves, forcing, cfg, xland=None,
-                           ncmin_land=0.0, ncmin_sea=0.0) -> RttovProfileTensors:
+                           ncmin_land=0.0, ncmin_sea=0.0, *, entry_qv=None) -> RttovProfileTensors:
     """leaves(State) -> RTTOV-unit torch tensors for the clear-sky T/Q path.
 
     Pure-torch from ``leaves`` (design 14.3): extract T=th*pii and Q=ppmv(qv),
@@ -397,8 +398,28 @@ def model_to_rttov_tensors(leaves, forcing, cfg, xland=None,
     th/qv. With ``cfg.cloud=True`` the shared cloud builder also supplies content,
     diameters and fraction, removing cloud above the model top. Surface tensors
     remain deferred. ``xland``/``ncmin_*`` are unused on the clear-sky path.
+
+    ``entry_qv`` explicitly selects the dry-number runtime's entry measure
+    ``forcing.rho/(1+entry_qv)`` instead of cfg.rho_d. Keep the entry tensor's
+    graph through microphysics and pass it with the output state; never infer
+    this measure from output humidity. This opt-in is a pure composed map,
+    not the detached-state DA callback's local covector contract.
     """
     t_model, qv_model, p_model = extract_model_columns(leaves, forcing)
+    rho_d = getattr(cfg, "rho_d", None)
+    if entry_qv is not None:
+        if not getattr(cfg, "cloud", False) or not getattr(cfg, "dry_number", False):
+            raise ValueError("entry_qv requires cloud=True and dry_number=True")
+        if rho_d is not None:
+            raise ValueError("choose entry_qv or fixed cfg.rho_d, not both")
+        if (not isinstance(entry_qv, torch.Tensor) or entry_qv.shape != forcing.rho.shape
+                or entry_qv.dtype != forcing.rho.dtype or entry_qv.device != forcing.rho.device):
+            raise ValueError("entry_qv must match forcing rho shape, dtype and device")
+        if entry_qv.dtype != torch.float64:
+            raise ValueError("entry_qv is supported only in float64")
+        if not bool(torch.isfinite(entry_qv).all()) or bool((entry_qv <= -1).any()):
+            raise ValueError("entry_qv must be finite and greater than -1")
+        rho_d = forcing.rho / (1.0 + entry_qv)
     q_model = qv_to_q_ppmv_moist(qv_model, gas_units=cfg.gas_units,
                                  qv_convention=cfg.qv_convention)
     _validate_forcing_domain(t_model, qv_model, p_model, forcing)
@@ -499,6 +520,6 @@ def model_to_rttov_tensors(leaves, forcing, cfg, xland=None,
     if getattr(cfg, "cloud", False):
         clw, ciw, deff_liq, deff_ice, cfrac = _cloud_profile_tensors(
             leaves, forcing, p_model, p_target, xland, ncmin_land, ncmin_sea,
-            getattr(cfg, "rho_d", None), getattr(cfg, "dry_number", False))
+            rho_d, getattr(cfg, "dry_number", False), entry_qv is not None)
         cloud = dict(clw=clw, ciw=ciw, deff_liq=deff_liq, deff_ice=deff_ice, cfrac=cfrac)
     return RttovProfileTensors(t_lay=t_lay, q_lay=q_lay, p_lay=p_lay, p_half=p_half, **cloud)

@@ -1,0 +1,52 @@
+{
+  "scope": "common source361 optical-only NC direction; no physical acceptance threshold",
+  "common_ami_channels": [
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16
+  ],
+  "max_bt_difference_K": 0.3126398886131483,
+  "max_nc_jvp_difference_K": 0.00016879973963263516,
+  "relative_to_dom32_maxnorm": 0.15624284369248803,
+  "relative_to_larger_solver_maxnorm": 0.14055959033675913,
+  "per_channel_jvp_fd_absolute_error_K": [
+    1.552455938780713e-28,
+    1.465631828998283e-20,
+    1.8252146835096751e-10,
+    1.3890863828115718e-10,
+    1.0210287313978245e-10,
+    2.822913311526648e-11,
+    1.2070328547428288e-10,
+    1.2824858362792124e-10,
+    2.4924035719412624e-10
+  ],
+  "per_channel_jvp_fd_max_component_relative": [
+    1.0,
+    1.0,
+    0.10703172094434024,
+    1.1566926189299421e-07,
+    2.170975155122288e-07,
+    3.397633036304003e-08,
+    1.221651690680953e-07,
+    1.1621317007983555e-07,
+    6.502888519933091e-07
+  ],
+  "endpoint_binary_grid_resolution_estimate_K_per_control": [
+    1.4210854715202004e-10,
+    1.4210854715202004e-10,
+    2.842170943040401e-10,
+    2.842170943040401e-10,
+    2.842170943040401e-10,
+    2.842170943040401e-10,
+    2.842170943040401e-10,
+    2.842170943040401e-10,
+    2.842170943040401e-10
+  ],
+  "resolution_estimate_is_not_total_computation_error_bound": true,
+  "policy": "DOM32 is highest table-supported numerical reference; report8/16/32 convergence and common-support differences. No selection by observedcost, no fabricated physical tolerance.",
+  "scientific_approval": false
+}
