@@ -59,6 +59,8 @@ class RttovProfileConfig(NamedTuple):
     ``cloud=True`` enables the all-sky cloud path (content + effective diameter
     via the hydrometeor bridge) and requires ``rho_d`` frozen from the background
     on the same model grid/order. Trial-state qv must not redefine this measure.
+    ``dry_number=True`` explicitly declares QN per kg dry air for that bridge;
+    the default retains the historical DSD mapping. It does not select DA physics.
     """
     gas_units: int                                 # must be _REQUIRED_GAS_UNITS (2)
     qv_convention: str                             # one of _SUPPORTED_QV_CONVENTIONS
@@ -66,6 +68,7 @@ class RttovProfileConfig(NamedTuple):
     rttov_level_pressure: "torch.Tensor | None" = None
     cloud: bool = False                            # all-sky cloud path on/off
     rho_d: "torch.Tensor | None" = None             # frozen dry density, model grid/order
+    dry_number: bool = False                        # QN input basis for cloud diagnostics
 
 
 def with_dry_air_density(cfg, rho_d: torch.Tensor) -> RttovProfileConfig:
@@ -78,7 +81,8 @@ def with_dry_air_density(cfg, rho_d: torch.Tensor) -> RttovProfileConfig:
         gas_units=cfg.gas_units, qv_convention=cfg.qv_convention,
         rttov_layer_pressure=cfg.rttov_layer_pressure,
         rttov_level_pressure=cfg.rttov_level_pressure,
-        cloud=cfg.cloud, rho_d=rho_d)
+        cloud=cfg.cloud, rho_d=rho_d,
+        dry_number=getattr(cfg, "dry_number", False))
 
 
 class RttovProfileTensors(NamedTuple):
@@ -292,7 +296,7 @@ def interp_log_pressure(field: torch.Tensor, p_src: torch.Tensor, p_dst: torch.T
 
 
 def _cloud_profile_tensors(leaves, forcing, p_model, p_target, xland,
-                           ncmin_land, ncmin_sea, rho_d):
+                           ncmin_land, ncmin_sea, rho_d, dry_number=False):
     """All-sky cloud fields on the RTTOV layer grid (pure-torch, differentiable).
 
     Wires the hydrometeor bridge (``rttov_cloud_profile``) into the obs path with the
@@ -322,7 +326,7 @@ def _cloud_profile_tensors(leaves, forcing, p_model, p_target, xland,
     forcing2d = type(forcing)(*(f.unsqueeze(0) for f in forcing))
     cp = rttov_cloud_profile(leaves2d, forcing2d, xland=xland,
                              ncmin_land=ncmin_land, ncmin_sea=ncmin_sea,
-                             rho_d=rho_d.unsqueeze(0))
+                             rho_d=rho_d.unsqueeze(0), dry_number=dry_number)
 
     # RTTOV content must be >= 0 (DA increments can drive q<0); clamp_min is the
     # clip_positive subgradient (0 in the unphysical region), not a graph break.
@@ -495,6 +499,6 @@ def model_to_rttov_tensors(leaves, forcing, cfg, xland=None,
     if getattr(cfg, "cloud", False):
         clw, ciw, deff_liq, deff_ice, cfrac = _cloud_profile_tensors(
             leaves, forcing, p_model, p_target, xland, ncmin_land, ncmin_sea,
-            getattr(cfg, "rho_d", None))
+            getattr(cfg, "rho_d", None), getattr(cfg, "dry_number", False))
         cloud = dict(clw=clw, ciw=ciw, deff_liq=deff_liq, deff_ice=deff_ice, cfrac=cfrac)
     return RttovProfileTensors(t_lay=t_lay, q_lay=q_lay, p_lay=p_lay, p_half=p_half, **cloud)

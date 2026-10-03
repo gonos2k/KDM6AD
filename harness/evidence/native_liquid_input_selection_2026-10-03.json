@@ -1,0 +1,248 @@
+{
+  "schema": "KDM6AD_C5_LIQUID_INPUT_CENSUS_V1",
+  "purpose": "read-only input-only selection of a strict full-profile supported liquid column for the optical-input gate; does not certify S2 physical calibration",
+  "source": {
+    "reader": "oracle.kdm6.io.frame_reader.read_wrfout_frame",
+    "reader_sha256": "232e54391e094cc04aee36a6de743d9b5b01328e298f0be1c41a566b47de6995",
+    "reader_repo_head": "576b53aad646fe2042ac193a0da07d0cbed27d31",
+    "forecast_path": "/private/tmp/KDM6AD-nccn-zero-merge603ea4a-host-confirm/case/runs/mp337_merge603ea4a_off_0min40s_hist0_20261003_102038_p26153/klfs_lc05_fcst.202507190000",
+    "forecast_sha256": "be0edb894d1ddc5996f925cf01d56d1d882b53d6ed0295566edac2cb60f31308",
+    "confirmed_host_executable_sha256": "a1a0c4b394e8141ea65b23da4d47cc8fde927115cb4667ecf1a4f8e567cabefa",
+    "confirmed_host_receipt": "/private/tmp/KDM6AD-nccn-zero-merge603ea4a-host-confirm/evidence/host_confirmation_603ea4a_2026-10-03.json"
+  },
+  "namelist": {
+    "path": "/private/tmp/KDM6AD-nccn-zero-merge603ea4a-host-confirm/case/runs/mp337_merge603ea4a_off_0min40s_hist0_20261003_102038_p26153/namelist.input",
+    "sha256": "8d73a01a827b5b3980b4440592b31dd801ddc659611b2d25651bd4f11e7ea2bc",
+    "mp_physics": 337,
+    "dt_seconds": 20,
+    "dx_m": 5000,
+    "e_we": 235,
+    "e_sn": 283,
+    "e_vert": 40,
+    "numtiles": 2,
+    "ncmin_land": 10.0,
+    "ncmin_sea": 10.0
+  },
+  "frames": {
+    "scanned_chronologically": [
+      {
+        "time_index": 1,
+        "valid_time": "2025-07-19_00:00:20"
+      },
+      {
+        "time_index": 2,
+        "valid_time": "2025-07-19_00:00:40"
+      }
+    ],
+    "native_mass_levels": 39,
+    "nccn_policy": "as_stored",
+    "reader_column_order": "b=j*nx+i; WRF mass grid has nx=234, ny=282"
+  },
+  "owned_interior": {
+    "global_i_1based": [
+      2,
+      233
+    ],
+    "global_j_1based": [
+      2,
+      281
+    ],
+    "expected_columns_per_frame": 64960,
+    "observed_columns_per_frame": 64960
+  },
+  "input_gates": {
+    "state_order": [
+      "th",
+      "qv",
+      "qc",
+      "qr",
+      "qi",
+      "qs",
+      "qg",
+      "nccn",
+      "nc",
+      "ni",
+      "nr",
+      "bg"
+    ],
+    "forcing_order": [
+      "rho",
+      "pii",
+      "p",
+      "delz"
+    ],
+    "strict_full_profile_pairs": [
+      {
+        "name": "qc/nc",
+        "mass": "qc",
+        "all39levels": true,
+        "reject_negative": true,
+        "reject_exactly_one_zero": true,
+        "moment": "nc"
+      },
+      {
+        "name": "qr/nr",
+        "mass": "qr",
+        "all39levels": true,
+        "reject_negative": true,
+        "reject_exactly_one_zero": true,
+        "moment": "nr"
+      },
+      {
+        "name": "qi/ni",
+        "mass": "qi",
+        "all39levels": true,
+        "reject_negative": true,
+        "reject_exactly_one_zero": true,
+        "moment": "ni"
+      },
+      {
+        "name": "qg/bg",
+        "mass": "qg",
+        "all39levels": true,
+        "reject_negative": true,
+        "reject_exactly_one_zero": true,
+        "moment": "bg"
+      }
+    ],
+    "preconditions": "finite all State/Forcing; state.th>0; other 11 prognostic fields >=0; forcing rho/pii/p/delz >0; T=th*pii finite positive; xland exactly 1 or 2",
+    "active_liquid_profile": "exists k with qc>oracle.kdm6.ops.EPS and rho_dry*nc>ncmin(xland)",
+    "rho_dry_reconstruction": "reader forcing.rho / (1 + entry qv); frame_reader documents forcing.rho as moist density",
+    "ncmin_source": "exact `ncmin_land` and `ncmin_sea` from archived C2 namelist; values preserved as 10 and 10",
+    "ice_requirement": false,
+    "nccn_synthesized_or_modified": false
+  },
+  "per_frame_summary": [
+    {
+      "time_index_zero_based": 1,
+      "valid_time": "2025-07-19_00:00:20",
+      "global_owned_ij_1based": [
+        2,
+        233,
+        2,
+        281
+      ],
+      "owned_columns": 64960,
+      "numeric_precondition_profiles": 64960,
+      "strict_pair_pass_profiles": 25714,
+      "pair_failure_level_counts": {
+        "qc/nc": 38328,
+        "qr/nr": 43787,
+        "qi/ni": 111855,
+        "qg/bg": 14938
+      },
+      "active_liquid_profiles_without_pair_filter": 32320,
+      "active_ice_profiles_descriptive_only": 35699,
+      "eligible_liquid_profiles": 10907,
+      "eligible_land_profiles": 2590,
+      "eligible_sea_profiles": 8317,
+      "ncmin_land_sea": {
+        "land": 10.0,
+        "sea": 10.0
+      },
+      "qc_eps": 1e-15,
+      "selection_metric": "input-only sequential-f64 sum(qc) over 39 levels",
+      "median_index_rule": "sort eligible candidates ascending by (sum_qc, global_j, global_i); choose index N//2",
+      "maximum_qc_sum_eligible": 0.004028835683129728,
+      "maximum_qc_sum_global_ij_1based": [
+        73,
+        66
+      ],
+      "median_qc_sum_eligible": 2.0380813566589495e-05,
+      "median_qc_sum_global_ij_1based": [
+        71,
+        101
+      ],
+      "selected_by_rule": true
+    },
+    {
+      "time_index_zero_based": 2,
+      "valid_time": "2025-07-19_00:00:40",
+      "global_owned_ij_1based": [
+        2,
+        233,
+        2,
+        281
+      ],
+      "owned_columns": 64960,
+      "numeric_precondition_profiles": 64960,
+      "strict_pair_pass_profiles": 22990,
+      "pair_failure_level_counts": {
+        "qc/nc": 3135,
+        "qr/nr": 38336,
+        "qi/ni": 157512,
+        "qg/bg": 26404
+      },
+      "active_liquid_profiles_without_pair_filter": 34163,
+      "active_ice_profiles_descriptive_only": 36364,
+      "eligible_liquid_profiles": 10988,
+      "eligible_land_profiles": 3115,
+      "eligible_sea_profiles": 7873,
+      "ncmin_land_sea": {
+        "land": 10.0,
+        "sea": 10.0
+      },
+      "qc_eps": 1e-15,
+      "selection_metric": "input-only sequential-f64 sum(qc) over 39 levels",
+      "median_index_rule": "sort eligible candidates ascending by (sum_qc, global_j, global_i); choose index N//2",
+      "maximum_qc_sum_eligible": 0.003866820043185726,
+      "maximum_qc_sum_global_ij_1based": [
+        123,
+        251
+      ],
+      "median_qc_sum_eligible": 3.4194481258964515e-05,
+      "median_qc_sum_global_ij_1based": [
+        37,
+        196
+      ],
+      "selected_by_rule": false
+    }
+  ],
+  "selection": {
+    "selected": true,
+    "rule": "earliest eligible frame (20 s before 40 s); among strict eligible liquid profiles, median of sequential-f64 sum(qc) ascending; equal sums break by global row-major (j,i); median index N//2",
+    "selected_time_index": 1,
+    "selected_valid_time": "2025-07-19_00:00:20",
+    "selected_global_ij_1based": [
+      71,
+      101
+    ],
+    "selected_xland": 2.0,
+    "selected_sum_qc": 2.0380813566589495e-05,
+    "selected_frame_eligible_count": 10907,
+    "frozen_input_npz": "native_liquid_input_2026-10-03.npz",
+    "frozen_input_npz_sha256": "2a18c87a354a79c379e1939463ad9b534215da335ebacd8735cd8b086e554bab"
+  },
+  "limitations": [
+    "selection is a liquid optical-input admission search only; not an S2 unit/calibration or physical-number approval",
+    "no downstream DSD output, RTTOV, FD, BT, or cost value informed selection",
+    "no model data were acquired or substituted",
+    "The census executor was inline and is not archived as a hashed script; the full input rule, reader revision/hash, source forecast hash and frozen profile are retained. Global counts require the private source forecast to replay."
+  ],
+  "scope": {
+    "rttov_runs": 0,
+    "physical_number_basis_resolved": false,
+    "accepted_observation_cost": false,
+    "operational_approval": false
+  },
+  "post_selection_size_check": {
+    "performed_after_input_frozen": true,
+    "operator_source_revision": "ff08c56",
+    "python": "3.10.11",
+    "torch": "2.13.0",
+    "dry_number": true,
+    "fixed_observation_density": true,
+    "active_qc_levels_1based": [
+      3,
+      4,
+      5
+    ],
+    "reff_liquid_micrometres": [
+      3.020323303836551,
+      3.19753624264584,
+      3.494942520426108
+    ],
+    "nonzero_nc_size_jvp_levels": 3,
+    "rttov_runs": 0
+  }
+}
