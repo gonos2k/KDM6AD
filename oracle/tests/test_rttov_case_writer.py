@@ -438,6 +438,60 @@ _SURF = {
 }
 
 
+def test_zero_wind_fetch_only_with_solar_disabled():
+    from kdm6.obs.rttov_case_writer import _validate_surface
+    import copy
+    surface = copy.deepcopy(_SURF)
+    surface["near_surface"]["wind_fetch"] = 0.0
+    _validate_surface(surface, 1, solar_enabled=False)
+    with pytest.raises(ValueError, match="wind_fetch"):
+        _validate_surface(surface, 1)
+    surface["near_surface"]["wind_fetch"] = -1.0
+    with pytest.raises(ValueError, match="wind_fetch"):
+        _validate_surface(surface, 1, solar_enabled=False)
+
+
+def test_copied_case_uses_staged_interface_count(tmp_path):
+    from kdm6.obs.rttov_case_writer import _patch_config_counts
+    path = tmp_path / "rttov_test.txt"
+    path.write_text("defn%nprofiles=6\ndefn%nchannels=96\ndefn%nlevels=70\ndefn%realprec=3\n")
+    _patch_config_counts(path, 1, 9, 64)
+    assert "defn%nlevels=64" in path.read_text()
+    assert "defn%nprofiles=1" in path.read_text()
+    assert "defn%nchannels=9" in path.read_text()
+
+
+@needs_fixture
+def test_writer_zero_fetch_reads_executed_solar_flag(tmp_path):
+    import copy
+    fixture = tmp_path / "fixture"
+    shutil.copytree(_FIX, fixture)
+    path = fixture / "out/rttov_test.txt"
+    base = re.sub(r"(?mi)^\s*defn%opts%rt_all%solar\s*=.*\n", "", path.read_text())
+    base = re.sub(r"(?m)(defn%nlevels\s*=\s*)\d+", r"\g<1>777", base)
+    surface = copy.deepcopy(_SURF)
+    surface["near_surface"]["wind_fetch"] = 0.0
+    t, q = _fixture_tq()
+    inp = _rttov_input_from_arrays(t, q, surface=surface)
+    def config(flags):
+        return re.sub(r"(?m)^/\s*$", lambda _: "defn%opts%rt_all%solar=" + flags + "\n/", base)
+    path.write_text(config(".FALSE."))
+    out = tmp_path / "valid"
+    write_rttov_case(inp, out, fixture_case_dir=fixture)
+    assert f"defn%nlevels={inp.nlayers+1}" in (out / "out/rttov_test.txt").read_text().replace(" ", "")
+    assert re.search(r"s0%wind_fetch\s*=\s*0\.0", (out / "in/profiles/001/sfc/01/near_surface.txt").read_text())
+    for i, flags in enumerate((".TRUE.", ".FALSE.\n defn%opts%rt_all%solar=.MAYBE.",
+                               ".FALSE.\n defn%opts%rt_all%solar=.TRUE.,")):
+        path.write_text(config(flags))
+        rejected = tmp_path / f"rejected{i}"
+        with pytest.raises(ValueError, match="wind_fetch"):
+            write_rttov_case(inp, rejected, fixture_case_dir=fixture)
+        assert not rejected.exists()
+    path.write_text(base + "\n defn%opts%rt_all%solar=.FALSE.\n")
+    with pytest.raises(ValueError, match="wind_fetch"):
+        write_rttov_case(inp, tmp_path / "outside_namelist", fixture_case_dir=fixture)
+
+
 @needs_fixture
 def test_surface_overlay_writes_skin_and_near_surface(tmp_path):
     """A surface dict overlays sfc/NN/skin.txt (&skin k0%...) + near_surface.txt
