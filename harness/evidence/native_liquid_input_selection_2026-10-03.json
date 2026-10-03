@@ -216,12 +216,33 @@
   "limitations": [
     "selection is a liquid optical-input admission search only; not an S2 unit/calibration or physical-number approval",
     "no downstream DSD output, RTTOV, FD, BT, or cost value informed selection",
-    "no model data were acquired or substituted"
+    "no model data were acquired or substituted",
+    "The census executor was inline and is not archived as a hashed script; the full input rule, reader revision/hash, source forecast hash and frozen profile are retained. Global counts require the private source forecast to replay."
   ],
   "scope": {
     "rttov_runs": 0,
     "physical_number_basis_resolved": false,
     "accepted_observation_cost": false,
     "operational_approval": false
+  },
+  "post_selection_size_check": {
+    "performed_after_input_frozen": true,
+    "operator_source_revision": "ff08c56",
+    "python": "3.10.11",
+    "torch": "2.13.0",
+    "dry_number": true,
+    "fixed_observation_density": true,
+    "active_qc_levels_1based": [
+      3,
+      4,
+      5
+    ],
+    "reff_liquid_micrometres": [
+      3.020323303836551,
+      3.19753624264584,
+      3.494942520426108
+    ],
+    "nonzero_nc_size_jvp_levels": 3,
+    "rttov_runs": 0
   }
 }

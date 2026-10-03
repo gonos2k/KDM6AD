@@ -3,7 +3,10 @@ import pytest
 import torch
 import numpy as np
 from pathlib import Path
+import sys
 
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
 from harness.replay_supported_native_nccn import parse_trace
 from kdm6 import coordinator as coord
 from kdm6.runtime import _state_to_coord, _build_coord_forcing
@@ -98,7 +101,7 @@ def test_dry_basis_rejects_implicit_or_live_observation_density():
 
 
 def test_input_selected_native_liquid_retains_nc_size_sensitivity():
-    path = Path(__file__).resolve().parents[2] / "harness/evidence/native_liquid_input_2026-10-03.npz"
+    path = ROOT / "harness/evidence/native_liquid_input_2026-10-03.npz"
     with np.load(path) as a:
         assert int(a["global_i_1based"]) == 71 and int(a["global_j_1based"]) == 101
         state = State(*(torch.tensor(x, dtype=torch.float64)[None, :] for x in a["state"]))

@@ -30,7 +30,7 @@ Do not extend that arithmetic to NC/NI/NR or add a new framework.
   volume number/mass with the fixed observation measure and passes native-input
   size JVP/VJP/FD and profile tests. This resolves the discovered representation
   gap, not empirical calibration, all process budgets or a coupled qv Jacobian.
-- [ ] C5: With that physical contract, validate actual number-to-size/optical
+- [ ] C5: Once the S2 physical contract is resolved, validate number-to-size/optical
   inputs and then S11 using retained native model/observation data. An empty
   liquid observation support is a failure, not accepted zero cost.
   A liquid input is now frozen by the [input-only rule](native_liquid_input_selection_2026-10-03.json)
