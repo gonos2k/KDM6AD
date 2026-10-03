@@ -417,8 +417,10 @@ def model_to_rttov_tensors(leaves, forcing, cfg, xland=None,
             raise ValueError("entry_qv must match forcing rho shape, dtype and device")
         if entry_qv.dtype != torch.float64:
             raise ValueError("entry_qv is supported only in float64")
-        if not bool(torch.isfinite(entry_qv).all()) or bool((entry_qv <= -1).any()):
-            raise ValueError("entry_qv must be finite and greater than -1")
+        # Value-only input validation; density arithmetic remains in the AD map.
+        with torch.no_grad():
+            if not bool(torch.isfinite(entry_qv).all()) or bool((entry_qv <= -1).any()):
+                raise ValueError("entry_qv must be finite and greater than -1")
         rho_d = forcing.rho / (1.0 + entry_qv)
     q_model = qv_to_q_ppmv_moist(qv_model, gas_units=cfg.gas_units,
                                  qv_convention=cfg.qv_convention)

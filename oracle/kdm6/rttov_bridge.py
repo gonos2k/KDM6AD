@@ -135,8 +135,10 @@ def require_dry_air_density(rho_d, ref: torch.Tensor, *, live=False) -> torch.Te
         raise ValueError("live entry density is supported only in float64")
     if rho_d.requires_grad and not live:
         raise ValueError("rho_d must be frozen before the observation/DA evaluation")
-    if not bool(torch.isfinite(rho_d).all()) or bool((rho_d <= 0).any()):
-        raise ValueError("rho_d must be finite and positive")
+    # Value-only input validation; return the original live tensor unchanged.
+    with torch.no_grad():
+        if not bool(torch.isfinite(rho_d).all()) or bool((rho_d <= 0).any()):
+            raise ValueError("rho_d must be finite and positive")
     return rho_d
 
 
