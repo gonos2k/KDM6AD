@@ -1,0 +1,110 @@
+{
+  "status": "NUMERICAL_PASS",
+  "h": 0.0001,
+  "nc_direction": "0.01*NC; all other state/forcing held fixed",
+  "jvp_bt_K": [
+    -2.452498959483175e-27,
+    -2.8401171005801194e-21,
+    -1.416684280685081e-09,
+    -0.0010392934770842258,
+    -0.00048747540050504446,
+    -0.000833599262650203,
+    -0.0009740110018428005,
+    -0.0010801985220079472,
+    -0.00037332500338534494
+  ],
+  "fd_bt_K": [
+    0.0,
+    0.0,
+    -1.7053025658242404e-09,
+    -0.0010392932381364517,
+    -0.00048747551772976294,
+    -0.0008335993584296375,
+    -0.0009740108453115681,
+    -0.001080198614999972,
+    -0.000373325121927337
+  ],
+  "max_norm_relative_error": 2.671900159205137e-07,
+  "duality_lhs": -0.001453686554604537,
+  "duality_rhs": -0.001453686554604537,
+  "duality_difference": 0.0,
+  "duality_relative_error": 0.0,
+  "nonzero_nc_bt_sensitivity": true,
+  "nonzero_radiance_supported_nc_bt_sensitivity": true,
+  "base_quality": [
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  ],
+  "plus_quality": [
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  ],
+  "minus_quality": [
+    [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  ],
+  "quality_unchanged": true,
+  "accepted_observation_cost": false,
+  "physical_number_basis_resolved": false,
+  "source_sha256": "760c7e4b0e3270dd68b36cfcba263094dc80a203c2ae8fe6ddd63d3ff871ad6a",
+  "profile_sha256": "7915ef9bc9fab4983ab47776c1a3345384c21f09bddc2a6d540d36c4755194d4",
+  "fixture_source_hashes": {
+    "in/channels.txt": "0619baeba1031a46dd7b7441ddda55534bac06b7ade0973a97c9f54e21fd6074",
+    "in/coef.txt": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+    "in/lprofiles.txt": "3246915ade2b7c7b645d559d237be146dfebbe05f1d7db79336c602544df1e44",
+    "in/profiles/001/angles.txt": "964ad347010b0daf7a38fe53b3bd1574c0302c42f9c85534c3a86dae42f60402",
+    "in/profiles/001/angles.txt.disabled_fixture_placeholder": "404be0e0afbde7711548489d7bed17a0ff0ac049a80d0f793fb454be21c629a7",
+    "in/profiles/001/atm/co2.txt": "19d5eb79fbcf11ed37727549189b53f45e826797b562dbcda46d2099b9782b30",
+    "in/profiles/001/atm/deff_param.txt": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0",
+    "in/profiles/001/atm/hydro.txt": "3683f83ed4540f66da6fa1bb1ad54eef093bbf96b3be7232f3e1788067ab1bd4",
+    "in/profiles/001/atm/hydro_deff.txt": "9d311d4732955c118bc720df0a67c5d949024eaf75fc950ed2892694ca4e0c07",
+    "in/profiles/001/atm/hydro_frac.txt": "9d7589519d546cf98e3357eb3a30f035edaf3c4d2f9be150a7f3b0f6f1bf1cb8",
+    "in/profiles/001/atm/mmr_hydro_aer.txt": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c",
+    "in/profiles/001/atm/o3.txt": "70ee77849437926a71a07c21f9c47e382ff3d94270a02d05753c17f357429078",
+    "in/profiles/001/atm/p.txt": "eacd140945700fccafcf606a63509cedeff83113f1493545569714a26befb2fc",
+    "in/profiles/001/atm/p_half.txt": "55a7dd797232ee7aa41c45f393bf13b0fdce8f6b2ddab789e78370c185b7931f",
+    "in/profiles/001/atm/q.txt": "a5fe69de84611eef39d53ae7b4ac4a5b0ce8778a97e9157912c1ab1cf641d427",
+    "in/profiles/001/atm/simple_cloud.txt.disabled_fixture_placeholder": "4cb129317ade83978b1f98ec3e0cdca9346b81a8b7734503725ba9a0e42ccdcb",
+    "in/profiles/001/atm/t.txt": "b03a613e25a909a14508e49a03e69b735abaf0fcf861e63977dfa5de70bdf8cc",
+    "in/profiles/001/be.txt": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1",
+    "in/profiles/001/datetime.txt": "3838e0134bc6aa095c0ab7e542a1a6467a3c8b64c1823239db7d56e826897e13",
+    "in/profiles/001/gas_units.txt": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555",
+    "in/profiles/001/prof_id.txt": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793",
+    "in/profiles/001/sfc/01/near_surface.txt": "666e970cb30ed1a359491706580e0cdf8c619fad5b1d012d74da6d86e8f37cb5",
+    "in/profiles/001/sfc/01/skin.txt": "cfd317346f597bdc030bc8f38028b25d9d5d53a2d2d904ee5dae2508b7c17630",
+    "in/profiles/001/sfc.disabled_fixture_placeholder/01/near_surface.txt": "42b1342406950c6b2a578f880e63edf50399f03dbfe1a43cff5bb55c8ce086af",
+    "in/profiles/001/sfc.disabled_fixture_placeholder/01/skin.txt": "d021c3373a57a513127af55c6d367c40cea7885b9e96309afde1a5c9033107ee",
+    "out/env.sh": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+    "out/rttov_test.txt": "374f10e2b87fbe95f9f0783971c443f4d516c40241b848fa213dae6d2353d381",
+    "out/run.sh": "96c2e53a0ca2586c3b58c7975937b535a24bfe967c02f6da0272fa4b088dc484",
+    "out/run.sh.disabled_pending_root_review": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+    "preexecution_provenance.json": "2bdbd0f6056cd17c92f7074065b79299d6d5d75a1c3e018640d68950e0265cdf"
+  }
+}

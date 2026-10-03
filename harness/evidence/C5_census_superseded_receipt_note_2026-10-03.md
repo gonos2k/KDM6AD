@@ -1,0 +1,7 @@
+# C5 coefficient-support v1 receipt byte history
+
+The first completed NumPy-reduction census emitted receipt SHA256 `63b2d92798ce71d15e607902f7b602901ad13e891cb4a1fbbc041649184735e3`. Its receipt, stdout file and selected-profile NPZ were overwritten before they were copied to versioned filenames. The first-run stdout summary observed in the session reported 8,317 and 7,873 sea candidates, 4,329 and 4,226 passing profiles, and selected `(j=157,i=73)` at 20 seconds. The exact first-run stdout and selected NPZ bytes are not preserved, and no byte-identity claim is made for them.
+
+The archived v1 Python source, receipt, stdout and selected NPZ instead refer to the provenance-complete NumPy-reduction rerun. Its receipt SHA256 is `379132b2381fd4d51fb5444bebdf943285ef66f2d11a9a6d46cb1757e2a983d6`; its stdout SHA256 is `a802782140b36cd702dece58a41041b6bbe6de996e5ae2043b31d68f2b964713`; and its selected NPZ SHA256 is `73e833a0f6aef50db62c488556d2bab7a63c173414b6740121dd1490c863c9e3`. The reconstructed v1 Python source hash-verifies against the v1 receipt's recorded script SHA256 `e9ccf69ae8f8fc270c0db3f28d3416eaa3112b0b0e901ce2e57007f17ac27b69`.
+
+The v2 census replaces NumPy profile reductions and gas factors with an embedded Fortran `map_profiles` helper, which calls installed `rttov_layeravg`, applies the moist-to-dry factor in `jprv`, and maps T/Q/O3/CO2 with Fortran `SUM`. It reuses the frozen v4 input gate and ordering. V2 output artifacts have separate filenames; no RTTOV radiance, BT, FD, or K call is made here.

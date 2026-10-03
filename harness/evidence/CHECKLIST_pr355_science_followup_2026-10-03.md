@@ -37,7 +37,19 @@ Do not extend that arithmetic to NC/NI/NR or add a new framework.
   and its NC/size derivative is checked. The [actual RTTOV baseline](REPORT_C5_liquid_baseline_2026-10-03.md)
   now executes and returns BT/K, but coefficient/solver flags leave **0/9**
   accepted channels. No independent derivative/reference or accepted cost is
-  claimed. Empirical
+  claimed. A [global input-only coefficient census](REPORT_C5_coefficient_support_2026-10-03.md)
+  now freezes a supported sea candidate (73,157), before new radiative output.
+  Its [actual BT/NC derivative and observed-support diagnostic](REPORT_C5_supported_liquid_BT_2026-10-03.md)
+  now pass the bounded numerical gates after correcting output serialization:
+  7/9 Delta-Eddington channels survive the combined mask, and DOM 8/16/32 each
+  have 9/9 radiance support. DOM 64 is unsupported by the installed table.
+  The following C5 subitems are resolved; full scientific approval remains OPEN.
+  - [x] Input-only native liquid selection and coherent dry-number DSD/optics.
+  - [x] Actual BT/K and unchanged-mask NC JVP/VJP/independent FD.
+  - [x] Actual nonempty observation support and frozen-support score derivative.
+  - [x] Bounded solver comparison and explicit unsupported 64-stream failure.
+  - [ ] Original threshold calibration, physical solver/optical accuracy and
+    accepted observation error/cost policy. Empirical
   threshold calibration and the coupled density/DA contract remain unresolved.
 
 Use mathematical dimensions and budgets, meteorological validity and native
