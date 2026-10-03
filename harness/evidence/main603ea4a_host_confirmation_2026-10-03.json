@@ -1,0 +1,68 @@
+{
+  "schema": "KDM6AD_MAIN_603EA4A_PRIVATE_HOST_CONFIRMATION_COMPACT_V1",
+  "purpose": "Compact reproducibility summary for the exact merged zero-only fp64 NCCN return-map candidate in the private native host.",
+  "candidate": {
+    "commit": "603ea4a681faf3822915cbf4f9f6f2c61cd758cf",
+    "tracked_libtorch_subtree_clean": true,
+    "checkout_note": "An unrelated untracked science-follow-up checklist is present in the source checkout; it was not a libtorch input and was left untouched.",
+    "runtime_cpp_sha256": "84358f6c1ec080130187b335fcf46d47d0070388aed4a22e5d55cb159b099ea3",
+    "c_api_cpp_sha256": "3285bb3c87b2162a6d6a85e51e75d31693cbbf14fa5daaf7bdecc5766aecca3b"
+  },
+  "build": {
+    "configuration": "Fresh CMake Release build; KDM6_ENABLE_TEST_HOOKS=OFF; no substep dump flag.",
+    "c_abi_test": "Passed ctest -R ^c_abi$.",
+    "installed_library_sha256": "b1ffad40b1b14d356744069cecfb976d18c51062cb74f046ec7d1704156f7172",
+    "build_tree_library_sha256": "6683535a04d4ea3ee8d674c038251bc97112d45eda8642d02b149aa221044685",
+    "native_wrapper_source_sha256": "3e2b282dcd8b00e41d23c8fd0365c09da5a60b7da47b0d6506330430573a2282",
+    "native_wrapper_preprocessed_sha256": "ac2aa1a4c5dc098ffeb335d83c02c18a64439d6eed717db9a42018fccfb743c9",
+    "native_wrapper_object_sha256": "1bd0142200b890f5c37001e77cd038d0a5572a3835b4017ec0e234fd334905f3",
+    "iso_source_sha256": "5e8a38b4c24d47a89d8c108014dc0e4073cff236db19f19a21913cbfb1cc6dea",
+    "iso_object_sha256": "e4108901afdc3e49ba43c3f704a581a5a0a60dc47258c90a18c476a99ed0158c",
+    "host_executable_sha256": "a1a0c4b394e8141ea65b23da4d47cc8fde927115cb4667ecf1a4f8e567cabefa",
+    "host_dynamic_dependency": "@rpath/libkdm6_c.2.dylib resolves to the isolated fresh install prefix; the operational install was not changed."
+  },
+  "configuration": {
+    "mp_physics": 337,
+    "selector": 2,
+    "dry_number": 1,
+    "normalized_ice": 1,
+    "run_duration_seconds": 40,
+    "dt_seconds": 20,
+    "saved_model_times": [
+      "2025-07-19_00:00:00",
+      "2025-07-19_00:00:20",
+      "2025-07-19_00:00:40"
+    ],
+    "mpi_ranks": 1,
+    "thread_limits": 1,
+    "local_interface": "en0",
+    "ad_fd_probe": "disabled in both runs",
+    "instrumentation": "S1 tile-call logger is the only OFF/ON change; logger is read-only and ON logged two tiles at each of timesteps 1 and 2."
+  },
+  "results": {
+    "off_run_completed": true,
+    "on_run_completed": true,
+    "forecast_sha256_off": "be0edb894d1ddc5996f925cf01d56d1d882b53d6ed0295566edac2cb60f31308",
+    "forecast_sha256_on": "be0edb894d1ddc5996f925cf01d56d1d882b53d6ed0295566edac2cb60f31308",
+    "previous_candidate_forecast_sha256": "be0edb894d1ddc5996f925cf01d56d1d882b53d6ed0295566edac2cb60f31308",
+    "strict_all_frame_comparison": {
+      "frames": 3,
+      "numeric_variables": 253,
+      "time_character_variable": 1,
+      "different_values": 0,
+      "times_equal": true,
+      "off_on_pass": true,
+      "merged_commit_vs_previous_candidate_pass": true
+    },
+    "energy_sha256_off": "e8251c4bd2bf8556b66c81f9079371d176815ddbdd8b3752f9dd13601e90c72e",
+    "energy_sha256_on": "e8251c4bd2bf8556b66c81f9079371d176815ddbdd8b3752f9dd13601e90c72e",
+    "energy_equal": true
+  },
+  "evidence_detail": "Full private receipt: host_confirmation_603ea4a_2026-10-03.json (maintained under the isolated /private/tmp confirmation root).",
+  "scope": {
+    "new_native_fp64_fd_probe": false,
+    "physical_number_basis_resolved": false,
+    "accepted_observation_cost": false,
+    "operational_approval": false
+  }
+}
