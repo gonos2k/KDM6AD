@@ -112,6 +112,53 @@ def test_density_validation_rejects_missing_nonfinite_negative_shape_and_live_gr
         model_to_rttov_tensors(col, forc_col, cfg)
 
 
+@pytest.mark.parametrize(
+    "tangent_values", [(0.0, 0.0), (0.01, -0.02)], ids=["zero", "nonzero"])
+def test_frozen_density_rejects_forward_dual_even_if_zero(tangent_values):
+    state, forcing = _state(), _forcing()
+    rho_d = torch.tensor([[1.0, 0.8]], dtype=F64)
+    tangent = torch.tensor([tangent_values], dtype=F64)
+
+    with pytest.raises(ValueError, match="frozen"):
+        torch.func.jvp(
+            lambda rho: rttov_cloud_profile(
+                state, forcing, rho_d=rho, dry_number=True,
+                live_density=False).clw,
+            (rho_d,), (tangent,),
+        )
+
+
+def test_live_density_jvp_keeps_analytic_content_tangent():
+    state, forcing = _state(), _forcing()
+    rho_d = torch.tensor([[1.0, 0.8]], dtype=F64)
+    tangent = torch.tensor([[0.03, -0.04]], dtype=F64)
+
+    _, dclw = torch.func.jvp(
+        lambda rho: rttov_cloud_profile(
+            state, forcing, rho_d=rho, dry_number=True,
+            live_density=True).clw,
+        (rho_d,), (tangent,),
+    )
+
+    torch.testing.assert_close(dclw, (state.qc * tangent) * 1000.0,
+                               rtol=1.0e-15, atol=0.0)
+
+
+def test_constant_frozen_density_allows_state_jvp():
+    state, forcing = _state(), _forcing()
+    rho_d = torch.tensor([[1.0, 0.8]], dtype=F64)
+    qc_tangent = torch.ones_like(state.qc)
+
+    _, dclw = torch.func.jvp(
+        lambda qc: rttov_cloud_profile(
+            state._replace(qc=qc), forcing, rho_d=rho_d,
+            dry_number=True).clw,
+        (state.qc,), (qc_tangent,),
+    )
+
+    assert torch.equal(dclw, 1000.0 * rho_d * qc_tangent)
+
+
 def _cloud_profile_cfg(rho_d):
     return RttovProfileConfig(
         gas_units=2, qv_convention="mixing_ratio_kgkg_dry", cloud=True,
