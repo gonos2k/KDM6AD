@@ -330,7 +330,7 @@ def _surface_for_profile(surface, p: int):
     return surface[p] if isinstance(surface, (list, tuple)) else surface
 
 
-def _validate_surface(surface, nprof: int) -> None:
+def _validate_surface(surface, nprof: int, *, solar_enabled: bool = True) -> None:
     """Validate RttovInputConfig.surface BEFORE any FS mutation (reject-don't-drop): a
     dict (broadcast) or a list of ``nprof`` dicts, each ``{'skin': {...}, 'near_surface':
     {...}}`` carrying EXACTLY the &skin (surftype/watertype/t/salinity/foam_fraction/
@@ -408,8 +408,9 @@ def _validate_surface(surface, nprof: int) -> None:
             raise ValueError(
                 f"surface.near_surface q2m {ns['q2m']} must be in [50, 2e5] ppmv MOIST "
                 "(gas_units=2, profile Q units) -- pass ppmv, NOT kg/kg or g/kg.")
-        if float(ns["wind_fetch"]) <= 0.0:
-            raise ValueError("surface.near_surface wind_fetch must be > 0 m.")
+        fetch = float(ns["wind_fetch"])
+        if fetch < 0.0 or (solar_enabled and fetch == 0.0):
+            raise ValueError("surface.near_surface wind_fetch must be >= 0 m, and > 0 when solar is enabled.")
 
 
 def _overlay_surface(profile_dir: Path, surface: dict) -> None:
@@ -744,12 +745,14 @@ def _check_grid_matches_fixture(profile_dir: Path, p_half_model, p_lay_model=Non
                 "its explicit native p.txt when present.")
 
 
-def _patch_config_counts(config_path: Path, nprofiles: int, nchannels_total: int) -> None:
+def _patch_config_counts(config_path: Path, nprofiles: int, nchannels_total: int,
+                         nlevels: int) -> None:
     """Rewrite copied-case counts and test-driver decimal output precision.
 
     RTTOV reads the profile/channel count from this namelist (not from the
     ``in/`` directory listing), so a trimmed case whose namelist still says
     ``nprofiles=6`` fails because the reader expects six lines. ``realprec``
+    Interface count must also follow the staged layer grid. ``realprec``
     controls only emitted decimal formatting; 12 prevents live FD output from
     being quantized at 0.001 K and does not change binary arithmetic precision.
     """
@@ -760,10 +763,11 @@ def _patch_config_counts(config_path: Path, nprofiles: int, nchannels_total: int
     text, n2 = re.subn(r"(?m)^(\s*defn%nchannels\s*=\s*)\d+", rf"\g<1>{nchannels_total}", text)
     text, n3 = re.subn(r"(?m)^(\s*defn%realprec\s*=\s*)\d+",
                        rf"\g<1>{_RTTOV_OUTPUT_REALPREC}", text)
-    if n1 != 1 or n2 != 1 or n3 != 1:
+    text, n4 = re.subn(r"(?m)^(\s*defn%nlevels\s*=\s*)\d+", rf"\g<1>{nlevels}", text)
+    if n1 != 1 or n2 != 1 or n3 != 1 or n4 != 1:
         raise ValueError(
             f"{config_path}: expected one defn%nprofiles, defn%nchannels and "
-            f"defn%realprec line (found {n1}/{n2}/{n3}); cannot retarget copied case.")
+            f"defn%realprec/defn%nlevels line (found {n1}/{n2}/{n3}/{n4}); cannot retarget copied case.")
     config_path.write_text(text)
 
 
@@ -841,7 +845,6 @@ def write_rttov_case(rttov_input, out_case_dir, *, fixture_case_dir=None, overwr
             "RttovInput config requires at least one channel "
             "(an empty RTTOV case is not executable).")
     _validate_geometry(getattr(cfg, "geometry", None), rttov_input.nprofiles)
-    _validate_surface(getattr(cfg, "surface", None), rttov_input.nprofiles)
     # Every solar id must be a REQUESTED channel -- reject an out-of-run id at the
     # earliest gate rather than silently dropping it via the requested-intersection
     # below (reject-don't-drop; merge_solar_observable also catches it, but later).
@@ -887,6 +890,18 @@ def write_rttov_case(rttov_input, out_case_dir, *, fixture_case_dir=None, overwr
     if not fixture.is_dir():
         raise FileNotFoundError(
             f"RTTOV fixture case not found: {fixture} (set AD_RTTOV_HOME / install ami/501).")
+    # RTTOV only requires fetch for solar sea glint. Permit its zero initializer
+    # only for an explicitly solar-disabled case; absent/duplicate flags fail closed.
+    nml = re.fullmatch(r"\s*&rttov_test_nml\s*\n(.*?)^\s*/\s*",
+                      (fixture / "out" / "rttov_test.txt").read_text(), re.M | re.I | re.S)
+    body = nml.group(1) if nml is not None else ""
+    solar_flags = re.findall(
+        r"^\s*defn%opts%rt_all%solar\s*=\s*([^!\n]+)",
+        body, re.M | re.I)
+    solar_off = (nml is not None and not re.search(r"^\s*/\s*$", body, re.M)
+                 and [v.strip().rstrip(",").strip().upper() for v in solar_flags] == [".FALSE."])
+    _validate_surface(getattr(cfg, "surface", None), rttov_input.nprofiles,
+                      solar_enabled=not solar_off)
     _validate_disjoint_case_paths(out, fixture)
     if out.exists():
         if not overwrite:
@@ -1048,7 +1063,8 @@ def _populate_case(out: Path, rttov_input, cfg, is_cloud: bool, solar_channels=(
     # in/profiles/NNN/, so removing the extra profile dirs already drops them; only
     # the top-level channels/lprofiles + namelist counts need retargeting.
     nchannels_total = _write_channels_lprofiles(out / "in", nprof, rttov_input.config.channels)
-    _patch_config_counts(out / "out" / "rttov_test.txt", nprof, nchannels_total)
+    _patch_config_counts(out / "out" / "rttov_test.txt", nprof, nchannels_total,
+                         rttov_input.nlayers + 1)
     return out / "out"
 
 
