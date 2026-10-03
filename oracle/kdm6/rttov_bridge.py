@@ -123,16 +123,22 @@ def freeze_dry_air_density(background: State, forcing: Forcing) -> torch.Tensor:
     return require_dry_air_density(rho_d, background.qv)
 
 
-def require_dry_air_density(rho_d, ref: torch.Tensor) -> torch.Tensor:
-    """Require an explicit, fixed, positive dry-air measure on the model grid."""
+def require_dry_air_density(rho_d, ref: torch.Tensor, *, live=False) -> torch.Tensor:
+    """Validate a fixed measure, or an explicitly supplied live entry measure."""
+    if not isinstance(live, bool):
+        raise ValueError("live density selection must be a bool")
     if not isinstance(rho_d, torch.Tensor):
         raise ValueError("rho_d is required: pass frozen dry-air density on the model grid")
     if rho_d.shape != ref.shape or rho_d.device != ref.device or rho_d.dtype != ref.dtype:
         raise ValueError("rho_d must match the model field shape, dtype and device")
-    if rho_d.requires_grad:
+    if live and rho_d.dtype != torch.float64:
+        raise ValueError("live entry density is supported only in float64")
+    if rho_d.requires_grad and not live:
         raise ValueError("rho_d must be frozen before the observation/DA evaluation")
-    if not bool(torch.isfinite(rho_d).all()) or bool((rho_d <= 0).any()):
-        raise ValueError("rho_d must be finite and positive")
+    # Value-only input validation; return the original live tensor unchanged.
+    with torch.no_grad():
+        if not bool(torch.isfinite(rho_d).all()) or bool((rho_d <= 0).any()):
+            raise ValueError("rho_d must be finite and positive")
     return rho_d
 
 
@@ -146,7 +152,7 @@ def dsd_diagnostics(state: State, forcing: Forcing,
                     xland: "torch.Tensor | None" = None,
                     ncmin_land: float = 0.0,
                     ncmin_sea: float = 0.0, *, rho_d=None,
-                    dry_number: bool = False) -> DsdDiagnostics:
+                    dry_number: bool = False, live_density: bool = False) -> DsdDiagnostics:
     """Compute the scheme-consistent DSD diagnostics by RUNNING the scheme's
     own preamble (slopes, avedia) on the given state — no re-derivation.
 
@@ -157,11 +163,15 @@ def dsd_diagnostics(state: State, forcing: Forcing,
 
     dry_number=True declares stored QN per kg dry air and number thresholds
     per m3. rho_d is the frozen observation measure; never infer it from trial
-    qv. This does not select a microphysics variant or certify its Jacobian.
+    qv. live_density=True is reserved for an explicit shared entry measure;
+    it preserves that measure's tangent. This does not select a microphysics
+    variant or certify its Jacobian.
     """
     if not isinstance(dry_number, bool):
         raise ValueError("dry_number must be a bool")
-    rho_d = require_dry_air_density(rho_d, state.qv)
+    if live_density and not dry_number:
+        raise ValueError("live entry density requires dry_number=True")
+    rho_d = require_dry_air_density(rho_d, state.qv, live=live_density)
     moment_state = state
     if dry_number:
         moment_state = state._replace(
@@ -238,14 +248,14 @@ def rttov_cloud_profile(state: State, forcing: Forcing,
                         xland: "torch.Tensor | None" = None,
                         ncmin_land: float = 0.0,
                         ncmin_sea: float = 0.0, *, rho_d=None,
-                        dry_number: bool = False) -> RttovCloudProfile:
+                        dry_number: bool = False, live_density: bool = False) -> RttovCloudProfile:
     """Map the DSD diagnostics onto RTTOV VIS/IR all-sky cloud profile variables.
 
     Pure tensor ops — the RTTOV-K adjoint composes with this operator's VJP
     via torch.autograd (chain: lambda_BT -> RTTOV-K -> lambda_profile ->
     THIS operator's VJP -> lambda_{q*,n*} -> Handle.vjp; design §9.3)."""
     d = dsd_diagnostics(state, forcing, xland, ncmin_land, ncmin_sea,
-                        rho_d=rho_d, dry_number=dry_number)
+                        rho_d=rho_d, dry_number=dry_number, live_density=live_density)
     KG2G = 1.0e3      # kg/m^3 -> g/m^3
     M2UM = 1.0e6      # m -> micron
     return RttovCloudProfile(

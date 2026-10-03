@@ -1,0 +1,24 @@
+{
+  "selection": "fixed prior input-selected73,157; next chronological retained40s frame, before BT/FD",
+  "profile_sha256": "a7b01753b9de2835c9834e48f931452a1df5707e87c87e84a1820b8685510385",
+  "source_sha256": "8ce84fabf8016d053c4f55e3167004f0d055f01d39517fc18c8da9993eaa580f",
+  "forecast_sha256": "be0edb894d1ddc5996f925cf01d56d1d882b53d6ed0295566edac2cb60f31308",
+  "time_index": 2,
+  "global_i": 73,
+  "global_j": 157,
+  "surface": {
+    "TSK": 299.0932922363281,
+    "T2": 295.8963928222656,
+    "Q2": 0.016491759568452835,
+    "U10": -0.9824239611625671,
+    "V10": 2.357853412628174,
+    "HGT": 0.0,
+    "XLAND": 2.0,
+    "LANDMASK": 0.0,
+    "SEAICE": 0.0
+  },
+  "reference_bg_layers": 24,
+  "native_levels": 39,
+  "radiance_evaluated": false,
+  "scope": "fixed forcing20s KDM diagnostic; not native60s forecast; no observationcost approval"
+}

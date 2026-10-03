@@ -1,0 +1,6 @@
+{
+  "first_attempt": "writer grid mismatch before RTTOV; old20s fixture P/P_HALF was not updated",
+  "retry": "same40s native profile and coordinate; copied fixture, replacedP/P_HALF withsource40s arrays",
+  "model_or_tolerance_change": false,
+  "engine_executed_first_attempt": false
+}
