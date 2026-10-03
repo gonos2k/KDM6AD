@@ -188,7 +188,7 @@ def test_overlay_roundtrips_fixture_tq(tmp_path):
     assert lpro == ["1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1"]
     # authoritative namelist counts patched to (nprofiles=1, nchannels=1*16).
     assert _namelist_counts(tmp_path / "case") == (1, 16)
-    assert re.search(r"(?m)^\s*defn%realprec\s*=\s*12\s*$",
+    assert re.search(r"(?m)^\s*defn%realprec\s*=\s*17\s*$",
                      (tmp_path / "case" / "out" / "rttov_test.txt").read_text())
 
 

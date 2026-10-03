@@ -1,0 +1,11 @@
+STOP 1
+ 2026/10/03  15:30:22  fatal error in module ../../src/main/rttov_check_options.F90:0667
+     DOM nstreams exceeds the number of Legendre coefficients in the hydrometeor optical parameter file
+ 2026/10/03  15:30:22  fatal error in module ../../src/main/rttov_direct.F90:0276
+     
+ 2026/10/03  15:30:22  fatal error in module ../../src/test/rttov_test.F90:0417
+     
+ 2026/10/03  15:30:22  fatal error in module ../../src/test/rttov_test.F90:0300
+     
+ 2026/10/03  15:30:22  fatal error in module ../../src/test/rttov_test.F90:0300:0318
+     

@@ -24,7 +24,11 @@ error model, masks or thresholds to the resulting residuals.
 
 For `delta nc=0.01*nc`, compare the optical-map tangent/K contraction and VJP
 with independent value-only endpoints at `h=1e-4`. Report channel differences,
-vector max-norm relative discrepancy and output quantization; numerical failure
+vector max-norm relative discrepancy and output quantization. The bounded NC
+diagnostic uses the existing 1e-5 FD relative criterion and a 1e-12 duality
+criterion, requires a nonzero NC-to-BT tangent on radiance-supported channels and unchanged BASE/plus/minus
+radiance quality. These numerical gates are frozen before the next BT/K
+execution; they do not establish physical accuracy. Numerical failure
 must remain failure. Return-branch evidence from NCCN does not certify optical
 or microphysics branches.
 

@@ -1,0 +1,226 @@
+{
+  "census_receipt": "/private/tmp/KDM6AD-c5-native39-prepared-2026-10-03/evidence/c5_rttov_coefficient_support_census_v2_20261003.json",
+  "census_receipt_sha256": "e8ebd8fbc8473138ffe0bd5caed3e809104dca1b408004b14c063d376c306d19",
+  "census_rule_id": "C5_RTTOV_COEFFICIENT_PROFILE_SUPPORT_V4_SEA_IREMIS",
+  "census_rule_sha256": "6d0d116280e75191d0f775aa6a7799f8b5c9b6a3bc7c40790f8336fb8722e051",
+  "engine_executed": false,
+  "files": {
+    "angles_sha256": "964ad347010b0daf7a38fe53b3bd1574c0302c42f9c85534c3a86dae42f60402",
+    "channels": [
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "datetime_sha256": "3838e0134bc6aa095c0ab7e542a1a6467a3c8b64c1823239db7d56e826897e13",
+    "fixture": "/private/tmp/KDM6AD-c5-native39-sea-supported-retry1-20261003/case_template",
+    "near_surface_sha256": "666e970cb30ed1a359491706580e0cdf8c619fad5b1d012d74da6d86e8f37cb5",
+    "nlevels_namelist": 64,
+    "options_sha256": "f54b9f29f40e17f34ad709325346741de4961dc22b95dc1d103ddde76acb3577",
+    "prepared_case": "/private/tmp/KDM6AD-c5-native39-sea-supported-retry1-20261003/prepared_case",
+    "skin_sha256": "cfd317346f597bdc030bc8f38028b25d9d5d53a2d2d904ee5dae2508b7c17630"
+  },
+  "inputs": {
+    "above_model_top_reference_layers": 24,
+    "adk_bt": true,
+    "dry_number": true,
+    "fixed_rho_dry": true,
+    "gas_units": 2,
+    "interfaces": 64,
+    "layers": 63,
+    "mmr_hydro": false,
+    "native_p8w_real4_exact_selected_npz": true,
+    "native_profile_layers": 39,
+    "ncmin_land": 10.0,
+    "ncmin_sea": 10.0,
+    "rttov_profile_fields_P_P_HALF_T_Q_O3_CO2_exact_census_arrays": true,
+    "state_forcing_rho_dry_exact_selected_npz": true,
+    "store_rad": true
+  },
+  "limitations": [
+    "Root review required before RTTOV execution.",
+    "No BT/K/FD output was run for this new input.",
+    "Global S2 physical calibration remains distinct and open.",
+    "This input-domain census excludes known T/Q/O3/CO2 coefficient-envelope failures; it does not predict all ReturnQuality bits, especially Delta-Eddington bit15."
+  ],
+  "native_fd_or_derivative_evaluated": false,
+  "number_optics": {
+    "NC_native_nonzero_levels": 1,
+    "NC_range": [
+      0.0,
+      116721224.0
+    ],
+    "NI_native_nonzero_levels": 0,
+    "frozen_dry_number_basis": true,
+    "native_CFRAC_range": [
+      0.0,
+      0.999999
+    ],
+    "native_HYDRO6_content_g_m3_range": [
+      0.0,
+      0.024091237987402384
+    ],
+    "native_HYDRO7_content_g_m3_range": [
+      0.0,
+      0.0
+    ],
+    "native_HYDRO_DEFF6_um_range": [
+      5.0200000000000005,
+      7.80669453314748
+    ],
+    "native_HYDRO_DEFF7_um_range": [
+      10.0,
+      10.0
+    ],
+    "ncmin_land_sea": 10.0,
+    "rho_dry_range_kg_m3": [
+      0.08833407557366629,
+      1.1526993815117768
+    ]
+  },
+  "observation": {
+    "geometry_method": "nearest KO LCC geolocation from file metadata only; nominal GEO WGS84 ECEF line of sight; modeled nominal geometry, not measured ephemeris.",
+    "image_dn_or_bt_read": false,
+    "l1b_file": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir105_ko020lc_202507190000.nc",
+    "l1b_sha256": "c50356a3614e16d12ff770820000a9e7a1657248b21b94c3a70f0db0e47947af",
+    "model_minus_slot_seconds": 20,
+    "model_valid_time_utc": "2025-07-19 00:00:20",
+    "nearest_pixel_distance_km": 0.7105523299888992,
+    "nominal_orbit": {
+      "earth_center_radius_m": 42164000.0,
+      "sub_longitude_deg": 128.2,
+      "wgs84_a_m": 6378137.0,
+      "wgs84_b_m": 6356752.31414
+    },
+    "nominal_orbit_primary_sources": [
+      "https://nmsc.kma.go.kr/resources/homepage/pdf/210428_GK2A_Fact_Sheets.pdf",
+      "https://datasvc.nmsc.kma.go.kr/resources/common/pdf/%EC%B2%9C%EB%A6%AC%EC%95%88%EC%9C%84%EC%84%B1%202A%ED%98%B8%20%20%EC%9E%90%EB%A3%8C%ED%99%9C%EC%9A%A9%20QA.pdf"
+    ],
+    "nominal_slot_utc": "2025-07-19 00:00:00",
+    "pixel_column_zero_based": 338,
+    "pixel_latitude_deg": 38.67745761709377,
+    "pixel_longitude_deg": 123.35836446076169,
+    "pixel_row_zero_based": 411,
+    "solar_angle_values_basis": "RTTOV initializer zero defaults; source-proved unconsumed because solar is disabled and channels 8-16 are thermal-only",
+    "solar_angles_consumed": false,
+    "solar_azimuth_deg": 0.0,
+    "solar_consumption": {
+      "active_channels": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "rt_all_solar": false,
+      "solar_type_from_installed_coef": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "sun_angle_values_basis": "0 from RTTOV initializer; unconsumed by thermal-only channel set."
+    },
+    "solar_zenith_deg": 0.0,
+    "view_azimuth_deg_clockwise_from_north": 172.27506714706152,
+    "view_zenith_deg": 45.049796380752916,
+    "wrf_cell_latitude_deg": 38.68233871459961,
+    "wrf_cell_longitude_deg": 123.3636474609375
+  },
+  "preparation_attempt_history": "The initial private staging attempt completed profile and writer staging but failed while assembling its receipt due a variable-name error; it executed no RTTOV. The corrected retry1 script created a fresh unique root and completed staging/receipt, with zero unconsumed solar-angle defaults and exact frame_reader source assertions.",
+  "pressure_boundary": {
+    "PSFC_Pa": 100606.1015625,
+    "difference_Pa": -37.2265625,
+    "native_reconstructed_P8W_preserved": true,
+    "p_half_bottom_Pa": 100568.875
+  },
+  "profile_npz": "/private/tmp/KDM6AD-c5-native39-sea-supported-retry1-20261003/evidence/c5_sea_iremis_selected_profile_20261003.npz",
+  "profile_npz_sha256": "7915ef9bc9fab4983ab47776c1a3345384c21f09bddc2a6d540d36c4755194d4",
+  "rttov_y_or_bt_evaluated": false,
+  "selected_npz": "/private/tmp/KDM6AD-c5-native39-prepared-2026-10-03/evidence/c5_rttov_coefficient_support_selected_v2_20261003.npz",
+  "selected_npz_sha256": "73e833a0f6aef50db62c488556d2bab7a63c173414b6740121dd1490c863c9e3",
+  "source": {
+    "forecast_sha256": "be0edb894d1ddc5996f925cf01d56d1d882b53d6ed0295566edac2cb60f31308",
+    "frame_reader_sha256": "232e54391e094cc04aee36a6de743d9b5b01328e298f0be1c41a566b47de6995",
+    "model_profile_builder_sha256": "41b2110880284bf4b8047533f340761399f0a3ab582e3c5484881bfbe982f508",
+    "prep_script": "/private/tmp/KDM6AD-c5-native39-prepared-2026-10-03/evidence/prepare_selected_c5_profile_retry1_20261003.py",
+    "prep_script_sha256": "ad117f45c32d51246028fb99f8ed0d3919dfcca8993209e60c9a1668c426f7c6",
+    "profile_builder_used_exact_state_forcing": true,
+    "rttov_case_writer_sha256": "bab67765b5f0c4491e342e52c72b21ea2c412b69581f78419d14e4241c22183e",
+    "rttov_input_builder_sha256": "902e1554eb6e4f699d74cc770059daad847b3b35ad0dd9516d02cae35ad280a6",
+    "writer_head": "b85cb089de8749179199cc62a93c6a9c734c807d",
+    "writer_repo": "/private/tmp/KDM6AD-dry-number-optics"
+  },
+  "status": "PREPARED_INPUTS_ONLY_PENDING_ROOT_REVIEW",
+  "surface": {
+    "IREMIS": 2,
+    "Q2_ppmv_moist": 25854.671631451653,
+    "RTTOV_near_surface": {
+      "q2m": 25854.671631451653,
+      "t2m": 295.9731140136719,
+      "wind_fetch": 0.0,
+      "wind_u10m": -0.9600009322166443,
+      "wind_v10m": 2.3663442134857178
+    },
+    "RTTOV_skin": {
+      "fastem": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "foam_fraction": 0.0,
+      "salinity": 0.0,
+      "snow_fraction": 0.0,
+      "surftype": 1,
+      "t": 299.093017578125,
+      "watertype": 1
+    },
+    "same_c2_frame_surface": {
+      "HGT": 0.0,
+      "ISLTYP": 14.0,
+      "IVGTYP": 17.0,
+      "LANDMASK": 0.0,
+      "LU_INDEX": 17.0,
+      "PSFC": 100606.1015625,
+      "Q2": 0.016507726162672043,
+      "SEAICE": 0.0,
+      "SST": 299.0927429199219,
+      "T2": 295.9731140136719,
+      "TSK": 299.093017578125,
+      "U10": -0.9600009322166443,
+      "V10": 2.3663442134857178,
+      "XLAND": 2.0
+    },
+    "sea_scope": {
+      "LANDMASK": 0.0,
+      "SEAICE": 0.0,
+      "XLAND": 2.0
+    },
+    "unused_initializer_fields": "salinity, foam_fraction, snow_fraction, FASTEM, wind_fetch remain initialized/unused for thermal-only IREMIS; no solar channels."
+  },
+  "winner": {
+    "flat_b": 36576,
+    "global_i_1based": 73,
+    "global_j_1based": 157,
+    "sum_qc": 2.139174466719851e-05,
+    "time_index_zero_based": 1,
+    "valid_time_utc": "2025-07-19_00:00:20",
+    "xland": 2.0
+  }
+}

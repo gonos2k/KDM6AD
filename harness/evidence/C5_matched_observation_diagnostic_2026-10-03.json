@@ -1,0 +1,137 @@
+{
+  "status": "NONEMPTY_LIQUID_OBSERVATION_DIAGNOSTIC",
+  "pixel_zero_based": [
+    411,
+    338
+  ],
+  "calibration_sha256": "f519149e3ea3538866bad9f3e28cc0ddef741b6b4cdbf8febb7988aff6c08d40",
+  "channels": [
+    {
+      "channel": "wv063",
+      "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_wv063_ko020lc_202507190000.nc",
+      "sha256": "ecd9d3ae1c899b3bef20a870f01393631365a694b802cd78dd2708130451e1d3",
+      "bt_K": 240.25002368278427,
+      "obs_quality": 0.0
+    },
+    {
+      "channel": "wv069",
+      "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_wv069_ko020lc_202507190000.nc",
+      "sha256": "8bf7f25a5f8e5ecad17d8433bc835819c6a8ab5db06f7305e8d61139ec613cfb",
+      "bt_K": 255.22010155668121,
+      "obs_quality": 0.0
+    },
+    {
+      "channel": "wv073",
+      "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_wv073_ko020lc_202507190000.nc",
+      "sha256": "37095ec9805eafa4d928e7e77c6906a1557d61d22c90c965fd758d07862f404c",
+      "bt_K": 264.13619119637843,
+      "obs_quality": 0.0
+    },
+    {
+      "channel": "ir087",
+      "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir087_ko020lc_202507190000.nc",
+      "sha256": "a4cec04e51982e7c0b8d4da7dd8cef3f244b692a51fa7c4a7e86b5ca16618f1e",
+      "bt_K": 281.8632688064316,
+      "obs_quality": 0.0
+    },
+    {
+      "channel": "ir096",
+      "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir096_ko020lc_202507190000.nc",
+      "sha256": "e115d5e88eac27769fd43b79cdca51ea789ac4eab0cf3ea33a5622f7e7c14040",
+      "bt_K": 259.5791163642437,
+      "obs_quality": 0.0
+    },
+    {
+      "channel": "ir105",
+      "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir105_ko020lc_202507190000.nc",
+      "sha256": "c50356a3614e16d12ff770820000a9e7a1657248b21b94c3a70f0db0e47947af",
+      "bt_K": 284.5845734439225,
+      "obs_quality": 0.0
+    },
+    {
+      "channel": "ir112",
+      "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir112_ko020lc_202507190000.nc",
+      "sha256": "1df480537f95d25aa44236f65a52b9a8746354e6ae322ad154ecae5b84d149ca",
+      "bt_K": 286.55874794976995,
+      "obs_quality": 0.0
+    },
+    {
+      "channel": "ir123",
+      "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir123_ko020lc_202507190000.nc",
+      "sha256": "74bed1daf0da6c1bfe4e2a321fc4c986e70083b76d50f6af60af9e97b366bf72",
+      "bt_K": 285.2791766828346,
+      "obs_quality": 0.0
+    },
+    {
+      "channel": "ir133",
+      "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir133_ko020lc_202507190000.nc",
+      "sha256": "08729e98bcf155b9c52bcd679597799814aa967c6e250f1df00fe3d5d9adc600",
+      "bt_K": 271.33556751639685,
+      "obs_quality": 0.0
+    }
+  ],
+  "base_bt_K": [
+    [
+      242.64755322611458,
+      253.09595388249906,
+      263.0754827320998,
+      289.3265241438073,
+      259.7298299351727,
+      291.66614104121993,
+      291.2832235293557,
+      288.37881214998583,
+      273.1209395794518
+    ]
+  ],
+  "base_radiance_quality": [
+    [
+      32768.0,
+      32768.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ]
+  ],
+  "combined_mask": [
+    [
+      0.0,
+      0.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ]
+  ],
+  "eligible_observation_channels": 7,
+  "sigma_K": 1.0,
+  "huber_delta": 1.0,
+  "error_model": "fixed equal-unit diagnostic scale; not calibrated observation covariance",
+  "diagnostic_huber_score": 22.22637179897479,
+  "bt_cotangent": [
+    [
+      0.0,
+      0.0,
+      -1.0,
+      1.0,
+      0.15071357092898552,
+      1.0,
+      1.0,
+      1.0,
+      1.0
+    ]
+  ],
+  "nc_direction_score_tangent_K_contract": -0.004577512629580343,
+  "accepted_observation_cost": false,
+  "physical_number_basis_resolved": false,
+  "full_s11_accuracy_approval": false,
+  "diagnostic_score_fd": -0.004577512306980225,
+  "diagnostic_score_jvp_fd_relative_error": 7.047498163280553e-08,
+  "support_frozen_for_score_fd": true
+}

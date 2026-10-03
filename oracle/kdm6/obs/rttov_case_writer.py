@@ -38,7 +38,7 @@ _AMI501_FIXTURE = "external/rttov14/src/rttov_test/tests.1.gfortran-openmp/ami/5
 _AMI_CLOUD_FIXTURE = "external/rttov14/src/rttov_test/tests.1.gfortran-openmp/ami/cloud"
 _NHYDRO = 8            # hydro.txt columns (7 hydrotable types + Baran)
 _NHYDRO_DEFF = 7       # hydro_deff.txt columns (nhydro - 1, Baran has no Deff)
-_RTTOV_OUTPUT_REALPREC = 12  # copied test-driver decimal format; binary precision is independent
+_RTTOV_OUTPUT_REALPREC = 17  # binary64 round-trip output; binary arithmetic is independent
 _LIQ_COL = 5           # 0-based: slot 6 = CLW-Deff liquid
 _ICE_COL = 6           # 0-based: slot 7 = Baum ice
 # RttovInput.profile cloud keys -> (matrix, column). content [g/m^3], Deff [micron].
@@ -751,10 +751,10 @@ def _patch_config_counts(config_path: Path, nprofiles: int, nchannels_total: int
 
     RTTOV reads the profile/channel count from this namelist (not from the
     ``in/`` directory listing), so a trimmed case whose namelist still says
-    ``nprofiles=6`` fails because the reader expects six lines. ``realprec``
-    Interface count must also follow the staged layer grid. ``realprec``
-    controls only emitted decimal formatting; 12 prevents live FD output from
-    being quantized at 0.001 K and does not change binary arithmetic precision.
+    ``nprofiles=6`` fails because the reader expects six lines. Interface count
+    must also follow the staged layer grid. ``realprec`` controls only emitted
+    decimal formatting; 17 preserves binary64 BT/K values for independent
+    finite differences and does not change binary arithmetic precision.
     """
     if not config_path.is_file():
         raise FileNotFoundError(f"fixture config missing {config_path}")

@@ -1,0 +1,15 @@
+frame=1 candidates=8317 coefficient_pass=4329 field_profile_failures={'T': 0, 'Water_vapour': 3988, 'Ozone': 0, 'CO2': 0}
+frame=2 candidates=7873 coefficient_pass=4226 field_profile_failures={'T': 0, 'Water_vapour': 3647, 'Ozone': 0, 'CO2': 0}
+{
+  "selected": true,
+  "time_index_zero_based": 1,
+  "valid_time_utc": "2025-07-19_00:00:20",
+  "global_j_1based": 157,
+  "global_i_1based": 73,
+  "xland": 2.0,
+  "sum_qc": 2.139174466719851e-05,
+  "passing_profiles_in_selected_frame": 4329,
+  "median_index_zero_based": 2164,
+  "rank_rule": "earliest frame with support; median of ascending sequential-f64 sum(qc), tie row-major (j,i)"
+}
+receipt /private/tmp/KDM6AD-c5-native39-prepared-2026-10-03/evidence/c5_rttov_coefficient_support_census_v2_20261003.json sha256 e8ebd8fbc8473138ffe0bd5caed3e809104dca1b408004b14c063d376c306d19

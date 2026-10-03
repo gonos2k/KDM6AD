@@ -1,0 +1,76 @@
+{
+  "candidate_admission": {
+    "active_liquid": "exists native k with qc>1e-15 and rho_dry*nc>ncmin(xland), ncmin_land=10 and ncmin_sea=10 from the exact C2 namelist.",
+    "coefficient_domain_gate": "For each strict active-liquid profile, build the same native39 plus declared RTTOV profile004 above-model-top reference background (24 extra layers, same pressure extension/interpolation; source-backed REAL(4) P8W reconstruction retained). Use only the exact currently installed GKOMPSAT-2/AMI coefficient file and active RTTOV options.",
+    "frame_order": "chronological retained C2 frames (20s then 40s); use earliest frame with any eligible candidate",
+    "selection_after_gate": "Within earliest frame having candidates that pass strict active-liquid, sea/IREMIS surface, and all coefficient-support gates, sort by sequential-f64 sum(qc) ascending, tie by global row-major (j,i), and choose median index N//2. Selection uses input arrays only; no BT/FD/K/ReturnQuality/output is used.",
+    "strict_state_support": "all39-level strict exact moment pairs qc/nc, qr/nr, qi/ni, qg/bg; finite state/forcing and original frame-reader numerical preconditions; no synthesized or clipped state.",
+    "surface_scope": {
+      "meaning": "sea/IREMIS case only; land and sea-ice columns are excluded from candidate eligibility and their counts must be reported separately.",
+      "required": {
+        "LANDMASK": "==0",
+        "SEAICE": "==0",
+        "XLAND": ">=1.5"
+      }
+    }
+  },
+  "exact_rttov_coefficient_support_test": {
+    "active_gases": "T and Q are always screened. The exact run has nonempty f_o3=/atm/o3.txt and f_co2=/atm/co2.txt; rttov_test.F90 sets rt_all%o3_data/co2_data true when those paths are nonempty. The installed coefficient carries Mixed_gases, Water_vapour, Ozone, WV_Continuum, and CO2; check only gas profiles actually passed/active under the exact test options, and use coefficient/background convention for fixed gases.",
+    "checked_layer_range": "Use exact `rttov_check_reg_limits` lay_upper:lay_lower range for each input profile, including its coefficient-top extrapolation exclusion and lower-surface bound. Do not check extrapolated top coefficient levels that source excludes.",
+    "failure_policy": "Fail/reject the candidate; do not clamp/humidity-adjust, disable apply_reg_limits, omit active-gas checks, change coefficient, or hide/clear quality flags.",
+    "limit_scales": {
+      "gases": "rttov_init_coef applies env_prfl_gmax*(1+gscale_def) and env_prfl_gmin*(1-gscale_def), gscale_def=0.2",
+      "temperature": "rttov_init_coef applies env_prfl_tmax*(1+tscale_def) and env_prfl_tmin*(1-tscale_def), tscale_def=0.1"
+    },
+    "limit_source": "Coefficient PROFILE_ENVELOPE pressure-dependent values loaded by rttov_read_ascii_coef.F90; v13 profile-level gas limits are averaged to coefficient layers before these default scales.",
+    "limits": "Compare coefficient-layer T/Q/O3/CO2 to the exact pressure-dependent `lim_prfl_tmin/tmax` and `lim_prfl_gmin/gmax` arrays loaded by RTTOV from the coefficient `PROFILE_ENVELOPE` and initialized/scaled by RTTOV source. Accept values equal to a bound; reject any checked value strictly below min or strictly above max, matching source predicates.",
+    "profile_interpolation": "Use actual coefficient pressure-half vector from the selected coefficient file; compute coefficient full/center pressures by `rttov_calc_p_full` arithmetic mean of adjacent half levels. Use `enable_interp=.TRUE.`, `interp_mode=4`; `rttov_intavg_prof` maps modes other than explicit mode2 to Rochon. Run the source-defined `rttov_layeravg` weights in ln(P) for every profile variable.",
+    "unit_conversion": "For each user layer with moist-basis q, compute factor = 1/(1 - Q_moist*1e-6) per rttov_convert_profile_units.F90. Apply Q_dry = Q_moist*factor and the SAME layer factor to every enabled moist-ppmv trace-gas profile (O3 and CO2) before coefficient-layer averaging and bound checks.",
+    "user_profile_units": "input Q in ppmv over moist air (`run_gas_units=2`); `rttov_convert_profile_units` maps to ppmv dry by q_dry=q_moist/(1-q_moist*1e-6). T is K."
+  },
+  "frozen_utc": "2026-10-03",
+  "no_further_candidate_selection_performed": true,
+  "no_rttov_execution_performed_for_this_rule": true,
+  "not_screened_by_this_input_gate": {
+    "delta_eddington_bit15": "This gate cannot certify its absence. The installed source sets it when any Eddington extinction cell exceeds 20; total extinction includes both clear-sky path extinction and hydrometeor extinction. No layer-resolved extinction diagnostics are exposed in the current no-diagnostic RT input path.",
+    "historical_c5": "Do not rewrite previous frozen selection; this is a new rule for any future census only.",
+    "return_quality": "Always retain and report RTTOV ReturnQuality unchanged from any authorized later run; nonzero bit0 or bit15 stays explicit. The current retry produced raw [32769,32769,1,1,1,1,1,1,1]."
+  },
+  "parent_approval_state": "Frozen input-only rule for subsequent census; no new candidate selection or BT/K output has used it.",
+  "red_review_correction": {
+    "action": "Explicitly included same per-layer factor before all trace-gas coefficient-layer interpolation.",
+    "finding": "Moist-to-dry factor applies to O3 and CO2 as well as Q under gas_units=2."
+  },
+  "rule_id": "C5_RTTOV_COEFFICIENT_PROFILE_SUPPORT_V4_SEA_IREMIS",
+  "scope": "Input-only screen for the conditional C5 native 5-km liquid-profile search. It does not certify zero RTTOV ReturnQuality, physical S2 number calibration, D-Eddington support, or observation agreement.",
+  "source_data": {
+    "active_run_options": "/private/tmp/KDM6AD-c5-native39-prepared-2026-10-03/baseline_live_case_retry_20261003/out/rttov_test.txt",
+    "active_run_options_sha256": "f54b9f29f40e17f34ad709325346741de4961dc22b95dc1d103ddde76acb3577",
+    "coefficient_file": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+    "coefficient_sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+    "forecast_path": "/private/tmp/KDM6AD-nccn-zero-merge603ea4a-host-confirm/case/runs/mp337_merge603ea4a_off_0min40s_hist0_20261003_102038_p26153/klfs_lc05_fcst.202507190000",
+    "forecast_sha256": "be0edb894d1ddc5996f925cf01d56d1d882b53d6ed0295566edac2cb60f31308",
+    "input_census_receipt": "/private/tmp/KDM6AD-c5-liquid-input-2026-10-03/evidence/c5_liquid_input_census_2026-10-03.json",
+    "input_census_sha256": "324fd39ceac40ac5c60520b597e311452a5f4037703e0b3a46ed4386a3d85710",
+    "installed_source_sha256": {
+      "rttov_check_reg_limits": "a787634b7dee9ceef45683f3335dde90d0a5554650594eb6bae0a41df25f1864",
+      "rttov_const": "53c1cc5e5f04eb4e4117d7deefc5a16095cf8fd2b92e49111aee8b8c1f046d55",
+      "rttov_convert_profile_units": "785812e86ced00f58224de04a4d9b482b858f0a99fe9d3b492ea06b1d714823f",
+      "rttov_init_coef": "722959a285a71d3cbd6343b88bbebde8c7c927f245327d35f5563756731a70f9",
+      "rttov_intavg_prof": "d9b9c4a4b757de3606599922d59a1ecd4c6be2b43a15ac720e6c09b42f02902f",
+      "rttov_layeravg": "4d2599ffb357e43a7f391886b610cc0a54ce812567bf11b64cd4c661a67438f4",
+      "rttov_populate_profiles_coef": "04288f7fe8385a6644ffcf81d5c68fcaf6e45db43e020af316572a56e770ddfe",
+      "rttov_profiles_internal_mod": "6f61cf9a646c035ac30f111b904a7fdd3389a71a5156755c7359b9bfa451b25e",
+      "rttov_read_ascii_coef": "3d9399934bc42bcd74bd60db9072e1d724d3ec8b95ddd57f1b6068fbcdf13abd",
+      "rttov_test": "308d65c4ff85f0bcf70711d7fbe1a0ae05ac0be393bce466b0758b8667115b20"
+    },
+    "original_selected_column_npz": "/private/tmp/KDM6AD-c5-liquid-input-2026-10-03/evidence/c5_selected_liquid_input.npz",
+    "original_selected_npz_sha256": "2a18c87a354a79c379e1939463ad9b534215da335ebacd8735cd8b086e554bab"
+  },
+  "status": "FROZEN_BEFORE_ANY_FURTHER_CANDIDATE_SELECTION_OR_BT_K_RUN",
+  "supersedes_rule": {
+    "path": "/private/tmp/KDM6AD-c5-native39-prepared-2026-10-03/evidence/c5_rttov_coefficient_support_rule_v3_20261003.json",
+    "reason": "Freeze C5\u2019s explicit sea/IREMIS observation scope before any coefficient-domain census or subsequent candidate selection.",
+    "sha256": "972ffe0b46b002aca94009fd325b4c0142cb06a982a68a917d65cf0f2fecd644"
+  }
+}
