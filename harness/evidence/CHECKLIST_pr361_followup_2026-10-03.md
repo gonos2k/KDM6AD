@@ -18,6 +18,13 @@ No release/deployment or new general-purpose specification framework.
 - [x] Repeat on the next retained input state, fixed before its outputs.
   The 40-second frame uses its own state, forcing, surface and native pressure
   interfaces; failures are retained and no easier replacement was selected.
+- [x] Add a separately implemented C-DISORT comparison of frozen IR105
+  transport and actual NC endpoints. Attribute the thin-layer thermal-source
+  approximation difference; preserve original solver results. This is bounded
+  implementation evidence, not independent optics or physical accuracy approval.
+- [x] Complete the bounded original-source/history search for threshold units
+  and calibration. No documentary basis was recovered; retain that negative
+  result without inventing a convention or changing the thresholds.
 - [ ] Establish original land/sea 100/10 threshold units and empirical calibration.
   Registry units remain blank; the owner clarification is pending. Kernel-volume
   conventions and dimensional algebra are documented, not calibration evidence.
@@ -28,3 +35,7 @@ No release/deployment or new general-purpose specification framework.
 [Implementation and actual evidence](REPORT_shared_entry_density_2026-10-03.md)
 keeps state-input sensitivity separate from named-process attribution, native
 host execution, full DA controls, observation-cost approval and forecast skill.
+
+[Independent transport check](REPORT_independent_DISORT_2026-10-03.md) and
+[calibration provenance audit](REPORT_S2_calibration_provenance_2026-10-03.md)
+add evidence while preserving the two scientific/owner approval items as OPEN.

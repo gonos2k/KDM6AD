@@ -416,3 +416,13 @@ date_modified: 2026-06-25
 - Wiki sync: NONE — GRAPH_REPORT.md kept only in `graphify-out/`, NOT mirrored into `wiki/` per AGENTS.md §146-148. `wiki/index.md` has no `## Graph snapshot` section → untouched (not invented). graph.html skipped (5618 > 5000 viz limit).
 - Caveats: (a) `wiki/graph-report.md` is a PRE-EXISTING raw code-tree mirror dated 2026-07-05 that contradicts AGENTS.md §146-148 — left untouched and NOT refreshed; surfaced for owner decision rather than deleted. (b) Of the 21 removed nodes, 6 names survive under new ids; the remainder are `*_rationale_<n>` comment anchors that re-anchored to different numbers in files that are byte-unchanged (`libtorch/src` is git-clean and `sedimentation.cpp` still matches the SHA pinned by the G3.3-M overlay) — benign, but it makes node-level diffs noisy.
 - Frozen boundary: untouched — this cycle added only harness/docs; no production or reference source changed (C4 remains HOLD on Gate B G3.3-M).
+
+## 2026-10-03 — Independent IR105 transport implementation check
+
+Retained the frozen C5 column and added C-DISORT value/NC endpoint replay.
+Source-specific thin-layer Planck slope suppression explains the original BT
+difference; the isolated common-source experiment confirms the attribution.
+S2 original threshold calibration and S11 physical/error-policy approval remain
+OPEN. See [[Independent IR105 Transport Check]]. Graphify code refresh and
+bounded semantic cache/merge completed; broad/private graph coverage remains
+partial, and large HTML export was skipped. Raw reports stay in graphify-out.
