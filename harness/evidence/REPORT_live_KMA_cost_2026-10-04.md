@@ -38,7 +38,9 @@ RTTOV DOM32 calls, BASE/plus/minus. The preselected C5 sea column `(73,157)` at
 30 files and profile bytes match the existing C5 receipt. KO pixel `(411,338)` is
 decoded with the current source-paired reader, without replacing DN, QC or pixels.
 The prior common seven-channel support is frozen; DOM32 quality is identical
-across all three calls. Sigma=1 K and Huber delta=1 are fixed diagnostic scales.
+across all three calls and is zero for all nine channels. The 7/9 cost support is
+the predeclared common set, not two new quality failures. Sigma=1 K and Huber
+delta=1 are fixed diagnostic scales.
 
 The differentiated path is now executed by the production components:
 
@@ -55,6 +57,22 @@ native NC -> Torch optical profile -> RttovObsOp.apply(live KMA runK)
 | Relative difference | 1.4299017978485989e-8 |
 | Existing criterion | 1e-5 |
 | Fixed supported channels | 7/9 |
+
+J is dimensionless because its BT residuals are divided by sigma in Kelvin. The
+VJP/FD values above are cost derivatives with respect to the dimensionless
+direction parameter, not BT sensitivities in K/control.
+
+The stored direction and NC covector have nonzero support only at native
+top-to-surface index 34 (0-based): v_NC=1167212.24 and
+lambda_NC=-3.857647234334056e-9. The demonstrated active control is this liquid
+layer; independent coverage of all 39 NC elements or the full state Jacobian is
+outside this result. With v=0.01 NC and h=1e-4, endpoint changes are +/-1e-6 NC
+(+/-0.0001%), or +/-116.721224 at the active element. The experiment verifies a
+local derivative rather than the response to a finite 1% NC change.
+
+The same two supported channels (WV073, IR096) stay in the Huber quadratic region,
+and the other five stay in the linear region, for BASE/plus/minus. This verifies
+cost-branch stability for these endpoints; it is not an upstream branch census.
 
 IR105 model BT is 291.879409298424 K and observed BT is 286.160920783162 K,
 leaving 5.718488515262 K. Successful gradient connection does not remove this
