@@ -1,0 +1,60 @@
+{
+  "purpose": "Record the audited calibration-table pairing for the GK-2A AMI calibration JSON without asserting the deleted 2025 FD inputs used this table or SRF version.",
+  "updated_json": "oracle/kdm6/obs/data/gk2a_ami_cal_202507190000.json",
+  "legacy_json_archive": {
+    "path": "harness/evidence/AMI_legacy_nominal_calibration_202507190000.json",
+    "sha256": "f519149e3ea3538866bad9f3e28cc0ddef741b6b4cdbf8febb7988aff6c08d40",
+    "meaning": "Byte-exact copy of the pre-update JSON; channel_center_wavelength and all previous coefficient values are preserved in the updated JSON."
+  },
+  "calibration_source": {
+    "authority": "Korea Meteorological Administration, GK-2A AMI Calibration Table v3.0 (20190415)",
+    "download_url": "https://nmsc.kma.go.kr/homepage/json/base/bbs/selectAtchFile.do?attachFileUsq=40092&refTbUsq=200057",
+    "local_workbook": "/private/tmp/KDM6AD-GK2A-AMI-calibration-v3.0.xlsx",
+    "workbook_sha256": "eb15fa4032322e22a44a0a233451978568a46d5f0eabf783cb9c7212327aa822",
+    "sheet": "coeff.& equation_WN",
+    "channel_rows": "13-22; channel identifier in column B",
+    "center_wavenumber_cells": "C13:C22, cm^-1",
+    "dn_gain_cells": "D13:D22",
+    "dn_offset_cells": "F13:F22",
+    "teff_to_tbb_polynomial_cells": "I13:K22 (c0, c1, c2)",
+    "physical_constants_cells": "S18:S20 (light speed, Planck constant, Boltzmann constant)"
+  },
+  "pairing_check": {
+    "channels_checked": 10,
+    "dn_gain_offset_and_teff_polynomial_match_v3_0": true,
+    "maximum_absolute_difference_for_those_five_values": 0.0,
+    "shared_h_c_k_constants_match_v3_0": true,
+    "center_wavenumbers_added_to_json": true,
+    "nominal_channel_center_wavelength_preserved": true,
+    "original_coefficients_preserved": true,
+    "channels": {
+      "sw038": {"row": 13, "bt_wavenumber_cm1": 2612.67737352111, "nominal_channel_center_wavelength_um": "3.8"},
+      "wv063": {"row": 14, "bt_wavenumber_cm1": 1617.60924253134, "nominal_channel_center_wavelength_um": "6.3"},
+      "wv069": {"row": 15, "bt_wavenumber_cm1": 1441.57542876017, "nominal_channel_center_wavelength_um": "6.9"},
+      "wv073": {"row": 16, "bt_wavenumber_cm1": 1365.24999202444, "nominal_channel_center_wavelength_um": "7.3"},
+      "ir087": {"row": 17, "bt_wavenumber_cm1": 1164.94939285634, "nominal_channel_center_wavelength_um": "8.7"},
+      "ir096": {"row": 18, "bt_wavenumber_cm1": 1039.96021677611, "nominal_channel_center_wavelength_um": "9.6"},
+      "ir105": {"row": 19, "bt_wavenumber_cm1": 966.15338392605497, "nominal_channel_center_wavelength_um": "10.5"},
+      "ir112": {"row": 20, "bt_wavenumber_cm1": 891.71305730126005, "nominal_channel_center_wavelength_um": "11.2"},
+      "ir123": {"row": 21, "bt_wavenumber_cm1": 810.60900787123001, "nominal_channel_center_wavelength_um": "12.3"},
+      "ir133": {"row": 22, "bt_wavenumber_cm1": 753.59062148227804, "nominal_channel_center_wavelength_um": "13.3"}
+    }
+  },
+  "retained_fd_metadata_check": {
+    "path": "/Users/yhlee/AD-RTTOV/data/gk2a/aws_samples/gk2a_ami_le1b_ir087_fd020ge_202302160000.nc",
+    "sha256": "00bb68c190c96cfa9d9b6e35495534c7599c3402bbc31737b601653e1d48ce73",
+    "reported_calibration_table_version": "v.3.0_20190415",
+    "channel_center_wavelength": "8.7",
+    "scope": "This distinct 2023 IR087 file has coefficient metadata consistent with v3.0. It does not establish the calibration or SRF version of the deleted 2025 FD files."
+  },
+  "history_and_limits": {
+    "initial_json_commit": "d0e4ba3 added the table extracted from 2025-07-19 FD originals and noted those downloads were deleted after extraction; no extractor script or raw-file hashes were retained in that commit.",
+    "later_json_commit": "27cfef1 removed null valid-bit placeholder fields; it did not change calibration coefficients.",
+    "v3_1_note": "The current IR133 coefficients match v3.0. KMA v3.1 changes the IR133 SRF-related row, so v3.1 coefficients were not substituted.",
+    "not_established": [
+      "The exact 2025 FD input files or their hashes.",
+      "The calibration-table version or SRF version used by those deleted 2025 files.",
+      "That all retained or historical AMI files use the same calibration/SRF pairing."
+    ]
+  }
+}

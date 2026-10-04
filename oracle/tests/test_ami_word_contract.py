@@ -52,7 +52,7 @@ def test_sw038_14_bit_witness_and_unused_dn_bits():
     dn, q = unpack_ami_word(raw, 14)
     assert dn[0] == 16000 and q[0] == 0
     bt, _ = dn_to_bt(raw, CAL["sw038"], valid_bits=14)
-    assert bt[0] == pytest.approx(284.944, abs=0.001)
+    assert bt[0] == pytest.approx(283.35654418897286, abs=0.001)
     dn12, q12 = unpack_ami_word(raw, 12)
     assert dn12[0] == 3712 and q12[0] == 0
 
@@ -87,9 +87,12 @@ def test_zero_or_nonfinite_pixel_radiance_is_not_a_calibration_repair(offset, ga
     ("light_speed", True), ("Boltzmann_constant_k", 0.0),
 ])
 def test_malformed_calibration_is_refused_separately_from_pixel_qc(name, value):
+    cal = dict(CAL["ir105"], **{name: value})
+    if name == "channel_center_wavelength":
+        cal.pop("bt_wavenumber_cm1", None)  # Exercise the legacy wavelength operand.
     with pytest.raises(ValueError, match="AMI calibration"):
         dn_to_bt(np.array([0x0BB8], dtype=np.uint16),
-                 dict(CAL["ir105"], **{name: value}), valid_bits=13)
+                 cal, valid_bits=13)
 
 
 def test_nonfinite_temperature_from_calibration_is_refused():
@@ -170,9 +173,9 @@ def test_netcdf_variable_width_dqf_and_mask_reach_payload(tmp_path, product, mas
                           endian=endian), product)
     j = AMI_CHANNELS.index("sw038")
     np.testing.assert_array_equal(payload.obs_quality[:, j], [int(masked), 1, 2, 3])
-    assert float(payload.bt[-1, j]) == pytest.approx(284.944, abs=0.001)
+    assert float(payload.bt[-1, j]) == pytest.approx(283.35654418897286, abs=0.001)
     if not masked:
-        np.testing.assert_allclose(payload.bt[:, j], 284.944, atol=.001, rtol=0)
+        np.testing.assert_allclose(payload.bt[:, j], 283.35654418897286, atol=.001, rtol=0)
 
 
 @pytest.mark.parametrize("product", ["ko020lc", "fd020ge"])
@@ -250,3 +253,53 @@ def test_resolver_rejects_ambiguous_channel_files(tmp_path, product):
     resolver = slot_files if product == "ko020lc" else fd_slot_files
     with pytest.raises(ValueError, match="ambiguous AMI channel"):
         resolver(tmp_path, "202507190000", channels=["sw038"])
+
+
+def test_ir105_source_paired_wavenumber_and_legacy_definition_keep_dqf():
+    raw = np.array([3909, 0x4000 | 3909, 0x8000 | 3909, 0xC000 | 3909], dtype=np.uint16)
+    bt, q = dn_to_bt(raw, CAL['ir105'], valid_bits=13)
+    np.testing.assert_allclose(bt, 286.16092078316177, rtol=0., atol=1e-12)
+    np.testing.assert_array_equal(q, [0, 1, 2, 3])
+    legacy = dict(CAL['ir105'])
+    wn = legacy.pop('bt_wavenumber_cm1')
+    old_bt, old_q = dn_to_bt(raw, legacy, valid_bits=13)
+    np.testing.assert_allclose(old_bt, 284.5845734439225, rtol=0., atol=1e-12)
+    np.testing.assert_array_equal(old_q, q)
+    equivalent = dict(legacy, channel_center_wavelength=10000./wn)
+    wavelength_bt, _ = dn_to_bt(raw, equivalent, valid_bits=13)
+    np.testing.assert_allclose(wavelength_bt, bt, rtol=0., atol=1e-12)
+
+
+@pytest.mark.parametrize('wn', [None, 0., -1., np.nan, np.inf, True, '966.15', [966.15]])
+def test_invalid_explicit_bt_wavenumber_never_falls_back(wn):
+    with pytest.raises(ValueError, match='bt_wavenumber_cm1'):
+        dn_to_bt(np.array([3909], dtype=np.uint16),
+                 dict(CAL['ir105'], bt_wavenumber_cm1=wn), valid_bits=13)
+
+
+@pytest.mark.parametrize('explicit', [False, True])
+def test_fd_uses_explicit_or_audited_paired_wavenumber(tmp_path, explicit):
+    nc4 = pytest.importorskip('netCDF4')
+    path = _slot(tmp_path, 'fd020ge')
+    with nc4.Dataset(path, 'a') as ds:
+        if not explicit:
+            ds.delncattr('bt_wavenumber_cm1')
+        else:
+            ds.Teff_to_Tbb_c0 = float(ds.Teff_to_Tbb_c0) + .1
+    result = _read(path, 'fd020ge')
+    expected, quality = dn_to_bt(np.array([16000], dtype=np.uint16),
+                                dict(CAL['sw038'], Teff_to_Tbb_c0=CAL['sw038']['Teff_to_Tbb_c0'] + (.1 if explicit else 0.)),
+                                valid_bits=14)
+    j = AMI_CHANNELS.index('sw038')
+    assert float(result.bt[0, j]) == expected[0]
+    np.testing.assert_array_equal(result.obs_quality[:, j], [0, 1, 2, 3])
+
+
+def test_fd_unknown_coefficient_pair_is_refused(tmp_path):
+    nc4 = pytest.importorskip('netCDF4')
+    path = _slot(tmp_path, 'fd020ge')
+    with nc4.Dataset(path, 'a') as ds:
+        ds.delncattr('bt_wavenumber_cm1')
+        ds.Teff_to_Tbb_c0 = float(ds.Teff_to_Tbb_c0) + .1
+    with pytest.raises(ValueError, match='paired BT wavenumber'):
+        _read(path, 'fd020ge')

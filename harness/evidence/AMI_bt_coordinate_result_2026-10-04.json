@@ -1,0 +1,2254 @@
+{
+  "model_base_plus_minus_radiance_bt_and_residuals": {
+    "ir087": {
+      "base": {
+        "kma_v3_0_source_paired_bt_K": 289.6395448642139,
+        "legacy_ami_bt_K": 287.77440372351964,
+        "pinned_rttov_bt_K": 289.63916403242047,
+        "radiance": 57.96451668575858,
+        "stored_rttov_bt_K": 289.63916403242047
+      },
+      "center_same_radiance_map_offsets_K": {
+        "kma_v3_0_minus_legacy_ami": 1.866574570683838,
+        "pinned_rttov_minus_kma_v3_0": -0.00043065624345217657,
+        "pinned_rttov_minus_legacy_ami": 1.8661439144403857
+      },
+      "minus": {
+        "kma_v3_0_source_paired_bt_K": 289.63954496742423,
+        "legacy_ami_bt_K": 287.7744038267687,
+        "pinned_rttov_bt_K": 289.63916413563186,
+        "radiance": 57.96451680560025,
+        "stored_rttov_bt_K": 289.63916413563186
+      },
+      "model_minus_202507190000_observation_residual_K": {
+        "kma_v3_0_source_paired_coordinate": 5.909701487098459,
+        "legacy_ami_coordinate": 5.91113491708802,
+        "pinned_rttov_coordinate": 5.909751311548462
+      },
+      "plus": {
+        "kma_v3_0_source_paired_bt_K": 289.6395447610039,
+        "legacy_ami_bt_K": 287.77440362027096,
+        "pinned_rttov_bt_K": 289.6391639292093,
+        "radiance": 57.96451656591728,
+        "stored_rttov_bt_K": 289.6391639292093
+      }
+    },
+    "ir096": {
+      "base": {
+        "kma_v3_0_source_paired_bt_K": 259.81430004972583,
+        "legacy_ami_bt_K": 260.019303948546,
+        "pinned_rttov_bt_K": 259.8138828146363,
+        "radiance": 42.403715991666026,
+        "stored_rttov_bt_K": 259.8138828146363
+      },
+      "center_same_radiance_map_offsets_K": {
+        "kma_v3_0_minus_legacy_ami": -0.20502412475559595,
+        "pinned_rttov_minus_kma_v3_0": -0.0004126236789261384,
+        "pinned_rttov_minus_legacy_ami": -0.2054367484345221
+      },
+      "minus": {
+        "kma_v3_0_source_paired_bt_K": 259.8143000982464,
+        "legacy_ami_bt_K": 260.0193039970643,
+        "pinned_rttov_bt_K": 259.81388286315644,
+        "radiance": 42.403716037397146,
+        "stored_rttov_bt_K": 259.81388286315644
+      },
+      "model_minus_202507190000_observation_residual_K": {
+        "kma_v3_0_source_paired_coordinate": 0.44020781023772315,
+        "legacy_ami_coordinate": 0.44018758430229354,
+        "pinned_rttov_coordinate": 0.44020319882713466
+      },
+      "plus": {
+        "kma_v3_0_source_paired_bt_K": 259.81430000120525,
+        "legacy_ami_bt_K": 260.01930390002775,
+        "pinned_rttov_bt_K": 259.81388276611625,
+        "radiance": 42.403715945935026,
+        "stored_rttov_bt_K": 259.81388276611625
+      }
+    },
+    "ir105": {
+      "base": {
+        "kma_v3_0_source_paired_bt_K": 291.8794092984239,
+        "legacy_ami_bt_K": 290.32097018315795,
+        "pinned_rttov_bt_K": 291.8788934446462,
+        "radiance": 92.57190061030141,
+        "stored_rttov_bt_K": 291.8788934446462
+      },
+      "center_same_radiance_map_offsets_K": {
+        "kma_v3_0_minus_legacy_ami": 1.5763473392392484,
+        "pinned_rttov_minus_kma_v3_0": -0.0006191335778567009,
+        "pinned_rttov_minus_legacy_ami": 1.5757282056613917
+      },
+      "minus": {
+        "kma_v3_0_source_paired_bt_K": 291.87940938148733,
+        "legacy_ami_bt_K": 290.3209702664944,
+        "pinned_rttov_bt_K": 291.87889352771157,
+        "radiance": 92.57190073680482,
+        "stored_rttov_bt_K": 291.87889352771157
+      },
+      "model_minus_202507190000_observation_residual_K": {
+        "kma_v3_0_source_paired_coordinate": 5.718488515262152,
+        "legacy_ami_coordinate": 5.736396739235431,
+        "pinned_rttov_coordinate": 5.718591795062309
+      },
+      "plus": {
+        "kma_v3_0_source_paired_bt_K": 291.87940921536057,
+        "legacy_ami_bt_K": 290.32097009982186,
+        "pinned_rttov_bt_K": 291.87889336158116,
+        "radiance": 92.57190048379836,
+        "stored_rttov_bt_K": 291.87889336158116
+      }
+    },
+    "ir112": {
+      "base": {
+        "kma_v3_0_source_paired_bt_K": 291.3705492736708,
+        "legacy_ami_bt_K": 291.4929217476011,
+        "pinned_rttov_bt_K": 291.3695034405871,
+        "radiance": 104.61468409770035,
+        "stored_rttov_bt_K": 291.3695034405871
+      },
+      "center_same_radiance_map_offsets_K": {
+        "kma_v3_0_minus_legacy_ami": -0.12426776682389118,
+        "pinned_rttov_minus_kma_v3_0": -0.001238678155289108,
+        "pinned_rttov_minus_legacy_ami": -0.1255064449791803
+      },
+      "minus": {
+        "kma_v3_0_source_paired_bt_K": 291.37054937096184,
+        "legacy_ami_bt_K": 291.4929218448536,
+        "pinned_rttov_bt_K": 291.36950353788234,
+        "radiance": 104.61468425334095,
+        "stored_rttov_bt_K": 291.36950353788234
+      },
+      "model_minus_202507190000_observation_residual_K": {
+        "kma_v3_0_source_paired_coordinate": 4.936069090724743,
+        "legacy_ami_coordinate": 4.934173797831136,
+        "pinned_rttov_coordinate": 4.936261935796324
+      },
+      "plus": {
+        "kma_v3_0_source_paired_bt_K": 291.37054917638,
+        "legacy_ami_bt_K": 291.4929216503489,
+        "pinned_rttov_bt_K": 291.36950334329185,
+        "radiance": 104.61468394206,
+        "stored_rttov_bt_K": 291.36950334329185
+      }
+    },
+    "ir123": {
+      "base": {
+        "kma_v3_0_source_paired_bt_K": 288.42927154311565,
+        "legacy_ami_bt_K": 288.6613384145086,
+        "pinned_rttov_bt_K": 288.426714089635,
+        "radiance": 113.16111254623826,
+        "stored_rttov_bt_K": 288.426714089635
+      },
+      "center_same_radiance_map_offsets_K": {
+        "kma_v3_0_minus_legacy_ami": -0.23604265413553094,
+        "pinned_rttov_minus_kma_v3_0": -0.0028348940512046283,
+        "pinned_rttov_minus_legacy_ami": -0.23887754818673557
+      },
+      "minus": {
+        "kma_v3_0_source_paired_bt_K": 288.4292716511428,
+        "legacy_ami_bt_K": 288.6613385224066,
+        "pinned_rttov_bt_K": 288.42671419767186,
+        "radiance": 113.16111272054785,
+        "stored_rttov_bt_K": 288.42671419767186
+      },
+      "model_minus_202507190000_observation_residual_K": {
+        "kma_v3_0_source_paired_coordinate": 3.386137514416589,
+        "legacy_ami_coordinate": 3.382161731673989,
+        "pinned_rttov_coordinate": 3.386414954987174
+      },
+      "plus": {
+        "kma_v3_0_source_paired_bt_K": 288.4292714350888,
+        "legacy_ami_bt_K": 288.66133830661056,
+        "pinned_rttov_bt_K": 288.4267139815983,
+        "radiance": 113.16111237192891,
+        "stored_rttov_bt_K": 288.4267139815983
+      }
+    },
+    "ir133": {
+      "base": {
+        "kma_v3_0_source_paired_bt_K": 273.1883349616816,
+        "legacy_ami_bt_K": 273.0282464164712,
+        "pinned_rttov_bt_K": 273.1126859233835,
+        "radiance": 98.15239310587219,
+        "stored_rttov_bt_K": 273.1126859233835
+      },
+      "center_same_radiance_map_offsets_K": {
+        "kma_v3_0_minus_legacy_ami": 0.161718947563827,
+        "pinned_rttov_minus_kma_v3_0": -0.07641493938820076,
+        "pinned_rttov_minus_legacy_ami": 0.08530400817562622
+      },
+      "minus": {
+        "kma_v3_0_source_paired_bt_K": 273.1883349990006,
+        "legacy_ami_bt_K": 273.0282464538263,
+        "pinned_rttov_bt_K": 273.1126859607194,
+        "radiance": 98.1523931601039,
+        "stored_rttov_bt_K": 273.1126859607194
+      },
+      "model_minus_202507190000_observation_residual_K": {
+        "kma_v3_0_source_paired_coordinate": 1.6910484977209421,
+        "legacy_ami_coordinate": 1.692678900074327,
+        "pinned_rttov_coordinate": 1.6918143988110046
+      },
+      "plus": {
+        "kma_v3_0_source_paired_bt_K": 273.188334924363,
+        "legacy_ami_bt_K": 273.0282463791162,
+        "pinned_rttov_bt_K": 273.11268588604764,
+        "radiance": 98.1523930516407,
+        "stored_rttov_bt_K": 273.11268588604764
+      }
+    },
+    "wv073": {
+      "base": {
+        "kma_v3_0_source_paired_bt_K": 263.06208387498185,
+        "legacy_ami_bt_K": 263.59399574902204,
+        "pinned_rttov_bt_K": 263.0619668119928,
+        "radiance": 17.344262122982876,
+        "stored_rttov_bt_K": 263.0619668119928
+      },
+      "center_same_radiance_map_offsets_K": {
+        "kma_v3_0_minus_legacy_ami": -0.5322743838016777,
+        "pinned_rttov_minus_kma_v3_0": -0.0001187220036626968,
+        "pinned_rttov_minus_legacy_ami": -0.5323931058053404
+      },
+      "minus": {
+        "kma_v3_0_source_paired_bt_K": 263.06208387498197,
+        "legacy_ami_bt_K": 263.5939957490222,
+        "pinned_rttov_bt_K": 263.06196681199293,
+        "radiance": 17.344262122982947,
+        "stored_rttov_bt_K": 263.06196681199293
+      },
+      "model_minus_202507190000_observation_residual_K": {
+        "kma_v3_0_source_paired_coordinate": -0.5418329375949043,
+        "legacy_ami_coordinate": -0.5421954473563915,
+        "pinned_rttov_coordinate": -0.5418312785802755
+      },
+      "plus": {
+        "kma_v3_0_source_paired_bt_K": 263.0620838749817,
+        "legacy_ami_bt_K": 263.59399574902193,
+        "pinned_rttov_bt_K": 263.06196681199265,
+        "radiance": 17.34426212298281,
+        "stored_rttov_bt_K": 263.06196681199265
+      }
+    }
+  },
+  "model_configuration": {
+    "all_saved_endpoint_quality_zero": true,
+    "h": 0.0001,
+    "ir133_kma_v3_0_wavenumber_cm1": 753.590621482278,
+    "ir133_pinned_rttov_v3_1_wavenumber_cm1": 752.7924878,
+    "nc_direction": "0.01*NC; all other state/forcing held fixed",
+    "public_dom32_bt_arrays_equal_direct_text_bt": {
+      "base": true,
+      "minus": true,
+      "plus": true
+    },
+    "quality_unchanged": true,
+    "rttov_channel_list": [
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "source_calibration_version_physical_certification": false
+  },
+  "nc_jvp_coordinate_transforms": {
+    "ir087": {
+      "bound_scope": "deterministic derivative-ratio range over retained 3x3 radiances; not uncertainty or a confidence interval",
+      "endpoint_fd_K_per_control": {
+        "kma_v3_0_source_paired": -0.0010321016929992766,
+        "legacy_ami": -0.0010324887966817187,
+        "pinned_rttov": -0.0010321127774659544
+      },
+      "input_jvp_rttov_bt_K_per_control": -0.00103211255122007,
+      "jvp_kma_v3_0_phi_K_per_control": -0.0010321016379662002,
+      "jvp_legacy_phi_K_per_control": -0.0010324889398603035,
+      "kma_v3_0_phi_prime_over_psi_prime": 0.9999894262947807,
+      "legacy_phi_prime_over_psi_prime": 1.0003646779024133,
+      "phi_prime_kma_v3_0_at_model_radiance_K_per_radiance": 0.8612224000558144,
+      "phi_prime_legacy_at_model_radiance_K_per_radiance": 0.8615455785631589,
+      "psi_prime_rttov_at_model_radiance_K_per_radiance": 0.8612315064638894,
+      "rttov_radiance_derivative_from_endpoints_per_control": -0.0011984148429178276,
+      "saved_rttov_fd_K_per_control": -0.0010321127774659544,
+      "window_local_kma_phi_prime_over_psi_prime_range": {
+        "202507190000": [
+          0.9999927412926458,
+          0.9999938689123345
+        ],
+        "202507190002": [
+          0.9999926740132669,
+          0.9999938492635874
+        ]
+      }
+    },
+    "ir096": {
+      "bound_scope": "deterministic derivative-ratio range over retained 3x3 radiances; not uncertainty or a confidence interval",
+      "endpoint_fd_K_per_control": {
+        "kma_v3_0_source_paired": -0.0004852057600146509,
+        "legacy_ami": -0.00048518273843001225,
+        "pinned_rttov": -0.0004852009283240477
+      },
+      "input_jvp_rttov_bt_K_per_control": -0.0004852008995983327,
+      "jvp_kma_v3_0_phi_K_per_control": -0.0004852059023628264,
+      "jvp_legacy_phi_K_per_control": -0.0004851829590660032,
+      "kma_v3_0_phi_prime_over_psi_prime": 1.0000103107073748,
+      "legacy_phi_prime_over_psi_prime": 0.9999630245278927,
+      "phi_prime_kma_v3_0_at_model_radiance_K_per_radiance": 1.0609985993314894,
+      "phi_prime_legacy_at_model_radiance_K_per_radiance": 1.06094842927858,
+      "psi_prime_rttov_at_model_radiance_K_per_radiance": 1.060987659798201,
+      "rttov_radiance_derivative_from_endpoints_per_control": -0.0004573105982785819,
+      "saved_rttov_fd_K_per_control": -0.0004852009283240477,
+      "window_local_kma_phi_prime_over_psi_prime_range": {
+        "202507190000": [
+          1.0000100443709463,
+          1.000010726315625
+        ],
+        "202507190002": [
+          1.0000099456728198,
+          1.0000107120154045
+        ]
+      }
+    },
+    "ir105": {
+      "bound_scope": "deterministic derivative-ratio range over retained 3x3 radiances; not uncertainty or a confidence interval",
+      "endpoint_fd_K_per_control": {
+        "kma_v3_0_source_paired": -0.0008306338372676692,
+        "legacy_ami": -0.0008333626055900822,
+        "pinned_rttov": -0.0008306520271617046
+      },
+      "input_jvp_rttov_bt_K_per_control": -0.0008306519582626558,
+      "jvp_kma_v3_0_phi_K_per_control": -0.0008306343437347432,
+      "jvp_legacy_phi_K_per_control": -0.0008333628623239896,
+      "kma_v3_0_phi_prime_over_psi_prime": 0.999978794334092,
+      "legacy_phi_prime_over_psi_prime": 1.0032635859512131,
+      "phi_prime_kma_v3_0_at_model_radiance_K_per_radiance": 0.6566111911911784,
+      "phi_prime_legacy_at_model_radiance_K_per_radiance": 0.6587680678657173,
+      "psi_prime_rttov_at_model_radiance_K_per_radiance": 0.6566251153640016,
+      "rttov_radiance_derivative_from_endpoints_per_control": -0.0012650323100160676,
+      "saved_rttov_fd_K_per_control": -0.0008306520271617046,
+      "window_local_kma_phi_prime_over_psi_prime_range": {
+        "202507190000": [
+          0.9999836545027203,
+          0.999985236638854
+        ],
+        "202507190002": [
+          0.9999831619971215,
+          0.9999851911108735
+        ]
+      }
+    },
+    "ir112": {
+      "bound_scope": "deterministic derivative-ratio range over retained 3x3 radiances; not uncertainty or a confidence interval",
+      "endpoint_fd_K_per_control": {
+        "kma_v3_0_source_paired": -0.0009729092198540457,
+        "legacy_ami": -0.0009725235372570751,
+        "pinned_rttov": -0.0009729524208523799
+      },
+      "input_jvp_rttov_bt_K_per_control": -0.0009729521658006462,
+      "jvp_kma_v3_0_phi_K_per_control": -0.0009729087270321793,
+      "jvp_legacy_phi_K_per_control": -0.0009725234003155691,
+      "kma_v3_0_phi_prime_over_psi_prime": 0.9999553536443068,
+      "legacy_phi_prime_over_psi_prime": 0.9995593149384439,
+      "phi_prime_kma_v3_0_at_model_radiance_K_per_radiance": 0.6251000779539613,
+      "phi_prime_legacy_at_model_radiance_K_per_radiance": 0.6248525030747375,
+      "psi_prime_rttov_at_model_radiance_K_per_radiance": 0.6251279876404513,
+      "rttov_radiance_derivative_from_endpoints_per_control": -0.0015564047828320327,
+      "saved_rttov_fd_K_per_control": -0.0009729524208523799,
+      "window_local_kma_phi_prime_over_psi_prime_range": {
+        "202507190000": [
+          0.9999642194594198,
+          0.9999667363373169
+        ],
+        "202507190002": [
+          0.9999635229976358,
+          0.9999666402983066
+        ]
+      }
+    },
+    "ir123": {
+      "bound_scope": "deterministic derivative-ratio range over retained 3x3 radiances; not uncertainty or a confidence interval",
+      "endpoint_fd_K_per_control": {
+        "kma_v3_0_source_paired": -0.0010802699534906424,
+        "legacy_ami": -0.0010789801763166906,
+        "pinned_rttov": -0.001080367724171083
+      },
+      "input_jvp_rttov_bt_K_per_control": -0.0010803678148924452,
+      "jvp_kma_v3_0_phi_K_per_control": -0.0010802700647855538,
+      "jvp_legacy_phi_K_per_control": -0.00107898033966733,
+      "kma_v3_0_phi_prime_over_psi_prime": 0.9999095214559856,
+      "legacy_phi_prime_over_psi_prime": 0.9987157380977206,
+      "phi_prime_kma_v3_0_at_model_radiance_K_per_radiance": 0.6197426225075048,
+      "phi_prime_legacy_at_model_radiance_K_per_radiance": 0.6190027171327869,
+      "psi_prime_rttov_at_model_radiance_K_per_radiance": 0.6197987009915525,
+      "rttov_radiance_derivative_from_endpoints_per_control": -0.001743094699691028,
+      "saved_rttov_fd_K_per_control": -0.001080367724171083,
+      "window_local_kma_phi_prime_over_psi_prime_range": {
+        "202507190000": [
+          0.9999230280002369,
+          0.9999272998965635
+        ],
+        "202507190002": [
+          0.9999228786189979,
+          0.9999272998965635
+        ]
+      }
+    },
+    "ir133": {
+      "bound_scope": "deterministic derivative-ratio range over retained 3x3 radiances; not uncertainty or a confidence interval",
+      "endpoint_fd_K_per_control": {
+        "kma_v3_0_source_paired": -0.00037318784507078817,
+        "legacy_ami": -0.0003735505060831201,
+        "pinned_rttov": -0.0003733586595444649
+      },
+      "input_jvp_rttov_bt_K_per_control": -0.00037335843936295245,
+      "jvp_kma_v3_0_phi_K_per_control": -0.0003731876372057545,
+      "jvp_legacy_phi_K_per_control": -0.0003735504565233674,
+      "kma_v3_0_phi_prime_over_psi_prime": 0.9995425249862053,
+      "legacy_phi_prime_over_psi_prime": 1.0005142970940808,
+      "phi_prime_kma_v3_0_at_model_radiance_K_per_radiance": 0.6881373213904737,
+      "phi_prime_legacy_at_model_radiance_K_per_radiance": 0.6888063401051349,
+      "psi_prime_rttov_at_model_radiance_K_per_radiance": 0.6884522711026934,
+      "rttov_radiance_derivative_from_endpoints_per_control": -0.0005423159876727368,
+      "saved_rttov_fd_K_per_control": -0.0003733586595444649,
+      "window_local_kma_phi_prime_over_psi_prime_range": {
+        "202507190000": [
+          0.9995510090393223,
+          0.9995530196782114
+        ],
+        "202507190002": [
+          0.9995504359009572,
+          0.9995527319992763
+        ]
+      }
+    },
+    "wv073": {
+      "bound_scope": "deterministic derivative-ratio range over retained 3x3 radiances; not uncertainty or a confidence interval",
+      "endpoint_fd_K_per_control": {
+        "kma_v3_0_source_paired": -1.4210854715202004e-09,
+        "legacy_ami": -1.4210854715202004e-09,
+        "pinned_rttov": -1.4210854715202004e-09
+      },
+      "input_jvp_rttov_bt_K_per_control": -1.4192543104310496e-09,
+      "jvp_kma_v3_0_phi_K_per_control": -1.419258737351098e-09,
+      "jvp_legacy_phi_K_per_control": -1.420212159327825e-09,
+      "kma_v3_0_phi_prime_over_psi_prime": 1.0000031191873195,
+      "legacy_phi_prime_over_psi_prime": 1.0006748958870413,
+      "phi_prime_kma_v3_0_at_model_radiance_K_per_radiance": 2.030609638508925,
+      "phi_prime_legacy_at_model_radiance_K_per_radiance": 2.0319737504953848,
+      "psi_prime_rttov_at_model_radiance_K_per_radiance": 2.030603304676846,
+      "rttov_radiance_derivative_from_endpoints_per_control": -6.927791673660977e-10,
+      "saved_rttov_fd_K_per_control": -1.4210854715202004e-09,
+      "window_local_kma_phi_prime_over_psi_prime_range": {
+        "202507190000": [
+          1.0000029511210817,
+          1.000003058247741
+        ],
+        "202507190002": [
+          1.000002967529215,
+          1.0000030375590032
+        ]
+      }
+    }
+  },
+  "observed_channel_transform_and_window_statistics": {
+    "ir087": {
+      "kma_v3_0_source_paired_wavenumber_cm1": 1164.94939285634,
+      "legacy_nominal_wavelength_um": 8.7,
+      "pinned_rttov_band_offset_K": 0.1143843963,
+      "pinned_rttov_band_slope": 0.9996773307,
+      "pinned_rttov_channel": 11,
+      "pinned_rttov_wavenumber_cm1": 1164.949393,
+      "slots": {
+        "202507190000": {
+          "bt_from_mean_radiance_K": {
+            "kma_v3_0_source_paired": 284.060810754485,
+            "legacy_ami": 282.19427492241874,
+            "pinned_rttov": 284.06038221911956
+          },
+          "decoder_quality_counts": {
+            "0": 9
+          },
+          "kma_v3_0_minus_legacy_bt_range_K": {
+            "max": 1.8665972365175776,
+            "mean": 1.8665295690740007,
+            "min": 1.8663875220122463,
+            "std_ddof0": 7.284051996789529e-05
+          },
+          "kma_v3_0_source_paired_bt_stats_K": {
+            "max": 285.0683110568718,
+            "mean": 284.0588094569196,
+            "min": 283.51336979046357,
+            "std_ddof0": 0.5375739319609801
+          },
+          "kma_v3_0_source_paired_bt_window_K": [
+            [
+              283.8378366943457,
+              283.59462369684377,
+              283.51336979046357
+            ],
+            [
+              283.8378366943457,
+              283.72984337711546,
+              283.72984337711546
+            ],
+            [
+              285.0683110568718,
+              284.8824050879196,
+              284.3352153372555
+            ]
+          ],
+          "legacy_ami_bt_stats_K": {
+            "max": 283.20192353485953,
+            "mean": 282.19227988784564,
+            "min": 281.646772553946,
+            "std_ddof0": 0.5376466516104632
+          },
+          "legacy_ami_bt_window_K": [
+            [
+              281.97127422111004,
+              281.7280347202659,
+              281.646772553946
+            ],
+            [
+              281.97127422111004,
+              281.8632688064316,
+              281.8632688064316
+            ],
+            [
+              283.20192353485953,
+              283.0159867591438,
+              282.468715367312
+            ]
+          ],
+          "netcdf_missing_pixel_count": 0,
+          "pinned_rttov_bt_stats_K": {
+            "max": 285.06788946665216,
+            "mean": 284.0583810132764,
+            "min": 283.51293779000184,
+            "std_ddof0": 0.5375775344733795
+          },
+          "pinned_rttov_bt_window_K": [
+            [
+              283.83740672140493,
+              283.59419219695377,
+              283.51293779000184
+            ],
+            [
+              283.83740672140493,
+              283.729412720872,
+              283.729412720872
+            ],
+            [
+              285.06788946665216,
+              284.88198216078496,
+              284.33478862054056
+            ]
+          ],
+          "raw_radiance_window": [
+            [
+              51.48333191033426,
+              51.222680118865995,
+              51.135796188376574
+            ],
+            [
+              51.48333191033426,
+              51.367486669681696,
+              51.367486669681696
+            ],
+            [
+              52.8155521778387,
+              52.612823006696715,
+              52.01911614835235
+            ]
+          ],
+          "rttov_minus_kma_v3_0_bt_range_K": {
+            "max": -0.0004215902196165189,
+            "mean": -0.00042844364326002606,
+            "min": -0.0004320004617284212,
+            "std_ddof0": 3.6031447233659674e-06
+          },
+          "window_good_pixel_count": 9,
+          "window_radiance_stats": {
+            "max": 52.8155521778387,
+            "mean": 51.72306720001803,
+            "min": 51.135796188376574,
+            "std_ddof0": 0.5807972795638014
+          }
+        },
+        "202507190002": {
+          "bt_from_mean_radiance_K": {
+            "kma_v3_0_source_paired": 284.08919426227015,
+            "legacy_ami": 282.2226619822994,
+            "pinned_rttov": 284.08876591248804
+          },
+          "decoder_quality_counts": {
+            "0": 9
+          },
+          "kma_v3_0_minus_legacy_bt_range_K": {
+            "max": 1.8665945152573045,
+            "mean": 1.8665252978569558,
+            "min": 1.8663715659163245,
+            "std_ddof0": 7.830291287319943e-05
+          },
+          "kma_v3_0_source_paired_bt_stats_K": {
+            "max": 285.1610864922234,
+            "mean": 284.0869625228048,
+            "min": 283.5404646242195,
+            "std_ddof0": 0.5677251770292845
+          },
+          "kma_v3_0_source_paired_bt_window_K": [
+            [
+              283.75685687876296,
+              283.6216879558385,
+              283.5404646242195
+            ],
+            [
+              283.85132449278154,
+              283.770359833394,
+              283.74335139375165
+            ],
+            [
+              285.1610864922234,
+              284.9621371887361,
+              284.37539384553565
+            ]
+          ],
+          "legacy_ami_bt_stats_K": {
+            "max": 283.29471492630705,
+            "mean": 282.22043722494783,
+            "min": 281.6738701089622,
+            "std_ddof0": 0.5678033579894973
+          },
+          "legacy_ami_bt_window_K": [
+            [
+              281.89028528482385,
+              281.75510179660563,
+              281.6738701089622
+            ],
+            [
+              281.9847635673916,
+              281.9037897397431,
+              281.8767783074667
+            ],
+            [
+              283.29471492630705,
+              283.0957318818713,
+              282.5088994113593
+            ]
+          ],
+          "netcdf_missing_pixel_count": 0,
+          "pinned_rttov_bt_stats_K": {
+            "max": 285.1606655785593,
+            "mean": 284.08653427527884,
+            "min": 283.54003279014586,
+            "std_ddof0": 0.5677290038513885
+          },
+          "pinned_rttov_bt_window_K": [
+            [
+              283.7564263926479,
+              283.62125662374336,
+              283.54003279014586
+            ],
+            [
+              283.8508946057758,
+              283.7699294325177,
+              283.74292082251424
+            ],
+            [
+              285.1606655785593,
+              284.96171483191335,
+              284.37496739969174
+            ]
+          ],
+          "raw_radiance_window": [
+            [
+              51.39644797984484,
+              51.251641429029135,
+              51.164757498539714
+            ],
+            [
+              51.49781256541583,
+              51.41092863492641,
+              51.381967324763266
+            ],
+            [
+              52.91691676340969,
+              52.699706937186136,
+              52.06255811359706
+            ]
+          ],
+          "rttov_minus_kma_v3_0_bt_range_K": {
+            "max": -0.0004209136640724864,
+            "mean": -0.0004282475260121525,
+            "min": -0.0004318340736517712,
+            "std_ddof0": 3.827467861298051e-06
+          },
+          "window_good_pixel_count": 9,
+          "window_radiance_stats": {
+            "max": 52.91691676340969,
+            "mean": 51.7536374718569,
+            "min": 51.164757498539714,
+            "std_ddof0": 0.613831004373907
+          }
+        }
+      }
+    },
+    "ir096": {
+      "kma_v3_0_source_paired_wavenumber_cm1": 1039.96021677611,
+      "legacy_nominal_wavelength_um": 9.6,
+      "pinned_rttov_band_offset_K": 0.08642352307,
+      "pinned_rttov_band_slope": 0.9997313302,
+      "pinned_rttov_channel": 12,
+      "pinned_rttov_wavenumber_cm1": 1039.960217,
+      "slots": {
+        "202507190000": {
+          "bt_from_mean_radiance_K": {
+            "kma_v3_0_source_paired": 259.5643699499251,
+            "legacy_ami": 259.7693854768247,
+            "pinned_rttov": 259.5639553151686
+          },
+          "decoder_quality_counts": {
+            "0": 9
+          },
+          "kma_v3_0_minus_legacy_bt_range_K": {
+            "max": -0.20498670801765684,
+            "mean": -0.20501524157524878,
+            "min": -0.20502918889280863,
+            "std_ddof0": 1.5141398238353914e-05
+          },
+          "kma_v3_0_source_paired_bt_stats_K": {
+            "max": 260.1697262012238,
+            "mean": 259.56359829810185,
+            "min": 259.2596703108179,
+            "std_ddof0": 0.3246275864235332
+          },
+          "kma_v3_0_source_paired_bt_window_K": [
+            [
+              259.41219024804764,
+              259.2787539785416,
+              259.2596703108179
+            ],
+            [
+              259.43123127613046,
+              259.3740922394881,
+              259.3359729348194
+            ],
+            [
+              260.1697262012238,
+              260.05662832172817,
+              259.7541191721203
+            ]
+          ],
+          "legacy_ami_bt_stats_K": {
+            "max": 260.37471290924145,
+            "mean": 259.76861353967723,
+            "min": 259.4646994997107,
+            "std_ddof0": 0.3246124462572684
+          },
+          "legacy_ami_bt_window_K": [
+            [
+              259.61721266895785,
+              259.48378232835904,
+              259.4646994997107
+            ],
+            [
+              259.6362528421634,
+              259.5791163642437,
+              259.54099875552976
+            ],
+            [
+              260.37471290924145,
+              260.2616205832714,
+              259.95912590561727
+            ]
+          ],
+          "netcdf_missing_pixel_count": 0,
+          "pinned_rttov_bt_stats_K": {
+            "max": 260.1693053488076,
+            "mean": 259.56318371092954,
+            "min": 259.25925890954625,
+            "std_ddof0": 0.3246242134546625
+          },
+          "pinned_rttov_bt_window_K": [
+            [
+              259.4117772195321,
+              259.27834237271117,
+              259.25925890954625
+            ],
+            [
+              259.4308180456891,
+              259.3736796158092,
+              259.3355607172919
+            ],
+            [
+              260.1693053488076,
+              260.05620861009,
+              259.75370255888873
+            ]
+          ],
+          "raw_radiance_window": [
+            [
+              42.02583610080207,
+              41.90093127638127,
+              41.88308773003544
+            ],
+            [
+              42.0436796471479,
+              41.99014900811041,
+              41.95446191541875
+            ],
+            [
+              42.739577954635266,
+              42.632516676560286,
+              42.34701993502701
+            ]
+          ],
+          "rttov_minus_kma_v3_0_bt_range_K": {
+            "max": -0.0004114012716627258,
+            "mean": -0.0004145871723721939,
+            "min": -0.0004208524161981586,
+            "std_ddof0": 3.373052731107473e-06
+          },
+          "window_good_pixel_count": 9,
+          "window_radiance_stats": {
+            "max": 42.739577954635266,
+            "mean": 42.16858447156871,
+            "min": 41.88308773003544,
+            "std_ddof0": 0.3054902220047234
+          }
+        },
+        "202507190002": {
+          "bt_from_mean_radiance_K": {
+            "kma_v3_0_source_paired": 259.61713091285003,
+            "legacy_ami": 259.82214401667983,
+            "pinned_rttov": 259.61671572525813
+          },
+          "decoder_quality_counts": {
+            "0": 9
+          },
+          "kma_v3_0_minus_legacy_bt_range_K": {
+            "max": -0.20498014239228723,
+            "mean": -0.20501277484229125,
+            "min": -0.20502834981743945,
+            "std_ddof0": 1.6434948528815265e-05
+          },
+          "kma_v3_0_source_paired_bt_stats_K": {
+            "max": 260.30143889059127,
+            "mean": 259.61624072593,
+            "min": 259.2787539785416,
+            "std_ddof0": 0.34874237564151755
+          },
+          "kma_v3_0_source_paired_bt_window_K": [
+            [
+              259.45026699198957,
+              259.35503525113853,
+              259.2787539785416
+            ],
+            [
+              259.4883225027322,
+              259.39314390381156,
+              259.3740922394881
+            ],
+            [
+              260.30143889059127,
+              260.1320475981001,
+              259.7730651769772
+            ]
+          ],
+          "legacy_ami_bt_stats_K": {
+            "max": 260.50641903298356,
+            "mean": 259.82125350077234,
+            "min": 259.48378232835904,
+            "std_ddof0": 0.34872594241658533
+          },
+          "legacy_ami_bt_window_K": [
+            [
+              259.6552877011778,
+              259.5600602248587,
+              259.48378232835904
+            ],
+            [
+              259.6933414923355,
+              259.59816717762993,
+              259.5791163642437
+            ],
+            [
+              260.50641903298356,
+              260.33703616491806,
+              259.9780710204444
+            ]
+          ],
+          "netcdf_missing_pixel_count": 0,
+          "pinned_rttov_bt_stats_K": {
+            "max": 260.30101672171696,
+            "mean": 259.6158255932154,
+            "min": 259.27834237271117,
+            "std_ddof0": 0.3487387728519614
+          },
+          "pinned_rttov_bt_window_K": [
+            [
+              259.4498535599502,
+              259.3546228303708,
+              259.27834237271117
+            ],
+            [
+              259.4879086684794,
+              259.39273107755014,
+              259.3736796158092
+            ],
+            [
+              260.30101672171696,
+              260.13162712466976,
+              259.7726483676811
+            ]
+          ],
+          "raw_radiance_window": [
+            [
+              42.06152319349373,
+              41.97230546176458,
+              41.90093127638127
+            ],
+            [
+              42.09721028618539,
+              42.00799255445624,
+              41.99014900811041
+            ],
+            [
+              42.864482779056075,
+              42.703890861943606,
+              42.364863481372836
+            ]
+          ],
+          "rttov_minus_kma_v3_0_bt_range_K": {
+            "max": -0.00041160583043620136,
+            "mean": -0.0004151327146044221,
+            "min": -0.00042216887430868155,
+            "std_ddof0": 3.6029088027435787e-06
+          },
+          "window_good_pixel_count": 9,
+          "window_radiance_stats": {
+            "max": 42.864482779056075,
+            "mean": 42.2181498780849,
+            "min": 41.90093127638127,
+            "std_ddof0": 0.32856444024963194
+          }
+        }
+      }
+    },
+    "ir105": {
+      "kma_v3_0_source_paired_wavenumber_cm1": 966.153383926055,
+      "legacy_nominal_wavelength_um": 10.5,
+      "pinned_rttov_band_offset_K": 0.1026489494,
+      "pinned_rttov_band_slope": 0.999659444,
+      "pinned_rttov_channel": 13,
+      "pinned_rttov_wavenumber_cm1": 966.1533839,
+      "slots": {
+        "202507190000": {
+          "bt_from_mean_radiance_K": {
+            "kma_v3_0_source_paired": 286.5246265958519,
+            "legacy_ami": 284.9493659007302,
+            "pinned_rttov": 286.5240129598041
+          },
+          "decoder_quality_counts": {
+            "0": 9
+          },
+          "kma_v3_0_minus_legacy_bt_range_K": {
+            "max": 1.5767574466739802,
+            "mean": 1.5752575372279378,
+            "min": 1.5724294420420506,
+            "std_ddof0": 0.0015673391292609202
+          },
+          "kma_v3_0_source_paired_bt_stats_K": {
+            "max": 287.46127630831234,
+            "mean": 286.523240256683,
+            "min": 286.02303114594895,
+            "std_ddof0": 0.5209112515922663
+          },
+          "kma_v3_0_source_paired_bt_window_K": [
+            [
+              286.381139755284,
+              286.0920003393105,
+              286.02303114594895
+            ],
+            [
+              286.2435611054836,
+              286.16092078316177,
+              286.1471405896065
+            ],
+            [
+              287.46127630831234,
+              287.31158660481213,
+              286.88850567822726
+            ]
+          ],
+          "legacy_ami_bt_stats_K": {
+            "max": 285.8888468662703,
+            "mean": 284.94798271945507,
+            "min": 284.44627369927497,
+            "std_ddof0": 0.5224785850891787
+          },
+          "legacy_ami_bt_window_K": [
+            [
+              284.8054495123193,
+              284.51544789060654,
+              284.44627369927497
+            ],
+            [
+              284.66746004438073,
+              284.5845734439225,
+              284.5707522195682
+            ],
+            [
+              285.8888468662703,
+              285.7387015164659,
+              285.3143392822872
+            ]
+          ],
+          "netcdf_missing_pixel_count": 0,
+          "pinned_rttov_bt_stats_K": {
+            "max": 287.4606774999622,
+            "mean": 286.52262674865653,
+            "min": 286.02240996616825,
+            "std_ddof0": 0.520919349968847
+          },
+          "pinned_rttov_bt_window_K": [
+            [
+              286.38052393300603,
+              286.0913801803784,
+              286.02240996616825
+            ],
+            [
+              286.24294320826476,
+              286.1603016495839,
+              286.1465212505978
+            ],
+            [
+              287.4606774999622,
+              287.3109853619941,
+              286.88789768795317
+            ]
+          ],
+          "raw_radiance_window": [
+            [
+              84.42206456884719,
+              84.00585096329428,
+              83.90675248578168
+            ],
+            [
+              84.223867613822,
+              84.10494944080688,
+              84.08512974530436
+            ],
+            [
+              85.98782051354624,
+              85.76980386301852,
+              85.15539330244042
+            ]
+          ],
+          "rttov_minus_kma_v3_0_bt_range_K": {
+            "max": -0.0005988083501620167,
+            "mean": -0.0006135080264976346,
+            "min": -0.0006211797806940922,
+            "std_ddof0": 8.098832036930886e-06
+          },
+          "window_good_pixel_count": 9,
+          "window_radiance_stats": {
+            "max": 85.98782051354624,
+            "mean": 84.62907027742907,
+            "min": 83.90675248578168,
+            "std_ddof0": 0.7536762542208799
+          }
+        },
+        "202507190002": {
+          "bt_from_mean_radiance_K": {
+            "kma_v3_0_source_paired": 286.6511477941653,
+            "legacy_ami": 285.0762667788378,
+            "pinned_rttov": 286.65053610464173
+          },
+          "decoder_quality_counts": {
+            "0": 9
+          },
+          "kma_v3_0_minus_legacy_bt_range_K": {
+            "max": 1.5766344612870853,
+            "mean": 1.5748762700613257,
+            "min": 1.5710594336058534,
+            "std_ddof0": 0.0019317477151855223
+          },
+          "kma_v3_0_source_paired_bt_stats_K": {
+            "max": 287.90898932532,
+            "mean": 286.6490616670512,
+            "min": 286.06441851744927,
+            "std_ddof0": 0.6393282195214104
+          },
+          "kma_v3_0_source_paired_bt_window_K": [
+            [
+              286.353639518114,
+              286.1471405896065,
+              286.06441851744927
+            ],
+            [
+              286.3398864973705,
+              286.2297925762785,
+              286.2573276933848
+            ],
+            [
+              287.90898932532,
+              287.59716113291586,
+              286.9431991530214
+            ]
+          ],
+          "legacy_ami_bt_stats_K": {
+            "max": 286.33792989171417,
+            "mean": 285.0741853969899,
+            "min": 284.4877840561622,
+            "std_ddof0": 0.6412599554540539
+          },
+          "legacy_ami_bt_window_K": [
+            [
+              284.7778670761469,
+              284.5707522195682,
+              284.4877840561622
+            ],
+            [
+              284.76407296252717,
+              284.6536504577186,
+              284.68126769417404
+            ],
+            [
+              286.33792989171417,
+              286.0251463603975,
+              285.3691978545002
+            ]
+          ],
+          "netcdf_missing_pixel_count": 0,
+          "pinned_rttov_bt_stats_K": {
+            "max": 287.9083979454356,
+            "mean": 286.6484501701137,
+            "min": 286.0637979496365,
+            "std_ddof0": 0.6393383244078701
+          },
+          "pinned_rttov_bt_window_K": [
+            [
+              286.3530232794165,
+              286.1465212505978,
+              286.0637979496365
+            ],
+            [
+              286.3392700507313,
+              286.22917447255094,
+              286.256710002854
+            ],
+            [
+              287.9083979454356,
+              287.59656455586344,
+              286.94259202393727
+            ]
+          ],
+          "raw_radiance_window": [
+            [
+              84.38242517784215,
+              84.08512974530436,
+              83.96621157228924
+            ],
+            [
+              84.36260548233963,
+              84.20404791831947,
+              84.24368730932451
+            ],
+            [
+              86.64187046512939,
+              86.18601746857144,
+              85.2346720844505
+            ]
+          ],
+          "rttov_minus_kma_v3_0_bt_range_K": {
+            "max": -0.0005913798844403573,
+            "mean": -0.0006114969375074805,
+            "min": -0.0006205678127457759,
+            "std_ddof0": 1.0105828376907716e-05
+          },
+          "window_good_pixel_count": 9,
+          "window_radiance_stats": {
+            "max": 86.64187046512939,
+            "mean": 84.81185191373008,
+            "min": 83.96621157228924,
+            "std_ddof0": 0.9272285380907098
+          }
+        }
+      }
+    },
+    "ir112": {
+      "kma_v3_0_source_paired_wavenumber_cm1": 891.71305730126,
+      "legacy_nominal_wavelength_um": 11.2,
+      "pinned_rttov_band_offset_K": 0.1670084913,
+      "pinned_rttov_band_slope": 0.9994033778,
+      "pinned_rttov_channel": 14,
+      "pinned_rttov_wavenumber_cm1": 891.7130573,
+      "slots": {
+        "202507190000": {
+          "bt_from_mean_radiance_K": {
+            "kma_v3_0_source_paired": 286.72341754587313,
+            "legacy_ami": 286.84757766943426,
+            "pinned_rttov": 286.72218863825884
+          },
+          "decoder_quality_counts": {
+            "0": 9
+          },
+          "kma_v3_0_minus_legacy_bt_range_K": {
+            "max": -0.12388809574014203,
+            "mean": -0.12416000391303011,
+            "min": -0.12430459256825088,
+            "std_ddof0": 0.0001458507975633025
+          },
+          "kma_v3_0_source_paired_bt_stats_K": {
+            "max": 287.4487319002935,
+            "mean": 286.72273434764816,
+            "min": 286.3353774946844,
+            "std_ddof0": 0.38990310219497487
+          },
+          "kma_v3_0_source_paired_bt_window_K": [
+            [
+              286.56176802505377,
+              286.4061741626606,
+              286.3353774946844
+            ],
+            [
+              286.56176802505377,
+              286.43448018294606,
+              286.47692568041754
+            ],
+            [
+              287.4487319002935,
+              287.2943720999922,
+              286.9850115577315
+            ]
+          ],
+          "legacy_ami_bt_stats_K": {
+            "max": 287.57261999603367,
+            "mean": 286.84689435156116,
+            "min": 286.45968208725265,
+            "std_ddof0": 0.3897572515765791
+          },
+          "legacy_ami_bt_window_K": [
+            [
+              286.6859884216843,
+              286.5304524527123,
+              286.45968208725265
+            ],
+            [
+              286.6859884216843,
+              286.55874794976995,
+              286.6011776600235
+            ],
+            [
+              287.57261999603367,
+              287.41831830513985,
+              287.10907386975003
+            ]
+          ],
+          "netcdf_missing_pixel_count": 0,
+          "pinned_rttov_bt_stats_K": {
+            "max": 287.44752835106914,
+            "mean": 286.7215055885556,
+            "min": 286.33413550879925,
+            "std_ddof0": 0.3899165587998304
+          },
+          "pinned_rttov_bt_window_K": [
+            [
+              286.56053362793256,
+              286.40493453747587,
+              286.33413550879925
+            ],
+            [
+              286.56053362793256,
+              286.4332415047908,
+              286.47568842574833
+            ],
+            [
+              287.44752835106914,
+              287.2931630544269,
+              286.98379165882494
+            ]
+          ],
+          "raw_radiance_window": [
+            [
+              97.08137882873412,
+              96.8429594840854,
+              96.73458705469962
+            ],
+            [
+              97.08137882873412,
+              96.88630845583971,
+              96.95133191347118
+            ],
+            [
+              98.44687143899496,
+              98.20845209434624,
+              97.7316134050488
+            ]
+          ],
+          "rttov_minus_kma_v3_0_bt_range_K": {
+            "max": -0.0012035492243853696,
+            "mean": -0.0012287590925615809,
+            "min": -0.0012419858851444587,
+            "std_ddof0": 1.3457013325767727e-05
+          },
+          "window_good_pixel_count": 9,
+          "window_radiance_stats": {
+            "max": 98.44687143899496,
+            "mean": 97.32943127821713,
+            "min": 96.73458705469962,
+            "std_ddof0": 0.5996269237071304
+          }
+        },
+        "202507190002": {
+          "bt_from_mean_radiance_K": {
+            "kma_v3_0_source_paired": 286.8503751998473,
+            "legacy_ami": 286.9744878953168,
+            "pinned_rttov": 286.8491506450462
+          },
+          "decoder_quality_counts": {
+            "0": 9
+          },
+          "kma_v3_0_minus_legacy_bt_range_K": {
+            "max": -0.1237717659407167,
+            "mean": -0.12411251123331289,
+            "min": -0.1242888120108887,
+            "std_ddof0": 0.0001816120976212407
+          },
+          "kma_v3_0_source_paired_bt_stats_K": {
+            "max": 287.7568149787134,
+            "mean": 286.84932208027135,
+            "min": 286.3778609183431,
+            "std_ddof0": 0.484363926990557
+          },
+          "kma_v3_0_source_paired_bt_window_K": [
+            [
+              286.66066894273376,
+              286.44863048580623,
+              286.3778609183431
+            ],
+            [
+              286.66066894273376,
+              286.50521366481894,
+              286.5334944445275
+            ],
+            [
+              287.7568149787134,
+              287.58887459637,
+              287.1116717483955
+            ]
+          ],
+          "legacy_ami_bt_stats_K": {
+            "max": 287.8805867446541,
+            "mean": 286.97343459150466,
+            "min": 286.502149730354,
+            "std_ddof0": 0.48418231524913036
+          },
+          "legacy_ami_bt_window_K": [
+            [
+              286.784852478206,
+              286.5728929905409,
+              286.502149730354
+            ],
+            [
+              286.784852478206,
+              286.6294551180305,
+              286.65772537008024
+            ],
+            [
+              287.8805867446541,
+              287.71270983321295,
+              287.2356865802573
+            ]
+          ],
+          "netcdf_missing_pixel_count": 0,
+          "pinned_rttov_bt_stats_K": {
+            "max": 287.7556225605543,
+            "mean": 286.8480977544132,
+            "min": 286.3766203476993,
+            "std_ddof0": 0.48438083932714765
+          },
+          "pinned_rttov_bt_window_K": [
+            [
+              286.65943789720484,
+              286.4473922817543,
+              286.3766203476993
+            ],
+            [
+              286.65943789720484,
+              286.50397736109994,
+              286.5322590933249
+            ],
+            [
+              287.7556225605543,
+              287.58767608390735,
+              287.1104562669687
+            ]
+          ],
+          "raw_radiance_window": [
+            [
+              97.23310022987421,
+              96.90798294171687,
+              96.79961051233109
+            ],
+            [
+              97.23310022987421,
+              96.99468088522549,
+              97.0380298569798
+            ],
+            [
+              98.9237101282924,
+              98.66361629776652,
+              97.92668377794321
+            ]
+          ],
+          "rttov_minus_kma_v3_0_bt_range_K": {
+            "max": -0.001192418159121189,
+            "mean": -0.0012243258581937273,
+            "min": -0.001240570643801675,
+            "std_ddof0": 1.6913141691511797e-05
+          },
+          "window_good_pixel_count": 9,
+          "window_radiance_stats": {
+            "max": 98.9237101282924,
+            "mean": 97.52450165111154,
+            "min": 96.79961051233109,
+            "std_ddof0": 0.74609158755222
+          }
+        }
+      }
+    },
+    "ir123": {
+      "kma_v3_0_source_paired_wavenumber_cm1": 810.60900787123,
+      "legacy_nominal_wavelength_um": 12.3,
+      "pinned_rttov_band_offset_K": 0.2760283731,
+      "pinned_rttov_band_slope": 0.9989149175,
+      "pinned_rttov_channel": 15,
+      "pinned_rttov_wavenumber_cm1": 810.6090079,
+      "slots": {
+        "202507190000": {
+          "bt_from_mean_radiance_K": {
+            "kma_v3_0_source_paired": 285.1868214284292,
+            "legacy_ami": 285.4226981001143,
+            "pinned_rttov": 285.1839971305739
+          },
+          "decoder_quality_counts": {
+            "0": 9
+          },
+          "kma_v3_0_minus_legacy_bt_range_K": {
+            "max": -0.23521791971620587,
+            "mean": -0.23587657373608156,
+            "min": -0.23619713927269004,
+            "std_ddof0": 0.00031196712264510513
+          },
+          "kma_v3_0_source_paired_bt_stats_K": {
+            "max": 285.755035050761,
+            "mean": 285.18653768001286,
+            "min": 284.9092107157234,
+            "std_ddof0": 0.2694884245845173
+          },
+          "kma_v3_0_source_paired_bt_window_K": [
+            [
+              285.0728757078677,
+              284.938983592633,
+              284.9092107157234
+            ],
+            [
+              285.11747525560617,
+              285.04313402869906,
+              285.0282605929917
+            ],
+            [
+              285.755035050761,
+              285.53299015208535,
+              285.28087402374814
+            ]
+          ],
+          "legacy_ami_bt_stats_K": {
+            "max": 285.99025297047723,
+            "mean": 285.4224142537489,
+            "min": 285.1454078549961,
+            "std_ddof0": 0.2691764576598744
+          },
+          "legacy_ami_bt_window_K": [
+            [
+              285.3088840253853,
+              285.1751464060729,
+              285.1454078549961
+            ],
+            [
+              285.3534320637145,
+              285.2791766828346,
+              285.26432041453916
+            ],
+            [
+              285.99025297047723,
+              285.7684659476059,
+              285.5166419181147
+            ]
+          ],
+          "netcdf_missing_pixel_count": 0,
+          "pinned_rttov_bt_stats_K": {
+            "max": 285.7522536773556,
+            "mean": 285.1837135445534,
+            "min": 284.90636603942704,
+            "std_ddof0": 0.26950858378659154
+          },
+          "pinned_rttov_bt_window_K": [
+            [
+              285.0700429985509,
+              284.93614108322396,
+              284.90636603942704
+            ],
+            [
+              285.1146458308121,
+              285.04029913464785,
+              285.0254246080587
+            ],
+            [
+              285.7522536773556,
+              285.5301918106502,
+              285.2780567182546
+            ]
+          ],
+          "raw_radiance_window": [
+            [
+              107.81438616476866,
+              107.60396641492757,
+              107.55720647051844
+            ],
+            [
+              107.88452608138236,
+              107.76762622035953,
+              107.74424624815497
+            ],
+            [
+              108.8898648861787,
+              108.53916530311021,
+              108.14170577563259
+            ]
+          ],
+          "rttov_minus_kma_v3_0_bt_range_K": {
+            "max": -0.0027813734054120687,
+            "mean": -0.002824135459402694,
+            "min": -0.002844676296376747,
+            "std_ddof0": 2.0159769637264484e-05
+          },
+          "window_good_pixel_count": 9,
+          "window_radiance_stats": {
+            "max": 108.8898648861787,
+            "mean": 107.993632618337,
+            "min": 107.55720647051844,
+            "std_ddof0": 0.4245752598708601
+          }
+        },
+        "202507190002": {
+          "bt_from_mean_radiance_K": {
+            "kma_v3_0_source_paired": 285.26602820679653,
+            "legacy_ami": 285.501813278115,
+            "pinned_rttov": 285.2632097946176
+          },
+          "decoder_quality_counts": {
+            "0": 9
+          },
+          "kma_v3_0_minus_legacy_bt_range_K": {
+            "max": -0.23518352630088657,
+            "mean": -0.23578496158609774,
+            "min": -0.23619713927269004,
+            "std_ddof0": 0.00033047159234346295
+          },
+          "kma_v3_0_source_paired_bt_stats_K": {
+            "max": 285.78461208034383,
+            "mean": 285.2657102421751,
+            "min": 284.9092107157234,
+            "std_ddof0": 0.28537268686254114
+          },
+          "kma_v3_0_source_paired_bt_window_K": [
+            [
+              285.1026104683092,
+              284.9836298936873,
+              284.9092107157234
+            ],
+            [
+              285.25118066844954,
+              285.1323383151393,
+              285.1323383151393
+            ],
+            [
+              285.78461208034383,
+              285.6810627046507,
+              285.414409018133
+            ]
+          ],
+          "legacy_ami_bt_stats_K": {
+            "max": 286.0197956066447,
+            "mean": 285.5014952037611,
+            "min": 285.1454078549961,
+            "std_ddof0": 0.2850422155073628
+          },
+          "legacy_ami_bt_window_K": [
+            [
+              285.3385844468179,
+              285.21974121387797,
+              285.1454078549961
+            ],
+            [
+              285.48698291612544,
+              285.3682779522503,
+              285.3682779522503
+            ],
+            [
+              286.0197956066447,
+              285.91636659765214,
+              285.6500222932355
+            ]
+          ],
+          "netcdf_missing_pixel_count": 0,
+          "pinned_rttov_bt_stats_K": {
+            "max": 285.7818329859262,
+            "mean": 285.2628920119894,
+            "min": 284.90636603942704,
+            "std_ddof0": 0.2853940844233843
+          },
+          "pinned_rttov_bt_window_K": [
+            [
+              285.09977994768514,
+              284.9807906420538,
+              284.90636603942704
+            ],
+            [
+              285.2483611505701,
+              285.12950998716366,
+              285.12950998716366
+            ],
+            [
+              285.7818329859262,
+              285.67827565082786,
+              285.4116017170867
+            ]
+          ],
+          "raw_radiance_window": [
+            [
+              107.8611461091778,
+              107.67410633154127,
+              107.55720647051844
+            ],
+            [
+              108.09494583122346,
+              107.90790605358693,
+              107.90790605358693
+            ],
+            [
+              108.93662483058783,
+              108.77296502515587,
+              108.35212552547368
+            ]
+          ],
+          "rttov_minus_kma_v3_0_bt_range_K": {
+            "max": -0.0027790944176331323,
+            "mean": -0.0028182301857100356,
+            "min": -0.002844676296376747,
+            "std_ddof0": 2.1398239341475472e-05
+          },
+          "window_good_pixel_count": 9,
+          "window_radiance_stats": {
+            "max": 108.93662483058783,
+            "mean": 108.11832580342802,
+            "min": 107.55720647051844,
+            "std_ddof0": 0.4497227447060279
+          }
+        }
+      }
+    },
+    "ir133": {
+      "kma_v3_0_source_paired_wavenumber_cm1": 753.590621482278,
+      "legacy_nominal_wavelength_um": 13.3,
+      "pinned_rttov_band_offset_K": 0.0517770402,
+      "pinned_rttov_band_slope": 0.9997799864,
+      "pinned_rttov_channel": 16,
+      "pinned_rttov_wavenumber_cm1": 752.7924878,
+      "slots": {
+        "202507190000": {
+          "bt_from_mean_radiance_K": {
+            "kma_v3_0_source_paired": 271.5104669860219,
+            "legacy_ami": 271.3487606404511,
+            "pinned_rttov": 271.4340579538363
+          },
+          "decoder_quality_counts": {
+            "0": 9
+          },
+          "kma_v3_0_minus_legacy_bt_range_K": {
+            "max": 0.16188094159292632,
+            "mean": 0.16170633277360796,
+            "min": 0.16154068653059994,
+            "std_ddof0": 0.00010714207069146665
+          },
+          "kma_v3_0_source_paired_bt_stats_K": {
+            "max": 271.68356942625735,
+            "mean": 271.5104174109801,
+            "min": 271.3277002427438,
+            "std_ddof0": 0.11206731758253435
+          },
+          "kma_v3_0_source_paired_bt_window_K": [
+            [
+              271.53117646446543,
+              271.3616356757272,
+              271.3277002427438
+            ],
+            [
+              271.5481180656363,
+              271.4972864639607,
+              271.429479242819
+            ],
+            [
+              271.68356942625735,
+              271.6158618326321,
+              271.59892928457924
+            ]
+          ],
+          "legacy_ami_bt_stats_K": {
+            "max": 271.52202873972675,
+            "mean": 271.3487110782065,
+            "min": 271.16581930115086,
+            "std_ddof0": 0.11217445963841562
+          },
+          "legacy_ami_bt_window_K": [
+            [
+              271.3694899227417,
+              271.1997871282426,
+              271.16581930115086
+            ],
+            [
+              271.38644772770994,
+              271.33556751639685,
+              271.2676954906021
+            ],
+            [
+              271.52202873972675,
+              271.45425631573715,
+              271.4373075615507
+            ]
+          ],
+          "netcdf_missing_pixel_count": 0,
+          "pinned_rttov_bt_stats_K": {
+            "max": 271.6072380657128,
+            "mean": 271.43400839208545,
+            "min": 271.2512093864152,
+            "std_ddof0": 0.11211753981335545
+          },
+          "pinned_rttov_bt_window_K": [
+            [
+              271.45477671576964,
+              271.2851599979098,
+              271.2512093864152
+            ],
+            [
+              271.47172591319793,
+              271.4208715245725,
+              271.3530339293438
+            ],
+            [
+              271.6072380657128,
+              271.53950007129225,
+              271.52255992455497
+            ]
+          ],
+          "raw_radiance_window": [
+            [
+              95.75972718000429,
+              95.51668961346166,
+              95.46808210015314
+            ],
+            [
+              95.78403093665855,
+              95.71111966669577,
+              95.61390464007872
+            ],
+            [
+              95.97846098989265,
+              95.8812459632756,
+              95.85694220662134
+            ]
+          ],
+          "rttov_minus_kma_v3_0_bt_range_K": {
+            "max": -0.07633136054454326,
+            "mean": -0.07640901889469534,
+            "min": -0.07649085632857577,
+            "std_ddof0": 5.022224182111203e-05
+          },
+          "window_good_pixel_count": 9,
+          "window_radiance_stats": {
+            "max": 95.97846098989265,
+            "mean": 95.73002258853798,
+            "min": 95.46808210015314,
+            "std_ddof0": 0.1607145427730596
+          }
+        },
+        "202507190002": {
+          "bt_from_mean_radiance_K": {
+            "kma_v3_0_source_paired": 271.53117646446543,
+            "legacy_ami": 271.3694899227417,
+            "pinned_rttov": 271.45477671576964
+          },
+          "decoder_quality_counts": {
+            "0": 9
+          },
+          "kma_v3_0_minus_legacy_bt_range_K": {
+            "max": 0.1618323495487175,
+            "mean": 0.16168652269968536,
+            "min": 0.16144342352652075,
+            "std_ddof0": 0.00013075875475588173
+          },
+          "kma_v3_0_source_paired_bt_stats_K": {
+            "max": 271.7850631281513,
+            "mean": 271.53110274893805,
+            "min": 271.3785999783798,
+            "std_ddof0": 0.13667341685792414
+          },
+          "kma_v3_0_source_paired_bt_window_K": [
+            [
+              271.41252176094,
+              271.3785999783798,
+              271.3785999783798
+            ],
+            [
+              271.4972864639607,
+              271.53117646446543,
+              271.4633873926979
+            ],
+            [
+              271.7850631281513,
+              271.68356942625735,
+              271.6497201472099
+            ]
+          ],
+          "legacy_ami_bt_stats_K": {
+            "max": 271.6236197046248,
+            "mean": 271.36941622623834,
+            "min": 271.21676762883106,
+            "std_ddof0": 0.1368041755918893
+          },
+          "legacy_ami_bt_window_K": [
+            [
+              271.2507218090255,
+              271.21676762883106,
+              271.21676762883106
+            ],
+            [
+              271.33556751639685,
+              271.3694899227417,
+              271.30163604163545
+            ],
+            [
+              271.6236197046248,
+              271.52202873972675,
+              271.4881470443318
+            ]
+          ],
+          "netcdf_missing_pixel_count": 0,
+          "pinned_rttov_bt_stats_K": {
+            "max": 271.7087773869433,
+            "mean": 271.454703020004,
+            "min": 271.30213189073334,
+            "std_ddof0": 0.13673472041929324
+          },
+          "pinned_rttov_bt_window_K": [
+            [
+              271.33606885546493,
+              271.30213189073334,
+              271.30213189073334
+            ],
+            [
+              271.4208715245725,
+              271.45477671576964,
+              271.38695726504915
+            ],
+            [
+              271.7087773869433,
+              271.6072380657128,
+              271.57337358505674
+            ]
+          ],
+          "raw_radiance_window": [
+            [
+              95.58960088342445,
+              95.54099337011593,
+              95.54099337011593
+            ],
+            [
+              95.71111966669577,
+              95.75972718000429,
+              95.66251215338724
+            ],
+            [
+              96.12428352981823,
+              95.97846098989265,
+              95.92985347658413
+            ]
+          ],
+          "rttov_minus_kma_v3_0_bt_range_K": {
+            "max": -0.07628574120798248,
+            "mean": -0.07639972893404472,
+            "min": -0.07646808764644675,
+            "std_ddof0": 6.130357680944226e-05
+          },
+          "window_good_pixel_count": 9,
+          "window_radiance_stats": {
+            "max": 96.12428352981823,
+            "mean": 95.75972718000429,
+            "min": 95.54099337011593,
+            "std_ddof0": 0.19611055166825106
+          }
+        }
+      }
+    },
+    "wv073": {
+      "kma_v3_0_source_paired_wavenumber_cm1": 1365.24999202444,
+      "legacy_nominal_wavelength_um": 7.3,
+      "pinned_rttov_band_offset_K": 0.05327792292,
+      "pinned_rttov_band_slope": 0.9998686707,
+      "pinned_rttov_channel": 10,
+      "pinned_rttov_wavenumber_cm1": 1365.249992,
+      "slots": {
+        "202507190000": {
+          "bt_from_mean_radiance_K": {
+            "kma_v3_0_source_paired": 263.5822751385954,
+            "legacy_ami": 264.11453509991935,
+            "pinned_rttov": 263.5821564816644
+          },
+          "decoder_quality_counts": {
+            "0": 9
+          },
+          "kma_v3_0_minus_legacy_bt_range_K": {
+            "max": -0.5321049375254461,
+            "mean": -0.5322596860126699,
+            "min": -0.53244229983369,
+            "std_ddof0": 0.00010118087073210533
+          },
+          "kma_v3_0_source_paired_bt_stats_K": {
+            "max": 263.85640692509367,
+            "mean": 263.5820363891257,
+            "min": 263.3500995833693,
+            "std_ddof0": 0.1518286390706794
+          },
+          "kma_v3_0_source_paired_bt_window_K": [
+            [
+              263.3500995833693,
+              263.3892354486167,
+              263.5259613397899
+            ],
+            [
+              263.5064527822155,
+              263.60391681257676,
+              263.60391681257676
+            ],
+            [
+              263.6623009378416,
+              263.85640692509367,
+              263.74003686005085
+            ]
+          ],
+          "legacy_ami_bt_stats_K": {
+            "max": 264.38884922492736,
+            "mean": 264.1142960751383,
+            "min": 263.88220452089473,
+            "std_ddof0": 0.15192981986123674
+          },
+          "legacy_ami_bt_window_K": [
+            [
+              263.88220452089473,
+              263.9213665552671,
+              264.05818375026064
+            ],
+            [
+              264.03866217664364,
+              264.13619119637843,
+              264.13619119637843
+            ],
+            [
+              264.1946142065352,
+              264.38884922492736,
+              264.2724018489595
+            ]
+          ],
+          "netcdf_missing_pixel_count": 0,
+          "pinned_rttov_bt_stats_K": {
+            "max": 263.856287451219,
+            "mean": 263.58191773535185,
+            "min": 263.3499816307838,
+            "std_ddof0": 0.15182818257151126
+          },
+          "pinned_rttov_bt_window_K": [
+            [
+              263.3499816307838,
+              263.3891173765065,
+              263.5258428526491
+            ],
+            [
+              263.50633435405086,
+              263.6037980905731,
+              263.6037980905731
+            ],
+            [
+              263.66218204078143,
+              263.856287451219,
+              263.73991773102995
+            ]
+          ],
+          "raw_radiance_window": [
+            [
+              17.48652470111847,
+              17.505921244621277,
+              17.573809146881104
+            ],
+            [
+              17.5641108751297,
+              17.61260223388672,
+              17.61260223388672
+            ],
+            [
+              17.64169704914093,
+              17.73867976665497,
+              17.680490136146545
+            ]
+          ],
+          "rttov_minus_kma_v3_0_bt_range_K": {
+            "max": -0.00011795258546953846,
+            "mean": -0.00011865377380596935,
+            "min": -0.00011947387469035675,
+            "std_ddof0": 4.5650700358909e-07
+          },
+          "window_good_pixel_count": 9,
+          "window_radiance_stats": {
+            "max": 17.73867976665497,
+            "mean": 17.60182637638516,
+            "min": 17.48652470111847,
+            "std_ddof0": 0.07560014777021841
+          }
+        },
+        "202507190002": {
+          "bt_from_mean_radiance_K": {
+            "kma_v3_0_source_paired": 263.60608044659966,
+            "legacy_ami": 264.1383562720341,
+            "pinned_rttov": 263.6059617180958
+          },
+          "decoder_quality_counts": {
+            "0": 9
+          },
+          "kma_v3_0_minus_legacy_bt_range_K": {
+            "max": -0.5321702916392042,
+            "mean": -0.532275705282599,
+            "min": -0.5323907950593707,
+            "std_ddof0": 6.684261886509569e-05
+          },
+          "kma_v3_0_source_paired_bt_stats_K": {
+            "max": 263.7788579966631,
+            "mean": 263.60597624233475,
+            "min": 263.44787973099875,
+            "std_ddof0": 0.1003207817375264
+          },
+          "kma_v3_0_source_paired_bt_window_K": [
+            [
+              263.44787973099875,
+              263.4869363334036,
+              263.5259613397899
+            ],
+            [
+              263.58443974254993,
+              263.6623009378416,
+              263.60391681257676
+            ],
+            [
+              263.6817466435946,
+              263.7788579966631,
+              263.6817466435946
+            ]
+          ],
+          "legacy_ami_bt_stats_K": {
+            "max": 264.31124879172245,
+            "mean": 264.13825194761733,
+            "min": 263.98005002263795,
+            "std_ddof0": 0.10038762433689072
+          },
+          "legacy_ami_bt_window_K": [
+            [
+              263.98005002263795,
+              264.0191327026856,
+              264.05818375026064
+            ],
+            [
+              264.11670114662513,
+              264.1946142065352,
+              264.13619119637843
+            ],
+            [
+              264.21407285585536,
+              264.31124879172245,
+              264.21407285585536
+            ]
+          ],
+          "netcdf_missing_pixel_count": 0,
+          "pinned_rttov_bt_stats_K": {
+            "max": 263.77873875228016,
+            "mean": 263.6058575152086,
+            "min": 263.4477614803898,
+            "std_ddof0": 0.10032048037038857
+          },
+          "pinned_rttov_bt_window_K": [
+            [
+              263.4477614803898,
+              263.4868179643196,
+              263.5258428526491
+            ],
+            [
+              263.58432107910596,
+              263.66218204078143,
+              263.6037980905731
+            ],
+            [
+              263.6816276883893,
+              263.77873875228016,
+              263.6816276883893
+            ]
+          ],
+          "raw_radiance_window": [
+            [
+              17.53501605987549,
+              17.554412603378296,
+              17.573809146881104
+            ],
+            [
+              17.602903962135315,
+              17.64169704914093,
+              17.61260223388672
+            ],
+            [
+              17.651395320892334,
+              17.699886679649353,
+              17.651395320892334
+            ]
+          ],
+          "rttov_minus_kma_v3_0_bt_range_K": {
+            "max": -0.00011825060897763251,
+            "mean": -0.00011872712612001933,
+            "min": -0.00011924438291543993,
+            "std_ddof0": 3.013690449622869e-07
+          },
+          "window_good_pixel_count": 9,
+          "window_radiance_stats": {
+            "max": 17.699886679649353,
+            "mean": 17.613679819636875,
+            "min": 17.53501605987549,
+            "std_ddof0": 0.04996559571564548
+          }
+        }
+      }
+    }
+  },
+  "provenance": {
+    "cli_argv": [
+      "harness/evidence/AMI_bt_coordinate_source_2026-10-04.py",
+      "--observation-result",
+      "harness/evidence/AMI_local_support_result_2026-10-04.json",
+      "--legacy-calibration",
+      "harness/evidence/AMI_legacy_nominal_calibration_202507190000.json",
+      "--updated-calibration",
+      "oracle/kdm6/obs/data/gk2a_ami_cal_202507190000.json",
+      "--pairing-receipt",
+      "harness/evidence/AMI_calibration_pairing_receipt_2026-10-04.json",
+      "--rttov-coefficient",
+      "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+      "--base-npz",
+      "harness/evidence/C5_nc_bt_dom32_base_2026-10-03.npz",
+      "--plus-npz",
+      "harness/evidence/C5_nc_bt_dom32_plus_2026-10-03.npz",
+      "--minus-npz",
+      "harness/evidence/C5_nc_bt_dom32_minus_2026-10-03.npz",
+      "--derivatives-npz",
+      "harness/evidence/C5_nc_bt_dom32_derivatives_2026-10-03.npz",
+      "--dom32-result",
+      "harness/evidence/C5_nc_bt_dom32_result_2026-10-03.json",
+      "--rttov-channels",
+      "/private/tmp/KDM6AD-c5-dom32-nc-bt-20261003/base/in/channels.txt",
+      "--base-radiance",
+      "/private/tmp/KDM6AD-c5-dom32-nc-bt-20261003/base/out/direct/radiance.txt",
+      "--plus-radiance",
+      "/private/tmp/KDM6AD-c5-dom32-nc-bt-20261003/plus/out/direct/radiance.txt",
+      "--minus-radiance",
+      "/private/tmp/KDM6AD-c5-dom32-nc-bt-20261003/minus/out/direct/radiance.txt",
+      "--output",
+      "harness/evidence/AMI_bt_coordinate_result_2026-10-04.json"
+    ],
+    "input_hashes": {
+      "base_npz": "e5ab2065c0416c27de894d43fc999e0faeee0715e97e0cd01065476afe8465a4",
+      "base_radiance": "623566425f8f5261d3dbf03271f81f4eb42977c8a30887f4846c03b9cb320073",
+      "derivatives_npz": "4bc540a88782b8e3054b3ec01c4c3becf3e19f58f13f3bd783b8e8c417714396",
+      "dom32_result": "2291d9b73272a8f1790f6000213215c61e6690fe77722da416f55457f02c26df",
+      "legacy_calibration": "f519149e3ea3538866bad9f3e28cc0ddef741b6b4cdbf8febb7988aff6c08d40",
+      "minus_npz": "1ce2a477ccc3c95be74ed992fa341cf3d698c39f1dd0de9a24348032465e31e1",
+      "minus_radiance": "5710e4052eee9cc3ae39a9015efa2836d1b1147c9d961c0c46b0edebeeb46429",
+      "observation_result": "f39cbe67a0c035e4fba5ff78ed69d50a5af3984bcea1374d98ecced27d3c218f",
+      "pairing_receipt": "b3dcb7ad280a39b6ea5b48e457f5d133fda33257b931408367c7d6f62d09b51a",
+      "plus_npz": "864ddbc1826e999b897c9b063c7350e8badbb004d824083248af26a55bded63f",
+      "plus_radiance": "18518b679d9d559f14aa91e5f43577dbbd9a774a1e6299d922be4d9560be1b0d",
+      "rttov_channels": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b",
+      "rttov_coefficient": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+      "updated_calibration": "a6f830aa04e19f6982aa6ff36e832464a5b32fdcf8200211956969d5eb48325d"
+    },
+    "source_path": "/private/tmp/KDM6AD-dry-number-optics/harness/evidence/AMI_bt_coordinate_source_2026-10-04.py",
+    "source_paths": {
+      "base_npz": "/private/tmp/KDM6AD-dry-number-optics/harness/evidence/C5_nc_bt_dom32_base_2026-10-03.npz",
+      "base_radiance": "/private/tmp/KDM6AD-c5-dom32-nc-bt-20261003/base/out/direct/radiance.txt",
+      "derivatives_npz": "/private/tmp/KDM6AD-dry-number-optics/harness/evidence/C5_nc_bt_dom32_derivatives_2026-10-03.npz",
+      "dom32_result": "/private/tmp/KDM6AD-dry-number-optics/harness/evidence/C5_nc_bt_dom32_result_2026-10-03.json",
+      "legacy_calibration": "/private/tmp/KDM6AD-dry-number-optics/harness/evidence/AMI_legacy_nominal_calibration_202507190000.json",
+      "minus_npz": "/private/tmp/KDM6AD-dry-number-optics/harness/evidence/C5_nc_bt_dom32_minus_2026-10-03.npz",
+      "minus_radiance": "/private/tmp/KDM6AD-c5-dom32-nc-bt-20261003/minus/out/direct/radiance.txt",
+      "observation_result": "/private/tmp/KDM6AD-dry-number-optics/harness/evidence/AMI_local_support_result_2026-10-04.json",
+      "output": "/private/tmp/KDM6AD-dry-number-optics/harness/evidence/AMI_bt_coordinate_result_2026-10-04.json",
+      "pairing_receipt": "/private/tmp/KDM6AD-dry-number-optics/harness/evidence/AMI_calibration_pairing_receipt_2026-10-04.json",
+      "plus_npz": "/private/tmp/KDM6AD-dry-number-optics/harness/evidence/C5_nc_bt_dom32_plus_2026-10-03.npz",
+      "plus_radiance": "/private/tmp/KDM6AD-c5-dom32-nc-bt-20261003/plus/out/direct/radiance.txt",
+      "rttov_channels": "/private/tmp/KDM6AD-c5-dom32-nc-bt-20261003/base/in/channels.txt",
+      "rttov_coefficient": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+      "updated_calibration": "/private/tmp/KDM6AD-dry-number-optics/oracle/kdm6/obs/data/gk2a_ami_cal_202507190000.json"
+    },
+    "source_sha256": "3098c5a4539a6df48ccecf557c57baaee8e7d845fbb6e1bf2d26c6ba45fc8499"
+  },
+  "scope": {
+    "channels": [
+      "wv073",
+      "ir087",
+      "ir096",
+      "ir105",
+      "ir112",
+      "ir123",
+      "ir133"
+    ],
+    "conditional_residuals_are_not": [
+      "calibrated observation-error covariance",
+      "5 km footprint validation",
+      "physical/SRF approval"
+    ],
+    "global_physical_calibration_approval": false,
+    "ir133_kma_source_pairing": "KMA v3.0 center wavenumber paired with retained legacy polynomial; RTTOV comparison uses installed v3.1-shifted coefficient",
+    "ir133_srf_version_certified_physical": false,
+    "observation_pixel_zero_based_row_column": [
+      411,
+      338
+    ],
+    "observation_slots": [
+      "202507190000",
+      "202507190002"
+    ],
+    "radiance_unit": "retained AMI/RTTOV spectral-radiance numeric convention, mW m-2 sr-1 (cm-1)-1",
+    "window": "retained 3x3 source pixels; preserve existing decoder DQ/missingness; no QC relaxation"
+  },
+  "status": "COMPLETE_CONDITIONAL_COORDINATE_COMPARISON"
+}

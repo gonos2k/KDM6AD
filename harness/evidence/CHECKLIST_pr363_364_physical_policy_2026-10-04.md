@@ -142,3 +142,7 @@ model. Allocate BT error limits in K and sensitivity limits in K/control for
 set. Keep numerical FD thresholds fixed. A one-pixel cost, 3 ULP agreement or
 NEdT threshold cannot supply those limits. Use retained input-defined states and
 observations for validation; do not select them from their cost or FD outcome.
+
+BT-definition follow-up: the old 5.990047 K contrast is preserved as a mixed-definition
+historical number. See [the paired-coordinate correction](CHECKLIST_pr365_bt_definition_2026-10-04.md)
+for coherent radiance/BT comparisons and their unchanged physical-approval limits.
