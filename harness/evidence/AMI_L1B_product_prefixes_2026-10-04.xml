@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Name>noaa-gk2a-pds</Name><Prefix>AMI/L1B/</Prefix><KeyCount>2</KeyCount><MaxKeys>10</MaxKeys><Delimiter>/</Delimiter><IsTruncated>false</IsTruncated><CommonPrefixes><Prefix>AMI/L1B/FD/</Prefix></CommonPrefixes><CommonPrefixes><Prefix>AMI/L1B/LA/</Prefix></CommonPrefixes></ListBucketResult>
