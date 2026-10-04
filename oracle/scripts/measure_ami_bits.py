@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import numbers
 import sys
 from pathlib import Path
 from typing import Any
@@ -32,14 +33,19 @@ from kdm6.obs.gk2a_l1b import (  # noqa: E402
     read_ko_slot, slot_files,
 )
 from kdm6.obs.gk2a_l1b_fd import (  # noqa: E402
-    _CAL_ATTRS, _GEO_ATTRS, fd_slot_files, find_domain_window,
+    _GEO_ATTRS, fd_slot_files, find_domain_window,
     geos_latlon, read_fd_slot,
 )
 
 KO_TS = "202507190000"
 FD_TS = "202507190100"
 BBOX = (31.0, 45.0, 118.0, 134.6)
-CAL_KEYS = tuple(_CAL_ATTRS)
+FD_CAL_ATTRS = ("DN_to_Radiance_Gain", "DN_to_Radiance_Offset",
+                "Teff_to_Tbb_c0", "Teff_to_Tbb_c1", "Teff_to_Tbb_c2",
+                "Plank_constant_h", "light_speed", "Boltzmann_constant_k",
+                "channel_center_wavelength")
+PUBLISHED_FD_CAL_PATH = (Path(__file__).resolve().parents[1]
+                         / "kdm6/obs/data/gk2a_ami_cal_202507190000.json")
 
 
 def sha256(path: Path) -> str:
@@ -54,24 +60,88 @@ def scalar(x: Any) -> float:
     return float(x)
 
 
-def cal_equal(ds: netCDF4.Dataset, cal: dict[str, Any]) -> bool:
-    if not all(k in ds.ncattrs() for k in CAL_KEYS):
+def fd_scalar(value: Any, path: Path, name: str, *, numeric_type: bool = False) -> float:
+    if (np.ndim(value) != 0 or isinstance(value, (bool, np.bool_))
+            or (numeric_type and not isinstance(value, numbers.Real))):
+        raise ValueError(f"{path}: FD {name} must be a numeric scalar")
+    try:
+        return float(value)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError(f"{path}: FD {name} must be a numeric scalar") from exc
+
+
+def cal_equal(ds: netCDF4.Dataset, cal: dict[str, Any],
+              effective_wavenumber_cm1: float | None = None) -> bool:
+    """Whether the file's effective coefficients and BT coordinate equal ``cal``.
+
+    A missing file wavenumber is checked against the independently resolved
+    audited fallback passed by the caller; the legacy coefficient tuple alone
+    is not a complete BT-map match.
+    """
+    if not all(k in ds.ncattrs() for k in FD_CAL_ATTRS):
         return False
     try:
-        return all(scalar(ds.getncattr(k)) == scalar(cal[k]) for k in CAL_KEYS)
-    except (TypeError, ValueError, KeyError):
+        params_match = all(scalar(ds.getncattr(k)) == scalar(cal[k])
+                           for k in FD_CAL_ATTRS)
+        wavenumber = (ds.getncattr("bt_wavenumber_cm1")
+                      if "bt_wavenumber_cm1" in ds.ncattrs()
+                      else effective_wavenumber_cm1)
+        if wavenumber is None or isinstance(wavenumber, (bool, np.bool_)):
+            return False
+        wavenumber = scalar(wavenumber)
+        return (params_match and np.isfinite(wavenumber) and wavenumber > 0.0
+                and wavenumber == scalar(cal["bt_wavenumber_cm1"]))
+    except (TypeError, ValueError, KeyError, OverflowError):
         return False
+
+
+def resolve_fd_calibration(path: Path, channel: str) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Independently resolve file coefficients plus explicit/audited BT center.
+
+    This intentionally duplicates the small binding rule rather than calling
+    the production FD reader or ``dn_to_bt`` used by the comparison target.
+    """
+    with netCDF4.Dataset(str(path), "r") as ds:
+        if not all(k in ds.ncattrs() for k in FD_CAL_ATTRS):
+            raise ValueError(f"{path}: FD calibration attributes are incomplete")
+        file_cal = {key: fd_scalar(ds.getncattr(key), path, key)
+                    for key in FD_CAL_ATTRS}
+        if not all(np.isfinite(value) for value in file_cal.values()):
+            raise ValueError(f"{path}: FD calibration tuple contains a non-finite value")
+
+        if "bt_wavenumber_cm1" in ds.ncattrs():
+            wavenumber = ds.getncattr("bt_wavenumber_cm1")
+            provenance = "explicit_file_attribute"
+        else:
+            published = json.loads(PUBLISHED_FD_CAL_PATH.read_text())["channels"].get(channel)
+            if published is None or any(
+                    file_cal[key] != scalar(published[key]) for key in FD_CAL_ATTRS):
+                raise ValueError(
+                    f"{path}: FD file without explicit BT wavenumber does not exactly "
+                    "match the independent published package tuple")
+            wavenumber = published.get("bt_wavenumber_cm1")
+            provenance = "audited_published_package_tuple_fallback"
+        wavenumber = fd_scalar(wavenumber, path, "bt_wavenumber_cm1", numeric_type=True)
+        if not np.isfinite(wavenumber) or wavenumber <= 0.0:
+            raise ValueError(f"{path}: FD bt_wavenumber_cm1 must be positive and finite")
+        effective = dict(file_cal, bt_wavenumber_cm1=wavenumber)
+
+    info = {"bt_wavenumber_source": provenance, "effective_wavenumber_cm1": wavenumber}
+    return effective, info
 
 
 def file_info(path: Path, source: str, channel: str, timestamp: str,
-              cal: dict[str, Any]) -> dict[str, Any]:
+              reference_cal: dict[str, Any], fd_calibration: dict[str, Any] | None = None
+              ) -> dict[str, Any]:
     with netCDF4.Dataset(str(path), "r") as ds:
         var = ds.variables["image_pixel_values"]
         vb = int(var.getncattr("number_of_valid_bits_per_pixel"))
         va, ga = set(var.ncattrs()), set(ds.ncattrs())
         dqf = (int(var.getncattr("number_of_data_quality_flag_bits_per_pixel"))
                if "number_of_data_quality_flag_bits_per_pixel" in va else None)
-        embedded = cal_equal(ds, cal) if source == "FD" else None
+        embedded = (cal_equal(ds, reference_cal,
+                              effective_wavenumber_cm1=fd_calibration["effective_wavenumber_cm1"])
+                    if source == "FD" and fd_calibration is not None else None)
         dtype, shape = str(np.dtype(var.dtype)), [int(n) for n in var.shape]
     digest = sha256(path)
     return {
@@ -83,6 +153,10 @@ def file_info(path: Path, source: str, channel: str, timestamp: str,
         "global_valid_bits_present": "number_of_valid_bits_per_pixel" in ga,
         "variable_dqf_bits": dqf,
         "embedded_calibration_matches_external": embedded,
+        "bt_wavenumber_source": (fd_calibration["bt_wavenumber_source"]
+                                 if fd_calibration is not None else None),
+        "effective_wavenumber_cm1": (fd_calibration["effective_wavenumber_cm1"]
+                                     if fd_calibration is not None else None),
     }
 
 
@@ -218,8 +292,12 @@ def sample_source(source: str, files: list[Path], timestamp: str, cal_table: dic
     coordinate_match = (np.array_equal(prod_lat, exp_lat) and np.array_equal(prod_lon, exp_lon))
     for path in files:
         channel = path.name.split("_ami_le1b_", 1)[1].split("_", 1)[0]
-        cal = cal_table["channels"][channel]
-        info = file_info(path, source, channel, timestamp, cal)
+        reference_cal = cal_table["channels"][channel]
+        if source == "FD":
+            cal, fd_calibration = resolve_fd_calibration(path, channel)
+        else:
+            cal, fd_calibration = reference_cal, None
+        info = file_info(path, source, channel, timestamp, reference_cal, fd_calibration)
         raw, missing, vb = sampled_raw(path, sel["rows"], sel["cols"], chunk_rows)
         old_dn, old_q, new_dn, new_q = independent_words(raw, vb, missing)
         new_radiance_ok = independent_radiance_ok(new_dn, cal)

@@ -64,7 +64,8 @@ measurement files retain their original source hashes and results.
 The [post-PR209 checklist](../harness/evidence/CHECKLIST_pr209_boundary_resolution_2026-09-06.md)
 records the new regression and normal-value checks. Its
 [KO/FD production sample](reports/ami_boundary_followup_sample_20260906.json)
-compares the updated independent expectation with the current reader at
+compares the then-current reader (2026-09-06, before source-paired BT) with its
+independent expectation at
 explicit strides 16/8; it does not replace the historical full-raster evidence.
 
 The [synthetic boundary record](reports/ami_radiance_boundary_20260906.json)
@@ -155,8 +156,8 @@ Earlier bitwise BT records apply to their historical source/coefficient version.
 
 FD coefficients remain file-sourced. Without an explicit file BT wavenumber,
 they must exactly match an audited channel tuple before its center is attached;
-unknown tuples are refused. The source pairing does not certify the deleted
-2025 FD product's actual SRF revision. In particular, retained IR133 coefficients
+unknown tuples are refused. The source pairing alone does not certify the recovered
+2025 FD products' actual SRF revision. In particular, retained IR133 coefficients
 are v3.0, whereas the installed RTTOV SRF is the later shifted v3.1 package.
 
 See [the definition checklist and common-coordinate replay](../harness/evidence/CHECKLIST_pr365_bt_definition_2026-10-04.md).
@@ -176,3 +177,9 @@ lack the FD lineage and acquisition metadata needed to transfer those claims.
 Published IR133 operational SRF-model history also means that an old table label
 must not be interpreted as proof of an unshifted response. Source-paired numeric
 BT decoding remains resolved; physical observation/simulation compatibility is separate.
+
+The [team audit and replay checklist](../harness/evidence/REPORT_team_audit_2026-10-04.md)
+records verification-tool fixes and unchanged retained results. The FD measurement
+expectation now follows file coefficients and their effective BT center, while its
+external table is a comparison reference. Offline coordinate replay is not adoption
+of the common KMA coordinate in the live DA loss or its adjoint.

@@ -5,9 +5,10 @@ import numpy as np
 import pytest
 
 from kdm6.obs.gk2a_l1b import load_cal_table, read_ko_slot
+from kdm6.obs.gk2a_l1b_fd import geos_latlon, read_fd_slot
 from scripts.measure_ami_bits import (
     independent_bt, independent_radiance_ok, independent_words,
-    sample_source, selection,
+    resolve_fd_calibration, sample_source, selection,
 )
 
 
@@ -41,6 +42,51 @@ def _ko_fixture(tmp_path):
         for name, value in attrs.items():
             ds.setncattr(name, value)
     return path
+
+
+def _fd_fixture(tmp_path, *, explicit_wavenumber, c0_delta=0.0):
+    nc4 = pytest.importorskip("netCDF4")
+    path = tmp_path / "gk2a_ami_le1b_ir105_fd020ge_202507190100.nc"
+    cal = dict(_CAL["channels"]["ir105"])
+    cal["Teff_to_Tbb_c0"] += c0_delta
+    geo = {
+        "coff": 0.5, "loff": 0.5, "cfac": 20425338.903339352,
+        "lfac": -20425338.903339352, "sub_longitude": 2.2375121010567303,
+        "nominal_satellite_height": 42164000.0, "earth_equatorial_radius": 6378137.0,
+        "earth_polar_radius": 6356752.3,
+    }
+    with nc4.Dataset(path, "w") as ds:
+        ds.createDimension("dim_image_y", 2)
+        ds.createDimension("dim_image_x", 2)
+        var = ds.createVariable("image_pixel_values", "u2",
+                                ("dim_image_y", "dim_image_x"))
+        var.number_of_valid_bits_per_pixel = np.uint8(13)
+        var[:] = np.array([[3909, 0x4000 | 3909],
+                           [0x8000 | 3909, 0xC000 | 3909]], dtype=np.uint16)
+        for name, value in geo.items():
+            ds.setncattr(name, value)
+        for name in ("DN_to_Radiance_Gain", "DN_to_Radiance_Offset",
+                     "Teff_to_Tbb_c0", "Teff_to_Tbb_c1", "Teff_to_Tbb_c2",
+                     "Plank_constant_h", "light_speed", "Boltzmann_constant_k",
+                     "channel_center_wavelength"):
+            ds.setncattr(name, cal[name])
+        if explicit_wavenumber:
+            ds.setncattr("bt_wavenumber_cm1", 1000.0)
+    return path, geo
+
+
+def _sample_fd(path, geo, reference):
+    payload = read_fd_slot([path], bbox=(-90.0, 90.0, -180.0, 180.0), stride=1)
+    rows = np.arange(2, dtype=np.int64)
+    lines, columns = np.meshgrid(rows.astype(float), rows.astype(float), indexing="ij")
+    lat, lon = geos_latlon(lines, columns, geo)
+    selection_doc = {"rows": rows, "cols": rows,
+                     "keep": np.ones(4, dtype=bool),
+                     "coordinates": (lat.reshape(-1), lon.reshape(-1)),
+                     "domain": {"kind": "minimal synthetic 2x2 FD"}}
+    return sample_source("FD", [path], "202507190100",
+                         {"channels": {"ir105": reference}}, payload,
+                         selection_doc, chunk_rows=1)
 
 
 def test_historical_counterfactual_keeps_clipped_invalid_bt_separate():
@@ -90,3 +136,44 @@ def test_sample_source_keeps_embedded_dqf_and_netcdf_mask(tmp_path):
     assert row["correct_usable_finite"] == 1
     assert row["production_vs_independent_correct"]["q_exact"] is True
     assert row["production_vs_independent_correct"]["bt_exact_count"] == 4
+
+
+@pytest.mark.parametrize("c0_delta", [0.0, 0.1])
+def test_fd_sample_uses_explicit_file_calibration_and_wavenumber(tmp_path, c0_delta):
+    path, geo = _fd_fixture(tmp_path, explicit_wavenumber=True, c0_delta=c0_delta)
+    reference = dict(_CAL["channels"]["ir105"])
+    saved_reference = dict(reference)
+    observed, file_records = _sample_fd(path, geo, reference)
+    row = observed["channels"]["ir105"]
+    assert file_records[0]["bt_wavenumber_source"] == "explicit_file_attribute"
+    assert file_records[0]["effective_wavenumber_cm1"] == 1000.0
+    assert file_records[0]["embedded_calibration_matches_external"] is False
+    assert row["production_vs_independent_correct"]["q_exact"] is True
+    assert row["production_vs_independent_correct"]["bt_exact_count"] == 4
+    assert row["production_vs_independent_correct"]["bt_max_abs_error_K"] == 0.0
+    assert row["correct_dqf_counts_finite"] == [1, 1, 1, 1]
+    assert reference == saved_reference
+
+
+@pytest.mark.parametrize("reference_wavenumber_delta", [0.0, 0.01])
+def test_fd_sample_binds_missing_wavenumber_to_published_tuple(tmp_path, reference_wavenumber_delta):
+    path, geo = _fd_fixture(tmp_path, explicit_wavenumber=False)
+    reference = dict(_CAL["channels"]["ir105"])
+    reference["bt_wavenumber_cm1"] += reference_wavenumber_delta
+    saved_reference = dict(reference)
+    observed, file_records = _sample_fd(path, geo, reference)
+    row = observed["channels"]["ir105"]
+    assert file_records[0]["bt_wavenumber_source"] == "audited_published_package_tuple_fallback"
+    assert file_records[0]["effective_wavenumber_cm1"] == _CAL["channels"]["ir105"]["bt_wavenumber_cm1"]
+    assert file_records[0]["embedded_calibration_matches_external"] is (reference_wavenumber_delta == 0.0)
+    assert row["production_vs_independent_correct"]["q_exact"] is True
+    assert row["production_vs_independent_correct"]["bt_exact_count"] == 4
+    assert row["production_vs_independent_correct"]["bt_max_abs_error_K"] == 0.0
+    assert row["correct_dqf_counts_finite"] == [1, 1, 1, 1]
+    assert reference == saved_reference
+
+
+def test_fd_independent_fallback_refuses_an_unknown_tuple(tmp_path):
+    path, _ = _fd_fixture(tmp_path, explicit_wavenumber=False, c0_delta=0.1)
+    with pytest.raises(ValueError, match="does not exactly match the independent published package tuple"):
+        resolve_fd_calibration(path, "ir105")
