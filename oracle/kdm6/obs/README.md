@@ -1,6 +1,13 @@
 # `kdm6/obs/` — 모델면 RTTOV 관측연산자 (scaffold)
 
-설계: [`KDM6AD/model-side-rttov-observation-operator.md`](../../../model-side-rttov-observation-operator.md).
+Implementation note (2026-10-04): the initial scaffold/stub and missing-hydrotable
+notes below are historical design notes, not current implementation status. The
+package now has the live operator and first-order cloud/cost paths; see the
+[bounded live KMA result](../../../harness/evidence/REPORT_live_KMA_cost_2026-10-04.md).
+Physical accuracy and full DAWindow acceptance remain separate.
+
+Historical design reference: `KDM6AD/model-side-rttov-observation-operator.md`
+(external design file, not shipped in the public repository).
 관측 valid time의 완료 모델 상태(checkpoint 경계)에서 RTTOV direct/K를 **out-of-process**로 수행하고,
 profile adjoint를 KDM6AD-consistent bridge VJP(`../rttov_bridge.py`)로 state adjoint로 변환해
 `../da_window.py`의 `obs_adj[t]`로 주입한다.
@@ -36,3 +43,18 @@ torch 경로엔 직접 못 씀 — README 참조.
   **최종목적(all-sky 16채널)의 결정적 blocker**다(설계 §1.7/§13/§14.5).
 
 전부 stub(NotImplementedError) — 구현은 위 우선순위로.
+## Explicit KMA BT research coordinate
+
+`make_live_run_k(case_dir, fixture_case_dir=fixture, ami_kma_bt=True)` returns
+model BT and every K row in the paired KMA v3.0 coordinate for thermal AMI channels
+8–16. It uses TOTAL radiance from the same K run and the coefficient file actually
+consumed by that case. `RttovObsOp` then contracts the converted K against the
+cost's KMA-coordinate cotangent. The default native RTTOV/solar path is unchanged.
+
+Use source-paired KMA observations and declare bias/error scales in that same
+coordinate. This mode requires positive finite TOTAL radiance in every row,
+including flagged rows; zero/nonpositive placeholders are explicitly unsupported.
+It preserves quality flags and rejects solar channels. Cached external K supplies
+first-order derivatives only. The [retained live cost check](../../../harness/evidence/REPORT_live_KMA_cost_2026-10-04.md)
+validates one NC direction with a diagnostic 1 K scale; it does not approve the
+error model, SRF compatibility or a complete DAWindow trajectory.

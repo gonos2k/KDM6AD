@@ -11,6 +11,8 @@ closed. This follow-up adds metadata and policy evidence, not a new physical map
   installed RTTOV response package; do not infer one from another.
 - [x] State coordinate requirements for Jacobian, bias and covariance together.
 - [x] Check availability of the named ELA parents without substituting FD or LA.
+- [x] Connect one explicit KMA-coordinate live forward/loss/VJP and independent FD
+  for the retained C5 NC direction; see [the bounded result](REPORT_live_KMA_cost_2026-10-04.md).
 - [ ] Establish the exact KO ELA source lineage and processing/SRF identity, or
   obtain a justified product-to-simulation compatibility statement.
 - [ ] Approve a physical observation target, supported base error/bias model and

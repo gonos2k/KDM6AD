@@ -181,5 +181,9 @@ BT decoding remains resolved; physical observation/simulation compatibility is s
 The [team audit and replay checklist](../harness/evidence/REPORT_team_audit_2026-10-04.md)
 records verification-tool fixes and unchanged retained results. The FD measurement
 expectation now follows file coefficients and their effective BT center, while its
-external table is a comparison reference. Offline coordinate replay is not adoption
-of the common KMA coordinate in the live DA loss or its adjoint.
+external table is a comparison reference. The offline coordinate replay did not
+adopt the common KMA coordinate in the live DA loss or its adjoint. The subsequent
+[live KMA cost check](../harness/evidence/REPORT_live_KMA_cost_2026-10-04.md)
+connects an explicit research mode to `RttovObsOp`, the diagnostic loss and its VJP
+for one retained NC direction. Full DAWindow/native routing and scientific
+observation approval remain separate.

@@ -1155,7 +1155,7 @@ def merge_solar_observable(bt, refl, channels, solar_channels):
 
 
 def make_live_run_k(out_case_dir, *, fixture_case_dir=None, solar_channels=(),
-                    timeout=DEFAULT_RTTOV_TIMEOUT):
+                    timeout=DEFAULT_RTTOV_TIMEOUT, ami_kma_bt=False):
     """Build the live ``run_k(RttovInput) -> (observable, K, rad_quality)`` for RttovObsOp.
 
     Each call: write_rttov_case (overlay T/Q + cloud onto the fixture) -> out-of-process
@@ -1168,13 +1168,33 @@ def make_live_run_k(out_case_dir, *, fixture_case_dir=None, solar_channels=(),
     rewriting it. Sequential calls reuse it; independent jobs should use unique
     directories. The timeout bounds each external run (default 300 seconds),
     not preparation, parsing, or the complete DA cycle. No unbounded opt-out.
+
+    ``ami_kma_bt=True`` selects the paired KMA v3.0 BT coordinate for thermal AMI
+    channels 8..16. TOTAL radiance and BT/K come from the same locked run; all K
+    rows are converted at the model radiance. The bundled calibration is frozen
+    when this closure is created. This does not certify SRF compatibility or an
+    observation error model. The default native RTTOV/solar contract is unchanged.
     """
     timeout = validate_rttov_timeout(timeout)
+    if not isinstance(ami_kma_bt, bool):
+        raise ValueError("ami_kma_bt must be a boolean")
+    if ami_kma_bt and solar_channels:
+        raise ValueError("KMA BT conversion supports thermal AMI channels only")
+    if ami_kma_bt:
+        from .ami_bt_coordinate import (read_ami_filters, read_kma_calibration,
+                                        transform_rttov_to_kma)
+        from ._rttov_reference.rttov_ascii import parse_rttov_ascii_blocks
+        calibration = read_kma_calibration()
+
     def _run_k(rttov_input):
+        if ami_kma_bt and any(c not in range(8, 17) for c in rttov_input.config.channels):
+            raise ValueError("KMA BT conversion supports AMI channels 8..16 only")
         with exclusive_rttov_case(out_case_dir, role="root"):
             case_out = write_rttov_case(rttov_input, out_case_dir,
                                         fixture_case_dir=fixture_case_dir, overwrite=True,
                                         solar_channels=solar_channels, _lock=False)
+            if ami_kma_bt:
+                filters = read_ami_filters(_resolve_coef_path(Path(out_case_dir)))
             # The closure already owns CASE for the complete write/run/parse
             # transaction. Use the runner's unlocked core here so macOS flock
             # does not reject this intentional nested acquisition; direct
@@ -1194,7 +1214,19 @@ def make_live_run_k(out_case_dir, *, fixture_case_dir=None, solar_channels=(),
             # reorder to the run_k contract (observable, K, rad_quality); never `tuple(out)`.
             observable = merge_solar_observable(out.bt, out.refl,
                                                 rttov_input.config.channels, solar_channels)
-            return observable, out.k, out.rad_quality
+            k = out.k
+            if ami_kma_bt:
+                import numpy as np
+                blocks = parse_rttov_ascii_blocks(case_out / "k/radiance.txt")
+                if "RADIANCE%TOTAL" not in blocks:
+                    raise ValueError("KMA BT conversion requires same-run TOTAL radiance")
+                total = np.asarray(blocks["RADIANCE%TOTAL"], dtype=np.float64)
+                if total.size != out.nprofiles * out.nchannels:
+                    raise ValueError("TOTAL radiance does not match the BT profile/channel count")
+                observable, k, _ = transform_rttov_to_kma(
+                    observable, total.reshape(out.nprofiles, out.nchannels), k,
+                    rttov_input.config.channels, filters, calibration)
+            return observable, k, out.rad_quality
 
     # Tag the closure with its solar set so a consumer (obs_adjoint_callback) can verify
     # it matches ObsOperatorConfig.solar_channels -- a mismatch (e.g. cfg says solar but
@@ -1202,4 +1234,5 @@ def make_live_run_k(out_case_dir, *, fixture_case_dir=None, solar_channels=(),
     _run_k.solar_channels = tuple(int(c) for c in solar_channels)
     _run_k.evidence_level = "wiring_only"
     _run_k.timeout = timeout
+    _run_k.bt_coordinate = "kma_v3_0" if ami_kma_bt else "rttov_native"
     return _run_k
