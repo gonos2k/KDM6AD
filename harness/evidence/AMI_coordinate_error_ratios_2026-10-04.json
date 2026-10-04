@@ -1,0 +1,68 @@
+{
+  "scope": "deterministic local coordinate ratios from retained data; no covariance estimated or assigned",
+  "channels": {
+    "wv073": {
+      "at_observation_center_dphi_dpsi": 1.0000030045440156,
+      "local_variance_coordinate_ratio": 1.0000060090970584,
+      "exact_common_coordinate_residual_K": -0.5418329375949043,
+      "locally_rescaled_rttov_residual_K": -0.541832906536201,
+      "finite_residual_linearization_difference_K": -3.1058703275910204e-08,
+      "is_calibrated_observation_variance": false
+    },
+    "ir087": {
+      "at_observation_center_dphi_dpsi": 0.9999937119290829,
+      "local_variance_coordinate_ratio": 0.9999874238977057,
+      "exact_common_coordinate_residual_K": 5.909701487098459,
+      "locally_rescaled_rttov_residual_K": 5.909714150613112,
+      "finite_residual_linearization_difference_K": -1.2663514652899721e-05,
+      "is_calibrated_observation_variance": false
+    },
+    "ir096": {
+      "at_observation_center_dphi_dpsi": 1.0000106405743017,
+      "local_variance_coordinate_ratio": 1.0000212812618252,
+      "exact_common_coordinate_residual_K": 0.44020781023772315,
+      "locally_rescaled_rttov_residual_K": 0.4402078828419796,
+      "finite_residual_linearization_difference_K": -7.260425644028956e-08,
+      "is_calibrated_observation_variance": false
+    },
+    "ir105": {
+      "at_observation_center_dphi_dpsi": 0.9999850849540072,
+      "local_variance_coordinate_ratio": 0.999970170130473,
+      "exact_common_coordinate_residual_K": 5.718488515262152,
+      "locally_rescaled_rttov_residual_K": 5.718506502002672,
+      "finite_residual_linearization_difference_K": -1.7986740520115063e-05,
+      "is_calibrated_observation_variance": false
+    },
+    "ir112": {
+      "at_observation_center_dphi_dpsi": 0.9999665123034736,
+      "local_variance_coordinate_ratio": 0.999933025728373,
+      "exact_common_coordinate_residual_K": 4.936069090724743,
+      "locally_rescaled_rttov_residual_K": 4.936096631754643,
+      "finite_residual_linearization_difference_K": -2.7541029900213232e-05,
+      "is_calibrated_observation_variance": false
+    },
+    "ir123": {
+      "at_observation_center_dphi_dpsi": 0.9999266235085192,
+      "local_variance_coordinate_ratio": 0.999853252401148,
+      "exact_common_coordinate_residual_K": 3.386137514416589,
+      "locally_rescaled_rttov_residual_K": 3.386166471739079,
+      "finite_residual_linearization_difference_K": -2.8957322490086312e-05,
+      "is_calibrated_observation_variance": false
+    },
+    "ir133": {
+      "at_observation_center_dphi_dpsi": 0.9995520613259318,
+      "local_variance_coordinate_ratio": 0.9991043233009193,
+      "exact_common_coordinate_residual_K": 1.6910484977209421,
+      "locally_rescaled_rttov_residual_K": 1.6910565697124316,
+      "finite_residual_linearization_difference_K": -8.071991489444486e-06,
+      "is_calibrated_observation_variance": false
+    }
+  },
+  "base_R_approved": false,
+  "source_sha256": {
+    "harness/evidence/AMI_coordinate_error_source_2026-10-04.py": "b0baa6ee1a73addb9fc885013441567f503fa33deb43dd123df818e1f00076e8",
+    "harness/evidence/AMI_bt_coordinate_source_2026-10-04.py": "3098c5a4539a6df48ccecf557c57baaee8e7d845fbb6e1bf2d26c6ba45fc8499",
+    "harness/evidence/AMI_bt_coordinate_result_2026-10-04.json": "a6876060ebfe6c61bc6ddf1851a31b9293dada7b0b2c0bb6bcef74454d7e1d59",
+    "oracle/kdm6/obs/data/gk2a_ami_cal_202507190000.json": "a6f830aa04e19f6982aa6ff36e832464a5b32fdcf8200211956969d5eb48325d"
+  }
+}

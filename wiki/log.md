@@ -452,3 +452,12 @@ keeping nominal labels and the old JSON as historical evidence. KO/FD consume
 explicit or audited coordinates; unknown FD pairs fail. The [definition checklist](../harness/evidence/CHECKLIST_pr365_bt_definition_2026-10-04.md)
 links common-radiance/derivative replays and actual reader checks. IR133's v3.0
 observation versus shifted-v3.1 simulation and S2/S11 physical approval remain OPEN.
+
+## 2026-10-04 — Recovered AMI epoch headers and SRF-version distinction
+
+Found the original local 2025 FD archive: all ten table labels/tuples match v3.0.
+Header-only evidence separates this from actual SRF identity and KO ELA lineage.
+The [follow-up checklist](../harness/evidence/CHECKLIST_pr366_epoch_srf_error_2026-10-04.md)
+records operational SRF-model history, the scalar-response limitation and local
+bias/covariance/Jacobian coordinate rules. No physical approval, covariance fit,
+SRF substitution or production algorithm changed.

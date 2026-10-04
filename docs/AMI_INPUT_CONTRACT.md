@@ -164,3 +164,15 @@ The archived nominal table preserves previous C5/PR #365 calculations. When
 comparing under another BT representation, model Jacobians must also be multiplied
 by the conversion derivative. Coordinate agreement is separate from physical
 spectral/footprint accuracy and observation-cost approval.
+
+## Recovered 2025 product metadata (2026-10-04)
+
+The [epoch/SRF follow-up](../harness/evidence/CHECKLIST_pr366_epoch_srf_error_2026-10-04.md)
+now directly checks the local original 2025 FD headers: all ten report v3.0 and
+match the audited BT coefficients. The older pairing receipt's inability to
+inspect those files was a historical workspace limitation. This new table-version
+evidence does not certify an actual SRF epoch. KO headers name ELA sources and
+lack the FD lineage and acquisition metadata needed to transfer those claims.
+Published IR133 operational SRF-model history also means that an old table label
+must not be interpreted as proof of an unshifted response. Source-paired numeric
+BT decoding remains resolved; physical observation/simulation compatibility is separate.

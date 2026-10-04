@@ -1,0 +1,1292 @@
+{
+  "fd_ami_spectral_files": {
+    "ir087": {
+      "all_calibration_fields_match": true,
+      "calibration_json_exact_matches": {
+        "Boltzmann_constant_k": true,
+        "DN_to_Radiance_Gain": true,
+        "DN_to_Radiance_Offset": true,
+        "Plank_constant_h": true,
+        "Teff_to_Tbb_c0": true,
+        "Teff_to_Tbb_c1": true,
+        "Teff_to_Tbb_c2": true,
+        "light_speed": true
+      },
+      "header": {
+        "global_attributes": {
+          "Boltzmann_constant_k": 1.3806488e-23,
+          "DN_to_Radiance_Gain": -0.0144806550815701,
+          "DN_to_Radiance_Offset": 118.050903320312,
+          "Plank_constant_h": 6.62606957e-34,
+          "Teff_to_Tbb_c0": -0.141418528203155,
+          "Teff_to_Tbb_c1": 1.00052232906885,
+          "Teff_to_Tbb_c2": -3.6287276076109e-07,
+          "calibration_table_version": "v.3.0_20190415",
+          "channel_center_wavelength": "8.7",
+          "data_processing_center": "NMSC",
+          "data_processing_mode": "operation",
+          "file_format_version": "1.0.0_20181120",
+          "file_generation_time": "20250719_000953",
+          "file_name": "gk2a_ami_le1b_ir087_fd020ge_202507190000.nc",
+          "instrument_name": "AMI",
+          "light_speed": 299792458.0,
+          "mission_reference_time": "20250719_000000",
+          "observation_end_time": 806155776.7962154,
+          "observation_mode": "FD",
+          "observation_start_time": 806155233.1435251,
+          "satellite_name": "GK-2A",
+          "scene_acquisition_time": "20250719_000033",
+          "spectral_metadata_attributes": {},
+          "time_synchro_obt": 806155233.1435251,
+          "time_synchro_utc": 806155233.1554484
+        },
+        "image_pixel_values_header": {
+          "attributes": {
+            "channel_name": "IR087",
+            "number_of_data_quality_flag_bits_per_pixel": 2,
+            "number_of_total_bits_per_pixel": 16,
+            "number_of_valid_bits_per_pixel": 13
+          },
+          "dtype": "uint16",
+          "shape": [
+            5500,
+            5500
+          ]
+        },
+        "metadata_presence": {
+          "calibration_table_version": true,
+          "explicit_bt_wavenumber": false,
+          "mission_reference_time": true,
+          "observation_end_time": true,
+          "observation_start_time": true,
+          "scene_acquisition_time": true,
+          "srf_or_spectral_response_metadata": false
+        }
+      },
+      "manifest_key": "AMI/L1B/FD/202507/19/00/gk2a_ami_le1b_ir087_fd020ge_202507190000.nc",
+      "manifest_size_matches": true,
+      "path": "/Users/yhlee/KDM6AD+/observations/gk2a/20250719_0000_fd/gk2a_ami_le1b_ir087_fd020ge_202507190000.nc",
+      "sha256": "1c09e9fab92eba7c92c50246301fe990e44359df48b89c8ed28d2c4f7637fa95",
+      "size_bytes": 35486733
+    },
+    "ir096": {
+      "all_calibration_fields_match": true,
+      "calibration_json_exact_matches": {
+        "Boltzmann_constant_k": true,
+        "DN_to_Radiance_Gain": true,
+        "DN_to_Radiance_Offset": true,
+        "Plank_constant_h": true,
+        "Teff_to_Tbb_c0": true,
+        "Teff_to_Tbb_c1": true,
+        "Teff_to_Tbb_c2": true,
+        "light_speed": true
+      },
+      "header": {
+        "global_attributes": {
+          "Boltzmann_constant_k": 1.3806488e-23,
+          "DN_to_Radiance_Gain": -0.0178435463458299,
+          "DN_to_Radiance_Offset": 145.464874267578,
+          "Plank_constant_h": 6.62606957e-34,
+          "Teff_to_Tbb_c0": -0.114017728158198,
+          "Teff_to_Tbb_c1": 1.00047380585402,
+          "Teff_to_Tbb_c2": -3.74931509928403e-07,
+          "calibration_table_version": "v.3.0_20190415",
+          "channel_center_wavelength": "9.6",
+          "data_processing_center": "NMSC",
+          "data_processing_mode": "operation",
+          "file_format_version": "1.0.0_20181120",
+          "file_generation_time": "20250719_000953",
+          "file_name": "gk2a_ami_le1b_ir096_fd020ge_202507190000.nc",
+          "instrument_name": "AMI",
+          "light_speed": 299792458.0,
+          "mission_reference_time": "20250719_000000",
+          "observation_end_time": 806155776.7962154,
+          "observation_mode": "FD",
+          "observation_start_time": 806155233.1435251,
+          "satellite_name": "GK-2A",
+          "scene_acquisition_time": "20250719_000033",
+          "spectral_metadata_attributes": {},
+          "time_synchro_obt": 806155233.1435251,
+          "time_synchro_utc": 806155233.1554484
+        },
+        "image_pixel_values_header": {
+          "attributes": {
+            "channel_name": "IR096",
+            "number_of_data_quality_flag_bits_per_pixel": 2,
+            "number_of_total_bits_per_pixel": 16,
+            "number_of_valid_bits_per_pixel": 13
+          },
+          "dtype": "uint16",
+          "shape": [
+            5500,
+            5500
+          ]
+        },
+        "metadata_presence": {
+          "calibration_table_version": true,
+          "explicit_bt_wavenumber": false,
+          "mission_reference_time": true,
+          "observation_end_time": true,
+          "observation_start_time": true,
+          "scene_acquisition_time": true,
+          "srf_or_spectral_response_metadata": false
+        }
+      },
+      "manifest_key": "AMI/L1B/FD/202507/19/00/gk2a_ami_le1b_ir096_fd020ge_202507190000.nc",
+      "manifest_size_matches": true,
+      "path": "/Users/yhlee/KDM6AD+/observations/gk2a/20250719_0000_fd/gk2a_ami_le1b_ir096_fd020ge_202507190000.nc",
+      "sha256": "c71f84cd77a7499a528698dca1f823f9e46472d8c23cc8e897b423f00ccd7568",
+      "size_bytes": 32572768
+    },
+    "ir105": {
+      "all_calibration_fields_match": true,
+      "calibration_json_exact_matches": {
+        "Boltzmann_constant_k": true,
+        "DN_to_Radiance_Gain": true,
+        "DN_to_Radiance_Offset": true,
+        "Plank_constant_h": true,
+        "Teff_to_Tbb_c0": true,
+        "Teff_to_Tbb_c1": true,
+        "Teff_to_Tbb_c2": true,
+        "light_speed": true
+      },
+      "header": {
+        "global_attributes": {
+          "Boltzmann_constant_k": 1.3806488e-23,
+          "DN_to_Radiance_Gain": -0.0198196955025196,
+          "DN_to_Radiance_Offset": 161.580139160156,
+          "Plank_constant_h": 6.62606957e-34,
+          "Teff_to_Tbb_c0": -0.142866448475177,
+          "Teff_to_Tbb_c1": 1.00064069572049,
+          "Teff_to_Tbb_c2": -5.50443294960498e-07,
+          "calibration_table_version": "v.3.0_20190415",
+          "channel_center_wavelength": "10.5",
+          "data_processing_center": "NMSC",
+          "data_processing_mode": "operation",
+          "file_format_version": "1.0.0_20181120",
+          "file_generation_time": "20250719_000953",
+          "file_name": "gk2a_ami_le1b_ir105_fd020ge_202507190000.nc",
+          "instrument_name": "AMI",
+          "light_speed": 299792458.0,
+          "mission_reference_time": "20250719_000000",
+          "observation_end_time": 806155776.7962154,
+          "observation_mode": "FD",
+          "observation_start_time": 806155233.1435251,
+          "satellite_name": "GK-2A",
+          "scene_acquisition_time": "20250719_000033",
+          "spectral_metadata_attributes": {},
+          "time_synchro_obt": 806155233.1435251,
+          "time_synchro_utc": 806155233.1554484
+        },
+        "image_pixel_values_header": {
+          "attributes": {
+            "channel_name": "IR105",
+            "number_of_data_quality_flag_bits_per_pixel": 2,
+            "number_of_total_bits_per_pixel": 16,
+            "number_of_valid_bits_per_pixel": 13
+          },
+          "dtype": "uint16",
+          "shape": [
+            5500,
+            5500
+          ]
+        },
+        "metadata_presence": {
+          "calibration_table_version": true,
+          "explicit_bt_wavenumber": false,
+          "mission_reference_time": true,
+          "observation_end_time": true,
+          "observation_start_time": true,
+          "scene_acquisition_time": true,
+          "srf_or_spectral_response_metadata": false
+        }
+      },
+      "manifest_key": "AMI/L1B/FD/202507/19/00/gk2a_ami_le1b_ir105_fd020ge_202507190000.nc",
+      "manifest_size_matches": true,
+      "path": "/Users/yhlee/KDM6AD+/observations/gk2a/20250719_0000_fd/gk2a_ami_le1b_ir105_fd020ge_202507190000.nc",
+      "sha256": "40cb7ace877a65661be317476ce09589fe7597a1903c8ff51ae93ca4e7079de4",
+      "size_bytes": 35775494
+    },
+    "ir112": {
+      "all_calibration_fields_match": true,
+      "calibration_json_exact_matches": {
+        "Boltzmann_constant_k": true,
+        "DN_to_Radiance_Gain": true,
+        "DN_to_Radiance_Offset": true,
+        "Plank_constant_h": true,
+        "Teff_to_Tbb_c0": true,
+        "Teff_to_Tbb_c1": true,
+        "Teff_to_Tbb_c2": true,
+        "light_speed": true
+      },
+      "header": {
+        "global_attributes": {
+          "Boltzmann_constant_k": 1.3806488e-23,
+          "DN_to_Radiance_Gain": -0.0216744858771562,
+          "DN_to_Radiance_Offset": 176.713439941406,
+          "Plank_constant_h": 6.62606957e-34,
+          "Teff_to_Tbb_c0": -0.249111718496148,
+          "Teff_to_Tbb_c1": 1.00121166873756,
+          "Teff_to_Tbb_c2": -1.13167964011665e-06,
+          "calibration_table_version": "v.3.0_20190415",
+          "channel_center_wavelength": "11.2",
+          "data_processing_center": "NMSC",
+          "data_processing_mode": "operation",
+          "file_format_version": "1.0.0_20181120",
+          "file_generation_time": "20250719_000953",
+          "file_name": "gk2a_ami_le1b_ir112_fd020ge_202507190000.nc",
+          "instrument_name": "AMI",
+          "light_speed": 299792458.0,
+          "mission_reference_time": "20250719_000000",
+          "observation_end_time": 806155776.7962154,
+          "observation_mode": "FD",
+          "observation_start_time": 806155233.1435251,
+          "satellite_name": "GK-2A",
+          "scene_acquisition_time": "20250719_000033",
+          "spectral_metadata_attributes": {},
+          "time_synchro_obt": 806155233.1435251,
+          "time_synchro_utc": 806155233.1554484
+        },
+        "image_pixel_values_header": {
+          "attributes": {
+            "channel_name": "IR112",
+            "number_of_data_quality_flag_bits_per_pixel": 2,
+            "number_of_total_bits_per_pixel": 16,
+            "number_of_valid_bits_per_pixel": 13
+          },
+          "dtype": "uint16",
+          "shape": [
+            5500,
+            5500
+          ]
+        },
+        "metadata_presence": {
+          "calibration_table_version": true,
+          "explicit_bt_wavenumber": false,
+          "mission_reference_time": true,
+          "observation_end_time": true,
+          "observation_start_time": true,
+          "scene_acquisition_time": true,
+          "srf_or_spectral_response_metadata": false
+        }
+      },
+      "manifest_key": "AMI/L1B/FD/202507/19/00/gk2a_ami_le1b_ir112_fd020ge_202507190000.nc",
+      "manifest_size_matches": true,
+      "path": "/Users/yhlee/KDM6AD+/observations/gk2a/20250719_0000_fd/gk2a_ami_le1b_ir112_fd020ge_202507190000.nc",
+      "sha256": "95a2c3ce7fd2582e0608be7d5d3e7799cb4456b50b6ca476360f4858f55df90f",
+      "size_bytes": 35737420
+    },
+    "ir123": {
+      "all_calibration_fields_match": true,
+      "calibration_json_exact_matches": {
+        "Boltzmann_constant_k": true,
+        "DN_to_Radiance_Gain": true,
+        "DN_to_Radiance_Offset": true,
+        "Plank_constant_h": true,
+        "Teff_to_Tbb_c0": true,
+        "Teff_to_Tbb_c1": true,
+        "Teff_to_Tbb_c2": true,
+        "light_speed": true
+      },
+      "header": {
+        "global_attributes": {
+          "Boltzmann_constant_k": 1.3806488e-23,
+          "DN_to_Radiance_Gain": -0.023379972204566,
+          "DN_to_Radiance_Offset": 190.649627685546,
+          "Plank_constant_h": 6.62606957e-34,
+          "Teff_to_Tbb_c0": -0.458113885722738,
+          "Teff_to_Tbb_c1": 1.00245520975535,
+          "Teff_to_Tbb_c2": -2.53064314720476e-06,
+          "calibration_table_version": "v.3.0_20190415",
+          "channel_center_wavelength": "12.3",
+          "data_processing_center": "NMSC",
+          "data_processing_mode": "operation",
+          "file_format_version": "1.0.0_20181120",
+          "file_generation_time": "20250719_000953",
+          "file_name": "gk2a_ami_le1b_ir123_fd020ge_202507190000.nc",
+          "instrument_name": "AMI",
+          "light_speed": 299792458.0,
+          "mission_reference_time": "20250719_000000",
+          "observation_end_time": 806155776.7962154,
+          "observation_mode": "FD",
+          "observation_start_time": 806155233.1435251,
+          "satellite_name": "GK-2A",
+          "scene_acquisition_time": "20250719_000033",
+          "spectral_metadata_attributes": {},
+          "time_synchro_obt": 806155233.1435251,
+          "time_synchro_utc": 806155233.1554484
+        },
+        "image_pixel_values_header": {
+          "attributes": {
+            "channel_name": "IR123",
+            "number_of_data_quality_flag_bits_per_pixel": 2,
+            "number_of_total_bits_per_pixel": 16,
+            "number_of_valid_bits_per_pixel": 13
+          },
+          "dtype": "uint16",
+          "shape": [
+            5500,
+            5500
+          ]
+        },
+        "metadata_presence": {
+          "calibration_table_version": true,
+          "explicit_bt_wavenumber": false,
+          "mission_reference_time": true,
+          "observation_end_time": true,
+          "observation_start_time": true,
+          "scene_acquisition_time": true,
+          "srf_or_spectral_response_metadata": false
+        }
+      },
+      "manifest_key": "AMI/L1B/FD/202507/19/00/gk2a_ami_le1b_ir123_fd020ge_202507190000.nc",
+      "manifest_size_matches": true,
+      "path": "/Users/yhlee/KDM6AD+/observations/gk2a/20250719_0000_fd/gk2a_ami_le1b_ir123_fd020ge_202507190000.nc",
+      "sha256": "22373d8aa86316bf57d96444dd9bfbdcad00a539ae2bc0a6fa9107328964e5d2",
+      "size_bytes": 35337550
+    },
+    "ir133": {
+      "all_calibration_fields_match": true,
+      "calibration_json_exact_matches": {
+        "Boltzmann_constant_k": true,
+        "DN_to_Radiance_Gain": true,
+        "DN_to_Radiance_Offset": true,
+        "Plank_constant_h": true,
+        "Teff_to_Tbb_c0": true,
+        "Teff_to_Tbb_c1": true,
+        "Teff_to_Tbb_c2": true,
+        "light_speed": true
+      },
+      "header": {
+        "global_attributes": {
+          "Boltzmann_constant_k": 1.3806488e-23,
+          "DN_to_Radiance_Gain": -0.0243037566542625,
+          "DN_to_Radiance_Offset": 198.224365234375,
+          "Plank_constant_h": 6.62606957e-34,
+          "Teff_to_Tbb_c0": -0.0938521568527657,
+          "Teff_to_Tbb_c1": 1.00053982112966,
+          "Teff_to_Tbb_c2": -5.94913715312849e-07,
+          "calibration_table_version": "v.3.0_20190415",
+          "channel_center_wavelength": "13.3",
+          "data_processing_center": "NMSC",
+          "data_processing_mode": "operation",
+          "file_format_version": "1.0.0_20181120",
+          "file_generation_time": "20250719_000953",
+          "file_name": "gk2a_ami_le1b_ir133_fd020ge_202507190000.nc",
+          "instrument_name": "AMI",
+          "light_speed": 299792458.0,
+          "mission_reference_time": "20250719_000000",
+          "observation_end_time": 806155776.7962154,
+          "observation_mode": "FD",
+          "observation_start_time": 806155233.1435251,
+          "satellite_name": "GK-2A",
+          "scene_acquisition_time": "20250719_000033",
+          "spectral_metadata_attributes": {},
+          "time_synchro_obt": 806155233.1435251,
+          "time_synchro_utc": 806155233.1554484
+        },
+        "image_pixel_values_header": {
+          "attributes": {
+            "channel_name": "IR133",
+            "number_of_data_quality_flag_bits_per_pixel": 2,
+            "number_of_total_bits_per_pixel": 16,
+            "number_of_valid_bits_per_pixel": 13
+          },
+          "dtype": "uint16",
+          "shape": [
+            5500,
+            5500
+          ]
+        },
+        "metadata_presence": {
+          "calibration_table_version": true,
+          "explicit_bt_wavenumber": false,
+          "mission_reference_time": true,
+          "observation_end_time": true,
+          "observation_start_time": true,
+          "scene_acquisition_time": true,
+          "srf_or_spectral_response_metadata": false
+        }
+      },
+      "manifest_key": "AMI/L1B/FD/202507/19/00/gk2a_ami_le1b_ir133_fd020ge_202507190000.nc",
+      "manifest_size_matches": true,
+      "path": "/Users/yhlee/KDM6AD+/observations/gk2a/20250719_0000_fd/gk2a_ami_le1b_ir133_fd020ge_202507190000.nc",
+      "sha256": "a94a750cb1e1426ed973b949e7f37d1de1cca11866f38373a92d673b6d140fbb",
+      "size_bytes": 33523767
+    },
+    "sw038": {
+      "all_calibration_fields_match": true,
+      "calibration_json_exact_matches": {
+        "Boltzmann_constant_k": true,
+        "DN_to_Radiance_Gain": true,
+        "DN_to_Radiance_Offset": true,
+        "Plank_constant_h": true,
+        "Teff_to_Tbb_c0": true,
+        "Teff_to_Tbb_c1": true,
+        "Teff_to_Tbb_c2": true,
+        "light_speed": true
+      },
+      "header": {
+        "global_attributes": {
+          "Boltzmann_constant_k": 1.3806488e-23,
+          "DN_to_Radiance_Gain": -0.00108296517282724,
+          "DN_to_Radiance_Offset": 17.699987411499,
+          "Plank_constant_h": 6.62606957e-34,
+          "Teff_to_Tbb_c0": -0.447843939824124,
+          "Teff_to_Tbb_c1": 1.00065568090389,
+          "Teff_to_Tbb_c2": -6.33824089912448e-08,
+          "calibration_table_version": "v.3.0_20190415",
+          "channel_center_wavelength": "3.8",
+          "data_processing_center": "NMSC",
+          "data_processing_mode": "operation",
+          "file_format_version": "1.0.0_20181120",
+          "file_generation_time": "20250719_000953",
+          "file_name": "gk2a_ami_le1b_sw038_fd020ge_202507190000.nc",
+          "instrument_name": "AMI",
+          "light_speed": 299792458.0,
+          "mission_reference_time": "20250719_000000",
+          "observation_end_time": 806155776.7962154,
+          "observation_mode": "FD",
+          "observation_start_time": 806155233.1435251,
+          "satellite_name": "GK-2A",
+          "scene_acquisition_time": "20250719_000033",
+          "spectral_metadata_attributes": {},
+          "time_synchro_obt": 806155233.1435251,
+          "time_synchro_utc": 806155233.1554484
+        },
+        "image_pixel_values_header": {
+          "attributes": {
+            "channel_name": "SW038",
+            "number_of_data_quality_flag_bits_per_pixel": 2,
+            "number_of_total_bits_per_pixel": 16,
+            "number_of_valid_bits_per_pixel": 14
+          },
+          "dtype": "uint16",
+          "shape": [
+            5500,
+            5500
+          ]
+        },
+        "metadata_presence": {
+          "calibration_table_version": true,
+          "explicit_bt_wavenumber": false,
+          "mission_reference_time": true,
+          "observation_end_time": true,
+          "observation_start_time": true,
+          "scene_acquisition_time": true,
+          "srf_or_spectral_response_metadata": false
+        }
+      },
+      "manifest_key": "AMI/L1B/FD/202507/19/00/gk2a_ami_le1b_sw038_fd020ge_202507190000.nc",
+      "manifest_size_matches": true,
+      "path": "/Users/yhlee/KDM6AD+/observations/gk2a/20250719_0000_fd/gk2a_ami_le1b_sw038_fd020ge_202507190000.nc",
+      "sha256": "d0d767396103e1112e8a1bcf4669418b449394bec958b89b3907215d0cc68804",
+      "size_bytes": 28966203
+    },
+    "wv063": {
+      "all_calibration_fields_match": true,
+      "calibration_json_exact_matches": {
+        "Boltzmann_constant_k": true,
+        "DN_to_Radiance_Gain": true,
+        "DN_to_Radiance_Offset": true,
+        "Plank_constant_h": true,
+        "Teff_to_Tbb_c0": true,
+        "Teff_to_Tbb_c1": true,
+        "Teff_to_Tbb_c2": true,
+        "light_speed": true
+      },
+      "header": {
+        "global_attributes": {
+          "Boltzmann_constant_k": 1.3806488e-23,
+          "DN_to_Radiance_Gain": -0.0108914673328399,
+          "DN_to_Radiance_Offset": 44.1777038574218,
+          "Plank_constant_h": 6.62606957e-34,
+          "Teff_to_Tbb_c0": -1.76279494011147,
+          "Teff_to_Tbb_c1": 1.00414910562278,
+          "Teff_to_Tbb_c2": -9.83310914319385e-07,
+          "calibration_table_version": "v.3.0_20190415",
+          "channel_center_wavelength": "6.3",
+          "data_processing_center": "NMSC",
+          "data_processing_mode": "operation",
+          "file_format_version": "1.0.0_20181120",
+          "file_generation_time": "20250719_000953",
+          "file_name": "gk2a_ami_le1b_wv063_fd020ge_202507190000.nc",
+          "instrument_name": "AMI",
+          "light_speed": 299792458.0,
+          "mission_reference_time": "20250719_000000",
+          "observation_end_time": 806155776.7962154,
+          "observation_mode": "FD",
+          "observation_start_time": 806155233.1435251,
+          "satellite_name": "GK-2A",
+          "scene_acquisition_time": "20250719_000033",
+          "spectral_metadata_attributes": {},
+          "time_synchro_obt": 806155233.1435251,
+          "time_synchro_utc": 806155233.1554484
+        },
+        "image_pixel_values_header": {
+          "attributes": {
+            "channel_name": "WV063",
+            "number_of_data_quality_flag_bits_per_pixel": 2,
+            "number_of_total_bits_per_pixel": 16,
+            "number_of_valid_bits_per_pixel": 12
+          },
+          "dtype": "uint16",
+          "shape": [
+            5500,
+            5500
+          ]
+        },
+        "metadata_presence": {
+          "calibration_table_version": true,
+          "explicit_bt_wavenumber": false,
+          "mission_reference_time": true,
+          "observation_end_time": true,
+          "observation_start_time": true,
+          "scene_acquisition_time": true,
+          "srf_or_spectral_response_metadata": false
+        }
+      },
+      "manifest_key": "AMI/L1B/FD/202507/19/00/gk2a_ami_le1b_wv063_fd020ge_202507190000.nc",
+      "manifest_size_matches": true,
+      "path": "/Users/yhlee/KDM6AD+/observations/gk2a/20250719_0000_fd/gk2a_ami_le1b_wv063_fd020ge_202507190000.nc",
+      "sha256": "aadf3640986b8886235c054e932ba5148dd96cb9c41c798951ececeac57af8f7",
+      "size_bytes": 19061386
+    },
+    "wv069": {
+      "all_calibration_fields_match": true,
+      "calibration_json_exact_matches": {
+        "Boltzmann_constant_k": true,
+        "DN_to_Radiance_Gain": true,
+        "DN_to_Radiance_Offset": true,
+        "Plank_constant_h": true,
+        "Teff_to_Tbb_c0": true,
+        "Teff_to_Tbb_c1": true,
+        "Teff_to_Tbb_c2": true,
+        "light_speed": true
+      },
+      "header": {
+        "global_attributes": {
+          "Boltzmann_constant_k": 1.3806488e-23,
+          "DN_to_Radiance_Gain": -0.00818779878318309,
+          "DN_to_Radiance_Offset": 66.7480773925781,
+          "Plank_constant_h": 6.62606957e-34,
+          "Teff_to_Tbb_c0": -0.334311414359106,
+          "Teff_to_Tbb_c1": 1.00097359874468,
+          "Teff_to_Tbb_c2": -4.94603070252304e-07,
+          "calibration_table_version": "v.3.0_20190415",
+          "channel_center_wavelength": "6.9",
+          "data_processing_center": "NMSC",
+          "data_processing_mode": "operation",
+          "file_format_version": "1.0.0_20181120",
+          "file_generation_time": "20250719_000953",
+          "file_name": "gk2a_ami_le1b_wv069_fd020ge_202507190000.nc",
+          "instrument_name": "AMI",
+          "light_speed": 299792458.0,
+          "mission_reference_time": "20250719_000000",
+          "observation_end_time": 806155776.7962154,
+          "observation_mode": "FD",
+          "observation_start_time": 806155233.1435251,
+          "satellite_name": "GK-2A",
+          "scene_acquisition_time": "20250719_000033",
+          "spectral_metadata_attributes": {},
+          "time_synchro_obt": 806155233.1435251,
+          "time_synchro_utc": 806155233.1554484
+        },
+        "image_pixel_values_header": {
+          "attributes": {
+            "channel_name": "WV069",
+            "number_of_data_quality_flag_bits_per_pixel": 2,
+            "number_of_total_bits_per_pixel": 16,
+            "number_of_valid_bits_per_pixel": 13
+          },
+          "dtype": "uint16",
+          "shape": [
+            5500,
+            5500
+          ]
+        },
+        "metadata_presence": {
+          "calibration_table_version": true,
+          "explicit_bt_wavenumber": false,
+          "mission_reference_time": true,
+          "observation_end_time": true,
+          "observation_start_time": true,
+          "scene_acquisition_time": true,
+          "srf_or_spectral_response_metadata": false
+        }
+      },
+      "manifest_key": "AMI/L1B/FD/202507/19/00/gk2a_ami_le1b_wv069_fd020ge_202507190000.nc",
+      "manifest_size_matches": true,
+      "path": "/Users/yhlee/KDM6AD+/observations/gk2a/20250719_0000_fd/gk2a_ami_le1b_wv069_fd020ge_202507190000.nc",
+      "sha256": "f9ceffb539329b0cde86e51f77f775cf863f7945ced4bd8575204f65d85be78d",
+      "size_bytes": 27752650
+    },
+    "wv073": {
+      "all_calibration_fields_match": true,
+      "calibration_json_exact_matches": {
+        "Boltzmann_constant_k": true,
+        "DN_to_Radiance_Gain": true,
+        "DN_to_Radiance_Offset": true,
+        "Plank_constant_h": true,
+        "Teff_to_Tbb_c0": true,
+        "Teff_to_Tbb_c1": true,
+        "Teff_to_Tbb_c2": true,
+        "light_speed": true
+      },
+      "header": {
+        "global_attributes": {
+          "Boltzmann_constant_k": 1.3806488e-23,
+          "DN_to_Radiance_Gain": -0.0096982717514038,
+          "DN_to_Radiance_Offset": 79.0608520507812,
+          "Plank_constant_h": 6.62606957e-34,
+          "Teff_to_Tbb_c0": -0.0613124859696595,
+          "Teff_to_Tbb_c1": 1.00019008722941,
+          "Teff_to_Tbb_c2": -1.05863656750499e-07,
+          "calibration_table_version": "v.3.0_20190415",
+          "channel_center_wavelength": "7.3",
+          "data_processing_center": "NMSC",
+          "data_processing_mode": "operation",
+          "file_format_version": "1.0.0_20181120",
+          "file_generation_time": "20250719_000953",
+          "file_name": "gk2a_ami_le1b_wv073_fd020ge_202507190000.nc",
+          "instrument_name": "AMI",
+          "light_speed": 299792458.0,
+          "mission_reference_time": "20250719_000000",
+          "observation_end_time": 806155776.7962154,
+          "observation_mode": "FD",
+          "observation_start_time": 806155233.1435251,
+          "satellite_name": "GK-2A",
+          "scene_acquisition_time": "20250719_000033",
+          "spectral_metadata_attributes": {},
+          "time_synchro_obt": 806155233.1435251,
+          "time_synchro_utc": 806155233.1554484
+        },
+        "image_pixel_values_header": {
+          "attributes": {
+            "channel_name": "WV073",
+            "number_of_data_quality_flag_bits_per_pixel": 2,
+            "number_of_total_bits_per_pixel": 16,
+            "number_of_valid_bits_per_pixel": 13
+          },
+          "dtype": "uint16",
+          "shape": [
+            5500,
+            5500
+          ]
+        },
+        "metadata_presence": {
+          "calibration_table_version": true,
+          "explicit_bt_wavenumber": false,
+          "mission_reference_time": true,
+          "observation_end_time": true,
+          "observation_start_time": true,
+          "scene_acquisition_time": true,
+          "srf_or_spectral_response_metadata": false
+        }
+      },
+      "manifest_key": "AMI/L1B/FD/202507/19/00/gk2a_ami_le1b_wv073_fd020ge_202507190000.nc",
+      "manifest_size_matches": true,
+      "path": "/Users/yhlee/KDM6AD+/observations/gk2a/20250719_0000_fd/gk2a_ami_le1b_wv073_fd020ge_202507190000.nc",
+      "sha256": "500dfdaeca27e4770537181dbe4b4afea84fcd65ff479d2e80231d045d6db079",
+      "size_bytes": 30015271
+    }
+  },
+  "ko_selected_channel_headers": {
+    "ko_202507190000": {
+      "ir087": {
+        "header": {
+          "global_attributes": {
+            "channel_center_wavelength": "8.7",
+            "channel_spatial_resolution": "2.0",
+            "data_processing_center": "NMSC",
+            "data_processing_mode": "operation",
+            "file_format_version": "1.0.0_20181120",
+            "file_name": "gk2a_ami_le1b_ir087_ko020lc_202507190000.nc",
+            "instrument_name": "AMI",
+            "origianl_sourece_file": "gk2a_ami_le1b_ir087_ela020ge_202507190000.nc",
+            "satellite_name": "GK-2A",
+            "spectral_metadata_attributes": {}
+          },
+          "image_pixel_values_header": {
+            "attributes": {
+              "channel_name": "IR087",
+              "number_of_total_bits_per_pixel": 16,
+              "number_of_valid_bits_per_pixel": 13
+            },
+            "dtype": "uint16",
+            "shape": [
+              900,
+              900
+            ]
+          },
+          "metadata_presence": {
+            "calibration_table_version": false,
+            "explicit_bt_wavenumber": false,
+            "mission_reference_time": false,
+            "observation_end_time": false,
+            "observation_start_time": false,
+            "scene_acquisition_time": false,
+            "srf_or_spectral_response_metadata": false
+          }
+        },
+        "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir087_ko020lc_202507190000.nc",
+        "sha256": "a4cec04e51982e7c0b8d4da7dd8cef3f244b692a51fa7c4a7e86b5ca16618f1e",
+        "size_bytes": 1047610
+      },
+      "ir096": {
+        "header": {
+          "global_attributes": {
+            "channel_center_wavelength": "9.6",
+            "channel_spatial_resolution": "2.0",
+            "data_processing_center": "NMSC",
+            "data_processing_mode": "operation",
+            "file_format_version": "1.0.0_20181120",
+            "file_name": "gk2a_ami_le1b_ir096_ko020lc_202507190000.nc",
+            "instrument_name": "AMI",
+            "origianl_sourece_file": "gk2a_ami_le1b_ir096_ela020ge_202507190000.nc",
+            "satellite_name": "GK-2A",
+            "spectral_metadata_attributes": {}
+          },
+          "image_pixel_values_header": {
+            "attributes": {
+              "channel_name": "IR096",
+              "number_of_total_bits_per_pixel": 16,
+              "number_of_valid_bits_per_pixel": 13
+            },
+            "dtype": "uint16",
+            "shape": [
+              900,
+              900
+            ]
+          },
+          "metadata_presence": {
+            "calibration_table_version": false,
+            "explicit_bt_wavenumber": false,
+            "mission_reference_time": false,
+            "observation_end_time": false,
+            "observation_start_time": false,
+            "scene_acquisition_time": false,
+            "srf_or_spectral_response_metadata": false
+          }
+        },
+        "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir096_ko020lc_202507190000.nc",
+        "sha256": "e115d5e88eac27769fd43b79cdca51ea789ac4eab0cf3ea33a5622f7e7c14040",
+        "size_bytes": 977994
+      },
+      "ir105": {
+        "header": {
+          "global_attributes": {
+            "channel_center_wavelength": "10.5",
+            "channel_spatial_resolution": "2.0",
+            "data_processing_center": "NMSC",
+            "data_processing_mode": "operation",
+            "file_format_version": "1.0.0_20181120",
+            "file_name": "gk2a_ami_le1b_ir105_ko020lc_202507190000.nc",
+            "instrument_name": "AMI",
+            "origianl_sourece_file": "gk2a_ami_le1b_ir105_ela020ge_202507190000.nc",
+            "satellite_name": "GK-2A",
+            "spectral_metadata_attributes": {}
+          },
+          "image_pixel_values_header": {
+            "attributes": {
+              "channel_name": "IR105",
+              "number_of_total_bits_per_pixel": 16,
+              "number_of_valid_bits_per_pixel": 13
+            },
+            "dtype": "uint16",
+            "shape": [
+              900,
+              900
+            ]
+          },
+          "metadata_presence": {
+            "calibration_table_version": false,
+            "explicit_bt_wavenumber": false,
+            "mission_reference_time": false,
+            "observation_end_time": false,
+            "observation_start_time": false,
+            "scene_acquisition_time": false,
+            "srf_or_spectral_response_metadata": false
+          }
+        },
+        "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir105_ko020lc_202507190000.nc",
+        "sha256": "c50356a3614e16d12ff770820000a9e7a1657248b21b94c3a70f0db0e47947af",
+        "size_bytes": 1053804
+      },
+      "ir112": {
+        "header": {
+          "global_attributes": {
+            "channel_center_wavelength": "11.2",
+            "channel_spatial_resolution": "2.0",
+            "data_processing_center": "NMSC",
+            "data_processing_mode": "operation",
+            "file_format_version": "1.0.0_20181120",
+            "file_name": "gk2a_ami_le1b_ir112_ko020lc_202507190000.nc",
+            "instrument_name": "AMI",
+            "origianl_sourece_file": "gk2a_ami_le1b_ir112_ela020ge_202507190000.nc",
+            "satellite_name": "GK-2A",
+            "spectral_metadata_attributes": {}
+          },
+          "image_pixel_values_header": {
+            "attributes": {
+              "channel_name": "IR112",
+              "number_of_total_bits_per_pixel": 16,
+              "number_of_valid_bits_per_pixel": 13
+            },
+            "dtype": "uint16",
+            "shape": [
+              900,
+              900
+            ]
+          },
+          "metadata_presence": {
+            "calibration_table_version": false,
+            "explicit_bt_wavenumber": false,
+            "mission_reference_time": false,
+            "observation_end_time": false,
+            "observation_start_time": false,
+            "scene_acquisition_time": false,
+            "srf_or_spectral_response_metadata": false
+          }
+        },
+        "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir112_ko020lc_202507190000.nc",
+        "sha256": "1df480537f95d25aa44236f65a52b9a8746354e6ae322ad154ecae5b84d149ca",
+        "size_bytes": 1049681
+      },
+      "ir123": {
+        "header": {
+          "global_attributes": {
+            "channel_center_wavelength": "12.3",
+            "channel_spatial_resolution": "2.0",
+            "data_processing_center": "NMSC",
+            "data_processing_mode": "operation",
+            "file_format_version": "1.0.0_20181120",
+            "file_name": "gk2a_ami_le1b_ir123_ko020lc_202507190000.nc",
+            "instrument_name": "AMI",
+            "origianl_sourece_file": "gk2a_ami_le1b_ir123_ela020ge_202507190000.nc",
+            "satellite_name": "GK-2A",
+            "spectral_metadata_attributes": {}
+          },
+          "image_pixel_values_header": {
+            "attributes": {
+              "channel_name": "IR123",
+              "number_of_total_bits_per_pixel": 16,
+              "number_of_valid_bits_per_pixel": 13
+            },
+            "dtype": "uint16",
+            "shape": [
+              900,
+              900
+            ]
+          },
+          "metadata_presence": {
+            "calibration_table_version": false,
+            "explicit_bt_wavenumber": false,
+            "mission_reference_time": false,
+            "observation_end_time": false,
+            "observation_start_time": false,
+            "scene_acquisition_time": false,
+            "srf_or_spectral_response_metadata": false
+          }
+        },
+        "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir123_ko020lc_202507190000.nc",
+        "sha256": "74bed1daf0da6c1bfe4e2a321fc4c986e70083b76d50f6af60af9e97b366bf72",
+        "size_bytes": 1035821
+      },
+      "ir133": {
+        "header": {
+          "global_attributes": {
+            "channel_center_wavelength": "13.3",
+            "channel_spatial_resolution": "2.0",
+            "data_processing_center": "NMSC",
+            "data_processing_mode": "operation",
+            "file_format_version": "1.0.0_20181120",
+            "file_name": "gk2a_ami_le1b_ir133_ko020lc_202507190000.nc",
+            "instrument_name": "AMI",
+            "origianl_sourece_file": "gk2a_ami_le1b_ir133_ela020ge_202507190000.nc",
+            "satellite_name": "GK-2A",
+            "spectral_metadata_attributes": {}
+          },
+          "image_pixel_values_header": {
+            "attributes": {
+              "channel_name": "IR133",
+              "number_of_total_bits_per_pixel": 16,
+              "number_of_valid_bits_per_pixel": 13
+            },
+            "dtype": "uint16",
+            "shape": [
+              900,
+              900
+            ]
+          },
+          "metadata_presence": {
+            "calibration_table_version": false,
+            "explicit_bt_wavenumber": false,
+            "mission_reference_time": false,
+            "observation_end_time": false,
+            "observation_start_time": false,
+            "scene_acquisition_time": false,
+            "srf_or_spectral_response_metadata": false
+          }
+        },
+        "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir133_ko020lc_202507190000.nc",
+        "sha256": "08729e98bcf155b9c52bcd679597799814aa967c6e250f1df00fe3d5d9adc600",
+        "size_bytes": 991174
+      },
+      "wv073": {
+        "header": {
+          "global_attributes": {
+            "channel_center_wavelength": "7.3",
+            "channel_spatial_resolution": "2.0",
+            "data_processing_center": "NMSC",
+            "data_processing_mode": "operation",
+            "file_format_version": "1.0.0_20181120",
+            "file_name": "gk2a_ami_le1b_wv073_ko020lc_202507190000.nc",
+            "instrument_name": "AMI",
+            "origianl_sourece_file": "gk2a_ami_le1b_wv073_ela020ge_202507190000.nc",
+            "satellite_name": "GK-2A",
+            "spectral_metadata_attributes": {}
+          },
+          "image_pixel_values_header": {
+            "attributes": {
+              "channel_name": "WV073",
+              "number_of_total_bits_per_pixel": 16,
+              "number_of_valid_bits_per_pixel": 13
+            },
+            "dtype": "uint16",
+            "shape": [
+              900,
+              900
+            ]
+          },
+          "metadata_presence": {
+            "calibration_table_version": false,
+            "explicit_bt_wavenumber": false,
+            "mission_reference_time": false,
+            "observation_end_time": false,
+            "observation_start_time": false,
+            "scene_acquisition_time": false,
+            "srf_or_spectral_response_metadata": false
+          }
+        },
+        "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_wv073_ko020lc_202507190000.nc",
+        "sha256": "37095ec9805eafa4d928e7e77c6906a1557d61d22c90c965fd758d07862f404c",
+        "size_bytes": 936430
+      }
+    },
+    "ko_202507190002": {
+      "ir087": {
+        "header": {
+          "global_attributes": {
+            "channel_center_wavelength": "8.7",
+            "channel_spatial_resolution": "2.0",
+            "data_processing_center": "NMSC",
+            "data_processing_mode": "operation",
+            "file_format_version": "1.0.0_20181120",
+            "file_name": "gk2a_ami_le1b_ir087_ko020lc_202507190002.nc",
+            "instrument_name": "AMI",
+            "origianl_sourece_file": "gk2a_ami_le1b_ir087_ela020ge_202507190002.nc",
+            "satellite_name": "GK-2A",
+            "spectral_metadata_attributes": {}
+          },
+          "image_pixel_values_header": {
+            "attributes": {
+              "channel_name": "IR087",
+              "number_of_total_bits_per_pixel": 16,
+              "number_of_valid_bits_per_pixel": 13
+            },
+            "dtype": "uint16",
+            "shape": [
+              900,
+              900
+            ]
+          },
+          "metadata_presence": {
+            "calibration_table_version": false,
+            "explicit_bt_wavenumber": false,
+            "mission_reference_time": false,
+            "observation_end_time": false,
+            "observation_start_time": false,
+            "scene_acquisition_time": false,
+            "srf_or_spectral_response_metadata": false
+          }
+        },
+        "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir087_ko020lc_202507190002.nc",
+        "sha256": "6ba24471bba65fd40a1dd4ac00129b279d2114085f01a537d00306adf7639ea8",
+        "size_bytes": 1047868
+      },
+      "ir096": {
+        "header": {
+          "global_attributes": {
+            "channel_center_wavelength": "9.6",
+            "channel_spatial_resolution": "2.0",
+            "data_processing_center": "NMSC",
+            "data_processing_mode": "operation",
+            "file_format_version": "1.0.0_20181120",
+            "file_name": "gk2a_ami_le1b_ir096_ko020lc_202507190002.nc",
+            "instrument_name": "AMI",
+            "origianl_sourece_file": "gk2a_ami_le1b_ir096_ela020ge_202507190002.nc",
+            "satellite_name": "GK-2A",
+            "spectral_metadata_attributes": {}
+          },
+          "image_pixel_values_header": {
+            "attributes": {
+              "channel_name": "IR096",
+              "number_of_total_bits_per_pixel": 16,
+              "number_of_valid_bits_per_pixel": 13
+            },
+            "dtype": "uint16",
+            "shape": [
+              900,
+              900
+            ]
+          },
+          "metadata_presence": {
+            "calibration_table_version": false,
+            "explicit_bt_wavenumber": false,
+            "mission_reference_time": false,
+            "observation_end_time": false,
+            "observation_start_time": false,
+            "scene_acquisition_time": false,
+            "srf_or_spectral_response_metadata": false
+          }
+        },
+        "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir096_ko020lc_202507190002.nc",
+        "sha256": "4f96d56703a6a50a000ca4766cd1f27b5c0b40b6a405d94b8c11be50baa2b845",
+        "size_bytes": 978383
+      },
+      "ir105": {
+        "header": {
+          "global_attributes": {
+            "channel_center_wavelength": "10.5",
+            "channel_spatial_resolution": "2.0",
+            "data_processing_center": "NMSC",
+            "data_processing_mode": "operation",
+            "file_format_version": "1.0.0_20181120",
+            "file_name": "gk2a_ami_le1b_ir105_ko020lc_202507190002.nc",
+            "instrument_name": "AMI",
+            "origianl_sourece_file": "gk2a_ami_le1b_ir105_ela020ge_202507190002.nc",
+            "satellite_name": "GK-2A",
+            "spectral_metadata_attributes": {}
+          },
+          "image_pixel_values_header": {
+            "attributes": {
+              "channel_name": "IR105",
+              "number_of_total_bits_per_pixel": 16,
+              "number_of_valid_bits_per_pixel": 13
+            },
+            "dtype": "uint16",
+            "shape": [
+              900,
+              900
+            ]
+          },
+          "metadata_presence": {
+            "calibration_table_version": false,
+            "explicit_bt_wavenumber": false,
+            "mission_reference_time": false,
+            "observation_end_time": false,
+            "observation_start_time": false,
+            "scene_acquisition_time": false,
+            "srf_or_spectral_response_metadata": false
+          }
+        },
+        "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir105_ko020lc_202507190002.nc",
+        "sha256": "5a05d96053b78b1b76784763fa5a09443ba4cf721a0d10ad58f8a575046cb58a",
+        "size_bytes": 1054116
+      },
+      "ir112": {
+        "header": {
+          "global_attributes": {
+            "channel_center_wavelength": "11.2",
+            "channel_spatial_resolution": "2.0",
+            "data_processing_center": "NMSC",
+            "data_processing_mode": "operation",
+            "file_format_version": "1.0.0_20181120",
+            "file_name": "gk2a_ami_le1b_ir112_ko020lc_202507190002.nc",
+            "instrument_name": "AMI",
+            "origianl_sourece_file": "gk2a_ami_le1b_ir112_ela020ge_202507190002.nc",
+            "satellite_name": "GK-2A",
+            "spectral_metadata_attributes": {}
+          },
+          "image_pixel_values_header": {
+            "attributes": {
+              "channel_name": "IR112",
+              "number_of_total_bits_per_pixel": 16,
+              "number_of_valid_bits_per_pixel": 13
+            },
+            "dtype": "uint16",
+            "shape": [
+              900,
+              900
+            ]
+          },
+          "metadata_presence": {
+            "calibration_table_version": false,
+            "explicit_bt_wavenumber": false,
+            "mission_reference_time": false,
+            "observation_end_time": false,
+            "observation_start_time": false,
+            "scene_acquisition_time": false,
+            "srf_or_spectral_response_metadata": false
+          }
+        },
+        "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir112_ko020lc_202507190002.nc",
+        "sha256": "320fa17c037fbb3e1991a7a85f41fc7b45ce9b6f61edb9583417767c6a192b7e",
+        "size_bytes": 1049847
+      },
+      "ir123": {
+        "header": {
+          "global_attributes": {
+            "channel_center_wavelength": "12.3",
+            "channel_spatial_resolution": "2.0",
+            "data_processing_center": "NMSC",
+            "data_processing_mode": "operation",
+            "file_format_version": "1.0.0_20181120",
+            "file_name": "gk2a_ami_le1b_ir123_ko020lc_202507190002.nc",
+            "instrument_name": "AMI",
+            "origianl_sourece_file": "gk2a_ami_le1b_ir123_ela020ge_202507190002.nc",
+            "satellite_name": "GK-2A",
+            "spectral_metadata_attributes": {}
+          },
+          "image_pixel_values_header": {
+            "attributes": {
+              "channel_name": "IR123",
+              "number_of_total_bits_per_pixel": 16,
+              "number_of_valid_bits_per_pixel": 13
+            },
+            "dtype": "uint16",
+            "shape": [
+              900,
+              900
+            ]
+          },
+          "metadata_presence": {
+            "calibration_table_version": false,
+            "explicit_bt_wavenumber": false,
+            "mission_reference_time": false,
+            "observation_end_time": false,
+            "observation_start_time": false,
+            "scene_acquisition_time": false,
+            "srf_or_spectral_response_metadata": false
+          }
+        },
+        "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir123_ko020lc_202507190002.nc",
+        "sha256": "3c068246652876f5a94b35a064e18f57d820bf6864e876330b7afc31e5c22f3d",
+        "size_bytes": 1036243
+      },
+      "ir133": {
+        "header": {
+          "global_attributes": {
+            "channel_center_wavelength": "13.3",
+            "channel_spatial_resolution": "2.0",
+            "data_processing_center": "NMSC",
+            "data_processing_mode": "operation",
+            "file_format_version": "1.0.0_20181120",
+            "file_name": "gk2a_ami_le1b_ir133_ko020lc_202507190002.nc",
+            "instrument_name": "AMI",
+            "origianl_sourece_file": "gk2a_ami_le1b_ir133_ela020ge_202507190002.nc",
+            "satellite_name": "GK-2A",
+            "spectral_metadata_attributes": {}
+          },
+          "image_pixel_values_header": {
+            "attributes": {
+              "channel_name": "IR133",
+              "number_of_total_bits_per_pixel": 16,
+              "number_of_valid_bits_per_pixel": 13
+            },
+            "dtype": "uint16",
+            "shape": [
+              900,
+              900
+            ]
+          },
+          "metadata_presence": {
+            "calibration_table_version": false,
+            "explicit_bt_wavenumber": false,
+            "mission_reference_time": false,
+            "observation_end_time": false,
+            "observation_start_time": false,
+            "scene_acquisition_time": false,
+            "srf_or_spectral_response_metadata": false
+          }
+        },
+        "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir133_ko020lc_202507190002.nc",
+        "sha256": "0b59f69dab3d494874fb8f32452a14c0eaf8a3b537ba57f19edf3142efed3274",
+        "size_bytes": 991300
+      },
+      "wv073": {
+        "header": {
+          "global_attributes": {
+            "channel_center_wavelength": "7.3",
+            "channel_spatial_resolution": "2.0",
+            "data_processing_center": "NMSC",
+            "data_processing_mode": "operation",
+            "file_format_version": "1.0.0_20181120",
+            "file_name": "gk2a_ami_le1b_wv073_ko020lc_202507190002.nc",
+            "instrument_name": "AMI",
+            "origianl_sourece_file": "gk2a_ami_le1b_wv073_ela020ge_202507190002.nc",
+            "satellite_name": "GK-2A",
+            "spectral_metadata_attributes": {}
+          },
+          "image_pixel_values_header": {
+            "attributes": {
+              "channel_name": "WV073",
+              "number_of_total_bits_per_pixel": 16,
+              "number_of_valid_bits_per_pixel": 13
+            },
+            "dtype": "uint16",
+            "shape": [
+              900,
+              900
+            ]
+          },
+          "metadata_presence": {
+            "calibration_table_version": false,
+            "explicit_bt_wavenumber": false,
+            "mission_reference_time": false,
+            "observation_end_time": false,
+            "observation_start_time": false,
+            "scene_acquisition_time": false,
+            "srf_or_spectral_response_metadata": false
+          }
+        },
+        "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_wv073_ko020lc_202507190002.nc",
+        "sha256": "b1e86ea2fa0d1b935954b0be876e750ba224286ce47a3765cfd20c63e0f82ab0",
+        "size_bytes": 936507
+      }
+    }
+  },
+  "manifest": {
+    "expected_ami_files_present": true,
+    "path": "/Users/yhlee/KDM6AD+/observations/gk2a/20250719_0000_fd/manifest.json",
+    "prefix": "AMI/L1B/FD/202507/19/00/",
+    "sha256": "041597ccc18b33e6efb93bf7a51974a57776bbe54588fcf48ad582c00c04e5a6",
+    "sizes_match": true,
+    "source": "noaa-gk2a-pds"
+  },
+  "provenance": {
+    "calibration_path": "/private/tmp/KDM6AD-dry-number-optics/oracle/kdm6/obs/data/gk2a_ami_cal_202507190000.json",
+    "calibration_sha256": "a6f830aa04e19f6982aa6ff36e832464a5b32fdcf8200211956969d5eb48325d",
+    "script_path": "/private/tmp/KDM6AD-dry-number-optics/harness/evidence/AMI_epoch_metadata_source_2026-10-04.py",
+    "script_sha256": "56cc7f60dec88c844d9a03908a18f6fa7298c0e2ae1ab1a9748f0b4cbd06adf0"
+  },
+  "roots": {
+    "fd": "/Users/yhlee/KDM6AD+/observations/gk2a/20250719_0000_fd",
+    "ko": "/Users/yhlee/KDM6AD-k/GK2A/00"
+  },
+  "scope": "Header metadata and raw-file hashes only; image_pixel_values was never indexed.",
+  "summary": {
+    "fd_all_report_v3_0_and_match_calibration_json": true,
+    "fd_any_explicit_srf_metadata": false,
+    "fd_channel_count": 10,
+    "ko_calibration_version_attribute_present": false,
+    "ko_explicit_acquisition_time_attribute_present": false,
+    "ko_fd_source_lineage_established": false,
+    "ko_original_ela_filename_present": true
+  },
+  "time_interpretation": {
+    "fd": "Report source strings and numeric time fields as stored. Do not infer SRF epoch from table version.",
+    "ko": "KO filename timestamps and origianl_sourece_file identify remapped ELA products; they do not establish source FD lineage or transfer the FD full-disk observation interval."
+  }
+}

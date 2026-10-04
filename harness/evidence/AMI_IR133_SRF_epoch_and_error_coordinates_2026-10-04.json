@@ -1,0 +1,74 @@
+{
+  "purpose": "Bounded source note for the IR133 SRF revision, the retained 2025 FD metadata, and BT-coordinate error propagation. This is not a calibration or physical-accuracy approval.",
+  "retrieved_date": "2026-10-04",
+  "source_distinctions": {
+    "l1b_calibration_table": "The ten 2025-07-19 full-disk AMI files declare calibration_table_version v.3.0_20190415. Their gain, offset, Teff polynomial, and shared constants exactly match the retained v3.0 JSON/workbook table. This establishes the reported BT calibration tuple, not an SRF identifier.",
+    "operational_srf_processing_revision": "The KMA-authored 2021 commissioning paper describes selecting a -0.8 cm^-1 IR133 SRF shift by GEO-LEO inter-calibration tests and says the updated SRF entered the operational system on 2019-09-27, with earlier CO2-channel data reprocessed. This is a documented empirical operational SRF-model revision; it is not evidence that the physical sensor response itself changed.",
+    "rttov_srf_package": "The NWP-SAF README says KMA supplied updated SRFs and central wavelengths on 2021-02-02, naming the v3.1 IR133-shift workbook and srf.zip. It identifies the channel-16 file New_AMI_SRF_IR133_-0.80wn.txt and center 752.792 cm^-1. The currently installed RTTOV coefficient row uses 752.7924878 cm^-1.",
+    "unresolved_product_compatibility": "The 2025 FD files have no SRF or explicit BT-wavenumber metadata. Their v3.0 calibration-table label cannot identify which SRF processing model was used. The KO files are remapped ELA products and do not expose source-FD lineage or a calibration/SRF version. Therefore the actual 2025 observation SRF epoch is unverified."
+  },
+  "official_sources": [
+    {
+      "title": "KMA/NMSC GK-2A AMI calibration tables and SRF archive listing",
+      "url": "https://nmsc.kma.go.kr/enhome/html/base/cmm/selectPage.do?page=static.utilization.software",
+      "facts": "Lists 20190415 v3.0 and 20191115 v3.1_ir133_srf_shift calibration workbooks plus the current 16-band SRF archive.",
+      "local_workbook_hashes": {
+        "v3_0_20190415_sha256": "eb15fa4032322e22a44a0a233451978568a46d5f0eabf783cb9c7212327aa822",
+        "v3_1_20191115_sha256": "f7c23545b72215a7c9b17c44f43ad8b5075f1725062051badf051b35b482c38c"
+      }
+    },
+    {
+      "title": "KMA/NMSC GK-2A AMI channel SRF listing",
+      "url": "https://nmsc.kma.go.kr/homepage/html/base/cmm/selectPage.do?page=static.satllite.referenceDataGk2a",
+      "facts": "Current IR133 entry names GK2A_ami_srf_IR133_shift_-0.80wn.txt and reports center 752.792 cm^-1. The current public listing does not provide an unshifted IR133 response curve."
+    },
+    {
+      "title": "KMA/NMSC current SRF ZIP attachment",
+      "url": "https://nmsc.kma.go.kr/homepage/json/base/resources/selectAtchFile.do?attachFileUsq=40587",
+      "local_archive": "/private/tmp/KDM6AD-GK2A_AMI_SRF.zip",
+      "sha256": "de60b20da0df570455b15878b04320f39a3b6d4f3e48d7e511cce2b3eabb3f44",
+      "facts": "The archive includes GK2A_ami_srf_IR133_shift_-0.80wn.txt (ZIP entry time 2020-04-28) and no separate unshifted IR133 file."
+    },
+    {
+      "title": "NWP-SAF GKOMPSAT-2 AMI SRF README",
+      "url": "https://nwp-saf.eumetsat.int/downloads/rtcoef_info/visir_srf/rtcoef_gkompsat2_1_ami_srf.html",
+      "facts": "Generated 2021-05-04; README dated 2021-04-27. States updated SRFs and central wavelengths were received from KMA on 2021-02-02; lists the v3.1 shifted workbook, v3.1 channel centers, and New_AMI_SRF_IR133_-0.80wn.txt for channel 16."
+    },
+    {
+      "title": "Kim et al., Introduction of the Advanced Meteorological Imager of Geo-Kompsat-2a: In-Orbit Tests and Performance Validation, Remote Sensing 13(7), 1303 (2021)",
+      "url": "https://doi.org/10.3390/rs13071303",
+      "facts": "Reports generating IR133 SRFs at 0.1 cm^-1 shift increments from -1 to +1, applying them through the ground processing algorithm, and comparing updated L1B against IASI-B with GSICS for 2019-07-23 through 2019-08-11. The -0.8 cm^-1 case minimized the reported bias; the paper says it was implemented operationally on 2019-09-27 and prior CO2 observations were reprocessed. This identifies an empirical processing-model choice and date, not the SRF identity of each 2025 product."
+    }
+  ],
+  "retained_2025_fd_metadata": {
+    "result_path": "harness/evidence/AMI_epoch_metadata_result_2026-10-04.json",
+    "result_sha256": "e544f19ca62ad6b4ee5511e15a05deda31783efd6c9db899bebfd4c8306edc13",
+    "source_path": "harness/evidence/AMI_epoch_metadata_source_2026-10-04.py",
+    "source_sha256": "56cc7f60dec88c844d9a03908a18f6fa7298c0e2ae1ab1a9748f0b4cbd06adf0",
+    "fd_files": 10,
+    "fd_declared_calibration_table_version": "v.3.0_20190415",
+    "all_8_gain_offset_polynomial_and_constant_fields_exact_match_retained_json": true,
+    "explicit_bt_wavenumber_present": false,
+    "explicit_srf_or_spectral_response_metadata_present": false,
+    "source_manifest": "NOAA GK2A PDS AMI/L1B/FD/202507/19/00; manifest sizes match local original files",
+    "ko_source_fd_lineage_established": false
+  },
+  "why_bt_conversion_does_not_replace_an_srf": {
+    "discrete_counterexample": "Take two spectral bins and response A=(1,0), response B=(0,1). Spectra x=(1,1) and x'=(1,2) both give A(x)=A(x')=1, while B(x)=1 and B(x')=2. Any scalar g(A) returns the same value for both spectra and therefore cannot reproduce B for both. This demonstrates the general limitation for distinct non-proportional response functions; it is not a numerical comparison of the unavailable original IR133 curve.",
+    "scope": "Planck/brightness-temperature coordinate conversion maps a band radiance to a temperature convention. It cannot reconstruct information about spectral radiance variation that a different band response would weight differently. Actual IR133 spectral error remains unmeasured here."
+  },
+  "error_coordinate_policy": {
+    "mapping": "For per-channel maps y_R=Psi(L) and y_K=Phi(L), define f=Phi composed with inverse(Psi), and D=diag(f'(y_R)) locally.",
+    "covariance": "For small perturbations, R_K approximately D R_R D^T (first-order delta method); the local bias transforms approximately as b_K approximately D b_R. Nonlinear curvature can add higher-order mean effects.",
+    "not_an_error_estimate": "The 5.7 K model-observation residual is not an observation standard deviation or covariance. The current 1 K diagonal (`obs_sigma` default in oracle/kdm6/da_driver.py) is a code default, not an approved calibrated observation-error assignment. Instrument NEdT or calibration-accuracy specifications are not, by themselves, cloudy-scene representativeness/error covariance."
+  },
+  "status": {
+    "v3_0_calibration_tuple_verified_for_2025_fd_headers": true,
+    "2019_operational_srf_shift_documented": true,
+    "physical_sensor_response_change_established": false,
+    "2025_product_srf_epoch_established": false,
+    "original_unshifted_ir133_srf_curve_found_in_current_official_archive": false,
+    "observation_error_covariance_calibrated": false,
+    "s11_physical_and_error_policy_closed": false
+  }
+}
