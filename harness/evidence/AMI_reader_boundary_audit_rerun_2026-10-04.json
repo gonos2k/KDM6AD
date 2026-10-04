@@ -1,0 +1,49 @@
+{
+  "fd_is_2025_ko_lineage_or_replacement_data": false,
+  "ko_quality_shape": [
+    900,
+    900
+  ],
+  "original_record_path": "/private/tmp/KDM6AD-dry-number-optics/harness/evidence/AMI_reader_boundary_result_2026-10-04.json",
+  "original_record_sha256": "9b25cc3043a1f0c35aadd649c187696331f2f550c94ad808ab16f31f4fb8d6e4",
+  "provenance": {
+    "cli_argv": [
+      "harness/evidence/AMI_reader_boundary_source_2026-10-04.py",
+      "--record",
+      "harness/evidence/AMI_reader_boundary_result_2026-10-04.json",
+      "--output",
+      "harness/evidence/AMI_reader_boundary_audit_rerun_2026-10-04.json"
+    ],
+    "numpy": "2.2.6",
+    "python": "3.10.11",
+    "reader_calibration_source_sha256": {
+      "harness/evidence/AMI_legacy_nominal_calibration_202507190000.json": "f519149e3ea3538866bad9f3e28cc0ddef741b6b4cdbf8febb7988aff6c08d40",
+      "oracle/kdm6/obs/data/gk2a_ami_cal_202507190000.json": "a6f830aa04e19f6982aa6ff36e832464a5b32fdcf8200211956969d5eb48325d",
+      "oracle/kdm6/obs/gk2a_l1b.py": "c16195e581e847053c1f7e63c6cd93deaaba0e51d84a1f7eea092c95c180f4b8",
+      "oracle/kdm6/obs/gk2a_l1b_fd.py": "0c2c87a316680ba359f13336d3e7c87ca9c0bd9eab726f1b7cde469a87b1387e"
+    },
+    "source_path": "/private/tmp/KDM6AD-dry-number-optics/harness/evidence/AMI_reader_boundary_source_2026-10-04.py",
+    "source_sha256": "4b48ee2e49b5ffce03e033e571d4a64ea02a487e59fae638e96e29e8c6f50f73",
+    "torch": "2.13.0"
+  },
+  "replayed_values": {
+    "fd_file": "/Users/yhlee/AD-RTTOV/data/gk2a/aws_samples/gk2a_ami_le1b_ir087_fd020ge_202302160000.nc",
+    "fd_sha256": "00bb68c190c96cfa9d9b6e35495534c7599c3402bbc31737b601653e1d48ce73",
+    "fd_stamp": "202302160000",
+    "fd_stride": 16,
+    "fd_usable": 2565,
+    "ko_file": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir105_ko020lc_202507190000.nc",
+    "ko_file_sha256": "c50356a3614e16d12ff770820000a9e7a1657248b21b94c3a70f0db0e47947af",
+    "ko_pixel": [
+      411,
+      338
+    ],
+    "ko_stride": 1,
+    "legacy_bt_K": 284.5845734439225,
+    "new_source_paired_bt_K": 286.16092078316177,
+    "whole_ko_quality_array_identical": true
+  },
+  "scientific_approval": false,
+  "scope": "2025 KO IR105 and separate 2023 FD IR087 reader samples; no model or RTTOV run.",
+  "status": "BYTE_SOURCE_AND_VALUE_REPLAY_MATCH"
+}

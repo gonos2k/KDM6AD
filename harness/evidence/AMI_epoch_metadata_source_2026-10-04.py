@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
 
 import netCDF4
@@ -90,6 +91,17 @@ def channel_files(root: Path, product: str, stamp: str, channels: tuple[str, ...
     return found
 
 
+def validate_fd_identity(path: Path, channel: str, header_data: dict, manifest_item: dict,
+                         expected_prefix: str) -> None:
+    if manifest_item is None or manifest_item.get("key") != expected_prefix + path.name:
+        raise ValueError("FD manifest key does not identify the expected object")
+    if Path(manifest_item.get("path", "")).name != path.name:
+        raise ValueError("FD manifest path does not identify the expected filename")
+    label = header_data["image_pixel_values_header"]["attributes"].get("channel_name")
+    if not isinstance(label, str) or label.lower() != channel:
+        raise ValueError("FD variable channel_name differs from filename channel")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--fd-root", type=Path, required=True)
@@ -106,6 +118,8 @@ def main() -> None:
     if manifest.get("source") != "noaa-gk2a-pds" or manifest.get("prefix") != expected_prefix:
         raise ValueError("FD manifest is not the pinned NOAA-GK2A-PDS 2025-07-19 00Z prefix")
     manifest_files = {Path(item["path"]).name: item for item in manifest["files"]}
+    if len(manifest_files) != len(manifest["files"]):
+        raise ValueError("FD manifest contains duplicate filenames")
 
     records = {"fd_202507190000": {}, "ko_202507190000": {}, "ko_202507190002": {}}
     fd_paths = channel_files(args.fd_root, "fd020ge", FD_TIME, ALL_AMI)
@@ -120,6 +134,7 @@ def main() -> None:
                   "all_calibration_fields_match": len(matches) == len(CAL_FIELDS)
                   and all(matches.values())}
         manifest_item = manifest_files.get(path.name)
+        validate_fd_identity(path, channel, meta, manifest_item, expected_prefix)
         record["manifest_size_matches"] = (manifest_item is not None and
                                             int(manifest_item["size"]) == path.stat().st_size)
         record["manifest_key"] = manifest_item["key"] if manifest_item else None
@@ -173,6 +188,7 @@ def main() -> None:
     }
     result["provenance"] = {"script_path": str(Path(__file__).resolve()),
                             "script_sha256": sha256(Path(__file__).resolve()),
+                            "cli_argv": sys.argv,
                             "calibration_path": str(args.calibration.resolve()),
                             "calibration_sha256": sha256(args.calibration)}
     args.output.parent.mkdir(parents=True, exist_ok=True)

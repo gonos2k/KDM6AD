@@ -38,6 +38,16 @@ def load_npz(path: Path) -> dict[str, np.ndarray]:
         return {k: archive[k].copy() for k in archive.files}
 
 
+def validate_radiance_window(rad: np.ndarray, old_bt_saved: np.ndarray) -> None:
+    """Check the arrays themselves, independently of reported support counts."""
+    if rad.shape != (3, 3) or old_bt_saved.shape != (3, 3):
+        raise ValueError("expected preserved 3x3 raw radiance/BT")
+    if not np.isfinite(rad).all() or not (rad > 0).all():
+        raise ValueError("window radiance must be finite and positive")
+    if not np.isfinite(old_bt_saved).all() or not (old_bt_saved > 0).all():
+        raise ValueError("saved window BT must be finite and positive")
+
+
 def ami_phi(radiance, coeff: dict, wavenumber_cm1: float) -> np.ndarray:
     """Source-order AMI Planck + retained Teff-to-Tbb polynomial."""
     rad = np.asarray(radiance, dtype=np.float64)
@@ -264,8 +274,7 @@ def main() -> None:
                 raise ValueError(f"{ch}@{stamp}: invalid calibrated radiance samples are present")
             rad = np.asarray(entry["window_radiance"], dtype=np.float64)
             old_bt_saved = np.asarray(entry["window_bt_K"], dtype=np.float64)
-            if rad.shape != (3, 3) or old_bt_saved.shape != (3, 3):
-                raise ValueError(f"{ch}@{stamp}: expected preserved 3x3 raw radiance/BT")
+            validate_radiance_window(rad, old_bt_saved)
             old_bt = ami_phi(rad, oldc, old_wn)
             new_bt = ami_phi(rad, newc, new_wn)
             rt_bt = rttov_psi(rad, rt)
@@ -301,14 +310,16 @@ def main() -> None:
         k = channel_list.index(RTTOV_CHANNEL[ch])
         m = {}
         for name in ("base", "plus", "minus"):
-            l = float(direct[name][0][k])
+            radiance = float(direct[name][0][k])
+            if not math.isfinite(radiance) or radiance <= 0:
+                raise ValueError(f"{ch}@{name}: model radiance must be finite and positive")
             npz_bt = float(npzs[name]["BT"].reshape(-1)[k])
             m[name] = {
-                "radiance": l,
+                "radiance": radiance,
                 "stored_rttov_bt_K": npz_bt,
-                "legacy_ami_bt_K": float(ami_phi(l, oldc, old_wn)),
-                "kma_v3_0_source_paired_bt_K": float(ami_phi(l, newc, new_wn)),
-                "pinned_rttov_bt_K": float(rttov_psi(l, rt)),
+                "legacy_ami_bt_K": float(ami_phi(radiance, oldc, old_wn)),
+                "kma_v3_0_source_paired_bt_K": float(ami_phi(radiance, newc, new_wn)),
+                "pinned_rttov_bt_K": float(rttov_psi(radiance, rt)),
             }
             if not math.isclose(m[name]["pinned_rttov_bt_K"], npz_bt, rel_tol=0.0, abs_tol=3e-6):
                 raise ValueError(f"{ch}/{name}: coefficient-source RTTOV BT replay mismatch")
@@ -409,7 +420,7 @@ def main() -> None:
         "nc_jvp_coordinate_transforms": tangent_records,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n")
+    args.output.write_text(json.dumps(result, indent=2, sort_keys=True, allow_nan=False) + "\n")
     print(json.dumps({"status": result["status"], "output": str(args.output),
                       "sha256": file_sha(args.output)}, sort_keys=True))
 
