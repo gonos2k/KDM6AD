@@ -134,7 +134,9 @@ def independent_bt(dn: np.ndarray, cal: dict[str, Any], *, historical: bool = Fa
     h, c, k = (scalar(cal[x]) for x in ("Plank_constant_h", "light_speed", "Boltzmann_constant_k"))
     with np.errstate(over="ignore", invalid="ignore"):
         rad = offset + gain * dn
-    sigma = (10000.0 / wave) * 100.0
+    sigma = (scalar(cal["bt_wavenumber_cm1"]) * 100.0
+             if not historical and "bt_wavenumber_cm1" in cal
+             else (10000.0 / wave) * 100.0)
     if historical:
         # Preserve the bit-only historical counterfactual: its old decoder
         # clipped nonpositive radiance and left DQF unchanged.

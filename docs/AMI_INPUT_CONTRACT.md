@@ -26,8 +26,9 @@ Both sampled KO and FD slots contain the attribute in every channel:
 
 These are observed metadata values, not fallback defaults. The calibration
 JSON contains radiance/Planck coefficients; its former null word-width
-placeholders are removed. Positive finite radiances retain the existing
-Planck arithmetic and operation order.
+placeholders are removed. The earlier word/radiance boundary corrections preserved positive-radiance
+Planck arithmetic. The source-paired coordinate correction below changes its
+calculation parameter while preserving DN, radiance and DQF.
 
 ## Calibrated radiance domain
 
@@ -68,8 +69,8 @@ explicit strides 16/8; it does not replace the historical full-raster evidence.
 
 The [synthetic boundary record](reports/ami_radiance_boundary_20260906.json)
 compares the saved PR209 parent decoder at `2f88c4a` with this correction.
-All 652,140 positive-radiance words across ten IR channel fixtures retain
-BT bits and DQF exactly. Separately, all 524,288 word/width/byte-order
+In that historical source/coefficient version, all 652,140 positive-radiance
+words across ten IR fixtures retained BT bits and DQF exactly. Separately, all 524,288 word/width/byte-order
 combinations match quotient/remainder expectations for DN and DQF. These
 counts enumerate synthetic input space; they are not scene frequencies.
 
@@ -78,7 +79,8 @@ counts enumerate synthetic input space; they are not scene frequencies.
 `test_ami_word_contract.py` uses literal words `0x0BB8`, `0x4BB8`, `0x8BB8`,
 `0xCBB8`: all have DN 3000 and DQF 0, 1, 2, 3 respectively. It also checks
 all four quality values at each supported maximum DN, SW038 `0x3E80`
-(DN 16000, DQF 0, BT approximately 284.944 K with the shipped coefficients),
+(DN 16000, DQF 0, BT approximately 283.356544 K under the current
+source-paired wavenumber; the archived nominal-wavelength result was 284.944 K),
 and actual synthetic NetCDF → KO/FD → payload paths with masks, both byte
 orders and conflicting global metadata. Missing metadata, duplicate/ambiguous
 channels, nonpositive strides and unequal channel grids are rejected. Inputs
@@ -140,3 +142,25 @@ The existing distance-first ownership policy is unchanged: an unusable nearest
 pixel can win a column before channel QC. This documented choice is not a
 new regression. Quality-aware competition would change observation selection
 and requires a separate experiment; this correction adds no reassignment mode.
+
+## Source-paired BT calculation coordinate (2026-10-04)
+
+The shipped coefficient table now carries `bt_wavenumber_cm1`, taken from the
+KMA v3.0 workbook row paired with its unchanged gain/offset and Teff polynomial.
+`channel_center_wavelength` retains the file's nominal label. The calculation
+uses the explicit center when present; archived/custom tables without it retain
+their declared wavelength calculation. An invalid explicit center is rejected.
+This corrects BT values; it does not change radiance, packed DN, DQF or missingness.
+Earlier bitwise BT records apply to their historical source/coefficient version.
+
+FD coefficients remain file-sourced. Without an explicit file BT wavenumber,
+they must exactly match an audited channel tuple before its center is attached;
+unknown tuples are refused. The source pairing does not certify the deleted
+2025 FD product's actual SRF revision. In particular, retained IR133 coefficients
+are v3.0, whereas the installed RTTOV SRF is the later shifted v3.1 package.
+
+See [the definition checklist and common-coordinate replay](../harness/evidence/CHECKLIST_pr365_bt_definition_2026-10-04.md).
+The archived nominal table preserves previous C5/PR #365 calculations. When
+comparing under another BT representation, model Jacobians must also be multiplied
+by the conversion derivative. Coordinate agreement is separate from physical
+spectral/footprint accuracy and observation-cost approval.

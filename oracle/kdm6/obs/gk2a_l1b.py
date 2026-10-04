@@ -10,7 +10,8 @@
 AMI word 해독은 image_pixel_values의 유효 비트 속성을 사용한다:
   valid DN = raw & (2^valid_bits-1), quality = bits 14-15 (0=정상)
   radiance [mW m⁻² sr⁻¹ cm] = offset + gain·DN
-  Teff = Planck⁻¹(radiance, ν=10⁴/λμm)   (h·c·σ/k / ln(2hc²σ³/L + 1))
+  Teff = Planck⁻¹(radiance, paired bt_wavenumber_cm1; legacy ν=10⁴/λμm)
+         (h·c·σ/k / ln(2hc²σ³/L + 1))
   Tbb  = c0 + c1·Teff + c2·Teff²
 
 지오로케이션: KO 격자는 Lambert Conformal Conic (파일 속성: sp1=30, sp2=60,
@@ -25,6 +26,7 @@ from __future__ import annotations
 
 import json
 import math
+import numbers
 import operator
 import re
 from pathlib import Path
@@ -159,7 +161,15 @@ def dn_to_bt(raw: np.ndarray, cal: dict, *, valid_bits: int
     if min(lam_um, h, c, k) <= 0.0:
         raise ValueError("AMI calibration wavelength and Planck constants must be positive")
     try:
-        sigma_m = (10000.0 / lam_um) * 100.0                      # m-1
+        if "bt_wavenumber_cm1" in cal:
+            wn = cal["bt_wavenumber_cm1"]
+            if (isinstance(wn, (bool, np.bool_)) or not isinstance(wn, numbers.Real)
+                    or not math.isfinite(wn) or wn <= 0.0):
+                raise ValueError("AMI calibration bt_wavenumber_cm1 must be a positive finite numeric scalar")
+            sigma_m = float(wn) * 100.0
+        else:
+            # Legacy/custom tables define their calculation wavelength directly.
+            sigma_m = (10000.0 / lam_um) * 100.0                  # m-1
         planck_t = h * c * sigma_m / k
         planck_r = 2.0 * h * c * c * sigma_m ** 3
     except OverflowError as exc:

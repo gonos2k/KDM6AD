@@ -1,0 +1,29 @@
+{
+  "scope": "actual observation-reader boundary checks only; 2023 FD archive is not a replacement meteorological input",
+  "ko_file": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir105_ko020lc_202507190000.nc",
+  "ko_file_sha256": "c50356a3614e16d12ff770820000a9e7a1657248b21b94c3a70f0db0e47947af",
+  "ko_pixel": [
+    411,
+    338
+  ],
+  "new_source_paired_bt_K": 286.16092078316177,
+  "legacy_bt_K": 284.5845734439225,
+  "whole_ko_quality_array_identical": true,
+  "fd_file": "/Users/yhlee/AD-RTTOV/data/gk2a/aws_samples/gk2a_ami_le1b_ir087_fd020ge_202302160000.nc",
+  "fd_sha256": "00bb68c190c96cfa9d9b6e35495534c7599c3402bbc31737b601653e1d48ce73",
+  "fd_stamp": "202302160000",
+  "fd_stride": 16,
+  "fd_usable": 2565,
+  "kdm_or_rttov_executed": false,
+  "scientific_approval": false,
+  "python": "3.10.11",
+  "torch": "2.13.0",
+  "numpy": "2.2.6",
+  "source_sha256": {
+    "oracle/kdm6/obs/gk2a_l1b.py": "c16195e581e847053c1f7e63c6cd93deaaba0e51d84a1f7eea092c95c180f4b8",
+    "oracle/kdm6/obs/gk2a_l1b_fd.py": "0c2c87a316680ba359f13336d3e7c87ca9c0bd9eab726f1b7cde469a87b1387e",
+    "oracle/kdm6/obs/data/gk2a_ami_cal_202507190000.json": "a6f830aa04e19f6982aa6ff36e832464a5b32fdcf8200211956969d5eb48325d",
+    "harness/evidence/AMI_legacy_nominal_calibration_202507190000.json": "f519149e3ea3538866bad9f3e28cc0ddef741b6b4cdbf8febb7988aff6c08d40"
+  },
+  "ko_stride": 1
+}

@@ -444,3 +444,11 @@ diagnostic: radiance averaging/QC remain explicit, local variability is not R.
 The [policy checklist](../harness/evidence/CHECKLIST_pr363_364_physical_policy_2026-10-04.md)
 records instrument metrics, a conditional window-averaging residual bound and
 S2/S11 decision inputs. No physical approval or production default changed.
+
+## 2026-10-04 — AMI BT coefficient/wavenumber pairing
+
+Paired the retained coefficients with the official KMA v3.0 calculation centers,
+keeping nominal labels and the old JSON as historical evidence. KO/FD consume
+explicit or audited coordinates; unknown FD pairs fail. The [definition checklist](../harness/evidence/CHECKLIST_pr365_bt_definition_2026-10-04.md)
+links common-radiance/derivative replays and actual reader checks. IR133's v3.0
+observation versus shifted-v3.1 simulation and S2/S11 physical approval remain OPEN.

@@ -3,9 +3,12 @@
 KO(ko020lc) 어댑터와의 차이:
   - 투영: geos (CGMS 표준; coff/loff/cfac/lfac, sub_longitude[rad]) — AD-RTTOV
     검증 구현의 벡터화 이식. lfac<0 (y가 남향 증가) 그대로 수식에 흡수.
+  - Without explicit file bt_wavenumber_cm1, bind the calculation center only
+    to an exactly matching audited channel tuple; nominal labels are not guessed.
   - **검정계수 내장**: FD 원본은 DN_to_Radiance_Gain 등 검정 속성을 파일에
-    가짐 → 외부 테이블 불필요, 파일 자신의 계수로 dn_to_bt (KO 동결 테이블의
-    출처가 바로 이 속성들 — 같은 날짜 검정 동일함을 실측 확인).
+    가짐 → gain/offset/polynomial stay file-sourced; the calculation center is
+    explicit or audit-bound as above. KO 동결 테이블의
+    출처가 바로 이 속성들 — 같은 날짜 검정 동일함을 실측 확인.
   - 도메인 윈도우: 전구 5500²에서 한반도 박스만 — forward 투영 공식 대신
     **역변환 성긴-스캔**(50픽셀 간격 → bbox 포함 픽셀의 min/max ± 마진)으로
     윈도우를 찾는다 (수식 하나 줄이고 오류 여지 최소화; 비용 ~12k 픽셀).
@@ -22,7 +25,7 @@ from typing import Sequence
 import numpy as np
 import torch
 
-from .gk2a_l1b import AMI_CHANNELS, _positive_stride, _read_ami_bt
+from .gk2a_l1b import AMI_CHANNELS, _positive_stride, _read_ami_bt, load_cal_table
 from .obs_ingest import ObsPayload
 
 _F64 = dict(dtype=torch.float64)
@@ -127,6 +130,7 @@ def read_fd_slot(files: Sequence[str | Path], *,
     slot_geometry = None
     bt_all: dict[str, np.ndarray] = {}
     q_all: dict[str, np.ndarray] = {}
+    pairing_table = None
     for ch, path in sorted(by_ch.items()):
         import netCDF4                       # 검증 뒤로 지연 — 파일명/타임스탬프
         ds = netCDF4.Dataset(str(path))
@@ -149,6 +153,22 @@ def read_fd_slot(files: Sequence[str | Path], *,
                 lat, lon = geos_latlon(L, C, g)
             l0, l1, c0, c1 = win
             cal = {a: ds.getncattr(a) for a in _CAL_ATTRS}
+            if "bt_wavenumber_cm1" in ds.ncattrs():
+                cal["bt_wavenumber_cm1"] = ds.getncattr("bt_wavenumber_cm1")
+            else:
+                if pairing_table is None:
+                    pairing_table = load_cal_table(Path(__file__).parent / "data/gk2a_ami_cal_202507190000.json")
+                ref = pairing_table["channels"].get(ch)
+                try:
+                    matches = ref is not None and all(
+                        np.ndim(cal[k]) == 0 and not isinstance(cal[k], (bool, np.bool_))
+                        and np.isfinite(float(cal[k])) and float(cal[k]) == float(ref[k])
+                        for k in _CAL_ATTRS)
+                except (TypeError, ValueError, OverflowError):
+                    matches = False
+                if not matches or "bt_wavenumber_cm1" not in ref:
+                    raise ValueError(f"{ch}: FD calibration needs an explicit or audited paired BT wavenumber")
+                cal["bt_wavenumber_cm1"] = ref["bt_wavenumber_cm1"]
             bt, q = _read_ami_bt(ds.variables["image_pixel_values"], cal,
                                  (slice(l0, l1), slice(c0, c1)))
             bt_all[ch], q_all[ch] = bt, q

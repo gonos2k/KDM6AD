@@ -2,21 +2,7 @@
  "meta": {
   "source": "noaa-gk2a-pds S3, FD fd020ge 202507190000 originals",
   "extracted": "2026-07-06",
-  "note": "KO(ko020lc) \uc7ac\uaca9\uc790 \uc0b0\ucd9c\ubb3c\uc5d0\ub294 \uac80\uc815 \uc18d\uc131\uc774 \uc5c6\uc5b4 \uac19\uc740 \ub0a0\uc9dc FD \uc6d0\ubcf8\uc5d0\uc11c \ucd94\ucd9c (\uc6d0\ubcf8 ela020ge\uc5d0\uc11c \uc7ac\uaca9\uc790\ub428)",
-  "audited_pairing_reference": {
-   "version": "KMA GK-2A AMI Calibration Table v3.0 (20190415)",
-   "source_url": "https://nmsc.kma.go.kr/homepage/json/base/bbs/selectAtchFile.do?attachFileUsq=40092&refTbUsq=200057",
-   "workbook_sha256": "eb15fa4032322e22a44a0a233451978568a46d5f0eabf783cb9c7212327aa822",
-   "sheet": "coeff.& equation_WN",
-   "wavenumber_cells": "C13:C22, ordered by channel labels B13:B22",
-   "coefficient_cells": "D13:D22 (DN gain), F13:F22 (DN offset), I13:K22 (Teff-to-Tbb c0:c2)",
-   "physical_constants_cells": "S18:S20 (light speed, Planck constant, Boltzmann constant)",
-   "scope_note": "The workbook pairing supports these calibration constants and center wavenumbers. The retained 2025 FD source files were deleted after extraction; this does not certify their SRF or calibration-table version.",
-   "coefficients_match_reference": true,
-   "2025_fd_source_calibration_version_verified": false,
-   "2025_fd_srf_version_verified": false,
-   "note": "This identifies the audited reference used to add center wavenumbers and compare coefficients. It does not assert that the deleted 2025 FD files used this calibration-table or SRF version."
-  }
+  "note": "KO(ko020lc) \uc7ac\uaca9\uc790 \uc0b0\ucd9c\ubb3c\uc5d0\ub294 \uac80\uc815 \uc18d\uc131\uc774 \uc5c6\uc5b4 \uac19\uc740 \ub0a0\uc9dc FD \uc6d0\ubcf8\uc5d0\uc11c \ucd94\ucd9c (\uc6d0\ubcf8 ela020ge\uc5d0\uc11c \uc7ac\uaca9\uc790\ub428)"
  },
  "channels": {
   "sw038": {
@@ -28,8 +14,7 @@
    "Plank_constant_h": 6.62606957e-34,
    "light_speed": 299792458.0,
    "Boltzmann_constant_k": 1.3806488e-23,
-   "channel_center_wavelength": "3.8",
-   "bt_wavenumber_cm1": 2612.67737352111
+   "channel_center_wavelength": "3.8"
   },
   "wv063": {
    "DN_to_Radiance_Gain": -0.0108914673328399,
@@ -40,8 +25,7 @@
    "Plank_constant_h": 6.62606957e-34,
    "light_speed": 299792458.0,
    "Boltzmann_constant_k": 1.3806488e-23,
-   "channel_center_wavelength": "6.3",
-   "bt_wavenumber_cm1": 1617.60924253134
+   "channel_center_wavelength": "6.3"
   },
   "wv069": {
    "DN_to_Radiance_Gain": -0.00818779878318309,
@@ -52,8 +36,7 @@
    "Plank_constant_h": 6.62606957e-34,
    "light_speed": 299792458.0,
    "Boltzmann_constant_k": 1.3806488e-23,
-   "channel_center_wavelength": "6.9",
-   "bt_wavenumber_cm1": 1441.57542876017
+   "channel_center_wavelength": "6.9"
   },
   "wv073": {
    "DN_to_Radiance_Gain": -0.0096982717514038,
@@ -64,8 +47,7 @@
    "Plank_constant_h": 6.62606957e-34,
    "light_speed": 299792458.0,
    "Boltzmann_constant_k": 1.3806488e-23,
-   "channel_center_wavelength": "7.3",
-   "bt_wavenumber_cm1": 1365.24999202444
+   "channel_center_wavelength": "7.3"
   },
   "ir087": {
    "DN_to_Radiance_Gain": -0.0144806550815701,
@@ -76,8 +58,7 @@
    "Plank_constant_h": 6.62606957e-34,
    "light_speed": 299792458.0,
    "Boltzmann_constant_k": 1.3806488e-23,
-   "channel_center_wavelength": "8.7",
-   "bt_wavenumber_cm1": 1164.94939285634
+   "channel_center_wavelength": "8.7"
   },
   "ir096": {
    "DN_to_Radiance_Gain": -0.0178435463458299,
@@ -88,8 +69,7 @@
    "Plank_constant_h": 6.62606957e-34,
    "light_speed": 299792458.0,
    "Boltzmann_constant_k": 1.3806488e-23,
-   "channel_center_wavelength": "9.6",
-   "bt_wavenumber_cm1": 1039.96021677611
+   "channel_center_wavelength": "9.6"
   },
   "ir105": {
    "DN_to_Radiance_Gain": -0.0198196955025196,
@@ -100,8 +80,7 @@
    "Plank_constant_h": 6.62606957e-34,
    "light_speed": 299792458.0,
    "Boltzmann_constant_k": 1.3806488e-23,
-   "channel_center_wavelength": "10.5",
-   "bt_wavenumber_cm1": 966.153383926055
+   "channel_center_wavelength": "10.5"
   },
   "ir112": {
    "DN_to_Radiance_Gain": -0.0216744858771562,
@@ -112,8 +91,7 @@
    "Plank_constant_h": 6.62606957e-34,
    "light_speed": 299792458.0,
    "Boltzmann_constant_k": 1.3806488e-23,
-   "channel_center_wavelength": "11.2",
-   "bt_wavenumber_cm1": 891.71305730126
+   "channel_center_wavelength": "11.2"
   },
   "ir123": {
    "DN_to_Radiance_Gain": -0.023379972204566,
@@ -124,8 +102,7 @@
    "Plank_constant_h": 6.62606957e-34,
    "light_speed": 299792458.0,
    "Boltzmann_constant_k": 1.3806488e-23,
-   "channel_center_wavelength": "12.3",
-   "bt_wavenumber_cm1": 810.60900787123
+   "channel_center_wavelength": "12.3"
   },
   "ir133": {
    "DN_to_Radiance_Gain": -0.0243037566542625,
@@ -136,8 +113,7 @@
    "Plank_constant_h": 6.62606957e-34,
    "light_speed": 299792458.0,
    "Boltzmann_constant_k": 1.3806488e-23,
-   "channel_center_wavelength": "13.3",
-   "bt_wavenumber_cm1": 753.590621482278
+   "channel_center_wavelength": "13.3"
   }
  }
 }
