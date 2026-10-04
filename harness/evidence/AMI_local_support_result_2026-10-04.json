@@ -1,0 +1,934 @@
+{
+  "center_bt_00_to_02": {
+    "ir087": {
+      "center_bt_change_K": 0.040520933311483986,
+      "from_timestamp": "202507190000",
+      "quality_both_slots": true,
+      "to_timestamp": "202507190002"
+    },
+    "ir096": {
+      "center_bt_change_K": 0.019050813386229493,
+      "from_timestamp": "202507190000",
+      "quality_both_slots": true,
+      "to_timestamp": "202507190002"
+    },
+    "ir105": {
+      "center_bt_change_K": 0.06907701379606124,
+      "from_timestamp": "202507190000",
+      "quality_both_slots": true,
+      "to_timestamp": "202507190002"
+    },
+    "ir112": {
+      "center_bt_change_K": 0.07070716826052603,
+      "from_timestamp": "202507190000",
+      "quality_both_slots": true,
+      "to_timestamp": "202507190002"
+    },
+    "ir123": {
+      "center_bt_change_K": 0.08910126941572116,
+      "from_timestamp": "202507190000",
+      "quality_both_slots": true,
+      "to_timestamp": "202507190002"
+    },
+    "ir133": {
+      "center_bt_change_K": 0.03392240634485688,
+      "from_timestamp": "202507190000",
+      "quality_both_slots": true,
+      "to_timestamp": "202507190002"
+    },
+    "wv073": {
+      "center_bt_change_K": 0.05842301015678686,
+      "from_timestamp": "202507190000",
+      "quality_both_slots": true,
+      "to_timestamp": "202507190002"
+    }
+  },
+  "diagnostic": {
+    "channels": [
+      "wv073",
+      "ir087",
+      "ir096",
+      "ir105",
+      "ir112",
+      "ir123",
+      "ir133"
+    ],
+    "no_qc_relaxation": true,
+    "pixel_zero_based_row_column": [
+      411,
+      338
+    ],
+    "scope_note": "local retained-observation support only; not a 5 km footprint or a radiance-variance estimate",
+    "support_rule": "all 9 pixels must have decoder obs_quality=0, unmasked NetCDF input, and finite positive calibrated radiance",
+    "timestamps": [
+      "202507190000",
+      "202507190002"
+    ],
+    "window": "centered 3x3 pixels"
+  },
+  "provenance": {
+    "calibration_path": "/private/tmp/KDM6AD-dry-number-optics/oracle/kdm6/obs/data/gk2a_ami_cal_202507190000.json",
+    "calibration_sha256": "f519149e3ea3538866bad9f3e28cc0ddef741b6b4cdbf8febb7988aff6c08d40",
+    "cli_argv": [
+      "harness/evidence/AMI_local_support_source_2026-10-04.py",
+      "--input-root",
+      "/Users/yhlee/KDM6AD-k/GK2A/00",
+      "--calibration",
+      "oracle/kdm6/obs/data/gk2a_ami_cal_202507190000.json",
+      "--diagnostic",
+      "harness/evidence/C5_matched_observation_diagnostic_2026-10-03.json",
+      "--output",
+      "harness/evidence/AMI_local_support_result_2026-10-04.json"
+    ],
+    "decoder": "oracle/kdm6/obs/gk2a_l1b.py:read_ko_slot, _read_ami_bt, unpack_ami_word, dn_to_bt",
+    "decoder_sha256": "dfd2bbfdbc8816214cd4e945f9c898b6c4567d46794eb6d1e6f4ce2c8a0fa2c3",
+    "diagnostic_path": "/private/tmp/KDM6AD-dry-number-optics/harness/evidence/C5_matched_observation_diagnostic_2026-10-03.json",
+    "diagnostic_sha256": "ce445a0c7908793eb4388a235bdabaf922138c210093c67c45b813f74367fc3b",
+    "input_root": "/Users/yhlee/KDM6AD-k/GK2A/00",
+    "source_path": "/private/tmp/KDM6AD-dry-number-optics/harness/evidence/AMI_local_support_source_2026-10-04.py",
+    "source_sha256": "307c671d9b111e3d2e2f76bc5bf421033cd1341b63814bd422d3c09884e85513"
+  },
+  "slots": [
+    {
+      "channels": {
+        "ir087": {
+          "bt_from_mean_radiance_K": 282.19427492241874,
+          "center_bt_K": 281.8632688064316,
+          "center_obs_quality": 0.0,
+          "decoder_quality_counts": {
+            "0": 9
+          },
+          "max_bt_K": 283.20192353485953,
+          "mean_bt_K": 282.19227988784564,
+          "mean_radiance": 51.72306720001803,
+          "min_bt_K": 281.646772553946,
+          "minimum_good_pixel_count": 9,
+          "netcdf_missing_pixel_count": 0,
+          "nonfinite_or_nonpositive_radiance_pixel_count": 0,
+          "radiance_unit": "mW m-2 sr-1 (cm-1)-1 (AMI calibration convention)",
+          "spatial_bt_std_K_ddof0": 0.5376466516104632,
+          "statistics_status": "REPORTED",
+          "window_bt_K": [
+            [
+              281.97127422111004,
+              281.7280347202659,
+              281.646772553946
+            ],
+            [
+              281.97127422111004,
+              281.8632688064316,
+              281.8632688064316
+            ],
+            [
+              283.20192353485953,
+              283.0159867591438,
+              282.468715367312
+            ]
+          ],
+          "window_good_pixel_count": 9,
+          "window_pixel_count": 9,
+          "window_radiance": [
+            [
+              51.48333191033426,
+              51.222680118865995,
+              51.135796188376574
+            ],
+            [
+              51.48333191033426,
+              51.367486669681696,
+              51.367486669681696
+            ],
+            [
+              52.8155521778387,
+              52.612823006696715,
+              52.01911614835235
+            ]
+          ]
+        },
+        "ir096": {
+          "bt_from_mean_radiance_K": 259.7693854768247,
+          "center_bt_K": 259.5791163642437,
+          "center_obs_quality": 0.0,
+          "decoder_quality_counts": {
+            "0": 9
+          },
+          "max_bt_K": 260.37471290924145,
+          "mean_bt_K": 259.76861353967723,
+          "mean_radiance": 42.16858447156871,
+          "min_bt_K": 259.4646994997107,
+          "minimum_good_pixel_count": 9,
+          "netcdf_missing_pixel_count": 0,
+          "nonfinite_or_nonpositive_radiance_pixel_count": 0,
+          "radiance_unit": "mW m-2 sr-1 (cm-1)-1 (AMI calibration convention)",
+          "spatial_bt_std_K_ddof0": 0.3246124462572684,
+          "statistics_status": "REPORTED",
+          "window_bt_K": [
+            [
+              259.61721266895785,
+              259.48378232835904,
+              259.4646994997107
+            ],
+            [
+              259.6362528421634,
+              259.5791163642437,
+              259.54099875552976
+            ],
+            [
+              260.37471290924145,
+              260.2616205832714,
+              259.95912590561727
+            ]
+          ],
+          "window_good_pixel_count": 9,
+          "window_pixel_count": 9,
+          "window_radiance": [
+            [
+              42.02583610080207,
+              41.90093127638127,
+              41.88308773003544
+            ],
+            [
+              42.0436796471479,
+              41.99014900811041,
+              41.95446191541875
+            ],
+            [
+              42.739577954635266,
+              42.632516676560286,
+              42.34701993502701
+            ]
+          ]
+        },
+        "ir105": {
+          "bt_from_mean_radiance_K": 284.9493659007302,
+          "center_bt_K": 284.5845734439225,
+          "center_obs_quality": 0.0,
+          "decoder_quality_counts": {
+            "0": 9
+          },
+          "max_bt_K": 285.8888468662703,
+          "mean_bt_K": 284.94798271945507,
+          "mean_radiance": 84.62907027742907,
+          "min_bt_K": 284.44627369927497,
+          "minimum_good_pixel_count": 9,
+          "netcdf_missing_pixel_count": 0,
+          "nonfinite_or_nonpositive_radiance_pixel_count": 0,
+          "radiance_unit": "mW m-2 sr-1 (cm-1)-1 (AMI calibration convention)",
+          "spatial_bt_std_K_ddof0": 0.5224785850891787,
+          "statistics_status": "REPORTED",
+          "window_bt_K": [
+            [
+              284.8054495123193,
+              284.51544789060654,
+              284.44627369927497
+            ],
+            [
+              284.66746004438073,
+              284.5845734439225,
+              284.5707522195682
+            ],
+            [
+              285.8888468662703,
+              285.7387015164659,
+              285.3143392822872
+            ]
+          ],
+          "window_good_pixel_count": 9,
+          "window_pixel_count": 9,
+          "window_radiance": [
+            [
+              84.42206456884719,
+              84.00585096329428,
+              83.90675248578168
+            ],
+            [
+              84.223867613822,
+              84.10494944080688,
+              84.08512974530436
+            ],
+            [
+              85.98782051354624,
+              85.76980386301852,
+              85.15539330244042
+            ]
+          ]
+        },
+        "ir112": {
+          "bt_from_mean_radiance_K": 286.84757766943426,
+          "center_bt_K": 286.55874794976995,
+          "center_obs_quality": 0.0,
+          "decoder_quality_counts": {
+            "0": 9
+          },
+          "max_bt_K": 287.57261999603367,
+          "mean_bt_K": 286.84689435156116,
+          "mean_radiance": 97.32943127821713,
+          "min_bt_K": 286.45968208725265,
+          "minimum_good_pixel_count": 9,
+          "netcdf_missing_pixel_count": 0,
+          "nonfinite_or_nonpositive_radiance_pixel_count": 0,
+          "radiance_unit": "mW m-2 sr-1 (cm-1)-1 (AMI calibration convention)",
+          "spatial_bt_std_K_ddof0": 0.3897572515765791,
+          "statistics_status": "REPORTED",
+          "window_bt_K": [
+            [
+              286.6859884216843,
+              286.5304524527123,
+              286.45968208725265
+            ],
+            [
+              286.6859884216843,
+              286.55874794976995,
+              286.6011776600235
+            ],
+            [
+              287.57261999603367,
+              287.41831830513985,
+              287.10907386975003
+            ]
+          ],
+          "window_good_pixel_count": 9,
+          "window_pixel_count": 9,
+          "window_radiance": [
+            [
+              97.08137882873412,
+              96.8429594840854,
+              96.73458705469962
+            ],
+            [
+              97.08137882873412,
+              96.88630845583971,
+              96.95133191347118
+            ],
+            [
+              98.44687143899496,
+              98.20845209434624,
+              97.7316134050488
+            ]
+          ]
+        },
+        "ir123": {
+          "bt_from_mean_radiance_K": 285.4226981001143,
+          "center_bt_K": 285.2791766828346,
+          "center_obs_quality": 0.0,
+          "decoder_quality_counts": {
+            "0": 9
+          },
+          "max_bt_K": 285.99025297047723,
+          "mean_bt_K": 285.4224142537489,
+          "mean_radiance": 107.993632618337,
+          "min_bt_K": 285.1454078549961,
+          "minimum_good_pixel_count": 9,
+          "netcdf_missing_pixel_count": 0,
+          "nonfinite_or_nonpositive_radiance_pixel_count": 0,
+          "radiance_unit": "mW m-2 sr-1 (cm-1)-1 (AMI calibration convention)",
+          "spatial_bt_std_K_ddof0": 0.2691764576598744,
+          "statistics_status": "REPORTED",
+          "window_bt_K": [
+            [
+              285.3088840253853,
+              285.1751464060729,
+              285.1454078549961
+            ],
+            [
+              285.3534320637145,
+              285.2791766828346,
+              285.26432041453916
+            ],
+            [
+              285.99025297047723,
+              285.7684659476059,
+              285.5166419181147
+            ]
+          ],
+          "window_good_pixel_count": 9,
+          "window_pixel_count": 9,
+          "window_radiance": [
+            [
+              107.81438616476866,
+              107.60396641492757,
+              107.55720647051844
+            ],
+            [
+              107.88452608138236,
+              107.76762622035953,
+              107.74424624815497
+            ],
+            [
+              108.8898648861787,
+              108.53916530311021,
+              108.14170577563259
+            ]
+          ]
+        },
+        "ir133": {
+          "bt_from_mean_radiance_K": 271.3487606404511,
+          "center_bt_K": 271.33556751639685,
+          "center_obs_quality": 0.0,
+          "decoder_quality_counts": {
+            "0": 9
+          },
+          "max_bt_K": 271.52202873972675,
+          "mean_bt_K": 271.3487110782065,
+          "mean_radiance": 95.73002258853798,
+          "min_bt_K": 271.16581930115086,
+          "minimum_good_pixel_count": 9,
+          "netcdf_missing_pixel_count": 0,
+          "nonfinite_or_nonpositive_radiance_pixel_count": 0,
+          "radiance_unit": "mW m-2 sr-1 (cm-1)-1 (AMI calibration convention)",
+          "spatial_bt_std_K_ddof0": 0.11217445963841562,
+          "statistics_status": "REPORTED",
+          "window_bt_K": [
+            [
+              271.3694899227417,
+              271.1997871282426,
+              271.16581930115086
+            ],
+            [
+              271.38644772770994,
+              271.33556751639685,
+              271.2676954906021
+            ],
+            [
+              271.52202873972675,
+              271.45425631573715,
+              271.4373075615507
+            ]
+          ],
+          "window_good_pixel_count": 9,
+          "window_pixel_count": 9,
+          "window_radiance": [
+            [
+              95.75972718000429,
+              95.51668961346166,
+              95.46808210015314
+            ],
+            [
+              95.78403093665855,
+              95.71111966669577,
+              95.61390464007872
+            ],
+            [
+              95.97846098989265,
+              95.8812459632756,
+              95.85694220662134
+            ]
+          ]
+        },
+        "wv073": {
+          "bt_from_mean_radiance_K": 264.11453509991935,
+          "center_bt_K": 264.13619119637843,
+          "center_obs_quality": 0.0,
+          "decoder_quality_counts": {
+            "0": 9
+          },
+          "max_bt_K": 264.38884922492736,
+          "mean_bt_K": 264.1142960751383,
+          "mean_radiance": 17.60182637638516,
+          "min_bt_K": 263.88220452089473,
+          "minimum_good_pixel_count": 9,
+          "netcdf_missing_pixel_count": 0,
+          "nonfinite_or_nonpositive_radiance_pixel_count": 0,
+          "radiance_unit": "mW m-2 sr-1 (cm-1)-1 (AMI calibration convention)",
+          "spatial_bt_std_K_ddof0": 0.15192981986123674,
+          "statistics_status": "REPORTED",
+          "window_bt_K": [
+            [
+              263.88220452089473,
+              263.9213665552671,
+              264.05818375026064
+            ],
+            [
+              264.03866217664364,
+              264.13619119637843,
+              264.13619119637843
+            ],
+            [
+              264.1946142065352,
+              264.38884922492736,
+              264.2724018489595
+            ]
+          ],
+          "window_good_pixel_count": 9,
+          "window_pixel_count": 9,
+          "window_radiance": [
+            [
+              17.48652470111847,
+              17.505921244621277,
+              17.573809146881104
+            ],
+            [
+              17.5641108751297,
+              17.61260223388672,
+              17.61260223388672
+            ],
+            [
+              17.64169704914093,
+              17.73867976665497,
+              17.680490136146545
+            ]
+          ]
+        }
+      },
+      "files": [
+        {
+          "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_wv073_ko020lc_202507190000.nc",
+          "sha256": "37095ec9805eafa4d928e7e77c6906a1557d61d22c90c965fd758d07862f404c",
+          "size_bytes": 936430
+        },
+        {
+          "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir087_ko020lc_202507190000.nc",
+          "sha256": "a4cec04e51982e7c0b8d4da7dd8cef3f244b692a51fa7c4a7e86b5ca16618f1e",
+          "size_bytes": 1047610
+        },
+        {
+          "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir096_ko020lc_202507190000.nc",
+          "sha256": "e115d5e88eac27769fd43b79cdca51ea789ac4eab0cf3ea33a5622f7e7c14040",
+          "size_bytes": 977994
+        },
+        {
+          "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir105_ko020lc_202507190000.nc",
+          "sha256": "c50356a3614e16d12ff770820000a9e7a1657248b21b94c3a70f0db0e47947af",
+          "size_bytes": 1053804
+        },
+        {
+          "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir112_ko020lc_202507190000.nc",
+          "sha256": "1df480537f95d25aa44236f65a52b9a8746354e6ae322ad154ecae5b84d149ca",
+          "size_bytes": 1049681
+        },
+        {
+          "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir123_ko020lc_202507190000.nc",
+          "sha256": "74bed1daf0da6c1bfe4e2a321fc4c986e70083b76d50f6af60af9e97b366bf72",
+          "size_bytes": 1035821
+        },
+        {
+          "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir133_ko020lc_202507190000.nc",
+          "sha256": "08729e98bcf155b9c52bcd679597799814aa967c6e250f1df00fe3d5d9adc600",
+          "size_bytes": 991174
+        }
+      ],
+      "timestamp": "202507190000"
+    },
+    {
+      "channels": {
+        "ir087": {
+          "bt_from_mean_radiance_K": 282.2226619822994,
+          "center_bt_K": 281.9037897397431,
+          "center_obs_quality": 0.0,
+          "decoder_quality_counts": {
+            "0": 9
+          },
+          "max_bt_K": 283.29471492630705,
+          "mean_bt_K": 282.22043722494783,
+          "mean_radiance": 51.7536374718569,
+          "min_bt_K": 281.6738701089622,
+          "minimum_good_pixel_count": 9,
+          "netcdf_missing_pixel_count": 0,
+          "nonfinite_or_nonpositive_radiance_pixel_count": 0,
+          "radiance_unit": "mW m-2 sr-1 (cm-1)-1 (AMI calibration convention)",
+          "spatial_bt_std_K_ddof0": 0.5678033579894973,
+          "statistics_status": "REPORTED",
+          "window_bt_K": [
+            [
+              281.89028528482385,
+              281.75510179660563,
+              281.6738701089622
+            ],
+            [
+              281.9847635673916,
+              281.9037897397431,
+              281.8767783074667
+            ],
+            [
+              283.29471492630705,
+              283.0957318818713,
+              282.5088994113593
+            ]
+          ],
+          "window_good_pixel_count": 9,
+          "window_pixel_count": 9,
+          "window_radiance": [
+            [
+              51.39644797984484,
+              51.251641429029135,
+              51.164757498539714
+            ],
+            [
+              51.49781256541583,
+              51.41092863492641,
+              51.381967324763266
+            ],
+            [
+              52.91691676340969,
+              52.699706937186136,
+              52.06255811359706
+            ]
+          ]
+        },
+        "ir096": {
+          "bt_from_mean_radiance_K": 259.82214401667983,
+          "center_bt_K": 259.59816717762993,
+          "center_obs_quality": 0.0,
+          "decoder_quality_counts": {
+            "0": 9
+          },
+          "max_bt_K": 260.50641903298356,
+          "mean_bt_K": 259.82125350077234,
+          "mean_radiance": 42.2181498780849,
+          "min_bt_K": 259.48378232835904,
+          "minimum_good_pixel_count": 9,
+          "netcdf_missing_pixel_count": 0,
+          "nonfinite_or_nonpositive_radiance_pixel_count": 0,
+          "radiance_unit": "mW m-2 sr-1 (cm-1)-1 (AMI calibration convention)",
+          "spatial_bt_std_K_ddof0": 0.34872594241658533,
+          "statistics_status": "REPORTED",
+          "window_bt_K": [
+            [
+              259.6552877011778,
+              259.5600602248587,
+              259.48378232835904
+            ],
+            [
+              259.6933414923355,
+              259.59816717762993,
+              259.5791163642437
+            ],
+            [
+              260.50641903298356,
+              260.33703616491806,
+              259.9780710204444
+            ]
+          ],
+          "window_good_pixel_count": 9,
+          "window_pixel_count": 9,
+          "window_radiance": [
+            [
+              42.06152319349373,
+              41.97230546176458,
+              41.90093127638127
+            ],
+            [
+              42.09721028618539,
+              42.00799255445624,
+              41.99014900811041
+            ],
+            [
+              42.864482779056075,
+              42.703890861943606,
+              42.364863481372836
+            ]
+          ]
+        },
+        "ir105": {
+          "bt_from_mean_radiance_K": 285.0762667788378,
+          "center_bt_K": 284.6536504577186,
+          "center_obs_quality": 0.0,
+          "decoder_quality_counts": {
+            "0": 9
+          },
+          "max_bt_K": 286.33792989171417,
+          "mean_bt_K": 285.0741853969899,
+          "mean_radiance": 84.81185191373008,
+          "min_bt_K": 284.4877840561622,
+          "minimum_good_pixel_count": 9,
+          "netcdf_missing_pixel_count": 0,
+          "nonfinite_or_nonpositive_radiance_pixel_count": 0,
+          "radiance_unit": "mW m-2 sr-1 (cm-1)-1 (AMI calibration convention)",
+          "spatial_bt_std_K_ddof0": 0.6412599554540539,
+          "statistics_status": "REPORTED",
+          "window_bt_K": [
+            [
+              284.7778670761469,
+              284.5707522195682,
+              284.4877840561622
+            ],
+            [
+              284.76407296252717,
+              284.6536504577186,
+              284.68126769417404
+            ],
+            [
+              286.33792989171417,
+              286.0251463603975,
+              285.3691978545002
+            ]
+          ],
+          "window_good_pixel_count": 9,
+          "window_pixel_count": 9,
+          "window_radiance": [
+            [
+              84.38242517784215,
+              84.08512974530436,
+              83.96621157228924
+            ],
+            [
+              84.36260548233963,
+              84.20404791831947,
+              84.24368730932451
+            ],
+            [
+              86.64187046512939,
+              86.18601746857144,
+              85.2346720844505
+            ]
+          ]
+        },
+        "ir112": {
+          "bt_from_mean_radiance_K": 286.9744878953168,
+          "center_bt_K": 286.6294551180305,
+          "center_obs_quality": 0.0,
+          "decoder_quality_counts": {
+            "0": 9
+          },
+          "max_bt_K": 287.8805867446541,
+          "mean_bt_K": 286.97343459150466,
+          "mean_radiance": 97.52450165111154,
+          "min_bt_K": 286.502149730354,
+          "minimum_good_pixel_count": 9,
+          "netcdf_missing_pixel_count": 0,
+          "nonfinite_or_nonpositive_radiance_pixel_count": 0,
+          "radiance_unit": "mW m-2 sr-1 (cm-1)-1 (AMI calibration convention)",
+          "spatial_bt_std_K_ddof0": 0.48418231524913036,
+          "statistics_status": "REPORTED",
+          "window_bt_K": [
+            [
+              286.784852478206,
+              286.5728929905409,
+              286.502149730354
+            ],
+            [
+              286.784852478206,
+              286.6294551180305,
+              286.65772537008024
+            ],
+            [
+              287.8805867446541,
+              287.71270983321295,
+              287.2356865802573
+            ]
+          ],
+          "window_good_pixel_count": 9,
+          "window_pixel_count": 9,
+          "window_radiance": [
+            [
+              97.23310022987421,
+              96.90798294171687,
+              96.79961051233109
+            ],
+            [
+              97.23310022987421,
+              96.99468088522549,
+              97.0380298569798
+            ],
+            [
+              98.9237101282924,
+              98.66361629776652,
+              97.92668377794321
+            ]
+          ]
+        },
+        "ir123": {
+          "bt_from_mean_radiance_K": 285.501813278115,
+          "center_bt_K": 285.3682779522503,
+          "center_obs_quality": 0.0,
+          "decoder_quality_counts": {
+            "0": 9
+          },
+          "max_bt_K": 286.0197956066447,
+          "mean_bt_K": 285.5014952037611,
+          "mean_radiance": 108.11832580342802,
+          "min_bt_K": 285.1454078549961,
+          "minimum_good_pixel_count": 9,
+          "netcdf_missing_pixel_count": 0,
+          "nonfinite_or_nonpositive_radiance_pixel_count": 0,
+          "radiance_unit": "mW m-2 sr-1 (cm-1)-1 (AMI calibration convention)",
+          "spatial_bt_std_K_ddof0": 0.2850422155073628,
+          "statistics_status": "REPORTED",
+          "window_bt_K": [
+            [
+              285.3385844468179,
+              285.21974121387797,
+              285.1454078549961
+            ],
+            [
+              285.48698291612544,
+              285.3682779522503,
+              285.3682779522503
+            ],
+            [
+              286.0197956066447,
+              285.91636659765214,
+              285.6500222932355
+            ]
+          ],
+          "window_good_pixel_count": 9,
+          "window_pixel_count": 9,
+          "window_radiance": [
+            [
+              107.8611461091778,
+              107.67410633154127,
+              107.55720647051844
+            ],
+            [
+              108.09494583122346,
+              107.90790605358693,
+              107.90790605358693
+            ],
+            [
+              108.93662483058783,
+              108.77296502515587,
+              108.35212552547368
+            ]
+          ]
+        },
+        "ir133": {
+          "bt_from_mean_radiance_K": 271.3694899227417,
+          "center_bt_K": 271.3694899227417,
+          "center_obs_quality": 0.0,
+          "decoder_quality_counts": {
+            "0": 9
+          },
+          "max_bt_K": 271.6236197046248,
+          "mean_bt_K": 271.36941622623834,
+          "mean_radiance": 95.75972718000429,
+          "min_bt_K": 271.21676762883106,
+          "minimum_good_pixel_count": 9,
+          "netcdf_missing_pixel_count": 0,
+          "nonfinite_or_nonpositive_radiance_pixel_count": 0,
+          "radiance_unit": "mW m-2 sr-1 (cm-1)-1 (AMI calibration convention)",
+          "spatial_bt_std_K_ddof0": 0.1368041755918893,
+          "statistics_status": "REPORTED",
+          "window_bt_K": [
+            [
+              271.2507218090255,
+              271.21676762883106,
+              271.21676762883106
+            ],
+            [
+              271.33556751639685,
+              271.3694899227417,
+              271.30163604163545
+            ],
+            [
+              271.6236197046248,
+              271.52202873972675,
+              271.4881470443318
+            ]
+          ],
+          "window_good_pixel_count": 9,
+          "window_pixel_count": 9,
+          "window_radiance": [
+            [
+              95.58960088342445,
+              95.54099337011593,
+              95.54099337011593
+            ],
+            [
+              95.71111966669577,
+              95.75972718000429,
+              95.66251215338724
+            ],
+            [
+              96.12428352981823,
+              95.97846098989265,
+              95.92985347658413
+            ]
+          ]
+        },
+        "wv073": {
+          "bt_from_mean_radiance_K": 264.1383562720341,
+          "center_bt_K": 264.1946142065352,
+          "center_obs_quality": 0.0,
+          "decoder_quality_counts": {
+            "0": 9
+          },
+          "max_bt_K": 264.31124879172245,
+          "mean_bt_K": 264.13825194761733,
+          "mean_radiance": 17.613679819636875,
+          "min_bt_K": 263.98005002263795,
+          "minimum_good_pixel_count": 9,
+          "netcdf_missing_pixel_count": 0,
+          "nonfinite_or_nonpositive_radiance_pixel_count": 0,
+          "radiance_unit": "mW m-2 sr-1 (cm-1)-1 (AMI calibration convention)",
+          "spatial_bt_std_K_ddof0": 0.10038762433689072,
+          "statistics_status": "REPORTED",
+          "window_bt_K": [
+            [
+              263.98005002263795,
+              264.0191327026856,
+              264.05818375026064
+            ],
+            [
+              264.11670114662513,
+              264.1946142065352,
+              264.13619119637843
+            ],
+            [
+              264.21407285585536,
+              264.31124879172245,
+              264.21407285585536
+            ]
+          ],
+          "window_good_pixel_count": 9,
+          "window_pixel_count": 9,
+          "window_radiance": [
+            [
+              17.53501605987549,
+              17.554412603378296,
+              17.573809146881104
+            ],
+            [
+              17.602903962135315,
+              17.64169704914093,
+              17.61260223388672
+            ],
+            [
+              17.651395320892334,
+              17.699886679649353,
+              17.651395320892334
+            ]
+          ]
+        }
+      },
+      "files": [
+        {
+          "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_wv073_ko020lc_202507190002.nc",
+          "sha256": "b1e86ea2fa0d1b935954b0be876e750ba224286ce47a3765cfd20c63e0f82ab0",
+          "size_bytes": 936507
+        },
+        {
+          "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir087_ko020lc_202507190002.nc",
+          "sha256": "6ba24471bba65fd40a1dd4ac00129b279d2114085f01a537d00306adf7639ea8",
+          "size_bytes": 1047868
+        },
+        {
+          "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir096_ko020lc_202507190002.nc",
+          "sha256": "4f96d56703a6a50a000ca4766cd1f27b5c0b40b6a405d94b8c11be50baa2b845",
+          "size_bytes": 978383
+        },
+        {
+          "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir105_ko020lc_202507190002.nc",
+          "sha256": "5a05d96053b78b1b76784763fa5a09443ba4cf721a0d10ad58f8a575046cb58a",
+          "size_bytes": 1054116
+        },
+        {
+          "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir112_ko020lc_202507190002.nc",
+          "sha256": "320fa17c037fbb3e1991a7a85f41fc7b45ce9b6f61edb9583417767c6a192b7e",
+          "size_bytes": 1049847
+        },
+        {
+          "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir123_ko020lc_202507190002.nc",
+          "sha256": "3c068246652876f5a94b35a064e18f57d820bf6864e876330b7afc31e5c22f3d",
+          "size_bytes": 1036243
+        },
+        {
+          "path": "/Users/yhlee/KDM6AD-k/GK2A/00/gk2a_ami_le1b_ir133_ko020lc_202507190002.nc",
+          "sha256": "0b59f69dab3d494874fb8f32452a14c0eaf8a3b537ba57f19edf3142efed3274",
+          "size_bytes": 991300
+        }
+      ],
+      "timestamp": "202507190002"
+    }
+  ],
+  "status": "COMPLETE"
+}

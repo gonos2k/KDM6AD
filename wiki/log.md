@@ -435,3 +435,12 @@ entry density and real frozen constants retain their tested derivatives. The
 [review checklist](../harness/evidence/CHECKLIST_pr362_review_2026-10-04.md)
 records focused tests and the unsupported nested-transform boundary. Previous
 native/RTTOV evidence and physical-policy OPEN states are unchanged.
+
+## 2026-10-04 — Physical-policy checklist after PR #363/#364
+
+Retained bounded AD/IR105 closures and separated S2 coordinate convention from
+original calibration. Added an actual, fixed-pixel two-slot AMI 3×3 support
+diagnostic: radiance averaging/QC remain explicit, local variability is not R.
+The [policy checklist](../harness/evidence/CHECKLIST_pr363_364_physical_policy_2026-10-04.md)
+records instrument metrics, a conditional window-averaging residual bound and
+S2/S11 decision inputs. No physical approval or production default changed.
