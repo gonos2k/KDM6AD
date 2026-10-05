@@ -190,5 +190,9 @@ for one retained NC direction. The subsequent explicit
 passes model, optical number and BT settings through Python window/shard APIs
 and the full-domain caller. Its [assembled execution receipt](../harness/evidence/REPORT_unified_KMA_window_2026-10-05.md)
 checks a one-column diagnostic optimization and a 180-step recomputed window
-with frozen background optical density. Native host routing and scientific
+with frozen background optical density. A subsequent [team audit](../harness/evidence/CHECKLIST_pr373_team_audit_2026-10-05.md)
+identified native T/Q blending and an unusable cloud-OSSE worker. The
+[corrected native-preserving execution](../harness/evidence/REPORT_native_KMA_window_2026-10-05.md)
+records those repairs with separate actual window and spawned-worker evidence.
+Native host routing and scientific
 observation approval remain separate.

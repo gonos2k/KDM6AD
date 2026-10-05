@@ -807,6 +807,8 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
             geometry=take_profile_aux(geometry, jset),
             surface=take_profile_aux(surface, jset)),
         obs_sigma=1.0, t_ref=t_ref, q_ref=q_ref)
+    if normalized_dry:
+        clear_cfg.t_blend_octaves = clear_cfg.q_blend_octaves = 0.0
     # M and H must see the SAME land/sea and activation-minimum settings —
     # a mismatch makes microphysics activation and RTTOV Deff inconsistent
     # (review #2). ncmin values are pass-through so both sides agree.
@@ -819,7 +821,8 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
                      oracle_root=str(Path(__file__).resolve().parents[1]))
     if normalized_dry:
         rttov_cfg.update(dry_number=True, ami_kma_bt=True,
-                         fixture_case_dir=str(grids["cloud_fixture_case_dir"]))
+                         fixture_case_dir=str(grids["cloud_fixture_case_dir"]),
+                         t_blend_octaves=0.0, q_blend_octaves=0.0)
 
     prior = default_param_prior(0.2)
     if obs_time not in (0, 1):
@@ -916,8 +919,7 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     if normalized_dry:
         native_p = fc.p.flip(-1) / 100.0
         if (p_lay.ndim != 1 or p_lay.numel() < native_p.shape[-1]
-                or not torch.allclose(native_p, p_lay[-native_p.shape[-1]:].expand_as(native_p),
-                                      rtol=0.0, atol=1e-10)):
+                or not torch.equal(native_p, p_lay[-native_p.shape[-1]:].expand_as(native_p))):
             raise ValueError("normalized_dry requires the shared optical grid to retain every native center pressure")
     clear_cfg = _take_clear_config(clear_cfg, keep)
     for name in ("geometry", "surface"):
@@ -977,6 +979,7 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
             x_slot_bg=x_slot_bg, pseudo=pseudo,
             rttov_timeout=rttov_timeout,
             **({"channel_gate": gate} if gate is not None else {}))
+        obs_eval.normalized_dry = normalized_dry
         res = run_dual_minimizer(xb, [fc], obs_eval, cfg, b_sigma, prior,
                                  max_iter=max_iter, cvt=spec,
                                  partition=pspec)

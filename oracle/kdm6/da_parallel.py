@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import copy
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Sequence
 
@@ -77,8 +77,7 @@ class ShardSpec:
                 raise ValueError("normalized_dry shards require native center pressures")
             target = torch.as_tensor(target, dtype=native.dtype, device=native.device)
             if (target.ndim != 1 or target.numel() < native.shape[-1]
-                    or not torch.allclose(native, target[-native.shape[-1]:].expand_as(native),
-                                          rtol=0.0, atol=1e-10)):
+                    or not torch.equal(native, target[-native.shape[-1]:].expand_as(native))):
                 raise ValueError("normalized_dry shards must retain every native center pressure")
             if self.profile_kwargs.get("rttov_level_pressure") is None:
                 raise ValueError("normalized_dry shards require caller-supplied native interfaces")
@@ -109,9 +108,13 @@ def _shard_worker(spec: ShardSpec) -> dict:
 
     run_kw = {"timeout": spec.rttov_timeout}
     window_kw = {}
+    obs_kw = {"q_blend_octaves": spec.q_blend_octaves}
     if spec.normalized_dry:
         run_kw["ami_kma_bt"] = True
         window_kw["normalized_dry"] = True
+        # The first native-grid research mode uses fixture references only
+        # strictly above the model top; preserve native T/Q at and below it.
+        obs_kw.update(t_blend_octaves=0.0, q_blend_octaves=0.0)
     if spec.fixture_case_dir is not None:
         run_kw["fixture_case_dir"] = spec.fixture_case_dir
     obs_cfg = OsseObsConfig(
@@ -121,19 +124,79 @@ def _shard_worker(spec: ShardSpec) -> dict:
         input_cfg=RttovInputConfig(**spec.input_kwargs),
         obs_sigma=spec.obs_sigma,
         t_ref=spec.t_ref, q_ref=spec.q_ref,
-        q_blend_octaves=spec.q_blend_octaves)
-    rep = run_osse_sensitivity(
-        spec.x_truth, spec.x_background, [spec.forcing] * spec.n_steps,
-        list(spec.obs_times),
-        WindowConfig(dt=spec.dt, xland=spec.xland,
-                     ncmin_land=spec.ncmin_land,
-                     ncmin_sea=spec.ncmin_sea, **window_kw),
-        obs_cfg)
+        **obs_kw)
+    window_cfg = WindowConfig(dt=spec.dt, xland=spec.xland,
+                              ncmin_land=spec.ncmin_land,
+                              ncmin_sea=spec.ncmin_sea, **window_kw)
+    forcings = [spec.forcing] * spec.n_steps
+    if spec.normalized_dry:
+        rep = _run_normalized_dry_sensitivity(spec, forcings, window_cfg, obs_cfg)
+    else:
+        rep = run_osse_sensitivity(
+            spec.x_truth, spec.x_background, forcings,
+            list(spec.obs_times), window_cfg, obs_cfg)
     return dict(shard_id=spec.shard_id,
                 col_idx=spec.col_idx,
                 j_obs=rep.j_obs,
                 n_obs_times=rep.n_obs_times,
                 adj_x0={k: getattr(rep.window.adj_x0, k) for k in State._fields})
+
+
+def _make_normalized_dry_obs_eval(spec: ShardSpec, forcings,
+                                  window_cfg: WindowConfig, obs_cfg):
+    """Build truth BTs and one frozen normalized-dry all-sky dual callback."""
+    from .da_dual import default_param_prior, make_dual_frozen_obs_eval, params_from_vtheta
+    from .da_driver import batched_allsky_bt
+    from .da_window import collect_window_trajectory
+
+    prior = default_param_prior(0.2)
+    theta_b = params_from_vtheta(prior, torch.zeros(4, **_F64), live=False)
+    truth_cfg = replace(window_cfg, params=theta_b)
+    obs_times = set(spec.obs_times)
+    truth_states = collect_window_trajectory(
+        spec.x_truth, forcings, truth_cfg, obs_times)
+    y_by_time = {}
+    for t in sorted(obs_times):
+        forcing = forcings[t] if t < len(forcings) else forcings[-1]
+        with torch.no_grad():
+            bt, rad_quality, _ = batched_allsky_bt(
+                truth_states[t], forcing, obs_cfg, xland=spec.xland,
+                ncmin_land=spec.ncmin_land, ncmin_sea=spec.ncmin_sea)
+        y_by_time[t] = (bt.detach().clone(), rad_quality.detach().clone())
+
+    obs_eval = make_dual_frozen_obs_eval(
+        spec.x_background, forcings, y_by_time, obs_cfg, window_cfg, prior,
+        cloud=True, xland=spec.xland, ncmin_land=spec.ncmin_land,
+        ncmin_sea=spec.ncmin_sea)
+    return obs_eval
+
+
+def _run_normalized_dry_sensitivity(spec: ShardSpec, forcings,
+                                    window_cfg: WindowConfig, obs_cfg):
+    """Native all-sky truth observations plus frozen dual H and window VJP."""
+    from .da_driver import OsseReport
+    from .da_window import run_da_window
+
+    obs_eval = _make_normalized_dry_obs_eval(spec, forcings, window_cfg, obs_cfg)
+    j_obs = []
+
+    def obs_adjoint(t, x_t):
+        value = obs_eval(t, x_t)
+        if value is None:
+            return None
+        j_obs.append(float(value.j))
+        return value.adj
+
+    window = run_da_window(spec.x_background, forcings, obs_adjoint, window_cfg)
+    norms = {name: float(getattr(window.adj_x0, name).norm())
+             for name in State._fields}
+    th_abs = window.adj_x0.th.abs()
+    top = torch.argsort(th_abs.reshape(-1), descending=True)[:5]
+    B, K = th_abs.shape
+    top_th = [(int(i) // K, int(i) % K, float(th_abs.reshape(-1)[i]))
+              for i in top]
+    return OsseReport(j_obs=float(sum(j_obs)), n_obs_times=len(j_obs),
+                      window=window, adj_norms=norms, top_th=top_th)
 
 
 def run_sharded_sensitivity(specs: Sequence[ShardSpec], *, n_workers: int,

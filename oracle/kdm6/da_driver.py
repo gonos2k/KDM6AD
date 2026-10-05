@@ -141,7 +141,16 @@ def _blend_above_model_top(x_lay: torch.Tensor, x_ref: torch.Tensor,
 
     x_lay (B, n), x_ref (n,), p_lay (n,), p_top_col (B,) → (B, n).
     w=1(모델) ← p ≥ 2^octaves·p_top;  w=0(기준) ← p ≤ p_top. w는 상수(no_grad).
+    octaves=0 selects reference only above the native model top. Native
+    values and their tangents are preserved, including the top center.
     """
+    if not math.isfinite(octaves) or octaves < 0.0:
+        raise ValueError("model-top blend octaves must be finite and non-negative")
+    if octaves == 0.0:
+        # Pressure is fixed forcing; native research grids retain exact centers.
+        with torch.no_grad():
+            native = p_lay[None, :] >= p_top_col[:, None]
+        return torch.where(native, x_lay, x_ref[None, :])
     with torch.no_grad():
         lp = torch.log(p_lay)[None, :]                    # (1, n)
         lt = torch.log(p_top_col)[:, None]                # (B, 1)
