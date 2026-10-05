@@ -15,3 +15,5 @@ The KMA v3.0 observation coordinate, native grid and diagnostic loss settings ar
 The 3,600-second check keeps the nominal 00:00 target at a 01:00:20 model slot; it is not a time-collocated observing sequence. Stable frozen support does not establish invariant endpoint RTTOV quality or upstream branch masks.
 
 Receipt field scopes: `full_domain_input_state_unchanged` and `full_domain_input_forcing_unchanged` check the selected column only. The historical key `full_domain_elapsed_s` measures the entire campaign (232.13 s), including both window checks and the shard execution; the optimizer phase is separately timed by `full_domain_report.wall_s` (50.36 s). The executed source and JSON are preserved unchanged; these labels do not certify untouched values for every domain column.
+
+A subsequent [signed analysis-inventory calculation](REPORT_native_analysis_inventory_2026-10-05.md) quantifies the added water and conditional heat, separates both model legs, and explains the proxy cloud label. It does not change this execution or approve its physical analysis.

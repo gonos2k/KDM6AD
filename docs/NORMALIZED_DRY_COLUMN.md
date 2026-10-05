@@ -53,6 +53,12 @@ The [PR #373 audit](../harness/evidence/CHECKLIST_pr373_team_audit_2026-10-05.md
 preserves the original blended-operator evidence and records the missed paths
 and their corrections separately.
 
+The [signed inventory interpretation](../harness/evidence/REPORT_native_analysis_inventory_2026-10-05.md)
+separates the initial analysis water/heat changes from the two model trajectories
+on a declared fixed measure. These are conditional endpoint inventories, not
+closed boundary-flux budgets. The report's `cloudy_clear` label is the existing
+IR105 threshold proxy, not an independently observed clear scene.
+
 ```sh
 python oracle/scripts/run_normalized_dry_column.py \
   --input /path/to/native_5km_history \
