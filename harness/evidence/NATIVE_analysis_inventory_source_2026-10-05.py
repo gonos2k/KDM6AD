@@ -98,7 +98,8 @@ def main():
                          -d["background_model_net_change"][key]))
             for key in ("water_kg_m2", "phase_enthalpy_J_m2", "operator_potential_J_m2")}
 
-    # A constant reference offset per kg water changes delta-H by offset*delta-W.
+    # For _h_consistent, a common offset in every water phase changes delta-H
+    # by offset*delta-W; this does not describe a shift of only one phase.
     # This is a coordinate identity, not an alternative fitted thermodynamic law.
     delta_w = differences["fixed_background_dry"]["analysis_increment"]["water_kg_m2"]
     result = dict(

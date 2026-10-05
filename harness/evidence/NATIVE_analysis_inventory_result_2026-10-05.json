@@ -439,7 +439,7 @@
     "recorded_label": "cloudy_clear",
     "observed_IR105_K": 286.16092078316177
   },
-  "source_sha256": "12c95277ce85a4850de7b820d62eac57dd267bfa92ead19ea53fcaba76147c21",
+  "source_sha256": "7064de31ad48611ec8ce7a6704744a77cb56c4903305095135b93d62dc8c9aa4",
   "input_hashes": {
     "harness/evidence/NATIVE_KMA_analysis_fields_2026-10-05.npz": "fc414c8e394f60f094530ed4a493345dbaa13604517189d92a8f8de430e978da",
     "harness/evidence/NATIVE_KMA_window_arrays_2026-10-05.npz": "14e445fd7b644d8d24086e1ff229eeaa43b5f9a693329d5b3b7116f4729bedfd",
@@ -450,5 +450,5 @@
     "python": "3.10.11",
     "numpy": "2.2.6"
   },
-  "repository_head": "3e26b530f26b7b7dd8b8f0d7f337064295cbb7d8"
+  "repository_head": "efd8a6c404dc2ed09c72b34951d6ce46f90de5c2"
 }
