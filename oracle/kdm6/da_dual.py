@@ -205,7 +205,8 @@ def _freeze_obs_cfg_value(value):
         return {copy.deepcopy(k): _freeze_obs_cfg_value(v) for k, v in value.items()}
     if callable(value):
         return _FrozenCallable(
-            value, _freeze_obs_cfg_value(getattr(value, "solar_channels", None)))
+            value, _freeze_obs_cfg_value(getattr(value, "solar_channels", None)),
+            _freeze_obs_cfg_value(getattr(value, "bt_coordinate", None)))
     return copy.deepcopy(value)
 
 
@@ -265,14 +266,17 @@ def _obs_cfg_fingerprint(obs_cfg) -> str:
     run_k_fn = getattr(run_k, "fn", run_k)
     run_k_attrs = (getattr(run_k, "__dict__", {})
                    if not isinstance(run_k, _FrozenCallable)
-                   else {"solar_channels": getattr(run_k, "solar_channels", None)})
+                   else {"solar_channels": getattr(run_k, "solar_channels", None),
+                         "bt_coordinate": getattr(run_k, "bt_coordinate", None)})
     run_k_identity = (
         type(run_k_fn).__module__, type(run_k_fn).__qualname__,
         getattr(run_k_fn, "__module__", None),
         getattr(run_k_fn, "__qualname__", None),
         _fingerprint_obj(run_k_attrs))
     payload += (("run_k.identity", run_k_identity),
-                ("run_k.solar_channels", _fingerprint_obj(run_k_solar)))
+                ("run_k.solar_channels", _fingerprint_obj(run_k_solar)),
+                ("run_k.bt_coordinate", _fingerprint_obj(
+                    getattr(run_k, "bt_coordinate", None))))
     return hashlib.sha256(repr(payload).encode()).hexdigest()
 
 
@@ -280,6 +284,7 @@ def _obs_cfg_fingerprint(obs_cfg) -> str:
 class _FrozenCallable:
     fn: object
     solar_channels: object = None
+    bt_coordinate: object = None
 
     def __call__(self, *args, **kwargs):
         return self.fn(*args, **kwargs)

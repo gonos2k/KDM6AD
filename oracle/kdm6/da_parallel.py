@@ -60,9 +60,38 @@ class ShardSpec:
     ncmin_land: float = 0.0
     ncmin_sea: float = 0.0
     rttov_timeout: float = DEFAULT_RTTOV_TIMEOUT
+    normalized_dry: bool = False
+    fixture_case_dir: str | None = None
 
     def __post_init__(self):
         self.rttov_timeout = validate_rttov_timeout(self.rttov_timeout)
+        if not isinstance(self.normalized_dry, bool):
+            raise ValueError("normalized_dry must be a boolean")
+        if self.normalized_dry:
+            from .rttov_bridge import freeze_dry_air_density
+            if self.fixture_case_dir is None:
+                raise ValueError("normalized_dry shards require an explicit native-grid fixture")
+            target = self.profile_kwargs.get("rttov_layer_pressure")
+            native = self.forcing.p.flip(-1) / 100.0
+            if target is None:
+                raise ValueError("normalized_dry shards require native center pressures")
+            target = torch.as_tensor(target, dtype=native.dtype, device=native.device)
+            if (target.ndim != 1 or target.numel() < native.shape[-1]
+                    or not torch.allclose(native, target[-native.shape[-1]:].expand_as(native),
+                                          rtol=0.0, atol=1e-10)):
+                raise ValueError("normalized_dry shards must retain every native center pressure")
+            if self.profile_kwargs.get("rttov_level_pressure") is None:
+                raise ValueError("normalized_dry shards require caller-supplied native interfaces")
+            if (not self.profile_kwargs.get("cloud", False)
+                    or tuple(self.input_kwargs.get("channels", ())) != tuple(range(8, 17))
+                    or self.obs_sigma != 1.0):
+                raise ValueError("normalized_dry shards require all-sky AMI 8..16 and diagnostic sigma=1")
+            expected = freeze_dry_air_density(self.x_background, self.forcing)
+            rho = self.profile_kwargs.get("rho_d", expected)
+            if not isinstance(rho, torch.Tensor) or not torch.equal(rho, expected):
+                raise ValueError("normalized_dry shard density must be frozen from its background")
+            self.profile_kwargs = dict(self.profile_kwargs, dry_number=True,
+                                       rho_d=rho.detach().clone())
         # Keep direct construction on the same fail-fast boundary as the
         # worker's OsseObsConfig; an invalid pair must never reach spawn.
         from .da_driver import _validate_profile_ref_pair
@@ -78,9 +107,16 @@ def _shard_worker(spec: ShardSpec) -> dict:
     from .obs.rttov_case_writer import make_live_run_k
     from .obs.rttov_input_builder import RttovInputConfig
 
+    run_kw = {"timeout": spec.rttov_timeout}
+    window_kw = {}
+    if spec.normalized_dry:
+        run_kw["ami_kma_bt"] = True
+        window_kw["normalized_dry"] = True
+    if spec.fixture_case_dir is not None:
+        run_kw["fixture_case_dir"] = spec.fixture_case_dir
     obs_cfg = OsseObsConfig(
         run_k=make_live_run_k(Path(spec.case_root),
-                              timeout=spec.rttov_timeout),  # 가드 1: 샤드 전용 dir
+                              **run_kw),  # 가드 1: 샤드 전용 dir
         profile_cfg=RttovProfileConfig(**spec.profile_kwargs),
         input_cfg=RttovInputConfig(**spec.input_kwargs),
         obs_sigma=spec.obs_sigma,
@@ -91,7 +127,7 @@ def _shard_worker(spec: ShardSpec) -> dict:
         list(spec.obs_times),
         WindowConfig(dt=spec.dt, xland=spec.xland,
                      ncmin_land=spec.ncmin_land,
-                     ncmin_sea=spec.ncmin_sea),
+                     ncmin_sea=spec.ncmin_sea, **window_kw),
         obs_cfg)
     return dict(shard_id=spec.shard_id,
                 col_idx=spec.col_idx,
@@ -185,13 +221,17 @@ def build_shard_specs(x_truth: State, x_background: State, forcing: Forcing,
                       xland: torch.Tensor | None = None,
                       ncmin_land: float = 0.0,
                       ncmin_sea: float = 0.0,
-                      rttov_timeout: float = DEFAULT_RTTOV_TIMEOUT) -> list:
+                      rttov_timeout: float = DEFAULT_RTTOV_TIMEOUT,
+                      normalized_dry: bool = False,
+                      fixture_case_dir: str | None = None) -> list:
     """(B_total, K) 입력 + 분할 인덱스 리스트(예: da_shard.compose_shards 출력)
     → ShardSpec 리스트. col_idx는 [0, B_total) 재조립 인덱스 그 자체."""
     from .da_driver import (_normalize_obs_times,
                             _validate_profile_ref_pair)
 
     rttov_timeout = validate_rttov_timeout(rttov_timeout)
+    if not isinstance(normalized_dry, bool):
+        raise ValueError("normalized_dry must be a boolean")
     _validate_profile_ref_pair(t_ref, q_ref)
     B, K = x_truth.th.shape
     obs_times_f = _normalize_obs_times(obs_times, n_steps)
@@ -282,7 +322,8 @@ def build_shard_specs(x_truth: State, x_background: State, forcing: Forcing,
             obs_sigma=obs_sigma, t_ref=shard_t_ref, q_ref=shard_q_ref,
             q_blend_octaves=q_blend_octaves,
             xland=shard_xland, ncmin_land=float(ncmin_land),
-            ncmin_sea=float(ncmin_sea), rttov_timeout=rttov_timeout))
+            ncmin_sea=float(ncmin_sea), rttov_timeout=rttov_timeout,
+            normalized_dry=normalized_dry, fixture_case_dir=fixture_case_dir))
     return specs
 
 
@@ -312,11 +353,15 @@ def _forward_window_worker(args: dict) -> "np.ndarray":
     xland_t = None if xland is None else _torch.as_tensor(xland, dtype=_torch.float64)
     x = State(*(st[i] for i in range(12)))
     T = fcs.shape[0]
+    normalized_dry = args.get("normalized_dry", False)
+    if not isinstance(normalized_dry, bool):
+        raise ValueError("normalized_dry must be a boolean")
+    mode_kw = {"normalized_dry": True} if normalized_dry else {}
     for tt in range(T):
         fc = Forcing(*(fcs[tt, i] for i in range(4)))
         x, h = kdm6_step(x, fc, params, args["dt"], value_only=True,
                          xland=xland_t, ncmin_land=args.get("ncmin_land", 0.0),
-                         ncmin_sea=args.get("ncmin_sea", 0.0))
+                         ncmin_sea=args.get("ncmin_sea", 0.0), **mode_kw)
         h.close()
     return _torch.stack(list(x)).numpy()
 
@@ -324,7 +369,7 @@ def _forward_window_worker(args: dict) -> "np.ndarray":
 def sharded_forward_window(state: "State", forcings, dt: float, *,
                            theta=None, xland=None, ncmin_land: float = 0.0,
                            ncmin_sea: float = 0.0, n_workers: int = 8,
-                           pool=None) -> "State":
+                           pool=None, normalized_dry: bool = False) -> "State":
     """값-전용 창 전방을 컬럼 샤딩으로 — 단일 프로세스와 bitwise 동일 게이트.
 
     theta: (4,) 파라미터 값 | None. xland/ncmin_*: kdm6_step의 land/sea
@@ -333,6 +378,8 @@ def sharded_forward_window(state: "State", forcings, dt: float, *,
     import multiprocessing as mp
     import numpy as np
     from kdm6.state import State as _State
+    if not isinstance(normalized_dry, bool):
+        raise ValueError("normalized_dry must be a boolean")
 
     B = state.th.shape[0]
     st = torch.stack(list(state)).numpy()
@@ -345,7 +392,7 @@ def sharded_forward_window(state: "State", forcings, dt: float, *,
                  theta=None if theta is None else [float(v) for v in theta],
                  xland=None if xl is None else xl[ch].numpy(),
                  ncmin_land=ncmin_land, ncmin_sea=ncmin_sea,
-                 oracle_root=oracle_root)
+                 oracle_root=oracle_root, normalized_dry=normalized_dry)
             for ch in chunks if len(ch)]
     own = pool is None
     if own:

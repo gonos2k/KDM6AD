@@ -538,7 +538,8 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
                              huber_delta: "float | None" = 3.0,
                              x_slot_bg: "State | None" = None,
                              pseudo: "dict | None" = None,
-                             rttov_timeout: float = DEFAULT_RTTOV_TIMEOUT):
+                             rttov_timeout: float = DEFAULT_RTTOV_TIMEOUT,
+                             channel_gate=None):
     """동결 mask 결합 obs_eval — 슬롯 t=obs_time, ObsEvalResult 반환.
 
     동결 기준은 배경 '슬롯 시각' 상태 x_slot_bg(기본 xb_sub — obs_time=0일 때):
@@ -572,6 +573,11 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
     fc_sub = _freeze_h_value(fc_sub)
     y_bt = torch.as_tensor(y_bt, dtype=torch.float64).detach().clone()
     y_rq = torch.as_tensor(y_rq, dtype=torch.float64).detach().clone()
+    if channel_gate is not None:
+        channel_gate = torch.as_tensor(channel_gate, dtype=torch.float64).detach().clone()
+        if (channel_gate.shape != y_bt.shape or not bool(torch.isfinite(channel_gate).all())
+                or bool(((channel_gate != 0) & (channel_gate != 1)).any())):
+            raise ValueError("channel_gate must be a full-shape binary support field")
     xland_sub = (None if xland_sub is None else
                  torch.as_tensor(xland_sub).detach().clone())
     cloudy_pos = torch.as_tensor(cloudy_pos, dtype=torch.int64).detach().clone()
@@ -591,6 +597,8 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
     mask = torch.zeros_like(y_bt)
     mask[cloudy_pos] = ((y_rq[cloudy_pos] == 0) & (probe["rq"] == 0)).to(torch.float64)
     mask[clear_pos] = ((y_rq[clear_pos] == 0) & (rq_clear == 0)).to(torch.float64)
+    if channel_gate is not None:
+        mask = mask * channel_gate
     n_valid = int(mask.sum())
     # This digest checks captured data within one fixed window. Stateless
     # callbacks and unchanged external fixture provenance remain run-level
@@ -696,7 +704,9 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
                             pseudo_sigma_p: float = 2.0e-4,
                             conserving: bool = False,
                             save_fields: "str | None" = None,
-                            rttov_timeout: float = DEFAULT_RTTOV_TIMEOUT) -> dict:
+                            rttov_timeout: float = DEFAULT_RTTOV_TIMEOUT,
+                            normalized_dry: bool = False,
+                            observation_coordinate: str | None = None) -> dict:
     """전 도메인 분석 1회 — JSON 직렬화 가능한 보고 dict 반환.
 
     grids: dict(p_lay, p_half, t_ref, q_ref) — RTTOV 픽스처 격자/기준 프로파일
@@ -718,6 +728,11 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     deliberate qv-diagonal total-water change, and finals come from the
     single authoritative audit closure.
     save_fields: npz 경로 — 영상화/후속 분석용 배경·분석 필드 + bt/regime.
+    normalized_dry=True explicitly selects the normalized conservative,
+    dry-number model and optics, frozen background optical density and KMA
+    v3.0 BT. This first research mode requires thermal AMI 8..16, diagnostic
+    Huber delta=1, zero bias, native-grid fixtures and no pseudo-RH. It does
+    not grant scientific observation or operational approval.
     """
     from .obs.model_profile_builder import RttovProfileConfig
     from .obs.rttov_case_writer import make_live_run_k
@@ -733,10 +748,26 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     # explicitly retains the reference fixture and is reported below; it is
     # not a claim of location-specific observation geometry/surface matching.
     from .obs.rttov_case_writer import _validate_geometry, _validate_surface
+    if not isinstance(normalized_dry, bool):
+        raise ValueError("normalized_dry must be a boolean")
     _validate_geometry(geometry, fr.state.th.shape[0])
-    _validate_surface(surface, fr.state.th.shape[0])
+    if normalized_dry:
+        _validate_surface(surface, fr.state.th.shape[0], solar_enabled=False)
+    else:
+        _validate_surface(surface, fr.state.th.shape[0])
     geometry, surface = _freeze_h_value(geometry), _freeze_h_value(surface)
-    if getattr(co, "bias", None) is not None or getattr(co, "channel_gate", None) is not None:
+    if normalized_dry:
+        if observation_coordinate != "kma_v3_0":
+            raise ValueError("normalized_dry requires explicitly declared KMA v3.0 observations")
+        if tuple(channels) != tuple(range(8, 17)) or huber_delta != 1.0:
+            raise ValueError("normalized_dry supports thermal AMI 8..16 and diagnostic Huber delta=1")
+        if pseudo_rh:
+            raise ValueError("the first normalized_dry research path does not support pseudo-RH")
+        if grids.get("cloud_fixture_case_dir") is None:
+            raise ValueError("normalized_dry requires an explicit native-grid cloud fixture")
+        if getattr(co, "bias", None) is not None and bool((co.bias != 0).any()):
+            raise ValueError("the first normalized_dry research path supports zero bias only")
+    elif getattr(co, "bias", None) is not None or getattr(co, "channel_gate", None) is not None:
         raise ValueError(
             "run_fulldomain_analysis does not consume ColumnObs.bias/channel_gate; "
             "apply these fields in an obs-eval adapter before entering this driver")
@@ -748,13 +779,26 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     fc = _take(fr.forcing, jset)
     xland = fr.xland[jset]
     y_bt, y_rq = co.bt[jset], co.obs_quality[jset]
+    gate = None
+    if normalized_dry:
+        gate = (None if getattr(co, "channel_gate", None) is None else co.channel_gate[jset])
+        if y_bt.shape[1] == 16:
+            y_bt, y_rq = y_bt[:, 7:16], y_rq[:, 7:16]
+            gate = None if gate is None else gate[:, 7:16]
+        elif y_bt.shape[1] != 9:
+            raise ValueError("normalized_dry observations require nine thermal or sixteen AMI columns")
+    ir_col = 5 if normalized_dry else IR105_COL
+    model_mode = {"normalized_dry": True} if normalized_dry else {}
+    clear_run_kw = {"ami_kma_bt": True} if normalized_dry else {}
+    if grids.get("clear_fixture_case_dir") is not None:
+        clear_run_kw["fixture_case_dir"] = grids["clear_fixture_case_dir"]
 
     p_lay = torch.as_tensor(np.asarray(grids["p_lay"], dtype=float), **_F64)
     p_half = torch.as_tensor(np.asarray(grids["p_half"], dtype=float), **_F64)
     t_ref = torch.as_tensor(np.asarray(grids["t_ref"], dtype=float), **_F64)
     q_ref = torch.as_tensor(np.asarray(grids["q_ref"], dtype=float), **_F64)
     clear_cfg = OsseObsConfig(
-        run_k=make_live_run_k(f"{case_root}/clear", timeout=rttov_timeout),
+        run_k=make_live_run_k(f"{case_root}/clear", timeout=rttov_timeout, **clear_run_kw),
         profile_cfg=RttovProfileConfig(
             gas_units=2, qv_convention="mixing_ratio_kgkg_dry",
             rttov_layer_pressure=p_lay, rttov_level_pressure=p_half),
@@ -773,6 +817,9 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
                      surface=take_profile_aux(surface, jset),
                      ncmin_land=ncmin_land, ncmin_sea=ncmin_sea,
                      oracle_root=str(Path(__file__).resolve().parents[1]))
+    if normalized_dry:
+        rttov_cfg.update(dry_number=True, ami_kma_bt=True,
+                         fixture_case_dir=str(grids["cloud_fixture_case_dir"]))
 
     prior = default_param_prior(0.2)
     if obs_time not in (0, 1):
@@ -846,7 +893,7 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     # the observation applies to x_slot = M(x0), so cloud created/destroyed
     # within the step must classify and route accordingly (review #3).
     cfg = WindowConfig(dt=dt, xland=xland,
-                       ncmin_land=ncmin_land, ncmin_sea=ncmin_sea)
+                       ncmin_land=ncmin_land, ncmin_sea=ncmin_sea, **model_mode)
     x_slot_bg = _forward_to_slot(xb, fc, cfg)
     qtot_slot = (x_slot_bg.qc + x_slot_bg.qi + x_slot_bg.qs).sum(-1)
     mc = torch.where(qtot_slot > QTOT_MIN)[0]
@@ -856,6 +903,8 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
         mc = mc[:max_cloudy]
     if max_clear is not None:
         cl = cl[:max_clear]
+    if normalized_dry and cl.numel() and grids.get("clear_fixture_case_dir") is None:
+        raise ValueError("normalized_dry clear columns require an explicit native-grid clear fixture")
     keep = torch.cat([mc, cl])
     if keep.numel() == 0:
         raise ValueError(
@@ -864,6 +913,12 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
             f"partition {n_mc_precap} cloudy / {n_cl_precap} clear "
             "before caps) — nothing to minimize")
     xb, fc, xland = _take(xb, keep), _take(fc, keep), xland[keep]
+    if normalized_dry:
+        native_p = fc.p.flip(-1) / 100.0
+        if (p_lay.ndim != 1 or p_lay.numel() < native_p.shape[-1]
+                or not torch.allclose(native_p, p_lay[-native_p.shape[-1]:].expand_as(native_p),
+                                      rtol=0.0, atol=1e-10)):
+            raise ValueError("normalized_dry requires the shared optical grid to retain every native center pressure")
     clear_cfg = _take_clear_config(clear_cfg, keep)
     for name in ("geometry", "surface"):
         rttov_cfg[name] = take_profile_aux(rttov_cfg[name], keep)
@@ -871,10 +926,11 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     rttov_cfg["rho_d"] = freeze_dry_air_density(xb, fc).numpy()
     x_slot_bg = _take(x_slot_bg, keep)
     y_bt, y_rq = y_bt[keep], y_rq[keep]
+    gate = None if gate is None else gate[keep]
     model_cloudy_pos = torch.arange(mc.numel())
     model_clear_pos = torch.arange(mc.numel(), keep.numel())
     cfg = WindowConfig(dt=dt, xland=xland,
-                       ncmin_land=ncmin_land, ncmin_sea=ncmin_sea)
+                       ncmin_land=ncmin_land, ncmin_sea=ncmin_sea, **model_mode)
 
     def _slot_state(x_state, params=None):
         return _forward_to_slot(x_state, fc, cfg, params=params)
@@ -887,12 +943,12 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     r2 = torch.empty(0, dtype=torch.int64)
     if pseudo_rh:
         from .da_regime2 import cloud_top_levels, frozen_saturation_target
-        r2 = select_regime2_positions(y_bt, y_rq, model_clear_pos)
+        r2 = select_regime2_positions(y_bt, y_rq, model_clear_pos, ir_col=ir_col)
         if r2.numel():
             pseudo = dict(cols=r2,
                           target=frozen_saturation_target(x_slot_bg, fc, r2),
                           levels=cloud_top_levels(x_slot_bg, fc, r2,
-                                                  y_bt[r2, IR105_COL]),
+                                                  y_bt[r2, ir_col]),
                           sigma_p=pseudo_sigma_p)
     allsky_pos = torch.cat([model_cloudy_pos, r2])
     in_r2 = torch.zeros(keep.numel(), dtype=torch.bool)
@@ -919,7 +975,8 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
             clear_cfg, rttov_cfg, case_root, n_workers=n_workers, pool=pool,
             obs_time=obs_time, huber_delta=huber_delta,
             x_slot_bg=x_slot_bg, pseudo=pseudo,
-            rttov_timeout=rttov_timeout)
+            rttov_timeout=rttov_timeout,
+            **({"channel_gate": gate} if gate is not None else {}))
         res = run_dual_minimizer(xb, [fc], obs_eval, cfg, b_sigma, prior,
                                  max_iter=max_iter, cvt=spec,
                                  partition=pspec)
@@ -966,7 +1023,7 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     # t0 (control increments) and the slot time (what the obs actually saw —
     # pseudo-created condensate only exists at the slot, review #4).
     sub = jset[keep]
-    code = classify_regimes(int(sub.numel()), y_bt, mask, model_cloudy_pos)
+    code = classify_regimes(int(sub.numel()), y_bt, mask, model_cloudy_pos, ir_col=ir_col)
     # the 4-regime table covers only IR105-classifiable profiles; the
     # unclassified remainder still contributes other-channel radiances to
     # the GLOBAL O-B/O-A (reviewer caveat 3) — report the coverage honestly
@@ -1076,6 +1133,15 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
         offset_source=offset_source,
         time_tolerance_s=time_tolerance_s, huber_delta=huber_delta,
         rttov_timeout=rttov_timeout,
+        normalized_dry=normalized_dry,
+        model_number_basis="per_kg_dry_air" if normalized_dry else "legacy",
+        optical_number_basis="per_kg_dry_air" if normalized_dry else "legacy",
+        optical_density_policy="frozen_background",
+        bt_coordinate="kma_v3_0" if normalized_dry else "rttov_native",
+        observation_coordinate=observation_coordinate,
+        observation_error_scale_K=1.0,
+        scientific_observation_approval=False,
+        operational_approval=False,
         ncmin_land=ncmin_land, ncmin_sea=ncmin_sea, qv_levels=qv_levels,
         grad_norm_final=res.grad_norm_final,
         grad_theta_norm_final=res.grad_theta_norm_final,
