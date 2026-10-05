@@ -37,6 +37,12 @@ observation errors. Reports label the consumed number/BT/density settings and
 retain false scientific-observation and operational approval. No host writeback,
 restart or cycling is performed by this research mode.
 
+The [assembled-path experiment](../harness/evidence/REPORT_unified_KMA_window_2026-10-05.md)
+uses the original native grid to select one C5 column, executes a two-iteration
+single-step diagnostic optimization, and separately checks a 180-step recomputed
+window against independent cost differences. It does not optimize the entire
+domain or certify a time-collocated observing sequence.
+
 ```sh
 python oracle/scripts/run_normalized_dry_column.py \
   --input /path/to/native_5km_history \

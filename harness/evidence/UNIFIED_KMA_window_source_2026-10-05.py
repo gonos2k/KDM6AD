@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import platform
 import re
+import subprocess
 import time
 import sys
 
@@ -46,11 +47,7 @@ FORECAST = Path("/private/tmp/KDM6AD-nccn-zero-merge603ea4a-host-confirm/case/ru
 FIXTURE = Path("/private/tmp/KDM6AD-c5-dom32-fixture-20261003")
 CHANNELS = tuple(range(8, 17))
 F64 = dict(dtype=torch.float64)
-SOURCE_SET = (
-    "oracle/kdm6/runtime.py", "oracle/kdm6/da_window.py",
-    "oracle/kdm6/da_linearization.py", "oracle/kdm6/da_parallel.py",
-    "oracle/kdm6/da_fulldomain.py", "oracle/kdm6/da_dual.py",
-    "oracle/kdm6/obs/allsky_shard.py")
+LIBRARY_SOURCE_ROOT = ROOT / "oracle/kdm6"
 
 
 def bit_equal(left, right):
@@ -145,6 +142,21 @@ def sha(path):
     return h.hexdigest()
 
 
+def library_source_hashes():
+    return {str(path.relative_to(ROOT)): sha(path)
+            for path in sorted(LIBRARY_SOURCE_ROOT.rglob("*.py"))}
+
+
+def git_snapshot():
+    def git(*args):
+        return subprocess.check_output(["git", "-C", str(ROOT), *args], text=True).strip()
+    status = git("status", "--porcelain=v1", "--untracked-files=normal")
+    return dict(head=git("rev-parse", "HEAD"),
+                head_tree=git("rev-parse", "HEAD^{tree}"),
+                status_porcelain=status,
+                status_sha256=hashlib.sha256(status.encode()).hexdigest())
+
+
 def main():
     torch.set_num_threads(1)
     ap = argparse.ArgumentParser(description=__doc__)
@@ -153,13 +165,15 @@ def main():
     if a.output_root.exists():
         raise FileExistsError(a.output_root)
     a.output_root.mkdir(parents=True)
+    runner_hash_start = sha(__file__)
+    git_start = git_snapshot()
 
     if sha(PROFILE) != "7915ef9bc9fab4983ab47776c1a3345384c21f09bddc2a6d540d36c4755194d4":
         raise ValueError("pinned C5 profile changed")
     if sha(OBS_RECORD) != "ce445a0c7908793eb4388a235bdabaf922138c210093c67c45b813f74367fc3b":
         raise ValueError("pinned C5 observation receipt changed")
     prep = json.loads(PREP_RECEIPT.read_text())
-    source_hashes_start = {name: sha(ROOT / name) for name in SOURCE_SET}
+    source_hashes_start = library_source_hashes()
     if not prep["engine_executed"] is False:
         raise ValueError("selected profile preparation unexpectedly claims RTTOV")
     if sha(FORECAST) != prep["source"]["forecast_sha256"]:
@@ -271,9 +285,13 @@ def main():
     window3600 = run_independent_window(fr, b, co, p, geometry, surface,
                                         a.output_root / "window3600", horizon=180)
 
-    source_hashes_end = {name: sha(ROOT / name) for name in SOURCE_SET}
+    source_hashes_end = library_source_hashes()
     if source_hashes_end != source_hashes_start:
-        raise RuntimeError("a production source changed during the acceptance run")
+        raise RuntimeError("the oracle/kdm6 source bundle changed during the acceptance run")
+    runner_hash_end = sha(__file__)
+    git_end = git_snapshot()
+    if runner_hash_end != runner_hash_start:
+        raise RuntimeError("the acceptance runner changed during the campaign")
     exe_match = re.search(r"(?m)^exec\s+(\S+\.exe)\s*$", (FIXTURE / "out/run.sh").read_text())
     if exe_match is None:
         raise ValueError("cannot resolve RTTOV executable from pinned fixture runner")
@@ -291,6 +309,8 @@ def main():
         kma_calibration_sha256=sha(KMA_CAL), prep_receipt_sha256=sha(PREP_RECEIPT),
         forecast_sha256=sha(FORECAST), fixture_source_hashes=fixture_hashes,
         source_hashes_start=source_hashes_start, source_hashes_end=source_hashes_end,
+        runner_hash_start=runner_hash_start, runner_hash_end=runner_hash_end,
+        git_start=git_start, git_end=git_end,
         fixture_runtime=fixture_runtime,
         optical_native_center_suffix_exact=True,
         optical_native_half_suffix_matches_real4_P8W=True,

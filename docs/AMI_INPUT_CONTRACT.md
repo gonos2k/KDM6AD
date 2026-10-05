@@ -185,5 +185,10 @@ external table is a comparison reference. The offline coordinate replay did not
 adopt the common KMA coordinate in the live DA loss or its adjoint. The subsequent
 [live KMA cost check](../harness/evidence/REPORT_live_KMA_cost_2026-10-04.md)
 connects an explicit research mode to `RttovObsOp`, the diagnostic loss and its VJP
-for one retained NC direction. Full DAWindow/native routing and scientific
+for one retained NC direction. The subsequent explicit
+[normalized dry window mode](NORMALIZED_DRY_COLUMN.md#explicit-python-window-research-mode)
+passes model, optical number and BT settings through Python window/shard APIs
+and the full-domain caller. Its [assembled execution receipt](../harness/evidence/REPORT_unified_KMA_window_2026-10-05.md)
+checks a one-column diagnostic optimization and a 180-step recomputed window
+with frozen background optical density. Native host routing and scientific
 observation approval remain separate.
