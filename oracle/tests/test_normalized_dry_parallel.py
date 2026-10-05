@@ -8,6 +8,7 @@ import pytest
 import torch
 
 import kdm6.da_driver as da_driver
+import kdm6.da_parallel as da_parallel
 import kdm6.obs.rttov_case_writer as case_writer
 from kdm6.da_parallel import (
     _shard_worker, build_shard_specs, sharded_forward_window,
@@ -86,8 +87,9 @@ def test_shard_builder_freezes_background_density_and_worker_routes_kma_mode(
         seen["factory"] = (Path(case_root), timeout, ami_kma_bt, fixture_case_dir)
         return run_k_marker
 
-    def strict_run_osse_sensitivity(x_truth, x_background, forcings, obs_times,
-                                    window_cfg, obs_cfg):
+    def strict_normalized_sensitivity(spec_arg, forcings, window_cfg, obs_cfg):
+        assert spec_arg is spec
+        assert len(forcings) == 1 and forcings[0] is spec.forcing
         assert window_cfg.normalized_dry is True
         assert obs_cfg.run_k is run_k_marker
         assert obs_cfg.input_cfg.channels == tuple(range(8, 17))
@@ -97,18 +99,23 @@ def test_shard_builder_freezes_background_density_and_worker_routes_kma_mode(
         # The actual optics bridge consumes frozen background rho_d even though
         # the selected truth qv differs from the background qv.
         opt = rttov_cloud_profile(
-            x_truth, forcings[0], xland=spec.xland,
+            spec.x_truth, forcings[0], xland=spec.xland,
             ncmin_land=10.0, ncmin_sea=10.0,
             rho_d=obs_cfg.profile_cfg.rho_d, dry_number=obs_cfg.profile_cfg.dry_number)
         torch.testing.assert_close(
-            opt.clw, 1000.0 * expected * x_truth.qc, rtol=1.0e-15, atol=0.0)
+            opt.clw, 1000.0 * expected * spec.x_truth.qc, rtol=1.0e-15, atol=0.0)
         seen["profile"] = opt
         return SimpleNamespace(
-            j_obs=0.0, n_obs_times=len(obs_times),
-            window=SimpleNamespace(adj_x0=zeros_like_state(x_truth)))
+            j_obs=0.0, n_obs_times=len(spec.obs_times),
+            window=SimpleNamespace(adj_x0=zeros_like_state(spec.x_truth)))
+
+    def reject_clear_only_path(*args, **kwargs):
+        pytest.fail("normalized dry shards must use their all-sky worker path")
 
     monkeypatch.setattr(case_writer, "make_live_run_k", strict_make_live_run_k)
-    monkeypatch.setattr(da_driver, "run_osse_sensitivity", strict_run_osse_sensitivity)
+    monkeypatch.setattr(da_driver, "run_osse_sensitivity", reject_clear_only_path)
+    monkeypatch.setattr(da_parallel, "_run_normalized_dry_sensitivity",
+                        strict_normalized_sensitivity)
     result = _shard_worker(spec)
     assert seen["factory"][0] == Path(spec.case_root)
     assert seen["factory"][2] is True

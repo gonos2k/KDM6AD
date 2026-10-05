@@ -114,9 +114,9 @@ def _allsky_columns_worker(args: dict) -> dict:
                                       ncmin_sea=args.get("ncmin_sea", 0.0))
         p_top = fcol.p[0].reshape(1)
         tl = _blend_above_model_top(prof.t_lay.unsqueeze(0), t_ref, prof.p_lay,
-                                    p_top, octaves=1.0).squeeze(0)
+                                    p_top, octaves=args.get("t_blend_octaves", 1.0)).squeeze(0)
         ql = _blend_above_model_top(prof.q_lay.unsqueeze(0), q_ref, prof.p_lay,
-                                    p_top, octaves=4.0).squeeze(0)
+                                    p_top, octaves=args.get("q_blend_octaves", 4.0)).squeeze(0)
         # Each column gets a fresh parent, with the actual RTTOV case in an
         # inner directory.  The parent runner's sibling lock therefore has a
         # stable place to live and cannot collide with another column.

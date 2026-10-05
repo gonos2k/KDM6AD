@@ -23,6 +23,7 @@ date_modified: 2026-07-14
 - [[queries/_index|Queries]] - 2 pages
 
 ## Sources
+- [[sources/pr373-native-observation-team-audit-2026-10-05|PR373 native observation team audit]] - Reproduced native T/Q and cloud-shard gaps, with separately attributed corrected execution.
 - [[sources/unified-normalized-dry-window-2026-10-05|Unified normalized dry window research path]] - Explicit upper policy propagation and bounded actual optimization/window evidence.
 - [[kdm6-vs-kdm6ad-code-comparison-2026-06-25]] - Analysis note comparing mp37 KDM6 and mp137 KDM6AD implementation structure.
 - [[kdm6-microphysics-zotero-survey-2026-06-25]] - Literature synthesis for KDM/WDM microphysics and KDM6AD manuscript positioning.

@@ -5,6 +5,9 @@ import pytest
 import torch
 
 import kdm6.da_fulldomain as fd
+from kdm6.da_driver import OsseObsConfig
+from kdm6.obs.rttov_input_builder import RttovInputConfig
+from kdm6.rttov_bridge import freeze_dry_air_density
 from kdm6.state import State, Forcing
 from test_review208_fulldomain import _surface
 
@@ -53,6 +56,8 @@ def test_upper_research_policy_reaches_evaluator(monkeypatch, nine_columns):
         assert cloudy.tolist() == [0] and clear.numel() == 0
         assert rc['dry_number'] is True and rc['ami_kma_bt'] is True
         assert rc['fixture_case_dir'] == 'native-cloud'
+        assert (cc.t_blend_octaves, cc.q_blend_octaves) == (0.0, 0.0)
+        assert (rc['t_blend_octaves'], rc['q_blend_octaves']) == (0.0, 0.0)
         assert torch.equal(torch.as_tensor(rc['rho_d']), f.rho / (1 + x.qv))
         assert cc.run_k.bt_coordinate == 'kma_v3_0'
         raise Reached
@@ -115,3 +120,46 @@ def test_fractional_cost_support_rejected_before_probe(monkeypatch):
             fr.xland, torch.tensor([0]), torch.tensor([], dtype=torch.int64),
             None, {}, 'unused', n_workers=1, pool=None,
             channel_gate=torch.full_like(co.bt, .5))
+
+
+def test_missing_channel_gate_uses_all_qc_valid_channels_but_explicit_gate_limits_support(
+        monkeypatch):
+    """None means the frozen raw-QC mask; an explicit binary gate narrows it."""
+    fr, co, _ = inputs()
+    y_bt = co.bt[:, 7:16]
+    y_rq = co.obs_quality[:, 7:16]
+    channels = tuple(range(8, 17))
+    clear_cfg = OsseObsConfig(
+        run_k=None, profile_cfg=None,
+        input_cfg=RttovInputConfig(coef_id='fixture', channels=channels),
+        obs_sigma=1.0)
+    rho_d = freeze_dry_air_density(fr.state, fr.forcing)
+    rttov_cfg = dict(rho_d=rho_d.numpy(), dry_number=True,
+                     ami_kma_bt=True, channels=channels)
+
+    def mock_rttov_probe(state, forcing, positions, target, mask, xland,
+                         cfg, case_root, **kwargs):
+        n = positions.numel()
+        return {
+            "rq": torch.zeros((n, 9), dtype=torch.float64),
+            "j": 0.0,
+            "adj": torch.stack([
+                torch.zeros_like(getattr(state, name)[positions])
+                for name in State._fields]),
+        }
+
+    monkeypatch.setattr(fd, 'sharded_allsky', mock_rttov_probe)
+    gates = (
+        (None, 9),
+        (torch.tensor([[0., 0., 1., 1., 1., 1., 1., 1., 1.]], dtype=torch.float64), 7),
+    )
+    for gate, expected_nvalid in gates:
+        obs_eval = fd.make_fulldomain_obs_eval(
+            fr.state, fr.forcing, y_bt, y_rq, fr.xland,
+            torch.tensor([0]), torch.empty(0, dtype=torch.int64),
+            clear_cfg, rttov_cfg, 'unused', n_workers=1, pool=None,
+            obs_time=1, huber_delta=1.0, x_slot_bg=fr.state,
+            channel_gate=gate)
+        result = obs_eval(1, fr.state)
+        assert result.n_valid == expected_nvalid
+        assert int(obs_eval.mask.sum()) == expected_nvalid

@@ -32,7 +32,7 @@ from __future__ import annotations
 
 import copy
 import math
-from dataclasses import dataclass, fields, is_dataclass
+from dataclasses import dataclass, fields, is_dataclass, replace
 from typing import Callable, Optional, Sequence
 
 import torch
@@ -249,7 +249,7 @@ def _fingerprint_obj(value):
     return value
 
 
-def _obs_cfg_fingerprint(obs_cfg) -> str:
+def _obs_cfg_fingerprint(obs_cfg, *, normalized_dry: bool | None = None) -> str:
     """Digest the dual-relevant operator identity used by batched_clear_bt."""
     import hashlib
     fields_to_hash = (
@@ -277,6 +277,10 @@ def _obs_cfg_fingerprint(obs_cfg) -> str:
                 ("run_k.solar_channels", _fingerprint_obj(run_k_solar)),
                 ("run_k.bt_coordinate", _fingerprint_obj(
                     getattr(run_k, "bt_coordinate", None))))
+    if normalized_dry is not None:
+        if not isinstance(normalized_dry, bool):
+            raise TypeError("normalized_dry fingerprint tag must be a bool")
+        payload += (("window.normalized_dry", normalized_dry),)
     return hashlib.sha256(repr(payload).encode()).hexdigest()
 
 
@@ -358,9 +362,23 @@ def run_dual_minimizer(
         raise ValueError(
             "pass gate options through ObsGatePolicy OR legacy kwargs, not both "
             "— conflicting double specification would be silently ignored")
+    # Snapshot the model-window mode at the public optimizer boundary. The
+    # frozen dual adapter tags its probe mode so an evaluator prepared for one
+    # transition cannot be reused with another transition unnoticed.
+    window_config_snapshot = replace(window_config)
+    normalized_dry = window_config_snapshot.normalized_dry
+    if not isinstance(normalized_dry, bool):
+        raise TypeError("window_config.normalized_dry must be a bool")
+    obs_mode = getattr(obs_eval, "normalized_dry", None)
+    if obs_mode is not None:
+        if not isinstance(obs_mode, bool):
+            raise TypeError("obs_eval.normalized_dry tag must be a bool")
+        if obs_mode != normalized_dry:
+            raise ValueError(
+                "obs_eval normalized_dry mode does not match WindowConfig")
     _validate_state_shapes(b_sigma, xb, arg="b_sigma", ref_name="xb")
     if cvt is not None:
-        validate_cvt(xb, b_sigma, cvt, window_config.active_fields)
+        validate_cvt(xb, b_sigma, cvt, window_config_snapshot.active_fields)
     _connected = getattr(obs_eval, "connected_fields", None)
     _sigma_pos = (tuple(f for f in State._fields
                         if bool((getattr(b_sigma, f) > 0).any()))
@@ -376,7 +394,7 @@ def run_dual_minimizer(
     if partition is not None:
         # caps frozen from the background (v/w-independent B)
         caps = build_partition_caps(xb, partition)
-        validate_partition(caps, window_config.active_fields)
+        validate_partition(caps, window_config_snapshot.active_fields)
         validate_conserving_sigma(b_sigma)
         if partition_forcing is None:
             if not len(forcings):
@@ -413,7 +431,7 @@ def run_dual_minimizer(
         params_live = params_from_vtheta(param_prior, v_th.detach(), live=True)
         any_active = bool((param_prior.sigma_log > 0).any())
         import dataclasses as _dc
-        cfg_i = _dc.replace(window_config, params=params_live,
+        cfg_i = _dc.replace(window_config_snapshot, params=params_live,
                             param_grads=any_active)
 
         jobs_acc: list = []
@@ -699,12 +717,17 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
     from .obs.obs_loss import (compute_obs_loss,
                                validate_mixed_observation_sigma)
 
+    window_config_snapshot = dataclasses.replace(window_config)
+    normalized_dry = window_config_snapshot.normalized_dry
+    if not isinstance(normalized_dry, bool):
+        raise TypeError("window_config.normalized_dry must be a bool")
+
     conn = (("th", "qv", "qc", "qi", "qs", "nc", "ni") if cloud
             else ("th", "qv"))
 
     def _control(name, value):
         if value is None:
-            value = getattr(window_config, name, 0.0)
+            value = getattr(window_config_snapshot, name, 0.0)
         if isinstance(value, bool):
             raise TypeError(f"{name} must be a finite non-negative number")
         try:
@@ -718,7 +741,7 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
     ncmin_land = _control("ncmin_land", ncmin_land)
     ncmin_sea = _control("ncmin_sea", ncmin_sea)
     if xland is None:
-        xland = getattr(window_config, "xland", None)
+        xland = getattr(window_config_snapshot, "xland", None)
     xland_f = None
     if xland is not None:
         xland_f = torch.as_tensor(xland, dtype=torch.float64).detach().clone()
@@ -753,9 +776,59 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
                 "pass zero-valid policy through ObsGatePolicy OR the legacy "
                 "kwarg, not both — silent double specification forbidden")
         allow_zero_valid_slots = policy.allow_zero_valid_slots
+    expected_rho = None
+    if cloud and normalized_dry:
+        # The model transition uses M-entry density internally. The optical
+        # cloud bridge instead owns one fixed density from the initial
+        # background and first forcing; never accept a live or unrelated
+        # density tensor at this frozen-H boundary.
+        if not forcings_f:
+            raise ValueError(
+                "normalized_dry all-sky callback requires an initial forcing "
+                "to freeze background rho_d")
+        profile_cfg = getattr(obs_cfg, "profile_cfg", None)
+        if not getattr(profile_cfg, "cloud", False):
+            raise ValueError("normalized_dry all-sky callback requires cloud=True")
+        if not getattr(profile_cfg, "dry_number", False):
+            raise ValueError(
+                "normalized_dry all-sky callback requires profile_cfg.dry_number=True")
+        for name in ("t_blend_octaves", "q_blend_octaves"):
+            value = getattr(obs_cfg, name, None)
+            if (isinstance(value, bool) or not isinstance(value, (int, float))
+                    or not math.isfinite(value) or float(value) != 0.0):
+                raise ValueError(
+                    f"normalized_dry native-profile callback requires {name}=0")
+        from .rttov_bridge import freeze_dry_air_density, require_dry_air_density
+        # Validate the caller-owned tensor before _freeze_obs_cfg detaches and
+        # clones tensors. Otherwise a live or forward-dual density could be
+        # silently converted into an apparently valid frozen value.
+        supplied_rho = require_dry_air_density(
+            getattr(profile_cfg, "rho_d", None), xb.qv)
+        expected_rho = freeze_dry_air_density(xb, forcings_f[0])
+        if not torch.equal(supplied_rho, expected_rho):
+            raise ValueError(
+                "normalized_dry optical rho_d must equal the initial "
+                "background/forcing dry-air density")
     obs_cfg_f = _freeze_obs_cfg(obs_cfg)
+    if cloud and normalized_dry:
+        # Verify the frozen snapshot consumed by the callback too, not just
+        # the caller-owned object inspected above.
+        frozen_profile = obs_cfg_f.profile_cfg
+        if (not getattr(frozen_profile, "cloud", False)
+                or not getattr(frozen_profile, "dry_number", False)):
+            raise ValueError("normalized_dry frozen all-sky profile lost its dry-number mode")
+        for name in ("t_blend_octaves", "q_blend_octaves"):
+            value = getattr(obs_cfg_f, name, None)
+            if (isinstance(value, bool) or not isinstance(value, (int, float))
+                    or not math.isfinite(value) or float(value) != 0.0):
+                raise ValueError(
+                    f"normalized_dry frozen profile requires {name}=0")
+        frozen_rho = require_dry_air_density(
+            getattr(frozen_profile, "rho_d", None), xb.qv)
+        if not torch.equal(frozen_rho, expected_rho):
+            raise ValueError("normalized_dry frozen optical rho_d changed during callback capture")
     operator_fingerprint = hashlib.sha256(repr((
-        _obs_cfg_fingerprint(obs_cfg_f),
+        _obs_cfg_fingerprint(obs_cfg_f, normalized_dry=normalized_dry),
         _fingerprint_obj(forcings_f),
         _fingerprint_obj(xland_f), ncmin_land, ncmin_sea)).encode()).hexdigest()
     obs_sigma_f = torch.as_tensor(obs_cfg_f.obs_sigma, dtype=torch.float64).detach().clone()
@@ -783,7 +856,7 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
 
     theta_b_params = params_from_vtheta(param_prior, torch.zeros(4, **_F64),
                                         live=False)
-    probe_cfg = dataclasses.replace(window_config, params=theta_b_params,
+    probe_cfg = dataclasses.replace(window_config_snapshot, params=theta_b_params,
                                     param_grads=False, xland=xland_f,
                                     ncmin_land=ncmin_land,
                                     ncmin_sea=ncmin_sea)
@@ -876,6 +949,7 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
     # 서명은 여기서 θ_b/배경 궤적에 동결되어 v-독립이다 — 상태 CVT 종류와
     # 무관하게 유효한 계약 (live-state regime 해시는 어떤 CVT와도 양립 불가).
     obs_eval.connected_fields = conn
+    obs_eval.normalized_dry = normalized_dry
     obs_eval.h_callback_contract = (
         "runner-provenance-attested stable callback; custom callback closure "
         "state is caller-owned and must remain unchanged")

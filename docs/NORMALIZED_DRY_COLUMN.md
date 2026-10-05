@@ -18,30 +18,40 @@ window also accepts the flag explicitly.
 observation_coordinate="kma_v3_0")` passes this model choice to its window and
 selects dry-number optics plus KMA BT/K in the all-sky worker. The first supported
 configuration requires channels 8–16, Huber delta=1, diagnostic sigma=1 K, zero
-bias and no pseudo-RH. A binary `ColumnObs.channel_gate` fixes the cost support.
+bias and no pseudo-RH. A supplied binary `ColumnObs.channel_gate` narrows the
+frozen QC-valid support. If omitted, all background/observation QC-valid channels
+are kept; the retained experiment's seven-channel gate is not an automatic default.
 The density used by optics is frozen from the initial background and forcing;
 it is not recomputed from the trial or slot humidity. This contract differs
 from the live entry-density one-hour experiment.
 
 Supply `grids["cloud_fixture_case_dir"]`; any retained clear partition also
 requires `grids["clear_fixture_case_dir"]`. The shared optical center grid must
-retain the native center pressures of every selected column, possibly with
+retain the exact native center pressures of every selected column, possibly with
 declared reference layers above the model top. Different native column grids
 are rejected in this mode. Native interfaces are authoritative caller inputs
 in `p_half`: this API cannot reconstruct or certify them from center pressure.
 The generic OSSE shard builder likewise requires an explicit fixture and native
 grids; its synthetic observations use the same KMA runner as its model.
+In this mode both reference-blend widths are zero: reference T/Q are used only
+strictly above the native model top, while native T/Q and their sensitivities
+remain model-provided. Legacy callers keep their historical positive widths.
+The normalized OSSE worker uses the cloud-enabled evaluator; the older generic
+`run_osse_sensitivity` API remains clear-sky only.
 
 These choices do not calibrate the thresholds, bias, background covariance or
 observation errors. Reports label the consumed number/BT/density settings and
 retain false scientific-observation and operational approval. No host writeback,
 restart or cycling is performed by this research mode.
 
-The [assembled-path experiment](../harness/evidence/REPORT_unified_KMA_window_2026-10-05.md)
+The [corrected native-path experiment](../harness/evidence/REPORT_native_KMA_window_2026-10-05.md)
 uses the original native grid to select one C5 column, executes a two-iteration
 single-step diagnostic optimization, and separately checks a 180-step recomputed
 window against independent cost differences. It does not optimize the entire
 domain or certify a time-collocated observing sequence.
+The [PR #373 audit](../harness/evidence/CHECKLIST_pr373_team_audit_2026-10-05.md)
+preserves the original blended-operator evidence and records the missed paths
+and their corrections separately.
 
 ```sh
 python oracle/scripts/run_normalized_dry_column.py \

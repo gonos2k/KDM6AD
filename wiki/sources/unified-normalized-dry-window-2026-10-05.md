@@ -4,6 +4,11 @@ type: source
 date_modified: 2026-10-05
 ---
 
+The subsequent [[pr373-native-observation-team-audit-2026-10-05|fresh audit]]
+qualifies this historical assembly result: its reference blend modified native
+T/Q, and a mocked cloud-OSSE receiver concealed an unsupported real call. The
+corrected operator has separate evidence; the original artifacts are preserved.
+
 The [whole-codebase checklist](../../harness/evidence/CHECKLIST_unified_research_path_2026-10-05.md)
 addresses a configuration gap above the previously verified column components.
 An explicit `normalized_dry` selection now reaches collection, recomputed

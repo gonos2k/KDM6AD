@@ -4,6 +4,14 @@ Review baseline: `d0e2e14b` (PR #371). The PR #370–#371 single-NC optical
 cost/VJP result remains closed. This checklist addresses the upper assembly
 identified in the whole-codebase review; it does not reopen that experiment.
 
+The subsequent [fresh team audit](CHECKLIST_pr373_team_audit_2026-10-05.md)
+reproduced two paths missed by this initial verification: native T/Q were still
+blended toward references, and the normalized OSSE cloud worker reached a
+clear-only receiver. Thus the initial CLOSED rows below did not establish native
+T/Q preservation or executable cloud-shard integration. Their corrections and
+[fresh native-path execution](REPORT_native_KMA_window_2026-10-05.md) are recorded
+separately; the original numerical artifacts remain unchanged.
+
 | Review item | Resolution and evidence | Status |
 | --- | --- | --- |
 | Window cannot select the normalized dry-number transition | Appended opt-in flag in `WindowConfig`; collection, forward and recomputation capture the same choice. Two-step pure-map, VJP and independent FD tests. | CLOSED, bounded code verification |
