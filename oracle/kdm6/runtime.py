@@ -758,6 +758,7 @@ def kdm6_step(
     controls=None,   # [DA §5.2] ProcessControls — None → byte-identical default path
     diagnostic_trace=None,  # opt-in stage trace; None → no diagnostic work
     dry_number: bool = False,
+    normalized_dry: bool = False,
 ) -> tuple[State, Handle]:
     """[G3] 슬롯 47 진입점 — Fortran forward와 *동반 구동*되어 derivative 정보 산출.
 
@@ -788,6 +789,10 @@ def kdm6_step(
     dry_number : bool, default False
         Opt-in dry-mass QN boundary. The caller must provide the first-step CCN
         profile in dry-specific units; the kernel uses volume thresholds.
+    normalized_dry : bool, default False
+        Opt-in research map combining the dry-number boundary, normalized ice
+        handoff and conservative sedimentation functions. The legacy kwargs
+        boundary is unchanged when disabled.
 
     Returns
     -------
@@ -805,9 +810,16 @@ def kdm6_step(
     forward-mode vs reverse-mode 선택은 `torch.func.{jvp,vjp,jacrev,jacfwd}`를
     `kdm6_fn`에 직접 적용해 제어한다.
     """
+    if not isinstance(normalized_dry, bool):
+        raise TypeError("normalized_dry must be a bool")
     if params is None:
         params = make_parameters()
-    extra = {"dry_number": True} if dry_number else {}
+    if normalized_dry:
+        from .sed_conservative import CONSERVATIVE_SED_FNS
+        extra = {"dry_number": True, "normalize_ice_handoff": True,
+                 "sed_substep_fns": CONSERVATIVE_SED_FNS}
+    else:
+        extra = {"dry_number": True} if dry_number else {}
 
     if value_only:
         with torch.no_grad():

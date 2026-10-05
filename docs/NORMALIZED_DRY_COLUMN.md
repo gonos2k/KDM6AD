@@ -5,6 +5,44 @@ value-only forward, JVP/VJP and independent centered differences. This is an
 experimental microphysics diagnostic. Physical number/threshold policy, host
 transport, RTTOV accuracy and observation approval remain open.
 
+## Explicit Python window research mode
+
+`WindowConfig(normalized_dry=True)` and
+`WindowLinearization(..., normalized_dry=True)` select the existing normalized
+ice handoff, conservative sedimentation and dry-number boundary together.
+Collection, forward execution and adjoint recomputation use the same selection.
+Omitting the flag preserves the legacy transition. The value-only parallel
+window also accepts the flag explicitly.
+
+`run_fulldomain_analysis(..., normalized_dry=True,
+observation_coordinate="kma_v3_0")` passes this model choice to its window and
+selects dry-number optics plus KMA BT/K in the all-sky worker. The first supported
+configuration requires channels 8–16, Huber delta=1, diagnostic sigma=1 K, zero
+bias and no pseudo-RH. A binary `ColumnObs.channel_gate` fixes the cost support.
+The density used by optics is frozen from the initial background and forcing;
+it is not recomputed from the trial or slot humidity. This contract differs
+from the live entry-density one-hour experiment.
+
+Supply `grids["cloud_fixture_case_dir"]`; any retained clear partition also
+requires `grids["clear_fixture_case_dir"]`. The shared optical center grid must
+retain the native center pressures of every selected column, possibly with
+declared reference layers above the model top. Different native column grids
+are rejected in this mode. Native interfaces are authoritative caller inputs
+in `p_half`: this API cannot reconstruct or certify them from center pressure.
+The generic OSSE shard builder likewise requires an explicit fixture and native
+grids; its synthetic observations use the same KMA runner as its model.
+
+These choices do not calibrate the thresholds, bias, background covariance or
+observation errors. Reports label the consumed number/BT/density settings and
+retain false scientific-observation and operational approval. No host writeback,
+restart or cycling is performed by this research mode.
+
+The [assembled-path experiment](../harness/evidence/REPORT_unified_KMA_window_2026-10-05.md)
+uses the original native grid to select one C5 column, executes a two-iteration
+single-step diagnostic optimization, and separately checks a 180-step recomputed
+window against independent cost differences. It does not optimize the entire
+domain or certify a time-collocated observing sequence.
+
 ```sh
 python oracle/scripts/run_normalized_dry_column.py \
   --input /path/to/native_5km_history \

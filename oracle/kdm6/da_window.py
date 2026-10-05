@@ -137,6 +137,8 @@ class WindowConfig:
     # grad_eta[t] = ∂J/∂η_t is simply the running adjoint at x_{t+1}-space
     # (∂x_{t+1}/∂η_t = I) — the cheapest control the design defines.
     eta: "Sequence[State] | None" = None
+    # Opt-in normalized dry-number transition; kept last for positional callers.
+    normalized_dry: bool = False
 
 
 @dataclass
@@ -161,6 +163,10 @@ def collect_window_trajectory(x0: State, forcings: Sequence[Forcing],
     run_da_window를 쓰면 전 스텝 VJP 비용을 낸다 — 수집만 하는 데 부당).
     run_da_window 프로브와의 bitwise 동일성은 게이트 테스트로 고정.
     """
+    normalized_dry = config.normalized_dry
+    if not isinstance(normalized_dry, bool):
+        raise TypeError("normalized_dry must be a bool")
+    step_kwargs = {"normalized_dry": True} if normalized_dry else {}
     params = config.params if config.params is not None else make_parameters()
     T = len(forcings)
     for w in wanted_times:
@@ -187,7 +193,8 @@ def collect_window_trajectory(x0: State, forcings: Sequence[Forcing],
             x = _add_states(x, _to_f64(config.eta_pre[t]))
         out, h = kdm6_step(x, f64_forcings[t], params, config.dt,
                            value_only=True, xland=config.xland,
-                           ncmin_land=config.ncmin_land, ncmin_sea=config.ncmin_sea)
+                           ncmin_land=config.ncmin_land, ncmin_sea=config.ncmin_sea,
+                           **step_kwargs)
         h.close()
         x = State(*(f.detach() for f in out))
         if config.eta is not None:
@@ -229,6 +236,10 @@ def run_da_window(
     -------
     WindowResult — adj_x0 = Σ_t M_0^T ... M_{t-1}^T (∂J_obs/∂x_t).
     """
+    normalized_dry = config.normalized_dry
+    if not isinstance(normalized_dry, bool):
+        raise TypeError("normalized_dry must be a bool")
+    step_kwargs = {"normalized_dry": True} if normalized_dry else {}
     params = config.params if config.params is not None else make_parameters()
     T = len(forcings)
     if config.active_fields is not None:
@@ -270,7 +281,8 @@ def run_da_window(
             checkpoints.append(xt)   # reuse — one clone per step (review DP-5)
         out, h = kdm6_step(x, f64_forcings[t], params, config.dt,
                            value_only=True, xland=config.xland,
-                           ncmin_land=config.ncmin_land, ncmin_sea=config.ncmin_sea)
+                           ncmin_land=config.ncmin_land, ncmin_sea=config.ncmin_sea,
+                           **step_kwargs)
         h.close()
         out_detached = State(*(f.detach() for f in out))
         step_noop.append(
@@ -308,7 +320,7 @@ def run_da_window(
         _, handle = kdm6_step(leaves, f64_forcings[t], params, config.dt,
                               value_only=False, xland=config.xland,
                               ncmin_land=config.ncmin_land,
-                              ncmin_sea=config.ncmin_sea)
+                              ncmin_sea=config.ncmin_sea, **step_kwargs)
         if config.param_grads:
             # [G4] 파라미터 수반 기여는 이 스텝의 INCOMING adjoint(λ_{t+1})와의
             # 내적으로 — state vjp(그래프 해제) *이전*에 계산해야 한다.

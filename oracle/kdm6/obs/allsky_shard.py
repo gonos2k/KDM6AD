@@ -13,6 +13,7 @@ spawn-안전 모듈-레벨 워커, 워커당 torch 단일스레드, 명시적 �
 """
 from __future__ import annotations
 
+import numbers
 import os
 import shutil
 import tempfile
@@ -25,6 +26,27 @@ from .rttov_runner import DEFAULT_RTTOV_TIMEOUT, validate_rttov_timeout
 from ..state import State, Forcing
 
 _F64 = dict(dtype=torch.float64)
+
+
+def _allsky_rttov_modes(config):
+    """Validate the two narrow opt-in switches before preparation or worker work."""
+    dry_number = config.get("dry_number", False)
+    ami_kma_bt = config.get("ami_kma_bt", False)
+    if not isinstance(dry_number, bool):
+        raise ValueError("rttov_cfg dry_number must be a boolean")
+    if not isinstance(ami_kma_bt, bool):
+        raise ValueError("rttov_cfg ami_kma_bt must be a boolean")
+    if ami_kma_bt:
+        try:
+            channels = tuple(config.get("channels", ()))
+        except TypeError as exc:
+            raise ValueError("KMA BT requires thermal AMI channels 8..16") from exc
+        if (not channels
+                or any(isinstance(ch, bool) or not isinstance(ch, numbers.Integral)
+                       or not 8 <= int(ch) <= 16 for ch in channels)
+                or len({int(ch) for ch in channels}) != len(channels)):
+            raise ValueError("KMA BT supports unique thermal AMI channels 8..16 only")
+    return dry_number, ami_kma_bt
 
 
 def take_profile_aux(value, indices):
@@ -42,6 +64,7 @@ def _allsky_columns_worker(args: dict) -> dict:
       mask (n, nch) [동결 QC] · t_ref/q_ref/p_lay/p_half (RTTOV 격자) ·
       case_root · worker_id · grad · channels/coef_id
     """
+    dry_number, ami_kma_bt = _allsky_rttov_modes(args)
     os.environ.setdefault("OMP_NUM_THREADS", "1")
     torch.set_num_threads(1)
     from kdm6.da_driver import _blend_above_model_top
@@ -65,7 +88,8 @@ def _allsky_columns_worker(args: dict) -> dict:
     pcfg = RttovProfileConfig(
         gas_units=2, qv_convention="mixing_ratio_kgkg_dry",
         rttov_layer_pressure=torch.as_tensor(args["p_lay"], **_F64),
-        rttov_level_pressure=torch.as_tensor(args["p_half"], **_F64), cloud=True)
+        rttov_level_pressure=torch.as_tensor(args["p_half"], **_F64), cloud=True,
+        dry_number=dry_number)
     n, nch = y_bt.shape
     K = st.shape[2]
     grad = bool(args["grad"])
@@ -101,8 +125,15 @@ def _allsky_columns_worker(args: dict) -> dict:
                 prefix=f"w{args['worker_id']}_{i}_") as case_parent:
             case_dir = Path(case_parent) / "case"
             try:
+                run_k_kwargs = {"timeout": rttov_timeout}
+                # Keep the native/default factory invocation byte-for-byte
+                # compatible with legacy test doubles and callers.
+                if ami_kma_bt:
+                    run_k_kwargs["ami_kma_bt"] = True
+                if args.get("fixture_case_dir") is not None:
+                    run_k_kwargs["fixture_case_dir"] = args["fixture_case_dir"]
                 bt_i, rq_i = RttovObsOp.apply(
-                    make_live_run_k(case_dir, timeout=rttov_timeout),
+                    make_live_run_k(case_dir, **run_k_kwargs),
                     icfg, tl, ql, prof.p_lay, prof.p_half,
                     prof.clw, prof.ciw, prof.deff_liq, prof.deff_ice, prof.cfrac)
             except BaseException:
@@ -164,11 +195,15 @@ def sharded_allsky(state: "State", forcing: "Forcing", cidx: torch.Tensor,
 
     반환 dict: j(float), bt (n,nch), rq (n,nch), adj (12,n,K; grad시) — 순서는
     cidx 순. rttov_cfg: t_ref/q_ref/p_lay/p_half(np), channels, coef_id,
-    oracle_root. pool을 주면 재사용(스폰 비용 상각), 아니면 1회용 생성.
+    oracle_root. Optional ``dry_number`` and ``ami_kma_bt`` booleans select the
+    dry-number optical profile and paired KMA BT coordinate; optional
+    ``fixture_case_dir`` selects an explicit RTTOV fixture. Defaults keep the
+    native path. pool을 주면 재사용(스폰 비용 상각), 아니면 1회용 생성.
     """
     import multiprocessing as mp
     from ..rttov_bridge import require_dry_air_density
 
+    _allsky_rttov_modes(rttov_cfg)
     rttov_timeout = validate_rttov_timeout(rttov_timeout)
     n = int(cidx.numel())
     if "rho_d" not in rttov_cfg:

@@ -47,7 +47,9 @@ class WindowLinearization:
     def __init__(self, x0: State, forcings: Sequence[Forcing], *, dt: float,
                  params=None, xland: torch.Tensor | None = None,
                  ncmin_land: float = 0.0, ncmin_sea: float = 0.0,
-                 max_b: int = 512):
+                 max_b: int = 512, normalized_dry: bool = False):
+        if not isinstance(normalized_dry, bool):
+            raise TypeError("normalized_dry must be a bool")
         B = int(x0.th.shape[0])
         if B > max_b:
             raise ValueError(
@@ -57,6 +59,8 @@ class WindowLinearization:
         self._params = params if params is not None else make_parameters()
         self._dt = dt
         self._kw = dict(xland=xland, ncmin_land=ncmin_land, ncmin_sea=ncmin_sea)
+        if normalized_dry:
+            self._kw["normalized_dry"] = True
         self.T = len(forcings)
         self._forcings = [_f64(f) for f in forcings]
         self._handles = []
