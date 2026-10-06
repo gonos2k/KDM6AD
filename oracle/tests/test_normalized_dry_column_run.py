@@ -135,3 +135,49 @@ def test_existing_output_is_rejected_before_reading_inputs(tmp_path):
     with pytest.raises(ValueError, match="already exists"):
         runner.main(["--input", "missing.nc", "--library", "missing.so", "--i", "0",
                      "--j", "0", "--output", str(tmp_path)])
+
+
+@pytest.mark.parametrize("wrong_derivative", [False, True])
+def test_main_saves_numerical_failure_and_returns_nonzero(tmp_path, monkeypatch, wrong_derivative):
+    """Persist a failed FD check even when the ABI double passes duality."""
+    import json
+    from types import SimpleNamespace
+
+    import netCDF4
+    import torch
+
+    state, forcing = case()
+    input_path, library_path = tmp_path / "input.nc", tmp_path / "analytic-abi.so"
+    with netCDF4.Dataset(input_path, "w") as ds:
+        ds.DX = ds.DY = 5000.0
+        for name, size in (("Time", 1), ("west_east", 1), ("south_north", 1)):
+            ds.createDimension(name, size)
+    library_path.write_bytes(b"analytic test double, not a native library")
+    frame = SimpleNamespace(state=[torch.from_numpy(v[None, :]) for v in state],
+                            forcing=[torch.from_numpy(v[None, :]) for v in forcing],
+                            xland=torch.tensor([1.0]), meta={"valid_time_utc": "synthetic"})
+    monkeypatch.setattr(runner, "read_wrfout_frame", lambda *a, **kw: frame)
+
+    class DerivativeABI(LinearABI):
+        def kdm6_handle_jvp_c(self, handle, direction, out):
+            code = super().kdm6_handle_jvp_c(handle, direction, out)
+            if wrong_derivative:
+                np.ctypeslib.as_array(out, shape=(self.size,))[:] *= 1.5
+            return code
+
+        kdm6_handle_vjp_c = kdm6_handle_jvp_c
+
+    monkeypatch.setattr(runner, "load_library", lambda path: DerivativeABI())
+    output = tmp_path / "result"
+    code = runner.main(["--input", str(input_path), "--library", str(library_path),
+                        "--i", "0", "--j", "0", "--output", str(output)])
+    saved = json.loads((output / "result.json").read_text())
+    assert code == int(wrong_derivative)
+    assert saved["status"] == ("NUMERICAL_CHECK_FAILED" if wrong_derivative else "NUMERICAL_PASS")
+    assert saved["checks"]["duality_relative"] < 1e-12
+    assert saved["checks"]["finite_difference_passed"] is (not wrong_derivative)
+    assert saved["accepted_observation_cost"] is False
+    with np.load(output / "arrays.npz", allow_pickle=False) as arrays:
+        np.testing.assert_array_equal(arrays["state_in"], state)
+        np.testing.assert_array_equal(arrays["finite_difference"],
+                                      (arrays["plus_output"] - arrays["minus_output"]) / (2e-4))

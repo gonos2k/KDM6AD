@@ -64,8 +64,9 @@ Requires a local **libtorch/PyTorch** install and a C++17 compiler + CMake (see
 
 ```sh
 KROOT=$(pwd)
+TORCH_ROOT="$(python3 -c 'import torch,os;print(os.path.dirname(torch.__file__))')"
 cd "$KROOT/libtorch" && mkdir -p build && cd build
-cmake .. -DCMAKE_PREFIX_PATH="$(python3 -c 'import torch,os;print(os.path.dirname(torch.__file__))')" \
+cmake .. -DCMAKE_PREFIX_PATH="$TORCH_ROOT" -DCMAKE_LIBRARY_PATH="$TORCH_ROOT/lib" \
          -DCMAKE_INSTALL_PREFIX=../install -DCMAKE_CXX_FLAGS=-DKDM6_SUBSTEP_DUMP
 cmake --build . -j4 && cmake --install . && ctest --output-on-failure
 ```
@@ -76,15 +77,22 @@ masked-adjoint identity, double-backward readiness, f32 value-vs-graph determini
 rejection, and handle lifecycle guards), plus the conservative-interface C3 certification
 gates (`test_conservative_interface`: non-uniform-metric interface identity, per-column
 mstep, multi-subcycle closure, AD gates, legacy old-signature invariance). If a Fortran
-compiler is present, an ISO_C smoke test is added.
+compiler is present, ISO_C smoke and normalized-fp64 AD tests are added.
 
-> **ctest is green (17/17)** — verified two ways: on the pinned *local* macOS/clang reference
+> **Historical reference result: ctest was green (17/17)** — verified two ways: on the pinned *local* macOS/clang reference
 > toolchain ([ENVIRONMENT.md](ENVIRONMENT.md)), and independently by the **port-ci** badge above,
 > which builds + runs the suite on Ubuntu/gcc with `torch==2.8.0` on pushes to `main` and on
 > pull requests targeting `main`, when the change touches the port (`libtorch/`), the workflow,
 > or these ctest-claim docs (README / ENVIRONMENT / HOST_INTEGRATION) — its branch + path
 > filters. (A side-branch commit is exercised once it's opened as a PR to `main`; changes to
 > unrelated files don't trigger it.)
+> Current CMake registers 17 C++ tests plus two optional Fortran tests. The
+> [source-only research candidate](docs/RESEARCH_CANDIDATE.md) gives a fresh
+> environment, native-column acceptance and explicit dependency/asset boundaries.
+> Its [execution report](harness/evidence/REPORT_research_candidate_2026-10-06.md)
+> separates actual build/tests from skipped or unapproved uses. The Torch library
+> path above, on a fresh CMake cache, prevents system libraries from silently shadowing the selected
+> Python environment during CMake discovery.
 > Note the derivative contract: a handle from `kdm6_step_c(... value_only=0 ...)` records the
 > operational **float32** graph, whose VJP/JVP is a *mechanics/diagnostics* path — gradients may
 > be non-finite at inactive-ice corners (f32 underflow, propagating to graph-connected inputs).
