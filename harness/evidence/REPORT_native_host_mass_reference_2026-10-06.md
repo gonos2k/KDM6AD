@@ -27,7 +27,9 @@ Source trace in the active `host/KIM-meso_v1.0` tree:
 - `dyn_em/module_em.F:143`: total-column mass construction.
 - `dyn_em/module_big_step_utilities_em.F:3632`: base plus perturbation sum.
 - `dyn_em/module_big_step_utilities_em.F:4957`: hybrid hydrostatic pressure.
-- `dyn_em/module_big_step_utilities_em.F:1045`: logarithmic hypsometry.
+- `dyn_em/module_big_step_utilities_em.F:1048`: logarithmic hypsometry.
+- `dyn_em/module_initialize_real.F:3722`: `DNW = ZNW(k+1)-ZNW(k)`.
+- `phys/module_physics_init.F:5803–5816`: disabled map-corrected area branch and active `DX*DY`.
 - `share/module_model_constants.F:17`: gravity.
 
 ## Measures evaluated from decoded native fields
@@ -80,3 +82,23 @@ closure. S2/S11/S17 and operational approval remain OPEN.
 - [Executed source](NATIVE_host_mass_reference_source_2026-10-06.py)
 - [Native coefficient vectors, measures and hashes](NATIVE_host_mass_reference_result_2026-10-06.json)
 - [Earlier declared inventory measure](REPORT_native_analysis_inventory_2026-10-05.md)
+
+## Replay identity guard (2026-10-06 follow-up)
+
+The original executed source and result above remain byte-for-byte unchanged.
+A temporary counterexample changed the analysis background QV, updated its
+declared hash in a copied execution receipt, and passed the original generator.
+The real retained pair passes independent column and all-state correspondence
+checks; its published values remain valid.
+
+Use `python3 harness/replay_native_host_mass_reference.py --output NEW.json`
+for subsequent replay. It pins the original executed source and execution receipt, verifies the
+array hashes, and requires the analysis grid, selected flat index and all twelve
+background components to match the window input bitwise before running the
+original arithmetic. This is diagnostic input hardening, not a model change.
+The wrapper requires the private retained forecast and active host source tree.
+
+The [follow-up receipt](NATIVE_host_mass_reference_guard_result_2026-10-06.json)
+records 20 focused tests and the real guarded replay. All six water increments
+and column-weight sums match exactly in the recorded environment. This
+follow-up does not replace the original output.
