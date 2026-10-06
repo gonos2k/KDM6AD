@@ -1,0 +1,31 @@
+{
+  "artifact_role": "guarded_replay_followup",
+  "model_or_radiance_executed": false,
+  "original_result_sha256": "1dad507890bc9a4562e2d5c3d67a2916df6bf08c81cef2b55655c81f85370e7c",
+  "guard_source_sha256": "9299aaa060269f13f608c2fc6216bf38bcdb53ca45542700c548529a114dc8a7",
+  "test_source_sha256": "c35535cf572884bb12ebbe0264632c37270eb3155d9a1dcf0f03c8b45c35d9dd",
+  "focused_tests_passed": 20,
+  "all_six_water_inventory_deltas_exact": true,
+  "maximum_column_weight_sum_difference_kg_m2": 0.0,
+  "original_executed_source_and_result_unchanged": true,
+  "validation": [
+    "pinned historical audit source checked before import",
+    "pinned immutable window receipt",
+    "receipt array hashes",
+    "234 by 282 native grid",
+    "flat column 36576",
+    "all twelve background rows bitwise equal to window input"
+  ],
+  "counterexample": {
+    "temporary_copies_only": true,
+    "changed_background_qv": 0.01,
+    "original_generator_accepted": true,
+    "hybrid_initial_water_increment_kg_m2": -0.498848597,
+    "original_valid_increment_kg_m2": 0.10150946294925876
+  },
+  "environment": {
+    "python": "3.10.11",
+    "numpy": "2.2.6"
+  },
+  "scope": "Offline retained snapshot replay. No physical-policy, flux-budget, historical-build, forecast or operational approval."
+}

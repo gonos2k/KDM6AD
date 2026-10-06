@@ -26,3 +26,12 @@ Map factors belong to horizontal geometry/divergence, while this measure is per
 physical m². Physical cell totals were not evaluated. Future S17 accounting
 requires stage-bound mass fields, compatible enthalpy and net flux/work terms;
 number/threshold calibration and product/error policies remain separate.
+
+A subsequent Green/Red audit reproduced a crossed-input counterexample in the
+historical generator; the actual retained pair matches. The
+[guarded replay](../../harness/replay_native_host_mass_reference.py) pins the
+execution receipt and checks grid/column identity and all twelve background
+state components before invoking the unchanged original arithmetic. The
+[regression tests](../../harness/tests/test_replay_native_host_mass_reference.py)
+reject crossed columns and background components. This hardening leaves the
+original executed source/result and physical approval limits unchanged.
