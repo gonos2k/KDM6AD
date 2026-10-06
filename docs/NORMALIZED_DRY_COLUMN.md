@@ -58,6 +58,10 @@ separates the initial analysis water/heat changes from the two model trajectorie
 on a declared fixed measure. These are conditional endpoint inventories, not
 closed boundary-flux budgets. The report's `cloudy_clear` label is the existing
 IR105 threshold proxy, not an independently observed clear scene.
+The [host-coordinate mass audit](../harness/evidence/REPORT_native_host_mass_reference_2026-10-06.md)
+distinguishes the snapshot hybrid dry-mass measure from diagnostic density times
+height. The latter remains the declared optical/inventory policy; this audit
+does not silently replace it or close the host flux/enthalpy ledger.
 
 ```sh
 python oracle/scripts/run_normalized_dry_column.py \

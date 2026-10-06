@@ -23,6 +23,7 @@ date_modified: 2026-07-14
 - [[queries/_index|Queries]] - 2 pages
 
 ## Sources
+- [[sources/native-host-dry-mass-2026-10-06|Native host dry-mass coordinate]] - Active source binding and snapshot comparison to diagnostic layer weights.
 - [[sources/native-analysis-inventory-2026-10-05|Native analysis inventory interpretation]] - Signed water and conditional heat accounting, distinct from physical budget approval.
 - [[sources/pr373-native-observation-team-audit-2026-10-05|PR373 native observation team audit]] - Reproduced native T/Q and cloud-shard gaps, with separately attributed corrected execution.
 - [[sources/unified-normalized-dry-window-2026-10-05|Unified normalized dry window research path]] - Explicit upper policy propagation and bounded actual optimization/window evidence.

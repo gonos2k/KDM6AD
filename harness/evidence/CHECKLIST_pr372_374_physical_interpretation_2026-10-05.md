@@ -18,3 +18,9 @@ The [executed offline source](NATIVE_analysis_inventory_source_2026-10-05.py)
 and [result](NATIVE_analysis_inventory_result_2026-10-05.json) pin the input
 arrays, existing state-function source, enthalpy conventions and arithmetic
 environment. This is not a new KDM/RTTOV run or an added meteorological case.
+
+The subsequent [host dry-mass source audit](REPORT_native_host_mass_reference_2026-10-06.md)
+identifies the hybrid-coordinate reference in the active host and evaluates it
+from the same retained frame. It differs from the earlier rho_d*dz measure;
+hypsometric option 2 explains the dominant difference. Snapshot identification
+does not supply live staged mass/flux terms or settle all S2/S17 contracts.
