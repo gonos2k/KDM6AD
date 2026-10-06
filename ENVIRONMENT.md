@@ -5,7 +5,7 @@ the exact environment matters. Below is the **reference environment** on which t
 `mp37 ↔ mp137` STRICT BITWISE parity was produced. Other versions may work but are not
 guaranteed to reproduce bit-for-bit.
 
-**C++ unit-test status on this reference toolchain: `ctest` is green (17/17).** The operational
+**Historical C++ unit-test status on the 2026-07-04 reference toolchain: `ctest` was green (17/17).** The operational
 **float32** derivative handle (`kdm6_step_c` value_only=0) is a mechanics/diagnostics path whose
 VJP/JVP may be non-finite at inactive-ice corners (f32 underflow that propagates to graph-connected
 inputs — which fields exactly is toolchain-dependent); `test_c_abi` asserts only the packed-ABI
@@ -68,10 +68,21 @@ is unchanged.
 ## CI toolchain (separate from this reference environment)
 
 The `port-ci` GitHub Actions workflow verifies the **port-only `ctest` suite** on a
-**deliberately different** second toolchain — `ubuntu-24.04` / gcc+gfortran / Python 3.11,
+**deliberately different** second toolchain — `ubuntu-24.04` / gcc+gfortran / Python 3.12,
 with only `torch` pinned to the reference (`2.8.0`). It is a *portability* gate (the suite is
 f64-deterministic / tolerance / ABI-mechanics, so it is not libm-sensitive); it does **not**
 reproduce the macOS/clang reference above, and it does **not** exercise the host bitwise
 parity (that is a macOS-pinned, host-coupled property checked with `harness/strict_bitwise_nc.py`,
 not in CI). So "ctest is green 17/17" is validated twice: on this local reference toolchain, and
 independently on the CI toolchain.
+
+## Source-only research candidate (2026-10-06)
+
+The [candidate guide](docs/RESEARCH_CANDIDATE.md) and
+[clean-workspace execution report](harness/evidence/REPORT_research_candidate_2026-10-06.md)
+record a separate macOS arm64 source build, fresh Python 3.10 environment and
+installed-library native-column acceptance. They do not replace the historical
+host/parity environment above. Current CMake registers 17 C++ tests and two
+additional tests when Fortran is available. Match Torch's CMake package, headers
+and linked libraries to the same environment; `CMAKE_PREFIX_PATH` alone can
+allow system `libtorch`/`libc10` to win normal library discovery.

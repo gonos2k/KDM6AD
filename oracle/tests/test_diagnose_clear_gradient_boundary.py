@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 
+from kdm6.obs.rttov_case_writer import default_fixture_case_dir
+
 from scripts.diagnose_clear_gradient_boundary import (
     DEFAULT_CAL,
     DEFAULT_GK2A,
@@ -15,10 +17,12 @@ from scripts.diagnose_clear_gradient_boundary import (
 )
 
 
-_REAL_PRESENT = DEFAULT_KDM.is_file() and DEFAULT_GK2A.is_dir() and DEFAULT_CAL.is_file()
+_ATM = default_fixture_case_dir() / "in/profiles/001/atm"
+_REAL_PRESENT = (DEFAULT_KDM.is_file() and DEFAULT_GK2A.is_dir() and DEFAULT_CAL.is_file()
+                 and all((_ATM / name).is_file() for name in ("t.txt", "q.txt", "p_half.txt")))
 
 
-@pytest.mark.skipif(not _REAL_PRESENT, reason="private GK2A/KDM/calibration assets unavailable")
+@pytest.mark.skipif(not _REAL_PRESENT, reason="private GK2A/KDM/calibration or RTTOV reference-profile assets unavailable")
 def test_pinned_clear_qv_probe_localizes_large_fd_to_positivity_branch(tmp_path: Path):
     report = run_diagnostic(
         DEFAULT_KDM, DEFAULT_GK2A, DEFAULT_CAL, DEFAULT_STAMP,
