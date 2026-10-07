@@ -1,0 +1,186 @@
+{
+  "schema": "retained_viirs_stored_context_v1",
+  "producer_sha256": "8816d947bfb43b35996724331e6e613d8a9199e0619a4c77b3818ef9e6e32a90",
+  "selected": {
+    "file": "JRR-CloudPhase_v3r2_j01_s202507190555475_e202507190557102_c202507190621171.nc",
+    "row_col_0based": [
+      205,
+      27
+    ],
+    "lat_lon": [
+      35.4156379699707,
+      122.14338684082031
+    ],
+    "phase_code": 1,
+    "cloud_type_code": 2,
+    "quality_stored_byte": 0,
+    "type_diagnostic_stored_bytes": [
+      3,
+      -128,
+      8,
+      0,
+      0,
+      0
+    ],
+    "granule_time_coverage": {
+      "time_coverage_start": "2025-07-19T05:55:47Z",
+      "time_coverage_end": "2025-07-19T05:57:10Z"
+    }
+  },
+  "full_granule_qa": [
+    {
+      "file": "JRR-CloudPhase_v3r2_j01_s202507190554217_e202507190555463_c202507190622280.nc",
+      "sha256": "9ff002cd37aeb2b99de3fd93a62aa0db7826c6fd77366c98117f76e811a2dd4b",
+      "qa_fill_value": -128,
+      "qa_declared_valid_range": [
+        0,
+        1
+      ],
+      "netcdf_default_masked_pixels": 351434,
+      "stored_counts": {
+        "0": 2106166,
+        "5": 278771,
+        "9": 57647,
+        "13": 14971,
+        "17": 45
+      },
+      "fill_pixels": 0,
+      "nonfill_outside_declared_range": 351434
+    },
+    {
+      "file": "JRR-CloudPhase_v3r2_j01_s202507190555475_e202507190557102_c202507190621171.nc",
+      "sha256": "7fef6df795254f628c79e92c25816fed720e855bba46a9ba74adb92abac0cfe2",
+      "qa_fill_value": -128,
+      "qa_declared_valid_range": [
+        0,
+        1
+      ],
+      "netcdf_default_masked_pixels": 214771,
+      "stored_counts": {
+        "0": 2242829,
+        "3": 51200,
+        "5": 109372,
+        "9": 48112,
+        "13": 6049,
+        "17": 38
+      },
+      "fill_pixels": 0,
+      "nonfill_outside_declared_range": 214771,
+      "invalid_geolocation_pixels": 51200
+    },
+    {
+      "file": "JRR-CloudPhase_v3r2_j01_s202507190557115_e202507190558360_c202507190621256.nc",
+      "sha256": "31111e5cbe18693d7626f51aa1472013de6be4d4549e81a30aef1530d8dae9ec",
+      "qa_fill_value": -128,
+      "qa_declared_valid_range": [
+        0,
+        1
+      ],
+      "netcdf_default_masked_pixels": 189771,
+      "stored_counts": {
+        "0": 2267829,
+        "5": 22122,
+        "9": 12441,
+        "13": 1782,
+        "17": 140114,
+        "21": 11018,
+        "25": 145,
+        "29": 2149
+      },
+      "fill_pixels": 0,
+      "nonfill_outside_declared_range": 189771
+    }
+  ],
+  "neighborhoods": [
+    {
+      "radius_m": 1000,
+      "nominal_center_count": 3,
+      "phase_counts": {
+        "1": 3
+      },
+      "cloud_type_counts": {
+        "2": 3
+      },
+      "quality_stored_counts": {
+        "0": 2,
+        "5": 1
+      },
+      "row_col_extrema": [
+        205,
+        214,
+        26,
+        27
+      ]
+    },
+    {
+      "radius_m": 3500,
+      "nominal_center_count": 36,
+      "phase_counts": {
+        "1": 36
+      },
+      "cloud_type_counts": {
+        "2": 36
+      },
+      "quality_stored_counts": {
+        "0": 29,
+        "5": 7
+      },
+      "row_col_extrema": [
+        203,
+        224,
+        25,
+        29
+      ]
+    },
+    {
+      "radius_m": 5000,
+      "nominal_center_count": 75,
+      "phase_counts": {
+        "1": 75
+      },
+      "cloud_type_counts": {
+        "2": 75
+      },
+      "quality_stored_counts": {
+        "0": 66,
+        "5": 9
+      },
+      "row_col_extrema": [
+        202,
+        225,
+        24,
+        30
+      ]
+    },
+    {
+      "radius_m": 10000,
+      "nominal_center_count": 291,
+      "phase_counts": {
+        "0": 3,
+        "1": 288
+      },
+      "cloud_type_counts": {
+        "0": 3,
+        "2": 288
+      },
+      "quality_stored_counts": {
+        "0": 282,
+        "5": 9
+      },
+      "row_col_extrema": [
+        190,
+        228,
+        20,
+        33
+      ]
+    }
+  ],
+  "previous_receipt_scope": "PR387 masked nonfill out-of-range QA; its raw_quality_counts are not stored-byte counts",
+  "raw_quality_bits_decoded": false,
+  "qa_version_approved": false,
+  "pixel_time_verified": false,
+  "footprint_or_parallax_matched": false,
+  "warm_single_layer_verified": false,
+  "kdm_rttov_or_host_run": false,
+  "spatial_statistic": "counts of nominal geolocated centers inside spherical radii, not physical area weights or independent samples"
+}

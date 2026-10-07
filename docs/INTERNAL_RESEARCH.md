@@ -143,6 +143,16 @@ ancillary models and is not ground truth. Full QA, warm-column evidence and
 the corresponding target-time native state remain open. Continue R2 with this
 bounded case rather than adding loss options or treating catalogue files as cases.
 
+The [context follow-up](../harness/evidence/REPORT_VIIRS_context_2026-10-07.md)
+now reads actual GMTCO viewing angles/scan metadata and same-overpass cloud-height
+and optical values. A stored-QA histogram error in the historical producer is
+corrected by explicitly bypassing NetCDF automatic range masking; it does not
+invalidate the selected zero-byte candidate. Product-derived scan timing and
+parallax coordinates remain distinct from exact pixel time or an applied common
+footprint correction. Full optical QA, vertical structure and target-time native
+state still need case work; the phase-code neighborhood is not an independent
+sample count or physical area statistic.
+
 ## Numerical artifact acceptance for fixed errors
 
 When evaluating an actual fixed-error normalized KMA report, explicitly call

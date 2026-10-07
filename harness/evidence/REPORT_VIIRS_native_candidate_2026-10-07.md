@@ -158,3 +158,13 @@ The first command needs NumPy/SciPy/netCDF4; the second needs the existing oracl
 Python dependencies including Torch. It rejects existing outputs. The current
 graph was structurally refreshed, with a bounded semantic update for these
 case/checklist documents; source and actual receipts remain authoritative.
+
+## Subsequent stored-QA correction and case context
+
+The [actual context follow-up](REPORT_VIIRS_context_2026-10-07.md) found that the
+historical native producer's `raw_quality_counts` were NetCDF range-masked counts,
+not actual stored-byte counts: the original flag metadata declares 0..1 while
+packed values 3/5/9/etc occur. No true -128 QA fill occurs in those three arrays.
+The candidate's raw byte 0 and nearest-center result remain valid. Preserve this
+historical receipt and use the follow-up for corrected stored-QA frequencies,
+actual GMTCO angles/scan timing and same-overpass cloud-height/optical context.

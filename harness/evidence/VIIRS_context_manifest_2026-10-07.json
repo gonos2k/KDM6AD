@@ -1,0 +1,170 @@
+{
+  "raw_ranges/phase/bytes_8126464_8388607.bin": {
+    "sha256": "0b49e8bce99a650910ce6b020cedc8d280d75bb1d3cabe544223f7d69e09e318",
+    "bytes": 262144
+  },
+  "raw_ranges/phase/bytes_7864320_8126463.bin": {
+    "sha256": "c348bbbea4e5b1064ef542cc4135ffa6a29f605c231a61aa99029564dab7346e",
+    "bytes": 262144
+  },
+  "raw_ranges/phase/bytes_7602176_7864319.bin": {
+    "sha256": "df1378d7473c2262be6998f0d0da09f5b140f3c8f4327270dc8bdb33896c23f3",
+    "bytes": 262144
+  },
+  "raw_ranges/phase/bytes_4718592_4980735.bin": {
+    "sha256": "189547dc54f4435eba0a31ae00d62e8840e4f23d622c287e8fdc69eb3f278bfd",
+    "bytes": 262144
+  },
+  "raw_ranges/phase/bytes_8650752_8810068.bin": {
+    "sha256": "67504ed135789cfbc00be963a101492597c4652dbd00d8550b89a75417c2d0f7",
+    "bytes": 159317
+  },
+  "raw_ranges/phase/bytes_3932160_4194303.bin": {
+    "sha256": "17551f8c90f2326442c1ee428e8f4f11f7be58fc4b12f11d83f90964e840a1cf",
+    "bytes": 262144
+  },
+  "raw_ranges/phase/bytes_0_262143.bin": {
+    "sha256": "1f3c29521d258a30db9b26b0a63254149a4069c97e400b73a5545c1824983a3c",
+    "bytes": 262144
+  },
+  "raw_ranges/phase/bytes_1835008_2097151.bin": {
+    "sha256": "5b1f47ffa9e785d5ed626cbc333791214935ca688ed005ae0082debd5503f72e",
+    "bytes": 262144
+  },
+  "raw_ranges/height/bytes_22282240_22544383.bin": {
+    "sha256": "afef025c56bcce752f4e9d3705fa56bfdc3960bcaab8795b74cae91e6207f5f4",
+    "bytes": 262144
+  },
+  "raw_ranges/height/bytes_6029312_6291455.bin": {
+    "sha256": "d5e67987c56bf87d5da6768f4a17ccf373dee18e63de97fe286146bd4376b80c",
+    "bytes": 262144
+  },
+  "raw_ranges/height/bytes_15466496_15728639.bin": {
+    "sha256": "2fd76ae101f96813a24f55deae78c10337a92d52f893b8b1b02198e6e84cf6d8",
+    "bytes": 262144
+  },
+  "raw_ranges/height/bytes_6291456_6553599.bin": {
+    "sha256": "e7a133ef413b2183326e2f5d0e69c862e11d5597a61bba35a729d6701f57918c",
+    "bytes": 262144
+  },
+  "raw_ranges/height/bytes_8650752_8912895.bin": {
+    "sha256": "ec660cc5cad4b0323b2fbe410db2b4a73cbd0b316e7b5022d9a19d5a703f2119",
+    "bytes": 262144
+  },
+  "raw_ranges/height/bytes_25690112_25952255.bin": {
+    "sha256": "2536fc1b8fce4ce32dc40f80b01f2e69ba055075b4a830a8c3d6b80f994039d3",
+    "bytes": 262144
+  },
+  "raw_ranges/height/bytes_11796480_12058623.bin": {
+    "sha256": "bd757069f188b6c0abc1232ec9fac934d10f5561e77225a5a54c46c0ec8f1ddc",
+    "bytes": 262144
+  },
+  "raw_ranges/height/bytes_59768832_60030975.bin": {
+    "sha256": "33d84c20f86a68f9c543fe705dd8c745924b7b244792a8cfa88b8c0bde65a99f",
+    "bytes": 262144
+  },
+  "raw_ranges/height/bytes_41680896_41943039.bin": {
+    "sha256": "120c89cd310dd1b656675fcace19ad116a0b14218d32fe59a5ae886464ea8e83",
+    "bytes": 262144
+  },
+  "raw_ranges/height/bytes_71565312_71779578.bin": {
+    "sha256": "08c21ef29489cb8ba258a9fe2ac0ec67277fdf1efef4c30e7bf996dfeeae8ec0",
+    "bytes": 214267
+  },
+  "raw_ranges/height/bytes_3932160_4194303.bin": {
+    "sha256": "2e642dcf46cf751995341874b79ff031447128f811f9a221ee1f54bb23ec96ab",
+    "bytes": 262144
+  },
+  "raw_ranges/height/bytes_0_262143.bin": {
+    "sha256": "68d0e6ea98374d901377c6101c35a69902eb2f4fca417a0a1e5fd5718d765c71",
+    "bytes": 262144
+  },
+  "raw_ranges/height/bytes_1835008_2097151.bin": {
+    "sha256": "0ceccc292e136e25dedb70300c4c7b1f22d504fe29b6257cb0333677cfd560bb",
+    "bytes": 262144
+  },
+  "raw_ranges/dcomp/bytes_11534336_11796479.bin": {
+    "sha256": "e1af61f24b09c3bbd6dc4b54d9691b86e651848e3609d1de69e08a7cece87f2c",
+    "bytes": 262144
+  },
+  "raw_ranges/dcomp/bytes_18874368_19136511.bin": {
+    "sha256": "3d9defcbe1f5d601f6ae0b523edc21cec6e509f7824d40a0887806228597473d",
+    "bytes": 262144
+  },
+  "raw_ranges/dcomp/bytes_11272192_11534335.bin": {
+    "sha256": "c56c2ef6c87bbbef36243850f66ac799f2e6a7c02d271c799dcf724e36c3eaa0",
+    "bytes": 262144
+  },
+  "raw_ranges/dcomp/bytes_22544384_22806527.bin": {
+    "sha256": "5484dbd96a5731e3c8d9d5cdb3e94357b842646926bf0fd7c2d4faec405cdd16",
+    "bytes": 262144
+  },
+  "raw_ranges/dcomp/bytes_7602176_7864319.bin": {
+    "sha256": "171273db904ddc93ffb69d572309df5c97b036a7a9a4190cda858e7c1aad31e6",
+    "bytes": 262144
+  },
+  "raw_ranges/dcomp/bytes_26214400_26476543.bin": {
+    "sha256": "f63f22f13654a4b2fa495863337e691476b07774db0426c12d48f9aecf782cf3",
+    "bytes": 262144
+  },
+  "raw_ranges/dcomp/bytes_44826624_45085957.bin": {
+    "sha256": "90adc2b53252ce0c5639e2717e6ddb56edf530bf501a436b73b58acf773af063",
+    "bytes": 259334
+  },
+  "raw_ranges/dcomp/bytes_3932160_4194303.bin": {
+    "sha256": "28bd8c7ac0c4f0fc13363d62a1ffa2be9aad366270ee98e4e026964b41575f03",
+    "bytes": 262144
+  },
+  "raw_ranges/dcomp/bytes_15204352_15466495.bin": {
+    "sha256": "5f3cba182ba48d048d1cdbe3d50692d7ce2255e23be4ce676f65a77f21b6a01d",
+    "bytes": 262144
+  },
+  "raw_ranges/dcomp/bytes_0_262143.bin": {
+    "sha256": "a75d5df6072d27e85c01ca6d40b2a3cd9d91d273d2a1eadced8223861112ed91",
+    "bytes": 262144
+  },
+  "raw_ranges/dcomp/bytes_1835008_2097151.bin": {
+    "sha256": "f12b6005d13410661da2ddedf21ef058608918317344c0bb2470e99cbed4c269",
+    "bytes": 262144
+  },
+  "object_metadata/height.json": {
+    "sha256": "653217e493daa9af41be35508893226a517a7d604160bd0821adae250381ed31",
+    "bytes": 1239
+  },
+  "object_metadata/phase.json": {
+    "sha256": "72f9a670e0729a29c83ed077a6f0d7dfe4920155fe9dc3497cc68a6a748e28ac",
+    "bytes": 1230
+  },
+  "object_metadata/dcomp.json": {
+    "sha256": "b9839c6360fbfc9bbe3a2f2bcbd350bce513878eeadaa00120c28b7076f167ac",
+    "bytes": 1231
+  },
+  "target_sample_result.json": {
+    "sha256": "3a72c4ba9853c5105f22104a43e02e4bd150fbc67fe6d25977c3eab151ccf268",
+    "bytes": 39124
+  },
+  "README_target_sample.md": {
+    "sha256": "f8fbcf0f6ad03ef81cc90c906bdf1afe178df077404fd0b60919d21ca65d4108",
+    "bytes": 4077
+  },
+  "capture_target_samples.py": {
+    "sha256": "8f29dc7f1d9e2ab31955ed7d2e4270659abe77b99c3ca38ae5ad44e50bd961d5",
+    "bytes": 9701
+  },
+  "VIIRS_GEO_scan_context_2026-10-07.json": {
+    "sha256": "11e7c528bc315f57bb845abda9701260580366c442754b7962f1e786782884a3",
+    "bytes": 8318
+  },
+  "README_VIIRS_GEO_scan_context_2026-10-07.md": {
+    "sha256": "a1095f5ee8f767fbb14278f4e8b1957799183244a8ce2a51b6fad3e7f4750130",
+    "bytes": 3879
+  },
+  "gmtco_selected_raw.npz": {
+    "sha256": "8e91ebd0ba641c974d43546581b92b9df7fde622bca1ff1a8c0f116811dcf14f",
+    "bytes": 3936
+  },
+  "gmtco_all_attributes.txt": {
+    "sha256": "f424fa47fa3670fea05921272dc10a7c57f9322be116b8947e0f57677b7f9f88",
+    "bytes": 28551
+  }
+}
