@@ -77,3 +77,4 @@ date_modified: 2026-07-14
 - [[sources/internal-postmerge-review-2026-10-07|Internal research post-merge input and collection audit]]
 - [[sources/fixed-error-artifact-gates-2026-10-07|Explicit fixed-error numerical artifact acceptance]]
 - [[sources/la-reader-2026-10-07|Actual LA thermal read with time and coordinate contracts]]
+- [[sources/la-time-contract-2026-10-07|Conditional Satpy LA clock interpretation and native readiness]]

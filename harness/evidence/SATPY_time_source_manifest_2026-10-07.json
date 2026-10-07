@@ -1,0 +1,28 @@
+{
+  "repository": "https://github.com/pytroll/satpy",
+  "tag": "v0.57.0",
+  "commit": "70e3d3b728ed630c2d7e0df5512ee5d243c48581",
+  "files": [
+    {
+      "path": "satpy/readers/ami_l1b.py",
+      "url": "https://raw.githubusercontent.com/pytroll/satpy/70e3d3b728ed630c2d7e0df5512ee5d243c48581/satpy/readers/ami_l1b.py",
+      "bytes": 13131,
+      "sha256": "c6fd8f4e812906f05f0361ad0377336d045dbf013c5405799bd5a8475119794a",
+      "local": "<SOURCE_CACHE_ROOT>/raw/ami_l1b.py"
+    },
+    {
+      "path": "satpy/tests/reader_tests/test_ami_l1b.py",
+      "url": "https://raw.githubusercontent.com/pytroll/satpy/70e3d3b728ed630c2d7e0df5512ee5d243c48581/satpy/tests/reader_tests/test_ami_l1b.py",
+      "bytes": 16558,
+      "sha256": "215380da68b65d63b48aff72b9bda05228dd90d96a4918e2da487855040b266c",
+      "local": "<SOURCE_CACHE_ROOT>/raw/test_ami_l1b.py"
+    },
+    {
+      "path": "satpy/etc/readers/ami_l1b.yaml",
+      "url": "https://raw.githubusercontent.com/pytroll/satpy/70e3d3b728ed630c2d7e0df5512ee5d243c48581/satpy/etc/readers/ami_l1b.yaml",
+      "bytes": 10888,
+      "sha256": "bd3bbb828a3cdc00569dc4dbc04f9528b1995a40f781f897c1018a028d2e2198",
+      "local": "<SOURCE_CACHE_ROOT>/raw/ami_l1b.yaml"
+    }
+  ]
+}

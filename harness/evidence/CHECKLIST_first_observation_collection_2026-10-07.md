@@ -14,7 +14,7 @@ substituted for the current native 5 km model.
 | 3a. Decode the acquired LA slot | Ordered BT/DQF/radiance/nominal GEOS positions and original pixel indices from the unchanged files | DONE within the retained nine-channel 500×500 format — REPORT_LA_decode_2026-10-07.md; no actual UTC/phase/model match |
 | 4. Read independent cloud science QA | Verify liquid/ice/mixed phase, layering, uncertainty and precipitation contamination | OPEN — every candidate's phase remains unknown |
 | 5. Establish pixel/time/footprint correspondence | Actual scan time, geometry, surface and independent profile location checked | OPEN — bbox/scene overlap alone is insufficient |
-| 6. Produce corresponding native model states | Same current 5 km model's center/interface pressure, T/Q/hydrometeors preserved at observed time | OPEN — retained output ends 00:00:40 UTC; LA 05:34 filename/scene labels are OBT and not yet verified UTC |
+| 6. Produce corresponding native model states | Same current 5 km model's center/interface pressure, T/Q/hydrometeors preserved at observed time | OPEN — retained C5 output ends at 00:00:40 UTC. Satpy v0.57.0 yields a conditional naive 05:34:42–05:35:43 calendar interval from numeric header seconds, but UTC, pixel time and correspondence remain unverified; see [LA time-contract audit](REPORT_LA_time_contract_2026-10-07.md) |
 | 7. Complete first research bundles | Warm-liquid acceptance first; cold-season availability collected in parallel for one or two ice/mixed-phase cases | OPEN — three warm-liquid cases are not phase-verified; Nov 2025–Mar 2026 search not performed |
 | 8. Accumulate residuals and uncertainty | Sensor bias separate from O–B; event-level design/validation separation; unresolved components labelled | OPEN — no sigma/bias fit from these metadata |
 
@@ -110,7 +110,7 @@ These are concrete substeps of the existing user plan, not new approval gates.
 | Calibration and response | Decoder coefficient table and header version agree | Original SRF/processing identity and GSICS files not acquired; IR133 response compatibility remains S11 work |
 | Independent water/phase | MODIS/EarthCARE catalogue records only | Science QA/phase still unread; AMSR2 LWP and footprint metadata, or an equivalent independent LWP source, have not been queried/acquired |
 | Cold-season availability | Current searches cover summer candidates | Nov 2025–Mar 2026 ice/mixed-phase search not performed; parallel collection is planned, not completed |
-| Pixel time and model time | Scene and orbit interval metadata only | Resolve the region's actual EarthCARE sample time, AMI scan time/footprint and corresponding native model output |
+| Pixel time and model time | Pinned Satpy source gives a conditional naive calendar interval from LA numeric seconds; reader keeps `valid_time_utc=None` | Still open: establish numeric epoch/clock semantics, actual AMI scan/pixel time, footprint and matching native model state; see [LA time-contract audit](REPORT_LA_time_contract_2026-10-07.md) |
 
 The official NMSC metadata guide identifies scene/filename time as OBT and
 mission reference time as planned UTC. New LA outputs preserve these roles and

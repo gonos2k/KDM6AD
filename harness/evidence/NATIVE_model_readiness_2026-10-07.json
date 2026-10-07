@@ -1,0 +1,243 @@
+{
+  "schema": "kdm6ad_existing_native_model_readiness_v1",
+  "created_utc_date": "2026-10-07",
+  "scope": "Read-only inventory of existing native 5 km IC/BC, retained time coordinates, geometry envelope, executable/configuration pointers, and maximum saved times for a possible 2025-07-19 LA/EarthCARE sample. No host run, no model/reanalysis acquisition, no large-file rehash.",
+  "run_performed": false,
+  "scientific_sample_selected": false,
+  "utc_matched_run_established": false,
+  "pixel_footprint_collocation_established": false,
+  "phase_qa_validated": false,
+  "private_canonical_inputs": {
+    "wrfinput": {
+      "path": "<PROJECT_ROOT>/host/lc05_da_run/wrfinput_d01",
+      "symlink_target": "<EXISTING_MODEL_DATA_ROOT>/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfinput_d01",
+      "bytes": 374429080,
+      "mtime_utc": "2026-08-24T02:14:56.800157Z",
+      "sha256_existing_receipt": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+      "sha256_source": "<PROJECT_ROOT>/docs/reports/v10_fulldomain_lc05.json.manifest.json and v92_fulldomain_lc05.json.manifest.json; not recomputed"
+    },
+    "wrfbdy": {
+      "path": "<PROJECT_ROOT>/host/lc05_da_run/wrfbdy_d01",
+      "symlink_target": "<EXISTING_MODEL_DATA_ROOT>/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfbdy_d01",
+      "bytes": 103922656,
+      "mtime_utc": "2026-06-18T08:13:45Z",
+      "sha256_existing_receipt": null,
+      "sha256_note": "No wrfbdy hash was found in the reviewed existing receipts; no hash was computed."
+    },
+    "wrfinput_netcdf_metadata": {
+      "Times": [
+        "2025-07-19_00:00:00"
+      ],
+      "dimensions": {
+        "west_east": 234,
+        "south_north": 282,
+        "bottom_top": 39,
+        "bottom_top_stag": 40,
+        "west_east_stag": 235,
+        "south_north_stag": 283
+      },
+      "global_attrs": {
+        "START_DATE": "2025-07-19_00:00:00",
+        "DX_m": 5000.0,
+        "DY_m": 5000.0,
+        "CEN_LAT_deg": 38.00001,
+        "CEN_LON_deg": 126.0,
+        "MAP_PROJ": 1,
+        "TRUELAT1_deg": 30.0,
+        "TRUELAT2_deg": 60.0,
+        "STAND_LON_deg": 126.0
+      },
+      "XLAT_XLONG_minmax_from_only_2D_geolocation": {
+        "latitude_deg": [
+          31.36752700805664,
+          44.521148681640625
+        ],
+        "longitude_deg": [
+          118.41448974609375,
+          133.58551025390625
+        ]
+      }
+    },
+    "wrfbdy_netcdf_metadata": {
+      "Times": [
+        "2025-07-19_00:00:00",
+        "2025-07-19_03:00:00",
+        "2025-07-19_06:00:00",
+        "2025-07-19_09:00:00"
+      ],
+      "boundary_coverage_through_utc": "2025-07-19_09:00:00",
+      "dimensions": {
+        "Time": 4,
+        "west_east": 234,
+        "south_north": 282,
+        "bottom_top": 39
+      },
+      "inspection": "Read header and Times variable only; no boundary state arrays scanned."
+    }
+  },
+  "retained_forecasts_are_separate_evidence": [
+    {
+      "label": "C5 pinned 40-second source used by prior normalized KMA evidence",
+      "path": "<PINNED_C5_RUN_ROOT>/case/runs/mp337_merge603ea4a_off_0min40s_hist0_20261003_102038_p26153/klfs_lc05_fcst.202507190000",
+      "bytes": 953745068,
+      "mtime_utc": "2026-10-03T01:21:47.053275Z",
+      "sha256_existing_receipt": "be0edb894d1ddc5996f925cf01d56d1d882b53d6ed0295566edac2cb60f31308",
+      "times_from_existing_NATIVE_KMA_window_receipt": [
+        "2025-07-19_00:00:00",
+        "2025-07-19_00:00:20",
+        "2025-07-19_00:00:40"
+      ],
+      "provenance": "NATIVE_KMA_window_result_2026-10-05.json; source hash reused, not recomputed; this remains a distinct frozen C5 evidence file."
+    },
+    {
+      "label": "Current canonical lc05_da_run forecast file",
+      "path": "<PROJECT_ROOT>/host/lc05_da_run/klfs_lc05_fcst.202507190000",
+      "bytes": 353556426,
+      "mtime_utc": "2026-08-30T15:34:29.545621Z",
+      "times_read_from_NetCDF_Times_only": [
+        "2025-07-19_00:00:00",
+        "2025-07-19_00:00:20",
+        "2025-07-19_00:00:40",
+        "2025-07-19_00:01:00"
+      ],
+      "status": "Current file ends at +60 s. It does not supply a 05:34 native model snapshot."
+    },
+    {
+      "label": "SS-directory retained hourly 12-hour forecast, separate run record",
+      "path": "<PROJECT_ROOT>/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/klfs_lc05_fcst.202507190000",
+      "bytes": 4132673468,
+      "mtime_utc": "2026-07-18T13:43:11.710305Z",
+      "times_read_from_NetCDF_Times_only": [
+        "2025-07-19T00:00:00Z",
+        "2025-07-19T01:00:00Z",
+        "2025-07-19T02:00:00Z",
+        "2025-07-19T03:00:00Z",
+        "2025-07-19T04:00:00Z",
+        "2025-07-19T05:00:00Z",
+        "2025-07-19T06:00:00Z",
+        "2025-07-19T07:00:00Z",
+        "2025-07-19T08:00:00Z",
+        "2025-07-19T09:00:00Z",
+        "2025-07-19T10:00:00Z",
+        "2025-07-19T11:00:00Z",
+        "2025-07-19T12:00:00Z"
+      ],
+      "status": "Different directory/configuration and coarser hourly outputs; not time-matched to the LA scene or attributed to the pinned 40-second C5 run. Its 12:00 output also lies beyond the inspected wrfbdy final time (09:00)."
+    }
+  ],
+  "execution_configuration_pointers": {
+    "lc05_da_run_namelist": {
+      "path": "<PROJECT_ROOT>/host/lc05_da_run/namelist.input",
+      "bytes": 6444,
+      "mtime_utc": "2026-08-30T15:34:29.636939Z",
+      "read_settings": {
+        "run_hours": 3,
+        "end_hour": 12,
+        "history_interval_minutes": 5,
+        "history_interval_s": 0,
+        "time_step_s": 20,
+        "mp_physics": 137,
+        "numtiles": 2
+      },
+      "note": "The duration controls are inconsistent (run_hours=3 vs end_hour=12). This is configuration metadata, not an assertion about which value a historical executable run obeyed."
+    },
+    "lc05_da_run_wrf_exe": {
+      "path": "<PROJECT_ROOT>/host/lc05_da_run/wrf.exe",
+      "symlink_target": "<EXISTING_MODEL_DATA_ROOT>/KIM-meso_v1.0/main/wrf.exe",
+      "bytes": 50221736,
+      "mtime_utc": "2026-09-04T10:57:46.850026Z",
+      "note": "The canonical run-dir symlink resolves outside KDM6AD-k; no executable hash was computed."
+    },
+    "SS_namelist": {
+      "path": "<PROJECT_ROOT>/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/namelist.input",
+      "bytes": 6447,
+      "mtime_utc": "2026-07-18T13:43:11.860071Z",
+      "read_settings": {
+        "run_minutes": 720,
+        "end_hour": 12,
+        "history_interval_minutes": 60,
+        "history_interval_s": 0,
+        "time_step_s": 20,
+        "mp_physics": 137,
+        "numtiles": 2
+      },
+      "SS_wrf_exe_symlink_target": "../../../main/wrf.exe"
+    },
+    "harness_baseline": {
+      "script": "<PROJECT_ROOT>/harness/run_ss_case.py",
+      "defaults_or_environment": "--np defaults to 1; build_child_env sets OMP_NUM_THREADS=1, MKL_NUM_THREADS=1, OMP_THREAD_LIMIT=1.",
+      "execution_status": "No run was started. This identifies the intended isolated baseline after the actual target, clock and configuration are selected."
+    }
+  },
+  "observation_and_time_contract": {
+    "candidate": "NOAA LA AMI 2025-07-19 05:34 slot and EarthCARE orbit 06477D (05:34:57\u201305:46:44)",
+    "NOAA_LA_header_raw": {
+      "scene_acquisition_time": "20250719_053442",
+      "mission_reference_time": "20250719_053000",
+      "file_generation_time": "20250719_053600",
+      "observation_start_time_seconds": 806175282.4338461,
+      "observation_end_time_seconds": 806175343.6724635,
+      "time_synchro_utc_raw": 806175282.4398186,
+      "time_synchro_obt_raw": 806175282.4338461,
+      "units_epoch_attributes_present": false
+    },
+    "conditional_Satpy_conversion": {
+      "pinned_source": "<SOURCE_CACHE_ROOT>/SATPY_AMI_time_contract_2026-10-07.json",
+      "Satpy_source": "https://github.com/pytroll/satpy/blob/70e3d3b728ed630c2d7e0df5512ee5d243c48581/satpy/readers/ami_l1b.py#L123-L133",
+      "assumption": "Only if this file uses Satpy v0.57.0 documented/hard-coded epoch seconds since naive 2000-01-01 12:00; not verified UTC or a per-pixel scan time.",
+      "start_naive": "2025-07-19T05:34:42.433846",
+      "end_naive": "2025-07-19T05:35:43.672464",
+      "tzinfo": "none; no Z suffix"
+    },
+    "pixel_clock_status": "No pixel-specific acquisition-time variable was present in the header summary; exact pixel scan time remains unknown.",
+    "model_time_status": "No existing retained forecast contains a 05:34 selected sample; hourly 05:00/06:00 SS outputs are not an exact match, and the current canonical file ends at 00:01."
+  },
+  "observation_reader_provenance": {
+    "current_public_main_branch": "141f9980557d5d478fde38cd7556c181c5fa873a",
+    "LA_reader_path_in_that_separate_worktree": "<TEMP_ROOT>/KDM6AD-time-contract-review-20261007/oracle/kdm6/obs/gk2a_l1b_la.py",
+    "LA_reader_time_policy": "LAReadResult.payload.valid_time_utc=None; it retains raw scene/clock metadata and does not assign UTC from numeric fields.",
+    "canonical_local_checkout": "The canonical working tree is an older dirty checkout and was not edited or updated as part of this receipt; absence/presence there is not used to claim a global reader gap."
+  },
+  "coarse_geographic_comparison": {
+    "wrfinput_domain_latlon_bbox_deg": {
+      "lat": [
+        31.367527,
+        44.521149
+      ],
+      "lon": [
+        118.41449,
+        133.58551
+      ]
+    },
+    "LA_header_global_corner_attrs_raw": {
+      "upperleft_latitude": 0.7709971705416278,
+      "upperleft_longitude": 2.0929034164225846,
+      "lowerright_latitude": 0.543053372536856,
+      "lowerright_longitude": 2.3074227931344855,
+      "center_latitude": 0.6486608738079057,
+      "center_longitude": 2.2114768989102886
+    },
+    "LA_corner_conversion_if_radians_deg": {
+      "upperleft": [
+        44.174884,
+        119.914533
+      ],
+      "lowerright": [
+        31.114666,
+        132.205588
+      ],
+      "center": [
+        37.16553,
+        126.708293
+      ]
+    },
+    "conditional_overlap_note": "Under radians for the LA corner attributes, the coarse LA scene envelope overlaps the WRF bounding envelope; a scene rectangle is not a target-pixel footprint match. The lower-right corner is slightly south of the WRF min-lat envelope. No pixel row/column was matched."
+  },
+  "read_only_method": {
+    "netcdf_fields_read": "wrfinput global attributes, Times, and XLAT/XLONG 2-D coordinates; wrfbdy global attributes and Times only; forecast Times variables only; no atmospheric state arrays scanned except XLAT/XLONG.",
+    "large_file_sha_policy": "Only existing receipt hashes reused. No new SHA over 100 MB WRF files or WRF executable was computed.",
+    "external_data_or_model": "None acquired; no KDM/RTTOV/WRF execution."
+  },
+  "readiness_conclusion": "Existing July 19 00:00 native IC and boundary records through 09:00 can support a future model integration spanning the July 19 05:34 LA / 06477D candidate window without obtaining a replacement model dataset. This is not a time-matched observation/model pair: phase, selected pixel, pixel clock, exact navigation correspondence, and a time-resolved retained model state remain open. Do not attribute the separate hourly 12 h file to the pinned C5 run or use it as exact target state.",
+  "path_disclosure": "Public paths use logical root aliases; original absolute paths are retained in the local read-only receipt."
+}
