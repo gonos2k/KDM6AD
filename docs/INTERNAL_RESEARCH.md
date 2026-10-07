@@ -100,12 +100,36 @@ originals and four raw Anmado soundings were acquired. None is yet a validated
 cloud-phase/pixel/native-model pair. The LA product does not repair KO/ELA lineage,
 and independent soundings are observations, not substitute model profiles.
 
-The acquired LA020GE files also require an explicit LA ingest bridge: current
-`read_ko_slot` and `read_fd_slot` support KO020LC and FD020GE respectively and
-reject LA filenames. Header calibration-tuple agreement does not prove SRF
+The acquired LA020GE files now have a separate `read_la_slot` bridge to
+`ObsPayload`, with a sidecar and original pixel indices. KO020LC and FD020GE
+readers retain their existing scope. Header calibration-tuple agreement does not prove SRF
 processing identity. Raw SRF/GSICS files, independent LWP correspondence and a
 cold-season search remain unacquired/unqueried in this first packet. The
 EarthCARE frame start is not the timestamp of its intersection with Korea.
+
+## Reading the retained LA thermal slot
+
+```python
+from kdm6.obs.gk2a_l1b import load_cal_table
+from kdm6.obs.gk2a_l1b_la import read_la_slot
+read = read_la_slot(original_la_files, load_cal_table(paired_table_path), stride=1)
+payload = read.payload       # ordered AMI 8..16: BT, DQF and nominal GEOS positions
+metadata = read.metadata     # original source hashes, calibration and time roles
+```
+
+The first supported scope is a complete nine-channel LA020GE slot in the
+retained 500×500 v1.0.0_20181120 format. All headers/calibration/GEOS geometry
+must agree. Original basenames must match the NetCDF `file_name`; archive aliases
+can be restored to their recorded original LA names with bytes unchanged.
+Source hashes are checked across header and pixel passes; calibration is copied.
+DN/DQF and BT use the existing decoder, with exact paired coefficient/wavenumber
+checks. Raster indices are zero-based; NMSC GEOS scan coordinates are one-based.
+
+Scene acquisition/filename time is OBT, not verified UTC. Planned mission UTC
+is stored separately. `payload.valid_time_utc` stays None, so it cannot silently
+drive a data-derived UTC model offset. Raw synchronization fields are preserved;
+actual UTC conversion, pixel scan times and physical correspondence remain open.
+See [actual LA decoding](../harness/evidence/REPORT_LA_decode_2026-10-07.md).
 
 ## Numerical artifact acceptance for fixed errors
 

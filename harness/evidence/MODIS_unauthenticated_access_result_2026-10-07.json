@@ -1,0 +1,35 @@
+{
+  "url": "https://data.laadsdaac.earthdatacloud.nasa.gov/prod-lads/MOD06_L2/MOD06_L2.A2025200.0045.061.2025205141805.hdf",
+  "request_method": "GET",
+  "range": "bytes=0-0",
+  "max_response_bytes": 1,
+  "max_redirects": 5,
+  "auth_or_cookies_supplied": false,
+  "curl_exit_code": 63,
+  "curl_stderr": "curl: (63) Maximum file size exceeded",
+  "final_status": 401,
+  "redirect_count": 1,
+  "reported_downloaded_bytes": "0",
+  "final_host": "urs.earthdata.nasa.gov",
+  "final_path": "/oauth/authorize",
+  "final_query_redacted": true,
+  "response_chain": [
+    {
+      "status": 302,
+      "status_line": "HTTP/2 302 ",
+      "content_type": "application/json",
+      "content_length": "0",
+      "redirect_target_host": "urs.earthdata.nasa.gov",
+      "redirect_target_path": "/oauth/authorize"
+    },
+    {
+      "status": 401,
+      "status_line": "HTTP/1.1 401 Unauthorized",
+      "content_type": "text/html; charset=utf-8",
+      "content_length": "27",
+      "www_authenticate": "Basic realm=\"Please enter your Earthdata Login credentials. If you do not have a Earthdata Login, create one at https://urs.earthdata.nasa.gov//users/new\""
+    }
+  ],
+  "body_bytes_written": 0,
+  "body_sha256": null
+}

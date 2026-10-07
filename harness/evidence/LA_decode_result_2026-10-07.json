@@ -1,0 +1,400 @@
+{
+  "metadata": {
+    "source_product": "GK-2A AMI L1B LA020GE",
+    "channels": [
+      "wv063",
+      "wv069",
+      "wv073",
+      "ir087",
+      "ir096",
+      "ir105",
+      "ir112",
+      "ir123",
+      "ir133"
+    ],
+    "nominal_slot_obt": "202507190534",
+    "payload_valid_time_role": "unset; filename label is OBT and no documented UTC conversion was applied",
+    "scene_acquisition_time_raw": "20250719_053442",
+    "scene_acquisition_time_parsed_obt": "2025-07-19T05:34:42",
+    "scene_acquisition_time_utc": null,
+    "pixel_utc_time_verified": false,
+    "mission_reference_time_raw": "20250719_053000",
+    "mission_reference_time_role": "planned UTC; not observed or pixel time",
+    "planned_utc_time": "2025-07-19T05:30:00Z",
+    "observation_start_time_raw": 806175282.4338461,
+    "observation_end_time_raw": 806175343.6724635,
+    "observation_time_units": "seconds",
+    "observation_time_epoch": null,
+    "time_synchro_utc_raw": 806175282.4398186,
+    "time_synchro_obt_raw": 806175282.4338461,
+    "numeric_time_interpretation": "observation start/end are documented seconds with no epoch resolved here; synchro UTC/OBT fields remain raw and no offset conversion was inferred",
+    "time_semantics_source_url": "https://datasvc.nmsc.kma.go.kr/resources/common/pdf/%EC%B2%9C%EB%A6%AC%EC%95%88%EC%9C%84%EC%84%B1%202A%ED%98%B8%20%20%EC%9E%90%EB%A3%8C%ED%99%9C%EC%9A%A9%20QA.pdf",
+    "image_shape": [
+      500,
+      500
+    ],
+    "image_dimensions": [
+      "dim_image_y",
+      "dim_image_x"
+    ],
+    "channel_spatial_resolution_km": 2.0,
+    "projection_type": "GEOS",
+    "scene_family": {
+      "satellite_name": "GK-2A",
+      "instrument_name": "AMI",
+      "data_processing_center": "NMSC",
+      "data_processing_mode": "operation",
+      "observation_mode": "LA",
+      "projection_type": "GEOS",
+      "channel_spatial_resolution": "2.0",
+      "mission_reference_time": "20250719_053000",
+      "file_generation_time": "20250719_053600",
+      "file_format_version": "1.0.0_20181120",
+      "geometric_correction_sw_version": "GK2_INRSM_V1.3",
+      "calibration_table_version": "v.3.0_20190415",
+      "number_of_total_swaths": 3,
+      "resampling_kernel_type": "SINC",
+      "image_upperleft_latitude": 0.7709971705416278,
+      "image_upperleft_longitude": 2.0929034164225846
+    },
+    "geos": {
+      "coff": 314.30357081070537,
+      "loff": 2089.571379176208,
+      "cfac": 20425338.903339352,
+      "lfac": -20425338.903339356,
+      "sub_longitude": 2.2375121010567303,
+      "nominal_satellite_height": 42164000.0,
+      "earth_equatorial_radius": 6378137.0,
+      "earth_polar_radius": 6356752.3
+    },
+    "geos_scan_coordinate_origin": "one-based GEOS counts; returned pixel IDs are zero-based array indices",
+    "geos_header_upper_left_rad": {
+      "image_upperleft_latitude": 0.7709971705416278,
+      "image_upperleft_longitude": 2.0929034164225846
+    },
+    "source_files": [
+      {
+        "source_id": "gk2a_ami_le1b_wv063_la020ge_202507190534.nc",
+        "source_path": "/private/tmp/KDM6AD-la-decoding-20261007/originals/gk2a_ami_le1b_wv063_la020ge_202507190534.nc",
+        "sha256": "41d7ad9982dd79f5993de4bf068cd8ec8ee99ffb65b79107755b094d63d70e31",
+        "calibration_tuple_paired": true,
+        "paired_calibration_values": {
+          "DN_to_Radiance_Gain": -0.0108914673328399,
+          "DN_to_Radiance_Offset": 44.1777038574218,
+          "Teff_to_Tbb_c0": -1.76279494011147,
+          "Teff_to_Tbb_c1": 1.00414910562278,
+          "Teff_to_Tbb_c2": -9.83310914319385e-07,
+          "Plank_constant_h": 6.62606957e-34,
+          "light_speed": 299792458.0,
+          "Boltzmann_constant_k": 1.3806488e-23,
+          "channel_center_wavelength": "6.3",
+          "bt_wavenumber_cm1": 1617.60924253134
+        },
+        "paired_bt_wavenumber_cm1": 1617.60924253134,
+        "number_of_valid_bits_per_pixel": 12
+      },
+      {
+        "source_id": "gk2a_ami_le1b_wv069_la020ge_202507190534.nc",
+        "source_path": "/private/tmp/KDM6AD-la-decoding-20261007/originals/gk2a_ami_le1b_wv069_la020ge_202507190534.nc",
+        "sha256": "7af9c3847c918260a85500ca7e2806808f80af5ab2d5d0fe1ef6adce3f875234",
+        "calibration_tuple_paired": true,
+        "paired_calibration_values": {
+          "DN_to_Radiance_Gain": -0.00818779878318309,
+          "DN_to_Radiance_Offset": 66.7480773925781,
+          "Teff_to_Tbb_c0": -0.334311414359106,
+          "Teff_to_Tbb_c1": 1.00097359874468,
+          "Teff_to_Tbb_c2": -4.94603070252304e-07,
+          "Plank_constant_h": 6.62606957e-34,
+          "light_speed": 299792458.0,
+          "Boltzmann_constant_k": 1.3806488e-23,
+          "channel_center_wavelength": "6.9",
+          "bt_wavenumber_cm1": 1441.57542876017
+        },
+        "paired_bt_wavenumber_cm1": 1441.57542876017,
+        "number_of_valid_bits_per_pixel": 13
+      },
+      {
+        "source_id": "gk2a_ami_le1b_wv073_la020ge_202507190534.nc",
+        "source_path": "/private/tmp/KDM6AD-la-decoding-20261007/originals/gk2a_ami_le1b_wv073_la020ge_202507190534.nc",
+        "sha256": "6eb8defec3d77419989efc7088f881037b7470402c89e6b72c8dccadd6a15b16",
+        "calibration_tuple_paired": true,
+        "paired_calibration_values": {
+          "DN_to_Radiance_Gain": -0.0096982717514038,
+          "DN_to_Radiance_Offset": 79.0608520507812,
+          "Teff_to_Tbb_c0": -0.0613124859696595,
+          "Teff_to_Tbb_c1": 1.00019008722941,
+          "Teff_to_Tbb_c2": -1.05863656750499e-07,
+          "Plank_constant_h": 6.62606957e-34,
+          "light_speed": 299792458.0,
+          "Boltzmann_constant_k": 1.3806488e-23,
+          "channel_center_wavelength": "7.3",
+          "bt_wavenumber_cm1": 1365.24999202444
+        },
+        "paired_bt_wavenumber_cm1": 1365.24999202444,
+        "number_of_valid_bits_per_pixel": 13
+      },
+      {
+        "source_id": "gk2a_ami_le1b_ir087_la020ge_202507190534.nc",
+        "source_path": "/private/tmp/KDM6AD-la-decoding-20261007/originals/gk2a_ami_le1b_ir087_la020ge_202507190534.nc",
+        "sha256": "e9b5d3fcac3dcf0e41bb8d64c76366c06c83dec67d62894faede49d310137d1a",
+        "calibration_tuple_paired": true,
+        "paired_calibration_values": {
+          "DN_to_Radiance_Gain": -0.0144806550815701,
+          "DN_to_Radiance_Offset": 118.050903320312,
+          "Teff_to_Tbb_c0": -0.141418528203155,
+          "Teff_to_Tbb_c1": 1.00052232906885,
+          "Teff_to_Tbb_c2": -3.6287276076109e-07,
+          "Plank_constant_h": 6.62606957e-34,
+          "light_speed": 299792458.0,
+          "Boltzmann_constant_k": 1.3806488e-23,
+          "channel_center_wavelength": "8.7",
+          "bt_wavenumber_cm1": 1164.94939285634
+        },
+        "paired_bt_wavenumber_cm1": 1164.94939285634,
+        "number_of_valid_bits_per_pixel": 13
+      },
+      {
+        "source_id": "gk2a_ami_le1b_ir096_la020ge_202507190534.nc",
+        "source_path": "/private/tmp/KDM6AD-la-decoding-20261007/originals/gk2a_ami_le1b_ir096_la020ge_202507190534.nc",
+        "sha256": "7f5f77cb89c52901d8a43f3ed6abf033fd794744f81c97d77e4604b97bbf1123",
+        "calibration_tuple_paired": true,
+        "paired_calibration_values": {
+          "DN_to_Radiance_Gain": -0.0178435463458299,
+          "DN_to_Radiance_Offset": 145.464874267578,
+          "Teff_to_Tbb_c0": -0.114017728158198,
+          "Teff_to_Tbb_c1": 1.00047380585402,
+          "Teff_to_Tbb_c2": -3.74931509928403e-07,
+          "Plank_constant_h": 6.62606957e-34,
+          "light_speed": 299792458.0,
+          "Boltzmann_constant_k": 1.3806488e-23,
+          "channel_center_wavelength": "9.6",
+          "bt_wavenumber_cm1": 1039.96021677611
+        },
+        "paired_bt_wavenumber_cm1": 1039.96021677611,
+        "number_of_valid_bits_per_pixel": 13
+      },
+      {
+        "source_id": "gk2a_ami_le1b_ir105_la020ge_202507190534.nc",
+        "source_path": "/private/tmp/KDM6AD-la-decoding-20261007/originals/gk2a_ami_le1b_ir105_la020ge_202507190534.nc",
+        "sha256": "49ed9109637c68465c3d19938b0c794092dcb50b92afb7105ce0d687803789ce",
+        "calibration_tuple_paired": true,
+        "paired_calibration_values": {
+          "DN_to_Radiance_Gain": -0.0198196955025196,
+          "DN_to_Radiance_Offset": 161.580139160156,
+          "Teff_to_Tbb_c0": -0.142866448475177,
+          "Teff_to_Tbb_c1": 1.00064069572049,
+          "Teff_to_Tbb_c2": -5.50443294960498e-07,
+          "Plank_constant_h": 6.62606957e-34,
+          "light_speed": 299792458.0,
+          "Boltzmann_constant_k": 1.3806488e-23,
+          "channel_center_wavelength": "10.5",
+          "bt_wavenumber_cm1": 966.153383926055
+        },
+        "paired_bt_wavenumber_cm1": 966.153383926055,
+        "number_of_valid_bits_per_pixel": 13
+      },
+      {
+        "source_id": "gk2a_ami_le1b_ir112_la020ge_202507190534.nc",
+        "source_path": "/private/tmp/KDM6AD-la-decoding-20261007/originals/gk2a_ami_le1b_ir112_la020ge_202507190534.nc",
+        "sha256": "1fbc558723a61c0b48b3c3c635953db6ef1187048816a653ee54f4bbe519445f",
+        "calibration_tuple_paired": true,
+        "paired_calibration_values": {
+          "DN_to_Radiance_Gain": -0.0216744858771562,
+          "DN_to_Radiance_Offset": 176.713439941406,
+          "Teff_to_Tbb_c0": -0.249111718496148,
+          "Teff_to_Tbb_c1": 1.00121166873756,
+          "Teff_to_Tbb_c2": -1.13167964011665e-06,
+          "Plank_constant_h": 6.62606957e-34,
+          "light_speed": 299792458.0,
+          "Boltzmann_constant_k": 1.3806488e-23,
+          "channel_center_wavelength": "11.2",
+          "bt_wavenumber_cm1": 891.71305730126
+        },
+        "paired_bt_wavenumber_cm1": 891.71305730126,
+        "number_of_valid_bits_per_pixel": 13
+      },
+      {
+        "source_id": "gk2a_ami_le1b_ir123_la020ge_202507190534.nc",
+        "source_path": "/private/tmp/KDM6AD-la-decoding-20261007/originals/gk2a_ami_le1b_ir123_la020ge_202507190534.nc",
+        "sha256": "5db08c2dd09bab839cef2358ee73a581f009a1daf7b1b67ba8008e79a2979479",
+        "calibration_tuple_paired": true,
+        "paired_calibration_values": {
+          "DN_to_Radiance_Gain": -0.023379972204566,
+          "DN_to_Radiance_Offset": 190.649627685546,
+          "Teff_to_Tbb_c0": -0.458113885722738,
+          "Teff_to_Tbb_c1": 1.00245520975535,
+          "Teff_to_Tbb_c2": -2.53064314720476e-06,
+          "Plank_constant_h": 6.62606957e-34,
+          "light_speed": 299792458.0,
+          "Boltzmann_constant_k": 1.3806488e-23,
+          "channel_center_wavelength": "12.3",
+          "bt_wavenumber_cm1": 810.60900787123
+        },
+        "paired_bt_wavenumber_cm1": 810.60900787123,
+        "number_of_valid_bits_per_pixel": 13
+      },
+      {
+        "source_id": "gk2a_ami_le1b_ir133_la020ge_202507190534.nc",
+        "source_path": "/private/tmp/KDM6AD-la-decoding-20261007/originals/gk2a_ami_le1b_ir133_la020ge_202507190534.nc",
+        "sha256": "2154db4fa622b39e11af9227cbe7d2aba0b544903d746f9a93c900415b315c70",
+        "calibration_tuple_paired": true,
+        "paired_calibration_values": {
+          "DN_to_Radiance_Gain": -0.0243037566542625,
+          "DN_to_Radiance_Offset": 198.224365234375,
+          "Teff_to_Tbb_c0": -0.0938521568527657,
+          "Teff_to_Tbb_c1": 1.00053982112966,
+          "Teff_to_Tbb_c2": -5.94913715312849e-07,
+          "Plank_constant_h": 6.62606957e-34,
+          "light_speed": 299792458.0,
+          "Boltzmann_constant_k": 1.3806488e-23,
+          "channel_center_wavelength": "13.3",
+          "bt_wavenumber_cm1": 753.590621482278
+        },
+        "paired_bt_wavenumber_cm1": 753.590621482278,
+        "number_of_valid_bits_per_pixel": 13
+      }
+    ],
+    "pixel_index_semantics": "pixel_rows/pixel_cols align with payload rows and give original LA image indices after stride sampling and finite-GEOS-footprint filtering",
+    "stride": 1
+  },
+  "channels": {
+    "wv063": {
+      "dqf_exact": true,
+      "bt_max_abs_difference_K": 5.684341886080802e-14,
+      "quality_counts": {
+        "0": 250000
+      },
+      "bt_min_K": 211.59737599527517,
+      "bt_max_K": 250.53526461687446
+    },
+    "wv069": {
+      "dqf_exact": true,
+      "bt_max_abs_difference_K": 5.684341886080802e-14,
+      "quality_counts": {
+        "0": 250000
+      },
+      "bt_min_K": 211.71355904669636,
+      "bt_max_K": 260.49591360639977
+    },
+    "wv073": {
+      "dqf_exact": true,
+      "bt_max_abs_difference_K": 5.684341886080802e-14,
+      "quality_counts": {
+        "0": 250000
+      },
+      "bt_min_K": 212.45691589956814,
+      "bt_max_K": 267.81794264385235
+    },
+    "ir087": {
+      "dqf_exact": true,
+      "bt_max_abs_difference_K": 5.684341886080802e-14,
+      "quality_counts": {
+        "0": 250000
+      },
+      "bt_min_K": 212.83699531167719,
+      "bt_max_K": 299.6932150976555
+    },
+    "ir096": {
+      "dqf_exact": true,
+      "bt_max_abs_difference_K": 5.684341886080802e-14,
+      "quality_counts": {
+        "0": 250000
+      },
+      "bt_min_K": 220.0172787835917,
+      "bt_max_K": 270.6890089304444
+    },
+    "ir105": {
+      "dqf_exact": true,
+      "bt_max_abs_difference_K": 5.684341886080802e-14,
+      "quality_counts": {
+        "0": 250000
+      },
+      "bt_min_K": 212.82890509757797,
+      "bt_max_K": 302.50418088385965
+    },
+    "ir112": {
+      "dqf_exact": true,
+      "bt_max_abs_difference_K": 1.1368683772161603e-13,
+      "quality_counts": {
+        "0": 250000
+      },
+      "bt_min_K": 212.74348707727344,
+      "bt_max_K": 300.6899065031255
+    },
+    "ir123": {
+      "dqf_exact": true,
+      "bt_max_abs_difference_K": 1.1368683772161603e-13,
+      "quality_counts": {
+        "0": 250000
+      },
+      "bt_min_K": 212.41135590246688,
+      "bt_max_K": 295.17342408351533
+    },
+    "ir133": {
+      "dqf_exact": true,
+      "bt_max_abs_difference_K": 1.1368683772161603e-13,
+      "quality_counts": {
+        "0": 250000
+      },
+      "bt_min_K": 212.99671783003606,
+      "bt_max_K": 276.6791774779842
+    }
+  },
+  "n_pixels": 250000,
+  "n_channel_values": 2250000,
+  "latitude_range": [
+    31.09942685299624,
+    44.17488388856282
+  ],
+  "longitude_range": [
+    119.91453268952527,
+    133.08992430642394
+  ],
+  "forward_projection_max_pixel_error": {
+    "row": 3.2741809263825417e-11,
+    "column": 4.661160346586257e-12
+  },
+  "input_hashes": {
+    "gk2a_ami_le1b_ir087_la020ge_202507190534.nc": "e9b5d3fcac3dcf0e41bb8d64c76366c06c83dec67d62894faede49d310137d1a",
+    "gk2a_ami_le1b_ir096_la020ge_202507190534.nc": "7f5f77cb89c52901d8a43f3ed6abf033fd794744f81c97d77e4604b97bbf1123",
+    "gk2a_ami_le1b_ir105_la020ge_202507190534.nc": "49ed9109637c68465c3d19938b0c794092dcb50b92afb7105ce0d687803789ce",
+    "gk2a_ami_le1b_ir112_la020ge_202507190534.nc": "1fbc558723a61c0b48b3c3c635953db6ef1187048816a653ee54f4bbe519445f",
+    "gk2a_ami_le1b_ir123_la020ge_202507190534.nc": "5db08c2dd09bab839cef2358ee73a581f009a1daf7b1b67ba8008e79a2979479",
+    "gk2a_ami_le1b_ir133_la020ge_202507190534.nc": "2154db4fa622b39e11af9227cbe7d2aba0b544903d746f9a93c900415b315c70",
+    "gk2a_ami_le1b_wv063_la020ge_202507190534.nc": "41d7ad9982dd79f5993de4bf068cd8ec8ee99ffb65b79107755b094d63d70e31",
+    "gk2a_ami_le1b_wv069_la020ge_202507190534.nc": "7af9c3847c918260a85500ca7e2806808f80af5ab2d5d0fe1ef6adce3f875234",
+    "gk2a_ami_le1b_wv073_la020ge_202507190534.nc": "6eb8defec3d77419989efc7088f881037b7470402c89e6b72c8dccadd6a15b16"
+  },
+  "source_hashes": {
+    "oracle/kdm6/obs/gk2a_l1b_la.py": "67c4d2abd1c16f55d6909edeef1549b0ce2e8e449b9b3f64e7185b4d34b083db",
+    "oracle/kdm6/obs/gk2a_l1b.py": "c16195e581e847053c1f7e63c6cd93deaaba0e51d84a1f7eea092c95c180f4b8",
+    "oracle/kdm6/obs/gk2a_l1b_fd.py": "0c2c87a316680ba359f13336d3e7c87ca9c0bd9eab726f1b7cde469a87b1387e",
+    "oracle/kdm6/obs/obs_ingest.py": "224ff9d1f9e5c8557238db8e3f8a31650ca0faeb720e40394bd8c1d1666ced0d"
+  },
+  "producer_sha256": "d439949649fa05eb7197df72f38e2c0eee8d1ba3e293b08d20a4e93463ce3123",
+  "table_sha256": "a6f830aa04e19f6982aa6ff36e832464a5b32fdcf8200211956969d5eb48325d",
+  "decoded_sha256": "ad748418ef9deec0129949c8abc6b3b31a704394d6deb382d7f05c987059ab09",
+  "scientific_phase_verified": false,
+  "model_collocated": false,
+  "actual_utc_verified": false,
+  "scope": "one retained LA scene; real image values/DQF/BT/nominal GEOS read; no KDM/RTTOV/model run",
+  "decoded_array_storage": "full 250000x9 arrays retained locally; public originals+producer reproduce them; receipt fixed subset only",
+  "decoded_array_local_path": "/private/tmp/KDM6AD-la-decoding-verified-20261007/decoded.npz",
+  "radiance_units": "mW m^-2 sr^-1 (cm^-1)^-1",
+  "validation": {
+    "focused_passed": 26,
+    "focused_skipped": 2,
+    "public_only_passed": 1705,
+    "public_only_skipped": 93,
+    "public_only_warnings": 51,
+    "overlapping_counts": true
+  },
+  "time_semantics_primary_source": {
+    "url": "https://datasvc.nmsc.kma.go.kr/resources/common/pdf/%EC%B2%9C%EB%A6%AC%EC%95%88%EC%9C%84%EC%84%B1%202A%ED%98%B8%20%20%EC%9E%90%EB%A3%8C%ED%99%9C%EC%9A%A9%20QA.pdf",
+    "pdf_sha256": "ccefeaffc9550efa327f62db6f0d6d4b60ed4eb2a6faa559645dbe33892bb1bb",
+    "pdf_page": 20,
+    "scene_clock": "OBT",
+    "planned_clock": "UTC",
+    "actual_utc_resolved": false
+  }
+}

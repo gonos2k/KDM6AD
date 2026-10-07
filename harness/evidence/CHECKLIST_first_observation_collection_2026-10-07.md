@@ -11,9 +11,10 @@ substituted for the current native 5 km model.
 | 1. Separate data roles | Sensor calibration, independent atmosphere/cloud observations, and new model–observation pairs have distinct roles | DONE — roles below and packet metadata |
 | 2. Locate actual public files | Granule IDs, intervals, footprint metadata, access outcomes and hashes | DONE for a bounded first search; not a complete seasonal catalogue |
 | 3. Acquire a small raw observation subset | Original bytes, hashes, original metadata and missing-field declarations | PARTIAL — nine AMI LA thermal originals and four Anmado sounding records; MODIS/EarthCARE science files not acquired |
+| 3a. Decode the acquired LA slot | Ordered BT/DQF/radiance/nominal GEOS positions and original pixel indices from the unchanged files | DONE within the retained nine-channel 500×500 format — REPORT_LA_decode_2026-10-07.md; no actual UTC/phase/model match |
 | 4. Read independent cloud science QA | Verify liquid/ice/mixed phase, layering, uncertainty and precipitation contamination | OPEN — every candidate's phase remains unknown |
 | 5. Establish pixel/time/footprint correspondence | Actual scan time, geometry, surface and independent profile location checked | OPEN — bbox/scene overlap alone is insufficient |
-| 6. Produce corresponding native model states | Same current 5 km model's center/interface pressure, T/Q/hydrometeors preserved at observed time | OPEN — retained output ends 00:00:40; new candidate window is 05:34 |
+| 6. Produce corresponding native model states | Same current 5 km model's center/interface pressure, T/Q/hydrometeors preserved at observed time | OPEN — retained output ends 00:00:40 UTC; LA 05:34 filename/scene labels are OBT and not yet verified UTC |
 | 7. Complete first research bundles | Warm-liquid acceptance first; cold-season availability collected in parallel for one or two ice/mixed-phase cases | OPEN — three warm-liquid cases are not phase-verified; Nov 2025–Mar 2026 search not performed |
 | 8. Accumulate residuals and uncertainty | Sensor bias separate from O–B; event-level design/validation separation; unresolved components labelled | OPEN — no sigma/bias fit from these metadata |
 
@@ -55,17 +56,19 @@ do not extend that negative result to all dates or the whole mission.
 Nine actual NOAA LA thermal originals were acquired (AMI 8–16): eight new
 downloads plus the reused IR105 sample, totaling 4,414,025 bytes. Every file was
 size-checked and SHA-256 pinned. All nine headers
-report the same scene string, calibration version and GEOS 500×500 grid; no
-image pixel array was read and no DQF bits were decoded or counted. The earlier
+report the same scene string, calibration version and GEOS 500×500 grid. At the
+PR #382 acquisition stage, no image pixels or DQF bits were read. The subsequent
+explicit LA read is recorded separately below. The earlier
 IR105 receipt preserves a header-reported error-pixel count, which is distinct
 from independently inspecting pixel DQF. The IR105 example is:
 `AMI/L1B/LA/202507/19/05/gk2a_ami_le1b_ir105_la020ge_202507190534.nc`,
 531,907 bytes, SHA-256
 `49ed9109637c68465c3d19938b0c794092dcb50b92afb7105ce0d687803789ce`.
-Its scene acquisition is **05:34:42**, and its header declares LA, GEOS,
+Its scene acquisition string is **05:34:42 OBT**, and its header declares LA, GEOS,
 500×500, 2 km and KMA calibration v.3.0_20190415. Scene time and the EarthCARE
-interval are only coarse scene/orbit timing candidates; no specific AMI pixel QA,
-cloud phase or joint footprint has been inspected. Exact ELA prefixes returned
+interval are calendar-label candidates only; OBT has not been converted to UTC.
+Pixel DQF is now decoded, but cloud phase and joint footprint remain unverified.
+Exact ELA prefixes returned
 zero objects in the bounded queries; LA availability does not certify KO/ELA.
 
 Anmado `KSM00047269` (35.3469 N, 126.0305 E) has four acquired raw sounding
@@ -103,8 +106,15 @@ These are concrete substeps of the existing user plan, not new approval gates.
 
 | Detail | Current evidence | Remaining work |
 | --- | --- | --- |
-| LA ingestion | LA GEOS and calibration metadata exist; all nine calibration tuples match the shipped decoder table in this audit | Current KO/FD reader filename contracts reject LA020GE; add an explicit LA bridge preserving scene-time metadata, without relabelling LA as FD or KO |
+| LA ingestion | Dedicated LA reader decoded all nine unchanged originals; BT/DQF and one-based GEOS/header anchors verified | Actual UTC/scan-time interpretation and science/model correspondence remain open; legacy KO/FD contracts are not silently changed |
 | Calibration and response | Decoder coefficient table and header version agree | Original SRF/processing identity and GSICS files not acquired; IR133 response compatibility remains S11 work |
 | Independent water/phase | MODIS/EarthCARE catalogue records only | Science QA/phase still unread; AMSR2 LWP and footprint metadata, or an equivalent independent LWP source, have not been queried/acquired |
 | Cold-season availability | Current searches cover summer candidates | Nov 2025–Mar 2026 ice/mixed-phase search not performed; parallel collection is planned, not completed |
 | Pixel time and model time | Scene and orbit interval metadata only | Resolve the region's actual EarthCARE sample time, AMI scan time/footprint and corresponding native model output |
+
+The official NMSC metadata guide identifies scene/filename time as OBT and
+mission reference time as planned UTC. New LA outputs preserve these roles and
+leave `valid_time_utc` unset. Earlier filename labels/15-second nominal differences
+must not be read as verified simultaneous UTC samples. Existing KO/FD filename-
+time and FD pixel-coordinate conventions need separate verification before
+physical matching; historical numerical receipts remain unchanged.
