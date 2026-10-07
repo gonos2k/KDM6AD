@@ -10,10 +10,10 @@ substituted for the current native 5 km model.
 | --- | --- | --- |
 | 1. Separate data roles | Sensor calibration, independent atmosphere/cloud observations, and new model–observation pairs have distinct roles | DONE — roles below and packet metadata |
 | 2. Locate actual public files | Granule IDs, intervals, footprint metadata, access outcomes and hashes | DONE for a bounded first search; not a complete seasonal catalogue |
-| 3. Acquire a small raw observation subset | Original bytes, hashes, original metadata and missing-field declarations | PARTIAL — nine AMI LA thermal originals and four Anmado sounding records; MODIS/EarthCARE science files not acquired |
+| 3. Acquire a small raw observation subset | Original bytes, hashes, original metadata and missing-field declarations | PARTIAL — AMI LA originals, four Anmado sounding records and actual NOAA-20 VIIRS CloudPhase originals; MODIS/EarthCARE science files not acquired |
 | 3a. Decode the acquired LA slot | Ordered BT/DQF/radiance/nominal GEOS positions and original pixel indices from the unchanged files | DONE within the retained nine-channel 500×500 format — REPORT_LA_decode_2026-10-07.md; no actual UTC/phase/model match |
-| 4. Read independent cloud science QA | Verify liquid/ice/mixed phase, layering, uncertainty and precipitation contamination | OPEN — every candidate's phase remains unknown |
-| 5. Establish pixel/time/footprint correspondence | Actual scan time, geometry, surface and independent profile location checked | OPEN — bbox/scene overlap alone is insufficient |
+| 4. Read independent cloud science QA | Verify liquid/ice/mixed phase, layering, uncertainty and precipitation contamination | PARTIAL — VIIRS phase codes/raw QA actually read and NOAA meanings documented; selected liquid-category candidate, QA packing/vertical structure/contamination remain unapproved |
+| 5. Establish pixel/time/footprint correspondence | Actual scan time, geometry, surface and independent profile location checked | PARTIAL — actual native-grid and nearby AMI nominal centers identified; UTC/scan/footprint/parallax remain open |
 | 6. Produce corresponding native model states | Same current 5 km model's center/interface pressure, T/Q/hydrometeors preserved at observed time | OPEN — retained C5 output ends at 00:00:40 UTC. Satpy v0.57.0 yields a conditional naive 05:34:42–05:35:43 calendar interval from numeric header seconds, but UTC, pixel time and correspondence remain unverified; see [LA time-contract audit](REPORT_LA_time_contract_2026-10-07.md) |
 | 7. Complete first research bundles | Warm-liquid acceptance first; cold-season availability collected in parallel for one or two ice/mixed-phase cases | OPEN — three warm-liquid cases are not phase-verified; Nov 2025–Mar 2026 search not performed |
 | 8. Accumulate residuals and uncertainty | Sensor bias separate from O–B; event-level design/validation separation; unresolved components labelled | OPEN — no sigma/bias fit from these metadata |
@@ -108,7 +108,7 @@ These are concrete substeps of the existing user plan, not new approval gates.
 | --- | --- | --- |
 | LA ingestion | Dedicated LA reader decoded all nine unchanged originals; BT/DQF and one-based GEOS/header anchors verified | Actual UTC/scan-time interpretation and science/model correspondence remain open; legacy KO/FD contracts are not silently changed |
 | Calibration and response | Decoder coefficient table and header version agree | Original SRF/processing identity and GSICS files not acquired; IR133 response compatibility remains S11 work |
-| Independent water/phase | MODIS/EarthCARE catalogue records only | Science QA/phase still unread; AMSR2 LWP and footprint metadata, or an equivalent independent LWP source, have not been queried/acquired |
+| Independent water/phase | MODIS/EarthCARE catalogues; actual NOAA-20 VIIRS phase/raw QA now read | Full QA semantics/vertical phase approval remain open; independent LWP still unacquired |
 | Cold-season availability | Current searches cover summer candidates | Nov 2025–Mar 2026 ice/mixed-phase search not performed; parallel collection is planned, not completed |
 | Pixel time and model time | Pinned Satpy source gives a conditional naive calendar interval from LA numeric seconds; reader keeps `valid_time_utc=None` | Still open: establish numeric epoch/clock semantics, actual AMI scan/pixel time, footprint and matching native model state; see [LA time-contract audit](REPORT_LA_time_contract_2026-10-07.md) |
 
@@ -118,3 +118,13 @@ leave `valid_time_utc` unset. Earlier filename labels/15-second nominal differen
 must not be read as verified simultaneous UTC samples. Existing KO/FD filename-
 time and FD pixel-coordinate conventions need separate verification before
 physical matching; historical numerical receipts remain unchanged.
+
+## First actual independent science execution
+
+[VIIRS/native candidate report](REPORT_VIIRS_native_candidate_2026-10-07.md):
+official Google/Azure copies provide the Jul 19 VIIRS CloudPhase originals even
+though checked AWS 2025 prefixes are empty. The 05:55:47–05:57:10 UTC granule has
+a raw code-1/QA-0 marine candidate near native (j=86,i=48), and a newly decoded
+AMI LA 05:56 nominal center is nearby. This is not the old LA 05:34/MODIS 00:45
+pair. Product QA, actual pixel times/footprints and a target-time native model
+state are still required before the first scientific correspondence is complete.

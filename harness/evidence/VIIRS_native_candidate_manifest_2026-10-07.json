@@ -1,0 +1,90 @@
+{
+  "AMI_0556/gk2a_ami_le1b_wv063_la020ge_202507190556.nc": {
+    "sha256": "83b97370fac7df350db462a2024e53255a01b7bc7c69e7d45ea0168f348d8754",
+    "bytes": 357789
+  },
+  "AMI_0556/gk2a_ami_le1b_ir096_la020ge_202507190556.nc": {
+    "sha256": "40f5cbcdd1bf15485cf3ddc116f4a3d7699701f230810d49f04942d6d5ee102a",
+    "bytes": 500536
+  },
+  "AMI_0556/gk2a_ami_le1b_wv073_la020ge_202507190556.nc": {
+    "sha256": "470eab1587fa70e56dfb3745dd402f5619aba4bc6d11b0844fa6987602c3c7f0",
+    "bytes": 477776
+  },
+  "AMI_0556/gk2a_ami_le1b_wv069_la020ge_202507190556.nc": {
+    "sha256": "0c7fea702b255db8c9273d494d2e4b9c5ec86dca442e6059ebf9d91a9a8968e6",
+    "bytes": 456481
+  },
+  "AMI_0556/gk2a_ami_le1b_ir105_la020ge_202507190556.nc": {
+    "sha256": "824ee57213da084e8f3f129fd2767cee1f68e0bb10ef101d7419b7c4ec3ea889",
+    "bytes": 532071
+  },
+  "AMI_0556/gk2a_ami_le1b_ir112_la020ge_202507190556.nc": {
+    "sha256": "8370508b1c70364085311772bd9b092876be7a7b6accf8ed71112172550f647d",
+    "bytes": 530010
+  },
+  "AMI_0556/gk2a_ami_le1b_ir123_la020ge_202507190556.nc": {
+    "sha256": "19d1a4a9c60bee40cd6c7efe8a760189d72aa3f8f488b168cb8e35fc3963542f",
+    "bytes": 524322
+  },
+  "AMI_0556/gk2a_ami_le1b_ir087_la020ge_202507190556.nc": {
+    "sha256": "d98e0b5cd785c75f160982eacf57fb749674f4f0c471f27e1377dfa2767f2b50",
+    "bytes": 529492
+  },
+  "AMI_0556/gk2a_ami_le1b_ir133_la020ge_202507190556.nc": {
+    "sha256": "6440ea866f17f9336abed1d0f52329a2ec29d3ad89908a26320535473019835d",
+    "bytes": 506925
+  },
+  "AMI_0556/slot_receipt.json": {
+    "sha256": "8728b0dccc35c0bbb0f646524ca1745040b23265aca689347bc706d28eb4f53e",
+    "bytes": 9422
+  },
+  "AMI_0556/README.md": {
+    "sha256": "26caa88cfb621fc6e19260398a39e250ce5dee926a1812491beec37858d492b3",
+    "bytes": 1571
+  },
+  "AMI_0556/s3_listing.xml": {
+    "sha256": "498d03b7042b105eee32f1703d383b162695c6614fc740e9524a238b6906f76b",
+    "bytes": 169830
+  },
+  "VIIRS_selected/selected_viirs_attributes.json": {
+    "sha256": "ada0302a1889e60cb4893b651155a3ff01cf4239245d692fe47cbbb8567d6aeb",
+    "bytes": 2937
+  },
+  "VIIRS_selected/selected_viirs_5x5_raw.npz": {
+    "sha256": "bba892e1fb519a8d000e60d96d11380ed9f72520e9a78e01ceb588ef5db7479e",
+    "bytes": 1615
+  },
+  "VIIRS_selected/README.md": {
+    "sha256": "34f72d42934b14c5c092f43f7fde36abdc767f5155edcb669f916d4e398843a0",
+    "bytes": 357
+  },
+  "listings/gcs_noaa20_cloudphase_20250719.json": {
+    "sha256": "aa3d31c2b9a51371939bd35a4c8ca2889b9eed6575acfa4cea21a6a28851e5b3",
+    "bytes": 211738
+  },
+  "listings/azure_noaa20_cloudphase_20250719.xml": {
+    "sha256": "b949238c9c9d447e81c0a14e188879b99f2c8159209e2596af83f4651d12d819",
+    "bytes": 683011
+  },
+  "listings/aws_noaa-nesdis-n21-pds_cloudphase_2025.xml": {
+    "sha256": "5825d22c7c30a5059d57ad5c89a3fbafe641215d6fed4e97ec12cbad5f7cf983",
+    "bytes": 297
+  },
+  "listings/aws_noaa-nesdis-snpp-pds_cloudphase_2025.xml": {
+    "sha256": "eb051c315388f8e0ebd03c7546d88a9e6bc8abdb11d0177192854ab9ad457135",
+    "bytes": 298
+  },
+  "listings/aws_noaa-nesdis-n20-pds_cloudphase_2025.xml": {
+    "sha256": "bd175fb4c7329931afe7216a6545011514fee088d593fc377eb523cc2a808d71",
+    "bytes": 297
+  },
+  "NOAA_JPSS_CloudPhase_crosscloud_2026-10-07.json": {
+    "sha256": "0cc85c4715ed2cd56c7ed4af3e02ee8ebef21c84cc030bc00bfe45d358a41ec4",
+    "bytes": 30984
+  },
+  "README_NOAA_JPSS_CloudPhase_crosscloud_2026-10-07.md": {
+    "sha256": "b51be2f6db46b357a933afa83e244904636eb9fe7df4d0622ee4c37f4d0cd8e3",
+    "bytes": 3051
+  }
+}

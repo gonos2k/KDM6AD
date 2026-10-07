@@ -131,6 +131,18 @@ drive a data-derived UTC model offset. Raw synchronization fields are preserved;
 actual UTC conversion, pixel scan times and physical correspondence remain open.
 See [actual LA decoding](../harness/evidence/REPORT_LA_decode_2026-10-07.md).
 
+## First independent cloud science candidate
+
+The [VIIRS/native execution](../harness/evidence/REPORT_VIIRS_native_candidate_2026-10-07.md)
+acquired and read actual NOAA-20 CloudPhase originals from official public
+Google/Azure copies, then screened against native `XLAT/XLONG/XLAND`. A liquid
+retrieval-category candidate near (35.416 N, 122.143 E) has a nearby decoded
+AMI LA 05:56 center. Original phase/QA and granule time are retained; nominal
+centers are not footprint/parallax or pixel-time matches. The retrieval uses
+ancillary models and is not ground truth. Full QA, warm-column evidence and
+the corresponding target-time native state remain open. Continue R2 with this
+bounded case rather than adding loss options or treating catalogue files as cases.
+
 ## Numerical artifact acceptance for fixed errors
 
 When evaluating an actual fixed-error normalized KMA report, explicitly call

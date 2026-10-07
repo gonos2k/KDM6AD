@@ -8,7 +8,7 @@ results remain closed within their demonstrated scope.
 | ID | Work type | Item | Completion evidence | Status |
 | --- | --- | --- | --- | --- |
 | R1 | Data / physical decision | Declare dry mass/number coordinates, thresholds, admissible states and the separate runtime/optical/inventory density roles for one supported regime | Explicit source/units/state-domain record; unapproved assumptions labelled; no tuning to the residual | OPEN — existing conditional conventions available, physical approval remains separate |
-| R2 | Data / case selection | Bind one native model case to observation product, pixel/scan time, geometry/surface and footprint | Identified inputs and actual correspondence, with unresolved lineage/time fields explicit | OPEN / COLLECTION STARTED — actual public metadata, nine AMI thermal originals and four sounding records acquired; QA/pixel correspondence/aligned native model remain missing; CHECKLIST_first_observation_collection_2026-10-07.md |
+| R2 | Data / case selection | Bind one native model case to observation product, pixel/scan time, geometry/surface and footprint | Identified inputs and actual correspondence, with unresolved lineage/time fields explicit | OPEN / SCIENCE READ — actual NOAA-20 VIIRS phase/raw QA read; marine nominal native-grid candidate and nearby LA 05:56 BT/DQF demonstrated; full QA/time/footprint and target-time native state remain missing; REPORT_VIIRS_native_candidate_2026-10-07.md |
 | A1 | Code integration | Carry fixed channel sigma and observation-additive bias through upper analysis, frozen closure, clear/all-sky cost and worker | Same ordered weights/correction in value, VJP, final innovations and saved output; old diagnostic route unchanged | CLOSED — bounded integration; REPORT_fixed_obs_errors_2026-10-07.md |
 | A2 | Code / prior decision | Expose existing diagonal CVT control/prior choices without inventing a new B model | Predeclared controlled fields and prior scales reach the minimizer and result metadata; NC-fixed versus NC-enabled comparison can be specified | CLOSED — bounded state-prior integration and actual one-iteration comparison; REPORT_state_prior_controls_2026-10-07.md; scientific B remains uncalibrated |
 | A3 | Verification | Verify the A1 objective and its snapshots | Nonuniform sigma/nonzero bias AD–FD, mutation resistance, channel/column ordering, worker-route loss consistency and rejection tests; source/code evidence attributed | CLOSED — 89 focused / 2 skips, selected actual KDM→RTTOV cost FD; REPORT_fixed_obs_errors_2026-10-07.md |
@@ -52,3 +52,10 @@ this new input guard is verified separately and is not a new meteorological run.
 The [actual LA decoder evidence](REPORT_LA_decode_2026-10-07.md) closes the
 bounded reader/BT/DQF/nominal-GEOS step of R2. OBT-to-UTC/scan interpretation,
 independent cloud science QA and a native model correspondence remain open.
+
+The [first independent science execution](REPORT_VIIRS_native_candidate_2026-10-07.md)
+now reads VIIRS CloudPhase originals from official Google/Azure copies and the
+nearby AMI 05:56 slot. A nominal marine candidate lies within the actual native
+grid, not merely its rectangle. R2 remains OPEN: raw phase/QA, granule time and
+nearest centers do not certify a warm single layer, pixel time, footprint or
+target-time native atmospheric state. No new forecast or calibrated R/B was produced.
