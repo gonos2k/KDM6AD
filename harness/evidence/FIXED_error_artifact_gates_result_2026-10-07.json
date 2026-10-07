@@ -1,0 +1,212 @@
+{
+  "baseline": "810c9486e3295d4dc9804fbe68044f7bea5c0b01",
+  "scope": "synthetic acceptance-policy counterexamples plus archived report evaluation; no new KDM/RTTOV/model execution",
+  "cases": {
+    "bias": {
+      "report": {
+        "fixed_obs_errors": true,
+        "obs_error_source": "synthetic counterexample",
+        "normalized_dry": true,
+        "bt_coordinate": "kma_v3_0",
+        "observation_coordinate": "kma_v3_0",
+        "n_subspace": 1,
+        "obs_sigma_K": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "obs_bias_shape": [
+          1,
+          9
+        ],
+        "obs_bias_signature": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "obs_bias_definition": "added_to_observation",
+        "huber_delta_coordinate": "standardized_residual",
+        "omb": 0.0,
+        "oma": 2.0,
+        "omb_corrected": 2.0,
+        "oma_corrected": 0.0,
+        "omb_standardized": 2.0,
+        "oma_standardized": 0.0,
+        "j_trace": [
+          {
+            "total": 1.5
+          },
+          {
+            "total": 0.1,
+            "j_state": 0.1,
+            "j_theta": 0.0,
+            "j_obs": 0.0
+          }
+        ],
+        "jb_final": 0.1,
+        "jobs_final": 0.0,
+        "jtheta_final": 0.0,
+        "n_window_evals": 1,
+        "n_audit_evals": 1,
+        "grad_norm_final": 1.0,
+        "grad_theta_norm_final": 0.0,
+        "pathology_t0": {},
+        "pathology_slot": {},
+        "nonfinite_fields_t0": [],
+        "nonfinite_fields_slot": []
+      },
+      "legacy": {
+        "j_descended": true,
+        "pathology_t0_empty": true,
+        "pathology_slot_empty": true,
+        "no_nonfinite_t0": true,
+        "no_nonfinite_slot": true,
+        "finite_diagnostics": true,
+        "fixed_error_marker": false,
+        "oma_le_omb": false,
+        "final_audited": true,
+        "accepted": false
+      },
+      "fixed_objective": {
+        "j_descended": true,
+        "pathology_t0_empty": true,
+        "pathology_slot_empty": true,
+        "no_nonfinite_t0": true,
+        "no_nonfinite_slot": true,
+        "finite_diagnostics": true,
+        "fixed_error_marker": true,
+        "fixed_error_metadata": true,
+        "finite_innovation_diagnostics": true,
+        "final_audited": true,
+        "accepted": true
+      }
+    },
+    "channel_sigma": {
+      "report": {
+        "fixed_obs_errors": true,
+        "obs_error_source": "synthetic counterexample",
+        "normalized_dry": true,
+        "bt_coordinate": "kma_v3_0",
+        "observation_coordinate": "kma_v3_0",
+        "n_subspace": 1,
+        "obs_sigma_K": [
+          1.0,
+          10.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "obs_bias_shape": [
+          1,
+          9
+        ],
+        "obs_bias_signature": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "obs_bias_definition": "added_to_observation",
+        "huber_delta_coordinate": "standardized_residual",
+        "omb": 1.0,
+        "oma": 1.5,
+        "omb_corrected": 1.0,
+        "oma_corrected": 1.5,
+        "omb_standardized": 1.0,
+        "oma_standardized": 0.15,
+        "j_trace": [
+          {
+            "total": 1.5
+          },
+          {
+            "total": 0.14500000000000002,
+            "j_state": 0.1,
+            "j_theta": 0.0,
+            "j_obs": 0.045
+          }
+        ],
+        "jb_final": 0.1,
+        "jobs_final": 0.045,
+        "jtheta_final": 0.0,
+        "n_window_evals": 1,
+        "n_audit_evals": 1,
+        "grad_norm_final": 1.0,
+        "grad_theta_norm_final": 0.0,
+        "pathology_t0": {},
+        "pathology_slot": {},
+        "nonfinite_fields_t0": [],
+        "nonfinite_fields_slot": []
+      },
+      "legacy": {
+        "j_descended": true,
+        "pathology_t0_empty": true,
+        "pathology_slot_empty": true,
+        "no_nonfinite_t0": true,
+        "no_nonfinite_slot": true,
+        "finite_diagnostics": true,
+        "fixed_error_marker": false,
+        "oma_le_omb": false,
+        "final_audited": true,
+        "accepted": false
+      },
+      "fixed_objective": {
+        "j_descended": true,
+        "pathology_t0_empty": true,
+        "pathology_slot_empty": true,
+        "no_nonfinite_t0": true,
+        "no_nonfinite_slot": true,
+        "finite_diagnostics": true,
+        "fixed_error_marker": true,
+        "fixed_error_metadata": true,
+        "finite_innovation_diagnostics": true,
+        "final_audited": true,
+        "accepted": true
+      }
+    }
+  },
+  "archived_reports": {
+    "NC_initial_fixed": {
+      "j_descended": true,
+      "pathology_t0_empty": true,
+      "pathology_slot_empty": true,
+      "no_nonfinite_t0": true,
+      "no_nonfinite_slot": true,
+      "finite_diagnostics": true,
+      "fixed_error_marker": true,
+      "fixed_error_metadata": true,
+      "finite_innovation_diagnostics": true,
+      "final_audited": true,
+      "accepted": true
+    },
+    "NC_initial_enabled": {
+      "j_descended": true,
+      "pathology_t0_empty": true,
+      "pathology_slot_empty": true,
+      "no_nonfinite_t0": true,
+      "no_nonfinite_slot": true,
+      "finite_diagnostics": true,
+      "fixed_error_marker": true,
+      "fixed_error_metadata": true,
+      "finite_innovation_diagnostics": true,
+      "final_audited": true,
+      "accepted": true
+    }
+  },
+  "source_hashes": {
+    "oracle/kdm6/da_fulldomain.py": "25b94aba00c889a504876e27ed98abf9c38f6174da791b4dc0a04d5c029c1c60",
+    "oracle/scripts/run_fulldomain_lc05.py": "81ec60fa5f8a3cb67bff89ef667874aeb342fd1b92e26cfcbd6d28417e06ce8b",
+    "oracle/tests/test_fixed_error_artifact_gates.py": "e74f73db110c740bd413c5fed80792febaaf558c076941711321d35bc4b7539c"
+  },
+  "focused_tests": {
+    "passed": 68,
+    "skipped": 2
+  },
+  "public_only_suite_before_final_row_shape_guard": {
+    "passed": 1687,
+    "skipped": 93,
+    "warnings": 51
+  },
+  "scientific_approval": false,
+  "operational_approval": false
+}

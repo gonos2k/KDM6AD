@@ -106,3 +106,17 @@ reject LA filenames. Header calibration-tuple agreement does not prove SRF
 processing identity. Raw SRF/GSICS files, independent LWP correspondence and a
 cold-season search remain unacquired/unqueried in this first packet. The
 EarthCARE frame start is not the timestamp of its intersection with Korea.
+
+## Numerical artifact acceptance for fixed errors
+
+When evaluating an actual fixed-error normalized KMA report, explicitly call
+`evaluate_artifact_gates(report, expected_fixed_obs_errors=True)`. This requires
+the matching fixed-mode marker, normalized KMA coordinates, ordered nine-channel
+scale/bias metadata, finite raw/corrected/standardized innovations and final audit.
+Total objective descent remains required; individual mean-absolute innovation
+metrics need not descend under a weighted, bias-corrected Huber objective.
+
+The omitted/False selector preserves the legacy raw O-A <= O-B policy; a report
+cannot switch it by its own marker. The historical LC05 stress runner explicitly
+selects False. Neither `accepted=True` policy grants scientific/operational
+approval. Do not adjust sigma/bias to satisfy a raw innovation gate.
