@@ -1,0 +1,69 @@
+{
+  "schema": "retained_viirs_geometry_v1",
+  "producer_sha256": "51355eb6835963c2f564d18dc28ac3e40f5fa54ece0118f1c75d366095b4362c",
+  "geo_sha256": "2a194c417533a1087543cc7a91b1de2a5a6d8d71d1d71e2bfeb1571cc9f8dd0c",
+  "phase_sha256": "7fef6df795254f628c79e92c25816fed720e855bba46a9ba74adb92abac0cfe2",
+  "ami_result_sha256": "7cbe37a71ef3289fd120ac5b7f0b7c05ec37e85e6c85935b1b52963b1e9d7b4f",
+  "products_result_sha256": "3a72c4ba9853c5105f22104a43e02e4bd150fbc67fe6d25977c3eab151ccf268",
+  "row_col_0based": [
+    205,
+    27
+  ],
+  "lat_lon": [
+    35.4156379699707,
+    122.14338684082031
+  ],
+  "valid_edr_geo_arrays_exact": true,
+  "number_of_actual_scans": 47,
+  "allocated_scan_slots": 48,
+  "scan_index_0based": 12,
+  "detector_index_0based": 13,
+  "detectors_per_scan": 16,
+  "anchor_utc_from_product": "2025-07-19T05:55:47.547447+00:00",
+  "anchor_iet_microseconds": 2131595784547447,
+  "selected_scan_iet_start": 2131595805986512,
+  "selected_scan_iet_mid": 2131595806266001,
+  "next_scan_iet_start": 2131595807773095,
+  "product_anchored_scan_bracket_utc": [
+    "2025-07-19T05:56:08.986512+00:00",
+    "2025-07-19T05:56:10.773095+00:00"
+  ],
+  "time_scope": "IET differences from same granule UTC anchor; scan start/bracket, not pixel acquisition time; no absolute epoch/leap conversion",
+  "viirs_angles_degrees": {
+    "SatelliteZenithAngle": 68.92668914794922,
+    "SatelliteAzimuthAngle": -91.7182388305664,
+    "SolarZenithAngle": 29.753345489501953,
+    "SolarAzimuthAngle": -111.49372863769531
+  },
+  "geolocation_quality_stored": {
+    "scan_QF1": 128,
+    "scan_QF2": 0,
+    "pixel_QF2": 0
+  },
+  "ami_nominal_zenith_degrees": 41.60024040033139,
+  "ami_nominal_azimuth_degrees": 169.6159978622189,
+  "local_tangent_convention": "east/north; azimuth toward satellite clockwise from geographic north",
+  "relative_parallax_tangent_per_height": [
+    2.75402226726259,
+    -0.7954933415255704
+  ],
+  "hypothetical_relative_parallax_m": {
+    "0": 0.0,
+    "500": 1433.3045999533467,
+    "1000": 2866.6091999066934,
+    "2000": 5733.218399813387
+  },
+  "cloud_height_product_retrieval_m": 587.7369384765625,
+  "viirs_product_parallax_corrected_lat_lon": [
+    35.415225982666016,
+    122.1265640258789
+  ],
+  "viirs_product_nominal_to_pc_center_distance_m": 1525.1859117298873,
+  "relative_scale_if_retrieved_height_is_above_surface_m": 1684.8121149619083,
+  "parallax_scope": "flat local tangent scale only; no actual cloud displacement, height datum or footprint correction applied",
+  "pixel_time_verified": false,
+  "ami_clock_verified": false,
+  "footprint_or_parallax_matched": false,
+  "warm_single_layer_verified": false,
+  "kdm_rttov_or_host_run": false
+}

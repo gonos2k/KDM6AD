@@ -1,0 +1,1290 @@
+{
+  "schema": "jrr_viirs_context_target_sample_v1",
+  "capture_utc": "2026-10-07T14:56:10.419720+00:00",
+  "official_source": "NOAA NODD Google Cloud JPSS NOAA-20 bucket",
+  "bucket": "gcp-noaa-nesdis-n20",
+  "target_reference": {
+    "coordinates_deg": [
+      35.415638,
+      122.143387
+    ],
+    "reported_cloudphase_index_zero_based": [
+      205,
+      27
+    ]
+  },
+  "products": {
+    "phase": {
+      "gcs_object": {
+        "name": "VIIRS-JRR-CloudPhase/2025/07/19/JRR-CloudPhase_v3r2_j01_s202507190555475_e202507190557102_c202507190621171.nc",
+        "generation": "1752906359983449",
+        "metageneration": "6",
+        "size": "8810069",
+        "md5Hash": "na7vqU7a29skm0VvSEI9mQ==",
+        "crc32c": "/4iTIg==",
+        "updated": "2026-09-11T14:47:40.712Z",
+        "timeCreated": "2025-07-19T06:26:00.012Z",
+        "contentType": "binary/octet-stream",
+        "storageClass": "NEARLINE"
+      },
+      "object_metadata_response": {
+        "url": "https://storage.googleapis.com/storage/v1/b/gcp-noaa-nesdis-n20/o/VIIRS-JRR-CloudPhase%2F2025%2F07%2F19%2FJRR-CloudPhase_v3r2_j01_s202507190555475_e202507190557102_c202507190621171.nc",
+        "response_sha256": "72f9a670e0729a29c83ed077a6f0d7dfe4920155fe9dc3497cc68a6a748e28ac",
+        "response_bytes": 1230,
+        "raw_file": "object_metadata/phase.json"
+      },
+      "generation_pinned_media_url": "https://storage.googleapis.com/download/storage/v1/b/gcp-noaa-nesdis-n20/o/VIIRS-JRR-CloudPhase%2F2025%2F07%2F19%2FJRR-CloudPhase_v3r2_j01_s202507190555475_e202507190557102_c202507190621171.nc?alt=media&generation=1752906359983449",
+      "global_attributes": {
+        "title": "JRR_CloudPhase",
+        "history": "Enterprise Cloud Phase and Type Algorithm v2.2.0",
+        "history_package": "Delivery Package v3r2",
+        "time_coverage_start": "2025-07-19T05:55:47Z",
+        "time_coverage_end": "2025-07-19T05:57:10Z",
+        "date_created": "2025-07-19T06:21:17Z",
+        "satellite_name": "NOAA-20",
+        "instrument": "VIIRS",
+        "resolution": "750M",
+        "day_night_data_flag": "day",
+        "geospatial_bounds": "POLYGON((122.735451 34.0007477, 91.2683105 29.2763214, 89.0484009 33.9684639, 122.325287 38.9533501, 122.735451 34.0007477))",
+        "source": "GFS, CMC SST, L1b data",
+        "sensor_band_identifier": "M14,M15,M16",
+        "sensor_band_central_radiation_wavelength": "8.55um,10.763um,12.013um",
+        "start_orbit_number": [
+          39724
+        ],
+        "end_orbit_number": [
+          39724
+        ]
+      },
+      "target_index_zero_based": [
+        205,
+        27
+      ],
+      "fields": {
+        "Latitude": {
+          "shape": [
+            768,
+            3200
+          ],
+          "dtype": "float32",
+          "chunks": [
+            256,
+            200
+          ],
+          "compression": "gzip",
+          "attributes": {
+            "long_name": "Latitude",
+            "units": "degrees_north",
+            "_FillValue": [
+              -999.0
+            ],
+            "valid_range": [
+              -90.0,
+              90.0
+            ]
+          },
+          "raw_value": 35.4156379699707
+        },
+        "Longitude": {
+          "shape": [
+            768,
+            3200
+          ],
+          "dtype": "float32",
+          "chunks": [
+            256,
+            200
+          ],
+          "compression": "gzip",
+          "attributes": {
+            "long_name": "Longitude",
+            "units": "degrees_east",
+            "_FillValue": [
+              -999.0
+            ],
+            "valid_range": [
+              -180.0,
+              180.0
+            ]
+          },
+          "raw_value": 122.14338684082031
+        },
+        "CloudPhase": {
+          "shape": [
+            768,
+            3200
+          ],
+          "dtype": "int8",
+          "chunks": [
+            256,
+            200
+          ],
+          "compression": "gzip",
+          "attributes": {
+            "long_name": "Cloud Phase",
+            "units": "1",
+            "_FillValue": [
+              -128
+            ],
+            "valid_range": [
+              0,
+              5
+            ],
+            "coordinates": "Longitude Latitude"
+          },
+          "raw_value": 1
+        },
+        "CloudPhaseFlag": {
+          "shape": [
+            768,
+            3200,
+            1
+          ],
+          "dtype": "int8",
+          "chunks": [
+            256,
+            200,
+            1
+          ],
+          "compression": "gzip",
+          "attributes": {
+            "long_name": "Cloud Phase and Type Quality Flag",
+            "units": "1",
+            "_FillValue": [
+              -128
+            ],
+            "valid_range": [
+              0,
+              1
+            ],
+            "coordinates": "Longitude Latitude"
+          },
+          "raw_value": [
+            0
+          ]
+        },
+        "CloudType": {
+          "shape": [
+            768,
+            3200
+          ],
+          "dtype": "int8",
+          "chunks": [
+            256,
+            200
+          ],
+          "compression": "gzip",
+          "attributes": {
+            "long_name": "Cloud Type",
+            "units": "1",
+            "_FillValue": [
+              -128
+            ],
+            "valid_range": [
+              0,
+              8
+            ],
+            "coordinates": "Longitude Latitude"
+          },
+          "raw_value": 2
+        },
+        "CloudTypePacked": {
+          "shape": [
+            768,
+            3200,
+            6
+          ],
+          "dtype": "int8",
+          "chunks": [
+            256,
+            200,
+            6
+          ],
+          "compression": "gzip",
+          "attributes": {
+            "long_name": "Cloud Type Diagnostic Flag",
+            "units": "1",
+            "_FillValue": [
+              -128
+            ],
+            "valid_range": [
+              -128,
+              127
+            ],
+            "coordinates": "Longitude Latitude"
+          },
+          "raw_value": [
+            3,
+            -128,
+            8,
+            0,
+            0,
+            0
+          ]
+        },
+        "StartRow": {
+          "shape": [],
+          "dtype": "int32",
+          "chunks": null,
+          "compression": null,
+          "attributes": {
+            "long_name": "Start row index",
+            "units": "1"
+          },
+          "raw_value": 1
+        },
+        "StartColumn": {
+          "shape": [],
+          "dtype": "int32",
+          "chunks": null,
+          "compression": null,
+          "attributes": {
+            "long_name": "Start column index",
+            "units": "1"
+          },
+          "raw_value": 1
+        },
+        "granule_level_quality_flag": {
+          "shape": [],
+          "dtype": "int64",
+          "chunks": null,
+          "compression": null,
+          "attributes": {
+            "long_name": "Cloud Phase Granule Level Degradation Quality Flag",
+            "units": "1",
+            "_FillValue": [
+              -999
+            ],
+            "valid_range": [
+              0,
+              63
+            ],
+            "flag_masks": [
+              0,
+              1,
+              63
+            ],
+            "flag_meanings": "Missing_Channel_Degradation Missing_Ancillary_SST_Degradation Complete_IR_Failure"
+          },
+          "raw_value": 0
+        }
+      },
+      "range_transfer": {
+        "block_bytes": 262144,
+        "unique_response_bytes": 1994325,
+        "range_call_count": 8,
+        "ranges": [
+          {
+            "start": 0,
+            "end": 262143,
+            "content_range": "bytes 0-262143/8810069",
+            "bytes": 262144,
+            "sha256": "1f3c29521d258a30db9b26b0a63254149a4069c97e400b73a5545c1824983a3c",
+            "raw_file": "raw_ranges/phase/bytes_0_262143.bin"
+          },
+          {
+            "start": 8650752,
+            "end": 8810068,
+            "content_range": "bytes 8650752-8810068/8810069",
+            "bytes": 159317,
+            "sha256": "67504ed135789cfbc00be963a101492597c4652dbd00d8550b89a75417c2d0f7",
+            "raw_file": "raw_ranges/phase/bytes_8650752_8810068.bin"
+          },
+          {
+            "start": 1835008,
+            "end": 2097151,
+            "content_range": "bytes 1835008-2097151/8810069",
+            "bytes": 262144,
+            "sha256": "5b1f47ffa9e785d5ed626cbc333791214935ca688ed005ae0082debd5503f72e",
+            "raw_file": "raw_ranges/phase/bytes_1835008_2097151.bin"
+          },
+          {
+            "start": 3932160,
+            "end": 4194303,
+            "content_range": "bytes 3932160-4194303/8810069",
+            "bytes": 262144,
+            "sha256": "17551f8c90f2326442c1ee428e8f4f11f7be58fc4b12f11d83f90964e840a1cf",
+            "raw_file": "raw_ranges/phase/bytes_3932160_4194303.bin"
+          },
+          {
+            "start": 7602176,
+            "end": 7864319,
+            "content_range": "bytes 7602176-7864319/8810069",
+            "bytes": 262144,
+            "sha256": "df1378d7473c2262be6998f0d0da09f5b140f3c8f4327270dc8bdb33896c23f3",
+            "raw_file": "raw_ranges/phase/bytes_7602176_7864319.bin"
+          },
+          {
+            "start": 7864320,
+            "end": 8126463,
+            "content_range": "bytes 7864320-8126463/8810069",
+            "bytes": 262144,
+            "sha256": "c348bbbea4e5b1064ef542cc4135ffa6a29f605c231a61aa99029564dab7346e",
+            "raw_file": "raw_ranges/phase/bytes_7864320_8126463.bin"
+          },
+          {
+            "start": 8126464,
+            "end": 8388607,
+            "content_range": "bytes 8126464-8388607/8810069",
+            "bytes": 262144,
+            "sha256": "0b49e8bce99a650910ce6b020cedc8d280d75bb1d3cabe544223f7d69e09e318",
+            "raw_file": "raw_ranges/phase/bytes_8126464_8388607.bin"
+          },
+          {
+            "start": 4718592,
+            "end": 4980735,
+            "content_range": "bytes 4718592-4980735/8810069",
+            "bytes": 262144,
+            "sha256": "189547dc54f4435eba0a31ae00d62e8840e4f23d622c287e8fdc69eb3f278bfd",
+            "raw_file": "raw_ranges/phase/bytes_4718592_4980735.bin"
+          }
+        ],
+        "full_original_downloaded": false,
+        "dataset_read_method": "h5py raw access; no netCDF masks/scales applied."
+      }
+    },
+    "height": {
+      "gcs_object": {
+        "name": "VIIRS-JRR-CloudHeight/2025/07/19/JRR-CloudHeight_v3r2_j01_s202507190555475_e202507190557102_c202507190621171.nc",
+        "generation": "1752906345359928",
+        "metageneration": "5",
+        "size": "71779579",
+        "md5Hash": "MHWoy861HKGiGLpQs2tVzQ==",
+        "crc32c": "FXIOjA==",
+        "updated": "2026-09-22T06:39:09.302Z",
+        "timeCreated": "2025-07-19T06:25:45.388Z",
+        "contentType": "binary/octet-stream",
+        "storageClass": "NEARLINE"
+      },
+      "object_metadata_response": {
+        "url": "https://storage.googleapis.com/storage/v1/b/gcp-noaa-nesdis-n20/o/VIIRS-JRR-CloudHeight%2F2025%2F07%2F19%2FJRR-CloudHeight_v3r2_j01_s202507190555475_e202507190557102_c202507190621171.nc",
+        "response_sha256": "653217e493daa9af41be35508893226a517a7d604160bd0821adae250381ed31",
+        "response_bytes": 1239,
+        "raw_file": "object_metadata/height.json"
+      },
+      "generation_pinned_media_url": "https://storage.googleapis.com/download/storage/v1/b/gcp-noaa-nesdis-n20/o/VIIRS-JRR-CloudHeight%2F2025%2F07%2F19%2FJRR-CloudHeight_v3r2_j01_s202507190555475_e202507190557102_c202507190621171.nc?alt=media&generation=1752906345359928",
+      "global_attributes": {
+        "title": "JRR_CloudHeight",
+        "history": "Enterprise Cloud Height Algorithm v2.4.1",
+        "history_package": "Delivery Package v3r2",
+        "time_coverage_start": "2025-07-19T05:55:47Z",
+        "time_coverage_end": "2025-07-19T05:57:10Z",
+        "date_created": "2025-07-19T06:21:17Z",
+        "satellite_name": "NOAA-20",
+        "instrument": "VIIRS",
+        "resolution": "750M",
+        "day_night_data_flag": "day",
+        "geospatial_bounds": "POLYGON((122.735451 34.0007477, 91.2683105 29.2763214, 89.0484009 33.9684639, 122.325287 38.9533501, 122.735451 34.0007477))",
+        "source": "GFS, CMC SST, L1b data",
+        "sensor_band_identifier": "M14,M15,M16",
+        "sensor_band_central_radiation_wavelength": "8.55um,10.763um,12.013um",
+        "start_orbit_number": [
+          39724
+        ],
+        "end_orbit_number": [
+          39724
+        ]
+      },
+      "target_index_zero_based": [
+        205,
+        27
+      ],
+      "fields": {
+        "Latitude": {
+          "shape": [
+            768,
+            3200
+          ],
+          "dtype": "float32",
+          "chunks": [
+            256,
+            200
+          ],
+          "compression": "gzip",
+          "attributes": {
+            "long_name": "Latitude",
+            "units": "degrees_north",
+            "_FillValue": [
+              -999.0
+            ],
+            "valid_range": [
+              -90.0,
+              90.0
+            ]
+          },
+          "raw_value": 35.4156379699707
+        },
+        "Longitude": {
+          "shape": [
+            768,
+            3200
+          ],
+          "dtype": "float32",
+          "chunks": [
+            256,
+            200
+          ],
+          "compression": "gzip",
+          "attributes": {
+            "long_name": "Longitude",
+            "units": "degrees_east",
+            "_FillValue": [
+              -999.0
+            ],
+            "valid_range": [
+              -180.0,
+              180.0
+            ]
+          },
+          "raw_value": 122.14338684082031
+        },
+        "Latitude_Pc": {
+          "shape": [
+            768,
+            3200
+          ],
+          "dtype": "float32",
+          "chunks": [
+            256,
+            200
+          ],
+          "compression": "gzip",
+          "attributes": {
+            "long_name": "Parallax corrected Latitude",
+            "units": "Degree",
+            "_FillValue": [
+              -999.0
+            ],
+            "coordinates": "Longitude Latitude"
+          },
+          "raw_value": 35.415225982666016
+        },
+        "Longitude_Pc": {
+          "shape": [
+            768,
+            3200
+          ],
+          "dtype": "float32",
+          "chunks": [
+            256,
+            200
+          ],
+          "compression": "gzip",
+          "attributes": {
+            "long_name": "Parallax_corrected_Longitude",
+            "units": "Degree",
+            "_FillValue": [
+              -999.0
+            ],
+            "coordinates": "Longitude Latitude"
+          },
+          "raw_value": 122.1265640258789
+        },
+        "CldTopHght": {
+          "shape": [
+            768,
+            3200
+          ],
+          "dtype": "float32",
+          "chunks": [
+            256,
+            200
+          ],
+          "compression": "gzip",
+          "attributes": {
+            "long_name": "Cloud Top Height",
+            "units": "Meter",
+            "_FillValue": [
+              -999.0
+            ],
+            "valid_range": [
+              -300.0,
+              20000.0
+            ],
+            "coordinates": "Longitude Latitude"
+          },
+          "raw_value": 587.7369384765625
+        },
+        "CldTopTemp": {
+          "shape": [
+            768,
+            3200
+          ],
+          "dtype": "float32",
+          "chunks": [
+            256,
+            200
+          ],
+          "compression": "gzip",
+          "attributes": {
+            "long_name": "Cloud Top Temperature",
+            "units": "Kelvin",
+            "_FillValue": [
+              -999.0
+            ],
+            "valid_range": [
+              180.0,
+              340.0
+            ],
+            "coordinates": "Longitude Latitude"
+          },
+          "raw_value": 296.5706787109375
+        },
+        "CldTopPres": {
+          "shape": [
+            768,
+            3200
+          ],
+          "dtype": "float32",
+          "chunks": [
+            256,
+            200
+          ],
+          "compression": "gzip",
+          "attributes": {
+            "long_name": "Cloud Top Pressure",
+            "units": "hPa",
+            "_FillValue": [
+              -999.0
+            ],
+            "valid_range": [
+              0.0,
+              1100.0
+            ],
+            "coordinates": "Longitude Latitude"
+          },
+          "raw_value": 940.9852294921875
+        },
+        "CldTopPresLow": {
+          "shape": [
+            768,
+            3200
+          ],
+          "dtype": "float32",
+          "chunks": [
+            256,
+            200
+          ],
+          "compression": "gzip",
+          "attributes": {
+            "long_name": "Cloud Top Pressure Low",
+            "units": "hPa",
+            "_FillValue": [
+              -999.0
+            ],
+            "valid_range": [
+              0.0,
+              1100.0
+            ],
+            "coordinates": "Longitude Latitude"
+          },
+          "raw_value": -999.0
+        },
+        "CldTopTempLow": {
+          "shape": [
+            768,
+            3200
+          ],
+          "dtype": "float32",
+          "chunks": [
+            256,
+            200
+          ],
+          "compression": "gzip",
+          "attributes": {
+            "long_name": "Cloud Top Temperature Low",
+            "units": "Kelvin",
+            "_FillValue": [
+              -999.0
+            ],
+            "valid_range": [
+              180.0,
+              340.0
+            ],
+            "coordinates": "Longitude Latitude"
+          },
+          "raw_value": -999.0
+        },
+        "CldHgtFlag": {
+          "shape": [
+            768,
+            3200,
+            5
+          ],
+          "dtype": "int8",
+          "chunks": [
+            256,
+            200,
+            5
+          ],
+          "compression": "gzip",
+          "attributes": {
+            "long_name": "Cloud Height Parameter Quality Indicator",
+            "units": "1",
+            "_FillValue": [
+              -128
+            ],
+            "valid_range": [
+              0,
+              3
+            ],
+            "coordinates": "Longitude Latitude"
+          },
+          "raw_value": [
+            3,
+            1,
+            1,
+            1,
+            1
+          ]
+        },
+        "CloudHgtQF": {
+          "shape": [
+            768,
+            3200
+          ],
+          "dtype": "int8",
+          "chunks": [
+            256,
+            200
+          ],
+          "compression": "gzip",
+          "attributes": {
+            "long_name": "Cloud Height Quality Flag",
+            "units": "1",
+            "_FillValue": [
+              -128
+            ],
+            "valid_range": [
+              0,
+              4
+            ],
+            "coordinates": "Longitude Latitude"
+          },
+          "raw_value": 0
+        },
+        "CldOptDpth": {
+          "shape": [
+            768,
+            3200
+          ],
+          "dtype": "float32",
+          "chunks": [
+            256,
+            200
+          ],
+          "compression": "gzip",
+          "attributes": {
+            "long_name": "Cloud Optical Depth",
+            "units": "1",
+            "_FillValue": [
+              -999.0
+            ],
+            "valid_range": [
+              0.0,
+              20.0
+            ],
+            "coordinates": "Longitude Latitude"
+          },
+          "raw_value": 1.1430864334106445
+        },
+        "StartRow": {
+          "shape": [],
+          "dtype": "int32",
+          "chunks": null,
+          "compression": null,
+          "attributes": {
+            "long_name": "Start row index",
+            "units": "1"
+          },
+          "raw_value": 1
+        },
+        "StartColumn": {
+          "shape": [],
+          "dtype": "int32",
+          "chunks": null,
+          "compression": null,
+          "attributes": {
+            "long_name": "Start column index",
+            "units": "1"
+          },
+          "raw_value": 1
+        },
+        "granule_level_quality_flag": {
+          "shape": [],
+          "dtype": "int64",
+          "chunks": null,
+          "compression": null,
+          "attributes": {
+            "long_name": "Cloud Height Granule Level Degradation Quality Flag",
+            "units": "1",
+            "_FillValue": [
+              -999
+            ],
+            "valid_range": [
+              0,
+              63
+            ],
+            "flag_values": [
+              0,
+              1,
+              63
+            ],
+            "flag_meanings": "Missing_Channel_Degradation Missing_Ancillary_SST_Degradation Complete_IR_Failure"
+          },
+          "raw_value": 0
+        }
+      },
+      "range_transfer": {
+        "block_bytes": 262144,
+        "unique_response_bytes": 3359995,
+        "range_call_count": 13,
+        "ranges": [
+          {
+            "start": 0,
+            "end": 262143,
+            "content_range": "bytes 0-262143/71779579",
+            "bytes": 262144,
+            "sha256": "68d0e6ea98374d901377c6101c35a69902eb2f4fca417a0a1e5fd5718d765c71",
+            "raw_file": "raw_ranges/height/bytes_0_262143.bin"
+          },
+          {
+            "start": 71565312,
+            "end": 71779578,
+            "content_range": "bytes 71565312-71779578/71779579",
+            "bytes": 214267,
+            "sha256": "08c21ef29489cb8ba258a9fe2ac0ec67277fdf1efef4c30e7bf996dfeeae8ec0",
+            "raw_file": "raw_ranges/height/bytes_71565312_71779578.bin"
+          },
+          {
+            "start": 1835008,
+            "end": 2097151,
+            "content_range": "bytes 1835008-2097151/71779579",
+            "bytes": 262144,
+            "sha256": "0ceccc292e136e25dedb70300c4c7b1f22d504fe29b6257cb0333677cfd560bb",
+            "raw_file": "raw_ranges/height/bytes_1835008_2097151.bin"
+          },
+          {
+            "start": 3932160,
+            "end": 4194303,
+            "content_range": "bytes 3932160-4194303/71779579",
+            "bytes": 262144,
+            "sha256": "2e642dcf46cf751995341874b79ff031447128f811f9a221ee1f54bb23ec96ab",
+            "raw_file": "raw_ranges/height/bytes_3932160_4194303.bin"
+          },
+          {
+            "start": 6029312,
+            "end": 6291455,
+            "content_range": "bytes 6029312-6291455/71779579",
+            "bytes": 262144,
+            "sha256": "d5e67987c56bf87d5da6768f4a17ccf373dee18e63de97fe286146bd4376b80c",
+            "raw_file": "raw_ranges/height/bytes_6029312_6291455.bin"
+          },
+          {
+            "start": 6291456,
+            "end": 6553599,
+            "content_range": "bytes 6291456-6553599/71779579",
+            "bytes": 262144,
+            "sha256": "e7a133ef413b2183326e2f5d0e69c862e11d5597a61bba35a729d6701f57918c",
+            "raw_file": "raw_ranges/height/bytes_6291456_6553599.bin"
+          },
+          {
+            "start": 15466496,
+            "end": 15728639,
+            "content_range": "bytes 15466496-15728639/71779579",
+            "bytes": 262144,
+            "sha256": "2fd76ae101f96813a24f55deae78c10337a92d52f893b8b1b02198e6e84cf6d8",
+            "raw_file": "raw_ranges/height/bytes_15466496_15728639.bin"
+          },
+          {
+            "start": 8650752,
+            "end": 8912895,
+            "content_range": "bytes 8650752-8912895/71779579",
+            "bytes": 262144,
+            "sha256": "ec660cc5cad4b0323b2fbe410db2b4a73cbd0b316e7b5022d9a19d5a703f2119",
+            "raw_file": "raw_ranges/height/bytes_8650752_8912895.bin"
+          },
+          {
+            "start": 11796480,
+            "end": 12058623,
+            "content_range": "bytes 11796480-12058623/71779579",
+            "bytes": 262144,
+            "sha256": "bd757069f188b6c0abc1232ec9fac934d10f5561e77225a5a54c46c0ec8f1ddc",
+            "raw_file": "raw_ranges/height/bytes_11796480_12058623.bin"
+          },
+          {
+            "start": 25690112,
+            "end": 25952255,
+            "content_range": "bytes 25690112-25952255/71779579",
+            "bytes": 262144,
+            "sha256": "2536fc1b8fce4ce32dc40f80b01f2e69ba055075b4a830a8c3d6b80f994039d3",
+            "raw_file": "raw_ranges/height/bytes_25690112_25952255.bin"
+          },
+          {
+            "start": 59768832,
+            "end": 60030975,
+            "content_range": "bytes 59768832-60030975/71779579",
+            "bytes": 262144,
+            "sha256": "33d84c20f86a68f9c543fe705dd8c745924b7b244792a8cfa88b8c0bde65a99f",
+            "raw_file": "raw_ranges/height/bytes_59768832_60030975.bin"
+          },
+          {
+            "start": 22282240,
+            "end": 22544383,
+            "content_range": "bytes 22282240-22544383/71779579",
+            "bytes": 262144,
+            "sha256": "afef025c56bcce752f4e9d3705fa56bfdc3960bcaab8795b74cae91e6207f5f4",
+            "raw_file": "raw_ranges/height/bytes_22282240_22544383.bin"
+          },
+          {
+            "start": 41680896,
+            "end": 41943039,
+            "content_range": "bytes 41680896-41943039/71779579",
+            "bytes": 262144,
+            "sha256": "120c89cd310dd1b656675fcace19ad116a0b14218d32fe59a5ae886464ea8e83",
+            "raw_file": "raw_ranges/height/bytes_41680896_41943039.bin"
+          }
+        ],
+        "full_original_downloaded": false,
+        "dataset_read_method": "h5py raw access; no netCDF masks/scales applied."
+      }
+    },
+    "dcomp": {
+      "gcs_object": {
+        "name": "VIIRS-JRR-CloudDCOMP/2025/07/19/JRR-CloudDCOMP_v3r2_j01_s202507190555475_e202507190557102_c202507190627286.nc",
+        "generation": "1752906525369387",
+        "metageneration": "5",
+        "size": "45085958",
+        "md5Hash": "zKsvwVVoWN2IArJiLe+NRg==",
+        "crc32c": "lLz0hQ==",
+        "updated": "2026-09-22T07:08:33.062Z",
+        "timeCreated": "2025-07-19T06:28:45.397Z",
+        "contentType": "binary/octet-stream",
+        "storageClass": "NEARLINE"
+      },
+      "object_metadata_response": {
+        "url": "https://storage.googleapis.com/storage/v1/b/gcp-noaa-nesdis-n20/o/VIIRS-JRR-CloudDCOMP%2F2025%2F07%2F19%2FJRR-CloudDCOMP_v3r2_j01_s202507190555475_e202507190557102_c202507190627286.nc",
+        "response_sha256": "b9839c6360fbfc9bbe3a2f2bcbd350bce513878eeadaa00120c28b7076f167ac",
+        "response_bytes": 1231,
+        "raw_file": "object_metadata/dcomp.json"
+      },
+      "generation_pinned_media_url": "https://storage.googleapis.com/download/storage/v1/b/gcp-noaa-nesdis-n20/o/VIIRS-JRR-CloudDCOMP%2F2025%2F07%2F19%2FJRR-CloudDCOMP_v3r2_j01_s202507190555475_e202507190557102_c202507190627286.nc?alt=media&generation=1752906525369387",
+      "global_attributes": {
+        "title": "JRR-CloudDCOMP",
+        "history": "Enterprise Daytime Cloud Optical and Microphysical Properties Algorithm v2.1.1",
+        "history_package": "Delivery Package v3r2",
+        "time_coverage_start": "2025-07-19T05:55:47Z",
+        "time_coverage_end": "2025-07-19T05:57:10Z",
+        "date_created": "2025-07-19T06:27:28Z",
+        "satellite_name": "NOAA-20",
+        "resolution": "750M",
+        "day_night_data_flag": "day",
+        "geospatial_bounds": "POLYGON((122.735451 34.0007477, 91.2683105 29.2763214, 89.0484009 33.9684639, 122.325287 38.9533501,122.735451 34.0007477))",
+        "sensor_band_identifier": "M5,M10,M11,M12,M15,DNB",
+        "sensor_band_central_radiation_wavelength": "0.672um,1.610um,2.250um,3.7um,10.763um,0.7um",
+        "start_orbit_number": [
+          39724
+        ],
+        "end_orbit_number": [
+          39724
+        ]
+      },
+      "target_index_zero_based": [
+        205,
+        27
+      ],
+      "fields": {
+        "Latitude": {
+          "shape": [
+            768,
+            3200
+          ],
+          "dtype": "float32",
+          "chunks": [
+            256,
+            200
+          ],
+          "compression": "gzip",
+          "attributes": {
+            "long_name": "Latitude",
+            "units": "degrees_north",
+            "_FillValue": [
+              -999.0
+            ],
+            "valid_range": [
+              -90.0,
+              90.0
+            ]
+          },
+          "raw_value": 35.4156379699707
+        },
+        "Longitude": {
+          "shape": [
+            768,
+            3200
+          ],
+          "dtype": "float32",
+          "chunks": [
+            256,
+            200
+          ],
+          "compression": "gzip",
+          "attributes": {
+            "long_name": "Longitude",
+            "units": "degrees_east",
+            "_FillValue": [
+              -999.0
+            ],
+            "valid_range": [
+              -180.0,
+              180.0
+            ]
+          },
+          "raw_value": 122.14338684082031
+        },
+        "CloudMicroVisOD": {
+          "shape": [
+            768,
+            3200
+          ],
+          "dtype": "float32",
+          "chunks": [
+            256,
+            200
+          ],
+          "compression": "gzip",
+          "attributes": {
+            "long_name": "cloud optical depth",
+            "units": "1",
+            "_FillValue": [
+              -999.0
+            ],
+            "valid_range": [
+              0.0,
+              160.0
+            ],
+            "coordinates": "Longitude Latitude"
+          },
+          "raw_value": 2.680973529815674
+        },
+        "CloudMicroEffRad": {
+          "shape": [
+            768,
+            3200
+          ],
+          "dtype": "float32",
+          "chunks": [
+            256,
+            200
+          ],
+          "compression": "gzip",
+          "attributes": {
+            "long_name": "cloud effective radius",
+            "units": "Micron",
+            "_FillValue": [
+              -999.0
+            ],
+            "valid_range": [
+              0.0,
+              150.0
+            ],
+            "coordinates": "Longitude Latitude"
+          },
+          "raw_value": 113.55731964111328
+        },
+        "CloudMicroLWP": {
+          "shape": [
+            768,
+            3200
+          ],
+          "dtype": "float32",
+          "chunks": [
+            256,
+            200
+          ],
+          "compression": "gzip",
+          "attributes": {
+            "long_name": "cloud liquid water path",
+            "units": "g/m2",
+            "_FillValue": [
+              -999.0
+            ],
+            "valid_range": [
+              0.0,
+              5000.0
+            ],
+            "coordinates": "Longitude Latitude"
+          },
+          "raw_value": 169.13563537597656
+        },
+        "CloudMicroIWP": {
+          "shape": [
+            768,
+            3200
+          ],
+          "dtype": "float32",
+          "chunks": [
+            256,
+            200
+          ],
+          "compression": "gzip",
+          "attributes": {
+            "long_name": "cloud ice water path",
+            "units": "g/m2",
+            "_FillValue": [
+              -999.0
+            ],
+            "valid_range": [
+              0.0,
+              5000.0
+            ],
+            "coordinates": "Longitude Latitude"
+          },
+          "raw_value": 169.1356658935547
+        },
+        "VisOD_uncertainty": {
+          "shape": [
+            768,
+            3200
+          ],
+          "dtype": "float32",
+          "chunks": [
+            256,
+            200
+          ],
+          "compression": "gzip",
+          "attributes": {
+            "long_name": "cloud optical depth uncertainty",
+            "units": "1",
+            "_FillValue": [
+              -999.0
+            ],
+            "valid_range": [
+              0.0,
+              1.0
+            ],
+            "coordinates": "Longitude Latitude"
+          },
+          "raw_value": 0.23795393109321594
+        },
+        "EffRad_uncertainty": {
+          "shape": [
+            768,
+            3200
+          ],
+          "dtype": "float32",
+          "chunks": [
+            256,
+            200
+          ],
+          "compression": "gzip",
+          "attributes": {
+            "long_name": "cloud effective radius uncertainty",
+            "units": "Micron",
+            "_FillValue": [
+              -999.0
+            ],
+            "valid_range": [
+              0.0,
+              1.0
+            ],
+            "coordinates": "Longitude Latitude"
+          },
+          "raw_value": 0.12040656059980392
+        },
+        "EQualityFlag": {
+          "shape": [
+            768,
+            3200
+          ],
+          "dtype": "int16",
+          "chunks": [
+            256,
+            200
+          ],
+          "compression": "gzip",
+          "attributes": {
+            "long_name": "Cloud Micro Quality Flag",
+            "units": "1",
+            "_FillValue": [
+              -999
+            ],
+            "valid_range": [
+              0,
+              6
+            ],
+            "coordinates": "Longitude Latitude"
+          },
+          "raw_value": 17
+        },
+        "StartRow": {
+          "shape": [],
+          "dtype": "int32",
+          "chunks": null,
+          "compression": null,
+          "attributes": {
+            "long_name": "Start row index",
+            "units": "1"
+          },
+          "raw_value": 1
+        },
+        "StartColumn": {
+          "shape": [],
+          "dtype": "int32",
+          "chunks": null,
+          "compression": null,
+          "attributes": {
+            "long_name": "Start column index",
+            "units": "1"
+          },
+          "raw_value": 1
+        },
+        "granule_level_quality_flag": {
+          "shape": [],
+          "dtype": "int64",
+          "chunks": null,
+          "compression": null,
+          "attributes": {
+            "long_name": "DCOMP Granule Level Degradation Quality Flag",
+            "units": "1",
+            "_FillValue": [
+              -999
+            ],
+            "valid_range": [
+              0,
+              63
+            ],
+            "flag_masks": [
+              0,
+              1,
+              63
+            ],
+            "flag_meanings": "Missing_Channel_Degradation Missing_Ancillary_SST_Degradation Complete_IR_Failure"
+          },
+          "raw_value": 0
+        }
+      },
+      "range_transfer": {
+        "block_bytes": 262144,
+        "unique_response_bytes": 2880774,
+        "range_call_count": 11,
+        "ranges": [
+          {
+            "start": 0,
+            "end": 262143,
+            "content_range": "bytes 0-262143/45085958",
+            "bytes": 262144,
+            "sha256": "a75d5df6072d27e85c01ca6d40b2a3cd9d91d273d2a1eadced8223861112ed91",
+            "raw_file": "raw_ranges/dcomp/bytes_0_262143.bin"
+          },
+          {
+            "start": 1835008,
+            "end": 2097151,
+            "content_range": "bytes 1835008-2097151/45085958",
+            "bytes": 262144,
+            "sha256": "f12b6005d13410661da2ddedf21ef058608918317344c0bb2470e99cbed4c269",
+            "raw_file": "raw_ranges/dcomp/bytes_1835008_2097151.bin"
+          },
+          {
+            "start": 15204352,
+            "end": 15466495,
+            "content_range": "bytes 15204352-15466495/45085958",
+            "bytes": 262144,
+            "sha256": "5f3cba182ba48d048d1cdbe3d50692d7ce2255e23be4ce676f65a77f21b6a01d",
+            "raw_file": "raw_ranges/dcomp/bytes_15204352_15466495.bin"
+          },
+          {
+            "start": 3932160,
+            "end": 4194303,
+            "content_range": "bytes 3932160-4194303/45085958",
+            "bytes": 262144,
+            "sha256": "28bd8c7ac0c4f0fc13363d62a1ffa2be9aad366270ee98e4e026964b41575f03",
+            "raw_file": "raw_ranges/dcomp/bytes_3932160_4194303.bin"
+          },
+          {
+            "start": 11272192,
+            "end": 11534335,
+            "content_range": "bytes 11272192-11534335/45085958",
+            "bytes": 262144,
+            "sha256": "c56c2ef6c87bbbef36243850f66ac799f2e6a7c02d271c799dcf724e36c3eaa0",
+            "raw_file": "raw_ranges/dcomp/bytes_11272192_11534335.bin"
+          },
+          {
+            "start": 11534336,
+            "end": 11796479,
+            "content_range": "bytes 11534336-11796479/45085958",
+            "bytes": 262144,
+            "sha256": "e1af61f24b09c3bbd6dc4b54d9691b86e651848e3609d1de69e08a7cece87f2c",
+            "raw_file": "raw_ranges/dcomp/bytes_11534336_11796479.bin"
+          },
+          {
+            "start": 7602176,
+            "end": 7864319,
+            "content_range": "bytes 7602176-7864319/45085958",
+            "bytes": 262144,
+            "sha256": "171273db904ddc93ffb69d572309df5c97b036a7a9a4190cda858e7c1aad31e6",
+            "raw_file": "raw_ranges/dcomp/bytes_7602176_7864319.bin"
+          },
+          {
+            "start": 18874368,
+            "end": 19136511,
+            "content_range": "bytes 18874368-19136511/45085958",
+            "bytes": 262144,
+            "sha256": "3d9defcbe1f5d601f6ae0b523edc21cec6e509f7824d40a0887806228597473d",
+            "raw_file": "raw_ranges/dcomp/bytes_18874368_19136511.bin"
+          },
+          {
+            "start": 22544384,
+            "end": 22806527,
+            "content_range": "bytes 22544384-22806527/45085958",
+            "bytes": 262144,
+            "sha256": "5484dbd96a5731e3c8d9d5cdb3e94357b842646926bf0fd7c2d4faec405cdd16",
+            "raw_file": "raw_ranges/dcomp/bytes_22544384_22806527.bin"
+          },
+          {
+            "start": 26214400,
+            "end": 26476543,
+            "content_range": "bytes 26214400-26476543/45085958",
+            "bytes": 262144,
+            "sha256": "f63f22f13654a4b2fa495863337e691476b07774db0426c12d48f9aecf782cf3",
+            "raw_file": "raw_ranges/dcomp/bytes_26214400_26476543.bin"
+          },
+          {
+            "start": 44826624,
+            "end": 45085957,
+            "content_range": "bytes 44826624-45085957/45085958",
+            "bytes": 259334,
+            "sha256": "90adc2b53252ce0c5639e2717e6ddb56edf530bf501a436b73b58acf773af063",
+            "raw_file": "raw_ranges/dcomp/bytes_44826624_45085957.bin"
+          }
+        ],
+        "full_original_downloaded": false,
+        "dataset_read_method": "h5py raw access; no netCDF masks/scales applied."
+      }
+    }
+  },
+  "target_geolocation_by_product": {
+    "phase": {
+      "latitude": 35.4156379699707,
+      "longitude": 122.14338684082031
+    },
+    "height": {
+      "latitude": 35.4156379699707,
+      "longitude": 122.14338684082031
+    },
+    "dcomp": {
+      "latitude": 35.4156379699707,
+      "longitude": 122.14338684082031
+    }
+  },
+  "total_unique_range_bytes_downloaded": 8235094,
+  "maximum_range_bytes": 100000000,
+  "full_granule_files_downloaded": false,
+  "pixel_values_sampled": true,
+  "QA_policy": "All values are raw HDF5 dataset values; no _FillValue masking, valid_range filtering, bit decoding, or scaling was applied. Preserve out-of-range values exactly.",
+  "limitations": [
+    "The three products are derived outputs from the same NOAA-20 VIIRS granule, not independent observations.",
+    "Pixel time is the file granule interval, not an independently resolved scan-time for this target.",
+    "The coordinate/index match is recorded from product geolocation arrays; it does not establish direct agreement with an independently geolocated retrieval or model state."
+  ]
+}
