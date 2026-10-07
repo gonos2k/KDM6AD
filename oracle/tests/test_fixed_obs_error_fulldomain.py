@@ -39,6 +39,49 @@ def test_fixed_sigma_rejects_bad_policy(sigma):
         fd._freeze_fixed_obs_errors(torch.zeros((2, 3)), sigma, None)
 
 
+@pytest.mark.parametrize("mixed", [
+    [True, 1.0],
+    (1.0, False),
+    [torch.tensor(True), 1.0],
+])
+@pytest.mark.parametrize("field", ["obs_sigma", "obs_bias"])
+def test_fixed_errors_reject_mixed_boolean_sequences_before_coercion(field, mixed):
+    arguments = {"obs_sigma": [1.0, 1.0], field: mixed}
+    with pytest.raises(ValueError, match=field + ".*booleans"):
+        fd._freeze_fixed_obs_errors(torch.zeros((1, 2)), **arguments)
+
+
+@pytest.mark.parametrize("field", ["obs_sigma", "obs_bias"])
+def test_fixed_errors_reject_nested_numpy_boolean_input(field):
+    import numpy as np
+    mixed = [1.0, np.bool_(True)] if field == "obs_sigma" else [[0.0, np.bool_(True)]]
+    with pytest.raises(ValueError, match=field + ".*booleans"):
+        fd._freeze_fixed_obs_errors(torch.zeros((1, 2)), **{field: mixed})
+
+
+def test_fixed_errors_reject_boolean_inside_object_array():
+    import numpy as np
+    mixed = np.array([1.0, True], dtype=object)
+    with pytest.raises(ValueError, match="obs_sigma.*booleans"):
+        fd._freeze_fixed_obs_errors(torch.zeros((1, 2)), obs_sigma=mixed)
+
+
+def test_upper_mixed_boolean_sigma_is_rejected_before_membership_or_case(monkeypatch):
+    import kdm6.obs.rttov_case_writer as writer
+    fr, co, grids = inputs()
+    monkeypatch.setattr(fd, "select_membership",
+                        lambda *a, **kw: pytest.fail("membership ran before rejection"))
+    monkeypatch.setattr(writer, "make_live_run_k",
+                        lambda *a, **kw: pytest.fail("RTTOV case prepared before rejection"))
+    with pytest.raises(ValueError, match="obs_sigma.*booleans"):
+        fd.run_fulldomain_analysis(
+            fr, co, grids, "unused", normalized_dry=True,
+            observation_coordinate="kma_v3_0", channels=tuple(range(8, 17)),
+            huber_delta=1.0,
+            fixed_obs_errors=True, obs_sigma=[1.0] * 8 + [True],
+            obs_error_source="synthetic input rejection")
+
+
 def test_fixed_inputs_preserve_python_precision_and_copy():
     y = torch.zeros((2, 3), **F64)
     sigma, bias = fd._freeze_fixed_obs_errors(y, 0.1, 0.2)

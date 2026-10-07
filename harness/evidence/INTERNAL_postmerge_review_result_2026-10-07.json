@@ -1,0 +1,124 @@
+{
+  "baseline": "a4566024e25fe23d6e72fc73e14301cd0e5fbe7e",
+  "baseline_file_sha256": "9f43c3854f3e13bcbeb05c48f35634f8ec68533b9b93017fbe35b52d7601a3cd",
+  "current_file_sha256": "ae9da7c5bf14f5c3dcf991f1d82b7865cb5856951d075564e237cf6c787ad20a",
+  "accepted_numeric_combinations": 36,
+  "result": "raw binary64 sigma/bias snapshot bits identical; default None pair identical",
+  "scope": "static nuisance input snapshots only; no KDM/RTTOV rerun",
+  "observation_packet_verified_members": 59,
+  "resolved_finding": "mixed bool/real error assumptions accepted before coercion guard",
+  "focused_tests": "56 passed; rejection and upper pre-I/O boundary plus existing cost/VJP/FD/snapshot/worker/prior tests",
+  "historical_live_receipts": "PR380/381 pre-guard source pins retained; no new KDM/RTTOV execution",
+  "remaining_R2_details": [
+    "explicit LA ingest bridge",
+    "cloud phase/science QA",
+    "pixel/scan/footprint and aligned native output",
+    "original SRF/GSICS files",
+    "independent LWP",
+    "cold-season catalogue search"
+  ],
+  "LA_header_pairing": {
+    "decoder_table_sha256": "a6f830aa04e19f6982aa6ff36e832464a5b32fdcf8200211956969d5eb48325d",
+    "fields_compared": [
+      "DN_to_Radiance_Gain",
+      "DN_to_Radiance_Offset",
+      "Teff_to_Tbb_c0",
+      "Teff_to_Tbb_c1",
+      "Teff_to_Tbb_c2",
+      "Plank_constant_h",
+      "light_speed",
+      "Boltzmann_constant_k",
+      "channel_center_wavelength"
+    ],
+    "channels": {
+      "ir105": {
+        "calibration_tuple_binary64_equal": true,
+        "geometry_equal": true,
+        "image_shape": [
+          500,
+          500
+        ],
+        "scene_acquisition_time": "20250719_053442"
+      },
+      "ir087": {
+        "calibration_tuple_binary64_equal": true,
+        "geometry_equal": true,
+        "image_shape": [
+          500,
+          500
+        ],
+        "scene_acquisition_time": "20250719_053442"
+      },
+      "ir096": {
+        "calibration_tuple_binary64_equal": true,
+        "geometry_equal": true,
+        "image_shape": [
+          500,
+          500
+        ],
+        "scene_acquisition_time": "20250719_053442"
+      },
+      "ir112": {
+        "calibration_tuple_binary64_equal": true,
+        "geometry_equal": true,
+        "image_shape": [
+          500,
+          500
+        ],
+        "scene_acquisition_time": "20250719_053442"
+      },
+      "ir123": {
+        "calibration_tuple_binary64_equal": true,
+        "geometry_equal": true,
+        "image_shape": [
+          500,
+          500
+        ],
+        "scene_acquisition_time": "20250719_053442"
+      },
+      "ir133": {
+        "calibration_tuple_binary64_equal": true,
+        "geometry_equal": true,
+        "image_shape": [
+          500,
+          500
+        ],
+        "scene_acquisition_time": "20250719_053442"
+      },
+      "wv063": {
+        "calibration_tuple_binary64_equal": true,
+        "geometry_equal": true,
+        "image_shape": [
+          500,
+          500
+        ],
+        "scene_acquisition_time": "20250719_053442"
+      },
+      "wv069": {
+        "calibration_tuple_binary64_equal": true,
+        "geometry_equal": true,
+        "image_shape": [
+          500,
+          500
+        ],
+        "scene_acquisition_time": "20250719_053442"
+      },
+      "wv073": {
+        "calibration_tuple_binary64_equal": true,
+        "geometry_equal": true,
+        "image_shape": [
+          500,
+          500
+        ],
+        "scene_acquisition_time": "20250719_053442"
+      }
+    },
+    "scope": "header-only calibration tuple pairing and equal GEOS grid; no image values, DQF, SRF identity or pixel-time validation"
+  },
+  "final_public_only_suite": {
+    "passed": 1668,
+    "skipped": 93,
+    "warnings": 51,
+    "overlaps_focused_suite": true
+  }
+}
