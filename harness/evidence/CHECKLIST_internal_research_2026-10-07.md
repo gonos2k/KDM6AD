@@ -24,8 +24,9 @@ those inputs is not estimating or approving R, B or bias. The original
 normalized mode remains 1 K/zero-bias/H-delta=1 regression; a separate explicit
 research selection permits caller-supplied error assumptions.
 
-Proceed with A1 and the R1/R2 evidence inventory in parallel; finalize scientific
-error/prior choices only after the observation/physical target is defined.
+A1/A3 are closed within the executed integration scope. Continue R1/R2 and
+A2 (prior/control choices) next; finalize scientific error/prior choices only
+after the observation/physical target is defined.
 Mark only executed, verified scope CLOSED and link its source/tests/receipt.
 No new solver, Hessian, VAE or generic policy framework is required.
 
