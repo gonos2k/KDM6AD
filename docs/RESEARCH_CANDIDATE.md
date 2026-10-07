@@ -10,27 +10,30 @@ does not designate a canonical binary release.
 
 ## 1. Build and install the C ABI library
 
+Use the clean PR #378 checkout below. It contains both corrected Python test
+files, so no test overlay is required. The current-user
+[acceptance record](../harness/evidence/RESEARCH_CANDIDATE_revision_result_2026-10-07.json)
+is separate from the preserved October 6 build at PR #377 plus two test overlays.
 Use a clean checkout at the candidate revision. The demonstrated reference
 acceptance environment is macOS arm64 with Apple Clang 21.0, CMake 3.24.4,
 Python 3.10.11 and a local PyTorch install that provides CMake's `Torch`
-package. The [execution manifest](../harness/evidence/RESEARCH_CANDIDATE_result_2026-10-06.json)
-and [report](../harness/evidence/REPORT_research_candidate_2026-10-06.md) bind the
+package. The [current execution manifest](../harness/evidence/RESEARCH_CANDIDATE_revision_result_2026-10-07.json)
+and [current report](../harness/evidence/REPORT_research_candidate_revision_2026-10-07.md) bind the
 build, loaded images, tests and native command receipts. GNU Fortran 15.2.0 is optional for the C++ library but adds ISO_C
 smoke tests when CMake detects it. The fully resolved Python dependencies are
 [recorded separately](../harness/evidence/RESEARCH_requirements_macos_arm64_2026-10-06.txt);
-the inline installer below pins the direct dependencies.
+the installer below uses that versioned dependency file.
 
 ```sh
 set -eu
 git clone https://github.com/gonos2k/KDM6AD.git KDM6AD
 cd KDM6AD
-git checkout 4ce39d8043730c011e78c861da1768e64038faf1
+git checkout 30931e52f99e38f9abcd6e7e3b8cd055227a5c23
 
 KDM6_WORK="$(mktemp -d)"
 python3 -m venv "$KDM6_WORK/env"
 . "$KDM6_WORK/env/bin/activate"
-python -m pip install \
-  torch==2.13.0 numpy==2.2.6 netCDF4==1.7.4 pytest==9.1.1 pyproj==3.7.1
+python -m pip install -r harness/evidence/RESEARCH_requirements_macos_arm64_2026-10-06.txt
 
 KDM6_ROOT="$(pwd)"
 KDM6_BUILD="$KDM6_ROOT/libtorch/build"
@@ -138,10 +141,34 @@ installed library's actual loaded libtorch/libc10 images were verified to come
 from this fresh environment. Three negative checks behaved as expected: an
 existing output directory was left unchanged, `i=234` was rejected outside
 the input grid, and a clear column was rejected because it has no input ice.
-The [acceptance driver](../harness/evidence/RESEARCH_column_acceptance_source_2026-10-06.py)
-pins the source revision, input hash and installed-library hash for these
-repeats/rejections. These checks accept this installed library/column
-candidate only; they do not extend the tested profile domain.
+Those October 6 numbers describe the historical PR #377 execution. Its
+[original driver](../harness/evidence/RESEARCH_column_acceptance_source_2026-10-06.py)
+requires a clean `4ce39d8` tree and must not be used to certify a PR #378 checkout.
+
+For the current-user checkout, use the separate
+[PR #378 acceptance driver](../harness/evidence/RESEARCH_column_acceptance_source_2026-10-07.py).
+It requires clean `30931e52` source, records the supplied library identity, and
+performs the two repeats and three rejection cases:
+
+```sh
+# Obtain the separately pinned acceptance witness from this clone's history.
+# Keep it outside the source tree so the selected checkout stays clean.
+git show 6fcfffa5422f339ed353c9559f2e2c84147b6997:harness/evidence/RESEARCH_column_acceptance_source_2026-10-07.py \
+  > "$KDM6_WORK/accept_pr378.py"
+python - "$KDM6_WORK/accept_pr378.py" <<'PYHASH'
+import hashlib, pathlib, sys
+assert hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes()).hexdigest() == \
+    "8c204caec007446b478297a622fefe36600d155620e8b6a2e4dea5e65c5e94c8"
+PYHASH
+python "$KDM6_WORK/accept_pr378.py" \
+  --source "$KDM6_ROOT" --input "$NATIVE_INPUT" \
+  --library "$KDM6_LIBRARY" --output "$KDM6_WORK/pr378-acceptance"
+```
+
+The standalone native command above is already present in PR #378 and does
+not need this optional repeat/rejection driver. The
+[current-user report](../harness/evidence/REPORT_research_candidate_revision_2026-10-07.md)
+records the new checkout/library execution; it does not relabel the old receipt.
 
 To check preflight failures without inventing malformed NetCDF assets, use a
 missing input path and a pre-existing empty output directory. Both commands
