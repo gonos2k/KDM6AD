@@ -89,7 +89,7 @@ compiler is present, ISO_C smoke and normalized-fp64 AD tests are added.
 > Current CMake registers 17 C++ tests plus two optional Fortran tests. The
 > [source-only research candidate](docs/RESEARCH_CANDIDATE.md) gives a fresh
 > environment, native-column acceptance and explicit dependency/asset boundaries.
-> Its [execution report](harness/evidence/REPORT_research_candidate_2026-10-06.md)
+> Its [execution report](harness/evidence/REPORT_research_candidate_revision_2026-10-07.md)
 > separates actual build/tests from skipped or unapproved uses. The Torch library
 > path above, on a fresh CMake cache, prevents system libraries from silently shadowing the selected
 > Python environment during CMake discovery.

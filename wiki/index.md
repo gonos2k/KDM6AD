@@ -68,3 +68,5 @@ date_modified: 2026-07-14
 - [[kdm6ad-final-code-location-verification-2026-06-25]] - `/Users/yhlee/KDM6AD-k`가 현재 검토 코드/KG 루트임을 확인하고 SS step-1 frame-index-1 strict bitwise gate를 재확인.
 
 - [[sources/research-candidate-2026-10-06|Bounded source-only research candidate acceptance (2026-10-06)]]
+
+- [[sources/research-candidate-revision-2026-10-07|Research recipe checkout alignment (2026-10-07)]]

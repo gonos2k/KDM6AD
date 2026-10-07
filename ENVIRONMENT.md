@@ -79,7 +79,7 @@ independently on the CI toolchain.
 ## Source-only research candidate (2026-10-06)
 
 The [candidate guide](docs/RESEARCH_CANDIDATE.md) and
-[clean-workspace execution report](harness/evidence/REPORT_research_candidate_2026-10-06.md)
+[clean-workspace execution report](harness/evidence/REPORT_research_candidate_revision_2026-10-07.md)
 record a separate macOS arm64 source build, fresh Python 3.10 environment and
 installed-library native-column acceptance. They do not replace the historical
 host/parity environment above. Current CMake registers 17 C++ tests and two
