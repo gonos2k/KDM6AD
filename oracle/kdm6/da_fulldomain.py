@@ -23,6 +23,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import math
+import numbers
 import time
 from dataclasses import fields, is_dataclass, replace
 from pathlib import Path
@@ -766,7 +767,9 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
                             observation_coordinate: str | None = None,
                             fixed_obs_errors: bool = False,
                             obs_sigma=None,
-                            obs_error_source: str | None = None) -> dict:
+                            obs_error_source: str | None = None,
+                            background_sigma_overrides: dict | None = None,
+                            background_error_source: str | None = None) -> dict:
     """전 도메인 분석 1회 — JSON 직렬화 가능한 보고 dict 반환.
 
     grids: dict(p_lay, p_half, t_ref, q_ref) — RTTOV 픽스처 격자/기준 프로파일
@@ -798,6 +801,9 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     correction added to observations. obs_error_source labels the assumption,
     not a calibrated R. Targets, weights and bias are copied for the objective.
     Existing omb/oma stay raw; corrected/standardized metrics are additional.
+    background_sigma_overrides is a separate normalized-dry state-prior option
+    using the existing diagonal CVT builder. Its label identifies the uncalibrated
+    assumption; it does not change the four warm microphysics-parameter priors.
     """
     from .obs.model_profile_builder import RttovProfileConfig
     from .obs.rttov_case_writer import make_live_run_k
@@ -824,6 +830,47 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
             raise ValueError("fixed_obs_errors requires a nonempty obs_error_source assumption label")
     elif obs_sigma is not None or obs_error_source is not None:
         raise ValueError("obs_sigma/obs_error_source require explicit fixed_obs_errors=True")
+    prior_overrides = None
+    prior_source = None
+    if background_sigma_overrides is not None:
+        if not normalized_dry:
+            raise ValueError(
+                "background_sigma_overrides require normalized_dry research mode")
+        if not isinstance(background_sigma_overrides, dict):
+            raise ValueError("background_sigma_overrides must be a dict")
+        if (not isinstance(background_error_source, str)
+                or not background_error_source.strip()):
+            raise ValueError(
+                "background_sigma_overrides require a nonempty background_error_source label")
+        allowed_fields = set(State._fields)
+        unknown_prior_fields = set(background_sigma_overrides) - allowed_fields
+        if unknown_prior_fields:
+            raise ValueError(
+                "unknown background_sigma_overrides fields: "
+                f"{sorted(map(str, unknown_prior_fields))}")
+        prior_overrides = {}
+        for name, value in background_sigma_overrides.items():
+            try:
+                value_f = float(value)
+            except (TypeError, ValueError, OverflowError):
+                value_f = float("nan")
+            if (isinstance(value, bool) or not isinstance(value, numbers.Real)
+                    or not math.isfinite(value_f) or value_f < 0.0):
+                raise ValueError(
+                    f"background_sigma_overrides[{name!r}] must be a real finite number >= 0")
+            prior_overrides[name] = value_f
+        if conserving:
+            from .da_partition import MASS_HYDRO_FIELDS
+            conflicts = [name for name in (*MASS_HYDRO_FIELDS, "bg")
+                         if name in prior_overrides and prior_overrides[name] != 0.0]
+            if conflicts:
+                raise ValueError(
+                    "conserving=True forces mass hydrometeor/volume background sigma to zero; "
+                    f"conflicting overrides: {conflicts}")
+        prior_source = background_error_source.strip()
+    elif background_error_source is not None:
+        raise ValueError(
+            "background_error_source requires explicit background_sigma_overrides")
     _validate_geometry(geometry, fr.state.th.shape[0])
     if normalized_dry:
         _validate_surface(surface, fr.state.th.shape[0], solar_enabled=False)
@@ -1048,10 +1095,13 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     # B support is fixed a priori by the caller (qv_levels) — NOT switched by
     # the observed cloud (observation-dependent B is forbidden, review #8).
     # The overlap validation fail-fasts when the pseudo band falls outside.
+    sigma_overrides = prior_overrides
+    if conserving:
+        sigma_overrides = dict(prior_overrides or {})
+        sigma_overrides.update({"qc": 0.0, "qi": 0.0, "qs": 0.0})
     spec, b_sigma = make_default_cvt(
         xb, qv_levels=qv_levels,
-        sigma_overrides=({"qc": 0.0, "qi": 0.0, "qs": 0.0}
-                         if conserving else None))
+        sigma_overrides=sigma_overrides)
     pspec = PartitionSpec() if conserving else None
     if pseudo is not None:
         validate_pseudo_qv_overlap(b_sigma.qv, pseudo["cols"],
@@ -1237,6 +1287,17 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
                 dtw_qv_diag_mean=float(dtw.mean()),
                 dtw_qv_diag_mean_abs=float(dtw.abs().mean()))
 
+    state_prior_report = {}
+    if prior_overrides is not None:
+        state_prior_report = dict(
+            background_sigma_overrides=prior_overrides,
+            background_error_source=prior_source,
+            prior_is_calibrated=False,
+            background_prior_scope="state diagonal CVT only; four warm theta priors unchanged",
+            background_control_counts={
+                name: int((getattr(b_sigma, name) > 0).sum())
+                for name in State._fields})
+
     return dict(
         n_domain=int(fr.state.th.shape[0]), n_subspace=int(sub.numel()),
         n_model_cloudy=int(model_cloudy_pos.numel()),
@@ -1286,4 +1347,4 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
         pathology_t0=pathology_t0, pathology_slot=pathology_slot,
         nonfinite_fields_t0=nonfinite_t0, nonfinite_fields_slot=nonfinite_slot,
         cvt=res.cvt,
-        wall_s=time.time() - t0, **error_report)
+        wall_s=time.time() - t0, **error_report, **state_prior_report)
