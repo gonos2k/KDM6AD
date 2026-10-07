@@ -8,7 +8,7 @@ results remain closed within their demonstrated scope.
 | ID | Work type | Item | Completion evidence | Status |
 | --- | --- | --- | --- | --- |
 | R1 | Data / physical decision | Declare dry mass/number coordinates, thresholds, admissible states and the separate runtime/optical/inventory density roles for one supported regime | Explicit source/units/state-domain record; unapproved assumptions labelled; no tuning to the residual | OPEN — existing conditional conventions available, physical approval remains separate |
-| R2 | Data / case selection | Bind one native model case to observation product, pixel/scan time, geometry/surface and footprint | Identified inputs and actual correspondence, with unresolved lineage/time fields explicit | OPEN / DATA MISSING — retained inventory identifies no fully time/product/geometry-certified case; see INTERNAL_research_case_inventory_2026-10-07.md |
+| R2 | Data / case selection | Bind one native model case to observation product, pixel/scan time, geometry/surface and footprint | Identified inputs and actual correspondence, with unresolved lineage/time fields explicit | OPEN / COLLECTION STARTED — actual public metadata, nine AMI thermal originals and four sounding records acquired; QA/pixel correspondence/aligned native model remain missing; CHECKLIST_first_observation_collection_2026-10-07.md |
 | A1 | Code integration | Carry fixed channel sigma and observation-additive bias through upper analysis, frozen closure, clear/all-sky cost and worker | Same ordered weights/correction in value, VJP, final innovations and saved output; old diagnostic route unchanged | CLOSED — bounded integration; REPORT_fixed_obs_errors_2026-10-07.md |
 | A2 | Code / prior decision | Expose existing diagonal CVT control/prior choices without inventing a new B model | Predeclared controlled fields and prior scales reach the minimizer and result metadata; NC-fixed versus NC-enabled comparison can be specified | CLOSED — bounded state-prior integration and actual one-iteration comparison; REPORT_state_prior_controls_2026-10-07.md; scientific B remains uncalibrated |
 | A3 | Verification | Verify the A1 objective and its snapshots | Nonuniform sigma/nonzero bias AD–FD, mutation resistance, channel/column ordering, worker-route loss consistency and rejection tests; source/code evidence attributed | CLOSED — 89 focused / 2 skips, selected actual KDM→RTTOV cost FD; REPORT_fixed_obs_errors_2026-10-07.md |
@@ -40,3 +40,6 @@ comparison first, ice/mixed-phase collection in parallel. Preserve 1 K/zero bias
 as diagnostic regression. Catalogue candidates are not phase-certified cases;
 read science QA, actual time/footprint and native model correspondence before R2
 can close. Do not acquire or substitute external model/reanalysis profiles.
+
+See the [first acquisition checklist](CHECKLIST_first_observation_collection_2026-10-07.md)
+for separately tracked catalogue, raw-file, QA, correspondence and model steps.

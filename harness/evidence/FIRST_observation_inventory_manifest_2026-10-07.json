@@ -1,0 +1,246 @@
+{
+  "date_utc": "2026-10-07",
+  "scope": "First public observation acquisition: exact catalogue responses, nine AMI thermal originals inspected only as headers, one-day IGRA raw records; phase/pixel QA/collocation/model match not validated",
+  "files": {
+    "KSM00047269-20250719.txt": {
+      "bytes": 28590,
+      "sha256": "3e651165b387b3be9048a3321b3934b5def0ac29dfe9e3438cdef3bf05d8259f"
+    },
+    "NASA_CMR_MODIS_cloud_granule_inventory_2026-10-07.json": {
+      "bytes": 8968,
+      "sha256": "cf146a7f620201a9b8737235cf49f0430ae8085fcc3212e94a6936856d53cbbb"
+    },
+    "NOAA_EarthCARE_availability_2026-10-07.json": {
+      "bytes": 18818,
+      "sha256": "683968533d3db9905955ff877087c1e63b8166cd540bd006f43a62735733834b"
+    },
+    "NOAA_EarthCARE_availability_2026-10-07.md": {
+      "bytes": 7135,
+      "sha256": "69540752c16cf1c8131424170f974c996b034c2c618fb6faa3bf957c49d42fc5"
+    },
+    "NOAA_LA_202507190534_9channel_bundle_2026-10-07.json": {
+      "bytes": 28087,
+      "sha256": "7a0d2fc35cbeedcbc44c24f5d00a41d4d49dac3fa9d945297de31c10bd7198a8"
+    },
+    "NOAA_LA_202507190534_9channel_bundle_2026-10-07.sha256": {
+      "bytes": 1874,
+      "sha256": "d93a8bce7bac70a6dd43d4bf2c55252c35e280b8c478f7bec92a9cc814fb68cb"
+    },
+    "README.md": {
+      "bytes": 2872,
+      "sha256": "588e517208b0b10d7e06ec02ccfca00aff0ddea5c3047d82f73cb4b7d8ce6c80"
+    },
+    "capture_cmr_metadata.py": {
+      "bytes": 5694,
+      "sha256": "127bfa7342e1aa9868f459a65ea5b2bab734a7c60026b5d071106102bd8789cf"
+    },
+    "esa_l1_c5point_bbox_20250718_20.json": {
+      "bytes": 436,
+      "sha256": "545d115ed3e831141a4731ae1a2ceada1f9b0657986a83ca2005232bb7cdb25f"
+    },
+    "esa_l1_eastkr.json": {
+      "bytes": 113882,
+      "sha256": "2900cea5e24df4d6ef38ee3b896ea36f5dc6984f58cf6460a136539abbb5b6e8"
+    },
+    "esa_l1_kr_bbox_20250718_20.json": {
+      "bytes": 170249,
+      "sha256": "aeb795afc54f39d34e360f48f82a30b9f94a328f730b84f0e8d2b8da021988fb"
+    },
+    "esa_l2_c5point_bbox_20250718_20.json": {
+      "bytes": 436,
+      "sha256": "49de21061841ce9bb4f365be94c1ec732db60a3c34c6258c741b3e7fcb4cc2b2"
+    },
+    "esa_l2_eastkr.json": {
+      "bytes": 507243,
+      "sha256": "9e64ab209611b87874af7d766081fff6086ffbee0f95aed3d403c53833f5d950"
+    },
+    "esa_l2_kr_bbox_20250718_20.json": {
+      "bytes": 760280,
+      "sha256": "cb48e5c7fab159e0d840079112907b68e64d199f6e8898d6e3312b3161423149"
+    },
+    "esa_maap_earthcare_collections.json": {
+      "bytes": 178914,
+      "sha256": "b89ca092784c87ccdebc463c44212d71c6999bdc4b5403402c6cfe9bff914ab6"
+    },
+    "esa_orbit_kr_bbox_20250718_20.json": {
+      "bytes": 426,
+      "sha256": "b18cebc68a3878c86618c0a4d66290de18b5e0ad9e32ee4eb37986c091b58807"
+    },
+    "igra2-data-format.txt": {
+      "bytes": 13740,
+      "sha256": "dfd7b4d2dd18a255477455a7caefd12cb21c30549a1e70cbc3a51db9f41c1dfe"
+    },
+    "igra2-station-list.txt": {
+      "bytes": 260950,
+      "sha256": "c460cf55ce01bd3c2d6dad8939fef78e40c85a89c09c88572952125e7cbc9067"
+    },
+    "igra_korea_station_candidates.json": {
+      "bytes": 1153,
+      "sha256": "994b7f9b80902cb347d4de2a1569d098d6c2c7eb6db6212113e34d0e7df9c650"
+    },
+    "igra_soundings_receipt.json": {
+      "bytes": 2433,
+      "sha256": "a342571815e931ecabe02be1f0ca90252623f3cd40a827403833d703f7299e78"
+    },
+    "jaxa_l2_c5point_bbox_20250718_20.json": {
+      "bytes": 431,
+      "sha256": "3999b572272b76315fcf7b6c57c28f9c1968a3dbf7ea45a957388d72544dce76"
+    },
+    "jaxa_l2_eastkr.json": {
+      "bytes": 47595,
+      "sha256": "8a3695ee3d91205256c12ce42aed05ce5055cc7aacf79fb4acac565c17fb77b3"
+    },
+    "jaxa_l2_eastkr_bbox_20250718_20.json": {
+      "bytes": 47595,
+      "sha256": "8a3695ee3d91205256c12ce42aed05ce5055cc7aacf79fb4acac565c17fb77b3"
+    },
+    "jaxa_l2_kr_bbox_20250718_20.json": {
+      "bytes": 70821,
+      "sha256": "082ffe4a5609b5c9bac25c4acaa774850627358ac3fe4f1094f27ae0c4a2efb5"
+    },
+    "noaa_ela_0534.xml": {
+      "bytes": 313,
+      "sha256": "d2f066b74637ada7024e7acfc971e505f200f2688d441cabf6ec7ae2c73f4aa5"
+    },
+    "noaa_ela_ir105_202507190000.xml": {
+      "bytes": 313,
+      "sha256": "9e8114118878a40457e83cad553d51f0bb9e287d706f824032b0df88421c5d5e"
+    },
+    "noaa_fd_0530.xml": {
+      "bytes": 666,
+      "sha256": "42f68023f814818c901e1871a4e1a75229132f559490c9946171b2d403d4ad51"
+    },
+    "noaa_fd_0540.xml": {
+      "bytes": 666,
+      "sha256": "514c9f8bab2fae4e3f92cc7dba4c4a1a22945874d6471c3cedbc93b184879029"
+    },
+    "noaa_fd_20250719_00.xml": {
+      "bytes": 3992,
+      "sha256": "e3d30f035b25e301de3e556eda05fa08af2494f280aa1147d3133626eee5567d"
+    },
+    "noaa_fd_ir105_202507190000.xml": {
+      "bytes": 666,
+      "sha256": "d0c7dc871e7d5b5a2aa2937c61933dab9ec33803fe9e1910c0b48d8e11501756"
+    },
+    "noaa_la_0532.xml": {
+      "bytes": 664,
+      "sha256": "a316ebf79998009af44de24c60ddaba54d4a1a13821b8d7c2043e50fd2fc13d7"
+    },
+    "noaa_la_0534.xml": {
+      "bytes": 664,
+      "sha256": "3b8e512a2968392f6df77d46faeee22d7ac9833dae12ae67f23390cf8ab99a2f"
+    },
+    "noaa_la_0536.xml": {
+      "bytes": 664,
+      "sha256": "a5ff8c8495d0c3047bd3f660d0196fb0bd46e5830651ee8306fc15acf023c9a8"
+    },
+    "noaa_la_ir087_0534_listing.xml": {
+      "bytes": 661,
+      "sha256": "4a907fb16f7e2004dbde7563046407ed964edd0379f6ef5170e66842f3f6f5b4"
+    },
+    "noaa_la_ir096_0534_listing.xml": {
+      "bytes": 661,
+      "sha256": "de59d761c10cc598207e4d8efdf8c77d3d1ce2619256c3fe2feb9570163031d9"
+    },
+    "noaa_la_ir105_202507181652.xml": {
+      "bytes": 664,
+      "sha256": "d2b0a93e80b42bb05f243291f43eae49e34562b88d1a2e08a85274299bbf345d"
+    },
+    "noaa_la_ir105_202507190000.xml": {
+      "bytes": 664,
+      "sha256": "dfe36ff9081dd0c1ef7f911cc625790b8bdb19901f8dee41f7819fb381e5cf2e"
+    },
+    "noaa_la_ir105_202507190534.nc": {
+      "bytes": 531907,
+      "sha256": "49ed9109637c68465c3d19938b0c794092dcb50b92afb7105ce0d687803789ce"
+    },
+    "noaa_la_ir112_0534_listing.xml": {
+      "bytes": 661,
+      "sha256": "a81c053ae6081262651f5fc0e7ceb74573fa8dafc5cce635246aeb8f7f38f2b9"
+    },
+    "noaa_la_ir123_0534_listing.xml": {
+      "bytes": 661,
+      "sha256": "fa3c11aa5277f7c68448f5b69207b3b753dab0ab4f60d9eacfa2656a77e6dc8c"
+    },
+    "noaa_la_ir133_0534_listing.xml": {
+      "bytes": 661,
+      "sha256": "66987c393ff0ee80d3a6a1601473fe0a745ae683371d4dfa8578156d65b58e22"
+    },
+    "noaa_la_wv063_0534_listing.xml": {
+      "bytes": 661,
+      "sha256": "981f32b21af3abddf5d70da0b366da277b369babfa40e3c12086488b961dcb0f"
+    },
+    "noaa_la_wv069_0534_listing.xml": {
+      "bytes": 661,
+      "sha256": "b375b53f125c3e6639bc2649f350ec4ddd854bd945426ce54e1ca9b40c54fcd8"
+    },
+    "noaa_la_wv073_0534_listing.xml": {
+      "bytes": 661,
+      "sha256": "894c783ffb6ef34e5f9087f8f2c2a58ae4607bab2503b16dbeca354c944ab38c"
+    },
+    "raw/collection_MOD06_L2_v061.json": {
+      "bytes": 14981,
+      "sha256": "114c6681c1ec078574f05c31552a91aea4d29dd063e119e8877eb0af212c81e6"
+    },
+    "raw/collection_MYD06_L2_v061.json": {
+      "bytes": 15974,
+      "sha256": "4ab5872a013d22bd5dad4776f38702ad9157c0b3be58e2afcc2b539ff35a37d3"
+    },
+    "raw/granule_01_MYD06_L2.A2025091.0535.061.2025091220356.hdf.json": {
+      "bytes": 5433,
+      "sha256": "36bb3a020efb6ce240af99abe52e200ff4eb7d23291f872760275ce3e0dcd4fc"
+    },
+    "raw/granule_02_MOD06_L2.A2025200.0045.061.2025205141805.hdf.json": {
+      "bytes": 5436,
+      "sha256": "64974b98314ee6de615c24d56ee8cd0bf442255113beb4a3923cc90f33bd88b2"
+    },
+    "raw/granule_03_MOD06_L2.A2025263.0110.061.2025263203907.hdf.json": {
+      "bytes": 5433,
+      "sha256": "3cb6d9d9d97ddbf1e5829ec8cbc244358a2c816899d8d3f843e21c50a5966c96"
+    },
+    "raw/granule_04_MOD06_L2.A2025263.1215.061.2025264014149.hdf.json": {
+      "bytes": 4569,
+      "sha256": "4f94b8d0b567ec599a5f5681c46ffc3087a82d98efcf4d36144fbf917be4f9e0"
+    },
+    "raw/noaa_la_ir087_202507190534.nc": {
+      "bytes": 529159,
+      "sha256": "e9b5d3fcac3dcf0e41bb8d64c76366c06c83dec67d62894faede49d310137d1a"
+    },
+    "raw/noaa_la_ir096_202507190534.nc": {
+      "bytes": 500314,
+      "sha256": "7f5f77cb89c52901d8a43f3ed6abf033fd794744f81c97d77e4604b97bbf1123"
+    },
+    "raw/noaa_la_ir112_202507190534.nc": {
+      "bytes": 529676,
+      "sha256": "1fbc558723a61c0b48b3c3c635953db6ef1187048816a653ee54f4bbe519445f"
+    },
+    "raw/noaa_la_ir123_202507190534.nc": {
+      "bytes": 524253,
+      "sha256": "5db08c2dd09bab839cef2358ee73a581f009a1daf7b1b67ba8008e79a2979479"
+    },
+    "raw/noaa_la_ir133_202507190534.nc": {
+      "bytes": 506902,
+      "sha256": "2154db4fa622b39e11af9227cbe7d2aba0b544903d746f9a93c900415b315c70"
+    },
+    "raw/noaa_la_wv063_202507190534.nc": {
+      "bytes": 357657,
+      "sha256": "41d7ad9982dd79f5993de4bf068cd8ec8ee99ffb65b79107755b094d63d70e31"
+    },
+    "raw/noaa_la_wv069_202507190534.nc": {
+      "bytes": 456906,
+      "sha256": "7af9c3847c918260a85500ca7e2806808f80af5ab2d5d0fe1ef6adce3f875234"
+    },
+    "raw/noaa_la_wv073_202507190534.nc": {
+      "bytes": 477251,
+      "sha256": "6eb8defec3d77419989efc7088f881037b7470402c89e6b72c8dccadd6a15b16"
+    },
+    "unauthenticated_head_access_probe_2026-10-07.json": {
+      "bytes": 1978,
+      "sha256": "aa78fd5248dd7308c834eff27e78e1f156d4c34ab02dc337f6310fb1378bae3a"
+    }
+  },
+  "external_model_acquired": false,
+  "phase_verified": false,
+  "aligned_native_model_available": false,
+  "excluded_superseded_metadata": "Original three-granule night response raw/granule_03_*1215* stays local only. Current four-granule receipt uses raw/granule_04 night response."
+}
