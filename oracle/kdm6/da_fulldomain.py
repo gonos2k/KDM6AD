@@ -361,7 +361,8 @@ def validate_pseudo_qv_overlap(sigma_qv: torch.Tensor, cols: torch.Tensor,
 
 
 def evaluate_artifact_gates(rep: dict, *,
-                            expected_conserving: "bool | None" = None
+                            expected_conserving: "bool | None" = None,
+                            expected_fixed_obs_errors: "bool | None" = None
                             ) -> dict:
     """Acceptance gates for an evidence artifact — ENFORCED, not advisory.
 
@@ -375,7 +376,16 @@ def evaluate_artifact_gates(rep: dict, *,
     even if every self-declaration marker regressed away, and the v-block
     gradient diagnostic becomes required evidence. None (default) infers
     the mode from the report alone (archived-artifact re-evaluation).
+    expected_fixed_obs_errors=True explicitly selects numerical acceptance
+    for the declared fixed-error objective. Raw/corrected/standardized mean
+    absolute innovations must be finite, but need not individually descend.
+    Omitted/False retains the legacy raw O-A <= O-B policy; a report cannot
+    select a weaker policy by setting its own marker. Neither policy grants
+    scientific or operational approval.
     Returns {gate_name: bool, ..., "accepted": bool}."""
+    if expected_fixed_obs_errors is not None and type(expected_fixed_obs_errors) is not bool:
+        raise ValueError("expected_fixed_obs_errors must be a boolean or None")
+    fixed_errors = expected_fixed_obs_errors is True
     try:
         jt = [d["total"] for d in rep["j_trace"]]
         # every trace total is a nonnegative finite non-bool number —
@@ -386,9 +396,6 @@ def evaluate_artifact_gates(rep: dict, *,
         j_ok = False                       # malformed trace fails, not crashes
     gates = dict(
         j_descended=j_ok,
-        oma_le_omb=(_is_finite_number(rep.get("oma"))
-                    and _is_finite_number(rep.get("omb"))
-                    and 0.0 <= rep["oma"] <= rep["omb"]),
         pathology_t0_empty=(rep.get("pathology_t0") == {}),
         pathology_slot_empty=(rep.get("pathology_slot") == {}),
         no_nonfinite_t0=(rep.get("nonfinite_fields_t0") == []),
@@ -397,6 +404,19 @@ def evaluate_artifact_gates(rep: dict, *,
             _is_finite_number(rep.get("grad_theta_norm_final"))
             and rep["grad_theta_norm_final"] >= 0.0),
     )
+    if expected_fixed_obs_errors is not None or "fixed_obs_errors" in rep:
+        marker = rep.get("fixed_obs_errors", False)
+        gates["fixed_error_marker"] = type(marker) is bool and marker is fixed_errors
+    if fixed_errors:
+        gates["fixed_error_metadata"] = _gate_fixed_error_metadata(rep)
+        gates["finite_innovation_diagnostics"] = all(
+            _is_finite_number(rep.get(name)) and rep[name] >= 0.0
+            for name in ("omb", "oma", "omb_corrected", "oma_corrected",
+                         "omb_standardized", "oma_standardized"))
+    else:
+        gates["oma_le_omb"] = (_is_finite_number(rep.get("oma"))
+                                and _is_finite_number(rep.get("omb"))
+                                and 0.0 <= rep["oma"] <= rep["omb"])
     # Conserving-artifact gates — FAIL-CLOSED (reviewer P1): once the run
     # is conserving (runner contract OR report self-declaration), ALL
     # conserving gates are generated unconditionally, and a missing/None/
@@ -429,7 +449,7 @@ def evaluate_artifact_gates(rep: dict, *,
             and rep["grad_w_norm_final"] is None)
     if conserving or rep.get("water_budget") is not None:
         gates["pw_conserved"] = _gate_pw_conserved(rep)
-    if (conserving or expected_conserving is not None
+    if (conserving or expected_conserving is not None or fixed_errors
             or "n_audit_evals" in rep):
         # the EXISTENCE of the external contract enforces the audit gate —
         # dropping the whole audit block from a non-conserving report must
@@ -437,11 +457,36 @@ def evaluate_artifact_gates(rep: dict, *,
         # w-gradient is required; under the contract the v-block too.
         gates["final_audited"] = _gate_final_audited(
             rep, require_w=conserving,
-            require_v=expected_conserving is not None)
+            require_v=expected_conserving is not None or fixed_errors)
     if conserving:
         gates["conserving_contract"] = _gate_conserving_contract(rep)
     gates["accepted"] = all(gates.values())
     return gates
+
+
+def _gate_fixed_error_metadata(rep: dict) -> bool:
+    """Evidence of the fixed nuisance policy, not calibration or science QA."""
+    try:
+        sigma, shape = rep["obs_sigma_K"], rep["obs_bias_shape"]
+        return (rep.get("fixed_obs_errors") is True
+                and rep.get("normalized_dry") is True
+                and rep.get("bt_coordinate") == "kma_v3_0"
+                and rep.get("observation_coordinate") == "kma_v3_0"
+                and isinstance(rep.get("obs_error_source"), str)
+                and bool(rep["obs_error_source"].strip())
+                and isinstance(shape, (list, tuple)) and len(shape) == 2
+                and all(type(v) is int and v > 0 for v in shape) and shape[1] == 9
+                and type(rep.get("n_subspace")) is int
+                and rep["n_subspace"] > 0 and shape[0] == rep["n_subspace"]
+                and isinstance(sigma, (list, tuple)) and len(sigma) == shape[1]
+                and all(_is_finite_number(v) and v >= 1e-12 for v in sigma)
+                and rep.get("obs_bias_definition") == "added_to_observation"
+                and rep.get("huber_delta_coordinate") == "standardized_residual"
+                and isinstance(rep.get("obs_bias_signature"), str)
+                and len(rep["obs_bias_signature"]) == 64
+                and all(c in "0123456789abcdef" for c in rep["obs_bias_signature"]))
+    except (KeyError, TypeError, AttributeError, IndexError):
+        return False
 
 
 def _is_finite_number(x) -> bool:

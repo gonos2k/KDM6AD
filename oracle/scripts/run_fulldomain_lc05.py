@@ -663,7 +663,8 @@ def main(out_json, case_root, conserving=False, allow_dirty=False,
         # the runner-known mode is the external gate contract (fail-closed even
         # if every self-declaration marker regressed away)
         rep["gates"] = evaluate_artifact_gates(rep,
-                                               expected_conserving=conserving)
+                                               expected_conserving=conserving,
+                                               expected_fixed_obs_errors=False)
         drift = check_provenance_drift(manifest)
         accepted = finalize_artifact(rep, manifest, drift, out_json, staging_npz)
 
