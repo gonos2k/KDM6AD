@@ -48,3 +48,7 @@ The [post-merge Green/Red audit](REPORT_internal_postmerge_review_2026-10-07.md)
 resolved mixed-boolean fixed-error input coercion and records practical R2
 details still missing. Earlier live receipts retain their original source pins;
 this new input guard is verified separately and is not a new meteorological run.
+
+The [actual LA decoder evidence](REPORT_LA_decode_2026-10-07.md) closes the
+bounded reader/BT/DQF/nominal-GEOS step of R2. OBT-to-UTC/scan interpretation,
+independent cloud science QA and a native model correspondence remain open.

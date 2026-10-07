@@ -76,3 +76,4 @@ date_modified: 2026-07-14
 - [[sources/first-observation-collection-2026-10-07|First public observation acquisition for internal research]]
 - [[sources/internal-postmerge-review-2026-10-07|Internal research post-merge input and collection audit]]
 - [[sources/fixed-error-artifact-gates-2026-10-07|Explicit fixed-error numerical artifact acceptance]]
+- [[sources/la-reader-2026-10-07|Actual LA thermal read with time and coordinate contracts]]
