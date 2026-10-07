@@ -290,6 +290,7 @@
   },
   "library_sha256": "64cddefe4fce336a7b9a3979278692324a97a17fe7d5264224bcc05a7f20be2d",
   "guide_checkout_revision": "30931e52f99e38f9abcd6e7e3b8cd055227a5c23",
+  "witness_retrieval": "cloned tip before checkout; SHA checked",
   "acceptance_witness_commit": "6fcfffa5422f339ed353c9559f2e2c84147b6997",
   "acceptance_witness_sha256": "8c204caec007446b478297a622fefe36600d155620e8b6a2e4dea5e65c5e94c8",
   "environment": {
@@ -466,6 +467,8 @@
     "scope": "Installed-library native-column CLI only; no KDM host forecast, RTTOV, or KMA window executed."
   },
   "raw_file_hashes": {
+    "recipe-composition-check.txt": "a2ff256deaf12306ddf763f12a9f2d1daf54cd58d6cede167a877260fc539e18",
+    "recipe-witness.py": "8c204caec007446b478297a622fefe36600d155620e8b6a2e4dea5e65c5e94c8",
     "dependencies.log": "38e053df047937f02e49372d836b1a25ad9264920df686a29d487f0b7265dda5",
     "pip-check.log": "9261363b733079a641c2e4cc9bc46ffa1d8336945a87f807b6cf68847dbc9b09",
     "configure.log": "2628947aacaa66e19349aa0ba80cda3ac0150ab11366eb7789a77392a7a80075",
@@ -479,7 +482,7 @@
     "loaded-library-images.json": "d1670e21c0aa1597a20a89002c9e853a93509a1375c9518d6539530e3c270753",
     "accept_pr378.py": "8c204caec007446b478297a622fefe36600d155620e8b6a2e4dea5e65c5e94c8",
     "acceptance.log": "7f1f28151e253c3392fc8d3be35ba99686b0f704c07b6fd3de49e78e20503069",
-    "collect_receipt.py": "aff87fb1db5479fd582bb83b4d409f2e41fdf8740b4e4e4f7fc7e19792cc0194",
+    "collect_receipt.py": "7d2338000e6ed3f9cd22e41504ce811d184d403d660ccb95d4e356dda203e907",
     "source/libtorch/build/CMakeCache.txt": "b902a0d45a49604db7dd5162a8067495da94e46368e35eb3d8db5f2caf32e791",
     "source/libtorch/build/Testing/Temporary/LastTest.log": "55e59931bf20531de7332127b47ccf0ada706f7e273c661cec2398f657db50bd",
     "acceptance-cases/acceptance.json": "c34d6902d9c049781aed829bfa048800a9d58bfa025ca69439b552571fece7c3",

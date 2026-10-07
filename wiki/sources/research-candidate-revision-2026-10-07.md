@@ -11,8 +11,8 @@ records a fresh build/install, 19 CTests, 11 ABI exports, two matching native
 runs, three rejections and the public-only suite (1,628 passed / 87 skipped).
 No test overlays or runtime/physics changes were used.
 
-The separate October 7 acceptance witness is retrieved by an exact committed
-blob and digest outside the clean source checkout. The prior October 6 witness
+The separate October 7 acceptance witness is copied from the cloned tip and
+SHA-checked outside the source tree before selecting the clean checkout. The prior October 6 witness
 and its 4ce39d8-plus-test-overlays evidence remain unchanged and historical.
 This closes the instruction/source-composition mismatch; it does not supply
 second-user acceptance, distribution permission or scientific/operational approval.

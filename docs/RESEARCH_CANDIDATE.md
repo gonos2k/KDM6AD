@@ -28,9 +28,17 @@ the installer below uses that versioned dependency file.
 set -eu
 git clone https://github.com/gonos2k/KDM6AD.git KDM6AD
 cd KDM6AD
+KDM6_WORK="$(mktemp -d)"
+# Preserve the acceptance witness from the cloned tip before selecting source.
+git show HEAD:harness/evidence/RESEARCH_column_acceptance_source_2026-10-07.py \
+  > "$KDM6_WORK/accept_pr378.py"
+python3 - "$KDM6_WORK/accept_pr378.py" <<'PYHASH'
+import hashlib, pathlib, sys
+assert hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes()).hexdigest() == \
+    "8c204caec007446b478297a622fefe36600d155620e8b6a2e4dea5e65c5e94c8"
+PYHASH
 git checkout 30931e52f99e38f9abcd6e7e3b8cd055227a5c23
 
-KDM6_WORK="$(mktemp -d)"
 python3 -m venv "$KDM6_WORK/env"
 . "$KDM6_WORK/env/bin/activate"
 python -m pip install -r harness/evidence/RESEARCH_requirements_macos_arm64_2026-10-06.txt
@@ -151,15 +159,7 @@ It requires clean `30931e52` source, records the supplied library identity, and
 performs the two repeats and three rejection cases:
 
 ```sh
-# Obtain the separately pinned acceptance witness from this clone's history.
-# Keep it outside the source tree so the selected checkout stays clean.
-git show 6fcfffa5422f339ed353c9559f2e2c84147b6997:harness/evidence/RESEARCH_column_acceptance_source_2026-10-07.py \
-  > "$KDM6_WORK/accept_pr378.py"
-python - "$KDM6_WORK/accept_pr378.py" <<'PYHASH'
-import hashlib, pathlib, sys
-assert hashlib.sha256(pathlib.Path(sys.argv[1]).read_bytes()).hexdigest() == \
-    "8c204caec007446b478297a622fefe36600d155620e8b6a2e4dea5e65c5e94c8"
-PYHASH
+# The witness was copied and SHA-checked before the source checkout above.
 python "$KDM6_WORK/accept_pr378.py" \
   --source "$KDM6_ROOT" --input "$NATIVE_INPUT" \
   --library "$KDM6_LIBRARY" --output "$KDM6_WORK/pr378-acceptance"

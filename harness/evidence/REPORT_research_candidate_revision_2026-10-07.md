@@ -47,8 +47,10 @@ The [October 7 witness](RESEARCH_column_acceptance_source_2026-10-07.py) require
 clean `30931e52`; its committed source is
 `6fcfffa5422f339ed353c9559f2e2c84147b6997`, SHA-256
 `8c204caec007446b478297a622fefe36600d155620e8b6a2e4dea5e65c5e94c8`.
-The [guide](../../docs/RESEARCH_CANDIDATE.md) retrieves that exact blob into the
-external workspace and verifies its digest before running it. This keeps the
+The [guide](../../docs/RESEARCH_CANDIDATE.md) copies the witness from the cloned
+tip into the external workspace and verifies that digest before selecting the
+`30931e52` source checkout. It therefore does not require the authoring commit
+to survive a squash/rebase merge. This keeps the
 selected checkout clean and makes the additional witness source explicit.
 The existing native CLI and all tests already reside in `30931e52`.
 
