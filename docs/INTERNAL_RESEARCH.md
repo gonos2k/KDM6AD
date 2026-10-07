@@ -82,3 +82,17 @@ and declares `prior_is_calibrated=False`. This only changes the state diagonal
 CVT; the four warm-process parameter priors remain unchanged. Zero initial NC
 control does not freeze the NC trajectory against changes driven by other states.
 See the [actual comparison](../harness/evidence/REPORT_state_prior_controls_2026-10-07.md).
+
+## First public observation collection
+
+The [acquisition checklist](../harness/evidence/CHECKLIST_first_observation_collection_2026-10-07.md)
+starts with actual catalogues and small raw subsets, warm-liquid comparison first
+and ice/mixed-phase collection in parallel. It distinguishes sensor calibration,
+independent cloud/atmosphere observations and new native model–observation pairs.
+No prior calibrated sigma/bias is required to start. Preserve 1 K/zero bias as
+diagnostic regression and do not fit scientific weights to a metadata shortlist.
+
+Anonymous NASA CMR and ESA MAAP queries locate actual granules. Nine NOAA LA thermal
+originals and four raw Anmado soundings were acquired. None is yet a validated
+cloud-phase/pixel/native-model pair. The LA product does not repair KO/ELA lineage,
+and independent soundings are observations, not substitute model profiles.
