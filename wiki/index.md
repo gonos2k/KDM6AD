@@ -74,3 +74,4 @@ date_modified: 2026-07-14
 - [[sources/internal-fixed-errors-2026-10-07|Internal research fixed error and bias integration]]
 - [[sources/internal-state-priors-2026-10-07|Internal research initial state prior controls]]
 - [[sources/first-observation-collection-2026-10-07|First public observation acquisition for internal research]]
+- [[sources/internal-postmerge-review-2026-10-07|Internal research post-merge input and collection audit]]

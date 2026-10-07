@@ -35,6 +35,9 @@ objective and included in its signature. Nonfinite/nonpositive scales and
 invalid dimensions are rejected before a case is prepared; scales below the
 existing lower loss denominator floor are also rejected. State-dependent
 sigma recalculation during trial evaluation is unsupported by this fixed policy.
+Boolean values surviving in scalar/tensor/array or mixed sequence inputs are
+rejected before tensor coercion. A caller-created floating array that already
+converted a boolean into a number cannot reveal that earlier input type.
 
 The new objective reuses `compute_obs_loss` in both clear and all-sky paths.
 Huber delta is dimensionless in the standardized residual. Bias does not alter
@@ -96,3 +99,10 @@ Anonymous NASA CMR and ESA MAAP queries locate actual granules. Nine NOAA LA the
 originals and four raw Anmado soundings were acquired. None is yet a validated
 cloud-phase/pixel/native-model pair. The LA product does not repair KO/ELA lineage,
 and independent soundings are observations, not substitute model profiles.
+
+The acquired LA020GE files also require an explicit LA ingest bridge: current
+`read_ko_slot` and `read_fd_slot` support KO020LC and FD020GE respectively and
+reject LA filenames. Header calibration-tuple agreement does not prove SRF
+processing identity. Raw SRF/GSICS files, independent LWP correspondence and a
+cold-season search remain unacquired/unqueried in this first packet. The
+EarthCARE frame start is not the timestamp of its intersection with Korea.

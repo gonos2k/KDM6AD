@@ -14,7 +14,7 @@ substituted for the current native 5 km model.
 | 4. Read independent cloud science QA | Verify liquid/ice/mixed phase, layering, uncertainty and precipitation contamination | OPEN — every candidate's phase remains unknown |
 | 5. Establish pixel/time/footprint correspondence | Actual scan time, geometry, surface and independent profile location checked | OPEN — bbox/scene overlap alone is insufficient |
 | 6. Produce corresponding native model states | Same current 5 km model's center/interface pressure, T/Q/hydrometeors preserved at observed time | OPEN — retained output ends 00:00:40; new candidate window is 05:34 |
-| 7. Complete first research bundles | Three verified warm-liquid cases, then one or two ice/mixed-phase cases | OPEN — seasonal dates and day/night are not phase labels |
+| 7. Complete first research bundles | Warm-liquid acceptance first; cold-season availability collected in parallel for one or two ice/mixed-phase cases | OPEN — three warm-liquid cases are not phase-verified; Nov 2025–Mar 2026 search not performed |
 | 8. Accumulate residuals and uncertainty | Sensor bias separate from O–B; event-level design/validation separation; unresolved components labelled | OPEN — no sigma/bias fit from these metadata |
 
 Sensor calibration data: official AMI calibration/SRF/processing records and
@@ -46,7 +46,9 @@ ESA MAAP EarthCARE catalogue candidates intersecting East-Korea bbox 126.5–130
 34–39.5 N include 06469B (Jul 18 16:51:45–17:03:32) and 06477D
 (Jul 19 05:34:57–05:46:44). ESA/JAXA L1/L2 product records exist in the packet.
 These orbit intervals do not mean all instruments have valid measurements or
-all footprint pixels intersect the model domain. The queried C5 neighborhood
+all footprint pixels intersect the model domain. In particular, the frame
+start timestamp is not the time the descending track reaches Korea; exact
+sample times are unavailable from these catalogue polygons. The queried C5 neighborhood
 122.8–124.2 E, 38–39.4 N returns zero items for Jul 18–20 in the tested collections;
 do not extend that negative result to all dates or the whole mission.
 
@@ -62,7 +64,7 @@ from independently inspecting pixel DQF. The IR105 example is:
 `49ed9109637c68465c3d19938b0c794092dcb50b92afb7105ce0d687803789ce`.
 Its scene acquisition is **05:34:42**, and its header declares LA, GEOS,
 500×500, 2 km and KMA calibration v.3.0_20190415. Scene time and the EarthCARE
-interval are promising correspondence metadata; no specific AMI pixel QA,
+interval are only coarse scene/orbit timing candidates; no specific AMI pixel QA,
 cloud phase or joint footprint has been inspected. Exact ELA prefixes returned
 zero objects in the bounded queries; LA availability does not certify KO/ELA.
 
@@ -94,3 +96,15 @@ Next: obtain a small independent cloud science subset and read QA, then solve
 pixel/time/footprint correspondence. Choose actual verified regimes before
 expanding model runs or fitting conditional error candidates. A missing cloud
 QA field stays unknown; IR105 above 270 K is not proof of clear sky or liquid.
+
+## Unfinished parts of the same observation-case task (R2)
+
+These are concrete substeps of the existing user plan, not new approval gates.
+
+| Detail | Current evidence | Remaining work |
+| --- | --- | --- |
+| LA ingestion | LA GEOS and calibration metadata exist; all nine calibration tuples match the shipped decoder table in this audit | Current KO/FD reader filename contracts reject LA020GE; add an explicit LA bridge preserving scene-time metadata, without relabelling LA as FD or KO |
+| Calibration and response | Decoder coefficient table and header version agree | Original SRF/processing identity and GSICS files not acquired; IR133 response compatibility remains S11 work |
+| Independent water/phase | MODIS/EarthCARE catalogue records only | Science QA/phase still unread; AMSR2 LWP and footprint metadata, or an equivalent independent LWP source, have not been queried/acquired |
+| Cold-season availability | Current searches cover summer candidates | Nov 2025–Mar 2026 ice/mixed-phase search not performed; parallel collection is planned, not completed |
+| Pixel time and model time | Scene and orbit interval metadata only | Resolve the region's actual EarthCARE sample time, AMI scan time/footprint and corresponding native model output |

@@ -201,6 +201,25 @@ def select_membership(fr, co, *, boundary: int = 10) -> torch.Tensor:
     return torch.where(interior & has_obs)[0]
 
 
+def _reject_boolean_error_input(value, label):
+    """Check fixed nuisance input before mixed sequences promote bool to float."""
+    import numpy as np
+
+    if isinstance(value, (bool, np.bool_)):
+        raise ValueError(f"{label} must contain real numeric values, not booleans")
+    if isinstance(value, (list, tuple)):
+        for item in value:
+            _reject_boolean_error_input(item, label)
+    elif isinstance(value, torch.Tensor) and value.dtype == torch.bool:
+        raise ValueError(f"{label} must contain real numeric values, not booleans")
+    elif isinstance(value, np.ndarray):
+        if value.dtype.kind == "b":
+            raise ValueError(f"{label} must contain real numeric values, not booleans")
+        if value.dtype.kind == "O":
+            for item in value.flat:
+                _reject_boolean_error_input(item, label)
+
+
 def _freeze_fixed_obs_errors(y_bt, obs_sigma=None, obs_bias=None):
     """Private constant inner-loop weights; scalar/channel sigma, broadcast bias.
 
@@ -214,6 +233,7 @@ def _freeze_fixed_obs_errors(y_bt, obs_sigma=None, obs_bias=None):
     if y_bt.ndim != 2:
         raise ValueError("fixed error inputs require a profile-by-channel target")
     sigma_input = 1.0 if obs_sigma is None else obs_sigma
+    _reject_boolean_error_input(sigma_input, "obs_sigma")
     sigma = torch.as_tensor(sigma_input)
     if sigma.dtype == torch.bool or sigma.is_complex():
         raise ValueError("obs_sigma must contain real numeric channel scales")
@@ -225,6 +245,7 @@ def _freeze_fixed_obs_errors(y_bt, obs_sigma=None, obs_bias=None):
     if not bool(torch.isfinite(sigma).all()) or bool((sigma < 1e-12).any()):
         raise ValueError("fixed obs_sigma must be finite and >= 1e-12 K")
     bias_input = 0.0 if obs_bias is None else obs_bias
+    _reject_boolean_error_input(bias_input, "obs_bias")
     bias = torch.as_tensor(bias_input)
     if bias.dtype == torch.bool or bias.is_complex():
         raise ValueError("obs_bias must contain real numeric observation corrections")

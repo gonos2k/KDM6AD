@@ -43,3 +43,8 @@ can close. Do not acquire or substitute external model/reanalysis profiles.
 
 See the [first acquisition checklist](CHECKLIST_first_observation_collection_2026-10-07.md)
 for separately tracked catalogue, raw-file, QA, correspondence and model steps.
+
+The [post-merge Green/Red audit](REPORT_internal_postmerge_review_2026-10-07.md)
+resolved mixed-boolean fixed-error input coercion and records practical R2
+details still missing. Earlier live receipts retain their original source pins;
+this new input guard is verified separately and is not a new meteorological run.
