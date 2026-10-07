@@ -1,0 +1,211 @@
+{
+  "schema": "retained_viirs_nominal_native_candidate_v1",
+  "producer_sha256": "6a440c15da374e9fd4b241b3af0984dbc4a1bdb8d23392c3704e4c7c9bedbf02",
+  "native_input_sha256": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+  "native_input_times": [
+    "2025-07-19_00:00:00"
+  ],
+  "native_geometry_only": true,
+  "native_geometry_dimensions": [
+    "south_north",
+    "west_east"
+  ],
+  "native_geometry_shape": [
+    282,
+    234
+  ],
+  "files": [
+    {
+      "file": "JRR-CloudPhase_v3r2_j01_s202507190554217_e202507190555463_c202507190622280.nc",
+      "sha256": "9ff002cd37aeb2b99de3fd93a62aa0db7826c6fd77366c98117f76e811a2dd4b",
+      "bytes": 9259271,
+      "azure_url": "https://jpss.blob.core.windows.net/noaa-20/VIIRS-JRR-CloudPhase/2025/07/19/JRR-CloudPhase_v3r2_j01_s202507190554217_e202507190555463_c202507190622280.nc",
+      "time_coverage": {
+        "time_coverage_start": "2025-07-19T05:54:21Z",
+        "time_coverage_end": "2025-07-19T05:55:46Z"
+      },
+      "extrema_rectangle_pixels": 142404,
+      "nominal_interior_pixels": 60380,
+      "phase_counts": {
+        "0": 33763,
+        "1": 25616,
+        "2": 211,
+        "3": 106,
+        "4": 684
+      },
+      "raw_quality_counts": {
+        "-128": 14565,
+        "0": 45815
+      }
+    },
+    {
+      "file": "JRR-CloudPhase_v3r2_j01_s202507190555475_e202507190557102_c202507190621171.nc",
+      "sha256": "7fef6df795254f628c79e92c25816fed720e855bba46a9ba74adb92abac0cfe2",
+      "bytes": 8810069,
+      "azure_url": "https://jpss.blob.core.windows.net/noaa-20/VIIRS-JRR-CloudPhase/2025/07/19/JRR-CloudPhase_v3r2_j01_s202507190555475_e202507190557102_c202507190621171.nc",
+      "time_coverage": {
+        "time_coverage_start": "2025-07-19T05:55:47Z",
+        "time_coverage_end": "2025-07-19T05:57:10Z"
+      },
+      "extrema_rectangle_pixels": 225205,
+      "nominal_interior_pixels": 130570,
+      "phase_counts": {
+        "0": 78392,
+        "1": 47503,
+        "2": 62,
+        "4": 4613
+      },
+      "raw_quality_counts": {
+        "-128": 19338,
+        "0": 111232
+      }
+    },
+    {
+      "file": "JRR-CloudPhase_v3r2_j01_s202507190557115_e202507190558360_c202507190621256.nc",
+      "sha256": "31111e5cbe18693d7626f51aa1472013de6be4d4549e81a30aef1530d8dae9ec",
+      "bytes": 8516350,
+      "azure_url": "https://jpss.blob.core.windows.net/noaa-20/VIIRS-JRR-CloudPhase/2025/07/19/JRR-CloudPhase_v3r2_j01_s202507190557115_e202507190558360_c202507190621256.nc",
+      "time_coverage": {
+        "time_coverage_start": "2025-07-19T05:57:11Z",
+        "time_coverage_end": "2025-07-19T05:58:36Z"
+      },
+      "extrema_rectangle_pixels": 186511,
+      "nominal_interior_pixels": 130037,
+      "phase_counts": {
+        "0": 12780,
+        "1": 18168,
+        "2": 32556,
+        "3": 27958,
+        "4": 38575
+      },
+      "raw_quality_counts": {
+        "-128": 7885,
+        "0": 122152
+      }
+    }
+  ],
+  "candidate_policy": "phase code1, raw QA0, native XLAND2, <=3500m, ten-cell edge margin; minimum distance",
+  "selected_candidate": {
+    "file": "JRR-CloudPhase_v3r2_j01_s202507190555475_e202507190557102_c202507190621171.nc",
+    "obs_row_col_0based": [
+      205,
+      27
+    ],
+    "native_j_i_0based": [
+      86,
+      48
+    ],
+    "obs_lat_lon": [
+      35.4156379699707,
+      122.14338684082031
+    ],
+    "native_lat_lon": [
+      35.4156608581543,
+      122.143310546875
+    ],
+    "spherical_center_distance_m": 7.367358700618518,
+    "xland": 2,
+    "phase_code": 1,
+    "phase_category": "liquid (>273 K retrieval category)",
+    "quality_raw": 0,
+    "time_coverage": {
+      "time_coverage_start": "2025-07-19T05:55:47Z",
+      "time_coverage_end": "2025-07-19T05:57:10Z"
+    }
+  },
+  "candidates": [
+    {
+      "file": "JRR-CloudPhase_v3r2_j01_s202507190554217_e202507190555463_c202507190622280.nc",
+      "obs_row_col_0based": [
+        549,
+        111
+      ],
+      "native_j_i_0based": [
+        25,
+        27
+      ],
+      "obs_lat_lon": [
+        32.5816650390625,
+        121.17030334472656
+      ],
+      "native_lat_lon": [
+        32.5823860168457,
+        121.17050170898438
+      ],
+      "spherical_center_distance_m": 82.29538325636759,
+      "xland": 2,
+      "phase_code": 1,
+      "phase_category": "liquid (>273 K retrieval category)",
+      "quality_raw": 0,
+      "time_coverage": {
+        "time_coverage_start": "2025-07-19T05:54:21Z",
+        "time_coverage_end": "2025-07-19T05:55:46Z"
+      }
+    },
+    {
+      "file": "JRR-CloudPhase_v3r2_j01_s202507190555475_e202507190557102_c202507190621171.nc",
+      "obs_row_col_0based": [
+        205,
+        27
+      ],
+      "native_j_i_0based": [
+        86,
+        48
+      ],
+      "obs_lat_lon": [
+        35.4156379699707,
+        122.14338684082031
+      ],
+      "native_lat_lon": [
+        35.4156608581543,
+        122.143310546875
+      ],
+      "spherical_center_distance_m": 7.367358700618518,
+      "xland": 2,
+      "phase_code": 1,
+      "phase_category": "liquid (>273 K retrieval category)",
+      "quality_raw": 0,
+      "time_coverage": {
+        "time_coverage_start": "2025-07-19T05:55:47Z",
+        "time_coverage_end": "2025-07-19T05:57:10Z"
+      }
+    },
+    {
+      "file": "JRR-CloudPhase_v3r2_j01_s202507190557115_e202507190558360_c202507190621256.nc",
+      "obs_row_col_0based": [
+        281,
+        21
+      ],
+      "native_j_i_0based": [
+        201,
+        48
+      ],
+      "obs_lat_lon": [
+        40.71742248535156,
+        121.80463409423828
+      ],
+      "native_lat_lon": [
+        40.717742919921875,
+        121.8043212890625
+      ],
+      "spherical_center_distance_m": 44.32319591792552,
+      "xland": 2,
+      "phase_code": 1,
+      "phase_category": "liquid (>273 K retrieval category)",
+      "quality_raw": 0,
+      "time_coverage": {
+        "time_coverage_start": "2025-07-19T05:57:11Z",
+        "time_coverage_end": "2025-07-19T05:58:36Z"
+      }
+    }
+  ],
+  "distance_definition": "unit-sphere great-circle centers, R=6371008.8 m; not ellipsoid/PSF/parallax",
+  "independent_sensor": "NOAA-20 VIIRS; derived retrieval uses ancillary GFS/CMC SST, not ground truth",
+  "cloud_phase_document": "NOAA ATBD v3.0 Table31 p74; quality Table32 p75; file flags retained raw",
+  "scientific_qa_approved": false,
+  "warm_single_layer_verified": false,
+  "pixel_time_verified": false,
+  "ami_matched": false,
+  "target_native_state_generated": false,
+  "kdm_rttov_or_host_run": false
+}
