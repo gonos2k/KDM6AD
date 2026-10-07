@@ -61,6 +61,24 @@ Different costs from different weights are not forecast improvements.
 The [data inventory](../harness/evidence/INTERNAL_research_case_inventory_2026-10-07.md)
 records why the retained KO case is still nominal-time/product/geometry evidence.
 Without new lineage/scan/geometry information, keep that limitation visible.
-Next code item is the existing diagonal CVT prior/control selection (A2); next
-science items are R1/R2, signed physical budgets, timestep dependence and unused
+The existing diagonal CVT prior/control selection (A2) now has an explicit
+normalized-research option. Next science items are R1/R2, signed physical budgets, timestep dependence and unused
 validation data. Do not reopen closed numerical results to manufacture progress.
+
+## State prior and initial control choices
+
+Pass `background_sigma_overrides={"nc": 0.0}` with a nonempty
+`background_error_source` to fix the initial NC control; use a predeclared
+positive scale to enable it. This reuses `make_default_cvt`, including its
+existing reservoir and qv-level masks. `th` scales are additive Kelvin;
+multiplicative-field scales are dimensionless log-control scales. Overrides
+must be known state fields with finite nonnegative real scalars. The default
+call remains unchanged. The conserving partition forces qc/qi/qs scales to zero
+and rejects positive overrides on all mass hydrometeor fields and bg before
+preparing an observation case.
+
+The report saves the assumption, overrides and actual nonzero control counts,
+and declares `prior_is_calibrated=False`. This only changes the state diagonal
+CVT; the four warm-process parameter priors remain unchanged. Zero initial NC
+control does not freeze the NC trajectory against changes driven by other states.
+See the [actual comparison](../harness/evidence/REPORT_state_prior_controls_2026-10-07.md).
