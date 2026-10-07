@@ -1,0 +1,127 @@
+{
+  "schema": "la_time_contract_review_v1",
+  "date": "2026-10-07",
+  "scope": "Pinned-source property audit against one retained LA IR105 header and a bounded input-readiness summary. No new science data, cloud-phase classification, model run, or RTTOV run.",
+  "satpy_source": {
+    "repository": "https://github.com/pytroll/satpy",
+    "tag": "v0.57.0",
+    "annotated_tag_object": "1c34c0a5cdb86c5e817d87df3426cd613b5af044",
+    "peeled_commit": "70e3d3b728ed630c2d7e0df5512ee5d243c48581",
+    "reader_path": "satpy/readers/ami_l1b.py",
+    "reader_url": "https://raw.githubusercontent.com/pytroll/satpy/70e3d3b728ed630c2d7e0df5512ee5d243c48581/satpy/readers/ami_l1b.py",
+    "reader_sha256": "c6fd8f4e812906f05f0361ad0377336d045dbf013c5405799bd5a8475119794a",
+    "test_path": "satpy/tests/reader_tests/test_ami_l1b.py",
+    "test_url": "https://raw.githubusercontent.com/pytroll/satpy/70e3d3b728ed630c2d7e0df5512ee5d243c48581/satpy/tests/reader_tests/test_ami_l1b.py",
+    "test_sha256": "215380da68b65d63b48aff72b9bda05228dd90d96a4918e2da487855040b266c",
+    "property_behavior": "AST-extracted start_time/end_time add numeric observation seconds to naive 2000-01-01 12:00:00; unit test expects naive datetime.",
+    "other_header_fields_not_consumed": [
+      "scene_acquisition_time",
+      "mission_reference_time",
+      "time_synchro_utc",
+      "time_synchro_obt"
+    ],
+    "UTC_or_OBT_conversion_in_properties": false,
+    "full_satpy_execution": false,
+    "audit_json_sha256": "0fa230d89fa02141efcf0cb4ae737f6f7221b5fb86a3de3270058d7a171e24c0"
+  },
+  "header": {
+    "filename_slot_obt": "202507190534",
+    "source_bundle_member": "NOAA_LA_202507190534_9channel_bundle_2026-10-07.json",
+    "bundle_sha256": "7a0d2fc35cbeedcbc44c24f5d00a41d4d49dac3fa9d945297de31c10bd7198a8",
+    "file_sha256": "49ed9109637c68465c3d19938b0c794092dcb50b92afb7105ce0d687803789ce",
+    "scene_acquisition_time_raw_obt": "20250719_053442",
+    "mission_reference_time_raw_planned_utc": "20250719_053000",
+    "observation_start_time_raw_seconds": 806175282.4338461,
+    "observation_end_time_raw_seconds": 806175343.6724635,
+    "units_epoch_attributes_present": [],
+    "time_synchro_utc_raw": 806175282.4398186,
+    "time_synchro_obt_raw": 806175282.4338461,
+    "raw_sync_pair_difference_seconds": 0.005972504615783691,
+    "pixel_specific_time_present": false,
+    "semantics_reference": "https://datasvc.nmsc.kma.go.kr/resources/common/pdf/%EC%B2%9C%EB%A6%AC%EC%95%88%EC%9C%84%EC%84%B1%202A%ED%98%B8%20%20%EC%9E%90%EB%A3%8C%ED%99%9C%EC%9A%A9%20QA.pdf"
+  },
+  "conditional_source_property_execution": {
+    "runner": "harness/evidence/LA_time_candidates_source_2026-10-07.py",
+    "runner_sha256": "326e32b048ddb14c4d7d6934b6cb7cf9e01bb24b6c7ab78095a5861874c60c28",
+    "execution_sha256": "70ebd67966360448a7f837e44799318c53d40d5101076362f348b9d60e1ebabb",
+    "input_sha256": "49ed9109637c68465c3d19938b0c794092dcb50b92afb7105ce0d687803789ce",
+    "satpy_reader_sha256": "c6fd8f4e812906f05f0361ad0377336d045dbf013c5405799bd5a8475119794a",
+    "method": "Executed only AST-extracted pinned start_time/end_time properties against retained header and checked pinned test example.",
+    "assumed_epoch_naive": "2000-01-01T12:00:00; naive, no timezone",
+    "start_naive": "2025-07-19T05:34:42.433846",
+    "end_naive": "2025-07-19T05:35:43.672464",
+    "interval_seconds": 61.23861742019653,
+    "additional_affine_start_naive": "2025-07-19T05:34:42.439819",
+    "additional_affine_assumptions": "same epoch/seconds/clock rate; input start is OBT; synchronization not already applied",
+    "verified_utc": false,
+    "verified_pixel_time": false,
+    "applied_to_payload": false,
+    "model_or_rttov_run": false
+  },
+  "current_la_reader": {
+    "path": "oracle/kdm6/obs/gk2a_l1b_la.py",
+    "sha256": "67c4d2abd1c16f55d6909edeef1549b0ce2e8e449b9b3f64e7185b4d34b083db",
+    "status": "Preserves time fields in sidecar without UTC inference.",
+    "payload_valid_time_utc": null,
+    "pixel_utc_time_verified": false
+  },
+  "consumer_contract": {
+    "ingestion": "oracle/kdm6/obs/obs_ingest.py passes valid_time_utc through unchanged.",
+    "analysis": "oracle/kdm6/da_fulldomain.py requires caller-supplied obs_offset_s when observation/frame valid_time_utc is missing; it does not infer time from LA OBT fields."
+  },
+  "readiness": {
+    "inventory_manifest_sha256": "38bfa27941eca3e4c48dec5224449ab785aa2849189167cea1160220a363692f",
+    "la_channels": "Nine unchanged thermal originals AMI 8\u201316 are in the inventory; this audit does not claim phase validation.",
+    "native_model": {
+      "initialization_utc": "2025-07-19_00:00:00",
+      "boundary_times_utc": [
+        "2025-07-19_00:00:00",
+        "2025-07-19_03:00:00",
+        "2025-07-19_06:00:00",
+        "2025-07-19_09:00:00"
+      ],
+      "latitude_deg": [
+        31.36752700805664,
+        44.521148681640625
+      ],
+      "longitude_deg": [
+        118.41448974609375,
+        133.58551025390625
+      ],
+      "pinned_c5_output_times_utc": [
+        "2025-07-19_00:00:00",
+        "2025-07-19_00:00:20",
+        "2025-07-19_00:00:40"
+      ],
+      "utc_match_established": false,
+      "pixel_collocation_established": false
+    },
+    "modis": {
+      "granule": "MOD06_L2.A2025200.0045.061.2025205141805.hdf",
+      "cmr_interval_utc": [
+        "2025-07-19T00:45:00.000Z",
+        "2025-07-19T00:50:00.000Z"
+      ],
+      "unauthenticated_request_status": 403,
+      "access_interpretation": "unauthenticated HEAD denied; reason not determined; a separate bounded LAADS login redirect/401 is recorded in the existing access packet",
+      "noninteractive_credentials_detected": false,
+      "science_file_downloaded_or_read": false,
+      "available_reader_environment": "netCDF4 present; pyhdf, GDAL/osgeo, h5py and earthaccess absent; no HDF4 reader installed in the selected research env."
+    },
+    "earthcare": "Catalogue records only; no science product or phase QA read.",
+    "phase_verified": false,
+    "external_model_acquired": false,
+    "native_model_readiness_json_sha256": "caba8f00db394b584d88fd1e36af36864e69d990893defe13fc5d0c626438063",
+    "modis_auth_readiness_json_sha256": "fe75e486d3c68f43590fd4b300e586f6455b47d6b7dc568944771d560c47bd77"
+  },
+  "limitations": [
+    "Satpy naive calendar outputs reproduce pinned source behavior only; they do not certify the epoch/clock convention for the 2025 file.",
+    "No verified UTC, pixel scan time, footprint/model collocation, phase QA, or scientific sample is established.",
+    "No credentials were read or used; the MODIS unauthenticated request was denied after redirect.",
+    "No production time behavior was changed."
+  ],
+  "native_model_readiness_receipt": "NATIVE_model_readiness_2026-10-07.json",
+  "authentication_readiness_receipt": "MODIS_auth_availability_2026-10-07.json",
+  "actual_property_execution_receipt": "LA_time_property_execution_2026-10-07.json",
+  "producer_sha256": "326e32b048ddb14c4d7d6934b6cb7cf9e01bb24b6c7ab78095a5861874c60c28"
+}

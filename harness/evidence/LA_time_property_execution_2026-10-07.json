@@ -1,0 +1,24 @@
+{
+  "satpy_commit": "70e3d3b728ed630c2d7e0df5512ee5d243c48581",
+  "satpy_reader_sha256": "c6fd8f4e812906f05f0361ad0377336d045dbf013c5405799bd5a8475119794a",
+  "input_sha256": "49ed9109637c68465c3d19938b0c794092dcb50b92afb7105ce0d687803789ce",
+  "raw": {
+    "observation_start_time": 806175282.4338461,
+    "observation_end_time": 806175343.6724635,
+    "time_synchro_utc": 806175282.4398186,
+    "time_synchro_obt": 806175282.4338461,
+    "scene_acquisition_time": "20250719_053442",
+    "mission_reference_time": "20250719_053000"
+  },
+  "conditional_epoch": "2000-01-01T12:00:00; naive, no timezone",
+  "conditional_start": "2025-07-19T05:34:42.433846",
+  "conditional_end": "2025-07-19T05:35:43.672464",
+  "raw_interval_seconds": 61.23861742019653,
+  "raw_sync_pair_difference": 0.005972504615783691,
+  "conditional_affine_start": "2025-07-19T05:34:42.439819",
+  "affine_assumptions": "same epoch/seconds/clock rate; input start is OBT; synchronization not already applied",
+  "actual_utc_verified": false,
+  "pixel_scan_time_verified": false,
+  "applied_to_observation_payload": false,
+  "kdm_rttov_or_model_run": false
+}

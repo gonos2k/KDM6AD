@@ -1,0 +1,81 @@
+{
+  "schema": "sanitized_modis_auth_availability_v1",
+  "captured_local_date": "2026-10-07",
+  "credential_check": {
+    "scope": "noninteractive local CLI configuration metadata only",
+    "earthdata_relevant_environment_variable_names": [],
+    "netrc_present": false,
+    "earthdata_cookiejar_present": false,
+    "curl_or_wget_config_present": false,
+    "earthaccess_package_installed_in_research_env": false,
+    "keychain_or_browser_credentials_inspected": false,
+    "conclusion": "No configured noninteractive Earthdata/LAADS credential mechanism was found. This does not establish whether an account exists or whether an interactive browser session is authenticated.",
+    "secrets_read_or_emitted": false
+  },
+  "selected_candidate": {
+    "producer_granule_id": "MOD06_L2.A2025200.0045.061.2025205141805.hdf",
+    "product": "MOD06_L2",
+    "collection": "061",
+    "granule_concept_id": "G3621509574-LAADS",
+    "cmr_time_utc": [
+      "2025-07-19T00:45:00.000Z",
+      "2025-07-19T00:50:00.000Z"
+    ],
+    "cmr_size_mb": 76.5930290222168,
+    "size_gate_mb": 150,
+    "footprint_intersects_search_bbox": true,
+    "cmr_data_url": "https://data.laadsdaac.earthdatacloud.nasa.gov/prod-lads/MOD06_L2/MOD06_L2.A2025200.0045.061.2025205141805.hdf",
+    "laads_archive_url": "https://ladsweb.modaps.eosdis.nasa.gov/archive/allData/61/MOD06_L2/2025/200/MOD06_L2.A2025200.0045.061.2025205141805.hdf",
+    "metadata_source": "NASA CMR public metadata response; no science granule downloaded or opened",
+    "metadata_archive_member": "raw/granule_02_MOD06_L2.A2025200.0045.061.2025205141805.hdf.json",
+    "metadata_member_sha256": "64974b98314ee6de615c24d56ee8cd0bf442255113beb4a3923cc90f33bd88b2",
+    "CMR_reported_size_under_150MB": true,
+    "time_or_case_match_claim": "not established; this Terra granule is 00:45–00:50 UTC, while the LA filename label is OBT and not resolved UTC"
+  },
+  "previous_access_evidence": {
+    "anonymous_probe_repeated": false,
+    "existing_packet_member": "unauthenticated_head_access_probe_2026-10-07.json",
+    "selected_granule_status": 403,
+    "probe_interpretation": "unauthenticated HEAD denied; reason not determined; a separate bounded LAADS login redirect/401 is recorded in the existing access packet"
+  },
+  "safe_fetch_if_preconfigured": {
+    "method": "Use curl with existing Earthdata netrc and cookie jar, no token placed in command arguments or output; only after confirming the existing URS entry and app authorization are present.",
+    "command_template": "curl -fL -n -b ~/.urs_cookies -c ~/.urs_cookies -o MOD06_L2.A2025200.0045.061.2025205141805.hdf <LAADS archive URL>",
+    "status_here": "not runnable via a detected existing CLI credential configuration"
+  },
+  "reader_readiness": {
+    "product_container": "NASA describes MOD06_L2 primary data format as HDF-EOS; file specification describes HDF Scientific Data Sets.",
+    "phase_sds_options": "Cloud_Phase_Infrared is 5 km; Cloud_Phase_Optical_Properties is 1 km and has distinct values/semantics. Do not treat them as interchangeable.",
+    "qa_sds": "Quality_Assurance_5km and Quality_Assurance_1km; 1 km QA description directs users to MODIS product documentation and Collection 061 QA plan.",
+    "phase_remains": "unknown until actual file is fetched, opened, and QA/footprint/time conditions are checked.",
+    "available_python_env": "netCDF4 present; pyhdf, GDAL/osgeo, h5py and earthaccess absent; no HDF4 reader installed in the selected research env."
+  },
+  "official_sources": [
+    {
+      "title": "NASA MODIS Cloud (06_L2) product page",
+      "url": "https://atmosphere-imager.gsfc.nasa.gov/products/cloud"
+    },
+    {
+      "title": "NASA MOD06_L2 CDL file specification",
+      "url": "https://atmosphere-imager.gsfc.nasa.gov/sites/default/files/ModAtmo/MOD06_L2_CDL_fs.txt"
+    },
+    {
+      "title": "NASA Collection 061 QA plan and Cloud User Guide index",
+      "url": "https://atmosphere-imager.gsfc.nasa.gov/documentation/atbds-plans-guides"
+    },
+    {
+      "title": "NASA Earthdata curl/wget authentication instructions",
+      "url": "https://urs.earthdata.nasa.gov/documentation/for_users/data_access/curl_and_wget"
+    },
+    {
+      "title": "NASA LAADS MODIS archive/token information",
+      "url": "https://ladsweb.modaps.eosdis.nasa.gov/archive/allData/61/MOD06_L2/2025/200/"
+    }
+  ],
+  "limitations": [
+    "No account creation, authentication flow, account contact, or credential access was attempted.",
+    "No granule data were downloaded or read.",
+    "No model/reanalysis data were acquired.",
+    "The previous anonymous result is reused; no anonymous probe was repeated."
+  ]
+}
