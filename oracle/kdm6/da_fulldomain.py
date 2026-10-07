@@ -200,7 +200,43 @@ def select_membership(fr, co, *, boundary: int = 10) -> torch.Tensor:
     return torch.where(interior & has_obs)[0]
 
 
-def _part_loss(bt, y, mask, delta: "float | None"):
+def _freeze_fixed_obs_errors(y_bt, obs_sigma=None, obs_bias=None):
+    """Private constant inner-loop weights; scalar/channel sigma, broadcast bias.
+
+    This is a fixed-nuisance snapshot contract, not an error estimate or an AD
+    path through sigma/bias. The lower loss has a 1e-12 denominator floor;
+    reject smaller supplied scales rather than silently alter their meaning.
+    """
+    if obs_sigma is None and obs_bias is None:
+        return None, None
+    y_bt = torch.as_tensor(y_bt, dtype=torch.float64)
+    if y_bt.ndim != 2:
+        raise ValueError("fixed error inputs require a profile-by-channel target")
+    sigma_input = 1.0 if obs_sigma is None else obs_sigma
+    sigma = torch.as_tensor(sigma_input)
+    if sigma.dtype == torch.bool or sigma.is_complex():
+        raise ValueError("obs_sigma must contain real numeric channel scales")
+    sigma = torch.as_tensor(sigma_input, dtype=torch.float64).detach().clone()
+    if sigma.ndim == 0:
+        sigma = sigma.expand(y_bt.shape[1]).clone()
+    if sigma.shape != (y_bt.shape[1],):
+        raise ValueError("obs_sigma must be scalar or one value per configured channel")
+    if not bool(torch.isfinite(sigma).all()) or bool((sigma < 1e-12).any()):
+        raise ValueError("fixed obs_sigma must be finite and >= 1e-12 K")
+    bias_input = 0.0 if obs_bias is None else obs_bias
+    bias = torch.as_tensor(bias_input)
+    if bias.dtype == torch.bool or bias.is_complex():
+        raise ValueError("obs_bias must contain real numeric observation corrections")
+    try:
+        bias = torch.as_tensor(bias_input, dtype=torch.float64).detach().expand_as(y_bt).clone()
+    except RuntimeError as exc:
+        raise ValueError("obs_bias must broadcast into the full target shape") from exc
+    if not bool(torch.isfinite(bias).all()):
+        raise ValueError("fixed obs_bias must be finite")
+    return sigma, bias
+
+
+def _part_loss(bt, y, mask, delta: "float | None", *, obs_sigma=None, obs_bias=None):
     """Partition loss — delta=None: sigma_o=1K pure quadratic (legacy
     contract), delta>0: Huber (P0-3).
 
@@ -218,6 +254,18 @@ def _part_loss(bt, y, mask, delta: "float | None"):
         # delta allows negative cost (same validation as compute_obs_loss).
         raise ValueError(f"huber_delta must be None or finite > 0 "
                          f"(got {delta!r})")
+    if obs_sigma is not None or obs_bias is not None:
+        if delta is None:
+            raise ValueError("fixed observation errors require a positive Huber delta")
+        from .obs.obs_loss import compute_obs_loss
+        # The column worker has one vector; the shared loss expects (B,nch).
+        if bt.ndim == 1:
+            bt, y, mask = bt.unsqueeze(0), y.unsqueeze(0), mask.unsqueeze(0)
+        obs = {"bt": y}
+        if obs_bias is not None:
+            obs["bias"] = obs_bias
+        return compute_obs_loss(bt, obs, mask, 1.0 if obs_sigma is None else obs_sigma,
+                                delta=float(delta))
     r = torch.where(mask > 0, mask * (bt - y), torch.zeros_like(bt))
     if delta is None:
         return 0.5 * (r * r).sum()
@@ -539,7 +587,7 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
                              x_slot_bg: "State | None" = None,
                              pseudo: "dict | None" = None,
                              rttov_timeout: float = DEFAULT_RTTOV_TIMEOUT,
-                             channel_gate=None):
+                             channel_gate=None, obs_sigma=None, obs_bias=None):
     """동결 mask 결합 obs_eval — 슬롯 t=obs_time, ObsEvalResult 반환.
 
     동결 기준은 배경 '슬롯 시각' 상태 x_slot_bg(기본 xb_sub — obs_time=0일 때):
@@ -558,6 +606,12 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
     # Validate before any clear/all-sky probe can construct or rewrite a case.
     rttov_timeout = validate_rttov_timeout(rttov_timeout)
     nch = y_bt.shape[1]
+    loss_sigma, loss_bias = _freeze_fixed_obs_errors(y_bt, obs_sigma, obs_bias)
+    if loss_sigma is not None and (huber_delta is None or not math.isfinite(huber_delta)
+                                   or huber_delta <= 0):
+        raise ValueError("fixed observation errors require a positive Huber delta")
+    loss_kwargs = ({} if loss_sigma is None else
+                   {"obs_sigma": loss_sigma, "obs_bias": loss_bias})
     # Freeze the original background air-mass measure, NOT the slot/trial qv.
     # Every value consumed by H after this boundary is copied below.  In
     # particular, ``dict(rttov_cfg, ...)`` would only copy the outer mapping and
@@ -609,7 +663,7 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
         cloudy_pos=cloudy_pos, clear_pos=clear_pos,
         xland=xland_sub, forcing=fc_sub,
         clear_cfg=clear_cfg, rttov_cfg=rttov_cfg,
-        obs_time=obs_time, huber_delta=huber_delta, pseudo=pseudo)
+        obs_time=obs_time, huber_delta=huber_delta, pseudo=pseudo, **loss_kwargs)
     if pseudo is not None:
         n_valid += int(pseudo["levels"].sum())
 
@@ -623,7 +677,7 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
                              rttov_cfg, f"{case_root}/c{counters['call']}",
                              n_workers=n_workers, grad=True,
                              huber_delta=huber_delta, pool=pool,
-                             rttov_timeout=rttov_timeout)
+                             rttov_timeout=rttov_timeout, **loss_kwargs)
         x_cl, fc_cl = _take(x_t, clear_pos), _take(fc_sub, clear_pos)
         y_cl, m_cl = y_bt[clear_pos], mask[clear_pos]
         g_th = torch.zeros_like(x_cl.th)
@@ -634,7 +688,8 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
                                                _take(fc_cl, sl),
                                                _take_clear_config(clear_partition_cfg, sl))
             j_c = _part_loss(bt_c.to(torch.float64), y_cl[sl], m_cl[sl],
-                             huber_delta)
+                             huber_delta, **({} if loss_sigma is None else
+                                {"obs_sigma": loss_sigma, "obs_bias": loss_bias[clear_pos][sl]}))
             gt, gq = torch.autograd.grad(j_c, [leaves.th, leaves.qv],
                                          allow_unused=False)
             g_th[sl], g_qv[sl] = gt, gq
@@ -677,6 +732,8 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
     # a detached copy so O−B/O−A inspection cannot mutate the objective while
     # leaving its signature unchanged.
     obs_eval.mask = mask.detach().clone()
+    obs_eval.fixed_obs_sigma = None if loss_sigma is None else loss_sigma.clone()
+    obs_eval.fixed_obs_bias = None if loss_bias is None else loss_bias.clone()
     obs_eval.h_callback_contract = (
         "runner-provenance-attested stable callback; custom callback closure "
         "state is caller-owned and must remain unchanged")
@@ -706,7 +763,10 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
                             save_fields: "str | None" = None,
                             rttov_timeout: float = DEFAULT_RTTOV_TIMEOUT,
                             normalized_dry: bool = False,
-                            observation_coordinate: str | None = None) -> dict:
+                            observation_coordinate: str | None = None,
+                            fixed_obs_errors: bool = False,
+                            obs_sigma=None,
+                            obs_error_source: str | None = None) -> dict:
     """전 도메인 분석 1회 — JSON 직렬화 가능한 보고 dict 반환.
 
     grids: dict(p_lay, p_half, t_ref, q_ref) — RTTOV 픽스처 격자/기준 프로파일
@@ -731,8 +791,13 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     normalized_dry=True explicitly selects the normalized conservative,
     dry-number model and optics, frozen background optical density and KMA
     v3.0 BT. This first research mode requires thermal AMI 8..16, diagnostic
-    Huber delta=1, zero bias, native-grid fixtures and no pseudo-RH. It does
+    Huber delta=1, zero bias by default, native-grid fixtures and no pseudo-RH. It does
     not grant scientific observation or operational approval.
+    fixed_obs_errors=True is a separate research option: obs_sigma is scalar
+    or ordered AMI 8..16 channel scales [K]; ColumnObs.bias is a fixed full-field
+    correction added to observations. obs_error_source labels the assumption,
+    not a calibrated R. Targets, weights and bias are copied for the objective.
+    Existing omb/oma stay raw; corrected/standardized metrics are additional.
     """
     from .obs.model_profile_builder import RttovProfileConfig
     from .obs.rttov_case_writer import make_live_run_k
@@ -750,6 +815,15 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     from .obs.rttov_case_writer import _validate_geometry, _validate_surface
     if not isinstance(normalized_dry, bool):
         raise ValueError("normalized_dry must be a boolean")
+    if not isinstance(fixed_obs_errors, bool):
+        raise ValueError("fixed_obs_errors must be a boolean")
+    if fixed_obs_errors:
+        if not normalized_dry:
+            raise ValueError("fixed_obs_errors requires normalized_dry KMA research mode")
+        if not isinstance(obs_error_source, str) or not obs_error_source.strip():
+            raise ValueError("fixed_obs_errors requires a nonempty obs_error_source assumption label")
+    elif obs_sigma is not None or obs_error_source is not None:
+        raise ValueError("obs_sigma/obs_error_source require explicit fixed_obs_errors=True")
     _validate_geometry(geometry, fr.state.th.shape[0])
     if normalized_dry:
         _validate_surface(surface, fr.state.th.shape[0], solar_enabled=False)
@@ -765,12 +839,24 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
             raise ValueError("the first normalized_dry research path does not support pseudo-RH")
         if grids.get("cloud_fixture_case_dir") is None:
             raise ValueError("normalized_dry requires an explicit native-grid cloud fixture")
-        if getattr(co, "bias", None) is not None and bool((co.bias != 0).any()):
+        if not fixed_obs_errors and getattr(co, "bias", None) is not None and bool((co.bias != 0).any()):
             raise ValueError("the first normalized_dry research path supports zero bias only")
     elif getattr(co, "bias", None) is not None or getattr(co, "channel_gate", None) is not None:
         raise ValueError(
             "run_fulldomain_analysis does not consume ColumnObs.bias/channel_gate; "
             "apply these fields in an obs-eval adapter before entering this driver")
+    fixed_sigma = fixed_bias = None
+    if fixed_obs_errors:
+        full_bias = getattr(co, "bias", None)
+        if full_bias is not None and tuple(full_bias.shape) != tuple(co.bt.shape):
+            raise ValueError("ColumnObs.bias must have the same full shape as ColumnObs.bt")
+        error_target = co.bt[:, 7:16] if co.bt.shape[1] == 16 else co.bt
+        error_bias = (None if full_bias is None else
+                      full_bias[:, 7:16] if co.bt.shape[1] == 16 else full_bias)
+        if error_target.shape[1] != 9:
+            raise ValueError("fixed KMA errors require the nine configured thermal channels")
+        fixed_sigma, fixed_bias = _freeze_fixed_obs_errors(
+            error_target, 1.0 if obs_sigma is None else obs_sigma, error_bias)
     jset = select_membership(fr, co, boundary=boundary)
     if jset.numel() == 0:
         raise ValueError("empty J-subspace — no interior column carries a "
@@ -779,6 +865,7 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     fc = _take(fr.forcing, jset)
     xland = fr.xland[jset]
     y_bt, y_rq = co.bt[jset], co.obs_quality[jset]
+    selected_bias = None if fixed_bias is None else fixed_bias[jset]
     gate = None
     if normalized_dry:
         gate = (None if getattr(co, "channel_gate", None) is None else co.channel_gate[jset])
@@ -929,6 +1016,7 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     x_slot_bg = _take(x_slot_bg, keep)
     y_bt, y_rq = y_bt[keep], y_rq[keep]
     gate = None if gate is None else gate[keep]
+    selected_bias = None if selected_bias is None else selected_bias[keep]
     model_cloudy_pos = torch.arange(mc.numel())
     model_clear_pos = torch.arange(mc.numel(), keep.numel())
     cfg = WindowConfig(dt=dt, xland=xland,
@@ -978,7 +1066,9 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
             obs_time=obs_time, huber_delta=huber_delta,
             x_slot_bg=x_slot_bg, pseudo=pseudo,
             rttov_timeout=rttov_timeout,
-            **({"channel_gate": gate} if gate is not None else {}))
+            **({"channel_gate": gate} if gate is not None else {}),
+            **({"obs_sigma": fixed_sigma, "obs_bias": selected_bias}
+               if fixed_obs_errors else {}))
         obs_eval.normalized_dry = normalized_dry
         res = run_dual_minimizer(xb, [fc], obs_eval, cfg, b_sigma, prior,
                                  max_iter=max_iter, cvt=spec,
@@ -1016,9 +1106,36 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
     def _masked_abs_mean(bt, rows=None):
         m = mask if rows is None else mask[rows]
         r = (y_bt - bt) if rows is None else (y_bt[rows] - bt[rows])
+        if fixed_obs_errors:
+            r = torch.where(m > 0, r, torch.zeros_like(r))
         return float((m * r).abs().sum() / m.sum()) if float(m.sum()) else 0.0
 
     omb, oma = _masked_abs_mean(bt_b), _masked_abs_mean(bt_a)
+    error_report = {}
+    if fixed_obs_errors:
+        # Raw O-B/O-A remain the historical metrics. Report the fixed objective
+        # residual separately, without changing model BT or regime/QC support.
+        sigma_f = obs_eval.fixed_obs_sigma
+        bias_f = obs_eval.fixed_obs_bias
+        corrected_target = y_bt + bias_f
+        def corrected_mean(bt, standardized=False):
+            residual = corrected_target - bt
+            if standardized:
+                residual = residual / sigma_f
+            residual = torch.where(mask > 0, residual, torch.zeros_like(residual))
+            return float((mask * residual.abs()).sum() / mask.sum()) if float(mask.sum()) else 0.0
+        error_report = dict(
+            fixed_obs_errors=True, obs_error_source=obs_error_source.strip(),
+            obs_sigma_K=sigma_f.tolist(), obs_bias_definition="added_to_observation",
+            obs_bias_shape=list(bias_f.shape),
+            obs_bias_signature=_h_signature(obs_bias=bias_f),
+            innovation_definition="omb/oma raw; corrected and standardized metrics reported separately",
+            omb_corrected=corrected_mean(bt_b), oma_corrected=corrected_mean(bt_a),
+            omb_standardized=corrected_mean(bt_b, True), oma_standardized=corrected_mean(bt_a, True),
+            regime_proxy_uses_uncorrected_observations=True,
+            huber_delta_coordinate="standardized_residual",
+            observation_error_is_calibrated=False)
+
 
     # 4-regime stratification uses the PHYSICAL model-cloud set — the all-sky
     # ROUTING set (which absorbs regime-2 columns) must not leak into the
@@ -1053,6 +1170,10 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
             n_model_cloudy=int(model_cloudy_pos.numel()),
             n_allsky=int(allsky_pos.numel()), mask=mask.numpy(),
             y_bt=y_bt.numpy(), bt_b=bt_b.numpy(), bt_a=bt_a.numpy(),
+            **({"obs_sigma_K": obs_eval.fixed_obs_sigma.numpy(),
+                "obs_bias_K": obs_eval.fixed_obs_bias.numpy(),
+                "y_bt_corrected": (y_bt + obs_eval.fixed_obs_bias).numpy()}
+               if fixed_obs_errors else {}),
             regime=code.numpy(),
             theta_b=np.array([float(t) for t in prior.theta_b]),
             theta_a=np.array([float(t) for t in res.theta_analysis]),
@@ -1142,7 +1263,7 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
         optical_density_policy="frozen_background",
         bt_coordinate="kma_v3_0" if normalized_dry else "rttov_native",
         observation_coordinate=observation_coordinate,
-        observation_error_scale_K=1.0,
+        observation_error_scale_K=None if fixed_obs_errors else 1.0,
         scientific_observation_approval=False,
         operational_approval=False,
         ncmin_land=ncmin_land, ncmin_sea=ncmin_sea, qv_levels=qv_levels,
@@ -1165,4 +1286,4 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
         pathology_t0=pathology_t0, pathology_slot=pathology_slot,
         nonfinite_fields_t0=nonfinite_t0, nonfinite_fields_slot=nonfinite_slot,
         cvt=res.cvt,
-        wall_s=time.time() - t0)
+        wall_s=time.time() - t0, **error_report)

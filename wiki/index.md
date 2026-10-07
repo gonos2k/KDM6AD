@@ -70,3 +70,5 @@ date_modified: 2026-07-14
 - [[sources/research-candidate-2026-10-06|Bounded source-only research candidate acceptance (2026-10-06)]]
 
 - [[sources/research-candidate-revision-2026-10-07|Research recipe checkout alignment (2026-10-07)]]
+
+- [[sources/internal-fixed-errors-2026-10-07|Internal research fixed error and bias integration]]

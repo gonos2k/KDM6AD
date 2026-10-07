@@ -160,7 +160,15 @@ def _allsky_columns_worker(args: dict) -> dict:
             # Masked-residual replacement + Huber/quadratic selection share
             # one implementation (_part_loss) — single fix point.
             from kdm6.da_fulldomain import _part_loss
-            j_i = _part_loss(bt_v, y_bt[i], mask[i], args.get("huber_delta"))
+            loss_kwargs = {}
+            if "obs_sigma" in args or "obs_bias" in args:
+                loss_kwargs["obs_sigma"] = torch.as_tensor(
+                    args["obs_sigma"], **_F64)
+                if args.get("obs_bias") is not None:
+                    loss_kwargs["obs_bias"] = torch.as_tensor(
+                        args["obs_bias"][i], **_F64)
+            j_i = _part_loss(bt_v, y_bt[i], mask[i], args.get("huber_delta"),
+                             **loss_kwargs)
             j_i.backward()
             j_cols[i] = float(j_i.detach())
             # connected-field sever 검사 (재검토 #9): all-sky 연산자에 직접
@@ -189,6 +197,7 @@ def sharded_allsky(state: "State", forcing: "Forcing", cidx: torch.Tensor,
                    xland: torch.Tensor, rttov_cfg: dict, case_root: str,
                    *, n_workers: int = 8, grad: bool = True,
                    huber_delta: "float | None" = None,
+                   obs_sigma=None, obs_bias=None,
                    rttov_timeout: float = DEFAULT_RTTOV_TIMEOUT,
                    pool=None) -> dict:
     """구름 컬럼 집합 cidx의 all-sky H(+adjoint)를 n_workers로 샤딩.
@@ -198,7 +207,10 @@ def sharded_allsky(state: "State", forcing: "Forcing", cidx: torch.Tensor,
     oracle_root. Optional ``dry_number`` and ``ami_kma_bt`` booleans select the
     dry-number optical profile and paired KMA BT coordinate; optional
     ``fixture_case_dir`` selects an explicit RTTOV fixture. Defaults keep the
-    native path. pool을 주면 재사용(스폰 비용 상각), 아니면 1회용 생성.
+    native path. Optional ``obs_sigma`` and ``obs_bias`` select the opt-in fixed
+    error route; sigma is channel-ordered and bias is full ``[B, nch]``. Omitting
+    both keeps the legacy unit-sigma/no-bias operation path. pool을 주면
+    재사용(스폰 비용 상각), 아니면 1회용 생성.
     """
     import multiprocessing as mp
     from ..rttov_bridge import require_dry_air_density
@@ -210,6 +222,15 @@ def sharded_allsky(state: "State", forcing: "Forcing", cidx: torch.Tensor,
         raise ValueError("rttov_cfg requires frozen background rho_d on the full model grid")
     rho_d = require_dry_air_density(
         torch.as_tensor(rttov_cfg["rho_d"], **_F64), state.qv)
+    fixed_errors = obs_sigma is not None or obs_bias is not None
+    if fixed_errors:
+        # This import is intentionally opt-in: omitted error arguments retain
+        # the legacy worker payload and _part_loss operation order.
+        from ..da_fulldomain import _freeze_fixed_obs_errors
+        obs_sigma, obs_bias = _freeze_fixed_obs_errors(y_bt, obs_sigma, obs_bias)
+        obs_sigma = obs_sigma.detach().cpu().numpy().copy()
+        if obs_bias is not None:
+            obs_bias = obs_bias.detach().cpu().numpy().copy()
     st = torch.stack(list(state))[:, cidx].numpy()          # (12, n, K)
     fc = torch.stack(list(forcing))[:, cidx].numpy()
     chunks = np.array_split(np.arange(n), n_workers)
@@ -217,7 +238,7 @@ def sharded_allsky(state: "State", forcing: "Forcing", cidx: torch.Tensor,
     for w, ch in enumerate(chunks):
         if len(ch) == 0:
             continue
-        jobs.append(dict(rttov_cfg, state=st[:, ch], forcing=fc[:, ch],
+        job = dict(rttov_cfg, state=st[:, ch], forcing=fc[:, ch],
                          geometry=take_profile_aux(rttov_cfg.get("geometry"), cidx[ch]),
                          surface=take_profile_aux(rttov_cfg.get("surface"), cidx[ch]),
                          rho_d=rho_d[cidx][ch].numpy(),
@@ -225,7 +246,12 @@ def sharded_allsky(state: "State", forcing: "Forcing", cidx: torch.Tensor,
                          y_bt=y_bt[cidx][ch].numpy(), mask=mask[cidx][ch].numpy(),
                          case_root=case_root, worker_id=w, grad=grad,
                          huber_delta=huber_delta,
-                         rttov_timeout=rttov_timeout))
+                         rttov_timeout=rttov_timeout)
+        if fixed_errors:
+            job["obs_sigma"] = obs_sigma
+            if obs_bias is not None:
+                job["obs_bias"] = obs_bias[cidx][ch]
+        jobs.append(job)
     if jobs:
         # Direct callers may provide a new case root.  Delay this mutation
         # until all tensor/config validation and job construction succeeded.
