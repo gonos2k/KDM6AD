@@ -1,0 +1,310 @@
+{
+  "schema": "kdm6ad_private_isolated_build_smoke_evidence_v1",
+  "captured_at_utc": "2026-10-07T22:52:12Z",
+  "scope": "Private isolated mp337 normalized variant2/dry_number1 host build and completed 40-second execution smoke; no forecast-skill, scientific acceptance, host AD, or RTTOV claim.",
+  "workspace": "/private/tmp/KDM6AD-viirs-native-run-20261007",
+  "public_commit_created": false,
+  "graph_coverage": {
+    "private_scratch_runner_in_public_graph": false,
+    "review_method": "Source-based review of private files; existing public observation-context graph queried for upstream observation interface dependencies.",
+    "public_graph_update": "1315/1315 code files re-extracted; no topology changes detected."
+  },
+  "configuration": {
+    "wrf_compiler_option": 35,
+    "wrf_nesting_option": 1,
+    "configure_result": "Configuration successful",
+    "evidence": [
+      "/private/tmp/KDM6AD-viirs-native-run-20261007/configure.log",
+      "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/configure.wrf",
+      "/private/tmp/KDM6AD-viirs-native-run-20261007/native_run_plan_2026-10-07.json"
+    ],
+    "sdk_capture": {
+      "commands": [
+        "xcrun --show-sdk-path",
+        "xcrun --show-sdk-version"
+      ],
+      "first_path": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk",
+      "first_version": "27.0",
+      "second_path": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk",
+      "second_version": "27.0",
+      "SDKROOT_environment_at_capture": "unset",
+      "build_process_SDKROOT_persisted_in_logs": false,
+      "interpretation": "Repeated current xcrun resolution recorded; not attributed as a captured configure-time environment variable."
+    },
+    "hook": {
+      "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/hook.log",
+      "sha256": "78ae62bdc043c11e58409c87f6f2f5773398d3fb16d53d22b506e38bb2a9fbcb",
+      "lib_local": [
+        "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib/libkdm6_c.dylib",
+        "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch.dylib",
+        "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch_cpu.dylib",
+        "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libc10.dylib"
+      ]
+    }
+  },
+  "source_provenance": {
+    "base_manifest": {
+      "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/source_patch/patch_manifest.json",
+      "sha256": "8b0a650d6bd4fb16941f52e0754c45581dc73e1ad5d8db23661a9e4dcb4d5ea8"
+    },
+    "public_source_head": "30931e52f99e38f9abcd6e7e3b8cd055227a5c23",
+    "canonical_unchanged_checks": [
+      {
+        "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/phys/module_mp_kdm6ad_cons.F",
+        "baseline_sha256": "940adce388dff58495710349a62a79dcc66506f3017cc089756d8f3992b7e9bb",
+        "current_sha256": "940adce388dff58495710349a62a79dcc66506f3017cc089756d8f3992b7e9bb",
+        "matches_original_manifest_base": true
+      },
+      {
+        "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/phys/kdm6_iso_c.F",
+        "baseline_sha256": "0aef23e61cd0e1a31eda0d9213f48c838a119f0c8e0de6dcf1e8da76af6b55b3",
+        "current_sha256": "0aef23e61cd0e1a31eda0d9213f48c838a119f0c8e0de6dcf1e8da76af6b55b3",
+        "matches_original_manifest_base": true
+      }
+    ],
+    "private_build_sources": [
+      {
+        "role": "mp337 experimental wrapper source",
+        "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/phys/module_mp_kdm6ad_cons.F",
+        "sha256": "e4ab55a672f28c47d341ebf75ce589b32c2bbaa4da960c6b04157ec682a46965"
+      },
+      {
+        "role": "authoritative private host ISO source (.F; compiled through the host preprocessor rule)",
+        "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/phys/kdm6_iso_c.F",
+        "sha256": "4c7f9f22df54e91f30f97d1d8c0b8921537913f4236c6baf56c5579701a64f07"
+      },
+      {
+        "role": "transplanted public ISO source bytes",
+        "path": "/private/tmp/KDM6AD-research-rc-20261007/source/libtorch/bridge/kdm6_iso_c.f90",
+        "sha256": "4c7f9f22df54e91f30f97d1d8c0b8921537913f4236c6baf56c5579701a64f07",
+        "byte_equal_to_private_primary_F": true
+      },
+      {
+        "role": "generated Fortran after .F preprocessing; build artifact, not authoritative source",
+        "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/phys/kdm6_iso_c.f90",
+        "sha256": "65a2a06d1cd99374fd3de28e4dd4db914477b9d2361c1897ab73e2ca6efb5258",
+        "distinct_from_primary_F": true
+      }
+    ],
+    "experimental_scope": {
+      "changed_copy_only": [
+        "isolated mp337 wrapper",
+        "isolated kdm6_iso_c.F ABI mirror"
+      ],
+      "selector": "physics_variant=2 (normalized), dry_number=1",
+      "canonical_mp37_mp137_routes_modified": false,
+      "legacy_S8_probe_reused_as_build_or_forecast_evidence": false
+    }
+  },
+  "build": {
+    "compile_attempts": [
+      {
+        "pass": 1,
+        "log": "/private/tmp/KDM6AD-viirs-native-run-20261007/compile.log",
+        "log_sha256": "edaa8ef56e1c6ea91e6bf14ff6e6aa0374310823519f3035e9c36fb3c8a5fa6e",
+        "result": "failed",
+        "reason": "stale/generated ISO mirror lacked kdm6_step_v2_args_t; wrapper compile failed"
+      },
+      {
+        "pass": 2,
+        "log": "/private/tmp/KDM6AD-viirs-native-run-20261007/compile_pass2.log",
+        "log_sha256": "89ef0f5e288d3d5032db6c64be3a4e991d8b4ab48880cf8ea89dc1d33936840a",
+        "result": "failed",
+        "reason": "host compile driver did not find test/em_real during post-build population"
+      },
+      {
+        "pass": 3,
+        "log": "/private/tmp/KDM6AD-viirs-native-run-20261007/compile_pass3.log",
+        "log_sha256": "42690621138b8163c5318e59d579711294da8f0c7beb51a423d20579702c90e3",
+        "result": "completed_successfully",
+        "evidence": "Executables successfully built; main/wrf.exe present"
+      }
+    ],
+    "native_build_receipt": {
+      "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/native_build_receipt.json",
+      "sha256": "fe67b4b901ac46979cd03ff5f0a2572f10f92930c265b2ee98afe58ff178cde9"
+    },
+    "executable": {
+      "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/main/wrf.exe",
+      "sha256": "f467755ee9952dc2b1806e9dec3220689e2f26a2939234b0959065b1c357cd41",
+      "size_bytes": 50467544
+    },
+    "kdm6_c_library": {
+      "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+      "sha256": "64cddefe4fce336a7b9a3979278692324a97a17fe7d5264224bcc05a7f20be2d",
+      "abi_version": 2,
+      "v2_args_size_bytes": 344
+    },
+    "objects": [
+      {
+        "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/phys/kdm6_iso_c.o",
+        "sha256": "e38cb2b6ef60c6c80d431324f21b529cd67eb3fb6b81c4ba134f1d9384eaed0b"
+      },
+      {
+        "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/phys/module_mp_kdm6ad_cons.o",
+        "sha256": "8821bfc522408cb0d75e1579bdc861d955996d7464fc41cca9903af4d756e461"
+      }
+    ],
+    "runtime_marker": "KDM6AD_PRIVATE_EXPERIMENTAL_MP337 physics_variant=2 dry_number=1",
+    "abi_guards": "Wrapper compares c_sizeof(ARGS) with the linked v2 size function per call and rejects ABI mismatch; smoke completed through marker.",
+    "loaded_libraries_observation": {
+      "method": "read-only lsof on live WRF process",
+      "pid": 28803,
+      "process_role": "running target case; not stopped or modified",
+      "loaded_paths": [
+        "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+        "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch.dylib",
+        "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch_cpu.dylib",
+        "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libc10.dylib"
+      ],
+      "captured_at_utc": "2026-10-07T22:50:09Z"
+    },
+    "kdm6_floating_point_compile_contract": {
+      "private_phys_makefile": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/phys/Makefile",
+      "Fortran_KDM6_rules_contain": "-ffp-contract=off",
+      "CXX_build_CMake_contract": "-ffp-contract=off",
+      "interpretation": "compile-source contracts verified; pass3 log is retained as the executed build record"
+    }
+  },
+  "first_call_number_units": {
+    "ordinary_QN_basis": "Registry # kg(-1), dry-air basis; QNCCN/QNCLOUD/QNICE/QNRAIN otherwise pass through unchanged at the wrapper boundary.",
+    "exception": "First-call NCCN initializer is a volume concentration (cm^-3 profile multiplied by 1e6); only ITIMESTEP==1 NN_IN is converted to #/kg dry using DEN/(1+Q).",
+    "source": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/phys/module_mp_kdm6ad_cons.F",
+    "source_sha256": "e4ab55a672f28c47d341ebf75ce589b32c2bbaa4da960c6b04157ec682a46965",
+    "registry_sources": [
+      "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/Registry/Registry.EM_COMMON.var",
+      "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/Registry/Registry.CONVERT"
+    ],
+    "note": "No density scaling is applied to ordinary QN fields in the wrapper; the library owns its dry-density conversion."
+  },
+  "smoke": {
+    "status": "COMPLETED_VALID_40S_EXECUTION_SMOKE_ONLY",
+    "run_id": "mp337_viirs_norm2_dry1_smoke_0min40s_hist0_20261008_063456_p19796",
+    "receipt_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/evidence/smoke40_receipt_2026-10-08.json",
+    "receipt_sha256": "5ece74f1d885497e844bd7cf2638faeb1def0748209af0889c1d6ee9aedcc503",
+    "ranks": 1,
+    "threads": 1,
+    "variant": 2,
+    "dry_number": 1,
+    "times": [
+      "2025-07-19_00:00:00",
+      "2025-07-19_00:00:20",
+      "2025-07-19_00:00:40"
+    ],
+    "forecast": {
+      "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/smoke40/runs/mp337_viirs_norm2_dry1_smoke_0min40s_hist0_20261008_063456_p19796/klfs_lc05_fcst.202507190000",
+      "sha256": "9b045b43c29f1be1ecd8c2cd445d982c2f4a4b8026f8dd48874cf9a3f5e1d5c4",
+      "size_bytes": 953745068,
+      "variables": 254,
+      "numeric_variables": 253,
+      "nonfinite_numeric_variables": 0,
+      "dimensions": {
+        "west_east": 234,
+        "south_north": 282,
+        "bottom_top": 39,
+        "bottom_top_stag": 40
+      }
+    },
+    "smoke_stdout_sha256": "66c10d3a58c29e71d82c850a27ea1916e68fdc56098d143cab784a0db4a53f69",
+    "runtime_marker_seen": true,
+    "source_executable_sha256": "f467755ee9952dc2b1806e9dec3220689e2f26a2939234b0959065b1c357cd41",
+    "source_library_sha256": "64cddefe4fce336a7b9a3979278692324a97a17fe7d5264224bcc05a7f20be2d"
+  },
+  "archive_relocation": {
+    "receipt_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/archive_relocation_receipt.json",
+    "receipt_sha256": "9284dc5e1b995f5aef372885485b2258b01436a174fc000e84772083a43bdc17",
+    "inherited_runs_symlink_encountered": true,
+    "only_new_archive_moved": true,
+    "historical_output_deleted": false,
+    "destination_runs_directory_real": true,
+    "actor": "root manual recovery action",
+    "method": "Python shutil.move of the newly generated smoke run archive into isolated scratch; run_ss_case.py itself did not perform this relocation"
+  },
+  "target_case_as_of_capture": {
+    "status": "RUNNING",
+    "run_id": "mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261008_064206_p28793",
+    "run_directory": "/private/tmp/KDM6AD-viirs-native-run-20261007/target_case_055540_055800/runs/mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261008_064206_p28793",
+    "forecast_file_created": false,
+    "latest_model_time": "2025-07-19_01:12:40",
+    "fatal_or_error_lines_observed": false,
+    "receipt_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/evidence/target_native_run_receipt_2026-10-08.json",
+    "receipt_sha256": "24026a5df50e0723f93526d49473a4d098af44670b5ba5d5b64767117d0b4186",
+    "target_case_manifest_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/target_case_055540_055800/target_case_manifest.json",
+    "target_case_manifest_sha256": "88052927f4385938e82e79f60636e92095ab869c7e3f7b15ff6a5ecfb51cacc3",
+    "case_preparation_snapshot": {
+      "case_manifest_status": "PREPARED_REVIEW_ONLY_NOT_EXECUTED",
+      "runs_directory_real": true,
+      "runs_directory_initially_empty": true,
+      "outputs_present_before_launch": false,
+      "target_run_launched_at_manifest_creation": false,
+      "input_and_static_link_allowlist_entries": 79,
+      "manifest_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/target_case_055540_055800/target_case_manifest.json"
+    }
+  },
+  "evidence_artifacts": [
+    {
+      "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/evidence/isolated_build_smoke_report_2026-10-08.md",
+      "sha256": "a86d4123238f5f8a214862f9c45283934766ec65dc795557f2642b9967a80b27"
+    },
+    {
+      "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/evidence/isolated_build_smoke_manifest_2026-10-08.json",
+      "sha256_note": "manifest hash intentionally not self-referenced"
+    }
+  ],
+  "limitations": [
+    "The target 358-minute run is incomplete in this snapshot; no target forecast or RTTOV BT values are present.",
+    "The completed 40-second smoke checks execution and finite NetCDF output only; it is not forecast-skill, operational parity, optical-physics, or host AD validation.",
+    "The Fortran P8W result is a compiled source-derived thin helper comparison on smoke data, not full WRF module execution; only smoke frame 2 input/output is persisted and per-frame logs for frames 0 and 1 are unavailable.",
+    "No completed native KMA BT evaluation or RTTOV claim is made by this artifact.",
+    "The historical S8 probe is excluded as proof for this build; its former source/binary chain is not the current isolated build."
+  ],
+  "p8w_source_derived_smoke_comparison": {
+    "result_scope": "Red-reported three-frame comparison using only the completed smoke; not target forecast evidence.",
+    "standalone_helper_kind": "compiled REAL(4) source-derived thin transcription; not the full WRF Fortran module/routine build",
+    "reported_times": [
+      "2025-07-19_00:00:00",
+      "2025-07-19_00:00:20",
+      "2025-07-19_00:00:40"
+    ],
+    "interfaces_per_frame": 40,
+    "reported_bitwise_differences_per_frame": [
+      0,
+      0,
+      0
+    ],
+    "reported_max_ulp_per_frame": [
+      0,
+      0,
+      0
+    ],
+    "persisted_frame_artifact": "smoke frame index 2 only; exact per-frame logs for indices 0 and 1 were not persisted",
+    "helper_source": {
+      "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/evidence/p8w_fortran_source_audit_smoke/p8w_helper.f90",
+      "sha256": "587a60435c3d07795f5d89377e721219922bfefd1bc12e6d293e44b645f4f640"
+    },
+    "helper_binary": {
+      "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/evidence/p8w_fortran_source_audit_smoke/p8w_helper",
+      "sha256": "67e6e6f3c5c3f5071e0e6257dd6c3a3cce3907b2487d19a1520498f387cd5f73"
+    },
+    "input_frame_2": {
+      "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/evidence/p8w_fortran_source_audit_smoke/input.txt",
+      "sha256": "694b02c94f096de52432bde51599f3214e7f0be0d5d42b2bec03ecb992156344"
+    },
+    "output_frame_2": {
+      "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/evidence/p8w_fortran_source_audit_smoke/output.txt",
+      "sha256": "3bf8e50a6b98a7342a15f6e21a50e7c60ce1f4ae21ff60d8e84fbb18d895860a"
+    },
+    "authoritative_wrf_source": {
+      "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/share/wrf_timeseries.F",
+      "sha256": "0e86d176a5acbeac82dcf062dff543f4a8a3b4df08841d79679640adbfe96eb1",
+      "note": "Separately pinned source; helper transcription was not a full WRF source compilation."
+    },
+    "compiler_flags_reported": [
+      "gfortran",
+      "-O0",
+      "-ffp-contract=off",
+      "-fno-fast-math"
+    ],
+    "SDKROOT_resolution_reported": "SDKROOT set from xcrun --show-sdk-path for the helper compilation; SDK path/version capture appears in configuration.sdk_capture."
+  }
+}

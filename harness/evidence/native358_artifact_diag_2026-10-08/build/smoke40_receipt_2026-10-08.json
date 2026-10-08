@@ -1,0 +1,131 @@
+{
+  "status": "COMPLETED_VALID_40S_EXECUTION_SMOKE_ONLY",
+  "run_id": "mp337_viirs_norm2_dry1_smoke_0min40s_hist0_20261008_063456_p19796",
+  "archive_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/smoke40/runs/mp337_viirs_norm2_dry1_smoke_0min40s_hist0_20261008_063456_p19796",
+  "case_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/smoke40",
+  "scope": "native 5 km, mp337 isolated normalized variant2/dry_number1 value-only wrapper smoke; not a forecast-skill/science acceptance result",
+  "launch": {
+    "cli": "python harness/run_ss_case.py --mp 337 --minutes 0 --seconds 40 --history 0 --history-s 20 --np 1 --fixed-dt --label viirs_norm2_dry1_smoke --case <smoke40>",
+    "mpi_ranks": 1,
+    "threads": 1,
+    "fixed_dt": true,
+    "requested_seconds": 40,
+    "physics_variant": 2,
+    "dry_number": 1
+  },
+  "binary_and_abi": {
+    "executable_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/main/wrf.exe",
+    "executable_sha256": "f467755ee9952dc2b1806e9dec3220689e2f26a2939234b0959065b1c357cd41",
+    "executable_sha256_before_after_stable": true,
+    "wrapper_source_sha256": "e4ab55a672f28c47d341ebf75ce589b32c2bbaa4da960c6b04157ec682a46965",
+    "iso_source_F_sha256": "4c7f9f22df54e91f30f97d1d8c0b8921537913f4236c6baf56c5579701a64f07",
+    "linked_library_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+    "linked_library_sha256": "64cddefe4fce336a7b9a3979278692324a97a17fe7d5264224bcc05a7f20be2d",
+    "linked_library_abi_version": 2,
+    "linked_library_v2_struct_size": 344,
+    "wrapper_runtime_marker": "KDM6AD_PRIVATE_EXPERIMENTAL_MP337 physics_variant=2 dry_number=1",
+    "otool_load_names": [
+      "@rpath/libkdm6_c.2.dylib",
+      "@rpath/libtorch.dylib",
+      "@rpath/libtorch_cpu.dylib",
+      "@rpath/libc10.dylib"
+    ],
+    "required_rpaths": [
+      "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib",
+      "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib"
+    ]
+  },
+  "runner": {
+    "path": "/private/tmp/KDM6AD-viirs-observation-context-20261007/harness/run_ss_case.py",
+    "sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e"
+  },
+  "result": {
+    "experiment_valid": true,
+    "exit_code": 0,
+    "model_completed": true,
+    "actual_proc_grid": "1x1",
+    "completion_line": "d01 2025-07-19_00:00:40 wrf: SUCCESS COMPLETE WRF"
+  },
+  "inputs": {
+    "wrfinput_d01": {
+      "path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfinput_d01",
+      "sha256_before": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+      "sha256_after": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+      "stable": true
+    },
+    "wrfbdy_d01": {
+      "path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfbdy_d01",
+      "sha256_before": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+      "sha256_after": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+      "stable": true
+    },
+    "wrfchainp_d01": {
+      "path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfchainp_d01",
+      "sha256_before": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3",
+      "sha256_after": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3",
+      "stable": true
+    }
+  },
+  "forecast_output": {
+    "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/smoke40/runs/mp337_viirs_norm2_dry1_smoke_0min40s_hist0_20261008_063456_p19796/klfs_lc05_fcst.202507190000",
+    "sha256": "9b045b43c29f1be1ecd8c2cd445d982c2f4a4b8026f8dd48874cf9a3f5e1d5c4",
+    "byte_equal_to_case_output": true,
+    "size_bytes": 953745068,
+    "times": [
+      "2025-07-19_00:00:00",
+      "2025-07-19_00:00:20",
+      "2025-07-19_00:00:40"
+    ],
+    "variable_count": 254,
+    "numeric_variable_count": 253,
+    "nonfinite_numeric_variables": 0,
+    "dimensions": {
+      "west_east": 234,
+      "south_north": 282,
+      "bottom_top": 39,
+      "bottom_top_stag": 40
+    }
+  },
+  "native_outputs": {
+    "rsl_error_sha256": "18a2410ade2e3f92e87cf1901951256b4d5c92553696ee99f77720f5eb38b924",
+    "rsl_out_sha256": "5dcb23f7d15ea41b8af2b542ddf621e5ca0e000787ecaf29381db00afa085777"
+  },
+  "storage": {
+    "40s_forecast_file_bytes": 953745068,
+    "target_main_history_frames": 8,
+    "estimated_target_forecast_bytes_at_smoke_frame_size": 2543320181,
+    "target_case_runs_directory_real_and_empty_before_any_target_run": true
+  },
+  "separate_target_case": {
+    "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/target_case_055540_055800",
+    "namelist_sha256": "ef4d7054a393dbc0d6aa8f34094571ef65c4d3a076b582acfb822a1ad66fbac1",
+    "manifest_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/target_case_055540_055800/target_case_manifest.json",
+    "manifest_sha256": "88052927f4385938e82e79f60636e92095ab869c7e3f7b15ff6a5ecfb51cacc3",
+    "wrf_exe_link_sha256": "f467755ee9952dc2b1806e9dec3220689e2f26a2939234b0959065b1c357cd41",
+    "runs_is_symlink": false,
+    "runs_is_empty": true,
+    "outputs_present": false,
+    "target_run_launched": false,
+    "cli": [
+      "python",
+      "/Users/yhlee/KDM6AD-k/harness/run_ss_case.py",
+      "--mp",
+      "337",
+      "--minutes",
+      "358",
+      "--seconds",
+      "0",
+      "--history",
+      "0",
+      "--history-s",
+      "20",
+      "--np",
+      "1",
+      "--fixed-dt",
+      "--label",
+      "viirs_norm2_dry1_055540_055800",
+      "--case",
+      "/private/tmp/KDM6AD-viirs-native-run-20261007/target_case_055540_055800"
+    ]
+  }
+}

@@ -1,0 +1,1888 @@
+{
+  "schema": "native_target_artifact_packet_v1",
+  "scope": "failed-run diagnostic artifacts; offline arithmetic is not native/RTTOV execution",
+  "native_run_valid": false,
+  "experiment_valid": false,
+  "diagnostic_only": true,
+  "eligible_for_artifact_gates": false,
+  "file_count": 374,
+  "files": [
+    {
+      "path": "README.md",
+      "bytes": 1601,
+      "sha256": "82fcf71795dc8c727a6fa88680f11dbf710e5c579c61ff595c95e9d4c4a48cf8"
+    },
+    {
+      "path": "build/archive_relocation_receipt.json",
+      "bytes": 488,
+      "sha256": "9284dc5e1b995f5aef372885485b2258b01436a174fc000e84772083a43bdc17"
+    },
+    {
+      "path": "build/isolated_build_smoke_manifest_2026-10-08.json",
+      "bytes": 16594,
+      "sha256": "7bdcc53a036b8c6dfab2d05abfbc4cbe4ec00e098e476bff9e81c567535022fc"
+    },
+    {
+      "path": "build/isolated_build_smoke_report_2026-10-08.md",
+      "bytes": 6319,
+      "sha256": "a86d4123238f5f8a214862f9c45283934766ec65dc795557f2642b9967a80b27"
+    },
+    {
+      "path": "build/mpi_exit_probe40/probe_case_manifest.json",
+      "bytes": 41571,
+      "sha256": "afd40a3c35d841e53f655a6e0e9ff7784d22c6afca53ba93381edaa02f88db7d"
+    },
+    {
+      "path": "build/mpi_exit_probe40/probe_result.json",
+      "bytes": 3052,
+      "sha256": "93e102ebe2782a14e2762f28584ce739304b558e713cfa9c65fb2b8056fbd3d1"
+    },
+    {
+      "path": "build/mpi_exit_probe40_loopback/probe_case_manifest.json",
+      "bytes": 41313,
+      "sha256": "3b8c9d60f418c79f87fa00b518ece0618a767fda0cc62f6aece7f1d6562aac97"
+    },
+    {
+      "path": "build/mpi_exit_probe40_loopback/probe_result.json",
+      "bytes": 3066,
+      "sha256": "0c50006e6b1969fcceda394ecc5b0ff6bfb9204447f5f3230ae4b4b9327cb2c7"
+    },
+    {
+      "path": "build/native_build_receipt.json",
+      "bytes": 706,
+      "sha256": "fe67b4b901ac46979cd03ff5f0a2572f10f92930c265b2ee98afe58ff178cde9"
+    },
+    {
+      "path": "build/native_run_plan_2026-10-07.json",
+      "bytes": 26613,
+      "sha256": "df52684571184879a715a4e27aa0f8b8b420cef02cc45a81f44164a85b63813c"
+    },
+    {
+      "path": "build/smoke40_receipt_2026-10-08.json",
+      "bytes": 5728,
+      "sha256": "5ece74f1d885497e844bd7cf2638faeb1def0748209af0889c1d6ee9aedcc503"
+    },
+    {
+      "path": "build/source_patch/normalized_dry_host337.patch",
+      "bytes": 20969,
+      "sha256": "0b250f1ce2115f90df6ca9c74a3d64bcdb59da0d1f69c3e048a87a07a147ec9a"
+    },
+    {
+      "path": "build/source_patch/patch_manifest.json",
+      "bytes": 6709,
+      "sha256": "8b0a650d6bd4fb16941f52e0754c45581dc73e1ad5d8db23661a9e4dcb4d5ea8"
+    },
+    {
+      "path": "build/source_patch/pipeline_evidence.md",
+      "bytes": 2457,
+      "sha256": "7e0bc2cc4422f7fcd6439c1d458696eba82499ebd3e968ff2cf61f3b16c1b546"
+    },
+    {
+      "path": "build/target/namelist.input",
+      "bytes": 6784,
+      "sha256": "ef4d7054a393dbc0d6aa8f34094571ef65c4d3a076b582acfb822a1ad66fbac1"
+    },
+    {
+      "path": "build/target_launcher_tail.log",
+      "bytes": 5828,
+      "sha256": "f9b193327489a5629094891788a7d8ca99f1c6beadbe0c113f885c371b3d92f8"
+    },
+    {
+      "path": "build/target_launcher_tail_source.json",
+      "bytes": 239,
+      "sha256": "2c637644d8ce23ef1edf4d3baa4a79d01b4960d6c5866ad479683337eba66e23"
+    },
+    {
+      "path": "build/target_native_run_receipt_2026-10-08.json",
+      "bytes": 26451,
+      "sha256": "1cc1947c3355b8939b0b67ddf3b3b9a1599ef4d7375ccc34edeffea3c2c00de1"
+    },
+    {
+      "path": "offline_numeric_cost_replay.py",
+      "bytes": 5575,
+      "sha256": "043e8a0a4e7c6b387dd57f1e06c54f46220283bdeb65f672af7655d4e18297ec"
+    },
+    {
+      "path": "p8w_smoke/input.txt",
+      "bytes": 3791,
+      "sha256": "694b02c94f096de52432bde51599f3214e7f0be0d5d42b2bec03ecb992156344"
+    },
+    {
+      "path": "p8w_smoke/output.txt",
+      "bytes": 1040,
+      "sha256": "3bf8e50a6b98a7342a15f6e21a50e7c60ce1f4ae21ff60d8e84fbb18d895860a"
+    },
+    {
+      "path": "p8w_smoke/p8w_helper.f90",
+      "bytes": 998,
+      "sha256": "587a60435c3d07795f5d89377e721219922bfefd1bc12e6d293e44b645f4f640"
+    },
+    {
+      "path": "recipe/enrich_failed_native_artifact_metadata.py",
+      "bytes": 32080,
+      "sha256": "f02188185168624ee7a1b8ce7cd534a4a04bf5cf78d2c8016004b16ac4acbe61"
+    },
+    {
+      "path": "recipe/run_native_kma_bt_frames.py",
+      "bytes": 59299,
+      "sha256": "408bab9756c6ac1a6e8438b8469c87f41fa239ce75414cd8087d10b6a31d54c1"
+    },
+    {
+      "path": "recipe/test_failed_run_artifact_gate.py",
+      "bytes": 6878,
+      "sha256": "9d7eadec76ca64e053bcc8d42385316f37856c0846c054b67829333da606fe90"
+    },
+    {
+      "path": "results/native8frame_failed_native_artifact_runner_raw.json",
+      "bytes": 195340,
+      "sha256": "f7d2f0df605199209a30f56a2e467e90feae48a928f82acd474d27008f1faa18"
+    },
+    {
+      "path": "results/native8frame_failed_run_artifact_diagnostic.json",
+      "bytes": 195340,
+      "sha256": "f7d2f0df605199209a30f56a2e467e90feae48a928f82acd474d27008f1faa18"
+    },
+    {
+      "path": "results/native8frame_failed_run_artifact_diagnostic_enriched.json",
+      "bytes": 247906,
+      "sha256": "60ccf9056d3ddbfee8d174336ae7177f30242f10a96d12d3d554a63e0f897d05"
+    },
+    {
+      "path": "results/native8frame_failed_run_execution_inventory.json",
+      "bytes": 117398,
+      "sha256": "ea82270a57fa192ea259198cae71685df7637db6e1ef6261d1967c4a518dbc87"
+    },
+    {
+      "path": "results/offline_numeric_cost_replay.json",
+      "bytes": 3217,
+      "sha256": "394f5d324d7ca42d189218cf3887667e909851c4cc3a89ea7a0244a1ac51bf02"
+    },
+    {
+      "path": "rttov_retry2/case_00/in/channels.txt",
+      "bytes": 25,
+      "sha256": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b"
+    },
+    {
+      "path": "rttov_retry2/case_00/in/coef.txt",
+      "bytes": 186,
+      "sha256": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1"
+    },
+    {
+      "path": "rttov_retry2/case_00/in/lprofiles.txt",
+      "bytes": 18,
+      "sha256": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de"
+    },
+    {
+      "path": "rttov_retry2/case_00/in/profiles/001/angles.txt",
+      "bytes": 198,
+      "sha256": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161"
+    },
+    {
+      "path": "rttov_retry2/case_00/in/profiles/001/atm/co2.txt",
+      "bytes": 1584,
+      "sha256": "075c725200902dd1505635d3704db9416ef88f960be482819c17db9422ef7553"
+    },
+    {
+      "path": "rttov_retry2/case_00/in/profiles/001/atm/deff_param.txt",
+      "bytes": 54,
+      "sha256": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0"
+    },
+    {
+      "path": "rttov_retry2/case_00/in/profiles/001/atm/hydro.txt",
+      "bytes": 12144,
+      "sha256": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc"
+    },
+    {
+      "path": "rttov_retry2/case_00/in/profiles/001/atm/hydro_deff.txt",
+      "bytes": 10626,
+      "sha256": "6160575f7989ef12b570c807f6da93b29bc82f886ca1c34eb47cee9dd5abf98a"
+    },
+    {
+      "path": "rttov_retry2/case_00/in/profiles/001/atm/hydro_frac.txt",
+      "bytes": 1531,
+      "sha256": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b"
+    },
+    {
+      "path": "rttov_retry2/case_00/in/profiles/001/atm/mmr_hydro_aer.txt",
+      "bytes": 49,
+      "sha256": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c"
+    },
+    {
+      "path": "rttov_retry2/case_00/in/profiles/001/atm/o3.txt",
+      "bytes": 1584,
+      "sha256": "4169bd766bea042e1de81390c48df7c0f3ea690b5fc44007508127b3047fed6d"
+    },
+    {
+      "path": "rttov_retry2/case_00/in/profiles/001/atm/p.txt",
+      "bytes": 1584,
+      "sha256": "c7d47eed648f3e7313979e84600ae916fbf8d381d6c21f2d8f562c88463a7726"
+    },
+    {
+      "path": "rttov_retry2/case_00/in/profiles/001/atm/p_half.txt",
+      "bytes": 1608,
+      "sha256": "dc736422f63710511af6a3336a77b33f092c63e66deffba26e5e8c29f47c2b11"
+    },
+    {
+      "path": "rttov_retry2/case_00/in/profiles/001/atm/q.txt",
+      "bytes": 1518,
+      "sha256": "8d5b00aa058fae51b5272ddc8f6f65e1bcaa34a65c8e499c099128b87e6cb135"
+    },
+    {
+      "path": "rttov_retry2/case_00/in/profiles/001/atm/simple_cloud.txt",
+      "bytes": 54,
+      "sha256": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d"
+    },
+    {
+      "path": "rttov_retry2/case_00/in/profiles/001/atm/t.txt",
+      "bytes": 1518,
+      "sha256": "87b10f1915c6d0c358bc5f135d560c06db6e6e9b3ac05364e34cc14d655f0bfc"
+    },
+    {
+      "path": "rttov_retry2/case_00/in/profiles/001/be.txt",
+      "bytes": 10,
+      "sha256": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1"
+    },
+    {
+      "path": "rttov_retry2/case_00/in/profiles/001/datetime.txt",
+      "bytes": 25,
+      "sha256": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86"
+    },
+    {
+      "path": "rttov_retry2/case_00/in/profiles/001/gas_units.txt",
+      "bytes": 25,
+      "sha256": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555"
+    },
+    {
+      "path": "rttov_retry2/case_00/in/profiles/001/prof_id.txt",
+      "bytes": 9,
+      "sha256": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793"
+    },
+    {
+      "path": "rttov_retry2/case_00/in/profiles/001/sfc/01/near_surface.txt",
+      "bytes": 162,
+      "sha256": "9112090ec89e82f530bba289148450d568b12fdf136c493a6fd3f64744321d9e"
+    },
+    {
+      "path": "rttov_retry2/case_00/in/profiles/001/sfc/01/skin.txt",
+      "bytes": 350,
+      "sha256": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b"
+    },
+    {
+      "path": "rttov_retry2/case_00/out/direct/brdf_out.txt",
+      "bytes": 262,
+      "sha256": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+    },
+    {
+      "path": "rttov_retry2/case_00/out/direct/diffuse_reflectance_out.txt",
+      "bytes": 270,
+      "sha256": "4ab41aebeca12ed125438926a568bcdfebe635fcfbb5ad321c00003f613c7029"
+    },
+    {
+      "path": "rttov_retry2/case_00/out/direct/emissivity_out.txt",
+      "bytes": 261,
+      "sha256": "9df8cfeab4c6ba9e2bbba31bd40b493b5621bd197267f9445797b58451462aa3"
+    },
+    {
+      "path": "rttov_retry2/case_00/out/direct/radiance.txt",
+      "bytes": 1445,
+      "sha256": "471ce332d8491e2b5feedeea34fbc22548c96c25ccd2ea18abc7184f5f4253ea"
+    },
+    {
+      "path": "rttov_retry2/case_00/out/direct/transmission.txt",
+      "bytes": 32224,
+      "sha256": "ba17ad42f669b88a12760e16d00477cf39b8491e034aae218e0b78f1ee8cd32a"
+    },
+    {
+      "path": "rttov_retry2/case_00/out/gas_units.log",
+      "bytes": 100,
+      "sha256": "bbfa470e4245ae057ca3ced2319be137d64b8976d5ecea75d8d820f61cb0e026"
+    },
+    {
+      "path": "rttov_retry2/case_00/out/interpolation.log",
+      "bytes": 30,
+      "sha256": "041b94987f4ac2b741b1baeb77c2f53060aee2b62d41122efb537ec8a3b806aa"
+    },
+    {
+      "path": "rttov_retry2/case_00/out/k/brdf_k.txt",
+      "bytes": 260,
+      "sha256": "145610a7c73dda69ee8ea528f7b1fa51b22a4d93ee754df2712122335722f8a0"
+    },
+    {
+      "path": "rttov_retry2/case_00/out/k/brdf_out.txt",
+      "bytes": 262,
+      "sha256": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+    },
+    {
+      "path": "rttov_retry2/case_00/out/k/diffuse_reflectance_k.txt",
+      "bytes": 268,
+      "sha256": "d2587f977982983659b7f4d8197f55775d27cef96755f85fe3a0d55381db1c7d"
+    },
+    {
+      "path": "rttov_retry2/case_00/out/k/diffuse_reflectance_out.txt",
+      "bytes": 270,
+      "sha256": "4ab41aebeca12ed125438926a568bcdfebe635fcfbb5ad321c00003f613c7029"
+    },
+    {
+      "path": "rttov_retry2/case_00/out/k/emissivity_k.txt",
+      "bytes": 259,
+      "sha256": "d19fb6b6f7c9ab3ccd50699ff108174815f5d92c99421117e0d2c3628029aaef"
+    },
+    {
+      "path": "rttov_retry2/case_00/out/k/emissivity_out.txt",
+      "bytes": 261,
+      "sha256": "9df8cfeab4c6ba9e2bbba31bd40b493b5621bd197267f9445797b58451462aa3"
+    },
+    {
+      "path": "rttov_retry2/case_00/out/k/profiles_k.txt",
+      "bytes": 355264,
+      "sha256": "faca3777635c33a45397ff27cb88554448ac9768825c7848d93d6f28f3772c57"
+    },
+    {
+      "path": "rttov_retry2/case_00/out/k/radiance.txt",
+      "bytes": 1445,
+      "sha256": "471ce332d8491e2b5feedeea34fbc22548c96c25ccd2ea18abc7184f5f4253ea"
+    },
+    {
+      "path": "rttov_retry2/case_00/out/k/transmission.txt",
+      "bytes": 32224,
+      "sha256": "ba17ad42f669b88a12760e16d00477cf39b8491e034aae218e0b78f1ee8cd32a"
+    },
+    {
+      "path": "rttov_retry2/case_00/out/rttov_test.log",
+      "bytes": 518,
+      "sha256": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df"
+    },
+    {
+      "path": "rttov_retry2/case_00/out/rttov_test.txt",
+      "bytes": 5336,
+      "sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+    },
+    {
+      "path": "rttov_retry2/case_00/out/run.sh",
+      "bytes": 184,
+      "sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+    },
+    {
+      "path": "rttov_retry2/case_00/out/run.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "rttov_retry2/case_00/out/run.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "rttov_retry2/case_01/in/channels.txt",
+      "bytes": 25,
+      "sha256": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b"
+    },
+    {
+      "path": "rttov_retry2/case_01/in/coef.txt",
+      "bytes": 186,
+      "sha256": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1"
+    },
+    {
+      "path": "rttov_retry2/case_01/in/lprofiles.txt",
+      "bytes": 18,
+      "sha256": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de"
+    },
+    {
+      "path": "rttov_retry2/case_01/in/profiles/001/angles.txt",
+      "bytes": 198,
+      "sha256": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161"
+    },
+    {
+      "path": "rttov_retry2/case_01/in/profiles/001/atm/co2.txt",
+      "bytes": 1584,
+      "sha256": "10bd872ae422f29c5df7ca42003c3b0969eb9d0cb9a1915167d4a455014face9"
+    },
+    {
+      "path": "rttov_retry2/case_01/in/profiles/001/atm/deff_param.txt",
+      "bytes": 54,
+      "sha256": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0"
+    },
+    {
+      "path": "rttov_retry2/case_01/in/profiles/001/atm/hydro.txt",
+      "bytes": 12144,
+      "sha256": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc"
+    },
+    {
+      "path": "rttov_retry2/case_01/in/profiles/001/atm/hydro_deff.txt",
+      "bytes": 10626,
+      "sha256": "6160575f7989ef12b570c807f6da93b29bc82f886ca1c34eb47cee9dd5abf98a"
+    },
+    {
+      "path": "rttov_retry2/case_01/in/profiles/001/atm/hydro_frac.txt",
+      "bytes": 1531,
+      "sha256": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b"
+    },
+    {
+      "path": "rttov_retry2/case_01/in/profiles/001/atm/mmr_hydro_aer.txt",
+      "bytes": 49,
+      "sha256": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c"
+    },
+    {
+      "path": "rttov_retry2/case_01/in/profiles/001/atm/o3.txt",
+      "bytes": 1584,
+      "sha256": "6b7da0a7dc2d7c072ff28a7c71c931e7b8d193d42cde682a6359340ec9f26641"
+    },
+    {
+      "path": "rttov_retry2/case_01/in/profiles/001/atm/p.txt",
+      "bytes": 1584,
+      "sha256": "244c45bdfc83b3568f3aec41858a4667ac2130bab52133b5306f1d548c15f213"
+    },
+    {
+      "path": "rttov_retry2/case_01/in/profiles/001/atm/p_half.txt",
+      "bytes": 1608,
+      "sha256": "8280f3ba5e8e30af547fbfcfd3e5e4c1447cc60fbc34bc184b98ea86c4ad0b55"
+    },
+    {
+      "path": "rttov_retry2/case_01/in/profiles/001/atm/q.txt",
+      "bytes": 1518,
+      "sha256": "88d7ba081b9395d50f33d9babeb6dd51e16e8362b83c53710ad861994800a1a1"
+    },
+    {
+      "path": "rttov_retry2/case_01/in/profiles/001/atm/simple_cloud.txt",
+      "bytes": 54,
+      "sha256": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d"
+    },
+    {
+      "path": "rttov_retry2/case_01/in/profiles/001/atm/t.txt",
+      "bytes": 1518,
+      "sha256": "a2680f729c605654c10b86b6984a42d6d10921c7e5a7a066cc83de7f3a8ea78b"
+    },
+    {
+      "path": "rttov_retry2/case_01/in/profiles/001/be.txt",
+      "bytes": 10,
+      "sha256": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1"
+    },
+    {
+      "path": "rttov_retry2/case_01/in/profiles/001/datetime.txt",
+      "bytes": 25,
+      "sha256": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86"
+    },
+    {
+      "path": "rttov_retry2/case_01/in/profiles/001/gas_units.txt",
+      "bytes": 25,
+      "sha256": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555"
+    },
+    {
+      "path": "rttov_retry2/case_01/in/profiles/001/prof_id.txt",
+      "bytes": 9,
+      "sha256": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793"
+    },
+    {
+      "path": "rttov_retry2/case_01/in/profiles/001/sfc/01/near_surface.txt",
+      "bytes": 162,
+      "sha256": "3d2b2d431d546df823bcee7393cbb9b2326ce2d1320cdf4a67c40fe179924122"
+    },
+    {
+      "path": "rttov_retry2/case_01/in/profiles/001/sfc/01/skin.txt",
+      "bytes": 350,
+      "sha256": "f2601c58af9b69bd86c080eace80f45cb7e1f8ab34053d6780df8923c0c33ce4"
+    },
+    {
+      "path": "rttov_retry2/case_01/out/direct/brdf_out.txt",
+      "bytes": 262,
+      "sha256": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+    },
+    {
+      "path": "rttov_retry2/case_01/out/direct/diffuse_reflectance_out.txt",
+      "bytes": 270,
+      "sha256": "8cb3e5d82a61216827cdfc1d59d120d6e131f8e70d107836ef00e81cdfa4b651"
+    },
+    {
+      "path": "rttov_retry2/case_01/out/direct/emissivity_out.txt",
+      "bytes": 261,
+      "sha256": "61d4fa4b7724476d9a36fd23ef3327ecbeba1fd954e596f400dc0fae7c818d78"
+    },
+    {
+      "path": "rttov_retry2/case_01/out/direct/radiance.txt",
+      "bytes": 1445,
+      "sha256": "0d765e88a8d9e446868434d82f24b8c8a3bfd4bd3c3a0043956c3f8370e506ef"
+    },
+    {
+      "path": "rttov_retry2/case_01/out/direct/transmission.txt",
+      "bytes": 32224,
+      "sha256": "7ce10f18626bb8699e0f5bc67387f1add16cd93620ecb057ad0009ba1b8c9eba"
+    },
+    {
+      "path": "rttov_retry2/case_01/out/gas_units.log",
+      "bytes": 100,
+      "sha256": "bbfa470e4245ae057ca3ced2319be137d64b8976d5ecea75d8d820f61cb0e026"
+    },
+    {
+      "path": "rttov_retry2/case_01/out/interpolation.log",
+      "bytes": 30,
+      "sha256": "041b94987f4ac2b741b1baeb77c2f53060aee2b62d41122efb537ec8a3b806aa"
+    },
+    {
+      "path": "rttov_retry2/case_01/out/k/brdf_k.txt",
+      "bytes": 260,
+      "sha256": "145610a7c73dda69ee8ea528f7b1fa51b22a4d93ee754df2712122335722f8a0"
+    },
+    {
+      "path": "rttov_retry2/case_01/out/k/brdf_out.txt",
+      "bytes": 262,
+      "sha256": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+    },
+    {
+      "path": "rttov_retry2/case_01/out/k/diffuse_reflectance_k.txt",
+      "bytes": 268,
+      "sha256": "d2587f977982983659b7f4d8197f55775d27cef96755f85fe3a0d55381db1c7d"
+    },
+    {
+      "path": "rttov_retry2/case_01/out/k/diffuse_reflectance_out.txt",
+      "bytes": 270,
+      "sha256": "8cb3e5d82a61216827cdfc1d59d120d6e131f8e70d107836ef00e81cdfa4b651"
+    },
+    {
+      "path": "rttov_retry2/case_01/out/k/emissivity_k.txt",
+      "bytes": 259,
+      "sha256": "d19fb6b6f7c9ab3ccd50699ff108174815f5d92c99421117e0d2c3628029aaef"
+    },
+    {
+      "path": "rttov_retry2/case_01/out/k/emissivity_out.txt",
+      "bytes": 261,
+      "sha256": "61d4fa4b7724476d9a36fd23ef3327ecbeba1fd954e596f400dc0fae7c818d78"
+    },
+    {
+      "path": "rttov_retry2/case_01/out/k/profiles_k.txt",
+      "bytes": 355264,
+      "sha256": "fc45cf8590d9444f857d125e64440eca60229789c357273d353cb65db844aca9"
+    },
+    {
+      "path": "rttov_retry2/case_01/out/k/radiance.txt",
+      "bytes": 1445,
+      "sha256": "0d765e88a8d9e446868434d82f24b8c8a3bfd4bd3c3a0043956c3f8370e506ef"
+    },
+    {
+      "path": "rttov_retry2/case_01/out/k/transmission.txt",
+      "bytes": 32224,
+      "sha256": "7ce10f18626bb8699e0f5bc67387f1add16cd93620ecb057ad0009ba1b8c9eba"
+    },
+    {
+      "path": "rttov_retry2/case_01/out/rttov_test.log",
+      "bytes": 518,
+      "sha256": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df"
+    },
+    {
+      "path": "rttov_retry2/case_01/out/rttov_test.txt",
+      "bytes": 5336,
+      "sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+    },
+    {
+      "path": "rttov_retry2/case_01/out/run.sh",
+      "bytes": 184,
+      "sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+    },
+    {
+      "path": "rttov_retry2/case_01/out/run.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "rttov_retry2/case_01/out/run.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "rttov_retry2/case_02/in/channels.txt",
+      "bytes": 25,
+      "sha256": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b"
+    },
+    {
+      "path": "rttov_retry2/case_02/in/coef.txt",
+      "bytes": 186,
+      "sha256": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1"
+    },
+    {
+      "path": "rttov_retry2/case_02/in/lprofiles.txt",
+      "bytes": 18,
+      "sha256": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de"
+    },
+    {
+      "path": "rttov_retry2/case_02/in/profiles/001/angles.txt",
+      "bytes": 198,
+      "sha256": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161"
+    },
+    {
+      "path": "rttov_retry2/case_02/in/profiles/001/atm/co2.txt",
+      "bytes": 1584,
+      "sha256": "3500104087d32ed9e11dbd2ecf86297cf3a5c9a5e89fdb2d36b4fbb33deda571"
+    },
+    {
+      "path": "rttov_retry2/case_02/in/profiles/001/atm/deff_param.txt",
+      "bytes": 54,
+      "sha256": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0"
+    },
+    {
+      "path": "rttov_retry2/case_02/in/profiles/001/atm/hydro.txt",
+      "bytes": 12144,
+      "sha256": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc"
+    },
+    {
+      "path": "rttov_retry2/case_02/in/profiles/001/atm/hydro_deff.txt",
+      "bytes": 10626,
+      "sha256": "6160575f7989ef12b570c807f6da93b29bc82f886ca1c34eb47cee9dd5abf98a"
+    },
+    {
+      "path": "rttov_retry2/case_02/in/profiles/001/atm/hydro_frac.txt",
+      "bytes": 1531,
+      "sha256": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b"
+    },
+    {
+      "path": "rttov_retry2/case_02/in/profiles/001/atm/mmr_hydro_aer.txt",
+      "bytes": 49,
+      "sha256": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c"
+    },
+    {
+      "path": "rttov_retry2/case_02/in/profiles/001/atm/o3.txt",
+      "bytes": 1584,
+      "sha256": "ac60a4b72a8753ef270f0f7026b1bb49de9a2dccdc0c508dabcbb57df2dcc23c"
+    },
+    {
+      "path": "rttov_retry2/case_02/in/profiles/001/atm/p.txt",
+      "bytes": 1584,
+      "sha256": "c9262aaed070f82223b8745807b7f2d09c7c7d881c7bb82be4ec596864b86e9a"
+    },
+    {
+      "path": "rttov_retry2/case_02/in/profiles/001/atm/p_half.txt",
+      "bytes": 1608,
+      "sha256": "0b6bd61e8540dc1e514d4df56da4a635bc1bdad61eb49914b096e2a883c47833"
+    },
+    {
+      "path": "rttov_retry2/case_02/in/profiles/001/atm/q.txt",
+      "bytes": 1518,
+      "sha256": "3fa70de7c3e32185ee976fb43f79b1d95235f8d7dc5e686cd5d5b72053227783"
+    },
+    {
+      "path": "rttov_retry2/case_02/in/profiles/001/atm/simple_cloud.txt",
+      "bytes": 54,
+      "sha256": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d"
+    },
+    {
+      "path": "rttov_retry2/case_02/in/profiles/001/atm/t.txt",
+      "bytes": 1518,
+      "sha256": "0bc08a33cd7d6fb8f1438e4b59f63ce1f6faab97ee5b4ada8d75c37c8f649796"
+    },
+    {
+      "path": "rttov_retry2/case_02/in/profiles/001/be.txt",
+      "bytes": 10,
+      "sha256": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1"
+    },
+    {
+      "path": "rttov_retry2/case_02/in/profiles/001/datetime.txt",
+      "bytes": 25,
+      "sha256": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86"
+    },
+    {
+      "path": "rttov_retry2/case_02/in/profiles/001/gas_units.txt",
+      "bytes": 25,
+      "sha256": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555"
+    },
+    {
+      "path": "rttov_retry2/case_02/in/profiles/001/prof_id.txt",
+      "bytes": 9,
+      "sha256": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793"
+    },
+    {
+      "path": "rttov_retry2/case_02/in/profiles/001/sfc/01/near_surface.txt",
+      "bytes": 162,
+      "sha256": "06dae798936ae385bcae6214ac798bf3c0641bf358968d9adc3b23d8a47b6be8"
+    },
+    {
+      "path": "rttov_retry2/case_02/in/profiles/001/sfc/01/skin.txt",
+      "bytes": 350,
+      "sha256": "3002776050bc448b673f63ffd633d9eae7c9a244126f307366af51bcb2eb8e80"
+    },
+    {
+      "path": "rttov_retry2/case_02/out/direct/brdf_out.txt",
+      "bytes": 262,
+      "sha256": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+    },
+    {
+      "path": "rttov_retry2/case_02/out/direct/diffuse_reflectance_out.txt",
+      "bytes": 270,
+      "sha256": "39c8deae34056d737bc5264b653214ddf11cfa685fe6501af6420041ba577c00"
+    },
+    {
+      "path": "rttov_retry2/case_02/out/direct/emissivity_out.txt",
+      "bytes": 261,
+      "sha256": "1bf6a2016f4eaa3478b49058a49d7a37d4f5d4ac724ff8451bf9389f978eefa8"
+    },
+    {
+      "path": "rttov_retry2/case_02/out/direct/radiance.txt",
+      "bytes": 1445,
+      "sha256": "b44e50657b631aaf1565f00430224660df4b70d55edfbd39e17519368d520d3a"
+    },
+    {
+      "path": "rttov_retry2/case_02/out/direct/transmission.txt",
+      "bytes": 32224,
+      "sha256": "58633073ad59a948b1f3f8e796ac77226817168de982e69b68de0921704ab4de"
+    },
+    {
+      "path": "rttov_retry2/case_02/out/gas_units.log",
+      "bytes": 100,
+      "sha256": "bbfa470e4245ae057ca3ced2319be137d64b8976d5ecea75d8d820f61cb0e026"
+    },
+    {
+      "path": "rttov_retry2/case_02/out/interpolation.log",
+      "bytes": 30,
+      "sha256": "041b94987f4ac2b741b1baeb77c2f53060aee2b62d41122efb537ec8a3b806aa"
+    },
+    {
+      "path": "rttov_retry2/case_02/out/k/brdf_k.txt",
+      "bytes": 260,
+      "sha256": "145610a7c73dda69ee8ea528f7b1fa51b22a4d93ee754df2712122335722f8a0"
+    },
+    {
+      "path": "rttov_retry2/case_02/out/k/brdf_out.txt",
+      "bytes": 262,
+      "sha256": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+    },
+    {
+      "path": "rttov_retry2/case_02/out/k/diffuse_reflectance_k.txt",
+      "bytes": 268,
+      "sha256": "d2587f977982983659b7f4d8197f55775d27cef96755f85fe3a0d55381db1c7d"
+    },
+    {
+      "path": "rttov_retry2/case_02/out/k/diffuse_reflectance_out.txt",
+      "bytes": 270,
+      "sha256": "39c8deae34056d737bc5264b653214ddf11cfa685fe6501af6420041ba577c00"
+    },
+    {
+      "path": "rttov_retry2/case_02/out/k/emissivity_k.txt",
+      "bytes": 259,
+      "sha256": "d19fb6b6f7c9ab3ccd50699ff108174815f5d92c99421117e0d2c3628029aaef"
+    },
+    {
+      "path": "rttov_retry2/case_02/out/k/emissivity_out.txt",
+      "bytes": 261,
+      "sha256": "1bf6a2016f4eaa3478b49058a49d7a37d4f5d4ac724ff8451bf9389f978eefa8"
+    },
+    {
+      "path": "rttov_retry2/case_02/out/k/profiles_k.txt",
+      "bytes": 355264,
+      "sha256": "c2af5b53944895cc52b867249295375d2ac803dd153b8ae6c1d6943eacbfa633"
+    },
+    {
+      "path": "rttov_retry2/case_02/out/k/radiance.txt",
+      "bytes": 1445,
+      "sha256": "b44e50657b631aaf1565f00430224660df4b70d55edfbd39e17519368d520d3a"
+    },
+    {
+      "path": "rttov_retry2/case_02/out/k/transmission.txt",
+      "bytes": 32224,
+      "sha256": "58633073ad59a948b1f3f8e796ac77226817168de982e69b68de0921704ab4de"
+    },
+    {
+      "path": "rttov_retry2/case_02/out/rttov_test.log",
+      "bytes": 518,
+      "sha256": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df"
+    },
+    {
+      "path": "rttov_retry2/case_02/out/rttov_test.txt",
+      "bytes": 5336,
+      "sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+    },
+    {
+      "path": "rttov_retry2/case_02/out/run.sh",
+      "bytes": 184,
+      "sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+    },
+    {
+      "path": "rttov_retry2/case_02/out/run.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "rttov_retry2/case_02/out/run.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "rttov_retry2/case_03/in/channels.txt",
+      "bytes": 25,
+      "sha256": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b"
+    },
+    {
+      "path": "rttov_retry2/case_03/in/coef.txt",
+      "bytes": 186,
+      "sha256": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1"
+    },
+    {
+      "path": "rttov_retry2/case_03/in/lprofiles.txt",
+      "bytes": 18,
+      "sha256": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de"
+    },
+    {
+      "path": "rttov_retry2/case_03/in/profiles/001/angles.txt",
+      "bytes": 198,
+      "sha256": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161"
+    },
+    {
+      "path": "rttov_retry2/case_03/in/profiles/001/atm/co2.txt",
+      "bytes": 1584,
+      "sha256": "9e112d2391c7e273710206bcf228f6becf748782e84df65d7258c40dc363d764"
+    },
+    {
+      "path": "rttov_retry2/case_03/in/profiles/001/atm/deff_param.txt",
+      "bytes": 54,
+      "sha256": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0"
+    },
+    {
+      "path": "rttov_retry2/case_03/in/profiles/001/atm/hydro.txt",
+      "bytes": 12144,
+      "sha256": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc"
+    },
+    {
+      "path": "rttov_retry2/case_03/in/profiles/001/atm/hydro_deff.txt",
+      "bytes": 10626,
+      "sha256": "6160575f7989ef12b570c807f6da93b29bc82f886ca1c34eb47cee9dd5abf98a"
+    },
+    {
+      "path": "rttov_retry2/case_03/in/profiles/001/atm/hydro_frac.txt",
+      "bytes": 1531,
+      "sha256": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b"
+    },
+    {
+      "path": "rttov_retry2/case_03/in/profiles/001/atm/mmr_hydro_aer.txt",
+      "bytes": 49,
+      "sha256": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c"
+    },
+    {
+      "path": "rttov_retry2/case_03/in/profiles/001/atm/o3.txt",
+      "bytes": 1584,
+      "sha256": "48a7fe60e5990b75e1513e590f821bebf4aeb62c7e7f6766bea8315ad56e39a0"
+    },
+    {
+      "path": "rttov_retry2/case_03/in/profiles/001/atm/p.txt",
+      "bytes": 1584,
+      "sha256": "6eee586bf1e7da0581fc45bf457da434e3a060ee352956ea665dc6536c29aa95"
+    },
+    {
+      "path": "rttov_retry2/case_03/in/profiles/001/atm/p_half.txt",
+      "bytes": 1608,
+      "sha256": "3b168b9e86c9e8e14d4466889e1920b0522de2fd0c282975dce3182d975bec91"
+    },
+    {
+      "path": "rttov_retry2/case_03/in/profiles/001/atm/q.txt",
+      "bytes": 1518,
+      "sha256": "aeeebe359387eecae21149ad8b073388e8c319fefcbd62549ac1f8a140dd6b73"
+    },
+    {
+      "path": "rttov_retry2/case_03/in/profiles/001/atm/simple_cloud.txt",
+      "bytes": 54,
+      "sha256": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d"
+    },
+    {
+      "path": "rttov_retry2/case_03/in/profiles/001/atm/t.txt",
+      "bytes": 1518,
+      "sha256": "34402d87909f629a1368abcece6248ed2017687fd9c3068418108a179399fe8e"
+    },
+    {
+      "path": "rttov_retry2/case_03/in/profiles/001/be.txt",
+      "bytes": 10,
+      "sha256": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1"
+    },
+    {
+      "path": "rttov_retry2/case_03/in/profiles/001/datetime.txt",
+      "bytes": 25,
+      "sha256": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86"
+    },
+    {
+      "path": "rttov_retry2/case_03/in/profiles/001/gas_units.txt",
+      "bytes": 25,
+      "sha256": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555"
+    },
+    {
+      "path": "rttov_retry2/case_03/in/profiles/001/prof_id.txt",
+      "bytes": 9,
+      "sha256": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793"
+    },
+    {
+      "path": "rttov_retry2/case_03/in/profiles/001/sfc/01/near_surface.txt",
+      "bytes": 162,
+      "sha256": "1cca5671c6c638f59e3b38d2b6c1b1404d63bf1540f4c9ca07d573a4ac581d85"
+    },
+    {
+      "path": "rttov_retry2/case_03/in/profiles/001/sfc/01/skin.txt",
+      "bytes": 350,
+      "sha256": "3157e9b34e0d5008a79805d17d809a1b23914cbbe5bc9d774b2a2fad2f3a7647"
+    },
+    {
+      "path": "rttov_retry2/case_03/out/direct/brdf_out.txt",
+      "bytes": 262,
+      "sha256": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+    },
+    {
+      "path": "rttov_retry2/case_03/out/direct/diffuse_reflectance_out.txt",
+      "bytes": 270,
+      "sha256": "c586bf8c2fbbb3b80fcf4dde95b62225666c6dd0991269c4e0a18d4404c621c3"
+    },
+    {
+      "path": "rttov_retry2/case_03/out/direct/emissivity_out.txt",
+      "bytes": 261,
+      "sha256": "ba5271cd83d5d1635d047961a1a0c503d5daede8963172f3f6d8cc9a192f7906"
+    },
+    {
+      "path": "rttov_retry2/case_03/out/direct/radiance.txt",
+      "bytes": 1445,
+      "sha256": "f066a4b3c058611ca16f921b0d32075d8f8d69d711f2f056b05e6f7ad8babcaa"
+    },
+    {
+      "path": "rttov_retry2/case_03/out/direct/transmission.txt",
+      "bytes": 32224,
+      "sha256": "5130dd7919fae143e6b07bda78985bd101f4fcf22429fac7a11524e5093db53c"
+    },
+    {
+      "path": "rttov_retry2/case_03/out/gas_units.log",
+      "bytes": 100,
+      "sha256": "bbfa470e4245ae057ca3ced2319be137d64b8976d5ecea75d8d820f61cb0e026"
+    },
+    {
+      "path": "rttov_retry2/case_03/out/interpolation.log",
+      "bytes": 30,
+      "sha256": "041b94987f4ac2b741b1baeb77c2f53060aee2b62d41122efb537ec8a3b806aa"
+    },
+    {
+      "path": "rttov_retry2/case_03/out/k/brdf_k.txt",
+      "bytes": 260,
+      "sha256": "145610a7c73dda69ee8ea528f7b1fa51b22a4d93ee754df2712122335722f8a0"
+    },
+    {
+      "path": "rttov_retry2/case_03/out/k/brdf_out.txt",
+      "bytes": 262,
+      "sha256": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+    },
+    {
+      "path": "rttov_retry2/case_03/out/k/diffuse_reflectance_k.txt",
+      "bytes": 268,
+      "sha256": "d2587f977982983659b7f4d8197f55775d27cef96755f85fe3a0d55381db1c7d"
+    },
+    {
+      "path": "rttov_retry2/case_03/out/k/diffuse_reflectance_out.txt",
+      "bytes": 270,
+      "sha256": "c586bf8c2fbbb3b80fcf4dde95b62225666c6dd0991269c4e0a18d4404c621c3"
+    },
+    {
+      "path": "rttov_retry2/case_03/out/k/emissivity_k.txt",
+      "bytes": 259,
+      "sha256": "d19fb6b6f7c9ab3ccd50699ff108174815f5d92c99421117e0d2c3628029aaef"
+    },
+    {
+      "path": "rttov_retry2/case_03/out/k/emissivity_out.txt",
+      "bytes": 261,
+      "sha256": "ba5271cd83d5d1635d047961a1a0c503d5daede8963172f3f6d8cc9a192f7906"
+    },
+    {
+      "path": "rttov_retry2/case_03/out/k/profiles_k.txt",
+      "bytes": 355264,
+      "sha256": "d2a7ab3bfb80bf81e265883e8e6e002f450519355028089faea9eaaba3bee683"
+    },
+    {
+      "path": "rttov_retry2/case_03/out/k/radiance.txt",
+      "bytes": 1445,
+      "sha256": "f066a4b3c058611ca16f921b0d32075d8f8d69d711f2f056b05e6f7ad8babcaa"
+    },
+    {
+      "path": "rttov_retry2/case_03/out/k/transmission.txt",
+      "bytes": 32224,
+      "sha256": "5130dd7919fae143e6b07bda78985bd101f4fcf22429fac7a11524e5093db53c"
+    },
+    {
+      "path": "rttov_retry2/case_03/out/rttov_test.log",
+      "bytes": 518,
+      "sha256": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df"
+    },
+    {
+      "path": "rttov_retry2/case_03/out/rttov_test.txt",
+      "bytes": 5336,
+      "sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+    },
+    {
+      "path": "rttov_retry2/case_03/out/run.sh",
+      "bytes": 184,
+      "sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+    },
+    {
+      "path": "rttov_retry2/case_03/out/run.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "rttov_retry2/case_03/out/run.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "rttov_retry2/case_04/in/channels.txt",
+      "bytes": 25,
+      "sha256": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b"
+    },
+    {
+      "path": "rttov_retry2/case_04/in/coef.txt",
+      "bytes": 186,
+      "sha256": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1"
+    },
+    {
+      "path": "rttov_retry2/case_04/in/lprofiles.txt",
+      "bytes": 18,
+      "sha256": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de"
+    },
+    {
+      "path": "rttov_retry2/case_04/in/profiles/001/angles.txt",
+      "bytes": 198,
+      "sha256": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161"
+    },
+    {
+      "path": "rttov_retry2/case_04/in/profiles/001/atm/co2.txt",
+      "bytes": 1584,
+      "sha256": "b2c77a226ae318f2ddba54965e1f011d8c4c6f561048a7b249294f28cd5636b2"
+    },
+    {
+      "path": "rttov_retry2/case_04/in/profiles/001/atm/deff_param.txt",
+      "bytes": 54,
+      "sha256": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0"
+    },
+    {
+      "path": "rttov_retry2/case_04/in/profiles/001/atm/hydro.txt",
+      "bytes": 12144,
+      "sha256": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc"
+    },
+    {
+      "path": "rttov_retry2/case_04/in/profiles/001/atm/hydro_deff.txt",
+      "bytes": 10626,
+      "sha256": "6160575f7989ef12b570c807f6da93b29bc82f886ca1c34eb47cee9dd5abf98a"
+    },
+    {
+      "path": "rttov_retry2/case_04/in/profiles/001/atm/hydro_frac.txt",
+      "bytes": 1531,
+      "sha256": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b"
+    },
+    {
+      "path": "rttov_retry2/case_04/in/profiles/001/atm/mmr_hydro_aer.txt",
+      "bytes": 49,
+      "sha256": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c"
+    },
+    {
+      "path": "rttov_retry2/case_04/in/profiles/001/atm/o3.txt",
+      "bytes": 1584,
+      "sha256": "85337023aac71affa2badee1762eb29cf4baf7beb4e24784dfd19b874f2e6493"
+    },
+    {
+      "path": "rttov_retry2/case_04/in/profiles/001/atm/p.txt",
+      "bytes": 1584,
+      "sha256": "3311bfe8a664eac4ca08ce17098d0a75e8231c194cab22a142352f8d3603cbde"
+    },
+    {
+      "path": "rttov_retry2/case_04/in/profiles/001/atm/p_half.txt",
+      "bytes": 1608,
+      "sha256": "663e790bc56ef26bcda39f38316eaa6820c715dfd7313fe0feacd25a3ef33299"
+    },
+    {
+      "path": "rttov_retry2/case_04/in/profiles/001/atm/q.txt",
+      "bytes": 1518,
+      "sha256": "8779df62ecee42c87c1917b6be11327d83c32ccc4923cb2a15097705700f5c80"
+    },
+    {
+      "path": "rttov_retry2/case_04/in/profiles/001/atm/simple_cloud.txt",
+      "bytes": 54,
+      "sha256": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d"
+    },
+    {
+      "path": "rttov_retry2/case_04/in/profiles/001/atm/t.txt",
+      "bytes": 1518,
+      "sha256": "24f7b2decdb9f6044ed570d0f3465ac6c6f76a5a1e550c3431f86c2c61a0b1cb"
+    },
+    {
+      "path": "rttov_retry2/case_04/in/profiles/001/be.txt",
+      "bytes": 10,
+      "sha256": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1"
+    },
+    {
+      "path": "rttov_retry2/case_04/in/profiles/001/datetime.txt",
+      "bytes": 25,
+      "sha256": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86"
+    },
+    {
+      "path": "rttov_retry2/case_04/in/profiles/001/gas_units.txt",
+      "bytes": 25,
+      "sha256": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555"
+    },
+    {
+      "path": "rttov_retry2/case_04/in/profiles/001/prof_id.txt",
+      "bytes": 9,
+      "sha256": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793"
+    },
+    {
+      "path": "rttov_retry2/case_04/in/profiles/001/sfc/01/near_surface.txt",
+      "bytes": 162,
+      "sha256": "ae6c78993e32663bfcab38862bc1c4563be19ab3d0d46231760ed2f10a3a5bb4"
+    },
+    {
+      "path": "rttov_retry2/case_04/in/profiles/001/sfc/01/skin.txt",
+      "bytes": 350,
+      "sha256": "08ebe5336fddb416eb6fe1a918460facfd8ebd04ac322c78a716354d920c3742"
+    },
+    {
+      "path": "rttov_retry2/case_04/out/direct/brdf_out.txt",
+      "bytes": 262,
+      "sha256": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+    },
+    {
+      "path": "rttov_retry2/case_04/out/direct/diffuse_reflectance_out.txt",
+      "bytes": 270,
+      "sha256": "d9dca9476bdb1be2916b17c204eb9beca5ea9573d5a9d12c9757ad1484188663"
+    },
+    {
+      "path": "rttov_retry2/case_04/out/direct/emissivity_out.txt",
+      "bytes": 261,
+      "sha256": "92b18633e562ecdbfbd443bc70600d4ae9d483cad4b2335d880080ed8384c5e6"
+    },
+    {
+      "path": "rttov_retry2/case_04/out/direct/radiance.txt",
+      "bytes": 1445,
+      "sha256": "4558460ca68d6b67cf3f5893b6199bc73e34999cfa89431a4ed907344c3df03c"
+    },
+    {
+      "path": "rttov_retry2/case_04/out/direct/transmission.txt",
+      "bytes": 32224,
+      "sha256": "f3b46a964965d365fc96d0e447dc095c54ba1c60f857491a59c6d24be2e6515d"
+    },
+    {
+      "path": "rttov_retry2/case_04/out/gas_units.log",
+      "bytes": 100,
+      "sha256": "bbfa470e4245ae057ca3ced2319be137d64b8976d5ecea75d8d820f61cb0e026"
+    },
+    {
+      "path": "rttov_retry2/case_04/out/interpolation.log",
+      "bytes": 30,
+      "sha256": "041b94987f4ac2b741b1baeb77c2f53060aee2b62d41122efb537ec8a3b806aa"
+    },
+    {
+      "path": "rttov_retry2/case_04/out/k/brdf_k.txt",
+      "bytes": 260,
+      "sha256": "145610a7c73dda69ee8ea528f7b1fa51b22a4d93ee754df2712122335722f8a0"
+    },
+    {
+      "path": "rttov_retry2/case_04/out/k/brdf_out.txt",
+      "bytes": 262,
+      "sha256": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+    },
+    {
+      "path": "rttov_retry2/case_04/out/k/diffuse_reflectance_k.txt",
+      "bytes": 268,
+      "sha256": "d2587f977982983659b7f4d8197f55775d27cef96755f85fe3a0d55381db1c7d"
+    },
+    {
+      "path": "rttov_retry2/case_04/out/k/diffuse_reflectance_out.txt",
+      "bytes": 270,
+      "sha256": "d9dca9476bdb1be2916b17c204eb9beca5ea9573d5a9d12c9757ad1484188663"
+    },
+    {
+      "path": "rttov_retry2/case_04/out/k/emissivity_k.txt",
+      "bytes": 259,
+      "sha256": "d19fb6b6f7c9ab3ccd50699ff108174815f5d92c99421117e0d2c3628029aaef"
+    },
+    {
+      "path": "rttov_retry2/case_04/out/k/emissivity_out.txt",
+      "bytes": 261,
+      "sha256": "92b18633e562ecdbfbd443bc70600d4ae9d483cad4b2335d880080ed8384c5e6"
+    },
+    {
+      "path": "rttov_retry2/case_04/out/k/profiles_k.txt",
+      "bytes": 355264,
+      "sha256": "441fd95c83167509a2fb2c1f6912ea6da09066bec2d82d9cc76550da396cab2e"
+    },
+    {
+      "path": "rttov_retry2/case_04/out/k/radiance.txt",
+      "bytes": 1445,
+      "sha256": "4558460ca68d6b67cf3f5893b6199bc73e34999cfa89431a4ed907344c3df03c"
+    },
+    {
+      "path": "rttov_retry2/case_04/out/k/transmission.txt",
+      "bytes": 32224,
+      "sha256": "f3b46a964965d365fc96d0e447dc095c54ba1c60f857491a59c6d24be2e6515d"
+    },
+    {
+      "path": "rttov_retry2/case_04/out/rttov_test.log",
+      "bytes": 518,
+      "sha256": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df"
+    },
+    {
+      "path": "rttov_retry2/case_04/out/rttov_test.txt",
+      "bytes": 5336,
+      "sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+    },
+    {
+      "path": "rttov_retry2/case_04/out/run.sh",
+      "bytes": 184,
+      "sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+    },
+    {
+      "path": "rttov_retry2/case_04/out/run.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "rttov_retry2/case_04/out/run.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "rttov_retry2/case_05/in/channels.txt",
+      "bytes": 25,
+      "sha256": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b"
+    },
+    {
+      "path": "rttov_retry2/case_05/in/coef.txt",
+      "bytes": 186,
+      "sha256": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1"
+    },
+    {
+      "path": "rttov_retry2/case_05/in/lprofiles.txt",
+      "bytes": 18,
+      "sha256": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de"
+    },
+    {
+      "path": "rttov_retry2/case_05/in/profiles/001/angles.txt",
+      "bytes": 198,
+      "sha256": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161"
+    },
+    {
+      "path": "rttov_retry2/case_05/in/profiles/001/atm/co2.txt",
+      "bytes": 1584,
+      "sha256": "acf0fb2f33cb83424f08d6352036eb66df2ca906d4918977394d2903159ca90a"
+    },
+    {
+      "path": "rttov_retry2/case_05/in/profiles/001/atm/deff_param.txt",
+      "bytes": 54,
+      "sha256": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0"
+    },
+    {
+      "path": "rttov_retry2/case_05/in/profiles/001/atm/hydro.txt",
+      "bytes": 12144,
+      "sha256": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc"
+    },
+    {
+      "path": "rttov_retry2/case_05/in/profiles/001/atm/hydro_deff.txt",
+      "bytes": 10626,
+      "sha256": "6160575f7989ef12b570c807f6da93b29bc82f886ca1c34eb47cee9dd5abf98a"
+    },
+    {
+      "path": "rttov_retry2/case_05/in/profiles/001/atm/hydro_frac.txt",
+      "bytes": 1531,
+      "sha256": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b"
+    },
+    {
+      "path": "rttov_retry2/case_05/in/profiles/001/atm/mmr_hydro_aer.txt",
+      "bytes": 49,
+      "sha256": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c"
+    },
+    {
+      "path": "rttov_retry2/case_05/in/profiles/001/atm/o3.txt",
+      "bytes": 1584,
+      "sha256": "dcbcffa207ce46c5a0f656ed9168fc7aea6f912fd2ecc06147f8ae82285e24f6"
+    },
+    {
+      "path": "rttov_retry2/case_05/in/profiles/001/atm/p.txt",
+      "bytes": 1584,
+      "sha256": "0aaa3d21221ddac4ce9928285bc7e7e9d4974d0d0998a377584f234c51c779d6"
+    },
+    {
+      "path": "rttov_retry2/case_05/in/profiles/001/atm/p_half.txt",
+      "bytes": 1608,
+      "sha256": "76f4ea6ed006857f55d96d0abd5d18dab123a05721896a40114aaaf5ba01f294"
+    },
+    {
+      "path": "rttov_retry2/case_05/in/profiles/001/atm/q.txt",
+      "bytes": 1518,
+      "sha256": "8bc84cdb2582215e63a28acf241cb846da1fd1e4f9c1834c03643381f8d6f7e9"
+    },
+    {
+      "path": "rttov_retry2/case_05/in/profiles/001/atm/simple_cloud.txt",
+      "bytes": 54,
+      "sha256": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d"
+    },
+    {
+      "path": "rttov_retry2/case_05/in/profiles/001/atm/t.txt",
+      "bytes": 1518,
+      "sha256": "3216574ac8de41f4de7d63dc07a632434d85f1946d9cbacbfdec75591470ac09"
+    },
+    {
+      "path": "rttov_retry2/case_05/in/profiles/001/be.txt",
+      "bytes": 10,
+      "sha256": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1"
+    },
+    {
+      "path": "rttov_retry2/case_05/in/profiles/001/datetime.txt",
+      "bytes": 25,
+      "sha256": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86"
+    },
+    {
+      "path": "rttov_retry2/case_05/in/profiles/001/gas_units.txt",
+      "bytes": 25,
+      "sha256": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555"
+    },
+    {
+      "path": "rttov_retry2/case_05/in/profiles/001/prof_id.txt",
+      "bytes": 9,
+      "sha256": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793"
+    },
+    {
+      "path": "rttov_retry2/case_05/in/profiles/001/sfc/01/near_surface.txt",
+      "bytes": 162,
+      "sha256": "2f3c699105b496b791004b40fc04f9774c99a038f71dfae803b0bab9ebfd3d44"
+    },
+    {
+      "path": "rttov_retry2/case_05/in/profiles/001/sfc/01/skin.txt",
+      "bytes": 350,
+      "sha256": "32c3da2e12e2fc8dda8e4b86dbd58707d2f7738a420d7f48b8f2388b9d2587c8"
+    },
+    {
+      "path": "rttov_retry2/case_05/out/direct/brdf_out.txt",
+      "bytes": 262,
+      "sha256": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+    },
+    {
+      "path": "rttov_retry2/case_05/out/direct/diffuse_reflectance_out.txt",
+      "bytes": 270,
+      "sha256": "d71f8556b6622f341e6f9aef72c86ad6c18f1321a84e165e71d61803147470d9"
+    },
+    {
+      "path": "rttov_retry2/case_05/out/direct/emissivity_out.txt",
+      "bytes": 261,
+      "sha256": "c35786e1316ce4c00aeede2e48492a9f06a12612944e7a77f482d2c5c588eb37"
+    },
+    {
+      "path": "rttov_retry2/case_05/out/direct/radiance.txt",
+      "bytes": 1445,
+      "sha256": "0c3f8b85cc474f94979648479fb3bcea5c89301c6e845ef67b1d45d5b4621049"
+    },
+    {
+      "path": "rttov_retry2/case_05/out/direct/transmission.txt",
+      "bytes": 32224,
+      "sha256": "4164054bf9019576d7606b5fa2212690f5ea4e9254295da0a99cc2d6ed300d19"
+    },
+    {
+      "path": "rttov_retry2/case_05/out/gas_units.log",
+      "bytes": 100,
+      "sha256": "bbfa470e4245ae057ca3ced2319be137d64b8976d5ecea75d8d820f61cb0e026"
+    },
+    {
+      "path": "rttov_retry2/case_05/out/interpolation.log",
+      "bytes": 30,
+      "sha256": "041b94987f4ac2b741b1baeb77c2f53060aee2b62d41122efb537ec8a3b806aa"
+    },
+    {
+      "path": "rttov_retry2/case_05/out/k/brdf_k.txt",
+      "bytes": 260,
+      "sha256": "145610a7c73dda69ee8ea528f7b1fa51b22a4d93ee754df2712122335722f8a0"
+    },
+    {
+      "path": "rttov_retry2/case_05/out/k/brdf_out.txt",
+      "bytes": 262,
+      "sha256": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+    },
+    {
+      "path": "rttov_retry2/case_05/out/k/diffuse_reflectance_k.txt",
+      "bytes": 268,
+      "sha256": "d2587f977982983659b7f4d8197f55775d27cef96755f85fe3a0d55381db1c7d"
+    },
+    {
+      "path": "rttov_retry2/case_05/out/k/diffuse_reflectance_out.txt",
+      "bytes": 270,
+      "sha256": "d71f8556b6622f341e6f9aef72c86ad6c18f1321a84e165e71d61803147470d9"
+    },
+    {
+      "path": "rttov_retry2/case_05/out/k/emissivity_k.txt",
+      "bytes": 259,
+      "sha256": "d19fb6b6f7c9ab3ccd50699ff108174815f5d92c99421117e0d2c3628029aaef"
+    },
+    {
+      "path": "rttov_retry2/case_05/out/k/emissivity_out.txt",
+      "bytes": 261,
+      "sha256": "c35786e1316ce4c00aeede2e48492a9f06a12612944e7a77f482d2c5c588eb37"
+    },
+    {
+      "path": "rttov_retry2/case_05/out/k/profiles_k.txt",
+      "bytes": 355264,
+      "sha256": "b64820ed79e245a2cbc6ac60f0e6c9e08257154a2bd2f4c4d3fbb277751db0ce"
+    },
+    {
+      "path": "rttov_retry2/case_05/out/k/radiance.txt",
+      "bytes": 1445,
+      "sha256": "0c3f8b85cc474f94979648479fb3bcea5c89301c6e845ef67b1d45d5b4621049"
+    },
+    {
+      "path": "rttov_retry2/case_05/out/k/transmission.txt",
+      "bytes": 32224,
+      "sha256": "4164054bf9019576d7606b5fa2212690f5ea4e9254295da0a99cc2d6ed300d19"
+    },
+    {
+      "path": "rttov_retry2/case_05/out/rttov_test.log",
+      "bytes": 518,
+      "sha256": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df"
+    },
+    {
+      "path": "rttov_retry2/case_05/out/rttov_test.txt",
+      "bytes": 5336,
+      "sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+    },
+    {
+      "path": "rttov_retry2/case_05/out/run.sh",
+      "bytes": 184,
+      "sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+    },
+    {
+      "path": "rttov_retry2/case_05/out/run.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "rttov_retry2/case_05/out/run.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "rttov_retry2/case_06/in/channels.txt",
+      "bytes": 25,
+      "sha256": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b"
+    },
+    {
+      "path": "rttov_retry2/case_06/in/coef.txt",
+      "bytes": 186,
+      "sha256": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1"
+    },
+    {
+      "path": "rttov_retry2/case_06/in/lprofiles.txt",
+      "bytes": 18,
+      "sha256": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de"
+    },
+    {
+      "path": "rttov_retry2/case_06/in/profiles/001/angles.txt",
+      "bytes": 198,
+      "sha256": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161"
+    },
+    {
+      "path": "rttov_retry2/case_06/in/profiles/001/atm/co2.txt",
+      "bytes": 1584,
+      "sha256": "551f6090f5556dbefd4b813a4f6da1ca4733e1cd116ab6f8ef1e63b16fe8e8b3"
+    },
+    {
+      "path": "rttov_retry2/case_06/in/profiles/001/atm/deff_param.txt",
+      "bytes": 54,
+      "sha256": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0"
+    },
+    {
+      "path": "rttov_retry2/case_06/in/profiles/001/atm/hydro.txt",
+      "bytes": 12144,
+      "sha256": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc"
+    },
+    {
+      "path": "rttov_retry2/case_06/in/profiles/001/atm/hydro_deff.txt",
+      "bytes": 10626,
+      "sha256": "6160575f7989ef12b570c807f6da93b29bc82f886ca1c34eb47cee9dd5abf98a"
+    },
+    {
+      "path": "rttov_retry2/case_06/in/profiles/001/atm/hydro_frac.txt",
+      "bytes": 1531,
+      "sha256": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b"
+    },
+    {
+      "path": "rttov_retry2/case_06/in/profiles/001/atm/mmr_hydro_aer.txt",
+      "bytes": 49,
+      "sha256": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c"
+    },
+    {
+      "path": "rttov_retry2/case_06/in/profiles/001/atm/o3.txt",
+      "bytes": 1584,
+      "sha256": "77f671e1f80632346c04884a927c99d98d846c4f85007412985173fbb240cf16"
+    },
+    {
+      "path": "rttov_retry2/case_06/in/profiles/001/atm/p.txt",
+      "bytes": 1584,
+      "sha256": "6012b8c18bc8f45b0459bdb5ebf48b59e35a0a7fad4be76b695e0abdb985a5f7"
+    },
+    {
+      "path": "rttov_retry2/case_06/in/profiles/001/atm/p_half.txt",
+      "bytes": 1608,
+      "sha256": "b54d60c6fb5398a380f2907013911eaf18456f410228fc061d2f0b946867b29a"
+    },
+    {
+      "path": "rttov_retry2/case_06/in/profiles/001/atm/q.txt",
+      "bytes": 1518,
+      "sha256": "22c8cb8b46bb6fbd03b1de9cd8dff43e18a5c5792304af15250ed7af8ea2feb5"
+    },
+    {
+      "path": "rttov_retry2/case_06/in/profiles/001/atm/simple_cloud.txt",
+      "bytes": 54,
+      "sha256": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d"
+    },
+    {
+      "path": "rttov_retry2/case_06/in/profiles/001/atm/t.txt",
+      "bytes": 1518,
+      "sha256": "a1fa4e539c42c6e526a91e9c34d9ad6ad6c5fa6f1915dc1ee32c59c812c8b116"
+    },
+    {
+      "path": "rttov_retry2/case_06/in/profiles/001/be.txt",
+      "bytes": 10,
+      "sha256": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1"
+    },
+    {
+      "path": "rttov_retry2/case_06/in/profiles/001/datetime.txt",
+      "bytes": 25,
+      "sha256": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86"
+    },
+    {
+      "path": "rttov_retry2/case_06/in/profiles/001/gas_units.txt",
+      "bytes": 25,
+      "sha256": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555"
+    },
+    {
+      "path": "rttov_retry2/case_06/in/profiles/001/prof_id.txt",
+      "bytes": 9,
+      "sha256": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793"
+    },
+    {
+      "path": "rttov_retry2/case_06/in/profiles/001/sfc/01/near_surface.txt",
+      "bytes": 162,
+      "sha256": "da66c9201370dbf43dcf0c827c82061725edf08e76e8be00c1f8271607eea864"
+    },
+    {
+      "path": "rttov_retry2/case_06/in/profiles/001/sfc/01/skin.txt",
+      "bytes": 350,
+      "sha256": "a7d6d8bc10c5b25d0303f727751739b9065ba4a9e5d4ad00e2acbf650c8d0a3f"
+    },
+    {
+      "path": "rttov_retry2/case_06/out/direct/brdf_out.txt",
+      "bytes": 262,
+      "sha256": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+    },
+    {
+      "path": "rttov_retry2/case_06/out/direct/diffuse_reflectance_out.txt",
+      "bytes": 270,
+      "sha256": "3315f0f5823eec444d9295540677386f962deb6183929def60ee7be34178b74e"
+    },
+    {
+      "path": "rttov_retry2/case_06/out/direct/emissivity_out.txt",
+      "bytes": 261,
+      "sha256": "779cbe3e6fdd5526a3f5df07609817f97ef4939256a788ba00e32977e84d335c"
+    },
+    {
+      "path": "rttov_retry2/case_06/out/direct/radiance.txt",
+      "bytes": 1445,
+      "sha256": "86d6d54a26f1145e8da34b6776ba375f93027c6115e795ae7dc0795b336a4a04"
+    },
+    {
+      "path": "rttov_retry2/case_06/out/direct/transmission.txt",
+      "bytes": 32224,
+      "sha256": "fcd665ad84b4f55b248d60d0d9f4231caba8a9d8d5088d6113119e88367c8f2f"
+    },
+    {
+      "path": "rttov_retry2/case_06/out/gas_units.log",
+      "bytes": 100,
+      "sha256": "bbfa470e4245ae057ca3ced2319be137d64b8976d5ecea75d8d820f61cb0e026"
+    },
+    {
+      "path": "rttov_retry2/case_06/out/interpolation.log",
+      "bytes": 30,
+      "sha256": "041b94987f4ac2b741b1baeb77c2f53060aee2b62d41122efb537ec8a3b806aa"
+    },
+    {
+      "path": "rttov_retry2/case_06/out/k/brdf_k.txt",
+      "bytes": 260,
+      "sha256": "145610a7c73dda69ee8ea528f7b1fa51b22a4d93ee754df2712122335722f8a0"
+    },
+    {
+      "path": "rttov_retry2/case_06/out/k/brdf_out.txt",
+      "bytes": 262,
+      "sha256": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+    },
+    {
+      "path": "rttov_retry2/case_06/out/k/diffuse_reflectance_k.txt",
+      "bytes": 268,
+      "sha256": "d2587f977982983659b7f4d8197f55775d27cef96755f85fe3a0d55381db1c7d"
+    },
+    {
+      "path": "rttov_retry2/case_06/out/k/diffuse_reflectance_out.txt",
+      "bytes": 270,
+      "sha256": "3315f0f5823eec444d9295540677386f962deb6183929def60ee7be34178b74e"
+    },
+    {
+      "path": "rttov_retry2/case_06/out/k/emissivity_k.txt",
+      "bytes": 259,
+      "sha256": "d19fb6b6f7c9ab3ccd50699ff108174815f5d92c99421117e0d2c3628029aaef"
+    },
+    {
+      "path": "rttov_retry2/case_06/out/k/emissivity_out.txt",
+      "bytes": 261,
+      "sha256": "779cbe3e6fdd5526a3f5df07609817f97ef4939256a788ba00e32977e84d335c"
+    },
+    {
+      "path": "rttov_retry2/case_06/out/k/profiles_k.txt",
+      "bytes": 355264,
+      "sha256": "9a791ca9c67330738c45397c4cdab9b58f109fbca763b00dd4f445d710e2548b"
+    },
+    {
+      "path": "rttov_retry2/case_06/out/k/radiance.txt",
+      "bytes": 1445,
+      "sha256": "86d6d54a26f1145e8da34b6776ba375f93027c6115e795ae7dc0795b336a4a04"
+    },
+    {
+      "path": "rttov_retry2/case_06/out/k/transmission.txt",
+      "bytes": 32224,
+      "sha256": "fcd665ad84b4f55b248d60d0d9f4231caba8a9d8d5088d6113119e88367c8f2f"
+    },
+    {
+      "path": "rttov_retry2/case_06/out/rttov_test.log",
+      "bytes": 518,
+      "sha256": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df"
+    },
+    {
+      "path": "rttov_retry2/case_06/out/rttov_test.txt",
+      "bytes": 5336,
+      "sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+    },
+    {
+      "path": "rttov_retry2/case_06/out/run.sh",
+      "bytes": 184,
+      "sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+    },
+    {
+      "path": "rttov_retry2/case_06/out/run.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "rttov_retry2/case_06/out/run.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "rttov_retry2/case_07/in/channels.txt",
+      "bytes": 25,
+      "sha256": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b"
+    },
+    {
+      "path": "rttov_retry2/case_07/in/coef.txt",
+      "bytes": 186,
+      "sha256": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1"
+    },
+    {
+      "path": "rttov_retry2/case_07/in/lprofiles.txt",
+      "bytes": 18,
+      "sha256": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de"
+    },
+    {
+      "path": "rttov_retry2/case_07/in/profiles/001/angles.txt",
+      "bytes": 198,
+      "sha256": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161"
+    },
+    {
+      "path": "rttov_retry2/case_07/in/profiles/001/atm/co2.txt",
+      "bytes": 1584,
+      "sha256": "d749fa6e37f6a5b16dafc92a85fff04d4b8f3d729e240e81ff68980568993632"
+    },
+    {
+      "path": "rttov_retry2/case_07/in/profiles/001/atm/deff_param.txt",
+      "bytes": 54,
+      "sha256": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0"
+    },
+    {
+      "path": "rttov_retry2/case_07/in/profiles/001/atm/hydro.txt",
+      "bytes": 12144,
+      "sha256": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc"
+    },
+    {
+      "path": "rttov_retry2/case_07/in/profiles/001/atm/hydro_deff.txt",
+      "bytes": 10626,
+      "sha256": "6160575f7989ef12b570c807f6da93b29bc82f886ca1c34eb47cee9dd5abf98a"
+    },
+    {
+      "path": "rttov_retry2/case_07/in/profiles/001/atm/hydro_frac.txt",
+      "bytes": 1531,
+      "sha256": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b"
+    },
+    {
+      "path": "rttov_retry2/case_07/in/profiles/001/atm/mmr_hydro_aer.txt",
+      "bytes": 49,
+      "sha256": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c"
+    },
+    {
+      "path": "rttov_retry2/case_07/in/profiles/001/atm/o3.txt",
+      "bytes": 1584,
+      "sha256": "d90a8474e9a866f44425708285ad4f644097407ddf148718bb8de2a210597236"
+    },
+    {
+      "path": "rttov_retry2/case_07/in/profiles/001/atm/p.txt",
+      "bytes": 1584,
+      "sha256": "02a3b6f1001443213ef7b0ed7077955141f1071811f909438e8c3caaf4b7e3eb"
+    },
+    {
+      "path": "rttov_retry2/case_07/in/profiles/001/atm/p_half.txt",
+      "bytes": 1608,
+      "sha256": "5092c34377b11d2cdbd3bc2e9b415129768112d033ad22e0148c03a374244d02"
+    },
+    {
+      "path": "rttov_retry2/case_07/in/profiles/001/atm/q.txt",
+      "bytes": 1518,
+      "sha256": "5f3988f45c62185bf1895c3e588c5a0cb061d2ace8c37976c73313c0ae83b8a3"
+    },
+    {
+      "path": "rttov_retry2/case_07/in/profiles/001/atm/simple_cloud.txt",
+      "bytes": 54,
+      "sha256": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d"
+    },
+    {
+      "path": "rttov_retry2/case_07/in/profiles/001/atm/t.txt",
+      "bytes": 1518,
+      "sha256": "6f2f812d1ee19d13dd1cba430466fd74cefa9938412ae75af0b892c50885fabf"
+    },
+    {
+      "path": "rttov_retry2/case_07/in/profiles/001/be.txt",
+      "bytes": 10,
+      "sha256": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1"
+    },
+    {
+      "path": "rttov_retry2/case_07/in/profiles/001/datetime.txt",
+      "bytes": 25,
+      "sha256": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86"
+    },
+    {
+      "path": "rttov_retry2/case_07/in/profiles/001/gas_units.txt",
+      "bytes": 25,
+      "sha256": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555"
+    },
+    {
+      "path": "rttov_retry2/case_07/in/profiles/001/prof_id.txt",
+      "bytes": 9,
+      "sha256": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793"
+    },
+    {
+      "path": "rttov_retry2/case_07/in/profiles/001/sfc/01/near_surface.txt",
+      "bytes": 162,
+      "sha256": "b68617f296adf8abda0a6ac437e410f718dc634f08e9f24409663a1f1dda3c23"
+    },
+    {
+      "path": "rttov_retry2/case_07/in/profiles/001/sfc/01/skin.txt",
+      "bytes": 350,
+      "sha256": "f7c4d20e1ba2770e420c56c379b9f81364613630b91a33b9d54c6ff937a2826a"
+    },
+    {
+      "path": "rttov_retry2/case_07/out/direct/brdf_out.txt",
+      "bytes": 262,
+      "sha256": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+    },
+    {
+      "path": "rttov_retry2/case_07/out/direct/diffuse_reflectance_out.txt",
+      "bytes": 270,
+      "sha256": "ea1b47ded15bdb01126f5eb7956b05b7f355334122e6799a1c826e227302b1e1"
+    },
+    {
+      "path": "rttov_retry2/case_07/out/direct/emissivity_out.txt",
+      "bytes": 261,
+      "sha256": "2a97daee0035ecaf7b754ffbe18e92135c81286f7c1093494bdce3dd9112356f"
+    },
+    {
+      "path": "rttov_retry2/case_07/out/direct/radiance.txt",
+      "bytes": 1445,
+      "sha256": "95e92f3054b82c44fbd9c58556a7930f7fc3710ad71a3befecf74975135be6b7"
+    },
+    {
+      "path": "rttov_retry2/case_07/out/direct/transmission.txt",
+      "bytes": 32224,
+      "sha256": "eb21038b74f659e5b1581d7d9f509cbe3707b7877dc0ae29cdb7b6c3529257e3"
+    },
+    {
+      "path": "rttov_retry2/case_07/out/gas_units.log",
+      "bytes": 100,
+      "sha256": "bbfa470e4245ae057ca3ced2319be137d64b8976d5ecea75d8d820f61cb0e026"
+    },
+    {
+      "path": "rttov_retry2/case_07/out/interpolation.log",
+      "bytes": 30,
+      "sha256": "041b94987f4ac2b741b1baeb77c2f53060aee2b62d41122efb537ec8a3b806aa"
+    },
+    {
+      "path": "rttov_retry2/case_07/out/k/brdf_k.txt",
+      "bytes": 260,
+      "sha256": "145610a7c73dda69ee8ea528f7b1fa51b22a4d93ee754df2712122335722f8a0"
+    },
+    {
+      "path": "rttov_retry2/case_07/out/k/brdf_out.txt",
+      "bytes": 262,
+      "sha256": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+    },
+    {
+      "path": "rttov_retry2/case_07/out/k/diffuse_reflectance_k.txt",
+      "bytes": 268,
+      "sha256": "d2587f977982983659b7f4d8197f55775d27cef96755f85fe3a0d55381db1c7d"
+    },
+    {
+      "path": "rttov_retry2/case_07/out/k/diffuse_reflectance_out.txt",
+      "bytes": 270,
+      "sha256": "ea1b47ded15bdb01126f5eb7956b05b7f355334122e6799a1c826e227302b1e1"
+    },
+    {
+      "path": "rttov_retry2/case_07/out/k/emissivity_k.txt",
+      "bytes": 259,
+      "sha256": "d19fb6b6f7c9ab3ccd50699ff108174815f5d92c99421117e0d2c3628029aaef"
+    },
+    {
+      "path": "rttov_retry2/case_07/out/k/emissivity_out.txt",
+      "bytes": 261,
+      "sha256": "2a97daee0035ecaf7b754ffbe18e92135c81286f7c1093494bdce3dd9112356f"
+    },
+    {
+      "path": "rttov_retry2/case_07/out/k/profiles_k.txt",
+      "bytes": 355264,
+      "sha256": "498b4bbb9acf0abfb03f910ea40b1c86b8a2baa6a2341e03dbb38df56b029ce8"
+    },
+    {
+      "path": "rttov_retry2/case_07/out/k/radiance.txt",
+      "bytes": 1445,
+      "sha256": "95e92f3054b82c44fbd9c58556a7930f7fc3710ad71a3befecf74975135be6b7"
+    },
+    {
+      "path": "rttov_retry2/case_07/out/k/transmission.txt",
+      "bytes": 32224,
+      "sha256": "eb21038b74f659e5b1581d7d9f509cbe3707b7877dc0ae29cdb7b6c3529257e3"
+    },
+    {
+      "path": "rttov_retry2/case_07/out/rttov_test.log",
+      "bytes": 518,
+      "sha256": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df"
+    },
+    {
+      "path": "rttov_retry2/case_07/out/rttov_test.txt",
+      "bytes": 5336,
+      "sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+    },
+    {
+      "path": "rttov_retry2/case_07/out/run.sh",
+      "bytes": 184,
+      "sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+    },
+    {
+      "path": "rttov_retry2/case_07/out/run.stderr.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "rttov_retry2/case_07/out/run.stdout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "external_omissions": [
+    "full private host",
+    "2.54GB forecast",
+    "RTTOV binary/coefficient/hydrotable",
+    "env.sh",
+    "P8W helper executable"
+  ]
+}

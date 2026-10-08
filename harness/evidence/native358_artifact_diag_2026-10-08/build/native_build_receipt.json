@@ -1,0 +1,10 @@
+{
+  "exe": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/main/wrf.exe",
+  "exe_sha256": "f467755ee9952dc2b1806e9dec3220689e2f26a2939234b0959065b1c357cd41",
+  "wrapper_F_sha256": "e4ab55a672f28c47d341ebf75ce589b32c2bbaa4da960c6b04157ec682a46965",
+  "iso_F_sha256": "4c7f9f22df54e91f30f97d1d8c0b8921537913f4236c6baf56c5579701a64f07",
+  "library_sha256": "64cddefe4fce336a7b9a3979278692324a97a17fe7d5264224bcc05a7f20be2d",
+  "torch_lib": "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib",
+  "mode": "EXPERIMENTAL normalized physics_variant2/dry_number1;1rank1thread",
+  "case": "/private/tmp/KDM6AD-viirs-native-run-20261007/smoke40"
+}

@@ -166,3 +166,14 @@ The omitted/False selector preserves the legacy raw O-A <= O-B policy; a report
 cannot switch it by its own marker. The historical LC05 stress runner explicitly
 selects False. Neither `accepted=True` policy grants scientific/operational
 approval. Do not adjust sigma/bias to satisfy a raw innovation gate.
+
+## First target-window artifact comparison
+
+The [native target diagnostic](../harness/evidence/REPORT_native_target_artifact_2026-10-08.md)
+now preserves eight target-time native states and actual RTTOV evaluations.
+The long model run returned launcher exit 1 despite saved complete output and WRF
+success text, so its validity remains false. A separate explicit diagnostic mode
+uses the verified artifacts without granting numerical acceptance or scientific
+approval. Seven common quality-zero channels use the 1 K/zero-bias baseline;
+channels 8/9 remain excluded with recorded quality flags. Pixel time/footprint,
+full cloud QA and native termination are still open R2 work.
