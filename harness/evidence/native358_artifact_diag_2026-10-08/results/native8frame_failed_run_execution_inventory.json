@@ -1,0 +1,2475 @@
+{
+  "schema": "failed_native_artifact_rttov_execution_inventory_v1",
+  "enrichment_scope": "post-run file inventory and metadata correction only; no RTTOV or KDM rerun and no BT/quality/cost values changed",
+  "captured_at_utc": "2026-10-08T05:03:52.463679Z",
+  "runner_output_raw_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/native8frame_failed_run_artifact_diagnostic.json",
+  "runner_output_raw_sha256": "f7d2f0df605199209a30f56a2e467e90feae48a928f82acd474d27008f1faa18",
+  "runner_output_raw_preserved_copy": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/native8frame_failed_native_artifact_runner_raw.json",
+  "runner_output_raw_preserved_copy_sha256": "f7d2f0df605199209a30f56a2e467e90feae48a928f82acd474d27008f1faa18",
+  "enriched_result_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/native8frame_failed_run_artifact_diagnostic_enriched.json",
+  "enrichment_script": {
+    "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/enrich_failed_native_artifact_metadata.py",
+    "sha256": "f02188185168624ee7a1b8ce7cd534a4a04bf5cf78d2c8016004b16ac4acbe61"
+  },
+  "native_run_id": "mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261008_064206_p28793",
+  "native_run_status": {
+    "receipt_status": "COMPLETE",
+    "runner_exit_code": 1,
+    "runner_experiment_valid": false,
+    "model_completed_flag": false,
+    "wrf_success_complete_observed": true,
+    "mpi_abnormal_termination_observed": true,
+    "native_runner_invalid_reasons": [
+      "model_did_not_complete"
+    ]
+  },
+  "native_run_valid": false,
+  "experiment_valid": false,
+  "diagnostic_only": true,
+  "eligible_for_artifact_gates": false,
+  "source_snapshot": {
+    "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/provenance/run_native_kma_bt_frames.py",
+    "sha256": "408bab9756c6ac1a6e8438b8469c87f41fa239ce75414cd8087d10b6a31d54c1",
+    "executed_source_sha256_before": "408bab9756c6ac1a6e8438b8469c87f41fa239ce75414cd8087d10b6a31d54c1",
+    "executed_source_sha256_after": "408bab9756c6ac1a6e8438b8469c87f41fa239ce75414cd8087d10b6a31d54c1",
+    "captured_by_run": true,
+    "imported_runtime_module_hashes": {
+      "kdm6/state.py": "567869ae745b96184b1ade731d717de6f02b54dc8b51a8137ba792d3d313c19a",
+      "kdm6/obs/obs_loss.py": "4c39b69bf54be9929d48cc97881887f80fb1f7c9a05d68a6a6111bda1ca9d855",
+      "kdm6/io/frame_reader.py": "232e54391e094cc04aee36a6de743d9b5b01328e298f0be1c41a566b47de6995",
+      "kdm6/obs/model_profile_builder.py": "b9264edb61f32010c025718ad59ef686746f156e2a3c011c473943fbf82788ab",
+      "kdm6/obs/rttov_case_writer.py": "0203dbfd899996caedf2e8c94e34faabf949fabbaec1688cbda00b6e163081af",
+      "kdm6/obs/rttov_input_builder.py": "902e1554eb6e4f699d74cc770059daad847b3b35ad0dd9516d02cae35ad280a6",
+      "kdm6/obs/rttov_obs_operator.py": "d28149c211c1ccaffedcb18642e2337cc79b5cebc4b6aa8cf4c9a90978363b12",
+      "kdm6/obs/ami_bt_coordinate.py": "e1aec7c9270bbeff6dec9aee0f7b3fa3741528b3e060bc3aa74be721e3ac97cc",
+      "kdm6/obs/rttov_runner.py": "100e39c6f56ab5e1ccadb59f6b439ebd20255d139b5d9965063bf0ed393fa441",
+      "kdm6/rttov_bridge.py": "3c61c7fa6baa21ba294b37cdc17886c0f17979ee4adfae0af7e22154af964116"
+    },
+    "note": "source copy and before/after hashes were captured by this run"
+  },
+  "current_private_runner_source": {
+    "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/run_native_kma_bt_frames.py",
+    "sha256_at_inventory_capture": "408bab9756c6ac1a6e8438b8469c87f41fa239ce75414cd8087d10b6a31d54c1",
+    "timing_note": "current runner after post-run metadata fixes; not asserted as the execution-time script unless source_snapshot.captured_by_run is true"
+  },
+  "forecast_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/target_case_055540_055800/runs/mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261008_064206_p28793/klfs_lc05_fcst.202507190000",
+  "forecast_sha256": "ac73e382b3102a9fdad3cd5c9e4ec46b6b25a5997dba53aa1b369b0b9ac8153e",
+  "forecast_times": [
+    "2025-07-19_05:55:40",
+    "2025-07-19_05:56:00",
+    "2025-07-19_05:56:20",
+    "2025-07-19_05:56:40",
+    "2025-07-19_05:57:00",
+    "2025-07-19_05:57:20",
+    "2025-07-19_05:57:40",
+    "2025-07-19_05:58:00"
+  ],
+  "native_j_i_0based": [
+    86,
+    48
+  ],
+  "ami_row_col_0based": [
+    320,
+    48
+  ],
+  "rttov_channels": [
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16
+  ],
+  "thermal_coefficient_type_by_channel": {
+    "8": 0,
+    "9": 0,
+    "10": 0,
+    "11": 0,
+    "12": 0,
+    "13": 0,
+    "14": 0,
+    "15": 0,
+    "16": 0
+  },
+  "fixed_common_support_channels": [
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16
+  ],
+  "excluded_channels_with_rttov_quality": [
+    8,
+    9
+  ],
+  "common_support_count": 7,
+  "sigma_K": 1.0,
+  "bias_K": 0.0,
+  "huber_delta": 1.0,
+  "cost_sum_huber_all_eight_same_support": [
+    26.588575903055926,
+    26.59768478212186,
+    26.60745676145399,
+    26.615631826194488,
+    26.624654104545073,
+    26.633180860417724,
+    26.641499399909208,
+    26.64961880214031
+  ],
+  "dimensionless_common_support_huber_contributions": [
+    [
+      0.0,
+      0.0,
+      0.5303670483500582,
+      4.633124474817237,
+      6.489290998447245,
+      4.430225096255356,
+      4.483241202955867,
+      3.900014219837203,
+      2.1223128623929597
+    ],
+    [
+      0.0,
+      0.0,
+      0.52949545435456,
+      4.634578262282787,
+      6.49026607949537,
+      4.431696873952262,
+      4.485104764278844,
+      3.9023169094827495,
+      2.1242264382752865
+    ],
+    [
+      0.0,
+      0.0,
+      0.5287109283565314,
+      4.636090856807073,
+      6.491299540803823,
+      4.433291176947762,
+      4.487144033100606,
+      3.9047263273913018,
+      2.1261938980468926
+    ],
+    [
+      0.0,
+      0.0,
+      0.5280046762954385,
+      4.637380550817397,
+      6.492176316404027,
+      4.434582253548228,
+      4.488785682311118,
+      3.906772411087161,
+      2.1279299357311174
+    ],
+    [
+      0.0,
+      0.0,
+      0.5272402910208598,
+      4.638782695658847,
+      6.4931244698512955,
+      4.436042663736487,
+      4.490660741515853,
+      3.9090048002463504,
+      2.12979844251538
+    ],
+    [
+      0.0,
+      0.0,
+      0.5266906371621758,
+      4.640098757990472,
+      6.494015944859825,
+      4.437389957991456,
+      4.492360080795322,
+      3.9111018779580604,
+      2.131523603660412
+    ],
+    [
+      0.0,
+      0.0,
+      0.526127978472573,
+      4.641372874279227,
+      6.49488639610604,
+      4.438719520976235,
+      4.494054160334201,
+      3.913127889590953,
+      2.133210580149978
+    ],
+    [
+      0.0,
+      0.0,
+      0.5256537939509371,
+      4.642606750865184,
+      6.495725302704216,
+      4.439989462650544,
+      4.495673102950036,
+      3.9150998027548667,
+      2.134870586264526
+    ]
+  ],
+  "mean_absolute_residual_K_per_frame_on_common_support": [
+    4.298367986150846,
+    4.299669254588837,
+    4.301065251636284,
+    4.302233118027784,
+    4.303522014935011,
+    4.304740122916818,
+    4.305928485701315,
+    4.307088400305759
+  ],
+  "observation_IR105_K": 291.3025921545636,
+  "model_IR105_K_all_eight": [
+    296.232817250819,
+    296.2342890285159,
+    296.2358833315114,
+    296.23717440811185,
+    296.2386348183001,
+    296.2399821125551,
+    296.24131167553986,
+    296.24258161721417
+  ],
+  "model_IR105_K_mean": 296.2378342803209,
+  "model_state_summary_scope": "Saved state only; no KDM process or AD trajectory. Native hydrometeor amount paths are zero for the selected cell; retry2 retains fixture simple-cloud CTP metadata but sets its fraction to zero, so no whole-atmosphere 'clear' label is asserted.",
+  "per_frame": [
+    {
+      "index": 0,
+      "valid_time": "2025-07-19_05:55:40",
+      "profile_input_files_exact_vs_expected": true,
+      "native_pressure_centers_hPa_exact_vs_saved_forecast": true,
+      "native_pressure_interfaces_T_Q_exact_vs_recorded": true,
+      "trace_gas_endpoint_clamp_counts": {
+        "reference_pressure_min_hPa": 0.0003571285505,
+        "reference_pressure_max_hPa": 931.65625,
+        "extended_layer_count": 66,
+        "endpoint_policy": "numpy.interp holds endpoint values outside reference pressure bounds",
+        "per_gas_endpoint_clamp_layers": {
+          "O3": {
+            "layers_below_reference_min": 0,
+            "layers_above_reference_max": 6
+          },
+          "CO2": {
+            "layers_below_reference_min": 0,
+            "layers_above_reference_max": 6
+          }
+        }
+      },
+      "hydrometeor_slot_max": 0.0,
+      "hydro_fraction_max": 0.0,
+      "rttov_executable_sha256_at_inventory_capture": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+      "rttov_test_log_sha256": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df",
+      "rttov_quality_messages": [
+        "Delta-Eddington exinction limit exceeded",
+        "Delta-Eddington exinction limit exceeded",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set"
+      ]
+    },
+    {
+      "index": 1,
+      "valid_time": "2025-07-19_05:56:00",
+      "profile_input_files_exact_vs_expected": true,
+      "native_pressure_centers_hPa_exact_vs_saved_forecast": true,
+      "native_pressure_interfaces_T_Q_exact_vs_recorded": true,
+      "trace_gas_endpoint_clamp_counts": {
+        "reference_pressure_min_hPa": 0.0003571285505,
+        "reference_pressure_max_hPa": 931.65625,
+        "extended_layer_count": 66,
+        "endpoint_policy": "numpy.interp holds endpoint values outside reference pressure bounds",
+        "per_gas_endpoint_clamp_layers": {
+          "O3": {
+            "layers_below_reference_min": 0,
+            "layers_above_reference_max": 6
+          },
+          "CO2": {
+            "layers_below_reference_min": 0,
+            "layers_above_reference_max": 6
+          }
+        }
+      },
+      "hydrometeor_slot_max": 0.0,
+      "hydro_fraction_max": 0.0,
+      "rttov_executable_sha256_at_inventory_capture": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+      "rttov_test_log_sha256": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df",
+      "rttov_quality_messages": [
+        "Delta-Eddington exinction limit exceeded",
+        "Delta-Eddington exinction limit exceeded",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set"
+      ]
+    },
+    {
+      "index": 2,
+      "valid_time": "2025-07-19_05:56:20",
+      "profile_input_files_exact_vs_expected": true,
+      "native_pressure_centers_hPa_exact_vs_saved_forecast": true,
+      "native_pressure_interfaces_T_Q_exact_vs_recorded": true,
+      "trace_gas_endpoint_clamp_counts": {
+        "reference_pressure_min_hPa": 0.0003571285505,
+        "reference_pressure_max_hPa": 931.65625,
+        "extended_layer_count": 66,
+        "endpoint_policy": "numpy.interp holds endpoint values outside reference pressure bounds",
+        "per_gas_endpoint_clamp_layers": {
+          "O3": {
+            "layers_below_reference_min": 0,
+            "layers_above_reference_max": 6
+          },
+          "CO2": {
+            "layers_below_reference_min": 0,
+            "layers_above_reference_max": 6
+          }
+        }
+      },
+      "hydrometeor_slot_max": 0.0,
+      "hydro_fraction_max": 0.0,
+      "rttov_executable_sha256_at_inventory_capture": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+      "rttov_test_log_sha256": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df",
+      "rttov_quality_messages": [
+        "Delta-Eddington exinction limit exceeded",
+        "Delta-Eddington exinction limit exceeded",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set"
+      ]
+    },
+    {
+      "index": 3,
+      "valid_time": "2025-07-19_05:56:40",
+      "profile_input_files_exact_vs_expected": true,
+      "native_pressure_centers_hPa_exact_vs_saved_forecast": true,
+      "native_pressure_interfaces_T_Q_exact_vs_recorded": true,
+      "trace_gas_endpoint_clamp_counts": {
+        "reference_pressure_min_hPa": 0.0003571285505,
+        "reference_pressure_max_hPa": 931.65625,
+        "extended_layer_count": 66,
+        "endpoint_policy": "numpy.interp holds endpoint values outside reference pressure bounds",
+        "per_gas_endpoint_clamp_layers": {
+          "O3": {
+            "layers_below_reference_min": 0,
+            "layers_above_reference_max": 6
+          },
+          "CO2": {
+            "layers_below_reference_min": 0,
+            "layers_above_reference_max": 6
+          }
+        }
+      },
+      "hydrometeor_slot_max": 0.0,
+      "hydro_fraction_max": 0.0,
+      "rttov_executable_sha256_at_inventory_capture": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+      "rttov_test_log_sha256": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df",
+      "rttov_quality_messages": [
+        "Delta-Eddington exinction limit exceeded",
+        "Delta-Eddington exinction limit exceeded",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set"
+      ]
+    },
+    {
+      "index": 4,
+      "valid_time": "2025-07-19_05:57:00",
+      "profile_input_files_exact_vs_expected": true,
+      "native_pressure_centers_hPa_exact_vs_saved_forecast": true,
+      "native_pressure_interfaces_T_Q_exact_vs_recorded": true,
+      "trace_gas_endpoint_clamp_counts": {
+        "reference_pressure_min_hPa": 0.0003571285505,
+        "reference_pressure_max_hPa": 931.65625,
+        "extended_layer_count": 66,
+        "endpoint_policy": "numpy.interp holds endpoint values outside reference pressure bounds",
+        "per_gas_endpoint_clamp_layers": {
+          "O3": {
+            "layers_below_reference_min": 0,
+            "layers_above_reference_max": 6
+          },
+          "CO2": {
+            "layers_below_reference_min": 0,
+            "layers_above_reference_max": 6
+          }
+        }
+      },
+      "hydrometeor_slot_max": 0.0,
+      "hydro_fraction_max": 0.0,
+      "rttov_executable_sha256_at_inventory_capture": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+      "rttov_test_log_sha256": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df",
+      "rttov_quality_messages": [
+        "Delta-Eddington exinction limit exceeded",
+        "Delta-Eddington exinction limit exceeded",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set"
+      ]
+    },
+    {
+      "index": 5,
+      "valid_time": "2025-07-19_05:57:20",
+      "profile_input_files_exact_vs_expected": true,
+      "native_pressure_centers_hPa_exact_vs_saved_forecast": true,
+      "native_pressure_interfaces_T_Q_exact_vs_recorded": true,
+      "trace_gas_endpoint_clamp_counts": {
+        "reference_pressure_min_hPa": 0.0003571285505,
+        "reference_pressure_max_hPa": 931.65625,
+        "extended_layer_count": 66,
+        "endpoint_policy": "numpy.interp holds endpoint values outside reference pressure bounds",
+        "per_gas_endpoint_clamp_layers": {
+          "O3": {
+            "layers_below_reference_min": 0,
+            "layers_above_reference_max": 6
+          },
+          "CO2": {
+            "layers_below_reference_min": 0,
+            "layers_above_reference_max": 6
+          }
+        }
+      },
+      "hydrometeor_slot_max": 0.0,
+      "hydro_fraction_max": 0.0,
+      "rttov_executable_sha256_at_inventory_capture": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+      "rttov_test_log_sha256": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df",
+      "rttov_quality_messages": [
+        "Delta-Eddington exinction limit exceeded",
+        "Delta-Eddington exinction limit exceeded",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set"
+      ]
+    },
+    {
+      "index": 6,
+      "valid_time": "2025-07-19_05:57:40",
+      "profile_input_files_exact_vs_expected": true,
+      "native_pressure_centers_hPa_exact_vs_saved_forecast": true,
+      "native_pressure_interfaces_T_Q_exact_vs_recorded": true,
+      "trace_gas_endpoint_clamp_counts": {
+        "reference_pressure_min_hPa": 0.0003571285505,
+        "reference_pressure_max_hPa": 931.65625,
+        "extended_layer_count": 66,
+        "endpoint_policy": "numpy.interp holds endpoint values outside reference pressure bounds",
+        "per_gas_endpoint_clamp_layers": {
+          "O3": {
+            "layers_below_reference_min": 0,
+            "layers_above_reference_max": 6
+          },
+          "CO2": {
+            "layers_below_reference_min": 0,
+            "layers_above_reference_max": 6
+          }
+        }
+      },
+      "hydrometeor_slot_max": 0.0,
+      "hydro_fraction_max": 0.0,
+      "rttov_executable_sha256_at_inventory_capture": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+      "rttov_test_log_sha256": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df",
+      "rttov_quality_messages": [
+        "Delta-Eddington exinction limit exceeded",
+        "Delta-Eddington exinction limit exceeded",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set"
+      ]
+    },
+    {
+      "index": 7,
+      "valid_time": "2025-07-19_05:58:00",
+      "profile_input_files_exact_vs_expected": true,
+      "native_pressure_centers_hPa_exact_vs_saved_forecast": true,
+      "native_pressure_interfaces_T_Q_exact_vs_recorded": true,
+      "trace_gas_endpoint_clamp_counts": {
+        "reference_pressure_min_hPa": 0.0003571285505,
+        "reference_pressure_max_hPa": 931.65625,
+        "extended_layer_count": 66,
+        "endpoint_policy": "numpy.interp holds endpoint values outside reference pressure bounds",
+        "per_gas_endpoint_clamp_layers": {
+          "O3": {
+            "layers_below_reference_min": 0,
+            "layers_above_reference_max": 6
+          },
+          "CO2": {
+            "layers_below_reference_min": 0,
+            "layers_above_reference_max": 6
+          }
+        }
+      },
+      "hydrometeor_slot_max": 0.0,
+      "hydro_fraction_max": 0.0,
+      "rttov_executable_sha256_at_inventory_capture": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+      "rttov_test_log_sha256": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df",
+      "rttov_quality_messages": [
+        "Delta-Eddington exinction limit exceeded",
+        "Delta-Eddington exinction limit exceeded",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set",
+        "Quality OK - no bits set"
+      ]
+    }
+  ],
+  "earlier_retry_sensitivity_comparison": {
+    "earlier_retry_result_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry1/native8frame_failed_run_artifact_diagnostic.json",
+    "earlier_retry_result_sha256": "05764f61aa01240e4180cc16b4e057cd4b9c6be9d71f88cd03a2b9b305147944",
+    "comparison_scope": "retry1 solar-off, inherited simple_cloud fraction=0.6 versus retry2 same inputs with only staged simple_cloud fraction set to 0.0",
+    "per_case_case_tree_identical_except_simple_cloud_file": [
+      {
+        "case": "case_00",
+        "file_differences": [
+          "in/profiles/001/atm/simple_cloud.txt"
+        ],
+        "ctp_hPa_unchanged": true,
+        "simple_cloud_fraction_before": 0.6,
+        "simple_cloud_fraction_after": 0.0,
+        "per_file_sha256": [
+          {
+            "path": "in/channels.txt",
+            "retry1": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b",
+            "retry2": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b"
+          },
+          {
+            "path": "in/coef.txt",
+            "retry1": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+            "retry2": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1"
+          },
+          {
+            "path": "in/lprofiles.txt",
+            "retry1": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de",
+            "retry2": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de"
+          },
+          {
+            "path": "in/profiles/001/angles.txt",
+            "retry1": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161",
+            "retry2": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161"
+          },
+          {
+            "path": "in/profiles/001/atm/co2.txt",
+            "retry1": "075c725200902dd1505635d3704db9416ef88f960be482819c17db9422ef7553",
+            "retry2": "075c725200902dd1505635d3704db9416ef88f960be482819c17db9422ef7553"
+          },
+          {
+            "path": "in/profiles/001/atm/deff_param.txt",
+            "retry1": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0",
+            "retry2": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0"
+          },
+          {
+            "path": "in/profiles/001/atm/hydro.txt",
+            "retry1": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc",
+            "retry2": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc"
+          },
+          {
+            "path": "in/profiles/001/atm/hydro_deff.txt",
+            "retry1": "6160575f7989ef12b570c807f6da93b29bc82f886ca1c34eb47cee9dd5abf98a",
+            "retry2": "6160575f7989ef12b570c807f6da93b29bc82f886ca1c34eb47cee9dd5abf98a"
+          },
+          {
+            "path": "in/profiles/001/atm/hydro_frac.txt",
+            "retry1": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b",
+            "retry2": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b"
+          },
+          {
+            "path": "in/profiles/001/atm/mmr_hydro_aer.txt",
+            "retry1": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c",
+            "retry2": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c"
+          },
+          {
+            "path": "in/profiles/001/atm/o3.txt",
+            "retry1": "4169bd766bea042e1de81390c48df7c0f3ea690b5fc44007508127b3047fed6d",
+            "retry2": "4169bd766bea042e1de81390c48df7c0f3ea690b5fc44007508127b3047fed6d"
+          },
+          {
+            "path": "in/profiles/001/atm/p.txt",
+            "retry1": "c7d47eed648f3e7313979e84600ae916fbf8d381d6c21f2d8f562c88463a7726",
+            "retry2": "c7d47eed648f3e7313979e84600ae916fbf8d381d6c21f2d8f562c88463a7726"
+          },
+          {
+            "path": "in/profiles/001/atm/p_half.txt",
+            "retry1": "dc736422f63710511af6a3336a77b33f092c63e66deffba26e5e8c29f47c2b11",
+            "retry2": "dc736422f63710511af6a3336a77b33f092c63e66deffba26e5e8c29f47c2b11"
+          },
+          {
+            "path": "in/profiles/001/atm/q.txt",
+            "retry1": "8d5b00aa058fae51b5272ddc8f6f65e1bcaa34a65c8e499c099128b87e6cb135",
+            "retry2": "8d5b00aa058fae51b5272ddc8f6f65e1bcaa34a65c8e499c099128b87e6cb135"
+          },
+          {
+            "path": "in/profiles/001/atm/simple_cloud.txt",
+            "retry1": "4cb129317ade83978b1f98ec3e0cdca9346b81a8b7734503725ba9a0e42ccdcb",
+            "retry2": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d"
+          },
+          {
+            "path": "in/profiles/001/atm/t.txt",
+            "retry1": "87b10f1915c6d0c358bc5f135d560c06db6e6e9b3ac05364e34cc14d655f0bfc",
+            "retry2": "87b10f1915c6d0c358bc5f135d560c06db6e6e9b3ac05364e34cc14d655f0bfc"
+          },
+          {
+            "path": "in/profiles/001/be.txt",
+            "retry1": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1",
+            "retry2": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1"
+          },
+          {
+            "path": "in/profiles/001/datetime.txt",
+            "retry1": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86",
+            "retry2": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86"
+          },
+          {
+            "path": "in/profiles/001/gas_units.txt",
+            "retry1": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555",
+            "retry2": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555"
+          },
+          {
+            "path": "in/profiles/001/prof_id.txt",
+            "retry1": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793",
+            "retry2": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793"
+          },
+          {
+            "path": "in/profiles/001/sfc/01/near_surface.txt",
+            "retry1": "9112090ec89e82f530bba289148450d568b12fdf136c493a6fd3f64744321d9e",
+            "retry2": "9112090ec89e82f530bba289148450d568b12fdf136c493a6fd3f64744321d9e"
+          },
+          {
+            "path": "in/profiles/001/sfc/01/skin.txt",
+            "retry1": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b",
+            "retry2": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b"
+          },
+          {
+            "path": "out/direct/brdf_out.txt",
+            "retry1": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404",
+            "retry2": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+          },
+          {
+            "path": "out/direct/diffuse_reflectance_out.txt",
+            "retry1": "4ab41aebeca12ed125438926a568bcdfebe635fcfbb5ad321c00003f613c7029",
+            "retry2": "4ab41aebeca12ed125438926a568bcdfebe635fcfbb5ad321c00003f613c7029"
+          },
+          {
+            "path": "out/direct/emissivity_out.txt",
+            "retry1": "9df8cfeab4c6ba9e2bbba31bd40b493b5621bd197267f9445797b58451462aa3",
+            "retry2": "9df8cfeab4c6ba9e2bbba31bd40b493b5621bd197267f9445797b58451462aa3"
+          },
+          {
+            "path": "out/direct/radiance.txt",
+            "retry1": "471ce332d8491e2b5feedeea34fbc22548c96c25ccd2ea18abc7184f5f4253ea",
+            "retry2": "471ce332d8491e2b5feedeea34fbc22548c96c25ccd2ea18abc7184f5f4253ea"
+          },
+          {
+            "path": "out/direct/transmission.txt",
+            "retry1": "ba17ad42f669b88a12760e16d00477cf39b8491e034aae218e0b78f1ee8cd32a",
+            "retry2": "ba17ad42f669b88a12760e16d00477cf39b8491e034aae218e0b78f1ee8cd32a"
+          },
+          {
+            "path": "out/env.sh",
+            "retry1": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+            "retry2": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554"
+          },
+          {
+            "path": "out/gas_units.log",
+            "retry1": "bbfa470e4245ae057ca3ced2319be137d64b8976d5ecea75d8d820f61cb0e026",
+            "retry2": "bbfa470e4245ae057ca3ced2319be137d64b8976d5ecea75d8d820f61cb0e026"
+          },
+          {
+            "path": "out/interpolation.log",
+            "retry1": "041b94987f4ac2b741b1baeb77c2f53060aee2b62d41122efb537ec8a3b806aa",
+            "retry2": "041b94987f4ac2b741b1baeb77c2f53060aee2b62d41122efb537ec8a3b806aa"
+          },
+          {
+            "path": "out/k/brdf_k.txt",
+            "retry1": "145610a7c73dda69ee8ea528f7b1fa51b22a4d93ee754df2712122335722f8a0",
+            "retry2": "145610a7c73dda69ee8ea528f7b1fa51b22a4d93ee754df2712122335722f8a0"
+          },
+          {
+            "path": "out/k/brdf_out.txt",
+            "retry1": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404",
+            "retry2": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+          },
+          {
+            "path": "out/k/diffuse_reflectance_k.txt",
+            "retry1": "d2587f977982983659b7f4d8197f55775d27cef96755f85fe3a0d55381db1c7d",
+            "retry2": "d2587f977982983659b7f4d8197f55775d27cef96755f85fe3a0d55381db1c7d"
+          },
+          {
+            "path": "out/k/diffuse_reflectance_out.txt",
+            "retry1": "4ab41aebeca12ed125438926a568bcdfebe635fcfbb5ad321c00003f613c7029",
+            "retry2": "4ab41aebeca12ed125438926a568bcdfebe635fcfbb5ad321c00003f613c7029"
+          },
+          {
+            "path": "out/k/emissivity_k.txt",
+            "retry1": "d19fb6b6f7c9ab3ccd50699ff108174815f5d92c99421117e0d2c3628029aaef",
+            "retry2": "d19fb6b6f7c9ab3ccd50699ff108174815f5d92c99421117e0d2c3628029aaef"
+          },
+          {
+            "path": "out/k/emissivity_out.txt",
+            "retry1": "9df8cfeab4c6ba9e2bbba31bd40b493b5621bd197267f9445797b58451462aa3",
+            "retry2": "9df8cfeab4c6ba9e2bbba31bd40b493b5621bd197267f9445797b58451462aa3"
+          },
+          {
+            "path": "out/k/profiles_k.txt",
+            "retry1": "faca3777635c33a45397ff27cb88554448ac9768825c7848d93d6f28f3772c57",
+            "retry2": "faca3777635c33a45397ff27cb88554448ac9768825c7848d93d6f28f3772c57"
+          },
+          {
+            "path": "out/k/radiance.txt",
+            "retry1": "471ce332d8491e2b5feedeea34fbc22548c96c25ccd2ea18abc7184f5f4253ea",
+            "retry2": "471ce332d8491e2b5feedeea34fbc22548c96c25ccd2ea18abc7184f5f4253ea"
+          },
+          {
+            "path": "out/k/transmission.txt",
+            "retry1": "ba17ad42f669b88a12760e16d00477cf39b8491e034aae218e0b78f1ee8cd32a",
+            "retry2": "ba17ad42f669b88a12760e16d00477cf39b8491e034aae218e0b78f1ee8cd32a"
+          },
+          {
+            "path": "out/rttov_test.log",
+            "retry1": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df",
+            "retry2": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df"
+          },
+          {
+            "path": "out/rttov_test.txt",
+            "retry1": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282",
+            "retry2": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+          },
+          {
+            "path": "out/run.sh",
+            "retry1": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+            "retry2": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+          },
+          {
+            "path": "out/run.stderr.log",
+            "retry1": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "retry2": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "path": "out/run.stdout.log",
+            "retry1": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "retry2": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        ]
+      },
+      {
+        "case": "case_01",
+        "file_differences": [
+          "in/profiles/001/atm/simple_cloud.txt"
+        ],
+        "ctp_hPa_unchanged": true,
+        "simple_cloud_fraction_before": 0.6,
+        "simple_cloud_fraction_after": 0.0,
+        "per_file_sha256": [
+          {
+            "path": "in/channels.txt",
+            "retry1": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b",
+            "retry2": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b"
+          },
+          {
+            "path": "in/coef.txt",
+            "retry1": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+            "retry2": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1"
+          },
+          {
+            "path": "in/lprofiles.txt",
+            "retry1": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de",
+            "retry2": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de"
+          },
+          {
+            "path": "in/profiles/001/angles.txt",
+            "retry1": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161",
+            "retry2": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161"
+          },
+          {
+            "path": "in/profiles/001/atm/co2.txt",
+            "retry1": "10bd872ae422f29c5df7ca42003c3b0969eb9d0cb9a1915167d4a455014face9",
+            "retry2": "10bd872ae422f29c5df7ca42003c3b0969eb9d0cb9a1915167d4a455014face9"
+          },
+          {
+            "path": "in/profiles/001/atm/deff_param.txt",
+            "retry1": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0",
+            "retry2": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0"
+          },
+          {
+            "path": "in/profiles/001/atm/hydro.txt",
+            "retry1": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc",
+            "retry2": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc"
+          },
+          {
+            "path": "in/profiles/001/atm/hydro_deff.txt",
+            "retry1": "6160575f7989ef12b570c807f6da93b29bc82f886ca1c34eb47cee9dd5abf98a",
+            "retry2": "6160575f7989ef12b570c807f6da93b29bc82f886ca1c34eb47cee9dd5abf98a"
+          },
+          {
+            "path": "in/profiles/001/atm/hydro_frac.txt",
+            "retry1": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b",
+            "retry2": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b"
+          },
+          {
+            "path": "in/profiles/001/atm/mmr_hydro_aer.txt",
+            "retry1": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c",
+            "retry2": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c"
+          },
+          {
+            "path": "in/profiles/001/atm/o3.txt",
+            "retry1": "6b7da0a7dc2d7c072ff28a7c71c931e7b8d193d42cde682a6359340ec9f26641",
+            "retry2": "6b7da0a7dc2d7c072ff28a7c71c931e7b8d193d42cde682a6359340ec9f26641"
+          },
+          {
+            "path": "in/profiles/001/atm/p.txt",
+            "retry1": "244c45bdfc83b3568f3aec41858a4667ac2130bab52133b5306f1d548c15f213",
+            "retry2": "244c45bdfc83b3568f3aec41858a4667ac2130bab52133b5306f1d548c15f213"
+          },
+          {
+            "path": "in/profiles/001/atm/p_half.txt",
+            "retry1": "8280f3ba5e8e30af547fbfcfd3e5e4c1447cc60fbc34bc184b98ea86c4ad0b55",
+            "retry2": "8280f3ba5e8e30af547fbfcfd3e5e4c1447cc60fbc34bc184b98ea86c4ad0b55"
+          },
+          {
+            "path": "in/profiles/001/atm/q.txt",
+            "retry1": "88d7ba081b9395d50f33d9babeb6dd51e16e8362b83c53710ad861994800a1a1",
+            "retry2": "88d7ba081b9395d50f33d9babeb6dd51e16e8362b83c53710ad861994800a1a1"
+          },
+          {
+            "path": "in/profiles/001/atm/simple_cloud.txt",
+            "retry1": "4cb129317ade83978b1f98ec3e0cdca9346b81a8b7734503725ba9a0e42ccdcb",
+            "retry2": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d"
+          },
+          {
+            "path": "in/profiles/001/atm/t.txt",
+            "retry1": "a2680f729c605654c10b86b6984a42d6d10921c7e5a7a066cc83de7f3a8ea78b",
+            "retry2": "a2680f729c605654c10b86b6984a42d6d10921c7e5a7a066cc83de7f3a8ea78b"
+          },
+          {
+            "path": "in/profiles/001/be.txt",
+            "retry1": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1",
+            "retry2": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1"
+          },
+          {
+            "path": "in/profiles/001/datetime.txt",
+            "retry1": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86",
+            "retry2": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86"
+          },
+          {
+            "path": "in/profiles/001/gas_units.txt",
+            "retry1": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555",
+            "retry2": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555"
+          },
+          {
+            "path": "in/profiles/001/prof_id.txt",
+            "retry1": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793",
+            "retry2": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793"
+          },
+          {
+            "path": "in/profiles/001/sfc/01/near_surface.txt",
+            "retry1": "3d2b2d431d546df823bcee7393cbb9b2326ce2d1320cdf4a67c40fe179924122",
+            "retry2": "3d2b2d431d546df823bcee7393cbb9b2326ce2d1320cdf4a67c40fe179924122"
+          },
+          {
+            "path": "in/profiles/001/sfc/01/skin.txt",
+            "retry1": "f2601c58af9b69bd86c080eace80f45cb7e1f8ab34053d6780df8923c0c33ce4",
+            "retry2": "f2601c58af9b69bd86c080eace80f45cb7e1f8ab34053d6780df8923c0c33ce4"
+          },
+          {
+            "path": "out/direct/brdf_out.txt",
+            "retry1": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404",
+            "retry2": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+          },
+          {
+            "path": "out/direct/diffuse_reflectance_out.txt",
+            "retry1": "8cb3e5d82a61216827cdfc1d59d120d6e131f8e70d107836ef00e81cdfa4b651",
+            "retry2": "8cb3e5d82a61216827cdfc1d59d120d6e131f8e70d107836ef00e81cdfa4b651"
+          },
+          {
+            "path": "out/direct/emissivity_out.txt",
+            "retry1": "61d4fa4b7724476d9a36fd23ef3327ecbeba1fd954e596f400dc0fae7c818d78",
+            "retry2": "61d4fa4b7724476d9a36fd23ef3327ecbeba1fd954e596f400dc0fae7c818d78"
+          },
+          {
+            "path": "out/direct/radiance.txt",
+            "retry1": "0d765e88a8d9e446868434d82f24b8c8a3bfd4bd3c3a0043956c3f8370e506ef",
+            "retry2": "0d765e88a8d9e446868434d82f24b8c8a3bfd4bd3c3a0043956c3f8370e506ef"
+          },
+          {
+            "path": "out/direct/transmission.txt",
+            "retry1": "7ce10f18626bb8699e0f5bc67387f1add16cd93620ecb057ad0009ba1b8c9eba",
+            "retry2": "7ce10f18626bb8699e0f5bc67387f1add16cd93620ecb057ad0009ba1b8c9eba"
+          },
+          {
+            "path": "out/env.sh",
+            "retry1": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+            "retry2": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554"
+          },
+          {
+            "path": "out/gas_units.log",
+            "retry1": "bbfa470e4245ae057ca3ced2319be137d64b8976d5ecea75d8d820f61cb0e026",
+            "retry2": "bbfa470e4245ae057ca3ced2319be137d64b8976d5ecea75d8d820f61cb0e026"
+          },
+          {
+            "path": "out/interpolation.log",
+            "retry1": "041b94987f4ac2b741b1baeb77c2f53060aee2b62d41122efb537ec8a3b806aa",
+            "retry2": "041b94987f4ac2b741b1baeb77c2f53060aee2b62d41122efb537ec8a3b806aa"
+          },
+          {
+            "path": "out/k/brdf_k.txt",
+            "retry1": "145610a7c73dda69ee8ea528f7b1fa51b22a4d93ee754df2712122335722f8a0",
+            "retry2": "145610a7c73dda69ee8ea528f7b1fa51b22a4d93ee754df2712122335722f8a0"
+          },
+          {
+            "path": "out/k/brdf_out.txt",
+            "retry1": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404",
+            "retry2": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+          },
+          {
+            "path": "out/k/diffuse_reflectance_k.txt",
+            "retry1": "d2587f977982983659b7f4d8197f55775d27cef96755f85fe3a0d55381db1c7d",
+            "retry2": "d2587f977982983659b7f4d8197f55775d27cef96755f85fe3a0d55381db1c7d"
+          },
+          {
+            "path": "out/k/diffuse_reflectance_out.txt",
+            "retry1": "8cb3e5d82a61216827cdfc1d59d120d6e131f8e70d107836ef00e81cdfa4b651",
+            "retry2": "8cb3e5d82a61216827cdfc1d59d120d6e131f8e70d107836ef00e81cdfa4b651"
+          },
+          {
+            "path": "out/k/emissivity_k.txt",
+            "retry1": "d19fb6b6f7c9ab3ccd50699ff108174815f5d92c99421117e0d2c3628029aaef",
+            "retry2": "d19fb6b6f7c9ab3ccd50699ff108174815f5d92c99421117e0d2c3628029aaef"
+          },
+          {
+            "path": "out/k/emissivity_out.txt",
+            "retry1": "61d4fa4b7724476d9a36fd23ef3327ecbeba1fd954e596f400dc0fae7c818d78",
+            "retry2": "61d4fa4b7724476d9a36fd23ef3327ecbeba1fd954e596f400dc0fae7c818d78"
+          },
+          {
+            "path": "out/k/profiles_k.txt",
+            "retry1": "fc45cf8590d9444f857d125e64440eca60229789c357273d353cb65db844aca9",
+            "retry2": "fc45cf8590d9444f857d125e64440eca60229789c357273d353cb65db844aca9"
+          },
+          {
+            "path": "out/k/radiance.txt",
+            "retry1": "0d765e88a8d9e446868434d82f24b8c8a3bfd4bd3c3a0043956c3f8370e506ef",
+            "retry2": "0d765e88a8d9e446868434d82f24b8c8a3bfd4bd3c3a0043956c3f8370e506ef"
+          },
+          {
+            "path": "out/k/transmission.txt",
+            "retry1": "7ce10f18626bb8699e0f5bc67387f1add16cd93620ecb057ad0009ba1b8c9eba",
+            "retry2": "7ce10f18626bb8699e0f5bc67387f1add16cd93620ecb057ad0009ba1b8c9eba"
+          },
+          {
+            "path": "out/rttov_test.log",
+            "retry1": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df",
+            "retry2": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df"
+          },
+          {
+            "path": "out/rttov_test.txt",
+            "retry1": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282",
+            "retry2": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+          },
+          {
+            "path": "out/run.sh",
+            "retry1": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+            "retry2": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+          },
+          {
+            "path": "out/run.stderr.log",
+            "retry1": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "retry2": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "path": "out/run.stdout.log",
+            "retry1": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "retry2": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        ]
+      },
+      {
+        "case": "case_02",
+        "file_differences": [
+          "in/profiles/001/atm/simple_cloud.txt"
+        ],
+        "ctp_hPa_unchanged": true,
+        "simple_cloud_fraction_before": 0.6,
+        "simple_cloud_fraction_after": 0.0,
+        "per_file_sha256": [
+          {
+            "path": "in/channels.txt",
+            "retry1": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b",
+            "retry2": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b"
+          },
+          {
+            "path": "in/coef.txt",
+            "retry1": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+            "retry2": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1"
+          },
+          {
+            "path": "in/lprofiles.txt",
+            "retry1": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de",
+            "retry2": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de"
+          },
+          {
+            "path": "in/profiles/001/angles.txt",
+            "retry1": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161",
+            "retry2": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161"
+          },
+          {
+            "path": "in/profiles/001/atm/co2.txt",
+            "retry1": "3500104087d32ed9e11dbd2ecf86297cf3a5c9a5e89fdb2d36b4fbb33deda571",
+            "retry2": "3500104087d32ed9e11dbd2ecf86297cf3a5c9a5e89fdb2d36b4fbb33deda571"
+          },
+          {
+            "path": "in/profiles/001/atm/deff_param.txt",
+            "retry1": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0",
+            "retry2": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0"
+          },
+          {
+            "path": "in/profiles/001/atm/hydro.txt",
+            "retry1": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc",
+            "retry2": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc"
+          },
+          {
+            "path": "in/profiles/001/atm/hydro_deff.txt",
+            "retry1": "6160575f7989ef12b570c807f6da93b29bc82f886ca1c34eb47cee9dd5abf98a",
+            "retry2": "6160575f7989ef12b570c807f6da93b29bc82f886ca1c34eb47cee9dd5abf98a"
+          },
+          {
+            "path": "in/profiles/001/atm/hydro_frac.txt",
+            "retry1": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b",
+            "retry2": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b"
+          },
+          {
+            "path": "in/profiles/001/atm/mmr_hydro_aer.txt",
+            "retry1": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c",
+            "retry2": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c"
+          },
+          {
+            "path": "in/profiles/001/atm/o3.txt",
+            "retry1": "ac60a4b72a8753ef270f0f7026b1bb49de9a2dccdc0c508dabcbb57df2dcc23c",
+            "retry2": "ac60a4b72a8753ef270f0f7026b1bb49de9a2dccdc0c508dabcbb57df2dcc23c"
+          },
+          {
+            "path": "in/profiles/001/atm/p.txt",
+            "retry1": "c9262aaed070f82223b8745807b7f2d09c7c7d881c7bb82be4ec596864b86e9a",
+            "retry2": "c9262aaed070f82223b8745807b7f2d09c7c7d881c7bb82be4ec596864b86e9a"
+          },
+          {
+            "path": "in/profiles/001/atm/p_half.txt",
+            "retry1": "0b6bd61e8540dc1e514d4df56da4a635bc1bdad61eb49914b096e2a883c47833",
+            "retry2": "0b6bd61e8540dc1e514d4df56da4a635bc1bdad61eb49914b096e2a883c47833"
+          },
+          {
+            "path": "in/profiles/001/atm/q.txt",
+            "retry1": "3fa70de7c3e32185ee976fb43f79b1d95235f8d7dc5e686cd5d5b72053227783",
+            "retry2": "3fa70de7c3e32185ee976fb43f79b1d95235f8d7dc5e686cd5d5b72053227783"
+          },
+          {
+            "path": "in/profiles/001/atm/simple_cloud.txt",
+            "retry1": "4cb129317ade83978b1f98ec3e0cdca9346b81a8b7734503725ba9a0e42ccdcb",
+            "retry2": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d"
+          },
+          {
+            "path": "in/profiles/001/atm/t.txt",
+            "retry1": "0bc08a33cd7d6fb8f1438e4b59f63ce1f6faab97ee5b4ada8d75c37c8f649796",
+            "retry2": "0bc08a33cd7d6fb8f1438e4b59f63ce1f6faab97ee5b4ada8d75c37c8f649796"
+          },
+          {
+            "path": "in/profiles/001/be.txt",
+            "retry1": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1",
+            "retry2": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1"
+          },
+          {
+            "path": "in/profiles/001/datetime.txt",
+            "retry1": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86",
+            "retry2": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86"
+          },
+          {
+            "path": "in/profiles/001/gas_units.txt",
+            "retry1": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555",
+            "retry2": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555"
+          },
+          {
+            "path": "in/profiles/001/prof_id.txt",
+            "retry1": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793",
+            "retry2": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793"
+          },
+          {
+            "path": "in/profiles/001/sfc/01/near_surface.txt",
+            "retry1": "06dae798936ae385bcae6214ac798bf3c0641bf358968d9adc3b23d8a47b6be8",
+            "retry2": "06dae798936ae385bcae6214ac798bf3c0641bf358968d9adc3b23d8a47b6be8"
+          },
+          {
+            "path": "in/profiles/001/sfc/01/skin.txt",
+            "retry1": "3002776050bc448b673f63ffd633d9eae7c9a244126f307366af51bcb2eb8e80",
+            "retry2": "3002776050bc448b673f63ffd633d9eae7c9a244126f307366af51bcb2eb8e80"
+          },
+          {
+            "path": "out/direct/brdf_out.txt",
+            "retry1": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404",
+            "retry2": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+          },
+          {
+            "path": "out/direct/diffuse_reflectance_out.txt",
+            "retry1": "39c8deae34056d737bc5264b653214ddf11cfa685fe6501af6420041ba577c00",
+            "retry2": "39c8deae34056d737bc5264b653214ddf11cfa685fe6501af6420041ba577c00"
+          },
+          {
+            "path": "out/direct/emissivity_out.txt",
+            "retry1": "1bf6a2016f4eaa3478b49058a49d7a37d4f5d4ac724ff8451bf9389f978eefa8",
+            "retry2": "1bf6a2016f4eaa3478b49058a49d7a37d4f5d4ac724ff8451bf9389f978eefa8"
+          },
+          {
+            "path": "out/direct/radiance.txt",
+            "retry1": "b44e50657b631aaf1565f00430224660df4b70d55edfbd39e17519368d520d3a",
+            "retry2": "b44e50657b631aaf1565f00430224660df4b70d55edfbd39e17519368d520d3a"
+          },
+          {
+            "path": "out/direct/transmission.txt",
+            "retry1": "58633073ad59a948b1f3f8e796ac77226817168de982e69b68de0921704ab4de",
+            "retry2": "58633073ad59a948b1f3f8e796ac77226817168de982e69b68de0921704ab4de"
+          },
+          {
+            "path": "out/env.sh",
+            "retry1": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+            "retry2": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554"
+          },
+          {
+            "path": "out/gas_units.log",
+            "retry1": "bbfa470e4245ae057ca3ced2319be137d64b8976d5ecea75d8d820f61cb0e026",
+            "retry2": "bbfa470e4245ae057ca3ced2319be137d64b8976d5ecea75d8d820f61cb0e026"
+          },
+          {
+            "path": "out/interpolation.log",
+            "retry1": "041b94987f4ac2b741b1baeb77c2f53060aee2b62d41122efb537ec8a3b806aa",
+            "retry2": "041b94987f4ac2b741b1baeb77c2f53060aee2b62d41122efb537ec8a3b806aa"
+          },
+          {
+            "path": "out/k/brdf_k.txt",
+            "retry1": "145610a7c73dda69ee8ea528f7b1fa51b22a4d93ee754df2712122335722f8a0",
+            "retry2": "145610a7c73dda69ee8ea528f7b1fa51b22a4d93ee754df2712122335722f8a0"
+          },
+          {
+            "path": "out/k/brdf_out.txt",
+            "retry1": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404",
+            "retry2": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+          },
+          {
+            "path": "out/k/diffuse_reflectance_k.txt",
+            "retry1": "d2587f977982983659b7f4d8197f55775d27cef96755f85fe3a0d55381db1c7d",
+            "retry2": "d2587f977982983659b7f4d8197f55775d27cef96755f85fe3a0d55381db1c7d"
+          },
+          {
+            "path": "out/k/diffuse_reflectance_out.txt",
+            "retry1": "39c8deae34056d737bc5264b653214ddf11cfa685fe6501af6420041ba577c00",
+            "retry2": "39c8deae34056d737bc5264b653214ddf11cfa685fe6501af6420041ba577c00"
+          },
+          {
+            "path": "out/k/emissivity_k.txt",
+            "retry1": "d19fb6b6f7c9ab3ccd50699ff108174815f5d92c99421117e0d2c3628029aaef",
+            "retry2": "d19fb6b6f7c9ab3ccd50699ff108174815f5d92c99421117e0d2c3628029aaef"
+          },
+          {
+            "path": "out/k/emissivity_out.txt",
+            "retry1": "1bf6a2016f4eaa3478b49058a49d7a37d4f5d4ac724ff8451bf9389f978eefa8",
+            "retry2": "1bf6a2016f4eaa3478b49058a49d7a37d4f5d4ac724ff8451bf9389f978eefa8"
+          },
+          {
+            "path": "out/k/profiles_k.txt",
+            "retry1": "c2af5b53944895cc52b867249295375d2ac803dd153b8ae6c1d6943eacbfa633",
+            "retry2": "c2af5b53944895cc52b867249295375d2ac803dd153b8ae6c1d6943eacbfa633"
+          },
+          {
+            "path": "out/k/radiance.txt",
+            "retry1": "b44e50657b631aaf1565f00430224660df4b70d55edfbd39e17519368d520d3a",
+            "retry2": "b44e50657b631aaf1565f00430224660df4b70d55edfbd39e17519368d520d3a"
+          },
+          {
+            "path": "out/k/transmission.txt",
+            "retry1": "58633073ad59a948b1f3f8e796ac77226817168de982e69b68de0921704ab4de",
+            "retry2": "58633073ad59a948b1f3f8e796ac77226817168de982e69b68de0921704ab4de"
+          },
+          {
+            "path": "out/rttov_test.log",
+            "retry1": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df",
+            "retry2": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df"
+          },
+          {
+            "path": "out/rttov_test.txt",
+            "retry1": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282",
+            "retry2": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+          },
+          {
+            "path": "out/run.sh",
+            "retry1": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+            "retry2": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+          },
+          {
+            "path": "out/run.stderr.log",
+            "retry1": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "retry2": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "path": "out/run.stdout.log",
+            "retry1": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "retry2": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        ]
+      },
+      {
+        "case": "case_03",
+        "file_differences": [
+          "in/profiles/001/atm/simple_cloud.txt"
+        ],
+        "ctp_hPa_unchanged": true,
+        "simple_cloud_fraction_before": 0.6,
+        "simple_cloud_fraction_after": 0.0,
+        "per_file_sha256": [
+          {
+            "path": "in/channels.txt",
+            "retry1": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b",
+            "retry2": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b"
+          },
+          {
+            "path": "in/coef.txt",
+            "retry1": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+            "retry2": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1"
+          },
+          {
+            "path": "in/lprofiles.txt",
+            "retry1": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de",
+            "retry2": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de"
+          },
+          {
+            "path": "in/profiles/001/angles.txt",
+            "retry1": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161",
+            "retry2": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161"
+          },
+          {
+            "path": "in/profiles/001/atm/co2.txt",
+            "retry1": "9e112d2391c7e273710206bcf228f6becf748782e84df65d7258c40dc363d764",
+            "retry2": "9e112d2391c7e273710206bcf228f6becf748782e84df65d7258c40dc363d764"
+          },
+          {
+            "path": "in/profiles/001/atm/deff_param.txt",
+            "retry1": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0",
+            "retry2": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0"
+          },
+          {
+            "path": "in/profiles/001/atm/hydro.txt",
+            "retry1": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc",
+            "retry2": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc"
+          },
+          {
+            "path": "in/profiles/001/atm/hydro_deff.txt",
+            "retry1": "6160575f7989ef12b570c807f6da93b29bc82f886ca1c34eb47cee9dd5abf98a",
+            "retry2": "6160575f7989ef12b570c807f6da93b29bc82f886ca1c34eb47cee9dd5abf98a"
+          },
+          {
+            "path": "in/profiles/001/atm/hydro_frac.txt",
+            "retry1": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b",
+            "retry2": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b"
+          },
+          {
+            "path": "in/profiles/001/atm/mmr_hydro_aer.txt",
+            "retry1": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c",
+            "retry2": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c"
+          },
+          {
+            "path": "in/profiles/001/atm/o3.txt",
+            "retry1": "48a7fe60e5990b75e1513e590f821bebf4aeb62c7e7f6766bea8315ad56e39a0",
+            "retry2": "48a7fe60e5990b75e1513e590f821bebf4aeb62c7e7f6766bea8315ad56e39a0"
+          },
+          {
+            "path": "in/profiles/001/atm/p.txt",
+            "retry1": "6eee586bf1e7da0581fc45bf457da434e3a060ee352956ea665dc6536c29aa95",
+            "retry2": "6eee586bf1e7da0581fc45bf457da434e3a060ee352956ea665dc6536c29aa95"
+          },
+          {
+            "path": "in/profiles/001/atm/p_half.txt",
+            "retry1": "3b168b9e86c9e8e14d4466889e1920b0522de2fd0c282975dce3182d975bec91",
+            "retry2": "3b168b9e86c9e8e14d4466889e1920b0522de2fd0c282975dce3182d975bec91"
+          },
+          {
+            "path": "in/profiles/001/atm/q.txt",
+            "retry1": "aeeebe359387eecae21149ad8b073388e8c319fefcbd62549ac1f8a140dd6b73",
+            "retry2": "aeeebe359387eecae21149ad8b073388e8c319fefcbd62549ac1f8a140dd6b73"
+          },
+          {
+            "path": "in/profiles/001/atm/simple_cloud.txt",
+            "retry1": "4cb129317ade83978b1f98ec3e0cdca9346b81a8b7734503725ba9a0e42ccdcb",
+            "retry2": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d"
+          },
+          {
+            "path": "in/profiles/001/atm/t.txt",
+            "retry1": "34402d87909f629a1368abcece6248ed2017687fd9c3068418108a179399fe8e",
+            "retry2": "34402d87909f629a1368abcece6248ed2017687fd9c3068418108a179399fe8e"
+          },
+          {
+            "path": "in/profiles/001/be.txt",
+            "retry1": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1",
+            "retry2": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1"
+          },
+          {
+            "path": "in/profiles/001/datetime.txt",
+            "retry1": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86",
+            "retry2": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86"
+          },
+          {
+            "path": "in/profiles/001/gas_units.txt",
+            "retry1": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555",
+            "retry2": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555"
+          },
+          {
+            "path": "in/profiles/001/prof_id.txt",
+            "retry1": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793",
+            "retry2": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793"
+          },
+          {
+            "path": "in/profiles/001/sfc/01/near_surface.txt",
+            "retry1": "1cca5671c6c638f59e3b38d2b6c1b1404d63bf1540f4c9ca07d573a4ac581d85",
+            "retry2": "1cca5671c6c638f59e3b38d2b6c1b1404d63bf1540f4c9ca07d573a4ac581d85"
+          },
+          {
+            "path": "in/profiles/001/sfc/01/skin.txt",
+            "retry1": "3157e9b34e0d5008a79805d17d809a1b23914cbbe5bc9d774b2a2fad2f3a7647",
+            "retry2": "3157e9b34e0d5008a79805d17d809a1b23914cbbe5bc9d774b2a2fad2f3a7647"
+          },
+          {
+            "path": "out/direct/brdf_out.txt",
+            "retry1": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404",
+            "retry2": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+          },
+          {
+            "path": "out/direct/diffuse_reflectance_out.txt",
+            "retry1": "c586bf8c2fbbb3b80fcf4dde95b62225666c6dd0991269c4e0a18d4404c621c3",
+            "retry2": "c586bf8c2fbbb3b80fcf4dde95b62225666c6dd0991269c4e0a18d4404c621c3"
+          },
+          {
+            "path": "out/direct/emissivity_out.txt",
+            "retry1": "ba5271cd83d5d1635d047961a1a0c503d5daede8963172f3f6d8cc9a192f7906",
+            "retry2": "ba5271cd83d5d1635d047961a1a0c503d5daede8963172f3f6d8cc9a192f7906"
+          },
+          {
+            "path": "out/direct/radiance.txt",
+            "retry1": "f066a4b3c058611ca16f921b0d32075d8f8d69d711f2f056b05e6f7ad8babcaa",
+            "retry2": "f066a4b3c058611ca16f921b0d32075d8f8d69d711f2f056b05e6f7ad8babcaa"
+          },
+          {
+            "path": "out/direct/transmission.txt",
+            "retry1": "5130dd7919fae143e6b07bda78985bd101f4fcf22429fac7a11524e5093db53c",
+            "retry2": "5130dd7919fae143e6b07bda78985bd101f4fcf22429fac7a11524e5093db53c"
+          },
+          {
+            "path": "out/env.sh",
+            "retry1": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+            "retry2": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554"
+          },
+          {
+            "path": "out/gas_units.log",
+            "retry1": "bbfa470e4245ae057ca3ced2319be137d64b8976d5ecea75d8d820f61cb0e026",
+            "retry2": "bbfa470e4245ae057ca3ced2319be137d64b8976d5ecea75d8d820f61cb0e026"
+          },
+          {
+            "path": "out/interpolation.log",
+            "retry1": "041b94987f4ac2b741b1baeb77c2f53060aee2b62d41122efb537ec8a3b806aa",
+            "retry2": "041b94987f4ac2b741b1baeb77c2f53060aee2b62d41122efb537ec8a3b806aa"
+          },
+          {
+            "path": "out/k/brdf_k.txt",
+            "retry1": "145610a7c73dda69ee8ea528f7b1fa51b22a4d93ee754df2712122335722f8a0",
+            "retry2": "145610a7c73dda69ee8ea528f7b1fa51b22a4d93ee754df2712122335722f8a0"
+          },
+          {
+            "path": "out/k/brdf_out.txt",
+            "retry1": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404",
+            "retry2": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+          },
+          {
+            "path": "out/k/diffuse_reflectance_k.txt",
+            "retry1": "d2587f977982983659b7f4d8197f55775d27cef96755f85fe3a0d55381db1c7d",
+            "retry2": "d2587f977982983659b7f4d8197f55775d27cef96755f85fe3a0d55381db1c7d"
+          },
+          {
+            "path": "out/k/diffuse_reflectance_out.txt",
+            "retry1": "c586bf8c2fbbb3b80fcf4dde95b62225666c6dd0991269c4e0a18d4404c621c3",
+            "retry2": "c586bf8c2fbbb3b80fcf4dde95b62225666c6dd0991269c4e0a18d4404c621c3"
+          },
+          {
+            "path": "out/k/emissivity_k.txt",
+            "retry1": "d19fb6b6f7c9ab3ccd50699ff108174815f5d92c99421117e0d2c3628029aaef",
+            "retry2": "d19fb6b6f7c9ab3ccd50699ff108174815f5d92c99421117e0d2c3628029aaef"
+          },
+          {
+            "path": "out/k/emissivity_out.txt",
+            "retry1": "ba5271cd83d5d1635d047961a1a0c503d5daede8963172f3f6d8cc9a192f7906",
+            "retry2": "ba5271cd83d5d1635d047961a1a0c503d5daede8963172f3f6d8cc9a192f7906"
+          },
+          {
+            "path": "out/k/profiles_k.txt",
+            "retry1": "d2a7ab3bfb80bf81e265883e8e6e002f450519355028089faea9eaaba3bee683",
+            "retry2": "d2a7ab3bfb80bf81e265883e8e6e002f450519355028089faea9eaaba3bee683"
+          },
+          {
+            "path": "out/k/radiance.txt",
+            "retry1": "f066a4b3c058611ca16f921b0d32075d8f8d69d711f2f056b05e6f7ad8babcaa",
+            "retry2": "f066a4b3c058611ca16f921b0d32075d8f8d69d711f2f056b05e6f7ad8babcaa"
+          },
+          {
+            "path": "out/k/transmission.txt",
+            "retry1": "5130dd7919fae143e6b07bda78985bd101f4fcf22429fac7a11524e5093db53c",
+            "retry2": "5130dd7919fae143e6b07bda78985bd101f4fcf22429fac7a11524e5093db53c"
+          },
+          {
+            "path": "out/rttov_test.log",
+            "retry1": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df",
+            "retry2": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df"
+          },
+          {
+            "path": "out/rttov_test.txt",
+            "retry1": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282",
+            "retry2": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+          },
+          {
+            "path": "out/run.sh",
+            "retry1": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+            "retry2": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+          },
+          {
+            "path": "out/run.stderr.log",
+            "retry1": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "retry2": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "path": "out/run.stdout.log",
+            "retry1": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "retry2": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        ]
+      },
+      {
+        "case": "case_04",
+        "file_differences": [
+          "in/profiles/001/atm/simple_cloud.txt"
+        ],
+        "ctp_hPa_unchanged": true,
+        "simple_cloud_fraction_before": 0.6,
+        "simple_cloud_fraction_after": 0.0,
+        "per_file_sha256": [
+          {
+            "path": "in/channels.txt",
+            "retry1": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b",
+            "retry2": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b"
+          },
+          {
+            "path": "in/coef.txt",
+            "retry1": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+            "retry2": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1"
+          },
+          {
+            "path": "in/lprofiles.txt",
+            "retry1": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de",
+            "retry2": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de"
+          },
+          {
+            "path": "in/profiles/001/angles.txt",
+            "retry1": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161",
+            "retry2": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161"
+          },
+          {
+            "path": "in/profiles/001/atm/co2.txt",
+            "retry1": "b2c77a226ae318f2ddba54965e1f011d8c4c6f561048a7b249294f28cd5636b2",
+            "retry2": "b2c77a226ae318f2ddba54965e1f011d8c4c6f561048a7b249294f28cd5636b2"
+          },
+          {
+            "path": "in/profiles/001/atm/deff_param.txt",
+            "retry1": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0",
+            "retry2": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0"
+          },
+          {
+            "path": "in/profiles/001/atm/hydro.txt",
+            "retry1": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc",
+            "retry2": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc"
+          },
+          {
+            "path": "in/profiles/001/atm/hydro_deff.txt",
+            "retry1": "6160575f7989ef12b570c807f6da93b29bc82f886ca1c34eb47cee9dd5abf98a",
+            "retry2": "6160575f7989ef12b570c807f6da93b29bc82f886ca1c34eb47cee9dd5abf98a"
+          },
+          {
+            "path": "in/profiles/001/atm/hydro_frac.txt",
+            "retry1": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b",
+            "retry2": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b"
+          },
+          {
+            "path": "in/profiles/001/atm/mmr_hydro_aer.txt",
+            "retry1": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c",
+            "retry2": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c"
+          },
+          {
+            "path": "in/profiles/001/atm/o3.txt",
+            "retry1": "85337023aac71affa2badee1762eb29cf4baf7beb4e24784dfd19b874f2e6493",
+            "retry2": "85337023aac71affa2badee1762eb29cf4baf7beb4e24784dfd19b874f2e6493"
+          },
+          {
+            "path": "in/profiles/001/atm/p.txt",
+            "retry1": "3311bfe8a664eac4ca08ce17098d0a75e8231c194cab22a142352f8d3603cbde",
+            "retry2": "3311bfe8a664eac4ca08ce17098d0a75e8231c194cab22a142352f8d3603cbde"
+          },
+          {
+            "path": "in/profiles/001/atm/p_half.txt",
+            "retry1": "663e790bc56ef26bcda39f38316eaa6820c715dfd7313fe0feacd25a3ef33299",
+            "retry2": "663e790bc56ef26bcda39f38316eaa6820c715dfd7313fe0feacd25a3ef33299"
+          },
+          {
+            "path": "in/profiles/001/atm/q.txt",
+            "retry1": "8779df62ecee42c87c1917b6be11327d83c32ccc4923cb2a15097705700f5c80",
+            "retry2": "8779df62ecee42c87c1917b6be11327d83c32ccc4923cb2a15097705700f5c80"
+          },
+          {
+            "path": "in/profiles/001/atm/simple_cloud.txt",
+            "retry1": "4cb129317ade83978b1f98ec3e0cdca9346b81a8b7734503725ba9a0e42ccdcb",
+            "retry2": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d"
+          },
+          {
+            "path": "in/profiles/001/atm/t.txt",
+            "retry1": "24f7b2decdb9f6044ed570d0f3465ac6c6f76a5a1e550c3431f86c2c61a0b1cb",
+            "retry2": "24f7b2decdb9f6044ed570d0f3465ac6c6f76a5a1e550c3431f86c2c61a0b1cb"
+          },
+          {
+            "path": "in/profiles/001/be.txt",
+            "retry1": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1",
+            "retry2": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1"
+          },
+          {
+            "path": "in/profiles/001/datetime.txt",
+            "retry1": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86",
+            "retry2": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86"
+          },
+          {
+            "path": "in/profiles/001/gas_units.txt",
+            "retry1": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555",
+            "retry2": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555"
+          },
+          {
+            "path": "in/profiles/001/prof_id.txt",
+            "retry1": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793",
+            "retry2": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793"
+          },
+          {
+            "path": "in/profiles/001/sfc/01/near_surface.txt",
+            "retry1": "ae6c78993e32663bfcab38862bc1c4563be19ab3d0d46231760ed2f10a3a5bb4",
+            "retry2": "ae6c78993e32663bfcab38862bc1c4563be19ab3d0d46231760ed2f10a3a5bb4"
+          },
+          {
+            "path": "in/profiles/001/sfc/01/skin.txt",
+            "retry1": "08ebe5336fddb416eb6fe1a918460facfd8ebd04ac322c78a716354d920c3742",
+            "retry2": "08ebe5336fddb416eb6fe1a918460facfd8ebd04ac322c78a716354d920c3742"
+          },
+          {
+            "path": "out/direct/brdf_out.txt",
+            "retry1": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404",
+            "retry2": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+          },
+          {
+            "path": "out/direct/diffuse_reflectance_out.txt",
+            "retry1": "d9dca9476bdb1be2916b17c204eb9beca5ea9573d5a9d12c9757ad1484188663",
+            "retry2": "d9dca9476bdb1be2916b17c204eb9beca5ea9573d5a9d12c9757ad1484188663"
+          },
+          {
+            "path": "out/direct/emissivity_out.txt",
+            "retry1": "92b18633e562ecdbfbd443bc70600d4ae9d483cad4b2335d880080ed8384c5e6",
+            "retry2": "92b18633e562ecdbfbd443bc70600d4ae9d483cad4b2335d880080ed8384c5e6"
+          },
+          {
+            "path": "out/direct/radiance.txt",
+            "retry1": "4558460ca68d6b67cf3f5893b6199bc73e34999cfa89431a4ed907344c3df03c",
+            "retry2": "4558460ca68d6b67cf3f5893b6199bc73e34999cfa89431a4ed907344c3df03c"
+          },
+          {
+            "path": "out/direct/transmission.txt",
+            "retry1": "f3b46a964965d365fc96d0e447dc095c54ba1c60f857491a59c6d24be2e6515d",
+            "retry2": "f3b46a964965d365fc96d0e447dc095c54ba1c60f857491a59c6d24be2e6515d"
+          },
+          {
+            "path": "out/env.sh",
+            "retry1": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+            "retry2": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554"
+          },
+          {
+            "path": "out/gas_units.log",
+            "retry1": "bbfa470e4245ae057ca3ced2319be137d64b8976d5ecea75d8d820f61cb0e026",
+            "retry2": "bbfa470e4245ae057ca3ced2319be137d64b8976d5ecea75d8d820f61cb0e026"
+          },
+          {
+            "path": "out/interpolation.log",
+            "retry1": "041b94987f4ac2b741b1baeb77c2f53060aee2b62d41122efb537ec8a3b806aa",
+            "retry2": "041b94987f4ac2b741b1baeb77c2f53060aee2b62d41122efb537ec8a3b806aa"
+          },
+          {
+            "path": "out/k/brdf_k.txt",
+            "retry1": "145610a7c73dda69ee8ea528f7b1fa51b22a4d93ee754df2712122335722f8a0",
+            "retry2": "145610a7c73dda69ee8ea528f7b1fa51b22a4d93ee754df2712122335722f8a0"
+          },
+          {
+            "path": "out/k/brdf_out.txt",
+            "retry1": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404",
+            "retry2": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+          },
+          {
+            "path": "out/k/diffuse_reflectance_k.txt",
+            "retry1": "d2587f977982983659b7f4d8197f55775d27cef96755f85fe3a0d55381db1c7d",
+            "retry2": "d2587f977982983659b7f4d8197f55775d27cef96755f85fe3a0d55381db1c7d"
+          },
+          {
+            "path": "out/k/diffuse_reflectance_out.txt",
+            "retry1": "d9dca9476bdb1be2916b17c204eb9beca5ea9573d5a9d12c9757ad1484188663",
+            "retry2": "d9dca9476bdb1be2916b17c204eb9beca5ea9573d5a9d12c9757ad1484188663"
+          },
+          {
+            "path": "out/k/emissivity_k.txt",
+            "retry1": "d19fb6b6f7c9ab3ccd50699ff108174815f5d92c99421117e0d2c3628029aaef",
+            "retry2": "d19fb6b6f7c9ab3ccd50699ff108174815f5d92c99421117e0d2c3628029aaef"
+          },
+          {
+            "path": "out/k/emissivity_out.txt",
+            "retry1": "92b18633e562ecdbfbd443bc70600d4ae9d483cad4b2335d880080ed8384c5e6",
+            "retry2": "92b18633e562ecdbfbd443bc70600d4ae9d483cad4b2335d880080ed8384c5e6"
+          },
+          {
+            "path": "out/k/profiles_k.txt",
+            "retry1": "441fd95c83167509a2fb2c1f6912ea6da09066bec2d82d9cc76550da396cab2e",
+            "retry2": "441fd95c83167509a2fb2c1f6912ea6da09066bec2d82d9cc76550da396cab2e"
+          },
+          {
+            "path": "out/k/radiance.txt",
+            "retry1": "4558460ca68d6b67cf3f5893b6199bc73e34999cfa89431a4ed907344c3df03c",
+            "retry2": "4558460ca68d6b67cf3f5893b6199bc73e34999cfa89431a4ed907344c3df03c"
+          },
+          {
+            "path": "out/k/transmission.txt",
+            "retry1": "f3b46a964965d365fc96d0e447dc095c54ba1c60f857491a59c6d24be2e6515d",
+            "retry2": "f3b46a964965d365fc96d0e447dc095c54ba1c60f857491a59c6d24be2e6515d"
+          },
+          {
+            "path": "out/rttov_test.log",
+            "retry1": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df",
+            "retry2": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df"
+          },
+          {
+            "path": "out/rttov_test.txt",
+            "retry1": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282",
+            "retry2": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+          },
+          {
+            "path": "out/run.sh",
+            "retry1": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+            "retry2": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+          },
+          {
+            "path": "out/run.stderr.log",
+            "retry1": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "retry2": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "path": "out/run.stdout.log",
+            "retry1": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "retry2": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        ]
+      },
+      {
+        "case": "case_05",
+        "file_differences": [
+          "in/profiles/001/atm/simple_cloud.txt"
+        ],
+        "ctp_hPa_unchanged": true,
+        "simple_cloud_fraction_before": 0.6,
+        "simple_cloud_fraction_after": 0.0,
+        "per_file_sha256": [
+          {
+            "path": "in/channels.txt",
+            "retry1": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b",
+            "retry2": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b"
+          },
+          {
+            "path": "in/coef.txt",
+            "retry1": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+            "retry2": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1"
+          },
+          {
+            "path": "in/lprofiles.txt",
+            "retry1": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de",
+            "retry2": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de"
+          },
+          {
+            "path": "in/profiles/001/angles.txt",
+            "retry1": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161",
+            "retry2": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161"
+          },
+          {
+            "path": "in/profiles/001/atm/co2.txt",
+            "retry1": "acf0fb2f33cb83424f08d6352036eb66df2ca906d4918977394d2903159ca90a",
+            "retry2": "acf0fb2f33cb83424f08d6352036eb66df2ca906d4918977394d2903159ca90a"
+          },
+          {
+            "path": "in/profiles/001/atm/deff_param.txt",
+            "retry1": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0",
+            "retry2": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0"
+          },
+          {
+            "path": "in/profiles/001/atm/hydro.txt",
+            "retry1": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc",
+            "retry2": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc"
+          },
+          {
+            "path": "in/profiles/001/atm/hydro_deff.txt",
+            "retry1": "6160575f7989ef12b570c807f6da93b29bc82f886ca1c34eb47cee9dd5abf98a",
+            "retry2": "6160575f7989ef12b570c807f6da93b29bc82f886ca1c34eb47cee9dd5abf98a"
+          },
+          {
+            "path": "in/profiles/001/atm/hydro_frac.txt",
+            "retry1": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b",
+            "retry2": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b"
+          },
+          {
+            "path": "in/profiles/001/atm/mmr_hydro_aer.txt",
+            "retry1": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c",
+            "retry2": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c"
+          },
+          {
+            "path": "in/profiles/001/atm/o3.txt",
+            "retry1": "dcbcffa207ce46c5a0f656ed9168fc7aea6f912fd2ecc06147f8ae82285e24f6",
+            "retry2": "dcbcffa207ce46c5a0f656ed9168fc7aea6f912fd2ecc06147f8ae82285e24f6"
+          },
+          {
+            "path": "in/profiles/001/atm/p.txt",
+            "retry1": "0aaa3d21221ddac4ce9928285bc7e7e9d4974d0d0998a377584f234c51c779d6",
+            "retry2": "0aaa3d21221ddac4ce9928285bc7e7e9d4974d0d0998a377584f234c51c779d6"
+          },
+          {
+            "path": "in/profiles/001/atm/p_half.txt",
+            "retry1": "76f4ea6ed006857f55d96d0abd5d18dab123a05721896a40114aaaf5ba01f294",
+            "retry2": "76f4ea6ed006857f55d96d0abd5d18dab123a05721896a40114aaaf5ba01f294"
+          },
+          {
+            "path": "in/profiles/001/atm/q.txt",
+            "retry1": "8bc84cdb2582215e63a28acf241cb846da1fd1e4f9c1834c03643381f8d6f7e9",
+            "retry2": "8bc84cdb2582215e63a28acf241cb846da1fd1e4f9c1834c03643381f8d6f7e9"
+          },
+          {
+            "path": "in/profiles/001/atm/simple_cloud.txt",
+            "retry1": "4cb129317ade83978b1f98ec3e0cdca9346b81a8b7734503725ba9a0e42ccdcb",
+            "retry2": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d"
+          },
+          {
+            "path": "in/profiles/001/atm/t.txt",
+            "retry1": "3216574ac8de41f4de7d63dc07a632434d85f1946d9cbacbfdec75591470ac09",
+            "retry2": "3216574ac8de41f4de7d63dc07a632434d85f1946d9cbacbfdec75591470ac09"
+          },
+          {
+            "path": "in/profiles/001/be.txt",
+            "retry1": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1",
+            "retry2": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1"
+          },
+          {
+            "path": "in/profiles/001/datetime.txt",
+            "retry1": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86",
+            "retry2": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86"
+          },
+          {
+            "path": "in/profiles/001/gas_units.txt",
+            "retry1": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555",
+            "retry2": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555"
+          },
+          {
+            "path": "in/profiles/001/prof_id.txt",
+            "retry1": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793",
+            "retry2": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793"
+          },
+          {
+            "path": "in/profiles/001/sfc/01/near_surface.txt",
+            "retry1": "2f3c699105b496b791004b40fc04f9774c99a038f71dfae803b0bab9ebfd3d44",
+            "retry2": "2f3c699105b496b791004b40fc04f9774c99a038f71dfae803b0bab9ebfd3d44"
+          },
+          {
+            "path": "in/profiles/001/sfc/01/skin.txt",
+            "retry1": "32c3da2e12e2fc8dda8e4b86dbd58707d2f7738a420d7f48b8f2388b9d2587c8",
+            "retry2": "32c3da2e12e2fc8dda8e4b86dbd58707d2f7738a420d7f48b8f2388b9d2587c8"
+          },
+          {
+            "path": "out/direct/brdf_out.txt",
+            "retry1": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404",
+            "retry2": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+          },
+          {
+            "path": "out/direct/diffuse_reflectance_out.txt",
+            "retry1": "d71f8556b6622f341e6f9aef72c86ad6c18f1321a84e165e71d61803147470d9",
+            "retry2": "d71f8556b6622f341e6f9aef72c86ad6c18f1321a84e165e71d61803147470d9"
+          },
+          {
+            "path": "out/direct/emissivity_out.txt",
+            "retry1": "c35786e1316ce4c00aeede2e48492a9f06a12612944e7a77f482d2c5c588eb37",
+            "retry2": "c35786e1316ce4c00aeede2e48492a9f06a12612944e7a77f482d2c5c588eb37"
+          },
+          {
+            "path": "out/direct/radiance.txt",
+            "retry1": "0c3f8b85cc474f94979648479fb3bcea5c89301c6e845ef67b1d45d5b4621049",
+            "retry2": "0c3f8b85cc474f94979648479fb3bcea5c89301c6e845ef67b1d45d5b4621049"
+          },
+          {
+            "path": "out/direct/transmission.txt",
+            "retry1": "4164054bf9019576d7606b5fa2212690f5ea4e9254295da0a99cc2d6ed300d19",
+            "retry2": "4164054bf9019576d7606b5fa2212690f5ea4e9254295da0a99cc2d6ed300d19"
+          },
+          {
+            "path": "out/env.sh",
+            "retry1": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+            "retry2": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554"
+          },
+          {
+            "path": "out/gas_units.log",
+            "retry1": "bbfa470e4245ae057ca3ced2319be137d64b8976d5ecea75d8d820f61cb0e026",
+            "retry2": "bbfa470e4245ae057ca3ced2319be137d64b8976d5ecea75d8d820f61cb0e026"
+          },
+          {
+            "path": "out/interpolation.log",
+            "retry1": "041b94987f4ac2b741b1baeb77c2f53060aee2b62d41122efb537ec8a3b806aa",
+            "retry2": "041b94987f4ac2b741b1baeb77c2f53060aee2b62d41122efb537ec8a3b806aa"
+          },
+          {
+            "path": "out/k/brdf_k.txt",
+            "retry1": "145610a7c73dda69ee8ea528f7b1fa51b22a4d93ee754df2712122335722f8a0",
+            "retry2": "145610a7c73dda69ee8ea528f7b1fa51b22a4d93ee754df2712122335722f8a0"
+          },
+          {
+            "path": "out/k/brdf_out.txt",
+            "retry1": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404",
+            "retry2": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+          },
+          {
+            "path": "out/k/diffuse_reflectance_k.txt",
+            "retry1": "d2587f977982983659b7f4d8197f55775d27cef96755f85fe3a0d55381db1c7d",
+            "retry2": "d2587f977982983659b7f4d8197f55775d27cef96755f85fe3a0d55381db1c7d"
+          },
+          {
+            "path": "out/k/diffuse_reflectance_out.txt",
+            "retry1": "d71f8556b6622f341e6f9aef72c86ad6c18f1321a84e165e71d61803147470d9",
+            "retry2": "d71f8556b6622f341e6f9aef72c86ad6c18f1321a84e165e71d61803147470d9"
+          },
+          {
+            "path": "out/k/emissivity_k.txt",
+            "retry1": "d19fb6b6f7c9ab3ccd50699ff108174815f5d92c99421117e0d2c3628029aaef",
+            "retry2": "d19fb6b6f7c9ab3ccd50699ff108174815f5d92c99421117e0d2c3628029aaef"
+          },
+          {
+            "path": "out/k/emissivity_out.txt",
+            "retry1": "c35786e1316ce4c00aeede2e48492a9f06a12612944e7a77f482d2c5c588eb37",
+            "retry2": "c35786e1316ce4c00aeede2e48492a9f06a12612944e7a77f482d2c5c588eb37"
+          },
+          {
+            "path": "out/k/profiles_k.txt",
+            "retry1": "b64820ed79e245a2cbc6ac60f0e6c9e08257154a2bd2f4c4d3fbb277751db0ce",
+            "retry2": "b64820ed79e245a2cbc6ac60f0e6c9e08257154a2bd2f4c4d3fbb277751db0ce"
+          },
+          {
+            "path": "out/k/radiance.txt",
+            "retry1": "0c3f8b85cc474f94979648479fb3bcea5c89301c6e845ef67b1d45d5b4621049",
+            "retry2": "0c3f8b85cc474f94979648479fb3bcea5c89301c6e845ef67b1d45d5b4621049"
+          },
+          {
+            "path": "out/k/transmission.txt",
+            "retry1": "4164054bf9019576d7606b5fa2212690f5ea4e9254295da0a99cc2d6ed300d19",
+            "retry2": "4164054bf9019576d7606b5fa2212690f5ea4e9254295da0a99cc2d6ed300d19"
+          },
+          {
+            "path": "out/rttov_test.log",
+            "retry1": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df",
+            "retry2": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df"
+          },
+          {
+            "path": "out/rttov_test.txt",
+            "retry1": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282",
+            "retry2": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+          },
+          {
+            "path": "out/run.sh",
+            "retry1": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+            "retry2": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+          },
+          {
+            "path": "out/run.stderr.log",
+            "retry1": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "retry2": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "path": "out/run.stdout.log",
+            "retry1": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "retry2": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        ]
+      },
+      {
+        "case": "case_06",
+        "file_differences": [
+          "in/profiles/001/atm/simple_cloud.txt"
+        ],
+        "ctp_hPa_unchanged": true,
+        "simple_cloud_fraction_before": 0.6,
+        "simple_cloud_fraction_after": 0.0,
+        "per_file_sha256": [
+          {
+            "path": "in/channels.txt",
+            "retry1": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b",
+            "retry2": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b"
+          },
+          {
+            "path": "in/coef.txt",
+            "retry1": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+            "retry2": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1"
+          },
+          {
+            "path": "in/lprofiles.txt",
+            "retry1": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de",
+            "retry2": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de"
+          },
+          {
+            "path": "in/profiles/001/angles.txt",
+            "retry1": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161",
+            "retry2": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161"
+          },
+          {
+            "path": "in/profiles/001/atm/co2.txt",
+            "retry1": "551f6090f5556dbefd4b813a4f6da1ca4733e1cd116ab6f8ef1e63b16fe8e8b3",
+            "retry2": "551f6090f5556dbefd4b813a4f6da1ca4733e1cd116ab6f8ef1e63b16fe8e8b3"
+          },
+          {
+            "path": "in/profiles/001/atm/deff_param.txt",
+            "retry1": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0",
+            "retry2": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0"
+          },
+          {
+            "path": "in/profiles/001/atm/hydro.txt",
+            "retry1": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc",
+            "retry2": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc"
+          },
+          {
+            "path": "in/profiles/001/atm/hydro_deff.txt",
+            "retry1": "6160575f7989ef12b570c807f6da93b29bc82f886ca1c34eb47cee9dd5abf98a",
+            "retry2": "6160575f7989ef12b570c807f6da93b29bc82f886ca1c34eb47cee9dd5abf98a"
+          },
+          {
+            "path": "in/profiles/001/atm/hydro_frac.txt",
+            "retry1": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b",
+            "retry2": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b"
+          },
+          {
+            "path": "in/profiles/001/atm/mmr_hydro_aer.txt",
+            "retry1": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c",
+            "retry2": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c"
+          },
+          {
+            "path": "in/profiles/001/atm/o3.txt",
+            "retry1": "77f671e1f80632346c04884a927c99d98d846c4f85007412985173fbb240cf16",
+            "retry2": "77f671e1f80632346c04884a927c99d98d846c4f85007412985173fbb240cf16"
+          },
+          {
+            "path": "in/profiles/001/atm/p.txt",
+            "retry1": "6012b8c18bc8f45b0459bdb5ebf48b59e35a0a7fad4be76b695e0abdb985a5f7",
+            "retry2": "6012b8c18bc8f45b0459bdb5ebf48b59e35a0a7fad4be76b695e0abdb985a5f7"
+          },
+          {
+            "path": "in/profiles/001/atm/p_half.txt",
+            "retry1": "b54d60c6fb5398a380f2907013911eaf18456f410228fc061d2f0b946867b29a",
+            "retry2": "b54d60c6fb5398a380f2907013911eaf18456f410228fc061d2f0b946867b29a"
+          },
+          {
+            "path": "in/profiles/001/atm/q.txt",
+            "retry1": "22c8cb8b46bb6fbd03b1de9cd8dff43e18a5c5792304af15250ed7af8ea2feb5",
+            "retry2": "22c8cb8b46bb6fbd03b1de9cd8dff43e18a5c5792304af15250ed7af8ea2feb5"
+          },
+          {
+            "path": "in/profiles/001/atm/simple_cloud.txt",
+            "retry1": "4cb129317ade83978b1f98ec3e0cdca9346b81a8b7734503725ba9a0e42ccdcb",
+            "retry2": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d"
+          },
+          {
+            "path": "in/profiles/001/atm/t.txt",
+            "retry1": "a1fa4e539c42c6e526a91e9c34d9ad6ad6c5fa6f1915dc1ee32c59c812c8b116",
+            "retry2": "a1fa4e539c42c6e526a91e9c34d9ad6ad6c5fa6f1915dc1ee32c59c812c8b116"
+          },
+          {
+            "path": "in/profiles/001/be.txt",
+            "retry1": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1",
+            "retry2": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1"
+          },
+          {
+            "path": "in/profiles/001/datetime.txt",
+            "retry1": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86",
+            "retry2": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86"
+          },
+          {
+            "path": "in/profiles/001/gas_units.txt",
+            "retry1": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555",
+            "retry2": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555"
+          },
+          {
+            "path": "in/profiles/001/prof_id.txt",
+            "retry1": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793",
+            "retry2": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793"
+          },
+          {
+            "path": "in/profiles/001/sfc/01/near_surface.txt",
+            "retry1": "da66c9201370dbf43dcf0c827c82061725edf08e76e8be00c1f8271607eea864",
+            "retry2": "da66c9201370dbf43dcf0c827c82061725edf08e76e8be00c1f8271607eea864"
+          },
+          {
+            "path": "in/profiles/001/sfc/01/skin.txt",
+            "retry1": "a7d6d8bc10c5b25d0303f727751739b9065ba4a9e5d4ad00e2acbf650c8d0a3f",
+            "retry2": "a7d6d8bc10c5b25d0303f727751739b9065ba4a9e5d4ad00e2acbf650c8d0a3f"
+          },
+          {
+            "path": "out/direct/brdf_out.txt",
+            "retry1": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404",
+            "retry2": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+          },
+          {
+            "path": "out/direct/diffuse_reflectance_out.txt",
+            "retry1": "3315f0f5823eec444d9295540677386f962deb6183929def60ee7be34178b74e",
+            "retry2": "3315f0f5823eec444d9295540677386f962deb6183929def60ee7be34178b74e"
+          },
+          {
+            "path": "out/direct/emissivity_out.txt",
+            "retry1": "779cbe3e6fdd5526a3f5df07609817f97ef4939256a788ba00e32977e84d335c",
+            "retry2": "779cbe3e6fdd5526a3f5df07609817f97ef4939256a788ba00e32977e84d335c"
+          },
+          {
+            "path": "out/direct/radiance.txt",
+            "retry1": "86d6d54a26f1145e8da34b6776ba375f93027c6115e795ae7dc0795b336a4a04",
+            "retry2": "86d6d54a26f1145e8da34b6776ba375f93027c6115e795ae7dc0795b336a4a04"
+          },
+          {
+            "path": "out/direct/transmission.txt",
+            "retry1": "fcd665ad84b4f55b248d60d0d9f4231caba8a9d8d5088d6113119e88367c8f2f",
+            "retry2": "fcd665ad84b4f55b248d60d0d9f4231caba8a9d8d5088d6113119e88367c8f2f"
+          },
+          {
+            "path": "out/env.sh",
+            "retry1": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+            "retry2": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554"
+          },
+          {
+            "path": "out/gas_units.log",
+            "retry1": "bbfa470e4245ae057ca3ced2319be137d64b8976d5ecea75d8d820f61cb0e026",
+            "retry2": "bbfa470e4245ae057ca3ced2319be137d64b8976d5ecea75d8d820f61cb0e026"
+          },
+          {
+            "path": "out/interpolation.log",
+            "retry1": "041b94987f4ac2b741b1baeb77c2f53060aee2b62d41122efb537ec8a3b806aa",
+            "retry2": "041b94987f4ac2b741b1baeb77c2f53060aee2b62d41122efb537ec8a3b806aa"
+          },
+          {
+            "path": "out/k/brdf_k.txt",
+            "retry1": "145610a7c73dda69ee8ea528f7b1fa51b22a4d93ee754df2712122335722f8a0",
+            "retry2": "145610a7c73dda69ee8ea528f7b1fa51b22a4d93ee754df2712122335722f8a0"
+          },
+          {
+            "path": "out/k/brdf_out.txt",
+            "retry1": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404",
+            "retry2": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+          },
+          {
+            "path": "out/k/diffuse_reflectance_k.txt",
+            "retry1": "d2587f977982983659b7f4d8197f55775d27cef96755f85fe3a0d55381db1c7d",
+            "retry2": "d2587f977982983659b7f4d8197f55775d27cef96755f85fe3a0d55381db1c7d"
+          },
+          {
+            "path": "out/k/diffuse_reflectance_out.txt",
+            "retry1": "3315f0f5823eec444d9295540677386f962deb6183929def60ee7be34178b74e",
+            "retry2": "3315f0f5823eec444d9295540677386f962deb6183929def60ee7be34178b74e"
+          },
+          {
+            "path": "out/k/emissivity_k.txt",
+            "retry1": "d19fb6b6f7c9ab3ccd50699ff108174815f5d92c99421117e0d2c3628029aaef",
+            "retry2": "d19fb6b6f7c9ab3ccd50699ff108174815f5d92c99421117e0d2c3628029aaef"
+          },
+          {
+            "path": "out/k/emissivity_out.txt",
+            "retry1": "779cbe3e6fdd5526a3f5df07609817f97ef4939256a788ba00e32977e84d335c",
+            "retry2": "779cbe3e6fdd5526a3f5df07609817f97ef4939256a788ba00e32977e84d335c"
+          },
+          {
+            "path": "out/k/profiles_k.txt",
+            "retry1": "9a791ca9c67330738c45397c4cdab9b58f109fbca763b00dd4f445d710e2548b",
+            "retry2": "9a791ca9c67330738c45397c4cdab9b58f109fbca763b00dd4f445d710e2548b"
+          },
+          {
+            "path": "out/k/radiance.txt",
+            "retry1": "86d6d54a26f1145e8da34b6776ba375f93027c6115e795ae7dc0795b336a4a04",
+            "retry2": "86d6d54a26f1145e8da34b6776ba375f93027c6115e795ae7dc0795b336a4a04"
+          },
+          {
+            "path": "out/k/transmission.txt",
+            "retry1": "fcd665ad84b4f55b248d60d0d9f4231caba8a9d8d5088d6113119e88367c8f2f",
+            "retry2": "fcd665ad84b4f55b248d60d0d9f4231caba8a9d8d5088d6113119e88367c8f2f"
+          },
+          {
+            "path": "out/rttov_test.log",
+            "retry1": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df",
+            "retry2": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df"
+          },
+          {
+            "path": "out/rttov_test.txt",
+            "retry1": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282",
+            "retry2": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+          },
+          {
+            "path": "out/run.sh",
+            "retry1": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+            "retry2": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+          },
+          {
+            "path": "out/run.stderr.log",
+            "retry1": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "retry2": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "path": "out/run.stdout.log",
+            "retry1": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "retry2": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        ]
+      },
+      {
+        "case": "case_07",
+        "file_differences": [
+          "in/profiles/001/atm/simple_cloud.txt"
+        ],
+        "ctp_hPa_unchanged": true,
+        "simple_cloud_fraction_before": 0.6,
+        "simple_cloud_fraction_after": 0.0,
+        "per_file_sha256": [
+          {
+            "path": "in/channels.txt",
+            "retry1": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b",
+            "retry2": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b"
+          },
+          {
+            "path": "in/coef.txt",
+            "retry1": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+            "retry2": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1"
+          },
+          {
+            "path": "in/lprofiles.txt",
+            "retry1": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de",
+            "retry2": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de"
+          },
+          {
+            "path": "in/profiles/001/angles.txt",
+            "retry1": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161",
+            "retry2": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161"
+          },
+          {
+            "path": "in/profiles/001/atm/co2.txt",
+            "retry1": "d749fa6e37f6a5b16dafc92a85fff04d4b8f3d729e240e81ff68980568993632",
+            "retry2": "d749fa6e37f6a5b16dafc92a85fff04d4b8f3d729e240e81ff68980568993632"
+          },
+          {
+            "path": "in/profiles/001/atm/deff_param.txt",
+            "retry1": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0",
+            "retry2": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0"
+          },
+          {
+            "path": "in/profiles/001/atm/hydro.txt",
+            "retry1": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc",
+            "retry2": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc"
+          },
+          {
+            "path": "in/profiles/001/atm/hydro_deff.txt",
+            "retry1": "6160575f7989ef12b570c807f6da93b29bc82f886ca1c34eb47cee9dd5abf98a",
+            "retry2": "6160575f7989ef12b570c807f6da93b29bc82f886ca1c34eb47cee9dd5abf98a"
+          },
+          {
+            "path": "in/profiles/001/atm/hydro_frac.txt",
+            "retry1": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b",
+            "retry2": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b"
+          },
+          {
+            "path": "in/profiles/001/atm/mmr_hydro_aer.txt",
+            "retry1": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c",
+            "retry2": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c"
+          },
+          {
+            "path": "in/profiles/001/atm/o3.txt",
+            "retry1": "d90a8474e9a866f44425708285ad4f644097407ddf148718bb8de2a210597236",
+            "retry2": "d90a8474e9a866f44425708285ad4f644097407ddf148718bb8de2a210597236"
+          },
+          {
+            "path": "in/profiles/001/atm/p.txt",
+            "retry1": "02a3b6f1001443213ef7b0ed7077955141f1071811f909438e8c3caaf4b7e3eb",
+            "retry2": "02a3b6f1001443213ef7b0ed7077955141f1071811f909438e8c3caaf4b7e3eb"
+          },
+          {
+            "path": "in/profiles/001/atm/p_half.txt",
+            "retry1": "5092c34377b11d2cdbd3bc2e9b415129768112d033ad22e0148c03a374244d02",
+            "retry2": "5092c34377b11d2cdbd3bc2e9b415129768112d033ad22e0148c03a374244d02"
+          },
+          {
+            "path": "in/profiles/001/atm/q.txt",
+            "retry1": "5f3988f45c62185bf1895c3e588c5a0cb061d2ace8c37976c73313c0ae83b8a3",
+            "retry2": "5f3988f45c62185bf1895c3e588c5a0cb061d2ace8c37976c73313c0ae83b8a3"
+          },
+          {
+            "path": "in/profiles/001/atm/simple_cloud.txt",
+            "retry1": "4cb129317ade83978b1f98ec3e0cdca9346b81a8b7734503725ba9a0e42ccdcb",
+            "retry2": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d"
+          },
+          {
+            "path": "in/profiles/001/atm/t.txt",
+            "retry1": "6f2f812d1ee19d13dd1cba430466fd74cefa9938412ae75af0b892c50885fabf",
+            "retry2": "6f2f812d1ee19d13dd1cba430466fd74cefa9938412ae75af0b892c50885fabf"
+          },
+          {
+            "path": "in/profiles/001/be.txt",
+            "retry1": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1",
+            "retry2": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1"
+          },
+          {
+            "path": "in/profiles/001/datetime.txt",
+            "retry1": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86",
+            "retry2": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86"
+          },
+          {
+            "path": "in/profiles/001/gas_units.txt",
+            "retry1": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555",
+            "retry2": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555"
+          },
+          {
+            "path": "in/profiles/001/prof_id.txt",
+            "retry1": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793",
+            "retry2": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793"
+          },
+          {
+            "path": "in/profiles/001/sfc/01/near_surface.txt",
+            "retry1": "b68617f296adf8abda0a6ac437e410f718dc634f08e9f24409663a1f1dda3c23",
+            "retry2": "b68617f296adf8abda0a6ac437e410f718dc634f08e9f24409663a1f1dda3c23"
+          },
+          {
+            "path": "in/profiles/001/sfc/01/skin.txt",
+            "retry1": "f7c4d20e1ba2770e420c56c379b9f81364613630b91a33b9d54c6ff937a2826a",
+            "retry2": "f7c4d20e1ba2770e420c56c379b9f81364613630b91a33b9d54c6ff937a2826a"
+          },
+          {
+            "path": "out/direct/brdf_out.txt",
+            "retry1": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404",
+            "retry2": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+          },
+          {
+            "path": "out/direct/diffuse_reflectance_out.txt",
+            "retry1": "ea1b47ded15bdb01126f5eb7956b05b7f355334122e6799a1c826e227302b1e1",
+            "retry2": "ea1b47ded15bdb01126f5eb7956b05b7f355334122e6799a1c826e227302b1e1"
+          },
+          {
+            "path": "out/direct/emissivity_out.txt",
+            "retry1": "2a97daee0035ecaf7b754ffbe18e92135c81286f7c1093494bdce3dd9112356f",
+            "retry2": "2a97daee0035ecaf7b754ffbe18e92135c81286f7c1093494bdce3dd9112356f"
+          },
+          {
+            "path": "out/direct/radiance.txt",
+            "retry1": "95e92f3054b82c44fbd9c58556a7930f7fc3710ad71a3befecf74975135be6b7",
+            "retry2": "95e92f3054b82c44fbd9c58556a7930f7fc3710ad71a3befecf74975135be6b7"
+          },
+          {
+            "path": "out/direct/transmission.txt",
+            "retry1": "eb21038b74f659e5b1581d7d9f509cbe3707b7877dc0ae29cdb7b6c3529257e3",
+            "retry2": "eb21038b74f659e5b1581d7d9f509cbe3707b7877dc0ae29cdb7b6c3529257e3"
+          },
+          {
+            "path": "out/env.sh",
+            "retry1": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+            "retry2": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554"
+          },
+          {
+            "path": "out/gas_units.log",
+            "retry1": "bbfa470e4245ae057ca3ced2319be137d64b8976d5ecea75d8d820f61cb0e026",
+            "retry2": "bbfa470e4245ae057ca3ced2319be137d64b8976d5ecea75d8d820f61cb0e026"
+          },
+          {
+            "path": "out/interpolation.log",
+            "retry1": "041b94987f4ac2b741b1baeb77c2f53060aee2b62d41122efb537ec8a3b806aa",
+            "retry2": "041b94987f4ac2b741b1baeb77c2f53060aee2b62d41122efb537ec8a3b806aa"
+          },
+          {
+            "path": "out/k/brdf_k.txt",
+            "retry1": "145610a7c73dda69ee8ea528f7b1fa51b22a4d93ee754df2712122335722f8a0",
+            "retry2": "145610a7c73dda69ee8ea528f7b1fa51b22a4d93ee754df2712122335722f8a0"
+          },
+          {
+            "path": "out/k/brdf_out.txt",
+            "retry1": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404",
+            "retry2": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404"
+          },
+          {
+            "path": "out/k/diffuse_reflectance_k.txt",
+            "retry1": "d2587f977982983659b7f4d8197f55775d27cef96755f85fe3a0d55381db1c7d",
+            "retry2": "d2587f977982983659b7f4d8197f55775d27cef96755f85fe3a0d55381db1c7d"
+          },
+          {
+            "path": "out/k/diffuse_reflectance_out.txt",
+            "retry1": "ea1b47ded15bdb01126f5eb7956b05b7f355334122e6799a1c826e227302b1e1",
+            "retry2": "ea1b47ded15bdb01126f5eb7956b05b7f355334122e6799a1c826e227302b1e1"
+          },
+          {
+            "path": "out/k/emissivity_k.txt",
+            "retry1": "d19fb6b6f7c9ab3ccd50699ff108174815f5d92c99421117e0d2c3628029aaef",
+            "retry2": "d19fb6b6f7c9ab3ccd50699ff108174815f5d92c99421117e0d2c3628029aaef"
+          },
+          {
+            "path": "out/k/emissivity_out.txt",
+            "retry1": "2a97daee0035ecaf7b754ffbe18e92135c81286f7c1093494bdce3dd9112356f",
+            "retry2": "2a97daee0035ecaf7b754ffbe18e92135c81286f7c1093494bdce3dd9112356f"
+          },
+          {
+            "path": "out/k/profiles_k.txt",
+            "retry1": "498b4bbb9acf0abfb03f910ea40b1c86b8a2baa6a2341e03dbb38df56b029ce8",
+            "retry2": "498b4bbb9acf0abfb03f910ea40b1c86b8a2baa6a2341e03dbb38df56b029ce8"
+          },
+          {
+            "path": "out/k/radiance.txt",
+            "retry1": "95e92f3054b82c44fbd9c58556a7930f7fc3710ad71a3befecf74975135be6b7",
+            "retry2": "95e92f3054b82c44fbd9c58556a7930f7fc3710ad71a3befecf74975135be6b7"
+          },
+          {
+            "path": "out/k/transmission.txt",
+            "retry1": "eb21038b74f659e5b1581d7d9f509cbe3707b7877dc0ae29cdb7b6c3529257e3",
+            "retry2": "eb21038b74f659e5b1581d7d9f509cbe3707b7877dc0ae29cdb7b6c3529257e3"
+          },
+          {
+            "path": "out/rttov_test.log",
+            "retry1": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df",
+            "retry2": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df"
+          },
+          {
+            "path": "out/rttov_test.txt",
+            "retry1": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282",
+            "retry2": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+          },
+          {
+            "path": "out/run.sh",
+            "retry1": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+            "retry2": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+          },
+          {
+            "path": "out/run.stderr.log",
+            "retry1": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "retry2": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "path": "out/run.stdout.log",
+            "retry1": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "retry2": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        ]
+      }
+    ],
+    "model_bt_bitwise_equal": true,
+    "model_rad_quality_bitwise_equal": true,
+    "costs_bitwise_equal": true,
+    "max_abs_model_bt_difference_K": 0.0,
+    "max_abs_model_rad_quality_difference": 0.0,
+    "max_abs_cost_difference": 0.0,
+    "diagnostic_interpretation": "The explicit simple-cloud fraction change altered no BT, RTTOV quality, or cost in this run; the inputs remain labeled as diagnostic-only and no cloud physics conclusion is implied."
+  },
+  "rttov_common_assets": {
+    "rttov_executable_command_path": "/Users/yhlee/AD-RTTOV/external/rttov14/current/rttov_test/../bin/rttov_test.exe",
+    "resolved_executable_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+    "rttov_executable_sha256_at_inventory_capture": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+    "coefficient_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+    "coefficient_sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+    "hydrotable_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/hydrotable_visir/rttov_hydrotable_gkompsat2_1_ami.dat",
+    "hydrotable_sha256": "fdbe99ea68fd750e146fb78a798ab72b8568e4a3d545a2d847263cb374746890",
+    "run_captured_start_end_hashes": {
+      "coefficient_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+      "coefficient_sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+      "rttov_executable_command_path": "/Users/yhlee/AD-RTTOV/external/rttov14/current/rttov_test/../bin/rttov_test.exe",
+      "rttov_executable_resolved_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+      "rttov_executable_sha256_before": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+      "rttov_executable_sha256_after": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+      "hydrotable_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/hydrotable_visir/rttov_hydrotable_gkompsat2_1_ami.dat",
+      "hydrotable_sha256_before": "fdbe99ea68fd750e146fb78a798ab72b8568e4a3d545a2d847263cb374746890",
+      "hydrotable_sha256_after": "fdbe99ea68fd750e146fb78a798ab72b8568e4a3d545a2d847263cb374746890",
+      "comparison_runner_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/run_native_kma_bt_frames.py",
+      "comparison_runner_sha256_before": "408bab9756c6ac1a6e8438b8469c87f41fa239ce75414cd8087d10b6a31d54c1",
+      "comparison_runner_sha256_after": "408bab9756c6ac1a6e8438b8469c87f41fa239ce75414cd8087d10b6a31d54c1",
+      "output_cases": [
+        "case_00",
+        "case_01",
+        "case_02",
+        "case_03",
+        "case_04",
+        "case_05",
+        "case_06",
+        "case_07"
+      ],
+      "child_exit_code": 0,
+      "child_exit_code_basis": "each checked RTTOV runner call returned BT/K/quality; nonzero exit raises"
+    },
+    "rttov_simple_cloud_source": "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/main/rttov_calc_simple_cloud_params.F90",
+    "rttov_simple_cloud_source_sha256": "ac875faad5fb5391bd485ba30c88ccb9c5cbda38557b69cbc45829d9601ff325",
+    "simple_cloud_semantic_scope": "The RTTOV source routine uses CTP to locate the simple-cloud top layer. Retry2 keeps that metadata but sets simple_cloud cfraction=0 in each private case copy; model hydrometeor amounts and hydro_frac remain the executed cloud inputs and are audited per frame."
+  },
+  "model_output_diagnostic": {
+    "root_runner_exit_code": 1,
+    "root_runner_experiment_valid": false,
+    "root_runner_invalid_reasons": [
+      "model_did_not_complete"
+    ],
+    "wrf_success_complete_observed": true,
+    "overall_fatal_or_error_lines_observed": true,
+    "wrapper_wrf_fatal_lines_observed": false,
+    "mpi_abnormal_termination_observed": true,
+    "cause_attribution": "MPI termination was abnormal; the receipt does not establish why, and no speculation is added."
+  },
+  "metadata_corrections": {
+    "pressure_center_unit_correction_applied": false,
+    "raw_pressure_field_name": "native_pressure_centers_hPa",
+    "corrected_pressure_field_unit": "hPa",
+    "correction_validation": "all eight executed p.txt native center suffixes bitwise equal saved forecast float64-first (P+PB)/100",
+    "huber_contribution_label_correction_applied": false,
+    "raw_contribution_name_by_frame": [
+      "common_support_huber_contribution_dimensionless",
+      "common_support_huber_contribution_dimensionless",
+      "common_support_huber_contribution_dimensionless",
+      "common_support_huber_contribution_dimensionless",
+      "common_support_huber_contribution_dimensionless",
+      "common_support_huber_contribution_dimensionless",
+      "common_support_huber_contribution_dimensionless",
+      "common_support_huber_contribution_dimensionless"
+    ],
+    "corrected_contribution_name": "common_support_huber_contribution_dimensionless",
+    "correction_validation_cost": "sigma_K=1.0; standardized Huber contributions and all eight stored costs agree within 1e-13; BT, rad_quality, mask, and costs are unchanged"
+  },
+  "lifecycle_warning": "WRF logged SUCCESS COMPLETE WRF and wrote all eight finite frames, but run_ss_case returned 1, runner_result.experiment_valid=false, model_completed_flag=false, and MPI abnormal termination=true. This output is an ineligible artifact diagnostic."
+}

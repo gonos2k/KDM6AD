@@ -1,7 +1,7 @@
 ---
 title: KDM6AD-k Wiki Index
 type: meta
-date_modified: 2026-07-14
+date_modified: 2026-10-08
 ---
 # KDM6AD-k Wiki
 
@@ -12,7 +12,7 @@ date_modified: 2026-07-14
 - [[papers/_index|KDM6AD 논문 페이지 색인]]
 
 ## Content
-- [[sources/_index|Sources]] - 9 pages
+- [[sources/_index|Sources]] - 42 pages
 - [[entities/_index|Entities]] - 4 pages
 - [[concepts/_index|Concepts]] - 10 pages
 - [[papers/_index|Papers]] - 42 pages
@@ -62,6 +62,7 @@ date_modified: 2026-07-14
 
 ## Sources (recent)
 - [[abi-v2-hardening-roadmap-2026-07-14]] - 2026-07-13/14 frozen-code hardening arc → abi-v2-hardened @ a53503e.
+- [[sources/native-target-artifact-diagnostic-2026-10-08]] - Eight native saved states and RTTOV H diagnostics from a launcher-invalid run; artifacts remain diagnostic-only and R2 remains OPEN.
 
 ## Queries
 - [[kdm6ad-differentiable-microphysics-zotero-kg-2026-06-25]] - Zotero/KG bridge for KDM6AD differentiable microphysics research.

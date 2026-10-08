@@ -1,7 +1,7 @@
 ---
 title: Sources Index
 type: folder-index
-date_modified: 2026-09-25
+date_modified: 2026-10-08
 ---
 # Sources
 
@@ -19,3 +19,4 @@ Paper-level pages live in [[papers/_index]]. The source pages below are collecti
 - [[kdm6ad-s16-freeze-heat-replay-2026-09-25]] — S16 D2–D4 freeze-heat seed replay; retained operands explain the one-ULP stored-temperature difference, while current bundle attestation keeps the gate open.
 - [[kdm6ad-s3-first-negative-face-plan-2026-09-26]] — G2's earliest sampled QN transition is an RK1 internal state; source-order raw face/RK replay and accepted-state separation remain required for open S3.
 - [[kdm6ad-s15-upstream-attribution-plan-2026-09-27]] — Bounded next-step contract for six owner-5 QIB witnesses; synthetic identity and tendency-sum checks do not close face-divergence or RK numerical replay.
+- [[native-target-artifact-diagnostic-2026-10-08]] — Eight saved native states and RTTOV H diagnostics from a runner-invalid target; all results remain diagnostic-only and R2 remains OPEN.

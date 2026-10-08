@@ -1,0 +1,119 @@
+{
+  "schema": "offline_numeric_cost_replay_v1",
+  "replayed_at_utc": "2026-10-08T05:08:35.075237Z",
+  "input_path": "native8frame_failed_run_artifact_diagnostic_enriched.json",
+  "input_scope": "Enriched stored result only; no NetCDF or RTTOV invocation",
+  "output_scope": "Replay of stored Huber arithmetic and common mask only; no H, K, state, or model computation",
+  "native_run_valid": false,
+  "experiment_valid": false,
+  "diagnostic_only": true,
+  "eligible_for_artifact_gates": false,
+  "sigma_K": 1.0,
+  "bias_K": 0.0,
+  "huber_delta": 1.0,
+  "observation_DQF_all_zero": true,
+  "common_support_channel_indices_0based": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "common_support_rttov_channels": [
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16
+  ],
+  "replay_matches_stored_costs": true,
+  "replayed_costs": [
+    26.588575903055926,
+    26.59768478212186,
+    26.60745676145399,
+    26.615631826194488,
+    26.624654104545073,
+    26.633180860417724,
+    26.641499399909208,
+    26.64961880214031
+  ],
+  "stored_costs": [
+    26.588575903055926,
+    26.59768478212186,
+    26.60745676145399,
+    26.615631826194488,
+    26.624654104545073,
+    26.633180860417724,
+    26.641499399909208,
+    26.64961880214031
+  ],
+  "max_abs_cost_difference": 0.0,
+  "per_frame": [
+    {
+      "index": 0,
+      "valid_time": "2025-07-19_05:55:40",
+      "dimensionless_huber_cost": 26.588575903055926,
+      "max_abs_BT_residual_K": 6.989290998447245
+    },
+    {
+      "index": 1,
+      "valid_time": "2025-07-19_05:56:00",
+      "dimensionless_huber_cost": 26.59768478212186,
+      "max_abs_BT_residual_K": 6.99026607949537
+    },
+    {
+      "index": 2,
+      "valid_time": "2025-07-19_05:56:20",
+      "dimensionless_huber_cost": 26.60745676145399,
+      "max_abs_BT_residual_K": 6.991299540803823
+    },
+    {
+      "index": 3,
+      "valid_time": "2025-07-19_05:56:40",
+      "dimensionless_huber_cost": 26.615631826194488,
+      "max_abs_BT_residual_K": 6.992176316404027
+    },
+    {
+      "index": 4,
+      "valid_time": "2025-07-19_05:57:00",
+      "dimensionless_huber_cost": 26.624654104545073,
+      "max_abs_BT_residual_K": 6.9931244698512955
+    },
+    {
+      "index": 5,
+      "valid_time": "2025-07-19_05:57:20",
+      "dimensionless_huber_cost": 26.633180860417724,
+      "max_abs_BT_residual_K": 6.994015944859825
+    },
+    {
+      "index": 6,
+      "valid_time": "2025-07-19_05:57:40",
+      "dimensionless_huber_cost": 26.641499399909208,
+      "max_abs_BT_residual_K": 6.99488639610604
+    },
+    {
+      "index": 7,
+      "valid_time": "2025-07-19_05:58:00",
+      "dimensionless_huber_cost": 26.64961880214031,
+      "max_abs_BT_residual_K": 6.995725302704216
+    }
+  ],
+  "K_product_computed_by_RTTOV_but_not_consumed_by_adjoint": true,
+  "native_invalid_reason": {
+    "receipt_status": "COMPLETE",
+    "runner_exit_code": 1,
+    "runner_experiment_valid": false,
+    "model_completed_flag": false,
+    "wrf_success_complete_observed": true,
+    "mpi_abnormal_termination_observed": true,
+    "native_runner_invalid_reasons": [
+      "model_did_not_complete"
+    ],
+    "overall_fatal_or_error_lines_observed": true,
+    "wrapper_wrf_fatal_lines_observed": false
+  }
+}

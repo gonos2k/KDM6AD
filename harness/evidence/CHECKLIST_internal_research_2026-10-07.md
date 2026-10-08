@@ -8,7 +8,7 @@ results remain closed within their demonstrated scope.
 | ID | Work type | Item | Completion evidence | Status |
 | --- | --- | --- | --- | --- |
 | R1 | Data / physical decision | Declare dry mass/number coordinates, thresholds, admissible states and the separate runtime/optical/inventory density roles for one supported regime | Explicit source/units/state-domain record; unapproved assumptions labelled; no tuning to the residual | OPEN — existing conditional conventions available, physical approval remains separate |
-| R2 | Data / case selection | Bind one native model case to observation product, pixel/scan time, geometry/surface and footprint | Identified inputs and actual correspondence, with unresolved lineage/time fields explicit | OPEN / CONTEXT READ — stored-QA masking error corrected separately; actual VIIRS geolocation angles/scan bracket and same-overpass height/optical fields read; AMI pixel time, full QA/footprint and target-time native state remain open; REPORT_VIIRS_context_2026-10-07.md |
+| R2 | Data / case selection | Bind one native model case to observation product, pixel/scan time, geometry/surface and footprint | Identified inputs and actual correspondence, with unresolved lineage/time fields explicit | OPEN / ARTIFACT DIAGNOSTIC — actual eight target native states and RTTOV H calls obtained; native runner exit 1 remains invalid; AMI UTC/pixel time, full QA/footprint and the cause of channels 8/9 RTTOV quality flags remain unresolved; REPORT_native_target_artifact_2026-10-08.md |
 | A1 | Code integration | Carry fixed channel sigma and observation-additive bias through upper analysis, frozen closure, clear/all-sky cost and worker | Same ordered weights/correction in value, VJP, final innovations and saved output; old diagnostic route unchanged | CLOSED — bounded integration; REPORT_fixed_obs_errors_2026-10-07.md |
 | A2 | Code / prior decision | Expose existing diagonal CVT control/prior choices without inventing a new B model | Predeclared controlled fields and prior scales reach the minimizer and result metadata; NC-fixed versus NC-enabled comparison can be specified | CLOSED — bounded state-prior integration and actual one-iteration comparison; REPORT_state_prior_controls_2026-10-07.md; scientific B remains uncalibrated |
 | A3 | Verification | Verify the A1 objective and its snapshots | Nonuniform sigma/nonzero bias AD–FD, mutation resistance, channel/column ordering, worker-route loss consistency and rejection tests; source/code evidence attributed | CLOSED — 89 focused / 2 skips, selected actual KDM→RTTOV cost FD; REPORT_fixed_obs_errors_2026-10-07.md |
@@ -59,3 +59,8 @@ nearby AMI 05:56 slot. A nominal marine candidate lies within the actual native
 grid, not merely its rectangle. R2 remains OPEN: raw phase/QA, granule time and
 nearest centers do not certify a warm single layer, pixel time, footprint or
 target-time native atmospheric state. No new forecast or calibrated R/B was produced.
+
+The [target-window artifact diagnostic](REPORT_native_target_artifact_2026-10-08.md)
+adds actual saved native states and eight real RTTOV calls. WRF success text does
+not override runner exit 1 or `experiment_valid=false`. Failed-run artifacts are
+explicitly diagnostic-only and ineligible for artifact acceptance; R2 remains OPEN.
