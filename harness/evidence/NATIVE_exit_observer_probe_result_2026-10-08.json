@@ -1,0 +1,40 @@
+{
+  "scope": "fresh 40s private process-only exit observer; not reproduction of failed long run",
+  "returncode": -15,
+  "stopped_by_deadline": true,
+  "deadline_seconds": 60,
+  "elapsed_seconds": 60.025640833890066,
+  "pins_before": {
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/main/wrf.exe": "f467755ee9952dc2b1806e9dec3220689e2f26a2939234b0959065b1c357cd41",
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib/libkdm6_c.2.0.0.dylib": "64cddefe4fce336a7b9a3979278692324a97a17fe7d5264224bcc05a7f20be2d",
+    "/private/tmp/KDM6AD-viirs-observation-context-20261007/harness/run_ss_case.py": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+    "/private/tmp/KDM6AD-review388389-resolution-20261008/graphify-out/review-local/exit_observer/observer.c": "cf66c889df225b8e0d36861ea1b18ca8c4974ab8cdbc1a37e7bceace3a73da7b",
+    "/private/tmp/KDM6AD-review388389-resolution-20261008/graphify-out/review-local/exit_observer/observer.dylib": "2dea399e011af3101b7d024b58515ffa2402a6c9394601d7bf6f3407024a16da"
+  },
+  "pins_after": {
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/main/wrf.exe": "f467755ee9952dc2b1806e9dec3220689e2f26a2939234b0959065b1c357cd41",
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib/libkdm6_c.2.0.0.dylib": "64cddefe4fce336a7b9a3979278692324a97a17fe7d5264224bcc05a7f20be2d",
+    "/private/tmp/KDM6AD-viirs-observation-context-20261007/harness/run_ss_case.py": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+    "/private/tmp/KDM6AD-review388389-resolution-20261008/graphify-out/review-local/exit_observer/observer.c": "cf66c889df225b8e0d36861ea1b18ca8c4974ab8cdbc1a37e7bceace3a73da7b",
+    "/private/tmp/KDM6AD-review388389-resolution-20261008/graphify-out/review-local/exit_observer/observer.dylib": "2dea399e011af3101b7d024b58515ffa2402a6c9394601d7bf6f3407024a16da"
+  },
+  "all_pinned_files_unchanged": true,
+  "markers": [
+    {
+      "file": "/private/tmp/KDM6AD-review388389-resolution-20261008/graphify-out/review-local/exit_observer/case40/runs/mp337_exit_observer_local_0min40s_hist0_20261008_180840_p3473/wrf_mp337_exit_observer_local.stdout",
+      "line": "KDM_EXIT_OBSERVER pid=3475 event=loaded value=0"
+    }
+  ],
+  "original_cases_modified": false,
+  "native_target_validity_changed": false,
+  "schema": "bounded_exit_observer_probe_summary_v1",
+  "status": "PRE_MODEL_START_TIMEOUT",
+  "signal_note": "-15 is the outer harness process wait status after our deadline SIGTERM; no separate spontaneous native rank exit/signal was observed",
+  "mpi_finalize_entry_or_return_observed": false,
+  "wrf_start_observed": false,
+  "wrf_success_observed": false,
+  "control_scope": "C _Exit observer control passed; actual Fortran MPI finalize forwarding was not reached/validated",
+  "no_signal_handlers_installed": true,
+  "no_system_routes_or_security_settings_changed": true,
+  "status_basis": "marker-based: observer load seen; no WRF-start marker seen; does not establish whether model initialization began"
+}

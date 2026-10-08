@@ -1,0 +1,32 @@
+{
+  "schema": "native_artifact_geometry_correction_v1",
+  "scope": "metadata-only sidecar; no model, RTTOV, BT, cost or acceptance change",
+  "result_sha256": "60ccf9056d3ddbfee8d174336ae7177f30242f10a96d12d3d554a63e0f897d05",
+  "observation_sha256": "7cbe37a71ef3289fd120ac5b7f0b7c05ec37e85e6c85935b1b52963b1e9d7b4f",
+  "native_run_id": "mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261008_064206_p28793",
+  "endpoints_lat_lon": {
+    "ami": [
+      35.41925069326254,
+      122.13724164654832
+    ],
+    "native": [
+      35.4156608581543,
+      122.143310546875
+    ],
+    "viirs": [
+      35.4156379699707,
+      122.14338684082031
+    ]
+  },
+  "earth_radius_m": 6371008.8,
+  "historical_mislabelled_ami_native_distance_m": 686.6436228761686,
+  "corrected_distances": {
+    "ami_center_vs_native_center_distance_m": 679.5504989626675,
+    "ami_center_vs_viirs_center_distance_m": 686.6436228761686,
+    "native_center_vs_viirs_center_distance_m": 7.367358700549504
+  },
+  "native_run_valid": false,
+  "experiment_valid": false,
+  "diagnostic_only": true,
+  "eligible_for_artifact_gates": false
+}

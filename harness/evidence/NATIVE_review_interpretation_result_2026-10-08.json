@@ -1,0 +1,39 @@
+{
+  "schema": "review388389_conditional_interpretation_v1",
+  "source_sha256": {
+    "harness/evidence/native358_artifact_diag_2026-10-08/results/native8frame_failed_run_artifact_diagnostic_enriched.json": "60ccf9056d3ddbfee8d174336ae7177f30242f10a96d12d3d554a63e0f897d05",
+    "harness/evidence/VIIRS_AMI_candidate_result_2026-10-07.json": "7cbe37a71ef3289fd120ac5b7f0b7c05ec37e85e6c85935b1b52963b1e9d7b4f",
+    "harness/evidence/VIIRS_geometry_result_2026-10-07.json": "d27c828ad1823a21a580fc1331a92d22caf15414f9f2a0fb9f9c63a4906f86be"
+  },
+  "scope": "retained result/source metadata arithmetic; no new model or RTTOV run",
+  "conditional_ami_minus_viirs_seconds": [
+    45.398366,
+    107.029631
+  ],
+  "shared_clock_and_scan_bracket_assumption_required": true,
+  "actual_pixel_time_verified": false,
+  "footprint_matched": false,
+  "common_support_channel_indices_0based": [
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8
+  ],
+  "huber_linear_residual_count": 56,
+  "all_common_residuals_huber_linear": true,
+  "cost_mae_relation": "J=7*MAE/(1K)-3.5; these are not independent scores",
+  "max_cost_replay_difference": 0.0,
+  "IR105_model_range_K": 0.009764366395188517,
+  "IR096_first_residual_K": 6.989290998447245,
+  "IR096_first_huber_cost_fraction": 0.24406312779246694,
+  "model_hydrometeor_inputs_zero_all_frames": true,
+  "viirs_phase_code": 1,
+  "interpretation": "cloud-presence disagreement; no NC retrieval or ozone-cause attribution; no selected-neighbor replacement",
+  "native_run_valid": false,
+  "experiment_valid": false,
+  "diagnostic_only": true,
+  "eligible_for_artifact_gates": false
+}

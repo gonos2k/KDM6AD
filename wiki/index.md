@@ -12,7 +12,7 @@ date_modified: 2026-10-08
 - [[papers/_index|KDM6AD 논문 페이지 색인]]
 
 ## Content
-- [[sources/_index|Sources]] - 42 pages
+- [[sources/_index|Sources]] - 43 pages
 - [[entities/_index|Entities]] - 4 pages
 - [[concepts/_index|Concepts]] - 10 pages
 - [[papers/_index|Papers]] - 42 pages
@@ -61,6 +61,7 @@ date_modified: 2026-10-08
 - [[host-run-dir-confusion-2026-07-14]] - host/ 3개 케이스(5km 실사례·100km ideal·1km) 혼동 사고와 재발방지 규칙.
 
 ## Sources (recent)
+- [[sources/review388389-local-resolution-2026-10-08]] — Local-only PR388–389 review resolution; historical artifacts preserved and R2 open.
 - [[abi-v2-hardening-roadmap-2026-07-14]] - 2026-07-13/14 frozen-code hardening arc → abi-v2-hardened @ a53503e.
 - [[sources/native-target-artifact-diagnostic-2026-10-08]] - Eight native saved states and RTTOV H diagnostics from a launcher-invalid run; artifacts remain diagnostic-only and R2 remains OPEN.
 
