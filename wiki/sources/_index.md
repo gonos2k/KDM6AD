@@ -20,3 +20,5 @@ Paper-level pages live in [[papers/_index]]. The source pages below are collecti
 - [[kdm6ad-s3-first-negative-face-plan-2026-09-26]] — G2's earliest sampled QN transition is an RK1 internal state; source-order raw face/RK replay and accepted-state separation remain required for open S3.
 - [[kdm6ad-s15-upstream-attribution-plan-2026-09-27]] — Bounded next-step contract for six owner-5 QIB witnesses; synthetic identity and tendency-sum checks do not close face-divergence or RK numerical replay.
 - [[native-target-artifact-diagnostic-2026-10-08]] — Eight saved native states and RTTOV H diagnostics from a runner-invalid target; all results remain diagnostic-only and R2 remains OPEN.
+
+- [[review388389-local-resolution-2026-10-08]] — Local metadata correction and bounded termination/RTTOV warning diagnosis; underlying native/physical correspondence remains open.

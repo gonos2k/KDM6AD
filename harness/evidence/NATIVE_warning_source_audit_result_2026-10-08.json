@@ -1,0 +1,61 @@
+{
+  "schema": "rttov_warning_source_audit_v1",
+  "scope": "installed source review and delegated saved-output audit; no RTTOV rerun; not source-to-executable build attestation",
+  "source_sha256": {
+    "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/main/rttov_eddington_setup.F90": "2ad4c3b56be35ef71378c51f72f544e00fcfed5dd01d10a27e96f9694e4aabaf",
+    "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/main/rttov_const.F90": "53c1cc5e5f04eb4e4117d7deefc5a16095cf8fd2b92e49111aee8b8c1f046d55",
+    "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/main/rttov_opdep_13.F90": "9571f7e398a455e7113fd768131d21e3860eff56eb209f97c53c042cdc3222b0",
+    "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/main/rttov_transmit_thermal.F90": "c22c5b5171ebe707d4d3fd3342432513d62a826a32898fcd44b517812adf4149"
+  },
+  "flag_name": "qflag_delta_edd_ext_limits",
+  "flag_bit_zero_based": 15,
+  "flag_value": 32768,
+  "max_layer_extinction_km_inverse": 20,
+  "distinct_max_optical_depth_limit": 30,
+  "definition": "flag if any total layer extinction exceeds max_ext_delta_edd, then clip; gas extinction participates",
+  "source_locations": [
+    "rttov_const.F90:520,760,764",
+    "rttov_eddington_setup.F90:170-177,215-219"
+  ],
+  "retained_case_policy": "solver3 Delta-Eddington; aerosols disabled; enabled hydro inputs have zero content/fraction",
+  "delegated_output_findings": {
+    "scope": "Red read-only analysis of original eight retained outputs; not an additional RTTOV experiment",
+    "channel8_total_transmission_approx": 1.93e-22,
+    "channel9_total_transmission_approx_range": [
+      3.72e-19,
+      3.8e-19
+    ],
+    "channel10_total_transmission_approx": 1.46e-06,
+    "candidate_top_down_layer_indices_zero_based": [
+      63,
+      64,
+      65
+    ],
+    "hydrostatic_proxy_ch8_max_extinction_km_inverse_range": [
+      23.36,
+      23.88
+    ],
+    "hydrostatic_proxy_ch9_max_extinction_km_inverse_range": [
+      22.89,
+      22.91
+    ],
+    "proxy_is_actual_rttov_extinction": false,
+    "note": "candidate thin lower native layers and gas absorption; proxy thickness is not RTTOV ltick; retained cumulative transmissions may lose opacity information near limits"
+  },
+  "actual_internal_ext_lt_tick_arrays_retained": false,
+  "actual_trigger_layers_measured": false,
+  "warning_channels_readmitted": false,
+  "native_target_validity_changed": false,
+  "next_required_evidence": "isolated instrumented RTTOV ext/ltick dump with same profiles/assets/options; source-built binary would be a separately attributed diagnostic",
+  "retained_archive_sha256": "e5ec467dde75e5117d3c95657a4db40ac1325ba49895d38930d75b9e792722d2",
+  "saved_transmission_sha256": {
+    "rttov_retry2/case_00/out/direct/transmission.txt": "ba17ad42f669b88a12760e16d00477cf39b8491e034aae218e0b78f1ee8cd32a",
+    "rttov_retry2/case_01/out/direct/transmission.txt": "7ce10f18626bb8699e0f5bc67387f1add16cd93620ecb057ad0009ba1b8c9eba",
+    "rttov_retry2/case_02/out/direct/transmission.txt": "58633073ad59a948b1f3f8e796ac77226817168de982e69b68de0921704ab4de",
+    "rttov_retry2/case_03/out/direct/transmission.txt": "5130dd7919fae143e6b07bda78985bd101f4fcf22429fac7a11524e5093db53c",
+    "rttov_retry2/case_04/out/direct/transmission.txt": "f3b46a964965d365fc96d0e447dc095c54ba1c60f857491a59c6d24be2e6515d",
+    "rttov_retry2/case_05/out/direct/transmission.txt": "4164054bf9019576d7606b5fa2212690f5ea4e9254295da0a99cc2d6ed300d19",
+    "rttov_retry2/case_06/out/direct/transmission.txt": "fcd665ad84b4f55b248d60d0d9f4231caba8a9d8d5088d6113119e88367c8f2f",
+    "rttov_retry2/case_07/out/direct/transmission.txt": "eb21038b74f659e5b1581d7d9f509cbe3707b7877dc0ae29cdb7b6c3529257e3"
+  }
+}

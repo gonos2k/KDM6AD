@@ -126,5 +126,9 @@ official Google/Azure copies provide the Jul 19 VIIRS CloudPhase originals even
 though checked AWS 2025 prefixes are empty. The 05:55:47–05:57:10 UTC granule has
 a raw code-1/QA-0 marine candidate near native (j=86,i=48), and a newly decoded
 AMI LA 05:56 nominal center is nearby. This is not the old LA 05:34/MODIS 00:45
-pair. Product QA, actual pixel times/footprints and a target-time native model
-state are still required before the first scientific correspondence is complete.
+pair. Product QA and actual pixel times/footprints remain required. Target-time
+native states were subsequently saved, but their long-run launcher exited 1:
+see the [target artifact report](REPORT_native_target_artifact_2026-10-08.md).
+Saved states now exist; a valid native experiment and scientific correspondence
+remain unconfirmed. The earlier 00:00:40 C5 limitation describes the pre-target
+capture, not the current saved-state inventory.

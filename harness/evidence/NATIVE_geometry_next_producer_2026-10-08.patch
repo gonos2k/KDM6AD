@@ -1,0 +1,42 @@
+--- a/run_native_kma_bt_frames.py
++++ b/run_native_kma_bt_frames.py
+@@ -61,6 +61,29 @@
+ RCP = R_D / CP
+ T0 = np.float64(300.0)
+ P0 = np.float64(100000.0)
++
++
++EARTH_RADIUS_M = 6371008.8
++
++def spherical_distance_m(first, second):
++    """Haversine distance between explicit (latitude, longitude) endpoints."""
++    for point in (first, second):
++        if len(point) != 2 or not all(math.isfinite(float(v)) for v in point):
++            raise ValueError("distance needs two finite latitude/longitude pairs")
++        if not (-90 <= point[0] <= 90 and -180 <= point[1] <= 180):
++            raise ValueError("latitude/longitude outside geographical bounds")
++    p1, l1 = map(math.radians, first)
++    p2, l2 = map(math.radians, second)
++    a = math.sin((p2 - p1) / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin((l2 - l1) / 2) ** 2
++    return 2 * EARTH_RADIUS_M * math.asin(math.sqrt(min(1.0, max(0.0, a))))
++
++def distance_fields(ami, native, viirs):
++    """Use this explicit three-endpoint map in subsequent comparison producers."""
++    return {
++        "ami_center_vs_native_center_distance_m": spherical_distance_m(ami, native),
++        "ami_center_vs_viirs_center_distance_m": spherical_distance_m(ami, viirs),
++        "native_center_vs_viirs_center_distance_m": spherical_distance_m(native, viirs),
++    }
+
+
+ def sha256(path: Path) -> str:
+@@ -788,7 +811,8 @@
+         selected_native_lat_lon=frames[0]["native_center_lat_lon"],
+         selected_ami_row_col_0based=[OBS_ROW, OBS_COL],
+         selected_ami_lat_lon=obs["ami_lat_lon"],
+-        ami_center_vs_native_center_distance_m=obs["center_distance_from_viirs_m"],
++        **distance_fields(obs["ami_lat_lon"], frames[0]["native_center_lat_lon"],
++                          obs["selected_viirs_sample"]["obs_lat_lon"]),
+         time_scope="conditional nominal comparison only: AMI pixel UTC/time and pixel acquisition time are not verified; no collocation claim",
+         observation_result_path=str(OBS_RESULT), observation_result_sha256=sha256(OBS_RESULT),
+         observation_candidate_source_sha256=obs["producer_sha256"], observation_bt_K=obs["bt_K"],

@@ -99,6 +99,11 @@ checks the executed native pressure/T/Q suffixes without changing BT or costs.
 
 ## Comparison obtained
 
+The table and Huber cost use **KMA v3.0 BT coordinates**, transformed from
+RTTOV TOTAL radiance using the paired AMI filter/coefficient and calibration
+inputs. They are not native RTTOV BT values. This coordinate calculation does
+not certify physical SRF compatibility; that approval remains false.
+
 The original AMI pixel is zero-based `(row=320,col=48)`; IR105 is
 291.3025921545636 K. All nine observed DQFs are zero. RTTOV channels 8/9 carry
 quality value 32768 (`Delta-Eddington extinction limit exceeded`) in every
@@ -183,3 +188,10 @@ plus its manifest; the [receipt archive](NATIVE_target_artifact_receipts_2026-10
 passed every ZIP CRC and manifest SHA-256 check. The bounded stored-cost replay
 reproduced all eight costs exactly (maximum difference 0). It does not execute
 the native model or RTTOV.
+
+Review follow-up (2026-10-08): the historical AMI–native distance field
+accidentally held AMI–VIIRS distance. The separate [geometry correction](NATIVE_geometry_correction_result_2026-10-08.json)
+records AMI–native 679.550498963 m and AMI–VIIRS 686.643622876 m. Original
+result/receipt/archive bytes and all H/cost values are preserved. The
+[resolution checklist](CHECKLIST_review388389_resolution_2026-10-08.md) separates
+this closed metadata correction from still-open termination and correspondence work.
