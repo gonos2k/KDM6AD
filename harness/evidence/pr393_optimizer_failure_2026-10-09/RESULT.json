@@ -1,0 +1,56 @@
+{
+  "analysis_script_sha256": "d0dbaade5830ec037cabd2913342ba8b6663f755ab4869839aa001e572db7b42",
+  "experiment": {
+    "checks": {
+      "baseline_closure_at_x0_returns": true,
+      "first_line_search_trial_crosses_rejection_threshold": true,
+      "no_post_error_recovery_closure_or_result": true,
+      "trial_exception_propagates_from_step": true,
+      "trial_parameter_is_not_restored_after_exception": true
+    },
+    "closure_x_values": [
+      0.0,
+      1.0
+    ],
+    "exception_message": "synthetic trial rejected above x=0.5",
+    "exception_type": "ValueError",
+    "initial_x": 0.0,
+    "line_search": "strong_wolfe",
+    "objective": "f(x)=(x-2)^2",
+    "optimizer_state_after_exception": {
+      "func_evals": 1,
+      "n_iter": 1
+    },
+    "parameter_after_exception": 1.0,
+    "rejection_condition": "raise ValueError if x>0.5",
+    "result_object_returned": false,
+    "step_returned": false,
+    "successful_closure_losses": [
+      4.0
+    ]
+  },
+  "interpretation": "In this installed build, LBFGS calls the closure at x=0, then at the strong-Wolfe trial x=1. The ValueError escapes step(); the directional-evaluate helper does not reach its parameter-restore statement, the parameter remains at x=1, no later closure runs, and no optimizer result is returned. This is exception propagation, not an automatic line-search rejection/backtrack.",
+  "limits": [
+    "Synthetic scalar experiment only; it does not invoke run_minimizer or run_dual_minimizer.",
+    "Does not reproduce a KDM6, RTTOV, host, or user optimizer experiment.",
+    "No recovery, retry, rollback, or general error handling was added or tested.",
+    "The current fail-closed policy is sufficient to avoid publishing an accepted result after a quality mismatch; future smaller-step recovery would need an explicit invalid-trial protocol and owner decision."
+  ],
+  "project_source_review": {
+    "da_dual": "run_dual_minimizer has the same opt.step-before-final-audit/result ordering. The normalized-dry frozen-quality callback raises on invalid support, and has no local retry/catch.",
+    "da_minimizer": "run_minimizer calls opt.step(closure) before constructing and returning MinimizeResult; exceptions bypass its final audit/result.",
+    "fulldomain_pool": "run_fulldomain_analysis wraps evaluator/minimizer/diagnostics in try/finally and closes/joins its pool; the exception propagates before report/save_fields publication."
+  },
+  "runtime": {
+    "directional_evaluate_first_line": 318,
+    "directional_evaluate_source": "    def _directional_evaluate(self, closure, x, t, d):\n        self._add_grad(t, d)\n        loss = float(closure())\n        flat_grad = self._gather_flat_grad()\n        self._set_param(x)\n        return loss, flat_grad\n",
+    "probe_script_sha256": "d0dbaade5830ec037cabd2913342ba8b6663f755ab4869839aa001e572db7b42",
+    "python_executable": "/opt/local/bin/python3",
+    "python_version": "3.10.11 (main, Apr  9 2023, 15:10:32) [Clang 14.0.3 (clang-1403.0.22.14.1)]",
+    "torch_lbfgs_source": "/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/optim/lbfgs.py",
+    "torch_lbfgs_source_sha256": "a1bcd0a4650af947d74d73bdc5955860c7fceec84250784e0de82c37ea18f84f",
+    "torch_version": "2.13.0"
+  },
+  "scope": "One scalar x with f(x)=(x-2)^2; a synthetic ValueError is raised when x>0.5. No KDM6 code, model data, RTTOV, host, or project optimizer entry point is used. This probes this installed PyTorch build only; it does not establish behavior for other versions or other optimizer implementations.",
+  "study": "Installed PyTorch LBFGS exception-boundary probe"
+}

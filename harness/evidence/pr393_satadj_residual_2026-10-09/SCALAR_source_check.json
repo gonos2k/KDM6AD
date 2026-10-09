@@ -1,0 +1,35 @@
+{
+  "scope": "Scalar compute_qs_water AD only; no KDM integration, RTTOV, native forecast or optimizer. Management score sums only; subjective area grades are not independently calibrated.",
+  "torch": "2.13.0",
+  "rows": [
+    {
+      "call": 1,
+      "analytic_dqs_dT": 0.001116324104337133,
+      "actual_scalar_thermo_AD": 0.0011163241043371307,
+      "relative_difference": 2.1366955798956386e-15
+    },
+    {
+      "call": 2,
+      "analytic_dqs_dT": 0.0011284561969960192,
+      "actual_scalar_thermo_AD": 0.0011284561969960199,
+      "relative_difference": 5.764701414401444e-16
+    },
+    {
+      "call": 3,
+      "analytic_dqs_dT": 0.001128155663025823,
+      "actual_scalar_thermo_AD": 0.0011281556630258233,
+      "relative_difference": 1.922079032210092e-16
+    },
+    {
+      "call": 4,
+      "analytic_dqs_dT": 0.0011281619817210846,
+      "actual_scalar_thermo_AD": 0.0011281619817210843,
+      "relative_difference": 1.9220682668839513e-16
+    }
+  ],
+  "management_score_arithmetic": "49/75,53/75,54/75 verified",
+  "source_sha256": {
+    "oracle/kdm6/thermo.py": "5278c14c6d87178af5ee963eef59d3297b923fa374412fd854c01e43ffb1b5cd",
+    "oracle/kdm6/fconst.py": "c6529c9a543ad8ed0a33524114f30f5665cd9a7b6983b32a917cc39debd377f2"
+  }
+}

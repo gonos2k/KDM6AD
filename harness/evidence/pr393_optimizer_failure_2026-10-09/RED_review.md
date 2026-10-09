@@ -1,0 +1,21 @@
+# RED review — trial-QC exception and optimizer result boundary
+
+Reviewed clean project head `c543b98c`. The bounded experiment in [RESULT.json](RESULT.json) ran only the installed PyTorch `LBFGS` with one scalar, `f(x)=(x−2)²`, and a synthetic closure exception for `x>0.5`. This is not a project optimizer or KDM6/RTTOV/host experiment. I did not run any model or project tests.
+
+## Project source path
+
+The normalized-dry frozen-quality callbacks raise when a trial flags any channel in the frozen support. `make_fulldomain_obs_eval` performs the all-sky trial check after `sharded_allsky` returns and checks each clear chunk before its local gradient calculation ([da_fulldomain.py](../../../oracle/kdm6/da_fulldomain.py#L786)). `make_dual_frozen_obs_eval` checks trial quality before constructing its loss ([da_dual.py](../../../oracle/kdm6/da_dual.py#L954)). Neither callback turns a QC failure into a finite substitute objective or changes the frozen mask.
+
+Both public minimizers call `opt.step(closure)` before their final accepted-point audit and before constructing a result: [run_minimizer](../../../oracle/kdm6/da_minimizer.py#L196) and [run_dual_minimizer](../../../oracle/kdm6/da_dual.py#L634). There is no catch/retry at those boundaries. If the strict callback raises, control leaves `opt.step`; the final audit and `MinimizeResult`/`DualMinimizeResult` construction are skipped. In the full-domain caller, the enclosing `finally` closes and joins the pool; exception propagation skips subsequent O−B/O−A reporting and `save_fields` publication ([da_fulldomain.py](../../../oracle/kdm6/da_fulldomain.py#L1226), [pool cleanup](../../../oracle/kdm6/da_fulldomain.py#L1269), [save path](../../../oracle/kdm6/da_fulldomain.py#L1333)).
+
+## Installed optimizer probe
+
+The experiment used `/opt/local/bin/python3` 3.10.11 with PyTorch 2.13.0. The inspected installed file is `/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/optim/lbfgs.py`, SHA-256 `a1bcd0a4650af947d74d73bdc5955860c7fceec84250784e0de82c37ea18f84f`. Its `_directional_evaluate` adds the trial step, calls the closure, gathers the gradient, then restores the saved parameter. When the closure raises, the restore line is not reached. In this run, calls occurred at `x=0` and `x=1`; the exception propagated from `step()`, `x` remained `1`, no later closure ran, and no step result was returned. The reproducible runner zeroes the gradient with `optimizer.zero_grad(set_to_none=True)` at each closure and catches only the expected synthetic `ValueError`. Runner SHA-256 is `d0dbaade5830ec037cabd2913342ba8b6663f755ab4869839aa001e572db7b42`; both the earlier receipt and installed source are preserved under ignored `graphify-out/pr393-optimizer-red/`, and the final receipt was generated to a fresh exclusive path. This describes only the recorded installed PyTorch build, not every PyTorch release or every optimizer.
+
+This confirms that the project's current fail-closed policy prevents a completed minimizer result from being published after a strict-QC mismatch. It does not implement line-search recovery, and an exception must not be reported as successful backtracking. The normalized-dry quality policy is opt-in; this evidence does not establish a new mandatory defect in the operational default.
+
+If an owner later requests a smaller-step retry, that needs an explicit invalid-trial contract across both minimizers and the frozen callbacks: restore the accepted controls after each invalid trial, ensure invalid BT/adjoint values never enter the objective or L-BFGS history, retry only under an owner-defined bound/termination rule, and fail without a result when no valid trial is found. Keep the original support fixed throughout. No such retry or general error handler is implemented or recommended by this review.
+
+## Scope limits
+
+The synthetic scalar probe does not call `run_minimizer` or `run_dual_minimizer`, and is not evidence of a particular production callback failure or accepted/rejected state in a KDM experiment. There was no KDM diagnostic, RTTOV, native host, or operational optimizer experiment. Project source was inspected statically at `c543b98c`; the only execution was the explicitly bounded synthetic LBFGS probe.
