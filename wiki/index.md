@@ -23,6 +23,7 @@ date_modified: 2026-10-08
 - [[queries/_index|Queries]] - 2 pages
 
 ## Sources
+- [[sources/real-tq-artifact-diagnostic-2026-10-10|Actual RTTOV T/Q artifact diagnostic]] - One bounded iteration on a historical invalid-run checkpoint; real numerical connection, missing final physical state and no new valid case.
 - [[sources/prior-distance-saturation-2026-10-10|Prior distance to a warm saturation boundary]] - Bounded two-control cost geometry; saved nonmonotonic samples and no seed/actual-analysis claim.
 - [[sources/single-column-tq-allsky-pin-2026-10-10|Single-column T/Q all-sky routing and fixed parameters]] - Bounded research assembly; synthetic composition evidence and open native/observation case.
 - [[sources/pr393-residual-failure-preparation-2026-10-09|PR393 residual, failure and next-case preparation]] - Conditional saturation damping, fail-closed optimizer boundary and a staged nominal run, with execution and science decisions open.

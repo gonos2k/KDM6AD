@@ -23,7 +23,10 @@ caller obligation; the 39-level test uses synthetic dimensions.
 
 The saved weak-state prior-adjusted cost 23.1226955332 and 13.035224% decrease
 are conditional arithmetic, not an accepted analysis. The new native case and
-real observation study remain unexecuted/open. The management score remains
+real independent observation study remain unexecuted/open. A later
+[[real-tq-artifact-diagnostic-2026-10-10]] records a bounded actual RTTOV iteration
+on a historical invalid-run checkpoint, separately from that valid-case goal.
+The management score remains
 54/75 after PR393 merged, with no extra points for this code/test contribution.
 
 Related: [[pr393-residual-failure-preparation-2026-10-09]],

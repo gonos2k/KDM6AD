@@ -1,0 +1,147 @@
+{
+  "study": "PR394 actual RTTOV one-column T/Q integration diagnostic",
+  "status": "FAILED_NO_ACCEPTED_ANALYSIS",
+  "scope": "Actual single-profile RTTOV H and max_iter=1 existing dual minimizer over one normalized-dry 20 s KDM window; cached failed-run input only; diagnostic, not new valid native/science case.",
+  "preflight_receipt": {
+    "path": "graphify-out/pr394-real-tq-diagnostic-20261010/runs-baseline-3b5d8c8f6baa/preflight.json",
+    "status": "PREFLIGHT_READY_NOT_RUN"
+  },
+  "baseline_h_receipt": {
+    "path": "graphify-out/pr394-real-tq-diagnostic-20261010/runs-baseline-3b5d8c8f6baa/baseline_h.json",
+    "status": "BASELINE_H_READY_SEVEN_CHANNELS",
+    "Jo": 26.588575903055926,
+    "n_valid": 7
+  },
+  "receipt_sha256": {
+    "preflight": "fa1f800bf7b0ffd06e1c7f0093e5d1ec9eaa5162762f991e890d36d1d0b7af6a",
+    "baseline_h": "f56ab838be195792f0c094c2b7e8638f8ed0195603dd1be15891e96cde848a7c"
+  },
+  "diagnostic_driver_sha256": {
+    "preflight_and_baseline_h": "52f409954d12d570abb9d8368a8da612e1bc1822df88b5d52d930c3b6269af7e",
+    "analysis": "fd7ae2a7b6e755f8e99547ec23b5f9a9a6ae75cdc3fe1de47f5553915a22e150",
+    "changed_after_baseline": true,
+    "change_scope": "After baseline H, the driver readiness/receipt checks were tightened, and a pre-callback adapter configuration error was corrected by passing params=None while retaining the pinned default prior. The baseline H input and call were unchanged."
+  },
+  "failed_setup_attempts": [
+    {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr394_real_tq_diagnostic_2026-10-10/FAILED_ATTEMPT_existing_callback_root.json",
+      "sha256": "1943b7965a51e118f318a14c73841ee5d420211a809f10048a3ccf4e45f2cc6d",
+      "meaning": "setup failed before an accepted analysis; no state was accepted"
+    },
+    {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr394_real_tq_diagnostic_2026-10-10/FAILED_ATTEMPT_none_subscripted.json",
+      "sha256": "3d5b44ab2c718abca18b50bc0c7e997f1c4659b11c4356642bec3f420cc019b0",
+      "meaning": "setup failed before an accepted analysis; no state was accepted"
+    },
+    {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr394_real_tq_diagnostic_2026-10-10/FAILED_ATTEMPT_params_rejected_before_callback.json",
+      "sha256": "e0a270b1087f098e145ee9f0d100b2a05817790037ea59211142c9522014bc81",
+      "meaning": "setup failed before an accepted analysis; no state was accepted"
+    }
+  ],
+  "fresh_run_root": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr394-real-tq-diagnostic-20261010/runs-baseline-3b5d8c8f6baa",
+  "input_sha256": {
+    "checkpoint": "7c49d6c76de0193267772a362a8a1e95e296ff61341570b1648d800c7e5b7dfe",
+    "frame_observations": "60ccf9056d3ddbfee8d174336ae7177f30242f10a96d12d3d554a63e0f897d05",
+    "saved_cost_result": "590dcd2e346afc26b174d635b3d93bc5dd1db8fc82ce45d18b4bd7e961eba3bf",
+    "paired_execution_identity": "2a698e97f87c61ac98f8a0910616615a1271e16198dd748a1c4ac01a5f4f9425"
+  },
+  "source_sha256_before_analysis": {
+    "oracle/kdm6/da_single_column.py": "7a827f340c1fef189c0f70b65cd60bfd2af0938091b44eed90083a0439c63038",
+    "oracle/kdm6/da_fulldomain.py": "fcd783ec9efed50fe8c3a89e11b4f162447df32c5109e79e06a5f0bf71bfa984",
+    "oracle/kdm6/da_dual.py": "57ff5a832cc6b011d394f3b462dd344cb93177cb1a81af59edcb04c040fd256e",
+    "oracle/kdm6/da_window.py": "354b7b026aac23dc93807020e45b3d5311f40725de843e71fc0a5203c6a4d50c",
+    "oracle/kdm6/da_cvt.py": "64a4826b3c6c3985a89e3d590ea61e53b1c62c3352254833c56e06a1a6099021",
+    "oracle/kdm6/da_driver.py": "1ee8f001837bc633adc58e8331628e7cc0bb7b164662d466cf5f4c1d30739f7b",
+    "oracle/kdm6/runtime.py": "e505c3a1d42fb2880d0ce3d65381488a06528de8d4133b39d4e9a573cef997ac",
+    "oracle/kdm6/coordinator.py": "05981b7a19c8d4fe262cb8080b14ddf3b4eb5c027b58604803b2e0b80764a0bd",
+    "oracle/kdm6/thermo.py": "5278c14c6d87178af5ee963eef59d3297b923fa374412fd854c01e43ffb1b5cd",
+    "oracle/kdm6/fconst.py": "c6529c9a543ad8ed0a33524114f30f5665cd9a7b6983b32a917cc39debd377f2",
+    "oracle/kdm6/rttov_bridge.py": "3c61c7fa6baa21ba294b37cdc17886c0f17979ee4adfae0af7e22154af964116",
+    "oracle/kdm6/obs/allsky_shard.py": "18a101d1946e87d08d87a182cfe547794a794a9b280c2720f874d59352813afc",
+    "oracle/kdm6/obs/model_profile_builder.py": "b9264edb61f32010c025718ad59ef686746f156e2a3c011c473943fbf82788ab",
+    "oracle/kdm6/obs/rttov_input_builder.py": "902e1554eb6e4f699d74cc770059daad847b3b35ad0dd9516d02cae35ad280a6",
+    "oracle/kdm6/obs/rttov_obs_operator.py": "d28149c211c1ccaffedcb18642e2337cc79b5cebc4b6aa8cf4c9a90978363b12",
+    "oracle/kdm6/obs/rttov_case_writer.py": "0203dbfd899996caedf2e8c94e34faabf949fabbaec1688cbda00b6e163081af",
+    "oracle/kdm6/obs/rttov_runner.py": "100e39c6f56ab5e1ccadb59f6b439ebd20255d139b5d9965063bf0ed393fa441",
+    "oracle/kdm6/obs/ami_bt_coordinate.py": "e1aec7c9270bbeff6dec9aee0f7b3fa3741528b3e060bc3aa74be721e3ac97cc",
+    "oracle/kdm6/obs/obs_loss.py": "4c39b69bf54be9929d48cc97881887f80fb1f7c9a05d68a6a6111bda1ca9d855"
+  },
+  "source_sha256_after_analysis": {
+    "oracle/kdm6/da_single_column.py": "7a827f340c1fef189c0f70b65cd60bfd2af0938091b44eed90083a0439c63038",
+    "oracle/kdm6/da_fulldomain.py": "fcd783ec9efed50fe8c3a89e11b4f162447df32c5109e79e06a5f0bf71bfa984",
+    "oracle/kdm6/da_dual.py": "57ff5a832cc6b011d394f3b462dd344cb93177cb1a81af59edcb04c040fd256e",
+    "oracle/kdm6/da_window.py": "354b7b026aac23dc93807020e45b3d5311f40725de843e71fc0a5203c6a4d50c",
+    "oracle/kdm6/da_cvt.py": "64a4826b3c6c3985a89e3d590ea61e53b1c62c3352254833c56e06a1a6099021",
+    "oracle/kdm6/da_driver.py": "1ee8f001837bc633adc58e8331628e7cc0bb7b164662d466cf5f4c1d30739f7b",
+    "oracle/kdm6/runtime.py": "e505c3a1d42fb2880d0ce3d65381488a06528de8d4133b39d4e9a573cef997ac",
+    "oracle/kdm6/coordinator.py": "05981b7a19c8d4fe262cb8080b14ddf3b4eb5c027b58604803b2e0b80764a0bd",
+    "oracle/kdm6/thermo.py": "5278c14c6d87178af5ee963eef59d3297b923fa374412fd854c01e43ffb1b5cd",
+    "oracle/kdm6/fconst.py": "c6529c9a543ad8ed0a33524114f30f5665cd9a7b6983b32a917cc39debd377f2",
+    "oracle/kdm6/rttov_bridge.py": "3c61c7fa6baa21ba294b37cdc17886c0f17979ee4adfae0af7e22154af964116",
+    "oracle/kdm6/obs/allsky_shard.py": "18a101d1946e87d08d87a182cfe547794a794a9b280c2720f874d59352813afc",
+    "oracle/kdm6/obs/model_profile_builder.py": "b9264edb61f32010c025718ad59ef686746f156e2a3c011c473943fbf82788ab",
+    "oracle/kdm6/obs/rttov_input_builder.py": "902e1554eb6e4f699d74cc770059daad847b3b35ad0dd9516d02cae35ad280a6",
+    "oracle/kdm6/obs/rttov_obs_operator.py": "d28149c211c1ccaffedcb18642e2337cc79b5cebc4b6aa8cf4c9a90978363b12",
+    "oracle/kdm6/obs/rttov_case_writer.py": "0203dbfd899996caedf2e8c94e34faabf949fabbaec1688cbda00b6e163081af",
+    "oracle/kdm6/obs/rttov_runner.py": "100e39c6f56ab5e1ccadb59f6b439ebd20255d139b5d9965063bf0ed393fa441",
+    "oracle/kdm6/obs/ami_bt_coordinate.py": "e1aec7c9270bbeff6dec9aee0f7b3fa3741528b3e060bc3aa74be721e3ac97cc",
+    "oracle/kdm6/obs/obs_loss.py": "4c39b69bf54be9929d48cc97881887f80fb1f7c9a05d68a6a6111bda1ca9d855"
+  },
+  "paired_case_sha256_before_analysis": {
+    "in/profiles/001/atm/p.txt": "c7d47eed648f3e7313979e84600ae916fbf8d381d6c21f2d8f562c88463a7726",
+    "in/profiles/001/atm/p_half.txt": "dc736422f63710511af6a3336a77b33f092c63e66deffba26e5e8c29f47c2b11",
+    "in/profiles/001/atm/t.txt": "87b10f1915c6d0c358bc5f135d560c06db6e6e9b3ac05364e34cc14d655f0bfc",
+    "in/profiles/001/atm/q.txt": "8d5b00aa058fae51b5272ddc8f6f65e1bcaa34a65c8e499c099128b87e6cb135",
+    "in/profiles/001/atm/o3.txt": "4169bd766bea042e1de81390c48df7c0f3ea690b5fc44007508127b3047fed6d",
+    "in/profiles/001/atm/co2.txt": "075c725200902dd1505635d3704db9416ef88f960be482819c17db9422ef7553",
+    "in/profiles/001/atm/hydro.txt": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc",
+    "in/profiles/001/atm/hydro_deff.txt": "6160575f7989ef12b570c807f6da93b29bc82f886ca1c34eb47cee9dd5abf98a",
+    "in/profiles/001/atm/hydro_frac.txt": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b",
+    "in/profiles/001/atm/simple_cloud.txt": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d",
+    "in/profiles/001/gas_units.txt": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555",
+    "in/profiles/001/angles.txt": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161",
+    "in/profiles/001/sfc/01/skin.txt": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b",
+    "in/profiles/001/sfc/01/near_surface.txt": "9112090ec89e82f530bba289148450d568b12fdf136c493a6fd3f64744321d9e",
+    "in/channels.txt": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b",
+    "in/lprofiles.txt": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de",
+    "in/coef.txt": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+    "out/rttov_test.txt": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282",
+    "out/run.sh": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+  },
+  "paired_case_sha256_after_analysis": {
+    "in/profiles/001/atm/p.txt": "c7d47eed648f3e7313979e84600ae916fbf8d381d6c21f2d8f562c88463a7726",
+    "in/profiles/001/atm/p_half.txt": "dc736422f63710511af6a3336a77b33f092c63e66deffba26e5e8c29f47c2b11",
+    "in/profiles/001/atm/t.txt": "87b10f1915c6d0c358bc5f135d560c06db6e6e9b3ac05364e34cc14d655f0bfc",
+    "in/profiles/001/atm/q.txt": "8d5b00aa058fae51b5272ddc8f6f65e1bcaa34a65c8e499c099128b87e6cb135",
+    "in/profiles/001/atm/o3.txt": "4169bd766bea042e1de81390c48df7c0f3ea690b5fc44007508127b3047fed6d",
+    "in/profiles/001/atm/co2.txt": "075c725200902dd1505635d3704db9416ef88f960be482819c17db9422ef7553",
+    "in/profiles/001/atm/hydro.txt": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc",
+    "in/profiles/001/atm/hydro_deff.txt": "6160575f7989ef12b570c807f6da93b29bc82f886ca1c34eb47cee9dd5abf98a",
+    "in/profiles/001/atm/hydro_frac.txt": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b",
+    "in/profiles/001/atm/simple_cloud.txt": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d",
+    "in/profiles/001/gas_units.txt": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555",
+    "in/profiles/001/angles.txt": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161",
+    "in/profiles/001/sfc/01/skin.txt": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b",
+    "in/profiles/001/sfc/01/near_surface.txt": "9112090ec89e82f530bba289148450d568b12fdf136c493a6fd3f64744321d9e",
+    "in/channels.txt": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b",
+    "in/lprofiles.txt": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de",
+    "in/coef.txt": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+    "out/rttov_test.txt": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282",
+    "out/run.sh": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+  },
+  "source_and_pair_unchanged": true,
+  "failed_analysis": {
+    "exception_type": "TypeError",
+    "message": "'NoneType' object is not subscriptable",
+    "traceback": "Traceback (most recent call last):\n  File \"/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr394_real_tq_diagnostic_2026-10-10/run_diagnostic.py\", line 692, in _analysis_phase\n    captured = _capture_run_single_analysis(ctx, run_root, args.max_iter)\n  File \"/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr394_real_tq_diagnostic_2026-10-10/run_diagnostic.py\", line 644, in _capture_run_single_analysis\n    result_package = run_single_column_analysis(\n  File \"/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/da_single_column.py\", line 217, in run_single_column_analysis\n    obs_eval = make_fulldomain_obs_eval(\n  File \"/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/da_fulldomain.py\", line 744, in make_fulldomain_obs_eval\n    probe = sharded_allsky(x_probe, fc_sub, cloudy_pos, y_bt,\n  File \"/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr394_real_tq_diagnostic_2026-10-10/run_diagnostic.py\", line 620, in capture_sharded\n    adj_norms[field] = float(np.linalg.norm(np.asarray(out[\"adj\"][index])))\nTypeError: 'NoneType' object is not subscriptable\n"
+  },
+  "analysis": null,
+  "scope_limits": [
+    "Input is the small selected-column checkpoint from the failed 358-minute host run, not a newly valid target-time native frame.",
+    "No 2.5 GB forecast was opened or hashed, and no WRF host/native case was launched.",
+    "Actual profile RTTOV H runs use a fresh copy of the immutable paired case_00; the original case is hashed before and after.",
+    "The adapter captures logical all-sky callback outputs and paths; external child-process counts and every transient worker file are not independently persisted.",
+    "No physical observation match, forecast score, accepted-science prior, parameter inference, or release/operational claim is made."
+  ]
+}
