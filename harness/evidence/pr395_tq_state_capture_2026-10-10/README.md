@@ -12,6 +12,9 @@ The private NPZ stores the complete 12-field background initial state, returned
 analysis initial state, background slot state and final audit slot state; the
 input and audit forcing; frozen dry-air density; native center/interface
 pressures; Exner; observations; and the caller's RTTOV grid/reference arrays.
+Raw `PH`/`PHB` retain geopotential units of `m2 s-2`; they are kept distinct
+from pressure. The background host dry-air eta-layer mass is retained in its
+native float32 `kg m-2` values and bottom-up order.
 The private directory and file are set to mode `0700` and `0600`. Publication
 uses a same-directory, no-clobber atomic link. The public `RESULT.json` keeps
 state hashes and metric summaries; configuration arrays are represented by
@@ -57,6 +60,12 @@ GK2A matchup or scientific result. The metric named phase-aware RH is KDM6's
 `qv/qs(T,p)` ratio; the separate liquid-water ratio is `qv/qs_water(T,p)`.
 Neither is reported as observed vapor-pressure `e/es` RH. `qc` and `nc` sums
 are unweighted sums across native levels, not column-integrated budgets.
+
+The receipt reports `objective.initial_zero_control_closure` from the first
+existing optimizer trace entry (`j_trace[0]`), validates `Jb=Jtheta=0`, seven
+valid channels, and a signature matching the accepted audit. The separate
+`background_quality_probe` preserves the first non-grad H call's raw `J_huber`
+and all-zero cost mask; it is not presented as optimizer initial `Jo`.
 
 `test_capture_tq_state_storage.py` uses synthetic data only. It checks private
 file permissions, exclusive publication, four distinct 12-field state

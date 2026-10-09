@@ -1,0 +1,19 @@
+{
+  "recorded_at": "2026-10-10T08:56:11.427174+09:00",
+  "native_rank_pid": 99158,
+  "native_restarted": false,
+  "rsl_last_line": "Timing for main: time 2025-07-19_04:11:00 on domain   1:   14.57950 elapsed seconds",
+  "actual_native_completion_confirmed": false,
+  "actual_intake_or_analysis_executed": false,
+  "score": "54/75 (72%), unchanged",
+  "tests": {
+    "capture_storage_control_objective": 9,
+    "saved_state_algebra": 3,
+    "scope": "synthetic checks; not native or RTTOV cases",
+    "initial_cost_driver_regressions": 2
+  },
+  "waiting_consumer_pid": 68581,
+  "waiting_consumer": "v4",
+  "consumer_pins_match_current_source": true,
+  "green_red_final_review": "no actionable blocker in final scoped source; physics/native/science evidence remains distinct"
+}

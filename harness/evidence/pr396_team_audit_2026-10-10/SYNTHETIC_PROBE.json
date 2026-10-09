@@ -12,6 +12,17 @@
   "fault_temp_files_after_cleanup": [],
   "fixed_dt_control_false_but_effective_settings_are_fixed": true,
   "forecast_full_sha256_in_receipt": null,
+  "host_dry_mass_arrays_valid": true,
+  "host_dry_mass_provenance_valid": true,
+  "host_dry_mass_shapes": {
+    "background": [
+      39
+    ],
+    "window": [
+      8,
+      39
+    ]
+  },
   "identity_campaign_id_valid_under_run_ss_case_producer": true,
   "manifest_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr396-audit-green/synthetic_intake.json",
   "missing_template_source_fails_closed": true,

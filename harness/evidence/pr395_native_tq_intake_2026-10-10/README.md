@@ -10,7 +10,8 @@ effective-namelist hash must match the archived namelist bytes. Fixed-step is
 checked from the effective namelist; the producer's CLI `fixed_dt` bit is not
 required to be true. It then reads `Times` first and refuses
 to extract native state unless all eight exact target values from 05:55:40
-through 05:58:00 UTC are present. It does not launch or rerun the model.
+through 05:58:00 are present as WRF model-time labels. They do not certify
+the observation pixel clock. It does not launch or rerun the model.
 
 After the run has passed that gate, invoke it with the exact archive directory:
 
@@ -32,7 +33,11 @@ the public manifest is `INTAKE.json` in this directory. Both outputs are
 create-once. The NPZ includes the exact background `State` and one-entry
 `Forcing` expected by `capture_tq_state.py`, all eight native State/Forcing
 frames, raw native hydrometeor fields, native centers/interfaces, the RTTOV
-profile arrays, and separate raw `PH`/`PHB` interfaces.
+profile arrays, separate raw `PH`/`PHB` interfaces, and the selected-column
+host eta dry-layer mass measure in `native_window_host_dry_mass_kg_m2`
+([8,39], float32) plus `host_dry_mass_background_kg_m2` ([39], float32).
+That measure follows WRF's `C1H/MU/MUB/C2H/DNW` eta mass formula; it is not
+computed as EOS `rho_m * delz` and does not certify a process budget.
 
 Native center pressure uses float64-first `P+PB`. Temperature, dry potential
 temperature, and EOS density follow the archived selected-column reader. Native
@@ -68,13 +73,16 @@ through the state-capture adapter with `obs_time=1`, one 20 s forcing,
 prior 0.8 K (physical-temperature scale is 0.8 times Exner), lower-12
 qv log prior 0.08, other state controls zero, parameters pinned, and
 `ncmin_land=ncmin_sea=10`. It creates one durable exclusive run marker; later
-invocations stop before H/RTTOV. Its background `Jo0` probe is `H(M(xb))` at
-the nominal 05:56:00 slot. It does not compute a direct `H` on the native
+invocations stop before H/RTTOV. Initial `Jo0` comes from the first zero-control
+closure evaluating `H(M(xb))` at the nominal 05:56:00 slot. The separate
+quality probe has an all-zero cost mask and cost 0; saved probe BT is
+recombined with the actual frozen mask only as a cost cross-check. It does
+not compute a direct `H` on the native
 05:55:40 frame. The copied paired case supplies coefficient/template/static
 surface parameters only; pressure, interfaces, T/Q and O3/CO2 profiles are
 rewritten from the intake, cloud profiles come from each current State, and
 the AMI geometry plus native dynamic surface are explicit per-H overrides.
-The intake reads the actual nominal case's `namelist.input` and requires
+The intake reads the run archive's effective `namelist.input` and requires
 `ncmin_land=10`, `ncmin_sea=10`; it checks the archived wrapper source's two
 argument-forwarding statements and records both hashes without generalizing
 that those values are silent wrapper defaults.
@@ -95,3 +103,12 @@ analysis once. A durable claim marker prevents duplicate continuation, and
 any invalid native run, changed source or consumer failure stops the sequence.
 The public success/failure receipts remain the result authority; starting the
 continuation is not a statement that any target output or analysis exists.
+
+After analysis succeeds, the continuation invokes `diagnose_saved_state.py`
+using the exact one-shot capture receipt token. It reads the bound private
+arrays without evaluating M or H again. The report separates host/local
+potential-temperature and Exner temperature effects and water increments on
+the fixed first-frame host eta mass measure. Boundary/external fluxes remain
+unmeasured; this is not a closed water budget or an attribution of the
+host/local difference to microphysics error. A diagnostic failure preserves
+the accepted capture receipt and is recorded separately, without retry.

@@ -28,7 +28,25 @@ minimization. The final audit closure appends that signature to
 signatures and seven-channel counts, binds the accepted signature to the final
 mask digest, and records both in private metadata and success/failure receipts.
 
+The initial optimizer objective is now reported from the existing
+`result.j_trace[0]` entry, with `Jb_state=0`, `Jtheta=0`, `Jo`, `Jtotal`,
+`n_valid`, and the initial/final signature relation checked against the first
+`grad=True` callback. The separate first `grad=False` all-sky probe preserves
+its raw zero-mask `J_huber`, BT, quality, target, and mask; it is explicitly not
+called optimizer initial Jo. The capture helper verifies the initial trace's
+Jo against that first H callback without another M/H call. It also requires the intake's
+float32 host dry-mass window/background arrays and their source metadata,
+preserving the frame-zero `[39]` array into its private NPZ. Raw `PH`/`PHB` are
+now labeled as geopotential `m2 s-2`, separately from pressure.
+
 ## Findings and repairs
+
+The P2 initial-cost reporting issue is resolved by the trace-derived
+zero-control objective above; no extra H/M evaluation is used. The P3
+`PH`/`PHB` unit-label issue is resolved. The P3 host eta-layer dry-mass measure
+is preserved in float32 with the intake's stated units and source metadata.
+The remaining P3 `ncmin` provenance
+cross-check gap is recorded below.
 
 1. **Receipt could survive checkpoint cleanup after a post-link temp unlink
    error.** This was reproduced with an injected `Path.unlink` error. The writer
@@ -66,6 +84,6 @@ KDM6 M, or RTTOV execution was used for this repair audit.
 - Source: capture helper, `oracle/kdm6/da_single_column.py`,
   `oracle/kdm6/da_dual.py`, `oracle/kdm6/da_fulldomain.py`, and
   `oracle/kdm6/obs/allsky_shard.py`.
-- Synthetic validation: 8 storage/control tests passed; Ruff passed. These do
+- Synthetic validation: 9 storage/control/objective tests passed; Ruff passed. These do
   not establish the pending native run, RTTOV result, pixel-time matchup, or
   scientific acceptance.

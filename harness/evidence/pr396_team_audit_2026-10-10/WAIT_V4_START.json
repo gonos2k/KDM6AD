@@ -1,0 +1,25 @@
+{
+  "launch": {
+    "pid": 68581,
+    "previous_v3_withdrawn_before_consumers": true,
+    "native_rank_pid": 99158,
+    "native_relaunched": false,
+    "continuation_source_sha256": "7a5ab31d23a30cbbc14adff2a96f5818fc0462762d73efafa6b96c67b60441b5",
+    "reason": "initial objective, geopotential units, host layer mass and saved-state diagnosis follow-up"
+  },
+  "start": {
+    "status": "WAITING_FOR_NATIVE_COMPLETION",
+    "utc": "2026-10-09T23:55:01.445448+00:00",
+    "run_dir": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/runs/mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148",
+    "pid": 68581,
+    "consumer_sha256": {
+      "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr395_native_tq_intake_2026-10-10/intake_native_tq.py": "eb54cc2d037aee938c57f9d2bec77b850cec94ef68a856b31d1d018c3e77c2c3",
+      "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr395_native_tq_intake_2026-10-10/run_analysis.py": "a2de00ae0d9b546fa713ad795f7f934eb162f7014e47f6b75d24c45f47b2be16",
+      "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr395_tq_state_capture_2026-10-10/capture_tq_state.py": "32391d7750ad54c4c2aee64a5d30cde9f9d98822fcc569650aeef9c334c50311",
+      "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr395_observation_matchup_2026-10-10/RECEIPT.json": "6af23b226ade39402f68df24268227b5d30cee5107cabd32992c82d0d329ad92",
+      "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr395_native_tq_intake_2026-10-10/diagnose_saved_state.py": "bda3c66021d865ca4a88b58caad76bd9a291c2f51a711966776b671009b26413"
+    },
+    "python": "/private/tmp/KDM6AD-research-rc-20261007/env/bin/python",
+    "wrf_relaunched": false
+  }
+}

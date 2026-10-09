@@ -167,6 +167,7 @@ def test_private_npz_roundtrips_four_distinct_full_states_and_forcings(tmp_path:
     }
     forcing_window = (_tagged_forcing(1),)
     final_forcing = _tagged_forcing(2)
+    host_mass = np.linspace(1.0, 39.0, 39, dtype=np.float32)
     payload = capture._private_payload(
         xb=states["background_initial_state"],
         accepted_initial_state=states["returned_analysis_initial_state"],
@@ -183,6 +184,7 @@ def test_private_npz_roundtrips_four_distinct_full_states_and_forcings(tmp_path:
         slot_calls=[{"mask": np.ones((1, 7)), "rad_quality": np.zeros((1, 7)),
                      "bt": np.full((1, 7), 240.0)}],
         receipt_metadata={"synthetic_fixture": True},
+        host_dry_mass_background_kg_m2=host_mass,
         extra_private_arrays={
             **{f"b_sigma__{field}": getattr(_tagged_state(5), field).numpy()
                for field in State._fields},
@@ -229,6 +231,8 @@ def test_private_npz_roundtrips_four_distinct_full_states_and_forcings(tmp_path:
         np.testing.assert_array_equal(archive["control__fixed_eta_present"], np.asarray([False]))
         assert archive["control__fixed_eta"].shape == (0,)
         np.testing.assert_array_equal(archive["optimizer_state__d"], np.arange(12))
+        assert archive["host_dry_mass_background_kg_m2"].dtype == np.float32
+        np.testing.assert_array_equal(archive["host_dry_mass_background_kg_m2"], host_mass)
 
 
 def test_lbfgs_observer_preserves_original_quadratic_step_and_gradient():
@@ -292,6 +296,43 @@ def test_final_audit_signature_is_bound_to_frozen_mask_and_stable_trace():
     result.j_trace[-1]["signature"][1] = "b" * 64
     with pytest.raises(RuntimeError, match="signature changed"):
         capture._final_audit_signature(result, obs_time=1, final_mask=mask)
+
+
+def test_initial_zero_control_cost_is_separate_from_zero_mask_probe_cost():
+    signature = "c" * 64
+    mask = np.ones((1, 7), dtype=np.float64)
+    zero_mask = np.zeros((1, 7), dtype=np.float64)
+    result = SimpleNamespace(j_trace=[{
+        "j_state": 0.0, "j_theta": 0.0, "j_obs": 12.75, "total": 12.75,
+        "n_valid": {1: 7}, "signature": {1: signature},
+    }, {
+        "j_state": 1.0, "j_theta": 0.0, "j_obs": 8.0, "total": 9.0,
+        "n_valid": {1: 7}, "signature": {1: signature},
+    }])
+    events = [
+        {"call_index": 1, "grad": False, "returned": True,
+         "J_huber": 0.0, "frozen_mask": zero_mask.tolist(),
+         "fixed_mask": zero_mask.tolist(), "target_BT_K": np.full((1, 7), 240.0).tolist(),
+         "BT_K": np.full((1, 7), 245.0).tolist(), "rad_quality": zero_mask.tolist()},
+        {"call_index": 2, "grad": True, "returned": True,
+         "J_huber": 12.75, "frozen_mask": mask.tolist(),
+         "fixed_mask": mask.tolist()},
+    ]
+    accepted_signature = {"sha256": signature}
+    initial = capture._initial_zero_control_closure(
+        result, events, obs_time=1, final_audit_signature=accepted_signature,
+        final_mask=torch.as_tensor(mask))
+    probe = capture._background_quality_probe(events)
+
+    assert initial["trace_index"] == 0
+    assert initial["Jb_state"] == initial["Jtheta"] == 0.0
+    assert initial["Jo"] == initial["Jtotal"] == 12.75
+    assert initial["operator_signature_sha256"] == signature
+    assert initial["frozen_mask"]["sha256_f64"] == capture.array_sha256(mask)
+    assert probe["raw_J_huber"] == 0.0
+    assert probe["cost_semantics"].startswith("non-grad background quality probe")
+    assert probe["mask"]["sha256_f64"] == capture.array_sha256(zero_mask)
+    assert probe["raw_J_huber"] != initial["Jo"]
 
 
 def test_final_control_snapshot_reads_full_gradient_and_private_controls(tmp_path: Path):

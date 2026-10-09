@@ -326,6 +326,8 @@ def extract(run_dir: Path, manifest_path: Path, npz_path: Path) -> dict:
                 "surface": native["surface"],
                 "p_centers_native_bottomup_Pa_sha256": array_sha256(native["p_pa"]),
                 "p_half_calc_p8w_native_bottomup_Pa_sha256": array_sha256(native["p8w_pa"]),
+                "host_dry_mass_kg_m2_sha256_f32": array_sha256(
+                    np.asarray(native["host_dry_mass_kg_m2"], dtype=np.float32)),
                 "PH_raw_sha256": array_sha256(np.asarray(ds["PH"][ti, :, reader.J, reader.I])),
                 "PHB_raw_sha256": array_sha256(np.asarray(ds["PHB"][ti, :, reader.J, reader.I])),
             })
@@ -353,6 +355,13 @@ def extract(run_dir: Path, manifest_path: Path, npz_path: Path) -> dict:
     arrays["native_surface__longitude_deg"] = np.asarray([n["lon"] for n in native_frames], dtype=np.float64)
     arrays["rho_d_native_bottomup_kg_m3"] = (
         arrays["forcing_window_0__rho"] / (1.0 + arrays["background_initial_state__qv"]))
+    host_dry_mass = np.stack([
+        np.asarray(native["host_dry_mass_kg_m2"], dtype=np.float32)
+        for native in native_frames])
+    if host_dry_mass.shape != (8, 39) or not np.isfinite(host_dry_mass).all() or np.any(host_dry_mass <= 0.0):
+        raise ValueError("native host eta-layer dry mass must be finite, positive float32 [8,39]")
+    arrays["native_window_host_dry_mass_kg_m2"] = host_dry_mass
+    arrays["host_dry_mass_background_kg_m2"] = host_dry_mass[0].copy()
     arrays["p_centers_native_bottomup_Pa"] = arrays["forcing_window_0__p"][0].copy()
     arrays["p_half_native_bottomup_Pa"] = np.asarray(native_frames[0]["p8w_pa"], dtype=np.float32).copy()
     with netCDF4.Dataset(forecast, "r") as ds:
@@ -442,6 +451,14 @@ def extract(run_dir: Path, manifest_path: Path, npz_path: Path) -> dict:
             "temperature": "THM plus 300 K, divided by Exner and with Rv/Rd moisture correction as archived selected_frame; State.th carries dry potential temperature",
             "water_vapor": "native QVAPOR retained as kg kg-1 dry-air mixing ratio",
             "cloud_fields": "native WRF Q fields copied by selected_frame, then packed in public KDM6 State field order",
+            "host_dry_mass": {
+                "window_npz_key": "native_window_host_dry_mass_kg_m2",
+                "background_npz_key": "host_dry_mass_background_kg_m2",
+                "shape": [8, 39], "dtype": "float32", "units": "kg dry air m-2 per native eta layer",
+                "orientation": "bottom-up native levels",
+                "formula": "-(C1H*(MU+MUB)+C2H)*DNW/9.81, using selected_frame's REAL(4) operations",
+                "provenance": "host eta-coordinate layer dry-mass measure derived from native MU/MUB/C1H/C2H/DNW; distinct from EOS rho_m*delz and not a process budget",
+            },
             "native_interface_pressure": {"stored_key": "p_half_native_bottomup_Pa", "dtype": "float32", "method": "Python REAL(4) transcription of calc_p8w; not an executed host output", "source_path": str(P8W_SOURCE), "source_sha256": p8w_source_sha, "precision_note": "P+PB REAL(4), WRF REAL(4) operations; distinct from raw PH/PHB"},
             "raw_height_interfaces": "PH and PHB retained separately from derived calc_p8w interfaces",
             "frames": frame_context,
