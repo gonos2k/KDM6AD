@@ -1,0 +1,278 @@
+{
+  "study": "PR391 selected native-column T/Q response",
+  "date": "2026-10-09",
+  "worktree_head": "a85b39eb1340c0b5f4259434d0cbe2fce7672354",
+  "input": {
+    "kind": "private saved native WRF forecast; selected ti=0 at 2025-07-19_05:55:40",
+    "bytes": 2543209268,
+    "sha256_before": "ac73e382b3102a9fdad3cd5c9e4ec46b6b25a5997dba53aa1b369b0b9ac8153e",
+    "sha256_after": "ac73e382b3102a9fdad3cd5c9e4ec46b6b25a5997dba53aa1b369b0b9ac8153e",
+    "hash_readback_note": "Three unnecessary full-file checksum passes occurred in early script invocations; the final script uses the preverified pin. The requested one after-hash matches the before-hash. No input write occurred."
+  },
+  "selected_column": {
+    "wrf_j_0based": 86,
+    "wrf_i_0based": 48,
+    "wrf_j_1based": 87,
+    "wrf_i_1based": 49,
+    "wrf_k_zero_based_bottom_up": 3,
+    "wrf_k_1based": 4,
+    "rttov_layer_1based_from_enriched_receipt": 63,
+    "warm_water_rh_max": 0.9553440633005558,
+    "T_K": 296.7488237473604,
+    "p_Pa": 97710.18029785156,
+    "qv_dry_kgkg": 0.018194574862718582,
+    "qs_water_kgkg": 0.019045049382375744,
+    "saturation_gap_kgkg": 0.000850474519657158,
+    "nccn_policy": "stored QNCCN; no synthetic profile"
+  },
+  "runtime_contract": {
+    "implementation": "oracle/kdm6/runtime.py::kdm6_step, f64 value-only, normalized_dry=True",
+    "dt_s": 20,
+    "xland": 2.0,
+    "ncmin_land": 10.0,
+    "ncmin_sea": 10.0,
+    "forcing": "fixed native rho_m, pii, p, delz; runtime dry density rho_m/(1+qv_entry)",
+    "interpretation": "isolated opt-in Python research map; not a Fortran mp337/operational host execution"
+  },
+  "predeclared_scenarios": [
+    {
+      "name": "baseline",
+      "delta_T_K": 0.0,
+      "qv_factor": 1.0,
+      "rh_percent": 95.53440633005557,
+      "qc_selected_kgkg": 0.0,
+      "cfrac_selected": 0.0,
+      "activation_gate": false
+    },
+    {
+      "name": "T_minus_0p5K",
+      "delta_T_K": -0.5,
+      "qv_factor": 1.0,
+      "rh_percent": 98.5461182221054,
+      "qc_selected_kgkg": 0.0,
+      "cfrac_selected": 0.0,
+      "activation_gate": false
+    },
+    {
+      "name": "T_minus_1p0K",
+      "delta_T_K": -1.0,
+      "qv_factor": 1.0,
+      "rh_percent": 101.66212161628569,
+      "qc_selected_kgkg": 8.249522585043585e-05,
+      "cfrac_selected": 0.999999,
+      "activation_gate": true
+    },
+    {
+      "name": "qv_plus_2pct",
+      "delta_T_K": 0.0,
+      "qv_factor": 1.02,
+      "rh_percent": 97.44509444566768,
+      "qc_selected_kgkg": 0.0,
+      "cfrac_selected": 0.0,
+      "activation_gate": false
+    },
+    {
+      "name": "qv_plus_6pct",
+      "delta_T_K": 0.0,
+      "qv_factor": 1.06,
+      "rh_percent": 101.26647070985892,
+      "qc_selected_kgkg": 6.436213237777174e-05,
+      "cfrac_selected": 0.999999,
+      "activation_gate": true
+    }
+  ],
+  "observer_and_budget_checks": {
+    "observer": "temporary value-only wrapper around coordinator.apply_satadj_step_torch; restored after every call; did not use diagnostic_trace or alter source",
+    "instrumented_vs_uninstrumented_output_rawbit_equal": "all 12 State output fields in all five scenarios",
+    "all_output_fields_finite": "true for all five scenarios and all equal-final-time runs",
+    "captured_number_basis": "coordinator satadj stage NC/NCCN inventories are volume number [m^-3]; returned State NC/NCCN are dry-specific",
+    "wet_water_closure_max_abs_kgkg": 3.469446951953614e-18,
+    "wet_latent_transfer_max_abs_K": 3.808064974464287e-14,
+    "wet_nccn_floor_departure_m3": [
+      100000000.0,
+      99999999.99999997
+    ],
+    "number_claim": "activation + NCCN reservoir floor visibly changes summed stage number; no universal number conservation claim"
+  },
+  "equal_final_time_constant_forcing": [
+    {
+      "partition": "20s once",
+      "selected_qc_kgkg": 8.249522585043585e-05,
+      "activation_gate_sequence": [
+        true
+      ],
+      "observer_rawbit_equal": true
+    },
+    {
+      "partition": "10s twice",
+      "selected_qc_kgkg": 8.052426000795499e-05,
+      "activation_gate_sequence": [
+        true,
+        false
+      ],
+      "observer_rawbit_equal": true
+    },
+    {
+      "partition": "5s four times",
+      "selected_qc_kgkg": 8.056482903081131e-05,
+      "activation_gate_sequence": [
+        true,
+        false,
+        true,
+        false
+      ],
+      "observer_rawbit_equal": true
+    }
+  ],
+  "captured_stage_derivatives": {
+    "scope": "coordinator apply_satadj_step_torch only at captured clear baseline and captured T-1K supersaturated stage input",
+    "central_fd_eps": {
+      "T_K": 0.0001,
+      "qv_kgkg_dry": 1e-07
+    },
+    "max_abs_jvp_fd_error": {
+      "clear_T": 2.510205376893282e-10,
+      "clear_qv": 5.938805003324887e-12,
+      "wet_T": 2.421702838262263e-10,
+      "wet_qv": 1.7613615455047693e-08
+    },
+    "max_abs_jvp_vjp_duality_error": 1.1102230246251565e-16,
+    "activation_gate_stable_for_each_epsilon_pair": true,
+    "scope_limit": "does not establish whole-step state Jacobian, parameter identifiability, BT/cost sensitivity, or derivatives across the clear/supersaturated boundary"
+  },
+  "whole_runtime_local_jvp_fd": {
+    "runtime": "unchanged, unobserved 20 s oracle/kdm6/runtime.py::kdm6_step(normalized_dry=True); no diagnostic observer on AD/FD calls",
+    "fresh_initial_states": [
+      "clear baseline",
+      "baseline T\u22121 K wet initial state"
+    ],
+    "central_fd_eps": {
+      "T_K": 0.0001,
+      "qv_kgkg_dry": 1e-07
+    },
+    "max_abs_output_vector_error": {
+      "clear_T": 2.510205376893282e-10,
+      "clear_qv": 5.938805003324887e-12,
+      "wet_T": 1.8183210492850321e-10,
+      "wet_qv": 0.14901161193847656
+    },
+    "scaled_inf_error": {
+      "clear_T": 2.510205376893282e-10,
+      "clear_qv": 5.938805003324887e-12,
+      "wet_T": 1.8183210492850321e-10,
+      "wet_qv": 1.691193277505369e-09
+    },
+    "wet_qv_component_abs_error": {
+      "qv": 3.9122483030951116e-11,
+      "qc": 3.318373353877746e-11,
+      "T_K": 1.2145505934313405e-08,
+      "nc_dry_specific": 0.14901161193847656,
+      "nccn_dry_specific": 0.08304789662361145
+    },
+    "wet_qv_nc_rounding_bound": {
+      "epsilon_qv": 1e-07,
+      "nc_plus_minus_spacing": 2.9802322387695312e-08,
+      "spacing_over_2epsilon_bound": 0.14901161193847656,
+      "observed_nc_abs_jvp_fd_error": 0.14901161193847656
+    },
+    "wet_qv_nccn_rounding_bound": {
+      "nccn_plus_minus_spacing": 1.4901161193847656e-08,
+      "spacing_over_2epsilon_bound": 0.07450580596923828,
+      "observed_nccn_abs_jvp_fd_error": 0.08304789662361145
+    },
+    "selected_qc_vjp_jvp_duality_abs_error_max": 5.551115123125783e-17,
+    "all_fd_outputs_finite": true,
+    "limitation": "internal non-satadj branch masks not comprehensively recorded for these whole-map \u00b1epsilon calls; local point checks do not certify derivatives across all limiters/branches",
+    "output_components_checked": [
+      "selected-layer qv",
+      "selected-layer qc",
+      "selected-layer physical T",
+      "selected-layer dry-specific nc",
+      "selected-layer dry-specific nccn"
+    ],
+    "full_state_or_full_column_fd_compared": false,
+    "vjp_covector": "selected-layer qc only"
+  },
+  "supplemental_weak_cloud_point": {
+    "receipt": "harness/evidence/pr391_tq_response_2026-10-09/RESULT_weak_cloud_Tminus0p8.json",
+    "private_npz": "graphify-out/pr391-red/weak_cloud_Tminus0p8_checkpoint.npz",
+    "private_npz_sha256": "cff588a4ade432d655b0884908c5495c1b13decda884234f792ea5e3cef1d71e",
+    "private_npz_compressed_bytes": 9832,
+    "private_npz_array_count": 31,
+    "source": "cached private baseline checkpoint and fixed native forcing; no forecast read/hash",
+    "delta_T_K": -0.8,
+    "entry_q_over_qs_water": 1.0040295262801375,
+    "entry_sw_percent": 0.402952628013753,
+    "selected_layer_output": {
+      "level_1based": 4,
+      "qc_kgkg_dry": 2.005882014205248e-05,
+      "qi_kgkg_dry": 0.0,
+      "condensate_g_m3": 0.02235876116625672,
+      "derived_cfrac": 0.999999,
+      "cloud_positive_levels_1based": [
+        4
+      ]
+    },
+    "whole_runtime_selected_output_jvp": {
+      "output_order": [
+        "qv",
+        "qc",
+        "T",
+        "nc_dry_specific",
+        "nccn_dry_specific"
+      ],
+      "physical_T_direction": [
+        0.00031106333663826136,
+        -0.00031106333663826136,
+        0.2537052529538826,
+        -1514196185.8518786,
+        0.0
+      ],
+      "dry_qv_direction": [
+        0.7250595639127891,
+        0.2749404360872109,
+        659.5491911343062,
+        1336289979262.9946,
+        88110338.29192445
+      ]
+    },
+    "limitation": "JVP-only at this supplemental near-saturation point; no FD/VJP or comprehensive branch-mask census"
+  },
+  "private_checkpoint": {
+    "path": "graphify-out/pr391-red/selected_column_checkpoint.npz",
+    "compressed_bytes": 37759,
+    "sha256": "7c49d6c76de0193267772a362a8a1e95e296ff61341570b1648d800c7e5b7dfe",
+    "array_count": 127,
+    "contents": "baseline + five scenario 12-field input/output State; fixed native rho_m/pii/p/delz; native p centers and WRF P8W interfaces; baseline optical-reference rho_d; xland",
+    "all_state_arrays": "float64, 39 native levels, WRF bottom-up",
+    "selected_column_read_stat_before": {
+      "size_bytes": 2543209268,
+      "mtime_ns": 1791430130665235164
+    },
+    "selected_column_read_stat_after": {
+      "size_bytes": 2543209268,
+      "mtime_ns": 1791430130665235164
+    },
+    "raw_inputs": "private/ignored local evidence; not part of public receipt"
+  },
+  "geometry_note": {
+    "used_reconstruction": "archived selected_frame; PH+PHB divided by float64(float32(9.81)); float64-first P+PB centers",
+    "comparison_to_public_frame_reader_double_g": {
+      "max_abs_delz_difference_m": 3.5263647987449076e-05,
+      "sum_abs_delz_difference_m": 0.000894558350417185,
+      "max_relative_difference": 4.277438771712191e-08,
+      "max_layer_1based": 19
+    },
+    "native_pressure_note": "scenario perturbations changed only selected-layer theta or qv; pressure centers and native interfaces were not remapped; this local KDM6 run consumes p centers and delz, not RTTOV interfaces"
+  },
+  "source_pins": {
+    "native_reader": "408bab9756c6ac1a6e8438b8469c87f41fa239ce75414cd8087d10b6a31d54c1",
+    "authored_script": "2874aa593a30d76ee6572a368a5caaa749d33045e298682046442d8e6cd2ff96",
+    "weak_cloud_checkpoint_runner": "37d45578b3889dff166052dc98c531d43a63eb0431ab28ccdf258f6178b3c73e",
+    "runtime": "e505c3a1d42fb2880d0ce3d65381488a06528de8d4133b39d4e9a573cef997ac",
+    "coordinator": "05981b7a19c8d4fe262cb8080b14ddf3b4eb5c027b58604803b2e0b80764a0bd",
+    "thermo": "5278c14c6d87178af5ee963eef59d3297b923fa374412fd854c01e43ffb1b5cd",
+    "satadj": "d2766dc50dbdfd9b1db1b962651f2ca9ded9be34d2e01e97b61b62d189b88a92"
+  },
+  "metadata_corrections_scope": "Column one-based j/i labels and selected-five-output FD scope corrected; numerical arrays and runtime/observer code unchanged. Source pins identify inspection versions, not implied pre-execution pins."
+}

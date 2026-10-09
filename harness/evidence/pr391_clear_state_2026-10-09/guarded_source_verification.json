@@ -1,0 +1,15 @@
+{
+  "scope": "new diagnostic-source guard verification with one selected native-column read, no full forecast hash or KDM/RTTOV/model execution; prior diagnostic result preserved",
+  "source_sha256_before_and_after": "0263c51b0a1bf1275bec0e17e15725c37b603b9cb61d862be452fa800dec422f",
+  "prior_result_sha256_unchanged": "a5bf4fb627e51569a033c585ae567adb418126a960e4eadd06e17401d8a3c524",
+  "fresh_output_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr391-root/fresh_guarded_diagnostic.json",
+  "fresh_output_sha256": "a5bf4fb627e51569a033c585ae567adb418126a960e4eadd06e17401d8a3c524",
+  "thermodynamics_and_selected_controls_exactly_equal_prior_receipt": true,
+  "runtime": {
+    "python": "3.10.11",
+    "executable": "/opt/local/bin/python3",
+    "numpy": "2.2.6",
+    "torch": "2.13.0"
+  },
+  "returncode": 0
+}

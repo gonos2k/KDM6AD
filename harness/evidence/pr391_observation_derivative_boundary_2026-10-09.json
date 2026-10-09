@@ -1,0 +1,11 @@
+{
+  "scope": "Installed guide/source scope check only; no option toggled, no RTTOV rerun, no source-to-binary attestation",
+  "guide_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/docs/users_guide_rttov14_v1.1.pdf",
+  "guide_sha256": "b77e53f30182a93b71f7ddc16785c06f1e25078d05d0542ae7b246a8d111c3b3",
+  "guide_document_revision": "1.1.1, dated2026-01-21",
+  "guide_reference": "printed p74, delta-Eddington section and scattering-option table",
+  "zero_hydro_tlad_documented_scope": "MW sensor, pre-defined scattering properties, two-column overlap, Delta-Eddington (also radar where enabled); not a general AMI IR cloud creation remedy",
+  "actual_default_and_run_policy": "zero_hydro_tlad not enabled; model_profile_builder binary cfrac remains detached, liquid diameter2..52um and ice10..120um unchanged",
+  "source_units_threshold": "cfrac uses total cloud content above1e-6 g/m3, positive value0.999999",
+  "source_sha256": "b9264edb61f32010c025718ad59ef686746f156e2a3c011c473943fbf82788ab"
+}
