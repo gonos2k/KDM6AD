@@ -645,6 +645,30 @@ def _clear_bt_chunked(x_cl: State, fc_cl: Forcing, cfg: OsseObsConfig, nch: int)
     return torch.cat(bts), torch.cat(rqs)
 
 
+def _require_frozen_quality(rq, expected_shape, frozen_mask, partition: str):
+    """Fail closed when RTTOV quality no longer supports frozen channels."""
+    try:
+        raw_quality = torch.as_tensor(rq)
+    except (TypeError, ValueError, RuntimeError) as exc:
+        raise ValueError(f"{partition} rad_quality must be a finite numeric field") from exc
+    if raw_quality.dtype == torch.bool or raw_quality.is_complex():
+        raise ValueError(f"{partition} rad_quality must be a real numeric field")
+    quality = raw_quality.to(torch.float64)
+    if tuple(quality.shape) != tuple(expected_shape):
+        raise ValueError(
+            f"{partition} rad_quality shape {tuple(quality.shape)} != "
+            f"expected {tuple(expected_shape)}")
+    if not bool(torch.isfinite(quality).all()):
+        raise ValueError(f"{partition} rad_quality must be finite")
+    if bool((quality < 0).any()):
+        raise ValueError(f"{partition} rad_quality must be non-negative")
+    support = torch.as_tensor(frozen_mask, dtype=torch.bool, device=quality.device)
+    if tuple(support.shape) != tuple(expected_shape):
+        raise ValueError(f"{partition} frozen support shape does not match rad_quality")
+    if bool((support & (quality != 0)).any()):
+        raise ValueError(f"{partition} trial rad_quality flags a frozen-support channel")
+
+
 def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
                              xland_sub, cloudy_pos, clear_pos,
                              clear_cfg: OsseObsConfig, rttov_cfg: dict,
@@ -654,7 +678,8 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
                              x_slot_bg: "State | None" = None,
                              pseudo: "dict | None" = None,
                              rttov_timeout: float = DEFAULT_RTTOV_TIMEOUT,
-                             channel_gate=None, obs_sigma=None, obs_bias=None):
+                             channel_gate=None, obs_sigma=None, obs_bias=None,
+                             require_frozen_quality: bool = False):
     """동결 mask 결합 obs_eval — 슬롯 t=obs_time, ObsEvalResult 반환.
 
     동결 기준은 배경 '슬롯 시각' 상태 x_slot_bg(기본 xb_sub — obs_time=0일 때):
@@ -665,13 +690,19 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
     기록한다. obs_time≥1이면 관측항이 M(미세물리)을
     관통해 θ·전 필드 결합 기울기가 살아난다 (P0-1). huber_delta는 양 파트
     공통 (P0-3). pseudo = dict(cols, target, levels, sigma_p) — regime-2
-    부트스트랩 항 합성 (P0-2; 동결 구성은 서명에 합성).
+    부트스트랩 항 합성 (P0-2; 동결 구성은 서명에 합성). When
+    ``require_frozen_quality=True``, trial quality must preserve every channel
+    in the background mask; violations raise and propagate out of the current
+    optimizer call (this adapter does not retry or backtrack). The default
+    ``False`` retains the legacy evaluator contract without this guard.
     """
     from .da_regime2 import pseudo_rh_term
     from .rttov_bridge import freeze_dry_air_density, require_dry_air_density
 
     # Validate before any clear/all-sky probe can construct or rewrite a case.
     rttov_timeout = validate_rttov_timeout(rttov_timeout)
+    if not isinstance(require_frozen_quality, bool):
+        raise ValueError("require_frozen_quality must be a boolean")
     nch = y_bt.shape[1]
     loss_sigma, loss_bias = _freeze_fixed_obs_errors(y_bt, obs_sigma, obs_bias)
     if loss_sigma is not None and (huber_delta is None or not math.isfinite(huber_delta)
@@ -715,6 +746,13 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
                                f"{case_root}/probe", n_workers=n_workers,
                                grad=False, pool=pool,
                                rttov_timeout=rttov_timeout)
+    if require_frozen_quality:
+        _require_frozen_quality(probe["rq"], (int(cloudy_pos.numel()), nch),
+                                torch.zeros((int(cloudy_pos.numel()), nch)),
+                                "all-sky background")
+        _require_frozen_quality(rq_clear, (int(clear_pos.numel()), nch),
+                                torch.zeros((int(clear_pos.numel()), nch)),
+                                "clear background")
     mask = torch.zeros_like(y_bt)
     mask[cloudy_pos] = ((y_rq[cloudy_pos] == 0) & (probe["rq"] == 0)).to(torch.float64)
     mask[clear_pos] = ((y_rq[clear_pos] == 0) & (rq_clear == 0)).to(torch.float64)
@@ -725,12 +763,15 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
     # callbacks and unchanged external fixture provenance remain run-level
     # preconditions; it is not an identity for arbitrary Python closures.
     # Add newly captured H inputs to this list beside the closure's captures.
+    signature_policy = ({"require_frozen_quality": True}
+                        if require_frozen_quality else {})
     signature = _h_signature(
         y_bt=y_bt, y_rq=y_rq, mask=mask,
         cloudy_pos=cloudy_pos, clear_pos=clear_pos,
         xland=xland_sub, forcing=fc_sub,
         clear_cfg=clear_cfg, rttov_cfg=rttov_cfg,
-        obs_time=obs_time, huber_delta=huber_delta, pseudo=pseudo, **loss_kwargs)
+        obs_time=obs_time, huber_delta=huber_delta, pseudo=pseudo,
+        **signature_policy, **loss_kwargs)
     if pseudo is not None:
         n_valid += int(pseudo["levels"].sum())
 
@@ -745,15 +786,23 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
                              n_workers=n_workers, grad=True,
                              huber_delta=huber_delta, pool=pool,
                              rttov_timeout=rttov_timeout, **loss_kwargs)
+        if require_frozen_quality:
+            _require_frozen_quality(
+                out["rq"], (int(cloudy_pos.numel()), nch), mask[cloudy_pos],
+                "all-sky trial")
         x_cl, fc_cl = _take(x_t, clear_pos), _take(fc_sub, clear_pos)
         y_cl, m_cl = y_bt[clear_pos], mask[clear_pos]
         g_th = torch.zeros_like(x_cl.th)
         g_qv = torch.zeros_like(x_cl.qv)
         j_parts = []
         for sl in _clear_slices(x_cl.th.shape[0], nch):     # K-인덱스 4자리 청킹
-            bt_c, _, leaves = batched_clear_bt(_take(x_cl, sl),
-                                               _take(fc_cl, sl),
-                                               _take_clear_config(clear_partition_cfg, sl))
+            bt_c, rq_c, leaves = batched_clear_bt(_take(x_cl, sl),
+                                                  _take(fc_cl, sl),
+                                                  _take_clear_config(clear_partition_cfg, sl))
+            if require_frozen_quality:
+                _require_frozen_quality(
+                    rq_c, (int(sl.numel()), nch), m_cl[sl],
+                    "clear trial")
             j_c = _part_loss(bt_c.to(torch.float64), y_cl[sl], m_cl[sl],
                              huber_delta, **({} if loss_sigma is None else
                                 {"obs_sigma": loss_sigma, "obs_bias": loss_bias[clear_pos][sl]}))
@@ -804,6 +853,7 @@ def make_fulldomain_obs_eval(xb_sub: State, fc_sub: Forcing, y_bt, y_rq,
     obs_eval.h_callback_contract = (
         "runner-provenance-attested stable callback; custom callback closure "
         "state is caller-owned and must remain unchanged")
+    obs_eval.require_frozen_quality = require_frozen_quality
     return obs_eval
 
 
@@ -1182,6 +1232,7 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
             obs_time=obs_time, huber_delta=huber_delta,
             x_slot_bg=x_slot_bg, pseudo=pseudo,
             rttov_timeout=rttov_timeout,
+            require_frozen_quality=normalized_dry,
             **({"channel_gate": gate} if gate is not None else {}),
             **({"obs_sigma": fixed_sigma, "obs_bias": selected_bias}
                if fixed_obs_errors else {}))
@@ -1385,6 +1436,7 @@ def run_fulldomain_analysis(fr, co, grids: dict, case_root: str, *,
         time_tolerance_s=time_tolerance_s, huber_delta=huber_delta,
         rttov_timeout=rttov_timeout,
         normalized_dry=normalized_dry,
+        require_frozen_quality=obs_eval.require_frozen_quality,
         model_number_basis="per_kg_dry_air" if normalized_dry else "legacy",
         optical_number_basis="per_kg_dry_air" if normalized_dry else "legacy",
         optical_density_policy="frozen_background",

@@ -1,0 +1,167 @@
+{
+  "study": "PR392 frozen-support QC-loss evaluator counterexample",
+  "scope": "Synthetic fake-run_k reproduction through the real RttovObsOp, allsky_shard worker, make_fulldomain_obs_eval, and existing ObsEvalResult protocol. No RTTOV binary, KDM6 step, or optimizer was run.",
+  "source_head": "5a7701ed8159593943d6b7fbc10e9d046d93e218",
+  "repro_script_sha256": "8e5095546fc5fd0267fe4c077355112a3740286c2192a17c63356a00164ba96d",
+  "test_fixture_source": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/tests/test_normalized_dry_fulldomain.py",
+  "fixed_mask": [
+    0.0,
+    0.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+  ],
+  "preexcluded_channel_ids_1based": [
+    8,
+    9
+  ],
+  "preexcluded_channel_gate": [
+    0,
+    0
+  ],
+  "fixed_n_valid": 7,
+  "base": {
+    "J": 136.5,
+    "n_valid": 7,
+    "signature": "8d62a01263da9dfa45e8bfd9a2260d9fad0e9dc566a3adf43787748d275adaeb",
+    "fake_run_quality": [
+      32768,
+      32768,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "trial": {
+    "J": 117.0,
+    "n_valid": 7,
+    "signature": "8d62a01263da9dfa45e8bfd9a2260d9fad0e9dc566a3adf43787748d275adaeb",
+    "fake_run_quality": [
+      0,
+      0,
+      32768,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "flagged_channel_ids_1based": [
+      10
+    ]
+  },
+  "J_change": -19.5,
+  "calls": [
+    {
+      "mean_T_K": 275.5,
+      "lost_channel_support": false,
+      "flagged_channel_ids_1based": [
+        8,
+        9
+      ],
+      "BT_K": [
+        300.0,
+        300.0,
+        300.0,
+        300.0,
+        300.0,
+        300.0,
+        300.0,
+        300.0,
+        300.0
+      ],
+      "rad_quality": [
+        32768,
+        32768,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "mean_T_K": 275.5,
+      "lost_channel_support": false,
+      "flagged_channel_ids_1based": [
+        8,
+        9
+      ],
+      "BT_K": [
+        300.0,
+        300.0,
+        300.0,
+        300.0,
+        300.0,
+        300.0,
+        300.0,
+        300.0,
+        300.0
+      ],
+      "rad_quality": [
+        32768,
+        32768,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "mean_T_K": 276.45,
+      "lost_channel_support": true,
+      "flagged_channel_ids_1based": [
+        10
+      ],
+      "BT_K": [
+        300.0,
+        300.0,
+        280.0,
+        300.0,
+        300.0,
+        300.0,
+        300.0,
+        300.0,
+        300.0
+      ],
+      "rad_quality": [
+        0,
+        0,
+        32768,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "interpretation": "The evaluator fixes S from the background probe (7 channels); channels 8/9 are pre-excluded by the explicit gate. The fake run_k clears their baseline-only flags at trial and flags active channel 10 with 32768 while returning an artificially perfect BT for that channel. The trial still returns the same fixed mask count and signature, and J falls by 19.5 because the flagged BT remains inside _part_loss. This shows pre-excluded channel flags can change without changing S, but a new flag on S is not rejected. The evaluator does not reward a reduced mask count; it rewards an invalid newly flagged BT because trial rad_quality is returned by sharded_allsky but not checked against S.",
+  "limitations": [
+    "Controlled radiances/QC are synthetic; this demonstrates call-path behavior only.",
+    "Not evidence that the real RTTOV flag always produces a lower BT or that an optimizer accepted this trial.",
+    "No optimization, line search, microphysics, native run, or real RTTOV call was executed."
+  ],
+  "source_sha256": {
+    "oracle/kdm6/da_fulldomain.py": "25b94aba00c889a504876e27ed98abf9c38f6174da791b4dc0a04d5c029c1c60",
+    "oracle/kdm6/obs/allsky_shard.py": "18a101d1946e87d08d87a182cfe547794a794a9b280c2720f874d59352813afc",
+    "oracle/kdm6/da_dual.py": "1e807e228fb0bb86a769ad93c9d0ff1b29521bc8ebed55f48218dd2cea76521d",
+    "oracle/kdm6/da_minimizer.py": "f0702652d2dba7d74515a62b9415add36deb99777e1c0f369dde5f700c0b81ff",
+    "oracle/kdm6/obs/rttov_obs_operator.py": "d28149c211c1ccaffedcb18642e2337cc79b5cebc4b6aa8cf4c9a90978363b12"
+  }
+}
