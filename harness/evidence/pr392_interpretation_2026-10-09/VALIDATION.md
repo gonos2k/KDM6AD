@@ -12,11 +12,13 @@ snapshot hashes are in [GREEN_review.md](GREEN_review.md).
   replacement, malformed/nonfinite quality, both normalized-dry factories,
   and legacy opt-out are covered. The tests do not run binary RTTOV or a native
   host, and do not prove automatic invalid-trial recovery.
-- Focused integration regression: **165 passed, 2 skipped** in 11.49 s, using
-  `/opt/local/bin/python3 -m pytest -q -rs` on the files below. The two existing
+- Focused integration regression: **179 passed, 2 skipped**, using
+  `/opt/local/bin/python3 -m pytest -q -rs` on the 12 files below. The two existing
   live full-domain tests skip for the declared absence of LC05 wrfinput / GK2A KO /
   calibration table / live RTTOV dependencies. No full pytest campaign or new
-  native build was performed locally. There were 43 existing Torch/tuple-callback
+  native build was performed locally. These existing synthetic integration tests
+  do exercise pure-Torch KDM runtime and optimizer code; they are not new native
+  profile/host/optimization research experiments. There were 43 existing Torch/tuple-callback
   deprecation warnings, unrelated to this patch.
 
 ```text
@@ -31,6 +33,7 @@ oracle/tests/test_da_dual_bt_coordinate_fingerprint.py
 oracle/tests/test_normalized_dry_parallel.py
 oracle/tests/test_normalized_dry_shard_execution.py
 oracle/tests/test_clear_candidate_diagnostic_guards.py
+oracle/tests/test_internal_prior_controls.py
 ```
 
 - CI-style ruff `F821,F822,F823` and `git diff --check` pass on changed source,
@@ -70,3 +73,17 @@ selected for normalized-dry research evaluation.
 
 GitHub PR-head CI is a separate post-push check; its results are recorded in the
 PR and final handoff rather than asserted in advance here.
+
+
+## First CI head and fixture followup
+
+At `0f305609`, harness, path detection and both Ubuntu/macOS native CI passed.
+The oracle CI reported **1 failed / 1722 passed / 95 skipped**. The failure was
+an AttributeError in the internal-prior test double, which did not preserve the
+new callback metadata read by the report. It reproduced locally. Updating only
+that test double and asserting strict-policy forwarding/reporting fixed the
+failure; the guard implementation and source hashes in Green review did not
+change. The targeted rerun passed (1 test), and frozen-quality + internal-prior
+suites passed (32 tests). Final broader local coverage is listed above. New
+PR-head CI is rechecked separately; the old successful jobs are attributed to
+`0f305609` and are not claimed as the later head's CI results.

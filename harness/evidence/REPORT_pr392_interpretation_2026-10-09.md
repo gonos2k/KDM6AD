@@ -3,8 +3,7 @@
 검토 입력은 PR392 head `5a7701ed`, 당시 main은 `a85b39eb`이다. 후속 작업 중
 PR392가 `ce77afa2`로 병합된 사실을 확인했으며, 이 변경은 그 main 위의 별도 PR이다.
 기존 T/Q 구름 생성·약한 구름점의 두 방향 H∘M 미분과 MPI·거리·소산 진단은
-각각의 증거 범위에서 종결을 유지한다. 이번에는 새 KDM·RTTOV·host 실행이나
-최적화를 하지 않고 작은 공개 receipt와 보관 단계자료를 재사용했다.
+각각의 증거 범위에서 종결을 유지한다. 이번에는 새 native 기반 KDM 진단·실제 RTTOV·목표시각 host/최적화 실험을 하지 않고 작은 공개 receipt와 보관 단계자료를 재사용했다.
 
 ## 완료한 해석
 
@@ -70,3 +69,14 @@ RTTOV 자산/계수/바이너리는 공개 변경에 포함하지 않는다.
 [검증 기록](pr392_interpretation_2026-10-09/VALIDATION.md)에 기록한다.
 공개 산술 재생, 합성 callback 회귀, 기존 실제 국소 KDM/RTTOV 실행과 PR CI는
 서로 다른 근거이며 어느 것도 새 유효 목표시각 host 사례를 대신하지 않는다.
+
+
+## CI에서 발견한 시험 대역 누락
+
+첫 PR head `0f305609`에서 oracle CI는 1722 passed / 95 skipped / 1 failed였다.
+`test_internal_prior_controls`의 synthetic callback이 새 `require_frozen_quality`
+메타데이터를 보존하지 않아 보고서 작성 시 AttributeError가 발생했다. 이를 로컬에서
+재현한 뒤 테스트 대역에 전달 속성을 추가하고 normalized-dry 상위 호출과 세 prior
+비교의 보고값이 모두 True임을 검증했다. 품질 검사나 생산 소스를 완화하지 않았다.
+이 시험은 기존 synthetic KDM/dual-minimizer 코드 경로를 실행한다. 이번에 새 native
+기반 최적화 실험을 수행한 결과와는 구분한다.

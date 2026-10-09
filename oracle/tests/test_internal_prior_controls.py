@@ -82,8 +82,11 @@ def _install_lightweight_observation_boundary(monkeypatch, captured):
     monkeypatch.setattr(fd, "run_dual_minimizer", capture_minimizer)
 
     def make_eval(xb, _forcing, y_bt, _y_rq, _xland, cloudy, clear,
-                  _clear_cfg, _rttov_cfg, _case_root, **_kwargs):
+                  _clear_cfg, _rttov_cfg, _case_root, **kwargs):
         mask = torch.ones_like(y_bt)
+        require_frozen_quality = kwargs["require_frozen_quality"]
+        captured.setdefault("require_frozen_quality", []).append(
+            require_frozen_quality)
 
         def evaluate(t, x_t):
             if t != 1:
@@ -94,6 +97,7 @@ def _install_lightweight_observation_boundary(monkeypatch, captured):
                                  n_valid=9, signature="fixed-synthetic-slot")
 
         evaluate.mask = mask
+        evaluate.require_frozen_quality = require_frozen_quality
         evaluate.connected_fields = ("nc",)
         evaluate.connected_fields_by_position = {0: ("nc",)}
         evaluate.connected_fields_by_partition = {
@@ -132,6 +136,7 @@ def test_state_sigma_overrides_reach_real_dual_minimizer_and_default_is_unchange
     assert captured["builder_kwargs"][0] == {
         "qv_levels": 2, "sigma_overrides": None}
     assert "background_sigma_overrides" not in legacy
+    assert legacy["require_frozen_quality"] is True
     assert legacy["cvt"]["n_controlled"]["nc"] == 2
 
     nc_pinned = _run(
@@ -143,6 +148,7 @@ def test_state_sigma_overrides_reach_real_dual_minimizer_and_default_is_unchange
     assert torch.equal(captured["minimizer_sigma"][1], torch.zeros((1, 2), **F64))
     assert nc_pinned["cvt"]["n_controlled"]["nc"] == 0
     assert nc_pinned["background_control_counts"]["nc"] == 0
+    assert nc_pinned["require_frozen_quality"] is True
 
     nc_enabled = _run(
         frame, observations, grids,
@@ -155,6 +161,8 @@ def test_state_sigma_overrides_reach_real_dual_minimizer_and_default_is_unchange
     assert nc_enabled["background_control_counts"]["nc"] == 2
     assert nc_enabled["background_sigma_overrides"] == {"nc": 0.15}
     assert nc_enabled["background_error_source"] == "predeclared NC-enabled comparison"
+    assert nc_enabled["require_frozen_quality"] is True
+    assert captured["require_frozen_quality"] == [True, True, True]
     assert nc_enabled["prior_is_calibrated"] is False
     assert "four warm theta priors unchanged" in nc_enabled["background_prior_scope"]
     assert nc_enabled["theta_b"] == nc_pinned["theta_b"] == legacy["theta_b"]

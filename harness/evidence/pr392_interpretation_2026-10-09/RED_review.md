@@ -1,6 +1,6 @@
 # RED review — PR392 branch, coordinate, partition, and fixed-support interpretation
 
-Scope: source and receipt audit on head `5a7701ed` against the saved `a85b39eb` baseline. I read the small cached receipts and pinned source, but did not read or hash any forecast, run KDM6/RTTOV/host, or change model code. This review does not reopen prior closed campaign evidence or decide the open QA, target-run, or physical-floor questions.
+Scope: source and receipt audit on head `5a7701ed` against the saved `a85b39eb` baseline. I read the small cached receipts and pinned source, but did not read or hash any forecast, execute a KDM6 diagnostic, run RTTOV/host, or change model code. This review does not reopen prior closed campaign evidence or decide the open QA, target-run, or physical-floor questions.
 
 ## Findings
 
@@ -13,3 +13,7 @@ Scope: source and receipt audit on head `5a7701ed` against the saved `a85b39eb` 
 ## Required wording/status
 
 Retain explicit OPEN status for QA and observation correspondence, the new native target-time run, and the physical interpretation/decision on the NCCN floor or reservoir. Do not promote the synthetic fake-QC example into a universal operational defect or a demonstrated optimizer acceptance. The historical evaluator gap was on the normalized-dry research route; the current diff closes the callback quality check for that route, with fail-closed exception behavior and no automatic smaller-step retry.
+
+## CI fixture follow-up
+
+The CI `0f305609` failure was a synthetic test double in `test_internal_prior_controls.py` that returned `obs_eval` without the new `require_frozen_quality` metadata consumed by the report builder. Root reproduced the initial result (1,722 passed, 95 skipped, 1 failed); the repair forwards the factory's incoming policy onto the fake callback and asserts that all three normalized-dry report cases record `True`. This follow-up changes tests only; the production-source diff and current guard behavior are unchanged. Green reports the repaired focused run at 32 passed. The focused suite includes synthetic pure-Torch KDM/window and dual-minimizer paths (for example, `test_normalized_dry_parallel.py` exercises `kdm6_step`); these are regression tests on synthetic fixtures. No new native-based KDM diagnostic, real RTTOV, host run, or operational optimizer experiment was performed.
