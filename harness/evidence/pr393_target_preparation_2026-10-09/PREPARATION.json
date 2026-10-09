@@ -1,0 +1,1659 @@
+{
+  "schema": "pr393_nominal_case_preparation_v1",
+  "prepared_at_local": "2026-10-09",
+  "status": "PREPARED_NOT_LAUNCHED",
+  "case_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal",
+  "historical_case_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/target_case_055540_055800",
+  "historical_case_manifest_used_as_link_inventory": "/private/tmp/KDM6AD-viirs-native-run-20261007/target_case_055540_055800/target_case_manifest.json",
+  "historical_case_manifest_status": "PREPARED_REVIEW_ONLY_NOT_EXECUTED; used only for its curated 79-entry input/static link inventory, not as a run-success claim",
+  "namelist": {
+    "source_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/target_case_055540_055800/namelist.input",
+    "case_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/namelist.input",
+    "sha256": "ef4d7054a393dbc0d6aa8f34094571ef65c4d3a076b582acfb822a1ad66fbac1",
+    "copied_small_file": true,
+    "matched_required_values": {
+      "run_minutes": "358",
+      "run_seconds": "0",
+      "time_step": "20",
+      "mp_physics": "337",
+      "history_interval": "0",
+      "history_interval_s": "20",
+      "history_begin_d": "0",
+      "history_begin_h": "5",
+      "history_begin_m": "55",
+      "history_begin_s": "40",
+      "history_end_d": "0",
+      "history_end_h": "5",
+      "history_end_m": "58",
+      "history_end_s": "0",
+      "input_inname": "\"wrfinput_d<domain>\"",
+      "bdy_inname": "\"wrfbdy_d<domain>\"",
+      "auxinput24_inname": "\"wrfchainp_d<domain>\""
+    },
+    "model_start": "2025-07-19_00:00:00",
+    "expected_saved_times": [
+      "2025-07-19_05:55:40",
+      "2025-07-19_05:56:00",
+      "2025-07-19_05:56:20",
+      "2025-07-19_05:56:40",
+      "2025-07-19_05:57:00",
+      "2025-07-19_05:57:20",
+      "2025-07-19_05:57:40",
+      "2025-07-19_05:58:00"
+    ],
+    "expected_sha256_from_historical_case_manifest": "ef4d7054a393dbc0d6aa8f34094571ef65c4d3a076b582acfb822a1ad66fbac1"
+  },
+  "case_entries": [
+    {
+      "name": "BROADBAND_CLOUD_GODDARD.bin",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/BROADBAND_CLOUD_GODDARD.bin"
+    },
+    {
+      "name": "CAM_ABS_DATA",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CAM_ABS_DATA"
+    },
+    {
+      "name": "CAM_AEROPT_DATA",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CAM_AEROPT_DATA"
+    },
+    {
+      "name": "CAMtr_volume_mixing_ratio",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CAMtr_volume_mixing_ratio"
+    },
+    {
+      "name": "CAMtr_volume_mixing_ratio.A1B",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CAMtr_volume_mixing_ratio.A1B"
+    },
+    {
+      "name": "CAMtr_volume_mixing_ratio.A2",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CAMtr_volume_mixing_ratio.A2"
+    },
+    {
+      "name": "CAMtr_volume_mixing_ratio.RCP4.5",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CAMtr_volume_mixing_ratio.RCP4.5"
+    },
+    {
+      "name": "CAMtr_volume_mixing_ratio.RCP6",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CAMtr_volume_mixing_ratio.RCP6"
+    },
+    {
+      "name": "CAMtr_volume_mixing_ratio.RCP8.5",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CAMtr_volume_mixing_ratio.RCP8.5"
+    },
+    {
+      "name": "CAMtr_volume_mixing_ratio.SSP119",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CAMtr_volume_mixing_ratio.SSP119"
+    },
+    {
+      "name": "CAMtr_volume_mixing_ratio.SSP126",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CAMtr_volume_mixing_ratio.SSP126"
+    },
+    {
+      "name": "CAMtr_volume_mixing_ratio.SSP245",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CAMtr_volume_mixing_ratio.SSP245"
+    },
+    {
+      "name": "CAMtr_volume_mixing_ratio.SSP370",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CAMtr_volume_mixing_ratio.SSP370"
+    },
+    {
+      "name": "CAMtr_volume_mixing_ratio.SSP585",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CAMtr_volume_mixing_ratio.SSP585"
+    },
+    {
+      "name": "CCN_ACTIVATE.BIN",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CCN_ACTIVATE.BIN"
+    },
+    {
+      "name": "CLM_ALB_ICE_DFS_DATA",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CLM_ALB_ICE_DFS_DATA"
+    },
+    {
+      "name": "CLM_ALB_ICE_DRC_DATA",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CLM_ALB_ICE_DRC_DATA"
+    },
+    {
+      "name": "CLM_ASM_ICE_DFS_DATA",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CLM_ASM_ICE_DFS_DATA"
+    },
+    {
+      "name": "CLM_ASM_ICE_DRC_DATA",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CLM_ASM_ICE_DRC_DATA"
+    },
+    {
+      "name": "CLM_DRDSDT0_DATA",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CLM_DRDSDT0_DATA"
+    },
+    {
+      "name": "CLM_EXT_ICE_DFS_DATA",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CLM_EXT_ICE_DFS_DATA"
+    },
+    {
+      "name": "CLM_EXT_ICE_DRC_DATA",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CLM_EXT_ICE_DRC_DATA"
+    },
+    {
+      "name": "CLM_KAPPA_DATA",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CLM_KAPPA_DATA"
+    },
+    {
+      "name": "CLM_TAU_DATA",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CLM_TAU_DATA"
+    },
+    {
+      "name": "ETAMPNEW_DATA",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/ETAMPNEW_DATA"
+    },
+    {
+      "name": "ETAMPNEW_DATA.expanded_rain",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/ETAMPNEW_DATA.expanded_rain"
+    },
+    {
+      "name": "GENPARM.TBL",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/GENPARM.TBL"
+    },
+    {
+      "name": "HLC.TBL",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/HLC.TBL"
+    },
+    {
+      "name": "LANDUSE.TBL",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/LANDUSE.TBL"
+    },
+    {
+      "name": "METGRID.TBL",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/METGRID.TBL"
+    },
+    {
+      "name": "MPTABLE.TBL",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/MPTABLE.TBL"
+    },
+    {
+      "name": "RRTMG_LW_DATA",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/RRTMG_LW_DATA"
+    },
+    {
+      "name": "RRTMG_SW_DATA",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/RRTMG_SW_DATA"
+    },
+    {
+      "name": "RRTM_DATA",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/RRTM_DATA"
+    },
+    {
+      "name": "SOILPARM.TBL",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/SOILPARM.TBL"
+    },
+    {
+      "name": "STOCHPERT.TBL",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/STOCHPERT.TBL"
+    },
+    {
+      "name": "TREECANOPY.NEW.TBL",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/TREECANOPY.NEW.TBL"
+    },
+    {
+      "name": "TREECANOPY.NEW2.TBL",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/TREECANOPY.NEW2.TBL"
+    },
+    {
+      "name": "TREECANOPY.TBL",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/TREECANOPY.TBL"
+    },
+    {
+      "name": "TREECANOPY21.TBL",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/TREECANOPY21.TBL"
+    },
+    {
+      "name": "URBPARM.TBL",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/URBPARM.TBL"
+    },
+    {
+      "name": "URBPARM_LCZ.TBL",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/URBPARM_LCZ.TBL"
+    },
+    {
+      "name": "URBPARM_UZE.TBL",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/URBPARM_UZE.TBL"
+    },
+    {
+      "name": "VEGPARM.TBL",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/VEGPARM.TBL"
+    },
+    {
+      "name": "aerosol.formatted",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/aerosol.formatted"
+    },
+    {
+      "name": "aerosol_lat.formatted",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/aerosol_lat.formatted"
+    },
+    {
+      "name": "aerosol_lon.formatted",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/aerosol_lon.formatted"
+    },
+    {
+      "name": "aerosol_plev.formatted",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/aerosol_plev.formatted"
+    },
+    {
+      "name": "bulkdens.asc_s_0_03_0_9",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/bulkdens.asc_s_0_03_0_9"
+    },
+    {
+      "name": "bulkradii.asc_s_0_03_0_9",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/bulkradii.asc_s_0_03_0_9"
+    },
+    {
+      "name": "capacity.asc",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/capacity.asc"
+    },
+    {
+      "name": "coeff_p.asc",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/coeff_p.asc"
+    },
+    {
+      "name": "coeff_q.asc",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/coeff_q.asc"
+    },
+    {
+      "name": "constants.asc",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/constants.asc"
+    },
+    {
+      "name": "eclipse_besselian_elements.dat",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/eclipse_besselian_elements.dat"
+    },
+    {
+      "name": "geo_em.d01.nc",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/geo_em.d01.nc"
+    },
+    {
+      "name": "grib2map.tbl",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/grib2map.tbl"
+    },
+    {
+      "name": "gribmap.txt",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/gribmap.txt"
+    },
+    {
+      "name": "ishmael-gamma-tab.bin",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/ishmael-gamma-tab.bin"
+    },
+    {
+      "name": "ishmael-qi-qc.bin",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/ishmael-qi-qc.bin"
+    },
+    {
+      "name": "ishmael-qi-qr.bin",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/ishmael-qi-qr.bin"
+    },
+    {
+      "name": "kernels.asc_s_0_03_0_9",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/kernels.asc_s_0_03_0_9"
+    },
+    {
+      "name": "kernels_z.asc",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/kernels_z.asc"
+    },
+    {
+      "name": "masses.asc",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/masses.asc"
+    },
+    {
+      "name": "namelist.input",
+      "is_symlink": false,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": null
+    },
+    {
+      "name": "ozone.formatted",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/ozone.formatted"
+    },
+    {
+      "name": "ozone_lat.formatted",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/ozone_lat.formatted"
+    },
+    {
+      "name": "ozone_plev.formatted",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/ozone_plev.formatted"
+    },
+    {
+      "name": "p3_lookupTable_1.dat-v5.4_2momI",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/p3_lookupTable_1.dat-v5.4_2momI"
+    },
+    {
+      "name": "p3_lookupTable_1.dat-v5.4_3momI",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/p3_lookupTable_1.dat-v5.4_3momI"
+    },
+    {
+      "name": "p3_lookupTable_2.dat-v5.3",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/p3_lookupTable_2.dat-v5.3"
+    },
+    {
+      "name": "runs",
+      "is_symlink": false,
+      "is_directory": true,
+      "is_regular_file": false,
+      "symlink_target": null
+    },
+    {
+      "name": "termvels.asc",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/termvels.asc"
+    },
+    {
+      "name": "tr49t67",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/tr49t67"
+    },
+    {
+      "name": "tr49t85",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/tr49t85"
+    },
+    {
+      "name": "tr67t85",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/tr67t85"
+    },
+    {
+      "name": "wind-turbine-1.tbl",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wind-turbine-1.tbl"
+    },
+    {
+      "name": "windturbines.txt",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/windturbines.txt"
+    },
+    {
+      "name": "wrf.exe",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/main/wrf.exe"
+    },
+    {
+      "name": "wrfbdy_d01",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfbdy_d01"
+    },
+    {
+      "name": "wrfchainp_d01",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfchainp_d01"
+    },
+    {
+      "name": "wrfinput_d01",
+      "is_symlink": true,
+      "is_directory": false,
+      "is_regular_file": true,
+      "symlink_target": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfinput_d01"
+    }
+  ],
+  "executable_link": {
+    "path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/wrf.exe",
+    "target": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/main/wrf.exe",
+    "sha256": "f467755ee9952dc2b1806e9dec3220689e2f26a2939234b0959065b1c357cd41",
+    "matches_receipt": true
+  },
+  "input_files": [
+    {
+      "name": "wrfinput_d01",
+      "source_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfinput_d01",
+      "case_link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/wrfinput_d01",
+      "sha256": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+      "matches_saved_receipt": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "wrfbdy_d01",
+      "source_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfbdy_d01",
+      "case_link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/wrfbdy_d01",
+      "sha256": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c",
+      "matches_saved_receipt": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "wrfchainp_d01",
+      "source_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfchainp_d01",
+      "case_link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/wrfchainp_d01",
+      "sha256": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3",
+      "matches_saved_receipt": true,
+      "link_is_symlink": true
+    }
+  ],
+  "runtime_static_links": [
+    {
+      "name": "BROADBAND_CLOUD_GODDARD.bin",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/BROADBAND_CLOUD_GODDARD.bin",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/BROADBAND_CLOUD_GODDARD.bin",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 172680,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "CAM_ABS_DATA",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/CAM_ABS_DATA",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CAM_ABS_DATA",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 20580056,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "CAM_AEROPT_DATA",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/CAM_AEROPT_DATA",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CAM_AEROPT_DATA",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 18208,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "CAMtr_volume_mixing_ratio",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/CAMtr_volume_mixing_ratio",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CAMtr_volume_mixing_ratio",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 42780,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "CAMtr_volume_mixing_ratio.A1B",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/CAMtr_volume_mixing_ratio.A1B",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CAMtr_volume_mixing_ratio.A1B",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 955,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "CAMtr_volume_mixing_ratio.A2",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/CAMtr_volume_mixing_ratio.A2",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CAMtr_volume_mixing_ratio.A2",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 955,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "CAMtr_volume_mixing_ratio.RCP4.5",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/CAMtr_volume_mixing_ratio.RCP4.5",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CAMtr_volume_mixing_ratio.RCP4.5",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 42838,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "CAMtr_volume_mixing_ratio.RCP6",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/CAMtr_volume_mixing_ratio.RCP6",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CAMtr_volume_mixing_ratio.RCP6",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 42838,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "CAMtr_volume_mixing_ratio.RCP8.5",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/CAMtr_volume_mixing_ratio.RCP8.5",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CAMtr_volume_mixing_ratio.RCP8.5",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 42838,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "CAMtr_volume_mixing_ratio.SSP119",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/CAMtr_volume_mixing_ratio.SSP119",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CAMtr_volume_mixing_ratio.SSP119",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 42781,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "CAMtr_volume_mixing_ratio.SSP126",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/CAMtr_volume_mixing_ratio.SSP126",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CAMtr_volume_mixing_ratio.SSP126",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 42780,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "CAMtr_volume_mixing_ratio.SSP245",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/CAMtr_volume_mixing_ratio.SSP245",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CAMtr_volume_mixing_ratio.SSP245",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 42780,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "CAMtr_volume_mixing_ratio.SSP370",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/CAMtr_volume_mixing_ratio.SSP370",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CAMtr_volume_mixing_ratio.SSP370",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 42780,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "CAMtr_volume_mixing_ratio.SSP585",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/CAMtr_volume_mixing_ratio.SSP585",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CAMtr_volume_mixing_ratio.SSP585",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 42780,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "CCN_ACTIVATE.BIN",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/CCN_ACTIVATE.BIN",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CCN_ACTIVATE.BIN",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 35288,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "CLM_ALB_ICE_DFS_DATA",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/CLM_ALB_ICE_DFS_DATA",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CLM_ALB_ICE_DFS_DATA",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 148571,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "CLM_ALB_ICE_DRC_DATA",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/CLM_ALB_ICE_DRC_DATA",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CLM_ALB_ICE_DRC_DATA",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 148571,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "CLM_ASM_ICE_DFS_DATA",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/CLM_ASM_ICE_DFS_DATA",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CLM_ASM_ICE_DFS_DATA",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 148571,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "CLM_ASM_ICE_DRC_DATA",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/CLM_ASM_ICE_DRC_DATA",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CLM_ASM_ICE_DRC_DATA",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 148571,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "CLM_DRDSDT0_DATA",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/CLM_DRDSDT0_DATA",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CLM_DRDSDT0_DATA",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 68448,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "CLM_EXT_ICE_DFS_DATA",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/CLM_EXT_ICE_DFS_DATA",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CLM_EXT_ICE_DFS_DATA",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 148571,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "CLM_EXT_ICE_DRC_DATA",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/CLM_EXT_ICE_DRC_DATA",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CLM_EXT_ICE_DRC_DATA",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 148571,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "CLM_KAPPA_DATA",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/CLM_KAPPA_DATA",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CLM_KAPPA_DATA",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 68448,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "CLM_TAU_DATA",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/CLM_TAU_DATA",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/CLM_TAU_DATA",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 68448,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "ETAMPNEW_DATA",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/ETAMPNEW_DATA",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/ETAMPNEW_DATA",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 30200,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "ETAMPNEW_DATA.expanded_rain",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/ETAMPNEW_DATA.expanded_rain",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/ETAMPNEW_DATA.expanded_rain",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 43400,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "GENPARM.TBL",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/GENPARM.TBL",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/GENPARM.TBL",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 267,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "HLC.TBL",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/HLC.TBL",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/HLC.TBL",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 5513,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "LANDUSE.TBL",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/LANDUSE.TBL",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/LANDUSE.TBL",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 40650,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "METGRID.TBL",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/METGRID.TBL",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/METGRID.TBL",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 37308,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "MPTABLE.TBL",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/MPTABLE.TBL",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/MPTABLE.TBL",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 56140,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "RRTMG_LW_DATA",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/RRTMG_LW_DATA",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/RRTMG_LW_DATA",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 847552,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "RRTMG_SW_DATA",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/RRTMG_SW_DATA",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/RRTMG_SW_DATA",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 680368,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "RRTM_DATA",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/RRTM_DATA",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/RRTM_DATA",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 749248,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "SOILPARM.TBL",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/SOILPARM.TBL",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/SOILPARM.TBL",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 4399,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "STOCHPERT.TBL",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/STOCHPERT.TBL",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/STOCHPERT.TBL",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 1105,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "TREECANOPY.NEW.TBL",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/TREECANOPY.NEW.TBL",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/TREECANOPY.NEW.TBL",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 1945,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "TREECANOPY.NEW2.TBL",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/TREECANOPY.NEW2.TBL",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/TREECANOPY.NEW2.TBL",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 1945,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "TREECANOPY.TBL",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/TREECANOPY.TBL",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/TREECANOPY.TBL",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 1945,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "TREECANOPY21.TBL",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/TREECANOPY21.TBL",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/TREECANOPY21.TBL",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 1945,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "URBPARM.TBL",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/URBPARM.TBL",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/URBPARM.TBL",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 12038,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "URBPARM_LCZ.TBL",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/URBPARM_LCZ.TBL",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/URBPARM_LCZ.TBL",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 16132,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "URBPARM_UZE.TBL",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/URBPARM_UZE.TBL",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/URBPARM_UZE.TBL",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 8550,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "VEGPARM.TBL",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/VEGPARM.TBL",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/VEGPARM.TBL",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 23037,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "aerosol.formatted",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/aerosol.formatted",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/aerosol.formatted",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 29772567,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "aerosol_lat.formatted",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/aerosol_lat.formatted",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/aerosol_lat.formatted",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 736,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "aerosol_lon.formatted",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/aerosol_lon.formatted",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/aerosol_lon.formatted",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 1152,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "aerosol_plev.formatted",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/aerosol_plev.formatted",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/aerosol_plev.formatted",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 192,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "bulkdens.asc_s_0_03_0_9",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/bulkdens.asc_s_0_03_0_9",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/bulkdens.asc_s_0_03_0_9",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 3042,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "bulkradii.asc_s_0_03_0_9",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/bulkradii.asc_s_0_03_0_9",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/bulkradii.asc_s_0_03_0_9",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 3042,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "capacity.asc",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/capacity.asc",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/capacity.asc",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 3042,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "coeff_p.asc",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/coeff_p.asc",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/coeff_p.asc",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 206228,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "coeff_q.asc",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/coeff_q.asc",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/coeff_q.asc",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 9398,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "constants.asc",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/constants.asc",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/constants.asc",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 3950,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "eclipse_besselian_elements.dat",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/eclipse_besselian_elements.dat",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/eclipse_besselian_elements.dat",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 80040,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "geo_em.d01.nc",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/geo_em.d01.nc",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/geo_em.d01.nc",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 8397424,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "grib2map.tbl",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/grib2map.tbl",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/grib2map.tbl",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 30547,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "gribmap.txt",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/gribmap.txt",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/gribmap.txt",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 65700,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "ishmael-gamma-tab.bin",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/ishmael-gamma-tab.bin",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/ishmael-gamma-tab.bin",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 6060012,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "ishmael-qi-qc.bin",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/ishmael-qi-qc.bin",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/ishmael-qi-qc.bin",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 23346576,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "ishmael-qi-qr.bin",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/ishmael-qi-qr.bin",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/ishmael-qi-qr.bin",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 46693152,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "kernels.asc_s_0_03_0_9",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/kernels.asc_s_0_03_0_9",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/kernels.asc_s_0_03_0_9",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 702587,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "kernels_z.asc",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/kernels_z.asc",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/kernels_z.asc",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 43016,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "masses.asc",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/masses.asc",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/masses.asc",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 3042,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "ozone.formatted",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/ozone.formatted",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/ozone.formatted",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 543744,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "ozone_lat.formatted",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/ozone_lat.formatted",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/ozone_lat.formatted",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 536,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "ozone_plev.formatted",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/ozone_plev.formatted",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/ozone_plev.formatted",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 708,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "p3_lookupTable_1.dat-v5.4_2momI",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/p3_lookupTable_1.dat-v5.4_2momI",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/p3_lookupTable_1.dat-v5.4_2momI",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 1606038,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "p3_lookupTable_1.dat-v5.4_3momI",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/p3_lookupTable_1.dat-v5.4_3momI",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/p3_lookupTable_1.dat-v5.4_3momI",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 17886038,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "p3_lookupTable_2.dat-v5.3",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/p3_lookupTable_2.dat-v5.3",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/p3_lookupTable_2.dat-v5.3",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 15250032,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "termvels.asc",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/termvels.asc",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/termvels.asc",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 3043,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "tr49t67",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/tr49t67",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/tr49t67",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 748503,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "tr49t85",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/tr49t85",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/tr49t85",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 748503,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "tr67t85",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/tr67t85",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/tr67t85",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 748503,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "wind-turbine-1.tbl",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/wind-turbine-1.tbl",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wind-turbine-1.tbl",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 485,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "windturbines.txt",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/windturbines.txt",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/windturbines.txt",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 69,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "wrfbdy_d01",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/wrfbdy_d01",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfbdy_d01",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 103922656,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "wrfchainp_d01",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/wrfchainp_d01",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfchainp_d01",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 3458043,
+      "target_exists": true,
+      "link_is_symlink": true
+    },
+    {
+      "name": "wrfinput_d01",
+      "link_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/wrfinput_d01",
+      "target_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfinput_d01",
+      "kind_from_historical_manifest": "read-only-existing-input-or-table-link",
+      "target_is_directory": false,
+      "target_size_bytes": 374429080,
+      "target_exists": true,
+      "link_is_symlink": true
+    }
+  ],
+  "runtime_static_link_count": 79,
+  "forbidden_output_links": [],
+  "no_forecast_restart_rsl_or_prior_output_staged": true,
+  "fresh_empty_runs_directory": true,
+  "build_identity": {
+    "patch_manifest_sha256": "8b0a650d6bd4fb16941f52e0754c45581dc73e1ad5d8db23661a9e4dcb4d5ea8",
+    "isolated_experimental_wrapper_sha256": "e4ab55a672f28c47d341ebf75ce589b32c2bbaa4da960c6b04157ec682a46965",
+    "isolated_iso_F_sha256": "4c7f9f22df54e91f30f97d1d8c0b8921537913f4236c6baf56c5579701a64f07",
+    "wrf_executable_sha256": "f467755ee9952dc2b1806e9dec3220689e2f26a2939234b0959065b1c357cd41",
+    "kdm6_library_sha256": "64cddefe4fce336a7b9a3979278692324a97a17fe7d5264224bcc05a7f20be2d",
+    "abi_version": 2,
+    "v2_args_size_bytes": 344,
+    "historically_verified_model_version_line": "WRF V4.6.0 MODEL",
+    "historically_verified_runtime_marker": "KDM6AD_PRIVATE_EXPERIMENTAL_MP337 physics_variant=2 dry_number=1",
+    "wrapper_source_entries": "physics_variant=KDM6_PHYSICS_CONSERVATIVE_NORMALIZED, dry_number=1, value_only=1",
+    "current_loaded_libraries_not_reobserved": true,
+    "full_private_host_tree_hash_available": false,
+    "full_tree_hash_or_new_build_gate_imposed": false,
+    "source_hash_records": [
+      {
+        "role": "wrf.exe",
+        "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/main/wrf.exe",
+        "sha256": "f467755ee9952dc2b1806e9dec3220689e2f26a2939234b0959065b1c357cd41",
+        "matches_saved_receipt": true,
+        "size_bytes": 50467544
+      },
+      {
+        "role": "libkdm6_c.2.0.0.dylib",
+        "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+        "sha256": "64cddefe4fce336a7b9a3979278692324a97a17fe7d5264224bcc05a7f20be2d",
+        "matches_saved_receipt": true,
+        "size_bytes": 1041224
+      },
+      {
+        "role": "module_mp_kdm6ad_cons.F",
+        "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/phys/module_mp_kdm6ad_cons.F",
+        "sha256": "e4ab55a672f28c47d341ebf75ce589b32c2bbaa4da960c6b04157ec682a46965",
+        "matches_saved_receipt": true,
+        "size_bytes": 25242
+      },
+      {
+        "role": "kdm6_iso_c.F",
+        "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/phys/kdm6_iso_c.F",
+        "sha256": "4c7f9f22df54e91f30f97d1d8c0b8921537913f4236c6baf56c5579701a64f07",
+        "matches_saved_receipt": true,
+        "size_bytes": 19129
+      },
+      {
+        "role": "public_kdm6_iso_c.f90",
+        "path": "/private/tmp/KDM6AD-research-rc-20261007/source/libtorch/bridge/kdm6_iso_c.f90",
+        "sha256": "4c7f9f22df54e91f30f97d1d8c0b8921537913f4236c6baf56c5579701a64f07",
+        "matches_saved_receipt": true,
+        "size_bytes": 19129
+      },
+      {
+        "role": "patch_manifest.json",
+        "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/source_patch/patch_manifest.json",
+        "sha256": "8b0a650d6bd4fb16941f52e0754c45581dc73e1ad5d8db23661a9e4dcb4d5ea8",
+        "matches_saved_receipt": true,
+        "size_bytes": 6709
+      },
+      {
+        "role": "run_ss_case.py",
+        "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/run_ss_case.py",
+        "sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+        "matches_saved_receipt": true,
+        "size_bytes": 49126
+      }
+    ],
+    "loader": {
+      "otool_L_has": "@rpath/libkdm6_c.2.dylib, @rpath/libtorch.dylib, @rpath/libtorch_cpu.dylib, @rpath/libc10.dylib",
+      "rpaths_include": [
+        "@loader_path/../../../libtorch/install/lib",
+        "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib",
+        "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib",
+        "@loader_path"
+      ],
+      "planned_observer": "read-only lsof of live WRF PID (same observer method as historical receipt); compare loaded paths to the exact KDM6 dylib and matching Torch libdir; no DYLD_LIBRARY_PATH override",
+      "historical_loaded_paths": [
+        "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+        "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch.dylib",
+        "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch_cpu.dylib",
+        "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libc10.dylib"
+      ],
+      "planned_observer_chosen": true,
+      "observer_previously_traced_in_target_receipt": true,
+      "dyld_dependencies": [
+        "@rpath/libkdm6_c.2.dylib",
+        "@rpath/libtorch.dylib",
+        "@rpath/libtorch_cpu.dylib",
+        "@rpath/libc10.dylib"
+      ]
+    },
+    "manifest_scope": "consumed wrapper/ISO source, executable, ABI library, runner, input files, staged namelist, fixed environment and loaded-library observation; no full host-tree hash",
+    "run_harness_path_used_for_plan": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/run_ss_case.py",
+    "run_harness_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+    "canonical_local_harness_path": "/Users/yhlee/KDM6AD-k/harness/run_ss_case.py",
+    "canonical_local_harness_sha256": "fc92f1eff06fb0a5b4d417a6ef24aecfb1fdeee029fa4d848838de69845ad49f",
+    "canonical_local_harness_matches_prior_target_runner": false,
+    "archived_build_receipt_source_head": "30931e52f99e38f9abcd6e7e3b8cd055227a5c23",
+    "preflight_matches_archived_build_receipt_consumed_identities": true,
+    "preflight_new_build_claimed": false,
+    "actual_runtime_library_load_observed": false,
+    "current_pr_review_head_build_attested": false,
+    "tracked_libtorch_diff_from_archived_source_to_review_head": {
+      "from": "30931e52f99e38f9abcd6e7e3b8cd055227a5c23",
+      "to": "c543b98cc42f0e906b63568df209d974300d771d",
+      "command_scope": "git diff --name-status <from> <to> -- libtorch",
+      "result": "no tracked path differences",
+      "interpretation": "Tracked C++/libtorch source snapshot is unchanged across these commits. This does not establish which source snapshot produced the installed dylib and does not attest a PR393 rebuild."
+    }
+  },
+  "planned_run": {
+    "argv": [
+      "python",
+      "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/run_ss_case.py",
+      "--mp",
+      "337",
+      "--minutes",
+      "358",
+      "--seconds",
+      "0",
+      "--history",
+      "0",
+      "--history-s",
+      "20",
+      "--np",
+      "1",
+      "--fixed-dt",
+      "--label",
+      "viirs_norm2_dry1_055540_055800",
+      "--case",
+      "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal"
+    ],
+    "environment": {
+      "OMP_NUM_THREADS": "1",
+      "VECLIB_MAXIMUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "OMP_THREAD_LIMIT": "1"
+    },
+    "physics_mode": {
+      "mp_physics": 337,
+      "physics_variant": 2,
+      "dry_number": 1,
+      "value_only": 1
+    },
+    "run_start": "2025-07-19_00:00:00",
+    "run_end": "2025-07-19_05:58:00",
+    "model_dt_seconds": 20,
+    "history_begin": {
+      "history_begin_d": 0,
+      "history_begin_h": 5,
+      "history_begin_m": 55,
+      "history_begin_s": 40
+    },
+    "history_interval": {
+      "history_interval": 0,
+      "history_interval_s": 20
+    },
+    "candidate": "fixed VIIRS row205/col27, AMI row320/col48, native j86/i48; nominal diagnostic only",
+    "observation_qa_or_clock_closure_is_not_a_model_run_prerequisite": true,
+    "separate_launch_decision_required": true
+  },
+  "historical_run_context": {
+    "old_run_exit_code": 1,
+    "old_run_experiment_valid": false,
+    "old_elapsed_wall_seconds": 20823,
+    "new_run_duration_estimate_made": false,
+    "old_outputs_are_not_inputs_or_restart": true
+  },
+  "verification": {
+    "case_tree_has_only_copied_namelist_runs_dir_and_80_symlinks": true,
+    "symlink_count": 80,
+    "forbidden_output_names_absent": true,
+    "input_hashes_match_saved_receipts": true,
+    "small_source_build_hashes_match_saved_receipts": true,
+    "forecast_read_or_hashed": false,
+    "run_launched": false,
+    "preflight_proves_archive_artifact_identity_only": true,
+    "preflight_proves_current_pr_build": false,
+    "preflight_proves_runtime_load": false
+  },
+  "limitations": [
+    "This is filesystem preparation only; no host executable was run.",
+    "Static links match the prior curated case inventory and current targets/sizes were checked; static contents were not hashed.",
+    "Historical build metadata does not certify the complete private WRF source tree; only recorded build/source identities are checked.",
+    "Runtime-loaded library paths for this new case remain pending the planned live observer.",
+    "Normal completion, exact output Times, and experiment_valid=true remain pending any separately authorized run."
+  ],
+  "public_review_head": "c543b98cc42f0e906b63568df209d974300d771d",
+  "historical_case_manifest_sha256": "88052927f4385938e82e79f60636e92095ab869c7e3f7b15ff6a5ecfb51cacc3",
+  "runtime_static_files": {
+    "curated_link_count": 79,
+    "all_paths_exist": true,
+    "size_matches_old_case_manifest": true,
+    "per_file_active_usage_traced": false,
+    "status": "exact prior curated link inventory staged; no missing runtime path found, but this does not assert every link is exercised by this physics selection",
+    "open_items": [
+      "Per-file active reads of static tables were not independently traced."
+    ]
+  },
+  "open_items": [
+    "Owner decision to launch a long native run remains open.",
+    "Per-file active reads of the curated runtime static tables remain untraced.",
+    "Runtime-loaded library paths for the fresh case are unobserved until a separately authorized run."
+  ],
+  "source_relation": {
+    "public_review_head": "c543b98cc42f0e906b63568df209d974300d771d",
+    "archived_build_receipt_source_head": "30931e52f99e38f9abcd6e7e3b8cd055227a5c23",
+    "consumed_artifact_preflight_matches_archive": true,
+    "new_current_pr_build_claimed": false,
+    "actual_runtime_loader_observation_made": false
+  }
+}

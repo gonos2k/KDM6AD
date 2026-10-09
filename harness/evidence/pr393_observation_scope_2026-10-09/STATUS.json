@@ -1,0 +1,337 @@
+{
+  "schema": "pr393_observation_scope_status_v1",
+  "review": {
+    "public_head": "c543b98cc42f0e906b63568df209d974300d771d",
+    "base_main": "ce77afa24c02a8e08f0f9e7aec6ee7d75340fc84",
+    "pr_status_at_review": "open",
+    "native_or_rttov_run_launched": false,
+    "forecast_read_or_hashed": false,
+    "external_model_or_reanalysis_acquired": false,
+    "candidate_changed": false,
+    "private_host_present_in_worktree": false
+  },
+  "candidate": {
+    "viirs": {
+      "satellite": "NOAA-20",
+      "product_file": "JRR-CloudPhase_v3r2_j01_s202507190555475_e202507190557102_c202507190621171.nc",
+      "product_sha256": "7fef6df795254f628c79e92c25816fed720e855bba46a9ba74adb92abac0cfe2",
+      "object_path": "VIIRS-JRR-CloudPhase/2025/07/19/JRR-CloudPhase_v3r2_j01_s202507190555475_e202507190557102_c202507190621171.nc",
+      "candidate_screen": "phase 1, stored QA 0, XLAND 2, <=3500 m, 10-cell edge margin, then minimum nominal-center distance",
+      "row_col_zero_based": [
+        205,
+        27
+      ],
+      "latitude_longitude": [
+        35.4156379699707,
+        122.14338684082031
+      ],
+      "cloud_phase": 1,
+      "cloud_type": 2,
+      "cloud_phase_flag_stored_byte": 0,
+      "qa_science_approved": false
+    },
+    "ami": {
+      "product": "GK-2A AMI L1B LA020GE",
+      "slot_label": "202507190556",
+      "row_col_zero_based": [
+        320,
+        48
+      ],
+      "latitude_longitude": [
+        35.41925069326254,
+        122.13724164654832
+      ],
+      "ir105_bt_K": 291.3025921545636,
+      "all_nine_dqf_zero": true,
+      "pixel_utc_verified": false,
+      "files": [
+        {
+          "name": "gk2a_ami_le1b_wv063_la020ge_202507190556.nc",
+          "sha256": "83b97370fac7df350db462a2024e53255a01b7bc7c69e7d45ea0168f348d8754"
+        },
+        {
+          "name": "gk2a_ami_le1b_wv069_la020ge_202507190556.nc",
+          "sha256": "0c7fea702b255db8c9273d494d2e4b9c5ec86dca442e6059ebf9d91a9a8968e6"
+        },
+        {
+          "name": "gk2a_ami_le1b_wv073_la020ge_202507190556.nc",
+          "sha256": "470eab1587fa70e56dfb3745dd402f5619aba4bc6d11b0844fa6987602c3c7f0"
+        },
+        {
+          "name": "gk2a_ami_le1b_ir087_la020ge_202507190556.nc",
+          "sha256": "d98e0b5cd785c75f160982eacf57fb749674f4f0c471f27e1377dfa2767f2b50"
+        },
+        {
+          "name": "gk2a_ami_le1b_ir096_la020ge_202507190556.nc",
+          "sha256": "40f5cbcdd1bf15485cf3ddc116f4a3d7699701f230810d49f04942d6d5ee102a"
+        },
+        {
+          "name": "gk2a_ami_le1b_ir105_la020ge_202507190556.nc",
+          "sha256": "824ee57213da084e8f3f129fd2767cee1f68e0bb10ef101d7419b7c4ec3ea889"
+        },
+        {
+          "name": "gk2a_ami_le1b_ir112_la020ge_202507190556.nc",
+          "sha256": "8370508b1c70364085311772bd9b092876be7a7b6accf8ed71112172550f647d"
+        },
+        {
+          "name": "gk2a_ami_le1b_ir123_la020ge_202507190556.nc",
+          "sha256": "19d1a4a9c60bee40cd6c7efe8a760189d72aa3f8f488b168cb8e35fc3963542f"
+        },
+        {
+          "name": "gk2a_ami_le1b_ir133_la020ge_202507190556.nc",
+          "sha256": "6440ea866f17f9336abed1d0f52329a2ec29d3ad89908a26320535473019835d"
+        }
+      ]
+    },
+    "native": {
+      "grid_shape": [
+        282,
+        234
+      ],
+      "j_i_zero_based": [
+        86,
+        48
+      ],
+      "fortran_j_i_one_based": [
+        87,
+        49
+      ],
+      "nominal_viirs_center_distance_m": 7.3673587006,
+      "ami_viirs_center_distance_m": 686.6436229,
+      "ami_native_center_distance_m": 679.550499,
+      "native_vertical_levels": 39,
+      "center_distance_is_footprint_match": false
+    }
+  },
+  "retrieval_product_objects": {
+    "cloud_height": {
+      "name": "JRR-CloudHeight_v3r2_j01_s202507190555475_e202507190557102_c202507190621171.nc",
+      "generation": "1752906345359928",
+      "full_object_downloaded": false,
+      "full_file_sha256_verified": false
+    },
+    "cloud_dcomp": {
+      "name": "JRR-CloudDCOMP_v3r2_j01_s202507190555475_e202507190557102_c202507190627286.nc",
+      "generation": "1752906525369387",
+      "full_object_downloaded": false,
+      "full_file_sha256_verified": false
+    },
+    "viirs_gmtco_sha256": "2a194c417533a1087543cc7a91b1de2a5a6d8d71d1d71e2bfeb1571cc9f8dd0c"
+  },
+  "quality_and_structure": {
+    "viirs_cloudphaseflag_declared_valid_range": [
+      0,
+      1
+    ],
+    "selected_stored_byte": 0,
+    "granule_nonfill_out_of_declared_range_count": 214771,
+    "historical_default_mask_false_fill_count": 19338,
+    "actual_minus128_fill_count": 0,
+    "bit_decoder_version_matched": false,
+    "cloud_height_m": 587.7369384765625,
+    "cloud_height_field_datum_verified": false,
+    "height_qa": 0,
+    "height_parameter_flags": [
+      3,
+      1,
+      1,
+      1,
+      1
+    ],
+    "product_parallax_corrected_lat_lon": [
+      35.415225982666016,
+      122.1265640258789
+    ],
+    "product_parallax_center_shift_m": 1525.1859117298873,
+    "dcomp_equalityflag": 17,
+    "dcomp_equalityflag_valid_range": [
+      0,
+      6
+    ],
+    "dcomp_adopted_as_truth": false,
+    "warm_single_layer_nonprecipitating_full_column_verified": false
+  },
+  "timing": {
+    "viirs_granule_utc_anchor": "2025-07-19T05:55:47.547447Z",
+    "viirs_scan_index_zero_based": 12,
+    "viirs_detector_index_zero_based": 13,
+    "viirs_scan_start_bracket_utc": [
+      "2025-07-19T05:56:08.986512Z",
+      "2025-07-19T05:56:10.773095Z"
+    ],
+    "viirs_per_pixel_time_verified": false,
+    "ami_scene_acquisition_label": "20250719_055656",
+    "ami_scene_label_basis": "OBT of first swath/packet per KMA L1B guide",
+    "ami_planned_utc_label": "20250719_055000",
+    "ami_obs_start_seconds": 806176616.1714611,
+    "ami_obs_end_seconds": 806176676.0161434,
+    "ami_time_synchro_utc_seconds": 806176616.1774336,
+    "ami_time_synchro_obt_seconds": 806176616.1714611,
+    "ami_sync_pair_offset_seconds": 0.0059725,
+    "ami_numeric_epoch_verified": false,
+    "ami_pixel_utc_verified": false,
+    "noon_epoch_interval": [
+      "2025-07-19T05:56:56.171461Z",
+      "2025-07-19T05:57:56.016143Z"
+    ],
+    "noon_epoch_interval_is_exploratory_only": true
+  },
+  "parallax_and_footprint": {
+    "official_acha_relation": "surface-relative height (Zc-Zs) times view-angle geometry",
+    "local_tangent_scale_m_per_1000m_assumed_surface_relative_height": 2866.6092,
+    "587_74m_above_surface_scenario_shift_m": 1684.8121,
+    "actual_cloud_displacement_verified": false,
+    "physical_footprint_overlap_verified": false,
+    "ami_nominal_spatial_resolution_km": 2.0,
+    "ami_resampling_kernel": "SINC"
+  },
+  "target_run_spec": {
+    "status": "prepared_not_launched",
+    "scenario": "A_nominal_coordinate_diagnostic",
+    "owner_resource_decision": "open",
+    "full_private_host_source_tree_hash_available": false,
+    "fresh_full_source_build_manifest_required_before_future_launch": false,
+    "consumed_artifact_manifest_required_before_future_launch": true,
+    "observation_qa_or_clock_closure_required_to_run": false,
+    "physical_observation_matchup_approved": false,
+    "candidate_change_allowed": false,
+    "argv_template": [
+      "python",
+      "harness/run_ss_case.py",
+      "--mp",
+      "337",
+      "--minutes",
+      "358",
+      "--seconds",
+      "0",
+      "--history",
+      "0",
+      "--history-s",
+      "20",
+      "--np",
+      "1",
+      "--fixed-dt",
+      "--label",
+      "viirs_norm2_dry1_055540_055800",
+      "--case",
+      "<new isolated case directory>"
+    ],
+    "history_begin": {
+      "history_begin_d": 0,
+      "history_begin_h": 5,
+      "history_begin_m": 55,
+      "history_begin_s": 40
+    },
+    "history_interval": {
+      "history_interval": 0,
+      "history_interval_s": 20
+    },
+    "expected_model_start": "2025-07-19_00:00:00",
+    "expected_output_times": [
+      "2025-07-19_05:55:40",
+      "2025-07-19_05:56:00",
+      "2025-07-19_05:56:20",
+      "2025-07-19_05:56:40",
+      "2025-07-19_05:57:00",
+      "2025-07-19_05:57:20",
+      "2025-07-19_05:57:40",
+      "2025-07-19_05:58:00"
+    ],
+    "fixed_controls": {
+      "mp_physics": 337,
+      "physics_variant": 2,
+      "dry_number": 1,
+      "value_only": 1,
+      "time_step_seconds": 20,
+      "mpi_ranks": 1,
+      "model_threads": 1
+    },
+    "input_files": [
+      {
+        "role": "initial",
+        "path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfinput_d01",
+        "name": "wrfinput_d01",
+        "sha256": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970"
+      },
+      {
+        "role": "boundary",
+        "path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfbdy_d01",
+        "name": "wrfbdy_d01",
+        "sha256": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c"
+      },
+      {
+        "role": "auxinput24",
+        "path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfchainp_d01",
+        "name": "wrfchainp_d01",
+        "sha256": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3"
+      }
+    ],
+    "binary_files": [
+      {
+        "role": "wrf executable",
+        "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/main/wrf.exe",
+        "name": "wrf.exe",
+        "sha256": "f467755ee9952dc2b1806e9dec3220689e2f26a2939234b0959065b1c357cd41"
+      },
+      {
+        "role": "linked C ABI library",
+        "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+        "name": "libkdm6_c.2.0.0.dylib",
+        "sha256": "64cddefe4fce336a7b9a3979278692324a97a17fe7d5264224bcc05a7f20be2d",
+        "abi_version": 2,
+        "args_size_bytes": 344
+      }
+    ],
+    "prior_run_wall_seconds": 20823,
+    "prior_run_wall_time": "5 h 47 min observed",
+    "prior_run_wall_time_is_future_estimate": false,
+    "validity_completion_gates": [
+      "runner_exit_0",
+      "experiment_valid_true",
+      "consumed-artifact preflight receipt matches actual staged executable/library/input/runner/namelist identities",
+      "planned read-only live loaded-library observer matches pinned KDM6/Torch paths",
+      "normal model completion",
+      "actual Times equal exact eight-time list"
+    ],
+    "case_directory": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal",
+    "case_prepared_receipt": "harness/evidence/pr393_target_preparation_2026-10-09/PREPARATION.json",
+    "case_prepared_receipt_sha256": "9eaf376c54c258cdda92e498062a75d4252fc619bc195ecacaa34d5c7791bf92",
+    "no_launch": true,
+    "archived_build_receipt_source_head": "30931e52f99e38f9abcd6e7e3b8cd055227a5c23",
+    "public_review_head": "c543b98cc42f0e906b63568df209d974300d771d",
+    "tracked_libtorch_diff_from_archive_to_review_head": "no tracked paths changed; does not attest source of built dylib",
+    "consumed_artifact_preflight_matches_archive": true,
+    "new_current_pr_build_claimed": false,
+    "actual_runtime_library_load_observed": false,
+    "consumed_artifact_identity_record_available": true
+  },
+  "program_status": {
+    "D1": "OPEN",
+    "D2": "OPEN",
+    "D3": "OPEN",
+    "D4": "OPEN overall; local 20/10/5 diagnostic scoped separately",
+    "R1": "OPEN",
+    "R2": "OPEN",
+    "S17": "OPEN"
+  },
+  "graphify": {
+    "query_result": "generic footprint/native artifact nodes; observation path coverage incomplete",
+    "semantic_fragment_path": "graphify-out/pr393-observation-green/semantic.json",
+    "full_graph_refresh_performed": false
+  },
+  "evidence_paths": [
+    "harness/evidence/pr391_observation_scope_2026-10-09/summary.md",
+    "harness/evidence/pr391_observation_scope_2026-10-09/receipt.json",
+    "harness/evidence/REPORT_VIIRS_context_2026-10-07.md",
+    "harness/evidence/REPORT_native_target_artifact_2026-10-08.md",
+    "harness/evidence/native358_artifact_diag_2026-10-08/build/target_native_run_receipt_2026-10-08.json",
+    "harness/evidence/NATIVE_target_artifact_receipts_2026-10-08.zip"
+  ],
+  "official_primary_sources": {
+    "KMA_GK2A_L1B_guide": "https://datasvc.nmsc.kma.go.kr/resources/common/pdf/%EC%B2%9C%EB%A6%AC%EC%95%88%EC%9C%84%EC%84%B1%202A%ED%98%B8%20%20%EC%9E%90%EB%A3%8C%ED%99%9C%EC%9A%A9%20QA.pdf",
+    "NOAA_Cloud_Type_ATBD_v3": "https://www.star.nesdis.noaa.gov/jpss/documents/ATBD/ATBD_EPS_Cloud_CldType_v3.0.pdf",
+    "NOAA_VIIRS_SDR_Dictionary_Rev_L": "https://nesdis-prod.s3.amazonaws.com/2024-01/474-00448-02-06_JPSS-VIIRS-SDR-DD-Part-6_L.pdf",
+    "NOAA_ACHA_ATBD_v3_4": "https://www.star.nesdis.noaa.gov/jpss/documents/ATBD/ATBD_EPS_Cloud_ACHA_v3.4.pdf",
+    "UCAR_WRF_namelist_guide": "https://www2.mmm.ucar.edu/wrf/users/wrf_users_guide/build/html/namelist_variables.html"
+  }
+}

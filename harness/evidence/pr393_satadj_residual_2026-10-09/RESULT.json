@@ -1,0 +1,334 @@
+{
+  "study": "PR393 local saturation-adjustment residual derivative check",
+  "scope": "Offline scalar thermodynamic reconstruction from exactly two public JSON receipts. No KDM6 step, RTTOV, optimizer, forecast, NPZ, native artifact, or source-based microphysics rerun was read or executed.",
+  "inputs": {
+    "clear_state_result": "harness/evidence/pr391_clear_state_2026-10-09/result.json",
+    "clear_state_result_sha256": "a5bf4fb627e51569a033c585ae567adb418126a960e4eadd06e17401d8a3c524",
+    "applied_partition_result": "harness/evidence/pr392_applied_partition_2026-10-09/RESULT.json",
+    "applied_partition_result_sha256": "6c1c22dae68fb71ee9d35a96db644a5ee60877be484a6410886d8fdb345b3494",
+    "analysis_script_sha256": "9e8c6722b4b4c1c7d30086bc75b30f38e02143e4f0b81baf5a363ecefd5d59dd"
+  },
+  "thermo_constants_from_clear_receipt": {
+    "rd": 287.0,
+    "rv": 461.6,
+    "ep2": 0.6217504332755632,
+    "ttp": 273.15999999999997,
+    "psat": 610.78,
+    "xa": 5.077123165130615,
+    "xb": 24.90412712097168,
+    "xai": 0.5623916387557983,
+    "xbi": 23.165176391601562,
+    "qmin": 1e-15
+  },
+  "selected_column_from_partition_receipt": {
+    "k_bottomup_zero_based": 3,
+    "p_Pa": 97710.18029785156,
+    "rho_moist_forcing_kg_m3": 1.1349405976479523
+  },
+  "formula_contract": {
+    "qs_water": "es=psat*exp(log(ttp/T)*xa)*exp(xb*(1-ttp/T)); qs=ep2*es/(p-es)",
+    "exact_derivative": "dqs/dT=ep2*p/(p-es)^2 * es*(-xa/T+xb*ttp/T^2)",
+    "Dimpl": "1 + ((((L*L)/(Rv*cp))*qs)/(T*T)); each division/multiply is left-associated",
+    "Dexact": "1 + (L/cp)*(dqs/dT), holding L and cp fixed at the captured call values",
+    "postactivation": "qv_a=qv_in-a; qc_a=qc_in+a; T_a=T_in+(L/cp)*a",
+    "residual_prediction": "gplus_linear/g = 1-Dexact/Dimpl for one infinitesimal linearized satadj correction c=g/Dimpl",
+    "observed_residual": "(qv_out-qs(T_out))/(qv_a-qs(T_a)); endpoints include finite applied a+c"
+  },
+  "five_second_calls": [
+    {
+      "call_index_1based": 1,
+      "activation_gate_sw_gt_zero": true,
+      "sw_percent": 1.6621216162856944,
+      "dtcld_s_f32": 5.0,
+      "post_activation_reconstruction": {
+        "a_pcact_applied_mass_kgkg_from_public_partition_receipt": 2.553604662188529e-06,
+        "qv_kgkg_dry": 0.018192021258056395,
+        "qc_kgkg_dry": 2.553604662188529e-06,
+        "T_K": 295.75495108187266
+      },
+      "water_saturation": {
+        "es_Pa": 2734.9104185360093,
+        "qs_kgkg_dry": 0.017903942150997235,
+        "g_qv_minus_qs_kgkg": 0.00028807910705916026,
+        "dqsdT_kgkg_per_K": 0.001116324104337133,
+        "dlog_es_dT_per_K": 0.060605544592539945
+      },
+      "denominator_comparison": {
+        "Dimpl_left_associated": 3.6036185253340602,
+        "Dexact_local_thermo_derivative": 3.6786022568965424,
+        "Dexact_over_Dimpl_minus_1": 0.020807899347651038
+      },
+      "satadj_amount": {
+        "work1_g_over_Dimpl_kgkg": 7.994162118823467e-05,
+        "source_branch": "condensation",
+        "amount_after_source_availability_cap_kgkg": 7.994162118823467e-05,
+        "availability_cap_active": false,
+        "c_applied_reconstructed_from_public_receipt_kgkg": 7.994162118825707e-05,
+        "amount_reconstruction_error_kgkg": -2.2402327388981735e-17
+      },
+      "endpoint_closure_checks": {
+        "qv_out_minus_postactivation_minus_c_kgkg": 1.0408340855860843e-17,
+        "qc_out_minus_postactivation_plus_c_kgkg": -9.744267025213471e-18,
+        "T_out_minus_postactivation_latent_update_K": 0.0
+      },
+      "residual_after_applied_amount": {
+        "gplus_from_returned_qv_T_kgkg": -7.155973387070608e-06,
+        "predicted_first_order_gplus_over_g": -0.020807899347651038,
+        "observed_finite_change_gplus_over_g": -0.024840306748108075,
+        "observed_minus_predicted": -0.004032407400457037
+      },
+      "applicability_and_guard_checks": {
+        "T_lower_clamp_inactive": true,
+        "es_upper_cap_es_lt_0p99p": true,
+        "qs_lower_floor_inactive": true,
+        "p_minus_es_denominator_safe": true,
+        "water_branch_T_ge_ttp": true,
+        "qv_floor_inactive": true,
+        "observed_qc_positive_for_evaporation_availability": true,
+        "endpoint_es_upper_cap_inactive": true
+      }
+    },
+    {
+      "call_index_1based": 2,
+      "activation_gate_sw_gt_zero": false,
+      "sw_percent": -0.03949379290051347,
+      "dtcld_s_f32": 5.0,
+      "post_activation_reconstruction": {
+        "a_pcact_applied_mass_kgkg_from_public_partition_receipt": 0.0,
+        "qv_kgkg_dry": 0.018112079636868148,
+        "qc_kgkg_dry": 8.249522585043585e-05,
+        "T_K": 295.9467697536212
+      },
+      "water_saturation": {
+        "es_Pa": 2766.8662298372124,
+        "qs_kgkg_dry": 0.01811923561025522,
+        "g_qv_minus_qs_kgkg": -7.155973387070608e-06,
+        "dqsdT_kgkg_per_K": 0.0011284561969960192,
+        "dlog_es_dT_per_K": 0.06051588736858067
+      },
+      "denominator_comparison": {
+        "Dimpl_left_associated": 3.630693760812917,
+        "Dexact_local_thermo_derivative": 3.707384080121035,
+        "Dexact_over_Dimpl_minus_1": 0.021122772770278075
+      },
+      "satadj_amount": {
+        "work1_g_over_Dimpl_kgkg": -1.9709658424808532e-06,
+        "source_branch": "evaporation",
+        "amount_after_source_availability_cap_kgkg": -1.9709658424808532e-06,
+        "availability_cap_active": false,
+        "c_applied_reconstructed_from_public_receipt_kgkg": -1.9709658424693895e-06,
+        "amount_reconstruction_error_kgkg": -1.1463743908139701e-17
+      },
+      "endpoint_closure_checks": {
+        "qv_out_minus_postactivation_minus_c_kgkg": 1.0408340855860843e-17,
+        "qc_out_minus_postactivation_plus_c_kgkg": -1.146543797403421e-17,
+        "T_out_minus_postactivation_latent_update_K": 0.0
+      },
+      "residual_after_applied_amount": {
+        "gplus_from_returned_qv_T_kgkg": 1.50443399151573e-07,
+        "predicted_first_order_gplus_over_g": -0.021122772770278075,
+        "observed_finite_change_gplus_over_g": -0.02102347102399706,
+        "observed_minus_predicted": 9.930174628101571e-05
+      },
+      "applicability_and_guard_checks": {
+        "T_lower_clamp_inactive": true,
+        "es_upper_cap_es_lt_0p99p": true,
+        "qs_lower_floor_inactive": true,
+        "p_minus_es_denominator_safe": true,
+        "water_branch_T_ge_ttp": true,
+        "qv_floor_inactive": true,
+        "observed_qc_positive_for_evaporation_availability": true,
+        "endpoint_es_upper_cap_inactive": true
+      }
+    },
+    {
+      "call_index_1based": 3,
+      "activation_gate_sw_gt_zero": true,
+      "sw_percent": 0.0008305411746123426,
+      "dtcld_s_f32": 5.0,
+      "post_activation_reconstruction": {
+        "a_pcact_applied_mass_kgkg_from_public_partition_receipt": 0.0,
+        "qv_kgkg_dry": 0.018114050602710628,
+        "qc_kgkg_dry": 8.052426000795499e-05,
+        "T_K": 295.94204102639316
+      },
+      "water_saturation": {
+        "es_Pa": 2766.074553589332,
+        "qs_kgkg_dry": 0.018113900159311476,
+        "g_qv_minus_qs_kgkg": 1.50443399151573e-07,
+        "dqsdT_kgkg_per_K": 0.001128155663025823,
+        "dlog_es_dT_per_K": 0.06051809542232184
+      },
+      "denominator_comparison": {
+        "Dimpl_left_associated": 3.6300227098808833,
+        "Dexact_local_thermo_derivative": 3.7066708971792193,
+        "Dexact_over_Dimpl_minus_1": 0.021115071013109832
+      },
+      "satadj_amount": {
+        "work1_g_over_Dimpl_kgkg": 4.144420329439474e-08,
+        "source_branch": "condensation",
+        "amount_after_source_availability_cap_kgkg": 4.144420329439474e-08,
+        "availability_cap_active": false,
+        "c_applied_reconstructed_from_public_receipt_kgkg": 4.144420331637745e-08,
+        "amount_reconstruction_error_kgkg": -2.1982715207845835e-17
+      },
+      "endpoint_closure_checks": {
+        "qv_out_minus_postactivation_minus_c_kgkg": 2.0816681711721685e-17,
+        "qc_out_minus_postactivation_plus_c_kgkg": -2.1982199047143602e-17,
+        "T_out_minus_postactivation_latent_update_K": -5.684341886080802e-14
+      },
+      "residual_after_applied_amount": {
+        "gplus_from_returned_qv_T_kgkg": -3.176937220239484e-09,
+        "predicted_first_order_gplus_over_g": -0.021115071013109832,
+        "observed_finite_change_gplus_over_g": -0.02111715926491858,
+        "observed_minus_predicted": -2.0882518087482482e-06
+      },
+      "applicability_and_guard_checks": {
+        "T_lower_clamp_inactive": true,
+        "es_upper_cap_es_lt_0p99p": true,
+        "qs_lower_floor_inactive": true,
+        "p_minus_es_denominator_safe": true,
+        "water_branch_T_ge_ttp": true,
+        "qv_floor_inactive": true,
+        "observed_qc_positive_for_evaporation_availability": true,
+        "endpoint_es_upper_cap_inactive": true
+      }
+    },
+    {
+      "call_index_1based": 4,
+      "activation_gate_sw_gt_zero": false,
+      "sw_percent": -1.75385616141277e-05,
+      "dtcld_s_f32": 5.0,
+      "post_activation_reconstruction": {
+        "a_pcact_applied_mass_kgkg_from_public_partition_receipt": 0.0,
+        "qv_kgkg_dry": 0.018114009158507333,
+        "qc_kgkg_dry": 8.056570421124938e-05,
+        "T_K": 295.9421404593195
+      },
+      "water_saturation": {
+        "es_Pa": 2766.091198462654,
+        "qs_kgkg_dry": 0.018114012335444553,
+        "g_qv_minus_qs_kgkg": -3.176937220239484e-09,
+        "dqsdT_kgkg_per_K": 0.0011281619817210846,
+        "dlog_es_dT_per_K": 0.06051804899151728
+      },
+      "denominator_comparison": {
+        "Dimpl_left_associated": 3.6300368187990264,
+        "Dexact_local_thermo_derivative": 3.7066858917991587,
+        "Dexact_over_Dimpl_minus_1": 0.021115232937359396
+      },
+      "satadj_amount": {
+        "work1_g_over_Dimpl_kgkg": -8.751804399853313e-10,
+        "source_branch": "evaporation",
+        "amount_after_source_availability_cap_kgkg": -8.751804399853313e-10,
+        "availability_cap_active": false,
+        "c_applied_reconstructed_from_public_receipt_kgkg": -8.751804170470747e-10,
+        "amount_reconstruction_error_kgkg": -2.29382565704815e-17
+      },
+      "endpoint_closure_checks": {
+        "qv_out_minus_postactivation_minus_c_kgkg": 2.0816681711721685e-17,
+        "qc_out_minus_postactivation_plus_c_kgkg": -2.1033522146218786e-17,
+        "T_out_minus_postactivation_latent_update_K": -5.684341886080802e-14
+      },
+      "residual_after_applied_amount": {
+        "gplus_from_returned_qv_T_kgkg": 6.708160069091029e-11,
+        "predicted_first_order_gplus_over_g": -0.021115232937359396,
+        "observed_finite_change_gplus_over_g": -0.02111517982273932,
+        "observed_minus_predicted": 5.3114620077177044e-08
+      },
+      "applicability_and_guard_checks": {
+        "T_lower_clamp_inactive": true,
+        "es_upper_cap_es_lt_0p99p": true,
+        "qs_lower_floor_inactive": true,
+        "p_minus_es_denominator_safe": true,
+        "water_branch_T_ge_ttp": true,
+        "qv_floor_inactive": true,
+        "observed_qc_positive_for_evaporation_availability": true,
+        "endpoint_es_upper_cap_inactive": true
+      }
+    }
+  ],
+  "published_second_third_reconstruction_checks": [
+    {
+      "call_index_1based": 2,
+      "published_rounded": [
+        3.630693761,
+        3.70738408,
+        -0.021122773,
+        -0.021023471
+      ],
+      "recomputed": [
+        3.630693760812917,
+        3.707384080121035,
+        -0.021122772770278075,
+        -0.02102347102399706
+      ],
+      "absolute_errors": [
+        1.8708279370116543e-10,
+        1.2103473778779517e-10,
+        2.297219255098515e-10,
+        2.3997061282532428e-11
+      ]
+    },
+    {
+      "call_index_1based": 3,
+      "published_rounded": [
+        3.63002271,
+        3.706670897,
+        -0.021115071,
+        -0.021117159
+      ],
+      "recomputed": [
+        3.6300227098808833,
+        3.7066708971792193,
+        -0.021115071013109832,
+        -0.02111715926491858
+      ],
+      "absolute_errors": [
+        1.1911671649045275e-10,
+        1.7921930606235037e-10,
+        1.3109832663893428e-11,
+        2.6491858012844816e-10
+      ]
+    }
+  ],
+  "N1_activation_inventory_arithmetic": {
+    "partition": "5s_four_times",
+    "call_index_1based": 3,
+    "captured_fields": {
+      "activation_gate_sw_gt_zero": true,
+      "sw_percent": 0.0008305411746123426,
+      "NC_volume_in_m3": 201355994.62772563,
+      "NCCN_volume_in_m3": 100007909.15909275
+    },
+    "reconstructed_fields": {
+      "activated_fraction_F": 0.02202277077106695,
+      "ncact_m3_s": 0.0,
+      "applied_b_volume_m3": 0.0,
+      "applied_a_mass_kgkg": 0.0
+    },
+    "derived_arithmetic": {
+      "inventory_activation_threshold_NC_over_NC_plus_NCCN": 0.6681490121994262,
+      "activation_fraction_minus_threshold": -0.6461262414283593,
+      "unclamped_b_m3": -194719126.45595464,
+      "b_from_min_max_equation_m3": 0.0,
+      "formula": "b=min(max((NC+NCCN)*F-NC,0),NCCN)"
+    },
+    "interpretation": "The recorded strict sw_percent>0 gate is true, but reconstructed F is below NC/(NC+NCCN); the lower clamp therefore gives b=0, matching the stored reconstructed b and a. NC/NCCN inputs were captured volume inventories; F and b/a are reconstructed, not directly instrumented."
+  },
+  "limited_satadj_budget_from_existing_partition_receipt": {
+    "a_plus_c_water_transfer_kgkg": 8.056482903087553e-05,
+    "stage_water_closure_cumulative_kgkg": 3.1170812458958252e-19,
+    "stage_latent_closure_cumulative_K": -8.545523678941025e-14,
+    "endpoint_selected_qc_kgkg_dry": 8.056482903081131e-05,
+    "budget_scope": "These sums cover only captured coordinator satadj stages; not full KDM M, host budget, or external source/sink ledger."
+  },
+  "interpretation_and_limits": [
+    "Dexact is the local derivative of the uncapped water qs formula with L/cp frozen; it does not replace or alter the implemented Dimpl or any physics.",
+    "The second and third calls match the published local first-order residual predictions. Their observed endpoint ratios are finite changes and need not equal the linear prediction.",
+    "Call 1 applies a much larger finite correction and shows a larger prediction discrepancy; do not use it as a local infinitesimal derivative validation.",
+    "Call 4 is near saturation; its ratio is sensitive to float64 endpoint rounding because g is only about 3.18e-9 kg/kg.",
+    "The reported water and latent closures are limited to captured satadj stages. They are not a full KDM6/host budget, and this is not a sixth-order or convergence-order result.",
+    "The denominator comparison says nothing about RTTOV quality, observations, optimization acceptance, higher derivatives, or physical admissibility beyond these scalar checks."
+  ]
+}

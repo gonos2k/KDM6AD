@@ -709,6 +709,11 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
     clone하지 않는다. Production runner는 provenance-attested stable callback을
     공급해야 하며, custom callback은 evaluator lifetime 동안 captured mutable
     state를 caller가 변경하지 않아야 한다.
+
+    normalized_dry=True opts into a fail-closed trial-QC check on the frozen
+    support. A mismatch raises through the current optimizer call; this
+    callback does not retry or backtrack. The legacy/default path keeps its
+    existing quality behavior.
     """
     import dataclasses
     import hashlib
@@ -882,6 +887,22 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
                     f"{nm} shape {tuple(arr.shape)} != H(x) rad_quality "
                     f"{tuple(rad_q.shape)} at t={t} — pass the full [B,nch] "
                     "field (silent broadcast is forbidden)")
+        if normalized_dry:
+            rad_q = torch.as_tensor(rad_q)
+            if rad_q.dtype == torch.bool or rad_q.is_complex():
+                raise ValueError(
+                    f"normalized_dry background rad_quality at t={t} must be real numeric")
+            rad_q = rad_q.to(torch.float64)
+            if tuple(rad_q.shape) != tuple(y_bt.shape):
+                raise ValueError(
+                    f"normalized_dry background rad_quality shape "
+                    f"{tuple(rad_q.shape)} != expected {tuple(y_bt.shape)} at t={t}")
+            if not bool(torch.isfinite(rad_q).all()):
+                raise ValueError(
+                    f"normalized_dry background rad_quality at t={t} must be finite")
+            if bool((rad_q < 0.0).any()):
+                raise ValueError(
+                    f"normalized_dry background rad_quality at t={t} must be non-negative")
         # y_rq는 superob quality flag의 동결본이다. keep-mask/weight가 아니므로
         # 0은 사용 가능, nonzero는 플래그됨(RTTOV/obs 관례)으로 해석한다.
         # NaN/Inf와 음수만 설정 오류로 거부한다.
@@ -916,6 +937,7 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
                    + obs_sigma_f.cpu().numpy().tobytes()
                    + b"|operator|" + operator_fingerprint.encode()
                    + (b"|mode|allsky" if cloud else b"")   # 모드 혼동 서명 충돌 차단
+                   + (b"|frozen-quality|strict" if normalized_dry else b"")
                    + (b"" if bias_f is None
                       else b"|bias|" + bias_f.cpu().numpy().tobytes()))
         sig = hashlib.sha256(payload).hexdigest()
@@ -926,7 +948,28 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
         slot = frozen.get(t)
         if slot is None:
             return None
-        bt, _, leaves = _h(x_t, forcings_f[min(t, len(forcings_f) - 1)])
+        bt, rad_q, leaves = _h(x_t, forcings_f[min(t, len(forcings_f) - 1)])
+        if normalized_dry:
+            rad_q = torch.as_tensor(rad_q)
+            if rad_q.dtype == torch.bool or rad_q.is_complex():
+                raise ValueError(
+                    f"normalized_dry trial rad_quality at t={t} must be real numeric")
+            rad_q = rad_q.to(torch.float64)
+            if tuple(rad_q.shape) != tuple(slot.mask.shape):
+                raise ValueError(
+                    f"normalized_dry trial rad_quality shape "
+                    f"{tuple(rad_q.shape)} != frozen support shape "
+                    f"{tuple(slot.mask.shape)} at t={t}")
+            if not bool(torch.isfinite(rad_q).all()):
+                raise ValueError(
+                    f"normalized_dry trial rad_quality at t={t} must be finite")
+            if bool((rad_q < 0.0).any()):
+                raise ValueError(
+                    f"normalized_dry trial rad_quality at t={t} must be non-negative")
+            if bool(((slot.mask > 0) & (rad_q != 0)).any()):
+                raise ValueError(
+                    f"normalized_dry trial rad_quality flags a frozen-support "
+                    f"channel at t={t}")
         obs = {"bt": slot.y_bt}
         if slot.bias is not None:
             obs["bias"] = slot.bias
@@ -950,6 +993,7 @@ def make_dual_frozen_obs_eval(xb: State, forcings: Sequence[Forcing],
     # 무관하게 유효한 계약 (live-state regime 해시는 어떤 CVT와도 양립 불가).
     obs_eval.connected_fields = conn
     obs_eval.normalized_dry = normalized_dry
+    obs_eval.require_frozen_quality = normalized_dry
     obs_eval.h_callback_contract = (
         "runner-provenance-attested stable callback; custom callback closure "
         "state is caller-owned and must remain unchanged")

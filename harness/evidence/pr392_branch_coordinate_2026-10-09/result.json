@@ -1,0 +1,113 @@
+{
+  "study": "PR392 conditional branch and output-coordinate arithmetic audit",
+  "scope": "cached/public receipt arithmetic only; no KDM/RTTOV/forecast execution or native input reads",
+  "worktree_head": "5a7701ed",
+  "inputs": {
+    "green_saturation_receipt_sha256": "a5bf4fb627e51569a033c585ae567adb418126a960e4eadd06e17401d8a3c524",
+    "weak_cloud_receipt_sha256": "314e2c850fdc639def6c0d4feb1172e09ec629a6c3ffbca4ac0de6f7c0911d90",
+    "response_summary_sha256": "db1c2baa44608dfa744eaf6583a566e005559971b1858877cc28e95ede129823",
+    "cost_result_sha256": "590dcd2e346afc26b174d635b3d93bc5dd1db8fc82ce45d18b4bd7e961eba3bf",
+    "cached_weak_checkpoint_sha256": "cff588a4ade432d655b0884908c5495c1b13decda884234f792ea5e3cef1d71e",
+    "checkpoint_selected_indices": {
+      "wrf_k_zero_based_bottom_up": 3,
+      "wrf_j_zero_based": 86,
+      "wrf_i_zero_based": 48
+    }
+  },
+  "activation_coordinate": {
+    "formula": "F=min(1,max(S/0.48,0)^0.6), S=100*(qv/qs_water-1) percent",
+    "entry_T_K": 295.9488237473604,
+    "entry_qv_dry_kgkg": 0.018194574862718582,
+    "entry_p_Pa": 97710.18029785156,
+    "qs_water_kgkg": 0.01812155358630569,
+    "q_over_qs": 1.0040295262801349,
+    "S_percent": 0.4029526280134865,
+    "uncapped_saturation_fraction": 0.8394846416947637,
+    "saturation_based_activated_fraction": 0.9003422966704812,
+    "fixed_p_q_temperature_roots": {
+      "water_saturation_gate_S0_T_K": 296.0134076624113,
+      "full_activation_fraction_S0p48_T_K": 295.9365071904025,
+      "weak_point_minus_saturation_start_K": -0.06458391505088912,
+      "weak_point_minus_full_activation_cap_K": 0.012316556957898683,
+      "delta_T_to_saturation_onset_from_weak_point_K": 0.06458391505088912,
+      "delta_T_to_full_activation_cap_from_weak_point_K": -0.012316556957898683
+    },
+    "scope_limit": "These margins bound only the diagnosed warm-water saturation/CCN-fraction sub-branch; they are not a radius free of every KDM limiter, clamp, microphysics, cloud-operator, or RTTOV branch change."
+  },
+  "dry_number_output_coordinate": {
+    "rho_m_forcing_kg_m3": 1.1349405976479523,
+    "entry_qv_dry_kgkg": 0.018194574862718582,
+    "rho_dry_runtime_kg_m3": 1.1146598358186837,
+    "rho_dry_cached_kg_m3": 1.1146598358186837,
+    "input_nccn_dry_specific_per_kg_dry_air": 180630560.0,
+    "input_nccn_volume_per_m3": 201341630.3534369,
+    "output_nccn_dry_specific_per_kg_dry_air": 89713468.43815634,
+    "output_nccn_volume_per_m3": 100000000.0,
+    "nccn_lower_floor_per_m3": 100000000.0,
+    "derived_d_output_nccn_dry_specific_per_kg_dry_air_d_qv_kgkg": 88110338.29192446,
+    "recorded_selected_output_jvp": 88110338.29192445,
+    "interpretation": "At the active volume-floor branch, output NCCN volume stays clamped at 1e8 m^-3. The nonzero dry-specific JVP is the derivative of converting that fixed volume count through rho_dry=rho_m/(1+qv); it is not a physical NCCN production sensitivity."
+  },
+  "weak_cloud_content": {
+    "qc_dry_kgkg": 2.005882014205248e-05,
+    "qi_dry_kgkg": 0.0,
+    "condensate_g_m3_from_cached_qc_qi_and_runtime_rho_dry": 0.02235876116625672,
+    "content_gate_threshold_g_m3": 1e-06,
+    "derived_binary_cloud_fraction": 0.999999
+  },
+  "conditional_cost_arithmetic": {
+    "baseline_seven_channel_huber_sum": 26.588575903055926,
+    "T_minus_0p8K_seven_channel_huber_sum": 22.61603312654273,
+    "absolute_cost_drop": 3.972542776513194,
+    "relative_cost_drop_percent": 14.940788070024519,
+    "ir105_residual_and_huber": {
+      "baseline": {
+        "channel_1based": 13,
+        "residual_model_minus_observation_K": 4.930225096255356,
+        "normalized_residual_sigma_units": 4.930225096255356,
+        "huber_delta_sigma_units": 1.0,
+        "computed_huber_contribution": 4.430225096255356,
+        "recorded_huber_contribution": 4.430225096255356,
+        "positive_linear_huber_branch": true
+      },
+      "T_minus_0p8K": {
+        "channel_1based": 13,
+        "residual_model_minus_observation_K": 4.141717418273515,
+        "normalized_residual_sigma_units": 4.141717418273515,
+        "huber_delta_sigma_units": 1.0,
+        "computed_huber_contribution": 3.6417174182735152,
+        "recorded_huber_contribution": 3.6417174182735152,
+        "positive_linear_huber_branch": true
+      }
+    },
+    "cost_support_condition": "both cited cases retain 7/7 channels; strong-cloud cases with new flags are excluded from this pairwise common-support arithmetic",
+    "interpretation_limit": "conditional saved-artifact what-if, not an accepted observation match, optimization descent, calibrated error model, or validation result"
+  },
+  "partition_arithmetic": {
+    "fixed_forcing_selected_qc_kgkg_20s_10s_5s": [
+      8.249522585043585e-05,
+      8.052426000795499e-05,
+      8.056482903081131e-05
+    ],
+    "activation_gate_sequences": [
+      [
+        true
+      ],
+      [
+        true,
+        false
+      ],
+      [
+        true,
+        false,
+        true,
+        false
+      ]
+    ],
+    "difference_20minus10": 1.9709658424808596e-06,
+    "difference_10minus5": -4.056902285631955e-08,
+    "absolute_difference_ratio": 48.58302477388451,
+    "p_observed_log2_ratio": 5.602380409695115,
+    "interpretation_limit": "Conditional three-partition diagnostic only: activation patterns differ and the sequence is not evidence of asymptotic order, convergence rate, or whole-host timestep accuracy."
+  }
+}

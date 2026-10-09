@@ -1,0 +1,668 @@
+{
+  "study": "Offline applied satadj partition reconstruction from cached Red value-only observer",
+  "scope": "No KDM6/RTTOV/forecast/model run; uses existing selected_column_response_private.json, checkpoint NPZ, and pinned source equations only.",
+  "selected_column": {
+    "k_bottomup_zero_based": 3,
+    "p_Pa": 97710.18029785156,
+    "rho_moist_forcing_kg_m3": 1.1349405976479523
+  },
+  "captured_vs_reconstructed": {
+    "directly_captured_per_call": [
+      "dtcld indirectly known from declared fixed-dt partition and runtime loops=1",
+      "sw_percent and strict gate",
+      "qv/qc/T endpoints",
+      "NC/NCCN volume endpoints",
+      "den/dend",
+      "xl/cpm"
+    ],
+    "reconstructed_not_instrumented": [
+      "qs and qv-qs gap",
+      "ncact and applied b",
+      "pcact rate and applied mass a",
+      "pcond rate and applied amount c",
+      "pre-clamp NCCN and reservoir clip C",
+      "water/latent residuals from endpoints and source coefficients"
+    ],
+    "not_claimed_as_direct_measurement": [
+      "pcact or pcond rates",
+      "pcond branch trace",
+      "nc_evap",
+      "complete-evap trace",
+      "full dry-number ledger or S17 budget"
+    ]
+  },
+  "method": {
+    "pcond_equation": "source satadj.py:78-96 evaluated on post-pcact state; c=pcond*dtcld; strict source operation grouping",
+    "activation_equation": "coordinator.py:1974-2017; fraction=min(1,max(sw_percent/0.48,EPS)^0.6), strict sw_percent>0; source number-rate cap then b=ncact*dtcld",
+    "NCCN_clip": "coordinator.py:2022-2025; no full-evap branch in these calls because observed qc_out>0; C=clamp(NCCN_in-b,1e8,2e10)-(NCCN_in-b)",
+    "dry_density": "runtime.py:535-557; rho_dry=rho_m/(1+qv_entry) is recomputed at each external kdm6_step call, and returned State numbers are per kg dry air",
+    "dtcld": "runtime.py:608-612; compute_loops_max(dt,DTCLDCR) is 1 for 5/10/20 s, dtcld is float32(dt/loops)",
+    "pcond_mass_constant": 4.2411505487031584e-14,
+    "nccn_min_volume_m3": 100000000.0,
+    "nccn_max_volume_m3": 20000000000.0
+  },
+  "partition_summary": [
+    {
+      "partition": "20s_once",
+      "physical_dt_s": 20.0,
+      "source_dtcld_f32_s": 20.0,
+      "activation_gate_history_sw_gt_zero": [
+        true
+      ],
+      "calls": [
+        {
+          "dtcld_s_f32": 20.0,
+          "captured": {
+            "sw_percent": 1.6621216162856944,
+            "activation_gate_sw_gt_zero": true,
+            "qv_qc_T_in": [
+              0.018194574862718582,
+              0.0,
+              295.7488237473604
+            ],
+            "qv_qc_T_out": [
+              0.018112079636868148,
+              8.249522585043585e-05,
+              295.9467697536212
+            ],
+            "NC_NCCN_volume_in_m3": [
+              0.0,
+              201341630.3534369
+            ],
+            "NC_NCCN_volume_out_m3": [
+              201341630.3534369,
+              100000000.0
+            ],
+            "rho_moist_kg_m3": 1.1349405976479523,
+            "rho_dry_kg_m3": 1.1146598358186837,
+            "xl_J_kg": 2447037.3966656863,
+            "cpm_J_kg_K": 1019.8180125769228
+          },
+          "reconstructed_from_source_equations": {
+            "qv_minus_qs_entry_kgkg": 0.0002974716216586591,
+            "qv_minus_qs_from_sw_kgkg": 0.0002974716216586244,
+            "qv_minus_qs_sw_formula_error": 1.9984014443252818e-13,
+            "rho_dry_from_fixed_rho_m_and_entry_qv_kg_m3": 1.1146598358186837,
+            "rho_dry_capture_error_kg_m3": 0.0,
+            "activated_fraction": 1.0,
+            "ncact_m3_s": 10067081.517671844,
+            "a_pcact_applied_mass_kgkg": 2.553604662188529e-06,
+            "c_pcond_applied_mass_kgkg": 7.994162118825707e-05,
+            "pcond_rate_kgkg_s": 3.997081059412853e-06,
+            "b_ncact_applied_number_m3": 201341630.3534369,
+            "NCCN_preclip_m3_if_no_complete_evap": 0.0,
+            "C_final_reservoir_clip_m3_if_no_complete_evap": 100000000.0,
+            "complete_evaporation_excluded_by_positive_qc_out": true,
+            "formula_endpoint_errors_qv_qc_T": [
+              -1.0408340855860843e-17,
+              9.744267025213471e-18,
+              0.0
+            ]
+          },
+          "captured_stage_closures": {
+            "delta_qv_plus_delta_qc_kgkg": 1.870248747537495e-18,
+            "delta_T_minus_xl_over_cpm_times_a_plus_c_K": -1.4155343563970746e-15
+          },
+          "unit_basis": {
+            "qv_qc_a_c": "kg water / kg dry air",
+            "T": "K",
+            "NC_NCCN_b_C": "number / m^3 in coordinator stage",
+            "state_boundary_NC_NCCN": "number / kg dry air; must not sum directly with stage volume inventory",
+            "density": "rho_moist and rho_dry in kg / m^3; rho_dry recalculated at each kdm6_step entry"
+          }
+        }
+      ],
+      "sums_across_captured_satadj_calls": {
+        "a_pcact_applied_mass_kgkg": 2.553604662188529e-06,
+        "c_pcond_applied_mass_kgkg": 7.994162118825707e-05,
+        "b_ncact_applied_number_m3": 201341630.3534369,
+        "C_final_reservoir_clip_m3_if_no_complete_evap": 100000000.0,
+        "a_plus_c_water_transfer_kgkg": 8.249522585044559e-05,
+        "stage_water_closure_cumulative_kgkg": 1.870248747537495e-18,
+        "stage_latent_closure_cumulative_K": -1.4155343563970746e-15
+      },
+      "intercall_density_rebases": [],
+      "endpoint_selected_qc_kgkg_dry": 8.249522585043585e-05,
+      "satadj_scope_warning": "These sums cover only captured coordinator satadj stages; not full KDM M, host budget, or external source/sink ledger."
+    },
+    {
+      "partition": "10s_twice",
+      "physical_dt_s": 10.0,
+      "source_dtcld_f32_s": 10.0,
+      "activation_gate_history_sw_gt_zero": [
+        true,
+        false
+      ],
+      "calls": [
+        {
+          "dtcld_s_f32": 10.0,
+          "captured": {
+            "sw_percent": 1.6621216162856944,
+            "activation_gate_sw_gt_zero": true,
+            "qv_qc_T_in": [
+              0.018194574862718582,
+              0.0,
+              295.7488237473604
+            ],
+            "qv_qc_T_out": [
+              0.018112079636868148,
+              8.249522585043585e-05,
+              295.9467697536212
+            ],
+            "NC_NCCN_volume_in_m3": [
+              0.0,
+              201341630.3534369
+            ],
+            "NC_NCCN_volume_out_m3": [
+              201341630.3534369,
+              100000000.0
+            ],
+            "rho_moist_kg_m3": 1.1349405976479523,
+            "rho_dry_kg_m3": 1.1146598358186837,
+            "xl_J_kg": 2447037.3966656863,
+            "cpm_J_kg_K": 1019.8180125769228
+          },
+          "reconstructed_from_source_equations": {
+            "qv_minus_qs_entry_kgkg": 0.0002974716216586591,
+            "qv_minus_qs_from_sw_kgkg": 0.0002974716216586244,
+            "qv_minus_qs_sw_formula_error": 1.9984014443252818e-13,
+            "rho_dry_from_fixed_rho_m_and_entry_qv_kg_m3": 1.1146598358186837,
+            "rho_dry_capture_error_kg_m3": 0.0,
+            "activated_fraction": 1.0,
+            "ncact_m3_s": 20134163.035343688,
+            "a_pcact_applied_mass_kgkg": 2.553604662188529e-06,
+            "c_pcond_applied_mass_kgkg": 7.994162118825707e-05,
+            "pcond_rate_kgkg_s": 7.994162118825707e-06,
+            "b_ncact_applied_number_m3": 201341630.3534369,
+            "NCCN_preclip_m3_if_no_complete_evap": 0.0,
+            "C_final_reservoir_clip_m3_if_no_complete_evap": 100000000.0,
+            "complete_evaporation_excluded_by_positive_qc_out": true,
+            "formula_endpoint_errors_qv_qc_T": [
+              -1.0408340855860843e-17,
+              9.744267025213471e-18,
+              0.0
+            ]
+          },
+          "captured_stage_closures": {
+            "delta_qv_plus_delta_qc_kgkg": 1.870248747537495e-18,
+            "delta_T_minus_xl_over_cpm_times_a_plus_c_K": -1.4155343563970746e-15
+          },
+          "unit_basis": {
+            "qv_qc_a_c": "kg water / kg dry air",
+            "T": "K",
+            "NC_NCCN_b_C": "number / m^3 in coordinator stage",
+            "state_boundary_NC_NCCN": "number / kg dry air; must not sum directly with stage volume inventory",
+            "density": "rho_moist and rho_dry in kg / m^3; rho_dry recalculated at each kdm6_step entry"
+          }
+        },
+        {
+          "dtcld_s_f32": 10.0,
+          "captured": {
+            "sw_percent": -0.03949379290051347,
+            "activation_gate_sw_gt_zero": false,
+            "qv_qc_T_in": [
+              0.018112079636868148,
+              8.249522585043585e-05,
+              295.9467697536212
+            ],
+            "qv_qc_T_out": [
+              0.018114050602710628,
+              8.052426000795499e-05,
+              295.94204102639316
+            ],
+            "NC_NCCN_volume_in_m3": [
+              201356346.7115384,
+              100008102.76466614
+            ],
+            "NC_NCCN_volume_out_m3": [
+              201356346.7115384,
+              100008102.76466614
+            ],
+            "rho_moist_kg_m3": 1.1349405976479523,
+            "rho_dry_kg_m3": 1.114750154082008,
+            "xl_J_kg": 2446573.4904054133,
+            "cpm_J_kg_K": 1019.7485598462794
+          },
+          "reconstructed_from_source_equations": {
+            "qv_minus_qs_entry_kgkg": -7.155973387028974e-06,
+            "qv_minus_qs_from_sw_kgkg": -7.155973387070608e-06,
+            "qv_minus_qs_sw_formula_error": 2.3314683517128287e-13,
+            "rho_dry_from_fixed_rho_m_and_entry_qv_kg_m3": 1.114750154082008,
+            "rho_dry_capture_error_kg_m3": 0.0,
+            "activated_fraction": 1.0000000000000009e-09,
+            "ncact_m3_s": 0.0,
+            "a_pcact_applied_mass_kgkg": 0.0,
+            "c_pcond_applied_mass_kgkg": -1.9709658424693895e-06,
+            "pcond_rate_kgkg_s": -1.9709658424693894e-07,
+            "b_ncact_applied_number_m3": 0.0,
+            "NCCN_preclip_m3_if_no_complete_evap": 100008102.76466614,
+            "C_final_reservoir_clip_m3_if_no_complete_evap": 0.0,
+            "complete_evaporation_excluded_by_positive_qc_out": true,
+            "formula_endpoint_errors_qv_qc_T": [
+              -1.0408340855860843e-17,
+              1.146543797403421e-17,
+              0.0
+            ]
+          },
+          "captured_stage_closures": {
+            "delta_qv_plus_delta_qc_kgkg": -1.5043305143236374e-18,
+            "delta_T_minus_xl_over_cpm_times_a_plus_c_K": -2.0527850252971547e-14
+          },
+          "unit_basis": {
+            "qv_qc_a_c": "kg water / kg dry air",
+            "T": "K",
+            "NC_NCCN_b_C": "number / m^3 in coordinator stage",
+            "state_boundary_NC_NCCN": "number / kg dry air; must not sum directly with stage volume inventory",
+            "density": "rho_moist and rho_dry in kg / m^3; rho_dry recalculated at each kdm6_step entry"
+          }
+        }
+      ],
+      "sums_across_captured_satadj_calls": {
+        "a_pcact_applied_mass_kgkg": 2.553604662188529e-06,
+        "c_pcond_applied_mass_kgkg": 7.797065534578767e-05,
+        "b_ncact_applied_number_m3": 201341630.3534369,
+        "C_final_reservoir_clip_m3_if_no_complete_evap": 100000000.0,
+        "a_plus_c_water_transfer_kgkg": 8.05242600079762e-05,
+        "stage_water_closure_cumulative_kgkg": 3.6591823321385775e-19,
+        "stage_latent_closure_cumulative_K": -2.194338460936862e-14
+      },
+      "intercall_density_rebases": [
+        {
+          "between_calls": [
+            0,
+            1
+          ],
+          "species": "NC",
+          "previous_volume_out_m3": 201341630.3534369,
+          "next_volume_in_m3": 201356346.7115384,
+          "density_only_rebased_volume_m3": 201357944.59191936,
+          "observed_minus_density_rebase_m3": -1597.8803809583187,
+          "basis_change_volume_m3": 16314.23848247528,
+          "method": "previous dry-specific boundary = previous volume / previous entry rho_d; next stage volume = boundary * next entry rho_d"
+        },
+        {
+          "between_calls": [
+            0,
+            1
+          ],
+          "species": "NCCN",
+          "previous_volume_out_m3": 100000000.0,
+          "next_volume_in_m3": 100008102.76466614,
+          "density_only_rebased_volume_m3": 100008102.76466614,
+          "observed_minus_density_rebase_m3": 0.0,
+          "basis_change_volume_m3": 8102.7646661400795,
+          "method": "previous dry-specific boundary = previous volume / previous entry rho_d; next stage volume = boundary * next entry rho_d"
+        }
+      ],
+      "endpoint_selected_qc_kgkg_dry": 8.052426000795499e-05,
+      "satadj_scope_warning": "These sums cover only captured coordinator satadj stages; not full KDM M, host budget, or external source/sink ledger."
+    },
+    {
+      "partition": "5s_four_times",
+      "physical_dt_s": 5.0,
+      "source_dtcld_f32_s": 5.0,
+      "activation_gate_history_sw_gt_zero": [
+        true,
+        false,
+        true,
+        false
+      ],
+      "calls": [
+        {
+          "dtcld_s_f32": 5.0,
+          "captured": {
+            "sw_percent": 1.6621216162856944,
+            "activation_gate_sw_gt_zero": true,
+            "qv_qc_T_in": [
+              0.018194574862718582,
+              0.0,
+              295.7488237473604
+            ],
+            "qv_qc_T_out": [
+              0.018112079636868148,
+              8.249522585043585e-05,
+              295.9467697536212
+            ],
+            "NC_NCCN_volume_in_m3": [
+              0.0,
+              201341630.3534369
+            ],
+            "NC_NCCN_volume_out_m3": [
+              201341630.3534369,
+              100000000.0
+            ],
+            "rho_moist_kg_m3": 1.1349405976479523,
+            "rho_dry_kg_m3": 1.1146598358186837,
+            "xl_J_kg": 2447037.3966656863,
+            "cpm_J_kg_K": 1019.8180125769228
+          },
+          "reconstructed_from_source_equations": {
+            "qv_minus_qs_entry_kgkg": 0.0002974716216586591,
+            "qv_minus_qs_from_sw_kgkg": 0.0002974716216586244,
+            "qv_minus_qs_sw_formula_error": 1.9984014443252818e-13,
+            "rho_dry_from_fixed_rho_m_and_entry_qv_kg_m3": 1.1146598358186837,
+            "rho_dry_capture_error_kg_m3": 0.0,
+            "activated_fraction": 1.0,
+            "ncact_m3_s": 40268326.070687376,
+            "a_pcact_applied_mass_kgkg": 2.553604662188529e-06,
+            "c_pcond_applied_mass_kgkg": 7.994162118825707e-05,
+            "pcond_rate_kgkg_s": 1.5988324237651414e-05,
+            "b_ncact_applied_number_m3": 201341630.3534369,
+            "NCCN_preclip_m3_if_no_complete_evap": 0.0,
+            "C_final_reservoir_clip_m3_if_no_complete_evap": 100000000.0,
+            "complete_evaporation_excluded_by_positive_qc_out": true,
+            "formula_endpoint_errors_qv_qc_T": [
+              -1.0408340855860843e-17,
+              9.744267025213471e-18,
+              0.0
+            ]
+          },
+          "captured_stage_closures": {
+            "delta_qv_plus_delta_qc_kgkg": 1.870248747537495e-18,
+            "delta_T_minus_xl_over_cpm_times_a_plus_c_K": -1.4155343563970746e-15
+          },
+          "unit_basis": {
+            "qv_qc_a_c": "kg water / kg dry air",
+            "T": "K",
+            "NC_NCCN_b_C": "number / m^3 in coordinator stage",
+            "state_boundary_NC_NCCN": "number / kg dry air; must not sum directly with stage volume inventory",
+            "density": "rho_moist and rho_dry in kg / m^3; rho_dry recalculated at each kdm6_step entry"
+          }
+        },
+        {
+          "dtcld_s_f32": 5.0,
+          "captured": {
+            "sw_percent": -0.03949379290051347,
+            "activation_gate_sw_gt_zero": false,
+            "qv_qc_T_in": [
+              0.018112079636868148,
+              8.249522585043585e-05,
+              295.9467697536212
+            ],
+            "qv_qc_T_out": [
+              0.018114050602710628,
+              8.052426000795499e-05,
+              295.94204102639316
+            ],
+            "NC_NCCN_volume_in_m3": [
+              201357145.6517289,
+              100008102.76466614
+            ],
+            "NC_NCCN_volume_out_m3": [
+              201357145.6517289,
+              100008102.76466614
+            ],
+            "rho_moist_kg_m3": 1.1349405976479523,
+            "rho_dry_kg_m3": 1.114750154082008,
+            "xl_J_kg": 2446573.4904054133,
+            "cpm_J_kg_K": 1019.7485598462794
+          },
+          "reconstructed_from_source_equations": {
+            "qv_minus_qs_entry_kgkg": -7.155973387028974e-06,
+            "qv_minus_qs_from_sw_kgkg": -7.155973387070608e-06,
+            "qv_minus_qs_sw_formula_error": 2.3314683517128287e-13,
+            "rho_dry_from_fixed_rho_m_and_entry_qv_kg_m3": 1.114750154082008,
+            "rho_dry_capture_error_kg_m3": 0.0,
+            "activated_fraction": 1.0000000000000009e-09,
+            "ncact_m3_s": 0.0,
+            "a_pcact_applied_mass_kgkg": 0.0,
+            "c_pcond_applied_mass_kgkg": -1.9709658424693895e-06,
+            "pcond_rate_kgkg_s": -3.941931684938779e-07,
+            "b_ncact_applied_number_m3": 0.0,
+            "NCCN_preclip_m3_if_no_complete_evap": 100008102.76466614,
+            "C_final_reservoir_clip_m3_if_no_complete_evap": 0.0,
+            "complete_evaporation_excluded_by_positive_qc_out": true,
+            "formula_endpoint_errors_qv_qc_T": [
+              -1.0408340855860843e-17,
+              1.146543797403421e-17,
+              0.0
+            ]
+          },
+          "captured_stage_closures": {
+            "delta_qv_plus_delta_qc_kgkg": -1.5043305143236374e-18,
+            "delta_T_minus_xl_over_cpm_times_a_plus_c_K": -2.0527850252971547e-14
+          },
+          "unit_basis": {
+            "qv_qc_a_c": "kg water / kg dry air",
+            "T": "K",
+            "NC_NCCN_b_C": "number / m^3 in coordinator stage",
+            "state_boundary_NC_NCCN": "number / kg dry air; must not sum directly with stage volume inventory",
+            "density": "rho_moist and rho_dry in kg / m^3; rho_dry recalculated at each kdm6_step entry"
+          }
+        },
+        {
+          "dtcld_s_f32": 5.0,
+          "captured": {
+            "sw_percent": 0.0008305411746123426,
+            "activation_gate_sw_gt_zero": true,
+            "qv_qc_T_in": [
+              0.018114050602710628,
+              8.052426000795499e-05,
+              295.94204102639316
+            ],
+            "qv_qc_T_out": [
+              0.018114009158507333,
+              8.056570421124938e-05,
+              295.9421404593195
+            ],
+            "NC_NCCN_volume_in_m3": [
+              201355994.62772563,
+              100007909.15909275
+            ],
+            "NC_NCCN_volume_out_m3": [
+              201355994.62772563,
+              100007909.15909275
+            ],
+            "rho_moist_kg_m3": 1.1349405976479523,
+            "rho_dry_kg_m3": 1.1147479960384417,
+            "xl_J_kg": 2446584.572650545,
+            "cpm_J_kg_K": 1019.750219202422
+          },
+          "reconstructed_from_source_equations": {
+            "qv_minus_qs_entry_kgkg": 1.504433992313703e-07,
+            "qv_minus_qs_from_sw_kgkg": 1.50443399151573e-07,
+            "qv_minus_qs_sw_formula_error": 4.440892098500626e-13,
+            "rho_dry_from_fixed_rho_m_and_entry_qv_kg_m3": 1.1147479960384417,
+            "rho_dry_capture_error_kg_m3": 0.0,
+            "activated_fraction": 0.02202277077106695,
+            "ncact_m3_s": 0.0,
+            "a_pcact_applied_mass_kgkg": 0.0,
+            "c_pcond_applied_mass_kgkg": 4.144420331637745e-08,
+            "pcond_rate_kgkg_s": 8.28884066327549e-09,
+            "b_ncact_applied_number_m3": 0.0,
+            "NCCN_preclip_m3_if_no_complete_evap": 100007909.15909275,
+            "C_final_reservoir_clip_m3_if_no_complete_evap": 0.0,
+            "complete_evaporation_excluded_by_positive_qc_out": true,
+            "formula_endpoint_errors_qv_qc_T": [
+              -2.0816681711721685e-17,
+              2.1982199047143602e-17,
+              5.684341886080802e-14
+            ]
+          },
+          "captured_stage_closures": {
+            "delta_qv_plus_delta_qc_kgkg": -5.149960319306146e-19,
+            "delta_T_minus_xl_over_cpm_times_a_plus_c_K": -3.441627679460352e-14
+          },
+          "unit_basis": {
+            "qv_qc_a_c": "kg water / kg dry air",
+            "T": "K",
+            "NC_NCCN_b_C": "number / m^3 in coordinator stage",
+            "state_boundary_NC_NCCN": "number / kg dry air; must not sum directly with stage volume inventory",
+            "density": "rho_moist and rho_dry in kg / m^3; rho_dry recalculated at each kdm6_step entry"
+          }
+        },
+        {
+          "dtcld_s_f32": 5.0,
+          "captured": {
+            "sw_percent": -1.75385616141277e-05,
+            "activation_gate_sw_gt_zero": false,
+            "qv_qc_T_in": [
+              0.018114009158507333,
+              8.056570421124938e-05,
+              295.9421404593195
+            ],
+            "qv_qc_T_out": [
+              0.01811401003368777,
+              8.056482903081131e-05,
+              295.94213835958686
+            ],
+            "NC_NCCN_volume_in_m3": [
+              201355240.82353023,
+              100007913.23009866
+            ],
+            "NC_NCCN_volume_out_m3": [
+              201355240.82353023,
+              100007913.23009866
+            ],
+            "rho_moist_kg_m3": 1.1349405976479523,
+            "rho_dry_kg_m3": 1.1147480414163093,
+            "xl_J_kg": 2446584.3396195387,
+            "cpm_J_kg_K": 1019.7501843105472
+          },
+          "reconstructed_from_source_equations": {
+            "qv_minus_qs_entry_kgkg": -3.1769371369727573e-09,
+            "qv_minus_qs_from_sw_kgkg": -3.17693721330059e-09,
+            "qv_minus_qs_sw_formula_error": 4.218847493575595e-13,
+            "rho_dry_from_fixed_rho_m_and_entry_qv_kg_m3": 1.1147480414163093,
+            "rho_dry_capture_error_kg_m3": 0.0,
+            "activated_fraction": 1.0000000000000009e-09,
+            "ncact_m3_s": 0.0,
+            "a_pcact_applied_mass_kgkg": 0.0,
+            "c_pcond_applied_mass_kgkg": -8.751804170470747e-10,
+            "pcond_rate_kgkg_s": -1.7503608340941495e-10,
+            "b_ncact_applied_number_m3": 0.0,
+            "NCCN_preclip_m3_if_no_complete_evap": 100007913.23009866,
+            "C_final_reservoir_clip_m3_if_no_complete_evap": 0.0,
+            "complete_evaporation_excluded_by_positive_qc_out": true,
+            "formula_endpoint_errors_qv_qc_T": [
+              -2.0816681711721685e-17,
+              2.1033522146218786e-17,
+              5.684341886080802e-14
+            ]
+          },
+          "captured_stage_closures": {
+            "delta_qv_plus_delta_qc_kgkg": 4.607859233063394e-19,
+            "delta_T_minus_xl_over_cpm_times_a_plus_c_K": -2.909557538543811e-14
+          },
+          "unit_basis": {
+            "qv_qc_a_c": "kg water / kg dry air",
+            "T": "K",
+            "NC_NCCN_b_C": "number / m^3 in coordinator stage",
+            "state_boundary_NC_NCCN": "number / kg dry air; must not sum directly with stage volume inventory",
+            "density": "rho_moist and rho_dry in kg / m^3; rho_dry recalculated at each kdm6_step entry"
+          }
+        }
+      ],
+      "sums_across_captured_satadj_calls": {
+        "a_pcact_applied_mass_kgkg": 2.553604662188529e-06,
+        "c_pcond_applied_mass_kgkg": 7.801122436868701e-05,
+        "b_ncact_applied_number_m3": 201341630.3534369,
+        "C_final_reservoir_clip_m3_if_no_complete_evap": 100000000.0,
+        "a_plus_c_water_transfer_kgkg": 8.056482903087553e-05,
+        "stage_water_closure_cumulative_kgkg": 3.1170812458958252e-19,
+        "stage_latent_closure_cumulative_K": -8.545523678941025e-14
+      },
+      "intercall_density_rebases": [
+        {
+          "between_calls": [
+            0,
+            1
+          ],
+          "species": "NC",
+          "previous_volume_out_m3": 201341630.3534369,
+          "next_volume_in_m3": 201357145.6517289,
+          "density_only_rebased_volume_m3": 201357944.59191936,
+          "observed_minus_density_rebase_m3": -798.9401904642582,
+          "basis_change_volume_m3": 16314.23848247528,
+          "method": "previous dry-specific boundary = previous volume / previous entry rho_d; next stage volume = boundary * next entry rho_d"
+        },
+        {
+          "between_calls": [
+            0,
+            1
+          ],
+          "species": "NCCN",
+          "previous_volume_out_m3": 100000000.0,
+          "next_volume_in_m3": 100008102.76466614,
+          "density_only_rebased_volume_m3": 100008102.76466614,
+          "observed_minus_density_rebase_m3": 0.0,
+          "basis_change_volume_m3": 8102.7646661400795,
+          "method": "previous dry-specific boundary = previous volume / previous entry rho_d; next stage volume = boundary * next entry rho_d"
+        },
+        {
+          "between_calls": [
+            1,
+            2
+          ],
+          "species": "NC",
+          "previous_volume_out_m3": 201357145.6517289,
+          "next_volume_in_m3": 201355994.62772563,
+          "density_only_rebased_volume_m3": 201356755.8446577,
+          "observed_minus_density_rebase_m3": -761.2169320583344,
+          "basis_change_volume_m3": -389.80707120895386,
+          "method": "previous dry-specific boundary = previous volume / previous entry rho_d; next stage volume = boundary * next entry rho_d"
+        },
+        {
+          "between_calls": [
+            1,
+            2
+          ],
+          "species": "NCCN",
+          "previous_volume_out_m3": 100008102.76466614,
+          "next_volume_in_m3": 100007909.15909275,
+          "density_only_rebased_volume_m3": 100007909.15909277,
+          "observed_minus_density_rebase_m3": -1.4901161193847656e-08,
+          "basis_change_volume_m3": -193.60557337105274,
+          "method": "previous dry-specific boundary = previous volume / previous entry rho_d; next stage volume = boundary * next entry rho_d"
+        },
+        {
+          "between_calls": [
+            2,
+            3
+          ],
+          "species": "NC",
+          "previous_volume_out_m3": 201355994.62772563,
+          "next_volume_in_m3": 201355240.82353023,
+          "density_only_rebased_volume_m3": 201356002.82429177,
+          "observed_minus_density_rebase_m3": -762.000761538744,
+          "basis_change_volume_m3": 8.196566134691238,
+          "method": "previous dry-specific boundary = previous volume / previous entry rho_d; next stage volume = boundary * next entry rho_d"
+        },
+        {
+          "between_calls": [
+            2,
+            3
+          ],
+          "species": "NCCN",
+          "previous_volume_out_m3": 100007909.15909275,
+          "next_volume_in_m3": 100007913.23009866,
+          "density_only_rebased_volume_m3": 100007913.23009866,
+          "observed_minus_density_rebase_m3": 0.0,
+          "basis_change_volume_m3": 4.0710059106349945,
+          "method": "previous dry-specific boundary = previous volume / previous entry rho_d; next stage volume = boundary * next entry rho_d"
+        }
+      ],
+      "endpoint_selected_qc_kgkg_dry": 8.056482903081131e-05,
+      "satadj_scope_warning": "These sums cover only captured coordinator satadj stages; not full KDM M, host budget, or external source/sink ledger."
+    }
+  ],
+  "source_sha256": {
+    "oracle/kdm6/runtime.py": "e505c3a1d42fb2880d0ce3d65381488a06528de8d4133b39d4e9a573cef997ac",
+    "oracle/kdm6/coordinator.py": "05981b7a19c8d4fe262cb8080b14ddf3b4eb5c027b58604803b2e0b80764a0bd",
+    "oracle/kdm6/thermo.py": "5278c14c6d87178af5ee963eef59d3297b923fa374412fd854c01e43ffb1b5cd",
+    "oracle/kdm6/satadj.py": "d2766dc50dbdfd9b1db1b962651f2ca9ded9be34d2e01e97b61b62d189b88a92",
+    "oracle/kdm6/constants.py": "aa489872c2b00d1160e158b9390ebe7bdcbbe4b31a468673cf22615f137f1b62",
+    "oracle/kdm6/fconst.py": "c6529c9a543ad8ed0a33524114f30f5665cd9a7b6983b32a917cc39debd377f2"
+  },
+  "cached_input_sha256": {
+    "selected_column_response_private.json": "b9b6bbade2a99c26e2eb56dafd2f8ceaf13f83bb3b74640380f5ba4ecde272e9",
+    "selected_column_checkpoint.npz": "7c49d6c76de0193267772a362a8a1e95e296ff61341570b1648d800c7e5b7dfe"
+  },
+  "analysis_script_sha256": "17e4c23de7b764b05bfd7cade7a5ea5f6df19c633c7d1d257dc2cf4ccf9e3698",
+  "result_limits": [
+    "Activation b and clip C are source-reconstructed from captured stage inventories, not separately instrumented rates.",
+    "The inferred no-complete-evap branch is validated for this record by positive observed qc_out at every call; no generic claim is made.",
+    "Intercall volume rebases are density-coordinate changes, not microphysical activation/clip amounts.",
+    "No universal number conservation, external CCN source, full KDM water/heat budget, or convergence order is inferred."
+  ]
+}

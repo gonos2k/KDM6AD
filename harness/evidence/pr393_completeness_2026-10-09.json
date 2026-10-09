@@ -1,0 +1,27 @@
+{
+  "source": "User-supplied PR393 deep review dated 2026-10-09; management rubric, not an independently estimated probability",
+  "main_at_review": "ce77afa2",
+  "reviewed_pr393_head": "c543b98c",
+  "maximum_total": 75,
+  "maximum_per_area": 15,
+  "areas": [
+    {"area": "Forward microphysics and ABI", "earlier": 14, "main": 14, "with_pr393": 14},
+    {"area": "First-order AD, window, recomputation", "earlier": 13, "main": 14, "with_pr393": 14},
+    {"area": "Observation decode, optics, BT and cost", "earlier": 12, "main": 12, "with_pr393": 13},
+    {"area": "Physical units, admissibility, water and heat", "earlier": 7, "main": 9, "with_pr393": 9},
+    {"area": "B/R, bias and independent validation", "earlier": 3, "main": 4, "with_pr393": 4}
+  ],
+  "totals": {"earlier": 49, "main": 53, "with_pr393": 54},
+  "percent_rounded_one_decimal": {"earlier": 65.3, "main": 70.7, "with_pr393": 72.0},
+  "this_followup_additional_points": 0,
+  "interpretation": "Reviewer-assigned ordinal management progress under five equal-weight internal areas. Arithmetic reproduced; underlying scores remain judgment. Around 70-75 percent, not a precise statistical quantity.",
+  "not_measured": ["Probability of correctness", "Code or test coverage", "Fraction of remaining development time"],
+  "excluded_completion_gates": ["Deployment", "Release packaging", "User acceptance", "Unattended operations"],
+  "remaining_core_results": [
+    "New independently valid target-time native run",
+    "Independent matchup with declared QA/time/parallax/footprint evidence and assumptions",
+    "Actual limited T/Q analysis with fixed support and prior",
+    "Whole-host same-final-time timestep comparison",
+    "Native multicolumn and unused validation"
+  ]
+}
