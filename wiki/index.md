@@ -23,6 +23,7 @@ date_modified: 2026-10-08
 - [[queries/_index|Queries]] - 2 pages
 
 ## Sources
+- [[sources/single-column-tq-allsky-pin-2026-10-10|Single-column T/Q all-sky routing and fixed parameters]] - Bounded research assembly; synthetic composition evidence and open native/observation case.
 - [[sources/pr393-residual-failure-preparation-2026-10-09|PR393 residual, failure and next-case preparation]] - Conditional saturation damping, fail-closed optimizer boundary and a staged nominal run, with execution and science decisions open.
 - [[sources/pr392-branch-coordinate-support-2026-10-09|PR392 branch coordinates and fixed-support quality]] - Cached applied amounts and strict research trial quality, with physical decisions still open.
 - [[sources/native-host-dry-mass-2026-10-06|Native host dry-mass coordinate]] - Active source binding and snapshot comparison to diagnostic layer weights.

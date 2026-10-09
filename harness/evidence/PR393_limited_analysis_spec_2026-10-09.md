@@ -4,6 +4,28 @@
 strict 품질 callback을 사용하고 새 solver·복원/retry·포화조정식을 추가하지 않는다.
 새 유효 native 상태와 명시된 관측 대응 시나리오를 확보한 뒤 첫 분석의 범위를 정한다.
 
+## e619 추가 검토에서 확정한 실행 연결
+
+이 명세를 기본 `run_fulldomain_analysis()`에 그대로 연결하지 않는다. 그 함수는
+배경에서 clear/all-sky를 나누고 네 warm-process 매개변수를 .2 prior로 활성화하는
+기존 결합 추정 경로다. 별도 [run_single_column_analysis](../../oracle/kdm6/da_single_column.py)가
+아래 구성으로 기존 factory·CVT·dual 최소화기를 조립한다:
+
+- allsky_pos=[0], clear_pos=[]: 실제 물리 배경 분류는 보존하지만 H 선택에 쓰지 않는다.
+- default_param_prior(active=()): peaut/ncrk1/ncrk2/eccbrk를 기본 기준값에 고정한다.
+  State sigma=0만으로 매개변수가 고정된다고 해석하지 않는다.
+- obs_time≥1: 실제 M(xb)의 관측슬롯을 계산해 frozen 품질 probe에 제공한다.
+- 7채널 배경 지원을 확인한 뒤 strict S를 유지한다. 6개만 남으면 분석을 시작하지 않는다.
+- caller의 원래 forcing window와 ncmin/xland·native pressure center grid를 유지한다.
+  p_half는 그대로 전달하지만 helper만으로 native interface의 원자료 정체까지 인증하지 않는다.
+- 성공 callback 결과·기존 window/final-audit 횟수를 보고한다. max_iter를 실제 M/H 호출
+  수로 부르지 않고 미계측 내부 호출·실패 시 완료되지 않은 결과는 별도로 한정한다.
+
+실제 호출은 새 유효 native column/forcing와 검증된 관측·광학 설정을 준비한 뒤 한다.
+worker pool은 caller가 관리한다. 숨은 custom params·eta/eta_pre·partition·pseudo-RH
+경로는 이 첫 연구 helper에서 사용하지 않는다. 초기 T/Q가 고정하지 않은 QC/NC 등의
+적분 중 반응은 full-window pullback에 남는다.
+
 ## 고정할 상태와 제어
 
 - 현재 후보 j86/i48와 고유 39층 중심/경계 압력·T/Q/수상체를 유지한다. 외부 모델,
