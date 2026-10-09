@@ -39,7 +39,7 @@ forcing은 private NPZ에 보존하고 모델 위 참조대기와 기체 가정�
 CTH datum 및 공통 footprint는 아직 확정하지 못했다. nominal-center 시나리오 A를
 사용하며 실제 픽셀시각 정합 또는 독립 물리검증의 승인으로 표현하지 않는다.
 
-저장 경계 합성 검사 3개, import/누락입력 거부·구문·ruff·whitespace와 Green/Red
+저장 경계 합성 검사 5개(원래 3개 포함), import/누락입력 거부·구문·ruff·whitespace와 Green/Red
 소스 점검을 수행했다. 검사들은 native/RTTOV 실행을 대신하지 않는다. 새 consumer는
 아직 실행 전이며 단일-case continuation이 native 완료 receipt를 기다린다.
 native가 invalid이거나 소비 코드가 바뀌면 continuation은 분석 없이 중단한다.
@@ -51,3 +51,28 @@ receipt와 저장 상태를 검토해 기록하며 준비/시험 수로 완료�
 [관측 대응](../pr395_observation_matchup_2026-10-10/SUMMARY.md) ·
 [intake](../pr395_native_tq_intake_2026-10-10/README.md) ·
 [상태 저장](../pr395_tq_state_capture_2026-10-10/README.md)
+
+## 07:13 후속 검토 반영
+
+이전 실패 checkpoint 진단의 최종 callback은 알려진 [1,39] f64 영배열과
+9개 수상체/입자 필드 해시가 일치한다. 이 좁은 동일성 판단은 가능하며, 그 결과를
+구름 복원으로 해석하지 않는다. 초기 qv 상대증분 상한과 k3 액상 포화비 상한
+97.23%도 [공개 receipt 산술](../pr395_endpoint_bounds_2026-10-10/REPORT.md)로 확인했다.
+일반적인 상태벡터/기울기 복원 또는 중간 구름 존재 판정은 하지 않았다.
+
+새 driver는 v_state/v_parameter, b_sigma, 고정매개변수와 **최종 전체 제어공간
+기울기**를 private NPZ에 추가한다. 실제 optimizer 객체의 기존 final audit 뒤
+parameter.grad를 읽으므로 H 수반과 다르며 추가 closure/M/H를 실행하지 않는다.
+기록한 제어와 CVT로 수락 초기장/매개변수를 정확히 재구성해 반환점과 일치함을
+확인한다. optimizer history는 step 반환 직후/pre-audit, 최종 gradient는 post-audit
+자료로 구분한다. 원본 L-BFGS를 호출하는 관찰기의 한정 quadratic 값·gradient
+비간섭도 확인했다. 이 시험을 native/RTTOV 사례로 계산하지 않는다.
+
+기존 optimizer는 직접적인 종료 이유를 반환하지 않으므로 해당 값은 UNKNOWN이며,
+실제 n_iter/func_evals/보폭·tolerance 정보와 final gradient를 남긴다. 정상 반환이나
+예산 값만으로 수렴을 선언하지 않는다. solver를 대체하거나 자동 재시도하지 않는다.
+
+기존 **대기 프로세스만** 철회하고 아직 어떤 consumer도 실행되지 않았음을
+확인한 뒤, 보완 소스 hash를 pin한 continuation v2를 시작했다. native PID 99158은
+계속 적분하며 재시작/중단하지 않았다. old continuation의 철회 receipt와 source
+revision은 보존한다. 새 정상 목표시각/분석 결과는 여전히 완료 전이다.

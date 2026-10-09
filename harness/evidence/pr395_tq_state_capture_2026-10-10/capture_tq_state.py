@@ -21,6 +21,8 @@ import hashlib
 import json
 import math
 import os
+import inspect
+import sys
 import traceback
 import uuid
 from pathlib import Path
@@ -30,11 +32,10 @@ import numpy as np
 import torch
 
 ROOT = Path(__file__).resolve().parents[3]
-import sys
 sys.path.insert(0, str(ROOT / "oracle"))
 
-from kdm6.da_dual import default_param_prior  # noqa: E402
-from kdm6.da_fulldomain import _freeze_h_value  # noqa: E402
+from kdm6.da_dual import PNAMES, params_from_vtheta  # noqa: E402
+from kdm6.da_cvt import cvt_apply  # noqa: E402
 import kdm6.da_fulldomain as _fulldomain  # noqa: E402
 from kdm6.da_single_column import run_single_column_analysis  # noqa: E402
 from kdm6.rttov_bridge import freeze_dry_air_density  # noqa: E402
@@ -398,6 +399,7 @@ def _private_payload(
     native_coordinates: Mapping[str, Mapping],
     slot_calls: Sequence[Mapping],
     receipt_metadata: Mapping,
+    extra_private_arrays: Mapping[str, np.ndarray] | None = None,
 ) -> dict[str, np.ndarray]:
     payload: dict[str, np.ndarray] = {}
     _record_state(payload, "background_initial_state", xb)
@@ -425,6 +427,9 @@ def _private_payload(
             payload["final_slot_rad_quality"] = _array(final_call["rad_quality"]).copy()
         if final_call.get("bt") is not None:
             payload["final_slot_bt_K"] = _array(final_call["bt"]).copy()
+    for name, values in (extra_private_arrays or {}).items():
+        private_name = name if name.startswith("optimizer_state__") else f"control__{name}"
+        payload[private_name] = _array(values).copy()
     meta = json.dumps(_jsonable(receipt_metadata), sort_keys=True,
                       separators=(",", ":"), allow_nan=False).encode()
     payload["capture_metadata_json_utf8"] = np.frombuffer(meta, dtype=np.uint8).copy()
@@ -513,6 +518,244 @@ def _public_h_config_summary(config: Mapping) -> dict:
     return summary
 
 
+def _observe_existing_lbfgs(original_factory, observation: dict):
+    """Return a temporary factory that observes the real PyTorch LBFGS instance.
+
+    The original constructor, instance, and bound ``step`` implementation remain
+    in use. This wrapper only records constructor/step outcomes; it does not wrap
+    or re-evaluate the objective closure.
+    """
+    def factory(*args, **kwargs):
+        observation["constructor_calls"] = observation.get("constructor_calls", 0) + 1
+        optimizer = original_factory(*args, **kwargs)
+        if observation["constructor_calls"] != 1:
+            raise RuntimeError("fixed PR395 run constructed more than one LBFGS optimizer")
+        observation["optimizer"] = optimizer
+        observation["constructor_positional_arg_count"] = len(args)
+        original_step = optimizer.step
+
+        def observed_step(closure):
+            observation["step_calls"] = observation.get("step_calls", 0) + 1
+            returned_loss = original_step(closure)
+            observation["step_returned"] = True
+            observation["step_original_loss_returned"] = _jsonable(returned_loss)
+            group = optimizer.param_groups[0]
+            params = group["params"]
+            state = optimizer.state.get(params[0], {}) if params else {}
+            observation["step_state"] = {
+                "n_iter": _jsonable(state.get("n_iter")),
+                "func_evals": _jsonable(state.get("func_evals")),
+                "step_t": _jsonable(state.get("t")),
+                "prev_loss": _jsonable(state.get("prev_loss")),
+                "group": {name: _jsonable(group.get(name)) for name in (
+                    "lr", "max_iter", "max_eval", "history_size",
+                    "tolerance_grad", "tolerance_change", "line_search_fn")},
+            }
+            state_arrays = {}
+            state_structure = {}
+            for state_name, state_value in state.items():
+                if isinstance(state_value, torch.Tensor):
+                    array_key = f"optimizer_state__{state_name}"
+                    state_arrays[array_key] = _array(state_value).copy()
+                    state_structure[state_name] = {"array_key": array_key}
+                elif isinstance(state_value, (tuple, list)):
+                    sequence = []
+                    for index, item in enumerate(state_value):
+                        if isinstance(item, torch.Tensor):
+                            array_key = f"optimizer_state__{state_name}__{index}"
+                            state_arrays[array_key] = _array(item).copy()
+                            sequence.append({"array_key": array_key})
+                        else:
+                            sequence.append(_jsonable(item))
+                    state_structure[state_name] = sequence
+                else:
+                    state_structure[state_name] = _jsonable(state_value)
+            observation["optimizer_state_arrays"] = state_arrays
+            observation["optimizer_state_structure"] = state_structure
+            observation["optimizer_state_array_metadata"] = {
+                name: {"shape": list(array.shape), "dtype": str(array.dtype),
+                       "sha256_f64": array_sha256(array),
+                       "private_npz_key": name}
+                for name, array in state_arrays.items()
+            }
+            observation["torch_version"] = str(torch.__version__)
+            try:
+                source = inspect.getsource(original_step.__func__)
+                observation["step_implementation_sha256"] = hashlib.sha256(
+                    source.encode()).hexdigest()
+            except (AttributeError, OSError, TypeError):
+                observation["step_implementation_sha256"] = None
+            # PyTorch exposes counters and the last step length but does not
+            # return which stopping condition ended the loop.
+            observation["termination_status"] = "UNKNOWN"
+            observation["termination_reason"] = "NOT_EXPOSED_BY_PYTORCH_LBFGS"
+            return returned_loss
+
+        # An instance attribute is an ordinary callable. It delegates directly
+        # to the original bound method above, preserving the algorithm object.
+        optimizer.step = observed_step
+        return optimizer
+
+    return factory
+
+
+def _final_control_snapshot(optimizer_observation: Mapping, result, package: Mapping,
+                            window_config, xb: State) -> tuple[dict[str, np.ndarray], dict, dict]:
+    """Read final accepted-control gradients left by the existing audit closure."""
+    if (optimizer_observation.get("constructor_calls") != 1
+            or optimizer_observation.get("step_calls") != 1
+            or optimizer_observation.get("step_returned") is not True):
+        raise RuntimeError("fixed PR395 run did not use exactly one observed, returned LBFGS step")
+    optimizer = optimizer_observation.get("optimizer")
+    if optimizer is None:
+        raise RuntimeError("the original LBFGS instance was not retained")
+    params = optimizer.param_groups[0]["params"]
+    if len(params) != 2:
+        raise RuntimeError("fixed PR395 T/Q control contract expects exactly state and parameter controls")
+    v_state_param, v_theta_param = params
+    if v_state_param.grad is None or v_theta_param.grad is None:
+        raise RuntimeError("final accepted-state audit did not leave full control-space gradients")
+    v_state = v_state_param.detach().clone()
+    v_theta = v_theta_param.detach().clone()
+    grad_state = v_state_param.grad.detach().clone()
+    grad_theta = v_theta_param.grad.detach().clone()
+    if not torch.equal(v_state, result.v_state) or not torch.equal(v_theta, result.v_theta):
+        raise RuntimeError("original LBFGS controls differ from returned v_state/v_theta")
+    if (not bool(torch.isfinite(grad_state).all())
+            or not bool(torch.isfinite(grad_theta).all())):
+        raise FloatingPointError("final full control-space gradient contains non-finite values")
+    state_l2 = float(torch.linalg.vector_norm(grad_state).cpu())
+    theta_l2 = float(torch.linalg.vector_norm(grad_theta).cpu())
+    if (not math.isclose(state_l2, float(result.grad_norm_final), rel_tol=1e-12, abs_tol=1e-12)
+            or not math.isclose(theta_l2, float(result.grad_theta_norm_final),
+                                rel_tol=1e-12, abs_tol=1e-12)):
+        raise RuntimeError("captured accepted-control gradients disagree with returned gradient norms")
+    combined = torch.cat((grad_state.reshape(-1), grad_theta.reshape(-1)))
+    b_sigma = package["b_sigma"]
+    param_prior = package["param_prior"]
+    rederived_state, _ = cvt_apply(xb, b_sigma, v_state, package["cvt"])
+    if any(not torch.equal(getattr(rederived_state, field), getattr(result.x_analysis, field))
+           for field in State._fields):
+        raise RuntimeError("returned x_analysis differs from exact CVT reconstruction from v_state/b_sigma")
+    rederived_theta = params_from_vtheta(param_prior, v_theta, live=False)
+    if any(not torch.equal(getattr(rederived_theta, name), getattr(result.theta_analysis, name))
+           for name in PNAMES):
+        raise RuntimeError("returned theta_analysis differs from exact log-parameter reconstruction")
+    theta_analysis = torch.stack([
+        getattr(result.theta_analysis, name).detach().to(torch.float64)
+        for name in result.theta_analysis._fields])
+    eta = window_config.eta
+    eta_pre = window_config.eta_pre
+    private = {
+        "optimizer_v_state_control": _array(v_state).copy(),
+        "optimizer_v_theta_control": _array(v_theta).copy(),
+        "optimizer_final_gradient_v_state": _array(grad_state).copy(),
+        "optimizer_final_gradient_v_theta": _array(grad_theta).copy(),
+        "optimizer_final_gradient_combined": _array(combined).copy(),
+        "parameter_theta_background": _array(param_prior.theta_b).copy(),
+        "parameter_sigma_log": _array(param_prior.sigma_log).copy(),
+        "parameter_theta_analysis": _array(theta_analysis).copy(),
+        "fixed_eta_present": np.asarray([eta is not None], dtype=np.bool_),
+        "fixed_eta_pre_present": np.asarray([eta_pre is not None], dtype=np.bool_),
+        "fixed_eta": np.empty(0, dtype=np.float64) if eta is None else _array(eta).copy(),
+        "fixed_eta_pre": np.empty(0, dtype=np.float64) if eta_pre is None else _array(eta_pre).copy(),
+    }
+    _record_state(private, "b_sigma", b_sigma)
+    private.update(optimizer_observation.get("optimizer_state_arrays", {}))
+    vectors = {name: array for name, array in private.items()
+               if name.startswith(("optimizer_v_", "optimizer_final_gradient_",
+                                   "fixed_eta", "parameter_"))}
+    hashes = {name: array_sha256(array) for name, array in vectors.items()}
+    array_metadata = {
+        name: {"shape": list(array.shape), "dtype": str(array.dtype),
+               "sha256_f64": hashes[name],
+               "private_npz_key": f"control__{name}"}
+        for name, array in vectors.items()
+    }
+    step_state = optimizer_observation["step_state"]
+    group = step_state["group"]
+    public = {
+        "optimizer": {
+            "constructor_calls": optimizer_observation["constructor_calls"],
+            "step_calls": optimizer_observation["step_calls"],
+            "step_returned": optimizer_observation["step_returned"],
+            "termination_status": optimizer_observation["termination_status"],
+            "torch_version": optimizer_observation["torch_version"],
+            "step_implementation_sha256": optimizer_observation["step_implementation_sha256"],
+            "termination_reason": optimizer_observation["termination_reason"],
+            "step_original_loss_returned": optimizer_observation["step_original_loss_returned"],
+            "actual_n_iter": step_state["n_iter"],
+            "actual_func_evals": step_state["func_evals"],
+            "step_t": step_state["step_t"],
+            "prev_loss_at_step_return": step_state["prev_loss"],
+            "max_iter": group["max_iter"], "max_eval": group["max_eval"],
+            "lr": group["lr"], "history_size": group["history_size"],
+            "tolerance_grad": group["tolerance_grad"],
+            "tolerance_change": group["tolerance_change"],
+            "line_search_fn": group["line_search_fn"],
+            "final_audit_gradient_absmax": float(combined.abs().max().cpu()),
+            "final_audit_gradient_within_tolerance_grad": bool(
+                float(combined.abs().max().cpu()) <= float(group["tolerance_grad"])),
+            "state_snapshot_timing": "after original optimizer.step returned and before final accepted-state audit",
+            "state_structure": optimizer_observation.get("optimizer_state_structure", {}),
+            "state_arrays": optimizer_observation.get("optimizer_state_array_metadata", {}),
+            "n_window_evals": int(result.n_window_evals),
+            "n_audit_evals": int(result.n_audit_evals),
+        },
+        "final_control_gradient": {
+            "contract": "total objective gradient in LBFGS control space after the existing final audit; includes control-prior and CVT/log-parameter chain terms, not an RTTOV H-adjoint norm",
+            "v_state_order": list(State._fields),
+            "v_state_shape": list(grad_state.shape),
+            "v_theta_order": list(PNAMES),
+            "v_theta_shape": list(grad_theta.shape),
+            "state_l2_norm": state_l2,
+            "state_linf_norm": float(grad_state.abs().max().cpu()),
+            "theta_l2_norm": theta_l2,
+            "theta_linf_norm": float(grad_theta.abs().max().cpu()),
+            "combined_l2_norm": float(torch.linalg.vector_norm(combined).cpu()),
+            "combined_linf_norm": float(combined.abs().max().cpu()),
+            "block_norms_match_minimizer_return": True,
+            "x_analysis_rederived_exactly_from_v_state_and_b_sigma": True,
+            "theta_analysis_rederived_exactly_from_v_theta_and_prior": True,
+            "array_sha256_f64": hashes,
+            "arrays": array_metadata,
+        },
+        "control_background": {
+            "b_sigma_by_state_field": {
+                field: {"shape": list(_array(getattr(b_sigma, field)).shape),
+                        "dtype": str(_array(getattr(b_sigma, field)).dtype),
+                        "sha256_f64": array_sha256(getattr(b_sigma, field)),
+                        "private_npz_key": f"control__b_sigma__{field}"}
+                for field in State._fields},
+            "parameter_theta_background_sha256_f64": array_sha256(param_prior.theta_b),
+            "parameter_theta_background_private_npz_key": "control__parameter_theta_background",
+            "parameter_sigma_log_sha256_f64": array_sha256(param_prior.sigma_log),
+            "parameter_sigma_log_private_npz_key": "control__parameter_sigma_log",
+            "parameter_theta_analysis_sha256_f64": array_sha256(theta_analysis),
+            "parameter_theta_analysis_private_npz_key": "control__parameter_theta_analysis",
+            "fixed_eta": {"present": eta is not None,
+                          "shape": None if eta is None else list(_array(eta).shape),
+                          "sha256_f64": None if eta is None else array_sha256(eta),
+                          "private_npz_key": "control__fixed_eta"},
+            "fixed_eta_pre": {"present": eta_pre is not None,
+                              "shape": None if eta_pre is None else list(_array(eta_pre).shape),
+                              "sha256_f64": None if eta_pre is None else array_sha256(eta_pre),
+                              "private_npz_key": "control__fixed_eta_pre"},
+        },
+    }
+    metadata = {
+        "optimizer_capture": {key: value for key, value in optimizer_observation.items()
+                              if key not in ("optimizer", "optimizer_state_arrays")},
+        "control_capture": {
+            "state_control_order": list(State._fields),
+            "parameter_control_order": public["final_control_gradient"]["v_theta_order"],
+            "fixed_eta_present": eta is not None,
+            "fixed_eta_pre_present": eta_pre is not None,
+        },
+    }
+    return private, public, metadata
+
+
 def _classify_failure(exc: BaseException) -> str:
     message = str(exc).lower()
     if "rad_quality" in message or "frozen support" in message or "frozen-support" in message:
@@ -550,6 +793,8 @@ def _validate_predeclared_run(window_config, manifest: Mapping, *, obs_time: int
     if (obs_time != 1 or max_iter != 3 or len(forcings) != 1
             or float(getattr(window_config, "dt", math.nan)) != 20.0
             or getattr(window_config, "normalized_dry", False) is not True
+            or getattr(window_config, "eta", None) is not None
+            or getattr(window_config, "eta_pre", None) is not None
             or float(getattr(window_config, "ncmin_land", math.nan)) != 10.0
             or float(getattr(window_config, "ncmin_sea", math.nan)) != 10.0):
         raise ValueError("helper arguments differ from the fixed PR395 obs_time/dt/window contract")
@@ -599,6 +844,8 @@ def run_capture(
     intake_arrays = {}
     intake_manifest = {}
     events = []
+    optimizer_observation = {"constructor_calls": 0, "step_calls": 0,
+                             "step_returned": False}
     source_before = _source_snapshot()
     checkpoint_written = False
     try:
@@ -656,6 +903,7 @@ def run_capture(
         background_slot_forcing = None
         last_grad_call = None
         original_sharded = _fulldomain.sharded_allsky
+        original_lbfgs_factory = torch.optim.LBFGS
 
         def capture_call(*call_args, **call_kwargs):
             nonlocal call_number, background_slot, background_slot_forcing, last_grad_call
@@ -699,8 +947,10 @@ def run_capture(
                 }
             return out
 
-        _fulldomain.sharded_allsky = capture_call
         try:
+            _fulldomain.sharded_allsky = capture_call
+            torch.optim.LBFGS = _observe_existing_lbfgs(
+                original_lbfgs_factory, optimizer_observation)
             runner_kwargs = {
                 "window_config": window_config,
                 "obs_time": obs_time,
@@ -716,6 +966,7 @@ def run_capture(
                 **runner_kwargs)
         finally:
             _fulldomain.sharded_allsky = original_sharded
+            torch.optim.LBFGS = original_lbfgs_factory
 
         result = package["result"]
         actual_meta = package["metadata"]
@@ -763,6 +1014,9 @@ def run_capture(
         if not torch.equal(final_rq[final_mask > 0], torch.zeros_like(final_rq[final_mask > 0])):
             raise RuntimeError("final accepted-state quality flags are nonzero on frozen support")
 
+        control_private, control_public, control_metadata = _final_control_snapshot(
+            optimizer_observation, result, package, window_config, xb)
+
         accepted_state = State(*(getattr(result.x_analysis, f).detach().clone()
                                  for f in STATE_FIELDS))
         for i, forcing in enumerate(forcings):
@@ -809,6 +1063,7 @@ def run_capture(
                 "state_sha256": state_sha256(background_slot),
                 "forcing_sha256": forcing_sha256(background_slot_forcing),
             },
+            "control_and_optimizer_capture": control_metadata,
         }
         private_arrays = _private_payload(
             xb=xb, accepted_initial_state=accepted_state,
@@ -817,7 +1072,8 @@ def run_capture(
             final_slot_forcing=last_grad_call["forcing"], rho_d=rho_d,
             y_bt=y_bt, y_rq=y_rq,
             rttov_cfg=rttov_cfg, native_coordinates=native_coordinates,
-            slot_calls=events, receipt_metadata=config_metadata)
+            slot_calls=events, receipt_metadata=config_metadata,
+            extra_private_arrays=control_private)
         private_sha = write_private_npz_atomic(private_checkpoint, private_arrays)
         checkpoint_written = True
 
@@ -845,6 +1101,9 @@ def run_capture(
             },
             "minimizer_returned_state": True,
             "valid_native_analysis_published": False,
+            "optimization": control_public["optimizer"],
+            "final_control_gradient": control_public["final_control_gradient"],
+            "control_background": control_public["control_background"],
             "native_intake_context": intake_binding,
             "private_checkpoint": {
                 "path": str(private_checkpoint),
@@ -941,6 +1200,8 @@ def run_capture(
             "native_intake_context": intake_binding,
             "private_checkpoint": {"path": str(private_checkpoint), "published": False},
             "callback_attempt_metadata": events,
+            "optimizer_observation": {key: value for key, value in optimizer_observation.items()
+                                      if key != "optimizer"},
             "production_source_sha256_before": source_before,
             "production_source_sha256_after": _source_snapshot(),
             "valid_native_analysis_published": False,

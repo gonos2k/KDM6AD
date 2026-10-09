@@ -21,7 +21,9 @@ PYTHON = Path('/private/tmp/KDM6AD-research-rc-20261007/env/bin/python')
 RUN = Path('/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/runs/'
            'mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148')
 PACKET = Path(__file__).resolve().parent
-JOB = ROOT / 'graphify-out/pr395-case-continuation'
+# The first waiting job was withdrawn before any consumer ran so the user's
+# gradient-preservation follow-up could be applied. Native WRF was untouched.
+JOB = ROOT / 'graphify-out/pr395-case-continuation-v2'
 CONSUMERS = (PACKET / 'intake_native_tq.py', PACKET / 'run_analysis.py',
              ROOT / 'harness/evidence/pr395_tq_state_capture_2026-10-10/capture_tq_state.py',
              ROOT / 'harness/evidence/pr395_observation_matchup_2026-10-10/RECEIPT.json')

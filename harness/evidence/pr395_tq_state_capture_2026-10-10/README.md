@@ -17,12 +17,29 @@ uses a same-directory, no-clobber atomic link. The public `RESULT.json` keeps
 state hashes and metric summaries; configuration arrays are represented by
 shape, dtype and SHA-256 rather than full state arrays.
 
+The NPZ also stores final `v_state`/`v_theta`, all 12 `b_sigma` fields,
+parameter background/analysis values and log-prior widths, and the fixed
+`eta`/`eta_pre` presence and values (empty arrays plus `present=false` when
+the adapter pins them to `None`). The final full control-space gradient is
+read from the original LBFGS parameters after the existing accepted-state
+audit; the helper checks those controls against the returned result and its
+state and parameter gradient norms. Public output contains control and
+gradient hashes, shapes, and L2/L-infinity norms. These are total-objective
+gradients in control space, including prior and CVT/log-parameter chain terms;
+they are not RTTOV H-adjoint norms.
+
 The helper pins this run to `obs_time=1`, one 20-second forcing, three optimizer
 iterations, seven AMI channels, observation sigma/bias `1/0 K`, state priors
 `0.8 K` and `0.08` log-qv over the lowest 12 levels, inactive parameters,
 zero-initialized control, `ncmin_land=ncmin_sea=10`, and exactly one final
-accepted-state audit. Any callback quality loss or validation/analysis error
-leaves no successful checkpoint. A failure receipt may record the failure.
+accepted-state audit. The observer wraps the original PyTorch LBFGS instance's
+`step` call and records its actual counters, last line-search step, and
+tolerances. PyTorch does not return the stop condition, so the receipt marks
+the termination status unknown and reports the final-audit gradient/tolerance
+flag separately. Any callback quality loss or validation/analysis error leaves
+no successful checkpoint. A failure receipt may record the failure. The compact
+optimizer state is preserved as pre-audit provenance, not as a resumable
+optimizer checkpoint.
 
 Receipt sections distinguish validated input, numerical return, and physical
 matchup/science acceptance. A successful numerical return remains diagnostic:
@@ -33,6 +50,9 @@ Neither is reported as observed vapor-pressure `e/es` RH. `qc` and `nc` sums
 are unweighted sums across native levels, not column-integrated budgets.
 
 `test_capture_tq_state_storage.py` uses synthetic data only. It checks private
-file permissions, exclusive publication, and that a pre-analysis failure does
-not create a state checkpoint. It does not execute the native model, RTTOV, or
-the single-column analysis.
+file permissions, exclusive publication, four distinct 12-field state
+roundtrips plus control arrays, and that a pre-analysis failure does not create
+a state checkpoint. A synthetic quadratic compares the observed original
+LBFGS step with an unobserved step for exact value/gradient and counter parity.
+These checks do not execute the native model, RTTOV, or the single-column
+analysis.

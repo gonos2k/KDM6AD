@@ -37,3 +37,15 @@ diagnostic nor repeated CI earns an independent-case score.
 
 Related: [[single-column-tq-allsky-pin-2026-10-10]],
 [[native-target-artifact-diagnostic-2026-10-08]].
+
+## Later bounded endpoint inference
+
+The [known-zero addendum](../../harness/evidence/pr395_endpoint_bounds_2026-10-10/REPORT.md)
+checks the recorded final callback hashes against the known [1,39] positive-zero
+f64 payload. All nine condensate/precipitation and particle fields listed there
+match. This supports a clear final observation-slot endpoint under the recorded
+serialization and conventional hash-identity assumptions, without restoring a
+general private array or excluding transient intermediate clouds. Prior/norm
+bounds also limit the selected initial k3 water ratio to about 97.23%; they do
+not recover actual layer increments or endpoint RH. The original execution
+source and receipt remain unchanged.

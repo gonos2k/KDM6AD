@@ -11,7 +11,7 @@
 | RUN | 새 목표시각 실행 | 자연 종료상태와 harness validity, 실제 8개 Times 05:55:40–05:58:00 확인 | 05:26 JST 시작, WRF PID 99158; 정상 종료/목표 출력 대기 |
 | MATCH | 고정 관측 대응 | QA·픽셀/scan UTC·높이/시차·footprint의 확인값과 사전 가정 구분 | 선택 QA 해석 확인. nominal 시나리오 A 선언; 픽셀 UTC·CTH datum·공통 footprint 미확정 |
 | INTAKE | 새 native 입력 | 고정 j86/i48·native 39층에서 State/Forcing/압력·표면·기하를 식별, 배경/slot UTC 계산 | 코드·import·누락입력 거부 확인, 새 유효 결과 대기 |
-| SAVE | 상태 보존 | background/accepted initial·background/final slot·forcing·Exner·frozen rhoD·pressure를 private NPZ와 hash로 보존 | 저장 경계 3개 합성 검사 통과; 실제 결과 저장 대기 |
+| SAVE | 상태·제어·기울기 보존 | 네 State 묶음, forcing/Exner/frozen rhoD/pressure, v/b_sigma/고정매개변수, final total control gradient·optimizer 기록 | 5개 합성 검사 통과(원래3 포함); 실제 결과 저장 대기 |
 | BASE | 실제 RTTOV baseline | 새 입력에서 AMI10–16 7/7 품질·actual profile·지원집합 고정 | 새 유효 상태 대기 |
 | ANALYSIS | 한정 T/Q 분석 | zero control, parameter pin, strict S, same-H final audit, Jb/Jo/J·증분·slot QC/NC 기록 | 새 유효 상태 대기 |
 | PHYS | 결과 해석 | 물리 T·상대 qv·포화비·구름 반응과 초기 증분/모델 반응/좌표변환·reservoir를 구분 | 상태 저장 후 |
