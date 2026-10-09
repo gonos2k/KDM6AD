@@ -1,0 +1,88 @@
+{
+  "study": "PR393 one-column total-cost directional check",
+  "scope": "One bounded two-step, one-column synthetic-state CVT -> real pure-Torch KDM window M -> synthetic all-sky H -> Jb+Jo directional comparison. No RTTOV, native forecast, host run, physical observation, or full test suite was used.",
+  "test": {
+    "name": "test_cvt_to_real_window_to_synthetic_h_total_cost_directional_difference",
+    "path": "oracle/tests/test_da_single_column.py",
+    "sha256": "5d586f627d4f2753977e48d73de7929348eb8ce75a69e397d60db8b6765aaa58",
+    "adapter_module": "oracle/kdm6/da_single_column.py",
+    "adapter_module_sha256": "7a827f340c1fef189c0f70b65cd60bfd2af0938091b44eed90083a0439c63038",
+    "python": "3.10.11",
+    "torch": "2.13.0"
+  },
+  "configuration": {
+    "state_shape": [
+      1,
+      13
+    ],
+    "forcing_steps": 2,
+    "obs_time": 2,
+    "normalized_dry": true,
+    "operator_route": "all-sky at the sole profile, synthetic H callback",
+    "channels": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "state_prior": {
+      "th_add_sigma_K": 0.8,
+      "qv_log_sigma": 0.08,
+      "qv_levels_from_bottom": 12,
+      "non_tq_sigmas": 0.0
+    },
+    "parameter_prior_active": [],
+    "control_projection": [
+      "th",
+      "qv"
+    ],
+    "objective": "0.5*||v||^2 + Jo",
+    "v0_nonzero": {
+      "th": {
+        "profile": 0,
+        "level": 0,
+        "value": 0.03
+      },
+      "qv": {
+        "profile": 0,
+        "level": 2,
+        "value": -0.02
+      }
+    },
+    "direction": {
+      "th": {
+        "profile": 0,
+        "level": 0,
+        "value": 0.6
+      },
+      "qv": {
+        "profile": 0,
+        "level": 2,
+        "value": -0.8
+      }
+    },
+    "central_difference_step_control_units": 0.0001,
+    "window_vjp_steps": [
+      1,
+      0
+    ]
+  },
+  "comparison": {
+    "adjoint_directional_dJ": 0.24124595381474626,
+    "central_fd_directional_dJ": 0.2412459533784883,
+    "absolute_error": 4.362579464345373e-10,
+    "relative_error": 1.8083534232849416e-09,
+    "assertion_tolerance": {
+      "relative": 2e-08,
+      "absolute": 1e-09,
+      "effective_absolute_at_this_value": 4.824919076294925e-09
+    },
+    "error_over_effective_tolerance": 0.09041767116424708,
+    "J_plus": 2.251024509261605,
+    "J_minus": 2.2509762600709293
+  },
+  "interpretation": "This checks one nonzero T/qv control direction through CVT, two actual value/VJP KDM6 steps, a fixed synthetic all-sky H, and the quadratic state-control prior. It does not validate RTTOV gradients or a native-column analysis. The directional error is about 1.81e-9 relative and uses about 9.0% of the chosen effective tolerance."
+}

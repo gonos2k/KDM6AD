@@ -1,0 +1,234 @@
+{
+  "study": "PR394 bounded prior-regularized saturation-boundary scalar",
+  "scope": "Offline one-temperature saturation-boundary calculation from exactly three public JSON receipts. No NPZ, KDM6 integration, RTTOV, optimizer, native run, or external data was read or executed.",
+  "inputs": {
+    "clear_state_result": "harness/evidence/pr391_clear_state_2026-10-09/result.json",
+    "clear_state_result_sha256": "a5bf4fb627e51569a033c585ae567adb418126a960e4eadd06e17401d8a3c524",
+    "weak_delta_receipt": "harness/evidence/pr391_tq_response_2026-10-09/RESULT_weak_cloud_Tminus0p8.json",
+    "weak_delta_receipt_sha256": "314e2c850fdc639def6c0d4feb1172e09ec629a6c3ffbca4ac0de6f7c0911d90",
+    "cost_scenario_receipt": "harness/evidence/pr391_tq_cost_2026-10-09/RESULT.json",
+    "cost_scenario_receipt_sha256": "590dcd2e346afc26b174d635b3d93bc5dd1db8fc82ce45d18b4bd7e961eba3bf",
+    "analysis_script": "harness/evidence/pr394_prior_boundary_2026-10-10/analyze_boundary.py",
+    "analysis_script_sha256": "7315aa01576782e0f3a7a845f284af397a7adf60cada563bac2cbaf7cdc395e3"
+  },
+  "selected_baseline": {
+    "T_b_K": 296.7488237473604,
+    "q_b_dry_kgkg": 0.018194574862718582,
+    "q_ppmv_moist_from_cost_profile": 28421.5528557311,
+    "q_b_recomputed_from_cost_profile_kgkg_dry": 0.018194574862718582,
+    "p_Pa": 97710.18029785156,
+    "saved_weak_delta_T_K": -0.8,
+    "saved_weak_delta_theta_K": -0.8053122875524954,
+    "Exner_from_saved_delta_T_over_delta_theta": 0.9934034440618801,
+    "th_prior_sigma_K": 0.8,
+    "qv_log_prior_sigma": 0.08,
+    "induced_physical_T_prior_sigma_K": 0.7947227552495041,
+    "pressure_matches_clear_receipt": true,
+    "qv_matches_clear_receipt": true
+  },
+  "thermo_constants_from_clear_receipt": {
+    "rd": 287.0,
+    "rv": 461.6,
+    "ep2": 0.6217504332755632,
+    "ttp": 273.15999999999997,
+    "psat": 610.78,
+    "xa": 5.077123165130615,
+    "xb": 24.90412712097168,
+    "xai": 0.5623916387557983,
+    "xbi": 23.165176391601562,
+    "qmin": 1e-15
+  },
+  "objective_contract": {
+    "qs_water": "es=psat*exp(log(ttp/T)*xa)*exp(xb*(1-ttp/T)); qs=ep2*es/(p-es)",
+    "prior_regularized_boundary_cost": "0.5*((T-Tb)/sT)^2 + 0.5*(log(qs(T)/qb)/sq)^2",
+    "stationarity": "(T-Tb)/sT^2 + log(qs(T)/qb)*(dlogqs/dT)/sq^2 = 0",
+    "dlogqs_dT": "p/(p-es)*(-xa/T + xb*ttp/T^2)",
+    "control_coordinates": {
+      "u": "(T-Tb)/sT",
+      "v": "log(qs(T)/qb)/sq"
+    },
+    "bounded_temperature_interval_K": [
+      294.7488237473604,
+      298.7488237473604
+    ],
+    "prior_scope": "two controls only: potential-temperature additive prior mapped by saved Exner, and qv multiplicative log prior; not the full 51-control space"
+  },
+  "boundary_minimum": {
+    "method": "100-step bisection on analytic derivative in [Tb\u22121,Tb], plus endpoint and 20,001-point grid comparisons over Tb\u00b12 K",
+    "stationary_bracket_K": [
+      296.5460608375879,
+      296.54606083758796
+    ],
+    "dJ_dT_at_root": -8.804068585277491e-14,
+    "T_star_K": 296.5460608375879,
+    "delta_T_K": -0.20276290977250255,
+    "qs_star_kgkg": 0.01880704274634776,
+    "qv_factor_star": 1.0336621156718617,
+    "qv_relative_change_percent": 3.3662115671861725,
+    "u_star": -0.25513666046827227,
+    "v_star": 0.4138493584029613,
+    "J_star": 0.11818300348272258,
+    "grid_check": {
+      "points": 20001,
+      "spacing_K": 0.0002,
+      "minimum_T_K": 296.5460237473604,
+      "minimum_J": 0.11818300498442022,
+      "grid_minus_root_J": 1.5016976412374206e-09
+    }
+  },
+  "one_control_and_linearized_comparisons": {
+    "cooling_only": {
+      "T_sat_q_fixed_K": 296.0134076624113,
+      "delta_T_K": -0.7354160849491223,
+      "J": 0.4281588809398883,
+      "stored_clear_receipt_root_K": 296.0134076624113
+    },
+    "moist_only": {
+      "T_K": 296.7488237473604,
+      "qv_factor": 1.0467433026643462,
+      "log_qv_increment": 0.04568372767772767,
+      "J": 0.16304710738537354
+    },
+    "linearized_minimum_norm": {
+      "baseline_log_saturation_gap": 0.04568372767772767,
+      "a_vector_u_v": [
+        -0.04926106568397253,
+        0.08
+      ],
+      "u": -0.25495838725760767,
+      "v": 0.4140525727043869,
+      "J": 0.11822165609806091
+    }
+  },
+  "guard_applicability_on_grid": {
+    "T_lower_clamp_inactive_T_gt_1": true,
+    "es_upper_cap_inactive_es_lt_0p99p": true,
+    "qs_lower_floor_inactive_qs_gt_qmin": true,
+    "p_minus_es_denominator_safe": true,
+    "warm_water_branch_T_gt_ttp": true,
+    "minimum_margins": {
+      "T_K": 294.7488237473604,
+      "es_cap_margin_Pa": 93460.85743993495,
+      "qs_floor_margin_kgkg": 0.016812084791933024,
+      "p_minus_es_margin_Pa": 94437.95924291346,
+      "water_branch_margin_K": 21.588823747360436
+    }
+  },
+  "saved_cost_scenarios": {
+    "cost_contract": {
+      "channels_1based": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "sigma_K": 1.0,
+      "bias_K": 0.0,
+      "huber_delta": 1.0,
+      "cost_is_sum_over_each_scenario_supported_channel": true,
+      "common_seven_channel_cost_comparison_is_valid": false,
+      "intersection_of_all_case_quality_support_1based": [
+        12,
+        13,
+        14,
+        15
+      ],
+      "intersection_support_huber_costs_diagnostic_only": {
+        "baseline": 19.30277151749567,
+        "T_minus_0p5K": 19.232063364213218,
+        "T_minus_1p0K": 13.266850803209763,
+        "qv_plus_2pct": 19.290949652008067,
+        "qv_plus_6pct": 14.538814297534202,
+        "T_minus_0p8K": 16.568889423378266
+      },
+      "intersection_support_interpretation": "All six actual RTTOV QC masks retain only this common subset; these sums support a conditional within-set comparison and do not replace the frozen seven-channel reporting contract.",
+      "support_is_same_across_all_predeclared_cases": false
+    },
+    "rows": [
+      {
+        "scenario": "baseline",
+        "Jo_huber_sum": 26.588575903055926,
+        "valid_channel_count": 7,
+        "comparable_on_fixed_seven_channel_support": true
+      },
+      {
+        "scenario": "T_minus_0p5K",
+        "Jo_huber_sum": 26.492680185612585,
+        "valid_channel_count": 7,
+        "comparable_on_fixed_seven_channel_support": true
+      },
+      {
+        "scenario": "T_minus_0p8K",
+        "Jo_huber_sum": 22.61603312654273,
+        "valid_channel_count": 7,
+        "comparable_on_fixed_seven_channel_support": true
+      },
+      {
+        "scenario": "T_minus_1p0K",
+        "Jo_huber_sum": 13.266850803209763,
+        "valid_channel_count": 4,
+        "comparable_on_fixed_seven_channel_support": false
+      },
+      {
+        "scenario": "qv_plus_2pct",
+        "Jo_huber_sum": 26.57321129315153,
+        "valid_channel_count": 7,
+        "comparable_on_fixed_seven_channel_support": true
+      },
+      {
+        "scenario": "qv_plus_6pct",
+        "Jo_huber_sum": 19.14173770655151,
+        "valid_channel_count": 6,
+        "comparable_on_fixed_seven_channel_support": false
+      }
+    ],
+    "temperature_prior_adjusted_table": [
+      {
+        "scenario": "baseline",
+        "delta_physical_T_K": 0.0,
+        "Jo_saved_seven_channel_huber": 26.588575903055926,
+        "valid_channel_count": 7,
+        "Jb_th_prior_from_sT": 0.0,
+        "Jtotal_Jb_plus_saved_Jo": 26.588575903055926,
+        "Jtotal_minus_baseline_Jo": 0.0
+      },
+      {
+        "scenario": "T_minus_0p5K",
+        "delta_physical_T_K": -0.5,
+        "Jo_saved_seven_channel_huber": 26.492680185612585,
+        "valid_channel_count": 7,
+        "Jb_th_prior_from_sT": 0.19791500258881617,
+        "Jtotal_Jb_plus_saved_Jo": 26.6905951882014,
+        "Jtotal_minus_baseline_Jo": 0.10201928514547376
+      },
+      {
+        "scenario": "T_minus_0p8K",
+        "delta_physical_T_K": -0.8,
+        "Jo_saved_seven_channel_huber": 22.61603312654273,
+        "valid_channel_count": 7,
+        "Jb_th_prior_from_sT": 0.5066624066273696,
+        "Jtotal_Jb_plus_saved_Jo": 23.122695533170102,
+        "Jtotal_minus_baseline_Jo": -3.4658803698858236
+      }
+    ],
+    "weak_minus_0p8_prior_adjustment": {
+      "saved_Jo": 22.61603312654273,
+      "Jb_from_physical_T_delta_over_sT": 0.5066624066273696,
+      "Jb_direct_theta_delta_over_sigma": 0.5066624066273696,
+      "prior_coordinate_closure": 0.0,
+      "Jb_plus_saved_Jo": 23.122695533170102,
+      "baseline_Jo": 26.588575903055926,
+      "difference_vs_baseline_Jo": -3.4658803698858236,
+      "same_seven_channel_support": true
+    }
+  },
+  "interpretation_and_limits": [
+    "The scalar boundary minimum is conditional on exactly two prior-scaled controls and the uncapped warm-water qsat formula in Tb\u00b12 K; it is not a global 51-control minimum or a suggested optimizer seed.",
+    "The saved T\u22120.8 K and qv perturbation Jo values are forward diagnostic scenarios, not optimized analyses. Their prior-adjusted arithmetic does not create a new observation match.",
+    "The T\u22121 K and qv+6% scenarios lose one or more channels; they are explicitly marked incomparable with the fixed seven-channel objective.",
+    "No KDM/RTTOV profile derivative, high-level optimizer, physical prior calibration, observation admissibility, or forecast skill is inferred by this scalar calculation."
+  ]
+}

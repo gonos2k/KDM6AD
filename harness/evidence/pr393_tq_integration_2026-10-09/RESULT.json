@@ -1,0 +1,103 @@
+{
+  "focused_synthetic_integration": {
+    "callback_count_semantics": "n_successful_obs_callback_results counts non-None evaluator returns; failed attempts are excluded. Signature count, raw KDM step count, and RTTOV launch count are not reported.",
+    "command": "/opt/local/bin/python3 -m pytest -q oracle/tests/test_da_single_column.py",
+    "directional_result_receipt": "FD_result.json",
+    "objective_component_checks": "nonzero state control and Jb, zero Jtheta under sigma_log=0, positive Jo, and final trace total equals Jb+Jtheta+Jo; obs_time=0 rejected",
+    "observation_operator": "synthetic H monkeypatch at sharded_allsky/batched_clear_bt boundaries; real frozen-support factory and real dual window/minimizer used",
+    "real_rttov_or_host_calls": false,
+    "result": "12 passed; final tightened-directional test file rerun by coordinator",
+    "runtime_kdm_calls": "The KDM value-only window is exercised on synthetic 13- and 39-level states; underlying call counts are not instrumented.",
+    "synthetic_clear_background_allsky_test": "physical background classified clear; allsky[0] is called with seven valid channels; a synthetic cloudy trial has Jo>0 and nonzero qc/th adjoints with rad_quality=0",
+    "synthetic_original_clear_test": "allsky positions empty, real clear observation factory and two-step dual window, default_param_prior(0.2) with all four sigma_log=.2; positive Jo and nonzero th/qv adjoints persist",
+    "total_cost_directional_check": "nonzero v0 direction compared Jb+Jo central finite difference against projected window adjoint through the CVT, two-step KDM M, frozen callback, and synthetic H; assertion passed"
+  },
+  "inputs": {
+    "harness/evidence/pr391_tq_cost_2026-10-09/RESULT.json": "590dcd2e346afc26b174d635b3d93bc5dd1db8fc82ce45d18b4bd7e961eba3bf",
+    "harness/evidence/pr391_tq_response_2026-10-09/RESULT_weak_cloud_Tminus0p8.json": "314e2c850fdc639def6c0d4feb1172e09ec629a6c3ffbca4ac0de6f7c0911d90"
+  },
+  "interpretation_limits": [
+    "The theta weak-point prior adjustment is arithmetic over a previously saved what-if; it is not optimizer output or proof of a physical case.",
+    "The synthetic all-sky result demonstrates a possible callback path, not real RTTOV cloud sensitivity, scientific routing, a required P2 fix, or parameter identifiability.",
+    "The former clear H\u2218M path remains responsive to latent th/qv and is not shown to be wrong.",
+    "No numerical posterior probability is supported by these receipts or synthetic tests; any P2 confidence update remains qualitative and conditional."
+  ],
+  "original_high_level_source": {
+    "default_prior_active_parameters": [
+      "peaut",
+      "ncrk1",
+      "ncrk2",
+      "eccbrk"
+    ],
+    "default_prior_call": "run_fulldomain_analysis calls default_param_prior(0.2)",
+    "observation_through_M": "obs_time=1 in the current high-level research path retains the H\u2218M window adjoint",
+    "route": "slot-time physical cloud classification; allsky_pos=model_cloudy_pos + regime2; clear_op_pos=model_clear_pos without regime2",
+    "source_sha256": {
+      "oracle/kdm6/da_dual.py": "57ff5a832cc6b011d394f3b462dd344cb93177cb1a81af59edcb04c040fd256e",
+      "oracle/kdm6/da_fulldomain.py": "fcd783ec9efed50fe8c3a89e11b4f162447df32c5109e79e06a5f0bf71bfa984"
+    }
+  },
+  "review_baseline_scope": {
+    "base_commit": "e61988166272c03e012c1f5f57a577cf3ff1f404",
+    "both_paths_absent_from_base_commit": true,
+    "interpretation": "These adapter and test files are additions in the reviewed working tree, not files present at e6198816.",
+    "new_adapter_path": "oracle/kdm6/da_single_column.py",
+    "new_test_path": "oracle/tests/test_da_single_column.py"
+  },
+  "review_head": "e61988166272c03e012c1f5f57a577cf3ff1f404",
+  "saved_artifact_prior_arithmetic": {
+    "baseline": {
+      "jo_huber": 26.588575903055926,
+      "valid_channels": 7
+    },
+    "qv_plus_6pct_what_if": {
+      "admissible_for_frozen_7_channel_comparison": false,
+      "baseline_valid_channels": 7,
+      "jb_single_component": 0.26525512921565125,
+      "jo_huber_on_scenario_support": 19.14173770655151,
+      "log_increment": 0.058268908123975824,
+      "qv_factor": 1.06,
+      "qv_prior_sigma_log": 0.08,
+      "reason": "one channel is quality-flagged in this saved scenario; do not admit its six-channel sum as an improvement on the fixed seven-channel objective",
+      "valid_channels": 6
+    },
+    "weak_theta_what_if": {
+      "conditional_reduction_vs_saved_baseline_percent": 13.035223783788574,
+      "jb_single_component": 0.5066624066273696,
+      "jo_huber": 22.61603312654273,
+      "jo_plus_jb": 23.122695533170102,
+      "physical_delta_T_K": -0.8,
+      "potential_temperature_delta_theta_K": -0.8053122875524954,
+      "support_identical_to_baseline": true,
+      "th_prior_sigma_K": 0.8,
+      "valid_channels": 7
+    }
+  },
+  "scope": "Receipt arithmetic from two cached PR391 JSON files plus static source routing and a focused synthetic-H integration test. No real RTTOV, native forecast, full host or observation-based optimization was run.",
+  "single_column_alternative_source": {
+    "fixed_support": "AMI 10..16, all seven required at background and frozen through trials",
+    "interface_pressure_caveat": "p_half is passed unchanged with a grid-length coherence check; exact native interface identity is caller-supplied and not independently verified",
+    "parameter_prior": {
+      "active": [],
+      "sigma_log": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "route": "allsky_pos=[0], clear_pos=[] regardless of physical background classification",
+    "source_sha256": {
+      "oracle/kdm6/da_single_column.py": "7a827f340c1fef189c0f70b65cd60bfd2af0938091b44eed90083a0439c63038",
+      "oracle/tests/test_da_single_column.py": "5d586f627d4f2753977e48d73de7929348eb8ce75a69e397d60db8b6765aaa58"
+    },
+    "state_controls": {
+      "all_non_tq_state_sigmas_zero": true,
+      "qv_levels_from_bottom": 12,
+      "qv_sigma_log": 0.08,
+      "th_sigma_potential_temperature_K": 0.8
+    }
+  },
+  "study": "PR393 conditional all-sky routing / TQ prior integration review",
+  "validation_date_local": "2026-10-10 Asia/Tokyo; review basis is dated 2026-10-09"
+}
