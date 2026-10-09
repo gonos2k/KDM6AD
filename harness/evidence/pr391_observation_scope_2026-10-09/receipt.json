@@ -1,0 +1,70 @@
+{
+  "schema": "pr391_observation_scope_receipt_v1",
+  "date": "2026-10-09",
+  "worktree_head": "a85b39eb",
+  "scope": "Observation correspondence summary for unchanged VIIRS 205/27, AMI 320/48, native j86/i48 candidate.",
+  "summary_path": "harness/evidence/pr391_observation_scope_2026-10-09/summary.md",
+  "summary_sha256": "8af16efa3e9054678449087cc69fd653c46e09d0c9bd47b73154efba8b9f86e9",
+  "source_sha256": {
+    "REPORT_VIIRS_context_2026-10-07.md": "e19efe5d4cf9b439cd603480a2c9424ef6edd71509cce8d54280d31c19e12864",
+    "REPORT_VIIRS_native_candidate_2026-10-07.md": "90c46ac796ceb486fd341762864391770a67a56ac4d3e7cbc6ff30460707c8c0",
+    "REPORT_native_target_artifact_2026-10-08.md": "a2086cef40a3ebcf1c39d3918fa1aa873f3f75ae25ed2d845e4120e9ba17d887",
+    "VIIRS_native_candidate_result_2026-10-07.json": "51f3eb0ab3cb67d87f76b5631270cc7bac9d5193ac5292a81da5146783987b58",
+    "VIIRS_context_result_2026-10-07.json": "a29ec99f49c12da1a9f2451825eb331ebccef99aa0ab60cd504091b7dfa06fb7",
+    "VIIRS_geometry_result_2026-10-07.json": "d27c828ad1823a21a580fc1331a92d22caf15414f9f2a0fb9f9c63a4906f86be",
+    "VIIRS_products_result_2026-10-07.json": "3a72c4ba9853c5105f22104a43e02e4bd150fbc67fe6d25977c3eab151ccf268",
+    "VIIRS_AMI_candidate_result_2026-10-07.json": "7cbe37a71ef3289fd120ac5b7f0b7c05ec37e85e6c85935b1b52963b1e9d7b4f",
+    "NATIVE_geometry_correction_result_2026-10-08.json": "479800eb901e023cd364a1b2e22c0237537af62e00cf4d4a62badf4300c60424",
+    "VIIRS_context_receipts_2026-10-07.zip": "80596326f9cfb08f9138cd6820d31ce3cab10822b65ff12f6abfb92addc9040a",
+    "VIIRS_native_candidate_receipts_2026-10-07.zip": "6f9db394fbbdbccba5a308ac15e8133c3651ab321e2846eaf8f97a788ad1be5c",
+    "NATIVE_target_artifact_receipts_2026-10-08.zip": "e5ec467dde75e5117d3c95657a4db40ac1325ba49895d38930d75b9e792722d2"
+  },
+  "selected_candidate_changed": false,
+  "scientific_approval_granted": false,
+  "external_model_or_reanalysis_acquired": false,
+  "native_or_rttov_rerun": false,
+  "findings": [
+    "Nominal coordinates are tightly collocated (VIIRS-native 7.367 m) but footprint overlap is unestablished.",
+    "Stored QA byte 0 and corrected actual byte histograms are source bound; quality-flag encoding/science approval is unresolved.",
+    "VIIRS product anchored scan bracket is 05:56:08.986512\u201305:56:10.773095Z, not per-pixel time.",
+    "AMI numeric time epoch and pixel UTC remain unverified; Satpy noon-epoch interpretation is conditional.",
+    "CloudHeight/CloudDCOMP values are same-overpass retrievals; height datum and DCOMP QA/physical validity remain open.",
+    "Prior target-window run saved eight states and RTTOV artifacts but launcher exit 1 means experiment_valid remains false; diagnostic only."
+  ],
+  "predeclared_scenarios": [
+    "A nominal-coordinate diagnostic, unresolved timing; no parallax.",
+    "B native-time sensitivity over fixed VIIRS scan bracket; AMI time unresolved.",
+    "C only if independently documented AMI epoch is established; until then noon-epoch interval is conditional.",
+    "D separately compare nominal and provided parallax coordinates only under explicit height datum; preserve candidate and do not rank by BT fit."
+  ],
+  "graphify": {
+    "queried_graph": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/graph.json",
+    "query": "VIIRS native selected candidate observation context timing QA cloud top height parallax footprint",
+    "coverage": "Incomplete and mostly unrelated generic footprint nodes; conclusions are source/receipt based.",
+    "semantic_extract": "Manual bounded semantic fragment supplied in graphify-out/pr391-obs/semantic.json; CLI backend unavailable; root merge pending.",
+    "semantic_fragment_sha256": "23ab92fc6d40a12896ad5bfe944ef3ccea2902b69c3a0f64064fa743d9275e1b"
+  },
+  "network_research": {
+    "attempted": "Targeted official NOAA search for CloudPhaseFlag/v3r2 flag documentation. Results exposed NOAA-21 provisional readme and general legacy EUM, neither version-matched to this NOAA-20 v3r2 retrieval encoding; no decoding or new QA claim adopted.",
+    "result": "No closure; retain raw bytes and uncertainty."
+  },
+  "limitations": [
+    "The full CloudHeight/CloudDCOMP granules were not downloaded or full-file SHA verified; targeted generation-pinned ranges and offline block replay only.",
+    "No exact VIIRS per-pixel UTC or AMI UTC conversion is certified.",
+    "No complete footprint/parallax correspondence or target-time valid native experiment is established."
+  ],
+  "source_json_crosschecks": {
+    "result": "Passed read-only assertions against candidate/context/geometry/products/AMI JSON plus diagnostic artifact result and inventory JSON inside NATIVE_target_artifact_receipts_2026-10-08.zip.",
+    "identities": [
+      "Selected candidate file, row/column and native j/i match across candidate, context and AMI result JSON.",
+      "Selected CloudPhase granule SHA-256 matches both candidate-file inventory and context QA record; geometry result binds phase, AMI result and products result hashes.",
+      "Height and DCOMP sampled fields and target indices match products result JSON; their granule original files were not downloaded or full-file hashed.",
+      "Eight output times, run ID, selected native/AMI indices, referenced forecast SHA and false validity/diagnostic flags match target artifact JSON records and geometry correction sidecar."
+    ],
+    "verification_limit": "The forecast payload itself was not present or rehashed here. ZIP CRC/integrity verifies archive members against accidental corruption only; it does not certify full model content or turn the invalid run into a valid experiment.",
+    "checks_performed": [
+      "Metadata and exact value assertions only; no geometry or Huber recomputation.",
+      "VIIRS context and native target-artifact ZIPs passed unzip integrity checks in the prior step."
+    ]
+  }
+}

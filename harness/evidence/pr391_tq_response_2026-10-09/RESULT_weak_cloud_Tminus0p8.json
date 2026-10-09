@@ -1,0 +1,120 @@
+{
+  "input_checkpoint": "graphify-out/pr391-red/selected_column_checkpoint.npz",
+  "input_source": "cached native baseline NPZ only; no forecast read or hash",
+  "source_saved_forecast_sha256_reference": "ac73e382b3102a9fdad3cd5c9e4ec46b6b25a5997dba53aa1b369b0b9ac8153e",
+  "case": {
+    "time": "2025-07-19_05:55:40",
+    "wrf_j_1based": 87,
+    "wrf_i_1based": 49,
+    "wrf_k_bottomup_0based": 3,
+    "delta_T_K": -0.8,
+    "theta_delta_K": -0.8053122875524954,
+    "qv_factor": 1.0,
+    "dt_s": 20.0,
+    "normalized_dry": true,
+    "nccn_policy": "stored value from baseline"
+  },
+  "selected_entry": {
+    "T_K": 295.9488237473604,
+    "qv_kgkg_dry": 0.018194574862718582,
+    "p_Pa": 97710.18029785156,
+    "qs_water_kgkg_dry": 0.018121553586305645,
+    "q_over_qs_water": 1.0040295262801375,
+    "sw_percent": 0.402952628013753,
+    "activation_gate_sw_gt_zero": true
+  },
+  "selected_output": {
+    "T_K": 295.996945353809,
+    "theta_K": 297.9624714642836,
+    "qv_kgkg_dry": 0.01817451604257653,
+    "qc_kgkg_dry": 2.005882014205248e-05,
+    "qi_kgkg_dry": 0.0,
+    "nc_dry_specific": 162629333.23933968,
+    "nccn_dry_specific": 89713468.43815634,
+    "condensate_g_m3_using_runtime_entry_rho_dry": 0.02235876116625672,
+    "derived_binary_cfrac": 0.999999,
+    "cloud_positive_layers_1based": [
+      4
+    ]
+  },
+  "all_output_state_fields_finite": true,
+  "whole_runtime_jvp": {
+    "operator": "one 20s whole kdm6_step(normalized_dry=True) call; no observer/diagnostic trace",
+    "selected_layer": 4,
+    "directions": [
+      {
+        "direction": "physical_T_K",
+        "input_direction": "dtheta=1/pii at selected native level; qv unchanged",
+        "selected_output_order": [
+          "qv",
+          "qc",
+          "T",
+          "nc_dry_specific",
+          "nccn_dry_specific"
+        ],
+        "jvp": [
+          0.00031106333663826136,
+          -0.00031106333663826136,
+          0.2537052529538826,
+          -1514196185.8518786,
+          0.0
+        ],
+        "all_selected_jvp_finite": true
+      },
+      {
+        "direction": "dry_qv_kgkg",
+        "input_direction": "dqv=1 at selected native level; theta unchanged",
+        "selected_output_order": [
+          "qv",
+          "qc",
+          "T",
+          "nc_dry_specific",
+          "nccn_dry_specific"
+        ],
+        "jvp": [
+          0.7250595639127891,
+          0.2749404360872109,
+          659.5491911343062,
+          1336289979262.9946,
+          88110338.29192445
+        ],
+        "all_selected_jvp_finite": true
+      }
+    ],
+    "derivative_scope": "whole map at this point; no FD/VJP or all-branch census performed for this supplemental point"
+  },
+  "checkpoint_npz": "graphify-out/pr391-red/weak_cloud_Tminus0p8_checkpoint.npz",
+  "checkpoint_keys": [
+    "delz_m",
+    "p_center_Pa",
+    "p_interface_wrf_Pa",
+    "pii",
+    "rho_d_optical_reference",
+    "rho_d_runtime_entry",
+    "rho_m_forcing",
+    "state_in_bg",
+    "state_in_nc",
+    "state_in_nccn",
+    "state_in_ni",
+    "state_in_nr",
+    "state_in_qc",
+    "state_in_qg",
+    "state_in_qi",
+    "state_in_qr",
+    "state_in_qs",
+    "state_in_qv",
+    "state_in_th",
+    "state_out_bg",
+    "state_out_nc",
+    "state_out_nccn",
+    "state_out_ni",
+    "state_out_nr",
+    "state_out_qc",
+    "state_out_qg",
+    "state_out_qi",
+    "state_out_qr",
+    "state_out_qs",
+    "state_out_qv",
+    "state_out_th"
+  ]
+}

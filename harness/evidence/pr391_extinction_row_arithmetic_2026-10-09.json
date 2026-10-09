@@ -1,0 +1,46 @@
+{
+  "source": "harness/evidence/rttov_actual_extinction_2026-10-08/actual_extinction_profile_summary.json",
+  "source_sha256": "4eb5418a937e760b136296a0edd9896dd8e65a36477a1c37fb55c289acff0489",
+  "scope": "arithmetic on five previously measured rows; no extinction/model rerun; beta*ltick change is not TOA BT error or full-column transmission reconstruction",
+  "rows": [
+    {
+      "channel": 8,
+      "rttov_layer_1based": 65,
+      "native_bottomup_k_0based": 1,
+      "extinction_coefficient_reduction_percent": 39.09710786740203,
+      "local_delta_beta_times_ltick": 0.8703093741744234
+    },
+    {
+      "channel": 8,
+      "rttov_layer_1based": 66,
+      "native_bottomup_k_0based": 0,
+      "extinction_coefficient_reduction_percent": 47.92620369999657,
+      "local_delta_beta_times_ltick": 0.9725643608170897
+    },
+    {
+      "channel": 9,
+      "rttov_layer_1based": 64,
+      "native_bottomup_k_0based": 2,
+      "extinction_coefficient_reduction_percent": 0.7328472805734857,
+      "local_delta_beta_times_ltick": 0.012728952307260536
+    },
+    {
+      "channel": 9,
+      "rttov_layer_1based": 65,
+      "native_bottomup_k_0based": 1,
+      "extinction_coefficient_reduction_percent": 7.7661398380016875,
+      "local_delta_beta_times_ltick": 0.11415153787415117
+    },
+    {
+      "channel": 9,
+      "rttov_layer_1based": 66,
+      "native_bottomup_k_0based": 0,
+      "extinction_coefficient_reduction_percent": 11.487543793035076,
+      "local_delta_beta_times_ltick": 0.13714732746667274
+    }
+  ],
+  "sum_local_delta_beta_ltick_by_channel": {
+    "8": 1.8428737349915132,
+    "9": 0.2640278176480845
+  }
+}

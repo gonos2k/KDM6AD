@@ -1,0 +1,58 @@
+{
+  "scope": "Post-run execution-path identity reconciliation only. No forecast read, RTTOV execution, or recomputation of the six costs. This is not a pre-launch provenance capture.",
+  "worktree_head": "a85b39eb1340c0b5f4259434d0cbe2fce7672354",
+  "cost_result_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr391_tq_cost_2026-10-09/RESULT.json",
+  "cost_result_sha256": "590dcd2e346afc26b174d635b3d93bc5dd1db8fc82ce45d18b4bd7e961eba3bf",
+  "baseline_saved_result": {
+    "scenario": "baseline",
+    "main_call_profile_sha256": {
+      "p.txt": "c7d47eed648f3e7313979e84600ae916fbf8d381d6c21f2d8f562c88463a7726",
+      "p_half.txt": "dc736422f63710511af6a3336a77b33f092c63e66deffba26e5e8c29f47c2b11",
+      "t.txt": "87b10f1915c6d0c358bc5f135d560c06db6e6e9b3ac05364e34cc14d655f0bfc",
+      "q.txt": "8d5b00aa058fae51b5272ddc8f6f65e1bcaa34a65c8e499c099128b87e6cb135",
+      "o3.txt": "4169bd766bea042e1de81390c48df7c0f3ea690b5fc44007508127b3047fed6d",
+      "co2.txt": "075c725200902dd1505635d3704db9416ef88f960be482819c17db9422ef7553"
+    },
+    "captured_before_local_profile_H_fd": true,
+    "interpretation": "The main six-case baseline RTTOV call and cost were recorded before the local profile-H finite-difference evaluations began. The per-profile hashes are the values saved in RESULT.json at that call."
+  },
+  "paired_case_00_immutable_profile_sha256": {
+    "p.txt": "c7d47eed648f3e7313979e84600ae916fbf8d381d6c21f2d8f562c88463a7726",
+    "p_half.txt": "dc736422f63710511af6a3336a77b33f092c63e66deffba26e5e8c29f47c2b11",
+    "t.txt": "87b10f1915c6d0c358bc5f135d560c06db6e6e9b3ac05364e34cc14d655f0bfc",
+    "o3.txt": "4169bd766bea042e1de81390c48df7c0f3ea690b5fc44007508127b3047fed6d",
+    "co2.txt": "075c725200902dd1505635d3704db9416ef88f960be482819c17db9422ef7553",
+    "q.txt": "8d5b00aa058fae51b5272ddc8f6f65e1bcaa34a65c8e499c099128b87e6cb135"
+  },
+  "baseline_q_identity": {
+    "expected_main_call_sha256": "8d5b00aa058fae51b5272ddc8f6f65e1bcaa34a65c8e499c099128b87e6cb135",
+    "immutable_pair_q_sha256": "8d5b00aa058fae51b5272ddc8f6f65e1bcaa34a65c8e499c099128b87e6cb135",
+    "exact_match": true
+  },
+  "baseline_output_directory_after_old_runner_fd": {
+    "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr391-cost/runs12/run_baseline",
+    "current_profile_sha256": {
+      "p.txt": "c7d47eed648f3e7313979e84600ae916fbf8d381d6c21f2d8f562c88463a7726",
+      "p_half.txt": "dc736422f63710511af6a3336a77b33f092c63e66deffba26e5e8c29f47c2b11",
+      "t.txt": "87b10f1915c6d0c358bc5f135d560c06db6e6e9b3ac05364e34cc14d655f0bfc",
+      "q.txt": "3b2cbbbbdb66bc4f096830a2259ad92cc6b943e0f181005e9df844c4829bad67",
+      "o3.txt": "4169bd766bea042e1de81390c48df7c0f3ea690b5fc44007508127b3047fed6d",
+      "co2.txt": "075c725200902dd1505635d3704db9416ef88f960be482819c17db9422ef7553"
+    },
+    "current_q_sha256": "3b2cbbbbdb66bc4f096830a2259ad92cc6b943e0f181005e9df844c4829bad67",
+    "expected_q_sha256_at_main_call": "8d5b00aa058fae51b5272ddc8f6f65e1bcaa34a65c8e499c099128b87e6cb135",
+    "current_q_differs_from_main_call": true,
+    "reason": "The recorded runner reused run_baseline for four local H finite-difference calls; qv plus was the final call, so this directory now holds that final perturbed Q input. The actual baseline BT/cost and baseline profile hashes were already saved in RESULT.json before those overwrites. Do not treat the present q.txt in this directory as the baseline profile."
+  },
+  "runner_identity": {
+    "executed_runner_sha256_from_result": "33f64841aedeff68fe22a3d6d3453bee1d48741a6a797655eb23b1fe1d289afa",
+    "byte_exact_historical_runner_snapshot_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr391_tq_cost_2026-10-09/run_native_column_cost_at_execution.py",
+    "byte_exact_historical_runner_snapshot_sha256": "33f64841aedeff68fe22a3d6d3453bee1d48741a6a797655eb23b1fe1d289afa",
+    "snapshot_method": "Reconstructed after the run by reversing only the subsequent local-H path-isolation diff; digest exactly matches the runner SHA preserved in RESULT.json.",
+    "current_future_path_runner_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr391_tq_cost_2026-10-09/run_native_column_cost.py",
+    "current_future_path_runner_sha256": "cd7dee06df761d4a276621a8e6c9d0d2141a4b176e5c479542bcac95761a39a2",
+    "future_path_fix": "The base, T-/T+, and qv-/qv+ local profile-H RTTOV calls each write to a fresh child case directory. The six main scenario case directories are no longer reused by those derivative calls.",
+    "current_runner_was_used_for_saved_result": false
+  },
+  "source_and_build_limit": "M_source_identity.json remains the after-run tracked KDM source pin cross-checked with Red at the stated git revision. The historical runner snapshot is checksum-matched, but this does not create a pre-launch source capture or a new RTTOV source-to-binary build attestation."
+}

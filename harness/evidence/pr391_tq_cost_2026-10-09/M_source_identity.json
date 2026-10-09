@@ -1,0 +1,26 @@
+{
+  "scope": "After-run inspection pins for M in the composed cost experiment, cross-bound to independently pinned Red local runtime; no rerun and no pre-launch pin claim",
+  "worktree_head": "a85b39eb1340c0b5f4259434d0cbe2fce7672354",
+  "tracked_oracle_kdm6_sources_unmodified": true,
+  "physics_sources": {
+    "oracle/kdm6/runtime.py": {
+      "sha256": "e505c3a1d42fb2880d0ce3d65381488a06528de8d4133b39d4e9a573cef997ac",
+      "matches_red_runtime_receipt": true
+    },
+    "oracle/kdm6/coordinator.py": {
+      "sha256": "05981b7a19c8d4fe262cb8080b14ddf3b4eb5c027b58604803b2e0b80764a0bd",
+      "matches_red_runtime_receipt": true
+    },
+    "oracle/kdm6/thermo.py": {
+      "sha256": "5278c14c6d87178af5ee963eef59d3297b923fa374412fd854c01e43ffb1b5cd",
+      "matches_red_runtime_receipt": true
+    },
+    "oracle/kdm6/satadj.py": {
+      "sha256": "d2766dc50dbdfd9b1db1b962651f2ca9ded9be34d2e01e97b61b62d189b88a92",
+      "matches_red_runtime_receipt": true
+    }
+  },
+  "red_runtime_receipt_sha256": "db1c2baa44608dfa744eaf6583a566e005559971b1858877cc28e95ede129823",
+  "cost_result_sha256": "590dcd2e346afc26b174d635b3d93bc5dd1db8fc82ce45d18b4bd7e961eba3bf",
+  "cost_runner_source_binding": "Authored runner inserts this worktree/oracle at sys.path[0] before importing kdm6.runtime; RESULT runner SHA is preserved. Other physics dependency identities are bound by unchanged tracked source at the stated git revision."
+}

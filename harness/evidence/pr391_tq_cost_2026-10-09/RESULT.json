@@ -1,0 +1,979 @@
+{
+  "study": "PR391 native T/Q -> KDM endpoint cloud optics -> seven-channel KMA BT/Huber diagnostic",
+  "status": "DIAGNOSTIC_FORWARD_COST_AND_TQ_DERIVATIVES_COMPLETE",
+  "scenarios": [
+    {
+      "scenario": "baseline",
+      "model_bt_K": [
+        262.2609690648086,
+        293.6851951749752,
+        270.6304713118575,
+        296.232817250819,
+        295.9661155119729,
+        292.8917454490824,
+        276.60347635213475
+      ],
+      "observation_bt_K": [
+        263.29133611315865,
+        288.55207070015797,
+        263.64118031341025,
+        291.3025921545636,
+        290.982874309017,
+        288.4917312292452,
+        273.9811634897418
+      ],
+      "residual_K": [
+        -1.0303670483500582,
+        5.133124474817237,
+        6.989290998447245,
+        4.930225096255356,
+        4.983241202955867,
+        4.400014219837203,
+        2.6223128623929597
+      ],
+      "normalized_residual_sigma_units": [
+        -1.0303670483500582,
+        5.133124474817237,
+        6.989290998447245,
+        4.930225096255356,
+        4.983241202955867,
+        4.400014219837203,
+        2.6223128623929597
+      ],
+      "unmasked_per_channel_huber": [
+        0.5303670483500582,
+        4.633124474817237,
+        6.489290998447245,
+        4.430225096255356,
+        4.483241202955867,
+        3.900014219837203,
+        2.1223128623929597
+      ],
+      "quality_masked_per_channel_contribution": [
+        0.5303670483500582,
+        4.633124474817237,
+        6.489290998447245,
+        4.430225096255356,
+        4.483241202955867,
+        3.900014219837203,
+        2.1223128623929597
+      ],
+      "rad_quality": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mask": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "valid_channel_count": 7,
+      "huber_cost": 26.588575903055926,
+      "profile_identity": {
+        "native_center_pressure_exact": true,
+        "native_interface_pressure_exact": true,
+        "native_profile_arrays_sha256": {
+          "p_hPa": "32bf82adf79597fbd2bbe35a5f7efb73dc8039fed9943bbb9e4bdf2807ee4836",
+          "p_half_hPa": "626c617dc0a680376d68f56b4d55b2f472e738ab5c7c8562b67599fc0a1d7c8e",
+          "T_K": "f235e2c6166018134c3f3e470099592c9803d6f9eea416bd9f141a9782216464",
+          "Q_ppmv_moist": "4dcacb9494e9feb35d36a657ace8ca5369a33992d7dc3588c3e51397d9bdc886",
+          "hydro6_g_m3": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+          "hydro7_g_m3": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7"
+        },
+        "native_T_range_K": [
+          198.719494966329,
+          299.047967592547
+        ],
+        "native_Q_range_ppmv_moist": [
+          3.874095041803936,
+          29128.825483522705
+        ],
+        "k3_wrf_zero_based_temperature_K": 296.7488237473604,
+        "k3_wrf_zero_based_q_ppmv_moist": 28421.5528557311,
+        "cloudy_native_layer_count": 0,
+        "unchanged_gases_geometry_surface_verified": true,
+        "executed_profile_hashes": {
+          "p.txt": "c7d47eed648f3e7313979e84600ae916fbf8d381d6c21f2d8f562c88463a7726",
+          "p_half.txt": "dc736422f63710511af6a3336a77b33f092c63e66deffba26e5e8c29f47c2b11",
+          "t.txt": "87b10f1915c6d0c358bc5f135d560c06db6e6e9b3ac05364e34cc14d655f0bfc",
+          "q.txt": "8d5b00aa058fae51b5272ddc8f6f65e1bcaa34a65c8e499c099128b87e6cb135",
+          "o3.txt": "4169bd766bea042e1de81390c48df7c0f3ea690b5fc44007508127b3047fed6d",
+          "co2.txt": "075c725200902dd1505635d3704db9416ef88f960be482819c17db9422ef7553"
+        },
+        "executed_namelist_sha256": "bb34395dac966c50aa7f6e584fc15198ff05a4f0e9233df52a51460de155dd87",
+        "executed_run_script_sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+        "executed_channels_1based": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "executed_simple_cloud_fraction": 0.0,
+        "rttov_executable_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+        "rttov_executable_sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+        "coefficient_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+        "coefficient_sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+        "run_case_directory": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr391-cost/runs12/run_baseline"
+      },
+      "local_profile_H_directional_checks": {
+        "T": {
+          "direction": "1 K at WRF k3",
+          "directional_cost_covector": 0.19140973410338202,
+          "central_fd": 0.19140918538482765,
+          "relative_error": 2.8667223061675993e-06,
+          "h": 0.01,
+          "plus_minus_cost": [
+            26.586661751217832,
+            26.59048993492553
+          ]
+        },
+        "qv": {
+          "direction": "0.1*qv at WRF k3",
+          "directional_cost_covector": -0.07656914214484285,
+          "central_fd": -0.07656852081368015,
+          "relative_error": 8.114641816481908e-06,
+          "h": 0.01,
+          "plus_minus_cost": [
+            26.58934146382103,
+            26.587810093404755
+          ]
+        }
+      }
+    },
+    {
+      "scenario": "T_minus_0p5K",
+      "model_bt_K": [
+        262.26096005072407,
+        293.6714467571911,
+        270.62070305911124,
+        296.2150693260977,
+        295.94456221582425,
+        292.8701067694161,
+        276.5920281916734
+      ],
+      "observation_bt_K": [
+        263.29133611315865,
+        288.55207070015797,
+        263.64118031341025,
+        291.3025921545636,
+        290.982874309017,
+        288.4917312292452,
+        273.9811634897418
+      ],
+      "residual_K": [
+        -1.0303760624345841,
+        5.119376057033151,
+        6.97952274570099,
+        4.9124771715340785,
+        4.961687906807242,
+        4.378375540170907,
+        2.6108647019316322
+      ],
+      "normalized_residual_sigma_units": [
+        -1.0303760624345841,
+        5.119376057033151,
+        6.97952274570099,
+        4.9124771715340785,
+        4.961687906807242,
+        4.378375540170907,
+        2.6108647019316322
+      ],
+      "unmasked_per_channel_huber": [
+        0.5303760624345841,
+        4.619376057033151,
+        6.47952274570099,
+        4.4124771715340785,
+        4.461687906807242,
+        3.8783755401709072,
+        2.1108647019316322
+      ],
+      "quality_masked_per_channel_contribution": [
+        0.5303760624345841,
+        4.619376057033151,
+        6.47952274570099,
+        4.4124771715340785,
+        4.461687906807242,
+        3.8783755401709072,
+        2.1108647019316322
+      ],
+      "rad_quality": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mask": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "valid_channel_count": 7,
+      "huber_cost": 26.492680185612585,
+      "profile_identity": {
+        "native_center_pressure_exact": true,
+        "native_interface_pressure_exact": true,
+        "native_profile_arrays_sha256": {
+          "p_hPa": "32bf82adf79597fbd2bbe35a5f7efb73dc8039fed9943bbb9e4bdf2807ee4836",
+          "p_half_hPa": "626c617dc0a680376d68f56b4d55b2f472e738ab5c7c8562b67599fc0a1d7c8e",
+          "T_K": "45b3a6ce2e95db38827e1e8dc3d59f6274a240235f9bbb3308eb6d5ebc8647b4",
+          "Q_ppmv_moist": "4dcacb9494e9feb35d36a657ace8ca5369a33992d7dc3588c3e51397d9bdc886",
+          "hydro6_g_m3": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+          "hydro7_g_m3": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7"
+        },
+        "native_T_range_K": [
+          198.719494966329,
+          299.047967592547
+        ],
+        "native_Q_range_ppmv_moist": [
+          3.874095041803936,
+          29128.825483522705
+        ],
+        "k3_wrf_zero_based_temperature_K": 296.2488237473604,
+        "k3_wrf_zero_based_q_ppmv_moist": 28421.5528557311,
+        "cloudy_native_layer_count": 0,
+        "unchanged_gases_geometry_surface_verified": true,
+        "executed_profile_hashes": {
+          "p.txt": "c7d47eed648f3e7313979e84600ae916fbf8d381d6c21f2d8f562c88463a7726",
+          "p_half.txt": "dc736422f63710511af6a3336a77b33f092c63e66deffba26e5e8c29f47c2b11",
+          "t.txt": "490cb37cb4e4c8ea61c40cfada37e41722fd416641e73f917f2c4ea9e015c860",
+          "q.txt": "8d5b00aa058fae51b5272ddc8f6f65e1bcaa34a65c8e499c099128b87e6cb135",
+          "o3.txt": "4169bd766bea042e1de81390c48df7c0f3ea690b5fc44007508127b3047fed6d",
+          "co2.txt": "075c725200902dd1505635d3704db9416ef88f960be482819c17db9422ef7553"
+        },
+        "executed_namelist_sha256": "bb34395dac966c50aa7f6e584fc15198ff05a4f0e9233df52a51460de155dd87",
+        "executed_run_script_sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+        "executed_channels_1based": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "executed_simple_cloud_fraction": 0.0,
+        "rttov_executable_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+        "rttov_executable_sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+        "coefficient_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+        "coefficient_sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+        "run_case_directory": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr391-cost/runs12/run_T_minus_0p5K"
+      }
+    },
+    {
+      "scenario": "T_minus_1p0K",
+      "model_bt_K": [
+        262.2609469273298,
+        291.65233346873043,
+        269.25714094789055,
+        294.354988289529,
+        294.35885138370816,
+        291.71424818831815,
+        276.1798424130625
+      ],
+      "observation_bt_K": [
+        263.29133611315865,
+        288.55207070015797,
+        263.64118031341025,
+        291.3025921545636,
+        290.982874309017,
+        288.4917312292452,
+        273.9811634897418
+      ],
+      "residual_K": [
+        -1.0303891858288239,
+        3.1002627685724633,
+        5.615960634480302,
+        3.052396134965363,
+        3.37597707469115,
+        3.222516959072948,
+        2.198678923320699
+      ],
+      "normalized_residual_sigma_units": [
+        -1.0303891858288239,
+        3.1002627685724633,
+        5.615960634480302,
+        3.052396134965363,
+        3.37597707469115,
+        3.222516959072948,
+        2.198678923320699
+      ],
+      "unmasked_per_channel_huber": [
+        0.5303891858288239,
+        2.6002627685724633,
+        5.115960634480302,
+        2.552396134965363,
+        2.87597707469115,
+        2.722516959072948,
+        1.6986789233206991
+      ],
+      "quality_masked_per_channel_contribution": [
+        0.0,
+        0.0,
+        5.115960634480302,
+        2.552396134965363,
+        2.87597707469115,
+        2.722516959072948,
+        0.0
+      ],
+      "rad_quality": [
+        32768.0,
+        32768.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        32768.0
+      ],
+      "mask": [
+        0.0,
+        0.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        0.0
+      ],
+      "valid_channel_count": 4,
+      "huber_cost": 13.266850803209763,
+      "profile_identity": {
+        "native_center_pressure_exact": true,
+        "native_interface_pressure_exact": true,
+        "native_profile_arrays_sha256": {
+          "p_hPa": "32bf82adf79597fbd2bbe35a5f7efb73dc8039fed9943bbb9e4bdf2807ee4836",
+          "p_half_hPa": "626c617dc0a680376d68f56b4d55b2f472e738ab5c7c8562b67599fc0a1d7c8e",
+          "T_K": "eab3bb3e44666f4b3b71b2bd5a8bbec3ea451b89c8d9d837ea49c88ecf9383bd",
+          "Q_ppmv_moist": "6b6cd62df1570a965797d490d551fb6384450c64d5d4ad73d544069692143377",
+          "hydro6_g_m3": "a5f3bf2ddfea0341527e57d83868083c5a1d3c7bb092cd1f886681f73b55808c",
+          "hydro7_g_m3": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7"
+        },
+        "native_T_range_K": [
+          198.719494966329,
+          299.047967592547
+        ],
+        "native_Q_range_ppmv_moist": [
+          3.874095041803936,
+          29128.825483522705
+        ],
+        "k3_wrf_zero_based_temperature_K": 295.9467697536212,
+        "k3_wrf_zero_based_q_ppmv_moist": 28296.33434124729,
+        "cloudy_native_layer_count": 1,
+        "unchanged_gases_geometry_surface_verified": true,
+        "executed_profile_hashes": {
+          "p.txt": "c7d47eed648f3e7313979e84600ae916fbf8d381d6c21f2d8f562c88463a7726",
+          "p_half.txt": "dc736422f63710511af6a3336a77b33f092c63e66deffba26e5e8c29f47c2b11",
+          "t.txt": "4ae225bb97a1c129f6c5100eb8e4a99104e1c72a77953e845cd0df166f3c1321",
+          "q.txt": "417fd12ffcb627281db709680a80322219469a458681a8cf189e432cbf0b22e5",
+          "o3.txt": "4169bd766bea042e1de81390c48df7c0f3ea690b5fc44007508127b3047fed6d",
+          "co2.txt": "075c725200902dd1505635d3704db9416ef88f960be482819c17db9422ef7553"
+        },
+        "executed_namelist_sha256": "bb34395dac966c50aa7f6e584fc15198ff05a4f0e9233df52a51460de155dd87",
+        "executed_run_script_sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+        "executed_channels_1based": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "executed_simple_cloud_fraction": 0.0,
+        "rttov_executable_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+        "rttov_executable_sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+        "coefficient_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+        "coefficient_sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+        "run_case_directory": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr391-cost/runs12/run_T_minus_1p0K"
+      }
+    },
+    {
+      "scenario": "qv_plus_2pct",
+      "model_bt_K": [
+        262.2609687209905,
+        293.68329262863995,
+        270.62891769188855,
+        296.2297291481712,
+        295.96217067667294,
+        292.88851014151146,
+        276.6018358102351
+      ],
+      "observation_bt_K": [
+        263.29133611315865,
+        288.55207070015797,
+        263.64118031341025,
+        291.3025921545636,
+        290.982874309017,
+        288.4917312292452,
+        273.9811634897418
+      ],
+      "residual_K": [
+        -1.0303673921681593,
+        5.131221928481978,
+        6.9877373784783,
+        4.927136993607576,
+        4.979296367655934,
+        4.396778912266257,
+        2.620672320493327
+      ],
+      "normalized_residual_sigma_units": [
+        -1.0303673921681593,
+        5.131221928481978,
+        6.9877373784783,
+        4.927136993607576,
+        4.979296367655934,
+        4.396778912266257,
+        2.620672320493327
+      ],
+      "unmasked_per_channel_huber": [
+        0.5303673921681593,
+        4.631221928481978,
+        6.4877373784783,
+        4.427136993607576,
+        4.479296367655934,
+        3.8967789122662566,
+        2.120672320493327
+      ],
+      "quality_masked_per_channel_contribution": [
+        0.5303673921681593,
+        4.631221928481978,
+        6.4877373784783,
+        4.427136993607576,
+        4.479296367655934,
+        3.8967789122662566,
+        2.120672320493327
+      ],
+      "rad_quality": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mask": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "valid_channel_count": 7,
+      "huber_cost": 26.57321129315153,
+      "profile_identity": {
+        "native_center_pressure_exact": true,
+        "native_interface_pressure_exact": true,
+        "native_profile_arrays_sha256": {
+          "p_hPa": "32bf82adf79597fbd2bbe35a5f7efb73dc8039fed9943bbb9e4bdf2807ee4836",
+          "p_half_hPa": "626c617dc0a680376d68f56b4d55b2f472e738ab5c7c8562b67599fc0a1d7c8e",
+          "T_K": "f235e2c6166018134c3f3e470099592c9803d6f9eea416bd9f141a9782216464",
+          "Q_ppmv_moist": "e3ad61fb71788bf5394dd491ca21d777bb5b0de64b41044cf045cd1eb1fc1088",
+          "hydro6_g_m3": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+          "hydro7_g_m3": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7"
+        },
+        "native_T_range_K": [
+          198.719494966329,
+          299.047967592547
+        ],
+        "native_Q_range_ppmv_moist": [
+          3.874095041803936,
+          29128.825483522705
+        ],
+        "k3_wrf_zero_based_temperature_K": 296.7488237473604,
+        "k3_wrf_zero_based_q_ppmv_moist": 28973.514467388693,
+        "cloudy_native_layer_count": 0,
+        "unchanged_gases_geometry_surface_verified": true,
+        "executed_profile_hashes": {
+          "p.txt": "c7d47eed648f3e7313979e84600ae916fbf8d381d6c21f2d8f562c88463a7726",
+          "p_half.txt": "dc736422f63710511af6a3336a77b33f092c63e66deffba26e5e8c29f47c2b11",
+          "t.txt": "87b10f1915c6d0c358bc5f135d560c06db6e6e9b3ac05364e34cc14d655f0bfc",
+          "q.txt": "3450f75f4244201d4b8cd4036ef6ada9eba96a48100ac061666337603853512e",
+          "o3.txt": "4169bd766bea042e1de81390c48df7c0f3ea690b5fc44007508127b3047fed6d",
+          "co2.txt": "075c725200902dd1505635d3704db9416ef88f960be482819c17db9422ef7553"
+        },
+        "executed_namelist_sha256": "bb34395dac966c50aa7f6e584fc15198ff05a4f0e9233df52a51460de155dd87",
+        "executed_run_script_sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+        "executed_channels_1based": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "executed_simple_cloud_fraction": 0.0,
+        "rttov_executable_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+        "rttov_executable_sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+        "coefficient_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+        "coefficient_sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+        "run_case_directory": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr391-cost/runs12/run_qv_plus_2pct"
+      }
+    },
+    {
+      "scenario": "qv_plus_6pct",
+      "model_bt_K": [
+        262.2609633761173,
+        291.8703408591983,
+        269.51785050055,
+        294.7485500056548,
+        294.72127178750156,
+        291.9695200100639,
+        276.2658167397188
+      ],
+      "observation_bt_K": [
+        263.29133611315865,
+        288.55207070015797,
+        263.64118031341025,
+        291.3025921545636,
+        290.982874309017,
+        288.4917312292452,
+        273.9811634897418
+      ],
+      "residual_K": [
+        -1.0303727370413753,
+        3.31827015904031,
+        5.87667018713978,
+        3.4459578510911797,
+        3.7383974784845577,
+        3.4777887808186847,
+        2.284653249976998
+      ],
+      "normalized_residual_sigma_units": [
+        -1.0303727370413753,
+        3.31827015904031,
+        5.87667018713978,
+        3.4459578510911797,
+        3.7383974784845577,
+        3.4777887808186847,
+        2.284653249976998
+      ],
+      "unmasked_per_channel_huber": [
+        0.5303727370413753,
+        2.81827015904031,
+        5.37667018713978,
+        2.9459578510911797,
+        3.2383974784845577,
+        2.9777887808186847,
+        1.7846532499769978
+      ],
+      "quality_masked_per_channel_contribution": [
+        0.0,
+        2.81827015904031,
+        5.37667018713978,
+        2.9459578510911797,
+        3.2383974784845577,
+        2.9777887808186847,
+        1.7846532499769978
+      ],
+      "rad_quality": [
+        32768.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mask": [
+        0.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "valid_channel_count": 6,
+      "huber_cost": 19.14173770655151,
+      "profile_identity": {
+        "native_center_pressure_exact": true,
+        "native_interface_pressure_exact": true,
+        "native_profile_arrays_sha256": {
+          "p_hPa": "32bf82adf79597fbd2bbe35a5f7efb73dc8039fed9943bbb9e4bdf2807ee4836",
+          "p_half_hPa": "626c617dc0a680376d68f56b4d55b2f472e738ab5c7c8562b67599fc0a1d7c8e",
+          "T_K": "c36f06ac86ab87dc3dfc182825da7d2516ede2de9ec91789421f79225de0615d",
+          "Q_ppmv_moist": "5b5a713efdd1b6d26a8f4eadd9612678f24762c1752501dae118ac5945930990",
+          "hydro6_g_m3": "21896c24693306dff9be01f1b3224f76337a19e2a724810e4c753e99a78553a6",
+          "hydro7_g_m3": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7"
+        },
+        "native_T_range_K": [
+          198.719494966329,
+          299.047967592547
+        ],
+        "native_Q_range_ppmv_moist": [
+          3.874095041803936,
+          29978.198993459962
+        ],
+        "k3_wrf_zero_based_temperature_K": 296.9029728488205,
+        "k3_wrf_zero_based_q_ppmv_moist": 29978.198993459962,
+        "cloudy_native_layer_count": 1,
+        "unchanged_gases_geometry_surface_verified": true,
+        "executed_profile_hashes": {
+          "p.txt": "c7d47eed648f3e7313979e84600ae916fbf8d381d6c21f2d8f562c88463a7726",
+          "p_half.txt": "dc736422f63710511af6a3336a77b33f092c63e66deffba26e5e8c29f47c2b11",
+          "t.txt": "4549450b99812a899603ca17f1cabca40349519e4aeca47899d6ec7221e08966",
+          "q.txt": "7edd46d2d74ab6105baca60ad42e18a6207cdaf60da2ba65f96c1d1d2dd56c27",
+          "o3.txt": "4169bd766bea042e1de81390c48df7c0f3ea690b5fc44007508127b3047fed6d",
+          "co2.txt": "075c725200902dd1505635d3704db9416ef88f960be482819c17db9422ef7553"
+        },
+        "executed_namelist_sha256": "bb34395dac966c50aa7f6e584fc15198ff05a4f0e9233df52a51460de155dd87",
+        "executed_run_script_sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+        "executed_channels_1based": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "executed_simple_cloud_fraction": 0.0,
+        "rttov_executable_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+        "rttov_executable_sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+        "coefficient_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+        "coefficient_sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+        "run_case_directory": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr391-cost/runs12/run_qv_plus_6pct"
+      }
+    },
+    {
+      "scenario": "T_minus_0p8K",
+      "model_bt_K": [
+        262.2609478950243,
+        292.7016143237395,
+        270.04626474246425,
+        295.44430957283714,
+        295.242192248256,
+        292.25450086605696,
+        276.3483753511904
+      ],
+      "observation_bt_K": [
+        263.29133611315865,
+        288.55207070015797,
+        263.64118031341025,
+        291.3025921545636,
+        290.982874309017,
+        288.4917312292452,
+        273.9811634897418
+      ],
+      "residual_K": [
+        -1.0303882181343624,
+        4.149543623581508,
+        6.405084429054,
+        4.141717418273515,
+        4.259317939238997,
+        3.762769636811754,
+        2.3672118614485953
+      ],
+      "normalized_residual_sigma_units": [
+        -1.0303882181343624,
+        4.149543623581508,
+        6.405084429054,
+        4.141717418273515,
+        4.259317939238997,
+        3.762769636811754,
+        2.3672118614485953
+      ],
+      "unmasked_per_channel_huber": [
+        0.5303882181343624,
+        3.6495436235815077,
+        5.905084429054,
+        3.6417174182735152,
+        3.759317939238997,
+        3.262769636811754,
+        1.8672118614485953
+      ],
+      "quality_masked_per_channel_contribution": [
+        0.5303882181343624,
+        3.6495436235815077,
+        5.905084429054,
+        3.6417174182735152,
+        3.759317939238997,
+        3.262769636811754,
+        1.8672118614485953
+      ],
+      "rad_quality": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "mask": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "valid_channel_count": 7,
+      "huber_cost": 22.61603312654273,
+      "profile_identity": {
+        "native_center_pressure_exact": true,
+        "native_interface_pressure_exact": true,
+        "native_profile_arrays_sha256": {
+          "p_hPa": "32bf82adf79597fbd2bbe35a5f7efb73dc8039fed9943bbb9e4bdf2807ee4836",
+          "p_half_hPa": "626c617dc0a680376d68f56b4d55b2f472e738ab5c7c8562b67599fc0a1d7c8e",
+          "T_K": "cea7fc025aa3dad4648abe9d2ec353e01ecf969b36be41a82fa9dfa3a823153a",
+          "Q_ppmv_moist": "d399fdc413068425dc3bd577c0e9329b899e3ba812b5356862386884415993ab",
+          "hydro6_g_m3": "a6a283150980c72ac563f8a63b21fa18b833f3ddb221dff2706604bc87dc1e40",
+          "hydro7_g_m3": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7"
+        },
+        "native_T_range_K": [
+          198.719494966329,
+          299.047967592547
+        ],
+        "native_Q_range_ppmv_moist": [
+          3.874095041803936,
+          29128.825483522705
+        ],
+        "k3_wrf_zero_based_temperature_K": 295.996945353809,
+        "k3_wrf_zero_based_q_ppmv_moist": 28391.10878270501,
+        "cloudy_native_layer_count": 1,
+        "unchanged_gases_geometry_surface_verified": true,
+        "executed_profile_hashes": {
+          "p.txt": "c7d47eed648f3e7313979e84600ae916fbf8d381d6c21f2d8f562c88463a7726",
+          "p_half.txt": "dc736422f63710511af6a3336a77b33f092c63e66deffba26e5e8c29f47c2b11",
+          "t.txt": "62cbaa096965bdbb193152e260db2fd98e54cc411d2c2a5626fedd2b9acf9a53",
+          "q.txt": "baab6a4898c27c5676730eea761bd1fdc50d8f561471ab902522675aa9fee453",
+          "o3.txt": "4169bd766bea042e1de81390c48df7c0f3ea690b5fc44007508127b3047fed6d",
+          "co2.txt": "075c725200902dd1505635d3704db9416ef88f960be482819c17db9422ef7553"
+        },
+        "executed_namelist_sha256": "bb34395dac966c50aa7f6e584fc15198ff05a4f0e9233df52a51460de155dd87",
+        "executed_run_script_sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+        "executed_channels_1based": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "executed_simple_cloud_fraction": 0.0,
+        "rttov_executable_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+        "rttov_executable_sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+        "coefficient_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+        "coefficient_sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+        "run_case_directory": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr391-cost/runs12/run_T_minus_0p8K"
+      },
+      "full_H_M_directional_checks": {
+        "status": "FULL_H_COMPOSED_KDM_RTTOV_K_DIRECTIONAL_CHECKS_COMPLETE",
+        "fresh_full_runtime_endpoint_cost": 22.61603312654273,
+        "fresh_endpoint_BT_K": [
+          262.2609478950243,
+          292.7016143237395,
+          270.04626474246425,
+          295.44430957283714,
+          295.242192248256,
+          292.25450086605696,
+          276.3483753511904
+        ],
+        "quality": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ],
+        "mask": [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ],
+        "directions": {
+          "T": {
+            "direction": "+1 K physical T at WRF k=3",
+            "fd_step": 0.0001,
+            "cost_ad_directional": 45.00625884956761,
+            "cost_central_fd": 45.00626611104508,
+            "relative_error": 1.6134369940755304e-07,
+            "plus_minus_cost": [
+              22.61153420183433,
+              22.62053545505654
+            ],
+            "quality_by_side": [
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            ],
+            "cloud_branch_identical_to_base": true,
+            "absolute_input_perturbation": 0.0001
+          },
+          "qv": {
+            "direction": "+0.01 kg/kg dry qv at WRF k=3",
+            "fd_step": 1e-05,
+            "cost_ad_directional": -393.2833110648203,
+            "cost_central_fd": -393.28332942147875,
+            "relative_error": 4.667540447083682e-08,
+            "plus_minus_cost": [
+              22.61996732980549,
+              22.61210166321706
+            ],
+            "quality_by_side": [
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ],
+              [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            ],
+            "cloud_branch_identical_to_base": true,
+            "absolute_input_perturbation": 1.0000000000000001e-07
+          }
+        },
+        "scope": "Cost covectors chain through the unchanged f64 normalized_dry 20 s kdm6_step, native profile conversion/cloud mapping with frozen baseline optical rho_d, fresh RTTOV KMA BT/K and Huber cost. Directional FD independently reruns KDM and RTTOV with fixed pressures, gas/surface/geometry, sigma/bias/delta and mask.",
+        "fresh_kdm_output_all_12_state_fields_bitwise_match_checkpoint": true,
+        "executed_run_directories": {
+          "base": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr391-cost/runs12/composed_directional/composed_base",
+          "T_minus": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr391-cost/runs12/composed_directional/composed_T_minus",
+          "T_plus": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr391-cost/runs12/composed_directional/composed_T_plus",
+          "qv_minus": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr391-cost/runs12/composed_directional/composed_qv_minus",
+          "qv_plus": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr391-cost/runs12/composed_directional/composed_qv_plus"
+        }
+      }
+    }
+  ],
+  "cost_contract": {
+    "channels_1based": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "sigma_K": 1.0,
+    "bias_K": 0.0,
+    "huber_delta": 1.0,
+    "cost_is_sum_over_each_scenario_supported_channel": true,
+    "common_seven_channel_cost_comparison_is_valid": false,
+    "intersection_of_all_case_quality_support_1based": [
+      12,
+      13,
+      14,
+      15
+    ],
+    "intersection_support_huber_costs_diagnostic_only": {
+      "baseline": 19.30277151749567,
+      "T_minus_0p5K": 19.232063364213218,
+      "T_minus_1p0K": 13.266850803209763,
+      "qv_plus_2pct": 19.290949652008067,
+      "qv_plus_6pct": 14.538814297534202,
+      "T_minus_0p8K": 16.568889423378266
+    },
+    "intersection_support_interpretation": "All six actual RTTOV QC masks retain only this common subset; these sums support a conditional within-set comparison and do not replace the frozen seven-channel reporting contract.",
+    "support_is_same_across_all_predeclared_cases": false
+  },
+  "derivative_scope": "Fresh baseline RTTOV source K gives local profile T/Q-to-cost covectors with baseline cloud optics fixed. At the predeclared weak-cloud T\u22120.8 K point, a separate full H\u2218M check chains through the f64 normalized-dry KDM step, profile/cloud mapping with frozen baseline optical rho_d, fresh RTTOV K and Huber loss; independent FD reruns the full KDM+RTTOV path on fixed mask/branch pairs. No higher derivatives or parameter identifiability.",
+  "limits": [
+    "This is a new diagnostic calculation on the saved output of a failed historical native forecast.",
+    "Not an accepted observation cost, forecast score, DA analysis, optimizer result, or operational validation.",
+    "First-order RTTOV K scope only; no higher derivatives or parameter identifiability.",
+    "Gas channels 8 and 9 are excluded by predeclared quality warning; channels 10 through 16 are the fixed seven-channel support."
+  ],
+  "inputs": {
+    "checkpoint_sha256": "7c49d6c76de0193267772a362a8a1e95e296ff61341570b1648d800c7e5b7dfe",
+    "weak_cloud_checkpoint_sha256": "cff588a4ade432d655b0884908c5495c1b13decda884234f792ea5e3cef1d71e",
+    "paired_case_atm_files": {
+      "p.txt": "c7d47eed648f3e7313979e84600ae916fbf8d381d6c21f2d8f562c88463a7726",
+      "p_half.txt": "dc736422f63710511af6a3336a77b33f092c63e66deffba26e5e8c29f47c2b11",
+      "t.txt": "87b10f1915c6d0c358bc5f135d560c06db6e6e9b3ac05364e34cc14d655f0bfc",
+      "q.txt": "8d5b00aa058fae51b5272ddc8f6f65e1bcaa34a65c8e499c099128b87e6cb135",
+      "o3.txt": "4169bd766bea042e1de81390c48df7c0f3ea690b5fc44007508127b3047fed6d",
+      "co2.txt": "075c725200902dd1505635d3704db9416ef88f960be482819c17db9422ef7553",
+      "hydro.txt": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc",
+      "hydro_deff.txt": "6160575f7989ef12b570c807f6da93b29bc82f886ca1c34eb47cee9dd5abf98a",
+      "hydro_frac.txt": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b"
+    },
+    "paired_case_namelist_sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282",
+    "paired_geometry_sha256": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161",
+    "paired_surface_sha256": {
+      "skin": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b",
+      "near_surface": "9112090ec89e82f530bba289148450d568b12fdf136c493a6fd3f64744321d9e"
+    },
+    "paired_observation_result_sha256": "60ccf9056d3ddbfee8d174336ae7177f30242f10a96d12d3d554a63e0f897d05",
+    "source_sha256": {
+      "oracle/kdm6/obs/model_profile_builder.py": "b9264edb61f32010c025718ad59ef686746f156e2a3c011c473943fbf82788ab",
+      "oracle/kdm6/obs/rttov_case_writer.py": "0203dbfd899996caedf2e8c94e34faabf949fabbaec1688cbda00b6e163081af",
+      "oracle/kdm6/obs/rttov_input_builder.py": "902e1554eb6e4f699d74cc770059daad847b3b35ad0dd9516d02cae35ad280a6",
+      "oracle/kdm6/obs/rttov_obs_operator.py": "d28149c211c1ccaffedcb18642e2337cc79b5cebc4b6aa8cf4c9a90978363b12",
+      "oracle/kdm6/obs/ami_bt_coordinate.py": "e1aec7c9270bbeff6dec9aee0f7b3fa3741528b3e060bc3aa74be721e3ac97cc",
+      "oracle/kdm6/obs/obs_loss.py": "4c39b69bf54be9929d48cc97881887f80fb1f7c9a05d68a6a6111bda1ca9d855"
+    },
+    "rttov_quality_flag_definitions": {
+      "source_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/main/rttov_const.F90",
+      "source_sha256": "53c1cc5e5f04eb4e4117d7deefc5a16095cf8fd2b92e49111aee8b8c1f046d55",
+      "print_source_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/other/rttov_print_radiance_quality.F90",
+      "print_source_sha256": "defcf12739f96aaccf20f0595440b8513d5164220a146053e422c48e7d015ce9",
+      "32768_interpretation": "1<<15; qflag_delta_edd_ext_limits (Delta-Eddington extinction limit exceeded)"
+    },
+    "runner_source_sha256": "33f64841aedeff68fe22a3d6d3453bee1d48741a6a797655eb23b1fe1d289afa",
+    "weak_cloud_runtime_jvp_receipt_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr391_tq_response_2026-10-09/RESULT_weak_cloud_Tminus0p8.json",
+    "weak_cloud_runtime_jvp_receipt_sha256": "314e2c850fdc639def6c0d4feb1172e09ec629a6c3ffbca4ac0de6f7c0911d90",
+    "scratch_root": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr391-cost/runs12"
+  },
+  "runtime": {
+    "python": "3.10.11",
+    "torch": "2.13.0",
+    "numpy": "2.2.6"
+  }
+}

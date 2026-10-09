@@ -61,6 +61,7 @@ date_modified: 2026-10-08
 - [[host-run-dir-confusion-2026-07-14]] - host/ 3개 케이스(5km 실사례·100km ideal·1km) 혼동 사고와 재발방지 규칙.
 
 ## Sources (recent)
+- [[sources/pr391-saturation-control-resolution-2026-10-09]] — Subsat clear state, active T/Q controls, finite cloud creation, local timestep/budget scope and a seven-channel H∘M derivative witness; R2/full physical admission remain open.
 - [[sources/pr390-completeness-audit-2026-10-09]] — Team audit confirms bounded diagnostics; first valid independent case, physical budgets and further native numerical/spatial coverage remain open.
 - [[sources/pr390-small-diagnostics-2026-10-08]] — Actual MPI forwarding, paired short host exit/output identity and single-profile RTTOV extinction; historical target validity and R2 remain OPEN.
 - [[sources/review388389-local-resolution-2026-10-08]] — Local-only PR388–389 review resolution; historical artifacts preserved and R2 open.
