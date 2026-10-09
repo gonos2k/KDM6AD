@@ -1,0 +1,165 @@
+{
+  "schema": "rttov_original_exe_single_profile_baseline_v1",
+  "scope": "one saved native profile, untouched installed RTTOV executable; no source/build changes",
+  "run_start_utc": "2026-10-08T13:55:29.807323+00:00",
+  "scratch_run_path": "/private/tmp/KDM6AD-rttov-actual-ext-baseline-20261008",
+  "original_executable_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+  "original_executable_sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+  "coefficient_sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+  "hydrotable_sha256": "fdbe99ea68fd750e146fb78a798ab72b8568e4a3d545a2d847263cb374746890",
+  "saved_input_files_sha256": {
+    "in/channels.txt": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b",
+    "in/coef.txt": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+    "in/lprofiles.txt": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de",
+    "in/profiles/001/angles.txt": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161",
+    "in/profiles/001/atm/co2.txt": "075c725200902dd1505635d3704db9416ef88f960be482819c17db9422ef7553",
+    "in/profiles/001/atm/deff_param.txt": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0",
+    "in/profiles/001/atm/hydro.txt": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc",
+    "in/profiles/001/atm/hydro_deff.txt": "6160575f7989ef12b570c807f6da93b29bc82f886ca1c34eb47cee9dd5abf98a",
+    "in/profiles/001/atm/hydro_frac.txt": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b",
+    "in/profiles/001/atm/mmr_hydro_aer.txt": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c",
+    "in/profiles/001/atm/o3.txt": "4169bd766bea042e1de81390c48df7c0f3ea690b5fc44007508127b3047fed6d",
+    "in/profiles/001/atm/p.txt": "c7d47eed648f3e7313979e84600ae916fbf8d381d6c21f2d8f562c88463a7726",
+    "in/profiles/001/atm/p_half.txt": "dc736422f63710511af6a3336a77b33f092c63e66deffba26e5e8c29f47c2b11",
+    "in/profiles/001/atm/q.txt": "8d5b00aa058fae51b5272ddc8f6f65e1bcaa34a65c8e499c099128b87e6cb135",
+    "in/profiles/001/atm/simple_cloud.txt": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d",
+    "in/profiles/001/atm/t.txt": "87b10f1915c6d0c358bc5f135d560c06db6e6e9b3ac05364e34cc14d655f0bfc",
+    "in/profiles/001/be.txt": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1",
+    "in/profiles/001/datetime.txt": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86",
+    "in/profiles/001/gas_units.txt": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555",
+    "in/profiles/001/prof_id.txt": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793",
+    "in/profiles/001/sfc/01/near_surface.txt": "9112090ec89e82f530bba289148450d568b12fdf136c493a6fd3f64744321d9e",
+    "in/profiles/001/sfc/01/skin.txt": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b"
+  },
+  "rttov_test_control_sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282",
+  "process": {
+    "returncode": 0,
+    "stdout_tail": "",
+    "stderr_tail": "",
+    "log_tail": [
+      "Delta-Eddington exinction limit exceeded",
+      "Profile     1, channel     3",
+      "Quality OK - no bits set",
+      "Profile     1, channel     4",
+      "Quality OK - no bits set",
+      "Profile     1, channel     5",
+      "Quality OK - no bits set",
+      "Profile     1, channel     6",
+      "Quality OK - no bits set",
+      "Profile     1, channel     7",
+      "Quality OK - no bits set",
+      "Profile     1, channel     8",
+      "Quality OK - no bits set",
+      "Profile     1, channel     9",
+      "Quality OK - no bits set"
+    ],
+    "warning_channels_one_based_profile_channel_index": [
+      1,
+      2
+    ],
+    "warning_requested_rttov_channel_ids": [
+      8,
+      9
+    ]
+  },
+  "comparison_to_saved_output": {
+    "out/direct/radiance.txt": {
+      "saved_sha256": "471ce332d8491e2b5feedeea34fbc22548c96c25ccd2ea18abc7184f5f4253ea",
+      "rerun_sha256": "471ce332d8491e2b5feedeea34fbc22548c96c25ccd2ea18abc7184f5f4253ea",
+      "byte_identical": true
+    },
+    "out/direct/transmission.txt": {
+      "saved_sha256": "ba17ad42f669b88a12760e16d00477cf39b8491e034aae218e0b78f1ee8cd32a",
+      "rerun_sha256": "ba17ad42f669b88a12760e16d00477cf39b8491e034aae218e0b78f1ee8cd32a",
+      "byte_identical": true
+    },
+    "out/direct/brdf_out.txt": {
+      "saved_sha256": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404",
+      "rerun_sha256": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404",
+      "byte_identical": true
+    },
+    "out/direct/diffuse_reflectance_out.txt": {
+      "saved_sha256": "4ab41aebeca12ed125438926a568bcdfebe635fcfbb5ad321c00003f613c7029",
+      "rerun_sha256": "4ab41aebeca12ed125438926a568bcdfebe635fcfbb5ad321c00003f613c7029",
+      "byte_identical": true
+    },
+    "out/direct/emissivity_out.txt": {
+      "saved_sha256": "9df8cfeab4c6ba9e2bbba31bd40b493b5621bd197267f9445797b58451462aa3",
+      "rerun_sha256": "9df8cfeab4c6ba9e2bbba31bd40b493b5621bd197267f9445797b58451462aa3",
+      "byte_identical": true
+    },
+    "out/k/radiance.txt": {
+      "saved_sha256": "471ce332d8491e2b5feedeea34fbc22548c96c25ccd2ea18abc7184f5f4253ea",
+      "rerun_sha256": "471ce332d8491e2b5feedeea34fbc22548c96c25ccd2ea18abc7184f5f4253ea",
+      "byte_identical": true
+    },
+    "out/k/transmission.txt": {
+      "saved_sha256": "ba17ad42f669b88a12760e16d00477cf39b8491e034aae218e0b78f1ee8cd32a",
+      "rerun_sha256": "ba17ad42f669b88a12760e16d00477cf39b8491e034aae218e0b78f1ee8cd32a",
+      "byte_identical": true
+    },
+    "out/k/profiles_k.txt": {
+      "saved_sha256": "faca3777635c33a45397ff27cb88554448ac9768825c7848d93d6f28f3772c57",
+      "rerun_sha256": "faca3777635c33a45397ff27cb88554448ac9768825c7848d93d6f28f3772c57",
+      "byte_identical": true
+    },
+    "out/k/brdf_out.txt": {
+      "saved_sha256": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404",
+      "rerun_sha256": "1740d7abc4899033a340b744ea9cfd204b7c632340279b153c667f84ab9c5404",
+      "byte_identical": true
+    },
+    "out/k/diffuse_reflectance_out.txt": {
+      "saved_sha256": "4ab41aebeca12ed125438926a568bcdfebe635fcfbb5ad321c00003f613c7029",
+      "rerun_sha256": "4ab41aebeca12ed125438926a568bcdfebe635fcfbb5ad321c00003f613c7029",
+      "byte_identical": true
+    },
+    "out/k/emissivity_out.txt": {
+      "saved_sha256": "9df8cfeab4c6ba9e2bbba31bd40b493b5621bd197267f9445797b58451462aa3",
+      "rerun_sha256": "9df8cfeab4c6ba9e2bbba31bd40b493b5621bd197267f9445797b58451462aa3",
+      "byte_identical": true
+    },
+    "rttov_test.log": {
+      "saved_sha256": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df",
+      "rerun_sha256": "1acfe3bef1825e9dc783a86ae8d5e5dd42b4b8ace687e99937e02e599eac35df",
+      "byte_identical": false,
+      "difference_scope": "runtime date/time log text; warning channel sequence matches"
+    }
+  },
+  "saved_case_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00",
+  "profile_count": 1,
+  "input_files_sha256": {
+    "in/channels.txt": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b",
+    "in/coef.txt": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+    "in/lprofiles.txt": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de",
+    "in/profiles/001/angles.txt": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161",
+    "in/profiles/001/atm/co2.txt": "075c725200902dd1505635d3704db9416ef88f960be482819c17db9422ef7553",
+    "in/profiles/001/atm/deff_param.txt": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0",
+    "in/profiles/001/atm/hydro.txt": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc",
+    "in/profiles/001/atm/hydro_deff.txt": "6160575f7989ef12b570c807f6da93b29bc82f886ca1c34eb47cee9dd5abf98a",
+    "in/profiles/001/atm/hydro_frac.txt": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b",
+    "in/profiles/001/atm/mmr_hydro_aer.txt": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c",
+    "in/profiles/001/atm/o3.txt": "4169bd766bea042e1de81390c48df7c0f3ea690b5fc44007508127b3047fed6d",
+    "in/profiles/001/atm/p.txt": "c7d47eed648f3e7313979e84600ae916fbf8d381d6c21f2d8f562c88463a7726",
+    "in/profiles/001/atm/p_half.txt": "dc736422f63710511af6a3336a77b33f092c63e66deffba26e5e8c29f47c2b11",
+    "in/profiles/001/atm/q.txt": "8d5b00aa058fae51b5272ddc8f6f65e1bcaa34a65c8e499c099128b87e6cb135",
+    "in/profiles/001/atm/simple_cloud.txt": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d",
+    "in/profiles/001/atm/t.txt": "87b10f1915c6d0c358bc5f135d560c06db6e6e9b3ac05364e34cc14d655f0bfc",
+    "in/profiles/001/be.txt": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1",
+    "in/profiles/001/datetime.txt": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86",
+    "in/profiles/001/gas_units.txt": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555",
+    "in/profiles/001/prof_id.txt": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793",
+    "in/profiles/001/sfc/01/near_surface.txt": "9112090ec89e82f530bba289148450d568b12fdf136c493a6fd3f64744321d9e",
+    "in/profiles/001/sfc/01/skin.txt": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b"
+  },
+  "original_source_hashes_from_warning_audit": "2ad4c3b56be35ef71378c51f72f544e00fcfed5dd01d10a27e96f9694e4aabaf",
+  "numerical_products_byte_identical": true,
+  "actual_ext_ltick_retained_by_original": false,
+  "source_hashes_from_installed_source_audit": {
+    "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/main/rttov_eddington_setup.F90": "2ad4c3b56be35ef71378c51f72f544e00fcfed5dd01d10a27e96f9694e4aabaf",
+    "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/main/rttov_const.F90": "53c1cc5e5f04eb4e4117d7deefc5a16095cf8fd2b92e49111aee8b8c1f046d55",
+    "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/main/rttov_opdep_13.F90": "9571f7e398a455e7113fd768131d21e3860eff56eb209f97c53c042cdc3222b0",
+    "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/main/rttov_transmit_thermal.F90": "c22c5b5171ebe707d4d3fd3342432513d62a826a32898fcd44b517812adf4149"
+  },
+  "original_executable_sha256_after_rerun": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+  "original_executable_unchanged": true
+}

@@ -1,0 +1,395 @@
+{
+  "schema": "mpi_pinned_witness_receipt_v1",
+  "scope": "fresh, isolated replay of only the one-rank Fortran MPI finalize/_Exit controls; no WRF, RTTOV, or model physics process",
+  "runner_and_fortran_source": {
+    "source_copied_to": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-completeness-red/pinned_control_repeat",
+    "runner_sha256_before": "7d1b33ac18d3dcb7c718b140ee7be687263b2a0574f4f705d1873e1ba7f6fb49",
+    "runner_sha256_after": "7d1b33ac18d3dcb7c718b140ee7be687263b2a0574f4f705d1873e1ba7f6fb49",
+    "fortran_sha256_before": "ab370bbe179cb783695ed0b67392c5bcc0c28e6690fb5c27561f49a8eca3b154",
+    "fortran_sha256_after": "ab370bbe179cb783695ed0b67392c5bcc0c28e6690fb5c27561f49a8eca3b154",
+    "both_hashes_stable": true,
+    "copy_matches_current_evidence_sources": true,
+    "source_copy_receipt_sha256": "9e14a333d4daf1b26138d5767f7721196e87684ef19dd3e9470f8979ab95833b"
+  },
+  "controls": [
+    {
+      "label": "plain_without_observer",
+      "compile_command": [
+        "/opt/homebrew/bin/mpif90",
+        "-O2",
+        "-ftree-vectorize",
+        "-funroll-loops",
+        "-w",
+        "-ffree-form",
+        "-ffree-line-length-none",
+        "-fconvert=big-endian",
+        "-ffp-contract=off",
+        "-frecord-marker=4",
+        "-fallow-argument-mismatch",
+        "-fallow-invalid-boz",
+        "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-completeness-red/pinned_control_repeat/mpi_finalize_control.f90",
+        "-o",
+        "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-completeness-red/pinned_control_repeat/runs/plain_without_observer/wrf.exe"
+      ],
+      "compile_returncode": 0,
+      "compile_timed_out": false,
+      "compile_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "launch_command": [
+        "/opt/homebrew/bin/mpirun",
+        "-np",
+        "1",
+        "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-completeness-red/pinned_control_repeat/runs/plain_without_observer/wrf.exe"
+      ],
+      "deadline_seconds": 20,
+      "elapsed_seconds": 0.565027,
+      "launch_returncode": 0,
+      "timed_out": false,
+      "executable_sha256": "40c7dde81781452ae678458bf731ab9e9118fd3873151908dc81021a5dbe5f13",
+      "run_log_sha256": "0162e6f4f7d7fbea8f72dee119bdffa91811cb928dda0197e933e8eba00aea5b",
+      "observed_events": [
+        "MPI_CONTROL pid=19313 event=mpi_init_enter rank=unavailable",
+        "MPI_CONTROL pid=19313 event=mpi_init_return rank=0 ierr=0",
+        "MPI_CONTROL pid=19313 event=mpi_finalize_enter rank=0",
+        "MPI_CONTROL pid=19313 event=mpi_finalize_return rank=0 ierr=0"
+      ]
+    },
+    {
+      "label": "plain_with_observer",
+      "compile_command": [
+        "/opt/homebrew/bin/mpif90",
+        "-O2",
+        "-ftree-vectorize",
+        "-funroll-loops",
+        "-w",
+        "-ffree-form",
+        "-ffree-line-length-none",
+        "-fconvert=big-endian",
+        "-ffp-contract=off",
+        "-frecord-marker=4",
+        "-fallow-argument-mismatch",
+        "-fallow-invalid-boz",
+        "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-completeness-red/pinned_control_repeat/mpi_finalize_control.f90",
+        "-o",
+        "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-completeness-red/pinned_control_repeat/runs/plain_with_observer/wrf.exe"
+      ],
+      "compile_returncode": 0,
+      "compile_timed_out": false,
+      "compile_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "launch_command": [
+        "/opt/homebrew/bin/mpirun",
+        "-np",
+        "1",
+        "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-completeness-red/pinned_control_repeat/runs/plain_with_observer/wrf.exe"
+      ],
+      "deadline_seconds": 20,
+      "elapsed_seconds": 0.852158,
+      "launch_returncode": 0,
+      "timed_out": false,
+      "executable_sha256": "40c7dde81781452ae678458bf731ab9e9118fd3873151908dc81021a5dbe5f13",
+      "run_log_sha256": "287469c2ba35509abc9cfaf49213a432e604bd47fec6728ce8a3c10ef3b2bac9",
+      "observed_events": [
+        "KDM_EXIT_OBSERVER pid=19325 event=loaded value=0",
+        "MPI_CONTROL pid=19325 event=mpi_init_enter rank=unavailable",
+        "MPI_CONTROL pid=19325 event=mpi_init_return rank=0 ierr=0",
+        "MPI_CONTROL pid=19325 event=mpi_finalize_enter rank=0",
+        "KDM_EXIT_OBSERVER pid=19325 event=mpi_finalize_enter value=0",
+        "KDM_EXIT_OBSERVER pid=19325 event=mpi_finalize_return value=0",
+        "MPI_CONTROL pid=19325 event=mpi_finalize_return rank=0 ierr=0",
+        "KDM_EXIT_OBSERVER pid=19325 event=_Exit value=0"
+      ]
+    },
+    {
+      "label": "nativehostlib_without_observer",
+      "compile_command": [
+        "/opt/homebrew/bin/mpif90",
+        "-O2",
+        "-ftree-vectorize",
+        "-funroll-loops",
+        "-w",
+        "-ffree-form",
+        "-ffree-line-length-none",
+        "-fconvert=big-endian",
+        "-ffp-contract=off",
+        "-frecord-marker=4",
+        "-fallow-argument-mismatch",
+        "-fallow-invalid-boz",
+        "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-completeness-red/pinned_control_repeat/mpi_finalize_control.f90",
+        "-o",
+        "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-completeness-red/pinned_control_repeat/runs/nativehostlib_without_observer/wrf.exe",
+        "-Wl,-rpath,@loader_path/../../../libtorch/install/lib",
+        "-Wl,-rpath,/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib",
+        "-Wl,-rpath,/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib",
+        "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+        "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch.dylib",
+        "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch_cpu.dylib",
+        "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libc10.dylib"
+      ],
+      "compile_returncode": 0,
+      "compile_timed_out": false,
+      "compile_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "launch_command": [
+        "/opt/homebrew/bin/mpirun",
+        "-np",
+        "1",
+        "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-completeness-red/pinned_control_repeat/runs/nativehostlib_without_observer/wrf.exe"
+      ],
+      "deadline_seconds": 20,
+      "elapsed_seconds": 0.722279,
+      "launch_returncode": 0,
+      "timed_out": false,
+      "executable_sha256": "101410a53af2d4c102a56eb1662827286d408bedb8d46185642db758712731f5",
+      "run_log_sha256": "b755b4258be5fe399a2f048a8bd120b4caedb8ee4390b58cba9e9eb7d9b898c1",
+      "observed_events": [
+        "dyld[19337]: <A7BFFC7E-CC01-3883-879E-664B2D838BEB> /private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+        "dyld[19337]: <89D4A149-007D-3163-B44E-11EA84738339> /private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch.dylib",
+        "dyld[19337]: <79F353E0-BA32-3FE1-AC0A-7BE740151DAD> /private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch_cpu.dylib",
+        "dyld[19337]: <30ECE288-7C4B-3C60-BAB7-197706563948> /private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libc10.dylib",
+        "MPI_CONTROL pid=19337 event=mpi_init_enter rank=unavailable",
+        "MPI_CONTROL pid=19337 event=mpi_init_return rank=0 ierr=0",
+        "MPI_CONTROL pid=19337 event=mpi_finalize_enter rank=0",
+        "MPI_CONTROL pid=19337 event=mpi_finalize_return rank=0 ierr=0"
+      ]
+    },
+    {
+      "label": "nativehostlib_with_observer",
+      "compile_command": [
+        "/opt/homebrew/bin/mpif90",
+        "-O2",
+        "-ftree-vectorize",
+        "-funroll-loops",
+        "-w",
+        "-ffree-form",
+        "-ffree-line-length-none",
+        "-fconvert=big-endian",
+        "-ffp-contract=off",
+        "-frecord-marker=4",
+        "-fallow-argument-mismatch",
+        "-fallow-invalid-boz",
+        "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-completeness-red/pinned_control_repeat/mpi_finalize_control.f90",
+        "-o",
+        "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-completeness-red/pinned_control_repeat/runs/nativehostlib_with_observer/wrf.exe",
+        "-Wl,-rpath,@loader_path/../../../libtorch/install/lib",
+        "-Wl,-rpath,/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib",
+        "-Wl,-rpath,/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib",
+        "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+        "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch.dylib",
+        "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch_cpu.dylib",
+        "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libc10.dylib"
+      ],
+      "compile_returncode": 0,
+      "compile_timed_out": false,
+      "compile_log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "launch_command": [
+        "/opt/homebrew/bin/mpirun",
+        "-np",
+        "1",
+        "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-completeness-red/pinned_control_repeat/runs/nativehostlib_with_observer/wrf.exe"
+      ],
+      "deadline_seconds": 20,
+      "elapsed_seconds": 0.962916,
+      "launch_returncode": 0,
+      "timed_out": false,
+      "executable_sha256": "101410a53af2d4c102a56eb1662827286d408bedb8d46185642db758712731f5",
+      "run_log_sha256": "ac30181a461b2c4627460e0edb47c8f49d29a71fe311dd521f57b1cbdef5f547",
+      "observed_events": [
+        "dyld[19402]: <A7BFFC7E-CC01-3883-879E-664B2D838BEB> /private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+        "dyld[19402]: <89D4A149-007D-3163-B44E-11EA84738339> /private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch.dylib",
+        "dyld[19402]: <79F353E0-BA32-3FE1-AC0A-7BE740151DAD> /private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch_cpu.dylib",
+        "dyld[19402]: <30ECE288-7C4B-3C60-BAB7-197706563948> /private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libc10.dylib",
+        "KDM_EXIT_OBSERVER pid=19402 event=loaded value=0",
+        "MPI_CONTROL pid=19402 event=mpi_init_enter rank=unavailable",
+        "MPI_CONTROL pid=19402 event=mpi_init_return rank=0 ierr=0",
+        "MPI_CONTROL pid=19402 event=mpi_finalize_enter rank=0",
+        "KDM_EXIT_OBSERVER pid=19402 event=mpi_finalize_enter value=0",
+        "KDM_EXIT_OBSERVER pid=19402 event=mpi_finalize_return value=0",
+        "MPI_CONTROL pid=19402 event=mpi_finalize_return rank=0 ierr=0",
+        "KDM_EXIT_OBSERVER pid=19402 event=_Exit value=0"
+      ]
+    }
+  ],
+  "direct_singleton_controls": [
+    {
+      "label": "direct_without_observer",
+      "command": [
+        "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-completeness-red/pinned_control_repeat/runs/plain_without_observer/wrf.exe"
+      ],
+      "deadline_seconds": 20,
+      "elapsed_seconds": 0.047901,
+      "returncode": 0,
+      "direct_child_wait_status": 0,
+      "timed_out": false,
+      "run_log_sha256": "5e37913463a5c569361a7fbe2e0eb8d76935465c257ed3c9f7b9b30ab8f32c49",
+      "observed_events": [
+        "MPI_CONTROL pid=19405 event=mpi_init_enter rank=unavailable",
+        "MPI_CONTROL pid=19405 event=mpi_init_return rank=0 ierr=0",
+        "MPI_CONTROL pid=19405 event=mpi_finalize_enter rank=0",
+        "MPI_CONTROL pid=19405 event=mpi_finalize_return rank=0 ierr=0"
+      ]
+    },
+    {
+      "label": "direct_with_observer",
+      "command": [
+        "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-completeness-red/pinned_control_repeat/runs/plain_with_observer/wrf.exe"
+      ],
+      "deadline_seconds": 20,
+      "elapsed_seconds": 0.089946,
+      "returncode": 0,
+      "direct_child_wait_status": 0,
+      "timed_out": false,
+      "run_log_sha256": "11345313d4979360bd5699de641e732c325547a13390c38903e042f04c933816",
+      "observed_events": [
+        "KDM_EXIT_OBSERVER pid=19406 event=loaded value=0",
+        "MPI_CONTROL pid=19406 event=mpi_init_enter rank=unavailable",
+        "MPI_CONTROL pid=19406 event=mpi_init_return rank=0 ierr=0",
+        "MPI_CONTROL pid=19406 event=mpi_finalize_enter rank=0",
+        "KDM_EXIT_OBSERVER pid=19406 event=mpi_finalize_enter value=0",
+        "KDM_EXIT_OBSERVER pid=19406 event=mpi_finalize_return value=0",
+        "MPI_CONTROL pid=19406 event=mpi_finalize_return rank=0 ierr=0",
+        "KDM_EXIT_OBSERVER pid=19406 event=_Exit value=0"
+      ]
+    }
+  ],
+  "host_link_and_runtime": {
+    "configure_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/configure.wrf",
+    "configure_sha256": "fd14b77c4d78d2d46443a9a16b459e14fb8c3c28eabb429dc9dd799679e8d44d",
+    "configure_hash_matches_path": true,
+    "compiler": "/opt/homebrew/bin/mpif90",
+    "launcher": "/opt/homebrew/bin/mpirun",
+    "fortran_flags": [
+      "-O2",
+      "-ftree-vectorize",
+      "-funroll-loops",
+      "-w",
+      "-ffree-form",
+      "-ffree-line-length-none",
+      "-fconvert=big-endian",
+      "-ffp-contract=off",
+      "-frecord-marker=4",
+      "-fallow-argument-mismatch",
+      "-fallow-invalid-boz"
+    ],
+    "observer_source_sha256": "cf66c889df225b8e0d36861ea1b18ca8c4974ab8cdbc1a37e7bceace3a73da7b",
+    "observer_dylib_sha256": "2dea399e011af3101b7d024b58515ffa2402a6c9394601d7bf6f3407024a16da",
+    "original_asset_pins_before_after": {
+      "pins_before": {
+        "/private/tmp/KDM6AD-review388389-resolution-20261008/graphify-out/review-local/exit_observer/observer.c": "cf66c889df225b8e0d36861ea1b18ca8c4974ab8cdbc1a37e7bceace3a73da7b",
+        "/private/tmp/KDM6AD-review388389-resolution-20261008/graphify-out/review-local/exit_observer/observer.dylib": "2dea399e011af3101b7d024b58515ffa2402a6c9394601d7bf6f3407024a16da",
+        "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/main/wrf.exe": "f467755ee9952dc2b1806e9dec3220689e2f26a2939234b0959065b1c357cd41",
+        "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib/libkdm6_c.2.0.0.dylib": "64cddefe4fce336a7b9a3979278692324a97a17fe7d5264224bcc05a7f20be2d"
+      },
+      "pins_after": {
+        "/private/tmp/KDM6AD-review388389-resolution-20261008/graphify-out/review-local/exit_observer/observer.c": "cf66c889df225b8e0d36861ea1b18ca8c4974ab8cdbc1a37e7bceace3a73da7b",
+        "/private/tmp/KDM6AD-review388389-resolution-20261008/graphify-out/review-local/exit_observer/observer.dylib": "2dea399e011af3101b7d024b58515ffa2402a6c9394601d7bf6f3407024a16da",
+        "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/main/wrf.exe": "f467755ee9952dc2b1806e9dec3220689e2f26a2939234b0959065b1c357cd41",
+        "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib/libkdm6_c.2.0.0.dylib": "64cddefe4fce336a7b9a3979278692324a97a17fe7d5264224bcc05a7f20be2d"
+      },
+      "all_unchanged": true
+    },
+    "host_libraries": {
+      "kdm6": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+      "kdm6_sha256": "64cddefe4fce336a7b9a3979278692324a97a17fe7d5264224bcc05a7f20be2d",
+      "torch": [
+        "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch.dylib",
+        "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch_cpu.dylib",
+        "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libc10.dylib"
+      ],
+      "torch_sha256": {
+        "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch.dylib": "c9d126afd218772f9cd17387f79eaf117cdf15d89d5a0b6231c03c9a43ace910",
+        "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch_cpu.dylib": "f1584a65a2a09b5ddbe90a4e195ba824087b430a9f21cb1df9b8894177b99987",
+        "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libc10.dylib": "5db5749503cd842562a666510a72fa127dedd3a0046784760fdaeee9c562f23b"
+      },
+      "runtime_loader_tracing": "DYLD_PRINT_LIBRARIES=1 in hostlib arms",
+      "historical_source": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+      "torch_runtime_source": "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib",
+      "historical_wrf_recorded_torch_rpath": "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib",
+      "operation": "Loaded from a linked MPI control binary; no KDM6AD entry point or physics call is made"
+    }
+  },
+  "summary_result_json_sha256": "64709539c428c9aff201a33b1820316719135be06f5e8c28bce2d359725d0acb",
+  "old_oct8_mpi_result_untouched": true,
+  "old_oct8_controls_not_overwritten": "All new binaries, logs and the fresh result are under this copied runner directory; the Oct 8 evidence directory remains separate and its result/log SHA checks still match its receipt.",
+  "all_compiles_and_launches_successful": true,
+  "all_direct_singletons_successful": true,
+  "max_control_timeout_seconds": 20,
+  "run_controls_source_metadata_note": "This pins the current post-run metadata-corrected runner for the fresh replay. It does not recover the missing pre-edit runner hash from Oct 8.",
+  "old_oct8_preservation": {
+    "result_json_sha256_recorded_by_prior_red_receipt": "6ec5dd536a1a35e183169e5626098c562cc99e4dc6d9ccfdf5c7943191d8b8ef",
+    "current_result_json_sha256": "6ec5dd536a1a35e183169e5626098c562cc99e4dc6d9ccfdf5c7943191d8b8ef",
+    "result_hash_matches": true,
+    "all_old_compile_and_run_logs_match_embedded_hashes": true,
+    "log_check_count": 10,
+    "log_checks": [
+      {
+        "path": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/plain_without_observer/compile.log",
+        "recorded_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "current_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "match": true
+      },
+      {
+        "path": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/plain_without_observer/run.log",
+        "recorded_sha256": "10790b87f10a672b0ab879c411618131e35c7d8b72cd7023d9dbeb71ac91d3ae",
+        "current_sha256": "10790b87f10a672b0ab879c411618131e35c7d8b72cd7023d9dbeb71ac91d3ae",
+        "match": true
+      },
+      {
+        "path": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/plain_with_observer/compile.log",
+        "recorded_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "current_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "match": true
+      },
+      {
+        "path": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/plain_with_observer/run.log",
+        "recorded_sha256": "f27a7edf9502186a49d912d254d04ba0b4dfbefe50cfa54306ff430b3921350e",
+        "current_sha256": "f27a7edf9502186a49d912d254d04ba0b4dfbefe50cfa54306ff430b3921350e",
+        "match": true
+      },
+      {
+        "path": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/nativehostlib_without_observer/compile.log",
+        "recorded_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "current_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "match": true
+      },
+      {
+        "path": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/nativehostlib_without_observer/run.log",
+        "recorded_sha256": "66d26f31a97ebfb4380fec6d5ccc1dcf0c0478d5e26876d3883e0741bc573319",
+        "current_sha256": "66d26f31a97ebfb4380fec6d5ccc1dcf0c0478d5e26876d3883e0741bc573319",
+        "match": true
+      },
+      {
+        "path": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/nativehostlib_with_observer/compile.log",
+        "recorded_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "current_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "match": true
+      },
+      {
+        "path": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/nativehostlib_with_observer/run.log",
+        "recorded_sha256": "7fc01e76af70adc8bfe580efcfc5d644b0209f6bf91e671d1239ef2c05b916c5",
+        "current_sha256": "7fc01e76af70adc8bfe580efcfc5d644b0209f6bf91e671d1239ef2c05b916c5",
+        "match": true
+      },
+      {
+        "path": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/direct_without_observer.log",
+        "recorded_sha256": "f12c5defb7cff75a0fac1e1a70cee8fbb65daf8eb7c227e2404ca50a7f995f02",
+        "current_sha256": "f12c5defb7cff75a0fac1e1a70cee8fbb65daf8eb7c227e2404ca50a7f995f02",
+        "match": true
+      },
+      {
+        "path": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/direct_with_observer.log",
+        "recorded_sha256": "d3ce7dccca319b563f712c8707fb5b4ffd1d57d9e00818dc3fbcb9826926c4bb",
+        "current_sha256": "d3ce7dccca319b563f712c8707fb5b4ffd1d57d9e00818dc3fbcb9826926c4bb",
+        "match": true
+      }
+    ]
+  },
+  "comparison_to_oct8_control_receipt": {
+    "configure_hash_equal": true,
+    "fortran_flags_equal": true,
+    "observer_source_equal": true,
+    "observer_dylib_equal": true,
+    "historical_wrf_equal": true,
+    "kdm6_lib_sha_equal": true,
+    "torch_runtime_hashes_equal": true,
+    "loaded_library_paths_equal": true
+  },
+  "comparison_to_oct8_controls_all_pinned_runtime_assets_equal": true
+}

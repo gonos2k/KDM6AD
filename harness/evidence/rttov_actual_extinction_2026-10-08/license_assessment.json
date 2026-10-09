@@ -1,0 +1,14 @@
+{
+  "schema": "rttov_diagnostic_patch_license_assessment_v1",
+  "official_license_url": "https://nwp-saf.eumetsat.int/site/software/licence-agreement/",
+  "relevant_terms": {
+    "article_1_1": "The licensed organisation can run the software for activities covered by the agreement.",
+    "article_1_3": "The grant is limited to use; it does not confer broader rights.",
+    "article_1_4": "Passing the software onward to other parties is not authorised.",
+    "article_3_1": "Ownership of the software remains with EUMETSAT."
+  },
+  "local_package_observation": "Local source files contain EUMETSAT copyright notices; a copy of the license agreement was not present in the local source tree.",
+  "decision_for_this_task": "User authorized a private local diagnostic build. The available agreement has no express prohibition on local modifications. The diagnostic source copy, patch, object, library, executable, build logs, and raw array dump remain under ignored graphify-out/pr390-local/rttov; none are included in tracked evidence or redistributed.",
+  "limits": "This records the agreement page and task authorization used here; it does not replace the licensee's accepted click-through agreement.",
+  "terms_are_paraphrases": true
+}

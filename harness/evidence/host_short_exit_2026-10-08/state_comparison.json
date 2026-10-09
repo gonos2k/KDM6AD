@@ -1,0 +1,40 @@
+{
+  "schema": "pr390_host_short_observer_noninterference_v1",
+  "scope": "20 model seconds initial-time smoke only; neither target-time reproduction nor explanation of historical358min exit1",
+  "files": [
+    {
+      "file": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-local/host/without_observer/klfs_lc05_fcst.202507190000",
+      "Times": [
+        "2025-07-19_00:00:00",
+        "2025-07-19_00:00:20"
+      ],
+      "variable_count": 254
+    },
+    {
+      "file": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-local/host/with_observer/klfs_lc05_fcst.202507190000",
+      "Times": [
+        "2025-07-19_00:00:00",
+        "2025-07-19_00:00:20"
+      ],
+      "variable_count": 254
+    }
+  ],
+  "comparisons": [
+    {
+      "frame_index": 0,
+      "returncode": 0,
+      "pass_marker": true,
+      "log": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-local/host/bitwise_frame_0.log",
+      "summary": "# klfs_lc05_fcst.202507190000 (frames=2) vs klfs_lc05_fcst.202507190000 (frames=2)\n# strict uint-bitwise compare at selected frame index 0\n\nVARIABLES: 254 common, 254 BITWISE-MATCH, 0 DIFFER, 0 unsupported/skipped\n\nRESULT: STRICT BITWISE PASS\n",
+      "log_sha256": "a89574cb8d5ee8d69180f2aba1a78e9648ef6c409b93435964e423ff6bf35c20"
+    },
+    {
+      "frame_index": 1,
+      "returncode": 0,
+      "pass_marker": true,
+      "log": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-local/host/bitwise_frame_1.log",
+      "summary": "# klfs_lc05_fcst.202507190000 (frames=2) vs klfs_lc05_fcst.202507190000 (frames=2)\n# strict uint-bitwise compare at selected frame index 1\n\nVARIABLES: 254 common, 254 BITWISE-MATCH, 0 DIFFER, 0 unsupported/skipped\n\nRESULT: STRICT BITWISE PASS\n",
+      "log_sha256": "a1184b720456b71a0db7129de88cc89158ee5ca955114ed21608a8e9c27a7ef9"
+    }
+  ]
+}

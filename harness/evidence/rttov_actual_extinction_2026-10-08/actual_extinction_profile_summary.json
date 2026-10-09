@@ -1,0 +1,377 @@
+{
+  "schema": "rttov_actual_extinction_native_profile_derived_v1",
+  "status": "COMPLETE_FOR_SINGLE_SAVED_PROFILE_DIAGNOSTIC",
+  "native_forecast_validity": "invalid in the retained parent packet; this RTTOV profile replay does not change it",
+  "profile_scope": {
+    "case": "case_00",
+    "profiles": 1,
+    "rttov_layers": 66,
+    "channels_requested": [
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "raw_profile_or_dump_in_public_evidence": false,
+    "hydrometeor_input_checks": {
+      "hydro_values": 528,
+      "hydro_nonzero_values": 0,
+      "hydro_max_abs": 0.0,
+      "hydro_fraction_values": 67,
+      "hydro_fraction_nonzero_values": 0,
+      "hydro_fraction_max_abs": 0.0,
+      "size_parameter_file_has_nonzero_entries": true,
+      "scope_note": "Zero hydro.txt content and hydro_frac.txt fraction; hydro_deff.txt size parameters include nonzero values. No numerical inputs or extinction values changed."
+    }
+  },
+  "source_location_and_operation": {
+    "file": "RTTOV src/main/rttov_eddington_setup.F90",
+    "ltick_and_clear_extinction": "source audit lines 173-180; instrumented dump reads raytracing%ltick and ext_clear directly",
+    "preclip_ext_total": "instrumentation placed at the source-defined total-extinction-to-clip boundary (source-copy lines 218-230)",
+    "clip": "source line applies MIN(ext,max_ext_delta_edd); instrumentation captures immediately after it (source-copy lines 234-246)",
+    "warning": "same total ext array ANY(ext > max_ext_delta_edd) sets quality bit 15 before clipping",
+    "prior_source_audit_locations": {
+      "clear_gas_extinction_formula": "installed source audit rttov_eddington_setup.F90 lines 170-177",
+      "clip_and_quality_flag": "installed source audit rttov_eddington_setup.F90 lines 215-219",
+      "threshold_constant": "rttov_const.F90 lines 520, 760, 764"
+    },
+    "recorded_clear_sky_base_scope": "ext_clear after MAX(scatt_aux%ext_clear,min_ext_delta_edd=1e-10 km^-1); PRECLIP is before the later max_ext_delta_edd=20 km^-1 cap. Unfloored non-triggering bases not captured. Reported trigger values exceed20 and are unaffected."
+  },
+  "units": {
+    "ltick": "km, as used in RTTOV clear extinction formula to give km^-1",
+    "extinction": "km^-1",
+    "pressure": "hPa"
+  },
+  "threshold": {
+    "max_layer_extinction_km_inverse": 20.0,
+    "quality_flag_bit_zero_based": 15,
+    "quality_flag_value": 32768
+  },
+  "phase_mapping": {
+    "call_1": "rttov_test explicit forward call at src/test/rttov_test.F90:396 enters src/main/rttov_direct.F90:968",
+    "call_2": "rttov_test K call at src/test/rttov_test.F90:709; src/main/rttov_k.F90:346 invokes the forward direct pass, which enters rttov_direct.F90:968",
+    "call_identity_basis": "setup invocation ordinal plus reviewed caller order; both call identities retained in the raw private dump"
+  },
+  "diagnostic_quality": {
+    "actual_warning_requested_channels": [
+      8,
+      9
+    ],
+    "quality_vector_from_retained_result": [
+      32768,
+      32768,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "warning_channels_from_instrumented_run_log": [
+      8,
+      9
+    ],
+    "instrumented_run_warning_count": 2,
+    "preclip_trigger_layer_indices_1based_by_channel": {
+      "8": [
+        65,
+        66
+      ],
+      "9": [
+        64,
+        65,
+        66
+      ]
+    }
+  },
+  "instrumentation_checks": {
+    "rows": 4752,
+    "call_ids": [
+      1,
+      2
+    ],
+    "call_to_call_max_abs_total_extinction_difference_km_inverse": 0.0,
+    "max_abs_hyd_category_1_minus_category_0_km_inverse": 0.0,
+    "postclip_equals_min_preclip_limit_max_abs_error_km_inverse": 0.0,
+    "outputs_direct_and_K_byte_identical_to_saved_case": true,
+    "interpretation": "For this selected profile, RTTOV total extinction equals the clear-sky gas optical-depth path in both category 0 and category 1; the loaded hydrometeor addition is zero for all recorded layers.",
+    "parsed_brightness_temperature_equal_after_rttov_parser": {
+      "direct": true,
+      "K": true
+    },
+    "parsed_quality_equal_after_rttov_parser": {
+      "direct": true,
+      "K": true
+    },
+    "parsed_reflectance_equal_after_rttov_parser": {
+      "direct": true,
+      "K": true
+    },
+    "parsed_profiles_k_all_fields_equal": true,
+    "hydrometeor_content_and_fraction_zero_in_saved_profile": true
+  },
+  "triggering_layers": [
+    {
+      "rttov_requested_channel_id": 8,
+      "rttov_internal_layer_index_1based": 65,
+      "top_interface_pressure_hPa": 992.796875,
+      "bottom_interface_pressure_hPa": 1000.438046875,
+      "ltick_km": 0.06778552280273288,
+      "categories": [
+        {
+          "hydrometeor_category_index": 0,
+          "preclip_total_extinction_km_inverse": 32.83916296857617,
+          "postclip_total_extinction_km_inverse": 20.0,
+          "clear_sky_base_extinction_km_inverse": 32.83916296857617,
+          "additional_hydrometeor_extinction_km_inverse": 0.0
+        },
+        {
+          "hydrometeor_category_index": 1,
+          "preclip_total_extinction_km_inverse": 32.83916296857617,
+          "postclip_total_extinction_km_inverse": 20.0,
+          "clear_sky_base_extinction_km_inverse": 32.83916296857617,
+          "additional_hydrometeor_extinction_km_inverse": 0.0
+        }
+      ]
+    },
+    {
+      "rttov_requested_channel_id": 8,
+      "rttov_internal_layer_index_1based": 66,
+      "top_interface_pressure_hPa": 1000.438046875,
+      "bottom_interface_pressure_hPa": 1006.42046875,
+      "ltick_km": 0.05283656382514164,
+      "categories": [
+        {
+          "hydrometeor_category_index": 0,
+          "preclip_total_extinction_km_inverse": 38.40703275170795,
+          "postclip_total_extinction_km_inverse": 20.0,
+          "clear_sky_base_extinction_km_inverse": 38.40703275170795,
+          "additional_hydrometeor_extinction_km_inverse": 0.0
+        },
+        {
+          "hydrometeor_category_index": 1,
+          "preclip_total_extinction_km_inverse": 38.40703275170795,
+          "postclip_total_extinction_km_inverse": 20.0,
+          "clear_sky_base_extinction_km_inverse": 38.40703275170795,
+          "additional_hydrometeor_extinction_km_inverse": 0.0
+        }
+      ]
+    },
+    {
+      "rttov_requested_channel_id": 9,
+      "rttov_internal_layer_index_1based": 64,
+      "top_interface_pressure_hPa": 983.13828125,
+      "bottom_interface_pressure_hPa": 992.796875,
+      "ltick_km": 0.08620942494692282,
+      "categories": [
+        {
+          "hydrometeor_category_index": 0,
+          "preclip_total_extinction_km_inverse": 20.14765151623616,
+          "postclip_total_extinction_km_inverse": 20.0,
+          "clear_sky_base_extinction_km_inverse": 20.14765151623616,
+          "additional_hydrometeor_extinction_km_inverse": 0.0
+        },
+        {
+          "hydrometeor_category_index": 1,
+          "preclip_total_extinction_km_inverse": 20.14765151623616,
+          "postclip_total_extinction_km_inverse": 20.0,
+          "clear_sky_base_extinction_km_inverse": 20.14765151623616,
+          "additional_hydrometeor_extinction_km_inverse": 0.0
+        }
+      ]
+    },
+    {
+      "rttov_requested_channel_id": 9,
+      "rttov_internal_layer_index_1based": 65,
+      "top_interface_pressure_hPa": 992.796875,
+      "bottom_interface_pressure_hPa": 1000.438046875,
+      "ltick_km": 0.06778552280273288,
+      "categories": [
+        {
+          "hydrometeor_category_index": 0,
+          "preclip_total_extinction_km_inverse": 21.68401058447762,
+          "postclip_total_extinction_km_inverse": 20.0,
+          "clear_sky_base_extinction_km_inverse": 21.68401058447762,
+          "additional_hydrometeor_extinction_km_inverse": 0.0
+        },
+        {
+          "hydrometeor_category_index": 1,
+          "preclip_total_extinction_km_inverse": 21.68401058447762,
+          "postclip_total_extinction_km_inverse": 20.0,
+          "clear_sky_base_extinction_km_inverse": 21.68401058447762,
+          "additional_hydrometeor_extinction_km_inverse": 0.0
+        }
+      ]
+    },
+    {
+      "rttov_requested_channel_id": 9,
+      "rttov_internal_layer_index_1based": 66,
+      "top_interface_pressure_hPa": 1000.438046875,
+      "bottom_interface_pressure_hPa": 1006.42046875,
+      "ltick_km": 0.05283656382514164,
+      "categories": [
+        {
+          "hydrometeor_category_index": 0,
+          "preclip_total_extinction_km_inverse": 22.595689756066477,
+          "postclip_total_extinction_km_inverse": 20.0,
+          "clear_sky_base_extinction_km_inverse": 22.595689756066477,
+          "additional_hydrometeor_extinction_km_inverse": 0.0
+        },
+        {
+          "hydrometeor_category_index": 1,
+          "preclip_total_extinction_km_inverse": 22.595689756066477,
+          "postclip_total_extinction_km_inverse": 20.0,
+          "clear_sky_base_extinction_km_inverse": 22.595689756066477,
+          "additional_hydrometeor_extinction_km_inverse": 0.0
+        }
+      ]
+    }
+  ],
+  "channel_maxima": [
+    {
+      "rttov_requested_channel_id": 8,
+      "max_preclip_total_extinction_km_inverse": 38.40703275170795,
+      "max_layer_index_1based": 66,
+      "ltick_km_at_max": 0.05283656382514164,
+      "max_postclip_extinction_km_inverse": 20.0
+    },
+    {
+      "rttov_requested_channel_id": 9,
+      "max_preclip_total_extinction_km_inverse": 22.595689756066477,
+      "max_layer_index_1based": 66,
+      "ltick_km_at_max": 0.05283656382514164,
+      "max_postclip_extinction_km_inverse": 20.0
+    },
+    {
+      "rttov_requested_channel_id": 10,
+      "max_preclip_total_extinction_km_inverse": 5.987125994760372,
+      "max_layer_index_1based": 66,
+      "ltick_km_at_max": 0.05283656382514164,
+      "max_postclip_extinction_km_inverse": 5.987125994760372
+    },
+    {
+      "rttov_requested_channel_id": 11,
+      "max_preclip_total_extinction_km_inverse": 0.37512103201869584,
+      "max_layer_index_1based": 66,
+      "ltick_km_at_max": 0.05283656382514164,
+      "max_postclip_extinction_km_inverse": 0.37512103201869584
+    },
+    {
+      "rttov_requested_channel_id": 12,
+      "max_preclip_total_extinction_km_inverse": 0.36525329381602806,
+      "max_layer_index_1based": 66,
+      "ltick_km_at_max": 0.05283656382514164,
+      "max_postclip_extinction_km_inverse": 0.36525329381602806
+    },
+    {
+      "rttov_requested_channel_id": 13,
+      "max_preclip_total_extinction_km_inverse": 0.4402652956077083,
+      "max_layer_index_1based": 66,
+      "ltick_km_at_max": 0.05283656382514164,
+      "max_postclip_extinction_km_inverse": 0.4402652956077083
+    },
+    {
+      "rttov_requested_channel_id": 14,
+      "max_preclip_total_extinction_km_inverse": 0.6011825035064138,
+      "max_layer_index_1based": 66,
+      "ltick_km_at_max": 0.05283656382514164,
+      "max_postclip_extinction_km_inverse": 0.6011825035064138
+    },
+    {
+      "rttov_requested_channel_id": 15,
+      "max_preclip_total_extinction_km_inverse": 0.8586849226988043,
+      "max_layer_index_1based": 66,
+      "ltick_km_at_max": 0.05283656382514164,
+      "max_postclip_extinction_km_inverse": 0.8586849226988043
+    },
+    {
+      "rttov_requested_channel_id": 16,
+      "max_preclip_total_extinction_km_inverse": 1.2073601945435473,
+      "max_layer_index_1based": 66,
+      "ltick_km_at_max": 0.05283656382514164,
+      "max_postclip_extinction_km_inverse": 1.2073601945435473
+    }
+  ],
+  "artifact_receipts": {
+    "baseline": "original_executable_single_profile_baseline.json",
+    "instrumented": "graphify-out/pr390-local/rttov/instrumented_run_receipt.json",
+    "instrumented_raw_dump_private_path": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-local/rttov/raw_dumps/case_00_actual_extinction.tsv",
+    "instrumented_raw_dump_sha256": "a81e67229734c7ebe1b244fcf475ec0dcaa9cc4c0f0f3cbff602e079ee3bd793",
+    "instrumented_raw_dump_retained_under_ignored_graphify_out": true,
+    "no_source_or_raw_dump_in_tracked_evidence": true,
+    "private_build_receipt_path": "graphify-out/pr390-local/rttov/build_receipt.json",
+    "instrumented_run_receipt_path": "graphify-out/pr390-local/rttov/instrumented_run_receipt.json"
+  },
+  "limitations": [
+    "This is one saved native profile, not a forecast rerun or a new native validity result.",
+    "The warning threshold is triggered from RTTOV total extinction; the measurement identifies exact triggered layers and confirms zero hydrometeor increment in this saved input, but does not generalize gas attribution to profiles with nonzero hydrometeors or enabled aerosols.",
+    "The test-case layer index is RTTOV internal one-based order. Pressure interfaces are retained alongside the exact layer index; no reinterpretation as a different external vertical grid is made.",
+    "The instrumented run completed one direct call and a second forward pass for the K product; the two captured extinction states agree exactly."
+  ],
+  "source_and_build_hashes": {
+    "installed_original_executable_sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+    "isolated_instrumented_executable_sha256": "a0761ad2aa3bd6ee2f54dd34e17fd3510d185eab22fb54791d4ce856d7be2078",
+    "instrumented_rttov_eddington_setup_source_sha256": "7f0a0097dbbee6a43b1d86850f082eae2631016f431377a81673a391e5692efd",
+    "original_rttov_eddington_setup_source_sha256": "2ad4c3b56be35ef71378c51f72f544e00fcfed5dd01d10a27e96f9694e4aabaf",
+    "instrumented_rttov_eddington_setup_object_sha256": "c32edb02d0187b7e0481423f405353b3b57c64bcffac251ce83f593f3a0f7a58",
+    "instrumented_rttov_main_static_library_sha256": "ad917c5e25ae184871397c9168c1aa950630a1946d5f0d23c0c88830c2cb66ee",
+    "installed_source_hashes_from_prior_warning_audit": {
+      "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/main/rttov_eddington_setup.F90": "2ad4c3b56be35ef71378c51f72f544e00fcfed5dd01d10a27e96f9694e4aabaf",
+      "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/main/rttov_const.F90": "53c1cc5e5f04eb4e4117d7deefc5a16095cf8fd2b92e49111aee8b8c1f046d55",
+      "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/main/rttov_opdep_13.F90": "9571f7e398a455e7113fd768131d21e3860eff56eb209f97c53c042cdc3222b0",
+      "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/main/rttov_transmit_thermal.F90": "c22c5b5171ebe707d4d3fd3342432513d62a826a32898fcd44b517812adf4149"
+    }
+  },
+  "preservation_and_partial_build": {
+    "original_installed_executable_sha256": {
+      "before": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+      "after": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+      "unchanged": true
+    },
+    "audited_original_rttov_source_hashes_sha256": {
+      "before": {
+        "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/main/rttov_eddington_setup.F90": "2ad4c3b56be35ef71378c51f72f544e00fcfed5dd01d10a27e96f9694e4aabaf",
+        "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/main/rttov_const.F90": "53c1cc5e5f04eb4e4117d7deefc5a16095cf8fd2b92e49111aee8b8c1f046d55",
+        "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/main/rttov_opdep_13.F90": "9571f7e398a455e7113fd768131d21e3860eff56eb209f97c53c042cdc3222b0",
+        "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/main/rttov_transmit_thermal.F90": "c22c5b5171ebe707d4d3fd3342432513d62a826a32898fcd44b517812adf4149"
+      },
+      "after": {
+        "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/main/rttov_eddington_setup.F90": "2ad4c3b56be35ef71378c51f72f544e00fcfed5dd01d10a27e96f9694e4aabaf",
+        "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/main/rttov_const.F90": "53c1cc5e5f04eb4e4117d7deefc5a16095cf8fd2b92e49111aee8b8c1f046d55",
+        "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/main/rttov_opdep_13.F90": "9571f7e398a455e7113fd768131d21e3860eff56eb209f97c53c042cdc3222b0",
+        "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/main/rttov_transmit_thermal.F90": "c22c5b5171ebe707d4d3fd3342432513d62a826a32898fcd44b517812adf4149"
+      },
+      "unchanged": true
+    },
+    "coefficient_sha256": {
+      "before": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+      "after": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+      "unchanged": true
+    },
+    "hydrotable_sha256": {
+      "before": "fdbe99ea68fd750e146fb78a798ab72b8568e4a3d545a2d847263cb374746890",
+      "after": "fdbe99ea68fd750e146fb78a798ab72b8568e4a3d545a2d847263cb374746890",
+      "unchanged": true
+    },
+    "saved_profile_inputs_unchanged": true,
+    "all_original_source_executable_coeff_and_hydrotable_hashes_unchanged": true,
+    "instrumented_source_copy_only_file_changed": "src/main/rttov_eddington_setup.F90",
+    "rebuilt_object": "rttov_eddington_setup.o",
+    "other_object_files_identical_to_original": true,
+    "static_libraries_rearchived": [
+      "librttov14_main.a",
+      "librttov_main.a"
+    ],
+    "instrumented_executable_sha256": "a0761ad2aa3bd6ee2f54dd34e17fd3510d185eab22fb54791d4ce856d7be2078",
+    "full_compile_link_and_before_after_pins": "graphify-out/pr390-local/rttov/build_receipt.json"
+  },
+  "completeness_review_clarification_2026_10_09": {
+    "scope": "Rename an ambiguous all-input zero boolean to content/fraction zero; numbers unchanged. Prior derived summary preserved under graphify-out/pr390-completeness-root/."
+  }
+}

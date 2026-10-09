@@ -1,0 +1,281 @@
+{
+  "schema": "pr390_bounded_host_pair_v1",
+  "scope": "20 model seconds one rank/one thread, 60s wall per fresh case; not historical target reproduction",
+  "pins_before": {
+    "/private/tmp/KDM6AD-viirs-observation-context-20261007/harness/run_ss_case.py": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/main/wrf.exe": "f467755ee9952dc2b1806e9dec3220689e2f26a2939234b0959065b1c357cd41",
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib/libkdm6_c.2.0.0.dylib": "64cddefe4fce336a7b9a3979278692324a97a17fe7d5264224bcc05a7f20be2d",
+    "/private/tmp/KDM6AD-review388389-resolution-20261008/graphify-out/review-local/exit_observer/observer.dylib": "2dea399e011af3101b7d024b58515ffa2402a6c9394601d7bf6f3407024a16da"
+  },
+  "pins_after": {
+    "/private/tmp/KDM6AD-viirs-observation-context-20261007/harness/run_ss_case.py": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/main/wrf.exe": "f467755ee9952dc2b1806e9dec3220689e2f26a2939234b0959065b1c357cd41",
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib/libkdm6_c.2.0.0.dylib": "64cddefe4fce336a7b9a3979278692324a97a17fe7d5264224bcc05a7f20be2d",
+    "/private/tmp/KDM6AD-review388389-resolution-20261008/graphify-out/review-local/exit_observer/observer.dylib": "2dea399e011af3101b7d024b58515ffa2402a6c9394601d7bf6f3407024a16da"
+  },
+  "attempts": [
+    {
+      "label": "without_observer",
+      "command": [
+        "/opt/homebrew/bin/python3",
+        "/private/tmp/KDM6AD-viirs-observation-context-20261007/harness/run_ss_case.py",
+        "--case",
+        "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-local/host/without_observer",
+        "--mp",
+        "337",
+        "--minutes",
+        "0",
+        "--seconds",
+        "20",
+        "--history",
+        "0",
+        "--history-s",
+        "20",
+        "--np",
+        "1",
+        "--label",
+        "pr390_without_observer"
+      ],
+      "deadline_seconds": 60,
+      "stopped_by_deadline": false,
+      "outer_returncode": 0,
+      "elapsed_seconds": 50.95450274995528,
+      "markers": [
+        {
+          "file": "rsl.out.0000",
+          "line": "Timing for main: time 2025-07-19_00:00:20 on domain   1:   46.60834 elapsed seconds"
+        },
+        {
+          "file": "rsl.out.0000",
+          "line": "d01 2025-07-19_00:00:20 wrf: SUCCESS COMPLETE WRF"
+        },
+        {
+          "file": "rsl.error.0000",
+          "line": "Timing for main: time 2025-07-19_00:00:20 on domain   1:   46.60834 elapsed seconds"
+        },
+        {
+          "file": "rsl.error.0000",
+          "line": "d01 2025-07-19_00:00:20 wrf: SUCCESS COMPLETE WRF"
+        },
+        {
+          "file": "runs/mp337_pr390_without_observer_0min20s_hist0_20261008_230230_p54095/rsl.out.0000",
+          "line": "Timing for main: time 2025-07-19_00:00:20 on domain   1:   46.60834 elapsed seconds"
+        },
+        {
+          "file": "runs/mp337_pr390_without_observer_0min20s_hist0_20261008_230230_p54095/rsl.out.0000",
+          "line": "d01 2025-07-19_00:00:20 wrf: SUCCESS COMPLETE WRF"
+        },
+        {
+          "file": "runs/mp337_pr390_without_observer_0min20s_hist0_20261008_230230_p54095/rsl.error.0000",
+          "line": "Timing for main: time 2025-07-19_00:00:20 on domain   1:   46.60834 elapsed seconds"
+        },
+        {
+          "file": "runs/mp337_pr390_without_observer_0min20s_hist0_20261008_230230_p54095/rsl.error.0000",
+          "line": "d01 2025-07-19_00:00:20 wrf: SUCCESS COMPLETE WRF"
+        }
+      ],
+      "case_path": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-local/host/without_observer",
+      "namelist_sha256_after": "1be83a57386670ff897e62cf849325fc3437f3241429b1a993e6b9b4abceaeba",
+      "run_receipts": [
+        {
+          "path": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-local/host/without_observer/runs/mp337_pr390_without_observer_0min20s_hist0_20261008_230230_p54095/experiment_valid.json",
+          "sha256": "33894032feeb096dc1a2f886d72374549ada56e682e2695db5943eb5849d51bf"
+        },
+        {
+          "path": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-local/host/without_observer/runs/mp337_pr390_without_observer_0min20s_hist0_20261008_230230_p54095/run_identity.json",
+          "sha256": "6cbf7903e815c8441a7fddcaaab6cef5bb5d4b892eff345dae6d1b0965d72faa"
+        },
+        {
+          "path": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-local/host/without_observer/runs/mp337_pr390_without_observer_0min20s_hist0_20261008_230230_p54095/input_sha256.json",
+          "sha256": "d53940dc621f368cf1ce4ae4a770def8598dfa912cef48e412b6316b60800017"
+        }
+      ],
+      "harness_experiment_valid": {
+        "experiment_valid": true,
+        "invalid_reasons": [],
+        "requested_proc_grid": null,
+        "actual_proc_grid": "1x1",
+        "active_input_identity_complete": true,
+        "exit_code": 0,
+        "model_completed": true
+      },
+      "run_identity": {
+        "actual_proc_grid": "1x1",
+        "campaign_id": "3b67dac25e5f6f4f511238bac39d391e7db7d85e43f4a30c7990c3922691e563",
+        "controls": {
+          "fixed_dt": false,
+          "history": 0,
+          "history_s": 20,
+          "input_canonical_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+          "label": "pr390_without_observer",
+          "minutes": 0,
+          "namelist_without_grid_sha256": "c5e89b85b6c0b1ab52d8057eb48852193f61d38654185bc0ecfd7729d72c8ec4",
+          "np": 1,
+          "radt": null,
+          "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+          "seconds": 20
+        },
+        "exit_code": 0,
+        "experiment_valid": true,
+        "requested_proc_grid": null,
+        "schema": 1,
+        "scheme": "337"
+      },
+      "active_input_identity_sha256": "d53940dc621f368cf1ce4ae4a770def8598dfa912cef48e412b6316b60800017",
+      "executed_namelist_sha256": "8e558686b70b1c56065a37724a0c253d8df4e5835b6c0b5d75940c660d3c1cdf",
+      "forecast_output_sha256": "3fd23e7aaa4a56a5638fbf10797b8d059418a77306c43d8bdade8d11a21f38e2",
+      "forecast_output_path": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-local/host/without_observer/runs/mp337_pr390_without_observer_0min20s_hist0_20261008_230230_p54095/klfs_lc05_fcst.202507190000"
+    },
+    {
+      "label": "with_observer",
+      "command": [
+        "/opt/homebrew/bin/python3",
+        "/private/tmp/KDM6AD-viirs-observation-context-20261007/harness/run_ss_case.py",
+        "--case",
+        "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-local/host/with_observer",
+        "--mp",
+        "337",
+        "--minutes",
+        "0",
+        "--seconds",
+        "20",
+        "--history",
+        "0",
+        "--history-s",
+        "20",
+        "--np",
+        "1",
+        "--label",
+        "pr390_with_observer"
+      ],
+      "deadline_seconds": 60,
+      "stopped_by_deadline": false,
+      "outer_returncode": 0,
+      "elapsed_seconds": 51.36911529186182,
+      "markers": [
+        {
+          "file": "rsl.out.0000",
+          "line": "Timing for main: time 2025-07-19_00:00:20 on domain   1:   46.69696 elapsed seconds"
+        },
+        {
+          "file": "rsl.out.0000",
+          "line": "d01 2025-07-19_00:00:20 wrf: SUCCESS COMPLETE WRF"
+        },
+        {
+          "file": "rsl.error.0000",
+          "line": "Timing for main: time 2025-07-19_00:00:20 on domain   1:   46.69696 elapsed seconds"
+        },
+        {
+          "file": "rsl.error.0000",
+          "line": "d01 2025-07-19_00:00:20 wrf: SUCCESS COMPLETE WRF"
+        },
+        {
+          "file": "rsl.error.0000",
+          "line": "KDM_EXIT_OBSERVER pid=54427 event=mpi_finalize_enter value=0"
+        },
+        {
+          "file": "rsl.error.0000",
+          "line": "KDM_EXIT_OBSERVER pid=54427 event=mpi_finalize_return value=0"
+        },
+        {
+          "file": "rsl.error.0000",
+          "line": "KDM_EXIT_OBSERVER pid=54427 event=_Exit value=0"
+        },
+        {
+          "file": "runs/mp337_pr390_with_observer_0min20s_hist0_20261008_230321_p54425/rsl.out.0000",
+          "line": "Timing for main: time 2025-07-19_00:00:20 on domain   1:   46.69696 elapsed seconds"
+        },
+        {
+          "file": "runs/mp337_pr390_with_observer_0min20s_hist0_20261008_230321_p54425/rsl.out.0000",
+          "line": "d01 2025-07-19_00:00:20 wrf: SUCCESS COMPLETE WRF"
+        },
+        {
+          "file": "runs/mp337_pr390_with_observer_0min20s_hist0_20261008_230321_p54425/wrf_mp337_pr390_with_observer.stdout",
+          "line": "KDM_EXIT_OBSERVER pid=54427 event=loaded value=0"
+        },
+        {
+          "file": "runs/mp337_pr390_with_observer_0min20s_hist0_20261008_230321_p54425/rsl.error.0000",
+          "line": "Timing for main: time 2025-07-19_00:00:20 on domain   1:   46.69696 elapsed seconds"
+        },
+        {
+          "file": "runs/mp337_pr390_with_observer_0min20s_hist0_20261008_230321_p54425/rsl.error.0000",
+          "line": "d01 2025-07-19_00:00:20 wrf: SUCCESS COMPLETE WRF"
+        },
+        {
+          "file": "runs/mp337_pr390_with_observer_0min20s_hist0_20261008_230321_p54425/rsl.error.0000",
+          "line": "KDM_EXIT_OBSERVER pid=54427 event=mpi_finalize_enter value=0"
+        },
+        {
+          "file": "runs/mp337_pr390_with_observer_0min20s_hist0_20261008_230321_p54425/rsl.error.0000",
+          "line": "KDM_EXIT_OBSERVER pid=54427 event=mpi_finalize_return value=0"
+        },
+        {
+          "file": "runs/mp337_pr390_with_observer_0min20s_hist0_20261008_230321_p54425/rsl.error.0000",
+          "line": "KDM_EXIT_OBSERVER pid=54427 event=_Exit value=0"
+        }
+      ],
+      "case_path": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-local/host/with_observer",
+      "namelist_sha256_after": "1be83a57386670ff897e62cf849325fc3437f3241429b1a993e6b9b4abceaeba",
+      "run_receipts": [
+        {
+          "path": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-local/host/with_observer/runs/mp337_pr390_with_observer_0min20s_hist0_20261008_230321_p54425/experiment_valid.json",
+          "sha256": "33894032feeb096dc1a2f886d72374549ada56e682e2695db5943eb5849d51bf"
+        },
+        {
+          "path": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-local/host/with_observer/runs/mp337_pr390_with_observer_0min20s_hist0_20261008_230321_p54425/run_identity.json",
+          "sha256": "8c3fc8c356eac572a6f2ec7289d9f0924e0e7d910eddc8f14caf1675bfb3a8b2"
+        },
+        {
+          "path": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-local/host/with_observer/runs/mp337_pr390_with_observer_0min20s_hist0_20261008_230321_p54425/input_sha256.json",
+          "sha256": "d53940dc621f368cf1ce4ae4a770def8598dfa912cef48e412b6316b60800017"
+        }
+      ],
+      "harness_experiment_valid": {
+        "experiment_valid": true,
+        "invalid_reasons": [],
+        "requested_proc_grid": null,
+        "actual_proc_grid": "1x1",
+        "active_input_identity_complete": true,
+        "exit_code": 0,
+        "model_completed": true
+      },
+      "run_identity": {
+        "actual_proc_grid": "1x1",
+        "campaign_id": "cfce0d279225dc007810aa0b1055758afaefb00e239f53a4beb913e975860187",
+        "controls": {
+          "fixed_dt": false,
+          "history": 0,
+          "history_s": 20,
+          "input_canonical_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+          "label": "pr390_with_observer",
+          "minutes": 0,
+          "namelist_without_grid_sha256": "c5e89b85b6c0b1ab52d8057eb48852193f61d38654185bc0ecfd7729d72c8ec4",
+          "np": 1,
+          "radt": null,
+          "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+          "seconds": 20
+        },
+        "exit_code": 0,
+        "experiment_valid": true,
+        "requested_proc_grid": null,
+        "schema": 1,
+        "scheme": "337"
+      },
+      "active_input_identity_sha256": "d53940dc621f368cf1ce4ae4a770def8598dfa912cef48e412b6316b60800017",
+      "executed_namelist_sha256": "8e558686b70b1c56065a37724a0c253d8df4e5835b6c0b5d75940c660d3c1cdf",
+      "forecast_output_sha256": "3fd23e7aaa4a56a5638fbf10797b8d059418a77306c43d8bdade8d11a21f38e2",
+      "forecast_output_path": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/pr390-local/host/with_observer/runs/mp337_pr390_with_observer_0min20s_hist0_20261008_230321_p54425/klfs_lc05_fcst.202507190000"
+    }
+  ],
+  "historical_native_run_valid": false,
+  "all_original_pins_unchanged": true,
+  "source_capture_sha256": "440d7342cb1ff4b70f44e04dad6b751a3512724d1874f9dd4af811683840983f",
+  "input_canonical_hashes": {
+    "without_observer": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+    "with_observer": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf"
+  },
+  "receipt_metadata_correction": {
+    "scope": "No host rerun. Replace empty receipt list from the executed one-off script summary.json glob with the actual harness receipt paths and hashes. Executed source_capture.py remains unchanged and hash-bound.",
+    "original_scratch_receipt": "graphify-out/pr390-local/host/result.json"
+  }
+}

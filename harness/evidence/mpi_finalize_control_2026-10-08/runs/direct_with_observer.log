@@ -1,0 +1,8 @@
+KDM_EXIT_OBSERVER pid=51811 event=loaded value=0
+MPI_CONTROL pid=51811 event=mpi_init_enter rank=unavailable
+MPI_CONTROL pid=51811 event=mpi_init_return rank=0 ierr=0
+MPI_CONTROL pid=51811 event=mpi_finalize_enter rank=0
+KDM_EXIT_OBSERVER pid=51811 event=mpi_finalize_enter value=0
+KDM_EXIT_OBSERVER pid=51811 event=mpi_finalize_return value=0
+MPI_CONTROL pid=51811 event=mpi_finalize_return rank=0 ierr=0
+KDM_EXIT_OBSERVER pid=51811 event=_Exit value=0
