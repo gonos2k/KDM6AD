@@ -1,0 +1,9 @@
+{
+  "status": "CONTINUATION_WITHDRAWN_BEFORE_CONSUMERS",
+  "utc": "2026-10-09T23:22:58.116096+00:00",
+  "reason": "Team audit reproduced driver/publication boundary defects; repair before first analysis",
+  "continuation_pid": 7241,
+  "native_pid": 99158,
+  "native_stopped_or_restarted": false,
+  "intake_H_or_analysis_executed": false
+}

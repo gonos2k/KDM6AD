@@ -454,17 +454,30 @@ def write_private_npz_atomic(path: Path, payload: Mapping[str, np.ndarray]) -> s
             stream.flush()
             os.fsync(stream.fileno())
         os.chmod(temp, 0o600)
+        # Hash before the no-clobber link so a post-publication read error can
+        # never strand a checkpoint that the caller believes was not written.
+        checkpoint_sha = sha256_file(temp)
         # A same-directory hard link is an atomic no-clobber publication.
         # os.replace would overwrite a file created after the early existence
         # check, which is unsafe for a checkpoint path intended to be fresh.
         os.link(temp, path)
         linked = True
-        temp.unlink()
-        dir_fd = os.open(path.parent, os.O_RDONLY)
         try:
-            os.fsync(dir_fd)
-        finally:
-            os.close(dir_fd)
+            temp.unlink()
+        except OSError:
+            # The final name is already committed and private. A leftover
+            # mode-0600 temporary hard link is harmless; do not report failure
+            # after publication and leave an untracked checkpoint behind.
+            pass
+        try:
+            dir_fd = os.open(path.parent, os.O_RDONLY)
+            try:
+                os.fsync(dir_fd)
+            finally:
+                os.close(dir_fd)
+        except OSError:
+            # As above, the linked checkpoint remains the committed result.
+            pass
     except BaseException:
         try:
             temp.unlink()
@@ -476,7 +489,7 @@ def write_private_npz_atomic(path: Path, payload: Mapping[str, np.ndarray]) -> s
             except FileNotFoundError:
                 pass
         raise
-    return sha256_file(path)
+    return checkpoint_sha
 
 
 def _write_receipt_exclusive(path: Path, receipt: Mapping) -> str:
@@ -492,7 +505,13 @@ def _write_receipt_exclusive(path: Path, receipt: Mapping) -> str:
             os.fsync(stream.fileno())
         # link() atomically refuses an existing destination; then remove temp.
         os.link(temp, path)
-        temp.unlink()
+        try:
+            temp.unlink()
+        except OSError:
+            # The link is the commit point. Cleanup failure must not turn a
+            # published success receipt into a reported failure whose outer
+            # rollback deletes the referenced private checkpoint.
+            pass
     except BaseException:
         try:
             temp.unlink()
@@ -763,6 +782,67 @@ def _classify_failure(exc: BaseException) -> str:
     return "ANALYSIS_EXCEPTION"
 
 
+def _public_optimizer_failure_summary(observation: Mapping) -> dict:
+    """Keep failure diagnostics public while excluding optimizer objects/raw vectors."""
+    return {key: value for key, value in observation.items()
+            if key not in ("optimizer", "optimizer_state_arrays")}
+
+
+def _numerical_return_failure_summary(analysis_runner_returned: bool,
+                                      package) -> dict:
+    has_result = isinstance(package, Mapping) and package.get("result") is not None
+    if has_result:
+        status = "RETURNED_BUT_CAPTURE_FAILED"
+    elif analysis_runner_returned:
+        status = "RUNNER_RETURNED_WITHOUT_MINIMIZER_RESULT"
+    else:
+        status = "FAILED_BEFORE_RETURN"
+    return {"status": status,
+            "analysis_runner_returned": analysis_runner_returned,
+            "minimizer_returned_state": bool(has_result)}
+
+
+def _final_audit_signature(result, *, obs_time: int, final_mask: torch.Tensor) -> dict:
+    """Bind the accepted audit trace signature to its frozen seven-channel mask."""
+    trace = getattr(result, "j_trace", None)
+    if not isinstance(trace, list) or not trace:
+        raise RuntimeError("minimizer return lacks a final objective trace for signature audit")
+    signature = None
+    for index, item in enumerate(trace):
+        if not isinstance(item, Mapping):
+            raise RuntimeError(f"objective trace entry {index} is not a mapping")
+        signatures = item.get("signature")
+        n_valid = item.get("n_valid")
+        if not isinstance(signatures, Mapping) or not isinstance(n_valid, Mapping):
+            raise RuntimeError(f"objective trace entry {index} lacks frozen signature/count maps")
+        current_signature = signatures.get(obs_time, signatures.get(str(obs_time)))
+        current_count = n_valid.get(obs_time, n_valid.get(str(obs_time)))
+        if not isinstance(current_signature, str) or len(current_signature) != 64:
+            raise RuntimeError(f"objective trace entry {index} lacks a SHA-256 observation signature")
+        if any(character not in "0123456789abcdef" for character in current_signature):
+            raise RuntimeError(f"objective trace entry {index} signature is not lowercase SHA-256 hex")
+        if current_count != 7:
+            raise RuntimeError(f"objective trace entry {index} does not retain the fixed seven-channel support")
+        if signature is None:
+            signature = current_signature
+        elif current_signature != signature:
+            raise RuntimeError("observation signature changed across the minimizer trace")
+    mask_array = np.asarray(_array(final_mask), dtype=np.float64)
+    return {
+        "slot": obs_time,
+        "sha256": signature,
+        "trace_entry_count": len(trace),
+        "final_trace_index": len(trace) - 1,
+        "all_trace_signatures_match": True,
+        "n_valid_each_trace_entry": 7,
+        "final_frozen_mask": {
+            "shape": list(mask_array.shape),
+            "dtype": str(mask_array.dtype),
+            "sha256_f64": array_sha256(mask_array),
+        },
+    }
+
+
 def _validate_predeclared_run(window_config, manifest: Mapping, *, obs_time: int,
                               max_iter: int, forcings: Sequence[Forcing]) -> None:
     expected = {
@@ -846,6 +926,10 @@ def run_capture(
     events = []
     optimizer_observation = {"constructor_calls": 0, "step_calls": 0,
                              "step_returned": False}
+    package = None
+    analysis_runner_returned = False
+    final_audit_signature = None
+    failure_stage = "PRE_ANALYSIS"
     source_before = _source_snapshot()
     checkpoint_written = False
     try:
@@ -864,6 +948,7 @@ def run_capture(
             xb, forcings, native_intake_context_path,
             native_intake_context_sha256, native_intake_npz_path,
             native_intake_npz_sha256)
+        failure_stage = "NATIVE_INPUT_VALIDATED"
         # Fixed-forcing PR395 uses the same forcing at the only initial and
         # observation slot. Record the exact source index used for frozen rho_d.
         rho_d_formula = freeze_dry_air_density(xb, forcings[0])
@@ -960,15 +1045,22 @@ def run_capture(
             }
             if rttov_timeout is not None:
                 runner_kwargs["rttov_timeout"] = rttov_timeout
+            failure_stage = "ANALYSIS_RUNNING"
             package = analysis_runner(
                 xb, forcings, y_bt, y_rq, xland, clear_cfg, rttov_cfg,
                 str(case_root),
                 **runner_kwargs)
+            analysis_runner_returned = True
+            failure_stage = "ANALYSIS_RETURNED"
         finally:
             _fulldomain.sharded_allsky = original_sharded
             torch.optim.LBFGS = original_lbfgs_factory
 
         result = package["result"]
+        if last_grad_call is not None:
+            final_audit_signature = _final_audit_signature(
+                result, obs_time=obs_time, final_mask=last_grad_call["mask"])
+        failure_stage = "POST_RETURN_VALIDATION"
         actual_meta = package["metadata"]
         if (actual_meta.get("normalized_dry") is not True
                 or actual_meta.get("require_frozen_quality") is not True
@@ -1013,9 +1105,22 @@ def run_capture(
             raise RuntimeError("final accepted-state callback does not retain all seven frozen channels")
         if not torch.equal(final_rq[final_mask > 0], torch.zeros_like(final_rq[final_mask > 0])):
             raise RuntimeError("final accepted-state quality flags are nonzero on frozen support")
+        background_mask = torch.as_tensor(
+            actual_meta.get("background_mask"), dtype=final_mask.dtype,
+            device=final_mask.device)
+        if not torch.equal(final_mask, background_mask):
+            raise RuntimeError("final all-sky callback mask differs from the frozen background support")
+        final_event = events[last_grad_call["call_index"] - 1]
+        if (final_event.get("frozen_mask") != final_event.get("fixed_mask")
+                or not final_event.get("returned", False)):
+            raise RuntimeError("final all-sky callback mutated its frozen mask or failed before return")
+        if (final_audit_signature["final_frozen_mask"]["sha256_f64"]
+                != array_sha256(final_mask)):
+            raise RuntimeError("final callback mask digest changed after audit signature capture")
 
         control_private, control_public, control_metadata = _final_control_snapshot(
             optimizer_observation, result, package, window_config, xb)
+        failure_stage = "CONTROL_CAPTURED"
 
         accepted_state = State(*(getattr(result.x_analysis, f).detach().clone()
                                  for f in STATE_FIELDS))
@@ -1057,6 +1162,7 @@ def run_capture(
                 "call_index": last_grad_call["call_index"],
                 "state_sha256": state_sha256(last_grad_call["state"]),
                 "forcing_sha256": forcing_sha256(last_grad_call["forcing"]),
+                "operator_signature": final_audit_signature,
             },
             "background_slot_capture": {
                 "semantics": "first successful grad=False background quality probe",
@@ -1074,8 +1180,10 @@ def run_capture(
             rttov_cfg=rttov_cfg, native_coordinates=native_coordinates,
             slot_calls=events, receipt_metadata=config_metadata,
             extra_private_arrays=control_private)
+        failure_stage = "PRIVATE_CHECKPOINT_WRITE"
         private_sha = write_private_npz_atomic(private_checkpoint, private_arrays)
         checkpoint_written = True
+        failure_stage = "PRIVATE_CHECKPOINT_WRITTEN"
 
         metadata = package["metadata"]
         receipt = {
@@ -1161,6 +1269,7 @@ def run_capture(
                                        float(result.j_trace[-1]["total"])),
                 "n_valid": int(final_mask.sum()),
                 "frozen_support": final_mask.tolist(),
+                "final_audit_signature": final_audit_signature,
                 "final_rad_quality": final_rq.tolist(),
                 "n_window_evals": int(result.n_window_evals),
                 "n_audit_evals": int(result.n_audit_evals),
@@ -1169,7 +1278,9 @@ def run_capture(
             "runtime_rttov_child_launches": None,
             "runtime_rttov_child_launch_note": "not instrumented; logical all-sky H callback outputs are recorded",
         }
+        failure_stage = "PUBLIC_RECEIPT_WRITE"
         receipt_sha = _write_receipt_exclusive(public_receipt, receipt)
+        failure_stage = "SUCCESS_RECEIPT_PUBLISHED"
         receipt["public_receipt_sha256"] = receipt_sha
         return receipt
     except BaseException as exc:
@@ -1187,21 +1298,20 @@ def run_capture(
                 "manifest_sha256": None if intake_binding is None else intake_binding["sha256"],
                 "native_npz_sha256": None if intake_binding is None else intake_binding["npz_sha256"],
             },
-            "numerical_return": {
-                "status": "FAILED_BEFORE_RETURN",
-                "minimizer_returned_state": False,
-            },
+            "numerical_return": _numerical_return_failure_summary(
+                analysis_runner_returned, package),
             "physical_matchup_and_science_acceptance": {
                 "status": "NOT_ASSESSED",
                 "science_accepted": False,
             },
             "analysis_exception": {"type": type(exc).__name__, "message": str(exc),
                                    "traceback": traceback.format_exc()},
+            "failure_stage": failure_stage,
+            "final_audit_signature": final_audit_signature,
             "native_intake_context": intake_binding,
             "private_checkpoint": {"path": str(private_checkpoint), "published": False},
             "callback_attempt_metadata": events,
-            "optimizer_observation": {key: value for key, value in optimizer_observation.items()
-                                      if key != "optimizer"},
+            "optimizer_observation": _public_optimizer_failure_summary(optimizer_observation),
             "production_source_sha256_before": source_before,
             "production_source_sha256_after": _source_snapshot(),
             "valid_native_analysis_published": False,

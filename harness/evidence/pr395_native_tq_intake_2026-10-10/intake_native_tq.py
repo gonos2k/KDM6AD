@@ -53,6 +53,65 @@ def array_sha256(value) -> str:
     return hashlib.sha256(a.tobytes()).hexdigest()
 
 
+def _check_selected_hyperslab(var, raw, *, expected_shape: tuple[int, ...], time_index: int,
+                              j: int | None = None, i: int | None = None) -> np.ndarray:
+    """Reject masked/fill/non-finite data before ndarray conversion loses masks.
+
+    Only the caller's selected column or required one-dimensional coordinate
+    vector is read. This follows frame_reader._flat's mask-before-array rule
+    while keeping the native NetCDF access bounded to one (time,k,j,i) slice.
+    """
+    label = getattr(var, "name", "variable")
+    location = f"Time={time_index}" + (f", j={j}, i={i}" if j is not None else "")
+    if np.ma.is_masked(raw):
+        raise ValueError(f"{label}: masked values in required selected hyperslab ({location})")
+    values = np.asarray(raw)
+    if values.shape != expected_shape:
+        raise ValueError(
+            f"{label}: selected hyperslab shape {values.shape} != {expected_shape} ({location})")
+    if np.issubdtype(values.dtype, np.number):
+        if not np.isfinite(values).all():
+            raise ValueError(f"{label}: non-finite values in required selected hyperslab ({location})")
+        for attribute in ("_FillValue", "missing_value"):
+            if attribute in var.ncattrs():
+                sentinel = np.asarray(var.getncattr(attribute))
+                try:
+                    found = np.isin(values, sentinel).any()
+                except (TypeError, ValueError):
+                    found = False
+                if found:
+                    raise ValueError(
+                        f"{label}: {attribute} sentinel in required selected hyperslab ({location})")
+    return values
+
+
+def _validate_selected_frame_slices(ds, ti: int, reader) -> None:
+    """Mask/shape/finite checks for only the selected column and needed vectors."""
+    times_var = ds["Times"]
+    if np.ma.is_masked(times_var[ti]):
+        raise ValueError(f"Times: masked saved-time value at Time={ti}")
+    selected_3d = RAW_STATE_FIELDS + ("P", "PB")
+    for name in selected_3d:
+        _check_selected_hyperslab(
+            ds[name], ds[name][ti, :, reader.J, reader.I], expected_shape=(39,),
+            time_index=ti, j=reader.J, i=reader.I)
+    for name in ("PH", "PHB"):
+        _check_selected_hyperslab(
+            ds[name], ds[name][ti, :, reader.J, reader.I], expected_shape=(40,),
+            time_index=ti, j=reader.J, i=reader.I)
+    for name in ("FNM", "FNP", "C1H", "C2H", "DNW"):
+        _check_selected_hyperslab(
+            ds[name], ds[name][ti, :], expected_shape=(39,), time_index=ti)
+    surface_names = ("XLAND", "TSK", "T2", "Q2", "U10", "V10", "HGT",
+                     "MU", "MUB", "XLAT", "XLONG")
+    if "SEAICE" in ds.variables:
+        surface_names += ("SEAICE",)
+    for name in surface_names:
+        _check_selected_hyperslab(
+            ds[name], ds[name][ti, reader.J, reader.I], expected_shape=(),
+            time_index=ti, j=reader.J, i=reader.I)
+
+
 def load_reader():
     spec = importlib.util.spec_from_file_location("pr395_native_column_reader", READER)
     if spec is None or spec.loader is None:
@@ -62,7 +121,7 @@ def load_reader():
     return module
 
 
-def _read_completion_gate(run_dir: Path) -> tuple[dict, Path, dict]:
+def _read_completion_gate(run_dir: Path) -> tuple[dict, Path, dict, dict]:
     if run_dir.name != EXPECTED_RUN_ID:
         raise ValueError(f"expected the exact fresh PR395 native archive {EXPECTED_RUN_ID}, got {run_dir.name}")
     exit_path = run_dir / "exit_code"
@@ -80,23 +139,70 @@ def _read_completion_gate(run_dir: Path) -> tuple[dict, Path, dict]:
             or identity.get("exit_code") != 0
             or identity.get("experiment_valid") is not True):
         raise RuntimeError("native run gate failed: expected runner rc=0 and experiment_valid/model_completed=true")
+    run_settings = _validate_run_identity_and_namelist(run_dir, identity, valid)
     forecasts = sorted(run_dir.glob("klfs_lc05_fcst.*"))
     if len(forecasts) != 1 or not forecasts[0].is_file():
         raise RuntimeError(f"expected exactly one archived forecast in {run_dir}; found {len(forecasts)}")
-    return valid, forecasts[0], identity
+    return valid, forecasts[0], identity, run_settings
 
 
-def _namelist_ncmin(case_dir: Path) -> dict:
-    path = case_dir / "namelist.input"
+def _namelist_value(text: str, name: str) -> str:
+    matches = re.findall(rf"(?im)^\s*{re.escape(name)}\s*=\s*([^,!\s]+)", text)
+    if len(matches) != 1:
+        raise ValueError(f"expected one {name} assignment in archived effective namelist")
+    return matches[0].strip().strip("\"'")
+
+
+def _validate_run_identity_and_namelist(run_archive: Path, identity: dict,
+                                        valid_receipt: dict) -> dict:
+    path = run_archive / "namelist.input"
     text = path.read_text()
-    values = {}
+    controls = identity.get("controls", {})
+    expected_controls = {
+        "label": "viirs_norm2_dry1_055540_055800", "minutes": 358,
+        "seconds": 0, "history": 0, "history_s": 20, "np": 1,
+        "radt": None,
+    }
+    if identity.get("scheme") != "337":
+        raise ValueError(f"run_identity.scheme must be 337 for PR395, got {identity.get('scheme')!r}")
+    for key, expected in expected_controls.items():
+        if controls.get(key) != expected:
+            raise ValueError(f"run_identity.controls.{key} must be {expected!r}, got {controls.get(key)!r}")
+    if identity.get("actual_proc_grid") != "1x1" or valid_receipt.get("actual_proc_grid") != "1x1":
+        raise ValueError("runner receipts must record the one-rank actual processor grid 1x1")
+
+    # Match run_ss_case.campaign_identity's path-independent digest over the
+    # executed archived namelist, excluding only the optional MPI grid lines.
+    namelist_without_grid_sha256 = hashlib.sha256(
+        "\n".join(line for line in text.splitlines()
+                  if "nproc_x" not in line and "nproc_y" not in line).encode("utf-8")
+    ).hexdigest()
+    if controls.get("namelist_without_grid_sha256") != namelist_without_grid_sha256:
+        raise ValueError("run_identity namelist hash differs from archived effective namelist bytes")
+
+    namelist_controls = {
+        "mp_physics": _namelist_value(text, "mp_physics"),
+        "run_minutes": int(_namelist_value(text, "run_minutes")),
+        "run_seconds": int(_namelist_value(text, "run_seconds")),
+        "history_interval": int(_namelist_value(text, "history_interval")),
+        "history_interval_s": int(_namelist_value(text, "history_interval_s")),
+        "time_step": int(_namelist_value(text, "time_step")),
+        "use_adaptive_time_step": _namelist_value(text, "use_adaptive_time_step").lower(),
+        "step_to_output_time": _namelist_value(text, "step_to_output_time").lower(),
+    }
+    expected_namelist = {
+        "mp_physics": "337", "run_minutes": 358, "run_seconds": 0,
+        "history_interval": 0, "history_interval_s": 20, "time_step": 20,
+        "use_adaptive_time_step": ".false.", "step_to_output_time": ".false.",
+    }
+    if namelist_controls != expected_namelist:
+        raise ValueError(f"archived effective namelist differs from PR395 run controls: {namelist_controls}")
+
+    ncmin_values = {}
     for name in ("ncmin_land", "ncmin_sea"):
-        matches = re.findall(rf"(?im)^\s*{name}\s*=\s*([^,!\s]+)", text)
-        if len(matches) != 1:
-            raise ValueError(f"expected one {name} assignment in the executed case namelist")
-        values[name] = float(matches[0])
-    if values != {"ncmin_land": 10.0, "ncmin_sea": 10.0}:
-        raise ValueError(f"native run's case namelist ncmin values differ from predeclared 10/10: {values}")
+        ncmin_values[name] = float(_namelist_value(text, name))
+    if ncmin_values != {"ncmin_land": 10.0, "ncmin_sea": 10.0}:
+        raise ValueError(f"archived run's ncmin values differ from predeclared 10/10: {ncmin_values}")
     wrapper = WRAPPER_SOURCE.read_text()
     forwarding = {
         "ncmin_land": "ARGS%ncmin_land = REAL(ncmin_land, c_double)",
@@ -105,8 +211,16 @@ def _namelist_ncmin(case_dir: Path) -> dict:
     for name, line in forwarding.items():
         if wrapper.count(line) != 1:
             raise ValueError(f"expected one source forwarding statement for {name} in {WRAPPER_SOURCE}")
-    return {"path": str(path), "sha256": sha256(path), "values": values,
-            "interpretation": "actual prepared run namelist entries; checked against mp_kdm6ad_cons argument forwarding, not a claim that all wrapper defaults equal these settings"}
+    return {
+        "namelist": {"path": str(path), "sha256": sha256(path),
+                     "controls": namelist_controls,
+                     "identity_hash_matches_archived_bytes": True},
+        "kdm6_moment_floor_inputs": {
+            "path": str(path), "sha256": sha256(path), "values": ncmin_values,
+            "interpretation": "archived effective namelist entries; checked against mp_kdm6ad_cons argument forwarding, not a claim that all wrapper defaults equal these settings"},
+        "runner_identity": {"scheme": identity["scheme"], "controls": controls,
+                            "actual_proc_grid": identity["actual_proc_grid"]},
+    }
 
 
 def _atomic_npz(path: Path, arrays: dict[str, np.ndarray]) -> None:
@@ -119,13 +233,23 @@ def _atomic_npz(path: Path, arrays: dict[str, np.ndarray]) -> None:
     fd, temp_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp.npz", dir=path.parent)
     os.close(fd)
     temp = Path(temp_name)
+    linked = False
     try:
         np.savez_compressed(temp, **arrays)
         temp.chmod(0o600)
         os.link(temp, path)  # exclusive create: fail if another intake won the race
+        linked = True
         temp.unlink()
     except BaseException:
-        temp.unlink(missing_ok=True)
+        try:
+            temp.unlink(missing_ok=True)
+        except OSError:
+            pass
+        if linked:
+            try:
+                path.unlink(missing_ok=True)
+            except OSError:
+                pass
         raise
 
 
@@ -133,14 +257,24 @@ def _write_json_exclusive(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, temp_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=path.parent)
     temp = Path(temp_name)
+    linked = False
     try:
         with os.fdopen(fd, "w") as stream:
             stream.write(json.dumps(payload, indent=2, sort_keys=True) + "\n")
         temp.chmod(0o644)
         os.link(temp, path)
+        linked = True
         temp.unlink()
     except BaseException:
-        temp.unlink(missing_ok=True)
+        try:
+            temp.unlink(missing_ok=True)
+        except OSError:
+            pass
+        if linked:
+            try:
+                path.unlink(missing_ok=True)
+            except OSError:
+                pass
         raise
 
 
@@ -148,7 +282,7 @@ def extract(run_dir: Path, manifest_path: Path, npz_path: Path) -> dict:
     run_dir = run_dir.resolve()
     if manifest_path.exists() or npz_path.exists():
         raise FileExistsError("refusing to replace an existing native-intake manifest or NPZ")
-    valid_receipt, forecast, identity = _read_completion_gate(run_dir)
+    valid_receipt, forecast, identity, run_settings = _read_completion_gate(run_dir)
     reader = load_reader()
     reader.validate_p8w_source()
     if reader.WRF_P8W_SOURCE.resolve() != P8W_SOURCE.resolve():
@@ -158,7 +292,7 @@ def extract(run_dir: Path, manifest_path: Path, npz_path: Path) -> dict:
     p8w_source_sha = sha256(P8W_SOURCE)
     if p8w_source_sha != reader.WRF_P8W_EXPECTED_SHA256[str(P8W_SOURCE)]:
         raise RuntimeError("calc_p8w source differs from the source pinned by the archived reader")
-    ncmin_context = _namelist_ncmin(run_dir.parent.parent)
+    ncmin_context = run_settings["kdm6_moment_floor_inputs"]
     wrapper_sha = sha256(WRAPPER_SOURCE)
 
     arrays: dict[str, np.ndarray] = {}
@@ -179,6 +313,7 @@ def extract(run_dir: Path, manifest_path: Path, npz_path: Path) -> dict:
             raise ValueError(f"actual WRF Times differ from the exact eight required values: {actual_times}")
         native_frames = []
         for ti in range(8):
+            _validate_selected_frame_slices(ds, ti, reader)
             native = reader.selected_frame(ds, ti)
             if len(native["p_pa"]) != 39 or len(native["p8w_pa"]) != 40:
                 raise ValueError("selected native column must contain 39 centers and 40 calc_p8w interfaces")
@@ -280,6 +415,7 @@ def extract(run_dir: Path, manifest_path: Path, npz_path: Path) -> dict:
             "runner_experiment_valid_sha256": sha256(run_dir / "experiment_valid.json"),
             "runner_identity_sha256": sha256(run_dir / "run_identity.json"),
             "run_identity": identity,
+            "validated_run_settings": run_settings,
             "actual_saved_times": actual_times, "expected_saved_times": EXPECTED_TIMES,
             "background_time": EXPECTED_TIMES[0], "forecast_bytes": forecast_stat_after.st_size,
             "forecast_mtime_ns": forecast_stat_after.st_mtime_ns,
