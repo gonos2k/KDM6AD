@@ -1,0 +1,123 @@
+{
+  "schema": "pr395_native_launch_preflight_v1",
+  "status": "PREFLIGHT_PASS_NOT_LAUNCHED",
+  "verified_at_utc": "2026-10-09T20:25:49Z",
+  "worktree": {
+    "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009",
+    "head": "8e5aab06fac08d35efc67374adb1928404103dbb",
+    "branch": "codex/pr395-native-tq-case",
+    "dirty_paths": [
+      "M harness/evidence/pr393_tq_integration_2026-10-09/GREEN_design.md",
+      "?? harness/evidence/CHECKLIST_pr395_native_tq_case_2026-10-10.md",
+      "?? harness/evidence/pr395_observation_matchup_2026-10-10/"
+    ],
+    "head_is_current_review_build_attestation": false
+  },
+  "prepared_case": {
+    "path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal",
+    "preparation_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/PREPARATION.json",
+    "preparation_sha256": "9eaf376c54c258cdda92e498062a75d4252fc619bc195ecacaa34d5c7791bf92",
+    "namelist_sha256": "ef4d7054a393dbc0d6aa8f34094571ef65c4d3a076b582acfb822a1ad66fbac1",
+    "run_dir_empty_before_launch": true,
+    "case_symlink_count": 80,
+    "broken_symlinks": [],
+    "prior_output_or_restart_staged": false,
+    "output_links_forbidden_count": 0
+  },
+  "controls": {
+    "mp_physics": 337,
+    "physics_variant": 2,
+    "dry_number": 1,
+    "value_only": 1,
+    "run_minutes": 358,
+    "time_step_s": 20,
+    "history_interval_min": 0,
+    "history_interval_s": 20,
+    "expected_saved_times": [
+      "2025-07-19_05:55:40",
+      "2025-07-19_05:56:00",
+      "2025-07-19_05:56:20",
+      "2025-07-19_05:56:40",
+      "2025-07-19_05:57:00",
+      "2025-07-19_05:57:20",
+      "2025-07-19_05:57:40",
+      "2025-07-19_05:58:00"
+    ],
+    "np": 1,
+    "thread_environment": {
+      "OMP_NUM_THREADS": "1",
+      "VECLIB_MAXIMUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "OMP_THREAD_LIMIT": "1"
+    }
+  },
+  "command_argv": [
+    "python",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/run_ss_case.py",
+    "--mp",
+    "337",
+    "--minutes",
+    "358",
+    "--seconds",
+    "0",
+    "--history",
+    "0",
+    "--history-s",
+    "20",
+    "--np",
+    "1",
+    "--label",
+    "viirs_norm2_dry1_055540_055800",
+    "--case",
+    "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal"
+  ],
+  "artifacts": {
+    "run_ss_case_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+    "wrf_executable_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/main/wrf.exe",
+    "wrf_executable_sha256": "f467755ee9952dc2b1806e9dec3220689e2f26a2939234b0959065b1c357cd41",
+    "kdm6_library_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+    "kdm6_library_sha256": "64cddefe4fce336a7b9a3979278692324a97a17fe7d5264224bcc05a7f20be2d",
+    "mp337_wrapper_source_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/phys/module_mp_kdm6ad_cons.F",
+    "mp337_wrapper_source_sha256": "e4ab55a672f28c47d341ebf75ce589b32c2bbaa4da960c6b04157ec682a46965",
+    "abi_version": 2
+  },
+  "source_relation": {
+    "preparation_old_review_head": "c543b98cc42f0e906b63568df209d974300d771d",
+    "archived_source_head": "30931e52f99e38f9abcd6e7e3b8cd055227a5c23",
+    "current_head": "8e5aab06fac08d35efc67374adb1928404103dbb",
+    "consumed_executable_and_library_match_archived_receipt": true,
+    "current_PR_build_or_rebuild_claimed": false
+  },
+  "loader_preflight": {
+    "dyld_library_path": null,
+    "dyld_insert_libraries": null,
+    "otool_dependencies": [
+      "@rpath/libkdm6_c.2.dylib",
+      "@rpath/libtorch.dylib",
+      "@rpath/libtorch_cpu.dylib",
+      "@rpath/libc10.dylib"
+    ],
+    "rpaths": [
+      "@loader_path/../../../libtorch/install/lib",
+      "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib",
+      "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib",
+      "@loader_path"
+    ],
+    "expected_kdm6_loaded_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+    "actual_live_lsof_observed": false,
+    "post_start_lsof_required": true
+  },
+  "mode_evidence": {
+    "wrapper_sets_value_only": 1,
+    "wrapper_sets_normalized_variant": 2,
+    "wrapper_sets_dry_number": 1,
+    "expected_start_marker": "KDM6AD_PRIVATE_EXPERIMENTAL_MP337 physics_variant=2 dry_number=1",
+    "execution_marker_seen": false
+  },
+  "limitations": [
+    "PREPARATION.json is preparation-only, not prior native-run success.",
+    "The shared binary/library hashes match the archived build receipt, but this does not establish they were built from the current PR395 head.",
+    "Actual dynamic-loader paths and runtime/startup markers must be recorded from the live WRF process.",
+    "No forecast input file was rehashed during this preflight."
+  ]
+}

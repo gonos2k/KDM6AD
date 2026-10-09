@@ -1,0 +1,8 @@
+{
+  "monotone_positive_derivative_numerator_at_interval_high_T": 5295.483107325922,
+  "all_T_interval_positive_derivative": true,
+  "es_at_high_T_Pa": 2928.1353333636566,
+  "pressure_Pa": 97710.18029785156,
+  "es_guard_0p99_p_inactive_through_interval": true,
+  "no_KDM_RTTOV_native_execution": true
+}

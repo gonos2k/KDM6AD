@@ -1,0 +1,48 @@
+{
+  "schema": "pr395_saved_endpoint_bounds_v1",
+  "source_sha256": {
+    "harness/evidence/pr394_real_tq_diagnostic_2026-10-10/RESULT.json": "674c3da9dcbe374e38fe633c35321fe8c69eb9cd11d28fe188ce8d6af1c67d92",
+    "harness/evidence/pr394_prior_boundary_2026-10-10/RESULT.json": "2b7dab70e5de98b2150427048344652a77cc89dfe94a5af94a2feaa26ed41909",
+    "harness/evidence/pr394_prior_boundary_2026-10-10/analyze_boundary.py": "7315aa01576782e0f3a7a845f284af397a7adf60cada563bac2cbaf7cdc395e3",
+    "harness/evidence/pr395_endpoint_bounds_2026-10-10/analyze_saved_endpoint.py": "a6174f97c983271ac30ca0b98935992dcbf53dfb78d2ee44d1efa69bb5b0e424"
+  },
+  "scope": "Historical failed-native checkpoint diagnostic; no new native, M or RTTOV execution",
+  "known_zero_endpoint": {
+    "shape": [
+      1,
+      39
+    ],
+    "dtype": "float64",
+    "positive_zero_bytes": 312,
+    "sha256": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+    "matching_fields": {
+      "qc": true,
+      "qr": true,
+      "qi": true,
+      "qs": true,
+      "qg": true,
+      "nc": true,
+      "ni": true,
+      "nr": true,
+      "bg": true
+    },
+    "interpretation": "Final H callback has zero condensate and these particle fields under the recorded serialization/shape and conventional SHA identity assumption; not hash inversion or direct private-array read",
+    "transient_intermediate_cloud_excluded": false
+  },
+  "prior_coordinate_bounds": {
+    "control_norm": 0.20696240509018612,
+    "th_block_norm": 0.1729730221655872,
+    "qv_block_norm": 0.11363877297655754,
+    "qv_relative_lower_percent": -0.904990271481107,
+    "qv_relative_upper_percent": 0.9132551416669944,
+    "selected_k3_initial_delta_T_abs_upper_K": 0.137465596759269,
+    "selected_k3_initial_water_ratio_upper": 0.9723218999433026,
+    "actual_layer_increment_vector_recovered": false,
+    "applies_to_model_endpoint_or_all_39_layer_RH": false
+  },
+  "management_score": {
+    "points": 54,
+    "denominator": 75,
+    "percent": 72
+  }
+}

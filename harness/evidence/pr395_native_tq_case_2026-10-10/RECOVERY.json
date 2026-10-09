@@ -1,0 +1,14 @@
+{
+  "schema": "pr395_daemon_recovery_v1",
+  "observed_at_utc": "2026-10-09T20:38:06.231048+00:00",
+  "harness_pid": 99148,
+  "launcher_pid": 99157,
+  "wrf_pid": 99158,
+  "harness_reparented_to_pid1": true,
+  "all_three_processes_live": true,
+  "duplicate_run_started": false,
+  "source_modification_or_restart_used": false,
+  "native_log_advanced_after_restart": true,
+  "last_model_time_observed": "2025-07-19_00:12:20",
+  "outer_harness_completion_status_capture": "original tool session lost on daemon restart; final launcher exit and experiment verdict are persisted by harness independently before its stdout print"
+}

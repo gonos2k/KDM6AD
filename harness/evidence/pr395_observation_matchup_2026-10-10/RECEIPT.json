@@ -1,0 +1,349 @@
+{
+  "schema": "pr395_observation_matchup_receipt_v1",
+  "date": "2026-10-10",
+  "scope": "Source/receipt-bound observation correspondence audit for fixed VIIRS 205/27, AMI 320/48, native j86/i48.",
+  "summary_path": "harness/evidence/pr395_observation_matchup_2026-10-10/SUMMARY.md",
+  "summary_sha256": "a087b7423ab4d9f83cdfab3a9e4bf5f5c5bf334c4e025a9c085b8eee03deab61",
+  "candidate_changed": false,
+  "physical_matchup_approved": false,
+  "external_model_or_reanalysis_acquired": false,
+  "native_or_rttov_run_performed_by_observation_audit": false,
+  "fixed_candidate": {
+    "viirs_row_col_zero_based": [
+      205,
+      27
+    ],
+    "ami_row_col_zero_based": [
+      320,
+      48
+    ],
+    "native_j_i_zero_based": [
+      86,
+      48
+    ],
+    "viirs_phase": 1,
+    "viirs_cloud_type": 2,
+    "viirs_cloud_phase_flag_stored_byte": 0,
+    "native_center_distance_m": 7.367358700618518
+  },
+  "channel_order": [
+    "wv063",
+    "wv069",
+    "wv073",
+    "ir087",
+    "ir096",
+    "ir105",
+    "ir112",
+    "ir123",
+    "ir133"
+  ],
+  "ami_bt_K": [
+    242.39186902662343,
+    252.76613034325015,
+    263.29133611315865,
+    288.55207070015797,
+    263.64118031341025,
+    291.3025921545636,
+    290.982874309017,
+    288.4917312292452,
+    273.9811634897418
+  ],
+  "ami_dqf": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "qa_resolution": {
+    "selected_cloudphaseflag_byte_is_high_quality": true,
+    "basis": "v3r2 sibling-platform product-family readme says CloudPhaseFlag is a packed byte; NOAA Cloud Type ATBD v3.0 Table 32 says each of six zero bits means high quality; exact NOAA-20 file identifies algorithm v2.2.0/delivery v3r2; selected stored byte is zero.",
+    "nonzero_flag_bytes_decoded": false,
+    "whole_case_science_approved": false,
+    "other_qa_open": "CloudHeight high-quality flag is interpreted as retrieval success under v3r2 family readme; DCOMP flag 17 exceeds declared 0..6 and is not interpreted."
+  },
+  "ami_clock": {
+    "kma_documented_scene_acquisition_role": "OBT of first swath/first packet",
+    "kma_documented_mission_reference_role": "planned UTC start of whole image",
+    "numeric_epoch_officially_documented": false,
+    "per_pixel_time_available": false,
+    "raw_observation_start_seconds": 806176616.1714611,
+    "raw_observation_end_seconds": 806176676.0161434,
+    "raw_time_synchro_obt_seconds": 806176616.1714611,
+    "raw_time_synchro_utc_seconds": 806176616.1774336,
+    "utc_obt_numeric_delta_seconds": 0.0059725,
+    "conditional_epoch_origin": "2000-01-01T12:00:00Z",
+    "conditional_obt_scene_time": "2025-07-19T05:56:56.171461Z",
+    "conditional_sync_utc": "2025-07-19T05:56:56.177434Z",
+    "conditional_full_image_interval_obt": "2025-07-19T05:56:56.171461Z/2025-07-19T05:57:56.016143Z",
+    "conditional_full_image_interval_utc_if_sync_offset_constant": "2025-07-19T05:56:56.177434Z/2025-07-19T05:57:56.022116Z",
+    "classification": "strong file-internal epoch/offset consistency, not official epoch documentation, not per-pixel UTC; use only as scenario C"
+  },
+  "viirs_time": {
+    "gmtco_scan_index_zero_based": 12,
+    "detector_index_zero_based": 13,
+    "scan_bracket_utc": "2025-07-19T05:56:08.986512Z/2025-07-19T05:56:10.773095Z",
+    "pixel_time_verified": false,
+    "source": "UTC aggregate anchor plus same-granule IET scan differences; Rev L defines StartTime as scan time in IET microseconds since 1958-01-01."
+  },
+  "geometry": {
+    "ami_viirs_center_distance_m": 686.6436228761686,
+    "ami_native_center_distance_m": 679.5504989626675,
+    "viirs_native_center_distance_m": 7.367358700549504,
+    "viirs_sensor_zenith_deg": 68.92668914794922,
+    "viirs_product_parallax_center_shift_m": 1525.1859117298873,
+    "ami_nominal_resolution_km": 2.0,
+    "ami_resampling": "SINC",
+    "footprint_overlap_verified": false,
+    "height_datum_verified": false,
+    "candidate_or_native_cell_reassigned": false
+  },
+  "height": {
+    "cth_m": 587.7369384765625,
+    "ctt_K": 296.5706787109375,
+    "ctp_hPa": 940.9852294921875,
+    "CloudHgtQF": 0,
+    "CloudHgtQF_interpretation": "fully successful retrieval under v3r2 family readme",
+    "CldHgtFlag_raw": [
+      3,
+      1,
+      1,
+      1,
+      1
+    ],
+    "datum": "not established by stored attribute",
+    "full_file_downloaded": false,
+    "full_sha256_verified": false
+  },
+  "dcomp": {
+    "EQualityFlag": 17,
+    "declared_valid_range": [
+      0,
+      6
+    ],
+    "accepted_as_truth": false,
+    "full_file_downloaded": false,
+    "full_sha256_verified": false
+  },
+  "predeclared_cases": {
+    "A": "fixed nominal coordinates, fresh-run actual Times; local 05:55:40+20s->05:56:00 only after fresh valid frame; slot alignment not pixel collocation",
+    "B": "show VIIRS scan bracket alongside native 05:56:00 and 05:56:20, no interpolation/frame selection",
+    "C": "conditional file-level AMI epoch/sync interval with per-pixel time unresolved",
+    "D": "nominal and provided corrected VIIRS coordinates side by side; no column reassignment; relative-height scenario only with explicit Zs"
+  },
+  "fresh_native_run_status_from_parent": "Started 2026-10-10 05:26 JST; parent reports model time 00:00:20 reached. Target window Times and validity require that run own receipt; observation packet does not verify target-window output.",
+  "local_source_result_sha256": {
+    "REPORT_VIIRS_context_2026-10-07.md": "e19efe5d4cf9b439cd603480a2c9424ef6edd71509cce8d54280d31c19e12864",
+    "REPORT_VIIRS_native_candidate_2026-10-07.md": "90c46ac796ceb486fd341762864391770a67a56ac4d3e7cbc6ff30460707c8c0",
+    "REPORT_native_target_artifact_2026-10-08.md": "a2086cef40a3ebcf1c39d3918fa1aa873f3f75ae25ed2d845e4120e9ba17d887",
+    "VIIRS_native_candidate_result_2026-10-07.json": "51f3eb0ab3cb67d87f76b5631270cc7bac9d5193ac5292a81da5146783987b58",
+    "VIIRS_context_result_2026-10-07.json": "a29ec99f49c12da1a9f2451825eb331ebccef99aa0ab60cd504091b7dfa06fb7",
+    "VIIRS_geometry_result_2026-10-07.json": "d27c828ad1823a21a580fc1331a92d22caf15414f9f2a0fb9f9c63a4906f86be",
+    "VIIRS_products_result_2026-10-07.json": "3a72c4ba9853c5105f22104a43e02e4bd150fbc67fe6d25977c3eab151ccf268",
+    "VIIRS_AMI_candidate_result_2026-10-07.json": "7cbe37a71ef3289fd120ac5b7f0b7c05ec37e85e6c85935b1b52963b1e9d7b4f",
+    "NATIVE_geometry_correction_result_2026-10-08.json": "479800eb901e023cd364a1b2e22c0237537af62e00cf4d4a62badf4300c60424",
+    "pr393_observation_scope_2026-10-09/STATUS.json": "c5dba2df8b6c2bce94bb01868ae608cf66b291819c6b7f45efa7a9a7920e4dab",
+    "pr393_observation_scope_2026-10-09/SUMMARY.md": "87fbe3ee621f8347c9186e610b25d74e0fa1b62047a6d88fbf9b3e6a02e849ad"
+  },
+  "original_payloads": {
+    "viirs_cloudphase_original": {
+      "path": "/private/tmp/KDM6AD-time-contract-20261007/raw/JRR-CloudPhase_v3r2_j01_s202507190555475_e202507190557102_c202507190621171.nc",
+      "bytes": 8810069,
+      "sha256": "7fef6df795254f628c79e92c25816fed720e855bba46a9ba74adb92abac0cfe2",
+      "sha256_matches_candidate_result": true
+    },
+    "viirs_gmtco_original": {
+      "path": "/private/tmp/KDM6AD-viirs-context-20261007/raw/GMTCO_j01_d20250719_t0555475_e0557102_b39724_c20250719061432885000_oeac_ops.h5",
+      "bytes": 33174372,
+      "sha256": "2a194c417533a1087543cc7a91b1de2a5a6d8d71d1d71e2bfeb1571cc9f8dd0c",
+      "sha256_matches_geometry_result": true
+    },
+    "ami_ir105_original": {
+      "path": "/private/tmp/KDM6AD-case-readiness-20261007/AMI_LA_202507190556/gk2a_ami_le1b_ir105_la020ge_202507190556.nc",
+      "bytes": 532071,
+      "sha256": "824ee57213da084e8f3f129fd2767cee1f68e0bb10ef101d7419b7c4ec3ea889",
+      "sha256_matches_ami_result_source_record": true
+    },
+    "cloudheight_original_object": {
+      "name": "JRR-CloudHeight_v3r2_j01_s202507190555475_e202507190557102_c202507190621171.nc",
+      "generation": "1752906345359928",
+      "full_size_bytes": 71779579,
+      "full_downloaded": false,
+      "full_sha256_verified": false
+    },
+    "dcomp_original_object": {
+      "name": "JRR-CloudDCOMP_v3r2_j01_s202507190555475_e202507190557102_c202507190627286.nc",
+      "generation": "1752906525369387",
+      "full_size_bytes": 45085958,
+      "full_downloaded": false,
+      "full_sha256_verified": false
+    }
+  },
+  "official_documents_captured_2026_10_10": {
+    "noaa21_cloud_phase_v3r2_readme": {
+      "path": "graphify-out/pr395-obs-green/raw/NOAA-21_Cloud_Phase_Provisional_Readme.pdf",
+      "url": "https://www.star.nesdis.noaa.gov/jpss/documents/AMM/N21/NOAA-21_Cloud_Phase_Provisional_Readme.pdf",
+      "bytes": 261143,
+      "sha256": "ef9b684b9d159c96dc7a10c77c4de126321c4fb332fdc3fe41106798784195f7",
+      "version": "Enterprise Cloud Top Phase/Type v2.2.0; delivery v3r2",
+      "effective_date": "2023-03-30",
+      "review_date": "2023-10-26",
+      "platform": "NOAA-21 sibling platform; file evidence is NOAA-20 and matches algorithm/delivery attributes",
+      "page_reference": "Table 1, PDF p.3; version tag/effective date, PDF p.1"
+    },
+    "noaa21_cloud_height_v3r2_readme": {
+      "path": "graphify-out/pr395-obs-green/raw/NOAA-21_Cloud_Height_Provisional_Readme.pdf",
+      "url": "https://www.star.nesdis.noaa.gov/jpss/documents/AMM/N21/NOAA-21_Cloud_Height_Provisional_Readme.pdf",
+      "bytes": 277542,
+      "sha256": "726d8bf4912348e22422a4dd22593377bc3080ff0af61602af21d1b96af11fcd",
+      "version": "Enterprise Cloud Top Properties v2.4.1; processing tag v3r2",
+      "effective_date": "2023-03-30",
+      "review_date": "2023-10-26",
+      "platform": "NOAA-21 sibling platform; used only for v3r2 CloudHgtQF semantics",
+      "page_reference": "CloudHgtQF Table 1, PDF p.4; processing tag/effective date, PDF p.1"
+    },
+    "kma_gk2a_l1b_data_use_qa": {
+      "path": "graphify-out/pr395-obs-green/raw/KMA_GK2A_L1B_Data_Use_QA.pdf",
+      "url": "https://datasvc.nmsc.kma.go.kr/resources/common/pdf/%EC%B2%9C%EB%A6%AC%EC%95%88%EC%9C%84%EC%84%B1%202A%ED%98%B8%20%20%EC%9E%90%EB%A3%8C%ED%99%9C%EC%9A%A9%20QA.pdf",
+      "bytes": 2183673,
+      "sha256": "ccefeaffc9550efa327f62db6f0d6d4b60ed4eb2a6faa559645dbe33892bb1bb",
+      "last_modified": "2021-10-27T06:10:17Z",
+      "etag": "2151f9-5cf4f72b86d37",
+      "scope": "OBT first swath/packet and planned UTC roles; no numeric epoch or per-pixel clock definition",
+      "page_reference": "Global Attributes table, printed p.17 / PDF p.20"
+    },
+    "kma_l1b_manual_zip": {
+      "path": "graphify-out/pr395-obs-green/raw/20190524_GK2A_L1B_User_Manual.zip",
+      "url": "https://nmsc.kma.go.kr/upload/resource/data/gk2a/20190524_gk2a_level_1b_data_user_manual.zip",
+      "bytes": 1260375,
+      "sha256": "e61b2c8afd167447951b3bceaafb2187f03c6947fed861248ef33cbacf016b0f",
+      "last_modified": "2019-07-02T02:17:08Z",
+      "etag": "133b57-58ca957801d4b",
+      "contained_pdf_bytes": 1445310,
+      "contained_pdf_sha256": "3ce9fda8ce668c3b1ffc524fa7b9729e1d7da4e618670d7430399247fda141e6",
+      "page_reference": "Table 7, printed p.11"
+    },
+    "noaa_viirs_sdr_dictionary_rev_l_part6": {
+      "path": "graphify-out/pr395-obs-green/raw/JPSS_VIIRS_SDR_Dictionary_Rev_L_Part6.pdf",
+      "url": "https://nesdis-prod.s3.amazonaws.com/2024-01/474-00448-02-06_JPSS-VIIRS-SDR-DD-Part-6_L.pdf",
+      "bytes": 5403888,
+      "sha256": "eaa2d028ec39e71e8a6ef6ac590251d8e5f619cb6c6c1c36aae1ed1f3e76c7d5",
+      "revision": "474-00448-02-06 Rev L",
+      "effective_date": "2023-08-30",
+      "last_modified": "2024-01-12T16:11:03Z",
+      "etag": "220b64e6109dfbec74ac8f84df5f82cb",
+      "page_reference": "Table 6.2.65-1, PDF p.142; M-band scan-time and angle field details"
+    },
+    "noaa_cloud_type_atbd_v3_local": {
+      "path": "/private/tmp/KDM6AD-time-contract-20261007/docs/ATBD_EPS_Cloud_CldType_v3.0.pdf",
+      "bytes": 12447555,
+      "sha256": "e31109a6f64efd68dc8b837f059a6944189cb15934f88eb5a5e034cdabd5ac2c",
+      "version": "v3.0",
+      "sections": "Table 31 phase/type category; Table 32 phase/type flags"
+    },
+    "noaa_acha_atbd_v3_4_local": {
+      "path": "/private/tmp/KDM6AD-viirs-context-20261007/docs/ATBD_EPS_Cloud_ACHA_v3.4.pdf",
+      "bytes": 5908021,
+      "sha256": "6c949aa1499eeec1ba631b7b8e594104df7d77d0b38dd0335eb8aa5a75162e19",
+      "version": "v3.4",
+      "section": "4.4.2.12, parallax correction uses Zc-Zs"
+    }
+  },
+  "not_performed": [
+    "No full CloudHeight/CloudDCOMP download or checksum.",
+    "No new satellite-data acquisition; original CloudPhase, GMTCO and AMI IR105 were already local.",
+    "No parallax/footprint geometry calculation, Huber calculation, native forecast read, native rerun, or RTTOV run in this observation audit.",
+    "No raw nonzero CloudPhaseFlag/CloudHgtFlag/DCOMP bit decoder was introduced."
+  ],
+  "limitations": [
+    "Official KMA docs define OBT/planned UTC roles but do not specify the numeric epoch or per-pixel timing.",
+    "The epoch mapping is inferred from same-file scene string and OBT/UTC sync pair; use conditionally.",
+    "No physical footprint polygons or AMI source weights for the selected LA pixel are retained.",
+    "Sibling-platform NOAA-21 readmes support v3r2 product-family field semantics, not NOAA-20 platform-specific scientific maturity approval."
+  ],
+  "ami_candidate_result": {
+    "path": "harness/evidence/VIIRS_AMI_candidate_result_2026-10-07.json",
+    "sha256": "7cbe37a71ef3289fd120ac5b7f0b7c05ec37e85e6c85935b1b52963b1e9d7b4f",
+    "row_col_zero_based": [
+      320,
+      48
+    ],
+    "latitude_longitude": [
+      35.41925069326254,
+      122.13724164654832
+    ],
+    "channels": [
+      "wv063",
+      "wv069",
+      "wv073",
+      "ir087",
+      "ir096",
+      "ir105",
+      "ir112",
+      "ir123",
+      "ir133"
+    ],
+    "bt_K": [
+      242.39186902662343,
+      252.76613034325015,
+      263.29133611315865,
+      288.55207070015797,
+      263.64118031341025,
+      291.3025921545636,
+      290.982874309017,
+      288.4917312292452,
+      273.9811634897418
+    ],
+    "dqf": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "geos": {
+      "coff": 314.30357081070537,
+      "loff": 2089.571379176208,
+      "cfac": 20425338.903339352,
+      "lfac": -20425338.903339356,
+      "sub_longitude": 2.2375121010567303,
+      "nominal_satellite_height": 42164000.0,
+      "earth_equatorial_radius": 6378137.0,
+      "earth_polar_radius": 6356752.3
+    },
+    "projection_type": "GEOS",
+    "image_shape": [
+      500,
+      500
+    ],
+    "image_dimensions": [
+      "dim_image_y",
+      "dim_image_x"
+    ],
+    "channel_spatial_resolution_km": 2.0,
+    "scene_acquisition_time_raw": "20250719_055656",
+    "mission_reference_time_raw": "20250719_055000",
+    "observation_start_time_raw": 806176616.1714611,
+    "observation_end_time_raw": 806176676.0161434,
+    "time_synchro_obt_raw": 806176616.1714611,
+    "time_synchro_utc_raw": 806176616.1774336,
+    "source_ir105_sha256": "824ee57213da084e8f3f129fd2767cee1f68e0bb10ef101d7419b7c4ec3ea889"
+  },
+  "graphify": {
+    "queried_graph": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/graphify-out/graph.json",
+    "query": "VIIRS candidate stored QA scan time AMI pixel UTC cloud height parallax footprint native j86 i48",
+    "coverage": "Incomplete; traversal returned generic footprint/native and producer nodes without the observation producer-to-consumer chain. Conclusions were verified against source/receipt artifacts.",
+    "manual_semantic_fragment": "graphify-out/pr395-obs-green/semantic.json",
+    "semantic_fragment_sha256": "0f9a2bd8effd85ff2e8202dfd6657335c356e0f6efcef7e2c5ea5c1c6c62dc19",
+    "full_graph_refresh_by_observation_agent": false,
+    "root_merge_refresh_pending": true
+  }
+}
