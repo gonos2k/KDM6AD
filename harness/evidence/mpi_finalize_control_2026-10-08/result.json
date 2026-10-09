@@ -1,0 +1,409 @@
+{
+  "schema": "bounded_fortran_mpi_finalize_control_v1",
+  "scope": "one-rank standalone Fortran MPI_Init/MPI_Finalize controls; no WRF/model physics",
+  "source": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/mpi_finalize_control.f90",
+  "source_sha256": "ab370bbe179cb783695ed0b67392c5bcc0c28e6690fb5c27561f49a8eca3b154",
+  "host_build_basis": {
+    "configure": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/configure.wrf",
+    "compiler": "/opt/homebrew/bin/mpif90",
+    "launcher": "/opt/homebrew/bin/mpirun",
+    "fortran_flags": [
+      "-O2",
+      "-ftree-vectorize",
+      "-funroll-loops",
+      "-w",
+      "-ffree-form",
+      "-ffree-line-length-none",
+      "-fconvert=big-endian",
+      "-ffp-contract=off",
+      "-frecord-marker=4",
+      "-fallow-argument-mismatch",
+      "-fallow-invalid-boz"
+    ],
+    "configure_sha256": "fd14b77c4d78d2d46443a9a16b459e14fb8c3c28eabb429dc9dd799679e8d44d",
+    "rank_command_shape": [
+      "/opt/homebrew/bin/mpirun",
+      "-np",
+      "1",
+      "wrf.exe"
+    ],
+    "host_runner": "/Users/yhlee/KDM6AD-k/harness/run_ss_case.py",
+    "toolchain_environment_adjustment": "SDKROOT=/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk; the installed Homebrew GCC default SDK path is absent after the Xcode update",
+    "historical_native_wrf_executable_sha256_before_and_after": "f467755ee9952dc2b1806e9dec3220689e2f26a2939234b0959065b1c357cd41",
+    "runner_sha256": "7d1b33ac18d3dcb7c718b140ee7be687263b2a0574f4f705d1873e1ba7f6fb49",
+    "runner_hash_scope": "Current Python runner after post-run configure-hash metadata correction; not a pre-execution source hash. No pre-edit runner hash retained. Executed Fortran source, compile/launch commands, binaries and logs are separately identified."
+  },
+  "observer": {
+    "source": "/private/tmp/KDM6AD-review388389-resolution-20261008/graphify-out/review-local/exit_observer/observer.c",
+    "source_sha256": "cf66c889df225b8e0d36861ea1b18ca8c4974ab8cdbc1a37e7bceace3a73da7b",
+    "dylib": "/private/tmp/KDM6AD-review388389-resolution-20261008/graphify-out/review-local/exit_observer/observer.dylib",
+    "dylib_sha256": "2dea399e011af3101b7d024b58515ffa2402a6c9394601d7bf6f3407024a16da",
+    "program_name_filter": "wrf.exe",
+    "environment": "DYLD_INSERT_LIBRARIES set for the observer arm; Open MPI propagates it to launched rank"
+  },
+  "preserved_original_inputs": {
+    "pins_before": {
+      "/private/tmp/KDM6AD-review388389-resolution-20261008/graphify-out/review-local/exit_observer/observer.c": "cf66c889df225b8e0d36861ea1b18ca8c4974ab8cdbc1a37e7bceace3a73da7b",
+      "/private/tmp/KDM6AD-review388389-resolution-20261008/graphify-out/review-local/exit_observer/observer.dylib": "2dea399e011af3101b7d024b58515ffa2402a6c9394601d7bf6f3407024a16da",
+      "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/main/wrf.exe": "f467755ee9952dc2b1806e9dec3220689e2f26a2939234b0959065b1c357cd41",
+      "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib/libkdm6_c.2.0.0.dylib": "64cddefe4fce336a7b9a3979278692324a97a17fe7d5264224bcc05a7f20be2d"
+    },
+    "pins_after": {
+      "/private/tmp/KDM6AD-review388389-resolution-20261008/graphify-out/review-local/exit_observer/observer.c": "cf66c889df225b8e0d36861ea1b18ca8c4974ab8cdbc1a37e7bceace3a73da7b",
+      "/private/tmp/KDM6AD-review388389-resolution-20261008/graphify-out/review-local/exit_observer/observer.dylib": "2dea399e011af3101b7d024b58515ffa2402a6c9394601d7bf6f3407024a16da",
+      "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/main/wrf.exe": "f467755ee9952dc2b1806e9dec3220689e2f26a2939234b0959065b1c357cd41",
+      "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib/libkdm6_c.2.0.0.dylib": "64cddefe4fce336a7b9a3979278692324a97a17fe7d5264224bcc05a7f20be2d"
+    },
+    "all_unchanged": true
+  },
+  "host_libraries": {
+    "kdm6": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+    "kdm6_sha256": "64cddefe4fce336a7b9a3979278692324a97a17fe7d5264224bcc05a7f20be2d",
+    "torch": [
+      "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch.dylib",
+      "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch_cpu.dylib",
+      "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libc10.dylib"
+    ],
+    "torch_sha256": {
+      "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch.dylib": "c9d126afd218772f9cd17387f79eaf117cdf15d89d5a0b6231c03c9a43ace910",
+      "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch_cpu.dylib": "f1584a65a2a09b5ddbe90a4e195ba824087b430a9f21cb1df9b8894177b99987",
+      "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libc10.dylib": "5db5749503cd842562a666510a72fa127dedd3a0046784760fdaeee9c562f23b"
+    },
+    "runtime_loader_tracing": "DYLD_PRINT_LIBRARIES=1 in hostlib arms",
+    "historical_source": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+    "torch_runtime_source": "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib",
+    "historical_wrf_recorded_torch_rpath": "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib",
+    "operation": "Loaded from a linked MPI control binary; no KDM6AD entry point or physics call is made"
+  },
+  "controls": [
+    {
+      "label": "plain_without_observer",
+      "compile": {
+        "command": [
+          "/opt/homebrew/bin/mpif90",
+          "-O2",
+          "-ftree-vectorize",
+          "-funroll-loops",
+          "-w",
+          "-ffree-form",
+          "-ffree-line-length-none",
+          "-fconvert=big-endian",
+          "-ffp-contract=off",
+          "-frecord-marker=4",
+          "-fallow-argument-mismatch",
+          "-fallow-invalid-boz",
+          "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/mpi_finalize_control.f90",
+          "-o",
+          "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/plain_without_observer/wrf.exe"
+        ],
+        "returncode": 0,
+        "timed_out": false,
+        "log": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/plain_without_observer/compile.log",
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "run": {
+        "command": [
+          "/opt/homebrew/bin/mpirun",
+          "-np",
+          "1",
+          "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/plain_without_observer/wrf.exe"
+        ],
+        "cwd": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/plain_without_observer",
+        "deadline_seconds": 20,
+        "elapsed_seconds": 0.326975,
+        "returncode": 0,
+        "timed_out": false,
+        "process_status": "success",
+        "log": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/plain_without_observer/run.log",
+        "log_sha256": "10790b87f10a672b0ab879c411618131e35c7d8b72cd7023d9dbeb71ac91d3ae",
+        "executable_sha256": "6dbbdef9916c0bf3f814e14953ac7af4c72702c61857d6203615e02ecff6e6c8",
+        "observer_env": null,
+        "linked_host_library_load_commands": [],
+        "observed_events": [
+          "MPI_CONTROL pid=51769 event=mpi_init_enter rank=unavailable",
+          "MPI_CONTROL pid=51769 event=mpi_init_return rank=0 ierr=0",
+          "MPI_CONTROL pid=51769 event=mpi_finalize_enter rank=0",
+          "MPI_CONTROL pid=51769 event=mpi_finalize_return rank=0 ierr=0"
+        ]
+      }
+    },
+    {
+      "label": "plain_with_observer",
+      "compile": {
+        "command": [
+          "/opt/homebrew/bin/mpif90",
+          "-O2",
+          "-ftree-vectorize",
+          "-funroll-loops",
+          "-w",
+          "-ffree-form",
+          "-ffree-line-length-none",
+          "-fconvert=big-endian",
+          "-ffp-contract=off",
+          "-frecord-marker=4",
+          "-fallow-argument-mismatch",
+          "-fallow-invalid-boz",
+          "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/mpi_finalize_control.f90",
+          "-o",
+          "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/plain_with_observer/wrf.exe"
+        ],
+        "returncode": 0,
+        "timed_out": false,
+        "log": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/plain_with_observer/compile.log",
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "run": {
+        "command": [
+          "/opt/homebrew/bin/mpirun",
+          "-np",
+          "1",
+          "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/plain_with_observer/wrf.exe"
+        ],
+        "cwd": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/plain_with_observer",
+        "deadline_seconds": 20,
+        "elapsed_seconds": 0.861688,
+        "returncode": 0,
+        "timed_out": false,
+        "process_status": "success",
+        "log": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/plain_with_observer/run.log",
+        "log_sha256": "f27a7edf9502186a49d912d254d04ba0b4dfbefe50cfa54306ff430b3921350e",
+        "executable_sha256": "6dbbdef9916c0bf3f814e14953ac7af4c72702c61857d6203615e02ecff6e6c8",
+        "observer_env": "/private/tmp/KDM6AD-review388389-resolution-20261008/graphify-out/review-local/exit_observer/observer.dylib",
+        "linked_host_library_load_commands": [],
+        "observed_events": [
+          "KDM_EXIT_OBSERVER pid=51781 event=loaded value=0",
+          "MPI_CONTROL pid=51781 event=mpi_init_enter rank=unavailable",
+          "MPI_CONTROL pid=51781 event=mpi_init_return rank=0 ierr=0",
+          "MPI_CONTROL pid=51781 event=mpi_finalize_enter rank=0",
+          "KDM_EXIT_OBSERVER pid=51781 event=mpi_finalize_enter value=0",
+          "KDM_EXIT_OBSERVER pid=51781 event=mpi_finalize_return value=0",
+          "MPI_CONTROL pid=51781 event=mpi_finalize_return rank=0 ierr=0",
+          "KDM_EXIT_OBSERVER pid=51781 event=_Exit value=0"
+        ]
+      }
+    },
+    {
+      "label": "nativehostlib_without_observer",
+      "compile": {
+        "command": [
+          "/opt/homebrew/bin/mpif90",
+          "-O2",
+          "-ftree-vectorize",
+          "-funroll-loops",
+          "-w",
+          "-ffree-form",
+          "-ffree-line-length-none",
+          "-fconvert=big-endian",
+          "-ffp-contract=off",
+          "-frecord-marker=4",
+          "-fallow-argument-mismatch",
+          "-fallow-invalid-boz",
+          "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/mpi_finalize_control.f90",
+          "-o",
+          "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/nativehostlib_without_observer/wrf.exe",
+          "-Wl,-rpath,@loader_path/../../../libtorch/install/lib",
+          "-Wl,-rpath,/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib",
+          "-Wl,-rpath,/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib",
+          "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+          "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch.dylib",
+          "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch_cpu.dylib",
+          "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libc10.dylib"
+        ],
+        "returncode": 0,
+        "timed_out": false,
+        "log": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/nativehostlib_without_observer/compile.log",
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "run": {
+        "command": [
+          "/opt/homebrew/bin/mpirun",
+          "-np",
+          "1",
+          "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/nativehostlib_without_observer/wrf.exe"
+        ],
+        "cwd": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/nativehostlib_without_observer",
+        "deadline_seconds": 20,
+        "elapsed_seconds": 0.485852,
+        "returncode": 0,
+        "timed_out": false,
+        "process_status": "success",
+        "log": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/nativehostlib_without_observer/run.log",
+        "log_sha256": "66d26f31a97ebfb4380fec6d5ccc1dcf0c0478d5e26876d3883e0741bc573319",
+        "executable_sha256": "47185ca24802a6d995a4338051dc4c6fdc5beaa4247d0797b278279e3cc5fe7d",
+        "observer_env": null,
+        "linked_host_library_load_commands": [
+          "\t@rpath/libkdm6_c.2.dylib (compatibility version 2.0.0, current version 2.0.0)",
+          "\t@rpath/libtorch.dylib (compatibility version 0.0.0, current version 0.0.0)",
+          "\t@rpath/libtorch_cpu.dylib (compatibility version 0.0.0, current version 0.0.0)",
+          "\t@rpath/libc10.dylib (compatibility version 0.0.0, current version 0.0.0)",
+          "\t/opt/homebrew/opt/open-mpi/lib/libmpi_usempif08.40.dylib (compatibility version 81.0.0, current version 81.3.0)",
+          "\t/opt/homebrew/opt/open-mpi/lib/libmpi_usempi_ignore_tkr.40.dylib (compatibility version 81.0.0, current version 81.1.0)",
+          "\t/opt/homebrew/opt/open-mpi/lib/libmpi_mpifh.40.dylib (compatibility version 81.0.0, current version 81.1.0)",
+          "\t/opt/homebrew/opt/open-mpi/lib/libmpi.40.dylib (compatibility version 81.0.0, current version 81.7.0)",
+          "\t/opt/homebrew/opt/gcc/lib/gcc/current/libgfortran.5.dylib (compatibility version 6.0.0, current version 6.0.0)",
+          "\t/opt/homebrew/opt/gcc/lib/gcc/current/libquadmath.0.dylib (compatibility version 1.0.0, current version 1.0.0)",
+          "\t/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1359.0.0)"
+        ],
+        "observed_events": [
+          "dyld[51793]: <A7BFFC7E-CC01-3883-879E-664B2D838BEB> /private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+          "dyld[51793]: <89D4A149-007D-3163-B44E-11EA84738339> /private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch.dylib",
+          "dyld[51793]: <79F353E0-BA32-3FE1-AC0A-7BE740151DAD> /private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch_cpu.dylib",
+          "dyld[51793]: <30ECE288-7C4B-3C60-BAB7-197706563948> /private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libc10.dylib",
+          "MPI_CONTROL pid=51793 event=mpi_init_enter rank=unavailable",
+          "MPI_CONTROL pid=51793 event=mpi_init_return rank=0 ierr=0",
+          "MPI_CONTROL pid=51793 event=mpi_finalize_enter rank=0",
+          "MPI_CONTROL pid=51793 event=mpi_finalize_return rank=0 ierr=0"
+        ]
+      }
+    },
+    {
+      "label": "nativehostlib_with_observer",
+      "compile": {
+        "command": [
+          "/opt/homebrew/bin/mpif90",
+          "-O2",
+          "-ftree-vectorize",
+          "-funroll-loops",
+          "-w",
+          "-ffree-form",
+          "-ffree-line-length-none",
+          "-fconvert=big-endian",
+          "-ffp-contract=off",
+          "-frecord-marker=4",
+          "-fallow-argument-mismatch",
+          "-fallow-invalid-boz",
+          "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/mpi_finalize_control.f90",
+          "-o",
+          "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/nativehostlib_with_observer/wrf.exe",
+          "-Wl,-rpath,@loader_path/../../../libtorch/install/lib",
+          "-Wl,-rpath,/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib",
+          "-Wl,-rpath,/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib",
+          "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+          "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch.dylib",
+          "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch_cpu.dylib",
+          "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libc10.dylib"
+        ],
+        "returncode": 0,
+        "timed_out": false,
+        "log": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/nativehostlib_with_observer/compile.log",
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "run": {
+        "command": [
+          "/opt/homebrew/bin/mpirun",
+          "-np",
+          "1",
+          "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/nativehostlib_with_observer/wrf.exe"
+        ],
+        "cwd": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/nativehostlib_with_observer",
+        "deadline_seconds": 20,
+        "elapsed_seconds": 1.021878,
+        "returncode": 0,
+        "timed_out": false,
+        "process_status": "success",
+        "log": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/nativehostlib_with_observer/run.log",
+        "log_sha256": "7fc01e76af70adc8bfe580efcfc5d644b0209f6bf91e671d1239ef2c05b916c5",
+        "executable_sha256": "47185ca24802a6d995a4338051dc4c6fdc5beaa4247d0797b278279e3cc5fe7d",
+        "observer_env": "/private/tmp/KDM6AD-review388389-resolution-20261008/graphify-out/review-local/exit_observer/observer.dylib",
+        "linked_host_library_load_commands": [
+          "\t@rpath/libkdm6_c.2.dylib (compatibility version 2.0.0, current version 2.0.0)",
+          "\t@rpath/libtorch.dylib (compatibility version 0.0.0, current version 0.0.0)",
+          "\t@rpath/libtorch_cpu.dylib (compatibility version 0.0.0, current version 0.0.0)",
+          "\t@rpath/libc10.dylib (compatibility version 0.0.0, current version 0.0.0)",
+          "\t/opt/homebrew/opt/open-mpi/lib/libmpi_usempif08.40.dylib (compatibility version 81.0.0, current version 81.3.0)",
+          "\t/opt/homebrew/opt/open-mpi/lib/libmpi_usempi_ignore_tkr.40.dylib (compatibility version 81.0.0, current version 81.1.0)",
+          "\t/opt/homebrew/opt/open-mpi/lib/libmpi_mpifh.40.dylib (compatibility version 81.0.0, current version 81.1.0)",
+          "\t/opt/homebrew/opt/open-mpi/lib/libmpi.40.dylib (compatibility version 81.0.0, current version 81.7.0)",
+          "\t/opt/homebrew/opt/gcc/lib/gcc/current/libgfortran.5.dylib (compatibility version 6.0.0, current version 6.0.0)",
+          "\t/opt/homebrew/opt/gcc/lib/gcc/current/libquadmath.0.dylib (compatibility version 1.0.0, current version 1.0.0)",
+          "\t/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1359.0.0)"
+        ],
+        "observed_events": [
+          "dyld[51807]: <A7BFFC7E-CC01-3883-879E-664B2D838BEB> /private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+          "dyld[51807]: <89D4A149-007D-3163-B44E-11EA84738339> /private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch.dylib",
+          "dyld[51807]: <79F353E0-BA32-3FE1-AC0A-7BE740151DAD> /private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch_cpu.dylib",
+          "dyld[51807]: <30ECE288-7C4B-3C60-BAB7-197706563948> /private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libc10.dylib",
+          "KDM_EXIT_OBSERVER pid=51807 event=loaded value=0",
+          "MPI_CONTROL pid=51807 event=mpi_init_enter rank=unavailable",
+          "MPI_CONTROL pid=51807 event=mpi_init_return rank=0 ierr=0",
+          "MPI_CONTROL pid=51807 event=mpi_finalize_enter rank=0",
+          "KDM_EXIT_OBSERVER pid=51807 event=mpi_finalize_enter value=0",
+          "KDM_EXIT_OBSERVER pid=51807 event=mpi_finalize_return value=0",
+          "MPI_CONTROL pid=51807 event=mpi_finalize_return rank=0 ierr=0",
+          "KDM_EXIT_OBSERVER pid=51807 event=_Exit value=0"
+        ]
+      }
+    }
+  ],
+  "direct_singleton_controls": [
+    {
+      "label": "direct_without_observer",
+      "run": {
+        "command": [
+          "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/plain_without_observer/wrf.exe"
+        ],
+        "cwd": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/plain_without_observer",
+        "deadline_seconds": 20,
+        "elapsed_seconds": 0.081398,
+        "returncode": 0,
+        "timed_out": false,
+        "process_status": "success",
+        "log": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/direct_without_observer.log",
+        "log_sha256": "f12c5defb7cff75a0fac1e1a70cee8fbb65daf8eb7c227e2404ca50a7f995f02",
+        "launch_mode": "direct Open MPI singleton; no mpirun parent",
+        "observer_env": null,
+        "observed_events": [
+          "MPI_CONTROL pid=51810 event=mpi_init_enter rank=unavailable",
+          "MPI_CONTROL pid=51810 event=mpi_init_return rank=0 ierr=0",
+          "MPI_CONTROL pid=51810 event=mpi_finalize_enter rank=0",
+          "MPI_CONTROL pid=51810 event=mpi_finalize_return rank=0 ierr=0"
+        ],
+        "direct_child_wait_status": 0
+      }
+    },
+    {
+      "label": "direct_with_observer",
+      "run": {
+        "command": [
+          "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/plain_with_observer/wrf.exe"
+        ],
+        "cwd": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/plain_with_observer",
+        "deadline_seconds": 20,
+        "elapsed_seconds": 0.08745,
+        "returncode": 0,
+        "timed_out": false,
+        "process_status": "success",
+        "log": "/private/tmp/KDM6AD-pr390-small-diagnostics-20261008/harness/evidence/mpi_finalize_control_2026-10-08/runs/direct_with_observer.log",
+        "log_sha256": "d3ce7dccca319b563f712c8707fb5b4ffd1d57d9e00818dc3fbcb9826926c4bb",
+        "launch_mode": "direct Open MPI singleton; no mpirun parent",
+        "observer_env": "/private/tmp/KDM6AD-review388389-resolution-20261008/graphify-out/review-local/exit_observer/observer.dylib",
+        "observed_events": [
+          "KDM_EXIT_OBSERVER pid=51811 event=loaded value=0",
+          "MPI_CONTROL pid=51811 event=mpi_init_enter rank=unavailable",
+          "MPI_CONTROL pid=51811 event=mpi_init_return rank=0 ierr=0",
+          "MPI_CONTROL pid=51811 event=mpi_finalize_enter rank=0",
+          "KDM_EXIT_OBSERVER pid=51811 event=mpi_finalize_enter value=0",
+          "KDM_EXIT_OBSERVER pid=51811 event=mpi_finalize_return value=0",
+          "MPI_CONTROL pid=51811 event=mpi_finalize_return rank=0 ierr=0",
+          "KDM_EXIT_OBSERVER pid=51811 event=_Exit value=0"
+        ],
+        "direct_child_wait_status": 0
+      }
+    }
+  ],
+  "limitations": [
+    "This validates a standalone Fortran MPI finalize/interpose and C _Exit forwarding path only; it does not establish WRF shutdown behavior.",
+    "The observer has no rank-aware MPI launcher status interface; launcher exit code is recorded by this runner.",
+    "MPI_INIT entry is marked before initialization, when a communicator rank is unavailable."
+  ],
+  "receipt_metadata_correction": {
+    "scope": "metadata-only correction after Green provenance review; executed controls were not rerun",
+    "field": "host_build_basis.configure_sha256",
+    "previous_value": "490a164e853e4d1f28ff79c9dfc36843d00db9c8bd6aaae6bd47afd70ffc9292",
+    "previous_value_source": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/configure.wrf",
+    "corrected_value": "fd14b77c4d78d2d46443a9a16b459e14fb8c3c28eabb429dc9dd799679e8d44d",
+    "corrected_value_source": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/configure.wrf",
+    "runner_sha256_after_correction": "7d1b33ac18d3dcb7c718b140ee7be687263b2a0574f4f705d1873e1ba7f6fb49",
+    "execution_results_changed": false
+  }
+}

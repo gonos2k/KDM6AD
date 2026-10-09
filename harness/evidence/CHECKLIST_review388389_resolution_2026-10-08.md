@@ -1,5 +1,15 @@
 # PR388–389 local resolution checklist
 
+## Dated follow-up: 2026-10-09
+
+The [team completeness audit](REPORT_completeness_pr390_2026-10-09.md) adds
+actual minimum-MPI forwarding, a valid initial-time 20-second experimental
+mp337 pair and measured RTTOV extinction for saved `case_00` in a separate
+diagnostic build. **Q2 is measured for that one profile/build**; the other seven
+profiles were not internally instrumented. L1's historical exit-1 cause, L2's
+target-time validity and R2 remain OPEN. The original rows below preserve their
+PR388–389 review-time scope; they do not supersede this later measurement.
+
 Baseline `ac3a4ec7`; [supplied review identity](REVIEW_REQUEST_PR388_389_2026-10-08.md) on 2026-10-08. Work is local,
 in an isolated worktree. Canonical source, operational installs and historical
 inputs/results/receipt archives remain unchanged. The user requested a PR at 18:37 JST; this bounded source/metadata change is

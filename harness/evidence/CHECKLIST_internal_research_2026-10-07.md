@@ -1,5 +1,16 @@
 # Internal KDM6AD research checklist — one item at a time
 
+## Dated follow-up: 2026-10-09
+
+[Team completeness review](REPORT_completeness_pr390_2026-10-09.md) independently
+confirms the bounded MPI/short-host diagnostics and actual RTTOV warning layers
+for saved `case_00` in a separately attributed diagnostic build. That warning
+subquestion is now measured for one profile. R2 remains OPEN: the short host
+pair is an initial-time experimental mp337 run, not a valid target-time
+native/independent-observation case. Historical exit1, actual pixel/scan clocks,
+cloud QA and common footprint remain unresolved. The rows below retain their
+earlier scope; A1/A2/A3 are not reopened, and R1/P1/T1/C1/V1 remain distinct work.
+
 Baseline: PR #379 `f4a13de0`. Installation, licensing, releases and independent
 user acceptance are outside this research checklist. Source/input/coefficient
 identity remains mandatory. Closed NCCN, BT, first-order cost/VJP and recipe

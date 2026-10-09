@@ -1,0 +1,4 @@
+MPI_CONTROL pid=51769 event=mpi_init_enter rank=unavailable
+MPI_CONTROL pid=51769 event=mpi_init_return rank=0 ierr=0
+MPI_CONTROL pid=51769 event=mpi_finalize_enter rank=0
+MPI_CONTROL pid=51769 event=mpi_finalize_return rank=0 ierr=0
