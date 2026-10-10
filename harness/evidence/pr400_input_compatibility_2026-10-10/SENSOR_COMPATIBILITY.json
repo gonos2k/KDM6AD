@@ -1,0 +1,958 @@
+{
+  "actual_la_files": {
+    "ir087": {
+      "all_calibration_fields_match_v3_0": true,
+      "all_calibration_fields_match_v3_1": true,
+      "calibration_exact_field_matches": {
+        "v3.0": {
+          "Boltzmann_constant_k": true,
+          "DN_to_Radiance_Gain": true,
+          "DN_to_Radiance_Offset": true,
+          "Plank_constant_h": true,
+          "Teff_to_Tbb_c0": true,
+          "Teff_to_Tbb_c1": true,
+          "Teff_to_Tbb_c2": true,
+          "light_speed": true
+        },
+        "v3.1": {
+          "Boltzmann_constant_k": true,
+          "DN_to_Radiance_Gain": true,
+          "DN_to_Radiance_Offset": true,
+          "Plank_constant_h": true,
+          "Teff_to_Tbb_c0": true,
+          "Teff_to_Tbb_c1": true,
+          "Teff_to_Tbb_c2": true,
+          "light_speed": true
+        }
+      },
+      "channel_identity_matches_filename_and_receipt": true,
+      "matches_existing_slot_receipt_sha256": true,
+      "matches_existing_slot_receipt_size": true,
+      "metadata": {
+        "global_attributes": {
+          "Boltzmann_constant_k": 1.3806488e-23,
+          "DN_to_Radiance_Gain": -0.0144806550815701,
+          "DN_to_Radiance_Offset": 118.050903320312,
+          "Plank_constant_h": 6.62606957e-34,
+          "Teff_to_Tbb_c0": -0.141418528203155,
+          "Teff_to_Tbb_c1": 1.00052232906885,
+          "Teff_to_Tbb_c2": -3.6287276076109e-07,
+          "calibration_table_version": "v.3.0_20190415",
+          "channel_center_wavelength": "8.7",
+          "channel_spatial_resolution": "2.0",
+          "data_processing_center": "NMSC",
+          "data_processing_mode": "operation",
+          "file_format_version": "1.0.0_20181120",
+          "file_generation_time": "20250719_055820",
+          "file_name": "gk2a_ami_le1b_ir087_la020ge_202507190556.nc",
+          "instrument_name": "AMI",
+          "light_speed": 299792458.0,
+          "mission_reference_time": "20250719_055000",
+          "projection_type": "GEOS",
+          "satellite_name": "GK-2A",
+          "scene_acquisition_time": "20250719_055656"
+        },
+        "global_srf_wavenumber_metadata_present": false,
+        "image_pixel_values_header": {
+          "channel_name": "IR087",
+          "dtype": "uint16",
+          "shape": [
+            500,
+            500
+          ]
+        }
+      },
+      "sha256": "d98e0b5cd785c75f160982eacf57fb749674f4f0c471f27e1377dfa2767f2b50",
+      "size_bytes": 529492,
+      "source_file": "gk2a_ami_le1b_ir087_la020ge_202507190556.nc"
+    },
+    "ir096": {
+      "all_calibration_fields_match_v3_0": true,
+      "all_calibration_fields_match_v3_1": true,
+      "calibration_exact_field_matches": {
+        "v3.0": {
+          "Boltzmann_constant_k": true,
+          "DN_to_Radiance_Gain": true,
+          "DN_to_Radiance_Offset": true,
+          "Plank_constant_h": true,
+          "Teff_to_Tbb_c0": true,
+          "Teff_to_Tbb_c1": true,
+          "Teff_to_Tbb_c2": true,
+          "light_speed": true
+        },
+        "v3.1": {
+          "Boltzmann_constant_k": true,
+          "DN_to_Radiance_Gain": true,
+          "DN_to_Radiance_Offset": true,
+          "Plank_constant_h": true,
+          "Teff_to_Tbb_c0": true,
+          "Teff_to_Tbb_c1": true,
+          "Teff_to_Tbb_c2": true,
+          "light_speed": true
+        }
+      },
+      "channel_identity_matches_filename_and_receipt": true,
+      "matches_existing_slot_receipt_sha256": true,
+      "matches_existing_slot_receipt_size": true,
+      "metadata": {
+        "global_attributes": {
+          "Boltzmann_constant_k": 1.3806488e-23,
+          "DN_to_Radiance_Gain": -0.0178435463458299,
+          "DN_to_Radiance_Offset": 145.464874267578,
+          "Plank_constant_h": 6.62606957e-34,
+          "Teff_to_Tbb_c0": -0.114017728158198,
+          "Teff_to_Tbb_c1": 1.00047380585402,
+          "Teff_to_Tbb_c2": -3.74931509928403e-07,
+          "calibration_table_version": "v.3.0_20190415",
+          "channel_center_wavelength": "9.6",
+          "channel_spatial_resolution": "2.0",
+          "data_processing_center": "NMSC",
+          "data_processing_mode": "operation",
+          "file_format_version": "1.0.0_20181120",
+          "file_generation_time": "20250719_055820",
+          "file_name": "gk2a_ami_le1b_ir096_la020ge_202507190556.nc",
+          "instrument_name": "AMI",
+          "light_speed": 299792458.0,
+          "mission_reference_time": "20250719_055000",
+          "projection_type": "GEOS",
+          "satellite_name": "GK-2A",
+          "scene_acquisition_time": "20250719_055656"
+        },
+        "global_srf_wavenumber_metadata_present": false,
+        "image_pixel_values_header": {
+          "channel_name": "IR096",
+          "dtype": "uint16",
+          "shape": [
+            500,
+            500
+          ]
+        }
+      },
+      "sha256": "40f5cbcdd1bf15485cf3ddc116f4a3d7699701f230810d49f04942d6d5ee102a",
+      "size_bytes": 500536,
+      "source_file": "gk2a_ami_le1b_ir096_la020ge_202507190556.nc"
+    },
+    "ir105": {
+      "all_calibration_fields_match_v3_0": true,
+      "all_calibration_fields_match_v3_1": true,
+      "calibration_exact_field_matches": {
+        "v3.0": {
+          "Boltzmann_constant_k": true,
+          "DN_to_Radiance_Gain": true,
+          "DN_to_Radiance_Offset": true,
+          "Plank_constant_h": true,
+          "Teff_to_Tbb_c0": true,
+          "Teff_to_Tbb_c1": true,
+          "Teff_to_Tbb_c2": true,
+          "light_speed": true
+        },
+        "v3.1": {
+          "Boltzmann_constant_k": true,
+          "DN_to_Radiance_Gain": true,
+          "DN_to_Radiance_Offset": true,
+          "Plank_constant_h": true,
+          "Teff_to_Tbb_c0": true,
+          "Teff_to_Tbb_c1": true,
+          "Teff_to_Tbb_c2": true,
+          "light_speed": true
+        }
+      },
+      "channel_identity_matches_filename_and_receipt": true,
+      "matches_existing_slot_receipt_sha256": true,
+      "matches_existing_slot_receipt_size": true,
+      "metadata": {
+        "global_attributes": {
+          "Boltzmann_constant_k": 1.3806488e-23,
+          "DN_to_Radiance_Gain": -0.0198196955025196,
+          "DN_to_Radiance_Offset": 161.580139160156,
+          "Plank_constant_h": 6.62606957e-34,
+          "Teff_to_Tbb_c0": -0.142866448475177,
+          "Teff_to_Tbb_c1": 1.00064069572049,
+          "Teff_to_Tbb_c2": -5.50443294960498e-07,
+          "calibration_table_version": "v.3.0_20190415",
+          "channel_center_wavelength": "10.5",
+          "channel_spatial_resolution": "2.0",
+          "data_processing_center": "NMSC",
+          "data_processing_mode": "operation",
+          "file_format_version": "1.0.0_20181120",
+          "file_generation_time": "20250719_055820",
+          "file_name": "gk2a_ami_le1b_ir105_la020ge_202507190556.nc",
+          "instrument_name": "AMI",
+          "light_speed": 299792458.0,
+          "mission_reference_time": "20250719_055000",
+          "projection_type": "GEOS",
+          "satellite_name": "GK-2A",
+          "scene_acquisition_time": "20250719_055656"
+        },
+        "global_srf_wavenumber_metadata_present": false,
+        "image_pixel_values_header": {
+          "channel_name": "IR105",
+          "dtype": "uint16",
+          "shape": [
+            500,
+            500
+          ]
+        }
+      },
+      "sha256": "824ee57213da084e8f3f129fd2767cee1f68e0bb10ef101d7419b7c4ec3ea889",
+      "size_bytes": 532071,
+      "source_file": "gk2a_ami_le1b_ir105_la020ge_202507190556.nc"
+    },
+    "ir112": {
+      "all_calibration_fields_match_v3_0": true,
+      "all_calibration_fields_match_v3_1": true,
+      "calibration_exact_field_matches": {
+        "v3.0": {
+          "Boltzmann_constant_k": true,
+          "DN_to_Radiance_Gain": true,
+          "DN_to_Radiance_Offset": true,
+          "Plank_constant_h": true,
+          "Teff_to_Tbb_c0": true,
+          "Teff_to_Tbb_c1": true,
+          "Teff_to_Tbb_c2": true,
+          "light_speed": true
+        },
+        "v3.1": {
+          "Boltzmann_constant_k": true,
+          "DN_to_Radiance_Gain": true,
+          "DN_to_Radiance_Offset": true,
+          "Plank_constant_h": true,
+          "Teff_to_Tbb_c0": true,
+          "Teff_to_Tbb_c1": true,
+          "Teff_to_Tbb_c2": true,
+          "light_speed": true
+        }
+      },
+      "channel_identity_matches_filename_and_receipt": true,
+      "matches_existing_slot_receipt_sha256": true,
+      "matches_existing_slot_receipt_size": true,
+      "metadata": {
+        "global_attributes": {
+          "Boltzmann_constant_k": 1.3806488e-23,
+          "DN_to_Radiance_Gain": -0.0216744858771562,
+          "DN_to_Radiance_Offset": 176.713439941406,
+          "Plank_constant_h": 6.62606957e-34,
+          "Teff_to_Tbb_c0": -0.249111718496148,
+          "Teff_to_Tbb_c1": 1.00121166873756,
+          "Teff_to_Tbb_c2": -1.13167964011665e-06,
+          "calibration_table_version": "v.3.0_20190415",
+          "channel_center_wavelength": "11.2",
+          "channel_spatial_resolution": "2.0",
+          "data_processing_center": "NMSC",
+          "data_processing_mode": "operation",
+          "file_format_version": "1.0.0_20181120",
+          "file_generation_time": "20250719_055820",
+          "file_name": "gk2a_ami_le1b_ir112_la020ge_202507190556.nc",
+          "instrument_name": "AMI",
+          "light_speed": 299792458.0,
+          "mission_reference_time": "20250719_055000",
+          "projection_type": "GEOS",
+          "satellite_name": "GK-2A",
+          "scene_acquisition_time": "20250719_055656"
+        },
+        "global_srf_wavenumber_metadata_present": false,
+        "image_pixel_values_header": {
+          "channel_name": "IR112",
+          "dtype": "uint16",
+          "shape": [
+            500,
+            500
+          ]
+        }
+      },
+      "sha256": "8370508b1c70364085311772bd9b092876be7a7b6accf8ed71112172550f647d",
+      "size_bytes": 530010,
+      "source_file": "gk2a_ami_le1b_ir112_la020ge_202507190556.nc"
+    },
+    "ir123": {
+      "all_calibration_fields_match_v3_0": true,
+      "all_calibration_fields_match_v3_1": true,
+      "calibration_exact_field_matches": {
+        "v3.0": {
+          "Boltzmann_constant_k": true,
+          "DN_to_Radiance_Gain": true,
+          "DN_to_Radiance_Offset": true,
+          "Plank_constant_h": true,
+          "Teff_to_Tbb_c0": true,
+          "Teff_to_Tbb_c1": true,
+          "Teff_to_Tbb_c2": true,
+          "light_speed": true
+        },
+        "v3.1": {
+          "Boltzmann_constant_k": true,
+          "DN_to_Radiance_Gain": true,
+          "DN_to_Radiance_Offset": true,
+          "Plank_constant_h": true,
+          "Teff_to_Tbb_c0": true,
+          "Teff_to_Tbb_c1": true,
+          "Teff_to_Tbb_c2": true,
+          "light_speed": true
+        }
+      },
+      "channel_identity_matches_filename_and_receipt": true,
+      "matches_existing_slot_receipt_sha256": true,
+      "matches_existing_slot_receipt_size": true,
+      "metadata": {
+        "global_attributes": {
+          "Boltzmann_constant_k": 1.3806488e-23,
+          "DN_to_Radiance_Gain": -0.023379972204566,
+          "DN_to_Radiance_Offset": 190.649627685546,
+          "Plank_constant_h": 6.62606957e-34,
+          "Teff_to_Tbb_c0": -0.458113885722738,
+          "Teff_to_Tbb_c1": 1.00245520975535,
+          "Teff_to_Tbb_c2": -2.53064314720476e-06,
+          "calibration_table_version": "v.3.0_20190415",
+          "channel_center_wavelength": "12.3",
+          "channel_spatial_resolution": "2.0",
+          "data_processing_center": "NMSC",
+          "data_processing_mode": "operation",
+          "file_format_version": "1.0.0_20181120",
+          "file_generation_time": "20250719_055820",
+          "file_name": "gk2a_ami_le1b_ir123_la020ge_202507190556.nc",
+          "instrument_name": "AMI",
+          "light_speed": 299792458.0,
+          "mission_reference_time": "20250719_055000",
+          "projection_type": "GEOS",
+          "satellite_name": "GK-2A",
+          "scene_acquisition_time": "20250719_055656"
+        },
+        "global_srf_wavenumber_metadata_present": false,
+        "image_pixel_values_header": {
+          "channel_name": "IR123",
+          "dtype": "uint16",
+          "shape": [
+            500,
+            500
+          ]
+        }
+      },
+      "sha256": "19d1a4a9c60bee40cd6c7efe8a760189d72aa3f8f488b168cb8e35fc3963542f",
+      "size_bytes": 524322,
+      "source_file": "gk2a_ami_le1b_ir123_la020ge_202507190556.nc"
+    },
+    "ir133": {
+      "all_calibration_fields_match_v3_0": true,
+      "all_calibration_fields_match_v3_1": false,
+      "calibration_exact_field_matches": {
+        "v3.0": {
+          "Boltzmann_constant_k": true,
+          "DN_to_Radiance_Gain": true,
+          "DN_to_Radiance_Offset": true,
+          "Plank_constant_h": true,
+          "Teff_to_Tbb_c0": true,
+          "Teff_to_Tbb_c1": true,
+          "Teff_to_Tbb_c2": true,
+          "light_speed": true
+        },
+        "v3.1": {
+          "Boltzmann_constant_k": true,
+          "DN_to_Radiance_Gain": true,
+          "DN_to_Radiance_Offset": true,
+          "Plank_constant_h": true,
+          "Teff_to_Tbb_c0": false,
+          "Teff_to_Tbb_c1": false,
+          "Teff_to_Tbb_c2": false,
+          "light_speed": true
+        }
+      },
+      "channel_identity_matches_filename_and_receipt": true,
+      "matches_existing_slot_receipt_sha256": true,
+      "matches_existing_slot_receipt_size": true,
+      "metadata": {
+        "global_attributes": {
+          "Boltzmann_constant_k": 1.3806488e-23,
+          "DN_to_Radiance_Gain": -0.0243037566542625,
+          "DN_to_Radiance_Offset": 198.224365234375,
+          "Plank_constant_h": 6.62606957e-34,
+          "Teff_to_Tbb_c0": -0.0938521568527657,
+          "Teff_to_Tbb_c1": 1.00053982112966,
+          "Teff_to_Tbb_c2": -5.94913715312849e-07,
+          "calibration_table_version": "v.3.0_20190415",
+          "channel_center_wavelength": "13.3",
+          "channel_spatial_resolution": "2.0",
+          "data_processing_center": "NMSC",
+          "data_processing_mode": "operation",
+          "file_format_version": "1.0.0_20181120",
+          "file_generation_time": "20250719_055820",
+          "file_name": "gk2a_ami_le1b_ir133_la020ge_202507190556.nc",
+          "instrument_name": "AMI",
+          "light_speed": 299792458.0,
+          "mission_reference_time": "20250719_055000",
+          "projection_type": "GEOS",
+          "satellite_name": "GK-2A",
+          "scene_acquisition_time": "20250719_055656"
+        },
+        "global_srf_wavenumber_metadata_present": false,
+        "image_pixel_values_header": {
+          "channel_name": "IR133",
+          "dtype": "uint16",
+          "shape": [
+            500,
+            500
+          ]
+        }
+      },
+      "sha256": "6440ea866f17f9336abed1d0f52329a2ec29d3ad89908a26320535473019835d",
+      "size_bytes": 506925,
+      "source_file": "gk2a_ami_le1b_ir133_la020ge_202507190556.nc"
+    },
+    "wv063": {
+      "all_calibration_fields_match_v3_0": true,
+      "all_calibration_fields_match_v3_1": true,
+      "calibration_exact_field_matches": {
+        "v3.0": {
+          "Boltzmann_constant_k": true,
+          "DN_to_Radiance_Gain": true,
+          "DN_to_Radiance_Offset": true,
+          "Plank_constant_h": true,
+          "Teff_to_Tbb_c0": true,
+          "Teff_to_Tbb_c1": true,
+          "Teff_to_Tbb_c2": true,
+          "light_speed": true
+        },
+        "v3.1": {
+          "Boltzmann_constant_k": true,
+          "DN_to_Radiance_Gain": true,
+          "DN_to_Radiance_Offset": true,
+          "Plank_constant_h": true,
+          "Teff_to_Tbb_c0": true,
+          "Teff_to_Tbb_c1": true,
+          "Teff_to_Tbb_c2": true,
+          "light_speed": true
+        }
+      },
+      "channel_identity_matches_filename_and_receipt": true,
+      "matches_existing_slot_receipt_sha256": true,
+      "matches_existing_slot_receipt_size": true,
+      "metadata": {
+        "global_attributes": {
+          "Boltzmann_constant_k": 1.3806488e-23,
+          "DN_to_Radiance_Gain": -0.0108914673328399,
+          "DN_to_Radiance_Offset": 44.1777038574218,
+          "Plank_constant_h": 6.62606957e-34,
+          "Teff_to_Tbb_c0": -1.76279494011147,
+          "Teff_to_Tbb_c1": 1.00414910562278,
+          "Teff_to_Tbb_c2": -9.83310914319385e-07,
+          "calibration_table_version": "v.3.0_20190415",
+          "channel_center_wavelength": "6.3",
+          "channel_spatial_resolution": "2.0",
+          "data_processing_center": "NMSC",
+          "data_processing_mode": "operation",
+          "file_format_version": "1.0.0_20181120",
+          "file_generation_time": "20250719_055820",
+          "file_name": "gk2a_ami_le1b_wv063_la020ge_202507190556.nc",
+          "instrument_name": "AMI",
+          "light_speed": 299792458.0,
+          "mission_reference_time": "20250719_055000",
+          "projection_type": "GEOS",
+          "satellite_name": "GK-2A",
+          "scene_acquisition_time": "20250719_055656"
+        },
+        "global_srf_wavenumber_metadata_present": false,
+        "image_pixel_values_header": {
+          "channel_name": "WV063",
+          "dtype": "uint16",
+          "shape": [
+            500,
+            500
+          ]
+        }
+      },
+      "sha256": "83b97370fac7df350db462a2024e53255a01b7bc7c69e7d45ea0168f348d8754",
+      "size_bytes": 357789,
+      "source_file": "gk2a_ami_le1b_wv063_la020ge_202507190556.nc"
+    },
+    "wv069": {
+      "all_calibration_fields_match_v3_0": true,
+      "all_calibration_fields_match_v3_1": true,
+      "calibration_exact_field_matches": {
+        "v3.0": {
+          "Boltzmann_constant_k": true,
+          "DN_to_Radiance_Gain": true,
+          "DN_to_Radiance_Offset": true,
+          "Plank_constant_h": true,
+          "Teff_to_Tbb_c0": true,
+          "Teff_to_Tbb_c1": true,
+          "Teff_to_Tbb_c2": true,
+          "light_speed": true
+        },
+        "v3.1": {
+          "Boltzmann_constant_k": true,
+          "DN_to_Radiance_Gain": true,
+          "DN_to_Radiance_Offset": true,
+          "Plank_constant_h": true,
+          "Teff_to_Tbb_c0": true,
+          "Teff_to_Tbb_c1": true,
+          "Teff_to_Tbb_c2": true,
+          "light_speed": true
+        }
+      },
+      "channel_identity_matches_filename_and_receipt": true,
+      "matches_existing_slot_receipt_sha256": true,
+      "matches_existing_slot_receipt_size": true,
+      "metadata": {
+        "global_attributes": {
+          "Boltzmann_constant_k": 1.3806488e-23,
+          "DN_to_Radiance_Gain": -0.00818779878318309,
+          "DN_to_Radiance_Offset": 66.7480773925781,
+          "Plank_constant_h": 6.62606957e-34,
+          "Teff_to_Tbb_c0": -0.334311414359106,
+          "Teff_to_Tbb_c1": 1.00097359874468,
+          "Teff_to_Tbb_c2": -4.94603070252304e-07,
+          "calibration_table_version": "v.3.0_20190415",
+          "channel_center_wavelength": "6.9",
+          "channel_spatial_resolution": "2.0",
+          "data_processing_center": "NMSC",
+          "data_processing_mode": "operation",
+          "file_format_version": "1.0.0_20181120",
+          "file_generation_time": "20250719_055820",
+          "file_name": "gk2a_ami_le1b_wv069_la020ge_202507190556.nc",
+          "instrument_name": "AMI",
+          "light_speed": 299792458.0,
+          "mission_reference_time": "20250719_055000",
+          "projection_type": "GEOS",
+          "satellite_name": "GK-2A",
+          "scene_acquisition_time": "20250719_055656"
+        },
+        "global_srf_wavenumber_metadata_present": false,
+        "image_pixel_values_header": {
+          "channel_name": "WV069",
+          "dtype": "uint16",
+          "shape": [
+            500,
+            500
+          ]
+        }
+      },
+      "sha256": "0c7fea702b255db8c9273d494d2e4b9c5ec86dca442e6059ebf9d91a9a8968e6",
+      "size_bytes": 456481,
+      "source_file": "gk2a_ami_le1b_wv069_la020ge_202507190556.nc"
+    },
+    "wv073": {
+      "all_calibration_fields_match_v3_0": true,
+      "all_calibration_fields_match_v3_1": true,
+      "calibration_exact_field_matches": {
+        "v3.0": {
+          "Boltzmann_constant_k": true,
+          "DN_to_Radiance_Gain": true,
+          "DN_to_Radiance_Offset": true,
+          "Plank_constant_h": true,
+          "Teff_to_Tbb_c0": true,
+          "Teff_to_Tbb_c1": true,
+          "Teff_to_Tbb_c2": true,
+          "light_speed": true
+        },
+        "v3.1": {
+          "Boltzmann_constant_k": true,
+          "DN_to_Radiance_Gain": true,
+          "DN_to_Radiance_Offset": true,
+          "Plank_constant_h": true,
+          "Teff_to_Tbb_c0": true,
+          "Teff_to_Tbb_c1": true,
+          "Teff_to_Tbb_c2": true,
+          "light_speed": true
+        }
+      },
+      "channel_identity_matches_filename_and_receipt": true,
+      "matches_existing_slot_receipt_sha256": true,
+      "matches_existing_slot_receipt_size": true,
+      "metadata": {
+        "global_attributes": {
+          "Boltzmann_constant_k": 1.3806488e-23,
+          "DN_to_Radiance_Gain": -0.0096982717514038,
+          "DN_to_Radiance_Offset": 79.0608520507812,
+          "Plank_constant_h": 6.62606957e-34,
+          "Teff_to_Tbb_c0": -0.0613124859696595,
+          "Teff_to_Tbb_c1": 1.00019008722941,
+          "Teff_to_Tbb_c2": -1.05863656750499e-07,
+          "calibration_table_version": "v.3.0_20190415",
+          "channel_center_wavelength": "7.3",
+          "channel_spatial_resolution": "2.0",
+          "data_processing_center": "NMSC",
+          "data_processing_mode": "operation",
+          "file_format_version": "1.0.0_20181120",
+          "file_generation_time": "20250719_055820",
+          "file_name": "gk2a_ami_le1b_wv073_la020ge_202507190556.nc",
+          "instrument_name": "AMI",
+          "light_speed": 299792458.0,
+          "mission_reference_time": "20250719_055000",
+          "projection_type": "GEOS",
+          "satellite_name": "GK-2A",
+          "scene_acquisition_time": "20250719_055656"
+        },
+        "global_srf_wavenumber_metadata_present": false,
+        "image_pixel_values_header": {
+          "channel_name": "WV073",
+          "dtype": "uint16",
+          "shape": [
+            500,
+            500
+          ]
+        }
+      },
+      "sha256": "470eab1587fa70e56dfb3745dd402f5619aba4bc6d11b0844fa6987602c3c7f0",
+      "size_bytes": 477776,
+      "source_file": "gk2a_ami_le1b_wv073_la020ge_202507190556.nc"
+    }
+  },
+  "compatibility_conclusion": {
+    "actual_la_product_declared_calibration": "v.3.0_20190415 on all nine inspected LA files; all eight stored calibration fields match the v3.0 workbook exactly.",
+    "channel_scope": "Of channels 10-16, the NMSC calibration rows and RTTOV center wavenumbers align for channels 10-15. Channel 16 IR133 is the sole v3.0/v3.1 row change and sole center-wavenumber mismatch: LA metadata/calibration tuple is v3.0, while RTTOV uses the v3.1 shifted center and its shifted KMA SRF metadata. The three Teff-to-BT coefficient differences are from the official NMSC workbook comparison.",
+    "limits": [
+      "The LA files identify the declared calibration table and expose its conversion coefficients, but no explicit SRF identifier or wavenumber attribute was present.",
+      "The product header does not establish which SRF response curve the upstream production processor used outside the stated calibration tuple.",
+      "No actual pixel values or conversion were examined, so this audit makes no numeric BT residual or error estimate.",
+      "The changed compatibility evidence is isolated to IR133; it does not imply all channels or the full observed/model discrepancy are caused by this mismatch."
+    ],
+    "rttov_reference": "Installed RTTOV 14.1 coefficient file was created 2021-05-03; its README identifies KMA's 2021 updated AMI SRFs, the v3.1 shifted IR133 center, and channel-16 New_AMI_SRF_IR133_-0.80wn.txt. The IR133 Teff-to-BT polynomial comparison comes from the two NMSC workbooks, not from RTTOV metadata.",
+    "status": "IR133_COMPATIBILITY_MISMATCH_IN_DECLARED_CALIBRATION_TUPLE; UPSTREAM_LA_SRF_PAYLOAD_UNVERIFIED"
+  },
+  "ir133_srf_curve_comparison": {
+    "comparison_precision_note": "NWP SAF text prints the response to six decimal places; NMSC ZIP stores more digits.",
+    "interpretation": "The two official published shifted channel-16 curves agree on all 581 common 0.1 cm-1 samples to NWP SAF's printed precision. The installed coefficient header separately names the same shifted KMA input and center wavenumber; the coefficient file does not carry a hash of an input SRF payload.",
+    "matched_wavenumber_points": 581,
+    "max_abs_response_difference": 5.037799999385584e-07,
+    "nmsc_entry_name": "GK2A_ami_srf_IR133_shift_-0.80wn.txt",
+    "nmsc_entry_sha256": "9354e3d3a2c32ce3a00e1d42e6342da27eb24ddcae4f14dbf69fe6a3eb40fe91",
+    "nmsc_point_count": 581,
+    "nwp_saf_file_sha256": "62d71185099f55c27348df13a484d8ea2e6d3a393deff7cdc48756310747d922",
+    "nwp_saf_point_count": 581
+  },
+  "kma_table_differences_v3_0_to_v3_1": {
+    "ir087": [],
+    "ir096": [],
+    "ir105": [],
+    "ir112": [],
+    "ir123": [],
+    "ir133": [
+      "center_wavenumber_cm1",
+      "Teff_to_Tbb_c0",
+      "Teff_to_Tbb_c1",
+      "Teff_to_Tbb_c2"
+    ],
+    "sw038": [],
+    "wv063": [],
+    "wv069": [],
+    "wv073": []
+  },
+  "provenance": {
+    "audit_source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr400_input_compatibility_2026-10-10/sensor_compatibility_audit.py",
+    "audit_source_sha256": "d2ee4fdda2b8e9f2b9bca58857e273387ff73d317437345fcd7931d047c7b644",
+    "la_input_root": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr400_sensor_compat_20261010/raw_la_202507190556",
+    "la_slot_receipt_listing_sha256": "498d03b7042b105eee32f1703d383b162695c6614fc740e9524a238b6906f76b",
+    "la_slot_receipt_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr400_sensor_compat_20261010/raw_la_202507190556/slot_receipt.json",
+    "la_slot_receipt_sha256": "8728b0dccc35c0bbb0f646524ca1745040b23265aca689347bc706d28eb4f53e",
+    "la_slot_receipt_source_prefix": "AMI/L1B/LA/202507/19/05/",
+    "official_reference_assets": [
+      {
+        "label": "NMSC v3.0 workbook",
+        "mode_octal": "0o600",
+        "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr400_sensor_compat_20261010/official_refs/20190415_gk2a_ami_calibration_v3.0.xlsx",
+        "sha256": "eb15fa4032322e22a44a0a233451978568a46d5f0eabf783cb9c7212327aa822",
+        "size_bytes": 3780982
+      },
+      {
+        "label": "NMSC v3.1 workbook",
+        "mode_octal": "0o600",
+        "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr400_sensor_compat_20261010/official_refs/20191115_gk2a_ami_calibration_v3.1_ir133_srf_shift.xlsx",
+        "sha256": "f7c23545b72215a7c9b17c44f43ad8b5075f1725062051badf051b35b482c38c",
+        "size_bytes": 3469159
+      },
+      {
+        "label": "NMSC 16-band SRF ZIP",
+        "mode_octal": "0o600",
+        "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr400_sensor_compat_20261010/official_refs/GK2A_AMI_SRF.zip",
+        "sha256": "de60b20da0df570455b15878b04320f39a3b6d4f3e48d7e511cce2b3eabb3f44",
+        "size_bytes": 412143
+      },
+      {
+        "label": "NWP SAF published channel-16 SRF",
+        "mode_octal": "0o600",
+        "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr400_sensor_compat_20261010/official_refs/nwpsaf_ami_srf_channel16.txt",
+        "sha256": "62d71185099f55c27348df13a484d8ea2e6d3a393deff7cdc48756310747d922",
+        "size_bytes": 18761
+      },
+      {
+        "label": "installed RTTOV coefficient",
+        "mode_octal": "0o644",
+        "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+        "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+        "size_bytes": 1894428
+      },
+      {
+        "label": "rttov_coef_info utility",
+        "mode_octal": "0o755",
+        "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_coef_info.exe",
+        "sha256": "1b5499d75a172f55d9d949b5719bcec608b093f69e167a63acd3c1b009c5b288",
+        "size_bytes": 821696
+      }
+    ],
+    "rttov_coef_info_output_path": "harness/evidence/pr400_input_compatibility_2026-10-10/RTTOV_COEF_INFO.txt",
+    "rttov_coef_info_output_sha256": "ef9c896f7f26ec45650952b75ecb33abc36ec4eb0ab685525a69d5879d31e4ae"
+  },
+  "rttov_coefficient_metadata": {
+    "channel_rows_10_to_16": {
+      "10": {
+        "center_wavenumber_cm1": 1365.24999202444,
+        "flags": "th   pw",
+        "utility_printed_center_wavenumber_cm1": 1365.25
+      },
+      "11": {
+        "center_wavenumber_cm1": 1164.94939285634,
+        "flags": "th",
+        "utility_printed_center_wavenumber_cm1": 1164.949
+      },
+      "12": {
+        "center_wavenumber_cm1": 1039.96021677611,
+        "flags": "th   pw",
+        "utility_printed_center_wavenumber_cm1": 1039.96
+      },
+      "13": {
+        "center_wavenumber_cm1": 966.153383926055,
+        "flags": "th",
+        "utility_printed_center_wavenumber_cm1": 966.153
+      },
+      "14": {
+        "center_wavenumber_cm1": 891.71305730126,
+        "flags": "th",
+        "utility_printed_center_wavenumber_cm1": 891.713
+      },
+      "15": {
+        "center_wavenumber_cm1": 810.60900787123,
+        "flags": "th",
+        "utility_printed_center_wavenumber_cm1": 810.609
+      },
+      "16": {
+        "center_wavenumber_cm1": 752.792487755131,
+        "flags": "th",
+        "utility_printed_center_wavenumber_cm1": 752.792
+      }
+    },
+    "full_verbose_output_path": "harness/evidence/pr400_input_compatibility_2026-10-10/RTTOV_COEF_INFO.txt",
+    "number_of_channels": 16,
+    "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+    "precise_center_wavenumbers_from_embedded_readme": {
+      "ir087": 1164.94939285634,
+      "ir096": 1039.96021677611,
+      "ir105": 966.153383926055,
+      "ir112": 891.71305730126,
+      "ir123": 810.60900787123,
+      "ir133": 752.792487755131,
+      "sw038": 2612.67737352111,
+      "wv063": 1617.60924253134,
+      "wv069": 1441.57542876017,
+      "wv073": 1365.24999202444
+    },
+    "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+    "utility_sha256": "1b5499d75a172f55d9d949b5719bcec608b093f69e167a63acd3c1b009c5b288"
+  },
+  "schema": "pr400_gk2a_ami_la_sensor_compatibility_v1",
+  "scope": {
+    "actual_inputs": "Nine existing 2025-07-19 05:56 LA020GE AMI NetCDF files, 500x500 each; metadata/header only.",
+    "coefficient_or_default_modified": false,
+    "dn_bt_arithmetic_recomputed": false,
+    "native_or_external_model_data": false,
+    "pixels_read": false,
+    "rttov_coef_info_is_forward_model": false,
+    "rttov_coef_info_note": "This is the RTTOV metadata utility; it inspects coefficient headers and does not run RTTOV forward/H.",
+    "rttov_forward_or_h_call": false
+  },
+  "selected_physical_channels_10_to_16": {
+    "ir087": {
+      "la_calibration_values_match_v3_0": true,
+      "la_calibration_values_match_v3_1": true,
+      "la_channel_center_wavelength_um": "8.7",
+      "la_declared_calibration_table_version": "v.3.0_20190415",
+      "nmsc_official_srf_curve": {
+        "member": "GK2A_ami_srf_IR087.txt",
+        "point_count": 1084,
+        "positive_response_wavelength_um_min_max": [
+          8.200082001,
+          8.999280058
+        ],
+        "positive_response_wavenumber_cm1_min_max": [
+          1111.2,
+          1219.5
+        ],
+        "sha256": "7edcf226d4cac4990695fd7e7fcea15832b3e5b10906c09782331ed413aeb836"
+      },
+      "physical_name": "IR087",
+      "physical_sensor_channel": 11,
+      "rttov_channel_flags": "th",
+      "rttov_coefficient_center_wavenumber_cm1": 1164.94939285634,
+      "rttov_matches_v3_0_center_wavenumber": true,
+      "rttov_matches_v3_1_center_wavenumber": true,
+      "rttov_utility_rounded_center_wavenumber_cm1": 1164.949,
+      "v3_0_table_center_wavenumber_cm1": 1164.94939285634,
+      "v3_1_table_center_wavenumber_cm1": 1164.94939285634
+    },
+    "ir096": {
+      "la_calibration_values_match_v3_0": true,
+      "la_calibration_values_match_v3_1": true,
+      "la_channel_center_wavelength_um": "9.6",
+      "la_declared_calibration_table_version": "v.3.0_20190415",
+      "nmsc_official_srf_curve": {
+        "member": "GK2A_ami_srf_IR096.txt",
+        "point_count": 753,
+        "positive_response_wavelength_um_min_max": [
+          9.300595238,
+          10.0
+        ],
+        "positive_response_wavenumber_cm1_min_max": [
+          1000.0,
+          1075.2
+        ],
+        "sha256": "8133509fcdb9f288bcf43a6da7cc62be4fc92eac8bf0ed270c75f3d9b6fdf597"
+      },
+      "physical_name": "IR096",
+      "physical_sensor_channel": 12,
+      "rttov_channel_flags": "th   pw",
+      "rttov_coefficient_center_wavenumber_cm1": 1039.96021677611,
+      "rttov_matches_v3_0_center_wavenumber": true,
+      "rttov_matches_v3_1_center_wavenumber": true,
+      "rttov_utility_rounded_center_wavenumber_cm1": 1039.96,
+      "v3_0_table_center_wavenumber_cm1": 1039.96021677611,
+      "v3_1_table_center_wavenumber_cm1": 1039.96021677611
+    },
+    "ir105": {
+      "la_calibration_values_match_v3_0": true,
+      "la_calibration_values_match_v3_1": true,
+      "la_channel_center_wavelength_um": "10.5",
+      "la_declared_calibration_table_version": "v.3.0_20190415",
+      "nmsc_official_srf_curve": {
+        "member": "GK2A_ami_srf_IR105.txt",
+        "point_count": 1831,
+        "positive_response_wavelength_um_min_max": [
+          9.500285009,
+          11.49954002
+        ],
+        "positive_response_wavenumber_cm1_min_max": [
+          869.6,
+          1052.6
+        ],
+        "sha256": "e08670f508fffc4b4919181652f16d1ed754c4c98c1835f1ba71891dd2cef501"
+      },
+      "physical_name": "IR105",
+      "physical_sensor_channel": 13,
+      "rttov_channel_flags": "th",
+      "rttov_coefficient_center_wavenumber_cm1": 966.153383926055,
+      "rttov_matches_v3_0_center_wavenumber": true,
+      "rttov_matches_v3_1_center_wavenumber": true,
+      "rttov_utility_rounded_center_wavenumber_cm1": 966.153,
+      "v3_0_table_center_wavenumber_cm1": 966.153383926055,
+      "v3_1_table_center_wavenumber_cm1": 966.153383926055
+    },
+    "ir112": {
+      "la_calibration_values_match_v3_0": true,
+      "la_calibration_values_match_v3_1": true,
+      "la_channel_center_wavelength_um": "11.2",
+      "la_declared_calibration_table_version": "v.3.0_20190415",
+      "nmsc_official_srf_curve": {
+        "member": "GK2A_ami_srf_IR112.txt",
+        "point_count": 1191,
+        "positive_response_wavelength_um_min_max": [
+          10.50089258,
+          12.00048002
+        ],
+        "positive_response_wavenumber_cm1_min_max": [
+          833.3,
+          952.3
+        ],
+        "sha256": "893b4f23aa69c653444c642db82df1123ab0a473f0fd3010221f1d4ed040d4d5"
+      },
+      "physical_name": "IR112",
+      "physical_sensor_channel": 14,
+      "rttov_channel_flags": "th",
+      "rttov_coefficient_center_wavenumber_cm1": 891.71305730126,
+      "rttov_matches_v3_0_center_wavenumber": true,
+      "rttov_matches_v3_1_center_wavenumber": true,
+      "rttov_utility_rounded_center_wavenumber_cm1": 891.713,
+      "v3_0_table_center_wavenumber_cm1": 891.71305730126,
+      "v3_1_table_center_wavenumber_cm1": 891.71305730126
+    },
+    "ir123": {
+      "la_calibration_values_match_v3_0": true,
+      "la_calibration_values_match_v3_1": true,
+      "la_channel_center_wavelength_um": "12.3",
+      "la_declared_calibration_table_version": "v.3.0_20190415",
+      "nmsc_official_srf_curve": {
+        "member": "GK2A_ami_srf_IR123.txt",
+        "point_count": 1443,
+        "positive_response_wavelength_um_min_max": [
+          11.42595978,
+          13.49892009
+        ],
+        "positive_response_wavenumber_cm1_min_max": [
+          740.8,
+          875.2
+        ],
+        "sha256": "506403b2abffb528b1667d7ebaed1b424b96f4e3aaa0cca9bbe335df215070c7"
+      },
+      "physical_name": "IR123",
+      "physical_sensor_channel": 15,
+      "rttov_channel_flags": "th",
+      "rttov_coefficient_center_wavenumber_cm1": 810.60900787123,
+      "rttov_matches_v3_0_center_wavenumber": true,
+      "rttov_matches_v3_1_center_wavenumber": true,
+      "rttov_utility_rounded_center_wavenumber_cm1": 810.609,
+      "v3_0_table_center_wavenumber_cm1": 810.60900787123,
+      "v3_1_table_center_wavenumber_cm1": 810.60900787123
+    },
+    "ir133": {
+      "la_calibration_values_match_v3_0": true,
+      "la_calibration_values_match_v3_1": false,
+      "la_channel_center_wavelength_um": "13.3",
+      "la_declared_calibration_table_version": "v.3.0_20190415",
+      "nmsc_official_srf_curve": {
+        "member": "GK2A_ami_srf_IR133_shift_-0.80wn.txt",
+        "point_count": 581,
+        "positive_response_wavelength_um_min_max": [
+          12.81886959,
+          13.84849739
+        ],
+        "positive_response_wavenumber_cm1_min_max": [
+          722.1,
+          780.1
+        ],
+        "sha256": "9354e3d3a2c32ce3a00e1d42e6342da27eb24ddcae4f14dbf69fe6a3eb40fe91"
+      },
+      "physical_name": "IR133",
+      "physical_sensor_channel": 16,
+      "rttov_channel_flags": "th",
+      "rttov_coefficient_center_wavenumber_cm1": 752.792487755131,
+      "rttov_matches_v3_0_center_wavenumber": false,
+      "rttov_matches_v3_1_center_wavenumber": true,
+      "rttov_utility_rounded_center_wavenumber_cm1": 752.792,
+      "v3_0_table_center_wavenumber_cm1": 753.590621482278,
+      "v3_1_table_center_wavenumber_cm1": 752.792487755131
+    },
+    "wv073": {
+      "la_calibration_values_match_v3_0": true,
+      "la_calibration_values_match_v3_1": true,
+      "la_channel_center_wavelength_um": "7.3",
+      "la_declared_calibration_table_version": "v.3.0_20190415",
+      "nmsc_official_srf_curve": {
+        "member": "GK2A_ami_srf_WV073.txt",
+        "point_count": 839,
+        "positive_response_wavelength_um_min_max": [
+          7.100255609,
+          7.54944889
+        ],
+        "positive_response_wavenumber_cm1_min_max": [
+          1324.6,
+          1408.4
+        ],
+        "sha256": "b66a827866627ba11b58ce5a97d6372f5b050f5d83c9006e23f0d68d39f2f78e"
+      },
+      "physical_name": "WV073",
+      "physical_sensor_channel": 10,
+      "rttov_channel_flags": "th   pw",
+      "rttov_coefficient_center_wavenumber_cm1": 1365.24999202444,
+      "rttov_matches_v3_0_center_wavenumber": true,
+      "rttov_matches_v3_1_center_wavenumber": true,
+      "rttov_utility_rounded_center_wavenumber_cm1": 1365.25,
+      "v3_0_table_center_wavenumber_cm1": 1365.24999202444,
+      "v3_1_table_center_wavenumber_cm1": 1365.24999202444
+    }
+  }
+}

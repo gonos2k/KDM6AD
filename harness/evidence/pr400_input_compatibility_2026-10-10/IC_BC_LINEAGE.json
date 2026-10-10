@@ -1,0 +1,242 @@
+{
+  "audit_source_sha256": "ab8310f32f5c27113b568fbed8acf85e1f32147d1e92678919924c45c8eed30e",
+  "bc": {
+    "attributes": {
+      "CEN_LAT": 38.0000114440918,
+      "CEN_LON": 126.0,
+      "DX": 5000.0,
+      "DY": 5000.0,
+      "MAP_PROJ": 1,
+      "START_DATE": "2025-07-19_00:00:00",
+      "TITLE": " OUTPUT FROM REAL_EM V4.6.0 PREPROCESSOR"
+    },
+    "dimensions": {
+      "DateStrLen": 19,
+      "Time": 4,
+      "bdy_width": 5,
+      "bottom_top": 39,
+      "bottom_top_stag": 40,
+      "south_north": 282,
+      "south_north_stag": 283,
+      "west_east": 234,
+      "west_east_stag": 235
+    },
+    "mtime_ns": 1781770425000000000,
+    "path": "/Users/yhlee/KDM6AD-k/host/lc05_da_run/wrfbdy_d01",
+    "resolved": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfbdy_d01",
+    "size": 103922656,
+    "symlink": true,
+    "times": [
+      "2025-07-19_00:00:00",
+      "2025-07-19_03:00:00",
+      "2025-07-19_06:00:00",
+      "2025-07-19_09:00:00"
+    ],
+    "whole_file_hash": "NOT_COMPUTED; metadata and Times only"
+  },
+  "calls": {
+    "H": 0,
+    "M": 0,
+    "native": 0,
+    "optimizer": 0,
+    "preprocessing": 0
+  },
+  "conclusion": "RAW_METEOROLOGICAL_PROVIDER_AND_ORIGINAL_PREPROCESSING_LINEAGE_UNVERIFIED",
+  "ic": {
+    "attributes": {
+      "CEN_LAT": 38.0000114440918,
+      "CEN_LON": 126.0,
+      "DX": 5000.0,
+      "DY": 5000.0,
+      "MAP_PROJ": 1,
+      "SIMULATION_START_DATE": "2025-07-19_00:00:00",
+      "START_DATE": "2025-07-19_00:00:00",
+      "TITLE": " OUTPUT FROM REAL_EM V4.6.0 PREPROCESSOR"
+    },
+    "dimensions": {
+      "DIM0010": 5,
+      "DateStrLen": 19,
+      "Time": 1,
+      "bottom_top": 39,
+      "bottom_top_stag": 40,
+      "dust_erosion_dimension": 3,
+      "land_cat_stag": 21,
+      "month_hour": 288,
+      "num_ext_model_couple_dom_stag": 1,
+      "soil_cat_stag": 16,
+      "soil_layers_stag": 4,
+      "south_north": 282,
+      "south_north_stag": 283,
+      "urban_wind_directions_stag": 4,
+      "west_east": 234,
+      "west_east_stag": 235
+    },
+    "mtime_ns": 1787537696800157408,
+    "path": "/Users/yhlee/KDM6AD-k/host/lc05_da_run/wrfinput_d01",
+    "resolved": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfinput_d01",
+    "size": 374429080,
+    "symlink": true,
+    "times": [
+      "2025-07-19_00:00:00"
+    ],
+    "whole_file_hash": "NOT_COMPUTED; metadata and Times only"
+  },
+  "independent_native_cases": "NOT_ESTABLISHED_BY_THIS_INVENTORY",
+  "limits": [
+    "No whole-device archive absence claim",
+    "No meteorological arrays read",
+    "REAL_EM label and executable presence do not identify the original provider or executed build",
+    "Other-date met_em files are not independent native IC/BC or approved liquid-cloud events"
+  ],
+  "met_em_candidates": [
+    {
+      "attributes": {
+        "CEN_LAT": 37.50000762939453,
+        "CEN_LON": 127.0,
+        "DX": 5000.0,
+        "DY": 5000.0,
+        "MAP_PROJ": 1,
+        "SIMULATION_START_DATE": "2023-02-16_00:00:00",
+        "TITLE": "OUTPUT FROM METGRID V4.6.0"
+      },
+      "differences_from_current_ic": [
+        "INITIAL_DATE_DIFFERS",
+        "GRID_DIMENSION_DIFFERS:west_east",
+        "GRID_DIMENSION_DIFFERS:south_north",
+        "GRID_ATTRIBUTE_DIFFERS:CEN_LAT",
+        "GRID_ATTRIBUTE_DIFFERS:CEN_LON"
+      ],
+      "dimensions": {
+        "DateStrLen": 19,
+        "Time": 1,
+        "num_metgrid_levels": 13,
+        "num_sm_layers": 4,
+        "num_st_layers": 4,
+        "south_north": 249,
+        "south_north_stag": 250,
+        "west_east": 199,
+        "west_east_stag": 200,
+        "z-dimension0012": 12,
+        "z-dimension0016": 16,
+        "z-dimension0021": 21
+      },
+      "lineage_status": "NOT_CURRENT_IC_PARENT_DATE_GRID_MISMATCH",
+      "mtime_ns": 1781748679401156462,
+      "path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/met_em.d01.2023-02-16_00:00:00.nc",
+      "resolved": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/met_em.d01.2023-02-16_00:00:00.nc",
+      "size": 15305401,
+      "symlink": false,
+      "times": [
+        "2023-02-16_00:00:00"
+      ],
+      "whole_file_hash": "NOT_COMPUTED; metadata and Times only"
+    },
+    {
+      "attributes": {
+        "CEN_LAT": 37.50000762939453,
+        "CEN_LON": 127.0,
+        "DX": 5000.0,
+        "DY": 5000.0,
+        "MAP_PROJ": 1,
+        "SIMULATION_START_DATE": "2023-02-16_06:00:00",
+        "TITLE": "OUTPUT FROM METGRID V4.6.0"
+      },
+      "differences_from_current_ic": [
+        "INITIAL_DATE_DIFFERS",
+        "GRID_DIMENSION_DIFFERS:west_east",
+        "GRID_DIMENSION_DIFFERS:south_north",
+        "GRID_ATTRIBUTE_DIFFERS:CEN_LAT",
+        "GRID_ATTRIBUTE_DIFFERS:CEN_LON"
+      ],
+      "dimensions": {
+        "DateStrLen": 19,
+        "Time": 1,
+        "num_metgrid_levels": 13,
+        "num_sm_layers": 4,
+        "num_st_layers": 4,
+        "south_north": 249,
+        "south_north_stag": 250,
+        "west_east": 199,
+        "west_east_stag": 200,
+        "z-dimension0012": 12,
+        "z-dimension0016": 16,
+        "z-dimension0021": 21
+      },
+      "lineage_status": "NOT_CURRENT_IC_PARENT_DATE_GRID_MISMATCH",
+      "mtime_ns": 1781748680151256285,
+      "path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/met_em.d01.2023-02-16_06:00:00.nc",
+      "resolved": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/met_em.d01.2023-02-16_06:00:00.nc",
+      "size": 15261247,
+      "symlink": false,
+      "times": [
+        "2023-02-16_06:00:00"
+      ],
+      "whole_file_hash": "NOT_COMPUTED; metadata and Times only"
+    }
+  ],
+  "missing_preprocessing_evidence": [
+    "namelist.wps",
+    "Vtable",
+    "ungrib.log",
+    "metgrid.log",
+    "real.log"
+  ],
+  "namelists": [
+    {
+      "mtime_ns": 1788519212756117737,
+      "path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/namelist.input",
+      "resolved": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/namelist.input",
+      "role": "FORECAST_CONTEXT; original REAL_EM preprocessing association unverified",
+      "selected_assignments": {
+        "dx": "5000,",
+        "dy": "5000,",
+        "e_sn": "283,",
+        "e_vert": "40,",
+        "e_we": "235,",
+        "end_day": "19,",
+        "end_hour": "12,",
+        "end_month": "07,",
+        "end_year": "2025,",
+        "start_day": "19,",
+        "start_hour": "00,",
+        "start_month": "07,",
+        "start_year": "2025,"
+      },
+      "sha256": "02a12a02d3954ec1d72ac5a55e3cac125b2919bac251237fd5a6c6abe8008904",
+      "size": 6444,
+      "symlink": false
+    },
+    {
+      "mtime_ns": 1782137388551511002,
+      "path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/namelist.input.codex_dyn_parity_backup",
+      "resolved": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/namelist.input.codex_dyn_parity_backup",
+      "role": "FORECAST_CONTEXT; original REAL_EM preprocessing association unverified",
+      "selected_assignments": {
+        "dx": "5000,",
+        "dy": "5000,",
+        "e_sn": "283,",
+        "e_vert": "40,",
+        "e_we": "235,",
+        "end_day": "19,",
+        "end_hour": "12,",
+        "end_month": "07,",
+        "end_year": "2025,",
+        "start_day": "19,",
+        "start_hour": "00,",
+        "start_month": "07,",
+        "start_year": "2025,"
+      },
+      "sha256": "397575e092f061b1d941a09dc6fbec35a4895a3df1e283c13117c74cdce771e5",
+      "size": 6402,
+      "symlink": false
+    }
+  ],
+  "real_executable": {
+    "mtime_ns": 1788519467389604473,
+    "path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/real.exe",
+    "resolved": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/main/real.exe",
+    "size": 42405048,
+    "symlink": true
+  },
+  "scope": "Top-level original SS directory and canonical IC/BC symlinks only"
+}

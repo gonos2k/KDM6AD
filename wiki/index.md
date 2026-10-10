@@ -93,3 +93,5 @@ date_modified: 2026-10-08
 - [[sources/fixed-error-artifact-gates-2026-10-07|Explicit fixed-error numerical artifact acceptance]]
 - [[sources/la-reader-2026-10-07|Actual LA thermal read with time and coordinate contracts]]
 - [[sources/la-time-contract-2026-10-07|Conditional Satpy LA clock interpretation and native readiness]]
+
+- [[sources/pr400-input-compatibility-2026-10-10]] — Actual LA/RTTOV IR133 calibration-coordinate mismatch with upstream SRF unverified; fixed gas/surface provenance, retained direct K and bounded IC/BC lineage audit; independent native dates remain open.
