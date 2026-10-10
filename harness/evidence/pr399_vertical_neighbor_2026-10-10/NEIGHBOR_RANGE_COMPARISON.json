@@ -1,0 +1,71 @@
+{
+  "schema": "pr399.saved_range_comparison.v1",
+  "source_result": "NEIGHBOR_RESULT_attempt2.json",
+  "new_H_calls": 0,
+  "comparisons": [
+    {
+      "channel": "wv073",
+      "model_min_K": 262.1463166820028,
+      "model_max_K": 262.37886129777087,
+      "observation_min_K": 263.1932373444281,
+      "observation_max_K": 263.4283395618416,
+      "interval_distance_K": 0.8143760466572303,
+      "model_side": "colder"
+    },
+    {
+      "channel": "ir087",
+      "model_min_K": 293.5537950339173,
+      "model_max_K": 293.71020485347873,
+      "observation_min_K": 286.3435525746143,
+      "observation_max_K": 291.2489516762392,
+      "interval_distance_K": 2.3048433576781235,
+      "model_side": "warmer"
+    },
+    {
+      "channel": "ir096",
+      "model_min_K": 270.52559928681836,
+      "model_max_K": 270.6582855582452,
+      "observation_min_K": 262.1927649676645,
+      "observation_max_K": 265.1835110806034,
+      "interval_distance_K": 5.342088206214953,
+      "model_side": "warmer"
+    },
+    {
+      "channel": "ir105",
+      "model_min_K": 296.0824240597826,
+      "model_max_K": 296.2709385596359,
+      "observation_min_K": 288.9324696870723,
+      "observation_max_K": 293.7084781065267,
+      "interval_distance_K": 2.373945953255941,
+      "model_side": "warmer"
+    },
+    {
+      "channel": "ir112",
+      "model_min_K": 295.854841457597,
+      "model_max_K": 295.99427995052247,
+      "observation_min_K": 289.14667172822146,
+      "observation_max_K": 292.96423872419206,
+      "interval_distance_K": 2.8906027334049327,
+      "model_side": "warmer"
+    },
+    {
+      "channel": "ir123",
+      "model_min_K": 292.7766008259413,
+      "model_max_K": 292.9106040591683,
+      "observation_min_K": 287.31336539053996,
+      "observation_max_K": 289.98943594950543,
+      "interval_distance_K": 2.7871648764358383,
+      "model_side": "warmer"
+    },
+    {
+      "channel": "ir133",
+      "model_min_K": 276.5074274179473,
+      "model_max_K": 276.62381827281143,
+      "observation_min_K": 273.4314710950693,
+      "observation_max_K": 274.5616371216448,
+      "interval_distance_K": 1.9457902963025049,
+      "model_side": "warmer"
+    }
+  ],
+  "limits": "Fixed common geometry, existing gas/surface/reference assumptions and paired BT coordinate. Range separation is not physical matchup or unique process attribution; signed SINC weights and outside-patch inputs excluded."
+}

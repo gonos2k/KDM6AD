@@ -1,0 +1,49 @@
+{
+  "schema": "pr399.coordinator_preservation_verification.v1",
+  "verified": [
+    {
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr399_vertical_neighbor_20261010_v2/vertical_structure_27columns_3times_v2.npz",
+      "sha256": "5d02e8bbf4e5e54d049a818260adb2f3480aad9edd3661b282d55c24130263c0",
+      "mode": "0600",
+      "directory_mode": "0700"
+    },
+    {
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr399_native_neighbor_h_20261010/attempt2_native_3x3_direct_h_inputs_outputs.npz",
+      "sha256": "4e2c36075e69d000bff48db8b2586ff1378adda3297508c58caa72b092e1c793",
+      "mode": "0600",
+      "directory_mode": "0700"
+    },
+    {
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr399_vertical_neighbor_20261010_v2/sources/constants.py",
+      "sha256": "aa489872c2b00d1160e158b9390ebe7bdcbbe4b31a468673cf22615f137f1b62",
+      "mode": "0o600"
+    },
+    {
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr399_vertical_neighbor_20261010_v2/sources/run_native_kma_bt_frames.py",
+      "sha256": "408bab9756c6ac1a6e8438b8469c87f41fa239ce75414cd8087d10b6a31d54c1",
+      "mode": "0o600"
+    },
+    {
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr399_vertical_neighbor_20261010_v2/sources/thermo.py",
+      "sha256": "5278c14c6d87178af5ee963eef59d3297b923fa374412fd854c01e43ffb1b5cd",
+      "mode": "0o600"
+    },
+    {
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr399_vertical_neighbor_20261010_v2/sources/vertical_structure.py",
+      "sha256": "05422512b5dd8376b2878107f84a03985c88a00ea50c4083c48155cf2fcfa788",
+      "mode": "0o600"
+    },
+    {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr399_vertical_neighbor_2026-10-10/neighbor_rttov.py",
+      "sha256": "1ab829a94daa80c211984f7ddfbbe9bb825aa859a44bdc5aa83645368459e947",
+      "source": "neighbor_attempt2"
+    }
+  ],
+  "vertical_input_npz_sha256": "947c72c12ebe289b7ddc84fba1281635d77ffbcfe23f204345cc97abeebc1c21",
+  "neighbor_input_npz_sha256": "947c72c12ebe289b7ddc84fba1281635d77ffbcfe23f204345cc97abeebc1c21",
+  "vertical_original_result_kept": true,
+  "vertical_wrong_denominator_corrected_by_separate_audit": true,
+  "H_calls_for_this_verification": 0,
+  "M_calls": 0,
+  "automatic_retry": false
+}

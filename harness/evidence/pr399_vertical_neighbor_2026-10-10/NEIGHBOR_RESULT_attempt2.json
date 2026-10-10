@@ -1,0 +1,2121 @@
+{
+  "automatic_retry": false,
+  "center_h_reused": true,
+  "center_new_h_calls": 0,
+  "fixed_observation": {
+    "BT_K": [
+      [
+        263.29133611315865,
+        288.55207070015797,
+        263.64118031341025,
+        291.3025921545636,
+        290.982874309017,
+        288.4917312292452,
+        273.9811634897418
+      ]
+    ],
+    "DQF": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    ],
+    "bias_K": 0.0,
+    "frozen_support": [
+      [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    ],
+    "huber_delta_K": 1.0,
+    "sigma_K": 1.0
+  },
+  "intake_manifest_sha256": "375a89e7ea2194171a77d6f089ef46de79ae71f97306512afd98a4891647cfbe",
+  "intake_npz_sha256": "2873368d7967fbf41861c92e73a9cd0332186496e9b00192da0b5189288f8194",
+  "m_calls": 0,
+  "native_npz_sha256": "947c72c12ebe289b7ddc84fba1281635d77ffbcfe23f204345cc97abeebc1c21",
+  "native_runs": 0,
+  "neighbor_h_calls": 8,
+  "optimizer_calls": 0,
+  "plan_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr399_vertical_neighbor_2026-10-10/NEIGHBOR_PLAN_attempt2.json",
+  "plan_sha256": "5451176d914b5758ffc6315f08a957ae0b6f6ae38019df38faa5b4e58c086afb",
+  "pr398_v2_result_sha256": "a246386cb2d5967924a771cecad1858270514be4b97c4ccef4be1658f40b1feb",
+  "private_npz": {
+    "array_names": [
+      "BT_K",
+      "Jo_huber_K_units",
+      "forcing_fields",
+      "forcing_native_bottomup",
+      "frozen_support",
+      "j_i_0based",
+      "latitude_longitude_deg",
+      "observation_dqf",
+      "observation_target_BT_K",
+      "p_half_native_bottomup_Pa_real4",
+      "profile_co2_ppmv",
+      "profile_fields",
+      "profile_o3_ppmv",
+      "profile_p_half_hPa",
+      "profile_p_lay_hPa",
+      "profile_q_ppmv",
+      "profile_t_K",
+      "rad_quality",
+      "rho_d_native_bottomup_kg_m3",
+      "state_fields",
+      "state_native_bottomup",
+      "surface_fields",
+      "surface_values"
+    ],
+    "directory_mode_octal": "0700",
+    "mode_octal": "0600",
+    "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr399_native_neighbor_h_20261010/attempt2_native_3x3_direct_h_inputs_outputs.npz",
+    "sha256": "4e2c36075e69d000bff48db8b2586ff1378adda3297508c58caa72b092e1c793"
+  },
+  "results": [
+    {
+      "BT_K": [
+        [
+          262.1594149745223,
+          293.71020485347873,
+          270.6582855582452,
+          296.2709385596359,
+          295.99427995052247,
+          292.8953932747244,
+          276.59169006397354
+        ]
+      ],
+      "Jo_huber_K_units": 26.801101203080805,
+      "all_seven_rad_quality_zero": true,
+      "automatic_retry": false,
+      "case_id": "frame1_j85_i47_fixed_AMI_geometry",
+      "case_output_dir": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr399-native-neighbor-h-attempt2-2026-10-10/private/cases/hcase-frame1_j85_i47_fixed_AMI_geometry",
+      "channel_names": [
+        "wv073",
+        "ir087",
+        "ir096",
+        "ir105",
+        "ir112",
+        "ir123",
+        "ir133"
+      ],
+      "channels_1based": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "fixed_observation_quality_DQF": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "forcing_sha256_by_field": {
+        "delz": "ca08402ccdbf45725cf38c0a58e54b5dc914ac59dab9eb6dec2e9946147064cf",
+        "p": "1763b2578de50930f49dafac06c904e7152a180fdd542d06986f0683ef269d66",
+        "pii": "235a6f10d7c84f8d4cce516515900b37aa70f2bdb75cd04da9e3fc65eb68343e",
+        "rho": "9c1d406d132b04b21a72d61b5dac0523df84303c2abbbc229cfce6453bc33b64"
+      },
+      "frozen_support": [
+        [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      ],
+      "frozen_support_n_valid": 7,
+      "geometry": {
+        "azangle": 169.60651603862405,
+        "elevation": 0.0,
+        "latitude": 35.41925069326254,
+        "longitude": 122.13724164654832,
+        "sunazangle": 0.0,
+        "sunzenangle": 0.0,
+        "zenangle": 41.60526733455049
+      },
+      "i": 47,
+      "j": 85,
+      "lat_lon_deg": [
+        35.36763381958008,
+        122.08984375
+      ],
+      "native_time_label": "2025-07-19_05:56:00",
+      "operator_semantics": "direct H(native saved frame 1 State, Forcing); no M, interpolation, or backward",
+      "p8w_sha256": "e6966ab88a41aeae1350e378d8de09a80644db99b1a5548e6dcbf44d9760ce01",
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "rho_d_sha256": "3ad170d4bbab7561e5cca7332611e9cccd5119a42bc0c1334b1b508e7fdaece9",
+      "rttov_assets": {
+        "per_cell_pressure_gases_sha256": {
+          "co2.txt": "0d715b307585723f1d404b761a3b2f7d12b54351dc6ad88dc379aeb66265775e",
+          "o3.txt": "61dd73f00e0a3b105f11f0958c72f7a26bd3b1a3d1b57fa3f2f94a8014e6e668",
+          "p.txt": "6f1044c8b46cae0dc23c4e9b74b11d50fa518b482bb468566dbcd6e9fbef09be",
+          "p_half.txt": "c76f4cdba93f8d2324c13b940a2b7123a53e345b4375042c00ef7f01878a63f4"
+        },
+        "prepared_fixture_info": {
+          "O3_CO2_replaced_from_fixed_upper_reference_on_intake_grid": true,
+          "T_Q_and_cloud_replaced_on_each_H_call": true,
+          "ami_coefficient": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+            "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5"
+          },
+          "geometry_and_dynamic_surface": "supplied from fixed AMI candidate and fresh native selected column on each H input",
+          "prepared_files_sha256": {
+            "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/sfc/01/skin.txt": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b",
+            "in/channels.txt": "d5ddefcc18c631a7f79691be015b328dec004b0dfca1eaa1343991f32d032e1d",
+            "in/profiles/001/atm/co2.txt": "0d715b307585723f1d404b761a3b2f7d12b54351dc6ad88dc379aeb66265775e",
+            "in/profiles/001/atm/hydro.txt": "62efd0a4c425145db1d988127d0b5d3e50227328d2c8e69c455371585848f57e",
+            "in/profiles/001/atm/hydro_frac.txt": "94fd8b3afb76730bec5fae7a464123607ca22844c0c5ce194294a8f94faf4079",
+            "in/profiles/001/atm/o3.txt": "61dd73f00e0a3b105f11f0958c72f7a26bd3b1a3d1b57fa3f2f94a8014e6e668",
+            "in/profiles/001/atm/p.txt": "6f1044c8b46cae0dc23c4e9b74b11d50fa518b482bb468566dbcd6e9fbef09be",
+            "in/profiles/001/atm/p_half.txt": "c76f4cdba93f8d2324c13b940a2b7123a53e345b4375042c00ef7f01878a63f4",
+            "in/profiles/001/atm/q.txt": "036f26deaa5ba881c9fd3b3c52ef18bd55e5c576a8864a4a60c75736f3c2db65",
+            "in/profiles/001/atm/simple_cloud.txt": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d",
+            "in/profiles/001/atm/t.txt": "b68abfdbd8f38da68c6f1ca055e639fba957acb89427a8409398644cd2c5408f",
+            "out/rttov_test.txt": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+          },
+          "prepared_fixture_copy": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr399-native-neighbor-h-attempt2-2026-10-10/private/offline_fixture_preflight/fixture-frame1_j85_i47_fixed_AMI_geometry",
+          "pressure_grid_replaced_from_native_intake": true,
+          "rttov_executable": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+            "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+          },
+          "simple_cloud_fraction": 0.0,
+          "solar": false,
+          "source_template": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00",
+          "source_template_sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+        },
+        "source_asset_sha256": {
+          "env_sh": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/env.sh",
+            "sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554"
+          },
+          "rttov_coefficient": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+            "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5"
+          },
+          "rttov_executable": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+            "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+          },
+          "rttov_test_namelist": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/rttov_test.txt",
+            "sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+          },
+          "run_sh": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/run.sh",
+            "sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+          },
+          "static_surface_skin": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/sfc/01/skin.txt",
+            "sha256": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b"
+          },
+          "template_co2": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/co2.txt",
+            "sha256": "075c725200902dd1505635d3704db9416ef88f960be482819c17db9422ef7553"
+          },
+          "template_hydro": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/hydro.txt",
+            "sha256": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc"
+          },
+          "template_hydro_frac": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/hydro_frac.txt",
+            "sha256": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b"
+          },
+          "template_o3": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/o3.txt",
+            "sha256": "4169bd766bea042e1de81390c48df7c0f3ea690b5fc44007508127b3047fed6d"
+          },
+          "template_p": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/p.txt",
+            "sha256": "c7d47eed648f3e7313979e84600ae916fbf8d381d6c21f2d8f562c88463a7726"
+          },
+          "template_p_half": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/p_half.txt",
+            "sha256": "dc736422f63710511af6a3336a77b33f092c63e66deffba26e5e8c29f47c2b11"
+          },
+          "template_q": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/q.txt",
+            "sha256": "8d5b00aa058fae51b5272ddc8f6f65e1bcaa34a65c8e499c099128b87e6cb135"
+          },
+          "template_simple_cloud": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/simple_cloud.txt",
+            "sha256": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d"
+          },
+          "template_t": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/t.txt",
+            "sha256": "87b10f1915c6d0c358bc5f135d560c06db6e6e9b3ac05364e34cc14d655f0bfc"
+          }
+        }
+      },
+      "rttov_profile_sha256": {
+        "co2_ppmv": "17960cd3f3ae6638ab0cbf87aa386c562f8f71893345b9c3b437432de0ae0b45",
+        "o3_ppmv": "37d08601ad25bfe641a5d995e7b061b1e509b9915c555b756687b734f7062174",
+        "p_half_hPa": "1fcd43e1770278e00e8dda11408e9a01104691717c42ef4b5d5054d740bc7114",
+        "p_lay_hPa": "d00ce3fa563f2aa0d6718e419f29576913439edfbc274bf72a0139fd14468f2c",
+        "q_native_plus_fixed_upper_reference_ppmv": "9747307a9ac8e8613683d26cee0d321d986295a6ca533d0c4eedcbe380a415ba",
+        "t_native_plus_fixed_upper_reference_K": "d7a3cc4c52d38b9533a9e401ba85a2b567d98164d1e8e293ded75b1a41677158"
+      },
+      "state_sha256_by_field": {
+        "bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nccn": "dd29600c3d422107dfb79c3c96a1213f5767f7bbdd7f127a63cf63f38f4ba758",
+        "ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qv": "228debd7499f341ea81253d7c54de4cc3132136e442c2bd26c1ef7a7813d2285",
+        "th": "683b9ff4b2e46b8c390afe8e0042b5597e59e32d4392702a5f8c6a30fffe152b"
+      },
+      "status": "H_RETURNED",
+      "surface_sha256_by_field": {
+        "HGT": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "Q2": "12e721a19ab64c27914518b957d5b5ec9704acad1116ed1c24403c345b65c3f7",
+        "T2": "09b5b7a3e58b221caa28bca24c161c619b956b8c0008e6ee035d80ab925b3586",
+        "TSK": "fc99d048ed292604f484db645bed1a7d7895f24f341b924df25d5244c038f16c",
+        "U10": "9c8b98f5c461b3ec4915bdf60d210e1bae43e75d51ed7157fb70879bee8ed9b4",
+        "V10": "475ec0e98c1974d5a1e53c383b6cb2431f96a67481f84a213dd4a488dec3055d",
+        "latitude_deg": "08401b1f2fb604f4b6f512c67785393bcf323b4ba87027b44a3fcc3cf4d6da50",
+        "longitude_deg": "dfb8040dd598046aeeb349fc3ce71df9dfee4984c4809b181e41018697d9aa72",
+        "seaice": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "xland": "3f710ac088db33363087de2b9a657541fe5447821debaa9fe5cbd538eb1a5f29"
+      }
+    },
+    {
+      "BT_K": [
+        [
+          262.2671739152173,
+          293.6975721168712,
+          270.65052262316055,
+          296.2519020058975,
+          295.95909947394574,
+          292.8457400788651,
+          276.5540302208052
+        ]
+      ],
+      "Jo_huber_K_units": 26.531416521350764,
+      "all_seven_rad_quality_zero": true,
+      "automatic_retry": false,
+      "case_id": "frame1_j85_i48_fixed_AMI_geometry",
+      "case_output_dir": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr399-native-neighbor-h-attempt2-2026-10-10/private/cases/hcase-frame1_j85_i48_fixed_AMI_geometry",
+      "channel_names": [
+        "wv073",
+        "ir087",
+        "ir096",
+        "ir105",
+        "ir112",
+        "ir123",
+        "ir133"
+      ],
+      "channels_1based": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "fixed_observation_quality_DQF": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "forcing_sha256_by_field": {
+        "delz": "11d18c255f88ac0d4e187230acb4ec5ddc4873c88d7b6078e435eaa3d542bc06",
+        "p": "7f97447c44b67e44f50064d62dfd9b1034866d0c09e95b64a41cc24d4ec9c646",
+        "pii": "2b7cdb297a544b5dbf41ab8bc2b8b1b61fb205dd5cf1a3ded6bfc8a41a4eb71e",
+        "rho": "4597a38e7db88f961e9486c431f28e92165aa7582fe0293ce647760de9eb8020"
+      },
+      "frozen_support": [
+        [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      ],
+      "frozen_support_n_valid": 7,
+      "geometry": {
+        "azangle": 169.60651603862405,
+        "elevation": 0.0,
+        "latitude": 35.41925069326254,
+        "longitude": 122.13724164654832,
+        "sunazangle": 0.0,
+        "sunzenangle": 0.0,
+        "zenangle": 41.60526733455049
+      },
+      "i": 48,
+      "j": 85,
+      "lat_lon_deg": [
+        35.369850158691406,
+        122.14602661132812
+      ],
+      "native_time_label": "2025-07-19_05:56:00",
+      "operator_semantics": "direct H(native saved frame 1 State, Forcing); no M, interpolation, or backward",
+      "p8w_sha256": "ce551c6648b1a5c96ef3b59a3c249096f11ea507c48cfef75d4e2d64d08b6ab6",
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "rho_d_sha256": "5e161564f6fa210a678d839d549f2939b285317cda50d661779714da1bec909d",
+      "rttov_assets": {
+        "per_cell_pressure_gases_sha256": {
+          "co2.txt": "c0410844b36b9c8c0c22397c56d473c855f03050e8fe16296105e46a87d8c158",
+          "o3.txt": "f52a96660d3855c8bb2cf244c483673bc1b6aa34c19fff89ca140e702d105f3b",
+          "p.txt": "4e1f64a0d209f253e024b3aad72dd4ab01009bdb97e5a2a11663e0d41b28effc",
+          "p_half.txt": "e5a01d42fa73e4e8e7fb046cadc4143f9b7e35126b95fa05fbe4cfbdf5acacfa"
+        },
+        "prepared_fixture_info": {
+          "O3_CO2_replaced_from_fixed_upper_reference_on_intake_grid": true,
+          "T_Q_and_cloud_replaced_on_each_H_call": true,
+          "ami_coefficient": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+            "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5"
+          },
+          "geometry_and_dynamic_surface": "supplied from fixed AMI candidate and fresh native selected column on each H input",
+          "prepared_files_sha256": {
+            "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/sfc/01/skin.txt": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b",
+            "in/channels.txt": "d5ddefcc18c631a7f79691be015b328dec004b0dfca1eaa1343991f32d032e1d",
+            "in/profiles/001/atm/co2.txt": "c0410844b36b9c8c0c22397c56d473c855f03050e8fe16296105e46a87d8c158",
+            "in/profiles/001/atm/hydro.txt": "62efd0a4c425145db1d988127d0b5d3e50227328d2c8e69c455371585848f57e",
+            "in/profiles/001/atm/hydro_frac.txt": "94fd8b3afb76730bec5fae7a464123607ca22844c0c5ce194294a8f94faf4079",
+            "in/profiles/001/atm/o3.txt": "f52a96660d3855c8bb2cf244c483673bc1b6aa34c19fff89ca140e702d105f3b",
+            "in/profiles/001/atm/p.txt": "4e1f64a0d209f253e024b3aad72dd4ab01009bdb97e5a2a11663e0d41b28effc",
+            "in/profiles/001/atm/p_half.txt": "e5a01d42fa73e4e8e7fb046cadc4143f9b7e35126b95fa05fbe4cfbdf5acacfa",
+            "in/profiles/001/atm/q.txt": "7fbdc735a216e9f030bb78b0f26f2663048b4fbf58e597dbe1d77fce26240d39",
+            "in/profiles/001/atm/simple_cloud.txt": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d",
+            "in/profiles/001/atm/t.txt": "5b0d7876e64638e09aeaa571703dce93b88bc830b02b2665ac339cc58bca33a1",
+            "out/rttov_test.txt": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+          },
+          "prepared_fixture_copy": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr399-native-neighbor-h-attempt2-2026-10-10/private/offline_fixture_preflight/fixture-frame1_j85_i48_fixed_AMI_geometry",
+          "pressure_grid_replaced_from_native_intake": true,
+          "rttov_executable": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+            "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+          },
+          "simple_cloud_fraction": 0.0,
+          "solar": false,
+          "source_template": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00",
+          "source_template_sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+        },
+        "source_asset_sha256": {
+          "env_sh": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/env.sh",
+            "sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554"
+          },
+          "rttov_coefficient": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+            "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5"
+          },
+          "rttov_executable": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+            "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+          },
+          "rttov_test_namelist": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/rttov_test.txt",
+            "sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+          },
+          "run_sh": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/run.sh",
+            "sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+          },
+          "static_surface_skin": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/sfc/01/skin.txt",
+            "sha256": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b"
+          },
+          "template_co2": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/co2.txt",
+            "sha256": "075c725200902dd1505635d3704db9416ef88f960be482819c17db9422ef7553"
+          },
+          "template_hydro": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/hydro.txt",
+            "sha256": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc"
+          },
+          "template_hydro_frac": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/hydro_frac.txt",
+            "sha256": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b"
+          },
+          "template_o3": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/o3.txt",
+            "sha256": "4169bd766bea042e1de81390c48df7c0f3ea690b5fc44007508127b3047fed6d"
+          },
+          "template_p": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/p.txt",
+            "sha256": "c7d47eed648f3e7313979e84600ae916fbf8d381d6c21f2d8f562c88463a7726"
+          },
+          "template_p_half": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/p_half.txt",
+            "sha256": "dc736422f63710511af6a3336a77b33f092c63e66deffba26e5e8c29f47c2b11"
+          },
+          "template_q": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/q.txt",
+            "sha256": "8d5b00aa058fae51b5272ddc8f6f65e1bcaa34a65c8e499c099128b87e6cb135"
+          },
+          "template_simple_cloud": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/simple_cloud.txt",
+            "sha256": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d"
+          },
+          "template_t": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/t.txt",
+            "sha256": "87b10f1915c6d0c358bc5f135d560c06db6e6e9b3ac05364e34cc14d655f0bfc"
+          }
+        }
+      },
+      "rttov_profile_sha256": {
+        "co2_ppmv": "373d61b2812076b4ac5dd5db43fd06daed421b492fa80a67c4a447f1d4faa3c1",
+        "o3_ppmv": "ad849e821073a94d63e77fbb4eae15711922bb273db7602586c50e02921ec6ec",
+        "p_half_hPa": "e2cae2a2867fe671d03bf2f474ef1e8896b2710cd17f9fce6d0fab24682a8dd2",
+        "p_lay_hPa": "3ed68ebbb41ac0618a4efe6f8c29fc0de10bf66548e87e39ad0259a157173c07",
+        "q_native_plus_fixed_upper_reference_ppmv": "002c8d7508090f169f97f64dce40ecbcc14cda36fea7e0b9ebf802faf2175974",
+        "t_native_plus_fixed_upper_reference_K": "8d973e077557c08af554e9d2e294212ec5c32d20cde3ed46d5d5b82022ded5c0"
+      },
+      "state_sha256_by_field": {
+        "bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nccn": "ee75256d50c4d5d99904dbfc2112255a12715b4e1911ca9c1a8565fac1ceddf7",
+        "ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qv": "4c63032cf81577249445d9b3cf8e95784a0d3d9d2cdae247dbd18a26c2ef61a6",
+        "th": "3b4c12ed37bb6f19d0af79297f44992567eef761b8c02f99dd6b7e40948fdb8c"
+      },
+      "status": "H_RETURNED",
+      "surface_sha256_by_field": {
+        "HGT": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "Q2": "857e6b2a3d50218ddf5cdf423075f35cbc713b1513e62a97c585866ff3b64eb9",
+        "T2": "6d2be9d0b3cf4be44908c489a5b4992e50e17ffce0ab4c7660bbe7c154b2ac19",
+        "TSK": "68d6e0d7754915ad3e74b5814a80d6e3d1e8fd820b7ac2f8c92cd17c729aaaf0",
+        "U10": "a02cfa93a8b5b940ce19df5e5e23843c1f7a6c21c420cd8bc678fcf866a02988",
+        "V10": "2167865ee9a438348281d57339b04e5596c554962c53b22208ae3523eff698e8",
+        "latitude_deg": "31c59e32a295c6c0993329fb39e09e0fd80a8b7653c4339b2c2f802db46a2f24",
+        "longitude_deg": "f20c58a0d51c39228283bb194293e9c19758f9de184185e39cb1f96fdf26fd1b",
+        "seaice": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "xland": "3f710ac088db33363087de2b9a657541fe5447821debaa9fe5cbd538eb1a5f29"
+      }
+    },
+    {
+      "BT_K": [
+        [
+          262.37886129777087,
+          293.6615565643348,
+          270.6256632895954,
+          296.2060926376979,
+          295.89870797148336,
+          292.7766008259413,
+          276.5074274179473
+        ]
+      ],
+      "Jo_huber_K_units": 26.140741655222705,
+      "all_seven_rad_quality_zero": true,
+      "automatic_retry": false,
+      "case_id": "frame1_j85_i49_fixed_AMI_geometry",
+      "case_output_dir": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr399-native-neighbor-h-attempt2-2026-10-10/private/cases/hcase-frame1_j85_i49_fixed_AMI_geometry",
+      "channel_names": [
+        "wv073",
+        "ir087",
+        "ir096",
+        "ir105",
+        "ir112",
+        "ir123",
+        "ir133"
+      ],
+      "channels_1based": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "fixed_observation_quality_DQF": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "forcing_sha256_by_field": {
+        "delz": "9d99766526ff700048f7dfc150ae236ec9a2089d5cf66a8afb2040611f0b2b6f",
+        "p": "5d64394b9f7441f8e8f0040fe2475f7bcfc57838852b0d043d15c0385943b5f6",
+        "pii": "1825960472b4c944cfac20543aa6e768f7e48f96b658cb1e603187692843211d",
+        "rho": "d72752c6b456ac41926870977df11b528c316d19e00d3dcb1797cc72767de25d"
+      },
+      "frozen_support": [
+        [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      ],
+      "frozen_support_n_valid": 7,
+      "geometry": {
+        "azangle": 169.60651603862405,
+        "elevation": 0.0,
+        "latitude": 35.41925069326254,
+        "longitude": 122.13724164654832,
+        "sunazangle": 0.0,
+        "sunzenangle": 0.0,
+        "zenangle": 41.60526733455049
+      },
+      "i": 49,
+      "j": 85,
+      "lat_lon_deg": [
+        35.372039794921875,
+        122.20220947265625
+      ],
+      "native_time_label": "2025-07-19_05:56:00",
+      "operator_semantics": "direct H(native saved frame 1 State, Forcing); no M, interpolation, or backward",
+      "p8w_sha256": "b1e74f8838ddd852ab648ead63afcece99752d368e2b5d8dcc37c462dfd0befc",
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "rho_d_sha256": "70cc8b61fdf6e84db0127cdcd0f516e72043a9742b5d677ec6e511d9f5f27e97",
+      "rttov_assets": {
+        "per_cell_pressure_gases_sha256": {
+          "co2.txt": "b9b76b6fd569075e1cc2f8138f58091a4a63897806964b04d114c268ec5d331d",
+          "o3.txt": "fd3250606a12d49b810578a727cfcdcd6ece104fe09cfa679a93eac451552e0b",
+          "p.txt": "64766d9f062bb4ab6b2e741e1d12d713e1e26f6b6a87ae18d5fae2d0711755ff",
+          "p_half.txt": "b115997504a06b2945f093066c5e91a65af06c6eb4b6bf3eff641d611fee717f"
+        },
+        "prepared_fixture_info": {
+          "O3_CO2_replaced_from_fixed_upper_reference_on_intake_grid": true,
+          "T_Q_and_cloud_replaced_on_each_H_call": true,
+          "ami_coefficient": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+            "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5"
+          },
+          "geometry_and_dynamic_surface": "supplied from fixed AMI candidate and fresh native selected column on each H input",
+          "prepared_files_sha256": {
+            "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/sfc/01/skin.txt": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b",
+            "in/channels.txt": "d5ddefcc18c631a7f79691be015b328dec004b0dfca1eaa1343991f32d032e1d",
+            "in/profiles/001/atm/co2.txt": "b9b76b6fd569075e1cc2f8138f58091a4a63897806964b04d114c268ec5d331d",
+            "in/profiles/001/atm/hydro.txt": "62efd0a4c425145db1d988127d0b5d3e50227328d2c8e69c455371585848f57e",
+            "in/profiles/001/atm/hydro_frac.txt": "94fd8b3afb76730bec5fae7a464123607ca22844c0c5ce194294a8f94faf4079",
+            "in/profiles/001/atm/o3.txt": "fd3250606a12d49b810578a727cfcdcd6ece104fe09cfa679a93eac451552e0b",
+            "in/profiles/001/atm/p.txt": "64766d9f062bb4ab6b2e741e1d12d713e1e26f6b6a87ae18d5fae2d0711755ff",
+            "in/profiles/001/atm/p_half.txt": "b115997504a06b2945f093066c5e91a65af06c6eb4b6bf3eff641d611fee717f",
+            "in/profiles/001/atm/q.txt": "ee50b2881fad3345a086813502135003dd3c824269951c5cfb209c100101fe07",
+            "in/profiles/001/atm/simple_cloud.txt": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d",
+            "in/profiles/001/atm/t.txt": "cbe7ad244bf6f3c57cfa542f818ac7570c793b07344fa05dd8d16856e93f3f29",
+            "out/rttov_test.txt": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+          },
+          "prepared_fixture_copy": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr399-native-neighbor-h-attempt2-2026-10-10/private/offline_fixture_preflight/fixture-frame1_j85_i49_fixed_AMI_geometry",
+          "pressure_grid_replaced_from_native_intake": true,
+          "rttov_executable": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+            "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+          },
+          "simple_cloud_fraction": 0.0,
+          "solar": false,
+          "source_template": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00",
+          "source_template_sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+        },
+        "source_asset_sha256": {
+          "env_sh": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/env.sh",
+            "sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554"
+          },
+          "rttov_coefficient": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+            "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5"
+          },
+          "rttov_executable": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+            "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+          },
+          "rttov_test_namelist": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/rttov_test.txt",
+            "sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+          },
+          "run_sh": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/run.sh",
+            "sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+          },
+          "static_surface_skin": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/sfc/01/skin.txt",
+            "sha256": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b"
+          },
+          "template_co2": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/co2.txt",
+            "sha256": "075c725200902dd1505635d3704db9416ef88f960be482819c17db9422ef7553"
+          },
+          "template_hydro": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/hydro.txt",
+            "sha256": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc"
+          },
+          "template_hydro_frac": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/hydro_frac.txt",
+            "sha256": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b"
+          },
+          "template_o3": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/o3.txt",
+            "sha256": "4169bd766bea042e1de81390c48df7c0f3ea690b5fc44007508127b3047fed6d"
+          },
+          "template_p": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/p.txt",
+            "sha256": "c7d47eed648f3e7313979e84600ae916fbf8d381d6c21f2d8f562c88463a7726"
+          },
+          "template_p_half": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/p_half.txt",
+            "sha256": "dc736422f63710511af6a3336a77b33f092c63e66deffba26e5e8c29f47c2b11"
+          },
+          "template_q": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/q.txt",
+            "sha256": "8d5b00aa058fae51b5272ddc8f6f65e1bcaa34a65c8e499c099128b87e6cb135"
+          },
+          "template_simple_cloud": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/simple_cloud.txt",
+            "sha256": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d"
+          },
+          "template_t": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/t.txt",
+            "sha256": "87b10f1915c6d0c358bc5f135d560c06db6e6e9b3ac05364e34cc14d655f0bfc"
+          }
+        }
+      },
+      "rttov_profile_sha256": {
+        "co2_ppmv": "055f076af41a985e304b2ebcc64af6927d463ecc549ae213e35308be11e46244",
+        "o3_ppmv": "554b5bdeaf69eee95a8cb40c80a123631a8e9e8e346d832c3a80846c4cf9e9d2",
+        "p_half_hPa": "3a3889179e1a7c367b9bb42ac4d1662349aa2d358a5bba9bc68296654e5bd693",
+        "p_lay_hPa": "7497e37d5cd2ea29280a6149a7b10ccb4edd40f00e41d1733745e6fe7d5f02a5",
+        "q_native_plus_fixed_upper_reference_ppmv": "540d2d11a29fcc1a119a1f5a79f27db02e06a4cdea318ac249cba038f62ee360",
+        "t_native_plus_fixed_upper_reference_K": "29de89c2f2274e9bb41ca08e9c70500cc38d66789528549968b4f0efe04fb908"
+      },
+      "state_sha256_by_field": {
+        "bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nccn": "f1710ef86bbaabe21f960b1be285ebf421f02494f82d2fe298a80466121a9f77",
+        "ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qv": "92c8848971b8feafd4a6e89254a4dbe4c2ea59b5eb1677ea5643f4d05b9b2b74",
+        "th": "fb36ed20456b9a6a65421effee75b55870004de224fd97d005127098361d4790"
+      },
+      "status": "H_RETURNED",
+      "surface_sha256_by_field": {
+        "HGT": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "Q2": "42f52090bea13b4d22cec1b31dc66e8f5ed2d7429f2e35e629839a0935b16b81",
+        "T2": "29af33c00aacfd2016889512897dd6eac90dfbd4bca0f40030885901e42f531a",
+        "TSK": "9d034c60f5e050eb37ad988d0a06f5bef955e0a9aa3497c8fb1fc0e89c25060d",
+        "U10": "1ddd0fd1597e5c712da1d652f33dc60702be8cec3f29f9195763b7761882c797",
+        "V10": "2ee78201e4a980f2da7b1bca983838c969bbcc2fc26c5a731bdd0842d4eb2d25",
+        "latitude_deg": "c63ac5ba10735c794f72b9c08e8901f8532231f7df5c773b0e36569711c7f5ea",
+        "longitude_deg": "06e1946b2354c931e91a9a8c491e6bb13c45b5bbe551050dc00aed8d8f6bea70",
+        "seaice": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "xland": "3f710ac088db33363087de2b9a657541fe5447821debaa9fe5cbd538eb1a5f29"
+      }
+    },
+    {
+      "BT_K": [
+        [
+          262.15479469392255,
+          293.6724098760531,
+          270.6206643832654,
+          296.2222480337221,
+          295.9690199456879,
+          292.9106040591683,
+          276.62381827281143
+        ]
+      ],
+      "Jo_huber_K_units": 26.703693793808498,
+      "all_seven_rad_quality_zero": true,
+      "automatic_retry": false,
+      "case_id": "frame1_j86_i47_fixed_AMI_geometry",
+      "case_output_dir": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr399-native-neighbor-h-attempt2-2026-10-10/private/cases/hcase-frame1_j86_i47_fixed_AMI_geometry",
+      "channel_names": [
+        "wv073",
+        "ir087",
+        "ir096",
+        "ir105",
+        "ir112",
+        "ir123",
+        "ir133"
+      ],
+      "channels_1based": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "fixed_observation_quality_DQF": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "forcing_sha256_by_field": {
+        "delz": "103293d2cfa038563be720852aefdf52d54c773cd1e8b2104d047476bdbd9178",
+        "p": "d0ada6c9c3eb1f6e4e0db8373a688b47d45260275a41d3b3c19d1249a663de3e",
+        "pii": "150bab29376257df88c6a2bb01fe205f0aab65b91484fcf7b13d7884094ae193",
+        "rho": "f84952282b822595cbab6ee448fb598e5d3197ce602a29aeb86be049e36335fb"
+      },
+      "frozen_support": [
+        [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      ],
+      "frozen_support_n_valid": 7,
+      "geometry": {
+        "azangle": 169.60651603862405,
+        "elevation": 0.0,
+        "latitude": 35.41925069326254,
+        "longitude": 122.13724164654832,
+        "sunazangle": 0.0,
+        "sunzenangle": 0.0,
+        "zenangle": 41.60526733455049
+      },
+      "i": 47,
+      "j": 86,
+      "lat_lon_deg": [
+        35.4134407043457,
+        122.08709716796875
+      ],
+      "native_time_label": "2025-07-19_05:56:00",
+      "operator_semantics": "direct H(native saved frame 1 State, Forcing); no M, interpolation, or backward",
+      "p8w_sha256": "78af09bb7b5da06bf6cb61a6f75258110a828e1e60b9ad06ea670c787288d6d1",
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "rho_d_sha256": "9551235e91362432b1ddd2278131de5168cbfe37a35a925241db14d27f29c325",
+      "rttov_assets": {
+        "per_cell_pressure_gases_sha256": {
+          "co2.txt": "c1909a86e0af2367edc2518247434a505936e6ea9b5c8c25f281eb62b5f43563",
+          "o3.txt": "fe7110de69fc604ebbe04d8cea0e081312e6235e5d1582a2ce48545bad0c63cf",
+          "p.txt": "bfb57084893950463f4c294292907139368033b893e04f1e4e62b505c1284d2d",
+          "p_half.txt": "09fb1d451e6ace1a55e5f535bde712e9cd3d7853759f7039f1d218400cfab214"
+        },
+        "prepared_fixture_info": {
+          "O3_CO2_replaced_from_fixed_upper_reference_on_intake_grid": true,
+          "T_Q_and_cloud_replaced_on_each_H_call": true,
+          "ami_coefficient": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+            "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5"
+          },
+          "geometry_and_dynamic_surface": "supplied from fixed AMI candidate and fresh native selected column on each H input",
+          "prepared_files_sha256": {
+            "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/sfc/01/skin.txt": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b",
+            "in/channels.txt": "d5ddefcc18c631a7f79691be015b328dec004b0dfca1eaa1343991f32d032e1d",
+            "in/profiles/001/atm/co2.txt": "c1909a86e0af2367edc2518247434a505936e6ea9b5c8c25f281eb62b5f43563",
+            "in/profiles/001/atm/hydro.txt": "62efd0a4c425145db1d988127d0b5d3e50227328d2c8e69c455371585848f57e",
+            "in/profiles/001/atm/hydro_frac.txt": "94fd8b3afb76730bec5fae7a464123607ca22844c0c5ce194294a8f94faf4079",
+            "in/profiles/001/atm/o3.txt": "fe7110de69fc604ebbe04d8cea0e081312e6235e5d1582a2ce48545bad0c63cf",
+            "in/profiles/001/atm/p.txt": "bfb57084893950463f4c294292907139368033b893e04f1e4e62b505c1284d2d",
+            "in/profiles/001/atm/p_half.txt": "09fb1d451e6ace1a55e5f535bde712e9cd3d7853759f7039f1d218400cfab214",
+            "in/profiles/001/atm/q.txt": "f03c0977190ab69ff72f253d8704ac15cada4e7f030219cddcfc9e19ae4d237c",
+            "in/profiles/001/atm/simple_cloud.txt": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d",
+            "in/profiles/001/atm/t.txt": "ea5defe8b851c454f16e4a71095ec4fb4f1501dfb7b8e702ba0d253ad456184c",
+            "out/rttov_test.txt": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+          },
+          "prepared_fixture_copy": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr399-native-neighbor-h-attempt2-2026-10-10/private/offline_fixture_preflight/fixture-frame1_j86_i47_fixed_AMI_geometry",
+          "pressure_grid_replaced_from_native_intake": true,
+          "rttov_executable": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+            "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+          },
+          "simple_cloud_fraction": 0.0,
+          "solar": false,
+          "source_template": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00",
+          "source_template_sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+        },
+        "source_asset_sha256": {
+          "env_sh": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/env.sh",
+            "sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554"
+          },
+          "rttov_coefficient": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+            "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5"
+          },
+          "rttov_executable": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+            "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+          },
+          "rttov_test_namelist": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/rttov_test.txt",
+            "sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+          },
+          "run_sh": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/run.sh",
+            "sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+          },
+          "static_surface_skin": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/sfc/01/skin.txt",
+            "sha256": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b"
+          },
+          "template_co2": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/co2.txt",
+            "sha256": "075c725200902dd1505635d3704db9416ef88f960be482819c17db9422ef7553"
+          },
+          "template_hydro": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/hydro.txt",
+            "sha256": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc"
+          },
+          "template_hydro_frac": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/hydro_frac.txt",
+            "sha256": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b"
+          },
+          "template_o3": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/o3.txt",
+            "sha256": "4169bd766bea042e1de81390c48df7c0f3ea690b5fc44007508127b3047fed6d"
+          },
+          "template_p": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/p.txt",
+            "sha256": "c7d47eed648f3e7313979e84600ae916fbf8d381d6c21f2d8f562c88463a7726"
+          },
+          "template_p_half": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/p_half.txt",
+            "sha256": "dc736422f63710511af6a3336a77b33f092c63e66deffba26e5e8c29f47c2b11"
+          },
+          "template_q": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/q.txt",
+            "sha256": "8d5b00aa058fae51b5272ddc8f6f65e1bcaa34a65c8e499c099128b87e6cb135"
+          },
+          "template_simple_cloud": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/simple_cloud.txt",
+            "sha256": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d"
+          },
+          "template_t": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/t.txt",
+            "sha256": "87b10f1915c6d0c358bc5f135d560c06db6e6e9b3ac05364e34cc14d655f0bfc"
+          }
+        }
+      },
+      "rttov_profile_sha256": {
+        "co2_ppmv": "2b7c596b479f16b4909c5653b07c194c15e2f8e05cf4809feae41350c1eb78b8",
+        "o3_ppmv": "9f5df22cab000017a7a2dc76d483601468a3766e9dac01fbb215396c721366e3",
+        "p_half_hPa": "d05a3071e5c73c76439958b499279062f5cc5f7b2a8bced602a44ad7d7e948dd",
+        "p_lay_hPa": "d9ff8dcc5665dc03e51cb0e82650a037d44d34a525cce940e15a382e011c60cf",
+        "q_native_plus_fixed_upper_reference_ppmv": "1f81b891466b2fae3b524296f3e20191142ccbb8a900d136d3c7a6ef437c2c45",
+        "t_native_plus_fixed_upper_reference_K": "a2e6a1584e7fa404a49618230b69ae60bbac94037c92368560ff9edb56aa0718"
+      },
+      "state_sha256_by_field": {
+        "bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nccn": "06c7d1db225929da76d388b3117d4d2849a8e0f28adc0393f30e1263a369835e",
+        "ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qv": "f02a32d31110383299ba3f275996b9b7d425ce7339aeb436273e9d4e571f1372",
+        "th": "718e319e9152f0e92fe762222fd3f6e6ec216c1a935ee0a95e0015d7aaffa73f"
+      },
+      "status": "H_RETURNED",
+      "surface_sha256_by_field": {
+        "HGT": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "Q2": "475468796d006878cb55d81aca362046cfc03f3bdf82f638816e087ed90853b3",
+        "T2": "ed33294d00cbb91d7d855671069977743b2897cbb569794fe9d38c64096f5968",
+        "TSK": "69da16c0aa11614e2acd75ae532964438b25a66552275405d1def86a6c750abf",
+        "U10": "9460d2bfbc330e25bfd5bd6b9caf14f33eac38b1075cd9c61e55f92ab9cbdf60",
+        "V10": "31c63cf6fce79c609906a5d0ab4f7184031943fe7c3559cb1533c431a9849cbe",
+        "latitude_deg": "79e5b602b2d32df5d1d74746be3907a6dd87e7fd62315bd34dd7b261ed0eb183",
+        "longitude_deg": "dbd0286a4495d42dbf633fed00f7d4ab5fd3e41fa1d78973b7710def88ff5d81",
+        "seaice": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "xland": "3f710ac088db33363087de2b9a657541fe5447821debaa9fe5cbd538eb1a5f29"
+      }
+    },
+    {
+      "BT_K": [
+        [
+          262.2618406588041,
+          293.68664896244076,
+          270.6314463929056,
+          296.2342890285159,
+          295.96797907329585,
+          292.89404813872795,
+          276.6053899280171
+        ]
+      ],
+      "Jo_huber_K_units": 26.59768478212186,
+      "all_seven_rad_quality_zero": true,
+      "automatic_retry": false,
+      "case_id": "frame1_fixed_AMI_candidate_pixel_center",
+      "case_output_dir": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr398-centroid-viewing-angle-v2-2026-10-10/private/hcase-frame1_fixed_AMI_candidate_pixel_center",
+      "case_role": "REUSED_PR398_V2_CENTRAL_H",
+      "channel_names": [
+        "wv073",
+        "ir087",
+        "ir096",
+        "ir105",
+        "ir112",
+        "ir123",
+        "ir133"
+      ],
+      "channels_1based": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "cost_formula": "sum frozen_mask * Huber((BT-target_BT-bias)/sigma); sigma=1 K, bias=0 K, delta=1 K; null when any frozen-support rad_quality is nonzero",
+      "fixed_observation_quality_DQF": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "forcing_sha256_by_field": {
+        "delz": "20f38adf9aac191f9f33d5b423113723a2db4a86cd02903037fe0726c1dbe45a",
+        "p": "3d9fbcd8c381e1411e07c71c8a73c700316801c695c47dac18273ddef655a849",
+        "pii": "b332fbbf5fff05334a8cc38314b19dced3eb0cc95f8999546325d2db64adeafe",
+        "rho": "4875296b6d6fc1513e2520334dc9b27ff755e838501ad390c8a4ad54b12ab190"
+      },
+      "frame_index": 1,
+      "frozen_support": [
+        [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      ],
+      "frozen_support_n_valid": 7,
+      "geometry": {
+        "azangle": 169.60651603862405,
+        "elevation": 0.0,
+        "latitude": 35.41925069326254,
+        "longitude": 122.13724164654832,
+        "sunazangle": 0.0,
+        "sunzenangle": 0.0,
+        "zenangle": 41.60526733455049
+      },
+      "geometry_scenario": "fixed_AMI_candidate_pixel_center",
+      "i": 48,
+      "j": 86,
+      "lat_lon_deg": [
+        35.4156608581543,
+        122.143310546875
+      ],
+      "native_time_label": "2025-07-19_05:56:00",
+      "no_model_or_rttov_retry": true,
+      "operator_semantics": "H(native saved frame); no M step, interpolation, or backward",
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "rho_d_sha256": "87f8c5946ef606e705182459700458b4a4f436c34f7363ea7f75e7452e631c23",
+      "rttov_assets": {
+        "coefficient_sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+        "executable_sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+        "fixture_source": {
+          "O3_CO2_replaced_from_fixed_upper_reference_on_intake_grid": true,
+          "T_Q_and_cloud_replaced_on_each_H_call": true,
+          "ami_coefficient": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+            "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5"
+          },
+          "geometry_and_dynamic_surface": "supplied from fixed AMI candidate and fresh native selected column on each H input",
+          "prepared_files_sha256": {
+            "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/sfc/01/skin.txt": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b",
+            "in/channels.txt": "d5ddefcc18c631a7f79691be015b328dec004b0dfca1eaa1343991f32d032e1d",
+            "in/profiles/001/atm/co2.txt": "10bd872ae422f29c5df7ca42003c3b0969eb9d0cb9a1915167d4a455014face9",
+            "in/profiles/001/atm/hydro.txt": "62efd0a4c425145db1d988127d0b5d3e50227328d2c8e69c455371585848f57e",
+            "in/profiles/001/atm/hydro_frac.txt": "94fd8b3afb76730bec5fae7a464123607ca22844c0c5ce194294a8f94faf4079",
+            "in/profiles/001/atm/o3.txt": "6b7da0a7dc2d7c072ff28a7c71c931e7b8d193d42cde682a6359340ec9f26641",
+            "in/profiles/001/atm/p.txt": "244c45bdfc83b3568f3aec41858a4667ac2130bab52133b5306f1d548c15f213",
+            "in/profiles/001/atm/p_half.txt": "8280f3ba5e8e30af547fbfcfd3e5e4c1447cc60fbc34bc184b98ea86c4ad0b55",
+            "in/profiles/001/atm/q.txt": "92fa87df686ab047df16fb49522e742816de230fb1db4ac3336ed839f804e589",
+            "in/profiles/001/atm/simple_cloud.txt": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d",
+            "in/profiles/001/atm/t.txt": "133104daedf0b5f2ab101e8e6253e343a9a93718561a271a4fa5f78269f597d9",
+            "out/rttov_test.txt": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+          },
+          "prepared_fixture_copy": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr398-centroid-viewing-angle-v2-2026-10-10/private/fixture-frame1_fixed_AMI_candidate_pixel_center",
+          "pressure_grid_replaced_from_native_intake": true,
+          "rttov_executable": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+            "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+          },
+          "simple_cloud_fraction": 0.0,
+          "solar": false,
+          "source_template": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00",
+          "source_template_sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+        },
+        "per_frame_pressure_gas_files_sha256": {
+          "co2.txt": "10bd872ae422f29c5df7ca42003c3b0969eb9d0cb9a1915167d4a455014face9",
+          "o3.txt": "6b7da0a7dc2d7c072ff28a7c71c931e7b8d193d42cde682a6359340ec9f26641",
+          "p.txt": "244c45bdfc83b3568f3aec41858a4667ac2130bab52133b5306f1d548c15f213",
+          "p_half.txt": "8280f3ba5e8e30af547fbfcfd3e5e4c1447cc60fbc34bc184b98ea86c4ad0b55"
+        },
+        "rttov_env_sh_sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+        "rttov_run_sh_sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+      },
+      "rttov_profile_sha256": {
+        "co2_ppmv": "40d5438cf38b22a97e32ba77b7ad5d6da377eed769c99a1a12a82800efa82213",
+        "o3_ppmv": "209f8cd3ed8a30222f83a26a3525b673e7d4c0b729d8640f3e70cd4ca81063ec",
+        "p_half_hPa": "2755bfecc3fabb5ebc893963b5e43a9e204cb826fd03c1cde73faa858b35b844",
+        "p_lay_hPa": "1bd9042241617fad0e01c5322d5559b1619b72600c55543e618e45086541758d",
+        "q_native_plus_fixed_upper_reference_ppmv": "b0242f9f1e34d0b5133b44521595d14b74c3dc5755e94710b596a14b290b7c7f",
+        "t_native_plus_fixed_upper_reference_K": "3e6d7f90a8be16089ad655fe0a162fbdc5bad37df831f54cb56c32c137899f20"
+      },
+      "state_sha256_by_field": {
+        "native_window_state__bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nccn": "9faec2e0aa4a7aeb368bd6c483087ef823289cd9978d2a09b296075a9e34f25d",
+        "native_window_state__ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qv": "ecd3f68cd668be60d82038695564ac14a913de48593abe965749d0369499fda4",
+        "native_window_state__th": "90b4507e57b33c6ca2e78bc7cd4196d9caa9470628b8e2ffd089e1928c33d434"
+      },
+      "status": "H_RETURNED"
+    },
+    {
+      "BT_K": [
+        [
+          262.3719547454222,
+          293.6749201790743,
+          270.6235042783625,
+          296.216989261001,
+          295.9392102412941,
+          292.85571064979484,
+          276.57692165686876
+        ]
+      ],
+      "Jo_huber_K_units": 26.35827511993014,
+      "all_seven_rad_quality_zero": true,
+      "automatic_retry": false,
+      "case_id": "frame1_j86_i49_fixed_AMI_geometry",
+      "case_output_dir": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr399-native-neighbor-h-attempt2-2026-10-10/private/cases/hcase-frame1_j86_i49_fixed_AMI_geometry",
+      "channel_names": [
+        "wv073",
+        "ir087",
+        "ir096",
+        "ir105",
+        "ir112",
+        "ir123",
+        "ir133"
+      ],
+      "channels_1based": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "fixed_observation_quality_DQF": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "forcing_sha256_by_field": {
+        "delz": "bb062f3275873c75aa648ac64fd519970579f3cbb7d3177606718d0903dda16b",
+        "p": "fbefd7fdc365fe0fc68b0ca83bc9d6ba8e571c87f6770365b7546f4099158649",
+        "pii": "1be88683511afd055e7f6455e2496f66822f5df73620d40c482cc1015e3af03f",
+        "rho": "3d3225dc4fc117911181c0367fa5f8d8fe72bb81678430c7e3bb28eb1482b235"
+      },
+      "frozen_support": [
+        [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      ],
+      "frozen_support_n_valid": 7,
+      "geometry": {
+        "azangle": 169.60651603862405,
+        "elevation": 0.0,
+        "latitude": 35.41925069326254,
+        "longitude": 122.13724164654832,
+        "sunazangle": 0.0,
+        "sunzenangle": 0.0,
+        "zenangle": 41.60526733455049
+      },
+      "i": 49,
+      "j": 86,
+      "lat_lon_deg": [
+        35.4178581237793,
+        122.19952392578125
+      ],
+      "native_time_label": "2025-07-19_05:56:00",
+      "operator_semantics": "direct H(native saved frame 1 State, Forcing); no M, interpolation, or backward",
+      "p8w_sha256": "5026f411f4a505c5f703b531c47dd55604daafeab1164d3d3dac441fb071b629",
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "rho_d_sha256": "5f285c64cc48936c6f1137500dfd46b0619b3b11d5ccb61ce990e55b94fbcbe3",
+      "rttov_assets": {
+        "per_cell_pressure_gases_sha256": {
+          "co2.txt": "252345464617f39fb293ffbba75475770cdb76342af4f506bec644d6f7f19e40",
+          "o3.txt": "e358da690af52c7574f8676de7d8afedb281aa8c5321b1b09d5c08a78234dc51",
+          "p.txt": "9500a7626b1333634faeb087013c5c57e737b5882a9cecba28fc368d460a4d7b",
+          "p_half.txt": "7dd7d206b4e13041ae484332f36b70f8d18a20dc7fffd36cb7c82d8b4d5dec31"
+        },
+        "prepared_fixture_info": {
+          "O3_CO2_replaced_from_fixed_upper_reference_on_intake_grid": true,
+          "T_Q_and_cloud_replaced_on_each_H_call": true,
+          "ami_coefficient": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+            "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5"
+          },
+          "geometry_and_dynamic_surface": "supplied from fixed AMI candidate and fresh native selected column on each H input",
+          "prepared_files_sha256": {
+            "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/sfc/01/skin.txt": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b",
+            "in/channels.txt": "d5ddefcc18c631a7f79691be015b328dec004b0dfca1eaa1343991f32d032e1d",
+            "in/profiles/001/atm/co2.txt": "252345464617f39fb293ffbba75475770cdb76342af4f506bec644d6f7f19e40",
+            "in/profiles/001/atm/hydro.txt": "62efd0a4c425145db1d988127d0b5d3e50227328d2c8e69c455371585848f57e",
+            "in/profiles/001/atm/hydro_frac.txt": "94fd8b3afb76730bec5fae7a464123607ca22844c0c5ce194294a8f94faf4079",
+            "in/profiles/001/atm/o3.txt": "e358da690af52c7574f8676de7d8afedb281aa8c5321b1b09d5c08a78234dc51",
+            "in/profiles/001/atm/p.txt": "9500a7626b1333634faeb087013c5c57e737b5882a9cecba28fc368d460a4d7b",
+            "in/profiles/001/atm/p_half.txt": "7dd7d206b4e13041ae484332f36b70f8d18a20dc7fffd36cb7c82d8b4d5dec31",
+            "in/profiles/001/atm/q.txt": "c8510b7b8fe1f463c21659bb241176171f8e23d88e7dc2b6f470c0be4be993b1",
+            "in/profiles/001/atm/simple_cloud.txt": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d",
+            "in/profiles/001/atm/t.txt": "e4d3eec44af2e26cba5ff58b2c5286bfa2b8c1cebf07f047ef3b84c195d74a5e",
+            "out/rttov_test.txt": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+          },
+          "prepared_fixture_copy": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr399-native-neighbor-h-attempt2-2026-10-10/private/offline_fixture_preflight/fixture-frame1_j86_i49_fixed_AMI_geometry",
+          "pressure_grid_replaced_from_native_intake": true,
+          "rttov_executable": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+            "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+          },
+          "simple_cloud_fraction": 0.0,
+          "solar": false,
+          "source_template": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00",
+          "source_template_sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+        },
+        "source_asset_sha256": {
+          "env_sh": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/env.sh",
+            "sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554"
+          },
+          "rttov_coefficient": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+            "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5"
+          },
+          "rttov_executable": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+            "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+          },
+          "rttov_test_namelist": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/rttov_test.txt",
+            "sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+          },
+          "run_sh": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/run.sh",
+            "sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+          },
+          "static_surface_skin": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/sfc/01/skin.txt",
+            "sha256": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b"
+          },
+          "template_co2": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/co2.txt",
+            "sha256": "075c725200902dd1505635d3704db9416ef88f960be482819c17db9422ef7553"
+          },
+          "template_hydro": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/hydro.txt",
+            "sha256": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc"
+          },
+          "template_hydro_frac": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/hydro_frac.txt",
+            "sha256": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b"
+          },
+          "template_o3": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/o3.txt",
+            "sha256": "4169bd766bea042e1de81390c48df7c0f3ea690b5fc44007508127b3047fed6d"
+          },
+          "template_p": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/p.txt",
+            "sha256": "c7d47eed648f3e7313979e84600ae916fbf8d381d6c21f2d8f562c88463a7726"
+          },
+          "template_p_half": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/p_half.txt",
+            "sha256": "dc736422f63710511af6a3336a77b33f092c63e66deffba26e5e8c29f47c2b11"
+          },
+          "template_q": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/q.txt",
+            "sha256": "8d5b00aa058fae51b5272ddc8f6f65e1bcaa34a65c8e499c099128b87e6cb135"
+          },
+          "template_simple_cloud": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/simple_cloud.txt",
+            "sha256": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d"
+          },
+          "template_t": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/t.txt",
+            "sha256": "87b10f1915c6d0c358bc5f135d560c06db6e6e9b3ac05364e34cc14d655f0bfc"
+          }
+        }
+      },
+      "rttov_profile_sha256": {
+        "co2_ppmv": "99ab8fadad723ee23e0300eebec26bb8e04b9d16289d51cd0a417db8247471f4",
+        "o3_ppmv": "dc4c3ae3aaf5c92ad6a2652749aa61ce642df36efba644d2ddff3816aac72d73",
+        "p_half_hPa": "ad9db76dc3441be67cd44ac7cbe245a1396e0982e742219a900ba5d6221fed0b",
+        "p_lay_hPa": "05433588e92d495c2d4b5551cc304b2791bec22a287292b74ec78bc0480cc5dc",
+        "q_native_plus_fixed_upper_reference_ppmv": "f3482de062cdb9f614a1d0ca094029fe813296fd2c39202b534f8a62664d7d40",
+        "t_native_plus_fixed_upper_reference_K": "b76d6b263ebdf190d29229c8134c74ff6bc01c9360672bcbc0a00a9cac5d5803"
+      },
+      "state_sha256_by_field": {
+        "bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nccn": "2726e84cefb11b464873c3fcf4dcf2f0964afe46ccb880392555958fab344f15",
+        "ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qv": "389394f2ea971cde2c8505ede7e837cdf32575a77d4c1f7d3ecf7747648f038c",
+        "th": "5e6a4cb1e888d08fb2dc303e838924328ad2e219fc5d4b59c5d3881b58e2cc17"
+      },
+      "status": "H_RETURNED",
+      "surface_sha256_by_field": {
+        "HGT": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "Q2": "bc5fa52786f6193e2806963e7551cb6ee19f62b1420b59796f85292e35fc9895",
+        "T2": "08fa5c657bc2f5a3b9bc53fa301dfa4ecb534c2ec2dd6d769540aefeaac1f70f",
+        "TSK": "20bda7931b71cb2c2ad94837ec8dc9b7ff5e87bca05aa2407aeec0e07223ccf5",
+        "U10": "244933fe1bd0c20837ec34a0a9ef7e2a339b0414479e6c90e0d6d2c857a87343",
+        "V10": "40eb18c403f3d2a6496af31163672c05a80e8c3a2299fa10a40266c6cd509ccf",
+        "latitude_deg": "edb0bbbd08cf320a824706a633b92589179db79327f503f701cca1545e42397c",
+        "longitude_deg": "0d1558cff19cb810b354962ef348cc90dbb8030928ad3647cfe4a5e999fc0e10",
+        "seaice": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "xland": "3f710ac088db33363087de2b9a657541fe5447821debaa9fe5cbd538eb1a5f29"
+      }
+    },
+    {
+      "BT_K": [
+        [
+          262.1463166820028,
+          293.5537950339173,
+          270.52559928681836,
+          296.0824240597826,
+          295.854841457597,
+          292.8530658702461,
+          276.6202005350882
+        ]
+      ],
+      "Jo_huber_K_units": 26.183333478469592,
+      "all_seven_rad_quality_zero": true,
+      "automatic_retry": false,
+      "case_id": "frame1_j87_i47_fixed_AMI_geometry",
+      "case_output_dir": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr399-native-neighbor-h-attempt2-2026-10-10/private/cases/hcase-frame1_j87_i47_fixed_AMI_geometry",
+      "channel_names": [
+        "wv073",
+        "ir087",
+        "ir096",
+        "ir105",
+        "ir112",
+        "ir123",
+        "ir133"
+      ],
+      "channels_1based": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "fixed_observation_quality_DQF": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "forcing_sha256_by_field": {
+        "delz": "7de1d12e6ae3276e844ad150dfeba9c6e41ff21480ed0716270e1c90a6f6af6a",
+        "p": "051dfba2963370dd008cc2b5359ab84dd10890e6de6de4985fb93ac14eeb3806",
+        "pii": "8f36d05298919835317e0bb814b8047a46dc5285a831bfe76fbb8134aa750d64",
+        "rho": "c1f4f1ea119f5d31161cf9ec05751641fcc8c236dea557287446c9d13a815df6"
+      },
+      "frozen_support": [
+        [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      ],
+      "frozen_support_n_valid": 7,
+      "geometry": {
+        "azangle": 169.60651603862405,
+        "elevation": 0.0,
+        "latitude": 35.41925069326254,
+        "longitude": 122.13724164654832,
+        "sunazangle": 0.0,
+        "sunzenangle": 0.0,
+        "zenangle": 41.60526733455049
+      },
+      "i": 47,
+      "j": 87,
+      "lat_lon_deg": [
+        35.45924758911133,
+        122.0843505859375
+      ],
+      "native_time_label": "2025-07-19_05:56:00",
+      "operator_semantics": "direct H(native saved frame 1 State, Forcing); no M, interpolation, or backward",
+      "p8w_sha256": "7c96a5ac5bb6c2896a5260fcabaa6a13fd29435fba0c7f5b3b0921bf795a386c",
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "rho_d_sha256": "e2ced7df604b14e0c3761f06811db82ee2693d1afcc3ebebacf30ec4704e6792",
+      "rttov_assets": {
+        "per_cell_pressure_gases_sha256": {
+          "co2.txt": "0f5770e40bd731fea431bded9bcbf9e0f33d7d0479d3a45c2ba7a2e8ee375856",
+          "o3.txt": "85c87f35ab33823a4d0b9ce7900767b6a2581fce3aef0051bc8e0f0002550fa0",
+          "p.txt": "6cd2459de6a46eb8e79bf5501df7f15794fa46931699c8c4a1d4be869f826fb3",
+          "p_half.txt": "eae200b2f779bad30c05e257c9c62dc75cc0acce4549f38001670ab7d2653940"
+        },
+        "prepared_fixture_info": {
+          "O3_CO2_replaced_from_fixed_upper_reference_on_intake_grid": true,
+          "T_Q_and_cloud_replaced_on_each_H_call": true,
+          "ami_coefficient": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+            "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5"
+          },
+          "geometry_and_dynamic_surface": "supplied from fixed AMI candidate and fresh native selected column on each H input",
+          "prepared_files_sha256": {
+            "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/sfc/01/skin.txt": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b",
+            "in/channels.txt": "d5ddefcc18c631a7f79691be015b328dec004b0dfca1eaa1343991f32d032e1d",
+            "in/profiles/001/atm/co2.txt": "0f5770e40bd731fea431bded9bcbf9e0f33d7d0479d3a45c2ba7a2e8ee375856",
+            "in/profiles/001/atm/hydro.txt": "62efd0a4c425145db1d988127d0b5d3e50227328d2c8e69c455371585848f57e",
+            "in/profiles/001/atm/hydro_frac.txt": "94fd8b3afb76730bec5fae7a464123607ca22844c0c5ce194294a8f94faf4079",
+            "in/profiles/001/atm/o3.txt": "85c87f35ab33823a4d0b9ce7900767b6a2581fce3aef0051bc8e0f0002550fa0",
+            "in/profiles/001/atm/p.txt": "6cd2459de6a46eb8e79bf5501df7f15794fa46931699c8c4a1d4be869f826fb3",
+            "in/profiles/001/atm/p_half.txt": "eae200b2f779bad30c05e257c9c62dc75cc0acce4549f38001670ab7d2653940",
+            "in/profiles/001/atm/q.txt": "567d749aadf44b2c3807148bc527509981a6cd09e183d689e75a5dc0a6d872e9",
+            "in/profiles/001/atm/simple_cloud.txt": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d",
+            "in/profiles/001/atm/t.txt": "6e9db940d8592415c2cc139d34beb07f39b26287a4aa531c2c502f31ca24dda7",
+            "out/rttov_test.txt": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+          },
+          "prepared_fixture_copy": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr399-native-neighbor-h-attempt2-2026-10-10/private/offline_fixture_preflight/fixture-frame1_j87_i47_fixed_AMI_geometry",
+          "pressure_grid_replaced_from_native_intake": true,
+          "rttov_executable": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+            "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+          },
+          "simple_cloud_fraction": 0.0,
+          "solar": false,
+          "source_template": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00",
+          "source_template_sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+        },
+        "source_asset_sha256": {
+          "env_sh": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/env.sh",
+            "sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554"
+          },
+          "rttov_coefficient": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+            "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5"
+          },
+          "rttov_executable": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+            "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+          },
+          "rttov_test_namelist": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/rttov_test.txt",
+            "sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+          },
+          "run_sh": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/run.sh",
+            "sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+          },
+          "static_surface_skin": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/sfc/01/skin.txt",
+            "sha256": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b"
+          },
+          "template_co2": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/co2.txt",
+            "sha256": "075c725200902dd1505635d3704db9416ef88f960be482819c17db9422ef7553"
+          },
+          "template_hydro": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/hydro.txt",
+            "sha256": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc"
+          },
+          "template_hydro_frac": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/hydro_frac.txt",
+            "sha256": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b"
+          },
+          "template_o3": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/o3.txt",
+            "sha256": "4169bd766bea042e1de81390c48df7c0f3ea690b5fc44007508127b3047fed6d"
+          },
+          "template_p": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/p.txt",
+            "sha256": "c7d47eed648f3e7313979e84600ae916fbf8d381d6c21f2d8f562c88463a7726"
+          },
+          "template_p_half": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/p_half.txt",
+            "sha256": "dc736422f63710511af6a3336a77b33f092c63e66deffba26e5e8c29f47c2b11"
+          },
+          "template_q": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/q.txt",
+            "sha256": "8d5b00aa058fae51b5272ddc8f6f65e1bcaa34a65c8e499c099128b87e6cb135"
+          },
+          "template_simple_cloud": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/simple_cloud.txt",
+            "sha256": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d"
+          },
+          "template_t": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/t.txt",
+            "sha256": "87b10f1915c6d0c358bc5f135d560c06db6e6e9b3ac05364e34cc14d655f0bfc"
+          }
+        }
+      },
+      "rttov_profile_sha256": {
+        "co2_ppmv": "990d9f52c905334666b4ee929b21242e37f9fb3f475eb590404e52d05ad395c0",
+        "o3_ppmv": "88082c6d875cdb7abc608646481f9003badc16e6d3a00b5db0648fbdd3aa2ac3",
+        "p_half_hPa": "9dfc444562b39885a1f19e8243d3b5da3af9df98ac284fb3d14ca5acb3689155",
+        "p_lay_hPa": "d1b7634625ebaff52269f4957543a9b710134f882c2bca4c68d6fe775d711235",
+        "q_native_plus_fixed_upper_reference_ppmv": "8784e8753d6f0915b8e5df265e648a94cf7ec5c3537cfd98926437c23ce3b4f7",
+        "t_native_plus_fixed_upper_reference_K": "77fcc163b26a496da24575ca56b936286e9c44447536f2d7ac78e488c3fdcf65"
+      },
+      "state_sha256_by_field": {
+        "bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nccn": "40cd9681ab3d07b31b5ce1594d5634574b67a99471152b068f7ef7361c174b80",
+        "ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qv": "3def66c508f3767cb20e350f4090eb8dc060f5516c5fbb2dd75d1392ca197c1d",
+        "th": "deab2338b9268259372a9df6ee8079793b53f87d9696821f899b2d85d0779f63"
+      },
+      "status": "H_RETURNED",
+      "surface_sha256_by_field": {
+        "HGT": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "Q2": "e0ceef24c6ee276f7705d6986ec5b808e6bdc72cbd6202c2cc1631e7c0339238",
+        "T2": "3cc3546e5bdfe735b74de489f93e83d818d4c84126bb8df6788336c6fcea92dd",
+        "TSK": "7b6cc227ce682a826c125acdc27e0739dc4c9de07e5d8991f6a95538582c665f",
+        "U10": "ed66f5cd062a788e5177ada23e71316c0462025c841e45823fdc06c55042195d",
+        "V10": "e98297b1e988354d2bb4ae77a99a0f1938aafd68a39434ed230981274400cb5c",
+        "latitude_deg": "448532161db0c21480d85ed00ddaa95f31762a616f3e379574f40e553a4813d7",
+        "longitude_deg": "91570a9083700519585d60b6f2d3eead3252682eda1944bb0f243a6ef0934109",
+        "seaice": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "xland": "3f710ac088db33363087de2b9a657541fe5447821debaa9fe5cbd538eb1a5f29"
+      }
+    },
+    {
+      "BT_K": [
+        [
+          262.247970050248,
+          293.59827469932543,
+          270.5575801473527,
+          296.12906268805534,
+          295.8898740279551,
+          292.86900893482084,
+          276.619439258666
+        ]
+      ],
+      "Jo_huber_K_units": 26.254993622950224,
+      "all_seven_rad_quality_zero": true,
+      "automatic_retry": false,
+      "case_id": "frame1_j87_i48_fixed_AMI_geometry",
+      "case_output_dir": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr399-native-neighbor-h-attempt2-2026-10-10/private/cases/hcase-frame1_j87_i48_fixed_AMI_geometry",
+      "channel_names": [
+        "wv073",
+        "ir087",
+        "ir096",
+        "ir105",
+        "ir112",
+        "ir123",
+        "ir133"
+      ],
+      "channels_1based": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "fixed_observation_quality_DQF": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "forcing_sha256_by_field": {
+        "delz": "2aa6be2d7ebcbf5463c2954ecf7a5de07bdb0b506abf66416292ff2a6ce2b444",
+        "p": "3007df6a36f9a6c1a88a9a3c65760c8022ff7373d3b7569eb77c537aa94b4624",
+        "pii": "0088629f03a74afa3d7e3d3fc6d1f8a1f8f2e8c2194f9038c05e010d838abce8",
+        "rho": "adc4f528104435a5a7ed725792e8f0bf44ce7ebf7fdaaaaaa6d600f05b5d262b"
+      },
+      "frozen_support": [
+        [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      ],
+      "frozen_support_n_valid": 7,
+      "geometry": {
+        "azangle": 169.60651603862405,
+        "elevation": 0.0,
+        "latitude": 35.41925069326254,
+        "longitude": 122.13724164654832,
+        "sunazangle": 0.0,
+        "sunzenangle": 0.0,
+        "zenangle": 41.60526733455049
+      },
+      "i": 48,
+      "j": 87,
+      "lat_lon_deg": [
+        35.46147918701172,
+        122.14059448242188
+      ],
+      "native_time_label": "2025-07-19_05:56:00",
+      "operator_semantics": "direct H(native saved frame 1 State, Forcing); no M, interpolation, or backward",
+      "p8w_sha256": "a7f6b05b4e55ee4f0bceeb0fac2298d3c664b1b9e6b9fd98873a394f23f292eb",
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "rho_d_sha256": "935898a8fbbb70d3cc98c24d01764997b820f6d31a6140f09b13ceb36ca6dcef",
+      "rttov_assets": {
+        "per_cell_pressure_gases_sha256": {
+          "co2.txt": "2c59387cdf3de5fd4300339a8599c6149df2802949b27ffc5b95bbccf4fd8cfa",
+          "o3.txt": "142ec3324b9b22fcd293c98c61a8d84629fee9b27eb39244094484857f2351ce",
+          "p.txt": "6ca6331249b73d7cb6b8a651b962ad7fabe326ff8c1f08e9fd057f5566754de7",
+          "p_half.txt": "a0c0c4a4382da9b52cca9d0bb216e5b4fe95a93fcea2dbe854a5ca7ebbd047b5"
+        },
+        "prepared_fixture_info": {
+          "O3_CO2_replaced_from_fixed_upper_reference_on_intake_grid": true,
+          "T_Q_and_cloud_replaced_on_each_H_call": true,
+          "ami_coefficient": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+            "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5"
+          },
+          "geometry_and_dynamic_surface": "supplied from fixed AMI candidate and fresh native selected column on each H input",
+          "prepared_files_sha256": {
+            "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/sfc/01/skin.txt": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b",
+            "in/channels.txt": "d5ddefcc18c631a7f79691be015b328dec004b0dfca1eaa1343991f32d032e1d",
+            "in/profiles/001/atm/co2.txt": "2c59387cdf3de5fd4300339a8599c6149df2802949b27ffc5b95bbccf4fd8cfa",
+            "in/profiles/001/atm/hydro.txt": "62efd0a4c425145db1d988127d0b5d3e50227328d2c8e69c455371585848f57e",
+            "in/profiles/001/atm/hydro_frac.txt": "94fd8b3afb76730bec5fae7a464123607ca22844c0c5ce194294a8f94faf4079",
+            "in/profiles/001/atm/o3.txt": "142ec3324b9b22fcd293c98c61a8d84629fee9b27eb39244094484857f2351ce",
+            "in/profiles/001/atm/p.txt": "6ca6331249b73d7cb6b8a651b962ad7fabe326ff8c1f08e9fd057f5566754de7",
+            "in/profiles/001/atm/p_half.txt": "a0c0c4a4382da9b52cca9d0bb216e5b4fe95a93fcea2dbe854a5ca7ebbd047b5",
+            "in/profiles/001/atm/q.txt": "a1d36a362aa783d0649d44fd702e1e173781973802f2bfa7611fa56afadad621",
+            "in/profiles/001/atm/simple_cloud.txt": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d",
+            "in/profiles/001/atm/t.txt": "c08957ceed12e5a8153dce659cb21e241ceb1c42bebb57cdee9d858c3d11305a",
+            "out/rttov_test.txt": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+          },
+          "prepared_fixture_copy": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr399-native-neighbor-h-attempt2-2026-10-10/private/offline_fixture_preflight/fixture-frame1_j87_i48_fixed_AMI_geometry",
+          "pressure_grid_replaced_from_native_intake": true,
+          "rttov_executable": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+            "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+          },
+          "simple_cloud_fraction": 0.0,
+          "solar": false,
+          "source_template": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00",
+          "source_template_sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+        },
+        "source_asset_sha256": {
+          "env_sh": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/env.sh",
+            "sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554"
+          },
+          "rttov_coefficient": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+            "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5"
+          },
+          "rttov_executable": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+            "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+          },
+          "rttov_test_namelist": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/rttov_test.txt",
+            "sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+          },
+          "run_sh": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/run.sh",
+            "sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+          },
+          "static_surface_skin": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/sfc/01/skin.txt",
+            "sha256": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b"
+          },
+          "template_co2": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/co2.txt",
+            "sha256": "075c725200902dd1505635d3704db9416ef88f960be482819c17db9422ef7553"
+          },
+          "template_hydro": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/hydro.txt",
+            "sha256": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc"
+          },
+          "template_hydro_frac": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/hydro_frac.txt",
+            "sha256": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b"
+          },
+          "template_o3": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/o3.txt",
+            "sha256": "4169bd766bea042e1de81390c48df7c0f3ea690b5fc44007508127b3047fed6d"
+          },
+          "template_p": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/p.txt",
+            "sha256": "c7d47eed648f3e7313979e84600ae916fbf8d381d6c21f2d8f562c88463a7726"
+          },
+          "template_p_half": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/p_half.txt",
+            "sha256": "dc736422f63710511af6a3336a77b33f092c63e66deffba26e5e8c29f47c2b11"
+          },
+          "template_q": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/q.txt",
+            "sha256": "8d5b00aa058fae51b5272ddc8f6f65e1bcaa34a65c8e499c099128b87e6cb135"
+          },
+          "template_simple_cloud": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/simple_cloud.txt",
+            "sha256": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d"
+          },
+          "template_t": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/t.txt",
+            "sha256": "87b10f1915c6d0c358bc5f135d560c06db6e6e9b3ac05364e34cc14d655f0bfc"
+          }
+        }
+      },
+      "rttov_profile_sha256": {
+        "co2_ppmv": "47c14735a160b3882c2234efe4c866d2c573ab2b446d09cb1ba16b7f38b624c8",
+        "o3_ppmv": "3757dfe4222f1ba2e1ef0dfd82a52567f42e8a28e95a8f06d2b0f107c82ccf4e",
+        "p_half_hPa": "e7fe270c934c2f907a6864c97203759099c1db8c4ef9520550ac49d5855dc1b1",
+        "p_lay_hPa": "076803ee4ae0e1c57b901e87132d1850f954679a4886d2186398a041c299c722",
+        "q_native_plus_fixed_upper_reference_ppmv": "b55803e2e16a7c77db44c38d5a5b122978787471595eeaa3cfeffed1f676abaf",
+        "t_native_plus_fixed_upper_reference_K": "38b4f0758a8fdd003ad49da8513174128a94620e579701637858138396787011"
+      },
+      "state_sha256_by_field": {
+        "bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nccn": "54817f9ad9be992279a1afef84ed3e07e94497644c09de1fa5faa325ea2b5b75",
+        "ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qv": "d9f53ed537fb884f10fe3d85453312e8ee36287edb2c01914aaef3b6e8157157",
+        "th": "be73891e0e9712071113067690d39d87a2e9180b3726766b1ad0c3428d299d8f"
+      },
+      "status": "H_RETURNED",
+      "surface_sha256_by_field": {
+        "HGT": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "Q2": "10b73bf7976803e029658b4ea65218930e89ef79d10a82eebc46c078747045a8",
+        "T2": "03df9ef530432ceb867062dbc86bee93aca109f388ac4df09c08b382bf33b134",
+        "TSK": "53467de2e85bec4b667ef50fb168d9a7067bac7702187bdbc2c3132cf75d56b7",
+        "U10": "b5fc24290d533c73a87bb2c29052a261293d9182961f701ab2da638a5b7f96a9",
+        "V10": "ce28d9b78cf906d3d9642c71e8670d6070069a8aa2b13748f9be3a5606103cc8",
+        "latitude_deg": "d69e70f583045b1bda7f357d13f20cdcdf6d2af65765cf53fc1bc46efc90bc3d",
+        "longitude_deg": "708bac5803fd98d69757c899422ba6e07722dd99b18c52444dffada227f5a4ba",
+        "seaice": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "xland": "3f710ac088db33363087de2b9a657541fe5447821debaa9fe5cbd538eb1a5f29"
+      }
+    },
+    {
+      "BT_K": [
+        [
+          262.353833590649,
+          293.6135555615789,
+          270.5685005603369,
+          296.1428213739265,
+          295.8940309319668,
+          292.86122674259894,
+          276.60802125848056
+        ]
+      ],
+      "Jo_huber_K_units": 26.175999722608722,
+      "all_seven_rad_quality_zero": true,
+      "automatic_retry": false,
+      "case_id": "frame1_j87_i49_fixed_AMI_geometry",
+      "case_output_dir": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr399-native-neighbor-h-attempt2-2026-10-10/private/cases/hcase-frame1_j87_i49_fixed_AMI_geometry",
+      "channel_names": [
+        "wv073",
+        "ir087",
+        "ir096",
+        "ir105",
+        "ir112",
+        "ir123",
+        "ir133"
+      ],
+      "channels_1based": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "fixed_observation_quality_DQF": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "forcing_sha256_by_field": {
+        "delz": "c079b5ddc364840f98e9cd0586129b7233e86d786ff81eaef26d11b1d5685cca",
+        "p": "ce58e838906eed8a5f9d4a20ae87bf68179bd98676f781a50779e206418107be",
+        "pii": "8bab2ee06ad81c23cd05012ddf09c7a899e7c172333ede82ab668c44909c3c95",
+        "rho": "c9d80c21a0da84f0a825dfb0fd788a09faae594eb49b270e1be0dec91ef7dd43"
+      },
+      "frozen_support": [
+        [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      ],
+      "frozen_support_n_valid": 7,
+      "geometry": {
+        "azangle": 169.60651603862405,
+        "elevation": 0.0,
+        "latitude": 35.41925069326254,
+        "longitude": 122.13724164654832,
+        "sunazangle": 0.0,
+        "sunzenangle": 0.0,
+        "zenangle": 41.60526733455049
+      },
+      "i": 49,
+      "j": 87,
+      "lat_lon_deg": [
+        35.46367645263672,
+        122.19686889648438
+      ],
+      "native_time_label": "2025-07-19_05:56:00",
+      "operator_semantics": "direct H(native saved frame 1 State, Forcing); no M, interpolation, or backward",
+      "p8w_sha256": "b0f53f438182cfe35e5a10252d196689c12e95f14d3802e861e8ec2f4b2257f8",
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "rho_d_sha256": "c73e55f86990cff075b31fe38c54af16d7748435cdc4e5e7a618eb49886917e9",
+      "rttov_assets": {
+        "per_cell_pressure_gases_sha256": {
+          "co2.txt": "3d3f67e89d6f6fcf519c577f40738f0050d7900e97a3709985a5d720c6ecfce6",
+          "o3.txt": "290a823c245f3acc6693705de95c77954269df8abf2cefd6057337e1cda6ad4d",
+          "p.txt": "09404b96282d63d8958d2fda96174e5c6ffb79427cc9d28e7e5d4dab3d86bb30",
+          "p_half.txt": "3a74906c906140a9635fa194cc81f50a2fcb7ee179222cf38df292803f7f8163"
+        },
+        "prepared_fixture_info": {
+          "O3_CO2_replaced_from_fixed_upper_reference_on_intake_grid": true,
+          "T_Q_and_cloud_replaced_on_each_H_call": true,
+          "ami_coefficient": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+            "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5"
+          },
+          "geometry_and_dynamic_surface": "supplied from fixed AMI candidate and fresh native selected column on each H input",
+          "prepared_files_sha256": {
+            "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/sfc/01/skin.txt": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b",
+            "in/channels.txt": "d5ddefcc18c631a7f79691be015b328dec004b0dfca1eaa1343991f32d032e1d",
+            "in/profiles/001/atm/co2.txt": "3d3f67e89d6f6fcf519c577f40738f0050d7900e97a3709985a5d720c6ecfce6",
+            "in/profiles/001/atm/hydro.txt": "62efd0a4c425145db1d988127d0b5d3e50227328d2c8e69c455371585848f57e",
+            "in/profiles/001/atm/hydro_frac.txt": "94fd8b3afb76730bec5fae7a464123607ca22844c0c5ce194294a8f94faf4079",
+            "in/profiles/001/atm/o3.txt": "290a823c245f3acc6693705de95c77954269df8abf2cefd6057337e1cda6ad4d",
+            "in/profiles/001/atm/p.txt": "09404b96282d63d8958d2fda96174e5c6ffb79427cc9d28e7e5d4dab3d86bb30",
+            "in/profiles/001/atm/p_half.txt": "3a74906c906140a9635fa194cc81f50a2fcb7ee179222cf38df292803f7f8163",
+            "in/profiles/001/atm/q.txt": "35ce054fa782ef35c622acd9688966854971f09348926514f1b29723f9ebc913",
+            "in/profiles/001/atm/simple_cloud.txt": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d",
+            "in/profiles/001/atm/t.txt": "8b0d1b6ca94c52e613025501f23fc49c6725607ac73a1531483ec3a36ad85ac4",
+            "out/rttov_test.txt": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+          },
+          "prepared_fixture_copy": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr399-native-neighbor-h-attempt2-2026-10-10/private/offline_fixture_preflight/fixture-frame1_j87_i49_fixed_AMI_geometry",
+          "pressure_grid_replaced_from_native_intake": true,
+          "rttov_executable": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+            "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+          },
+          "simple_cloud_fraction": 0.0,
+          "solar": false,
+          "source_template": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00",
+          "source_template_sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+        },
+        "source_asset_sha256": {
+          "env_sh": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/env.sh",
+            "sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554"
+          },
+          "rttov_coefficient": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+            "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5"
+          },
+          "rttov_executable": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+            "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+          },
+          "rttov_test_namelist": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/rttov_test.txt",
+            "sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+          },
+          "run_sh": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/run.sh",
+            "sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+          },
+          "static_surface_skin": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/sfc/01/skin.txt",
+            "sha256": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b"
+          },
+          "template_co2": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/co2.txt",
+            "sha256": "075c725200902dd1505635d3704db9416ef88f960be482819c17db9422ef7553"
+          },
+          "template_hydro": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/hydro.txt",
+            "sha256": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc"
+          },
+          "template_hydro_frac": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/hydro_frac.txt",
+            "sha256": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b"
+          },
+          "template_o3": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/o3.txt",
+            "sha256": "4169bd766bea042e1de81390c48df7c0f3ea690b5fc44007508127b3047fed6d"
+          },
+          "template_p": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/p.txt",
+            "sha256": "c7d47eed648f3e7313979e84600ae916fbf8d381d6c21f2d8f562c88463a7726"
+          },
+          "template_p_half": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/p_half.txt",
+            "sha256": "dc736422f63710511af6a3336a77b33f092c63e66deffba26e5e8c29f47c2b11"
+          },
+          "template_q": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/q.txt",
+            "sha256": "8d5b00aa058fae51b5272ddc8f6f65e1bcaa34a65c8e499c099128b87e6cb135"
+          },
+          "template_simple_cloud": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/simple_cloud.txt",
+            "sha256": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d"
+          },
+          "template_t": {
+            "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/t.txt",
+            "sha256": "87b10f1915c6d0c358bc5f135d560c06db6e6e9b3ac05364e34cc14d655f0bfc"
+          }
+        }
+      },
+      "rttov_profile_sha256": {
+        "co2_ppmv": "87108487e9a1f333f8bc615e220b15392c354583a3ea03fe09e87d0a0c4c002f",
+        "o3_ppmv": "3bd9c632260bb68c4e9447ae17f10b91f9a4dca4c49f5fd378198e1ef5d40100",
+        "p_half_hPa": "df2c5d1603754d3416a772e925cf990921062b805a17815ba54ddf0331658f28",
+        "p_lay_hPa": "7c8e1db68074f197135e9171fc6c89745d9c1654835f47e16c7845ade977fe92",
+        "q_native_plus_fixed_upper_reference_ppmv": "b2054bcb828c54cfe5f95dd40da9473ec77429405acc7ee723375c0e658ee477",
+        "t_native_plus_fixed_upper_reference_K": "39b268def1fd4791d29a6d08969aa40e79f64704f72a905935d882b043495b2b"
+      },
+      "state_sha256_by_field": {
+        "bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nccn": "7346787079cc15c5903ed9435c9ad3845df02afc58141893d6f8b41558659df6",
+        "ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qv": "4200aa4ee94982a8b11b5e5f8b66ccfb579a1c3c6afc3053a0c9918a606720d6",
+        "th": "37a12b73d6a1c9709d7ca7e29a1c7cdcd1b2ca13bfa020270db2af305af5e9d7"
+      },
+      "status": "H_RETURNED",
+      "surface_sha256_by_field": {
+        "HGT": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "Q2": "c3a71278ae863334b2e65d661781bd1ee368aa25c878de58ec6497bf0a3c8c19",
+        "T2": "107f9842f2582d13fce0e28212d5aa758c58a4feec95b11ea9eddb2b211db298",
+        "TSK": "c2301670ab1bbca2936f156763737707cc904ebf238c8737dc18bf5abd32f751",
+        "U10": "4eeafe74e4fd3c0437006ff95c74b696e45d2fd397ee33726aedd7f25bf542cf",
+        "V10": "aaa5d0feaeb26ac0599b0ef3b50dc831db4698a16efb85095ade147e4ada85ad",
+        "latitude_deg": "609f2c6856a220b465133b4f6bc2659d6123de5a97208bd593ef7cb87ddeb2cf",
+        "longitude_deg": "92672300ccb13197fc14d418befe25f3ed84cbcaab9b9c15e724942c6f7883f8",
+        "seaice": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "xland": "3f710ac088db33363087de2b9a657541fe5447821debaa9fe5cbd538eb1a5f29"
+      }
+    }
+  ],
+  "schema": "pr399_vertical_neighbor_result_v1",
+  "scientific_acceptance": "NOT_ASSESSED",
+  "source_driver_sha256": "1ab829a94daa80c211984f7ddfbbe9bb825aa859a44bdc5aa83645368459e947",
+  "status": "ALL_NINE_ROWS_RETURNED"
+}

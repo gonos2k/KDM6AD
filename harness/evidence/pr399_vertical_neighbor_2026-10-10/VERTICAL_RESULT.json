@@ -1,0 +1,391 @@
+{
+  "canonical_private_npz": {
+    "directory_mode": "0o700",
+    "mode": "0o600",
+    "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr399_vertical_neighbor_20261010_v2/vertical_structure_27columns_3times_v2.npz",
+    "sha256": "5d02e8bbf4e5e54d049a818260adb2f3480aad9edd3661b282d55c24130263c0"
+  },
+  "canonical_source_copy_sha256": {
+    "constants.py": "aa489872c2b00d1160e158b9390ebe7bdcbbe4b31a468673cf22615f137f1b62",
+    "run_native_kma_bt_frames.py": "408bab9756c6ac1a6e8438b8469c87f41fa239ce75414cd8087d10b6a31d54c1",
+    "thermo.py": "5278c14c6d87178af5ee963eef59d3297b923fa374412fd854c01e43ffb1b5cd",
+    "vertical_structure.py": "05422512b5dd8376b2878107f84a03985c88a00ea50c4083c48155cf2fcfa788"
+  },
+  "canonical_sources_directory": {
+    "mode": "0o700",
+    "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr399_vertical_neighbor_20261010_v2/sources"
+  },
+  "claims": {
+    "endpoint_differences_are_rates": false,
+    "inversion_or_stability_diagnostic_only": true,
+    "no_RTTOV": true,
+    "no_height_regridding": true,
+    "no_model_or_H_calls": true,
+    "no_native_forecast_opened": true,
+    "no_optimizer": true,
+    "remainder_is_process_rate": false
+  },
+  "definitions": {
+    "detailed_levels_bottom_up_zero_based": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "height": "native interface geopotential z=(PH+PHB)/g using float64-first arrays; layer midheight is adjacent-interface mean; AGL subtracts saved HGT; preserve nonuniform actual center-height differences",
+    "liquid_saturation": "KDM6 compute_qs_water(T,p) at native center levels; no vertical remapping",
+    "local_saturation_change": "S=100*qv/qs_water at bottom-up maxsat layer; for endpoint pairs 1\u21924, 4\u21926, and 1\u21926, first-order local partial contributions in qv,T,p at the start endpoint plus exact nonlinear remainder; no division by elapsed time and no process-rate attribution",
+    "maxsat_definition": "qv / KDM6 phase-aware qs_ice at all native levels; report actual model midheight AGL and native center pressure for maximum and adjacent levels",
+    "maxsat_target_level_bottom_up_zero_based": 3,
+    "pressure": "native float64-first P+PB centers; P8W REAL(4) Python transcription remains separately labeled and only brackets native layers",
+    "stability": "report adjacent-level dT/dz and dtheta_v/dz over lower 12 levels; positive dT/dz flags a temperature inversion layer and positive dtheta_v/dz is stable-sign stratification, neither attributes a cause",
+    "virtual_potential_temperature": "theta_v = theta_d*(1+qv/epsilon)/(1+qv) = (THM+300)/(1+qv), epsilon=Rd/Rv; independently verify both expressions"
+  },
+  "driver_sha256": "05422512b5dd8376b2878107f84a03985c88a00ea50c4083c48155cf2fcfa788",
+  "input_npz_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_sensitivity_20261010/native_patch_3x3_frames_1_4_6_v3.npz",
+  "input_npz_sha256": "947c72c12ebe289b7ddc84fba1281635d77ffbcfe23f204345cc97abeebc1c21",
+  "input_plan_sha256": "4867f925372325a477a5c3ee5141053f07e932235551ed0a1d5a9af8f4308364",
+  "input_result_sha256": "3417158f5e47fe836f24b49309bfe3df36b81d34ecb4d4a1266ba38706dd7efb",
+  "plan_path": "harness/evidence/pr399_vertical_neighbor_2026-10-10/VERTICAL_PLAN_v2.json",
+  "plan_sha256": "b9a9d762cc8e22dfd529dd2fafcec4420b006fe8fd61a4a8eaae777839b540d8",
+  "private_npz": {
+    "arrays": {
+      "S_liquid_percent": {
+        "dtype": "float64",
+        "sha256": "008e9e0347e86b5466d836a31fa44570866aa586404d29822313a0e127decaf3",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "frame_indices": {
+        "dtype": "int32",
+        "sha256": "d7a79f6ea47f027c672129bcc08880df9f9b2ebe922d50533c5f2d4fe0a334e9",
+        "shape": [
+          3
+        ]
+      },
+      "i_indices": {
+        "dtype": "int32",
+        "sha256": "e27973743cb6eade55864212442133bc109d9508d63b08a6bb553dcb29e1da4b",
+        "shape": [
+          3
+        ]
+      },
+      "j_indices": {
+        "dtype": "int32",
+        "sha256": "20434aaf0abda30f9a41aa8b5d63c6c968f5e485f23a43426f2e5bb78902dace",
+        "shape": [
+          3
+        ]
+      },
+      "layer_thickness_m": {
+        "dtype": "float64",
+        "sha256": "9bfa85d6350cb0b08f741570a495e468019ec01315bbf51f9b8eb75a8b8c2b41",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "maxsat_level_bottomup_zero_based": {
+        "dtype": "int16",
+        "sha256": "a9aff8d8191eb19f30762f4c960fc73837facb9e37d7e72f3260aeba87a5425c",
+        "shape": [
+          3,
+          3,
+          3
+        ]
+      },
+      "midheight_spacing_up_m": {
+        "dtype": "float64",
+        "sha256": "84f10b76cd69436e00d09f251b4047f3e7fd7cdde993bfaed6a652c5a8a2ce31",
+        "shape": [
+          3,
+          3,
+          3,
+          38
+        ]
+      },
+      "p8w_half_bottomup_REAL4_transcription_Pa": {
+        "dtype": "float32",
+        "sha256": "4a7a61286739ca0e4de816655195f88615e2c4adc8392d8455f022eb1134e4a6",
+        "shape": [
+          3,
+          3,
+          3,
+          40
+        ]
+      },
+      "p_center_native_Pa": {
+        "dtype": "float64",
+        "sha256": "7cb64e84a732626103aecfc2ef92cb6d4f777222157ce7a490a2d90c67ce8d0b",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "qs_phase_aware_kgkg": {
+        "dtype": "float64",
+        "sha256": "91fd7328c45e6cd9e245f0ead5080caddcf9da47b4f09b351e743ea081067824",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "qs_water_kgkg": {
+        "dtype": "float64",
+        "sha256": "99a6a647755a13c1e390dc17f9f1061e51939fef595a589fdc80d73e0d95e3c5",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "qv_kgkg_dry": {
+        "dtype": "float64",
+        "sha256": "917b6e6576d27ddd1a3a549cc89559380afd01a53681b4afb59355ce08cbef76",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "qv_over_qs_phase_aware": {
+        "dtype": "float64",
+        "sha256": "7a87c1db97ad8546f24d5c95ae0b21044dbf719ee43248b334be08de91ca89ba",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "saturation_clip_any": {
+        "dtype": "bool",
+        "sha256": "1d2a1ee29bba7f39c2cd8a9c397c2376a4a484f274c5427a65c3e98cb1dd54b4",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "saturation_es_clip": {
+        "dtype": "bool",
+        "sha256": "1d2a1ee29bba7f39c2cd8a9c397c2376a4a484f274c5427a65c3e98cb1dd54b4",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "saturation_qmin_clip": {
+        "dtype": "bool",
+        "sha256": "1d2a1ee29bba7f39c2cd8a9c397c2376a4a484f274c5427a65c3e98cb1dd54b4",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "temperature_K": {
+        "dtype": "float64",
+        "sha256": "5663e024fa385c2b1de720cb28c5cf1f574e22215a787b965519ad33c9eb3db0",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "theta_d_K": {
+        "dtype": "float64",
+        "sha256": "eb2583f106913fff14d9170000497621ba152384b921cfcfa4a3eb6d65db29dc",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "theta_v_K": {
+        "dtype": "float64",
+        "sha256": "50ca929a4beb6d87b5de4af6c2f8c1f7dc4def8d3504d004653c76943b275c3c",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "z_interface_m_asl": {
+        "dtype": "float64",
+        "sha256": "220ddf6404af3c118724afb5bb8723d9267b353503671cd3c09f0110fd023923",
+        "shape": [
+          3,
+          3,
+          3,
+          40
+        ]
+      },
+      "z_mid_m_agl": {
+        "dtype": "float64",
+        "sha256": "113507bcb09b627907f681bc891509e68b49aceec03b5e558c2ad5ffd052f7dc",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      }
+    },
+    "mode": "0o600",
+    "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr399-vertical-neighbor-v2-2026-10-10/private/vertical_structure_27columns_3times_v2.npz",
+    "sha256": "5d02e8bbf4e5e54d049a818260adb2f3480aad9edd3661b282d55c24130263c0"
+  },
+  "public_outputs": {
+    "endpoint_sensitivity_csv": {
+      "path": "harness/evidence/pr399_vertical_neighbor_2026-10-10/VERTICAL_SENSITIVITY_v2.csv",
+      "rows": 27,
+      "sha256": "f681ea917116bc15ae6cb7ba49fa8c7fa849c3665c70ba2cb0e828833f52d0fa"
+    },
+    "maxsat_context_csv": {
+      "path": "harness/evidence/pr399_vertical_neighbor_2026-10-10/VERTICAL_MAXSAT_CONTEXT_v2.csv",
+      "rows": 27,
+      "sha256": "bfd562fc55542785bcef0718faad5afa18b46f782eef890f9031acd8547b47a9"
+    },
+    "profiles_csv": {
+      "path": "harness/evidence/pr399_vertical_neighbor_2026-10-10/VERTICAL_RESULT_v2.csv",
+      "rows": 324,
+      "sha256": "73b1262f2ef056062a352d784cd3aa807da6b4f579044382059d193e460beee4"
+    }
+  },
+  "schema": "pr399_vertical_structure_result_v2",
+  "source_sha256": {
+    "kdm6_constants": {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/constants.py",
+      "sha256": "aa489872c2b00d1160e158b9390ebe7bdcbbe4b31a468673cf22615f137f1b62"
+    },
+    "kdm6_thermo": {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/thermo.py",
+      "sha256": "5278c14c6d87178af5ee963eef59d3297b923fa374412fd854c01e43ffb1b5cd"
+    },
+    "native_patch_npz": {
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_sensitivity_20261010/native_patch_3x3_frames_1_4_6_v3.npz",
+      "sha256": "947c72c12ebe289b7ddc84fba1281635d77ffbcfe23f204345cc97abeebc1c21"
+    },
+    "native_patch_plan": {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr398_spatial_representativeness_2026-10-10/NATIVE_PATCH_v3.json",
+      "sha256": "4867f925372325a477a5c3ee5141053f07e932235551ed0a1d5a9af8f4308364"
+    },
+    "native_patch_result": {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr398_spatial_representativeness_2026-10-10/NATIVE_PATCH_RESULT_v3.json",
+      "sha256": "3417158f5e47fe836f24b49309bfe3df36b81d34ecb4d4a1266ba38706dd7efb"
+    },
+    "selected_frame_reader": {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/native358_artifact_diag_2026-10-08/recipe/run_native_kma_bt_frames.py",
+      "sha256": "408bab9756c6ac1a6e8438b8469c87f41fa239ce75414cd8087d10b6a31d54c1"
+    },
+    "vertical_structure_driver": {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr399_vertical_neighbor_2026-10-10/vertical_structure_v2.py",
+      "sha256": "05422512b5dd8376b2878107f84a03985c88a00ea50c4083c48155cf2fcfa788"
+    }
+  },
+  "status": "READY_DERIVED_DIAGNOSTIC_ONLY",
+  "summary": {
+    "all_endpoint_rows_warm_unclipped": true,
+    "arbitrary_height_regrid": false,
+    "cause_or_process_rate_attribution": false,
+    "elapsed_time_division_performed": false,
+    "endpoint_decomposition_rows": 27,
+    "endpoint_pair_count": 27,
+    "layer3": {
+      "center_pressure_hPa_range": [
+        977.096259765625,
+        977.1609307861328
+      ],
+      "midheight_AGL_m_range": [
+        260.737246281024,
+        260.9237091499974
+      ],
+      "qs_water_kgkg_range": [
+        0.01898109462947212,
+        0.01911583278819411
+      ],
+      "qv_kgkg_dry_range": [
+        0.018059760332107544,
+        0.018331600353121758
+      ],
+      "temperature_K_range": [
+        296.6952328537194,
+        296.80897729495166
+      ],
+      "theta_v_K_range": [
+        301.8851241774947,
+        302.0504561651646
+      ]
+    },
+    "layer3_maxsat_phase_aware_percent_range": [
+      95.14604233659942,
+      95.98792293093744
+    ],
+    "lower12": {
+      "actual_midheight_spacing_m_range": [
+        60.25792082029258,
+        436.7720453260383
+      ],
+      "adjacent_pair_count": 891,
+      "qs_water_kgkg_range": [
+        0.01483457440739377,
+        0.021430387668785588
+      ],
+      "qv_kgkg_dry_range": [
+        0.006000766530632973,
+        0.01878371834754944
+      ],
+      "temperature_K_range": [
+        288.8736869564572,
+        299.1132800806088
+      ],
+      "temperature_inversion_adjacent_pair_count": 51,
+      "theta_v_K_range": [
+        301.8851241774947,
+        313.2179839288881
+      ],
+      "warm_unclipped_layer3_endpoint_count": 27,
+      "water_saturation_clip_count": 0,
+      "z_mid_AGL_m_range": [
+        26.4594293880171,
+        2381.459753131769
+      ]
+    },
+    "maxsat_layer_counts": {
+      "3": 27
+    },
+    "maxsat_phase_aware_percent_range_all_layers": [
+      6.284192927860033,
+      95.98792293093744
+    ],
+    "model_H_or_RTTOV_calls": 0
+  }
+}

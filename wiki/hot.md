@@ -6,6 +6,7 @@ date_modified: 2026-07-14
 # Hot Cache
 
 ## Current Focus
+- [[sources/pr399-vertical-and-neighbor-h-2026-10-10]] — Current event's vertical structure and neighbor H narrow the mismatch; other-day native inputs and physical matchup remain open.
 - [[sources/pr398-spatial-representativeness-2026-10-10]] — Existing local spatial samples show liquid phase beyond one pixel but a clear native3×3, with substantial observed window-BT variation; matchup, QA range and unused-event availability stay distinct.
 - [[sources/pr398-local-balance-and-sensitivity-2026-10-10]] — October10 bounded research follow-up on preserved valid native input: local prior/observation balance and conditional time/viewing-angle sensitivity. Completed native input is distinct from unresolved pixel UTC/footprint and held-out validation.
 - [[KDM6AD Forward Parity]] between mp37 [[KDM6]] and mp137 [[KDM6AD]].

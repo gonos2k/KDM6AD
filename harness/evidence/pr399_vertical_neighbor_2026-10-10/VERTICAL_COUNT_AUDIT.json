@@ -1,0 +1,73 @@
+{
+  "correct_adjacent_pair_count": 297,
+  "denominator_derivation": {
+    "columns_per_time": 9,
+    "formula": "(9 * 3) * (12 - 1) = 297; equivalently count rows with dT_vs_below_K present",
+    "levels_lower12": 12,
+    "times": 3,
+    "valid_adjacent_pairs_per_column_time": 11,
+    "valid_pair_csv_rows": 297
+  },
+  "execution_scope": {
+    "H_calls": 0,
+    "M_calls": 0,
+    "model_run": false,
+    "native_forecast_opened": false,
+    "new_data_extraction": false,
+    "optimizer_calls": 0,
+    "profile_csv_reread_only": true
+  },
+  "finding": "V2 summary field adjacent_pair_count is incorrect: it reports 891 by multiplying 27 (=9 columns \u00d7 3 times) by 3 again and by 11 levels.",
+  "future_count_fix": {
+    "corrected_expression": "sum(row[\"dT_vs_below_K\"] is not None for row in profiles)",
+    "executed": false,
+    "source_path": "harness/evidence/pr399_vertical_neighbor_2026-10-10/vertical_structure_v3.py",
+    "source_sha256": "732629b2651243fb6c3b1943183bea03cd7ed28c719d746b3df2af4df1f143e3"
+  },
+  "handling": "Do not rewrite V2 result JSON, V2 report, or identical unsuffixed aliases. Treat their 891 value as historical; use 297 in corrected summaries/cards with this audit cited.",
+  "immutable_raw_artifacts": {
+    "executed_source": {
+      "path": "harness/evidence/pr399_vertical_neighbor_2026-10-10/vertical_structure_v2.py",
+      "sha256": "05422512b5dd8376b2878107f84a03985c88a00ea50c4083c48155cf2fcfa788"
+    },
+    "raw_profile_csv": {
+      "path": "harness/evidence/pr399_vertical_neighbor_2026-10-10/VERTICAL_RESULT_v2.csv",
+      "sha256": "73b1262f2ef056062a352d784cd3aa807da6b4f579044382059d193e460beee4"
+    },
+    "raw_report": {
+      "path": "harness/evidence/pr399_vertical_neighbor_2026-10-10/VERTICAL_REPORT_v2.md",
+      "sha256": "6673cd3036888e61907d66a367fe0eac197d2638441b7780fd6e74a119f6e249"
+    },
+    "raw_result": {
+      "path": "harness/evidence/pr399_vertical_neighbor_2026-10-10/VERTICAL_RESULT_v2.json",
+      "sha256": "fd25fb4fe996afc71a481bcac8a98d5bdaf5bc9159eda03cd2676011326c74e1"
+    },
+    "source_copy": {
+      "matches_executed_source": true,
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr399_vertical_neighbor_20261010_v2/sources/vertical_structure.py",
+      "sha256": "05422512b5dd8376b2878107f84a03985c88a00ea50c4083c48155cf2fcfa788"
+    },
+    "unsuffixed_profile_alias": {
+      "byte_identical_to_v2": true,
+      "path": "harness/evidence/pr399_vertical_neighbor_2026-10-10/VERTICAL_RESULT.csv",
+      "sha256": "73b1262f2ef056062a352d784cd3aa807da6b4f579044382059d193e460beee4"
+    },
+    "unsuffixed_report_alias": {
+      "byte_identical_to_v2": true,
+      "path": "harness/evidence/pr399_vertical_neighbor_2026-10-10/VERTICAL_REPORT.md",
+      "sha256": "6673cd3036888e61907d66a367fe0eac197d2638441b7780fd6e74a119f6e249"
+    },
+    "unsuffixed_result_alias": {
+      "byte_identical_to_v2": true,
+      "path": "harness/evidence/pr399_vertical_neighbor_2026-10-10/VERTICAL_RESULT.json",
+      "sha256": "fd25fb4fe996afc71a481bcac8a98d5bdaf5bc9159eda03cd2676011326c74e1"
+    }
+  },
+  "positive_dtheta_v_dz_flags_from_valid_pairs": 216,
+  "raw_counts_51_and_216_remain_valid": true,
+  "raw_v2_reported_adjacent_pair_count": 891,
+  "schema": "pr399_vertical_pair_count_audit_v1",
+  "status": "CORRECTION_NOTE_RAW_V2_PRESERVED",
+  "temperature_inversion_upward_flags_from_valid_pairs": 51,
+  "valid_profile_rows_total": 324
+}

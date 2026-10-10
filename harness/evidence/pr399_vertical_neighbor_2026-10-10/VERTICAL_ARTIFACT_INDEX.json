@@ -1,0 +1,31 @@
+{
+  "attempt_history": "VERTICAL_ATTEMPT_HISTORY.md",
+  "convenience_copies": {
+    "VERTICAL_MAXSAT_CONTEXT.csv": {
+      "identical_to": "VERTICAL_MAXSAT_CONTEXT_v2.csv",
+      "sha256": "bfd562fc55542785bcef0718faad5afa18b46f782eef890f9031acd8547b47a9"
+    },
+    "VERTICAL_REPORT.md": {
+      "identical_to": "VERTICAL_REPORT_v2.md",
+      "sha256": "6673cd3036888e61907d66a367fe0eac197d2638441b7780fd6e74a119f6e249"
+    },
+    "VERTICAL_RESULT.csv": {
+      "identical_to": "VERTICAL_RESULT_v2.csv",
+      "sha256": "73b1262f2ef056062a352d784cd3aa807da6b4f579044382059d193e460beee4"
+    },
+    "VERTICAL_RESULT.json": {
+      "identical_to": "VERTICAL_RESULT_v2.json",
+      "sha256": "fd25fb4fe996afc71a481bcac8a98d5bdaf5bc9159eda03cd2676011326c74e1"
+    },
+    "VERTICAL_SENSITIVITY.csv": {
+      "identical_to": "VERTICAL_SENSITIVITY_v2.csv",
+      "sha256": "f681ea917116bc15ae6cb7ba49fa8c7fa849c3665c70ba2cb0e828833f52d0fa"
+    }
+  },
+  "execution_plan": "VERTICAL_PLAN_v2.json",
+  "execution_result": "VERTICAL_RESULT_v2.json",
+  "execution_source": "vertical_structure_v2.py",
+  "execution_source_sha256": "05422512b5dd8376b2878107f84a03985c88a00ea50c4083c48155cf2fcfa788",
+  "schema": "pr399_vertical_artifact_index_v1",
+  "v1_setup_failure": "VERTICAL_ATTEMPT1_SETUP_FAILURE.json"
+}

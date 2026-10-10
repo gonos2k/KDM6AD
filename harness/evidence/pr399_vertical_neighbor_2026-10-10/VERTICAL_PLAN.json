@@ -1,0 +1,112 @@
+{
+  "created_utc": "2026-10-10T10:29:05Z",
+  "diagnostics": {
+    "detailed_levels_bottom_up_zero_based": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "height": "native interface geopotential z=(PH+PHB)/g using float64-first arrays; layer midheight is adjacent-interface mean; AGL subtracts saved HGT; preserve nonuniform actual center-height differences",
+    "liquid_saturation": "KDM6 compute_qs_water(T,p) at native center levels; no vertical remapping",
+    "local_saturation_change": "S=100*qv/qs_water at bottom-up maxsat layer; for endpoint pairs 1\u21924, 4\u21926, and 1\u21926, first-order local partial contributions in qv,T,p at the start endpoint plus exact nonlinear remainder; no division by elapsed time and no process-rate attribution",
+    "maxsat_definition": "qv / KDM6 phase-aware qs_ice at all native levels; report actual model midheight AGL and native center pressure for maximum and adjacent levels",
+    "maxsat_target_level_bottom_up_zero_based": 3,
+    "pressure": "native float64-first P+PB centers; P8W REAL(4) Python transcription remains separately labeled and only brackets native layers",
+    "stability": "report adjacent-level dT/dz and dtheta_v/dz over lower 12 levels; positive dT/dz flags a temperature inversion layer and positive dtheta_v/dz is stable-sign stratification, neither attributes a cause",
+    "virtual_potential_temperature": "theta_v = theta_d*(1+qv/epsilon)/(1+qv) = (THM+300)/(1+qv), epsilon=Rd/Rv; independently verify both expressions"
+  },
+  "driver_sha256": "9a96efe7ae7edbfe80f835e09595248afca3beda2e4a9f8e2a32fd1d7c885738",
+  "input_npz": {
+    "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_sensitivity_20261010/native_patch_3x3_frames_1_4_6_v3.npz",
+    "sha256": "947c72c12ebe289b7ddc84fba1281635d77ffbcfe23f204345cc97abeebc1c21"
+  },
+  "input_plan": {
+    "path": "harness/evidence/pr398_spatial_representativeness_2026-10-10/NATIVE_PATCH_v3.json",
+    "sha256": "4867f925372325a477a5c3ee5141053f07e932235551ed0a1d5a9af8f4308364"
+  },
+  "input_result": {
+    "path": "harness/evidence/pr398_spatial_representativeness_2026-10-10/NATIVE_PATCH_RESULT_v3.json",
+    "sha256": "3417158f5e47fe836f24b49309bfe3df36b81d34ecb4d4a1266ba38706dd7efb"
+  },
+  "input_run_id": "mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148",
+  "input_selection": {
+    "frames": [
+      1,
+      4,
+      6
+    ],
+    "i": [
+      47,
+      48,
+      49
+    ],
+    "j": [
+      85,
+      86,
+      87
+    ],
+    "levels": 39,
+    "times": [
+      "2025-07-19_05:56:00",
+      "2025-07-19_05:57:00",
+      "2025-07-19_05:57:40"
+    ]
+  },
+  "limits": [
+    "No arbitrary-height regrid",
+    "No model or RTTOV execution",
+    "Not a process-tendency or cause attribution",
+    "Saturation partial decomposition applies only to native warm, unclipped layer-3 endpoints; clipped/unstable endpoints are excluded and recorded"
+  ],
+  "native_source_times_full_hash": null,
+  "outputs": {
+    "canonical_private_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr399_vertical_neighbor_20261010/vertical_structure_27columns_3times.npz",
+    "maxsat_context_csv": "harness/evidence/pr399_vertical_neighbor_2026-10-10/VERTICAL_MAXSAT_CONTEXT.csv",
+    "private_npz": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr399-vertical-neighbor-2026-10-10/private/vertical_structure_27columns_3times.npz",
+    "profiles_csv": "harness/evidence/pr399_vertical_neighbor_2026-10-10/VERTICAL_RESULT.csv",
+    "report": "harness/evidence/pr399_vertical_neighbor_2026-10-10/VERTICAL_REPORT.md",
+    "result": "harness/evidence/pr399_vertical_neighbor_2026-10-10/VERTICAL_RESULT.json"
+  },
+  "schema": "pr399_vertical_structure_plan_v1",
+  "scope": "read immutable PR398 NPZ only; no forecast re-read, new model run, M/H, optimizer, or regridding",
+  "source_sha256": {
+    "kdm6_constants": {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/constants.py",
+      "sha256": "aa489872c2b00d1160e158b9390ebe7bdcbbe4b31a468673cf22615f137f1b62"
+    },
+    "kdm6_thermo": {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/thermo.py",
+      "sha256": "5278c14c6d87178af5ee963eef59d3297b923fa374412fd854c01e43ffb1b5cd"
+    },
+    "native_patch_npz": {
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_sensitivity_20261010/native_patch_3x3_frames_1_4_6_v3.npz",
+      "sha256": "947c72c12ebe289b7ddc84fba1281635d77ffbcfe23f204345cc97abeebc1c21"
+    },
+    "native_patch_plan": {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr398_spatial_representativeness_2026-10-10/NATIVE_PATCH_v3.json",
+      "sha256": "4867f925372325a477a5c3ee5141053f07e932235551ed0a1d5a9af8f4308364"
+    },
+    "native_patch_result": {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr398_spatial_representativeness_2026-10-10/NATIVE_PATCH_RESULT_v3.json",
+      "sha256": "3417158f5e47fe836f24b49309bfe3df36b81d34ecb4d4a1266ba38706dd7efb"
+    },
+    "selected_frame_reader": {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/native358_artifact_diag_2026-10-08/recipe/run_native_kma_bt_frames.py",
+      "sha256": "408bab9756c6ac1a6e8438b8469c87f41fa239ce75414cd8087d10b6a31d54c1"
+    },
+    "vertical_structure_driver": {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr399_vertical_neighbor_2026-10-10/vertical_structure.py",
+      "sha256": "9a96efe7ae7edbfe80f835e09595248afca3beda2e4a9f8e2a32fd1d7c885738"
+    }
+  },
+  "status": "PREDECLARED_DERIVATION_NO_MODEL_OR_OPERATOR"
+}

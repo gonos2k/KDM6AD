@@ -1,0 +1,82 @@
+{
+  "schema": "pr399.existing_native_ic_bc_source_trace.v1",
+  "created_utc": "2026-10-10T10:38:40.124879+00:00",
+  "method": "Read existing canonical symlinks, file stat, NetCDF headers and Times only; no state/forcing arrays, new acquisition or run.",
+  "files": [
+    {
+      "canonical_path": "/Users/yhlee/KDM6AD-k/host/lc05_da_run/wrfinput_d01",
+      "symlink": true,
+      "resolved_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfinput_d01",
+      "size_bytes": 374429080,
+      "mtime_ns": 1787537696800157408,
+      "stat_stable_during_metadata_read": true,
+      "whole_file_sha256_recomputed": false,
+      "times": [
+        "2025-07-19_00:00:00"
+      ],
+      "dimensions": {
+        "Time": 1,
+        "west_east": 234,
+        "south_north": 282,
+        "bottom_top": 39,
+        "bottom_top_stag": 40
+      },
+      "attributes": {
+        "TITLE": " OUTPUT FROM REAL_EM V4.6.0 PREPROCESSOR",
+        "START_DATE": "2025-07-19_00:00:00",
+        "SIMULATION_START_DATE": "2025-07-19_00:00:00",
+        "DX": 5000.0,
+        "DY": 5000.0,
+        "MAP_PROJ": 1,
+        "CEN_LAT": 38.0000114440918,
+        "CEN_LON": 126.0,
+        "TRUELAT1": 30.0,
+        "TRUELAT2": 60.0,
+        "STAND_LON": 126.0,
+        "MMINLU": "MODIFIED_IGBP_MODIS_NOAH"
+      }
+    },
+    {
+      "canonical_path": "/Users/yhlee/KDM6AD-k/host/lc05_da_run/wrfbdy_d01",
+      "symlink": true,
+      "resolved_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfbdy_d01",
+      "size_bytes": 103922656,
+      "mtime_ns": 1781770425000000000,
+      "stat_stable_during_metadata_read": true,
+      "whole_file_sha256_recomputed": false,
+      "times": [
+        "2025-07-19_00:00:00",
+        "2025-07-19_03:00:00",
+        "2025-07-19_06:00:00",
+        "2025-07-19_09:00:00"
+      ],
+      "dimensions": {
+        "Time": 4,
+        "west_east": 234,
+        "south_north": 282,
+        "bottom_top": 39,
+        "bottom_top_stag": 40
+      },
+      "attributes": {
+        "TITLE": " OUTPUT FROM REAL_EM V4.6.0 PREPROCESSOR",
+        "START_DATE": "2025-07-19_00:00:00",
+        "DX": 5000.0,
+        "DY": 5000.0,
+        "MAP_PROJ": 1,
+        "CEN_LAT": 38.0000114440918,
+        "CEN_LON": 126.0,
+        "TRUELAT1": 30.0,
+        "TRUELAT2": 60.0,
+        "STAND_LON": 126.0,
+        "MMINLU": "MODIFIED_IGBP_MODIS_NOAH"
+      }
+    }
+  ],
+  "other_initial_days_source": "WAITING_FOR_USER_ARCHIVE_PATH_OPTIONAL_QUESTION",
+  "no_external_model_or_reanalysis_acquisition": true,
+  "M_H_calls": 0,
+  "native_runs": 0,
+  "confirmed_init_day": "2025-07-19",
+  "upstream_preprocessing_origin_verified": false,
+  "limits": "Native IC/BC connection and metadata identity only. Directory creation stamp20260619 is not an independent atmospheric initialization. Upstream raw-input/source pipeline is not identified by these headers. Other archives not inspected."
+}
