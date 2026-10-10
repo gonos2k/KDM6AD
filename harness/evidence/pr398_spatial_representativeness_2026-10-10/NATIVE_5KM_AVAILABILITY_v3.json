@@ -1,0 +1,101 @@
+{
+  "availability_for_two_additional_independent_dates": "NOT_AVAILABLE_IN_INSPECTED_LOCAL_INVENTORY",
+  "existing_boundary_condition": {
+    "coverage_through": "2025-07-19_09:00:00",
+    "sha256_computed": false,
+    "times": [
+      "2025-07-19_00:00:00",
+      "2025-07-19_03:00:00",
+      "2025-07-19_06:00:00",
+      "2025-07-19_09:00:00"
+    ]
+  },
+  "existing_initial_condition": {
+    "source_receipt": "harness/evidence/NATIVE_model_readiness_2026-10-07.json",
+    "wrfinput_sha256_existing_receipt": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+    "wrfinput_times": [
+      "2025-07-19_00:00:00"
+    ]
+  },
+  "existing_nonmatched_variants": [
+    {
+      "label": "C5 pinned 40-second source used by prior normalized KMA evidence",
+      "status": "distinct frozen evidence file; same 2025-07-19 00:00 initialization suffix",
+      "times": [
+        "2025-07-19_00:00:00",
+        "2025-07-19_00:00:20",
+        "2025-07-19_00:00:40"
+      ]
+    },
+    {
+      "label": "Current canonical lc05_da_run forecast file",
+      "status": "Current file ends at +60 s. It does not supply a 05:34 native model snapshot.",
+      "times": [
+        "2025-07-19_00:00:00",
+        "2025-07-19_00:00:20",
+        "2025-07-19_00:00:40",
+        "2025-07-19_00:01:00"
+      ]
+    },
+    {
+      "label": "SS-directory retained hourly 12-hour forecast, separate run record",
+      "status": "Different directory/configuration and coarser hourly outputs; not time-matched to the LA scene or attributed to the pinned 40-second C5 run. Its 12:00 output also lies beyond the inspected wrfbdy final time (09:00).",
+      "times": [
+        "2025-07-19T00:00:00Z",
+        "2025-07-19T01:00:00Z",
+        "2025-07-19T02:00:00Z",
+        "2025-07-19T03:00:00Z",
+        "2025-07-19T04:00:00Z",
+        "2025-07-19T05:00:00Z",
+        "2025-07-19T06:00:00Z",
+        "2025-07-19T07:00:00Z",
+        "2025-07-19T08:00:00Z",
+        "2025-07-19T09:00:00Z",
+        "2025-07-19T10:00:00Z",
+        "2025-07-19T11:00:00Z",
+        "2025-07-19T12:00:00Z"
+      ]
+    }
+  ],
+  "forecast_path_count": 84,
+  "interpretation": "All 83 ordinary forecast files share initialization suffix 202507190000; the single quarantined clobbered copy has the same initialization stamp. These are different run artifacts/configurations, not independent IC dates. No second or third independent initialization/event date is available in the inspected local retained forecast inventory.",
+  "inventory_root": "/Users/yhlee/KDM6AD-k/host",
+  "limits": "Same-day frames and repeated run variants do not establish independence; no second/third IC date was found. This conclusion is bounded to inspected existing inventory, not a claim about unavailable archives.",
+  "newly_completed_accepted_archive": {
+    "forecast_sha256": null,
+    "run_id": "mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148",
+    "stat": {
+      "mtime_ns": 1791595485694435349,
+      "size_bytes": 2543209268
+    },
+    "times": [
+      "2025-07-19_05:55:40",
+      "2025-07-19_05:56:00",
+      "2025-07-19_05:56:20",
+      "2025-07-19_05:56:40",
+      "2025-07-19_05:57:00",
+      "2025-07-19_05:57:20",
+      "2025-07-19_05:57:40",
+      "2025-07-19_05:58:00"
+    ],
+    "validity": {
+      "active_input_identity_complete": true,
+      "actual_proc_grid": "1x1",
+      "exit_code": 0,
+      "experiment_valid": true,
+      "invalid_reasons": [],
+      "model_completed": true,
+      "requested_proc_grid": null
+    }
+  },
+  "schema": "pr398_existing_native_5km_inventory_v1",
+  "scope": "Read-only inventory of already-retained local 5 km inputs/forecasts only. No model run, new files, acquisition, or state scan performed for this inventory.",
+  "suffix_counts": {
+    "202507190000": 83,
+    "202507190000.clobbered-pr1b-20260716": 1
+  },
+  "unique_forecast_suffixes": [
+    "202507190000",
+    "202507190000.clobbered-pr1b-20260716"
+  ]
+}

@@ -1,0 +1,346 @@
+{
+  "AMI_patch": {
+    "BT_and_DQF_semantics": "authoritative existing GK2A LA reader output; DQF preserved per sample, fill mask separately retained",
+    "center_BT_delta_from_existing_candidate_K": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "center_DQF_equals_existing_candidate": true,
+    "center_lat_lon_deg": [
+      35.41925069326254,
+      122.13724164654832
+    ],
+    "channel_names": [
+      "wv073",
+      "ir087",
+      "ir096",
+      "ir105",
+      "ir112",
+      "ir123",
+      "ir133"
+    ],
+    "channel_summary": [
+      {
+        "ami_channel": "wv073",
+        "ami_channel_id_1based": 10,
+        "bt_valid_max_K": 263.4283395618416,
+        "bt_valid_median_K": 263.27173234565174,
+        "bt_valid_min_K": 263.1932373444281,
+        "dqf_counts_raw": "{\"0\": 25}",
+        "fill_count": 0,
+        "invalid_calibrated_radiance_count": 0,
+        "pixel_count": 25,
+        "radiance_units": "mW m-2 sr-1 per cm-1; estimate from gain/offset applied to DN",
+        "radiance_valid_max": 17.525317788124084,
+        "radiance_valid_median": 17.447731614112854,
+        "radiance_valid_min": 17.40893852710724,
+        "reader_dqf_usable_count": 25,
+        "scatter_as_sigmaR": false
+      },
+      {
+        "ami_channel": "ir087",
+        "ami_channel_id_1based": 11,
+        "bt_valid_max_K": 291.2489516762392,
+        "bt_valid_median_K": 288.55207070015797,
+        "bt_valid_min_K": 286.3435525746143,
+        "dqf_counts_raw": "{\"0\": 25}",
+        "fill_count": 0,
+        "invalid_calibrated_radiance_count": 0,
+        "pixel_count": 25,
+        "radiance_units": "mW m-2 sr-1 per cm-1; estimate from gain/offset applied to DN",
+        "radiance_valid_max": 59.85315054748177,
+        "radiance_valid_median": 56.71084839478106,
+        "radiance_valid_min": 54.220175720751,
+        "reader_dqf_usable_count": 25,
+        "scatter_as_sigmaR": false
+      },
+      {
+        "ami_channel": "ir096",
+        "ami_channel_id_1based": 12,
+        "bt_valid_max_K": 265.1835110806034,
+        "bt_valid_median_K": 263.64118031341025,
+        "bt_valid_min_K": 262.1927649676645,
+        "dqf_counts_raw": "{\"0\": 25}",
+        "fill_count": 0,
+        "invalid_calibrated_radiance_count": 0,
+        "pixel_count": 25,
+        "radiance_units": "mW m-2 sr-1 per cm-1; estimate from gain/offset applied to DN",
+        "radiance_valid_max": 47.66439674608432,
+        "radiance_valid_median": 46.112008213997115,
+        "radiance_valid_min": 44.68452450633073,
+        "reader_dqf_usable_count": 25,
+        "scatter_as_sigmaR": false
+      },
+      {
+        "ami_channel": "ir105",
+        "ami_channel_id_1based": 13,
+        "bt_valid_max_K": 293.7084781065267,
+        "bt_valid_median_K": 291.2895039483703,
+        "bt_valid_min_K": 288.9324696870723,
+        "dqf_counts_raw": "{\"0\": 25}",
+        "fill_count": 0,
+        "invalid_calibrated_radiance_count": 0,
+        "pixel_count": 25,
+        "radiance_units": "mW m-2 sr-1 per cm-1; estimate from gain/offset applied to DN",
+        "radiance_valid_max": 95.38235618174053,
+        "radiance_valid_median": 91.67607312276937,
+        "radiance_valid_min": 88.14816732332088,
+        "reader_dqf_usable_count": 25,
+        "scatter_as_sigmaR": false
+      },
+      {
+        "ami_channel": "ir112",
+        "ami_channel_id_1based": 14,
+        "bt_valid_max_K": 292.96423872419206,
+        "bt_valid_median_K": 290.982874309017,
+        "bt_valid_min_K": 289.14667172822146,
+        "dqf_counts_raw": "{\"0\": 25}",
+        "fill_count": 0,
+        "invalid_calibrated_radiance_count": 0,
+        "pixel_count": 25,
+        "radiance_units": "mW m-2 sr-1 per cm-1; estimate from gain/offset applied to DN",
+        "radiance_valid_max": 107.1816892474889,
+        "radiance_valid_median": 103.99553982354695,
+        "radiance_valid_min": 101.09115871600801,
+        "reader_dqf_usable_count": 25,
+        "scatter_as_sigmaR": false
+      },
+      {
+        "ami_channel": "ir123",
+        "ami_channel_id_1based": 15,
+        "bt_valid_max_K": 289.98943594950543,
+        "bt_valid_median_K": 288.44827596005155,
+        "bt_valid_min_K": 287.31336539053996,
+        "dqf_counts_raw": "{\"0\": 25}",
+        "fill_count": 0,
+        "invalid_calibrated_radiance_count": 0,
+        "pixel_count": 25,
+        "radiance_units": "mW m-2 sr-1 per cm-1; estimate from gain/offset applied to DN",
+        "radiance_valid_max": 115.6934367977074,
+        "radiance_valid_median": 113.19177977181884,
+        "radiance_valid_min": 111.3681419398627,
+        "reader_dqf_usable_count": 25,
+        "scatter_as_sigmaR": false
+      },
+      {
+        "ami_channel": "ir133",
+        "ami_channel_id_1based": 16,
+        "bt_valid_max_K": 274.5616371216448,
+        "bt_valid_median_K": 273.9479151362614,
+        "bt_valid_min_K": 273.4314710950693,
+        "dqf_counts_raw": "{\"0\": 25}",
+        "fill_count": 0,
+        "invalid_calibrated_radiance_count": 0,
+        "pixel_count": 25,
+        "radiance_units": "mW m-2 sr-1 per cm-1; estimate from gain/offset applied to DN",
+        "radiance_valid_max": 100.15870713442581,
+        "radiance_valid_median": 99.2594681382181,
+        "radiance_valid_min": 98.50605168193596,
+        "reader_dqf_usable_count": 25,
+        "scatter_as_sigmaR": false
+      }
+    ],
+    "channels_1based": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "radiance_semantics": "derived per pixel from packed DN and the hash-bound gain/offset; no BT-to-radiance conversion and no patch averaging",
+    "radiance_units": "mW m-2 sr-1 per cm-1 according to existing reader equation",
+    "selection": "fixed 5x5 LA pixel-center grid rows318:323 cols46:51, zero based, including fixed center (320,48)",
+    "source_srf_status": "the bundled calibration-table note states the 2025 FD SRF version is unverified",
+    "spatial_variation_sigmaR": "not estimated; patch scatter is not a calibrated R or observation-error sigma"
+  },
+  "VIIRS_patch": {
+    "CloudPhaseFlag_nonzero_bytes_bit_decoded": false,
+    "CloudPhaseFlag_raw_byte_counts_not_bit_decoded": {
+      "0": 94,
+      "5": 9
+    },
+    "CloudPhase_raw_category_counts": {
+      "1": 103
+    },
+    "CloudPhase_raw_fill_or_out_of_range_count": 0,
+    "CloudType_raw_category_counts": {
+      "2": 103
+    },
+    "CloudType_raw_fill_or_out_of_range_count": 0,
+    "angle_summary_deg": {
+      "SatelliteAzimuthAngle": {
+        "finite_count": 103,
+        "max_deg": -90.84809875488281,
+        "median_deg": -91.38386535644531,
+        "min_deg": -91.86844635009766,
+        "nonfinite_count": 0
+      },
+      "SatelliteZenithAngle": {
+        "finite_count": 103,
+        "max_deg": 69.05345153808594,
+        "median_deg": 68.92668914794922,
+        "min_deg": 68.82923889160156,
+        "nonfinite_count": 0
+      },
+      "SolarAzimuthAngle": {
+        "finite_count": 103,
+        "max_deg": -111.36936950683594,
+        "median_deg": -111.49372863769531,
+        "min_deg": -111.60641479492188,
+        "nonfinite_count": 0
+      },
+      "SolarZenithAngle": {
+        "finite_count": 103,
+        "max_deg": 29.817733764648438,
+        "median_deg": 29.75627326965332,
+        "min_deg": 29.69944953918457,
+        "nonfinite_count": 0
+      }
+    },
+    "categorical_code_averaging": false,
+    "center_CTH_extended_to_patch": false,
+    "center_angle_delta_from_existing_geometry_result_deg": {
+      "SatelliteAzimuthAngle": 0.0,
+      "SatelliteZenithAngle": 0.0,
+      "SolarAzimuthAngle": 0.0,
+      "SolarZenithAngle": 0.0
+    },
+    "center_angles_deg": {
+      "SatelliteAzimuthAngle": -91.7182388305664,
+      "SatelliteZenithAngle": 68.92668914794922,
+      "SolarAzimuthAngle": -111.49372863769531,
+      "SolarZenithAngle": 29.753345489501953
+    },
+    "cloud_height_patch_status": "NOT_AVAILABLE_FULL_SOURCE_UNVERIFIED",
+    "fixed_candidate_in_selection": true,
+    "fixed_candidate_row_col_0based": [
+      205,
+      27
+    ],
+    "footprint_overlap_verified": false,
+    "sample_count": 103,
+    "selection": "existing CloudPhase and GMTCO center samples inside native 3x3-center union lat/lon bounds"
+  },
+  "common_predeclared_sha256": "1e70efc9548111ee05dc690c35c377a4cd0eb6f71d8130d013d1dec8535fe2f0",
+  "comparison_limits": {
+    "AMI_5x5_is_descriptive_patch_not_sensor_footprint": true,
+    "VIIRS_bounds_are_center_only_not_cell_edges_or_areas": true,
+    "height_datum_verified": false,
+    "parallax_applied": false,
+    "per_pixel_UTC_verified": false,
+    "physical_matchup_approved": false,
+    "science_admission": "NOT_ASSESSED"
+  },
+  "execution_limits": {
+    "M_H_RTTOV_or_optimizer_calls": 0,
+    "candidate_replacement": false,
+    "new_native_run": false,
+    "new_observation_acquisition": false
+  },
+  "native_bounds_center_union": {
+    "latitude_max": 35.46367645263672,
+    "latitude_min": 35.36763381958008,
+    "longitude_max": 122.20220947265625,
+    "longitude_min": 122.0843505859375
+  },
+  "native_bounds_contract": "descriptive center-bounds box; not exact model-cell union, satellite footprint, area weights or parallax correction",
+  "native_frames_and_times": [
+    {
+      "frame_index": 1,
+      "time": "2025-07-19_05:56:00"
+    },
+    {
+      "frame_index": 4,
+      "time": "2025-07-19_05:57:00"
+    },
+    {
+      "frame_index": 6,
+      "time": "2025-07-19_05:57:40"
+    }
+  ],
+  "native_geography_sha256": "11a21e3ce8efee751861c983dc7c447ec080bddf8c9431eec457622b351ebefe",
+  "native_patch_plan_sha256": "e5553065e046f0cff147d2642ede134a3474f9eb39a269cbafc9a42d46882c67",
+  "private_npz": {
+    "arrays": [
+      "ami_patch_bt_authoritative_K",
+      "ami_patch_bt_raw_decoder_check_K",
+      "ami_patch_channel_names",
+      "ami_patch_channels_1based",
+      "ami_patch_decoder_effective_dqf",
+      "ami_patch_dn_float64",
+      "ami_patch_fill_mask",
+      "ami_patch_invalid_radiance_mask",
+      "ami_patch_lat_lon_deg",
+      "ami_patch_radiance_from_dn",
+      "ami_patch_raw_dqf_int",
+      "ami_patch_raw_word_uint16",
+      "ami_patch_reader_dqf",
+      "ami_patch_row_col_0based",
+      "native_geo_frames",
+      "native_geo_latitude_3x3_deg",
+      "native_geo_longitude_3x3_deg",
+      "viirs_cloud_phase_flag_raw",
+      "viirs_cloud_phase_raw",
+      "viirs_cloud_type_raw",
+      "viirs_satellite_azimuth_deg",
+      "viirs_satellite_zenith_deg",
+      "viirs_selected_lat_lon_deg",
+      "viirs_selected_row_col_0based",
+      "viirs_solar_azimuth_deg",
+      "viirs_solar_zenith_deg"
+    ],
+    "directory_mode_octal": "0700",
+    "mode_octal": "0600",
+    "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_sensitivity_20261010/observation_patch_ami5x5_viirs_nativebbox.npz",
+    "sha256": "0b55e3e5f78b21a19476d1f6557a8fed23ff74a50eaab8322a4603a147003234"
+  },
+  "public_tables": {
+    "ami_5x5_path": "harness/evidence/pr398_spatial_representativeness_2026-10-10/AMI_PATCH_5x5.csv",
+    "ami_5x5_sha256": "417ae9e8655de66ae105683ed4ce255f97059d8403cc47ad026e19acc30bd629",
+    "ami_channel_summary_path": "harness/evidence/pr398_spatial_representativeness_2026-10-10/AMI_PATCH_CHANNEL_SUMMARY.csv",
+    "ami_channel_summary_sha256": "7875690d89673b2840b10a7742ee7bc30e57724e1a1b555e5398aa0dd8bcd2ce",
+    "viirs_category_counts_path": "harness/evidence/pr398_spatial_representativeness_2026-10-10/VIIRS_PATCH_CATEGORY_COUNTS.csv",
+    "viirs_category_counts_sha256": "205944f2236aea5e3b6a6e6a6d7c1774471da0094fe8ed7df1999c8c7970e3ee"
+  },
+  "schema": "pr398_observation_patch_result_v1",
+  "source_sha256_after_read": {
+    "AMI": {
+      "gk2a_ami_le1b_ir087_la020ge_202507190556.nc": "d98e0b5cd785c75f160982eacf57fb749674f4f0c471f27e1377dfa2767f2b50",
+      "gk2a_ami_le1b_ir096_la020ge_202507190556.nc": "40f5cbcdd1bf15485cf3ddc116f4a3d7699701f230810d49f04942d6d5ee102a",
+      "gk2a_ami_le1b_ir105_la020ge_202507190556.nc": "824ee57213da084e8f3f129fd2767cee1f68e0bb10ef101d7419b7c4ec3ea889",
+      "gk2a_ami_le1b_ir112_la020ge_202507190556.nc": "8370508b1c70364085311772bd9b092876be7a7b6accf8ed71112172550f647d",
+      "gk2a_ami_le1b_ir123_la020ge_202507190556.nc": "19d1a4a9c60bee40cd6c7efe8a760189d72aa3f8f488b168cb8e35fc3963542f",
+      "gk2a_ami_le1b_ir133_la020ge_202507190556.nc": "6440ea866f17f9336abed1d0f52329a2ec29d3ad89908a26320535473019835d",
+      "gk2a_ami_le1b_wv063_la020ge_202507190556.nc": "83b97370fac7df350db462a2024e53255a01b7bc7c69e7d45ea0168f348d8754",
+      "gk2a_ami_le1b_wv069_la020ge_202507190556.nc": "0c7fea702b255db8c9273d494d2e4b9c5ec86dca442e6059ebf9d91a9a8968e6",
+      "gk2a_ami_le1b_wv073_la020ge_202507190556.nc": "470eab1587fa70e56dfb3745dd402f5619aba4bc6d11b0844fa6987602c3c7f0"
+    },
+    "CloudPhase": "7fef6df795254f628c79e92c25816fed720e855bba46a9ba74adb92abac0cfe2",
+    "GMTCO": "2a194c417533a1087543cc7a91b1de2a5a6d8d71d1d71e2bfeb1571cc9f8dd0c",
+    "ami_candidate_result": "7cbe37a71ef3289fd120ac5b7f0b7c05ec37e85e6c85935b1b52963b1e9d7b4f",
+    "ami_slot_receipt": "8728b0dccc35c0bbb0f646524ca1745040b23265aca689347bc706d28eb4f53e",
+    "calibration": "a6f830aa04e19f6982aa6ff36e832464a5b32fdcf8200211956969d5eb48325d",
+    "common_predeclared": "1e70efc9548111ee05dc690c35c377a4cd0eb6f71d8130d013d1dec8535fe2f0",
+    "geometry_result": "d27c828ad1823a21a580fc1331a92d22caf15414f9f2a0fb9f9c63a4906f86be",
+    "native_geometry": "11a21e3ce8efee751861c983dc7c447ec080bddf8c9431eec457622b351ebefe",
+    "native_patch_plan": "e5553065e046f0cff147d2642ede134a3474f9eb39a269cbafc9a42d46882c67",
+    "observation_receipt": "6af23b226ade39402f68df24268227b5d30cee5107cabd32992c82d0d329ad92",
+    "reader_sources": {
+      "ami_candidate_reader": "d4eb8db5d39d28997c13f8bc8c5a316cc282df2d71da7470a8482e6b28442221",
+      "gk2a_l1b": "c16195e581e847053c1f7e63c6cd93deaaba0e51d84a1f7eea092c95c180f4b8",
+      "gk2a_l1b_fd": "0c2c87a316680ba359f13336d3e7c87ca9c0bd9eab726f1b7cde469a87b1387e",
+      "gk2a_l1b_la": "67c4d2abd1c16f55d6909edeef1549b0ce2e8e449b9b3f64e7185b4d34b083db",
+      "obs_ingest": "224ff9d1f9e5c8557238db8e3f8a31650ca0faeb720e40394bd8c1d1666ced0d",
+      "observation_patch": "8994402e328d7f60fb573a19ff9e66fd91f42d01cdff930c252fc7285aae9903",
+      "viirs_geometry_reader": "51355eb6835963c2f564d18dc28ac3e40f5fa54ece0118f1c75d366095b4362c"
+    }
+  },
+  "status": "AUDITED_DESCRIPTIVE_PATCH_NO_MATCHUP_CLAIM"
+}

@@ -68,6 +68,7 @@ date_modified: 2026-10-08
 - [[host-run-dir-confusion-2026-07-14]] - host/ 3개 케이스(5km 실사례·100km ideal·1km) 혼동 사고와 재발방지 규칙.
 
 ## Sources (recent)
+- [[sources/pr398-spatial-representativeness-2026-10-10]] — Fixed native/AMI/VIIRS surrounding samples, unresolved packed QA metadata and missing independent native dates; phase consistency differs from radiance homogeneity.
 - [[sources/pr398-local-balance-and-sensitivity-2026-10-10]] — Stored control balance, a separately identified iteration-budget analysis and predeclared direct-H time/view-angle sensitivity; user-reviewed PR397 management basis56/75, with matchup/held-out limits open.
 - [[sources/pr391-saturation-control-resolution-2026-10-09]] — Subsat clear state, active T/Q controls, finite cloud creation, local timestep/budget scope and a seven-channel H∘M derivative witness; R2/full physical admission remain open.
 - [[sources/pr390-completeness-audit-2026-10-09]] — Team audit confirms bounded diagnostics; first valid independent case, physical budgets and further native numerical/spatial coverage remain open.

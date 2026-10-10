@@ -1,0 +1,18 @@
+{
+  "H_calls": 0,
+  "M_calls": 0,
+  "attempt_id": "native_patch_v1_plan_2026-10-10",
+  "attempted_command": "native_patch.py --extract-once",
+  "cause": "The gate compared the full eight actual_saved_times against the three selected common-plan times. Correct rule: verify all eight actual times equal the intake expected times, then compare actual_saved_times[1,4,6] against the three selected plan times.",
+  "driver_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr398_spatial_representativeness_2026-10-10/native_patch.py",
+  "driver_sha256": "de2c35eabc12a42b885d3482c6626829fabf1b82c091458c197cd50d91abca1c",
+  "failure": "ValueError: native intake run/time gate differs from common predeclaration",
+  "forecast_dataset_opened": false,
+  "native_or_model_run": false,
+  "plan_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr398_spatial_representativeness_2026-10-10/NATIVE_PATCH.json",
+  "plan_sha256": "93beec8933422de8b3ce21f26bd8380ad3c4f127b0b8c56604c4070e127e973d",
+  "retry_authorization": "fresh V2 plan/output ID only; original V1 source and plan preserved",
+  "schema": "pr398_native_patch_setup_failure_v1",
+  "selected_state_hyperslabs_read": false,
+  "status": "SETUP_GATE_FAILURE_BEFORE_FORECAST_OPEN"
+}

@@ -1,0 +1,10 @@
+field,raw_value_or_category,count,interpretation
+CloudPhase,1,103,categorical count only; code values are never averaged
+CloudType,2,103,categorical count only; code values are never averaged
+CloudPhaseFlag_raw,0,94,categorical count only; code values are never averaged
+CloudPhaseFlag_raw,5,9,categorical count only; code values are never averaged
+CloudPhase,valid_range_0_5_count,103,raw values in declared range
+CloudPhase,fill_or_out_of_range_count,0,fill/out-of-range raw categories
+CloudType,valid_range_0_8_count,103,raw values in declared range
+CloudType,fill_or_out_of_range_count,0,fill/out-of-range raw categories
+CloudPhaseFlag_raw,fill_byte_count,0,raw fill bytes only; nonzero bytes not bit-decoded

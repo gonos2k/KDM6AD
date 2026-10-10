@@ -1,0 +1,11 @@
+{
+  "schema": "pr398.viirs_saved_array_table.v1",
+  "source_npz_sha256": "0b55e3e5f78b21a19476d1f6557a8fed23ff74a50eaab8322a4603a147003234",
+  "original_result_sha256": "4efd2fffece5de6303bdeda5623c8929d53c97f14760940748d2483bd6b783f0",
+  "table_path": "harness/evidence/pr398_spatial_representativeness_2026-10-10/VIIRS_PATCH_SAMPLES.csv",
+  "table_sha256": "7a34d6ca7c3e584affe93db31582ca5b7854b975fd096455fbbf019112184e20",
+  "sample_count": 103,
+  "out_of_declared_range_count": 9,
+  "method": "Direct columns from saved arrays; nominal geolocation; no bit decoding, weighting, physical footprint or new extraction. Original artifacts unchanged.",
+  "M_H_calls": 0
+}

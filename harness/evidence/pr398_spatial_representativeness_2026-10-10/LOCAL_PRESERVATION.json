@@ -1,0 +1,156 @@
+{
+  "schema": "pr398_spatial_canonical_preservation.v1",
+  "canonical_root": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_spatial_20261010",
+  "directory_mode": "0700",
+  "file_modes": "0600",
+  "files": [
+    {
+      "source_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_sensitivity_20261010/native_patch_3x3_frames_1_4_6_v3.npz",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_spatial_20261010/native_patch_3x3_frames_1_4_6_v3.npz",
+      "sha256": "947c72c12ebe289b7ddc84fba1281635d77ffbcfe23f204345cc97abeebc1c21",
+      "size_bytes": 113476
+    },
+    {
+      "source_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_sensitivity_20261010/observation_patch_ami5x5_viirs_nativebbox.npz",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_spatial_20261010/observation_patch_ami5x5_viirs_nativebbox.npz",
+      "sha256": "0b55e3e5f78b21a19476d1f6557a8fed23ff74a50eaab8322a4603a147003234",
+      "size_bytes": 12742
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr398_spatial_representativeness_2026-10-10/native_patch_v3.py",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_spatial_20261010/native_patch_v3.py",
+      "sha256": "6921bfb0a05d6d9619f242beca5a702e81a3546f54252c6b33501b5763abf2ff",
+      "size_bytes": 41249
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr398_spatial_representativeness_2026-10-10/observation_patch.py",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_spatial_20261010/observation_patch.py",
+      "sha256": "8994402e328d7f60fb573a19ff9e66fd91f42d01cdff930c252fc7285aae9903",
+      "size_bytes": 43162
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr398_spatial_representativeness_2026-10-10/NATIVE_PATCH_RESULT_v3.json",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_spatial_20261010/NATIVE_PATCH_RESULT_v3.json",
+      "sha256": "3417158f5e47fe836f24b49309bfe3df36b81d34ecb4d4a1266ba38706dd7efb",
+      "size_bytes": 97576
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr398_spatial_representativeness_2026-10-10/NATIVE_PATCH_ATTEMPT1_SETUP_FAILURE.json",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_spatial_20261010/NATIVE_PATCH_ATTEMPT1_SETUP_FAILURE.json",
+      "sha256": "d689bc16562d0e64005185ab8920ffd84f925bd3ba7e3072bbea978a8671696c",
+      "size_bytes": 1290
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr398_spatial_representativeness_2026-10-10/PATCH_PREFLIGHT.json",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_spatial_20261010/PATCH_PREFLIGHT.json",
+      "sha256": "cf40baa6bff34a7750944bca7e125eb492c2008af21f9d1a9becc871fb1f3c7b",
+      "size_bytes": 10997
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr398_spatial_representativeness_2026-10-10/NATIVE_PATCH_GEOGRAPHY.json",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_spatial_20261010/NATIVE_PATCH_GEOGRAPHY.json",
+      "sha256": "11a21e3ce8efee751861c983dc7c447ec080bddf8c9431eec457622b351ebefe",
+      "size_bytes": 8129
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr398_spatial_representativeness_2026-10-10/OBSERVATION_PATCH_QA_AUDIT.json",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_spatial_20261010/OBSERVATION_PATCH_QA_AUDIT.json",
+      "sha256": "40d252931492105f4b4727cef761eef140ba59c8f80d0a5501cfacd9da9bc0c3",
+      "size_bytes": 1573
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr398_spatial_representativeness_2026-10-10/PATCH_PREFLIGHT_v2.json",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_spatial_20261010/PATCH_PREFLIGHT_v2.json",
+      "sha256": "6b87ca1c0309c9f0a5c9dde15b78e2c0c5ad7af084236e0a450ccb637249d21f",
+      "size_bytes": 10997
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr398_spatial_representativeness_2026-10-10/NATIVE_PATCH_v2.json",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_spatial_20261010/NATIVE_PATCH_v2.json",
+      "sha256": "e5553065e046f0cff147d2642ede134a3474f9eb39a269cbafc9a42d46882c67",
+      "size_bytes": 11424
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr398_spatial_representativeness_2026-10-10/PREDECLARED.json",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_spatial_20261010/PREDECLARED.json",
+      "sha256": "1e70efc9548111ee05dc690c35c377a4cd0eb6f71d8130d013d1dec8535fe2f0",
+      "size_bytes": 2432
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr398_spatial_representativeness_2026-10-10/NATIVE_PATCH_v3.json",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_spatial_20261010/NATIVE_PATCH_v3.json",
+      "sha256": "4867f925372325a477a5c3ee5141053f07e932235551ed0a1d5a9af8f4308364",
+      "size_bytes": 11424
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr398_spatial_representativeness_2026-10-10/PATCH_PREFLIGHT_v3.json",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_spatial_20261010/PATCH_PREFLIGHT_v3.json",
+      "sha256": "039391db46893964c8d92bae56f36bc986002df5307dba154a855e233d2cbf93",
+      "size_bytes": 11150
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr398_spatial_representativeness_2026-10-10/NATIVE_PATCH.json",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_spatial_20261010/NATIVE_PATCH.json",
+      "sha256": "93beec8933422de8b3ce21f26bd8380ad3c4f127b0b8c56604c4070e127e973d",
+      "size_bytes": 11406
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr398_spatial_representativeness_2026-10-10/OBSERVATION_PATCH.json",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_spatial_20261010/OBSERVATION_PATCH.json",
+      "sha256": "4efd2fffece5de6303bdeda5623c8929d53c97f14760940748d2483bd6b783f0",
+      "size_bytes": 14338
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr398_spatial_representativeness_2026-10-10/NATIVE_5KM_AVAILABILITY_v3.json",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_spatial_20261010/NATIVE_5KM_AVAILABILITY_v3.json",
+      "sha256": "fd97d9e865e6f76f1bd3b04f22b758f88b8ce25f5b28df1ef317e1bd4a39f901",
+      "size_bytes": 3931
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/thermo.py",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_spatial_20261010/thermo.py",
+      "sha256": "5278c14c6d87178af5ee963eef59d3297b923fa374412fd854c01e43ffb1b5cd",
+      "size_bytes": 9973
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/constants.py",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_spatial_20261010/constants.py",
+      "sha256": "aa489872c2b00d1160e158b9390ebe7bdcbbe4b31a468673cf22615f137f1b62",
+      "size_bytes": 6267
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/obs/gk2a_l1b.py",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_spatial_20261010/gk2a_l1b.py",
+      "sha256": "c16195e581e847053c1f7e63c6cd93deaaba0e51d84a1f7eea092c95c180f4b8",
+      "size_bytes": 15571
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/obs/gk2a_l1b_la.py",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_spatial_20261010/gk2a_l1b_la.py",
+      "sha256": "67c4d2abd1c16f55d6909edeef1549b0ce2e8e449b9b3f64e7185b4d34b083db",
+      "size_bytes": 23027
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/obs/gk2a_l1b_fd.py",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_spatial_20261010/gk2a_l1b_fd.py",
+      "sha256": "0c2c87a316680ba359f13336d3e7c87ca9c0bd9eab726f1b7cde469a87b1387e",
+      "size_bytes": 10079
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/obs/data/gk2a_ami_cal_202507190000.json",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_spatial_20261010/gk2a_ami_cal_202507190000.json",
+      "sha256": "a6f830aa04e19f6982aa6ff36e832464a5b32fdcf8200211956969d5eb48325d",
+      "size_bytes": 5827
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/native358_artifact_diag_2026-10-08/recipe/run_native_kma_bt_frames.py",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_spatial_20261010/run_native_kma_bt_frames.py",
+      "sha256": "408bab9756c6ac1a6e8438b8469c87f41fa239ce75414cd8087d10b6a31d54c1",
+      "size_bytes": 59299
+    }
+  ],
+  "exact_native_execution_source_sha256": "6921bfb0a05d6d9619f242beca5a702e81a3546f54252c6b33501b5763abf2ff",
+  "exact_observation_execution_source_sha256": "8994402e328d7f60fb573a19ff9e66fd91f42d01cdff930c252fc7285aae9903",
+  "M_H_calls": 0,
+  "no_original_changed": true
+}

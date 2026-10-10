@@ -1,0 +1,309 @@
+{
+  "common_predeclared_sha256": "1e70efc9548111ee05dc690c35c377a4cd0eb6f71d8130d013d1dec8535fe2f0",
+  "forecast_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/runs/mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148/klfs_lc05_fcst.202507190000",
+  "forecast_sha256": null,
+  "forecast_stat_after": {
+    "mtime_ns": 1791595485694435349,
+    "size_bytes": 2543209268
+  },
+  "forecast_stat_before": {
+    "mtime_ns": 1791595485694435349,
+    "size_bytes": 2543209268
+  },
+  "forecast_stat_stable": true,
+  "frames": [
+    {
+      "axis_aligned_bounds_corners_lat_lon_deg": {
+        "northeast": [
+          35.46367645263672,
+          122.20220947265625
+        ],
+        "northwest": [
+          35.46367645263672,
+          122.0843505859375
+        ],
+        "southeast": [
+          35.36763381958008,
+          122.20220947265625
+        ],
+        "southwest": [
+          35.36763381958008,
+          122.0843505859375
+        ]
+      },
+      "center_bounds_only": {
+        "latitude_max": 35.46367645263672,
+        "latitude_min": 35.36763381958008,
+        "longitude_max": 122.20220947265625,
+        "longitude_min": 122.0843505859375
+      },
+      "coordinates_dtype_source": {
+        "XLAT": "float32",
+        "XLONG": "float32"
+      },
+      "frame_index": 1,
+      "latitude_deg_centers": [
+        [
+          35.36763381958008,
+          35.369850158691406,
+          35.372039794921875
+        ],
+        [
+          35.4134407043457,
+          35.4156608581543,
+          35.4178581237793
+        ],
+        [
+          35.45924758911133,
+          35.46147918701172,
+          35.46367645263672
+        ]
+      ],
+      "longitude_deg_centers": [
+        [
+          122.08984375,
+          122.14602661132812,
+          122.20220947265625
+        ],
+        [
+          122.08709716796875,
+          122.143310546875,
+          122.19952392578125
+        ],
+        [
+          122.0843505859375,
+          122.14059448242188,
+          122.19686889648438
+        ]
+      ],
+      "native_center_j_i_zero_based": [
+        86,
+        48
+      ],
+      "native_patch_i_indices": [
+        47,
+        48,
+        49
+      ],
+      "native_patch_j_indices": [
+        85,
+        86,
+        87
+      ],
+      "time_label": "2025-07-19_05:56:00"
+    },
+    {
+      "axis_aligned_bounds_corners_lat_lon_deg": {
+        "northeast": [
+          35.46367645263672,
+          122.20220947265625
+        ],
+        "northwest": [
+          35.46367645263672,
+          122.0843505859375
+        ],
+        "southeast": [
+          35.36763381958008,
+          122.20220947265625
+        ],
+        "southwest": [
+          35.36763381958008,
+          122.0843505859375
+        ]
+      },
+      "center_bounds_only": {
+        "latitude_max": 35.46367645263672,
+        "latitude_min": 35.36763381958008,
+        "longitude_max": 122.20220947265625,
+        "longitude_min": 122.0843505859375
+      },
+      "coordinates_dtype_source": {
+        "XLAT": "float32",
+        "XLONG": "float32"
+      },
+      "frame_index": 4,
+      "latitude_deg_centers": [
+        [
+          35.36763381958008,
+          35.369850158691406,
+          35.372039794921875
+        ],
+        [
+          35.4134407043457,
+          35.4156608581543,
+          35.4178581237793
+        ],
+        [
+          35.45924758911133,
+          35.46147918701172,
+          35.46367645263672
+        ]
+      ],
+      "longitude_deg_centers": [
+        [
+          122.08984375,
+          122.14602661132812,
+          122.20220947265625
+        ],
+        [
+          122.08709716796875,
+          122.143310546875,
+          122.19952392578125
+        ],
+        [
+          122.0843505859375,
+          122.14059448242188,
+          122.19686889648438
+        ]
+      ],
+      "native_center_j_i_zero_based": [
+        86,
+        48
+      ],
+      "native_patch_i_indices": [
+        47,
+        48,
+        49
+      ],
+      "native_patch_j_indices": [
+        85,
+        86,
+        87
+      ],
+      "time_label": "2025-07-19_05:57:00"
+    },
+    {
+      "axis_aligned_bounds_corners_lat_lon_deg": {
+        "northeast": [
+          35.46367645263672,
+          122.20220947265625
+        ],
+        "northwest": [
+          35.46367645263672,
+          122.0843505859375
+        ],
+        "southeast": [
+          35.36763381958008,
+          122.20220947265625
+        ],
+        "southwest": [
+          35.36763381958008,
+          122.0843505859375
+        ]
+      },
+      "center_bounds_only": {
+        "latitude_max": 35.46367645263672,
+        "latitude_min": 35.36763381958008,
+        "longitude_max": 122.20220947265625,
+        "longitude_min": 122.0843505859375
+      },
+      "coordinates_dtype_source": {
+        "XLAT": "float32",
+        "XLONG": "float32"
+      },
+      "frame_index": 6,
+      "latitude_deg_centers": [
+        [
+          35.36763381958008,
+          35.369850158691406,
+          35.372039794921875
+        ],
+        [
+          35.4134407043457,
+          35.4156608581543,
+          35.4178581237793
+        ],
+        [
+          35.45924758911133,
+          35.46147918701172,
+          35.46367645263672
+        ]
+      ],
+      "longitude_deg_centers": [
+        [
+          122.08984375,
+          122.14602661132812,
+          122.20220947265625
+        ],
+        [
+          122.08709716796875,
+          122.143310546875,
+          122.19952392578125
+        ],
+        [
+          122.0843505859375,
+          122.14059448242188,
+          122.19686889648438
+        ]
+      ],
+      "native_center_j_i_zero_based": [
+        86,
+        48
+      ],
+      "native_patch_i_indices": [
+        47,
+        48,
+        49
+      ],
+      "native_patch_j_indices": [
+        85,
+        86,
+        87
+      ],
+      "time_label": "2025-07-19_05:57:40"
+    }
+  ],
+  "intake_manifest_sha256": "375a89e7ea2194171a77d6f089ef46de79ae71f97306512afd98a4891647cfbe",
+  "netcdf_reads": [
+    "Times[index]",
+    "XLAT[index,85:88,47:50]",
+    "XLONG[index,85:88,47:50]"
+  ],
+  "no_M_H_or_optimization": true,
+  "region_filter_contract": "VIIRS center in axis-aligned bounding box of native 3x3 XLAT/XLONG centers; descriptive only, not an exact nine-cell union, physical footprint or parallax claim",
+  "schema": "pr398_native_patch_geography_v1",
+  "scope": "read only exact Times rows and XLAT/XLONG 3x3 hyperslabs; no native State/Forcing/thermodynamic/cloud diagnostics or VIIRS sample values",
+  "status": "GEOMETRY_ONLY_SELECTED_COORDINATES",
+  "union_bounds_axis_aligned_corners_lat_lon_deg": {
+    "northeast": [
+      35.46367645263672,
+      122.20220947265625
+    ],
+    "northwest": [
+      35.46367645263672,
+      122.0843505859375
+    ],
+    "southeast": [
+      35.36763381958008,
+      122.20220947265625
+    ],
+    "southwest": [
+      35.36763381958008,
+      122.0843505859375
+    ]
+  },
+  "union_bounds_of_native_3x3_centers_only": {
+    "latitude_max": 35.46367645263672,
+    "latitude_min": 35.36763381958008,
+    "longitude_max": 122.20220947265625,
+    "longitude_min": 122.0843505859375
+  },
+  "viirs_source": {
+    "center_in_native_3x3_center_bounds": true,
+    "cloudphase_source_path": "/private/tmp/KDM6AD-time-contract-20261007/raw/JRR-CloudPhase_v3r2_j01_s202507190555475_e202507190557102_c202507190621171.nc",
+    "cloudphase_source_sha256": "7fef6df795254f628c79e92c25816fed720e855bba46a9ba74adb92abac0cfe2",
+    "file": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/VIIRS_geometry_result_2026-10-07.json",
+    "gmtco_geo_sha256": "2a194c417533a1087543cc7a91b1de2a5a6d8d71d1d71e2bfeb1571cc9f8dd0c",
+    "lat_lon_deg": [
+      35.4156379699707,
+      122.14338684082031
+    ],
+    "product_source_path": "/private/tmp/KDM6AD-viirs-context-20261007/raw/GMTCO_j01_d20250719_t0555475_e0557102_b39724_c20250719061432885000_oeac_ops.h5",
+    "product_source_sha256": "2a194c417533a1087543cc7a91b1de2a5a6d8d71d1d71e2bfeb1571cc9f8dd0c",
+    "row_col_zero_based": [
+      205,
+      27
+    ],
+    "sha256": "d27c828ad1823a21a580fc1331a92d22caf15414f9f2a0fb9f9c63a4906f86be"
+  }
+}

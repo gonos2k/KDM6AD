@@ -1,0 +1,260 @@
+{
+  "AMI_patch": {
+    "channels_1based": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "channels_names": [
+      "wv073",
+      "ir087",
+      "ir096",
+      "ir105",
+      "ir112",
+      "ir123",
+      "ir133"
+    ],
+    "cols": [
+      46,
+      47,
+      48,
+      49,
+      50
+    ],
+    "files_sha256": {
+      "gk2a_ami_le1b_ir087_la020ge_202507190556.nc": "d98e0b5cd785c75f160982eacf57fb749674f4f0c471f27e1377dfa2767f2b50",
+      "gk2a_ami_le1b_ir096_la020ge_202507190556.nc": "40f5cbcdd1bf15485cf3ddc116f4a3d7699701f230810d49f04942d6d5ee102a",
+      "gk2a_ami_le1b_ir105_la020ge_202507190556.nc": "824ee57213da084e8f3f129fd2767cee1f68e0bb10ef101d7419b7c4ec3ea889",
+      "gk2a_ami_le1b_ir112_la020ge_202507190556.nc": "8370508b1c70364085311772bd9b092876be7a7b6accf8ed71112172550f647d",
+      "gk2a_ami_le1b_ir123_la020ge_202507190556.nc": "19d1a4a9c60bee40cd6c7efe8a760189d72aa3f8f488b168cb8e35fc3963542f",
+      "gk2a_ami_le1b_ir133_la020ge_202507190556.nc": "6440ea866f17f9336abed1d0f52329a2ec29d3ad89908a26320535473019835d",
+      "gk2a_ami_le1b_wv063_la020ge_202507190556.nc": "83b97370fac7df350db462a2024e53255a01b7bc7c69e7d45ea0168f348d8754",
+      "gk2a_ami_le1b_wv069_la020ge_202507190556.nc": "0c7fea702b255db8c9273d494d2e4b9c5ec86dca442e6059ebf9d91a9a8968e6",
+      "gk2a_ami_le1b_wv073_la020ge_202507190556.nc": "470eab1587fa70e56dfb3745dd402f5619aba4bc6d11b0844fa6987602c3c7f0"
+    },
+    "fixed_row_col_center_zero_based": [
+      320,
+      48
+    ],
+    "header_contract": {
+      "gk2a_ami_le1b_ir087_la020ge_202507190556.nc": {
+        "add_offset": null,
+        "channel_name": "IR087",
+        "dqf_bits": 2,
+        "dqf_meaning": "0:good_pixel, 1:conditionally_usable_pixel, 2:out_of_scan_area_pixel, 3:error_pixel",
+        "dtype": "uint16",
+        "file_calibration_table_version": "v.3.0_20190415",
+        "fill_value": null,
+        "missing_value": null,
+        "scale_factor": null,
+        "shape": [
+          500,
+          500
+        ],
+        "valid_bits": 13
+      },
+      "gk2a_ami_le1b_ir096_la020ge_202507190556.nc": {
+        "add_offset": null,
+        "channel_name": "IR096",
+        "dqf_bits": 2,
+        "dqf_meaning": "0:good_pixel, 1:conditionally_usable_pixel, 2:out_of_scan_area_pixel, 3:error_pixel",
+        "dtype": "uint16",
+        "file_calibration_table_version": "v.3.0_20190415",
+        "fill_value": null,
+        "missing_value": null,
+        "scale_factor": null,
+        "shape": [
+          500,
+          500
+        ],
+        "valid_bits": 13
+      },
+      "gk2a_ami_le1b_ir105_la020ge_202507190556.nc": {
+        "add_offset": null,
+        "channel_name": "IR105",
+        "dqf_bits": 2,
+        "dqf_meaning": "0:good_pixel, 1:conditionally_usable_pixel, 2:out_of_scan_area_pixel, 3:error_pixel",
+        "dtype": "uint16",
+        "file_calibration_table_version": "v.3.0_20190415",
+        "fill_value": null,
+        "missing_value": null,
+        "scale_factor": null,
+        "shape": [
+          500,
+          500
+        ],
+        "valid_bits": 13
+      },
+      "gk2a_ami_le1b_ir112_la020ge_202507190556.nc": {
+        "add_offset": null,
+        "channel_name": "IR112",
+        "dqf_bits": 2,
+        "dqf_meaning": "0:good_pixel, 1:conditionally_usable_pixel, 2:out_of_scan_area_pixel, 3:error_pixel",
+        "dtype": "uint16",
+        "file_calibration_table_version": "v.3.0_20190415",
+        "fill_value": null,
+        "missing_value": null,
+        "scale_factor": null,
+        "shape": [
+          500,
+          500
+        ],
+        "valid_bits": 13
+      },
+      "gk2a_ami_le1b_ir123_la020ge_202507190556.nc": {
+        "add_offset": null,
+        "channel_name": "IR123",
+        "dqf_bits": 2,
+        "dqf_meaning": "0:good_pixel, 1:conditionally_usable_pixel, 2:out_of_scan_area_pixel, 3:error_pixel",
+        "dtype": "uint16",
+        "file_calibration_table_version": "v.3.0_20190415",
+        "fill_value": null,
+        "missing_value": null,
+        "scale_factor": null,
+        "shape": [
+          500,
+          500
+        ],
+        "valid_bits": 13
+      },
+      "gk2a_ami_le1b_ir133_la020ge_202507190556.nc": {
+        "add_offset": null,
+        "channel_name": "IR133",
+        "dqf_bits": 2,
+        "dqf_meaning": "0:good_pixel, 1:conditionally_usable_pixel, 2:out_of_scan_area_pixel, 3:error_pixel",
+        "dtype": "uint16",
+        "file_calibration_table_version": "v.3.0_20190415",
+        "fill_value": null,
+        "missing_value": null,
+        "scale_factor": null,
+        "shape": [
+          500,
+          500
+        ],
+        "valid_bits": 13
+      },
+      "gk2a_ami_le1b_wv063_la020ge_202507190556.nc": {
+        "add_offset": null,
+        "channel_name": "WV063",
+        "dqf_bits": 2,
+        "dqf_meaning": "0:good_pixel, 1:conditionally_usable_pixel, 2:out_of_scan_area_pixel, 3:error_pixel",
+        "dtype": "uint16",
+        "file_calibration_table_version": "v.3.0_20190415",
+        "fill_value": null,
+        "missing_value": null,
+        "scale_factor": null,
+        "shape": [
+          500,
+          500
+        ],
+        "valid_bits": 12
+      },
+      "gk2a_ami_le1b_wv069_la020ge_202507190556.nc": {
+        "add_offset": null,
+        "channel_name": "WV069",
+        "dqf_bits": 2,
+        "dqf_meaning": "0:good_pixel, 1:conditionally_usable_pixel, 2:out_of_scan_area_pixel, 3:error_pixel",
+        "dtype": "uint16",
+        "file_calibration_table_version": "v.3.0_20190415",
+        "fill_value": null,
+        "missing_value": null,
+        "scale_factor": null,
+        "shape": [
+          500,
+          500
+        ],
+        "valid_bits": 13
+      },
+      "gk2a_ami_le1b_wv073_la020ge_202507190556.nc": {
+        "add_offset": null,
+        "channel_name": "WV073",
+        "dqf_bits": 2,
+        "dqf_meaning": "0:good_pixel, 1:conditionally_usable_pixel, 2:out_of_scan_area_pixel, 3:error_pixel",
+        "dtype": "uint16",
+        "file_calibration_table_version": "v.3.0_20190415",
+        "fill_value": null,
+        "missing_value": null,
+        "scale_factor": null,
+        "shape": [
+          500,
+          500
+        ],
+        "valid_bits": 13
+      }
+    },
+    "rows": [
+      318,
+      319,
+      320,
+      321,
+      322
+    ]
+  },
+  "VIIRS_sources": {
+    "cloudheight_patch": "unavailable; full source object was not downloaded/hash-verified; center value will not be extended",
+    "cloudphase_path": "/private/tmp/KDM6AD-time-contract-20261007/raw/JRR-CloudPhase_v3r2_j01_s202507190555475_e202507190557102_c202507190621171.nc",
+    "cloudphase_sha256": "7fef6df795254f628c79e92c25816fed720e855bba46a9ba74adb92abac0cfe2",
+    "geometry_result_sha256": "d27c828ad1823a21a580fc1331a92d22caf15414f9f2a0fb9f9c63a4906f86be",
+    "gmtco_path": "/private/tmp/KDM6AD-viirs-context-20261007/raw/GMTCO_j01_d20250719_t0555475_e0557102_b39724_c20250719061432885000_oeac_ops.h5",
+    "gmtco_sha256": "2a194c417533a1087543cc7a91b1de2a5a6d8d71d1d71e2bfeb1571cc9f8dd0c"
+  },
+  "calibration": {
+    "2025_FD_SRF_version_verified": false,
+    "meta": {
+      "audited_pairing_reference": {
+        "2025_fd_source_calibration_version_verified": false,
+        "2025_fd_srf_version_verified": false,
+        "coefficient_cells": "D13:D22 (DN gain), F13:F22 (DN offset), I13:K22 (Teff-to-Tbb c0:c2)",
+        "coefficients_match_reference": true,
+        "note": "This identifies the audited reference used to add center wavenumbers and compare coefficients. It does not assert that the deleted 2025 FD files used this calibration-table or SRF version.",
+        "physical_constants_cells": "S18:S20 (light speed, Planck constant, Boltzmann constant)",
+        "scope_note": "The workbook pairing supports these calibration constants and center wavenumbers. The retained 2025 FD source files were deleted after extraction; this does not certify their SRF or calibration-table version.",
+        "sheet": "coeff.& equation_WN",
+        "source_url": "https://nmsc.kma.go.kr/homepage/json/base/bbs/selectAtchFile.do?attachFileUsq=40092&refTbUsq=200057",
+        "version": "KMA GK-2A AMI Calibration Table v3.0 (20190415)",
+        "wavenumber_cells": "C13:C22, ordered by channel labels B13:B22",
+        "workbook_sha256": "eb15fa4032322e22a44a0a233451978568a46d5f0eabf783cb9c7212327aa822"
+      },
+      "extracted": "2026-07-06",
+      "note": "KO(ko020lc) \uc7ac\uaca9\uc790 \uc0b0\ucd9c\ubb3c\uc5d0\ub294 \uac80\uc815 \uc18d\uc131\uc774 \uc5c6\uc5b4 \uac19\uc740 \ub0a0\uc9dc FD \uc6d0\ubcf8\uc5d0\uc11c \ucd94\ucd9c (\uc6d0\ubcf8 ela020ge\uc5d0\uc11c \uc7ac\uaca9\uc790\ub428)",
+      "source": "noaa-gk2a-pds S3, FD fd020ge 202507190000 originals"
+    },
+    "radiance_semantics": "derived per sample from DN_to_Radiance_Offset + Gain*DN; not a spatially averaged BT converted to radiance",
+    "table_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/obs/data/gk2a_ami_cal_202507190000.json",
+    "table_sha256": "a6f830aa04e19f6982aa6ff36e832464a5b32fdcf8200211956969d5eb48325d"
+  },
+  "canonical_private_npz_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_sensitivity_20261010/observation_patch_ami5x5_viirs_nativebbox.npz",
+  "common_predeclared_sha256": "1e70efc9548111ee05dc690c35c377a4cd0eb6f71d8130d013d1dec8535fe2f0",
+  "existing_receipts": {
+    "ami_slot_receipt_sha256": "8728b0dccc35c0bbb0f646524ca1745040b23265aca689347bc706d28eb4f53e",
+    "candidate_result_sha256": "7cbe37a71ef3289fd120ac5b7f0b7c05ec37e85e6c85935b1b52963b1e9d7b4f",
+    "observation_receipt_sha256": "6af23b226ade39402f68df24268227b5d30cee5107cabd32992c82d0d329ad92",
+    "viirs_geometry_result_sha256": "d27c828ad1823a21a580fc1331a92d22caf15414f9f2a0fb9f9c63a4906f86be"
+  },
+  "native_bounds_from_3x3_centers_only": {
+    "latitude_max": 35.46367645263672,
+    "latitude_min": 35.36763381958008,
+    "longitude_max": 122.20220947265625,
+    "longitude_min": 122.0843505859375
+  },
+  "native_geometry_sha256": "11a21e3ce8efee751861c983dc7c447ec080bddf8c9431eec457622b351ebefe",
+  "native_patch_plan_sha256": "e5553065e046f0cff147d2642ede134a3474f9eb39a269cbafc9a42d46882c67",
+  "no_new_download_or_model_M_H": true,
+  "no_sample_values_inspected": true,
+  "reader_source_sha256": {
+    "ami_candidate_reader": "d4eb8db5d39d28997c13f8bc8c5a316cc282df2d71da7470a8482e6b28442221",
+    "gk2a_l1b": "c16195e581e847053c1f7e63c6cd93deaaba0e51d84a1f7eea092c95c180f4b8",
+    "gk2a_l1b_fd": "0c2c87a316680ba359f13336d3e7c87ca9c0bd9eab726f1b7cde469a87b1387e",
+    "gk2a_l1b_la": "67c4d2abd1c16f55d6909edeef1549b0ce2e8e449b9b3f64e7185b4d34b083db",
+    "obs_ingest": "224ff9d1f9e5c8557238db8e3f8a31650ca0faeb720e40394bd8c1d1666ced0d",
+    "observation_patch": "8994402e328d7f60fb573a19ff9e66fd91f42d01cdff930c252fc7285aae9903",
+    "viirs_geometry_reader": "51355eb6835963c2f564d18dc28ac3e40f5fa54ece0118f1c75d366095b4362c"
+  },
+  "schema": "pr398_observation_patch_preflight_v1",
+  "selection_contract": "existing CloudPhase geolocations inside latitude/longitude bounding box of native3x3 centers; bounds derived only from fixed native geometry",
+  "status": "READY_NO_SURROUNDING_PIXEL_VALUES_READ"
+}

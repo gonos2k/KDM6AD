@@ -32,5 +32,14 @@ tracks bounded same-objective and saved-host sensitivity follow-ups. Precise
 pixel UTC, footprint, flux closure and held-out event validation remain open;
 normal native completion does not establish them.
 
+## Spatial representativeness follow-up
+
+The subsequent [[sources/pr398-spatial-representativeness-2026-10-10]] diagnostic
+reads fixed native/AMI/VIIRS patches. It finds an all-clear native3×3, consistent
+raw liquid phase in103 VIIRS samples and a4.78K observed IR105 range. Nine QA
+bytes conflict with the advertised range. These descriptive samples do not
+establish common footprint or independent-case validation; no new forecast
+or optimization was run.
+
 ## Initialization Note (historical)
 This is an Obsidian-ready vault. The formal kg schema pin was not created because the global schema files were not available in the expected local skill directories.

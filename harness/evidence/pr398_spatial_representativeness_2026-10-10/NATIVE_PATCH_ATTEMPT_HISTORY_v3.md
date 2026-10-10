@@ -1,0 +1,7 @@
+# Native spatial patch attempt history
+
+- **V1**: `/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr398_spatial_representativeness_2026-10-10/native_patch.py` / `/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr398_spatial_representativeness_2026-10-10/NATIVE_PATCH.json` are preserved unchanged. The attempted `--extract-once` stopped at the receipt-versus-selection time-list comparison, before opening the NetCDF forecast. The separately recorded setup failure is [`NATIVE_PATCH_ATTEMPT1_SETUP_FAILURE.json`](NATIVE_PATCH_ATTEMPT1_SETUP_FAILURE.json). No V1 `STARTED_ONCE`, `FAILED`, or NPZ marker exists; none is fabricated.
+- **V2**: `NATIVE_PATCH_v2.json` and `native_patch_v2.py` are preserved unexecuted. Red review found that source `Times` had not been read before V2 would claim extraction.
+- **V3**: [`NATIVE_PATCH_v3.json`](NATIVE_PATCH_v3.json) and [`native_patch_v3.py`](native_patch_v3.py) bind the corrected full-eight-time intake receipt and a pre-marker Times-only read from the source forecast, checking selected indices 1/4/6 and stable size/mtime. This is the only extraction attempt. Its result is [`NATIVE_PATCH_RESULT_v3.json`](NATIVE_PATCH_RESULT_v3.json); it returned 60 arrays and 27 fixed cell/time rows, with zero M/H/optimizer calls.
+
+No native/model integration or new observation/model data acquisition was performed by the spatial patch workflow.
