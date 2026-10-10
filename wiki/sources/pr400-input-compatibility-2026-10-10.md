@@ -30,3 +30,7 @@ Current July2025 IC/BC resolve to the original SS case directory. Its two Februa
 - [Lineage](../../harness/evidence/pr400_input_compatibility_2026-10-10/IC_BC_LINEAGE.json)
 
 Resolve product-specific upstream SRF/calibration compatibility and original matching IC/BC lineage before a separately identified corrected baseline or independent-date analysis. Existing channel/prior/bias assumptions and artifacts remain unchanged. Score56/75 is the user's research-management basis, not coverage or correctness probability.
+
+## PR401 interpretation clarification
+
+The PR400 metadata finding does not establish unlike BT coordinates in the current cost. The executed `make_live_run_k(..., ami_kma_bt=True)` path uses same-run total radiance to convert both modeled BT and every K row through `transform_rttov_to_kma`; observations already use that bundled KMA coordinate. Actual upstream LA SRF identity remains a separate unresolved spectral-response question. See [[pr401-fixed-input-k-response-2026-10-10]] for the read-only stored-K continuation. PR400 receipts remain unchanged.

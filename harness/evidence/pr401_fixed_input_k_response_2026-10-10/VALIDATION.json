@@ -1,0 +1,50 @@
+{
+  "python": "3.10.11 (main, Apr  9 2023, 15:10:32) [Clang 14.0.3 (clang-1403.0.22.14.1)]",
+  "new_tests": {
+    "result": "8 passed",
+    "scope": "synthetic pressure/source alignment, coherent held-plus-partial endpoint, wrong run/unit/channel flags"
+  },
+  "ruff": "PASS",
+  "compilation": "PASS",
+  "final_v2_source_hash": "PASS",
+  "direction_plan_hash": "PASS",
+  "source_contracts": {
+    "verified": 18,
+    "scope": "current source hashes; not proof of compilation into historical executable"
+  },
+  "canonical_private_npz": {
+    "sha256_match": true,
+    "file_mode": "0600",
+    "directory_mode": "0700",
+    "layout": {
+      "P": [
+        66,
+        69
+      ],
+      "directions": [
+        6,
+        7
+      ],
+      "channels": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ]
+    },
+    "center_KMA_BT_replay_max_abs_K": 0.0
+  },
+  "team": "Green and independent Red complete; prior findings resolved in final_v2",
+  "new_scientific_calls": {
+    "native": 0,
+    "preprocessing": 0,
+    "M": 0,
+    "H": 0,
+    "new_K": 0,
+    "optimizer": 0
+  },
+  "scope_limit": "Stored direct RTTOV K response only; no independent input-error calibration or new event; local full pytest not rerun, public CI separately attributed"
+}
