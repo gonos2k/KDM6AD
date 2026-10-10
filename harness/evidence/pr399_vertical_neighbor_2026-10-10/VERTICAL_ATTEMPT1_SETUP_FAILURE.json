@@ -1,0 +1,16 @@
+{
+  "H_calls": 0,
+  "M_calls": 0,
+  "cause": "ModuleNotFoundError: No module named kdm6; executable did not insert repository oracle path before importing KDM6 thermodynamics.",
+  "derived_outputs_written": false,
+  "driver_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr399_vertical_neighbor_2026-10-10/vertical_structure.py",
+  "driver_sha256": "9a96efe7ae7edbfe80f835e09595248afca3beda2e4a9f8e2a32fd1d7c885738",
+  "failed_receipt_sha256": "05009de554d153a9a4ab3eaa41ed738d691edff8a292e47eb6bf16730d833512",
+  "native_forecast_opened": false,
+  "optimizer_calls": 0,
+  "retry_policy": "fresh V2 plan/output IDs only; preserve V1 marker and source",
+  "saved_npz_read": true,
+  "schema": "pr399_vertical_setup_failure_v1",
+  "started_receipt_sha256": "aa5d5b31cf37b5fefc3d467f538b06047bbaa96e26e40bf338abace58840b2db",
+  "status": "SETUP_FAILURE_BEFORE_DERIVATION"
+}

@@ -1,0 +1,534 @@
+{
+  "M_calls": 0,
+  "all_nine_costs_recomputed": true,
+  "all_nine_geometry_files_match_fixed_AMI_geometry": true,
+  "all_nine_profile_files_match_saved_profile_arrays": true,
+  "all_nine_quality_gates_pass": true,
+  "all_nine_rows_present": true,
+  "all_nine_surface_files_match_pinned_writer_inputs": true,
+  "assets_still_match_plan": true,
+  "automatic_retry": false,
+  "by_case": [
+    {
+      "Jo_matches_saved": true,
+      "Jo_recomputed": 26.801101203080805,
+      "all_seven_rad_quality_zero": true,
+      "angles_file_matches_fixed_geometry": true,
+      "case_role": "ONE_RETURNED_H",
+      "i": 47,
+      "j": 85,
+      "profile_files": {
+        "co2.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "0d715b307585723f1d404b761a3b2f7d12b54351dc6ad88dc379aeb66265775e",
+          "shape": [
+            66
+          ]
+        },
+        "o3.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "61dd73f00e0a3b105f11f0958c72f7a26bd3b1a3d1b57fa3f2f94a8014e6e668",
+          "shape": [
+            66
+          ]
+        },
+        "p.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "6f1044c8b46cae0dc23c4e9b74b11d50fa518b482bb468566dbcd6e9fbef09be",
+          "shape": [
+            66
+          ]
+        },
+        "p_half.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "c76f4cdba93f8d2324c13b940a2b7123a53e345b4375042c00ef7f01878a63f4",
+          "shape": [
+            67
+          ]
+        },
+        "q.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "1d80134a56d6902d58eb2810cbb1a2590e6a9ab699137b303becee3203e32db4",
+          "shape": [
+            66
+          ]
+        },
+        "t.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "90170c45adb9b470036e0eaf08204361db2b4ef51c71f406a4395d954051fe5c",
+          "shape": [
+            66
+          ]
+        }
+      },
+      "surface_files_match_pinned_writer": true
+    },
+    {
+      "Jo_matches_saved": true,
+      "Jo_recomputed": 26.531416521350764,
+      "all_seven_rad_quality_zero": true,
+      "angles_file_matches_fixed_geometry": true,
+      "case_role": "ONE_RETURNED_H",
+      "i": 48,
+      "j": 85,
+      "profile_files": {
+        "co2.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "c0410844b36b9c8c0c22397c56d473c855f03050e8fe16296105e46a87d8c158",
+          "shape": [
+            66
+          ]
+        },
+        "o3.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "f52a96660d3855c8bb2cf244c483673bc1b6aa34c19fff89ca140e702d105f3b",
+          "shape": [
+            66
+          ]
+        },
+        "p.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "4e1f64a0d209f253e024b3aad72dd4ab01009bdb97e5a2a11663e0d41b28effc",
+          "shape": [
+            66
+          ]
+        },
+        "p_half.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "e5a01d42fa73e4e8e7fb046cadc4143f9b7e35126b95fa05fbe4cfbdf5acacfa",
+          "shape": [
+            67
+          ]
+        },
+        "q.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "9f3431e4e78c2f452655cd8a3b13d42a290a0d2f699fa83540a242b21e9a370a",
+          "shape": [
+            66
+          ]
+        },
+        "t.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "949d652cc4ca240899606329740a0b7ccf5d412bd00f9919e9e82e38f4e32907",
+          "shape": [
+            66
+          ]
+        }
+      },
+      "surface_files_match_pinned_writer": true
+    },
+    {
+      "Jo_matches_saved": true,
+      "Jo_recomputed": 26.140741655222705,
+      "all_seven_rad_quality_zero": true,
+      "angles_file_matches_fixed_geometry": true,
+      "case_role": "ONE_RETURNED_H",
+      "i": 49,
+      "j": 85,
+      "profile_files": {
+        "co2.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "b9b76b6fd569075e1cc2f8138f58091a4a63897806964b04d114c268ec5d331d",
+          "shape": [
+            66
+          ]
+        },
+        "o3.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "fd3250606a12d49b810578a727cfcdcd6ece104fe09cfa679a93eac451552e0b",
+          "shape": [
+            66
+          ]
+        },
+        "p.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "64766d9f062bb4ab6b2e741e1d12d713e1e26f6b6a87ae18d5fae2d0711755ff",
+          "shape": [
+            66
+          ]
+        },
+        "p_half.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "b115997504a06b2945f093066c5e91a65af06c6eb4b6bf3eff641d611fee717f",
+          "shape": [
+            67
+          ]
+        },
+        "q.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "5543b438162966b17fd1eec8922b020d50d8098849de67ce3e4a744f8d311d0b",
+          "shape": [
+            66
+          ]
+        },
+        "t.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "b6e4f9c67f603d1245b688333cb5484378920f9847d7edcadc9a4c4a5458875f",
+          "shape": [
+            66
+          ]
+        }
+      },
+      "surface_files_match_pinned_writer": true
+    },
+    {
+      "Jo_matches_saved": true,
+      "Jo_recomputed": 26.703693793808498,
+      "all_seven_rad_quality_zero": true,
+      "angles_file_matches_fixed_geometry": true,
+      "case_role": "ONE_RETURNED_H",
+      "i": 47,
+      "j": 86,
+      "profile_files": {
+        "co2.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "c1909a86e0af2367edc2518247434a505936e6ea9b5c8c25f281eb62b5f43563",
+          "shape": [
+            66
+          ]
+        },
+        "o3.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "fe7110de69fc604ebbe04d8cea0e081312e6235e5d1582a2ce48545bad0c63cf",
+          "shape": [
+            66
+          ]
+        },
+        "p.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "bfb57084893950463f4c294292907139368033b893e04f1e4e62b505c1284d2d",
+          "shape": [
+            66
+          ]
+        },
+        "p_half.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "09fb1d451e6ace1a55e5f535bde712e9cd3d7853759f7039f1d218400cfab214",
+          "shape": [
+            67
+          ]
+        },
+        "q.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "384b2fe712e44bc12194878a028cbe448f1d82e3f7c5dbe10e1cbc12e5dcf3ca",
+          "shape": [
+            66
+          ]
+        },
+        "t.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "e4dd76f81b5e942a5a31bb59f9b16c6ecf485155c7b5572154948b1ee3af4be9",
+          "shape": [
+            66
+          ]
+        }
+      },
+      "surface_files_match_pinned_writer": true
+    },
+    {
+      "Jo_matches_saved": true,
+      "Jo_recomputed": 26.59768478212186,
+      "all_seven_rad_quality_zero": true,
+      "angles_file_matches_fixed_geometry": true,
+      "case_role": "REUSED_PR398_CENTER",
+      "i": 48,
+      "j": 86,
+      "profile_files": {
+        "co2.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "10bd872ae422f29c5df7ca42003c3b0969eb9d0cb9a1915167d4a455014face9",
+          "shape": [
+            66
+          ]
+        },
+        "o3.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "6b7da0a7dc2d7c072ff28a7c71c931e7b8d193d42cde682a6359340ec9f26641",
+          "shape": [
+            66
+          ]
+        },
+        "p.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "244c45bdfc83b3568f3aec41858a4667ac2130bab52133b5306f1d548c15f213",
+          "shape": [
+            66
+          ]
+        },
+        "p_half.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "8280f3ba5e8e30af547fbfcfd3e5e4c1447cc60fbc34bc184b98ea86c4ad0b55",
+          "shape": [
+            67
+          ]
+        },
+        "q.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "88d7ba081b9395d50f33d9babeb6dd51e16e8362b83c53710ad861994800a1a1",
+          "shape": [
+            66
+          ]
+        },
+        "t.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "a2680f729c605654c10b86b6984a42d6d10921c7e5a7a066cc83de7f3a8ea78b",
+          "shape": [
+            66
+          ]
+        }
+      },
+      "surface_files_match_pinned_writer": true
+    },
+    {
+      "Jo_matches_saved": true,
+      "Jo_recomputed": 26.35827511993014,
+      "all_seven_rad_quality_zero": true,
+      "angles_file_matches_fixed_geometry": true,
+      "case_role": "ONE_RETURNED_H",
+      "i": 49,
+      "j": 86,
+      "profile_files": {
+        "co2.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "252345464617f39fb293ffbba75475770cdb76342af4f506bec644d6f7f19e40",
+          "shape": [
+            66
+          ]
+        },
+        "o3.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "e358da690af52c7574f8676de7d8afedb281aa8c5321b1b09d5c08a78234dc51",
+          "shape": [
+            66
+          ]
+        },
+        "p.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "9500a7626b1333634faeb087013c5c57e737b5882a9cecba28fc368d460a4d7b",
+          "shape": [
+            66
+          ]
+        },
+        "p_half.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "7dd7d206b4e13041ae484332f36b70f8d18a20dc7fffd36cb7c82d8b4d5dec31",
+          "shape": [
+            67
+          ]
+        },
+        "q.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "8bae0f8cd252ad701035e88e2ea5489cd4ba37f125752f6ff43b5e4059fce86c",
+          "shape": [
+            66
+          ]
+        },
+        "t.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "c115b5c13af402a9a17a34c9a0724f368a300a83102784b3398dea545a2068c7",
+          "shape": [
+            66
+          ]
+        }
+      },
+      "surface_files_match_pinned_writer": true
+    },
+    {
+      "Jo_matches_saved": true,
+      "Jo_recomputed": 26.183333478469592,
+      "all_seven_rad_quality_zero": true,
+      "angles_file_matches_fixed_geometry": true,
+      "case_role": "ONE_RETURNED_H",
+      "i": 47,
+      "j": 87,
+      "profile_files": {
+        "co2.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "0f5770e40bd731fea431bded9bcbf9e0f33d7d0479d3a45c2ba7a2e8ee375856",
+          "shape": [
+            66
+          ]
+        },
+        "o3.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "85c87f35ab33823a4d0b9ce7900767b6a2581fce3aef0051bc8e0f0002550fa0",
+          "shape": [
+            66
+          ]
+        },
+        "p.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "6cd2459de6a46eb8e79bf5501df7f15794fa46931699c8c4a1d4be869f826fb3",
+          "shape": [
+            66
+          ]
+        },
+        "p_half.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "eae200b2f779bad30c05e257c9c62dc75cc0acce4549f38001670ab7d2653940",
+          "shape": [
+            67
+          ]
+        },
+        "q.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "c30cc3880fa8afbb619eefb16a1b2613f04a62c37d0ee3ac6f0a991ca269d4cd",
+          "shape": [
+            66
+          ]
+        },
+        "t.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "72b9ad2816ec9aceeeee14223b32b686787a26afe10e68e0eaafe7cdb8a98774",
+          "shape": [
+            66
+          ]
+        }
+      },
+      "surface_files_match_pinned_writer": true
+    },
+    {
+      "Jo_matches_saved": true,
+      "Jo_recomputed": 26.254993622950224,
+      "all_seven_rad_quality_zero": true,
+      "angles_file_matches_fixed_geometry": true,
+      "case_role": "ONE_RETURNED_H",
+      "i": 48,
+      "j": 87,
+      "profile_files": {
+        "co2.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "2c59387cdf3de5fd4300339a8599c6149df2802949b27ffc5b95bbccf4fd8cfa",
+          "shape": [
+            66
+          ]
+        },
+        "o3.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "142ec3324b9b22fcd293c98c61a8d84629fee9b27eb39244094484857f2351ce",
+          "shape": [
+            66
+          ]
+        },
+        "p.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "6ca6331249b73d7cb6b8a651b962ad7fabe326ff8c1f08e9fd057f5566754de7",
+          "shape": [
+            66
+          ]
+        },
+        "p_half.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "a0c0c4a4382da9b52cca9d0bb216e5b4fe95a93fcea2dbe854a5ca7ebbd047b5",
+          "shape": [
+            67
+          ]
+        },
+        "q.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "d110ac88361e9f8a4619844a28dbde475289e82f5f6bb7d0650bd1b59df0da9c",
+          "shape": [
+            66
+          ]
+        },
+        "t.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "9569057d72c920e4b62887f491672ef3c463d9ad2a776bcabeefbc760ce12eb0",
+          "shape": [
+            66
+          ]
+        }
+      },
+      "surface_files_match_pinned_writer": true
+    },
+    {
+      "Jo_matches_saved": true,
+      "Jo_recomputed": 26.175999722608722,
+      "all_seven_rad_quality_zero": true,
+      "angles_file_matches_fixed_geometry": true,
+      "case_role": "ONE_RETURNED_H",
+      "i": 49,
+      "j": 87,
+      "profile_files": {
+        "co2.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "3d3f67e89d6f6fcf519c577f40738f0050d7900e97a3709985a5d720c6ecfce6",
+          "shape": [
+            66
+          ]
+        },
+        "o3.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "290a823c245f3acc6693705de95c77954269df8abf2cefd6057337e1cda6ad4d",
+          "shape": [
+            66
+          ]
+        },
+        "p.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "09404b96282d63d8958d2fda96174e5c6ffb79427cc9d28e7e5d4dab3d86bb30",
+          "shape": [
+            66
+          ]
+        },
+        "p_half.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "3a74906c906140a9635fa194cc81f50a2fcb7ee179222cf38df292803f7f8163",
+          "shape": [
+            67
+          ]
+        },
+        "q.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "077da45fe7c0d53d8bd07feeefe5f6c44af20cb683e2a43829b5edcc28755c44",
+          "shape": [
+            66
+          ]
+        },
+        "t.txt": {
+          "matches_saved_native_profile": true,
+          "sha256": "3cf8c16bfe9e0439ca462c279a9cb61b32d11ea421faa135d8864a47599c83f2",
+          "shape": [
+            66
+          ]
+        }
+      },
+      "surface_files_match_pinned_writer": true
+    }
+  ],
+  "center_Jo_huber_K_units": 26.59768478212186,
+  "center_is_exactly_reused_pr398_H": true,
+  "executed_source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr399_vertical_neighbor_2026-10-10/neighbor_rttov.py",
+  "executed_source_sha256": "1ab829a94daa80c211984f7ddfbbe9bb825aa859a44bdc5aa83645368459e947",
+  "expected_new_H_calls": 8,
+  "interpretation_limit": "direct H(native saved State, Forcing) under one fixed AMI viewing geometry; row differences combine per-cell state, pressure, density and dynamic surface. No M(xb), parallax, footprint/time validation or science acceptance.",
+  "max_Jo_row_j_i": [
+    85,
+    47
+  ],
+  "max_abs_BT_change_from_center_K": 0.15186496873326405,
+  "max_abs_BT_change_row_j_i": [
+    87,
+    47
+  ],
+  "min_Jo_row_j_i": [
+    85,
+    49
+  ],
+  "native_runs": 0,
+  "native_v3_npz_sha256": "947c72c12ebe289b7ddc84fba1281635d77ffbcfe23f204345cc97abeebc1c21",
+  "neighbor_Jo_max_K_units": 26.801101203080805,
+  "neighbor_Jo_min_K_units": 26.140741655222705,
+  "optimizer_calls": 0,
+  "plan_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr399_vertical_neighbor_2026-10-10/NEIGHBOR_PLAN_attempt2.json",
+  "plan_sha256": "5451176d914b5758ffc6315f08a957ae0b6f6ae38019df38faa5b4e58c086afb",
+  "pr398_v2_center_result_sha256": "a246386cb2d5967924a771cecad1858270514be4b97c4ccef4be1658f40b1feb",
+  "private_npz_directory_mode": "0o700",
+  "private_npz_mode": "0o600",
+  "private_npz_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr399_native_neighbor_h_20261010/attempt2_native_3x3_direct_h_inputs_outputs.npz",
+  "private_npz_sha256": "4e2c36075e69d000bff48db8b2586ff1378adda3297508c58caa72b092e1c793",
+  "result_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr399_vertical_neighbor_2026-10-10/NEIGHBOR_RESULT_attempt2.json",
+  "result_sha256": "2bf488dca1a39f5c8d6fc19fd299a5a4de2560cfa083b98dc0bafd133f150422",
+  "schema": "pr399_vertical_neighbor_postrun_audit_v1",
+  "status": "POSTRUN_INPUT_COST_AND_STORAGE_CHECKS_PASS"
+}
