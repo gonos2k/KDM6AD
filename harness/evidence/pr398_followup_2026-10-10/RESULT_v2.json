@@ -1,0 +1,970 @@
+{
+  "automatic_retry": false,
+  "driver_sha256": "6f8b4c0c91fd5ce2c16975c76b7912119ac8c1a8edf5de81679efd5e40b1c830",
+  "intake_manifest_sha256": "375a89e7ea2194171a77d6f089ef46de79ae71f97306512afd98a4891647cfbe",
+  "intake_npz_sha256": "2873368d7967fbf41861c92e73a9cd0332186496e9b00192da0b5189288f8194",
+  "n_backward_calls": 0,
+  "n_model_M_calls": 0,
+  "native_run_id": "mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148",
+  "plan_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr398_followup_2026-10-10/PREDECLARED_v2.json",
+  "plan_sha256": "ba389506ccdfbd835b282abf3a12ef39526149abf3dfdcc4f9581e04be95cebe",
+  "results": [
+    {
+      "BT_K": [
+        [
+          262.2618406588041,
+          293.68664896244076,
+          270.6314463929056,
+          296.2342890285159,
+          295.96797907329585,
+          292.89404813872795,
+          276.6053899280171
+        ]
+      ],
+      "Jo_huber_K_units": 26.59768478212186,
+      "all_seven_rad_quality_zero": true,
+      "case_id": "frame1_fixed_AMI_candidate_pixel_center",
+      "case_output_dir": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr398-centroid-viewing-angle-v2-2026-10-10/private/hcase-frame1_fixed_AMI_candidate_pixel_center",
+      "channel_names": [
+        "wv073",
+        "ir087",
+        "ir096",
+        "ir105",
+        "ir112",
+        "ir123",
+        "ir133"
+      ],
+      "channels_1based": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "cost_formula": "sum frozen_mask * Huber((BT-target_BT-bias)/sigma); sigma=1 K, bias=0 K, delta=1 K; null when any frozen-support rad_quality is nonzero",
+      "fixed_observation_quality_DQF": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "forcing_sha256_by_field": {
+        "delz": "20f38adf9aac191f9f33d5b423113723a2db4a86cd02903037fe0726c1dbe45a",
+        "p": "3d9fbcd8c381e1411e07c71c8a73c700316801c695c47dac18273ddef655a849",
+        "pii": "b332fbbf5fff05334a8cc38314b19dced3eb0cc95f8999546325d2db64adeafe",
+        "rho": "4875296b6d6fc1513e2520334dc9b27ff755e838501ad390c8a4ad54b12ab190"
+      },
+      "frame_index": 1,
+      "frozen_support": [
+        [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      ],
+      "frozen_support_n_valid": 7,
+      "geometry": {
+        "azangle": 169.60651603862405,
+        "elevation": 0.0,
+        "latitude": 35.41925069326254,
+        "longitude": 122.13724164654832,
+        "sunazangle": 0.0,
+        "sunzenangle": 0.0,
+        "zenangle": 41.60526733455049
+      },
+      "geometry_scenario": "fixed_AMI_candidate_pixel_center",
+      "native_time_label": "2025-07-19_05:56:00",
+      "no_model_or_rttov_retry": true,
+      "operator_semantics": "H(native saved frame); no M step, interpolation, or backward",
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "rho_d_sha256": "87f8c5946ef606e705182459700458b4a4f436c34f7363ea7f75e7452e631c23",
+      "rttov_assets": {
+        "coefficient_sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+        "executable_sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+        "fixture_source": {
+          "O3_CO2_replaced_from_fixed_upper_reference_on_intake_grid": true,
+          "T_Q_and_cloud_replaced_on_each_H_call": true,
+          "ami_coefficient": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+            "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5"
+          },
+          "geometry_and_dynamic_surface": "supplied from fixed AMI candidate and fresh native selected column on each H input",
+          "prepared_files_sha256": {
+            "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/sfc/01/skin.txt": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b",
+            "in/channels.txt": "d5ddefcc18c631a7f79691be015b328dec004b0dfca1eaa1343991f32d032e1d",
+            "in/profiles/001/atm/co2.txt": "10bd872ae422f29c5df7ca42003c3b0969eb9d0cb9a1915167d4a455014face9",
+            "in/profiles/001/atm/hydro.txt": "62efd0a4c425145db1d988127d0b5d3e50227328d2c8e69c455371585848f57e",
+            "in/profiles/001/atm/hydro_frac.txt": "94fd8b3afb76730bec5fae7a464123607ca22844c0c5ce194294a8f94faf4079",
+            "in/profiles/001/atm/o3.txt": "6b7da0a7dc2d7c072ff28a7c71c931e7b8d193d42cde682a6359340ec9f26641",
+            "in/profiles/001/atm/p.txt": "244c45bdfc83b3568f3aec41858a4667ac2130bab52133b5306f1d548c15f213",
+            "in/profiles/001/atm/p_half.txt": "8280f3ba5e8e30af547fbfcfd3e5e4c1447cc60fbc34bc184b98ea86c4ad0b55",
+            "in/profiles/001/atm/q.txt": "92fa87df686ab047df16fb49522e742816de230fb1db4ac3336ed839f804e589",
+            "in/profiles/001/atm/simple_cloud.txt": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d",
+            "in/profiles/001/atm/t.txt": "133104daedf0b5f2ab101e8e6253e343a9a93718561a271a4fa5f78269f597d9",
+            "out/rttov_test.txt": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+          },
+          "prepared_fixture_copy": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr398-centroid-viewing-angle-v2-2026-10-10/private/fixture-frame1_fixed_AMI_candidate_pixel_center",
+          "pressure_grid_replaced_from_native_intake": true,
+          "rttov_executable": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+            "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+          },
+          "simple_cloud_fraction": 0.0,
+          "solar": false,
+          "source_template": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00",
+          "source_template_sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+        },
+        "per_frame_pressure_gas_files_sha256": {
+          "co2.txt": "10bd872ae422f29c5df7ca42003c3b0969eb9d0cb9a1915167d4a455014face9",
+          "o3.txt": "6b7da0a7dc2d7c072ff28a7c71c931e7b8d193d42cde682a6359340ec9f26641",
+          "p.txt": "244c45bdfc83b3568f3aec41858a4667ac2130bab52133b5306f1d548c15f213",
+          "p_half.txt": "8280f3ba5e8e30af547fbfcfd3e5e4c1447cc60fbc34bc184b98ea86c4ad0b55"
+        },
+        "rttov_env_sh_sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+        "rttov_run_sh_sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+      },
+      "rttov_profile_sha256": {
+        "co2_ppmv": "40d5438cf38b22a97e32ba77b7ad5d6da377eed769c99a1a12a82800efa82213",
+        "o3_ppmv": "209f8cd3ed8a30222f83a26a3525b673e7d4c0b729d8640f3e70cd4ca81063ec",
+        "p_half_hPa": "2755bfecc3fabb5ebc893963b5e43a9e204cb826fd03c1cde73faa858b35b844",
+        "p_lay_hPa": "1bd9042241617fad0e01c5322d5559b1619b72600c55543e618e45086541758d",
+        "q_native_plus_fixed_upper_reference_ppmv": "b0242f9f1e34d0b5133b44521595d14b74c3dc5755e94710b596a14b290b7c7f",
+        "t_native_plus_fixed_upper_reference_K": "3e6d7f90a8be16089ad655fe0a162fbdc5bad37df831f54cb56c32c137899f20"
+      },
+      "state_sha256_by_field": {
+        "native_window_state__bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nccn": "9faec2e0aa4a7aeb368bd6c483087ef823289cd9978d2a09b296075a9e34f25d",
+        "native_window_state__ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qv": "ecd3f68cd668be60d82038695564ac14a913de48593abe965749d0369499fda4",
+        "native_window_state__th": "90b4507e57b33c6ca2e78bc7cd4196d9caa9470628b8e2ffd089e1928c33d434"
+      },
+      "status": "H_RETURNED"
+    },
+    {
+      "BT_K": [
+        [
+          262.262591039751,
+          293.687023333906,
+          270.63255286286756,
+          296.23458358194756,
+          295.96826619299816,
+          292.8944133908556,
+          276.6061757339781
+        ]
+      ],
+      "Jo_huber_K_units": 26.60014797382479,
+      "all_seven_rad_quality_zero": true,
+      "case_id": "frame1_saved_native_cell_center_viewing_geometry",
+      "case_output_dir": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr398-centroid-viewing-angle-v2-2026-10-10/private/hcase-frame1_saved_native_cell_center_viewing_geometry",
+      "channel_names": [
+        "wv073",
+        "ir087",
+        "ir096",
+        "ir105",
+        "ir112",
+        "ir123",
+        "ir133"
+      ],
+      "channels_1based": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "cost_formula": "sum frozen_mask * Huber((BT-target_BT-bias)/sigma); sigma=1 K, bias=0 K, delta=1 K; null when any frozen-support rad_quality is nonzero",
+      "fixed_observation_quality_DQF": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "forcing_sha256_by_field": {
+        "delz": "20f38adf9aac191f9f33d5b423113723a2db4a86cd02903037fe0726c1dbe45a",
+        "p": "3d9fbcd8c381e1411e07c71c8a73c700316801c695c47dac18273ddef655a849",
+        "pii": "b332fbbf5fff05334a8cc38314b19dced3eb0cc95f8999546325d2db64adeafe",
+        "rho": "4875296b6d6fc1513e2520334dc9b27ff755e838501ad390c8a4ad54b12ab190"
+      },
+      "frame_index": 1,
+      "frozen_support": [
+        [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      ],
+      "frozen_support_n_valid": 7,
+      "geometry": {
+        "azangle": 169.6158746523554,
+        "elevation": 0.0,
+        "latitude": 35.4156608581543,
+        "longitude": 122.143310546875,
+        "sunazangle": 0.0,
+        "sunzenangle": 0.0,
+        "zenangle": 41.60027843907801
+      },
+      "geometry_scenario": "saved_native_cell_center_viewing_geometry",
+      "native_time_label": "2025-07-19_05:56:00",
+      "no_model_or_rttov_retry": true,
+      "operator_semantics": "H(native saved frame); no M step, interpolation, or backward",
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "rho_d_sha256": "87f8c5946ef606e705182459700458b4a4f436c34f7363ea7f75e7452e631c23",
+      "rttov_assets": {
+        "coefficient_sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+        "executable_sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+        "fixture_source": {
+          "O3_CO2_replaced_from_fixed_upper_reference_on_intake_grid": true,
+          "T_Q_and_cloud_replaced_on_each_H_call": true,
+          "ami_coefficient": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+            "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5"
+          },
+          "geometry_and_dynamic_surface": "supplied from fixed AMI candidate and fresh native selected column on each H input",
+          "prepared_files_sha256": {
+            "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/sfc/01/skin.txt": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b",
+            "in/channels.txt": "d5ddefcc18c631a7f79691be015b328dec004b0dfca1eaa1343991f32d032e1d",
+            "in/profiles/001/atm/co2.txt": "10bd872ae422f29c5df7ca42003c3b0969eb9d0cb9a1915167d4a455014face9",
+            "in/profiles/001/atm/hydro.txt": "62efd0a4c425145db1d988127d0b5d3e50227328d2c8e69c455371585848f57e",
+            "in/profiles/001/atm/hydro_frac.txt": "94fd8b3afb76730bec5fae7a464123607ca22844c0c5ce194294a8f94faf4079",
+            "in/profiles/001/atm/o3.txt": "6b7da0a7dc2d7c072ff28a7c71c931e7b8d193d42cde682a6359340ec9f26641",
+            "in/profiles/001/atm/p.txt": "244c45bdfc83b3568f3aec41858a4667ac2130bab52133b5306f1d548c15f213",
+            "in/profiles/001/atm/p_half.txt": "8280f3ba5e8e30af547fbfcfd3e5e4c1447cc60fbc34bc184b98ea86c4ad0b55",
+            "in/profiles/001/atm/q.txt": "92fa87df686ab047df16fb49522e742816de230fb1db4ac3336ed839f804e589",
+            "in/profiles/001/atm/simple_cloud.txt": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d",
+            "in/profiles/001/atm/t.txt": "133104daedf0b5f2ab101e8e6253e343a9a93718561a271a4fa5f78269f597d9",
+            "out/rttov_test.txt": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+          },
+          "prepared_fixture_copy": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr398-centroid-viewing-angle-v2-2026-10-10/private/fixture-frame1_saved_native_cell_center_viewing_geometry",
+          "pressure_grid_replaced_from_native_intake": true,
+          "rttov_executable": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+            "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+          },
+          "simple_cloud_fraction": 0.0,
+          "solar": false,
+          "source_template": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00",
+          "source_template_sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+        },
+        "per_frame_pressure_gas_files_sha256": {
+          "co2.txt": "10bd872ae422f29c5df7ca42003c3b0969eb9d0cb9a1915167d4a455014face9",
+          "o3.txt": "6b7da0a7dc2d7c072ff28a7c71c931e7b8d193d42cde682a6359340ec9f26641",
+          "p.txt": "244c45bdfc83b3568f3aec41858a4667ac2130bab52133b5306f1d548c15f213",
+          "p_half.txt": "8280f3ba5e8e30af547fbfcfd3e5e4c1447cc60fbc34bc184b98ea86c4ad0b55"
+        },
+        "rttov_env_sh_sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+        "rttov_run_sh_sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+      },
+      "rttov_profile_sha256": {
+        "co2_ppmv": "40d5438cf38b22a97e32ba77b7ad5d6da377eed769c99a1a12a82800efa82213",
+        "o3_ppmv": "209f8cd3ed8a30222f83a26a3525b673e7d4c0b729d8640f3e70cd4ca81063ec",
+        "p_half_hPa": "2755bfecc3fabb5ebc893963b5e43a9e204cb826fd03c1cde73faa858b35b844",
+        "p_lay_hPa": "1bd9042241617fad0e01c5322d5559b1619b72600c55543e618e45086541758d",
+        "q_native_plus_fixed_upper_reference_ppmv": "b0242f9f1e34d0b5133b44521595d14b74c3dc5755e94710b596a14b290b7c7f",
+        "t_native_plus_fixed_upper_reference_K": "3e6d7f90a8be16089ad655fe0a162fbdc5bad37df831f54cb56c32c137899f20"
+      },
+      "state_sha256_by_field": {
+        "native_window_state__bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nccn": "9faec2e0aa4a7aeb368bd6c483087ef823289cd9978d2a09b296075a9e34f25d",
+        "native_window_state__ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qv": "ecd3f68cd668be60d82038695564ac14a913de48593abe965749d0369499fda4",
+        "native_window_state__th": "90b4507e57b33c6ca2e78bc7cd4196d9caa9470628b8e2ffd089e1928c33d434"
+      },
+      "status": "H_RETURNED"
+    },
+    {
+      "BT_K": [
+        [
+          262.2640958221378,
+          293.6908533958168,
+          270.63430478326154,
+          296.2386348183001,
+          295.97353505053286,
+          292.90073602949155,
+          276.61096193225717
+        ]
+      ],
+      "Jo_huber_K_units": 26.624654104545073,
+      "all_seven_rad_quality_zero": true,
+      "case_id": "frame4_fixed_AMI_candidate_pixel_center",
+      "case_output_dir": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr398-centroid-viewing-angle-v2-2026-10-10/private/hcase-frame4_fixed_AMI_candidate_pixel_center",
+      "channel_names": [
+        "wv073",
+        "ir087",
+        "ir096",
+        "ir105",
+        "ir112",
+        "ir123",
+        "ir133"
+      ],
+      "channels_1based": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "cost_formula": "sum frozen_mask * Huber((BT-target_BT-bias)/sigma); sigma=1 K, bias=0 K, delta=1 K; null when any frozen-support rad_quality is nonzero",
+      "fixed_observation_quality_DQF": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "forcing_sha256_by_field": {
+        "delz": "7bf3d90f013e74fcdddcf6561f0a1b7bbf7c05803f4ebfe3ab368e8ddef36b6c",
+        "p": "4eed37b1d3ecd47c1a507f8357e11ec3b0e6e3db0d36a0a62dfcaa18b924cdad",
+        "pii": "09d90ddf80ab07836a67277b2ce582d6124b7707d9bbfecc596aa1ef531c07ac",
+        "rho": "dfd01ef8ec8b26f84ef3e2d078f9546197951b9f1ab847191d7c072dc74cda8a"
+      },
+      "frame_index": 4,
+      "frozen_support": [
+        [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      ],
+      "frozen_support_n_valid": 7,
+      "geometry": {
+        "azangle": 169.60651603862405,
+        "elevation": 0.0,
+        "latitude": 35.41925069326254,
+        "longitude": 122.13724164654832,
+        "sunazangle": 0.0,
+        "sunzenangle": 0.0,
+        "zenangle": 41.60526733455049
+      },
+      "geometry_scenario": "fixed_AMI_candidate_pixel_center",
+      "native_time_label": "2025-07-19_05:57:00",
+      "no_model_or_rttov_retry": true,
+      "operator_semantics": "H(native saved frame); no M step, interpolation, or backward",
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "rho_d_sha256": "5270eb3024143556ddc6507a41f661cab0eb193d53e83a858e9a28f038d4f977",
+      "rttov_assets": {
+        "coefficient_sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+        "executable_sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+        "fixture_source": {
+          "O3_CO2_replaced_from_fixed_upper_reference_on_intake_grid": true,
+          "T_Q_and_cloud_replaced_on_each_H_call": true,
+          "ami_coefficient": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+            "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5"
+          },
+          "geometry_and_dynamic_surface": "supplied from fixed AMI candidate and fresh native selected column on each H input",
+          "prepared_files_sha256": {
+            "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/sfc/01/skin.txt": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b",
+            "in/channels.txt": "d5ddefcc18c631a7f79691be015b328dec004b0dfca1eaa1343991f32d032e1d",
+            "in/profiles/001/atm/co2.txt": "b2c77a226ae318f2ddba54965e1f011d8c4c6f561048a7b249294f28cd5636b2",
+            "in/profiles/001/atm/hydro.txt": "62efd0a4c425145db1d988127d0b5d3e50227328d2c8e69c455371585848f57e",
+            "in/profiles/001/atm/hydro_frac.txt": "94fd8b3afb76730bec5fae7a464123607ca22844c0c5ce194294a8f94faf4079",
+            "in/profiles/001/atm/o3.txt": "85337023aac71affa2badee1762eb29cf4baf7beb4e24784dfd19b874f2e6493",
+            "in/profiles/001/atm/p.txt": "3311bfe8a664eac4ca08ce17098d0a75e8231c194cab22a142352f8d3603cbde",
+            "in/profiles/001/atm/p_half.txt": "663e790bc56ef26bcda39f38316eaa6820c715dfd7313fe0feacd25a3ef33299",
+            "in/profiles/001/atm/q.txt": "92fa87df686ab047df16fb49522e742816de230fb1db4ac3336ed839f804e589",
+            "in/profiles/001/atm/simple_cloud.txt": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d",
+            "in/profiles/001/atm/t.txt": "133104daedf0b5f2ab101e8e6253e343a9a93718561a271a4fa5f78269f597d9",
+            "out/rttov_test.txt": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+          },
+          "prepared_fixture_copy": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr398-centroid-viewing-angle-v2-2026-10-10/private/fixture-frame4_fixed_AMI_candidate_pixel_center",
+          "pressure_grid_replaced_from_native_intake": true,
+          "rttov_executable": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+            "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+          },
+          "simple_cloud_fraction": 0.0,
+          "solar": false,
+          "source_template": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00",
+          "source_template_sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+        },
+        "per_frame_pressure_gas_files_sha256": {
+          "co2.txt": "b2c77a226ae318f2ddba54965e1f011d8c4c6f561048a7b249294f28cd5636b2",
+          "o3.txt": "85337023aac71affa2badee1762eb29cf4baf7beb4e24784dfd19b874f2e6493",
+          "p.txt": "3311bfe8a664eac4ca08ce17098d0a75e8231c194cab22a142352f8d3603cbde",
+          "p_half.txt": "663e790bc56ef26bcda39f38316eaa6820c715dfd7313fe0feacd25a3ef33299"
+        },
+        "rttov_env_sh_sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+        "rttov_run_sh_sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+      },
+      "rttov_profile_sha256": {
+        "co2_ppmv": "fedde5b17322461e36d09a6b4faa98a88fb5420d81d99d8a5d582fa268f939ea",
+        "o3_ppmv": "81a8e55dbd601712b550ea39bb5ad9d85de1cd920c8f936152c1d2fe74153286",
+        "p_half_hPa": "1494656faf65aff4dbcfb6513524d966568715768f6ebcc27068b169eda30cb8",
+        "p_lay_hPa": "6013914d1207ae606ffd7e6044eaa35ed297c6687b172a5677b6a332681b509e",
+        "q_native_plus_fixed_upper_reference_ppmv": "af82245e2f1e3535dfef40e5c9c0d5642e20a5173e3d401a055c46fb6fa82c2e",
+        "t_native_plus_fixed_upper_reference_K": "8d2364c1074597586bb4e5cb5ccc26f435dc3698d7d38b247825b40343035a43"
+      },
+      "state_sha256_by_field": {
+        "native_window_state__bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nccn": "ea2c480fb219dacea66e279d9c67b222eb65c8bfa03c16c2cfb9b6dbef01923f",
+        "native_window_state__ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qv": "ef90fb0d3d1a5696a9da026daf6326320ffe0ff4802fab52df617384af2a7d43",
+        "native_window_state__th": "298a1fb26072550c45e1e9ed72aa244167d40192a21b7199947418e1a4337a99"
+      },
+      "status": "H_RETURNED"
+    },
+    {
+      "BT_K": [
+        [
+          262.2648463500019,
+          293.6912276245046,
+          270.63541118575836,
+          296.2389291756813,
+          295.97382192142567,
+          292.90110103619975,
+          276.61174764444314
+        ]
+      ],
+      "Jo_huber_K_units": 26.62711615503372,
+      "all_seven_rad_quality_zero": true,
+      "case_id": "frame4_saved_native_cell_center_viewing_geometry",
+      "case_output_dir": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr398-centroid-viewing-angle-v2-2026-10-10/private/hcase-frame4_saved_native_cell_center_viewing_geometry",
+      "channel_names": [
+        "wv073",
+        "ir087",
+        "ir096",
+        "ir105",
+        "ir112",
+        "ir123",
+        "ir133"
+      ],
+      "channels_1based": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "cost_formula": "sum frozen_mask * Huber((BT-target_BT-bias)/sigma); sigma=1 K, bias=0 K, delta=1 K; null when any frozen-support rad_quality is nonzero",
+      "fixed_observation_quality_DQF": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "forcing_sha256_by_field": {
+        "delz": "7bf3d90f013e74fcdddcf6561f0a1b7bbf7c05803f4ebfe3ab368e8ddef36b6c",
+        "p": "4eed37b1d3ecd47c1a507f8357e11ec3b0e6e3db0d36a0a62dfcaa18b924cdad",
+        "pii": "09d90ddf80ab07836a67277b2ce582d6124b7707d9bbfecc596aa1ef531c07ac",
+        "rho": "dfd01ef8ec8b26f84ef3e2d078f9546197951b9f1ab847191d7c072dc74cda8a"
+      },
+      "frame_index": 4,
+      "frozen_support": [
+        [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      ],
+      "frozen_support_n_valid": 7,
+      "geometry": {
+        "azangle": 169.6158746523554,
+        "elevation": 0.0,
+        "latitude": 35.4156608581543,
+        "longitude": 122.143310546875,
+        "sunazangle": 0.0,
+        "sunzenangle": 0.0,
+        "zenangle": 41.60027843907801
+      },
+      "geometry_scenario": "saved_native_cell_center_viewing_geometry",
+      "native_time_label": "2025-07-19_05:57:00",
+      "no_model_or_rttov_retry": true,
+      "operator_semantics": "H(native saved frame); no M step, interpolation, or backward",
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "rho_d_sha256": "5270eb3024143556ddc6507a41f661cab0eb193d53e83a858e9a28f038d4f977",
+      "rttov_assets": {
+        "coefficient_sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+        "executable_sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+        "fixture_source": {
+          "O3_CO2_replaced_from_fixed_upper_reference_on_intake_grid": true,
+          "T_Q_and_cloud_replaced_on_each_H_call": true,
+          "ami_coefficient": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+            "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5"
+          },
+          "geometry_and_dynamic_surface": "supplied from fixed AMI candidate and fresh native selected column on each H input",
+          "prepared_files_sha256": {
+            "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/sfc/01/skin.txt": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b",
+            "in/channels.txt": "d5ddefcc18c631a7f79691be015b328dec004b0dfca1eaa1343991f32d032e1d",
+            "in/profiles/001/atm/co2.txt": "b2c77a226ae318f2ddba54965e1f011d8c4c6f561048a7b249294f28cd5636b2",
+            "in/profiles/001/atm/hydro.txt": "62efd0a4c425145db1d988127d0b5d3e50227328d2c8e69c455371585848f57e",
+            "in/profiles/001/atm/hydro_frac.txt": "94fd8b3afb76730bec5fae7a464123607ca22844c0c5ce194294a8f94faf4079",
+            "in/profiles/001/atm/o3.txt": "85337023aac71affa2badee1762eb29cf4baf7beb4e24784dfd19b874f2e6493",
+            "in/profiles/001/atm/p.txt": "3311bfe8a664eac4ca08ce17098d0a75e8231c194cab22a142352f8d3603cbde",
+            "in/profiles/001/atm/p_half.txt": "663e790bc56ef26bcda39f38316eaa6820c715dfd7313fe0feacd25a3ef33299",
+            "in/profiles/001/atm/q.txt": "92fa87df686ab047df16fb49522e742816de230fb1db4ac3336ed839f804e589",
+            "in/profiles/001/atm/simple_cloud.txt": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d",
+            "in/profiles/001/atm/t.txt": "133104daedf0b5f2ab101e8e6253e343a9a93718561a271a4fa5f78269f597d9",
+            "out/rttov_test.txt": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+          },
+          "prepared_fixture_copy": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr398-centroid-viewing-angle-v2-2026-10-10/private/fixture-frame4_saved_native_cell_center_viewing_geometry",
+          "pressure_grid_replaced_from_native_intake": true,
+          "rttov_executable": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+            "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+          },
+          "simple_cloud_fraction": 0.0,
+          "solar": false,
+          "source_template": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00",
+          "source_template_sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+        },
+        "per_frame_pressure_gas_files_sha256": {
+          "co2.txt": "b2c77a226ae318f2ddba54965e1f011d8c4c6f561048a7b249294f28cd5636b2",
+          "o3.txt": "85337023aac71affa2badee1762eb29cf4baf7beb4e24784dfd19b874f2e6493",
+          "p.txt": "3311bfe8a664eac4ca08ce17098d0a75e8231c194cab22a142352f8d3603cbde",
+          "p_half.txt": "663e790bc56ef26bcda39f38316eaa6820c715dfd7313fe0feacd25a3ef33299"
+        },
+        "rttov_env_sh_sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+        "rttov_run_sh_sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+      },
+      "rttov_profile_sha256": {
+        "co2_ppmv": "fedde5b17322461e36d09a6b4faa98a88fb5420d81d99d8a5d582fa268f939ea",
+        "o3_ppmv": "81a8e55dbd601712b550ea39bb5ad9d85de1cd920c8f936152c1d2fe74153286",
+        "p_half_hPa": "1494656faf65aff4dbcfb6513524d966568715768f6ebcc27068b169eda30cb8",
+        "p_lay_hPa": "6013914d1207ae606ffd7e6044eaa35ed297c6687b172a5677b6a332681b509e",
+        "q_native_plus_fixed_upper_reference_ppmv": "af82245e2f1e3535dfef40e5c9c0d5642e20a5173e3d401a055c46fb6fa82c2e",
+        "t_native_plus_fixed_upper_reference_K": "8d2364c1074597586bb4e5cb5ccc26f435dc3698d7d38b247825b40343035a43"
+      },
+      "state_sha256_by_field": {
+        "native_window_state__bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nccn": "ea2c480fb219dacea66e279d9c67b222eb65c8bfa03c16c2cfb9b6dbef01923f",
+        "native_window_state__ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qv": "ef90fb0d3d1a5696a9da026daf6326320ffe0ff4802fab52df617384af2a7d43",
+        "native_window_state__th": "298a1fb26072550c45e1e9ed72aa244167d40192a21b7199947418e1a4337a99"
+      },
+      "status": "H_RETURNED"
+    },
+    {
+      "BT_K": [
+        [
+          262.2652081346861,
+          293.6934435744372,
+          270.6360667095163,
+          296.24131167553986,
+          295.9769284693512,
+          292.90485911883616,
+          276.61437406989177
+        ]
+      ],
+      "Jo_huber_K_units": 26.641499399909208,
+      "all_seven_rad_quality_zero": true,
+      "case_id": "frame6_fixed_AMI_candidate_pixel_center",
+      "case_output_dir": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr398-centroid-viewing-angle-v2-2026-10-10/private/hcase-frame6_fixed_AMI_candidate_pixel_center",
+      "channel_names": [
+        "wv073",
+        "ir087",
+        "ir096",
+        "ir105",
+        "ir112",
+        "ir123",
+        "ir133"
+      ],
+      "channels_1based": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "cost_formula": "sum frozen_mask * Huber((BT-target_BT-bias)/sigma); sigma=1 K, bias=0 K, delta=1 K; null when any frozen-support rad_quality is nonzero",
+      "fixed_observation_quality_DQF": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "forcing_sha256_by_field": {
+        "delz": "c6c03eb7da87f29fbec145e52ba053d47b472362026b70b0d46aee1605f651ab",
+        "p": "09d0c5e57e3cedb2f41401cde179e3c6e8a8e97c761d5c046b1d5f8b2935c2f6",
+        "pii": "662700dabf20a78603fb527602c7b0666c827feccdccec1722ea991f46e7f59b",
+        "rho": "0ed96504846cc8bc1dca9015fee7f924fdac8cd7309a212049999114bb176e7f"
+      },
+      "frame_index": 6,
+      "frozen_support": [
+        [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      ],
+      "frozen_support_n_valid": 7,
+      "geometry": {
+        "azangle": 169.60651603862405,
+        "elevation": 0.0,
+        "latitude": 35.41925069326254,
+        "longitude": 122.13724164654832,
+        "sunazangle": 0.0,
+        "sunzenangle": 0.0,
+        "zenangle": 41.60526733455049
+      },
+      "geometry_scenario": "fixed_AMI_candidate_pixel_center",
+      "native_time_label": "2025-07-19_05:57:40",
+      "no_model_or_rttov_retry": true,
+      "operator_semantics": "H(native saved frame); no M step, interpolation, or backward",
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "rho_d_sha256": "8d4b35eddfd1af561a811b98eb0b7056019e273780e87b858197b3ee1d5a0735",
+      "rttov_assets": {
+        "coefficient_sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+        "executable_sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+        "fixture_source": {
+          "O3_CO2_replaced_from_fixed_upper_reference_on_intake_grid": true,
+          "T_Q_and_cloud_replaced_on_each_H_call": true,
+          "ami_coefficient": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+            "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5"
+          },
+          "geometry_and_dynamic_surface": "supplied from fixed AMI candidate and fresh native selected column on each H input",
+          "prepared_files_sha256": {
+            "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/sfc/01/skin.txt": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b",
+            "in/channels.txt": "d5ddefcc18c631a7f79691be015b328dec004b0dfca1eaa1343991f32d032e1d",
+            "in/profiles/001/atm/co2.txt": "551f6090f5556dbefd4b813a4f6da1ca4733e1cd116ab6f8ef1e63b16fe8e8b3",
+            "in/profiles/001/atm/hydro.txt": "62efd0a4c425145db1d988127d0b5d3e50227328d2c8e69c455371585848f57e",
+            "in/profiles/001/atm/hydro_frac.txt": "94fd8b3afb76730bec5fae7a464123607ca22844c0c5ce194294a8f94faf4079",
+            "in/profiles/001/atm/o3.txt": "77f671e1f80632346c04884a927c99d98d846c4f85007412985173fbb240cf16",
+            "in/profiles/001/atm/p.txt": "6012b8c18bc8f45b0459bdb5ebf48b59e35a0a7fad4be76b695e0abdb985a5f7",
+            "in/profiles/001/atm/p_half.txt": "b54d60c6fb5398a380f2907013911eaf18456f410228fc061d2f0b946867b29a",
+            "in/profiles/001/atm/q.txt": "92fa87df686ab047df16fb49522e742816de230fb1db4ac3336ed839f804e589",
+            "in/profiles/001/atm/simple_cloud.txt": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d",
+            "in/profiles/001/atm/t.txt": "133104daedf0b5f2ab101e8e6253e343a9a93718561a271a4fa5f78269f597d9",
+            "out/rttov_test.txt": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+          },
+          "prepared_fixture_copy": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr398-centroid-viewing-angle-v2-2026-10-10/private/fixture-frame6_fixed_AMI_candidate_pixel_center",
+          "pressure_grid_replaced_from_native_intake": true,
+          "rttov_executable": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+            "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+          },
+          "simple_cloud_fraction": 0.0,
+          "solar": false,
+          "source_template": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00",
+          "source_template_sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+        },
+        "per_frame_pressure_gas_files_sha256": {
+          "co2.txt": "551f6090f5556dbefd4b813a4f6da1ca4733e1cd116ab6f8ef1e63b16fe8e8b3",
+          "o3.txt": "77f671e1f80632346c04884a927c99d98d846c4f85007412985173fbb240cf16",
+          "p.txt": "6012b8c18bc8f45b0459bdb5ebf48b59e35a0a7fad4be76b695e0abdb985a5f7",
+          "p_half.txt": "b54d60c6fb5398a380f2907013911eaf18456f410228fc061d2f0b946867b29a"
+        },
+        "rttov_env_sh_sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+        "rttov_run_sh_sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+      },
+      "rttov_profile_sha256": {
+        "co2_ppmv": "0042c93f8f40aa95e151586ec159cb9e62f7f13b65cc43dae418ee3960cdb70b",
+        "o3_ppmv": "7f0cb30b1d3a85f8c84b08a9825ce7f3112c8577747f83e6d9853c441893f892",
+        "p_half_hPa": "19c8907ded45c82cdfcaf1a2108f2cb6865d2bae4f5f23135ac0777338070500",
+        "p_lay_hPa": "013ab7858b7431be9d6e6de5f3644775ed8005434c0a450dbd2ab54c8d962d8a",
+        "q_native_plus_fixed_upper_reference_ppmv": "3cca69a210fb6315f9c40e9237fd93d42e5af41a06c57a0f8bce77458613ef41",
+        "t_native_plus_fixed_upper_reference_K": "bcc2618325cd4e12f3e95ea18e3ede6dc36ac4f697a8046c37e6ea76ba7fbae1"
+      },
+      "state_sha256_by_field": {
+        "native_window_state__bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nccn": "8002a5218c819fa55e264f29ad587bf2b4b872c041a45d85aa5896d54d76bde7",
+        "native_window_state__ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qv": "5f86063aea857f6f34212bd08a6e3eff8240025a5666a6790ecb7cbe6c9c3623",
+        "native_window_state__th": "ffd832ce6d26f4863960576b23551912a2b0878ec91076d40fee93eddaa48666"
+      },
+      "status": "H_RETURNED"
+    },
+    {
+      "BT_K": [
+        [
+          262.26595875218425,
+          293.69381769953856,
+          270.63717306181434,
+          296.2416059017818,
+          295.97721519556177,
+          292.90522395277975,
+          276.61515971797604
+        ]
+      ],
+      "Jo_huber_K_units": 26.643960694290797,
+      "all_seven_rad_quality_zero": true,
+      "case_id": "frame6_saved_native_cell_center_viewing_geometry",
+      "case_output_dir": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr398-centroid-viewing-angle-v2-2026-10-10/private/hcase-frame6_saved_native_cell_center_viewing_geometry",
+      "channel_names": [
+        "wv073",
+        "ir087",
+        "ir096",
+        "ir105",
+        "ir112",
+        "ir123",
+        "ir133"
+      ],
+      "channels_1based": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "cost_formula": "sum frozen_mask * Huber((BT-target_BT-bias)/sigma); sigma=1 K, bias=0 K, delta=1 K; null when any frozen-support rad_quality is nonzero",
+      "fixed_observation_quality_DQF": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "forcing_sha256_by_field": {
+        "delz": "c6c03eb7da87f29fbec145e52ba053d47b472362026b70b0d46aee1605f651ab",
+        "p": "09d0c5e57e3cedb2f41401cde179e3c6e8a8e97c761d5c046b1d5f8b2935c2f6",
+        "pii": "662700dabf20a78603fb527602c7b0666c827feccdccec1722ea991f46e7f59b",
+        "rho": "0ed96504846cc8bc1dca9015fee7f924fdac8cd7309a212049999114bb176e7f"
+      },
+      "frame_index": 6,
+      "frozen_support": [
+        [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      ],
+      "frozen_support_n_valid": 7,
+      "geometry": {
+        "azangle": 169.6158746523554,
+        "elevation": 0.0,
+        "latitude": 35.4156608581543,
+        "longitude": 122.143310546875,
+        "sunazangle": 0.0,
+        "sunzenangle": 0.0,
+        "zenangle": 41.60027843907801
+      },
+      "geometry_scenario": "saved_native_cell_center_viewing_geometry",
+      "native_time_label": "2025-07-19_05:57:40",
+      "no_model_or_rttov_retry": true,
+      "operator_semantics": "H(native saved frame); no M step, interpolation, or backward",
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "rho_d_sha256": "8d4b35eddfd1af561a811b98eb0b7056019e273780e87b858197b3ee1d5a0735",
+      "rttov_assets": {
+        "coefficient_sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+        "executable_sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+        "fixture_source": {
+          "O3_CO2_replaced_from_fixed_upper_reference_on_intake_grid": true,
+          "T_Q_and_cloud_replaced_on_each_H_call": true,
+          "ami_coefficient": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+            "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5"
+          },
+          "geometry_and_dynamic_surface": "supplied from fixed AMI candidate and fresh native selected column on each H input",
+          "prepared_files_sha256": {
+            "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/sfc/01/skin.txt": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b",
+            "in/channels.txt": "d5ddefcc18c631a7f79691be015b328dec004b0dfca1eaa1343991f32d032e1d",
+            "in/profiles/001/atm/co2.txt": "551f6090f5556dbefd4b813a4f6da1ca4733e1cd116ab6f8ef1e63b16fe8e8b3",
+            "in/profiles/001/atm/hydro.txt": "62efd0a4c425145db1d988127d0b5d3e50227328d2c8e69c455371585848f57e",
+            "in/profiles/001/atm/hydro_frac.txt": "94fd8b3afb76730bec5fae7a464123607ca22844c0c5ce194294a8f94faf4079",
+            "in/profiles/001/atm/o3.txt": "77f671e1f80632346c04884a927c99d98d846c4f85007412985173fbb240cf16",
+            "in/profiles/001/atm/p.txt": "6012b8c18bc8f45b0459bdb5ebf48b59e35a0a7fad4be76b695e0abdb985a5f7",
+            "in/profiles/001/atm/p_half.txt": "b54d60c6fb5398a380f2907013911eaf18456f410228fc061d2f0b946867b29a",
+            "in/profiles/001/atm/q.txt": "92fa87df686ab047df16fb49522e742816de230fb1db4ac3336ed839f804e589",
+            "in/profiles/001/atm/simple_cloud.txt": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d",
+            "in/profiles/001/atm/t.txt": "133104daedf0b5f2ab101e8e6253e343a9a93718561a271a4fa5f78269f597d9",
+            "out/rttov_test.txt": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+          },
+          "prepared_fixture_copy": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr398-centroid-viewing-angle-v2-2026-10-10/private/fixture-frame6_saved_native_cell_center_viewing_geometry",
+          "pressure_grid_replaced_from_native_intake": true,
+          "rttov_executable": {
+            "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+            "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+          },
+          "simple_cloud_fraction": 0.0,
+          "solar": false,
+          "source_template": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00",
+          "source_template_sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+        },
+        "per_frame_pressure_gas_files_sha256": {
+          "co2.txt": "551f6090f5556dbefd4b813a4f6da1ca4733e1cd116ab6f8ef1e63b16fe8e8b3",
+          "o3.txt": "77f671e1f80632346c04884a927c99d98d846c4f85007412985173fbb240cf16",
+          "p.txt": "6012b8c18bc8f45b0459bdb5ebf48b59e35a0a7fad4be76b695e0abdb985a5f7",
+          "p_half.txt": "b54d60c6fb5398a380f2907013911eaf18456f410228fc061d2f0b946867b29a"
+        },
+        "rttov_env_sh_sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+        "rttov_run_sh_sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+      },
+      "rttov_profile_sha256": {
+        "co2_ppmv": "0042c93f8f40aa95e151586ec159cb9e62f7f13b65cc43dae418ee3960cdb70b",
+        "o3_ppmv": "7f0cb30b1d3a85f8c84b08a9825ce7f3112c8577747f83e6d9853c441893f892",
+        "p_half_hPa": "19c8907ded45c82cdfcaf1a2108f2cb6865d2bae4f5f23135ac0777338070500",
+        "p_lay_hPa": "013ab7858b7431be9d6e6de5f3644775ed8005434c0a450dbd2ab54c8d962d8a",
+        "q_native_plus_fixed_upper_reference_ppmv": "3cca69a210fb6315f9c40e9237fd93d42e5af41a06c57a0f8bce77458613ef41",
+        "t_native_plus_fixed_upper_reference_K": "bcc2618325cd4e12f3e95ea18e3ede6dc36ac4f697a8046c37e6ea76ba7fbae1"
+      },
+      "state_sha256_by_field": {
+        "native_window_state__bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nccn": "8002a5218c819fa55e264f29ad587bf2b4b872c041a45d85aa5896d54d76bde7",
+        "native_window_state__ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qv": "5f86063aea857f6f34212bd08a6e3eff8240025a5666a6790ecb7cbe6c9c3623",
+        "native_window_state__th": "ffd832ce6d26f4863960576b23551912a2b0878ec91076d40fee93eddaa48666"
+      },
+      "status": "H_RETURNED"
+    }
+  ],
+  "schema": "pr398_time_geometry_sensitivity_result_v2",
+  "science_accepted": false,
+  "status": "ALL_PREDECLARED_CASES_RETURNED"
+}

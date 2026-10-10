@@ -1,0 +1,35 @@
+{
+  "additional_model_or_observation_calls": 0,
+  "cloudphase_source": {
+    "path": "/private/tmp/KDM6AD-time-contract-20261007/raw/JRR-CloudPhase_v3r2_j01_s202507190555475_e202507190557102_c202507190621171.nc",
+    "sha256": "7fef6df795254f628c79e92c25816fed720e855bba46a9ba74adb92abac0cfe2"
+  },
+  "declared": {
+    "fill_value": -128,
+    "units": "1",
+    "valid_range": [
+      0,
+      1
+    ]
+  },
+  "field": "CloudPhaseFlag",
+  "fill_count": 0,
+  "immutability": "The one-shot result JSON, public CSV tables, and private NPZ are unchanged; this separate audit interprets their hash-bound contents.",
+  "interpretation": "Nine selected raw bytes are 5 although the product variable advertises valid_range [0,1]. The extraction preserves these raw bytes and does not decode flag bits. Treat this as an unresolved product QA metadata discrepancy; do not infer quality semantics from value 5.",
+  "observed_raw_counts": {
+    "0": 94,
+    "5": 9
+  },
+  "outside_declared_range_count": 9,
+  "private_npz": {
+    "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_sensitivity_20261010/observation_patch_ami5x5_viirs_nativebbox.npz",
+    "sha256": "0b55e3e5f78b21a19476d1f6557a8fed23ff74a50eaab8322a4603a147003234"
+  },
+  "sample_count": 103,
+  "schema": "pr398_observation_patch_posthoc_qa_audit_v1",
+  "source_result": {
+    "path": "harness/evidence/pr398_spatial_representativeness_2026-10-10/OBSERVATION_PATCH.json",
+    "sha256": "4efd2fffece5de6303bdeda5623c8929d53c97f14760940748d2483bd6b783f0"
+  },
+  "status": "QA_METADATA_RANGE_EXCEEDANCE_RECORDED"
+}

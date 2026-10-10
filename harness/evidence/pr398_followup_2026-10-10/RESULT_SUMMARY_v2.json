@@ -1,0 +1,174 @@
+{
+  "all_seven_rad_quality_zero_every_case": true,
+  "all_six_Jo_costs_present": true,
+  "all_six_cases_matched_plan": true,
+  "all_six_h_returned": true,
+  "automatic_retry": false,
+  "backward_calls": 0,
+  "canonical_private_preservation": {
+    "all_hashes_match": true,
+    "canonical_directory": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_sensitivity_20261010",
+    "directory_mode": "0700",
+    "preserved_filenames": [
+      "PREDECLARED_v2.json",
+      "PRIVATE_BACKUP_v2.json",
+      "RESULT.json",
+      "STARTED_ONCE.json",
+      "run_time_geometry_sensitivity_v2_at_execution.py"
+    ],
+    "receipt_path": "harness/evidence/pr398_followup_2026-10-10/LOCAL_PRESERVATION_v2.json",
+    "receipt_sha256": "9b58259dad4de343bab3db08d56f76cccd7f31a93d1ea99a141191f02b66d2b4"
+  },
+  "cth_used": false,
+  "driver_sha256": "6f8b4c0c91fd5ce2c16975c76b7912119ac8c1a8edf5de81679efd5e40b1c830",
+  "execution_driver_backup_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr398-centroid-viewing-angle-v2-2026-10-10/private/run_time_geometry_sensitivity_v2_at_execution.py",
+  "execution_driver_backup_sha256": "6f8b4c0c91fd5ce2c16975c76b7912119ac8c1a8edf5de81679efd5e40b1c830",
+  "geometry_sensitivity": [
+    {
+      "BT_native_center_minus_AMI_center_K": [
+        0.0007503809468971667,
+        0.0003743714652273411,
+        0.0011064699619396379,
+        0.0002945534316722842,
+        0.00028711970230688166,
+        0.00036525212766491677,
+        0.0007858059610157397
+      ],
+      "Jo_native_minus_AMI": 0.0024631917029296346,
+      "frame_index": 1,
+      "max_abs_BT_difference_K": 0.0011064699619396379,
+      "time": "2025-07-19_05:56:00"
+    },
+    {
+      "BT_native_center_minus_AMI_center_K": [
+        0.0007505278641133373,
+        0.00037422868780367935,
+        0.0011064024968163721,
+        0.0002943573811649003,
+        0.00028687089280765576,
+        0.0003650067081935049,
+        0.0007857121859728977
+      ],
+      "Jo_native_minus_AMI": 0.002462050488645673,
+      "frame_index": 4,
+      "max_abs_BT_difference_K": 0.0011064024968163721,
+      "time": "2025-07-19_05:57:00"
+    },
+    {
+      "BT_native_center_minus_AMI_center_K": [
+        0.0007506174981699587,
+        0.00037412510135936827,
+        0.0011063522980521157,
+        0.0002942262419196595,
+        0.000286726210561028,
+        0.0003648339435926573,
+        0.000785648084274726
+      ],
+      "Jo_native_minus_AMI": 0.002461294381589596,
+      "frame_index": 6,
+      "max_abs_BT_difference_K": 0.0011063522980521157,
+      "time": "2025-07-19_05:57:40"
+    }
+  ],
+  "independent_checks": "For each of six rows: plan time, geometry, State/Forcing/rho_d/profile hashes matched; Huber Jo recomputed from returned BT with fixed target/mask/sigma/bias/delta and matched recorded value; no additional H/M was used.",
+  "intake_manifest_sha256": "375a89e7ea2194171a77d6f089ef46de79ae71f97306512afd98a4891647cfbe",
+  "intake_npz_sha256": "2873368d7967fbf41861c92e73a9cd0332186496e9b00192da0b5189288f8194",
+  "m_calls": 0,
+  "parallax_or_footprint_claim": false,
+  "permissions": {
+    "execution_driver_backup": "0o600",
+    "private_output_dir": "0o700",
+    "result": "0o600"
+  },
+  "plan_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr398_followup_2026-10-10/PREDECLARED_v2.json",
+  "plan_sha256": "ba389506ccdfbd835b282abf3a12ef39526149abf3dfdcc4f9581e04be95cebe",
+  "plan_status": "PREDECLARED_NO_RTTOV_EXECUTED",
+  "planned_and_returned_case_count": [
+    6,
+    6
+  ],
+  "private_backup_manifest_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr398-centroid-viewing-angle-v2-2026-10-10/private/PRIVATE_BACKUP_v2.json",
+  "private_backup_manifest_sha256": "7bf831defb1978411fe11de99256da4abac3d62f793a99c8fceb931de007bb92",
+  "public_result_copy_path": "harness/evidence/pr398_followup_2026-10-10/RESULT_v2.json",
+  "public_result_copy_sha256": "a246386cb2d5967924a771cecad1858270514be4b97c4ccef4be1658f40b1feb",
+  "result_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr398-centroid-viewing-angle-v2-2026-10-10/private/RESULT.json",
+  "result_sha256": "a246386cb2d5967924a771cecad1858270514be4b97c4ccef4be1658f40b1feb",
+  "result_status": "ALL_PREDECLARED_CASES_RETURNED",
+  "schema": "pr398_centroid_viewing_angle_v2_result_summary_v1",
+  "science_accepted": false,
+  "temporal_sensitivity": [
+    {
+      "BT_later_minus_frame1_K": [
+        0.0022551633337002386,
+        0.004204433376060024,
+        0.0028583903559251667,
+        0.0043457897842245075,
+        0.005555977237008847,
+        0.00668789076360099,
+        0.00557200424009352
+      ],
+      "Jo_later_minus_frame1": 0.026969322423212816,
+      "from_time": "2025-07-19_05:56:00",
+      "geometry_scenario": "fixed_AMI_candidate_pixel_center",
+      "max_abs_BT_difference_K": 0.00668789076360099,
+      "to_time": "2025-07-19_05:57:00"
+    },
+    {
+      "BT_later_minus_frame1_K": [
+        0.0033674758819870476,
+        0.006794611996440381,
+        0.004620316610669306,
+        0.00702264702397315,
+        0.008949396055356829,
+        0.010810980108203694,
+        0.008984141874691431
+      ],
+      "Jo_later_minus_frame1": 0.04381461778734774,
+      "from_time": "2025-07-19_05:56:00",
+      "geometry_scenario": "fixed_AMI_candidate_pixel_center",
+      "max_abs_BT_difference_K": 0.010810980108203694,
+      "to_time": "2025-07-19_05:57:40"
+    },
+    {
+      "BT_later_minus_frame1_K": [
+        0.002255310250916409,
+        0.004204290598636362,
+        0.002858322890801901,
+        0.0043455937337171235,
+        0.005555728427509621,
+        0.006687645344129578,
+        0.005571910465050678
+      ],
+      "Jo_later_minus_frame1": 0.026968181208928854,
+      "from_time": "2025-07-19_05:56:00",
+      "geometry_scenario": "saved_native_cell_center_viewing_geometry",
+      "max_abs_BT_difference_K": 0.006687645344129578,
+      "to_time": "2025-07-19_05:57:00"
+    },
+    {
+      "BT_later_minus_frame1_K": [
+        0.0033677124332598396,
+        0.006794365632572408,
+        0.004620198946781784,
+        0.007022319834220525,
+        0.008949002563610975,
+        0.010810561924131434,
+        0.008983983997950418
+      ],
+      "Jo_later_minus_frame1": 0.043812720466007704,
+      "from_time": "2025-07-19_05:56:00",
+      "geometry_scenario": "saved_native_cell_center_viewing_geometry",
+      "max_abs_BT_difference_K": 0.010810561924131434,
+      "to_time": "2025-07-19_05:57:40"
+    }
+  ],
+  "v1_withdrawal": {
+    "old_entrypoint_now_fails_closed": true,
+    "original_cth_plan_sha256": "c41199459a909435de05f082da3d972c080dc1afe01e4b03cee3c2ad6b1e8d2b",
+    "original_source_preserved_as_disabled": "harness/evidence/pr398_followup_2026-10-10/run_time_geometry_sensitivity_cth_v1_unexecuted.py.disabled",
+    "original_source_sha256": "a1e31fd9aed55630ebb66905050a845e92c81f7ce81f3733a833dddf7dda4fef",
+    "sidecar_path": "harness/evidence/pr398_followup_2026-10-10/V1_WITHDRAWN.json",
+    "sidecar_sha256": "ee176ef5ff8b37048caa17a64425a550d848f022fcc504382ef420ea8b2d8987",
+    "status": "WITHDRAWN_UNEXECUTED"
+  }
+}

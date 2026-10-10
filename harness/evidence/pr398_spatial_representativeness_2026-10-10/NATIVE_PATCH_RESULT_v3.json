@@ -1,0 +1,3158 @@
+{
+  "H_calls": 0,
+  "M_calls": 0,
+  "canonical_npz": {
+    "directory_mode": "0o700",
+    "hash_matches_private": true,
+    "mode": "0o600",
+    "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_sensitivity_20261010/native_patch_3x3_frames_1_4_6_v3.npz",
+    "sha256": "947c72c12ebe289b7ddc84fba1281635d77ffbcfe23f204345cc97abeebc1c21"
+  },
+  "center_matches_intake_at_all_frames": true,
+  "common_predeclaration_sha256": "1e70efc9548111ee05dc690c35c377a4cd0eb6f71d8130d013d1dec8535fe2f0",
+  "diagnostic_table": [
+    {
+      "frame_index": 1,
+      "host_eta_dry_mass_sum_kg_m2": 9714.686393737793,
+      "host_eta_mass_weighted_water_path_reported": false,
+      "hydrometeors": {
+        "QCLOUD": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QGRAUP": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QICE": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QRAIN": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QSNOW": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "i": 47,
+      "j": 85,
+      "latitude_deg": 35.36763381958008,
+      "longitude_deg": 122.08984375,
+      "maxsat_liquid_layer_bottomup_0based": 3,
+      "maxsat_liquid_qv_over_qs_water_percent": 95.90776623927337,
+      "maxsat_phase_aware_layer_bottomup_0based": 3,
+      "maxsat_phase_aware_qv_over_qs_percent": 95.90776623927337,
+      "nc_raw": {
+        "maximum_raw": 0.0,
+        "positive_level_count": 0,
+        "unweighted_native_level_sum_raw": 0.0
+      },
+      "number_fields_raw": {
+        "QIB": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNCCN": {
+          "maximum_raw": 1855839872.0,
+          "positive_level_count": 39,
+          "unweighted_native_level_sum_raw": 18626203976.0
+        },
+        "QNCLOUD": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNICE": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNRAIN": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "phase_metric_interpretation": "KDM6 thermo qv/qs ratio; not observed vapor-pressure/e_es relative humidity",
+      "qc_unweighted_sum_is_lwp": false,
+      "qv_max_kgkg_dry": 0.01873984932899475,
+      "surface": {
+        "HGT": 0.0,
+        "MU": 301.0745544433594,
+        "MUB": 95000.0,
+        "Q2": 0.01923525705933571,
+        "T2": 299.45733642578125,
+        "TSK": 300.8484191894531,
+        "U10": -0.10461227595806122,
+        "V10": 4.425509452819824,
+        "latitude_deg": 35.36763381958008,
+        "longitude_deg": 122.08984375,
+        "seaice": 0.0,
+        "xland": 2.0
+      },
+      "temperature_max_K": 299.05726154457665,
+      "temperature_min_K": 198.88876237747556,
+      "time": "2025-07-19_05:56:00"
+    },
+    {
+      "frame_index": 1,
+      "host_eta_dry_mass_sum_kg_m2": 9714.33288192749,
+      "host_eta_mass_weighted_water_path_reported": false,
+      "hydrometeors": {
+        "QCLOUD": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QGRAUP": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QICE": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QRAIN": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QSNOW": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "i": 48,
+      "j": 85,
+      "latitude_deg": 35.369850158691406,
+      "longitude_deg": 122.14602661132812,
+      "maxsat_liquid_layer_bottomup_0based": 3,
+      "maxsat_liquid_qv_over_qs_water_percent": 95.9425963525739,
+      "maxsat_phase_aware_layer_bottomup_0based": 3,
+      "maxsat_phase_aware_qv_over_qs_percent": 95.9425963525739,
+      "nc_raw": {
+        "maximum_raw": 0.0,
+        "positive_level_count": 0,
+        "unweighted_native_level_sum_raw": 0.0
+      },
+      "number_fields_raw": {
+        "QIB": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNCCN": {
+          "maximum_raw": 1928089856.0,
+          "positive_level_count": 39,
+          "unweighted_native_level_sum_raw": 18649966672.0
+        },
+        "QNCLOUD": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNICE": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNRAIN": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "phase_metric_interpretation": "KDM6 thermo qv/qs ratio; not observed vapor-pressure/e_es relative humidity",
+      "qc_unweighted_sum_is_lwp": false,
+      "qv_max_kgkg_dry": 0.018758460879325867,
+      "surface": {
+        "HGT": 0.0,
+        "MU": 297.6059875488281,
+        "MUB": 95000.0,
+        "Q2": 0.019259702414274216,
+        "T2": 299.4864196777344,
+        "TSK": 300.8819274902344,
+        "U10": 0.0395745113492012,
+        "V10": 4.506807804107666,
+        "latitude_deg": 35.369850158691406,
+        "longitude_deg": 122.14602661132812,
+        "seaice": 0.0,
+        "xland": 2.0
+      },
+      "temperature_max_K": 299.0784495539237,
+      "temperature_min_K": 198.89185880362456,
+      "time": "2025-07-19_05:56:00"
+    },
+    {
+      "frame_index": 1,
+      "host_eta_dry_mass_sum_kg_m2": 9713.960189819336,
+      "host_eta_mass_weighted_water_path_reported": false,
+      "hydrometeors": {
+        "QCLOUD": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QGRAUP": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QICE": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QRAIN": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QSNOW": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "i": 49,
+      "j": 85,
+      "latitude_deg": 35.372039794921875,
+      "longitude_deg": 122.20220947265625,
+      "maxsat_liquid_layer_bottomup_0based": 3,
+      "maxsat_liquid_qv_over_qs_water_percent": 95.8600289792808,
+      "maxsat_phase_aware_layer_bottomup_0based": 3,
+      "maxsat_phase_aware_qv_over_qs_percent": 95.8600289792808,
+      "nc_raw": {
+        "maximum_raw": 0.0,
+        "positive_level_count": 0,
+        "unweighted_native_level_sum_raw": 0.0
+      },
+      "number_fields_raw": {
+        "QIB": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNCCN": {
+          "maximum_raw": 1959042944.0,
+          "positive_level_count": 39,
+          "unweighted_native_level_sum_raw": 18559767336.0
+        },
+        "QNCLOUD": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNICE": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNRAIN": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "phase_metric_interpretation": "KDM6 thermo qv/qs ratio; not observed vapor-pressure/e_es relative humidity",
+      "qc_unweighted_sum_is_lwp": false,
+      "qv_max_kgkg_dry": 0.018767548725008965,
+      "surface": {
+        "HGT": 0.0,
+        "MU": 293.9507141113281,
+        "MUB": 95000.0,
+        "Q2": 0.01927282102406025,
+        "T2": 299.5077209472656,
+        "TSK": 300.87774658203125,
+        "U10": 0.18737436830997467,
+        "V10": 4.594804286956787,
+        "latitude_deg": 35.372039794921875,
+        "longitude_deg": 122.20220947265625,
+        "seaice": 0.0,
+        "xland": 2.0
+      },
+      "temperature_max_K": 299.10264008167337,
+      "temperature_min_K": 198.90644610956429,
+      "time": "2025-07-19_05:56:00"
+    },
+    {
+      "frame_index": 1,
+      "host_eta_dry_mass_sum_kg_m2": 9714.930912017822,
+      "host_eta_mass_weighted_water_path_reported": false,
+      "hydrometeors": {
+        "QCLOUD": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QGRAUP": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QICE": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QRAIN": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QSNOW": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "i": 47,
+      "j": 86,
+      "latitude_deg": 35.4134407043457,
+      "longitude_deg": 122.08709716796875,
+      "maxsat_liquid_layer_bottomup_0based": 3,
+      "maxsat_liquid_qv_over_qs_water_percent": 95.43300439401222,
+      "maxsat_phase_aware_layer_bottomup_0based": 3,
+      "maxsat_phase_aware_qv_over_qs_percent": 95.43300439401222,
+      "nc_raw": {
+        "maximum_raw": 0.0,
+        "positive_level_count": 0,
+        "unweighted_native_level_sum_raw": 0.0
+      },
+      "number_fields_raw": {
+        "QIB": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNCCN": {
+          "maximum_raw": 1513571840.0,
+          "positive_level_count": 39,
+          "unweighted_native_level_sum_raw": 17392738136.0
+        },
+        "QNCLOUD": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNICE": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNRAIN": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "phase_metric_interpretation": "KDM6 thermo qv/qs ratio; not observed vapor-pressure/e_es relative humidity",
+      "qc_unweighted_sum_is_lwp": false,
+      "qv_max_kgkg_dry": 0.01864209957420826,
+      "surface": {
+        "HGT": 0.0,
+        "MU": 303.472900390625,
+        "MUB": 95000.0,
+        "Q2": 0.019125033169984818,
+        "T2": 299.4153747558594,
+        "TSK": 300.71466064453125,
+        "U10": 0.028375940397381783,
+        "V10": 4.240085601806641,
+        "latitude_deg": 35.4134407043457,
+        "longitude_deg": 122.08709716796875,
+        "seaice": 0.0,
+        "xland": 2.0
+      },
+      "temperature_max_K": 299.02414505680224,
+      "temperature_min_K": 198.72792172481257,
+      "time": "2025-07-19_05:56:00"
+    },
+    {
+      "frame_index": 1,
+      "host_eta_dry_mass_sum_kg_m2": 9714.65686416626,
+      "host_eta_mass_weighted_water_path_reported": false,
+      "hydrometeors": {
+        "QCLOUD": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QGRAUP": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QICE": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QRAIN": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QSNOW": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "i": 48,
+      "j": 86,
+      "latitude_deg": 35.4156608581543,
+      "longitude_deg": 122.143310546875,
+      "maxsat_liquid_layer_bottomup_0based": 3,
+      "maxsat_liquid_qv_over_qs_water_percent": 95.54302932179498,
+      "maxsat_phase_aware_layer_bottomup_0based": 3,
+      "maxsat_phase_aware_qv_over_qs_percent": 95.54302932179498,
+      "nc_raw": {
+        "maximum_raw": 0.0,
+        "positive_level_count": 0,
+        "unweighted_native_level_sum_raw": 0.0
+      },
+      "number_fields_raw": {
+        "QIB": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNCCN": {
+          "maximum_raw": 1703669120.0,
+          "positive_level_count": 39,
+          "unweighted_native_level_sum_raw": 17653789608.0
+        },
+        "QNCLOUD": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNICE": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNRAIN": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "phase_metric_interpretation": "KDM6 thermo qv/qs ratio; not observed vapor-pressure/e_es relative humidity",
+      "qc_unweighted_sum_is_lwp": false,
+      "qv_max_kgkg_dry": 0.018663737922906876,
+      "surface": {
+        "HGT": 0.0,
+        "MU": 300.78521728515625,
+        "MUB": 95000.0,
+        "Q2": 0.019154582172632217,
+        "T2": 299.44512939453125,
+        "TSK": 300.77423095703125,
+        "U10": 0.1695604920387268,
+        "V10": 4.309659004211426,
+        "latitude_deg": 35.4156608581543,
+        "longitude_deg": 122.143310546875,
+        "seaice": 0.0,
+        "xland": 2.0
+      },
+      "temperature_max_K": 299.0509829529219,
+      "temperature_min_K": 198.72859576413734,
+      "time": "2025-07-19_05:56:00"
+    },
+    {
+      "frame_index": 1,
+      "host_eta_dry_mass_sum_kg_m2": 9714.3519821167,
+      "host_eta_mass_weighted_water_path_reported": false,
+      "hydrometeors": {
+        "QCLOUD": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QGRAUP": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QICE": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QRAIN": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QSNOW": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "i": 49,
+      "j": 86,
+      "latitude_deg": 35.4178581237793,
+      "longitude_deg": 122.19952392578125,
+      "maxsat_liquid_layer_bottomup_0based": 3,
+      "maxsat_liquid_qv_over_qs_water_percent": 95.5771288272255,
+      "maxsat_phase_aware_layer_bottomup_0based": 3,
+      "maxsat_phase_aware_qv_over_qs_percent": 95.5771288272255,
+      "nc_raw": {
+        "maximum_raw": 0.0,
+        "positive_level_count": 0,
+        "unweighted_native_level_sum_raw": 0.0
+      },
+      "number_fields_raw": {
+        "QIB": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNCCN": {
+          "maximum_raw": 1843601280.0,
+          "positive_level_count": 39,
+          "unweighted_native_level_sum_raw": 17803107184.0
+        },
+        "QNCLOUD": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNICE": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNRAIN": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "phase_metric_interpretation": "KDM6 thermo qv/qs ratio; not observed vapor-pressure/e_es relative humidity",
+      "qc_unweighted_sum_is_lwp": false,
+      "qv_max_kgkg_dry": 0.01867583580315113,
+      "surface": {
+        "HGT": 0.0,
+        "MU": 297.7942199707031,
+        "MUB": 95000.0,
+        "Q2": 0.019173242151737213,
+        "T2": 299.4718322753906,
+        "TSK": 300.7931213378906,
+        "U10": 0.3134661912918091,
+        "V10": 4.390345096588135,
+        "latitude_deg": 35.4178581237793,
+        "longitude_deg": 122.19952392578125,
+        "seaice": 0.0,
+        "xland": 2.0
+      },
+      "temperature_max_K": 299.0742166236615,
+      "temperature_min_K": 198.7415960144493,
+      "time": "2025-07-19_05:56:00"
+    },
+    {
+      "frame_index": 1,
+      "host_eta_dry_mass_sum_kg_m2": 9715.062133789062,
+      "host_eta_mass_weighted_water_path_reported": false,
+      "hydrometeors": {
+        "QCLOUD": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QGRAUP": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QICE": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QRAIN": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QSNOW": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "i": 47,
+      "j": 87,
+      "latitude_deg": 35.45924758911133,
+      "longitude_deg": 122.0843505859375,
+      "maxsat_liquid_layer_bottomup_0based": 3,
+      "maxsat_liquid_qv_over_qs_water_percent": 95.14604233659942,
+      "maxsat_phase_aware_layer_bottomup_0based": 3,
+      "maxsat_phase_aware_qv_over_qs_percent": 95.14604233659942,
+      "nc_raw": {
+        "maximum_raw": 0.0,
+        "positive_level_count": 0,
+        "unweighted_native_level_sum_raw": 0.0
+      },
+      "number_fields_raw": {
+        "QIB": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNCCN": {
+          "maximum_raw": 1110752256.0,
+          "positive_level_count": 39,
+          "unweighted_native_level_sum_raw": 16110380816.0
+        },
+        "QNCLOUD": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNICE": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNRAIN": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "phase_metric_interpretation": "KDM6 thermo qv/qs ratio; not observed vapor-pressure/e_es relative humidity",
+      "qc_unweighted_sum_is_lwp": false,
+      "qv_max_kgkg_dry": 0.018553486093878746,
+      "surface": {
+        "HGT": 0.0,
+        "MU": 304.7617492675781,
+        "MUB": 95000.0,
+        "Q2": 0.01901319995522499,
+        "T2": 299.3479919433594,
+        "TSK": 300.46490478515625,
+        "U10": 0.14186972379684448,
+        "V10": 4.04872989654541,
+        "latitude_deg": 35.45924758911133,
+        "longitude_deg": 122.0843505859375,
+        "seaice": 0.0,
+        "xland": 2.0
+      },
+      "temperature_max_K": 298.97452560224605,
+      "temperature_min_K": 198.5970894535738,
+      "time": "2025-07-19_05:56:00"
+    },
+    {
+      "frame_index": 1,
+      "host_eta_dry_mass_sum_kg_m2": 9714.858520507812,
+      "host_eta_mass_weighted_water_path_reported": false,
+      "hydrometeors": {
+        "QCLOUD": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QGRAUP": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QICE": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QRAIN": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QSNOW": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "i": 48,
+      "j": 87,
+      "latitude_deg": 35.46147918701172,
+      "longitude_deg": 122.14059448242188,
+      "maxsat_liquid_layer_bottomup_0based": 3,
+      "maxsat_liquid_qv_over_qs_water_percent": 95.18073605626347,
+      "maxsat_phase_aware_layer_bottomup_0based": 3,
+      "maxsat_phase_aware_qv_over_qs_percent": 95.18073605626347,
+      "nc_raw": {
+        "maximum_raw": 0.0,
+        "positive_level_count": 0,
+        "unweighted_native_level_sum_raw": 0.0
+      },
+      "number_fields_raw": {
+        "QIB": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNCCN": {
+          "maximum_raw": 1248137088.0,
+          "positive_level_count": 39,
+          "unweighted_native_level_sum_raw": 16433714880.0
+        },
+        "QNCLOUD": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNICE": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNRAIN": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "phase_metric_interpretation": "KDM6 thermo qv/qs ratio; not observed vapor-pressure/e_es relative humidity",
+      "qc_unweighted_sum_is_lwp": false,
+      "qv_max_kgkg_dry": 0.018568068742752075,
+      "surface": {
+        "HGT": 0.0,
+        "MU": 302.76348876953125,
+        "MUB": 95000.0,
+        "Q2": 0.019038591533899307,
+        "T2": 299.3859558105469,
+        "TSK": 300.56048583984375,
+        "U10": 0.2954627275466919,
+        "V10": 4.102165699005127,
+        "latitude_deg": 35.46147918701172,
+        "longitude_deg": 122.14059448242188,
+        "seaice": 0.0,
+        "xland": 2.0
+      },
+      "temperature_max_K": 299.0031076043867,
+      "temperature_min_K": 198.59108183939014,
+      "time": "2025-07-19_05:56:00"
+    },
+    {
+      "frame_index": 1,
+      "host_eta_dry_mass_sum_kg_m2": 9714.603450775146,
+      "host_eta_mass_weighted_water_path_reported": false,
+      "hydrometeors": {
+        "QCLOUD": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QGRAUP": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QICE": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QRAIN": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QSNOW": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "i": 49,
+      "j": 87,
+      "latitude_deg": 35.46367645263672,
+      "longitude_deg": 122.19686889648438,
+      "maxsat_liquid_layer_bottomup_0based": 3,
+      "maxsat_liquid_qv_over_qs_water_percent": 95.28414908872674,
+      "maxsat_phase_aware_layer_bottomup_0based": 3,
+      "maxsat_phase_aware_qv_over_qs_percent": 95.28414908872674,
+      "nc_raw": {
+        "maximum_raw": 0.0,
+        "positive_level_count": 0,
+        "unweighted_native_level_sum_raw": 0.0
+      },
+      "number_fields_raw": {
+        "QIB": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNCCN": {
+          "maximum_raw": 1465272320.0,
+          "positive_level_count": 39,
+          "unweighted_native_level_sum_raw": 16687091072.0
+        },
+        "QNCLOUD": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNICE": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNRAIN": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "phase_metric_interpretation": "KDM6 thermo qv/qs ratio; not observed vapor-pressure/e_es relative humidity",
+      "qc_unweighted_sum_is_lwp": false,
+      "qv_max_kgkg_dry": 0.01858210377395153,
+      "surface": {
+        "HGT": 0.0,
+        "MU": 300.2680969238281,
+        "MUB": 95000.0,
+        "Q2": 0.01906047947704792,
+        "T2": 299.4154968261719,
+        "TSK": 300.6098937988281,
+        "U10": 0.44339194893836975,
+        "V10": 4.163875102996826,
+        "latitude_deg": 35.46367645263672,
+        "longitude_deg": 122.19686889648438,
+        "seaice": 0.0,
+        "xland": 2.0
+      },
+      "temperature_max_K": 299.0300281434744,
+      "temperature_min_K": 198.59934997541296,
+      "time": "2025-07-19_05:56:00"
+    },
+    {
+      "frame_index": 4,
+      "host_eta_dry_mass_sum_kg_m2": 9714.912559509277,
+      "host_eta_mass_weighted_water_path_reported": false,
+      "hydrometeors": {
+        "QCLOUD": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QGRAUP": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QICE": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QRAIN": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QSNOW": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "i": 47,
+      "j": 85,
+      "latitude_deg": 35.36763381958008,
+      "longitude_deg": 122.08984375,
+      "maxsat_liquid_layer_bottomup_0based": 3,
+      "maxsat_liquid_qv_over_qs_water_percent": 95.93938922237525,
+      "maxsat_phase_aware_layer_bottomup_0based": 3,
+      "maxsat_phase_aware_qv_over_qs_percent": 95.93938922237525,
+      "nc_raw": {
+        "maximum_raw": 0.0,
+        "positive_level_count": 0,
+        "unweighted_native_level_sum_raw": 0.0
+      },
+      "number_fields_raw": {
+        "QIB": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNCCN": {
+          "maximum_raw": 1855049984.0,
+          "positive_level_count": 39,
+          "unweighted_native_level_sum_raw": 18655187288.0
+        },
+        "QNCLOUD": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNICE": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNRAIN": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "phase_metric_interpretation": "KDM6 thermo qv/qs ratio; not observed vapor-pressure/e_es relative humidity",
+      "qc_unweighted_sum_is_lwp": false,
+      "qv_max_kgkg_dry": 0.01874907687306404,
+      "surface": {
+        "HGT": 0.0,
+        "MU": 303.29705810546875,
+        "MUB": 95000.0,
+        "Q2": 0.01924419030547142,
+        "T2": 299.4630432128906,
+        "TSK": 300.8493347167969,
+        "U10": -0.07632388919591904,
+        "V10": 4.431790828704834,
+        "latitude_deg": 35.36763381958008,
+        "longitude_deg": 122.08984375,
+        "seaice": 0.0,
+        "xland": 2.0
+      },
+      "temperature_max_K": 299.06266167343557,
+      "temperature_min_K": 198.9182922449625,
+      "time": "2025-07-19_05:57:00"
+    },
+    {
+      "frame_index": 4,
+      "host_eta_dry_mass_sum_kg_m2": 9714.554096221924,
+      "host_eta_mass_weighted_water_path_reported": false,
+      "hydrometeors": {
+        "QCLOUD": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QGRAUP": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QICE": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QRAIN": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QSNOW": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "i": 48,
+      "j": 85,
+      "latitude_deg": 35.369850158691406,
+      "longitude_deg": 122.14602661132812,
+      "maxsat_liquid_layer_bottomup_0based": 3,
+      "maxsat_liquid_qv_over_qs_water_percent": 95.95953286982053,
+      "maxsat_phase_aware_layer_bottomup_0based": 3,
+      "maxsat_phase_aware_qv_over_qs_percent": 95.95953286982053,
+      "nc_raw": {
+        "maximum_raw": 0.0,
+        "positive_level_count": 0,
+        "unweighted_native_level_sum_raw": 0.0
+      },
+      "number_fields_raw": {
+        "QIB": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNCCN": {
+          "maximum_raw": 1926482688.0,
+          "positive_level_count": 39,
+          "unweighted_native_level_sum_raw": 18681575160.0
+        },
+        "QNCLOUD": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNICE": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNRAIN": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "phase_metric_interpretation": "KDM6 thermo qv/qs ratio; not observed vapor-pressure/e_es relative humidity",
+      "qc_unweighted_sum_is_lwp": false,
+      "qv_max_kgkg_dry": 0.01876780577003956,
+      "surface": {
+        "HGT": 0.0,
+        "MU": 299.78094482421875,
+        "MUB": 95000.0,
+        "Q2": 0.01926863007247448,
+        "T2": 299.4889831542969,
+        "TSK": 300.8828430175781,
+        "U10": 0.06829133629798889,
+        "V10": 4.513810634613037,
+        "latitude_deg": 35.369850158691406,
+        "longitude_deg": 122.14602661132812,
+        "seaice": 0.0,
+        "xland": 2.0
+      },
+      "temperature_max_K": 299.08639180121213,
+      "temperature_min_K": 198.92232589058693,
+      "time": "2025-07-19_05:57:00"
+    },
+    {
+      "frame_index": 4,
+      "host_eta_dry_mass_sum_kg_m2": 9714.158409118652,
+      "host_eta_mass_weighted_water_path_reported": false,
+      "hydrometeors": {
+        "QCLOUD": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QGRAUP": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QICE": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QRAIN": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QSNOW": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "i": 49,
+      "j": 85,
+      "latitude_deg": 35.372039794921875,
+      "longitude_deg": 122.20220947265625,
+      "maxsat_liquid_layer_bottomup_0based": 3,
+      "maxsat_liquid_qv_over_qs_water_percent": 95.87863623691607,
+      "maxsat_phase_aware_layer_bottomup_0based": 3,
+      "maxsat_phase_aware_qv_over_qs_percent": 95.87863623691607,
+      "nc_raw": {
+        "maximum_raw": 0.0,
+        "positive_level_count": 0,
+        "unweighted_native_level_sum_raw": 0.0
+      },
+      "number_fields_raw": {
+        "QIB": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNCCN": {
+          "maximum_raw": 1955733504.0,
+          "positive_level_count": 39,
+          "unweighted_native_level_sum_raw": 18585606576.0
+        },
+        "QNCLOUD": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNICE": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNRAIN": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "phase_metric_interpretation": "KDM6 thermo qv/qs ratio; not observed vapor-pressure/e_es relative humidity",
+      "qc_unweighted_sum_is_lwp": false,
+      "qv_max_kgkg_dry": 0.018777241930365562,
+      "surface": {
+        "HGT": 0.0,
+        "MU": 295.89837646484375,
+        "MUB": 95000.0,
+        "Q2": 0.019282124936580658,
+        "T2": 299.5105285644531,
+        "TSK": 300.878662109375,
+        "U10": 0.2161957174539566,
+        "V10": 4.601817607879639,
+        "latitude_deg": 35.372039794921875,
+        "longitude_deg": 122.20220947265625,
+        "seaice": 0.0,
+        "xland": 2.0
+      },
+      "temperature_max_K": 299.10587365076856,
+      "temperature_min_K": 198.93745350787037,
+      "time": "2025-07-19_05:57:00"
+    },
+    {
+      "frame_index": 4,
+      "host_eta_dry_mass_sum_kg_m2": 9715.16191482544,
+      "host_eta_mass_weighted_water_path_reported": false,
+      "hydrometeors": {
+        "QCLOUD": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QGRAUP": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QICE": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QRAIN": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QSNOW": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "i": 47,
+      "j": 86,
+      "latitude_deg": 35.4134407043457,
+      "longitude_deg": 122.08709716796875,
+      "maxsat_liquid_layer_bottomup_0based": 3,
+      "maxsat_liquid_qv_over_qs_water_percent": 95.46952783886121,
+      "maxsat_phase_aware_layer_bottomup_0based": 3,
+      "maxsat_phase_aware_qv_over_qs_percent": 95.46952783886121,
+      "nc_raw": {
+        "maximum_raw": 0.0,
+        "positive_level_count": 0,
+        "unweighted_native_level_sum_raw": 0.0
+      },
+      "number_fields_raw": {
+        "QIB": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNCCN": {
+          "maximum_raw": 1512528768.0,
+          "positive_level_count": 39,
+          "unweighted_native_level_sum_raw": 17412681240.0
+        },
+        "QNCLOUD": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNICE": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNRAIN": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "phase_metric_interpretation": "KDM6 thermo qv/qs ratio; not observed vapor-pressure/e_es relative humidity",
+      "qc_unweighted_sum_is_lwp": false,
+      "qv_max_kgkg_dry": 0.018649980425834656,
+      "surface": {
+        "HGT": 0.0,
+        "MU": 305.7438659667969,
+        "MUB": 95000.0,
+        "Q2": 0.0191327054053545,
+        "T2": 299.4218444824219,
+        "TSK": 300.715576171875,
+        "U10": 0.05737120285630226,
+        "V10": 4.242722034454346,
+        "latitude_deg": 35.4134407043457,
+        "longitude_deg": 122.08709716796875,
+        "seaice": 0.0,
+        "xland": 2.0
+      },
+      "temperature_max_K": 299.03005084504247,
+      "temperature_min_K": 198.75402818257226,
+      "time": "2025-07-19_05:57:00"
+    },
+    {
+      "frame_index": 4,
+      "host_eta_dry_mass_sum_kg_m2": 9714.871189117432,
+      "host_eta_mass_weighted_water_path_reported": false,
+      "hydrometeors": {
+        "QCLOUD": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QGRAUP": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QICE": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QRAIN": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QSNOW": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "i": 48,
+      "j": 86,
+      "latitude_deg": 35.4156608581543,
+      "longitude_deg": 122.143310546875,
+      "maxsat_liquid_layer_bottomup_0based": 3,
+      "maxsat_liquid_qv_over_qs_water_percent": 95.57391050968127,
+      "maxsat_phase_aware_layer_bottomup_0based": 3,
+      "maxsat_phase_aware_qv_over_qs_percent": 95.57391050968127,
+      "nc_raw": {
+        "maximum_raw": 0.0,
+        "positive_level_count": 0,
+        "unweighted_native_level_sum_raw": 0.0
+      },
+      "number_fields_raw": {
+        "QIB": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNCCN": {
+          "maximum_raw": 1701969024.0,
+          "positive_level_count": 39,
+          "unweighted_native_level_sum_raw": 17678113664.0
+        },
+        "QNCLOUD": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNICE": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNRAIN": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "phase_metric_interpretation": "KDM6 thermo qv/qs ratio; not observed vapor-pressure/e_es relative humidity",
+      "qc_unweighted_sum_is_lwp": false,
+      "qv_max_kgkg_dry": 0.018672211095690727,
+      "surface": {
+        "HGT": 0.0,
+        "MU": 302.89068603515625,
+        "MUB": 95000.0,
+        "Q2": 0.019162848591804504,
+        "T2": 299.4508972167969,
+        "TSK": 300.775146484375,
+        "U10": 0.19875504076480865,
+        "V10": 4.313336372375488,
+        "latitude_deg": 35.4156608581543,
+        "longitude_deg": 122.143310546875,
+        "seaice": 0.0,
+        "xland": 2.0
+      },
+      "temperature_max_K": 299.05487370463305,
+      "temperature_min_K": 198.75552424238376,
+      "time": "2025-07-19_05:57:00"
+    },
+    {
+      "frame_index": 4,
+      "host_eta_dry_mass_sum_kg_m2": 9714.53673171997,
+      "host_eta_mass_weighted_water_path_reported": false,
+      "hydrometeors": {
+        "QCLOUD": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QGRAUP": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QICE": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QRAIN": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QSNOW": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "i": 49,
+      "j": 86,
+      "latitude_deg": 35.4178581237793,
+      "longitude_deg": 122.19952392578125,
+      "maxsat_liquid_layer_bottomup_0based": 3,
+      "maxsat_liquid_qv_over_qs_water_percent": 95.60059301045833,
+      "maxsat_phase_aware_layer_bottomup_0based": 3,
+      "maxsat_phase_aware_qv_over_qs_percent": 95.60059301045833,
+      "nc_raw": {
+        "maximum_raw": 0.0,
+        "positive_level_count": 0,
+        "unweighted_native_level_sum_raw": 0.0
+      },
+      "number_fields_raw": {
+        "QIB": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNCCN": {
+          "maximum_raw": 1841882624.0,
+          "positive_level_count": 39,
+          "unweighted_native_level_sum_raw": 17827832560.0
+        },
+        "QNCLOUD": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNICE": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNRAIN": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "phase_metric_interpretation": "KDM6 thermo qv/qs ratio; not observed vapor-pressure/e_es relative humidity",
+      "qc_unweighted_sum_is_lwp": false,
+      "qv_max_kgkg_dry": 0.018684612587094307,
+      "surface": {
+        "HGT": 0.0,
+        "MU": 299.6128234863281,
+        "MUB": 95000.0,
+        "Q2": 0.019181741401553154,
+        "T2": 299.4749755859375,
+        "TSK": 300.7940368652344,
+        "U10": 0.343397855758667,
+        "V10": 4.395035743713379,
+        "latitude_deg": 35.4178581237793,
+        "longitude_deg": 122.19952392578125,
+        "seaice": 0.0,
+        "xland": 2.0
+      },
+      "temperature_max_K": 299.08020092493445,
+      "temperature_min_K": 198.76907797915842,
+      "time": "2025-07-19_05:57:00"
+    },
+    {
+      "frame_index": 4,
+      "host_eta_dry_mass_sum_kg_m2": 9715.287521362305,
+      "host_eta_mass_weighted_water_path_reported": false,
+      "hydrometeors": {
+        "QCLOUD": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QGRAUP": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QICE": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QRAIN": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QSNOW": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "i": 47,
+      "j": 87,
+      "latitude_deg": 35.45924758911133,
+      "longitude_deg": 122.0843505859375,
+      "maxsat_liquid_layer_bottomup_0based": 3,
+      "maxsat_liquid_qv_over_qs_water_percent": 95.16796964594948,
+      "maxsat_phase_aware_layer_bottomup_0based": 3,
+      "maxsat_phase_aware_qv_over_qs_percent": 95.16796964594948,
+      "nc_raw": {
+        "maximum_raw": 0.0,
+        "positive_level_count": 0,
+        "unweighted_native_level_sum_raw": 0.0
+      },
+      "number_fields_raw": {
+        "QIB": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNCCN": {
+          "maximum_raw": 1110991616.0,
+          "positive_level_count": 39,
+          "unweighted_native_level_sum_raw": 16122983552.0
+        },
+        "QNCLOUD": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNICE": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNRAIN": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "phase_metric_interpretation": "KDM6 thermo qv/qs ratio; not observed vapor-pressure/e_es relative humidity",
+      "qc_unweighted_sum_is_lwp": false,
+      "qv_max_kgkg_dry": 0.018559757620096207,
+      "surface": {
+        "HGT": 0.0,
+        "MU": 306.9786376953125,
+        "MUB": 95000.0,
+        "Q2": 0.019019320607185364,
+        "T2": 299.3544921875,
+        "TSK": 300.4658203125,
+        "U10": 0.17301833629608154,
+        "V10": 4.048149585723877,
+        "latitude_deg": 35.45924758911133,
+        "longitude_deg": 122.0843505859375,
+        "seaice": 0.0,
+        "xland": 2.0
+      },
+      "temperature_max_K": 298.9811931439898,
+      "temperature_min_K": 198.61678245067588,
+      "time": "2025-07-19_05:57:00"
+    },
+    {
+      "frame_index": 4,
+      "host_eta_dry_mass_sum_kg_m2": 9715.05585861206,
+      "host_eta_mass_weighted_water_path_reported": false,
+      "hydrometeors": {
+        "QCLOUD": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QGRAUP": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QICE": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QRAIN": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QSNOW": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "i": 48,
+      "j": 87,
+      "latitude_deg": 35.46147918701172,
+      "longitude_deg": 122.14059448242188,
+      "maxsat_liquid_layer_bottomup_0based": 3,
+      "maxsat_liquid_qv_over_qs_water_percent": 95.2118910727795,
+      "maxsat_phase_aware_layer_bottomup_0based": 3,
+      "maxsat_phase_aware_qv_over_qs_percent": 95.2118910727795,
+      "nc_raw": {
+        "maximum_raw": 0.0,
+        "positive_level_count": 0,
+        "unweighted_native_level_sum_raw": 0.0
+      },
+      "number_fields_raw": {
+        "QIB": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNCCN": {
+          "maximum_raw": 1247928192.0,
+          "positive_level_count": 39,
+          "unweighted_native_level_sum_raw": 16453720392.0
+        },
+        "QNCLOUD": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNICE": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNRAIN": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "phase_metric_interpretation": "KDM6 thermo qv/qs ratio; not observed vapor-pressure/e_es relative humidity",
+      "qc_unweighted_sum_is_lwp": false,
+      "qv_max_kgkg_dry": 0.01857544481754303,
+      "surface": {
+        "HGT": 0.0,
+        "MU": 304.7054138183594,
+        "MUB": 95000.0,
+        "Q2": 0.01904578134417534,
+        "T2": 299.39166259765625,
+        "TSK": 300.5614013671875,
+        "U10": 0.32556208968162537,
+        "V10": 4.102998733520508,
+        "latitude_deg": 35.46147918701172,
+        "longitude_deg": 122.14059448242188,
+        "seaice": 0.0,
+        "xland": 2.0
+      },
+      "temperature_max_K": 299.01127955898573,
+      "temperature_min_K": 198.61233212895144,
+      "time": "2025-07-19_05:57:00"
+    },
+    {
+      "frame_index": 4,
+      "host_eta_dry_mass_sum_kg_m2": 9714.7844581604,
+      "host_eta_mass_weighted_water_path_reported": false,
+      "hydrometeors": {
+        "QCLOUD": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QGRAUP": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QICE": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QRAIN": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QSNOW": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "i": 49,
+      "j": 87,
+      "latitude_deg": 35.46367645263672,
+      "longitude_deg": 122.19686889648438,
+      "maxsat_liquid_layer_bottomup_0based": 3,
+      "maxsat_liquid_qv_over_qs_water_percent": 95.31644926389387,
+      "maxsat_phase_aware_layer_bottomup_0based": 3,
+      "maxsat_phase_aware_qv_over_qs_percent": 95.31644926389387,
+      "nc_raw": {
+        "maximum_raw": 0.0,
+        "positive_level_count": 0,
+        "unweighted_native_level_sum_raw": 0.0
+      },
+      "number_fields_raw": {
+        "QIB": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNCCN": {
+          "maximum_raw": 1468183680.0,
+          "positive_level_count": 39,
+          "unweighted_native_level_sum_raw": 16712642184.0
+        },
+        "QNCLOUD": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNICE": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNRAIN": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "phase_metric_interpretation": "KDM6 thermo qv/qs ratio; not observed vapor-pressure/e_es relative humidity",
+      "qc_unweighted_sum_is_lwp": false,
+      "qv_max_kgkg_dry": 0.018590172752738,
+      "surface": {
+        "HGT": 0.0,
+        "MU": 302.041748046875,
+        "MUB": 95000.0,
+        "Q2": 0.01906830072402954,
+        "T2": 299.4189758300781,
+        "TSK": 300.6108093261719,
+        "U10": 0.47248542308807373,
+        "V10": 4.166547775268555,
+        "latitude_deg": 35.46367645263672,
+        "longitude_deg": 122.19686889648438,
+        "seaice": 0.0,
+        "xland": 2.0
+      },
+      "temperature_max_K": 299.03808727427355,
+      "temperature_min_K": 198.62194281704416,
+      "time": "2025-07-19_05:57:00"
+    },
+    {
+      "frame_index": 6,
+      "host_eta_dry_mass_sum_kg_m2": 9715.019416809082,
+      "host_eta_mass_weighted_water_path_reported": false,
+      "hydrometeors": {
+        "QCLOUD": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QGRAUP": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QICE": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QRAIN": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QSNOW": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "i": 47,
+      "j": 85,
+      "latitude_deg": 35.36763381958008,
+      "longitude_deg": 122.08984375,
+      "maxsat_liquid_layer_bottomup_0based": 3,
+      "maxsat_liquid_qv_over_qs_water_percent": 95.9702928122782,
+      "maxsat_phase_aware_layer_bottomup_0based": 3,
+      "maxsat_phase_aware_qv_over_qs_percent": 95.9702928122782,
+      "nc_raw": {
+        "maximum_raw": 0.0,
+        "positive_level_count": 0,
+        "unweighted_native_level_sum_raw": 0.0
+      },
+      "number_fields_raw": {
+        "QIB": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNCCN": {
+          "maximum_raw": 1854582400.0,
+          "positive_level_count": 39,
+          "unweighted_native_level_sum_raw": 18674143888.0
+        },
+        "QNCLOUD": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNICE": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNRAIN": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "phase_metric_interpretation": "KDM6 thermo qv/qs ratio; not observed vapor-pressure/e_es relative humidity",
+      "qc_unweighted_sum_is_lwp": false,
+      "qv_max_kgkg_dry": 0.018755260854959488,
+      "surface": {
+        "HGT": 0.0,
+        "MU": 304.3441162109375,
+        "MUB": 95000.0,
+        "Q2": 0.019250161945819855,
+        "T2": 299.4661560058594,
+        "TSK": 300.8499450683594,
+        "U10": -0.0571989081799984,
+        "V10": 4.436282634735107,
+        "latitude_deg": 35.36763381958008,
+        "longitude_deg": 122.08984375,
+        "seaice": 0.0,
+        "xland": 2.0
+      },
+      "temperature_max_K": 299.06612377640226,
+      "temperature_min_K": 198.93804846366723,
+      "time": "2025-07-19_05:57:40"
+    },
+    {
+      "frame_index": 6,
+      "host_eta_dry_mass_sum_kg_m2": 9714.641056060791,
+      "host_eta_mass_weighted_water_path_reported": false,
+      "hydrometeors": {
+        "QCLOUD": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QGRAUP": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QICE": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QRAIN": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QSNOW": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "i": 48,
+      "j": 85,
+      "latitude_deg": 35.369850158691406,
+      "longitude_deg": 122.14602661132812,
+      "maxsat_liquid_layer_bottomup_0based": 3,
+      "maxsat_liquid_qv_over_qs_water_percent": 95.98792293093744,
+      "maxsat_phase_aware_layer_bottomup_0based": 3,
+      "maxsat_phase_aware_qv_over_qs_percent": 95.98792293093744,
+      "nc_raw": {
+        "maximum_raw": 0.0,
+        "positive_level_count": 0,
+        "unweighted_native_level_sum_raw": 0.0
+      },
+      "number_fields_raw": {
+        "QIB": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNCCN": {
+          "maximum_raw": 1925530880.0,
+          "positive_level_count": 39,
+          "unweighted_native_level_sum_raw": 18702859232.0
+        },
+        "QNCLOUD": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNICE": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNRAIN": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "phase_metric_interpretation": "KDM6 thermo qv/qs ratio; not observed vapor-pressure/e_es relative humidity",
+      "qc_unweighted_sum_is_lwp": false,
+      "qv_max_kgkg_dry": 0.018774060532450676,
+      "surface": {
+        "HGT": 0.0,
+        "MU": 300.6295166015625,
+        "MUB": 95000.0,
+        "Q2": 0.019274752587080002,
+        "T2": 299.4926452636719,
+        "TSK": 300.8834533691406,
+        "U10": 0.08799990266561508,
+        "V10": 4.518753528594971,
+        "latitude_deg": 35.369850158691406,
+        "longitude_deg": 122.14602661132812,
+        "seaice": 0.0,
+        "xland": 2.0
+      },
+      "temperature_max_K": 299.08988148046456,
+      "temperature_min_K": 198.94197899076354,
+      "time": "2025-07-19_05:57:40"
+    },
+    {
+      "frame_index": 6,
+      "host_eta_dry_mass_sum_kg_m2": 9714.249992370605,
+      "host_eta_mass_weighted_water_path_reported": false,
+      "hydrometeors": {
+        "QCLOUD": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QGRAUP": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QICE": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QRAIN": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QSNOW": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "i": 49,
+      "j": 85,
+      "latitude_deg": 35.372039794921875,
+      "longitude_deg": 122.20220947265625,
+      "maxsat_liquid_layer_bottomup_0based": 3,
+      "maxsat_liquid_qv_over_qs_water_percent": 95.89747177765285,
+      "maxsat_phase_aware_layer_bottomup_0based": 3,
+      "maxsat_phase_aware_qv_over_qs_percent": 95.89747177765285,
+      "nc_raw": {
+        "maximum_raw": 0.0,
+        "positive_level_count": 0,
+        "unweighted_native_level_sum_raw": 0.0
+      },
+      "number_fields_raw": {
+        "QIB": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNCCN": {
+          "maximum_raw": 1953769728.0,
+          "positive_level_count": 39,
+          "unweighted_native_level_sum_raw": 18603466048.0
+        },
+        "QNCLOUD": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNICE": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNRAIN": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "phase_metric_interpretation": "KDM6 thermo qv/qs ratio; not observed vapor-pressure/e_es relative humidity",
+      "qc_unweighted_sum_is_lwp": false,
+      "qv_max_kgkg_dry": 0.01878371834754944,
+      "surface": {
+        "HGT": 0.0,
+        "MU": 296.7995300292969,
+        "MUB": 95000.0,
+        "Q2": 0.01928848773241043,
+        "T2": 299.5140380859375,
+        "TSK": 300.8792724609375,
+        "U10": 0.23601296544075012,
+        "V10": 4.607174873352051,
+        "latitude_deg": 35.372039794921875,
+        "longitude_deg": 122.20220947265625,
+        "seaice": 0.0,
+        "xland": 2.0
+      },
+      "temperature_max_K": 299.1132800806088,
+      "temperature_min_K": 198.95792980384877,
+      "time": "2025-07-19_05:57:40"
+    },
+    {
+      "frame_index": 6,
+      "host_eta_dry_mass_sum_kg_m2": 9715.251777648926,
+      "host_eta_mass_weighted_water_path_reported": false,
+      "hydrometeors": {
+        "QCLOUD": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QGRAUP": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QICE": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QRAIN": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QSNOW": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "i": 47,
+      "j": 86,
+      "latitude_deg": 35.4134407043457,
+      "longitude_deg": 122.08709716796875,
+      "maxsat_liquid_layer_bottomup_0based": 3,
+      "maxsat_liquid_qv_over_qs_water_percent": 95.49363980518892,
+      "maxsat_phase_aware_layer_bottomup_0based": 3,
+      "maxsat_phase_aware_qv_over_qs_percent": 95.49363980518892,
+      "nc_raw": {
+        "maximum_raw": 0.0,
+        "positive_level_count": 0,
+        "unweighted_native_level_sum_raw": 0.0
+      },
+      "number_fields_raw": {
+        "QIB": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNCCN": {
+          "maximum_raw": 1511865856.0,
+          "positive_level_count": 39,
+          "unweighted_native_level_sum_raw": 17426349856.0
+        },
+        "QNCLOUD": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNICE": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNRAIN": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "phase_metric_interpretation": "KDM6 thermo qv/qs ratio; not observed vapor-pressure/e_es relative humidity",
+      "qc_unweighted_sum_is_lwp": false,
+      "qv_max_kgkg_dry": 0.018655290827155113,
+      "surface": {
+        "HGT": 0.0,
+        "MU": 306.62298583984375,
+        "MUB": 95000.0,
+        "Q2": 0.01913784071803093,
+        "T2": 299.4253234863281,
+        "TSK": 300.7161865234375,
+        "U10": 0.07722917199134827,
+        "V10": 4.244709014892578,
+        "latitude_deg": 35.4134407043457,
+        "longitude_deg": 122.08709716796875,
+        "seaice": 0.0,
+        "xland": 2.0
+      },
+      "temperature_max_K": 299.03083206715496,
+      "temperature_min_K": 198.7708134635323,
+      "time": "2025-07-19_05:57:40"
+    },
+    {
+      "frame_index": 6,
+      "host_eta_dry_mass_sum_kg_m2": 9714.946022033691,
+      "host_eta_mass_weighted_water_path_reported": false,
+      "hydrometeors": {
+        "QCLOUD": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QGRAUP": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QICE": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QRAIN": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QSNOW": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "i": 48,
+      "j": 86,
+      "latitude_deg": 35.4156608581543,
+      "longitude_deg": 122.143310546875,
+      "maxsat_liquid_layer_bottomup_0based": 3,
+      "maxsat_liquid_qv_over_qs_water_percent": 95.60048639657744,
+      "maxsat_phase_aware_layer_bottomup_0based": 3,
+      "maxsat_phase_aware_qv_over_qs_percent": 95.60048639657744,
+      "nc_raw": {
+        "maximum_raw": 0.0,
+        "positive_level_count": 0,
+        "unweighted_native_level_sum_raw": 0.0
+      },
+      "number_fields_raw": {
+        "QIB": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNCCN": {
+          "maximum_raw": 1700812160.0,
+          "positive_level_count": 39,
+          "unweighted_native_level_sum_raw": 17694872520.0
+        },
+        "QNCLOUD": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNICE": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNRAIN": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "phase_metric_interpretation": "KDM6 thermo qv/qs ratio; not observed vapor-pressure/e_es relative humidity",
+      "qc_unweighted_sum_is_lwp": false,
+      "qv_max_kgkg_dry": 0.018677901476621628,
+      "surface": {
+        "HGT": 0.0,
+        "MU": 303.625732421875,
+        "MUB": 95000.0,
+        "Q2": 0.01916840299963951,
+        "T2": 299.4544372558594,
+        "TSK": 300.7757568359375,
+        "U10": 0.21881309151649475,
+        "V10": 4.315852642059326,
+        "latitude_deg": 35.4156608581543,
+        "longitude_deg": 122.143310546875,
+        "seaice": 0.0,
+        "xland": 2.0
+      },
+      "temperature_max_K": 299.0587541230511,
+      "temperature_min_K": 198.77306810347596,
+      "time": "2025-07-19_05:57:40"
+    },
+    {
+      "frame_index": 6,
+      "host_eta_dry_mass_sum_kg_m2": 9714.609130859375,
+      "host_eta_mass_weighted_water_path_reported": false,
+      "hydrometeors": {
+        "QCLOUD": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QGRAUP": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QICE": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QRAIN": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QSNOW": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "i": 49,
+      "j": 86,
+      "latitude_deg": 35.4178581237793,
+      "longitude_deg": 122.19952392578125,
+      "maxsat_liquid_layer_bottomup_0based": 3,
+      "maxsat_liquid_qv_over_qs_water_percent": 95.61901396931425,
+      "maxsat_phase_aware_layer_bottomup_0based": 3,
+      "maxsat_phase_aware_qv_over_qs_percent": 95.61901396931425,
+      "nc_raw": {
+        "maximum_raw": 0.0,
+        "positive_level_count": 0,
+        "unweighted_native_level_sum_raw": 0.0
+      },
+      "number_fields_raw": {
+        "QIB": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNCCN": {
+          "maximum_raw": 1840620800.0,
+          "positive_level_count": 39,
+          "unweighted_native_level_sum_raw": 17844623592.0
+        },
+        "QNCLOUD": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNICE": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNRAIN": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "phase_metric_interpretation": "KDM6 thermo qv/qs ratio; not observed vapor-pressure/e_es relative humidity",
+      "qc_unweighted_sum_is_lwp": false,
+      "qv_max_kgkg_dry": 0.018690496683120728,
+      "surface": {
+        "HGT": 0.0,
+        "MU": 300.3226623535156,
+        "MUB": 95000.0,
+        "Q2": 0.01918753795325756,
+        "T2": 299.4783935546875,
+        "TSK": 300.7946472167969,
+        "U10": 0.3637385666370392,
+        "V10": 4.398093223571777,
+        "latitude_deg": 35.4178581237793,
+        "longitude_deg": 122.19952392578125,
+        "seaice": 0.0,
+        "xland": 2.0
+      },
+      "temperature_max_K": 299.08220557622616,
+      "temperature_min_K": 198.7872877806194,
+      "time": "2025-07-19_05:57:40"
+    },
+    {
+      "frame_index": 6,
+      "host_eta_dry_mass_sum_kg_m2": 9715.360164642334,
+      "host_eta_mass_weighted_water_path_reported": false,
+      "hydrometeors": {
+        "QCLOUD": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QGRAUP": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QICE": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QRAIN": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QSNOW": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "i": 47,
+      "j": 87,
+      "latitude_deg": 35.45924758911133,
+      "longitude_deg": 122.0843505859375,
+      "maxsat_liquid_layer_bottomup_0based": 3,
+      "maxsat_liquid_qv_over_qs_water_percent": 95.1842320447071,
+      "maxsat_phase_aware_layer_bottomup_0based": 3,
+      "maxsat_phase_aware_qv_over_qs_percent": 95.1842320447071,
+      "nc_raw": {
+        "maximum_raw": 0.0,
+        "positive_level_count": 0,
+        "unweighted_native_level_sum_raw": 0.0
+      },
+      "number_fields_raw": {
+        "QIB": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNCCN": {
+          "maximum_raw": 1111149056.0,
+          "positive_level_count": 39,
+          "unweighted_native_level_sum_raw": 16131338464.0
+        },
+        "QNCLOUD": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNICE": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNRAIN": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "phase_metric_interpretation": "KDM6 thermo qv/qs ratio; not observed vapor-pressure/e_es relative humidity",
+      "qc_unweighted_sum_is_lwp": false,
+      "qv_max_kgkg_dry": 0.01856398582458496,
+      "surface": {
+        "HGT": 0.0,
+        "MU": 307.6881408691406,
+        "MUB": 95000.0,
+        "Q2": 0.019023407250642776,
+        "T2": 299.3577575683594,
+        "TSK": 300.4664306640625,
+        "U10": 0.19387027621269226,
+        "V10": 4.048148155212402,
+        "latitude_deg": 35.45924758911133,
+        "longitude_deg": 122.0843505859375,
+        "seaice": 0.0,
+        "xland": 2.0
+      },
+      "temperature_max_K": 298.98459789751774,
+      "temperature_min_K": 198.63040938649925,
+      "time": "2025-07-19_05:57:40"
+    },
+    {
+      "frame_index": 6,
+      "host_eta_dry_mass_sum_kg_m2": 9715.123649597168,
+      "host_eta_mass_weighted_water_path_reported": false,
+      "hydrometeors": {
+        "QCLOUD": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QGRAUP": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QICE": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QRAIN": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QSNOW": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "i": 48,
+      "j": 87,
+      "latitude_deg": 35.46147918701172,
+      "longitude_deg": 122.14059448242188,
+      "maxsat_liquid_layer_bottomup_0based": 3,
+      "maxsat_liquid_qv_over_qs_water_percent": 95.22733515578642,
+      "maxsat_phase_aware_layer_bottomup_0based": 3,
+      "maxsat_phase_aware_qv_over_qs_percent": 95.22733515578642,
+      "nc_raw": {
+        "maximum_raw": 0.0,
+        "positive_level_count": 0,
+        "unweighted_native_level_sum_raw": 0.0
+      },
+      "number_fields_raw": {
+        "QIB": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNCCN": {
+          "maximum_raw": 1247454720.0,
+          "positive_level_count": 39,
+          "unweighted_native_level_sum_raw": 16467085456.0
+        },
+        "QNCLOUD": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNICE": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNRAIN": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "phase_metric_interpretation": "KDM6 thermo qv/qs ratio; not observed vapor-pressure/e_es relative humidity",
+      "qc_unweighted_sum_is_lwp": false,
+      "qv_max_kgkg_dry": 0.01858040876686573,
+      "surface": {
+        "HGT": 0.0,
+        "MU": 305.3646545410156,
+        "MUB": 95000.0,
+        "Q2": 0.019050519913434982,
+        "T2": 299.3935241699219,
+        "TSK": 300.56201171875,
+        "U10": 0.3459485173225403,
+        "V10": 4.103756427764893,
+        "latitude_deg": 35.46147918701172,
+        "longitude_deg": 122.14059448242188,
+        "seaice": 0.0,
+        "xland": 2.0
+      },
+      "temperature_max_K": 299.01391731931545,
+      "temperature_min_K": 198.6263679450441,
+      "time": "2025-07-19_05:57:40"
+    },
+    {
+      "frame_index": 6,
+      "host_eta_dry_mass_sum_kg_m2": 9714.832935333252,
+      "host_eta_mass_weighted_water_path_reported": false,
+      "hydrometeors": {
+        "QCLOUD": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QGRAUP": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QICE": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QRAIN": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QSNOW": {
+          "maximum_raw_kgkg": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "i": 49,
+      "j": 87,
+      "latitude_deg": 35.46367645263672,
+      "longitude_deg": 122.19686889648438,
+      "maxsat_liquid_layer_bottomup_0based": 3,
+      "maxsat_liquid_qv_over_qs_water_percent": 95.33978515220181,
+      "maxsat_phase_aware_layer_bottomup_0based": 3,
+      "maxsat_phase_aware_qv_over_qs_percent": 95.33978515220181,
+      "nc_raw": {
+        "maximum_raw": 0.0,
+        "positive_level_count": 0,
+        "unweighted_native_level_sum_raw": 0.0
+      },
+      "number_fields_raw": {
+        "QIB": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNCCN": {
+          "maximum_raw": 1469511552.0,
+          "positive_level_count": 39,
+          "unweighted_native_level_sum_raw": 16729548784.0
+        },
+        "QNCLOUD": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNICE": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        },
+        "QNRAIN": {
+          "maximum_raw": 0.0,
+          "positive_level_count": 0,
+          "unweighted_native_level_sum_raw": 0.0
+        }
+      },
+      "phase_metric_interpretation": "KDM6 thermo qv/qs ratio; not observed vapor-pressure/e_es relative humidity",
+      "qc_unweighted_sum_is_lwp": false,
+      "qv_max_kgkg_dry": 0.018595587462186813,
+      "surface": {
+        "HGT": 0.0,
+        "MU": 302.5124816894531,
+        "MUB": 95000.0,
+        "Q2": 0.01907370612025261,
+        "T2": 299.42303466796875,
+        "TSK": 300.6114196777344,
+        "U10": 0.49292072653770447,
+        "V10": 4.168625354766846,
+        "latitude_deg": 35.46367645263672,
+        "longitude_deg": 122.19686889648438,
+        "seaice": 0.0,
+        "xland": 2.0
+      },
+      "temperature_max_K": 299.0408584788901,
+      "temperature_min_K": 198.63690533528978,
+      "time": "2025-07-19_05:57:40"
+    }
+  ],
+  "forecast_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/runs/mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148/klfs_lc05_fcst.202507190000",
+  "forecast_sha256": null,
+  "forecast_stats": {
+    "forecast_sha256": null,
+    "forecast_stat_after": {
+      "mtime_ns": 1791595485694435349,
+      "size_bytes": 2543209268
+    },
+    "forecast_stat_before": {
+      "mtime_ns": 1791595485694435349,
+      "size_bytes": 2543209268
+    },
+    "forecast_stat_stable": true,
+    "times_only_preflight_stat": {
+      "mtime_ns": 1791595485694435349,
+      "size_bytes": 2543209268
+    }
+  },
+  "geography_only_source_sha256": "11a21e3ce8efee751861c983dc7c447ec080bddf8c9431eec457622b351ebefe",
+  "intake_manifest_sha256": "375a89e7ea2194171a77d6f089ef46de79ae71f97306512afd98a4891647cfbe",
+  "intake_npz_sha256": "2873368d7967fbf41861c92e73a9cd0332186496e9b00192da0b5189288f8194",
+  "interpretation_limits": {
+    "maxsat_is_kdm6_phase_aware_qv_over_qs_diagnostic_not_observed_RH": true,
+    "native_cell_centers_only_bounds_not_physical_footprint": true,
+    "no_area_weighted_or_spatially_calibrated_R_or_sigma": true,
+    "number_units_unresolved_basis": true,
+    "qc_unweighted_sum_not_lwp_or_budget": true,
+    "science_admission": "NOT_ASSESSED",
+    "viirs_filter": "fixed VIIRS candidate center is described relative to native3x3 center-bounds box; no candidate replacement or footprint overlap claim"
+  },
+  "native_patch_driver_sha256": "6921bfb0a05d6d9619f242beca5a702e81a3546f54252c6b33501b5763abf2ff",
+  "native_run_id": "mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148",
+  "optimizer_calls": 0,
+  "plan_path": "harness/evidence/pr398_spatial_representativeness_2026-10-10/NATIVE_PATCH_v3.json",
+  "plan_sha256": "4867f925372325a477a5c3ee5141053f07e932235551ed0a1d5a9af8f4308364",
+  "private_npz": {
+    "array_count": 60,
+    "arrays": {
+      "frame_indices": {
+        "dtype": "int32",
+        "sha256": "d7a79f6ea47f027c672129bcc08880df9f9b2ebe922d50533c5f2d4fe0a334e9",
+        "shape": [
+          3
+        ]
+      },
+      "i_indices": {
+        "dtype": "int32",
+        "sha256": "e27973743cb6eade55864212442133bc109d9508d63b08a6bb553dcb29e1da4b",
+        "shape": [
+          3
+        ]
+      },
+      "j_indices": {
+        "dtype": "int32",
+        "sha256": "20434aaf0abda30f9a41aa8b5d63c6c968f5e485f23a43426f2e5bb78902dace",
+        "shape": [
+          3
+        ]
+      },
+      "native_patch__delz": {
+        "dtype": "float64",
+        "sha256": "73016bb8a7356e27b065f81b18479c03151d066b633039af9d714c4c5d090bc5",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__host_dry_mass_kg_m2": {
+        "dtype": "float32",
+        "sha256": "b06e60da61606e249f500b2c15b81a495c79a214c7e9bf3013ec23b702edd06f",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__p_centers_native_bottomup_Pa": {
+        "dtype": "float64",
+        "sha256": "7cb64e84a732626103aecfc2ef92cb6d4f777222157ce7a490a2d90c67ce8d0b",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__p_half_calc_p8w_bottomup_Pa": {
+        "dtype": "float32",
+        "sha256": "4a7a61286739ca0e4de816655195f88615e2c4adc8392d8455f022eb1134e4a6",
+        "shape": [
+          3,
+          3,
+          3,
+          40
+        ]
+      },
+      "native_patch__p_pa": {
+        "dtype": "float64",
+        "sha256": "7cb64e84a732626103aecfc2ef92cb6d4f777222157ce7a490a2d90c67ce8d0b",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__pii": {
+        "dtype": "float64",
+        "sha256": "d590bb60f15eb711e9c7fd06fc3bacef7f0365b7f55737539b7c457d0f392bbf",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__rho": {
+        "dtype": "float64",
+        "sha256": "766316253480cff5a2c015cc5c446b7e84bd8e265f2a65ce684d1e7020c2cacb",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__rho_d": {
+        "dtype": "float64",
+        "sha256": "7e71070cc370c9e93501ee9b74035a9b6e958639d320baa6d57e413e52e403ad",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__rho_m": {
+        "dtype": "float64",
+        "sha256": "766316253480cff5a2c015cc5c446b7e84bd8e265f2a65ce684d1e7020c2cacb",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__state__bg": {
+        "dtype": "float64",
+        "sha256": "f20683f4e5815b759d3553961d13d2dddfb16987d5cfaf38eaa852bcc614ebed",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__state__nc": {
+        "dtype": "float64",
+        "sha256": "f20683f4e5815b759d3553961d13d2dddfb16987d5cfaf38eaa852bcc614ebed",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__state__nccn": {
+        "dtype": "float64",
+        "sha256": "b6eb09bc2133ce55bd6d700959dae750270103cdd9a84597929ea3a730d5e4bf",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__state__ni": {
+        "dtype": "float64",
+        "sha256": "f20683f4e5815b759d3553961d13d2dddfb16987d5cfaf38eaa852bcc614ebed",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__state__nr": {
+        "dtype": "float64",
+        "sha256": "f20683f4e5815b759d3553961d13d2dddfb16987d5cfaf38eaa852bcc614ebed",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__state__qc": {
+        "dtype": "float64",
+        "sha256": "f20683f4e5815b759d3553961d13d2dddfb16987d5cfaf38eaa852bcc614ebed",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__state__qg": {
+        "dtype": "float64",
+        "sha256": "f20683f4e5815b759d3553961d13d2dddfb16987d5cfaf38eaa852bcc614ebed",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__state__qi": {
+        "dtype": "float64",
+        "sha256": "f20683f4e5815b759d3553961d13d2dddfb16987d5cfaf38eaa852bcc614ebed",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__state__qr": {
+        "dtype": "float64",
+        "sha256": "f20683f4e5815b759d3553961d13d2dddfb16987d5cfaf38eaa852bcc614ebed",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__state__qs": {
+        "dtype": "float64",
+        "sha256": "f20683f4e5815b759d3553961d13d2dddfb16987d5cfaf38eaa852bcc614ebed",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__state__qv": {
+        "dtype": "float64",
+        "sha256": "917b6e6576d27ddd1a3a549cc89559380afd01a53681b4afb59355ce08cbef76",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__state__th": {
+        "dtype": "float64",
+        "sha256": "eb2583f106913fff14d9170000497621ba152384b921cfcfa4a3eb6d65db29dc",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__surface__HGT": {
+        "dtype": "float64",
+        "sha256": "a5645e7a3fa0866cde8842c4dab96567507c3d1a3c028b816bc63f6966367b70",
+        "shape": [
+          3,
+          3,
+          3
+        ]
+      },
+      "native_patch__surface__MU": {
+        "dtype": "float64",
+        "sha256": "158152b00bd376c619302f362aab6273c47732689790767c39e93b9989d4ac3e",
+        "shape": [
+          3,
+          3,
+          3
+        ]
+      },
+      "native_patch__surface__MUB": {
+        "dtype": "float64",
+        "sha256": "4d917a00e9fe8cce90753f89f1095b161be552db2596582d29e3ccd3d59717e5",
+        "shape": [
+          3,
+          3,
+          3
+        ]
+      },
+      "native_patch__surface__Q2": {
+        "dtype": "float64",
+        "sha256": "a0c8db4155686b375509666a9c1acaf6ec493698aa4c147d6a57b3b762759391",
+        "shape": [
+          3,
+          3,
+          3
+        ]
+      },
+      "native_patch__surface__T2": {
+        "dtype": "float64",
+        "sha256": "0eb30fa9db786d9eb8245ffd418502e78bedf436919fdf4fd305b1ce80ef3e37",
+        "shape": [
+          3,
+          3,
+          3
+        ]
+      },
+      "native_patch__surface__TSK": {
+        "dtype": "float64",
+        "sha256": "4d9142f5fd4bd21a402320d716eaaf8fbc0d08fb445554c1385f4b77ab62ee82",
+        "shape": [
+          3,
+          3,
+          3
+        ]
+      },
+      "native_patch__surface__U10": {
+        "dtype": "float64",
+        "sha256": "b987d7067a0e5ab055e0eee54100be99bc366c1fb70df2b723277038234f96a3",
+        "shape": [
+          3,
+          3,
+          3
+        ]
+      },
+      "native_patch__surface__V10": {
+        "dtype": "float64",
+        "sha256": "cbad1734da4abb8440ff097fb0da28d560e8c035ef4ea9a0d65a28c4b6b91eed",
+        "shape": [
+          3,
+          3,
+          3
+        ]
+      },
+      "native_patch__surface__latitude_deg": {
+        "dtype": "float64",
+        "sha256": "d81bb0d5cdb103af2dac236d9fd10d45ab959b2782d7ba47de0153e1627bde5b",
+        "shape": [
+          3,
+          3,
+          3
+        ]
+      },
+      "native_patch__surface__longitude_deg": {
+        "dtype": "float64",
+        "sha256": "d91f8f61d927b87fdef9752c7c0aec2638976006f22268ae76607d4c86f6bbd1",
+        "shape": [
+          3,
+          3,
+          3
+        ]
+      },
+      "native_patch__surface__seaice": {
+        "dtype": "float64",
+        "sha256": "a5645e7a3fa0866cde8842c4dab96567507c3d1a3c028b816bc63f6966367b70",
+        "shape": [
+          3,
+          3,
+          3
+        ]
+      },
+      "native_patch__surface__xland": {
+        "dtype": "float64",
+        "sha256": "df74c7b3e975fd97c5b6b163292acca05a0aef050065d97494f4ab09e0586497",
+        "shape": [
+          3,
+          3,
+          3
+        ]
+      },
+      "native_patch__temperature_K": {
+        "dtype": "float64",
+        "sha256": "5663e024fa385c2b1de720cb28c5cf1f574e22215a787b965519ad33c9eb3db0",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__thm_moist_potential_K": {
+        "dtype": "float64",
+        "sha256": "fe8174a4ee226994ec3b9787ebb580248d354f065b52b88d0fc4f6119c960aa2",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__vertical_coeff__C1H": {
+        "dtype": "float32",
+        "sha256": "8ad79c7f19f62b8129d56841984fad91ba8b663dee1b901fb30bb056a0df86b7",
+        "shape": [
+          3,
+          39
+        ]
+      },
+      "native_patch__vertical_coeff__C2H": {
+        "dtype": "float32",
+        "sha256": "7852ec46ebba571cec55cf7b281112cfe7e83cb0659518968ebd60df5a9d8c9f",
+        "shape": [
+          3,
+          39
+        ]
+      },
+      "native_patch__vertical_coeff__DNW": {
+        "dtype": "float32",
+        "sha256": "2734cdbe3cc1c5310fbbb74e695409ae66bd3ea2561017833d893718e927723d",
+        "shape": [
+          3,
+          39
+        ]
+      },
+      "native_patch__vertical_coeff__FNM": {
+        "dtype": "float32",
+        "sha256": "bc07196b0f915168ecc9fba652f8de81dd466e4a1614fab5961f04817bf93f65",
+        "shape": [
+          3,
+          39
+        ]
+      },
+      "native_patch__vertical_coeff__FNP": {
+        "dtype": "float32",
+        "sha256": "36b41927d5751fcb56e3db4740ff2b95468ff8b43c9199a88d10691e85eb88d8",
+        "shape": [
+          3,
+          39
+        ]
+      },
+      "native_patch__wrf_raw__P": {
+        "dtype": "float32",
+        "sha256": "418d036775ab1f04cb7e5929cdbc6e00f83fe205080941dba83361cdc92f7b3c",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__wrf_raw__PB": {
+        "dtype": "float32",
+        "sha256": "ffdae5e34a8503609e9e33bd2109a21964f0e4f0d980179ff4439ac41bce178f",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__wrf_raw__PH": {
+        "dtype": "float32",
+        "sha256": "bc6915f37d54252a7a0adb54c39c8a6fc65b042e56ff5458d02f3a0b25c76078",
+        "shape": [
+          3,
+          3,
+          3,
+          40
+        ]
+      },
+      "native_patch__wrf_raw__PHB": {
+        "dtype": "float32",
+        "sha256": "f88f7ea0f9d0a144ce8ff02fe67049f87e940ad96ebe006771955359eab4c3c6",
+        "shape": [
+          3,
+          3,
+          3,
+          40
+        ]
+      },
+      "native_patch__wrf_raw__QCLOUD": {
+        "dtype": "float64",
+        "sha256": "f20683f4e5815b759d3553961d13d2dddfb16987d5cfaf38eaa852bcc614ebed",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__wrf_raw__QGRAUP": {
+        "dtype": "float64",
+        "sha256": "f20683f4e5815b759d3553961d13d2dddfb16987d5cfaf38eaa852bcc614ebed",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__wrf_raw__QIB": {
+        "dtype": "float64",
+        "sha256": "f20683f4e5815b759d3553961d13d2dddfb16987d5cfaf38eaa852bcc614ebed",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__wrf_raw__QICE": {
+        "dtype": "float64",
+        "sha256": "f20683f4e5815b759d3553961d13d2dddfb16987d5cfaf38eaa852bcc614ebed",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__wrf_raw__QNCCN": {
+        "dtype": "float64",
+        "sha256": "b6eb09bc2133ce55bd6d700959dae750270103cdd9a84597929ea3a730d5e4bf",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__wrf_raw__QNCLOUD": {
+        "dtype": "float64",
+        "sha256": "f20683f4e5815b759d3553961d13d2dddfb16987d5cfaf38eaa852bcc614ebed",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__wrf_raw__QNICE": {
+        "dtype": "float64",
+        "sha256": "f20683f4e5815b759d3553961d13d2dddfb16987d5cfaf38eaa852bcc614ebed",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__wrf_raw__QNRAIN": {
+        "dtype": "float64",
+        "sha256": "f20683f4e5815b759d3553961d13d2dddfb16987d5cfaf38eaa852bcc614ebed",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__wrf_raw__QRAIN": {
+        "dtype": "float64",
+        "sha256": "f20683f4e5815b759d3553961d13d2dddfb16987d5cfaf38eaa852bcc614ebed",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__wrf_raw__QSNOW": {
+        "dtype": "float64",
+        "sha256": "f20683f4e5815b759d3553961d13d2dddfb16987d5cfaf38eaa852bcc614ebed",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__wrf_raw__QVAPOR": {
+        "dtype": "float64",
+        "sha256": "917b6e6576d27ddd1a3a549cc89559380afd01a53681b4afb59355ce08cbef76",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "native_patch__wrf_raw__THM": {
+        "dtype": "float64",
+        "sha256": "2eb8b3aeca1dab72ed83a6769adf69b08d1bbb5ce6cf2ef4c942b0779149c0bf",
+        "shape": [
+          3,
+          3,
+          3,
+          39
+        ]
+      },
+      "time_labels_ascii": {
+        "dtype": "|S19",
+        "sha256": "7a4c5a5c6f329173118351d2d2f40786d7707e441b4c5e02c730248209c8ae45",
+        "shape": [
+          3
+        ]
+      }
+    },
+    "mode": "0o600",
+    "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr398-spatial-representativeness-v3-2026-10-10/private/native_patch_3x3_frames_1_4_6_v3.npz",
+    "sha256": "947c72c12ebe289b7ddc84fba1281635d77ffbcfe23f204345cc97abeebc1c21",
+    "size_bytes": 113476
+  },
+  "retry": false,
+  "run_identity_sha256": "76cfe2c195797da0266468b6a099d54809da4852d5c969b93fc2071a8473fae0",
+  "runner_valid_receipt": {
+    "active_input_identity_complete": true,
+    "actual_proc_grid": "1x1",
+    "exit_code": 0,
+    "experiment_valid": true,
+    "invalid_reasons": [],
+    "model_completed": true,
+    "requested_proc_grid": null
+  },
+  "schema": "pr398_native_patch_result_v3",
+  "selection": {
+    "frame_indices": [
+      1,
+      4,
+      6
+    ],
+    "i_indices": [
+      47,
+      48,
+      49
+    ],
+    "j_indices": [
+      85,
+      86,
+      87
+    ],
+    "native_column_center_j_i": [
+      86,
+      48
+    ],
+    "times": [
+      "2025-07-19_05:56:00",
+      "2025-07-19_05:57:00",
+      "2025-07-19_05:57:40"
+    ]
+  },
+  "source_times_only_preflight": [
+    "2025-07-19_05:55:40",
+    "2025-07-19_05:56:00",
+    "2025-07-19_05:56:20",
+    "2025-07-19_05:56:40",
+    "2025-07-19_05:57:00",
+    "2025-07-19_05:57:20",
+    "2025-07-19_05:57:40",
+    "2025-07-19_05:58:00"
+  ],
+  "status": "READY_NATIVE_PATCH_DIAGNOSTIC_ONLY"
+}

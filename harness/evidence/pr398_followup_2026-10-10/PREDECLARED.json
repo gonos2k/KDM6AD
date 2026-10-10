@@ -1,0 +1,703 @@
+{
+  "baseline_analysis_binding": {
+    "baseline_rttov_execution_assets": {
+      "coefficient": {
+        "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+        "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5"
+      },
+      "env_sh": {
+        "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr395-native-tq-analysis-2026-10-10/run-3d2e97f159/rttov_fixture/out/env.sh",
+        "sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554"
+      },
+      "executable": {
+        "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+        "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+      },
+      "run_sh": {
+        "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr395-native-tq-analysis-2026-10-10/run-3d2e97f159/rttov_fixture/out/run.sh",
+        "sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+      }
+    },
+    "capture_receipt_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr395_tq_state_capture_2026-10-10/RESULT_3d2e97f159.json",
+    "capture_receipt_sha256": "c49808c0331754eeb9ab9f77a88083119d5834852281db890b2827f6acf6eeca",
+    "driver_receipt_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr395_tq_state_capture_2026-10-10/DRIVER_3d2e97f159.json",
+    "driver_receipt_sha256": "836ac71bdf069c1a677e8d3e770cab3e31cfaf807d8a13ccab9884b01bb49333",
+    "frozen_mask": [
+      [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    ],
+    "frozen_mask_sha256_f64": "022451970ff25a1cf57eb1602f05e6ab8a2d0edb918d8efd1574f2ef1a77898f",
+    "frozen_support_n_valid": 7,
+    "initial_zero_control_operator_signature_sha256": "2564e3298a383f3b9bdb348cc5abbd68156653b633f4963551fdc799132d1e59"
+  },
+  "created_utc": "2026-10-10T03:17:16Z",
+  "driver_sha256": "a1e31fd9aed55630ebb66905050a845e92c81f7ce81f3733a833dddf7dda4fef",
+  "execution": {
+    "actual_BT_available": false,
+    "automatic_retry": false,
+    "order": "serial in listed case order; one external RTTOV runK per case",
+    "prior_BT_reused": false,
+    "process_M_calls": 0,
+    "rttov_assets": {
+      "env_sh": {
+        "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/env.sh",
+        "sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554"
+      },
+      "rttov_coefficient": {
+        "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+        "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5"
+      },
+      "rttov_executable": {
+        "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+        "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+      },
+      "rttov_test_namelist": {
+        "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/rttov_test.txt",
+        "sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282"
+      },
+      "run_sh": {
+        "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/run.sh",
+        "sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+      },
+      "template_co2": {
+        "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/co2.txt",
+        "sha256": "075c725200902dd1505635d3704db9416ef88f960be482819c17db9422ef7553"
+      },
+      "template_o3": {
+        "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/o3.txt",
+        "sha256": "4169bd766bea042e1de81390c48df7c0f3ea690b5fc44007508127b3047fed6d"
+      },
+      "template_p": {
+        "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/p.txt",
+        "sha256": "c7d47eed648f3e7313979e84600ae916fbf8d381d6c21f2d8f562c88463a7726"
+      },
+      "template_p_half": {
+        "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/p_half.txt",
+        "sha256": "dc736422f63710511af6a3336a77b33f092c63e66deffba26e5e8c29f47c2b11"
+      }
+    },
+    "rttov_timeout_s": 300.0,
+    "source_sha256": {
+      "allsky_column_driver": "1ee8f001837bc633adc58e8331628e7cc0bb7b164662d466cf5f4c1d30739f7b",
+      "allsky_observation_operator": "d28149c211c1ccaffedcb18642e2337cc79b5cebc4b6aa8cf4c9a90978363b12",
+      "allsky_shard": "18a101d1946e87d08d87a182cfe547794a794a9b280c2720f874d59352813afc",
+      "ami_bt_coordinate": "e1aec7c9270bbeff6dec9aee0f7b3fa3741528b3e060bc3aa74be721e3ac97cc",
+      "analysis_driver": "a2de00ae0d9b546fa713ad795f7f934eb162f7014e47f6b75d24c45f47b2be16",
+      "intake_consumer": "eb54cc2d037aee938c57f9d2bec77b850cec94ef68a856b31d1d018c3e77c2c3",
+      "model_profile_builder": "b9264edb61f32010c025718ad59ef686746f156e2a3c011c473943fbf82788ab",
+      "native_reader": "408bab9756c6ac1a6e8438b8469c87f41fa239ce75414cd8087d10b6a31d54c1",
+      "observation_loss": "4c39b69bf54be9929d48cc97881887f80fb1f7c9a05d68a6a6111bda1ca9d855",
+      "rttov_case_writer": "0203dbfd899996caedf2e8c94e34faabf949fabbaec1688cbda00b6e163081af",
+      "rttov_input_builder": "902e1554eb6e4f699d74cc770059daad847b3b35ad0dd9516d02cae35ad280a6",
+      "rttov_runner": "100e39c6f56ab5e1ccadb59f6b439ebd20255d139b5d9965063bf0ed393fa441"
+    }
+  },
+  "geometry_policy": {
+    "cth_source_limit": "observation receipt reports CTH 587.7369384765625 m, but the height datum is not established and the full CloudHeight file was not downloaded or full-file hashed",
+    "height_sensitivity": "second geometry case changes only RTTOV &angles elevation to the selected 587.7369384765625 m CTH value expressed in km; datum is unverified and it is only a declared input assumption",
+    "native_grid_location_reassignment": false,
+    "nominal_elevation_source": "selected frame's native WRF HGT converted to RTTOV elevation km (observed HGT is recorded per frame)",
+    "not_parallax": "this does not recompute lat/lon, move the AMI ray intersection, use the product's corrected VIIRS coordinate, verify footprint overlap, or reassign the native column; it is RTTOV profile-elevation sensitivity only",
+    "viewing_angle_method": "archived ami_geometry ECEF satellite-minus-ellipsoid-point line of sight from fixed AMI candidate and GEOS; sun angles explicitly zero for solar-disabled thermal run",
+    "viewing_latitude_longitude": [
+      35.41925069326254,
+      122.13724164654832
+    ]
+  },
+  "intake": {
+    "manifest_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr395_native_tq_intake_2026-10-10/INTAKE.json",
+    "manifest_sha256": "375a89e7ea2194171a77d6f089ef46de79ae71f97306512afd98a4891647cfbe",
+    "native_run_id": "mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148",
+    "npz_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr395-native-tq-intake-2026-10-10/private/native_column_8frame.npz",
+    "npz_sha256": "2873368d7967fbf41861c92e73a9cd0332186496e9b00192da0b5189288f8194",
+    "selected_column": {
+      "i": 48,
+      "j": 86,
+      "levels": 39
+    }
+  },
+  "limits": [
+    "H(host(t)) is not H(M(xb)); none of these direct snapshots advances KDM6.",
+    "The 05:57:00 and 05:57:40 labels fall inside the conditional file-level AMI scene interval only under its recorded synchronization assumption; per-pixel UTC remains unverified.",
+    "The CTH-as-elevation case is an explicit RTTOV elevation input sensitivity, not validated cloud-top parallax or a geolocation correction.",
+    "No time, geometry, surface, or model-column scenario will be selected after seeing BT results; the full 3x2 matrix and support gate are fixed here."
+  ],
+  "observations_and_support": {
+    "ami_candidate_row_col_zero_based": [
+      320,
+      48
+    ],
+    "bias_K": 0.0,
+    "channel_names": [
+      "wv073",
+      "ir087",
+      "ir096",
+      "ir105",
+      "ir112",
+      "ir123",
+      "ir133"
+    ],
+    "channels_1based": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "frozen_mask": [
+      [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    ],
+    "huber_delta_K": 1.0,
+    "native_j_i_zero_based": [
+      86,
+      48
+    ],
+    "observation_dqf": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    ],
+    "observation_receipt_sha256": "6af23b226ade39402f68df24268227b5d30cee5107cabd32992c82d0d329ad92",
+    "quality_policy": "use exactly the baseline initial-closure frozen all-seven mask; each direct H must retain rad_quality=0 on all seven to receive a cost; never shrink or recompute a favorable subset",
+    "sigma_K": 1.0,
+    "target_bt_sha256_f64": "efe6d7fed662800cbbebffecc2c79d4133b10de900db7cabc049db4d758e6c17"
+  },
+  "planned_case_count": 6,
+  "planned_cases": [
+    {
+      "case_id": "frame1_nominal_native_surface_elevation",
+      "forcing_sha256_by_field": {
+        "delz": "20f38adf9aac191f9f33d5b423113723a2db4a86cd02903037fe0726c1dbe45a",
+        "p": "3d9fbcd8c381e1411e07c71c8a73c700316801c695c47dac18273ddef655a849",
+        "pii": "b332fbbf5fff05334a8cc38314b19dced3eb0cc95f8999546325d2db64adeafe",
+        "rho": "4875296b6d6fc1513e2520334dc9b27ff755e838501ad390c8a4ad54b12ab190"
+      },
+      "frame_index": 1,
+      "geometry": {
+        "azangle": 169.60651603862405,
+        "elevation": 0.0,
+        "latitude": 35.41925069326254,
+        "longitude": 122.13724164654832,
+        "sunazangle": 0.0,
+        "sunzenangle": 0.0,
+        "zenangle": 41.60526733455049
+      },
+      "geometry_derivation": {
+        "ami_pixel_lat_lon": [
+          35.41925069326254,
+          122.13724164654832
+        ],
+        "elevation_source": "selected WRF native cell HGT, meters converted to RTTOV kilometers",
+        "satellite_viewing_geometry": "computed at AMI pixel center with retained AMI GEOS navigation",
+        "solar_angle_source": "explicit zero angles; each staged thermal-only RTTOV case asserts rt_all%solar=.FALSE., so the solar angles are unconsumed"
+      },
+      "geometry_scenario": "nominal_native_surface_elevation",
+      "height_assumption": "native selected WRF HGT",
+      "interpretation_limit": null,
+      "native_time_label": "2025-07-19_05:56:00",
+      "operator_semantics": "direct H(native saved State_t, Forcing_t); no KDM M step and no temporal interpolation",
+      "p8w_sha256": "9a07221a4b800bcfc4c424b48d74eda58cbde109166dddcd169958df632bff10",
+      "profile_layers_interfaces": [
+        66,
+        67
+      ],
+      "rho_d_sha256": "87f8c5946ef606e705182459700458b4a4f436c34f7363ea7f75e7452e631c23",
+      "rttov_profile_sha256": {
+        "co2_ppmv": "40d5438cf38b22a97e32ba77b7ad5d6da377eed769c99a1a12a82800efa82213",
+        "o3_ppmv": "209f8cd3ed8a30222f83a26a3525b673e7d4c0b729d8640f3e70cd4ca81063ec",
+        "p_half_hPa": "2755bfecc3fabb5ebc893963b5e43a9e204cb826fd03c1cde73faa858b35b844",
+        "p_lay_hPa": "1bd9042241617fad0e01c5322d5559b1619b72600c55543e618e45086541758d",
+        "q_native_plus_fixed_upper_reference_ppmv": "b0242f9f1e34d0b5133b44521595d14b74c3dc5755e94710b596a14b290b7c7f",
+        "t_native_plus_fixed_upper_reference_K": "3e6d7f90a8be16089ad655fe0a162fbdc5bad37df831f54cb56c32c137899f20"
+      },
+      "state_sha256_by_field": {
+        "native_window_state__bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nccn": "9faec2e0aa4a7aeb368bd6c483087ef823289cd9978d2a09b296075a9e34f25d",
+        "native_window_state__ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qv": "ecd3f68cd668be60d82038695564ac14a913de48593abe965749d0369499fda4",
+        "native_window_state__th": "90b4507e57b33c6ca2e78bc7cd4196d9caa9470628b8e2ffd089e1928c33d434"
+      },
+      "surface_sha256_by_field": {
+        "HGT": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "Q2": "e22d192d3a0a1fd39085817424422aa6a0a72b7704f8787bdc67136379e377a6",
+        "T2": "cbb85fce7162091c7d52d3259886e0f0415209b40aa73bbfc7f7d657d3ad7102",
+        "TSK": "86f31db432b5a13dedd03d6233ea20991337baa90ecbac9ce3c86000c2245eb9",
+        "U10": "10e50d089f4330b996c6747d5f8d282d9648094688b777d4a918e063c44456ea",
+        "V10": "14ad6fa75d502b01ac7f4937e7dd5608e3a2593e217ead1d555269e43a0fc87a",
+        "latitude_deg": "af9a60313d67c94a4d7606266a4710ba446e16a81af165d52e43ace05c6c097d",
+        "longitude_deg": "01982f6c4105e08a9158949acc0546e65f93f17859510088251ef5165900b6c3",
+        "seaice": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "xland": "3f710ac088db33363087de2b9a657541fe5447821debaa9fe5cbd538eb1a5f29"
+      }
+    },
+    {
+      "case_id": "frame1_conditional_CTH_as_RTTOV_elevation_assumption",
+      "forcing_sha256_by_field": {
+        "delz": "20f38adf9aac191f9f33d5b423113723a2db4a86cd02903037fe0726c1dbe45a",
+        "p": "3d9fbcd8c381e1411e07c71c8a73c700316801c695c47dac18273ddef655a849",
+        "pii": "b332fbbf5fff05334a8cc38314b19dced3eb0cc95f8999546325d2db64adeafe",
+        "rho": "4875296b6d6fc1513e2520334dc9b27ff755e838501ad390c8a4ad54b12ab190"
+      },
+      "frame_index": 1,
+      "geometry": {
+        "azangle": 169.60651603862405,
+        "elevation": 0.5877369384765625,
+        "latitude": 35.41925069326254,
+        "longitude": 122.13724164654832,
+        "sunazangle": 0.0,
+        "sunzenangle": 0.0,
+        "zenangle": 41.60526733455049
+      },
+      "geometry_derivation": {
+        "ami_pixel_lat_lon": [
+          35.41925069326254,
+          122.13724164654832
+        ],
+        "elevation_source": "selected WRF native cell HGT, meters converted to RTTOV kilometers",
+        "satellite_viewing_geometry": "computed at AMI pixel center with retained AMI GEOS navigation",
+        "solar_angle_source": "explicit zero angles; each staged thermal-only RTTOV case asserts rt_all%solar=.FALSE., so the solar angles are unconsumed"
+      },
+      "geometry_scenario": "conditional_CTH_as_RTTOV_elevation_assumption",
+      "height_assumption": "CloudHeight CTH used only as an explicit RTTOV surface-elevation sensitivity; datum is unverified",
+      "interpretation_limit": "not a physical surface-height claim, not a cloud-top displacement, and not a satellite line-of-sight parallax correction",
+      "native_time_label": "2025-07-19_05:56:00",
+      "operator_semantics": "direct H(native saved State_t, Forcing_t); no KDM M step and no temporal interpolation",
+      "p8w_sha256": "9a07221a4b800bcfc4c424b48d74eda58cbde109166dddcd169958df632bff10",
+      "profile_layers_interfaces": [
+        66,
+        67
+      ],
+      "rho_d_sha256": "87f8c5946ef606e705182459700458b4a4f436c34f7363ea7f75e7452e631c23",
+      "rttov_profile_sha256": {
+        "co2_ppmv": "40d5438cf38b22a97e32ba77b7ad5d6da377eed769c99a1a12a82800efa82213",
+        "o3_ppmv": "209f8cd3ed8a30222f83a26a3525b673e7d4c0b729d8640f3e70cd4ca81063ec",
+        "p_half_hPa": "2755bfecc3fabb5ebc893963b5e43a9e204cb826fd03c1cde73faa858b35b844",
+        "p_lay_hPa": "1bd9042241617fad0e01c5322d5559b1619b72600c55543e618e45086541758d",
+        "q_native_plus_fixed_upper_reference_ppmv": "b0242f9f1e34d0b5133b44521595d14b74c3dc5755e94710b596a14b290b7c7f",
+        "t_native_plus_fixed_upper_reference_K": "3e6d7f90a8be16089ad655fe0a162fbdc5bad37df831f54cb56c32c137899f20"
+      },
+      "state_sha256_by_field": {
+        "native_window_state__bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nccn": "9faec2e0aa4a7aeb368bd6c483087ef823289cd9978d2a09b296075a9e34f25d",
+        "native_window_state__ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qv": "ecd3f68cd668be60d82038695564ac14a913de48593abe965749d0369499fda4",
+        "native_window_state__th": "90b4507e57b33c6ca2e78bc7cd4196d9caa9470628b8e2ffd089e1928c33d434"
+      },
+      "surface_sha256_by_field": {
+        "HGT": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "Q2": "e22d192d3a0a1fd39085817424422aa6a0a72b7704f8787bdc67136379e377a6",
+        "T2": "cbb85fce7162091c7d52d3259886e0f0415209b40aa73bbfc7f7d657d3ad7102",
+        "TSK": "86f31db432b5a13dedd03d6233ea20991337baa90ecbac9ce3c86000c2245eb9",
+        "U10": "10e50d089f4330b996c6747d5f8d282d9648094688b777d4a918e063c44456ea",
+        "V10": "14ad6fa75d502b01ac7f4937e7dd5608e3a2593e217ead1d555269e43a0fc87a",
+        "latitude_deg": "af9a60313d67c94a4d7606266a4710ba446e16a81af165d52e43ace05c6c097d",
+        "longitude_deg": "01982f6c4105e08a9158949acc0546e65f93f17859510088251ef5165900b6c3",
+        "seaice": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "xland": "3f710ac088db33363087de2b9a657541fe5447821debaa9fe5cbd538eb1a5f29"
+      }
+    },
+    {
+      "case_id": "frame4_nominal_native_surface_elevation",
+      "forcing_sha256_by_field": {
+        "delz": "7bf3d90f013e74fcdddcf6561f0a1b7bbf7c05803f4ebfe3ab368e8ddef36b6c",
+        "p": "4eed37b1d3ecd47c1a507f8357e11ec3b0e6e3db0d36a0a62dfcaa18b924cdad",
+        "pii": "09d90ddf80ab07836a67277b2ce582d6124b7707d9bbfecc596aa1ef531c07ac",
+        "rho": "dfd01ef8ec8b26f84ef3e2d078f9546197951b9f1ab847191d7c072dc74cda8a"
+      },
+      "frame_index": 4,
+      "geometry": {
+        "azangle": 169.60651603862405,
+        "elevation": 0.0,
+        "latitude": 35.41925069326254,
+        "longitude": 122.13724164654832,
+        "sunazangle": 0.0,
+        "sunzenangle": 0.0,
+        "zenangle": 41.60526733455049
+      },
+      "geometry_derivation": {
+        "ami_pixel_lat_lon": [
+          35.41925069326254,
+          122.13724164654832
+        ],
+        "elevation_source": "selected WRF native cell HGT, meters converted to RTTOV kilometers",
+        "satellite_viewing_geometry": "computed at AMI pixel center with retained AMI GEOS navigation",
+        "solar_angle_source": "explicit zero angles; each staged thermal-only RTTOV case asserts rt_all%solar=.FALSE., so the solar angles are unconsumed"
+      },
+      "geometry_scenario": "nominal_native_surface_elevation",
+      "height_assumption": "native selected WRF HGT",
+      "interpretation_limit": null,
+      "native_time_label": "2025-07-19_05:57:00",
+      "operator_semantics": "direct H(native saved State_t, Forcing_t); no KDM M step and no temporal interpolation",
+      "p8w_sha256": "3483ed61173e6312e2906cd69131e8c9091ae182d9c748da13c0b6f5adba6c75",
+      "profile_layers_interfaces": [
+        66,
+        67
+      ],
+      "rho_d_sha256": "5270eb3024143556ddc6507a41f661cab0eb193d53e83a858e9a28f038d4f977",
+      "rttov_profile_sha256": {
+        "co2_ppmv": "fedde5b17322461e36d09a6b4faa98a88fb5420d81d99d8a5d582fa268f939ea",
+        "o3_ppmv": "81a8e55dbd601712b550ea39bb5ad9d85de1cd920c8f936152c1d2fe74153286",
+        "p_half_hPa": "1494656faf65aff4dbcfb6513524d966568715768f6ebcc27068b169eda30cb8",
+        "p_lay_hPa": "6013914d1207ae606ffd7e6044eaa35ed297c6687b172a5677b6a332681b509e",
+        "q_native_plus_fixed_upper_reference_ppmv": "af82245e2f1e3535dfef40e5c9c0d5642e20a5173e3d401a055c46fb6fa82c2e",
+        "t_native_plus_fixed_upper_reference_K": "8d2364c1074597586bb4e5cb5ccc26f435dc3698d7d38b247825b40343035a43"
+      },
+      "state_sha256_by_field": {
+        "native_window_state__bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nccn": "ea2c480fb219dacea66e279d9c67b222eb65c8bfa03c16c2cfb9b6dbef01923f",
+        "native_window_state__ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qv": "ef90fb0d3d1a5696a9da026daf6326320ffe0ff4802fab52df617384af2a7d43",
+        "native_window_state__th": "298a1fb26072550c45e1e9ed72aa244167d40192a21b7199947418e1a4337a99"
+      },
+      "surface_sha256_by_field": {
+        "HGT": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "Q2": "3e0084599ee6bfa1195d2c279c21329177603418cfb7b6a2ee48fe3362bf8112",
+        "T2": "6b996bc95fb3cac9344b8b0d1864fbbeea0a34a9ae4fcffd4267cddc5bf63cf9",
+        "TSK": "c84c14090701a684d3be24294b8eed3065a934fe953cb7ac68b43887b8b54329",
+        "U10": "bac96bd72a620d00090d166956c59f6bd63e13d1af44b92dd6c01cc0a13f68fa",
+        "V10": "a7eb3e1735aff3e0f52e15ea47e938895fd683270e297b885d8efc81a6304a9d",
+        "latitude_deg": "af9a60313d67c94a4d7606266a4710ba446e16a81af165d52e43ace05c6c097d",
+        "longitude_deg": "01982f6c4105e08a9158949acc0546e65f93f17859510088251ef5165900b6c3",
+        "seaice": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "xland": "3f710ac088db33363087de2b9a657541fe5447821debaa9fe5cbd538eb1a5f29"
+      }
+    },
+    {
+      "case_id": "frame4_conditional_CTH_as_RTTOV_elevation_assumption",
+      "forcing_sha256_by_field": {
+        "delz": "7bf3d90f013e74fcdddcf6561f0a1b7bbf7c05803f4ebfe3ab368e8ddef36b6c",
+        "p": "4eed37b1d3ecd47c1a507f8357e11ec3b0e6e3db0d36a0a62dfcaa18b924cdad",
+        "pii": "09d90ddf80ab07836a67277b2ce582d6124b7707d9bbfecc596aa1ef531c07ac",
+        "rho": "dfd01ef8ec8b26f84ef3e2d078f9546197951b9f1ab847191d7c072dc74cda8a"
+      },
+      "frame_index": 4,
+      "geometry": {
+        "azangle": 169.60651603862405,
+        "elevation": 0.5877369384765625,
+        "latitude": 35.41925069326254,
+        "longitude": 122.13724164654832,
+        "sunazangle": 0.0,
+        "sunzenangle": 0.0,
+        "zenangle": 41.60526733455049
+      },
+      "geometry_derivation": {
+        "ami_pixel_lat_lon": [
+          35.41925069326254,
+          122.13724164654832
+        ],
+        "elevation_source": "selected WRF native cell HGT, meters converted to RTTOV kilometers",
+        "satellite_viewing_geometry": "computed at AMI pixel center with retained AMI GEOS navigation",
+        "solar_angle_source": "explicit zero angles; each staged thermal-only RTTOV case asserts rt_all%solar=.FALSE., so the solar angles are unconsumed"
+      },
+      "geometry_scenario": "conditional_CTH_as_RTTOV_elevation_assumption",
+      "height_assumption": "CloudHeight CTH used only as an explicit RTTOV surface-elevation sensitivity; datum is unverified",
+      "interpretation_limit": "not a physical surface-height claim, not a cloud-top displacement, and not a satellite line-of-sight parallax correction",
+      "native_time_label": "2025-07-19_05:57:00",
+      "operator_semantics": "direct H(native saved State_t, Forcing_t); no KDM M step and no temporal interpolation",
+      "p8w_sha256": "3483ed61173e6312e2906cd69131e8c9091ae182d9c748da13c0b6f5adba6c75",
+      "profile_layers_interfaces": [
+        66,
+        67
+      ],
+      "rho_d_sha256": "5270eb3024143556ddc6507a41f661cab0eb193d53e83a858e9a28f038d4f977",
+      "rttov_profile_sha256": {
+        "co2_ppmv": "fedde5b17322461e36d09a6b4faa98a88fb5420d81d99d8a5d582fa268f939ea",
+        "o3_ppmv": "81a8e55dbd601712b550ea39bb5ad9d85de1cd920c8f936152c1d2fe74153286",
+        "p_half_hPa": "1494656faf65aff4dbcfb6513524d966568715768f6ebcc27068b169eda30cb8",
+        "p_lay_hPa": "6013914d1207ae606ffd7e6044eaa35ed297c6687b172a5677b6a332681b509e",
+        "q_native_plus_fixed_upper_reference_ppmv": "af82245e2f1e3535dfef40e5c9c0d5642e20a5173e3d401a055c46fb6fa82c2e",
+        "t_native_plus_fixed_upper_reference_K": "8d2364c1074597586bb4e5cb5ccc26f435dc3698d7d38b247825b40343035a43"
+      },
+      "state_sha256_by_field": {
+        "native_window_state__bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nccn": "ea2c480fb219dacea66e279d9c67b222eb65c8bfa03c16c2cfb9b6dbef01923f",
+        "native_window_state__ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qv": "ef90fb0d3d1a5696a9da026daf6326320ffe0ff4802fab52df617384af2a7d43",
+        "native_window_state__th": "298a1fb26072550c45e1e9ed72aa244167d40192a21b7199947418e1a4337a99"
+      },
+      "surface_sha256_by_field": {
+        "HGT": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "Q2": "3e0084599ee6bfa1195d2c279c21329177603418cfb7b6a2ee48fe3362bf8112",
+        "T2": "6b996bc95fb3cac9344b8b0d1864fbbeea0a34a9ae4fcffd4267cddc5bf63cf9",
+        "TSK": "c84c14090701a684d3be24294b8eed3065a934fe953cb7ac68b43887b8b54329",
+        "U10": "bac96bd72a620d00090d166956c59f6bd63e13d1af44b92dd6c01cc0a13f68fa",
+        "V10": "a7eb3e1735aff3e0f52e15ea47e938895fd683270e297b885d8efc81a6304a9d",
+        "latitude_deg": "af9a60313d67c94a4d7606266a4710ba446e16a81af165d52e43ace05c6c097d",
+        "longitude_deg": "01982f6c4105e08a9158949acc0546e65f93f17859510088251ef5165900b6c3",
+        "seaice": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "xland": "3f710ac088db33363087de2b9a657541fe5447821debaa9fe5cbd538eb1a5f29"
+      }
+    },
+    {
+      "case_id": "frame6_nominal_native_surface_elevation",
+      "forcing_sha256_by_field": {
+        "delz": "c6c03eb7da87f29fbec145e52ba053d47b472362026b70b0d46aee1605f651ab",
+        "p": "09d0c5e57e3cedb2f41401cde179e3c6e8a8e97c761d5c046b1d5f8b2935c2f6",
+        "pii": "662700dabf20a78603fb527602c7b0666c827feccdccec1722ea991f46e7f59b",
+        "rho": "0ed96504846cc8bc1dca9015fee7f924fdac8cd7309a212049999114bb176e7f"
+      },
+      "frame_index": 6,
+      "geometry": {
+        "azangle": 169.60651603862405,
+        "elevation": 0.0,
+        "latitude": 35.41925069326254,
+        "longitude": 122.13724164654832,
+        "sunazangle": 0.0,
+        "sunzenangle": 0.0,
+        "zenangle": 41.60526733455049
+      },
+      "geometry_derivation": {
+        "ami_pixel_lat_lon": [
+          35.41925069326254,
+          122.13724164654832
+        ],
+        "elevation_source": "selected WRF native cell HGT, meters converted to RTTOV kilometers",
+        "satellite_viewing_geometry": "computed at AMI pixel center with retained AMI GEOS navigation",
+        "solar_angle_source": "explicit zero angles; each staged thermal-only RTTOV case asserts rt_all%solar=.FALSE., so the solar angles are unconsumed"
+      },
+      "geometry_scenario": "nominal_native_surface_elevation",
+      "height_assumption": "native selected WRF HGT",
+      "interpretation_limit": null,
+      "native_time_label": "2025-07-19_05:57:40",
+      "operator_semantics": "direct H(native saved State_t, Forcing_t); no KDM M step and no temporal interpolation",
+      "p8w_sha256": "70b6746fdc9a468ccbb2b7e6cd26bfeb134fd05f5e18be571257077cfd498955",
+      "profile_layers_interfaces": [
+        66,
+        67
+      ],
+      "rho_d_sha256": "8d4b35eddfd1af561a811b98eb0b7056019e273780e87b858197b3ee1d5a0735",
+      "rttov_profile_sha256": {
+        "co2_ppmv": "0042c93f8f40aa95e151586ec159cb9e62f7f13b65cc43dae418ee3960cdb70b",
+        "o3_ppmv": "7f0cb30b1d3a85f8c84b08a9825ce7f3112c8577747f83e6d9853c441893f892",
+        "p_half_hPa": "19c8907ded45c82cdfcaf1a2108f2cb6865d2bae4f5f23135ac0777338070500",
+        "p_lay_hPa": "013ab7858b7431be9d6e6de5f3644775ed8005434c0a450dbd2ab54c8d962d8a",
+        "q_native_plus_fixed_upper_reference_ppmv": "3cca69a210fb6315f9c40e9237fd93d42e5af41a06c57a0f8bce77458613ef41",
+        "t_native_plus_fixed_upper_reference_K": "bcc2618325cd4e12f3e95ea18e3ede6dc36ac4f697a8046c37e6ea76ba7fbae1"
+      },
+      "state_sha256_by_field": {
+        "native_window_state__bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nccn": "8002a5218c819fa55e264f29ad587bf2b4b872c041a45d85aa5896d54d76bde7",
+        "native_window_state__ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qv": "5f86063aea857f6f34212bd08a6e3eff8240025a5666a6790ecb7cbe6c9c3623",
+        "native_window_state__th": "ffd832ce6d26f4863960576b23551912a2b0878ec91076d40fee93eddaa48666"
+      },
+      "surface_sha256_by_field": {
+        "HGT": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "Q2": "023a5f34fe95626af71d4155c552f9529f49300314cfe9627e12e9523b154a42",
+        "T2": "a0c56add2ae16bf89ee8084e96ba3b4201eadf172ff80c7c03835fc1c738dd4e",
+        "TSK": "cd95335e7b141a6e5da1255fd1c04ede401f3831b5fd37cb184c0c04a263b44d",
+        "U10": "b56be6c10f59ad258d2d1aacc6d108524da40616eaad1c40e6dfac4cacce794f",
+        "V10": "72cc0fcaf6c09ba3a7f655e4898acbc7c9c46f22d1ed96c2324e36ea15ac7465",
+        "latitude_deg": "af9a60313d67c94a4d7606266a4710ba446e16a81af165d52e43ace05c6c097d",
+        "longitude_deg": "01982f6c4105e08a9158949acc0546e65f93f17859510088251ef5165900b6c3",
+        "seaice": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "xland": "3f710ac088db33363087de2b9a657541fe5447821debaa9fe5cbd538eb1a5f29"
+      }
+    },
+    {
+      "case_id": "frame6_conditional_CTH_as_RTTOV_elevation_assumption",
+      "forcing_sha256_by_field": {
+        "delz": "c6c03eb7da87f29fbec145e52ba053d47b472362026b70b0d46aee1605f651ab",
+        "p": "09d0c5e57e3cedb2f41401cde179e3c6e8a8e97c761d5c046b1d5f8b2935c2f6",
+        "pii": "662700dabf20a78603fb527602c7b0666c827feccdccec1722ea991f46e7f59b",
+        "rho": "0ed96504846cc8bc1dca9015fee7f924fdac8cd7309a212049999114bb176e7f"
+      },
+      "frame_index": 6,
+      "geometry": {
+        "azangle": 169.60651603862405,
+        "elevation": 0.5877369384765625,
+        "latitude": 35.41925069326254,
+        "longitude": 122.13724164654832,
+        "sunazangle": 0.0,
+        "sunzenangle": 0.0,
+        "zenangle": 41.60526733455049
+      },
+      "geometry_derivation": {
+        "ami_pixel_lat_lon": [
+          35.41925069326254,
+          122.13724164654832
+        ],
+        "elevation_source": "selected WRF native cell HGT, meters converted to RTTOV kilometers",
+        "satellite_viewing_geometry": "computed at AMI pixel center with retained AMI GEOS navigation",
+        "solar_angle_source": "explicit zero angles; each staged thermal-only RTTOV case asserts rt_all%solar=.FALSE., so the solar angles are unconsumed"
+      },
+      "geometry_scenario": "conditional_CTH_as_RTTOV_elevation_assumption",
+      "height_assumption": "CloudHeight CTH used only as an explicit RTTOV surface-elevation sensitivity; datum is unverified",
+      "interpretation_limit": "not a physical surface-height claim, not a cloud-top displacement, and not a satellite line-of-sight parallax correction",
+      "native_time_label": "2025-07-19_05:57:40",
+      "operator_semantics": "direct H(native saved State_t, Forcing_t); no KDM M step and no temporal interpolation",
+      "p8w_sha256": "70b6746fdc9a468ccbb2b7e6cd26bfeb134fd05f5e18be571257077cfd498955",
+      "profile_layers_interfaces": [
+        66,
+        67
+      ],
+      "rho_d_sha256": "8d4b35eddfd1af561a811b98eb0b7056019e273780e87b858197b3ee1d5a0735",
+      "rttov_profile_sha256": {
+        "co2_ppmv": "0042c93f8f40aa95e151586ec159cb9e62f7f13b65cc43dae418ee3960cdb70b",
+        "o3_ppmv": "7f0cb30b1d3a85f8c84b08a9825ce7f3112c8577747f83e6d9853c441893f892",
+        "p_half_hPa": "19c8907ded45c82cdfcaf1a2108f2cb6865d2bae4f5f23135ac0777338070500",
+        "p_lay_hPa": "013ab7858b7431be9d6e6de5f3644775ed8005434c0a450dbd2ab54c8d962d8a",
+        "q_native_plus_fixed_upper_reference_ppmv": "3cca69a210fb6315f9c40e9237fd93d42e5af41a06c57a0f8bce77458613ef41",
+        "t_native_plus_fixed_upper_reference_K": "bcc2618325cd4e12f3e95ea18e3ede6dc36ac4f697a8046c37e6ea76ba7fbae1"
+      },
+      "state_sha256_by_field": {
+        "native_window_state__bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nccn": "8002a5218c819fa55e264f29ad587bf2b4b872c041a45d85aa5896d54d76bde7",
+        "native_window_state__ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "native_window_state__qv": "5f86063aea857f6f34212bd08a6e3eff8240025a5666a6790ecb7cbe6c9c3623",
+        "native_window_state__th": "ffd832ce6d26f4863960576b23551912a2b0878ec91076d40fee93eddaa48666"
+      },
+      "surface_sha256_by_field": {
+        "HGT": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "Q2": "023a5f34fe95626af71d4155c552f9529f49300314cfe9627e12e9523b154a42",
+        "T2": "a0c56add2ae16bf89ee8084e96ba3b4201eadf172ff80c7c03835fc1c738dd4e",
+        "TSK": "cd95335e7b141a6e5da1255fd1c04ede401f3831b5fd37cb184c0c04a263b44d",
+        "U10": "b56be6c10f59ad258d2d1aacc6d108524da40616eaad1c40e6dfac4cacce794f",
+        "V10": "72cc0fcaf6c09ba3a7f655e4898acbc7c9c46f22d1ed96c2324e36ea15ac7465",
+        "latitude_deg": "af9a60313d67c94a4d7606266a4710ba446e16a81af165d52e43ace05c6c097d",
+        "longitude_deg": "01982f6c4105e08a9158949acc0546e65f93f17859510088251ef5165900b6c3",
+        "seaice": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "xland": "3f710ac088db33363087de2b9a657541fe5447821debaa9fe5cbd538eb1a5f29"
+      }
+    }
+  ],
+  "predeclared_times": [
+    {
+      "frame_index": 1,
+      "role": "nominal 20 s slot; model/observation alignment only, pixel time unverified",
+      "time_label": "2025-07-19_05:56:00"
+    },
+    {
+      "frame_index": 4,
+      "role": "saved frame inside conditional AMI scene interval; not per-pixel UTC",
+      "time_label": "2025-07-19_05:57:00"
+    },
+    {
+      "frame_index": 6,
+      "role": "saved frame inside conditional AMI scene interval; not per-pixel UTC",
+      "time_label": "2025-07-19_05:57:40"
+    }
+  ],
+  "profile_policy": {
+    "ami_kma_bt": true,
+    "dry_number": true,
+    "ncmin_land": 10.0,
+    "ncmin_sea": 10.0,
+    "pressure": "per-frame native centers and REAL(4)-transcribed P8W interfaces; rebuild each frame's 39-native-plus-27-reference profile grid and update its isolated fixture pressure/gas files before H",
+    "raw_PH_PHB": "preserved by intake; not substituted for P8W pressure interfaces",
+    "state_forcing_surface_and_eos_optical_density": "each selected frame's own saved arrays; rho_d=Forcing.rho/(1+State.qv)",
+    "t_q_blend_octaves": 0.0,
+    "template_role": "retained RTTOV coefficient/test-driver and static sea-surface parameters; per-case native pressure, gases, T/Q/cloud, geometry, and dynamic surface are supplied explicitly",
+    "upper_reference": {
+      "external_model_or_reanalysis_data_used": false,
+      "files": {
+        "co2": {
+          "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rttov_test/tests.1.gfortran-openmp/ami/cloud/in/profiles/001/atm/co2.txt",
+          "sha256": "1f2fa0ab7945f5d642cbc3fa54c64c9b7af0867a55e3451555e3a972afece9df"
+        },
+        "o3": {
+          "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rttov_test/tests.1.gfortran-openmp/ami/cloud/in/profiles/001/atm/o3.txt",
+          "sha256": "9e34e3d23760e51c980f8a74b221ddfde829b2d6ea88f979e7fefa2895483ad7"
+        },
+        "p_half": {
+          "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rttov_test/tests.1.gfortran-openmp/ami/cloud/in/profiles/001/atm/p_half.txt",
+          "sha256": "4836e1a4726c4f5574fc77812bc2a6ddc2fe9bf74461c4d1fe6ddc641d8d263d"
+        },
+        "q": {
+          "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rttov_test/tests.1.gfortran-openmp/ami/cloud/in/profiles/001/atm/q.txt",
+          "sha256": "d0ababfea9c62b2860d7e4abfd6f0f11a7b5e53fe23273221b6a3aeb94c85268"
+        },
+        "t": {
+          "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rttov_test/tests.1.gfortran-openmp/ami/cloud/in/profiles/001/atm/t.txt",
+          "sha256": "0777e1ae6390e4c21658e79cb62086d9b15387aca90a8ee90affcda9cfdaf4cd"
+        }
+      },
+      "fixture_root": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rttov_test/tests.1.gfortran-openmp/ami/cloud",
+      "gas_fields": "O3/CO2 from the same fixed reference fixture; interpolation follows archived helper; endpoint behavior is described by that helper",
+      "grid": {
+        "native_centers": 39,
+        "native_interfaces": 40,
+        "orientation": "RTTOV top-down; native arrays remain bottom-up",
+        "total_rttov_interfaces": 67,
+        "total_rttov_layers": 66,
+        "upper_reference_layers": 27
+      },
+      "kind": "fixed_upper_reference_atmosphere_from_retained_RTTOV_test_fixture",
+      "method": "retain reference levels above native top using archived extend_above_native_top; replace entire 39-layer model segment with each fresh native model input; native p-centers and REAL(4)-transcribed calc_p8w interfaces form exact suffix"
+    }
+  },
+  "schema": "pr398_time_geometry_sensitivity_plan_v1",
+  "scope": "one sequential direct-H batch on saved native frames; no WRF rerun, no KDM integration, no interpolation, no new column, no external model or reanalysis",
+  "status": "PREDECLARED_NO_RTTOV_EXECUTED",
+  "time_context": {
+    "conditional_ami_scene_interval": "2025-07-19T05:56:56.177434Z/2025-07-19T05:57:56.022116Z",
+    "interval_source": "observation receipt conditional AMI file-level interval; exact per-pixel UTC and synchronization not established",
+    "time_interpolation": false,
+    "times_are_exact_native_saved_labels": true
+  }
+}

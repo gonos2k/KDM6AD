@@ -1,0 +1,205 @@
+{
+  "common_predeclaration_path": "harness/evidence/pr398_spatial_representativeness_2026-10-10/PREDECLARED.json",
+  "common_predeclaration_sha256": "1e70efc9548111ee05dc690c35c377a4cd0eb6f71d8130d013d1dec8535fe2f0",
+  "created_utc": "2026-10-10T05:31:00Z",
+  "diagnostic_table_contract": {
+    "mass_weighting": "host eta dry mass retained; no mass-weighted water path is reported",
+    "maxsat_semantics": "KDM6 thermo.compute_qs_ice phase-aware qv/qs diagnostic; also report qv/qs_water; neither is claimed as observed vapor-pressure RH",
+    "number_units": "Registry raw QN fields retained; # kg-1 basis not specified dry-vs-moist; QIB m3 kg-1; no calibration/conversion claim",
+    "per_cell_metrics": [
+      "KDM6 phase-aware max qv/qs ratio and layer",
+      "liquid-only qv/qs_water max and layer",
+      "qv maximum",
+      "temperature min/max",
+      "nonzero QC/QC max/unweighted-level QC sum",
+      "NC raw max/nonzero-count/unweighted-level sum",
+      "all hydrometeor raw maxima and nonzero counts",
+      "surface and class fields"
+    ],
+    "qc_sum_semantics": "unweighted native-level QC sum is not LWP, not a path integral, and not a water budget"
+  },
+  "execution": {
+    "H_calls": 0,
+    "M_calls": 0,
+    "actual_arrays_read_at_predeclaration": false,
+    "external_acquisition": false,
+    "forecast_relaunch": false,
+    "optimizer_calls": 0
+  },
+  "geography_only_source": {
+    "path": "harness/evidence/pr398_spatial_representativeness_2026-10-10/NATIVE_PATCH_GEOGRAPHY.json",
+    "sha256": "11a21e3ce8efee751861c983dc7c447ec080bddf8c9431eec457622b351ebefe",
+    "viirs_region_filter": "center-in-axis-aligned-bounds-of-native-3x3-centers; descriptive only, not nine-cell union or physical footprint"
+  },
+  "native_intake": {
+    "forecast_integrity_contract": "reuse existing runner validity/identity and intake receipt; selected hyperslabs only; no multi-gigabyte whole-file hash",
+    "forecast_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/runs/mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148/klfs_lc05_fcst.202507190000",
+    "forecast_sha256": null,
+    "forecast_stat_at_intake": {
+      "mtime_ns": 1791595485694435349,
+      "size_bytes": 2543209268
+    },
+    "manifest_path": "harness/evidence/pr395_native_tq_intake_2026-10-10/INTAKE.json",
+    "manifest_sha256": "375a89e7ea2194171a77d6f089ef46de79ae71f97306512afd98a4891647cfbe",
+    "npz_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr395-native-tq-intake-2026-10-10/private/native_column_8frame.npz",
+    "npz_sha256": "2873368d7967fbf41861c92e73a9cd0332186496e9b00192da0b5189288f8194",
+    "run_directory": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/runs/mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148",
+    "run_id": "mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148"
+  },
+  "native_patch_driver_sha256": "6921bfb0a05d6d9619f242beca5a702e81a3546f54252c6b33501b5763abf2ff",
+  "outputs": {
+    "canonical_private_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_sensitivity_20261010/native_patch_3x3_frames_1_4_6_v3.npz",
+    "no_overwrite_or_retry": true,
+    "private_npz": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr398-spatial-representativeness-v3-2026-10-10/private/native_patch_3x3_frames_1_4_6_v3.npz",
+    "public_result": "harness/evidence/pr398_spatial_representativeness_2026-10-10/NATIVE_PATCH_RESULT_v3.json",
+    "public_summary": "harness/evidence/pr398_spatial_representativeness_2026-10-10/NATIVE_PATCH_SUMMARY_v3.md"
+  },
+  "planned_arrays": {
+    "native_patch__delz/rho_d/rho_m/pii": "[3,3,3,39] float64; selected_frame formulas",
+    "native_patch__host_dry_mass_kg_m2": "[3,3,3,39] float32; host eta measure -(C1H*(MU+MUB)+C2H)*DNW/9.81",
+    "native_patch__p_centers_native_bottomup_Pa": "[3,3,3,39] float64-first P+PB; same values as Forcing.p",
+    "native_patch__p_half_calc_p8w_bottomup_Pa": "[3,3,3,40] float32 REAL(4) transcription",
+    "native_patch__state__<12 KDM6 fields>": "[3,3,3,39] float64; th follows selected_frame THM/QVAPOR conversion",
+    "native_patch__surface__<fields>": "[3,3,3] selected scalar surface and XLAND/SEAICE/geolocation values",
+    "native_patch__temperature_K": "[3,3,3,39] float64, th*pii",
+    "native_patch__vertical_coeff__<FNM,FNP,C1H,C2H,DNW>": "[3,39] source float32",
+    "native_patch__wrf_raw__<THM,QVAPOR,QCLOUD,QRAIN,QICE,QSNOW,QGRAUP,QNCCN,QNCLOUD,QNICE,QNRAIN,QIB>": "[3,3,3,39] float64",
+    "native_patch__wrf_raw__P/PB": "[3,3,3,39] source float32",
+    "native_patch__wrf_raw__PH/PHB": "[3,3,3,40] source float32"
+  },
+  "read_contract": {
+    "center_crosscheck": "j86/i48 arrays must equal existing PR395 intake arrays at frames 1/4/6 before publication",
+    "duplicate_small_reads": "P/PB/PH/PHB hyperslabs are re-read inside p8w_for_column; no single-read claim",
+    "interface_slices": "only PH/PHB [time_index,:,j,i] for 40 interfaces at each cell",
+    "mask_fill_finite_checks_before_ndarray_conversion": true,
+    "p8w": "authoritative archived reader p8w_for_column per cell; Python REAL(4) transcription, not an executed host output",
+    "selected_3d_slices": "only ds[name][time_index,:,j,i] for each of nine fixed cells",
+    "state_variables": [
+      "THM",
+      "QVAPOR",
+      "QCLOUD",
+      "QRAIN",
+      "QICE",
+      "QSNOW",
+      "QGRAUP",
+      "QNCCN",
+      "QNCLOUD",
+      "QNICE",
+      "QNRAIN",
+      "QIB"
+    ],
+    "surface_slices": "only selected XLAND/SEAICE/TSK/T2/Q2/U10/V10/HGT/MU/MUB/XLAT/XLONG scalars",
+    "vertical_coefficients": "FNM/FNP/C1H/C2H/DNW vectors of 39 values once per frame"
+  },
+  "reconstruction_provenance": {
+    "center_pressure": "float64-first P + PB from stored REAL(4) fields",
+    "cloud_fields": "native WRF Q fields copied by selected_frame, then packed in public KDM6 State field order",
+    "delz_formula": "((PH+PHB)/g)[k+1]-((PH+PHB)/g)[k], selected_frame convention",
+    "host_dry_mass": {
+      "background_npz_key": "host_dry_mass_background_kg_m2",
+      "dtype": "float32",
+      "formula": "-(C1H*(MU+MUB)+C2H)*DNW/9.81, using selected_frame's REAL(4) operations",
+      "orientation": "bottom-up native levels",
+      "provenance": "host eta-coordinate layer dry-mass measure derived from native MU/MUB/C1H/C2H/DNW; distinct from EOS rho_m*delz and not a process budget",
+      "shape": [
+        8,
+        39
+      ],
+      "units": "kg dry air m-2 per native eta layer",
+      "window_npz_key": "native_window_host_dry_mass_kg_m2"
+    },
+    "interface_pressure": {
+      "dtype": "float32",
+      "method": "Python REAL(4) transcription of calc_p8w; not an executed host output",
+      "precision_note": "P+PB REAL(4), WRF REAL(4) operations; distinct from raw PH/PHB",
+      "source_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/share/wrf_timeseries.F",
+      "source_sha256": "0e86d176a5acbeac82dcf062dff543f4a8a3b4df08841d79679640adbfe96eb1",
+      "stored_key": "p_half_native_bottomup_Pa"
+    },
+    "p8w_formula": "reader.p8w_for_column REAL(4) transcription of pinned calc_p8w; not executed host output",
+    "p_center_formula": "float64-first P+PB",
+    "physical_temperature_formula": "T_K = th*pii; th from (THM+300)/(1+(Rv/Rd)*QVAPOR), selected_frame convention",
+    "registry_source": {
+      "number_species_units": "Registry labels # kg-1; dry/moist denominator basis not specified",
+      "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/Registry/Registry.EM_COMMON",
+      "qib_units": "m3 kg-1",
+      "sha256": "6741720cba12ad7ee1c172339bd8def5973b22f4e88ab9cd152f3ba3df456e37",
+      "water_species_units": "Registry labels kg kg-1; dry/moist denominator basis not specified in this receipt"
+    },
+    "rho_d_formula": "p_pa/(Rd*(THM+300)*pii), selected_frame convention",
+    "selected_reader": {
+      "function": "selected_frame; formulas replicated for neighbor cells without its center-ocean-only reject",
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/native358_artifact_diag_2026-10-08/recipe/run_native_kma_bt_frames.py",
+      "sha256": "408bab9756c6ac1a6e8438b8469c87f41fa239ce75414cd8087d10b6a31d54c1"
+    },
+    "temperature": "THM plus 300 K, divided by Exner and with Rv/Rd moisture correction as archived selected_frame; State.th carries dry potential temperature",
+    "water_vapor": "native QVAPOR retained as kg kg-1 dry-air mixing ratio"
+  },
+  "schema": "pr398_native_patch_plan_v3",
+  "scope": "bounded 3x3 native selected-column patch from an already accepted forecast; no M/H, optimization, new run, reanalysis, or acquisition",
+  "selection": {
+    "center_j_i_zero_based": [
+      86,
+      48
+    ],
+    "i_indices": [
+      47,
+      48,
+      49
+    ],
+    "interface_levels": 40,
+    "j_indices": [
+      85,
+      86,
+      87
+    ],
+    "orientation": "WRF j/i, bottom-up vertical; arrays do not remap or select a replacement column",
+    "sampling": "all nine fixed cells at each of the same three predeclared saved frames",
+    "saved_frame_indices": [
+      1,
+      4,
+      6
+    ],
+    "saved_times": [
+      "2025-07-19_05:56:00",
+      "2025-07-19_05:57:00",
+      "2025-07-19_05:57:40"
+    ],
+    "vertical_levels": 39
+  },
+  "source_sha256": {
+    "intake_consumer": {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr395_native_tq_intake_2026-10-10/intake_native_tq.py",
+      "sha256": "eb54cc2d037aee938c57f9d2bec77b850cec94ef68a856b31d1d018c3e77c2c3"
+    },
+    "kdm6_constants": {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/constants.py",
+      "sha256": "aa489872c2b00d1160e158b9390ebe7bdcbbe4b31a468673cf22615f137f1b62"
+    },
+    "kdm6_thermo": {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/thermo.py",
+      "sha256": "5278c14c6d87178af5ee963eef59d3297b923fa374412fd854c01e43ffb1b5cd"
+    },
+    "native_patch_driver": {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr398_spatial_representativeness_2026-10-10/native_patch_v3.py",
+      "sha256": "6921bfb0a05d6d9619f242beca5a702e81a3546f54252c6b33501b5763abf2ff"
+    },
+    "observation_receipt": {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr395_observation_matchup_2026-10-10/RECEIPT.json",
+      "sha256": "6af23b226ade39402f68df24268227b5d30cee5107cabd32992c82d0d329ad92"
+    },
+    "selected_frame_reader": {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/native358_artifact_diag_2026-10-08/recipe/run_native_kma_bt_frames.py",
+      "sha256": "408bab9756c6ac1a6e8438b8469c87f41fa239ce75414cd8087d10b6a31d54c1"
+    },
+    "viirs_geometry_result": {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/VIIRS_geometry_result_2026-10-07.json",
+      "sha256": "d27c828ad1823a21a580fc1331a92d22caf15414f9f2a0fb9f9c63a4906f86be"
+    },
+    "wrf_registry": {
+      "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/Registry/Registry.EM_COMMON",
+      "sha256": "6741720cba12ad7ee1c172339bd8def5973b22f4e88ab9cd152f3ba3df456e37"
+    }
+  },
+  "status": "PREDECLARED_NO_STATE_DIAGNOSTICS"
+}

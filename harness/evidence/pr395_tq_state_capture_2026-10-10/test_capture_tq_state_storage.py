@@ -254,6 +254,64 @@ def test_private_payload_keeps_legacy_final_slot_event_aliases():
     np.testing.assert_array_equal(payload["final_slot_bt_K"], bt)
 
 
+def test_pr398_iteration_gate_is_opt_in_and_keeps_pr395_default():
+    forcing = _tagged_forcing(1)
+    window = SimpleNamespace(dt=20.0, normalized_dry=True, eta=None,
+                             eta_pre=None, ncmin_land=10.0, ncmin_sea=10.0)
+    common = {
+        "obs_time": 1, "dt_s": 20, "observation_sigma_K": 1.0,
+        "observation_bias_K": 0.0, "huber_delta_K": 1.0,
+        "th_sigma_K": 0.8, "qv_sigma_log": 0.08,
+        "qv_levels_from_bottom": 12, "non_tq_state_sigmas_zero": True,
+        "parameter_prior_active": [], "partition_control": False,
+        "pseudo_rh": False, "warm_start": False,
+        "automatic_retry": False, "ncmin_land": 10.0, "ncmin_sea": 10.0,
+    }
+    capture._validate_predeclared_run(
+        window, {**common, "max_iter": 3}, obs_time=1, max_iter=3,
+        forcings=(forcing,))
+    with pytest.raises(ValueError, match="named PR398"):
+        capture._validate_predeclared_run(
+            window, {**common, "max_iter": 8}, obs_time=1, max_iter=8,
+            forcings=(forcing,))
+    variant = {
+        **common, "max_iter": 8,
+        "experiment_id": "PR398_CONVERGENCE_8ITER_20261010",
+        "optimizer_max_eval_policy": "pytorch_lbfgs_default_ceil_1.25_max_iter",
+    }
+    capture._validate_predeclared_run(
+        window, variant, obs_time=1, max_iter=8, forcings=(forcing,))
+    for tampered in (
+        {**variant, "experiment_id": "another-run"},
+        {**variant, "optimizer_max_eval_policy": "forced-10"},
+    ):
+        with pytest.raises(ValueError, match="named PR398"):
+            capture._validate_predeclared_run(
+                window, tampered, obs_time=1, max_iter=8, forcings=(forcing,))
+
+
+def test_pr398_eight_iter_records_unforced_pytorch_default_max_eval():
+    x = torch.tensor([5.0], dtype=torch.float64, requires_grad=True)
+    observation = {"constructor_calls": 0, "step_calls": 0,
+                   "step_returned": False}
+    factory = capture._observe_existing_lbfgs(torch.optim.LBFGS, observation)
+    optimizer = factory([x], max_iter=8, history_size=8,
+                        line_search_fn="strong_wolfe", tolerance_grad=1e-10)
+    assert optimizer.defaults["max_eval"] == 10
+    assert optimizer.param_groups[0]["max_eval"] == 10
+
+    def closure():
+        optimizer.zero_grad()
+        loss = ((x - 1.0) ** 2).sum()
+        loss.backward()
+        return loss
+
+    optimizer.step(closure)
+    assert observation["step_state"]["group"]["max_iter"] == 8
+    assert observation["step_state"]["group"]["max_eval"] == 10
+    assert observation["constructor_calls"] == observation["step_calls"] == 1
+
+
 def test_lbfgs_observer_preserves_original_quadratic_step_and_gradient():
     original_factory = torch.optim.LBFGS
     kwargs = {"lr": 0.7, "max_iter": 4, "history_size": 8,

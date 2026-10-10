@@ -1,0 +1,154 @@
+{
+  "acceptance": "diagnostic only; science acceptance remains NOT_ASSESSED",
+  "experiment_id": "PR398_CONVERGENCE_8ITER_20261010",
+  "method": {
+    "layer_order": "native bottom-up; 0-based layer index",
+    "qc_nc": "unweighted native-level sum and maximum; not a column-integrated budget",
+    "saturation_ratios": "KDM6 qv/qs phase-aware and qv/qs_water liquid-only; neither is observed vapor-pressure e/es RH"
+  },
+  "pr397": {
+    "checkpoint_sha256": "8cfe28df6ef336454cfa595cc70f7a4ddec2e5cd8cbd393c0c7ce8106c904c59",
+    "forcing_window0_equals_final": true,
+    "states": {
+      "background_initial_state": {
+        "liquid_qv_over_qs_water_max_percent": 95.53440633005557,
+        "liquid_ratio_max_layer_bottomup_0based": 3,
+        "nc_max_raw": 0.0,
+        "nc_positive_level_count": 0,
+        "nc_unweighted_level_sum_raw": 0.0,
+        "phase_aware_max_layer_bottomup_0based": 3,
+        "phase_aware_qv_over_qs_max_percent": 95.53440633005557,
+        "qc_max_kgkg": 0.0,
+        "qc_positive_level_count": 0,
+        "qc_unweighted_level_sum_kgkg": 0.0,
+        "qv_max_kgkg_dry": 0.018660932779312134
+      },
+      "background_slot_state": {
+        "liquid_qv_over_qs_water_max_percent": 95.53440633005557,
+        "liquid_ratio_max_layer_bottomup_0based": 3,
+        "nc_max_raw": 0.0,
+        "nc_positive_level_count": 0,
+        "nc_unweighted_level_sum_raw": 0.0,
+        "phase_aware_max_layer_bottomup_0based": 3,
+        "phase_aware_qv_over_qs_max_percent": 95.53440633005557,
+        "qc_max_kgkg": 0.0,
+        "qc_positive_level_count": 0,
+        "qc_unweighted_level_sum_kgkg": 0.0,
+        "qv_max_kgkg_dry": 0.018660932779312134
+      },
+      "final_slot_state": {
+        "liquid_qv_over_qs_water_max_percent": 96.75147829265397,
+        "liquid_ratio_max_layer_bottomup_0based": 3,
+        "nc_max_raw": 0.0,
+        "nc_positive_level_count": 0,
+        "nc_unweighted_level_sum_raw": 0.0,
+        "phase_aware_max_layer_bottomup_0based": 3,
+        "phase_aware_qv_over_qs_max_percent": 96.75147829265397,
+        "qc_max_kgkg": 0.0,
+        "qc_positive_level_count": 0,
+        "qc_unweighted_level_sum_kgkg": 0.0,
+        "qv_max_kgkg_dry": 0.01867996693337965
+      },
+      "returned_analysis_initial_state": {
+        "liquid_qv_over_qs_water_max_percent": 96.75147829265397,
+        "liquid_ratio_max_layer_bottomup_0based": 3,
+        "nc_max_raw": 0.0,
+        "nc_positive_level_count": 0,
+        "nc_unweighted_level_sum_raw": 0.0,
+        "phase_aware_max_layer_bottomup_0based": 3,
+        "phase_aware_qv_over_qs_max_percent": 96.75147829265397,
+        "qc_max_kgkg": 0.0,
+        "qc_positive_level_count": 0,
+        "qc_unweighted_level_sum_kgkg": 0.0,
+        "qv_max_kgkg_dry": 0.01867996693337965
+      }
+    }
+  },
+  "pr398": {
+    "checkpoint_sha256": "f69e13259e8617ba9d5a5f4785fc0e9c2d1eb990994a92411e1a7d6d72d1b0e8",
+    "forcing_window0_equals_final": true,
+    "states": {
+      "background_initial_state": {
+        "liquid_qv_over_qs_water_max_percent": 95.53440633005557,
+        "liquid_ratio_max_layer_bottomup_0based": 3,
+        "max_abs_diff_vs_pr397": {
+          "nc": 0.0,
+          "qc": 0.0,
+          "qs": 0.0,
+          "qv": 0.0
+        },
+        "nc_max_raw": 0.0,
+        "nc_positive_level_count": 0,
+        "nc_unweighted_level_sum_raw": 0.0,
+        "phase_aware_max_layer_bottomup_0based": 3,
+        "phase_aware_qv_over_qs_max_percent": 95.53440633005557,
+        "qc_max_kgkg": 0.0,
+        "qc_positive_level_count": 0,
+        "qc_unweighted_level_sum_kgkg": 0.0,
+        "qv_max_kgkg_dry": 0.018660932779312134
+      },
+      "background_slot_state": {
+        "liquid_qv_over_qs_water_max_percent": 95.53440633005557,
+        "liquid_ratio_max_layer_bottomup_0based": 3,
+        "max_abs_diff_vs_pr397": {
+          "nc": 0.0,
+          "qc": 0.0,
+          "qs": 0.0,
+          "qv": 0.0
+        },
+        "nc_max_raw": 0.0,
+        "nc_positive_level_count": 0,
+        "nc_unweighted_level_sum_raw": 0.0,
+        "phase_aware_max_layer_bottomup_0based": 3,
+        "phase_aware_qv_over_qs_max_percent": 95.53440633005557,
+        "qc_max_kgkg": 0.0,
+        "qc_positive_level_count": 0,
+        "qc_unweighted_level_sum_kgkg": 0.0,
+        "qv_max_kgkg_dry": 0.018660932779312134
+      },
+      "final_slot_state": {
+        "liquid_qv_over_qs_water_max_percent": 96.75089803326708,
+        "liquid_ratio_max_layer_bottomup_0based": 3,
+        "max_abs_diff_vs_pr397": {
+          "nc": 0.0,
+          "qc": 0.0,
+          "qs": 0.0,
+          "qv": 1.1612016479964349e-07
+        },
+        "nc_max_raw": 0.0,
+        "nc_positive_level_count": 0,
+        "nc_unweighted_level_sum_raw": 0.0,
+        "phase_aware_max_layer_bottomup_0based": 3,
+        "phase_aware_qv_over_qs_max_percent": 96.75089803326708,
+        "qc_max_kgkg": 0.0,
+        "qc_positive_level_count": 0,
+        "qc_unweighted_level_sum_kgkg": 0.0,
+        "qv_max_kgkg_dry": 0.018679927933588813
+      },
+      "returned_analysis_initial_state": {
+        "liquid_qv_over_qs_water_max_percent": 96.75089803326708,
+        "liquid_ratio_max_layer_bottomup_0based": 3,
+        "max_abs_diff_vs_pr397": {
+          "nc": 0.0,
+          "qc": 0.0,
+          "qs": 0.0,
+          "qv": 1.1612016479964349e-07
+        },
+        "nc_max_raw": 0.0,
+        "nc_positive_level_count": 0,
+        "nc_unweighted_level_sum_raw": 0.0,
+        "phase_aware_max_layer_bottomup_0based": 3,
+        "phase_aware_qv_over_qs_max_percent": 96.75089803326708,
+        "qc_max_kgkg": 0.0,
+        "qc_positive_level_count": 0,
+        "qc_unweighted_level_sum_kgkg": 0.0,
+        "qv_max_kgkg_dry": 0.018679927933588813
+      }
+    }
+  },
+  "schema": "pr398_saved_endpoint_diagnostic_v1",
+  "source": "read-only arithmetic on saved NPZ endpoint arrays only; no model, M, H, RTTOV or optimizer call",
+  "source_sha256": {
+    "capture_tq_state.py": "e45375e7147ed71240afb49158673d9681511276e9e813e6272b21290d68e2a3"
+  }
+}

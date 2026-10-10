@@ -1,0 +1,91 @@
+{
+  "schema": "pr398.fixed_candidate_spatial_diagnostic.v1",
+  "created_at": "2026-10-10T05:22:16.090688+00:00",
+  "predeclaration_basis": "User PR398 review: native3x3, AMI5x5, corresponding geolocated VIIRS samples. Written before new surrounding sample values are inspected.",
+  "base_revision": "bf00721b79ae82d041d69981fd781c46c2ca04eb",
+  "native": {
+    "center_j_i_zero_based": [
+      86,
+      48
+    ],
+    "j_indices": [
+      85,
+      86,
+      87
+    ],
+    "i_indices": [
+      47,
+      48,
+      49
+    ],
+    "saved_frame_indices": [
+      1,
+      4,
+      6
+    ],
+    "times": [
+      "2025-07-19_05:56:00",
+      "2025-07-19_05:57:00",
+      "2025-07-19_05:57:40"
+    ],
+    "grid": "existing5km native horizontal grid and39levels; no regridding"
+  },
+  "ami": {
+    "fixed_center_row_col_zero_based": [
+      320,
+      48
+    ],
+    "rows": [
+      318,
+      319,
+      320,
+      321,
+      322
+    ],
+    "cols": [
+      46,
+      47,
+      48,
+      49,
+      50
+    ],
+    "channels_1based": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "selection": "same existing local source images; fixed5x5 descriptive patch, not known instrument footprint"
+  },
+  "viirs": {
+    "fixed_candidate_row_col_zero_based": [
+      205,
+      27
+    ],
+    "selection": "existing CloudPhase geolocations inside latitude/longitude bounding box of native3x3 centers; bounds derived only from fixed native geometry",
+    "region_boundary_contract": "descriptive center-bounds box; not exact model-cell union, satellite footprint, area weights or parallax correction",
+    "fields": [
+      "CloudPhase",
+      "CloudType",
+      "CloudPhaseFlag",
+      "Latitude",
+      "Longitude",
+      "viewing_angles_if_locally_available",
+      "cloud_height_and_QA_if_locally_available"
+    ]
+  },
+  "no_new_native_run": true,
+  "no_M_H_or_optimization": true,
+  "no_new_observation_or_model_acquisition": true,
+  "no_candidate_replacement": true,
+  "no_BT_residual_selection": true,
+  "no_category_code_averaging": true,
+  "no_BT_averaging_as_radiance": true,
+  "no_spatial_scatter_as_calibrated_R_or_sigma": true,
+  "held_out_inventory": "inspect existing native5km dates only; other times/variants of July19 are not independent events",
+  "science_admission": "NOT_ASSESSED; QA/time/height datum/common physical footprint remain separate",
+  "review_timestamp": "2026-10-10T14:19:00+09:00"
+}

@@ -1,0 +1,17 @@
+{
+  "old_plan_path": "harness/evidence/pr398_followup_2026-10-10/PREDECLARED.json",
+  "old_plan_recorded_status": "PREDECLARED_NO_RTTOV_EXECUTED",
+  "old_plan_sha256": "c41199459a909435de05f082da3d972c080dc1afe01e4b03cee3c2ad6b1e8d2b",
+  "old_script_path": "harness/evidence/pr398_followup_2026-10-10/run_time_geometry_sensitivity.py",
+  "old_script_sha256": "a1e31fd9aed55630ebb66905050a845e92c81f7ce81f3733a833dddf7dda4fef",
+  "preserved_copy_sha256": "a1e31fd9aed55630ebb66905050a845e92c81f7ce81f3733a833dddf7dda4fef",
+  "preserved_nonrunnable_source_copy": "harness/evidence/pr398_followup_2026-10-10/run_time_geometry_sensitivity_cth_v1_unexecuted.py.disabled",
+  "reason": "RTTOV &angles.elevation is profile surface elevation; substituting cloud-top height with unchanged native surface/pressure does not represent a supported physical geometry perturbation.",
+  "replacement_semantics": "AMI candidate-center vs saved native-cell-center viewing geometry at frames 1/4/6, native HGT unchanged; no CTH height substitution, parallax or footprint claim.",
+  "schema": "pr398_cth_v1_withdrawal_v1",
+  "status": "WITHDRAWN_UNEXECUTED",
+  "superseded_by_plan": "harness/evidence/pr398_followup_2026-10-10/PREDECLARED_v2.json",
+  "v1_failure_marker_exists": false,
+  "v1_result_exists": false,
+  "v1_started_marker_exists": false
+}

@@ -1,0 +1,58 @@
+{
+  "schema": "pr398_convergence_predeclaration_v1",
+  "experiment_id": "PR398_CONVERGENCE_8ITER_20261010",
+  "status": "PREDECLARED_NOT_RUN",
+  "max_iter": 8,
+  "max_eval_policy": "pytorch_lbfgs_default_ceil_1.25_max_iter",
+  "max_eval_expected_from_pinned_torch": 10,
+  "torch_version_expected": "2.13.0",
+  "baseline": {
+    "result_path": "harness/evidence/pr395_tq_state_capture_2026-10-10/RESULT_3d2e97f159.json",
+    "result_sha256": "c49808c0331754eeb9ab9f77a88083119d5834852281db890b2827f6acf6eeca",
+    "driver_path": "harness/evidence/pr395_tq_state_capture_2026-10-10/DRIVER_3d2e97f159.json",
+    "driver_sha256": "836ac71bdf069c1a677e8d3e770cab3e31cfaf807d8a13ccab9884b01bb49333",
+    "initial_zero_control_Jo": 26.588575903055926,
+    "initial_operator_signature_sha256": "2564e3298a383f3b9bdb348cc5abbd68156653b633f4963551fdc799132d1e59"
+  },
+  "max_eval_explicitly_forced": false,
+  "native_input": {
+    "source": "existing validated PR395 native intake",
+    "rerun": false,
+    "column_j_i_zero_based": [86, 48],
+    "levels": 39,
+    "background_time": "2025-07-19_05:55:40",
+    "observation_slot": "2025-07-19_05:56:00",
+    "pixel_time_verified": false
+  },
+  "unchanged_physical_and_observation_contract": {
+    "forcing_window_count": 1,
+    "dt_s": 20,
+    "obs_time": 1,
+    "ami_channels": [10, 11, 12, 13, 14, 15, 16],
+    "all_sky": true,
+    "observation_sigma_K": 1.0,
+    "observation_bias_K": 0.0,
+    "huber_delta_K": 1.0,
+    "active_state_fields": ["th", "qv"],
+    "th_sigma_K": 0.8,
+    "qv_sigma_log": 0.08,
+    "qv_levels_from_bottom": 12,
+    "other_state_sigmas_zero": true,
+    "parameter_prior_active": [],
+    "eta_and_eta_pre_active": false,
+    "ncmin_land": 10.0,
+    "ncmin_sea": 10.0
+  },
+  "initialization": {
+    "state": "same intake xb",
+    "v_state": "zero",
+    "v_theta": "zero",
+    "warm_start": false,
+    "automatic_retry": false
+  },
+  "purpose": "bounded convergence/gradient trajectory experiment; not cloud seeking",
+  "additional_m_or_h_before_approval": 0,
+  "additional_native_runs": 0,
+  "science_acceptance": "NOT_ASSESSED",
+  "execution_authorization": "await root coordination after preflight/source review"
+}

@@ -1,0 +1,12 @@
+{
+  "schema": "pr398_convergence_local_preservation.v1",
+  "canonical_root": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_convergence_20261010",
+  "manifest_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_convergence_20261010/ARCHIVE_MANIFEST.json",
+  "manifest_sha256": "8c7aa5876d4be0f327f63e99a502a33e5f602a1e9dc553e2863bb40ccac5ca99",
+  "verified_file_count": 40,
+  "all_hashes_match": true,
+  "directory_mode": "0700",
+  "file_modes": "0600",
+  "original_receipts_and_checkpoint_unchanged": true,
+  "M_H_calls": 0
+}

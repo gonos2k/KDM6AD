@@ -1,0 +1,62 @@
+{
+  "checks": {
+    "baseline_fixture_assets_stable": true,
+    "coefficient_matches_pr397": true,
+    "effective_h_config_equal_except_fixture_path": true,
+    "executable_matches_pr397": true,
+    "fixture_files_match_pr397": true,
+    "raw_cross_run_signature_equal": false,
+    "same_initial_frozen_mask": true,
+    "same_initial_valid_count": true,
+    "same_initial_zero_control_Jo": true,
+    "signature_source_hashes_rttov_config": true,
+    "within_run_initial_matches_accepted_signature": true,
+    "within_run_trace_signatures_stable": true
+  },
+  "driver_original_failed_checks": [
+    "same_pr397_initial_signature"
+  ],
+  "experiment_id": "PR398_CONVERGENCE_8ITER_20261010",
+  "historical_policy_label": {
+    "actual_pinned_torch_behavior": "PyTorch 2.13 sets default max_eval=int(max_iter*1.25); for max_iter=8 this is 10",
+    "max_eval_was_explicitly_passed": false,
+    "stored_manifest_token": "pytorch_lbfgs_default_ceil_1.25_max_iter"
+  },
+  "interpretation_boundary": {
+    "capture_status": "RETURNED_DIAGNOSTIC_ONLY",
+    "science_acceptance": "NOT_ASSESSED",
+    "signature_interpretation_is_source_inference": true
+  },
+  "preservation": {
+    "additional_model_M_or_H_calls": 0,
+    "capture_result_modified": false,
+    "original_driver_receipt_modified": false,
+    "private_checkpoint_modified": false,
+    "retry": false
+  },
+  "raw_signature": {
+    "effective_h_configuration_differing_fields": [],
+    "fixture_case_dir_pr397": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr395-native-tq-analysis-2026-10-10/run-3d2e97f159/rttov_fixture",
+    "fixture_case_dir_pr398": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr398-convergence-8iter-20261010/run-PR398_CONVERGENCE_8ITER_20261010-sourcechecked7/rttov_fixture",
+    "interpreted_difference": "The raw signature differs because the signature hashes the full H configuration, which contains the distinct isolated fixture_case_dir; all remaining effective configuration values and the hash-bound assets match.",
+    "pr397_initial_sha256": "2564e3298a383f3b9bdb348cc5abbd68156653b633f4963551fdc799132d1e59",
+    "pr398_final_sha256": "cdf933641a10aefa60444c779c5a4ae547a4685b1f53051e0ccc367f2cec5148",
+    "pr398_initial_sha256": "cdf933641a10aefa60444c779c5a4ae547a4685b1f53051e0ccc367f2cec5148",
+    "within_pr398_initial_equals_final": true
+  },
+  "receipt_hashes": {
+    "baseline_driver_sha256": "836ac71bdf069c1a677e8d3e770cab3e31cfaf807d8a13ccab9884b01bb49333",
+    "baseline_result_sha256": "c49808c0331754eeb9ab9f77a88083119d5834852281db890b2827f6acf6eeca",
+    "original_driver_sha256": "78e8fd335029d5d147ae9d996eda7f1393f602a9aff21961aaaba6b5df36e188",
+    "preflight_sha256": "23a7af036189b6b28dbf320e9fa22d44bd96b26681711055bc76389bf9de39f3",
+    "private_checkpoint_sha256": "f69e13259e8617ba9d5a5f4785fc0e9c2d1eb990994a92411e1a7d6d72d1b0e8",
+    "result_sha256": "8591e782c07ee62ad290d24be2d3769ed2b6bb1c86fdd9b403e74b5f587dcfb8"
+  },
+  "saved_endpoint_diagnostic": {
+    "additional_model_M_or_H_calls": 0,
+    "path": "harness/evidence/pr398_followup/SAVED_ENDPOINTS.json",
+    "sha256": "5ea833470ba23a220d757a53b69ef60b4a0b490aabcd002aeb0f44fedc19c78f"
+  },
+  "schema": "pr398_postrun_comparison_audit_v1",
+  "status": "SAME_FIXED_H_INPUTS_PATH_SENSITIVE_RAW_SIGNATURE_DIFFERENCE"
+}
