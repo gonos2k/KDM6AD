@@ -1,0 +1,23 @@
+{
+  "schema": "pr397_actual_native_progress_v1",
+  "recorded_at": "2026-10-10T10:01:09.945052+09:00",
+  "base_main": "eec82d6571095a06656c382a2bb97ca448824ce1",
+  "branch": "codex/pr397-native-result-checklist",
+  "stage": "NATIVE_RUNNING",
+  "run_id": "mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148",
+  "native_pids": [
+    99148,
+    99157,
+    99158
+  ],
+  "continuation_pid": 68581,
+  "os_exit_observer_pid": 80753,
+  "last_rsl_line": "Timing for Writing klfs_lc05_prcp.202507190000 for domain        1:    0.00844 elapsed seconds",
+  "model_restarted": false,
+  "second_waiter_started": false,
+  "intake_completed": false,
+  "analysis_completed": false,
+  "science_accepted": false,
+  "management_score": "54/75 (72%) unchanged",
+  "consumer_pins_match_current_source": true
+}
