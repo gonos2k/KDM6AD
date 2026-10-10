@@ -65,3 +65,5 @@ date_modified: 2026-07-14
 - [[sources/pr400-input-compatibility-2026-10-10]] — Actual LA/RTTOV IR133 calibration-coordinate mismatch with upstream SRF unverified; fixed gas/surface provenance, retained direct K and bounded IC/BC lineage audit; independent native dates remain open.
 
 - [[sources/pr401-fixed-input-k-response-2026-10-10]] — Common KMA BT/K replay and six declared fixed-input response directions from saved center K, with coherent held/partial source endpoint sensitivity; actual SRF and independent native dates remain open.
+
+- [[sources/pr402-finite-input-response-2026-10-11]] — Four actual skin/O3 finite trials preserve seven-channel quality and locally agree with saved K; fresh direct/K outputs, historical-asset limits and independent-observation availability are separated.

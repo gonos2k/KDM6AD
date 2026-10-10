@@ -1,0 +1,23 @@
+{
+  "python": "3.10.11 (main, Apr  9 2023, 15:10:32) [Clang 14.0.3 (clang-1403.0.22.14.1)]",
+  "targeted_tests": "3 passed; half-step FD/curvature/near-zero absolute errors/duplicate-execution prevention; no RTTOV calls in tests",
+  "ruff": "PASS",
+  "compilation": "PASS",
+  "json": "PASS",
+  "actual_execution": {
+    "wrapper_launches": 4,
+    "returned_direct_outputs": 4,
+    "returned_K_outputs": 4,
+    "internal_RTTOV_H_calls": null,
+    "M": 0,
+    "native": 0,
+    "optimizer": 0
+  },
+  "source_plan_payload_hashes": "PASS",
+  "private_modes": "0700/0600",
+  "all_fixed_quality_zero": true,
+  "direct_K_BT_match": "0 K max difference in each actual trial",
+  "reviews": "Independent Red and Green complete",
+  "new_native_M_optimizer_calls": 0,
+  "limits": "Historical hydrotable/dylib identity unknown; one-point/two-direction finite checks, not measured input errors or independent cases"
+}

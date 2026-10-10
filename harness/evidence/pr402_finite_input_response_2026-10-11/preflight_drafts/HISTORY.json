@@ -1,0 +1,21 @@
+{
+  "scope": "Preflight-only drafts; no RTTOV wrappers launched from any draft",
+  "current_executed_plan": "final_v4/K_RESPONSE_PLAN.json",
+  "initial_preflight_failures": [
+    {
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr402_finite_input_response_20261011/cases/finiteplan402a/PREFLIGHT_FAILURE.json",
+      "sha256": "d1ba54f82d6fbf70a0c3eb3cdda134d0afe3e8e7a62689c515fc3dfbc1bb45e8",
+      "record": {
+        "status": "FAILED_BEFORE_WRAPPER_CALLS",
+        "plan_id": "finiteplan402a",
+        "failure": "asset stability check compared mismatched key sets: before included descriptive paths; after included executable/coefficient/hydrotable hashes only",
+        "wrapper_calls": 0,
+        "saved_center_case_mutated": false,
+        "executed_helper_sha256": "5e8854ef368d2ec5fa6581b6e14b6d017da32739323425d04b4d092c1e428847",
+        "source_sha256_captured_after_failure_not_at_process_start": true
+      }
+    }
+  ],
+  "drafts_relocated_byte_preserved": "Root and final_v2/v3 preflight snapshots now under preflight_drafts; historical path strings refer to original locations",
+  "earlier_preflight_exact_source_bytes": "NOT_PRESERVED unless explicitly in private records; final executed helper/executor source preserved separately"
+}
