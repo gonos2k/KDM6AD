@@ -21,5 +21,16 @@ The June 10 presentation ([[kdm6ad-20260610-presentation-adversarial-review]]) i
 
 Open questions center on boundaries: `diag_rhog` is excluded from the packed AD ABI because it is a diagnostic with no meaningful derivative (no longer because it is a parity floor — it is now bitwise), diagnostics used for WRF parity may not all have derivative semantics, mp137 remains slower than mp37 in observed run timing (still unquantified), and the [[Differentiable Bulk Microphysics Research Gap]] still needs full-text literature verification before manuscript drafting. The dtype-conditional "operational-raw / DA-clamped" numerics idiom that reconciles Fortran's raw operational math with autograd-safe clamped forms — used ~25× and now the port's load-bearing technique — is captured in [[Operational-Raw vs DA-Clamped Dual Path]].
 
-## Initialization Note
+## October10 internal research update
+
+PR397 provided a completed native rank/launcher, valid saved input and actual
+single-column KDM–all-sky RTTOV T/Q analysis with preserved states/gradient.
+The outer Python harness exit120 remains separately recorded. The user-reviewed
+management basis is56/75 (74.7%), reflecting those actual results rather than
+the number of PRs. [[sources/pr398-local-balance-and-sensitivity-2026-10-10]]
+tracks bounded same-objective and saved-host sensitivity follow-ups. Precise
+pixel UTC, footprint, flux closure and held-out event validation remain open;
+normal native completion does not establish them.
+
+## Initialization Note (historical)
 This is an Obsidian-ready vault. The formal kg schema pin was not created because the global schema files were not available in the expected local skill directories.

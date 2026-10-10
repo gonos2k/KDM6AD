@@ -1,0 +1,57 @@
+{
+  "canonical_directory": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_sensitivity_20261010",
+  "canonical_directory_mode": "0o700",
+  "file_count": 5,
+  "model_or_rttov_calls_during_copy": 0,
+  "original_graphify_private_artifacts_preserved": true,
+  "preserved_at_local": "2026-10-10T13:12:41+0900",
+  "preserved_files": {
+    "PREDECLARED_v2.json": {
+      "bytes": 50447,
+      "canonical_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_sensitivity_20261010/PREDECLARED_v2.json",
+      "canonical_sha256": "ba389506ccdfbd835b282abf3a12ef39526149abf3dfdcc4f9581e04be95cebe",
+      "mode": "0o600",
+      "sha256_matches": true,
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr398_followup_2026-10-10/PREDECLARED_v2.json",
+      "source_sha256": "ba389506ccdfbd835b282abf3a12ef39526149abf3dfdcc4f9581e04be95cebe"
+    },
+    "PRIVATE_BACKUP_v2.json": {
+      "bytes": 2037,
+      "canonical_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_sensitivity_20261010/PRIVATE_BACKUP_v2.json",
+      "canonical_sha256": "7bf831defb1978411fe11de99256da4abac3d62f793a99c8fceb931de007bb92",
+      "mode": "0o600",
+      "sha256_matches": true,
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr398-centroid-viewing-angle-v2-2026-10-10/private/PRIVATE_BACKUP_v2.json",
+      "source_sha256": "7bf831defb1978411fe11de99256da4abac3d62f793a99c8fceb931de007bb92"
+    },
+    "RESULT.json": {
+      "bytes": 50171,
+      "canonical_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_sensitivity_20261010/RESULT.json",
+      "canonical_sha256": "a246386cb2d5967924a771cecad1858270514be4b97c4ccef4be1658f40b1feb",
+      "mode": "0o600",
+      "sha256_matches": true,
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr398-centroid-viewing-angle-v2-2026-10-10/private/RESULT.json",
+      "source_sha256": "a246386cb2d5967924a771cecad1858270514be4b97c4ccef4be1658f40b1feb"
+    },
+    "STARTED_ONCE.json": {
+      "bytes": 313,
+      "canonical_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_sensitivity_20261010/STARTED_ONCE.json",
+      "canonical_sha256": "7d8c800250087de10037cd2391c12e72af0ea9c9abae54cbfc5e491f804693b8",
+      "mode": "0o600",
+      "sha256_matches": true,
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr398-centroid-viewing-angle-v2-2026-10-10/private/STARTED_ONCE.json",
+      "source_sha256": "7d8c800250087de10037cd2391c12e72af0ea9c9abae54cbfc5e491f804693b8"
+    },
+    "run_time_geometry_sensitivity_v2_at_execution.py": {
+      "bytes": 36109,
+      "canonical_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr398_sensitivity_20261010/run_time_geometry_sensitivity_v2_at_execution.py",
+      "canonical_sha256": "6f8b4c0c91fd5ce2c16975c76b7912119ac8c1a8edf5de81679efd5e40b1c830",
+      "mode": "0o600",
+      "sha256_matches": true,
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr398-centroid-viewing-angle-v2-2026-10-10/private/run_time_geometry_sensitivity_v2_at_execution.py",
+      "source_sha256": "6f8b4c0c91fd5ce2c16975c76b7912119ac8c1a8edf5de81679efd5e40b1c830"
+    }
+  },
+  "schema": "pr398_v2_canonical_local_preservation_v1",
+  "status": "VERIFIED"
+}

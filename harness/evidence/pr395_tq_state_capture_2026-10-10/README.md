@@ -37,8 +37,9 @@ gradient hashes, shapes, and L2/L-infinity norms. These are total-objective
 gradients in control space, including prior and CVT/log-parameter chain terms;
 they are not RTTOV H-adjoint norms.
 
-The helper pins this run to `obs_time=1`, one 20-second forcing, three optimizer
-iterations as an upper bound (`max_iter=3`), seven AMI channels, observation sigma/bias `1/0 K`, state priors
+The default helper contract pins this run to `obs_time=1`, one 20-second
+forcing, three optimizer iterations as an upper bound (`max_iter=3`), seven
+AMI channels, observation sigma/bias `1/0 K`, state priors
 `0.8 K` and `0.08` log-qv over the lowest 12 levels, inactive parameters,
 zero-initialized control, `ncmin_land=ncmin_sea=10`, and exactly one final
 accepted-state audit. The observer wraps the original PyTorch LBFGS instance's
@@ -52,6 +53,13 @@ temporary-name cleanup and directory syncing after a successful link are
 best-effort so cleanup I/O errors cannot leave a success receipt pointing to a
 removed checkpoint. A failure receipt includes the actual return stage and any
 available final signature; raw optimizer-state arrays remain private.
+
+One explicit opt-in extends the same adapter for the separately identified
+`PR398_CONVERGENCE_8ITER_20261010` experiment: `max_iter=8` is accepted only
+with that experiment ID and the declared unforced PyTorch default `max_eval`
+policy. The ordinary PR395 `max_iter=3` call remains the default and rejects an
+experiment ID. PR398 records the optimizer's actual `max_eval` and does not
+change solver, prior, or physical setup.
 
 Receipt sections distinguish validated input, numerical return, and physical
 matchup/science acceptance. A successful numerical return remains diagnostic:

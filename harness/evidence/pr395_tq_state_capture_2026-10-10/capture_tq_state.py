@@ -982,10 +982,25 @@ def _background_quality_probe(events: Sequence[Mapping]) -> dict:
 
 def _validate_predeclared_run(window_config, manifest: Mapping, *, obs_time: int,
                               max_iter: int, forcings: Sequence[Forcing]) -> None:
+    # PR395 remains the fixed three-iteration production of this evidence
+    # packet. The only opt-in extension is a separately identified PR398
+    # convergence observation; it reuses the same solver and physical setup.
+    experiment_id = manifest.get("experiment_id")
+    if max_iter == 3:
+        expected_max_iter = 3
+        if experiment_id is not None:
+            raise ValueError("the default PR395 contract does not accept an experiment_id")
+    elif (max_iter == 8
+          and experiment_id == "PR398_CONVERGENCE_8ITER_20261010"
+          and manifest.get("optimizer_max_eval_policy")
+          == "pytorch_lbfgs_default_ceil_1.25_max_iter"):
+        expected_max_iter = 8
+    else:
+        raise ValueError("only fixed PR395 max_iter=3 or the named PR398 max_iter=8 protocol is allowed")
     expected = {
         "obs_time": 1,
         "dt_s": 20,
-        "max_iter": 3,
+        "max_iter": expected_max_iter,
         "observation_sigma_K": 1.0,
         "observation_bias_K": 0.0,
         "huber_delta_K": 1.0,
@@ -1007,7 +1022,7 @@ def _validate_predeclared_run(window_config, manifest: Mapping, *, obs_time: int
     for name, value in expected.items():
         if manifest[name] != value:
             raise ValueError(f"run_manifest.{name}={manifest[name]!r} violates fixed PR395 value {value!r}")
-    if (obs_time != 1 or max_iter != 3 or len(forcings) != 1
+    if (obs_time != 1 or max_iter != expected_max_iter or len(forcings) != 1
             or float(getattr(window_config, "dt", math.nan)) != 20.0
             or getattr(window_config, "normalized_dry", False) is not True
             or getattr(window_config, "eta", None) is not None
