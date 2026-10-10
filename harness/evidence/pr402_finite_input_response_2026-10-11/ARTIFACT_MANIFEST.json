@@ -1,0 +1,109 @@
+{
+  "scope": "Published PR402 packet; raw private inputs/K/output payloads remain private; manifest excludes itself",
+  "artifacts": {
+    "COORDINATOR_REPORT.md": {
+      "sha256": "17b99d433d173819c61e17f2b56a7a3ecc71dafee6be91232637b307e9a382bf",
+      "bytes": 4491
+    },
+    "GREEN_REVIEW.md": {
+      "sha256": "3869ffb5d2d0c3d26fdf8c8e808d693bf902f00976b10aa44314470fc64192fd",
+      "bytes": 3039
+    },
+    "INDEPENDENT_INPUTS_AVAILABILITY.json": {
+      "sha256": "c7c9ebf50d0ce27aa2bf1ea983fa7eeabfee5947b4b03a39e5f0f2ea7e7eb5a4",
+      "bytes": 7006
+    },
+    "INDEPENDENT_INPUTS_SCOPE.md": {
+      "sha256": "3c6e7712362609d931ef29822b37cd774838c1ae70744a2270ceaa39b55d63f6",
+      "bytes": 9874
+    },
+    "RED_REVIEW.md": {
+      "sha256": "c4ba155d285a1c8765ac436b8b36e835440a87fa2237ee8a0bff24062543c25d",
+      "bytes": 5793
+    },
+    "VALIDATION.json": {
+      "sha256": "e10db7627f720816ae8bb43bec04ea7a7d8ca1beb0642769d5f77705c2e24c11",
+      "bytes": 903
+    },
+    "execute_finite_response.py": {
+      "sha256": "a2ce178f7761ee37a9515af0239b65c440c1fbc8efabc95bc07c8732f1508530",
+      "bytes": 16820
+    },
+    "final_v4/FINITE_CHANNELS.csv": {
+      "sha256": "40bf746a6fb029c5ff762e8bbe4285a5599e95fe48a12f34d67c13f7c44881cb",
+      "bytes": 3007
+    },
+    "final_v4/FINITE_RESULT.json": {
+      "sha256": "5f67c0ea9357a99098987b796c1ee362a38d26510553f95443b24f058273aca4",
+      "bytes": 13719
+    },
+    "final_v4/INPUT_DIFFS.csv": {
+      "sha256": "772a4db2d87676c2de2e08c2ddb03bd25b5b80b481482f244e4f920615750896",
+      "bytes": 1543
+    },
+    "final_v4/K_RESPONSE_PLAN.json": {
+      "sha256": "c2cf7f7a8fa8dc3d49354b8ca36914bf54dfade8f900ff4a2c5a9b0aef6498c8",
+      "bytes": 30985
+    },
+    "final_v4/NUMERICAL_REPORT.md": {
+      "sha256": "8396821224cecbe9fd51107f5ee1bc3bf403c82db19c220cd648c479b2655191",
+      "bytes": 4309
+    },
+    "final_v4/PREFLIGHT_REPORT.md": {
+      "sha256": "5c8836b6732b504b2b39e1ebc7cb4aba9d4aed91febb756d8254def4fcb448f3",
+      "bytes": 2858
+    },
+    "final_v4/REPORT.md": {
+      "sha256": "169f9ca31628fb5a26396247d1b29ae3805591072ece46ff0e05148010897ca5",
+      "bytes": 846
+    },
+    "finite_input_response.py": {
+      "sha256": "d7ddabda1758a9331f4db63d9efc2c2dc60b7ddc1338390dd5cd83c455859c8b",
+      "bytes": 29578
+    },
+    "preflight_drafts/HISTORY.json": {
+      "sha256": "0bf3c1caf556ae832e51fc5ec0d8812e72a80dcbd88bce51e0102417f9594189",
+      "bytes": 1267
+    },
+    "preflight_drafts/INPUT_DIFFS.csv": {
+      "sha256": "1a4532accab61e80115818479a978dd2ffd905d350146cee221c1296161a85cb",
+      "bytes": 1523
+    },
+    "preflight_drafts/K_RESPONSE_PLAN.json": {
+      "sha256": "09e818b341b6ec8483009b7759425c2d3e12477d3aa17c295aa0e49da3b4053d",
+      "bytes": 17566
+    },
+    "preflight_drafts/REPORT.md": {
+      "sha256": "e6e8cbfd6acaaa78ed6f2c9b1212c3237296afd7093a09198c43cf30dcc89411",
+      "bytes": 2383
+    },
+    "preflight_drafts/final_v2/INPUT_DIFFS.csv": {
+      "sha256": "c46d2cf2ebb968ab3b13254bcb8fc0326669fd458846712fd843039c347c7910",
+      "bytes": 1523
+    },
+    "preflight_drafts/final_v2/K_RESPONSE_PLAN.json": {
+      "sha256": "a9a5abeb4facc7f9bdd72098b1e2cea737d675b71e2ca996338a1b080f1290e9",
+      "bytes": 18005
+    },
+    "preflight_drafts/final_v2/REPORT.md": {
+      "sha256": "0df35411074d61343be6b04ea54b9bae9e05dbae23ef10468b001ac034366449",
+      "bytes": 2383
+    },
+    "preflight_drafts/final_v3/INPUT_DIFFS.csv": {
+      "sha256": "b18bcd958c9ac0366ababc4b1d4904979f2ec713142cce3a3434e18e7fe3aa8c",
+      "bytes": 1539
+    },
+    "preflight_drafts/final_v3/K_RESPONSE_PLAN.json": {
+      "sha256": "1cbde10f9b3997be9239e6e79535bc71f1e1c391d1172ee8c9425d2fda8f1a96",
+      "bytes": 30827
+    },
+    "preflight_drafts/final_v3/REPORT.md": {
+      "sha256": "a8d0f894f5c4c22feb81c47ffe56f533959ef335eef1b46916512876037cec45",
+      "bytes": 2791
+    },
+    "test_execute_finite_response.py": {
+      "sha256": "5bff1c9438d77d02b1a0fb42f65738716d3ad050082c45794247f2af6990d0c8",
+      "bytes": 1905
+    }
+  }
+}

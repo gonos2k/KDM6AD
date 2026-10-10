@@ -1,0 +1,346 @@
+{
+  "baseline": {
+    "baseline_active_o3_ppmv_moist_min_max": [
+      0.03011784,
+      9.78409
+    ],
+    "baseline_bt_kma_k": [
+      [
+        262.2618406588041,
+        293.68664896244076,
+        270.6314463929056,
+        296.2342890285159,
+        295.96797907329585,
+        292.89404813872795,
+        276.6053899280171
+      ]
+    ],
+    "baseline_cost_jo_dimensionless": 26.59768478212186,
+    "baseline_skin_t_k": 300.774231,
+    "baseline_source_o3_ppmv_moist_min_max": [
+      0.03011784,
+      9.78409
+    ],
+    "center_case_outputs_sha256": {
+      "profiles_k_sha256": "e3ade1f26ff5b7cfddab622d7eae667821a4db745e347e40be4c76b90b405df9",
+      "radiance_k_sha256": "a4efba93b31c4432c8714c83ec843572de9424657962d43231ec9eccf1d909af"
+    },
+    "center_case_path_read_only": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr398-centroid-viewing-angle-v2-2026-10-10/private/hcase-frame1_fixed_AMI_candidate_pixel_center",
+    "pr399_plan_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr399_vertical_neighbor_2026-10-10/NEIGHBOR_PLAN_attempt2.json",
+    "pr399_plan_sha256": "5451176d914b5758ffc6315f08a957ae0b6f6ae38019df38faa5b4e58c086afb",
+    "pr399_result_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr399_vertical_neighbor_2026-10-10/NEIGHBOR_RESULT_attempt2.json",
+    "pr399_result_sha256": "2bf488dca1a39f5c8d6fc19fd299a5a4de2560cfa083b98dc0bafd133f150422",
+    "pr401_baseline_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr401_fixed_input_k_response_2026-10-10/final_v2/K_RESPONSE.json",
+    "pr401_baseline_sha256": "af27640b279570853dd391d01381ece33c38f0d853b040ac22e8cdcc75de93de",
+    "pr401_private_npz_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr401_fixed_input_k_response_20261010/center_86_48_rttov_k_response_v2.npz",
+    "pr401_private_npz_sha256": "45fcd36620a36681fbbb483c795441c151772606d7b2770eef6264e48db00d98"
+  },
+  "direction_plan": {
+    "channels": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "finite_response_definition": {
+      "D_f": "(H(x_plus)-H(x_minus))/2",
+      "D_h": "K(x0)@(delta_input_plus-delta_input_minus)/2 using serialized actual input vectors",
+      "E_minus": "H(x_minus)-H(x0)",
+      "E_plus": "H(x_plus)-H(x0)",
+      "deltaJo_actual": "J(x_trial)-J(x0), dimensionless normalized Huber cost",
+      "deltaJo_linear": "baseline Huber slope dot D_h (or one-sided K direction), dimensionless",
+      "relative_error": "signed_error/abs(D_f), null exactly when D_f=0",
+      "signed_error": "D_f-D_h in K"
+    },
+    "fixed_contract": {
+      "bias_K": 0.0,
+      "huber_delta_K": 1.0,
+      "sigma_K": 1.0,
+      "support": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "o3": "reference O3 +/-1% across 69 levels; saved P[66,69] maps beta to active 66-layer O3; active ASCII vector uses .17E serialization",
+    "skin": "actual k0%t +/- 0.5 K, serialized to six decimals"
+  },
+  "execution_guard": {
+    "automatic_retry": false,
+    "execution_id_required": true,
+    "failure_record_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr402_finite_input_response_20261011/cases/finiteplan402b/EXECUTION_FAILURE.json",
+    "guard_file_exclusive_create": true,
+    "guard_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr402_finite_input_response_20261011/cases/finiteplan402b/EXECUTION_GUARD.json",
+    "lock_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr402_finite_input_response_20261011/cases/finiteplan402b/EXECUTION_LOCK",
+    "max_wrapper_calls": 4,
+    "one_shot": true,
+    "required_plan_sha256_argument": true
+  },
+  "historical_baseline_library_identity": "UNKNOWN_NOT_RECORDED",
+  "limits": [
+    "This is phase-1 preflight only; no wrapper/run.sh/RTTOV was invoked.",
+    "No fresh baseline run, fifth call, H/M/model/native/preprocessing/acquisition or optimizer call is planned.",
+    "Trials change only skin k0%t or the active O3 profile; every other center input and all launch settings remain hash-identical.",
+    "No trial output is accepted until the one-shot execution stage, quality gate and source/asset postchecks complete."
+  ],
+  "original_case_unchanged_during_preflight": {
+    "after": {
+      "env.sh": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+      "out/k/profiles_k.txt": "e3ade1f26ff5b7cfddab622d7eae667821a4db745e347e40be4c76b90b405df9",
+      "out/k/radiance.txt": "a4efba93b31c4432c8714c83ec843572de9424657962d43231ec9eccf1d909af",
+      "rttov_test.txt": "bb34395dac966c50aa7f6e584fc15198ff05a4f0e9233df52a51460de155dd87",
+      "run.sh": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+    },
+    "before": {
+      "env.sh": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+      "out/k/profiles_k.txt": "e3ade1f26ff5b7cfddab622d7eae667821a4db745e347e40be4c76b90b405df9",
+      "out/k/radiance.txt": "a4efba93b31c4432c8714c83ec843572de9424657962d43231ec9eccf1d909af",
+      "rttov_test.txt": "bb34395dac966c50aa7f6e584fc15198ff05a4f0e9233df52a51460de155dd87",
+      "run.sh": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+    }
+  },
+  "preflight_provenance": {
+    "helper_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr402_finite_input_response_2026-10-11/finite_input_response.py",
+    "helper_sha256": "5e8854ef368d2ec5fa6581b6e14b6d017da32739323425d04b4d092c1e428847",
+    "source_pr401_k_response_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr401_fixed_input_k_response_2026-10-10/final_v2/K_RESPONSE.json",
+    "trial_case_directories": [
+      "/Users/yhlee/KDM6AD-k/host/research_evidence/pr402_finite_input_response_20261011/cases/finiteplan402b/skin_minus_0p5K",
+      "/Users/yhlee/KDM6AD-k/host/research_evidence/pr402_finite_input_response_20261011/cases/finiteplan402b/skin_plus_0p5K",
+      "/Users/yhlee/KDM6AD-k/host/research_evidence/pr402_finite_input_response_20261011/cases/finiteplan402b/o3_source_minus_1pct",
+      "/Users/yhlee/KDM6AD-k/host/research_evidence/pr402_finite_input_response_20261011/cases/finiteplan402b/o3_source_plus_1pct"
+    ],
+    "trial_directory_mode_octal": "0o700"
+  },
+  "runtime_asset_unchanged_during_preflight": true,
+  "runtime_assets": {
+    "coef_prefix_literal": "/Users/yhlee/AD-RTTOV/external/rttov14/current",
+    "coef_prefix_resolved": "/Users/yhlee/AD-RTTOV/external/rttov14/src",
+    "coefficient_relative_path": "rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+    "coefficient_resolved_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+    "coefficient_sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+    "env_sh_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr398-centroid-viewing-angle-v2-2026-10-10/private/hcase-frame1_fixed_AMI_candidate_pixel_center/out/env.sh",
+    "env_sh_sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+    "hydrotable_relative_path": "rtcoef_rttov14/hydrotable_visir/rttov_hydrotable_gkompsat2_1_ami.dat",
+    "hydrotable_resolved_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/hydrotable_visir/rttov_hydrotable_gkompsat2_1_ami.dat",
+    "hydrotable_sha256": "fdbe99ea68fd750e146fb78a798ab72b8568e4a3d545a2d847263cb374746890",
+    "library_manifest": {
+      "libraries": [
+        {
+          "hash_status": "HASHED_FILE",
+          "install_name": "/opt/local/lib/libnetcdff.7.dylib",
+          "resolved_path": "/opt/local/lib/libnetcdff.7.dylib",
+          "sha256": "779525a1467e9384f03b430e3602beb4f405ab88dd2eed308f545e925953d2ef"
+        },
+        {
+          "hash_status": "HASHED_FILE",
+          "install_name": "/opt/local/lib/libnetcdf.19.dylib",
+          "resolved_path": "/opt/local/lib/libnetcdf.19.dylib",
+          "sha256": "1f62583f8f6f0e468ea82679267596d2f5815dcd234f2be945c841ea0abe4b3a"
+        },
+        {
+          "hash_status": "HASHED_FILE",
+          "install_name": "/opt/homebrew/opt/gcc/lib/gcc/current/libgfortran.5.dylib",
+          "resolved_path": "/opt/homebrew/Cellar/gcc/15.2.0/lib/gcc/current/libgfortran.5.dylib",
+          "sha256": "d3167911d6f65ec5a07320865a2314a3d145dddf529dde52ba4b6e1211018378"
+        },
+        {
+          "hash_status": "HASHED_FILE",
+          "install_name": "/opt/homebrew/opt/gcc/lib/gcc/current/libgomp.1.dylib",
+          "resolved_path": "/opt/homebrew/Cellar/gcc/15.2.0/lib/gcc/current/libgomp.1.dylib",
+          "sha256": "2399f4dc62036e4bdc5b8ed6b1fb99a585f2627326dd7e8b80cae88b2906e0d4"
+        },
+        {
+          "hash_status": "HASHED_FILE",
+          "install_name": "/opt/homebrew/opt/gcc/lib/gcc/current/libquadmath.0.dylib",
+          "resolved_path": "/opt/homebrew/Cellar/gcc/15.2.0/lib/gcc/current/libquadmath.0.dylib",
+          "sha256": "9f231a97e89de90f72a0471d69c4b12fb60e0ef869b2ba1dd3c6e6a0f0e054e7"
+        },
+        {
+          "hash_status": "UNAVAILABLE_SYSTEM_OR_SHARED_CACHE",
+          "install_name": "/usr/lib/libSystem.B.dylib",
+          "resolved_path": "/usr/lib/libSystem.B.dylib",
+          "sha256": null
+        }
+      ],
+      "otool_stdout": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe:\n\t/opt/local/lib/libnetcdff.7.dylib (compatibility version 9.0.0, current version 9.0.0)\n\t/opt/local/lib/libnetcdf.19.dylib (compatibility version 19.0.0, current version 19.0.0)\n\t/opt/homebrew/opt/gcc/lib/gcc/current/libgfortran.5.dylib (compatibility version 6.0.0, current version 6.0.0)\n\t/opt/homebrew/opt/gcc/lib/gcc/current/libgomp.1.dylib (compatibility version 2.0.0, current version 2.0.0)\n\t/opt/homebrew/opt/gcc/lib/gcc/current/libquadmath.0.dylib (compatibility version 1.0.0, current version 1.0.0)\n\t/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1351.0.0)\n"
+    },
+    "rttov_executable_resolved_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+    "rttov_executable_sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+    "rttov_test_namelist_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr398-centroid-viewing-angle-v2-2026-10-10/private/hcase-frame1_fixed_AMI_candidate_pixel_center/out/rttov_test.txt",
+    "rttov_test_namelist_sha256": "bb34395dac966c50aa7f6e584fc15198ff05a4f0e9233df52a51460de155dd87",
+    "run_script_executable_literal": "/Users/yhlee/AD-RTTOV/external/rttov14/current/rttov_test/../bin/rttov_test.exe",
+    "run_script_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr398-centroid-viewing-angle-v2-2026-10-10/private/hcase-frame1_fixed_AMI_candidate_pixel_center/out/run.sh",
+    "run_script_sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+  },
+  "schema": "pr402_finite_input_response_plan_v1",
+  "scope": {
+    "automatic_retry": false,
+    "baseline_run": "reuse PR401 final-v2 center KMA BT/K; no fifth run",
+    "calls": {
+      "H": 0,
+      "K": 0,
+      "M": 0,
+      "Model_H": 0,
+      "RTTOV_wrapper": 0,
+      "acquisition": 0,
+      "native": 0,
+      "optimizer": 0,
+      "preprocessing": 0
+    },
+    "center": {
+      "case_role": "REUSED_PR398_V2_CENTRAL_H",
+      "i": 48,
+      "j": 86,
+      "time": "2025-07-19_05:56:00"
+    },
+    "max_wrapper_calls": 4,
+    "preflight_wrapper_calls": 0,
+    "runner": "case/out/run.sh through production run_rttov_k(case/out)",
+    "trial_count": 4
+  },
+  "status": "PREFLIGHT_READY_NOT_EXECUTED",
+  "trial_set_id": "finiteplan402b",
+  "trials": [
+    {
+      "empty_output_directories": {
+        "direct": [],
+        "k": []
+      },
+      "expected_input_file_change": "profiles/001/sfc/01/skin.txt",
+      "input_diff": {
+        "baseline_changed_file_sha256": "f2601c58af9b69bd86c080eace80f45cb7e1f8ab34053d6780df8923c0c33ce4",
+        "changed_files": [
+          "profiles/001/sfc/01/skin.txt"
+        ],
+        "trial_changed_file_sha256": "992e00d421f7a696e4a6dba348a3b203dcd08a3c6ca6789d3349e73863432ac7",
+        "unchanged_file_count": 21
+      },
+      "input_file_count": 22,
+      "input_o3_actual_delta_min_max": null,
+      "input_scalar_actual_delta": -0.5,
+      "out_directory_file_list": [
+        "env.sh",
+        "rttov_test.txt",
+        "run.sh"
+      ],
+      "out_static_files": {
+        "env.sh": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+        "rttov_test.txt": "bb34395dac966c50aa7f6e584fc15198ff05a4f0e9233df52a51460de155dd87",
+        "run.sh": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+      },
+      "runner_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr402_finite_input_response_20261011/cases/finiteplan402b/skin_minus_0p5K/out/run.sh",
+      "trial_case_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr402_finite_input_response_20261011/cases/finiteplan402b/skin_minus_0p5K",
+      "trial_name": "skin_minus_0p5K",
+      "wrapper_calls_planned": 1
+    },
+    {
+      "empty_output_directories": {
+        "direct": [],
+        "k": []
+      },
+      "expected_input_file_change": "profiles/001/sfc/01/skin.txt",
+      "input_diff": {
+        "baseline_changed_file_sha256": "f2601c58af9b69bd86c080eace80f45cb7e1f8ab34053d6780df8923c0c33ce4",
+        "changed_files": [
+          "profiles/001/sfc/01/skin.txt"
+        ],
+        "trial_changed_file_sha256": "d1529a062a1e3daea96342b94dabfcaa570a78d0b04072c9dbd22e9bf9eb94f2",
+        "unchanged_file_count": 21
+      },
+      "input_file_count": 22,
+      "input_o3_actual_delta_min_max": null,
+      "input_scalar_actual_delta": 0.5,
+      "out_directory_file_list": [
+        "env.sh",
+        "rttov_test.txt",
+        "run.sh"
+      ],
+      "out_static_files": {
+        "env.sh": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+        "rttov_test.txt": "bb34395dac966c50aa7f6e584fc15198ff05a4f0e9233df52a51460de155dd87",
+        "run.sh": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+      },
+      "runner_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr402_finite_input_response_20261011/cases/finiteplan402b/skin_plus_0p5K/out/run.sh",
+      "trial_case_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr402_finite_input_response_20261011/cases/finiteplan402b/skin_plus_0p5K",
+      "trial_name": "skin_plus_0p5K",
+      "wrapper_calls_planned": 1
+    },
+    {
+      "empty_output_directories": {
+        "direct": [],
+        "k": []
+      },
+      "expected_input_file_change": "profiles/001/atm/o3.txt",
+      "input_diff": {
+        "baseline_changed_file_sha256": "6b7da0a7dc2d7c072ff28a7c71c931e7b8d193d42cde682a6359340ec9f26641",
+        "changed_files": [
+          "profiles/001/atm/o3.txt"
+        ],
+        "trial_changed_file_sha256": "d5805beac56c2c5454f715cac69317c78a9787f1ffb05aa6683f968c42bb309d",
+        "unchanged_file_count": 21
+      },
+      "input_file_count": 22,
+      "input_o3_actual_delta_min_max": [
+        -0.09784089999999956,
+        -0.00030117840000000104
+      ],
+      "input_scalar_actual_delta": null,
+      "out_directory_file_list": [
+        "env.sh",
+        "rttov_test.txt",
+        "run.sh"
+      ],
+      "out_static_files": {
+        "env.sh": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+        "rttov_test.txt": "bb34395dac966c50aa7f6e584fc15198ff05a4f0e9233df52a51460de155dd87",
+        "run.sh": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+      },
+      "runner_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr402_finite_input_response_20261011/cases/finiteplan402b/o3_source_minus_1pct/out/run.sh",
+      "trial_case_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr402_finite_input_response_20261011/cases/finiteplan402b/o3_source_minus_1pct",
+      "trial_name": "o3_source_minus_1pct",
+      "wrapper_calls_planned": 1
+    },
+    {
+      "empty_output_directories": {
+        "direct": [],
+        "k": []
+      },
+      "expected_input_file_change": "profiles/001/atm/o3.txt",
+      "input_diff": {
+        "baseline_changed_file_sha256": "6b7da0a7dc2d7c072ff28a7c71c931e7b8d193d42cde682a6359340ec9f26641",
+        "changed_files": [
+          "profiles/001/atm/o3.txt"
+        ],
+        "trial_changed_file_sha256": "88c9c4f5b98d19903a7f7ff63c9f34fa372a9412d02ac39e93192fcedfbb2d57",
+        "unchanged_file_count": 21
+      },
+      "input_file_count": 22,
+      "input_o3_actual_delta_min_max": [
+        0.00030117840000000104,
+        0.09784089999999956
+      ],
+      "input_scalar_actual_delta": null,
+      "out_directory_file_list": [
+        "env.sh",
+        "rttov_test.txt",
+        "run.sh"
+      ],
+      "out_static_files": {
+        "env.sh": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+        "rttov_test.txt": "bb34395dac966c50aa7f6e584fc15198ff05a4f0e9233df52a51460de155dd87",
+        "run.sh": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+      },
+      "runner_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr402_finite_input_response_20261011/cases/finiteplan402b/o3_source_plus_1pct/out/run.sh",
+      "trial_case_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr402_finite_input_response_20261011/cases/finiteplan402b/o3_source_plus_1pct",
+      "trial_name": "o3_source_plus_1pct",
+      "wrapper_calls_planned": 1
+    }
+  ]
+}

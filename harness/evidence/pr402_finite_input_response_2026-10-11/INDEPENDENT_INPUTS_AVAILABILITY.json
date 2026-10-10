@@ -1,0 +1,139 @@
+{
+  "schema": "pr402_independent_inputs_availability_v1",
+  "retrieved_utc_date": "2026-10-11",
+  "case": {
+    "native_frame_label_utc": "2025-07-19T05:56:00Z",
+    "center_latitude_deg": 35.41566,
+    "center_longitude_deg": 122.14331,
+    "ami_source_filename_time_label": "202507190556",
+    "ami_per_pixel_utc_verified": false
+  },
+  "verified_availability": {
+    "local_packet": {
+      "gk2a_ami_bt_patch": {
+        "status": "available_in_referenced_local_packet",
+        "path": "harness/evidence/pr398_spatial_representativeness_2026-10-10/OBSERVATION_PATCH.json",
+        "center_latitude_deg": 35.41925069326254,
+        "center_longitude_deg": 122.13724164654832,
+        "per_pixel_utc_verified": false,
+        "physical_matchup_approved": false,
+        "new_observation_acquisition": false
+      },
+      "native_sea_surface_skin_state": {
+        "status": "model_state_only",
+        "variable": "TSK",
+        "value_K": 300.77423,
+        "independent_observation": false
+      }
+    },
+    "sst_catalog_metadata": {
+      "status": "candidate_granule_metadata_found_pixel_match_unconfirmed",
+      "source": "NASA CMR / PO.DAAC; NOAA STAR ACSPO VIIRS NOAA-20 GHRSST L2P",
+      "collection_short_name": "VIIRS_N20-STAR-L2P-v2.80",
+      "collection_concept_id": "C2147478146-POCLOUD",
+      "granule": "20250719055000-STAR-L2P_GHRSST-SSTsubskin-VIIRS_N20-ACSPO_V2.80-v02.0-fv01.0",
+      "granule_time_start_utc": "2025-07-19T05:50:00Z",
+      "granule_time_end_utc": "2025-07-19T06:00:00Z",
+      "query_bbox": [
+        121.8,
+        35.2,
+        122.5,
+        35.7
+      ],
+      "catalog_footprint_overlaps_query": true,
+      "measured_quantity": "SST subskin",
+      "pixel_value_at_case_point_verified": false,
+      "pixel_time_verified": false,
+      "pixel_coordinates_verified": false,
+      "quality_clear_sky_flags_verified": false,
+      "uncertainty_verified": false,
+      "granule_downloaded": false,
+      "cmr_collection_query_url": "https://cmr.earthdata.nasa.gov/search/collections.json?keyword=GHRSST&provider=POCLOUD&page_size=100",
+      "cmr_granule_query_url": "https://cmr.earthdata.nasa.gov/search/granules.json?collection_concept_id=C2147478146-POCLOUD&temporal=2025-07-19T05:30:00Z,2025-07-19T06:30:00Z&bounding_box=121.8,35.2,122.5,35.7&page_size=20"
+    },
+    "upper_air_catalog_metadata": {
+      "status": "daily_files_found_actual_nearby_profile_unconfirmed",
+      "source": "NASA Aura MLS Level-2 V005",
+      "ozone": {
+        "short_name": "ML2O3.005",
+        "collection_concept_id": "C1729925806-GES_DISC",
+        "granule": "ML2O3.005:MLS-Aura_L2GP-O3_v05-03-c01_2025d200.he5",
+        "daily_file_available_for_utc_date": "2025-07-19",
+        "catalog_spatial_metadata_is_global": true,
+        "point_profile_geolocation_time_quality_sensitivity_verified": false,
+        "cmr_url": "https://cmr.earthdata.nasa.gov/search/granules.json?collection_concept_id=C1729925806-GES_DISC&temporal=2025-07-19T05:00:00Z,2025-07-19T07:00:00Z&bounding_box=120,34,124,37&page_size=20"
+      },
+      "temperature": {
+        "short_name": "ML2T.005",
+        "collection_concept_id": "C1729926922-GES_DISC",
+        "granule": "ML2T.005:MLS-Aura_L2GP-Temperature_v05-03-c01_2025d200.he5",
+        "daily_file_available_for_utc_date": "2025-07-19",
+        "catalog_spatial_metadata_is_global": true,
+        "point_profile_geolocation_time_quality_sensitivity_verified": false,
+        "cmr_url": "https://cmr.earthdata.nasa.gov/search/granules.json?collection_concept_id=C1729926922-GES_DISC&temporal=2025-07-19T05:00:00Z,2025-07-19T07:00:00Z&bounding_box=120,34,124,37&page_size=20"
+      },
+      "unauthenticated_opendap_metadata_request": "HTTP 401; no profile data inspected",
+      "version_matched_guidance": {
+        "version": "Aura MLS V5.0x Level-2/3 Quality and Description Document",
+        "url": "https://mls.jpl.nasa.gov/data/v5-0_data_quality_document.pdf",
+        "retrieved_utc_date": "2026-10-11",
+        "used_for_v005_screening": false,
+        "reason": "No profile data were retrieved; no V5 screening thresholds were applied.",
+        "v6_thresholds_or_ranges_applied_to_v005": false,
+        "per_profile_qa_status": "unconfirmed_not_applied_no_profile_data"
+      }
+    },
+    "native_ic_bc_lineage": {
+      "status": "original_provider_archive_lineage_unverified",
+      "source": "harness/evidence/pr400_input_compatibility_2026-10-10/IC_BC_LINEAGE.json",
+      "other_date_met_em_candidates_documented": [
+        "2023-02-16"
+      ],
+      "independent_native_case_established": false,
+      "original_provider_path_request": "already_outstanding_do_not_repeat"
+    }
+  },
+  "physical_definition_requirements": {
+    "sst": [
+      "state skin versus retrieval skin/subskin/foundation/depth must be explicit",
+      "actual pixel time and location",
+      "quality/clear-sky flags",
+      "uncertainty",
+      "spatiotemporal matchup rule"
+    ],
+    "ozone_profile": [
+      "O3 mixing ratio profile, not total column",
+      "retrieval pressure coordinates",
+      "time and geolocation",
+      "quality/status",
+      "uncertainty",
+      "averaging kernel/prior or vertical sensitivity"
+    ],
+    "temperature_profile": [
+      "retrieved vertical T profile",
+      "pressure coordinates",
+      "time and geolocation",
+      "quality/status",
+      "uncertainty",
+      "vertical sensitivity"
+    ],
+    "vertical_scope": "Review actual 39 native model levels and 27 RTTOV reference levels above native model top as distinct regions. Keep the upper 27 levels in scope wherever the retrieved profile useful range and vertical sensitivity support them; do not exclude that target region solely because it is above native model top. Upper reference levels are not native model states."
+  },
+  "not_independent_observations": {
+    "fixed_69_level_o3_co2_fixture_profiles": true,
+    "27_level_upper_temperature_perturbation": true,
+    "bt_residual_calibrated_profile": true
+  },
+  "minimum_additional_data": [
+    "NASA PO.DAAC candidate granule pixel/subset fields: SST, per-pixel time/geolocation, quality flags and SSES uncertainty",
+    "Profile observations at actual case time/location, with pressure coordinates, quality, uncertainty and version-matched averaging kernels/sensitivity; assess both native levels and the 27 upper reference levels where supported.",
+    "Already-requested original IC/BC provider archive plus preprocessing/cycle lineage and immutable source identities to establish a separate native case"
+  ],
+  "limitations": [
+    "No SST granule pixel sample has been verified.",
+    "Daily MLS metadata is global and does not verify a nearby profile.",
+    "No alternate GFS/ERA5 model or reanalysis inputs were acquired or proposed.",
+    "No whole-device archive absence claim is made.",
+    "MLS candidates are V005; V6 QA/range thresholds were not applied. Version-matched V5.0x guidance is identified, but no V5 screening could be applied without profile data."
+  ]
+}
