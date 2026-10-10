@@ -1,0 +1,15 @@
+{
+  "scope": "Existing K coordinate and unit contract source inspection only",
+  "files": {
+    "oracle/kdm6/obs/ami_bt_coordinate.py": "e1aec7c9270bbeff6dec9aee0f7b3fa3741528b3e060bc3aa74be721e3ac97cc",
+    "oracle/kdm6/obs/rttov_case_writer.py": "0203dbfd899996caedf2e8c94e34faabf949fabbaec1688cbda00b6e163081af",
+    "oracle/kdm6/obs/rttov_runner.py": "100e39c6f56ab5e1ccadb59f6b439ebd20255d139b5d9965063bf0ed393fa441",
+    "oracle/kdm6/obs/rttov_input_builder.py": "902e1554eb6e4f699d74cc770059daad847b3b35ad0dd9516d02cae35ad280a6",
+    "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/main/rttov_types.F90": "e461c9c90efdc5e43c0a3cb9de622a9807b34c55059453394e3a10fc3b2651be"
+  },
+  "key_paths": [
+    "make_live_run_k converts observable and all K fields using same-run total radiance",
+    "transform_rttov_to_kma returns ratio phi_prime/psi_prime",
+    "RTTOV types comment gas_units2 = ppmv over moist air"
+  ]
+}

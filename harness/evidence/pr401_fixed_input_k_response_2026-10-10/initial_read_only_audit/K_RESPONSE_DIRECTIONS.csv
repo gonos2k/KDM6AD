@@ -1,0 +1,43 @@
+direction,category,description,input_units,affected_levels,channel_id_1based,channel_name,delta_bt_kma_k,huber_slope_djo_dbt,delta_jo_linear,term_group
+skin_T_plus_1K,surface,+1 K in the saved skin-temperature scalar,K,1,10,wv073,2.8276595725958245e-06,-1.0,-2.8276595725958245e-06,channels_10_to_15
+skin_T_plus_1K,surface,+1 K in the saved skin-temperature scalar,K,1,11,ir087,0.5126617349232452,1.0,0.5126617349232452,channels_10_to_15
+skin_T_plus_1K,surface,+1 K in the saved skin-temperature scalar,K,1,12,ir096,0.37647504901341694,1.0,0.37647504901341694,channels_10_to_15
+skin_T_plus_1K,surface,+1 K in the saved skin-temperature scalar,K,1,13,ir105,0.556796984160401,1.0,0.556796984160401,channels_10_to_15
+skin_T_plus_1K,surface,+1 K in the saved skin-temperature scalar,K,1,14,ir112,0.4671514307628932,1.0,0.4671514307628932,channels_10_to_15
+skin_T_plus_1K,surface,+1 K in the saved skin-temperature scalar,K,1,15,ir123,0.2946899620965724,1.0,0.2946899620965724,channels_10_to_15
+skin_T_plus_1K,surface,+1 K in the saved skin-temperature scalar,K,1,16,ir133,0.09535265114020032,1.0,0.09535265114020032,channel_16_ir133
+reference_o3_plus_1pct,reference_gas,"+1% of the 69-level reference O3 profile, projected to active levels",ppmv_moist_reference,66,10,wv073,-9.002463633170367e-06,-1.0,9.002463633170367e-06,channels_10_to_15
+reference_o3_plus_1pct,reference_gas,"+1% of the 69-level reference O3 profile, projected to active levels",ppmv_moist_reference,66,11,ir087,-0.004213081578989665,1.0,-0.004213081578989665,channels_10_to_15
+reference_o3_plus_1pct,reference_gas,"+1% of the 69-level reference O3 profile, projected to active levels",ppmv_moist_reference,66,12,ir096,-0.12501077016914888,1.0,-0.12501077016914888,channels_10_to_15
+reference_o3_plus_1pct,reference_gas,"+1% of the 69-level reference O3 profile, projected to active levels",ppmv_moist_reference,66,13,ir105,-0.0034550710100888305,1.0,-0.0034550710100888305,channels_10_to_15
+reference_o3_plus_1pct,reference_gas,"+1% of the 69-level reference O3 profile, projected to active levels",ppmv_moist_reference,66,14,ir112,-1.5611603833234403e-06,1.0,-1.5611603833234403e-06,channels_10_to_15
+reference_o3_plus_1pct,reference_gas,"+1% of the 69-level reference O3 profile, projected to active levels",ppmv_moist_reference,66,15,ir123,-0.0012337634197644338,1.0,-0.0012337634197644338,channels_10_to_15
+reference_o3_plus_1pct,reference_gas,"+1% of the 69-level reference O3 profile, projected to active levels",ppmv_moist_reference,66,16,ir133,-0.007901747910841365,1.0,-0.007901747910841365,channel_16_ir133
+reference_co2_plus_1pct,reference_gas,"+1% of the 69-level reference CO2 profile, projected to active levels",ppmv_moist_reference,66,10,wv073,-0.0009081592741065372,-1.0,0.0009081592741065372,channels_10_to_15
+reference_co2_plus_1pct,reference_gas,"+1% of the 69-level reference CO2 profile, projected to active levels",ppmv_moist_reference,66,11,ir087,-1.99005752228257e-06,1.0,-1.99005752228257e-06,channels_10_to_15
+reference_co2_plus_1pct,reference_gas,"+1% of the 69-level reference CO2 profile, projected to active levels",ppmv_moist_reference,66,12,ir096,-0.0019038729853497849,1.0,-0.0019038729853497849,channels_10_to_15
+reference_co2_plus_1pct,reference_gas,"+1% of the 69-level reference CO2 profile, projected to active levels",ppmv_moist_reference,66,13,ir105,-0.00172256808294507,1.0,-0.00172256808294507,channels_10_to_15
+reference_co2_plus_1pct,reference_gas,"+1% of the 69-level reference CO2 profile, projected to active levels",ppmv_moist_reference,66,14,ir112,-0.00021614938029923859,1.0,-0.00021614938029923859,channels_10_to_15
+reference_co2_plus_1pct,reference_gas,"+1% of the 69-level reference CO2 profile, projected to active levels",ppmv_moist_reference,66,15,ir123,-0.0009995990400657614,1.0,-0.0009995990400657614,channels_10_to_15
+reference_co2_plus_1pct,reference_gas,"+1% of the 69-level reference CO2 profile, projected to active levels",ppmv_moist_reference,66,16,ir133,-0.04056360135252868,1.0,-0.04056360135252868,channel_16_ir133
+near_surface_Q2_plus_1pct,near_surface,+1% of the actual saved RTTOV near-surface Q2 value,ppmv_moist,1,10,wv073,-5.686130535897633e-08,-1.0,5.686130535897633e-08,channels_10_to_15
+near_surface_Q2_plus_1pct,near_surface,+1% of the actual saved RTTOV near-surface Q2 value,ppmv_moist,1,11,ir087,-0.00034028581828404107,1.0,-0.00034028581828404107,channels_10_to_15
+near_surface_Q2_plus_1pct,near_surface,+1% of the actual saved RTTOV near-surface Q2 value,ppmv_moist,1,12,ir096,-0.00029805385681755663,1.0,-0.00029805385681755663,channels_10_to_15
+near_surface_Q2_plus_1pct,near_surface,+1% of the actual saved RTTOV near-surface Q2 value,ppmv_moist,1,13,ir105,-0.0006168936807319064,1.0,-0.0006168936807319064,channels_10_to_15
+near_surface_Q2_plus_1pct,near_surface,+1% of the actual saved RTTOV near-surface Q2 value,ppmv_moist,1,14,ir112,-0.0008368164604279398,1.0,-0.0008368164604279398,channels_10_to_15
+near_surface_Q2_plus_1pct,near_surface,+1% of the actual saved RTTOV near-surface Q2 value,ppmv_moist,1,15,ir123,-0.0005862640049892104,1.0,-0.0005862640049892104,channels_10_to_15
+near_surface_Q2_plus_1pct,near_surface,+1% of the actual saved RTTOV near-surface Q2 value,ppmv_moist,1,16,ir133,-0.0003213855522057819,1.0,-0.0003213855522057819,channel_16_ir133
+upper_reference_T_plus_1K,upper_reference,+1 K on 27 upper fixture-reference T levels; all 39 native levels held fixed,K,27,10,wv073,0.007226634757469915,-1.0,-0.007226634757469915,channels_10_to_15
+upper_reference_T_plus_1K,upper_reference,+1 K on 27 upper fixture-reference T levels; all 39 native levels held fixed,K,27,11,ir087,0.0019782931076956327,1.0,0.0019782931076956327,channels_10_to_15
+upper_reference_T_plus_1K,upper_reference,+1 K on 27 upper fixture-reference T levels; all 39 native levels held fixed,K,27,12,ir096,0.22315921164384928,1.0,0.22315921164384928,channels_10_to_15
+upper_reference_T_plus_1K,upper_reference,+1 K on 27 upper fixture-reference T levels; all 39 native levels held fixed,K,27,13,ir105,-0.004975037909310964,1.0,-0.004975037909310964,channels_10_to_15
+upper_reference_T_plus_1K,upper_reference,+1 K on 27 upper fixture-reference T levels; all 39 native levels held fixed,K,27,14,ir112,0.0011271400755003282,1.0,0.0011271400755003282,channels_10_to_15
+upper_reference_T_plus_1K,upper_reference,+1 K on 27 upper fixture-reference T levels; all 39 native levels held fixed,K,27,15,ir123,-0.00041376757424088336,1.0,-0.00041376757424088336,channels_10_to_15
+upper_reference_T_plus_1K,upper_reference,+1 K on 27 upper fixture-reference T levels; all 39 native levels held fixed,K,27,16,ir133,0.021043710113328847,1.0,0.021043710113328847,channel_16_ir133
+upper_reference_Q_plus_1pct,upper_reference,+1% on 27 upper fixture-reference Q levels; all 39 native levels held fixed,ppmv_moist_gas_units_2,27,10,wv073,6.257043567193029e-05,-1.0,-6.257043567193029e-05,channels_10_to_15
+upper_reference_Q_plus_1pct,upper_reference,+1% on 27 upper fixture-reference Q levels; all 39 native levels held fixed,ppmv_moist_gas_units_2,27,11,ir087,-7.820613439636195e-06,1.0,-7.820613439636195e-06,channels_10_to_15
+upper_reference_Q_plus_1pct,upper_reference,+1% on 27 upper fixture-reference Q levels; all 39 native levels held fixed,ppmv_moist_gas_units_2,27,12,ir096,-3.898631748235421e-07,1.0,-3.898631748235421e-07,channels_10_to_15
+upper_reference_Q_plus_1pct,upper_reference,+1% on 27 upper fixture-reference Q levels; all 39 native levels held fixed,ppmv_moist_gas_units_2,27,13,ir105,-2.6829690786008863e-07,1.0,-2.6829690786008863e-07,channels_10_to_15
+upper_reference_Q_plus_1pct,upper_reference,+1% on 27 upper fixture-reference Q levels; all 39 native levels held fixed,ppmv_moist_gas_units_2,27,14,ir112,-8.249008621101197e-07,1.0,-8.249008621101197e-07,channels_10_to_15
+upper_reference_Q_plus_1pct,upper_reference,+1% on 27 upper fixture-reference Q levels; all 39 native levels held fixed,ppmv_moist_gas_units_2,27,15,ir123,-5.309139046900158e-06,1.0,-5.309139046900158e-06,channels_10_to_15
+upper_reference_Q_plus_1pct,upper_reference,+1% on 27 upper fixture-reference Q levels; all 39 native levels held fixed,ppmv_moist_gas_units_2,27,16,ir133,-4.176968976555101e-06,1.0,-4.176968976555101e-06,channel_16_ir133
