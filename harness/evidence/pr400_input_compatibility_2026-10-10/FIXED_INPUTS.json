@@ -1,0 +1,3996 @@
+{
+  "audit_calls": {
+    "H": 0,
+    "M": 0,
+    "Model_H": 0,
+    "RTTOV": 0,
+    "external_acquisition": 0,
+    "native_run": 0,
+    "optimizer": 0
+  },
+  "launch_file_hashes": {
+    "rttov_test.txt": {
+      "85,47": "bb34395dac966c50aa7f6e584fc15198ff05a4f0e9233df52a51460de155dd87",
+      "85,48": "bb34395dac966c50aa7f6e584fc15198ff05a4f0e9233df52a51460de155dd87",
+      "85,49": "bb34395dac966c50aa7f6e584fc15198ff05a4f0e9233df52a51460de155dd87",
+      "86,47": "bb34395dac966c50aa7f6e584fc15198ff05a4f0e9233df52a51460de155dd87",
+      "86,48": "bb34395dac966c50aa7f6e584fc15198ff05a4f0e9233df52a51460de155dd87",
+      "86,49": "bb34395dac966c50aa7f6e584fc15198ff05a4f0e9233df52a51460de155dd87",
+      "87,47": "bb34395dac966c50aa7f6e584fc15198ff05a4f0e9233df52a51460de155dd87",
+      "87,48": "bb34395dac966c50aa7f6e584fc15198ff05a4f0e9233df52a51460de155dd87",
+      "87,49": "bb34395dac966c50aa7f6e584fc15198ff05a4f0e9233df52a51460de155dd87"
+    },
+    "run.sh": {
+      "85,47": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+      "85,48": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+      "85,49": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+      "86,47": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+      "86,48": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+      "86,49": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+      "87,47": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+      "87,48": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+      "87,49": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+    }
+  },
+  "limitations": [
+    "Read-only audit of preserved PR399 attempt-2 inputs and outputs; no new radiation/model calls.",
+    "RTTOV reference T/Q/O3/CO2 fixture values are reproducible inputs, not independently validated as the atmospheric profile for this observation.",
+    "Fixed surface parameters and RTTOV emissivity model were not independently validated or tuned.",
+    "Direct RTTOV K products do not certify KDM6AD Model_H/JVP/VJP or any model-composed derivative.",
+    "No input, sigma, bias, support, or scientific-acceptance decision was changed."
+  ],
+  "observation_operator": {
+    "ami_kma_bt": true,
+    "channels_1based": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "cloud": true,
+    "direct_rttov_k_inventory": {
+      "KDM6AD_Model_H_or_model_composed_derivative": false,
+      "aggregated_fields_across_all_inspected_files": {
+        "CFRACTION": {
+          "elements": 63,
+          "max_abs": 0.0,
+          "nonzero": 0,
+          "records": 63
+        },
+        "CO2": {
+          "elements": 4158,
+          "max_abs": 0.00056851724741122,
+          "nonzero": 4095,
+          "records": 63
+        },
+        "CTP": {
+          "elements": 63,
+          "max_abs": 0.0,
+          "nonzero": 0,
+          "records": 63
+        },
+        "HYDRO": {
+          "elements": 33264,
+          "max_abs": 0.0,
+          "nonzero": 0,
+          "records": 63
+        },
+        "HYDRO_DEFF": {
+          "elements": 29106,
+          "max_abs": 0.0,
+          "nonzero": 0,
+          "records": 63
+        },
+        "HYDRO_FRAC": {
+          "elements": 4158,
+          "max_abs": 0.0,
+          "nonzero": 0,
+          "records": 63
+        },
+        "HYDRO_FRAC_EFF": {
+          "elements": 63,
+          "max_abs": 0.0,
+          "nonzero": 0,
+          "records": 63
+        },
+        "NEAR_SURFACE( 1)%Q2M": {
+          "elements": 63,
+          "max_abs": 2.939981750435809e-06,
+          "nonzero": 63,
+          "records": 63
+        },
+        "NEAR_SURFACE( 1)%T2M": {
+          "elements": 63,
+          "max_abs": 0.011281293213629584,
+          "nonzero": 63,
+          "records": 63
+        },
+        "NEAR_SURFACE( 1)%WIND_FETCH": {
+          "elements": 63,
+          "max_abs": 0.0,
+          "nonzero": 0,
+          "records": 63
+        },
+        "NEAR_SURFACE( 1)%WIND_U10M": {
+          "elements": 63,
+          "max_abs": 0.00017116664909508787,
+          "nonzero": 63,
+          "records": 63
+        },
+        "NEAR_SURFACE( 1)%WIND_V10M": {
+          "elements": 63,
+          "max_abs": 0.0016239241670730623,
+          "nonzero": 63,
+          "records": 63
+        },
+        "O3": {
+          "elements": 4158,
+          "max_abs": 3.8573277004559006,
+          "nonzero": 4095,
+          "records": 63
+        },
+        "P": {
+          "elements": 4158,
+          "max_abs": 0.0,
+          "nonzero": 0,
+          "records": 63
+        },
+        "P_HALF": {
+          "elements": 4221,
+          "max_abs": 0.0,
+          "nonzero": 0,
+          "records": 63
+        },
+        "Q": {
+          "elements": 4158,
+          "max_abs": 0.0032904965875025912,
+          "nonzero": 4158,
+          "records": 63
+        },
+        "SKIN( 1)%FASTEM": {
+          "elements": 315,
+          "max_abs": 0.0,
+          "nonzero": 0,
+          "records": 63
+        },
+        "SKIN( 1)%FOAM_FRACTION": {
+          "elements": 63,
+          "max_abs": 0.0,
+          "nonzero": 0,
+          "records": 63
+        },
+        "SKIN( 1)%SALINITY": {
+          "elements": 63,
+          "max_abs": 0.0,
+          "nonzero": 0,
+          "records": 63
+        },
+        "SKIN( 1)%T": {
+          "elements": 63,
+          "max_abs": 0.5577510270453929,
+          "nonzero": 63,
+          "records": 63
+        },
+        "T": {
+          "elements": 4158,
+          "max_abs": 0.09696180502717215,
+          "nonzero": 4158,
+          "records": 63
+        }
+      },
+      "channel_profiles_per_file": 7,
+      "diffuse_reflectance_k": {
+        "elements_total": 63,
+        "nonzero_total": 0,
+        "sha256_by_cell": {
+          "85,47": "32ce7fcd73d5346118e979e4e43f904812a77e7da4e4e11ec301b92ed3d0513c",
+          "85,48": "32ce7fcd73d5346118e979e4e43f904812a77e7da4e4e11ec301b92ed3d0513c",
+          "85,49": "32ce7fcd73d5346118e979e4e43f904812a77e7da4e4e11ec301b92ed3d0513c",
+          "86,47": "32ce7fcd73d5346118e979e4e43f904812a77e7da4e4e11ec301b92ed3d0513c",
+          "86,48": "32ce7fcd73d5346118e979e4e43f904812a77e7da4e4e11ec301b92ed3d0513c",
+          "86,49": "32ce7fcd73d5346118e979e4e43f904812a77e7da4e4e11ec301b92ed3d0513c",
+          "87,47": "32ce7fcd73d5346118e979e4e43f904812a77e7da4e4e11ec301b92ed3d0513c",
+          "87,48": "32ce7fcd73d5346118e979e4e43f904812a77e7da4e4e11ec301b92ed3d0513c",
+          "87,49": "32ce7fcd73d5346118e979e4e43f904812a77e7da4e4e11ec301b92ed3d0513c"
+        }
+      },
+      "emissivity_k": {
+        "elements_total": 63,
+        "nonzero_total": 0,
+        "sha256_by_cell": {
+          "85,47": "17ef08a3d8da0a85eab22aaa8cb41ab33d83ae895fef3cc926ef6097502b5309",
+          "85,48": "17ef08a3d8da0a85eab22aaa8cb41ab33d83ae895fef3cc926ef6097502b5309",
+          "85,49": "17ef08a3d8da0a85eab22aaa8cb41ab33d83ae895fef3cc926ef6097502b5309",
+          "86,47": "17ef08a3d8da0a85eab22aaa8cb41ab33d83ae895fef3cc926ef6097502b5309",
+          "86,48": "17ef08a3d8da0a85eab22aaa8cb41ab33d83ae895fef3cc926ef6097502b5309",
+          "86,49": "17ef08a3d8da0a85eab22aaa8cb41ab33d83ae895fef3cc926ef6097502b5309",
+          "87,47": "17ef08a3d8da0a85eab22aaa8cb41ab33d83ae895fef3cc926ef6097502b5309",
+          "87,48": "17ef08a3d8da0a85eab22aaa8cb41ab33d83ae895fef3cc926ef6097502b5309",
+          "87,49": "17ef08a3d8da0a85eab22aaa8cb41ab33d83ae895fef3cc926ef6097502b5309"
+        }
+      },
+      "inspected_profiles_k_files_total": 9,
+      "new_neighbor_profiles_k_files": 8,
+      "output_file_hashes_recorded_per_cell": true,
+      "reused_center_profiles_k_files": 1,
+      "scope": "8 PR399 neighbor RTTOV runK products plus 1 existing PR398 center K output reused with the center H result; no KDM6AD Model_H, JVP/VJP, or end-to-end derivative validation"
+    },
+    "do_direct": true,
+    "do_k": true,
+    "dry_number": true,
+    "fixed_observation": {
+      "bias_K": 0.0,
+      "huber_delta_K": 1.0,
+      "sigma_K": 1.0,
+      "support": [
+        [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      ]
+    },
+    "gas_units": 2,
+    "ncmin_land": 10.0,
+    "ncmin_sea": 10.0,
+    "q_blend_octaves": 0.0,
+    "qv_convention": "mixing_ratio_kgkg_dry",
+    "rho_d": "saved native rho/(1+qv)",
+    "rttov_namelist_assignments_by_cell": {
+      "85,47": {
+        "defn%calc_diag_output": ".FALSE.",
+        "defn%calc_emis_terms": ".FALSE.",
+        "defn%calc_rad2": ".FALSE.",
+        "defn%coef_prefix": "'/Users/yhlee/AD-RTTOV/external/rttov14/current'",
+        "defn%do_ad": ".FALSE.",
+        "defn%do_direct": ".TRUE.",
+        "defn%do_k": ".TRUE.",
+        "defn%do_k_ad": ".FALSE.",
+        "defn%do_k_bf": ".FALSE.",
+        "defn%do_k_tl": ".FALSE.",
+        "defn%do_print": ".TRUE.",
+        "defn%do_taylor": ".FALSE.",
+        "defn%do_tl": ".FALSE.",
+        "defn%f_angles": "'/angles.txt'",
+        "defn%f_be": "'/be.txt'",
+        "defn%f_channels": "'../in/channels.txt'",
+        "defn%f_co2": "'/atm/co2.txt'",
+        "defn%f_coef": "'../in/coef.txt'",
+        "defn%f_datetime": "'/datetime.txt'",
+        "defn%f_gas_units": "'/gas_units.txt'",
+        "defn%f_hydro": "'/atm/hydro.txt'",
+        "defn%f_hydro_frac": "'/atm/hydro_frac.txt'",
+        "defn%f_lprofiles": "'../in/lprofiles.txt'",
+        "defn%f_mmr_hydro_aer": "'/atm/mmr_hydro_aer.txt'",
+        "defn%f_near_surface": "'near_surface.txt'",
+        "defn%f_o3": "'/atm/o3.txt'",
+        "defn%f_p_half": "'/atm/p_half.txt'",
+        "defn%f_prof_id": "'/prof_id.txt'",
+        "defn%f_q": "'/atm/q.txt'",
+        "defn%f_simple_cloud": "'/atm/simple_cloud.txt'",
+        "defn%f_skin": "'skin.txt'",
+        "defn%f_t": "'/atm/t.txt'",
+        "defn%input_gas_units": "-1",
+        "defn%lallchans": ".FALSE.",
+        "defn%mult": "1",
+        "defn%nchannels": "7",
+        "defn%nlevels": "67",
+        "defn%nprofiles": "1",
+        "defn%nsurfaces": "1",
+        "defn%nthreads": "0",
+        "defn%ntimes": "1",
+        "defn%opts%cloud_overlap%col_threshold": "0",
+        "defn%opts%cloud_overlap%exp_random_z0": "0",
+        "defn%opts%cloud_overlap%hydro_frac_tlad": ".TRUE.",
+        "defn%opts%cloud_overlap%overlap_param": "0",
+        "defn%opts%cloud_overlap%overlap_top_down": ".TRUE.",
+        "defn%opts%cloud_overlap%per_hydro_frac": ".FALSE.",
+        "defn%opts%cloud_overlap%two_col_max_frac_max_p": "750",
+        "defn%opts%clw_absorption%clw_cloud_top": "322",
+        "defn%opts%clw_absorption%permittivity_param": "2",
+        "defn%opts%config%adk_bt": ".TRUE.",
+        "defn%opts%config%adk_refl": ".TRUE.",
+        "defn%opts%config%apply_reg_limits": ".FALSE.",
+        "defn%opts%config%bt_overcast_calc": ".FALSE.",
+        "defn%opts%config%check_profiles": ".TRUE.",
+        "defn%opts%config%gas_opdep_calc": ".TRUE.",
+        "defn%opts%config%opdep13_gas_clip": ".TRUE.",
+        "defn%opts%config%transmittances_only": ".FALSE.",
+        "defn%opts%config%verbose": ".TRUE.",
+        "defn%opts%dev%no_opt_param_tladk": ".FALSE.",
+        "defn%opts%interpolation%enable_interp": ".TRUE.",
+        "defn%opts%interpolation%interp_mode": "4",
+        "defn%opts%interpolation%pressure_gradients": ".FALSE.",
+        "defn%opts%rt_all%cosmic_rad": ".TRUE.",
+        "defn%opts%rt_all%nlte_correction": ".FALSE.",
+        "defn%opts%rt_all%plane_parallel": ".FALSE.",
+        "defn%opts%rt_all%rad_down_lin_tau": ".TRUE.",
+        "defn%opts%rt_all%rayleigh_max_wavelength": "2",
+        "defn%opts%rt_all%rayleigh_min_pressure": "0",
+        "defn%opts%rt_all%rayleigh_single_scatt": ".TRUE.",
+        "defn%opts%rt_all%refraction": ".TRUE.",
+        "defn%opts%rt_all%solar": ".FALSE.",
+        "defn%opts%rt_all%use_q2m": ".TRUE.",
+        "defn%opts%rt_all%use_t2m": ".TRUE.",
+        "defn%opts%scatt%baran_ice_version": "2",
+        "defn%opts%scatt%chou_tang_factor": "0.05",
+        "defn%opts%scatt%chou_tang_mod": ".FALSE.",
+        "defn%opts%scatt%dom_accuracy": "0",
+        "defn%opts%scatt%dom_nstreams": "8",
+        "defn%opts%scatt%dom_opdep_threshold": "0",
+        "defn%opts%scatt%ice_polarisation": "1.4",
+        "defn%opts%scatt%mw_pol_mode": "1",
+        "defn%opts%scatt%radar": ".FALSE.",
+        "defn%opts%scatt%rayleigh_multi_scatt": ".FALSE.",
+        "defn%opts%scatt%solar_solver": "1",
+        "defn%opts%scatt%thermal_solver": "3",
+        "defn%opts%scatt%zero_hydro_tlad": ".FALSE.",
+        "defn%opts%surface%ir_sea_emis_model": "2",
+        "defn%opts%surface%lambertian": ".FALSE.",
+        "defn%opts%surface%lambertian_fixed_angle": ".TRUE.",
+        "defn%opts%surface%mw_sea_emis_model": "3",
+        "defn%opts%surface%solar_sea_refl_model": "1",
+        "defn%opts%surface%use_foam_fraction": ".FALSE.",
+        "defn%opts%surface%use_tskin_eff": ".FALSE.",
+        "defn%over_alloc": ".FALSE.",
+        "defn%print_opts": ".FALSE.",
+        "defn%print_profiles": ".FALSE.",
+        "defn%print_quality": ".TRUE.",
+        "defn%prof_ndigits": "3",
+        "defn%realprec": "17",
+        "defn%run_gas_units": "2",
+        "defn%scale_inc": "1",
+        "defn%scale_out": "1",
+        "defn%taylor_by_chan": ".FALSE.",
+        "defn%taylor_on_btrefl": ".FALSE.",
+        "defn%temp_alloc": ".FALSE.",
+        "defn%user_check_opts": ".FALSE.",
+        "defn%user_check_prof": ".FALSE."
+      },
+      "85,48": {
+        "defn%calc_diag_output": ".FALSE.",
+        "defn%calc_emis_terms": ".FALSE.",
+        "defn%calc_rad2": ".FALSE.",
+        "defn%coef_prefix": "'/Users/yhlee/AD-RTTOV/external/rttov14/current'",
+        "defn%do_ad": ".FALSE.",
+        "defn%do_direct": ".TRUE.",
+        "defn%do_k": ".TRUE.",
+        "defn%do_k_ad": ".FALSE.",
+        "defn%do_k_bf": ".FALSE.",
+        "defn%do_k_tl": ".FALSE.",
+        "defn%do_print": ".TRUE.",
+        "defn%do_taylor": ".FALSE.",
+        "defn%do_tl": ".FALSE.",
+        "defn%f_angles": "'/angles.txt'",
+        "defn%f_be": "'/be.txt'",
+        "defn%f_channels": "'../in/channels.txt'",
+        "defn%f_co2": "'/atm/co2.txt'",
+        "defn%f_coef": "'../in/coef.txt'",
+        "defn%f_datetime": "'/datetime.txt'",
+        "defn%f_gas_units": "'/gas_units.txt'",
+        "defn%f_hydro": "'/atm/hydro.txt'",
+        "defn%f_hydro_frac": "'/atm/hydro_frac.txt'",
+        "defn%f_lprofiles": "'../in/lprofiles.txt'",
+        "defn%f_mmr_hydro_aer": "'/atm/mmr_hydro_aer.txt'",
+        "defn%f_near_surface": "'near_surface.txt'",
+        "defn%f_o3": "'/atm/o3.txt'",
+        "defn%f_p_half": "'/atm/p_half.txt'",
+        "defn%f_prof_id": "'/prof_id.txt'",
+        "defn%f_q": "'/atm/q.txt'",
+        "defn%f_simple_cloud": "'/atm/simple_cloud.txt'",
+        "defn%f_skin": "'skin.txt'",
+        "defn%f_t": "'/atm/t.txt'",
+        "defn%input_gas_units": "-1",
+        "defn%lallchans": ".FALSE.",
+        "defn%mult": "1",
+        "defn%nchannels": "7",
+        "defn%nlevels": "67",
+        "defn%nprofiles": "1",
+        "defn%nsurfaces": "1",
+        "defn%nthreads": "0",
+        "defn%ntimes": "1",
+        "defn%opts%cloud_overlap%col_threshold": "0",
+        "defn%opts%cloud_overlap%exp_random_z0": "0",
+        "defn%opts%cloud_overlap%hydro_frac_tlad": ".TRUE.",
+        "defn%opts%cloud_overlap%overlap_param": "0",
+        "defn%opts%cloud_overlap%overlap_top_down": ".TRUE.",
+        "defn%opts%cloud_overlap%per_hydro_frac": ".FALSE.",
+        "defn%opts%cloud_overlap%two_col_max_frac_max_p": "750",
+        "defn%opts%clw_absorption%clw_cloud_top": "322",
+        "defn%opts%clw_absorption%permittivity_param": "2",
+        "defn%opts%config%adk_bt": ".TRUE.",
+        "defn%opts%config%adk_refl": ".TRUE.",
+        "defn%opts%config%apply_reg_limits": ".FALSE.",
+        "defn%opts%config%bt_overcast_calc": ".FALSE.",
+        "defn%opts%config%check_profiles": ".TRUE.",
+        "defn%opts%config%gas_opdep_calc": ".TRUE.",
+        "defn%opts%config%opdep13_gas_clip": ".TRUE.",
+        "defn%opts%config%transmittances_only": ".FALSE.",
+        "defn%opts%config%verbose": ".TRUE.",
+        "defn%opts%dev%no_opt_param_tladk": ".FALSE.",
+        "defn%opts%interpolation%enable_interp": ".TRUE.",
+        "defn%opts%interpolation%interp_mode": "4",
+        "defn%opts%interpolation%pressure_gradients": ".FALSE.",
+        "defn%opts%rt_all%cosmic_rad": ".TRUE.",
+        "defn%opts%rt_all%nlte_correction": ".FALSE.",
+        "defn%opts%rt_all%plane_parallel": ".FALSE.",
+        "defn%opts%rt_all%rad_down_lin_tau": ".TRUE.",
+        "defn%opts%rt_all%rayleigh_max_wavelength": "2",
+        "defn%opts%rt_all%rayleigh_min_pressure": "0",
+        "defn%opts%rt_all%rayleigh_single_scatt": ".TRUE.",
+        "defn%opts%rt_all%refraction": ".TRUE.",
+        "defn%opts%rt_all%solar": ".FALSE.",
+        "defn%opts%rt_all%use_q2m": ".TRUE.",
+        "defn%opts%rt_all%use_t2m": ".TRUE.",
+        "defn%opts%scatt%baran_ice_version": "2",
+        "defn%opts%scatt%chou_tang_factor": "0.05",
+        "defn%opts%scatt%chou_tang_mod": ".FALSE.",
+        "defn%opts%scatt%dom_accuracy": "0",
+        "defn%opts%scatt%dom_nstreams": "8",
+        "defn%opts%scatt%dom_opdep_threshold": "0",
+        "defn%opts%scatt%ice_polarisation": "1.4",
+        "defn%opts%scatt%mw_pol_mode": "1",
+        "defn%opts%scatt%radar": ".FALSE.",
+        "defn%opts%scatt%rayleigh_multi_scatt": ".FALSE.",
+        "defn%opts%scatt%solar_solver": "1",
+        "defn%opts%scatt%thermal_solver": "3",
+        "defn%opts%scatt%zero_hydro_tlad": ".FALSE.",
+        "defn%opts%surface%ir_sea_emis_model": "2",
+        "defn%opts%surface%lambertian": ".FALSE.",
+        "defn%opts%surface%lambertian_fixed_angle": ".TRUE.",
+        "defn%opts%surface%mw_sea_emis_model": "3",
+        "defn%opts%surface%solar_sea_refl_model": "1",
+        "defn%opts%surface%use_foam_fraction": ".FALSE.",
+        "defn%opts%surface%use_tskin_eff": ".FALSE.",
+        "defn%over_alloc": ".FALSE.",
+        "defn%print_opts": ".FALSE.",
+        "defn%print_profiles": ".FALSE.",
+        "defn%print_quality": ".TRUE.",
+        "defn%prof_ndigits": "3",
+        "defn%realprec": "17",
+        "defn%run_gas_units": "2",
+        "defn%scale_inc": "1",
+        "defn%scale_out": "1",
+        "defn%taylor_by_chan": ".FALSE.",
+        "defn%taylor_on_btrefl": ".FALSE.",
+        "defn%temp_alloc": ".FALSE.",
+        "defn%user_check_opts": ".FALSE.",
+        "defn%user_check_prof": ".FALSE."
+      },
+      "85,49": {
+        "defn%calc_diag_output": ".FALSE.",
+        "defn%calc_emis_terms": ".FALSE.",
+        "defn%calc_rad2": ".FALSE.",
+        "defn%coef_prefix": "'/Users/yhlee/AD-RTTOV/external/rttov14/current'",
+        "defn%do_ad": ".FALSE.",
+        "defn%do_direct": ".TRUE.",
+        "defn%do_k": ".TRUE.",
+        "defn%do_k_ad": ".FALSE.",
+        "defn%do_k_bf": ".FALSE.",
+        "defn%do_k_tl": ".FALSE.",
+        "defn%do_print": ".TRUE.",
+        "defn%do_taylor": ".FALSE.",
+        "defn%do_tl": ".FALSE.",
+        "defn%f_angles": "'/angles.txt'",
+        "defn%f_be": "'/be.txt'",
+        "defn%f_channels": "'../in/channels.txt'",
+        "defn%f_co2": "'/atm/co2.txt'",
+        "defn%f_coef": "'../in/coef.txt'",
+        "defn%f_datetime": "'/datetime.txt'",
+        "defn%f_gas_units": "'/gas_units.txt'",
+        "defn%f_hydro": "'/atm/hydro.txt'",
+        "defn%f_hydro_frac": "'/atm/hydro_frac.txt'",
+        "defn%f_lprofiles": "'../in/lprofiles.txt'",
+        "defn%f_mmr_hydro_aer": "'/atm/mmr_hydro_aer.txt'",
+        "defn%f_near_surface": "'near_surface.txt'",
+        "defn%f_o3": "'/atm/o3.txt'",
+        "defn%f_p_half": "'/atm/p_half.txt'",
+        "defn%f_prof_id": "'/prof_id.txt'",
+        "defn%f_q": "'/atm/q.txt'",
+        "defn%f_simple_cloud": "'/atm/simple_cloud.txt'",
+        "defn%f_skin": "'skin.txt'",
+        "defn%f_t": "'/atm/t.txt'",
+        "defn%input_gas_units": "-1",
+        "defn%lallchans": ".FALSE.",
+        "defn%mult": "1",
+        "defn%nchannels": "7",
+        "defn%nlevels": "67",
+        "defn%nprofiles": "1",
+        "defn%nsurfaces": "1",
+        "defn%nthreads": "0",
+        "defn%ntimes": "1",
+        "defn%opts%cloud_overlap%col_threshold": "0",
+        "defn%opts%cloud_overlap%exp_random_z0": "0",
+        "defn%opts%cloud_overlap%hydro_frac_tlad": ".TRUE.",
+        "defn%opts%cloud_overlap%overlap_param": "0",
+        "defn%opts%cloud_overlap%overlap_top_down": ".TRUE.",
+        "defn%opts%cloud_overlap%per_hydro_frac": ".FALSE.",
+        "defn%opts%cloud_overlap%two_col_max_frac_max_p": "750",
+        "defn%opts%clw_absorption%clw_cloud_top": "322",
+        "defn%opts%clw_absorption%permittivity_param": "2",
+        "defn%opts%config%adk_bt": ".TRUE.",
+        "defn%opts%config%adk_refl": ".TRUE.",
+        "defn%opts%config%apply_reg_limits": ".FALSE.",
+        "defn%opts%config%bt_overcast_calc": ".FALSE.",
+        "defn%opts%config%check_profiles": ".TRUE.",
+        "defn%opts%config%gas_opdep_calc": ".TRUE.",
+        "defn%opts%config%opdep13_gas_clip": ".TRUE.",
+        "defn%opts%config%transmittances_only": ".FALSE.",
+        "defn%opts%config%verbose": ".TRUE.",
+        "defn%opts%dev%no_opt_param_tladk": ".FALSE.",
+        "defn%opts%interpolation%enable_interp": ".TRUE.",
+        "defn%opts%interpolation%interp_mode": "4",
+        "defn%opts%interpolation%pressure_gradients": ".FALSE.",
+        "defn%opts%rt_all%cosmic_rad": ".TRUE.",
+        "defn%opts%rt_all%nlte_correction": ".FALSE.",
+        "defn%opts%rt_all%plane_parallel": ".FALSE.",
+        "defn%opts%rt_all%rad_down_lin_tau": ".TRUE.",
+        "defn%opts%rt_all%rayleigh_max_wavelength": "2",
+        "defn%opts%rt_all%rayleigh_min_pressure": "0",
+        "defn%opts%rt_all%rayleigh_single_scatt": ".TRUE.",
+        "defn%opts%rt_all%refraction": ".TRUE.",
+        "defn%opts%rt_all%solar": ".FALSE.",
+        "defn%opts%rt_all%use_q2m": ".TRUE.",
+        "defn%opts%rt_all%use_t2m": ".TRUE.",
+        "defn%opts%scatt%baran_ice_version": "2",
+        "defn%opts%scatt%chou_tang_factor": "0.05",
+        "defn%opts%scatt%chou_tang_mod": ".FALSE.",
+        "defn%opts%scatt%dom_accuracy": "0",
+        "defn%opts%scatt%dom_nstreams": "8",
+        "defn%opts%scatt%dom_opdep_threshold": "0",
+        "defn%opts%scatt%ice_polarisation": "1.4",
+        "defn%opts%scatt%mw_pol_mode": "1",
+        "defn%opts%scatt%radar": ".FALSE.",
+        "defn%opts%scatt%rayleigh_multi_scatt": ".FALSE.",
+        "defn%opts%scatt%solar_solver": "1",
+        "defn%opts%scatt%thermal_solver": "3",
+        "defn%opts%scatt%zero_hydro_tlad": ".FALSE.",
+        "defn%opts%surface%ir_sea_emis_model": "2",
+        "defn%opts%surface%lambertian": ".FALSE.",
+        "defn%opts%surface%lambertian_fixed_angle": ".TRUE.",
+        "defn%opts%surface%mw_sea_emis_model": "3",
+        "defn%opts%surface%solar_sea_refl_model": "1",
+        "defn%opts%surface%use_foam_fraction": ".FALSE.",
+        "defn%opts%surface%use_tskin_eff": ".FALSE.",
+        "defn%over_alloc": ".FALSE.",
+        "defn%print_opts": ".FALSE.",
+        "defn%print_profiles": ".FALSE.",
+        "defn%print_quality": ".TRUE.",
+        "defn%prof_ndigits": "3",
+        "defn%realprec": "17",
+        "defn%run_gas_units": "2",
+        "defn%scale_inc": "1",
+        "defn%scale_out": "1",
+        "defn%taylor_by_chan": ".FALSE.",
+        "defn%taylor_on_btrefl": ".FALSE.",
+        "defn%temp_alloc": ".FALSE.",
+        "defn%user_check_opts": ".FALSE.",
+        "defn%user_check_prof": ".FALSE."
+      },
+      "86,47": {
+        "defn%calc_diag_output": ".FALSE.",
+        "defn%calc_emis_terms": ".FALSE.",
+        "defn%calc_rad2": ".FALSE.",
+        "defn%coef_prefix": "'/Users/yhlee/AD-RTTOV/external/rttov14/current'",
+        "defn%do_ad": ".FALSE.",
+        "defn%do_direct": ".TRUE.",
+        "defn%do_k": ".TRUE.",
+        "defn%do_k_ad": ".FALSE.",
+        "defn%do_k_bf": ".FALSE.",
+        "defn%do_k_tl": ".FALSE.",
+        "defn%do_print": ".TRUE.",
+        "defn%do_taylor": ".FALSE.",
+        "defn%do_tl": ".FALSE.",
+        "defn%f_angles": "'/angles.txt'",
+        "defn%f_be": "'/be.txt'",
+        "defn%f_channels": "'../in/channels.txt'",
+        "defn%f_co2": "'/atm/co2.txt'",
+        "defn%f_coef": "'../in/coef.txt'",
+        "defn%f_datetime": "'/datetime.txt'",
+        "defn%f_gas_units": "'/gas_units.txt'",
+        "defn%f_hydro": "'/atm/hydro.txt'",
+        "defn%f_hydro_frac": "'/atm/hydro_frac.txt'",
+        "defn%f_lprofiles": "'../in/lprofiles.txt'",
+        "defn%f_mmr_hydro_aer": "'/atm/mmr_hydro_aer.txt'",
+        "defn%f_near_surface": "'near_surface.txt'",
+        "defn%f_o3": "'/atm/o3.txt'",
+        "defn%f_p_half": "'/atm/p_half.txt'",
+        "defn%f_prof_id": "'/prof_id.txt'",
+        "defn%f_q": "'/atm/q.txt'",
+        "defn%f_simple_cloud": "'/atm/simple_cloud.txt'",
+        "defn%f_skin": "'skin.txt'",
+        "defn%f_t": "'/atm/t.txt'",
+        "defn%input_gas_units": "-1",
+        "defn%lallchans": ".FALSE.",
+        "defn%mult": "1",
+        "defn%nchannels": "7",
+        "defn%nlevels": "67",
+        "defn%nprofiles": "1",
+        "defn%nsurfaces": "1",
+        "defn%nthreads": "0",
+        "defn%ntimes": "1",
+        "defn%opts%cloud_overlap%col_threshold": "0",
+        "defn%opts%cloud_overlap%exp_random_z0": "0",
+        "defn%opts%cloud_overlap%hydro_frac_tlad": ".TRUE.",
+        "defn%opts%cloud_overlap%overlap_param": "0",
+        "defn%opts%cloud_overlap%overlap_top_down": ".TRUE.",
+        "defn%opts%cloud_overlap%per_hydro_frac": ".FALSE.",
+        "defn%opts%cloud_overlap%two_col_max_frac_max_p": "750",
+        "defn%opts%clw_absorption%clw_cloud_top": "322",
+        "defn%opts%clw_absorption%permittivity_param": "2",
+        "defn%opts%config%adk_bt": ".TRUE.",
+        "defn%opts%config%adk_refl": ".TRUE.",
+        "defn%opts%config%apply_reg_limits": ".FALSE.",
+        "defn%opts%config%bt_overcast_calc": ".FALSE.",
+        "defn%opts%config%check_profiles": ".TRUE.",
+        "defn%opts%config%gas_opdep_calc": ".TRUE.",
+        "defn%opts%config%opdep13_gas_clip": ".TRUE.",
+        "defn%opts%config%transmittances_only": ".FALSE.",
+        "defn%opts%config%verbose": ".TRUE.",
+        "defn%opts%dev%no_opt_param_tladk": ".FALSE.",
+        "defn%opts%interpolation%enable_interp": ".TRUE.",
+        "defn%opts%interpolation%interp_mode": "4",
+        "defn%opts%interpolation%pressure_gradients": ".FALSE.",
+        "defn%opts%rt_all%cosmic_rad": ".TRUE.",
+        "defn%opts%rt_all%nlte_correction": ".FALSE.",
+        "defn%opts%rt_all%plane_parallel": ".FALSE.",
+        "defn%opts%rt_all%rad_down_lin_tau": ".TRUE.",
+        "defn%opts%rt_all%rayleigh_max_wavelength": "2",
+        "defn%opts%rt_all%rayleigh_min_pressure": "0",
+        "defn%opts%rt_all%rayleigh_single_scatt": ".TRUE.",
+        "defn%opts%rt_all%refraction": ".TRUE.",
+        "defn%opts%rt_all%solar": ".FALSE.",
+        "defn%opts%rt_all%use_q2m": ".TRUE.",
+        "defn%opts%rt_all%use_t2m": ".TRUE.",
+        "defn%opts%scatt%baran_ice_version": "2",
+        "defn%opts%scatt%chou_tang_factor": "0.05",
+        "defn%opts%scatt%chou_tang_mod": ".FALSE.",
+        "defn%opts%scatt%dom_accuracy": "0",
+        "defn%opts%scatt%dom_nstreams": "8",
+        "defn%opts%scatt%dom_opdep_threshold": "0",
+        "defn%opts%scatt%ice_polarisation": "1.4",
+        "defn%opts%scatt%mw_pol_mode": "1",
+        "defn%opts%scatt%radar": ".FALSE.",
+        "defn%opts%scatt%rayleigh_multi_scatt": ".FALSE.",
+        "defn%opts%scatt%solar_solver": "1",
+        "defn%opts%scatt%thermal_solver": "3",
+        "defn%opts%scatt%zero_hydro_tlad": ".FALSE.",
+        "defn%opts%surface%ir_sea_emis_model": "2",
+        "defn%opts%surface%lambertian": ".FALSE.",
+        "defn%opts%surface%lambertian_fixed_angle": ".TRUE.",
+        "defn%opts%surface%mw_sea_emis_model": "3",
+        "defn%opts%surface%solar_sea_refl_model": "1",
+        "defn%opts%surface%use_foam_fraction": ".FALSE.",
+        "defn%opts%surface%use_tskin_eff": ".FALSE.",
+        "defn%over_alloc": ".FALSE.",
+        "defn%print_opts": ".FALSE.",
+        "defn%print_profiles": ".FALSE.",
+        "defn%print_quality": ".TRUE.",
+        "defn%prof_ndigits": "3",
+        "defn%realprec": "17",
+        "defn%run_gas_units": "2",
+        "defn%scale_inc": "1",
+        "defn%scale_out": "1",
+        "defn%taylor_by_chan": ".FALSE.",
+        "defn%taylor_on_btrefl": ".FALSE.",
+        "defn%temp_alloc": ".FALSE.",
+        "defn%user_check_opts": ".FALSE.",
+        "defn%user_check_prof": ".FALSE."
+      },
+      "86,48": {
+        "defn%calc_diag_output": ".FALSE.",
+        "defn%calc_emis_terms": ".FALSE.",
+        "defn%calc_rad2": ".FALSE.",
+        "defn%coef_prefix": "'/Users/yhlee/AD-RTTOV/external/rttov14/current'",
+        "defn%do_ad": ".FALSE.",
+        "defn%do_direct": ".TRUE.",
+        "defn%do_k": ".TRUE.",
+        "defn%do_k_ad": ".FALSE.",
+        "defn%do_k_bf": ".FALSE.",
+        "defn%do_k_tl": ".FALSE.",
+        "defn%do_print": ".TRUE.",
+        "defn%do_taylor": ".FALSE.",
+        "defn%do_tl": ".FALSE.",
+        "defn%f_angles": "'/angles.txt'",
+        "defn%f_be": "'/be.txt'",
+        "defn%f_channels": "'../in/channels.txt'",
+        "defn%f_co2": "'/atm/co2.txt'",
+        "defn%f_coef": "'../in/coef.txt'",
+        "defn%f_datetime": "'/datetime.txt'",
+        "defn%f_gas_units": "'/gas_units.txt'",
+        "defn%f_hydro": "'/atm/hydro.txt'",
+        "defn%f_hydro_frac": "'/atm/hydro_frac.txt'",
+        "defn%f_lprofiles": "'../in/lprofiles.txt'",
+        "defn%f_mmr_hydro_aer": "'/atm/mmr_hydro_aer.txt'",
+        "defn%f_near_surface": "'near_surface.txt'",
+        "defn%f_o3": "'/atm/o3.txt'",
+        "defn%f_p_half": "'/atm/p_half.txt'",
+        "defn%f_prof_id": "'/prof_id.txt'",
+        "defn%f_q": "'/atm/q.txt'",
+        "defn%f_simple_cloud": "'/atm/simple_cloud.txt'",
+        "defn%f_skin": "'skin.txt'",
+        "defn%f_t": "'/atm/t.txt'",
+        "defn%input_gas_units": "-1",
+        "defn%lallchans": ".FALSE.",
+        "defn%mult": "1",
+        "defn%nchannels": "7",
+        "defn%nlevels": "67",
+        "defn%nprofiles": "1",
+        "defn%nsurfaces": "1",
+        "defn%nthreads": "0",
+        "defn%ntimes": "1",
+        "defn%opts%cloud_overlap%col_threshold": "0",
+        "defn%opts%cloud_overlap%exp_random_z0": "0",
+        "defn%opts%cloud_overlap%hydro_frac_tlad": ".TRUE.",
+        "defn%opts%cloud_overlap%overlap_param": "0",
+        "defn%opts%cloud_overlap%overlap_top_down": ".TRUE.",
+        "defn%opts%cloud_overlap%per_hydro_frac": ".FALSE.",
+        "defn%opts%cloud_overlap%two_col_max_frac_max_p": "750",
+        "defn%opts%clw_absorption%clw_cloud_top": "322",
+        "defn%opts%clw_absorption%permittivity_param": "2",
+        "defn%opts%config%adk_bt": ".TRUE.",
+        "defn%opts%config%adk_refl": ".TRUE.",
+        "defn%opts%config%apply_reg_limits": ".FALSE.",
+        "defn%opts%config%bt_overcast_calc": ".FALSE.",
+        "defn%opts%config%check_profiles": ".TRUE.",
+        "defn%opts%config%gas_opdep_calc": ".TRUE.",
+        "defn%opts%config%opdep13_gas_clip": ".TRUE.",
+        "defn%opts%config%transmittances_only": ".FALSE.",
+        "defn%opts%config%verbose": ".TRUE.",
+        "defn%opts%dev%no_opt_param_tladk": ".FALSE.",
+        "defn%opts%interpolation%enable_interp": ".TRUE.",
+        "defn%opts%interpolation%interp_mode": "4",
+        "defn%opts%interpolation%pressure_gradients": ".FALSE.",
+        "defn%opts%rt_all%cosmic_rad": ".TRUE.",
+        "defn%opts%rt_all%nlte_correction": ".FALSE.",
+        "defn%opts%rt_all%plane_parallel": ".FALSE.",
+        "defn%opts%rt_all%rad_down_lin_tau": ".TRUE.",
+        "defn%opts%rt_all%rayleigh_max_wavelength": "2",
+        "defn%opts%rt_all%rayleigh_min_pressure": "0",
+        "defn%opts%rt_all%rayleigh_single_scatt": ".TRUE.",
+        "defn%opts%rt_all%refraction": ".TRUE.",
+        "defn%opts%rt_all%solar": ".FALSE.",
+        "defn%opts%rt_all%use_q2m": ".TRUE.",
+        "defn%opts%rt_all%use_t2m": ".TRUE.",
+        "defn%opts%scatt%baran_ice_version": "2",
+        "defn%opts%scatt%chou_tang_factor": "0.05",
+        "defn%opts%scatt%chou_tang_mod": ".FALSE.",
+        "defn%opts%scatt%dom_accuracy": "0",
+        "defn%opts%scatt%dom_nstreams": "8",
+        "defn%opts%scatt%dom_opdep_threshold": "0",
+        "defn%opts%scatt%ice_polarisation": "1.4",
+        "defn%opts%scatt%mw_pol_mode": "1",
+        "defn%opts%scatt%radar": ".FALSE.",
+        "defn%opts%scatt%rayleigh_multi_scatt": ".FALSE.",
+        "defn%opts%scatt%solar_solver": "1",
+        "defn%opts%scatt%thermal_solver": "3",
+        "defn%opts%scatt%zero_hydro_tlad": ".FALSE.",
+        "defn%opts%surface%ir_sea_emis_model": "2",
+        "defn%opts%surface%lambertian": ".FALSE.",
+        "defn%opts%surface%lambertian_fixed_angle": ".TRUE.",
+        "defn%opts%surface%mw_sea_emis_model": "3",
+        "defn%opts%surface%solar_sea_refl_model": "1",
+        "defn%opts%surface%use_foam_fraction": ".FALSE.",
+        "defn%opts%surface%use_tskin_eff": ".FALSE.",
+        "defn%over_alloc": ".FALSE.",
+        "defn%print_opts": ".FALSE.",
+        "defn%print_profiles": ".FALSE.",
+        "defn%print_quality": ".TRUE.",
+        "defn%prof_ndigits": "3",
+        "defn%realprec": "17",
+        "defn%run_gas_units": "2",
+        "defn%scale_inc": "1",
+        "defn%scale_out": "1",
+        "defn%taylor_by_chan": ".FALSE.",
+        "defn%taylor_on_btrefl": ".FALSE.",
+        "defn%temp_alloc": ".FALSE.",
+        "defn%user_check_opts": ".FALSE.",
+        "defn%user_check_prof": ".FALSE."
+      },
+      "86,49": {
+        "defn%calc_diag_output": ".FALSE.",
+        "defn%calc_emis_terms": ".FALSE.",
+        "defn%calc_rad2": ".FALSE.",
+        "defn%coef_prefix": "'/Users/yhlee/AD-RTTOV/external/rttov14/current'",
+        "defn%do_ad": ".FALSE.",
+        "defn%do_direct": ".TRUE.",
+        "defn%do_k": ".TRUE.",
+        "defn%do_k_ad": ".FALSE.",
+        "defn%do_k_bf": ".FALSE.",
+        "defn%do_k_tl": ".FALSE.",
+        "defn%do_print": ".TRUE.",
+        "defn%do_taylor": ".FALSE.",
+        "defn%do_tl": ".FALSE.",
+        "defn%f_angles": "'/angles.txt'",
+        "defn%f_be": "'/be.txt'",
+        "defn%f_channels": "'../in/channels.txt'",
+        "defn%f_co2": "'/atm/co2.txt'",
+        "defn%f_coef": "'../in/coef.txt'",
+        "defn%f_datetime": "'/datetime.txt'",
+        "defn%f_gas_units": "'/gas_units.txt'",
+        "defn%f_hydro": "'/atm/hydro.txt'",
+        "defn%f_hydro_frac": "'/atm/hydro_frac.txt'",
+        "defn%f_lprofiles": "'../in/lprofiles.txt'",
+        "defn%f_mmr_hydro_aer": "'/atm/mmr_hydro_aer.txt'",
+        "defn%f_near_surface": "'near_surface.txt'",
+        "defn%f_o3": "'/atm/o3.txt'",
+        "defn%f_p_half": "'/atm/p_half.txt'",
+        "defn%f_prof_id": "'/prof_id.txt'",
+        "defn%f_q": "'/atm/q.txt'",
+        "defn%f_simple_cloud": "'/atm/simple_cloud.txt'",
+        "defn%f_skin": "'skin.txt'",
+        "defn%f_t": "'/atm/t.txt'",
+        "defn%input_gas_units": "-1",
+        "defn%lallchans": ".FALSE.",
+        "defn%mult": "1",
+        "defn%nchannels": "7",
+        "defn%nlevels": "67",
+        "defn%nprofiles": "1",
+        "defn%nsurfaces": "1",
+        "defn%nthreads": "0",
+        "defn%ntimes": "1",
+        "defn%opts%cloud_overlap%col_threshold": "0",
+        "defn%opts%cloud_overlap%exp_random_z0": "0",
+        "defn%opts%cloud_overlap%hydro_frac_tlad": ".TRUE.",
+        "defn%opts%cloud_overlap%overlap_param": "0",
+        "defn%opts%cloud_overlap%overlap_top_down": ".TRUE.",
+        "defn%opts%cloud_overlap%per_hydro_frac": ".FALSE.",
+        "defn%opts%cloud_overlap%two_col_max_frac_max_p": "750",
+        "defn%opts%clw_absorption%clw_cloud_top": "322",
+        "defn%opts%clw_absorption%permittivity_param": "2",
+        "defn%opts%config%adk_bt": ".TRUE.",
+        "defn%opts%config%adk_refl": ".TRUE.",
+        "defn%opts%config%apply_reg_limits": ".FALSE.",
+        "defn%opts%config%bt_overcast_calc": ".FALSE.",
+        "defn%opts%config%check_profiles": ".TRUE.",
+        "defn%opts%config%gas_opdep_calc": ".TRUE.",
+        "defn%opts%config%opdep13_gas_clip": ".TRUE.",
+        "defn%opts%config%transmittances_only": ".FALSE.",
+        "defn%opts%config%verbose": ".TRUE.",
+        "defn%opts%dev%no_opt_param_tladk": ".FALSE.",
+        "defn%opts%interpolation%enable_interp": ".TRUE.",
+        "defn%opts%interpolation%interp_mode": "4",
+        "defn%opts%interpolation%pressure_gradients": ".FALSE.",
+        "defn%opts%rt_all%cosmic_rad": ".TRUE.",
+        "defn%opts%rt_all%nlte_correction": ".FALSE.",
+        "defn%opts%rt_all%plane_parallel": ".FALSE.",
+        "defn%opts%rt_all%rad_down_lin_tau": ".TRUE.",
+        "defn%opts%rt_all%rayleigh_max_wavelength": "2",
+        "defn%opts%rt_all%rayleigh_min_pressure": "0",
+        "defn%opts%rt_all%rayleigh_single_scatt": ".TRUE.",
+        "defn%opts%rt_all%refraction": ".TRUE.",
+        "defn%opts%rt_all%solar": ".FALSE.",
+        "defn%opts%rt_all%use_q2m": ".TRUE.",
+        "defn%opts%rt_all%use_t2m": ".TRUE.",
+        "defn%opts%scatt%baran_ice_version": "2",
+        "defn%opts%scatt%chou_tang_factor": "0.05",
+        "defn%opts%scatt%chou_tang_mod": ".FALSE.",
+        "defn%opts%scatt%dom_accuracy": "0",
+        "defn%opts%scatt%dom_nstreams": "8",
+        "defn%opts%scatt%dom_opdep_threshold": "0",
+        "defn%opts%scatt%ice_polarisation": "1.4",
+        "defn%opts%scatt%mw_pol_mode": "1",
+        "defn%opts%scatt%radar": ".FALSE.",
+        "defn%opts%scatt%rayleigh_multi_scatt": ".FALSE.",
+        "defn%opts%scatt%solar_solver": "1",
+        "defn%opts%scatt%thermal_solver": "3",
+        "defn%opts%scatt%zero_hydro_tlad": ".FALSE.",
+        "defn%opts%surface%ir_sea_emis_model": "2",
+        "defn%opts%surface%lambertian": ".FALSE.",
+        "defn%opts%surface%lambertian_fixed_angle": ".TRUE.",
+        "defn%opts%surface%mw_sea_emis_model": "3",
+        "defn%opts%surface%solar_sea_refl_model": "1",
+        "defn%opts%surface%use_foam_fraction": ".FALSE.",
+        "defn%opts%surface%use_tskin_eff": ".FALSE.",
+        "defn%over_alloc": ".FALSE.",
+        "defn%print_opts": ".FALSE.",
+        "defn%print_profiles": ".FALSE.",
+        "defn%print_quality": ".TRUE.",
+        "defn%prof_ndigits": "3",
+        "defn%realprec": "17",
+        "defn%run_gas_units": "2",
+        "defn%scale_inc": "1",
+        "defn%scale_out": "1",
+        "defn%taylor_by_chan": ".FALSE.",
+        "defn%taylor_on_btrefl": ".FALSE.",
+        "defn%temp_alloc": ".FALSE.",
+        "defn%user_check_opts": ".FALSE.",
+        "defn%user_check_prof": ".FALSE."
+      },
+      "87,47": {
+        "defn%calc_diag_output": ".FALSE.",
+        "defn%calc_emis_terms": ".FALSE.",
+        "defn%calc_rad2": ".FALSE.",
+        "defn%coef_prefix": "'/Users/yhlee/AD-RTTOV/external/rttov14/current'",
+        "defn%do_ad": ".FALSE.",
+        "defn%do_direct": ".TRUE.",
+        "defn%do_k": ".TRUE.",
+        "defn%do_k_ad": ".FALSE.",
+        "defn%do_k_bf": ".FALSE.",
+        "defn%do_k_tl": ".FALSE.",
+        "defn%do_print": ".TRUE.",
+        "defn%do_taylor": ".FALSE.",
+        "defn%do_tl": ".FALSE.",
+        "defn%f_angles": "'/angles.txt'",
+        "defn%f_be": "'/be.txt'",
+        "defn%f_channels": "'../in/channels.txt'",
+        "defn%f_co2": "'/atm/co2.txt'",
+        "defn%f_coef": "'../in/coef.txt'",
+        "defn%f_datetime": "'/datetime.txt'",
+        "defn%f_gas_units": "'/gas_units.txt'",
+        "defn%f_hydro": "'/atm/hydro.txt'",
+        "defn%f_hydro_frac": "'/atm/hydro_frac.txt'",
+        "defn%f_lprofiles": "'../in/lprofiles.txt'",
+        "defn%f_mmr_hydro_aer": "'/atm/mmr_hydro_aer.txt'",
+        "defn%f_near_surface": "'near_surface.txt'",
+        "defn%f_o3": "'/atm/o3.txt'",
+        "defn%f_p_half": "'/atm/p_half.txt'",
+        "defn%f_prof_id": "'/prof_id.txt'",
+        "defn%f_q": "'/atm/q.txt'",
+        "defn%f_simple_cloud": "'/atm/simple_cloud.txt'",
+        "defn%f_skin": "'skin.txt'",
+        "defn%f_t": "'/atm/t.txt'",
+        "defn%input_gas_units": "-1",
+        "defn%lallchans": ".FALSE.",
+        "defn%mult": "1",
+        "defn%nchannels": "7",
+        "defn%nlevels": "67",
+        "defn%nprofiles": "1",
+        "defn%nsurfaces": "1",
+        "defn%nthreads": "0",
+        "defn%ntimes": "1",
+        "defn%opts%cloud_overlap%col_threshold": "0",
+        "defn%opts%cloud_overlap%exp_random_z0": "0",
+        "defn%opts%cloud_overlap%hydro_frac_tlad": ".TRUE.",
+        "defn%opts%cloud_overlap%overlap_param": "0",
+        "defn%opts%cloud_overlap%overlap_top_down": ".TRUE.",
+        "defn%opts%cloud_overlap%per_hydro_frac": ".FALSE.",
+        "defn%opts%cloud_overlap%two_col_max_frac_max_p": "750",
+        "defn%opts%clw_absorption%clw_cloud_top": "322",
+        "defn%opts%clw_absorption%permittivity_param": "2",
+        "defn%opts%config%adk_bt": ".TRUE.",
+        "defn%opts%config%adk_refl": ".TRUE.",
+        "defn%opts%config%apply_reg_limits": ".FALSE.",
+        "defn%opts%config%bt_overcast_calc": ".FALSE.",
+        "defn%opts%config%check_profiles": ".TRUE.",
+        "defn%opts%config%gas_opdep_calc": ".TRUE.",
+        "defn%opts%config%opdep13_gas_clip": ".TRUE.",
+        "defn%opts%config%transmittances_only": ".FALSE.",
+        "defn%opts%config%verbose": ".TRUE.",
+        "defn%opts%dev%no_opt_param_tladk": ".FALSE.",
+        "defn%opts%interpolation%enable_interp": ".TRUE.",
+        "defn%opts%interpolation%interp_mode": "4",
+        "defn%opts%interpolation%pressure_gradients": ".FALSE.",
+        "defn%opts%rt_all%cosmic_rad": ".TRUE.",
+        "defn%opts%rt_all%nlte_correction": ".FALSE.",
+        "defn%opts%rt_all%plane_parallel": ".FALSE.",
+        "defn%opts%rt_all%rad_down_lin_tau": ".TRUE.",
+        "defn%opts%rt_all%rayleigh_max_wavelength": "2",
+        "defn%opts%rt_all%rayleigh_min_pressure": "0",
+        "defn%opts%rt_all%rayleigh_single_scatt": ".TRUE.",
+        "defn%opts%rt_all%refraction": ".TRUE.",
+        "defn%opts%rt_all%solar": ".FALSE.",
+        "defn%opts%rt_all%use_q2m": ".TRUE.",
+        "defn%opts%rt_all%use_t2m": ".TRUE.",
+        "defn%opts%scatt%baran_ice_version": "2",
+        "defn%opts%scatt%chou_tang_factor": "0.05",
+        "defn%opts%scatt%chou_tang_mod": ".FALSE.",
+        "defn%opts%scatt%dom_accuracy": "0",
+        "defn%opts%scatt%dom_nstreams": "8",
+        "defn%opts%scatt%dom_opdep_threshold": "0",
+        "defn%opts%scatt%ice_polarisation": "1.4",
+        "defn%opts%scatt%mw_pol_mode": "1",
+        "defn%opts%scatt%radar": ".FALSE.",
+        "defn%opts%scatt%rayleigh_multi_scatt": ".FALSE.",
+        "defn%opts%scatt%solar_solver": "1",
+        "defn%opts%scatt%thermal_solver": "3",
+        "defn%opts%scatt%zero_hydro_tlad": ".FALSE.",
+        "defn%opts%surface%ir_sea_emis_model": "2",
+        "defn%opts%surface%lambertian": ".FALSE.",
+        "defn%opts%surface%lambertian_fixed_angle": ".TRUE.",
+        "defn%opts%surface%mw_sea_emis_model": "3",
+        "defn%opts%surface%solar_sea_refl_model": "1",
+        "defn%opts%surface%use_foam_fraction": ".FALSE.",
+        "defn%opts%surface%use_tskin_eff": ".FALSE.",
+        "defn%over_alloc": ".FALSE.",
+        "defn%print_opts": ".FALSE.",
+        "defn%print_profiles": ".FALSE.",
+        "defn%print_quality": ".TRUE.",
+        "defn%prof_ndigits": "3",
+        "defn%realprec": "17",
+        "defn%run_gas_units": "2",
+        "defn%scale_inc": "1",
+        "defn%scale_out": "1",
+        "defn%taylor_by_chan": ".FALSE.",
+        "defn%taylor_on_btrefl": ".FALSE.",
+        "defn%temp_alloc": ".FALSE.",
+        "defn%user_check_opts": ".FALSE.",
+        "defn%user_check_prof": ".FALSE."
+      },
+      "87,48": {
+        "defn%calc_diag_output": ".FALSE.",
+        "defn%calc_emis_terms": ".FALSE.",
+        "defn%calc_rad2": ".FALSE.",
+        "defn%coef_prefix": "'/Users/yhlee/AD-RTTOV/external/rttov14/current'",
+        "defn%do_ad": ".FALSE.",
+        "defn%do_direct": ".TRUE.",
+        "defn%do_k": ".TRUE.",
+        "defn%do_k_ad": ".FALSE.",
+        "defn%do_k_bf": ".FALSE.",
+        "defn%do_k_tl": ".FALSE.",
+        "defn%do_print": ".TRUE.",
+        "defn%do_taylor": ".FALSE.",
+        "defn%do_tl": ".FALSE.",
+        "defn%f_angles": "'/angles.txt'",
+        "defn%f_be": "'/be.txt'",
+        "defn%f_channels": "'../in/channels.txt'",
+        "defn%f_co2": "'/atm/co2.txt'",
+        "defn%f_coef": "'../in/coef.txt'",
+        "defn%f_datetime": "'/datetime.txt'",
+        "defn%f_gas_units": "'/gas_units.txt'",
+        "defn%f_hydro": "'/atm/hydro.txt'",
+        "defn%f_hydro_frac": "'/atm/hydro_frac.txt'",
+        "defn%f_lprofiles": "'../in/lprofiles.txt'",
+        "defn%f_mmr_hydro_aer": "'/atm/mmr_hydro_aer.txt'",
+        "defn%f_near_surface": "'near_surface.txt'",
+        "defn%f_o3": "'/atm/o3.txt'",
+        "defn%f_p_half": "'/atm/p_half.txt'",
+        "defn%f_prof_id": "'/prof_id.txt'",
+        "defn%f_q": "'/atm/q.txt'",
+        "defn%f_simple_cloud": "'/atm/simple_cloud.txt'",
+        "defn%f_skin": "'skin.txt'",
+        "defn%f_t": "'/atm/t.txt'",
+        "defn%input_gas_units": "-1",
+        "defn%lallchans": ".FALSE.",
+        "defn%mult": "1",
+        "defn%nchannels": "7",
+        "defn%nlevels": "67",
+        "defn%nprofiles": "1",
+        "defn%nsurfaces": "1",
+        "defn%nthreads": "0",
+        "defn%ntimes": "1",
+        "defn%opts%cloud_overlap%col_threshold": "0",
+        "defn%opts%cloud_overlap%exp_random_z0": "0",
+        "defn%opts%cloud_overlap%hydro_frac_tlad": ".TRUE.",
+        "defn%opts%cloud_overlap%overlap_param": "0",
+        "defn%opts%cloud_overlap%overlap_top_down": ".TRUE.",
+        "defn%opts%cloud_overlap%per_hydro_frac": ".FALSE.",
+        "defn%opts%cloud_overlap%two_col_max_frac_max_p": "750",
+        "defn%opts%clw_absorption%clw_cloud_top": "322",
+        "defn%opts%clw_absorption%permittivity_param": "2",
+        "defn%opts%config%adk_bt": ".TRUE.",
+        "defn%opts%config%adk_refl": ".TRUE.",
+        "defn%opts%config%apply_reg_limits": ".FALSE.",
+        "defn%opts%config%bt_overcast_calc": ".FALSE.",
+        "defn%opts%config%check_profiles": ".TRUE.",
+        "defn%opts%config%gas_opdep_calc": ".TRUE.",
+        "defn%opts%config%opdep13_gas_clip": ".TRUE.",
+        "defn%opts%config%transmittances_only": ".FALSE.",
+        "defn%opts%config%verbose": ".TRUE.",
+        "defn%opts%dev%no_opt_param_tladk": ".FALSE.",
+        "defn%opts%interpolation%enable_interp": ".TRUE.",
+        "defn%opts%interpolation%interp_mode": "4",
+        "defn%opts%interpolation%pressure_gradients": ".FALSE.",
+        "defn%opts%rt_all%cosmic_rad": ".TRUE.",
+        "defn%opts%rt_all%nlte_correction": ".FALSE.",
+        "defn%opts%rt_all%plane_parallel": ".FALSE.",
+        "defn%opts%rt_all%rad_down_lin_tau": ".TRUE.",
+        "defn%opts%rt_all%rayleigh_max_wavelength": "2",
+        "defn%opts%rt_all%rayleigh_min_pressure": "0",
+        "defn%opts%rt_all%rayleigh_single_scatt": ".TRUE.",
+        "defn%opts%rt_all%refraction": ".TRUE.",
+        "defn%opts%rt_all%solar": ".FALSE.",
+        "defn%opts%rt_all%use_q2m": ".TRUE.",
+        "defn%opts%rt_all%use_t2m": ".TRUE.",
+        "defn%opts%scatt%baran_ice_version": "2",
+        "defn%opts%scatt%chou_tang_factor": "0.05",
+        "defn%opts%scatt%chou_tang_mod": ".FALSE.",
+        "defn%opts%scatt%dom_accuracy": "0",
+        "defn%opts%scatt%dom_nstreams": "8",
+        "defn%opts%scatt%dom_opdep_threshold": "0",
+        "defn%opts%scatt%ice_polarisation": "1.4",
+        "defn%opts%scatt%mw_pol_mode": "1",
+        "defn%opts%scatt%radar": ".FALSE.",
+        "defn%opts%scatt%rayleigh_multi_scatt": ".FALSE.",
+        "defn%opts%scatt%solar_solver": "1",
+        "defn%opts%scatt%thermal_solver": "3",
+        "defn%opts%scatt%zero_hydro_tlad": ".FALSE.",
+        "defn%opts%surface%ir_sea_emis_model": "2",
+        "defn%opts%surface%lambertian": ".FALSE.",
+        "defn%opts%surface%lambertian_fixed_angle": ".TRUE.",
+        "defn%opts%surface%mw_sea_emis_model": "3",
+        "defn%opts%surface%solar_sea_refl_model": "1",
+        "defn%opts%surface%use_foam_fraction": ".FALSE.",
+        "defn%opts%surface%use_tskin_eff": ".FALSE.",
+        "defn%over_alloc": ".FALSE.",
+        "defn%print_opts": ".FALSE.",
+        "defn%print_profiles": ".FALSE.",
+        "defn%print_quality": ".TRUE.",
+        "defn%prof_ndigits": "3",
+        "defn%realprec": "17",
+        "defn%run_gas_units": "2",
+        "defn%scale_inc": "1",
+        "defn%scale_out": "1",
+        "defn%taylor_by_chan": ".FALSE.",
+        "defn%taylor_on_btrefl": ".FALSE.",
+        "defn%temp_alloc": ".FALSE.",
+        "defn%user_check_opts": ".FALSE.",
+        "defn%user_check_prof": ".FALSE."
+      },
+      "87,49": {
+        "defn%calc_diag_output": ".FALSE.",
+        "defn%calc_emis_terms": ".FALSE.",
+        "defn%calc_rad2": ".FALSE.",
+        "defn%coef_prefix": "'/Users/yhlee/AD-RTTOV/external/rttov14/current'",
+        "defn%do_ad": ".FALSE.",
+        "defn%do_direct": ".TRUE.",
+        "defn%do_k": ".TRUE.",
+        "defn%do_k_ad": ".FALSE.",
+        "defn%do_k_bf": ".FALSE.",
+        "defn%do_k_tl": ".FALSE.",
+        "defn%do_print": ".TRUE.",
+        "defn%do_taylor": ".FALSE.",
+        "defn%do_tl": ".FALSE.",
+        "defn%f_angles": "'/angles.txt'",
+        "defn%f_be": "'/be.txt'",
+        "defn%f_channels": "'../in/channels.txt'",
+        "defn%f_co2": "'/atm/co2.txt'",
+        "defn%f_coef": "'../in/coef.txt'",
+        "defn%f_datetime": "'/datetime.txt'",
+        "defn%f_gas_units": "'/gas_units.txt'",
+        "defn%f_hydro": "'/atm/hydro.txt'",
+        "defn%f_hydro_frac": "'/atm/hydro_frac.txt'",
+        "defn%f_lprofiles": "'../in/lprofiles.txt'",
+        "defn%f_mmr_hydro_aer": "'/atm/mmr_hydro_aer.txt'",
+        "defn%f_near_surface": "'near_surface.txt'",
+        "defn%f_o3": "'/atm/o3.txt'",
+        "defn%f_p_half": "'/atm/p_half.txt'",
+        "defn%f_prof_id": "'/prof_id.txt'",
+        "defn%f_q": "'/atm/q.txt'",
+        "defn%f_simple_cloud": "'/atm/simple_cloud.txt'",
+        "defn%f_skin": "'skin.txt'",
+        "defn%f_t": "'/atm/t.txt'",
+        "defn%input_gas_units": "-1",
+        "defn%lallchans": ".FALSE.",
+        "defn%mult": "1",
+        "defn%nchannels": "7",
+        "defn%nlevels": "67",
+        "defn%nprofiles": "1",
+        "defn%nsurfaces": "1",
+        "defn%nthreads": "0",
+        "defn%ntimes": "1",
+        "defn%opts%cloud_overlap%col_threshold": "0",
+        "defn%opts%cloud_overlap%exp_random_z0": "0",
+        "defn%opts%cloud_overlap%hydro_frac_tlad": ".TRUE.",
+        "defn%opts%cloud_overlap%overlap_param": "0",
+        "defn%opts%cloud_overlap%overlap_top_down": ".TRUE.",
+        "defn%opts%cloud_overlap%per_hydro_frac": ".FALSE.",
+        "defn%opts%cloud_overlap%two_col_max_frac_max_p": "750",
+        "defn%opts%clw_absorption%clw_cloud_top": "322",
+        "defn%opts%clw_absorption%permittivity_param": "2",
+        "defn%opts%config%adk_bt": ".TRUE.",
+        "defn%opts%config%adk_refl": ".TRUE.",
+        "defn%opts%config%apply_reg_limits": ".FALSE.",
+        "defn%opts%config%bt_overcast_calc": ".FALSE.",
+        "defn%opts%config%check_profiles": ".TRUE.",
+        "defn%opts%config%gas_opdep_calc": ".TRUE.",
+        "defn%opts%config%opdep13_gas_clip": ".TRUE.",
+        "defn%opts%config%transmittances_only": ".FALSE.",
+        "defn%opts%config%verbose": ".TRUE.",
+        "defn%opts%dev%no_opt_param_tladk": ".FALSE.",
+        "defn%opts%interpolation%enable_interp": ".TRUE.",
+        "defn%opts%interpolation%interp_mode": "4",
+        "defn%opts%interpolation%pressure_gradients": ".FALSE.",
+        "defn%opts%rt_all%cosmic_rad": ".TRUE.",
+        "defn%opts%rt_all%nlte_correction": ".FALSE.",
+        "defn%opts%rt_all%plane_parallel": ".FALSE.",
+        "defn%opts%rt_all%rad_down_lin_tau": ".TRUE.",
+        "defn%opts%rt_all%rayleigh_max_wavelength": "2",
+        "defn%opts%rt_all%rayleigh_min_pressure": "0",
+        "defn%opts%rt_all%rayleigh_single_scatt": ".TRUE.",
+        "defn%opts%rt_all%refraction": ".TRUE.",
+        "defn%opts%rt_all%solar": ".FALSE.",
+        "defn%opts%rt_all%use_q2m": ".TRUE.",
+        "defn%opts%rt_all%use_t2m": ".TRUE.",
+        "defn%opts%scatt%baran_ice_version": "2",
+        "defn%opts%scatt%chou_tang_factor": "0.05",
+        "defn%opts%scatt%chou_tang_mod": ".FALSE.",
+        "defn%opts%scatt%dom_accuracy": "0",
+        "defn%opts%scatt%dom_nstreams": "8",
+        "defn%opts%scatt%dom_opdep_threshold": "0",
+        "defn%opts%scatt%ice_polarisation": "1.4",
+        "defn%opts%scatt%mw_pol_mode": "1",
+        "defn%opts%scatt%radar": ".FALSE.",
+        "defn%opts%scatt%rayleigh_multi_scatt": ".FALSE.",
+        "defn%opts%scatt%solar_solver": "1",
+        "defn%opts%scatt%thermal_solver": "3",
+        "defn%opts%scatt%zero_hydro_tlad": ".FALSE.",
+        "defn%opts%surface%ir_sea_emis_model": "2",
+        "defn%opts%surface%lambertian": ".FALSE.",
+        "defn%opts%surface%lambertian_fixed_angle": ".TRUE.",
+        "defn%opts%surface%mw_sea_emis_model": "3",
+        "defn%opts%surface%solar_sea_refl_model": "1",
+        "defn%opts%surface%use_foam_fraction": ".FALSE.",
+        "defn%opts%surface%use_tskin_eff": ".FALSE.",
+        "defn%over_alloc": ".FALSE.",
+        "defn%print_opts": ".FALSE.",
+        "defn%print_profiles": ".FALSE.",
+        "defn%print_quality": ".TRUE.",
+        "defn%prof_ndigits": "3",
+        "defn%realprec": "17",
+        "defn%run_gas_units": "2",
+        "defn%scale_inc": "1",
+        "defn%scale_out": "1",
+        "defn%taylor_by_chan": ".FALSE.",
+        "defn%taylor_on_btrefl": ".FALSE.",
+        "defn%temp_alloc": ".FALSE.",
+        "defn%user_check_opts": ".FALSE.",
+        "defn%user_check_prof": ".FALSE."
+      }
+    },
+    "solar": false,
+    "t_blend_octaves": 0.0
+  },
+  "profile_contract": {
+    "RTTOV_layers": 66,
+    "case_count": 9,
+    "conversion_molar_masses_kg_mol": {
+      "dry_air": 0.0289647,
+      "water_vapor": 0.01801528
+    },
+    "gas_policy": "fixture O3/CO2 interpolated in log pressure across complete extended grid; np.interp holds endpoint outside fixture range",
+    "gas_units": 2,
+    "interfaces": 67,
+    "max_active_file_difference_from_archive": {
+      "co2.txt": 0.0,
+      "o3.txt": 0.0,
+      "p.txt": 0.0,
+      "p_half.txt": 0.0,
+      "q.txt": 0.0,
+      "t.txt": 0.0
+    },
+    "native_TQ_policy": "fixed RTTOV fixture supplies T/Q only above native top; saved native 39-layer T and dry-mixing-ratio qv occupy the suffix",
+    "native_centers_and_P8W_suffix_preserved": true,
+    "native_layers": 39,
+    "native_levels_above_fixture_max_total": 54,
+    "native_levels_below_fixture_min_total": 0,
+    "per_cell": [
+      {
+        "active_profiles": {
+          "co2.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "0d715b307585723f1d404b761a3b2f7d12b54351dc6ad88dc379aeb66265775e"
+          },
+          "o3.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "61dd73f00e0a3b105f11f0958c72f7a26bd3b1a3d1b57fa3f2f94a8014e6e668"
+          },
+          "p.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "6f1044c8b46cae0dc23c4e9b74b11d50fa518b482bb468566dbcd6e9fbef09be"
+          },
+          "p_half.txt": {
+            "length": 67,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "c76f4cdba93f8d2324c13b940a2b7123a53e345b4375042c00ef7f01878a63f4"
+          },
+          "q.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "1d80134a56d6902d58eb2810cbb1a2590e6a9ab699137b303becee3203e32db4"
+          },
+          "t.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "90170c45adb9b470036e0eaf08204361db2b4ef51c71f406a4395d954051fe5c"
+          }
+        },
+        "actual_near_surface_file": {
+          "q2m": 29998.424904,
+          "t2m": 299.457336,
+          "wind_fetch": 0.0,
+          "wind_u10m": -0.104612,
+          "wind_v10m": 4.425509
+        },
+        "actual_skin_file": {
+          "fastem(1)": 3.0,
+          "fastem(2)": 5.0,
+          "fastem(3)": 15.0,
+          "fastem(4)": 0.1,
+          "fastem(5)": 0.3,
+          "foam_fraction": 0.0,
+          "salinity": 35.0,
+          "snow_fraction": 0.0,
+          "surftype": 1.0,
+          "t": 300.848419,
+          "watertype": 1.0
+        },
+        "case_id": "frame1_j85_i47_fixed_AMI_geometry",
+        "cell_j_i": [
+          85,
+          47
+        ],
+        "channels": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "diffuse_reflectance_k": {
+          "elements": 7,
+          "nonzero": 0,
+          "sha256": "32ce7fcd73d5346118e979e4e43f904812a77e7da4e4e11ec301b92ed3d0513c",
+          "values": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "emissivity_k": {
+          "elements": 7,
+          "nonzero": 0,
+          "sha256": "17ef08a3d8da0a85eab22aaa8cb41ab33d83ae895fef3cc926ef6097502b5309",
+          "values": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "emissivity_output": {
+          "sha256": "0c2334803b7b541756a04535b90a16e9bfd3a4c88e6b51305193704029c7259a",
+          "values": [
+            0.9748947121190948,
+            0.9782426840777316,
+            0.9818788248621991,
+            0.9858698768752203,
+            0.9874926918361564,
+            0.9760748642614351,
+            0.9623010919265681
+          ]
+        },
+        "gas_reference_min_max_hPa": [
+          0.0003571285505,
+          931.65625
+        ],
+        "gas_units_file_sha256": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555",
+        "independent_reconstruction_max_abs": {
+          "co2.txt": 0.0,
+          "o3.txt": 0.0,
+          "p.txt": 0.0,
+          "p_half.txt": 0.0,
+          "q.txt": 0.0,
+          "t.txt": 0.0
+        },
+        "native_interface_suffix_exact": true,
+        "native_layers": 39,
+        "native_levels_above_reference_max": 6,
+        "native_levels_below_reference_min": 0,
+        "native_pressure_suffix_exact": true,
+        "native_surface": {
+          "HGT": 0.0,
+          "Q2": 0.01923525705933571,
+          "T2": 299.45733642578125,
+          "TSK": 300.8484191894531,
+          "U10": -0.10461227595806122,
+          "V10": 4.425509452819824,
+          "latitude_deg": 35.36763381958008,
+          "longitude_deg": 122.08984375,
+          "seaice": 0.0,
+          "xland": 2.0
+        },
+        "pinned_assets": {
+          "case_role": "new neighbor H output",
+          "coefficient_sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+          "executable_sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+          "static_skin_sha256": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b"
+        },
+        "profiles_k": {
+          "channel_profiles": 7,
+          "fields": {
+            "CFRACTION": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "CO2": {
+              "elements": 462,
+              "max_abs": 0.0005668118835828003,
+              "nonzero": 455,
+              "records": 7
+            },
+            "CTP": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO": {
+              "elements": 3696,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO_DEFF": {
+              "elements": 3234,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO_FRAC": {
+              "elements": 462,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO_FRAC_EFF": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%Q2M": {
+              "elements": 7,
+              "max_abs": 2.93494935705645e-06,
+              "nonzero": 7,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%T2M": {
+              "elements": 7,
+              "max_abs": 0.011281293213629584,
+              "nonzero": 7,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%WIND_FETCH": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%WIND_U10M": {
+              "elements": 7,
+              "max_abs": 3.8002208230428986e-05,
+              "nonzero": 7,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%WIND_V10M": {
+              "elements": 7,
+              "max_abs": 0.0016076464893476615,
+              "nonzero": 7,
+              "records": 7
+            },
+            "O3": {
+              "elements": 462,
+              "max_abs": 3.8528419821507254,
+              "nonzero": 455,
+              "records": 7
+            },
+            "P": {
+              "elements": 462,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "P_HALF": {
+              "elements": 469,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "Q": {
+              "elements": 462,
+              "max_abs": 0.0031323714467144242,
+              "nonzero": 462,
+              "records": 7
+            },
+            "SKIN( 1)%FASTEM": {
+              "elements": 35,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "SKIN( 1)%FOAM_FRACTION": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "SKIN( 1)%SALINITY": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "SKIN( 1)%T": {
+              "elements": 7,
+              "max_abs": 0.5569241010002809,
+              "nonzero": 7,
+              "records": 7
+            },
+            "T": {
+              "elements": 462,
+              "max_abs": 0.09288266198582316,
+              "nonzero": 462,
+              "records": 7
+            }
+          },
+          "sha256": "af01d9d254086f3b95c638a4eb6772ab5ddbc6e83321f27a6962ff735438afb7"
+        },
+        "reference_layers": 27,
+        "selected_rttov_namelist": {
+          "defn%do_direct": ".TRUE.",
+          "defn%do_k": ".TRUE.",
+          "defn%nchannels": "7",
+          "defn%nlevels": "67",
+          "defn%opts%rt_all%solar": ".FALSE.",
+          "defn%run_gas_units": "2"
+        },
+        "surface_rounding_differences": {
+          "Q2_ppmv": 4.2905958252958953e-07,
+          "T2": 4.2578125203363015e-07,
+          "TSK": 1.8945314650409273e-07,
+          "U10": 2.7595806122160393e-07,
+          "V10": 4.5281982430367407e-07
+        }
+      },
+      {
+        "active_profiles": {
+          "co2.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "c0410844b36b9c8c0c22397c56d473c855f03050e8fe16296105e46a87d8c158"
+          },
+          "o3.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "f52a96660d3855c8bb2cf244c483673bc1b6aa34c19fff89ca140e702d105f3b"
+          },
+          "p.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "4e1f64a0d209f253e024b3aad72dd4ab01009bdb97e5a2a11663e0d41b28effc"
+          },
+          "p_half.txt": {
+            "length": 67,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "e5a01d42fa73e4e8e7fb046cadc4143f9b7e35126b95fa05fbe4cfbdf5acacfa"
+          },
+          "q.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "9f3431e4e78c2f452655cd8a3b13d42a290a0d2f699fa83540a242b21e9a370a"
+          },
+          "t.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "949d652cc4ca240899606329740a0b7ccf5d412bd00f9919e9e82e38f4e32907"
+          }
+        },
+        "actual_near_surface_file": {
+          "q2m": 30035.403693,
+          "t2m": 299.48642,
+          "wind_fetch": 0.0,
+          "wind_u10m": 0.039575,
+          "wind_v10m": 4.506808
+        },
+        "actual_skin_file": {
+          "fastem(1)": 3.0,
+          "fastem(2)": 5.0,
+          "fastem(3)": 15.0,
+          "fastem(4)": 0.1,
+          "fastem(5)": 0.3,
+          "foam_fraction": 0.0,
+          "salinity": 35.0,
+          "snow_fraction": 0.0,
+          "surftype": 1.0,
+          "t": 300.881927,
+          "watertype": 1.0
+        },
+        "case_id": "frame1_j85_i48_fixed_AMI_geometry",
+        "cell_j_i": [
+          85,
+          48
+        ],
+        "channels": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "diffuse_reflectance_k": {
+          "elements": 7,
+          "nonzero": 0,
+          "sha256": "32ce7fcd73d5346118e979e4e43f904812a77e7da4e4e11ec301b92ed3d0513c",
+          "values": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "emissivity_k": {
+          "elements": 7,
+          "nonzero": 0,
+          "sha256": "17ef08a3d8da0a85eab22aaa8cb41ab33d83ae895fef3cc926ef6097502b5309",
+          "values": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "emissivity_output": {
+          "sha256": "18a37ae4b88d8c534150a363b0e2f41e5305d8db994a67f3dc8eba1ac2bb3938",
+          "values": [
+            0.9748879882914232,
+            0.9782381589622032,
+            0.9818742444775008,
+            0.9858647008760406,
+            0.987489796534877,
+            0.976072317491389,
+            0.9622970279435817
+          ]
+        },
+        "gas_reference_min_max_hPa": [
+          0.0003571285505,
+          931.65625
+        ],
+        "gas_units_file_sha256": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555",
+        "independent_reconstruction_max_abs": {
+          "co2.txt": 0.0,
+          "o3.txt": 0.0,
+          "p.txt": 0.0,
+          "p_half.txt": 0.0,
+          "q.txt": 0.0,
+          "t.txt": 0.0
+        },
+        "native_interface_suffix_exact": true,
+        "native_layers": 39,
+        "native_levels_above_reference_max": 6,
+        "native_levels_below_reference_min": 0,
+        "native_pressure_suffix_exact": true,
+        "native_surface": {
+          "HGT": 0.0,
+          "Q2": 0.019259702414274216,
+          "T2": 299.4864196777344,
+          "TSK": 300.8819274902344,
+          "U10": 0.0395745113492012,
+          "V10": 4.506807804107666,
+          "latitude_deg": 35.369850158691406,
+          "longitude_deg": 122.14602661132812,
+          "seaice": 0.0,
+          "xland": 2.0
+        },
+        "pinned_assets": {
+          "case_role": "new neighbor H output",
+          "coefficient_sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+          "executable_sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+          "static_skin_sha256": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b"
+        },
+        "profiles_k": {
+          "channel_profiles": 7,
+          "fields": {
+            "CFRACTION": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "CO2": {
+              "elements": 462,
+              "max_abs": 0.0005661977719101049,
+              "nonzero": 455,
+              "records": 7
+            },
+            "CTP": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO": {
+              "elements": 3696,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO_DEFF": {
+              "elements": 3234,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO_FRAC": {
+              "elements": 462,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO_FRAC_EFF": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%Q2M": {
+              "elements": 7,
+              "max_abs": 2.939981750435809e-06,
+              "nonzero": 7,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%T2M": {
+              "elements": 7,
+              "max_abs": 0.011223712265220372,
+              "nonzero": 7,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%WIND_FETCH": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%WIND_U10M": {
+              "elements": 7,
+              "max_abs": 1.398427097898175e-05,
+              "nonzero": 7,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%WIND_V10M": {
+              "elements": 7,
+              "max_abs": 0.0015925312526151052,
+              "nonzero": 7,
+              "records": 7
+            },
+            "O3": {
+              "elements": 462,
+              "max_abs": 3.85590205888754,
+              "nonzero": 455,
+              "records": 7
+            },
+            "P": {
+              "elements": 462,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "P_HALF": {
+              "elements": 469,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "Q": {
+              "elements": 462,
+              "max_abs": 0.003209071807048752,
+              "nonzero": 462,
+              "records": 7
+            },
+            "SKIN( 1)%FASTEM": {
+              "elements": 35,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "SKIN( 1)%FOAM_FRACTION": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "SKIN( 1)%SALINITY": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "SKIN( 1)%T": {
+              "elements": 7,
+              "max_abs": 0.5549798840689079,
+              "nonzero": 7,
+              "records": 7
+            },
+            "T": {
+              "elements": 462,
+              "max_abs": 0.09491949667280007,
+              "nonzero": 462,
+              "records": 7
+            }
+          },
+          "sha256": "463c14cba880e2a66be6c762af3581f73e9f84e52a7826f6d8360bb734251d7d"
+        },
+        "reference_layers": 27,
+        "selected_rttov_namelist": {
+          "defn%do_direct": ".TRUE.",
+          "defn%do_k": ".TRUE.",
+          "defn%nchannels": "7",
+          "defn%nlevels": "67",
+          "defn%opts%rt_all%solar": ".FALSE.",
+          "defn%run_gas_units": "2"
+        },
+        "surface_rounding_differences": {
+          "Q2_ppmv": 1.3984390534460545e-07,
+          "T2": 3.2226563462245394e-07,
+          "TSK": 4.902343562207534e-07,
+          "U10": 4.886507987966748e-07,
+          "V10": 1.958923343536867e-07
+        }
+      },
+      {
+        "active_profiles": {
+          "co2.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "b9b76b6fd569075e1cc2f8138f58091a4a63897806964b04d114c268ec5d331d"
+          },
+          "o3.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "fd3250606a12d49b810578a727cfcdcd6ece104fe09cfa679a93eac451552e0b"
+          },
+          "p.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "64766d9f062bb4ab6b2e741e1d12d713e1e26f6b6a87ae18d5fae2d0711755ff"
+          },
+          "p_half.txt": {
+            "length": 67,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "b115997504a06b2945f093066c5e91a65af06c6eb4b6bf3eff641d611fee717f"
+          },
+          "q.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "5543b438162966b17fd1eec8922b020d50d8098849de67ce3e4a744f8d311d0b"
+          },
+          "t.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "b6e4f9c67f603d1245b688333cb5484378920f9847d7edcadc9a4c4a5458875f"
+          }
+        },
+        "actual_near_surface_file": {
+          "q2m": 30055.247213,
+          "t2m": 299.507721,
+          "wind_fetch": 0.0,
+          "wind_u10m": 0.187374,
+          "wind_v10m": 4.594804
+        },
+        "actual_skin_file": {
+          "fastem(1)": 3.0,
+          "fastem(2)": 5.0,
+          "fastem(3)": 15.0,
+          "fastem(4)": 0.1,
+          "fastem(5)": 0.3,
+          "foam_fraction": 0.0,
+          "salinity": 35.0,
+          "snow_fraction": 0.0,
+          "surftype": 1.0,
+          "t": 300.877747,
+          "watertype": 1.0
+        },
+        "case_id": "frame1_j85_i49_fixed_AMI_geometry",
+        "cell_j_i": [
+          85,
+          49
+        ],
+        "channels": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "diffuse_reflectance_k": {
+          "elements": 7,
+          "nonzero": 0,
+          "sha256": "32ce7fcd73d5346118e979e4e43f904812a77e7da4e4e11ec301b92ed3d0513c",
+          "values": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "emissivity_k": {
+          "elements": 7,
+          "nonzero": 0,
+          "sha256": "17ef08a3d8da0a85eab22aaa8cb41ab33d83ae895fef3cc926ef6097502b5309",
+          "values": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "emissivity_output": {
+          "sha256": "dfd7b290ed32fe5037fd1d6978c465234d924fbfe79d0c305ef384782df4147d",
+          "values": [
+            0.9748799761987177,
+            0.9782301129387968,
+            0.9818666109404406,
+            0.9858577865959441,
+            0.9874824435554982,
+            0.9760602927598396,
+            0.9622837257952908
+          ]
+        },
+        "gas_reference_min_max_hPa": [
+          0.0003571285505,
+          931.65625
+        ],
+        "gas_units_file_sha256": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555",
+        "independent_reconstruction_max_abs": {
+          "co2.txt": 0.0,
+          "o3.txt": 0.0,
+          "p.txt": 0.0,
+          "p_half.txt": 0.0,
+          "q.txt": 0.0,
+          "t.txt": 0.0
+        },
+        "native_interface_suffix_exact": true,
+        "native_layers": 39,
+        "native_levels_above_reference_max": 6,
+        "native_levels_below_reference_min": 0,
+        "native_pressure_suffix_exact": true,
+        "native_surface": {
+          "HGT": 0.0,
+          "Q2": 0.01927282102406025,
+          "T2": 299.5077209472656,
+          "TSK": 300.87774658203125,
+          "U10": 0.18737436830997467,
+          "V10": 4.594804286956787,
+          "latitude_deg": 35.372039794921875,
+          "longitude_deg": 122.20220947265625,
+          "seaice": 0.0,
+          "xland": 2.0
+        },
+        "pinned_assets": {
+          "case_role": "new neighbor H output",
+          "coefficient_sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+          "executable_sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+          "static_skin_sha256": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b"
+        },
+        "profiles_k": {
+          "channel_profiles": 7,
+          "fields": {
+            "CFRACTION": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "CO2": {
+              "elements": 462,
+              "max_abs": 0.0005653626539468101,
+              "nonzero": 455,
+              "records": 7
+            },
+            "CTP": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO": {
+              "elements": 3696,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO_DEFF": {
+              "elements": 3234,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO_FRAC": {
+              "elements": 462,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO_FRAC_EFF": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%Q2M": {
+              "elements": 7,
+              "max_abs": 2.880309701239034e-06,
+              "nonzero": 7,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%T2M": {
+              "elements": 7,
+              "max_abs": 0.011172349254705926,
+              "nonzero": 7,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%WIND_FETCH": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%WIND_U10M": {
+              "elements": 7,
+              "max_abs": 6.40847252952769e-05,
+              "nonzero": 7,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%WIND_V10M": {
+              "elements": 7,
+              "max_abs": 0.00157149205399703,
+              "nonzero": 7,
+              "records": 7
+            },
+            "O3": {
+              "elements": 462,
+              "max_abs": 3.8567904826512964,
+              "nonzero": 455,
+              "records": 7
+            },
+            "P": {
+              "elements": 462,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "P_HALF": {
+              "elements": 469,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "Q": {
+              "elements": 462,
+              "max_abs": 0.0032904965875025912,
+              "nonzero": 462,
+              "records": 7
+            },
+            "SKIN( 1)%FASTEM": {
+              "elements": 35,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "SKIN( 1)%FOAM_FRACTION": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "SKIN( 1)%SALINITY": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "SKIN( 1)%T": {
+              "elements": 7,
+              "max_abs": 0.5525036744756561,
+              "nonzero": 7,
+              "records": 7
+            },
+            "T": {
+              "elements": 462,
+              "max_abs": 0.09696180502717215,
+              "nonzero": 462,
+              "records": 7
+            }
+          },
+          "sha256": "ad32ff76e338e56b34f7216a5b377ed9bd6d5b27bc79bf5ee250be3496426823"
+        },
+        "reference_layers": 27,
+        "selected_rttov_namelist": {
+          "defn%do_direct": ".TRUE.",
+          "defn%do_k": ".TRUE.",
+          "defn%nchannels": "7",
+          "defn%nlevels": "67",
+          "defn%opts%rt_all%solar": ".FALSE.",
+          "defn%run_gas_units": "2"
+        },
+        "surface_rounding_differences": {
+          "Q2_ppmv": 1.4615579857490957e-07,
+          "T2": 5.2734378641616786e-08,
+          "TSK": 4.1796874938881956e-07,
+          "U10": 3.683099746576435e-07,
+          "V10": 2.869567872210155e-07
+        }
+      },
+      {
+        "active_profiles": {
+          "co2.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "c1909a86e0af2367edc2518247434a505936e6ea9b5c8c25f281eb62b5f43563"
+          },
+          "o3.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "fe7110de69fc604ebbe04d8cea0e081312e6235e5d1582a2ce48545bad0c63cf"
+          },
+          "p.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "bfb57084893950463f4c294292907139368033b893e04f1e4e62b505c1284d2d"
+          },
+          "p_half.txt": {
+            "length": 67,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "09fb1d451e6ace1a55e5f535bde712e9cd3d7853759f7039f1d218400cfab214"
+          },
+          "q.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "384b2fe712e44bc12194878a028cbe448f1d82e3f7c5dbe10e1cbc12e5dcf3ca"
+          },
+          "t.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "e4dd76f81b5e942a5a31bb59f9b16c6ecf485155c7b5572154948b1ee3af4be9"
+          }
+        },
+        "actual_near_surface_file": {
+          "q2m": 29831.652845,
+          "t2m": 299.415375,
+          "wind_fetch": 0.0,
+          "wind_u10m": 0.028376,
+          "wind_v10m": 4.240086
+        },
+        "actual_skin_file": {
+          "fastem(1)": 3.0,
+          "fastem(2)": 5.0,
+          "fastem(3)": 15.0,
+          "fastem(4)": 0.1,
+          "fastem(5)": 0.3,
+          "foam_fraction": 0.0,
+          "salinity": 35.0,
+          "snow_fraction": 0.0,
+          "surftype": 1.0,
+          "t": 300.714661,
+          "watertype": 1.0
+        },
+        "case_id": "frame1_j86_i47_fixed_AMI_geometry",
+        "cell_j_i": [
+          86,
+          47
+        ],
+        "channels": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "diffuse_reflectance_k": {
+          "elements": 7,
+          "nonzero": 0,
+          "sha256": "32ce7fcd73d5346118e979e4e43f904812a77e7da4e4e11ec301b92ed3d0513c",
+          "values": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "emissivity_k": {
+          "elements": 7,
+          "nonzero": 0,
+          "sha256": "17ef08a3d8da0a85eab22aaa8cb41ab33d83ae895fef3cc926ef6097502b5309",
+          "values": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "emissivity_output": {
+          "sha256": "365c8bc41a9df5221b5e776513107cdcb207f83181ba7398dc4e5ee7b3c5c6b1",
+          "values": [
+            0.9749099724668971,
+            0.9782494812907829,
+            0.9818863726011665,
+            0.9858806451842332,
+            0.9874941525126973,
+            0.9760688732485624,
+            0.9622992389617041
+          ]
+        },
+        "gas_reference_min_max_hPa": [
+          0.0003571285505,
+          931.65625
+        ],
+        "gas_units_file_sha256": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555",
+        "independent_reconstruction_max_abs": {
+          "co2.txt": 0.0,
+          "o3.txt": 0.0,
+          "p.txt": 0.0,
+          "p_half.txt": 0.0,
+          "q.txt": 0.0,
+          "t.txt": 0.0
+        },
+        "native_interface_suffix_exact": true,
+        "native_layers": 39,
+        "native_levels_above_reference_max": 6,
+        "native_levels_below_reference_min": 0,
+        "native_pressure_suffix_exact": true,
+        "native_surface": {
+          "HGT": 0.0,
+          "Q2": 0.019125033169984818,
+          "T2": 299.4153747558594,
+          "TSK": 300.71466064453125,
+          "U10": 0.028375940397381783,
+          "V10": 4.240085601806641,
+          "latitude_deg": 35.4134407043457,
+          "longitude_deg": 122.08709716796875,
+          "seaice": 0.0,
+          "xland": 2.0
+        },
+        "pinned_assets": {
+          "case_role": "new neighbor H output",
+          "coefficient_sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+          "executable_sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+          "static_skin_sha256": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b"
+        },
+        "profiles_k": {
+          "channel_profiles": 7,
+          "fields": {
+            "CFRACTION": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "CO2": {
+              "elements": 462,
+              "max_abs": 0.0005678690880086383,
+              "nonzero": 455,
+              "records": 7
+            },
+            "CTP": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO": {
+              "elements": 3696,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO_DEFF": {
+              "elements": 3234,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO_FRAC": {
+              "elements": 462,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO_FRAC_EFF": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%Q2M": {
+              "elements": 7,
+              "max_abs": 2.7417098972329702e-06,
+              "nonzero": 7,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%T2M": {
+              "elements": 7,
+              "max_abs": 0.01117152299370795,
+              "nonzero": 7,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%WIND_FETCH": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%WIND_U10M": {
+              "elements": 7,
+              "max_abs": 1.0867815455833964e-05,
+              "nonzero": 7,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%WIND_V10M": {
+              "elements": 7,
+              "max_abs": 0.0016239241670730623,
+              "nonzero": 7,
+              "records": 7
+            },
+            "O3": {
+              "elements": 462,
+              "max_abs": 3.8486707684804324,
+              "nonzero": 455,
+              "records": 7
+            },
+            "P": {
+              "elements": 462,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "P_HALF": {
+              "elements": 469,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "Q": {
+              "elements": 462,
+              "max_abs": 0.003075623955594,
+              "nonzero": 462,
+              "records": 7
+            },
+            "SKIN( 1)%FASTEM": {
+              "elements": 35,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "SKIN( 1)%FOAM_FRACTION": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "SKIN( 1)%SALINITY": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "SKIN( 1)%T": {
+              "elements": 7,
+              "max_abs": 0.5577510270453929,
+              "nonzero": 7,
+              "records": 7
+            },
+            "T": {
+              "elements": 462,
+              "max_abs": 0.09119460501814157,
+              "nonzero": 462,
+              "records": 7
+            }
+          },
+          "sha256": "f21169c76adcd88a665c1c7d6b1e75d48e131e97879e99609f1e7c9e7ef4c8a2"
+        },
+        "reference_layers": 27,
+        "selected_rttov_namelist": {
+          "defn%do_direct": ".TRUE.",
+          "defn%do_k": ".TRUE.",
+          "defn%nchannels": "7",
+          "defn%nlevels": "67",
+          "defn%opts%rt_all%solar": ".FALSE.",
+          "defn%run_gas_units": "2"
+        },
+        "surface_rounding_differences": {
+          "Q2_ppmv": 2.831584424711764e-07,
+          "T2": 2.44140608174348e-07,
+          "TSK": 3.554687282303348e-07,
+          "U10": 5.960261821591484e-08,
+          "V10": 3.981933591745701e-07
+        }
+      },
+      {
+        "active_profiles": {
+          "co2.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "10bd872ae422f29c5df7ca42003c3b0969eb9d0cb9a1915167d4a455014face9"
+          },
+          "o3.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "6b7da0a7dc2d7c072ff28a7c71c931e7b8d193d42cde682a6359340ec9f26641"
+          },
+          "p.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "244c45bdfc83b3568f3aec41858a4667ac2130bab52133b5306f1d548c15f213"
+          },
+          "p_half.txt": {
+            "length": 67,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "8280f3ba5e8e30af547fbfcfd3e5e4c1447cc60fbc34bc184b98ea86c4ad0b55"
+          },
+          "q.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "88d7ba081b9395d50f33d9babeb6dd51e16e8362b83c53710ad861994800a1a1"
+          },
+          "t.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "a2680f729c605654c10b86b6984a42d6d10921c7e5a7a066cc83de7f3a8ea78b"
+          }
+        },
+        "actual_near_surface_file": {
+          "q2m": 29876.367,
+          "t2m": 299.445129,
+          "wind_fetch": 0.0,
+          "wind_u10m": 0.16956,
+          "wind_v10m": 4.309659
+        },
+        "actual_skin_file": {
+          "fastem(1)": 3.0,
+          "fastem(2)": 5.0,
+          "fastem(3)": 15.0,
+          "fastem(4)": 0.1,
+          "fastem(5)": 0.3,
+          "foam_fraction": 0.0,
+          "salinity": 35.0,
+          "snow_fraction": 0.0,
+          "surftype": 1.0,
+          "t": 300.774231,
+          "watertype": 1.0
+        },
+        "case_id": "frame1_fixed_AMI_candidate_pixel_center",
+        "cell_j_i": [
+          86,
+          48
+        ],
+        "channels": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "diffuse_reflectance_k": {
+          "elements": 7,
+          "nonzero": 0,
+          "sha256": "32ce7fcd73d5346118e979e4e43f904812a77e7da4e4e11ec301b92ed3d0513c",
+          "values": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "emissivity_k": {
+          "elements": 7,
+          "nonzero": 0,
+          "sha256": "17ef08a3d8da0a85eab22aaa8cb41ab33d83ae895fef3cc926ef6097502b5309",
+          "values": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "emissivity_output": {
+          "sha256": "f5a9c258ce659165c9a3c285b21239614a154a48f8ee6ca9edfc846a91e7a242",
+          "values": [
+            0.9749040620391108,
+            0.9782473160253404,
+            0.981883832598767,
+            0.9858766064490904,
+            0.9874942746727483,
+            0.9760727779963826,
+            0.9623014474998434
+          ]
+        },
+        "gas_reference_min_max_hPa": [
+          0.0003571285505,
+          931.65625
+        ],
+        "gas_units_file_sha256": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555",
+        "independent_reconstruction_max_abs": {
+          "co2.txt": 0.0,
+          "o3.txt": 0.0,
+          "p.txt": 0.0,
+          "p_half.txt": 0.0,
+          "q.txt": 0.0,
+          "t.txt": 0.0
+        },
+        "native_interface_suffix_exact": true,
+        "native_layers": 39,
+        "native_levels_above_reference_max": 6,
+        "native_levels_below_reference_min": 0,
+        "native_pressure_suffix_exact": true,
+        "native_surface": {
+          "HGT": 0.0,
+          "Q2": 0.019154582172632217,
+          "T2": 299.44512939453125,
+          "TSK": 300.77423095703125,
+          "U10": 0.1695604920387268,
+          "V10": 4.309659004211426,
+          "latitude_deg": 35.4156608581543,
+          "longitude_deg": 122.143310546875,
+          "seaice": 0.0,
+          "xland": 2.0
+        },
+        "pinned_assets": {
+          "case_role": "reused center H output",
+          "coefficient_sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+          "executable_sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+          "static_skin_sha256": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b"
+        },
+        "profiles_k": {
+          "channel_profiles": 7,
+          "fields": {
+            "CFRACTION": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "CO2": {
+              "elements": 462,
+              "max_abs": 0.0005677719850239793,
+              "nonzero": 455,
+              "records": 7
+            },
+            "CTP": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO": {
+              "elements": 3696,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO_DEFF": {
+              "elements": 3234,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO_FRAC": {
+              "elements": 462,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO_FRAC_EFF": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%Q2M": {
+              "elements": 7,
+              "max_abs": 2.801085289250449e-06,
+              "nonzero": 7,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%T2M": {
+              "elements": 7,
+              "max_abs": 0.011198683028210287,
+              "nonzero": 7,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%WIND_FETCH": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%WIND_U10M": {
+              "elements": 7,
+              "max_abs": 6.347702180596295e-05,
+              "nonzero": 7,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%WIND_V10M": {
+              "elements": 7,
+              "max_abs": 0.001613377673503565,
+              "nonzero": 7,
+              "records": 7
+            },
+            "O3": {
+              "elements": 462,
+              "max_abs": 3.8541861125252326,
+              "nonzero": 455,
+              "records": 7
+            },
+            "P": {
+              "elements": 462,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "P_HALF": {
+              "elements": 469,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "Q": {
+              "elements": 462,
+              "max_abs": 0.0031631409552003095,
+              "nonzero": 462,
+              "records": 7
+            },
+            "SKIN( 1)%FASTEM": {
+              "elements": 35,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "SKIN( 1)%FOAM_FRACTION": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "SKIN( 1)%SALINITY": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "SKIN( 1)%T": {
+              "elements": 7,
+              "max_abs": 0.556811459186819,
+              "nonzero": 7,
+              "records": 7
+            },
+            "T": {
+              "elements": 462,
+              "max_abs": 0.09319829407840217,
+              "nonzero": 462,
+              "records": 7
+            }
+          },
+          "sha256": "e3ade1f26ff5b7cfddab622d7eae667821a4db745e347e40be4c76b90b405df9"
+        },
+        "reference_layers": 27,
+        "selected_rttov_namelist": {
+          "defn%do_direct": ".TRUE.",
+          "defn%do_k": ".TRUE.",
+          "defn%nchannels": "7",
+          "defn%nlevels": "67",
+          "defn%opts%rt_all%solar": ".FALSE.",
+          "defn%run_gas_units": "2"
+        },
+        "surface_rounding_differences": {
+          "Q2_ppmv": 1.0684743756428361e-08,
+          "T2": 3.945312414543878e-07,
+          "TSK": 4.296873612474883e-08,
+          "U10": 4.920387268181337e-07,
+          "V10": 4.211425874700581e-09
+        }
+      },
+      {
+        "active_profiles": {
+          "co2.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "252345464617f39fb293ffbba75475770cdb76342af4f506bec644d6f7f19e40"
+          },
+          "o3.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "e358da690af52c7574f8676de7d8afedb281aa8c5321b1b09d5c08a78234dc51"
+          },
+          "p.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "9500a7626b1333634faeb087013c5c57e737b5882a9cecba28fc368d460a4d7b"
+          },
+          "p_half.txt": {
+            "length": 67,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "7dd7d206b4e13041ae484332f36b70f8d18a20dc7fffd36cb7c82d8b4d5dec31"
+          },
+          "q.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "8bae0f8cd252ad701035e88e2ea5489cd4ba37f125752f6ff43b5e4059fce86c"
+          },
+          "t.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "c115b5c13af402a9a17a34c9a0724f368a300a83102784b3398dea545a2068c7"
+          }
+        },
+        "actual_near_surface_file": {
+          "q2m": 29904.601539,
+          "t2m": 299.471832,
+          "wind_fetch": 0.0,
+          "wind_u10m": 0.313466,
+          "wind_v10m": 4.390345
+        },
+        "actual_skin_file": {
+          "fastem(1)": 3.0,
+          "fastem(2)": 5.0,
+          "fastem(3)": 15.0,
+          "fastem(4)": 0.1,
+          "fastem(5)": 0.3,
+          "foam_fraction": 0.0,
+          "salinity": 35.0,
+          "snow_fraction": 0.0,
+          "surftype": 1.0,
+          "t": 300.793121,
+          "watertype": 1.0
+        },
+        "case_id": "frame1_j86_i49_fixed_AMI_geometry",
+        "cell_j_i": [
+          86,
+          49
+        ],
+        "channels": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "diffuse_reflectance_k": {
+          "elements": 7,
+          "nonzero": 0,
+          "sha256": "32ce7fcd73d5346118e979e4e43f904812a77e7da4e4e11ec301b92ed3d0513c",
+          "values": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "emissivity_k": {
+          "elements": 7,
+          "nonzero": 0,
+          "sha256": "17ef08a3d8da0a85eab22aaa8cb41ab33d83ae895fef3cc926ef6097502b5309",
+          "values": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "emissivity_output": {
+          "sha256": "8b8e8c6d1c51644679f4feb59b935abcb027e8e3cd31e4b77940651ab1e8275b",
+          "values": [
+            0.9748964458444777,
+            0.9782410438221061,
+            0.9818777051611468,
+            0.9858704227034638,
+            0.9874893115152428,
+            0.9760660152647896,
+            0.9622931952659418
+          ]
+        },
+        "gas_reference_min_max_hPa": [
+          0.0003571285505,
+          931.65625
+        ],
+        "gas_units_file_sha256": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555",
+        "independent_reconstruction_max_abs": {
+          "co2.txt": 0.0,
+          "o3.txt": 0.0,
+          "p.txt": 0.0,
+          "p_half.txt": 0.0,
+          "q.txt": 0.0,
+          "t.txt": 0.0
+        },
+        "native_interface_suffix_exact": true,
+        "native_layers": 39,
+        "native_levels_above_reference_max": 6,
+        "native_levels_below_reference_min": 0,
+        "native_pressure_suffix_exact": true,
+        "native_surface": {
+          "HGT": 0.0,
+          "Q2": 0.019173242151737213,
+          "T2": 299.4718322753906,
+          "TSK": 300.7931213378906,
+          "U10": 0.3134661912918091,
+          "V10": 4.390345096588135,
+          "latitude_deg": 35.4178581237793,
+          "longitude_deg": 122.19952392578125,
+          "seaice": 0.0,
+          "xland": 2.0
+        },
+        "pinned_assets": {
+          "case_role": "new neighbor H output",
+          "coefficient_sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+          "executable_sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+          "static_skin_sha256": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b"
+        },
+        "profiles_k": {
+          "channel_profiles": 7,
+          "fields": {
+            "CFRACTION": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "CO2": {
+              "elements": 462,
+              "max_abs": 0.0005674535626768466,
+              "nonzero": 455,
+              "records": 7
+            },
+            "CTP": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO": {
+              "elements": 3696,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO_DEFF": {
+              "elements": 3234,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO_FRAC": {
+              "elements": 462,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO_FRAC_EFF": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%Q2M": {
+              "elements": 7,
+              "max_abs": 2.7806640034203294e-06,
+              "nonzero": 7,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%T2M": {
+              "elements": 7,
+              "max_abs": 0.011124282097314597,
+              "nonzero": 7,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%WIND_FETCH": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%WIND_U10M": {
+              "elements": 7,
+              "max_abs": 0.00011403249500646602,
+              "nonzero": 7,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%WIND_V10M": {
+              "elements": 7,
+              "max_abs": 0.001597117372503439,
+              "nonzero": 7,
+              "records": 7
+            },
+            "O3": {
+              "elements": 462,
+              "max_abs": 3.8573277004559006,
+              "nonzero": 455,
+              "records": 7
+            },
+            "P": {
+              "elements": 462,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "P_HALF": {
+              "elements": 469,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "Q": {
+              "elements": 462,
+              "max_abs": 0.0032429654067490914,
+              "nonzero": 462,
+              "records": 7
+            },
+            "SKIN( 1)%FASTEM": {
+              "elements": 35,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "SKIN( 1)%FOAM_FRACTION": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "SKIN( 1)%SALINITY": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "SKIN( 1)%T": {
+              "elements": 7,
+              "max_abs": 0.5554646972761189,
+              "nonzero": 7,
+              "records": 7
+            },
+            "T": {
+              "elements": 462,
+              "max_abs": 0.09519990452182724,
+              "nonzero": 462,
+              "records": 7
+            }
+          },
+          "sha256": "671c58454c3f8e9eec2b219bf3cf9ecf96b3319b9f9a0e9ae27e068cefdfb2e4"
+        },
+        "reference_layers": 27,
+        "selected_rttov_namelist": {
+          "defn%do_direct": ".TRUE.",
+          "defn%do_k": ".TRUE.",
+          "defn%nchannels": "7",
+          "defn%nlevels": "67",
+          "defn%opts%rt_all%solar": ".FALSE.",
+          "defn%run_gas_units": "2"
+        },
+        "surface_rounding_differences": {
+          "Q2_ppmv": 4.317189450375736e-08,
+          "T2": 2.753906187535904e-07,
+          "TSK": 3.3789063991207513e-07,
+          "U10": 1.9129180905963494e-07,
+          "V10": 9.658813482360529e-08
+        }
+      },
+      {
+        "active_profiles": {
+          "co2.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "0f5770e40bd731fea431bded9bcbf9e0f33d7d0479d3a45c2ba7a2e8ee375856"
+          },
+          "o3.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "85c87f35ab33823a4d0b9ce7900767b6a2581fce3aef0051bc8e0f0002550fa0"
+          },
+          "p.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "6cd2459de6a46eb8e79bf5501df7f15794fa46931699c8c4a1d4be869f826fb3"
+          },
+          "p_half.txt": {
+            "length": 67,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "eae200b2f779bad30c05e257c9c62dc75cc0acce4549f38001670ab7d2653940"
+          },
+          "q.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "c30cc3880fa8afbb619eefb16a1b2613f04a62c37d0ee3ac6f0a991ca269d4cd"
+          },
+          "t.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "72b9ad2816ec9aceeeee14223b32b686787a26afe10e68e0eaafe7cdb8a98774"
+          }
+        },
+        "actual_near_surface_file": {
+          "q2m": 29662.38721,
+          "t2m": 299.347992,
+          "wind_fetch": 0.0,
+          "wind_u10m": 0.14187,
+          "wind_v10m": 4.04873
+        },
+        "actual_skin_file": {
+          "fastem(1)": 3.0,
+          "fastem(2)": 5.0,
+          "fastem(3)": 15.0,
+          "fastem(4)": 0.1,
+          "fastem(5)": 0.3,
+          "foam_fraction": 0.0,
+          "salinity": 35.0,
+          "snow_fraction": 0.0,
+          "surftype": 1.0,
+          "t": 300.464905,
+          "watertype": 1.0
+        },
+        "case_id": "frame1_j87_i47_fixed_AMI_geometry",
+        "cell_j_i": [
+          87,
+          47
+        ],
+        "channels": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "diffuse_reflectance_k": {
+          "elements": 7,
+          "nonzero": 0,
+          "sha256": "32ce7fcd73d5346118e979e4e43f904812a77e7da4e4e11ec301b92ed3d0513c",
+          "values": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "emissivity_k": {
+          "elements": 7,
+          "nonzero": 0,
+          "sha256": "17ef08a3d8da0a85eab22aaa8cb41ab33d83ae895fef3cc926ef6097502b5309",
+          "values": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "emissivity_output": {
+          "sha256": "30d668552e2503bf6c6d5eb20c8c8657b937bd98c4c03835e7268571f5858654",
+          "values": [
+            0.9749246020707841,
+            0.9782486844944842,
+            0.9818876122120003,
+            0.9858889082816209,
+            0.9874847941151581,
+            0.9760383497624555,
+            0.9622741456354209
+          ]
+        },
+        "gas_reference_min_max_hPa": [
+          0.0003571285505,
+          931.65625
+        ],
+        "gas_units_file_sha256": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555",
+        "independent_reconstruction_max_abs": {
+          "co2.txt": 0.0,
+          "o3.txt": 0.0,
+          "p.txt": 0.0,
+          "p_half.txt": 0.0,
+          "q.txt": 0.0,
+          "t.txt": 0.0
+        },
+        "native_interface_suffix_exact": true,
+        "native_layers": 39,
+        "native_levels_above_reference_max": 6,
+        "native_levels_below_reference_min": 0,
+        "native_pressure_suffix_exact": true,
+        "native_surface": {
+          "HGT": 0.0,
+          "Q2": 0.01901319995522499,
+          "T2": 299.3479919433594,
+          "TSK": 300.46490478515625,
+          "U10": 0.14186972379684448,
+          "V10": 4.04872989654541,
+          "latitude_deg": 35.45924758911133,
+          "longitude_deg": 122.0843505859375,
+          "seaice": 0.0,
+          "xland": 2.0
+        },
+        "pinned_assets": {
+          "case_role": "new neighbor H output",
+          "coefficient_sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+          "executable_sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+          "static_skin_sha256": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b"
+        },
+        "profiles_k": {
+          "channel_profiles": 7,
+          "fields": {
+            "CFRACTION": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "CO2": {
+              "elements": 462,
+              "max_abs": 0.0005679645125868319,
+              "nonzero": 455,
+              "records": 7
+            },
+            "CTP": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO": {
+              "elements": 3696,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO_DEFF": {
+              "elements": 3234,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO_FRAC": {
+              "elements": 462,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO_FRAC_EFF": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%Q2M": {
+              "elements": 7,
+              "max_abs": 2.363852163143311e-06,
+              "nonzero": 7,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%T2M": {
+              "elements": 7,
+              "max_abs": 0.01092030624148799,
+              "nonzero": 7,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%WIND_FETCH": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%WIND_U10M": {
+              "elements": 7,
+              "max_abs": 5.688069996018666e-05,
+              "nonzero": 7,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%WIND_V10M": {
+              "elements": 7,
+              "max_abs": 0.0016232790325636606,
+              "nonzero": 7,
+              "records": 7
+            },
+            "O3": {
+              "elements": 462,
+              "max_abs": 3.8366287595772355,
+              "nonzero": 455,
+              "records": 7
+            },
+            "P": {
+              "elements": 462,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "P_HALF": {
+              "elements": 469,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "Q": {
+              "elements": 462,
+              "max_abs": 0.0030016719152550315,
+              "nonzero": 462,
+              "records": 7
+            },
+            "SKIN( 1)%FASTEM": {
+              "elements": 35,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "SKIN( 1)%FOAM_FRACTION": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "SKIN( 1)%SALINITY": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "SKIN( 1)%T": {
+              "elements": 7,
+              "max_abs": 0.5560777964357042,
+              "nonzero": 7,
+              "records": 7
+            },
+            "T": {
+              "elements": 462,
+              "max_abs": 0.08972570316789798,
+              "nonzero": 462,
+              "records": 7
+            }
+          },
+          "sha256": "637774370e886e78222794c3ea4253587644c2c18a660c19adc014df37ba770c"
+        },
+        "reference_layers": 27,
+        "selected_rttov_namelist": {
+          "defn%do_direct": ".TRUE.",
+          "defn%do_k": ".TRUE.",
+          "defn%nchannels": "7",
+          "defn%nlevels": "67",
+          "defn%opts%rt_all%solar": ".FALSE.",
+          "defn%run_gas_units": "2"
+        },
+        "surface_rounding_differences": {
+          "Q2_ppmv": 2.661217877175659e-07,
+          "T2": 5.664060154231265e-08,
+          "TSK": 2.14843737467163e-07,
+          "U10": 2.762031555136879e-07,
+          "V10": 1.0345458978378019e-07
+        }
+      },
+      {
+        "active_profiles": {
+          "co2.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "2c59387cdf3de5fd4300339a8599c6149df2802949b27ffc5b95bbccf4fd8cfa"
+          },
+          "o3.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "142ec3324b9b22fcd293c98c61a8d84629fee9b27eb39244094484857f2351ce"
+          },
+          "p.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "6ca6331249b73d7cb6b8a651b962ad7fabe326ff8c1f08e9fd057f5566754de7"
+          },
+          "p_half.txt": {
+            "length": 67,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "a0c0c4a4382da9b52cca9d0bb216e5b4fe95a93fcea2dbe854a5ca7ebbd047b5"
+          },
+          "q.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "d110ac88361e9f8a4619844a28dbde475289e82f5f6bb7d0650bd1b59df0da9c"
+          },
+          "t.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "9569057d72c920e4b62887f491672ef3c463d9ad2a776bcabeefbc760ce12eb0"
+          }
+        },
+        "actual_near_surface_file": {
+          "q2m": 29700.823924,
+          "t2m": 299.385956,
+          "wind_fetch": 0.0,
+          "wind_u10m": 0.295463,
+          "wind_v10m": 4.102166
+        },
+        "actual_skin_file": {
+          "fastem(1)": 3.0,
+          "fastem(2)": 5.0,
+          "fastem(3)": 15.0,
+          "fastem(4)": 0.1,
+          "fastem(5)": 0.3,
+          "foam_fraction": 0.0,
+          "salinity": 35.0,
+          "snow_fraction": 0.0,
+          "surftype": 1.0,
+          "t": 300.560486,
+          "watertype": 1.0
+        },
+        "case_id": "frame1_j87_i48_fixed_AMI_geometry",
+        "cell_j_i": [
+          87,
+          48
+        ],
+        "channels": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "diffuse_reflectance_k": {
+          "elements": 7,
+          "nonzero": 0,
+          "sha256": "32ce7fcd73d5346118e979e4e43f904812a77e7da4e4e11ec301b92ed3d0513c",
+          "values": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "emissivity_k": {
+          "elements": 7,
+          "nonzero": 0,
+          "sha256": "17ef08a3d8da0a85eab22aaa8cb41ab33d83ae895fef3cc926ef6097502b5309",
+          "values": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "emissivity_output": {
+          "sha256": "41ba85020209a30094da6277e69afc3042f69dd3b4a7deca18d13606cb20034b",
+          "values": [
+            0.9749199393279407,
+            0.97824989999365,
+            0.98188800550524,
+            0.9858865455108078,
+            0.987489191346511,
+            0.976051336166595,
+            0.9622852089210636
+          ]
+        },
+        "gas_reference_min_max_hPa": [
+          0.0003571285505,
+          931.65625
+        ],
+        "gas_units_file_sha256": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555",
+        "independent_reconstruction_max_abs": {
+          "co2.txt": 0.0,
+          "o3.txt": 0.0,
+          "p.txt": 0.0,
+          "p_half.txt": 0.0,
+          "q.txt": 0.0,
+          "t.txt": 0.0
+        },
+        "native_interface_suffix_exact": true,
+        "native_layers": 39,
+        "native_levels_above_reference_max": 6,
+        "native_levels_below_reference_min": 0,
+        "native_pressure_suffix_exact": true,
+        "native_surface": {
+          "HGT": 0.0,
+          "Q2": 0.019038591533899307,
+          "T2": 299.3859558105469,
+          "TSK": 300.56048583984375,
+          "U10": 0.2954627275466919,
+          "V10": 4.102165699005127,
+          "latitude_deg": 35.46147918701172,
+          "longitude_deg": 122.14059448242188,
+          "seaice": 0.0,
+          "xland": 2.0
+        },
+        "pinned_assets": {
+          "case_role": "new neighbor H output",
+          "coefficient_sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+          "executable_sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+          "static_skin_sha256": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b"
+        },
+        "profiles_k": {
+          "channel_profiles": 7,
+          "fields": {
+            "CFRACTION": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "CO2": {
+              "elements": 462,
+              "max_abs": 0.0005683619756651727,
+              "nonzero": 455,
+              "records": 7
+            },
+            "CTP": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO": {
+              "elements": 3696,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO_DEFF": {
+              "elements": 3234,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO_FRAC": {
+              "elements": 462,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO_FRAC_EFF": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%Q2M": {
+              "elements": 7,
+              "max_abs": 2.4788641634805983e-06,
+              "nonzero": 7,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%T2M": {
+              "elements": 7,
+              "max_abs": 0.010950541915785575,
+              "nonzero": 7,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%WIND_FETCH": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%WIND_U10M": {
+              "elements": 7,
+              "max_abs": 0.00011663030389812734,
+              "nonzero": 7,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%WIND_V10M": {
+              "elements": 7,
+              "max_abs": 0.0016192784450864085,
+              "nonzero": 7,
+              "records": 7
+            },
+            "O3": {
+              "elements": 462,
+              "max_abs": 3.845015632356228,
+              "nonzero": 455,
+              "records": 7
+            },
+            "P": {
+              "elements": 462,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "P_HALF": {
+              "elements": 469,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "Q": {
+              "elements": 462,
+              "max_abs": 0.0031062068288992013,
+              "nonzero": 462,
+              "records": 7
+            },
+            "SKIN( 1)%FASTEM": {
+              "elements": 35,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "SKIN( 1)%FOAM_FRACTION": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "SKIN( 1)%SALINITY": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "SKIN( 1)%T": {
+              "elements": 7,
+              "max_abs": 0.5564253678578247,
+              "nonzero": 7,
+              "records": 7
+            },
+            "T": {
+              "elements": 462,
+              "max_abs": 0.09167755982488457,
+              "nonzero": 462,
+              "records": 7
+            }
+          },
+          "sha256": "43a624d9da21dfb73fa266236796a8940575fcd645b980a6c0ba20fb96591734"
+        },
+        "reference_layers": 27,
+        "selected_rttov_namelist": {
+          "defn%do_direct": ".TRUE.",
+          "defn%do_k": ".TRUE.",
+          "defn%nchannels": "7",
+          "defn%nlevels": "67",
+          "defn%opts%rt_all%solar": ".FALSE.",
+          "defn%run_gas_units": "2"
+        },
+        "surface_rounding_differences": {
+          "Q2_ppmv": 4.5872366172261536e-07,
+          "T2": 1.8945314650409273e-07,
+          "TSK": 1.6015627579690772e-07,
+          "U10": 2.72453308081122e-07,
+          "V10": 3.009948734700174e-07
+        }
+      },
+      {
+        "active_profiles": {
+          "co2.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "3d3f67e89d6f6fcf519c577f40738f0050d7900e97a3709985a5d720c6ecfce6"
+          },
+          "o3.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "290a823c245f3acc6693705de95c77954269df8abf2cefd6057337e1cda6ad4d"
+          },
+          "p.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "09404b96282d63d8958d2fda96174e5c6ffb79427cc9d28e7e5d4dab3d86bb30"
+          },
+          "p_half.txt": {
+            "length": 67,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "3a74906c906140a9635fa194cc81f50a2fcb7ee179222cf38df292803f7f8163"
+          },
+          "q.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "077da45fe7c0d53d8bd07feeefe5f6c44af20cb683e2a43829b5edcc28755c44"
+          },
+          "t.txt": {
+            "length": 66,
+            "max_abs_diff_from_archive": 0.0,
+            "sha256": "3cf8c16bfe9e0439ca462c279a9cb61b32d11ea421faa135d8864a47599c83f2"
+          }
+        },
+        "actual_near_surface_file": {
+          "q2m": 29733.954536,
+          "t2m": 299.415497,
+          "wind_fetch": 0.0,
+          "wind_u10m": 0.443392,
+          "wind_v10m": 4.163875
+        },
+        "actual_skin_file": {
+          "fastem(1)": 3.0,
+          "fastem(2)": 5.0,
+          "fastem(3)": 15.0,
+          "fastem(4)": 0.1,
+          "fastem(5)": 0.3,
+          "foam_fraction": 0.0,
+          "salinity": 35.0,
+          "snow_fraction": 0.0,
+          "surftype": 1.0,
+          "t": 300.609894,
+          "watertype": 1.0
+        },
+        "case_id": "frame1_j87_i49_fixed_AMI_geometry",
+        "cell_j_i": [
+          87,
+          49
+        ],
+        "channels": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "diffuse_reflectance_k": {
+          "elements": 7,
+          "nonzero": 0,
+          "sha256": "32ce7fcd73d5346118e979e4e43f904812a77e7da4e4e11ec301b92ed3d0513c",
+          "values": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "emissivity_k": {
+          "elements": 7,
+          "nonzero": 0,
+          "sha256": "17ef08a3d8da0a85eab22aaa8cb41ab33d83ae895fef3cc926ef6097502b5309",
+          "values": [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "emissivity_output": {
+          "sha256": "6fa96961a8b145a53649fe832d5e50ce6305332a64fbc4886100d9f6c5c123eb",
+          "values": [
+            0.9749137394935138,
+            0.9782468423571473,
+            0.981884697227907,
+            0.9858820895144487,
+            0.9874881654580017,
+            0.9760527736378389,
+            0.9622850239456506
+          ]
+        },
+        "gas_reference_min_max_hPa": [
+          0.0003571285505,
+          931.65625
+        ],
+        "gas_units_file_sha256": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555",
+        "independent_reconstruction_max_abs": {
+          "co2.txt": 0.0,
+          "o3.txt": 0.0,
+          "p.txt": 0.0,
+          "p_half.txt": 0.0,
+          "q.txt": 0.0,
+          "t.txt": 0.0
+        },
+        "native_interface_suffix_exact": true,
+        "native_layers": 39,
+        "native_levels_above_reference_max": 6,
+        "native_levels_below_reference_min": 0,
+        "native_pressure_suffix_exact": true,
+        "native_surface": {
+          "HGT": 0.0,
+          "Q2": 0.01906047947704792,
+          "T2": 299.4154968261719,
+          "TSK": 300.6098937988281,
+          "U10": 0.44339194893836975,
+          "V10": 4.163875102996826,
+          "latitude_deg": 35.46367645263672,
+          "longitude_deg": 122.19686889648438,
+          "seaice": 0.0,
+          "xland": 2.0
+        },
+        "pinned_assets": {
+          "case_role": "new neighbor H output",
+          "coefficient_sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+          "executable_sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+          "static_skin_sha256": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b"
+        },
+        "profiles_k": {
+          "channel_profiles": 7,
+          "fields": {
+            "CFRACTION": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "CO2": {
+              "elements": 462,
+              "max_abs": 0.00056851724741122,
+              "nonzero": 455,
+              "records": 7
+            },
+            "CTP": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO": {
+              "elements": 3696,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO_DEFF": {
+              "elements": 3234,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO_FRAC": {
+              "elements": 462,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "HYDRO_FRAC_EFF": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%Q2M": {
+              "elements": 7,
+              "max_abs": 2.5159675342200404e-06,
+              "nonzero": 7,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%T2M": {
+              "elements": 7,
+              "max_abs": 0.010951982064994127,
+              "nonzero": 7,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%WIND_FETCH": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%WIND_U10M": {
+              "elements": 7,
+              "max_abs": 0.00017116664909508787,
+              "nonzero": 7,
+              "records": 7
+            },
+            "NEAR_SURFACE( 1)%WIND_V10M": {
+              "elements": 7,
+              "max_abs": 0.0016074185619064146,
+              "nonzero": 7,
+              "records": 7
+            },
+            "O3": {
+              "elements": 462,
+              "max_abs": 3.850842659160248,
+              "nonzero": 455,
+              "records": 7
+            },
+            "P": {
+              "elements": 462,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "P_HALF": {
+              "elements": 469,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "Q": {
+              "elements": 462,
+              "max_abs": 0.003195527707380719,
+              "nonzero": 462,
+              "records": 7
+            },
+            "SKIN( 1)%FASTEM": {
+              "elements": 35,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "SKIN( 1)%FOAM_FRACTION": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "SKIN( 1)%SALINITY": {
+              "elements": 7,
+              "max_abs": 0.0,
+              "nonzero": 0,
+              "records": 7
+            },
+            "SKIN( 1)%T": {
+              "elements": 7,
+              "max_abs": 0.5560088986365571,
+              "nonzero": 7,
+              "records": 7
+            },
+            "T": {
+              "elements": 462,
+              "max_abs": 0.09361206770855458,
+              "nonzero": 462,
+              "records": 7
+            }
+          },
+          "sha256": "1bf5aa0c9e57e49db0ae2129a5b35702acec8fed28b2568ae7ebd39a487b342d"
+        },
+        "reference_layers": 27,
+        "selected_rttov_namelist": {
+          "defn%do_direct": ".TRUE.",
+          "defn%do_k": ".TRUE.",
+          "defn%nchannels": "7",
+          "defn%nlevels": "67",
+          "defn%opts%rt_all%solar": ".FALSE.",
+          "defn%run_gas_units": "2"
+        },
+        "surface_rounding_differences": {
+          "Q2_ppmv": 1.4454417396336794e-07,
+          "T2": 1.7382814121447154e-07,
+          "TSK": 2.011718720495992e-07,
+          "U10": 5.106163025736521e-08,
+          "V10": 1.0299682617898043e-07
+        }
+      }
+    ],
+    "qv_convention": "dry mixing ratio kg/kg converted to RTTOV moist-air ppmv",
+    "reference_fixture": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rttov_test/tests.1.gfortran-openmp/ami/cloud/in/profiles/001/atm",
+    "reference_layers_used_above_native_top": 27,
+    "reference_pressure_range_hPa": [
+      0.0003571285505,
+      931.65625
+    ],
+    "source_fixture_grid": {
+      "interfaces": 70,
+      "layers": 69
+    }
+  },
+  "schema": "pr400_fixed_input_compatibility_audit_v1",
+  "sensor_compatibility_context": {
+    "available": true,
+    "channel_scope": "Of channels 10-16, the NMSC calibration rows and RTTOV center wavenumbers align for channels 10-15. Channel 16 IR133 is the sole v3.0/v3.1 row change and sole center-wavenumber mismatch: LA metadata/calibration tuple is v3.0, while RTTOV uses the v3.1 shifted center and its shifted KMA SRF metadata. The three Teff-to-BT coefficient differences are from the official NMSC workbook comparison.",
+    "pixel_bt_recomputed": false,
+    "report_sha256": "cf562a445083546029a210a773547c06fc25defe5cc0093d684bbea03935e175",
+    "result_sha256": "77b759b48f7e4c5537fb1dc0d895bf98dfdd1ed7cb27b770fac3fd3903a4d8e8",
+    "status": "IR133_COMPATIBILITY_MISMATCH_IN_DECLARED_CALIBRATION_TUPLE; UPSTREAM_LA_SRF_PAYLOAD_UNVERIFIED",
+    "upstream_la_srf_payload_verified": false
+  },
+  "source_hashes": {
+    "PR395_writer": "a2de00ae0d9b546fa713ad795f7f934eb162f7014e47f6b75d24c45f47b2be16",
+    "PR399_archive_npz": "4e2c36075e69d000bff48db8b2586ff1378adda3297508c58caa72b092e1c793",
+    "RTTOV_coefficient": {
+      "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+      "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5"
+    },
+    "RTTOV_executable": {
+      "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+      "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+    },
+    "driver": "1ab829a94daa80c211984f7ddfbbe9bb825aa859a44bdc5aa83645368459e947",
+    "driver_matches_executed_sha": true,
+    "intake_json": "375a89e7ea2194171a77d6f089ef46de79ae71f97306512afd98a4891647cfbe",
+    "intake_npz": "2873368d7967fbf41861c92e73a9cd0332186496e9b00192da0b5189288f8194",
+    "native_npz": "947c72c12ebe289b7ddc84fba1281635d77ffbcfe23f204345cc97abeebc1c21",
+    "plan": "5451176d914b5758ffc6315f08a957ae0b6f6ae38019df38faa5b4e58c086afb",
+    "postrun": "f8e3c941f57dc39faa72dc7b7c10bec2c4dfe5cdc2a458bfbf65d61da4c0636b",
+    "profile_reader": "408bab9756c6ac1a6e8438b8469c87f41fa239ce75414cd8087d10b6a31d54c1",
+    "reference_files": {
+      "co2": "1f2fa0ab7945f5d642cbc3fa54c64c9b7af0867a55e3451555e3a972afece9df",
+      "o3": "9e34e3d23760e51c980f8a74b221ddfde829b2d6ea88f979e7fefa2895483ad7",
+      "p_half": "4836e1a4726c4f5574fc77812bc2a6ddc2fe9bf74461c4d1fe6ddc641d8d263d",
+      "q": "d0ababfea9c62b2860d7e4abfd6f0f11a7b5e53fe23273221b6a3aeb94c85268",
+      "t": "0777e1ae6390e4c21658e79cb62086d9b15387aca90a8ee90affcda9cfdaf4cd"
+    },
+    "reference_files_match_PR395_intake_receipt": true,
+    "result": "2bf488dca1a39f5c8d6fc19fd299a5a4de2560cfa083b98dc0bafd133f150422"
+  },
+  "status": "READ_ONLY_FIXED_INPUT_AUDIT_COMPLETE",
+  "surface_contract": {
+    "actual_emissivity_output_range": [
+      0.9622741456354209,
+      0.9874942746727483
+    ],
+    "all_cells_xland_2_seaice_0": true,
+    "dynamic_RTTOV_surface_fields": [
+      "TSK",
+      "T2",
+      "Q2",
+      "U10",
+      "V10"
+    ],
+    "dynamic_q2_conversion": "dry mixing ratio to RTTOV moist-air ppmv with gas_units=2",
+    "emissivity_is_RTTOV_output_not_external_validation": true,
+    "fixed_skin_parameters": {
+      "fastem(1)": 3.0,
+      "fastem(2)": 5.0,
+      "fastem(3)": 15.0,
+      "fastem(4)": 0.1,
+      "fastem(5)": 0.3,
+      "foam_fraction": 0.0,
+      "salinity": 35.0,
+      "snow_fraction": 0.0,
+      "surftype": 1.0,
+      "watertype": 1.0
+    },
+    "geometry": "one fixed AMI candidate geometry reused across all nine columns; HGT was not varied per neighbor in that fixed geometry",
+    "max_surface_rounding_differences": {
+      "Q2_ppmv": 4.5872366172261536e-07,
+      "T2": 4.2578125203363015e-07,
+      "TSK": 4.902343562207534e-07,
+      "U10": 4.920387268181337e-07,
+      "V10": 4.5281982430367407e-07
+    },
+    "native_context_fields": [
+      "HGT",
+      "xland",
+      "seaice"
+    ],
+    "options": {
+      "ir_sea_emis_model": 2,
+      "lambertian": false,
+      "mw_sea_emis_model": 3,
+      "solar": false,
+      "use_foam_fraction": false,
+      "use_tskin_eff": false
+    },
+    "wind_fetch_m": 0.0
+  }
+}

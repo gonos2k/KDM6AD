@@ -1,0 +1,35 @@
+{
+  "python": "3.10.11 (main, Apr  9 2023, 15:10:32) [Clang 14.0.3 (clang-1403.0.22.14.1)]",
+  "checks": {
+    "ruff": "PASS",
+    "py_compile_3_helpers": "PASS",
+    "all_packet_json": "PASS",
+    "current_sensor_source_hash": "PASS",
+    "current_lineage_source_hash": "PASS",
+    "actual_lineage_metadata_reread": "PASS",
+    "diff_check_authored_files": "PASS; raw coefficient utility transcript excluded: hash-bound original trailing spaces and final blank line retained",
+    "final_green_red": "PASS: no blocking finding; polynomial and direct-parent claim attribution corrected",
+    "graphify_structural_and_semantic": "PASS; scoped relationships inspected; generic lineage coverage remains incomplete"
+  },
+  "executed_audits": [
+    "sensor_compatibility_audit.py: nine headers, pinned file hashes, official reference assets, coefficient metadata utility",
+    "audit_fixed_inputs.py: nine existing active cases and nine existing K outputs",
+    "audit_ic_bc_lineage.py: current IC/BC and two candidate met_em headers/Times"
+  ],
+  "calls": {
+    "native": 0,
+    "preprocessing": 0,
+    "KDM": 0,
+    "radiation_H": 0,
+    "optimizer": 0
+  },
+  "preformat_preservation": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr400_coordinator_20261010/preformat",
+  "source_sha256": {
+    "audit_fixed_inputs.py": "6e8ee35d3e477a2c5680de6d9abe0ed5158379b419aa5f09d78a91f066b31af2",
+    "audit_ic_bc_lineage.py": "ab8310f32f5c27113b568fbed8acf85e1f32147d1e92678919924c45c8eed30e",
+    "sensor_compatibility_audit.py": "d2ee4fdda2b8e9f2b9bca58857e273387ff73d317437345fcd7931d047c7b644"
+  },
+  "full_pytest": "NOT_RUN; no production physics/AD changes; public CI remains separately attributed",
+  "executed_audits_note": "Metadata audits rerun after formatting and attribution wording correction; original preformat evidence retained separately.",
+  "coef_info_metadata_only_reruns_by_coordinator": 2
+}

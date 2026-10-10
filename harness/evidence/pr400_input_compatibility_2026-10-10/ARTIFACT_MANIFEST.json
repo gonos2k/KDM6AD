@@ -1,0 +1,61 @@
+{
+  "scope": "Published PR400 packet; excludes this manifest to avoid self-reference",
+  "artifacts": {
+    "COORDINATOR_REPORT.md": {
+      "sha256": "1b9ab01eb49f8599b3105f18faf666973821a763afccad3c69084a608e688ad2",
+      "bytes": 5216
+    },
+    "FIXED_INPUTS.json": {
+      "sha256": "54beee8da30c34cc7b49589bde9d24be7270a8fb04fd01a489293d5425293318",
+      "bytes": 138042
+    },
+    "FIXED_INPUTS_RED_REVIEW.md": {
+      "sha256": "4dc07b731a283a5175b9c244dc8ab039771aed395a964694983af859248b37ac",
+      "bytes": 3878
+    },
+    "GREEN_FINAL_REVIEW.md": {
+      "sha256": "c6dc6873a9adc0aac7eae06813c272a8c6fd1bc2a8c160ab3590df5dac29e8cb",
+      "bytes": 3459
+    },
+    "IC_BC_LINEAGE.json": {
+      "sha256": "026c13fe5fec2e98633a29d4d9abc58e22002b6db81fcd74fce96e57eb2f953e",
+      "bytes": 7950
+    },
+    "RED_FINAL_REVIEW.md": {
+      "sha256": "59e4daec769dfd40fd5e2dbc55f04f4893b7355667544231920a76133fcadb16",
+      "bytes": 2844
+    },
+    "REPORT.md": {
+      "sha256": "9576a70cd3cbbfd7d3cea104de6b3c5e4c9654baf1ec39bf934b393168768900",
+      "bytes": 4852
+    },
+    "RTTOV_COEF_INFO.txt": {
+      "sha256": "ef9c896f7f26ec45650952b75ecb33abc36ec4eb0ab685525a69d5879d31e4ae",
+      "bytes": 5034
+    },
+    "SENSOR_COMPATIBILITY.json": {
+      "sha256": "77b759b48f7e4c5537fb1dc0d895bf98dfdd1ed7cb27b770fac3fd3903a4d8e8",
+      "bytes": 38572
+    },
+    "SENSOR_COMPATIBILITY_REPORT.md": {
+      "sha256": "cf562a445083546029a210a773547c06fc25defe5cc0093d684bbea03935e175",
+      "bytes": 8114
+    },
+    "VALIDATION.json": {
+      "sha256": "30a3c89059ae0424e416850285d01d736676caedd3bf151ba49c0cdd4e28bf7e",
+      "bytes": 1904
+    },
+    "audit_fixed_inputs.py": {
+      "sha256": "6e8ee35d3e477a2c5680de6d9abe0ed5158379b419aa5f09d78a91f066b31af2",
+      "bytes": 30684
+    },
+    "audit_ic_bc_lineage.py": {
+      "sha256": "ab8310f32f5c27113b568fbed8acf85e1f32147d1e92678919924c45c8eed30e",
+      "bytes": 5282
+    },
+    "sensor_compatibility_audit.py": {
+      "sha256": "d2ee4fdda2b8e9f2b9bca58857e273387ff73d317437345fcd7931d047c7b644",
+      "bytes": 21936
+    }
+  }
+}

@@ -1,0 +1,131 @@
+
+RTTOV information
+  RTTOV library version        14.1.0
+  Maximum real size            1.797693135+308
+  Maximum integer size         2147483647
+
+Coefficient file
+  Creation date                2021/05/03
+  Coefficient file version     13
+
+  Platform                     gkompsat2 -  1
+  Instrument                   ami
+  Sensor type                  ir
+  Nominal satellite height     35800.00
+  Number of channels in file   16
+  Number of channels extracted 16
+  Zeeman coefficient file?     F
+  PC compatibility?            F
+  Solar compatibility?         T
+  Separate solar fast coefs?   T
+
+  Fast model version           13
+  Number of levels             54
+  Number of gases              5
+  Gas name    # predictors # gas coefs # correction coefs
+  Mixed_gases       10           9              4
+  Water_vapour      15          14              5
+  Ozone             13          12              1
+  WV_Continuum       4           4              0
+  CO2               14          13              3
+
+  Line-By-Line information
+    LBLRTM  database DB6  IR; Gaz combinations; Exclusively for v13 predictors
+    Created at CNRM/CEMS, Christmas 2019 and June-July 2020 (HPC)
+    pascal.brunel@meteo.fr
+    Software = lblrtm_v12.8
+    Continuum = contnm.f(Revision: 31651) mt_ckd_3.2  (Aug 2017)
+    LBL data = lblrtm_v12.8/aer_v_3.6
+    Profiles = based on ECMWF_83P 2013 (marco.matricardi@ecmwf.int) revised for 1970-202x
+    PROFILES_ECMWF_83_2016_CO2VAR 3 variable gases h2o, co2, o3
+    Minor gases from ECMWF_83P 2013 (marco.matricardi@ecmwf.int) and US76
+    LbL nadir layer optical depth calculated for 25-3375cm-1 spectral interval
+    LbL calculation intervals are 25-1950cm-1 and 1850-3375cm-1
+    LbL HDF5 stored 50-3350cm-1
+    LbL HDF5 valid spectral range 75-3325cm-1
+    LbL interpolated/averaged at 0.001cm-1
+    LbL-RTTOV calculations for 14 secants
+    LbL-RTTOV spectral resolution for storage 0.10cm-1
+    LbL-RTTOV high resolution sounders, convolution at 0.001cm-1
+    LBLRTM  database DB7  VIS/NIR/SWIR; Gaz combinations; Exclusively for v13 predictors
+    Created at CNRM/CEMS, Christmas 2019 and June-July 2020 (HPC)
+    pascal.brunel@meteo.fr
+    Software = lblrtm_v12.8
+    Continuum = contnm.f(Revision: 31651) mt_ckd_3.2  (Aug 2017)
+    LBL data = lblrtm_v12.8/aer_v_3.6
+    Profiles = based on ECMWF_83P 2013 (marco.matricardi@ecmwf.int) revised for 1970-202x
+    PROFILES_ECMWF_83_2016_CO2VAR 3 variable gases h2o, co2, o3
+    Minor gases from ECMWF_83P 2013 (marco.matricardi@ecmwf.int) and US76
+    LbL nadir layer optical depth calculated for 25-3375cm-1 spectral interval
+    LbL NO Rayleigh absorption
+    LbL calculation intervals are 1950-3850, 3750-5750, 5650-7650 ... 24650-25550cm-1
+    LbL HDF5 stored 1975-25525cm-1
+    LbL HDF5 valid spectral range 2000-25500cm-1
+    LbL interpolated/averaged at 0.01cm-1
+    LbL-RTTOV calculations for 14 secants
+    LbL-RTTOV spectral resolution for storage 1.0cm-1
+
+  Spectral Response Function information
+    README file for GeoKOMPSAT-2A AMI instrument
+    27/04/2021
+    P. Roquet
+    
+    Information about AMI on board GK-2A satellite was
+    provided by Chu-Yong Chung on June 26, 2019
+    and on September, 16 2019 by email.
+    We received an updated version of the SRFs and Central Wavelength
+    from Eunha Sohn from KMA on February 2, 2021 by email.
+    
+    Files provided:
+    20191115_gk-2a ami calibration table_v3.1_ir133_srf_shift.xlsx
+    srf.zip
+    
+    Nominal central wavelength (microns) from file
+    20191115_gk-2a ami calibration table_v3.1_ir133_srf_shift.xlsx:
+    
+    Band1   0.4702
+    Band2   0.5086
+    Band3   0.6394
+    Band4   0.8630
+    Band5   1.3740
+    Band6   1.6092
+    
+    append_coef: Following is taken from rtcoef_gkompsat2_1_ami-ir.H5:
+        Information about AMI on board GK-2A satellite had been
+        provided by Chu-Yong Chung on June 26 , 2019
+        and on September, 16 2019 by email
+        Channel	Center Wavenumber (cm-1)
+        (from file 20191115_gk-2a ami calibration table_v3.1_ir133_srf_shift.xlsx):
+        IR3.8	2612.677373521110
+        IR6.3	1617.609242531340
+        IR6.9	1441.575428760170
+        IR7.3	1365.249992024440
+        IR8.7	1164.949392856340
+        IR9.6	1039.960216776110
+        IR10.5	966.153383926055
+        IR11.2	891.713057301260
+        IR12.3	810.609007871230
+        IR13.3	752.792487755131
+        Band corrections A B computed by RTTOV.
+
+  SSIREM model version 1
+  IREMIS model version 1
+
+  Thermal/Solar and Planck-weighted flags
+      1 21267.546 cm-1    sol 
+      2 19661.817 cm-1    sol 
+      3 15639.662 cm-1    sol 
+      4 11587.486 cm-1    sol 
+      5  7278.020 cm-1    sol 
+      6  6214.268 cm-1    sol 
+      7  2612.677 cm-1  th+sol pw 
+      8  1617.609 cm-1    th   pw 
+      9  1441.575 cm-1    th   pw 
+     10  1365.250 cm-1    th   pw 
+     11  1164.949 cm-1    th  
+     12  1039.960 cm-1    th   pw 
+     13   966.153 cm-1    th  
+     14   891.713 cm-1    th  
+     15   810.609 cm-1    th  
+     16   752.792 cm-1    th  
+
