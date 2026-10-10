@@ -38,7 +38,7 @@ gradients in control space, including prior and CVT/log-parameter chain terms;
 they are not RTTOV H-adjoint norms.
 
 The helper pins this run to `obs_time=1`, one 20-second forcing, three optimizer
-iterations, seven AMI channels, observation sigma/bias `1/0 K`, state priors
+iterations as an upper bound (`max_iter=3`), seven AMI channels, observation sigma/bias `1/0 K`, state priors
 `0.8 K` and `0.08` log-qv over the lowest 12 levels, inactive parameters,
 zero-initialized control, `ncmin_land=ncmin_sea=10`, and exactly one final
 accepted-state audit. The observer wraps the original PyTorch LBFGS instance's
@@ -74,3 +74,12 @@ a state checkpoint. A synthetic quadratic compares the observed original
 LBFGS step with an unobserved step for exact value/gradient and counter parity.
 These checks do not execute the native model, RTTOV, or the single-column
 analysis.
+
+The actual run in PR397 used the preserved PR396 producer. Its callback
+spelled the final observations `fixed_mask`/`BT_K`, while the old private writer
+looked for `mask`/`bt`; the original NPZ omitted those two arrays although its
+public receipt kept them. The current producer accepts both spellings and the
+roundtrip fixture now uses the production event schema. The original checkpoint
+and receipt were not rewritten; a separately identified local sidecar derives
+the missing observations from the hash-bound accepted callback with no H/M call.
+See [actual results](../pr397_actual_native_results_2026-10-10/REPORT.md).

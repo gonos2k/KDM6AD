@@ -1,0 +1,24 @@
+{
+  "run_id": "mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148",
+  "run_dir": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/runs/mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148",
+  "launcher_exit_code_file": 0,
+  "experiment_valid_receipt": {
+    "experiment_valid": true,
+    "invalid_reasons": [],
+    "requested_proc_grid": null,
+    "actual_proc_grid": "1x1",
+    "active_input_identity_complete": true,
+    "exit_code": 0,
+    "model_completed": true
+  },
+  "run_identity_sha256": "76cfe2c195797da0266468b6a099d54809da4852d5c969b93fc2071a8473fae0",
+  "experiment_valid_sha256": "33894032feeb096dc1a2f886d72374549ada56e682e2695db5943eb5849d51bf",
+  "mpi_finalize_calls_observed": false,
+  "outer_harness_os_exit": 120,
+  "outer_harness_exit_cause": "UNCONFIRMED; stdout/tool session was lost on daemon restart, Python cleanup I/O is a possible explanation, not a reproduced diagnosis",
+  "native_executable_source_head_is_current_main": false,
+  "native_restarted": false,
+  "consumer_attempts": 1,
+  "model_rsl_success_marker": true,
+  "science_accepted": false
+}

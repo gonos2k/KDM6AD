@@ -1,0 +1,50 @@
+{
+  "source_receipt_sha256": "c49808c0331754eeb9ab9f77a88083119d5834852281db890b2827f6acf6eeca",
+  "sigma_K": 1,
+  "bias_K": 0,
+  "channels": [
+    {
+      "ami_physical_channel": 10,
+      "model_minus_observed_initial_K": -1.0303670483500582,
+      "model_minus_observed_final_K": -1.0380108725645414,
+      "absolute_residual_change_K": 0.007643824214483175
+    },
+    {
+      "ami_physical_channel": 11,
+      "model_minus_observed_initial_K": 5.133124474817237,
+      "model_minus_observed_final_K": 5.067552875253739,
+      "absolute_residual_change_K": -0.06557159956349778
+    },
+    {
+      "ami_physical_channel": 12,
+      "model_minus_observed_initial_K": 6.989290998447245,
+      "model_minus_observed_final_K": 6.947444548695671,
+      "absolute_residual_change_K": -0.041846449751574255
+    },
+    {
+      "ami_physical_channel": 13,
+      "model_minus_observed_initial_K": 4.930225096255356,
+      "model_minus_observed_final_K": 4.856613060112352,
+      "absolute_residual_change_K": -0.07361203614300393
+    },
+    {
+      "ami_physical_channel": 14,
+      "model_minus_observed_initial_K": 4.983241202955867,
+      "model_minus_observed_final_K": 4.888845879887583,
+      "absolute_residual_change_K": -0.09439532306828369
+    },
+    {
+      "ami_physical_channel": 15,
+      "model_minus_observed_initial_K": 4.400014219837203,
+      "model_minus_observed_final_K": 4.290241663210281,
+      "absolute_residual_change_K": -0.10977255662692187
+    },
+    {
+      "ami_physical_channel": 16,
+      "model_minus_observed_initial_K": 2.6223128623929597,
+      "model_minus_observed_final_K": 2.5469075029910186,
+      "absolute_residual_change_K": -0.07540535940194104
+    }
+  ],
+  "additional_H_calls": 0
+}

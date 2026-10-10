@@ -467,12 +467,19 @@ def _private_payload(
             payload[f"rttov_config__{name}"] = _array(rttov_cfg[name]).copy()
     if slot_calls:
         final_call = slot_calls[-1]
-        if final_call.get("mask") is not None:
-            payload["final_slot_frozen_mask"] = _array(final_call["mask"]).copy()
-        if final_call.get("rad_quality") is not None:
-            payload["final_slot_rad_quality"] = _array(final_call["rad_quality"]).copy()
-        if final_call.get("bt") is not None:
-            payload["final_slot_bt_K"] = _array(final_call["bt"]).copy()
+        frozen_mask = next((final_call[name] for name in
+                            ("fixed_mask", "mask", "frozen_mask")
+                            if final_call.get(name) is not None), None)
+        rad_quality = next((final_call[name] for name in ("rad_quality", "rq")
+                            if final_call.get(name) is not None), None)
+        bt = next((final_call[name] for name in ("BT_K", "bt")
+                   if final_call.get(name) is not None), None)
+        if frozen_mask is not None:
+            payload["final_slot_frozen_mask"] = _array(frozen_mask).copy()
+        if rad_quality is not None:
+            payload["final_slot_rad_quality"] = _array(rad_quality).copy()
+        if bt is not None:
+            payload["final_slot_bt_K"] = _array(bt).copy()
     for name, values in (extra_private_arrays or {}).items():
         private_name = name if name.startswith("optimizer_state__") else f"control__{name}"
         payload[private_name] = _array(values).copy()

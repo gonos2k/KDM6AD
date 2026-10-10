@@ -1,0 +1,2060 @@
+{
+  "schema": "pr395_tq_state_capture_v1",
+  "status": "RETURNED_DIAGNOSTIC_ONLY",
+  "input_validity": {
+    "status": "VALIDATED_NATIVE_INPUT",
+    "manifest_sha256": "375a89e7ea2194171a77d6f089ef46de79ae71f97306512afd98a4891647cfbe",
+    "native_npz_sha256": "2873368d7967fbf41861c92e73a9cd0332186496e9b00192da0b5189288f8194",
+    "native_run_exit_code": 0,
+    "actual_saved_times": [
+      "2025-07-19_05:55:40",
+      "2025-07-19_05:56:00",
+      "2025-07-19_05:56:20",
+      "2025-07-19_05:56:40",
+      "2025-07-19_05:57:00",
+      "2025-07-19_05:57:20",
+      "2025-07-19_05:57:40",
+      "2025-07-19_05:58:00"
+    ]
+  },
+  "numerical_return": {
+    "status": "RETURNED",
+    "minimizer_returned_state": true,
+    "final_accepted_state_audit_callback": true
+  },
+  "physical_matchup_and_science_acceptance": {
+    "status": "NOT_ASSESSED",
+    "pixel_time_verified": false,
+    "science_accepted": false,
+    "note": "nominal model slot evaluation does not certify pixel-time matchup or scientific acceptance"
+  },
+  "minimizer_returned_state": true,
+  "valid_native_analysis_published": false,
+  "optimization": {
+    "constructor_calls": 1,
+    "step_calls": 1,
+    "step_returned": true,
+    "termination_status": "UNKNOWN",
+    "torch_version": "2.13.0",
+    "step_implementation_sha256": "7d1dd4afcf631b9a90cb03b72f52ea510674b70f4e4bc0fc0a50fe20dda94ab0",
+    "termination_reason": "NOT_EXPOSED_BY_PYTORCH_LBFGS",
+    "step_original_loss_returned": 26.588575903055926,
+    "actual_n_iter": 2,
+    "actual_func_evals": 3,
+    "step_t": 1,
+    "prev_loss_at_step_return": 26.472160772253215,
+    "max_iter": 3,
+    "max_eval": 3,
+    "lr": 1,
+    "history_size": 8,
+    "tolerance_grad": 1e-10,
+    "tolerance_change": 1e-09,
+    "line_search_fn": "strong_wolfe",
+    "final_audit_gradient_absmax": 7.817358308397082e-05,
+    "final_audit_gradient_within_tolerance_grad": false,
+    "state_snapshot_timing": "after original optimizer.step returned and before final accepted-state audit",
+    "state_structure": {
+      "func_evals": 3,
+      "n_iter": 2,
+      "al": [
+        {
+          "array_key": "optimizer_state__al__0"
+        },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "d": {
+        "array_key": "optimizer_state__d"
+      },
+      "t": 1,
+      "old_dirs": [
+        {
+          "array_key": "optimizer_state__old_dirs__0"
+        }
+      ],
+      "old_stps": [
+        {
+          "array_key": "optimizer_state__old_stps__0"
+        }
+      ],
+      "ro": [
+        {
+          "array_key": "optimizer_state__ro__0"
+        }
+      ],
+      "H_diag": {
+        "array_key": "optimizer_state__H_diag"
+      },
+      "prev_flat_grad": {
+        "array_key": "optimizer_state__prev_flat_grad"
+      },
+      "prev_loss": 26.472160772253215
+    },
+    "state_arrays": {
+      "optimizer_state__al__0": {
+        "shape": [
+          1
+        ],
+        "dtype": "float64",
+        "sha256_f64": "966b121219f8cfb507705f17a290b5df5dc9fd20a888a3c178548b2462da5e54",
+        "private_npz_key": "optimizer_state__al__0"
+      },
+      "optimizer_state__d": {
+        "shape": [
+          472
+        ],
+        "dtype": "float64",
+        "sha256_f64": "f95e29f45c77adf0ec8c03572c8883a4c6d1b8b78d355efdf11530e5208ed345",
+        "private_npz_key": "optimizer_state__d"
+      },
+      "optimizer_state__old_dirs__0": {
+        "shape": [
+          472
+        ],
+        "dtype": "float64",
+        "sha256_f64": "fa7180f2af4b72486188c5a8b61adea86611f0b03a6d10e87b69b15f69ee2c19",
+        "private_npz_key": "optimizer_state__old_dirs__0"
+      },
+      "optimizer_state__old_stps__0": {
+        "shape": [
+          472
+        ],
+        "dtype": "float64",
+        "sha256_f64": "463c7c1afb8003bef41209a3d29b63e79ed5e1bf22b3423ea9464121c279ab59",
+        "private_npz_key": "optimizer_state__old_stps__0"
+      },
+      "optimizer_state__ro__0": {
+        "shape": [
+          1
+        ],
+        "dtype": "float64",
+        "sha256_f64": "1c70513d1ee833d5407ba9a11ce6acf76edd77b6fcaee3e6f8ac1b0045420319",
+        "private_npz_key": "optimizer_state__ro__0"
+      },
+      "optimizer_state__H_diag": {
+        "shape": [
+          1
+        ],
+        "dtype": "float64",
+        "sha256_f64": "2e4b6caf0e0a93efdfb7bd8bcb92d9aa2ae46720c406e06877b56e7d1c33c706",
+        "private_npz_key": "optimizer_state__H_diag"
+      },
+      "optimizer_state__prev_flat_grad": {
+        "shape": [
+          472
+        ],
+        "dtype": "float64",
+        "sha256_f64": "df18b2a51efcfd6a2404c2e9312fc7fb6d46d25c50cc990b5768dabe7c4d7615",
+        "private_npz_key": "optimizer_state__prev_flat_grad"
+      }
+    },
+    "n_window_evals": 3,
+    "n_audit_evals": 1
+  },
+  "final_control_gradient": {
+    "contract": "total objective gradient in LBFGS control space after the existing final audit; includes control-prior and CVT/log-parameter chain terms, not an RTTOV H-adjoint norm",
+    "v_state_order": [
+      "th",
+      "qv",
+      "qc",
+      "qr",
+      "qi",
+      "qs",
+      "qg",
+      "nccn",
+      "nc",
+      "ni",
+      "nr",
+      "bg"
+    ],
+    "v_state_shape": [
+      12,
+      1,
+      39
+    ],
+    "v_theta_order": [
+      "peaut",
+      "ncrk1",
+      "ncrk2",
+      "eccbrk"
+    ],
+    "v_theta_shape": [
+      4
+    ],
+    "state_l2_norm": 0.00020011374514061956,
+    "state_linf_norm": 7.817358308397082e-05,
+    "theta_l2_norm": 0.0,
+    "theta_linf_norm": 0.0,
+    "combined_l2_norm": 0.00020011374514061956,
+    "combined_linf_norm": 7.817358308397082e-05,
+    "block_norms_match_minimizer_return": true,
+    "x_analysis_rederived_exactly_from_v_state_and_b_sigma": true,
+    "theta_analysis_rederived_exactly_from_v_theta_and_prior": true,
+    "array_sha256_f64": {
+      "optimizer_v_state_control": "651c9860751c9d66b6062927d8449a25525640e11d7497148ce1e0e952802c85",
+      "optimizer_v_theta_control": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925",
+      "optimizer_final_gradient_v_state": "3f1fc99c07dc2d20dea91c7689ad2d4142665d7809ba7ed94b1304410360e32b",
+      "optimizer_final_gradient_v_theta": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925",
+      "optimizer_final_gradient_combined": "b0ff7979339133a97525a4e8103bde67680394a0a2f499c8d25e839a8a7527d7",
+      "parameter_theta_background": "70cbdba9e5ffa083dda7cbca9801e2c46db97c36be48ad9cebeeb98f2d633969",
+      "parameter_sigma_log": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925",
+      "parameter_theta_analysis": "70cbdba9e5ffa083dda7cbca9801e2c46db97c36be48ad9cebeeb98f2d633969",
+      "fixed_eta_present": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+      "fixed_eta_pre_present": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+      "fixed_eta": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "fixed_eta_pre": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "arrays": {
+      "optimizer_v_state_control": {
+        "shape": [
+          12,
+          1,
+          39
+        ],
+        "dtype": "float64",
+        "sha256_f64": "651c9860751c9d66b6062927d8449a25525640e11d7497148ce1e0e952802c85",
+        "private_npz_key": "control__optimizer_v_state_control"
+      },
+      "optimizer_v_theta_control": {
+        "shape": [
+          4
+        ],
+        "dtype": "float64",
+        "sha256_f64": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925",
+        "private_npz_key": "control__optimizer_v_theta_control"
+      },
+      "optimizer_final_gradient_v_state": {
+        "shape": [
+          12,
+          1,
+          39
+        ],
+        "dtype": "float64",
+        "sha256_f64": "3f1fc99c07dc2d20dea91c7689ad2d4142665d7809ba7ed94b1304410360e32b",
+        "private_npz_key": "control__optimizer_final_gradient_v_state"
+      },
+      "optimizer_final_gradient_v_theta": {
+        "shape": [
+          4
+        ],
+        "dtype": "float64",
+        "sha256_f64": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925",
+        "private_npz_key": "control__optimizer_final_gradient_v_theta"
+      },
+      "optimizer_final_gradient_combined": {
+        "shape": [
+          472
+        ],
+        "dtype": "float64",
+        "sha256_f64": "b0ff7979339133a97525a4e8103bde67680394a0a2f499c8d25e839a8a7527d7",
+        "private_npz_key": "control__optimizer_final_gradient_combined"
+      },
+      "parameter_theta_background": {
+        "shape": [
+          4
+        ],
+        "dtype": "float64",
+        "sha256_f64": "70cbdba9e5ffa083dda7cbca9801e2c46db97c36be48ad9cebeeb98f2d633969",
+        "private_npz_key": "control__parameter_theta_background"
+      },
+      "parameter_sigma_log": {
+        "shape": [
+          4
+        ],
+        "dtype": "float64",
+        "sha256_f64": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925",
+        "private_npz_key": "control__parameter_sigma_log"
+      },
+      "parameter_theta_analysis": {
+        "shape": [
+          4
+        ],
+        "dtype": "float64",
+        "sha256_f64": "70cbdba9e5ffa083dda7cbca9801e2c46db97c36be48ad9cebeeb98f2d633969",
+        "private_npz_key": "control__parameter_theta_analysis"
+      },
+      "fixed_eta_present": {
+        "shape": [
+          1
+        ],
+        "dtype": "bool",
+        "sha256_f64": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "private_npz_key": "control__fixed_eta_present"
+      },
+      "fixed_eta_pre_present": {
+        "shape": [
+          1
+        ],
+        "dtype": "bool",
+        "sha256_f64": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "private_npz_key": "control__fixed_eta_pre_present"
+      },
+      "fixed_eta": {
+        "shape": [
+          0
+        ],
+        "dtype": "float64",
+        "sha256_f64": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "private_npz_key": "control__fixed_eta"
+      },
+      "fixed_eta_pre": {
+        "shape": [
+          0
+        ],
+        "dtype": "float64",
+        "sha256_f64": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "private_npz_key": "control__fixed_eta_pre"
+      }
+    }
+  },
+  "control_background": {
+    "b_sigma_by_state_field": {
+      "th": {
+        "shape": [
+          1,
+          39
+        ],
+        "dtype": "float64",
+        "sha256_f64": "2cb2327f3bd8a781603f68c7a923133c820e0b00b2b88f7953a49eb643cc75c7",
+        "private_npz_key": "control__b_sigma__th"
+      },
+      "qv": {
+        "shape": [
+          1,
+          39
+        ],
+        "dtype": "float64",
+        "sha256_f64": "387a78244d2c49b09c25a720212254925bf0ec15d869698c175ba5a837054813",
+        "private_npz_key": "control__b_sigma__qv"
+      },
+      "qc": {
+        "shape": [
+          1,
+          39
+        ],
+        "dtype": "float64",
+        "sha256_f64": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "private_npz_key": "control__b_sigma__qc"
+      },
+      "qr": {
+        "shape": [
+          1,
+          39
+        ],
+        "dtype": "float64",
+        "sha256_f64": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "private_npz_key": "control__b_sigma__qr"
+      },
+      "qi": {
+        "shape": [
+          1,
+          39
+        ],
+        "dtype": "float64",
+        "sha256_f64": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "private_npz_key": "control__b_sigma__qi"
+      },
+      "qs": {
+        "shape": [
+          1,
+          39
+        ],
+        "dtype": "float64",
+        "sha256_f64": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "private_npz_key": "control__b_sigma__qs"
+      },
+      "qg": {
+        "shape": [
+          1,
+          39
+        ],
+        "dtype": "float64",
+        "sha256_f64": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "private_npz_key": "control__b_sigma__qg"
+      },
+      "nccn": {
+        "shape": [
+          1,
+          39
+        ],
+        "dtype": "float64",
+        "sha256_f64": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "private_npz_key": "control__b_sigma__nccn"
+      },
+      "nc": {
+        "shape": [
+          1,
+          39
+        ],
+        "dtype": "float64",
+        "sha256_f64": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "private_npz_key": "control__b_sigma__nc"
+      },
+      "ni": {
+        "shape": [
+          1,
+          39
+        ],
+        "dtype": "float64",
+        "sha256_f64": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "private_npz_key": "control__b_sigma__ni"
+      },
+      "nr": {
+        "shape": [
+          1,
+          39
+        ],
+        "dtype": "float64",
+        "sha256_f64": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "private_npz_key": "control__b_sigma__nr"
+      },
+      "bg": {
+        "shape": [
+          1,
+          39
+        ],
+        "dtype": "float64",
+        "sha256_f64": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "private_npz_key": "control__b_sigma__bg"
+      }
+    },
+    "parameter_theta_background_sha256_f64": "70cbdba9e5ffa083dda7cbca9801e2c46db97c36be48ad9cebeeb98f2d633969",
+    "parameter_theta_background_private_npz_key": "control__parameter_theta_background",
+    "parameter_sigma_log_sha256_f64": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925",
+    "parameter_sigma_log_private_npz_key": "control__parameter_sigma_log",
+    "parameter_theta_analysis_sha256_f64": "70cbdba9e5ffa083dda7cbca9801e2c46db97c36be48ad9cebeeb98f2d633969",
+    "parameter_theta_analysis_private_npz_key": "control__parameter_theta_analysis",
+    "fixed_eta": {
+      "present": false,
+      "shape": null,
+      "sha256_f64": null,
+      "private_npz_key": "control__fixed_eta"
+    },
+    "fixed_eta_pre": {
+      "present": false,
+      "shape": null,
+      "sha256_f64": null,
+      "private_npz_key": "control__fixed_eta_pre"
+    }
+  },
+  "native_intake_context": {
+    "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr395_native_tq_intake_2026-10-10/INTAKE.json",
+    "sha256": "375a89e7ea2194171a77d6f089ef46de79ae71f97306512afd98a4891647cfbe",
+    "initial_state_sha256": {
+      "th": "1a0f2b8d66f6d64375303acec813542830ab4caf408c4a7f2622d1459dea7639",
+      "qv": "77e92e6687dd28167ee69a4df1a29036369fe8c7a19c15200458b0a78ba8770b",
+      "qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "nccn": "e08716b755ba04dd032c05c0ca3d8fbed08a5fcc9a79fb3dde215f0314d3b813",
+      "nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7"
+    },
+    "npz_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr395-native-tq-intake-2026-10-10/private/native_column_8frame.npz",
+    "npz_sha256": "2873368d7967fbf41861c92e73a9cd0332186496e9b00192da0b5189288f8194",
+    "forcing_window_0_sha256": {
+      "rho": "0c60092b5650af75738601c9698fd8ffffaec559645e0b1895f3c2df9f6a09ab",
+      "pii": "96e2a9aa9a7d4f35e454ac762ecd1fde0b435392435cde89177577931047dbd7",
+      "p": "e24684b7aaa09c1f5ff057f262c06e43da67a4a72a9277502ddd4edcc4ac2502",
+      "delz": "bc7367353592f7479e4ab6e9b383881ac86f3b5c42e7b791072dfd785db2d028"
+    },
+    "manifest_schema": "pr395_native_tq_intake_v1",
+    "manifest_status": "READY_VALID_NATIVE_INTAKE",
+    "background_time": "2025-07-19_05:55:40",
+    "expected_saved_times": [
+      "2025-07-19_05:55:40",
+      "2025-07-19_05:56:00",
+      "2025-07-19_05:56:20",
+      "2025-07-19_05:56:40",
+      "2025-07-19_05:57:00",
+      "2025-07-19_05:57:20",
+      "2025-07-19_05:57:40",
+      "2025-07-19_05:58:00"
+    ],
+    "actual_saved_times": [
+      "2025-07-19_05:55:40",
+      "2025-07-19_05:56:00",
+      "2025-07-19_05:56:20",
+      "2025-07-19_05:56:40",
+      "2025-07-19_05:57:00",
+      "2025-07-19_05:57:20",
+      "2025-07-19_05:57:40",
+      "2025-07-19_05:58:00"
+    ],
+    "selected_column": {
+      "i": 48,
+      "j": 86,
+      "levels": 39
+    },
+    "clock": {
+      "dt_s": 20,
+      "interpretation": "slot index 1 is the second exact native saved frame; center-sample nominal alignment only",
+      "nominal_slot_utc": "2025-07-19_05:56:00",
+      "obs_time": 1,
+      "pixel_time_verified": false,
+      "scenario": "A_nominal_centers_only"
+    },
+    "state_time_index_to_wrf_times": {
+      "0": "2025-07-19_05:55:40",
+      "1": "2025-07-19_05:56:00",
+      "mapping_basis": "first two exact actual_saved_times entries; slot nominal, pixel time unverified"
+    },
+    "pressure_sources": null,
+    "host_dry_mass_background": {
+      "background_npz_key": "host_dry_mass_background_kg_m2",
+      "dtype": "float32",
+      "formula": "-(C1H*(MU+MUB)+C2H)*DNW/9.81, using selected_frame's REAL(4) operations",
+      "orientation": "bottom-up native levels",
+      "provenance": "host eta-coordinate layer dry-mass measure derived from native MU/MUB/C1H/C2H/DNW; distinct from EOS rho_m*delz and not a process budget",
+      "shape": [
+        39
+      ],
+      "units": "kg dry air m-2 per native eta layer",
+      "window_npz_key": "native_window_host_dry_mass_kg_m2",
+      "source_key": "host_dry_mass_background_kg_m2",
+      "sha256_raw_dtype_bytes": "2e9989275c5855b05182d54dc070309fb6f4ce54fc52da1ce9e17259384dfc5d",
+      "window_source_key": "native_window_host_dry_mass_kg_m2",
+      "window_shape": [
+        8,
+        39
+      ],
+      "window_dtype": "float32",
+      "background_matches_window_frame_0": true
+    },
+    "science_approved": false,
+    "analysis_executed_at_intake": false
+  },
+  "host_dry_mass_background": {
+    "background_npz_key": "host_dry_mass_background_kg_m2",
+    "dtype": "float32",
+    "formula": "-(C1H*(MU+MUB)+C2H)*DNW/9.81, using selected_frame's REAL(4) operations",
+    "orientation": "bottom-up native levels",
+    "provenance": "host eta-coordinate layer dry-mass measure derived from native MU/MUB/C1H/C2H/DNW; distinct from EOS rho_m*delz and not a process budget",
+    "shape": [
+      39
+    ],
+    "units": "kg dry air m-2 per native eta layer",
+    "window_npz_key": "native_window_host_dry_mass_kg_m2",
+    "source_key": "host_dry_mass_background_kg_m2",
+    "sha256_raw_dtype_bytes": "2e9989275c5855b05182d54dc070309fb6f4ce54fc52da1ce9e17259384dfc5d",
+    "window_source_key": "native_window_host_dry_mass_kg_m2",
+    "window_shape": [
+      8,
+      39
+    ],
+    "window_dtype": "float32",
+    "background_matches_window_frame_0": true
+  },
+  "private_checkpoint": {
+    "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr395-tq-state-capture-2026-10-10/private/accepted-final-3d2e97f159.npz",
+    "sha256": "8cfe28df6ef336454cfa595cc70f7a4ddec2e5cd8cbd393c0c7ce8106c904c59",
+    "array_keys": [
+      "background_initial_state__bg",
+      "background_initial_state__nc",
+      "background_initial_state__nccn",
+      "background_initial_state__ni",
+      "background_initial_state__nr",
+      "background_initial_state__qc",
+      "background_initial_state__qg",
+      "background_initial_state__qi",
+      "background_initial_state__qr",
+      "background_initial_state__qs",
+      "background_initial_state__qv",
+      "background_initial_state__th",
+      "background_slot_state__bg",
+      "background_slot_state__nc",
+      "background_slot_state__nccn",
+      "background_slot_state__ni",
+      "background_slot_state__nr",
+      "background_slot_state__qc",
+      "background_slot_state__qg",
+      "background_slot_state__qi",
+      "background_slot_state__qr",
+      "background_slot_state__qs",
+      "background_slot_state__qv",
+      "background_slot_state__th",
+      "capture_metadata_json_utf8",
+      "control__b_sigma__bg",
+      "control__b_sigma__nc",
+      "control__b_sigma__nccn",
+      "control__b_sigma__ni",
+      "control__b_sigma__nr",
+      "control__b_sigma__qc",
+      "control__b_sigma__qg",
+      "control__b_sigma__qi",
+      "control__b_sigma__qr",
+      "control__b_sigma__qs",
+      "control__b_sigma__qv",
+      "control__b_sigma__th",
+      "control__fixed_eta",
+      "control__fixed_eta_pre",
+      "control__fixed_eta_pre_present",
+      "control__fixed_eta_present",
+      "control__optimizer_final_gradient_combined",
+      "control__optimizer_final_gradient_v_state",
+      "control__optimizer_final_gradient_v_theta",
+      "control__optimizer_v_state_control",
+      "control__optimizer_v_theta_control",
+      "control__parameter_sigma_log",
+      "control__parameter_theta_analysis",
+      "control__parameter_theta_background",
+      "exner_final_slot_native_bottomup",
+      "final_slot_forcing__delz",
+      "final_slot_forcing__p",
+      "final_slot_forcing__pii",
+      "final_slot_forcing__rho",
+      "final_slot_rad_quality",
+      "final_slot_state__bg",
+      "final_slot_state__nc",
+      "final_slot_state__nccn",
+      "final_slot_state__ni",
+      "final_slot_state__nr",
+      "final_slot_state__qc",
+      "final_slot_state__qg",
+      "final_slot_state__qi",
+      "final_slot_state__qr",
+      "final_slot_state__qs",
+      "final_slot_state__qv",
+      "final_slot_state__th",
+      "forcing_window_0__delz",
+      "forcing_window_0__p",
+      "forcing_window_0__pii",
+      "forcing_window_0__rho",
+      "host_dry_mass_background_kg_m2",
+      "native_coordinate__PHB_raw_native_bottomup",
+      "native_coordinate__PH_raw_native_bottomup",
+      "native_coordinate__native_p_centers_bottomup",
+      "native_coordinate__native_p_half_calc_p8w_bottomup_real4",
+      "native_coordinate__p_half_rttov_topdown",
+      "native_coordinate__p_lay_rttov_topdown",
+      "observation_y_bt_K",
+      "observation_y_dqf",
+      "optimizer_state__H_diag",
+      "optimizer_state__al__0",
+      "optimizer_state__d",
+      "optimizer_state__old_dirs__0",
+      "optimizer_state__old_stps__0",
+      "optimizer_state__prev_flat_grad",
+      "optimizer_state__ro__0",
+      "p_centers_native_bottomup_Pa",
+      "returned_analysis_initial_state__bg",
+      "returned_analysis_initial_state__nc",
+      "returned_analysis_initial_state__nccn",
+      "returned_analysis_initial_state__ni",
+      "returned_analysis_initial_state__nr",
+      "returned_analysis_initial_state__qc",
+      "returned_analysis_initial_state__qg",
+      "returned_analysis_initial_state__qi",
+      "returned_analysis_initial_state__qr",
+      "returned_analysis_initial_state__qs",
+      "returned_analysis_initial_state__qv",
+      "returned_analysis_initial_state__th",
+      "rho_d_native_bottomup_kg_m3",
+      "rttov_config__p_half",
+      "rttov_config__p_lay",
+      "rttov_config__q_ref",
+      "rttov_config__t_ref"
+    ],
+    "contains_full_state_arrays": true,
+    "public_receipt_contains_full_state_arrays": false
+  },
+  "production_source_sha256_before_after": {
+    "before": {
+      "oracle/kdm6/da_single_column.py": "7a827f340c1fef189c0f70b65cd60bfd2af0938091b44eed90083a0439c63038",
+      "oracle/kdm6/da_fulldomain.py": "fcd783ec9efed50fe8c3a89e11b4f162447df32c5109e79e06a5f0bf71bfa984",
+      "oracle/kdm6/da_dual.py": "57ff5a832cc6b011d394f3b462dd344cb93177cb1a81af59edcb04c040fd256e",
+      "oracle/kdm6/da_window.py": "354b7b026aac23dc93807020e45b3d5311f40725de843e71fc0a5203c6a4d50c",
+      "oracle/kdm6/da_cvt.py": "64a4826b3c6c3985a89e3d590ea61e53b1c62c3352254833c56e06a1a6099021",
+      "oracle/kdm6/da_driver.py": "1ee8f001837bc633adc58e8331628e7cc0bb7b164662d466cf5f4c1d30739f7b",
+      "oracle/kdm6/runtime.py": "e505c3a1d42fb2880d0ce3d65381488a06528de8d4133b39d4e9a573cef997ac",
+      "oracle/kdm6/coordinator.py": "05981b7a19c8d4fe262cb8080b14ddf3b4eb5c027b58604803b2e0b80764a0bd",
+      "oracle/kdm6/thermo.py": "5278c14c6d87178af5ee963eef59d3297b923fa374412fd854c01e43ffb1b5cd",
+      "oracle/kdm6/fconst.py": "c6529c9a543ad8ed0a33524114f30f5665cd9a7b6983b32a917cc39debd377f2",
+      "oracle/kdm6/rttov_bridge.py": "3c61c7fa6baa21ba294b37cdc17886c0f17979ee4adfae0af7e22154af964116",
+      "oracle/kdm6/obs/allsky_shard.py": "18a101d1946e87d08d87a182cfe547794a794a9b280c2720f874d59352813afc",
+      "oracle/kdm6/obs/model_profile_builder.py": "b9264edb61f32010c025718ad59ef686746f156e2a3c011c473943fbf82788ab",
+      "oracle/kdm6/obs/rttov_input_builder.py": "902e1554eb6e4f699d74cc770059daad847b3b35ad0dd9516d02cae35ad280a6",
+      "oracle/kdm6/obs/rttov_obs_operator.py": "d28149c211c1ccaffedcb18642e2337cc79b5cebc4b6aa8cf4c9a90978363b12",
+      "oracle/kdm6/obs/rttov_case_writer.py": "0203dbfd899996caedf2e8c94e34faabf949fabbaec1688cbda00b6e163081af",
+      "oracle/kdm6/obs/rttov_runner.py": "100e39c6f56ab5e1ccadb59f6b439ebd20255d139b5d9965063bf0ed393fa441",
+      "oracle/kdm6/obs/ami_bt_coordinate.py": "e1aec7c9270bbeff6dec9aee0f7b3fa3741528b3e060bc3aa74be721e3ac97cc",
+      "oracle/kdm6/obs/obs_loss.py": "4c39b69bf54be9929d48cc97881887f80fb1f7c9a05d68a6a6111bda1ca9d855"
+    },
+    "after": {
+      "oracle/kdm6/da_single_column.py": "7a827f340c1fef189c0f70b65cd60bfd2af0938091b44eed90083a0439c63038",
+      "oracle/kdm6/da_fulldomain.py": "fcd783ec9efed50fe8c3a89e11b4f162447df32c5109e79e06a5f0bf71bfa984",
+      "oracle/kdm6/da_dual.py": "57ff5a832cc6b011d394f3b462dd344cb93177cb1a81af59edcb04c040fd256e",
+      "oracle/kdm6/da_window.py": "354b7b026aac23dc93807020e45b3d5311f40725de843e71fc0a5203c6a4d50c",
+      "oracle/kdm6/da_cvt.py": "64a4826b3c6c3985a89e3d590ea61e53b1c62c3352254833c56e06a1a6099021",
+      "oracle/kdm6/da_driver.py": "1ee8f001837bc633adc58e8331628e7cc0bb7b164662d466cf5f4c1d30739f7b",
+      "oracle/kdm6/runtime.py": "e505c3a1d42fb2880d0ce3d65381488a06528de8d4133b39d4e9a573cef997ac",
+      "oracle/kdm6/coordinator.py": "05981b7a19c8d4fe262cb8080b14ddf3b4eb5c027b58604803b2e0b80764a0bd",
+      "oracle/kdm6/thermo.py": "5278c14c6d87178af5ee963eef59d3297b923fa374412fd854c01e43ffb1b5cd",
+      "oracle/kdm6/fconst.py": "c6529c9a543ad8ed0a33524114f30f5665cd9a7b6983b32a917cc39debd377f2",
+      "oracle/kdm6/rttov_bridge.py": "3c61c7fa6baa21ba294b37cdc17886c0f17979ee4adfae0af7e22154af964116",
+      "oracle/kdm6/obs/allsky_shard.py": "18a101d1946e87d08d87a182cfe547794a794a9b280c2720f874d59352813afc",
+      "oracle/kdm6/obs/model_profile_builder.py": "b9264edb61f32010c025718ad59ef686746f156e2a3c011c473943fbf82788ab",
+      "oracle/kdm6/obs/rttov_input_builder.py": "902e1554eb6e4f699d74cc770059daad847b3b35ad0dd9516d02cae35ad280a6",
+      "oracle/kdm6/obs/rttov_obs_operator.py": "d28149c211c1ccaffedcb18642e2337cc79b5cebc4b6aa8cf4c9a90978363b12",
+      "oracle/kdm6/obs/rttov_case_writer.py": "0203dbfd899996caedf2e8c94e34faabf949fabbaec1688cbda00b6e163081af",
+      "oracle/kdm6/obs/rttov_runner.py": "100e39c6f56ab5e1ccadb59f6b439ebd20255d139b5d9965063bf0ed393fa441",
+      "oracle/kdm6/obs/ami_bt_coordinate.py": "e1aec7c9270bbeff6dec9aee0f7b3fa3741528b3e060bc3aa74be721e3ac97cc",
+      "oracle/kdm6/obs/obs_loss.py": "4c39b69bf54be9929d48cc97881887f80fb1f7c9a05d68a6a6111bda1ca9d855"
+    },
+    "unchanged": true
+  },
+  "state_array_sha256": {
+    "background_initial": {
+      "th": "1a0f2b8d66f6d64375303acec813542830ab4caf408c4a7f2622d1459dea7639",
+      "qv": "77e92e6687dd28167ee69a4df1a29036369fe8c7a19c15200458b0a78ba8770b",
+      "qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "nccn": "e08716b755ba04dd032c05c0ca3d8fbed08a5fcc9a79fb3dde215f0314d3b813",
+      "nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7"
+    },
+    "returned_analysis_initial": {
+      "th": "465e72a64636ed0b8654ae438391749b79367019f91a60cec52965c0790a5174",
+      "qv": "c27b8184a3bad3ed4e8bfa5ec5fb3ada30fe289b5e3b91943820893ba0599f83",
+      "qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "nccn": "e08716b755ba04dd032c05c0ca3d8fbed08a5fcc9a79fb3dde215f0314d3b813",
+      "nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7"
+    },
+    "background_slot": {
+      "th": "585c0996be7c73c4375a04719f6f652dc8d60af7aabb6638840c6b0c33872573",
+      "qv": "77e92e6687dd28167ee69a4df1a29036369fe8c7a19c15200458b0a78ba8770b",
+      "qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "nccn": "e08716b755ba04dd032c05c0ca3d8fbed08a5fcc9a79fb3dde215f0314d3b813",
+      "nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7"
+    },
+    "final_slot": {
+      "th": "a70bc65ac42db25f7bfd2f5e178ee0459a6c12ff35d9816176657cce8bd08ca1",
+      "qv": "c27b8184a3bad3ed4e8bfa5ec5fb3ada30fe289b5e3b91943820893ba0599f83",
+      "qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "nccn": "e08716b755ba04dd032c05c0ca3d8fbed08a5fcc9a79fb3dde215f0314d3b813",
+      "nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7"
+    }
+  },
+  "forcing_array_sha256": {
+    "forcing_window": [
+      {
+        "rho": "0c60092b5650af75738601c9698fd8ffffaec559645e0b1895f3c2df9f6a09ab",
+        "pii": "96e2a9aa9a7d4f35e454ac762ecd1fde0b435392435cde89177577931047dbd7",
+        "p": "e24684b7aaa09c1f5ff057f262c06e43da67a4a72a9277502ddd4edcc4ac2502",
+        "delz": "bc7367353592f7479e4ab6e9b383881ac86f3b5c42e7b791072dfd785db2d028"
+      }
+    ],
+    "background_slot": {
+      "rho": "0c60092b5650af75738601c9698fd8ffffaec559645e0b1895f3c2df9f6a09ab",
+      "pii": "96e2a9aa9a7d4f35e454ac762ecd1fde0b435392435cde89177577931047dbd7",
+      "p": "e24684b7aaa09c1f5ff057f262c06e43da67a4a72a9277502ddd4edcc4ac2502",
+      "delz": "bc7367353592f7479e4ab6e9b383881ac86f3b5c42e7b791072dfd785db2d028"
+    },
+    "final_slot": {
+      "rho": "0c60092b5650af75738601c9698fd8ffffaec559645e0b1895f3c2df9f6a09ab",
+      "pii": "96e2a9aa9a7d4f35e454ac762ecd1fde0b435392435cde89177577931047dbd7",
+      "p": "e24684b7aaa09c1f5ff057f262c06e43da67a4a72a9277502ddd4edcc4ac2502",
+      "delz": "bc7367353592f7479e4ab6e9b383881ac86f3b5c42e7b791072dfd785db2d028"
+    }
+  },
+  "native_coordinate_arrays": {
+    "native_p_centers_bottomup": {
+      "units": "Pa",
+      "orientation": "bottom-up",
+      "source": "float64-first P+PB center pressure",
+      "shape": [
+        39
+      ],
+      "dtype": "float64",
+      "sha256": "e24684b7aaa09c1f5ff057f262c06e43da67a4a72a9277502ddd4edcc4ac2502"
+    },
+    "native_p_half_calc_p8w_bottomup_real4": {
+      "units": "Pa",
+      "orientation": "bottom-up",
+      "source": "REAL(4)-transcribed calc_p8w; distinct from raw PH/PHB",
+      "shape": [
+        40
+      ],
+      "dtype": "float32",
+      "sha256": "b15f3960d3720d9bc0d08efff8db47f96c54baa5869e61ccf2d2aefe20025b02"
+    },
+    "PH_raw_native_bottomup": {
+      "units": "m2 s-2",
+      "orientation": "bottom-up",
+      "source": "raw WRF geopotential PH; not pressure",
+      "shape": [
+        40
+      ],
+      "dtype": "float32",
+      "sha256": "ea7ab32de4d29d85ec4f837d1f603892d59d98b76328ffaddab177e39352fc3d"
+    },
+    "PHB_raw_native_bottomup": {
+      "units": "m2 s-2",
+      "orientation": "bottom-up",
+      "source": "raw WRF base-state geopotential PHB; not pressure",
+      "shape": [
+        40
+      ],
+      "dtype": "float32",
+      "sha256": "172d35b439ac8ca52ac6057e3a04a97ad1ee0d37414a96c34acd3ee816e05992"
+    },
+    "p_lay_rttov_topdown": {
+      "units": "hPa",
+      "orientation": "top-down",
+      "source": "RTTOV layer grid",
+      "shape": [
+        66
+      ],
+      "dtype": "float64",
+      "sha256": "276b5b1ab9404ccdbf6e172e45d508f74c3b7c04c7cf11ee9495a4fb08fc0006"
+    },
+    "p_half_rttov_topdown": {
+      "units": "hPa",
+      "orientation": "top-down",
+      "source": "RTTOV interface grid",
+      "shape": [
+        67
+      ],
+      "dtype": "float64",
+      "sha256": "33c3927023b867e61d2f3ccda9501bad634ca4b55e674324e6e04ae8f241e259"
+    }
+  },
+  "actual_h_configuration": {
+    "channels": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "coef_id": "paired-case_00-GK2A-AMI",
+    "fixture_case_dir": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr395-native-tq-analysis-2026-10-10/run-3d2e97f159/rttov_fixture",
+    "p_lay": {
+      "shape": [
+        66
+      ],
+      "dtype": "float64",
+      "sha256_f64": "276b5b1ab9404ccdbf6e172e45d508f74c3b7c04c7cf11ee9495a4fb08fc0006"
+    },
+    "p_half": {
+      "shape": [
+        67
+      ],
+      "dtype": "float64",
+      "sha256_f64": "33c3927023b867e61d2f3ccda9501bad634ca4b55e674324e6e04ae8f241e259"
+    },
+    "t_ref": {
+      "shape": [
+        66
+      ],
+      "dtype": "float64",
+      "sha256_f64": "b7add1244e625361d42f34dd4a01e3efd09a00c8dade23f1b2ad37a6eda99ffc"
+    },
+    "q_ref": {
+      "shape": [
+        66
+      ],
+      "dtype": "float64",
+      "sha256_f64": "03e7099fcc6f5ad08cc27f3dd06abc712db0d5fcc002f7333fd5bdd4a1f30a19"
+    },
+    "rho_d": {
+      "shape": [
+        1,
+        39
+      ],
+      "dtype": "float64",
+      "sha256_f64": "5e8576b3ab5fc54bd92d06c0f975ff6111b4ed54816f0a967f5b4e0b886a6a5f"
+    },
+    "dry_number": true,
+    "ami_kma_bt": true,
+    "ncmin_land": 10.0,
+    "ncmin_sea": 10.0,
+    "t_blend_octaves": 0.0,
+    "q_blend_octaves": 0.0,
+    "geometry": {
+      "zenangle": 41.60526733455049,
+      "azangle": 169.60651603862405,
+      "sunzenangle": 0.0,
+      "sunazangle": 0.0,
+      "latitude": 35.41925069326254,
+      "longitude": 122.13724164654832,
+      "elevation": 0.0
+    },
+    "surface": {
+      "skin": {
+        "surftype": 1,
+        "watertype": 1,
+        "salinity": 35.0,
+        "foam_fraction": 0.0,
+        "snow_fraction": 0.0,
+        "fastem": [
+          3.0,
+          5.0,
+          15.0,
+          0.1,
+          0.3
+        ],
+        "t": 300.77392578125
+      },
+      "near_surface": {
+        "t2m": 299.4415283203125,
+        "q2m": 29872.0941915294,
+        "wind_u10m": 0.15998432040214539,
+        "wind_v10m": 4.30886173248291,
+        "wind_fetch": 0.0
+      }
+    },
+    "rttov_timeout": 300.0
+  },
+  "effective_h_configuration": {
+    "channels": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "coef_id": "paired-case_00-GK2A-AMI",
+    "fixture_case_dir": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr395-native-tq-analysis-2026-10-10/run-3d2e97f159/rttov_fixture",
+    "p_lay": {
+      "shape": [
+        66
+      ],
+      "dtype": "float64",
+      "sha256_f64": "276b5b1ab9404ccdbf6e172e45d508f74c3b7c04c7cf11ee9495a4fb08fc0006"
+    },
+    "p_half": {
+      "shape": [
+        67
+      ],
+      "dtype": "float64",
+      "sha256_f64": "33c3927023b867e61d2f3ccda9501bad634ca4b55e674324e6e04ae8f241e259"
+    },
+    "t_ref": {
+      "shape": [
+        66
+      ],
+      "dtype": "float64",
+      "sha256_f64": "b7add1244e625361d42f34dd4a01e3efd09a00c8dade23f1b2ad37a6eda99ffc"
+    },
+    "q_ref": {
+      "shape": [
+        66
+      ],
+      "dtype": "float64",
+      "sha256_f64": "03e7099fcc6f5ad08cc27f3dd06abc712db0d5fcc002f7333fd5bdd4a1f30a19"
+    },
+    "rho_d": {
+      "shape": [
+        1,
+        39
+      ],
+      "dtype": "float64",
+      "sha256_f64": "5e8576b3ab5fc54bd92d06c0f975ff6111b4ed54816f0a967f5b4e0b886a6a5f"
+    },
+    "dry_number": true,
+    "ami_kma_bt": true,
+    "ncmin_land": 10.0,
+    "ncmin_sea": 10.0,
+    "t_blend_octaves": 0.0,
+    "q_blend_octaves": 0.0,
+    "geometry": {
+      "zenangle": 41.60526733455049,
+      "azangle": 169.60651603862405,
+      "sunzenangle": 0.0,
+      "sunazangle": 0.0,
+      "latitude": 35.41925069326254,
+      "longitude": 122.13724164654832,
+      "elevation": 0.0
+    },
+    "surface": {
+      "skin": {
+        "surftype": 1,
+        "watertype": 1,
+        "salinity": 35.0,
+        "foam_fraction": 0.0,
+        "snow_fraction": 0.0,
+        "fastem": [
+          3.0,
+          5.0,
+          15.0,
+          0.1,
+          0.3
+        ],
+        "t": 300.77392578125
+      },
+      "near_surface": {
+        "t2m": 299.4415283203125,
+        "q2m": 29872.0941915294,
+        "wind_u10m": 0.15998432040214539,
+        "wind_v10m": 4.30886173248291,
+        "wind_fetch": 0.0
+      }
+    },
+    "rttov_timeout": 300.0
+  },
+  "frozen_optical_rho_d": {
+    "shape": [
+      1,
+      39
+    ],
+    "units": "kg m-3 dry-air density",
+    "orientation": "native bottom-up KDM grid",
+    "sha256_f64": "5e8576b3ab5fc54bd92d06c0f975ff6111b4ed54816f0a967f5b4e0b886a6a5f",
+    "formula": "freeze_dry_air_density(background_initial_state, forcing_window_0)",
+    "forcing_index": 0,
+    "intake_array_sha256_f64": "5e8576b3ab5fc54bd92d06c0f975ff6111b4ed54816f0a967f5b4e0b886a6a5f"
+  },
+  "adapter_metadata": {
+    "normalized_dry": true,
+    "obs_time": 1,
+    "h_forcing_index": 0,
+    "n_forcings": 1,
+    "native_state_shape": [
+      1,
+      39
+    ],
+    "physical_background_cloudy_at_obs_time": false,
+    "physical_background_condensate_unweighted_level_sum_kgkg": 0.0,
+    "physical_background_classifier": {
+      "definition": "sum over native levels of qc+qi+qs exceeds QTOT_MIN",
+      "threshold": 1e-05
+    },
+    "caller_pressure_grids": {
+      "native_center_suffix_matches_forcing": true,
+      "p_half_passed_unchanged": true,
+      "p_half_native_interface_identity_independently_verified": false
+    },
+    "operator_routing": {
+      "allsky_pos": [
+        0
+      ],
+      "clear_pos": []
+    },
+    "operator_routing_policy": "all-sky always; physical background class is metadata only",
+    "channels_ami_physical_ids": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "background_mask": [
+      [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    ],
+    "n_valid_background": 7,
+    "require_frozen_quality": true,
+    "huber_delta_K": 1.0,
+    "observation_sigma_K": 1.0,
+    "observation_bias_K": 0.0,
+    "state_prior": {
+      "th_sigma_K": 0.8,
+      "qv_sigma_log": 0.08,
+      "qv_levels_from_bottom": 12,
+      "active_fields_at_initial_state": [
+        "th",
+        "qv"
+      ],
+      "active_counts_from_built_sigma": {
+        "th": 39,
+        "qv": 12,
+        "qc": 0,
+        "qr": 0,
+        "qi": 0,
+        "qs": 0,
+        "qg": 0,
+        "nccn": 0,
+        "nc": 0,
+        "ni": 0,
+        "nr": 0,
+        "bg": 0
+      },
+      "non_tq_fields_fixed_zero": [
+        "qc",
+        "qr",
+        "qi",
+        "qs",
+        "qg",
+        "nccn",
+        "nc",
+        "ni",
+        "nr",
+        "bg"
+      ]
+    },
+    "parameter_prior": {
+      "active": [],
+      "theta_b": [
+        0.4,
+        3030.0,
+        2590000000000000.0,
+        1.0
+      ],
+      "sigma_log": [
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "initial_state_control": "zero initialized by existing dual minimizer",
+    "window_config_projection": [
+      "th",
+      "qv"
+    ],
+    "partition_control": false,
+    "pseudo_rh": false,
+    "n_successful_obs_callback_results": 4,
+    "callback_count_note": "counts non-None evaluator results only; exceptional/failed attempts are not included",
+    "n_window_evals": 3,
+    "n_audit_evals": 1,
+    "runtime_kdm6_step_calls": null,
+    "runtime_rttov_launches": null,
+    "runtime_call_count_note": "underlying step/RTTOV calls are not instrumented by this adapter"
+  },
+  "observations": {
+    "channels_ami_physical_ids": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "y_bt_K": [
+      [
+        263.29133611315865,
+        288.55207070015797,
+        263.64118031341025,
+        291.3025921545636,
+        290.982874309017,
+        288.4917312292452,
+        273.9811634897418
+      ]
+    ],
+    "observation_dqf": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    ],
+    "model_rad_quality_is_separate_from_observation_dqf": true
+  },
+  "metrics": {
+    "initial_time_state": {
+      "physical_temperature_K": {
+        "before": {
+          "count_finite": 39,
+          "min": 198.719494966329,
+          "max": 299.047967592547,
+          "mean": 253.3664625964012
+        },
+        "after": {
+          "count_finite": 39,
+          "min": 198.71921030226233,
+          "max": 299.00968251681564,
+          "mean": 253.3295656615524
+        },
+        "delta": {
+          "count_finite": 39,
+          "min": -0.15252246779834877,
+          "max": 0.01625615918925405,
+          "mean": -0.036896934848724
+        },
+        "delta_l2_norm": 0.4305391588401589,
+        "formula": "T = th * pii with the same recorded forcing for both states"
+      },
+      "qv_dry_mixing_ratio_kg_kg": {
+        "before": {
+          "count_finite": 39,
+          "min": 2.4095943444990553e-06,
+          "max": 0.018660932779312134,
+          "mean": 0.004345170279631743
+        },
+        "after": {
+          "count_finite": 39,
+          "min": 2.4095943444990553e-06,
+          "max": 0.01867996693337965,
+          "mean": 0.004366613379858068
+        },
+        "absolute_delta": {
+          "count_finite": 39,
+          "min": 0.0,
+          "max": 0.00011924342445368726,
+          "mean": 2.1443100226325145e-05
+        },
+        "absolute_delta_l2_norm": 0.0002657546931491503,
+        "relative_delta": {
+          "units": "percent",
+          "valid_positive_reference_count": 39,
+          "nonfinite_pair_count": 0,
+          "zero_or_nonpositive_reference_count": 0,
+          "min": 0.0,
+          "max": 1.7028745767690312,
+          "mean": 0.2196186134663217
+        }
+      },
+      "relative_humidity_percent": {
+        "before": {
+          "count_finite": 39,
+          "min": 6.469222872116657,
+          "max": 95.53440633005557,
+          "mean": 38.31767026011813
+        },
+        "after": {
+          "count_finite": 39,
+          "min": 6.468913319828773,
+          "max": 96.75147829265397,
+          "mean": 38.580793183355695
+        },
+        "delta": {
+          "count_finite": 39,
+          "min": -0.04985329168150798,
+          "max": 1.2170719625983963,
+          "mean": 0.26312292323758507
+        },
+        "spatial_summary": "grid-point ratio mean/range over the full native column",
+        "formula": "100 * KDM6 thermo.compute_rh(qv, phase-aware qs(T,p)); qmin lower floor only, no 100% cap",
+        "interpretation_limit": "model q/qs ratio; not rigorously identical to observed vapor-pressure e/es RH"
+      },
+      "liquid_water_saturation_ratio_percent": {
+        "before": {
+          "count_finite": 39,
+          "min": 3.467746803374969,
+          "max": 95.53440633005557,
+          "mean": 32.513385166172824
+        },
+        "after": {
+          "count_finite": 39,
+          "min": 3.467593964771497,
+          "max": 96.75147829265397,
+          "mean": 32.77850143272726
+        },
+        "delta": {
+          "count_finite": 39,
+          "min": -0.036446883612633485,
+          "max": 1.2170719625983963,
+          "mean": 0.26511626655443593
+        },
+        "spatial_summary": "grid-point qv/qs_water ratio mean/range over the full native column",
+        "formula": "100 * KDM6 thermo.compute_rh(qv, qs_water(T,p)); not clipped at 100%",
+        "interpretation_limit": "separate from phase-aware RH; a column mean is not a ratio of column sums"
+      }
+    },
+    "observation_slot_state": {
+      "physical_temperature_K": {
+        "before": {
+          "count_finite": 39,
+          "min": 198.719494966329,
+          "max": 299.047967592547,
+          "mean": 253.3664625964012
+        },
+        "after": {
+          "count_finite": 39,
+          "min": 198.71921030226233,
+          "max": 299.00968251681564,
+          "mean": 253.3295656615524
+        },
+        "delta": {
+          "count_finite": 39,
+          "min": -0.15252246779834877,
+          "max": 0.01625615918925405,
+          "mean": -0.036896934848724
+        },
+        "delta_l2_norm": 0.4305391588401589,
+        "formula": "T = th * pii with the same recorded forcing for both states"
+      },
+      "qv_dry_mixing_ratio_kg_kg": {
+        "before": {
+          "count_finite": 39,
+          "min": 2.4095943444990553e-06,
+          "max": 0.018660932779312134,
+          "mean": 0.004345170279631743
+        },
+        "after": {
+          "count_finite": 39,
+          "min": 2.4095943444990553e-06,
+          "max": 0.01867996693337965,
+          "mean": 0.004366613379858068
+        },
+        "absolute_delta": {
+          "count_finite": 39,
+          "min": 0.0,
+          "max": 0.00011924342445368726,
+          "mean": 2.1443100226325145e-05
+        },
+        "absolute_delta_l2_norm": 0.0002657546931491503,
+        "relative_delta": {
+          "units": "percent",
+          "valid_positive_reference_count": 39,
+          "nonfinite_pair_count": 0,
+          "zero_or_nonpositive_reference_count": 0,
+          "min": 0.0,
+          "max": 1.7028745767690312,
+          "mean": 0.2196186134663217
+        }
+      },
+      "relative_humidity_percent": {
+        "before": {
+          "count_finite": 39,
+          "min": 6.469222872116657,
+          "max": 95.53440633005557,
+          "mean": 38.31767026011813
+        },
+        "after": {
+          "count_finite": 39,
+          "min": 6.468913319828773,
+          "max": 96.75147829265397,
+          "mean": 38.580793183355695
+        },
+        "delta": {
+          "count_finite": 39,
+          "min": -0.04985329168150798,
+          "max": 1.2170719625983963,
+          "mean": 0.26312292323758507
+        },
+        "spatial_summary": "grid-point ratio mean/range over the full native column",
+        "formula": "100 * KDM6 thermo.compute_rh(qv, phase-aware qs(T,p)); qmin lower floor only, no 100% cap",
+        "interpretation_limit": "model q/qs ratio; not rigorously identical to observed vapor-pressure e/es RH"
+      },
+      "liquid_water_saturation_ratio_percent": {
+        "before": {
+          "count_finite": 39,
+          "min": 3.467746803374969,
+          "max": 95.53440633005557,
+          "mean": 32.513385166172824
+        },
+        "after": {
+          "count_finite": 39,
+          "min": 3.467593964771497,
+          "max": 96.75147829265397,
+          "mean": 32.77850143272726
+        },
+        "delta": {
+          "count_finite": 39,
+          "min": -0.036446883612633485,
+          "max": 1.2170719625983963,
+          "mean": 0.26511626655443593
+        },
+        "spatial_summary": "grid-point qv/qs_water ratio mean/range over the full native column",
+        "formula": "100 * KDM6 thermo.compute_rh(qv, qs_water(T,p)); not clipped at 100%",
+        "interpretation_limit": "separate from phase-aware RH; a column mean is not a ratio of column sums"
+      }
+    },
+    "background_slot_qc": {
+      "units": "kg kg-1 dry air",
+      "range": {
+        "count_finite": 39,
+        "min": 0.0,
+        "max": 0.0,
+        "mean": 0.0
+      },
+      "positive_count": 0,
+      "unweighted_vertical_level_sum": 0.0,
+      "sum_definition": "unweighted sum over native vertical levels, not an area/mass-integrated column budget"
+    },
+    "background_slot_nc": {
+      "units": "number per kg dry air",
+      "range": {
+        "count_finite": 39,
+        "min": 0.0,
+        "max": 0.0,
+        "mean": 0.0
+      },
+      "positive_count": 0,
+      "unweighted_vertical_level_sum": 0.0,
+      "sum_definition": "unweighted sum over native vertical levels, not an area/mass-integrated column budget"
+    },
+    "final_slot_qc": {
+      "units": "kg kg-1 dry air",
+      "range": {
+        "count_finite": 39,
+        "min": 0.0,
+        "max": 0.0,
+        "mean": 0.0
+      },
+      "positive_count": 0,
+      "unweighted_vertical_level_sum": 0.0,
+      "sum_definition": "unweighted sum over native vertical levels, not an area/mass-integrated column budget"
+    },
+    "final_slot_nc": {
+      "units": "number per kg dry air",
+      "range": {
+        "count_finite": 39,
+        "min": 0.0,
+        "max": 0.0,
+        "mean": 0.0
+      },
+      "positive_count": 0,
+      "unweighted_vertical_level_sum": 0.0,
+      "sum_definition": "unweighted sum over native vertical levels, not an area/mass-integrated column budget"
+    }
+  },
+  "objective": {
+    "Jb_state": 0.2284737909127953,
+    "Jtheta": 0.0,
+    "Jo": 26.135616402715186,
+    "Jtotal": 26.36409019362798,
+    "Jtotal_final_trace": 26.36409019362798,
+    "n_valid": 7,
+    "frozen_support": [
+      [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    ],
+    "final_audit_signature": {
+      "slot": 1,
+      "sha256": "2564e3298a383f3b9bdb348cc5abbd68156653b633f4963551fdc799132d1e59",
+      "trace_entry_count": 4,
+      "final_trace_index": 3,
+      "all_trace_signatures_match": true,
+      "n_valid_each_trace_entry": 7,
+      "final_frozen_mask": {
+        "shape": [
+          1,
+          7
+        ],
+        "dtype": "float64",
+        "sha256_f64": "022451970ff25a1cf57eb1602f05e6ab8a2d0edb918d8efd1574f2ef1a77898f"
+      }
+    },
+    "initial_zero_control_closure": {
+      "trace_index": 0,
+      "control_semantics": "first existing optimizer closure before L-BFGS updates; v_state and v_theta start at zero",
+      "Jb_state": 0.0,
+      "Jtheta": 0.0,
+      "Jo": 26.588575903055926,
+      "Jtotal": 26.588575903055926,
+      "n_valid": 7,
+      "operator_signature_sha256": "2564e3298a383f3b9bdb348cc5abbd68156653b633f4963551fdc799132d1e59",
+      "signature_matches_final_accepted_audit": true,
+      "first_grad_true_h_call_index": 2,
+      "first_h_J_huber_matches_Jo": true,
+      "frozen_mask": {
+        "shape": [
+          1,
+          7
+        ],
+        "dtype": "float64",
+        "values": [
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ]
+        ],
+        "sha256_f64": "022451970ff25a1cf57eb1602f05e6ab8a2d0edb918d8efd1574f2ef1a77898f"
+      }
+    },
+    "final_rad_quality": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    ],
+    "n_window_evals": 3,
+    "n_audit_evals": 1
+  },
+  "background_quality_probe": {
+    "call_index": 1,
+    "raw_J_huber": 0.0,
+    "cost_semantics": "non-grad background quality probe with all-zero loss mask; not initial zero-control closure Jo",
+    "target_BT_K": [
+      [
+        263.29133611315865,
+        288.55207070015797,
+        263.64118031341025,
+        291.3025921545636,
+        290.982874309017,
+        288.4917312292452,
+        273.9811634897418
+      ]
+    ],
+    "BT_K": [
+      [
+        262.2609690648086,
+        293.6851951749752,
+        270.6304713118575,
+        296.232817250819,
+        295.9661155119729,
+        292.8917454490824,
+        276.60347635213475
+      ]
+    ],
+    "rad_quality": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    ],
+    "mask": {
+      "shape": [
+        1,
+        7
+      ],
+      "dtype": "float64",
+      "values": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "sha256_f64": "d4817aa5497628e7c77e6b606107042bbba3130888c5f47a375e6179be789fbb"
+    },
+    "mask_unchanged_across_h": true
+  },
+  "logical_h_calls": [
+    {
+      "call_index": 1,
+      "stage": "probe",
+      "grad": false,
+      "profile_positions": [
+        0
+      ],
+      "state_sha256": {
+        "th": "585c0996be7c73c4375a04719f6f652dc8d60af7aabb6638840c6b0c33872573",
+        "qv": "77e92e6687dd28167ee69a4df1a29036369fe8c7a19c15200458b0a78ba8770b",
+        "qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nccn": "e08716b755ba04dd032c05c0ca3d8fbed08a5fcc9a79fb3dde215f0314d3b813",
+        "nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7"
+      },
+      "forcing_sha256": {
+        "rho": "0c60092b5650af75738601c9698fd8ffffaec559645e0b1895f3c2df9f6a09ab",
+        "pii": "96e2a9aa9a7d4f35e454ac762ecd1fde0b435392435cde89177577931047dbd7",
+        "p": "e24684b7aaa09c1f5ff057f262c06e43da67a4a72a9277502ddd4edcc4ac2502",
+        "delz": "bc7367353592f7479e4ab6e9b383881ac86f3b5c42e7b791072dfd785db2d028"
+      },
+      "channels": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "target_BT_K": [
+        [
+          263.29133611315865,
+          288.55207070015797,
+          263.64118031341025,
+          291.3025921545636,
+          290.982874309017,
+          288.4917312292452,
+          273.9811634897418
+        ]
+      ],
+      "frozen_mask": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "returned": true,
+      "BT_K": [
+        [
+          262.2609690648086,
+          293.6851951749752,
+          270.6304713118575,
+          296.232817250819,
+          295.9661155119729,
+          292.8917454490824,
+          276.60347635213475
+        ]
+      ],
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "fixed_mask": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "J_huber": 0.0
+    },
+    {
+      "call_index": 2,
+      "stage": "c1",
+      "grad": true,
+      "profile_positions": [
+        0
+      ],
+      "state_sha256": {
+        "th": "585c0996be7c73c4375a04719f6f652dc8d60af7aabb6638840c6b0c33872573",
+        "qv": "77e92e6687dd28167ee69a4df1a29036369fe8c7a19c15200458b0a78ba8770b",
+        "qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nccn": "e08716b755ba04dd032c05c0ca3d8fbed08a5fcc9a79fb3dde215f0314d3b813",
+        "nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7"
+      },
+      "forcing_sha256": {
+        "rho": "0c60092b5650af75738601c9698fd8ffffaec559645e0b1895f3c2df9f6a09ab",
+        "pii": "96e2a9aa9a7d4f35e454ac762ecd1fde0b435392435cde89177577931047dbd7",
+        "p": "e24684b7aaa09c1f5ff057f262c06e43da67a4a72a9277502ddd4edcc4ac2502",
+        "delz": "bc7367353592f7479e4ab6e9b383881ac86f3b5c42e7b791072dfd785db2d028"
+      },
+      "channels": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "target_BT_K": [
+        [
+          263.29133611315865,
+          288.55207070015797,
+          263.64118031341025,
+          291.3025921545636,
+          290.982874309017,
+          288.4917312292452,
+          273.9811634897418
+        ]
+      ],
+      "frozen_mask": [
+        [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      ],
+      "returned": true,
+      "BT_K": [
+        [
+          262.2609690648086,
+          293.6851951749752,
+          270.6304713118575,
+          296.232817250819,
+          295.9661155119729,
+          292.8917454490824,
+          276.60347635213475
+        ]
+      ],
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "fixed_mask": [
+        [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      ],
+      "J_huber": 26.588575903055926
+    },
+    {
+      "call_index": 3,
+      "stage": "c2",
+      "grad": true,
+      "profile_positions": [
+        0
+      ],
+      "state_sha256": {
+        "th": "f9050e838fee764a0dfc0064dd7d218890404f2dc26a3a54f441a35f6e71fcbc",
+        "qv": "4c1c5628975205bd628a2e925f27d08ab015b828c102f4f02658c85d4bd23e09",
+        "qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nccn": "e08716b755ba04dd032c05c0ca3d8fbed08a5fcc9a79fb3dde215f0314d3b813",
+        "nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7"
+      },
+      "forcing_sha256": {
+        "rho": "0c60092b5650af75738601c9698fd8ffffaec559645e0b1895f3c2df9f6a09ab",
+        "pii": "96e2a9aa9a7d4f35e454ac762ecd1fde0b435392435cde89177577931047dbd7",
+        "p": "e24684b7aaa09c1f5ff057f262c06e43da67a4a72a9277502ddd4edcc4ac2502",
+        "delz": "bc7367353592f7479e4ab6e9b383881ac86f3b5c42e7b791072dfd785db2d028"
+      },
+      "channels": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "target_BT_K": [
+        [
+          263.29133611315865,
+          288.55207070015797,
+          263.64118031341025,
+          291.3025921545636,
+          290.982874309017,
+          288.4917312292452,
+          273.9811634897418
+        ]
+      ],
+      "frozen_mask": [
+        [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      ],
+      "returned": true,
+      "BT_K": [
+        [
+          262.2586380335665,
+          293.66521553362946,
+          270.6177383530082,
+          296.21044875520454,
+          295.93743370065147,
+          292.8583379715786,
+          276.58048385616434
+        ]
+      ],
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "fixed_mask": [
+        [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      ],
+      "J_huber": 26.45074405369286
+    },
+    {
+      "call_index": 4,
+      "stage": "c3",
+      "grad": true,
+      "profile_positions": [
+        0
+      ],
+      "state_sha256": {
+        "th": "a70bc65ac42db25f7bfd2f5e178ee0459a6c12ff35d9816176657cce8bd08ca1",
+        "qv": "c27b8184a3bad3ed4e8bfa5ec5fb3ada30fe289b5e3b91943820893ba0599f83",
+        "qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nccn": "e08716b755ba04dd032c05c0ca3d8fbed08a5fcc9a79fb3dde215f0314d3b813",
+        "nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7"
+      },
+      "forcing_sha256": {
+        "rho": "0c60092b5650af75738601c9698fd8ffffaec559645e0b1895f3c2df9f6a09ab",
+        "pii": "96e2a9aa9a7d4f35e454ac762ecd1fde0b435392435cde89177577931047dbd7",
+        "p": "e24684b7aaa09c1f5ff057f262c06e43da67a4a72a9277502ddd4edcc4ac2502",
+        "delz": "bc7367353592f7479e4ab6e9b383881ac86f3b5c42e7b791072dfd785db2d028"
+      },
+      "channels": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "target_BT_K": [
+        [
+          263.29133611315865,
+          288.55207070015797,
+          263.64118031341025,
+          291.3025921545636,
+          290.982874309017,
+          288.4917312292452,
+          273.9811634897418
+        ]
+      ],
+      "frozen_mask": [
+        [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      ],
+      "returned": true,
+      "BT_K": [
+        [
+          262.2533252405941,
+          293.6196235754117,
+          270.5886248621059,
+          296.159205214676,
+          295.8717201889046,
+          292.7819728924555,
+          276.5280709927328
+        ]
+      ],
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "fixed_mask": [
+        [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      ],
+      "J_huber": 26.135616402715186
+    },
+    {
+      "call_index": 5,
+      "stage": "c4",
+      "grad": true,
+      "profile_positions": [
+        0
+      ],
+      "state_sha256": {
+        "th": "a70bc65ac42db25f7bfd2f5e178ee0459a6c12ff35d9816176657cce8bd08ca1",
+        "qv": "c27b8184a3bad3ed4e8bfa5ec5fb3ada30fe289b5e3b91943820893ba0599f83",
+        "qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nccn": "e08716b755ba04dd032c05c0ca3d8fbed08a5fcc9a79fb3dde215f0314d3b813",
+        "nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+        "bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7"
+      },
+      "forcing_sha256": {
+        "rho": "0c60092b5650af75738601c9698fd8ffffaec559645e0b1895f3c2df9f6a09ab",
+        "pii": "96e2a9aa9a7d4f35e454ac762ecd1fde0b435392435cde89177577931047dbd7",
+        "p": "e24684b7aaa09c1f5ff057f262c06e43da67a4a72a9277502ddd4edcc4ac2502",
+        "delz": "bc7367353592f7479e4ab6e9b383881ac86f3b5c42e7b791072dfd785db2d028"
+      },
+      "channels": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "target_BT_K": [
+        [
+          263.29133611315865,
+          288.55207070015797,
+          263.64118031341025,
+          291.3025921545636,
+          290.982874309017,
+          288.4917312292452,
+          273.9811634897418
+        ]
+      ],
+      "frozen_mask": [
+        [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      ],
+      "returned": true,
+      "BT_K": [
+        [
+          262.2533252405941,
+          293.6196235754117,
+          270.5886248621059,
+          296.159205214676,
+          295.8717201889046,
+          292.7819728924555,
+          276.5280709927328
+        ]
+      ],
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "fixed_mask": [
+        [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      ],
+      "J_huber": 26.135616402715186
+    }
+  ],
+  "runtime_rttov_child_launches": null,
+  "runtime_rttov_child_launch_note": "not instrumented; logical all-sky H callback outputs are recorded"
+}

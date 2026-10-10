@@ -1,0 +1,124 @@
+{
+  "schema": "pr397_actual_saved_array_interpretation_v1",
+  "receipt_sha256": "c49808c0331754eeb9ab9f77a88083119d5834852281db890b2827f6acf6eeca",
+  "driver_sha256": "836ac71bdf069c1a677e8d3e770cab3e31cfaf807d8a13ccab9884b01bb49333",
+  "capture_npz_sha256": "8cfe28df6ef336454cfa595cc70f7a4ddec2e5cd8cbd393c0c7ce8106c904c59",
+  "intake_npz_sha256": "2873368d7967fbf41861c92e73a9cd0332186496e9b00192da0b5189288f8194",
+  "source_sha256": "fb8fbc50cb663369330d7946a019ec7626f397a6a345b9170b628263fff318a3",
+  "additional_model_or_rttov_calls": 0,
+  "objective": {
+    "Jo0": 26.588575903055926,
+    "Jo_final": 26.135616402715186,
+    "Jb_final": 0.2284737909127953,
+    "Jtotal_final": 26.36409019362798,
+    "total_decrease_percent": 0.844293843515494,
+    "observational_decrease_percent": 1.7035869163969743
+  },
+  "active_initial_sigma_counts": {
+    "th": 39,
+    "qv": 12,
+    "qc": 0,
+    "qr": 0,
+    "qi": 0,
+    "qs": 0,
+    "qg": 0,
+    "nccn": 0,
+    "nc": 0,
+    "ni": 0,
+    "nr": 0,
+    "bg": 0
+  },
+  "conditional_rank_bound": {
+    "rows": 7,
+    "active_columns": 51,
+    "max_rank": 7,
+    "rank_measured": false
+  },
+  "initial_increment": {
+    "coolest_delta_T_K": -0.15252246779831788,
+    "coolest_layer_0based": 9,
+    "warmest_delta_T_K": 0.016256159189220753,
+    "warmest_layer_0based": 19,
+    "max_delta_qv_kg_kg": 0.00011924342445368726,
+    "max_absolute_qv_layer_0based": 9,
+    "max_relative_qv_percent": 1.7028745767690276,
+    "max_relative_qv_layer_0based": 11
+  },
+  "liquid_saturation_ratio": {
+    "xb": {
+      "max_percent": 95.53440633005557,
+      "max_layer_bottomup_0based": 3
+    },
+    "xa": {
+      "max_percent": 96.75147829265397,
+      "max_layer_bottomup_0based": 3
+    },
+    "mb": {
+      "max_percent": 95.53440633005557,
+      "max_layer_bottomup_0based": 3
+    },
+    "ma": {
+      "max_percent": 96.75147829265397,
+      "max_layer_bottomup_0based": 3
+    }
+  },
+  "four_state_condensate_positive_counts": {
+    "xb": {
+      "qc": 0,
+      "qr": 0,
+      "qi": 0,
+      "qs": 0,
+      "qg": 0
+    },
+    "xa": {
+      "qc": 0,
+      "qr": 0,
+      "qi": 0,
+      "qs": 0,
+      "qg": 0
+    },
+    "mb": {
+      "qc": 0,
+      "qr": 0,
+      "qi": 0,
+      "qs": 0,
+      "qg": 0
+    },
+    "ma": {
+      "qc": 0,
+      "qr": 0,
+      "qi": 0,
+      "qs": 0,
+      "qg": 0
+    }
+  },
+  "fixed_host_mass_water_kg_m2": {
+    "analysis": 0.2216824149154899,
+    "model_analysis": 0.0,
+    "model_background": 0.0
+  },
+  "native_host_20s_water_change_kg_m2": {
+    "fixed_w0_mixing_ratio_term": -0.002829685415802516,
+    "changing_mass_term": 0.00046964942827454337,
+    "actual_w1_q1_minus_w0_q0": -0.0023600359875288746,
+    "identity_residual": -9.020562075079397e-16,
+    "closed_budget": false,
+    "boundary_external_fluxes": "NOT_MEASURED"
+  },
+  "alternate_temperature_split_cross_term_max_abs_K": 1.4516035471035006e-08,
+  "named_process_attribution": "NOT_MEASURED",
+  "science_accepted": false,
+  "local_derived_profiles": {
+    "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr397-actual-interpretation/private/derived_profiles.npz",
+    "sha256": "a826307083db28920ceeceb75b2d9f24bbcecff9b98d51b2be4724a89c6aaf0c"
+  },
+  "local_observation_sidecar": {
+    "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr397-actual-interpretation/private/receipt_derived_observation_support.npz",
+    "sha256": "3ae28d0d3a8782524ace1f8024d58be560a1ec72e8c5464ebb63177488e46a07",
+    "source": "final accepted grad=True callback in the hash-bound original public capture receipt",
+    "original_checkpoint_has_bt": false,
+    "original_checkpoint_has_mask": false,
+    "original_checkpoint_rewritten": false,
+    "sidecar_is_new_rttov_execution": false
+  }
+}

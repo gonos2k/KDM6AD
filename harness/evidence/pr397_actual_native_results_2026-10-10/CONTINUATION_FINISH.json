@@ -1,0 +1,37 @@
+{
+  "status": "CONSUMERS_RETURNED",
+  "utc": "2026-10-10T01:25:10.115500+00:00",
+  "run_dir": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/runs/mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148",
+  "commands": [
+    {
+      "argv": [
+        "/private/tmp/KDM6AD-research-rc-20261007/env/bin/python",
+        "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr395_native_tq_intake_2026-10-10/intake_native_tq.py",
+        "--run-dir",
+        "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/runs/mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148"
+      ],
+      "returncode": 0
+    },
+    {
+      "argv": [
+        "/private/tmp/KDM6AD-research-rc-20261007/env/bin/python",
+        "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr395_native_tq_intake_2026-10-10/run_analysis.py"
+      ],
+      "returncode": 0
+    },
+    {
+      "argv": [
+        "/private/tmp/KDM6AD-research-rc-20261007/env/bin/python",
+        "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr395_native_tq_intake_2026-10-10/diagnose_saved_state.py",
+        "--capture-receipt",
+        "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr395_tq_state_capture_2026-10-10/RESULT_3d2e97f159.json",
+        "--output",
+        "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr396-saved-state-diagnostic/private/DIAGNOSTIC.json"
+      ],
+      "returncode": 0,
+      "additional_model_or_rttov_calls": 0
+    }
+  ],
+  "scientific_acceptance": false,
+  "automatic_retry": false
+}

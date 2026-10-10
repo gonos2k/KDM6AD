@@ -1,0 +1,21 @@
+{
+  "executed_capture_source_sha256": "32391d7750ad54c4c2aee64a5d30cde9f9d98822fcc569650aeef9c334c50311",
+  "executed_capture_git_revision": "eec82d6571095a06656c382a2bb97ca448824ce1",
+  "future_capture_source_sha256": "b53c1ac1febbb9de34ed4ff24fcfb69c104050caf3347834a16af957c3e10a71",
+  "public_artifact_sha256": {
+    "harness/evidence/pr395_native_tq_intake_2026-10-10/INTAKE.json": "375a89e7ea2194171a77d6f089ef46de79ae71f97306512afd98a4891647cfbe",
+    "harness/evidence/pr395_tq_state_capture_2026-10-10/RESULT_3d2e97f159.json": "c49808c0331754eeb9ab9f77a88083119d5834852281db890b2827f6acf6eeca",
+    "harness/evidence/pr395_tq_state_capture_2026-10-10/DRIVER_3d2e97f159.json": "836ac71bdf069c1a677e8d3e770cab3e31cfaf807d8a13ccab9884b01bb49333",
+    "harness/evidence/pr395_tq_state_capture_2026-10-10/capture_tq_state.py": "b53c1ac1febbb9de34ed4ff24fcfb69c104050caf3347834a16af957c3e10a71",
+    "harness/evidence/pr395_tq_state_capture_2026-10-10/test_capture_tq_state_storage.py": "b2885f54e89eba6cdf6a8daac9d394983bdf10cafbd082abb9669d69f8eb03ed",
+    "harness/evidence/pr397_actual_native_results_2026-10-10/analyze_saved_actual.py": "fb8fbc50cb663369330d7946a019ec7626f397a6a345b9170b628263fff318a3"
+  },
+  "private_original_checkpoint_sha256": "8cfe28df6ef336454cfa595cc70f7a4ddec2e5cd8cbd393c0c7ce8106c904c59",
+  "sidecar_sha256": "3ae28d0d3a8782524ace1f8024d58be560a1ec72e8c5464ebb63177488e46a07",
+  "original_checkpoint_rewritten": false,
+  "native_or_analysis_rerun_for_storage_fix": false,
+  "focused_future_storage_tests_passed": 10,
+  "scope_note": "9 earlier synthetic tests retained and one alias regression added; no ten new meteorological cases",
+  "interpretation_script_uses": "saved actual arrays plus thermodynamic diagnostics, no M/H/RTTOV",
+  "science_accepted": false
+}

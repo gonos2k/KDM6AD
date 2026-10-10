@@ -181,8 +181,8 @@ def test_private_npz_roundtrips_four_distinct_full_states_and_forcings(tmp_path:
         rttov_cfg={"p_lay": np.arange(39), "p_half": np.arange(40),
                    "t_ref": np.arange(39), "q_ref": np.arange(39)},
         native_coordinates={"centers": {"values": np.arange(39)}},
-        slot_calls=[{"mask": np.ones((1, 7)), "rad_quality": np.zeros((1, 7)),
-                     "bt": np.full((1, 7), 240.0)}],
+        slot_calls=[{"frozen_mask": np.ones((1, 7)), "fixed_mask": np.ones((1, 7)),
+                     "rad_quality": np.zeros((1, 7)), "BT_K": np.full((1, 7), 240.0)}],
         receipt_metadata={"synthetic_fixture": True},
         host_dry_mass_background_kg_m2=host_mass,
         extra_private_arrays={
@@ -233,6 +233,25 @@ def test_private_npz_roundtrips_four_distinct_full_states_and_forcings(tmp_path:
         np.testing.assert_array_equal(archive["optimizer_state__d"], np.arange(12))
         assert archive["host_dry_mass_background_kg_m2"].dtype == np.float32
         np.testing.assert_array_equal(archive["host_dry_mass_background_kg_m2"], host_mass)
+
+
+def test_private_payload_keeps_legacy_final_slot_event_aliases():
+    state, forcing = _synthetic_state_and_forcing()
+    mask = np.ones((1, 7), dtype=np.float64)
+    rq = np.zeros((1, 7), dtype=np.float64)
+    bt = np.full((1, 7), 240.0, dtype=np.float64)
+    payload = capture._private_payload(
+        xb=state, accepted_initial_state=state,
+        background_slot_state=state, final_slot_state=state,
+        forcings=(forcing,), final_slot_forcing=forcing,
+        rho_d=torch.ones((1, 39), dtype=torch.float64),
+        y_bt=np.zeros((1, 7)), y_rq=np.zeros((1, 7)),
+        rttov_cfg={}, native_coordinates={},
+        slot_calls=[{"mask": mask, "rq": rq, "bt": bt}],
+        receipt_metadata={"synthetic_fixture": True})
+    np.testing.assert_array_equal(payload["final_slot_frozen_mask"], mask)
+    np.testing.assert_array_equal(payload["final_slot_rad_quality"], rq)
+    np.testing.assert_array_equal(payload["final_slot_bt_K"], bt)
 
 
 def test_lbfgs_observer_preserves_original_quadratic_step_and_gradient():
