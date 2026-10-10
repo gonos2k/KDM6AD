@@ -78,6 +78,13 @@ gradient L∞=`7.8173583084e-5`(L2=`2.0011374514e-4`)로 tolerance_grad=`1e-10`�
 증분의 `(theta_a-theta_b)*Pi`와 원래 `(theta_a*Pi-theta_b*Pi)`는 연산순서의
 부동소수점 차이가 있을 수 있다. Bit equality를 주장하지 않는다.
 
+원래 native/capture/진단 NPZ, derived profile·관측 sidecar, receipts와 실행 당시
+capture source의 동일 바이트 사본 12개(368,064 bytes)를 canonical private
+`host/research_evidence/pr397_native_tq_20261010/`에 보존했다. 디렉터리0700·파일0600,
+gitignored이며 원래 경로·파일을 덮어쓰지 않았다. 큰 forecast는 복사하지 않았다.
+[보존 manifest](LOCAL_PRESERVATION.json)는 사본 위치와 SHA-256을 기록하고,
+기존 receipt의 temporary 경로는 당시 출처로 유지한다.
+
 ## 실제 물·host/local 진단
 
 첫 시각의 native host eta 건조질량을 고정하면 분석이 추가한 물은
