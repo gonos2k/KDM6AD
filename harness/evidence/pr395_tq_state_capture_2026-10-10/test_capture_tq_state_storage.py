@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import stat
 from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
+import pytest
 import torch
 
 import capture_tq_state as capture
@@ -52,6 +54,53 @@ def test_private_npz_is_atomic_private_and_refuses_replacement(tmp_path: Path):
     assert list(directory.iterdir()) == [checkpoint]
 
 
+def test_private_npz_digest_is_computed_before_no_clobber_publication(tmp_path: Path, monkeypatch):
+    checkpoint = tmp_path / "private" / "prehashed.npz"
+    original_hash = capture.sha256_file
+    hashed_paths = []
+
+    def record_hash(path):
+        path = Path(path)
+        assert path != checkpoint
+        hashed_paths.append(path)
+        return original_hash(path)
+
+    monkeypatch.setattr(capture, "sha256_file", record_hash)
+    digest = capture.write_private_npz_atomic(checkpoint, {"state": np.arange(5)})
+    assert len(hashed_paths) == 1
+    assert hashed_paths[0].parent == checkpoint.parent
+    assert not hashed_paths[0].exists()
+    assert hashlib.sha256(checkpoint.read_bytes()).hexdigest() == digest
+
+
+def test_post_link_receipt_temp_cleanup_error_keeps_referenced_checkpoint(tmp_path: Path, monkeypatch):
+    checkpoint = tmp_path / "private" / "accepted.npz"
+    checkpoint_sha = capture.write_private_npz_atomic(
+        checkpoint, {"synthetic_state": np.arange(4, dtype=np.float64)})
+    receipt = tmp_path / "public" / "RESULT.json"
+    original_unlink = Path.unlink
+
+    def fail_receipt_temp_unlink(path, *args, **kwargs):
+        if path.name.startswith(".RESULT.json."):
+            raise OSError("synthetic temp cleanup failure after receipt link")
+        return original_unlink(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "unlink", fail_receipt_temp_unlink)
+    receipt_sha = capture._write_receipt_exclusive(
+        receipt, {"status": "RETURNED_DIAGNOSTIC_ONLY",
+                  "private_checkpoint": str(checkpoint),
+                  "private_checkpoint_sha256": checkpoint_sha})
+    record = json.loads(receipt.read_text())
+    assert len(receipt_sha) == 64
+    assert record["status"] == "RETURNED_DIAGNOSTIC_ONLY"
+    assert Path(record["private_checkpoint"]).is_file()
+    assert hashlib.sha256(Path(record["private_checkpoint"]).read_bytes()).hexdigest() == record[
+        "private_checkpoint_sha256"]
+    # Cleanup is best-effort after the receipt hard link commits. A leftover
+    # 0600 temp name does not turn a committed receipt into a failed call.
+    assert any(path.name.startswith(".RESULT.json.") for path in receipt.parent.iterdir())
+
+
 def test_public_receipt_is_exclusive_and_failure_does_not_publish_state(tmp_path: Path):
     receipt_path = tmp_path / "public" / "RESULT.json"
     receipt_hash = capture._write_receipt_exclusive(receipt_path, {"status": "SYNTHETIC"})
@@ -93,11 +142,20 @@ def test_public_receipt_is_exclusive_and_failure_does_not_publish_state(tmp_path
     assert result["status"] == "ANALYSIS_EXCEPTION"
     assert result["input_validity"]["status"] == "NOT_VALIDATED"
     assert result["numerical_return"]["minimizer_returned_state"] is False
+    assert result["numerical_return"]["status"] == "FAILED_BEFORE_RETURN"
+    assert result["failure_stage"] == "PRE_ANALYSIS"
     assert result["physical_matchup_and_science_acceptance"]["status"] == "NOT_ASSESSED"
     assert not checkpoint.exists()
     assert json.loads(failed_receipt.read_text())["status"] == "ANALYSIS_EXCEPTION"
     assert calls == []
     assert not checkpoint.parent.exists()
+    returned = capture._numerical_return_failure_summary(
+        True, {"result": SimpleNamespace()})
+    assert returned == {
+        "status": "RETURNED_BUT_CAPTURE_FAILED",
+        "analysis_runner_returned": True,
+        "minimizer_returned_state": True,
+    }
 
 
 def test_private_npz_roundtrips_four_distinct_full_states_and_forcings(tmp_path: Path):
@@ -109,6 +167,7 @@ def test_private_npz_roundtrips_four_distinct_full_states_and_forcings(tmp_path:
     }
     forcing_window = (_tagged_forcing(1),)
     final_forcing = _tagged_forcing(2)
+    host_mass = np.linspace(1.0, 39.0, 39, dtype=np.float32)
     payload = capture._private_payload(
         xb=states["background_initial_state"],
         accepted_initial_state=states["returned_analysis_initial_state"],
@@ -125,6 +184,7 @@ def test_private_npz_roundtrips_four_distinct_full_states_and_forcings(tmp_path:
         slot_calls=[{"mask": np.ones((1, 7)), "rad_quality": np.zeros((1, 7)),
                      "bt": np.full((1, 7), 240.0)}],
         receipt_metadata={"synthetic_fixture": True},
+        host_dry_mass_background_kg_m2=host_mass,
         extra_private_arrays={
             **{f"b_sigma__{field}": getattr(_tagged_state(5), field).numpy()
                for field in State._fields},
@@ -171,6 +231,8 @@ def test_private_npz_roundtrips_four_distinct_full_states_and_forcings(tmp_path:
         np.testing.assert_array_equal(archive["control__fixed_eta_present"], np.asarray([False]))
         assert archive["control__fixed_eta"].shape == (0,)
         np.testing.assert_array_equal(archive["optimizer_state__d"], np.arange(12))
+        assert archive["host_dry_mass_background_kg_m2"].dtype == np.float32
+        np.testing.assert_array_equal(archive["host_dry_mass_background_kg_m2"], host_mass)
 
 
 def test_lbfgs_observer_preserves_original_quadratic_step_and_gradient():
@@ -211,6 +273,66 @@ def test_lbfgs_observer_preserves_original_quadratic_step_and_gradient():
     assert observation["step_state"]["n_iter"] == plain_optimizer.state[x_plain]["n_iter"]
     assert observation["step_state"]["func_evals"] == plain_optimizer.state[x_plain]["func_evals"]
     assert observation["step_state"]["step_t"] == plain_optimizer.state[x_plain]["t"]
+    failure_summary = capture._public_optimizer_failure_summary(observation)
+    assert "optimizer" not in failure_summary
+    assert "optimizer_state_arrays" not in failure_summary
+
+
+def test_final_audit_signature_is_bound_to_frozen_mask_and_stable_trace():
+    signature = "a" * 64
+    result = SimpleNamespace(j_trace=[
+        {"n_valid": {1: 7}, "signature": {1: signature}},
+        {"n_valid": {1: 7}, "signature": {1: signature}},
+    ])
+    mask = torch.ones((1, 7), dtype=torch.float64)
+    record = capture._final_audit_signature(result, obs_time=1, final_mask=mask)
+    assert record["sha256"] == signature
+    assert record["trace_entry_count"] == 2
+    assert record["final_trace_index"] == 1
+    assert record["all_trace_signatures_match"] is True
+    assert record["final_frozen_mask"]["shape"] == [1, 7]
+    assert record["final_frozen_mask"]["sha256_f64"] == capture.array_sha256(mask)
+
+    result.j_trace[-1]["signature"][1] = "b" * 64
+    with pytest.raises(RuntimeError, match="signature changed"):
+        capture._final_audit_signature(result, obs_time=1, final_mask=mask)
+
+
+def test_initial_zero_control_cost_is_separate_from_zero_mask_probe_cost():
+    signature = "c" * 64
+    mask = np.ones((1, 7), dtype=np.float64)
+    zero_mask = np.zeros((1, 7), dtype=np.float64)
+    result = SimpleNamespace(j_trace=[{
+        "j_state": 0.0, "j_theta": 0.0, "j_obs": 12.75, "total": 12.75,
+        "n_valid": {1: 7}, "signature": {1: signature},
+    }, {
+        "j_state": 1.0, "j_theta": 0.0, "j_obs": 8.0, "total": 9.0,
+        "n_valid": {1: 7}, "signature": {1: signature},
+    }])
+    events = [
+        {"call_index": 1, "grad": False, "returned": True,
+         "J_huber": 0.0, "frozen_mask": zero_mask.tolist(),
+         "fixed_mask": zero_mask.tolist(), "target_BT_K": np.full((1, 7), 240.0).tolist(),
+         "BT_K": np.full((1, 7), 245.0).tolist(), "rad_quality": zero_mask.tolist()},
+        {"call_index": 2, "grad": True, "returned": True,
+         "J_huber": 12.75, "frozen_mask": mask.tolist(),
+         "fixed_mask": mask.tolist()},
+    ]
+    accepted_signature = {"sha256": signature}
+    initial = capture._initial_zero_control_closure(
+        result, events, obs_time=1, final_audit_signature=accepted_signature,
+        final_mask=torch.as_tensor(mask))
+    probe = capture._background_quality_probe(events)
+
+    assert initial["trace_index"] == 0
+    assert initial["Jb_state"] == initial["Jtheta"] == 0.0
+    assert initial["Jo"] == initial["Jtotal"] == 12.75
+    assert initial["operator_signature_sha256"] == signature
+    assert initial["frozen_mask"]["sha256_f64"] == capture.array_sha256(mask)
+    assert probe["raw_J_huber"] == 0.0
+    assert probe["cost_semantics"].startswith("non-grad background quality probe")
+    assert probe["mask"]["sha256_f64"] == capture.array_sha256(zero_mask)
+    assert probe["raw_J_huber"] != initial["Jo"]
 
 
 def test_final_control_snapshot_reads_full_gradient_and_private_controls(tmp_path: Path):

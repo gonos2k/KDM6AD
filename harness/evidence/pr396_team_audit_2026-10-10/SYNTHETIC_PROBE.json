@@ -1,0 +1,61 @@
+{
+  "adaptive_effective_settings_error": "archived effective namelist differs from PR395 run controls: {'mp_physics': '337', 'run_minutes': 358, 'run_seconds': 0, 'history_interval': 0, 'history_interval_s': 20, 'time_step': 20, 'use_adaptive_time_step': '.true.', 'step_to_output_time': '.true.'}",
+  "adaptive_effective_settings_rejected": true,
+  "analysis_custom_cli_path_binding_verified": true,
+  "archive_namelist_mismatch_error": "archived run's ncmin values differ from predeclared 10/10: {'ncmin_land': 5.0, 'ncmin_sea': 6.0}",
+  "archive_namelist_mismatch_rejected": true,
+  "case_restored_namelist_ncmin": {
+    "ncmin_land": 10.0,
+    "ncmin_sea": 10.0
+  },
+  "exact_time_count": 8,
+  "fault_temp_files_after_cleanup": [],
+  "fixed_dt_control_false_but_effective_settings_are_fixed": true,
+  "forecast_full_sha256_in_receipt": null,
+  "host_dry_mass_arrays_valid": true,
+  "host_dry_mass_provenance_valid": true,
+  "host_dry_mass_shapes": {
+    "background": [
+      39
+    ],
+    "window": [
+      8,
+      39
+    ]
+  },
+  "identity_campaign_id_valid_under_run_ss_case_producer": true,
+  "manifest_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr396-audit-green/synthetic_intake.json",
+  "missing_template_source_fails_closed": true,
+  "ncmin_manifest_path_is_archived_effective_namelist": true,
+  "no_orphan_manifest_after_fault": true,
+  "no_orphan_npz_after_fault": true,
+  "npz_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr396-audit-green/private/synthetic_intake.npz",
+  "prior_archived_reader_masked_fill_as_finite": true,
+  "publication_fault_injected": true,
+  "publication_fault_message": "synthetic one-shot post-link unlink failure",
+  "runner_identity_controls": {
+    "fixed_dt": false,
+    "history": 0,
+    "history_s": 20,
+    "input_canonical_sha256": "ea1cf4769515ea11e8f38f025822206bd4a6bbf1a3a0adf0e322af1e77b4cfe9",
+    "label": "viirs_norm2_dry1_055540_055800",
+    "minutes": 358,
+    "namelist_without_grid_sha256": "f4c4f114d446f1456759045624a47c97d6cbc55acc45fe6cc2f5925c504ab0f6",
+    "np": 1,
+    "radt": null,
+    "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+    "seconds": 0
+  },
+  "runner_identity_scheme": "337",
+  "schema_ready": true,
+  "scope": "synthetic NetCDF/file-backed runner metadata only; no live case or model/H/RTTOV",
+  "selected_fields_finite_after_mask_rejection": true,
+  "selected_mask_failure_left_no_outputs": true,
+  "selected_qnccn_exported_valid_value": 100000000.0,
+  "selected_qnccn_mask_error": "QNCCN: masked values in required selected hyperslab (Time=0, j=86, i=48)",
+  "selected_qnccn_mask_rejected": true,
+  "synthetic_forecast": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr396-audit-green/synthetic_case/runs/mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148/klfs_lc05_fcst.synthetic.nc",
+  "synthetic_run_dir": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr396-audit-green/synthetic_case/runs/mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148",
+  "unselected_column_mask_did_not_block_selected_intake": true,
+  "unselected_other_column_remained_masked": true
+}

@@ -12,10 +12,19 @@ The private NPZ stores the complete 12-field background initial state, returned
 analysis initial state, background slot state and final audit slot state; the
 input and audit forcing; frozen dry-air density; native center/interface
 pressures; Exner; observations; and the caller's RTTOV grid/reference arrays.
+Raw `PH`/`PHB` retain geopotential units of `m2 s-2`; they are kept distinct
+from pressure. The background host dry-air eta-layer mass is retained in its
+native float32 `kg m-2` values and bottom-up order.
 The private directory and file are set to mode `0700` and `0600`. Publication
 uses a same-directory, no-clobber atomic link. The public `RESULT.json` keeps
 state hashes and metric summaries; configuration arrays are represented by
 shape, dtype and SHA-256 rather than full state arrays.
+
+The final accepted audit's per-slot observation signature is read from the
+returned minimizer trace, checked stable across trace entries, and persisted
+with the final frozen-mask shape, dtype, and SHA-256 in both private metadata
+and the public receipt. Callback mask values must also match the frozen
+background mask and remain unchanged across the H call.
 
 The NPZ also stores final `v_state`/`v_theta`, all 12 `b_sigma` fields,
 parameter background/analysis values and log-prior widths, and the fixed
@@ -36,10 +45,13 @@ accepted-state audit. The observer wraps the original PyTorch LBFGS instance's
 `step` call and records its actual counters, last line-search step, and
 tolerances. PyTorch does not return the stop condition, so the receipt marks
 the termination status unknown and reports the final-audit gradient/tolerance
-flag separately. Any callback quality loss or validation/analysis error leaves
-no successful checkpoint. A failure receipt may record the failure. The compact
-optimizer state is preserved as pre-audit provenance, not as a resumable
-optimizer checkpoint.
+flag separately. The compact optimizer state is preserved as pre-audit
+provenance, not as a resumable optimizer checkpoint. NPZ hashing happens before
+exclusive publication. Receipt and checkpoint links are commit points;
+temporary-name cleanup and directory syncing after a successful link are
+best-effort so cleanup I/O errors cannot leave a success receipt pointing to a
+removed checkpoint. A failure receipt includes the actual return stage and any
+available final signature; raw optimizer-state arrays remain private.
 
 Receipt sections distinguish validated input, numerical return, and physical
 matchup/science acceptance. A successful numerical return remains diagnostic:
@@ -48,6 +60,12 @@ GK2A matchup or scientific result. The metric named phase-aware RH is KDM6's
 `qv/qs(T,p)` ratio; the separate liquid-water ratio is `qv/qs_water(T,p)`.
 Neither is reported as observed vapor-pressure `e/es` RH. `qc` and `nc` sums
 are unweighted sums across native levels, not column-integrated budgets.
+
+The receipt reports `objective.initial_zero_control_closure` from the first
+existing optimizer trace entry (`j_trace[0]`), validates `Jb=Jtheta=0`, seven
+valid channels, and a signature matching the accepted audit. The separate
+`background_quality_probe` preserves the first non-grad H call's raw `J_huber`
+and all-zero cost mask; it is not presented as optimizer initial `Jo`.
 
 `test_capture_tq_state_storage.py` uses synthetic data only. It checks private
 file permissions, exclusive publication, four distinct 12-field state

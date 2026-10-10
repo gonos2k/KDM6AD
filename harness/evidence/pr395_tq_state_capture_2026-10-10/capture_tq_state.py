@@ -315,6 +315,41 @@ def _validate_intake_binding(
     # The native forecast/source files are never opened by this capture wrapper.
     with np.load(npz_path, allow_pickle=False) as archive:
         intake_arrays = {key: archive[key].copy() for key in archive.files}
+    host_mass_window = np.asarray(
+        intake_arrays["native_window_host_dry_mass_kg_m2"])
+    host_mass_background = np.asarray(
+        intake_arrays["host_dry_mass_background_kg_m2"])
+    host_mass_provenance = manifest.get("model_data_provenance", {}).get(
+        "host_dry_mass", {})
+    if (host_mass_window.dtype != np.float32 or host_mass_window.shape != (8, 39)
+            or host_mass_background.dtype != np.float32 or host_mass_background.shape != (39,)
+            or not np.isfinite(host_mass_window).all()
+            or not np.isfinite(host_mass_background).all()
+            or not np.all(host_mass_window > 0.0)
+            or not np.all(host_mass_background > 0.0)
+            or not np.array_equal(host_mass_window[0], host_mass_background)
+            or host_mass_provenance.get("window_npz_key") != "native_window_host_dry_mass_kg_m2"
+            or host_mass_provenance.get("background_npz_key") != "host_dry_mass_background_kg_m2"
+            or host_mass_provenance.get("shape") != [8, 39]
+            or host_mass_provenance.get("dtype") != "float32"
+            or host_mass_provenance.get("units") != "kg dry air m-2 per native eta layer"
+            or host_mass_provenance.get("orientation") != "bottom-up native levels"
+            or not isinstance(host_mass_provenance.get("formula"), str)
+            or not isinstance(host_mass_provenance.get("provenance"), str)):
+        raise ValueError(
+            "native intake host dry mass lacks matching finite float32 arrays and source-backed eta-layer metadata")
+    host_mass_summary = {
+        **host_mass_provenance,
+        "source_key": "host_dry_mass_background_kg_m2",
+        "shape": list(host_mass_background.shape),
+        "dtype": str(host_mass_background.dtype),
+        "sha256_raw_dtype_bytes": hashlib.sha256(
+            np.ascontiguousarray(host_mass_background).tobytes()).hexdigest(),
+        "window_source_key": "native_window_host_dry_mass_kg_m2",
+        "window_shape": list(host_mass_window.shape),
+        "window_dtype": str(host_mass_window.dtype),
+        "background_matches_window_frame_0": True,
+    }
     current_state_sha = state_sha256(xb)
     _require_finite_state(xb, label="native_intake_background_initial")
     expected_state_sha = {
@@ -341,9 +376,11 @@ def _validate_intake_binding(
             "p_half_native_bottomup_Pa", "Pa", "bottom-up",
             "REAL(4)-transcribed calc_p8w; distinct from raw PH/PHB"),
         "PH_raw_native_bottomup": (
-            "PH_raw_native_bottomup", "Pa", "bottom-up", "raw native PH"),
+            "PH_raw_native_bottomup", "m2 s-2", "bottom-up",
+            "raw WRF geopotential PH; not pressure"),
         "PHB_raw_native_bottomup": (
-            "PHB_raw_native_bottomup", "Pa", "bottom-up", "raw native PHB"),
+            "PHB_raw_native_bottomup", "m2 s-2", "bottom-up",
+            "raw WRF base-state geopotential PHB; not pressure"),
         "p_lay_rttov_topdown": (
             "p_lay_rttov_topdown_hPa", "hPa", "top-down", "RTTOV layer grid"),
         "p_half_rttov_topdown": (
@@ -379,6 +416,7 @@ def _validate_intake_binding(
             "mapping_basis": "first two exact actual_saved_times entries; slot nominal, pixel time unverified",
         },
         "pressure_sources": manifest.get("pressure_sources", manifest.get("pressure_provenance")),
+        "host_dry_mass_background": host_mass_summary,
         "science_approved": manifest["science_approved"],
         "analysis_executed_at_intake": manifest["analysis_executed"],
     }, coordinates, intake_arrays, manifest)
@@ -399,6 +437,7 @@ def _private_payload(
     native_coordinates: Mapping[str, Mapping],
     slot_calls: Sequence[Mapping],
     receipt_metadata: Mapping,
+    host_dry_mass_background_kg_m2: np.ndarray | None = None,
     extra_private_arrays: Mapping[str, np.ndarray] | None = None,
 ) -> dict[str, np.ndarray]:
     payload: dict[str, np.ndarray] = {}
@@ -414,6 +453,13 @@ def _private_payload(
     payload["observation_y_dqf"] = _array(y_rq).copy()
     payload["p_centers_native_bottomup_Pa"] = _array(final_slot_forcing.p).copy()
     payload["exner_final_slot_native_bottomup"] = _array(final_slot_forcing.pii).copy()
+    if host_dry_mass_background_kg_m2 is not None:
+        mass = np.asarray(host_dry_mass_background_kg_m2)
+        if (mass.dtype != np.float32 or mass.shape != (xb.th.shape[-1],)
+                or not np.isfinite(mass).all() or not np.all(mass > 0.0)):
+            raise ValueError(
+                "host eta-layer dry mass must preserve finite positive native float32 [K] intake values")
+        payload["host_dry_mass_background_kg_m2"] = mass.copy()
     for name, value in native_coordinates.items():
         payload[f"native_coordinate__{name}"] = _array(value["values"]).copy()
     for name in ("p_lay", "p_half", "t_ref", "q_ref"):
@@ -454,17 +500,30 @@ def write_private_npz_atomic(path: Path, payload: Mapping[str, np.ndarray]) -> s
             stream.flush()
             os.fsync(stream.fileno())
         os.chmod(temp, 0o600)
+        # Hash before the no-clobber link so a post-publication read error can
+        # never strand a checkpoint that the caller believes was not written.
+        checkpoint_sha = sha256_file(temp)
         # A same-directory hard link is an atomic no-clobber publication.
         # os.replace would overwrite a file created after the early existence
         # check, which is unsafe for a checkpoint path intended to be fresh.
         os.link(temp, path)
         linked = True
-        temp.unlink()
-        dir_fd = os.open(path.parent, os.O_RDONLY)
         try:
-            os.fsync(dir_fd)
-        finally:
-            os.close(dir_fd)
+            temp.unlink()
+        except OSError:
+            # The final name is already committed and private. A leftover
+            # mode-0600 temporary hard link is harmless; do not report failure
+            # after publication and leave an untracked checkpoint behind.
+            pass
+        try:
+            dir_fd = os.open(path.parent, os.O_RDONLY)
+            try:
+                os.fsync(dir_fd)
+            finally:
+                os.close(dir_fd)
+        except OSError:
+            # As above, the linked checkpoint remains the committed result.
+            pass
     except BaseException:
         try:
             temp.unlink()
@@ -476,7 +535,7 @@ def write_private_npz_atomic(path: Path, payload: Mapping[str, np.ndarray]) -> s
             except FileNotFoundError:
                 pass
         raise
-    return sha256_file(path)
+    return checkpoint_sha
 
 
 def _write_receipt_exclusive(path: Path, receipt: Mapping) -> str:
@@ -492,7 +551,13 @@ def _write_receipt_exclusive(path: Path, receipt: Mapping) -> str:
             os.fsync(stream.fileno())
         # link() atomically refuses an existing destination; then remove temp.
         os.link(temp, path)
-        temp.unlink()
+        try:
+            temp.unlink()
+        except OSError:
+            # The link is the commit point. Cleanup failure must not turn a
+            # published success receipt into a reported failure whose outer
+            # rollback deletes the referenced private checkpoint.
+            pass
     except BaseException:
         try:
             temp.unlink()
@@ -763,6 +828,151 @@ def _classify_failure(exc: BaseException) -> str:
     return "ANALYSIS_EXCEPTION"
 
 
+def _public_optimizer_failure_summary(observation: Mapping) -> dict:
+    """Keep failure diagnostics public while excluding optimizer objects/raw vectors."""
+    return {key: value for key, value in observation.items()
+            if key not in ("optimizer", "optimizer_state_arrays")}
+
+
+def _numerical_return_failure_summary(analysis_runner_returned: bool,
+                                      package) -> dict:
+    has_result = isinstance(package, Mapping) and package.get("result") is not None
+    if has_result:
+        status = "RETURNED_BUT_CAPTURE_FAILED"
+    elif analysis_runner_returned:
+        status = "RUNNER_RETURNED_WITHOUT_MINIMIZER_RESULT"
+    else:
+        status = "FAILED_BEFORE_RETURN"
+    return {"status": status,
+            "analysis_runner_returned": analysis_runner_returned,
+            "minimizer_returned_state": bool(has_result)}
+
+
+def _final_audit_signature(result, *, obs_time: int, final_mask: torch.Tensor) -> dict:
+    """Bind the accepted audit trace signature to its frozen seven-channel mask."""
+    trace = getattr(result, "j_trace", None)
+    if not isinstance(trace, list) or not trace:
+        raise RuntimeError("minimizer return lacks a final objective trace for signature audit")
+    signature = None
+    for index, item in enumerate(trace):
+        if not isinstance(item, Mapping):
+            raise RuntimeError(f"objective trace entry {index} is not a mapping")
+        signatures = item.get("signature")
+        n_valid = item.get("n_valid")
+        if not isinstance(signatures, Mapping) or not isinstance(n_valid, Mapping):
+            raise RuntimeError(f"objective trace entry {index} lacks frozen signature/count maps")
+        current_signature = signatures.get(obs_time, signatures.get(str(obs_time)))
+        current_count = n_valid.get(obs_time, n_valid.get(str(obs_time)))
+        if not isinstance(current_signature, str) or len(current_signature) != 64:
+            raise RuntimeError(f"objective trace entry {index} lacks a SHA-256 observation signature")
+        if any(character not in "0123456789abcdef" for character in current_signature):
+            raise RuntimeError(f"objective trace entry {index} signature is not lowercase SHA-256 hex")
+        if current_count != 7:
+            raise RuntimeError(f"objective trace entry {index} does not retain the fixed seven-channel support")
+        if signature is None:
+            signature = current_signature
+        elif current_signature != signature:
+            raise RuntimeError("observation signature changed across the minimizer trace")
+    mask_array = np.asarray(_array(final_mask), dtype=np.float64)
+    return {
+        "slot": obs_time,
+        "sha256": signature,
+        "trace_entry_count": len(trace),
+        "final_trace_index": len(trace) - 1,
+        "all_trace_signatures_match": True,
+        "n_valid_each_trace_entry": 7,
+        "final_frozen_mask": {
+            "shape": list(mask_array.shape),
+            "dtype": str(mask_array.dtype),
+            "sha256_f64": array_sha256(mask_array),
+        },
+    }
+
+
+def _initial_zero_control_closure(result, events: Sequence[Mapping], *, obs_time: int,
+                                  final_audit_signature: Mapping,
+                                  final_mask: torch.Tensor) -> dict:
+    """Extract and validate the first existing optimizer closure at zero controls."""
+    trace = getattr(result, "j_trace", None)
+    if not isinstance(trace, list) or not trace:
+        raise RuntimeError("minimizer return lacks the initial zero-control trace entry")
+    initial = trace[0]
+    if not isinstance(initial, Mapping):
+        raise RuntimeError("initial zero-control trace entry is not a mapping")
+    jb = float(initial["j_state"])
+    jtheta = float(initial["j_theta"])
+    jo = float(initial["j_obs"])
+    total = float(initial["total"])
+    if jb != 0.0 or jtheta != 0.0:
+        raise RuntimeError("first optimizer closure is not at zero state/parameter controls")
+    if not math.isclose(total, jb + jtheta + jo, rel_tol=0.0, abs_tol=1e-12):
+        raise RuntimeError("initial zero-control Jtotal differs from Jb + Jtheta + Jo")
+    n_valid_map = initial.get("n_valid")
+    signature_map = initial.get("signature")
+    if not isinstance(n_valid_map, Mapping) or not isinstance(signature_map, Mapping):
+        raise RuntimeError("initial zero-control trace lacks n_valid/signature maps")
+    n_valid = n_valid_map.get(obs_time, n_valid_map.get(str(obs_time)))
+    signature = signature_map.get(obs_time, signature_map.get(str(obs_time)))
+    if n_valid != 7 or signature != final_audit_signature.get("sha256"):
+        raise RuntimeError("initial zero-control trace support/signature differs from the accepted audit")
+    first_grad_event = next((event for event in events if event.get("grad") is True), None)
+    if first_grad_event is None or not first_grad_event.get("returned", False):
+        raise RuntimeError("initial zero-control trace lacks its successful first grad=True H callback")
+    if first_grad_event.get("frozen_mask") != first_grad_event.get("fixed_mask"):
+        raise RuntimeError("initial zero-control H callback mutated its frozen mask")
+    mask_array = np.asarray(first_grad_event["fixed_mask"], dtype=np.float64)
+    if not np.array_equal(mask_array, _array(final_mask)):
+        raise RuntimeError("initial zero-control H support differs from the accepted audit support")
+    raw_h_cost = float(first_grad_event["J_huber"])
+    if not math.isclose(jo, raw_h_cost, rel_tol=1e-12, abs_tol=1e-12):
+        raise RuntimeError("initial zero-control trace Jo differs from its first H callback cost")
+    return {
+        "trace_index": 0,
+        "control_semantics": "first existing optimizer closure before L-BFGS updates; v_state and v_theta start at zero",
+        "Jb_state": jb,
+        "Jtheta": jtheta,
+        "Jo": jo,
+        "Jtotal": total,
+        "n_valid": int(n_valid),
+        "operator_signature_sha256": signature,
+        "signature_matches_final_accepted_audit": True,
+        "first_grad_true_h_call_index": first_grad_event["call_index"],
+        "first_h_J_huber_matches_Jo": True,
+        "frozen_mask": {
+            "shape": list(mask_array.shape),
+            "dtype": str(mask_array.dtype),
+            "values": mask_array.tolist(),
+            "sha256_f64": array_sha256(mask_array),
+        },
+    }
+
+
+def _background_quality_probe(events: Sequence[Mapping]) -> dict:
+    """Keep the raw zero-mask QC-probe cost distinct from objective Jo at v=0."""
+    probe = next((event for event in events if event.get("grad") is False), None)
+    if probe is None or not probe.get("returned", False):
+        raise RuntimeError("successful adapter return lacks its grad=False background quality probe")
+    if probe.get("frozen_mask") != probe.get("fixed_mask"):
+        raise RuntimeError("background quality probe mutated its zero loss mask")
+    mask = np.asarray(probe["fixed_mask"], dtype=np.float64)
+    if not np.isfinite(mask).all() or np.count_nonzero(mask) != 0:
+        raise RuntimeError("background quality probe must retain its all-zero cost mask")
+    raw_cost = float(probe["J_huber"])
+    if raw_cost != 0.0:
+        raise RuntimeError("all-zero background quality-probe mask must have zero Huber cost")
+    return {
+        "call_index": probe["call_index"],
+        "raw_J_huber": raw_cost,
+        "cost_semantics": "non-grad background quality probe with all-zero loss mask; not initial zero-control closure Jo",
+        "target_BT_K": probe["target_BT_K"],
+        "BT_K": probe["BT_K"],
+        "rad_quality": probe["rad_quality"],
+        "mask": {"shape": list(mask.shape), "dtype": str(mask.dtype),
+                 "values": mask.tolist(), "sha256_f64": array_sha256(mask)},
+        "mask_unchanged_across_h": True,
+    }
+
+
 def _validate_predeclared_run(window_config, manifest: Mapping, *, obs_time: int,
                               max_iter: int, forcings: Sequence[Forcing]) -> None:
     expected = {
@@ -846,6 +1056,10 @@ def run_capture(
     events = []
     optimizer_observation = {"constructor_calls": 0, "step_calls": 0,
                              "step_returned": False}
+    package = None
+    analysis_runner_returned = False
+    final_audit_signature = None
+    failure_stage = "PRE_ANALYSIS"
     source_before = _source_snapshot()
     checkpoint_written = False
     try:
@@ -864,6 +1078,7 @@ def run_capture(
             xb, forcings, native_intake_context_path,
             native_intake_context_sha256, native_intake_npz_path,
             native_intake_npz_sha256)
+        failure_stage = "NATIVE_INPUT_VALIDATED"
         # Fixed-forcing PR395 uses the same forcing at the only initial and
         # observation slot. Record the exact source index used for frozen rho_d.
         rho_d_formula = freeze_dry_air_density(xb, forcings[0])
@@ -960,15 +1175,22 @@ def run_capture(
             }
             if rttov_timeout is not None:
                 runner_kwargs["rttov_timeout"] = rttov_timeout
+            failure_stage = "ANALYSIS_RUNNING"
             package = analysis_runner(
                 xb, forcings, y_bt, y_rq, xland, clear_cfg, rttov_cfg,
                 str(case_root),
                 **runner_kwargs)
+            analysis_runner_returned = True
+            failure_stage = "ANALYSIS_RETURNED"
         finally:
             _fulldomain.sharded_allsky = original_sharded
             torch.optim.LBFGS = original_lbfgs_factory
 
         result = package["result"]
+        if last_grad_call is not None:
+            final_audit_signature = _final_audit_signature(
+                result, obs_time=obs_time, final_mask=last_grad_call["mask"])
+        failure_stage = "POST_RETURN_VALIDATION"
         actual_meta = package["metadata"]
         if (actual_meta.get("normalized_dry") is not True
                 or actual_meta.get("require_frozen_quality") is not True
@@ -1013,9 +1235,26 @@ def run_capture(
             raise RuntimeError("final accepted-state callback does not retain all seven frozen channels")
         if not torch.equal(final_rq[final_mask > 0], torch.zeros_like(final_rq[final_mask > 0])):
             raise RuntimeError("final accepted-state quality flags are nonzero on frozen support")
+        background_mask = torch.as_tensor(
+            actual_meta.get("background_mask"), dtype=final_mask.dtype,
+            device=final_mask.device)
+        if not torch.equal(final_mask, background_mask):
+            raise RuntimeError("final all-sky callback mask differs from the frozen background support")
+        final_event = events[last_grad_call["call_index"] - 1]
+        if (final_event.get("frozen_mask") != final_event.get("fixed_mask")
+                or not final_event.get("returned", False)):
+            raise RuntimeError("final all-sky callback mutated its frozen mask or failed before return")
+        if (final_audit_signature["final_frozen_mask"]["sha256_f64"]
+                != array_sha256(final_mask)):
+            raise RuntimeError("final callback mask digest changed after audit signature capture")
+        initial_zero_control_closure = _initial_zero_control_closure(
+            result, events, obs_time=obs_time,
+            final_audit_signature=final_audit_signature, final_mask=final_mask)
+        background_quality_probe = _background_quality_probe(events)
 
         control_private, control_public, control_metadata = _final_control_snapshot(
             optimizer_observation, result, package, window_config, xb)
+        failure_stage = "CONTROL_CAPTURED"
 
         accepted_state = State(*(getattr(result.x_analysis, f).detach().clone()
                                  for f in STATE_FIELDS))
@@ -1057,7 +1296,10 @@ def run_capture(
                 "call_index": last_grad_call["call_index"],
                 "state_sha256": state_sha256(last_grad_call["state"]),
                 "forcing_sha256": forcing_sha256(last_grad_call["forcing"]),
+                "operator_signature": final_audit_signature,
             },
+            "initial_zero_control_closure": initial_zero_control_closure,
+            "background_quality_probe": background_quality_probe,
             "background_slot_capture": {
                 "semantics": "first successful grad=False background quality probe",
                 "state_sha256": state_sha256(background_slot),
@@ -1073,9 +1315,13 @@ def run_capture(
             y_bt=y_bt, y_rq=y_rq,
             rttov_cfg=rttov_cfg, native_coordinates=native_coordinates,
             slot_calls=events, receipt_metadata=config_metadata,
+            host_dry_mass_background_kg_m2=intake_arrays[
+                "host_dry_mass_background_kg_m2"],
             extra_private_arrays=control_private)
+        failure_stage = "PRIVATE_CHECKPOINT_WRITE"
         private_sha = write_private_npz_atomic(private_checkpoint, private_arrays)
         checkpoint_written = True
+        failure_stage = "PRIVATE_CHECKPOINT_WRITTEN"
 
         metadata = package["metadata"]
         receipt = {
@@ -1105,6 +1351,7 @@ def run_capture(
             "final_control_gradient": control_public["final_control_gradient"],
             "control_background": control_public["control_background"],
             "native_intake_context": intake_binding,
+            "host_dry_mass_background": intake_binding["host_dry_mass_background"],
             "private_checkpoint": {
                 "path": str(private_checkpoint),
                 "sha256": private_sha,
@@ -1161,15 +1408,20 @@ def run_capture(
                                        float(result.j_trace[-1]["total"])),
                 "n_valid": int(final_mask.sum()),
                 "frozen_support": final_mask.tolist(),
+                "final_audit_signature": final_audit_signature,
+                "initial_zero_control_closure": initial_zero_control_closure,
                 "final_rad_quality": final_rq.tolist(),
                 "n_window_evals": int(result.n_window_evals),
                 "n_audit_evals": int(result.n_audit_evals),
             },
+            "background_quality_probe": background_quality_probe,
             "logical_h_calls": events,
             "runtime_rttov_child_launches": None,
             "runtime_rttov_child_launch_note": "not instrumented; logical all-sky H callback outputs are recorded",
         }
+        failure_stage = "PUBLIC_RECEIPT_WRITE"
         receipt_sha = _write_receipt_exclusive(public_receipt, receipt)
+        failure_stage = "SUCCESS_RECEIPT_PUBLISHED"
         receipt["public_receipt_sha256"] = receipt_sha
         return receipt
     except BaseException as exc:
@@ -1187,21 +1439,20 @@ def run_capture(
                 "manifest_sha256": None if intake_binding is None else intake_binding["sha256"],
                 "native_npz_sha256": None if intake_binding is None else intake_binding["npz_sha256"],
             },
-            "numerical_return": {
-                "status": "FAILED_BEFORE_RETURN",
-                "minimizer_returned_state": False,
-            },
+            "numerical_return": _numerical_return_failure_summary(
+                analysis_runner_returned, package),
             "physical_matchup_and_science_acceptance": {
                 "status": "NOT_ASSESSED",
                 "science_accepted": False,
             },
             "analysis_exception": {"type": type(exc).__name__, "message": str(exc),
                                    "traceback": traceback.format_exc()},
+            "failure_stage": failure_stage,
+            "final_audit_signature": final_audit_signature,
             "native_intake_context": intake_binding,
             "private_checkpoint": {"path": str(private_checkpoint), "published": False},
             "callback_attempt_metadata": events,
-            "optimizer_observation": {key: value for key, value in optimizer_observation.items()
-                                      if key != "optimizer"},
+            "optimizer_observation": _public_optimizer_failure_summary(optimizer_observation),
             "production_source_sha256_before": source_before,
             "production_source_sha256_after": _source_snapshot(),
             "valid_native_analysis_published": False,

@@ -15,6 +15,7 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import math
 import multiprocessing as mp
 import os
 from pathlib import Path
@@ -37,6 +38,7 @@ from kdm6.obs.model_profile_builder import (  # noqa: E402
 from kdm6.obs.rttov_case_writer import _resolve_coef_path, make_live_run_k  # noqa: E402
 from kdm6.obs.rttov_input_builder import RttovInputConfig  # noqa: E402
 from kdm6.obs.rttov_runner import DEFAULT_RTTOV_TIMEOUT  # noqa: E402
+from kdm6.obs.obs_loss import compute_obs_loss  # noqa: E402
 from kdm6.state import Forcing, State  # noqa: E402
 
 INTAKE_MANIFEST = ROOT / "harness/evidence/pr395_native_tq_intake_2026-10-10/INTAKE.json"
@@ -247,6 +249,13 @@ def build_run_inputs(arrays: dict[str, np.ndarray], manifest: dict,
     rho_d = arrays["rho_d_native_bottomup_kg_m3"].copy()
     if not np.isfinite(rho_d).all() or rho_d.shape != (1, 39):
         raise ValueError("frozen optical dry density must be finite [1,39]")
+    host_mass_window = arrays["native_window_host_dry_mass_kg_m2"]
+    host_mass_background = arrays["host_dry_mass_background_kg_m2"]
+    if (host_mass_window.dtype != np.float32 or host_mass_window.shape != (8, 39)
+            or host_mass_background.dtype != np.float32 or host_mass_background.shape != (39,)
+            or not np.isfinite(host_mass_window).all() or np.any(host_mass_window <= 0.0)
+            or not np.array_equal(host_mass_window[0], host_mass_background)):
+        raise ValueError("native host eta-layer dry mass must bind frame0 and all eight frames as finite positive f32")
 
     p_lay = np.asarray(arrays["p_lay_rttov_topdown_hPa"], dtype=np.float64)
     p_half = np.asarray(arrays["p_half_rttov_topdown_hPa"], dtype=np.float64)
@@ -325,10 +334,16 @@ def build_run_inputs(arrays: dict[str, np.ndarray], manifest: dict,
                              "ami_row_col_zero_based": [320, 48],
                              "native_j_i_zero_based": [86, 48]},
         "observation_receipt_sha256": sha256(OBS_RECEIPT),
-        "native_intake_manifest_sha256": sha256(INTAKE_MANIFEST),
-        "native_intake_npz_sha256": sha256(INTAKE_NPZ),
         "observation_bt_K_channels_10_16": y_bt_np.tolist(),
         "observation_dqf_channels_10_16": y_rq_np.tolist(),
+        "native_host_dry_mass_background": {
+            "npz_key": "host_dry_mass_background_kg_m2",
+            "npz_key_window": "native_window_host_dry_mass_kg_m2",
+            "shape_f32": list(host_mass_background.shape),
+            "units": "kg dry air m-2 per native eta layer",
+            "sha256_f32": hashlib.sha256(np.ascontiguousarray(host_mass_background).tobytes()).hexdigest(),
+            "method": "native host eta mass -(C1H*(MU+MUB)+C2H)*DNW/9.81; not replaced by EOS rho_m*delz",
+        },
         "new_geometry_candidate": geometry,
         "geometry_derivation": geometry_context,
         "new_native_surface_candidate": surface,
@@ -355,6 +370,112 @@ def build_run_inputs(arrays: dict[str, np.ndarray], manifest: dict,
             "window_config": window_config, "run_manifest": run_manifest,
             "surface": surface, "geometry": geometry,
             "native_intake": manifest}
+
+
+def _audit_initial_objectives(capture_result: dict, y_bt: torch.Tensor) -> dict:
+    """Separate the zero-mask QC probe from the true first-closure Jo0.
+
+    This calculation consumes only the capture receipt's saved BT/mask fields;
+    it does not call H or M. Reapplying the frozen seven-channel mask to the
+    quality-probe BT cross-checks that probe against the first zero-control
+    objective without relabeling the raw zero-mask probe cost.
+    """
+    calls = capture_result.get("logical_h_calls", [])
+    probe_event = next((call for call in calls if call.get("grad") is False), None)
+    first_grad_event = next((call for call in calls if call.get("grad") is True), None)
+    objective = capture_result.get("objective", {})
+    zero = objective.get("initial_zero_control_closure")
+    probe = capture_result.get("background_quality_probe")
+    unavailable = {
+        "status": "NOT_AVAILABLE",
+        "initial_zero_control_objective": None,
+        "background_quality_probe": None,
+        "crosscheck_valid": False,
+        "h_or_m_re_evaluations_for_crosscheck": 0,
+    }
+    if (not isinstance(zero, dict) or not isinstance(probe, dict)
+            or probe_event is None or first_grad_event is None):
+        return unavailable
+
+    zero_mask = np.asarray(zero.get("frozen_mask", {}).get("values"), dtype=np.float64)
+    probe_bt = np.asarray(probe.get("BT_K"), dtype=np.float64)
+    probe_target = np.asarray(probe.get("target_BT_K"), dtype=np.float64)
+    probe_cost_mask = np.asarray(probe.get("mask", {}).get("values"), dtype=np.float64)
+    first_grad_bt = np.asarray(first_grad_event.get("BT_K"), dtype=np.float64)
+    first_grad_mask = np.asarray(first_grad_event.get("fixed_mask"), dtype=np.float64)
+    expected_shape = tuple(y_bt.shape)
+    if any(a.shape != expected_shape for a in
+           (zero_mask, probe_bt, probe_target, probe_cost_mask, first_grad_bt, first_grad_mask)):
+        return {**unavailable, "status": "INVALID_SHAPE"}
+    if not (np.isfinite(zero_mask).all() and np.isfinite(probe_bt).all()
+            and np.isfinite(probe_target).all() and np.isfinite(probe_cost_mask).all()
+            and np.isfinite(first_grad_bt).all() and np.isfinite(first_grad_mask).all()):
+        return {**unavailable, "status": "NONFINITE_CAPTURE"}
+
+    zero_jo = float(zero["Jo"])
+    zero_jb = float(zero["Jb_state"])
+    zero_jtheta = float(zero["Jtheta"])
+    zero_total = float(zero["Jtotal"])
+    raw_probe_masked_cost = float(probe["raw_J_huber"])
+    probe_zero_mask_cost = float(compute_obs_loss(
+        torch.as_tensor(probe_bt, **F64), {"bt": y_bt, "bias": 0.0},
+        torch.as_tensor(probe_cost_mask, **F64), 1.0, delta=1.0))
+    probe_bt_under_frozen_mask = float(compute_obs_loss(
+        torch.as_tensor(probe_bt, **F64), {"bt": y_bt, "bias": 0.0},
+        torch.as_tensor(zero_mask, **F64), 1.0, delta=1.0))
+    mask_matches_first_closure = np.array_equal(zero_mask, first_grad_mask)
+    probe_state_matches_first_closure = (
+        probe_event.get("state_sha256") == first_grad_event.get("state_sha256"))
+    probe_bt_matches_first_closure = np.array_equal(probe_bt, first_grad_bt)
+    probe_target_matches_input = np.array_equal(probe_target, y_bt.detach().cpu().numpy())
+    zero_objective_matches_components = math.isclose(
+        zero_total, zero_jb + zero_jtheta + zero_jo, rel_tol=0.0, abs_tol=1e-12)
+    raw_probe_cost_matches_zero_mask = math.isclose(
+        raw_probe_masked_cost, probe_zero_mask_cost, rel_tol=0.0, abs_tol=1e-12)
+    probe_under_frozen_matches_zero_jo = math.isclose(
+        probe_bt_under_frozen_mask, zero_jo, rel_tol=1e-12, abs_tol=1e-12)
+    crosscheck_valid = bool(
+        zero.get("trace_index") == 0 and zero.get("n_valid") == 7
+        and zero_jb == 0.0 and zero_jtheta == 0.0
+        and zero_objective_matches_components
+        and int(np.count_nonzero(zero_mask)) == 7
+        and not np.any(probe_cost_mask)
+        and mask_matches_first_closure
+        and probe_state_matches_first_closure
+        and probe_bt_matches_first_closure
+        and probe_target_matches_input
+        and raw_probe_cost_matches_zero_mask
+        and probe_under_frozen_matches_zero_jo)
+    return {
+        "status": "CROSSCHECKED" if crosscheck_valid else "MISMATCH",
+        "initial_zero_control_objective": {
+            "Jo0_huber": zero_jo, "Jb_state": zero_jb,
+            "Jtheta": zero_jtheta, "Jtotal": zero_total,
+            "trace_index": int(zero["trace_index"]),
+            "n_valid": int(zero["n_valid"]),
+            "operator_signature_sha256": zero["operator_signature_sha256"],
+            "frozen_mask": zero["frozen_mask"],
+        },
+        "background_quality_probe": {
+            "probe_masked_cost": raw_probe_masked_cost,
+            "cost_semantics": probe.get("cost_semantics"),
+            "zero_mask": probe.get("mask"),
+            "zero_mask_cost_recomputed": probe_zero_mask_cost,
+            "probe_BT_cost_recomputed_with_frozen_mask": probe_bt_under_frozen_mask,
+            "probe_BT_K": probe_bt.tolist(),
+            "rad_quality": probe.get("rad_quality"),
+        },
+        "crosschecks": {
+            "first_zero_control_closure_components_sum": zero_objective_matches_components,
+            "probe_cost_matches_zero_mask_recomputation": raw_probe_cost_matches_zero_mask,
+            "probe_and_initial_closure_states_match": probe_state_matches_first_closure,
+            "probe_BT_matches_first_zero_control_H_BT": probe_bt_matches_first_closure,
+            "probe_target_matches_validated_observation": probe_target_matches_input,
+            "frozen_mask_matches_first_zero_control_H": mask_matches_first_closure,
+            "probe_BT_under_frozen_mask_matches_initial_zero_control_Jo": probe_under_frozen_matches_zero_jo,
+            "h_or_m_re_evaluations_for_crosscheck": 0,
+        },
+    }
 
 
 def main() -> int:
@@ -478,6 +599,8 @@ def main() -> int:
         background_probe is not None
         and background_probe.get("state_sha256")
         == result.get("state_array_sha256", {}).get("background_slot"))
+    objective_audit = _audit_initial_objectives(result, ctx["y_bt"])
+    objective_audit_valid = objective_audit.get("status") == "CROSSCHECKED"
     driver_result = {
         "schema": "pr395_native_tq_analysis_driver_v1",
         "status": result.get("status"),
@@ -493,10 +616,13 @@ def main() -> int:
         "rttov_execution_assets_stable_during_analysis": execution_assets_before == execution_assets_after,
         "rttov_execution_assets_before": execution_assets_before,
         "rttov_execution_assets_after": execution_assets_after,
-        "background_probe": {
+        "objective_audit": objective_audit,
+        "background_quality_probe_callback": {
             "status": ("CAPTURED" if background_probe is not None else "NOT_CAPTURED"),
             "state_hash_matches_recorded_background_slot": background_probe_hash_matches,
-            "Jo0_huber": None if background_probe is None else background_probe.get("J_huber"),
+            "raw_zero_mask_J_huber": (None if background_probe is None
+                                      else background_probe.get("J_huber")),
+            "zero_cost_probe_only": True,
             "BT_K": None if background_probe is None else background_probe.get("BT_K"),
             "rad_quality": None if background_probe is None else background_probe.get("rad_quality"),
             "state_sha256": None if background_probe is None else background_probe.get("state_sha256"),
@@ -517,7 +643,7 @@ def main() -> int:
                       "driver_receipt": str(driver_receipt),
                       "checkpoint": result.get("private_checkpoint")}, indent=2))
     return 0 if (result.get("status") == "RETURNED_DIAGNOSTIC_ONLY"
-                 and background_probe_hash_matches) else 1
+                 and background_probe_hash_matches and objective_audit_valid) else 1
 
 
 if __name__ == "__main__":
