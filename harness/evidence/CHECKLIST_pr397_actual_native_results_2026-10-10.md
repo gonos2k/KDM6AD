@@ -28,7 +28,7 @@ true와 정확한 8개 Times가 확인됐고, 기존 세 consumer는 10:25:10 JS
 | R7 | 기존 저장 배열 진단 | continuation의 세 번째 consumer 결과; host/local 온위·Exner 분해와 고정 host 질량측도의 물 변화 | 완료: 기존 진단 consumer0, 추가 M/H0, closed budget=false |
 | R8 | 물리적 상태 해석 | 층별 ΔT, qv 절대/상대 증분, 포화비, QC/NC, 질량측도 변화 항. 추가 M/H 없이 보존 배열 사용 | 완료: 실제 ΔT/qv/포화/무구름/고정·변동 질량측도 진단; 과정 원인·수지 OPEN |
 | R9 | 독립 Green/Red 결과 대조 | 실제 receipt/배열의 일관성, 비용·수렴·물리 채택의 구분, 지원집합·관측 시나리오 유지 | 완료: receipt-derived BT/mask sidecar와 moving-mass 계산 독립 확인; 미래 producer alias fix와 테스트 연결 Red 검토 완료 |
-| R10 | 확인 범위·미완료 항목과 PR | 실행 사실과 조건부 해석을 근거에 연결해 공개; private 전체 상태·예보파일은 공개하지 않음 | 자료 작성 완료; PR 갱신 준비 |
+| R10 | 확인 범위·미완료 항목과 PR | 실행 사실과 조건부 해석을 근거에 연결해 공개; private 전체 상태·예보파일은 공개하지 않음 | [PR #397 게시](https://github.com/gonos2k/KDM6AD/pull/397); CI 상태는 별도 확인 |
 
 ## 결과 해석의 유지 조건
 
