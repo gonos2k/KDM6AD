@@ -1,0 +1,10 @@
+{
+  "pid": 99157,
+  "role": "mpi_launcher",
+  "raw_wait_status": 0,
+  "raw_fflags": 2214592512,
+  "raw_flags": 32817,
+  "exit_code_or_negative_signal": 0,
+  "utc": "2026-10-10T01:24:45.764809+00:00",
+  "MPI_Finalize_calls_observed": false
+}

@@ -1,0 +1,2 @@
+Timing for main: time 2025-07-19_05:58:00 on domain   1:   14.27131 elapsed seconds
+d01 2025-07-19_05:58:00 wrf: SUCCESS COMPLETE WRF

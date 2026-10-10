@@ -1,0 +1,16 @@
+{
+  "schema": "pr395_os_process_exit_v1",
+  "observer_pid": 80753,
+  "registered_pids": [
+    99148,
+    99157,
+    99158
+  ],
+  "unavailable": [],
+  "method": "EVFILT_PROC NOTE_EXIT|NOTE_EXITSTATUS; independent OS process exit, not an MPI call trace",
+  "kernel": "25.6.0",
+  "source_sha256": "bf119d82c2689ce157b09f79ab441b0c82aa80ea967cfd5160507457a43ebbf2",
+  "rank_code_changed": false,
+  "model_signal_sent": false,
+  "utc": "2026-10-09T21:35:41.661261+00:00"
+}

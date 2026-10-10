@@ -1,0 +1,43 @@
+{
+  "schema": "pr396_saved_state_diagnostic_v1",
+  "status": "DERIVED_FROM_SAVED_ARRAYS",
+  "capture_receipt_sha256": "c49808c0331754eeb9ab9f77a88083119d5834852281db890b2827f6acf6eeca",
+  "native_npz_sha256": "2873368d7967fbf41861c92e73a9cd0332186496e9b00192da0b5189288f8194",
+  "capture_npz_sha256": "8cfe28df6ef336454cfa595cc70f7a4ddec2e5cd8cbd393c0c7ce8106c904c59",
+  "diagnostic_source_sha256": "bda3c66021d865ca4a88b58caad76bd9a291c2f51a711966776b671009b26413",
+  "private_profile_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr396-saved-state-diagnostic/private/DIAGNOSTIC.npz",
+  "private_profile_sha256": "8361fd61843221ebef03cf6b36083c4216f03e05960f9967182bf87b203ae0d5",
+  "times": [
+    "2025-07-19_05:55:40",
+    "2025-07-19_05:56:00"
+  ],
+  "mass_measure": "fixed first-frame native host eta dry mass",
+  "boundary_and_external_fluxes": "NOT_MEASURED",
+  "closed_water_budget": false,
+  "host_local_difference_attribution": "included processes, splitting and forcing updates differ; not microphysics error or R",
+  "additional_model_or_rttov_calls": 0,
+  "science_accepted": false,
+  "water_increments_kg_m2": {
+    "analysis": 0.2216824149154899,
+    "model_analysis": 0.0,
+    "model_background": 0.0,
+    "slot_analysis_minus_background": 0.2216824149154899,
+    "decomposition_identity_residual": 0.0
+  },
+  "temperature_identity_max_abs_residual_K": 4.4725724859806526e-14,
+  "host_minus_local_max_abs_by_field": {
+    "qv": 5.723908543586731e-06,
+    "qc": 0.0,
+    "qr": 0.0,
+    "qi": 0.0,
+    "qs": 0.0,
+    "qg": 0.0,
+    "nc": 0.0,
+    "ni": 0.0,
+    "nr": 0.0,
+    "nccn": 5789888.0,
+    "th": 0.038299882075023106,
+    "bg": 0.0
+  },
+  "temperature_difference_max_abs_K": 0.016867697757817268
+}

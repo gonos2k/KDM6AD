@@ -1,0 +1,98 @@
+{
+  "schema": "pr397_actual_native_intake_green_v1",
+  "scope": "read-only archive receipts, archived effective namelist, existing intake manifest, and compact private NPZ; forecast not opened or whole-file hashed; no intake rerun or M/H/RTTOV execution",
+  "archive_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/runs/mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148",
+  "archive_run_id": "mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148",
+  "runner": {
+    "exit_code_file": 0,
+    "experiment_valid_exit_code": 0,
+    "experiment_valid": true,
+    "model_completed": true,
+    "invalid_reasons": [],
+    "experiment_valid_sha256": "33894032feeb096dc1a2f886d72374549ada56e682e2695db5943eb5849d51bf",
+    "run_identity_sha256": "76cfe2c195797da0266468b6a099d54809da4852d5c969b93fc2071a8473fae0",
+    "intake_runner_receipt_hashes_match_archive": true,
+    "actual_grid_receipts": "1x1",
+    "run_identity_scheme": "337",
+    "run_identity_namelist_without_grid_hash_matches_archive": true,
+    "effective_namelist_sha256": "ef4d7054a393dbc0d6aa8f34094571ef65c4d3a076b582acfb822a1ad66fbac1",
+    "effective_namelist_controls": {
+      "mp_physics": "337",
+      "run_minutes": 358,
+      "run_seconds": 0,
+      "history_interval": 0,
+      "history_interval_s": 20,
+      "time_step": 20,
+      "use_adaptive_time_step": ".false.",
+      "step_to_output_time": ".false.",
+      "ncmin_land": 10.0,
+      "ncmin_sea": 10.0
+    },
+    "rank_os_exit_code": 0,
+    "mpi_launcher_os_exit_code": 0,
+    "outer_python_harness_os_exit_code": 120,
+    "outer_harness_exit_cause_established": false
+  },
+  "intake": {
+    "path": "harness/evidence/pr395_native_tq_intake_2026-10-10/INTAKE.json",
+    "schema": "pr395_native_tq_intake_v1",
+    "status": "READY_VALID_NATIVE_INTAKE",
+    "exact_eight_times_match_expected": true,
+    "times": [
+      "2025-07-19_05:55:40",
+      "2025-07-19_05:56:00",
+      "2025-07-19_05:56:20",
+      "2025-07-19_05:56:40",
+      "2025-07-19_05:57:00",
+      "2025-07-19_05:57:20",
+      "2025-07-19_05:57:40",
+      "2025-07-19_05:58:00"
+    ],
+    "selected_column": {
+      "j": 86,
+      "i": 48,
+      "levels": 39
+    },
+    "clock": {
+      "scenario": "A_nominal_centers_only",
+      "obs_time": 1,
+      "dt_s": 20,
+      "nominal_slot_utc": "2025-07-19_05:56:00",
+      "pixel_time_verified": false
+    },
+    "science_approved": false,
+    "analysis_executed": false,
+    "forecast_sha256": null,
+    "forecast_size_mtime_before_equals_after": true
+  },
+  "npz": {
+    "path": "graphify-out/pr395-native-tq-intake-2026-10-10/private/native_column_8frame.npz",
+    "sha256": "2873368d7967fbf41861c92e73a9cd0332186496e9b00192da0b5189288f8194",
+    "sha256_matches_manifest": true,
+    "array_count": 70,
+    "all_arrays_match_manifest_hashes": true,
+    "all_arrays_finite": true,
+    "state_shapes_and_frame_zero_binding": true,
+    "forcing_shapes_and_frame_zero_binding": true,
+    "native_centers_and_interfaces_shapes": [39, 40],
+    "raw_PH_PHB_shapes": [40, 40],
+    "rttov_profile_shapes_layers_interfaces": [66, 67],
+    "host_eta_mass_shapes": [[8, 39], [39]],
+    "host_eta_mass_dtype": "float32",
+    "host_eta_mass_frame_zero_binding": true,
+    "permissions": {
+      "npz": "0600",
+      "private_parent": "0700",
+      "manifest": "0644"
+    }
+  },
+  "provenance": {
+    "launch_worktree_head": "8e5aab06fac08d35efc67374adb1928404103dbb",
+    "compiled_source_snapshot": "30931e52f99e38f9abcd6e7e3b8cd055227a5c23",
+    "current_head_build_claimed": false
+  },
+  "verifier_sources": {
+    "intake_native_tq.py": "eb54cc2d037aee938c57f9d2bec77b850cec94ef68a856b31d1d018c3e77c2c3",
+    "run_analysis.py": "a2de00ae0d9b546fa713ad795f7f934eb162f7014e47f6b75d24c45f47b2be16"
+  }
+}

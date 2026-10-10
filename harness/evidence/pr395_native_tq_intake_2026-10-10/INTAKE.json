@@ -1,0 +1,585 @@
+{
+  "analysis_executed": false,
+  "clock": {
+    "dt_s": 20,
+    "interpretation": "slot index 1 is the second exact native saved frame; center-sample nominal alignment only",
+    "nominal_slot_utc": "2025-07-19_05:56:00",
+    "obs_time": 1,
+    "pixel_time_verified": false,
+    "scenario": "A_nominal_centers_only"
+  },
+  "model_data_provenance": {
+    "center_pressure": "float64-first P + PB from stored REAL(4) fields",
+    "cloud_fields": "native WRF Q fields copied by selected_frame, then packed in public KDM6 State field order",
+    "frame_array_sha256": {
+      "PHB_raw_native_bottomup": "172d35b439ac8ca52ac6057e3a04a97ad1ee0d37414a96c34acd3ee816e05992",
+      "PH_raw_native_bottomup": "ea7ab32de4d29d85ec4f837d1f603892d59d98b76328ffaddab177e39352fc3d",
+      "background_initial_state__bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "background_initial_state__nc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "background_initial_state__nccn": "e08716b755ba04dd032c05c0ca3d8fbed08a5fcc9a79fb3dde215f0314d3b813",
+      "background_initial_state__ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "background_initial_state__nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "background_initial_state__qc": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "background_initial_state__qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "background_initial_state__qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "background_initial_state__qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "background_initial_state__qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "background_initial_state__qv": "77e92e6687dd28167ee69a4df1a29036369fe8c7a19c15200458b0a78ba8770b",
+      "background_initial_state__th": "1a0f2b8d66f6d64375303acec813542830ab4caf408c4a7f2622d1459dea7639",
+      "co2_rttov_topdown_ppmv": "5969a2eec5abc5da8d18e62450556edb3c6cee32d4ededfc20c50266b086f485",
+      "forcing_window_0__delz": "bc7367353592f7479e4ab6e9b383881ac86f3b5c42e7b791072dfd785db2d028",
+      "forcing_window_0__p": "e24684b7aaa09c1f5ff057f262c06e43da67a4a72a9277502ddd4edcc4ac2502",
+      "forcing_window_0__pii": "96e2a9aa9a7d4f35e454ac762ecd1fde0b435392435cde89177577931047dbd7",
+      "forcing_window_0__rho": "0c60092b5650af75738601c9698fd8ffffaec559645e0b1895f3c2df9f6a09ab",
+      "host_dry_mass_background_kg_m2": "2e9989275c5855b05182d54dc070309fb6f4ce54fc52da1ce9e17259384dfc5d",
+      "native_surface__HGT": "f5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b",
+      "native_surface__Q2": "1940f2cc387992d591d54c4e57c026bbcae5245965a579c24d10acbbe9a9da7c",
+      "native_surface__T2": "78bbacb1d34ef891ba1afac6e112810c5aac7908a1f15b41c62ba155e1d9fbdf",
+      "native_surface__TSK": "ce342398e2ba70742da9a95b66129725d879f8bde504477158314dc39cb16bb4",
+      "native_surface__U10": "2e7860f90d67ccb471cc19d8f70d1bd9b91841e2e8feb0579ac6f759d6730bdd",
+      "native_surface__V10": "13344c2c09274265fffea420e55597f87e35bdb1189f412b1d50c5d340a10636",
+      "native_surface__latitude_deg": "24b845f55a95a9e6e75b33841bac51cd42915b4a90d9d4f959a15d1fea0d8230",
+      "native_surface__longitude_deg": "416595128067be9c74c7b91b2ec12aad8d3c0d5c13414dd8169cb0c631cf3be0",
+      "native_surface__seaice": "f5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b",
+      "native_surface__xland": "d12b361067e63a5dc640b9aceba9a97488e54a0d09171e72ae55512052fea7ba",
+      "native_window_PHB_raw_bottomup": "ef31ff65be1f542d184921a146e1d0cf88b00c4a833facfb6f290d108e930500",
+      "native_window_PH_raw_bottomup": "a8edc92f6748c0104847114f9f9713196a397725cb441fa0aa1d0390b62468b1",
+      "native_window_forcing__delz": "5b6909d4f6c3fb9355196a43f171792ec24c7363c520ac904637d3c91ba7c528",
+      "native_window_forcing__p": "655928f7a3a426eb467e47a00251b230ef7fe2f5b87d5ba0e403852780bb7a38",
+      "native_window_forcing__pii": "7dec4c579d63c6d517bd201c791113208d9fc08f04e0d6028961e29c927529aa",
+      "native_window_forcing__rho": "50e463d72dfaf4b9233934ccc4235b02954f0736786f287f27ccd3cf8a7e7bcb",
+      "native_window_host_dry_mass_kg_m2": "a867e2dd82b870162d3a0721dc74f1a4bdba06824cae6490577980ab39f5c630",
+      "native_window_p_half_calc_p8w_bottomup_Pa": "b3b961a21b9605f64f1bd1a629e8577e0475ec9fa61be2e3593bc488f297f5cf",
+      "native_window_state__bg": "89f71694141dedff4a8c78b5db40be02ac451aa869ecc708ff8313e5525dd433",
+      "native_window_state__nc": "89f71694141dedff4a8c78b5db40be02ac451aa869ecc708ff8313e5525dd433",
+      "native_window_state__nccn": "52ed7784b8c3de2aa5d882269722163d0e12c8f9ec3e810d8ac564d8a768051a",
+      "native_window_state__ni": "89f71694141dedff4a8c78b5db40be02ac451aa869ecc708ff8313e5525dd433",
+      "native_window_state__nr": "89f71694141dedff4a8c78b5db40be02ac451aa869ecc708ff8313e5525dd433",
+      "native_window_state__qc": "89f71694141dedff4a8c78b5db40be02ac451aa869ecc708ff8313e5525dd433",
+      "native_window_state__qg": "89f71694141dedff4a8c78b5db40be02ac451aa869ecc708ff8313e5525dd433",
+      "native_window_state__qi": "89f71694141dedff4a8c78b5db40be02ac451aa869ecc708ff8313e5525dd433",
+      "native_window_state__qr": "89f71694141dedff4a8c78b5db40be02ac451aa869ecc708ff8313e5525dd433",
+      "native_window_state__qs": "89f71694141dedff4a8c78b5db40be02ac451aa869ecc708ff8313e5525dd433",
+      "native_window_state__qv": "81a744fce73c4cf8261ff873bd99575722876e5c07d312a5a4888988553375af",
+      "native_window_state__th": "db8e62917da15a9aaeff6b9d38f5f25cb20e8ae080d73993f18902670f47b4f7",
+      "o3_rttov_topdown_ppmv": "c68dea39111e3142f4734353c15364bcbdb05a82312099e8315c9233ad3849c2",
+      "p_centers_native_bottomup_Pa": "e24684b7aaa09c1f5ff057f262c06e43da67a4a72a9277502ddd4edcc4ac2502",
+      "p_half_native_bottomup_Pa": "b15f3960d3720d9bc0d08efff8db47f96c54baa5869e61ccf2d2aefe20025b02",
+      "p_half_rttov_topdown_hPa": "33c3927023b867e61d2f3ccda9501bad634ca4b55e674324e6e04ae8f241e259",
+      "p_lay_rttov_topdown_hPa": "276b5b1ab9404ccdbf6e172e45d508f74c3b7c04c7cf11ee9495a4fb08fc0006",
+      "q_rttov_topdown_ppmv": "03e7099fcc6f5ad08cc27f3dd06abc712db0d5fcc002f7333fd5bdd4a1f30a19",
+      "rho_d_native_bottomup_kg_m3": "5e8576b3ab5fc54bd92d06c0f975ff6111b4ed54816f0a967f5b4e0b886a6a5f",
+      "t_rttov_topdown_K": "b7add1244e625361d42f34dd4a01e3efd09a00c8dade23f1b2ad37a6eda99ffc",
+      "wrf_raw__QCLOUD": "89f71694141dedff4a8c78b5db40be02ac451aa869ecc708ff8313e5525dd433",
+      "wrf_raw__QGRAUP": "89f71694141dedff4a8c78b5db40be02ac451aa869ecc708ff8313e5525dd433",
+      "wrf_raw__QIB": "89f71694141dedff4a8c78b5db40be02ac451aa869ecc708ff8313e5525dd433",
+      "wrf_raw__QICE": "89f71694141dedff4a8c78b5db40be02ac451aa869ecc708ff8313e5525dd433",
+      "wrf_raw__QNCCN": "52ed7784b8c3de2aa5d882269722163d0e12c8f9ec3e810d8ac564d8a768051a",
+      "wrf_raw__QNCLOUD": "89f71694141dedff4a8c78b5db40be02ac451aa869ecc708ff8313e5525dd433",
+      "wrf_raw__QNICE": "89f71694141dedff4a8c78b5db40be02ac451aa869ecc708ff8313e5525dd433",
+      "wrf_raw__QNRAIN": "89f71694141dedff4a8c78b5db40be02ac451aa869ecc708ff8313e5525dd433",
+      "wrf_raw__QRAIN": "89f71694141dedff4a8c78b5db40be02ac451aa869ecc708ff8313e5525dd433",
+      "wrf_raw__QSNOW": "89f71694141dedff4a8c78b5db40be02ac451aa869ecc708ff8313e5525dd433",
+      "wrf_raw__QVAPOR": "81a744fce73c4cf8261ff873bd99575722876e5c07d312a5a4888988553375af",
+      "wrf_raw__THM": "b3cbbb9511fafc9d10ed548f057dd6a2d9667b016c2f8b0fe4f13ad9ad275ae5"
+    },
+    "frames": [
+      {
+        "PHB_raw_sha256": "172d35b439ac8ca52ac6057e3a04a97ad1ee0d37414a96c34acd3ee816e05992",
+        "PH_raw_sha256": "ea7ab32de4d29d85ec4f837d1f603892d59d98b76328ffaddab177e39352fc3d",
+        "host_dry_mass_kg_m2_sha256_f32": "2e9989275c5855b05182d54dc070309fb6f4ce54fc52da1ce9e17259384dfc5d",
+        "latitude_deg": 35.4156608581543,
+        "longitude_deg": 122.143310546875,
+        "p_centers_native_bottomup_Pa_sha256": "e24684b7aaa09c1f5ff057f262c06e43da67a4a72a9277502ddd4edcc4ac2502",
+        "p_half_calc_p8w_native_bottomup_Pa_sha256": "b15f3960d3720d9bc0d08efff8db47f96c54baa5869e61ccf2d2aefe20025b02",
+        "seaice": 0.0,
+        "surface": {
+          "HGT": 0.0,
+          "Q2": 0.019151758402585983,
+          "T2": 299.4415283203125,
+          "TSK": 300.77392578125,
+          "U10": 0.15998432040214539,
+          "V10": 4.30886173248291
+        },
+        "time": "2025-07-19_05:55:40",
+        "xland": 2.0
+      },
+      {
+        "PHB_raw_sha256": "172d35b439ac8ca52ac6057e3a04a97ad1ee0d37414a96c34acd3ee816e05992",
+        "PH_raw_sha256": "17924bdb631942e55e4856d9378cf56e2557b2cd83f866e7c772af214a3a5339",
+        "host_dry_mass_kg_m2_sha256_f32": "8c77057de0f2dc8b0602c84bb8d88c3e8d1bb2158ce746ba14f39d39eb55bf30",
+        "latitude_deg": 35.4156608581543,
+        "longitude_deg": 122.143310546875,
+        "p_centers_native_bottomup_Pa_sha256": "3d9fbcd8c381e1411e07c71c8a73c700316801c695c47dac18273ddef655a849",
+        "p_half_calc_p8w_native_bottomup_Pa_sha256": "9a07221a4b800bcfc4c424b48d74eda58cbde109166dddcd169958df632bff10",
+        "seaice": 0.0,
+        "surface": {
+          "HGT": 0.0,
+          "Q2": 0.019154582172632217,
+          "T2": 299.44512939453125,
+          "TSK": 300.77423095703125,
+          "U10": 0.1695604920387268,
+          "V10": 4.309659004211426
+        },
+        "time": "2025-07-19_05:56:00",
+        "xland": 2.0
+      },
+      {
+        "PHB_raw_sha256": "172d35b439ac8ca52ac6057e3a04a97ad1ee0d37414a96c34acd3ee816e05992",
+        "PH_raw_sha256": "dfb87cca7f0602a4b9ca5277dfe79326d36f59e98bc9415234bd6f1f2e2cf0da",
+        "host_dry_mass_kg_m2_sha256_f32": "0642b04ec883a836ad11e27990751cac85a075c5f518697b6c584be41123ebf9",
+        "latitude_deg": 35.4156608581543,
+        "longitude_deg": 122.143310546875,
+        "p_centers_native_bottomup_Pa_sha256": "d90ee4bea0816423f9d21e7a21b891cc2579515c9e86833e09eefc55cd97daff",
+        "p_half_calc_p8w_native_bottomup_Pa_sha256": "279a88fedcda1e671f7fe466fb37ccf5db29543702e452158dfafb31cb51a550",
+        "seaice": 0.0,
+        "surface": {
+          "HGT": 0.0,
+          "Q2": 0.019157378003001213,
+          "T2": 299.44793701171875,
+          "TSK": 300.7745361328125,
+          "U10": 0.179373636841774,
+          "V10": 4.310789585113525
+        },
+        "time": "2025-07-19_05:56:20",
+        "xland": 2.0
+      },
+      {
+        "PHB_raw_sha256": "172d35b439ac8ca52ac6057e3a04a97ad1ee0d37414a96c34acd3ee816e05992",
+        "PH_raw_sha256": "8924e7f882fb5fc01118100108498b4becc89f79874b2c27d349259690a51926",
+        "host_dry_mass_kg_m2_sha256_f32": "f02bfec9817534f8ea061585346fdaa8ceecad3460ccc8e5ec9e1c02e1dbd582",
+        "latitude_deg": 35.4156608581543,
+        "longitude_deg": 122.143310546875,
+        "p_centers_native_bottomup_Pa_sha256": "c41df098d73baa68119c85219bdb4d6327f3e2f87d8ecef2e2a146b92dda4a26",
+        "p_half_calc_p8w_native_bottomup_Pa_sha256": "8a98f1a1a3557ede20d9d07ca6d6392ec51dcb39c77a2446caf2419c79e7d526",
+        "seaice": 0.0,
+        "surface": {
+          "HGT": 0.0,
+          "Q2": 0.019160054624080658,
+          "T2": 299.4487609863281,
+          "TSK": 300.77484130859375,
+          "U10": 0.18851101398468018,
+          "V10": 4.311966896057129
+        },
+        "time": "2025-07-19_05:56:40",
+        "xland": 2.0
+      },
+      {
+        "PHB_raw_sha256": "172d35b439ac8ca52ac6057e3a04a97ad1ee0d37414a96c34acd3ee816e05992",
+        "PH_raw_sha256": "249b0ef78a000e2c2363e2db1346a10dc0ff103e41537d13d120ec412973478c",
+        "host_dry_mass_kg_m2_sha256_f32": "b712fba9b94e61326b3e060f63427c693e01b51526b4ab15a93214a420fcbff4",
+        "latitude_deg": 35.4156608581543,
+        "longitude_deg": 122.143310546875,
+        "p_centers_native_bottomup_Pa_sha256": "4eed37b1d3ecd47c1a507f8357e11ec3b0e6e3db0d36a0a62dfcaa18b924cdad",
+        "p_half_calc_p8w_native_bottomup_Pa_sha256": "3483ed61173e6312e2906cd69131e8c9091ae182d9c748da13c0b6f5adba6c75",
+        "seaice": 0.0,
+        "surface": {
+          "HGT": 0.0,
+          "Q2": 0.019162848591804504,
+          "T2": 299.4508972167969,
+          "TSK": 300.775146484375,
+          "U10": 0.19875504076480865,
+          "V10": 4.313336372375488
+        },
+        "time": "2025-07-19_05:57:00",
+        "xland": 2.0
+      },
+      {
+        "PHB_raw_sha256": "172d35b439ac8ca52ac6057e3a04a97ad1ee0d37414a96c34acd3ee816e05992",
+        "PH_raw_sha256": "54d31d27d28a4220ecbd915e29e23adf89b9ebbddc8f036b7f6204bfa63376a9",
+        "host_dry_mass_kg_m2_sha256_f32": "e68ce9a9dde6e6c5b28bbf3c0eb64c38660c60b1a2fcd8da7f0db1024f9ada64",
+        "latitude_deg": 35.4156608581543,
+        "longitude_deg": 122.143310546875,
+        "p_centers_native_bottomup_Pa_sha256": "acbc153207c2bcec2f0ed7f08a50920e4c55b45ed442390fbf72f6e26ee1e832",
+        "p_half_calc_p8w_native_bottomup_Pa_sha256": "9acd52dd7c96cb25a3e3129f72fb9f3caae2e2d1e73214fc94d6ccda0130e795",
+        "seaice": 0.0,
+        "surface": {
+          "HGT": 0.0,
+          "Q2": 0.01916554942727089,
+          "T2": 299.4516906738281,
+          "TSK": 300.77545166015625,
+          "U10": 0.20884490013122559,
+          "V10": 4.314492702484131
+        },
+        "time": "2025-07-19_05:57:20",
+        "xland": 2.0
+      },
+      {
+        "PHB_raw_sha256": "172d35b439ac8ca52ac6057e3a04a97ad1ee0d37414a96c34acd3ee816e05992",
+        "PH_raw_sha256": "ff2a9e510485e9c9637c750e251572157b1e90c51c4696667dc53bf5faf872b7",
+        "host_dry_mass_kg_m2_sha256_f32": "dfe0227991163ac65c9f44f4b7c7445f04df173adba93b5a97a8964e93823e46",
+        "latitude_deg": 35.4156608581543,
+        "longitude_deg": 122.143310546875,
+        "p_centers_native_bottomup_Pa_sha256": "09d0c5e57e3cedb2f41401cde179e3c6e8a8e97c761d5c046b1d5f8b2935c2f6",
+        "p_half_calc_p8w_native_bottomup_Pa_sha256": "70b6746fdc9a468ccbb2b7e6cd26bfeb134fd05f5e18be571257077cfd498955",
+        "seaice": 0.0,
+        "surface": {
+          "HGT": 0.0,
+          "Q2": 0.01916840299963951,
+          "T2": 299.4544372558594,
+          "TSK": 300.7757568359375,
+          "U10": 0.21881309151649475,
+          "V10": 4.315852642059326
+        },
+        "time": "2025-07-19_05:57:40",
+        "xland": 2.0
+      },
+      {
+        "PHB_raw_sha256": "172d35b439ac8ca52ac6057e3a04a97ad1ee0d37414a96c34acd3ee816e05992",
+        "PH_raw_sha256": "f9cea76d36167e63caf175904a859b864be61ae688648df22a92f879d4a88e6a",
+        "host_dry_mass_kg_m2_sha256_f32": "51778025b84b231966a7bd11a9e29adcbaa925fd8132edc04927515e30989281",
+        "latitude_deg": 35.4156608581543,
+        "longitude_deg": 122.143310546875,
+        "p_centers_native_bottomup_Pa_sha256": "39b88092ca9849e20a82b0a8a37acc5c55ff4c487c041a3af4f594ca20691748",
+        "p_half_calc_p8w_native_bottomup_Pa_sha256": "628f7b6d18d305919cbbae8bcfc8280846b244f161ae290efcb653da2c4f18b1",
+        "seaice": 0.0,
+        "surface": {
+          "HGT": 0.0,
+          "Q2": 0.019171200692653656,
+          "T2": 299.4554748535156,
+          "TSK": 300.77606201171875,
+          "U10": 0.2292749136686325,
+          "V10": 4.318029880523682
+        },
+        "time": "2025-07-19_05:58:00",
+        "xland": 2.0
+      }
+    ],
+    "host_dry_mass": {
+      "background_npz_key": "host_dry_mass_background_kg_m2",
+      "dtype": "float32",
+      "formula": "-(C1H*(MU+MUB)+C2H)*DNW/9.81, using selected_frame's REAL(4) operations",
+      "orientation": "bottom-up native levels",
+      "provenance": "host eta-coordinate layer dry-mass measure derived from native MU/MUB/C1H/C2H/DNW; distinct from EOS rho_m*delz and not a process budget",
+      "shape": [
+        8,
+        39
+      ],
+      "units": "kg dry air m-2 per native eta layer",
+      "window_npz_key": "native_window_host_dry_mass_kg_m2"
+    },
+    "host_wrapper_forwarding_source": {
+      "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/phys/module_mp_kdm6ad_cons.F",
+      "sha256": "e4ab55a672f28c47d341ebf75ce589b32c2bbaa4da960c6b04157ec682a46965",
+      "source_lines": "ncmin_land and ncmin_sea are copied to C ABI arguments as REAL(c_double)"
+    },
+    "kdm6_moment_floor_inputs": {
+      "interpretation": "archived effective namelist entries; checked against mp_kdm6ad_cons argument forwarding, not a claim that all wrapper defaults equal these settings",
+      "path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/runs/mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148/namelist.input",
+      "sha256": "ef4d7054a393dbc0d6aa8f34094571ef65c4d3a076b582acfb822a1ad66fbac1",
+      "values": {
+        "ncmin_land": 10.0,
+        "ncmin_sea": 10.0
+      }
+    },
+    "native_interface_pressure": {
+      "dtype": "float32",
+      "method": "Python REAL(4) transcription of calc_p8w; not an executed host output",
+      "precision_note": "P+PB REAL(4), WRF REAL(4) operations; distinct from raw PH/PHB",
+      "source_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/share/wrf_timeseries.F",
+      "source_sha256": "0e86d176a5acbeac82dcf062dff543f4a8a3b4df08841d79679640adbfe96eb1",
+      "stored_key": "p_half_native_bottomup_Pa"
+    },
+    "raw_height_interfaces": "PH and PHB retained separately from derived calc_p8w interfaces",
+    "reader_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/native358_artifact_diag_2026-10-08/recipe/run_native_kma_bt_frames.py",
+    "reader_sha256": "408bab9756c6ac1a6e8438b8469c87f41fa239ce75414cd8087d10b6a31d54c1",
+    "selected_column_reader": "selected_frame reads one time index and only (j=86,i=48) hyperslabs for state/thermo/surface/coordinates",
+    "source": "fresh accepted WRF forecast archive selected by this run's completion evidence",
+    "temperature": "THM plus 300 K, divided by Exner and with Rv/Rd moisture correction as archived selected_frame; State.th carries dry potential temperature",
+    "water_vapor": "native QVAPOR retained as kg kg-1 dry-air mixing ratio"
+  },
+  "native_run": {
+    "actual_saved_times": [
+      "2025-07-19_05:55:40",
+      "2025-07-19_05:56:00",
+      "2025-07-19_05:56:20",
+      "2025-07-19_05:56:40",
+      "2025-07-19_05:57:00",
+      "2025-07-19_05:57:20",
+      "2025-07-19_05:57:40",
+      "2025-07-19_05:58:00"
+    ],
+    "background_time": "2025-07-19_05:55:40",
+    "exit_code": 0,
+    "expected_saved_times": [
+      "2025-07-19_05:55:40",
+      "2025-07-19_05:56:00",
+      "2025-07-19_05:56:20",
+      "2025-07-19_05:56:40",
+      "2025-07-19_05:57:00",
+      "2025-07-19_05:57:20",
+      "2025-07-19_05:57:40",
+      "2025-07-19_05:58:00"
+    ],
+    "experiment_valid": true,
+    "forecast_bytes": 2543209268,
+    "forecast_hash_policy": "not re-read as a multi-GB stream; source is tied to archived completion evidence, file size/mtime, and selected-array hashes",
+    "forecast_mtime_ns": 1791595485694435349,
+    "forecast_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/runs/mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148/klfs_lc05_fcst.202507190000",
+    "forecast_sha256": null,
+    "forecast_size_mtime_stable_while_read": true,
+    "forecast_stat_after": {
+      "mtime_ns": 1791595485694435349,
+      "size_bytes": 2543209268
+    },
+    "forecast_stat_before": {
+      "mtime_ns": 1791595485694435349,
+      "size_bytes": 2543209268
+    },
+    "model_completed_flag": true,
+    "run_directory": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/runs/mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148",
+    "run_id": "mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148",
+    "run_identity": {
+      "actual_proc_grid": "1x1",
+      "campaign_id": "2d0ec5a83dbe4fdb17f0a293a376d8871d6eaa9448f7c195f4cc585f3915e8b0",
+      "controls": {
+        "fixed_dt": false,
+        "history": 0,
+        "history_s": 20,
+        "input_canonical_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+        "label": "viirs_norm2_dry1_055540_055800",
+        "minutes": 358,
+        "namelist_without_grid_sha256": "418d1300181eecf485db87294d6115e3cd269762b091fad9b6323612f5d92314",
+        "np": 1,
+        "radt": null,
+        "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+        "seconds": 0
+      },
+      "exit_code": 0,
+      "experiment_valid": true,
+      "requested_proc_grid": null,
+      "schema": 1,
+      "scheme": "337"
+    },
+    "runner_exit_code_file": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/runs/mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148/exit_code",
+    "runner_experiment_valid_sha256": "33894032feeb096dc1a2f886d72374549ada56e682e2695db5943eb5849d51bf",
+    "runner_identity_sha256": "76cfe2c195797da0266468b6a099d54809da4852d5c969b93fc2071a8473fae0",
+    "runner_valid_receipt": {
+      "active_input_identity_complete": true,
+      "actual_proc_grid": "1x1",
+      "exit_code": 0,
+      "experiment_valid": true,
+      "invalid_reasons": [],
+      "model_completed": true,
+      "requested_proc_grid": null
+    },
+    "validated_run_settings": {
+      "kdm6_moment_floor_inputs": {
+        "interpretation": "archived effective namelist entries; checked against mp_kdm6ad_cons argument forwarding, not a claim that all wrapper defaults equal these settings",
+        "path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/runs/mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148/namelist.input",
+        "sha256": "ef4d7054a393dbc0d6aa8f34094571ef65c4d3a076b582acfb822a1ad66fbac1",
+        "values": {
+          "ncmin_land": 10.0,
+          "ncmin_sea": 10.0
+        }
+      },
+      "namelist": {
+        "controls": {
+          "history_interval": 0,
+          "history_interval_s": 20,
+          "mp_physics": "337",
+          "run_minutes": 358,
+          "run_seconds": 0,
+          "step_to_output_time": ".false.",
+          "time_step": 20,
+          "use_adaptive_time_step": ".false."
+        },
+        "identity_hash_matches_archived_bytes": true,
+        "path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/runs/mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148/namelist.input",
+        "sha256": "ef4d7054a393dbc0d6aa8f34094571ef65c4d3a076b582acfb822a1ad66fbac1"
+      },
+      "runner_identity": {
+        "actual_proc_grid": "1x1",
+        "controls": {
+          "fixed_dt": false,
+          "history": 0,
+          "history_s": 20,
+          "input_canonical_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+          "label": "viirs_norm2_dry1_055540_055800",
+          "minutes": 358,
+          "namelist_without_grid_sha256": "418d1300181eecf485db87294d6115e3cd269762b091fad9b6323612f5d92314",
+          "np": 1,
+          "radt": null,
+          "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+          "seconds": 0
+        },
+        "scheme": "337"
+      }
+    }
+  },
+  "npz": {
+    "array_count": 70,
+    "keys": [
+      "PHB_raw_native_bottomup",
+      "PH_raw_native_bottomup",
+      "background_initial_state__bg",
+      "background_initial_state__nc",
+      "background_initial_state__nccn",
+      "background_initial_state__ni",
+      "background_initial_state__nr",
+      "background_initial_state__qc",
+      "background_initial_state__qg",
+      "background_initial_state__qi",
+      "background_initial_state__qr",
+      "background_initial_state__qs",
+      "background_initial_state__qv",
+      "background_initial_state__th",
+      "co2_rttov_topdown_ppmv",
+      "forcing_window_0__delz",
+      "forcing_window_0__p",
+      "forcing_window_0__pii",
+      "forcing_window_0__rho",
+      "host_dry_mass_background_kg_m2",
+      "native_surface__HGT",
+      "native_surface__Q2",
+      "native_surface__T2",
+      "native_surface__TSK",
+      "native_surface__U10",
+      "native_surface__V10",
+      "native_surface__latitude_deg",
+      "native_surface__longitude_deg",
+      "native_surface__seaice",
+      "native_surface__xland",
+      "native_window_PHB_raw_bottomup",
+      "native_window_PH_raw_bottomup",
+      "native_window_forcing__delz",
+      "native_window_forcing__p",
+      "native_window_forcing__pii",
+      "native_window_forcing__rho",
+      "native_window_host_dry_mass_kg_m2",
+      "native_window_p_half_calc_p8w_bottomup_Pa",
+      "native_window_state__bg",
+      "native_window_state__nc",
+      "native_window_state__nccn",
+      "native_window_state__ni",
+      "native_window_state__nr",
+      "native_window_state__qc",
+      "native_window_state__qg",
+      "native_window_state__qi",
+      "native_window_state__qr",
+      "native_window_state__qs",
+      "native_window_state__qv",
+      "native_window_state__th",
+      "o3_rttov_topdown_ppmv",
+      "p_centers_native_bottomup_Pa",
+      "p_half_native_bottomup_Pa",
+      "p_half_rttov_topdown_hPa",
+      "p_lay_rttov_topdown_hPa",
+      "q_rttov_topdown_ppmv",
+      "rho_d_native_bottomup_kg_m3",
+      "t_rttov_topdown_K",
+      "wrf_raw__QCLOUD",
+      "wrf_raw__QGRAUP",
+      "wrf_raw__QIB",
+      "wrf_raw__QICE",
+      "wrf_raw__QNCCN",
+      "wrf_raw__QNCLOUD",
+      "wrf_raw__QNICE",
+      "wrf_raw__QNRAIN",
+      "wrf_raw__QRAIN",
+      "wrf_raw__QSNOW",
+      "wrf_raw__QVAPOR",
+      "wrf_raw__THM"
+    ],
+    "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr395-native-tq-intake-2026-10-10/private/native_column_8frame.npz",
+    "sha256": "2873368d7967fbf41861c92e73a9cd0332186496e9b00192da0b5189288f8194"
+  },
+  "provenance_scope": {
+    "current_head_build_claimed": false,
+    "current_worktree_head": "8e5aab06fac08d35efc67374adb1928404103dbb",
+    "executable_and_loaded_library": "the live loaded-library observation and run_identity attribute the prepared executable/library; no current-head build claim",
+    "live_launch_evidence_directory": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr395-native-progress",
+    "loaded_libraries_observation": {
+      "captured_local": "2026-10-10 05:28:12 JST",
+      "captured_pid": 99158,
+      "dyld_insert_libraries": null,
+      "dyld_library_path": null,
+      "interpretation": "Actual process mapped the prepared KDM6 dylib and Torch runtime from the pinned research venv. This confirms current dynamic loading of the old prepared artifact; it does not claim current PR395 source built it.",
+      "kdm6_library": {
+        "inode": "401633287",
+        "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/libtorch/install/lib/libkdm6_c.2.0.0.dylib",
+        "size_bytes": 1041224
+      },
+      "kdm6_loaded_path_exactly_matches_preflight": true,
+      "kdm6_prelaunch_sha256": "64cddefe4fce336a7b9a3979278692324a97a17fe7d5264224bcc05a7f20be2d",
+      "method": "single recorded read-only lsof snapshot of live WRF PID; extracted from LIVE_START.json, no second lsof observation",
+      "schema": "pr395_loaded_library_observation_v1",
+      "torch_runtime_libraries": [
+        {
+          "inode": "401354926",
+          "path": "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch.dylib",
+          "size_bytes": 16752
+        },
+        {
+          "inode": "401354927",
+          "path": "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libtorch_cpu.dylib",
+          "size_bytes": 337911904
+        },
+        {
+          "inode": "401354923",
+          "path": "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libc10.dylib",
+          "size_bytes": 1102704
+        },
+        {
+          "inode": "401354924",
+          "path": "/private/tmp/KDM6AD-research-rc-20261007/env/lib/python3.10/site-packages/torch/lib/libomp.dylib",
+          "size_bytes": 856096
+        }
+      ],
+      "wrf_executable": {
+        "inode": "401640682",
+        "path": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/main/wrf.exe",
+        "size_bytes": 50467544
+      }
+    },
+    "loaded_libraries_observation_sha256": "5878d4cc5d14342f95c47f4d3a30b72eff2acce4ff9137632669771197f877ae",
+    "notes": "The run's loaded binary/library are attributed by the run identity and separate launch evidence; this intake does not claim that current source was compiled into them.",
+    "source_snapshot_head": "30931e52f99e38f9abcd6e7e3b8cd055227a5c23"
+  },
+  "schema": "pr395_native_tq_intake_v1",
+  "science_approved": false,
+  "selected_column": {
+    "i": 48,
+    "j": 86,
+    "levels": 39
+  },
+  "selected_column_orientation": "zero-based WRF (j,i), vertical bottom-up",
+  "status": "READY_VALID_NATIVE_INTAKE",
+  "upper_reference_assumption": {
+    "external_model_or_reanalysis_data_used": false,
+    "files": {
+      "co2": {
+        "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rttov_test/tests.1.gfortran-openmp/ami/cloud/in/profiles/001/atm/co2.txt",
+        "sha256": "1f2fa0ab7945f5d642cbc3fa54c64c9b7af0867a55e3451555e3a972afece9df"
+      },
+      "o3": {
+        "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rttov_test/tests.1.gfortran-openmp/ami/cloud/in/profiles/001/atm/o3.txt",
+        "sha256": "9e34e3d23760e51c980f8a74b221ddfde829b2d6ea88f979e7fefa2895483ad7"
+      },
+      "p_half": {
+        "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rttov_test/tests.1.gfortran-openmp/ami/cloud/in/profiles/001/atm/p_half.txt",
+        "sha256": "4836e1a4726c4f5574fc77812bc2a6ddc2fe9bf74461c4d1fe6ddc641d8d263d"
+      },
+      "q": {
+        "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rttov_test/tests.1.gfortran-openmp/ami/cloud/in/profiles/001/atm/q.txt",
+        "sha256": "d0ababfea9c62b2860d7e4abfd6f0f11a7b5e53fe23273221b6a3aeb94c85268"
+      },
+      "t": {
+        "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rttov_test/tests.1.gfortran-openmp/ami/cloud/in/profiles/001/atm/t.txt",
+        "sha256": "0777e1ae6390e4c21658e79cb62086d9b15387aca90a8ee90affcda9cfdaf4cd"
+      }
+    },
+    "fixture_root": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rttov_test/tests.1.gfortran-openmp/ami/cloud",
+    "gas_fields": "O3/CO2 from the same fixed reference fixture; interpolation follows archived helper; endpoint behavior is described by that helper",
+    "grid": {
+      "native_centers": 39,
+      "native_interfaces": 40,
+      "orientation": "RTTOV top-down; native arrays remain bottom-up",
+      "total_rttov_interfaces": 67,
+      "total_rttov_layers": 66,
+      "upper_reference_layers": 27
+    },
+    "kind": "fixed_upper_reference_atmosphere_from_retained_RTTOV_test_fixture",
+    "method": "retain reference levels above native top using archived extend_above_native_top; replace entire 39-layer model segment with each fresh native model input; native p-centers and REAL(4)-transcribed calc_p8w interfaces form exact suffix"
+  }
+}

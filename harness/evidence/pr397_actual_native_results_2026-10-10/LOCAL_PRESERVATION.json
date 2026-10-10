@@ -1,0 +1,98 @@
+{
+  "schema": "pr397_private_preservation_v1",
+  "recorded_at": "2026-10-10T10:55:31.113535+09:00",
+  "private_root": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr397_native_tq_20261010",
+  "directory_mode": "0700",
+  "gitignored": true,
+  "files": [
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr395-native-tq-intake-2026-10-10/private/native_column_8frame.npz",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr397_native_tq_20261010/native_column_8frame.npz",
+      "bytes": 41415,
+      "sha256": "2873368d7967fbf41861c92e73a9cd0332186496e9b00192da0b5189288f8194",
+      "copy_mode": "0600"
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr395-tq-state-capture-2026-10-10/private/accepted-final-3d2e97f159.npz",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr397_native_tq_20261010/accepted_final_3d2e97f159.npz",
+      "bytes": 42046,
+      "sha256": "8cfe28df6ef336454cfa595cc70f7a4ddec2e5cd8cbd393c0c7ce8106c904c59",
+      "copy_mode": "0600"
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr396-saved-state-diagnostic/private/DIAGNOSTIC.npz",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr397_native_tq_20261010/diagnostic_profiles.npz",
+      "bytes": 6943,
+      "sha256": "8361fd61843221ebef03cf6b36083c4216f03e05960f9967182bf87b203ae0d5",
+      "copy_mode": "0600"
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr397-actual-interpretation/private/derived_profiles.npz",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr397_native_tq_20261010/derived_profiles.npz",
+      "bytes": 3919,
+      "sha256": "a826307083db28920ceeceb75b2d9f24bbcecff9b98d51b2be4724a89c6aaf0c",
+      "copy_mode": "0600"
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr397-actual-interpretation/private/receipt_derived_observation_support.npz",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr397_native_tq_20261010/receipt_derived_observation_support.npz",
+      "bytes": 731,
+      "sha256": "3ae28d0d3a8782524ace1f8024d58be560a1ec72e8c5464ebb63177488e46a07",
+      "copy_mode": "0600"
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr395_native_tq_intake_2026-10-10/INTAKE.json",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr397_native_tq_20261010/INTAKE.json",
+      "bytes": 31091,
+      "sha256": "375a89e7ea2194171a77d6f089ef46de79ae71f97306512afd98a4891647cfbe",
+      "copy_mode": "0600"
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr395_tq_state_capture_2026-10-10/RESULT_3d2e97f159.json",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr397_native_tq_20261010/RESULT_3d2e97f159.json",
+      "bytes": 67404,
+      "sha256": "c49808c0331754eeb9ab9f77a88083119d5834852281db890b2827f6acf6eeca",
+      "copy_mode": "0600"
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr395_tq_state_capture_2026-10-10/DRIVER_3d2e97f159.json",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr397_native_tq_20261010/DRIVER_3d2e97f159.json",
+      "bytes": 84889,
+      "sha256": "836ac71bdf069c1a677e8d3e770cab3e31cfaf807d8a13ccab9884b01bb49333",
+      "copy_mode": "0600"
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr397_actual_native_results_2026-10-10/ACTUAL_ARRAY_CALCULATIONS.json",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr397_native_tq_20261010/ACTUAL_ARRAY_CALCULATIONS.json",
+      "bytes": 3770,
+      "sha256": "8dc83999f4759e16140ea3d943ef288bf16c0254554abfb5b663b58222bc35bf",
+      "copy_mode": "0600"
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr397_actual_native_results_2026-10-10/SAVED_DIAGNOSTIC.json",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr397_native_tq_20261010/SAVED_DIAGNOSTIC.json",
+      "bytes": 1752,
+      "sha256": "2ff2156548d159f5a209b3f483396cf99616bb563466346d1c5800f96d574eb5",
+      "copy_mode": "0600"
+    },
+    {
+      "source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr397_actual_native_results_2026-10-10/analyze_saved_actual.py",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr397_native_tq_20261010/analyze_saved_actual.py",
+      "bytes": 8657,
+      "sha256": "fb8fbc50cb663369330d7946a019ec7626f397a6a345b9170b628263fff318a3",
+      "copy_mode": "0600"
+    },
+    {
+      "source_path": "git:eec82d65:harness/evidence/pr395_tq_state_capture_2026-10-10/capture_tq_state.py",
+      "copy_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr397_native_tq_20261010/executed_capture_32391d77.py",
+      "bytes": 75447,
+      "sha256": "32391d7750ad54c4c2aee64a5d30cde9f9d98822fcc569650aeef9c334c50311",
+      "copy_mode": "0600"
+    }
+  ],
+  "total_bytes": 368064,
+  "original_files_rewritten": false,
+  "model_or_rttov_calls": 0,
+  "full_forecast_copied": false,
+  "purpose": "durable private copies outside temporary worktree; original receipt paths and hashes remain historical identities"
+}
