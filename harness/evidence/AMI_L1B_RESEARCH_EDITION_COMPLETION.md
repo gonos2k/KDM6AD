@@ -88,6 +88,7 @@ Another-date execution supports calculation/repeatability. The upper process goa
 | [Vertical/neighbor H](pr399_vertical_neighbor_2026-10-10/) and [fixed-input K](pr401_fixed_input_k_response_2026-10-10/) | Context and declared input sensitivities | Endpoints alone do not identify process causes; sensitivity is not measured input error |
 | [PR403 L1B scenes](pr403_l1b_heldout_2026-10-11/) and [V4 admission](pr407_native_saved_time_bound_2026-10-11/) | Other-date observation intake and engineering linkage | Matching real native analyses still pending;70-array replay is one same-date intake, not70 cases |
 | [PR408 synthetic success](pr408_synthetic_capture_success_2026-10-11/COORDINATOR_REPORT.md) | Real KDM/AD/minimizer/audit/checkpoint with synthetic H | No real RTTOV or new-date weather result; strict gradient criterion unmet; full spawned-worker path not exercised |
+| [PR411 actual V4 integration](pr411_v4_actual_integration_2026-10-12/REPORT.md) | Existing Jul19 real L1B/native binding through fixture copy, configured spawn worker, actual RTTOV, analysis/audit and saved state/gradient | One same-date engineering run; no new native integration/date, strict convergence, process contribution or physical-matchup acceptance |
 
 Historical non-AMI selection/labels remain history, not evidence for new AMI-only scientific claims under the [observation contract](CURRENT_OBSERVATION_DATA_CONTRACT.md). Closed selected checks are mapped, not reopened. State Jacobians alone do not prove named-process attribution. An unchanged M endpoint does not imply M_x=I.
 

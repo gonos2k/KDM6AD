@@ -1,0 +1,233 @@
+{
+  "schema": "pr411_actual_v4_integration_result_v1",
+  "run_id": "PR411_REAL_V4_JUL19_20261012_01",
+  "case_id": "PR411_JUL19_REAL_V4_INTEGRATION",
+  "one_top_level_invocation": 1,
+  "entrypoint": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr407_native_saved_time_bound_2026-10-11/run_case_analysis.py",
+  "entrypoint_sha256": "50416adbbf8331e9eaae229f7b6b04309ce506bd4ba909da83b7b875a128e801",
+  "plan_sha256": "69ff921a09938f9288154fdbb6f15e444aaf26cebc6a9b79460fb6b2bfd9f22c",
+  "actual_os_exit_code": 0,
+  "status": "RETURNED_CASE_DIAGNOSTIC",
+  "spawn_evidence": "unchanged executed entrypoint uses multiprocessing.get_context(spawn).Pool(1); no InlinePool or synthetic-H hook",
+  "logical_h_callback_count": 5,
+  "logical_h_all_returned": true,
+  "all_h_quality_zero": true,
+  "internal_RTTOV_direct_K_calls": null,
+  "internal_count_note": "not instrumented; logical all-sky H callback outputs are recorded",
+  "new_native_integrations": 0,
+  "restored_L1B_files": 9,
+  "new_observation_dates": 0,
+  "objective": {
+    "Jb_state": 0.2284737909127953,
+    "Jtheta": 0.0,
+    "Jo": 26.135616402715186,
+    "Jtotal": 26.36409019362798,
+    "Jtotal_final_trace": 26.36409019362798,
+    "n_valid": 7,
+    "frozen_support": [
+      [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    ],
+    "final_audit_signature": {
+      "slot": 1,
+      "sha256": "81d2a52cd54bce6cc17e59e644a0ea9e574d9a85a1794cd30cff8e75d1372473",
+      "trace_entry_count": 4,
+      "final_trace_index": 3,
+      "all_trace_signatures_match": true,
+      "n_valid_each_trace_entry": 7,
+      "final_frozen_mask": {
+        "shape": [
+          1,
+          7
+        ],
+        "dtype": "float64",
+        "sha256_f64": "022451970ff25a1cf57eb1602f05e6ab8a2d0edb918d8efd1574f2ef1a77898f"
+      }
+    },
+    "initial_zero_control_closure": {
+      "trace_index": 0,
+      "control_semantics": "first existing optimizer closure before L-BFGS updates; v_state and v_theta start at zero",
+      "Jb_state": 0.0,
+      "Jtheta": 0.0,
+      "Jo": 26.588575903055926,
+      "Jtotal": 26.588575903055926,
+      "n_valid": 7,
+      "operator_signature_sha256": "81d2a52cd54bce6cc17e59e644a0ea9e574d9a85a1794cd30cff8e75d1372473",
+      "signature_matches_final_accepted_audit": true,
+      "first_grad_true_h_call_index": 2,
+      "first_h_J_huber_matches_Jo": true,
+      "frozen_mask": {
+        "shape": [
+          1,
+          7
+        ],
+        "dtype": "float64",
+        "values": [
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ]
+        ],
+        "sha256_f64": "022451970ff25a1cf57eb1602f05e6ab8a2d0edb918d8efd1574f2ef1a77898f"
+      }
+    },
+    "final_rad_quality": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    ],
+    "n_window_evals": 3,
+    "n_audit_evals": 1
+  },
+  "optimization": {
+    "constructor_calls": 1,
+    "step_calls": 1,
+    "actual_n_iter": 2,
+    "actual_func_evals": 3,
+    "max_iter": 3,
+    "max_eval": 3,
+    "termination_status": "UNKNOWN",
+    "tolerance_grad": 1e-10,
+    "final_audit_gradient_absmax": 7.817358308397082e-05,
+    "final_audit_gradient_within_tolerance_grad": false
+  },
+  "objective_audit": {
+    "status": "CROSSCHECKED",
+    "initial_zero_control_objective": {
+      "Jo0_huber": 26.588575903055926,
+      "Jb_state": 0.0,
+      "Jtheta": 0.0,
+      "Jtotal": 26.588575903055926,
+      "trace_index": 0,
+      "n_valid": 7,
+      "operator_signature_sha256": "81d2a52cd54bce6cc17e59e644a0ea9e574d9a85a1794cd30cff8e75d1372473",
+      "frozen_mask": {
+        "shape": [
+          1,
+          7
+        ],
+        "dtype": "float64",
+        "values": [
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ]
+        ],
+        "sha256_f64": "022451970ff25a1cf57eb1602f05e6ab8a2d0edb918d8efd1574f2ef1a77898f"
+      }
+    },
+    "background_quality_probe": {
+      "probe_masked_cost": 0.0,
+      "cost_semantics": "non-grad background quality probe with all-zero loss mask; not initial zero-control closure Jo",
+      "zero_mask": {
+        "shape": [
+          1,
+          7
+        ],
+        "dtype": "float64",
+        "values": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "sha256_f64": "d4817aa5497628e7c77e6b606107042bbba3130888c5f47a375e6179be789fbb"
+      },
+      "zero_mask_cost_recomputed": 0.0,
+      "probe_BT_cost_recomputed_with_frozen_mask": 26.588575903055926,
+      "probe_BT_K": [
+        [
+          262.2609690648086,
+          293.6851951749752,
+          270.6304713118575,
+          296.232817250819,
+          295.9661155119729,
+          292.8917454490824,
+          276.60347635213475
+        ]
+      ],
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ]
+    },
+    "crosschecks": {
+      "first_zero_control_closure_components_sum": true,
+      "probe_cost_matches_zero_mask_recomputation": true,
+      "probe_and_initial_closure_states_match": true,
+      "probe_BT_matches_first_zero_control_H_BT": true,
+      "probe_target_matches_validated_observation": true,
+      "frozen_mask_matches_first_zero_control_H": true,
+      "probe_BT_under_frozen_mask_matches_initial_zero_control_Jo": true,
+      "h_or_m_re_evaluations_for_crosscheck": 0
+    }
+  },
+  "private_checkpoint": {
+    "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/runs/PR411_REAL_V4_JUL19_20261012_01/private/accepted_state.npz",
+    "sha256": "e4759fab35b2705f8c96e287a8b95eab2412aa7927542896ec1ca1c6386d0aa7",
+    "bytes": 41670,
+    "mode": "0600",
+    "all_four_state_groups_hash_checked": true,
+    "full_control_gradient_hash_checked": true,
+    "BT_mask_quality_present_match_final_callback": true
+  },
+  "capture_original_sha256": "5408123195f6ad4cd58c5f20576f49f74d5a422f795eb71f73b6a25d4b57ad8c",
+  "capture_public_copy_sha256": "5408123195f6ad4cd58c5f20576f49f74d5a422f795eb71f73b6a25d4b57ad8c",
+  "driver_original_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/runs/PR411_REAL_V4_JUL19_20261012_01/DRIVER_RESULT.json",
+  "driver_original_sha256": "674a5145b59ef65cabedfd12b8dc16bfcf0a12a9915adafdadb7ee2b5f61b236",
+  "execution_log_sha256": "d5aaaa75017a94ca3ca3bed6765f9fb79cc7dd9748d91ba07ed855485fb06b57",
+  "source_and_driver_assets_before_after_match": true,
+  "all_33_predeclared_external_assets_after_match": true,
+  "H_temporary_case_outputs": "Successful worker TemporaryDirectory workspaces are removed by existing allsky_shard; parsed BT/K-pullback/capture outputs retained; no raw H workspaces claimed",
+  "strict_convergence": false,
+  "physical_matchup_and_science_acceptance": "NOT_ASSESSED",
+  "current_native_build_certified": false,
+  "budget_expansion": false,
+  "automatic_retry": false,
+  "R_M_I_M_tests_repeated": false,
+  "management_score_reassessed": false,
+  "pending_other_dates": [
+    "20250720",
+    "20250721"
+  ],
+  "spawn_pool_requested_workers": 1,
+  "spawn_runtime_pid_inventory": "NOT_INSTRUMENTED; successful configured spawn-pool execution is source/return evidence",
+  "execution_log_original_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/EXECUTION.log",
+  "execution_log_public_copy": "harness/evidence/pr411_v4_actual_integration_2026-10-12/EXECUTION.log",
+  "os_exit_observation_record": "harness/evidence/pr411_v4_actual_integration_2026-10-12/EXECUTION_EXIT.json"
+}
