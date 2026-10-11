@@ -99,3 +99,5 @@ date_modified: 2026-10-08
 - [[sources/pr401-fixed-input-k-response-2026-10-10]] — Common KMA BT/K replay and six declared fixed-input response directions from saved center K, with coherent held/partial source endpoint sensitivity; actual SRF and independent native dates remain open.
 
 - [[sources/pr402-finite-input-response-2026-10-11]] — Four actual skin/O3 finite trials preserve seven-channel quality and locally agree with saved K; fresh direct/K outputs, historical-asset limits and independent-observation availability are separated.
+
+- [[sources/pr403-l1b-heldout-scenes-2026-10-11]] — Current AMI L1B-only contract; two exact-slot held-out scene intakes complete, new-date native analyses pending.

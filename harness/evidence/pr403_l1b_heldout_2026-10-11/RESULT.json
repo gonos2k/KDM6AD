@@ -1,0 +1,263 @@
+{
+  "download_receipt_path_private": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr403_l1b_heldout_20261011/l1bheldout20261011c/DOWNLOAD_RECEIPT.json",
+  "interpretation": "Two GK2A AMI L1B scenes at distinct dates; not independent meteorological events, not SST/cloud-phase truth, and not newly validated native-model/RTTOV observations.",
+  "patch_csv": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr403_l1b_heldout_2026-10-11/FIXED_PATCH_SAMPLES.csv",
+  "plan_path": "harness/evidence/pr403_l1b_heldout_2026-10-11/PREDECLARED_PLAN.json",
+  "plan_sha256": "ce5a3d4a4109813ef61aa199c8b0bcef83d8828d9fdeebe6db5675d275ee54f3",
+  "point_csv": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr403_l1b_heldout_2026-10-11/POINT_SAMPLES.csv",
+  "private_decode_receipt_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr403_l1b_heldout_20261011/l1bheldout20261011c/DECODE_RECEIPT.json",
+  "private_payload_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr403_l1b_heldout_20261011/l1bheldout20261011c/FIXED_POINT_PATCH.npz",
+  "private_payload_sha256": "d24bb3a5d029ec13d1b25d0afdae95637a971d6d304f38bcc73dae461220bd90",
+  "scenes": [
+    {
+      "date": "20250720",
+      "fixed_window_geolocated_cells": 25,
+      "fixed_window_rows_cols": [
+        320,
+        48
+      ],
+      "nearest_pixel": {
+        "bt_K_by_channel": {
+          "ir087": 291.0778092233963,
+          "ir096": 266.1936569597201,
+          "ir105": 293.874560965552,
+          "ir112": 293.1778871905522,
+          "ir123": 289.65966253904065,
+          "ir133": 273.99778447180614,
+          "wv063": 238.891962811154,
+          "wv069": 250.09905414259472,
+          "wv073": 260.29867687098283
+        },
+        "column": 48,
+        "distance_to_fixed_point_m": 679.5505150089832,
+        "latitude_deg": 35.41925069326254,
+        "longitude_deg": 122.13724164654832,
+        "reader_dqf_by_channel": {
+          "ir087": 0,
+          "ir096": 0,
+          "ir105": 0,
+          "ir112": 0,
+          "ir123": 0,
+          "ir133": 0,
+          "wv063": 0,
+          "wv069": 0,
+          "wv073": 0
+        },
+        "row": 320
+      },
+      "nearest_pixel_within_2p5km": true,
+      "scientific_limits": [
+        "L1B DQF is source data-quality metadata, not cloud or clear-sky classification.",
+        "BT is a GK2A L1B brightness temperature; it is not a retrieved SST or independent cloud-phase label.",
+        "Window values and DQF counts are descriptive; no averaging, fit, residual selection, or observation-error R estimate is performed."
+      ],
+      "selected_nominal_slot_obt": "202507200556",
+      "status": "POINT_WITHIN_RADIUS",
+      "target_point": {
+        "latitude_deg": 35.415660858,
+        "longitude_deg": 122.143310547
+      },
+      "time_interpretation": "Filename label and scene acquisition are OBT; mission_reference_time is planned UTC; payload valid_time_utc remains unset.",
+      "whole_scene_quality_counts": {
+        "ir087": {
+          "all_finite_geometry_pixels": 250000,
+          "ami_channel_id_1based": 11,
+          "dqf0_support": 250000,
+          "reader_dqf_counts": {
+            "0": 250000
+          }
+        },
+        "ir096": {
+          "all_finite_geometry_pixels": 250000,
+          "ami_channel_id_1based": 12,
+          "dqf0_support": 250000,
+          "reader_dqf_counts": {
+            "0": 250000
+          }
+        },
+        "ir105": {
+          "all_finite_geometry_pixels": 250000,
+          "ami_channel_id_1based": 13,
+          "dqf0_support": 250000,
+          "reader_dqf_counts": {
+            "0": 250000
+          }
+        },
+        "ir112": {
+          "all_finite_geometry_pixels": 250000,
+          "ami_channel_id_1based": 14,
+          "dqf0_support": 250000,
+          "reader_dqf_counts": {
+            "0": 250000
+          }
+        },
+        "ir123": {
+          "all_finite_geometry_pixels": 250000,
+          "ami_channel_id_1based": 15,
+          "dqf0_support": 250000,
+          "reader_dqf_counts": {
+            "0": 250000
+          }
+        },
+        "ir133": {
+          "all_finite_geometry_pixels": 250000,
+          "ami_channel_id_1based": 16,
+          "dqf0_support": 250000,
+          "reader_dqf_counts": {
+            "0": 250000
+          }
+        },
+        "wv063": {
+          "all_finite_geometry_pixels": 250000,
+          "ami_channel_id_1based": 8,
+          "dqf0_support": 250000,
+          "reader_dqf_counts": {
+            "0": 250000
+          }
+        },
+        "wv069": {
+          "all_finite_geometry_pixels": 250000,
+          "ami_channel_id_1based": 9,
+          "dqf0_support": 250000,
+          "reader_dqf_counts": {
+            "0": 250000
+          }
+        },
+        "wv073": {
+          "all_finite_geometry_pixels": 250000,
+          "ami_channel_id_1based": 10,
+          "dqf0_support": 250000,
+          "reader_dqf_counts": {
+            "0": 250000
+          }
+        }
+      }
+    },
+    {
+      "date": "20250721",
+      "fixed_window_geolocated_cells": 25,
+      "fixed_window_rows_cols": [
+        320,
+        48
+      ],
+      "nearest_pixel": {
+        "bt_K_by_channel": {
+          "ir087": 280.18480174068816,
+          "ir096": 259.4883225027322,
+          "ir105": 282.6388683886508,
+          "ir112": 280.1578186813128,
+          "ir123": 276.5661358217474,
+          "ir133": 262.80886053738226,
+          "wv063": 235.83763833745004,
+          "wv069": 243.83028866458352,
+          "wv073": 252.2893277855052
+        },
+        "column": 48,
+        "distance_to_fixed_point_m": 679.5505150089832,
+        "latitude_deg": 35.41925069326254,
+        "longitude_deg": 122.13724164654832,
+        "reader_dqf_by_channel": {
+          "ir087": 0,
+          "ir096": 0,
+          "ir105": 0,
+          "ir112": 0,
+          "ir123": 0,
+          "ir133": 0,
+          "wv063": 0,
+          "wv069": 0,
+          "wv073": 0
+        },
+        "row": 320
+      },
+      "nearest_pixel_within_2p5km": true,
+      "scientific_limits": [
+        "L1B DQF is source data-quality metadata, not cloud or clear-sky classification.",
+        "BT is a GK2A L1B brightness temperature; it is not a retrieved SST or independent cloud-phase label.",
+        "Window values and DQF counts are descriptive; no averaging, fit, residual selection, or observation-error R estimate is performed."
+      ],
+      "selected_nominal_slot_obt": "202507210556",
+      "status": "POINT_WITHIN_RADIUS",
+      "target_point": {
+        "latitude_deg": 35.415660858,
+        "longitude_deg": 122.143310547
+      },
+      "time_interpretation": "Filename label and scene acquisition are OBT; mission_reference_time is planned UTC; payload valid_time_utc remains unset.",
+      "whole_scene_quality_counts": {
+        "ir087": {
+          "all_finite_geometry_pixels": 250000,
+          "ami_channel_id_1based": 11,
+          "dqf0_support": 250000,
+          "reader_dqf_counts": {
+            "0": 250000
+          }
+        },
+        "ir096": {
+          "all_finite_geometry_pixels": 250000,
+          "ami_channel_id_1based": 12,
+          "dqf0_support": 250000,
+          "reader_dqf_counts": {
+            "0": 250000
+          }
+        },
+        "ir105": {
+          "all_finite_geometry_pixels": 250000,
+          "ami_channel_id_1based": 13,
+          "dqf0_support": 250000,
+          "reader_dqf_counts": {
+            "0": 250000
+          }
+        },
+        "ir112": {
+          "all_finite_geometry_pixels": 250000,
+          "ami_channel_id_1based": 14,
+          "dqf0_support": 250000,
+          "reader_dqf_counts": {
+            "0": 250000
+          }
+        },
+        "ir123": {
+          "all_finite_geometry_pixels": 250000,
+          "ami_channel_id_1based": 15,
+          "dqf0_support": 250000,
+          "reader_dqf_counts": {
+            "0": 250000
+          }
+        },
+        "ir133": {
+          "all_finite_geometry_pixels": 250000,
+          "ami_channel_id_1based": 16,
+          "dqf0_support": 250000,
+          "reader_dqf_counts": {
+            "0": 250000
+          }
+        },
+        "wv063": {
+          "all_finite_geometry_pixels": 250000,
+          "ami_channel_id_1based": 8,
+          "dqf0_support": 250000,
+          "reader_dqf_counts": {
+            "0": 250000
+          }
+        },
+        "wv069": {
+          "all_finite_geometry_pixels": 250000,
+          "ami_channel_id_1based": 9,
+          "dqf0_support": 250000,
+          "reader_dqf_counts": {
+            "0": 250000
+          }
+        },
+        "wv073": {
+          "all_finite_geometry_pixels": 250000,
+          "ami_channel_id_1based": 10,
+          "dqf0_support": 250000,
+          "reader_dqf_counts": {
+            "0": 250000
+          }
+        }
+      }
+    }
+  ],
+  "schema": "pr403_gk2a_l1b_heldout_result_v1",
+  "status": "DECODED_GK2A_L1B_SCENES_ONLY"
+}

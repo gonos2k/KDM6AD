@@ -1,0 +1,11 @@
+{
+  "status": "ADDITIVE_ARITHMETIC_REPLAY_NOT_NEW_OBSERVATION_DECODE",
+  "rows": 450,
+  "input_patch_sha256": "3774e0913d2ac14106bb92b00fe70ebd03d2ba8de16fc2c794d8d0aff3ae2ef1",
+  "calibration_sha256": "a6f830aa04e19f6982aa6ff36e832464a5b32fdcf8200211956969d5eb48325d",
+  "output_sha256": "a072ad5f9e7324ea9d460a6f92c63582f4c592b0eba1886aeb37b12628df70f7",
+  "formula": "L = DN_to_Radiance_Offset + DN_to_Radiance_Gain * retained DN",
+  "unit": "mW m^-2 sr^-1 (cm^-1)^-1, same spectral-radiance convention as paired Planck conversion",
+  "limits": "Produced after original decode from preserved DN/calibration; not originally present in executed NPZ/CSV, not an average, new reader run or model call.",
+  "csv_column": "radiance_mW_m2_inverse_sr_inverse_per_cm1"
+}
