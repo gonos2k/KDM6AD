@@ -38,3 +38,7 @@ The [independent team audit](pr404_l1b_source_mask_2026-10-11/audit_20261011/TEA
 ## Native valid-time follow-up at PR404
 
 The [PR405 linkage record](pr405_native_valid_time_2026-10-11/NATIVE_TIME_LINKAGE.json) and [report](pr405_native_valid_time_2026-10-11/COORDINATOR_REPORT.md) correct the existingBC final record09UTC versus interval endpoint12UTC. This file still does not reach July20/21. A matching native valid state may come from an earlier initialization; initialization suffixes are not a forecast-horizon census. New-date cases remainPENDING_NATIVE_INPUT, with no native run selected or analysis executed. The user's same-scale assessment is now79/100, without further points for this follow-up.
+
+## Case-consumer follow-up at PR406
+
+The [case consumer and checklist](CHECKLIST_pr406_native_case_consumer_2026-10-11.md) separate the case/run/time identifiers from the unchanged historical intake. Its bounded core needs one saved native background plus declared20s forcing; additional host frames are optional diagnostics. The isolated capture adapter reuses the existing analysis and final audit. Actual evidence is a July19 core intake replay and synthetic admission/failure tests, not a new-date analysis. Both July20/21 cases remain pending native input. The79/100 assessment is unchanged.

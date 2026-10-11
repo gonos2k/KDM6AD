@@ -6,6 +6,7 @@ date_modified: 2026-07-14
 # Hot Cache
 
 ## Current Focus
+- [[sources/pr406-native-case-consumer-2026-10-11]] — Case-bound single-background intake and isolated capture admission; actual July19 intake replay, July20/21 still pending native input. No new M/H/analysis result.
 - [[sources/pr405-native-valid-time-linkage-2026-10-11]] — CurrentBC interval ends12UTC (lastrecord starts09); no knowncachedJul20/21validstates. Firstreadydate canproceed, user79/100 recorded.
 - [[sources/pr404-l1b-source-mask-and-native-linkage-2026-10-11]] — P3 source-mask capture repaired with actual-NetCDF tests and additive sidecar; July20/21 model-connected analyses pending original native inputs.
 - [[sources/pr403-l1b-heldout-scenes-2026-10-11]] — AMI L1B-only completion scope supersedes external-observation gates; July20/21 intake complete, matching native analyses pending. Historical entries below retain their original scope.

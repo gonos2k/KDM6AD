@@ -1,0 +1,39 @@
+{
+  "schema": "pr406_local_validation_v1",
+  "scope": "GK2A AMI L1B bounded case consumer; no M/H/optimizer/native launch",
+  "environment": {
+    "python": "3.10.11",
+    "numpy": "2.2.6",
+    "netCDF4": "1.7.4",
+    "torch": "2.13.0",
+    "pytest": "9.1.1"
+  },
+  "unique_focused_cases": 24,
+  "focused_result": "24 passed",
+  "portable_oracle_facade_cases": 14,
+  "portable_result": "14 passed",
+  "portable_cases_are_subset_not_additional": true,
+  "focused_command": "OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OMP_THREAD_LIMIT=1 VECLIB_MAXIMUM_THREADS=1 PYTHONPATH=oracle /private/tmp/KDM6AD-research-rc-20261007/env/bin/python -m pytest -q harness/evidence/pr406_native_case_consumer_2026-10-11/test_native_case_intake.py harness/evidence/pr406_native_case_consumer_2026-10-11/test_case_analysis_adapter.py",
+  "portable_command": "same environment; python -m pytest -q oracle/tests/test_native_case_consumer_contract.py",
+  "private_coverage": "synthetic NetCDF and case-capture admission plus actual retained July19 core intake comparison; not a complete geophysical analysis",
+  "broader_CI": "reported separately on the PR head; no private native/RTTOV execution implied",
+  "newdate_analysis_executed": false,
+  "management_score": "user-owned79/100 unchanged",
+  "ruff": "passed for packet and portable facade",
+  "python_compile": "passed for v1/v2 intake, adapter, driver and portable facade",
+  "diff_check": "passed",
+  "graph_refresh": {
+    "structural_update": "executed; current code graph and semantic merge",
+    "semantic_relationships": {
+      "unique_prior_ids_preserved": true,
+      "scoped_edges_present": true,
+      "semantic_nodes": 20,
+      "semantic_edges": 17,
+      "graph_nodes": 18025,
+      "graph_edges": 30936,
+      "limits": "Scoped manual semantic extraction and cached AST graph; source/tests authoritative, no complete corpus certification"
+    },
+    "coverage_limits": "Cached structural graph and scoped Green/Red/coordinator semantics. The first merge exposed seven fragment edges using type instead of relation; normalized before final export. Final graph has zero missing relation fields; prior IDs and all scoped edges remain present. Raw reports stay ignored graphify-out.",
+    "final_missing_relation_fields": 0
+  }
+}
