@@ -1,0 +1,14 @@
+{
+  "schema": "pr412_selection_output_failure_v1",
+  "observed_exit_code": 1,
+  "error": "TypeError: Object of type int64 is not JSON serializable",
+  "stage": "after completed bounded native read, private slice saved, final source/stat guards passed; public JSON serialization failed",
+  "plan_sha256": "2b2108821f0f6194b8f9917da4e55ab2ebb253c14aaf8aa3d71308e1ef97f026",
+  "selector_sha256": "9bf955a0e37c920b7c81fed249588ebb234544c7a1d33af10d8f8bf833ca1bc6",
+  "private_slice_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr412_native_process_20261012/SELECTION_SLICE.npz",
+  "private_slice_sha256": "7963b364d86f37640b42d5602df20731224fc11557dd3c0059689a58eb3bca7d",
+  "empty_partial_result_preserved": "SELECTION_RESULT_EMPTY_AFTER_FAILURE.empty",
+  "M_H_optimizer_calls": 0,
+  "native_integrations": 0,
+  "native_rescan_or_selection_expansion_authorized": false
+}

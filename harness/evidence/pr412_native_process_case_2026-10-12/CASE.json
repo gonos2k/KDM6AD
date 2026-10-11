@@ -1,0 +1,90 @@
+{
+  "schema": "kdm6ad_native_case_v4",
+  "case_id": "PR412_JUL19_NATURAL_LIQUID_COLUMN",
+  "observation": {
+    "source_result_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr412_native_process_case_2026-10-12/L1B_WIRE_RESULT.json",
+    "source_result_sha256": "8211a20739de78d29d86cbf71c0afd893501b17004a1a579bfe4f73180009953",
+    "source_payload_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr412_native_process_20261012/inputs/SELECTED_L1B_PATCH.npz",
+    "source_payload_sha256": "6b2cc7f43421ca1b2100680dde31dc661e3477bdf44b095d0f1217a7bf8a40bc",
+    "scene_date": "20250719",
+    "nominal_slot_obt": "202507190556",
+    "nominal_obs_model_time": "2025-07-19_05:56:00",
+    "time_assumption": "NOMINAL_FILENAME_TIME_AS_MODEL_UTC_RESEARCH_MODE",
+    "observed_pixel_utc": null,
+    "source_metadata_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr412_native_process_20261012/inputs/DECODE_RECEIPT.json",
+    "source_metadata_sha256": "febac62c03e334f39d7b206971c89f55305d858f299ab1a9d28eafecdfad3c00",
+    "nearest_pixel": {
+      "row": 289,
+      "column": 49,
+      "latitude_deg": 36.19700231203294,
+      "longitude_deg": 122.09240151533507,
+      "distance_to_fixed_point_m": 425.93526469995294,
+      "bt_K_by_channel": {
+        "wv063": 240.85618883047806,
+        "wv069": 251.24082067586068,
+        "wv073": 262.66001521264155,
+        "ir087": 292.4845078767833,
+        "ir096": 265.75997649163685,
+        "ir105": 295.256843926959,
+        "ir112": 295.1098357639112,
+        "ir123": 292.1487063351286,
+        "ir133": 275.82968074809355
+      },
+      "reader_dqf_by_channel": {
+        "wv063": 0,
+        "wv069": 0,
+        "wv073": 0,
+        "ir087": 0,
+        "ir096": 0,
+        "ir105": 0,
+        "ir112": 0,
+        "ir123": 0,
+        "ir133": 0
+      }
+    }
+  },
+  "native": {
+    "run_id": "mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148",
+    "run_dir": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/runs/mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148",
+    "initial_time": "2025-07-19_00:00:00",
+    "background_valid_time": "2025-07-19_05:55:40",
+    "column": {
+      "j": 103,
+      "i": 48,
+      "expected_latitude_deg": 36.195343017578125,
+      "expected_longitude_deg": 122.0966796875,
+      "coordinate_tolerance_deg": 5e-05
+    },
+    "diagnostic_times": [],
+    "completion_receipt_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr397_actual_native_results_2026-10-10/NATIVE_COMPLETION.json",
+    "completion_receipt_sha256": "b1025c391f178cfea7fd77fc1c39adced0fdf205210c650b7dacc576fcba713b"
+  },
+  "analysis": {
+    "dt_s": 20,
+    "obs_time": 1,
+    "nominal_obs_model_time": "2025-07-19_05:56:00",
+    "all_sky": true,
+    "channel_ids_1based": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "require_source_dqf_zero": true,
+    "control_fields": [
+      "th",
+      "qv"
+    ],
+    "ncmin_land": 10.0,
+    "ncmin_sea": 10.0,
+    "use_adaptive_time_step": false,
+    "step_to_output_time": false
+  },
+  "output": {
+    "manifest_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr412_native_process_case_2026-10-12/INTAKE.json",
+    "private_npz_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr412_native_process_20261012/inputs/SELECTED_CORE_BOUND_V4.npz"
+  }
+}

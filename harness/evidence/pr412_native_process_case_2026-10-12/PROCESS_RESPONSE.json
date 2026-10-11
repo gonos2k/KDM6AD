@@ -1,0 +1,193 @@
+{
+  "schema": "pr412_saved_process_response_v1",
+  "status": "RETURNED_TWO_VALUE_ONLY_H_DIAGNOSTICS",
+  "plan_sha256": "f28191380bef731079b7d619b67520936ffd689b466050cba7f809c790d96581",
+  "missing_initial_H": {
+    "background_initial": {
+      "BT_K": [
+        [
+          260.8187419927671,
+          290.9623522743392,
+          268.6855792304603,
+          293.47535296749425,
+          293.30569046582696,
+          290.6413561479957,
+          275.43267589519735
+        ]
+      ],
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "Jo": 8.460824432435476
+    },
+    "returned_analysis_initial": {
+      "BT_K": [
+        [
+          260.8367593915605,
+          291.004143534737,
+          268.71456823869016,
+          293.5230900820249,
+          293.36176187869677,
+          290.69798097421176,
+          275.4700919690137
+        ]
+      ],
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "Jo": 8.255417046266073
+    }
+  },
+  "stored_slot_H": {
+    "background_BT_K": [
+      [
+        260.81874199152185,
+        290.9619408303017,
+        268.6852993205804,
+        293.47496365617684,
+        293.3053803916121,
+        290.6411739033245,
+        275.4326163752464
+      ]
+    ],
+    "analysis_BT_K": [
+      [
+        260.8367617332408,
+        291.83624716699285,
+        269.23220759066055,
+        294.212110445515,
+        293.9222373285544,
+        291.0895251197003,
+        275.6091050472442
+      ]
+    ]
+  },
+  "R_M_background_K": [
+    [
+      -1.2452687769837212e-09,
+      -0.0004114440374678452,
+      -0.0002799098799073363,
+      -0.00038931131740582714,
+      -0.0003100742148376412,
+      -0.00018224467117988752,
+      -5.9519950923458964e-05
+    ]
+  ],
+  "R_M_analysis_K": [
+    [
+      2.341680271911173e-06,
+      0.8321036322558371,
+      0.5176393519703879,
+      0.6890203634901013,
+      0.5604754498576199,
+      0.391544145488524,
+      0.13901307823050502
+    ]
+  ],
+  "I_M_K": [
+    [
+      2.3429255406881566e-06,
+      0.8325150762933049,
+      0.5179192618502952,
+      0.6894096748075071,
+      0.5607855240724575,
+      0.3917263901597039,
+      0.13907259818142848
+    ]
+  ],
+  "fixed_state_pair_observation_cost_gains": {
+    "G_M": 2.1404157250372196,
+    "G_0": 0.20540738616940324,
+    "G_M_minus_G_0": 1.9350083388678163
+  },
+  "state_snapshots": {
+    "background_initial": {
+      "T_min_K": 200.83863348910057,
+      "T_max_K": 297.2187299771868,
+      "liquid_saturation_ratio_max_percent": 100.00066170226617,
+      "water_fixed_host_dry_measure_kg_m2": 38.37652090499288,
+      "qc_max_kg_kg_dry": 3.460201696725562e-05,
+      "qc_fixed_host_dry_path_kg_m2": 0.004189188041903991,
+      "nc_max_recorded_model_coordinate": 23088648.0,
+      "qc_positive_layers": 1
+    },
+    "background_slot": {
+      "T_min_K": 200.83863348910057,
+      "T_max_K": 297.2187299771868,
+      "liquid_saturation_ratio_max_percent": 99.99998712596393,
+      "water_fixed_host_dry_measure_kg_m2": 38.37652090499288,
+      "qc_max_kg_kg_dry": 3.463419313714804e-05,
+      "qc_fixed_host_dry_path_kg_m2": 0.004193083538119577,
+      "nc_max_recorded_model_coordinate": 23088139.30079706,
+      "qc_positive_layers": 1
+    },
+    "returned_analysis_initial": {
+      "T_min_K": 200.83847332553827,
+      "T_max_K": 297.22695827952265,
+      "liquid_saturation_ratio_max_percent": 96.34100332507958,
+      "water_fixed_host_dry_measure_kg_m2": 38.261544083686786,
+      "qc_max_kg_kg_dry": 3.460201696725562e-05,
+      "qc_fixed_host_dry_path_kg_m2": 0.004189188041903991,
+      "nc_max_recorded_model_coordinate": 23088648.0,
+      "qc_positive_layers": 1
+    },
+    "final_slot": {
+      "T_min_K": 200.83847332553827,
+      "T_max_K": 297.22695827952265,
+      "liquid_saturation_ratio_max_percent": 96.89483224416037,
+      "water_fixed_host_dry_measure_kg_m2": 38.261544083686786,
+      "qc_max_kg_kg_dry": 0.0,
+      "qc_fixed_host_dry_path_kg_m2": 0.0,
+      "nc_max_recorded_model_coordinate": 0.0,
+      "qc_positive_layers": 0
+    }
+  },
+  "local_M_endpoint_changes": {
+    "background_initial__to__background_slot": {
+      "T_delta_min_K": 0.0,
+      "T_delta_max_K": 7.734893600927983e-05,
+      "qv_delta_min_kg_kg_dry": -3.217616989167893e-08,
+      "qv_delta_max_kg_kg_dry": 0.0,
+      "qc_delta_min_kg_kg_dry": 0.0,
+      "qc_delta_max_kg_kg_dry": 3.217616989241754e-08,
+      "water_fixed_measure_delta_kg_m2": 0.0
+    },
+    "returned_analysis_initial__to__final_slot": {
+      "T_delta_min_K": -0.08319606421579004,
+      "T_delta_max_K": 4.634589797694712e-14,
+      "qv_delta_min_kg_kg_dry": 0.0,
+      "qv_delta_max_kg_kg_dry": 3.460201696725562e-05,
+      "qc_delta_min_kg_kg_dry": -3.460201696725562e-05,
+      "qc_delta_max_kg_kg_dry": 0.0,
+      "water_fixed_measure_delta_kg_m2": 0.0
+    }
+  },
+  "analysis_initial_water_delta_kg_m2": -0.11497682130609377,
+  "additional_logical_H_calls": 2,
+  "internal_RTTOV_direct_K_calls": null,
+  "additional_M_optimizer_calls": 0,
+  "number_coordinate_note": "recorded native NC is used under the declared normalized-dry/dry_number=True runtime contract; independent native QN dry-vs-moist basis is not revalidated here; maxima are recorded coordinate values, not observed concentrations or a number budget",
+  "named_process_rates_recorded": false,
+  "external_flux_budget_closed": false,
+  "same_valid_time_host_comparison": false,
+  "reoptimized_no_M_system": false,
+  "observed_cloud_phase_or_NC_truth": false,
+  "new_dates": 0,
+  "science_accepted": false
+}

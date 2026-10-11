@@ -23,6 +23,7 @@ date_modified: 2026-10-08
 - [[queries/_index|Queries]] - 2 pages
 
 ## Sources
+- [[sources/pr412-natural-native-process-case-2026-10-12|Natural native warm-QC case]] — Same-date new column; actual analysis and paired H response, with nonconvergence and no process-rate/date claim.
 - [[sources/team-intake-capture-audit-2026-10-10|Team intake/capture boundary audit]] - Reproduced and repaired conditional research-tool faults; running model and science limits kept separate.
 - [[sources/native-tq-case-progress-2026-10-10|Fresh native T/Q case preparation]] - Fresh run started; gated intake and full-state persistence prepared, target outputs and scientific matchup pending.
 - [[sources/real-tq-artifact-diagnostic-2026-10-10|Actual RTTOV T/Q artifact diagnostic]] - One bounded iteration on a historical invalid-run checkpoint; real numerical connection, missing final physical state and no new valid case.

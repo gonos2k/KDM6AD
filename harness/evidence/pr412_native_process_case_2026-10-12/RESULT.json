@@ -1,0 +1,312 @@
+{
+  "schema": "pr412_actual_analysis_result_v1",
+  "status": "RETURNED_CASE_DIAGNOSTIC",
+  "driver_original_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr412_native_process_20261012/runs/PR412_NATURAL_LIQUID_JUL19_20261012_01/DRIVER_RESULT.json",
+  "driver_sha256": "b96a8c905146d9203405c15adc262454b525269be803253350a6c9da9d15cb65",
+  "capture_original_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr412_native_process_20261012/runs/PR412_NATURAL_LIQUID_JUL19_20261012_01/CAPTURE.json",
+  "capture_sha256": "746b6dd782d6e44d26e897e2c579f69f53d8d6c1de1b2a4087ad62c674195103",
+  "checkpoint": {
+    "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr412_native_process_20261012/runs/PR412_NATURAL_LIQUID_JUL19_20261012_01/private/accepted_state.npz",
+    "sha256": "a928ef2daeac7664998a6f869a489181422737a28fd3dc320dc4c2a64e1517dc",
+    "array_keys": [
+      "background_initial_state__bg",
+      "background_initial_state__nc",
+      "background_initial_state__nccn",
+      "background_initial_state__ni",
+      "background_initial_state__nr",
+      "background_initial_state__qc",
+      "background_initial_state__qg",
+      "background_initial_state__qi",
+      "background_initial_state__qr",
+      "background_initial_state__qs",
+      "background_initial_state__qv",
+      "background_initial_state__th",
+      "background_slot_state__bg",
+      "background_slot_state__nc",
+      "background_slot_state__nccn",
+      "background_slot_state__ni",
+      "background_slot_state__nr",
+      "background_slot_state__qc",
+      "background_slot_state__qg",
+      "background_slot_state__qi",
+      "background_slot_state__qr",
+      "background_slot_state__qs",
+      "background_slot_state__qv",
+      "background_slot_state__th",
+      "capture_metadata_json_utf8",
+      "control__b_sigma__bg",
+      "control__b_sigma__nc",
+      "control__b_sigma__nccn",
+      "control__b_sigma__ni",
+      "control__b_sigma__nr",
+      "control__b_sigma__qc",
+      "control__b_sigma__qg",
+      "control__b_sigma__qi",
+      "control__b_sigma__qr",
+      "control__b_sigma__qs",
+      "control__b_sigma__qv",
+      "control__b_sigma__th",
+      "control__fixed_eta",
+      "control__fixed_eta_pre",
+      "control__fixed_eta_pre_present",
+      "control__fixed_eta_present",
+      "control__optimizer_final_gradient_combined",
+      "control__optimizer_final_gradient_v_state",
+      "control__optimizer_final_gradient_v_theta",
+      "control__optimizer_v_state_control",
+      "control__optimizer_v_theta_control",
+      "control__parameter_sigma_log",
+      "control__parameter_theta_analysis",
+      "control__parameter_theta_background",
+      "exner_final_slot_native_bottomup",
+      "final_slot_bt_K",
+      "final_slot_forcing__delz",
+      "final_slot_forcing__p",
+      "final_slot_forcing__pii",
+      "final_slot_forcing__rho",
+      "final_slot_frozen_mask",
+      "final_slot_rad_quality",
+      "final_slot_state__bg",
+      "final_slot_state__nc",
+      "final_slot_state__nccn",
+      "final_slot_state__ni",
+      "final_slot_state__nr",
+      "final_slot_state__qc",
+      "final_slot_state__qg",
+      "final_slot_state__qi",
+      "final_slot_state__qr",
+      "final_slot_state__qs",
+      "final_slot_state__qv",
+      "final_slot_state__th",
+      "forcing_window_0__delz",
+      "forcing_window_0__p",
+      "forcing_window_0__pii",
+      "forcing_window_0__rho",
+      "host_dry_mass_background_kg_m2",
+      "native_coordinate__PHB_raw_native_bottomup",
+      "native_coordinate__PH_raw_native_bottomup",
+      "native_coordinate__native_p_centers_bottomup",
+      "native_coordinate__native_p_half_calc_p8w_bottomup_real4",
+      "native_coordinate__p_half_rttov_topdown",
+      "native_coordinate__p_lay_rttov_topdown",
+      "observation_y_bt_K",
+      "observation_y_dqf",
+      "optimizer_state__H_diag",
+      "optimizer_state__al__0",
+      "optimizer_state__d",
+      "optimizer_state__old_dirs__0",
+      "optimizer_state__old_stps__0",
+      "optimizer_state__prev_flat_grad",
+      "optimizer_state__ro__0",
+      "p_centers_native_bottomup_Pa",
+      "returned_analysis_initial_state__bg",
+      "returned_analysis_initial_state__nc",
+      "returned_analysis_initial_state__nccn",
+      "returned_analysis_initial_state__ni",
+      "returned_analysis_initial_state__nr",
+      "returned_analysis_initial_state__qc",
+      "returned_analysis_initial_state__qg",
+      "returned_analysis_initial_state__qi",
+      "returned_analysis_initial_state__qr",
+      "returned_analysis_initial_state__qs",
+      "returned_analysis_initial_state__qv",
+      "returned_analysis_initial_state__th",
+      "rho_d_native_bottomup_kg_m3",
+      "rttov_config__p_half",
+      "rttov_config__p_lay",
+      "rttov_config__q_ref",
+      "rttov_config__t_ref"
+    ],
+    "contains_full_state_arrays": true,
+    "public_receipt_contains_full_state_arrays": false
+  },
+  "objective_audit": {
+    "status": "CROSSCHECKED",
+    "initial_zero_control_objective": {
+      "Jo0_huber": 8.461861229522402,
+      "Jb_state": 0.0,
+      "Jtheta": 0.0,
+      "Jtotal": 8.461861229522402,
+      "trace_index": 0,
+      "n_valid": 7,
+      "operator_signature_sha256": "7c278c5fcc088acbaca529ef2c006a6d3538e1184e00a65c8dd705da0a6e1c7c",
+      "frozen_mask": {
+        "shape": [
+          1,
+          7
+        ],
+        "dtype": "float64",
+        "values": [
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ]
+        ],
+        "sha256_f64": "022451970ff25a1cf57eb1602f05e6ab8a2d0edb918d8efd1574f2ef1a77898f"
+      }
+    },
+    "background_quality_probe": {
+      "probe_masked_cost": 0.0,
+      "cost_semantics": "non-grad background quality probe with all-zero loss mask; not initial zero-control closure Jo",
+      "zero_mask": {
+        "shape": [
+          1,
+          7
+        ],
+        "dtype": "float64",
+        "values": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "sha256_f64": "d4817aa5497628e7c77e6b606107042bbba3130888c5f47a375e6179be789fbb"
+      },
+      "zero_mask_cost_recomputed": 0.0,
+      "probe_BT_cost_recomputed_with_frozen_mask": 8.461861229522402,
+      "probe_BT_K": [
+        [
+          260.81874199152185,
+          290.9619408303017,
+          268.6852993205804,
+          293.47496365617684,
+          293.3053803916121,
+          290.6411739033245,
+          275.4326163752464
+        ]
+      ],
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ]
+    },
+    "crosschecks": {
+      "first_zero_control_closure_components_sum": true,
+      "probe_cost_matches_zero_mask_recomputation": true,
+      "probe_and_initial_closure_states_match": true,
+      "probe_BT_matches_first_zero_control_H_BT": true,
+      "probe_target_matches_validated_observation": true,
+      "frozen_mask_matches_first_zero_control_H": true,
+      "probe_BT_under_frozen_mask_matches_initial_zero_control_Jo": true,
+      "h_or_m_re_evaluations_for_crosscheck": 0
+    }
+  },
+  "objective": {
+    "Jb_state": 0.10934786066219129,
+    "Jtheta": 0.0,
+    "Jo": 6.321445504485183,
+    "Jtotal": 6.430793365147374,
+    "Jtotal_final_trace": 6.430793365147374,
+    "n_valid": 7,
+    "frozen_support": [
+      [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    ],
+    "final_audit_signature": {
+      "slot": 1,
+      "sha256": "7c278c5fcc088acbaca529ef2c006a6d3538e1184e00a65c8dd705da0a6e1c7c",
+      "trace_entry_count": 5,
+      "final_trace_index": 4,
+      "all_trace_signatures_match": true,
+      "n_valid_each_trace_entry": 7,
+      "final_frozen_mask": {
+        "shape": [
+          1,
+          7
+        ],
+        "dtype": "float64",
+        "sha256_f64": "022451970ff25a1cf57eb1602f05e6ab8a2d0edb918d8efd1574f2ef1a77898f"
+      }
+    },
+    "initial_zero_control_closure": {
+      "trace_index": 0,
+      "control_semantics": "first existing optimizer closure before L-BFGS updates; v_state and v_theta start at zero",
+      "Jb_state": 0.0,
+      "Jtheta": 0.0,
+      "Jo": 8.461861229522402,
+      "Jtotal": 8.461861229522402,
+      "n_valid": 7,
+      "operator_signature_sha256": "7c278c5fcc088acbaca529ef2c006a6d3538e1184e00a65c8dd705da0a6e1c7c",
+      "signature_matches_final_accepted_audit": true,
+      "first_grad_true_h_call_index": 2,
+      "first_h_J_huber_matches_Jo": true,
+      "frozen_mask": {
+        "shape": [
+          1,
+          7
+        ],
+        "dtype": "float64",
+        "values": [
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ]
+        ],
+        "sha256_f64": "022451970ff25a1cf57eb1602f05e6ab8a2d0edb918d8efd1574f2ef1a77898f"
+      }
+    },
+    "final_rad_quality": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    ],
+    "n_window_evals": 4,
+    "n_audit_evals": 1
+  },
+  "gradient_linf": 0.3041588432993508,
+  "strict_gradient_convergence": false,
+  "termination_reason": "UNKNOWN",
+  "iterations": 2,
+  "function_evals": 4,
+  "window_evals": 4,
+  "audit_evals": 1,
+  "logical_H_callbacks": 6,
+  "RTTOV_internal_child_calls": null,
+  "33_assets_and_8_sources_match_after_run": true,
+  "new_native_integrations": 0,
+  "new_dates": 0,
+  "same_center_integration_repeated": false,
+  "optional_H_diagnostic_executed": true,
+  "science_accepted": false,
+  "additional_value_only_H_diagnostic": {
+    "source": "DIAGNOSTIC_EXIT.json",
+    "logical_H_calls": 2,
+    "response": "PROCESS_RESPONSE.json",
+    "M_optimizer_calls": 0
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "schema": "pr412_selected_column_binding_plan_v1",
+  "producer_sha256": "23d8b9365fcf5108726d2998eef6492df89370ae739eb05f18063546f6cc347f",
+  "selection_result_sha256": "7b834c5dd55271bd969e8ed9a2fb74d605a5d98017f96b9ebe567b8c176facbf",
+  "original_files_receipt_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr411_v4_actual_integration_2026-10-12/RESTORE_RESULT.json",
+  "original_files_receipt_sha256": "0a95f5762c362dfa86e98aecc7868996fb6cea253cd8816bfa66fa4c29e2c52d",
+  "pixel_selection": "nearestfinitegeolocation to preselectednativecolumn; no BT/residual/dqf ranking",
+  "gates": "native-to-pixel<=2500m; all7analysisDQF0; iffailkeepfailureanddoNOTtryanothernativecandidate/pixel",
+  "new_dates": 0,
+  "native_M_H_optimizer_calls": 0,
+  "original_records_overwritten": false
+}
