@@ -90,6 +90,19 @@ Another-date execution supports calculation/repeatability. The upper process goa
 
 Historical non-AMI selection/labels remain history, not evidence for new AMI-only scientific claims under the [observation contract](CURRENT_OBSERVATION_DATA_CONTRACT.md). Closed selected checks are mapped, not reopened. State Jacobians alone do not prove named-process attribution. An unchanged M endpoint does not imply M_x=I.
 
+### What the closed synthetic success establishes
+
+The reused [synthetic all-sky fixture](../../oracle/tests/test_da_single_column.py) returns the same scalar in every channel: `bt=s(x).expand(1,7)`, where `s=280+mean(theta*pii)-ref_T+0.05*(mean(qv)-ref_qv)+20*mean(qc)`. The coefficients are test choices, not AMI/RTTOV physical sensitivities. Hence, within a differentiable branch,
+
+\[
+D_v(\widetilde H\circ M\circ C)=\boldsymbol1_7a(v)^T,
+\qquad \operatorname{rank}D_v(\widetilde H\circ M\circ C)\le1.
+\]
+
+This upper bound follows from the output structure, including when M is real KDM; it is not a measured rank of actual AMI/RTTOV. With equal channel scales and full equal masks, permuting targets preserves the summed synthetic loss and state pullback. Metadata/order checks are separate; this physical-response fixture cannot distinguish channel-specific spectral misassociation. It does not read NC directly (`partial H_tilde/partial NC=0`), which does not exclude indirect NC effects through M. Seven supported output entries therefore do not constitute seven independent spectral responses.
+
+In the [retained PR408 result](pr408_synthetic_capture_success_2026-10-11/SYNTHETIC_CAPTURE_RESULT.json), initial identical BT281.179394596 with targets282–288 puts the first residual in the Huber quadratic region and the other six in its linear region. The real-case all-linear description does not transfer to this fixture. Its cost reduction is a synthetic-objective result, not meteorological improvement. The success/audit/storage test remains closed; no richer fixture or new execution is required by these qualifications.
+
 ### Optional comparison matched to a claim
 
 T/Q affects H directly through thermodynamics/gases and indirectly through M, latent/state/hydrometeor/size changes. Cost improvement alone cannot separate these routes. If claiming additional observation-space contribution of M, first connect existing matching state/process/BT records. Where missing, a limited diagnostic may compare
@@ -97,6 +110,15 @@ T/Q affects H directly through thermodynamics/gases and indirectly through M, la
 \[
 \Delta y_M(v)=H_{a_H}(M(C(v);f_b,\alpha_b))-H_{a_H}(C(v)).
 \]
+
+For a retained initial state x, denote this by `R_M(x)=H(M(x))-H(x)`. R_M measures the one-state observation change due to the chosen evolution. For retained background and accepted initial states x_b,x_a, distinguish the analysis-increment response difference
+
+\[
+\mathcal I_M=R_M(x_a)-R_M(x_b)
+=[H(M(x_a))-H(M(x_b))]-[H(x_a)-H(x_b)].
+\]
+
+R_M can be nonzero while I_M is zero: an evolution-induced offset need not change the observation effect of the analysis increment. First use the four stored states x_b,x_a,M(x_b),M(x_a), matching existing BT and process records where available. Only missing values needed for a stated claim justify a limited extra H comparison; neither two new optimizations nor new calls for every case are required. These quantities were not evaluated by this documentation change.
 
 If the claim concerns sensitivity, distinguish `H_x(M(x0))*M_x(x0)*C_v` from `H_x(x0)*C_v`. Keep identical H auxiliaries, including frozen optical density, and the same valid seven-channel support on both sides; if a diagnostic side is inadmissible, record that outcome rather than shrink support. No-evolution H is a diagnostic counterfactual, not another same-valid-time host forecast. This neither isolates individual processes without their records nor proves forecast skill. It is not an unconditional completion gate, new optimization campaign or comparison executed by this documentation change.
 

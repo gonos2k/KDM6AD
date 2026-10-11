@@ -1,0 +1,41 @@
+{
+  "schema": "pr409_addendum_artifact_manifest_v1",
+  "basis_main": "8427d547",
+  "supersedes_current_document_hashes_only_from_revision": "bf20ee035d017e63ddde30303d98c0bd2dee96fa",
+  "historical_manifest_preserved": "harness/evidence/pr409_problem_evidence_alignment_2026-10-11/ARTIFACT_MANIFEST.json",
+  "files": [
+    {
+      "path": "harness/evidence/AMI_L1B_RESEARCH_EDITION_COMPLETION.md",
+      "size_bytes": 15588,
+      "sha256": "1a1dbff7b436f6c7b214d91c6c9e9760b90a9ed8ac4c578e5a8fea9756c836f7"
+    },
+    {
+      "path": "wiki/sources/pr409-problem-evidence-alignment-2026-10-11.md",
+      "size_bytes": 2492,
+      "sha256": "99e064951bb0550cc60e2a448eb6f120f07d41131efce35bfce1063c4a59ffe2"
+    },
+    {
+      "path": "harness/evidence/pr409_problem_evidence_alignment_2026-10-11/ADDENDUM_REPORT.md",
+      "size_bytes": 2592,
+      "sha256": "3e0681e414a35c98faf95ed722ede95c3854aa0681e1eb6ac650cd4fa246f7f7"
+    },
+    {
+      "path": "harness/evidence/pr409_problem_evidence_alignment_2026-10-11/ADDENDUM_GREEN_REVIEW.md",
+      "size_bytes": 2739,
+      "sha256": "255f4996062f99721ff2f18bab4e2392ebaa4a93c66060541de4aa0535f60fc1"
+    },
+    {
+      "path": "harness/evidence/pr409_problem_evidence_alignment_2026-10-11/ADDENDUM_RED_REVIEW.md",
+      "size_bytes": 3312,
+      "sha256": "1fb91fdfd2dae825eaac0da6a15d0b98bdb0cf8f67a8bcf332ee3dd87b076525"
+    },
+    {
+      "path": "harness/evidence/pr409_problem_evidence_alignment_2026-10-11/ADDENDUM_VALIDATION.json",
+      "size_bytes": 1081,
+      "sha256": "873c58824d1b46728ff29838deec35cf846f340e83fe468a615e309e83c0baa5"
+    }
+  ],
+  "execution_or_scientific_code_changed": false,
+  "new_test_or_calculation_run": false,
+  "score_reassessment": false
+}

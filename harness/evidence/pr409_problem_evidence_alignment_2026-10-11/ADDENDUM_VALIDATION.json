@@ -1,0 +1,24 @@
+{
+  "schema": "pr409_addendum_document_validation_v1",
+  "basis_main": "8427d547",
+  "prior_revision": "bf20ee035d017e63ddde30303d98c0bd2dee96fa",
+  "local_link_targets_checked": 29,
+  "missing_local_link_targets": [],
+  "original_manifest_entries_verified_at_prior_revision": 10,
+  "historical_manifest_and_validation_unchanged": true,
+  "protected_scientific_execution_and_pr408_records_unchanged": true,
+  "new_tests_or_numerical_calculations": false,
+  "native_M_H_optimizer_runs": false,
+  "score_reassessment": false,
+  "green_red_review": "No blocking issue in source/record/document comparison",
+  "graph_refresh": {
+    "prior_unique_ids_preserved": true,
+    "scoped_relationships_present": true,
+    "semantic_nodes": 12,
+    "semantic_edges": 7,
+    "graph_nodes": 18418,
+    "graph_edges": 31519,
+    "limits": "Cached code graph plus scoped addendum semantics, not complete corpus certification; source authoritative"
+  },
+  "scope": "Local document links, diff and artifact hashes only; no execution artifacts reproduced. CI separately attributed to pushed head."
+}
