@@ -60,8 +60,8 @@
     },
     {
       "path": "harness/evidence/pr412_native_process_case_2026-10-12/GREEN_ANALYSIS_PREFLIGHT.md",
-      "size_bytes": 4014,
-      "sha256": "c38b57b62ad85e062b7507a85e880e6cef01b962a5afdb3c305c6add82f02122"
+      "size_bytes": 4092,
+      "sha256": "7ad6717e139f7cdf8a6babe5f4c42a16482d7a4ac52c95f41080dafeebda34e6"
     },
     {
       "path": "harness/evidence/pr412_native_process_case_2026-10-12/GREEN_DIAGNOSTIC_POSTRUN.md",
