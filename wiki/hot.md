@@ -6,6 +6,7 @@ date_modified: 2026-07-14
 # Hot Cache
 
 ## Current Focus
+- [[sources/pr407-native-saved-time-bound-2026-10-11]] — Saved host Times now bounded by independent producer stop; terminal BG permits separate local20s slot. Actual July19 intake only; July20/21 still pending.
 - [[sources/pr406-native-case-consumer-2026-10-11]] — Case-bound single-background intake and isolated capture admission; actual July19 intake replay, July20/21 still pending native input. No new M/H/analysis result.
 - [[sources/pr405-native-valid-time-linkage-2026-10-11]] — CurrentBC interval ends12UTC (lastrecord starts09); no knowncachedJul20/21validstates. Firstreadydate canproceed, user79/100 recorded.
 - [[sources/pr404-l1b-source-mask-and-native-linkage-2026-10-11]] — P3 source-mask capture repaired with actual-NetCDF tests and additive sidecar; July20/21 model-connected analyses pending original native inputs.
