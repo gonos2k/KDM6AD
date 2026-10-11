@@ -1,0 +1,28 @@
+# AMI L1B research-edition completion criteria
+
+Scope revised by the user on2026-10-11. The current target is a repeatable native/KDM6AD/RTTOV analysis system using **GK2A AMI L1B as its only satellite-observation input**. This document supersedes broader external-observation prerequisites in historical collection checklists; it does not rewrite their executed evidence.
+
+## In-scope completion matrix
+
+| Requirement | Actual completion evidence | Current limit / next result |
+|---|---|---|
+| L1B source, decoding and calibration | Original file hashes, DN/radiance/BT/DQF, missingness, exact file/calibration pairing and unchanged input checks; production LA reader and PR382–384/398/400 records; PR403 decoded two held-out dates with unchanged reader/calibration | Held-out observation intake is executed; matching native inputs and analysis remain separate. Do not silently replace paired calibration |
+| RTTOV comparison coordinate/configuration | Same-run radiance/native BT replay into bundled KMA coordinate for all K fields; channel/coefficient/SRF provenance and actual finite trials (PR365/400–402) | IR133 upstream product SRF identity remains unverified; describe the current fixed pairing conditionally rather than invent a correction |
+| Time, geolocation and spatial admission | Preserved OBT/scene/planned-UTC/raw numeric fields; GEOS origin and original indices; fixed nominal location, strict DQF0 support and documented point/patch rules | Pixel UTC and footprint identity remain unverified. Declare explicit nominal-time/geometry assumptions and do not promote filename labels to observed UTC |
+| Declared analysis/control configuration | New single-column all-sky helper with fixed physics and T/Q-only initial controls; current native39 layers/pressures and modeled cloud response retained (PR394–397) | No forced cloud seed, pseudo-RH, channel removal or residual-fitted parameter change |
+| Repeatable baseline/analysis/final audit | Normal native rank/launcher and valid selected output evidence; actual KDM→RTTOV→cost/minimization→accepted-state/gradient preservation; bounded failure contracts (PR395–398) | One initial-date native case. New-date observed scenes alone do not demonstrate new-date DA. Stop on quality loss; accepted return, convergence and scientific interpretation remain distinct |
+| Numerical/physical diagnostics | Stored initial/slot state pairs, control/total gradient, saturation/cloud response, water-change decomposition, host/local differences and finite input steps (PR396–402) | Explain the defined measure, reservoir terms and unmeasured boundaries. Algebraic decomposition is not closed flux conservation; a finite step check is not global/high-order validity |
+| Held-out date/scene repeatability | PR403 acquired/decoded preselected July20/21 exact nominal05:56 scenes:18 files,8,555,216 bytes; hashes, point/patch values and original time/navigation attributes retained | Observation intake complete; matching native inputs and same-configuration analyses remain pending. Separate scene dates do not prove independent meteorological events |
+| Prior/error/bias interpretation | Existing1K sigma, zero bias and T/Q prior are explicit exploration assumptions; modeled states and conditional residuals are reported as such | Multiple scene residual statistics can be accumulated, but are not automatically pure observation error R. No mandatory external truth or new B/R architecture gate |
+
+## Deferred extensions, not present-edition penalties
+
+External SST, MLS temperature/ozone, VIIRS phase, other sensors and L2 products; external independent cloud/height/number truth; cross-sensor verification. Their absence is not a current completion deduction or prerequisite. Required gas/surface/upper-atmosphere inputs remain labeled research assumptions; no external observations are required to use them.
+
+Better BT fit does not independently prove phase, height or NC. Those inferred model states can still be valid research outputs of this edition. Native model initial/boundary data remain necessary for model-connected cases and are not excluded by the satellite-data restriction.
+
+## Evaluation accounting
+
+The earlier **56/75 (~75%)** was a broader management score. Keep it as a historical reference, **not an automatically transferred or raised AMI-only score**. A next scope-specific assessment must map the evidence above to explicit weights/completion states before assigning a new number. Do not increase a score merely because requirements moved to the extension phase, files/tests/PRs grew, or nearby pixels were counted as independent events.
+
+Current work separates observation intake from model-connected analysis and marks executed, conditional and pending stages explicitly. No production physics, solver, observation support, sigma/bias or prior was changed by this scope revision.

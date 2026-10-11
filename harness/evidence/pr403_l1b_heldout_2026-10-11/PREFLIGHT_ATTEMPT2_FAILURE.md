@@ -1,0 +1,3 @@
+# Preflight attempt 2
+
+The slot selector incorrectly required the filename manifest's channel set to equal the requested nine thermal channels. The public LA020GE prefix also lists three extra non-analysis channels, so attempt 2 marked complete 05:56 slots as missing despite all nine requested files being present. This was a metadata-selection bug only: no L1B file was downloaded, no source bytes were decoded, and no model/RTTOV/H/K/M call occurred. The draft plan is preserved at `preflight_drafts/PREDECLARED_PLAN_ATTEMPT1_INCOMPLETE_CHANNEL_SET.json`; the selector now accepts a slot when all nine required channel keys are a subset of the listed channels and downloads only those nine.

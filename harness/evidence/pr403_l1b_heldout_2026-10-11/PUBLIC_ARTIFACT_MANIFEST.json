@@ -1,0 +1,90 @@
+{
+  "scope": "Public observation-only evidence packet; originals/payload remain canonical private archive",
+  "files": {
+    "COORDINATOR_REPORT.md": {
+      "sha256": "c2ebf7d73a1a7b1709ae1dc3cb112e0b7d1ebc06079d05e3226cc02adc89ad95",
+      "bytes": 4265
+    },
+    "COVERAGE_REVIEW.md": {
+      "sha256": "7006c2486ff01c4e78fc6e26bbf0df2ac833747507d950f81cd7f50ef233d488",
+      "bytes": 12537
+    },
+    "FIXED_PATCH_SAMPLES.csv": {
+      "sha256": "3774e0913d2ac14106bb92b00fe70ebd03d2ba8de16fc2c794d8d0aff3ae2ef1",
+      "bytes": 81048
+    },
+    "GREEN_REVIEW.md": {
+      "sha256": "cd651144657018bb4077d6f410e58924e794d30ef320e1fb2108676074ffd058",
+      "bytes": 1769
+    },
+    "POINT_SAMPLES.csv": {
+      "sha256": "cdabb308bad00acb6be88011f616687b9e30703a128c9962ddff7efc7db00aa6",
+      "bytes": 2762
+    },
+    "PREDECLARED_PLAN.json": {
+      "sha256": "ce5a3d4a4109813ef61aa199c8b0bcef83d8828d9fdeebe6db5675d275ee54f3",
+      "bytes": 16455
+    },
+    "PREFLIGHT_ATTEMPT1_FAILURE.md": {
+      "sha256": "dce1e3232f3c91532a5087be439313c8bd54603452c9139ff0503aa6de9bbbf6",
+      "bytes": 569
+    },
+    "PREFLIGHT_ATTEMPT2_FAILURE.md": {
+      "sha256": "1e2cb7421f1e9dad06a5e839172743c4205dcb7b6f4ec590d65524a5be679223",
+      "bytes": 694
+    },
+    "RADIANCE_REPLAY.json": {
+      "sha256": "9977c7b381aac252977eeb699ae7ac0cc71fd2e1144027f92000492cfc2b453e",
+      "bytes": 765
+    },
+    "RED_REVIEW.md": {
+      "sha256": "b0fb65a1a6be14065cab08ac23761ffbdf27310279284df2ed794298732a203c",
+      "bytes": 6077
+    },
+    "REPLAYED_PATCH_RADIANCE.csv": {
+      "sha256": "a072ad5f9e7324ea9d460a6f92c63582f4c592b0eba1886aeb37b12628df70f7",
+      "bytes": 28838
+    },
+    "REPORT.md": {
+      "sha256": "0857b55f132b2637eeba4f2a4f3037170caaec22bb34a9ff25cd7ab36b9f37fe",
+      "bytes": 4331
+    },
+    "RESULT.json": {
+      "sha256": "3182efa96388e650e03e249c5aa0ca775d1d7935cc2a323542904b6b3b1c7268",
+      "bytes": 8886
+    },
+    "VALIDATION.json": {
+      "sha256": "bc82efb8b0daeded660f206d1efe29b3ad74f9a66b916df45b67ad1026e6b1e5",
+      "bytes": 1200
+    },
+    "heldout_l1b.py": {
+      "sha256": "e8d2ce8f4aa654b15f479dcd1cfd583760786d2b02bacea14d30607a0451fb8a",
+      "bytes": 33744
+    },
+    "preflight_drafts/PREDECLARED_PLAN_ATTEMPT1_INCOMPLETE_CHANNEL_SET.json": {
+      "sha256": "530a5ad096b393064eb8a3ced1f1e15329956973b98d419d3dc18d349841686d",
+      "bytes": 10700
+    },
+    "source_listings/20250720_05.xml": {
+      "sha256": "c6e616467b8cf88598e3606e4ec90ae0a443309ef910d998d6b74570ab041829",
+      "bytes": 169830
+    },
+    "source_listings/20250720_06.xml": {
+      "sha256": "9508839567b3eea7a1c5aed72a9ff656002fa14243c1ff7e246487f366299b33",
+      "bytes": 169830
+    },
+    "source_listings/20250721_05.xml": {
+      "sha256": "c4edc67ab05f5f1ca51dae0378dff87b4d27bf150609607865b114776b572e15",
+      "bytes": 169830
+    },
+    "source_listings/20250721_06.xml": {
+      "sha256": "3fa8075c8afba25a62f6dd0466ad6c745bafea293c7618cfab84dea4120776da",
+      "bytes": 169830
+    },
+    "test_heldout_l1b.py": {
+      "sha256": "2386a85c311ba47c9b1df490f0c4e833fa3ae852dd46157c27ac9d76b61080f9",
+      "bytes": 2995
+    }
+  },
+  "self_excluded": true
+}

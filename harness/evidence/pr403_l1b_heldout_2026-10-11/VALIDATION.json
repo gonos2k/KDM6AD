@@ -1,0 +1,21 @@
+{
+  "local_pytest": {
+    "passed": 21,
+    "scope": "5 held-out selection/geolocation tests and16 unchanged production LA-reader tests",
+    "command": "OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OMP_THREAD_LIMIT=1 VECLIB_MAXIMUM_THREADS=1 /private/tmp/KDM6AD-research-rc-20261007/env/bin/python -m pytest -q harness/evidence/pr403_l1b_heldout_2026-10-11/test_heldout_l1b.py oracle/tests/test_gk2a_l1b_la.py"
+  },
+  "ruff": "PASS both new Python files",
+  "py_compile": "PASS both new Python files",
+  "public_json_parse": "PASS",
+  "source_custody": "18 sizes SHA256 MD5/ETags and0700/0600 modes verified independently",
+  "Green_Red": "No material blockers; two Red wording suggestions resolved without numerical changes",
+  "graph": "Code AST refresh and scoped semantic merge performed; raw reports stay ignored graphify-out. Existing full corpus is not certified by this scoped refresh. HTML skipped at17598+nodes.",
+  "model_calls": {
+    "native": 0,
+    "KDM_M": 0,
+    "RTTOV_H_K": 0,
+    "optimizer": 0
+  },
+  "pending": "Matching original native inputs and same-configuration analyses for held-out dates",
+  "CI": "Check actual PR runs separately; no native build success inferred from skips"
+}

@@ -1,0 +1,459 @@
+{
+  "calibration": {
+    "channel_names": [
+      "wv063",
+      "wv069",
+      "wv073",
+      "ir087",
+      "ir096",
+      "ir105",
+      "ir112",
+      "ir123",
+      "ir133"
+    ],
+    "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/obs/data/gk2a_ami_cal_202507190000.json",
+    "sha256": "a6f830aa04e19f6982aa6ff36e832464a5b32fdcf8200211956969d5eb48325d"
+  },
+  "download_budget": {
+    "max_bytes": 20971520,
+    "max_files": 18,
+    "selected_bytes": 8555216,
+    "selected_files": 18
+  },
+  "execution_scope": {
+    "external_model_or_reanalysis": 0,
+    "max_downloads": 18,
+    "preflight_observation_downloads": 0,
+    "rttov_H_K_M_model_optimizer_calls": 0
+  },
+  "plan_id": "l1bheldout20261011c",
+  "preflight_helper": {
+    "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr403_l1b_heldout_2026-10-11/heldout_l1b.py",
+    "sha256": "e8d2ce8f4aa654b15f479dcd1cfd583760786d2b02bacea14d30607a0451fb8a"
+  },
+  "production_sources": {
+    "oracle/kdm6/obs/gk2a_l1b.py": "c16195e581e847053c1f7e63c6cd93deaaba0e51d84a1f7eea092c95c180f4b8",
+    "oracle/kdm6/obs/gk2a_l1b_fd.py": "0c2c87a316680ba359f13336d3e7c87ca9c0bd9eab726f1b7cde469a87b1387e",
+    "oracle/kdm6/obs/gk2a_l1b_la.py": "67c4d2abd1c16f55d6909edeef1549b0ce2e8e449b9b3f64e7185b4d34b083db",
+    "oracle/kdm6/obs/obs_ingest.py": "224ff9d1f9e5c8557238db8e3f8a31650ca0faeb720e40394bd8c1d1666ced0d"
+  },
+  "scenes": [
+    {
+      "date": "20250720",
+      "listed_hour_prefixes": [
+        {
+          "hour": "05",
+          "listing_origin": "REUSED_SAVED_PUBLIC_LISTING",
+          "object_count": 360,
+          "path": "harness/evidence/pr403_l1b_heldout_2026-10-11/source_listings/20250720_05.xml",
+          "sha256": "c6e616467b8cf88598e3606e4ec90ae0a443309ef910d998d6b74570ab041829",
+          "url": "https://noaa-gk2a-pds.s3.amazonaws.com/?list-type=2&prefix=AMI%2FL1B%2FLA%2F202507%2F20%2F05%2F"
+        },
+        {
+          "hour": "06",
+          "listing_origin": "REUSED_SAVED_PUBLIC_LISTING",
+          "object_count": 360,
+          "path": "harness/evidence/pr403_l1b_heldout_2026-10-11/source_listings/20250720_06.xml",
+          "sha256": "9508839567b3eea7a1c5aed72a9ff656002fa14243c1ff7e246487f366299b33",
+          "url": "https://noaa-gk2a-pds.s3.amazonaws.com/?list-type=2&prefix=AMI%2FL1B%2FLA%2F202507%2F20%2F06%2F"
+        }
+      ],
+      "nominal_slot_obt": "202507200556",
+      "selected_file_count": 9,
+      "selected_objects": [
+        {
+          "channel": "wv063",
+          "etag": "4fe0e11dd3daa70edbaecc0e920b15d8",
+          "key": "AMI/L1B/LA/202507/20/05/gk2a_ami_le1b_wv063_la020ge_202507200556.nc",
+          "last_modified_utc": "2025-07-23T08:01:16.000Z",
+          "size_bytes": 362880,
+          "stamp": "202507200556"
+        },
+        {
+          "channel": "wv069",
+          "etag": "e7c01fb2ac0771aa66eb60290f649ccc",
+          "key": "AMI/L1B/LA/202507/20/05/gk2a_ami_le1b_wv069_la020ge_202507200556.nc",
+          "last_modified_utc": "2025-07-23T08:01:17.000Z",
+          "size_bytes": 454672,
+          "stamp": "202507200556"
+        },
+        {
+          "channel": "wv073",
+          "etag": "5fdf2c14724133978d241ab1529a8b2b",
+          "key": "AMI/L1B/LA/202507/20/05/gk2a_ami_le1b_wv073_la020ge_202507200556.nc",
+          "last_modified_utc": "2025-07-23T08:01:17.000Z",
+          "size_bytes": 479895,
+          "stamp": "202507200556"
+        },
+        {
+          "channel": "ir087",
+          "etag": "58a7e226e070ff82c8baa3c5589c90ab",
+          "key": "AMI/L1B/LA/202507/20/05/gk2a_ami_le1b_ir087_la020ge_202507200556.nc",
+          "last_modified_utc": "2025-07-23T08:01:15.000Z",
+          "size_bytes": 529602,
+          "stamp": "202507200556"
+        },
+        {
+          "channel": "ir096",
+          "etag": "f088d77d3f54142d585ff3391cd49c5f",
+          "key": "AMI/L1B/LA/202507/20/05/gk2a_ami_le1b_ir096_la020ge_202507200556.nc",
+          "last_modified_utc": "2025-07-23T08:01:15.000Z",
+          "size_bytes": 499535,
+          "stamp": "202507200556"
+        },
+        {
+          "channel": "ir105",
+          "etag": "139de749af4f55d7c3a8919ef0fdb9bb",
+          "key": "AMI/L1B/LA/202507/20/05/gk2a_ami_le1b_ir105_la020ge_202507200556.nc",
+          "last_modified_utc": "2025-07-23T08:01:15.000Z",
+          "size_bytes": 532281,
+          "stamp": "202507200556"
+        },
+        {
+          "channel": "ir112",
+          "etag": "75d0394f4978cd060f3777d9d92e4510",
+          "key": "AMI/L1B/LA/202507/20/05/gk2a_ami_le1b_ir112_la020ge_202507200556.nc",
+          "last_modified_utc": "2025-07-23T08:01:15.000Z",
+          "size_bytes": 531686,
+          "stamp": "202507200556"
+        },
+        {
+          "channel": "ir123",
+          "etag": "02354f6b62a65fddf4cb6426a569028b",
+          "key": "AMI/L1B/LA/202507/20/05/gk2a_ami_le1b_ir123_la020ge_202507200556.nc",
+          "last_modified_utc": "2025-07-23T08:01:15.000Z",
+          "size_bytes": 527964,
+          "stamp": "202507200556"
+        },
+        {
+          "channel": "ir133",
+          "etag": "e57d168ddfd8b54e24cd45581910ac91",
+          "key": "AMI/L1B/LA/202507/20/05/gk2a_ami_le1b_ir133_la020ge_202507200556.nc",
+          "last_modified_utc": "2025-07-23T08:01:15.000Z",
+          "size_bytes": 512004,
+          "stamp": "202507200556"
+        }
+      ],
+      "selected_total_bytes": 4430519,
+      "selection": {
+        "candidate_slots": [
+          "202507200500",
+          "202507200502",
+          "202507200504",
+          "202507200506",
+          "202507200508",
+          "202507200510",
+          "202507200512",
+          "202507200514",
+          "202507200516",
+          "202507200518",
+          "202507200520",
+          "202507200522",
+          "202507200524",
+          "202507200526",
+          "202507200528",
+          "202507200530",
+          "202507200532",
+          "202507200534",
+          "202507200536",
+          "202507200538",
+          "202507200540",
+          "202507200542",
+          "202507200544",
+          "202507200546",
+          "202507200548",
+          "202507200550",
+          "202507200552",
+          "202507200554",
+          "202507200556",
+          "202507200558",
+          "202507200600",
+          "202507200602",
+          "202507200604",
+          "202507200606",
+          "202507200608",
+          "202507200610",
+          "202507200612",
+          "202507200614",
+          "202507200616",
+          "202507200618",
+          "202507200620",
+          "202507200622",
+          "202507200624",
+          "202507200626",
+          "202507200628",
+          "202507200630",
+          "202507200632",
+          "202507200634",
+          "202507200636",
+          "202507200638",
+          "202507200640",
+          "202507200642",
+          "202507200644",
+          "202507200646",
+          "202507200648",
+          "202507200650",
+          "202507200652",
+          "202507200654",
+          "202507200656",
+          "202507200658"
+        ],
+        "exact_slot_missing_channels": [],
+        "rule": "EXACT_SLOT_COMPLETE",
+        "selected_slot": "202507200556"
+      }
+    },
+    {
+      "date": "20250721",
+      "listed_hour_prefixes": [
+        {
+          "hour": "05",
+          "listing_origin": "REUSED_SAVED_PUBLIC_LISTING",
+          "object_count": 360,
+          "path": "harness/evidence/pr403_l1b_heldout_2026-10-11/source_listings/20250721_05.xml",
+          "sha256": "c4edc67ab05f5f1ca51dae0378dff87b4d27bf150609607865b114776b572e15",
+          "url": "https://noaa-gk2a-pds.s3.amazonaws.com/?list-type=2&prefix=AMI%2FL1B%2FLA%2F202507%2F21%2F05%2F"
+        },
+        {
+          "hour": "06",
+          "listing_origin": "REUSED_SAVED_PUBLIC_LISTING",
+          "object_count": 360,
+          "path": "harness/evidence/pr403_l1b_heldout_2026-10-11/source_listings/20250721_06.xml",
+          "sha256": "3fa8075c8afba25a62f6dd0466ad6c745bafea293c7618cfab84dea4120776da",
+          "url": "https://noaa-gk2a-pds.s3.amazonaws.com/?list-type=2&prefix=AMI%2FL1B%2FLA%2F202507%2F21%2F06%2F"
+        }
+      ],
+      "nominal_slot_obt": "202507210556",
+      "selected_file_count": 9,
+      "selected_objects": [
+        {
+          "channel": "wv063",
+          "etag": "7d29f87fedc203f9c903d8b67d87d50e",
+          "key": "AMI/L1B/LA/202507/21/05/gk2a_ami_le1b_wv063_la020ge_202507210556.nc",
+          "last_modified_utc": "2025-07-21T22:42:24.000Z",
+          "size_bytes": 335158,
+          "stamp": "202507210556"
+        },
+        {
+          "channel": "wv069",
+          "etag": "dc8ee443e92dc7bb4339da0b35c27ca3",
+          "key": "AMI/L1B/LA/202507/21/05/gk2a_ami_le1b_wv069_la020ge_202507210556.nc",
+          "last_modified_utc": "2025-07-21T22:42:25.000Z",
+          "size_bytes": 420454,
+          "stamp": "202507210556"
+        },
+        {
+          "channel": "wv073",
+          "etag": "e91ce67567478a479e7ed69fc250b2bf",
+          "key": "AMI/L1B/LA/202507/21/05/gk2a_ami_le1b_wv073_la020ge_202507210556.nc",
+          "last_modified_utc": "2025-07-21T22:42:25.000Z",
+          "size_bytes": 440897,
+          "stamp": "202507210556"
+        },
+        {
+          "channel": "ir087",
+          "etag": "b9ed53a374b5fcaabfe06083ded649f1",
+          "key": "AMI/L1B/LA/202507/21/05/gk2a_ami_le1b_ir087_la020ge_202507210556.nc",
+          "last_modified_utc": "2025-07-21T22:42:22.000Z",
+          "size_bytes": 497884,
+          "stamp": "202507210556"
+        },
+        {
+          "channel": "ir096",
+          "etag": "c6396c9097fcc69487f201396be76c14",
+          "key": "AMI/L1B/LA/202507/21/05/gk2a_ami_le1b_ir096_la020ge_202507210556.nc",
+          "last_modified_utc": "2025-07-21T22:42:22.000Z",
+          "size_bytes": 466418,
+          "stamp": "202507210556"
+        },
+        {
+          "channel": "ir105",
+          "etag": "9ba113a0e73d525765297cad4f428ced",
+          "key": "AMI/L1B/LA/202507/21/05/gk2a_ami_le1b_ir105_la020ge_202507210556.nc",
+          "last_modified_utc": "2025-07-21T22:42:22.000Z",
+          "size_bytes": 500462,
+          "stamp": "202507210556"
+        },
+        {
+          "channel": "ir112",
+          "etag": "7dedc329cb650721ed325743be49e925",
+          "key": "AMI/L1B/LA/202507/21/05/gk2a_ami_le1b_ir112_la020ge_202507210556.nc",
+          "last_modified_utc": "2025-07-21T22:42:23.000Z",
+          "size_bytes": 498580,
+          "stamp": "202507210556"
+        },
+        {
+          "channel": "ir123",
+          "etag": "24b31c207fd905081e20a5f951acb76d",
+          "key": "AMI/L1B/LA/202507/21/05/gk2a_ami_le1b_ir123_la020ge_202507210556.nc",
+          "last_modified_utc": "2025-07-21T22:42:23.000Z",
+          "size_bytes": 492706,
+          "stamp": "202507210556"
+        },
+        {
+          "channel": "ir133",
+          "etag": "c36f034f097c168e82ab83e72ebb462b",
+          "key": "AMI/L1B/LA/202507/21/05/gk2a_ami_le1b_ir133_la020ge_202507210556.nc",
+          "last_modified_utc": "2025-07-21T22:42:23.000Z",
+          "size_bytes": 472138,
+          "stamp": "202507210556"
+        }
+      ],
+      "selected_total_bytes": 4124697,
+      "selection": {
+        "candidate_slots": [
+          "202507210500",
+          "202507210502",
+          "202507210504",
+          "202507210506",
+          "202507210508",
+          "202507210510",
+          "202507210512",
+          "202507210514",
+          "202507210516",
+          "202507210518",
+          "202507210520",
+          "202507210522",
+          "202507210524",
+          "202507210526",
+          "202507210528",
+          "202507210530",
+          "202507210532",
+          "202507210534",
+          "202507210536",
+          "202507210538",
+          "202507210540",
+          "202507210542",
+          "202507210544",
+          "202507210546",
+          "202507210548",
+          "202507210550",
+          "202507210552",
+          "202507210554",
+          "202507210556",
+          "202507210558",
+          "202507210600",
+          "202507210602",
+          "202507210604",
+          "202507210606",
+          "202507210608",
+          "202507210610",
+          "202507210612",
+          "202507210614",
+          "202507210616",
+          "202507210618",
+          "202507210620",
+          "202507210622",
+          "202507210624",
+          "202507210626",
+          "202507210628",
+          "202507210630",
+          "202507210632",
+          "202507210634",
+          "202507210636",
+          "202507210638",
+          "202507210640",
+          "202507210642",
+          "202507210644",
+          "202507210646",
+          "202507210648",
+          "202507210650",
+          "202507210652",
+          "202507210654",
+          "202507210656",
+          "202507210658"
+        ],
+        "exact_slot_missing_channels": [],
+        "rule": "EXACT_SLOT_COMPLETE",
+        "selected_slot": "202507210556"
+      }
+    }
+  ],
+  "schema": "pr403_gk2a_l1b_heldout_preflight_v1",
+  "selection_contract": {
+    "analysis_channels": [
+      "wv073",
+      "ir087",
+      "ir096",
+      "ir105",
+      "ir112",
+      "ir123",
+      "ir133"
+    ],
+    "analysis_radius_km": 2.5,
+    "dqf_contract": "Existing production LA reader; DQF 0 counts as source-usable L1B only, never cloud/clear-sky classification.",
+    "exact_slot_first": true,
+    "fallback": "Only if exact slot does not have all nine channels: nearest complete 9-channel nominal filename slot within \u00b110 minutes; tie earlier; selection uses timestamps and completeness only.",
+    "fixed_native_point": true,
+    "nominal_slot_obt_hhmm": "0556",
+    "point_or_window_selection": "Geographic nearest pixel only; no DQF, BT, residual, or apparent quality criteria select row/column.",
+    "scene_independence": "Dates are separate scenes, not independent meteorological events by declaration.",
+    "supported_channel_ids_1based": [
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "supported_channels": [
+      "wv063",
+      "wv069",
+      "wv073",
+      "ir087",
+      "ir096",
+      "ir105",
+      "ir112",
+      "ir123",
+      "ir133"
+    ],
+    "target_latitude_deg": 35.415660858,
+    "target_longitude_deg": 122.143310547,
+    "timestamp_basis": "Filename nominal OBT label only; no UTC mapping inferred.",
+    "window": "5\u00d75 original raster cells centered on geometric nearest pixel only when nearest distance <=2.5 km; no target shifting."
+  },
+  "source": {
+    "anonymous_https": true,
+    "bucket": "noaa-gk2a-pds",
+    "object_root": "AMI/L1B/LA/202507/{20,21}/{05,06}/",
+    "objects_bound_by": "S3 key, size, last modified, and ETag from public listing before download; local SHA-256 recorded after download.",
+    "source_listings": [
+      {
+        "hour": "05",
+        "listing_origin": "REUSED_SAVED_PUBLIC_LISTING",
+        "object_count": 360,
+        "path": "harness/evidence/pr403_l1b_heldout_2026-10-11/source_listings/20250720_05.xml",
+        "sha256": "c6e616467b8cf88598e3606e4ec90ae0a443309ef910d998d6b74570ab041829",
+        "url": "https://noaa-gk2a-pds.s3.amazonaws.com/?list-type=2&prefix=AMI%2FL1B%2FLA%2F202507%2F20%2F05%2F"
+      },
+      {
+        "hour": "06",
+        "listing_origin": "REUSED_SAVED_PUBLIC_LISTING",
+        "object_count": 360,
+        "path": "harness/evidence/pr403_l1b_heldout_2026-10-11/source_listings/20250720_06.xml",
+        "sha256": "9508839567b3eea7a1c5aed72a9ff656002fa14243c1ff7e246487f366299b33",
+        "url": "https://noaa-gk2a-pds.s3.amazonaws.com/?list-type=2&prefix=AMI%2FL1B%2FLA%2F202507%2F20%2F06%2F"
+      },
+      {
+        "hour": "05",
+        "listing_origin": "REUSED_SAVED_PUBLIC_LISTING",
+        "object_count": 360,
+        "path": "harness/evidence/pr403_l1b_heldout_2026-10-11/source_listings/20250721_05.xml",
+        "sha256": "c4edc67ab05f5f1ca51dae0378dff87b4d27bf150609607865b114776b572e15",
+        "url": "https://noaa-gk2a-pds.s3.amazonaws.com/?list-type=2&prefix=AMI%2FL1B%2FLA%2F202507%2F21%2F05%2F"
+      },
+      {
+        "hour": "06",
+        "listing_origin": "REUSED_SAVED_PUBLIC_LISTING",
+        "object_count": 360,
+        "path": "harness/evidence/pr403_l1b_heldout_2026-10-11/source_listings/20250721_06.xml",
+        "sha256": "3fa8075c8afba25a62f6dd0466ad6c745bafea293c7618cfab84dea4120776da",
+        "url": "https://noaa-gk2a-pds.s3.amazonaws.com/?list-type=2&prefix=AMI%2FL1B%2FLA%2F202507%2F21%2F06%2F"
+      }
+    ]
+  },
+  "status": "PREDECLARED_BEFORE_DOWNLOAD"
+}
