@@ -16,3 +16,11 @@ Basis: main `6bdcdccc` (PR403), the user's 2026-10-11 review, and the [AMI L1B-o
 See [mask result](pr404_l1b_source_mask_2026-10-11/MASK_REPAIR_RESULT.json), [native availability](pr404_l1b_source_mask_2026-10-11/NATIVE_AVAILABILITY_REPORT.md) and [coordinator report](pr404_l1b_source_mask_2026-10-11/COORDINATOR_REPORT.md). Existing finite-input K/RTTOV and spatial/vertical campaigns stay closed. Other sensors and all L2 products remain deferred extensions.
 
 Verification: [Green](pr404_l1b_source_mask_2026-10-11/GREEN_REVIEW.md), [Red](pr404_l1b_source_mask_2026-10-11/RED_REVIEW.md), [validation](pr404_l1b_source_mask_2026-10-11/VALIDATION.json). Code AST and scoped semantic graph updated; raw graph reports remain ignored under graphify-out.
+
+## Independent team follow-up
+
+- [x] Check future decode/publication paths independently of raw-helper tests; reject failed/incomplete/mismatched download provenance.
+- [x] Verify successful RESULT publication follows CSV completion, conflicting outputs stop before source intake, and empty/external-plan cases retain a consistent contract.
+- [x] Add channel/raster-axis metadata and exact local command/environment without modifying original manifests/receipts.
+
+Current future writer is [v3](pr404_l1b_source_mask_2026-10-11/heldout_l1b_v3.py); frozen v2 remains historical helper/repair evidence. See [team resolution](pr404_l1b_source_mask_2026-10-11/audit_20261011/TEAM_AUDIT_RESOLUTION.md) for findings,36 scoped tests and execution limits. Same-date native analyses are still pending.

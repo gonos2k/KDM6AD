@@ -1,0 +1,34 @@
+{
+  "reviewed_head_before_changes": "4b65577f7c2062ab99dffe50ced233a092457184",
+  "prior_25_test_command": "OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OMP_THREAD_LIMIT=1 VECLIB_MAXIMUM_THREADS=1 /private/tmp/KDM6AD-research-rc-20261007/env/bin/python -m pytest -q harness/evidence/pr404_l1b_source_mask_2026-10-11/test_source_mask.py oracle/tests/test_gk2a_l1b_la.py",
+  "current_36_test_command": "OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OMP_THREAD_LIMIT=1 VECLIB_MAXIMUM_THREADS=1 /private/tmp/KDM6AD-research-rc-20261007/env/bin/python -m pytest -q harness/evidence/pr404_l1b_source_mask_2026-10-11/test_source_mask.py harness/evidence/pr404_l1b_source_mask_2026-10-11/test_decode_publication.py oracle/tests/test_gk2a_l1b_la.py",
+  "environment": {
+    "python": "3.10.11",
+    "python_executable": "/private/tmp/KDM6AD-research-rc-20261007/env/bin/python",
+    "numpy": "2.2.6",
+    "netCDF4": "1.7.4",
+    "torch": "2.13.0",
+    "pytest": "9.1.1",
+    "test_thread_settings": {
+      "OMP_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "OMP_THREAD_LIMIT": "1",
+      "VECLIB_MAXIMUM_THREADS": "1"
+    }
+  },
+  "current_passed": 36,
+  "test_scope": "9 actual-NetCDF source-mask cases +11 synthetic publication/provenance cases +16 unchanged LA-reader cases",
+  "synthetic_reader_limit": "Nonempty writer integration uses a clearly synthetic reader payload, not an actual LA-scene decode. No network/download/native/H/K/M/optimizer.",
+  "frozen_PR404_manifest_files": 10,
+  "v2_raw_canvas_AST_equal_to_v3": true,
+  "new_sources": {
+    "heldout_l1b_v3.py": "b29627c39cbf16952e1be30d8bc1298d31272c9440ab90b898d5f4967772dbd6",
+    "test_decode_publication.py": "aa30c83d593c0fb2431ae55d67bc9069211f87672e3bc8f49b69ee9b06ccb686"
+  },
+  "prior_CI_run_ids": {
+    "harness": 38105648779,
+    "oracle": 38105648764,
+    "port": 38105648778
+  },
+  "prior_CI_limit": "These passed at the old4b65577f head; updated head requires its own CI receipt."
+}
