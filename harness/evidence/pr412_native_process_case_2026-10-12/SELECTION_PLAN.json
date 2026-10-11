@@ -1,0 +1,99 @@
+{
+  "schema": "pr412_native_process_selection_plan_v1",
+  "base_main": "381b90f5",
+  "case_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr411_v4_actual_integration_2026-10-12/CASE.json",
+  "v4_intake_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr407_native_saved_time_bound_2026-10-11/intake_native_case_v4.py",
+  "forecast_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/runs/mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148/klfs_lc05_fcst.202507190000",
+  "forecast_size_bytes": 2543209268,
+  "forecast_mtime_ns": 1791595485694435349,
+  "background_valid_time": "2025-07-19_05:55:40",
+  "j_inclusive": [
+    66,
+    106
+  ],
+  "i_inclusive": [
+    28,
+    68
+  ],
+  "center_j_i": [
+    86,
+    48
+  ],
+  "center_lat_lon": [
+    35.4156608581543,
+    122.143310546875
+  ],
+  "qc_threshold_kg_kg_dry": 1e-08,
+  "cloud_temperature_min_K": 273.15,
+  "frozen_threshold_kg_kg_dry": 1e-08,
+  "native_fields_3d": [
+    "THM",
+    "QVAPOR",
+    "QCLOUD",
+    "QRAIN",
+    "QICE",
+    "QSNOW",
+    "QGRAUP",
+    "QNCCN",
+    "QNCLOUD",
+    "QNICE",
+    "QNRAIN",
+    "QIB",
+    "P",
+    "PB",
+    "PH",
+    "PHB"
+  ],
+  "native_fields_2d": [
+    "XLAT",
+    "XLONG",
+    "XLAND",
+    "SEAICE",
+    "TSK",
+    "T2",
+    "Q2",
+    "U10",
+    "V10",
+    "HGT"
+  ],
+  "nonnegative_fields": [
+    "QVAPOR",
+    "QCLOUD",
+    "QRAIN",
+    "QICE",
+    "QSNOW",
+    "QGRAUP",
+    "QNCCN",
+    "QNCLOUD",
+    "QNICE",
+    "QNRAIN",
+    "QIB"
+  ],
+  "source_bindings": [
+    {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr411_v4_actual_integration_2026-10-12/CASE.json",
+      "sha256": "c14e9f3937a043d410411987ac8cba8d1b4a04fb956c86a89ed3507bdc8e785e"
+    },
+    {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr411_v4_actual_integration_2026-10-12/INTAKE.json",
+      "sha256": "427d65bf62d61c256cd99e7e0c1552b74f543085f1b47f10e9c504e91001331d"
+    },
+    {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr407_native_saved_time_bound_2026-10-11/intake_native_case_v4.py",
+      "sha256": "e1449548820510edc4fb213872df4446405058a318f8b99cd811d8470a139ae5"
+    }
+  ],
+  "selector_sha256": "9bf955a0e37c920b7c81fed249588ebb234544c7a1d33af10d8f8bf833ca1bc6",
+  "private_slice_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr412_native_process_20261012/SELECTION_SLICE.npz",
+  "selection_order": "geodesic distance to original native center then zero-based j/i; no BT, innovation, cost, response or cloud-mass ranking",
+  "empty_result_policy": "record absence; do not expand range or relax phase/threshold/quality",
+  "only_model_state_classification": true,
+  "frozen_absence_is_threshold_condition_not_exact_zero": true,
+  "native_M_H_optimizer_calls": 0,
+  "new_dates": 0,
+  "raw_arrays_public": false,
+  "prior_intake_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr411_v4_actual_integration_2026-10-12/INTAKE.json",
+  "warm_layer_rule": "at least one layer with QCLOUD>=1e-8 and physical T>=273.15; not an all-warm-profile requirement or satellite phase truth",
+  "native_screen_scope": "finite raw/derived fields, nonnegative water/moment fields, monotonic pressure/geopotential and mass-positive requires positive companion number/volume proxy; not complete DSD/moment admissibility certification",
+  "distance_metric": "spherical great-circle Haversine, radius6371000m; not ellipsoidal geodesy or observed pointing accuracy"
+}

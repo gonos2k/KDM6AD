@@ -1,0 +1,235 @@
+{
+  "schema": "pr412_case_artifact_manifest_v1",
+  "base_main": "381b90f5",
+  "analysis_run_id": "PR412_NATURAL_LIQUID_JUL19_20261012_01",
+  "files": [
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/BINDING_PLAN.json",
+      "size_bytes": 823,
+      "sha256": "71facda7b77daba80d6ce737c0e278792d31511e0c6f643ef9222c68d96e5691"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/CAPTURE.json",
+      "size_bytes": 71156,
+      "sha256": "746b6dd782d6e44d26e897e2c579f69f53d8d6c1de1b2a4087ad62c674195103"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/CASE.json",
+      "size_bytes": 3448,
+      "sha256": "d906217d7892baf83a37cc2459c5b115ccbf3fffa9594374993d45d6db0f0cc3"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/CASE_CHANNELS.csv",
+      "size_bytes": 1693,
+      "sha256": "a5b6f4fb1b29ac9b489b6216690a8cb67927a5ec27c6bf65e6d42170480e1bf3"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/DIAGNOSTIC.log",
+      "size_bytes": 604,
+      "sha256": "c2684620ca18c0d784a89f78c4a58b5974a275227994b4bbfb253815d3bc60a9"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/DIAGNOSTIC_EXIT.json",
+      "size_bytes": 712,
+      "sha256": "554f41d677df756c6c1964d360cafe2f38d046a9821dd94571cb8282abb1a6d0"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/DIAGNOSTIC_PLAN.json",
+      "size_bytes": 31363,
+      "sha256": "f28191380bef731079b7d619b67520936ffd689b466050cba7f809c790d96581"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/EXECUTION.log",
+      "size_bytes": 87,
+      "sha256": "fd70fa7786efafa11a54af09ba124f20bf79db71be718c8978ed5c8b6c654909"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/EXECUTION_EXIT.json",
+      "size_bytes": 629,
+      "sha256": "13411822f1fdd7c42dd589e5fe33be39bdb4895dbf173e8067dca32b6f6f8393"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/EXECUTION_STARTED_ONCE.json",
+      "size_bytes": 333,
+      "sha256": "481afd3499c1fcdf5ae0baed858df00b11fa0c3df27ff2294bf7f713cf47c672"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/GREEN_ANALYSIS_POSTRUN.md",
+      "size_bytes": 3302,
+      "sha256": "e1548c773320b5bc76fa1ee37fd6bf20a160fa9be67a3895716ef981e7a891a1"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/GREEN_ANALYSIS_PREFLIGHT.md",
+      "size_bytes": 4014,
+      "sha256": "c38b57b62ad85e062b7507a85e880e6cef01b962a5afdb3c305c6add82f02122"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/GREEN_DIAGNOSTIC_POSTRUN.md",
+      "size_bytes": 4447,
+      "sha256": "0c5993d069f2f271a7c72b6db78296bc44f432f5bbeca3fb79f34a26240e203e"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/GREEN_DIAGNOSTIC_PREFLIGHT.md",
+      "size_bytes": 3438,
+      "sha256": "03d1f9821b7f548ac9653a84a9d60fd02da0a28ab22a6e3126e4979a0841007b"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/GREEN_SELECTION_POSTRUN.md",
+      "size_bytes": 3329,
+      "sha256": "86a035d9077f49beba17afc74e3a2b8b0b4301b886e0ec39ce407e9ac8537efe"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/GREEN_SELECTION_PREFLIGHT.md",
+      "size_bytes": 5032,
+      "sha256": "ecb30ef9ba493fe776675c30fd3b602200387b132a21750af394041ec5b0ce89"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/INTAKE.json",
+      "size_bytes": 33429,
+      "sha256": "092808f0919fbd7faf9b9701324839abb7d91c10c039cf4a3d038c2265463d91"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/L1B_WIRE_RESULT.json",
+      "size_bytes": 2995,
+      "sha256": "8211a20739de78d29d86cbf71c0afd893501b17004a1a579bfe4f73180009953"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/PREDECLARED.json",
+      "size_bytes": 20584,
+      "sha256": "5dd153af34d76ef819e145f67be4654d5c70f95925da83a4f19254f7e83163ad"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/PREFLIGHT.json",
+      "size_bytes": 5570,
+      "sha256": "3809aa7595aec1a38dcf1ebaed4c0b0769264acb55c918549d7949054743b635"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/PROCESS_RESPONSE.json",
+      "size_bytes": 5697,
+      "sha256": "144284de82cb10597c5ca8172b20d089f73a5cf3f661acaf4f29b32209a288a8"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/RED_ANALYSIS_POSTRUN.md",
+      "size_bytes": 3631,
+      "sha256": "967c1b45fd0ca0a7adebd65cac74be6c37a01ab819c87ee6b185cf3699305609"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/RED_ANALYSIS_PREFLIGHT.md",
+      "size_bytes": 3233,
+      "sha256": "10f59e7dbad33d62690e645b961cae72183e69aeffe3741db421568b84395bc4"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/RED_DIAGNOSTIC_POSTRUN.md",
+      "size_bytes": 3025,
+      "sha256": "f2c912c1ac617f03c57087632b7e9e711759691c498453cc8fa9f2893635bc08"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/RED_DIAGNOSTIC_PREFLIGHT.md",
+      "size_bytes": 2339,
+      "sha256": "b755ca04a9908a0e98088764e8a98f5151243dee4f602127bc370e2709bd3060"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/RED_SELECTION_POSTRUN.md",
+      "size_bytes": 3464,
+      "sha256": "618fac9aefba351d3a2cc3dc8a08a9c7c96e5e48b771bee44fee99f14e8c7ece"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/RED_SELECTION_PREFLIGHT.md",
+      "size_bytes": 3017,
+      "sha256": "4ba3322427189bcee7d3213c886e7673d7122332562eb367e364ccdada85f0ef"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/REPORT.md",
+      "size_bytes": 10722,
+      "sha256": "00cb3b8c59ca10db93e4937b7226cd469b72e596aded927c44b0273b9b59e9a7"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/RESULT.json",
+      "size_bytes": 9833,
+      "sha256": "00664657b2fe60d9056ebffd7e4573b98dc2bfee756865b909bdf002fab5413e"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/RUN_STARTED_ONCE.json",
+      "size_bytes": 5194,
+      "sha256": "1834889fdb00c85e947f3c96c437d96176bdd1876b47807d55da771c7a9782a9"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/SELECTION_EXECUTION.json",
+      "size_bytes": 808,
+      "sha256": "21208e36a2aad3a925a6fd473a05c09bd23abdb84e54dbb761d69614981ef021"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/SELECTION_FAILURE.json",
+      "size_bytes": 876,
+      "sha256": "1485e6ec8360635589e4c03b5eec673b6bbb3cc917cee4bd19c69696dd6ec3dd"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/SELECTION_PLAN.json",
+      "size_bytes": 3605,
+      "sha256": "2b2108821f0f6194b8f9917da4e55ab2ebb253c14aaf8aa3d71308e1ef97f026"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/SELECTION_RECOVERED_RESULT.json",
+      "size_bytes": 12501,
+      "sha256": "7b834c5dd55271bd969e8ed9a2fb74d605a5d98017f96b9ebe567b8c176facbf"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/SELECTION_RESULT_EMPTY_AFTER_FAILURE.empty",
+      "size_bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/VALIDATION.json",
+      "size_bytes": 1630,
+      "sha256": "4f99553831806059431c0ec196e9e1fda8f397af2cc687213bd596f12d4b3232"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/bind_selected_case.py",
+      "size_bytes": 9549,
+      "sha256": "23d8b9365fcf5108726d2998eef6492df89370ae739eb05f18063546f6cc347f"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/diagnose_saved_case.py",
+      "size_bytes": 10741,
+      "sha256": "3945a2e36bbbbee6d7367c61e6f15e48d44458bf7b18cde6c64306d96c8aa4a6"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/recover_selection_result.py",
+      "size_bytes": 4428,
+      "sha256": "fc482fffad649f0f71677cf565c97d5a74d97d08d989438825492b25f4d6e2f9"
+    },
+    {
+      "path": "harness/evidence/pr412_native_process_case_2026-10-12/select_native_column.py",
+      "size_bytes": 8535,
+      "sha256": "9bf955a0e37c920b7c81fed249588ebb234544c7a1d33af10d8f8bf833ca1bc6"
+    },
+    {
+      "path": "harness/evidence/AMI_L1B_RESEARCH_EDITION_COMPLETION.md",
+      "size_bytes": 17044,
+      "sha256": "9a9e2fa4c5c896a9786f5752b4c0c2c198b626292548d10062aca705e256a1c3"
+    },
+    {
+      "path": "wiki/sources/pr412-natural-native-process-case-2026-10-12.md",
+      "size_bytes": 2371,
+      "sha256": "c9bd9a75300fc1d7543610e158884c036c2e1f8f53761d99a85026025f56facd"
+    },
+    {
+      "path": "wiki/index.md",
+      "size_bytes": 11703,
+      "sha256": "7aab0eb9c7d2020d492bae9602eb2a5bf32055c8bac8efcf62b1c5fe2a39fc07"
+    },
+    {
+      "path": "wiki/hot.md",
+      "size_bytes": 16851,
+      "sha256": "0300db1df87be2249d97b84e66a3e587c5c12063949ca37f363b585b561f65dc"
+    }
+  ],
+  "private_checkpoint": {
+    "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr412_native_process_20261012/runs/PR412_NATURAL_LIQUID_JUL19_20261012_01/private/accepted_state.npz",
+    "sha256": "a928ef2daeac7664998a6f869a489181422737a28fd3dc320dc4c2a64e1517dc",
+    "mode": "0600",
+    "full_source_arrays_published": false
+  },
+  "raw_native_slice_intake_L1B_checkpoint_published": false,
+  "original_records_overwritten": false
+}

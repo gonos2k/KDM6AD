@@ -1,0 +1,20 @@
+{
+  "schema": "pr412_selection_execution_observation_v1",
+  "attestation_source": "coordinator-observed exec_command tool completion; not inferred from result-file presence",
+  "selector": {
+    "chunk_id": "3690e4",
+    "exit_code": 1,
+    "source_sha256": "9bf955a0e37c920b7c81fed249588ebb234544c7a1d33af10d8f8bf833ca1bc6",
+    "failure_receipt_sha256": "1485e6ec8360635589e4c03b5eec673b6bbb3cc917cee4bd19c69696dd6ec3dd"
+  },
+  "recovery": {
+    "chunk_id": "d9f5e9",
+    "exit_code": 0,
+    "source_sha256": "fc482fffad649f0f71677cf565c97d5a74d97d08d989438825492b25f4d6e2f9",
+    "recovered_result_sha256": "7b834c5dd55271bd969e8ed9a2fb74d605a5d98017f96b9ebe567b8c176facbf"
+  },
+  "native_array_scans": 1,
+  "M_H_optimizer_calls": 0,
+  "automatic_retry": false,
+  "recovery_native_arrays_reread": false
+}

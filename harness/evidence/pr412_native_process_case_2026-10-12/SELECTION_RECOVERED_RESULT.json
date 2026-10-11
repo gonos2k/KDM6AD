@@ -1,0 +1,413 @@
+{
+  "schema": "pr412_native_process_selection_recovered_v1",
+  "status": "NATIVE_CANDIDATE_SELECTED",
+  "selected": {
+    "j": 103,
+    "i": 48,
+    "latitude_deg": 36.195343017578125,
+    "longitude_deg": 122.0966796875,
+    "distance_to_original_native_center_m": 86798.62106824054,
+    "qc_max_kg_kg_dry": 3.460201696725562e-05,
+    "qc_threshold_layers": 1,
+    "warm_qc_threshold_layers": 1,
+    "temperature_min_on_qc_threshold_K": 294.8898472008618,
+    "temperature_min_on_warm_qc_threshold_K": 294.8898472008618
+  },
+  "counts": {
+    "inspected": 1681,
+    "finite_screened": 1681,
+    "open_ocean": 1681,
+    "warm_natural_cloud": 41,
+    "frozen_absence": 1681,
+    "eligible": 41
+  },
+  "original_plan_sha256": "2b2108821f0f6194b8f9917da4e55ab2ebb253c14aaf8aa3d71308e1ef97f026",
+  "failure_receipt_sha256": "1485e6ec8360635589e4c03b5eec673b6bbb3cc917cee4bd19c69696dd6ec3dd",
+  "recovery_source_sha256": "fc482fffad649f0f71677cf565c97d5a74d97d08d989438825492b25f4d6e2f9",
+  "private_slice_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr412_native_process_20261012/SELECTION_SLICE.npz",
+  "private_slice_sha256": "7963b364d86f37640b42d5602df20731224fc11557dd3c0059689a58eb3bca7d",
+  "array_inventory": {
+    "THM": {
+      "shape": [
+        39,
+        41,
+        41
+      ],
+      "dtype": "float64",
+      "sha256": "8aeee79ff4d67356e8ac9c85e5a5d5388fd8611feb0ebdfd76ae8e9f0c6bee9a"
+    },
+    "QVAPOR": {
+      "shape": [
+        39,
+        41,
+        41
+      ],
+      "dtype": "float64",
+      "sha256": "35a13eff8aa9a1c2acf182fd5448e9fbd9d56576b0fe63246acd8338acc6b3b4"
+    },
+    "QCLOUD": {
+      "shape": [
+        39,
+        41,
+        41
+      ],
+      "dtype": "float64",
+      "sha256": "b7896bbce34c28cbdc7964e75d557e5904b701b443355acca2658aab9179d185"
+    },
+    "QRAIN": {
+      "shape": [
+        39,
+        41,
+        41
+      ],
+      "dtype": "float64",
+      "sha256": "014263cc9c4f6d1fdc69533f6bb963cc77f95f62f27f18c7eeddab0385d4f2eb"
+    },
+    "QICE": {
+      "shape": [
+        39,
+        41,
+        41
+      ],
+      "dtype": "float64",
+      "sha256": "f588e41b8acd3da3e1080913387ab2010b8791a4ba0ee02871d96a6c8dbc353b"
+    },
+    "QSNOW": {
+      "shape": [
+        39,
+        41,
+        41
+      ],
+      "dtype": "float64",
+      "sha256": "f588e41b8acd3da3e1080913387ab2010b8791a4ba0ee02871d96a6c8dbc353b"
+    },
+    "QGRAUP": {
+      "shape": [
+        39,
+        41,
+        41
+      ],
+      "dtype": "float64",
+      "sha256": "f588e41b8acd3da3e1080913387ab2010b8791a4ba0ee02871d96a6c8dbc353b"
+    },
+    "QNCCN": {
+      "shape": [
+        39,
+        41,
+        41
+      ],
+      "dtype": "float64",
+      "sha256": "da01913cc51f8e36ccb8bb6948e44d38185a9752a925b5911d39f2c0b602b25a"
+    },
+    "QNCLOUD": {
+      "shape": [
+        39,
+        41,
+        41
+      ],
+      "dtype": "float64",
+      "sha256": "735a9e66bbc12262cbcf7bdaad22d1978702d1091e6d4ebba7ac8b7cccf0b06b"
+    },
+    "QNICE": {
+      "shape": [
+        39,
+        41,
+        41
+      ],
+      "dtype": "float64",
+      "sha256": "f588e41b8acd3da3e1080913387ab2010b8791a4ba0ee02871d96a6c8dbc353b"
+    },
+    "QNRAIN": {
+      "shape": [
+        39,
+        41,
+        41
+      ],
+      "dtype": "float64",
+      "sha256": "59cd7b9cb2ee4a23d7aa4d416f15277a14bcb11f657d22e3bca642ce422e88b5"
+    },
+    "QIB": {
+      "shape": [
+        39,
+        41,
+        41
+      ],
+      "dtype": "float64",
+      "sha256": "f588e41b8acd3da3e1080913387ab2010b8791a4ba0ee02871d96a6c8dbc353b"
+    },
+    "P": {
+      "shape": [
+        39,
+        41,
+        41
+      ],
+      "dtype": "float64",
+      "sha256": "6191e6e732b1941653d7e0fa76113cffcbfa3d899395395e2627bf8cb9638b4f"
+    },
+    "PB": {
+      "shape": [
+        39,
+        41,
+        41
+      ],
+      "dtype": "float64",
+      "sha256": "c7bf8b8a98a67432792e5a37be4d31e24c15549374f6ee97fea3b8400fc13e67"
+    },
+    "PH": {
+      "shape": [
+        40,
+        41,
+        41
+      ],
+      "dtype": "float64",
+      "sha256": "fa58ab060f852b47cffc34284c1cf92e3812ca3abae8eba7fcebf650ba4c3d3e"
+    },
+    "PHB": {
+      "shape": [
+        40,
+        41,
+        41
+      ],
+      "dtype": "float64",
+      "sha256": "349241917c2ba9c36fb784cf039d9607eebf38c6a2a85c26ae8336574955edf3"
+    },
+    "XLAT": {
+      "shape": [
+        41,
+        41
+      ],
+      "dtype": "float64",
+      "sha256": "c0b7caa6308a289a07964d93e44c943c2e90a8dd6e18e85631b4f4fa91c3cb1b"
+    },
+    "XLONG": {
+      "shape": [
+        41,
+        41
+      ],
+      "dtype": "float64",
+      "sha256": "c099d372b349f2ae05bb3c10a493f6826673debbadcf4beffef33703e05401a9"
+    },
+    "XLAND": {
+      "shape": [
+        41,
+        41
+      ],
+      "dtype": "float64",
+      "sha256": "2b64ccbc1e6209dcd7fee3cea9113c92e2969e582c852c88a81364426d61c950"
+    },
+    "SEAICE": {
+      "shape": [
+        41,
+        41
+      ],
+      "dtype": "float64",
+      "sha256": "555113cbfac6ff22652347146a0f56b623f38424eaf5ad4e7c1050918ab254a1"
+    },
+    "TSK": {
+      "shape": [
+        41,
+        41
+      ],
+      "dtype": "float64",
+      "sha256": "5e62e32b9eb869c22e1bf55369ebded8cbfeebf1d51d1f3ee2121fec2b790fa9"
+    },
+    "T2": {
+      "shape": [
+        41,
+        41
+      ],
+      "dtype": "float64",
+      "sha256": "f275d4d1b854db96172b9e7af93a099a9c3e93d25f8dd865998e57445f216fd7"
+    },
+    "Q2": {
+      "shape": [
+        41,
+        41
+      ],
+      "dtype": "float64",
+      "sha256": "283ac2a786cb677773fe5eef275e898ea841dd99c0379df4e2c2d20ee25732d1"
+    },
+    "U10": {
+      "shape": [
+        41,
+        41
+      ],
+      "dtype": "float64",
+      "sha256": "49be93328a0965836a2e56252fdea68f22185c213d6a1f2665890f604d960321"
+    },
+    "V10": {
+      "shape": [
+        41,
+        41
+      ],
+      "dtype": "float64",
+      "sha256": "84409fdcd3ebed641ec8931263081bf9b778c5bbf94f0816e1e4490b75f71ec4"
+    },
+    "HGT": {
+      "shape": [
+        41,
+        41
+      ],
+      "dtype": "float64",
+      "sha256": "78b2172cf5a74f3587be0a1b7726a04355c1dff9713b761523cffc52fcdbdd1a"
+    },
+    "derived_temperature_K": {
+      "shape": [
+        39,
+        41,
+        41
+      ],
+      "dtype": "float64",
+      "sha256": "7fb99801f49e313481a953c7ca34cd69716815be816251e8e47578d68f4d2591"
+    },
+    "valid_mask": {
+      "shape": [
+        41,
+        41
+      ],
+      "dtype": "bool",
+      "sha256": "9c8bf12288585506e7fca460a7f1d4d04ccc937798ebd4cda248fc8fa0d50dc1"
+    },
+    "ocean_mask": {
+      "shape": [
+        41,
+        41
+      ],
+      "dtype": "bool",
+      "sha256": "9c8bf12288585506e7fca460a7f1d4d04ccc937798ebd4cda248fc8fa0d50dc1"
+    },
+    "warm_cloud_mask": {
+      "shape": [
+        41,
+        41
+      ],
+      "dtype": "bool",
+      "sha256": "b1cda3f4e74a806435ae5e9d93d1e198a7a65c05b12226849f2578bc6cd871a3"
+    },
+    "frozen_absence_mask": {
+      "shape": [
+        41,
+        41
+      ],
+      "dtype": "bool",
+      "sha256": "9c8bf12288585506e7fca460a7f1d4d04ccc937798ebd4cda248fc8fa0d50dc1"
+    },
+    "eligible_mask": {
+      "shape": [
+        41,
+        41
+      ],
+      "dtype": "bool",
+      "sha256": "b1cda3f4e74a806435ae5e9d93d1e198a7a65c05b12226849f2578bc6cd871a3"
+    },
+    "distance_to_original_native_center_m": {
+      "shape": [
+        41,
+        41
+      ],
+      "dtype": "float64",
+      "sha256": "9524d6ab0471212fcb4dcbbe725de61c47c58b117c7fc2e2781a5ad15cfe4dea"
+    }
+  },
+  "saved_times_metadata": {
+    "count": 8,
+    "first": "2025-07-19_05:55:40",
+    "last": "2025-07-19_05:58:00",
+    "ordered_times_sha256": "2c9aa4b638103e4b9dffa111e5b52ebbeb0d7067c3e9f0c4faa0bde115b0f1b5"
+  },
+  "producer_gate": {
+    "run_id": "mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148",
+    "run_dir": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/runs/mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148",
+    "initial_time": "2025-07-19_00:00:00",
+    "effective_start_time": "2025-07-19_00:00:00",
+    "effective_stop_time": "2025-07-19_05:58:00",
+    "effective_duration_seconds": 21480,
+    "effective_stop_basis": "wrf_run_duration_components",
+    "run_duration_components": {
+      "run_days": 0,
+      "run_hours": 0,
+      "run_minutes": 358,
+      "run_seconds": 0
+    },
+    "completion_receipt_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr397_actual_native_results_2026-10-10/NATIVE_COMPLETION.json",
+    "completion_receipt_sha256": "b1025c391f178cfea7fd77fc1c39adced0fdf205210c650b7dacc576fcba713b",
+    "completion_receipt_identity_fallback": true,
+    "exit_code": 0,
+    "experiment_valid": true,
+    "model_completed": true,
+    "experiment_valid_sha256": "33894032feeb096dc1a2f886d72374549ada56e682e2695db5943eb5849d51bf",
+    "run_identity_sha256": "76cfe2c195797da0266468b6a099d54809da4852d5c969b93fc2071a8473fae0",
+    "exit_code_file_sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "runner_receipt_sha256": {
+      "exit_code": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "experiment_valid.json": "33894032feeb096dc1a2f886d72374549ada56e682e2695db5943eb5849d51bf",
+      "run_identity.json": "76cfe2c195797da0266468b6a099d54809da4852d5c969b93fc2071a8473fae0",
+      "namelist.input": "ef4d7054a393dbc0d6aa8f34094571ef65c4d3a076b582acfb822a1ad66fbac1"
+    },
+    "actual_proc_grid": "1x1",
+    "scheme": "337",
+    "runner_controls": {
+      "fixed_dt": false,
+      "history": 0,
+      "history_s": 20,
+      "input_canonical_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+      "label": "viirs_norm2_dry1_055540_055800",
+      "minutes": 358,
+      "namelist_without_grid_sha256": "418d1300181eecf485db87294d6115e3cd269762b091fad9b6323612f5d92314",
+      "np": 1,
+      "radt": null,
+      "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+      "seconds": 0
+    },
+    "namelist": {
+      "namelist_path": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/runs/mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148/namelist.input",
+      "namelist_sha256": "ef4d7054a393dbc0d6aa8f34094571ef65c4d3a076b582acfb822a1ad66fbac1",
+      "namelist_without_grid_sha256": "418d1300181eecf485db87294d6115e3cd269762b091fad9b6323612f5d92314",
+      "controls": {
+        "mp_physics": "337",
+        "time_step": 20,
+        "history_interval": 0,
+        "history_interval_s": 20,
+        "use_adaptive_time_step": ".false.",
+        "step_to_output_time": ".false.",
+        "ncmin_land": 10.0,
+        "ncmin_sea": 10.0
+      },
+      "case_details": {
+        "label": "viirs_norm2_dry1_055540_055800",
+        "minutes": 358,
+        "seconds": 0,
+        "history": 0,
+        "history_s": 20,
+        "radt": null
+      },
+      "run_identity_declared_controls": {
+        "fixed_dt": false,
+        "history": 0,
+        "history_s": 20,
+        "input_canonical_sha256": "12e132ecefa9e0f7e0a0bd67d57353ec3a7ec113ab1b43121474340293125fdf",
+        "label": "viirs_norm2_dry1_055540_055800",
+        "minutes": 358,
+        "namelist_without_grid_sha256": "418d1300181eecf485db87294d6115e3cd269762b091fad9b6323612f5d92314",
+        "np": 1,
+        "radt": null,
+        "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+        "seconds": 0
+      }
+    },
+    "receipt_paths": {
+      "exit_code": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/runs/mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148/exit_code",
+      "experiment_valid.json": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/runs/mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148/experiment_valid.json",
+      "run_identity.json": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/runs/mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148/run_identity.json",
+      "namelist.input": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/runs/mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148/namelist.input"
+    }
+  },
+  "forecast_full_file_rehashed": false,
+  "metadata_Times_rechecked_without_array_rescan": true,
+  "native_array_scans": 1,
+  "selection_region_expansions": 0,
+  "M_H_optimizer_calls": 0,
+  "native_integrations": 0,
+  "BT_or_residuals_read_for_selection": false,
+  "science_accepted": false
+}
