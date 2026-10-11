@@ -1,7 +1,7 @@
 # Independent Red audit: PR404 raw source masks
 
-Date: 2026-10-11  
-Audited head: `4b65577f7c2062ab99dffe50ced233a092457184` (`codex/pr404-l1b-source-mask`)  
+Date: 2026-10-11
+Audited head: `4b65577f7c2062ab99dffe50ced233a092457184` (`codex/pr404-l1b-source-mask`)
 Scope: `read_packed_source_patch`, `source_patch_canvas`, the actual netCDF inputs, source-mask tests, `repair_source_mask.py`, and its private additive NPZ plus axis contract. No acquisition, full-scene BT decode, native run, H/K/M call, or optimizer was performed. Frozen PR403/v2 payload and receipt were not edited.
 
 ## Result
