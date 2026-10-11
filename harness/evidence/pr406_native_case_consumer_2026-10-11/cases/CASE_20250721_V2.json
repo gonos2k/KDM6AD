@@ -1,0 +1,67 @@
+{
+  "schema": "kdm6ad_native_case_v2",
+  "case_id": "PR406_AMI_20250721_0556_V2",
+  "observation": {
+    "source_result_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr403_l1b_heldout_2026-10-11/RESULT.json",
+    "source_result_sha256": "3182efa96388e650e03e249c5aa0ca775d1d7935cc2a323542904b6b3b1c7268",
+    "source_payload_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr403_l1b_heldout_20261011/l1bheldout20261011c/FIXED_POINT_PATCH.npz",
+    "source_payload_sha256": "d24bb3a5d029ec13d1b25d0afdae95637a971d6d304f38bcc73dae461220bd90",
+    "scene_date": "20250721",
+    "nominal_slot_obt": "202507210556",
+    "nominal_obs_model_time": "2025-07-21_05:56:00",
+    "time_assumption": "NOMINAL_FILENAME_TIME_AS_MODEL_UTC_RESEARCH_MODE",
+    "observed_pixel_utc": null,
+    "source_metadata_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr403_l1b_heldout_20261011/l1bheldout20261011c/DECODE_RECEIPT.json",
+    "source_metadata_sha256": "b96eccc6762d01cd1e5dfbe4a44bf7f40a0c9eab9e6477f3b4d443579a190760",
+    "nearest_pixel": {
+      "row": 320,
+      "column": 48,
+      "latitude_deg": 35.41925069326254,
+      "longitude_deg": 122.13724164654832
+    }
+  },
+  "native": {
+    "run_id": null,
+    "run_dir": null,
+    "initial_time": null,
+    "background_valid_time": "2025-07-21_05:55:40",
+    "column": {
+      "j": 86,
+      "i": 48,
+      "expected_latitude_deg": 35.4156608581543,
+      "expected_longitude_deg": 122.143310546875,
+      "coordinate_tolerance_deg": 5e-05
+    },
+    "diagnostic_times": [],
+    "completion_receipt_path": null,
+    "completion_receipt_sha256": null
+  },
+  "analysis": {
+    "dt_s": 20,
+    "obs_time": 1,
+    "nominal_obs_model_time": "2025-07-21_05:56:00",
+    "all_sky": true,
+    "channel_ids_1based": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "require_source_dqf_zero": true,
+    "control_fields": [
+      "th",
+      "qv"
+    ],
+    "ncmin_land": 10.0,
+    "ncmin_sea": 10.0,
+    "use_adaptive_time_step": false,
+    "step_to_output_time": false
+  },
+  "output": {
+    "manifest_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr406_native_case_consumer_2026-10-11/PENDING_20250721_V2.json",
+    "private_npz_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr406_native_case_consumer_20261011/private/core_20250721_v2.npz"
+  }
+}

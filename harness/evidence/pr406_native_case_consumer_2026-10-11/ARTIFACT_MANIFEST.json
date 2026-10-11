@@ -1,0 +1,149 @@
+{
+  "schema": "pr406_public_artifact_manifest_v1",
+  "basis_main": "2a7c09d8",
+  "files": [
+    {
+      "path": "harness/evidence/CHECKLIST_pr406_native_case_consumer_2026-10-11.md",
+      "size_bytes": 2186,
+      "sha256": "847876a1c5c6d249391525d28f1d375146302bac19cebdb61e9b78eac4776109"
+    },
+    {
+      "path": "harness/evidence/pr406_native_case_consumer_2026-10-11/COORDINATOR_REPORT.md",
+      "size_bytes": 6693,
+      "sha256": "c3346f895d35d9f1da855f4949f588977ffa7b59d03bf07049005d3064e2fadd"
+    },
+    {
+      "path": "harness/evidence/pr406_native_case_consumer_2026-10-11/CORE_REPLAY19_COMPARISON.json",
+      "size_bytes": 2620,
+      "sha256": "aacb0a3fe14b1408a35bae128dee9d23828055add00b7b06193aeaeba7d8b120"
+    },
+    {
+      "path": "harness/evidence/pr406_native_case_consumer_2026-10-11/CORE_REPLAY19_INTAKE.json",
+      "size_bytes": 27378,
+      "sha256": "f9dd105eb72ed0ab97ccebc600f80463b62828d279b27ab7a1aa02c6cd5b4945"
+    },
+    {
+      "path": "harness/evidence/pr406_native_case_consumer_2026-10-11/CORE_REPLAY19_V2_COMPARISON.json",
+      "size_bytes": 6517,
+      "sha256": "dab27303618c1ffc448b76437988d269f3884bf628ff5c25fd20d86e3ac6c468"
+    },
+    {
+      "path": "harness/evidence/pr406_native_case_consumer_2026-10-11/CORE_REPLAY19_V2_INTAKE.json",
+      "size_bytes": 28280,
+      "sha256": "02080fdce7de385c68369d99c29d0f49ce55e6bb67f55e434edbc4bbadf5fbde"
+    },
+    {
+      "path": "harness/evidence/pr406_native_case_consumer_2026-10-11/GREEN_CASE_REVIEW.md",
+      "size_bytes": 5614,
+      "sha256": "3f70a83491c1eaf6034227d1735679eac116bf046e486f8adc8258342d382d72"
+    },
+    {
+      "path": "harness/evidence/pr406_native_case_consumer_2026-10-11/PENDING_20250720.json",
+      "size_bytes": 5283,
+      "sha256": "e13c95da88a8634cb8f7dd36a7e552d64dd9c24b7090b05ba39c45af5de4c2af"
+    },
+    {
+      "path": "harness/evidence/pr406_native_case_consumer_2026-10-11/PENDING_20250720_V2.json",
+      "size_bytes": 5384,
+      "sha256": "077908c549d77a6dd2010ac590fb70b8c4d61ad590ccc662a5c368459f43de75"
+    },
+    {
+      "path": "harness/evidence/pr406_native_case_consumer_2026-10-11/PENDING_20250721.json",
+      "size_bytes": 5283,
+      "sha256": "43c3091c718366faf68204bcb8b56f31613ea5099fd634102805742f66c538ea"
+    },
+    {
+      "path": "harness/evidence/pr406_native_case_consumer_2026-10-11/PENDING_20250721_V2.json",
+      "size_bytes": 5384,
+      "sha256": "98f8990e3a2a54fcbc8580802dc3fbae6a6f5ea95ff669c132883dd07faff19e"
+    },
+    {
+      "path": "harness/evidence/pr406_native_case_consumer_2026-10-11/RED_CASE_REVIEW.md",
+      "size_bytes": 5298,
+      "sha256": "57c77c31ab68ad3f1bf53fa43645955b165c7102a250cd54d4c210847ea5b2ae"
+    },
+    {
+      "path": "harness/evidence/pr406_native_case_consumer_2026-10-11/VALIDATION.json",
+      "size_bytes": 2269,
+      "sha256": "c2af3b586b5f6cf823a1aedfb6e6057a71baed63d229dd412878550dbaa45307"
+    },
+    {
+      "path": "harness/evidence/pr406_native_case_consumer_2026-10-11/case_SCHEMA.md",
+      "size_bytes": 8904,
+      "sha256": "06d9a61f82f1bac3a49c918bece995addf9826365b0fa1d050c7dc463e11998a"
+    },
+    {
+      "path": "harness/evidence/pr406_native_case_consumer_2026-10-11/case_capture_adapter.py",
+      "size_bytes": 7367,
+      "sha256": "b3f415ef75fe71ad56c63ff48ebcae9045d27bcba9a56f454014729b777e3b3f"
+    },
+    {
+      "path": "harness/evidence/pr406_native_case_consumer_2026-10-11/cases/CASE_20250720.json",
+      "size_bytes": 2311,
+      "sha256": "bf7735aeb36af518ef6e92e3bc3de600e2dff0b4cb2fee58d8761f478512a910"
+    },
+    {
+      "path": "harness/evidence/pr406_native_case_consumer_2026-10-11/cases/CASE_20250720_V2.json",
+      "size_bytes": 2396,
+      "sha256": "9da55c813f718668b97992a42b7aa25300706488fb89771dfc9a9ddf5aefbc45"
+    },
+    {
+      "path": "harness/evidence/pr406_native_case_consumer_2026-10-11/cases/CASE_20250721.json",
+      "size_bytes": 2311,
+      "sha256": "27c4a29e51ad1d674370582d7011222561eac52fe40deaa392b74ca8f4a98ad9"
+    },
+    {
+      "path": "harness/evidence/pr406_native_case_consumer_2026-10-11/cases/CASE_20250721_V2.json",
+      "size_bytes": 2396,
+      "sha256": "ce0dea699d5b1b5bf3f87c468cb92e88533568a8c36f2af6dd3d370212fc47be"
+    },
+    {
+      "path": "harness/evidence/pr406_native_case_consumer_2026-10-11/cases/CORE_REPLAY19_CASE.json",
+      "size_bytes": 1809,
+      "sha256": "654ea85bf2658fe2d99778520c9aa293fd9b40bc2dd1a0ad35088421ab7e96a8"
+    },
+    {
+      "path": "harness/evidence/pr406_native_case_consumer_2026-10-11/cases/CORE_REPLAY19_V2_CASE.json",
+      "size_bytes": 2087,
+      "sha256": "eb5c2b8feb6d9453ae181d56d2450ca45a41a1c9261f3125ae8dbdbbbab4c2f9"
+    },
+    {
+      "path": "harness/evidence/pr406_native_case_consumer_2026-10-11/intake_native_case.py",
+      "size_bytes": 63040,
+      "sha256": "c8dac976132f6ec88bd3080896a275a7b6fd1c56ad51071cae99484c24050780"
+    },
+    {
+      "path": "harness/evidence/pr406_native_case_consumer_2026-10-11/intake_native_case_v2.py",
+      "size_bytes": 66619,
+      "sha256": "f87bb171c792623e4d66be70186e18de2e39a84521b8679352ac27b3b751b1d6"
+    },
+    {
+      "path": "harness/evidence/pr406_native_case_consumer_2026-10-11/run_case_analysis.py",
+      "size_bytes": 12410,
+      "sha256": "78e094f8dc0667d2f8b846fc36a2b6d68a287d3e1af834664215a8d6f0f722a1"
+    },
+    {
+      "path": "harness/evidence/pr406_native_case_consumer_2026-10-11/test_case_analysis_adapter.py",
+      "size_bytes": 9073,
+      "sha256": "6d0f2548849f5ba27b3a3d8a651830ffa80aa0eacbd8ed80291f6b88922da7c6"
+    },
+    {
+      "path": "harness/evidence/pr406_native_case_consumer_2026-10-11/test_native_case_intake.py",
+      "size_bytes": 26719,
+      "sha256": "12c93164f6b7a39bb25ab1b81cf67169fbe746fc4924c8469f1b6243e6a15b87"
+    },
+    {
+      "path": "oracle/tests/test_native_case_consumer_contract.py",
+      "size_bytes": 1578,
+      "sha256": "56ca666b217235459e0c854a49a5bd56cebf843de900cae54102d581827fb3de"
+    },
+    {
+      "path": "wiki/sources/pr406-native-case-consumer-2026-10-11.md",
+      "size_bytes": 1986,
+      "sha256": "72e31b496a958388e67d6c57e698cdc4b3ddc1c8a59fc00c1682d2bbcdd61516"
+    }
+  ],
+  "private_npz_not_published": true,
+  "v1_consumer_preserved_sha256": "c8dac976132f6ec88bd3080896a275a7b6fd1c56ad51071cae99484c24050780",
+  "newdate_analysis_executed": false
+}

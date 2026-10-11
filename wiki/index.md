@@ -105,3 +105,4 @@ date_modified: 2026-10-08
 - [[sources/pr404-l1b-source-mask-and-native-linkage-2026-10-11]] — Separate raw/source-mask/padding/DQF capture; actual 18-slice sidecar verified, same-date native inputs still unavailable in bounded roots; user78/100 baseline recorded.
 
 - [[sources/pr405-native-valid-time-linkage-2026-10-11]] — Boundary record09 vsintervalend12 correction; validtime/lead ratherthan init-date equality; twoL1B links remainpending nativeinputs.
+- [[sources/pr406-native-case-consumer-2026-10-11]] — Case-driven native core and isolated analysis admission; single-background replay preserves native arrays, optional saved diagnostics remain separate, new-date analyses pending.

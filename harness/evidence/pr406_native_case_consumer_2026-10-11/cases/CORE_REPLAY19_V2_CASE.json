@@ -1,0 +1,59 @@
+{
+  "schema": "kdm6ad_native_case_v2",
+  "case_id": "PR406_JUL19_CORE_ONLY_REPLAY_V2",
+  "observation": {
+    "source_result_path": null,
+    "source_result_sha256": null,
+    "source_payload_path": null,
+    "source_payload_sha256": null,
+    "scene_date": "20250719",
+    "nominal_slot_obt": "202507190556",
+    "nominal_obs_model_time": "2025-07-19_05:56:00",
+    "time_assumption": "NOMINAL_FILENAME_TIME_AS_MODEL_UTC_RESEARCH_MODE",
+    "observed_pixel_utc": null
+  },
+  "native": {
+    "run_id": "mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148",
+    "run_dir": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/runs/mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148",
+    "initial_time": "2025-07-19_00:00:00",
+    "background_valid_time": "2025-07-19_05:55:40",
+    "column": {
+      "j": 86,
+      "i": 48,
+      "expected_latitude_deg": 35.4156608581543,
+      "expected_longitude_deg": 122.143310546875,
+      "coordinate_tolerance_deg": 5e-05
+    },
+    "diagnostic_times": [],
+    "completion_receipt_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr397_actual_native_results_2026-10-10/NATIVE_COMPLETION.json",
+    "completion_receipt_sha256": "b1025c391f178cfea7fd77fc1c39adced0fdf205210c650b7dacc576fcba713b"
+  },
+  "analysis": {
+    "dt_s": 20,
+    "obs_time": 1,
+    "nominal_obs_model_time": "2025-07-19_05:56:00",
+    "all_sky": true,
+    "channel_ids_1based": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "require_source_dqf_zero": true,
+    "control_fields": [
+      "th",
+      "qv"
+    ],
+    "ncmin_land": 10.0,
+    "ncmin_sea": 10.0,
+    "use_adaptive_time_step": false,
+    "step_to_output_time": false
+  },
+  "output": {
+    "manifest_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr406_native_case_consumer_2026-10-11/CORE_REPLAY19_V2_INTAKE.json",
+    "private_npz_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr406_native_case_consumer_20261011/private/core_jul19_v2.npz"
+  }
+}

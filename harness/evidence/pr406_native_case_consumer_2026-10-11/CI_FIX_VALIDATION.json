@@ -1,0 +1,28 @@
+{
+  "schema": "pr406_ci_portability_fix_validation_v1",
+  "first_head": "7824d28ca55aa0a7727daabb5079b59b364de8d7",
+  "first_oracle_ci": {
+    "run_id": 38114357249,
+    "result": "1 failed,1748 passed,95 skipped,33 warnings",
+    "cause": "Portable facade accidentally exposed a local native-intake integration requiring private P8W/reference assets"
+  },
+  "corrected_local_result": "38 passed in1.26s",
+  "focused_cases": 24,
+  "portable_cases": 14,
+  "shared_cases": 13,
+  "new_portable_only_case": 1,
+  "unique_cases": 25,
+  "public_guard": "autouse rejects _load_legacy and netCDF4.Dataset access",
+  "intake_capture_driver_changed": false,
+  "executed_native_replay_repeated": false,
+  "model_H_M_optimizer_calls": 0,
+  "newdate_analysis_executed": false,
+  "management_score": "user-owned79/100 unchanged",
+  "final_remote_ci": "attributed separately to the updated PR head",
+  "source_sha256": {
+    "oracle/tests/test_native_case_consumer_contract.py": "938658b49129a2c2fc1a8c0fa00305af3ec0def44bcd14586a906fbbc3ba5eb7",
+    "harness/evidence/pr406_native_case_consumer_2026-10-11/intake_native_case_v2.py": "f87bb171c792623e4d66be70186e18de2e39a84521b8679352ac27b3b751b1d6",
+    "harness/evidence/pr406_native_case_consumer_2026-10-11/case_capture_adapter.py": "b3f415ef75fe71ad56c63ff48ebcae9045d27bcba9a56f454014729b777e3b3f",
+    "harness/evidence/pr406_native_case_consumer_2026-10-11/run_case_analysis.py": "78e094f8dc0667d2f8b846fc36a2b6d68a287d3e1af834664215a8d6f0f722a1"
+  }
+}
