@@ -1,0 +1,357 @@
+{
+  "RTTOV_execution": "not called; existing sharded_allsky callback replaced with the explicit synthetic fixture",
+  "case_id": "synthetic_jul20_core",
+  "case_json_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr408_synthetic_capture_success_2026-10-11/inputs/PR408_SYNTHETIC_ALLSKY_TQ_20261011_01/case/CASE.json",
+  "case_json_sha256": "932ebe35796c0bae7101aaa65179d35a0d1599698b0095a4c3ddbfe718f3510c",
+  "execution_kind": "real run_single_column_analysis/LBFGS/final audit/capture with existing synthetic all-sky H and InlinePool",
+  "final_audit_evaluations": 1,
+  "final_control_gradient": {
+    "array_sha256_f64": {
+      "fixed_eta": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "fixed_eta_pre": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "fixed_eta_pre_present": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+      "fixed_eta_present": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+      "optimizer_final_gradient_combined": "bda729809123f2dba1c3b4430bd6473f246f4f0a73019ea2b5cb835f00dea973",
+      "optimizer_final_gradient_v_state": "82c694ca7fc0fc2a179d170362788148f1db89bccf02020519e5d5092e460f50",
+      "optimizer_final_gradient_v_theta": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925",
+      "optimizer_v_state_control": "097d16599a4b18e89b835f4c555ab9b9e736393a9150503cb3aebda5a695e779",
+      "optimizer_v_theta_control": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925",
+      "parameter_sigma_log": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925",
+      "parameter_theta_analysis": "70cbdba9e5ffa083dda7cbca9801e2c46db97c36be48ad9cebeeb98f2d633969",
+      "parameter_theta_background": "70cbdba9e5ffa083dda7cbca9801e2c46db97c36be48ad9cebeeb98f2d633969"
+    },
+    "arrays": {
+      "fixed_eta": {
+        "dtype": "float64",
+        "private_npz_key": "control__fixed_eta",
+        "sha256_f64": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "shape": [
+          0
+        ]
+      },
+      "fixed_eta_pre": {
+        "dtype": "float64",
+        "private_npz_key": "control__fixed_eta_pre",
+        "sha256_f64": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "shape": [
+          0
+        ]
+      },
+      "fixed_eta_pre_present": {
+        "dtype": "bool",
+        "private_npz_key": "control__fixed_eta_pre_present",
+        "sha256_f64": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "shape": [
+          1
+        ]
+      },
+      "fixed_eta_present": {
+        "dtype": "bool",
+        "private_npz_key": "control__fixed_eta_present",
+        "sha256_f64": "af5570f5a1810b7af78caf4bc70a660f0df51e42baf91d4de5b2328de0e83dfc",
+        "shape": [
+          1
+        ]
+      },
+      "optimizer_final_gradient_combined": {
+        "dtype": "float64",
+        "private_npz_key": "control__optimizer_final_gradient_combined",
+        "sha256_f64": "bda729809123f2dba1c3b4430bd6473f246f4f0a73019ea2b5cb835f00dea973",
+        "shape": [
+          472
+        ]
+      },
+      "optimizer_final_gradient_v_state": {
+        "dtype": "float64",
+        "private_npz_key": "control__optimizer_final_gradient_v_state",
+        "sha256_f64": "82c694ca7fc0fc2a179d170362788148f1db89bccf02020519e5d5092e460f50",
+        "shape": [
+          12,
+          1,
+          39
+        ]
+      },
+      "optimizer_final_gradient_v_theta": {
+        "dtype": "float64",
+        "private_npz_key": "control__optimizer_final_gradient_v_theta",
+        "sha256_f64": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925",
+        "shape": [
+          4
+        ]
+      },
+      "optimizer_v_state_control": {
+        "dtype": "float64",
+        "private_npz_key": "control__optimizer_v_state_control",
+        "sha256_f64": "097d16599a4b18e89b835f4c555ab9b9e736393a9150503cb3aebda5a695e779",
+        "shape": [
+          12,
+          1,
+          39
+        ]
+      },
+      "optimizer_v_theta_control": {
+        "dtype": "float64",
+        "private_npz_key": "control__optimizer_v_theta_control",
+        "sha256_f64": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925",
+        "shape": [
+          4
+        ]
+      },
+      "parameter_sigma_log": {
+        "dtype": "float64",
+        "private_npz_key": "control__parameter_sigma_log",
+        "sha256_f64": "66687aadf862bd776c8fc18b8e9f8e20089714856ee233b3902a591d0d5f2925",
+        "shape": [
+          4
+        ]
+      },
+      "parameter_theta_analysis": {
+        "dtype": "float64",
+        "private_npz_key": "control__parameter_theta_analysis",
+        "sha256_f64": "70cbdba9e5ffa083dda7cbca9801e2c46db97c36be48ad9cebeeb98f2d633969",
+        "shape": [
+          4
+        ]
+      },
+      "parameter_theta_background": {
+        "dtype": "float64",
+        "private_npz_key": "control__parameter_theta_background",
+        "sha256_f64": "70cbdba9e5ffa083dda7cbca9801e2c46db97c36be48ad9cebeeb98f2d633969",
+        "shape": [
+          4
+        ]
+      }
+    },
+    "block_norms_match_minimizer_return": true,
+    "combined_l2_norm": 6.933478386330614e-07,
+    "combined_linf_norm": 1.5642977119201262e-07,
+    "contract": "total objective gradient in LBFGS control space after the existing final audit; includes control-prior and CVT/log-parameter chain terms, not an RTTOV H-adjoint norm",
+    "state_l2_norm": 6.933478386330614e-07,
+    "state_linf_norm": 1.5642977119201262e-07,
+    "theta_analysis_rederived_exactly_from_v_theta_and_prior": true,
+    "theta_l2_norm": 0.0,
+    "theta_linf_norm": 0.0,
+    "v_state_order": [
+      "th",
+      "qv",
+      "qc",
+      "qr",
+      "qi",
+      "qs",
+      "qg",
+      "nccn",
+      "nc",
+      "ni",
+      "nr",
+      "bg"
+    ],
+    "v_state_shape": [
+      12,
+      1,
+      39
+    ],
+    "v_theta_order": [
+      "peaut",
+      "ncrk1",
+      "ncrk2",
+      "eccbrk"
+    ],
+    "v_theta_shape": [
+      4
+    ],
+    "x_analysis_rederived_exactly_from_v_state_and_b_sigma": true
+  },
+  "final_valid_channel_count": 7,
+  "independent_initial_objective_crosscheck": {
+    "background_quality_probe": {
+      "cost_semantics": "non-grad background quality probe with all-zero loss mask; not initial zero-control closure Jo",
+      "probe_BT_K": [
+        [
+          281.1793945959209,
+          281.1793945959209,
+          281.1793945959209,
+          281.1793945959209,
+          281.1793945959209,
+          281.1793945959209,
+          281.1793945959209
+        ]
+      ],
+      "probe_BT_cost_recomputed_with_frozen_mask": 23.26032903907663,
+      "probe_masked_cost": 0.0,
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "zero_mask": {
+        "dtype": "float64",
+        "sha256_f64": "d4817aa5497628e7c77e6b606107042bbba3130888c5f47a375e6179be789fbb",
+        "shape": [
+          1,
+          7
+        ],
+        "values": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ]
+      },
+      "zero_mask_cost_recomputed": 0.0
+    },
+    "crosschecks": {
+      "first_zero_control_closure_components_sum": true,
+      "frozen_mask_matches_first_zero_control_H": true,
+      "h_or_m_re_evaluations_for_crosscheck": 0,
+      "probe_BT_matches_first_zero_control_H_BT": true,
+      "probe_BT_under_frozen_mask_matches_initial_zero_control_Jo": true,
+      "probe_and_initial_closure_states_match": true,
+      "probe_cost_matches_zero_mask_recomputation": true,
+      "probe_target_matches_validated_observation": true
+    },
+    "initial_zero_control_objective": {
+      "Jb_state": 0.0,
+      "Jo0_huber": 23.26032903907663,
+      "Jtheta": 0.0,
+      "Jtotal": 23.26032903907663,
+      "frozen_mask": {
+        "dtype": "float64",
+        "sha256_f64": "022451970ff25a1cf57eb1602f05e6ab8a2d0edb918d8efd1574f2ef1a77898f",
+        "shape": [
+          1,
+          7
+        ],
+        "values": [
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ]
+        ]
+      },
+      "n_valid": 7,
+      "operator_signature_sha256": "982e8db2f9a3f6d8b5475feb711cbab901263fe7e318fddaba0438e2dd9a1a32",
+      "trace_index": 0
+    },
+    "status": "CROSSCHECKED"
+  },
+  "intake_manifest_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr408_synthetic_capture_success_2026-10-11/inputs/PR408_SYNTHETIC_ALLSKY_TQ_20261011_01/case/intake/INTAKE.json",
+  "intake_manifest_sha256": "f6f5e38a2abb51cf68428bad3340fa544d9a8a14fa9d489bd5d7db7004ab7097",
+  "intake_npz_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr408_synthetic_capture_success_2026-10-11/inputs/PR408_SYNTHETIC_ALLSKY_TQ_20261011_01/case/intake/private/synthetic_jul20_core.npz",
+  "intake_npz_sha256": "8868c56d250d768af70be64a2a5ce00d8a4db5eac5bb709798cd9ab0b316dd76",
+  "logical_synthetic_h_calls": 5,
+  "native_background_time": "2025-07-20_05:55:40",
+  "new_date_native_input_or_analysis": false,
+  "no_overwrite_guard": "A second invocation with the same checkpoint/receipt/H-case paths raised FileExistsError before analysis; hashes remained unchanged.",
+  "objective": {
+    "Jb_state": 0.2282258444389793,
+    "Jo": 22.801572933855642,
+    "Jtheta": 0.0,
+    "Jtotal": 23.02979877829462,
+    "Jtotal_final_trace": 23.02979877829462,
+    "final_audit_signature": {
+      "all_trace_signatures_match": true,
+      "final_frozen_mask": {
+        "dtype": "float64",
+        "sha256_f64": "022451970ff25a1cf57eb1602f05e6ab8a2d0edb918d8efd1574f2ef1a77898f",
+        "shape": [
+          1,
+          7
+        ]
+      },
+      "final_trace_index": 3,
+      "n_valid_each_trace_entry": 7,
+      "sha256": "982e8db2f9a3f6d8b5475feb711cbab901263fe7e318fddaba0438e2dd9a1a32",
+      "slot": 1,
+      "trace_entry_count": 4
+    },
+    "final_rad_quality": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    ],
+    "frozen_support": [
+      [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    ],
+    "initial_zero_control_closure": {
+      "Jb_state": 0.0,
+      "Jo": 23.26032903907663,
+      "Jtheta": 0.0,
+      "Jtotal": 23.26032903907663,
+      "control_semantics": "first existing optimizer closure before L-BFGS updates; v_state and v_theta start at zero",
+      "first_grad_true_h_call_index": 2,
+      "first_h_J_huber_matches_Jo": true,
+      "frozen_mask": {
+        "dtype": "float64",
+        "sha256_f64": "022451970ff25a1cf57eb1602f05e6ab8a2d0edb918d8efd1574f2ef1a77898f",
+        "shape": [
+          1,
+          7
+        ],
+        "values": [
+          [
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0,
+            1.0
+          ]
+        ]
+      },
+      "n_valid": 7,
+      "operator_signature_sha256": "982e8db2f9a3f6d8b5475feb711cbab901263fe7e318fddaba0438e2dd9a1a32",
+      "signature_matches_final_accepted_audit": true,
+      "trace_index": 0
+    },
+    "n_audit_evals": 1,
+    "n_valid": 7,
+    "n_window_evals": 3
+  },
+  "physical_matchup_or_science_acceptance": "NOT_ASSESSED",
+  "private_checkpoint_mode_octal": "0o600",
+  "private_checkpoint_parent_mode_octal": "0o700",
+  "private_checkpoint_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr408_synthetic_capture_20261011/private/PR408_SYNTHETIC_ALLSKY_TQ_20261011_01.npz",
+  "private_checkpoint_sha256": "9410e2717bb8af4914e7eca4d761311ba5f8a837a341e2f7128bffceabd2188f",
+  "production_source_unchanged": true,
+  "public_capture_receipt_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr408_synthetic_capture_success_2026-10-11/runs/PR408_SYNTHETIC_ALLSKY_TQ_20261011_01/CAPTURE.json",
+  "public_capture_receipt_sha256": "a5b1122c4ce16f1d70bf0f453c23eb59b7ec99c7eee9b98eed4607fa400ee500",
+  "run_id": "PR408_SYNTHETIC_ALLSKY_TQ_20261011_01",
+  "schema": "pr408_synthetic_capture_success_v1",
+  "status": "RETURNED_DIAGNOSTIC_ONLY",
+  "synthetic_fixture_test": "oracle/tests/test_da_single_column.py::_install_synthetic_allsky",
+  "synthetic_native_state_not_actual_July20_native_input": true,
+  "synthetic_observation_slot": "2025-07-20_05:56:00",
+  "test_source_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr408_synthetic_capture_success_2026-10-11/test_synthetic_capture_success.py",
+  "test_source_sha256": "adccb6f5956e9bd2b48868916aafa50fb4a0e04962ba15b4eccec65104bbfda4"
+}
