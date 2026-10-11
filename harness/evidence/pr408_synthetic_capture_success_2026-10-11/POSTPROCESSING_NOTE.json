@@ -1,0 +1,12 @@
+{
+  "schema": "pr408_post_capture_reporting_event_v1",
+  "reported_by": "Green execution agent",
+  "run_id": "PR408_SYNTHETIC_ALLSKY_TQ_20261011_01",
+  "stage": "AFTER_SUCCESSFUL_CAPTURE_AND_CHECKPOINT_PUBLICATION",
+  "error": "NameError in the separate summary serialization script: Path import omitted",
+  "actual_capture_failed": false,
+  "record_recovery": "Summary and report reconstructed by reading the existing CAPTURE.json and private checkpoint",
+  "capture_or_optimizer_rerun": false,
+  "checkpoint_or_capture_receipt_overwritten": false,
+  "limits": "Agent-reported postprocessing event; the failing serialization script/traceback was not independently replayed. Successful capture and checkpoint are independently hash-verifiable."
+}

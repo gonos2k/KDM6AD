@@ -1,0 +1,23 @@
+{
+  "schema": "pr408_local_positive_validation_v1",
+  "unique_case_count": 1,
+  "result": "1 passed",
+  "facade_duplicates_existing_case": true,
+  "post_pytest_teardown_sharded_allsky_identity_restored": true,
+  "post_pytest_teardown_LBFGS_identity_restored": true,
+  "capture_internal_pointer_identity_not_asserted_in_test": true,
+  "persistent_capture_repeated": false,
+  "scope": "Repeatable temporary synthetic-H integration; canonical one-time run remains unchanged",
+  "command": "single-thread PYTHONPATH=oracle; pytest.main([oracle/tests/test_synthetic_case_capture_success.py]); compare original H/LBFGS object identity after pytest teardown",
+  "ruff": "passed",
+  "graph_refresh": {
+    "prior_unique_ids_preserved": true,
+    "scoped_relationships_present": true,
+    "semantic_nodes": 24,
+    "semantic_edges": 21,
+    "graph_nodes": 18362,
+    "graph_edges": 31480,
+    "limits": "Cached structural graph plus scoped Green/Red/root evidence semantics; source authoritative, not complete corpus certification"
+  },
+  "scope_limitation": "Private reference-bearing positive integration is local; public CI skip does not certify execution. Real RTTOV and new-date native analysis remain unexecuted."
+}
