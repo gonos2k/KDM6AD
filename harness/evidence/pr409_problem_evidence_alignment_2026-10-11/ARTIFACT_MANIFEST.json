@@ -1,0 +1,60 @@
+{
+  "schema": "pr409_document_artifact_manifest_v1",
+  "basis_main": "8427d547",
+  "provided_review_basis": "a42024a8",
+  "files": [
+    {
+      "path": "harness/evidence/AMI_L1B_MANAGEMENT_RUBRIC_2026-10-11.md",
+      "size_bytes": 4678,
+      "sha256": "34a91cd1d5b4343c570be3742c6da6409154210925f073b9d61d2e68ea66601c"
+    },
+    {
+      "path": "harness/evidence/AMI_L1B_RESEARCH_EDITION_COMPLETION.md",
+      "size_bytes": 13143,
+      "sha256": "06722b25c7b54e1a6700a9efd5c0fed1d804b0f40068fdd9d5296455c219c485"
+    },
+    {
+      "path": "harness/evidence/CHECKLIST_hydrometeor_sensitivity_2026-09-06.md",
+      "size_bytes": 68667,
+      "sha256": "f6b6f530845f59a7a699595813994c754f8308eb59ac8a171badc19113fc906c"
+    },
+    {
+      "path": "harness/evidence/CHECKLIST_pr409_problem_evidence_alignment_2026-10-11.md",
+      "size_bytes": 2001,
+      "sha256": "4a2e58477807fd1c1e9059a963bda0d24511302246995499c94f3f7f2f5687d1"
+    },
+    {
+      "path": "harness/evidence/CURRENT_OBSERVATION_DATA_CONTRACT.md",
+      "size_bytes": 5789,
+      "sha256": "7eea9c5b1c54b6bed86bf774831a2b22a40b2b806759c5d3504684fdc82edc84"
+    },
+    {
+      "path": "harness/evidence/pr409_problem_evidence_alignment_2026-10-11/COORDINATOR_REPORT.md",
+      "size_bytes": 3591,
+      "sha256": "1c772fddbcba263b78986baf58ddf4b1ca09e90957e8c3daaf3d5fccf25e7067"
+    },
+    {
+      "path": "harness/evidence/pr409_problem_evidence_alignment_2026-10-11/GREEN_PROBLEM_SCOPE_REVIEW.md",
+      "size_bytes": 6638,
+      "sha256": "f951c01cac3ddbe448778e39b63dab4989e34c798dd72afc1d809c85a1d9012b"
+    },
+    {
+      "path": "harness/evidence/pr409_problem_evidence_alignment_2026-10-11/RED_PROBLEM_SCOPE_REVIEW.md",
+      "size_bytes": 4488,
+      "sha256": "1d9dd74a9127a2f9828c715c11c0394c7d5674da676bd156749e471a2b5f900c"
+    },
+    {
+      "path": "harness/evidence/pr409_problem_evidence_alignment_2026-10-11/VALIDATION.json",
+      "size_bytes": 968,
+      "sha256": "18c13fc4715381549661ae569d12889e23bd32fa3e7b58dce9692985aa6ff978"
+    },
+    {
+      "path": "wiki/sources/pr409-problem-evidence-alignment-2026-10-11.md",
+      "size_bytes": 1789,
+      "sha256": "94d9655379108ea091f9017c3528192fae022f3ff40d6121d654395abf28dd9f"
+    }
+  ],
+  "execution_or_scientific_code_changed": false,
+  "new_test_or_calculation_run": false,
+  "score_reassessment": false
+}

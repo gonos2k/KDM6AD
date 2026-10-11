@@ -7,6 +7,12 @@ hydrometeor process interactions, through GK2A–RTTOV data assimilation.
 Forecast skill, unattended cycling and a full host-model adjoint are not gates
 for this task. Team work uses Luna (`gpt-5.6-luna`), reasoning `high`.
 
+The [current AMI L1B problem/evidence definition](AMI_L1B_RESEARCH_EDITION_COMPLETION.md)
+separates this upper process-science goal from the implemented fixed-forcing
+single-column T/Q experiment and engineering linkage. The selected numerical
+evidence below retains its dated regimes, builds and limits; completing that
+T/Q workflow does not by itself close all hydrometeor-process research.
+
 Follow-up review on merged main `ca23480b` is tracked in
 [the ordered PR #215 resolution checklist](CHECKLIST_pr215_review_2026-09-19.md).
 V5a execution evidence is retained, but its former NaN-blind comparison and

@@ -1,48 +1,109 @@
-# AMI L1B research-edition completion criteria
+# AMI L1B research edition: problem, evidence and completion
 
-Scope revised by the user on2026-10-11. The current target is a repeatable native/KDM6AD/RTTOV analysis system using **GK2A AMI L1B as its only satellite-observation input**. This document supersedes broader external-observation prerequisites in historical collection checklists; it does not rewrite their executed evidence.
+This is the current interpretation document. It separates the observation scope, upper scientific goal, current numerical subproblem and engineering execution. It changes no physical map, solver, consumer or executed record.
 
-## In-scope completion matrix
+## Four distinct levels
 
-| Requirement | Actual completion evidence | Current limit / next result |
+| Level | Definition | Boundary |
 |---|---|---|
-| L1B source, decoding and calibration | Original file hashes, DN/radiance/BT/DQF, missingness, exact file/calibration pairing and unchanged input checks; production LA reader and PR382–384/398/400 records; PR403 decoded two held-out dates with unchanged reader/calibration | Held-out observation intake is executed; matching native inputs and analysis remain separate. Do not silently replace paired calibration |
-| RTTOV comparison coordinate/configuration | Same-run radiance/native BT replay into bundled KMA coordinate for all K fields; channel/coefficient/SRF provenance and actual finite trials (PR365/400–402) | IR133 upstream product SRF identity remains unverified; describe the current fixed pairing conditionally rather than invent a correction |
-| Time, geolocation and spatial admission | Preserved OBT/scene/planned-UTC/raw numeric fields; GEOS origin and original indices; fixed nominal location, strict DQF0 support and documented point/patch rules | Pixel UTC and footprint identity remain unverified. Declare explicit nominal-time/geometry assumptions and do not promote filename labels to observed UTC |
-| Declared analysis/control configuration | New single-column all-sky helper with fixed physics and T/Q-only initial controls; current native39 layers/pressures and modeled cloud response retained (PR394–397) | No forced cloud seed, pseudo-RH, channel removal or residual-fitted parameter change |
-| Repeatable baseline/analysis/final audit | Normal native rank/launcher and valid selected output evidence; actual KDM→RTTOV→cost/minimization→accepted-state/gradient preservation; bounded failure contracts (PR395–398) | One initial-date native case. New-date observed scenes alone do not demonstrate new-date DA. Stop on quality loss; accepted return, convergence and scientific interpretation remain distinct |
-| Numerical/physical diagnostics | Stored initial/slot state pairs, control/total gradient, saturation/cloud response, water-change decomposition, host/local differences and finite input steps (PR396–402) | Explain the defined measure, reservoir terms and unmeasured boundaries. Algebraic decomposition is not closed flux conservation; a finite step check is not global/high-order validity |
-| Held-out date/scene repeatability | PR403 acquired/decoded preselected July20/21 exact nominal05:56 scenes:18 files,8,555,216 bytes; hashes, point/patch values and original time/navigation attributes retained | Observation intake complete; matching native inputs and same-configuration analyses remain pending. Separate scene dates do not prove independent meteorological events |
-| Prior/error/bias interpretation | Existing1K sigma, zero bias and T/Q prior are explicit exploration assumptions; modeled states and conditional residuals are reported as such | Multiple scene residual statistics can be accumulated, but are not automatically pure observation error R. No mandatory external truth or new B/R architecture gate |
+| User scope | GK2A AMI L1B is the only satellite-observation input; internal research takes priority over deployment | Other satellites/L2 are deferred. This does not itself prescribe seven channels,39 layers,20 seconds or T/Q-only control |
+| Upper scientific goal | Validate differentiable KDM hydrometeor processes, interactions and their connection to GK2A–RTTOV response | Needs claim-matched process/transfer/state/observation evidence; BT fit alone is insufficient |
+| Current subproblem | Fixed-forcing microphysics-constrained single-column initial T/Q variational analysis | Prior-conditional adjustment, not direct cloud/NC/parameter retrieval or full-host4D-Var |
+| Engineering execution | Bind actual run/state/time/column/observation/configuration to analysis, audit and storage | Input gates and synthetic success establish wiring, not new-date scientific results |
 
-## Deferred extensions, not present-edition penalties
+The upper goal remains the [README differentiation contract](../../README.md#scope--differentiation-contract) and [hydrometeor sensitivity checklist](CHECKLIST_hydrometeor_sensitivity_2026-09-06.md). Completion of the narrow T/Q workflow does not complete all process research. Closed selected subcases remain closed.
 
-External SST, MLS temperature/ozone, VIIRS phase, other sensors and L2 products; external independent cloud/height/number truth; cross-sensor verification. Their absence is not a current completion deduction or prerequisite. Required gas/surface/upper-atmosphere inputs remain labeled research assumptions; no external observations are required to use them.
+## Current problem definition
 
-Better BT fit does not independently prove phase, height or NC. Those inferred model states can still be valid research outputs of this edition. Native model initial/boundary data remain necessary for model-connected cases and are not excluded by the satellite-data restriction.
+**AMI L1B 기반, 고정 forcing 미세물리 제약의 단일 연직열 초기 온습도 변분분석.**
 
-## Evaluation accounting
+Given one normal native ocean column, adjust initial dry potential temperature and eligible bottom-level vapor mixing ratio under the declared prior. Apply the prescribed-forcing f64 KDM20s map and all-sky RTTOV, express modeled radiance in the paired KMA BT coordinate, and reduce control-prior plus Huber observation cost. This experiment does not require cloud creation, unique true-state recovery or forecast improvement.
 
-The earlier **56/75 (~75%)** was a broader management score. Keep it as a historical reference, **not an automatically transferred or raised AMI-only score**. A next scope-specific assessment must map the evidence above to explicit weights/completion states before assigning a new number. Do not increase a score merely because requirements moved to the extension phase, files/tests/PRs grew, or nearby pixels were counted as independent events.
+| Quantity | Current role |
+|---|---|
+| Native background x_b | Initial12-field State on39 native levels; a background, not truth |
+| f_b=(rho_m,pii,p,delz) | Fixed supplied moist-air density, Exner, pressure and thickness; not rebuilt or differentiated as forcing during trials |
+| Observation y | Preselected AMI L1B channels10–16 BT point, with frozen valid support |
+| Microphysics parameters alpha_b | Four parameter controls inactive; values fixed |
+| H auxiliaries a_H | Native centers/interfaces, upper reference T/Q, O3/CO2, surface/near-surface inputs, frozen optical dry density, geometry, coefficients/options and BT conversion; declared fixed assets/assumptions |
+| Active initial controls | Additive potential temperature on39 levels; pure-log vapor on eligible positive-background cells in bottom12 levels; actual counts computed per case |
+| Other initial State fields | Fixed at background in C, including QC/NC; their evolved values can change through M |
+| Outputs | Accepted initial/slot States, BT, control/total gradient, costs, quality/support, numerical termination and defined state-change diagnostics |
 
-Current work separates observation intake from model-connected analysis and marks executed, conditional and pending stages explicitly. No production physics, solver, observation support, sigma/bias or prior was changed by this scope revision.
+For active coordinates, mathematically
 
-## User assessment at PR403
+\[
+\theta_{0,k}=\theta_{b,k}+0.8u_{\theta,k},\qquad
+r_{v,0,k}=r_{v,b,k}\exp(0.08u_{q,k}).
+\]
 
-The user subsequently supplied a new8-area,100-point rubric at main6bdcdccc: **78/100**. See the [dated management rubric](AMI_L1B_MANAGEMENT_RUBRIC_2026-10-11.md) for exact weights/scores and evidence limits. This is an explicit new assessment, not an automatic scope-based conversion of56/75. PR404 fixes source-mask capture without assigning additional points; matching new-date native analyses remain pending.
+For positive vapor with epsilon0, the executed f64 CVT uses `r_b+r_b*expm1(0.08*u_q)`, retaining its floating-point behavior. Ineligible/upper vapor controls are inactive; no separate qv clamp-headroom bound is introduced by this prior. There are at most39+12=51 active coordinates. Packed arrays retain inactive coordinates, not extra retrieved quantities. Restricting initial controls to T/Q does not remove intermediate hydrometeor-state sensitivity paths in the full-window state adjoint. Potential-temperature sigma0.8K is not physical-temperature sigma0.8K: with fixed Exner, `delta T=pii*delta theta`. Sources: [control assembly](../../oracle/kdm6/da_single_column.py), [CVT](../../oracle/kdm6/da_cvt.py), [current V4 driver](pr407_native_saved_time_bound_2026-10-11/run_case_analysis.py).
 
-Future raw-patch acquisition/decode uses the versioned [PR404 v3 writer](pr404_l1b_source_mask_2026-10-11/heldout_l1b_v3.py) with a new frozen plan and output directory. The PR403 helper remains immutable executed evidence, not the current source-mask writer. PR404's actual execution was limited to its raw/canvas helpers and an additive sidecar from existing slices; no full acquisition/decode workflow or new-date analysis is claimed.
+### Map, objective and valid domain
 
-The [independent team audit](pr404_l1b_source_mask_2026-10-11/audit_20261011/TEAM_AUDIT_RESOLUTION.md) supersedes the earlier v2 future-writer declaration. V2/actual sidecar evidence stays frozen. V3 adds validated download provenance, stable empty schemas and completion-last publication; only synthetic writer integration was executed, with no real full-scene v3 decode or new-date model analysis.
+\[
+x_0=C(v;x_b),\quad x_1=M^{64}_{20s}(x_0;f_b,\alpha_b),\quad
+\widehat y=\mathcal H_{a_H}(x_1),\quad
+\mathcal H_{a_H}=\Phi_{KMA}\circ\mathcal R_{RTTOV}\circ\mathcal P.
+\]
 
-## Native valid-time follow-up at PR404
+P converts native states to optical/profile inputs and attaches the upper reference. The differentiated map is branch-local f64 DA, not the literal adjoint of operational f32 machine arithmetic. All H auxiliary bindings belong to the problem; writing H(x) does not imply those inputs are independently validated or may change silently.
 
-The [PR405 linkage record](pr405_native_valid_time_2026-10-11/NATIVE_TIME_LINKAGE.json) and [report](pr405_native_valid_time_2026-10-11/COORDINATOR_REPORT.md) correct the existingBC final record09UTC versus interval endpoint12UTC. This file still does not reach July20/21. A matching native valid state may come from an earlier initialization; initialization suffixes are not a forecast-horizon census. New-date cases remainPENDING_NATIVE_INPUT, with no native run selected or analysis executed. The user's same-scale assessment is now79/100, without further points for this follow-up.
+\[
+J(v)=\tfrac12\|v\|^2+\sum_{c\in S}\rho_1\!\left(\frac{\widehat y_c-(y_c+b_c)}{s_c}\right),\quad
+S=\{10,\ldots,16\},\ s_c=1\mathrm K,\ b_c=0,
+\]
+\[
+\rho_1(r)=\begin{cases}\tfrac12r^2,&|r|\le1,\\|r|-\tfrac12,&|r|>1.\end{cases}
+\]
 
-## Case-consumer follow-up at PR406
+Inactive controls remain zero. The1K scale is exploratory residual normalization, not a calibrated observed standard deviation or pure R. This is not Gaussian least squares over every residual. Sources: [observation loss](../../oracle/kdm6/obs/obs_loss.py), [dual minimizer](../../oracle/kdm6/da_dual.py), [single-column helper](../../oracle/kdm6/da_single_column.py).
 
-The [case consumer and checklist](CHECKLIST_pr406_native_case_consumer_2026-10-11.md) separate the case/run/time identifiers from the unchanged historical intake. Its bounded core needs one saved native background plus declared20s forcing; additional host frames are optional diagnostics. The isolated capture adapter reuses the existing analysis and final audit. Actual evidence is a July19 core intake replay and synthetic admission/failure tests, not a new-date analysis. Both July20/21 cases remain pending native input. The79/100 assessment is unchanged.
+Within fixed-support domain D_S, trials that lose quality/support stop; channels are not dropped to lower cost. The implementation is a bounded local L-BFGS run, not a global constrained optimizer over D_S. Report its accepted point and actual gradient/termination, not a global optimum or automatic convergence.
 
-The [PR407 correction](CHECKLIST_pr407_native_saved_time_bound_2026-10-11.md) binds every saved host Times to the independent effective producer start/stop at intake and reload. Current V4 consumes numeric producer clocks, preserving a terminal background's separate local20s slot. Same-date intake verifies unchanged arrays; no new-date M/H/analysis or completion-score increase is claimed. Use V4 for new cases; historical V2 and superseded V3 evidence remain preserved.
+With N active controls, seven residuals provide at most seven independent first-order directions. If N=51, at least44 directions are locally unresolved by observations alone. Prior regularization can give a unique linearized solution without independent satellite determination of every control. Neither that linearized property nor a returned point proves nonlinear global uniqueness across branches. No new SVD/Hessian/identifiability gate is required here.
 
-The [PR408 positive synthetic test](CHECKLIST_pr408_synthetic_capture_success_2026-10-11.md) exercises unchanged V4/capture through real KDM/AD/minimizer/final audit/checkpoint using the existing synthetic H fixture. It establishes one diagnostic success/storage path, not actual RTTOV, convergence or new-date analysis. Local private dependencies are explicit and the public facade skips without them. Both actual new dates and79/100 remain unchanged; no new consumer version or extra time gate is introduced.
+The strong constraint is the chosen local microphysics map. Supplied pressure/rho_m/Exner/metrics are not rebalanced after each T/Q change, so the returned state is not guaranteed to be a balanced host initial field. This does not freeze every derived density: the normalized-dry M path derives dry number density from `rho_m/(1+trial_qv)` and retains that state sensitivity ([runtime](../../oracle/kdm6/runtime.py)); the separate optical rho_d in H is frozen from the background. Rebuilding the supplied forcing from trial state changes the derivative from M_x to M_x+M_f f_x and is a different problem. Full host coupling, writeback/cycling and forecast skill remain separate objectives.
+
+## Completion and claims: three evidence stages
+
+| Stage | Completion evidence | Does not establish |
+|---|---|---|
+| Calculation | Valid case bindings, same objective/support, baseline→analysis→accepted-point audit, state/control/gradient and failure records | Atmospheric truth, convergence or a mechanism |
+| Numerical validation | Existing independent derivatives/transpose checks in declared directions/branches; actual termination and gradient criterion distinguished | All branches, higher derivatives, global optimum or empirical input accuracy |
+| Research interpretation | Explain T/Q→modeled state/hydrometeor→BT changes using selected process records or a claim-matched comparison; repeat declared rules across preselected scenes | Cloud/NC/phase truth or forecast improvement from cost decrease alone |
+
+Another-date execution supports calculation/repeatability. The upper process goal also needs evidence matching the scientific claim. External SST/MLS/VIIRS/L2 absence is not a current penalty, and no new full-host adjoint, solver or B/R architecture is made mandatory.
+
+### Existing evidence and its limits
+
+| Evidence | Supported interpretation | Qualification |
+|---|---|---|
+| [Selected process campaign](CHECKLIST_hydrometeor_sensitivity_2026-09-06.md) | Named rates→applied transfers→later states, selected warm/cold chains, AD/FD and branch/instrumentation records | Selected fixtures/regimes/measures, not all processes or attribution for this native T/Q case |
+| [PR391 state response](pr391_tq_response_2026-10-09/) and [composed cost](pr391_tq_cost_2026-10-09/) | Selected satadj/state responses and a declared weak-cloud H∘M T-direction check | Limited point/branch/support; wet NC/NCCN residuals are not uniformly small and cross-scenario seven-support is not universally valid |
+| [C5 NC→BT record](C5_nc_bt_17digits_result_2026-10-03.json) | Fixed-profile number-direction optical/BT K/FD | Direct optical H probe, not H∘M or an NC retrieval; number-basis/accepted-cost conditions remain limited |
+| [Native number-direction report](REPORT_supported_native_nccn_2026-10-03.md) | Historical isolated native candidate/overlay, one frozen column and two directions | Specific private build/variant/input, not an adopted current build, full process attribution or number truth; unadmitted zero-return probes do not count |
+| [Actual Jul19 analysis](pr397_actual_native_results_2026-10-10/REPORT.md) and [bounded follow-up](pr398_followup_2026-10-10/) | One retained native date's conditional analysis and stored diagnostics | No-cloud/cost/gradient outcomes do not complete upper science; keep dated source/build/auxiliary/outer-harness caveats |
+| [Vertical/neighbor H](pr399_vertical_neighbor_2026-10-10/) and [fixed-input K](pr401_fixed_input_k_response_2026-10-10/) | Context and declared input sensitivities | Endpoints alone do not identify process causes; sensitivity is not measured input error |
+| [PR403 L1B scenes](pr403_l1b_heldout_2026-10-11/) and [V4 admission](pr407_native_saved_time_bound_2026-10-11/) | Other-date observation intake and engineering linkage | Matching real native analyses still pending;70-array replay is one same-date intake, not70 cases |
+| [PR408 synthetic success](pr408_synthetic_capture_success_2026-10-11/COORDINATOR_REPORT.md) | Real KDM/AD/minimizer/audit/checkpoint with synthetic H | No real RTTOV or new-date weather result; strict gradient criterion unmet; full spawned-worker path not exercised |
+
+Historical non-AMI selection/labels remain history, not evidence for new AMI-only scientific claims under the [observation contract](CURRENT_OBSERVATION_DATA_CONTRACT.md). Closed selected checks are mapped, not reopened. State Jacobians alone do not prove named-process attribution. An unchanged M endpoint does not imply M_x=I.
+
+### Optional comparison matched to a claim
+
+T/Q affects H directly through thermodynamics/gases and indirectly through M, latent/state/hydrometeor/size changes. Cost improvement alone cannot separate these routes. If claiming additional observation-space contribution of M, first connect existing matching state/process/BT records. Where missing, a limited diagnostic may compare
+
+\[
+\Delta y_M(v)=H_{a_H}(M(C(v);f_b,\alpha_b))-H_{a_H}(C(v)).
+\]
+
+If the claim concerns sensitivity, distinguish `H_x(M(x0))*M_x(x0)*C_v` from `H_x(x0)*C_v`. Keep identical H auxiliaries, including frozen optical density, and the same valid seven-channel support on both sides; if a diagnostic side is inadmissible, record that outcome rather than shrink support. No-evolution H is a diagnostic counterfactual, not another same-valid-time host forecast. This neither isolates individual processes without their records nor proves forecast skill. It is not an unconditional completion gate, new optimization campaign or comparison executed by this documentation change.
+
+## Actual data dependency and management attribution
+
+The next real case needs native background/forcing/pressure/surface bound to admitted L1B, then analysis/audit/storage and interpretation. July20/21 L1B is decoded but remains PENDING_NATIVE_INPUT. Another valid date may be used first if selected by native availability and admitted QA/time/location before inspecting residuals; preserve the original pending records rather than silently substitute a well-fitting case. Scene date, initialization/lead and independent weather event counts differ.
+
+The first prepared date need not wait for the second. Do not repeat the same archive search/request merely to create another receipt. Never relabel July19 states, extrapolate inadequate BC or silently substitute external models/reanalysis. V4 remains the sole new-case consumer; closed time/mask/provenance and finite-step checks stay closed.
+
+The [78→79/100 rubric](AMI_L1B_MANAGEMENT_RUBRIC_2026-10-11.md) was **proposed in conversation reviews and relayed in user messages**. It is not a user-established scientific performance criterion, correctness probability, coverage fraction or proof of upper-goal completion. Earlier user-owned/user-supplied wording is superseded by this attribution correction; immutable dated execution records retain their bytes. Keep79 as historical management context without rescoring here. The three evidence stages above, not that number alone, govern completion claims.
