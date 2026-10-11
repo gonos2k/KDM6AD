@@ -1,0 +1,64 @@
+{
+  "schema": "pr410_retained_case_artifact_manifest_v1",
+  "base_main": "4ebe3d766cedfd6f85c8e20cb5dd2cae809a38af",
+  "original_input_hashes": {
+    "capture_sha256": "8cfe28df6ef336454cfa595cc70f7a4ddec2e5cd8cbd393c0c7ce8106c904c59",
+    "receipt_sha256": "c49808c0331754eeb9ab9f77a88083119d5834852281db890b2827f6acf6eeca",
+    "existing_diagnostic_sha256": "8dc83999f4759e16140ea3d943ef288bf16c0254554abfb5b663b58222bc35bf"
+  },
+  "files": [
+    {
+      "path": "harness/evidence/pr410_retained_case_claims_2026-10-11/read_retained_case.py",
+      "size_bytes": 8337,
+      "sha256": "1b69152f1cd6610e206e020bf4035fd23be8f35e9cc2b6a539c33f543eb2acaa"
+    },
+    {
+      "path": "harness/evidence/pr410_retained_case_claims_2026-10-11/RESULT.json",
+      "size_bytes": 10383,
+      "sha256": "944d9b23a699e4ad736a01b8c0b5d9630f27099b8c10ebe3d8a52cc6ef4e1d80"
+    },
+    {
+      "path": "harness/evidence/pr410_retained_case_claims_2026-10-11/REPORT.md",
+      "size_bytes": 6512,
+      "sha256": "0d0e6ebca36c5c7c02b525bac367a84bc8060ddc029723fec79207ae3c656b32"
+    },
+    {
+      "path": "harness/evidence/pr410_retained_case_claims_2026-10-11/GREEN_REVIEW.md",
+      "size_bytes": 2835,
+      "sha256": "b0ccbb0981977ebb0bae1c07658ac8be22988ec4f465587949954128b4ae743f"
+    },
+    {
+      "path": "harness/evidence/pr410_retained_case_claims_2026-10-11/RED_REVIEW.md",
+      "size_bytes": 4557,
+      "sha256": "ae77bbeb5a28add2e819e368dd7630f22f120196db93adeab2f845111d61f42e"
+    },
+    {
+      "path": "harness/evidence/AMI_L1B_RESEARCH_EDITION_COMPLETION.md",
+      "size_bytes": 16177,
+      "sha256": "882576d015db4c43ffa14063046065b027825266d322a02bec3fb551e2a62b02"
+    },
+    {
+      "path": "wiki/sources/pr410-retained-case-claims-2026-10-11.md",
+      "size_bytes": 1482,
+      "sha256": "3dccb4120cb42f62bc28548b676854c0982ffb9cb7e1041c5660b055a70a977a"
+    },
+    {
+      "path": "wiki/index.md",
+      "size_bytes": 11313,
+      "sha256": "1bca94f250e181bb305d932e4ce9606d2931fe7d7546d3ed747bcbce834c6c81"
+    },
+    {
+      "path": "wiki/hot.md",
+      "size_bytes": 16486,
+      "sha256": "41582c0420292fd9f2c6056588e08dc262ab96c8c8b7d97d64e8e92050a4f59a"
+    },
+    {
+      "path": "harness/evidence/pr410_retained_case_claims_2026-10-11/VALIDATION.json",
+      "size_bytes": 1330,
+      "sha256": "31d11f6fb882b2f45e89983470953a31a91b632e2a9ca1a97a55996af80f507d"
+    }
+  ],
+  "full_private_arrays_published": false,
+  "original_inputs_or_receipts_rewritten": false,
+  "new_model_H_optimizer_calls": 0
+}

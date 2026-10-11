@@ -109,3 +109,5 @@ date_modified: 2026-10-08
 - [[sources/pr407-native-saved-time-bound-2026-10-11]] — Inclusive saved-host producer-time bound, numeric clock provenance and explicit local-slot separation; same-date intake verified, new-date analyses pending.
 - [[sources/pr408-synthetic-capture-success-2026-10-11]] — One synthetic positive success/storage path using unchanged V4 and real DA; synthetic H, explicit public skip and diagnostic/nonconvergence limits.
 - [[sources/pr409-problem-evidence-alignment-2026-10-11]] — Fixed-forcing T/Q subproblem and upper process-goal evidence mapped separately; reviewer score attribution corrected, no new experiment.
+
+- [[sources/pr410-retained-case-claims-2026-10-11]] — Retained Jul19 actual fit response and source/input-equivalence inference; no new H/M/date run or process-rate claim.

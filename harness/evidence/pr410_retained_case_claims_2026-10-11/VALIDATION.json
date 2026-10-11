@@ -1,0 +1,27 @@
+{
+  "schema": "pr410_retained_result_validation_v1",
+  "base_main": "4ebe3d766cedfd6f85c8e20cb5dd2cae809a38af",
+  "local_postprocessor_exit_code": 0,
+  "executed_source_sha256": "1b69152f1cd6610e206e020bf4035fd23be8f35e9cc2b6a539c33f543eb2acaa",
+  "local_command": "OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OMP_THREAD_LIMIT=1 VECLIB_MAXIMUM_THREADS=1 /private/tmp/KDM6AD-research-rc-20261007/env/bin/python harness/evidence/pr410_retained_case_claims_2026-10-11/read_retained_case.py",
+  "new_KDM_RTTOV_native_optimizer_calls": 0,
+  "closed_derivative_or_Huber_campaigns_rerun": false,
+  "independent_green_private_array_projection_and_zero_checks": true,
+  "red_source_callback_binding_review": true,
+  "local_links_checked": 40,
+  "missing_links": [],
+  "static_ruff_F821_F822_F823": "passed",
+  "executed_postprocessor_source_preserved": true,
+  "production_and_historical_evidence_changed": false,
+  "score_reassessment": false,
+  "branch_ci": "not run yet; local result is separate from CI",
+  "graph": {
+    "prior_unique_ids_preserved": true,
+    "scoped_relationships_present": true,
+    "semantic_nodes": 15,
+    "semantic_edges": 12,
+    "graph_nodes": 18464,
+    "graph_edges": 31556,
+    "limits": "Cached code graph plus scoped retained-case claim semantics, not complete corpus certification; source authoritative"
+  }
+}
