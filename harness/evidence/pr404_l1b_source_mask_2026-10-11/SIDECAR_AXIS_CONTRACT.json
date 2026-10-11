@@ -1,0 +1,109 @@
+{
+  "scope": "Additive self-description of already preserved PR404 SOURCE_MASK_PATCH.npz; no payload/receipt rewrite",
+  "payload_sha256": "5257baba8553247519b74abe088aa24fe6f5829b270f999c59861926e993cad6",
+  "original_payload_sha256": "d24bb3a5d029ec13d1b25d0afdae95637a971d6d304f38bcc73dae461220bd90",
+  "axes": [
+    "patch_row",
+    "patch_column",
+    "channel"
+  ],
+  "shape": [
+    5,
+    5,
+    9
+  ],
+  "date_prefixes": [
+    "20250720",
+    "20250721"
+  ],
+  "channel_axis": [
+    {
+      "index_0based": 0,
+      "channel": "wv063",
+      "ami_channel_id_1based": 8,
+      "valid_dn_bits": 12
+    },
+    {
+      "index_0based": 1,
+      "channel": "wv069",
+      "ami_channel_id_1based": 9,
+      "valid_dn_bits": 13
+    },
+    {
+      "index_0based": 2,
+      "channel": "wv073",
+      "ami_channel_id_1based": 10,
+      "valid_dn_bits": 13
+    },
+    {
+      "index_0based": 3,
+      "channel": "ir087",
+      "ami_channel_id_1based": 11,
+      "valid_dn_bits": 13
+    },
+    {
+      "index_0based": 4,
+      "channel": "ir096",
+      "ami_channel_id_1based": 12,
+      "valid_dn_bits": 13
+    },
+    {
+      "index_0based": 5,
+      "channel": "ir105",
+      "ami_channel_id_1based": 13,
+      "valid_dn_bits": 13
+    },
+    {
+      "index_0based": 6,
+      "channel": "ir112",
+      "ami_channel_id_1based": 14,
+      "valid_dn_bits": 13
+    },
+    {
+      "index_0based": 7,
+      "channel": "ir123",
+      "ami_channel_id_1based": 15,
+      "valid_dn_bits": 13
+    },
+    {
+      "index_0based": 8,
+      "channel": "ir133",
+      "ami_channel_id_1based": 16,
+      "valid_dn_bits": 13
+    }
+  ],
+  "raster_index_base": 0,
+  "raster_rows": [
+    318,
+    319,
+    320,
+    321,
+    322
+  ],
+  "raster_columns": [
+    46,
+    47,
+    48,
+    49,
+    50
+  ],
+  "center": {
+    "row": 320,
+    "column": 48,
+    "canvas_row": 2,
+    "canvas_column": 2
+  },
+  "source_variable": "image_pixel_values",
+  "raw_words_unit": "packed uint16; scaling disabled",
+  "dqf_bits": "bits14\u201315; separate from valid_dn_bits",
+  "source_mask_semantics": "NetCDF4 source masking including fill/missing/validity attributes; excludes image-edge padding",
+  "padding_semantics": "True only for canvas positions outside original raster; those raw words are placeholders, not samples",
+  "array_suffixes": [
+    "raw_words",
+    "source_missing_mask",
+    "padding_mask",
+    "raw_embedded_dqf"
+  ],
+  "original_lat_lon_reference": "PR403 payload date_prefix_patch_latitude_deg and date_prefix_patch_longitude_deg; hash bound above",
+  "no_new_observation_or_model_run": true
+}

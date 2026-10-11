@@ -1,0 +1,50 @@
+{
+  "scope": "Additive independent-team follow-up; oldPR40410-entrymanifest andPR40321-entrymanifest preserved",
+  "files": {
+    "heldout_l1b_v3.py": {
+      "sha256": "b29627c39cbf16952e1be30d8bc1298d31272c9440ab90b898d5f4967772dbd6",
+      "bytes": 38607
+    },
+    "test_decode_publication.py": {
+      "sha256": "aa30c83d593c0fb2431ae55d67bc9069211f87672e3bc8f49b69ee9b06ccb686",
+      "bytes": 8842
+    },
+    "SIDECAR_AXIS_CONTRACT.json": {
+      "sha256": "f3858178e7b17918ebebbe08a28fea1f1e0f13cbaa884d763626b24cbf362df2",
+      "bytes": 2575
+    },
+    "audit_20261011/AUDIT_VALIDATION.json": {
+      "sha256": "510d11cb8a937a77316e91e716a3b9773c17de1785f25d903095cb627d55edc3",
+      "bytes": 1944
+    },
+    "audit_20261011/FINAL_GREEN_REVIEW.md": {
+      "sha256": "4baa567599c47629167283a0727d172068b31f2e2cac059ced925816c5265d20",
+      "bytes": 4784
+    },
+    "audit_20261011/FLOW_RED_AUDIT.md": {
+      "sha256": "532e5929554ea218d6282d7359164f40a7802aec2ad2c4042b45bc5032430adb",
+      "bytes": 4408
+    },
+    "audit_20261011/INDEPENDENT_GREEN_AUDIT.md": {
+      "sha256": "e45530d56a518d77f36ae2354d4d72daf66703f871ca2f623f06d97f220b2402",
+      "bytes": 6122
+    },
+    "audit_20261011/LOCAL_TESTS.log": {
+      "sha256": "40a6b89911d4a62dd48f828f487fcab2ac54e5e7e8e29c7bc79ecf479295b725",
+      "bytes": 99
+    },
+    "audit_20261011/RAW_RED_AUDIT.md": {
+      "sha256": "1331a1f2a3752acb22f55411a4db55d1602c764e0cb70cecf102e668aa2f5495",
+      "bytes": 4600
+    },
+    "audit_20261011/TEAM_AUDIT_RESOLUTION.md": {
+      "sha256": "a7592a714c341c926c9f07557dce78f54b1bb5f2b53485fe402f635fa0e62bb6",
+      "bytes": 3949
+    },
+    "audit_20261011/V2_FINDINGS_SUPERSEDED.md": {
+      "sha256": "6ad2bc2b59825a14621c15972ab69dbf6a10b10b079c79b3963655575c027e4c",
+      "bytes": 6572
+    }
+  },
+  "self_excluded": true
+}

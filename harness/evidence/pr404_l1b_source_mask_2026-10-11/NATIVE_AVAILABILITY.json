@@ -1,0 +1,123 @@
+{
+  "schema": "pr404_matching_native_availability_v1",
+  "audited_utc_date": "2026-10-11",
+  "scope": {
+    "canonical_case_root": "/Users/yhlee/KDM6AD-k/host/lc05_da_run",
+    "existing_receipts_used": [
+      "harness/evidence/pr400_input_compatibility_2026-10-10/IC_BC_LINEAGE.json",
+      "harness/evidence/NATIVE_model_readiness_2026-10-07.json",
+      "harness/evidence/pr398_spatial_representativeness_2026-10-10/NATIVE_5KM_AVAILABILITY_v3.json",
+      "harness/evidence/pr397_actual_native_results_2026-10-10/NATIVE_COMPLETION.json"
+    ],
+    "recursive_full_device_search": false,
+    "forecast_state_arrays_read": false,
+    "model_or_reanalysis_acquisition": false,
+    "model_run": false,
+    "original_provider_question_repeated": false,
+    "additional_original_case_root_checked": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS",
+    "exact_date_filename_patterns_checked": [
+      "met_em.d01.2025-07-20*",
+      "met_em.d01.2025-07-21*",
+      "wrfout_d01_2025-07-20*",
+      "wrfout_d01_2025-07-21*",
+      "wrfinput_d01_2025-07-20*",
+      "wrfinput_d01_2025-07-21*",
+      "wrfbdy_d01_2025-07-20*",
+      "wrfbdy_d01_2025-07-21*"
+    ],
+    "exact_date_filename_pattern_matches": {
+      "2025-07-20": 0,
+      "2025-07-21": 0
+    }
+  },
+  "canonical_july19_inputs": {
+    "initial_condition": {
+      "path": "/Users/yhlee/KDM6AD-k/host/lc05_da_run/wrfinput_d01",
+      "resolved_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfinput_d01",
+      "symlink": true,
+      "size_bytes": 374429080,
+      "mtime_ns": 1787537696800157408,
+      "existing_receipt_sha256": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+      "times": [
+        "2025-07-19_00:00:00"
+      ],
+      "source_metadata_status": "read_from_existing_receipts_no_state_arrays_read"
+    },
+    "boundary_condition": {
+      "path": "/Users/yhlee/KDM6AD-k/host/lc05_da_run/wrfbdy_d01",
+      "resolved_path": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfbdy_d01",
+      "symlink": true,
+      "size_bytes": 103922656,
+      "mtime_ns": 1781770425000000000,
+      "existing_receipt_sha256": null,
+      "times": [
+        "2025-07-19_00:00:00",
+        "2025-07-19_03:00:00",
+        "2025-07-19_06:00:00",
+        "2025-07-19_09:00:00"
+      ],
+      "coverage_through_utc": "2025-07-19T09:00:00Z",
+      "source_metadata_status": "read_from_existing_receipts_no_boundary_arrays_read"
+    },
+    "meteorological_provider_and_original_preprocessing": "UNVERIFIED_IN_PR400"
+  },
+  "retained_native_inventory": {
+    "receipt": "harness/evidence/pr398_spatial_representativeness_2026-10-10/NATIVE_5KM_AVAILABILITY_v3.json",
+    "inventory_root": "/Users/yhlee/KDM6AD-k/host",
+    "forecast_path_count": 84,
+    "unique_forecast_suffixes": [
+      "202507190000",
+      "202507190000.clobbered-pr1b-20260716"
+    ],
+    "ordinary_forecast_suffix_count": 83,
+    "quarantined_clobbered_suffix_count": 1,
+    "inventory_scope": "Existing bounded inventory reused; exhaustive scan not repeated.",
+    "independent_initialization_date_found": false,
+    "global_archive_absence_claim": false
+  },
+  "recent_separate_valid_native_run": {
+    "receipt": "harness/evidence/pr397_actual_native_results_2026-10-10/NATIVE_COMPLETION.json",
+    "run_id": "mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148",
+    "saved_times": [
+      "2025-07-19_05:55:40",
+      "2025-07-19_05:56:00",
+      "2025-07-19_05:56:20",
+      "2025-07-19_05:56:40",
+      "2025-07-19_05:57:00",
+      "2025-07-19_05:57:20",
+      "2025-07-19_05:57:40",
+      "2025-07-19_05:58:00"
+    ],
+    "input_initialization_date": "2025-07-19",
+    "science_accepted": false,
+    "can_be_relabelled_july20_or21": false
+  },
+  "other_date_candidates": [
+    {
+      "date": "2023-02-16",
+      "source": "harness/evidence/pr400_input_compatibility_2026-10-10/IC_BC_LINEAGE.json",
+      "grid_dimensions": "249x199",
+      "current_grid_dimensions": "282x234",
+      "status": "WRONG_START_DATE_AND_GRID_NOT_MATCHING_NATIVE_IC"
+    }
+  ],
+  "availability_result": {
+    "july20_original_native_ic_bc_or_state_found_in_inspected_scope": false,
+    "july21_original_native_ic_bc_or_state_found_in_inspected_scope": false,
+    "status": "NO_MATCHING_INPUTS_IN_NAMED_CANONICAL_ROOTS_OR_REUSED_RETAINED_INVENTORY",
+    "interpretation": "Scope-bounded non-match: direct canonical July19 IC/BC and resolved SS case root contain no exact Jul20/21 source/state filenames; bounded existing forecast receipt has only July19 initialization. Not global archive absence.",
+    "observation_only_l1b_stage_is_blocked": false,
+    "same_date_native_baseline_analysis_final_audit_are_blocked": true,
+    "substituted_external_model_or_reanalysis": false
+  },
+  "open_lineage": {
+    "original_provider_path_request": "already_outstanding_not_repeated",
+    "new_native_cases_require": "matching original IC/BC/state artifacts with verified source, date, grid and processing lineage, or an explicitly identified series authorized by the project owner"
+  },
+  "management_rubric": {
+    "score": "78/100",
+    "source": "user assessment conveyed by project owner",
+    "computed_by_this_audit": false,
+    "automatic_change_applied": false
+  }
+}
