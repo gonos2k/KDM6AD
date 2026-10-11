@@ -1,0 +1,94 @@
+{
+  "authoritative_wrf_source": {
+    "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/share/set_timekeeping.F",
+    "registry_path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/Registry/Registry.EM_COMMON",
+    "registry_sha256": "6741720cba12ad7ee1c172339bd8def5973b22f4e88ab9cd152f3ba3df456e37",
+    "sha256": "89089f2b2c0f3e8b7ee58a4bdf702fbce498b62507a4ba056770cfbe1aa5e26f"
+  },
+  "case_id": "pr407_v2_exact_jul20_stop_counterexample",
+  "declared_case": {
+    "background_valid_time": "2025-07-20_05:55:40",
+    "dt_s": 20,
+    "initial_time": "2025-07-19_00:00:00",
+    "nominal_obs_model_time": "2025-07-20_05:56:00",
+    "obs_time": 1
+  },
+  "effective_wrf_stop": {
+    "background_excess_seconds": 107680,
+    "basis": "run_* duration takes precedence over end_*",
+    "stop_time": "2025-07-19_00:01:00"
+  },
+  "evidence_type": "SYNTHETIC_NETCDF_INTAKE_REPRODUCTION",
+  "fixture_generator_source": {
+    "path": "harness/evidence/pr406_native_case_consumer_2026-10-11/test_native_case_intake.py",
+    "sha256": "12c93164f6b7a39bb25ab1b81cf67169fbe746fc4924c8469f1b6243e6a15b87"
+  },
+  "producer": {
+    "actual_proc_grid": "1x1",
+    "experiment_valid": true,
+    "model_completed": true,
+    "mp_physics": "337",
+    "namelist_controls": {
+      "run_days": 0,
+      "run_hours": 0,
+      "run_minutes": 1,
+      "run_seconds": 0,
+      "start_day": 19,
+      "start_hour": 0,
+      "start_minute": 0,
+      "start_month": 7,
+      "start_second": 0,
+      "start_year": 2025,
+      "time_step": 20
+    },
+    "run_directory_basename": "pr407_synthetic_jul19_start_runmin1",
+    "run_id": "pr407_synthetic_jul19_start_runmin1",
+    "run_identity_exit_code": 0
+  },
+  "schema": "pr407_v2_stop_bound_counterexample_v1",
+  "scope": {
+    "H_calls": 0,
+    "M_calls": 0,
+    "acquisition": 0,
+    "native_or_boundary_arrays": false,
+    "optimizer_calls": 0,
+    "private_P8W_and_upper_reference_assets_used_by_v2_intake": true,
+    "real_WRF_run": false,
+    "real_newdate_input": false
+  },
+  "synthetic_forecast": {
+    "Times": [
+      "2025-07-20_05:55:40"
+    ],
+    "USE_THETA_M": 1,
+    "dimensions": {
+      "DateStrLen": 19,
+      "Time": 1,
+      "bottom_top": 39,
+      "bottom_top_stag": 40,
+      "south_north": 2,
+      "west_east": 3
+    },
+    "filename": "klfs_lc05_fcst.202507190000",
+    "selected_column": {
+      "i": 2,
+      "j": 1
+    },
+    "test_generator": "test_native_case_intake.make_forecast"
+  },
+  "v2_executable_source": {
+    "path": "harness/evidence/pr406_native_case_consumer_2026-10-11/intake_native_case_v2.py",
+    "sha256": "f87bb171c792623e4d66be70186e18de2e39a84521b8679352ac27b3b751b1d6"
+  },
+  "v2_intake_result": {
+    "full_case_json_sha256": "66d170cf11a8345d07e7d535b0319f61dc12f5fbfe6ce8b999ff60783fd42f72",
+    "npz_array_count": 71,
+    "selected_background_time": "2025-07-20_05:55:40",
+    "selected_times": [
+      "2025-07-20_05:55:40"
+    ],
+    "status": "READY_CORE_NATIVE_INTAKE",
+    "synthetic_forecast_size_bytes": 47017,
+    "synthetic_namelist_sha256": "f762fd3bd6d68cd2e4d553207fde7097adfc25c1bcc106effab2da2ad10b06f6"
+  }
+}

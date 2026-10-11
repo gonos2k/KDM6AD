@@ -1,0 +1,140 @@
+{
+  "analysis": {
+    "all_sky": true,
+    "channel_ids_1based": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "control_fields": [
+      "th",
+      "qv"
+    ],
+    "dt_s": 20,
+    "ncmin_land": 10.0,
+    "ncmin_sea": 10.0,
+    "nominal_obs_model_time": "2025-07-21_05:56:00",
+    "obs_time": 1,
+    "require_source_dqf_zero": true,
+    "step_to_output_time": false,
+    "use_adaptive_time_step": false
+  },
+  "analysis_executed": false,
+  "case_contract": {
+    "analysis": {
+      "all_sky": true,
+      "channel_ids_1based": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "control_fields": [
+        "th",
+        "qv"
+      ],
+      "dt_s": 20,
+      "ncmin_land": 10.0,
+      "ncmin_sea": 10.0,
+      "nominal_obs_model_time": "2025-07-21_05:56:00",
+      "obs_time": 1,
+      "require_source_dqf_zero": true,
+      "step_to_output_time": false,
+      "use_adaptive_time_step": false
+    },
+    "case_id": "PR406_AMI_20250721_0556_V4",
+    "native": {
+      "background_valid_time": "2025-07-21_05:55:40",
+      "column": {
+        "coordinate_tolerance_deg": 5e-05,
+        "expected_latitude_deg": 35.4156608581543,
+        "expected_longitude_deg": 122.143310546875,
+        "i": 48,
+        "j": 86
+      },
+      "completion_receipt_path": null,
+      "completion_receipt_sha256": null,
+      "diagnostic_times": [],
+      "initial_time": null,
+      "run_dir": null,
+      "run_id": null
+    },
+    "observation": {
+      "nearest_pixel": {
+        "column": 48,
+        "latitude_deg": 35.41925069326254,
+        "longitude_deg": 122.13724164654832,
+        "row": 320
+      },
+      "nominal_obs_model_time": "2025-07-21_05:56:00",
+      "nominal_slot_obt": "202507210556",
+      "observed_pixel_utc": null,
+      "scene_date": "20250721",
+      "source_metadata_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr403_l1b_heldout_20261011/l1bheldout20261011c/DECODE_RECEIPT.json",
+      "source_metadata_sha256": "b96eccc6762d01cd1e5dfbe4a44bf7f40a0c9eab9e6477f3b4d443579a190760",
+      "source_payload_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr403_l1b_heldout_20261011/l1bheldout20261011c/FIXED_POINT_PATCH.npz",
+      "source_payload_sha256": "d24bb3a5d029ec13d1b25d0afdae95637a971d6d304f38bcc73dae461220bd90",
+      "source_result_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr403_l1b_heldout_2026-10-11/RESULT.json",
+      "source_result_sha256": "3182efa96388e650e03e249c5aa0ca775d1d7935cc2a323542904b6b3b1c7268",
+      "time_assumption": "NOMINAL_FILENAME_TIME_AS_MODEL_UTC_RESEARCH_MODE"
+    },
+    "output": {
+      "manifest_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr407_native_saved_time_bound_2026-10-11/PENDING_20250721_V4.json",
+      "private_npz_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr407_native_saved_time_bound_20261011/private/core_20250721_v4.npz"
+    },
+    "schema": "kdm6ad_native_case_v4"
+  },
+  "case_id": "PR406_AMI_20250721_0556_V4",
+  "case_json": {
+    "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr407_native_saved_time_bound_2026-10-11/cases/CASE_20250721_V4.json",
+    "sha256": "14fceb340a1e34251d60918d5eeb08db4aa1b9f65e2246b1a433b9d5d918afd8"
+  },
+  "case_schema": "kdm6ad_native_case_v4",
+  "manifest_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr407_native_saved_time_bound_2026-10-11/PENDING_20250721_V4.json",
+  "native_request": {
+    "background_valid_time": "2025-07-21_05:55:40",
+    "column": {
+      "coordinate_tolerance_deg": 5e-05,
+      "expected_latitude_deg": 35.4156608581543,
+      "expected_longitude_deg": 122.143310546875,
+      "i": 48,
+      "j": 86
+    },
+    "diagnostic_times_requested": [],
+    "initial_time": null,
+    "nominal_obs_model_time": "2025-07-21_05:56:00",
+    "run_dir": null,
+    "run_id": null
+  },
+  "npz": null,
+  "observation": {
+    "nearest_pixel": {
+      "column": 48,
+      "latitude_deg": 35.41925069326254,
+      "longitude_deg": 122.13724164654832,
+      "row": 320
+    },
+    "nominal_obs_model_time": "2025-07-21_05:56:00",
+    "nominal_slot_obt": "202507210556",
+    "observed_pixel_utc": null,
+    "scene_date": "20250721",
+    "source_metadata_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr403_l1b_heldout_20261011/l1bheldout20261011c/DECODE_RECEIPT.json",
+    "source_metadata_sha256": "b96eccc6762d01cd1e5dfbe4a44bf7f40a0c9eab9e6477f3b4d443579a190760",
+    "source_payload_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr403_l1b_heldout_20261011/l1bheldout20261011c/FIXED_POINT_PATCH.npz",
+    "source_payload_sha256": "d24bb3a5d029ec13d1b25d0afdae95637a971d6d304f38bcc73dae461220bd90",
+    "source_result_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr403_l1b_heldout_2026-10-11/RESULT.json",
+    "source_result_sha256": "3182efa96388e650e03e249c5aa0ca775d1d7935cc2a323542904b6b3b1c7268",
+    "time_assumption": "NOMINAL_FILENAME_TIME_AS_MODEL_UTC_RESEARCH_MODE"
+  },
+  "pending_reason": "case has no selected native run ID/directory/initial time",
+  "private_npz_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr407_native_saved_time_bound_20261011/private/core_20250721_v4.npz",
+  "schema": "kdm6ad_native_case_intake_v4",
+  "status": "PENDING_NATIVE_INPUT"
+}

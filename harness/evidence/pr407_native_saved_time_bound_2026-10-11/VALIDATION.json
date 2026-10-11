@@ -1,0 +1,47 @@
+{
+  "schema": "pr407_local_validation_v1",
+  "basis_main": "2d7d1000",
+  "environment": {
+    "python": "3.10.11",
+    "numpy": "2.2.6",
+    "netCDF4": "1.7.4",
+    "torch": "2.13.0",
+    "pytest": "9.1.1"
+  },
+  "focused_cases": 41,
+  "focused_breakdown": {
+    "intake_v4": 17,
+    "time_contract_v4": 15,
+    "adapter": 8,
+    "exact_counterexample": 1
+  },
+  "focused_result": "41 passed in1.60s",
+  "portable_cases": 15,
+  "portable_breakdown": {
+    "pure_time": 14,
+    "synthetic_netcdf_guard": 1
+  },
+  "portable_cases_are_repeated_subset": true,
+  "combined_test_executions": 56,
+  "unique_cases": 41,
+  "intake_v4_sha256": "e1449548820510edc4fb213872df4446405058a318f8b99cd811d8470a139ae5",
+  "time_policy": "Inclusive producer range for every saved host Times; local20s slot not capped",
+  "clock_source": "hash-bound effective numeric namelist, not forecast last Times",
+  "scope": "ActualJuly19BG-onlyintake and synthetictests; no native/M/H/K/optimizer/acquisition",
+  "newdate_analysis_executed": false,
+  "management_score": "user-owned79/100 unchanged",
+  "focused_command": "OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OMP_THREAD_LIMIT=1 VECLIB_MAXIMUM_THREADS=1 PYTHONPATH=oracle /private/tmp/KDM6AD-research-rc-20261007/env/bin/python -m pytest -q harness/evidence/pr407_native_saved_time_bound_2026-10-11/test_native_case_intake_v4.py harness/evidence/pr407_native_saved_time_bound_2026-10-11/test_saved_time_contract_v4.py harness/evidence/pr407_native_saved_time_bound_2026-10-11/test_case_analysis_adapter.py harness/evidence/pr407_native_saved_time_bound_2026-10-11/test_saved_time_counterexample.py",
+  "public_command": "same environment; python -m pytest -q oracle/tests/test_native_saved_time_contract.py oracle/tests/test_native_saved_time_intake_guard.py",
+  "lint": "Ruff passed",
+  "diff_check": "passed",
+  "CI": "reported separately at PR head; private execution/native builds not implied",
+  "graph_refresh": {
+    "prior_unique_ids_preserved": true,
+    "scoped_relationships_present": true,
+    "semantic_nodes": 23,
+    "semantic_edges": 20,
+    "graph_nodes": 18302,
+    "graph_edges": 31421,
+    "limits": "Cached structural graph plus scoped Green/Red/root evidence semantics; source authoritative, not complete corpus certification"
+  }
+}
