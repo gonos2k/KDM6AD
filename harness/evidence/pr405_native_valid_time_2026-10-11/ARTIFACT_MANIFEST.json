@@ -1,0 +1,38 @@
+{
+  "scope": "Metadata-only temporal linkage/correction; no model/weather arrays",
+  "files": {
+    "COORDINATOR_REPORT.md": {
+      "sha256": "920bc4e738c1e8186b97552795c5d5581627f97ce1669e0d232d0e232fa355f0",
+      "bytes": 4431
+    },
+    "GREEN_VALID_TIME_REVIEW.md": {
+      "sha256": "a53015ecb78d0a234d7b544e116664a465095330abacba77a504602f2f728205",
+      "bytes": 6599
+    },
+    "NATIVE_TIME_LINKAGE.json": {
+      "sha256": "c6bf401b459779564a0a6d4fb72afbf0be8969950b6ea3282388b24816ea2014",
+      "bytes": 5194
+    },
+    "RED_BC_REVIEW.md": {
+      "sha256": "7e9099c8b4525f4415d17f9f5864d65c292e29decf06d1b7c3ca90777b2a60a2",
+      "bytes": 4218
+    },
+    "RED_TIME_LINKAGE_REVIEW.md": {
+      "sha256": "9e62e0521bfd11faaf5a46dd31eecb5cd8446c42f0bd25aa9cbb8478fb2c58e6",
+      "bytes": 2470
+    },
+    "VALIDATION.json": {
+      "sha256": "bef32c70b82528a8a00a0ce1da54f2daedbe3ac178aef71f48306582b0b7cfbd",
+      "bytes": 982
+    },
+    "native_time_linkage.py": {
+      "sha256": "c35832f0bc6b798c48021db841290234f2b9f54e857a1722bfb9e49a69aa614a",
+      "bytes": 6108
+    },
+    "test_native_time_linkage.py": {
+      "sha256": "c0fcdcaec84026febcc6e335cb3ae40442f2c1024695f6969f41295a3c6156df",
+      "bytes": 2936
+    }
+  },
+  "self_excluded": true
+}

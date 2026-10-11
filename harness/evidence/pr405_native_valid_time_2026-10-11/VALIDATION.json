@@ -1,0 +1,21 @@
+{
+  "pytest_passed": 8,
+  "scope": "Temporal metadata counterexamples only; no writer/physics rerun or native analysis",
+  "command": "OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OMP_THREAD_LIMIT=1 VECLIB_MAXIMUM_THREADS=1 /private/tmp/KDM6AD-research-rc-20261007/env/bin/python -m pytest -q harness/evidence/pr405_native_valid_time_2026-10-11/test_native_time_linkage.py",
+  "environment": {
+    "python": "3.10.11",
+    "netCDF4": "1.7.4",
+    "pytest": "9.1.1"
+  },
+  "ruff": "PASS both new Python files",
+  "py_compile": "PASS",
+  "JSON": "PASS",
+  "execution": "One metadata read of canonical IC Times andBC Times/THISBDYTIME/NEXTBDYTIME; no weather/state arrays or forecast files read",
+  "target_statuses": [
+    "PENDING_NATIVE_INPUT",
+    "PENDING_NATIVE_INPUT"
+  ],
+  "newday_analyses": 0,
+  "reviews": "Green andRed verifiedintervals/source/horizons andconditionaltime model-linkage assumptions",
+  "management_score": "User79/100 same100point rubric, no extra score assigned"
+}

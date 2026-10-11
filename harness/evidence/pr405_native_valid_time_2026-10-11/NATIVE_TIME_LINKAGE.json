@@ -1,0 +1,149 @@
+{
+  "basis_main": "cc0a2edb",
+  "script_sha256": "c35832f0bc6b798c48021db841290234f2b9f54e857a1722bfb9e49a69aa614a",
+  "IC_time_metadata": {
+    "path": "/Users/yhlee/KDM6AD-k/host/lc05_da_run/wrfinput_d01",
+    "resolved": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfinput_d01",
+    "size_bytes": 374429080,
+    "mtime_ns": 1787537696800157408,
+    "variables_read": {
+      "Times": [
+        "2025-07-19_00:00:00"
+      ]
+    },
+    "whole_file_hash": "NOT_COMPUTED; time metadata only"
+  },
+  "BC_time_metadata": {
+    "path": "/Users/yhlee/KDM6AD-k/host/lc05_da_run/wrfbdy_d01",
+    "resolved": "/Users/yhlee/KDM6AD+/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfbdy_d01",
+    "size_bytes": 103922656,
+    "mtime_ns": 1781770425000000000,
+    "variables_read": {
+      "Times": [
+        "2025-07-19_00:00:00",
+        "2025-07-19_03:00:00",
+        "2025-07-19_06:00:00",
+        "2025-07-19_09:00:00"
+      ],
+      "md___thisbdytimee_x_t_d_o_m_a_i_n_m_e_t_a_data_": [
+        "2025-07-19_00:00:00",
+        "2025-07-19_03:00:00",
+        "2025-07-19_06:00:00",
+        "2025-07-19_09:00:00"
+      ],
+      "md___nextbdytimee_x_t_d_o_m_a_i_n_m_e_t_a_data_": [
+        "2025-07-19_03:00:00",
+        "2025-07-19_06:00:00",
+        "2025-07-19_09:00:00",
+        "2025-07-19_12:00:00"
+      ]
+    },
+    "whole_file_hash": "NOT_COMPUTED; time metadata only"
+  },
+  "boundary_intervals": [
+    {
+      "start_inclusive": "2025-07-19_00:00:00",
+      "end_exclusive": "2025-07-19_03:00:00"
+    },
+    {
+      "start_inclusive": "2025-07-19_03:00:00",
+      "end_exclusive": "2025-07-19_06:00:00"
+    },
+    {
+      "start_inclusive": "2025-07-19_06:00:00",
+      "end_exclusive": "2025-07-19_09:00:00"
+    },
+    {
+      "start_inclusive": "2025-07-19_09:00:00",
+      "end_exclusive": "2025-07-19_12:00:00"
+    }
+  ],
+  "correction": "09UTC is the last boundary record START; its NEXTBDYTIME interval endpoint is12UTC. No boundary advance at/past12 is certified.",
+  "L1B_result_sha256": "3182efa96388e650e03e249c5aa0ca775d1d7935cc2a323542904b6b3b1c7268",
+  "case_links": [
+    {
+      "observation_date": "20250720",
+      "nominal_slot_OBT": "202507200556",
+      "time_assumption": "NOMINAL_FILENAME_TIME_AS_MODEL_UTC_RESEARCH_MODE; not measured pixel UTC",
+      "observed_pixel_UTC": null,
+      "analysis_channel_ids": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "nearest_pixel": {
+        "row": 320,
+        "column": 48,
+        "latitude_deg": 35.41925069326254,
+        "longitude_deg": 122.13724164654832
+      },
+      "existing_IC_candidate_time_assessment": {
+        "initial_time": "2025-07-19_00:00:00",
+        "target_nominal_time_assumed_model_UTC": "2025-07-20_05:56:00",
+        "forecast_lead_seconds": 107760,
+        "local_background_valid_time_required": "2025-07-20_05:55:40",
+        "local_slot_valid_time_required": "2025-07-20_05:56:00",
+        "existing_8frame_intake_last_time_required": "2025-07-20_05:58:00",
+        "boundary_supports_run_to_target": false,
+        "boundary_supports_existing_8frame_intake": false,
+        "advance_from_target_supported_by_current_BC": false,
+        "seconds_after_last_boundary_interval_end": 64560,
+        "same_initialization_date_required": false
+      },
+      "selected_native_run_id": null,
+      "selected_native_state_forcing_pressure_surface": null,
+      "status": "PENDING_NATIVE_INPUT",
+      "analysis_executed": false
+    },
+    {
+      "observation_date": "20250721",
+      "nominal_slot_OBT": "202507210556",
+      "time_assumption": "NOMINAL_FILENAME_TIME_AS_MODEL_UTC_RESEARCH_MODE; not measured pixel UTC",
+      "observed_pixel_UTC": null,
+      "analysis_channel_ids": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "nearest_pixel": {
+        "row": 320,
+        "column": 48,
+        "latitude_deg": 35.41925069326254,
+        "longitude_deg": 122.13724164654832
+      },
+      "existing_IC_candidate_time_assessment": {
+        "initial_time": "2025-07-19_00:00:00",
+        "target_nominal_time_assumed_model_UTC": "2025-07-21_05:56:00",
+        "forecast_lead_seconds": 194160,
+        "local_background_valid_time_required": "2025-07-21_05:55:40",
+        "local_slot_valid_time_required": "2025-07-21_05:56:00",
+        "existing_8frame_intake_last_time_required": "2025-07-21_05:58:00",
+        "boundary_supports_run_to_target": false,
+        "boundary_supports_existing_8frame_intake": false,
+        "advance_from_target_supported_by_current_BC": false,
+        "seconds_after_last_boundary_interval_end": 150960,
+        "same_initialization_date_required": false
+      },
+      "selected_native_run_id": null,
+      "selected_native_state_forcing_pressure_surface": null,
+      "status": "PENDING_NATIVE_INPUT",
+      "analysis_executed": false
+    }
+  ],
+  "calls": {
+    "native": 0,
+    "M": 0,
+    "H_K": 0,
+    "optimizer": 0,
+    "acquisition": 0
+  },
+  "limits": "No state/boundary arrays or forecast files read. Cached initialization suffix counts are not valid-time horizon evidence. No global archive-absence claim."
+}
