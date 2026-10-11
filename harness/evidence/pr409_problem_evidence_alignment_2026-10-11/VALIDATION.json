@@ -1,0 +1,21 @@
+{
+  "schema": "pr409_document_validation_v1",
+  "local_link_targets_checked": 30,
+  "missing_local_link_targets": [],
+  "changed_scientific_or_execution_code": false,
+  "new_tests_or_mathematical_examples": false,
+  "native_M_H_optimizer_runs": false,
+  "score_reassessment": false,
+  "scope": "Source/evidence/document comparison only; existing execution artifacts not reproduced",
+  "source_basis": "User reviewa42024a8; current worktree8427d547 includes PR408 synthetic evidence only",
+  "graph_refresh": {
+    "prior_unique_ids_preserved": true,
+    "scoped_relationships_present": true,
+    "semantic_nodes": 22,
+    "semantic_edges": 16,
+    "graph_nodes": 18403,
+    "graph_edges": 31510,
+    "limits": "Cached structural graph plus scoped Green/Red/root evidence semantics; source authoritative, not complete corpus certification"
+  },
+  "verification": "Source/evidence review, existing local-link checks and git diff --check; no new tests or calculations"
+}

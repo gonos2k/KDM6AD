@@ -1,0 +1,50 @@
+{
+  "schema": "pr409_addendum_artifact_manifest_v1",
+  "basis_main": "8427d547",
+  "supersedes_current_document_hashes_only_from_revision": "bf20ee035d017e63ddde30303d98c0bd2dee96fa",
+  "historical_manifest_preserved": "harness/evidence/pr409_problem_evidence_alignment_2026-10-11/ARTIFACT_MANIFEST.json",
+  "files": [
+    {
+      "path": "harness/evidence/AMI_L1B_RESEARCH_EDITION_COMPLETION.md",
+      "size_bytes": 15735,
+      "sha256": "99e74b7eb894b4a9b032c0ce62f1d8ca916b2d3096695ac8a1bcbcf47d129497"
+    },
+    {
+      "path": "wiki/sources/pr409-problem-evidence-alignment-2026-10-11.md",
+      "size_bytes": 2492,
+      "sha256": "99e064951bb0550cc60e2a448eb6f120f07d41131efce35bfce1063c4a59ffe2"
+    },
+    {
+      "path": "harness/evidence/pr409_problem_evidence_alignment_2026-10-11/ADDENDUM_REPORT.md",
+      "size_bytes": 3721,
+      "sha256": "fab6962b939bfcf4726b7f458deec7275faa35eeebceb8fe9bd1da7986c8f5df"
+    },
+    {
+      "path": "harness/evidence/pr409_problem_evidence_alignment_2026-10-11/ADDENDUM_GREEN_REVIEW.md",
+      "size_bytes": 2739,
+      "sha256": "255f4996062f99721ff2f18bab4e2392ebaa4a93c66060541de4aa0535f60fc1"
+    },
+    {
+      "path": "harness/evidence/pr409_problem_evidence_alignment_2026-10-11/ADDENDUM_RED_REVIEW.md",
+      "size_bytes": 3336,
+      "sha256": "01dcb47b6068886b71ddb2656c03f66c3de9d9dac644e450e656f23266859301"
+    },
+    {
+      "path": "harness/evidence/pr409_problem_evidence_alignment_2026-10-11/ADDENDUM_VALIDATION.json",
+      "size_bytes": 1081,
+      "sha256": "873c58824d1b46728ff29838deec35cf846f340e83fe468a615e309e83c0baa5"
+    }
+  ],
+  "execution_or_scientific_code_changed": false,
+  "new_test_or_calculation_run": false,
+  "score_reassessment": false,
+  "followup_audit": {
+    "reviewed_revision": "0d9cd16674920927c4fab0a8bdbd38ddfb9ad16f",
+    "previous_addendum_manifest_available_at_commit": "0d9cd16674920927c4fab0a8bdbd38ddfb9ad16f",
+    "findings": "One P3 Huber-delta unit wording corrected; real-arithmetic permutation statement clarified without raw-bit guarantee",
+    "original_validation_record_preserved": true,
+    "local_links_checked": 29,
+    "missing_links": [],
+    "new_tests_or_model_calculations": false
+  }
+}

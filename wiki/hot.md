@@ -6,6 +6,7 @@ date_modified: 2026-07-14
 # Hot Cache
 
 ## Current Focus
+- [[sources/pr409-problem-evidence-alignment-2026-10-11]] — Current T/Q estimation, upper process science and engineering evidence separated; reviewer-management79 is not a scientific completion criterion.
 - [[sources/pr408-synthetic-capture-success-2026-10-11]] — One positive synthetic-H case traverses real KDM/AD/minimizer/final audit/checkpoint; V4 unchanged, actual new-date RTTOV analysis still pending.
 - [[sources/pr407-native-saved-time-bound-2026-10-11]] — Saved host Times now bounded by independent producer stop; terminal BG permits separate local20s slot. Actual July19 intake only; July20/21 still pending.
 - [[sources/pr406-native-case-consumer-2026-10-11]] — Case-bound single-background intake and isolated capture admission; actual July19 intake replay, July20/21 still pending native input. No new M/H/analysis result.
