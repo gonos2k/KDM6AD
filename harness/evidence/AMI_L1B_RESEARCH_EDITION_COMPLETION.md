@@ -34,3 +34,7 @@ The user subsequently supplied a new8-area,100-point rubric at main6bdcdccc: **7
 Future raw-patch acquisition/decode uses the versioned [PR404 v3 writer](pr404_l1b_source_mask_2026-10-11/heldout_l1b_v3.py) with a new frozen plan and output directory. The PR403 helper remains immutable executed evidence, not the current source-mask writer. PR404's actual execution was limited to its raw/canvas helpers and an additive sidecar from existing slices; no full acquisition/decode workflow or new-date analysis is claimed.
 
 The [independent team audit](pr404_l1b_source_mask_2026-10-11/audit_20261011/TEAM_AUDIT_RESOLUTION.md) supersedes the earlier v2 future-writer declaration. V2/actual sidecar evidence stays frozen. V3 adds validated download provenance, stable empty schemas and completion-last publication; only synthetic writer integration was executed, with no real full-scene v3 decode or new-date model analysis.
+
+## Native valid-time follow-up at PR404
+
+The [PR405 linkage record](pr405_native_valid_time_2026-10-11/NATIVE_TIME_LINKAGE.json) and [report](pr405_native_valid_time_2026-10-11/COORDINATOR_REPORT.md) correct the existingBC final record09UTC versus interval endpoint12UTC. This file still does not reach July20/21. A matching native valid state may come from an earlier initialization; initialization suffixes are not a forecast-horizon census. New-date cases remainPENDING_NATIVE_INPUT, with no native run selected or analysis executed. The user's same-scale assessment is now79/100, without further points for this follow-up.
