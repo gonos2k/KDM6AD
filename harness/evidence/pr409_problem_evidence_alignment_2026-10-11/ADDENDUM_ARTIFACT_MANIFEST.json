@@ -6,8 +6,8 @@
   "files": [
     {
       "path": "harness/evidence/AMI_L1B_RESEARCH_EDITION_COMPLETION.md",
-      "size_bytes": 15588,
-      "sha256": "1a1dbff7b436f6c7b214d91c6c9e9760b90a9ed8ac4c578e5a8fea9756c836f7"
+      "size_bytes": 15735,
+      "sha256": "99e74b7eb894b4a9b032c0ce62f1d8ca916b2d3096695ac8a1bcbcf47d129497"
     },
     {
       "path": "wiki/sources/pr409-problem-evidence-alignment-2026-10-11.md",
@@ -16,8 +16,8 @@
     },
     {
       "path": "harness/evidence/pr409_problem_evidence_alignment_2026-10-11/ADDENDUM_REPORT.md",
-      "size_bytes": 2592,
-      "sha256": "3e0681e414a35c98faf95ed722ede95c3854aa0681e1eb6ac650cd4fa246f7f7"
+      "size_bytes": 3721,
+      "sha256": "fab6962b939bfcf4726b7f458deec7275faa35eeebceb8fe9bd1da7986c8f5df"
     },
     {
       "path": "harness/evidence/pr409_problem_evidence_alignment_2026-10-11/ADDENDUM_GREEN_REVIEW.md",
@@ -26,8 +26,8 @@
     },
     {
       "path": "harness/evidence/pr409_problem_evidence_alignment_2026-10-11/ADDENDUM_RED_REVIEW.md",
-      "size_bytes": 3312,
-      "sha256": "1fb91fdfd2dae825eaac0da6a15d0b98bdb0cf8f67a8bcf332ee3dd87b076525"
+      "size_bytes": 3336,
+      "sha256": "01dcb47b6068886b71ddb2656c03f66c3de9d9dac644e450e656f23266859301"
     },
     {
       "path": "harness/evidence/pr409_problem_evidence_alignment_2026-10-11/ADDENDUM_VALIDATION.json",
@@ -37,5 +37,14 @@
   ],
   "execution_or_scientific_code_changed": false,
   "new_test_or_calculation_run": false,
-  "score_reassessment": false
+  "score_reassessment": false,
+  "followup_audit": {
+    "reviewed_revision": "0d9cd16674920927c4fab0a8bdbd38ddfb9ad16f",
+    "previous_addendum_manifest_available_at_commit": "0d9cd16674920927c4fab0a8bdbd38ddfb9ad16f",
+    "findings": "One P3 Huber-delta unit wording corrected; real-arithmetic permutation statement clarified without raw-bit guarantee",
+    "original_validation_record_preserved": true,
+    "local_links_checked": 29,
+    "missing_links": [],
+    "new_tests_or_model_calculations": false
+  }
 }

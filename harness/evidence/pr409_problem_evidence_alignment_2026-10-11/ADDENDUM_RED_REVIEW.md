@@ -28,7 +28,8 @@ operator; the document keeps those questions separate and does not label the
 synthetic result an NC retrieval or NC sensitivity result.
 
 The retained PR408 result's initial synthetic BT is 281.179394596 K across
-channels, with targets 282–288 K, unit sigma and Huber delta 1 K. Thus one
+channels, with targets 282–288 K, sigma 1 K and normalized Huber delta 1
+(dimensionless). Thus one
 initial residual is within the quadratic region and six are in the linear
 region. The addendum correctly prevents transferring an all-linear statement
 from the real case to this synthetic result. It describes the synthetic cost
