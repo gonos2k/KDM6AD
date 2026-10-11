@@ -74,3 +74,5 @@ date_modified: 2026-07-14
 - [[sources/pr401-fixed-input-k-response-2026-10-10]] — Common KMA BT/K replay and six declared fixed-input response directions from saved center K, with coherent held/partial source endpoint sensitivity; actual SRF and independent native dates remain open.
 
 - [[sources/pr402-finite-input-response-2026-10-11]] — Four actual skin/O3 finite trials preserve seven-channel quality and locally agree with saved K; fresh direct/K outputs, historical-asset limits and independent-observation availability are separated.
+
+- [[sources/pr410-retained-case-claims-2026-10-11]] — Retained Jul19 actual fit response and source/input-equivalence inference; no new H/M/date run or process-rate claim.

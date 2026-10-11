@@ -1,0 +1,340 @@
+{
+  "schema": "pr410_one_retained_case_claims_v1",
+  "scope": "One already executed Jul19 case; new retained-array comparison only",
+  "source_main": "4ebe3d766cedfd6f85c8e20cb5dd2cae809a38af",
+  "source_sha256": "1b69152f1cd6610e206e020bf4035fd23be8f35e9cc2b6a539c33f543eb2acaa",
+  "executed_source_hashes_match_current_files": {
+    "oracle/kdm6/da_single_column.py": "7a827f340c1fef189c0f70b65cd60bfd2af0938091b44eed90083a0439c63038",
+    "oracle/kdm6/da_fulldomain.py": "fcd783ec9efed50fe8c3a89e11b4f162447df32c5109e79e06a5f0bf71bfa984",
+    "oracle/kdm6/da_dual.py": "57ff5a832cc6b011d394f3b462dd344cb93177cb1a81af59edcb04c040fd256e",
+    "oracle/kdm6/da_window.py": "354b7b026aac23dc93807020e45b3d5311f40725de843e71fc0a5203c6a4d50c",
+    "oracle/kdm6/da_cvt.py": "64a4826b3c6c3985a89e3d590ea61e53b1c62c3352254833c56e06a1a6099021",
+    "oracle/kdm6/da_driver.py": "1ee8f001837bc633adc58e8331628e7cc0bb7b164662d466cf5f4c1d30739f7b",
+    "oracle/kdm6/runtime.py": "e505c3a1d42fb2880d0ce3d65381488a06528de8d4133b39d4e9a573cef997ac",
+    "oracle/kdm6/coordinator.py": "05981b7a19c8d4fe262cb8080b14ddf3b4eb5c027b58604803b2e0b80764a0bd",
+    "oracle/kdm6/thermo.py": "5278c14c6d87178af5ee963eef59d3297b923fa374412fd854c01e43ffb1b5cd",
+    "oracle/kdm6/fconst.py": "c6529c9a543ad8ed0a33524114f30f5665cd9a7b6983b32a917cc39debd377f2",
+    "oracle/kdm6/rttov_bridge.py": "3c61c7fa6baa21ba294b37cdc17886c0f17979ee4adfae0af7e22154af964116",
+    "oracle/kdm6/obs/allsky_shard.py": "18a101d1946e87d08d87a182cfe547794a794a9b280c2720f874d59352813afc",
+    "oracle/kdm6/obs/model_profile_builder.py": "b9264edb61f32010c025718ad59ef686746f156e2a3c011c473943fbf82788ab",
+    "oracle/kdm6/obs/rttov_input_builder.py": "902e1554eb6e4f699d74cc770059daad847b3b35ad0dd9516d02cae35ad280a6",
+    "oracle/kdm6/obs/rttov_obs_operator.py": "d28149c211c1ccaffedcb18642e2337cc79b5cebc4b6aa8cf4c9a90978363b12",
+    "oracle/kdm6/obs/rttov_case_writer.py": "0203dbfd899996caedf2e8c94e34faabf949fabbaec1688cbda00b6e163081af",
+    "oracle/kdm6/obs/rttov_runner.py": "100e39c6f56ab5e1ccadb59f6b439ebd20255d139b5d9965063bf0ed393fa441",
+    "oracle/kdm6/obs/ami_bt_coordinate.py": "e1aec7c9270bbeff6dec9aee0f7b3fa3741528b3e060bc3aa74be721e3ac97cc",
+    "oracle/kdm6/obs/obs_loss.py": "4c39b69bf54be9929d48cc97881887f80fb1f7c9a05d68a6a6111bda1ca9d855"
+  },
+  "inputs": {
+    "capture_sha256": "8cfe28df6ef336454cfa595cc70f7a4ddec2e5cd8cbd393c0c7ce8106c904c59",
+    "receipt_sha256": "c49808c0331754eeb9ab9f77a88083119d5834852281db890b2827f6acf6eeca",
+    "existing_diagnostic_sha256": "8dc83999f4759e16140ea3d943ef288bf16c0254554abfb5b663b58222bc35bf"
+  },
+  "new_calls": {
+    "native": 0,
+    "KDM_M": 0,
+    "RTTOV_H_K": 0,
+    "optimizer": 0
+  },
+  "environment": {
+    "numpy": "2.2.6",
+    "torch": "2.13.0",
+    "torch_threads": 1
+  },
+  "endpoint_pairs": [
+    {
+      "states": [
+        "xb",
+        "mb"
+      ],
+      "state_field_comparison": {
+        "th": {
+          "bitwise_equal": false,
+          "max_abs_difference": 5.684341886080802e-14
+        },
+        "qv": {
+          "bitwise_equal": true,
+          "max_abs_difference": 0.0
+        },
+        "qc": {
+          "bitwise_equal": true,
+          "max_abs_difference": 0.0
+        },
+        "qr": {
+          "bitwise_equal": true,
+          "max_abs_difference": 0.0
+        },
+        "qi": {
+          "bitwise_equal": true,
+          "max_abs_difference": 0.0
+        },
+        "qs": {
+          "bitwise_equal": true,
+          "max_abs_difference": 0.0
+        },
+        "qg": {
+          "bitwise_equal": true,
+          "max_abs_difference": 0.0
+        },
+        "nccn": {
+          "bitwise_equal": true,
+          "max_abs_difference": 0.0
+        },
+        "nc": {
+          "bitwise_equal": true,
+          "max_abs_difference": 0.0
+        },
+        "ni": {
+          "bitwise_equal": true,
+          "max_abs_difference": 0.0
+        },
+        "nr": {
+          "bitwise_equal": true,
+          "max_abs_difference": 0.0
+        },
+        "bg": {
+          "bitwise_equal": true,
+          "max_abs_difference": 0.0
+        }
+      },
+      "physical_temperature_K": {
+        "bitwise_equal": true,
+        "max_abs_difference_K": 0.0,
+        "before_sha256_f64": "0001f2a1cea9fb5838cd64c7b270dd97f65800b0e5657dd8a732b6319e9a69f9",
+        "after_sha256_f64": "0001f2a1cea9fb5838cd64c7b270dd97f65800b0e5657dd8a732b6319e9a69f9",
+        "numpy_matches_torch_projection": true
+      },
+      "source_input_equivalence": true
+    },
+    {
+      "states": [
+        "xa",
+        "ma"
+      ],
+      "state_field_comparison": {
+        "th": {
+          "bitwise_equal": false,
+          "max_abs_difference": 5.684341886080802e-14
+        },
+        "qv": {
+          "bitwise_equal": true,
+          "max_abs_difference": 0.0
+        },
+        "qc": {
+          "bitwise_equal": true,
+          "max_abs_difference": 0.0
+        },
+        "qr": {
+          "bitwise_equal": true,
+          "max_abs_difference": 0.0
+        },
+        "qi": {
+          "bitwise_equal": true,
+          "max_abs_difference": 0.0
+        },
+        "qs": {
+          "bitwise_equal": true,
+          "max_abs_difference": 0.0
+        },
+        "qg": {
+          "bitwise_equal": true,
+          "max_abs_difference": 0.0
+        },
+        "nccn": {
+          "bitwise_equal": true,
+          "max_abs_difference": 0.0
+        },
+        "nc": {
+          "bitwise_equal": true,
+          "max_abs_difference": 0.0
+        },
+        "ni": {
+          "bitwise_equal": true,
+          "max_abs_difference": 0.0
+        },
+        "nr": {
+          "bitwise_equal": true,
+          "max_abs_difference": 0.0
+        },
+        "bg": {
+          "bitwise_equal": true,
+          "max_abs_difference": 0.0
+        }
+      },
+      "physical_temperature_K": {
+        "bitwise_equal": true,
+        "max_abs_difference_K": 0.0,
+        "before_sha256_f64": "03c6499e0da273b82239d710a98ddda174fbd251c3f445681a6a8d8f514ab567",
+        "after_sha256_f64": "03c6499e0da273b82239d710a98ddda174fbd251c3f445681a6a8d8f514ab567",
+        "numpy_matches_torch_projection": true
+      },
+      "source_input_equivalence": true
+    }
+  ],
+  "stored_actual_H_outputs": {
+    "H_Mxb": {
+      "call_index": 2,
+      "BT_K": [
+        [
+          262.2609690648086,
+          293.6851951749752,
+          270.6304713118575,
+          296.232817250819,
+          295.9661155119729,
+          292.8917454490824,
+          276.60347635213475
+        ]
+      ],
+      "Jo": 26.588575903055926
+    },
+    "H_Mxa": {
+      "call_index": 5,
+      "BT_K": [
+        [
+          262.2533252405941,
+          293.6196235754117,
+          270.5886248621059,
+          296.159205214676,
+          295.8717201889046,
+          292.7819728924555,
+          276.5280709927328
+        ]
+      ],
+      "Jo": 26.135616402715186
+    }
+  },
+  "direct_initial_H_outputs": {
+    "H_xb": "NOT_EXECUTED_OR_STORED",
+    "H_xa": "NOT_EXECUTED_OR_STORED"
+  },
+  "conditional_inference": {
+    "status": "SOURCE_INPUT_EQUIVALENCE",
+    "assumption": "Same fixed auxiliaries and deterministic unchanged executed H; inferred, not new H evaluations",
+    "R_M_xb_K": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "R_M_xa_K": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "I_M_K": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "G_M_measured": 0.4529595003407394,
+    "G_0_inferred": 0.4529595003407394,
+    "G_M_minus_G_0_inferred": 0.0,
+    "not_established": [
+      "M_x=I",
+      "zero internal process rates",
+      "named-process cause",
+      "reoptimized no-M performance",
+      "cloud truth",
+      "forecast skill"
+    ]
+  },
+  "existing_state_diagnostics_read_not_rerun": {
+    "objective": {
+      "Jo0": 26.588575903055926,
+      "Jo_final": 26.135616402715186,
+      "Jb_final": 0.2284737909127953,
+      "Jtotal_final": 26.36409019362798,
+      "total_decrease_percent": 0.844293843515494,
+      "observational_decrease_percent": 1.7035869163969743
+    },
+    "initial_increment": {
+      "coolest_delta_T_K": -0.15252246779831788,
+      "coolest_layer_0based": 9,
+      "warmest_delta_T_K": 0.016256159189220753,
+      "warmest_layer_0based": 19,
+      "max_delta_qv_kg_kg": 0.00011924342445368726,
+      "max_absolute_qv_layer_0based": 9,
+      "max_relative_qv_percent": 1.7028745767690276,
+      "max_relative_qv_layer_0based": 11
+    },
+    "liquid_saturation_ratio": {
+      "xb": {
+        "max_percent": 95.53440633005557,
+        "max_layer_bottomup_0based": 3
+      },
+      "xa": {
+        "max_percent": 96.75147829265397,
+        "max_layer_bottomup_0based": 3
+      },
+      "mb": {
+        "max_percent": 95.53440633005557,
+        "max_layer_bottomup_0based": 3
+      },
+      "ma": {
+        "max_percent": 96.75147829265397,
+        "max_layer_bottomup_0based": 3
+      }
+    },
+    "four_state_condensate_positive_counts": {
+      "xb": {
+        "qc": 0,
+        "qr": 0,
+        "qi": 0,
+        "qs": 0,
+        "qg": 0
+      },
+      "xa": {
+        "qc": 0,
+        "qr": 0,
+        "qi": 0,
+        "qs": 0,
+        "qg": 0
+      },
+      "mb": {
+        "qc": 0,
+        "qr": 0,
+        "qi": 0,
+        "qs": 0,
+        "qg": 0
+      },
+      "ma": {
+        "qc": 0,
+        "qr": 0,
+        "qi": 0,
+        "qs": 0,
+        "qg": 0
+      }
+    },
+    "fixed_host_mass_water_kg_m2": {
+      "analysis": 0.2216824149154899,
+      "model_analysis": 0.0,
+      "model_background": 0.0
+    },
+    "native_host_20s_water_change_kg_m2": {
+      "fixed_w0_mixing_ratio_term": -0.002829685415802516,
+      "changing_mass_term": 0.00046964942827454337,
+      "actual_w1_q1_minus_w0_q0": -0.0023600359875288746,
+      "identity_residual": -9.020562075079397e-16,
+      "closed_budget": false,
+      "boundary_external_fluxes": "NOT_MEASURED"
+    },
+    "named_process_attribution": "NOT_MEASURED"
+  },
+  "limits": [
+    "No measured H(xb)/H(xa) output vectors are manufactured",
+    "PR398/399 host/neighbor H bindings do not fill the initial-state H gap",
+    "Original RTTOV executable/coefficient hashes are not recorded in this receipt",
+    "Original outer harness exit120, nominal time and finite-gradient limits remain",
+    "No independent date, score reassessment or raw private-array publication"
+  ]
+}
