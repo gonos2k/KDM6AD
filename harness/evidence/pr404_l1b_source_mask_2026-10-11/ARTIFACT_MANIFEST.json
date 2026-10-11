@@ -1,0 +1,46 @@
+{
+  "files": {
+    "COORDINATOR_REPORT.md": {
+      "sha256": "2a307aa44fa7fcbb906ce76e894cc8f044b5fd53f52e2854c1f4b46c451eaa04",
+      "bytes": 4240
+    },
+    "GREEN_REVIEW.md": {
+      "sha256": "a79d27c66f7eb9789dbb70b2426262122545d4e2cb4fd6be8e721e892580ac6c",
+      "bytes": 2440
+    },
+    "MASK_REPAIR_RESULT.json": {
+      "sha256": "3cfd415f089950d13c3f9d99475311ddc38c9910c13302939658bcebfb4a4401",
+      "bytes": 5582
+    },
+    "NATIVE_AVAILABILITY.json": {
+      "sha256": "836af4a13fc76edaa0685ebb582e5b5aa73b6b0d6969d6cffa1c7332f1f2d9d2",
+      "bytes": 5306
+    },
+    "NATIVE_AVAILABILITY_REPORT.md": {
+      "sha256": "4131a0a27a0c44a2ea4e57bc3675aaa74c1988df6201e0d18511179106a741ec",
+      "bytes": 3749
+    },
+    "RED_REVIEW.md": {
+      "sha256": "853d045b30cae6c4f1bf38f40c877f333811bf4e5ff41b80c72f2e425f124071",
+      "bytes": 3388
+    },
+    "VALIDATION.json": {
+      "sha256": "c78f9061fe05a5a2742b36d9d9527406af4d1feb90eabe451bb084d84c649a8d",
+      "bytes": 873
+    },
+    "heldout_l1b_v2.py": {
+      "sha256": "30a9f166757570f3b77f18582bfbcdfee2b8f7ac7b3fa3e692e0203fb144ded5",
+      "bytes": 35392
+    },
+    "repair_source_mask.py": {
+      "sha256": "6d041297692ea0a82344f57dbcc46095d89e6a1e47bfcf7baab1f74e272f9713",
+      "bytes": 5404
+    },
+    "test_source_mask.py": {
+      "sha256": "07b5612ba9bd7648a0511615db74537bb7273734b8f85a4d9dc711625d0a7e9a",
+      "bytes": 5122
+    }
+  },
+  "self_excluded": true,
+  "limits": "Original model/L1B bytes and additive NPZ remain private; this packet records bounded capture and availability."
+}

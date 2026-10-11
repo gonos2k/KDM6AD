@@ -1,0 +1,142 @@
+{
+  "status": "ADDITIVE_SOURCE_MASK_SIDECAR_ONLY",
+  "original_payload_sha256": "d24bb3a5d029ec13d1b25d0afdae95637a971d6d304f38bcc73dae461220bd90",
+  "original_acquisition_plan_sha256": "ce5a3d4a4109813ef61aa199c8b0bcef83d8828d9fdeebe6db5675d275ee54f3",
+  "repair_source_sha256": "6d041297692ea0a82344f57dbcc46095d89e6a1e47bfcf7baab1f74e272f9713",
+  "future_writer_source_sha256": "30a9f166757570f3b77f18582bfbcdfee2b8f7ac7b3fa3e692e0203fb144ded5",
+  "source_files": [
+    {
+      "file": "gk2a_ami_le1b_wv063_la020ge_202507200556.nc",
+      "sha256": "7231ed2c1498f96577dd2fd887f2fe739991c4a8db5e22f07ecbd9de0eeb0400",
+      "source_mask_attributes": {},
+      "source_missing_cells": 0,
+      "padding_cells": 0
+    },
+    {
+      "file": "gk2a_ami_le1b_wv069_la020ge_202507200556.nc",
+      "sha256": "fa48ee5eb76dd532357dc42a61a91974c296e9d0e1cd8aa52dd622bfbb66cae1",
+      "source_mask_attributes": {},
+      "source_missing_cells": 0,
+      "padding_cells": 0
+    },
+    {
+      "file": "gk2a_ami_le1b_wv073_la020ge_202507200556.nc",
+      "sha256": "6d9074c665ebf52f7344d6c3258327e56f3f7e651994e9a44ef243d4d9e3d75f",
+      "source_mask_attributes": {},
+      "source_missing_cells": 0,
+      "padding_cells": 0
+    },
+    {
+      "file": "gk2a_ami_le1b_ir087_la020ge_202507200556.nc",
+      "sha256": "e289dad0b09cc5e4b3465331441663abdb68e4132544823efed28d2600fb8250",
+      "source_mask_attributes": {},
+      "source_missing_cells": 0,
+      "padding_cells": 0
+    },
+    {
+      "file": "gk2a_ami_le1b_ir096_la020ge_202507200556.nc",
+      "sha256": "097cfde3965e06dc3b79bba15e2e6b4bcee04f198b1a338441e2cdec14d60961",
+      "source_mask_attributes": {},
+      "source_missing_cells": 0,
+      "padding_cells": 0
+    },
+    {
+      "file": "gk2a_ami_le1b_ir105_la020ge_202507200556.nc",
+      "sha256": "d51d40e370344e73d6467b426317284afa30ad820a00c9cb52b26ef20686a252",
+      "source_mask_attributes": {},
+      "source_missing_cells": 0,
+      "padding_cells": 0
+    },
+    {
+      "file": "gk2a_ami_le1b_ir112_la020ge_202507200556.nc",
+      "sha256": "695cfa9e6200b08634544bdd2d4ad77228943423d9be3f04342715fb17386b54",
+      "source_mask_attributes": {},
+      "source_missing_cells": 0,
+      "padding_cells": 0
+    },
+    {
+      "file": "gk2a_ami_le1b_ir123_la020ge_202507200556.nc",
+      "sha256": "0e3580d7d042f99cdccd37575aea5d4d4800c7875950087b6d0489e5a6841d3a",
+      "source_mask_attributes": {},
+      "source_missing_cells": 0,
+      "padding_cells": 0
+    },
+    {
+      "file": "gk2a_ami_le1b_ir133_la020ge_202507200556.nc",
+      "sha256": "d94681ccca2edcfdc581c5b0bc817c7f4b3891284d22f06d8491e461e2da3b29",
+      "source_mask_attributes": {},
+      "source_missing_cells": 0,
+      "padding_cells": 0
+    },
+    {
+      "file": "gk2a_ami_le1b_wv063_la020ge_202507210556.nc",
+      "sha256": "6fcfe544bb9f06fdbd20af51147c53b21bcd4199c270cb317245ccab2cbef8b8",
+      "source_mask_attributes": {},
+      "source_missing_cells": 0,
+      "padding_cells": 0
+    },
+    {
+      "file": "gk2a_ami_le1b_wv069_la020ge_202507210556.nc",
+      "sha256": "72176d9a196923b04f8e8c022b18f973fdf1f0801e902da9f8e10f7e538cdd04",
+      "source_mask_attributes": {},
+      "source_missing_cells": 0,
+      "padding_cells": 0
+    },
+    {
+      "file": "gk2a_ami_le1b_wv073_la020ge_202507210556.nc",
+      "sha256": "636510b09a1f788d02d0306ed20aeaf4c47dc995f28447a64352c2e1f1275696",
+      "source_mask_attributes": {},
+      "source_missing_cells": 0,
+      "padding_cells": 0
+    },
+    {
+      "file": "gk2a_ami_le1b_ir087_la020ge_202507210556.nc",
+      "sha256": "c6d4897308a1cfb4a95f607a755a74a24d8117e4f8e31f8c2554dd2332b13072",
+      "source_mask_attributes": {},
+      "source_missing_cells": 0,
+      "padding_cells": 0
+    },
+    {
+      "file": "gk2a_ami_le1b_ir096_la020ge_202507210556.nc",
+      "sha256": "13ecdd5cb51221d3af8d1a717fbacb759525578d80996ae2b90296c4f9016a75",
+      "source_mask_attributes": {},
+      "source_missing_cells": 0,
+      "padding_cells": 0
+    },
+    {
+      "file": "gk2a_ami_le1b_ir105_la020ge_202507210556.nc",
+      "sha256": "26cfea1f8cbc3ec158b5e7b9323bbfd07fde312055e1d4cbee5b2ded857f0b1f",
+      "source_mask_attributes": {},
+      "source_missing_cells": 0,
+      "padding_cells": 0
+    },
+    {
+      "file": "gk2a_ami_le1b_ir112_la020ge_202507210556.nc",
+      "sha256": "0a3ac29f22803f7e8a0ca5910f9897ea0503ac7e63cb8e34effc9852903ee8b2",
+      "source_mask_attributes": {},
+      "source_missing_cells": 0,
+      "padding_cells": 0
+    },
+    {
+      "file": "gk2a_ami_le1b_ir123_la020ge_202507210556.nc",
+      "sha256": "13ecb997ec02c6b795902165496cabe6b8dcc142428e659991ef1be04f26a921",
+      "source_mask_attributes": {},
+      "source_missing_cells": 0,
+      "padding_cells": 0
+    },
+    {
+      "file": "gk2a_ami_le1b_ir133_la020ge_202507210556.nc",
+      "sha256": "3a30a381884a27c8c559a4d2874a8022dbb1710056063b819145f1bef8460926",
+      "source_mask_attributes": {},
+      "source_missing_cells": 0,
+      "padding_cells": 0
+    }
+  ],
+  "output_private": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr404_l1b_source_mask_20261011/source-mask-v1/SOURCE_MASK_PATCH.npz",
+  "output_sha256": "5257baba8553247519b74abe088aa24fe6f5829b270f999c59861926e993cad6",
+  "source_slices_read": 18,
+  "original_words_and_embedded_DQF_unchanged": true,
+  "original_payload_unchanged": true,
+  "scope": "Existing 5x5 raw slices only; no full scene BT decode, acquisition, model, RTTOV or optimizer.",
+  "future_writer_execution": "Only read/source-canvas helpers executed; future preflight/download/full-decode not run."
+}

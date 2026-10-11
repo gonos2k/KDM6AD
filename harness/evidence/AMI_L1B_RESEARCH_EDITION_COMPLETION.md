@@ -26,3 +26,9 @@ Better BT fit does not independently prove phase, height or NC. Those inferred m
 The earlier **56/75 (~75%)** was a broader management score. Keep it as a historical reference, **not an automatically transferred or raised AMI-only score**. A next scope-specific assessment must map the evidence above to explicit weights/completion states before assigning a new number. Do not increase a score merely because requirements moved to the extension phase, files/tests/PRs grew, or nearby pixels were counted as independent events.
 
 Current work separates observation intake from model-connected analysis and marks executed, conditional and pending stages explicitly. No production physics, solver, observation support, sigma/bias or prior was changed by this scope revision.
+
+## User assessment at PR403
+
+The user subsequently supplied a new8-area,100-point rubric at main6bdcdccc: **78/100**. See the [dated management rubric](AMI_L1B_MANAGEMENT_RUBRIC_2026-10-11.md) for exact weights/scores and evidence limits. This is an explicit new assessment, not an automatic scope-based conversion of56/75. PR404 fixes source-mask capture without assigning additional points; matching new-date native analyses remain pending.
+
+Future raw-patch acquisition/decode uses the versioned [PR404 writer](pr404_l1b_source_mask_2026-10-11/heldout_l1b_v2.py) with a new frozen plan and output directory. The PR403 helper remains immutable executed evidence, not the current source-mask writer. PR404's actual execution was limited to its raw/canvas helpers and an additive sidecar from existing slices; no full acquisition/decode workflow or new-date analysis is claimed.

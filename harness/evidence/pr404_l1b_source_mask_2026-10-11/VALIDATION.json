@@ -1,0 +1,21 @@
+{
+  "pytest_passed": 25,
+  "pytest_scope": "9 actual-netCDF4 source-mask regressions plus16 unchanged production LA-reader tests",
+  "ruff": "PASS all three new Python files",
+  "py_compile": "PASS all three new Python files",
+  "JSON": "PASS current packet",
+  "actual_raw_capture": "18 existing5x5 slices;450 cells;source masks and padding both zero;original raw words/DQF unchanged",
+  "frozen_PR403_manifest_files": 21,
+  "original_private_payload_unchanged": true,
+  "v2_workflow": "raw/canvas helpers executed; acquisition/full-decode workflow unexecuted",
+  "calls": {
+    "acquisition": 0,
+    "full_scene_BT_decode": 0,
+    "native": 0,
+    "M": 0,
+    "H_K": 0,
+    "optimizer": 0
+  },
+  "newdate_native_analyses": "NOT_STARTED_MATCHING_NATIVE_INPUTS_UNAVAILABLE_IN_INSPECTED_ROOTS",
+  "management_score": "User78/100 baseline recorded; no points recalculated"
+}

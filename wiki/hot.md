@@ -6,6 +6,7 @@ date_modified: 2026-07-14
 # Hot Cache
 
 ## Current Focus
+- [[sources/pr404-l1b-source-mask-and-native-linkage-2026-10-11]] — P3 source-mask capture repaired with actual-NetCDF tests and additive sidecar; July20/21 model-connected analyses pending original native inputs.
 - [[sources/pr403-l1b-heldout-scenes-2026-10-11]] — AMI L1B-only completion scope supersedes external-observation gates; July20/21 intake complete, matching native analyses pending. Historical entries below retain their original scope.
 - [[sources/pr399-vertical-and-neighbor-h-2026-10-10]] — Current event's vertical structure and neighbor H narrow the mismatch; other-day native inputs and physical matchup remain open.
 - [[sources/pr398-spatial-representativeness-2026-10-10]] — Existing local spatial samples show liquid phase beyond one pixel but a clear native3×3, with substantial observed window-BT variation; matchup, QA range and unused-event availability stay distinct.

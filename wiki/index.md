@@ -101,3 +101,5 @@ date_modified: 2026-10-08
 - [[sources/pr402-finite-input-response-2026-10-11]] — Four actual skin/O3 finite trials preserve seven-channel quality and locally agree with saved K; fresh direct/K outputs, historical-asset limits and independent-observation availability are separated.
 
 - [[sources/pr403-l1b-heldout-scenes-2026-10-11]] — Current AMI L1B-only contract; two exact-slot held-out scene intakes complete, new-date native analyses pending.
+
+- [[sources/pr404-l1b-source-mask-and-native-linkage-2026-10-11]] — Separate raw/source-mask/padding/DQF capture; actual 18-slice sidecar verified, same-date native inputs still unavailable in bounded roots; user78/100 baseline recorded.
