@@ -26,7 +26,7 @@ Synthetic tests exercise real NetCDF hyperslab semantics and case admission. Ada
 2. An arbitrary caller fixture could be relabeled as the established AMI pair. The driver now rejects a different template path before loading intake or creating output directories.
 3. The first immutable-asset list omitted T/Q/channel files. The final list covers all prepared atmospheric vectors, cloud templates, channel selection and static skin as well as executable/configuration assets.
 
-See [Green](GREEN_CASE_REVIEW.md) and [Red](RED_CASE_REVIEW.md) reviews for demonstrated coverage and counterexamples, and [validation](VALIDATION.json) for24 unique local cases; the14 portable cases are a repeated subset. The current executed records are [v2 intake](CORE_REPLAY19_V2_INTAKE.json), [comparison](CORE_REPLAY19_V2_COMPARISON.json), [July20](PENDING_20250720_V2.json) and [July21](PENDING_20250721_V2.json). No changed production microphysics/AD path was involved.
+See [Green](GREEN_CASE_REVIEW.md) and [Red](RED_CASE_REVIEW.md) reviews for demonstrated coverage and counterexamples. Initial [validation](VALIDATION.json) records24 focused local cases and14 repeated facade executions at head7824d28c. The [additive CI portability correction](CI_PORTABILITY_FIX.md) supersedes its portable classification: the current24 focused plus14 portable executions have13 overlaps and25 distinct cases. The executed records are [v2 intake](CORE_REPLAY19_V2_INTAKE.json), [comparison](CORE_REPLAY19_V2_COMPARISON.json), [July20](PENDING_20250720_V2.json) and [July21](PENDING_20250721_V2.json). No changed production microphysics/AD path was involved.
 
 ## Remaining limits and next operation
 
