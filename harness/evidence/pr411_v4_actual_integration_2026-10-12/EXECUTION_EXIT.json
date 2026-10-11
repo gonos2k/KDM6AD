@@ -1,0 +1,12 @@
+{
+  "schema": "pr411_observed_exec_completion_v1",
+  "run_id": "PR411_REAL_V4_JUL19_20261012_01",
+  "tool": "exec_command completion via write_stdin",
+  "session_id": 66365,
+  "observed_exit_code": 0,
+  "driver_return_status": "RETURNED_CASE_DIAGNOSTIC",
+  "source": "coordinator observed tool completion, not an exit code inferred from result JSON",
+  "stdout_stderr_log_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/EXECUTION.log",
+  "stdout_stderr_log_sha256": "d5aaaa75017a94ca3ca3bed6765f9fb79cc7dd9748d91ba07ed855485fb06b57",
+  "new_invocation_or_retry": false
+}

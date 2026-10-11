@@ -1,0 +1,111 @@
+{
+  "schema": "pr411_original_ami_restoration_receipt_v1",
+  "status": "ALL_NINE_ORIGINAL_HASHES_RESTORED",
+  "plan_sha256": "864a223783b3db33ecd3ed18a35d322bf608b3d4cc5d2bfe547320171b2e2026",
+  "source_sha256": "d98a43d37acdf384456ec127037024c532570573e909a67d2fffa1741ab44914",
+  "files": [
+    {
+      "name": "gk2a_ami_le1b_wv063_la020ge_202507190556.nc",
+      "expected_sha256": "83b97370fac7df350db462a2024e53255a01b7bc7c69e7d45ea0168f348d8754",
+      "url": "https://noaa-gk2a-pds.s3.amazonaws.com/AMI/L1B/LA/202507/19/05/gk2a_ami_le1b_wv063_la020ge_202507190556.nc",
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_wv063_la020ge_202507190556.nc",
+      "actual_sha256": "83b97370fac7df350db462a2024e53255a01b7bc7c69e7d45ea0168f348d8754",
+      "bytes": 357789,
+      "http_status": 200,
+      "etag": "\"a0cf9192aaa465225e955ed908114bba\"",
+      "last_modified": "Wed, 23 Jul 2025 00:18:02 GMT"
+    },
+    {
+      "name": "gk2a_ami_le1b_wv069_la020ge_202507190556.nc",
+      "expected_sha256": "0c7fea702b255db8c9273d494d2e4b9c5ec86dca442e6059ebf9d91a9a8968e6",
+      "url": "https://noaa-gk2a-pds.s3.amazonaws.com/AMI/L1B/LA/202507/19/05/gk2a_ami_le1b_wv069_la020ge_202507190556.nc",
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_wv069_la020ge_202507190556.nc",
+      "actual_sha256": "0c7fea702b255db8c9273d494d2e4b9c5ec86dca442e6059ebf9d91a9a8968e6",
+      "bytes": 456481,
+      "http_status": 200,
+      "etag": "\"c95f8d26c28537894241cb22bfcefd02\"",
+      "last_modified": "Wed, 23 Jul 2025 00:18:02 GMT"
+    },
+    {
+      "name": "gk2a_ami_le1b_wv073_la020ge_202507190556.nc",
+      "expected_sha256": "470eab1587fa70e56dfb3745dd402f5619aba4bc6d11b0844fa6987602c3c7f0",
+      "url": "https://noaa-gk2a-pds.s3.amazonaws.com/AMI/L1B/LA/202507/19/05/gk2a_ami_le1b_wv073_la020ge_202507190556.nc",
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_wv073_la020ge_202507190556.nc",
+      "actual_sha256": "470eab1587fa70e56dfb3745dd402f5619aba4bc6d11b0844fa6987602c3c7f0",
+      "bytes": 477776,
+      "http_status": 200,
+      "etag": "\"bb62826e22ef3f03d51fc19b6b057324\"",
+      "last_modified": "Wed, 23 Jul 2025 00:18:02 GMT"
+    },
+    {
+      "name": "gk2a_ami_le1b_ir087_la020ge_202507190556.nc",
+      "expected_sha256": "d98e0b5cd785c75f160982eacf57fb749674f4f0c471f27e1377dfa2767f2b50",
+      "url": "https://noaa-gk2a-pds.s3.amazonaws.com/AMI/L1B/LA/202507/19/05/gk2a_ami_le1b_ir087_la020ge_202507190556.nc",
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_ir087_la020ge_202507190556.nc",
+      "actual_sha256": "d98e0b5cd785c75f160982eacf57fb749674f4f0c471f27e1377dfa2767f2b50",
+      "bytes": 529492,
+      "http_status": 200,
+      "etag": "\"b1317d0001147a35e3187b957f730448\"",
+      "last_modified": "Wed, 23 Jul 2025 00:18:01 GMT"
+    },
+    {
+      "name": "gk2a_ami_le1b_ir096_la020ge_202507190556.nc",
+      "expected_sha256": "40f5cbcdd1bf15485cf3ddc116f4a3d7699701f230810d49f04942d6d5ee102a",
+      "url": "https://noaa-gk2a-pds.s3.amazonaws.com/AMI/L1B/LA/202507/19/05/gk2a_ami_le1b_ir096_la020ge_202507190556.nc",
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_ir096_la020ge_202507190556.nc",
+      "actual_sha256": "40f5cbcdd1bf15485cf3ddc116f4a3d7699701f230810d49f04942d6d5ee102a",
+      "bytes": 500536,
+      "http_status": 200,
+      "etag": "\"07848981e605710fce054f44fe29b039\"",
+      "last_modified": "Wed, 23 Jul 2025 00:18:01 GMT"
+    },
+    {
+      "name": "gk2a_ami_le1b_ir105_la020ge_202507190556.nc",
+      "expected_sha256": "824ee57213da084e8f3f129fd2767cee1f68e0bb10ef101d7419b7c4ec3ea889",
+      "url": "https://noaa-gk2a-pds.s3.amazonaws.com/AMI/L1B/LA/202507/19/05/gk2a_ami_le1b_ir105_la020ge_202507190556.nc",
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_ir105_la020ge_202507190556.nc",
+      "actual_sha256": "824ee57213da084e8f3f129fd2767cee1f68e0bb10ef101d7419b7c4ec3ea889",
+      "bytes": 532071,
+      "http_status": 200,
+      "etag": "\"6e5c9c0822e270ecf41bda6ef9a6cdce\"",
+      "last_modified": "Wed, 23 Jul 2025 00:18:01 GMT"
+    },
+    {
+      "name": "gk2a_ami_le1b_ir112_la020ge_202507190556.nc",
+      "expected_sha256": "8370508b1c70364085311772bd9b092876be7a7b6accf8ed71112172550f647d",
+      "url": "https://noaa-gk2a-pds.s3.amazonaws.com/AMI/L1B/LA/202507/19/05/gk2a_ami_le1b_ir112_la020ge_202507190556.nc",
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_ir112_la020ge_202507190556.nc",
+      "actual_sha256": "8370508b1c70364085311772bd9b092876be7a7b6accf8ed71112172550f647d",
+      "bytes": 530010,
+      "http_status": 200,
+      "etag": "\"5712c73e1d5f297905624a6bea46f541\"",
+      "last_modified": "Wed, 23 Jul 2025 00:18:01 GMT"
+    },
+    {
+      "name": "gk2a_ami_le1b_ir123_la020ge_202507190556.nc",
+      "expected_sha256": "19d1a4a9c60bee40cd6c7efe8a760189d72aa3f8f488b168cb8e35fc3963542f",
+      "url": "https://noaa-gk2a-pds.s3.amazonaws.com/AMI/L1B/LA/202507/19/05/gk2a_ami_le1b_ir123_la020ge_202507190556.nc",
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_ir123_la020ge_202507190556.nc",
+      "actual_sha256": "19d1a4a9c60bee40cd6c7efe8a760189d72aa3f8f488b168cb8e35fc3963542f",
+      "bytes": 524322,
+      "http_status": 200,
+      "etag": "\"aac1aba769e6ef46f3f8d522b2663913\"",
+      "last_modified": "Wed, 23 Jul 2025 00:18:01 GMT"
+    },
+    {
+      "name": "gk2a_ami_le1b_ir133_la020ge_202507190556.nc",
+      "expected_sha256": "6440ea866f17f9336abed1d0f52329a2ec29d3ad89908a26320535473019835d",
+      "url": "https://noaa-gk2a-pds.s3.amazonaws.com/AMI/L1B/LA/202507/19/05/gk2a_ami_le1b_ir133_la020ge_202507190556.nc",
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_ir133_la020ge_202507190556.nc",
+      "actual_sha256": "6440ea866f17f9336abed1d0f52329a2ec29d3ad89908a26320535473019835d",
+      "bytes": 506925,
+      "http_status": 200,
+      "etag": "\"2a6e1dc4277aec4d4a06a63e3c2f5089\"",
+      "last_modified": "Wed, 23 Jul 2025 00:18:01 GMT"
+    }
+  ],
+  "error": null,
+  "automatic_retry": false,
+  "new_dates": 0,
+  "no_other_satellite_L2_or_model_data": true
+}

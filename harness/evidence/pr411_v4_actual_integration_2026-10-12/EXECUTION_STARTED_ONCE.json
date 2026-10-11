@@ -1,0 +1,8 @@
+{
+  "run_id": "PR411_REAL_V4_JUL19_20261012_01",
+  "plan_sha256": "69ff921a09938f9288154fdbb6f15e444aaf26cebc6a9b79460fb6b2bfd9f22c",
+  "entrypoint_sha256": "50416adbbf8331e9eaae229f7b6b04309ce506bd4ba909da83b7b875a128e801",
+  "command_python": "/private/tmp/KDM6AD-research-rc-20261007/env/bin/python",
+  "automatic_retry": false,
+  "stage": "ACTUAL_TOP_LEVEL_INVOCATION_STARTING"
+}

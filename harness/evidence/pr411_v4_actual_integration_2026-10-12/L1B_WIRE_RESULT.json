@@ -1,0 +1,61 @@
+{
+  "schema": "pr403_gk2a_l1b_heldout_result_v1",
+  "status": "DECODED_GK2A_L1B_SCENES_ONLY",
+  "producer": {
+    "name": "pr411_existing_jul19_l1b_binding_v1",
+    "source_sha256": "482294a93d32442f3d90e91515e493cbd56bb41742e303c282db217c9c1b4b64",
+    "wire_schema_only": "PR403 v1 format required by unchanged V4; not a historical PR403 run",
+    "new_dates": 0,
+    "restoration_receipt_sha256": "0a95f5762c362dfa86e98aecc7868996fb6cea253cd8816bfa66fa4c29e2c52d",
+    "current_mask_helper_sha256": "b29627c39cbf16952e1be30d8bc1298d31272c9440ab90b898d5f4967772dbd6",
+    "reader_sources_sha256": {
+      "oracle/kdm6/obs/gk2a_l1b_la.py": "67c4d2abd1c16f55d6909edeef1549b0ce2e8e449b9b3f64e7185b4d34b083db",
+      "oracle/kdm6/obs/gk2a_l1b.py": "c16195e581e847053c1f7e63c6cd93deaaba0e51d84a1f7eea092c95c180f4b8",
+      "oracle/kdm6/obs/gk2a_l1b_fd.py": "0c2c87a316680ba359f13336d3e7c87ca9c0bd9eab726f1b7cde469a87b1387e",
+      "oracle/kdm6/obs/obs_ingest.py": "224ff9d1f9e5c8557238db8e3f8a31650ca0faeb720e40394bd8c1d1666ced0d"
+    },
+    "paired_calibration_sha256": "a6f830aa04e19f6982aa6ff36e832464a5b32fdcf8200211956969d5eb48325d",
+    "original_metadata_sha256": "7cbe37a71ef3289fd120ac5b7f0b7c05ec37e85e6c85935b1b52963b1e9d7b4f"
+  },
+  "private_decode_receipt_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/DECODE_RECEIPT.json",
+  "private_payload_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/JUL19_L1B_PATCH.npz",
+  "private_payload_sha256": "e2cc6a346c283eeeacbcbd3ad5e964cce017cc3bd3fde8b285c1b139ac9fa199",
+  "scenes": [
+    {
+      "date": "20250719",
+      "status": "POINT_WITHIN_RADIUS",
+      "selected_nominal_slot_obt": "202507190556",
+      "nearest_pixel": {
+        "row": 320,
+        "column": 48,
+        "latitude_deg": 35.41925069326254,
+        "longitude_deg": 122.13724164654832,
+        "distance_to_fixed_point_m": 679.5505150089832,
+        "bt_K_by_channel": {
+          "wv063": 242.39186902662343,
+          "wv069": 252.76613034325015,
+          "wv073": 263.29133611315865,
+          "ir087": 288.55207070015797,
+          "ir096": 263.64118031341025,
+          "ir105": 291.3025921545636,
+          "ir112": 290.982874309017,
+          "ir123": 288.4917312292452,
+          "ir133": 273.9811634897418
+        },
+        "reader_dqf_by_channel": {
+          "wv063": 0,
+          "wv069": 0,
+          "wv073": 0,
+          "ir087": 0,
+          "ir096": 0,
+          "ir105": 0,
+          "ir112": 0,
+          "ir123": 0,
+          "ir133": 0
+        }
+      },
+      "nearest_pixel_within_2p5km": true,
+      "time_interpretation": "Filename label and scene acquisition are OBT; mission_reference_time is planned UTC; payload valid_time_utc remains unset."
+    }
+  ]
+}

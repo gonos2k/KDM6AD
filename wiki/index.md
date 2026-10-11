@@ -111,3 +111,5 @@ date_modified: 2026-10-08
 - [[sources/pr409-problem-evidence-alignment-2026-10-11]] — Fixed-forcing T/Q subproblem and upper process-goal evidence mapped separately; reviewer score attribution corrected, no new experiment.
 
 - [[sources/pr410-retained-case-claims-2026-10-11]] — Retained Jul19 actual fit response and source/input-equivalence inference; no new H/M/date run or process-rate claim.
+
+- [[sources/pr411-v4-actual-integration-2026-10-12]] — One real V4 spawn/RTTOV/analysis/audit/checkpoint path on retained Jul19 inputs; no native rerun/new date or convergence claim.

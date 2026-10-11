@@ -1,0 +1,43 @@
+{
+  "schema": "pr411_actual_v4_local_validation_v1",
+  "base_main": "f46658a28f67598bea6d3be02644ecbbdaaa58cb",
+  "actual_top_level_executions": 1,
+  "actual_process_exit_observed": 0,
+  "run_id": "PR411_REAL_V4_JUL19_20261012_01",
+  "driver_status": "RETURNED_CASE_DIAGNOSTIC",
+  "strict_convergence": false,
+  "physical_matchup_and_science_acceptance": "NOT_ASSESSED",
+  "new_native_integrations": 0,
+  "new_observation_dates": 0,
+  "original_L1B_SHA_restored_count": 9,
+  "native_same_case_array_match_count": 71,
+  "logical_H_returns": 5,
+  "internal_RTTOV_child_calls": "NOT_INSTRUMENTED",
+  "spawn_requested_workers": 1,
+  "runtime_PID_inventory": "NOT_INSTRUMENTED",
+  "source_asset_bindings_current_match": true,
+  "checkpoint_state_control_gradient_BT_mask_quality_checked": true,
+  "independent_green_private_checkpoint_check": true,
+  "independent_red_callback_asset_checkpoint_check": true,
+  "ruff_undefined_name_family": "passed",
+  "local_links_checked": 40,
+  "missing_links": [],
+  "no_raw_private_arrays_in_public_packet": true,
+  "no_production_model_AD_solver_V4_code_changes": true,
+  "no_R_M_I_M_or_closed_derivative_campaign_repeated": true,
+  "score_reassessment": false,
+  "branch_CI": "not run at this local validation time; public CI does not rerun this private actual case",
+  "resolved_packaging_findings": [
+    "Pinned Python argv corrected before launch",
+    "Execution log path/public copy and observed-exit marker added without re-execution"
+  ],
+  "graph": {
+    "prior_unique_ids_preserved": true,
+    "scoped_relationships_present": true,
+    "semantic_nodes": 14,
+    "semantic_edges": 13,
+    "graph_nodes": 18505,
+    "graph_edges": 31594,
+    "limits": "Cached code graph plus scoped actual V4 integration semantics, not complete corpus certification; source authoritative"
+  }
+}
