@@ -465,3 +465,5 @@ SRF substitution or production algorithm changed.
 - 2026-10-12: Added [[sources/pr414-jul19-ten-minute-local-window-2026-10-12]]; actual three-slot joint window/real RTTOV audit and saved gradient, held-forcing/nominal-time/nonconvergence limits, scoped additional-directory inventory. No other-date model input substitution.
 
 - 2026-10-12: Added [[sources/pr415-three-slot-bounded-finish-2026-10-12]]: unchanged three-slot problem, one eight-budget result with smaller unconverged gradient, constant sampled BT and materially changed initial control; specific hourly child normal completion identified, provenance/date-attribute gaps preserved.
+
+- 2026-10-12: Added [[sources/pr416-hourly-native-column-2026-10-12]]: actual05/06/07 columns, T/Q/cloud/pressure/wind changes and independently checked corrected temperature; no current-case substitution or new model/H calls.

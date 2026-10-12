@@ -23,6 +23,7 @@ date_modified: 2026-10-08
 - [[queries/_index|Queries]] - 2 pages
 
 ## Sources
+- [[sources/pr416-hourly-native-column-2026-10-12|Historical hourly native column]] — Actual weather slices and corrected units, with source/moving-level and no-BT/process-budget limits.
 - [[sources/pr415-three-slot-bounded-finish-2026-10-12|Three-slot bounded numerical finish]] — Same problem, lower cost/gradient, no temporal BT evolution; positive hourly-run identity with explicit remaining source-byte gaps.
 - [[sources/pr414-jul19-ten-minute-local-window-2026-10-12|Jul19 actual ten-minute local window]] — Three actual AMI slots jointly audited under held forcing; finite-budget, not host cycling/new date.
 - [[sources/pr413-cloud-bounded-convergence-2026-10-12|Bounded convergence of natural cloudy column]] — Same problem, lower gradient/cost and QC-loss persistence; strict convergence and other dates remain open.

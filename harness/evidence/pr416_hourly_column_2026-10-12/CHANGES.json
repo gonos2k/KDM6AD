@@ -1,0 +1,202 @@
+{
+  "schema": "pr416_saved_hourly_changes_v1",
+  "source_summary_sha256": "67b5db6adbe3f25567fc66ac231c66ebb312542a03ab352bdffe07e02519b489",
+  "source_csv_sha256": "4474cb0721e5eab6802f9d66ef07c63d866e6b4831fe4cf0b10115236cfd9e30",
+  "hour_pairs": [
+    {
+      "from": "2025-07-19_05:00:00",
+      "to": "2025-07-19_06:00:00",
+      "elapsed_s": 3600,
+      "changes_at_same_native_eta_index": {
+        "temperature_K": {
+          "max_abs_change": 2.522443762585482,
+          "signed_change_at_max": -2.522443762585482,
+          "native_model_k": 37,
+          "RMS_change": 0.6034962964505849
+        },
+        "theta_dry_K": {
+          "max_abs_change": 5.669858230769194,
+          "signed_change_at_max": -5.669858230769194,
+          "native_model_k": 37,
+          "RMS_change": 1.2589263959837371
+        },
+        "QVAPOR": {
+          "max_abs_change": 0.0003103753551840782,
+          "signed_change_at_max": -0.0003103753551840782,
+          "native_model_k": 9,
+          "RMS_change": 0.0001017805661185198
+        },
+        "QCLOUD": {
+          "max_abs_change": 4.4970143790123984e-05,
+          "signed_change_at_max": -4.4970143790123984e-05,
+          "native_model_k": 3,
+          "RMS_change": 7.200986101461857e-06
+        },
+        "pressure_center_Pa": {
+          "max_abs_change": 36.29327392578125,
+          "signed_change_at_max": -36.29327392578125,
+          "native_model_k": 1,
+          "RMS_change": 18.62912142978257
+        },
+        "z_center_m": {
+          "max_abs_change": 11.095431880774413,
+          "signed_change_at_max": -11.095431880774413,
+          "native_model_k": 38,
+          "RMS_change": 5.022968343193067
+        },
+        "delz_m": {
+          "max_abs_change": 7.832906934319908,
+          "signed_change_at_max": -7.832906934319908,
+          "native_model_k": 37,
+          "RMS_change": 1.8237455309264285
+        },
+        "rho_d_kg_m3": {
+          "max_abs_change": 0.0014828480303301639,
+          "signed_change_at_max": -0.0014828480303301639,
+          "native_model_k": 2,
+          "RMS_change": 0.0008043030957513982
+        },
+        "rho_m_kg_m3": {
+          "max_abs_change": 0.001777222451740612,
+          "signed_change_at_max": -0.001777222451740612,
+          "native_model_k": 9,
+          "RMS_change": 0.0007930518996529842
+        },
+        "U_east_ms": {
+          "max_abs_change": 2.9215277334962995,
+          "signed_change_at_max": 2.9215277334962995,
+          "native_model_k": 38,
+          "RMS_change": 1.5044170775561398
+        },
+        "V_north_ms": {
+          "max_abs_change": 5.004093264818827,
+          "signed_change_at_max": -5.004093264818827,
+          "native_model_k": 38,
+          "RMS_change": 1.3955846389147033
+        }
+      }
+    },
+    {
+      "from": "2025-07-19_06:00:00",
+      "to": "2025-07-19_07:00:00",
+      "elapsed_s": 3600,
+      "changes_at_same_native_eta_index": {
+        "temperature_K": {
+          "max_abs_change": 0.890661630493554,
+          "signed_change_at_max": -0.890661630493554,
+          "native_model_k": 31,
+          "RMS_change": 0.39929548257109565
+        },
+        "theta_dry_K": {
+          "max_abs_change": 1.668044618388933,
+          "signed_change_at_max": -1.668044618388933,
+          "native_model_k": 31,
+          "RMS_change": 0.6389533151169648
+        },
+        "QVAPOR": {
+          "max_abs_change": 0.0003991220146417618,
+          "signed_change_at_max": -0.0003991220146417618,
+          "native_model_k": 8,
+          "RMS_change": 0.00012882544420200938
+        },
+        "QCLOUD": {
+          "max_abs_change": 2.0450122974580154e-05,
+          "signed_change_at_max": -2.0450122974580154e-05,
+          "native_model_k": 3,
+          "RMS_change": 3.274640437006517e-06
+        },
+        "pressure_center_Pa": {
+          "max_abs_change": 114.95947265625,
+          "signed_change_at_max": -114.95947265625,
+          "native_model_k": 2,
+          "RMS_change": 58.536652953830306
+        },
+        "z_center_m": {
+          "max_abs_change": 5.261292460985715,
+          "signed_change_at_max": 5.261292460985715,
+          "native_model_k": 28,
+          "RMS_change": 2.477191794671815
+        },
+        "delz_m": {
+          "max_abs_change": 2.7628455112771917,
+          "signed_change_at_max": -2.7628455112771917,
+          "native_model_k": 31,
+          "RMS_change": 1.009804321319001
+        },
+        "rho_d_kg_m3": {
+          "max_abs_change": 0.002891357927968574,
+          "signed_change_at_max": -0.002891357927968574,
+          "native_model_k": 3,
+          "RMS_change": 0.0013817563746354672
+        },
+        "rho_m_kg_m3": {
+          "max_abs_change": 0.003042158207044121,
+          "signed_change_at_max": -0.003042158207044121,
+          "native_model_k": 8,
+          "RMS_change": 0.0014758171226215732
+        },
+        "U_east_ms": {
+          "max_abs_change": 2.2315277957296065,
+          "signed_change_at_max": 2.2315277957296065,
+          "native_model_k": 3,
+          "RMS_change": 1.2316736955909298
+        },
+        "V_north_ms": {
+          "max_abs_change": 2.8488930394235474,
+          "signed_change_at_max": 2.8488930394235474,
+          "native_model_k": 26,
+          "RMS_change": 1.312044980749917
+        }
+      }
+    }
+  ],
+  "samples": [
+    {
+      "time": "2025-07-19_05:00:00",
+      "QCLOUD_path_g_m2": 7.922122588238436,
+      "QRAIN_path_g_m2": 0.013221939584889738,
+      "host_dry_column_mass_kg_m2": 9717.13748550415,
+      "surface": {
+        "TSK": 298.6294860839844,
+        "T2": 297.4229431152344,
+        "Q2": 0.017475532367825508,
+        "U10": -3.294942855834961,
+        "V10": 1.5932070016860962,
+        "HGT": 0.0
+      }
+    },
+    {
+      "time": "2025-07-19_06:00:00",
+      "QCLOUD_path_g_m2": 2.47542621736129,
+      "QRAIN_path_g_m2": 0.0,
+      "host_dry_column_mass_kg_m2": 9713.593933105469,
+      "surface": {
+        "TSK": 298.6917419433594,
+        "T2": 297.5685119628906,
+        "Q2": 0.017655091360211372,
+        "U10": -2.292672634124756,
+        "V10": 1.5390195846557617,
+        "HGT": 0.0
+      }
+    },
+    {
+      "time": "2025-07-19_07:00:00",
+      "QCLOUD_path_g_m2": 0.0,
+      "QRAIN_path_g_m2": 0.0,
+      "host_dry_column_mass_kg_m2": 9702.591083526611,
+      "surface": {
+        "TSK": 298.75079345703125,
+        "T2": 297.8063049316406,
+        "Q2": 0.017736945301294327,
+        "U10": -0.20679375529289246,
+        "V10": 2.987760543823242,
+        "HGT": 0.0
+      }
+    }
+  ],
+  "comparison_coordinates": "same native eta index; pressure and geometric height change; not fixed-height/isobaric tendency",
+  "no_forecast_reopen_or_new_model_H_calls": true,
+  "not_current_retained_case_equivalence": true,
+  "no_interpolated_host_state_0606_0616": true,
+  "no_individual_process_or_closed_flux_budget_claim": true
+}

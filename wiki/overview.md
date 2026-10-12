@@ -59,3 +59,10 @@ eight-budget numerical check. Gradient/cost decrease, but sampled BT stays
 constant and strict convergence remains unmet. A narrowed hourly archive audit
 now confirms normal historical four-rank completion, without certifying old
 executable/input bytes or substituting it into the current experiment.
+
+## Historical hourly-state evidence
+
+[[sources/pr416-hourly-native-column-2026-10-12]] records real selected05/06/07
+native weather arrays with evolving cloud/thermodynamics/metrics/winds. It is
+a distinct historical host diagnostic, not a temporal BT validation or an
+interpolated replacement for the fixed-forcing three-slot experiment.
