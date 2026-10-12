@@ -1,0 +1,125 @@
+{
+  "schema": "pr418_validation_v1",
+  "code_commit": "96312ff371100d500771e4e55b26859916725969",
+  "baseline_main": "b07af3fe",
+  "python_executable": "/private/tmp/KDM6AD-research-rc-20261007/env/bin/python",
+  "assertions_enabled": true,
+  "thread_environment": {
+    "OMP_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "OMP_THREAD_LIMIT": "1",
+    "VECLIB_MAXIMUM_THREADS": "1"
+  },
+  "full_oracle_final": {
+    "passed": 1841,
+    "skipped": 32,
+    "warnings": 51,
+    "elapsed_seconds": 290.86
+  },
+  "full_harness": {
+    "passed": 2253,
+    "skipped": 59,
+    "deselected": 309,
+    "elapsed_seconds": 67.49
+  },
+  "focused_checks_reported_by_green": {
+    "nine_channel_pipeline": 7,
+    "existing_capture_storage": 12,
+    "original_case_adapter": 8,
+    "single_column_oracle": 25
+  },
+  "test_loader_failure_resolution": {
+    "first_full_oracle": {
+      "failed": 1,
+      "passed": 1840,
+      "skipped": 32
+    },
+    "baseline_reproduction_b07af3fe": {
+      "failed": 1,
+      "deselected": 1859
+    },
+    "standalone_original_test_passed": true,
+    "full_collection_after_loader_fix": {
+      "passed": 1,
+      "deselected": 1872
+    },
+    "cause": "PR406/PR407 historical top-level case_capture_adapter module cache collision; intended PR407 dependency now isolated in test loader"
+  },
+  "skip_limits": [
+    "C++ dump/conservative/autograd tools and shared library not built in this worktree",
+    "gitignored host reference tree and LC05 input paths absent from isolated worktree",
+    "optional pyproj missing from local test interpreter",
+    "private forecast/time-window/AMI/calibration/live integration prerequisites unavailable for specific tests",
+    "harness local-only compiled/host legs not selected without --local"
+  ],
+  "not_executed": [
+    "native builds/host integration",
+    "C ABI or operational f32 revalidation",
+    "real nine-channel analysis/accepted checkpoint",
+    "simultaneous nine-channel H",
+    "additional seven-channel H or H05",
+    "new scientific-case KDM M/optimizer; synthetic test M/LBFGS calls are separately attributed",
+    "new-date analysis/observed temporal-fit comparison"
+  ],
+  "new_actual_H": {
+    "calls": 2,
+    "channels": [
+      8,
+      9
+    ],
+    "time_indices": [
+      6,
+      7
+    ],
+    "all_four_model_quality_flags": 32768,
+    "all_nine_quality_zero_gate": false
+  },
+  "existing_L1B_source_mapping": "L1B_BINDING_CHECK.json; nine DQF0 source values only, no hourly matchup",
+  "original_PR417_packet_and_PR407_driver_byte_preserved": true,
+  "original_H_assets_and_fixtures_hash_preserved": true,
+  "ruff_F821_F822_F823": "PASS",
+  "git_whitespace_check": "PASS with standard CSV CRLF treated as EOL; original generated CSV bytes preserved",
+  "Green_Red_review": "actionable final-driver audit finding resolved; limits in GREEN_POSTRUN.md/RED_POSTRUN.md",
+  "graph": {
+    "semantic_files": [
+      "docs/INTERNAL_RESEARCH_CLOSEOUT_2026-10-12.md",
+      "harness/evidence/pr418_nine_channels_2026-10-12/GEOMETRY_CORRECTION.md",
+      "harness/evidence/pr418_nine_channels_2026-10-12/REPORT.md",
+      "wiki/sources/pr418-nine-channel-closeout-2026-10-12.md"
+    ],
+    "cached_files": 4,
+    "fragment_nodes": 22,
+    "fragment_edges": 34,
+    "graph_nodes": 19053,
+    "graph_edges": 32258,
+    "source_verified": true,
+    "scope": "targeted four-document semantic extraction and full code refresh; older graph coverage remains incomplete",
+    "token_accounting": "exact subagent token usage unavailable; no paid extraction API called"
+  },
+  "local_log_bindings": {
+    "pr418_harness_pytest.log": {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr418_harness_pytest.log",
+      "sha256": "a3329ffe94dd9c497eaca217489a04668e1993a321b98e6f1f1fa3c175bf33a2"
+    },
+    "pr418_oracle_pytest.log": {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr418_oracle_pytest.log",
+      "sha256": "11bd44543fc4afc56b30ba3a7830c969b58b174d9ba9081bbf79af54d43377d4"
+    },
+    "pr418_oracle_final_pytest.log": {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr418_oracle_final_pytest.log",
+      "sha256": "4bfd3faf5dbbc79a04f008e599ef7256feef831d9800264d9d971e208dfcc5af"
+    },
+    "pr418_baseline_collection_failure.log": {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr418_baseline_collection_failure.log",
+      "sha256": "bba3dff023e4458a59437e180a36c208185d9d75eb58ab67aa3378a8992b5147"
+    },
+    "pr418_oracle_failed_case_recheck.log": {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr418_oracle_failed_case_recheck.log",
+      "sha256": "5b6af0c27926dd8cda5be8713c0e3453a7a3aa2596b5f86eefbc382c5b177fff"
+    },
+    "pr418_full_collection_recheck.log": {
+      "path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/pr418_full_collection_recheck.log",
+      "sha256": "85f94677555c8d3cb7b5926bcab3fcff192176339cc3061771daebbde95484de"
+    }
+  }
+}
