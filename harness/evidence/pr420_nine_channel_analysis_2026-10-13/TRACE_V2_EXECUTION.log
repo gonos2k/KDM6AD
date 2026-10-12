@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/private/tmp/KDM6AD-pr418-postmerge-audit/harness/evidence/pr420_nine_channel_analysis_2026-10-13/trace_saved07_v2.py", line 99, in <module>
+    main()
+  File "/private/tmp/KDM6AD-pr418-postmerge-audit/harness/evidence/pr420_nine_channel_analysis_2026-10-13/trace_saved07_v2.py", line 77, in main
+    assert any(len(r) > 3 and r[0] == kind and int(r[3]) == internal for r in rows), (kind, internal)
+AssertionError: ('EDD_CALL', 1)

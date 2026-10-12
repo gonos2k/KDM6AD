@@ -23,6 +23,7 @@ date_modified: 2026-10-08
 - [[queries/_index|Queries]] - 2 pages
 
 ## Sources
+- [[sources/pr420-dom-nine-channel-analysis-2026-10-13|Actual DOM nine-channel analysis]] — Quality0 on all9, matched DOM7 audit/checkpoint, joint M response and independent gradient direction; separate opt-in H and explicit nonconvergence/provenance limits.
 - [[sources/pr419-postmerge-verification-2026-10-12|PR418 post-merge verification]] — Reader producer now hash-bound and nine-channel capture/audit tests auto-collected in oracle CI; historical H results preserved.
 - [[sources/pr418-nine-channel-closeout-2026-10-12|WV063/WV069 support and research closeout]] — Added channels returned flags32768; optional9 I/O, native geometry correction and completed functional scope remain distinct from scientific acceptance.
 - [[sources/pr417-hourly-rttov-response-2026-10-12|Historical hourly AMI forward response]] — Native snapshot-specific H inputs give channel changes, with measure/layer and source limits.

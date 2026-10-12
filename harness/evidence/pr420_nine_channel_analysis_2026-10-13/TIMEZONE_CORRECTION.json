@@ -1,0 +1,41 @@
+{
+  "schema": "pr420_timezone_correction_v1",
+  "authored_at_local": "2026-10-13T01:16:17.914519+09:00",
+  "display_timezone": "KST",
+  "requested_timezone_name": "Asia/Seoul",
+  "correction_scope": "additive display metadata for current/newly authored PR420 records; no execution record or plan was rewritten",
+  "timezone_offset": "UTC+09:00",
+  "historical_plan_bound_records": {
+    "BUILD_CONTEXT.json": {
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr420_nine_channel_20261013/rttov_trace/BUILD_CONTEXT.json",
+      "sha256_restored": "9fb45afaa5ca61c4878cba70cf9af7f35b1a9b31d4a49820bdc0978b58172e1a",
+      "plan_bound_sha256": "9fb45afaa5ca61c4878cba70cf9af7f35b1a9b31d4a49820bdc0978b58172e1a",
+      "matches_archived_binding": true
+    },
+    "BUILD_CONTEXT_V1.json": {
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr420_nine_channel_20261013/rttov_trace/BUILD_CONTEXT_V1.json",
+      "sha256_restored": "9fb45afaa5ca61c4878cba70cf9af7f35b1a9b31d4a49820bdc0978b58172e1a",
+      "plan_bound_sha256": "9fb45afaa5ca61c4878cba70cf9af7f35b1a9b31d4a49820bdc0978b58172e1a",
+      "matches_archived_binding": true
+    },
+    "BUILD_CONTEXT_V2.json": {
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr420_nine_channel_20261013/rttov_trace/BUILD_CONTEXT_V2.json",
+      "sha256_restored": "aedcc2e6f1d32ca65dba53a2f90c1ea7f5ffd8529e6061b84ad1480040186b39",
+      "plan_bound_sha256": "aedcc2e6f1d32ca65dba53a2f90c1ea7f5ffd8529e6061b84ad1480040186b39",
+      "matches_archived_binding": true
+    }
+  },
+  "execution_plan_hashes_unchanged": {
+    "/private/tmp/KDM6AD-pr418-postmerge-audit/harness/evidence/pr420_nine_channel_analysis_2026-10-13/TRACE_PLAN.json": "3237e48286956ef7dd548a06dd3d4ce8d9767a5e60793138a79a99fa7ff472dc",
+    "/private/tmp/KDM6AD-pr418-postmerge-audit/harness/evidence/pr420_nine_channel_analysis_2026-10-13/TRACE_V2_PLAN.json": "454533ba01db91319115d21231c857cb87eb464e4d783c33f336fa4498e94345"
+  },
+  "timestamp_handling": "Historical BUILD_CONTEXT bytes, timezone labels, and UTC/model times were restored exactly to their archived plan-bound content. The correction timestamp is authored in Asia/Seoul/KST. No timestamp conversion or raw/model UTC shift was applied.",
+  "future_recording_rule": "Use Asia/Seoul and display_timezone KST for newly authored PR420 timestamps.",
+  "execution_counts_added": {
+    "H": 0,
+    "RTTOV": 0,
+    "M_optimizer": 0,
+    "native_run": 0,
+    "L1B_acquisition": 0
+  }
+}

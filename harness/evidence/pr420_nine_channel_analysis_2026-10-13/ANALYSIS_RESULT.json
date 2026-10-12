@@ -1,0 +1,21 @@
+{
+  "status": "RETURNED_TWO_ACTUAL_DOM_ANALYSES",
+  "runs": {
+    "DOM9": {
+      "status": "RETURNED_DIAGNOSTIC_ONLY",
+      "objective_audit": "CROSSCHECKED",
+      "n_valid": 9,
+      "logical_H_calls": 6
+    },
+    "DOM7": {
+      "status": "RETURNED_DIAGNOSTIC_ONLY",
+      "objective_audit": "CROSSCHECKED",
+      "n_valid": 7,
+      "logical_H_calls": 6
+    }
+  },
+  "plan_sha256": "c8291602c6b69b5bd107401ce8eb6b480a898423c2b3ac3214179b740dc4dd9e",
+  "same_problem_except_selected_channels": true,
+  "native_model_runs": 0,
+  "actual_pixel_UTC_verified": false
+}

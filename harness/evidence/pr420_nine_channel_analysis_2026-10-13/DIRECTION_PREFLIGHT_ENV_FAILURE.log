@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/private/tmp/KDM6AD-pr418-postmerge-audit/harness/evidence/pr420_nine_channel_analysis_2026-10-13/check_dom_direction.py", line 120, in <module>
+    main()
+  File "/private/tmp/KDM6AD-pr418-postmerge-audit/harness/evidence/pr420_nine_channel_analysis_2026-10-13/check_dom_direction.py", line 30, in main
+    assert all(os.environ.get(k) == v for k, v in old["thread_environment"].items())
+AssertionError

@@ -50,7 +50,23 @@ tendency” alongside local M without a separate process/coordinate contract.
 
 Claims above cite immutable experiment records, not the newest workspace
 library as a substitute for old executed code. The geometry correction changes
-descriptions only; the angle-choice BT effect was not calculated. New added
-channel results disclose new versus reused channels, quality flags and the
-absence of a new analysis. Private assets, checkpoints and native host inputs
+descriptions only; the angle-choice BT effect was not calculated. PR418's added
+channel records disclose new versus reused channels, quality flags and the
+absence of an analysis in that campaign. Private assets, checkpoints and native host inputs
 remain private; portable/synthetic CI is separately attributed.
+
+## Additive nine-channel execution — 2026-10-13 KST
+
+[PR420](../harness/evidence/pr420_nine_channel_analysis_2026-10-13/REPORT.md)
+completes an actual nine-channel analysis/audit/checkpoint and matched
+seven-channel comparison on the retained PR412 natural-QC case using explicitly
+opt-in RTTOV DOM1, with unchanged controls/M/prior/budget. All selected model
+quality flags are zero. Joint M-response and one independent total-gradient
+direction are verified. The original Edd3 default and historical flagged
+results remain preserved; the separate 07:00 MP137 trace localizes its
+20km⁻¹ extinction cap and is not relabeled as the 05:55:40 MP337 analysis.
+
+The returned DOM9 gradient L∞0.2929647968 still exceeds 1e−10. Pixel UTC,
+interface identity, the original pair's unbound calibration-JSON history,
+other dates and scientific truth remain stated limits. This adds the requested
+optional execution evidence without reopening seven-channel functional closure.

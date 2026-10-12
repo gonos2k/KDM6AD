@@ -1,0 +1,64 @@
+{
+  "schema": "pr420_red_lineage_check_v1",
+  "review_scope": "Read-only lineage and arithmetic verification of the completed DOM9 directional finite difference. This review made zero H, KDM, M, or optimizer calls.",
+  "capture_receipt": {
+    "path": "harness/evidence/pr420_nine_channel_analysis_2026-10-13/DOM9_CAPTURE.json",
+    "sha256": "75dd9762457a62be9a88f70f3b0456ddcb85ce18ef0495a5abf8233ebcd9b0e8",
+    "status": "RETURNED_DIAGNOSTIC_ONLY",
+    "private_checkpoint_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr420_nine_channel_20261013/DOM_ANALYSIS_PAIR_ONCE_01/DOM9/private/accepted_state.npz",
+    "private_checkpoint_sha256": "902f5b64e808503b33d92477f585693f5fcfe91aede0cc2982f307bfd4c2e06f",
+    "receipt_checkpoint_sha256": "902f5b64e808503b33d92477f585693f5fcfe91aede0cc2982f307bfd4c2e06f"
+  },
+  "direction_plan": {
+    "path": "harness/evidence/pr420_nine_channel_analysis_2026-10-13/DIRECTION_PLAN.json",
+    "sha256": "a9e8430ac00766988e4bdd22ab5daba75ccc2bd27d2cf857e0cdb022a0a550e9",
+    "step_control_units": 0.001,
+    "logical_H_calls": 2,
+    "KDM_value_steps": 2,
+    "optimizer_calls": 0,
+    "calibration_json_bound_for_direction": true,
+    "calibration_json_bound_for_original_pair": false
+  },
+  "direction_result": {
+    "path": "harness/evidence/pr420_nine_channel_analysis_2026-10-13/DIRECTION_RESULT.json",
+    "sha256": "20154da9b48f208989c6727bd7e81d25007ccddd46243f733bb30278064608b4",
+    "status": "PASS",
+    "directional_FD": 0.5093536529727771,
+    "directional_AD": 0.5093536523613577,
+    "absolute_error": 6.114194706086096e-10,
+    "relative_error": 1.2003830104566365e-09,
+    "quality_all_zero": true
+  },
+  "checkpoint_gradient_lineage": {
+    "checkpoint_key": "control__optimizer_final_gradient_v_state",
+    "capture_receipt_array_sha256_f64": "062cbd56e41020b2f482a1b678372ae8c4e7e754f403ef49662be62be20e910e",
+    "independently_hashed_checkpoint_array_sha256_f64": "062cbd56e41020b2f482a1b678372ae8c4e7e754f403ef49662be62be20e910e",
+    "direction_file_sha256": "88207c252993ee0543651df7d2798e28ace12f2bd53492743839ca17d5699cb9",
+    "direction_is_normalized_checkpoint_gradient": true,
+    "active_state_control_count": 51,
+    "state_gradient_linf": 0.2929647967869784,
+    "recorded_capture_state_gradient_linf": 0.2929647967869784
+  },
+  "checks": {
+    "capture_checkpoint_hash_matches_npz_bytes": true,
+    "direction_plan_checkpoint_pin_matches_npz_bytes": true,
+    "checkpoint_final_state_gradient_matches_capture_receipt": true,
+    "checkpoint_state_control_matches_capture_receipt": true,
+    "checkpoint_parameter_gradient_matches_capture_receipt": true,
+    "direction_equals_normalized_checkpoint_gradient": true,
+    "direction_unit_norm": true,
+    "analysis_plan_hash_matches_direction_binding": true,
+    "direction_result_references_exact_direction_plan": true,
+    "reported_ad_matches_checkpoint_dot_direction": true,
+    "reported_fd_recomputes_from_plus_minus_costs": true,
+    "both_perturbed_quality_vectors_zero": true,
+    "active_control_count_matches_51": true,
+    "source_capture_reports_nonconverged_iterate": true
+  },
+  "all_lineage_checks_pass": true,
+  "limitations": [
+    "This verifies one first-order direction at the returned DOM9 iterate only; it does not establish optimizer convergence, higher derivatives, or a full Jacobian.",
+    "The KMA calibration JSON was pinned for the two-call direction check but was not bound in the original DOM9/DOM7 capture plan; its omission remains an additive provenance limitation for that pair.",
+    "The original saved-time trace analyzed separately was PR417 time index 7 at 2025-07-19 07:00:00 (historical MP137), not the PR420 retained 05:55:40 MP337 background; its layer values do not transfer."
+  ]
+}

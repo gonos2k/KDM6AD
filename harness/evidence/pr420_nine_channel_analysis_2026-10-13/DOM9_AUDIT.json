@@ -1,0 +1,97 @@
+{
+  "status": "CROSSCHECKED",
+  "expected_channel_count": 9,
+  "initial_zero_control_objective": {
+    "Jo0_huber": 13.224700697554198,
+    "Jb_state": 0.0,
+    "Jtheta": 0.0,
+    "Jtotal": 13.224700697554198,
+    "trace_index": 0,
+    "n_valid": 9,
+    "operator_signature_sha256": "e4d74cf6c06026032f0d1078e701f505ee0fefb7d67854e7cd4a93b7a0870d11",
+    "frozen_mask": {
+      "shape": [
+        1,
+        9
+      ],
+      "dtype": "float64",
+      "values": [
+        [
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0
+        ]
+      ],
+      "sha256_f64": "19088d37e44fec2ac250d3cc3ba2102f084acde81a46ade67312433a0a6af3e2"
+    }
+  },
+  "background_quality_probe": {
+    "probe_masked_cost": 0.0,
+    "cost_semantics": "non-grad background quality probe with all-zero loss mask; not initial zero-control closure Jo",
+    "zero_mask": {
+      "shape": [
+        1,
+        9
+      ],
+      "dtype": "float64",
+      "values": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "sha256_f64": "834a709ba2534ebe3ee1397fd4f7bd288b2acc1d20a08d6c862dcd99b6f04400"
+    },
+    "zero_mask_cost_recomputed": 0.0,
+    "probe_BT_cost_recomputed_with_frozen_mask": 13.224700697554198,
+    "probe_BT_K": [
+      [
+        237.56646733505906,
+        248.33570515115346,
+        260.8039297767686,
+        291.22670833784395,
+        268.8130999606277,
+        293.66763493837334,
+        293.3826890019477,
+        290.68366670189687,
+        275.42604762298134
+      ]
+    ],
+    "rad_quality": [
+      [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    ]
+  },
+  "crosschecks": {
+    "first_zero_control_closure_components_sum": true,
+    "probe_cost_matches_zero_mask_recomputation": true,
+    "probe_and_initial_closure_states_match": true,
+    "probe_BT_matches_first_zero_control_H_BT": true,
+    "probe_target_matches_validated_observation": true,
+    "frozen_mask_matches_first_zero_control_H": true,
+    "probe_BT_under_frozen_mask_matches_initial_zero_control_Jo": true,
+    "h_or_m_re_evaluations_for_crosscheck": 0
+  }
+}

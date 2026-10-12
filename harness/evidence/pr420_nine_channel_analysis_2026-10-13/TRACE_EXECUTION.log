@@ -1,0 +1,8 @@
+{"name": "control", "BT_K": [[238.06241257211687, 248.8070814266319]], "rad_quality": [[32768.0, 32768.0]]}
+{"name": "instrumented", "BT_K": [[238.06241257211687, 248.8070814266319]], "rad_quality": [[32768.0, 32768.0]]}
+Traceback (most recent call last):
+  File "/private/tmp/KDM6AD-pr418-postmerge-audit/harness/evidence/pr420_nine_channel_analysis_2026-10-13/trace_saved07.py", line 187, in <module>
+    main()
+  File "/private/tmp/KDM6AD-pr418-postmerge-audit/harness/evidence/pr420_nine_channel_analysis_2026-10-13/trace_saved07.py", line 170, in main
+    raise ValueError("missing trace records: " + kind + "/" + str(channel))
+ValueError: missing trace records: EDD_CALL/8
