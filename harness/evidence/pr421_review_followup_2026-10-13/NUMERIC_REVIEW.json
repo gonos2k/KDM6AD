@@ -1,0 +1,83 @@
+{
+  "schema": "pr421_public_numeric_recompute_v1",
+  "inputs": {
+    "DOM7_CAPTURE_sha256": "f8e68587901987bb842c92ba3adafba8e05ba1d34a8f4276f1e607af569d2ddf",
+    "DOM9_CAPTURE_sha256": "75dd9762457a62be9a88f70f3b0456ddcb85ce18ef0495a5abf8233ebcd9b0e8",
+    "CHANNELS_csv_sha256": "5dd414c465fd8a6fe09457ec2baca62d7a8d2f7e2ec3d5d5047b79c1a6c521f1",
+    "DIRECTION_RESULT_sha256": "20154da9b48f208989c6727bd7e81d25007ccddd46243f733bb30278064608b4",
+    "DIRECTION_PLAN_sha256": "a9e8430ac00766988e4bdd22ab5daba75ccc2bd27d2cf857e0cdb022a0a550e9",
+    "no_private_checkpoint_values_used": true
+  },
+  "common_7_cost_plus_prior": {
+    "initial_common7_Jo_DOM7": 8.029863677427983,
+    "initial_common7_Jo_DOM9": 8.029863677427983,
+    "initial_common7_equal": true,
+    "final_common7_Jo_DOM7": 6.224656348134357,
+    "final_common7_Jo_DOM9": 6.213744724653283,
+    "final_common7_observation_cost_delta_DOM9_minus_DOM7": -0.010911623481073995,
+    "final_common7_plus_prior_DOM7": 6.331861533573145,
+    "final_common7_plus_prior_DOM9": 6.333585942299874,
+    "final_common7_plus_prior_delta_DOM9_minus_DOM7": 0.0017244087267289376,
+    "full_objective_prior_terms": {
+      "DOM7": {
+        "Jb_state": 0.10720518543878768,
+        "Jtheta": 0.0
+      },
+      "DOM9": {
+        "Jb_state": 0.11984121764659092,
+        "Jtheta": 0.0
+      }
+    }
+  },
+  "added_channel_8_9_loss_gain": {
+    "initial_added2_Jo": 5.194837020126215,
+    "final_added2_Jo": 5.135073612882792,
+    "added2_gain": 0.05976340724342322,
+    "added2_fractional_reduction": 0.011504385414187872,
+    "DOM9_total_Jo_gain": 1.8758823600181227,
+    "DOM9_common7_gain": 1.8161189527746995,
+    "added2_gain_share_of_total_DOM9_Jo_gain": 0.0318588246881568,
+    "common7_gain_share_of_total_DOM9_Jo_gain": 0.9681411753118432,
+    "added2_initial_share_of_DOM9_initial_Jo": 0.3928132015181983,
+    "added2_final_share_of_DOM9_final_Jo": 0.4524765010907435,
+    "per_channel": {
+      "8": {
+        "name": "wv063",
+        "O_minus_B_K": 3.289721495419002,
+        "O_minus_A_K": 3.261075928611689,
+        "initial_huber_cost": 2.789721495419002,
+        "final_huber_cost": 2.761075928611689,
+        "huber_gain": 0.028645566807313116
+      },
+      "9": {
+        "name": "wv069",
+        "O_minus_B_K": 2.905115524707213,
+        "O_minus_A_K": 2.873997684271103,
+        "initial_huber_cost": 2.405115524707213,
+        "final_huber_cost": 2.373997684271103,
+        "huber_gain": 0.0311178404361101
+      }
+    },
+    "scope": "per-channel Huber arithmetic at the captured 9-channel point; raw whole-vector Jo across N is not a performance comparison"
+  },
+  "directional_minus_point_and_norm_ratio": {
+    "lower_minus_point_Jo": 11.348353347732616,
+    "lower_minus_point_Jb": 0.1197973609932878,
+    "lower_minus_point_Jtotal": 11.468150708725902,
+    "captured_returned_point_Jtotal": 11.468659555182667,
+    "returned_minus_lower_point_Jtotal": 0.0005088464567641893,
+    "plus_point_Jtotal": 11.469169416031848,
+    "step_control_units": 0.001,
+    "central_FD_recomputed_from_public_endpoints": 0.5093536529727771,
+    "AD_directional": 0.5093536523613577,
+    "captured_full_gradient_L2": 0.5093536523613577,
+    "prior_gradient_L2_from_half_squared_control_norm": 0.4895737281484596,
+    "full_gradient_over_prior_gradient_L2_ratio": 1.0404023399860622,
+    "FD_over_AD_ratio": 1.000000001200383,
+    "FD_over_full_gradient_L2_norm_ratio": 1.000000001200383,
+    "absolute_error": 6.114194706086096e-10,
+    "relative_error_vs_AD": 1.2003830104566365e-09,
+    "plus_minus_quality_all_zero": true
+  },
+  "created_at_kst": "2026-10-13T04:33:09.429498+09:00"
+}

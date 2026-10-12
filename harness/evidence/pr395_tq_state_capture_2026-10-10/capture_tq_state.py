@@ -41,6 +41,7 @@ from kdm6.da_single_column import (  # noqa: E402
     _selected_channels, run_single_column_analysis,
 )
 from kdm6.rttov_bridge import freeze_dry_air_density  # noqa: E402
+from kdm6.obs import ami_bt_coordinate  # noqa: E402
 from kdm6.state import Forcing, State  # noqa: E402
 from kdm6.thermo import (  # noqa: E402
     compute_qs_ice, compute_qs_water, compute_rh, default_thermo_params,
@@ -258,7 +259,20 @@ def _jsonable(value):
 
 
 def _source_snapshot() -> dict:
-    return {name: sha256_file(ROOT / name) for name in SOURCE_FILES}
+    # This legacy receipt field also binds the input actually read by the
+    # paired BT/K conversion, not only the Python reader's source text.
+    paths = {name: ROOT / name for name in SOURCE_FILES}
+    calibration = Path(ami_bt_coordinate._CAL_PATH).resolve()
+    paths[str(calibration)] = calibration
+    snapshot = {}
+    for name, path in paths.items():
+        try:
+            snapshot[name] = sha256_file(path)
+        except FileNotFoundError:
+            # Preserve disappeared inputs in the failure receipt. A missing
+            # preflight binding is rejected before any analysis work below.
+            snapshot[name] = None
+    return snapshot
 
 
 def _validate_intake_binding(
@@ -1091,6 +1105,9 @@ def run_capture(
     source_before = _source_snapshot()
     checkpoint_written = False
     try:
+        missing = [path for path, digest in source_before.items() if digest is None]
+        if missing:
+            raise FileNotFoundError("required analysis sources/inputs missing: " + ", ".join(missing))
         selected_channels = _selected_channels(channels)
         forcings = tuple(forcings)
         if not forcings:

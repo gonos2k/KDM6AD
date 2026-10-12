@@ -1,11 +1,12 @@
 ---
 title: Hot Cache
 type: meta
-date_modified: 2026-07-14
+date_modified: 2026-10-13
 ---
 # Hot Cache
 
 ## Current Focus
+- [[sources/pr421-calibration-dom-review-2026-10-13]] — Calibration input guard added for future runs; DOM8-stream effective rules and nonstationary/shared-cost interpretations recorded additively.
 - [[sources/pr420-dom-nine-channel-analysis-2026-10-13]] — Actual9 and matched7 DOM1 analyses/audits/checkpoints completed; default Edd3 preserved, gradient/time/provenance limits explicit.
 - [[sources/pr417-hourly-rttov-response-2026-10-12]] — Two actual historical06/07 H calls show nonzero joint BT response, all quality0; no model/optimizer or observed temporal-fit claim.
 - [[sources/pr416-hourly-native-column-2026-10-12]] — Actual05/06/07 fixed-column read shows thermodynamic/cloud/metric/wind changes; distinct historical NP4 source, no H or substitution.

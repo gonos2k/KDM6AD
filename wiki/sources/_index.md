@@ -1,9 +1,12 @@
 ---
 title: Sources Index
 type: folder-index
-date_modified: 2026-10-08
+date_modified: 2026-10-13
 ---
 # Sources
+
+- [[pr421-calibration-dom-review-2026-10-13]] — Future calibration JSON binding and recorded DOM/common-objective qualifications.
+- [[pr420-dom-nine-channel-analysis-2026-10-13]] — Actual finite-budget DOM9 and matched DOM7 analysis, audit and checkpoint with explicit scientific limits.
 
 - [[pr419-postmerge-verification-2026-10-12]] — Geometry producer hash checks and portable nine-channel regression coverage.
 

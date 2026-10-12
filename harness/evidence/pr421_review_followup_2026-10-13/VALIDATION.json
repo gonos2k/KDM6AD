@@ -1,0 +1,78 @@
+{
+  "schema": "pr421_review_followup_validation_v1",
+  "authored_at_kst": "2026-10-13T04:38:46.478097+09:00",
+  "basis_main": "741172da385d589747570329902edc300c2ba73e",
+  "local": {
+    "related_oracle_tests": {
+      "passed": 55,
+      "skipped": 0,
+      "files": [
+        "test_da_single_column.py",
+        "test_nine_channel_capture.py",
+        "test_nine_channel_source_binding.py",
+        "test_ami_bt_coordinate.py"
+      ],
+      "warning": "numpy.ndarray size changed RuntimeWarning in synthetic capture; tests pass",
+      "duration_s": 5.29
+    },
+    "legacy_synthetic_seven_capture": {
+      "passed": 1,
+      "duration_s": 2.18
+    },
+    "ruff": "PASS",
+    "git_diff_check": "PASS"
+  },
+  "guard_coverage": {
+    "supports": [
+      7,
+      9
+    ],
+    "actual_calibration_path_pinned": true,
+    "preparation_mutation_rejected_before_capture": true,
+    "missing_preflight_no_output_root_or_started_marker": true,
+    "missing_capture_entry_receipt_zero_H_optimizer_no_checkpoint": true,
+    "modify_delete_during_capture_failure_receipt_no_checkpoint": true,
+    "scope": "Synthetic H/temp assets with real KDM/minimizer/capture where used; not a private experiment rerun"
+  },
+  "preservation": {
+    "all41_PR420_manifest_entries_match": true,
+    "original_PR420_PLAN_recorded_hash_BT_and_executed_scripts_unmodified": true,
+    "historical_shared_source_attribution": "Shared capture and driver change only for future use; old runs refer to741172da/earlier revisions, not current working helper hashes.",
+    "no_KDM_AD_loss_solver_prior_or_support_map_change": true,
+    "no_new_private_RTTOV_native_optimizer_or_FD_call": true
+  },
+  "recorded_file_review": {
+    "retained_cases_read": 12,
+    "streams": 8,
+    "configured_flags_versus_DOM_effective_rules": "DOM_EFFECTIVE_SETTINGS.json",
+    "public_numeric_recompute": "NUMERIC_REVIEW.json",
+    "original_pair_calibration_history_still_unproven": true
+  },
+  "graph": {
+    "status": "PASS",
+    "nodes": 19233,
+    "edges": 32531,
+    "semantic_fragment_nodes": 12,
+    "semantic_fragment_edges": 11,
+    "cached_source_files": 7,
+    "code_AST_metadata_preserved_for_reused_nodes": true,
+    "actual_JSON_binding_edges_verified": true,
+    "three_docs": [
+      "REPORT.md",
+      "INTERNAL_RESEARCH_CLOSEOUT_2026-10-12.md",
+      "pr421-calibration-dom-review-2026-10-13.md"
+    ],
+    "private_RTTOV_graph_coverage": false,
+    "html": "Default5000node limit exceeded; graph.json/raw report updated",
+    "private_RTTOV_source_coverage": "Not present in public graph; guide/source checked separately, source-originalexe attestation unproven."
+  },
+  "CI": {
+    "status": "NOT_CAPTURED_IN_LOCAL_PACKET",
+    "where": "Current-head GitHub PR checks; final inspection saved separately",
+    "meaning": "Portable checks, not private native/RTTOV replay"
+  },
+  "reviews": {
+    "Green": "PASS",
+    "Red": "PASS"
+  }
+}

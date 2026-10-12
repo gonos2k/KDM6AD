@@ -42,6 +42,7 @@ load_module = _capture_adapter.load_module
 _prepare_capture_module = _capture_adapter.prepare_capture_module
 sha = _capture_adapter.sha
 from kdm6.da_single_column import _selected_channels  # noqa: E402
+from kdm6.obs import ami_bt_coordinate  # noqa: E402
 from kdm6.obs.obs_loss import compute_obs_loss  # noqa: E402
 
 LEGACY_DRIVER = ROOT / "harness/evidence/pr395_native_tq_intake_2026-10-10/run_analysis.py"
@@ -57,9 +58,10 @@ F64 = {"dtype": torch.float64}
 
 
 def _analysis_source_paths(legacy):
-    """Direct producers consumed by this driver, including viewing geometry."""
+    """Direct producers and the calibration input consumed by the analysis."""
     return (Path(__file__), INTAKE_SOURCE, PR407_PACKET / "case_capture_adapter.py",
-            LEGACY_DRIVER, legacy.CAPTURE_HELPER, legacy.NATIVE_READER)
+            LEGACY_DRIVER, legacy.CAPTURE_HELPER, legacy.NATIVE_READER,
+            Path(ami_bt_coordinate._CAL_PATH))
 
 
 def _direct_source_hashes(paths, *, allow_missing=False):

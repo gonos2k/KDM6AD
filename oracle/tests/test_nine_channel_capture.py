@@ -9,7 +9,6 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-import torch
 
 ROOT = Path(__file__).resolve().parents[2]
 CHANNELS_9 = tuple(range(8, 17))
@@ -31,9 +30,10 @@ driver = _load(
 
 
 def _synthetic_capture(tmp_path, monkeypatch, *, background_quality_flag=False,
-                       source_reader_change=None):
+                       source_reader_change=None, calibration_change=None,
+                       channels=CHANNELS_9):
     xb, forcing_window, y_bt, y_rq, xland, clear_cfg, rttov_cfg, window = (
-        da_fixture._inputs(k=39, channels=CHANNELS_9))
+        da_fixture._inputs(k=39, channels=channels))
     forcing = forcing_window[0]
     window = dataclasses.replace(
         window, ncmin_land=10.0, ncmin_sea=10.0, active_fields=("th", "qv"))
@@ -71,7 +71,7 @@ def _synthetic_capture(tmp_path, monkeypatch, *, background_quality_flag=False,
         "ncmin_land": 10.0, "ncmin_sea": 10.0,
         "observation_channel_binding": {
             "validation": "synthetic-test-only",
-            "selected_ami_physical_ids": list(CHANNELS_9),
+            "selected_ami_physical_ids": list(channels),
         },
     }
     staged_reader = None
@@ -89,7 +89,14 @@ def _synthetic_capture(tmp_path, monkeypatch, *, background_quality_flag=False,
                 for path in original_path_builder(module))
 
         monkeypatch.setattr(driver, "_analysis_source_paths", paths_with_staged_reader)
+    staged_calibration = None
+    if calibration_change is not None:
+        staged_calibration = tmp_path / "staged_calibration.json"
+        staged_calibration.write_bytes(Path(driver.ami_bt_coordinate._CAL_PATH).read_bytes())
+        monkeypatch.setattr(driver.ami_bt_coordinate, "_CAL_PATH", staged_calibration)
     capture = driver.prepare_capture_module()
+    if calibration_change == "missing_before":
+        staged_calibration.unlink()
 
     def synthetic_provenance(_xb, _forcings, *_args):
         assert tuple(_xb.th.shape) == (1, 39)
@@ -100,18 +107,19 @@ def _synthetic_capture(tmp_path, monkeypatch, *, background_quality_flag=False,
         monkeypatch, background_qc_flag=background_quality_flag,
         bad_channel=0, inputs=(xb, (forcing,), y_bt, y_rq, xland, clear_cfg,
                                 rttov_cfg, window))
-    if staged_reader is not None:
+    if staged_reader is not None or staged_calibration is not None:
         synthetic_h = da_fixture.fd.sharded_allsky
         mutated = {"done": False}
 
         def mutate_reader_after_synthetic_h(*args, **kwargs):
             output = synthetic_h(*args, **kwargs)
             if not mutated["done"]:
-                if source_reader_change == "remove":
-                    staged_reader.unlink()
+                path = staged_calibration if staged_calibration is not None else staged_reader
+                change = calibration_change if staged_calibration is not None else source_reader_change
+                if change == "remove":
+                    path.unlink()
                 else:
-                    staged_reader.write_bytes(
-                        staged_reader.read_bytes() + b"\n# synthetic mutation\n")
+                    path.write_bytes(path.read_bytes() + b"\n ")
                 mutated["done"] = True
             return output
 
@@ -121,7 +129,7 @@ def _synthetic_capture(tmp_path, monkeypatch, *, background_quality_flag=False,
     result = capture.run_capture(
         xb=xb, forcings=(forcing,), y_bt=y_bt, y_rq=y_rq, xland=xland,
         clear_cfg=clear_cfg, rttov_cfg=rttov_cfg, window_config=window,
-        obs_time=1, pool=da_fixture.InlinePool(), max_iter=3, channels=CHANNELS_9,
+        obs_time=1, pool=da_fixture.InlinePool(), max_iter=3, channels=channels,
         private_checkpoint=checkpoint, public_receipt=receipt_path,
         case_root=tmp_path / "synthetic-H", native_intake_context_path=tmp_path / "unused.json",
         native_intake_context_sha256="synthetic-test-only",
@@ -164,6 +172,9 @@ def test_nine_channel_capture_roundtrip_and_selected_count_audit(tmp_path, monke
     assert metadata["channels_ami_physical_ids"] == list(CHANNELS_9)
     assert json.loads(receipt_path.read_text())["observations"][
         "channels_ami_physical_ids"] == list(CHANNELS_9)
+    key = str(Path(driver.ami_bt_coordinate._CAL_PATH).resolve())
+    bindings = result["production_source_sha256_before_after"]
+    assert bindings["before"][key] == bindings["after"][key] == driver.sha(key)
 
 
 def test_background_model_quality_32768_aborts_before_optimizer_or_checkpoint(
@@ -176,6 +187,40 @@ def test_background_model_quality_32768_aborts_before_optimizer_or_checkpoint(
     assert result["optimizer_observation"]["constructor_calls"] == 0
     assert result["optimizer_observation"]["step_calls"] == 0
     assert not checkpoint.exists()
+
+
+@pytest.mark.parametrize("channels", [tuple(range(10, 17)), CHANNELS_9])
+@pytest.mark.parametrize("change", ["modify", "remove"])
+def test_calibration_input_change_refuses_checkpoint_and_preserves_failure_receipt(
+        tmp_path, monkeypatch, channels, change):
+    result, checkpoint, receipt_path, _, _, _ = _synthetic_capture(
+        tmp_path, monkeypatch, calibration_change=change, channels=channels)
+    key = str((tmp_path / "staged_calibration.json").resolve())
+    assert result["status"] == "ANALYSIS_EXCEPTION"
+    assert "tracked KDM/RTTOV sources changed" in result["analysis_exception"]["message"]
+    assert result["numerical_return"]["minimizer_returned_state"] is True
+    assert result["production_source_sha256_before"][key] is not None
+    after = result["production_source_sha256_after"][key]
+    assert after is None if change == "remove" else after != result["production_source_sha256_before"][key]
+    assert not checkpoint.exists()
+    assert json.loads(receipt_path.read_text()) == result
+
+
+@pytest.mark.parametrize("channels", [tuple(range(10, 17)), CHANNELS_9])
+def test_missing_calibration_before_capture_has_failure_receipt_without_analysis(
+        tmp_path, monkeypatch, channels):
+    result, checkpoint, receipt_path, calls, _, _ = _synthetic_capture(
+        tmp_path, monkeypatch, calibration_change="missing_before", channels=channels)
+    key = str((tmp_path / "staged_calibration.json").resolve())
+    assert result["analysis_exception"]["type"] == "FileNotFoundError"
+    assert result["failure_stage"] == "PRE_ANALYSIS"
+    assert result["production_source_sha256_before"][key] is None
+    assert result["production_source_sha256_after"][key] is None
+    assert result["optimizer_observation"]["constructor_calls"] == 0
+    assert result["optimizer_observation"]["step_calls"] == 0
+    assert not calls
+    assert not checkpoint.exists()
+    assert json.loads(receipt_path.read_text()) == result
 
 
 @pytest.mark.parametrize("source_reader_change", ["modify", "remove"])

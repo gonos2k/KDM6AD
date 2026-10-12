@@ -1,0 +1,42 @@
+{
+  "schema": "pr421_additive_evidence_manifest_v1",
+  "authored_at_kst": "2026-10-13T04:43:32.423169+09:00",
+  "basis_main": "741172da385d589747570329902edc300c2ba73e",
+  "files": {
+    "DOM_EFFECTIVE_SETTINGS.json": {
+      "size_bytes": 16360,
+      "sha256": "3b74e3fa505d211334035a959a3d09bb6fc560e2afb8fe9a10030dd4e8ed612f",
+      "git_blob_sha1": "06ca5891c4f018b14cda6826fa225c0c8d7b271a"
+    },
+    "GREEN_REVIEW.md": {
+      "size_bytes": 3051,
+      "sha256": "31586684947ede5cd2aa2131285e3c105888e4fce9353bacb05a68f6efa2e50e",
+      "git_blob_sha1": "ec90b61c372b4b57f54a4b6cd1175e366decb90f"
+    },
+    "NUMERIC_REVIEW.json": {
+      "size_bytes": 3646,
+      "sha256": "6436f44a788bb05f1d5de7f96b7ece4e9a5f64f7cec6ac63ecfbd42fef1c78c6",
+      "git_blob_sha1": "a19e0c94934ea74d1fbee8ededb74de7ba203670"
+    },
+    "RED_REVIEW.md": {
+      "size_bytes": 2715,
+      "sha256": "e239616931ccfa30cf7ce75873e7619c9f9e633da6920ab9c709ef63e02c2c63",
+      "git_blob_sha1": "44bb90051c1e54a46c80b949b64e3005eee686ce"
+    },
+    "REPORT.md": {
+      "size_bytes": 5455,
+      "sha256": "ad2b87945ff696d2ab3b4434c311e3666e9cc2f1a6b4d54448d69898a6ba2083",
+      "git_blob_sha1": "271cf7cdd44dabacc5d1e9b2a84ef2261e75f45f"
+    },
+    "VALIDATION.json": {
+      "size_bytes": 2908,
+      "sha256": "ae0cb8c8a4050b809760ffb83ef77f6cda4798e1222989aeaa37b196acb78c45",
+      "git_blob_sha1": "97bd825c00c2560f5da052ed55e8af57d22d922c"
+    },
+    "recompute_pr421_review.py": {
+      "size_bytes": 17529,
+      "sha256": "b053d258c97788d953a359e931c89f8baf89f395b63642befc508e06a645f68f",
+      "git_blob_sha1": "c11888c20470224b0ea5a79e7d191f9a12ed0472"
+    }
+  }
+}

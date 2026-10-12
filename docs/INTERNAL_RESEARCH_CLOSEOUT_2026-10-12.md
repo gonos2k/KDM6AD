@@ -70,3 +70,11 @@ The returned DOM9 gradient L∞0.2929647968 still exceeds 1e−10. Pixel UTC,
 interface identity, the original pair's unbound calibration-JSON history,
 other dates and scientific truth remain stated limits. This adds the requested
 optional execution evidence without reopening seven-channel functional closure.
+
+[PR421 interpretation/input follow-up](../harness/evidence/pr421_review_followup_2026-10-13/REPORT.md)
+records the eight-stream DOM effective plane-parallel/Lambertian rules and the
+common-seven-plus-prior cost comparison. Future capture now binds the actual
+KMA calibration JSON; the original pair's missing hash history remains a limit.
+Existing negative-direction diagnostics show further descent, without replacing
+the returned checkpoint or starting another experiment. Completed scopes above
+remain unchanged.
