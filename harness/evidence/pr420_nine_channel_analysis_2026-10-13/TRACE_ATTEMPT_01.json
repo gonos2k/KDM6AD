@@ -1,0 +1,54 @@
+{
+  "schema": "pr420_first_trace_attempt_v1",
+  "status": "NUMERIC_NONINTERFERENCE_CONFIRMED_TRACE_FILTER_INCOMPLETE",
+  "control_BT_K": [
+    [
+      238.06241257211687,
+      248.8070814266319
+    ]
+  ],
+  "rad_quality": [
+    [
+      32768.0,
+      32768.0
+    ]
+  ],
+  "raw_noninterference": {
+    "raw_files": {
+      "direct/radiance.txt": {
+        "byte_equal": true,
+        "control_sha256": "28c70ce600d2f8f176a03b520a3decc641560fef9839cfb7b4d60eebcf976fe8",
+        "instrumented_sha256": "28c70ce600d2f8f176a03b520a3decc641560fef9839cfb7b4d60eebcf976fe8"
+      },
+      "direct/transmission.txt": {
+        "byte_equal": true,
+        "control_sha256": "c8ee9788a161adec8f576243e0741140250942ecbdf8bbe26664c6195834c766",
+        "instrumented_sha256": "c8ee9788a161adec8f576243e0741140250942ecbdf8bbe26664c6195834c766"
+      },
+      "k/radiance.txt": {
+        "byte_equal": true,
+        "control_sha256": "28c70ce600d2f8f176a03b520a3decc641560fef9839cfb7b4d60eebcf976fe8",
+        "instrumented_sha256": "28c70ce600d2f8f176a03b520a3decc641560fef9839cfb7b4d60eebcf976fe8"
+      },
+      "k/transmission.txt": {
+        "byte_equal": true,
+        "control_sha256": "c8ee9788a161adec8f576243e0741140250942ecbdf8bbe26664c6195834c766",
+        "instrumented_sha256": "c8ee9788a161adec8f576243e0741140250942ecbdf8bbe26664c6195834c766"
+      },
+      "k/profiles_k.txt": {
+        "byte_equal": true,
+        "control_sha256": "d7e709abf1c4666555c3b262e23d126f834c5f5a6700f2ed0da1aa0717f18af3",
+        "instrumented_sha256": "d7e709abf1c4666555c3b262e23d126f834c5f5a6700f2ed0da1aa0717f18af3"
+      }
+    },
+    "all_byte_equal": true,
+    "trace_incomplete": true,
+    "actual_H_calls": 2,
+    "optimizer_M_calls": 0
+  },
+  "reason": "chanprof%chan is the internal index after reading a selected coefficient subset, not the instrument physical channel ID; the conditional trace emitted no layer records",
+  "first_attempt_logical_H_calls": 2,
+  "M_optimizer_native_calls": 0,
+  "original_results_unchanged": true,
+  "next_step": "One separately declared corrected instrumented call on the same saved07 profile; reuse this control raw output, do not rerun control or7-channel H."
+}

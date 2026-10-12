@@ -1,0 +1,16 @@
+{
+  "schema": "pr420_additive_provenance_limits_v1",
+  "display_timezone": "KST",
+  "calibration_json": {
+    "path": "/private/tmp/KDM6AD-pr418-postmerge-audit/oracle/kdm6/obs/data/gk2a_ami_cal_202507190000.json",
+    "current_sha256_posthoc": "a6f830aa04e19f6982aa6ff36e832464a5b32fdcf8200211956969d5eb48325d",
+    "git_worktree_status": "",
+    "bound_before_after_original_DOM_pair": false,
+    "bound_before_after_directional_check": true,
+    "limitation": "Current unmodified tracked bytes do not certify bytes throughout prior DOM7/9 calls."
+  },
+  "historical_original_template_replay": "Not fully recovered byte-for-byte. Fresh V4 core arrays matched all71 old arrays; prepared actual trace/DOM fixtures independently bound. Old PLAN/results/hashes not changed.",
+  "trace_source_to_original_executable_attested": false,
+  "trace_numeric_noninterference": "Five raw direct/K products exactly equal for the one historical07 profile.",
+  "display_timezone_policy": "New author displays KST/Asia-Seoul; model valid times remain UTC. Bound old mislabeled build records preserved with TIMEZONE_CORRECTION.json."
+}

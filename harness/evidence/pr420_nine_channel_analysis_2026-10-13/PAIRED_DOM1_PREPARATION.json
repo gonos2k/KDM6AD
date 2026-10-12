@@ -1,0 +1,674 @@
+{
+  "schema": "pr420_dom1_paired_preparation_v1",
+  "created_at_local_timezone": "Asia/Seoul",
+  "case_path": "/private/tmp/KDM6AD-pr418-postmerge-audit/harness/evidence/pr420_nine_channel_analysis_2026-10-13/CASE.json",
+  "case_sha256": "fcceb52d2f91b027178e05d8109c61a1066f1de1ef1de4df79a7b80de2cfaff9",
+  "intake_manifest_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr420_nine_channel_20261013/inputs/INTAKE.json",
+  "intake_manifest_sha256": "550929a6fb70e8c16c318669944f25c978ae225c9b42f0aaaa8ce147048fe45f",
+  "intake_npz_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr420_nine_channel_20261013/inputs/SELECTED_CORE_BOUND_V4.npz",
+  "intake_npz_sha256": "de976bd9fd15ee5c5931c5e47ac1e280fa3e818f29a63e2e8b9828aae67931ec",
+  "prepared_root": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr420_nine_channel_20261013/DOM1_PAIR_PREPARED_01",
+  "source_template": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00",
+  "source_template_solver": 3,
+  "source_template_rttov_test_sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282",
+  "source_template_channels_sha256": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b",
+  "runs": {
+    "DOM7": {
+      "channels": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "fixture": {
+        "source_template": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00",
+        "source_template_sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282",
+        "prepared_fixture_copy": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr420_nine_channel_20261013/DOM1_PAIR_PREPARED_01/DOM7/rttov_fixture",
+        "prepared_files_sha256": {
+          "in/profiles/001/atm/p.txt": "1b71c1a6bce4950592c0dc1d67dbbb93669cf43bca5de647a58e4a2d6194656a",
+          "in/profiles/001/atm/p_half.txt": "d61191ebb5fd6811d67d45477f4af05a9aac58649cfa61043442a403d2424222",
+          "in/profiles/001/atm/t.txt": "aade638cc21121d043678ea5079bae879b193d41534b1a6dd083221540904a03",
+          "in/profiles/001/atm/q.txt": "f817547988e2fe084c481909ca0e0482ab46b507b971864dda6b4b82ab0493c6",
+          "in/profiles/001/atm/o3.txt": "5f3a093a7ec4f3ee080d7414c3f8c0baaffb88943d163f35d5835027bdd0689c",
+          "in/profiles/001/atm/co2.txt": "94e59089381bf7e3c45d664d3876dd6302eac5c4d37fdfb51b091389f4b04eb7",
+          "in/profiles/001/atm/simple_cloud.txt": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d",
+          "in/profiles/001/atm/hydro.txt": "62efd0a4c425145db1d988127d0b5d3e50227328d2c8e69c455371585848f57e",
+          "in/profiles/001/atm/hydro_frac.txt": "94fd8b3afb76730bec5fae7a464123607ca22844c0c5ce194294a8f94faf4079",
+          "out/rttov_test.txt": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282",
+          "in/channels.txt": "d5ddefcc18c631a7f79691be015b328dec004b0dfca1eaa1343991f32d032e1d",
+          "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/sfc/01/skin.txt": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b"
+        },
+        "ami_coefficient": {
+          "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+          "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5"
+        },
+        "rttov_executable": {
+          "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+          "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+        },
+        "pressure_grid_replaced_from_native_intake": true,
+        "T_Q_and_cloud_replaced_on_each_H_call": true,
+        "O3_CO2_replaced_from_fixed_upper_reference_on_intake_grid": true,
+        "simple_cloud_fraction": 0.0,
+        "solar": false,
+        "geometry_and_dynamic_surface": "supplied from fixed AMI candidate and fresh native selected column on each H input"
+      },
+      "fixture_copy": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr420_nine_channel_20261013/DOM1_PAIR_PREPARED_01/DOM7/rttov_fixture",
+      "thermal_solver": 1,
+      "prepared_file_hashes_before_dom1_edit": {
+        "in/channels.txt": "d5ddefcc18c631a7f79691be015b328dec004b0dfca1eaa1343991f32d032e1d",
+        "in/coef.txt": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+        "in/lprofiles.txt": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de",
+        "in/profiles/001/angles.txt": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161",
+        "in/profiles/001/atm/co2.txt": "94e59089381bf7e3c45d664d3876dd6302eac5c4d37fdfb51b091389f4b04eb7",
+        "in/profiles/001/atm/deff_param.txt": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0",
+        "in/profiles/001/atm/hydro.txt": "62efd0a4c425145db1d988127d0b5d3e50227328d2c8e69c455371585848f57e",
+        "in/profiles/001/atm/hydro_frac.txt": "94fd8b3afb76730bec5fae7a464123607ca22844c0c5ce194294a8f94faf4079",
+        "in/profiles/001/atm/mmr_hydro_aer.txt": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c",
+        "in/profiles/001/atm/o3.txt": "5f3a093a7ec4f3ee080d7414c3f8c0baaffb88943d163f35d5835027bdd0689c",
+        "in/profiles/001/atm/p.txt": "1b71c1a6bce4950592c0dc1d67dbbb93669cf43bca5de647a58e4a2d6194656a",
+        "in/profiles/001/atm/p_half.txt": "d61191ebb5fd6811d67d45477f4af05a9aac58649cfa61043442a403d2424222",
+        "in/profiles/001/atm/q.txt": "f817547988e2fe084c481909ca0e0482ab46b507b971864dda6b4b82ab0493c6",
+        "in/profiles/001/atm/simple_cloud.txt": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d",
+        "in/profiles/001/atm/t.txt": "aade638cc21121d043678ea5079bae879b193d41534b1a6dd083221540904a03",
+        "in/profiles/001/be.txt": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1",
+        "in/profiles/001/datetime.txt": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86",
+        "in/profiles/001/gas_units.txt": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555",
+        "in/profiles/001/prof_id.txt": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793",
+        "in/profiles/001/sfc/01/near_surface.txt": "9112090ec89e82f530bba289148450d568b12fdf136c493a6fd3f64744321d9e",
+        "in/profiles/001/sfc/01/skin.txt": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b",
+        "out/env.sh": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+        "out/rttov_test.txt": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282",
+        "out/run.sh": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+      },
+      "prepared_file_hashes_after_dom1_edit": {
+        "in/channels.txt": "d5ddefcc18c631a7f79691be015b328dec004b0dfca1eaa1343991f32d032e1d",
+        "in/coef.txt": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+        "in/lprofiles.txt": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de",
+        "in/profiles/001/angles.txt": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161",
+        "in/profiles/001/atm/co2.txt": "94e59089381bf7e3c45d664d3876dd6302eac5c4d37fdfb51b091389f4b04eb7",
+        "in/profiles/001/atm/deff_param.txt": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0",
+        "in/profiles/001/atm/hydro.txt": "62efd0a4c425145db1d988127d0b5d3e50227328d2c8e69c455371585848f57e",
+        "in/profiles/001/atm/hydro_frac.txt": "94fd8b3afb76730bec5fae7a464123607ca22844c0c5ce194294a8f94faf4079",
+        "in/profiles/001/atm/mmr_hydro_aer.txt": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c",
+        "in/profiles/001/atm/o3.txt": "5f3a093a7ec4f3ee080d7414c3f8c0baaffb88943d163f35d5835027bdd0689c",
+        "in/profiles/001/atm/p.txt": "1b71c1a6bce4950592c0dc1d67dbbb93669cf43bca5de647a58e4a2d6194656a",
+        "in/profiles/001/atm/p_half.txt": "d61191ebb5fd6811d67d45477f4af05a9aac58649cfa61043442a403d2424222",
+        "in/profiles/001/atm/q.txt": "f817547988e2fe084c481909ca0e0482ab46b507b971864dda6b4b82ab0493c6",
+        "in/profiles/001/atm/simple_cloud.txt": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d",
+        "in/profiles/001/atm/t.txt": "aade638cc21121d043678ea5079bae879b193d41534b1a6dd083221540904a03",
+        "in/profiles/001/be.txt": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1",
+        "in/profiles/001/datetime.txt": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86",
+        "in/profiles/001/gas_units.txt": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555",
+        "in/profiles/001/prof_id.txt": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793",
+        "in/profiles/001/sfc/01/near_surface.txt": "9112090ec89e82f530bba289148450d568b12fdf136c493a6fd3f64744321d9e",
+        "in/profiles/001/sfc/01/skin.txt": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b",
+        "out/env.sh": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+        "out/rttov_test.txt": "a4c9fa9b3e9923a97c0a88fbde4774e2265a323b9a02d5718f8751a2b419fbe5",
+        "out/run.sh": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+      },
+      "changed_by_dom1_edit": [
+        "out/rttov_test.txt"
+      ],
+      "run_manifest": {
+        "case_id": "PR420_JUL19_NATURAL_LIQUID_NINE_CHANNELS_20261013",
+        "obs_time": 1,
+        "dt_s": 20,
+        "max_iter": 3,
+        "observation_sigma_K": 1.0,
+        "observation_bias_K": 0.0,
+        "huber_delta_K": 1.0,
+        "th_sigma_K": 0.8,
+        "qv_sigma_log": 0.08,
+        "qv_levels_from_bottom": 12,
+        "non_tq_state_sigmas_zero": true,
+        "parameter_prior_active": [],
+        "partition_control": false,
+        "pseudo_rh": false,
+        "warm_start": false,
+        "automatic_retry": false,
+        "ncmin_land": 10.0,
+        "ncmin_sea": 10.0,
+        "background_time": "2025-07-19_05:55:40",
+        "native_producer_effective_start": "2025-07-19_00:00:00",
+        "native_producer_effective_stop": "2025-07-19_05:58:00",
+        "nominal_observation_slot": "2025-07-19_05:56:00",
+        "observation_slot_pixel_time_verified": false,
+        "observation_sigma_bias_prior_assumptions": "unchanged exploration contract",
+        "forcing_hypothesis": "one saved BG forcing held for a local20s KDM step, not a full host integration",
+        "geometry_derivation": {
+          "solar_angle_source": "explicit zero angles; each staged thermal-only RTTOV case asserts rt_all%solar=.FALSE., so the solar angles are unconsumed",
+          "ami_pixel_lat_lon": [
+            36.19700231203294,
+            122.09240151533507
+          ],
+          "satellite_viewing_geometry": "computed at AMI pixel center with retained AMI GEOS navigation",
+          "elevation_source": "selected WRF native cell HGT, meters converted to RTTOV kilometers"
+        },
+        "native_L1B_distance_m": 425.9352646986823,
+        "host_slot_comparison": "optional diagnostics only; no saved host slot required"
+      },
+      "observed_bt_K": [
+        [
+          262.66001521264155,
+          292.4845078767833,
+          265.75997649163685,
+          295.256843926959,
+          295.1098357639112,
+          292.1487063351286,
+          275.82968074809355
+        ]
+      ],
+      "source_dqf": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "native_distance_m": 425.9352646986823,
+      "geometry_derivation": {
+        "solar_angle_source": "explicit zero angles; each staged thermal-only RTTOV case asserts rt_all%solar=.FALSE., so the solar angles are unconsumed",
+        "ami_pixel_lat_lon": [
+          36.19700231203294,
+          122.09240151533507
+        ],
+        "satellite_viewing_geometry": "computed at AMI pixel center with retained AMI GEOS navigation",
+        "elevation_source": "selected WRF native cell HGT, meters converted to RTTOV kilometers"
+      },
+      "profile_hashes": {
+        "p.txt": "1b71c1a6bce4950592c0dc1d67dbbb93669cf43bca5de647a58e4a2d6194656a",
+        "p_half.txt": "d61191ebb5fd6811d67d45477f4af05a9aac58649cfa61043442a403d2424222",
+        "t.txt": "aade638cc21121d043678ea5079bae879b193d41534b1a6dd083221540904a03",
+        "q.txt": "f817547988e2fe084c481909ca0e0482ab46b507b971864dda6b4b82ab0493c6",
+        "o3.txt": "5f3a093a7ec4f3ee080d7414c3f8c0baaffb88943d163f35d5835027bdd0689c",
+        "co2.txt": "94e59089381bf7e3c45d664d3876dd6302eac5c4d37fdfb51b091389f4b04eb7",
+        "hydro.txt": "62efd0a4c425145db1d988127d0b5d3e50227328d2c8e69c455371585848f57e",
+        "hydro_frac.txt": "94fd8b3afb76730bec5fae7a464123607ca22844c0c5ce194294a8f94faf4079"
+      },
+      "run_id": "PR420_DOM7_JUL19_NATURAL_LIQUID_20261013",
+      "analysis_executed": false,
+      "h_calls": 0,
+      "rttov_calls": 0,
+      "optimizer_calls": 0,
+      "native_runs_added": 0
+    },
+    "DOM9": {
+      "channels": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "fixture": {
+        "source_template": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00",
+        "source_template_sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282",
+        "prepared_fixture_copy": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr420_nine_channel_20261013/DOM1_PAIR_PREPARED_01/DOM9/rttov_fixture",
+        "prepared_files_sha256": {
+          "in/profiles/001/atm/p.txt": "1b71c1a6bce4950592c0dc1d67dbbb93669cf43bca5de647a58e4a2d6194656a",
+          "in/profiles/001/atm/p_half.txt": "d61191ebb5fd6811d67d45477f4af05a9aac58649cfa61043442a403d2424222",
+          "in/profiles/001/atm/t.txt": "aade638cc21121d043678ea5079bae879b193d41534b1a6dd083221540904a03",
+          "in/profiles/001/atm/q.txt": "f817547988e2fe084c481909ca0e0482ab46b507b971864dda6b4b82ab0493c6",
+          "in/profiles/001/atm/o3.txt": "5f3a093a7ec4f3ee080d7414c3f8c0baaffb88943d163f35d5835027bdd0689c",
+          "in/profiles/001/atm/co2.txt": "94e59089381bf7e3c45d664d3876dd6302eac5c4d37fdfb51b091389f4b04eb7",
+          "in/profiles/001/atm/simple_cloud.txt": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d",
+          "in/profiles/001/atm/hydro.txt": "62efd0a4c425145db1d988127d0b5d3e50227328d2c8e69c455371585848f57e",
+          "in/profiles/001/atm/hydro_frac.txt": "94fd8b3afb76730bec5fae7a464123607ca22844c0c5ce194294a8f94faf4079",
+          "out/rttov_test.txt": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282",
+          "in/channels.txt": "d5ddefcc18c631a7f79691be015b328dec004b0dfca1eaa1343991f32d032e1d",
+          "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/sfc/01/skin.txt": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b"
+        },
+        "ami_coefficient": {
+          "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+          "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5"
+        },
+        "rttov_executable": {
+          "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+          "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+        },
+        "pressure_grid_replaced_from_native_intake": true,
+        "T_Q_and_cloud_replaced_on_each_H_call": true,
+        "O3_CO2_replaced_from_fixed_upper_reference_on_intake_grid": true,
+        "simple_cloud_fraction": 0.0,
+        "solar": false,
+        "geometry_and_dynamic_surface": "supplied from fixed AMI candidate and fresh native selected column on each H input"
+      },
+      "fixture_copy": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr420_nine_channel_20261013/DOM1_PAIR_PREPARED_01/DOM9/rttov_fixture",
+      "thermal_solver": 1,
+      "prepared_file_hashes_before_dom1_edit": {
+        "in/channels.txt": "d5ddefcc18c631a7f79691be015b328dec004b0dfca1eaa1343991f32d032e1d",
+        "in/coef.txt": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+        "in/lprofiles.txt": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de",
+        "in/profiles/001/angles.txt": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161",
+        "in/profiles/001/atm/co2.txt": "94e59089381bf7e3c45d664d3876dd6302eac5c4d37fdfb51b091389f4b04eb7",
+        "in/profiles/001/atm/deff_param.txt": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0",
+        "in/profiles/001/atm/hydro.txt": "62efd0a4c425145db1d988127d0b5d3e50227328d2c8e69c455371585848f57e",
+        "in/profiles/001/atm/hydro_frac.txt": "94fd8b3afb76730bec5fae7a464123607ca22844c0c5ce194294a8f94faf4079",
+        "in/profiles/001/atm/mmr_hydro_aer.txt": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c",
+        "in/profiles/001/atm/o3.txt": "5f3a093a7ec4f3ee080d7414c3f8c0baaffb88943d163f35d5835027bdd0689c",
+        "in/profiles/001/atm/p.txt": "1b71c1a6bce4950592c0dc1d67dbbb93669cf43bca5de647a58e4a2d6194656a",
+        "in/profiles/001/atm/p_half.txt": "d61191ebb5fd6811d67d45477f4af05a9aac58649cfa61043442a403d2424222",
+        "in/profiles/001/atm/q.txt": "f817547988e2fe084c481909ca0e0482ab46b507b971864dda6b4b82ab0493c6",
+        "in/profiles/001/atm/simple_cloud.txt": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d",
+        "in/profiles/001/atm/t.txt": "aade638cc21121d043678ea5079bae879b193d41534b1a6dd083221540904a03",
+        "in/profiles/001/be.txt": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1",
+        "in/profiles/001/datetime.txt": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86",
+        "in/profiles/001/gas_units.txt": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555",
+        "in/profiles/001/prof_id.txt": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793",
+        "in/profiles/001/sfc/01/near_surface.txt": "9112090ec89e82f530bba289148450d568b12fdf136c493a6fd3f64744321d9e",
+        "in/profiles/001/sfc/01/skin.txt": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b",
+        "out/env.sh": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+        "out/rttov_test.txt": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282",
+        "out/run.sh": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+      },
+      "prepared_file_hashes_after_dom1_edit": {
+        "in/channels.txt": "d5ddefcc18c631a7f79691be015b328dec004b0dfca1eaa1343991f32d032e1d",
+        "in/coef.txt": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+        "in/lprofiles.txt": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de",
+        "in/profiles/001/angles.txt": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161",
+        "in/profiles/001/atm/co2.txt": "94e59089381bf7e3c45d664d3876dd6302eac5c4d37fdfb51b091389f4b04eb7",
+        "in/profiles/001/atm/deff_param.txt": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0",
+        "in/profiles/001/atm/hydro.txt": "62efd0a4c425145db1d988127d0b5d3e50227328d2c8e69c455371585848f57e",
+        "in/profiles/001/atm/hydro_frac.txt": "94fd8b3afb76730bec5fae7a464123607ca22844c0c5ce194294a8f94faf4079",
+        "in/profiles/001/atm/mmr_hydro_aer.txt": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c",
+        "in/profiles/001/atm/o3.txt": "5f3a093a7ec4f3ee080d7414c3f8c0baaffb88943d163f35d5835027bdd0689c",
+        "in/profiles/001/atm/p.txt": "1b71c1a6bce4950592c0dc1d67dbbb93669cf43bca5de647a58e4a2d6194656a",
+        "in/profiles/001/atm/p_half.txt": "d61191ebb5fd6811d67d45477f4af05a9aac58649cfa61043442a403d2424222",
+        "in/profiles/001/atm/q.txt": "f817547988e2fe084c481909ca0e0482ab46b507b971864dda6b4b82ab0493c6",
+        "in/profiles/001/atm/simple_cloud.txt": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d",
+        "in/profiles/001/atm/t.txt": "aade638cc21121d043678ea5079bae879b193d41534b1a6dd083221540904a03",
+        "in/profiles/001/be.txt": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1",
+        "in/profiles/001/datetime.txt": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86",
+        "in/profiles/001/gas_units.txt": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555",
+        "in/profiles/001/prof_id.txt": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793",
+        "in/profiles/001/sfc/01/near_surface.txt": "9112090ec89e82f530bba289148450d568b12fdf136c493a6fd3f64744321d9e",
+        "in/profiles/001/sfc/01/skin.txt": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b",
+        "out/env.sh": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+        "out/rttov_test.txt": "a4c9fa9b3e9923a97c0a88fbde4774e2265a323b9a02d5718f8751a2b419fbe5",
+        "out/run.sh": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+      },
+      "changed_by_dom1_edit": [
+        "out/rttov_test.txt"
+      ],
+      "run_manifest": {
+        "case_id": "PR420_JUL19_NATURAL_LIQUID_NINE_CHANNELS_20261013",
+        "obs_time": 1,
+        "dt_s": 20,
+        "max_iter": 3,
+        "observation_sigma_K": 1.0,
+        "observation_bias_K": 0.0,
+        "huber_delta_K": 1.0,
+        "th_sigma_K": 0.8,
+        "qv_sigma_log": 0.08,
+        "qv_levels_from_bottom": 12,
+        "non_tq_state_sigmas_zero": true,
+        "parameter_prior_active": [],
+        "partition_control": false,
+        "pseudo_rh": false,
+        "warm_start": false,
+        "automatic_retry": false,
+        "ncmin_land": 10.0,
+        "ncmin_sea": 10.0,
+        "background_time": "2025-07-19_05:55:40",
+        "native_producer_effective_start": "2025-07-19_00:00:00",
+        "native_producer_effective_stop": "2025-07-19_05:58:00",
+        "nominal_observation_slot": "2025-07-19_05:56:00",
+        "observation_slot_pixel_time_verified": false,
+        "observation_sigma_bias_prior_assumptions": "unchanged exploration contract",
+        "forcing_hypothesis": "one saved BG forcing held for a local20s KDM step, not a full host integration",
+        "geometry_derivation": {
+          "solar_angle_source": "explicit zero angles; each staged thermal-only RTTOV case asserts rt_all%solar=.FALSE., so the solar angles are unconsumed",
+          "ami_pixel_lat_lon": [
+            36.19700231203294,
+            122.09240151533507
+          ],
+          "satellite_viewing_geometry": "computed at AMI pixel center with retained AMI GEOS navigation",
+          "elevation_source": "selected WRF native cell HGT, meters converted to RTTOV kilometers"
+        },
+        "native_L1B_distance_m": 425.9352646986823,
+        "host_slot_comparison": "optional diagnostics only; no saved host slot required",
+        "observation_channel_binding": {
+          "validation": "supplemental_nine_channel_payload_binding",
+          "payload_sha256": "6b2cc7f43421ca1b2100680dde31dc661e3477bdf44b095d0f1217a7bf8a40bc",
+          "payload_channel_order": [
+            "wv063",
+            "wv069",
+            "wv073",
+            "ir087",
+            "ir096",
+            "ir105",
+            "ir112",
+            "ir123",
+            "ir133"
+          ],
+          "selected_ami_physical_ids": [
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "selected_channel_names": [
+            "wv063",
+            "wv069",
+            "wv073",
+            "ir087",
+            "ir096",
+            "ir105",
+            "ir112",
+            "ir123",
+            "ir133"
+          ],
+          "selected_bt_exactly_matches_bound_point": true,
+          "all_selected_source_dqf_zero": true
+        }
+      },
+      "observed_bt_K": [
+        [
+          240.85618883047806,
+          251.24082067586068,
+          262.66001521264155,
+          292.4845078767833,
+          265.75997649163685,
+          295.256843926959,
+          295.1098357639112,
+          292.1487063351286,
+          275.82968074809355
+        ]
+      ],
+      "source_dqf": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "native_distance_m": 425.9352646986823,
+      "geometry_derivation": {
+        "solar_angle_source": "explicit zero angles; each staged thermal-only RTTOV case asserts rt_all%solar=.FALSE., so the solar angles are unconsumed",
+        "ami_pixel_lat_lon": [
+          36.19700231203294,
+          122.09240151533507
+        ],
+        "satellite_viewing_geometry": "computed at AMI pixel center with retained AMI GEOS navigation",
+        "elevation_source": "selected WRF native cell HGT, meters converted to RTTOV kilometers"
+      },
+      "profile_hashes": {
+        "p.txt": "1b71c1a6bce4950592c0dc1d67dbbb93669cf43bca5de647a58e4a2d6194656a",
+        "p_half.txt": "d61191ebb5fd6811d67d45477f4af05a9aac58649cfa61043442a403d2424222",
+        "t.txt": "aade638cc21121d043678ea5079bae879b193d41534b1a6dd083221540904a03",
+        "q.txt": "f817547988e2fe084c481909ca0e0482ab46b507b971864dda6b4b82ab0493c6",
+        "o3.txt": "5f3a093a7ec4f3ee080d7414c3f8c0baaffb88943d163f35d5835027bdd0689c",
+        "co2.txt": "94e59089381bf7e3c45d664d3876dd6302eac5c4d37fdfb51b091389f4b04eb7",
+        "hydro.txt": "62efd0a4c425145db1d988127d0b5d3e50227328d2c8e69c455371585848f57e",
+        "hydro_frac.txt": "94fd8b3afb76730bec5fae7a464123607ca22844c0c5ce194294a8f94faf4079"
+      },
+      "run_id": "PR420_DOM9_JUL19_NATURAL_LIQUID_20261013",
+      "analysis_executed": false,
+      "h_calls": 0,
+      "rttov_calls": 0,
+      "optimizer_calls": 0,
+      "native_runs_added": 0
+    }
+  },
+  "paired_checks": {
+    "same_v4_npz_and_native_initial_state": true,
+    "same_20_second_forcing": true,
+    "same_native_geometry_and_pressure_arrays": true,
+    "same_prior_and_optimizer_contract": true,
+    "dom7_bt_equals_dom9_common_channel_10_to_16_slice": true,
+    "dom7_source_dqf_equals_dom9_common_channel_10_to_16_slice": true,
+    "all_nine_source_dqf_zero": true,
+    "p_half_native_interface_identity_independently_verified": false
+  },
+  "scientific_scope": {
+    "rttov_dom1_execution": false,
+    "h_execution": false,
+    "m_optimizer_execution": false,
+    "native_run_added": false,
+    "l1b_acquisition": false,
+    "analysis_executed": false,
+    "native_background": "saved PR412 2025-07-19_05:55:40, j103/i48, 39 centers/40 interfaces",
+    "observation": "existing source payload, nominal 2025-07-19_05:56:00, fixed pixel row289/col49; pixel UTC not independently verified",
+    "solver_change": "fresh DOM7 and DOM9 fixture copies only; exactly out/rttov_test.txt thermal_solver changed 3->1; original source template remains at solver 3; no installed RTTOV files were modified",
+    "comparison_rule": "report each channel-N objective separately; use exact common 10\u201316 channel slice for paired response comparisons, never compare raw total costs across N",
+    "support_gate": "all nine fixed source DQF must remain zero and every selected-channel background model rad_quality must be zero; no warning/quality waiver",
+    "background_quality_gate": "all nine source DQFs are zero; require model rad_quality zero for every selected channel before accepting analysis; do not waive warnings or remove channels",
+    "timing_limit": "nominal pixel slot 2025-07-19 05:56:00; pixel UTC remains unverified",
+    "geometry_pressure_limit": "same pixel-center AMI geometry and saved native pressure arrays; historical native p_half interface identity is still not independently verified"
+  },
+  "prepared_at_local": "2026-10-13T01:10:43.819143+09:00",
+  "driver_path": "/private/tmp/KDM6AD-pr418-postmerge-audit/harness/evidence/pr418_nine_channels_2026-10-12/run_case_analysis_nine.py",
+  "driver_sha256": "1853e1203bca33c4a2e6934f0c668c3b34968b87e9738dd78d25243c15d445bd",
+  "source_bindings": {
+    "/private/tmp/KDM6AD-pr418-postmerge-audit/harness/evidence/pr418_nine_channels_2026-10-12/run_case_analysis_nine.py": "1853e1203bca33c4a2e6934f0c668c3b34968b87e9738dd78d25243c15d445bd",
+    "/private/tmp/KDM6AD-pr418-postmerge-audit/harness/evidence/pr407_native_saved_time_bound_2026-10-11/intake_native_case_v4.py": "e1449548820510edc4fb213872df4446405058a318f8b99cd811d8470a139ae5",
+    "/private/tmp/KDM6AD-pr418-postmerge-audit/harness/evidence/pr407_native_saved_time_bound_2026-10-11/case_capture_adapter.py": "31b82fba7099e9c3424119e7e2692329303a9c199516cede52f6cb868cd8e83a",
+    "/private/tmp/KDM6AD-pr418-postmerge-audit/harness/evidence/pr395_native_tq_intake_2026-10-10/run_analysis.py": "a2de00ae0d9b546fa713ad795f7f934eb162f7014e47f6b75d24c45f47b2be16",
+    "/private/tmp/KDM6AD-pr418-postmerge-audit/harness/evidence/pr395_tq_state_capture_2026-10-10/capture_tq_state.py": "51b9df170667830d961ececc1b20f8fb4b682664d8c44c6e1fbfe9af70303a0f",
+    "/private/tmp/KDM6AD-pr418-postmerge-audit/harness/evidence/native358_artifact_diag_2026-10-08/recipe/run_native_kma_bt_frames.py": "408bab9756c6ac1a6e8438b8469c87f41fa239ce75414cd8087d10b6a31d54c1"
+  },
+  "asset_baseline_scope": "static bytes at preparation time; execution before/after hashes remain to be captured by the authorized run controller",
+  "external_asset_hashes_at_preparation": {
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/rttov_test.txt": {
+      "sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282",
+      "resolved_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/rttov_test.txt"
+    },
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/channels.txt": {
+      "sha256": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b",
+      "resolved_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/channels.txt"
+    },
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/sfc/01/skin.txt": {
+      "sha256": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b",
+      "resolved_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/sfc/01/skin.txt"
+    },
+    "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat": {
+      "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+      "resolved_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat"
+    },
+    "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/hydrotable_visir/rttov_hydrotable_gkompsat2_1_ami.dat": {
+      "sha256": "fdbe99ea68fd750e146fb78a798ab72b8568e4a3d545a2d847263cb374746890",
+      "resolved_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/hydrotable_visir/rttov_hydrotable_gkompsat2_1_ami.dat"
+    },
+    "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe": {
+      "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+      "resolved_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe"
+    },
+    "/Users/yhlee/AD-RTTOV/external/rttov14/src/rttov_test.exe": {
+      "missing": true
+    }
+  },
+  "external_asset_hashes_at_preparation_time": "2026-10-13T01:10:43.819143+09:00",
+  "display_timezone": "KST",
+  "timezone_note": "Timezone label corrected to Asia/Seoul/KST; recorded UTC+09:00 timestamps and model-time values were not converted or shifted.",
+  "case_reader_code": {
+    "role": "native WRF column and AMI viewing-geometry reader",
+    "path": "/private/tmp/KDM6AD-pr418-postmerge-audit/harness/evidence/native358_artifact_diag_2026-10-08/recipe/run_native_kma_bt_frames.py",
+    "sha256": "408bab9756c6ac1a6e8438b8469c87f41fa239ce75414cd8087d10b6a31d54c1",
+    "sha256_bound_during_v4_intake": "408bab9756c6ac1a6e8438b8469c87f41fa239ce75414cd8087d10b6a31d54c1",
+    "unchanged_since_v4_intake": true,
+    "source_changed": false
+  },
+  "full_capture_preflight": {
+    "schema": "pr420_dom1_full_capture_preflight_v1",
+    "status": "PREPARED_ONLY_NOT_EXECUTED",
+    "scope": "ingredients and required gates for root-owned direct capture controller; this receipt is not authorization/evidence of an executed RTTOV or analysis",
+    "case_id": "PR420_JUL19_NATURAL_LIQUID_NINE_CHANNELS_20261013",
+    "intake_manifest_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr420_nine_channel_20261013/inputs/INTAKE.json",
+    "intake_manifest_sha256": "550929a6fb70e8c16c318669944f25c978ae225c9b42f0aaaa8ce147048fe45f",
+    "intake_npz_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr420_nine_channel_20261013/inputs/SELECTED_CORE_BOUND_V4.npz",
+    "intake_npz_sha256": "de976bd9fd15ee5c5931c5e47ac1e280fa3e818f29a63e2e8b9828aae67931ec",
+    "source_bindings": {
+      "/private/tmp/KDM6AD-pr418-postmerge-audit/harness/evidence/pr418_nine_channels_2026-10-12/run_case_analysis_nine.py": "1853e1203bca33c4a2e6934f0c668c3b34968b87e9738dd78d25243c15d445bd",
+      "/private/tmp/KDM6AD-pr418-postmerge-audit/harness/evidence/pr407_native_saved_time_bound_2026-10-11/intake_native_case_v4.py": "e1449548820510edc4fb213872df4446405058a318f8b99cd811d8470a139ae5",
+      "/private/tmp/KDM6AD-pr418-postmerge-audit/harness/evidence/pr407_native_saved_time_bound_2026-10-11/case_capture_adapter.py": "31b82fba7099e9c3424119e7e2692329303a9c199516cede52f6cb868cd8e83a",
+      "/private/tmp/KDM6AD-pr418-postmerge-audit/harness/evidence/pr395_native_tq_intake_2026-10-10/run_analysis.py": "a2de00ae0d9b546fa713ad795f7f934eb162f7014e47f6b75d24c45f47b2be16",
+      "/private/tmp/KDM6AD-pr418-postmerge-audit/harness/evidence/pr395_tq_state_capture_2026-10-10/capture_tq_state.py": "51b9df170667830d961ececc1b20f8fb4b682664d8c44c6e1fbfe9af70303a0f",
+      "/private/tmp/KDM6AD-pr418-postmerge-audit/harness/evidence/native358_artifact_diag_2026-10-08/recipe/run_native_kma_bt_frames.py": "408bab9756c6ac1a6e8438b8469c87f41fa239ce75414cd8087d10b6a31d54c1"
+    },
+    "native_geometry_reader": {
+      "role": "native WRF column and AMI viewing-geometry reader",
+      "path": "/private/tmp/KDM6AD-pr418-postmerge-audit/harness/evidence/native358_artifact_diag_2026-10-08/recipe/run_native_kma_bt_frames.py",
+      "sha256": "408bab9756c6ac1a6e8438b8469c87f41fa239ce75414cd8087d10b6a31d54c1",
+      "sha256_bound_during_v4_intake": "408bab9756c6ac1a6e8438b8469c87f41fa239ce75414cd8087d10b6a31d54c1",
+      "unchanged_since_v4_intake": true,
+      "source_changed": false
+    },
+    "rttov_template": {
+      "source_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00",
+      "source_solver": 3,
+      "source_rttov_test_sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282",
+      "prepared_dom7_fixture": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr420_nine_channel_20261013/DOM1_PAIR_PREPARED_01/DOM7/rttov_fixture",
+      "prepared_dom9_fixture": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr420_nine_channel_20261013/DOM1_PAIR_PREPARED_01/DOM9/rttov_fixture",
+      "prepared_solver": 1,
+      "edit_scope": "only fresh copy out/rttov_test.txt thermal_solver 3->1"
+    },
+    "runs": {
+      "DOM7": {
+        "run_id": "PR420_DOM7_JUL19_NATURAL_LIQUID_20261013",
+        "channel_ids_1based": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "input_bt_K": [
+          [
+            262.66001521264155,
+            292.4845078767833,
+            265.75997649163685,
+            295.256843926959,
+            295.1098357639112,
+            292.1487063351286,
+            275.82968074809355
+          ]
+        ],
+        "source_dqf": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "fixture_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr420_nine_channel_20261013/DOM1_PAIR_PREPARED_01/DOM7/rttov_fixture",
+        "all_selected_source_dqf_zero": true
+      },
+      "DOM9": {
+        "run_id": "PR420_DOM9_JUL19_NATURAL_LIQUID_20261013",
+        "channel_ids_1based": [
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "input_bt_K": [
+          [
+            240.85618883047806,
+            251.24082067586068,
+            262.66001521264155,
+            292.4845078767833,
+            265.75997649163685,
+            295.256843926959,
+            295.1098357639112,
+            292.1487063351286,
+            275.82968074809355
+          ]
+        ],
+        "source_dqf": [
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "fixture_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr420_nine_channel_20261013/DOM1_PAIR_PREPARED_01/DOM9/rttov_fixture",
+        "all_selected_source_dqf_zero": true
+      }
+    },
+    "same_case_setup": {
+      "background_valid_time": "2025-07-19_05:55:40",
+      "nominal_observation_slot": "2025-07-19_05:56:00",
+      "selected_column_j_i_1based": [
+        103,
+        48
+      ],
+      "native_centers": 39,
+      "native_interfaces": 40,
+      "local_dt_s": 20,
+      "max_iter": 3,
+      "th_sigma_K": 0.8,
+      "qv_sigma_log": 0.08,
+      "qv_levels_from_bottom": 12,
+      "control_fields": [
+        "th",
+        "qv"
+      ],
+      "non_tq_state_sigmas_zero": true,
+      "parameter_prior_active": [],
+      "huber_delta_K": 1.0,
+      "observation_sigma_K": 1.0,
+      "observation_bias_K": 0.0
+    },
+    "required_before_analysis_acceptance": [
+      "verify emitted live RTTOV channel IDs equal the selected 7 or 9 IDs in order; fixture in/channels.txt remains the legacy 10..16 template",
+      "record coefficient, hydrotable, RTTOV executable/runtime asset hashes immediately before and after every actual RTTOV call",
+      "preserve nine fixed source DQFs and require background model rad_quality zero for all selected channels; do not waive or shrink support",
+      "retain source snapshots including the native geometry reader and report before/after digests on any mutation/removal",
+      "use separate fresh output roots and no retry; keep original seven-channel Eddington run unchanged",
+      "report 7- and 9-channel costs separately and make paired comparisons on shared channels 10..16"
+    ],
+    "unresolved_limits": [
+      "pixel UTC is not independently verified; nominal filename slot remains an explicit research-time assumption",
+      "historical native p_half interface identity is not independently verified",
+      "cloud-regime natural variability and channel-count-dependent objective totals remain distinct interpretation limits"
+    ],
+    "executed_counts": {
+      "H": 0,
+      "RTTOV": 0,
+      "M_optimizer": 0,
+      "native_run": 0,
+      "L1B_acquisition": 0
+    },
+    "analysis_executed": false
+  }
+}

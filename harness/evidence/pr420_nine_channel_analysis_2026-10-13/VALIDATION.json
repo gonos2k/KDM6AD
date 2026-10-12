@@ -1,0 +1,85 @@
+{
+  "schema": "pr420_validation_v1",
+  "authored_at_kst": "2026-10-13T01:36:23.612461+09:00",
+  "basis_main": "569892aebfd3b97808c358d270d49ee22002f82a",
+  "parent_source_guard_fixes": "0b85d04acee8c5ca1b2b5356ab09428a3d48e5e8",
+  "local": {
+    "selected_oracle_tests": {
+      "command": "PYTHONOPTIMIZE=0 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OMP_THREAD_LIMIT=1 VECLIB_MAXIMUM_THREADS=1 OPENBLAS_NUM_THREADS=1 /private/tmp/KDM6AD-research-rc-20261007/env/bin/python -m pytest -q oracle/tests/test_da_single_column.py oracle/tests/test_nine_channel_capture.py oracle/tests/test_nine_channel_source_binding.py",
+      "passed": 32,
+      "skipped": 0,
+      "duration_s": 4.36,
+      "warning": "numpy.ndarray size changed RuntimeWarning in synthetic capture roundtrip; not a failed test"
+    },
+    "ruff": {
+      "status": "PASS",
+      "command": "ruff check harness/evidence/pr420_nine_channel_analysis_2026-10-13 --ignore E402",
+      "intentional_E402": "Executed immutable research runner inserts oracle/packet sys.path before importing explicit helper; no executed-source rewrite for cosmetic noqa."
+    },
+    "compileall": "PASS",
+    "actual_private_evidence": {
+      "analysis": "ANALYSIS_RESULT.json",
+      "derivative": "DIRECTION_RESULT.json",
+      "M_response": "PROCESS_RESPONSE.json",
+      "trace": "EXTINCTION_TRACE_SUMMARY.json",
+      "lineage": "RED_LINEAGE_CHECK.json"
+    },
+    "new_cpp_fortran_physics_or_ad_source_changes": false,
+    "new_native_build_or_integration": false
+  },
+  "graph": {
+    "structural_update": "graphify update .",
+    "observed_nodes": 19197,
+    "observed_edges": 32479,
+    "new_PR420_nodes": 53,
+    "source_paths_visible_in_query": true,
+    "html_skipped": "graph node count exceeds default5000 visualization limit; graph.json/GRAPH_REPORT.md updated",
+    "semantic_update": {
+      "status": "PASS",
+      "nodes": 19197,
+      "edges": 32479,
+      "semantic_nodes": 27,
+      "semantic_edges": 46,
+      "cache_files": 3,
+      "targeted_documents": [
+        "REPORT.md",
+        "INTERNAL_RESEARCH_CLOSEOUT_2026-10-12.md",
+        "pr420-dom-nine-channel-analysis-2026-10-13.md"
+      ],
+      "report_locations_after_final_document_edits": "No stale exact line claims",
+      "new_code_paths_verified_by_query": true,
+      "html": "Skipped default5000node limit; graph.json/raw report updated",
+      "report_recovery": "Initial report-generation metadata lacked total_words. Existing merged graph reused; no source/model/LLM rerun."
+    },
+    "structural_AST_files": 2036
+  },
+  "public_CI": {
+    "status": "NOT_CAPTURED_IN_LOCAL_SCIENTIFIC_PACKET",
+    "where": "GitHub PR current-head checks; final inspection reported separately",
+    "meaning": "Portable arithmetic/capture regression, not independent private native/RTTOV replay"
+  },
+  "preservation": {
+    "no_existing_PR417_PR418_plan_hash_BT_or_quality_edit": true,
+    "existing_PR419_parent_unchanged": true,
+    "no_proprietary_RTTOV_source_patch_binary_added": true
+  },
+  "execution_failures_preserved": {
+    "trace_attempt1": "Successful2H but incomplete channel logging; postprocessing exit1",
+    "trace_v2": "Successful1H then old-schema postprocessing exit1; recovered from retained logs without H replay",
+    "direction_environment_preflight": "Missing VECLIB_MAXIMUM_THREADS in first command; assert before plan/output/M/H, corrected environment ran declared2H once"
+  },
+  "coverage_limits": [
+    "DOM1 separate research H; Edd3/default unchanged",
+    "diagnostic returned iterates, strict convergence unmet",
+    "one first-order total-cost direction only",
+    "actual pixel UTC/native interface identity unverified",
+    "original paired calibration JSON pre/post hash missing, subsequent diagnostics bind it",
+    "historical trace source-to-originalbinary attestation unavailable",
+    "no other-date/truth/forecast/cycling certification"
+  ],
+  "reviews": {
+    "Green": "GREEN_REVIEW.md, consistency and coverage PASS",
+    "Red": "RED_REVIEW.md, no remaining scoped blocker; explicit limits retained",
+    "independent_array_lineage": "RED_LINEAGE_CHECK.json all14 checks PASS"
+  }
+}

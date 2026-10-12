@@ -1,0 +1,169 @@
+{
+  "analysis": {
+    "all_sky": true,
+    "channel_ids_1based": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "control_fields": [
+      "th",
+      "qv"
+    ],
+    "dt_s": 20,
+    "ncmin_land": 10.0,
+    "ncmin_sea": 10.0,
+    "nominal_obs_model_time": "2025-07-19_05:56:00",
+    "obs_time": 1,
+    "require_source_dqf_zero": true,
+    "step_to_output_time": false,
+    "use_adaptive_time_step": false
+  },
+  "case_id": "PR420_JUL19_NATURAL_LIQUID_NINE_CHANNELS_20261013",
+  "native": {
+    "background_valid_time": "2025-07-19_05:55:40",
+    "column": {
+      "coordinate_tolerance_deg": 5e-05,
+      "expected_latitude_deg": 36.195343017578125,
+      "expected_longitude_deg": 122.0966796875,
+      "i": 48,
+      "j": 103
+    },
+    "completion_receipt_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr397_actual_native_results_2026-10-10/NATIVE_COMPLETION.json",
+    "completion_receipt_sha256": "b1025c391f178cfea7fd77fc1c39adced0fdf205210c650b7dacc576fcba713b",
+    "diagnostic_times": [],
+    "initial_time": "2025-07-19_00:00:00",
+    "run_dir": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/runs/mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148",
+    "run_id": "mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148"
+  },
+  "observation": {
+    "nearest_pixel": {
+      "bt_K_by_channel": {
+        "ir087": 292.4845078767833,
+        "ir096": 265.75997649163685,
+        "ir105": 295.256843926959,
+        "ir112": 295.1098357639112,
+        "ir123": 292.1487063351286,
+        "ir133": 275.82968074809355,
+        "wv063": 240.85618883047806,
+        "wv069": 251.24082067586068,
+        "wv073": 262.66001521264155
+      },
+      "column": 49,
+      "distance_to_fixed_point_m": 425.93526469995294,
+      "latitude_deg": 36.19700231203294,
+      "longitude_deg": 122.09240151533507,
+      "reader_dqf_by_channel": {
+        "ir087": 0,
+        "ir096": 0,
+        "ir105": 0,
+        "ir112": 0,
+        "ir123": 0,
+        "ir133": 0,
+        "wv063": 0,
+        "wv069": 0,
+        "wv073": 0
+      },
+      "row": 289
+    },
+    "nominal_obs_model_time": "2025-07-19_05:56:00",
+    "nominal_slot_obt": "202507190556",
+    "observed_pixel_utc": null,
+    "scene_date": "20250719",
+    "source_metadata_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr412_native_process_20261012/inputs/DECODE_RECEIPT.json",
+    "source_metadata_sha256": "febac62c03e334f39d7b206971c89f55305d858f299ab1a9d28eafecdfad3c00",
+    "source_payload_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr412_native_process_20261012/inputs/SELECTED_L1B_PATCH.npz",
+    "source_payload_sha256": "6b2cc7f43421ca1b2100680dde31dc661e3477bdf44b095d0f1217a7bf8a40bc",
+    "source_result_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr412_native_process_case_2026-10-12/L1B_WIRE_RESULT.json",
+    "source_result_sha256": "8211a20739de78d29d86cbf71c0afd893501b17004a1a579bfe4f73180009953",
+    "time_assumption": "NOMINAL_FILENAME_TIME_AS_MODEL_UTC_RESEARCH_MODE"
+  },
+  "output": {
+    "manifest_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr420_nine_channel_20261013/inputs/INTAKE.json",
+    "private_npz_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr420_nine_channel_20261013/inputs/SELECTED_CORE_BOUND_V4.npz"
+  },
+  "schema": "kdm6ad_native_case_v4",
+  "supplemental_channel_selection": {
+    "driver_path": "/private/tmp/KDM6AD-pr418-postmerge-audit/harness/evidence/pr418_nine_channels_2026-10-12/run_case_analysis_nine.py",
+    "driver_sha256": "1853e1203bca33c4a2e6934f0c668c3b34968b87e9738dd78d25243c15d445bd",
+    "frozen_support_may_shrink": false,
+    "l1b_channel_order": [
+      "wv063",
+      "wv069",
+      "wv073",
+      "ir087",
+      "ir096",
+      "ir105",
+      "ir112",
+      "ir123",
+      "ir133"
+    ],
+    "mapping": [
+      {
+        "ami_channel_id_1based": 8,
+        "l1b_name": "wv063",
+        "payload_column_zero_based": 0
+      },
+      {
+        "ami_channel_id_1based": 9,
+        "l1b_name": "wv069",
+        "payload_column_zero_based": 1
+      },
+      {
+        "ami_channel_id_1based": 10,
+        "l1b_name": "wv073",
+        "payload_column_zero_based": 2
+      },
+      {
+        "ami_channel_id_1based": 11,
+        "l1b_name": "ir087",
+        "payload_column_zero_based": 3
+      },
+      {
+        "ami_channel_id_1based": 12,
+        "l1b_name": "ir096",
+        "payload_column_zero_based": 4
+      },
+      {
+        "ami_channel_id_1based": 13,
+        "l1b_name": "ir105",
+        "payload_column_zero_based": 5
+      },
+      {
+        "ami_channel_id_1based": 14,
+        "l1b_name": "ir112",
+        "payload_column_zero_based": 6
+      },
+      {
+        "ami_channel_id_1based": 15,
+        "l1b_name": "ir123",
+        "payload_column_zero_based": 7
+      },
+      {
+        "ami_channel_id_1based": 16,
+        "l1b_name": "ir133",
+        "payload_column_zero_based": 8
+      }
+    ],
+    "model_rad_quality_required_zero_for_all_selected_channels": true,
+    "no_residual_guided_selection": true,
+    "physical_channel_ids_1based": [
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "schema": "pr420_supplemental_nine_channel_selection_v1",
+    "scope": "supplemental opt-in only; preserve the V4 seven-channel analysis admission below",
+    "source_dqf_required_zero_for_all_nine": true
+  }
+}
