@@ -471,3 +471,5 @@ SRF substitution or production algorithm changed.
 - 2026-10-12: Added [[sources/pr417-hourly-rttov-response-2026-10-12]]: actual two-snapshot H, joint BT changes/allquality0, clarified EOS-path versus eta mass and cloud-layer warming; no extraM/optimizer or observed-fit claim.
 
 - 2026-10-12: Added [[sources/pr418-nine-channel-closeout-2026-10-12]]: two additional-channel H calls return flags32768; default7 results preserved, optional9 input/audit/save support and functional closeout documented; native-centre geometry corrected additively. Graph/source and synthetic/private-run evidence remain separately attributed.
+
+- 2026-10-12: Added [[sources/pr419-postmerge-verification-2026-10-12]]: post-merge source-reader binding and CI discovery omissions reproduced/resolved; portable synthetic capture/quality/source-mutation tests added. Saved actual H/PLAN/flags and scientific limits preserved.

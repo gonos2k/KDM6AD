@@ -1,0 +1,138 @@
+{
+  "schema": "pr419_postmerge_validation_v1",
+  "audit_baseline_main": "569892aebfd3b97808c358d270d49ee22002f82a",
+  "captured_at_UTC": "2026-10-12T15:11:21.544509+00:00",
+  "captured_at_KST": "2026-10-13T00:11:21.544509+09:00",
+  "display_timezone": "KST",
+  "full_oracle_local": {
+    "passed": 1846,
+    "skipped": 33,
+    "warnings": 51,
+    "elapsed_seconds": 299.19,
+    "source_stage": "before final missing-reader live-snapshot refinement"
+  },
+  "combined_focused_local": {
+    "passed": 39,
+    "elapsed_seconds": 5.02,
+    "source_stage": "before final missing-reader live-snapshot refinement"
+  },
+  "new_portable_tests": {
+    "count": 7,
+    "CI_collection_path": "oracle/tests",
+    "private_native_reference_required": false
+  },
+  "complete_driver_local": {
+    "status": "RETURNED_CASE_DIAGNOSTIC",
+    "selected_audit": "CROSSCHECKED",
+    "channels": [
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "synthetic_H_callbacks": 5,
+    "real_KDM_LBFGS_executed_on_test_fixture": true,
+    "actual_RTTOV_calls": 0,
+    "existing_private_template_reference_used": true
+  },
+  "baseline_reader_guard_counterexample": {
+    "baseline": "569892ae",
+    "baseline_driver_sha256": "2c3ffdf9fe16a760f9d856f8ce4a5be217df947fcd10ee6601d8ba69e4d48af7",
+    "status_after_reader_change": "RETURNED_CASE_DIAGNOSTIC",
+    "reader_in_case_sources": false,
+    "actual_H_M_RTTOV_calls": 0,
+    "source_mutation": "staged copy only; original source untouched"
+  },
+  "resolved_findings": [
+    "viewing geometry producer omitted from preflight/capture source hashes",
+    "nine-channel capture/audit tests outside oracle/harness CI discovery"
+  ],
+  "current_private_dependency_limit": {
+    "paths": [
+      "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/share/wrf_timeseries.F",
+      "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/share/wrf_timeseries.f90"
+    ],
+    "both_paths_exist": false,
+    "older_PR408_test_skipped_in_full_suite": true,
+    "old_PR417_source_guard_replay_available": false,
+    "cause_of_current_absence": "not established; not restored or substituted",
+    "past_focused_private_checks": "passed earlier; separate execution evidence"
+  },
+  "other_skip_limits": [
+    "compiled C++/C ABI tools and private host inputs absent from isolated worktree",
+    "optional local pyproj absent",
+    "specific AMI/native/live prerequisites unavailable"
+  ],
+  "scientific_case_executions_added": {
+    "RTTOV_H": 0,
+    "native_run": 0,
+    "M_optimizer": 0,
+    "observation_acquisition": 0
+  },
+  "synthetic_test_M_H_optimizer_calls": "executed as explicitly synthetic tests; not a scientific native/RTTOV case",
+  "preservation": {
+    "PR417_public_packet_equals_b07af3fe": true,
+    "PR407_original_driver_unchanged": true,
+    "PR418_historical_manifest_matches_569892ae_git_blobs": true,
+    "PR418_current_driver_source_intentionally_changed": true,
+    "BT_flag_PLAN_records_changed": false
+  },
+  "ruff_F821_F822_F823": "PASS",
+  "git_diff_check": "PASS",
+  "local_logs": {
+    "audit_focused_final.log": {
+      "sha256": "79b3816a2ee5585f1f39ebdb24400a15d382f605921ae80e4dba37b63a3c8284",
+      "path": "/private/tmp/KDM6AD-pr418-postmerge-audit/graphify-out/audit_focused_final.log"
+    },
+    "audit_oracle_full.log": {
+      "sha256": "9c548f62bcdd32b6b723a08a220e4013745b7af9b363e8f12481bde00f44e382",
+      "path": "/private/tmp/KDM6AD-pr418-postmerge-audit/graphify-out/audit_oracle_full.log"
+    },
+    "full_synthetic_driver.log": {
+      "sha256": "946544facf79d368ff77471c04e210c50c875504653be1f1dd3ae5612dd3e503",
+      "path": "/private/tmp/KDM6AD-pr418-postmerge-audit/graphify-out/full_synthetic_driver.log"
+    },
+    "baseline_reader_gap.log": {
+      "sha256": "918e3015ab4679061bd9438403ffad85e0ff001a4ca1dedad8a3721658fd3b34",
+      "path": "/private/tmp/KDM6AD-pr418-postmerge-audit/graphify-out/baseline_reader_gap.log"
+    },
+    "ci_collection.log": {
+      "sha256": "671301e285353807bc78129651911cd161757966bebcbd582ec5c05eb36d8318",
+      "path": "/private/tmp/KDM6AD-pr418-postmerge-audit/graphify-out/ci_collection.log"
+    },
+    "audit_guard_final.log": {
+      "path": "/private/tmp/KDM6AD-pr418-postmerge-audit/graphify-out/audit_guard_final.log",
+      "sha256": "4f610e5d6d3338b4318d09a353cc8f177d28eee48f5261388af33fc0cf6550d5"
+    },
+    "ci_collection_final.log": {
+      "path": "/private/tmp/KDM6AD-pr418-postmerge-audit/graphify-out/ci_collection_final.log",
+      "sha256": "494063b8d2f72fd1ef46703731b94795ee7120ee61e57355d056d45ca050769f"
+    }
+  },
+  "graph": {
+    "semantic_files": [
+      "harness/evidence/pr419_postmerge_audit_2026-10-12/REPORT.md",
+      "wiki/sources/pr419-postmerge-verification-2026-10-12.md"
+    ],
+    "cached_files": 2,
+    "fragment_nodes": 11,
+    "fragment_edges": 16,
+    "graph_nodes": 19087,
+    "graph_edges": 32312,
+    "scope": "postmerge source verification and focused semantic update; prior incomplete graph coverage is not global certification",
+    "token_accounting": "exact subagent tokens unavailable; no paid external extraction call"
+  },
+  "Github_569892ae_prior_CI": "pre-fix checks green; does not certify this followup",
+  "followup_CI_status": "not yet submitted",
+  "final_focused_source_stage": {
+    "passed": 32,
+    "skipped": 1,
+    "scope": "seven new portable guard/capture cases,25 core single-column tests,older private capture skipped",
+    "log": "audit_guard_final.log"
+  }
+}
