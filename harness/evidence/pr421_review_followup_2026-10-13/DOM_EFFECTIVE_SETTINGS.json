@@ -1,0 +1,402 @@
+{
+  "analysis_plan_path": "/private/tmp/KDM6AD-pr418-postmerge-audit/harness/evidence/pr420_nine_channel_analysis_2026-10-13/ANALYSIS_PLAN.json",
+  "analysis_plan_sha256": "c8291602c6b69b5bd107401ce8eb6b480a898423c2b3ac3214179b740dc4dd9e",
+  "public_capture_sha256": {
+    "DOM7": "f8e68587901987bb842c92ba3adafba8e05ba1d34a8f4276f1e607af569d2ddf",
+    "DOM9": "75dd9762457a62be9a88f70f3b0456ddcb85ce18ef0495a5abf8233ebcd9b0e8"
+  },
+  "captured_case_count": 12,
+  "runs": {
+    "DOM7": [
+      {
+        "call": "c1",
+        "case_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr420_nine_channel_20261013/DOM_ANALYSIS_PAIR_ONCE_01/DOM7/h_cases/c1/w0_0_a1_63vf3/case",
+        "channels": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "rttov_test_txt_sha256": "6956c5e48c6ef7b57f881edae656858a246c9bbc98422729a465414d8df5506a",
+        "channels_txt_sha256": "1b873d3a359f0775c3a3ae8913d6bfa2cfe0256e5946c744e5e324edf14564a2",
+        "run_sh_sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+        "env_sh_sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+        "coef_txt_sha256": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+        "configured": {
+          "thermal_solver": 1,
+          "dom_nstreams": 8,
+          "dom_accuracy": 0.0,
+          "dom_opdep_threshold": 0.0,
+          "solar": false,
+          "plane_parallel": false,
+          "lambertian": false,
+          "lambertian_fixed_angle": true
+        }
+      },
+      {
+        "call": "c2",
+        "case_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr420_nine_channel_20261013/DOM_ANALYSIS_PAIR_ONCE_01/DOM7/h_cases/c2/w0_0_wgpmcpnm/case",
+        "channels": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "rttov_test_txt_sha256": "6956c5e48c6ef7b57f881edae656858a246c9bbc98422729a465414d8df5506a",
+        "channels_txt_sha256": "1b873d3a359f0775c3a3ae8913d6bfa2cfe0256e5946c744e5e324edf14564a2",
+        "run_sh_sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+        "env_sh_sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+        "coef_txt_sha256": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+        "configured": {
+          "thermal_solver": 1,
+          "dom_nstreams": 8,
+          "dom_accuracy": 0.0,
+          "dom_opdep_threshold": 0.0,
+          "solar": false,
+          "plane_parallel": false,
+          "lambertian": false,
+          "lambertian_fixed_angle": true
+        }
+      },
+      {
+        "call": "c3",
+        "case_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr420_nine_channel_20261013/DOM_ANALYSIS_PAIR_ONCE_01/DOM7/h_cases/c3/w0_0_yrd8n6bh/case",
+        "channels": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "rttov_test_txt_sha256": "6956c5e48c6ef7b57f881edae656858a246c9bbc98422729a465414d8df5506a",
+        "channels_txt_sha256": "1b873d3a359f0775c3a3ae8913d6bfa2cfe0256e5946c744e5e324edf14564a2",
+        "run_sh_sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+        "env_sh_sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+        "coef_txt_sha256": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+        "configured": {
+          "thermal_solver": 1,
+          "dom_nstreams": 8,
+          "dom_accuracy": 0.0,
+          "dom_opdep_threshold": 0.0,
+          "solar": false,
+          "plane_parallel": false,
+          "lambertian": false,
+          "lambertian_fixed_angle": true
+        }
+      },
+      {
+        "call": "c4",
+        "case_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr420_nine_channel_20261013/DOM_ANALYSIS_PAIR_ONCE_01/DOM7/h_cases/c4/w0_0_04o9g1ls/case",
+        "channels": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "rttov_test_txt_sha256": "6956c5e48c6ef7b57f881edae656858a246c9bbc98422729a465414d8df5506a",
+        "channels_txt_sha256": "1b873d3a359f0775c3a3ae8913d6bfa2cfe0256e5946c744e5e324edf14564a2",
+        "run_sh_sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+        "env_sh_sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+        "coef_txt_sha256": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+        "configured": {
+          "thermal_solver": 1,
+          "dom_nstreams": 8,
+          "dom_accuracy": 0.0,
+          "dom_opdep_threshold": 0.0,
+          "solar": false,
+          "plane_parallel": false,
+          "lambertian": false,
+          "lambertian_fixed_angle": true
+        }
+      },
+      {
+        "call": "c5",
+        "case_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr420_nine_channel_20261013/DOM_ANALYSIS_PAIR_ONCE_01/DOM7/h_cases/c5/w0_0_rsy_knjx/case",
+        "channels": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "rttov_test_txt_sha256": "6956c5e48c6ef7b57f881edae656858a246c9bbc98422729a465414d8df5506a",
+        "channels_txt_sha256": "1b873d3a359f0775c3a3ae8913d6bfa2cfe0256e5946c744e5e324edf14564a2",
+        "run_sh_sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+        "env_sh_sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+        "coef_txt_sha256": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+        "configured": {
+          "thermal_solver": 1,
+          "dom_nstreams": 8,
+          "dom_accuracy": 0.0,
+          "dom_opdep_threshold": 0.0,
+          "solar": false,
+          "plane_parallel": false,
+          "lambertian": false,
+          "lambertian_fixed_angle": true
+        }
+      },
+      {
+        "call": "probe",
+        "case_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr420_nine_channel_20261013/DOM_ANALYSIS_PAIR_ONCE_01/DOM7/h_cases/probe/w0_0_06384uyv/case",
+        "channels": [
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "rttov_test_txt_sha256": "6956c5e48c6ef7b57f881edae656858a246c9bbc98422729a465414d8df5506a",
+        "channels_txt_sha256": "1b873d3a359f0775c3a3ae8913d6bfa2cfe0256e5946c744e5e324edf14564a2",
+        "run_sh_sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+        "env_sh_sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+        "coef_txt_sha256": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+        "configured": {
+          "thermal_solver": 1,
+          "dom_nstreams": 8,
+          "dom_accuracy": 0.0,
+          "dom_opdep_threshold": 0.0,
+          "solar": false,
+          "plane_parallel": false,
+          "lambertian": false,
+          "lambertian_fixed_angle": true
+        }
+      }
+    ],
+    "DOM9": [
+      {
+        "call": "c1",
+        "case_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr420_nine_channel_20261013/DOM_ANALYSIS_PAIR_ONCE_01/DOM9/h_cases/c1/w0_0_xuy0lgu6/case",
+        "channels": [
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "rttov_test_txt_sha256": "a4c9fa9b3e9923a97c0a88fbde4774e2265a323b9a02d5718f8751a2b419fbe5",
+        "channels_txt_sha256": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b",
+        "run_sh_sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+        "env_sh_sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+        "coef_txt_sha256": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+        "configured": {
+          "thermal_solver": 1,
+          "dom_nstreams": 8,
+          "dom_accuracy": 0.0,
+          "dom_opdep_threshold": 0.0,
+          "solar": false,
+          "plane_parallel": false,
+          "lambertian": false,
+          "lambertian_fixed_angle": true
+        }
+      },
+      {
+        "call": "c2",
+        "case_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr420_nine_channel_20261013/DOM_ANALYSIS_PAIR_ONCE_01/DOM9/h_cases/c2/w0_0_aj8gyfd4/case",
+        "channels": [
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "rttov_test_txt_sha256": "a4c9fa9b3e9923a97c0a88fbde4774e2265a323b9a02d5718f8751a2b419fbe5",
+        "channels_txt_sha256": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b",
+        "run_sh_sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+        "env_sh_sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+        "coef_txt_sha256": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+        "configured": {
+          "thermal_solver": 1,
+          "dom_nstreams": 8,
+          "dom_accuracy": 0.0,
+          "dom_opdep_threshold": 0.0,
+          "solar": false,
+          "plane_parallel": false,
+          "lambertian": false,
+          "lambertian_fixed_angle": true
+        }
+      },
+      {
+        "call": "c3",
+        "case_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr420_nine_channel_20261013/DOM_ANALYSIS_PAIR_ONCE_01/DOM9/h_cases/c3/w0_0_k42_7o7n/case",
+        "channels": [
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "rttov_test_txt_sha256": "a4c9fa9b3e9923a97c0a88fbde4774e2265a323b9a02d5718f8751a2b419fbe5",
+        "channels_txt_sha256": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b",
+        "run_sh_sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+        "env_sh_sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+        "coef_txt_sha256": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+        "configured": {
+          "thermal_solver": 1,
+          "dom_nstreams": 8,
+          "dom_accuracy": 0.0,
+          "dom_opdep_threshold": 0.0,
+          "solar": false,
+          "plane_parallel": false,
+          "lambertian": false,
+          "lambertian_fixed_angle": true
+        }
+      },
+      {
+        "call": "c4",
+        "case_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr420_nine_channel_20261013/DOM_ANALYSIS_PAIR_ONCE_01/DOM9/h_cases/c4/w0_0_15t8bq_b/case",
+        "channels": [
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "rttov_test_txt_sha256": "a4c9fa9b3e9923a97c0a88fbde4774e2265a323b9a02d5718f8751a2b419fbe5",
+        "channels_txt_sha256": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b",
+        "run_sh_sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+        "env_sh_sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+        "coef_txt_sha256": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+        "configured": {
+          "thermal_solver": 1,
+          "dom_nstreams": 8,
+          "dom_accuracy": 0.0,
+          "dom_opdep_threshold": 0.0,
+          "solar": false,
+          "plane_parallel": false,
+          "lambertian": false,
+          "lambertian_fixed_angle": true
+        }
+      },
+      {
+        "call": "c5",
+        "case_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr420_nine_channel_20261013/DOM_ANALYSIS_PAIR_ONCE_01/DOM9/h_cases/c5/w0_0_clfwmf0o/case",
+        "channels": [
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "rttov_test_txt_sha256": "a4c9fa9b3e9923a97c0a88fbde4774e2265a323b9a02d5718f8751a2b419fbe5",
+        "channels_txt_sha256": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b",
+        "run_sh_sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+        "env_sh_sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+        "coef_txt_sha256": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+        "configured": {
+          "thermal_solver": 1,
+          "dom_nstreams": 8,
+          "dom_accuracy": 0.0,
+          "dom_opdep_threshold": 0.0,
+          "solar": false,
+          "plane_parallel": false,
+          "lambertian": false,
+          "lambertian_fixed_angle": true
+        }
+      },
+      {
+        "call": "probe",
+        "case_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr420_nine_channel_20261013/DOM_ANALYSIS_PAIR_ONCE_01/DOM9/h_cases/probe/w0_0_69yt9xa2/case",
+        "channels": [
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16
+        ],
+        "rttov_test_txt_sha256": "a4c9fa9b3e9923a97c0a88fbde4774e2265a323b9a02d5718f8751a2b419fbe5",
+        "channels_txt_sha256": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b",
+        "run_sh_sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+        "env_sh_sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+        "coef_txt_sha256": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+        "configured": {
+          "thermal_solver": 1,
+          "dom_nstreams": 8,
+          "dom_accuracy": 0.0,
+          "dom_opdep_threshold": 0.0,
+          "solar": false,
+          "plane_parallel": false,
+          "lambertian": false,
+          "lambertian_fixed_angle": true
+        }
+      }
+    ]
+  },
+  "static_prepared_fixture_rttov_test_sha256": {
+    "DOM7": "a4c9fa9b3e9923a97c0a88fbde4774e2265a323b9a02d5718f8751a2b419fbe5",
+    "DOM9": "a4c9fa9b3e9923a97c0a88fbde4774e2265a323b9a02d5718f8751a2b419fbe5"
+  },
+  "declared_plan_solver": 1,
+  "guide": {
+    "title": "RTTOV v14 Users' Guide",
+    "document_id": "NWPSAF-MO-UD-055",
+    "version": "1.1.1",
+    "date": "2026-01-21",
+    "local_pdf_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/docs/users_guide_rttov14_v1.1.pdf",
+    "local_pdf_sha256": "b77e53f30182a93b71f7ddc16785c06f1e25078d05d0542ae7b246a8d111c3b3",
+    "official_url": "https://nwp-saf.eumetsat.int/site/download/documentation/rtm/docs_rttov14/users_guide_rttov14_v1.1.pdf",
+    "support": [
+      "Section 8.4.2, Table 8.11, p.73: thermal_solver_dom is integer 1; delta-Eddington is integer 3 and default.",
+      "Section 8.4.2, p.73: DOM requires strict plane-parallel atmospheric geometry and RTTOV applies it automatically even when the configured plane_parallel flag is false.",
+      "Section 8.4.2, p.73: DOM treats the surface as Lambertian independently of the lambertian option and does not use the specularity parameter.",
+      "Section 8.4.2, p.73: DOM streams default to 8; dom_opdep_threshold 0 excludes no layers. dom_accuracy 0 is the default with no truncation; its described azimuthal-loop criterion is for solar radiation, disabled in this thermal-only run."
+    ]
+  },
+  "configured_vs_documented_effective_behavior": {
+    "configured_namelist": {
+      "plane_parallel": false,
+      "lambertian": false,
+      "lambertian_fixed_angle": true,
+      "solar": false,
+      "thermal_solver": 1,
+      "dom_nstreams": 8,
+      "dom_accuracy": 0.0,
+      "dom_opdep_threshold": 0.0
+    },
+    "documented_DOM_behavior": {
+      "strict_plane_parallel": "applied automatically by RTTOV whenever DOM is selected, independent of the configured false flag",
+      "surface_reflection": "Lambertian under DOM, independent of the configured false lambertian option; specularity is not used",
+      "runtime_flags_instrumented": false
+    },
+    "interpretation": "The namelist booleans are preserved as configured inputs; RTTOV's documented DOM behavior supplies the effective plane-parallel/Lambertian treatment. Do not describe false namelist values as proof that DOM ran spherical geometry or a non-Lambertian surface."
+  },
+  "created_at_kst": "2026-10-13T04:33:09.429498+09:00"
+}

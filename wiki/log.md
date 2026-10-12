@@ -1,7 +1,7 @@
 ---
 title: Wiki Log
 type: meta
-date_modified: 2026-06-25
+date_modified: 2026-10-13
 ---
 # Wiki Log
 
@@ -474,3 +474,4 @@ SRF substitution or production algorithm changed.
 
 - 2026-10-12: Added [[sources/pr419-postmerge-verification-2026-10-12]]: post-merge source-reader binding and CI discovery omissions reproduced/resolved; portable synthetic capture/quality/source-mutation tests added. Saved actual H/PLAN/flags and scientific limits preserved.
 - 2026-10-13 KST: Added [[sources/pr420-dom-nine-channel-analysis-2026-10-13]]: Edd extinction trigger measured on historical07; separate DOM9/DOM7 actual bounded analyses plus saved-state M-response and independent direction complete. All selected quality0; strict convergence and pixel/provenance limitations preserved.
+- 2026-10-13 KST: Added [[sources/pr421-calibration-dom-review-2026-10-13]]: future shared capture/case preflight binds actual calibration JSON; missing/mutation guards tested. Retained DOM8-stream effective geometry/reflection and common-seven-plus-prior comparison documented without private experiment replay; original PR420 packet preserved.

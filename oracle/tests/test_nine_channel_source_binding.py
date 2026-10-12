@@ -45,7 +45,8 @@ class _FakeContext:
         return _FakePool()
 
 
-def _setup(monkeypatch, tmp_path, *, build_mutation=None, run_mutation=None):
+def _setup(monkeypatch, tmp_path, *, build_mutation=None, run_mutation=None,
+           mutation_target="reader", channels=tuple(range(8, 17))):
     template = tmp_path / "template"
     template.mkdir()
     manifest_path = tmp_path / "manifest.json"
@@ -57,6 +58,10 @@ def _setup(monkeypatch, tmp_path, *, build_mutation=None, run_mutation=None):
     capture_source.write_text("capture stub\n")
     geometry_reader = tmp_path / "native_reader.py"
     geometry_reader.write_text("geometry reader v1\n")
+    calibration = tmp_path / "calibration.json"
+    calibration.write_text('{"channels": {}}\n')
+    monkeypatch.setattr(driver.ami_bt_coordinate, "_CAL_PATH", calibration)
+    mutation_path = geometry_reader if mutation_target == "reader" else calibration
     coefficient = tmp_path / "coef.dat"
     coefficient.write_text("coefficient fixture\n")
     executable = tmp_path / "rttov_test.exe"
@@ -95,7 +100,7 @@ def _setup(monkeypatch, tmp_path, *, build_mutation=None, run_mutation=None):
         return legacy if Path(path) == driver.LEGACY_DRIVER else intake
 
     capture_callback = (
-        None if run_mutation is None else lambda: run_mutation(geometry_reader)
+        None if run_mutation is None else lambda: run_mutation(mutation_path)
     )
     capture = _FakeCapture(on_run=capture_callback)
     monkeypatch.setattr(driver, "load_module", load_module)
@@ -111,7 +116,7 @@ def _setup(monkeypatch, tmp_path, *, build_mutation=None, run_mutation=None):
         # Reading this temporary file stands in for consuming ami_geometry.
         consumed = geometry_reader.read_text()
         if build_mutation is not None:
-            build_mutation(geometry_reader)
+            build_mutation(mutation_path)
         return {
             "xb": None, "forcing": None, "y_bt": None, "y_rq": None,
             "xland": None, "clear_cfg": None, "rttov_cfg": None,
@@ -125,9 +130,10 @@ def _setup(monkeypatch, tmp_path, *, build_mutation=None, run_mutation=None):
         "manifest": manifest_path,
         "npz": npz_path,
         "reader": geometry_reader,
+        "calibration": calibration,
         "capture": capture,
         "execute": lambda out: driver.execute(
-            manifest_path, npz_path, out, template, channels=tuple(range(8, 17))
+            manifest_path, npz_path, out, template, channels=channels
         ),
     }
 
@@ -172,3 +178,53 @@ def test_geometry_reader_change_during_capture_fails_final_source_audit(
     assert result["status"] == "FAILED_CASE_AUDIT"
     assert result["case_sources"][reader_key] != driver.sha(probe["reader"])
     assert probe["capture"].calls == 1
+
+
+@pytest.mark.parametrize("channels", [tuple(range(10, 17)), tuple(range(8, 17))])
+def test_actual_calibration_input_is_bound_before_and_during_capture(
+        monkeypatch, tmp_path, channels):
+    probe = _setup(monkeypatch, tmp_path, channels=channels)
+    result = probe["execute"](tmp_path / "output")
+    key = str(probe["calibration"].resolve())
+    preflight = json.loads((tmp_path / "output/PREFLIGHT.json").read_text())
+    assert preflight["source_bindings"][key] == driver.sha(probe["calibration"])
+    assert result["case_sources"][key] == preflight["source_bindings"][key]
+    assert result["status"] == "RETURNED_CASE_DIAGNOSTIC"
+
+
+@pytest.mark.parametrize("channels", [tuple(range(10, 17)), tuple(range(8, 17))])
+def test_calibration_mutation_during_preparation_prevents_capture(
+        monkeypatch, tmp_path, channels):
+    probe = _setup(monkeypatch, tmp_path, channels=channels,
+                   mutation_target="calibration",
+                   build_mutation=lambda path: path.write_text("changed\n"))
+    with pytest.raises(ValueError, match="case sources changed during preparation"):
+        probe["execute"](tmp_path / "output")
+    assert probe["capture"].calls == 0
+    assert not (tmp_path / "output/RUN_STARTED_ONCE.json").exists()
+
+
+@pytest.mark.parametrize("change", ["modify", "remove"])
+@pytest.mark.parametrize("channels", [tuple(range(10, 17)), tuple(range(8, 17))])
+def test_calibration_change_during_capture_fails_final_input_audit(
+        monkeypatch, tmp_path, change, channels):
+    def mutate(path):
+        path.unlink() if change == "remove" else path.write_text("changed\n")
+
+    probe = _setup(monkeypatch, tmp_path, channels=channels,
+                   mutation_target="calibration", run_mutation=mutate)
+    result = probe["execute"](tmp_path / "output")
+    assert result["status"] == "FAILED_CASE_AUDIT"
+    assert probe["capture"].calls == 1
+
+
+@pytest.mark.parametrize("channels", [tuple(range(10, 17)), tuple(range(8, 17))])
+def test_missing_calibration_preflight_aborts_without_creating_outputs(
+        monkeypatch, tmp_path, channels):
+    probe = _setup(monkeypatch, tmp_path, channels=channels)
+    probe["calibration"].unlink()
+    out = tmp_path / "output"
+    with pytest.raises(FileNotFoundError):
+        probe["execute"](out)
+    assert probe["capture"].calls == 0
+    assert not out.exists()
