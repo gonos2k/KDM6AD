@@ -5,6 +5,8 @@ date_modified: 2026-10-08
 ---
 # Sources
 
+- [[pr419-postmerge-verification-2026-10-12]] — Geometry producer hash checks and portable nine-channel regression coverage.
+
 - [[pr418-nine-channel-closeout-2026-10-12]] — Explicit nine-channel support, flagged added-channel H and bounded internal research closeout.
 
 Paper-level pages live in [[papers/_index]]. The source pages below are collection ledgers, synthesis notes, and review notes.

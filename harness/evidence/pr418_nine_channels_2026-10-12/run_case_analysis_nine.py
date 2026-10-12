@@ -56,17 +56,41 @@ L1B_CHANNEL_ORDER = tuple(CHANNEL_NAMES[channel] for channel in CHANNELS_9)
 F64 = {"dtype": torch.float64}
 
 
-def prepare_capture_module():
-    """Bind the opt-in driver itself into capture's before/after source snapshot."""
+def _analysis_source_paths(legacy):
+    """Direct producers consumed by this driver, including viewing geometry."""
+    return (Path(__file__), INTAKE_SOURCE, PR407_PACKET / "case_capture_adapter.py",
+            LEGACY_DRIVER, legacy.CAPTURE_HELPER, legacy.NATIVE_READER)
+
+
+def _direct_source_hashes(paths, *, allow_missing=False):
+    hashes = {}
+    for path in paths:
+        key = str(Path(path).resolve())
+        try:
+            hashes[key] = sha(path)
+        except FileNotFoundError:
+            if not allow_missing:
+                raise
+            hashes[key] = None
+    return hashes
+
+
+def prepare_capture_module(source_bindings=None):
+    """Carry the preflight's direct producers through capture's source checks."""
+    legacy = load_module(LEGACY_DRIVER, "pr419_capture_source_primitives")
+    paths = _analysis_source_paths(legacy)
+    current = _direct_source_hashes(paths)
+    expected = current if source_bindings is None else dict(source_bindings)
+    if current != expected:
+        raise ValueError("analysis source changed between preflight and capture")
     capture = _prepare_capture_module()
-    driver_path = Path(__file__).resolve()
-    driver_sha = sha(driver_path)
     base_snapshot = capture._source_snapshot
 
     def source_snapshot():
-        if sha(driver_path) != driver_sha:
-            raise ValueError("nine-channel driver source changed during capture")
-        return {**base_snapshot(), str(driver_path): driver_sha}
+        # Return live hashes so run_capture can report before/after mismatches
+        # in its failure receipt rather than throwing again while reporting.
+        actual = _direct_source_hashes(paths, allow_missing=True)
+        return {**base_snapshot(), **actual}
 
     capture._source_snapshot = source_snapshot
     return capture
@@ -308,9 +332,8 @@ def execute(manifest_path, npz_path, output_root, template_fixture, channels=Non
     output_root = Path(output_root).resolve()
     if output_root.exists():
         raise FileExistsError("case analysis output root must be fresh; no retry/overwrite")
-    source_paths = [Path(__file__), INTAKE_SOURCE, PR407_PACKET / "case_capture_adapter.py",
-                    LEGACY_DRIVER, legacy.CAPTURE_HELPER]
-    pinned = {str(p): sha(p) for p in source_paths}
+    source_paths = _analysis_source_paths(legacy)
+    pinned = {str(Path(p).resolve()): sha(p) for p in source_paths}
     output_root.mkdir(parents=True, mode=0o700)
     output_root.chmod(0o700)
     fixture_copy = output_root / "rttov_fixture"
@@ -326,7 +349,7 @@ def execute(manifest_path, npz_path, output_root, template_fixture, channels=Non
     (output_root / "PREFLIGHT.json").write_text(json.dumps(preflight, indent=2) + "\n")
     with (output_root / "RUN_STARTED_ONCE.json").open("x") as stream:
         stream.write(json.dumps(preflight) + "\n")
-    capture = prepare_capture_module()
+    capture = prepare_capture_module(pinned)
     source_snapshot = capture._source_snapshot()
     fixture_paths = [fixture_copy / rel for rel in ("in/profiles/001/atm/p.txt", "in/profiles/001/atm/p_half.txt",
                      "in/profiles/001/atm/t.txt", "in/profiles/001/atm/q.txt", "in/channels.txt",
