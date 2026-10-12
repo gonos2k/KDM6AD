@@ -469,3 +469,5 @@ SRF substitution or production algorithm changed.
 - 2026-10-12: Added [[sources/pr416-hourly-native-column-2026-10-12]]: actual05/06/07 columns, T/Q/cloud/pressure/wind changes and independently checked corrected temperature; no current-case substitution or new model/H calls.
 
 - 2026-10-12: Added [[sources/pr417-hourly-rttov-response-2026-10-12]]: actual two-snapshot H, joint BT changes/allquality0, clarified EOS-path versus eta mass and cloud-layer warming; no extraM/optimizer or observed-fit claim.
+
+- 2026-10-12: Added [[sources/pr418-nine-channel-closeout-2026-10-12]]: two additional-channel H calls return flags32768; default7 results preserved, optional9 input/audit/save support and functional closeout documented; native-centre geometry corrected additively. Graph/source and synthetic/private-run evidence remain separately attributed.

@@ -1,0 +1,46 @@
+{
+  "schema": "pr418_existing_L1B_nine_channel_binding_check_v1",
+  "intake_manifest_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr412_native_process_case_2026-10-12/INTAKE.json",
+  "intake_manifest_sha256": "092808f0919fbd7faf9b9701324839abb7d91c10c039cf4a3d038c2265463d91",
+  "payload_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr412_native_process_20261012/inputs/SELECTED_L1B_PATCH.npz",
+  "payload_sha256": "6b2cc7f43421ca1b2100680dde31dc661e3477bdf44b095d0f1217a7bf8a40bc",
+  "source_driver_sha256": "2c3ffdf9fe16a760f9d856f8ce4a5be217df947fcd10ee6601d8ba69e4d48af7",
+  "physical_channel_ids": [
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16
+  ],
+  "channel_names": [
+    "wv063",
+    "wv069",
+    "wv073",
+    "ir087",
+    "ir096",
+    "ir105",
+    "ir112",
+    "ir123",
+    "ir133"
+  ],
+  "source_DQF": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "BT_matches_original_bound_point": true,
+  "snapshot_matchup_or_residual_computed": false,
+  "L1B_acquisitions": 0,
+  "H_M_optimizer_calls": 0,
+  "scope": "Existing Jul19 retained 05:56 L1B source mapping only; does not pair observations with hourly06/07 H."
+}

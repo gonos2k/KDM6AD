@@ -1,0 +1,63 @@
+{
+  "schema": "pr418_added_two_channels_v1",
+  "base_main": "b07af3fe",
+  "channels_newly_evaluated": [
+    8,
+    9
+  ],
+  "channels_reused": [
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16
+  ],
+  "composite_channels": [
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16
+  ],
+  "time_indices": [
+    6,
+    7
+  ],
+  "max_logical_H_calls": 2,
+  "grad": false,
+  "M_optimizer_calls": 0,
+  "python_executable": "/private/tmp/KDM6AD-research-rc-20261007/env/bin/python",
+  "thread_environment": {
+    "MKL_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OMP_THREAD_LIMIT": "1",
+    "VECLIB_MAXIMUM_THREADS": "1"
+  },
+  "output_root": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr418_added_channels_20261012",
+  "bindings": {
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr417_hourly_rttov_2026-10-12/PLAN.json": "0a1e22763b3dca11d5334f8c71c0969c9d810d46a358921e7a4c715dd7009e0c",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr417_hourly_rttov_2026-10-12/RESULT.json": "eae3a7739e9defc0858d516c37fe2b41450fc2466f3dfcf0fcbd38ca8951341d",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr417_hourly_rttov_2026-10-12/REPORT.md": "28cca90913a7ebcf34649d894888678ce7d418443521b775c3aeac78577201e4",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr417_hourly_rttov_2026-10-12/CHANNEL_RESPONSE.csv": "ea77e7d34e7515705b802047bbcb2c8e86fcf269bdab9a769335ba590d1a611a",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr417_hourly_rttov_2026-10-12/RED_POSTRUN.md": "2159e73d7d814893c0bb95b471b51881a45bee99a95843d9c3b56f3eb4dc2eba",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr417_hourly_rttov_2026-10-12/GREEN_POSTRUN.md": "1f1076f60b62fa2ec7994362619a6eae23d31dbe30557da83c5c8e12bf49ac63",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr417_hourly_rttov_2026-10-12/prepare_hourly_h.py": "292a39c19b8994cefa62ae807c2c346ec838c0563948e3cf9e4a44eb414c4ab8",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr417_hourly_rttov_2026-10-12/EXECUTION.log": "a9e4d950884e6c9f20cfda836ea0307d133c0975d6ca19cee11e0d532d61be1d",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr417_hourly_rttov_2026-10-12/MEASURE_AND_LAYER_CLARIFICATION.md": "3edad9f526aaa02fe717eb4308947e46ed7801cd87e46f13ca7911dae498700b",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr417_hourly_rttov_2026-10-12/EXECUTION_EXIT.json": "4130de3fbbf2e3ae61034395c0863ded19563c582d1989b0d38d37a8c4221223",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr417_hourly_rttov_2026-10-12/MEASURE_AND_LAYER_CLARIFICATION.json": "ab4df49d535e1d5d004b8c90cdd5391ab668f4f0c804fbb8a3b40cca5412d8a9",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr417_hourly_rttov_2026-10-12/ARTIFACT_MANIFEST.json": "3ab9f9f9006d8f03a748225d9ad81fbc84460680341d56874ef071c4a55c98a6",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr417_hourly_rttov_2026-10-12/run_hourly_h.py": "9518d8a3ae56bafbe283968a8354794bc5d3a01df28c27b6a487ce1d51d3d21b",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr417_hourly_rttov_2026-10-12/RED_PREFLIGHT.md": "6aec3b9ca8c13161a0ae937602847d03808a6d7db966230b225db8de273004a6",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr418_nine_channels_2026-10-12/run_added_channels.py": "6e1a02d836d98d71a28fcdbdebc04a5218c37bf380465855996f61ba68201e30"
+  },
+  "geometry_policy": "native-center viewing angles unchanged; AMI GEOS navigation donor separate",
+  "quality_policy": "record every flag; composite analysis eligible only if all nine are quality zero",
+  "between_runs": "same hash-bound states/auxiliaries/assets; composite is not a simultaneous nine-channel call"
+}

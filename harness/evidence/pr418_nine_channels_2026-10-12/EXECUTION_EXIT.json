@@ -1,0 +1,9 @@
+{
+  "exit_code": 0,
+  "new_logical_H_calls": 2,
+  "new_M_optimizer_calls": 0,
+  "all_nine_quality_zero_both_times": false,
+  "nine_channel_analysis_executed": false,
+  "guard_rejection_before_H": "PRE_EXECUTION_SOURCE_GUARD.log",
+  "automatic_model_retry": false
+}

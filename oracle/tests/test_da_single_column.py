@@ -27,7 +27,7 @@ class InlinePool:
         return [fn(job) for job in jobs]
 
 
-def _inputs(k=13):
+def _inputs(k=13, channels=CHANNELS):
     p = torch.linspace(100000.0, 50000.0, k, **F64).reshape(1, k)
     pii = (p / 100000.0).pow(0.2854)
     z = torch.zeros((1, k), **F64)
@@ -43,7 +43,7 @@ def _inputs(k=13):
     rho_d = freeze_dry_air_density(xb, forcing)
     rttov_cfg = dict(
         rho_d=rho_d,
-        channels=CHANNELS,
+        channels=tuple(channels),
         coef_id="synthetic-single-column",
         p_lay=p_lay,
         p_half=p_half,
@@ -61,14 +61,15 @@ def _inputs(k=13):
     window_config = WindowConfig(
         dt=20.0, xland=xland, ncmin_land=0.0, ncmin_sea=0.0,
         normalized_dry=True)
-    y_bt = torch.full((1, 7), 279.2, **F64)
-    y_rq = torch.zeros((1, 7), **F64)
+    y_bt = torch.full((1, len(channels)), 279.2, **F64)
+    y_rq = torch.zeros((1, len(channels)), **F64)
     return (xb, (forcing, forcing), y_bt, y_rq, xland, clear_cfg, rttov_cfg,
             window_config)
 
 
 def _install_synthetic_allsky(monkeypatch, *, trial_qc_flag=False,
-                               background_qc_flag=False, inputs=None):
+                               background_qc_flag=False, inputs=None,
+                               bad_channel=0):
     xb, forcings, y_bt, _, _, _, _, _ = _inputs() if inputs is None else inputs
     forcing = forcings[0]
     ref_t = (xb.th * forcing.pii).mean(-1, keepdim=True)
@@ -78,17 +79,20 @@ def _install_synthetic_allsky(monkeypatch, *, trial_qc_flag=False,
     def fake_sharded_allsky(state, fc, positions, target, mask, xland, cfg,
                             case_root, *, grad, **kwargs):
         assert positions.tolist() == [0]
-        assert tuple(target.shape) == (1, 7)
-        assert tuple(mask.shape) == (1, 7)
-        assert tuple(cfg["channels"]) == CHANNELS
-        observed.append(dict(grad=grad, qc=float(state.qc.sum())))
+        n_channels = len(cfg["channels"])
+        assert tuple(target.shape) == (1, n_channels)
+        assert tuple(mask.shape) == (1, n_channels)
+        assert tuple(target.shape) == (1, len(y_bt[0]))
+        observed.append(dict(grad=grad, qc=float(state.qc.sum()),
+                             channels=tuple(cfg["channels"])))
 
         # This synthetic H converts potential temperature to physical
         # temperature through Exner and retains a direct all-sky qc path.
         t_delta = (state.th * fc.pii).mean(-1, keepdim=True) - ref_t
         qv_delta = state.qv.mean(-1, keepdim=True) - ref_qv
         qc_mean = state.qc.mean(-1, keepdim=True)
-        bt = (280.0 + t_delta + 0.05 * qv_delta + 20.0 * qc_mean).expand(1, 7)
+        bt = (280.0 + t_delta + 0.05 * qv_delta + 20.0 * qc_mean).expand(
+            1, n_channels)
         residual = bt - target
         j_t = fd._part_loss(bt[0], target[0], mask[0], 1.0)
         d_bt = torch.where(residual.abs() < 1.0, residual, residual.sign()) * mask
@@ -100,9 +104,9 @@ def _install_synthetic_allsky(monkeypatch, *, trial_qc_flag=False,
         adj["qc"] = torch.ones_like(state.qc) * (dsum * (20.0 / k))
         rq = torch.zeros_like(target)
         if grad and trial_qc_flag:
-            rq[0, 0] = 32768.0
+            rq[0, bad_channel] = 32768.0
         if not grad and background_qc_flag:
-            rq[0, 0] = 32768.0
+            rq[0, bad_channel] = 32768.0
         return {
             "bt": bt,
             "rq": rq,
@@ -243,6 +247,123 @@ def test_adapter_preserves_synthetic_39_level_native_shape_and_51_cvts(
     assert sum(counts.values()) == 51
     assert calls[0]["grad"] is False  # background support probe
     assert any(item["grad"] is True for item in calls[1:])
+
+
+def test_explicit_nine_channel_support_runs_synthetic_dual_analysis(
+        monkeypatch, tmp_path):
+    channels = tuple(range(8, 17))
+    data = _inputs(k=39, channels=channels)
+    calls = _install_synthetic_allsky(monkeypatch, inputs=data)
+    analysis = _run(monkeypatch, tmp_path, inputs=data, channels=channels)
+
+    meta = analysis["metadata"]
+    result = analysis["result"]
+    assert meta["channels_ami_physical_ids"] == list(channels)
+    assert meta["n_valid_background"] == 9
+    assert meta["background_mask"] == [[1.0] * 9]
+    assert tuple(analysis["obs_eval"].mask.shape) == (1, 9)
+    assert meta["require_frozen_quality"] is True
+    assert meta["n_successful_obs_callback_results"] > 0
+    assert meta["n_window_evals"] == result.n_window_evals >= 1
+    assert meta["n_audit_evals"] == result.n_audit_evals >= 1
+    assert len(calls) == 1 + meta["n_successful_obs_callback_results"]
+    assert [call["channels"] for call in calls] == [channels] * len(calls)
+    assert calls[0]["grad"] is False
+    assert any(call["grad"] is True for call in calls[1:])
+
+
+def test_explicit_nine_channel_background_quality_loss_fails_closed(
+        monkeypatch, tmp_path):
+    channels = tuple(range(8, 17))
+    data = _inputs(k=39, channels=channels)
+    _install_synthetic_allsky(monkeypatch, background_qc_flag=True,
+                              bad_channel=8, inputs=data)
+    monkeypatch.setattr(
+        single, "run_dual_minimizer",
+        lambda *a, **kw: pytest.fail("minimizer reached with 8/9 supported channels"))
+    xb, forcings, y_bt, y_rq, xland, clear_cfg, rttov_cfg, cfg = data
+
+    with pytest.raises(ValueError, match="n_valid=8, required=9"):
+        single.run_single_column_analysis(
+            xb, forcings, y_bt, y_rq, xland, clear_cfg, rttov_cfg,
+            str(tmp_path), window_config=cfg, obs_time=2, pool=InlinePool(),
+            max_iter=1, channels=channels)
+
+
+def test_explicit_nine_channel_trial_quality_loss_raises_without_dropping_channel(
+        monkeypatch, tmp_path):
+    channels = tuple(range(8, 17))
+    data = _inputs(k=39, channels=channels)
+    _install_synthetic_allsky(monkeypatch, trial_qc_flag=True,
+                              bad_channel=8, inputs=data)
+
+    with pytest.raises(ValueError, match="flags a frozen-support channel"):
+        _run(monkeypatch, tmp_path, inputs=data, channels=channels)
+
+
+def test_explicit_nine_channel_source_quality_loss_does_not_shrink_support(
+        monkeypatch, tmp_path):
+    channels = tuple(range(8, 17))
+    data = list(_inputs(k=39, channels=channels))
+    data[3][0, 8] = 1.0  # source DQF/quality excludes physical channel 16
+    data = tuple(data)
+    _install_synthetic_allsky(monkeypatch, inputs=data)
+    monkeypatch.setattr(
+        single, "run_dual_minimizer",
+        lambda *a, **kw: pytest.fail("minimizer reached after source support shrank"))
+    xb, forcings, y_bt, y_rq, xland, clear_cfg, rttov_cfg, cfg = data
+
+    with pytest.raises(ValueError, match="n_valid=8, required=9"):
+        single.run_single_column_analysis(
+            xb, forcings, y_bt, y_rq, xland, clear_cfg, rttov_cfg,
+            str(tmp_path), window_config=cfg, obs_time=2, pool=InlinePool(),
+            max_iter=1, channels=channels)
+
+
+def test_explicit_channels_require_optional_clear_channel_config_to_match(
+        monkeypatch, tmp_path):
+    channels = tuple(range(8, 17))
+    xb, forcings, y_bt, y_rq, xland, clear_cfg, rttov_cfg, cfg = _inputs(
+        k=39, channels=channels)
+    clear_cfg.input_cfg.channels = CHANNELS
+    monkeypatch.setattr(
+        single, "collect_window_trajectory",
+        lambda *a, **kw: pytest.fail("mismatched clear channels reached M"))
+
+    with pytest.raises(ValueError, match="clear_cfg.input_cfg.channels must match"):
+        single.run_single_column_analysis(
+            xb, forcings, y_bt, y_rq, xland, clear_cfg, rttov_cfg,
+            str(tmp_path), window_config=cfg, obs_time=2, pool=InlinePool(),
+            max_iter=1, channels=channels)
+
+
+@pytest.mark.parametrize("channels, error", [
+    ((16, 15, 14, 13, 12, 11, 10, 9, 8), ValueError),
+    ((8, 9, 10, 11, 12, 13, 14, 15), ValueError),
+    ((8, 9, 10, 11, 12, 13, 14, 15, True), TypeError),
+    (set(range(8, 17)), TypeError),
+    (frozenset(range(8, 17)), TypeError),
+    (iter(range(8, 17)), TypeError),
+])
+def test_explicit_channels_reject_order_subset_and_boolean_ids_before_operator(
+        monkeypatch, tmp_path, channels, error):
+    data = _inputs(k=39, channels=tuple(range(8, 17)))
+    _install_synthetic_allsky(monkeypatch, inputs=data)
+    monkeypatch.setattr(
+        single, "run_dual_minimizer",
+        lambda *a, **kw: pytest.fail("invalid channel declaration reached minimizer"))
+    xb, forcings, y_bt, y_rq, xland, clear_cfg, rttov_cfg, cfg = data
+
+    with pytest.raises(error):
+        single.run_single_column_analysis(
+            xb, forcings, y_bt, y_rq, xland, clear_cfg, rttov_cfg,
+            str(tmp_path), window_config=cfg, obs_time=2, pool=InlinePool(),
+            max_iter=1, channels=channels)
+
+
+@pytest.mark.parametrize("channels", [list(range(8, 17)), range(8, 17)])
+def test_explicit_channels_accept_ordered_sequences(channels):
+    assert single._selected_channels(channels) == tuple(range(8, 17))
 
 
 def test_cvt_to_real_window_to_synthetic_h_total_cost_directional_difference(
