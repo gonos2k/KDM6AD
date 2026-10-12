@@ -1,0 +1,134 @@
+{
+  "schema": "pr415_same_window_saved_comparison_v1",
+  "old_result_sha256": "ee0aedbbe1716e449dc6f195b836a63706fa38fb57b0973e449dad818ab0d166",
+  "new_result_sha256": "773c7fbb90a88004332952430a02897fed37370207e534119c6743a5bee1ce58",
+  "old": {
+    "Jo": 20.094911217481094,
+    "Jb": 0.19964886384766506,
+    "J": 20.294560081328758,
+    "gradient_Linf": 0.3850806305018468,
+    "gradient_L2": 1.3767559786807746,
+    "control_L2": 0.6319000931281227,
+    "full_gradient_to_prior_ratio": 2.178755777460578,
+    "strict_converged": false,
+    "termination": "UNKNOWN",
+    "optimizer": {
+      "n_iter": 2,
+      "func_evals": 4,
+      "step_t": 10,
+      "prev_loss": 20.63196106230365,
+      "group": {
+        "lr": 1,
+        "max_iter": 3,
+        "max_eval": 3,
+        "history_size": 8,
+        "tolerance_grad": 1e-10,
+        "tolerance_change": 1e-09,
+        "line_search_fn": "strong_wolfe"
+      }
+    },
+    "window_evaluations": 4,
+    "audit_evaluations": 1,
+    "logical_H_calls": 15
+  },
+  "new": {
+    "Jo": 18.420371779734346,
+    "Jb": 1.0200243206562063,
+    "J": 19.44039610039055,
+    "gradient_Linf": 0.002606100334250405,
+    "gradient_L2": 0.007957037976822522,
+    "control_L2": 1.4283027134723272,
+    "full_gradient_to_prior_ratio": 0.0055709744872487685,
+    "strict_converged": false,
+    "termination": "UNKNOWN",
+    "optimizer": {
+      "n_iter": 8,
+      "func_evals": 10,
+      "step_t": 1,
+      "prev_loss": 19.44072033973596,
+      "group": {
+        "lr": 1,
+        "max_iter": 8,
+        "max_eval": 10,
+        "history_size": 8,
+        "tolerance_grad": 1e-10,
+        "tolerance_change": 1e-09,
+        "line_search_fn": "strong_wolfe"
+      }
+    },
+    "window_evaluations": 10,
+    "audit_evaluations": 1,
+    "logical_H_calls": 33
+  },
+  "same_original_background_forcing_H_aux_control_sigmas_observations": true,
+  "initial_J": 26.649841375721227,
+  "cost_delta_new_minus_old": {
+    "Jo": -1.6745394377467484,
+    "Jb": 0.8203754568085413,
+    "J": -0.8541639809382069
+  },
+  "accepted_initial_change": {
+    "control_delta_L2": 1.2298918693057843,
+    "control_angle_degrees": 59.11018796563064,
+    "delta_relative_to_new_control_norm": 0.8610862793334692,
+    "T_max_abs_K": 0.2488645676783015,
+    "qv_max_abs_kg_kg_dry": 0.0005163287725918099
+  },
+  "slots": [
+    {
+      "step_index": 1,
+      "old_Jo": 6.296961690078167,
+      "new_Jo": 5.7553551032879104,
+      "new_huber_quadratic_channel_ids": [
+        11,
+        13,
+        15,
+        16
+      ],
+      "new_QC_max": 0.0,
+      "new_recorded_NC_max": 0.0,
+      "new_water_fixed_mass_kg_m2": 37.9858134198088
+    },
+    {
+      "step_index": 31,
+      "old_Jo": 6.910692202270275,
+      "new_Jo": 6.340511428173851,
+      "new_huber_quadratic_channel_ids": [
+        11,
+        16
+      ],
+      "new_QC_max": 0.0,
+      "new_recorded_NC_max": 0.0,
+      "new_water_fixed_mass_kg_m2": 37.9858134198088
+    },
+    {
+      "step_index": 61,
+      "old_Jo": 6.8872573251326505,
+      "new_Jo": 6.324505248272581,
+      "new_huber_quadratic_channel_ids": [
+        11,
+        13,
+        16
+      ],
+      "new_QC_max": 0.0,
+      "new_recorded_NC_max": 0.0,
+      "new_water_fixed_mass_kg_m2": 37.9858134198088
+    }
+  ],
+  "new_sampled_states_exactly_equal": true,
+  "new_simulated_temporal_range_K_by_channel": {
+    "WV073": 0.0,
+    "IR087": 0.0,
+    "IR096": 0.0,
+    "IR105": 0.0,
+    "IR112": 0.0,
+    "IR123": 0.0,
+    "IR133": 0.0
+  },
+  "old_to_new_BT_max_abs_K": 0.17767086817747213,
+  "new_analysis_initial_water_change_fixed_mass_kg_m2": -0.3907074851840804,
+  "M_H_optimizer_calls_for_comparison": 0,
+  "new_dates_or_native_integrations": 0,
+  "no_process_rate_or_external_flux_budget_claim": true,
+  "old_PR412_R_M_I_M_not_transferred": true
+}

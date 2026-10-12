@@ -1,0 +1,15 @@
+{
+  "schema": "pr415_same_problem_budget_result_v1",
+  "run_id": "PR415_JUL19_THREE_SLOT_8ITER_20261012_01",
+  "status": "RETURNED_AUDITED_WINDOW",
+  "original_runner_sha256": "bb01077496cf95263f5f69c3dfc95bba9871e171fa374e29e9b3de3d5217cedf",
+  "new_adapter_sha256": "073bce6bffdd854b84f40e4234f1eecf5f426d9ea5c658ce8ba16de4eee0e15c",
+  "plan_sha256": "83eb8e3873ac22f9947ed5226e8f9930386ce7e3a4f5589cab82c468413d2ad6",
+  "result_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr415_window_finish_20261012/run-PR415_JUL19_THREE_SLOT_8ITER_20261012_01/RESULT.json",
+  "result_sha256": "773c7fbb90a88004332952430a02897fed37370207e534119c6743a5bee1ce58",
+  "serialization_schema_reused": "pr414_actual_local_window_v1",
+  "scientific_change": "optimizer budget only;61-step3-slot problem unchanged",
+  "automatic_retry": false,
+  "native_integrations": 0,
+  "new_dates": 0
+}

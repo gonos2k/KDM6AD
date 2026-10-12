@@ -51,3 +51,11 @@ scenes jointly fitted along61×20s held-forcing local transitions from the norma
 05:55:40 native state. All-slot audit and checkpoint returned, strict convergence
 remains unmet. This extends temporal calculation coverage on Jul19, not full
 host cycling, independent-date or forecast-skill evidence.
+
+## Three-slot bounded follow-up
+
+[[sources/pr415-three-slot-bounded-finish-2026-10-12]] records a single same-problem
+eight-budget numerical check. Gradient/cost decrease, but sampled BT stays
+constant and strict convergence remains unmet. A narrowed hourly archive audit
+now confirms normal historical four-rank completion, without certifying old
+executable/input bytes or substituting it into the current experiment.

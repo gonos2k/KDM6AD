@@ -1,0 +1,219 @@
+{
+  "schema": "pr415_bounded_hourly_candidate_identity_v1",
+  "status": "NORMAL_COMPLETION_CONFIRMED_PARTIAL_PROVENANCE",
+  "scope": {
+    "candidate_case_parent": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS",
+    "specific_run_child": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp137_termparity_720min_hist60_np4_20260718_185625",
+    "forecast_file_hashing": false,
+    "weather_array_reads": false,
+    "model_or_optimizer_execution": false,
+    "archive_search": false
+  },
+  "confirmed_run": {
+    "run_dir_name": "mp137_termparity_720min_hist60_np4_20260718_185625",
+    "archived_exit_code": 0,
+    "mpi_ranks": 4,
+    "rank_success_complete_markers": 4,
+    "terminal_model_time": "2025-07-19_12:00:00",
+    "history_frame_count": 13,
+    "first_saved_time": "2025-07-19_00:00:00",
+    "last_saved_time": "2025-07-19_12:00:00",
+    "run_record": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/terminal_parity.log",
+    "run_record_sha256": "e884853340aece047aa6f720a71bb43caa4338a8bb825ecb65811428a57aaa00",
+    "runtime_version": "WRF V4.6.0 MODEL",
+    "runtime_source_commit_text": "48d8c323edd91019529837a226bffbe51bf727ea",
+    "claim_limit": "No executable checksum or immutable build receipt accompanies the run."
+  },
+  "namelist_binding": {
+    "run_copy": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp137_termparity_720min_hist60_np4_20260718_185625/namelist.input",
+    "case_copy": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/namelist.input",
+    "both_sha256": "064b6f5ea5683ee3dc68d408c08bf4cbf588be06dbc7d99bb3529be8ba61554a",
+    "declared_mp_physics": 137,
+    "start": "2025-07-19_00:00:00",
+    "run_minutes": 720,
+    "end": "2025-07-19_12:00:00",
+    "time_step_seconds": 20,
+    "history_interval_minutes": 60,
+    "domain": {
+      "horizontal": "234x282",
+      "dx_m": 5000,
+      "dy_m": 5000,
+      "mass_levels": 39
+    }
+  },
+  "input_provenance": {
+    "files": {
+      "wrfinput_d01": {
+        "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfinput_d01",
+        "size_bytes": 374429080,
+        "Times": [
+          "2025-07-19_00:00:00"
+        ]
+      },
+      "wrfbdy_d01": {
+        "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfbdy_d01",
+        "size_bytes": 103922656,
+        "Times": [
+          "2025-07-19_00:00:00",
+          "2025-07-19_03:00:00",
+          "2025-07-19_06:00:00",
+          "2025-07-19_09:00:00"
+        ],
+        "THISBDYTIME": [
+          "2025-07-19_00:00:00",
+          "2025-07-19_03:00:00",
+          "2025-07-19_06:00:00",
+          "2025-07-19_09:00:00"
+        ],
+        "NEXTBDYTIME": [
+          "2025-07-19_03:00:00",
+          "2025-07-19_06:00:00",
+          "2025-07-19_09:00:00",
+          "2025-07-19_12:00:00"
+        ],
+        "last_interval": "[09:00,12:00) end-exclusive"
+      },
+      "wrfchainp_d01": {
+        "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrfchainp_d01",
+        "size_bytes": 3458043,
+        "Times": [
+          "2025-07-19_00:00:00",
+          "2025-07-19_01:00:00",
+          "2025-07-19_02:00:00",
+          "2025-07-19_03:00:00",
+          "2025-07-19_04:00:00",
+          "2025-07-19_05:00:00",
+          "2025-07-19_06:00:00",
+          "2025-07-19_07:00:00",
+          "2025-07-19_08:00:00",
+          "2025-07-19_09:00:00",
+          "2025-07-19_10:00:00",
+          "2025-07-19_11:00:00",
+          "2025-07-19_12:00:00"
+        ],
+        "START_DATE_attribute": "2024-07-23_06:00:00",
+        "times_vs_start_date_note": "START_DATE attribute differs from Times records; not resolved by this metadata-only audit."
+      }
+    },
+    "input_sha256_recorded_in_this_run": false,
+    "weather_arrays_read": false
+  },
+  "forecast_association": {
+    "run_child": {
+      "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp137_termparity_720min_hist60_np4_20260718_185625/klfs_lc05_fcst.202507190000",
+      "size_bytes": 4132673468,
+      "mtime_ns": 1784382191710304955,
+      "inode": 244722390,
+      "device": 16777232
+    },
+    "case_parent": {
+      "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/klfs_lc05_fcst.202507190000",
+      "size_bytes": 4132673468,
+      "mtime_ns": 1784382191710304955,
+      "inode": 244099847,
+      "device": 16777232
+    },
+    "same_inode": false,
+    "same_size_and_mtime": true,
+    "content_hash_computed": false,
+    "recommended_source_for_reuse": "The run-specific child named by terminal_parity.log, not the unbound parent path."
+  },
+  "current_executable_metadata": {
+    "symlink": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/wrf.exe",
+    "target": "../../../main/wrf.exe",
+    "resolved": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/main/wrf.exe",
+    "current_target_size_bytes": 50483352,
+    "current_target_mtime": "2026-08-23T00:21:51"
+  },
+  "small_receipt_file_hashes": {
+    "terminal_parity_log": {
+      "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/terminal_parity.log",
+      "size_bytes": 1566,
+      "mtime": "2026-07-18T22:44:55",
+      "sha256": "e884853340aece047aa6f720a71bb43caa4338a8bb825ecb65811428a57aaa00"
+    },
+    "terminal_parity_script": {
+      "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/run_terminal_parity.sh",
+      "size_bytes": 4447,
+      "mtime": "2026-07-18T17:34:47",
+      "sha256": "13be061c5e378ad643dc6bed3e152e816b1daaba88daf925323bd0927cffefdf"
+    },
+    "run_wrapper": {
+      "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/run_ss_case.py",
+      "size_bytes": 9647,
+      "mtime": "2026-07-18T17:30:48",
+      "sha256": "43c401c412c439c4ee70759bbdc08a63767c709e0d2164d651d1334dae70c481"
+    },
+    "run_namelist": {
+      "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp137_termparity_720min_hist60_np4_20260718_185625/namelist.input",
+      "size_bytes": 6447,
+      "mtime": "2026-07-18T18:56:25",
+      "sha256": "064b6f5ea5683ee3dc68d408c08bf4cbf588be06dbc7d99bb3529be8ba61554a"
+    },
+    "rank_logs": [
+      {
+        "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp137_termparity_720min_hist60_np4_20260718_185625/rsl.error.0000",
+        "size_bytes": 209902,
+        "mtime": "2026-07-18T22:43:11",
+        "sha256": "e2adfd34d0f31fed99b645fd8f4b0917e9a57b4cc509b08509b333f0ed964ce1"
+      },
+      {
+        "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp137_termparity_720min_hist60_np4_20260718_185625/rsl.error.0001",
+        "size_bytes": 33452,
+        "mtime": "2026-07-18T22:43:11",
+        "sha256": "a4343c69b8909320682bb08bb77f1e1adc016b23d95249b02ece895708b1f4c1"
+      },
+      {
+        "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp137_termparity_720min_hist60_np4_20260718_185625/rsl.error.0002",
+        "size_bytes": 9587,
+        "mtime": "2026-07-18T22:43:11",
+        "sha256": "4b718519d256f04e3e1b17cd5e4e1ea5f541a142ce848243b45854e2656bc0d3"
+      },
+      {
+        "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp137_termparity_720min_hist60_np4_20260718_185625/rsl.error.0003",
+        "size_bytes": 6028,
+        "mtime": "2026-07-18T22:43:11",
+        "sha256": "a153484a8f114c3a9ab7d14b1acc4bd4962bc02603319913b6f2aacbc0224378"
+      }
+    ],
+    "exit_code": {
+      "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp137_termparity_720min_hist60_np4_20260718_185625/exit_code",
+      "size_bytes": 2,
+      "mtime": "2026-07-18T22:43:21",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    "run_stdout": {
+      "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp137_termparity_720min_hist60_np4_20260718_185625/wrf_mp137_termparity.stdout",
+      "size_bytes": 196,
+      "mtime": "2026-07-18T18:56:26",
+      "sha256": "9500367e0d5ff6f2be217c996c4abb2609a784ee4f122beab80dfcf50d6061e4"
+    },
+    "parent_namelist": {
+      "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/namelist.input",
+      "size_bytes": 6447,
+      "mtime": "2026-07-18T22:43:11",
+      "sha256": "064b6f5ea5683ee3dc68d408c08bf4cbf588be06dbc7d99bb3529be8ba61554a"
+    },
+    "parent_stdout_pointer": {
+      "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/mp137_terminal.out",
+      "size_bytes": 134,
+      "mtime": "2026-07-18T22:43:21",
+      "sha256": "e59d29735e5ee004607324a2d97d94446cd01f8eda9fe3659201f96124a01d2b"
+    }
+  },
+  "prior_evidence_used": [
+    "harness/evidence/pr404_l1b_source_mask_2026-10-11/NATIVE_AVAILABILITY_REPORT.md",
+    "harness/evidence/pr405_native_valid_time_2026-10-11/COORDINATOR_REPORT.md",
+    "harness/evidence/pr405_native_valid_time_2026-10-11/RED_BC_REVIEW.md",
+    "wiki/entities/LC05 5km SS Case.md",
+    "wiki/entities/WRF KIM-meso Host.md"
+  ],
+  "limitations": [
+    "Run completion and its archived experiment label are supported by terminal_parity.log, run exit marker, and four per-rank completion markers.",
+    "Runtime WRF version and source-commit text are recorded, but exact executable bytes/build receipt are not.",
+    "The run-specific forecast child and case-root parent file have distinct inodes; equal size and mtime do not establish byte identity without a digest.",
+    "No run-time hashes bind IC, BC, or wrfchainp input bytes.",
+    "The BC metadata permits the last interval [09:00,12:00); it does not authorize advancing at or beyond 12:00.",
+    "The evidence establishes completed MP137 integration metadata, not physical validity, forecast skill, or analysis acceptance."
+  ]
+}

@@ -154,3 +154,23 @@ execution does not establish another date or forecast skill. The original
 single20s problem/evidence and PR412/413 claims remain distinct; no automatic
 repeat or score change is introduced. See the
 [actual times and additional-directory inventory](pr414_ami_window_2026-10-12/INPUT_AND_TIME_INVENTORY.md).
+
+### Same three-slot numerical finish and hourly archive identity (PR415)
+
+[One bounded max_iter8 check](pr415_window_numerical_finish_2026-10-12/REPORT.md)
+retains the original zero-control background,61steps/three real scenes, one
+prior and identical M/H/weights. Actual8iterations/10evaluations plus1all-slot
+audit (33logicalH) returned J19.440396100, gradientLinf0.002606100 (147.76× lower
+than the prior short run), but strict1e-10 convergence remains false/UNKNOWN.
+Sampled accepted BT/States at1/31/61 remain equal; this improves the level
+compromise, not temporal variation or an online forecast. Initial controls move
+substantially despite lower gradient. No automatic further budget/window
+extension or old R_M/I_M transfer is made.
+
+The [narrow hourly audit](pr415_window_numerical_finish_2026-10-12/HOURLY_IDENTITY_AUDIT.md)
+now confirms the historical four-rank MP137 child run's normal00–12 completion
+and13saved hourly frames. Earlier unknown-completion status is corrected for
+that run; parent/child output-byte equivalence, old executable/ICBC hashes and
+chainp START_DATE/Times mismatch remain unresolved. It is not substituted into
+the retained one-rank/current-variant case or this same-problem comparison.
+The final BC interval starts09 and ends12; no post12 coverage is inferred.
