@@ -5,6 +5,8 @@ date_modified: 2026-10-08
 ---
 # Sources
 
+- [[pr418-nine-channel-closeout-2026-10-12]] — Explicit nine-channel support, flagged added-channel H and bounded internal research closeout.
+
 Paper-level pages live in [[papers/_index]]. The source pages below are collection ledgers, synthesis notes, and review notes.
 
 - [[kdm6-vs-kdm6ad-code-comparison-2026-06-25]] - Analysis note comparing [[KDM6]] and [[KDM6AD]] implementation structure, parity evidence, and AD boundary.

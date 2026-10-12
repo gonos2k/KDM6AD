@@ -23,6 +23,7 @@ date_modified: 2026-10-08
 - [[queries/_index|Queries]] - 2 pages
 
 ## Sources
+- [[sources/pr418-nine-channel-closeout-2026-10-12|WV063/WV069 support and research closeout]] — Added channels returned flags32768; optional9 I/O, native geometry correction and completed functional scope remain distinct from scientific acceptance.
 - [[sources/pr417-hourly-rttov-response-2026-10-12|Historical hourly AMI forward response]] — Native snapshot-specific H inputs give channel changes, with measure/layer and source limits.
 - [[sources/pr416-hourly-native-column-2026-10-12|Historical hourly native column]] — Actual weather slices and corrected units, with source/moving-level and no-BT/process-budget limits.
 - [[sources/pr415-three-slot-bounded-finish-2026-10-12|Three-slot bounded numerical finish]] — Same problem, lower cost/gradient, no temporal BT evolution; positive hourly-run identity with explicit remaining source-byte gaps.

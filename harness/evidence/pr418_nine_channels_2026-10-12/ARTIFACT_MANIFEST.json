@@ -1,0 +1,102 @@
+{
+  "schema": "pr418_public_artifacts_v1",
+  "files": {
+    "docs/INTERNAL_RESEARCH_CLOSEOUT_2026-10-12.md": {
+      "sha256": "cf1b6fd9725a1570f1e48319d2e5fc487e7812b34cad9a2772c2ec07bed2cb7a",
+      "size_bytes": 4961
+    },
+    "harness/evidence/pr395_tq_state_capture_2026-10-10/capture_tq_state.py": {
+      "sha256": "51b9df170667830d961ececc1b20f8fb4b682664d8c44c6e1fbfe9af70303a0f",
+      "size_bytes": 77459
+    },
+    "harness/evidence/pr418_nine_channels_2026-10-12/CHANNEL_RESPONSE.csv": {
+      "sha256": "a7653a76e8ff617e0aa0d2556feffcf2f3d5e75c7553d01f27ecc6823a83de30",
+      "size_bytes": 885
+    },
+    "harness/evidence/pr418_nine_channels_2026-10-12/EXECUTION.log": {
+      "sha256": "6d15d7ea13fa701d92e8190ed40da4b3c49943991a1684faa0a09e23002ecdfc",
+      "size_bytes": 297
+    },
+    "harness/evidence/pr418_nine_channels_2026-10-12/EXECUTION_EXIT.json": {
+      "sha256": "c96452b878fc602a129352806cc711a922cf81da227a94d950866a54840a6a58",
+      "size_bytes": 265
+    },
+    "harness/evidence/pr418_nine_channels_2026-10-12/GEOMETRY_CORRECTION.json": {
+      "sha256": "2f085fd6c86a85869ac695fe0c7b0f9b2925465e86f8e7bd9c8690c928af9ee1",
+      "size_bytes": 4164
+    },
+    "harness/evidence/pr418_nine_channels_2026-10-12/GEOMETRY_CORRECTION.md": {
+      "sha256": "0b6921cce80cc6231c5f35361fa2c1fe8c7436abd3950f9655f1320064477dc7",
+      "size_bytes": 1699
+    },
+    "harness/evidence/pr418_nine_channels_2026-10-12/GREEN_POSTRUN.md": {
+      "sha256": "efdfd10f2a68d63db4dcfa4a9953ed9782acb6b9b965882e70c85d8fb310ed69",
+      "size_bytes": 4519
+    },
+    "harness/evidence/pr418_nine_channels_2026-10-12/L1B_BINDING_CHECK.json": {
+      "sha256": "110834a8acbd84108534e805c623c6e4552ac019c70d1bc3f4c33cb278c164cd",
+      "size_bytes": 1212
+    },
+    "harness/evidence/pr418_nine_channels_2026-10-12/PLAN.json": {
+      "sha256": "7642e9958ecf0c2c7d1552607a1fbcecd2eb601d14e66bfc3943b8568c57b6d4",
+      "size_bytes": 4024
+    },
+    "harness/evidence/pr418_nine_channels_2026-10-12/PRE_EXECUTION_SOURCE_GUARD.log": {
+      "sha256": "035f1b9fbbf77eb6fbde979c05a3dba6195cdd1e8e41ca99fa9ace7c59843e99",
+      "size_bytes": 992
+    },
+    "harness/evidence/pr418_nine_channels_2026-10-12/RED_POSTRUN.md": {
+      "sha256": "3bdafdc1eee4d98c62951bde9cd9547d0212343f3be7810210cc645fa256d706",
+      "size_bytes": 5311
+    },
+    "harness/evidence/pr418_nine_channels_2026-10-12/RED_PREFLIGHT.md": {
+      "sha256": "6b03fd0a27f70c40640eb4c3cbed704d4b60635a54652c5fa395117991b7cbbb",
+      "size_bytes": 2759
+    },
+    "harness/evidence/pr418_nine_channels_2026-10-12/REPORT.md": {
+      "sha256": "0f616a4da0336e03976ec806fee4144a49e6c3356f11fd447a03ffaed8f950cc",
+      "size_bytes": 5076
+    },
+    "harness/evidence/pr418_nine_channels_2026-10-12/RESULT.json": {
+      "sha256": "c0836507d24211414b738ea36e8ec57abf11a2fb33f40d805353497489a86f10",
+      "size_bytes": 2548
+    },
+    "harness/evidence/pr418_nine_channels_2026-10-12/VALIDATION.json": {
+      "sha256": "b212da4e14d4f070ac664ce82d663a4c830fcf904a2e8bb4646ff66ad1d2e03b",
+      "size_bytes": 5060
+    },
+    "harness/evidence/pr418_nine_channels_2026-10-12/WARNING_SOURCE.json": {
+      "sha256": "4000c850cd0277bfda6cf7bc6afd456dd96f3bb0165cf10591806a7ab3c49e44",
+      "size_bytes": 1427
+    },
+    "harness/evidence/pr418_nine_channels_2026-10-12/run_added_channels.py": {
+      "sha256": "6e1a02d836d98d71a28fcdbdebc04a5218c37bf380465855996f61ba68201e30",
+      "size_bytes": 8014
+    },
+    "harness/evidence/pr418_nine_channels_2026-10-12/run_case_analysis_nine.py": {
+      "sha256": "2c3ffdf9fe16a760f9d856f8ce4a5be217df947fcd10ee6601d8ba69e4d48af7",
+      "size_bytes": 22607
+    },
+    "harness/evidence/pr418_nine_channels_2026-10-12/test_case_analysis_nine_channels.py": {
+      "sha256": "350d783cbeafc26b6d3de486613550ac3f139012481fe9019f6ac94859676dcf",
+      "size_bytes": 10416
+    },
+    "oracle/kdm6/da_single_column.py": {
+      "sha256": "99755db20e3ea736c040a023dea8c2b4bd4da9fb83e91a6d3823dbd3d3cf0881",
+      "size_bytes": 16442
+    },
+    "oracle/tests/test_da_single_column.py": {
+      "sha256": "71411ccf5f27aba48548fdcf3c0ab988ed1c834bc6e8a78d6f693928e3d5de50",
+      "size_bytes": 23505
+    },
+    "oracle/tests/test_synthetic_case_capture_success.py": {
+      "sha256": "68f5ba66957b39bc9bfaab1b4c0af5338350b2bdcedb3271c744a69f68b37c30",
+      "size_bytes": 1540
+    },
+    "wiki/sources/pr418-nine-channel-closeout-2026-10-12.md": {
+      "sha256": "42768fa864a1751ed1054e8ba0a21ddbfee30036cea275661ca0e105c40fed42",
+      "size_bytes": 2283
+    }
+  },
+  "private_arrays_published": false
+}

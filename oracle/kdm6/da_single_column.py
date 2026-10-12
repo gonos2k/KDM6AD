@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import dataclasses
 import math
+from collections.abc import Sequence as OrderedSequence
+from numbers import Integral
 from typing import Sequence
 
 import torch
@@ -23,6 +25,7 @@ from .state import Forcing, State
 
 _F64 = {"dtype": torch.float64}
 _CHANNELS = tuple(range(10, 17))
+_CHANNELS_9 = tuple(range(8, 17))
 _ACTIVE_FIELDS = ("th", "qv")
 _NON_TQ_FIELDS = tuple(f for f in State._fields if f not in _ACTIVE_FIELDS)
 
@@ -62,6 +65,24 @@ def _callback_with_counter(obs_eval, counter):
     return counted
 
 
+def _selected_channels(channels: Sequence[int] | None) -> tuple[int, ...]:
+    """Accept only the established seven-channel default or explicit 8..16."""
+    if channels is None:
+        return _CHANNELS
+    if not isinstance(channels, OrderedSequence) or isinstance(channels, (str, bytes)):
+        raise TypeError("channels must be an ordered sequence of physical AMI channel IDs")
+    selected = tuple(channels)
+    if any(isinstance(value, bool) or not isinstance(value, Integral)
+           for value in selected):
+        raise TypeError("channels must contain plain integer physical AMI channel IDs")
+    selected = tuple(int(value) for value in selected)
+    if selected not in (_CHANNELS, _CHANNELS_9):
+        raise ValueError(
+            "channels must be exactly AMI 10..16 (default) or AMI 8..16 in physical order"
+        )
+    return selected
+
+
 def run_single_column_analysis(
     xb: State,
     forcings: Sequence[Forcing],
@@ -78,6 +99,7 @@ def run_single_column_analysis(
     n_workers: int = 1,
     max_iter: int = 3,
     rttov_timeout: float = DEFAULT_RTTOV_TIMEOUT,
+    channels: Sequence[int] | None = None,
 ) -> dict:
     """Run the bounded one-column T/qv dual analysis on an existing native column.
 
@@ -88,12 +110,15 @@ def run_single_column_analysis(
     physical background is clear; the slot-background cloud classification is
     returned as metadata only.
 
-    The callback requires all seven AMI 10..16 channels to be supported by the
-    background mask. It raises on any loss of that fixed support during a
-    trial. The existing minimizer owns the zero-initialized control and
+    By default, the callback requires all seven AMI 10..16 channels. The
+    explicit opt-in ``channels=(8, ..., 16)`` requires all nine channels.
+    Either selected set must be fully supported by the background mask, and
+    any loss of that fixed support during a trial raises. The existing
+    minimizer owns the zero-initialized control and
     full-window pullback; ``active_fields`` projects only the initial-state
     adjoint to th/qv after the complete M transpose.
     """
+    selected_channels = _selected_channels(channels)
     if not isinstance(window_config, WindowConfig):
         raise TypeError("window_config must be a WindowConfig")
     if window_config.normalized_dry is not True:
@@ -135,17 +160,23 @@ def run_single_column_analysis(
 
     y_bt = torch.as_tensor(y_bt, dtype=torch.float64)
     y_rq = torch.as_tensor(y_rq, dtype=torch.float64)
-    expected_obs_shape = (1, len(_CHANNELS))
+    expected_obs_shape = (1, len(selected_channels))
     if tuple(y_bt.shape) != expected_obs_shape:
-        raise ValueError(f"y_bt must have exact shape {expected_obs_shape} for AMI 10..16")
+        raise ValueError(
+            f"y_bt must have exact shape {expected_obs_shape} for selected AMI channels")
     if tuple(y_rq.shape) != expected_obs_shape:
-        raise ValueError(f"y_rq must have exact shape {expected_obs_shape} for AMI 10..16")
+        raise ValueError(
+            f"y_rq must have exact shape {expected_obs_shape} for selected AMI channels")
     if not bool(torch.isfinite(y_bt).all()):
-        raise ValueError("all seven fixed-support y_bt values must be finite")
+        raise ValueError("all selected fixed-support y_bt values must be finite")
     if not bool(torch.isfinite(y_rq).all()) or bool((y_rq < 0.0).any()):
         raise ValueError("y_rq must contain finite non-negative quality flags")
-    if tuple(rttov_cfg.get("channels", ())) != _CHANNELS:
-        raise ValueError("rttov_cfg.channels must be exactly AMI 10..16 in order")
+    if tuple(rttov_cfg.get("channels", ())) != selected_channels:
+        raise ValueError("rttov_cfg.channels must exactly match selected AMI channels in order")
+    clear_channels = getattr(getattr(clear_cfg, "input_cfg", None), "channels", None)
+    if clear_channels is not None and tuple(clear_channels) != selected_channels:
+        raise ValueError(
+            "clear_cfg.input_cfg.channels must match selected AMI channels in order")
     if rttov_cfg.get("dry_number") is not True:
         raise ValueError("normalized-dry single-column analysis requires dry_number=True")
     if rttov_cfg.get("ami_kma_bt") is not True:
@@ -228,10 +259,10 @@ def run_single_column_analysis(
             f"frozen background support shape {tuple(background_mask.shape)} "
             f"!= required {expected_obs_shape}")
     n_valid_background = int(background_mask.sum())
-    if n_valid_background != len(_CHANNELS):
+    if n_valid_background != len(selected_channels):
         raise ValueError(
-            "the declared seven-channel support is incomplete at the background: "
-            f"n_valid={n_valid_background}, required=7; do not shrink S")
+            "the declared channel support is incomplete at the background: "
+            f"n_valid={n_valid_background}, required={len(selected_channels)}; do not shrink S")
 
     callback_counter = {"results": 0}
     counted_obs_eval = _callback_with_counter(obs_eval, callback_counter)
@@ -263,7 +294,7 @@ def run_single_column_analysis(
         },
         "operator_routing": {"allsky_pos": [0], "clear_pos": []},
         "operator_routing_policy": "all-sky always; physical background class is metadata only",
-        "channels_ami_physical_ids": list(_CHANNELS),
+        "channels_ami_physical_ids": list(selected_channels),
         "background_mask": background_mask.tolist(),
         "n_valid_background": n_valid_background,
         "require_frozen_quality": True,

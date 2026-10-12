@@ -37,7 +37,9 @@ sys.path.insert(0, str(ROOT / "oracle"))
 from kdm6.da_dual import PNAMES, params_from_vtheta  # noqa: E402
 from kdm6.da_cvt import cvt_apply  # noqa: E402
 import kdm6.da_fulldomain as _fulldomain  # noqa: E402
-from kdm6.da_single_column import run_single_column_analysis  # noqa: E402
+from kdm6.da_single_column import (  # noqa: E402
+    _selected_channels, run_single_column_analysis,
+)
 from kdm6.rttov_bridge import freeze_dry_air_density  # noqa: E402
 from kdm6.state import Forcing, State  # noqa: E402
 from kdm6.thermo import (  # noqa: E402
@@ -855,8 +857,9 @@ def _numerical_return_failure_summary(analysis_runner_returned: bool,
             "minimizer_returned_state": bool(has_result)}
 
 
-def _final_audit_signature(result, *, obs_time: int, final_mask: torch.Tensor) -> dict:
-    """Bind the accepted audit trace signature to its frozen seven-channel mask."""
+def _final_audit_signature(result, *, obs_time: int, final_mask: torch.Tensor,
+                           n_channels: int = len(CHANNELS)) -> dict:
+    """Bind the accepted audit trace signature to its frozen channel mask."""
     trace = getattr(result, "j_trace", None)
     if not isinstance(trace, list) or not trace:
         raise RuntimeError("minimizer return lacks a final objective trace for signature audit")
@@ -874,8 +877,9 @@ def _final_audit_signature(result, *, obs_time: int, final_mask: torch.Tensor) -
             raise RuntimeError(f"objective trace entry {index} lacks a SHA-256 observation signature")
         if any(character not in "0123456789abcdef" for character in current_signature):
             raise RuntimeError(f"objective trace entry {index} signature is not lowercase SHA-256 hex")
-        if current_count != 7:
-            raise RuntimeError(f"objective trace entry {index} does not retain the fixed seven-channel support")
+        if current_count != n_channels:
+            raise RuntimeError(
+                f"objective trace entry {index} does not retain all {n_channels} selected channels")
         if signature is None:
             signature = current_signature
         elif current_signature != signature:
@@ -887,7 +891,7 @@ def _final_audit_signature(result, *, obs_time: int, final_mask: torch.Tensor) -
         "trace_entry_count": len(trace),
         "final_trace_index": len(trace) - 1,
         "all_trace_signatures_match": True,
-        "n_valid_each_trace_entry": 7,
+        "n_valid_each_trace_entry": n_channels,
         "final_frozen_mask": {
             "shape": list(mask_array.shape),
             "dtype": str(mask_array.dtype),
@@ -898,7 +902,8 @@ def _final_audit_signature(result, *, obs_time: int, final_mask: torch.Tensor) -
 
 def _initial_zero_control_closure(result, events: Sequence[Mapping], *, obs_time: int,
                                   final_audit_signature: Mapping,
-                                  final_mask: torch.Tensor) -> dict:
+                                  final_mask: torch.Tensor,
+                                  n_channels: int = len(CHANNELS)) -> dict:
     """Extract and validate the first existing optimizer closure at zero controls."""
     trace = getattr(result, "j_trace", None)
     if not isinstance(trace, list) or not trace:
@@ -920,7 +925,7 @@ def _initial_zero_control_closure(result, events: Sequence[Mapping], *, obs_time
         raise RuntimeError("initial zero-control trace lacks n_valid/signature maps")
     n_valid = n_valid_map.get(obs_time, n_valid_map.get(str(obs_time)))
     signature = signature_map.get(obs_time, signature_map.get(str(obs_time)))
-    if n_valid != 7 or signature != final_audit_signature.get("sha256"):
+    if n_valid != n_channels or signature != final_audit_signature.get("sha256"):
         raise RuntimeError("initial zero-control trace support/signature differs from the accepted audit")
     first_grad_event = next((event for event in events if event.get("grad") is True), None)
     if first_grad_event is None or not first_grad_event.get("returned", False):
@@ -1055,6 +1060,7 @@ def run_capture(
     max_iter: int = 3,
     n_workers: int = 1,
     rttov_timeout: float | None = None,
+    channels: Sequence[int] | None = None,
     analysis_runner=run_single_column_analysis,
 ) -> dict:
     """Execute existing adapter once and publish state only after successful return.
@@ -1085,14 +1091,16 @@ def run_capture(
     source_before = _source_snapshot()
     checkpoint_written = False
     try:
+        selected_channels = _selected_channels(channels)
         forcings = tuple(forcings)
         if not forcings:
             raise ValueError("forcings must contain the full ordered model window")
         _validate_predeclared_run(
             window_config, run_manifest, obs_time=obs_time,
             max_iter=max_iter, forcings=forcings)
-        if tuple(rttov_cfg.get("channels", ())) != CHANNELS:
-            raise ValueError("rttov_cfg must use fixed AMI physical channels 10..16")
+        if tuple(rttov_cfg.get("channels", ())) != selected_channels:
+            raise ValueError(
+                "rttov_cfg channels must match the selected AMI physical channels")
         if (float(rttov_cfg.get("ncmin_land", math.nan)) != 10.0
                 or float(rttov_cfg.get("ncmin_sea", math.nan)) != 10.0):
             raise ValueError("fixed PR395 caller H configuration requires ncmin_land=ncmin_sea=10")
@@ -1197,6 +1205,8 @@ def run_capture(
             }
             if rttov_timeout is not None:
                 runner_kwargs["rttov_timeout"] = rttov_timeout
+            if selected_channels == tuple(range(8, 17)):
+                runner_kwargs["channels"] = selected_channels
             failure_stage = "ANALYSIS_RUNNING"
             package = analysis_runner(
                 xb, forcings, y_bt, y_rq, xland, clear_cfg, rttov_cfg,
@@ -1211,19 +1221,20 @@ def run_capture(
         result = package["result"]
         if last_grad_call is not None:
             final_audit_signature = _final_audit_signature(
-                result, obs_time=obs_time, final_mask=last_grad_call["mask"])
+                result, obs_time=obs_time, final_mask=last_grad_call["mask"],
+                n_channels=len(selected_channels))
         failure_stage = "POST_RETURN_VALIDATION"
         actual_meta = package["metadata"]
         if (actual_meta.get("normalized_dry") is not True
                 or actual_meta.get("require_frozen_quality") is not True
-                or actual_meta.get("n_valid_background") != 7
-                or actual_meta.get("channels_ami_physical_ids") != list(CHANNELS)
+                or actual_meta.get("n_valid_background") != len(selected_channels)
+                or actual_meta.get("channels_ami_physical_ids") != list(selected_channels)
                 or actual_meta.get("huber_delta_K") != 1.0
                 or actual_meta.get("observation_sigma_K") != 1.0
                 or actual_meta.get("observation_bias_K") != 0.0
                 or actual_meta.get("partition_control") is not False
                 or actual_meta.get("pseudo_rh") is not False):
-            raise RuntimeError("returned adapter metadata differs from the fixed seven-channel T/Q contract")
+            raise RuntimeError("returned adapter metadata differs from the selected-channel T/Q contract")
         state_prior = actual_meta.get("state_prior", {})
         if (state_prior.get("th_sigma_K") != 0.8
                 or state_prior.get("qv_sigma_log") != 0.08
@@ -1249,12 +1260,14 @@ def run_capture(
             raise RuntimeError("last captured final-slot H cost differs from returned final Jo")
         final_mask = last_grad_call["mask"]
         final_rq = last_grad_call["rad_quality"]
-        if tuple(final_mask.shape) != (1, len(CHANNELS)) or tuple(final_rq.shape) != (1, len(CHANNELS)):
-            raise RuntimeError("final callback did not return exact [1,7] support/quality arrays")
+        if (tuple(final_mask.shape) != (1, len(selected_channels))
+                or tuple(final_rq.shape) != (1, len(selected_channels))):
+            raise RuntimeError("final callback shape differs from selected channel support")
         if bool(((final_mask > 0) & (final_rq != 0)).any()):
             raise RuntimeError("final callback quality invalidated frozen support")
-        if int(final_mask.sum()) != 7:
-            raise RuntimeError("final accepted-state callback does not retain all seven frozen channels")
+        if int(final_mask.sum()) != len(selected_channels):
+            raise RuntimeError(
+                "final accepted-state callback does not retain every selected frozen channel")
         if not torch.equal(final_rq[final_mask > 0], torch.zeros_like(final_rq[final_mask > 0])):
             raise RuntimeError("final accepted-state quality flags are nonzero on frozen support")
         background_mask = torch.as_tensor(
@@ -1271,7 +1284,8 @@ def run_capture(
             raise RuntimeError("final callback mask digest changed after audit signature capture")
         initial_zero_control_closure = _initial_zero_control_closure(
             result, events, obs_time=obs_time,
-            final_audit_signature=final_audit_signature, final_mask=final_mask)
+            final_audit_signature=final_audit_signature, final_mask=final_mask,
+            n_channels=len(selected_channels))
         background_quality_probe = _background_quality_probe(events)
 
         control_private, control_public, control_metadata = _final_control_snapshot(
@@ -1312,7 +1326,7 @@ def run_capture(
             "max_iter": max_iter,
             "n_workers": n_workers,
             "normalized_dry": True,
-            "channels_ami_physical_ids": list(CHANNELS),
+            "channels_ami_physical_ids": list(selected_channels),
             "final_slot_capture": {
                 "semantics": "last successful grad=True all-sky callback; existing minimizer performs its final accepted-state audit after optimizer step",
                 "call_index": last_grad_call["call_index"],
@@ -1415,9 +1429,11 @@ def run_capture(
             },
             "adapter_metadata": _jsonable(metadata),
             "observations": {
-                "channels_ami_physical_ids": list(CHANNELS),
+                "channels_ami_physical_ids": list(selected_channels),
                 "y_bt_K": _jsonable(y_bt),
                 "observation_dqf": _jsonable(y_rq),
+                "channel_binding": _jsonable(
+                    run_manifest.get("observation_channel_binding")),
                 "model_rad_quality_is_separate_from_observation_dqf": True,
             },
             "metrics": metrics,

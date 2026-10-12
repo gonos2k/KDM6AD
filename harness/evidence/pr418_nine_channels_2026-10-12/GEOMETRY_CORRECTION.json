@@ -1,0 +1,87 @@
+{
+  "schema": "pr418_additive_geometry_correction_v1",
+  "baseline_main": "b07af3fe",
+  "original_packet_unchanged_sha256": {
+    "harness/evidence/pr417_hourly_rttov_2026-10-12/PLAN.json": "0a1e22763b3dca11d5334f8c71c0969c9d810d46a358921e7a4c715dd7009e0c",
+    "harness/evidence/pr417_hourly_rttov_2026-10-12/RESULT.json": "eae3a7739e9defc0858d516c37fe2b41450fc2466f3dfcf0fcbd38ca8951341d",
+    "harness/evidence/pr417_hourly_rttov_2026-10-12/REPORT.md": "28cca90913a7ebcf34649d894888678ce7d418443521b775c3aeac78577201e4",
+    "harness/evidence/pr417_hourly_rttov_2026-10-12/CHANNEL_RESPONSE.csv": "ea77e7d34e7515705b802047bbcb2c8e86fcf269bdab9a769335ba590d1a611a",
+    "harness/evidence/pr417_hourly_rttov_2026-10-12/RED_POSTRUN.md": "2159e73d7d814893c0bb95b471b51881a45bee99a95843d9c3b56f3eb4dc2eba",
+    "harness/evidence/pr417_hourly_rttov_2026-10-12/GREEN_POSTRUN.md": "1f1076f60b62fa2ec7994362619a6eae23d31dbe30557da83c5c8e12bf49ac63",
+    "harness/evidence/pr417_hourly_rttov_2026-10-12/prepare_hourly_h.py": "292a39c19b8994cefa62ae807c2c346ec838c0563948e3cf9e4a44eb414c4ab8",
+    "harness/evidence/pr417_hourly_rttov_2026-10-12/EXECUTION.log": "a9e4d950884e6c9f20cfda836ea0307d133c0975d6ca19cee11e0d532d61be1d",
+    "harness/evidence/pr417_hourly_rttov_2026-10-12/MEASURE_AND_LAYER_CLARIFICATION.md": "3edad9f526aaa02fe717eb4308947e46ed7801cd87e46f13ca7911dae498700b",
+    "harness/evidence/pr417_hourly_rttov_2026-10-12/EXECUTION_EXIT.json": "4130de3fbbf2e3ae61034395c0863ded19563c582d1989b0d38d37a8c4221223",
+    "harness/evidence/pr417_hourly_rttov_2026-10-12/MEASURE_AND_LAYER_CLARIFICATION.json": "ab4df49d535e1d5d004b8c90cdd5391ab668f4f0c804fbb8a3b40cca5412d8a9",
+    "harness/evidence/pr417_hourly_rttov_2026-10-12/ARTIFACT_MANIFEST.json": "3ab9f9f9006d8f03a748225d9ad81fbc84460680341d56874ef071c4a55c98a6",
+    "harness/evidence/pr417_hourly_rttov_2026-10-12/run_hourly_h.py": "9518d8a3ae56bafbe283968a8354794bc5d3a01df28c27b6a487ce1d51d3d21b",
+    "harness/evidence/pr417_hourly_rttov_2026-10-12/RED_PREFLIGHT.md": "6aec3b9ca8c13161a0ae937602847d03808a6d7db966230b225db8de273004a6"
+  },
+  "corrected_time_contexts": {
+    "6": {
+      "time": "2025-07-19_06:00:00",
+      "viewing_geometry_calculation_point": {
+        "type": "native_column_center",
+        "j": 103,
+        "i": 48,
+        "latitude_deg": 36.195343017578125,
+        "longitude_deg": 122.0966796875
+      },
+      "AMI_navigation_donor": {
+        "column": 49,
+        "latitude_deg": 36.19700231203294,
+        "longitude_deg": 122.09240151533507,
+        "row": 289,
+        "source": "PR414 GEOS navigation only"
+      },
+      "geometry_values_unchanged": {
+        "azangle": 169.72850568489585,
+        "elevation": 0.0,
+        "latitude": 36.195343017578125,
+        "longitude": 122.0966796875,
+        "sunazangle": 0.0,
+        "sunzenangle": 0.0,
+        "zenangle": 42.47232104822703
+      },
+      "superseded_context_keys": [
+        "ami_pixel_lat_lon",
+        "satellite_viewing_geometry"
+      ],
+      "elevation_source": "native HGT metres converted to kilometres",
+      "angle_choice_BT_effect_assessed": false
+    },
+    "7": {
+      "time": "2025-07-19_07:00:00",
+      "viewing_geometry_calculation_point": {
+        "type": "native_column_center",
+        "j": 103,
+        "i": 48,
+        "latitude_deg": 36.195343017578125,
+        "longitude_deg": 122.0966796875
+      },
+      "AMI_navigation_donor": {
+        "column": 49,
+        "latitude_deg": 36.19700231203294,
+        "longitude_deg": 122.09240151533507,
+        "row": 289,
+        "source": "PR414 GEOS navigation only"
+      },
+      "geometry_values_unchanged": {
+        "azangle": 169.72850568489585,
+        "elevation": 0.0,
+        "latitude": 36.195343017578125,
+        "longitude": 122.0966796875,
+        "sunazangle": 0.0,
+        "sunzenangle": 0.0,
+        "zenangle": 42.47232104822703
+      },
+      "superseded_context_keys": [
+        "ami_pixel_lat_lon",
+        "satellite_viewing_geometry"
+      ],
+      "elevation_source": "native HGT metres converted to kilometres",
+      "angle_choice_BT_effect_assessed": false
+    }
+  },
+  "H_calls_for_correction": 0
+}

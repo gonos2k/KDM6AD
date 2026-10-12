@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr418_nine_channels_2026-10-12/run_added_channels.py", line 160, in <module>
+    main()
+  File "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr418_nine_channels_2026-10-12/run_added_channels.py", line 92, in main
+    old_plan = validate(plan)
+  File "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr418_nine_channels_2026-10-12/run_added_channels.py", line 47, in validate
+    module(OLD / "run_hourly_h.py", "pr418_old_guard").check(old_plan)
+  File "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr417_hourly_rttov_2026-10-12/run_hourly_h.py", line 29, in check
+    raise ValueError('bound input/source changed: ' + path)
+ValueError: bound input/source changed: /private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr407_native_saved_time_bound_2026-10-11/run_case_analysis.py

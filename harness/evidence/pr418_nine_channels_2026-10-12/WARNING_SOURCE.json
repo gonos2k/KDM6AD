@@ -1,0 +1,44 @@
+{
+  "observed_flags": {
+    "WV063": [
+      32768,
+      32768
+    ],
+    "WV069": [
+      32768,
+      32768
+    ]
+  },
+  "installed_source_bit_definition": {
+    "bit": 15,
+    "name": "qflag_delta_edd_ext_limits",
+    "meaning": "Delta-Eddington extinction limits exceeded"
+  },
+  "source_records": [
+    {
+      "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/main/rttov_const.F90",
+      "sha256": "53c1cc5e5f04eb4e4117d7deefc5a16095cf8fd2b92e49111aee8b8c1f046d55",
+      "size_bytes": 68336
+    },
+    {
+      "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/main/rttov_eddington_setup.F90",
+      "sha256": "2ad4c3b56be35ef71378c51f72f544e00fcfed5dd01d10a27e96f9694e4aabaf",
+      "size_bytes": 15693
+    },
+    {
+      "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/other/rttov_print_radiance_quality.F90",
+      "sha256": "defcf12739f96aaccf20f0595440b8513d5164220a146053e422c48e7d015ce9",
+      "size_bytes": 3250
+    }
+  ],
+  "executed_asset": {
+    "path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+    "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+    "matches_original_PR417_pinned_executable": true
+  },
+  "source_to_executable_build_attested": false,
+  "actual_triggering_layer_or_constituent_diagnosed": false,
+  "nine_channel_analysis_executed": false,
+  "quality_zero_gate_passed": false,
+  "automatic_channel_removal": false
+}

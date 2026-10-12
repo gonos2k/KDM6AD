@@ -5,6 +5,8 @@ date_modified: 2026-07-14
 ---
 # Overview
 
+[[sources/pr418-nine-channel-closeout-2026-10-12]] fixes the internal AMI L1B research execution closeout at PR417 evidence plus explicit9 support. Added WV063/WV069 real H returned flags32768; this input is not eligible for9-channel analysis. Completed7 functionality and bounded experiments remain closed; strict convergence, other dates and actual observed temporal fit remain separate.
+
 This vault tracks project knowledge for KDM6AD-k: a standalone KDM6AD working tree that compares the original [[KDM6]] Fortran microphysics scheme with the [[KDM6AD]] libtorch-based differentiable port inside the [[WRF KIM-meso Host]].
 
 The main theme is [[KDM6AD Forward Parity]]. mp37 calls the Fortran `module_mp_kdm6.F`; mp137 enters a Fortran wrapper, stages WRF arrays through `kdm6_iso_c.F`, and calls the C++ libtorch port. As of 2026-07-04 the two paths agree STRICT BITWISE across all 254 variables at every frame through a full 12-hour × MPI(np4) integration (2160 steps) — the campaign goal. The interim "12h in progress / mp137 MPI-runtime crash" note is superseded: that crash was an upstream numerics NaN from a transposed/OOB read in `flow_dep_bdy_qnn` (`share/module_bc.F`), root-caused and fixed (see [[module-bc-flow-dep-bdy-qnn-oob-2026-07-03]]); the last physics seed was §53x. Earlier "step-1 gate" / "irreducible §48 floor" framings are also superseded. See [[kdm6ad-differentiable-mathematics-2026-07-04]].
