@@ -1,0 +1,12 @@
+{
+  "schema": "pr413_guard_test_record_v1",
+  "unique_cases": 9,
+  "passed": 9,
+  "warnings": 1,
+  "warning": "RuntimeWarning: numpy.ndarray size changed, may indicate binary incompatibility. Expected16 fromCheader, got96 fromPyObject",
+  "scope": "validation-only identity/budget/prior/window and launch-environment rejection; no M/H/optimizer/native calls",
+  "source_sha256": "bbb4ab91a1d96d063f6662a99fe9105b10b7f71f753e6ef7040ddb047b9143ae",
+  "test_sha256": "927a483e6d6fcfd3f1cd40d641a47f0f3f4b9c4a7e942f8b51ad58a84da69e6a",
+  "Ruff_F821_F822_F823": "PASS",
+  "earlier_7_case_subset_not_added_to_unique_count": true
+}

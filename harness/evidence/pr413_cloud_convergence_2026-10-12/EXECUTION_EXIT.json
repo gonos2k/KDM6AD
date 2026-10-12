@@ -1,0 +1,14 @@
+{
+  "schema": "pr413_observed_execution_exit_v1",
+  "tool_session_id": 64169,
+  "completion_chunk_id": "ebcd47",
+  "observed_exit_code": 0,
+  "attestation": "coordinator-observed tool completion, not inferred result existence or independent OS PID monitoring",
+  "log_original_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr413_cloud_convergence_20261012/EXECUTION.log",
+  "log_sha256": "ca38286f114be52dc0e79bb0e7bea90e88021eee103879e43d2fecaacac0e7df",
+  "plan_sha256": "e58002d656499c23a9a11842bb0e379375155dae788b8b45ded32f4c6f640cac",
+  "capture_sha256": "8fcf0561267416a32a0db2dcca35135e686092ac883d0233c556b5f29d4b6573",
+  "driver_sha256": "8e0b86f5af4b0550e6f76293ac36e1eb6c4b43fed09ccc4166440b3ba78f8c7b",
+  "retry": false,
+  "new_native_integrations": 0
+}
