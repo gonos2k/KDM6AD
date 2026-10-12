@@ -1,0 +1,89 @@
+{
+  "schema": "pr417_historical_hourly_H_v1",
+  "status": "RETURNED_TWO_ACTUAL_VALUE_ONLY_H",
+  "plan_sha256": "0a1e22763b3dca11d5334f8c71c0969c9d810d46a358921e7a4c715dd7009e0c",
+  "channels": [
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16
+  ],
+  "logical_H_calls": 2,
+  "internal_RTTOV_direct_K_calls": null,
+  "M_native_optimizer_calls": 0,
+  "events": [
+    {
+      "time_index": 6,
+      "returned": true,
+      "grad_requested": false,
+      "BT_K": [
+        [
+          260.9932948568863,
+          291.23908713607995,
+          268.8633866224697,
+          293.7262876054364,
+          293.52633688702275,
+          290.81061135748854,
+          275.51618186531925
+        ]
+      ],
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ]
+    },
+    {
+      "time_index": 7,
+      "returned": true,
+      "grad_requested": false,
+      "BT_K": [
+        [
+          261.064117770301,
+          292.09663671098735,
+          269.40478304532,
+          294.49578896728224,
+          294.2683349974554,
+          291.47370402013,
+          275.89162879989937
+        ]
+      ],
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ]
+    }
+  ],
+  "BT_delta_07_minus_06_K": [
+    [
+      0.07082291341470182,
+      0.8575495749074094,
+      0.5413964228503119,
+      0.769501361845812,
+      0.7419981104326325,
+      0.6630926626414748,
+      0.37544693458011125
+    ]
+  ],
+  "dummy_cost_discarded": true,
+  "observation_fit_or_temporal_reproduction_assessed": false,
+  "retained_case_same_problem_comparison": false,
+  "new_dates": 0,
+  "interpretation": "Joint historical snapshot state/pressure/density/surface response under declared common H rules; not isolated microphysics or observed temporal fit."
+}

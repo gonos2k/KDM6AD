@@ -1,0 +1,58 @@
+{
+  "schema": "pr417_pr416_saved_csv_measure_clarification_v1",
+  "status": "READ_ONLY_FROM_SAVED_PR416_PROFILE_CSV",
+  "source_csv": "harness/evidence/pr416_hourly_column_2026-10-12/PROFILE.csv",
+  "hydrometeor_column_mass_method": "sum(q_mass_kg_per_kg_dry_air * rho_d_kg_m3 * delz_m)",
+  "weighting_distinction": "geometric EOS rho_d*delz; distinct from host eta-layer dry-air mass weights used by the older local-analysis path",
+  "samples": {
+    "2025-07-19_05:00:00": {
+      "qcloud_positive_levels": [3],
+      "qcloud_layer_z_m": [204.6065737808013, 312.1920110871196],
+      "temperature_k3_K": 294.70961761730223,
+      "qv_k3_kg_kg": 0.016759883612394333,
+      "qt_k3_kg_kg": 0.016825386100485673,
+      "qcloud_column_mass_kg_m2": 0.007922122588238436,
+      "qrain_column_mass_kg_m2": 0.000013221939584889738
+    },
+    "2025-07-19_06:00:00": {
+      "qcloud_positive_levels": [3],
+      "qcloud_layer_z_m": [204.7926827810075, 312.4725581442373],
+      "temperature_k3_K": 294.8905959515088,
+      "qv_k3_kg_kg": 0.016958124935626984,
+      "qt_k3_kg_kg": 0.016978575058601564,
+      "qcloud_column_mass_kg_m2": 0.00247542621736129,
+      "qrain_column_mass_kg_m2": 0.0
+    },
+    "2025-07-19_07:00:00": {
+      "qcloud_positive_levels": [],
+      "temperature_k3_K": 295.30376435235394,
+      "qv_k3_kg_kg": 0.01698584482073784,
+      "qt_k3_kg_kg": 0.01698584482073784,
+      "qcloud_column_mass_kg_m2": 0.0,
+      "qrain_column_mass_kg_m2": 0.0
+    }
+  },
+  "adjacent_saved_frames": {
+    "2025-07-19_05:00:00_to_06:00:00": {
+      "k3_temperature_change_K": 0.1809783342065998,
+      "k3_qv_change_kg_kg": 0.00019824132323265076,
+      "k3_qt_change_kg_kg": 0.00015318895811589073,
+      "full_profile_min_temperature_change_K": -2.522443762585482,
+      "cooling_minimum_k": 37,
+      "cooling_minimum_center_heights_m": [20001.82191177959, 19995.98468638261]
+    },
+    "2025-07-19_06:00:00_to_07:00:00": {
+      "k3_temperature_change_K": 0.41316840084510886,
+      "k3_qv_change_kg_kg": 0.000027719885110855103,
+      "k3_qt_change_kg_kg": 0.000007269762136274949,
+      "full_profile_min_temperature_change_K": -0.890661630493554,
+      "cooling_minimum_k": 31,
+      "cooling_minimum_center_heights_m": [16229.679936997225, 16230.856391139054]
+    }
+  },
+  "limits": [
+    "Three saved hourly endpoints only; no interpolation or continuous tendency is inferred.",
+    "Mass columns are snapshots, not rates; no flux closure, physical conservation, cloud truth, or process attribution is established.",
+    "Raw number-concentration basis was not independently revalidated by this CSV-only clarification."
+  ]
+}

@@ -188,3 +188,16 @@ conversion error was found/fixed before the sole read; raw/derived/mask slices
 and117profile rows are source-bound and independently checked. Old build/input
 byte and chainp metadata limits persist. Native center/interface rules and
 model-time versus AMI-pixel-time uncertainty remain explicit.
+
+### Two historical hourly H evaluations (PR417)
+
+[Two value-only actual H calls](pr417_hourly_rttov_2026-10-12/REPORT.md) on the
+saved06/07historical profiles returned seven-channel quality0; IR105 delta
++0.769501K and IR087+0.857550K. Snapshot T/Q/hydrometeors, native pressure,
+density and surface vary jointly under common coefficient/BT/geometry/gas-source
+rules. This is not cloud-only attribution, PR415's same-case/time-window
+counterpart, observed temporal reproduction or new-date validation. NoM/native/
+optimizer/L1B acquisition or extra05H was added. PR416 QC path usesEOS rho_d*dz,
+not eta/fixed analysis mass; cloud-layer warming must be distinguished from
+20km-profile maximum cooling. Existing source-byte/number/wind-basis/time limits
+persist. This minimum forward question is completed in its stated scope.
