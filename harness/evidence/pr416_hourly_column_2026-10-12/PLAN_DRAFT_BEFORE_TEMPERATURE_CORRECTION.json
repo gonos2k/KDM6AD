@@ -1,0 +1,798 @@
+{
+  "schema": "pr416_hourly_fixed_column_read_v1",
+  "status": "PREDECLARED_NO_COLUMN_READ",
+  "candidate_run": {
+    "run_dir": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp137_termparity_720min_hist60_np4_20260718_185625",
+    "exit_code": 0,
+    "mp_physics": 137,
+    "ranks": 4,
+    "terminal": "2025-07-19_12:00:00"
+  },
+  "forecast_file": {
+    "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp137_termparity_720min_hist60_np4_20260718_185625/klfs_lc05_fcst.202507190000",
+    "size_bytes": 4132673468,
+    "mtime_ns": 1784382191710304955,
+    "inode": 244722390,
+    "device": 16777232,
+    "full_sha256": null,
+    "hash_policy": "No full 4.13GB hash; selected slices receive per-array hashes."
+  },
+  "forecast_parent_relation": {
+    "parent_path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/klfs_lc05_fcst.202507190000",
+    "same_inode": false,
+    "selected_source": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp137_termparity_720min_hist60_np4_20260718_185625/klfs_lc05_fcst.202507190000",
+    "rule": "Use only the run-specific child."
+  },
+  "point": {
+    "j": 103,
+    "i": 48,
+    "latitude_deg": 36.195343017578125,
+    "longitude_deg": 122.0966796875,
+    "coordinate_abs_tolerance_deg": 1e-06
+  },
+  "times": [
+    {
+      "index": 5,
+      "time": "2025-07-19_05:00:00"
+    },
+    {
+      "index": 6,
+      "time": "2025-07-19_06:00:00"
+    },
+    {
+      "index": 7,
+      "time": "2025-07-19_07:00:00"
+    }
+  ],
+  "metadata": {
+    "dimensions": {
+      "Time": "UNLIMITED",
+      "DateStrLen": 19,
+      "west_east": 234,
+      "south_north": 282,
+      "bottom_top": 39,
+      "bottom_top_stag": 40,
+      "soil_layers_stag": 4,
+      "west_east_stag": 235,
+      "south_north_stag": 283,
+      "seed_dim_stag": 8
+    },
+    "attrs": {
+      "START_DATE": "2025-07-19_00:00:00",
+      "SIMULATION_START_DATE": "2025-07-19_00:00:00",
+      "DX": "5000.0",
+      "DY": "5000.0",
+      "USE_THETA_M": "1"
+    },
+    "all_times": [
+      "2025-07-19_00:00:00",
+      "2025-07-19_01:00:00",
+      "2025-07-19_02:00:00",
+      "2025-07-19_03:00:00",
+      "2025-07-19_04:00:00",
+      "2025-07-19_05:00:00",
+      "2025-07-19_06:00:00",
+      "2025-07-19_07:00:00",
+      "2025-07-19_08:00:00",
+      "2025-07-19_09:00:00",
+      "2025-07-19_10:00:00",
+      "2025-07-19_11:00:00",
+      "2025-07-19_12:00:00"
+    ]
+  },
+  "variables": {
+    "THM": {
+      "dims": [
+        "Time",
+        "bottom_top",
+        "south_north",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        39,
+        282,
+        234
+      ],
+      "dtype": "float32",
+      "units": "K"
+    },
+    "QVAPOR": {
+      "dims": [
+        "Time",
+        "bottom_top",
+        "south_north",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        39,
+        282,
+        234
+      ],
+      "dtype": "float32",
+      "units": "kg kg-1"
+    },
+    "QCLOUD": {
+      "dims": [
+        "Time",
+        "bottom_top",
+        "south_north",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        39,
+        282,
+        234
+      ],
+      "dtype": "float32",
+      "units": "kg kg-1"
+    },
+    "QRAIN": {
+      "dims": [
+        "Time",
+        "bottom_top",
+        "south_north",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        39,
+        282,
+        234
+      ],
+      "dtype": "float32",
+      "units": "kg kg-1"
+    },
+    "QICE": {
+      "dims": [
+        "Time",
+        "bottom_top",
+        "south_north",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        39,
+        282,
+        234
+      ],
+      "dtype": "float32",
+      "units": "kg kg-1"
+    },
+    "QSNOW": {
+      "dims": [
+        "Time",
+        "bottom_top",
+        "south_north",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        39,
+        282,
+        234
+      ],
+      "dtype": "float32",
+      "units": "kg kg-1"
+    },
+    "QGRAUP": {
+      "dims": [
+        "Time",
+        "bottom_top",
+        "south_north",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        39,
+        282,
+        234
+      ],
+      "dtype": "float32",
+      "units": "kg kg-1"
+    },
+    "QNCCN": {
+      "dims": [
+        "Time",
+        "bottom_top",
+        "south_north",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        39,
+        282,
+        234
+      ],
+      "dtype": "float32",
+      "units": "  kg(-1)"
+    },
+    "QNCLOUD": {
+      "dims": [
+        "Time",
+        "bottom_top",
+        "south_north",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        39,
+        282,
+        234
+      ],
+      "dtype": "float32",
+      "units": "  kg(-1)"
+    },
+    "QNICE": {
+      "dims": [
+        "Time",
+        "bottom_top",
+        "south_north",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        39,
+        282,
+        234
+      ],
+      "dtype": "float32",
+      "units": "  kg-1"
+    },
+    "QNRAIN": {
+      "dims": [
+        "Time",
+        "bottom_top",
+        "south_north",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        39,
+        282,
+        234
+      ],
+      "dtype": "float32",
+      "units": "  kg(-1)"
+    },
+    "QIB": {
+      "dims": [
+        "Time",
+        "bottom_top",
+        "south_north",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        39,
+        282,
+        234
+      ],
+      "dtype": "float32",
+      "units": "m(3) kg(-1)"
+    },
+    "P": {
+      "dims": [
+        "Time",
+        "bottom_top",
+        "south_north",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        39,
+        282,
+        234
+      ],
+      "dtype": "float32",
+      "units": "Pa"
+    },
+    "PB": {
+      "dims": [
+        "Time",
+        "bottom_top",
+        "south_north",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        39,
+        282,
+        234
+      ],
+      "dtype": "float32",
+      "units": "Pa"
+    },
+    "FNM": {
+      "dims": [
+        "Time",
+        "bottom_top"
+      ],
+      "shape": [
+        13,
+        39
+      ],
+      "dtype": "float32",
+      "units": ""
+    },
+    "FNP": {
+      "dims": [
+        "Time",
+        "bottom_top"
+      ],
+      "shape": [
+        13,
+        39
+      ],
+      "dtype": "float32",
+      "units": ""
+    },
+    "C1H": {
+      "dims": [
+        "Time",
+        "bottom_top"
+      ],
+      "shape": [
+        13,
+        39
+      ],
+      "dtype": "float32",
+      "units": "Dimensionless"
+    },
+    "C2H": {
+      "dims": [
+        "Time",
+        "bottom_top"
+      ],
+      "shape": [
+        13,
+        39
+      ],
+      "dtype": "float32",
+      "units": "Pa"
+    },
+    "DNW": {
+      "dims": [
+        "Time",
+        "bottom_top"
+      ],
+      "shape": [
+        13,
+        39
+      ],
+      "dtype": "float32",
+      "units": ""
+    },
+    "PH": {
+      "dims": [
+        "Time",
+        "bottom_top_stag",
+        "south_north",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        40,
+        282,
+        234
+      ],
+      "dtype": "float32",
+      "units": "m2 s-2"
+    },
+    "PHB": {
+      "dims": [
+        "Time",
+        "bottom_top_stag",
+        "south_north",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        40,
+        282,
+        234
+      ],
+      "dtype": "float32",
+      "units": "m2 s-2"
+    },
+    "XLAND": {
+      "dims": [
+        "Time",
+        "south_north",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        282,
+        234
+      ],
+      "dtype": "float32",
+      "units": ""
+    },
+    "SEAICE": {
+      "dims": [
+        "Time",
+        "south_north",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        282,
+        234
+      ],
+      "dtype": "float32",
+      "units": ""
+    },
+    "TSK": {
+      "dims": [
+        "Time",
+        "south_north",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        282,
+        234
+      ],
+      "dtype": "float32",
+      "units": "K"
+    },
+    "T2": {
+      "dims": [
+        "Time",
+        "south_north",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        282,
+        234
+      ],
+      "dtype": "float32",
+      "units": "K"
+    },
+    "Q2": {
+      "dims": [
+        "Time",
+        "south_north",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        282,
+        234
+      ],
+      "dtype": "float32",
+      "units": "kg kg-1"
+    },
+    "U10": {
+      "dims": [
+        "Time",
+        "south_north",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        282,
+        234
+      ],
+      "dtype": "float32",
+      "units": "m s-1"
+    },
+    "V10": {
+      "dims": [
+        "Time",
+        "south_north",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        282,
+        234
+      ],
+      "dtype": "float32",
+      "units": "m s-1"
+    },
+    "HGT": {
+      "dims": [
+        "Time",
+        "south_north",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        282,
+        234
+      ],
+      "dtype": "float32",
+      "units": "m"
+    },
+    "MU": {
+      "dims": [
+        "Time",
+        "south_north",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        282,
+        234
+      ],
+      "dtype": "float32",
+      "units": "Pa"
+    },
+    "MUB": {
+      "dims": [
+        "Time",
+        "south_north",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        282,
+        234
+      ],
+      "dtype": "float32",
+      "units": "Pa"
+    },
+    "XLAT": {
+      "dims": [
+        "Time",
+        "south_north",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        282,
+        234
+      ],
+      "dtype": "float32",
+      "units": "degree_north"
+    },
+    "XLONG": {
+      "dims": [
+        "Time",
+        "south_north",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        282,
+        234
+      ],
+      "dtype": "float32",
+      "units": "degree_east"
+    },
+    "U": {
+      "dims": [
+        "Time",
+        "bottom_top",
+        "south_north",
+        "west_east_stag"
+      ],
+      "shape": [
+        13,
+        39,
+        282,
+        235
+      ],
+      "dtype": "float32",
+      "units": "m s-1"
+    },
+    "V": {
+      "dims": [
+        "Time",
+        "bottom_top",
+        "south_north_stag",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        39,
+        283,
+        234
+      ],
+      "dtype": "float32",
+      "units": "m s-1"
+    },
+    "W": {
+      "dims": [
+        "Time",
+        "bottom_top_stag",
+        "south_north",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        40,
+        282,
+        234
+      ],
+      "dtype": "float32",
+      "units": "m s-1"
+    },
+    "COSALPHA": {
+      "dims": [
+        "Time",
+        "south_north",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        282,
+        234
+      ],
+      "dtype": "float32",
+      "units": ""
+    },
+    "SINALPHA": {
+      "dims": [
+        "Time",
+        "south_north",
+        "west_east"
+      ],
+      "shape": [
+        13,
+        282,
+        234
+      ],
+      "dtype": "float32",
+      "units": ""
+    }
+  },
+  "read_contract": {
+    "netcdf_openings": 1,
+    "time_indices": [
+      5,
+      6,
+      7
+    ],
+    "time_values": [
+      "2025-07-19_05:00:00",
+      "2025-07-19_06:00:00",
+      "2025-07-19_07:00:00"
+    ],
+    "j": 103,
+    "i": 48,
+    "column_variables_3d": [
+      "THM",
+      "QVAPOR",
+      "QCLOUD",
+      "QRAIN",
+      "QICE",
+      "QSNOW",
+      "QGRAUP",
+      "QNCCN",
+      "QNCLOUD",
+      "QNICE",
+      "QNRAIN",
+      "QIB",
+      "P",
+      "PB"
+    ],
+    "column_vertical_vectors": [
+      "FNM",
+      "FNP",
+      "C1H",
+      "C2H",
+      "DNW"
+    ],
+    "interface_variables": [
+      "PH",
+      "PHB"
+    ],
+    "surface_variables": [
+      "XLAND",
+      "SEAICE",
+      "TSK",
+      "T2",
+      "Q2",
+      "U10",
+      "V10",
+      "HGT",
+      "MU",
+      "MUB",
+      "XLAT",
+      "XLONG"
+    ],
+    "U_slice": "U[t,:,j,i:i+2]",
+    "V_slice": "V[t,:,j:j+2,i]",
+    "W_slice": "W[t,:,j,i]",
+    "rotation": "selected COSALPHA/SINALPHA scalars only if both variables exist",
+    "no_full_grid_arrays": true,
+    "no_time_interpolation": true,
+    "no_reselection": true,
+    "no_forecast_writes": true
+  },
+  "outputs": {
+    "absent_at_declaration": true,
+    "profile_csv": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr416_hourly_column_2026-10-12/PROFILE.csv",
+    "summary_json": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr416_hourly_column_2026-10-12/SUMMARY.json",
+    "private_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr416_hourly_column_20261012/private/hourly_j103_i48_05_06_07.npz"
+  },
+  "arithmetic": {
+    "selected_frame_source": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr406_native_case_consumer_2026-10-11/intake_native_case_v2.py",
+    "selected_frame_sha256": "f87bb171c792623e4d66be70186e18de2e39a84521b8679352ac27b3b751b1d6",
+    "reader_source": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/native358_artifact_diag_2026-10-08/recipe/run_native_kma_bt_frames.py",
+    "reader_sha256": "408bab9756c6ac1a6e8438b8469c87f41fa239ce75414cd8087d10b6a31d54c1",
+    "p8w_source": "/private/tmp/KDM6AD-viirs-native-run-20261007/isolated_project/host/KIM-meso_v1.0/share/wrf_timeseries.F",
+    "p8w_source_sha256": "0e86d176a5acbeac82dcf062dff543f4a8a3b4df08841d79679640adbfe96eb1",
+    "p8w_note": "Python REAL(4) transcription; host Fortran routine not executed"
+  },
+  "source_receipts": {
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr416_hourly_column_2026-10-12/extract_hourly_column.py": {
+      "sha256": "3a858e6e60fd5efd870724250009c58d093f24c3043f144d696d3f28416e249e",
+      "size_bytes": 26916
+    },
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr406_native_case_consumer_2026-10-11/intake_native_case_v2.py": {
+      "sha256": "f87bb171c792623e4d66be70186e18de2e39a84521b8679352ac27b3b751b1d6",
+      "size_bytes": 66619
+    },
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr395_native_tq_intake_2026-10-10/intake_native_tq.py": {
+      "sha256": "eb54cc2d037aee938c57f9d2bec77b850cec94ef68a856b31d1d018c3e77c2c3",
+      "size_bytes": 29920
+    },
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/native358_artifact_diag_2026-10-08/recipe/run_native_kma_bt_frames.py": {
+      "sha256": "408bab9756c6ac1a6e8438b8469c87f41fa239ce75414cd8087d10b6a31d54c1",
+      "size_bytes": 59299
+    },
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr415_window_numerical_finish_2026-10-12/HOURLY_IDENTITY_AUDIT.json": {
+      "sha256": "98220e406c591907487dfbed99a66fbc5ef6ec192f3018855063f3efd4580746",
+      "size_bytes": 10183
+    },
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr415_window_numerical_finish_2026-10-12/HOURLY_IDENTITY_AUDIT.md": {
+      "sha256": "a0c6b364870613b06cac4bbb7f600c33014b24ec3181562bada7d3483d057341",
+      "size_bytes": 4138
+    },
+    "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/terminal_parity.log": {
+      "sha256": "e884853340aece047aa6f720a71bb43caa4338a8bb825ecb65811428a57aaa00",
+      "size_bytes": 1566
+    },
+    "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/run_terminal_parity.sh": {
+      "sha256": "13be061c5e378ad643dc6bed3e152e816b1daaba88daf925323bd0927cffefdf",
+      "size_bytes": 4447
+    },
+    "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/run_ss_case.py": {
+      "sha256": "43c401c412c439c4ee70759bbdc08a63767c709e0d2164d651d1334dae70c481",
+      "size_bytes": 9647
+    },
+    "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp137_termparity_720min_hist60_np4_20260718_185625/namelist.input": {
+      "sha256": "064b6f5ea5683ee3dc68d408c08bf4cbf588be06dbc7d99bb3529be8ba61554a",
+      "size_bytes": 6447
+    },
+    "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp137_termparity_720min_hist60_np4_20260718_185625/exit_code": {
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+      "size_bytes": 2
+    },
+    "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp137_termparity_720min_hist60_np4_20260718_185625/rsl.error.0000": {
+      "sha256": "e2adfd34d0f31fed99b645fd8f4b0917e9a57b4cc509b08509b333f0ed964ce1",
+      "size_bytes": 209902
+    },
+    "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp137_termparity_720min_hist60_np4_20260718_185625/rsl.error.0001": {
+      "sha256": "a4343c69b8909320682bb08bb77f1e1adc016b23d95249b02ece895708b1f4c1",
+      "size_bytes": 33452
+    },
+    "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp137_termparity_720min_hist60_np4_20260718_185625/rsl.error.0002": {
+      "sha256": "4b718519d256f04e3e1b17cd5e4e1ea5f541a142ce848243b45854e2656bc0d3",
+      "size_bytes": 9587
+    },
+    "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/test/ss_real_case_20260619_063620/SS/runs/mp137_termparity_720min_hist60_np4_20260718_185625/rsl.error.0003": {
+      "sha256": "a153484a8f114c3a9ab7d14b1acc4bd4962bc02603319913b6f2aacbc0224378",
+      "size_bytes": 6028
+    }
+  },
+  "analysis_calls": {
+    "native_model_run": 0,
+    "KDM_M": 0,
+    "all_sky_H": 0,
+    "RTTOV": 0,
+    "optimizer": 0
+  },
+  "limits": [
+    "Model state diagnostic only; not observed cloud truth or process attribution.",
+    "No exact hourly build or input-byte binding; chainp START_DATE/Times discrepancy unresolved.",
+    "Final boundary interval [09:00,12:00) is end-exclusive for further advancement."
+  ]
+}

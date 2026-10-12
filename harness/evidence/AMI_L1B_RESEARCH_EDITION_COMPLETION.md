@@ -174,3 +174,17 @@ that run; parent/child output-byte equivalence, old executable/ICBC hashes and
 chainp START_DATE/Times mismatch remain unresolved. It is not substituted into
 the retained one-rank/current-variant case or this same-problem comparison.
 The final BC interval starts09 and ends12; no post12 coverage is inferred.
+
+### Actual historical hourly column read (PR416)
+
+[One fixed-column05/06/07 read](pr416_hourly_column_2026-10-12/REPORT.md) of the
+normal historical four-rank MP137 child shows native state changes: QCLOUD path
+7.922→2.475→0g/m²; max same-eta physical-T differences2.522/0.891K and changing
+qv/pressure/height/wind/surface. This is a historical host diagnosis, not the
+current retained-variant counterpart, interpolated06:06/06:16 state, observed
+cloud truth, process-rate budget or BT temporal validation. No M/H/optimizer
+was called and the old three-slot input was not replaced. A draft temperature
+conversion error was found/fixed before the sole read; raw/derived/mask slices
+and117profile rows are source-bound and independently checked. Old build/input
+byte and chainp metadata limits persist. Native center/interface rules and
+model-time versus AMI-pixel-time uncertainty remain explicit.

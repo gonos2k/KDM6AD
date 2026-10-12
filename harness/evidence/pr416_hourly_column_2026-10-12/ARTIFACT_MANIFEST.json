@@ -1,0 +1,75 @@
+{
+  "schema": "pr416_public_artifacts_v1",
+  "public_files": {
+    "CHANGES.json": {
+      "sha256": "f85e36ed4fc3ac3d5ce074b16765157ab3f2c7a4bec93d76a583caef0fbaced1",
+      "bytes": 6851
+    },
+    "EXECUTION.log": {
+      "sha256": "feba1dea7ada50ffbd5e4b84d1ef57c55e67da8485b9b7d0a0da0e2f18a5f4ed",
+      "bytes": 29
+    },
+    "EXECUTION_EXIT.json": {
+      "sha256": "eaecfb63a75c5d15a54ec48f95727fcf8387d7ac7c19a062b1596830b9705779",
+      "bytes": 134
+    },
+    "GREEN_POSTRUN.md": {
+      "sha256": "34ced6cdee7858896a675e4d2afa1c0f836d8e2c32fd6938163535176e850d9e",
+      "bytes": 4626
+    },
+    "GREEN_PREFLIGHT.md": {
+      "sha256": "ca0808d896056c4c51b7d0b78b760be91aec51405e234acf98a4062fdc095e5d",
+      "bytes": 2569
+    },
+    "GREEN_PREFLIGHT_DRAFT_BEFORE_TEMPERATURE_CORRECTION.md": {
+      "sha256": "4cf4b5e294ad637ec15d0e74141cb85814e234d737fddd6f2dee0ab1e47ccd71",
+      "bytes": 3166
+    },
+    "PLAN.json": {
+      "sha256": "b38b0493ac9a2764b0f75dae0e276ba2e76747d0fb870d7bb720fac07c2b4b25",
+      "bytes": 18013
+    },
+    "PLAN_DRAFT_BEFORE_TEMPERATURE_CORRECTION.json": {
+      "sha256": "aa76539dca47ec2e0097447b91e3016d061ade5e964c13ba1e1e1ac7f3b60465",
+      "bytes": 18013
+    },
+    "PROFILE.csv": {
+      "sha256": "4474cb0721e5eab6802f9d66ef07c63d866e6b4831fe4cf0b10115236cfd9e30",
+      "bytes": 62895
+    },
+    "RED_POSTRUN.md": {
+      "sha256": "dc6e5f12a3a25437e1500abdbb15449425bf0875591f1d4cccd06b1f15a76241",
+      "bytes": 5009
+    },
+    "RED_PREFLIGHT.md": {
+      "sha256": "008b97ba0cacfeabc822cc4a0202d8b37f6b03a1bc8fd382b9b88140ad99ed6f",
+      "bytes": 2769
+    },
+    "RED_PREFLIGHT_DRAFT_BEFORE_TEMPERATURE_CORRECTION.md": {
+      "sha256": "503e1e7e588577dc786f9d8e1f4f87abcacff16cf3b15838fa7bfeff6556ced3",
+      "bytes": 4062
+    },
+    "REPORT.md": {
+      "sha256": "438025b0d7c6eb711791843922ec1a52dabc3fe74ab9fcd555db09d846447e72",
+      "bytes": 6068
+    },
+    "SUMMARY.json": {
+      "sha256": "67b5db6adbe3f25567fc66ac231c66ebb312542a03ab352bdffe07e02519b489",
+      "bytes": 29205
+    },
+    "extract_hourly_column.py": {
+      "sha256": "8bb99057f9b2ca60fbfa8aa76c00ad56bb7717dfd086a371347251a4f061c088",
+      "bytes": 26918
+    },
+    "extract_hourly_column_DRAFT_BEFORE_TEMPERATURE_CORRECTION.py.txt": {
+      "sha256": "3a858e6e60fd5efd870724250009c58d093f24c3043f144d696d3f28416e249e",
+      "bytes": 26916
+    },
+    "summarize_changes.py": {
+      "sha256": "5d49a47f01a4ff3b4fad7e3d88e0531b968234d547507b44a21f556ab9ddcd75",
+      "bytes": 2906
+    }
+  },
+  "private_npz_published": false,
+  "scope": "one actual selected hourly column read; no model/H/optimizer; drafts unexecuted"
+}
