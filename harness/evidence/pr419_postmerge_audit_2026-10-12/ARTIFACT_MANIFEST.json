@@ -1,0 +1,39 @@
+{
+  "schema": "pr419_artifact_manifest_v1",
+  "baseline_main": "569892ae",
+  "files": {
+    "harness/evidence/pr418_nine_channels_2026-10-12/run_case_analysis_nine.py": {
+      "sha256": "1853e1203bca33c4a2e6934f0c668c3b34968b87e9738dd78d25243c15d445bd",
+      "size_bytes": 23495
+    },
+    "harness/evidence/pr419_postmerge_audit_2026-10-12/GREEN_REVIEW.md": {
+      "sha256": "c044e69fd8ab488ba090e5f5e60cf84d56dcde208eb111ce094379e53ee962b1",
+      "size_bytes": 5737
+    },
+    "harness/evidence/pr419_postmerge_audit_2026-10-12/RED_REVIEW.md": {
+      "sha256": "740f9529b776c1f6819f63e7328683769bc3bbe2df72db97de507cfc9f6a454a",
+      "size_bytes": 3489
+    },
+    "harness/evidence/pr419_postmerge_audit_2026-10-12/REPORT.md": {
+      "sha256": "9863bf11b0155a26486bbfb1e9c186a851f154b2a17e9c91a9a63eae3d7f28bc",
+      "size_bytes": 5031
+    },
+    "harness/evidence/pr419_postmerge_audit_2026-10-12/VALIDATION.json": {
+      "sha256": "be769b4849cb858060f1a2edb4ba0dfd65510a36005399133e5f88769e43d135",
+      "size_bytes": 5660
+    },
+    "oracle/tests/test_nine_channel_capture.py": {
+      "sha256": "7dab3aab27a7ad029620032328b8817458c2f95bc4c262302d7408815d0c360d",
+      "size_bytes": 9468
+    },
+    "oracle/tests/test_nine_channel_source_binding.py": {
+      "sha256": "123772036571d81cc2d5b414b2356bc2f5a9abd107c39b74075d8fb33ae06875",
+      "size_bytes": 6132
+    },
+    "wiki/sources/pr419-postmerge-verification-2026-10-12.md": {
+      "sha256": "20165fcd663dce9495ed5831f9f5ff853ac93db3ba74a4133ab7013988fee3ef",
+      "size_bytes": 1392
+    }
+  },
+  "private_arrays_published": false
+}

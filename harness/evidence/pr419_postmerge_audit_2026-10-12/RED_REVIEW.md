@@ -27,8 +27,8 @@ historical H preparation.
 The new nine-channel capture/audit and source-binding tests now live under
 `oracle/tests`, which public oracle CI collects. The tests use synthetic H and
 staged or mocked provenance; they need no private native/reference inputs and
-make no RTTOV call. Root reports the combined focused set passed 39 tests in
-5.02 seconds. The local full-driver synthetic-H check also returned
+make no RTTOV call. The combined focused set passed 39 tests in 5.02 seconds before the final
+missing-reader snapshot refinement. The full-driver synthetic-H check also returned
 `RETURNED_CASE_DIAGNOSTIC` with the nine-channel audit `CROSSCHECKED`; it used
 the existing private reference/template, real KDM M and L-BFGS, and zero actual
 RTTOV calls. That local check is separate from portable CI evidence.
@@ -52,6 +52,11 @@ The two-document Graphify fragment is a manual extraction with no paid external
 model call. Exact manual token usage is unavailable; the fragment token fields
 are zero rather than an estimated count.
 
-The packet's `VALIDATION.json` is still pending the root full-oracle run as of
-this review. The 39-pass count above is the completed combined focused set, not
-the full oracle result.
+The validation receipt records the full oracle run at 1846 passed, 33 skipped,
+51 warnings in 299.19 seconds; that run preceded the final missing-reader
+snapshot refinement. The final focused recheck passed 32 tests and skipped one
+private-reference test in 4.16 seconds, covering seven new portable cases plus
+the 25 single-column oracle tests. The skipped PR408 capture requires a pinned
+temporary `share/wrf_timeseries.F/.f90` path; both are currently absent. The
+old PR417 plan binds the `.F` path, so current replay of that historical source
+guard is unavailable. This does not invalidate the saved executed H evidence.

@@ -120,19 +120,21 @@
       "wiki/sources/pr419-postmerge-verification-2026-10-12.md"
     ],
     "cached_files": 2,
-    "fragment_nodes": 11,
-    "fragment_edges": 16,
-    "graph_nodes": 19087,
-    "graph_edges": 32312,
+    "fragment_nodes": 16,
+    "fragment_edges": 22,
+    "graph_nodes": 19106,
+    "graph_edges": 32332,
     "scope": "postmerge source verification and focused semantic update; prior incomplete graph coverage is not global certification",
     "token_accounting": "exact subagent tokens unavailable; no paid external extraction call"
   },
   "Github_569892ae_prior_CI": "pre-fix checks green; does not certify this followup",
-  "followup_CI_status": "not yet submitted",
+  "followup_CI_status": "submitted; checked separately at final head",
   "final_focused_source_stage": {
     "passed": 32,
     "skipped": 1,
     "scope": "seven new portable guard/capture cases,25 core single-column tests,older private capture skipped",
     "log": "audit_guard_final.log"
-  }
+  },
+  "code_commit": "0c514fcd",
+  "followup_PR": "https://github.com/gonos2k/KDM6AD/pull/419"
 }
