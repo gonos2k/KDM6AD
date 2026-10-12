@@ -1,0 +1,84 @@
+{
+  "schema": "pr415_public_artifacts_v1",
+  "public_files": {
+    "CHANNEL_COMPARISON.csv": {
+      "sha256": "2cf7a3642976256b39928642091b1c868fe134ad7e0aa8ec613dcdb2deb40d21",
+      "bytes": 3273
+    },
+    "COMPARISON.json": {
+      "sha256": "72ed7a61c939e46cf10cb8d5c0580d123a1a24ec895e632be6a0fe8244ced409",
+      "bytes": 3783
+    },
+    "COMPARISON_EXECUTION.log": {
+      "sha256": "e8739b98d6f300f6693f95841c92d4ef0cab2687771b125ffbcbdc7b4244010d",
+      "bytes": 3105
+    },
+    "DRIVER_RESULT.json": {
+      "sha256": "151cf52f99d60067bf4e87530ebf7b598aececcd0aba2f8f452a2636d8d079f7",
+      "bytes": 879
+    },
+    "EXECUTION.log": {
+      "sha256": "aa6d4a613268f44b08ee3b760572c99596e9a429597646133845e6f160e69511",
+      "bytes": 12251
+    },
+    "EXECUTION_EXIT.json": {
+      "sha256": "ae89aa3a3822d862da2859d8a9da57f2565057be696e1bddc4b3cbc8e016b2c6",
+      "bytes": 133
+    },
+    "GREEN_POSTRUN.md": {
+      "sha256": "be3d31d9454fdee4e2349ddb3930ed0c3919125bda4220dd845ccad8b6d4b21e",
+      "bytes": 5689
+    },
+    "GREEN_PREFLIGHT.md": {
+      "sha256": "71c12a5cf4479a80a19136e3dcbe169b0279483ac77ccfd34bace7900ee620f8",
+      "bytes": 3652
+    },
+    "HOURLY_IDENTITY_AUDIT.json": {
+      "sha256": "98220e406c591907487dfbed99a66fbc5ef6ec192f3018855063f3efd4580746",
+      "bytes": 10183
+    },
+    "HOURLY_IDENTITY_AUDIT.md": {
+      "sha256": "a0c6b364870613b06cac4bbb7f600c33014b24ec3181562bada7d3483d057341",
+      "bytes": 4138
+    },
+    "PREFLIGHT.json": {
+      "sha256": "70bec681f6937d313bace1b7d9fb89e4d8213246c5f87ebff7715e38d6a0b305",
+      "bytes": 9746
+    },
+    "RED_POSTRUN.md": {
+      "sha256": "b6a8ab9bed8300ce8d4a6130f93c43eba8186e81fcafd66ab07c536462ffb402",
+      "bytes": 4713
+    },
+    "RED_PREFLIGHT.md": {
+      "sha256": "302cde147291e27e97d4c947dd8099783d1442bad3763259c5379ef29cdbe935",
+      "bytes": 3677
+    },
+    "REPORT.md": {
+      "sha256": "ec7fc8479d1a39220443acf52f82337269da599470e96d9b7037e2dbbdf46adc",
+      "bytes": 8852
+    },
+    "RESULT.json": {
+      "sha256": "773c7fbb90a88004332952430a02897fed37370207e534119c6743a5bee1ce58",
+      "bytes": 96624
+    },
+    "RUN_STARTED_ONCE.json": {
+      "sha256": "6670c67320b44c1c70f2436a33e97b174fb5911519a66ab08011bc74e104a1b2",
+      "bytes": 234
+    },
+    "WINDOW_PREDECLARED.json": {
+      "sha256": "83eb8e3873ac22f9947ed5226e8f9930386ce7e3a4f5589cab82c468413d2ad6",
+      "bytes": 39924
+    },
+    "compare_results.py": {
+      "sha256": "38a6790e3dc99b9b5bf1d44887868951b78f1a79bea638742f16a092f37c1574",
+      "bytes": 7278
+    },
+    "run_finish.py": {
+      "sha256": "073bce6bffdd854b84f40e4234f1eecf5f426d9ea5c658ce8ba16de4eee0e15c",
+      "bytes": 6787
+    }
+  },
+  "private_arrays_published": false,
+  "validation": "one actual same-problem budget run; independent saved-array objective/gradient/context checks; Green/Red scoped reviews; Ruff; no new FD campaign",
+  "graph_update": "structural plus scoped semantic; raw reports ignored outside wiki"
+}
