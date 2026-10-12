@@ -66,3 +66,10 @@ executable/input bytes or substituting it into the current experiment.
 native weather arrays with evolving cloud/thermodynamics/metrics/winds. It is
 a distinct historical host diagnostic, not a temporal BT validation or an
 interpolated replacement for the fixed-forcing three-slot experiment.
+
+## Historical hourly radiance response
+
+[[sources/pr417-hourly-rttov-response-2026-10-12]] completes two actual06/07
+forwardH calls, showing nonzero joint state/auxiliary-input response. It is
+separate from the fixed-forcing window and does not establish temporal fit,
+individual mechanism or a required new full-host model.

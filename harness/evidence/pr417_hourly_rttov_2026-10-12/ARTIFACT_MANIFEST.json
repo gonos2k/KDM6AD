@@ -1,0 +1,60 @@
+{
+  "schema": "pr417_public_artifacts_v1",
+  "public_files": {
+    "CHANNEL_RESPONSE.csv": {
+      "sha256": "ea77e7d34e7515705b802047bbcb2c8e86fcf269bdab9a769335ba590d1a611a",
+      "bytes": 545
+    },
+    "EXECUTION.log": {
+      "sha256": "a9e4d950884e6c9f20cfda836ea0307d133c0975d6ca19cee11e0d532d61be1d",
+      "bytes": 555
+    },
+    "EXECUTION_EXIT.json": {
+      "sha256": "4130de3fbbf2e3ae61034395c0863ded19563c582d1989b0d38d37a8c4221223",
+      "bytes": 106
+    },
+    "GREEN_POSTRUN.md": {
+      "sha256": "1f1076f60b62fa2ec7994362619a6eae23d31dbe30557da83c5c8e12bf49ac63",
+      "bytes": 3438
+    },
+    "MEASURE_AND_LAYER_CLARIFICATION.json": {
+      "sha256": "ab4df49d535e1d5d004b8c90cdd5391ab668f4f0c804fbb8a3b40cca5412d8a9",
+      "bytes": 2638
+    },
+    "MEASURE_AND_LAYER_CLARIFICATION.md": {
+      "sha256": "3edad9f526aaa02fe717eb4308947e46ed7801cd87e46f13ca7911dae498700b",
+      "bytes": 2219
+    },
+    "PLAN.json": {
+      "sha256": "0a1e22763b3dca11d5334f8c71c0969c9d810d46a358921e7a4c715dd7009e0c",
+      "bytes": 52444
+    },
+    "RED_POSTRUN.md": {
+      "sha256": "2159e73d7d814893c0bb95b471b51881a45bee99a95843d9c3b56f3eb4dc2eba",
+      "bytes": 4296
+    },
+    "RED_PREFLIGHT.md": {
+      "sha256": "6aec3b9ca8c13161a0ae937602847d03808a6d7db966230b225db8de273004a6",
+      "bytes": 3851
+    },
+    "REPORT.md": {
+      "sha256": "28cca90913a7ebcf34649d894888678ce7d418443521b775c3aeac78577201e4",
+      "bytes": 5670
+    },
+    "RESULT.json": {
+      "sha256": "eae3a7739e9defc0858d516c37fe2b41450fc2466f3dfcf0fcbd38ca8951341d",
+      "bytes": 1923
+    },
+    "prepare_hourly_h.py": {
+      "sha256": "292a39c19b8994cefa62ae807c2c346ec838c0563948e3cf9e4a44eb414c4ab8",
+      "bytes": 27622
+    },
+    "run_hourly_h.py": {
+      "sha256": "9518d8a3ae56bafbe283968a8354794bc5d3a01df28c27b6a487ce1d51d3d21b",
+      "bytes": 5124
+    }
+  },
+  "private_npz_published": false,
+  "scope": "two actual historical snapshot H calls; noM/optimizer/observational fit",
+  "reviews": "Green/Red independent saved-input/result checks"
+}

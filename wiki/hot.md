@@ -6,6 +6,7 @@ date_modified: 2026-07-14
 # Hot Cache
 
 ## Current Focus
+- [[sources/pr417-hourly-rttov-response-2026-10-12]] — Two actual historical06/07 H calls show nonzero joint BT response, all quality0; no model/optimizer or observed temporal-fit claim.
 - [[sources/pr416-hourly-native-column-2026-10-12]] — Actual05/06/07 fixed-column read shows thermodynamic/cloud/metric/wind changes; distinct historical NP4 source, no H or substitution.
 - [[sources/pr415-three-slot-bounded-finish-2026-10-12]] — One same61step/3scene budget check reduces gradient but remains unconverged/common-BT; hourly child normal completion now identified with partial provenance.
 - [[sources/pr414-jul19-ten-minute-local-window-2026-10-12]] — Actual nominal0556/0606/0616 joint local window completed once; gradient remains unconverged and other dates pending.

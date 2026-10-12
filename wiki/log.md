@@ -467,3 +467,5 @@ SRF substitution or production algorithm changed.
 - 2026-10-12: Added [[sources/pr415-three-slot-bounded-finish-2026-10-12]]: unchanged three-slot problem, one eight-budget result with smaller unconverged gradient, constant sampled BT and materially changed initial control; specific hourly child normal completion identified, provenance/date-attribute gaps preserved.
 
 - 2026-10-12: Added [[sources/pr416-hourly-native-column-2026-10-12]]: actual05/06/07 columns, T/Q/cloud/pressure/wind changes and independently checked corrected temperature; no current-case substitution or new model/H calls.
+
+- 2026-10-12: Added [[sources/pr417-hourly-rttov-response-2026-10-12]]: actual two-snapshot H, joint BT changes/allquality0, clarified EOS-path versus eta mass and cloud-layer warming; no extraM/optimizer or observed-fit claim.

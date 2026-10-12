@@ -1,0 +1,17 @@
+# Green post-run review: PR417 hourly value-only H calls
+
+## Disposition
+
+The two recorded H calls are consistent with the prepared 06:00 and 07:00 contexts. I found no source, input-binding, fixture, output-channel, or interpretation mismatch. This review did not call H, M, RTTOV, or the optimizer and did not reopen a forecast file; the independent input comparisons used only the retained PR416 and PR417 private NPZ files and the public receipts.
+
+## Checks
+
+I independently recomputed all 79 plan-declared path checks: 23 source/input bindings, 33 external assets (SHA-256, byte size, and resolved path), and 23 prepared-fixture file hashes. All matched. `PREPARED.json` points to the current plan SHA-256 `0a1e22763b3dca11d5334f8c71c0969c9d810d46a358921e7a4c715dd7009e0c` and the current `TIME_INPUTS.npz` SHA-256 `51c55e57037cd30019029e2cf26410d7fc1a9f24309ffa5dcaadeb10d00d07e4`; the private NPZ is mode `0600` under a mode `0700` directory. The runner source remains the plan-pinned SHA-256 `9518d8a3ae56bafbe283968a8354794bc5d3a01df28c27b6a487ce1d51d3d21b`.
+
+For each requested time index, all 26 preserved raw profile/forcing arrays and masks in the PR417 NPZ exactly match the same index in the retained PR416 NPZ. The native-level frozen `rho_d`, `rho_m` forcing, center pressure, `delz`, and 40-interface P8W arrays also match their corresponding PR416 derived arrays exactly. The 39-level state and forcing records are stored separately per time; each H context references its own `rho_d`, `p_lay`, `p_half`, temperature and humidity references, and separately hashed fixture. The saved pressure/reference arrays are finite; the 66 center-pressure and 67 interface-pressure values increase top-down. Both contexts use the same selected native column (`j=103, i=48`) and original PR414 GEOS navigation point. The H10 winds are passed as raw WRF `U10/V10` under the existing V4 surface contract; their basis remains explicitly unverified.
+
+The public result matches the two private event receipts exactly: indices 6 and 7 returned once each, with `grad_requested=false`; all seven BTs are finite and all seven model `rad_quality` values are zero at both times. The recorded 07-minus-06 vector recomputes exactly from the event BT arrays. No 05:00 H event is present. The runner reports two logical H calls, zero M/native/optimizer calls, and leaves internal direct RTTOV K-call counts unknown. Its all-one channel gate ensures all seven channels are evaluated; the zero target is a shape placeholder and its dummy returned cost is discarded.
+
+## Bounded interpretation
+
+These are value-only all-sky outputs for two saved hourly model snapshots under common declared H rules. Their differences are a joint response to the changed saved state, pressure, density, and surface fields; they do not isolate microphysics or named-process effects. The placeholder target does not represent observed BT, and no BT/DQF residual, observation fit, or temporal fit was assessed. This also is not a same-problem comparison with PR415, a native-model rerun, cloud-truth evidence, or evidence of forecast skill. The hourly producer executable and exact model input bytes remain unbound; P8W is the pinned Python REAL(4) transcription rather than an executed host Fortran routine; the raw number-concentration basis is not independently validated. The existing report's limits on internal RTTOV call counts and H10 wind basis are supported.
