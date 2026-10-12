@@ -1,0 +1,52 @@
+{
+  "result_sha256": "ee0aedbbe1716e449dc6f195b836a63706fa38fb57b0973e449dad818ab0d166",
+  "checkpoint_sha256": "d3bad26034b327128dfbf1242f32eb013e3dda0bc30315cd8368c4440c02ca26",
+  "slots": [
+    {
+      "nominal_slot_obt": "202507190556",
+      "step_index": 1,
+      "J_o_background": 8.461861229522402,
+      "J_o_accepted": 6.296961690078167,
+      "MAE_background_K": 1.6828707920396124,
+      "MAE_accepted_K": 1.3465104602031974,
+      "background_QC_max": 3.463419313714804e-05,
+      "accepted_QC_max": 0.0,
+      "background_water_fixed_mass_kg_m2": 38.37652090499288,
+      "accepted_water_fixed_mass_kg_m2": 38.23283537005026
+    },
+    {
+      "nominal_slot_obt": "202507190606",
+      "step_index": 31,
+      "J_o_background": 9.110309309429791,
+      "J_o_accepted": 6.910692202270275,
+      "MAE_background_K": 1.7808427012558923,
+      "MAE_accepted_K": 1.4445271738095957,
+      "background_QC_max": 3.463357906492828e-05,
+      "accepted_QC_max": 0.0,
+      "background_water_fixed_mass_kg_m2": 38.37652090499288,
+      "accepted_water_fixed_mass_kg_m2": 38.23283537005026
+    },
+    {
+      "nominal_slot_obt": "202507190616",
+      "step_index": 61,
+      "J_o_background": 9.077670836769034,
+      "J_o_accepted": 6.8872573251326505,
+      "MAE_background_K": 1.7722319469350754,
+      "MAE_accepted_K": 1.4359583134400313,
+      "background_QC_max": 3.46335790648984e-05,
+      "accepted_QC_max": 0.0,
+      "background_water_fixed_mass_kg_m2": 38.37652090499287,
+      "accepted_water_fixed_mass_kg_m2": 38.23283537005026
+    }
+  ],
+  "initial_J": 26.649841375721227,
+  "final_J": 20.294560081328758,
+  "total_cost_reduction_percent": 23.847351302369525,
+  "analysis_initial_water_change_fixed_mass_kg_m2": -0.1436855349426196,
+  "initial_T_increment_max_abs_K": 0.2665248167960327,
+  "initial_qv_increment_max_abs_kg_kg_dry": 0.0006352717054581535,
+  "gradient_Linf": 0.3850806305018468,
+  "gradient_L2": 1.3767559786807746,
+  "no_new_M_H_optimizer_calls": true,
+  "water_is_fixed_measure_not_external_flux_budget": true
+}

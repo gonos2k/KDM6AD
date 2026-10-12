@@ -1,0 +1,2248 @@
+{
+  "schema": "pr414_actual_local_window_v1",
+  "status": "RETURNED_AUDITED_WINDOW",
+  "run_id": "PR414_JUL19_0556_0606_0616_20261012_01",
+  "plan_sha256": "fc704e2af5c68674e91afeaffd3e61102ebdcc167660f8b515fe123d6a1111cd",
+  "slots": [
+    1,
+    31,
+    61
+  ],
+  "n_steps": 61,
+  "observations": [
+    {
+      "all_nine_bt_K_by_channel": {
+        "ir087": 292.4845078767833,
+        "ir096": 265.75997649163685,
+        "ir105": 295.256843926959,
+        "ir112": 295.1098357639112,
+        "ir123": 292.1487063351286,
+        "ir133": 275.82968074809355,
+        "wv063": 240.85618883047806,
+        "wv069": 251.24082067586068,
+        "wv073": 262.66001521264155
+      },
+      "all_nine_channel_names": [
+        "wv063",
+        "wv069",
+        "wv073",
+        "ir087",
+        "ir096",
+        "ir105",
+        "ir112",
+        "ir123",
+        "ir133"
+      ],
+      "all_nine_reader_dqf_by_channel": {
+        "ir087": 0,
+        "ir096": 0,
+        "ir105": 0,
+        "ir112": 0,
+        "ir123": 0,
+        "ir133": 0,
+        "wv063": 0,
+        "wv069": 0,
+        "wv073": 0
+      },
+      "all_seven_analysis_channels_finite_and_dqf0": true,
+      "analysis_channel_ids": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "analysis_channel_names": [
+        "wv073",
+        "ir087",
+        "ir096",
+        "ir105",
+        "ir112",
+        "ir123",
+        "ir133"
+      ],
+      "distance_to_native_column_m": 425.93526469995294,
+      "nearest_pixel": {
+        "column": 49,
+        "latitude_deg": 36.19700231203294,
+        "longitude_deg": 122.09240151533507,
+        "row": 289
+      },
+      "nominal_model_time": "2025-07-19_05:56:00",
+      "nominal_slot_obt": "202507190556",
+      "pixel_utc": null,
+      "pixel_utc_time_verified": false,
+      "point_matches_original_pr412_observation": true,
+      "reader_dqf": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "reader_geos": {
+        "cfac": 20425338.903339352,
+        "coff": 314.30357081070537,
+        "earth_equatorial_radius": 6378137.0,
+        "earth_polar_radius": 6356752.3,
+        "lfac": -20425338.903339356,
+        "loff": 2089.571379176208,
+        "nominal_satellite_height": 42164000.0,
+        "sub_longitude": 2.2375121010567303
+      },
+      "reader_geos_matches_original_pr412_observation": true,
+      "reader_metadata": {
+        "channel_spatial_resolution_km": 2.0,
+        "channels": [
+          "wv063",
+          "wv069",
+          "wv073",
+          "ir087",
+          "ir096",
+          "ir105",
+          "ir112",
+          "ir123",
+          "ir133"
+        ],
+        "geos": {
+          "cfac": 20425338.903339352,
+          "coff": 314.30357081070537,
+          "earth_equatorial_radius": 6378137.0,
+          "earth_polar_radius": 6356752.3,
+          "lfac": -20425338.903339356,
+          "loff": 2089.571379176208,
+          "nominal_satellite_height": 42164000.0,
+          "sub_longitude": 2.2375121010567303
+        },
+        "geos_header_upper_left_rad": {
+          "image_upperleft_latitude": 0.7709971705416278,
+          "image_upperleft_longitude": 2.0929034164225846
+        },
+        "geos_scan_coordinate_origin": "one-based GEOS counts; returned pixel IDs are zero-based array indices",
+        "image_dimensions": [
+          "dim_image_y",
+          "dim_image_x"
+        ],
+        "image_shape": [
+          500,
+          500
+        ],
+        "mission_reference_time_raw": "20250719_055000",
+        "mission_reference_time_role": "planned UTC; not observed or pixel time",
+        "nominal_slot_obt": "202507190556",
+        "numeric_time_interpretation": "observation start/end are documented seconds with no epoch resolved here; synchro UTC/OBT fields remain raw and no offset conversion was inferred",
+        "observation_end_time_raw": 806176676.0161434,
+        "observation_start_time_raw": 806176616.1714611,
+        "observation_time_epoch": null,
+        "observation_time_units": "seconds",
+        "payload_valid_time_role": "unset; filename label is OBT and no documented UTC conversion was applied",
+        "pixel_index_semantics": "pixel_rows/pixel_cols align with payload rows and give original LA image indices after stride sampling and finite-GEOS-footprint filtering",
+        "pixel_utc_time_verified": false,
+        "planned_utc_time": "2025-07-19T05:50:00Z",
+        "projection_type": "GEOS",
+        "scene_acquisition_time_parsed_obt": "2025-07-19T05:56:56",
+        "scene_acquisition_time_raw": "20250719_055656",
+        "scene_acquisition_time_utc": null,
+        "scene_family": {
+          "calibration_table_version": "v.3.0_20190415",
+          "channel_spatial_resolution": "2.0",
+          "data_processing_center": "NMSC",
+          "data_processing_mode": "operation",
+          "file_format_version": "1.0.0_20181120",
+          "file_generation_time": "20250719_055820",
+          "geometric_correction_sw_version": "GK2_INRSM_V1.3",
+          "image_upperleft_latitude": 0.7709971705416278,
+          "image_upperleft_longitude": 2.0929034164225846,
+          "instrument_name": "AMI",
+          "mission_reference_time": "20250719_055000",
+          "number_of_total_swaths": 3,
+          "observation_mode": "LA",
+          "projection_type": "GEOS",
+          "resampling_kernel_type": "SINC",
+          "satellite_name": "GK-2A"
+        },
+        "source_files": [
+          {
+            "calibration_tuple_paired": true,
+            "number_of_valid_bits_per_pixel": 12,
+            "paired_bt_wavenumber_cm1": 1617.60924253134,
+            "paired_calibration_values": {
+              "Boltzmann_constant_k": 1.3806488e-23,
+              "DN_to_Radiance_Gain": -0.0108914673328399,
+              "DN_to_Radiance_Offset": 44.1777038574218,
+              "Plank_constant_h": 6.62606957e-34,
+              "Teff_to_Tbb_c0": -1.76279494011147,
+              "Teff_to_Tbb_c1": 1.00414910562278,
+              "Teff_to_Tbb_c2": -9.83310914319385e-07,
+              "bt_wavenumber_cm1": 1617.60924253134,
+              "channel_center_wavelength": "6.3",
+              "light_speed": 299792458.0
+            },
+            "sha256": "83b97370fac7df350db462a2024e53255a01b7bc7c69e7d45ea0168f348d8754",
+            "source_id": "gk2a_ami_le1b_wv063_la020ge_202507190556.nc",
+            "source_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_wv063_la020ge_202507190556.nc"
+          },
+          {
+            "calibration_tuple_paired": true,
+            "number_of_valid_bits_per_pixel": 13,
+            "paired_bt_wavenumber_cm1": 1441.57542876017,
+            "paired_calibration_values": {
+              "Boltzmann_constant_k": 1.3806488e-23,
+              "DN_to_Radiance_Gain": -0.00818779878318309,
+              "DN_to_Radiance_Offset": 66.7480773925781,
+              "Plank_constant_h": 6.62606957e-34,
+              "Teff_to_Tbb_c0": -0.334311414359106,
+              "Teff_to_Tbb_c1": 1.00097359874468,
+              "Teff_to_Tbb_c2": -4.94603070252304e-07,
+              "bt_wavenumber_cm1": 1441.57542876017,
+              "channel_center_wavelength": "6.9",
+              "light_speed": 299792458.0
+            },
+            "sha256": "0c7fea702b255db8c9273d494d2e4b9c5ec86dca442e6059ebf9d91a9a8968e6",
+            "source_id": "gk2a_ami_le1b_wv069_la020ge_202507190556.nc",
+            "source_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_wv069_la020ge_202507190556.nc"
+          },
+          {
+            "calibration_tuple_paired": true,
+            "number_of_valid_bits_per_pixel": 13,
+            "paired_bt_wavenumber_cm1": 1365.24999202444,
+            "paired_calibration_values": {
+              "Boltzmann_constant_k": 1.3806488e-23,
+              "DN_to_Radiance_Gain": -0.0096982717514038,
+              "DN_to_Radiance_Offset": 79.0608520507812,
+              "Plank_constant_h": 6.62606957e-34,
+              "Teff_to_Tbb_c0": -0.0613124859696595,
+              "Teff_to_Tbb_c1": 1.00019008722941,
+              "Teff_to_Tbb_c2": -1.05863656750499e-07,
+              "bt_wavenumber_cm1": 1365.24999202444,
+              "channel_center_wavelength": "7.3",
+              "light_speed": 299792458.0
+            },
+            "sha256": "470eab1587fa70e56dfb3745dd402f5619aba4bc6d11b0844fa6987602c3c7f0",
+            "source_id": "gk2a_ami_le1b_wv073_la020ge_202507190556.nc",
+            "source_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_wv073_la020ge_202507190556.nc"
+          },
+          {
+            "calibration_tuple_paired": true,
+            "number_of_valid_bits_per_pixel": 13,
+            "paired_bt_wavenumber_cm1": 1164.94939285634,
+            "paired_calibration_values": {
+              "Boltzmann_constant_k": 1.3806488e-23,
+              "DN_to_Radiance_Gain": -0.0144806550815701,
+              "DN_to_Radiance_Offset": 118.050903320312,
+              "Plank_constant_h": 6.62606957e-34,
+              "Teff_to_Tbb_c0": -0.141418528203155,
+              "Teff_to_Tbb_c1": 1.00052232906885,
+              "Teff_to_Tbb_c2": -3.6287276076109e-07,
+              "bt_wavenumber_cm1": 1164.94939285634,
+              "channel_center_wavelength": "8.7",
+              "light_speed": 299792458.0
+            },
+            "sha256": "d98e0b5cd785c75f160982eacf57fb749674f4f0c471f27e1377dfa2767f2b50",
+            "source_id": "gk2a_ami_le1b_ir087_la020ge_202507190556.nc",
+            "source_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_ir087_la020ge_202507190556.nc"
+          },
+          {
+            "calibration_tuple_paired": true,
+            "number_of_valid_bits_per_pixel": 13,
+            "paired_bt_wavenumber_cm1": 1039.96021677611,
+            "paired_calibration_values": {
+              "Boltzmann_constant_k": 1.3806488e-23,
+              "DN_to_Radiance_Gain": -0.0178435463458299,
+              "DN_to_Radiance_Offset": 145.464874267578,
+              "Plank_constant_h": 6.62606957e-34,
+              "Teff_to_Tbb_c0": -0.114017728158198,
+              "Teff_to_Tbb_c1": 1.00047380585402,
+              "Teff_to_Tbb_c2": -3.74931509928403e-07,
+              "bt_wavenumber_cm1": 1039.96021677611,
+              "channel_center_wavelength": "9.6",
+              "light_speed": 299792458.0
+            },
+            "sha256": "40f5cbcdd1bf15485cf3ddc116f4a3d7699701f230810d49f04942d6d5ee102a",
+            "source_id": "gk2a_ami_le1b_ir096_la020ge_202507190556.nc",
+            "source_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_ir096_la020ge_202507190556.nc"
+          },
+          {
+            "calibration_tuple_paired": true,
+            "number_of_valid_bits_per_pixel": 13,
+            "paired_bt_wavenumber_cm1": 966.153383926055,
+            "paired_calibration_values": {
+              "Boltzmann_constant_k": 1.3806488e-23,
+              "DN_to_Radiance_Gain": -0.0198196955025196,
+              "DN_to_Radiance_Offset": 161.580139160156,
+              "Plank_constant_h": 6.62606957e-34,
+              "Teff_to_Tbb_c0": -0.142866448475177,
+              "Teff_to_Tbb_c1": 1.00064069572049,
+              "Teff_to_Tbb_c2": -5.50443294960498e-07,
+              "bt_wavenumber_cm1": 966.153383926055,
+              "channel_center_wavelength": "10.5",
+              "light_speed": 299792458.0
+            },
+            "sha256": "824ee57213da084e8f3f129fd2767cee1f68e0bb10ef101d7419b7c4ec3ea889",
+            "source_id": "gk2a_ami_le1b_ir105_la020ge_202507190556.nc",
+            "source_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_ir105_la020ge_202507190556.nc"
+          },
+          {
+            "calibration_tuple_paired": true,
+            "number_of_valid_bits_per_pixel": 13,
+            "paired_bt_wavenumber_cm1": 891.71305730126,
+            "paired_calibration_values": {
+              "Boltzmann_constant_k": 1.3806488e-23,
+              "DN_to_Radiance_Gain": -0.0216744858771562,
+              "DN_to_Radiance_Offset": 176.713439941406,
+              "Plank_constant_h": 6.62606957e-34,
+              "Teff_to_Tbb_c0": -0.249111718496148,
+              "Teff_to_Tbb_c1": 1.00121166873756,
+              "Teff_to_Tbb_c2": -1.13167964011665e-06,
+              "bt_wavenumber_cm1": 891.71305730126,
+              "channel_center_wavelength": "11.2",
+              "light_speed": 299792458.0
+            },
+            "sha256": "8370508b1c70364085311772bd9b092876be7a7b6accf8ed71112172550f647d",
+            "source_id": "gk2a_ami_le1b_ir112_la020ge_202507190556.nc",
+            "source_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_ir112_la020ge_202507190556.nc"
+          },
+          {
+            "calibration_tuple_paired": true,
+            "number_of_valid_bits_per_pixel": 13,
+            "paired_bt_wavenumber_cm1": 810.60900787123,
+            "paired_calibration_values": {
+              "Boltzmann_constant_k": 1.3806488e-23,
+              "DN_to_Radiance_Gain": -0.023379972204566,
+              "DN_to_Radiance_Offset": 190.649627685546,
+              "Plank_constant_h": 6.62606957e-34,
+              "Teff_to_Tbb_c0": -0.458113885722738,
+              "Teff_to_Tbb_c1": 1.00245520975535,
+              "Teff_to_Tbb_c2": -2.53064314720476e-06,
+              "bt_wavenumber_cm1": 810.60900787123,
+              "channel_center_wavelength": "12.3",
+              "light_speed": 299792458.0
+            },
+            "sha256": "19d1a4a9c60bee40cd6c7efe8a760189d72aa3f8f488b168cb8e35fc3963542f",
+            "source_id": "gk2a_ami_le1b_ir123_la020ge_202507190556.nc",
+            "source_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_ir123_la020ge_202507190556.nc"
+          },
+          {
+            "calibration_tuple_paired": true,
+            "number_of_valid_bits_per_pixel": 13,
+            "paired_bt_wavenumber_cm1": 753.590621482278,
+            "paired_calibration_values": {
+              "Boltzmann_constant_k": 1.3806488e-23,
+              "DN_to_Radiance_Gain": -0.0243037566542625,
+              "DN_to_Radiance_Offset": 198.224365234375,
+              "Plank_constant_h": 6.62606957e-34,
+              "Teff_to_Tbb_c0": -0.0938521568527657,
+              "Teff_to_Tbb_c1": 1.00053982112966,
+              "Teff_to_Tbb_c2": -5.94913715312849e-07,
+              "bt_wavenumber_cm1": 753.590621482278,
+              "channel_center_wavelength": "13.3",
+              "light_speed": 299792458.0
+            },
+            "sha256": "6440ea866f17f9336abed1d0f52329a2ec29d3ad89908a26320535473019835d",
+            "source_id": "gk2a_ami_le1b_ir133_la020ge_202507190556.nc",
+            "source_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_ir133_la020ge_202507190556.nc"
+          }
+        ],
+        "source_product": "GK-2A AMI L1B LA020GE",
+        "stride": 1,
+        "time_semantics_source_url": "https://datasvc.nmsc.kma.go.kr/resources/common/pdf/%EC%B2%9C%EB%A6%AC%EC%95%88%EC%9C%84%EC%84%B1%202A%ED%98%B8%20%20%EC%9E%90%EB%A3%8C%ED%99%9C%EC%9A%A9%20QA.pdf",
+        "time_synchro_obt_raw": 806176616.1714611,
+        "time_synchro_utc_raw": 806176616.1774336
+      },
+      "scene_date": "2025-07-19",
+      "selection_basis": "nearest finite GEOS pixel to fixed PR412 native j103/i48; distance only before DQF/BT inspection",
+      "source_files": [
+        {
+          "channel": "wv063",
+          "etag": "a0cf9192aaa465225e955ed908114bba",
+          "immutable_reused_source": true,
+          "key": "AMI/L1B/LA/202507/19/05/gk2a_ami_le1b_wv063_la020ge_202507190556.nc",
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_wv063_la020ge_202507190556.nc",
+          "sha256": "83b97370fac7df350db462a2024e53255a01b7bc7c69e7d45ea0168f348d8754",
+          "size_bytes": 357789
+        },
+        {
+          "channel": "wv069",
+          "etag": "c95f8d26c28537894241cb22bfcefd02",
+          "immutable_reused_source": true,
+          "key": "AMI/L1B/LA/202507/19/05/gk2a_ami_le1b_wv069_la020ge_202507190556.nc",
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_wv069_la020ge_202507190556.nc",
+          "sha256": "0c7fea702b255db8c9273d494d2e4b9c5ec86dca442e6059ebf9d91a9a8968e6",
+          "size_bytes": 456481
+        },
+        {
+          "channel": "wv073",
+          "etag": "bb62826e22ef3f03d51fc19b6b057324",
+          "immutable_reused_source": true,
+          "key": "AMI/L1B/LA/202507/19/05/gk2a_ami_le1b_wv073_la020ge_202507190556.nc",
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_wv073_la020ge_202507190556.nc",
+          "sha256": "470eab1587fa70e56dfb3745dd402f5619aba4bc6d11b0844fa6987602c3c7f0",
+          "size_bytes": 477776
+        },
+        {
+          "channel": "ir087",
+          "etag": "b1317d0001147a35e3187b957f730448",
+          "immutable_reused_source": true,
+          "key": "AMI/L1B/LA/202507/19/05/gk2a_ami_le1b_ir087_la020ge_202507190556.nc",
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_ir087_la020ge_202507190556.nc",
+          "sha256": "d98e0b5cd785c75f160982eacf57fb749674f4f0c471f27e1377dfa2767f2b50",
+          "size_bytes": 529492
+        },
+        {
+          "channel": "ir096",
+          "etag": "07848981e605710fce054f44fe29b039",
+          "immutable_reused_source": true,
+          "key": "AMI/L1B/LA/202507/19/05/gk2a_ami_le1b_ir096_la020ge_202507190556.nc",
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_ir096_la020ge_202507190556.nc",
+          "sha256": "40f5cbcdd1bf15485cf3ddc116f4a3d7699701f230810d49f04942d6d5ee102a",
+          "size_bytes": 500536
+        },
+        {
+          "channel": "ir105",
+          "etag": "6e5c9c0822e270ecf41bda6ef9a6cdce",
+          "immutable_reused_source": true,
+          "key": "AMI/L1B/LA/202507/19/05/gk2a_ami_le1b_ir105_la020ge_202507190556.nc",
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_ir105_la020ge_202507190556.nc",
+          "sha256": "824ee57213da084e8f3f129fd2767cee1f68e0bb10ef101d7419b7c4ec3ea889",
+          "size_bytes": 532071
+        },
+        {
+          "channel": "ir112",
+          "etag": "5712c73e1d5f297905624a6bea46f541",
+          "immutable_reused_source": true,
+          "key": "AMI/L1B/LA/202507/19/05/gk2a_ami_le1b_ir112_la020ge_202507190556.nc",
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_ir112_la020ge_202507190556.nc",
+          "sha256": "8370508b1c70364085311772bd9b092876be7a7b6accf8ed71112172550f647d",
+          "size_bytes": 530010
+        },
+        {
+          "channel": "ir123",
+          "etag": "aac1aba769e6ef46f3f8d522b2663913",
+          "immutable_reused_source": true,
+          "key": "AMI/L1B/LA/202507/19/05/gk2a_ami_le1b_ir123_la020ge_202507190556.nc",
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_ir123_la020ge_202507190556.nc",
+          "sha256": "19d1a4a9c60bee40cd6c7efe8a760189d72aa3f8f488b168cb8e35fc3963542f",
+          "size_bytes": 524322
+        },
+        {
+          "channel": "ir133",
+          "etag": "2a6e1dc4277aec4d4a06a63e3c2f5089",
+          "immutable_reused_source": true,
+          "key": "AMI/L1B/LA/202507/19/05/gk2a_ami_le1b_ir133_la020ge_202507190556.nc",
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_ir133_la020ge_202507190556.nc",
+          "sha256": "6440ea866f17f9336abed1d0f52329a2ec29d3ad89908a26320535473019835d",
+          "size_bytes": 506925
+        }
+      ],
+      "step_index": 1,
+      "time_assumption": "NOMINAL_FILENAME_TIME_AS_MODEL_UTC_RESEARCH_MODE",
+      "within_2p5km": true,
+      "y_bt_K": [
+        262.66001521264155,
+        292.4845078767833,
+        265.75997649163685,
+        295.256843926959,
+        295.1098357639112,
+        292.1487063351286,
+        275.82968074809355
+      ]
+    },
+    {
+      "all_nine_bt_K_by_channel": {
+        "ir087": 292.55657709314266,
+        "ir096": 265.77737359114724,
+        "ir105": 295.37017066423283,
+        "ir112": 295.17544730606124,
+        "ir123": 292.31771897789827,
+        "ir133": 275.8952204081599,
+        "wv063": 241.26751994035143,
+        "wv069": 251.5345597360528,
+        "wv073": 262.8779695087775
+      },
+      "all_nine_channel_names": [
+        "wv063",
+        "wv069",
+        "wv073",
+        "ir087",
+        "ir096",
+        "ir105",
+        "ir112",
+        "ir123",
+        "ir133"
+      ],
+      "all_nine_reader_dqf_by_channel": {
+        "ir087": 0,
+        "ir096": 0,
+        "ir105": 0,
+        "ir112": 0,
+        "ir123": 0,
+        "ir133": 0,
+        "wv063": 0,
+        "wv069": 0,
+        "wv073": 0
+      },
+      "all_seven_analysis_channels_finite_and_dqf0": true,
+      "analysis_channel_ids": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "analysis_channel_names": [
+        "wv073",
+        "ir087",
+        "ir096",
+        "ir105",
+        "ir112",
+        "ir123",
+        "ir133"
+      ],
+      "distance_to_native_column_m": 425.93526469995294,
+      "nearest_pixel": {
+        "column": 49,
+        "latitude_deg": 36.19700231203294,
+        "longitude_deg": 122.09240151533507,
+        "row": 289
+      },
+      "nominal_model_time": "2025-07-19_06:06:00",
+      "nominal_slot_obt": "202507190606",
+      "pixel_utc": null,
+      "pixel_utc_time_verified": false,
+      "point_matches_original_pr412_observation": true,
+      "reader_dqf": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "reader_geos": {
+        "cfac": 20425338.903339352,
+        "coff": 314.30357081070537,
+        "earth_equatorial_radius": 6378137.0,
+        "earth_polar_radius": 6356752.3,
+        "lfac": -20425338.903339356,
+        "loff": 2089.571379176208,
+        "nominal_satellite_height": 42164000.0,
+        "sub_longitude": 2.2375121010567303
+      },
+      "reader_geos_matches_original_pr412_observation": true,
+      "reader_metadata": {
+        "channel_spatial_resolution_km": 2.0,
+        "channels": [
+          "wv063",
+          "wv069",
+          "wv073",
+          "ir087",
+          "ir096",
+          "ir105",
+          "ir112",
+          "ir123",
+          "ir133"
+        ],
+        "geos": {
+          "cfac": 20425338.903339352,
+          "coff": 314.30357081070537,
+          "earth_equatorial_radius": 6378137.0,
+          "earth_polar_radius": 6356752.3,
+          "lfac": -20425338.903339356,
+          "loff": 2089.571379176208,
+          "nominal_satellite_height": 42164000.0,
+          "sub_longitude": 2.2375121010567303
+        },
+        "geos_header_upper_left_rad": {
+          "image_upperleft_latitude": 0.7709971705416278,
+          "image_upperleft_longitude": 2.0929034164225846
+        },
+        "geos_scan_coordinate_origin": "one-based GEOS counts; returned pixel IDs are zero-based array indices",
+        "image_dimensions": [
+          "dim_image_y",
+          "dim_image_x"
+        ],
+        "image_shape": [
+          500,
+          500
+        ],
+        "mission_reference_time_raw": "20250719_060000",
+        "mission_reference_time_role": "planned UTC; not observed or pixel time",
+        "nominal_slot_obt": "202507190606",
+        "numeric_time_interpretation": "observation start/end are documented seconds with no epoch resolved here; synchro UTC/OBT fields remain raw and no offset conversion was inferred",
+        "observation_end_time_raw": 806177276.0155854,
+        "observation_start_time_raw": 806177216.1709031,
+        "observation_time_epoch": null,
+        "observation_time_units": "seconds",
+        "payload_valid_time_role": "unset; filename label is OBT and no documented UTC conversion was applied",
+        "pixel_index_semantics": "pixel_rows/pixel_cols align with payload rows and give original LA image indices after stride sampling and finite-GEOS-footprint filtering",
+        "pixel_utc_time_verified": false,
+        "planned_utc_time": "2025-07-19T06:00:00Z",
+        "projection_type": "GEOS",
+        "scene_acquisition_time_parsed_obt": "2025-07-19T06:06:56",
+        "scene_acquisition_time_raw": "20250719_060656",
+        "scene_acquisition_time_utc": null,
+        "scene_family": {
+          "calibration_table_version": "v.3.0_20190415",
+          "channel_spatial_resolution": "2.0",
+          "data_processing_center": "NMSC",
+          "data_processing_mode": "operation",
+          "file_format_version": "1.0.0_20181120",
+          "file_generation_time": "20250719_060817",
+          "geometric_correction_sw_version": "GK2_INRSM_V1.3",
+          "image_upperleft_latitude": 0.7709971705416278,
+          "image_upperleft_longitude": 2.0929034164225846,
+          "instrument_name": "AMI",
+          "mission_reference_time": "20250719_060000",
+          "number_of_total_swaths": 3,
+          "observation_mode": "LA",
+          "projection_type": "GEOS",
+          "resampling_kernel_type": "SINC",
+          "satellite_name": "GK-2A"
+        },
+        "source_files": [
+          {
+            "calibration_tuple_paired": true,
+            "number_of_valid_bits_per_pixel": 12,
+            "paired_bt_wavenumber_cm1": 1617.60924253134,
+            "paired_calibration_values": {
+              "Boltzmann_constant_k": 1.3806488e-23,
+              "DN_to_Radiance_Gain": -0.0108914673328399,
+              "DN_to_Radiance_Offset": 44.1777038574218,
+              "Plank_constant_h": 6.62606957e-34,
+              "Teff_to_Tbb_c0": -1.76279494011147,
+              "Teff_to_Tbb_c1": 1.00414910562278,
+              "Teff_to_Tbb_c2": -9.83310914319385e-07,
+              "bt_wavenumber_cm1": 1617.60924253134,
+              "channel_center_wavelength": "6.3",
+              "light_speed": 299792458.0
+            },
+            "sha256": "1de5cc522301c0f61a6a89ac8adda13b63cf45664ed56054d7d53d6f78670591",
+            "source_id": "gk2a_ami_le1b_wv063_la020ge_202507190606.nc",
+            "source_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190606/gk2a_ami_le1b_wv063_la020ge_202507190606.nc"
+          },
+          {
+            "calibration_tuple_paired": true,
+            "number_of_valid_bits_per_pixel": 13,
+            "paired_bt_wavenumber_cm1": 1441.57542876017,
+            "paired_calibration_values": {
+              "Boltzmann_constant_k": 1.3806488e-23,
+              "DN_to_Radiance_Gain": -0.00818779878318309,
+              "DN_to_Radiance_Offset": 66.7480773925781,
+              "Plank_constant_h": 6.62606957e-34,
+              "Teff_to_Tbb_c0": -0.334311414359106,
+              "Teff_to_Tbb_c1": 1.00097359874468,
+              "Teff_to_Tbb_c2": -4.94603070252304e-07,
+              "bt_wavenumber_cm1": 1441.57542876017,
+              "channel_center_wavelength": "6.9",
+              "light_speed": 299792458.0
+            },
+            "sha256": "612917232e9279941e30faf8ff812c1d670885e0acfdb2118301c4719bcae133",
+            "source_id": "gk2a_ami_le1b_wv069_la020ge_202507190606.nc",
+            "source_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190606/gk2a_ami_le1b_wv069_la020ge_202507190606.nc"
+          },
+          {
+            "calibration_tuple_paired": true,
+            "number_of_valid_bits_per_pixel": 13,
+            "paired_bt_wavenumber_cm1": 1365.24999202444,
+            "paired_calibration_values": {
+              "Boltzmann_constant_k": 1.3806488e-23,
+              "DN_to_Radiance_Gain": -0.0096982717514038,
+              "DN_to_Radiance_Offset": 79.0608520507812,
+              "Plank_constant_h": 6.62606957e-34,
+              "Teff_to_Tbb_c0": -0.0613124859696595,
+              "Teff_to_Tbb_c1": 1.00019008722941,
+              "Teff_to_Tbb_c2": -1.05863656750499e-07,
+              "bt_wavenumber_cm1": 1365.24999202444,
+              "channel_center_wavelength": "7.3",
+              "light_speed": 299792458.0
+            },
+            "sha256": "a450b6e7b43e2919a976caf03a447cb641c7ff8c59cb9f510606dc1953016ba7",
+            "source_id": "gk2a_ami_le1b_wv073_la020ge_202507190606.nc",
+            "source_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190606/gk2a_ami_le1b_wv073_la020ge_202507190606.nc"
+          },
+          {
+            "calibration_tuple_paired": true,
+            "number_of_valid_bits_per_pixel": 13,
+            "paired_bt_wavenumber_cm1": 1164.94939285634,
+            "paired_calibration_values": {
+              "Boltzmann_constant_k": 1.3806488e-23,
+              "DN_to_Radiance_Gain": -0.0144806550815701,
+              "DN_to_Radiance_Offset": 118.050903320312,
+              "Plank_constant_h": 6.62606957e-34,
+              "Teff_to_Tbb_c0": -0.141418528203155,
+              "Teff_to_Tbb_c1": 1.00052232906885,
+              "Teff_to_Tbb_c2": -3.6287276076109e-07,
+              "bt_wavenumber_cm1": 1164.94939285634,
+              "channel_center_wavelength": "8.7",
+              "light_speed": 299792458.0
+            },
+            "sha256": "f2af500999e050f104fafd3ecb53ab045c45d68d09a76ddb8d879ae678450649",
+            "source_id": "gk2a_ami_le1b_ir087_la020ge_202507190606.nc",
+            "source_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190606/gk2a_ami_le1b_ir087_la020ge_202507190606.nc"
+          },
+          {
+            "calibration_tuple_paired": true,
+            "number_of_valid_bits_per_pixel": 13,
+            "paired_bt_wavenumber_cm1": 1039.96021677611,
+            "paired_calibration_values": {
+              "Boltzmann_constant_k": 1.3806488e-23,
+              "DN_to_Radiance_Gain": -0.0178435463458299,
+              "DN_to_Radiance_Offset": 145.464874267578,
+              "Plank_constant_h": 6.62606957e-34,
+              "Teff_to_Tbb_c0": -0.114017728158198,
+              "Teff_to_Tbb_c1": 1.00047380585402,
+              "Teff_to_Tbb_c2": -3.74931509928403e-07,
+              "bt_wavenumber_cm1": 1039.96021677611,
+              "channel_center_wavelength": "9.6",
+              "light_speed": 299792458.0
+            },
+            "sha256": "304b79f91e052f6f2970fbd0757ba5abfd401471a46021dfca257ecf6133728b",
+            "source_id": "gk2a_ami_le1b_ir096_la020ge_202507190606.nc",
+            "source_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190606/gk2a_ami_le1b_ir096_la020ge_202507190606.nc"
+          },
+          {
+            "calibration_tuple_paired": true,
+            "number_of_valid_bits_per_pixel": 13,
+            "paired_bt_wavenumber_cm1": 966.153383926055,
+            "paired_calibration_values": {
+              "Boltzmann_constant_k": 1.3806488e-23,
+              "DN_to_Radiance_Gain": -0.0198196955025196,
+              "DN_to_Radiance_Offset": 161.580139160156,
+              "Plank_constant_h": 6.62606957e-34,
+              "Teff_to_Tbb_c0": -0.142866448475177,
+              "Teff_to_Tbb_c1": 1.00064069572049,
+              "Teff_to_Tbb_c2": -5.50443294960498e-07,
+              "bt_wavenumber_cm1": 966.153383926055,
+              "channel_center_wavelength": "10.5",
+              "light_speed": 299792458.0
+            },
+            "sha256": "4a4b0175cccbfb01c7d377694c8601f5bbbc2754154355ee43c5a105a1c37ede",
+            "source_id": "gk2a_ami_le1b_ir105_la020ge_202507190606.nc",
+            "source_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190606/gk2a_ami_le1b_ir105_la020ge_202507190606.nc"
+          },
+          {
+            "calibration_tuple_paired": true,
+            "number_of_valid_bits_per_pixel": 13,
+            "paired_bt_wavenumber_cm1": 891.71305730126,
+            "paired_calibration_values": {
+              "Boltzmann_constant_k": 1.3806488e-23,
+              "DN_to_Radiance_Gain": -0.0216744858771562,
+              "DN_to_Radiance_Offset": 176.713439941406,
+              "Plank_constant_h": 6.62606957e-34,
+              "Teff_to_Tbb_c0": -0.249111718496148,
+              "Teff_to_Tbb_c1": 1.00121166873756,
+              "Teff_to_Tbb_c2": -1.13167964011665e-06,
+              "bt_wavenumber_cm1": 891.71305730126,
+              "channel_center_wavelength": "11.2",
+              "light_speed": 299792458.0
+            },
+            "sha256": "9e78e6cba872252435f7af062c73c8f4e928e2857d8587c195bab5a032bfadfe",
+            "source_id": "gk2a_ami_le1b_ir112_la020ge_202507190606.nc",
+            "source_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190606/gk2a_ami_le1b_ir112_la020ge_202507190606.nc"
+          },
+          {
+            "calibration_tuple_paired": true,
+            "number_of_valid_bits_per_pixel": 13,
+            "paired_bt_wavenumber_cm1": 810.60900787123,
+            "paired_calibration_values": {
+              "Boltzmann_constant_k": 1.3806488e-23,
+              "DN_to_Radiance_Gain": -0.023379972204566,
+              "DN_to_Radiance_Offset": 190.649627685546,
+              "Plank_constant_h": 6.62606957e-34,
+              "Teff_to_Tbb_c0": -0.458113885722738,
+              "Teff_to_Tbb_c1": 1.00245520975535,
+              "Teff_to_Tbb_c2": -2.53064314720476e-06,
+              "bt_wavenumber_cm1": 810.60900787123,
+              "channel_center_wavelength": "12.3",
+              "light_speed": 299792458.0
+            },
+            "sha256": "4dfd625508856f4c50d5cdb60ec00061259a6899fd3556319bb9836287337b46",
+            "source_id": "gk2a_ami_le1b_ir123_la020ge_202507190606.nc",
+            "source_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190606/gk2a_ami_le1b_ir123_la020ge_202507190606.nc"
+          },
+          {
+            "calibration_tuple_paired": true,
+            "number_of_valid_bits_per_pixel": 13,
+            "paired_bt_wavenumber_cm1": 753.590621482278,
+            "paired_calibration_values": {
+              "Boltzmann_constant_k": 1.3806488e-23,
+              "DN_to_Radiance_Gain": -0.0243037566542625,
+              "DN_to_Radiance_Offset": 198.224365234375,
+              "Plank_constant_h": 6.62606957e-34,
+              "Teff_to_Tbb_c0": -0.0938521568527657,
+              "Teff_to_Tbb_c1": 1.00053982112966,
+              "Teff_to_Tbb_c2": -5.94913715312849e-07,
+              "bt_wavenumber_cm1": 753.590621482278,
+              "channel_center_wavelength": "13.3",
+              "light_speed": 299792458.0
+            },
+            "sha256": "091624dd7b81af24c2eda9b20f9c6cb02f15858b84ac942cc9c2b6c1d7eafda5",
+            "source_id": "gk2a_ami_le1b_ir133_la020ge_202507190606.nc",
+            "source_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190606/gk2a_ami_le1b_ir133_la020ge_202507190606.nc"
+          }
+        ],
+        "source_product": "GK-2A AMI L1B LA020GE",
+        "stride": 1,
+        "time_semantics_source_url": "https://datasvc.nmsc.kma.go.kr/resources/common/pdf/%EC%B2%9C%EB%A6%AC%EC%95%88%EC%9C%84%EC%84%B1%202A%ED%98%B8%20%20%EC%9E%90%EB%A3%8C%ED%99%9C%EC%9A%A9%20QA.pdf",
+        "time_synchro_obt_raw": 806177216.1709031,
+        "time_synchro_utc_raw": 806177216.1768756
+      },
+      "scene_date": "2025-07-19",
+      "selection_basis": "nearest finite GEOS pixel to fixed PR412 native j103/i48; distance only before DQF/BT inspection",
+      "source_files": [
+        {
+          "channel": "wv063",
+          "etag": "8f020458394c938c95690bc991e1717f",
+          "immutable_reused_source": false,
+          "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_wv063_la020ge_202507190606.nc",
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190606/gk2a_ami_le1b_wv063_la020ge_202507190606.nc",
+          "sha256": "1de5cc522301c0f61a6a89ac8adda13b63cf45664ed56054d7d53d6f78670591",
+          "size_bytes": 357806
+        },
+        {
+          "channel": "wv069",
+          "etag": "8b3ff40fdc4280d54e7181538f787c59",
+          "immutable_reused_source": false,
+          "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_wv069_la020ge_202507190606.nc",
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190606/gk2a_ami_le1b_wv069_la020ge_202507190606.nc",
+          "sha256": "612917232e9279941e30faf8ff812c1d670885e0acfdb2118301c4719bcae133",
+          "size_bytes": 456368
+        },
+        {
+          "channel": "wv073",
+          "etag": "f38e12746bb0a3073d2e69f57a406164",
+          "immutable_reused_source": false,
+          "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_wv073_la020ge_202507190606.nc",
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190606/gk2a_ami_le1b_wv073_la020ge_202507190606.nc",
+          "sha256": "a450b6e7b43e2919a976caf03a447cb641c7ff8c59cb9f510606dc1953016ba7",
+          "size_bytes": 477569
+        },
+        {
+          "channel": "ir087",
+          "etag": "9d014764b4490ff3319dfb705c2e92e9",
+          "immutable_reused_source": false,
+          "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir087_la020ge_202507190606.nc",
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190606/gk2a_ami_le1b_ir087_la020ge_202507190606.nc",
+          "sha256": "f2af500999e050f104fafd3ecb53ab045c45d68d09a76ddb8d879ae678450649",
+          "size_bytes": 529327
+        },
+        {
+          "channel": "ir096",
+          "etag": "3cd3b222eb076be8ef88e8b9127463e5",
+          "immutable_reused_source": false,
+          "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir096_la020ge_202507190606.nc",
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190606/gk2a_ami_le1b_ir096_la020ge_202507190606.nc",
+          "sha256": "304b79f91e052f6f2970fbd0757ba5abfd401471a46021dfca257ecf6133728b",
+          "size_bytes": 500539
+        },
+        {
+          "channel": "ir105",
+          "etag": "16d861cd2cfa9cb8fcee30e040b3c166",
+          "immutable_reused_source": false,
+          "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir105_la020ge_202507190606.nc",
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190606/gk2a_ami_le1b_ir105_la020ge_202507190606.nc",
+          "sha256": "4a4b0175cccbfb01c7d377694c8601f5bbbc2754154355ee43c5a105a1c37ede",
+          "size_bytes": 532035
+        },
+        {
+          "channel": "ir112",
+          "etag": "9f47d1b47aa0f31720855e702a77d662",
+          "immutable_reused_source": false,
+          "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir112_la020ge_202507190606.nc",
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190606/gk2a_ami_le1b_ir112_la020ge_202507190606.nc",
+          "sha256": "9e78e6cba872252435f7af062c73c8f4e928e2857d8587c195bab5a032bfadfe",
+          "size_bytes": 530145
+        },
+        {
+          "channel": "ir123",
+          "etag": "6020e159300cb3cdd2a6d3d4f9844acc",
+          "immutable_reused_source": false,
+          "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir123_la020ge_202507190606.nc",
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190606/gk2a_ami_le1b_ir123_la020ge_202507190606.nc",
+          "sha256": "4dfd625508856f4c50d5cdb60ec00061259a6899fd3556319bb9836287337b46",
+          "size_bytes": 524408
+        },
+        {
+          "channel": "ir133",
+          "etag": "f4283e5b10d7c0dc6b8b38ac40647f0e",
+          "immutable_reused_source": false,
+          "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir133_la020ge_202507190606.nc",
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190606/gk2a_ami_le1b_ir133_la020ge_202507190606.nc",
+          "sha256": "091624dd7b81af24c2eda9b20f9c6cb02f15858b84ac942cc9c2b6c1d7eafda5",
+          "size_bytes": 506839
+        }
+      ],
+      "step_index": 31,
+      "time_assumption": "NOMINAL_FILENAME_TIME_AS_MODEL_UTC_RESEARCH_MODE",
+      "within_2p5km": true,
+      "y_bt_K": [
+        262.8779695087775,
+        292.55657709314266,
+        265.77737359114724,
+        295.37017066423283,
+        295.17544730606124,
+        292.31771897789827,
+        275.8952204081599
+      ]
+    },
+    {
+      "all_nine_bt_K_by_channel": {
+        "ir087": 292.55657709314266,
+        "ir096": 265.8469202441147,
+        "ir105": 295.3198182166753,
+        "ir112": 295.1885653095098,
+        "ir123": 292.27548543484755,
+        "ir133": 275.8460687114308,
+        "wv063": 241.34915294602547,
+        "wv069": 251.90534137290726,
+        "wv073": 263.0161538230468
+      },
+      "all_nine_channel_names": [
+        "wv063",
+        "wv069",
+        "wv073",
+        "ir087",
+        "ir096",
+        "ir105",
+        "ir112",
+        "ir123",
+        "ir133"
+      ],
+      "all_nine_reader_dqf_by_channel": {
+        "ir087": 0,
+        "ir096": 0,
+        "ir105": 0,
+        "ir112": 0,
+        "ir123": 0,
+        "ir133": 0,
+        "wv063": 0,
+        "wv069": 0,
+        "wv073": 0
+      },
+      "all_seven_analysis_channels_finite_and_dqf0": true,
+      "analysis_channel_ids": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "analysis_channel_names": [
+        "wv073",
+        "ir087",
+        "ir096",
+        "ir105",
+        "ir112",
+        "ir123",
+        "ir133"
+      ],
+      "distance_to_native_column_m": 425.93526469995294,
+      "nearest_pixel": {
+        "column": 49,
+        "latitude_deg": 36.19700231203294,
+        "longitude_deg": 122.09240151533507,
+        "row": 289
+      },
+      "nominal_model_time": "2025-07-19_06:16:00",
+      "nominal_slot_obt": "202507190616",
+      "pixel_utc": null,
+      "pixel_utc_time_verified": false,
+      "point_matches_original_pr412_observation": true,
+      "reader_dqf": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "reader_geos": {
+        "cfac": 20425338.903339352,
+        "coff": 314.30357081070537,
+        "earth_equatorial_radius": 6378137.0,
+        "earth_polar_radius": 6356752.3,
+        "lfac": -20425338.903339356,
+        "loff": 2089.571379176208,
+        "nominal_satellite_height": 42164000.0,
+        "sub_longitude": 2.2375121010567303
+      },
+      "reader_geos_matches_original_pr412_observation": true,
+      "reader_metadata": {
+        "channel_spatial_resolution_km": 2.0,
+        "channels": [
+          "wv063",
+          "wv069",
+          "wv073",
+          "ir087",
+          "ir096",
+          "ir105",
+          "ir112",
+          "ir123",
+          "ir133"
+        ],
+        "geos": {
+          "cfac": 20425338.903339352,
+          "coff": 314.30357081070537,
+          "earth_equatorial_radius": 6378137.0,
+          "earth_polar_radius": 6356752.3,
+          "lfac": -20425338.903339356,
+          "loff": 2089.571379176208,
+          "nominal_satellite_height": 42164000.0,
+          "sub_longitude": 2.2375121010567303
+        },
+        "geos_header_upper_left_rad": {
+          "image_upperleft_latitude": 0.7709971705416278,
+          "image_upperleft_longitude": 2.0929034164225846
+        },
+        "geos_scan_coordinate_origin": "one-based GEOS counts; returned pixel IDs are zero-based array indices",
+        "image_dimensions": [
+          "dim_image_y",
+          "dim_image_x"
+        ],
+        "image_shape": [
+          500,
+          500
+        ],
+        "mission_reference_time_raw": "20250719_061000",
+        "mission_reference_time_role": "planned UTC; not observed or pixel time",
+        "nominal_slot_obt": "202507190616",
+        "numeric_time_interpretation": "observation start/end are documented seconds with no epoch resolved here; synchro UTC/OBT fields remain raw and no offset conversion was inferred",
+        "observation_end_time_raw": 806177876.0132265,
+        "observation_start_time_raw": 806177816.168544,
+        "observation_time_epoch": null,
+        "observation_time_units": "seconds",
+        "payload_valid_time_role": "unset; filename label is OBT and no documented UTC conversion was applied",
+        "pixel_index_semantics": "pixel_rows/pixel_cols align with payload rows and give original LA image indices after stride sampling and finite-GEOS-footprint filtering",
+        "pixel_utc_time_verified": false,
+        "planned_utc_time": "2025-07-19T06:10:00Z",
+        "projection_type": "GEOS",
+        "scene_acquisition_time_parsed_obt": "2025-07-19T06:16:56",
+        "scene_acquisition_time_raw": "20250719_061656",
+        "scene_acquisition_time_utc": null,
+        "scene_family": {
+          "calibration_table_version": "v.3.0_20190415",
+          "channel_spatial_resolution": "2.0",
+          "data_processing_center": "NMSC",
+          "data_processing_mode": "operation",
+          "file_format_version": "1.0.0_20181120",
+          "file_generation_time": "20250719_061818",
+          "geometric_correction_sw_version": "GK2_INRSM_V1.3",
+          "image_upperleft_latitude": 0.7709971705416278,
+          "image_upperleft_longitude": 2.0929034164225846,
+          "instrument_name": "AMI",
+          "mission_reference_time": "20250719_061000",
+          "number_of_total_swaths": 3,
+          "observation_mode": "LA",
+          "projection_type": "GEOS",
+          "resampling_kernel_type": "SINC",
+          "satellite_name": "GK-2A"
+        },
+        "source_files": [
+          {
+            "calibration_tuple_paired": true,
+            "number_of_valid_bits_per_pixel": 12,
+            "paired_bt_wavenumber_cm1": 1617.60924253134,
+            "paired_calibration_values": {
+              "Boltzmann_constant_k": 1.3806488e-23,
+              "DN_to_Radiance_Gain": -0.0108914673328399,
+              "DN_to_Radiance_Offset": 44.1777038574218,
+              "Plank_constant_h": 6.62606957e-34,
+              "Teff_to_Tbb_c0": -1.76279494011147,
+              "Teff_to_Tbb_c1": 1.00414910562278,
+              "Teff_to_Tbb_c2": -9.83310914319385e-07,
+              "bt_wavenumber_cm1": 1617.60924253134,
+              "channel_center_wavelength": "6.3",
+              "light_speed": 299792458.0
+            },
+            "sha256": "93c93b5d5cef6cd3bd0ad9940eea1678989adfc3d4567ce102981ea9f551c105",
+            "source_id": "gk2a_ami_le1b_wv063_la020ge_202507190616.nc",
+            "source_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190616/gk2a_ami_le1b_wv063_la020ge_202507190616.nc"
+          },
+          {
+            "calibration_tuple_paired": true,
+            "number_of_valid_bits_per_pixel": 13,
+            "paired_bt_wavenumber_cm1": 1441.57542876017,
+            "paired_calibration_values": {
+              "Boltzmann_constant_k": 1.3806488e-23,
+              "DN_to_Radiance_Gain": -0.00818779878318309,
+              "DN_to_Radiance_Offset": 66.7480773925781,
+              "Plank_constant_h": 6.62606957e-34,
+              "Teff_to_Tbb_c0": -0.334311414359106,
+              "Teff_to_Tbb_c1": 1.00097359874468,
+              "Teff_to_Tbb_c2": -4.94603070252304e-07,
+              "bt_wavenumber_cm1": 1441.57542876017,
+              "channel_center_wavelength": "6.9",
+              "light_speed": 299792458.0
+            },
+            "sha256": "32d21cde49c80a487f90a108dc5b028e80ddf7feecc5ce1d5e3911100b5901e5",
+            "source_id": "gk2a_ami_le1b_wv069_la020ge_202507190616.nc",
+            "source_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190616/gk2a_ami_le1b_wv069_la020ge_202507190616.nc"
+          },
+          {
+            "calibration_tuple_paired": true,
+            "number_of_valid_bits_per_pixel": 13,
+            "paired_bt_wavenumber_cm1": 1365.24999202444,
+            "paired_calibration_values": {
+              "Boltzmann_constant_k": 1.3806488e-23,
+              "DN_to_Radiance_Gain": -0.0096982717514038,
+              "DN_to_Radiance_Offset": 79.0608520507812,
+              "Plank_constant_h": 6.62606957e-34,
+              "Teff_to_Tbb_c0": -0.0613124859696595,
+              "Teff_to_Tbb_c1": 1.00019008722941,
+              "Teff_to_Tbb_c2": -1.05863656750499e-07,
+              "bt_wavenumber_cm1": 1365.24999202444,
+              "channel_center_wavelength": "7.3",
+              "light_speed": 299792458.0
+            },
+            "sha256": "b8f504a81af33f702cedf7284d0845d859c1620faa210b523106ad00008f450c",
+            "source_id": "gk2a_ami_le1b_wv073_la020ge_202507190616.nc",
+            "source_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190616/gk2a_ami_le1b_wv073_la020ge_202507190616.nc"
+          },
+          {
+            "calibration_tuple_paired": true,
+            "number_of_valid_bits_per_pixel": 13,
+            "paired_bt_wavenumber_cm1": 1164.94939285634,
+            "paired_calibration_values": {
+              "Boltzmann_constant_k": 1.3806488e-23,
+              "DN_to_Radiance_Gain": -0.0144806550815701,
+              "DN_to_Radiance_Offset": 118.050903320312,
+              "Plank_constant_h": 6.62606957e-34,
+              "Teff_to_Tbb_c0": -0.141418528203155,
+              "Teff_to_Tbb_c1": 1.00052232906885,
+              "Teff_to_Tbb_c2": -3.6287276076109e-07,
+              "bt_wavenumber_cm1": 1164.94939285634,
+              "channel_center_wavelength": "8.7",
+              "light_speed": 299792458.0
+            },
+            "sha256": "4e5b1f565a0d1b031ed95fa4b244a534e0288a4b6a16f1fe363ee99bfe3df2bf",
+            "source_id": "gk2a_ami_le1b_ir087_la020ge_202507190616.nc",
+            "source_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190616/gk2a_ami_le1b_ir087_la020ge_202507190616.nc"
+          },
+          {
+            "calibration_tuple_paired": true,
+            "number_of_valid_bits_per_pixel": 13,
+            "paired_bt_wavenumber_cm1": 1039.96021677611,
+            "paired_calibration_values": {
+              "Boltzmann_constant_k": 1.3806488e-23,
+              "DN_to_Radiance_Gain": -0.0178435463458299,
+              "DN_to_Radiance_Offset": 145.464874267578,
+              "Plank_constant_h": 6.62606957e-34,
+              "Teff_to_Tbb_c0": -0.114017728158198,
+              "Teff_to_Tbb_c1": 1.00047380585402,
+              "Teff_to_Tbb_c2": -3.74931509928403e-07,
+              "bt_wavenumber_cm1": 1039.96021677611,
+              "channel_center_wavelength": "9.6",
+              "light_speed": 299792458.0
+            },
+            "sha256": "d0cc524c1e0238013d57b25276bd7ef1d6371909b12cf3506219b29f478eeda2",
+            "source_id": "gk2a_ami_le1b_ir096_la020ge_202507190616.nc",
+            "source_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190616/gk2a_ami_le1b_ir096_la020ge_202507190616.nc"
+          },
+          {
+            "calibration_tuple_paired": true,
+            "number_of_valid_bits_per_pixel": 13,
+            "paired_bt_wavenumber_cm1": 966.153383926055,
+            "paired_calibration_values": {
+              "Boltzmann_constant_k": 1.3806488e-23,
+              "DN_to_Radiance_Gain": -0.0198196955025196,
+              "DN_to_Radiance_Offset": 161.580139160156,
+              "Plank_constant_h": 6.62606957e-34,
+              "Teff_to_Tbb_c0": -0.142866448475177,
+              "Teff_to_Tbb_c1": 1.00064069572049,
+              "Teff_to_Tbb_c2": -5.50443294960498e-07,
+              "bt_wavenumber_cm1": 966.153383926055,
+              "channel_center_wavelength": "10.5",
+              "light_speed": 299792458.0
+            },
+            "sha256": "cf86f1e8f1d20dca0859de6ed64d8ebcd9f953aa68d9df3cf406d42247323eb8",
+            "source_id": "gk2a_ami_le1b_ir105_la020ge_202507190616.nc",
+            "source_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190616/gk2a_ami_le1b_ir105_la020ge_202507190616.nc"
+          },
+          {
+            "calibration_tuple_paired": true,
+            "number_of_valid_bits_per_pixel": 13,
+            "paired_bt_wavenumber_cm1": 891.71305730126,
+            "paired_calibration_values": {
+              "Boltzmann_constant_k": 1.3806488e-23,
+              "DN_to_Radiance_Gain": -0.0216744858771562,
+              "DN_to_Radiance_Offset": 176.713439941406,
+              "Plank_constant_h": 6.62606957e-34,
+              "Teff_to_Tbb_c0": -0.249111718496148,
+              "Teff_to_Tbb_c1": 1.00121166873756,
+              "Teff_to_Tbb_c2": -1.13167964011665e-06,
+              "bt_wavenumber_cm1": 891.71305730126,
+              "channel_center_wavelength": "11.2",
+              "light_speed": 299792458.0
+            },
+            "sha256": "aa7dd410bf6e8cf462f8442cb19620a3b9c4f00d0d2c19672fff971c8ccbf8be",
+            "source_id": "gk2a_ami_le1b_ir112_la020ge_202507190616.nc",
+            "source_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190616/gk2a_ami_le1b_ir112_la020ge_202507190616.nc"
+          },
+          {
+            "calibration_tuple_paired": true,
+            "number_of_valid_bits_per_pixel": 13,
+            "paired_bt_wavenumber_cm1": 810.60900787123,
+            "paired_calibration_values": {
+              "Boltzmann_constant_k": 1.3806488e-23,
+              "DN_to_Radiance_Gain": -0.023379972204566,
+              "DN_to_Radiance_Offset": 190.649627685546,
+              "Plank_constant_h": 6.62606957e-34,
+              "Teff_to_Tbb_c0": -0.458113885722738,
+              "Teff_to_Tbb_c1": 1.00245520975535,
+              "Teff_to_Tbb_c2": -2.53064314720476e-06,
+              "bt_wavenumber_cm1": 810.60900787123,
+              "channel_center_wavelength": "12.3",
+              "light_speed": 299792458.0
+            },
+            "sha256": "3e4030bf214b28053bb64e3102252428f264de02f4f121f861599a2dd6f13685",
+            "source_id": "gk2a_ami_le1b_ir123_la020ge_202507190616.nc",
+            "source_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190616/gk2a_ami_le1b_ir123_la020ge_202507190616.nc"
+          },
+          {
+            "calibration_tuple_paired": true,
+            "number_of_valid_bits_per_pixel": 13,
+            "paired_bt_wavenumber_cm1": 753.590621482278,
+            "paired_calibration_values": {
+              "Boltzmann_constant_k": 1.3806488e-23,
+              "DN_to_Radiance_Gain": -0.0243037566542625,
+              "DN_to_Radiance_Offset": 198.224365234375,
+              "Plank_constant_h": 6.62606957e-34,
+              "Teff_to_Tbb_c0": -0.0938521568527657,
+              "Teff_to_Tbb_c1": 1.00053982112966,
+              "Teff_to_Tbb_c2": -5.94913715312849e-07,
+              "bt_wavenumber_cm1": 753.590621482278,
+              "channel_center_wavelength": "13.3",
+              "light_speed": 299792458.0
+            },
+            "sha256": "fcbbc384b80247cb1744f7514844eb78c47fbead7b514d665aa3f62c416a1686",
+            "source_id": "gk2a_ami_le1b_ir133_la020ge_202507190616.nc",
+            "source_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190616/gk2a_ami_le1b_ir133_la020ge_202507190616.nc"
+          }
+        ],
+        "source_product": "GK-2A AMI L1B LA020GE",
+        "stride": 1,
+        "time_semantics_source_url": "https://datasvc.nmsc.kma.go.kr/resources/common/pdf/%EC%B2%9C%EB%A6%AC%EC%95%88%EC%9C%84%EC%84%B1%202A%ED%98%B8%20%20%EC%9E%90%EB%A3%8C%ED%99%9C%EC%9A%A9%20QA.pdf",
+        "time_synchro_obt_raw": 806177816.168544,
+        "time_synchro_utc_raw": 806177816.1745166
+      },
+      "scene_date": "2025-07-19",
+      "selection_basis": "nearest finite GEOS pixel to fixed PR412 native j103/i48; distance only before DQF/BT inspection",
+      "source_files": [
+        {
+          "channel": "wv063",
+          "etag": "696f7ad261980bb78ae4fc02e9bc050b",
+          "immutable_reused_source": false,
+          "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_wv063_la020ge_202507190616.nc",
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190616/gk2a_ami_le1b_wv063_la020ge_202507190616.nc",
+          "sha256": "93c93b5d5cef6cd3bd0ad9940eea1678989adfc3d4567ce102981ea9f551c105",
+          "size_bytes": 357795
+        },
+        {
+          "channel": "wv069",
+          "etag": "8d6226f4d257a8c240f78dbdb179cc5e",
+          "immutable_reused_source": false,
+          "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_wv069_la020ge_202507190616.nc",
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190616/gk2a_ami_le1b_wv069_la020ge_202507190616.nc",
+          "sha256": "32d21cde49c80a487f90a108dc5b028e80ddf7feecc5ce1d5e3911100b5901e5",
+          "size_bytes": 456097
+        },
+        {
+          "channel": "wv073",
+          "etag": "46b0f23b8e9b4ada781e88dfa5de64a3",
+          "immutable_reused_source": false,
+          "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_wv073_la020ge_202507190616.nc",
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190616/gk2a_ami_le1b_wv073_la020ge_202507190616.nc",
+          "sha256": "b8f504a81af33f702cedf7284d0845d859c1620faa210b523106ad00008f450c",
+          "size_bytes": 477489
+        },
+        {
+          "channel": "ir087",
+          "etag": "065d21a048fb4b3a39c42561074af7c8",
+          "immutable_reused_source": false,
+          "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir087_la020ge_202507190616.nc",
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190616/gk2a_ami_le1b_ir087_la020ge_202507190616.nc",
+          "sha256": "4e5b1f565a0d1b031ed95fa4b244a534e0288a4b6a16f1fe363ee99bfe3df2bf",
+          "size_bytes": 529249
+        },
+        {
+          "channel": "ir096",
+          "etag": "a18c3df4cf4f1e14151a5ef1f18d7e7e",
+          "immutable_reused_source": false,
+          "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir096_la020ge_202507190616.nc",
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190616/gk2a_ami_le1b_ir096_la020ge_202507190616.nc",
+          "sha256": "d0cc524c1e0238013d57b25276bd7ef1d6371909b12cf3506219b29f478eeda2",
+          "size_bytes": 500309
+        },
+        {
+          "channel": "ir105",
+          "etag": "4afbf8cfa615549662ca0542be49a762",
+          "immutable_reused_source": false,
+          "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir105_la020ge_202507190616.nc",
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190616/gk2a_ami_le1b_ir105_la020ge_202507190616.nc",
+          "sha256": "cf86f1e8f1d20dca0859de6ed64d8ebcd9f953aa68d9df3cf406d42247323eb8",
+          "size_bytes": 531896
+        },
+        {
+          "channel": "ir112",
+          "etag": "2e9fec054c08b168a651450ba4e3d410",
+          "immutable_reused_source": false,
+          "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir112_la020ge_202507190616.nc",
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190616/gk2a_ami_le1b_ir112_la020ge_202507190616.nc",
+          "sha256": "aa7dd410bf6e8cf462f8442cb19620a3b9c4f00d0d2c19672fff971c8ccbf8be",
+          "size_bytes": 550300
+        },
+        {
+          "channel": "ir123",
+          "etag": "b0f0e6d23dfec656c7cafa700c4c8758",
+          "immutable_reused_source": false,
+          "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir123_la020ge_202507190616.nc",
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190616/gk2a_ami_le1b_ir123_la020ge_202507190616.nc",
+          "sha256": "3e4030bf214b28053bb64e3102252428f264de02f4f121f861599a2dd6f13685",
+          "size_bytes": 524310
+        },
+        {
+          "channel": "ir133",
+          "etag": "3fb8f849edeb4aa51516e06aa113b1a6",
+          "immutable_reused_source": false,
+          "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir133_la020ge_202507190616.nc",
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/raw/202507190616/gk2a_ami_le1b_ir133_la020ge_202507190616.nc",
+          "sha256": "fcbbc384b80247cb1744f7514844eb78c47fbead7b514d665aa3f62c416a1686",
+          "size_bytes": 506620
+        }
+      ],
+      "step_index": 61,
+      "time_assumption": "NOMINAL_FILENAME_TIME_AS_MODEL_UTC_RESEARCH_MODE",
+      "within_2p5km": true,
+      "y_bt_K": [
+        263.0161538230468,
+        292.55657709314266,
+        265.8469202441147,
+        295.3198182166753,
+        295.1885653095098,
+        292.27548543484755,
+        275.8460687114308
+      ]
+    }
+  ],
+  "shared_effective_H": {
+    "channels": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "coef_id": "paired-case_00-GK2A-AMI",
+    "fixture_case_dir": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/run-PR414_JUL19_0556_0606_0616_20261012_01/rttov_fixture",
+    "p_lay": {
+      "shape": [
+        66
+      ],
+      "dtype": "float64",
+      "sha256_f64": "15fa15c45a7716a7b4d327780c92df595233fe00b64189a29eabe825b9519401"
+    },
+    "p_half": {
+      "shape": [
+        67
+      ],
+      "dtype": "float64",
+      "sha256_f64": "ce9537f82fbac459345364577a0365bfa2576c8b7343495de1f1766c864228b0"
+    },
+    "t_ref": {
+      "shape": [
+        66
+      ],
+      "dtype": "float64",
+      "sha256_f64": "3f9672d2eabf31ea9fb62c3ed34ef8ba55c6b9eccc15a13332ca620976f7f770"
+    },
+    "q_ref": {
+      "shape": [
+        66
+      ],
+      "dtype": "float64",
+      "sha256_f64": "bd65b770677a02e92e73da4837326dd731ede0fe4629bc2351f3f355acac41e5"
+    },
+    "rho_d": {
+      "shape": [
+        1,
+        39
+      ],
+      "dtype": "float64",
+      "sha256_f64": "88e1826c9540523132fcb484243ba5c7690512ebd9bc6ba8300ef8af6c023829"
+    },
+    "dry_number": true,
+    "ami_kma_bt": true,
+    "ncmin_land": 10.0,
+    "ncmin_sea": 10.0,
+    "t_blend_octaves": 0.0,
+    "q_blend_octaves": 0.0,
+    "surface": {
+      "skin": {
+        "surftype": 1,
+        "watertype": 1,
+        "salinity": 35.0,
+        "foam_fraction": 0.0,
+        "snow_fraction": 0.0,
+        "fastem": [
+          3.0,
+          5.0,
+          15.0,
+          0.1,
+          0.3
+        ],
+        "t": 298.6808166503906
+      },
+      "near_surface": {
+        "t2m": 297.5748596191406,
+        "q2m": 27596.949879344724,
+        "wind_u10m": -2.4813899993896484,
+        "wind_v10m": 1.5687845945358276,
+        "wind_fetch": 0.0
+      }
+    },
+    "geometry": {
+      "zenangle": 42.47485308513994,
+      "azangle": 169.72180378382882,
+      "sunzenangle": 0.0,
+      "sunazangle": 0.0,
+      "latitude": 36.19700231203294,
+      "longitude": 122.09240151533507,
+      "elevation": 0.0
+    }
+  },
+  "native_integrations": 0,
+  "new_observation_dates": 0,
+  "full_host_cycling": false,
+  "initial_J_o": 26.649841375721227,
+  "final_J_o": 20.094911217481094,
+  "final_J_b": 0.19964886384766506,
+  "final_J": 20.294560081328758,
+  "gradient_Linf": 0.3850806305018468,
+  "gradient_L2": 1.3767559786807746,
+  "strict_gradient_converged": false,
+  "termination_reason": "UNKNOWN",
+  "optimizer": {
+    "n_iter": 2,
+    "func_evals": 4,
+    "step_t": 10,
+    "prev_loss": 20.63196106230365,
+    "group": {
+      "lr": 1,
+      "max_iter": 3,
+      "max_eval": 3,
+      "history_size": 8,
+      "tolerance_grad": 1e-10,
+      "tolerance_change": 1e-09,
+      "line_search_fn": "strong_wolfe"
+    }
+  },
+  "window_evaluations": 4,
+  "audit_evaluations": 1,
+  "logical_H_calls": 15,
+  "internal_RTTOV_calls": null,
+  "trace": [
+    {
+      "total": 26.649841375721227,
+      "j_state": 0.0,
+      "j_theta": 0.0,
+      "j_obs": 26.649841375721227,
+      "n_valid": {
+        "1": 7,
+        "31": 7,
+        "61": 7
+      },
+      "signature": {
+        "1": "c69198d7d88bec88582560459e4843dc3564234a65ed8b60f766763ebdf55e7a",
+        "31": "013205c390fc596c67373466b82585f385b416ac466f10cd00fb6c541afc9375",
+        "61": "14961904352b4b8ae9b2584cd56769fcd55509a78226215454d62001f226a145"
+      }
+    },
+    {
+      "total": 20.63196106230365,
+      "j_state": 0.2012638050455764,
+      "j_theta": 0.0,
+      "j_obs": 20.43069725725807,
+      "n_valid": {
+        "1": 7,
+        "31": 7,
+        "61": 7
+      },
+      "signature": {
+        "1": "c69198d7d88bec88582560459e4843dc3564234a65ed8b60f766763ebdf55e7a",
+        "31": "013205c390fc596c67373466b82585f385b416ac466f10cd00fb6c541afc9375",
+        "61": "14961904352b4b8ae9b2584cd56769fcd55509a78226215454d62001f226a145"
+      }
+    },
+    {
+      "total": 20.595711329010836,
+      "j_state": 0.1988236994978369,
+      "j_theta": 0.0,
+      "j_obs": 20.396887629513,
+      "n_valid": {
+        "1": 7,
+        "31": 7,
+        "61": 7
+      },
+      "signature": {
+        "1": "c69198d7d88bec88582560459e4843dc3564234a65ed8b60f766763ebdf55e7a",
+        "31": "013205c390fc596c67373466b82585f385b416ac466f10cd00fb6c541afc9375",
+        "61": "14961904352b4b8ae9b2584cd56769fcd55509a78226215454d62001f226a145"
+      }
+    },
+    {
+      "total": 20.294560081328758,
+      "j_state": 0.19964886384766506,
+      "j_theta": 0.0,
+      "j_obs": 20.094911217481094,
+      "n_valid": {
+        "1": 7,
+        "31": 7,
+        "61": 7
+      },
+      "signature": {
+        "1": "c69198d7d88bec88582560459e4843dc3564234a65ed8b60f766763ebdf55e7a",
+        "31": "013205c390fc596c67373466b82585f385b416ac466f10cd00fb6c541afc9375",
+        "61": "14961904352b4b8ae9b2584cd56769fcd55509a78226215454d62001f226a145"
+      }
+    },
+    {
+      "total": 20.294560081328758,
+      "j_state": 0.19964886384766506,
+      "j_theta": 0.0,
+      "j_obs": 20.094911217481094,
+      "n_valid": {
+        "1": 7,
+        "31": 7,
+        "61": 7
+      },
+      "signature": {
+        "1": "c69198d7d88bec88582560459e4843dc3564234a65ed8b60f766763ebdf55e7a",
+        "31": "013205c390fc596c67373466b82585f385b416ac466f10cd00fb6c541afc9375",
+        "61": "14961904352b4b8ae9b2584cd56769fcd55509a78226215454d62001f226a145"
+      }
+    }
+  ],
+  "baseline": [
+    {
+      "call": 1,
+      "step_index": 1,
+      "returned": true,
+      "BT_K": [
+        260.81874199152185,
+        290.9619408303017,
+        268.6852993205804,
+        293.47496365617684,
+        293.3053803916121,
+        290.6411739033245,
+        275.4326163752464
+      ],
+      "rad_quality": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "J_o": 8.461861229522402,
+      "signature": "c69198d7d88bec88582560459e4843dc3564234a65ed8b60f766763ebdf55e7a",
+      "n_valid": 7
+    },
+    {
+      "call": 2,
+      "step_index": 31,
+      "returned": true,
+      "BT_K": [
+        260.8187419918398,
+        290.9620694659912,
+        268.68536983779285,
+        293.4750519245444,
+        293.30545624011245,
+        290.6412407585414,
+        275.4326409150975
+      ],
+      "rad_quality": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "J_o": 9.110309309429791,
+      "signature": "013205c390fc596c67373466b82585f385b416ac466f10cd00fb6c541afc9375",
+      "n_valid": 7
+    },
+    {
+      "call": 3,
+      "step_index": 61,
+      "returned": true,
+      "BT_K": [
+        260.8187419921207,
+        290.96219027644526,
+        268.6854350354583,
+        293.4751327993484,
+        293.3055261980275,
+        290.64130415830283,
+        275.4326643272063
+      ],
+      "rad_quality": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "J_o": 9.077670836769034,
+      "signature": "14961904352b4b8ae9b2584cd56769fcd55509a78226215454d62001f226a145",
+      "n_valid": 7
+    }
+  ],
+  "accepted": [
+    {
+      "call": 13,
+      "step_index": 1,
+      "returned": true,
+      "BT_K": [
+        260.83867895951977,
+        291.8413022218276,
+        269.2357505752249,
+        294.21835736122,
+        293.9299037807682,
+        291.0973456770881,
+        275.61420272525925
+      ],
+      "rad_quality": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "J_o": 6.296961690078167,
+      "signature": "c69198d7d88bec88582560459e4843dc3564234a65ed8b60f766763ebdf55e7a",
+      "n_valid": 7
+    },
+    {
+      "call": 14,
+      "step_index": 31,
+      "returned": true,
+      "BT_K": [
+        260.83867895951977,
+        291.8413022218276,
+        269.2357505752249,
+        294.21835736122,
+        293.9299037807682,
+        291.0973456770881,
+        275.61420272525925
+      ],
+      "rad_quality": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "J_o": 6.910692202270275,
+      "signature": "013205c390fc596c67373466b82585f385b416ac466f10cd00fb6c541afc9375",
+      "n_valid": 7
+    },
+    {
+      "call": 15,
+      "step_index": 61,
+      "returned": true,
+      "BT_K": [
+        260.83867895951977,
+        291.8413022218276,
+        269.2357505752249,
+        294.21835736122,
+        293.9299037807682,
+        291.0973456770881,
+        275.61420272525925
+      ],
+      "rad_quality": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "J_o": 6.8872573251326505,
+      "signature": "14961904352b4b8ae9b2584cd56769fcd55509a78226215454d62001f226a145",
+      "n_valid": 7
+    }
+  ],
+  "events": [
+    {
+      "call": 1,
+      "step_index": 1,
+      "returned": true,
+      "BT_K": [
+        260.81874199152185,
+        290.9619408303017,
+        268.6852993205804,
+        293.47496365617684,
+        293.3053803916121,
+        290.6411739033245,
+        275.4326163752464
+      ],
+      "rad_quality": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "J_o": 8.461861229522402,
+      "signature": "c69198d7d88bec88582560459e4843dc3564234a65ed8b60f766763ebdf55e7a",
+      "n_valid": 7
+    },
+    {
+      "call": 2,
+      "step_index": 31,
+      "returned": true,
+      "BT_K": [
+        260.8187419918398,
+        290.9620694659912,
+        268.68536983779285,
+        293.4750519245444,
+        293.30545624011245,
+        290.6412407585414,
+        275.4326409150975
+      ],
+      "rad_quality": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "J_o": 9.110309309429791,
+      "signature": "013205c390fc596c67373466b82585f385b416ac466f10cd00fb6c541afc9375",
+      "n_valid": 7
+    },
+    {
+      "call": 3,
+      "step_index": 61,
+      "returned": true,
+      "BT_K": [
+        260.8187419921207,
+        290.96219027644526,
+        268.6854350354583,
+        293.4751327993484,
+        293.3055261980275,
+        290.64130415830283,
+        275.4326643272063
+      ],
+      "rad_quality": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "J_o": 9.077670836769034,
+      "signature": "14961904352b4b8ae9b2584cd56769fcd55509a78226215454d62001f226a145",
+      "n_valid": 7
+    },
+    {
+      "call": 4,
+      "step_index": 1,
+      "returned": true,
+      "BT_K": [
+        260.8207423273103,
+        291.82001802662023,
+        269.2219678832352,
+        294.1959171412059,
+        293.9013203606062,
+        291.0628486380863,
+        275.58574234394774
+      ],
+      "rad_quality": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "J_o": 6.4070905160235325,
+      "signature": "c69198d7d88bec88582560459e4843dc3564234a65ed8b60f766763ebdf55e7a",
+      "n_valid": 7
+    },
+    {
+      "call": 5,
+      "step_index": 31,
+      "returned": true,
+      "BT_K": [
+        260.8207423273103,
+        291.82001802662023,
+        269.2219678832352,
+        294.1959171412059,
+        293.9013203606062,
+        291.0628486380863,
+        275.58574234394774
+      ],
+      "rad_quality": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "J_o": 7.024220247201591,
+      "signature": "013205c390fc596c67373466b82585f385b416ac466f10cd00fb6c541afc9375",
+      "n_valid": 7
+    },
+    {
+      "call": 6,
+      "step_index": 61,
+      "returned": true,
+      "BT_K": [
+        260.8207423273103,
+        291.82001802662023,
+        269.2219678832352,
+        294.1959171412059,
+        293.9013203606062,
+        291.0628486380863,
+        275.58574234394774
+      ],
+      "rad_quality": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "J_o": 6.999386494032948,
+      "signature": "14961904352b4b8ae9b2584cd56769fcd55509a78226215454d62001f226a145",
+      "n_valid": 7
+    },
+    {
+      "call": 7,
+      "step_index": 1,
+      "returned": true,
+      "BT_K": [
+        260.82253597278554,
+        291.8221500504041,
+        269.2233490338724,
+        294.19816695361123,
+        293.9041858407986,
+        291.06630503632607,
+        275.5885916914507
+      ],
+      "rad_quality": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "J_o": 6.396000889053806,
+      "signature": "c69198d7d88bec88582560459e4843dc3564234a65ed8b60f766763ebdf55e7a",
+      "n_valid": 7
+    },
+    {
+      "call": 8,
+      "step_index": 31,
+      "returned": true,
+      "BT_K": [
+        260.82253597278554,
+        291.8221500504041,
+        269.2233490338724,
+        294.19816695361123,
+        293.9041858407986,
+        291.06630503632607,
+        275.5885916914507
+      ],
+      "rad_quality": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "J_o": 7.012790221681748,
+      "signature": "013205c390fc596c67373466b82585f385b416ac466f10cd00fb6c541afc9375",
+      "n_valid": 7
+    },
+    {
+      "call": 9,
+      "step_index": 61,
+      "returned": true,
+      "BT_K": [
+        260.82253597278554,
+        291.8221500504041,
+        269.2233490338724,
+        294.19816695361123,
+        293.9041858407986,
+        291.06630503632607,
+        275.5885916914507
+      ],
+      "rad_quality": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "J_o": 6.9880965187774455,
+      "signature": "14961904352b4b8ae9b2584cd56769fcd55509a78226215454d62001f226a145",
+      "n_valid": 7
+    },
+    {
+      "call": 10,
+      "step_index": 1,
+      "returned": true,
+      "BT_K": [
+        260.83867895951977,
+        291.8413022218276,
+        269.2357505752249,
+        294.21835736122,
+        293.9299037807682,
+        291.0973456770881,
+        275.61420272525925
+      ],
+      "rad_quality": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "J_o": 6.296961690078167,
+      "signature": "c69198d7d88bec88582560459e4843dc3564234a65ed8b60f766763ebdf55e7a",
+      "n_valid": 7
+    },
+    {
+      "call": 11,
+      "step_index": 31,
+      "returned": true,
+      "BT_K": [
+        260.83867895951977,
+        291.8413022218276,
+        269.2357505752249,
+        294.21835736122,
+        293.9299037807682,
+        291.0973456770881,
+        275.61420272525925
+      ],
+      "rad_quality": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "J_o": 6.910692202270275,
+      "signature": "013205c390fc596c67373466b82585f385b416ac466f10cd00fb6c541afc9375",
+      "n_valid": 7
+    },
+    {
+      "call": 12,
+      "step_index": 61,
+      "returned": true,
+      "BT_K": [
+        260.83867895951977,
+        291.8413022218276,
+        269.2357505752249,
+        294.21835736122,
+        293.9299037807682,
+        291.0973456770881,
+        275.61420272525925
+      ],
+      "rad_quality": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "J_o": 6.8872573251326505,
+      "signature": "14961904352b4b8ae9b2584cd56769fcd55509a78226215454d62001f226a145",
+      "n_valid": 7
+    },
+    {
+      "call": 13,
+      "step_index": 1,
+      "returned": true,
+      "BT_K": [
+        260.83867895951977,
+        291.8413022218276,
+        269.2357505752249,
+        294.21835736122,
+        293.9299037807682,
+        291.0973456770881,
+        275.61420272525925
+      ],
+      "rad_quality": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "J_o": 6.296961690078167,
+      "signature": "c69198d7d88bec88582560459e4843dc3564234a65ed8b60f766763ebdf55e7a",
+      "n_valid": 7
+    },
+    {
+      "call": 14,
+      "step_index": 31,
+      "returned": true,
+      "BT_K": [
+        260.83867895951977,
+        291.8413022218276,
+        269.2357505752249,
+        294.21835736122,
+        293.9299037807682,
+        291.0973456770881,
+        275.61420272525925
+      ],
+      "rad_quality": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "J_o": 6.910692202270275,
+      "signature": "013205c390fc596c67373466b82585f385b416ac466f10cd00fb6c541afc9375",
+      "n_valid": 7
+    },
+    {
+      "call": 15,
+      "step_index": 61,
+      "returned": true,
+      "BT_K": [
+        260.83867895951977,
+        291.8413022218276,
+        269.2357505752249,
+        294.21835736122,
+        293.9299037807682,
+        291.0973456770881,
+        275.61420272525925
+      ],
+      "rad_quality": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "J_o": 6.8872573251326505,
+      "signature": "14961904352b4b8ae9b2584cd56769fcd55509a78226215454d62001f226a145",
+      "n_valid": 7
+    }
+  ],
+  "objective_audit": "CROSSCHECKED_ALL_THREE_SLOTS",
+  "checkpoint": {
+    "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/run-PR414_JUL19_0556_0606_0616_20261012_01/private/accepted_window.npz",
+    "sha256": "d3bad26034b327128dfbf1242f32eb013e3dda0bc30315cd8368c4440c02ca26",
+    "array_keys": [
+      "accepted_1__bt",
+      "accepted_1__rq",
+      "accepted_31__bt",
+      "accepted_31__rq",
+      "accepted_61__bt",
+      "accepted_61__rq",
+      "accepted_initial__bg",
+      "accepted_initial__nc",
+      "accepted_initial__nccn",
+      "accepted_initial__ni",
+      "accepted_initial__nr",
+      "accepted_initial__qc",
+      "accepted_initial__qg",
+      "accepted_initial__qi",
+      "accepted_initial__qr",
+      "accepted_initial__qs",
+      "accepted_initial__qv",
+      "accepted_initial__th",
+      "accepted_slot_1__bg",
+      "accepted_slot_1__nc",
+      "accepted_slot_1__nccn",
+      "accepted_slot_1__ni",
+      "accepted_slot_1__nr",
+      "accepted_slot_1__qc",
+      "accepted_slot_1__qg",
+      "accepted_slot_1__qi",
+      "accepted_slot_1__qr",
+      "accepted_slot_1__qs",
+      "accepted_slot_1__qv",
+      "accepted_slot_1__th",
+      "accepted_slot_31__bg",
+      "accepted_slot_31__nc",
+      "accepted_slot_31__nccn",
+      "accepted_slot_31__ni",
+      "accepted_slot_31__nr",
+      "accepted_slot_31__qc",
+      "accepted_slot_31__qg",
+      "accepted_slot_31__qi",
+      "accepted_slot_31__qr",
+      "accepted_slot_31__qs",
+      "accepted_slot_31__qv",
+      "accepted_slot_31__th",
+      "accepted_slot_61__bg",
+      "accepted_slot_61__nc",
+      "accepted_slot_61__nccn",
+      "accepted_slot_61__ni",
+      "accepted_slot_61__nr",
+      "accepted_slot_61__qc",
+      "accepted_slot_61__qg",
+      "accepted_slot_61__qi",
+      "accepted_slot_61__qr",
+      "accepted_slot_61__qs",
+      "accepted_slot_61__qv",
+      "accepted_slot_61__th",
+      "b_sigma__bg",
+      "b_sigma__nc",
+      "b_sigma__nccn",
+      "b_sigma__ni",
+      "b_sigma__nr",
+      "b_sigma__qc",
+      "b_sigma__qg",
+      "b_sigma__qi",
+      "b_sigma__qr",
+      "b_sigma__qs",
+      "b_sigma__qv",
+      "b_sigma__th",
+      "background_1__bt",
+      "background_1__rq",
+      "background_31__bt",
+      "background_31__rq",
+      "background_61__bt",
+      "background_61__rq",
+      "background_initial__bg",
+      "background_initial__nc",
+      "background_initial__nccn",
+      "background_initial__ni",
+      "background_initial__nr",
+      "background_initial__qc",
+      "background_initial__qg",
+      "background_initial__qi",
+      "background_initial__qr",
+      "background_initial__qs",
+      "background_initial__qv",
+      "background_initial__th",
+      "background_slot_1__bg",
+      "background_slot_1__nc",
+      "background_slot_1__nccn",
+      "background_slot_1__ni",
+      "background_slot_1__nr",
+      "background_slot_1__qc",
+      "background_slot_1__qg",
+      "background_slot_1__qi",
+      "background_slot_1__qr",
+      "background_slot_1__qs",
+      "background_slot_1__qv",
+      "background_slot_1__th",
+      "background_slot_31__bg",
+      "background_slot_31__nc",
+      "background_slot_31__nccn",
+      "background_slot_31__ni",
+      "background_slot_31__nr",
+      "background_slot_31__qc",
+      "background_slot_31__qg",
+      "background_slot_31__qi",
+      "background_slot_31__qr",
+      "background_slot_31__qs",
+      "background_slot_31__qv",
+      "background_slot_31__th",
+      "background_slot_61__bg",
+      "background_slot_61__nc",
+      "background_slot_61__nccn",
+      "background_slot_61__ni",
+      "background_slot_61__nr",
+      "background_slot_61__qc",
+      "background_slot_61__qg",
+      "background_slot_61__qi",
+      "background_slot_61__qr",
+      "background_slot_61__qs",
+      "background_slot_61__qv",
+      "background_slot_61__th",
+      "control__gradient_parameters",
+      "control__gradient_state",
+      "control__v_state",
+      "control__v_theta",
+      "fixed_optical_rho_d",
+      "forcing__delz",
+      "forcing__p",
+      "forcing__pii",
+      "forcing__rho",
+      "observations_1__mask",
+      "observations_1__y_bt",
+      "observations_31__mask",
+      "observations_31__y_bt",
+      "observations_61__mask",
+      "observations_61__y_bt",
+      "p_half",
+      "p_lay"
+    ]
+  },
+  "active_controls": {
+    "th": 39,
+    "qv": 12,
+    "qc": 0,
+    "qr": 0,
+    "qi": 0,
+    "qs": 0,
+    "qg": 0,
+    "nccn": 0,
+    "nc": 0,
+    "ni": 0,
+    "nr": 0,
+    "bg": 0
+  },
+  "interpretation": "Forecast-backed prescribed-forcing local KDM joint window through06:16; not saved host forecast later states or cycling. Nominal OBT filenames treated as modelUTC by research hypothesis, pixelUTC unverified. One bounded finite-budget attempt, not a strict convergence or atmospheric truth claim."
+}

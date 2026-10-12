@@ -6,6 +6,7 @@ date_modified: 2026-07-14
 # Hot Cache
 
 ## Current Focus
+- [[sources/pr414-jul19-ten-minute-local-window-2026-10-12]] — Actual nominal0556/0606/0616 joint local window completed once; gradient remains unconverged and other dates pending.
 - [[sources/pr413-cloud-bounded-convergence-2026-10-12]] — One eight-iteration-budget check returned at5 iterations/10 evaluations; gradient ratio4.31%, still unconverged and full accepted T/Q changed.
 - [[sources/pr412-natural-native-process-case-2026-10-12]] — One pre-residual natural warm-QC target, actual AMI binding and joint M endpoint response; July20/21 still pending.
 - [[sources/pr409-problem-evidence-alignment-2026-10-11]] — Current T/Q estimation, upper process science and engineering evidence separated; reviewer-management79 is not a scientific completion criterion.

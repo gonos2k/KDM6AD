@@ -1,0 +1,82 @@
+{
+  "authoritative_success_receipts": {
+    "downloaded_bytes": 8849101,
+    "downloaded_files": 18,
+    "observations_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr414_ami_window_2026-10-12/OBSERVATIONS.json",
+    "observations_sha256": "6c60d3f00493026321519977993e778815acd6a3072cc2482c271c362e386f85",
+    "partial_files_remaining": [],
+    "per_object_attempts": {
+      "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir087_la020ge_202507190606.nc": 1,
+      "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir087_la020ge_202507190616.nc": 1,
+      "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir096_la020ge_202507190606.nc": 1,
+      "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir096_la020ge_202507190616.nc": 1,
+      "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir105_la020ge_202507190606.nc": 1,
+      "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir105_la020ge_202507190616.nc": 1,
+      "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir112_la020ge_202507190606.nc": 1,
+      "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir112_la020ge_202507190616.nc": 1,
+      "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir123_la020ge_202507190606.nc": 1,
+      "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir123_la020ge_202507190616.nc": 1,
+      "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir133_la020ge_202507190606.nc": 1,
+      "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir133_la020ge_202507190616.nc": 1,
+      "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_wv063_la020ge_202507190606.nc": 1,
+      "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_wv063_la020ge_202507190616.nc": 1,
+      "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_wv069_la020ge_202507190606.nc": 1,
+      "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_wv069_la020ge_202507190616.nc": 1,
+      "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_wv073_la020ge_202507190606.nc": 1,
+      "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_wv073_la020ge_202507190616.nc": 1
+    },
+    "plan_sha256": "97d18a9e85689b2cf69d8c442db6bc977b9a65b1f12cc1a740be5586a3867835",
+    "private_decode_receipt_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/DECODE_RECEIPT.json",
+    "private_decode_receipt_sha256": "6e43e0f07c6ac6c1cdfbef8fad24ac70a9e5ff8d3cc38d7df827a4d3e37840e0",
+    "private_download_receipt_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/DOWNLOAD_RECEIPT.json",
+    "private_download_receipt_sha256": "126ef51880a2353db4ae789bc85724cd838570d754701dc0d287bd6a97b5fd16",
+    "three_observation_slots": [
+      {
+        "all_seven_analysis_channels_finite_and_dqf0": true,
+        "nearest_pixel": {
+          "column": 49,
+          "latitude_deg": 36.19700231203294,
+          "longitude_deg": 122.09240151533507,
+          "row": 289
+        },
+        "nominal_slot_obt": "202507190556",
+        "step_index": 1
+      },
+      {
+        "all_seven_analysis_channels_finite_and_dqf0": true,
+        "nearest_pixel": {
+          "column": 49,
+          "latitude_deg": 36.19700231203294,
+          "longitude_deg": 122.09240151533507,
+          "row": 289
+        },
+        "nominal_slot_obt": "202507190606",
+        "step_index": 31
+      },
+      {
+        "all_seven_analysis_channels_finite_and_dqf0": true,
+        "nearest_pixel": {
+          "column": 49,
+          "latitude_deg": 36.19700231203294,
+          "longitude_deg": 122.09240151533507,
+          "row": 289
+        },
+        "nominal_slot_obt": "202507190616",
+        "step_index": 61
+      }
+    ],
+    "unique_key_count": 18
+  },
+  "historical_assessment": {
+    "automatic_retry_or_second_GET": false,
+    "incorrect_assessment": "An interim status message inferred a stalled download at 16/18 after observing a 0-byte partial for the 17th file, and a self-authored DOWNLOAD_FAILURE.json was briefly written.",
+    "retracted": true,
+    "why_incorrect": "The one-shot process continued asynchronously. A later filesystem snapshot shows the original progress journal has 18 unique successful entries, all18 exact objects were downloaded once, the authoritative DOWNLOAD_RECEIPT reports ALL_18_PLANNED_OBJECTS_DOWNLOADED, decode completed, and all three seven-channel gates passed. The premature failure file was removed when this contradiction was detected."
+  },
+  "limits": [
+    "This correction documents a premature agent-side status inference; it does not change the immutable predeclared plan, successful download/decode receipts, or observation payload.",
+    "No RTTOV, M, optimizer, or native-model analysis was run by the observation preparer."
+  ],
+  "schema": "pr414_download_interruption_assessment_correction_v1",
+  "status": "CORRECTED_COMPLETED_NO_RETRY"
+}

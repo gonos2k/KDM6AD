@@ -43,3 +43,11 @@ or optimization was run.
 
 ## Initialization Note (historical)
 This is an Obsidian-ready vault. The formal kg schema pin was not created because the global schema files were not available in the expected local skill directories.
+
+## Jul19 multi-time local analysis
+
+[[sources/pr414-jul19-ten-minute-local-window-2026-10-12]] records three real AMI
+scenes jointly fitted along61×20s held-forcing local transitions from the normal
+05:55:40 native state. All-slot audit and checkpoint returned, strict convergence
+remains unmet. This extends temporal calculation coverage on Jul19, not full
+host cycling, independent-date or forecast-skill evidence.

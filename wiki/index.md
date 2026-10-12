@@ -23,6 +23,7 @@ date_modified: 2026-10-08
 - [[queries/_index|Queries]] - 2 pages
 
 ## Sources
+- [[sources/pr414-jul19-ten-minute-local-window-2026-10-12|Jul19 actual ten-minute local window]] — Three actual AMI slots jointly audited under held forcing; finite-budget, not host cycling/new date.
 - [[sources/pr413-cloud-bounded-convergence-2026-10-12|Bounded convergence of natural cloudy column]] — Same problem, lower gradient/cost and QC-loss persistence; strict convergence and other dates remain open.
 - [[sources/pr412-natural-native-process-case-2026-10-12|Natural native warm-QC case]] — Same-date new column; actual analysis and paired H response, with nonconvergence and no process-rate/date claim.
 - [[sources/team-intake-capture-audit-2026-10-10|Team intake/capture boundary audit]] - Reproduced and repaired conditional research-tool faults; running model and science limits kept separate.

@@ -461,3 +461,5 @@ The [follow-up checklist](../harness/evidence/CHECKLIST_pr366_epoch_srf_error_20
 records operational SRF-model history, the scalar-response limitation and local
 bias/covariance/Jacobian coordinate rules. No physical approval, covariance fit,
 SRF substitution or production algorithm changed.
+
+- 2026-10-12: Added [[sources/pr414-jul19-ten-minute-local-window-2026-10-12]]; actual three-slot joint window/real RTTOV audit and saved gradient, held-forcing/nominal-time/nonconvergence limits, scoped additional-directory inventory. No other-date model input substitution.
