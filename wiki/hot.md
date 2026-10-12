@@ -6,6 +6,7 @@ date_modified: 2026-07-14
 # Hot Cache
 
 ## Current Focus
+- [[sources/pr413-cloud-bounded-convergence-2026-10-12]] — One eight-iteration-budget check returned at5 iterations/10 evaluations; gradient ratio4.31%, still unconverged and full accepted T/Q changed.
 - [[sources/pr412-natural-native-process-case-2026-10-12]] — One pre-residual natural warm-QC target, actual AMI binding and joint M endpoint response; July20/21 still pending.
 - [[sources/pr409-problem-evidence-alignment-2026-10-11]] — Current T/Q estimation, upper process science and engineering evidence separated; reviewer-management79 is not a scientific completion criterion.
 - [[sources/pr408-synthetic-capture-success-2026-10-11]] — One positive synthetic-H case traverses real KDM/AD/minimizer/final audit/checkpoint; V4 unchanged, actual new-date RTTOV analysis still pending.

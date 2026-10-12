@@ -1,0 +1,261 @@
+{
+  "schema": "pr413_cloud_convergence_declaration_v1",
+  "base_main": "732f5482",
+  "run_id": "PR413_CLOUD_CONVERGENCE_20261012_01",
+  "experiment_id": "PR413_CLOUD_CONVERGENCE_8ITER_20261012",
+  "input_case_id": "PR412_JUL19_NATURAL_LIQUID_COLUMN",
+  "runner_sha256": "bbb4ab91a1d96d063f6662a99fe9105b10b7f71f753e6ef7040ddb047b9143ae",
+  "v4_driver_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr407_native_saved_time_bound_2026-10-11/run_case_analysis.py",
+  "intake_manifest": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr412_native_process_case_2026-10-12/INTAKE.json",
+  "intake_npz": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr412_native_process_20261012/inputs/SELECTED_CORE_BOUND_V4.npz",
+  "baseline_capture": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr412_native_process_case_2026-10-12/CAPTURE.json",
+  "baseline_preflight": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr412_native_process_case_2026-10-12/PREFLIGHT.json",
+  "baseline_driver": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr412_native_process_20261012/runs/PR412_NATURAL_LIQUID_JUL19_20261012_01/DRIVER_RESULT.json",
+  "baseline_fixture": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr412_native_process_20261012/runs/PR412_NATURAL_LIQUID_JUL19_20261012_01/rttov_fixture",
+  "template_fixture": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00",
+  "output_root": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr413_cloud_convergence_20261012/run-PR413_CLOUD_CONVERGENCE_20261012_01",
+  "bindings": {
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr412_native_process_case_2026-10-12/INTAKE.json": "092808f0919fbd7faf9b9701324839abb7d91c10c039cf4a3d038c2265463d91",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr412_native_process_case_2026-10-12/CASE.json": "d906217d7892baf83a37cc2459c5b115ccbf3fffa9594374993d45d6db0f0cc3",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr412_native_process_case_2026-10-12/PREFLIGHT.json": "3809aa7595aec1a38dcf1ebaed4c0b0769264acb55c918549d7949054743b635",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr412_native_process_case_2026-10-12/CAPTURE.json": "746b6dd782d6e44d26e897e2c579f69f53d8d6c1de1b2a4087ad62c674195103",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr412_native_process_case_2026-10-12/PREDECLARED.json": "5dd153af34d76ef819e145f67be4654d5c70f95925da83a4f19254f7e83163ad",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr412_native_process_case_2026-10-12/RESULT.json": "00664657b2fe60d9056ebffd7e4573b98dc2bfee756865b909bdf002fab5413e",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/pr412_native_process_20261012/inputs/SELECTED_CORE_BOUND_V4.npz": "de976bd9fd15ee5c5931c5e47ac1e280fa3e818f29a63e2e8b9828aae67931ec",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/pr412_native_process_20261012/runs/PR412_NATURAL_LIQUID_JUL19_20261012_01/private/accepted_state.npz": "a928ef2daeac7664998a6f869a489181422737a28fd3dc320dc4c2a64e1517dc",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/pr412_native_process_20261012/runs/PR412_NATURAL_LIQUID_JUL19_20261012_01/DRIVER_RESULT.json": "b96a8c905146d9203405c15adc262454b525269be803253350a6c9da9d15cb65",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr407_native_saved_time_bound_2026-10-11/run_case_analysis.py": "50416adbbf8331e9eaae229f7b6b04309ce506bd4ba909da83b7b875a128e801",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr407_native_saved_time_bound_2026-10-11/intake_native_case_v4.py": "e1449548820510edc4fb213872df4446405058a318f8b99cd811d8470a139ae5",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr407_native_saved_time_bound_2026-10-11/case_capture_adapter.py": "31b82fba7099e9c3424119e7e2692329303a9c199516cede52f6cb868cd8e83a",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr395_native_tq_intake_2026-10-10/run_analysis.py": "a2de00ae0d9b546fa713ad795f7f934eb162f7014e47f6b75d24c45f47b2be16",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr395_tq_state_capture_2026-10-10/capture_tq_state.py": "e45375e7147ed71240afb49158673d9681511276e9e813e6272b21290d68e2a3",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr412_native_process_case_2026-10-12/select_native_column.py": "9bf955a0e37c920b7c81fed249588ebb234544c7a1d33af10d8f8bf833ca1bc6",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr412_native_process_case_2026-10-12/recover_selection_result.py": "fc482fffad649f0f71677cf565c97d5a74d97d08d989438825492b25f4d6e2f9",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr412_native_process_case_2026-10-12/bind_selected_case.py": "23d8b9365fcf5108726d2998eef6492df89370ae739eb05f18063546f6cc347f",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/da_single_column.py": "7a827f340c1fef189c0f70b65cd60bfd2af0938091b44eed90083a0439c63038",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/da_fulldomain.py": "fcd783ec9efed50fe8c3a89e11b4f162447df32c5109e79e06a5f0bf71bfa984",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/da_dual.py": "57ff5a832cc6b011d394f3b462dd344cb93177cb1a81af59edcb04c040fd256e",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/da_window.py": "354b7b026aac23dc93807020e45b3d5311f40725de843e71fc0a5203c6a4d50c",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/da_cvt.py": "64a4826b3c6c3985a89e3d590ea61e53b1c62c3352254833c56e06a1a6099021",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/da_driver.py": "1ee8f001837bc633adc58e8331628e7cc0bb7b164662d466cf5f4c1d30739f7b",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/runtime.py": "e505c3a1d42fb2880d0ce3d65381488a06528de8d4133b39d4e9a573cef997ac",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/coordinator.py": "05981b7a19c8d4fe262cb8080b14ddf3b4eb5c027b58604803b2e0b80764a0bd",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/thermo.py": "5278c14c6d87178af5ee963eef59d3297b923fa374412fd854c01e43ffb1b5cd",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/fconst.py": "c6529c9a543ad8ed0a33524114f30f5665cd9a7b6983b32a917cc39debd377f2",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/rttov_bridge.py": "3c61c7fa6baa21ba294b37cdc17886c0f17979ee4adfae0af7e22154af964116",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/obs/allsky_shard.py": "18a101d1946e87d08d87a182cfe547794a794a9b280c2720f874d59352813afc",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/obs/model_profile_builder.py": "b9264edb61f32010c025718ad59ef686746f156e2a3c011c473943fbf82788ab",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/obs/rttov_input_builder.py": "902e1554eb6e4f699d74cc770059daad847b3b35ad0dd9516d02cae35ad280a6",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/obs/rttov_obs_operator.py": "d28149c211c1ccaffedcb18642e2337cc79b5cebc4b6aa8cf4c9a90978363b12",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/obs/rttov_case_writer.py": "0203dbfd899996caedf2e8c94e34faabf949fabbaec1688cbda00b6e163081af",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/obs/rttov_runner.py": "100e39c6f56ab5e1ccadb59f6b439ebd20255d139b5d9965063bf0ed393fa441",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/obs/ami_bt_coordinate.py": "e1aec7c9270bbeff6dec9aee0f7b3fa3741528b3e060bc3aa74be721e3ac97cc",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/obs/obs_loss.py": "4c39b69bf54be9929d48cc97881887f80fb1f7c9a05d68a6a6111bda1ca9d855"
+  },
+  "external_assets": {
+    "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe": {
+      "resolved_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe",
+      "sha256": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+      "bytes": 4184448
+    },
+    "/Users/yhlee/AD-RTTOV/external/rttov14/current/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat": {
+      "resolved_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat",
+      "sha256": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+      "bytes": 1894428
+    },
+    "/Users/yhlee/AD-RTTOV/external/rttov14/current/rtcoef_rttov14/hydrotable_visir/rttov_hydrotable_gkompsat2_1_ami.dat": {
+      "resolved_path": "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/hydrotable_visir/rttov_hydrotable_gkompsat2_1_ami.dat",
+      "sha256": "fdbe99ea68fd750e146fb78a798ab72b8568e4a3d545a2d847263cb374746890",
+      "bytes": 3442018
+    },
+    "/opt/local/lib/libnetcdff.7.dylib": {
+      "resolved_path": "/opt/local/lib/libnetcdff.7.dylib",
+      "sha256": "779525a1467e9384f03b430e3602beb4f405ab88dd2eed308f545e925953d2ef",
+      "bytes": 380927
+    },
+    "/opt/local/lib/libnetcdf.19.dylib": {
+      "resolved_path": "/opt/local/lib/libnetcdf.19.dylib",
+      "sha256": "1f62583f8f6f0e468ea82679267596d2f5815dcd234f2be945c841ea0abe4b3a",
+      "bytes": 1177440
+    },
+    "/opt/homebrew/opt/gcc/lib/gcc/current/libgfortran.5.dylib": {
+      "resolved_path": "/opt/homebrew/Cellar/gcc/15.2.0/lib/gcc/current/libgfortran.5.dylib",
+      "sha256": "d3167911d6f65ec5a07320865a2314a3d145dddf529dde52ba4b6e1211018378",
+      "bytes": 2215232
+    },
+    "/opt/homebrew/opt/gcc/lib/gcc/current/libgomp.1.dylib": {
+      "resolved_path": "/opt/homebrew/Cellar/gcc/15.2.0/lib/gcc/current/libgomp.1.dylib",
+      "sha256": "2399f4dc62036e4bdc5b8ed6b1fb99a585f2627326dd7e8b80cae88b2906e0d4",
+      "bytes": 441344
+    },
+    "/opt/homebrew/opt/gcc/lib/gcc/current/libquadmath.0.dylib": {
+      "resolved_path": "/opt/homebrew/Cellar/gcc/15.2.0/lib/gcc/current/libquadmath.0.dylib",
+      "sha256": "9f231a97e89de90f72a0471d69c4b12fb60e0ef869b2ba1dd3c6e6a0f0e054e7",
+      "bytes": 362768
+    },
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/channels.txt": {
+      "resolved_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/channels.txt",
+      "sha256": "7323b398bc7f268a6db5f463cf7f8f3dc2645c77d475bc5beaf5d3b051f4c80b",
+      "bytes": 25
+    },
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/coef.txt": {
+      "resolved_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/coef.txt",
+      "sha256": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+      "bytes": 186
+    },
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/lprofiles.txt": {
+      "resolved_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/lprofiles.txt",
+      "sha256": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de",
+      "bytes": 18
+    },
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/datetime.txt": {
+      "resolved_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/datetime.txt",
+      "sha256": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86",
+      "bytes": 25
+    },
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/gas_units.txt": {
+      "resolved_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/gas_units.txt",
+      "sha256": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555",
+      "bytes": 25
+    },
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/angles.txt": {
+      "resolved_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/angles.txt",
+      "sha256": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161",
+      "bytes": 198
+    },
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/be.txt": {
+      "resolved_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/be.txt",
+      "sha256": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1",
+      "bytes": 10
+    },
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/prof_id.txt": {
+      "resolved_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/prof_id.txt",
+      "sha256": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793",
+      "bytes": 9
+    },
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/co2.txt": {
+      "resolved_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/co2.txt",
+      "sha256": "075c725200902dd1505635d3704db9416ef88f960be482819c17db9422ef7553",
+      "bytes": 1584
+    },
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/hydro.txt": {
+      "resolved_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/hydro.txt",
+      "sha256": "733e33e171990e01e27b0a485e22d267c37e3a693d14fe3b2c56cf4dadf4badc",
+      "bytes": 12144
+    },
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/simple_cloud.txt": {
+      "resolved_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/simple_cloud.txt",
+      "sha256": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d",
+      "bytes": 54
+    },
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/hydro_frac.txt": {
+      "resolved_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/hydro_frac.txt",
+      "sha256": "8b5ccf2aad2ffd71ab5b391dcbe6407e7830b8df1353c159e1211f46ed5f356b",
+      "bytes": 1531
+    },
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/t.txt": {
+      "resolved_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/t.txt",
+      "sha256": "87b10f1915c6d0c358bc5f135d560c06db6e6e9b3ac05364e34cc14d655f0bfc",
+      "bytes": 1518
+    },
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/o3.txt": {
+      "resolved_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/o3.txt",
+      "sha256": "4169bd766bea042e1de81390c48df7c0f3ea690b5fc44007508127b3047fed6d",
+      "bytes": 1584
+    },
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/mmr_hydro_aer.txt": {
+      "resolved_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/mmr_hydro_aer.txt",
+      "sha256": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c",
+      "bytes": 49
+    },
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/deff_param.txt": {
+      "resolved_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/deff_param.txt",
+      "sha256": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0",
+      "bytes": 54
+    },
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/q.txt": {
+      "resolved_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/q.txt",
+      "sha256": "8d5b00aa058fae51b5272ddc8f6f65e1bcaa34a65c8e499c099128b87e6cb135",
+      "bytes": 1518
+    },
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/p.txt": {
+      "resolved_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/p.txt",
+      "sha256": "c7d47eed648f3e7313979e84600ae916fbf8d381d6c21f2d8f562c88463a7726",
+      "bytes": 1584
+    },
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/hydro_deff.txt": {
+      "resolved_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/hydro_deff.txt",
+      "sha256": "6160575f7989ef12b570c807f6da93b29bc82f886ca1c34eb47cee9dd5abf98a",
+      "bytes": 10626
+    },
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/p_half.txt": {
+      "resolved_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/atm/p_half.txt",
+      "sha256": "dc736422f63710511af6a3336a77b33f092c63e66deffba26e5e8c29f47c2b11",
+      "bytes": 1608
+    },
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/sfc/01/near_surface.txt": {
+      "resolved_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/sfc/01/near_surface.txt",
+      "sha256": "9112090ec89e82f530bba289148450d568b12fdf136c493a6fd3f64744321d9e",
+      "bytes": 162
+    },
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/sfc/01/skin.txt": {
+      "resolved_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/in/profiles/001/sfc/01/skin.txt",
+      "sha256": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b",
+      "bytes": 350
+    },
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/rttov_test.txt": {
+      "resolved_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/rttov_test.txt",
+      "sha256": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282",
+      "bytes": 5336
+    },
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/run.sh": {
+      "resolved_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/run.sh",
+      "sha256": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+      "bytes": 184
+    },
+    "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/env.sh": {
+      "resolved_path": "/private/tmp/KDM6AD-viirs-native-run-20261007/comparison/results_failed_native_artifact_diag_055540_055800_retry2/case_00/out/env.sh",
+      "sha256": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+      "bytes": 55
+    }
+  },
+  "torch_version": "2.13.0",
+  "optimizer": {
+    "max_iter": 8,
+    "max_eval": "existing default nominal10; strong-Wolfe may exceed nominal evaluation budget",
+    "max_eval_explicitly_passed": false,
+    "gradient_tolerance": 1e-10,
+    "zero_initialized_controls": true,
+    "warm_start": false,
+    "old_accepted_analysis_not_new_background": true,
+    "automatic_retry": false
+  },
+  "protocol_validation_adapter": {
+    "actual_run_manifest_experiment_id": "PR413_CLOUD_CONVERGENCE_8ITER_20261012",
+    "validation_copy_only_experiment_id": "PR398_CONVERGENCE_8ITER_20261010",
+    "original_guard_other_fields_unmodified": true,
+    "actual_capture_identity_not_rewritten": true,
+    "existing_V4_capture_solver_source_changed": false
+  },
+  "same_problem_contract": "sameoriginal PR412cloudcolumnxb/f/7AMIobservations,theta/qvpriors,sigma1Kbias0,fixedphysics20s,nativepressure/interface,optics/frozenrho/surface/geometry; onlymax_iter budget3->8 plus truthfulidentitymetadata",
+  "scope": "one boundedcloudcaseconvergence observation, not cloudseeking; closedselector/4H/RM/FD/oldclearbudgetcampaign not replayed; no extraM/Houtsideanalysis/audit",
+  "new_native_integrations": 0,
+  "new_dates": 0,
+  "other_dates_dependency": "July20/21 PENDING_NATIVE_INPUT unchanged; no repeated archive inquiry/search or externalmodel substitution",
+  "no_extra_endpoint_H_contrast": true,
+  "original_records_overwritten": false,
+  "science_acceptance_or_score_rescoring": false,
+  "environment": {
+    "python_executable": "/private/tmp/KDM6AD-research-rc-20261007/env/bin/python",
+    "PYTHONOPTIMIZE": "0",
+    "thread_environment": {
+      "OMP_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "OMP_THREAD_LIMIT": "1",
+      "VECLIB_MAXIMUM_THREADS": "1"
+    },
+    "torch_num_threads": 1,
+    "torch_version_enforced_by_check_bindings": "2.13.0",
+    "externally_supplied_and_checked_before_Torch_import": true
+  }
+}

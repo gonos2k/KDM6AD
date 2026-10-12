@@ -1,0 +1,139 @@
+{
+  "schema": "pr413_bounded_convergence_artifact_manifest_v1",
+  "base_main": "732f5482",
+  "experiment_id": "PR413_CLOUD_CONVERGENCE_8ITER_20261012",
+  "files": [
+    {
+      "path": "harness/evidence/pr413_cloud_convergence_2026-10-12/CAPTURE.json",
+      "size_bytes": 92215,
+      "sha256": "8fcf0561267416a32a0db2dcca35135e686092ac883d0233c556b5f29d4b6573"
+    },
+    {
+      "path": "harness/evidence/pr413_cloud_convergence_2026-10-12/CHANNEL_COMPARISON.csv",
+      "size_bytes": 1209,
+      "sha256": "2ce72afae521e5ee6ab7d1498e4eb7841206ab983fb9584ea02a20b8a83a409d"
+    },
+    {
+      "path": "harness/evidence/pr413_cloud_convergence_2026-10-12/COMPARISON.json",
+      "size_bytes": 2914,
+      "sha256": "f9db4ca26da28d2a8956b2dad43f0471e52c080f9dbb24e0f3be42f6dd8dcf3e"
+    },
+    {
+      "path": "harness/evidence/pr413_cloud_convergence_2026-10-12/DRIVER_RESULT.json",
+      "size_bytes": 14159,
+      "sha256": "8e0b86f5af4b0550e6f76293ac36e1eb6c4b43fed09ccc4166440b3ba78f8c7b"
+    },
+    {
+      "path": "harness/evidence/pr413_cloud_convergence_2026-10-12/EXECUTION.log",
+      "size_bytes": 111,
+      "sha256": "ca38286f114be52dc0e79bb0e7bea90e88021eee103879e43d2fecaacac0e7df"
+    },
+    {
+      "path": "harness/evidence/pr413_cloud_convergence_2026-10-12/EXECUTION_EXIT.json",
+      "size_bytes": 774,
+      "sha256": "571a96f8e0c6635621f8a99d91e3059fc5ea7f9b4680f540e0ff638a1b377808"
+    },
+    {
+      "path": "harness/evidence/pr413_cloud_convergence_2026-10-12/EXECUTION_STARTED_ONCE.json",
+      "size_bytes": 402,
+      "sha256": "02ab07f4b6e5f33933e5d88b780e21c3dad21126bc578115d02f70c272257136"
+    },
+    {
+      "path": "harness/evidence/pr413_cloud_convergence_2026-10-12/GREEN_POSTRUN.md",
+      "size_bytes": 4613,
+      "sha256": "8211a656ee3a3227433ee609a667ea8ae0c873fa89a276635cc5a94b241667e9"
+    },
+    {
+      "path": "harness/evidence/pr413_cloud_convergence_2026-10-12/GREEN_PREFLIGHT.md",
+      "size_bytes": 4149,
+      "sha256": "1ce51d521636910a6bfbd23ff3ff598ffc25519ee63a3050ca34dff73be82bb0"
+    },
+    {
+      "path": "harness/evidence/pr413_cloud_convergence_2026-10-12/GUARD_TEST_RESULT.json",
+      "size_bytes": 625,
+      "sha256": "9fcab855d04e26442ac6d4ffa9f847adaf2c745dea3a23113aaab29e33eff16c"
+    },
+    {
+      "path": "harness/evidence/pr413_cloud_convergence_2026-10-12/PREDECLARED.json",
+      "size_bytes": 23460,
+      "sha256": "e58002d656499c23a9a11842bb0e379375155dae788b8b45ded32f4c6f640cac"
+    },
+    {
+      "path": "harness/evidence/pr413_cloud_convergence_2026-10-12/PREFLIGHT.json",
+      "size_bytes": 13555,
+      "sha256": "9803952d669f207be3b6984e99543b61f38bb7e196d6ec09b9d79c3029d12997"
+    },
+    {
+      "path": "harness/evidence/pr413_cloud_convergence_2026-10-12/PREFLIGHT_DRAFT_BEFORE_ENV_OBSERVATION.json",
+      "size_bytes": 13525,
+      "sha256": "3e18c598b9204e35948bbaf0e036c8cfac424aef71dd0454419eeed142789980"
+    },
+    {
+      "path": "harness/evidence/pr413_cloud_convergence_2026-10-12/RED_POSTRUN.md",
+      "size_bytes": 3660,
+      "sha256": "d17c43043aaf85092267b3dcd98df470805af52fb436c0d01c5afb82a2ab6211"
+    },
+    {
+      "path": "harness/evidence/pr413_cloud_convergence_2026-10-12/RED_PREFLIGHT.md",
+      "size_bytes": 2911,
+      "sha256": "41e5ba2dfcc95a84ef4fe35384582f84ed9b6d888d115c276b7a350bee32c6bc"
+    },
+    {
+      "path": "harness/evidence/pr413_cloud_convergence_2026-10-12/REPORT.md",
+      "size_bytes": 8797,
+      "sha256": "04106aba35c8e58658274a313eff123c3926b7fbc256141890d8af9cd0a2e9c5"
+    },
+    {
+      "path": "harness/evidence/pr413_cloud_convergence_2026-10-12/RUN_STARTED_ONCE.json",
+      "size_bytes": 239,
+      "sha256": "6cdb9d4890fe5b1ced23e0a14fbf817c0951163aed5f6f74c8e8c17b2a3e06c0"
+    },
+    {
+      "path": "harness/evidence/pr413_cloud_convergence_2026-10-12/VALIDATION.json",
+      "size_bytes": 1986,
+      "sha256": "43f2762c05c53dcb48477a8ba3675889bea8614030d912a3c034a7ffa69fb7e4"
+    },
+    {
+      "path": "harness/evidence/pr413_cloud_convergence_2026-10-12/compare_saved_results.py",
+      "size_bytes": 6688,
+      "sha256": "0ddb8ec38c592610e88187aee755c7aea6d60f5c9ae277df2420850e31bd50cd"
+    },
+    {
+      "path": "harness/evidence/pr413_cloud_convergence_2026-10-12/run_cloud_convergence.py",
+      "size_bytes": 10671,
+      "sha256": "bbb4ab91a1d96d063f6662a99fe9105b10b7f71f753e6ef7040ddb047b9143ae"
+    },
+    {
+      "path": "harness/evidence/pr413_cloud_convergence_2026-10-12/test_budget_identity_guard.py",
+      "size_bytes": 2844,
+      "sha256": "927a483e6d6fcfd3f1cd40d641a47f0f3f4b9c4a7e942f8b51ad58a84da69e6a"
+    },
+    {
+      "path": "harness/evidence/AMI_L1B_RESEARCH_EDITION_COMPLETION.md",
+      "size_bytes": 17506,
+      "sha256": "fe4b3e7d1d6fdef096dfbd155015c4dc18d0c822ebc9ced871755e3dd543e7a7"
+    },
+    {
+      "path": "wiki/sources/pr413-cloud-bounded-convergence-2026-10-12.md",
+      "size_bytes": 2398,
+      "sha256": "3284786d9a29843cbd3ada605271aba49561309f4280f7fd17ced3f5927bd4df"
+    },
+    {
+      "path": "wiki/index.md",
+      "size_bytes": 11916,
+      "sha256": "ad59d55cf37810e0ec7995439374a990c8d7e51833f51dba41227801bfb2ba31"
+    },
+    {
+      "path": "wiki/hot.md",
+      "size_bytes": 17055,
+      "sha256": "017392fd8f3fbc3e952d02cd6d60890c3f98b7edcee90bc6781ff74879d0834c"
+    }
+  ],
+  "private_checkpoint": {
+    "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr413_cloud_convergence_20261012/run-PR413_CLOUD_CONVERGENCE_20261012_01/private/accepted_state.npz",
+    "sha256": "08d3a3d7f0e49bf00def9a02cc810b5980f96fa8c26399b84386cdae633d29c6",
+    "mode": "0600",
+    "raw_arrays_public": false
+  },
+  "original_PR412_and_PR398_records_overwritten": false
+}

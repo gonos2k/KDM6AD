@@ -23,6 +23,7 @@ date_modified: 2026-10-08
 - [[queries/_index|Queries]] - 2 pages
 
 ## Sources
+- [[sources/pr413-cloud-bounded-convergence-2026-10-12|Bounded convergence of natural cloudy column]] — Same problem, lower gradient/cost and QC-loss persistence; strict convergence and other dates remain open.
 - [[sources/pr412-natural-native-process-case-2026-10-12|Natural native warm-QC case]] — Same-date new column; actual analysis and paired H response, with nonconvergence and no process-rate/date claim.
 - [[sources/team-intake-capture-audit-2026-10-10|Team intake/capture boundary audit]] - Reproduced and repaired conditional research-tool faults; running model and science limits kept separate.
 - [[sources/native-tq-case-progress-2026-10-10|Fresh native T/Q case preparation]] - Fresh run started; gated intake and full-state persistence prepared, target outputs and scientific matchup pending.
