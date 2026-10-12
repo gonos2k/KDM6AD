@@ -133,3 +133,24 @@ The next real case needs native background/forcing/pressure/surface bound to adm
 The first prepared date need not wait for the second. Do not repeat the same archive search/request merely to create another receipt. Never relabel July19 states, extrapolate inadequate BC or silently substitute external models/reanalysis. V4 remains the sole new-case consumer; closed time/mask/provenance and finite-step checks stay closed.
 
 The [78→79/100 rubric](AMI_L1B_MANAGEMENT_RUBRIC_2026-10-11.md) was **proposed in conversation reviews and relayed in user messages**. It is not a user-established scientific performance criterion, correctness probability, coverage fraction or proof of upper-goal completion. Earlier user-owned/user-supplied wording is superseded by this attribution correction; immutable dated execution records retain their bytes. Keep79 as historical management context without rescoring here. The three evidence stages above, not that number alone, govern completion claims.
+
+## Jul19 ten-minute joint local window (PR414 evidence)
+
+The user requested a Jul19 window before other dates. The
+[declared actual three-slot run](pr414_ami_window_2026-10-12/REPORT.md) reuses the
+validated05:55:40 natural-QC background,61×20s transitions under the same held
+forcing, and actual AMI nominal05:56/06:06/06:16 scenes at indices1/31/61. One
+initial T/Q prior and21 equal-scale Huber terms are minimized jointly with the
+existing window/dual solver and real RTTOV. Native geometry and initial optical
+rho remain fixed; later slots are local states, not saved host forecasts or
+cycling. Temporal observation error covariance is uncalibrated; pixel UTC
+remains unverified under the explicitly declared nominal-time assumption.
+
+All three slots passed final audit/checkpoint/full-gradient saving in one
+finite-budget attempt: J26.649841376→20.294560081, with all seven model-quality0
+channels at each callback. Gradient Linf0.385080631 remains unconverged; actual
+iterations/evaluations2/4 plus1audit,15logicalH callbacks. Same-date multi-time
+execution does not establish another date or forecast skill. The original
+single20s problem/evidence and PR412/413 claims remain distinct; no automatic
+repeat or score change is introduced. See the
+[actual times and additional-directory inventory](pr414_ami_window_2026-10-12/INPUT_AND_TIME_INVENTORY.md).

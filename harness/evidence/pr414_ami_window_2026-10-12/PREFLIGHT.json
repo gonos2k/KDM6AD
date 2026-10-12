@@ -1,0 +1,147 @@
+{
+  "status": "PREPARED_NO_ANALYSIS",
+  "plan_sha256": "fc704e2af5c68674e91afeaffd3e61102ebdcc167660f8b515fe123d6a1111cd",
+  "fingerprint": {
+    "initial_state": {
+      "th": "492d7f9003e741693ae43db954a5b6f966a83bf42799a4a03d832cb10bd4b231",
+      "qv": "0b9fcfbac8db467b5a87ebcc5ef6001473590749c83b45cd2241881eddf6c041",
+      "qc": "f84e3bbeb56c388781e441e6b3a434db15e89fd403887c5f771595b039ba43b2",
+      "qr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "qi": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "qs": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "qg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "nccn": "e317165b5718e14780820e454cfac160a721f79f8f56f3d46421a0c4906591ad",
+      "nc": "a336b2bf981d2412952ebab1143d9e697f5615e6e1fac33a13b54fa31915dc22",
+      "ni": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "nr": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7",
+      "bg": "6287e17fe5efcb191aec8a2578e685d0a1040a0ab53bd1f02c7f49cc6c8fced7"
+    },
+    "forcing": {
+      "rho": "2037837f8f22994409b8f45716d22f41d83c87531dc5fe5e49d8aea1a30dca9a",
+      "pii": "bbeb6918e9abd24cb88e00e24ce02dc20720fc0673ffc4d6edebe1bd66f8cb4f",
+      "p": "c7491f61efaaef5c8274ed3b73823ee1e6baed7cb41df0b751c3b4803cb81fb5",
+      "delz": "4bbba04fa750d1a9494810f93b0062b06205269e31791c2de5007c3382b50e7f"
+    },
+    "H": {
+      "channels": [
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "coef_id": "paired-case_00-GK2A-AMI",
+      "fixture_case_dir": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/run-PR414_JUL19_0556_0606_0616_20261012_01/rttov_fixture",
+      "p_lay": {
+        "shape": [
+          66
+        ],
+        "dtype": "float64",
+        "sha256_f64": "15fa15c45a7716a7b4d327780c92df595233fe00b64189a29eabe825b9519401"
+      },
+      "p_half": {
+        "shape": [
+          67
+        ],
+        "dtype": "float64",
+        "sha256_f64": "ce9537f82fbac459345364577a0365bfa2576c8b7343495de1f1766c864228b0"
+      },
+      "t_ref": {
+        "shape": [
+          66
+        ],
+        "dtype": "float64",
+        "sha256_f64": "3f9672d2eabf31ea9fb62c3ed34ef8ba55c6b9eccc15a13332ca620976f7f770"
+      },
+      "q_ref": {
+        "shape": [
+          66
+        ],
+        "dtype": "float64",
+        "sha256_f64": "bd65b770677a02e92e73da4837326dd731ede0fe4629bc2351f3f355acac41e5"
+      },
+      "rho_d": {
+        "shape": [
+          1,
+          39
+        ],
+        "dtype": "float64",
+        "sha256_f64": "88e1826c9540523132fcb484243ba5c7690512ebd9bc6ba8300ef8af6c023829"
+      },
+      "dry_number": true,
+      "ami_kma_bt": true,
+      "ncmin_land": 10.0,
+      "ncmin_sea": 10.0,
+      "t_blend_octaves": 0.0,
+      "q_blend_octaves": 0.0,
+      "surface": {
+        "skin": {
+          "surftype": 1,
+          "watertype": 1,
+          "salinity": 35.0,
+          "foam_fraction": 0.0,
+          "snow_fraction": 0.0,
+          "fastem": [
+            3.0,
+            5.0,
+            15.0,
+            0.1,
+            0.3
+          ],
+          "t": 298.6808166503906
+        },
+        "near_surface": {
+          "t2m": 297.5748596191406,
+          "q2m": 27596.949879344724,
+          "wind_u10m": -2.4813899993896484,
+          "wind_v10m": 1.5687845945358276,
+          "wind_fetch": 0.0
+        }
+      },
+      "geometry": {
+        "zenangle": 42.47485308513994,
+        "azangle": 169.72180378382882,
+        "sunzenangle": 0.0,
+        "sunazangle": 0.0,
+        "latitude": 36.19700231203294,
+        "longitude": 122.09240151533507,
+        "elevation": 0.0
+      }
+    },
+    "signatures": {
+      "1": "c69198d7d88bec88582560459e4843dc3564234a65ed8b60f766763ebdf55e7a",
+      "31": "013205c390fc596c67373466b82585f385b416ac466f10cd00fb6c541afc9375",
+      "61": "14961904352b4b8ae9b2584cd56769fcd55509a78226215454d62001f226a145"
+    }
+  },
+  "fixture_hashes": {
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/run-PR414_JUL19_0556_0606_0616_20261012_01/rttov_fixture/out/run.sh": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/run-PR414_JUL19_0556_0606_0616_20261012_01/rttov_fixture/out/rttov_test.txt": "796952fa3bea7a2b61b7901f099bea304bcc4c63e0d1d5bd93f20bee4a5cf282",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/run-PR414_JUL19_0556_0606_0616_20261012_01/rttov_fixture/out/env.sh": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/run-PR414_JUL19_0556_0606_0616_20261012_01/rttov_fixture/in/channels.txt": "d5ddefcc18c631a7f79691be015b328dec004b0dfca1eaa1343991f32d032e1d",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/run-PR414_JUL19_0556_0606_0616_20261012_01/rttov_fixture/in/coef.txt": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/run-PR414_JUL19_0556_0606_0616_20261012_01/rttov_fixture/in/lprofiles.txt": "5d6df146150632c4d605185dfcc0971f44ad7c69f5015f02dd3a68dbe3e122de",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/run-PR414_JUL19_0556_0606_0616_20261012_01/rttov_fixture/in/profiles/001/datetime.txt": "d5e5bc0724f7675edc9bbf449c16421406fc4f4c6c7848ede9095955b3699c86",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/run-PR414_JUL19_0556_0606_0616_20261012_01/rttov_fixture/in/profiles/001/gas_units.txt": "2c5dfcfd33bf4baefbdd5a3b990226ecab2e003a1027d72a573ee79a4b0a6555",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/run-PR414_JUL19_0556_0606_0616_20261012_01/rttov_fixture/in/profiles/001/angles.txt": "f24d3597db4b84b632d76989b774a6e02b82e6637fc02e57d5fb185ab26c1161",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/run-PR414_JUL19_0556_0606_0616_20261012_01/rttov_fixture/in/profiles/001/be.txt": "f82433dcc0d78b62c2c875c38891cc73839bed9b087b4a8ee31a171f5253d3b1",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/run-PR414_JUL19_0556_0606_0616_20261012_01/rttov_fixture/in/profiles/001/prof_id.txt": "59c6ff5eeacaae383f75f0b5e4669592609c386667518d2da7368a1d6393a793",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/run-PR414_JUL19_0556_0606_0616_20261012_01/rttov_fixture/in/profiles/001/atm/co2.txt": "94e59089381bf7e3c45d664d3876dd6302eac5c4d37fdfb51b091389f4b04eb7",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/run-PR414_JUL19_0556_0606_0616_20261012_01/rttov_fixture/in/profiles/001/atm/hydro.txt": "62efd0a4c425145db1d988127d0b5d3e50227328d2c8e69c455371585848f57e",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/run-PR414_JUL19_0556_0606_0616_20261012_01/rttov_fixture/in/profiles/001/atm/simple_cloud.txt": "82ff0e0cc9f6b219e25eb0b9b4c9d08f0edb5d8b4a572d34df94e9c684c0c29d",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/run-PR414_JUL19_0556_0606_0616_20261012_01/rttov_fixture/in/profiles/001/atm/hydro_frac.txt": "94fd8b3afb76730bec5fae7a464123607ca22844c0c5ce194294a8f94faf4079",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/run-PR414_JUL19_0556_0606_0616_20261012_01/rttov_fixture/in/profiles/001/atm/t.txt": "aade638cc21121d043678ea5079bae879b193d41534b1a6dd083221540904a03",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/run-PR414_JUL19_0556_0606_0616_20261012_01/rttov_fixture/in/profiles/001/atm/o3.txt": "5f3a093a7ec4f3ee080d7414c3f8c0baaffb88943d163f35d5835027bdd0689c",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/run-PR414_JUL19_0556_0606_0616_20261012_01/rttov_fixture/in/profiles/001/atm/mmr_hydro_aer.txt": "5b7cb82b49bf4b81faf2ed65cf73e6e576bb42647b67f3d0436905fbd317291c",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/run-PR414_JUL19_0556_0606_0616_20261012_01/rttov_fixture/in/profiles/001/atm/deff_param.txt": "0e7d42dfbc560dc138717e3b4de958a19bfe2604ee67c4db858039fc6ac3aef0",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/run-PR414_JUL19_0556_0606_0616_20261012_01/rttov_fixture/in/profiles/001/atm/q.txt": "f817547988e2fe084c481909ca0e0482ab46b507b971864dda6b4b82ab0493c6",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/run-PR414_JUL19_0556_0606_0616_20261012_01/rttov_fixture/in/profiles/001/atm/p.txt": "1b71c1a6bce4950592c0dc1d67dbbb93669cf43bca5de647a58e4a2d6194656a",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/run-PR414_JUL19_0556_0606_0616_20261012_01/rttov_fixture/in/profiles/001/atm/p_half.txt": "d61191ebb5fd6811d67d45477f4af05a9aac58649cfa61043442a403d2424222",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/run-PR414_JUL19_0556_0606_0616_20261012_01/rttov_fixture/in/profiles/001/sfc/01/near_surface.txt": "9112090ec89e82f530bba289148450d568b12fdf136c493a6fd3f64744321d9e",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012/run-PR414_JUL19_0556_0606_0616_20261012_01/rttov_fixture/in/profiles/001/sfc/01/skin.txt": "32e8b5de4a58937324399b2f16162da6200fdfe0b0493f018dc94b565ca4351b"
+  },
+  "torch_version": "2.13.0",
+  "analysis_executed": false
+}

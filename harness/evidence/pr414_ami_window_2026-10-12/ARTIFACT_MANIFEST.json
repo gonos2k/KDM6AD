@@ -1,0 +1,120 @@
+{
+  "schema": "pr414_public_artifacts_v1",
+  "public_files": {
+    "DOWNLOAD_INTERRUPTION_CORRECTION.json": {
+      "sha256": "36d1f3bac73b6f56d7e1e81a083558d4c11e689e0197c9f31e463ec8be89472c",
+      "bytes": 4594
+    },
+    "DOWNLOAD_RECEIPT.json": {
+      "sha256": "126ef51880a2353db4ae789bc85724cd838570d754701dc0d287bd6a97b5fd16",
+      "bytes": 11135
+    },
+    "DOWNLOAD_STARTED_ONCE.json": {
+      "sha256": "34beb5cb1f9ce87d3e9b2e3a8e449a80d9806e98230391620451a26e9a3d77de",
+      "bytes": 140
+    },
+    "EXECUTION.log": {
+      "sha256": "67bde2b8f8f7721adf8f7fbbce4f66ee80a8f8525b7f8318b418ead55b775708",
+      "bytes": 5627
+    },
+    "EXECUTION_EXIT.json": {
+      "sha256": "90d340df8145eaf999736f6011e4dd448a1d7aff3b2ba4fef11353734e5037dc",
+      "bytes": 109
+    },
+    "GREEN_POSTRUN.md": {
+      "sha256": "8e0b9b420bc988a6111f2894b1109527aa29d81f6a206a4746f2515214636656",
+      "bytes": 5479
+    },
+    "GREEN_PREFLIGHT.md": {
+      "sha256": "78bc29bcdcb9ff60d27c85aab20bbef7dd4a751049787580a912872139abb5a2",
+      "bytes": 4866
+    },
+    "INPUT_AND_TIME_INVENTORY.md": {
+      "sha256": "88bc61d2c5992d67ca130deadbe249943fbe88c8565b9f5c1c8fc2f1d3ae9cfd",
+      "bytes": 4904
+    },
+    "OBSERVATIONS.json": {
+      "sha256": "6c60d3f00493026321519977993e778815acd6a3072cc2482c271c362e386f85",
+      "bytes": 73410
+    },
+    "PREDECLARED.json": {
+      "sha256": "97d18a9e85689b2cf69d8c442db6bc977b9a65b1f12cc1a740be5586a3867835",
+      "bytes": 17146
+    },
+    "PREFLIGHT.json": {
+      "sha256": "95a9ac02c7fee1d49c6b5d03323c739b3189b0597c3526b580d1def06790dcbe",
+      "bytes": 9621
+    },
+    "PREFLIGHT_DRAFT_BEFORE_RECEIPT_GATE.json": {
+      "sha256": "d615b6143166b9cb1ea2baf03fb1a59e6a89baf45c1d1e4055b00dd083ad0e7b",
+      "bytes": 9621
+    },
+    "RED_POSTRUN.md": {
+      "sha256": "26f94305789a4bc6d3a4ffc54e0f1dbc0a1bb0e7dc14fb81215904e9320b4986",
+      "bytes": 4062
+    },
+    "RED_PREFLIGHT.md": {
+      "sha256": "7489b65a65c5fb4a8b6726272f8f4b0f02695a556270f53a3973338f4e0c94c9",
+      "bytes": 4153
+    },
+    "RED_WINDOW_DESIGN.md": {
+      "sha256": "551433a5b28808191ba685b0b20f83325094b727211d6c2d3141b18d1670821a",
+      "bytes": 4653
+    },
+    "REPORT.md": {
+      "sha256": "3205b77239dd897f4ee965977c514aaac0f47db546d8cb8f8db3a464b1e2c500",
+      "bytes": 7006
+    },
+    "RESULT.json": {
+      "sha256": "ee0aedbbe1716e449dc6f195b836a63706fa38fb57b0973e449dad818ab0d166",
+      "bytes": 83519
+    },
+    "SUMMARY_EXECUTION.log": {
+      "sha256": "096c4c92342f9df80741db75decee4311d38403a6f057ed09a20e07a3a62409b",
+      "bytes": 1807
+    },
+    "WINDOW_CHANNELS.csv": {
+      "sha256": "2cbe40fb2b796ecf6fe4ec358ee894a8411bc494d438e80f806553dda049f392",
+      "bytes": 2704
+    },
+    "WINDOW_PREDECLARED.json": {
+      "sha256": "fc704e2af5c68674e91afeaffd3e61102ebdcc167660f8b515fe123d6a1111cd",
+      "bytes": 38365
+    },
+    "WINDOW_PREDECLARED_DRAFT_BEFORE_RECEIPT_GATE.json": {
+      "sha256": "0bd25feb6aeee430cb08a32c1356a62546c55089ebd1054ae50643a5835ce184",
+      "bytes": 38365
+    },
+    "WINDOW_SUMMARY.json": {
+      "sha256": "0c334047bea10832fbe12fdaba817c72b00bc483e13f387afff869863165d4ce",
+      "bytes": 2049
+    },
+    "declare_window.py": {
+      "sha256": "2af7ac90be627bf7a43747d9e2c9473f9f4543a2b17f35b9e3fd058983d64005",
+      "bytes": 3733
+    },
+    "prepare_observations.py": {
+      "sha256": "1b4dc4b7128b5f96bf9b31acce7e393d7260e763280ae83f5e48644581008183",
+      "bytes": 37912
+    },
+    "run_window.py": {
+      "sha256": "bb01077496cf95263f5f69c3dfc95bba9871e171fa374e29e9b3de3d5217cedf",
+      "bytes": 16187
+    },
+    "summarize_window.py": {
+      "sha256": "1e0d805abbd3948cf14cad79153d0d471725a935bf0e0a71c9fe76d252c989dd",
+      "bytes": 4264
+    }
+  },
+  "private_raw_arrays_published": false,
+  "checkpoint_private": true,
+  "graph_refresh": "structural plus scoped semantic; ignored raw reports; source authoritative",
+  "validation": {
+    "existing_dual_gate_tests_passed": 5,
+    "deselected": 33,
+    "ruff": "passed",
+    "actual_window_attempts": 1,
+    "Green": "passed scoped",
+    "Red": "passed scoped"
+  }
+}

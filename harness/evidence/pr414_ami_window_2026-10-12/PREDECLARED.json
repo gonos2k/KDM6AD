@@ -1,0 +1,383 @@
+{
+  "analysis_channel_ids_1based": [
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16
+  ],
+  "analysis_channel_names": [
+    "wv073",
+    "ir087",
+    "ir096",
+    "ir105",
+    "ir112",
+    "ir123",
+    "ir133"
+  ],
+  "automatic_retry": false,
+  "calibration_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/obs/data/gk2a_ami_cal_202507190000.json",
+  "calibration_sha256": "a6f830aa04e19f6982aa6ff36e832464a5b32fdcf8200211956969d5eb48325d",
+  "channels_source_nine": [
+    "wv063",
+    "wv069",
+    "wv073",
+    "ir087",
+    "ir096",
+    "ir105",
+    "ir112",
+    "ir123",
+    "ir133"
+  ],
+  "current_main": "f16645f11cf09c5ec47852cf4533552ea9c04fae",
+  "decode_contract": {
+    "alternate_pixel_fallback": false,
+    "alternate_slot_fallback": false,
+    "geoselection_target": "PR412 selected native column j103/i48",
+    "radius_m": 2500.0,
+    "reader": "unchanged oracle/kdm6/obs/gk2a_l1b_la.py::read_la_slot",
+    "required_dqf_for_supported_channels": 0,
+    "required_supported_channel_ids_1based": [
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16
+    ],
+    "selection_precedes_quality_and_bt_checks": true,
+    "stride": 1
+  },
+  "download_budget": {
+    "automatic_retry": false,
+    "extra_channels_downloaded": 0,
+    "extra_slots_downloaded": 0,
+    "max_bytes": 8849101,
+    "max_files": 18,
+    "planned_bytes": 8849101,
+    "planned_files": 18,
+    "request_attempts_per_object": 1
+  },
+  "native_reference": {
+    "background_valid_time": "2025-07-19_05:55:40",
+    "case_id": "PR412_JUL19_NATURAL_LIQUID_COLUMN",
+    "case_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr412_native_process_case_2026-10-12/CASE.json",
+    "case_sha256": "d906217d7892baf83a37cc2459c5b115ccbf3fffa9594374993d45d6db0f0cc3",
+    "column_j_i": [
+      103,
+      48
+    ],
+    "coordinate_tolerance_deg": 5e-05,
+    "initial_time": "2025-07-19_00:00:00",
+    "latitude_deg": 36.195343017578125,
+    "longitude_deg": 122.0966796875,
+    "run_dir": "/private/tmp/KDM6AD-pr393-target-preparation-20261009/case_nominal/runs/mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148",
+    "run_id": "mp337_viirs_norm2_dry1_055540_055800_358min_hist0_20261010_052612_p99148"
+  },
+  "new_s3_objects": [
+    {
+      "channel": "wv063",
+      "etag": "8f020458394c938c95690bc991e1717f",
+      "etag_raw": "\"8f020458394c938c95690bc991e1717f\"",
+      "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_wv063_la020ge_202507190606.nc",
+      "size_bytes": 357806,
+      "slot_obt": "202507190606"
+    },
+    {
+      "channel": "wv069",
+      "etag": "8b3ff40fdc4280d54e7181538f787c59",
+      "etag_raw": "\"8b3ff40fdc4280d54e7181538f787c59\"",
+      "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_wv069_la020ge_202507190606.nc",
+      "size_bytes": 456368,
+      "slot_obt": "202507190606"
+    },
+    {
+      "channel": "wv073",
+      "etag": "f38e12746bb0a3073d2e69f57a406164",
+      "etag_raw": "\"f38e12746bb0a3073d2e69f57a406164\"",
+      "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_wv073_la020ge_202507190606.nc",
+      "size_bytes": 477569,
+      "slot_obt": "202507190606"
+    },
+    {
+      "channel": "ir087",
+      "etag": "9d014764b4490ff3319dfb705c2e92e9",
+      "etag_raw": "\"9d014764b4490ff3319dfb705c2e92e9\"",
+      "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir087_la020ge_202507190606.nc",
+      "size_bytes": 529327,
+      "slot_obt": "202507190606"
+    },
+    {
+      "channel": "ir096",
+      "etag": "3cd3b222eb076be8ef88e8b9127463e5",
+      "etag_raw": "\"3cd3b222eb076be8ef88e8b9127463e5\"",
+      "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir096_la020ge_202507190606.nc",
+      "size_bytes": 500539,
+      "slot_obt": "202507190606"
+    },
+    {
+      "channel": "ir105",
+      "etag": "16d861cd2cfa9cb8fcee30e040b3c166",
+      "etag_raw": "\"16d861cd2cfa9cb8fcee30e040b3c166\"",
+      "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir105_la020ge_202507190606.nc",
+      "size_bytes": 532035,
+      "slot_obt": "202507190606"
+    },
+    {
+      "channel": "ir112",
+      "etag": "9f47d1b47aa0f31720855e702a77d662",
+      "etag_raw": "\"9f47d1b47aa0f31720855e702a77d662\"",
+      "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir112_la020ge_202507190606.nc",
+      "size_bytes": 530145,
+      "slot_obt": "202507190606"
+    },
+    {
+      "channel": "ir123",
+      "etag": "6020e159300cb3cdd2a6d3d4f9844acc",
+      "etag_raw": "\"6020e159300cb3cdd2a6d3d4f9844acc\"",
+      "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir123_la020ge_202507190606.nc",
+      "size_bytes": 524408,
+      "slot_obt": "202507190606"
+    },
+    {
+      "channel": "ir133",
+      "etag": "f4283e5b10d7c0dc6b8b38ac40647f0e",
+      "etag_raw": "\"f4283e5b10d7c0dc6b8b38ac40647f0e\"",
+      "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir133_la020ge_202507190606.nc",
+      "size_bytes": 506839,
+      "slot_obt": "202507190606"
+    },
+    {
+      "channel": "wv063",
+      "etag": "696f7ad261980bb78ae4fc02e9bc050b",
+      "etag_raw": "\"696f7ad261980bb78ae4fc02e9bc050b\"",
+      "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_wv063_la020ge_202507190616.nc",
+      "size_bytes": 357795,
+      "slot_obt": "202507190616"
+    },
+    {
+      "channel": "wv069",
+      "etag": "8d6226f4d257a8c240f78dbdb179cc5e",
+      "etag_raw": "\"8d6226f4d257a8c240f78dbdb179cc5e\"",
+      "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_wv069_la020ge_202507190616.nc",
+      "size_bytes": 456097,
+      "slot_obt": "202507190616"
+    },
+    {
+      "channel": "wv073",
+      "etag": "46b0f23b8e9b4ada781e88dfa5de64a3",
+      "etag_raw": "\"46b0f23b8e9b4ada781e88dfa5de64a3\"",
+      "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_wv073_la020ge_202507190616.nc",
+      "size_bytes": 477489,
+      "slot_obt": "202507190616"
+    },
+    {
+      "channel": "ir087",
+      "etag": "065d21a048fb4b3a39c42561074af7c8",
+      "etag_raw": "\"065d21a048fb4b3a39c42561074af7c8\"",
+      "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir087_la020ge_202507190616.nc",
+      "size_bytes": 529249,
+      "slot_obt": "202507190616"
+    },
+    {
+      "channel": "ir096",
+      "etag": "a18c3df4cf4f1e14151a5ef1f18d7e7e",
+      "etag_raw": "\"a18c3df4cf4f1e14151a5ef1f18d7e7e\"",
+      "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir096_la020ge_202507190616.nc",
+      "size_bytes": 500309,
+      "slot_obt": "202507190616"
+    },
+    {
+      "channel": "ir105",
+      "etag": "4afbf8cfa615549662ca0542be49a762",
+      "etag_raw": "\"4afbf8cfa615549662ca0542be49a762\"",
+      "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir105_la020ge_202507190616.nc",
+      "size_bytes": 531896,
+      "slot_obt": "202507190616"
+    },
+    {
+      "channel": "ir112",
+      "etag": "2e9fec054c08b168a651450ba4e3d410",
+      "etag_raw": "\"2e9fec054c08b168a651450ba4e3d410\"",
+      "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir112_la020ge_202507190616.nc",
+      "size_bytes": 550300,
+      "slot_obt": "202507190616"
+    },
+    {
+      "channel": "ir123",
+      "etag": "b0f0e6d23dfec656c7cafa700c4c8758",
+      "etag_raw": "\"b0f0e6d23dfec656c7cafa700c4c8758\"",
+      "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir123_la020ge_202507190616.nc",
+      "size_bytes": 524310,
+      "slot_obt": "202507190616"
+    },
+    {
+      "channel": "ir133",
+      "etag": "3fb8f849edeb4aa51516e06aa113b1a6",
+      "etag_raw": "\"3fb8f849edeb4aa51516e06aa113b1a6\"",
+      "key": "AMI/L1B/LA/202507/19/06/gk2a_ami_le1b_ir133_la020ge_202507190616.nc",
+      "size_bytes": 506620,
+      "slot_obt": "202507190616"
+    }
+  ],
+  "original_0556_bindings": {
+    "decode_receipt_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr412_native_process_20261012/inputs/DECODE_RECEIPT.json",
+    "decode_receipt_sha256": "febac62c03e334f39d7b206971c89f55305d858f299ab1a9d28eafecdfad3c00",
+    "restore_receipt_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr411_v4_actual_integration_2026-10-12/RESTORE_RESULT.json",
+    "restore_receipt_sha256": "0a95f5762c362dfa86e98aecc7868996fb6cea253cd8816bfa66fa4c29e2c52d",
+    "wire_result_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr412_native_process_case_2026-10-12/L1B_WIRE_RESULT.json",
+    "wire_result_sha256": "8211a20739de78d29d86cbf71c0afd893501b17004a1a579bfe4f73180009953"
+  },
+  "original_0556_sources": [
+    {
+      "channel": "wv063",
+      "etag": "a0cf9192aaa465225e955ed908114bba",
+      "immutable_reused_source": true,
+      "key": "AMI/L1B/LA/202507/19/05/gk2a_ami_le1b_wv063_la020ge_202507190556.nc",
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_wv063_la020ge_202507190556.nc",
+      "sha256": "83b97370fac7df350db462a2024e53255a01b7bc7c69e7d45ea0168f348d8754",
+      "size_bytes": 357789,
+      "slot_obt": "202507190556"
+    },
+    {
+      "channel": "wv069",
+      "etag": "c95f8d26c28537894241cb22bfcefd02",
+      "immutable_reused_source": true,
+      "key": "AMI/L1B/LA/202507/19/05/gk2a_ami_le1b_wv069_la020ge_202507190556.nc",
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_wv069_la020ge_202507190556.nc",
+      "sha256": "0c7fea702b255db8c9273d494d2e4b9c5ec86dca442e6059ebf9d91a9a8968e6",
+      "size_bytes": 456481,
+      "slot_obt": "202507190556"
+    },
+    {
+      "channel": "wv073",
+      "etag": "bb62826e22ef3f03d51fc19b6b057324",
+      "immutable_reused_source": true,
+      "key": "AMI/L1B/LA/202507/19/05/gk2a_ami_le1b_wv073_la020ge_202507190556.nc",
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_wv073_la020ge_202507190556.nc",
+      "sha256": "470eab1587fa70e56dfb3745dd402f5619aba4bc6d11b0844fa6987602c3c7f0",
+      "size_bytes": 477776,
+      "slot_obt": "202507190556"
+    },
+    {
+      "channel": "ir087",
+      "etag": "b1317d0001147a35e3187b957f730448",
+      "immutable_reused_source": true,
+      "key": "AMI/L1B/LA/202507/19/05/gk2a_ami_le1b_ir087_la020ge_202507190556.nc",
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_ir087_la020ge_202507190556.nc",
+      "sha256": "d98e0b5cd785c75f160982eacf57fb749674f4f0c471f27e1377dfa2767f2b50",
+      "size_bytes": 529492,
+      "slot_obt": "202507190556"
+    },
+    {
+      "channel": "ir096",
+      "etag": "07848981e605710fce054f44fe29b039",
+      "immutable_reused_source": true,
+      "key": "AMI/L1B/LA/202507/19/05/gk2a_ami_le1b_ir096_la020ge_202507190556.nc",
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_ir096_la020ge_202507190556.nc",
+      "sha256": "40f5cbcdd1bf15485cf3ddc116f4a3d7699701f230810d49f04942d6d5ee102a",
+      "size_bytes": 500536,
+      "slot_obt": "202507190556"
+    },
+    {
+      "channel": "ir105",
+      "etag": "6e5c9c0822e270ecf41bda6ef9a6cdce",
+      "immutable_reused_source": true,
+      "key": "AMI/L1B/LA/202507/19/05/gk2a_ami_le1b_ir105_la020ge_202507190556.nc",
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_ir105_la020ge_202507190556.nc",
+      "sha256": "824ee57213da084e8f3f129fd2767cee1f68e0bb10ef101d7419b7c4ec3ea889",
+      "size_bytes": 532071,
+      "slot_obt": "202507190556"
+    },
+    {
+      "channel": "ir112",
+      "etag": "5712c73e1d5f297905624a6bea46f541",
+      "immutable_reused_source": true,
+      "key": "AMI/L1B/LA/202507/19/05/gk2a_ami_le1b_ir112_la020ge_202507190556.nc",
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_ir112_la020ge_202507190556.nc",
+      "sha256": "8370508b1c70364085311772bd9b092876be7a7b6accf8ed71112172550f647d",
+      "size_bytes": 530010,
+      "slot_obt": "202507190556"
+    },
+    {
+      "channel": "ir123",
+      "etag": "aac1aba769e6ef46f3f8d522b2663913",
+      "immutable_reused_source": true,
+      "key": "AMI/L1B/LA/202507/19/05/gk2a_ami_le1b_ir123_la020ge_202507190556.nc",
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_ir123_la020ge_202507190556.nc",
+      "sha256": "19d1a4a9c60bee40cd6c7efe8a760189d72aa3f8f488b168cb8e35fc3963542f",
+      "size_bytes": 524322,
+      "slot_obt": "202507190556"
+    },
+    {
+      "channel": "ir133",
+      "etag": "2a6e1dc4277aec4d4a06a63e3c2f5089",
+      "immutable_reused_source": true,
+      "key": "AMI/L1B/LA/202507/19/05/gk2a_ami_le1b_ir133_la020ge_202507190556.nc",
+      "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr411_v4_actual_20261012/inputs/AMI_LA_202507190556/gk2a_ami_le1b_ir133_la020ge_202507190556.nc",
+      "sha256": "6440ea866f17f9336abed1d0f52329a2ec29d3ad89908a26320535473019835d",
+      "size_bytes": 506925,
+      "slot_obt": "202507190556"
+    }
+  ],
+  "private_output_root": "/Users/yhlee/KDM6AD-k/host/research_evidence/pr414_ami_window_20261012",
+  "producer_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr414_ami_window_2026-10-12/prepare_observations.py",
+  "producer_sha256": "1b4dc4b7128b5f96bf9b31acce7e393d7260e763280ae83f5e48644581008183",
+  "reader_source_sha256": {
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr403_l1b_heldout_2026-10-11/heldout_l1b.py": "e8d2ce8f4aa654b15f479dcd1cfd583760786d2b02bacea14d30607a0451fb8a",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr414_ami_window_2026-10-12/prepare_observations.py": "1b4dc4b7128b5f96bf9b31acce7e393d7260e763280ae83f5e48644581008183",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/obs/gk2a_l1b.py": "c16195e581e847053c1f7e63c6cd93deaaba0e51d84a1f7eea092c95c180f4b8",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/obs/gk2a_l1b_fd.py": "0c2c87a316680ba359f13336d3e7c87ca9c0bd9eab726f1b7cde469a87b1387e",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/obs/gk2a_l1b_la.py": "67c4d2abd1c16f55d6909edeef1549b0ce2e8e449b9b3f64e7185b4d34b083db",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/obs/obs_ingest.py": "224ff9d1f9e5c8557238db8e3f8a31650ca0faeb720e40394bd8c1d1666ced0d"
+  },
+  "rttov_H_K_M_optimizer_native_calls": 0,
+  "s3_listing_url": "https://noaa-gk2a-pds.s3.amazonaws.com/?list-type=2&prefix=AMI/L1B/LA/202507/19/06/",
+  "schema": "pr414_ami_window_observation_preflight_v1",
+  "source_bucket": "noaa-gk2a-pds",
+  "source_file_binding": {
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr403_l1b_heldout_2026-10-11/heldout_l1b.py": "e8d2ce8f4aa654b15f479dcd1cfd583760786d2b02bacea14d30607a0451fb8a",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/harness/evidence/pr414_ami_window_2026-10-12/prepare_observations.py": "1b4dc4b7128b5f96bf9b31acce7e393d7260e763280ae83f5e48644581008183",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/obs/gk2a_l1b.py": "c16195e581e847053c1f7e63c6cd93deaaba0e51d84a1f7eea092c95c180f4b8",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/obs/gk2a_l1b_fd.py": "0c2c87a316680ba359f13336d3e7c87ca9c0bd9eab726f1b7cde469a87b1387e",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/obs/gk2a_l1b_la.py": "67c4d2abd1c16f55d6909edeef1549b0ce2e8e449b9b3f64e7185b4d34b083db",
+    "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/oracle/kdm6/obs/obs_ingest.py": "224ff9d1f9e5c8557238db8e3f8a31650ca0faeb720e40394bd8c1d1666ced0d"
+  },
+  "source_list_path": "/private/tmp/KDM6AD-pr391-saturation-controls-20261009/graphify-out/other-native-search-20261012/AMI_0606_0616_SOURCE_LIST.json",
+  "source_list_sha256": "36891023380a8a52808950dc6a7391057c23b90ddbfc924535c87aed0c1e10f9",
+  "status": "PREDECLARED_BEFORE_DOWNLOAD",
+  "time_assumption": "NOMINAL_FILENAME_TIME_AS_MODEL_UTC_RESEARCH_MODE",
+  "time_assumption_note": "Scene filename OBT labels are represented as nominal model UTC for the declared local window only; per-pixel UTC remains unverified and is never synthesized.",
+  "window_id": "PR414_JUL19_AMI_0556_0606_0616",
+  "window_time_map": {
+    "background_valid_time": "2025-07-19_05:55:40",
+    "dt_s": 20,
+    "forcing_window_bound_by_this_producer": false,
+    "host_states_after_background_bound_by_this_producer": false,
+    "n_steps": 61,
+    "pixel_utc_verified": false,
+    "slot_times": [
+      {
+        "nominal_model_time": "2025-07-19_05:56:00",
+        "nominal_slot_obt": "202507190556",
+        "seconds_after_saved_background": 20,
+        "step_index": 1
+      },
+      {
+        "nominal_model_time": "2025-07-19_06:06:00",
+        "nominal_slot_obt": "202507190606",
+        "seconds_after_saved_background": 620,
+        "step_index": 31
+      },
+      {
+        "nominal_model_time": "2025-07-19_06:16:00",
+        "nominal_slot_obt": "202507190616",
+        "seconds_after_saved_background": 1220,
+        "step_index": 61
+      }
+    ]
+  }
+}
