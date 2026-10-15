@@ -200,7 +200,8 @@ O3의 단위·basis·초기 시각 처리는 별도 계약으로 해결한다.
 5. **최적화 연결:** full-host control encoder/pullback을 연결하고 각 closure의 창 재실행을 확인한다.
    마지막으로 전체 영역·관측 창의 비용/gradient/재현성/수렴을 별도로 평가한다.
 
-현재 설치된 native137 wrapper는 `value_only=1`로 handle을 닫는다.
+검토한 로컬 native137 wrapper 소스는 `value_only=1`로 호출하고 handle을 닫는다.
+설치된 바이너리와 이 소스의 빌드 일치 여부는 아직 인증되지 않았다.
 따라서 기존 65,988-column 고정 forcing 실행을 재개하는 것은 위 결합 설계의 실행이 아니다.
 현재 source를 새로 빌드했다는 증거도 별도로 확보해야 한다.
 Native 실행 검증 기록은 별도 private evidence로 관리하며 public clone에는 포함하지 않는다.
