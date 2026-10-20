@@ -1,0 +1,165 @@
+{
+  "schema": "kdm6ad.native_two_step_tq_summary.v1",
+  "as_of": "2026-10-20",
+  "scope": "paired 40-second cold MP137 native forward; one saved unaccepted T/Q posterior in probe, then empty T/Q command",
+  "model": {
+    "grid": [
+      234,
+      282,
+      39
+    ],
+    "native_columns": 65988,
+    "dt_seconds": 20,
+    "steps": 2,
+    "mpi_ranks": 1,
+    "threads": 1,
+    "radt_minutes": 0.3333333333333333
+  },
+  "provenance": {
+    "v4_executable_sha256": "a6879994ed91d5f1964dd16e788eb7c469a80a36c59f215b4cb03ec43f885e78",
+    "installed_kdm_library_sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+    "same_actual_namelist_sha256": "80155530e4b1a39436e27c45a3ce0712d4e72d9b4d9258d02cca0ed3e0106b6e",
+    "cold_wrfinput_sha256": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+    "startup_checkpoint_sha256": "0522208dc78a08ef279223d1638ae67947c8db673e6ab64ecd0902356abbcc82",
+    "saved_posterior_npz_sha256": "fafb9052342b522c9e129344b76dc6a9aa97ea9727151f5b93d7ff883cc04c7a",
+    "build_scope": "isolated existing build; mediation/helper rebuilt and remaining archive members reused; not a clean full host rebuild"
+  },
+  "zero_control_case": {
+    "status": "complete",
+    "control_rows_by_boundary": [
+      0,
+      0
+    ],
+    "checkpoint_times": [
+      "2025-07-19_00:00:00",
+      "2025-07-19_00:00:20",
+      "2025-07-19_00:00:40"
+    ],
+    "checkpoint_sha256": [
+      "0522208dc78a08ef279223d1638ae67947c8db673e6ab64ecd0902356abbcc82",
+      "e821185879a6df8c5e2f37c55bb92e61369fb501db4ec2bdbac4a9db27490510",
+      "c588a6ff75ccfac3fa4ce9ff066102bf76263ddba25fbd16ccd97d36aac6f4f3"
+    ],
+    "direct_h_updates": 0
+  },
+  "saved_tq_probe": {
+    "status": "complete",
+    "posterior_accepted": false,
+    "analysis_valid_time": "2025-07-19_00:00:00",
+    "source_column_flat_index": 4835,
+    "native_i_j": [
+      156,
+      21
+    ],
+    "updated_levels": 39,
+    "delta_theta_m_max_abs_K": 0.5539826939843238,
+    "delta_qv_max_abs_kg_per_kg_dry": 4.5887501770452976e-05,
+    "control_rows_by_boundary": [
+      39,
+      0
+    ],
+    "first_output_sha256_equals_second_input_sha256": true,
+    "second_input_checkpoint_sha256": "0acb0aed67d6d6aea66852f3bcda96bbaffd911a819874dc2d4eb8ee9a5e5355",
+    "direct_h_updates": 0
+  },
+  "probe_vs_zero_state_comparisons": {
+    "2025-07-19_00:00:20": {
+      "variables": 652,
+      "numeric_values_compared": 322426586,
+      "numeric_mismatches": 48264,
+      "fields_with_differences": 136,
+      "finite": true,
+      "complete_values": true
+    },
+    "2025-07-19_00:00:40": {
+      "variables": 652,
+      "numeric_values_compared": 322426586,
+      "numeric_mismatches": 238989,
+      "fields_with_differences": 153,
+      "finite": true,
+      "complete_values": true
+    }
+  },
+  "mp_input_delta_max_abs": {
+    "00:00:20": {
+      "TH_K": 0.527313232421875,
+      "Q_kg_per_kg": 4.3587759137153625e-05,
+      "DEN_kg_per_m3": 0.0005521774291992188,
+      "PII": 9.59634780883789e-05,
+      "P_Pa": 11.046875,
+      "DELZ_m": 1.1259765625
+    },
+    "00:00:40": {
+      "TH_K": 0.498199462890625,
+      "Q_kg_per_kg": 4.1835010051727295e-05,
+      "DEN_kg_per_m3": 0.0004773437976837158,
+      "PII": 5.638599395751953e-05,
+      "P_Pa": 9.07421875,
+      "DELZ_m": 0.9755859375
+    }
+  },
+  "finish_tendency_delta_max_abs": {
+    "00:00:20": {
+      "H_rate_levels": 28,
+      "H_rate_K_per_s": 0.000132772111101076,
+      "QV_rate_levels": 10,
+      "QV_rate_kg_per_kg_s": 3.546011129174076e-08
+    },
+    "00:00:40": {
+      "H_rate_levels": 11,
+      "H_rate_K_per_s": 0.00021107829525135458,
+      "QV_rate_levels": 5,
+      "QV_rate_kg_per_kg_s": 5.628535149071467e-08
+    }
+  },
+  "finish_checks": {
+    "samples_per_case": 78,
+    "trace_records_per_case": 312,
+    "arithmetic_mismatches": 0,
+    "packing_mismatches": 0,
+    "finish_to_checkpoint_comparisons_per_case": 312,
+    "finish_to_checkpoint_mismatches": 0
+  },
+  "v4_zero_first_step_vs_v3_one_step": {
+    "time": "2025-07-19_00:00:20",
+    "variables": 652,
+    "numeric_values_compared": 322426586,
+    "raw_bit_mismatches": 0,
+    "finite_and_complete": true,
+    "metadata_alarm_normalizations": [
+      "WRF_ALARM_ISRINGING_01",
+      "WRF_ALARM_ISRINGING_07"
+    ]
+  },
+  "source_safeguards": {
+    "origin_bound_casefolded_reserved_output_names": [
+      "native_trace.hex",
+      "transition.json",
+      "namelist.output",
+      "prefix_compare_*"
+    ],
+    "origin_bound_synthetic_asset_variants": 8,
+    "live_stepper_reserved_child_output": "validation",
+    "live_stepper_case_variants": 2,
+    "preflight_before_case_creation_or_runner_launch": true,
+    "caller_owned_asset_bytes_unchanged": true,
+    "negative_old_qv_rejected_before_update": true
+  },
+  "limits": [
+    "one unaccepted saved diagnostic posterior; not a converged analysis",
+    "one column and 39 levels receive direct increments",
+    "T/Q state and retained H/Q tendency memory evolve jointly; isolated H contribution is not separated",
+    "QV changes are external water sources; no global balance or conservation certificate",
+    "no new observations, RTTOV, optimizer, full-host derivative, or cycling-skill result"
+  ],
+  "validation_final": {
+    "full_harness_passed": 2490,
+    "full_harness_skipped": 59,
+    "full_harness_deselected": 309,
+    "full_harness_wall_seconds": 142.2,
+    "seven_focused_native_files_passed": 183,
+    "focused_wall_seconds": 27.46,
+    "ruff_undefined_names": "passed",
+    "diff_check": "passed"
+  }
+}

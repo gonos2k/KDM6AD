@@ -158,6 +158,26 @@ the actual native forcing and produced native tendencies for this one step.
 There was no next MP call, and the result is not a converged/accepted analysis,
 physical balance certificate, conservation proof, or full-host derivative.
 
+### Two-step cold T/Q carry
+
+A matched 40-second baseline/probe now extends that cold result through a
+second native step. The probe applied the same 39-level saved T/Q posterior at
+00:00 and an empty T/Q command at 00:20; the baseline used empty commands at
+both boundaries. The probe's 00:20 output checkpoint SHA equals its 00:20
+second-step input SHA. At the second MP137 call all 39 column levels changed in
+TH/Q/DEN/PII/P/DELZ, by at most 0.498199 K, `4.18350e-5` kg/kg,
+`4.77344e-4` kg/m³, `5.63860e-5`, 9.074219 Pa, and 0.975586 m. Finish
+produced an H rate change at 11 levels (maximum `2.11078e-4 K s-1`) and a QV
+rate change at 5 levels (maximum `5.62854e-8 kg kg-1 s-1`); there was no direct
+H control. Full-state comparisons were finite and complete; expected
+probe-versus-control differences were 48,264 numeric values at 00:20 and
+238,989 at 00:40. Finish replay and finish-to-checkpoint checks had zero
+mismatches. Since H/Q memory evolves with the adjusted state, this two-step run
+does not isolate an H-rate causal contribution. The single-column posterior
+remains unaccepted and has no global balance or conservation certificate. See the
+[`two-step report`](../harness/evidence/native_two_step_tq_2026-10-20/REPORT.md)
+for build attribution and the bounded measurements.
+
 ### Radiation cadence
 
 The live stepper defaults to `radiation_every_step=True`. For 20-second steps

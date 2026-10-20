@@ -219,6 +219,39 @@ def test_origin_prefix_mismatch_is_recorded_as_failed_and_not_returned(setup_nat
     }]
 
 
+@pytest.mark.parametrize("asset_name", [
+    "native_trace.hex",
+    "NATIVE_TRACE.HEX",
+    "transition.json",
+    "TRANSITION.JSON",
+    "namelist.output",
+    "NAMELIST.OUTPUT",
+    "prefix_compare_0001.json",
+    "PREFIX_COMPARE_0001.JSON",
+])
+def test_owned_output_asset_name_is_refused_before_staging_or_launch(
+        setup_native, tmp_path, monkeypatch, asset_name):
+    model, state, inputs = setup_native
+    trace_asset = tmp_path / "caller-trace.hex"
+    trace_asset.write_bytes(b"caller-owned trace bytes\n")
+    before = trace_asset.read_bytes()
+    launched = []
+    monkeypatch.setattr(native, "_run_runner", _synthetic_runner(launched))
+    colliding = NativeInputs(
+        inputs.namelist,
+        inputs.assets + ((asset_name, PinnedFile.bind(trace_asset)),),
+        inputs.environment,
+    )
+    case_dirs_before = set(model.work_root.iterdir())
+
+    with pytest.raises(ValueError):
+        model.forward(0, state, colliding, 20)
+
+    assert launched == []
+    assert set(model.work_root.iterdir()) == case_dirs_before
+    assert trace_asset.read_bytes() == before
+
+
 def test_origin_context_rejects_changed_external_or_runtime_before_launch(setup_native, monkeypatch, tmp_path):
     model, state, inputs = setup_native
     calls = []

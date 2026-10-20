@@ -218,6 +218,7 @@ def fortran_analysis_control(tmp_path_factory):
   character(len=256) :: message
   character(len=16) :: step_arg
   character(len=8) :: expect_reject
+  character(len=8) :: negative_old_q
   integer :: bounds(6)
   bounds = [1,2,1,3,1,2]
   step=6
@@ -236,6 +237,8 @@ def fortran_analysis_control(tmp_path_factory):
   allocate(oldt(size(dt)),oldq(size(dq)))
   oldt=270.0_real32
   oldq=0.125_real32
+  call get_environment_variable('KDM6AD_TQ_TEST_NEGATIVE_OLD_Q',value=negative_old_q)
+  if(trim(negative_old_q) == '1') oldq(1)=-0.125_real32
   if(size(dt) >= 1) then
     oldt(1)=transfer(int(z'80000000',int32),0.0_real32)
     dt(1)=0.0_real32
@@ -305,12 +308,15 @@ end program analysis_driver
     return executable
 
 
-def _run_fortran_waiting(executable, control, packet, *, step=6, expect_reject=False):
+def _run_fortran_waiting(executable, control, packet, *, step=6, expect_reject=False,
+                         negative_old_q=False):
     env = os.environ.copy()
     env["KDM6AD_STEP_CONTROL_ROOT"] = str(control)
     env["KDM6AD_STEP_CONTROL_FAMILY"] = "ANALYSIS_TQ"
     if expect_reject:
         env["KDM6AD_TQ_TEST_EXPECT_REJECT"] = "1"
+    if negative_old_q:
+        env["KDM6AD_TQ_TEST_NEGATIVE_OLD_Q"] = "1"
     proc = subprocess.Popen([str(executable),str(step)],env=env,stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT,text=True)
     ready=control/f"ready_{step:010d}.txt"
@@ -359,6 +365,20 @@ def test_fortran_prepare_rejects_invalid_later_row_without_partial_host_mutation
     code,output=_run_fortran_waiting(
         fortran_analysis_control,control,encode_analysis_command(6,updates,BOUNDS),
         expect_reject=True)
+    assert code==0,output
+    assert "REJECTED_NO_PARTIAL_MUTATION" in output
+    assert not (control/"applied_0000000006.txt").exists()
+
+
+def test_fortran_prepare_rejects_negative_old_qv_even_if_delta_would_repair_it(
+        tmp_path,fortran_analysis_control):
+    # The requested increment would change QV from -0.125 to +0.125. The
+    # invalid base state must be rejected before any prepared value is applied.
+    updates=(AnalysisUpdate(1,1,1,0.0,.25),)
+    control=tmp_path/"negative_old_qv";control.mkdir()
+    code,output=_run_fortran_waiting(
+        fortran_analysis_control,control,encode_analysis_command(6,updates,BOUNDS),
+        expect_reject=True,negative_old_q=True)
     assert code==0,output
     assert "REJECTED_NO_PARTIAL_MUTATION" in output
     assert not (control/"applied_0000000006.txt").exists()
