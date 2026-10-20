@@ -27,10 +27,13 @@ CoordinatorAuxDiagnostics build_default_aux_for_test(
 // RESERVED / NOT WIRED. Physics-parameter sensitivity is not yet connected to the
 // forward graph: kdm6_fn consumes baked-in constants and IGNORES `params` (see
 // runtime.cpp). Building requires_grad parameter leaves via make_parameters(flags != 0)
-// therefore has NO effect on any gradient — only STATE leaves are differentiable today.
-// To avoid a silent "flag set, no effect" trap, kdm6_step() fast-fails (TORCH_CHECK) if
-// any Parameters tensor requires grad, and the C ABI rejects param_grad_flags != 0
-// (KDM6_ERR_NOT_IMPLEMENTED). These types are kept for a future param-grad ABI.
+// therefore has NO effect on any gradient — physics-parameter leaves are not
+// differentiable today. State leaves are supported by the existing VJP/JVP;
+// forcing leaves are supported only through the explicit joint state-forcing
+// derivative methods when all sixteen inputs are independent grad leaves. To
+// avoid a silent "flag set, no effect" trap, kdm6_step() fast-fails (TORCH_CHECK)
+// if any Parameters tensor requires grad, and the C ABI rejects param_grad_flags
+// != 0 (KDM6_ERR_NOT_IMPLEMENTED). These types are kept for a future param-grad ABI.
 struct Parameters {
     torch::Tensor peaut;
     torch::Tensor ncrk1;
@@ -147,6 +150,13 @@ struct GraphOptions {
 
 inline constexpr uint32_t kAllStateFields = 0x0FFFu;
 
+// Joint adjoint result. State active_field_mask applies only to `state`; all
+// four independent forcing fields participate in the joint derivative.
+struct StateForcingGradient {
+    State state;
+    Forcing forcing;
+};
+
 // ── [G3] Handle — vjp/jvp/jacobian 인터페이스 ──────────────────────────────
 class Handle {
 public:
@@ -175,6 +185,17 @@ public:
     //      the returned JVP can itself participate in higher-order AD.
     State vjp(const State& u, const GraphOptions& opts = {}) const;
     State jvp(const State& v, const GraphOptions& opts = {}) const;
+    // Joint derivatives with respect to the twelve state leaves and four
+    // independent forcing leaves stored by kdm6_step. These methods reject
+    // handles whose forcing tensors are frozen, non-leaf, or reuse the same
+    // TensorImpl identity as another input; they never manufacture gradients
+    // for frozen forcing. Distinct leaf views that share storage are not
+    // detected by this identity check.
+    StateForcingGradient vjp_state_forcing(
+        const State& u, const GraphOptions& opts = {}) const;
+    State jvp_state_forcing(
+        const State& v, const Forcing& vf,
+        const GraphOptions& opts = {}) const;
     // jacobian / param_grad — 후행 추가
 
     // [G6] RAII close — 명시적 해제

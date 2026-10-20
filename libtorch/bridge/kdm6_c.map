@@ -3,7 +3,7 @@
  * exported symbols; `local: *` localizes every internal kdm6::/libtorch/std
  * symbol. The KDM6_2 node also symbol-versions the exports (kdm6_step_c@@KDM6_2);
  * the ELF SONAME is set separately by CMake SOVERSION (PR3-B), not here. This
- * global set MUST stay exactly the 11 C ABI functions — the CI gate asserts it. */
+ * global set MUST stay exactly the 14 C ABI functions — the CI gate asserts it. */
 KDM6_2 {
   global:
     kdm6_step_c;
@@ -17,6 +17,9 @@ KDM6_2 {
     kdm6_handle_jvp_c;
     kdm6_handle_close_c;
     kdm6_handle_closep_c;
+    kdm6_step_ad_state_forcing_c;
+    kdm6_handle_state_forcing_vjp_c;
+    kdm6_handle_state_forcing_jvp_c;
   local:
     *;
 };

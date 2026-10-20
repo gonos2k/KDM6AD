@@ -53,6 +53,7 @@ extern "C" struct kdm6_handle_t {
     // computed on an f32 graph carry f32 precision even in double buffers
     // (kdm6ad+da.md §0.1.A — the fp64 DA path is the design default).
     c10::ScalarType dtype = c10::ScalarType::Float;
+    bool state_forcing_ad = false;
 };
 
 namespace {
@@ -610,6 +611,22 @@ kdm6::Forcing unpack_packed_forcing(const double* packed, int im, int kme, int j
     return fc;
 }
 
+// Value-only C boundary: export four forcing cotangents in the same native
+// Fortran layout used by the inputs. This does not detach the live AD graph.
+void pack_packed_forcing(const kdm6::Forcing& forcing, double* packed,
+                         int im, int kme, int jme) {
+    const int64_t n = static_cast<int64_t>(im) * kme * jme;
+    const auto fields = forcing.fields();
+    for (size_t f = 0; f < fields.size(); ++f) {
+        auto t = fields[f]->detach().to(torch::kFloat64);
+        TORCH_CHECK(t.numel() == n, "packed forcing field ", f, " numel mismatch");
+        auto ordered = t.reshape({im, jme, kme}).permute({0, 2, 1})
+                           .permute({2, 1, 0}).contiguous();
+        std::memcpy(packed + static_cast<int64_t>(f) * n,
+                    ordered.data_ptr<double>(), sizeof(double) * n);
+    }
+}
+
 }  // namespace
 
 // NOTE: diag_rhog/RHOPO3D is deliberately NOT part of the adjoint packed ABI.
@@ -628,7 +645,8 @@ static int kdm6_step_ad_variant_impl(
     double ncmin_land,
     double ncmin_sea,
     uint32_t physics_variant,
-    int64_t dry_number) {
+    int64_t dry_number,
+    bool state_forcing_ad = false) {
     if (handle) *handle = nullptr;   // NULL output handle on every error path (see kdm6_step_c)
     if (im <= 0 || kme <= 0 || jme <= 0 ||
         !kdm6::fortran_packed_shape_fits(im, kme, jme, sizeof(double),
@@ -669,6 +687,9 @@ static int kdm6_step_ad_variant_impl(
         }
         auto forcing = unpack_packed_forcing(forcing_packed, im, kme, jme,
                                              c10::ScalarType::Double);
+        if (state_forcing_ad && value_only == 0) {
+            for (auto* field : forcing.fields()) field->requires_grad_(true);
+        }
         auto params = kdm6::make_parameters(0);
 
         c10::optional<torch::Tensor> xland_t = c10::nullopt;
@@ -696,6 +717,7 @@ static int kdm6_step_ad_variant_impl(
             h->impl = std::move(result.handle);
             h->im = im; h->kme = kme; h->jme = jme;
             h->dtype = c10::ScalarType::Double;   // fp64 DA graph
+            h->state_forcing_ad = state_forcing_ad;
             *handle = h;
         }
         return KDM6_OK;
@@ -747,6 +769,72 @@ extern "C" int kdm6_step_ad_c(
         state_in_packed, forcing_packed, im, kme, jme, dt, value_only,
         state_out_packed, handle, xland, ncmin_land, ncmin_sea,
         (uint32_t)KDM6_PHYSICS_LEGACY);
+}
+
+extern "C" int kdm6_step_ad_state_forcing_c(
+    const double* state_in_packed, const double* forcing_packed,
+    int im, int kme, int jme, double dt, int value_only,
+    double* state_out_packed, kdm6_handle_t** handle,
+    const float* xland, double ncmin_land, double ncmin_sea,
+    uint32_t physics_variant, int64_t dry_number) {
+    return kdm6_step_ad_variant_impl(
+        state_in_packed, forcing_packed, im, kme, jme, dt, value_only,
+        state_out_packed, handle, xland, ncmin_land, ncmin_sea,
+        physics_variant, dry_number, true);
+}
+
+extern "C" int kdm6_handle_state_forcing_vjp_c(
+    kdm6_handle_t* h, const double* u_packed,
+    double* state_grad_packed, double* forcing_grad_packed) {
+    if (!h || !h->impl || !u_packed || !state_grad_packed || !forcing_grad_packed)
+        return KDM6_ERR_NULL_POINTER;
+    if (h->impl->is_closed()) return KDM6_ERR_HANDLE_CLOSED;
+    if (h->impl->is_value_only()) return KDM6_ERR_VALUE_ONLY;
+    if (!h->state_forcing_ad) return KDM6_ERR_INVALID_ARG;
+    if (h->im <= 0 || h->kme <= 0 || h->jme <= 0) return KDM6_ERR_INVALID_DIM;
+    FpEnvGuard kdm6_fpenv_guard;
+    if (!ensure_libtorch_singlethread()) return KDM6_ERR_THREAD_CONFIG;
+    try {
+        auto u = unpack_packed_state(u_packed, h->im, h->kme, h->jme, h->dtype);
+        kdm6::GraphOptions opts;
+        opts.retain_graph = true;
+        auto grad = h->impl->vjp_state_forcing(u, opts);
+        pack_packed_state(grad.state, state_grad_packed, h->im, h->kme, h->jme);
+        pack_packed_forcing(grad.forcing, forcing_grad_packed, h->im, h->kme, h->jme);
+        return KDM6_OK;
+    } catch (const c10::NotImplementedError&) {
+        return KDM6_ERR_NOT_IMPLEMENTED;
+    } catch (const std::exception& e) {
+        std::fprintf(stderr, "kdm6_handle_state_forcing_vjp_c: %s\n", e.what());
+        return KDM6_ERR_INTERNAL;
+    } catch (...) { return KDM6_ERR_INTERNAL; }
+}
+
+extern "C" int kdm6_handle_state_forcing_jvp_c(
+    kdm6_handle_t* h, const double* state_direction_packed,
+    const double* forcing_direction_packed, double* tangent_out_packed) {
+    if (!h || !h->impl || !state_direction_packed || !forcing_direction_packed || !tangent_out_packed)
+        return KDM6_ERR_NULL_POINTER;
+    if (h->impl->is_closed()) return KDM6_ERR_HANDLE_CLOSED;
+    if (h->impl->is_value_only()) return KDM6_ERR_VALUE_ONLY;
+    if (!h->state_forcing_ad) return KDM6_ERR_INVALID_ARG;
+    if (h->im <= 0 || h->kme <= 0 || h->jme <= 0) return KDM6_ERR_INVALID_DIM;
+    FpEnvGuard kdm6_fpenv_guard;
+    if (!ensure_libtorch_singlethread()) return KDM6_ERR_THREAD_CONFIG;
+    try {
+        auto vs = unpack_packed_state(state_direction_packed, h->im, h->kme, h->jme, h->dtype);
+        auto vf = unpack_packed_forcing(forcing_direction_packed, h->im, h->kme, h->jme, h->dtype);
+        kdm6::GraphOptions opts;
+        opts.retain_graph = true;
+        auto tangent = h->impl->jvp_state_forcing(vs, vf, opts);
+        pack_packed_state(tangent, tangent_out_packed, h->im, h->kme, h->jme);
+        return KDM6_OK;
+    } catch (const c10::NotImplementedError&) {
+        return KDM6_ERR_NOT_IMPLEMENTED;
+    } catch (const std::exception& e) {
+        std::fprintf(stderr, "kdm6_handle_state_forcing_jvp_c: %s\n", e.what());
+        return KDM6_ERR_INTERNAL;
+    } catch (...) { return KDM6_ERR_INTERNAL; }
 }
 
 extern "C" int kdm6_handle_vjp_c(kdm6_handle_t* h,

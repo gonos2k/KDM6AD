@@ -1,0 +1,363 @@
+{
+  "schema": "fortran_fixture_cpp_duality_diagnostic_v1",
+  "fixture": {
+    "im": 2,
+    "kme": 3,
+    "jme": 2,
+    "nccn_output_count": 12,
+    "dt_seconds": 60.0,
+    "physics_variant": 1,
+    "ncmin_land": 100.0,
+    "ncmin_sea": 10.0,
+    "directions_and_covector": "exact Fortran fixture"
+  },
+  "library": {
+    "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_state_forcing_ad_20261020/build/libkdm6_c.dylib",
+    "sha256": "3e968dcd43f6d361a2e1be6b963f76dcb9de1381313875e5c805af187a1693e4",
+    "torch_libraries": [
+      "/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libc10.dylib",
+      "/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libtorch.dylib",
+      "/Users/yhlee/Library/Python/3.10/lib/python/site-packages/torch/lib/libtorch_cpu.dylib"
+    ]
+  },
+  "results": [
+    {
+      "dry_number": 0,
+      "nccn_input_cells": [
+        1000000000.0,
+        1000000000.0,
+        1000000000.0,
+        1000000000.0,
+        1000000000.0,
+        1000000000.0,
+        1000000000.0,
+        1000000000.0,
+        1000000000.0,
+        1000000000.0,
+        1000000000.0,
+        1000000000.0
+      ],
+      "nccn_output_cells": [
+        1000000000.0,
+        1000000015.1810023,
+        1000000000.0,
+        1000000008.5627534,
+        1000000000.0,
+        1000000004.7949909,
+        1000000000.0,
+        1000000015.1810023,
+        1000000000.0,
+        1000000008.5627534,
+        1000000000.0,
+        1000000004.7949909
+      ],
+      "nccn_output_delta_cells": [
+        0.0,
+        15.181002259254456,
+        0.0,
+        8.562753438949585,
+        0.0,
+        4.79499089717865,
+        0.0,
+        15.181002259254456,
+        0.0,
+        8.562753438949585,
+        0.0,
+        4.79499089717865
+      ],
+      "old_state_only_lhs_decimal": -133.38460298797264,
+      "old_state_only_rhs_decimal": -133.384602975924,
+      "joint_state_direction_lhs_decimal": -133.38460298797264,
+      "joint_state_gradient_rhs_decimal": -133.384602975924,
+      "old_vs_joint_state_jvp_max_abs": 0.0,
+      "old_vs_joint_state_vjp_max_abs": 0.0,
+      "old_vs_joint_state_jvp_raw_bits_equal": true,
+      "old_vs_joint_state_vjp_raw_bits_equal": true,
+      "old_vs_joint_state_jvp_raw_bit_mismatch_count": 0,
+      "old_vs_joint_state_vjp_raw_bit_mismatch_count": 0,
+      "full_lhs_decimal_exact_products": -243.5156684996043,
+      "full_rhs_decimal_exact_products": -243.51566835135299,
+      "nccn_lhs_decimal_exact_products": -259.3591287432828,
+      "nccn_vjp_rhs_decimal_exact_products": -259.3591285950315,
+      "nccn_unit_basis_weighted_rhs_decimal_exact_products": -259.35912866571647,
+      "nccn_unit_basis_jvp_max_abs_error": 5.265448077551582e-10,
+      "nccn_unit_basis_vjp_vs_aggregate_max_abs_state": 0.07443582639098167,
+      "nccn_unit_basis_vjp_vs_aggregate_max_abs_forcing": 1.8842402693457925e-05,
+      "nccn_unit_vjp_directional_dots_decimal": [
+        -2.475913085400554e-10,
+        -1.0461309149092657,
+        0.0,
+        -0.38438407389154333,
+        -9.008458539870424e-11,
+        -0.030359570997740344,
+        -3.428275087702154e-10,
+        -1.4790008359622568,
+        0.0,
+        -0.4977168341895075,
+        -1.1710996101831553e-10,
+        -0.038639453997124075
+      ],
+      "nccn_jvp_cells": [
+        -5.526317181647755e-10,
+        -1.0461309154358105,
+        0.0,
+        -0.38438407390435714,
+        -4.285993782104924e-11,
+        -0.03035957102838438,
+        -2.8319391276454553e-10,
+        -1.4790008358478417,
+        0.0,
+        -0.49771683454287086,
+        1.5916157281026244e-12,
+        -0.03863945422449433
+      ],
+      "nccn_value_only_central_difference": [
+        {
+          "epsilon": 0.01,
+          "max_abs_error_vs_joint_jvp": 6.280252137003117e-06,
+          "max_relative_error_vs_joint_jvp": 552.6317181647755,
+          "fd_nccn_cells": [
+            0.0,
+            -1.0461270809173584,
+            0.0,
+            -0.38439035415649414,
+            0.0,
+            -0.030362606048583984,
+            0.0,
+            -1.4790058135986328,
+            0.0,
+            -0.49771666526794434,
+            0.0,
+            -0.0386357307434082
+          ]
+        },
+        {
+          "epsilon": 0.001,
+          "max_abs_error_vs_joint_jvp": 4.396023473418609e-05,
+          "max_relative_error_vs_joint_jvp": 552.6317181647755,
+          "fd_nccn_cells": [
+            0.0,
+            -1.0461211204528809,
+            0.0,
+            -0.38439035415649414,
+            0.0,
+            -0.030338764190673828,
+            0.0,
+            -1.4789700508117676,
+            0.0,
+            -0.4976987838745117,
+            0.0,
+            -0.038683414459228516
+          ]
+        },
+        {
+          "epsilon": 0.0001,
+          "max_abs_error_vs_joint_jvp": 0.00020959897040029318,
+          "max_relative_error_vs_joint_jvp": 552.6317181647755,
+          "fd_nccn_cells": [
+            0.0,
+            -1.0460615158081055,
+            0.0,
+            -0.38444995880126953,
+            0.0,
+            -0.03039836883544922,
+            0.0,
+            -1.4787912368774414,
+            0.0,
+            -0.4976987838745117,
+            0.0,
+            -0.038743019104003906
+          ]
+        },
+        {
+          "epsilon": 1e-05,
+          "max_abs_error_vs_joint_jvp": 0.005154819059384641,
+          "max_relative_error_vs_joint_jvp": 552.6317181647755,
+          "fd_nccn_cells": [
+            0.0,
+            -1.043081283569336,
+            0.0,
+            -0.38146972656249994,
+            0.0,
+            -0.02980232238769531,
+            0.0,
+            -1.4841556549072263,
+            0.0,
+            -0.49471855163574213,
+            0.0,
+            -0.04172325134277344
+          ]
+        }
+      ]
+    },
+    {
+      "dry_number": 1,
+      "nccn_input_cells": [
+        1000000000.0,
+        1000000000.0,
+        1000000000.0,
+        1000000000.0,
+        1000000000.0,
+        1000000000.0,
+        1000000000.0,
+        1000000000.0,
+        1000000000.0,
+        1000000000.0,
+        1000000000.0,
+        1000000000.0
+      ],
+      "nccn_output_cells": [
+        1000000000.0,
+        1000000008.6232411,
+        1000000000.0,
+        1000000008.7635454,
+        1000000000.0,
+        1000000005.9071712,
+        1000000000.0,
+        1000000008.6232411,
+        1000000000.0,
+        1000000008.7635454,
+        1000000000.0,
+        1000000005.9071712
+      ],
+      "nccn_output_delta_cells": [
+        0.0,
+        8.623241066932678,
+        0.0,
+        8.763545393943787,
+        0.0,
+        5.907171249389648,
+        0.0,
+        8.623241066932678,
+        0.0,
+        8.763545393943787,
+        0.0,
+        5.907171249389648
+      ],
+      "old_state_only_lhs_decimal": -86.29571100969986,
+      "old_state_only_rhs_decimal": -86.29571098362443,
+      "joint_state_direction_lhs_decimal": -86.29571100969986,
+      "joint_state_gradient_rhs_decimal": -86.29571098362443,
+      "old_vs_joint_state_jvp_max_abs": 0.0,
+      "old_vs_joint_state_vjp_max_abs": 0.0,
+      "old_vs_joint_state_jvp_raw_bits_equal": true,
+      "old_vs_joint_state_vjp_raw_bits_equal": true,
+      "old_vs_joint_state_jvp_raw_bit_mismatch_count": 0,
+      "old_vs_joint_state_vjp_raw_bit_mismatch_count": 0,
+      "full_lhs_decimal_exact_products": -212.80969136100813,
+      "full_rhs_decimal_exact_products": -212.80969095556893,
+      "nccn_lhs_decimal_exact_products": -228.53571487212182,
+      "nccn_vjp_rhs_decimal_exact_products": -228.53571489826464,
+      "nccn_unit_basis_weighted_rhs_decimal_exact_products": -228.53571396315198,
+      "nccn_unit_basis_jvp_max_abs_error": 7.362507714603339e-09,
+      "nccn_unit_basis_vjp_vs_aggregate_max_abs_state": 0.037212811410427094,
+      "nccn_unit_basis_vjp_vs_aggregate_max_abs_forcing": 4.724024341534066e-05,
+      "nccn_unit_vjp_directional_dots_decimal": [
+        -3.2846059290265257e-10,
+        -0.5114550157044859,
+        -3.942380972291262e-10,
+        -0.5655565808402889,
+        2.1064770623777139e-10,
+        -0.13519679203098925,
+        -4.580910707750011e-10,
+        -0.7133243125666264,
+        -5.214538973277243e-10,
+        -0.7389500865777259,
+        2.738420181091028e-10,
+        -0.17206864440307723
+      ],
+      "nccn_jvp_cells": [
+        0.0,
+        -0.5114550134167075,
+        9.322538971900939e-10,
+        -0.5655565820634365,
+        0.0,
+        -0.13519679568707943,
+        0.0,
+        -0.7133243093267083,
+        0.0,
+        -0.7389500886201859,
+        0.0,
+        -0.17206865176558495
+      ],
+      "nccn_value_only_central_difference": [
+        {
+          "epsilon": 0.01,
+          "max_abs_error_vs_joint_jvp": 6.482936441898346e-06,
+          "max_relative_error_vs_joint_jvp": 932.2538971900939,
+          "fd_nccn_cells": [
+            0.0,
+            -0.5114614963531494,
+            0.0,
+            -0.565558671951294,
+            0.0,
+            -0.13519525527954102,
+            0.0,
+            -0.7133185863494873,
+            0.0,
+            -0.7389485836029053,
+            0.0,
+            -0.1720726490020752
+          ]
+        },
+        {
+          "epsilon": 0.001,
+          "max_abs_error_vs_joint_jvp": 0.00016637053340673447,
+          "max_relative_error_vs_joint_jvp": 932.2538971900939,
+          "fd_nccn_cells": [
+            0.0,
+            -0.5112886428833008,
+            0.0,
+            -0.5655288696289062,
+            0.0,
+            -0.13530254364013672,
+            0.0,
+            -0.7132291793823242,
+            0.0,
+            -0.7389187812805176,
+            0.0,
+            -0.17201900482177734
+          ]
+        },
+        {
+          "epsilon": 0.0001,
+          "max_abs_error_vs_joint_jvp": 0.0007393350824713707,
+          "max_relative_error_vs_joint_jvp": 932.2538971900939,
+          "fd_nccn_cells": [
+            0.0,
+            -0.5114078521728516,
+            0.0,
+            -0.5650520324707031,
+            0.0,
+            -0.1347064971923828,
+            0.0,
+            -0.7140636444091797,
+            0.0,
+            -0.7385015487670898,
+            0.0,
+            -0.1722574234008789
+          ]
+        },
+        {
+          "epsilon": 1e-05,
+          "max_abs_error_vs_joint_jvp": 0.009989500977099053,
+          "max_relative_error_vs_joint_jvp": 932.2538971900939,
+          "fd_nccn_cells": [
+            0.0,
+            -0.5125999450683594,
+            0.0,
+            -0.5662441253662109,
+            0.0,
+            -0.13709068298339844,
+            0.0,
+            -0.7033348083496093,
+            0.0,
+            -0.7331371307373046,
+            0.0,
+            -0.17285346984863278
+          ]
+        }
+      ]
+    }
+  ]
+}
