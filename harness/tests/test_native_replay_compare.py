@@ -95,6 +95,36 @@ def test_rejects_wrong_selected_timestamp():
     assert "Times mismatch" in " ".join(report["errors"])
 
 
+def test_numeric_times_cannot_bypass_expected_utc_validation():
+    reference = _dataset([T0])
+    candidate = _dataset([T0])
+    for dataset in (reference, candidate):
+        dataset.variables["Times"] = FakeVariable(
+            np.asarray([0], dtype=np.int32), ("Time",)
+        )
+
+    report = compare_frames(reference, candidate, 0, 0, T0)
+
+    assert not report["passed"]
+    assert not report["raw_bitwise_equal"]
+    assert not report["times_values"]
+    assert any("Times variable must use a character dtype" in e for e in report["errors"])
+
+
+def test_character_times_without_time_axis_cannot_pass():
+    reference = _dataset([T0])
+    candidate = _dataset([T0])
+    chars = _times(T0)[0]
+    for dataset in (reference, candidate):
+        dataset.variables["Times"] = FakeVariable(chars, ("DateStrLen",))
+
+    report = compare_frames(reference, candidate, 0, 0, T0)
+
+    assert not report["passed"]
+    assert not report["raw_bitwise_equal"]
+    assert any("Times variable must include the Time dimension" in e for e in report["errors"])
+
+
 def test_missing_h_diabatic_is_not_hidden():
     reference = _dataset([T0])
     candidate = _dataset([T0])

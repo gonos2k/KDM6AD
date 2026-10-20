@@ -206,7 +206,10 @@ tests do not substitute for the private native comparisons.
 
 The native integrations and terminal comparisons are complete for the case
 above. The restart-entry diagnostic history discrepancy remains open.
-Full-host state/control encoding, `HostTransition` integration, forcing
+The follow-up [`NATIVE_MP137_TRANSITION.md`](NATIVE_MP137_TRANSITION.md)
+adds a value-only origin-bound `HostTransition` adapter and actual MP input
+traces, while retaining a newly reproduced intermediate-restart mismatch.
+Full-host state/control encoding, differentiable native integration, forcing
 JVP/VJP, pressure-aware observations and full-cost directional differences
 remain unimplemented. Existing full-host scope gates stay closed. The earlier
 fixed-forcing KO DA remains paused; no observations were assimilated by these

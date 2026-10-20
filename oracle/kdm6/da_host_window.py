@@ -21,29 +21,32 @@ RTTOV's existing fixed-pressure first-order wrapper does not meet that scope.
 """
 from __future__ import annotations
 
+import copy
 from dataclasses import dataclass
 import math
 from numbers import Real
 from types import MappingProxyType
-from typing import Callable, Mapping, Protocol, Sequence
+from typing import Callable, Generic, Mapping, Protocol, Sequence, TypeVar
 
 import torch
 
 FieldMap = Mapping[str, torch.Tensor]
+StateT = TypeVar("StateT")
+ExternalT = TypeVar("ExternalT")
 
 
-class HostTransition(Protocol):
+class HostTransition(Protocol[StateT, ExternalT]):
     mp_physics: int
     derivative_scope: str  # "full_host" or "value_only"; local KDM is insufficient.
     required_state_fields: frozenset[str]
 
-    def forward(self, step: int, state: FieldMap, external: FieldMap,
-                dt: float) -> FieldMap: ...
+    def forward(self, step: int, state: StateT, external: ExternalT,
+                dt: float) -> StateT: ...
 
-    def vjp(self, step: int, state: FieldMap, external: FieldMap,
+    def vjp(self, step: int, state: StateT, external: ExternalT,
             dt: float, cotangent: FieldMap) -> FieldMap: ...
 
-    def jvp(self, step: int, state: FieldMap, external: FieldMap,
+    def jvp(self, step: int, state: StateT, external: ExternalT,
             dt: float, direction: FieldMap) -> FieldMap: ...
 
 
@@ -67,6 +70,13 @@ class HostWindowResult:
     cost: float
     checkpoints: list[dict[str, torch.Tensor]]
     adjoint_initial: dict[str, torch.Tensor] | None
+
+
+@dataclass
+class HostForwardResult(Generic[StateT]):
+    """Value-only full-window output; contains no cost or derivative claim."""
+
+    checkpoints: list[StateT]
 
 
 def _snapshot(fields: FieldMap, *, allow_empty: bool = False) -> dict[str, torch.Tensor]:
@@ -108,7 +118,7 @@ class CoupledHostWindow:
     steps to UTC and verifying pixel acquisition times is the caller's job.
     """
 
-    def __init__(self, model: HostTransition, external_steps: Sequence[FieldMap], *,
+    def __init__(self, model: HostTransition[FieldMap, FieldMap], external_steps: Sequence[FieldMap], *,
                  dt: float, observe: Callable, supports: Mapping[int, FrozenSupport]):
         if model.mp_physics != 137:
             raise ValueError("this host-coupled contract requires MP_PHYSICS=137")
@@ -216,3 +226,65 @@ class CoupledHostWindow:
             current = self._advance(step, current)
             tangent = _matching(next_tangent, current, name="host_step_jvp")
         return current, tangent
+
+
+class HostForwardWindow(Generic[StateT, ExternalT]):
+    """Value-only full-host replay for opaque, explicitly validated states.
+
+    The snapshot callback must validate the complete native checkpoint (for
+    example, required fields, timestamp, and file identity/hash) and return an
+    independent immutable snapshot.  The generic orchestrator deliberately
+    does not coerce opaque checkpoint values into floating-point tensors.
+    External inputs are deep-copied at construction and again for each call.
+    Each ``evaluate`` restarts from its supplied initial checkpoint and invokes
+    the same ``HostTransition.forward`` protocol used by the AD window.
+    """
+
+    def __init__(
+        self,
+        model: HostTransition[StateT, ExternalT],
+        external_steps: Sequence[ExternalT],
+        *,
+        dt: float,
+        snapshot: Callable[[StateT], StateT],
+    ):
+        mp_physics = getattr(model, "mp_physics", None)
+        if isinstance(mp_physics, bool) or mp_physics != 137:
+            raise ValueError("this host-coupled contract requires MP_PHYSICS=137")
+        scope = getattr(model, "derivative_scope", None)
+        if scope not in {"full_host", "value_only"}:
+            raise ValueError("backend must declare derivative_scope as full_host or value_only")
+        required = getattr(model, "required_state_fields", None)
+        if (not isinstance(required, (set, frozenset)) or not required
+                or any(not isinstance(field, str) or not field for field in required)):
+            raise ValueError("backend must declare nonempty required checkpoint fields")
+        if isinstance(dt, bool) or not isinstance(dt, Real) or not math.isfinite(dt) or dt <= 0:
+            raise ValueError("dt must be finite and positive")
+        if not external_steps:
+            raise ValueError("a host window needs at least one full timestep")
+        if not callable(snapshot):
+            raise TypeError("an explicit checkpoint snapshot/validation callback is required")
+
+        self.model = model
+        self.dt = float(dt)
+        self.snapshot = snapshot
+        # Own the schedule so caller mutations cannot steer a trial.
+        self._external_steps = tuple(copy.deepcopy(value) for value in external_steps)
+
+    def _state_snapshot(self, value: StateT) -> StateT:
+        result = self.snapshot(value)
+        if result is None:
+            raise TypeError("checkpoint snapshot callback returned None")
+        return result
+
+    def evaluate(self, initial: StateT) -> HostForwardResult[StateT]:
+        """Run every prescribed native step from a fresh initial snapshot."""
+        current = self._state_snapshot(initial)
+        checkpoints = [current]
+        for step, external in enumerate(self._external_steps):
+            step_input = self._state_snapshot(current)
+            step_external = copy.deepcopy(external)
+            output = self.model.forward(step, step_input, step_external, self.dt)
+            current = self._state_snapshot(output)
+            checkpoints.append(current)
+        return HostForwardResult(checkpoints)

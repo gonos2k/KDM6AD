@@ -1,0 +1,28 @@
+{
+  "scope": "Two host-boundary objects rebuilt from reviewed source; corrected initializer objects and all remaining prior archive members reused. Not a clean full-source build. Full exact make arguments remain in the hash-bound private receipt.",
+  "sdkroot": "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk",
+  "overlay": false,
+  "archive_before_sha256": "de6da1b5b47f57387e6f9732d237ff0bb227c613b986f463c36ddaab753bcbf9",
+  "executable": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_transition_20261020/bin/boundary_control_wrf.exe",
+  "executable_sha256": "fea44b2df66b12938eac846579c653b5db65671583de422e341181db26c3b293",
+  "library_sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+  "source_sha256": {
+    "phys/module_mp_kdm6ad.F": "c56499524c73bec4e5092e7aecfde244d072f9572733708226c7f6d743cc9e67",
+    "dyn_em/module_big_step_utilities_em.F": "27ce690b27b24c80247a5551b48d37fc32fc47470d806cbef1bb859d58edc31c"
+  },
+  "trace_source_sha256": "f3284bd5676ea0fb6a1b7f26b059f04c9f6ced54c52d1cac1b2ea1b80e57ebd8",
+  "commands": [
+    {
+      "argv": [
+        "ar",
+        "r",
+        "libwrflib.a",
+        "../phys/module_mp_kdm6ad.o",
+        "../dyn_em/module_big_step_utilities_em.o"
+      ],
+      "cwd": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_transition_20261020/build/main"
+    }
+  ],
+  "archive_after_sha256": "b3f8d4276947c127594e2d7e103b2ca267192ec4d378297b5f4a5fca138c0656",
+  "complete_build_receipt_sha256": "164424a754641a3e22977ac6b9ff65e863bbe82fe87587055e492ca49ce88176"
+}

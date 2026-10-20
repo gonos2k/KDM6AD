@@ -1,0 +1,26 @@
+{
+  "schema": "kdm6ad.native_replay_compare.v1",
+  "expected_time": "2025-07-19_00:02:00",
+  "reference_frame": 0,
+  "candidate_frame": 0,
+  "reference_time_dimension": 1,
+  "candidate_time_dimension": 1,
+  "times_values": {
+    "reference": "2025-07-19_00:02:00",
+    "candidate": "2025-07-19_00:02:00"
+  },
+  "variable_count_reference": 652,
+  "variable_count_candidate": 652,
+  "missing_variables": [],
+  "extra_variables": [],
+  "numeric_elements_compared": 322426586,
+  "numeric_element_mismatches": 0,
+  "raw_bitwise_equal": true,
+  "finite": true,
+  "complete_values": true,
+  "passed": true,
+  "errors": [],
+  "reference_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_replay_20261020/CONTINUOUS/wrfrst_d01_2025-07-19_00:02:00",
+  "candidate_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_replay_20261020/PRESERVED_RELOAD/wrfrst_d01_2025-07-19_00:02:00",
+  "local_receipt_sha256": "5dff85a2348e404c147f1b2a7d3e4e303cace5fcca52d4929862768c89d0d67b"
+}
