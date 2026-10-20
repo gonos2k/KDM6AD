@@ -10,6 +10,10 @@
 현재 native MP137의 forward 실행 증거와 아래 인터페이스의 합성모델 테스트는 서로 다른 증거다.
 기존 [`da_window.py`](../oracle/kdm6/da_window.py)와 중단된 KO 분석 snapshot은 기존 계약을 유지한다.
 
+실제 MP137의 재시작 초기화와 짧은 창 재현에 대한 후속 증거는
+[`NATIVE_MP137_REPLAY.md`](NATIVE_MP137_REPLAY.md)에 기록한다.
+해당 value-only 검증과 full-host 미분 backend의 완성 여부는 별도로 판단한다.
+
 ## 1. 두 종류의 반복
 
 최적화 trial을 `k`, 모델 시간 단계를 `n`으로 구분한다.
