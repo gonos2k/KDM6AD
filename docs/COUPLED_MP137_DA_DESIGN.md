@@ -6,7 +6,7 @@
 
 구현된 공통 인터페이스는 [`da_host_window.py`](../oracle/kdm6/da_host_window.py)다.
 이 모듈은 결합 창의 전진/체크포인트/수반/JVP 실행 순서를 제공한다.
-**실제 WRF 실행파일을 이 인터페이스에 연결하는 backend와 full-host 미분 backend는 아직 구현되지 않았다.**
+값 전용 origin-bound native backend는 [`NATIVE_MP137_TRANSITION.md`](NATIVE_MP137_TRANSITION.md)에 연결했으며, **full-host 미분 backend는 아직 구현되지 않았다.**
 현재 native MP137의 forward 실행 증거와 아래 인터페이스의 합성모델 테스트는 서로 다른 증거다.
 기존 [`da_window.py`](../oracle/kdm6/da_window.py)와 중단된 KO 분석 snapshot은 기존 계약을 유지한다.
 
