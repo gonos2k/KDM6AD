@@ -68,7 +68,9 @@ module kdm6_iso_c
   end type kdm6_step_v2_args_t
 
   public :: kdm6_step, kdm6_step_ad, kdm6_step_ad_variant, kdm6_step_ad_number
+  public :: kdm6_step_ad_state_forcing
   public :: kdm6_handle_vjp, kdm6_handle_jvp, kdm6_handle_close
+  public :: kdm6_handle_state_forcing_vjp, kdm6_handle_state_forcing_jvp
   public :: kdm6_get_abi_version_c, kdm6_step_v2_args_size_c, kdm6_step_v2_c
 
   ! ── C ABI interfaces ───────────────────────────────────────────────────────
@@ -196,6 +198,30 @@ module kdm6_iso_c
       integer(c_int)              :: rc
     end function kdm6_step_ad_number_c
 
+    ! Independent state+forcing fp64 DA forward. Packed arrays are field-major
+    ! in Fortran (im,kme,jme,12/4) order; physics_variant and dry_number match
+    ! the selectors on kdm6_step_ad_number_c.
+    function kdm6_step_ad_state_forcing_c( &
+        state_in_packed, forcing_packed, &
+        im, kme, jme, dt, value_only, &
+        state_out_packed, handle, &
+        xland, ncmin_land, ncmin_sea, physics_variant, dry_number &
+      ) bind(C, name="kdm6_step_ad_state_forcing_c") result(rc)
+      import :: c_int, c_int32_t, c_int64_t, c_double, c_float, c_ptr
+      real(c_double), intent(in)  :: state_in_packed(*)
+      real(c_double), intent(in)  :: forcing_packed(*)
+      integer(c_int), value       :: im, kme, jme
+      real(c_double), value       :: dt
+      integer(c_int), value       :: value_only
+      real(c_double), intent(out) :: state_out_packed(*)
+      type(c_ptr), intent(out)    :: handle
+      real(c_float), intent(in)   :: xland(*)
+      real(c_double), value       :: ncmin_land, ncmin_sea
+      integer(c_int32_t), value   :: physics_variant
+      integer(c_int64_t), value   :: dry_number
+      integer(c_int)              :: rc
+    end function kdm6_step_ad_state_forcing_c
+
     function kdm6_handle_vjp_c(h, u_packed, grad_out_packed) &
         bind(C, name="kdm6_handle_vjp_c") result(rc)
       import :: c_int, c_double, c_float, c_ptr
@@ -213,6 +239,27 @@ module kdm6_iso_c
       real(c_double), intent(out) :: tangent_out_packed(*)
       integer(c_int)              :: rc
     end function kdm6_handle_jvp_c
+
+    function kdm6_handle_state_forcing_vjp_c(h, u_packed, &
+                                               state_grad_packed, forcing_grad_packed) &
+        bind(C, name="kdm6_handle_state_forcing_vjp_c") result(rc)
+      import :: c_int, c_double, c_ptr
+      type(c_ptr), value           :: h
+      real(c_double), intent(in)   :: u_packed(*)
+      real(c_double), intent(out)  :: state_grad_packed(*), forcing_grad_packed(*)
+      integer(c_int)               :: rc
+    end function kdm6_handle_state_forcing_vjp_c
+
+    function kdm6_handle_state_forcing_jvp_c(h, state_direction_packed, &
+                                               forcing_direction_packed, tangent_out_packed) &
+        bind(C, name="kdm6_handle_state_forcing_jvp_c") result(rc)
+      import :: c_int, c_double, c_ptr
+      type(c_ptr), value           :: h
+      real(c_double), intent(in)   :: state_direction_packed(*)
+      real(c_double), intent(in)   :: forcing_direction_packed(*)
+      real(c_double), intent(out)  :: tangent_out_packed(*)
+      integer(c_int)               :: rc
+    end function kdm6_handle_state_forcing_jvp_c
 
     function kdm6_handle_close_c(h) &
         bind(C, name="kdm6_handle_close_c") result(rc)
@@ -360,6 +407,46 @@ contains
                                physics_variant, dry_number)
   end function kdm6_step_ad_number
 
+  ! Fortran-friendly independent fp64 state+forcing forward. The last
+  ! dimensions are field-major: state (im,kme,jme,12), forcing
+  ! (im,kme,jme,4), with the same field order as kdm6_step_ad_number.
+  ! XLAND is required. Reject shape mismatches before entering C and leave a
+  ! deterministic NULL handle on every local error path.
+  function kdm6_step_ad_state_forcing( &
+      state_in, forcing, &
+      im, kme, jme, dt, value_only, &
+      state_out, handle, &
+      xland, ncmin_land, ncmin_sea, physics_variant, dry_number &
+    ) result(rc)
+    real(c_double), intent(in), contiguous :: state_in(:,:,:,:)
+    real(c_double), intent(in), contiguous :: forcing(:,:,:,:)
+    integer(c_int), intent(in)              :: im, kme, jme
+    real(c_double), intent(in)              :: dt
+    integer(c_int), intent(in)              :: value_only
+    real(c_double), intent(out), contiguous :: state_out(:,:,:,:)
+    type(c_ptr), intent(out)                :: handle
+    real(c_float), intent(in), contiguous  :: xland(:,:)
+    real(c_double), intent(in)              :: ncmin_land, ncmin_sea
+    integer(c_int32_t), intent(in)          :: physics_variant
+    integer(c_int64_t), intent(in)          :: dry_number
+    integer(c_int)                          :: rc
+
+    handle = c_null_ptr
+    rc = KDM6_ERR_INVALID_DIM
+    if (im <= 0_c_int .or. kme <= 0_c_int .or. jme <= 0_c_int) return
+    if (size(state_in,1) /= im .or. size(state_in,2) /= kme .or. &
+        size(state_in,3) /= jme .or. size(state_in,4) /= 12) return
+    if (size(forcing,1) /= im .or. size(forcing,2) /= kme .or. &
+        size(forcing,3) /= jme .or. size(forcing,4) /= 4) return
+    if (size(state_out,1) /= im .or. size(state_out,2) /= kme .or. &
+        size(state_out,3) /= jme .or. size(state_out,4) /= 12) return
+    if (size(xland,1) /= im .or. size(xland,2) /= jme) return
+
+    rc = kdm6_step_ad_state_forcing_c( &
+      state_in, forcing, im, kme, jme, dt, value_only, &
+      state_out, handle, xland, ncmin_land, ncmin_sea, physics_variant, dry_number)
+  end function kdm6_step_ad_state_forcing
+
   function kdm6_handle_vjp(h, u_packed, grad_out_packed) result(rc)
     type(c_ptr),    intent(in)              :: h
     real(c_double), intent(in),  contiguous :: u_packed(:)
@@ -375,6 +462,31 @@ contains
     integer(c_int)                          :: rc
     rc = kdm6_handle_jvp_c(h, v_packed, tangent_out_packed)
   end function kdm6_handle_jvp
+
+  ! Joint derivatives use caller-sized flat buffers, like the existing
+  ! state-only handle wrappers. Their lengths must satisfy the C ABI contract:
+  ! u/tangent = 12*im*kme*jme; state directions/gradients use that same size;
+  ! forcing directions/gradients = 4*im*kme*jme. The handle owns the dimensions.
+  function kdm6_handle_state_forcing_vjp(h, u_packed, &
+                                         state_grad_packed, forcing_grad_packed) result(rc)
+    type(c_ptr), intent(in)              :: h
+    real(c_double), intent(in), contiguous :: u_packed(:)
+    real(c_double), intent(out), contiguous :: state_grad_packed(:), forcing_grad_packed(:)
+    integer(c_int)                        :: rc
+    rc = kdm6_handle_state_forcing_vjp_c(h, u_packed, &
+                                         state_grad_packed, forcing_grad_packed)
+  end function kdm6_handle_state_forcing_vjp
+
+  function kdm6_handle_state_forcing_jvp(h, state_direction_packed, &
+                                         forcing_direction_packed, tangent_out_packed) result(rc)
+    type(c_ptr), intent(in)               :: h
+    real(c_double), intent(in), contiguous :: state_direction_packed(:)
+    real(c_double), intent(in), contiguous :: forcing_direction_packed(:)
+    real(c_double), intent(out), contiguous :: tangent_out_packed(:)
+    integer(c_int)                         :: rc
+    rc = kdm6_handle_state_forcing_jvp_c(h, state_direction_packed, &
+                                         forcing_direction_packed, tangent_out_packed)
+  end function kdm6_handle_state_forcing_jvp
 
   ! intent(inout): on return, h is reset to C_NULL_PTR so a stale handle can
   ! never be reused (the C side frees the wrapper). Binds to the pointer-nulling

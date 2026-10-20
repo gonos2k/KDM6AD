@@ -68,10 +68,10 @@ target_include_directories(kdm6_c
 target_link_libraries(kdm6_c PUBLIC kdm6)
 
 # ── PR3: symbol visibility / export allowlist (docs/PR3_VISIBILITY_DESIGN.md) ─
-# The shipped dylib must export ONLY the 11 C ABI functions (kdm6_c_api.h), not
+# The shipped dylib must export ONLY the 14 C ABI functions (kdm6_c_api.h), not
 # its ~1342-symbol internal world (kdm6::/libtorch/std). Two layers:
 #  (1) compiler visibility hidden on BOTH this bridge and the static kdm6 core
-#      above — each of the 11 is opted back in via KDM6_C_API in the header;
+#      above — each is opted back in via KDM6_C_API in the header;
 #  (2) a linker export allowlist as the load-bearing backstop (macOS
 #      exported_symbols_list / Linux --version-script), which the symbol-surface
 #      CI gate measures. KDM6_C_BUILD makes KDM6_C_API take the producer branch
@@ -164,6 +164,9 @@ if(KDM6_ENABLE_TEST_HOOKS)
     target_compile_definitions(test_c_abi PRIVATE KDM6_ENABLE_TEST_HOOKS)
 endif()
 add_test(NAME c_abi COMMAND test_c_abi)
+add_executable(test_state_forcing_abi tests/test_state_forcing_abi.cpp)
+target_link_libraries(test_state_forcing_abi PRIVATE kdm6_c)
+add_test(NAME state_forcing_abi COMMAND test_state_forcing_abi)
 add_executable(test_autograd_endtoend tests/test_autograd_endtoend.cpp)
 target_link_libraries(test_autograd_endtoend PRIVATE kdm6)
 add_test(NAME autograd_endtoend COMMAND test_autograd_endtoend)
@@ -219,6 +222,17 @@ if(CMAKE_Fortran_COMPILER)
     target_include_directories(test_fortran_normalized_ad PRIVATE "${_fortran_normalized_ad_mod_dir}")
     target_link_libraries(test_fortran_normalized_ad PRIVATE kdm6_c)
     add_test(NAME fortran_normalized_ad COMMAND test_fortran_normalized_ad)
+    add_executable(test_fortran_state_forcing
+        bridge/kdm6_iso_c.f90
+        tests/test_fortran_state_forcing.f90
+    )
+    set(_fortran_state_forcing_mod_dir "${CMAKE_CURRENT_BINARY_DIR}/fortran-state-forcing-mod")
+    file(MAKE_DIRECTORY "${_fortran_state_forcing_mod_dir}")
+    set_target_properties(test_fortran_state_forcing PROPERTIES
+        Fortran_MODULE_DIRECTORY "${_fortran_state_forcing_mod_dir}")
+    target_include_directories(test_fortran_state_forcing PRIVATE "${_fortran_state_forcing_mod_dir}")
+    target_link_libraries(test_fortran_state_forcing PRIVATE kdm6_c)
+    add_test(NAME fortran_state_forcing COMMAND test_fortran_state_forcing)
     message(STATUS "Fortran enabled — test_fortran_smoke will be built")
 else()
     message(STATUS "Fortran compiler not found — skipping test_fortran_smoke")
@@ -235,7 +249,7 @@ endif()
 foreach(t IN ITEMS
         test_smoke test_slope test_progb test_warm test_satadj test_aux_placeholder_gap
         test_cold test_melt_freeze test_sedimentation test_thermo test_coordinator
-        test_cloud_dsd test_c_abi test_autograd_endtoend test_handle_vjp
+        test_cloud_dsd test_c_abi test_state_forcing_abi test_autograd_endtoend test_handle_vjp
         test_dry_number
         test_conservative_interface)
     if(TARGET ${t})

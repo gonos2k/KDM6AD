@@ -1,7 +1,7 @@
 # PR3 macOS export allowlist (docs/PR3_VISIBILITY_DESIGN.md §4.2).
 # Passed to the linker via -Wl,-exported_symbols_list. Only the symbols listed
 # here are exported; every internal kdm6::/libtorch/std symbol becomes local.
-# macOS C symbols carry a leading underscore. This set MUST stay exactly the 11
+# macOS C symbols carry a leading underscore. This set MUST stay exactly the 14
 # C ABI functions (kdm6_c_api.h) — the symbol-surface CI gate asserts it.
 _kdm6_step_c
 _kdm6_step_ad_c
@@ -14,3 +14,6 @@ _kdm6_handle_vjp_c
 _kdm6_handle_jvp_c
 _kdm6_handle_close_c
 _kdm6_handle_closep_c
+_kdm6_step_ad_state_forcing_c
+_kdm6_handle_state_forcing_vjp_c
+_kdm6_handle_state_forcing_jvp_c
