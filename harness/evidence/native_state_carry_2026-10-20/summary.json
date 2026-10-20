@@ -1,0 +1,198 @@
+{
+  "schema": "kdm6ad.native_state_carry_summary.v1",
+  "as_of": "2026-10-20",
+  "scope": "bounded, value-only MP137 native state-carry and one saved offline T/Q increment; no new observations, RTTOV cost, optimizer, or full-host derivative",
+  "model": {
+    "grid": [
+      234,
+      282,
+      39
+    ],
+    "dt_seconds": 20,
+    "mpi_ranks": 1,
+    "threads": 1,
+    "internal_tiles": 2,
+    "forward_columns": 65988
+  },
+  "zero_control_live_identity": {
+    "times": [
+      "2025-07-19_00:02:20",
+      "2025-07-19_00:02:40",
+      "2025-07-19_00:03:00"
+    ],
+    "variables_per_time": 652,
+    "numeric_mismatches_per_time": 0,
+    "metadata_differences_per_time": 0,
+    "normalizations": []
+  },
+  "h_rate_probe": {
+    "role": "artificial retained-tendency memory intervention, not data assimilation",
+    "time": "2025-07-19_00:02:20",
+    "point_i_k_j": [
+      156,
+      6,
+      21
+    ],
+    "delta_h_diabatic_K_per_s": 0.001,
+    "mp_call_8_changes": {
+      "TH_levels": 6,
+      "Q_levels": 21,
+      "DEN_levels": 23,
+      "PII_levels": 23,
+      "P_levels": 23,
+      "DELZ_levels": 21
+    },
+    "finish_replay_samples": 117,
+    "finish_arithmetic_mismatches": 0,
+    "finish_packing_mismatches": 0,
+    "pre_injection_mp_call_7_unchanged": true
+  },
+  "analysis_tq_saved_diagnostic": {
+    "role": "one unaccepted saved offline KO7 posterior increment, not a converged analysis",
+    "valid_time": "2025-07-19_00:00:00",
+    "flat_column_index": 4835,
+    "native_i_j": [
+      156,
+      21
+    ],
+    "updated_levels": 39,
+    "background_full_domain_t_q_match": true,
+    "prognostic_source": "THM_2 plus QVAPOR; NetCDF T is diagnostic and was rejected before any command in an earlier preflight",
+    "delta_theta_m_max_abs_K": 0.5539826939843238,
+    "delta_qv_max_abs_kg_per_kg_dry": 4.5887501770452976e-05,
+    "direct_h_diabatic_updates": 0,
+    "first_mp_inputs_changed_all_39_levels": true,
+    "max_abs_mp_input_change": {
+      "TH_K": 0.527313232421875,
+      "Q_kg_per_kg": 4.3587759137153625e-05,
+      "DEN_kg_per_m3": 0.0005521774291992188,
+      "PII": 9.59634780883789e-05,
+      "P_Pa": 11.046875,
+      "DELZ_m": 1.1259765625
+    },
+    "finish_rates_changed": {
+      "H_rate_levels": 28,
+      "H_rate_max_abs_K_per_s": 0.000132772111101076,
+      "QV_rate_levels": 10,
+      "QV_rate_max_abs_kg_per_kg_s": 3.546011129174076e-08
+    },
+    "terminal_fields": 652,
+    "terminal_finite_and_complete": true,
+    "terminal_raw_mismatches_vs_identity_control": 48264,
+    "finish_arithmetic_mismatches": 0,
+    "finish_packing_mismatches": 0,
+    "native_steps": 1,
+    "next_mp_call_checked": false,
+    "terminal_changed_variables": 136,
+    "rrtmg_lw_calls": 2,
+    "rrtmg_sw_calls": 2,
+    "kdm6ad_dispatch_calls": 2,
+    "calls_basis": "one native step over two internal tiles",
+    "radiation_and_physics_calls": {
+      "namelist": {
+        "radt_minutes": 0.3333333333333333,
+        "bldt_minutes": 0.0,
+        "cudt_minutes": 0.0,
+        "STEPRA": 1,
+        "STEPBL": 1,
+        "STEPCU": 1,
+        "ra_lw_physics": 4,
+        "ra_sw_physics": 4,
+        "bl_pbl_physics": 11,
+        "cu_physics": 37
+      },
+      "native_steps": 1,
+      "internal_tiles": 2,
+      "actual_calls": {
+        "rrtmg_lw": 2,
+        "rrtmg_sw": 2,
+        "pbl_driver": 1,
+        "shin_hong_pbl": 2,
+        "cumulus_driver": 1,
+        "ksas": 2,
+        "microphysics_driver": 1,
+        "kdm6ad_dispatch": 2
+      },
+      "measurement_scope": "this saved-DA namelist/run only"
+    }
+  },
+  "accepted_admissibility_carry": {
+    "native_transitions": 3,
+    "caller_decisions_accepted": 3,
+    "checks": "finite positive pressure, positive specific volume, nonnegative water",
+    "equilibrium_or_conservation_certified": false
+  },
+  "radiation_every_step_variant": {
+    "radt_minutes": 0.3333333333333333,
+    "steps": 2,
+    "stepra_seed_at_each_checkpoint": true,
+    "rrtmg_lw_calls": 4,
+    "rrtmg_sw_calls": 4,
+    "call_basis": "2 internal tiles x 2 model steps",
+    "raw_parity_with_five_minute_schedule_claimed": false
+  },
+  "provenance": {
+    "warm_restart_input_sha256": "d5d9470bc303c29ef7c308eeb3907d42b197bf7b1273eabc273ce9b1152b6bea",
+    "cold_wrfinput_sha256": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970",
+    "cold_captured_startup_restart_sha256": "0522208dc78a08ef279223d1638ae67947c8db673e6ab64ecd0902356abbcc82",
+    "saved_posterior_npz_sha256": "fafb9052342b522c9e129344b76dc6a9aa97ea9727151f5b93d7ff883cc04c7a",
+    "executable_sha256_by_variant": {
+      "inactive_control": "d01ef67a1ed6f928fe301f30785d6470cd00104d80abdecffbfbed721fc272a1",
+      "warm_live_identity_h_carry_and_radiation_v2": "a53888758b983cdff698fd149757524e7a060d88425b8b1204c2dfc472af6459",
+      "cold_analysis_tq_v3": "911541b9060b3d5aec0179c685a5d3d2905e233fdf721cc19cf342a2938e1f86"
+    },
+    "installed_kdm_library_sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+    "build_scope": "isolated existing build; mediation/helper rebuilt, remaining archive members reused; not a clean full host rebuild",
+    "cold_saved_da_encoder_launch_sha256": "9d50815bafc8bab4cea4b2ad4b90e98f5c5075101460cde45219dcb6cb74c1cb",
+    "cold_saved_da_encoder_launch_snapshot": "host/research_evidence/mp137_state_carry_20261020/source_snapshot/cold_saved_da_launch/harness/native_analysis_increment.py"
+  },
+  "limits": [
+    "the saved posterior is not accepted or converged",
+    "QV increments are external water sources; no global column/domain budget is certified",
+    "one native step verifies no subsequent MP forcing call",
+    "no new RTTOV, observation cost, optimizer, full-host JVP/VJP, or HVP",
+    "no general balance, equilibrium, or unattended cycling certificate",
+    "native physical time advances by dt; analysis/observation-time policy remains caller-owned",
+    "NativeAnalysisIncrement is a public value carrier; live runtime trusts manually constructed objects for units/alpha unless produced by the checked encoder"
+  ],
+  "private_receipts": [
+    "host/research_evidence/mp137_state_carry_20261020/LIVE_ZERO_CONTROL_SUMMARY.json",
+    "host/research_evidence/mp137_state_carry_20261020/LIVE_H_FEEDBACK_SUMMARY.json",
+    "host/research_evidence/mp137_state_carry_20261020/COLD_STARTUP_PROGNOSTIC_BINDING.json",
+    "host/research_evidence/mp137_state_carry_20261020/COLD_TQ_ZERO_CONTROL_SUMMARY.json",
+    "host/research_evidence/mp137_state_carry_20261020/COLD_SAVED_DA_FEEDBACK_SUMMARY.json",
+    "host/research_evidence/mp137_state_carry_20261020/ACCEPTED_STATE_CARRY/FINISHED.json",
+    "host/research_evidence/mp137_state_carry_20261020/RADIATION_EVERY_STEP_VERIFICATION.json",
+    "host/research_evidence/mp137_state_carry_20261020/PHYSICS_CALL_CADENCE.json",
+    "host/research_evidence/mp137_state_carry_20261020/live_step_v3_BUILD.json"
+  ],
+  "analysis_tq_zero_control_identity": {
+    "origin": "cold input at 2025-07-19_00:00:00, itimestep 0",
+    "steps": 1,
+    "control_rows": 0,
+    "comparison": "helper-disabled same binary, same inputs and same radiation cadence",
+    "time": "2025-07-19_00:00:20",
+    "variables": 652,
+    "numeric_elements_compared": 322426586,
+    "numeric_mismatches": 0,
+    "metadata_differences": 0,
+    "normalizations": [],
+    "finite_and_complete": true
+  },
+  "validation_snapshot": {
+    "full_harness_final": {
+      "passed": 2479,
+      "skipped": 59,
+      "deselected": 309,
+      "wall_seconds": 110.68
+    },
+    "focused_seven_native_test_files": {
+      "passed": 172,
+      "wall_seconds": 11.93
+    },
+    "torch_free_numpy_import_smoke": "passed",
+    "ruff_undefined_name_family": "passed",
+    "diff_check": "passed",
+    "process_group_cleanup": "EPERM tolerated only after independent no-live-member verification; live/unknown checks propagate original error"
+  }
+}

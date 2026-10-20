@@ -126,11 +126,23 @@ backend의 로컬 VJP/JVP 내부에서는 **새 live 상태에서 forcing을 다
 
 를 사용한다. 따라서 기존 minimizer에 새 `Forcing` 배열만 넣는 방식으로 연결하지 않는다.
 별도의 full-host control encoder/pullback과 이 창 실행기를 연결해야 한다.
-native encoder, full-host 미분 backend와 실제 최적화 연결은 아직 구현하지 않았다.
+일반적인 full-host control encoder/pullback, full-host 미분 backend와 실제
+최적화 연결은 아직 구현하지 않았다. 현재의 좁은 T/Q encoder는 검증된
+background 체크포인트의 dry-theta/QV posterior를 native `THM_2`/`QVAPOR`
+증분으로 변환한다.
 별도의 값 전용 `HostForwardWindow`와 origin-bound native prefix replay는
-[`NATIVE_MP137_TRANSITION.md`](NATIVE_MP137_TRANSITION.md)에 기술했다.
-이 경로는 중간 restart의 연속성 문제를 해결했다는 주장이 아니며,
-아래 full-host 미분·최적화 계약에 해당하지 않는다.
+[`NATIVE_MP137_TRANSITION.md`](NATIVE_MP137_TRANSITION.md)에 기술했다. 한
+프로세스에서 실제 상태를 이어가는 제한적 value-only pilot은
+[`NATIVE_STATE_CARRY_LOOP.md`](NATIVE_STATE_CARRY_LOOP.md)에 기록한다. 이
+pilot의 zero-control 경로는 120–180초의 세 단계에서 inactive reference와
+652개 checkpoint 변수 및 metadata가 일치했다. 별도의 artificial
+`H_DIABATIC` probe는 후속 MP 입력과 tendency 변화를 만들었다. 더 나아가,
+저장된 unaccepted offline T/Q posterior 39개를 00:00 cold state에 적용한
+단일 20초 native step에서는 TH/Q/DEN/PII/P/DELZ 39개 층이 모두 MP137에
+도달하고 native H/QV tendency가 바뀌었다. `T`가 아니라 prognostic
+`THM_2`를 native T/Q source로 쓴다. 이 제한된 증거는 새 관측 평가,
+수렴한/accepted analysis, full-host derivatives, 임의 중간 restart,
+일반 balance encoder 또는 unattended cycling을 구현하거나 인증하지 않는다.
 
 실제 최적화 연결점은 다음 closure다. `encoder`와 `prior`는 검증된 값/수반 쌍을 제공해야 한다.
 이는 연결 위치를 명시한 의사코드이며, 현재 native 실행에 연결된 예제가 아니다.

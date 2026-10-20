@@ -365,6 +365,111 @@ def test_runner_timeout_terminates_its_descendant(tmp_path):
         time.sleep(0.05)
 
 
+def test_runner_group_eperm_is_ignored_only_when_ps_shows_absent_or_zombie_group(monkeypatch):
+    def ps(stdout, returncode=0):
+        return subprocess.CompletedProcess(["ps"], returncode, stdout=stdout, stderr="")
+
+    monkeypatch.setattr(native.subprocess, "run", lambda *args, **kwargs: ps(" 10 S\n 11 Ss\n"))
+    assert native._runner_group_quiescent(42)
+
+    monkeypatch.setattr(native.subprocess, "run", lambda *args, **kwargs: ps(" 42 Z\n 42 Z+\n"))
+    assert native._runner_group_quiescent(42)
+
+    permission = PermissionError(1, "group signal denied")
+
+    def denied(_pgid, _signal):
+        raise permission
+
+    monkeypatch.setattr(native.os, "killpg", denied)
+    assert native._signal_runner_group(42, 15) is False
+
+    monkeypatch.setattr(native.subprocess, "run", lambda *args, **kwargs: ps(" 42 S\n"))
+    with pytest.raises(PermissionError) as raised:
+        native._signal_runner_group(42, 15)
+    assert raised.value is permission
+
+
+@pytest.mark.parametrize("ps_result", [
+    subprocess.CompletedProcess(["ps"], 1, stdout="", stderr="ps failed"),
+    OSError("ps unavailable"),
+    subprocess.TimeoutExpired(["ps"], 2),
+])
+def test_runner_group_permission_error_propagates_when_ps_is_not_trustworthy(
+        monkeypatch, ps_result):
+    permission = PermissionError(1, "group signal denied")
+
+    def denied(_pgid, _signal):
+        raise permission
+
+    def failed_ps(*args, **kwargs):
+        if isinstance(ps_result, BaseException):
+            raise ps_result
+        return ps_result
+
+    monkeypatch.setattr(native.os, "killpg", denied)
+    monkeypatch.setattr(native.subprocess, "run", failed_ps)
+    with pytest.raises(PermissionError) as raised:
+        native._signal_runner_group(42, 15)
+    assert raised.value is permission
+
+
+def test_stop_runner_group_uses_quiescence_fallback_for_term_probe_and_kill(monkeypatch):
+    class Child:
+        pid = 42
+
+        def __init__(self):
+            self.wait_calls = []
+
+        def wait(self, timeout=None):
+            self.wait_calls.append(timeout)
+            return -15
+
+    child = Child()
+    signals = []
+    ps_calls = []
+
+    def denied(_pgid, sig):
+        signals.append(sig)
+        raise PermissionError(1, "group signal denied")
+
+    def zombie_group(*args, **kwargs):
+        ps_calls.append(args[0])
+        return subprocess.CompletedProcess(["ps"], 0, stdout=" 42 Z\n", stderr="")
+
+    monkeypatch.setattr(native.os, "killpg", denied)
+    monkeypatch.setattr(native.subprocess, "run", zombie_group)
+
+    native._stop_runner_group(child)
+
+    assert signals == [native.signal.SIGTERM, 0, native.signal.SIGKILL]
+    assert len(ps_calls) == 3
+    assert child.wait_calls == [5, 5]
+
+
+def test_stop_runner_group_does_not_hide_eperm_for_live_group(monkeypatch):
+    class Child:
+        pid = 42
+        waited = False
+
+        def wait(self, timeout=None):
+            self.waited = True
+            return -15
+
+    child = Child()
+    permission = PermissionError(1, "group signal denied")
+
+    def denied(_pgid, _signal):
+        raise permission
+
+    monkeypatch.setattr(native.os, "killpg", denied)
+    monkeypatch.setattr(native.subprocess, "run", lambda *args, **kwargs:
+                        subprocess.CompletedProcess(["ps"], 0, stdout=" 42 S\n", stderr=""))
+    with pytest.raises(PermissionError) as raised:
+        native._stop_runner_group(child)
+    assert raised.value is permission
+    assert not child.waited
+
+
 def test_restart_metadata_rejects_changed_global_physics_context(tmp_path):
     reference_path, candidate_path = _metadata_pair(tmp_path)
     with nc.Dataset(reference_path, "r") as reference, nc.Dataset(candidate_path, "r+") as candidate:

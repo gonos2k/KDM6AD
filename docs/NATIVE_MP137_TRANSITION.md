@@ -145,7 +145,7 @@ Their toy-model derivative tests do not certify a native derivative backend.
 VJP, pressure-aware observation closure, observation assimilation, and an
 optimizer remain open work.
 
-## Intended one-step state-carrying analysis loop (not implemented)
+## Intended one-step state-carrying analysis loop
 
 The requested operational loop is stateful across accepted model steps. The
 complete, balance-adjusted host state produced for the next step becomes that
@@ -174,14 +174,41 @@ consumption remain governed by the native phase order documented in
 [`COUPLED_MP137_DA_DESIGN.md`](COUPLED_MP137_DA_DESIGN.md) and
 [`NATIVE_MP137_REPLAY.md`](NATIVE_MP137_REPLAY.md).
 
-This desired loop is not implemented by the current PR backend. Its
-`NativeHostTransition` is an origin-bound, fixed-input value reference: it
-replays prefixes from one trial origin, verifies earlier checkpoints, and
-rejects intermediate analysis increments. That reference does not provide the
-stateful accepted-analysis handoff above. A future backend needs a validated
-complete-state encoder/balance operation, an explicit accepted-state checkpoint
-boundary, and a native one-step transition that consumes that state without
-reinitializing it from the original background.
+The live `NativeLiveStepper` is a limited value-only state-carry prototype for
+forward execution. It keeps one native process and hands each returned live
+state to the next step. It now also has an opt-in `ANALYSIS_TQ` path that
+applies a bound posterior increment to prognostic moist theta and QV before a
+native step; the one-step saved-DA evidence below shows that these fields
+reached MP137 forcing and the native tendency finish. It does not compute the
+posterior, provide a general full-host balance encoder, run an observation
+optimizer, or provide derivatives. The separate `NativeHostTransition` is
+still an origin-bound, fixed-input value reference: it replays prefixes from
+one trial origin, verifies earlier checkpoints, and rejects intermediate
+analysis increments. It is not the live handoff implementation.
+
+## Live state-carry identity pilot
+
+The separate `LIVE_IDENTITY_V2` run used one persistent MP137 process and
+retained its live model context across 120→140→160→180 s. With empty control
+packets, all 652 checkpoint variables at 140, 160 and 180 s matched the
+inactive-control run bit for bit. Metadata also matched with no normalization.
+The case used one MPI rank and one thread while retaining WRF's two internal
+tiles. The opt-in hook executes once outside those tiles. An earlier guard
+mistakenly rejected the valid two-tile metadata after the first step; removing
+that guard did not alter model tiling, and the completed identity run passed.
+
+This verifies the empty-control live path over these three steps only. It does
+not establish arbitrary restart continuation or a full analysis cycle. The
+separate `LIVE_H_UPDATE` run applied a `+0.001 K s-1` artificial `H_DIABATIC`
+memory perturbation at `(i=156,k=6,j=21)` on the 140 s boundary. It changed
+later MP inputs and native tendencies, but it is not an analysis increment.
+The saved posterior T/Q run is distinct: it applied 39 increments at the
+cold 00:00:00 valid time, then completed one native 20 s step. All 39 sampled
+levels changed in MP input TH/Q/DEN/PII/P/DELZ, and the finish generated
+changed H and QV rates without any direct H control. See
+[`NATIVE_STATE_CARRY_LOOP.md`](NATIVE_STATE_CARRY_LOOP.md) for bounded metrics.
+This single unaccepted offline posterior is not a converged or accepted
+analysis, and one step does not verify the next MP call or cycling.
 
 The clock policy is still open. Carrying the full state is required either
 way, but the run must explicitly choose whether each model step advances valid
