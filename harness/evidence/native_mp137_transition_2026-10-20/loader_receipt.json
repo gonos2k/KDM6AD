@@ -1,0 +1,38 @@
+{
+  "scope": "just-loaded checkpoint dump and loader diagnostic; never a successful integration",
+  "returncode": 14,
+  "expected_post_finalize_exit": 14,
+  "model_steps_completed": 0,
+  "input": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_transition_20261020/BASELINE_FORWARD_WINDOW/calls/step0000_xxb1uvso/wrfrst_d01_2025-07-19_00:02:20",
+  "input_sha256": "7a2741f718f93dc7f8faf463793c7025c167f618bb14b5803d07b8c8b2c115e6",
+  "dump": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_transition_20261020/RELOAD_140/case/wrfrst_d01_2025-07-19_00:02:20",
+  "command": [
+    "/opt/local/bin/python3",
+    "/private/tmp/KDM6AD-native-transition-20261020/harness/run_ss_case.py",
+    "--case",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_transition_20261020/RELOAD_140/case",
+    "--mp",
+    "137",
+    "--minutes",
+    "0",
+    "--seconds",
+    "20",
+    "--history",
+    "0",
+    "--history-s",
+    "20",
+    "--np",
+    "1",
+    "--proc-grid",
+    "1x1",
+    "--fixed-dt",
+    "--label",
+    "load_only_140"
+  ],
+  "loaded_library_lines": [
+    "dyld[32736]: <D0B72C6E-0048-3F7A-B028-CB6BBAF4A86D> /Users/yhlee/KDM6AD-k/libtorch/install/lib/libkdm6_c.2.0.0.dylib"
+  ],
+  "library_candidate_sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+  "executable_sha256": "be6728ffca512ab9841644e789b543cc983193429f023937eb39784086a0da47",
+  "archive": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_transition_20261020/RELOAD_140/case/runs/mp137_load_only_140_0min20s_hist0_1x1_20261020_162623_p32734"
+}

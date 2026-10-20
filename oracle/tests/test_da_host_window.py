@@ -5,6 +5,8 @@ claim about a native WRF/MP137 derivative or about operational cycling.
 """
 from __future__ import annotations
 
+from copy import deepcopy
+from dataclasses import dataclass
 from typing import Mapping
 
 import numpy as np
@@ -14,6 +16,7 @@ import torch
 from kdm6.da_host_window import (
     CoupledHostWindow,
     FrozenSupport,
+    HostForwardWindow,
     HostObservation,
 )
 
@@ -381,6 +384,114 @@ def test_declared_observation_calls_and_frozen_support_are_enforced():
         window.evaluate(_state(), need_gradient=False)
     assert model.forward_steps == []
     assert observer.calls == [0]
+
+
+@dataclass
+class OpaqueCheckpoint:
+    timestamp_seconds: int
+    fields: dict[str, float]
+    source_sha256: str
+
+
+class OpaqueExternalStep:
+    def __init__(self, increment):
+        self.increments = [float(increment)]
+
+
+class OpaqueHost137:
+    mp_physics = 137
+    derivative_scope = "value_only"
+    required_state_fields = frozenset({"T", "QVAPOR", "H_DIABATIC"})
+
+    def __init__(self):
+        self.calls = []
+
+    def forward(self, step, state: OpaqueCheckpoint, external: OpaqueExternalStep, dt):
+        self.calls.append((step, state.timestamp_seconds, dict(state.fields), external.increments[0]))
+        # Deliberately mutate both arguments. The orchestrator must isolate its
+        # checkpoints and prescribed schedule from this backend behavior.
+        state.fields["T"] += external.increments[0]
+        state.timestamp_seconds += int(dt)
+        external.increments[0] += 1000.0
+        return state
+
+
+def test_value_only_forward_window_snapshots_opaque_state_and_external_each_trial():
+    source_hash = "native-checkpoint-sha256"
+    required = OpaqueHost137.required_state_fields
+    snapshots = []
+
+    def validate_and_snapshot(checkpoint):
+        if not isinstance(checkpoint, OpaqueCheckpoint):
+            raise TypeError("expected opaque native checkpoint")
+        if checkpoint.source_sha256 != source_hash:
+            raise ValueError("checkpoint source hash changed")
+        missing = required - checkpoint.fields.keys()
+        if missing:
+            raise ValueError(f"missing checkpoint fields: {sorted(missing)}")
+        snapshots.append(checkpoint.timestamp_seconds)
+        return deepcopy(checkpoint)
+
+    model = OpaqueHost137()
+    external = [OpaqueExternalStep(1.0), OpaqueExternalStep(2.0)]
+    window = HostForwardWindow(
+        model, external, dt=1.0, snapshot=validate_and_snapshot
+    )
+    # Caller changes after construction cannot alter the window's schedule.
+    external[0].increments[0] = 90.0
+    initial = OpaqueCheckpoint(
+        120,
+        {"T": 250.0, "QVAPOR": 0.005, "H_DIABATIC": 1.0},
+        source_hash,
+    )
+
+    first = window.evaluate(initial)
+    second = window.evaluate(initial)
+
+    assert [item.fields["T"] for item in first.checkpoints] == [250.0, 251.0, 253.0]
+    assert [item.timestamp_seconds for item in first.checkpoints] == [120, 121, 122]
+    assert [call[3] for call in model.calls] == [1.0, 2.0, 1.0, 2.0]
+    assert [call[1] for call in model.calls] == [120, 121, 120, 121]
+    assert [item.fields["T"] for item in second.checkpoints] == [250.0, 251.0, 253.0]
+    assert initial.fields["T"] == 250.0
+    assert external[0].increments == [90.0]
+    assert external[1].increments == [2.0]
+    # Per trial: one initial snapshot, then pre-forward and output snapshots.
+    assert snapshots == [120, 120, 121, 121, 122, 120, 120, 121, 121, 122]
+
+
+def test_value_only_forward_window_rejects_invalid_configuration_and_checkpoint():
+    model = OpaqueHost137()
+    external = [OpaqueExternalStep(1.0)]
+    snapshot = deepcopy
+
+    model.mp_physics = 37
+    with pytest.raises(ValueError, match="MP_PHYSICS=137"):
+        HostForwardWindow(model, external, dt=DT, snapshot=snapshot)
+    model.mp_physics = 137
+
+    for bad_dt in (0.0, float("nan")):
+        with pytest.raises(ValueError, match="finite and positive"):
+            HostForwardWindow(model, external, dt=bad_dt, snapshot=snapshot)
+    with pytest.raises(ValueError, match="at least one full timestep"):
+        HostForwardWindow(model, [], dt=DT, snapshot=snapshot)
+
+    model.required_state_fields = frozenset()
+    with pytest.raises(ValueError, match="nonempty required checkpoint fields"):
+        HostForwardWindow(model, external, dt=DT, snapshot=snapshot)
+
+    model.required_state_fields = OpaqueHost137.required_state_fields
+
+    def validating_snapshot(checkpoint):
+        if not OpaqueHost137.required_state_fields <= checkpoint.fields.keys():
+            raise ValueError("missing required checkpoint fields")
+        return deepcopy(checkpoint)
+
+    window = HostForwardWindow(model, external, dt=DT, snapshot=validating_snapshot)
+    incomplete = OpaqueCheckpoint(120, {"T": 250.0}, "native-checkpoint-sha256")
+    with pytest.raises(ValueError, match="missing required checkpoint fields"):
+        window.evaluate(incomplete)
+    assert model.calls == []
 
 
 def test_finite_endpoint_and_initial_cotangents_cannot_overflow_at_final_sum():

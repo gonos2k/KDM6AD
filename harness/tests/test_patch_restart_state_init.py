@@ -70,6 +70,40 @@ def test_duplicate_or_partially_patched_context_is_refused(tmp_path):
     assert all((tmp_path / name).read_bytes() == content for name, content in before.items())
 
 
+def test_comment_only_old_tree_guard_with_active_alternate_is_refused(tmp_path):
+    _synthetic_host(tmp_path)
+    physics_path = tmp_path / SOURCE_PATCHES[0].relative_path
+    physics_path.write_text(
+        "!   IF (itree_canopy .ne. 0) then\n"
+        "   IF (itree_canopy .GT. 0) then\n",
+        encoding="utf-8",
+    )
+    paths = [tmp_path / item.relative_path for item in SOURCE_PATCHES]
+    before = [path.read_bytes() for path in paths]
+
+    report = patch_host_root(tmp_path, apply=True)
+
+    assert report["status"] == "refused"
+    assert all(path.read_bytes() == content for path, content in zip(paths, before))
+
+
+def test_comment_only_patched_tree_guard_with_active_alternate_is_refused(tmp_path):
+    _synthetic_host(tmp_path)
+    physics_path = tmp_path / SOURCE_PATCHES[0].relative_path
+    physics_path.write_text(
+        "!   IF ((itree_canopy .ne. 0) .AND. (.NOT. restart)) then\n"
+        "   IF (itree_canopy .GT. 0) then\n",
+        encoding="utf-8",
+    )
+    paths = [tmp_path / item.relative_path for item in SOURCE_PATCHES]
+    before = [path.read_bytes() for path in paths]
+
+    report = patch_host_root(tmp_path, apply=True)
+
+    assert report["status"] == "refused"
+    assert all(path.read_bytes() == content for path, content in zip(paths, before))
+
+
 
 def test_mixed_patched_and_original_sources_are_refused(tmp_path):
     _synthetic_host(tmp_path)

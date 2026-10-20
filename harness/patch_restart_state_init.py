@@ -70,13 +70,49 @@ def _sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def _active_snippet_spans(text: str, snippet_text: str) -> list[tuple[int, int]]:
+    """Find exact whole-line snippets in active free-form Fortran source.
+
+    Full-line ``!`` comments are excluded, and a match must begin at the first
+    character of a source line and consume that entire line (apart from its
+    newline).  This keeps examples and commented-out historical code from
+    satisfying either the preflight or the replacement.
+    """
+    source_lines = text.splitlines(keepends=True)
+    snippet_lines = snippet_text.splitlines()
+    if not snippet_lines:
+        return []
+
+    line_content: list[str] = []
+    offsets: list[tuple[int, int]] = []
+    offset = 0
+    for line in source_lines:
+        content = line.rstrip("\r\n")
+        line_content.append(content)
+        offsets.append((offset, offset + len(content)))
+        offset += len(line)
+
+    spans: list[tuple[int, int]] = []
+    width = len(snippet_lines)
+    for start in range(len(line_content) - width + 1):
+        candidate = line_content[start:start + width]
+        if any(line.lstrip().startswith("!") for line in candidate):
+            continue
+        if candidate == snippet_lines:
+            spans.append((offsets[start][0], offsets[start + width - 1][1]))
+    return spans
+
+
 def _classify(text: str, snippet: Snippet) -> str:
-    old_count = text.count(snippet.old)
-    new_count = text.count(snippet.new)
-    embedded_old_count = 1 if snippet.old in snippet.new else 0
-    if new_count == 1 and old_count == embedded_old_count:
+    old_spans = _active_snippet_spans(text, snippet.old)
+    new_spans = _active_snippet_spans(text, snippet.new)
+    embedded_old_count = sum(
+        1 for old_start, old_end in old_spans
+        if any(new_start <= old_start and old_end <= new_end for new_start, new_end in new_spans)
+    )
+    if len(new_spans) == 1 and len(old_spans) == embedded_old_count:
         return "applied"
-    if new_count == 0 and old_count == 1:
+    if not new_spans and len(old_spans) == 1:
         return "ready"
     return "drift_or_ambiguous"
 
@@ -122,7 +158,8 @@ def patch_host_root(host_root: str | Path, *, apply: bool = False) -> dict[str, 
         updated = text
         for snippet in source_patch.snippets:
             if snippet_states[snippet.name] == "ready":
-                updated = updated.replace(snippet.old, snippet.new, 1)
+                start, end = _active_snippet_spans(updated, snippet.old)[0]
+                updated = updated[:start] + snippet.new + updated[end:]
         planned.append({
             "path": str(path),
             "relative_path": source_patch.relative_path,

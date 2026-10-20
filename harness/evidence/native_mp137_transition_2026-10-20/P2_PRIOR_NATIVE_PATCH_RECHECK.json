@@ -1,0 +1,6 @@
+{
+  "active_source_check_only": "ready",
+  "prior_applied_source_check_only": "already_applied",
+  "fixed_patcher_proposes_identical_native_source_bytes": true,
+  "source_mutated": false
+}

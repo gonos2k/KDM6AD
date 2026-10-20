@@ -1,0 +1,1179 @@
+{
+  "scope": "origin-bound value-only replay, all serialized variables; no full-host AD, assimilation or mid-window increment support",
+  "native_case": {
+    "grid": [
+      234,
+      282,
+      39
+    ],
+    "mp_physics": 137,
+    "dt_seconds": 20,
+    "mpi_ranks": 1,
+    "threads": 1,
+    "origin_time": "2025-07-19_00:02:00",
+    "terminal_time": "2025-07-19_00:02:40"
+  },
+  "baseline_vs_independent_contiguous": {
+    "2025-07-19_00:02:20": {
+      "schema": "kdm6ad.native_replay_compare.v1",
+      "expected_time": "2025-07-19_00:02:20",
+      "reference_frame": 0,
+      "candidate_frame": 0,
+      "reference_time_dimension": 1,
+      "candidate_time_dimension": 1,
+      "times_values": {
+        "reference": "2025-07-19_00:02:20",
+        "candidate": "2025-07-19_00:02:20"
+      },
+      "variable_count_reference": 652,
+      "variable_count_candidate": 652,
+      "missing_variables": [],
+      "extra_variables": [],
+      "numeric_elements_compared": 322426586,
+      "numeric_element_mismatches": 0,
+      "raw_bitwise_equal": true,
+      "finite": true,
+      "complete_values": true,
+      "passed": true,
+      "errors": []
+    },
+    "2025-07-19_00:02:40": {
+      "schema": "kdm6ad.native_replay_compare.v1",
+      "expected_time": "2025-07-19_00:02:40",
+      "reference_frame": 0,
+      "candidate_frame": 0,
+      "reference_time_dimension": 1,
+      "candidate_time_dimension": 1,
+      "times_values": {
+        "reference": "2025-07-19_00:02:40",
+        "candidate": "2025-07-19_00:02:40"
+      },
+      "variable_count_reference": 652,
+      "variable_count_candidate": 652,
+      "missing_variables": [],
+      "extra_variables": [],
+      "numeric_elements_compared": 322426586,
+      "numeric_element_mismatches": 0,
+      "raw_bitwise_equal": true,
+      "finite": true,
+      "complete_values": true,
+      "passed": true,
+      "errors": []
+    }
+  },
+  "executions": {
+    "FINAL_BASELINE_FORWARD_WINDOW": {
+      "start": {
+        "mode": "HostForwardWindow two 20s transitions",
+        "exe": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_transition_20261020/bin/boundary_trace_wrf.exe",
+        "exe_sha256": "be6728ffca512ab9841644e789b543cc983193429f023937eb39784086a0da47",
+        "initial_checkpoint": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_replay_20261020/CONTINUOUS/wrfrst_d01_2025-07-19_00:02:00",
+        "initial_sha256": "d5d9470bc303c29ef7c308eeb3907d42b197bf7b1273eabc273ce9b1152b6bea",
+        "input_time": "2025-07-19_00:02:00",
+        "input_itimestep": 6,
+        "trace": true,
+        "probe": false,
+        "native_dt": 20,
+        "mpi": 1,
+        "threads": 1,
+        "native_adapter_sha256": "3424e054bf0df48d61ec9af5e2af471d025788965cc4d148728d6b2983c7fe6b",
+        "forward_window_sha256": "a84d4c5c4a848fa61b4934e205f0f956eaf390ec858b4a9aa47a5d44c101f5db",
+        "environment_sha256": "6b6c45f04a6aa66b6d3ca7bf95036f86869c0bd2b9a9f49e5fbd145c4ce6cee9",
+        "assets": [
+          {
+            "name": "BROADBAND_CLOUD_GODDARD.bin",
+            "sha256": "ad4bb1dd8446a2b00559ac425e21255a01b79a4cac7b5e3e693a3c98c222a1c8"
+          },
+          {
+            "name": "CAM_ABS_DATA",
+            "sha256": "91ee3079e43a6d908256fe3d1bd4bc5f3ac5662d2a8a1ed6ac9685be0555ad87"
+          },
+          {
+            "name": "CAM_AEROPT_DATA",
+            "sha256": "9782ca59f2ebd12128e23f775e74665d7eb3dc386f53aaa053adfd926a388049"
+          },
+          {
+            "name": "CAMtr_volume_mixing_ratio",
+            "sha256": "9a427fd106f8e36b30e0b29266bff1398b025b82af5b878e5a7a8e9dfe268ca7"
+          },
+          {
+            "name": "CAMtr_volume_mixing_ratio.A1B",
+            "sha256": "898ae2e2dbb8ba61934a2eda3b53727b44a13d7ab5339a9347dabd88e1bf21a1"
+          },
+          {
+            "name": "CAMtr_volume_mixing_ratio.A2",
+            "sha256": "f3110d6941e3880bf6a134bf36b7e039289f5653ee61a687a9edf6ce76b851ae"
+          },
+          {
+            "name": "CAMtr_volume_mixing_ratio.RCP4.5",
+            "sha256": "ddbd4a28582380a396f4bf6f567ea2b1d2b326166bb1328dad8958445acd8ac8"
+          },
+          {
+            "name": "CAMtr_volume_mixing_ratio.RCP6",
+            "sha256": "5d3a5bbdaba4e18b9d271956081757a247a86c2674fbc7bac2446005c299ee30"
+          },
+          {
+            "name": "CAMtr_volume_mixing_ratio.RCP8.5",
+            "sha256": "82e8c0cd521784707d039030cd611ab473f8359c10ee64a7df8a45ac78331c32"
+          },
+          {
+            "name": "CAMtr_volume_mixing_ratio.SSP119",
+            "sha256": "8c99cb5622a087b0f4a7dc8be351e0e67c2b34ac3a4c266efc16ed730968401e"
+          },
+          {
+            "name": "CAMtr_volume_mixing_ratio.SSP126",
+            "sha256": "94070e69a7b96163178c4b1404c8fb6d240dec5294b67d51cea1bdd6fdbba191"
+          },
+          {
+            "name": "CAMtr_volume_mixing_ratio.SSP245",
+            "sha256": "9a427fd106f8e36b30e0b29266bff1398b025b82af5b878e5a7a8e9dfe268ca7"
+          },
+          {
+            "name": "CAMtr_volume_mixing_ratio.SSP370",
+            "sha256": "28d7cab970360f66fe8ea271d97c6a9705fc123c4c3bcb4f9e76ffb043355845"
+          },
+          {
+            "name": "CAMtr_volume_mixing_ratio.SSP585",
+            "sha256": "cb014ecc482e9fbd79dc676e5f815b96c7679291de6cdd5a27705e116603e12b"
+          },
+          {
+            "name": "CCN_ACTIVATE.BIN",
+            "sha256": "f2b8d3916560f9046f89f8ac5f32c5292a1800498fd75301e422f147c82a3dbd"
+          },
+          {
+            "name": "CLM_ALB_ICE_DFS_DATA",
+            "sha256": "b8ae396abd12f488f87ce3a516d707c73ec5350a3d241238f0cc064c92d99c28"
+          },
+          {
+            "name": "CLM_ALB_ICE_DRC_DATA",
+            "sha256": "067f83f7543e102ca92a36138cd71be795da5872bb83cf8a8eef7bbcbff8f45e"
+          },
+          {
+            "name": "CLM_ASM_ICE_DFS_DATA",
+            "sha256": "db963d6cadfbec4a5706dbf589c2e95b229091f8d191949d1b46c723e4c3a0ed"
+          },
+          {
+            "name": "CLM_ASM_ICE_DRC_DATA",
+            "sha256": "6a1d9e1dd8c046d497216a37ac3d0d7da3faa53b2962b966be61ba38963b86e6"
+          },
+          {
+            "name": "CLM_DRDSDT0_DATA",
+            "sha256": "e98303374a1f49f1ebe68375455daf61126b79f2a84b156e97738fcef3e44d8e"
+          },
+          {
+            "name": "CLM_EXT_ICE_DFS_DATA",
+            "sha256": "d53a1ac63d1aecaec091f55beea6842e535d47d166651da36ca44ea032644417"
+          },
+          {
+            "name": "CLM_EXT_ICE_DRC_DATA",
+            "sha256": "e74c212073c04fb60007e47c4ce9b1b4da2e2688ae291e51d179422281a13971"
+          },
+          {
+            "name": "CLM_KAPPA_DATA",
+            "sha256": "8b8b1d624b417152ba639d4b3024d7011abf7218baea42ea6026d8aec57ed01e"
+          },
+          {
+            "name": "CLM_TAU_DATA",
+            "sha256": "cb706cedda2fa8c807d2693eeec5b7da05a0fd5b1cc6fa08c476aef40ada4aa5"
+          },
+          {
+            "name": "ETAMPNEW_DATA",
+            "sha256": "a913785f0bf5f75f8428ede706ce67ae804c3b285b4a34aeb533c4ad5cd9bea2"
+          },
+          {
+            "name": "ETAMPNEW_DATA.expanded_rain",
+            "sha256": "28e60e6c83eb55889c4ab65eaa33e9fc3b557e5ab45c3dde7ee7153c2ef95a13"
+          },
+          {
+            "name": "GENPARM.TBL",
+            "sha256": "42e9bd99ba8801537ce7e6d6ad02b7952506a30406909a6a7a61881c13b2d43c"
+          },
+          {
+            "name": "HLC.TBL",
+            "sha256": "46b9e9575655ceac80f2ebf23fad59044a46615cffcfeebd69380a6a087df67d"
+          },
+          {
+            "name": "LANDUSE.TBL",
+            "sha256": "7f661318ff5f06aed6b4b5508e4d077dc794cff03d5fb4447fe59c88d0ed2ece"
+          },
+          {
+            "name": "METGRID.TBL",
+            "sha256": "44f1a43af35441957d0bef3a6220831aad1cf56ebc765d64d08e20f439a63b44"
+          },
+          {
+            "name": "MPTABLE.TBL",
+            "sha256": "7fae6a77660c90ad80845565ecfb057093c100de41f35f25a7ffa63f41c19e5d"
+          },
+          {
+            "name": "RRTMG_LW_DATA",
+            "sha256": "bcfdee24b63a4c909522a329b8e16c539f0173c7e5aea2caf933ab4fe28c5c97"
+          },
+          {
+            "name": "RRTMG_SW_DATA",
+            "sha256": "a7d25f5b4d33be8629cbef7ecacc1ff413bf398a021297793e843ba1cc627baf"
+          },
+          {
+            "name": "RRTM_DATA",
+            "sha256": "45dc91514cf018e133301a1b667deeb17f5b65c49ccfaa9140761a8028bc8ae0"
+          },
+          {
+            "name": "SOILPARM.TBL",
+            "sha256": "65ebc19ff475dd16c0a7482486b9f78dab951ac433af9b6b6688bf1f37e570de"
+          },
+          {
+            "name": "STOCHPERT.TBL",
+            "sha256": "e0e6f147628f91ab3e7f3f4be6fc27296a43e1da8ded404b7fe06501fb42559e"
+          },
+          {
+            "name": "TREECANOPY.NEW.TBL",
+            "sha256": "5318a6ceb26c955e89122cd84e06b8066cba4e9ecf040d372373da43ed05b954"
+          },
+          {
+            "name": "TREECANOPY.NEW2.TBL",
+            "sha256": "52910e7f99e71d725c8a8cb331d56ba2303650b5dd31863636339284f8aa3a41"
+          },
+          {
+            "name": "TREECANOPY.TBL",
+            "sha256": "58ede9080c62fa807c7a64ae5b7e74b6b9bb5a4e0375e84c311e5705903ffab8"
+          },
+          {
+            "name": "TREECANOPY21.TBL",
+            "sha256": "1c87980ab9f82b5d6a2ebc62a984e88898a57f11e625e38fdc65d414d5b3ed02"
+          },
+          {
+            "name": "URBPARM.TBL",
+            "sha256": "5811226b3db503ae02d8b35cb5cb10e0e90804e451f0f4a5b76a274ee64773d0"
+          },
+          {
+            "name": "URBPARM_LCZ.TBL",
+            "sha256": "2d1d4481875fa8d762a9115ac8f59b88d03d9557e02193439e156aed711f867e"
+          },
+          {
+            "name": "URBPARM_UZE.TBL",
+            "sha256": "19da35cad1a70a0bc19ee3b183f356e2f5043a32039d22d45844ea2db0a715df"
+          },
+          {
+            "name": "VEGPARM.TBL",
+            "sha256": "a3078940951642ffbb71fdff62cbbb5c7ffbe9c44e0697e7527e1fd5994747e2"
+          },
+          {
+            "name": "aerosol.formatted",
+            "sha256": "5551eeccf5b4aa80e6ed8ae94e73c4ce8a4306a32aae9b3cc954cfa9c2c2d6aa"
+          },
+          {
+            "name": "aerosol_lat.formatted",
+            "sha256": "16121ba61f026c57ba18200988ae786609304f52959d24db86d50d8411473a1a"
+          },
+          {
+            "name": "aerosol_lon.formatted",
+            "sha256": "8201ebcba7199b5b737edf4f9f2a75d36ef4afa27fbdcffa9029dadcf8e61376"
+          },
+          {
+            "name": "aerosol_plev.formatted",
+            "sha256": "3992b2acecbf604430cdb1975497d617cca3e314ee0ae3624f03e5a7f788fc96"
+          },
+          {
+            "name": "bulkdens.asc_s_0_03_0_9",
+            "sha256": "a5607b3d0b9eb1fcdba30e50b714e348a81aabb64d963b0a00ff4f7b2a24caa6"
+          },
+          {
+            "name": "bulkradii.asc_s_0_03_0_9",
+            "sha256": "e88c840873cc45f4b21bd7bf1a17a93c8275c5478a6c07e1b7d40f8d59d44d32"
+          },
+          {
+            "name": "capacity.asc",
+            "sha256": "33759dbb0e238b37403ce2ad62759cca57c03538d72d34c2cc04bb7b2547c951"
+          },
+          {
+            "name": "coeff_p.asc",
+            "sha256": "22e2385ba836176919514fed221db94681fdd169182acec14af121426527b2ad"
+          },
+          {
+            "name": "coeff_q.asc",
+            "sha256": "83ab3d88f266443b1bd3691771c9e99f907db1fbc9729b1c300edc85ad90ee3f"
+          },
+          {
+            "name": "constants.asc",
+            "sha256": "ef4f16ec1397ce9892684d4350f76c62f9673b99ee6520ca6c07b1f8a3b22c0e"
+          },
+          {
+            "name": "eclipse_besselian_elements.dat",
+            "sha256": "2a1367ae68a832c7b2bac26a8d28eeda6dbe860126e50dbb0714eec4c9d6eed7"
+          },
+          {
+            "name": "grib2map.tbl",
+            "sha256": "846ff6ffec204e8f15a5ef4540af4a369dec68ef862cb219001ac778a2c0a641"
+          },
+          {
+            "name": "gribmap.txt",
+            "sha256": "24425f411fcfb460a47436ea1aeb00f388f450ba3cb1734af89116a02cb8961b"
+          },
+          {
+            "name": "ishmael-gamma-tab.bin",
+            "sha256": "d85e4960053024a73034fb962ff52bd62aeae1b975dd5b4f62244ec82d622daa"
+          },
+          {
+            "name": "ishmael-qi-qc.bin",
+            "sha256": "b8e4cea138b78668f027934bb8e39c6ea2cb62c1d277c17249c72003c8f4646c"
+          },
+          {
+            "name": "ishmael-qi-qr.bin",
+            "sha256": "69dd41d3d285318c95cac0d2dde10f8a3b25f802bf52ac781f29c87adb964cc4"
+          },
+          {
+            "name": "kernels.asc_s_0_03_0_9",
+            "sha256": "170b34c8ba0e50cd433917cfe9a1cc673018113ca7e4b2ae33898e8fa1cabfa6"
+          },
+          {
+            "name": "kernels_z.asc",
+            "sha256": "ce4e140595ff6db2434ecd5376a16c50ea410d03ddc1700bfa95a3490c15106f"
+          },
+          {
+            "name": "masses.asc",
+            "sha256": "f53d3acdaa0a3e2a265272fa22a2a0bd54292f51815149370bbf315e3fa1bee4"
+          },
+          {
+            "name": "ozone.formatted",
+            "sha256": "2a13ee25809672e0419e40062c1fc753580adbf604bfc67a9166ef77c815dbc0"
+          },
+          {
+            "name": "ozone_lat.formatted",
+            "sha256": "761597f3454b99e3dbf15d2621b1ede88269948e96e47f4695b79fabd3cc6348"
+          },
+          {
+            "name": "ozone_plev.formatted",
+            "sha256": "df26a938273b22d2d04ec52b7297827a316cac0061fab020519241cdc0e61d48"
+          },
+          {
+            "name": "p3_lookupTable_1.dat-v5.4_2momI",
+            "sha256": "be1ab6fb03481e376e47c6c79d808af5d8ab069f2b242931e9c54801bad4ae84"
+          },
+          {
+            "name": "p3_lookupTable_1.dat-v5.4_3momI",
+            "sha256": "9a3c57ecc09498802c8d7cb3931dbb0200dcf0f51466b3e288120c080271e6dc"
+          },
+          {
+            "name": "p3_lookupTable_2.dat-v5.3",
+            "sha256": "c9103041ead719cf9e2e215cf846e0ef81b2004f29386156444a079af6b24d97"
+          },
+          {
+            "name": "termvels.asc",
+            "sha256": "2b22e4ccf63e21e7dd7b381f46ed0f406b7e313b1e5fb43902423708e25443f3"
+          },
+          {
+            "name": "tr49t67",
+            "sha256": "97501d7f0dc6b93a03803e5c59e57732010dd543686aa55404a1400dc62ae039"
+          },
+          {
+            "name": "tr49t85",
+            "sha256": "b7b6aff5c9dbf05d7a0b8ecf08fd13b2762690aa4d0de77030b81a9167608e89"
+          },
+          {
+            "name": "tr67t85",
+            "sha256": "92a3320df2b0a9eb6fa6e4d62819969d7f410823fe11f3959090202c2a486388"
+          },
+          {
+            "name": "wind-turbine-1.tbl",
+            "sha256": "d2f863483ab050673ebe15bd1e8510277e7a641845048b08afd7cdc97be7e069"
+          },
+          {
+            "name": "windturbines.txt",
+            "sha256": "49633da16e0c02feee493d3f1e46b7ec768d3953aa72b49715732e6d8c4cf402"
+          },
+          {
+            "name": "wrfbdy_d01",
+            "sha256": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c"
+          },
+          {
+            "name": "wrfchainp_d01",
+            "sha256": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3"
+          },
+          {
+            "name": "wrfinput_d01",
+            "sha256": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970"
+          },
+          {
+            "name": "iofields_filename",
+            "sha256": "16255a7c7780e8c6c810e88fe824ad5f352caff6d476e0e74a4ad4eb4b19eaff"
+          }
+        ]
+      },
+      "checkpoints": [
+        {
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_replay_20261020/CONTINUOUS/wrfrst_d01_2025-07-19_00:02:00",
+          "sha256": "d5d9470bc303c29ef7c308eeb3907d42b197bf7b1273eabc273ce9b1152b6bea",
+          "time": "2025-07-19_00:02:00",
+          "itimestep": 6,
+          "receipt": null
+        },
+        {
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_transition_20261020/FINAL_BASELINE_FORWARD_WINDOW/calls/step0000__wznj43q/wrfrst_d01_2025-07-19_00:02:20",
+          "sha256": "7a2741f718f93dc7f8faf463793c7025c167f618bb14b5803d07b8c8b2c115e6",
+          "time": "2025-07-19_00:02:20",
+          "itimestep": 7,
+          "receipt": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_transition_20261020/FINAL_BASELINE_FORWARD_WINDOW/calls/step0000__wznj43q/transition.json"
+        },
+        {
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_transition_20261020/FINAL_BASELINE_FORWARD_WINDOW/calls/step0001_b68q8tbo/wrfrst_d01_2025-07-19_00:02:40",
+          "sha256": "4f0691a9ec26d62ada9119ce06a4b2ccb025abeee4fa9f233a72b4de32338d52",
+          "time": "2025-07-19_00:02:40",
+          "itimestep": 8,
+          "receipt": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_transition_20261020/FINAL_BASELINE_FORWARD_WINDOW/calls/step0001_b68q8tbo/transition.json"
+        }
+      ],
+      "steps": [
+        {
+          "transition_receipt": {
+            "scope": "value_only_origin_bound_prefix_replay",
+            "status": "complete",
+            "origin_checkpoint_sha256": "d5d9470bc303c29ef7c308eeb3907d42b197bf7b1273eabc273ce9b1152b6bea",
+            "origin_time": "2025-07-19_00:02:00",
+            "prefix_steps": 1,
+            "executed_seconds": 20,
+            "inputs_signature": "53668f091fbb796111e129a66e7f510983b1f08f6328834ab0eac2d0d2173503",
+            "runtime_signature": "85c943cb09157c6bf06a245d43e724f0112a70639ec04b4056c5740dd5d44394",
+            "replay_policy": "reintegrate continuous origin prefix; require all prior checkpoint fields bitwise equal",
+            "step": 0,
+            "input_checkpoint_sha256": "d5d9470bc303c29ef7c308eeb3907d42b197bf7b1273eabc273ce9b1152b6bea",
+            "input_time": "2025-07-19_00:02:00",
+            "input_itimestep": 6,
+            "dt_seconds": 20,
+            "command": [
+              "/opt/local/bin/python3",
+              "/private/tmp/KDM6AD-native-transition-20261020/harness/run_ss_case.py",
+              "--case",
+              "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_transition_20261020/FINAL_BASELINE_FORWARD_WINDOW/calls/step0000__wznj43q",
+              "--mp",
+              "137",
+              "--minutes",
+              "0",
+              "--seconds",
+              "20",
+              "--history",
+              "0",
+              "--history-s",
+              "20",
+              "--np",
+              "1",
+              "--proc-grid",
+              "1x1",
+              "--fixed-dt",
+              "--label",
+              "native_transition"
+            ],
+            "runner_input_environment_sha256": "d6dd90fcaaeebf7323234440a0f4b3e1b14d8fe7ca4d23ccae405b528e24186a",
+            "wrf_child_environment_policy": "run_ss_case.py forces OMP_NUM_THREADS, VECLIB_MAXIMUM_THREADS, MKL_NUM_THREADS, OMP_THREAD_LIMIT=1 and GFORTRAN_ERROR_BACKTRACE=1",
+            "executable_sha256": "be6728ffca512ab9841644e789b543cc983193429f023937eb39784086a0da47",
+            "library_sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+            "library_binding_scope": "pinned candidate; actual loaded library requires a separate native loader receipt",
+            "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+            "namelist_sha256": "50741ce71cac712061a82a2a2414aabaa4e7ed74e08125f45a16ce96e79f6db2",
+            "trace_file": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_transition_20261020/FINAL_BASELINE_FORWARD_WINDOW/calls/step0000__wznj43q/native_trace.hex",
+            "io_timer_policy": "reset_io_alarms_per_full_step; no initial history write",
+            "returncode": 0,
+            "archive": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_transition_20261020/FINAL_BASELINE_FORWARD_WINDOW/calls/step0000__wznj43q/runs/mp137_native_transition_0min20s_hist0_1x1_20261020_165851_p38226",
+            "execution": {
+              "experiment_valid": true,
+              "invalid_reasons": [],
+              "requested_proc_grid": "1x1",
+              "actual_proc_grid": "1x1",
+              "active_input_identity_complete": true,
+              "exit_code": 0,
+              "model_completed": true
+            },
+            "prefix_comparisons": [],
+            "output_checkpoint_sha256": "7a2741f718f93dc7f8faf463793c7025c167f618bb14b5803d07b8c8b2c115e6",
+            "output_time": "2025-07-19_00:02:20",
+            "output_itimestep": 7
+          },
+          "prefix_reports": []
+        },
+        {
+          "transition_receipt": {
+            "scope": "value_only_origin_bound_prefix_replay",
+            "status": "complete",
+            "origin_checkpoint_sha256": "d5d9470bc303c29ef7c308eeb3907d42b197bf7b1273eabc273ce9b1152b6bea",
+            "origin_time": "2025-07-19_00:02:00",
+            "prefix_steps": 2,
+            "executed_seconds": 40,
+            "inputs_signature": "53668f091fbb796111e129a66e7f510983b1f08f6328834ab0eac2d0d2173503",
+            "runtime_signature": "85c943cb09157c6bf06a245d43e724f0112a70639ec04b4056c5740dd5d44394",
+            "replay_policy": "reintegrate continuous origin prefix; require all prior checkpoint fields bitwise equal",
+            "step": 1,
+            "input_checkpoint_sha256": "7a2741f718f93dc7f8faf463793c7025c167f618bb14b5803d07b8c8b2c115e6",
+            "input_time": "2025-07-19_00:02:20",
+            "input_itimestep": 7,
+            "dt_seconds": 20,
+            "command": [
+              "/opt/local/bin/python3",
+              "/private/tmp/KDM6AD-native-transition-20261020/harness/run_ss_case.py",
+              "--case",
+              "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_transition_20261020/FINAL_BASELINE_FORWARD_WINDOW/calls/step0001_b68q8tbo",
+              "--mp",
+              "137",
+              "--minutes",
+              "0",
+              "--seconds",
+              "40",
+              "--history",
+              "0",
+              "--history-s",
+              "20",
+              "--np",
+              "1",
+              "--proc-grid",
+              "1x1",
+              "--fixed-dt",
+              "--label",
+              "native_transition"
+            ],
+            "runner_input_environment_sha256": "2daf63fab0a9a6ebc211bea287e7b2901d734daa66b6da1478f72f1f3d194fb6",
+            "wrf_child_environment_policy": "run_ss_case.py forces OMP_NUM_THREADS, VECLIB_MAXIMUM_THREADS, MKL_NUM_THREADS, OMP_THREAD_LIMIT=1 and GFORTRAN_ERROR_BACKTRACE=1",
+            "executable_sha256": "be6728ffca512ab9841644e789b543cc983193429f023937eb39784086a0da47",
+            "library_sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+            "library_binding_scope": "pinned candidate; actual loaded library requires a separate native loader receipt",
+            "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+            "namelist_sha256": "cf5442517b38b714407ba3c2ba6efcb0a2a79baca24c3109c2730ef3e0d94f76",
+            "trace_file": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_transition_20261020/FINAL_BASELINE_FORWARD_WINDOW/calls/step0001_b68q8tbo/native_trace.hex",
+            "io_timer_policy": "reset_io_alarms_per_full_step; no initial history write",
+            "returncode": 0,
+            "archive": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_transition_20261020/FINAL_BASELINE_FORWARD_WINDOW/calls/step0001_b68q8tbo/runs/mp137_native_transition_0min40s_hist0_1x1_20261020_170102_p38937",
+            "execution": {
+              "experiment_valid": true,
+              "invalid_reasons": [],
+              "requested_proc_grid": "1x1",
+              "actual_proc_grid": "1x1",
+              "active_input_identity_complete": true,
+              "exit_code": 0,
+              "model_completed": true
+            },
+            "prefix_comparisons": [
+              {
+                "time": "2025-07-19_00:02:20",
+                "passed": true,
+                "report": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_transition_20261020/FINAL_BASELINE_FORWARD_WINDOW/calls/step0001_b68q8tbo/prefix_compare_0001.json"
+              }
+            ],
+            "output_checkpoint_sha256": "4f0691a9ec26d62ada9119ce06a4b2ccb025abeee4fa9f233a72b4de32338d52",
+            "output_time": "2025-07-19_00:02:40",
+            "output_itimestep": 8
+          },
+          "prefix_reports": [
+            {
+              "schema": "kdm6ad.native_replay_compare.v1",
+              "expected_time": "2025-07-19_00:02:20",
+              "reference_frame": 0,
+              "candidate_frame": 0,
+              "reference_time_dimension": 1,
+              "candidate_time_dimension": 1,
+              "times_values": {
+                "reference": "2025-07-19_00:02:20",
+                "candidate": "2025-07-19_00:02:20"
+              },
+              "variable_count_reference": 652,
+              "variable_count_candidate": 652,
+              "missing_variables": [],
+              "extra_variables": [],
+              "numeric_elements_compared": 322426586,
+              "numeric_element_mismatches": 0,
+              "raw_bitwise_equal": true,
+              "finite": true,
+              "complete_values": true,
+              "passed": true,
+              "errors": [],
+              "restart_metadata": {
+                "passed": true,
+                "differences": [],
+                "output_ringing_normalizations": [
+                  {
+                    "scope": "global",
+                    "attribute": "WRF_ALARM_ISRINGING_01",
+                    "reference": 1,
+                    "candidate": 0
+                  },
+                  {
+                    "scope": "global",
+                    "attribute": "WRF_ALARM_ISRINGING_07",
+                    "reference": 1,
+                    "candidate": 0
+                  }
+                ],
+                "policy": "override_restart_timers=true; only history/auxhist6 Boolean ringing bits normalized"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "FINAL_H_PROBE_FORWARD_WINDOW": {
+      "start": {
+        "mode": "HostForwardWindow two 20s transitions",
+        "exe": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_transition_20261020/bin/boundary_trace_wrf.exe",
+        "exe_sha256": "be6728ffca512ab9841644e789b543cc983193429f023937eb39784086a0da47",
+        "initial_checkpoint": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_replay_20261020/H_MEMORY_PROBE/checkpoint_input_d01_2025-07-19_00:02:00",
+        "initial_sha256": "0308e0e7d0b0edcc6a9df872e2c58c64338edd38e41348115f511b658c80555c",
+        "input_time": "2025-07-19_00:02:00",
+        "input_itimestep": 6,
+        "trace": true,
+        "probe": true,
+        "native_dt": 20,
+        "mpi": 1,
+        "threads": 1,
+        "native_adapter_sha256": "3424e054bf0df48d61ec9af5e2af471d025788965cc4d148728d6b2983c7fe6b",
+        "forward_window_sha256": "a84d4c5c4a848fa61b4934e205f0f956eaf390ec858b4a9aa47a5d44c101f5db",
+        "environment_sha256": "5d504cef9b6988decdbac943ee2e5b9c54ee2e9a563c871c87b339a6b30cb0b0",
+        "assets": [
+          {
+            "name": "BROADBAND_CLOUD_GODDARD.bin",
+            "sha256": "ad4bb1dd8446a2b00559ac425e21255a01b79a4cac7b5e3e693a3c98c222a1c8"
+          },
+          {
+            "name": "CAM_ABS_DATA",
+            "sha256": "91ee3079e43a6d908256fe3d1bd4bc5f3ac5662d2a8a1ed6ac9685be0555ad87"
+          },
+          {
+            "name": "CAM_AEROPT_DATA",
+            "sha256": "9782ca59f2ebd12128e23f775e74665d7eb3dc386f53aaa053adfd926a388049"
+          },
+          {
+            "name": "CAMtr_volume_mixing_ratio",
+            "sha256": "9a427fd106f8e36b30e0b29266bff1398b025b82af5b878e5a7a8e9dfe268ca7"
+          },
+          {
+            "name": "CAMtr_volume_mixing_ratio.A1B",
+            "sha256": "898ae2e2dbb8ba61934a2eda3b53727b44a13d7ab5339a9347dabd88e1bf21a1"
+          },
+          {
+            "name": "CAMtr_volume_mixing_ratio.A2",
+            "sha256": "f3110d6941e3880bf6a134bf36b7e039289f5653ee61a687a9edf6ce76b851ae"
+          },
+          {
+            "name": "CAMtr_volume_mixing_ratio.RCP4.5",
+            "sha256": "ddbd4a28582380a396f4bf6f567ea2b1d2b326166bb1328dad8958445acd8ac8"
+          },
+          {
+            "name": "CAMtr_volume_mixing_ratio.RCP6",
+            "sha256": "5d3a5bbdaba4e18b9d271956081757a247a86c2674fbc7bac2446005c299ee30"
+          },
+          {
+            "name": "CAMtr_volume_mixing_ratio.RCP8.5",
+            "sha256": "82e8c0cd521784707d039030cd611ab473f8359c10ee64a7df8a45ac78331c32"
+          },
+          {
+            "name": "CAMtr_volume_mixing_ratio.SSP119",
+            "sha256": "8c99cb5622a087b0f4a7dc8be351e0e67c2b34ac3a4c266efc16ed730968401e"
+          },
+          {
+            "name": "CAMtr_volume_mixing_ratio.SSP126",
+            "sha256": "94070e69a7b96163178c4b1404c8fb6d240dec5294b67d51cea1bdd6fdbba191"
+          },
+          {
+            "name": "CAMtr_volume_mixing_ratio.SSP245",
+            "sha256": "9a427fd106f8e36b30e0b29266bff1398b025b82af5b878e5a7a8e9dfe268ca7"
+          },
+          {
+            "name": "CAMtr_volume_mixing_ratio.SSP370",
+            "sha256": "28d7cab970360f66fe8ea271d97c6a9705fc123c4c3bcb4f9e76ffb043355845"
+          },
+          {
+            "name": "CAMtr_volume_mixing_ratio.SSP585",
+            "sha256": "cb014ecc482e9fbd79dc676e5f815b96c7679291de6cdd5a27705e116603e12b"
+          },
+          {
+            "name": "CCN_ACTIVATE.BIN",
+            "sha256": "f2b8d3916560f9046f89f8ac5f32c5292a1800498fd75301e422f147c82a3dbd"
+          },
+          {
+            "name": "CLM_ALB_ICE_DFS_DATA",
+            "sha256": "b8ae396abd12f488f87ce3a516d707c73ec5350a3d241238f0cc064c92d99c28"
+          },
+          {
+            "name": "CLM_ALB_ICE_DRC_DATA",
+            "sha256": "067f83f7543e102ca92a36138cd71be795da5872bb83cf8a8eef7bbcbff8f45e"
+          },
+          {
+            "name": "CLM_ASM_ICE_DFS_DATA",
+            "sha256": "db963d6cadfbec4a5706dbf589c2e95b229091f8d191949d1b46c723e4c3a0ed"
+          },
+          {
+            "name": "CLM_ASM_ICE_DRC_DATA",
+            "sha256": "6a1d9e1dd8c046d497216a37ac3d0d7da3faa53b2962b966be61ba38963b86e6"
+          },
+          {
+            "name": "CLM_DRDSDT0_DATA",
+            "sha256": "e98303374a1f49f1ebe68375455daf61126b79f2a84b156e97738fcef3e44d8e"
+          },
+          {
+            "name": "CLM_EXT_ICE_DFS_DATA",
+            "sha256": "d53a1ac63d1aecaec091f55beea6842e535d47d166651da36ca44ea032644417"
+          },
+          {
+            "name": "CLM_EXT_ICE_DRC_DATA",
+            "sha256": "e74c212073c04fb60007e47c4ce9b1b4da2e2688ae291e51d179422281a13971"
+          },
+          {
+            "name": "CLM_KAPPA_DATA",
+            "sha256": "8b8b1d624b417152ba639d4b3024d7011abf7218baea42ea6026d8aec57ed01e"
+          },
+          {
+            "name": "CLM_TAU_DATA",
+            "sha256": "cb706cedda2fa8c807d2693eeec5b7da05a0fd5b1cc6fa08c476aef40ada4aa5"
+          },
+          {
+            "name": "ETAMPNEW_DATA",
+            "sha256": "a913785f0bf5f75f8428ede706ce67ae804c3b285b4a34aeb533c4ad5cd9bea2"
+          },
+          {
+            "name": "ETAMPNEW_DATA.expanded_rain",
+            "sha256": "28e60e6c83eb55889c4ab65eaa33e9fc3b557e5ab45c3dde7ee7153c2ef95a13"
+          },
+          {
+            "name": "GENPARM.TBL",
+            "sha256": "42e9bd99ba8801537ce7e6d6ad02b7952506a30406909a6a7a61881c13b2d43c"
+          },
+          {
+            "name": "HLC.TBL",
+            "sha256": "46b9e9575655ceac80f2ebf23fad59044a46615cffcfeebd69380a6a087df67d"
+          },
+          {
+            "name": "LANDUSE.TBL",
+            "sha256": "7f661318ff5f06aed6b4b5508e4d077dc794cff03d5fb4447fe59c88d0ed2ece"
+          },
+          {
+            "name": "METGRID.TBL",
+            "sha256": "44f1a43af35441957d0bef3a6220831aad1cf56ebc765d64d08e20f439a63b44"
+          },
+          {
+            "name": "MPTABLE.TBL",
+            "sha256": "7fae6a77660c90ad80845565ecfb057093c100de41f35f25a7ffa63f41c19e5d"
+          },
+          {
+            "name": "RRTMG_LW_DATA",
+            "sha256": "bcfdee24b63a4c909522a329b8e16c539f0173c7e5aea2caf933ab4fe28c5c97"
+          },
+          {
+            "name": "RRTMG_SW_DATA",
+            "sha256": "a7d25f5b4d33be8629cbef7ecacc1ff413bf398a021297793e843ba1cc627baf"
+          },
+          {
+            "name": "RRTM_DATA",
+            "sha256": "45dc91514cf018e133301a1b667deeb17f5b65c49ccfaa9140761a8028bc8ae0"
+          },
+          {
+            "name": "SOILPARM.TBL",
+            "sha256": "65ebc19ff475dd16c0a7482486b9f78dab951ac433af9b6b6688bf1f37e570de"
+          },
+          {
+            "name": "STOCHPERT.TBL",
+            "sha256": "e0e6f147628f91ab3e7f3f4be6fc27296a43e1da8ded404b7fe06501fb42559e"
+          },
+          {
+            "name": "TREECANOPY.NEW.TBL",
+            "sha256": "5318a6ceb26c955e89122cd84e06b8066cba4e9ecf040d372373da43ed05b954"
+          },
+          {
+            "name": "TREECANOPY.NEW2.TBL",
+            "sha256": "52910e7f99e71d725c8a8cb331d56ba2303650b5dd31863636339284f8aa3a41"
+          },
+          {
+            "name": "TREECANOPY.TBL",
+            "sha256": "58ede9080c62fa807c7a64ae5b7e74b6b9bb5a4e0375e84c311e5705903ffab8"
+          },
+          {
+            "name": "TREECANOPY21.TBL",
+            "sha256": "1c87980ab9f82b5d6a2ebc62a984e88898a57f11e625e38fdc65d414d5b3ed02"
+          },
+          {
+            "name": "URBPARM.TBL",
+            "sha256": "5811226b3db503ae02d8b35cb5cb10e0e90804e451f0f4a5b76a274ee64773d0"
+          },
+          {
+            "name": "URBPARM_LCZ.TBL",
+            "sha256": "2d1d4481875fa8d762a9115ac8f59b88d03d9557e02193439e156aed711f867e"
+          },
+          {
+            "name": "URBPARM_UZE.TBL",
+            "sha256": "19da35cad1a70a0bc19ee3b183f356e2f5043a32039d22d45844ea2db0a715df"
+          },
+          {
+            "name": "VEGPARM.TBL",
+            "sha256": "a3078940951642ffbb71fdff62cbbb5c7ffbe9c44e0697e7527e1fd5994747e2"
+          },
+          {
+            "name": "aerosol.formatted",
+            "sha256": "5551eeccf5b4aa80e6ed8ae94e73c4ce8a4306a32aae9b3cc954cfa9c2c2d6aa"
+          },
+          {
+            "name": "aerosol_lat.formatted",
+            "sha256": "16121ba61f026c57ba18200988ae786609304f52959d24db86d50d8411473a1a"
+          },
+          {
+            "name": "aerosol_lon.formatted",
+            "sha256": "8201ebcba7199b5b737edf4f9f2a75d36ef4afa27fbdcffa9029dadcf8e61376"
+          },
+          {
+            "name": "aerosol_plev.formatted",
+            "sha256": "3992b2acecbf604430cdb1975497d617cca3e314ee0ae3624f03e5a7f788fc96"
+          },
+          {
+            "name": "bulkdens.asc_s_0_03_0_9",
+            "sha256": "a5607b3d0b9eb1fcdba30e50b714e348a81aabb64d963b0a00ff4f7b2a24caa6"
+          },
+          {
+            "name": "bulkradii.asc_s_0_03_0_9",
+            "sha256": "e88c840873cc45f4b21bd7bf1a17a93c8275c5478a6c07e1b7d40f8d59d44d32"
+          },
+          {
+            "name": "capacity.asc",
+            "sha256": "33759dbb0e238b37403ce2ad62759cca57c03538d72d34c2cc04bb7b2547c951"
+          },
+          {
+            "name": "coeff_p.asc",
+            "sha256": "22e2385ba836176919514fed221db94681fdd169182acec14af121426527b2ad"
+          },
+          {
+            "name": "coeff_q.asc",
+            "sha256": "83ab3d88f266443b1bd3691771c9e99f907db1fbc9729b1c300edc85ad90ee3f"
+          },
+          {
+            "name": "constants.asc",
+            "sha256": "ef4f16ec1397ce9892684d4350f76c62f9673b99ee6520ca6c07b1f8a3b22c0e"
+          },
+          {
+            "name": "eclipse_besselian_elements.dat",
+            "sha256": "2a1367ae68a832c7b2bac26a8d28eeda6dbe860126e50dbb0714eec4c9d6eed7"
+          },
+          {
+            "name": "grib2map.tbl",
+            "sha256": "846ff6ffec204e8f15a5ef4540af4a369dec68ef862cb219001ac778a2c0a641"
+          },
+          {
+            "name": "gribmap.txt",
+            "sha256": "24425f411fcfb460a47436ea1aeb00f388f450ba3cb1734af89116a02cb8961b"
+          },
+          {
+            "name": "ishmael-gamma-tab.bin",
+            "sha256": "d85e4960053024a73034fb962ff52bd62aeae1b975dd5b4f62244ec82d622daa"
+          },
+          {
+            "name": "ishmael-qi-qc.bin",
+            "sha256": "b8e4cea138b78668f027934bb8e39c6ea2cb62c1d277c17249c72003c8f4646c"
+          },
+          {
+            "name": "ishmael-qi-qr.bin",
+            "sha256": "69dd41d3d285318c95cac0d2dde10f8a3b25f802bf52ac781f29c87adb964cc4"
+          },
+          {
+            "name": "kernels.asc_s_0_03_0_9",
+            "sha256": "170b34c8ba0e50cd433917cfe9a1cc673018113ca7e4b2ae33898e8fa1cabfa6"
+          },
+          {
+            "name": "kernels_z.asc",
+            "sha256": "ce4e140595ff6db2434ecd5376a16c50ea410d03ddc1700bfa95a3490c15106f"
+          },
+          {
+            "name": "masses.asc",
+            "sha256": "f53d3acdaa0a3e2a265272fa22a2a0bd54292f51815149370bbf315e3fa1bee4"
+          },
+          {
+            "name": "ozone.formatted",
+            "sha256": "2a13ee25809672e0419e40062c1fc753580adbf604bfc67a9166ef77c815dbc0"
+          },
+          {
+            "name": "ozone_lat.formatted",
+            "sha256": "761597f3454b99e3dbf15d2621b1ede88269948e96e47f4695b79fabd3cc6348"
+          },
+          {
+            "name": "ozone_plev.formatted",
+            "sha256": "df26a938273b22d2d04ec52b7297827a316cac0061fab020519241cdc0e61d48"
+          },
+          {
+            "name": "p3_lookupTable_1.dat-v5.4_2momI",
+            "sha256": "be1ab6fb03481e376e47c6c79d808af5d8ab069f2b242931e9c54801bad4ae84"
+          },
+          {
+            "name": "p3_lookupTable_1.dat-v5.4_3momI",
+            "sha256": "9a3c57ecc09498802c8d7cb3931dbb0200dcf0f51466b3e288120c080271e6dc"
+          },
+          {
+            "name": "p3_lookupTable_2.dat-v5.3",
+            "sha256": "c9103041ead719cf9e2e215cf846e0ef81b2004f29386156444a079af6b24d97"
+          },
+          {
+            "name": "termvels.asc",
+            "sha256": "2b22e4ccf63e21e7dd7b381f46ed0f406b7e313b1e5fb43902423708e25443f3"
+          },
+          {
+            "name": "tr49t67",
+            "sha256": "97501d7f0dc6b93a03803e5c59e57732010dd543686aa55404a1400dc62ae039"
+          },
+          {
+            "name": "tr49t85",
+            "sha256": "b7b6aff5c9dbf05d7a0b8ecf08fd13b2762690aa4d0de77030b81a9167608e89"
+          },
+          {
+            "name": "tr67t85",
+            "sha256": "92a3320df2b0a9eb6fa6e4d62819969d7f410823fe11f3959090202c2a486388"
+          },
+          {
+            "name": "wind-turbine-1.tbl",
+            "sha256": "d2f863483ab050673ebe15bd1e8510277e7a641845048b08afd7cdc97be7e069"
+          },
+          {
+            "name": "windturbines.txt",
+            "sha256": "49633da16e0c02feee493d3f1e46b7ec768d3953aa72b49715732e6d8c4cf402"
+          },
+          {
+            "name": "wrfbdy_d01",
+            "sha256": "d46e5d7117c076956d130b4ff905fc34a5d53dbd5a0d9571311582b0a60c5e6c"
+          },
+          {
+            "name": "wrfchainp_d01",
+            "sha256": "c8e300d2aa52f98c9060803438ab6f796bddd1e1cdd6b75a14e39a398cb0c4e3"
+          },
+          {
+            "name": "wrfinput_d01",
+            "sha256": "5a9ae8da992028dbf3a2a7652eb61532c1efab2acea7ea0e393e4cac8fd4c970"
+          },
+          {
+            "name": "iofields_filename",
+            "sha256": "16255a7c7780e8c6c810e88fe824ad5f352caff6d476e0e74a4ad4eb4b19eaff"
+          }
+        ]
+      },
+      "checkpoints": [
+        {
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_replay_20261020/H_MEMORY_PROBE/checkpoint_input_d01_2025-07-19_00:02:00",
+          "sha256": "0308e0e7d0b0edcc6a9df872e2c58c64338edd38e41348115f511b658c80555c",
+          "time": "2025-07-19_00:02:00",
+          "itimestep": 6,
+          "receipt": null
+        },
+        {
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_transition_20261020/FINAL_H_PROBE_FORWARD_WINDOW/calls/step0000_w834jj82/wrfrst_d01_2025-07-19_00:02:20",
+          "sha256": "e48c16e7b54b578139c3da413e41b76aa0cfad854d706b753c6c2ac25128c248",
+          "time": "2025-07-19_00:02:20",
+          "itimestep": 7,
+          "receipt": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_transition_20261020/FINAL_H_PROBE_FORWARD_WINDOW/calls/step0000_w834jj82/transition.json"
+        },
+        {
+          "path": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_transition_20261020/FINAL_H_PROBE_FORWARD_WINDOW/calls/step0001_khic05u6/wrfrst_d01_2025-07-19_00:02:40",
+          "sha256": "997037e4f021d9abd1a957a8780a5a5e655449e342f44597902e7987af08d16a",
+          "time": "2025-07-19_00:02:40",
+          "itimestep": 8,
+          "receipt": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_transition_20261020/FINAL_H_PROBE_FORWARD_WINDOW/calls/step0001_khic05u6/transition.json"
+        }
+      ],
+      "steps": [
+        {
+          "transition_receipt": {
+            "scope": "value_only_origin_bound_prefix_replay",
+            "status": "complete",
+            "origin_checkpoint_sha256": "0308e0e7d0b0edcc6a9df872e2c58c64338edd38e41348115f511b658c80555c",
+            "origin_time": "2025-07-19_00:02:00",
+            "prefix_steps": 1,
+            "executed_seconds": 20,
+            "inputs_signature": "2b6057b8ad045f66231b378c571d1891f3dfc808ce9b9f421df5f7808e1aa624",
+            "runtime_signature": "85c943cb09157c6bf06a245d43e724f0112a70639ec04b4056c5740dd5d44394",
+            "replay_policy": "reintegrate continuous origin prefix; require all prior checkpoint fields bitwise equal",
+            "step": 0,
+            "input_checkpoint_sha256": "0308e0e7d0b0edcc6a9df872e2c58c64338edd38e41348115f511b658c80555c",
+            "input_time": "2025-07-19_00:02:00",
+            "input_itimestep": 6,
+            "dt_seconds": 20,
+            "command": [
+              "/opt/local/bin/python3",
+              "/private/tmp/KDM6AD-native-transition-20261020/harness/run_ss_case.py",
+              "--case",
+              "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_transition_20261020/FINAL_H_PROBE_FORWARD_WINDOW/calls/step0000_w834jj82",
+              "--mp",
+              "137",
+              "--minutes",
+              "0",
+              "--seconds",
+              "20",
+              "--history",
+              "0",
+              "--history-s",
+              "20",
+              "--np",
+              "1",
+              "--proc-grid",
+              "1x1",
+              "--fixed-dt",
+              "--label",
+              "native_transition"
+            ],
+            "runner_input_environment_sha256": "3ac3906c2435626bb1f32dce00d41bad6377280fd31049152cddb16aac110887",
+            "wrf_child_environment_policy": "run_ss_case.py forces OMP_NUM_THREADS, VECLIB_MAXIMUM_THREADS, MKL_NUM_THREADS, OMP_THREAD_LIMIT=1 and GFORTRAN_ERROR_BACKTRACE=1",
+            "executable_sha256": "be6728ffca512ab9841644e789b543cc983193429f023937eb39784086a0da47",
+            "library_sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+            "library_binding_scope": "pinned candidate; actual loaded library requires a separate native loader receipt",
+            "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+            "namelist_sha256": "50741ce71cac712061a82a2a2414aabaa4e7ed74e08125f45a16ce96e79f6db2",
+            "trace_file": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_transition_20261020/FINAL_H_PROBE_FORWARD_WINDOW/calls/step0000_w834jj82/native_trace.hex",
+            "io_timer_policy": "reset_io_alarms_per_full_step; no initial history write",
+            "returncode": 0,
+            "archive": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_transition_20261020/FINAL_H_PROBE_FORWARD_WINDOW/calls/step0000_w834jj82/runs/mp137_native_transition_0min20s_hist0_1x1_20261020_165857_p38253",
+            "execution": {
+              "experiment_valid": true,
+              "invalid_reasons": [],
+              "requested_proc_grid": "1x1",
+              "actual_proc_grid": "1x1",
+              "active_input_identity_complete": true,
+              "exit_code": 0,
+              "model_completed": true
+            },
+            "prefix_comparisons": [],
+            "output_checkpoint_sha256": "e48c16e7b54b578139c3da413e41b76aa0cfad854d706b753c6c2ac25128c248",
+            "output_time": "2025-07-19_00:02:20",
+            "output_itimestep": 7
+          },
+          "prefix_reports": []
+        },
+        {
+          "transition_receipt": {
+            "scope": "value_only_origin_bound_prefix_replay",
+            "status": "complete",
+            "origin_checkpoint_sha256": "0308e0e7d0b0edcc6a9df872e2c58c64338edd38e41348115f511b658c80555c",
+            "origin_time": "2025-07-19_00:02:00",
+            "prefix_steps": 2,
+            "executed_seconds": 40,
+            "inputs_signature": "2b6057b8ad045f66231b378c571d1891f3dfc808ce9b9f421df5f7808e1aa624",
+            "runtime_signature": "85c943cb09157c6bf06a245d43e724f0112a70639ec04b4056c5740dd5d44394",
+            "replay_policy": "reintegrate continuous origin prefix; require all prior checkpoint fields bitwise equal",
+            "step": 1,
+            "input_checkpoint_sha256": "e48c16e7b54b578139c3da413e41b76aa0cfad854d706b753c6c2ac25128c248",
+            "input_time": "2025-07-19_00:02:20",
+            "input_itimestep": 7,
+            "dt_seconds": 20,
+            "command": [
+              "/opt/local/bin/python3",
+              "/private/tmp/KDM6AD-native-transition-20261020/harness/run_ss_case.py",
+              "--case",
+              "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_transition_20261020/FINAL_H_PROBE_FORWARD_WINDOW/calls/step0001_khic05u6",
+              "--mp",
+              "137",
+              "--minutes",
+              "0",
+              "--seconds",
+              "40",
+              "--history",
+              "0",
+              "--history-s",
+              "20",
+              "--np",
+              "1",
+              "--proc-grid",
+              "1x1",
+              "--fixed-dt",
+              "--label",
+              "native_transition"
+            ],
+            "runner_input_environment_sha256": "0a360db8559f0547b267122cf3e1134d32ea218202d3403b014c2b7761754b30",
+            "wrf_child_environment_policy": "run_ss_case.py forces OMP_NUM_THREADS, VECLIB_MAXIMUM_THREADS, MKL_NUM_THREADS, OMP_THREAD_LIMIT=1 and GFORTRAN_ERROR_BACKTRACE=1",
+            "executable_sha256": "be6728ffca512ab9841644e789b543cc983193429f023937eb39784086a0da47",
+            "library_sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+            "library_binding_scope": "pinned candidate; actual loaded library requires a separate native loader receipt",
+            "runner_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+            "namelist_sha256": "cf5442517b38b714407ba3c2ba6efcb0a2a79baca24c3109c2730ef3e0d94f76",
+            "trace_file": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_transition_20261020/FINAL_H_PROBE_FORWARD_WINDOW/calls/step0001_khic05u6/native_trace.hex",
+            "io_timer_policy": "reset_io_alarms_per_full_step; no initial history write",
+            "returncode": 0,
+            "archive": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_transition_20261020/FINAL_H_PROBE_FORWARD_WINDOW/calls/step0001_khic05u6/runs/mp137_native_transition_0min40s_hist0_1x1_20261020_170108_p38951",
+            "execution": {
+              "experiment_valid": true,
+              "invalid_reasons": [],
+              "requested_proc_grid": "1x1",
+              "actual_proc_grid": "1x1",
+              "active_input_identity_complete": true,
+              "exit_code": 0,
+              "model_completed": true
+            },
+            "prefix_comparisons": [
+              {
+                "time": "2025-07-19_00:02:20",
+                "passed": true,
+                "report": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_transition_20261020/FINAL_H_PROBE_FORWARD_WINDOW/calls/step0001_khic05u6/prefix_compare_0001.json"
+              }
+            ],
+            "output_checkpoint_sha256": "997037e4f021d9abd1a957a8780a5a5e655449e342f44597902e7987af08d16a",
+            "output_time": "2025-07-19_00:02:40",
+            "output_itimestep": 8
+          },
+          "prefix_reports": [
+            {
+              "schema": "kdm6ad.native_replay_compare.v1",
+              "expected_time": "2025-07-19_00:02:20",
+              "reference_frame": 0,
+              "candidate_frame": 0,
+              "reference_time_dimension": 1,
+              "candidate_time_dimension": 1,
+              "times_values": {
+                "reference": "2025-07-19_00:02:20",
+                "candidate": "2025-07-19_00:02:20"
+              },
+              "variable_count_reference": 652,
+              "variable_count_candidate": 652,
+              "missing_variables": [],
+              "extra_variables": [],
+              "numeric_elements_compared": 322426586,
+              "numeric_element_mismatches": 0,
+              "raw_bitwise_equal": true,
+              "finite": true,
+              "complete_values": true,
+              "passed": true,
+              "errors": [],
+              "restart_metadata": {
+                "passed": true,
+                "differences": [],
+                "output_ringing_normalizations": [
+                  {
+                    "scope": "global",
+                    "attribute": "WRF_ALARM_ISRINGING_01",
+                    "reference": 1,
+                    "candidate": 0
+                  },
+                  {
+                    "scope": "global",
+                    "attribute": "WRF_ALARM_ISRINGING_07",
+                    "reference": 1,
+                    "candidate": 0
+                  }
+                ],
+                "policy": "override_restart_timers=true; only history/auxhist6 Boolean ringing bits normalized"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "source_hashes": {
+    "harness/native_host_transition.py": "3424e054bf0df48d61ec9af5e2af471d025788965cc4d148728d6b2983c7fe6b",
+    "harness/native_trace_records.py": "31045477448408fdb20c91dafbce40445a5717ce3ba3972e53fc071e7a9193d3",
+    "harness/native_trace_overlay.py": "bd574331d8f5fe898ba2e9b18c76a8102ab9dc598f81119e704e983f241754e3",
+    "harness/native_trace/kdm6ad_native_trace.f90": "f3284bd5676ea0fb6a1b7f26b059f04c9f6ced54c52d1cac1b2ea1b80e57ebd8",
+    "harness/native_finish_replay.py": "74696b372512c8fb0807fa99887fca92cb5885261b7fe30238dc8b6de8131dad",
+    "oracle/kdm6/da_host_window.py": "a84d4c5c4a848fa61b4934e205f0f956eaf390ec858b4a9aa47a5d44c101f5db"
+  },
+  "finish_object_disassembly_sha256": "74ace0eddba7a480e26d1bc9b0f2426561086b66f18448b0a6d66c400aab79d7",
+  "initial_h_probe": {
+    "source": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_replay_20261020/CONTINUOUS/wrfrst_d01_2025-07-19_00:02:00",
+    "source_sha256": "d5d9470bc303c29ef7c308eeb3907d42b197bf7b1273eabc273ce9b1152b6bea",
+    "staged_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_replay_20261020/H_MEMORY_PROBE/checkpoint_input_d01_2025-07-19_00:02:00",
+    "staged_sha256": "0308e0e7d0b0edcc6a9df872e2c58c64338edd38e41348115f511b658c80555c",
+    "intervention": {
+      "field": "H_DIABATIC",
+      "index": [
+        0,
+        5,
+        20,
+        155
+      ],
+      "old": 0.0,
+      "new": 0.0010000000474974513,
+      "scope": "Value-only memory intervention, not a DA control/analysis"
+    }
+  }
+}

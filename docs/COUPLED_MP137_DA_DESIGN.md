@@ -6,7 +6,7 @@
 
 구현된 공통 인터페이스는 [`da_host_window.py`](../oracle/kdm6/da_host_window.py)다.
 이 모듈은 결합 창의 전진/체크포인트/수반/JVP 실행 순서를 제공한다.
-**실제 WRF 실행파일을 이 인터페이스에 연결하는 backend와 full-host 미분 backend는 아직 구현되지 않았다.**
+값 전용 origin-bound native backend는 [`NATIVE_MP137_TRANSITION.md`](NATIVE_MP137_TRANSITION.md)에 연결했으며, **full-host 미분 backend는 아직 구현되지 않았다.**
 현재 native MP137의 forward 실행 증거와 아래 인터페이스의 합성모델 테스트는 서로 다른 증거다.
 기존 [`da_window.py`](../oracle/kdm6/da_window.py)와 중단된 KO 분석 snapshot은 기존 계약을 유지한다.
 
@@ -126,7 +126,11 @@ backend의 로컬 VJP/JVP 내부에서는 **새 live 상태에서 forcing을 다
 
 를 사용한다. 따라서 기존 minimizer에 새 `Forcing` 배열만 넣는 방식으로 연결하지 않는다.
 별도의 full-host control encoder/pullback과 이 창 실행기를 연결해야 한다.
-현재 모듈에는 이 native encoder, native backend, 실제 최적화 연결이 들어 있지 않다.
+native encoder, full-host 미분 backend와 실제 최적화 연결은 아직 구현하지 않았다.
+별도의 값 전용 `HostForwardWindow`와 origin-bound native prefix replay는
+[`NATIVE_MP137_TRANSITION.md`](NATIVE_MP137_TRANSITION.md)에 기술했다.
+이 경로는 중간 restart의 연속성 문제를 해결했다는 주장이 아니며,
+아래 full-host 미분·최적화 계약에 해당하지 않는다.
 
 실제 최적화 연결점은 다음 closure다. `encoder`와 `prior`는 검증된 값/수반 쌍을 제공해야 한다.
 이는 연결 위치를 명시한 의사코드이며, 현재 native 실행에 연결된 예제가 아니다.

@@ -182,11 +182,43 @@ def compare_frames(
     if extra:
         errors.append(f"candidate has extra variables: {extra}")
 
+    times_values: dict[str, str] = {}
+    times_valid = True
+    if "Times" not in ref_vars or "Times" not in cand_vars:
+        errors.append("both datasets must contain a Times variable")
+        times_valid = False
+    else:
+        for role, variable, frame in (
+            ("reference", ref_vars["Times"], reference_frame),
+            ("candidate", cand_vars["Times"], candidate_frame),
+        ):
+            dims = tuple(variable.dimensions)
+            dtype = np.dtype(variable.dtype)
+            if "Time" not in dims:
+                errors.append(f"{role} Times variable must include the Time dimension")
+                times_valid = False
+                continue
+            if dtype.kind not in _CHAR_KINDS:
+                errors.append(f"{role} Times variable must use a character dtype, got {dtype}")
+                times_valid = False
+                continue
+            try:
+                value = _decoded_char_frame(_read_frame(variable, frame))
+            except (IndexError, ValueError, TypeError, UnicodeError) as exc:
+                errors.append(f"{role} Times selected frame is invalid: {exc}")
+                times_valid = False
+                continue
+            times_values[role] = value
+            if value != expected_time:
+                errors.append(
+                    f"{role} Times mismatch: expected {expected_time!r}, got {value!r}"
+                )
+                times_valid = False
+
     field_reports: dict[str, dict[str, Any]] = {}
     total_numeric_elements = 0
     total_element_mismatches = 0
     all_numeric_finite = True
-    times_values: dict[str, str] = {}
 
     for name in sorted(ref_names & cand_names):
         va, vb = ref_vars[name], cand_vars[name]
@@ -276,24 +308,9 @@ def compare_frames(
                 ]
             if not item["raw_bitwise_equal"]:
                 errors.append(f"{name}: character data differ")
-            if name == "Times":
-                if "Time" not in dims_a:
-                    errors.append("Times variable must include the Time dimension")
-                else:
-                    time_a = _decoded_char_frame(xa)
-                    time_b = _decoded_char_frame(xb)
-                    times_values = {"reference": time_a, "candidate": time_b}
-                    if time_a != expected_time or time_b != expected_time:
-                        errors.append(
-                            f"Times mismatch: expected {expected_time!r}, "
-                            f"reference={time_a!r}, candidate={time_b!r}"
-                        )
-
-    if "Times" not in ref_names or "Times" not in cand_names:
-        errors.append("both datasets must contain a Times variable")
-
     raw_equal = (
-        not missing
+        times_valid
+        and not missing
         and not extra
         and all(item["raw_bitwise_equal"] for item in field_reports.values())
         and all("mismatch" not in error.lower() and "differ" not in error.lower()
