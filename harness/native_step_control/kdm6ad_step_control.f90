@@ -890,9 +890,10 @@ contains
     do n = 1, size(old_t2)
       if (.not. ieee_is_finite(old_t2(n)) .or. .not. ieee_is_finite(old_qv(n)) .or. &
           .not. ieee_is_finite(delta_t2(n)) .or. .not. ieee_is_finite(delta_qv(n)) .or. &
+          old_qv(n) < 0.0_real32 .or. &
           (delta_t2(n) == 0.0_real32 .and. delta_qv(n) == 0.0_real32)) then
         ierr = 132
-        message = "analysis update has nonfinite data or a zero delta pair"
+        message = "analysis update has nonfinite data, negative old QV, or a zero delta pair"
         return
       end if
       new_t2(n) = old_t2(n)

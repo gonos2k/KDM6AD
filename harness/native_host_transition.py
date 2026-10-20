@@ -170,10 +170,14 @@ class NativeInputs:
 
     def verify(self) -> None:
         names = [name for name, _ in self.assets]
-        reserved = {"namelist.input", "wrf.exe", "runs"}
+        # Trace and validation receipts are writer-owned too: a staged asset
+        # symlink must never turn either output into a write to a pinned input.
+        reserved = {"namelist.input", "namelist.output", "wrf.exe", "runs",
+                    "native_trace.hex", "transition.json", "validation"}
         if len(set(names)) != len(names) or any(
-                Path(n).name != n or n in reserved or n in ("", ".", "..")
-                or n.startswith(("wrfrst_", "checkpoint_input_", "rsl.", "klfs_", "wrfout_"))
+                Path(n).name != n or n.casefold() in reserved or n in ("", ".", "..")
+                or n.casefold().startswith(("wrfrst_", "checkpoint_input_", "rsl.",
+                                           "klfs_", "wrfout_", "prefix_compare_"))
                 for n in names):
             raise ValueError("native assets need unique safe case basenames")
         keys = [key for key, _ in self.environment]

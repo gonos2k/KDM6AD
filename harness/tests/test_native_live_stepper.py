@@ -437,6 +437,39 @@ def test_every_step_radiation_requires_stepra_one_but_legacy_template_mode_allow
     assert legacy.process is None
 
 
+@pytest.mark.parametrize("asset_name", ["validation", "VALIDATION"])
+def test_validation_asset_name_is_refused_before_case_creation_or_child_launch(
+        tmp_path, make_stepper, monkeypatch, asset_name):
+    template = make_stepper(steps=1)
+    asset = tmp_path / "caller-validation-asset"
+    asset.write_bytes(b"caller-owned validation asset\n")
+    before = asset.read_bytes()
+    external = NativeInputs(
+        template.external.namelist,
+        ((asset_name, PinnedFile.bind(asset)),),
+        template.external.environment,
+    )
+    child_launches = []
+    monkeypatch.setattr(live.subprocess, "Popen",
+                        lambda *args, **kwargs: child_launches.append(args))
+    work_root = tmp_path / "reserved-validation-work"
+
+    with pytest.raises(ValueError, match="native assets need unique safe case basenames"):
+        NativeLiveStepper(
+            initial=template.initial,
+            external=external,
+            executable=template.executable,
+            library=template.library,
+            runner=template.runner,
+            work_root=work_root,
+            steps=1,
+        )
+
+    assert child_launches == []
+    assert not work_root.exists()
+    assert asset.read_bytes() == before
+
+
 def test_numpy_float32_control_is_logged_as_json_without_changing_packet_bits(make_stepper):
     stepper = make_stepper(steps=1)
     proposal = np.float32(0.1)
