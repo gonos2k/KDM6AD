@@ -1,0 +1,237 @@
+{
+  "schema": "kdm6ad.native_mp137_replay_audit.v1",
+  "public_base": "ceaa3bb7400fffb88c6948136edccc9c52485f4d",
+  "private_evidence_root": "host/research_evidence/mp137_native_replay_20261020",
+  "native_grid": {
+    "west_east": 234,
+    "south_north": 282,
+    "mass_levels": 39,
+    "interface_levels": 40
+  },
+  "model_date": "2025-07-19",
+  "dt_seconds": 20,
+  "continuous_seconds": [
+    0,
+    240
+  ],
+  "restart_seconds": [
+    120,
+    240
+  ],
+  "mpi_ranks": 1,
+  "threads_per_rank": 1,
+  "observations_assimilated": 0,
+  "complete_clean_source_rebuild": false,
+  "full_host_ad": false,
+  "tests": {
+    "command": "python3 -m pytest -q harness/tests/test_native_replay_compare.py harness/tests/test_patch_restart_state_init.py",
+    "passed": 18,
+    "skipped": 0,
+    "scope": "Focused public helper tests, not native/AD tests"
+  },
+  "unpatched_repeat_checkpoint_pass": true,
+  "unpatched_continuous_vs_restart_pass": false,
+  "variant_verification": {
+    "scope": "Native MP137 value-only continuous/restart replay; not DA or full-host AD",
+    "checks": {
+      "control_recompile_vs_installed_restart": {
+        "passed": true,
+        "variable_count": 652,
+        "numeric_elements": 322426586,
+        "differences": {},
+        "errors": []
+      },
+      "cold_forward_history": {
+        "passed": true,
+        "variable_count": 261,
+        "numeric_elements": 97487929,
+        "differences": {},
+        "errors": []
+      },
+      "cold_forward_checkpoint": {
+        "passed": true,
+        "variable_count": 652,
+        "numeric_elements": 322426586,
+        "differences": {},
+        "errors": []
+      },
+      "continuous_vs_restart_checkpoint": {
+        "passed": true,
+        "variable_count": 652,
+        "numeric_elements": 322426586,
+        "differences": {},
+        "errors": []
+      },
+      "continuous_vs_restart_history": {
+        "passed": true,
+        "variable_count": 261,
+        "numeric_elements": 97487929,
+        "differences": {},
+        "errors": []
+      },
+      "loaded_checkpoint": {
+        "passed": true,
+        "variable_count": 652,
+        "numeric_elements": 322426586,
+        "differences": {},
+        "errors": []
+      },
+      "entry_history": {
+        "passed": false,
+        "variable_count": 261,
+        "numeric_elements": 97487929,
+        "differences": {
+          "FOGFRAC_SFC": {
+            "count": 65988,
+            "first": [
+              0,
+              0
+            ],
+            "max_abs": 0.8719726204872131
+          },
+          "NOAHRES": {
+            "count": 29954,
+            "first": [
+              0,
+              0
+            ],
+            "max_abs": 9.47479248046875
+          },
+          "REFL_10CM": {
+            "count": 2533440,
+            "first": [
+              0,
+              1,
+              1
+            ],
+            "max_abs": 498.05120849609375
+          },
+          "RHO_ICE": {
+            "count": 21697,
+            "first": [
+              13,
+              124,
+              150
+            ],
+            "max_abs": 900.0
+          },
+          "VIS_SFC": {
+            "count": 65988,
+            "first": [
+              0,
+              0
+            ],
+            "max_abs": 100000.0
+          },
+          "VIS_SFC_CAPPED": {
+            "count": 63347,
+            "first": [
+              0,
+              0
+            ],
+            "max_abs": 1.0
+          },
+          "VIS_SFC_RAW": {
+            "count": 65988,
+            "first": [
+              0,
+              0
+            ],
+            "max_abs": 3912023.0
+          }
+        },
+        "errors": []
+      }
+    },
+    "terminal_replay_pass": true,
+    "complete_history_pass": false,
+    "dump_only_exit_expected": 14,
+    "complete_clean_source_rebuild": false,
+    "source_recompiled_archive_members": [
+      "module_physics_init.o",
+      "module_sf_urban.o"
+    ],
+    "observations_assimilated": false,
+    "full_host_derivatives": false
+  },
+  "archive_members": {
+    "archive_inventory_equal": true,
+    "member_count": 376,
+    "changed_members": [
+      {
+        "member": "module_sf_urban.o",
+        "original_sha256": "d066ac8fe04096b412a9ea8324574af91053a6c59878fbfd2fbcd5bc23fec341",
+        "new_sha256": "491e8936fc8701780fc6f812501bffc6a0046c62d00ea9f720a9789acdfde381"
+      },
+      {
+        "member": "module_physics_init.o",
+        "original_sha256": "aed891b24d6c7050f8a0084ef440cefc35cd67aade0fce013de75d1061d68b7a",
+        "new_sha256": "6ac6a6a19d15b5ed3af650c3cad461e8289bcd3e8a3e17f91fc619cdb175b9b0"
+      }
+    ],
+    "scope": "Both variant links reuse all other object/archive members unchanged; not a complete clean rebuild."
+  },
+  "value_only_H_intervention": {
+    "one_changed_input_element": true,
+    "terminal_diagnostics": {
+      "p_from_P_plus_PB": {
+        "changed_values": 39512,
+        "max_abs_delta": 3.0,
+        "finite": true,
+        "sampling": "Derived from terminal checkpoint using reviewed source formula; not an actual next-call tuple capture"
+      },
+      "rho_from_inverse_specific_volume": {
+        "changed_values": 34902,
+        "max_abs_delta": 2.5212764739990234e-05,
+        "finite": true,
+        "sampling": "Derived from terminal checkpoint using reviewed source formula; not an actual next-call tuple capture"
+      }
+    }
+  },
+  "artifacts": {
+    "PREPARED.json": {
+      "sha256": "ec60eedcb7aa1ec24d0815881a27414cd7d508b340d531c1816f2bfbf6739052",
+      "availability": "private local evidence, not in a public clone"
+    },
+    "control_BUILD.json": {
+      "sha256": "d840b6ee195e407700282aeac8cf5bf5e675dd8c11580178901896e63d8ed12a",
+      "availability": "private local evidence, not in a public clone"
+    },
+    "preserved_restart_BUILD.json": {
+      "sha256": "77aad398ad921f925b0f40a1ee6f12410f58eee2204469e362259e28ba3bc56e",
+      "availability": "private local evidence, not in a public clone"
+    },
+    "ACTIVE_SOURCE_REVIEW_SNAPSHOT.json": {
+      "sha256": "67fea506e68d3433c2cc3cb9081d5e0eb224c3025e7e8291a55f328777155b9b",
+      "availability": "private local evidence, not in a public clone"
+    },
+    "REPLAY_VERIFICATION.json": {
+      "sha256": "5961bf8353ca52730970a99f0844412e1b66384d8e9bc87ce40021eed6b634ea",
+      "availability": "private local evidence, not in a public clone"
+    },
+    "VARIANT_VERIFICATION.json": {
+      "sha256": "7263d7f6d0195edc48a7063d62b77b07f838b03e3a2032b91572e706d8dd62f8",
+      "availability": "private local evidence, not in a public clone"
+    },
+    "PATCH_APPLIED.json": {
+      "sha256": "de645cc67905dfa4a801dc133e4761cdeaa05ae5184b0a4598c76888c68dd32c",
+      "availability": "private local evidence, not in a public clone"
+    },
+    "VARIANT_LIVE_LIBRARY_MAPPING.json": {
+      "sha256": "ad7e5cde1f0781862616e66419e4d7e438be966c0e8e29b9e599e1ccaeaffef8",
+      "availability": "private local evidence, not in a public clone"
+    },
+    "DEFAULT_FILL_VALUE_INVENTORY.json": {
+      "sha256": "b9fee38bfd53d3e8f0c8fd974eb8464e059a06838f4f34b5f93b46db821ee839",
+      "availability": "private local evidence, not in a public clone"
+    }
+  },
+  "control_executable_sha256": "bba2833183df799a62d6fe0863b17071455da5011ecb046d727b3c56a2e094aa",
+  "preserved_restart_executable_sha256": "cde661544a014f1e3d1e6483fd6c6626dab67c7d7b689dda4ecfe03321df6104",
+  "remaining_limits": [
+    "Separate restart-entry history diagnostic fields are not certified by terminal/state equality.",
+    "Only this four-minute MP137 configuration and decomposition were executed.",
+    "Other host archive members were reused; complete source correspondence of the installed executable is unattested.",
+    "No HostTransition native/full-host derivative backend, pressure-aware observation closure or optimizer was implemented."
+  ]
+}
