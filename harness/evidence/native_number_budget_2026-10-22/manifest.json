@@ -1,0 +1,109 @@
+{
+  "base_commit": "827246d018a199676b17c9b72d5e63922fc7fd9d",
+  "scope": "source-unit contract audit and read-only saved-fp64 applied-change decomposition",
+  "platform": "macOS-26.7-arm64-arm-64bit",
+  "python": "3.10.11",
+  "numpy": "2.2.6",
+  "source_sha256": {
+    "harness/audit_applied_budget.py": "07504595fea4502de7076596b007f76aa7747b78b12bd0c45e5e11bac65fd234",
+    "harness/tests/test_audit_applied_budget.py": "348e4806e5560571a134cfe30786ed3794f31120b5921b1fd153491111290fc8",
+    "docs/NATIVE_NUMBER_UNIT_CONTRACT.md": "f603e7445c54adced36833711c04652988815e3ac852d79e988e4960832d768e"
+  },
+  "unchanged_physics_ABI_consumer_sha256": {
+    "oracle/kdm6/runtime.py": "e505c3a1d42fb2880d0ce3d65381488a06528de8d4133b39d4e9a573cef997ac",
+    "oracle/kdm6/coordinator.py": "05981b7a19c8d4fe262cb8080b14ddf3b4eb5c027b58604803b2e0b80764a0bd",
+    "oracle/kdm6/cloud_dsd.py": "b62a79a620052f9d9b77a0f58b90a1e7eb41ff9415692bbcf30630885ee93310",
+    "oracle/kdm6/rttov_bridge.py": "3c61c7fa6baa21ba294b37cdc17886c0f17979ee4adfae0af7e22154af964116",
+    "oracle/kdm6/obs/native_cloud_profile.py": "2aeb687fed9f660818d76f98d1f8588e2cc21c9d20a7e471ff166a999a5d202c",
+    "libtorch/src/runtime.cpp": "4a56110c91b7495aea0542531eb809a048bb7994747cea2be826f9a2f6e26f7a",
+    "libtorch/src/cloud_dsd.cpp": "987da43ab5bd7107b487cb60fe919d4aff216461c102c22c1acc5d635090b4e4",
+    "libtorch/bridge/kdm6_c_api.cpp": "de632f31ae13ac401348bf397d13db6518c80c89291ae9e6e4b46e01ee960e69",
+    "libtorch/bridge/kdm6_iso_c.f90": "4908064b9fe8e0726f2659638840795ae21d371d31a3905c18ac4007c4f2dd7d"
+  },
+  "input_report": "harness/evidence/microphysics_observation_ad_2026-10-21/native39_composed_cost.json",
+  "input_report_sha256": "465aed12f8d8fa42f50b5ffd5b4aa8a24023f05fbdc0b3e137054e6098481bf8",
+  "ledger_sha256": "ca9ccd5f92c74a7626cb551bb5a560f47baebc126f6686370951fbcae16269c7",
+  "report_sha256": "51ff6aa2e6623dde2fcf7dda3c3ca3e060d38f5b0434a2fd312353af80e04bdb",
+  "private_source_sha256": {
+    "Registry/Registry.EM_COMMON": {
+      "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/Registry/Registry.EM_COMMON",
+      "sha256": "6741720cba12ad7ee1c172339bd8def5973b22f4e88ab9cd152f3ba3df456e37",
+      "navigation_lines": "535\u2013554, 3214\u20133217"
+    },
+    "dyn_em/module_initialize_real.F": {
+      "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/dyn_em/module_initialize_real.F",
+      "sha256": "a4bb2497d0c70588f45da06fe9754b56597245033fec7b4bb51beba05901ce2c",
+      "navigation_lines": "2004\u20132040, 4789\u20134831"
+    },
+    "dyn_em/module_em.F": {
+      "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/dyn_em/module_em.F",
+      "sha256": "7695bfb05a7f99763334a6e69523bbcc1de0f2c659177a18c10a6e1cf530a0c7",
+      "navigation_lines": "1680\u20131725, 1732\u20131775, 1901\u20131909"
+    },
+    "dyn_em/solve_em.F": {
+      "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/dyn_em/solve_em.F",
+      "sha256": "d66e9db1bba8f37e3f46d30c2fd74bdf8def411adf233376a69e0b401c6d3d1f",
+      "navigation_lines": "3722, 4015\u20134044, 4056\u20134088"
+    },
+    "dyn_em/module_big_step_utilities_em.F": {
+      "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/dyn_em/module_big_step_utilities_em.F",
+      "sha256": "27ce690b27b24c80247a5551b48d37fc32fc47470d806cbef1bb859d58edc31c",
+      "navigation_lines": "5394\u20135446, 5540\u20135545"
+    },
+    "phys/module_microphysics_driver.F": {
+      "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/phys/module_microphysics_driver.F",
+      "sha256": "94db84c45b7422b62e04967cb3cd1362311abdb02fa3d374d881799c0bce7e84",
+      "navigation_lines": "2742\u20132757, 2885\u20132905"
+    },
+    "phys/module_mp_kdm6.F": {
+      "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/phys/module_mp_kdm6.F",
+      "sha256": "fc0a72d33a5e61803fea56eb9118018039c6da8b5775813032b4861a2bd66eb5",
+      "navigation_lines": "379\u2013429, 1564\u20131575, 3266\u20133295, 4404\u20134434"
+    },
+    "phys/module_mp_kdm6ad.F": {
+      "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/phys/module_mp_kdm6ad.F",
+      "sha256": "c56499524c73bec4e5092e7aecfde244d072f9572733708226c7f6d743cc9e67",
+      "navigation_lines": "236\u2013251, 287\u2013296, 330\u2013345"
+    },
+    "phys/module_microphysics_zero_out.F": {
+      "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/phys/module_microphysics_zero_out.F",
+      "sha256": "a57268701b424b07a604ce93f733314183a29bfb39e7e6283f92f8668808fa4f",
+      "navigation_lines": "24\u201372, `microphysics_zero_outb`"
+    },
+    "share/module_optional_input.F": {
+      "path": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/share/module_optional_input.F",
+      "sha256": "99dab3a5c498dd7492ad1a989457c1000f148ae39e1b9235b19352dfaeaa5dca",
+      "navigation_lines": "292\u2013302, 361\u2013369"
+    }
+  },
+  "private_source_receipt_sha256": "c4dc2074522a00b1e5043008b3c6602cd594586d246140bb2abbec3ab3481c05",
+  "independent_array_audit_sha256": "ded8cf3880a22eb16ae5e58f66c788e0ddf3f9391df1fd30f3d13bde3bb88b66",
+  "independent_audit_script_sha256": "c30cb8f49ca69e3c9e3b2bf4c3188c403175c34efeac4ecf27d9001526392db1",
+  "cleanup_threshold": {
+    "executed_namelist_sha256": "1fa1515fd3006a5a3f2fd0369c8a1dac94ae2ad136a031ab1c9ce0d5103f609e",
+    "source_text_value": "9.99999994E-09",
+    "binary32_threshold_kg_kg_dry": 9.99999993922529e-09,
+    "parser_source_sha256": "175ade71058672b957d565ef88ffd7925bc7d74dfe559c36aaec61fa8de0d96e",
+    "available_in_old_public_composed_report": false,
+    "ledger_rule_recomputed": false
+  },
+  "number_unit_status": "verified host dry-mass carrier / kernel volume-number interface conflict; historical input payload basis not globally established",
+  "closed_water_budget_certified": false,
+  "closed_number_budget_certified": false,
+  "closed_energy_budget_certified": false,
+  "new_native_integrations": 0,
+  "new_KDM_evaluations": 0,
+  "new_RTTOV_calls": 0,
+  "new_optimizer_runs": 0,
+  "new_physics_or_ABI_changes": 0,
+  "validation": {
+    "focused_tests_passed": 12,
+    "local_harness_passed": 2561,
+    "local_harness_skipped": 59,
+    "local_marked_deselected": 309,
+    "local_harness_seconds": 139.57
+  },
+  "operational_executable_sha256": "676223e8d61d23456d4ac83713bff0283ea08b1e71776b7f8885b062d97f801b",
+  "operational_library_sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+  "old_KO_DA": "remains paused"
+}
