@@ -194,3 +194,8 @@ and cost derivatives, and higher derivatives remain separate work.
 water-rate RK-add option is off, while the updated water states still persist.
 The new map does not isolate or differentiate the resulting RK temperature
 increment. It does not assert balance, forecast skill, or full-domain DA.
+
+The subsequent, separately bounded column prep composition is described in
+[NATIVE_PREP_AD.md](NATIVE_PREP_AD.md). It supplies state-dependent forcing from
+moist theta, column mass and interface geopotential, without changing this
+finish map or declaring a full-host adjoint.
