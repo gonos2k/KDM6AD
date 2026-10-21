@@ -1,0 +1,74 @@
+{
+  "base_commit": "df2ee9671761df2112c98501eff3b49957b3f2c3",
+  "scope": "offline continuous-fp64 split-physics first-order composition plus separate native profile number case",
+  "platform": "macOS-26.7-arm64-arm-64bit",
+  "python": "3.10.11",
+  "torch": "2.13.0",
+  "numpy": "2.2.6",
+  "netCDF4": "1.7.4",
+  "source_sha256": {
+    "harness/native_microphysics_obs.py": "8e3e98da62460e263c2448b5ae4cc8acf4af41bbf3466f5a16e199d27116c195",
+    "harness/verify_microphysics_obs_ad.py": "0a2af2484f8c8ba7a67fc4cc18cf8092ac7a7f2f7844e7553f3513b60de96c6f",
+    "harness/tests/test_verify_microphysics_obs_ad.py": "b1ceebb9296ab85111d2fb5a6370f2a5cd0ca657d1d61d050f18b4b6bef4a309",
+    "oracle/tests/test_microphysics_observation_state.py": "4984c8b7187b7aeda22d494dcab6691a2e1d7d2828c147539fe717906b5bc8df",
+    "docs/MICROPHYSICS_OBSERVATION_AD.md": "f1c5070ef63e05d1b8bb1565b340f2789c0fc879485df476078d2463e72381c5"
+  },
+  "reports": {
+    "composed": {
+      "file": "native39_composed_cost.json",
+      "sha256": "465aed12f8d8fa42f50b5ffd5b4aa8a24023f05fbdc0b3e137054e6098481bf8",
+      "source_pins_verified": 117,
+      "RTTOV_calls": 71,
+      "directions": 7,
+      "passed": true,
+      "max_dot_relative_error": 7.917339450718715e-14,
+      "max_selected_FD_tolerance_ratio": 0.015398854735288108
+    },
+    "cloudy_number_profile": {
+      "file": "native40_number_obs.json",
+      "sha256": "78fcaac600dbfa1876b3b3e36f4d76b01f4017651a06d66cfc5bed511594f2c1",
+      "source_pins_verified": 81,
+      "RTTOV_calls": 91,
+      "directions": 9,
+      "passed": true,
+      "max_dot_relative_error": 9.167383999532319e-15,
+      "max_selected_FD_tolerance_ratio": 0.031848422311374344
+    }
+  },
+  "evidence_notes_sha256": {
+    "REPORT.md": "c92cfabe174506cb001b702002dce0a7e236a8e0556db3c5916d771a173a7c26",
+    "NUMBER_CASE.md": "5d11ec52c082d71b08dc2a1ea6e63b76c01203da06541c0370f8c28fd7fcf81f"
+  },
+  "private_authoritative_sources_sha256": {
+    "dyn_em/solve_em.F": "d66e9db1bba8f37e3f46d30c2fd74bdf8def411adf233376a69e0b401c6d3d1f",
+    "dyn_em/module_big_step_utilities_em.F": "27ce690b27b24c80247a5551b48d37fc32fc47470d806cbef1bb859d58edc31c",
+    "phys/module_microphysics_zero_out.F": "a57268701b424b07a604ce93f733314183a29bfb39e7e6283f92f8668808fa4f",
+    "phys/module_mp_kdm6ad.F": "c56499524c73bec4e5092e7aecfde244d072f9572733708226c7f6d743cc9e67",
+    "Registry/Registry.EM_COMMON": "6741720cba12ad7ee1c172339bd8def5973b22f4e88ab9cd152f3ba3df456e37"
+  },
+  "independent_final_audit_sha256": "7de879b00e4b3551758f2bcdf1bee473781c9801860e48b80d9fc9eb53748e7a",
+  "reused_library_manifest": "harness/evidence/state_forcing_ad_2026-10-20/build_manifest.json",
+  "new_native_integrations": 0,
+  "new_kernel_builds": 0,
+  "new_optimizations": 0,
+  "RTTOV_invocations": {
+    "final_composed": 71,
+    "secondary_cloudy_number_profile": 91,
+    "earlier_six_direction_composed": 61,
+    "total_recorded": 223
+  },
+  "exploratory_six_direction_report_sha256": "c0cc14280f4c5ecbdb994750a2ae2c45a1f93a9c304b716aa4d77577945d7f64",
+  "focused_tests": {
+    "native_prep_finish_profile_cloud_and_two_new_test_files": 60
+  },
+  "local_harness": {
+    "passed": 2549,
+    "skipped": 59,
+    "local_marked_deselected": 309,
+    "elapsed_seconds": 188.22
+  },
+  "operational_executable_sha256": "676223e8d61d23456d4ac83713bff0283ea08b1e71776b7f8885b062d97f801b",
+  "operational_library_sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+  "paused_old_DA": "PIDs 86154,86179..86189 remain stopped",
+  "limits": "Fixed MU/PH split EOS; trace/reconstructed native operands; raw kernel numbers/Registry optical convention conditional; +40s nominal slot offset/pixel time unknown; no full host/RK/memory/HVP/budget/skill certificate; whole-reference pressure mismatch retained."
+}
