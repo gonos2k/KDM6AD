@@ -1,0 +1,48 @@
+{
+  "base_commit": "ac286b6ddb2067ff6c68b638c51d6354606cbbc0",
+  "scope": "offline saved-value replay, continuous fp64 kernel/thermo-application derivatives, and isolated public Fortran-wrapper error checks",
+  "platform": "macOS-26.7-arm64-arm-64bit",
+  "torch": "2.13.0",
+  "numpy": "2.2.6",
+  "kernel_library_sha256": "3e968dcd43f6d361a2e1be6b963f76dcb9de1381313875e5c805af187a1693e4",
+  "kernel_source_sha256_checked_unchanged": {
+    "libtorch/src/runtime.cpp": "4a56110c91b7495aea0542531eb809a048bb7994747cea2be826f9a2f6e26f7a",
+    "libtorch/include/kdm6/runtime.h": "7820c9acd0866dd32521054a88d727ce88c91af629275940b4b7eea0046f6276",
+    "libtorch/include/kdm6/state.h": "6de4e4d17927b23c77fec99522398f57b04ed8697fe4e3cca787a171eecc235d",
+    "libtorch/bridge/kdm6_c_api.cpp": "de632f31ae13ac401348bf397d13db6518c80c89291ae9e6e4b46e01ee960e69",
+    "libtorch/bridge/kdm6_c_api.h": "3cc0f9b14a1529e55ef16e72ebe5c725df7dccda8fdeb50962eadda19306e609",
+    "libtorch/tests/test_state_forcing_abi.cpp": "315a75325cf3d0a07b9d00c823eaf5c5294a75b02a1bf5cc3dfd688d7da36a8f",
+    "libtorch/tests/test_handle_vjp.cpp": "459085cb9d7ff38fc331316414aff43ed5788b993eef99db520d8069b0e4ff3f"
+  },
+  "source_sha256": {
+    "oracle/kdm6/native_finish.py": "1053123132884751f869ccceda00dd2a1cace440c2048cc705f0f3689b61c37a",
+    "harness/verify_native_finish_ad.py": "d724b1101de04ab8bd9513e03d5ed74312f369f5d78f517537f7a07ea6f5dc60",
+    "libtorch/bridge/kdm6_iso_c.f90": "4908064b9fe8e0726f2659638840795ae21d371d31a3905c18ac4007c4f2dd7d",
+    "libtorch/tests/test_fortran_state_forcing.f90": "8e0d36cc00edf3c410edf5c7ca472082540539bb132da14110f11bc68293f02d",
+    "oracle/tests/test_native_finish.py": "5efb12a9d4a852cc096cb014075a3f9955e378d76ab0f3882d639e51ea5e8c21",
+    "harness/tests/test_verify_native_finish_ad.py": "82a576adc2b63357b3b998bf57482547f517879978a766d6f0e4e9712a2de3f8"
+  },
+  "fortran": {
+    "compiler": "GNU Fortran 15.2.0",
+    "flags": [
+      "-O3",
+      "-ffp-contract=off"
+    ],
+    "baseline_shim_commit": "ac286b6ddb2067ff6c68b638c51d6354606cbbc0",
+    "baseline_shim_sha256": "d7b26bbac9f5b0b5c1ccf4d626c6b0a95e5d6f1982c2cd411afc9837444869f0",
+    "same_test_and_shared_library": true,
+    "baseline_run_exit": 1,
+    "baseline_failure": "local state-shape rejection changed output backing storage",
+    "corrected_run_exit": 0,
+    "corrected_fortran_program_sha256": "2bfe515354e504373bbc92c261928a0d4aa5bb52f875575d20cb79626cfb23b3",
+    "compiled_programs_passed": [
+      "test_fortran_smoke",
+      "test_fortran_normalized_ad",
+      "test_fortran_state_forcing"
+    ]
+  },
+  "saved_audit_script_sha256": "8b9fdf0a834665dcb3615ba79d598caf053d8ceeadf46258061463f9029524bd",
+  "operational_executable_sha256": "676223e8d61d23456d4ac83713bff0283ea08b1e71776b7f8885b062d97f801b",
+  "operational_library_sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+  "new_native_integrations": 0
+}

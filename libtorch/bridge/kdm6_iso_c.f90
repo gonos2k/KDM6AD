@@ -117,17 +117,17 @@ module kdm6_iso_c
       integer(c_int), value       :: im, kme, jme
       real(c_double), value       :: dt
       integer(c_int), value       :: param_grad_flags, value_only
-      real(c_float), intent(out) :: th_out(*), qv_out(*), qc_out(*), qr_out(*)
-      real(c_float), intent(out) :: qi_out(*), qs_out(*), qg_out(*)
-      real(c_float), intent(out) :: nccn_out(*), nc_out(*), ni_out(*), nr_out(*), bg_out(*)
+      real(c_float), intent(inout) :: th_out(*), qv_out(*), qc_out(*), qr_out(*)
+      real(c_float), intent(inout) :: qi_out(*), qs_out(*), qg_out(*)
+      real(c_float), intent(inout) :: nccn_out(*), nc_out(*), ni_out(*), nr_out(*), bg_out(*)
       type(c_ptr), intent(out)    :: handle
       ! Phase 3 ABI extension. xland is (im, jme) float*, may be NULL.
       real(c_float), intent(in)  :: xland(*)
       real(c_double), value       :: ncmin_land, ncmin_sea
       ! Sedimentation surface increments (im, jme) float* [mm], caller-allocated.
-      real(c_float), intent(out) :: rain_increment(*), snow_increment(*), graupel_increment(*)
+      real(c_float), intent(inout) :: rain_increment(*), snow_increment(*), graupel_increment(*)
       ! Graupel density (im, kme, jme) [kg m^-3] → WRF diag_rhog/RHOPO3D.
-      real(c_float), intent(out) :: rhog_out(*)
+      real(c_float), intent(inout) :: rhog_out(*)
       integer(c_int)              :: rc
     end function kdm6_step_c
 
@@ -150,7 +150,7 @@ module kdm6_iso_c
       integer(c_int), value       :: im, kme, jme
       real(c_double), value       :: dt
       integer(c_int), value       :: value_only
-      real(c_double), intent(out) :: state_out_packed(*)
+      real(c_double), intent(inout) :: state_out_packed(*)
       type(c_ptr), intent(out)    :: handle
       real(c_float), intent(in)  :: xland(*)
       real(c_double), value       :: ncmin_land, ncmin_sea
@@ -169,7 +169,7 @@ module kdm6_iso_c
       integer(c_int), value       :: im, kme, jme
       real(c_double), value       :: dt
       integer(c_int), value       :: value_only
-      real(c_double), intent(out) :: state_out_packed(*)
+      real(c_double), intent(inout) :: state_out_packed(*)
       type(c_ptr), intent(out)    :: handle
       real(c_float), intent(in)  :: xland(*)
       real(c_double), value       :: ncmin_land, ncmin_sea
@@ -189,7 +189,7 @@ module kdm6_iso_c
       integer(c_int), value       :: im, kme, jme
       real(c_double), value       :: dt
       integer(c_int), value       :: value_only
-      real(c_double), intent(out) :: state_out_packed(*)
+      real(c_double), intent(inout) :: state_out_packed(*)
       type(c_ptr), intent(out)    :: handle
       real(c_float), intent(in)  :: xland(*)
       real(c_double), value       :: ncmin_land, ncmin_sea
@@ -213,7 +213,7 @@ module kdm6_iso_c
       integer(c_int), value       :: im, kme, jme
       real(c_double), value       :: dt
       integer(c_int), value       :: value_only
-      real(c_double), intent(out) :: state_out_packed(*)
+      real(c_double), intent(inout) :: state_out_packed(*)
       type(c_ptr), intent(out)    :: handle
       real(c_float), intent(in)   :: xland(*)
       real(c_double), value       :: ncmin_land, ncmin_sea
@@ -227,7 +227,7 @@ module kdm6_iso_c
       import :: c_int, c_double, c_float, c_ptr
       type(c_ptr),    value       :: h
       real(c_double), intent(in)  :: u_packed(*)
-      real(c_double), intent(out) :: grad_out_packed(*)
+      real(c_double), intent(inout) :: grad_out_packed(*)
       integer(c_int)              :: rc
     end function kdm6_handle_vjp_c
 
@@ -236,7 +236,7 @@ module kdm6_iso_c
       import :: c_int, c_double, c_float, c_ptr
       type(c_ptr),    value       :: h
       real(c_double), intent(in)  :: v_packed(*)
-      real(c_double), intent(out) :: tangent_out_packed(*)
+      real(c_double), intent(inout) :: tangent_out_packed(*)
       integer(c_int)              :: rc
     end function kdm6_handle_jvp_c
 
@@ -246,7 +246,7 @@ module kdm6_iso_c
       import :: c_int, c_double, c_ptr
       type(c_ptr), value           :: h
       real(c_double), intent(in)   :: u_packed(*)
-      real(c_double), intent(out)  :: state_grad_packed(*), forcing_grad_packed(*)
+      real(c_double), intent(inout)  :: state_grad_packed(*), forcing_grad_packed(*)
       integer(c_int)               :: rc
     end function kdm6_handle_state_forcing_vjp_c
 
@@ -257,7 +257,7 @@ module kdm6_iso_c
       type(c_ptr), value           :: h
       real(c_double), intent(in)   :: state_direction_packed(*)
       real(c_double), intent(in)   :: forcing_direction_packed(*)
-      real(c_double), intent(out)  :: tangent_out_packed(*)
+      real(c_double), intent(inout)  :: tangent_out_packed(*)
       integer(c_int)               :: rc
     end function kdm6_handle_state_forcing_jvp_c
 
@@ -305,20 +305,20 @@ contains
     integer(c_int), intent(in)              :: im, kme, jme
     real(c_double), intent(in)              :: dt
     integer(c_int), intent(in)              :: param_grad_flags, value_only
-    real(c_float), intent(out), contiguous :: th_out(:,:,:), qv_out(:,:,:), qc_out(:,:,:), qr_out(:,:,:)
-    real(c_float), intent(out), contiguous :: qi_out(:,:,:), qs_out(:,:,:), qg_out(:,:,:)
-    real(c_float), intent(out), contiguous :: nccn_out(:,:,:), nc_out(:,:,:), ni_out(:,:,:), nr_out(:,:,:)
-    real(c_float), intent(out), contiguous :: bg_out(:,:,:)
+    real(c_float), intent(inout), contiguous :: th_out(:,:,:), qv_out(:,:,:), qc_out(:,:,:), qr_out(:,:,:)
+    real(c_float), intent(inout), contiguous :: qi_out(:,:,:), qs_out(:,:,:), qg_out(:,:,:)
+    real(c_float), intent(inout), contiguous :: nccn_out(:,:,:), nc_out(:,:,:), ni_out(:,:,:), nr_out(:,:,:)
+    real(c_float), intent(inout), contiguous :: bg_out(:,:,:)
     type(c_ptr),    intent(out)             :: handle
     ! Phase 3 ABI extension: land/sea mask + per-regime ncmin scalars.
     real(c_float), intent(in),  contiguous :: xland(:,:)
     real(c_double), intent(in)              :: ncmin_land, ncmin_sea
     ! Sedimentation surface increments (im, jme) [mm] — caller-allocated.
-    real(c_float), intent(out), contiguous :: rain_increment(:,:)
-    real(c_float), intent(out), contiguous :: snow_increment(:,:)
-    real(c_float), intent(out), contiguous :: graupel_increment(:,:)
+    real(c_float), intent(inout), contiguous :: rain_increment(:,:)
+    real(c_float), intent(inout), contiguous :: snow_increment(:,:)
+    real(c_float), intent(inout), contiguous :: graupel_increment(:,:)
     ! Graupel density (im, kme, jme) [kg m^-3] → WRF diag_rhog/RHOPO3D.
-    real(c_float), intent(out), contiguous :: rhog_out(:,:,:)
+    real(c_float), intent(inout), contiguous :: rhog_out(:,:,:)
     integer(c_int)                          :: rc
 
     rc = kdm6_step_c( &
@@ -353,7 +353,7 @@ contains
     integer(c_int), intent(in)              :: im, kme, jme
     real(c_double), intent(in)              :: dt
     integer(c_int), intent(in)              :: value_only
-    real(c_double), intent(out), contiguous :: state_out(:,:,:,:)
+    real(c_double), intent(inout), contiguous :: state_out(:,:,:,:)
     type(c_ptr),    intent(out)             :: handle
     real(c_float),  intent(in),  contiguous :: xland(:,:)
     real(c_double), intent(in)              :: ncmin_land, ncmin_sea
@@ -373,7 +373,7 @@ contains
     integer(c_int), intent(in)              :: im, kme, jme
     real(c_double), intent(in)              :: dt
     integer(c_int), intent(in)              :: value_only
-    real(c_double), intent(out), contiguous :: state_out(:,:,:,:)
+    real(c_double), intent(inout), contiguous :: state_out(:,:,:,:)
     type(c_ptr),    intent(out)             :: handle
     real(c_float),  intent(in),  contiguous :: xland(:,:)
     real(c_double), intent(in)              :: ncmin_land, ncmin_sea
@@ -395,7 +395,7 @@ contains
     integer(c_int), intent(in)              :: im, kme, jme
     real(c_double), intent(in)              :: dt
     integer(c_int), intent(in)              :: value_only
-    real(c_double), intent(out), contiguous :: state_out(:,:,:,:)
+    real(c_double), intent(inout), contiguous :: state_out(:,:,:,:)
     type(c_ptr),    intent(out)             :: handle
     real(c_float),  intent(in),  contiguous :: xland(:,:)
     real(c_double), intent(in)              :: ncmin_land, ncmin_sea
@@ -423,7 +423,7 @@ contains
     integer(c_int), intent(in)              :: im, kme, jme
     real(c_double), intent(in)              :: dt
     integer(c_int), intent(in)              :: value_only
-    real(c_double), intent(out), contiguous :: state_out(:,:,:,:)
+    real(c_double), intent(inout), contiguous :: state_out(:,:,:,:)
     type(c_ptr), intent(out)                :: handle
     real(c_float), intent(in), contiguous  :: xland(:,:)
     real(c_double), intent(in)              :: ncmin_land, ncmin_sea
@@ -450,7 +450,7 @@ contains
   function kdm6_handle_vjp(h, u_packed, grad_out_packed) result(rc)
     type(c_ptr),    intent(in)              :: h
     real(c_double), intent(in),  contiguous :: u_packed(:)
-    real(c_double), intent(out), contiguous :: grad_out_packed(:)
+    real(c_double), intent(inout), contiguous :: grad_out_packed(:)
     integer(c_int)                          :: rc
     rc = kdm6_handle_vjp_c(h, u_packed, grad_out_packed)
   end function kdm6_handle_vjp
@@ -458,7 +458,7 @@ contains
   function kdm6_handle_jvp(h, v_packed, tangent_out_packed) result(rc)
     type(c_ptr),    intent(in)              :: h
     real(c_double), intent(in),  contiguous :: v_packed(:)
-    real(c_double), intent(out), contiguous :: tangent_out_packed(:)
+    real(c_double), intent(inout), contiguous :: tangent_out_packed(:)
     integer(c_int)                          :: rc
     rc = kdm6_handle_jvp_c(h, v_packed, tangent_out_packed)
   end function kdm6_handle_jvp
@@ -471,7 +471,7 @@ contains
                                          state_grad_packed, forcing_grad_packed) result(rc)
     type(c_ptr), intent(in)              :: h
     real(c_double), intent(in), contiguous :: u_packed(:)
-    real(c_double), intent(out), contiguous :: state_grad_packed(:), forcing_grad_packed(:)
+    real(c_double), intent(inout), contiguous :: state_grad_packed(:), forcing_grad_packed(:)
     integer(c_int)                        :: rc
     rc = kdm6_handle_state_forcing_vjp_c(h, u_packed, &
                                          state_grad_packed, forcing_grad_packed)
@@ -482,7 +482,7 @@ contains
     type(c_ptr), intent(in)               :: h
     real(c_double), intent(in), contiguous :: state_direction_packed(:)
     real(c_double), intent(in), contiguous :: forcing_direction_packed(:)
-    real(c_double), intent(out), contiguous :: tangent_out_packed(:)
+    real(c_double), intent(inout), contiguous :: tangent_out_packed(:)
     integer(c_int)                         :: rc
     rc = kdm6_handle_state_forcing_jvp_c(h, state_direction_packed, &
                                          forcing_direction_packed, tangent_out_packed)

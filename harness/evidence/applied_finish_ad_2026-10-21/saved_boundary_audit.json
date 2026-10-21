@@ -1,0 +1,511 @@
+{
+  "audit_type": "read-only saved-trace/restart producer-consumer verification; not new model/DA/RTTOV/AD execution",
+  "created_utc_or_local_date": "2026-10-21 Asia/Tokyo",
+  "graphify_query_note": "Graphify returned no direct host source edges; source call path verified against the source anchors recorded here.",
+  "provenance": {
+    "trace": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_two_step_20261020/TWO_STEP_SAVED_DA/calls/live_yws3nddy/native_trace.hex",
+    "trace_sha256": "9ec44c6fdc46862f59703059d234e845135e14f97e23e7c213475619a00dd2b5",
+    "finished_manifest_sha256": "f6f9bfa083b84d799821f2bac4a486eb4110ce792b1ceaa75fd266a5ec106dd9",
+    "live_receipt_sha256": "761008d6337fc30069f799f14c3cdc7f95fae8bd5a7c9e2826001aacc8be733a",
+    "checkpoint_sha256": {
+      "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_two_step_20261020/TWO_STEP_SAVED_DA/calls/live_yws3nddy/wrfrst_d01_2025-07-19_00:00:00": "0522208dc78a08ef279223d1638ae67947c8db673e6ab64ecd0902356abbcc82",
+      "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_two_step_20261020/TWO_STEP_SAVED_DA/calls/live_yws3nddy/wrfrst_d01_2025-07-19_00:00:20": "0acb0aed67d6d6aea66852f3bcda96bbaffd911a819874dc2d4eb8ee9a5e5355",
+      "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_two_step_20261020/TWO_STEP_SAVED_DA/calls/live_yws3nddy/wrfrst_d01_2025-07-19_00:00:40": "7a353f1fa4f6636864ac169c9ee8d16869d1f38c8e998762c19659404cbb9c8e"
+    },
+    "source_sha256_before": {
+      "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/dyn_em/solve_em.F": "d66e9db1bba8f37e3f46d30c2fd74bdf8def411adf233376a69e0b401c6d3d1f",
+      "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/dyn_em/module_big_step_utilities_em.F": "27ce690b27b24c80247a5551b48d37fc32fc47470d806cbef1bb859d58edc31c",
+      "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/phys/module_microphysics_zero_out.F": "a57268701b424b07a604ce93f733314183a29bfb39e7e6283f92f8668808fa4f",
+      "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/phys/module_mp_kdm6ad.F": "c56499524c73bec4e5092e7aecfde244d072f9572733708226c7f6d743cc9e67",
+      "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/phys/module_microphysics_driver.F": "94db84c45b7422b62e04967cb3cd1362311abdb02fa3d374d881799c0bce7e84",
+      "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/dyn_em/module_em.F": "7695bfb05a7f99763334a6e69523bbcc1de0f2c659177a18c10a6e1cf530a0c7",
+      "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/share/module_model_constants.F": "5b80377fecdc18a5f0ad38d3b6c15cfc86ad5d76701adbbbb08a08698d0f7062"
+    },
+    "source_sha256_after": {
+      "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/dyn_em/solve_em.F": "d66e9db1bba8f37e3f46d30c2fd74bdf8def411adf233376a69e0b401c6d3d1f",
+      "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/dyn_em/module_big_step_utilities_em.F": "27ce690b27b24c80247a5551b48d37fc32fc47470d806cbef1bb859d58edc31c",
+      "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/phys/module_microphysics_zero_out.F": "a57268701b424b07a604ce93f733314183a29bfb39e7e6283f92f8668808fa4f",
+      "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/phys/module_mp_kdm6ad.F": "c56499524c73bec4e5092e7aecfde244d072f9572733708226c7f6d743cc9e67",
+      "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/phys/module_microphysics_driver.F": "94db84c45b7422b62e04967cb3cd1362311abdb02fa3d374d881799c0bce7e84",
+      "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/dyn_em/module_em.F": "7695bfb05a7f99763334a6e69523bbcc1de0f2c659177a18c10a6e1cf530a0c7",
+      "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/share/module_model_constants.F": "5b80377fecdc18a5f0ad38d3b6c15cfc86ad5d76701adbbbb08a08698d0f7062"
+    },
+    "trace_overlay_inputs_sha256": {
+      "/private/tmp/KDM6AD-two-step-20261020/harness/native_trace_overlay.py": "bd574331d8f5fe898ba2e9b18c76a8102ab9dc598f81119e704e983f241754e3",
+      "/private/tmp/KDM6AD-two-step-20261020/harness/native_trace/kdm6ad_native_trace.f90": "f3284bd5676ea0fb6a1b7f26b059f04c9f6ced54c52d1cac1b2ea1b80e57ebd8",
+      "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_two_step_20261020/build/dyn_em/module_big_step_utilities_em.F": "e7ce1c5eb0ff38a8e2687a4fbb720a2646689615c7e184a33fa56d484a4d80c4",
+      "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_two_step_20261020/build/phys/module_mp_kdm6ad.F": "8b47bc625c6b402626e888fe02e5e380fd8557cc582c5c8db4d3be54b97550fa",
+      "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_two_step_20261020/build/dyn_em/module_big_step_utilities_em.f90": "1e3cbfbb2c4854e2e52222b9b7cc07523ffcc7e46f6483287a9279b21ed71717"
+    },
+    "trace_and_finish_replay_dependencies_sha256": {
+      "/private/tmp/KDM6AD-two-step-20261020/harness/native_trace_records.py": "31045477448408fdb20c91dafbce40445a5717ce3ba3972e53fc071e7a9193d3",
+      "/private/tmp/KDM6AD-two-step-20261020/harness/native_finish_replay.py": "74696b372512c8fb0807fa99887fca92cb5885261b7fe30238dc8b6de8131dad"
+    },
+    "da_binding_and_run_recipe_sha256": {
+      "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_two_step_20261020/code/run_cold_analysis_case.py": "8047c0e478ac2fc220f2369f58ae7a4ae1b180f2ce0d439ea4b150c6a79537ab",
+      "/private/tmp/KDM6AD-two-step-20261020/harness/native_analysis_increment.py": "081e50d2fe6fc46302f7f161d85b6b49ff258706adca2a06ddec2084e8571bb9",
+      "/private/tmp/KDM6AD-two-step-20261020/harness/native_analysis_control.py": "5bd46e05c7ea71fab44587f8a3ee17925952de0c2ad0f01a84cb41052d59ee46",
+      "/private/tmp/KDM6AD-two-step-20261020/harness/native_live_stepper.py": "72e9a0a158b06c8e27f3c6ce6c4a1b0252cff252635006f62bb332fd38c9d9a2",
+      "/private/tmp/KDM6AD-two-step-20261020/harness/native_step_control/kdm6ad_step_control.f90": "a31475c31b5bfe31ce67c166ae86881ddf15dd5d5542e5607318258090a606bd",
+      "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_replay_20261020/PREPARED.json": "ec60eedcb7aa1ec24d0815881a27414cd7d508b340d531c1816f2bfbf6739052"
+    },
+    "audit_script_sha256": "8b9fdf0a834665dcb3615ba79d598caf053d8ceeadf46258061463f9029524bd",
+    "all_inputs_unchanged_during_audit": true
+  },
+  "configuration": {
+    "actual_namelist_output": {
+      "time_step": "20",
+      "time_step_fract_num": "0",
+      "time_step_fract_den": "1",
+      "mp_physics": "137",
+      "mp_zero_out": "2",
+      "mp_zero_out_all": "0",
+      "mp_zero_out_thresh": "9.99999994E-09",
+      "no_mp_heating": "0",
+      "mp_tend_lim": "10.0000000",
+      "use_theta_m": "1",
+      "use_q_diabatic": "0"
+    },
+    "namelist_input_sha256_from_receipt": "80155530e4b1a39436e27c45a3ce0712d4e72d9b4d9258d02cca0ed3e0106b6e",
+    "dt_seconds": 20,
+    "radiation_cadence": "every_model_step",
+    "native_layout": [
+      234,
+      282,
+      39
+    ],
+    "native_columns": 65988,
+    "mp_driver_variant": 137,
+    "wrf_plus_core": false,
+    "dfi_radar": "macro path absent from compiled finish signature; build CPP command did not define WRF_DFI_RADAR=1",
+    "trace_inventory_rows": 312,
+    "loaded_library_sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+    "executable_sha256": "a6879994ed91d5f1964dd16e788eb7c469a80a36c59f215b4cb03ec43f885e78",
+    "build_scope": "Isolated existing build: replace mediation_integrate only and add step-control helper; all prior archive members reused, not full clean host build",
+    "namelist_input_sha256_actual": "80155530e4b1a39436e27c45a3ce0712d4e72d9b4d9258d02cca0ed3e0106b6e",
+    "namelist_output_sha256": "1fa1515fd3006a5a3f2fd0369c8a1dac94ae2ad136a031ab1c9ce0d5103f609e"
+  },
+  "cold_start_binding": {
+    "cold_checkpoint_time": "2025-07-19_00:00:00",
+    "wrfrst_THM_2_rawbits_eq_history_THM_fullfield": true,
+    "wrfrst_QVAPOR_rawbits_eq_history_QVAPOR_fullfield": true,
+    "checkpoint_shape": [
+      39,
+      282,
+      234
+    ],
+    "interpreted_native_T2": "perturbation total moist potential temperature (theta_m - T0), K",
+    "native_qv": "water vapor mixing ratio, kg kg-1 dry air",
+    "analysis_coordinate": "nominal f64 alpha; re-bound preserving total moist theta to captured host-f32 alpha",
+    "analysis_valid_time": "2025-07-19_00:00:00",
+    "analysis_applied_levels": [
+      156,
+      "all39",
+      21
+    ],
+    "source_posterior_science_accepted": false,
+    "t2_to_dry_theta_rebind": "(T_2 + T0) / (1 + alpha_host * qv)",
+    "T0_K_bits": "0x43960000",
+    "alpha_host_f32_bits": "0x3FCDDED2",
+    "analysis_source_npz_sha256": "fafb9052342b522c9e129344b76dc6a9aa97ea9727151f5b93d7ff883cc04c7a"
+  },
+  "source_contract": {
+    "trace_timing": "MP_INPUT is the KDM6AD call input after the host has advanced the step to its physics stage; it is not asserted to be raw checkpoint values before RK/dynamics.",
+    "producer_consumer": [
+      "moist_physics_prep_em computes th_phy=(t_new+T0)/(1+alpha*qv), saves h_diabatic=th_phy, and caches qv/qc (WRFPLUS=0)",
+      "MP137 dispatch calls KDM6AD; MP wrapper copies MP outputs to host prognostic fields",
+      "zero_outb boundary then zero_outa interior execute before moist_physics_finish_em",
+      "finish computes mpten=th_phy-h_diabatic, clips to +/-mp_tend_lim*dt; derives qvten/qcten from post-Z fields minus cached fields",
+      "use_theta_m finish writes T_2 and H_DIABATIC; qv/qc rates are cached in qv_diabatic/qc_diabatic",
+      "module_em adds (c1*mut+c2)*H_DIABATIC/msfty to host T tendency in that source expression order; configured use_q_diabatic=0 prevents water-rate addition to RK scalar tendency, while normal microphysics prognostic QV/QC updates remain"
+    ],
+    "source_paths": {
+      "solve_em": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/dyn_em/solve_em.F",
+      "big_step": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/dyn_em/module_big_step_utilities_em.F",
+      "zero_out": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/phys/module_microphysics_zero_out.F",
+      "mp_wrapper": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/phys/module_mp_kdm6ad.F",
+      "driver": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/phys/module_microphysics_driver.F",
+      "module_em": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/dyn_em/module_em.F",
+      "constants": "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/share/module_model_constants.F"
+    },
+    "source_line_anchors": {
+      "prep_theta_m_and_memory": "module_big_step_utilities_em.F:5505-5544",
+      "finish_diff_limiter_theta_m_and_rates": "module_big_step_utilities_em.F:5682-5765",
+      "zero_out_between_mp_and_finish": "solve_em.F:4015-4100; module_microphysics_zero_out.F:52-74 and 104-146",
+      "mp137_dispatch": "module_microphysics_driver.F:2885-2926",
+      "KDM6AD_output_copyback": "module_mp_kdm6ad.F:287-345",
+      "host_temperature_tendency_consumes_h_rate": "module_em.F:1073-1080",
+      "gas_constants_and_t0": "module_model_constants.F:19-22,37",
+      "q_diabatic_add_conditional_in_solve": "solve_em.F:2239 onward (guarded by use_q_diabatic == 1)"
+    },
+    "temperature_rate_unit": "H_DIABATIC is K s-1 heating/moist-theta tendency; host T tendency consumes it as (c1*mut+c2)*H_DIABATIC/msfty in source expression order, then RK integrates it. This audit does not isolate the complete RK temperature increment.",
+    "water_rate_units": "kg kg-1 s-1; stored as qv/qc diabatic rates, use_q_diabatic=0 in this run"
+  },
+  "analysis_posterior_increment_forecast_distinction": {
+    "npz_arrays": {
+      "background_th": {
+        "shape": [
+          39
+        ],
+        "dtype": "float64"
+      },
+      "background_qv": {
+        "shape": [
+          39
+        ],
+        "dtype": "float64"
+      },
+      "analysis_th": {
+        "shape": [
+          39
+        ],
+        "dtype": "float64"
+      },
+      "analysis_qv": {
+        "shape": [
+          39
+        ],
+        "dtype": "float64"
+      },
+      "delta_th": {
+        "shape": [
+          39
+        ],
+        "dtype": "float64"
+      },
+      "delta_qv": {
+        "shape": [
+          39
+        ],
+        "dtype": "float64"
+      },
+      "obs_bt": {
+        "shape": [
+          7
+        ],
+        "dtype": "float64"
+      },
+      "obs_dqf": {
+        "shape": [
+          7
+        ],
+        "dtype": "float64"
+      },
+      "obs_qc": {
+        "shape": [
+          7
+        ],
+        "dtype": "float64"
+      },
+      "mask": {
+        "shape": [
+          7
+        ],
+        "dtype": "float64"
+      },
+      "background_slot_bt": {
+        "shape": [
+          7
+        ],
+        "dtype": "float64"
+      },
+      "background_slot_rq": {
+        "shape": [
+          7
+        ],
+        "dtype": "float64"
+      },
+      "final_slot_bt": {
+        "shape": [
+          7
+        ],
+        "dtype": "float64"
+      },
+      "final_slot_rq": {
+        "shape": [
+          7
+        ],
+        "dtype": "float64"
+      }
+    },
+    "background_and_analysis_state": "39-level dry potential temperature (K) and qv (kg kg-1 dry air)",
+    "delta_th": "dry-theta posterior minus background (K), nominal f64 alpha coordinate",
+    "delta_qv": "qv posterior minus background (kg kg-1 dry air)",
+    "native_applied_fields": "T_2 moist-potential-temperature perturbation (K) and QVAPOR (kg kg-1 dry air)",
+    "native_applied_increment_map": "delta T_2 = delta[(theta_dry * (1 + alpha_host*qv))]; delta QVAPOR = posterior qv - background qv; unchanged native values preserve bits",
+    "source_valid_time": "2025-07-19_00:00:00",
+    "analysis_background_checkpoint_sha256": "0522208dc78a08ef279223d1638ae67947c8db673e6ab64ecd0902356abbcc82",
+    "analysis_geometry_id": "fae3092edfcc74862ba3777e461909d5578e2bf9614c392ebe64e5ec89d403b1",
+    "source_is_posterior": true,
+    "source_is_increment": false,
+    "science_accepted": false,
+    "host_acknowledgement_rows": 39,
+    "host_acknowledged_native_levels_1_based": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35,
+      36,
+      37,
+      38,
+      39
+    ],
+    "forecast_checkpoint_valid_times": [
+      "2025-07-19_00:00:20",
+      "2025-07-19_00:00:40"
+    ],
+    "forecast_terminal_fields": "checkpoint outputs at 00:00:20 and 00:00:40, not posterior states"
+  },
+  "paired_saved_control_propagation": {
+    "evidence_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_two_step_20261020/TWO_STEP_FEEDBACK_SUMMARY.json",
+    "evidence_sha256": "9d7cce861821a79aaa30c982cdba494fdcd8ae64241459aa8a267d7b515d59de",
+    "initial_checkpoint_sha_equal": true,
+    "state_comparisons": {
+      "2025-07-19_00:00:20": {
+        "numeric_elements_compared": 322426586,
+        "numeric_element_mismatches": 48264,
+        "changed_variables": {
+          "THM_2": {
+            "count": 835,
+            "maxabs": 0.52508544921875
+          },
+          "QVAPOR": {
+            "count": 1685,
+            "maxabs": 4.3587759137153625e-05
+          },
+          "H_DIABATIC": {
+            "count": 646,
+            "maxabs": 0.000132772111101076
+          },
+          "QV_DIABATIC": {
+            "count": 176,
+            "maxabs": 3.546011129174076e-08
+          },
+          "QC_DIABATIC": {
+            "count": 2668,
+            "maxabs": 1.4711986295878887e-08
+          }
+        }
+      },
+      "2025-07-19_00:00:40": {
+        "numeric_elements_compared": 322426586,
+        "numeric_element_mismatches": 238989,
+        "changed_variables": {
+          "THM_2": {
+            "count": 2279,
+            "maxabs": 0.494873046875
+          },
+          "QVAPOR": {
+            "count": 5924,
+            "maxabs": 4.1835010051727295e-05
+          },
+          "H_DIABATIC": {
+            "count": 1157,
+            "maxabs": 0.00021107829525135458
+          },
+          "QV_DIABATIC": {
+            "count": 450,
+            "maxabs": 5.6285351490714675e-08
+          },
+          "QC_DIABATIC": {
+            "count": 2189,
+            "maxabs": 3.575212303985609e-08
+          }
+        }
+      }
+    },
+    "step2_selected_column_mp_input_vs_zero": {
+      "TH": {
+        "changed_levels": 39,
+        "maxabs": 0.498199462890625
+      },
+      "Q": {
+        "changed_levels": 39,
+        "maxabs": 4.1835010051727295e-05
+      }
+    },
+    "interpretation": "Existing paired full-domain run starts from the same checkpoint; one unaccepted posterior is applied only in generation 0. Nonzero T/Q, H_DIABATIC and moisture-rate differences at the 00:20 and 00:40 checkpoints, and changed step-2 KDM inputs, demonstrate host-state propagation. This summary is not a new forecast.",
+    "not_a_physical_conservation_or_forecast_skill_claim": true
+  },
+  "steps": {
+    "1": {
+      "theta_tq_chain_bits": {
+        "FINISH_PRE.H_PRE_eq_MP_INPUT.TH": true,
+        "FINISH_PRE.QV_PRE_eq_MP_INPUT.Q": true,
+        "FINISH_PRE.TH_PLUS_eq_MP_OUTPUT.TH": true,
+        "FINISH_PRE.QV_PLUS_eq_MP_OUTPUT.Q": true
+      },
+      "zero_out_Z": {
+        "mode": 2,
+        "threshold_namelist_text": "9.99999994E-09",
+        "threshold_float32": 9.99999993922529e-09,
+        "threshold_bits": "0x322BCC77",
+        "zero_outb_selected_point_effect": "none; target i=156,j=21 is interior. zero_outb clamps only jds/jde-1 rows and ids/ide-1 columns, then zero_outa applies mode-2 condensate threshold to the interior.",
+        "qc_below_threshold": 39,
+        "qc_equal_threshold": 0,
+        "qc_above_threshold": 0,
+        "qc_changed_levels_1_based": [
+          2
+        ],
+        "min_abs_threshold_margin": 9.99994309580643e-09,
+        "closest_level_1_based": 2,
+        "qv_negative": 0,
+        "qv_zero": 0,
+        "qv_positive": 39,
+        "qv_min": 9.99912117549684e-07,
+        "qv_min_level_1_based": 37,
+        "qv_max": 0.020728860050439835,
+        "qv_min_distance_from_zero": 9.99912117549684e-07,
+        "qv_changed_levels_1_based": [],
+        "qc_rate_Z_replay_bit_matches_all39": true,
+        "qv_rate_Z_replay_bit_matches_all39": true,
+        "qc_rate_rawK_vs_ZK_bit_equal_all39": true,
+        "checkpoint_QCLOUD_matches_Z_K_all39": true,
+        "checkpoint_QVAPOR_matches_Z_K_all39": true
+      },
+      "limiter": {
+        "cap_K": 200.0,
+        "cap_bits": "0x43480000",
+        "interior": 39,
+        "lower": 0,
+        "upper": 0,
+        "ties": 0,
+        "min_lower_margin_K": 199.99288940429688,
+        "min_upper_margin_K": 199.98721313476562,
+        "captured_clip_bit_matches": 39
+      },
+      "finish_replay_7field_matches_each_39": {
+        "MP_RAW": 39,
+        "MP_CLIPPED": 39,
+        "QVTEN": 39,
+        "T_NEW_AFTER": 39,
+        "H_RATE": 39,
+        "QV_RATE": 39,
+        "TH_PHY_M_T0": 39
+      },
+      "post_rates_units": {
+        "H_RATE": "K s-1 in moist-theta/heating coordinate",
+        "QV_RATE": "kg kg-1 s-1",
+        "QC_RATE": "kg kg-1 s-1"
+      }
+    },
+    "2": {
+      "theta_tq_chain_bits": {
+        "FINISH_PRE.H_PRE_eq_MP_INPUT.TH": true,
+        "FINISH_PRE.QV_PRE_eq_MP_INPUT.Q": true,
+        "FINISH_PRE.TH_PLUS_eq_MP_OUTPUT.TH": true,
+        "FINISH_PRE.QV_PLUS_eq_MP_OUTPUT.Q": true
+      },
+      "zero_out_Z": {
+        "mode": 2,
+        "threshold_namelist_text": "9.99999994E-09",
+        "threshold_float32": 9.99999993922529e-09,
+        "threshold_bits": "0x322BCC77",
+        "zero_outb_selected_point_effect": "none; target i=156,j=21 is interior. zero_outb clamps only jds/jde-1 rows and ids/ide-1 columns, then zero_outa applies mode-2 condensate threshold to the interior.",
+        "qc_below_threshold": 39,
+        "qc_equal_threshold": 0,
+        "qc_above_threshold": 0,
+        "qc_changed_levels_1_based": [],
+        "min_abs_threshold_margin": 9.99999993922529e-09,
+        "closest_level_1_based": 1,
+        "qv_negative": 0,
+        "qv_zero": 0,
+        "qv_positive": 39,
+        "qv_min": 9.998094583352213e-07,
+        "qv_min_level_1_based": 37,
+        "qv_max": 0.02073761820793152,
+        "qv_min_distance_from_zero": 9.998094583352213e-07,
+        "qv_changed_levels_1_based": [],
+        "qc_rate_Z_replay_bit_matches_all39": true,
+        "qv_rate_Z_replay_bit_matches_all39": true,
+        "qc_rate_rawK_vs_ZK_bit_equal_all39": true,
+        "checkpoint_QCLOUD_matches_Z_K_all39": true,
+        "checkpoint_QVAPOR_matches_Z_K_all39": true
+      },
+      "limiter": {
+        "cap_K": 200.0,
+        "cap_bits": "0x43480000",
+        "interior": 39,
+        "lower": 0,
+        "upper": 0,
+        "ties": 0,
+        "min_lower_margin_K": 199.99993896484375,
+        "min_upper_margin_K": 199.9871826171875,
+        "captured_clip_bit_matches": 39
+      },
+      "finish_replay_7field_matches_each_39": {
+        "MP_RAW": 39,
+        "MP_CLIPPED": 39,
+        "QVTEN": 39,
+        "T_NEW_AFTER": 39,
+        "H_RATE": 39,
+        "QV_RATE": 39,
+        "TH_PHY_M_T0": 39
+      },
+      "post_rates_units": {
+        "H_RATE": "K s-1 in moist-theta/heating coordinate",
+        "QV_RATE": "kg kg-1 s-1",
+        "QC_RATE": "kg kg-1 s-1"
+      }
+    }
+  },
+  "limiter_replay_bit_match_counts": {
+    "1": {
+      "MP_RAW": 39,
+      "MP_CLIPPED": 39,
+      "QVTEN": 39,
+      "T_NEW_AFTER": 39,
+      "H_RATE": 39,
+      "QV_RATE": 39,
+      "TH_PHY_M_T0": 39
+    },
+    "2": {
+      "MP_RAW": 39,
+      "MP_CLIPPED": 39,
+      "QVTEN": 39,
+      "T_NEW_AFTER": 39,
+      "H_RATE": 39,
+      "QV_RATE": 39,
+      "TH_PHY_M_T0": 39
+    }
+  },
+  "limitations": [
+    "Only the selected native column i=156,j=21 and its 39 mass levels are traced; model integration ran full 234x282 domain.",
+    "Saved DA posterior is explicitly marked unaccepted; no new observation processing, RTTOV, minimization, cost, or derivative was executed.",
+    "The audit establishes this saved value path and its branches; it is not a generic WRF restart or adjoint qualification.",
+    "No limiter active/tie branches occur at this profile; no negative-QV branch occurs. Zero-out QC has only one changed tiny positive in step 1.",
+    "The host physics source uses active alpha as Rv/Rd; trace records alpha bits 3FCDDED2. The replay is pinned to saved native build/evidence.",
+    "The executable came from the recorded isolated incremental build with reused archive members, not a clean full-host rebuild."
+  ]
+}

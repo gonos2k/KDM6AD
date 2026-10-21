@@ -122,6 +122,10 @@ relative derivative accuracy at every number-concentration regime.
 
 ## Remaining composition
 
+The bounded downstream thermodynamic finish/cleanup composition is documented
+in [APPLIED_FINISH_AD.md](APPLIED_FINISH_AD.md). It uses these independent
+kernel partials without changing their raw-coordinate contract.
+
 These kernel partials do not supply `G_X` for host-generated forcing `F=G(X)`.
 They also exclude RK integration, retained heating memory, moist-theta host
 conversion, finish limiters, native radiation, and RTTOV pressure sensitivity.
