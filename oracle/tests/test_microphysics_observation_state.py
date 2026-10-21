@@ -146,4 +146,3 @@ def test_qi_qs_cleanup_threshold_tie_is_refused_for_derivatives():
         assert signature[4, 0] == 2
     finally:
         adapter.close(record)
-
