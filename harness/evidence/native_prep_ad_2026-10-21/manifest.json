@@ -1,0 +1,58 @@
+{
+  "base_commit": "45c7198c72ba74eca4886381da4aa16fd9cb2b79",
+  "scope": "offline selected native column prep and G/S->K->Z->R first derivatives; no host integration",
+  "platform": "macOS-26.7-arm64-arm-64bit",
+  "python": "3.10.11",
+  "torch": "2.13.0",
+  "numpy": "2.2.6",
+  "netCDF4": "1.7.4",
+  "libm_resolved": "/usr/lib/libm.dylib",
+  "source_sha256": {
+    "oracle/kdm6/native_prep.py": "b5386603f0cb7f021b7d4c46493bfc77599fd2dcea49d5a67e845904b9b95ed5",
+    "oracle/tests/test_native_prep.py": "8e27e20d3bea7c9ab74229ed9060535d10d18d2b6f53e1285ae3e4d55c3ab689",
+    "harness/native_prep_replay.py": "afc9933a4287b1bbe5a6928be3bdf070a8aaf1ef8b45e701d646ace42a73a2f6",
+    "harness/verify_native_prep_ad.py": "070d843e262d086a96a5218082ae672cfa46e9638fc362443376ef372b2e9954",
+    "harness/tests/test_native_prep_replay.py": "bf9b209d98f3c694052bf7d2021a4ace067a25a17cd78cbd5bc9d42febc5b6c8",
+    "harness/tests/test_verify_native_prep_ad.py": "c92f7881d81e0ad43121400abf942c1444a4989de697b2756c5606abd6142a5a",
+    "docs/NATIVE_PREP_AD.md": "4a119bb47afa3f2e2c8ecdb4bfea264ea19116e1b54b355a4a934111e3f32c82"
+  },
+  "kernel_library_sha256": "3e968dcd43f6d361a2e1be6b963f76dcb9de1381313875e5c805af187a1693e4",
+  "unchanged_research_build_sources": {
+    "libtorch/src/runtime.cpp": "4a56110c91b7495aea0542531eb809a048bb7994747cea2be826f9a2f6e26f7a",
+    "libtorch/include/kdm6/runtime.h": "7820c9acd0866dd32521054a88d727ce88c91af629275940b4b7eea0046f6276",
+    "libtorch/include/kdm6/state.h": "6de4e4d17927b23c77fec99522398f57b04ed8697fe4e3cca787a171eecc235d",
+    "libtorch/bridge/kdm6_c_api.cpp": "de632f31ae13ac401348bf397d13db6518c80c89291ae9e6e4b46e01ee960e69",
+    "libtorch/bridge/kdm6_c_api.h": "3cc0f9b14a1529e55ef16e72ebe5c725df7dccda8fdeb50962eadda19306e609",
+    "libtorch/bridge/kdm6_c.exports": "07c73fd3eb4c2bfd734a67a0b63ac5baabfeb24408f1aca25233d978d5c44597",
+    "libtorch/bridge/kdm6_c.map": "ba621040e9ddf653e3ca8021737c3909b65fe76ebab2f9ae19287d230dad93ea",
+    "harness/verify_state_forcing_ad.py": "08f762aa5802aced370eccfa972308170b1d0a90dd0d5cb9dbc1623bd70a3f26",
+    "libtorch/CMakeLists.txt": "65c782502a3445367cda01582909c7ccde35e6b78d4f7d68be0ee72ce8bb81a0",
+    "libtorch/tests/test_state_forcing_abi.cpp": "315a75325cf3d0a07b9d00c823eaf5c5294a75b02a1bf5cc3dfd688d7da36a8f",
+    "libtorch/tests/test_handle_vjp.cpp": "459085cb9d7ff38fc331316414aff43ed5788b993eef99db520d8069b0e4ff3f"
+  },
+  "prior_Fortran_only_changes": {
+    "libtorch/bridge/kdm6_iso_c.f90": {
+      "old_build": "d7b26bbac9f5b0b5c1ccf4d626c6b0a95e5d6f1982c2cd411afc9837444869f0",
+      "current_prior_PR428": "4908064b9fe8e0726f2659638840795ae21d371d31a3905c18ac4007c4f2dd7d"
+    },
+    "libtorch/tests/test_fortran_state_forcing.f90": {
+      "old_build": "a79b1102f61c35c73c5bb785e30d19f8e5ae8a9b4fe24dc49048042a70e8a66b",
+      "current_prior_PR428": "8e0d36cc00edf3c410edf5c7ca472082540539bb132da14110f11bc68293f02d"
+    }
+  },
+  "private_source_audit_sha256": "56ada54239229759687682109bdbb1b3dc08f369dfcd45a85cbd9d07239d67cb",
+  "private_audit_script_sha256": "6b6342a6a459d0e7ef834bb411f6cf321c67e656f1e3a9385683f4687e849206",
+  "new_native_integrations": 0,
+  "new_RTTOV_calls": 0,
+  "new_observation_optimizations": 0,
+  "operational_executable_sha256": "676223e8d61d23456d4ac83713bff0283ea08b1e71776b7f8885b062d97f801b",
+  "operational_library_sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+  "focused_tests_passed": 58,
+  "limits": "Native 39-level one-column derivative; fixed hybrid geometry; checkpoint/trace reconstructed operands, not a new complete prep-entry trace; raw-number stress limitation retained",
+  "local_harness": {
+    "passed": 2521,
+    "skipped": 59,
+    "local_marked_deselected": 309,
+    "elapsed_seconds": 98.42
+  }
+}
