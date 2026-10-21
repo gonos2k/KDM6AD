@@ -793,6 +793,66 @@ def _validate_disjoint_case_paths(out: Path, fixture: Path) -> None:
             "must be disjoint (neither may contain the other).")
 
 
+def _live_pressure_rows(rttov_input):
+    """Validate the explicit single-native-column pressure mode, before staging.
+
+    Existing callers retain their fixed-grid witness contract. A live-pressure
+    trial instead supplies every centre/interface value; the template's other
+    gas profiles remain fixed on the same layer indices and must have matching
+    lengths. No remapping or unadvertised gas resampling occurs here.
+    """
+    import numpy as np
+    enabled = getattr(rttov_input.config, "pressure_gradients", False)
+    if not isinstance(enabled, bool):
+        raise ValueError("pressure_gradients must be a boolean")
+    if not enabled:
+        return None
+    if rttov_input.nprofiles != 1:
+        raise ValueError("live-pressure case writing currently supports one native column")
+    values = []
+    for key, size in (("P", rttov_input.nlayers), ("P_HALF", rttov_input.nlayers+1)):
+        if key not in rttov_input.profile:
+            raise ValueError(f"live-pressure mode requires explicit {key}")
+        array = np.asarray(rttov_input.profile[key], dtype=np.float64)
+        if array.shape != (1, size):
+            raise ValueError(f"live-pressure {key} must have shape (1, {size})")
+        row = array[0]
+        if not np.isfinite(row).all() or np.any(np.diff(row) <= 0):
+            raise ValueError(f"live-pressure {key} must be finite and strictly increasing")
+        if (key == "P" and np.any(row <= 0)) or (key == "P_HALF" and np.any(row < 0)):
+            raise ValueError(f"live-pressure {key} has an invalid pressure domain")
+        values.append(row)
+    p, ph = values
+    if not np.all((ph[:-1] < p) & (p < ph[1:])):
+        raise ValueError("live-pressure centres must lie strictly inside their native interfaces")
+    return p, ph
+
+
+def _enable_pressure_gradients(config_path: Path) -> None:
+    """Enable actual RTTOV pressure K in the copied case, never in its source."""
+    text = config_path.read_text()
+    nml = re.fullmatch(r"\s*&rttov_test_nml\s*\n(?P<body>.*?)^\s*/\s*",
+                       text, re.M | re.I | re.S)
+    if nml is None:
+        raise ValueError("pressure-gradient mode requires one complete rttov_test_nml")
+    option = r"defn%opts%interpolation%pressure_gradients"
+    lines = list(re.finditer(rf"(?mi)^[ \t]*{option}[ \t]*=[^\n]*$", text))
+    if len(lines) > 1:
+        raise ValueError("duplicate RTTOV pressure_gradients assignments")
+    assignment = "  defn%opts%interpolation%pressure_gradients = .TRUE."
+    if lines:
+        old = lines[0]
+        if re.fullmatch(rf"[ \t]*{option}[ \t]*=[ \t]*\.(?:TRUE|FALSE)\.[ \t]*,?[ \t]*(?:!.*)?",
+                        old.group(), re.I) is None:
+            raise ValueError("unsupported RTTOV pressure_gradients assignment")
+        text = text[:old.start()]+assignment+text[old.end():]
+    else:
+        # The matched body excludes the sole closing slash.
+        end = nml.end("body")
+        text = text[:end]+assignment+"\n"+text[end:]
+    config_path.write_text(text)
+
+
 def write_rttov_case(rttov_input, out_case_dir, *, fixture_case_dir=None, overwrite=False,
                      solar_channels=(), _lock=True) -> Path:
     """Copy the fixture case and overlay atm/t.txt + atm/q.txt from ``rttov_input``.
@@ -828,6 +888,7 @@ def write_rttov_case(rttov_input, out_case_dir, *, fixture_case_dir=None, overwr
     # The run uses the fixture's config/grid/gases/surface/geometry -- only T/Q (+ cloud)
     # + channels come from the RttovInput; reject fields the writer would silently ignore.
     cfg = rttov_input.config
+    _live_pressure_rows(rttov_input)
     # geometry (viewing + solar angles) and surface (skin + near-surface state) are BOTH
     # overlaid now (see _overlay_geometry / _overlay_surface, applied in _populate_case);
     # validate them BEFORE any FS mutation.
@@ -936,6 +997,9 @@ def _populate_case(out: Path, rttov_input, cfg, is_cloud: bool, solar_channels=(
 
     Split out of write_rttov_case so a post-copytree failure can be cleaned up by the
     caller (no partial case left behind)."""
+    live_pressure = _live_pressure_rows(rttov_input)
+    if live_pressure is not None:
+        _enable_pressure_gradients(out / "out" / "rttov_test.txt")
     _verify_fixture_contract(out / "out" / "rttov_test.txt", cfg)
     if is_cloud:
         _verify_cloud_namelist(out / "out" / "rttov_test.txt")
@@ -1047,7 +1111,13 @@ def _populate_case(out: Path, rttov_input, cfg, is_cloud: bool, solar_channels=(
         pdir = prof_root / prof_ids[p]
         _overlay_atm(pdir, "t.txt", t_all[p])
         _overlay_atm(pdir, "q.txt", q_all[p])
-        _check_grid_matches_fixture(pdir, ph_all[p], None if pl_all is None else pl_all[p])
+        if live_pressure is None:
+            _check_grid_matches_fixture(pdir, ph_all[p], None if pl_all is None else pl_all[p])
+        else:
+            # Preserve all native centres/interfaces, including the surface
+            # interface whose RTTOV K includes the surface-pressure pullback.
+            (pdir / "atm" / "p.txt").write_text(_format_rttov_vector(live_pressure[0]))
+            (pdir / "atm" / "p_half.txt").write_text(_format_rttov_vector(live_pressure[1]))
         if is_cloud:
             _overlay_cloud(pdir, rttov_input, p, len(t_all[p]))
         if cfg.geometry is not None:                    # per-obs viewing + solar angles

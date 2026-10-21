@@ -22,7 +22,6 @@ template); the autograd closure (P6) is exercised with a mock runner that takes
 from __future__ import annotations
 
 import hashlib
-import math
 from typing import NamedTuple
 
 
@@ -49,6 +48,9 @@ class RttovInputConfig(NamedTuple):
     store_rad: bool = _REQUIRED_STORE_RAD
     surface: dict | None = None
     geometry: dict | None = None
+    # Native pressure K is opt-in. Legacy fixture grids remain fixed-value
+    # witnesses unless this is explicitly enabled.
+    pressure_gradients: bool = False
 
 
 class RttovInput(NamedTuple):
@@ -82,6 +84,9 @@ def _require_options(cfg) -> None:
         bad.append(f"adk_bt={cfg.adk_bt!r} (must be {_REQUIRED_ADK_BT}; else K is radiance-K)")
     if bool(cfg.store_rad) != _REQUIRED_STORE_RAD:
         bad.append(f"store_rad={cfg.store_rad!r} (must be {_REQUIRED_STORE_RAD}; else no BT/quality)")
+    pressure_gradients = getattr(cfg, "pressure_gradients", False)
+    if type(pressure_gradients) is not bool:
+        bad.append(f"pressure_gradients={pressure_gradients!r} (must be bool)")
     if bad:
         raise ValueError("RTTOV config violates the forced contract (design 4.6/14.5): "
                          + "; ".join(bad))
@@ -171,12 +176,16 @@ def _config_hash(cfg, nlayers, nlevels, profile_keys=(), grids=()) -> str:
     geometry/surface (runtime-significant: the viewing/solar angles change BT and K, so
     two inputs differing only in geometry MUST get distinct fingerprints -- else a
     config-hash-keyed cache would return stale BT/K, Codex stop-review)."""
-    key = repr((cfg.coef_id, tuple(cfg.channels), cfg.gas_units, bool(cfg.mmr_hydro),
-                bool(cfg.adk_bt), bool(cfg.store_rad), int(nlayers), int(nlevels),
-                tuple(sorted(profile_keys)),
-                _canon_mapping(getattr(cfg, "geometry", None)),
-                _canon_mapping(getattr(cfg, "surface", None)),
-                _grid_fingerprint(grids)))
+    parts = (cfg.coef_id, tuple(cfg.channels), cfg.gas_units, bool(cfg.mmr_hydro),
+             bool(cfg.adk_bt), bool(cfg.store_rad), int(nlayers), int(nlevels),
+             tuple(sorted(profile_keys)),
+             _canon_mapping(getattr(cfg, "geometry", None)),
+             _canon_mapping(getattr(cfg, "surface", None)),
+             _grid_fingerprint(grids))
+    # Preserve the exact historical fingerprint when pressure K is disabled.
+    # Only the opt-in path changes the cache key.
+    key = repr(parts + (("pressure_gradients", True),)
+               if getattr(cfg, "pressure_gradients", False) else parts)
     return hashlib.sha256(key.encode()).hexdigest()[:16]
 
 
@@ -190,6 +199,7 @@ def pack_rttov_input(profile_tensors, rttov_config) -> RttovInput:
     fields (clw/ciw/deff_liq/deff_ice/cfrac) are serialized when present (cloud mode).
     """
     _require_options(rttov_config)
+    pressure_gradients = getattr(rttov_config, "pressure_gradients", False)
     t = _to_numpy_2d(profile_tensors.t_lay, "t_lay")
     q = _to_numpy_2d(profile_tensors.q_lay, "q_lay")
     if t.shape != q.shape:
@@ -224,6 +234,10 @@ def pack_rttov_input(profile_tensors, rttov_config) -> RttovInput:
                 f"P has {pl.shape[-1]} layers but T/Q have {nlayers}; "
                 "layer pressure must ride the T/Q grid.")
         profile["P"] = pl
+
+    if pressure_gradients and ("P" not in profile or "P_HALF" not in profile):
+        raise ValueError(
+            "pressure_gradients=True requires both p_lay (P) and p_half pressure inputs")
 
     # all-sky cloud fields (present only in cloud mode); each on the T/Q layer grid.
     for attr, fkey in _CLOUD_FIELD_MAP:
