@@ -68,6 +68,7 @@ _UNSET = _Unset()
 #   6 clw, 7 ciw, 8 deff_liq, 9 deff_ice, 10 cfrac (cfrac = non-diff passthrough)
 _GRAD_INPUTS = ((2, "T"), (3, "Q"), (6, "HYDRO6"), (7, "HYDRO7"),
                 (8, "HYDRO_DEFF6"), (9, "HYDRO_DEFF7"))
+_PRESSURE_GRAD_INPUTS = ((4, "P"), (5, "P_HALF"))
 
 
 class ObsOperatorConfig(NamedTuple):
@@ -122,6 +123,32 @@ class RttovObsOp(torch.autograd.Function):
         if not cloud_mode:
             clw = ciw = deff_liq = deff_ice = cfrac = None
 
+        pressure_gradients = getattr(rttov_config, "pressure_gradients", False)
+        if type(pressure_gradients) is not bool:
+            raise TypeError("rttov_config.pressure_gradients must be bool")
+        pressure_grid_shared = {}
+        if pressure_gradients:
+            nprofiles = t_lay.shape[0] if t_lay.ndim == 2 else 1
+            for name, grid, nvertical in (
+                    ("p_lay", p_lay, t_lay.shape[-1] if t_lay.ndim else 0),
+                    ("p_half", p_half, (t_lay.shape[-1] + 1) if t_lay.ndim else 0)):
+                if not isinstance(grid, torch.Tensor):
+                    raise ValueError(
+                        f"pressure_gradients=True requires tensor {name} input")
+                if grid.dtype != t_lay.dtype or grid.device != t_lay.device:
+                    raise ValueError(
+                        f"{name} dtype/device must match t_lay for pressure gradients")
+                if grid.ndim not in (1, 2) or grid.shape[-1] != nvertical:
+                    raise ValueError(
+                        f"{name} must have a layer axis of length {nvertical}"
+                        if name == "p_lay" else
+                        f"{name} must have an interface axis of length {nvertical}")
+                if grid.ndim == 2 and grid.shape[0] not in (1, nprofiles):
+                    raise ValueError(
+                        f"{name} must have one shared pressure row or {nprofiles} profile rows")
+                pressure_grid_shared[name] = (
+                    grid.ndim == 1 or (grid.ndim == 2 and grid.shape[0] == 1))
+
         prof = RttovProfileTensors(t_lay=t_lay, q_lay=q_lay, p_lay=p_lay, p_half=p_half,
                                    clw=clw, ciw=ciw, deff_liq=deff_liq, deff_ice=deff_ice,
                                    cfrac=cfrac)
@@ -130,11 +157,24 @@ class RttovObsOp(torch.autograd.Function):
 
         # grad spec: (apply-arg index, K field, in-shape) for each DIFFERENTIABLE input
         # present. args mirrors the apply positional order (run_k=0 ... cfrac=10).
-        args = (None, None, t_lay, q_lay, None, None, clw, ciw, deff_liq, deff_ice, cfrac)
-        grad_specs = [(idx, key, tuple(args[idx].shape))
-                      for (idx, key) in _GRAD_INPUTS if idx < n_args and args[idx] is not None]
+        args = (None, None, t_lay, q_lay,
+                p_lay if pressure_gradients else None,
+                p_half if pressure_gradients else None,
+                clw, ciw, deff_liq, deff_ice, cfrac)
+        grad_specs = [(idx, key, tuple(args[idx].shape), False)
+                      for (idx, key) in _GRAD_INPUTS
+                      if idx < n_args and args[idx] is not None]
+        if pressure_gradients:
+            for idx, key in _PRESSURE_GRAD_INPUTS:
+                grid = args[idx]
+                # pack_rttov_input also requires both arrays when this opt-in is set.
+                if grid is None:
+                    raise ValueError(
+                        f"pressure_gradients=True requires {key} pressure input")
+                name = "p_lay" if key == "P" else "p_half"
+                grad_specs.append((idx, key, tuple(grid.shape), pressure_grid_shared[name]))
         # fail FAST at the run_k contract boundary (not later inside autograd):
-        missing = [key for (_, key, _) in grad_specs if key not in k_dict]
+        missing = [key for (_, key, _, _) in grad_specs if key not in k_dict]
         if missing:
             raise KeyError(
                 f"run_k k_dict missing required K field(s) {sorted(missing)} for the "
@@ -156,16 +196,17 @@ class RttovObsOp(torch.autograd.Function):
         lam = grad_bt
         nprof, nch = lam.shape
         grads = [None] * ctx.n_args            # one slot per arg passed to apply
-        for idx, key, in_shape in ctx.grad_specs:
+        for idx, key, in_shape, shared_pressure in ctx.grad_specs:
             kt = torch.as_tensor(ctx.k_dict[key], dtype=ctx.dtype, device=ctx.device)
             # Guard the K shape: a transposed (or square nlay==nch) K would give a
             # wrong-but-finite gradient silently (design 9.1/F1-SHAPE seam). Field-
             # agnostic, so it covers the cloud HYDRO*/HYDRO_DEFF* K identically.
             nlay = in_shape[-1]
             if tuple(kt.shape) != (nprof, nch, nlay):
+                vertical_name = "nlevels" if key == "P_HALF" else "nlayers"
                 raise ValueError(
                     f"K['{key}'] shape {tuple(kt.shape)} != expected "
-                    f"(nprofiles, nchannels, nlayers) ({nprof}, {nch}, {nlay}); "
+                    f"(nprofiles, nchannels, {vertical_name}) ({nprof}, {nch}, {nlay}); "
                     "guards a transposed/square-K silent wrong-gradient.")
             # Finite-check K before contraction: the live parser rejects non-finite K, but
             # an INJECTED run_k (mock / custom) could pass NaN/Inf, silently poisoning the
@@ -175,7 +216,14 @@ class RttovObsOp(torch.autograd.Function):
                     f"K['{key}'] has non-finite values -- a NaN/Inf K would poison the "
                     "obs gradient (the contraction K^T·lambda_BT). Reject, don't propagate.")
             # channel contraction K^T·λ_BT: grad_field[p,l] = Σ_c K[p,c,l]·λ_BT[p,c]
-            grads[idx] = torch.einsum("pcl,pc->pl", kt, lam).reshape(in_shape)
+            per_profile = torch.einsum("pcl,pc->pl", kt, lam)
+            if shared_pressure:
+                # A shared pressure grid is serialized as one row for every
+                # RTTOV profile; its adjoint therefore sums the profile partials.
+                reduced = per_profile.sum(dim=0)
+                grads[idx] = reduced.unsqueeze(0) if len(in_shape) == 2 else reduced
+            else:
+                grads[idx] = per_profile.reshape(in_shape)
         return tuple(grads)
 
 

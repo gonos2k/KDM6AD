@@ -19,7 +19,9 @@ import torch
 from kdm6.state import State, Forcing
 from kdm6.da_window import WindowConfig, run_da_window
 from kdm6.runtime import make_parameters
-from kdm6.obs.model_profile_builder import RttovProfileConfig, model_to_rttov_tensors
+from kdm6.obs.model_profile_builder import (
+    RttovProfileConfig, RttovProfileTensors, model_to_rttov_tensors,
+)
 from kdm6.obs.rttov_input_builder import RttovInputConfig
 from kdm6.obs.obs_loss import compute_obs_loss
 from kdm6.obs.model_rttov_scheduler import ObsSchedule
@@ -59,8 +61,8 @@ def _profile_cfg():
                               rttov_layer_pressure=P_LAYER, rttov_level_pressure=P_LEVEL)
 
 
-def _input_cfg():
-    return RttovInputConfig(coef_id="rtcoef_test_ami", channels=tuple(range(1, NCH + 1)))
+def _input_cfg(**kw):
+    return RttovInputConfig(coef_id="rtcoef_test_ami", channels=tuple(range(1, NCH + 1)), **kw)
 
 
 def _mock_bt_np(t_np, q_np):
@@ -183,6 +185,156 @@ def test_rttovobsop_backward_shape_matches_input():
     assert rq.requires_grad is False     # non-differentiable
     bt.sum().backward()
     assert leaves.th.grad is not None and torch.isfinite(leaves.th.grad).all()
+
+
+def test_pressure_gradient_opt_in_backprop_matches_k_and_finite_difference():
+    import numpy as np
+
+    nlay = 4
+    nlev = nlay + 1
+    p_lay = P_LAYER.clone().requires_grad_(True)
+    p_half = P_LEVEL.clone().requires_grad_(True)
+    t_lay = torch.linspace(260.0, 290.0, nlay, dtype=F64).reshape(1, -1)
+    q_lay = torch.linspace(100.0, 400.0, nlay, dtype=F64).reshape(1, -1)
+    cfg = _input_cfg(pressure_gradients=True)
+    kp = np.arange(1, NCH * nlay + 1, dtype=float).reshape(1, NCH, nlay) * 0.013
+    kh = np.arange(1, NCH * nlev + 1, dtype=float).reshape(1, NCH, nlev) * -0.007
+
+    def run_k(rin):
+        bt = (np.einsum("pcl,pl->pc", kp, rin.profile["P"])
+              + np.einsum("pcl,pl->pc", kh, rin.profile["P_HALF"]))
+        return bt, {
+            "T": np.zeros((1, NCH, nlay)), "Q": np.zeros((1, NCH, nlay)),
+            "P": kp, "P_HALF": kh,
+        }, np.zeros((1, NCH), dtype=int)
+
+    bt, quality = RttovObsOp.apply(run_k, cfg, t_lay, q_lay, p_lay, p_half)
+    assert quality.requires_grad is False
+    weights = torch.tensor([[0.4, -0.7, 1.2]], dtype=F64)
+    (bt * weights).sum().backward()
+    expected_lay = torch.from_numpy(np.einsum("pcl,pc->pl", kp, weights.numpy())[0])
+    expected_half = torch.from_numpy(np.einsum("pcl,pc->pl", kh, weights.numpy())[0])
+    torch.testing.assert_close(p_lay.grad, expected_lay, rtol=0, atol=0)
+    torch.testing.assert_close(p_half.grad, expected_half, rtol=0, atol=0)
+
+    dlay = torch.tensor([0.3, -0.2, 0.5, -0.4], dtype=F64)
+    dhalf = torch.tensor([-0.1, 0.2, 0.4, -0.3, 0.1], dtype=F64)
+    analytic = torch.dot(p_lay.grad, dlay) + torch.dot(p_half.grad, dhalf)
+
+    def objective(scale):
+        profile = RttovProfileTensors(
+            t_lay=t_lay, q_lay=q_lay, p_lay=p_lay.detach() + scale*dlay,
+            p_half=p_half.detach() + scale*dhalf)
+        from kdm6.obs.rttov_input_builder import pack_rttov_input
+        packed = pack_rttov_input(profile, cfg)
+        value, _, _ = run_k(packed)
+        return float((torch.from_numpy(value) * weights).sum())
+
+    eps = 1.0e-2
+    finite_difference = (objective(eps) - objective(-eps)) / (2.0*eps)
+    assert math.isclose(float(analytic), finite_difference, rel_tol=5e-10, abs_tol=5e-12)
+
+
+def test_pressure_gradient_requires_pressure_k_and_sums_shared_grid_profiles():
+    import numpy as np
+
+    nlay, nlev, nprof = 4, 5, 2
+    p_lay = P_LAYER.clone().requires_grad_(True)       # shared 1-D grid
+    p_half = P_LEVEL.clone().requires_grad_(True)      # shared 1-D interfaces
+    t_lay = torch.ones((nprof, nlay), dtype=F64) * 270.0
+    q_lay = torch.ones((nprof, nlay), dtype=F64) * 100.0
+    kp = np.arange(1, nprof*NCH*nlay + 1, dtype=float).reshape(nprof, NCH, nlay) * 0.01
+    kh = np.arange(1, nprof*NCH*nlev + 1, dtype=float).reshape(nprof, NCH, nlev) * 0.02
+    weights = torch.tensor([[0.5, -0.2, 0.8], [-0.3, 0.6, 0.1]], dtype=F64)
+
+    def run_k(rin, *, omit=None):
+        bt = (np.einsum("pcl,pl->pc", kp, np.broadcast_to(rin.profile["P"], (nprof, nlay)))
+              + np.einsum("pcl,pl->pc", kh,
+                          np.broadcast_to(rin.profile["P_HALF"], (nprof, nlev))))
+        k = {"T": np.zeros((nprof, NCH, nlay)), "Q": np.zeros((nprof, NCH, nlay)),
+             "P": kp, "P_HALF": kh}
+        if omit:
+            k.pop(omit)
+        return bt, k, np.zeros((nprof, NCH), dtype=int)
+
+    cfg = _input_cfg(pressure_gradients=True)
+    bt, _ = RttovObsOp.apply(run_k, cfg, t_lay, q_lay, p_lay, p_half)
+    (bt * weights).sum().backward()
+    expected_lay = torch.from_numpy(np.einsum("pcl,pc->pl", kp, weights.numpy()).sum(axis=0))
+    expected_half = torch.from_numpy(np.einsum("pcl,pc->pl", kh, weights.numpy()).sum(axis=0))
+    torch.testing.assert_close(p_lay.grad, expected_lay, rtol=0, atol=0)
+    torch.testing.assert_close(p_half.grad, expected_half, rtol=0, atol=0)
+
+    for missing in ("P", "P_HALF"):
+        with pytest.raises(KeyError, match="missing required K field"):
+            RttovObsOp.apply(lambda rin, missing=missing: run_k(rin, omit=missing),
+                             cfg, t_lay, q_lay, p_lay.detach(), p_half.detach())
+
+
+def test_pressure_gradient_requires_k_half_level_shape():
+    import numpy as np
+
+    nlay = 4
+    cfg = _input_cfg(pressure_gradients=True)
+    t_lay = torch.ones((1, nlay), dtype=F64) * 270.0
+    q_lay = torch.ones((1, nlay), dtype=F64) * 100.0
+    p_lay = P_LAYER.clone().requires_grad_(True)
+    p_half = P_LEVEL.clone().requires_grad_(True)
+
+    def run_k(rin):
+        return (np.zeros((1, NCH)), {
+            "T": np.zeros((1, NCH, nlay)), "Q": np.zeros((1, NCH, nlay)),
+            "P": np.zeros((1, NCH, nlay)), "P_HALF": np.zeros((1, NCH, nlay)),
+        }, np.zeros((1, NCH), dtype=int))
+
+    bt, _ = RttovObsOp.apply(run_k, cfg, t_lay, q_lay, p_lay, p_half)
+    with pytest.raises(ValueError, match=r"K\['P_HALF'\].*nlevels"):
+        bt.sum().backward()
+
+
+def test_pressure_gradient_and_cloud_use_11_arg_backward_contract():
+    import numpy as np
+
+    nlay, nlev = 4, 5
+    t_lay = torch.full((1, nlay), 275.0, dtype=F64, requires_grad=True)
+    q_lay = torch.full((1, nlay), 120.0, dtype=F64, requires_grad=True)
+    p_lay = P_LAYER.clone().requires_grad_(True)
+    p_half = P_LEVEL.clone().requires_grad_(True)
+    clw = torch.full((1, nlay), 0.02, dtype=F64, requires_grad=True)
+    ciw = torch.full((1, nlay), 0.01, dtype=F64, requires_grad=True)
+    deff_liq = torch.full((1, nlay), 20.0, dtype=F64, requires_grad=True)
+    deff_ice = torch.full((1, nlay), 40.0, dtype=F64, requires_grad=True)
+    cfrac = torch.full((1, nlay), 0.5, dtype=F64, requires_grad=True)
+    cfg = _input_cfg(pressure_gradients=True)
+    field_inputs = {
+        "T": t_lay, "Q": q_lay, "P": p_lay, "P_HALF": p_half,
+        "HYDRO6": clw, "HYDRO7": ciw,
+        "HYDRO_DEFF6": deff_liq, "HYDRO_DEFF7": deff_ice,
+    }
+    coefficients = {name: (index + 1) * 0.125 for index, name in enumerate(field_inputs)}
+    k_fields = {
+        name: np.full((1, NCH, input_field.shape[-1]), coefficients[name], dtype=np.float64)
+        for name, input_field in field_inputs.items()
+    }
+
+    def run_k(rin):
+        assert {"P", "P_HALF", "HYDRO6", "HYDRO7", "HYDRO_DEFF6", "HYDRO_DEFF7", "CFRAC"} <= set(rin.profile)
+        bt = np.zeros((1, NCH), dtype=np.float64)
+        for name, k in k_fields.items():
+            bt += np.einsum("pcl,pl->pc", k, rin.profile[name])
+        return bt, k_fields, np.zeros((1, NCH), dtype=np.int32)
+
+    bt, quality = RttovObsOp.apply(
+        run_k, cfg, t_lay, q_lay, p_lay, p_half,
+        clw, ciw, deff_liq, deff_ice, cfrac)
+    assert quality.requires_grad is False
+    assert bt.shape == (1, NCH)
+    bt.sum().backward()
+
+    for name, input_field in field_inputs.items():
+        expected = torch.full_like(input_field, coefficients[name] * NCH)
+        torch.testing.assert_close(input_field.grad, expected, rtol=0, atol=0)
+    assert cfrac.grad is None  # passed in the 11th slot, intentionally nondifferentiable
 
 
 def test_assemble_covector_sever_raises_on_connected_none():

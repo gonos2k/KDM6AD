@@ -1,0 +1,77 @@
+{
+  "base_commit": "39406973a428c12544323d0100a0a323b7fd2c36",
+  "source_at_run": "frozen source edits subsequently committed in this PR; exact per-file hashes are authoritative",
+  "platform": "macOS-26.7-arm64-arm-64bit",
+  "python": "3.10.11",
+  "torch": "2.13.0",
+  "numpy": "2.2.6",
+  "netCDF4": "1.7.4",
+  "source_sha256": {
+    "harness/verify_native_obs_ad.py": "5cfa03ae8f427dbfd3780e84e4949e0937d7856b582331d6fb49b06a72c914e0",
+    "harness/tests/test_verify_native_obs_ad.py": "51ef55d7c70a1122c876ecf2e72acb8912cda56dd427fb6c66502944769a036e",
+    "oracle/kdm6/obs/native_profile_builder.py": "480018c36078aaf6952ca5d2e2667f61b563a221a1dc1e3a42290f655680b58e",
+    "oracle/kdm6/obs/native_cloud_profile.py": "2aeb687fed9f660818d76f98d1f8588e2cc21c9d20a7e471ff166a999a5d202c",
+    "oracle/kdm6/obs/rttov_obs_operator.py": "40e4cdd9708ab0315c1be5851d65ec5961ac8d6a74a987c98750c688a92a438d",
+    "oracle/kdm6/obs/rttov_input_builder.py": "573cdb1d21c76c2f3bc042c3f50da6f75306668af70b3714b8d6a505ff0e1d45",
+    "oracle/kdm6/obs/rttov_case_writer.py": "aee152ca3c9fda15b2a9d25f38b4ca784e04f66735b173e73d92f5b6cd80d93d",
+    "oracle/tests/test_native_profile_builder.py": "7b9cf0aa5c1bad74d1e242620ba34ee8424ae571b460231e46976521329af9c6",
+    "oracle/tests/test_native_cloud_profile.py": "c11051a072ced99e767ed9b259b6601f3c26637d3168f55236141236a29594ca",
+    "oracle/tests/test_native_observation_composition.py": "8e980de7c2548a07e1c1d47a67663ed3b96613b14477495015ac285ef8ea3632",
+    "oracle/tests/test_rttov_input_builder.py": "cbdc9d29e49ada6f05c70bdefca66cd5d663c82ecdc9d2a94995538ec909dd4c",
+    "oracle/tests/test_rttov_obs_operator.py": "b3edd58cdd4d14491a971d4a1167ee63804793347ecf684b6dac5386ddd66b40",
+    "oracle/tests/test_rttov_pressure_writer.py": "d1a07f25d6e41359dc8ca4e7c284a6c4fc7696c5ab97e9dacd99a648000ecb10",
+    "docs/NATIVE_OBSERVATION_AD.md": "2ea1807a5526b040a568bccb66133c209d6f6bdfe798cf73904182518280daa9"
+  },
+  "primary_reports": {
+    "clear": {
+      "file": "native39_clear_cost.json",
+      "sha256": "a2f5e99e03facfd880a3344613a68927aa5180974696a1dd53621e5b1db7c616",
+      "pins_verified": 43,
+      "calls": 61
+    },
+    "cloud": {
+      "file": "native39_cloud_cost.json",
+      "sha256": "d6ebb874594c9c9acbc790026765e85b47b11a9495a89caf72fe05492bfebace",
+      "pins_verified": 81,
+      "calls": 91
+    }
+  },
+  "private_producer_source_sha256": {
+    "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/dyn_em/module_big_step_utilities_em.F": "27ce690b27b24c80247a5551b48d37fc32fc47470d806cbef1bb859d58edc31c",
+    "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/dyn_em/solve_em.F": "d66e9db1bba8f37e3f46d30c2fd74bdf8def411adf233376a69e0b401c6d3d1f",
+    "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/share/module_model_constants.F": "5b80377fecdc18a5f0ad38d3b6c15cfc86ad5d76701adbbbb08a08698d0f7062",
+    "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/Registry/Registry.EM_COMMON": "6741720cba12ad7ee1c172339bd8def5973b22f4e88ab9cd152f3ba3df456e37",
+    "/Users/yhlee/KDM6AD-k/host/KIM-meso_v1.0/phys/module_mp_kdm6.F": "fc0a72d33a5e61803fea56eb9118018039c6da8b5775813032b4861a2bd66eb5"
+  },
+  "run_counts": {
+    "final_clear": 61,
+    "final_cloud": 91,
+    "independent_pressure_probe_components_and_retries": 19,
+    "whole_reference_pressure_followup": 6,
+    "earlier_clear_exploratory": 51,
+    "earlier_cloud_exploratory": 91,
+    "failed_external_driver_invocations": 1,
+    "recorded_total_RTTOV_invocations": 320,
+    "new_native_integrations": 0,
+    "new_optimizations": 0
+  },
+  "validation": {
+    "focused_passed": 78,
+    "local_harness_passed": 2538,
+    "local_harness_skipped": 59,
+    "local_marked_deselected": 309,
+    "local_harness_seconds": 186.01
+  },
+  "operational_host_executable_sha256": "676223e8d61d23456d4ac83713bff0283ea08b1e71776b7f8885b062d97f801b",
+  "operational_kernel_library_sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+  "old_KO_DA": "paused, not resumed",
+  "number_basis": "NC/NI Registry-declared per-kg-dry convention selected for optical bridge; legacy raw-kernel unit/budget consistency not established; CCN excluded",
+  "limits": [
+    "whole-reference-pressure mixed-direction mismatch unresolved",
+    "KO pixel time unverified; model +20s relative to nominal slot",
+    "NI direction locally zero at ice diameter floor",
+    "fixed trace gases/surface/geometry",
+    "no clean RTTOV rebuild certificate",
+    "no full-host/RK/cycling/HVP or forecast-skill proof"
+  ]
+}
