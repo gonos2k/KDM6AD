@@ -23,15 +23,20 @@ program test_fortran_state_forcing
   real(c_double) :: out_live(im,kme,jme,12)
   integer(c_int64_t) :: bits_old(ns), bits_value(ns), bits_live(ns)
   real(c_double) :: state_short(im,kme,jme,11), forcing_short(im,kme,jme,3)
-  real(c_double) :: out_short(im,kme,jme,12)
+  real(c_double) :: out_backing(2*im,kme,jme,12)
   real(c_double) :: v_state(im,kme,jme,12), v_forcing(im,kme,jme,4)
   real(c_double) :: u_state(im,kme,jme,12)
   real(c_double) :: v_state_packed(ns), v_forcing_packed(nf), u_raw_packed(ns), u_packed(ns)
   real(c_double) :: jv_packed(ns), gs_packed(ns), gf_packed(nf)
   real(c_double) :: gs_raw(ns), gf_raw(nf)
+  real(c_double) :: grad_state_backing(2*ns), grad_forcing_backing(2*nf), tangent_backing(2*ns)
   real(c_double) :: lhs, rhs, state_term, forcing_term, denom
   real(c_double) :: raw_lhs, raw_rhs, raw_state_term, raw_forcing_term, raw_denom
   real(c_float) :: xland(im,jme)
+  real(c_float) :: state32(im,kme,jme,12), forcing32(im,kme,jme,4)
+  real(c_float) :: out32_backing(2*im,kme,jme,12)
+  real(c_float) :: rain_backing(2*im,jme), snow_backing(2*im,jme), graupel_backing(2*im,jme)
+  real(c_float) :: rhog_backing(2*im,kme,jme)
   type(c_ptr) :: old_handle, value_handle, handle, bad_handle
   integer(c_int) :: rc
   integer :: i, k, j, f
@@ -40,6 +45,11 @@ program test_fortran_state_forcing
   state = 0.0_c_double
   forcing = 0.0_c_double
   xland = 2.0_c_float
+  out_old = -101.0_c_double
+  out_value = -102.0_c_double
+  out_live = -103.0_c_double
+  state32 = 0.0_c_float
+  forcing32 = 0.0_c_float
 
   ! Distinguishable columns and native (im,kme,jme,field) packing exercise
   ! both horizontal dimensions, all three levels, and all 12/4 field blocks.
@@ -94,21 +104,108 @@ program test_fortran_state_forcing
   end if
 
   ! Local shape failures must never pass invalid packed lengths to C, and must
-  ! leave the returned handle deterministically NULL.
+  ! leave the returned handle deterministically NULL and preserve the caller's
+  ! output backing array, including elements outside a strided section.
   state_short = 0.0_c_double
+  out_backing = -151.25_c_double
   bad_handle = c_null_ptr
   rc = kdm6_step_ad_state_forcing(state_short, forcing, im, kme, jme, dt, 0_c_int, &
-       out_short, bad_handle, xland, ncmin_land, ncmin_sea, physics_variant, dry_number)
+       out_backing(1:2*im:2,:,:,:), bad_handle, xland, ncmin_land, ncmin_sea, &
+       physics_variant, dry_number)
   if (rc /= KDM6_ERR_INVALID_DIM .or. c_associated(bad_handle)) then
     print *, 'FAIL: malformed state shape must reject before C with NULL handle', rc
     stop 1
   end if
+  if (any(out_backing /= -151.25_c_double)) then
+    print *, 'FAIL: local state-shape rejection changed output backing storage'
+    stop 1
+  end if
   forcing_short = 0.0_c_double
+  out_backing = -152.25_c_double
   bad_handle = c_null_ptr
   rc = kdm6_step_ad_state_forcing(state, forcing_short, im, kme, jme, dt, 0_c_int, &
-       out_short, bad_handle, xland, ncmin_land, ncmin_sea, physics_variant, dry_number)
+       out_backing(1:2*im:2,:,:,:), bad_handle, xland, ncmin_land, ncmin_sea, &
+       physics_variant, dry_number)
   if (rc /= KDM6_ERR_INVALID_DIM .or. c_associated(bad_handle)) then
     print *, 'FAIL: malformed forcing shape must reject before C with NULL handle', rc
+    stop 1
+  end if
+  if (any(out_backing /= -152.25_c_double)) then
+    print *, 'FAIL: local forcing-shape rejection changed output backing storage'
+    stop 1
+  end if
+
+  ! C validation failures must preserve noncontiguous caller outputs for all
+  ! existing fp64 forward wrappers and the new joint entry.
+  out_backing = -161.25_c_double
+  bad_handle = c_null_ptr
+  rc = kdm6_step_ad(state, forcing, im, kme, jme, dt, 2_c_int, &
+       out_backing(1:2*im:2,:,:,:), bad_handle, xland, ncmin_land, ncmin_sea)
+  if (rc /= KDM6_ERR_INVALID_ARG .or. c_associated(bad_handle) .or. &
+      any(out_backing /= -161.25_c_double)) then
+    print *, 'FAIL: state-only invalid-value_only error modified output or handle', rc
+    stop 1
+  end if
+
+  out_backing = -162.25_c_double
+  bad_handle = c_null_ptr
+  rc = kdm6_step_ad_variant(state, forcing, im, kme, jme, dt, 1_c_int, &
+       out_backing(1:2*im:2,:,:,:), bad_handle, xland, ncmin_land, ncmin_sea, -1_c_int32_t)
+  if (rc /= KDM6_ERR_INVALID_ARG .or. c_associated(bad_handle) .or. &
+      any(out_backing /= -162.25_c_double)) then
+    print *, 'FAIL: state-only invalid variant error modified output or handle', rc
+    stop 1
+  end if
+
+  out_backing = -163.25_c_double
+  bad_handle = c_null_ptr
+  rc = kdm6_step_ad_number(state, forcing, im, kme, jme, dt, 1_c_int, &
+       out_backing(1:2*im:2,:,:,:), bad_handle, xland, ncmin_land, ncmin_sea, &
+       physics_variant, -1_c_int64_t)
+  if (rc /= KDM6_ERR_INVALID_ARG .or. c_associated(bad_handle) .or. &
+      any(out_backing /= -163.25_c_double)) then
+    print *, 'FAIL: state-only invalid dry-number error modified output or handle', rc
+    stop 1
+  end if
+
+  out_backing = -164.25_c_double
+  bad_handle = c_null_ptr
+  rc = kdm6_step_ad_state_forcing(state, forcing, im, kme, jme, dt, 1_c_int, &
+       out_backing(1:2*im:2,:,:,:), bad_handle, xland, ncmin_land, ncmin_sea, &
+       -1_c_int32_t, dry_number)
+  if (rc /= KDM6_ERR_INVALID_ARG .or. c_associated(bad_handle) .or. &
+      any(out_backing /= -164.25_c_double)) then
+    print *, 'FAIL: joint invalid variant error modified output or handle', rc
+    stop 1
+  end if
+
+  ! The operational f32 wrapper has the same C validation/thread preservation
+  ! contract for its state, sedimentation and rhog outputs.
+  out32_backing = -171.0_c_float
+  rain_backing = -172.0_c_float
+  snow_backing = -173.0_c_float
+  graupel_backing = -174.0_c_float
+  rhog_backing = -175.0_c_float
+  bad_handle = c_null_ptr
+  rc = kdm6_step(state32(:,:,:,1), state32(:,:,:,2), state32(:,:,:,3), &
+       state32(:,:,:,4), state32(:,:,:,5), state32(:,:,:,6), state32(:,:,:,7), &
+       state32(:,:,:,8), state32(:,:,:,9), state32(:,:,:,10), state32(:,:,:,11), &
+       state32(:,:,:,12), forcing32(:,:,:,1), forcing32(:,:,:,2), &
+       forcing32(:,:,:,3), forcing32(:,:,:,4), im, kme, jme, dt, 0_c_int, 2_c_int, &
+       out32_backing(1:2*im:2,:,:,1), out32_backing(1:2*im:2,:,:,2), &
+       out32_backing(1:2*im:2,:,:,3), out32_backing(1:2*im:2,:,:,4), &
+       out32_backing(1:2*im:2,:,:,5), out32_backing(1:2*im:2,:,:,6), &
+       out32_backing(1:2*im:2,:,:,7), out32_backing(1:2*im:2,:,:,8), &
+       out32_backing(1:2*im:2,:,:,9), out32_backing(1:2*im:2,:,:,10), &
+       out32_backing(1:2*im:2,:,:,11), out32_backing(1:2*im:2,:,:,12), &
+       bad_handle, xland, ncmin_land, ncmin_sea, &
+       rain_backing(1:2*im:2,:), snow_backing(1:2*im:2,:), &
+       graupel_backing(1:2*im:2,:), rhog_backing(1:2*im:2,:,:))
+  if (rc /= KDM6_ERR_INVALID_ARG .or. c_associated(bad_handle) .or. &
+      any(out32_backing /= -171.0_c_float) .or. any(rain_backing /= -172.0_c_float) .or. &
+      any(snow_backing /= -173.0_c_float) .or. any(graupel_backing /= -174.0_c_float) .or. &
+      any(rhog_backing /= -175.0_c_float)) then
+    print *, 'FAIL: f32 invalid value_only error modified output or handle', rc
     stop 1
   end if
 
@@ -157,6 +254,38 @@ program test_fortran_state_forcing
       u_packed((f-1)*n+i) = u_raw_packed((f-1)*n+i) / output_scales(f)
     end do
   end do
+
+  ! Null-handle VJP/JVP errors must preserve every array output. Strided
+  ! sections exercise the Fortran INOUT copy-in/copy-out contract, including
+  ! untouched backing elements omitted from the section.
+  grad_state_backing = -201.0_c_double
+  rc = kdm6_handle_vjp(c_null_ptr, u_packed, grad_state_backing(1:2*ns:2))
+  if (rc /= KDM6_ERR_NULL_POINTER .or. any(grad_state_backing /= -201.0_c_double)) then
+    print *, 'FAIL: null state-only VJP changed output backing storage', rc
+    stop 1
+  end if
+  tangent_backing = -202.0_c_double
+  rc = kdm6_handle_jvp(c_null_ptr, v_state_packed, tangent_backing(1:2*ns:2))
+  if (rc /= KDM6_ERR_NULL_POINTER .or. any(tangent_backing /= -202.0_c_double)) then
+    print *, 'FAIL: null state-only JVP changed output backing storage', rc
+    stop 1
+  end if
+  grad_state_backing = -203.0_c_double
+  grad_forcing_backing = -204.0_c_double
+  rc = kdm6_handle_state_forcing_vjp(c_null_ptr, u_packed, &
+       grad_state_backing(1:2*ns:2), grad_forcing_backing(1:2*nf:2))
+  if (rc /= KDM6_ERR_NULL_POINTER .or. any(grad_state_backing /= -203.0_c_double) .or. &
+      any(grad_forcing_backing /= -204.0_c_double)) then
+    print *, 'FAIL: null joint VJP changed output backing storage', rc
+    stop 1
+  end if
+  tangent_backing = -205.0_c_double
+  rc = kdm6_handle_state_forcing_jvp(c_null_ptr, v_state_packed, v_forcing_packed, &
+       tangent_backing(1:2*ns:2))
+  if (rc /= KDM6_ERR_NULL_POINTER .or. any(tangent_backing /= -205.0_c_double)) then
+    print *, 'FAIL: null joint JVP changed output backing storage', rc
+    stop 1
+  end if
 
   jv_packed = -777.0_c_double
   rc = kdm6_handle_state_forcing_jvp(handle, v_state_packed, v_forcing_packed, jv_packed)
