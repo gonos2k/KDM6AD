@@ -1,0 +1,83 @@
+{
+  "base_commit": "03398d523a55f074a32f0c6741e5e03b0ac8897f",
+  "scope": "versioned research C^-1 Klegacy C boundary and qualified native-column observation-cost derivative",
+  "source_sha256": {
+    "harness/native_number_boundary.py": "c7c230f17e537532851246c4237ecfba8f319d871a952ef1a657cef023c6f25f",
+    "harness/native_number_qualification.py": "8a0b842a31157d89e1a082b1203dbc2ffff3bc5f904a7406c918945ba5e8be23",
+    "harness/verify_microphysics_obs_ad.py": "5f8fe5e69fac826cc10de0d6f499fc5fb671e2da13b623d65ddd1a62d5a69953",
+    "harness/tests/test_native_number_boundary.py": "e359c7942a763440632780fe79baf42491d50744e79e1b9052ef2894a51bc669",
+    "harness/tests/test_native_number_qualification.py": "20ad9cbe3e8deaddb75ebbf91e81cf3982ff24a95abb14aef3852026cbf53f17",
+    "harness/tests/test_verify_microphysics_obs_ad.py": "4b490c6a81934c0e7bfc454162be572ed5613a82b0f204deea679045ab1c334b",
+    "docs/NATIVE_DRY_NUMBER_BOUNDARY.md": "cf1bfe7a563182a67878a94231ac8b453e6673efdce94cae3fbe26a89702cff3"
+  },
+  "platform": "macOS-26.7-arm64-arm-64bit",
+  "python": "3.10.11",
+  "numpy": "2.2.6",
+  "torch": "2.13.0",
+  "reports": {
+    "native39_dry_boundary_cost.json": "91427596f243d9cddb9bba3c33fc6e4b2802ee02f1097f72a42b13bb1cdd80d2",
+    "native39_admission.json": "d6ab30b3daa7d284c5f3354d8e51212822a9ed5930c356b8d036da8aaa5a0d34",
+    "legacy_separation.json": "0b7bcfd3a461b3f2dd913ea8065e3a2be314892f1c042474fd213ee117b7b638",
+    "REPORT.md": "dfce6aeeedab4cc04e558bee496d3a38953dc44635774e17b1437c0db18e620c"
+  },
+  "actual_source_pins_verified": 120,
+  "coordinate_admission": {
+    "origin": "derived_kernel_volume_coordinate",
+    "input_units": "derived dry-specific research controls for NN/NC/NI/NR",
+    "original_host_payload_basis_certified": false,
+    "first_step_and_checkpoint_migration_implemented": false,
+    "roundtrip_max_ulp": 1,
+    "roundtrip_limit_ulp": 2
+  },
+  "legacy_comparison": {
+    "research_fp64_repeat_bits_equal": true,
+    "research_fp64_value_graph_bits_equal": true,
+    "explicit_conjugation_bits_equal": true,
+    "new_operational_f32_campaign": false,
+    "private_producer_sha256": "fc176a09a2d50726929b08b422456d56c87e2e5353711eb2fb486c7a94d54165"
+  },
+  "kernel_library_sha256": "3e968dcd43f6d361a2e1be6b963f76dcb9de1381313875e5c805af187a1693e4",
+  "build_manifest": "harness/evidence/state_forcing_ad_2026-10-20/build_manifest.json",
+  "new_cpp_or_fortran_builds": 0,
+  "actual_KDM_calls": 192,
+  "actual_RTTOV_invocations": 182,
+  "new_native_integrations": 0,
+  "new_optimizer_runs": 0,
+  "actual_directions": 9,
+  "max_dot_relative_error": 7.917339450718715e-14,
+  "max_selected_BT_cost_FD_tolerance_ratio": 0.015398854735288108,
+  "independent_recalculation_sha256": "c82d963b6e59af61676637967751829958fad479e24566495108f1b73b13df9f",
+  "admission_producer_sha256": "718ad4fd21d9001aec9775cb83ab14716f06cfea76c2da555234c48cfaae67f4",
+  "actual_coupled_command_sha256": "3ede2f35311c4f401b9bee77a8475ee6caf1bce4e173107156aab1d80b16dda5",
+  "validation": {
+    "focused_boundary_qualification_verifier_passed": 36,
+    "existing_torch_composition_passed": 3,
+    "full_local_harness_passed": 2586,
+    "full_local_harness_skipped": 59,
+    "local_marked_deselected": 309,
+    "full_local_harness_seconds": 115.15
+  },
+  "operational_executable_sha256": "676223e8d61d23456d4ac83713bff0283ea08b1e71776b7f8885b062d97f801b",
+  "operational_library_sha256": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7",
+  "old_KO_DA": "paused",
+  "limits": "research coordinate execution boundary, not certification/migration of historical inputs or complete host/RK physics; no closed physical budget, HVP, identifiability, optimization or forecast-skill result; pressure/time/P8W/geometry/NCCN stress limits retained",
+  "executions": {
+    "published_primary": {
+      "KDM": 91,
+      "RTTOV": 91
+    },
+    "earlier_primary_before_EOF_cleanup": {
+      "KDM": 91,
+      "RTTOV": 91
+    },
+    "published_legacy_comparison": {
+      "KDM": 5,
+      "RTTOV": 0
+    },
+    "earlier_legacy_comparison": {
+      "KDM": 5,
+      "RTTOV": 0
+    }
+  },
+  "earlier_primary_report_sha256": "687eeb7fd4493491508494b03dcf238b442f7a063d92275b572d16f51d763ef9"
+}
