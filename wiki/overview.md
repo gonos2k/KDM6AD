@@ -5,6 +5,11 @@ date_modified: 2026-07-14
 ---
 # Overview
 
+[[sources/same-call-water-budget-2026-10-22]] adds an isolated fp64 accounting
+result: one native-column legacy call loses water with zero surface export.
+The dominant loss is localized to sedimentation, separate from cleanup,
+forward parity and the accepted local derivative evidence; closure remains open.
+
 [[sources/pr418-nine-channel-closeout-2026-10-12]] fixes the internal AMI L1B research execution closeout at PR417 evidence plus explicit9 support. Added WV063/WV069 real H returned flags32768; this input is not eligible for9-channel analysis. Completed7 functionality and bounded experiments remain closed; strict convergence, other dates and actual observed temporal fit remain separate.
 
 This vault tracks project knowledge for KDM6AD-k: a standalone KDM6AD working tree that compares the original [[KDM6]] Fortran microphysics scheme with the [[KDM6AD]] libtorch-based differentiable port inside the [[WRF KIM-meso Host]].

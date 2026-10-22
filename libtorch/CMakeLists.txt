@@ -194,6 +194,26 @@ add_test(NAME conservative_interface COMMAND test_conservative_interface)
 add_executable(dump_conservative_interface tests/dump_conservative_interface.cpp)
 target_link_libraries(dump_conservative_interface PRIVATE kdm6)
 
+# Isolated research executable for a same-call fp64 single-column budget
+# capture. This is opt-in, links the source-tree static core, and is never
+# installed or wired into the host ABI.
+option(KDM6_BUILD_RESEARCH_COLUMN_BUDGET_TOOL
+    "Build the opt-in same-call fp64 column budget capture tool" OFF)
+if(KDM6_BUILD_RESEARCH_COLUMN_BUDGET_TOOL)
+    add_executable(kdm6_column_budget tools/kdm6_column_budget.cpp)
+    target_link_libraries(kdm6_column_budget PRIVATE kdm6)
+    target_compile_options(kdm6_column_budget PRIVATE -Wall -Wextra -Wpedantic)
+    add_executable(test_column_budget_cli tests/test_column_budget_cli.cpp)
+    target_link_libraries(test_column_budget_cli PRIVATE kdm6)
+    add_test(NAME column_budget_cli_same_call_parity
+        COMMAND test_column_budget_cli $<TARGET_FILE:kdm6_column_budget>)
+    add_test(NAME column_budget_rejects_truncated_request
+        COMMAND ${CMAKE_COMMAND}
+            -DPROGRAM=$<TARGET_FILE:kdm6_column_budget>
+            -DWORK=${CMAKE_CURRENT_BINARY_DIR}/column-budget-reject-test
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_column_budget_reject.cmake)
+endif()
+
 # ── Fortran ISO_C_BINDING smoke (optional — Fortran 컴파일러 있을 때만) ──────
 # KIM-meso 통합 시 `kdm6_iso_c` 모듈을 그대로 drop-in 사용. 컴파일러 없으면 skip.
 include(CheckLanguage)
@@ -251,7 +271,7 @@ foreach(t IN ITEMS
         test_cold test_melt_freeze test_sedimentation test_thermo test_coordinator
         test_cloud_dsd test_c_abi test_state_forcing_abi test_autograd_endtoend test_handle_vjp
         test_dry_number
-        test_conservative_interface)
+        test_conservative_interface test_column_budget_cli)
     if(TARGET ${t})
         target_compile_options(${t} PRIVATE -UNDEBUG)
     endif()
