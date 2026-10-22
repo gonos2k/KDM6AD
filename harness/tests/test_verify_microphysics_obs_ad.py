@@ -48,6 +48,14 @@ def test_refuse_output_inside_workspace(tmp_path):
         verify.validate_paths(a)
 
 
+def test_optional_number_receipt_is_a_pinned_input_not_an_output(tmp_path):
+    a = args(tmp_path)
+    a.native_number_admission = tmp_path/"admission.json"
+    a.output = a.native_number_admission
+    with pytest.raises(ValueError, match="output must be new"):
+        verify.validate_paths(a)
+
+
 def test_fd_gate_checks_each_channel_and_cost_with_common_epsilon():
     # Opposite per-channel errors cancel in a BT sum; they must still fail.
     dbt = np.array([[1., 1.]])

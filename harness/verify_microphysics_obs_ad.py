@@ -6,6 +6,7 @@ assimilation cycle, f32 parity campaign or higher-derivative contract.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -25,6 +26,8 @@ def validate_paths(args):
     names = ("trace", "checkpoint", "namelist", "library", "kernel_build_manifest",
              "observations", "template", "executable", "time_audit")
     sources = {name: Path(getattr(args, name)).resolve() for name in names}
+    if getattr(args, "native_number_admission", None) is not None:
+        sources["native_number_admission"] = Path(args.native_number_admission).resolve()
     dest, work = Path(args.output), Path(args.workspace)
     if dest.exists() or dest.is_symlink() or dest.resolve() in sources.values():
         raise ValueError("output must be new and distinct from inputs")
@@ -135,6 +138,9 @@ def verify(args):
         files[relative] = root/relative
     for relative in build_sources:
         files[relative] = root/relative
+    if "native_number_admission" in sources:
+        for relative in ("harness/native_number_boundary.py", "harness/native_number_qualification.py"):
+            files[relative] = root/relative
     for directory in ("in", "out"):
         for path in sorted((sources["template"]/directory).rglob("*")):
             if path.is_file() and (directory == "in" or path.name in ("run.sh", "env.sh", "rttov_test.txt")):
@@ -169,13 +175,29 @@ def verify(args):
                              all_sky=True, levels=args.levels)
     prep = Prep(args.levels, case.geometry, case.config)
     api = finish_api()
-    kernel = Kernel(sources["library"], args.levels, case.captured.config["dt"],
-                    case.xland, *case.captured.ncmin)
+    x = pack_state(case.X)
+    rest = np.ascontiguousarray(case.captured.state[2:])
+    admission = receipt = None
+    if "native_number_admission" in sources:
+        from harness.native_number_boundary import NativeDryNumberKernel
+        from harness.native_number_qualification import apply_receipt
+        receipt = json.loads(sources["native_number_admission"].read_text())
+        base_forcing = prep.forward(x)
+        volume_state = np.ascontiguousarray(np.vstack((base_forcing[0], case.X[1], rest)))
+        bindings = {key: sha(sources[key]) for key in ("trace", "namelist", "checkpoint")}
+        bindings.update(step=args.step, i=args.i, j=args.j, levels=args.levels,
+                        base_native_X_sha256=hashlib.sha256(x.tobytes()).hexdigest())
+        dry_state, admission = apply_receipt(receipt, volume_state, np.ascontiguousarray(base_forcing[1:]),
+                                              bindings, sha(sources["native_number_admission"]))
+        # Admission is fixed once at the reference point. Trial density is not
+        # used to reinterpret archived values or regenerate dry-number controls.
+        rest = np.ascontiguousarray(dry_state[2:])
+    raw_kernel = Kernel(sources["library"], args.levels, case.captured.config["dt"],
+                        case.xland, *case.captured.ncmin)
+    kernel = raw_kernel if admission is None else NativeDryNumberKernel(raw_kernel, admission=admission)
     finish = KernelFinish(kernel, api.FinishConfig(**case.captured.config),
                           api.ZeroOutConfig(**case.captured.zero))
     adapter = MicrophysicsObservationState(prep, finish)
-    x = pack_state(case.X)
-    rest = np.ascontiguousarray(case.captured.state[2:])
     geom = profile_api.FrozenNativeProfileGeometry(**{k: torch.from_numpy(v.copy()) for k, v in snapshot.geometry.items()})
     config = profile_api.NativeObservationConfig(**snapshot.constants)
     reference = profile_api.UpperReferenceProfile(**{k: torch.from_numpy(v.copy()) for k, v in snapshot.reference.items()},
@@ -234,7 +256,23 @@ def verify(args):
     try:
         gx, gr = adapter.vjp(base["record"], base["gy"])
         reports = {}
-        for name, (dx, dr) in directions(x, rest, args.levels).items():
+        trial_directions = directions(x, rest, args.levels)
+        if admission is not None:
+            from oracle.kdm6 import constants
+            phase = np.arange(args.levels)
+            # Probe NN away from its declared entry clamp; zero reservoirs
+            # and bound cells stay fixed rather than crossing a known kink.
+            entry = base["record"].handle.volume_input
+            interior = (entry[7] > constants.NCCN_MIN*1.000001) & (entry[7] < constants.NCCN_MAX*.999999)
+            for name, row, mask in (("nccn_number", 5, interior),
+                                    ("rain_number", 8, np.ones(args.levels, dtype=bool))):
+                dr = np.zeros_like(rest)
+                dr[row] = .02*rest[row]*np.cos(.33*(phase+row+1))*mask
+                if np.any(dr):
+                    trial_directions[name] = (np.zeros_like(x), dr)
+                    mx, mr = trial_directions["mixed"]
+                    trial_directions["mixed"] = (mx, mr+dr)
+        for name, (dx, dr) in trial_directions.items():
             dy = adapter.jvp(base["record"], dx, dr)
             vs = tuple(torch.from_numpy(v.copy()) for v in observation_arrays(dy, args.levels))
             _, products = torch.autograd.functional.jvp(lambda *v: profile_values(project(*v)), base["fields"], vs)
@@ -265,7 +303,9 @@ def verify(args):
                              "best_max_tolerance_ratio": None if best is None else best["max_tolerance_ratio"],
                              "direction_x": dx.tolist(), "direction_rest": dr.tolist(), "trials": trials,
                              "passed": bool(best and best["max_tolerance_ratio"] <= 1 and dot <= DOT_RTOL)}
-        report = {"schema": "kdm6.microphysics_observation_ad.v1", "source": {k: str(v) for k, v in files.items()},
+        report = {"schema": ("kdm6.microphysics_observation_ad.v1" if admission is None else
+                             "kdm6.microphysics_observation_ad.native_dry_numbers.v1"),
+                  "source": {k: str(v) for k, v in files.items()},
                   "input_sha256": pinned, "verified_kernel_build_sources": build_sources,
                   "kernel_contract": {"physics_variant": 0, "dry_number": 0, "dt_seconds": kernel.dt,
                                       "xland": case.xland, "ncmin_land_sea": case.captured.ncmin,
@@ -287,6 +327,26 @@ def verify(args):
                   "directions": reports, "external_RTTOV_calls": len(calls),
                   "passed": bool(reports) and all(r["passed"] for r in reports.values()),
                   "limits": "offline native one-column continuous fp64 substep; fixed hybrid/reference/surface/trace-gas geometry; same MU/PH through finish, post-EOS recomputed; legacy raw KDM numbers interpreted conditionally under Registry optical convention; no RK/retained-memory/host-window/optimization/HVP or applied mass/number-budget certificate; pixel time unknown; whole-reference pressure counterexample unresolved"}
+        if admission is not None:
+            boundary_handle = base["record"].handle
+            report["number_boundary"] = {
+                "version": "kdm6.native_dry_number.v1", "admission": receipt,
+                "research_coordinate_units": "NN/NC/NI/NR number per kg dry air, defined by the explicit receipt; not certification of original host payload",
+                "internal_units": "NN/NC/NI/NR kernel volume operands",
+                "physical_forcing_unchanged": bool(np.array_equal(
+                    boundary_handle.forcing.view(np.uint64), prep.forward(x)[1:].view(np.uint64))),
+                "kernel_volume_input": boundary_handle.volume_input.tolist(),
+                "kernel_volume_output": boundary_handle.volume_output.tolist(),
+                "entry_dry_density": boundary_handle.rho_dry.tolist(),
+                "original_host_payload_basis_certified": False,
+            }
+            report["limits"] = (
+                "versioned research dry-number boundary over legacy K with unchanged native DEN/PII/P/DELZ; "
+                "input is a fixed declared coordinate pullback of traced kernel-volume operands, not a host/checkpoint unit certificate; "
+                "all four number controls/output are dry-specific; no first-step producer or restart migration; "
+                "one-column continuous fp64 split map with fixed MU/PH through finish and live prep geometry; "
+                "fixed reference/surface/gases, +40s nominal KO offset/pixel time unknown, reconstructed P8W; "
+                "no RK/full-host/window optimization/HVP/conservation/skill certificate; whole-reference pressure counterexample retained")
     finally:
         adapter.close(base["record"])
     if any(sha(files[name]) != digest for name, digest in pinned.items()):
@@ -314,4 +374,6 @@ if __name__ == "__main__":
     p.add_argument("--sigma", type=float, default=1.)
     p.add_argument("--huber-delta", type=float, default=1.)
     p.add_argument("--timeout", type=float, default=300.)
+    p.add_argument("--native-number-admission", type=Path,
+                   help="Opt in to native dry-number v1 using an explicit qualified input receipt")
     verify(p.parse_args())
