@@ -141,6 +141,7 @@ jobs:
             -DCMAKE_PREFIX_PATH="$(python -c 'import torch, os; print(os.path.dirname(torch.__file__))')" \
             -DCMAKE_INSTALL_PREFIX=../install \
             -DKDM6_ENABLE_TEST_HOOKS=OFF \
+            -DKDM6_BUILD_RESEARCH_COLUMN_BUDGET_TOOL=ON \
             -DCMAKE_CXX_FLAGS=-DKDM6_SUBSTEP_DUMP
 
       - name: Build (shipped)
@@ -298,6 +299,7 @@ jobs:
             -DCMAKE_INSTALL_PREFIX=../install \
             -DCMAKE_BUILD_TYPE=Release \
             -DKDM6_ENABLE_TEST_HOOKS=OFF \
+            -DKDM6_BUILD_RESEARCH_COLUMN_BUDGET_TOOL=ON \
             -DCMAKE_CXX_FLAGS=-DKDM6_SUBSTEP_DUMP
 
       - name: Build (shipped)
