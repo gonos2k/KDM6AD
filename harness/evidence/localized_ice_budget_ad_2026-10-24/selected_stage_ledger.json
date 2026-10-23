@@ -1,0 +1,166 @@
+{
+  "norm_actual_chunk034": {
+    "flat_index": 17662,
+    "i_1based": 113,
+    "j_1based": 76,
+    "stages": {
+      "sedimentation": {
+        "total_kg_m2": -0.04893712319213365,
+        "per_species_kg_m2": {
+          "QV": 0.0,
+          "QC": 0.0,
+          "QR": -0.04893712319213363,
+          "QI": 0.0,
+          "QS": -2.4355699167307863e-17,
+          "QG": 1.0237248830981943e-18
+        }
+      },
+      "microphysics": {
+        "total_kg_m2": -1.6335934313114213e-15,
+        "per_species_kg_m2": {
+          "QV": 0.07250209167201047,
+          "QC": -0.12966825980973803,
+          "QR": 0.15247431657160598,
+          "QI": 0.0,
+          "QS": -0.0918064729085888,
+          "QG": -0.003501675525291243
+        }
+      },
+      "cleanup": {
+        "total_kg_m2": 0.0
+      }
+    },
+    "reported_total_precip_mm": 0.053995637612914336,
+    "raw_residual_kg_m2": 0.005058514420779037,
+    "ice_bottom": {
+      "actual_departure_kg_m2": 0.0,
+      "applied_arrival_kg_m2": 0.0,
+      "bottom_net_state_depletion_kg_m2": 0.0,
+      "raw_code_report_increment": 0.0,
+      "reported_minus_applied": 0.0
+    }
+  },
+  "norm_actual_chunk040": {
+    "flat_index": 20488,
+    "i_1based": 131,
+    "j_1based": 88,
+    "stages": {
+      "sedimentation": {
+        "total_kg_m2": -0.1817715693076851,
+        "per_species_kg_m2": {
+          "QV": 0.0,
+          "QC": 0.0,
+          "QR": -0.1817715693076849,
+          "QI": 1.6940658945086007e-21,
+          "QS": -1.7167917884834336e-16,
+          "QG": -1.108702600484835e-17
+        }
+      },
+      "microphysics": {
+        "total_kg_m2": 8.396960349509847e-16,
+        "per_species_kg_m2": {
+          "QV": 0.06835360837685582,
+          "QC": -0.19707156936567277,
+          "QR": 0.32317227887366323,
+          "QI": 0.00011687905697308173,
+          "QS": -0.1610422767531468,
+          "QG": -0.03352892018867174
+        }
+      },
+      "cleanup": {
+        "total_kg_m2": -6.9495706997567825e-12
+      }
+    },
+    "reported_total_precip_mm": 0.0,
+    "raw_residual_kg_m2": -0.18177156930768423,
+    "ice_bottom": {
+      "actual_departure_kg_m2": 0.0,
+      "applied_arrival_kg_m2": 0.0,
+      "bottom_net_state_depletion_kg_m2": 0.0,
+      "raw_code_report_increment": 0.0,
+      "reported_minus_applied": 0.0
+    }
+  },
+  "raw_actual_chunk034": {
+    "flat_index": 17662,
+    "i_1based": 113,
+    "j_1based": 76,
+    "stages": {
+      "sedimentation": {
+        "total_kg_m2": -0.04893712319213365,
+        "per_species_kg_m2": {
+          "QV": 0.0,
+          "QC": 0.0,
+          "QR": -0.04893712319213363,
+          "QI": 0.0,
+          "QS": -2.4355699167307863e-17,
+          "QG": 1.0237248830981943e-18
+        }
+      },
+      "microphysics": {
+        "total_kg_m2": -1.6335934313114213e-15,
+        "per_species_kg_m2": {
+          "QV": 0.07250209167201047,
+          "QC": -0.12966825980973803,
+          "QR": 0.15247431657160598,
+          "QI": 0.0,
+          "QS": -0.0918064729085888,
+          "QG": -0.003501675525291243
+        }
+      },
+      "cleanup": {
+        "total_kg_m2": 0.0
+      }
+    },
+    "reported_total_precip_mm": 0.053995637612914336,
+    "raw_residual_kg_m2": 0.005058514420779037,
+    "ice_bottom": {
+      "actual_departure_kg_m2": 0.0,
+      "applied_arrival_kg_m2": 0.0,
+      "bottom_net_state_depletion_kg_m2": 0.0,
+      "raw_code_report_increment": 0.0,
+      "reported_minus_applied": 0.0
+    }
+  },
+  "raw_actual_chunk040": {
+    "flat_index": 20488,
+    "i_1based": 131,
+    "j_1based": 88,
+    "stages": {
+      "sedimentation": {
+        "total_kg_m2": -0.1817715693076851,
+        "per_species_kg_m2": {
+          "QV": 0.0,
+          "QC": 0.0,
+          "QR": -0.1817715693076849,
+          "QI": 8.131516293641283e-20,
+          "QS": -1.7167917884834336e-16,
+          "QG": -1.108702600484835e-17
+        }
+      },
+      "microphysics": {
+        "total_kg_m2": 1.1124329903069995e-15,
+        "per_species_kg_m2": {
+          "QV": 0.06786566875560825,
+          "QC": -0.19707156936567277,
+          "QR": 0.32317227887366323,
+          "QI": 0.0006007823132467003,
+          "QS": -0.16103824038817277,
+          "QG": -0.03352892018867155
+        }
+      },
+      "cleanup": {
+        "total_kg_m2": -6.889342870419895e-12
+      }
+    },
+    "reported_total_precip_mm": 0.0,
+    "raw_residual_kg_m2": -0.18177156930768396,
+    "ice_bottom": {
+      "actual_departure_kg_m2": 0.0,
+      "applied_arrival_kg_m2": 0.0,
+      "bottom_net_state_depletion_kg_m2": 0.0,
+      "raw_code_report_increment": 0.0,
+      "reported_minus_applied": 0.0
+    }
+  }
+}

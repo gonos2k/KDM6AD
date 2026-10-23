@@ -1,0 +1,16 @@
+{
+  "scope": "B512 target-local seed pilot,12 prognostic outputs; no FD/precipitation/finish/host/RTTOV certificate",
+  "B": 512,
+  "L": 39,
+  "mode": "norm_actual",
+  "chunk": 40,
+  "target_row": 8,
+  "value_and_recorded_forward_match_frozen_batch_bits": true,
+  "VJP_JVP_finite": true,
+  "dot_lhs": -0.9050681918756144,
+  "dot_rhs": -0.9050681918756147,
+  "dot_relative_error": 3.6800200291794255e-16,
+  "wall_seconds": 1.2432703338563442,
+  "controller_sha256": "20486925db0d4f879be6fec691bd0bf055f8d13430480db6fc68f870a75d074b",
+  "library_sha256": "e412328b7714c6b106268fbd795708aa8434e88338bc9157b8cfe1fffa5315e9"
+}
