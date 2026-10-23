@@ -24,7 +24,7 @@
     "harness/tests/test_ice_trace_ad_noninterference.py": "384691b9bf7e10a860ba5ad95569c18d5838b20c978a2eb0aefb316f93e3b302"
   },
   "artifact_sha256": {
-    "harness/evidence/ice_boundary_attribution_2026-10-23/SOURCE_AUDIT.md": "6ba8abe5c633c52f27d981cbec808239082155c3c57ad3d63a0d18033d17f137",
+    "harness/evidence/ice_boundary_attribution_2026-10-23/SOURCE_AUDIT.md": "791b69c34a505e15220cd14572b07a4671e38a9fca70bce3ecdaf8957bb0809c",
     "harness/evidence/ice_boundary_attribution_2026-10-23/REPORT.md": "272ba997f708a8282dc276b94c64456eb41ee97b4c674e9739073f3e88fb19a4",
     "harness/evidence/ice_boundary_attribution_2026-10-23/actual_file_build_receipt.json": "66d0cc4904b2217360e52ef52b6433b2b6447e3e354a9de9569465aa1734dd2a",
     "harness/evidence/ice_boundary_attribution_2026-10-23/applied_change_ledger_v2.json": "94ae5ee8ad3718906be9bba910abb3a9abeddeb4fe41478169c73a2c3864e6e3",
@@ -65,5 +65,11 @@
   ],
   "numpy": "2.2.6",
   "torch": "2.13.0",
-  "execution_contract": "CPU binary64; each graph comparison runs in a fresh process; OMP_NUM_THREADS=MKL_NUM_THREADS=OMP_THREAD_LIMIT=OPENBLAS_NUM_THREADS=1"
+  "execution_contract": "CPU binary64; each graph comparison runs in a fresh process; OMP_NUM_THREADS=MKL_NUM_THREADS=OMP_THREAD_LIMIT=OPENBLAS_NUM_THREADS=1",
+  "documentation_correction": {
+    "file": "harness/evidence/ice_boundary_attribution_2026-10-23/SOURCE_AUDIT.md",
+    "previous_sha256": "6ba8abe5c633c52f27d981cbec808239082155c3c57ad3d63a0d18033d17f137",
+    "reason": "Actual bottom departure uses applied outflow; before-after is net depletion when bottom arrival is nonzero.",
+    "numerical_artifacts_unchanged": true
+  }
 }

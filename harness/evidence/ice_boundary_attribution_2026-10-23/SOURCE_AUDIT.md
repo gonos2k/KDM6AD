@@ -98,13 +98,17 @@ arrivals, not the uncapped attempts. With no upper boundary inflow,
 column_delta_QI + actual_bottom_outflow + sum(interior G_u) = 0
 ```
 
-up to floating-point reduction error. The bottom state departure is
-`DEN_bottom*DELZ_bottom*(QI_before-QI_after)`. The stored bottom diagnostic
-is instead raw accumulated `falk_qi * DELZ_bottom * dtcld`; if the local
-departure cap binds, it can exceed the actual bottom state removal. Under the
-default raw-velocity handoff, its dimensional interpretation is additionally
-conditional as described above. Keep this diagnostic-minus-applied gap
-separate from internal interface gaps.
+up to floating-point reduction error. The applied bottom departure is
+`DEN_bottom*DELZ_bottom*out_applied_QI_bottom` (the source's `dqi` at KTS).
+The bottom state net depletion is instead
+`DEN_bottom*DELZ_bottom*(QI_before-QI_after)`; because the bottom update also
+adds the applied arrival from the layer above, this net depletion equals the
+departure only when that arrival is zero. The stored bottom diagnostic is
+raw accumulated `falk_qi * DELZ_bottom * dtcld`; if the local departure cap
+binds, it can exceed the applied departure. Under the default raw-velocity
+handoff, its dimensional interpretation is additionally conditional as
+described above. Keep this diagnostic-minus-applied-departure gap separate
+from the bottom net state change and internal interface gaps.
 
 For `NI`, the KDM equations imply a volume-number coordinate: the ice DSD
 uses `PIDNI*NI/(DEN*QI)` and its limiting inverse writes

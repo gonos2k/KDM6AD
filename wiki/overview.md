@@ -5,6 +5,11 @@ date_modified: 2026-07-14
 ---
 # Overview
 
+[[sources/native-ice-factorial-2026-10-23]] completes the one-column ice-only
+factorial and prepares the full native-grid endpoint packet. Numerical ice
+balance improves in the changed maps, but physical kernel closure and map
+selection remain open; no regional KDM execution is claimed.
+
 [[sources/native-ice-boundary-2026-10-23]] fixes diagnostic summation and
 attributes the same-call QI sedimentation loss to measured internal
 departure/arrival gaps. It preserves the legacy physical map and local

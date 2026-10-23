@@ -1,0 +1,58 @@
+{
+  "artifact_sha256": {
+    "compile_log": "3d320295f416f0ff4b55dfc77b66745d3a5dd09b8cc31b3e77627dbfc78b4ac2",
+    "experimental_archive": "0bf2c94d30d66ba5a76767ae526ee5ea89d944a8cc242f95255b20a23bdb8b3a",
+    "fp64_domain_manifest": "24630a58b03e54d90cc4bb6c6167e0571b02d2d002095424b19789286914601d",
+    "full_domain_dryrun_plan": "c5ea246b084a4307c297343c0730d1be860423102271a70229d338798d935c76",
+    "overlay_manifest": "9102e60cdb4748e6ad3357c67cc05f8267063fc29cfba90c8af1c7cc49683d2e",
+    "protocol_doc": "0fce77d9f2b4ecc7e8f8e681b130f202e3826364041d667a890528961d0a2110",
+    "python_helper": "7bc300f82bfa870bd4b29f2fb4dc7aa0ada62ed79ee0e94a3bf2b35ba9d629ba",
+    "smoke_receipt": "be09e670d4b2d3d1c0951df395de29d9f8f0b95344273274273d083154672157",
+    "tool_executable": "b8051d8b8c983dd91e98c98204d900b27da39054eceeb282d4f9e0025cf894e7",
+    "tool_object": "eea6c7531f96f240ef303575155dbbb776c8073ee74ba45357372dd03d67fe8b",
+    "tool_source": "ad3af12215edb23298b48cbcc21da54e184b556e25a5efae13ee37884d7864a2"
+  },
+  "compile_flags": "-O3 -DNDEBUG -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX27.0.sdk -mmacosx-version-min=26.7 -fPIC -fvisibility=hidden -fvisibility-inlines-hidden -ffp-contract=off -Wall -Wextra -Wpedantic -std=c++17",
+  "compile_note": "flags.make had a malformed SDK root; used installed MacOSX27.0 SDK resolved under MacOSX.platform. Torch headers emitted 1722 extension warnings; compile and link succeeded.",
+  "compiler": "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/c++",
+  "dry_run": {
+    "KDM6_full_domain_calls": 0,
+    "arms": [
+      "norm_actual",
+      "norm_cap",
+      "raw_actual",
+      "raw_cap"
+    ],
+    "chunks_per_arm": 129,
+    "columns": 65988,
+    "coverage": {
+      "duplicate": 0,
+      "missing": 0
+    },
+    "final_batch_size": 452,
+    "fixed_chunk_columns": 512,
+    "levels": 39,
+    "prepared_bundle_bytes_total": 330922260,
+    "runtime_config": {
+      "arms_execution": "sequential; each arm may use workers_per_arm independent chunk processes",
+      "call": "one value-only kdm6_fn FnResult per request",
+      "chunking": "fixed prepared flat-column order, 512 columns except final 452-column chunk",
+      "factor_mode_environment": "KDM6_ICE_FACTORIAL_MODE set to the arm name",
+      "max_concurrent_chunk_processes": 10,
+      "physics_variant": "Legacy main chain",
+      "threads_per_worker": {
+        "MKL_NUM_THREADS": "1",
+        "OMP_NUM_THREADS": "1",
+        "OMP_THREAD_LIMIT": "1",
+        "OPENBLAS_NUM_THREADS": "1"
+      },
+      "trace_environment": "KDM6_ICE_BOUNDARY_TRACE, KDM6_SUBSTEP_DUMP and KDM6_SAME_CALL_BUDGET_TRACE cleared unless explicitly overridden",
+      "workers_per_arm": 10
+    }
+  },
+  "link_line": "c++ tool.o -Wl,-search_paths_first -Wl,-headerpad_max_install_names <experimental libkdm6.a> -o ice_factorial_batch -Wl,-rpath,<torch/lib> <libtorch.dylib> <libtorch_cpu.dylib> <libc10.dylib> /opt/homebrew/lib/libc10.dylib",
+  "platform": "macOS-26.7-arm64-arm-64bit",
+  "runtime_scope": "isolated same-call fp64 research executable against the experimental four-TU archive; no ABI, production CMake target, install tree, host dispatch or canonical source edits.",
+  "schema": "kdm6.ice_factorial_batch_tool_build.v1",
+  "final_input_plan_refresh": "Revalidated frozen-producer final packet; all numerical chunk hashes unchanged. No C++ recompile, sample rerun, or full-domain execution."
+}

@@ -6,6 +6,7 @@ date_modified: 2026-10-13
 # Hot Cache
 
 ## Current Focus
+- [[sources/native-ice-factorial-2026-10-23]] — Ice-only factorial separates handoff/arrival effects; endpoint-initialized 65,988-column packet and fixed batch plan prepared, no domain run.
 - [[sources/native-ice-boundary-2026-10-23]] — Ledger v2 fixes BLAS-dependent aggregates; actual ice caps explain the native QI sink, physical closure remains open.
 - [[sources/same-call-water-budget-2026-10-22]] — Same-call fp64 water closure fails; dominant QI loss localized to sedimentation, cleanup isolated, legacy physics unchanged.
 - [[sources/pr421-calibration-dom-review-2026-10-13]] — Calibration input guard added for future runs; DOM8-stream effective rules and nonstationary/shared-cost interpretations recorded additively.
