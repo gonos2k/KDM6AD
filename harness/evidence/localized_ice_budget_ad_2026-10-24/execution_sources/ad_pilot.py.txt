@@ -1,0 +1,48 @@
+"""Guarded B512 state+forcing AD pilot; no precipitation/host derivative.
+K(s,F) JVP = K_s ds + K_F dF; full-array transpose dot uses sparse local
+seeds without dropping the other 511 columns from the forward/scheduling.
+"""
+from pathlib import Path
+import ctypes as ct,hashlib,json,sys,time
+import numpy as np
+from harness.ice_factorial_batch import unpack_response,IN_HEADER
+from harness.verify_state_forcing_ad import D,ptr,OUTPUT_SCALES
+R=Path(__file__).resolve().parent
+mode='norm_actual';idx=40;target=8
+case=R/f'{mode}_chunk{idx:03d}'
+libpath=R/'ad_build/libkdm6_ice_factorial_ad.2.0.0.dylib'
+self_hash=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
+lib=ct.CDLL(str(libpath))
+fn=lib.kdm6_step_ad_state_forcing_c
+fn.argtypes=[D,D,ct.c_int,ct.c_int,ct.c_int,ct.c_double,ct.c_int,D,ct.POINTER(ct.c_void_p),ct.POINTER(ct.c_float),ct.c_double,ct.c_double,ct.c_uint32,ct.c_int64];fn.restype=ct.c_int
+for name in ['kdm6_handle_state_forcing_vjp_c','kdm6_handle_state_forcing_jvp_c']:
+ getattr(lib,name).argtypes=[ct.c_void_p,D,D,D];getattr(lib,name).restype=ct.c_int
+lib.kdm6_handle_closep_c.argtypes=[ct.POINTER(ct.c_void_p)];lib.kdm6_handle_closep_c.restype=ct.c_int
+response=unpack_response((case/'response.bin').read_bytes());s=response['state_in'];f=response['forcing_in'];B,L=s.shape[1:]
+raw=(case/'request.bin').read_bytes();xland=np.frombuffer(raw,dtype='<f8',offset=IN_HEADER.size+(12+4)*B*L*8,count=B).astype(np.float32)
+def check(rc):
+ if rc!=0:raise RuntimeError(f'C ABI rc={rc}')
+def forward(record):
+ out=np.empty_like(s);h=ct.c_void_p();check(fn(ptr(s),ptr(f),1,L,B,20.,int(not record),ptr(out),ct.byref(h),xland.ctypes.data_as(ct.POINTER(ct.c_float)),10.,10.,0,0));return out,h
+start=time.monotonic()
+out,h0=forward(False);check(lib.kdm6_handle_closep_c(ct.byref(h0)))
+if not np.array_equal(out.view('u8'),response['state_out'].view('u8')):raise RuntimeError('B512 C ABI value differs from frozen batch value')
+print('value_match',flush=True)
+out,h=forward(True)
+if not np.array_equal(out.view('u8'),response['state_out'].view('u8')):raise RuntimeError('recorded B512 C ABI value differs')
+print('record_match',flush=True)
+try:
+ u=np.zeros_like(s);u[:,target]=np.sin(.23*(np.arange(12*L).reshape(12,L)+1))/OUTPUT_SCALES
+ gs=np.empty_like(s);gf=np.empty_like(f);check(lib.kdm6_handle_state_forcing_vjp_c(h,ptr(u),ptr(gs),ptr(gf)))
+ if not(np.isfinite(gs).all() and np.isfinite(gf).all()):raise RuntimeError('nonfinite VJP')
+ print('vjp_finite',flush=True)
+ vs=np.zeros_like(s);vf=np.zeros_like(f);k=np.arange(L)
+ vs[0,target]=.2*np.sin(.37*(k+1));vs[1,target]=.02*s[1,target]*np.cos(.29*(k+2))
+ vf[:,target]=.001*f[:,target]*np.sin(.31*(k[None,:]+np.arange(4)[:,None]+1))
+ jv=np.empty_like(s);check(lib.kdm6_handle_state_forcing_jvp_c(h,ptr(vs),ptr(vf),ptr(jv)))
+ if not np.isfinite(jv).all():raise RuntimeError('nonfinite JVP')
+ lhs=float(np.sum(jv*u));rhs=float(np.sum(gs*vs)+np.sum(gf*vf));err=abs(lhs-rhs)/max(abs(lhs),abs(rhs),1e-12)
+ result={'scope':'B512 target-local seed pilot,12 prognostic outputs; no FD/precipitation/finish/host/RTTOV certificate','B':B,'L':L,'mode':mode,'chunk':idx,'target_row':target,'value_and_recorded_forward_match_frozen_batch_bits':True,'VJP_JVP_finite':True,'dot_lhs':lhs,'dot_rhs':rhs,'dot_relative_error':err,'wall_seconds':time.monotonic()-start,'controller_sha256':self_hash,'library_sha256':hashlib.sha256(libpath.read_bytes()).hexdigest()}
+ with (R/'ad_pilot.json').open('x') as stream:json.dump(result,stream,indent=2,allow_nan=False)
+ print(json.dumps(result),flush=True)
+finally:check(lib.kdm6_handle_closep_c(ct.byref(h)))

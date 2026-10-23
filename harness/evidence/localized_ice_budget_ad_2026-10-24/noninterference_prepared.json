@@ -1,0 +1,13 @@
+{
+  "source_sha256": "dc680e370ea7301241910cef39c2aa270b113daf739917eb52bf680b994e508a",
+  "modes": [
+    "norm_actual",
+    "raw_actual"
+  ],
+  "chunks": [
+    34,
+    40
+  ],
+  "KDM_forward_calls_expected": 8,
+  "scope": "one mixeddirection andcotangent percase, off/on both full B512"
+}

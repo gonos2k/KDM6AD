@@ -1,0 +1,520 @@
+"""First-order B512 alternate-ice K(s,F) plus applied thermo-finish checks.
+
+Preserves the full native block/scheduling. Outputs are 12 RAW kernel fields
+and five existing thermo-finish fields, not precipitation, a water-budget
+residual, full host dynamics or RTTOV. Raw historical number units stay
+conditional. The backend is an isolated caller-supplied diagnostic library.
+"""
+
+from __future__ import annotations
+
+import argparse
+import ctypes as ct
+import hashlib
+import json
+import math
+import os
+from pathlib import Path
+
+import numpy as np
+
+from harness.ice_factorial_batch import (
+    IN_HEADER,
+    TRACE_ENV_VARS,
+    pack_request,
+    unpack_response,
+)
+from harness.verify_native_finish_ad import (
+    _api,
+    _zero_value,
+    _zero_jvp,
+    _zero_vjp,
+    finish_value,
+    finish_jvp,
+    finish_vjp,
+    OUTPUT_FIELDS as FINISH_FIELDS,
+    OUTPUT_SCALES as FINISH_SCALES,
+)
+from harness.verify_state_forcing_ad import D, ptr, STATE_FIELDS, OUTPUT_SCALES
+
+EPSILONS = (1e-2, 3e-3, 1e-3, 3e-4, 1e-4)
+FIELDS = STATE_FIELDS + FINISH_FIELDS
+SCALES = np.r_[OUTPUT_SCALES[:, 0], FINISH_SCALES[:, 0]][:, None, None]
+ATOL = np.r_[np.full(12, 1e-8), np.full(5, 1e-9)]
+RTOL = np.r_[np.full(12, 3e-5), np.full(5, 3e-6)]
+
+
+def sha(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def finite(array, shape):
+    if (
+        array.dtype != np.float64
+        or array.shape != shape
+        or not np.isfinite(array).all()
+    ):
+        raise ValueError(f"finite binary64 array of shape {shape} required")
+
+
+class BatchKernel:
+    def __init__(self, library, xland, levels):
+        self.xland = np.ascontiguousarray(xland, dtype=np.float32)
+        if (
+            self.xland.ndim != 1
+            or not self.xland.size
+            or not np.all(np.isin(self.xland, (1.0, 2.0)))
+        ):
+            raise ValueError("one-dimensional nonempty native land/sea mask required")
+        if type(levels) is not int or levels <= 0:
+            raise ValueError("positive integer levels required")
+        self.lib = ct.CDLL(str(Path(library).resolve()))
+        self.B, self.L = self.xland.size, levels
+        self.fn = self.lib.kdm6_step_ad_state_forcing_c
+        self.fn.argtypes = [
+            D,
+            D,
+            ct.c_int,
+            ct.c_int,
+            ct.c_int,
+            ct.c_double,
+            ct.c_int,
+            D,
+            ct.POINTER(ct.c_void_p),
+            ct.POINTER(ct.c_float),
+            ct.c_double,
+            ct.c_double,
+            ct.c_uint32,
+            ct.c_int64,
+        ]
+        self.fn.restype = ct.c_int
+        for name in (
+            "kdm6_handle_state_forcing_jvp_c",
+            "kdm6_handle_state_forcing_vjp_c",
+        ):
+            fn = getattr(self.lib, name)
+            fn.argtypes, fn.restype = [ct.c_void_p, D, D, D], ct.c_int
+        self.lib.kdm6_handle_closep_c.argtypes = [ct.POINTER(ct.c_void_p)]
+        self.lib.kdm6_handle_closep_c.restype = ct.c_int
+        self.forward_calls = 0
+
+    @staticmethod
+    def check(rc):
+        if rc:
+            raise RuntimeError(f"C ABI returned {rc}")
+
+    def forward(self, state, forcing, *, record=False):
+        finite(state, (12, self.B, self.L))
+        finite(forcing, (4, self.B, self.L))
+        state, forcing = np.ascontiguousarray(state), np.ascontiguousarray(forcing)
+        out, handle = np.empty_like(state), ct.c_void_p()
+        # ABI field block Fortran(1,L,B) offset is b*L+k == C-order(B,L).
+        self.check(
+            self.fn(
+                ptr(state),
+                ptr(forcing),
+                1,
+                self.L,
+                self.B,
+                20.0,
+                int(not record),
+                ptr(out),
+                ct.byref(handle),
+                self.xland.ctypes.data_as(ct.POINTER(ct.c_float)),
+                10.0,
+                10.0,
+                0,
+                0,
+            )
+        )
+        self.forward_calls += 1
+        finite(out, state.shape)
+        return out, handle
+
+    def close(self, handle):
+        self.check(self.lib.kdm6_handle_closep_c(ct.byref(handle)))
+
+    def jvp(self, handle, ds, df):
+        ds, df = np.ascontiguousarray(ds), np.ascontiguousarray(df)
+        finite(ds, (12, self.B, self.L))
+        finite(df, (4, self.B, self.L))
+        out = np.empty_like(ds)
+        self.check(
+            self.lib.kdm6_handle_state_forcing_jvp_c(handle, ptr(ds), ptr(df), ptr(out))
+        )
+        finite(out, ds.shape)
+        return out
+
+    def vjp(self, handle, cotangent):
+        cotangent = np.ascontiguousarray(cotangent)
+        finite(cotangent, (12, self.B, self.L))
+        gs, gf = (
+            np.empty_like(cotangent),
+            np.empty((4, self.B, self.L), dtype=np.float64),
+        )
+        self.check(
+            self.lib.kdm6_handle_state_forcing_vjp_c(
+                handle, ptr(cotangent), ptr(gs), ptr(gf)
+            )
+        )
+        finite(gs, cotangent.shape)
+        finite(gf, (4, self.B, self.L))
+        return gs, gf
+
+
+class BatchFinish:
+    def __init__(self, config, zero):
+        self.config, self.zero = config, zero
+
+    def value(self, state, raw):
+        clean = _zero_value(raw[:3], self.zero)
+        return np.concatenate(
+            (raw, finish_value(state[:3], clean, self.config)), axis=0
+        )
+
+    def jvp(self, state, raw, ds, dy):
+        clean = _zero_value(raw[:3], self.zero)
+        dc = _zero_jvp(raw[:3], dy[:3], self.zero)
+        return np.concatenate(
+            (dy, finish_jvp(state[:3], clean, ds[:3], dc, self.config)), axis=0
+        )
+
+    def vjp(self, state, raw, cotangent):
+        clean = _zero_value(raw[:3], self.zero)
+        old, new = finish_vjp(state[:3], clean, cotangent[12:], self.config)
+        seed = cotangent[:12].copy()
+        seed[:3] += _zero_vjp(raw[:3], new, self.zero)
+        return old, seed
+
+    def branch(self, state, raw):
+        delta = raw[0] - state[0]
+        limit = self.config.mp_tend_lim * self.config.dt
+        masks = np.stack(
+            (
+                raw[1] > 0,
+                raw[2] >= self.zero.threshold,
+                np.where(delta >= limit, 1, np.where(delta <= -limit, -1, 0)),
+            )
+        )
+        return hashlib.sha256(masks.tobytes()).hexdigest()
+
+
+def directions(state, forcing, target, family="raw"):
+    levels = state.shape[-1]
+    k = np.arange(levels, dtype=np.float64)
+
+    def zeros():
+        return np.zeros_like(state), np.zeros_like(forcing)
+
+    tq = zeros()
+    tq[0][0, target] = 0.2 * np.sin(0.37 * (k + 1))
+    tq[0][1, target] = 0.02 * state[1, target] * np.cos(0.29 * (k + 2))
+    mass = zeros()
+    mass[0][2:7, target] = (
+        0.01
+        * state[2:7, target]
+        * np.sin(0.31 * (k[None, :] + np.arange(5)[:, None] + 1))
+    )
+    number = zeros()
+    number[0][7:11, target] = (
+        0.01
+        * np.maximum(state[7:11, target], 0)
+        * np.cos(0.27 * (k[None, :] + np.arange(4)[:, None] + 1))
+    )
+    if family == "entry_interior_pairs":
+        # Separate control subspace: never modify the native base point.
+        for qrow, nrow in ((2, 8), (3, 10), (4, 9), (6, 11)):
+            active = (state[qrow, target] > 0) & (state[nrow, target] > 0)
+            factor = 0.01 * np.sin(0.31 * (k + qrow - 2 + 1))
+            mass[0][qrow, target] = np.where(active, state[qrow, target] * factor, 0.0)
+            mass[0][nrow, target] = np.where(active, state[nrow, target] * factor, 0.0)
+        # Pinned NCCN entry clamp [1e8,2e10]; all tested epsilon endpoints
+        # must remain strictly interior. This freezes seeds, not state values.
+        n = state[7, target]
+        extent = max(EPSILONS) * abs(number[0][7, target])
+        number[0][7, target] = np.where(
+            (n - extent > 1e8) & (n + extent < 2e10), number[0][7, target], 0.0
+        )
+    elif family != "raw":
+        raise ValueError("unknown direction family")
+    selected = dict(thermo=tq, cloud_mass=mass, number=number)
+    for row, name in enumerate(("density", "pii", "pressure", "delz")):
+        pair = zeros()
+        pair[1][row, target] = (
+            0.001 * forcing[row, target] * np.sin(0.31 * (k + row + 1))
+        )
+        selected[name] = pair
+    mixed = (
+        sum(v[0] for v in selected.values()),
+        sum(v[1] for v in selected.values()),
+    )
+    selected["mixed"] = mixed
+    return selected
+
+
+def fd_metrics(fd, tangent):
+    error = np.max(abs((fd - tangent) / SCALES), axis=(1, 2))
+    signal = np.maximum(
+        np.max(abs(fd / SCALES), axis=(1, 2)),
+        np.max(abs(tangent / SCALES), axis=(1, 2)),
+    )
+    ratio = error / (ATOL + RTOL * signal)
+    return {
+        "max_tolerance_ratio": float(ratio.max()),
+        "per_field_tolerance_ratio": dict(zip(FIELDS, map(float, ratio))),
+    }
+
+
+def run(case, library, library_sha, finish_reference, target, output, family="raw"):
+    import torch
+
+    torch.set_num_threads(1)
+    if os.environ.get("KDM6_ICE_FACTORIAL_MODE") != "norm_actual":
+        raise ValueError(
+            "fresh process with KDM6_ICE_FACTORIAL_MODE=norm_actual required"
+        )
+    if any(os.environ.get(k) for k in TRACE_ENV_VARS):
+        raise ValueError(
+            "bulk trace must be off during AD/FD; stage trace evidence is separate"
+        )
+    case, output = Path(case), Path(output)
+    output.mkdir(parents=True, exist_ok=False)
+    receipt = json.loads((case / "receipt.json").read_text())
+    if receipt["mode"] != "norm_actual" or receipt["B"] != 512 or receipt["L"] != 39:
+        raise ValueError("fixed norm_actual B512 native case required")
+    official_path = (
+        Path(__file__).parent
+        / "evidence/domain_ice_factorial_2026-10-23/chunk_receipts.json"
+    )
+    official = json.loads(official_path.read_text())["receipts"]
+    matches = [
+        r
+        for r in official
+        if r["mode"] == "norm_actual" and r["index"] == receipt["batch_index"]
+    ]
+    if len(matches) != 1 or any(
+        receipt[k] != matches[0][k]
+        for k in (
+            "request_sha256",
+            "response_sha256",
+            "tool_sha256",
+            "manifest_sha256",
+            "source_chunk_sha256",
+            "B",
+            "L",
+        )
+    ):
+        raise ValueError("case differs from the published original B512 experiment")
+    pins = {
+        str(library): library_sha,
+        str(case / "request.bin"): receipt["request_sha256"],
+        str(case / "response.bin"): receipt["response_sha256"],
+        str(finish_reference): sha(finish_reference),
+        str(Path(__file__).resolve()): sha(__file__),
+        str(official_path): sha(official_path),
+    }
+    root = Path(__file__).resolve().parents[1]
+    for relative in (
+        "harness/ice_factorial_batch.py",
+        "harness/verify_state_forcing_ad.py",
+        "harness/verify_native_finish_ad.py",
+        "oracle/kdm6/native_finish.py",
+        "libtorch/include/kdm6/constants.h",
+    ):
+        pins[str(root / relative)] = sha(root / relative)
+    if any(sha(p) != h for p, h in pins.items()):
+        raise ValueError("input/library/source hash differs")
+    response_bytes = (case / "response.bin").read_bytes()
+    request = (case / "request.bin").read_bytes()
+    if (
+        hashlib.sha256(response_bytes).hexdigest() != receipt["response_sha256"]
+        or hashlib.sha256(request).hexdigest() != receipt["request_sha256"]
+    ):
+        raise ValueError("immutable request/response buffer differs from admitted hash")
+    response = unpack_response(response_bytes)
+    state, forcing = response["state_in"], response["forcing_in"]
+    if not 0 <= target < 512:
+        raise ValueError("target row outside native chunk")
+    xland = np.frombuffer(
+        request, dtype="<f8", offset=IN_HEADER.size + 16 * 512 * 39 * 8, count=512
+    ).copy()
+    if pack_request(state, forcing, xland, 20.0, 10.0, 10.0) != request:
+        raise ValueError(
+            "saved request differs from admitted response inputs/configuration"
+        )
+    kernel = BatchKernel(library, xland, 39)
+    reference = json.loads(Path(finish_reference).read_text())
+    if reference["configuration"]["dt"] != 20.0 or reference["zero_out"]["mode"] != 2:
+        raise ValueError("dt20/interior mode2 finish contract required")
+    operator = BatchFinish(
+        _api().FinishConfig(**reference["configuration"]),
+        _api().ZeroOutConfig(**reference["zero_out"]),
+    )
+    value, h0 = kernel.forward(state, forcing)
+    kernel.close(h0)
+    raw, handle = kernel.forward(state, forcing, record=True)
+    expected = response["state_out"].view("u8")
+    if not (
+        np.array_equal(value.view("u8"), expected)
+        and np.array_equal(raw.view("u8"), expected)
+    ):
+        kernel.close(handle)
+        raise RuntimeError("value/recorded forward differs from original B512 map")
+    baseline = operator.value(state, raw)
+    signature = operator.branch(state, raw)
+    u = np.zeros_like(baseline)
+    u[:, target] = (
+        np.sin(0.23 * (np.arange(17 * 39).reshape(17, 39) + 1)) / SCALES[:, 0]
+    )
+    off = np.arange(512) != target
+    products = {
+        "state": state,
+        "forcing": forcing,
+        "raw_baseline": raw,
+        "finish_baseline": baseline[12:],
+        "cotangent": u,
+    }
+    report = {
+        "schema": "kdm6.localized_ice_ad.v1",
+        "scope": "norm_actual B512 raw-state plus applied thermo-finish first derivatives; no precip/budget/host/RTTOV derivative",
+        "mode": "norm_actual",
+        "B": 512,
+        "L": 39,
+        "target_row": target,
+        "batch_index": receipt["batch_index"],
+        "C_ABI_dimensions": {"im": 1, "kme": 39, "jme": 512},
+        "dry_number": 0,
+        "direction_family": family,
+        "control_subspace": "Raw directions are retained at entry kinks; entry_interior_pairs pairs active entry moments and excludes NCCN entry-clamp crossing, not all downstream kinks.",
+        "finish_configuration": reference["configuration"],
+        "zero_out_configuration": reference["zero_out"],
+        "forward_and_recorded_match_prior_batch_bits": True,
+        "source_sha256": pins,
+        "tolerances": {
+            "dot_relative": 1e-10,
+            "kernel_fd_atol": 1e-8,
+            "kernel_fd_rtol": 3e-5,
+            "finish_fd_atol": 1e-9,
+            "finish_fd_rtol": 3e-6,
+        },
+        "branch_scope": "Explicit thermo cleanup/heating-limit masks checked; internal KDM limiter and integer schedules not exhaustively traced. Full-B field FD and off-target checks retain scheduling sensitivity.",
+        "directions": {},
+    }
+    try:
+        direct, seed = operator.vjp(state, raw, u)
+        gs, gf = kernel.vjp(handle, seed)
+        gs[:3] += direct
+        products.update(state_vjp=gs, forcing_vjp=gf, finish_direct_old_state=direct)
+        report["off_target_vjp_maxabs"] = {
+            "state": float(abs(gs[:, off]).max()),
+            "forcing": float(abs(gf[:, off]).max()),
+        }
+        for name, (ds, df) in directions(state, forcing, target, family).items():
+            dy = kernel.jvp(handle, ds, df)
+            tangent = operator.jvp(state, raw, ds, dy)
+            finite(tangent, baseline.shape)
+            lhs = math.fsum((u * tangent).reshape(-1))
+            rhs = math.fsum(np.r_[(gs * ds).reshape(-1), (gf * df).reshape(-1)])
+            dot = abs(lhs - rhs) / max(abs(lhs), abs(rhs), 1e-12)
+            trials = []
+            for epsilon in EPSILONS:
+                plus_state, minus_state = state + epsilon * ds, state - epsilon * ds
+                if np.any(plus_state[1:7] < 0) or np.any(minus_state[1:7] < 0):
+                    raise ValueError("FD makes negative water input")
+                yp, hp = kernel.forward(plus_state, forcing + epsilon * df)
+                kernel.close(hp)
+                ym, hm = kernel.forward(minus_state, forcing - epsilon * df)
+                kernel.close(hm)
+                stable = (
+                    operator.branch(plus_state, yp) == signature
+                    and operator.branch(minus_state, ym) == signature
+                )
+                fd = (
+                    operator.value(plus_state, yp) - operator.value(minus_state, ym)
+                ) / (2 * epsilon)
+                finite(fd, baseline.shape)
+                metrics = fd_metrics(fd, tangent)
+                metrics.update(
+                    epsilon=epsilon,
+                    thermo_branches_preserved=stable,
+                    off_target_FD_maxabs=float(abs(fd[:, off]).max()),
+                )
+                metrics["passed"] = bool(stable and metrics["max_tolerance_ratio"] <= 1)
+                trials.append(metrics)
+                products[name + f"_fd_{epsilon}"] = fd
+            best = min(
+                trials,
+                key=lambda row: row["max_tolerance_ratio"]
+                if row["thermo_branches_preserved"]
+                else math.inf,
+            )
+            item = {
+                "dot_lhs": lhs,
+                "dot_rhs": rhs,
+                "dot_relative_error": dot,
+                "finish_direct_old_state_directional_contribution": math.fsum(
+                    (direct * ds[:3]).reshape(-1)
+                ),
+                "off_target_JVP_maxabs": float(abs(tangent[:, off]).max()),
+                "trials": trials,
+                "passing_epsilon_count": sum(row["passed"] for row in trials),
+                "best_epsilon": best["epsilon"],
+                "best_max_tolerance_ratio": best["max_tolerance_ratio"],
+                "passed": bool(dot <= 1e-10 and any(row["passed"] for row in trials)),
+            }
+            report["directions"][name] = item
+            products[name + "_jvp"] = tangent
+            products[name + "_ds"] = ds
+            products[name + "_df"] = df
+            print(
+                json.dumps(
+                    {
+                        "direction": name,
+                        "passed": item["passed"],
+                        "dot": dot,
+                        "best_ratio": item["best_max_tolerance_ratio"],
+                    }
+                ),
+                flush=True,
+            )
+    finally:
+        kernel.close(handle)
+    if any(sha(p) != h for p, h in pins.items()):
+        raise RuntimeError("pinned source/input/library changed during execution")
+    report["KDM_forward_calls"] = kernel.forward_calls
+    report["passed"] = all(r["passed"] for r in report["directions"].values())
+    path = output / "products.npz"
+    with path.open("xb") as stream:
+        np.savez_compressed(stream, **products)
+    report["products_sha256"] = sha(path)
+    with (output / "report.json").open("x") as stream:
+        json.dump(report, stream, indent=2, allow_nan=False)
+        stream.write("\n")
+    return report
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    for name in ("case", "library", "finish-reference", "output"):
+        parser.add_argument("--" + name, type=Path, required=True)
+    parser.add_argument("--library-sha256", required=True)
+    parser.add_argument("--target", type=int, required=True)
+    parser.add_argument(
+        "--direction-family", choices=("raw", "entry_interior_pairs"), default="raw"
+    )
+    args = parser.parse_args(argv)
+    report = run(
+        args.case,
+        args.library,
+        args.library_sha256,
+        args.finish_reference,
+        args.target,
+        args.output,
+        args.direction_family,
+    )
+
+    return 0 if report["passed"] else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,22 @@
+"""Value/JVP probe of the observed NCCN entry-floor kink, original B512."""
+from pathlib import Path
+import json,hashlib,numpy as np
+from harness.ice_factorial_batch import unpack_response,IN_HEADER
+from harness.verify_localized_ice_ad import BatchKernel
+root=Path(__file__).resolve().parent;library=root/'ad_build/libkdm6_ice_factorial_ad.2.0.0.dylib'
+results=[]
+for index,row,level in [(34,254,34),(40,8,11)]:
+ case=root/f'norm_actual_chunk{index:03d}';response=unpack_response((case/'response.bin').read_bytes());s,f=response['state_in'],response['forcing_in'];request=(case/'request.bin').read_bytes();land=np.frombuffer(request,dtype='<f8',offset=IN_HEADER.size+16*512*39*8,count=512).copy()
+ kernel=BatchKernel(library,land,39);base,h=kernel.forward(s,f,record=True)
+ try:
+  if not np.array_equal(base.view('u8'),response['state_out'].view('u8')):raise RuntimeError('base differs')
+  ds=np.zeros_like(s);df=np.zeros_like(f);ds[7,row,level]=1e6
+  jvp=kernel.jvp(h,ds,df);epsilon=1e-4
+  yp,hp=kernel.forward(s+epsilon*ds,f);kernel.close(hp)
+  ym,hm=kernel.forward(s-epsilon*ds,f);kernel.close(hm)
+  key=(7,row,level);value=float(base[key])
+  results.append({'chunk':index,'target_row':row,'level_bottom0':level,'NN_before':float(s[key]),'NN_base':value,'epsilon':epsilon,'NN_input_direction':1e6,'NN_plus':float(yp[key]),'NN_minus':float(ym[key]),'JVP':float(jvp[key]),'forward_sided_FD':float((yp[key]-base[key])/epsilon),'backward_sided_FD':float((base[key]-ym[key])/epsilon),'central_FD':float((yp[key]-ym[key])/(2*epsilon)),'KDM_forward_calls':kernel.forward_calls})
+ finally:kernel.close(h)
+report={'scope':'actual full-B512 lower entry clamp probe; chosen AD branch derivative is inward one-sided, not a classical derivative valid for every raw direction','library_sha256':hashlib.sha256(library.read_bytes()).hexdigest(),'source_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),'results':results}
+with(root/'nn_one_sided.json').open('x')as out:json.dump(report,out,indent=2)
+print(json.dumps(report,indent=2))
