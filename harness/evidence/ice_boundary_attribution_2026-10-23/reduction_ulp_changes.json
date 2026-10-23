@@ -1,0 +1,76 @@
+{
+  "schema": "kdm6.ice_boundary.deterministic_reduction_migration.v1",
+  "operation_contract": {
+    "weight": "binary64(float(DEN[k])*float(DELZ[k])) per layer",
+    "product": "binary64(float(change[k])*float(weight[k])) per layer",
+    "sum": "math.fsum; field rows level ascending; full ledger species-major then level-major",
+    "old_artifacts_mutated": false,
+    "physical_forward_or_native_runs": 0
+  },
+  "applied_ledger": {
+    "v1_path": "harness/evidence/native_number_budget_2026-10-22/applied_change_ledger.json",
+    "v1_sha256": "ca9ccd5f92c74a7626cb551bb5a560f47baebc126f6686370951fbcae16269c7",
+    "v2_path": "harness/evidence/ice_boundary_attribution_2026-10-23/applied_change_ledger_v2.json",
+    "v2_sha256": "94ae5ee8ad3718906be9bba910abb3a9abeddeb4fe41478169c73a2c3864e6e3",
+    "source_report_path": "harness/evidence/microphysics_observation_ad_2026-10-21/native39_composed_cost.json",
+    "source_report_sha256": "465aed12f8d8fa42f50b5ffd5b4aa8a24023f05fbdc0b3e137054e6098481bf8",
+    "aggregate_changes": [
+      {
+        "scope": "total",
+        "field": "six_species",
+        "term": "applied_change_kg_m2",
+        "v1": -0.0012990943156989405,
+        "v2": -0.0012990943156989407,
+        "delta": -2.168404344971009e-19,
+        "ulp_steps": -1.0
+      }
+    ],
+    "qi_pairwise_counterexample": {
+      "field": "QI",
+      "aggregate": "kernel_change_kg_m2",
+      "fsum_binary64_products": 1.1457121099234677e-05,
+      "numpy_pairwise_sum_of_rounded_products": 1.1457121099234675e-05,
+      "historical_v1_saved_value": 1.1457121099234677e-05,
+      "pairwise_sum_is_one_ulp_below_fsum": true,
+      "historical_dot_equals_fsum_on_this_platform": true,
+      "interpretation": "saved v1 value is retained; fixed fsum removes dependence on BLAS/NumPy reduction grouping"
+    }
+  },
+  "same_call_ledger": {
+    "historical_path": "harness/evidence/same_call_water_budget_2026-10-22/native39_same_call.json",
+    "historical_sha256": "f4aaacac0b02519aec5bf93b95276c3cf6b8fd40eea136fc95a06978f03c4220",
+    "historical_schema": "kdm6.same_call_water_budget.v1",
+    "v2_path": "harness/evidence/ice_boundary_attribution_2026-10-23/same_call_deterministic_reduction_v2.json",
+    "v2_sha256": "61e81ce3ca1de7b5d890f2e2692d19339b832c82d0745f0508934943bc97dd7c",
+    "aggregate_changes": {
+      "fields": [
+        {
+          "field": "QR",
+          "term": "kernel",
+          "v1": -1.5476445323143343e-05,
+          "v2": -1.547644532314334e-05,
+          "delta": 3.3881317890172014e-21,
+          "ulp_steps": 1.0
+        },
+        {
+          "field": "QR",
+          "term": "applied",
+          "v1": -1.5476445323143343e-05,
+          "v2": -1.547644532314334e-05,
+          "delta": 3.3881317890172014e-21,
+          "ulp_steps": 1.0
+        },
+        {
+          "field": "QI",
+          "term": "kernel",
+          "v1": 1.1457122175864412e-05,
+          "v2": 1.145712217586441e-05,
+          "delta": -1.6940658945086007e-21,
+          "ulp_steps": -1.0
+        }
+      ],
+      "totals": []
+    },
+    "balance_exactly_unchanged": true
+  }
+}

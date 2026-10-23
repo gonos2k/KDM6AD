@@ -5,6 +5,11 @@ date_modified: 2026-07-14
 ---
 # Overview
 
+[[sources/native-ice-boundary-2026-10-23]] fixes diagnostic summation and
+attributes the same-call QI sedimentation loss to measured internal
+departure/arrival gaps. It preserves the legacy physical map and local
+derivative results; physical water closure remains unresolved.
+
 [[sources/same-call-water-budget-2026-10-22]] adds an isolated fp64 accounting
 result: one native-column legacy call loses water with zero surface export.
 The dominant loss is localized to sedimentation, separate from cleanup,

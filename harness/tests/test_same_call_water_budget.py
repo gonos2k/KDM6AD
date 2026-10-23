@@ -1,6 +1,7 @@
 """Independent reservoirs and protocol corruption checks; no KDM required."""
 import struct
 import copy
+import hashlib
 import json
 from pathlib import Path
 
@@ -126,14 +127,22 @@ def test_native_scalar_controls_bound_before_run(changed):
 
 
 def test_public_same_call_ledger_recomputed_without_private_execution():
-    source = Path(__file__).parents[1]/"evidence/same_call_water_budget_2026-10-22/native39_same_call.json"
-    saved = json.loads(source.read_text())
+    evidence = Path(__file__).parents[1]/"evidence"
+    source = evidence/"same_call_water_budget_2026-10-22/native39_same_call.json"
+    saved = json.loads(source.read_text())  # immutable historical v1 capture
+    v2 = json.loads((evidence/"ice_boundary_attribution_2026-10-23/same_call_deterministic_reduction_v2.json").read_text())
     call, precip = saved["same_call"], saved["precipitation"]
     flux = [precip["total_precip_mm"], precip["snow_ice_subset_mm"], precip["graupel_subset_mm"]]
     actual = budget.ledger(call["state_in"], call["forcing_in"], call["state_out"],
                            call["clean_after"], flux, saved["dt_seconds"])
-    for key, value in actual.items():
-        assert saved[key] == value, key
+    assert saved["schema"] == "kdm6.same_call_water_budget.v1"
+    assert budget.SCHEMA == actual["schema"] == v2["schema"] == "kdm6.same_call_water_budget.v2"
+    assert v2["historical_source"]["sha256"] == hashlib.sha256(source.read_bytes()).hexdigest()
+    assert actual["weight_contract"] == v2["weight_contract"]
+    assert actual["water"] == v2["water"]
+    for key in ("initial_water_kg_m2", "raw_final_water_kg_m2", "kernel_change_kg_m2",
+                "cleanup_change_kg_m2", "applied_change_kg_m2", "kernel_plus_export_residual_kg_m2"):
+        assert actual["balance"][key] == v2["balance"][key], key
     assert saved["diagnostic_complete"]
     assert not saved["balance"]["within_numerical_gate"]
     assert saved["comparison_to_prior"]["state_out_raw_bit_equal"]

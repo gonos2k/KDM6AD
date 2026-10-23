@@ -1,0 +1,42 @@
+{
+  "base_build_inputs_sha256": {
+    "base_archive": "9d654b4e8e70b73b10c20b570a88ad39918119fb011bca2ee4e653a13f3e4475",
+    "capi_link": "0fdd559f54ef111bd4a8217953d66f926410f24ec0eb0495b91285b01a57d82a",
+    "capi_object": "a95211b6186982780c1e54bc76dffa1db159bb8f4929679d093f32b5269e95a0",
+    "compile_flags": "51167818af8b6e20292580aaab1f57d867e319f5024b24d142086ab53929d748",
+    "tool_link": "037e6d874db7e5c3b8139ec57c443d6d444d2ad820906c1c7325ad7393aa0ab1",
+    "tool_object": "261a726e36a78dc65cf19b2df343cae7beb9b8024fa8a28cb6785c9884bc668d"
+  },
+  "base_build_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_same_call_budget_20261022/build",
+  "numeric_contract": "trace-enabled run rejects non-binary64 state, forcing, and local ice operands",
+  "orientation": "sedimentation top_first; public WRF model state bottom_first",
+  "overlay_source_sha256": {
+    "coordinator.cpp": "61da0c015b0bfd2379fe770dab7bc3cd8f4250daeb45b931bbb1e1f13c575b23",
+    "runtime.cpp": "4a56110c91b7495aea0542531eb809a048bb7994747cea2be826f9a2f6e26f7a",
+    "sedimentation.cpp": "7854efd8dd9fb08dee85e1dec179c8edf48fd1b074456a8e0d5ec2dba23d850e"
+  },
+  "physics_change": false,
+  "request_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_same_call_budget_20261022/capture_published/request.bin",
+  "request_sha256": "4867805f5318f1ad28b05101ffc583d50000309ed80b81c4379fb9c9e77082e2",
+  "schema": "kdm6.ice_boundary_trace.v1",
+  "source_root": "/private/tmp/KDM6AD-ice-boundary-20261023/libtorch",
+  "source_sha256": {
+    "coordinator.cpp": "9253e1741cb8926f98fc088c56579a015472ea43b7ef0b365ef2c42bd2660152",
+    "runtime.cpp": "4a56110c91b7495aea0542531eb809a048bb7994747cea2be826f9a2f6e26f7a",
+    "sedimentation.cpp": "1fd41e6dff2f99cf80cf9f318245cb50cb2d107d2f9053f8c65802f6b4037c2a"
+  },
+  "trace_environment_variable": "KDM6_ICE_BOUNDARY_TRACE",
+  "trace_records": [
+    "ice_velocity",
+    "ice_layer",
+    "ice_bottom"
+  ],
+  "unit_contract": {
+    "NI_state": "raw KDM operand interpreted as volumetric number (# m-3) by source equations; incoming host producer basis is not certified here",
+    "QI_state": "nominal water mass-mixing-ratio coordinate; DEN*DELZ*QI is a nominal state-inventory measure in kg m-2",
+    "bottom_comparison": "stored-falk equivalent versus applied bottom state outflow is a numerical state-coordinate comparison, not a certified physical surface flux",
+    "interface_terms": "DEN*DELZ-weighted QI and DELZ-weighted NI departures/arrivals are state-equivalent terms from the actual update recurrence, not a certification of physical flux conservation",
+    "legacy_velocity_handoff": "post-main-reslope raw VT_i/Vtni values are handed to ice substeps without /DELZ in Legacy; raw falk/outflow/arrival fields are executed algebraic values, not physically certified flux dimensions",
+    "trace_suffixes": "field suffixes name the nominal coordinate/consumer; they do not assert dimensionally consistent physical fluxes where the legacy handoff is unnormalized"
+  }
+}

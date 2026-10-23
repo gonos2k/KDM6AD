@@ -24,7 +24,9 @@ from harness.run_ss_case import _namelist_assignments
 REQUEST = struct.Struct("<8sII4d")
 RESPONSE = struct.Struct("<8sII")
 MAX_LEVELS = 256
-SCHEMA = "kdm6.same_call_water_budget.v1"
+# v2 fixes the imported per-species diagnostic reduction; v1 captures remain
+# immutable historical evidence of the original BLAS-dependent aggregation.
+SCHEMA = "kdm6.same_call_water_budget.v2"
 
 
 def sha(path):
