@@ -9,11 +9,40 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 from pathlib import Path
 
 import numpy as np
 
 WATER_FIELDS = ("QV", "QC", "QR", "QI", "QS", "QG")
+AGGREGATION_SCHEMA = "kdm6.applied_change_ledger.fixed_fsum.v1"
+
+
+def _weighted_sum(values, weights):
+    """Sum binary64 ``value * weight`` terms with a fixed level order.
+
+    Each multiplication is rounded once to binary64 and the rounded products
+    are then accumulated by ``math.fsum``. This avoids BLAS-dependent dot
+    reductions and NumPy pairwise-sum differences.
+    """
+    values = np.asarray(values, dtype=np.float64)
+    weights = np.asarray(weights, dtype=np.float64)
+    if values.ndim != 1 or values.shape != weights.shape:
+        raise ValueError("weighted_sum requires equal one-dimensional inputs")
+    return math.fsum(float(value) * float(weight) for value, weight in zip(values, weights))
+
+
+def _weighted_matrix_sum(values, weights):
+    """Sum rounded binary64 products in fixed species-major, level-major order."""
+    values = np.asarray(values, dtype=np.float64)
+    weights = np.asarray(weights, dtype=np.float64)
+    if values.ndim != 2 or values.shape[1] != weights.size:
+        raise ValueError("weighted_matrix_sum requires shape (species, levels)")
+    return math.fsum(
+        float(values[row, level]) * float(weights[level])
+        for row in range(values.shape[0])
+        for level in range(values.shape[1])
+    )
 
 
 def sha(path):
@@ -61,18 +90,24 @@ def split_changes(before, raw, clean, dt, weights):
             "applied_mean_rate_ratio_per_s": (applied[index]/dt).tolist(),
             "cleanup_changed_levels_1based": (np.flatnonzero(dz != 0)+1).tolist(),
             "cleanup_max_removed_ratio": float(np.max(np.maximum(-dz, 0.))),
-            "cleanup_removed_kg_m2": float(weights @ np.maximum(-dz, 0.)),
-            "cleanup_added_kg_m2": float(weights @ np.maximum(dz, 0.)),
-            "kernel_change_kg_m2": float(weights @ kernel[index]),
-            "cleanup_change_kg_m2": float(weights @ dz),
-            "applied_change_kg_m2": float(weights @ applied[index]),
+            "cleanup_removed_kg_m2": _weighted_sum(np.maximum(-dz, 0.), weights),
+            "cleanup_added_kg_m2": _weighted_sum(np.maximum(dz, 0.), weights),
+            "kernel_change_kg_m2": _weighted_sum(kernel[index], weights),
+            "cleanup_change_kg_m2": _weighted_sum(dz, weights),
+            "applied_change_kg_m2": _weighted_sum(applied[index], weights),
         }
-    totals = {name+"_change_kg_m2": float(np.sum(values*weights[None, :]))
+    totals = {name+"_change_kg_m2": _weighted_matrix_sum(values, weights)
               for name, values in (("kernel", kernel), ("cleanup", cleanup), ("applied", applied))}
-    totals["algebraic_split_residual_kg_m2"] = float(np.sum(residual*weights[None, :]))
+    totals["algebraic_split_residual_kg_m2"] = _weighted_matrix_sum(residual, weights)
     return {"fields": fields, "total_water": totals,
             "algebraic_split_verified": verified,
-            "max_ratio_split_residual": float(np.max(abs(residual)))}
+            "max_ratio_split_residual": float(np.max(abs(residual))),
+            "aggregation_contract": {
+                "schema": AGGREGATION_SCHEMA,
+                "multiplication": "one binary64 change * fixed binary64 weight per level",
+                "reduction": "math.fsum of rounded products, species-major then level-major",
+                "blas_or_numpy_sum_used": False,
+            }}
 
 
 def audit(report):
@@ -102,7 +137,9 @@ def audit(report):
     dz = _array(captured["DELZ"], (levels,), "captured DELZ")
     if np.any(rho <= 0) or np.any(dz <= 0):
         raise ValueError("captured dry density and layer thickness must be positive")
-    weights = rho*dz
+    # Freeze each layer weight with the declared binary64 DEN * DELZ order.
+    weights = np.fromiter((float(r) * float(z) for r, z in zip(rho, dz)),
+                          dtype=np.float64, count=levels)
     ledger = split_changes(before, raw[1:7], clean[1:7], dt, weights)
     finish = report["applied_finish"]
     qv_rate = _array(finish["QV_RATE"], (levels,), "QV_RATE")
@@ -129,14 +166,14 @@ def audit(report):
                        "newly_zero_mass_after_cleanup_levels_1based": (np.flatnonzero(newly)+1).tolist(),
                        "raw_number_at_newly_zero_mass_levels": clean[number_row, newly].tolist(),
                        "interpretation": "inactive mass with retained raw number; no compensating number transfer inferred"}
-    return {"schema": "kdm6.applied_change_ledger.v1", "levels": levels, "dt_seconds": dt,
+    return {"schema": "kdm6.applied_change_ledger.v2", "levels": levels, "dt_seconds": dt,
             "native_column": report["native_snapshot"],
             "audited_namelist_options": options,
             "weight_contract": {"kind": "fixed captured MP-entry density-thickness layer measure; not an RK/MU flux ledger",
                                 "formula": "captured_DEN * captured_DELZ, binary32 values promoted before product",
                                 "units": "kg_dry_air m-2", "rho_d_kg_m3": rho.tolist(),
                                 "delz_m": dz.tolist(), "weights_kg_m2": weights.tolist(),
-                                "column_dry_mass_kg_m2": float(np.sum(weights))},
+                                "column_dry_mass_kg_m2": math.fsum(float(weight) for weight in weights)},
             "water_coordinate": "kg water / kg dry air; changes interpreted with the same fixed captured weights",
             "water": ledger, "number": number, "mass_number_pairs": pairs,
             "finish_checks": {"QV_RATE_maxabs_error": float(np.max(abs(qv_error))),
