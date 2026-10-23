@@ -1,0 +1,125 @@
+{
+  "scope": "Stored column diagnostics and uniform offline finish; no full-Jacobian or B=1 identity claim",
+  "pairs": {
+    "raw_cap__norm_cap": {
+      "reported_total_precip_mm": {
+        "bit_different_values": 72,
+        "max_absolute_difference": 4.679402771259485e-16
+      },
+      "snow_ice_subset_mm": {
+        "bit_different_values": 83,
+        "max_absolute_difference": 4.679402771259485e-16
+      },
+      "graupel_subset_mm": {
+        "bit_different_values": 0,
+        "max_absolute_difference": 0.0
+      },
+      "raw_plus_reported_precip_residual": {
+        "bit_different_values": 32574,
+        "max_absolute_difference": 0.4135621357306603
+      },
+      "cleanup_water_change": {
+        "bit_different_values": 30949,
+        "max_absolute_difference": 8.27353676014819e-06
+      },
+      "applied_water_change": {
+        "bit_different_values": 32574,
+        "max_absolute_difference": 0.41356293774150277
+      },
+      "applied_finish": {
+        "bit_different_values": 582317,
+        "max_absolute_difference": 0.22631912189694958
+      }
+    },
+    "raw_cap__raw_actual": {
+      "reported_total_precip_mm": {
+        "bit_different_values": 10,
+        "max_absolute_difference": 2.407412430484045e-35
+      },
+      "snow_ice_subset_mm": {
+        "bit_different_values": 13,
+        "max_absolute_difference": 2.407412430484045e-35
+      },
+      "graupel_subset_mm": {
+        "bit_different_values": 0,
+        "max_absolute_difference": 0.0
+      },
+      "raw_plus_reported_precip_residual": {
+        "bit_different_values": 32368,
+        "max_absolute_difference": 0.4135621357306606
+      },
+      "cleanup_water_change": {
+        "bit_different_values": 16966,
+        "max_absolute_difference": 7.161627306239788e-06
+      },
+      "applied_water_change": {
+        "bit_different_values": 32362,
+        "max_absolute_difference": 0.4135629377415658
+      },
+      "applied_finish": {
+        "bit_different_values": 429758,
+        "max_absolute_difference": 0.11654354740903727
+      }
+    },
+    "raw_cap__norm_actual": {
+      "reported_total_precip_mm": {
+        "bit_different_values": 72,
+        "max_absolute_difference": 4.679402771259485e-16
+      },
+      "snow_ice_subset_mm": {
+        "bit_different_values": 83,
+        "max_absolute_difference": 4.679402771259485e-16
+      },
+      "graupel_subset_mm": {
+        "bit_different_values": 0,
+        "max_absolute_difference": 0.0
+      },
+      "raw_plus_reported_precip_residual": {
+        "bit_different_values": 32574,
+        "max_absolute_difference": 0.4135621357306603
+      },
+      "cleanup_water_change": {
+        "bit_different_values": 30949,
+        "max_absolute_difference": 8.27353676014819e-06
+      },
+      "applied_water_change": {
+        "bit_different_values": 32574,
+        "max_absolute_difference": 0.41356293774150277
+      },
+      "applied_finish": {
+        "bit_different_values": 582317,
+        "max_absolute_difference": 0.22631912189694958
+      }
+    },
+    "norm_cap__norm_actual": {
+      "reported_total_precip_mm": {
+        "bit_different_values": 5,
+        "max_absolute_difference": 1.1754943508222875e-38
+      },
+      "snow_ice_subset_mm": {
+        "bit_different_values": 10,
+        "max_absolute_difference": 1.1754943508222875e-38
+      },
+      "graupel_subset_mm": {
+        "bit_different_values": 0,
+        "max_absolute_difference": 0.0
+      },
+      "raw_plus_reported_precip_residual": {
+        "bit_different_values": 10431,
+        "max_absolute_difference": 1.734723475976807e-18
+      },
+      "cleanup_water_change": {
+        "bit_different_values": 8311,
+        "max_absolute_difference": 1.5246593050577406e-20
+      },
+      "applied_water_change": {
+        "bit_different_values": 1191,
+        "max_absolute_difference": 1.734723475976807e-18
+      },
+      "applied_finish": {
+        "bit_different_values": 0,
+        "max_absolute_difference": 0.0
+      }
+    }
+  }
+}

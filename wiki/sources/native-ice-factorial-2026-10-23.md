@@ -23,6 +23,7 @@ Regional preparation covers 65,988 native columns and 39 levels in 129 fp64
 chunks, initialized from the saved MP137 00:00:40 endpoint. It is an offline
 physics initial state, not an actual next-MP capture or host forecast step.
 The B-column tool and 10-worker dry-run plan are ready; full-domain KDM calls
-remain zero. Fixed 512-column chunks are part of experiment identity. The
+were zero at preparation. Subsequent execution is recorded in
+[[native-domain-ice-factorial-2026-10-23]]. Fixed 512-column chunks are part of experiment identity. The
 input, protocol and [scope](../../docs/NATIVE_ICE_FACTORIAL.md) retain explicit
 number-unit, batching, boundary/RK and observation limitations.

@@ -1,0 +1,450 @@
+{
+  "edges": [
+    {
+      "_origin": "semantic",
+      "binding": "execution_summary.manifest_sha256 matches the historical prepared manifest hash",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "relation": "input_packet_for_later_execution",
+      "source": "domain_ice_historical_endpoint_packet",
+      "source_file": "harness/evidence/domain_ice_factorial_2026-10-23/REPORT.md",
+      "source_location": "H1:Executed native-domain ice-only 2\u00d72 comparison",
+      "target": "domain_ice_actual_execution_summary"
+    },
+    {
+      "_origin": "semantic",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "relation": "produces_and_binds",
+      "source": "domain_ice_guarded_runner_source",
+      "source_file": "harness/evidence/domain_ice_factorial_2026-10-23/chunk_receipts.json",
+      "source_location": "/receipts",
+      "target": "domain_ice_chunk_request_response_receipts"
+    },
+    {
+      "_origin": "semantic",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "relation": "admitted_by",
+      "source": "domain_ice_chunk_request_response_receipts",
+      "source_file": "harness/analyze_domain_ice_factorial.py",
+      "source_location": "L81-L149",
+      "target": "domain_ice_offline_analyzer"
+    },
+    {
+      "_origin": "semantic",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "relation": "summarizes",
+      "source": "domain_ice_actual_execution_summary",
+      "source_file": "harness/evidence/domain_ice_factorial_2026-10-23/execution_summary.json",
+      "source_location": "/modes",
+      "target": "domain_ice_chunk_request_response_receipts"
+    },
+    {
+      "_origin": "semantic",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "relation": "applies_offline",
+      "source": "domain_ice_offline_analyzer",
+      "source_file": "harness/analyze_domain_ice_factorial.py",
+      "source_location": "L260-L288",
+      "target": "domain_ice_offline_finish_reference"
+    },
+    {
+      "_origin": "semantic",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "relation": "generates_diagnostics_for",
+      "source": "domain_ice_offline_finish_reference",
+      "source_file": "harness/evidence/domain_ice_factorial_2026-10-23/analysis.json",
+      "source_location": "/modes",
+      "target": "domain_ice_analysis_summary"
+    },
+    {
+      "_origin": "semantic",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "relation": "separate_historical_evidence_from",
+      "source": "domain_ice_historical_single_column_factorial",
+      "source_file": "harness/evidence/domain_ice_factorial_2026-10-23/REPORT.md",
+      "source_location": "H2:Provenance and replay",
+      "target": "domain_ice_actual_execution_summary"
+    },
+    {
+      "_origin": "semantic",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "relation": "bounds_interpretation_of",
+      "source": "domain_ice_limits_and_validation",
+      "source_file": "harness/evidence/domain_ice_factorial_2026-10-23/REPORT.md",
+      "source_location": "H4:Scope and next decision",
+      "target": "domain_ice_analysis_summary"
+    },
+    {
+      "_origin": "semantic",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "relation": "sliced_from_executed_responses",
+      "source": "domain_ice_posthoc_sample_slices",
+      "source_file": "harness/evidence/domain_ice_factorial_2026-10-23/selected_columns.json",
+      "source_location": "/scope",
+      "target": "domain_ice_actual_execution_summary"
+    },
+    {
+      "_origin": "semantic",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "relation": "compares_stored_diagnostics",
+      "source": "domain_ice_between_variant_comparison",
+      "source_file": "harness/evidence/domain_ice_factorial_2026-10-23/between_variant_differences.json",
+      "source_location": "/pairs",
+      "target": "domain_ice_analysis_summary"
+    },
+    {
+      "_origin": "semantic",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "relation": "qualifies_controller_source_identity",
+      "source": "domain_ice_raw_cap_runner_attribution",
+      "source_file": "harness/evidence/domain_ice_factorial_2026-10-23/REPORT.md",
+      "source_location": "H3:Provenance and replay",
+      "target": "domain_ice_actual_execution_summary"
+    }
+  ],
+  "hyperedges": [
+    {
+      "_origin": "semantic",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "id": "domain_ice_packet_receipt_analysis_offline_finish_chain",
+      "label": "Historical endpoint packet, actual guarded KDM receipts, admitted offline diagnostics and finish reference",
+      "nodes": [
+        "domain_ice_historical_endpoint_packet",
+        "domain_ice_guarded_runner_source",
+        "domain_ice_actual_execution_summary",
+        "domain_ice_chunk_request_response_receipts",
+        "domain_ice_offline_analyzer",
+        "domain_ice_offline_finish_reference",
+        "domain_ice_analysis_summary",
+        "domain_ice_raw_cap_runner_attribution"
+      ],
+      "relation": "supports_value_only_domain_report",
+      "source_file": "harness/evidence/domain_ice_factorial_2026-10-23/REPORT.md",
+      "source_location": "H1:Executed native-domain ice-only 2\u00d72 comparison"
+    },
+    {
+      "_origin": "semantic",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "id": "domain_ice_experiment_scope_limits",
+      "label": "Historical one-column study and actual domain value run remain separate; neither certifies physical closure or alternate-map AD",
+      "nodes": [
+        "domain_ice_historical_single_column_factorial",
+        "domain_ice_actual_execution_summary",
+        "domain_ice_analysis_summary",
+        "domain_ice_limits_and_validation",
+        "domain_ice_posthoc_sample_slices",
+        "domain_ice_between_variant_comparison"
+      ],
+      "relation": "bounds_scope",
+      "source_file": "harness/evidence/domain_ice_factorial_2026-10-23/REPORT.md",
+      "source_location": "H4:Scope and next decision"
+    }
+  ],
+  "input_tokens": null,
+  "nodes": [
+    {
+      "_origin": "semantic",
+      "factors": [
+        "raw or DELZ-normalized first-ice velocity handoff",
+        "Legacy post-update cap or actual-departure arrival"
+      ],
+      "file_type": "document",
+      "id": "domain_ice_factorial_experiment_contract",
+      "label": "Executed native-domain ice-only two-factor value comparison",
+      "main_precipitation_chain": "Legacy in every arm",
+      "modes": [
+        "raw_cap",
+        "norm_cap",
+        "raw_actual",
+        "norm_actual"
+      ],
+      "not_actual_next_mp_input": true,
+      "not_host_forecast_or_da_cycle": true,
+      "packet_start": "saved MP137 2025-07-19 00:00:40 endpoint used as an offline initial state",
+      "source_file": "docs/NATIVE_DOMAIN_ICE_FACTORIAL.md",
+      "source_location": "H1:Native-domain ice factorial: executed value comparison"
+    },
+    {
+      "_origin": "semantic",
+      "chunk_columns": 512,
+      "chunks": 129,
+      "columns": 65988,
+      "file_type": "document",
+      "final_chunk_columns": 452,
+      "grid": [
+        234,
+        282,
+        39
+      ],
+      "id": "domain_ice_historical_endpoint_packet",
+      "label": "Historical full native-grid binary64 endpoint packet preparation",
+      "manifest_sha256": "24630a58b03e54d90cc4bb6c6167e0571b02d2d002095424b19789286914601d",
+      "packet_dtype": "float64",
+      "packet_path_identifier": "private-research/mp137_ice_factorial_20261023/domain_preparation_fp64_final",
+      "preparation_kdm_calls": 0,
+      "prepared_before_domain_execution": true,
+      "source_file": "harness/evidence/ice_factorial_2026-10-23/full_domain_preparation.json",
+      "source_location": "/private_packet",
+      "status_at_preparation": "PREPARED_OFFLINE_ENDPOINT_INITIALIZED; SPLIT_PHYSICS_EXECUTION_PENDING"
+    },
+    {
+      "_origin": "semantic",
+      "arms_sequential": true,
+      "calls": 516,
+      "file_type": "document",
+      "id": "domain_ice_actual_execution_summary",
+      "kdm_tool_sha256_applies_to_all_modes": true,
+      "label": "Four-arm full-grid value-only KDM execution summary",
+      "manifest_sha256": "24630a58b03e54d90cc4bb6c6167e0571b02d2d002095424b19789286914601d",
+      "model_host_steps": 0,
+      "modes": {
+        "norm_actual": {
+          "columns": 65988,
+          "completed_chunks": 129,
+          "resumed_chunks": 0
+        },
+        "norm_cap": {
+          "columns": 65988,
+          "completed_chunks": 129,
+          "resumed_chunks": 0
+        },
+        "raw_actual": {
+          "columns": 65988,
+          "completed_chunks": 129,
+          "resumed_chunks": 0
+        },
+        "raw_cap": {
+          "columns": 65988,
+          "completed_chunks": 129,
+          "resumed_chunks": 0
+        }
+      },
+      "observation_calls": 0,
+      "per_arm_request_response_hashes": true,
+      "pilot_calls_separate": 4,
+      "raw_cap_runner_note": "Earlier controller run; no separate full controller-source hash was preserved.",
+      "raw_cap_runner_sha256_available": false,
+      "runner_sha256": "298b1f8d8b742e44d47393fbd1f6475ec54d9b1727b465b73e28f86006e5277b",
+      "runner_sha256_scope_modes": [
+        "norm_cap",
+        "raw_actual",
+        "norm_actual"
+      ],
+      "source_file": "harness/evidence/domain_ice_factorial_2026-10-23/execution_summary.json",
+      "source_location": "/",
+      "threads_per_worker": 1,
+      "tool_sha256": "b8051d8b8c983dd91e98c98204d900b27da39054eceeb282d4f9e0025cf894e7",
+      "workers_per_arm": 10
+    },
+    {
+      "_origin": "semantic",
+      "contract": "Admits final packet manifest/tool hashes; reads and hashes the same bytes it decodes; runs one value-only batch call per chunk.",
+      "executed_source_sha256": "298b1f8d8b742e44d47393fbd1f6475ec54d9b1727b465b73e28f86006e5277b",
+      "executed_source_snapshot": "harness/evidence/domain_ice_factorial_2026-10-23/execution_sources/run_domain_ice_factorial.py.txt",
+      "file_type": "code",
+      "id": "domain_ice_guarded_runner_source",
+      "label": "Runner source snapshot for the three later arms",
+      "raw_cap_runner_sha256": null,
+      "raw_cap_scope_note": "raw_cap completed before the Darwin RSS parser fix; the full controller source hash for that run is unavailable.",
+      "runner_sha256_scope_modes": [
+        "norm_cap",
+        "raw_actual",
+        "norm_actual"
+      ],
+      "shared_run_identity": "KDM executable and each arm\u2019s request/response receipts remain hash-pinned independently.",
+      "source_file": "harness/run_domain_ice_factorial.py",
+      "source_location": "L103-L135, L138-L249"
+    },
+    {
+      "_origin": "semantic",
+      "all_complete": true,
+      "all_source_chunks_bound": true,
+      "file_type": "document",
+      "id": "domain_ice_chunk_request_response_receipts",
+      "label": "Completed per-chunk request, response, and source receipts",
+      "mode_dt_threshold_and_bounds_recorded": true,
+      "receipt_count": 516,
+      "request_response_hashes_recorded": true,
+      "source_file": "harness/evidence/domain_ice_factorial_2026-10-23/chunk_receipts.json",
+      "source_location": "/receipts"
+    },
+    {
+      "_origin": "semantic",
+      "all_passed": true,
+      "calls": 4,
+      "chunk_columns": 512,
+      "chunk_index": 38,
+      "file_type": "document",
+      "id": "domain_ice_pilot_run",
+      "label": "Separate B=512 four-mode pilot on selected stress-proxy chunk",
+      "levels": 39,
+      "pilot_distinct_from_full_516_calls": true,
+      "selection_basis": "largest single-column condensed-water inventory; stress proxy, not worst-runtime proof",
+      "source_file": "harness/evidence/domain_ice_factorial_2026-10-23/pilot_summary.json",
+      "source_location": "/arms"
+    },
+    {
+      "_origin": "semantic",
+      "admission": "Rechecks source chunk, run receipt, request tensor fingerprint, response hash and bitwise echoed state/forcing before analysis.",
+      "file_type": "code",
+      "id": "domain_ice_offline_analyzer",
+      "kdm_calls": 0,
+      "label": "Receipt-admitting offline column diagnostics and uniform finish analysis",
+      "producer_sha256": "a172d91aaf36a1e220f944d38b2ecd67c3e7bb21d8c0118398c6c45b307ab19f",
+      "receipt_admission": "all516 verified source/request/response/receipt/config/echo records passed before analysis",
+      "source_file": "harness/analyze_domain_ice_factorial.py",
+      "source_location": "L81-L149, L152-L311",
+      "source_manifest_sha256": "24630a58b03e54d90cc4bb6c6167e0571b02d2d002095424b19789286914601d",
+      "tool_sha256": "b8051d8b8c983dd91e98c98204d900b27da39054eceeb282d4f9e0025cf894e7"
+    },
+    {
+      "_origin": "semantic",
+      "file_type": "document",
+      "finish": "Offline `finish_value` with the audited dt=20 s mode-2 interior cleanup; no host boundary cleanup, RK, dynamics or retained-memory consumption.",
+      "finish_reference_sha256": "49a1be5dbc8145def704d338ee20eadf2bb0b16124b854fc354e7e9ed31bd61f",
+      "id": "domain_ice_offline_finish_reference",
+      "label": "Existing moist-theta offline cleanup/finish reference",
+      "source_file": "harness/evidence/domain_ice_factorial_2026-10-23/analysis.json",
+      "source_location": "/finish_reference_sha256"
+    },
+    {
+      "_origin": "semantic",
+      "analysis_archives": {
+        "norm_actual": "64473ed0360c4d1f4f3e71949e445c44236073f4a6c351a510b1575d95be4710",
+        "norm_cap": "f854420235948553f38867dca9c583567a01bcc1327fe11c641b7a5ba849e686",
+        "raw_actual": "792d620fa17102c6fbbe10135810785c87af7935ff355afeb2c5c645b936c4b4",
+        "raw_cap": "0db8005c69548351038ce83ff904c2b8dd483549d90a0ec2b46d479bf9422bc0"
+      },
+      "closed_water_budget_certified": {
+        "norm_actual": false,
+        "norm_cap": false,
+        "raw_actual": false,
+        "raw_cap": false
+      },
+      "columns_per_mode": {
+        "norm_actual": 65988,
+        "norm_cap": 65988,
+        "raw_actual": 65988,
+        "raw_cap": 65988
+      },
+      "execution_configuration": {
+        "arms_execute_sequentially": true,
+        "chunk_columns": 512,
+        "dt_seconds": 20.0,
+        "ncmin_land": 10.0,
+        "ncmin_sea": 10.0,
+        "workers_per_arm": 10
+      },
+      "file_type": "document",
+      "finish_reference_sha256": "49a1be5dbc8145def704d338ee20eadf2bb0b16124b854fc354e7e9ed31bd61f",
+      "id": "domain_ice_analysis_summary",
+      "label": "Four-arm per-column offline diagnostic outputs",
+      "no_area_weighted_regional_totals": true,
+      "producer_sha256": "a172d91aaf36a1e220f944d38b2ecd67c3e7bb21d8c0118398c6c45b307ab19f",
+      "source_file": "harness/evidence/domain_ice_factorial_2026-10-23/analysis.json",
+      "source_location": "/modes",
+      "source_manifest_sha256": "24630a58b03e54d90cc4bb6c6167e0571b02d2d002095424b19789286914601d",
+      "statistics_contract": "fsum of rounded binary64 weighted terms; all spatial statistics unweighted column distributions, no cell areas; rank quantiles select sorted values without interpolation",
+      "tool_sha256": "b8051d8b8c983dd91e98c98204d900b27da39054eceeb282d4f9e0025cf894e7",
+      "units_contract": {
+        "H_RATE": "offline moist-theta rate K/s; not physical T or BT change",
+        "QV_QC_RATE_column": "kg/m2/s per column",
+        "precipitation": "reported code diagnostic mm per column; total includes all species",
+        "water_changes": "kg/m2 per column; fixed input DEN*DELZ measure"
+      }
+    },
+    {
+      "_origin": "semantic",
+      "calls": 9,
+      "file_type": "document",
+      "id": "domain_ice_historical_single_column_factorial",
+      "label": "Historical nine-call one-column factorial remains separate evidence",
+      "scope": "One frozen native column and first-ice schedule; historical comparison, not a regional result.",
+      "source_file": "harness/evidence/ice_factorial_2026-10-23/native39_factorial.json",
+      "source_location": "/CLI_calls"
+    },
+    {
+      "DA_processes": "86154,86179,86180..86189 remain stopped T/Ts; no resume/kill requested or performed",
+      "RTTOV_calls": 0,
+      "_origin": "semantic",
+      "analysis_admission": "All516 chunks passed strict admission; output arrays and metrics unchanged",
+      "candidate_selected": false,
+      "closed_water_budget_certified": false,
+      "file_type": "document",
+      "full_host_AD": false,
+      "full_host_steps": 0,
+      "id": "domain_ice_limits_and_validation",
+      "label": "Physical and execution limitations for the native-domain comparison",
+      "local_focused_tests": "32 passed",
+      "new_map_AD_certificate": false,
+      "operational_sha_unchanged": {
+        "host/KIM-meso_v1.0/main/wrf.exe": "676223e8d61d23456d4ac83713bff0283ea08b1e71776b7f8885b062d97f801b",
+        "libtorch/install/lib/libkdm6_c.2.0.0.dylib": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7"
+      },
+      "physical_water_closure_certified": false,
+      "raw_flux_units_and_number_basis": "conditional",
+      "source_file": "harness/evidence/domain_ice_factorial_2026-10-23/validation.json",
+      "source_location": "/new_map_AD_certificate"
+    },
+    {
+      "_origin": "semantic",
+      "file_type": "document",
+      "flat_indices": [
+        0,
+        17662,
+        36010,
+        37415,
+        65987
+      ],
+      "id": "domain_ice_posthoc_sample_slices",
+      "label": "Five post-hoc slices from executed B=512/final452 responses",
+      "scope": "Post-hoc slices of stored B=512/final452 responses; not separate B=1 KDM runs or batch-shape equivalence claims. Includes grid endpoints, most negative/positive baseline balance residual and maximal norm_actual H_RATE profile change.",
+      "separate_b1_runs": false,
+      "source_file": "harness/evidence/domain_ice_factorial_2026-10-23/selected_columns.json",
+      "source_location": "/flat_indices"
+    },
+    {
+      "_origin": "semantic",
+      "file_type": "document",
+      "id": "domain_ice_between_variant_comparison",
+      "label": "Stored per-column between-variant diagnostic contrasts",
+      "not_ad_or_physical_closure_certificate": true,
+      "pairs": [
+        "raw_cap__norm_cap",
+        "raw_cap__raw_actual",
+        "raw_cap__norm_actual",
+        "norm_cap__norm_actual"
+      ],
+      "scope": "Stored column diagnostics and uniform offline finish; no full-Jacobian or B=1 identity claim",
+      "source_file": "harness/evidence/domain_ice_factorial_2026-10-23/between_variant_differences.json",
+      "source_location": "/pairs"
+    },
+    {
+      "_origin": "semantic",
+      "file_type": "document",
+      "id": "domain_ice_raw_cap_runner_attribution",
+      "kdm_tool_sha256": "b8051d8b8c983dd91e98c98204d900b27da39054eceeb282d4f9e0025cf894e7",
+      "label": "Raw-cap controller source hash unavailable; KDM payload receipts retained",
+      "per_arm_requests_responses_hash_pinned": true,
+      "raw_cap_controller_sha256": null,
+      "scope": "raw_cap completed before the RSS parser correction; the later runner snapshot hash covers the other three arms only.",
+      "source_file": "harness/evidence/domain_ice_factorial_2026-10-23/REPORT.md",
+      "source_location": "H3:Provenance and replay"
+    }
+  ],
+  "output_tokens": null,
+  "schema": "graphify.semantic.v1",
+  "scope": "Executed native-domain ice-only value comparison. Historical endpoint preparation is linked to, but distinguished from, the later 516-call run. Diagnostics apply an offline finish only; no full-host step, RTTOV call, new-map AD certificate, physical conservation certificate, or candidate selection is claimed. Token usage is unmetered."
+}
