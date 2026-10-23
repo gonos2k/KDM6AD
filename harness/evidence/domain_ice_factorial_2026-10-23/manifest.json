@@ -1,0 +1,54 @@
+{
+  "schema": "kdm6.domain_ice_factorial_manifest.v1",
+  "base_commit": "3323f01525b8e4834a82809f8d02e574da622916",
+  "executed_runner_sha256": "298b1f8d8b742e44d47393fbd1f6475ec54d9b1727b465b73e28f86006e5277b",
+  "analysis_producer_sha256": "a172d91aaf36a1e220f944d38b2ecd67c3e7bb21d8c0118398c6c45b307ab19f",
+  "source_sha256": {
+    "harness/run_domain_ice_factorial.py": "ada402ee4cba14899aadeb7ba7f239eb6318ff8f770b4bb5d571d9543319e0e6",
+    "harness/analyze_domain_ice_factorial.py": "a172d91aaf36a1e220f944d38b2ecd67c3e7bb21d8c0118398c6c45b307ab19f",
+    "harness/ice_factorial_batch.py": "7bc300f82bfa870bd4b29f2fb4dc7aa0ada62ed79ee0e94a3bf2b35ba9d629ba",
+    "harness/tests/test_analyze_domain_ice_factorial.py": "5081d6bc806dfba906dfe34f8a5f7b39e1f3fe8c8d75332bde0d171fe57a4370",
+    "harness/tests/test_run_domain_ice_factorial.py": "877dedd336c1f7bd42828da3c135e77d6a4ea38d00e61e1f0f7a11532fd3f919",
+    "harness/tests/test_domain_ice_factorial_evidence.py": "66c4e3b0c8e455988cbb33bd7025f6a9f907313a0d6ba1d148599debdeeda823",
+    "harness/tests/test_prepare_ice_factorial_domain.py": "a0f39e1bfa63406fa65bb6c6f0fe7171565e33d696e8d28c5c8595783ce9c8eb",
+    "harness/verify_native_finish_ad.py": "d724b1101de04ab8bd9513e03d5ed74312f369f5d78f517537f7a07ea6f5dc60",
+    "oracle/kdm6/native_finish.py": "1053123132884751f869ccceda00dd2a1cace440c2048cc705f0f3689b61c37a",
+    "docs/NATIVE_DOMAIN_ICE_FACTORIAL.md": "aedb7d9c31779e5dda22933b42b8bfebbdbf45eb719a45dd7ab58698d8d8088c"
+  },
+  "artifact_sha256": {
+    "harness/evidence/domain_ice_factorial_2026-10-23/REPORT.md": "5a26be89111a4f66ac33c8904a414edbeec288eeee881e706999067126fd9b95",
+    "harness/evidence/domain_ice_factorial_2026-10-23/analysis.json": "bcc6fe47df8c5f4d87798864077a2acfb56059ce2432a8512918b224af772772",
+    "harness/evidence/domain_ice_factorial_2026-10-23/between_variant_differences.json": "bad71385fb7bbf7d5c6cb8c8a985fbb8628bf59b8a3d2d71397443454bbd2335",
+    "harness/evidence/domain_ice_factorial_2026-10-23/chunk_receipts.json": "170b15e5e13013c8d850c559ff819e3014047a41a0c4132670bfe10f0668c96d",
+    "harness/evidence/domain_ice_factorial_2026-10-23/execution_sources/run_domain_ice_factorial.py.txt": "298b1f8d8b742e44d47393fbd1f6475ec54d9b1727b465b73e28f86006e5277b",
+    "harness/evidence/domain_ice_factorial_2026-10-23/execution_summary.json": "807651832e9c263079ea652b91dd00f63f6a696c4ac603ea8490fd9fc0fa55b7",
+    "harness/evidence/domain_ice_factorial_2026-10-23/initial_validation_failure.json": "ac87abf75a2432002fa7c8eb614503d25dcb8b898f7b2ee997e665fe222fa5a7",
+    "harness/evidence/domain_ice_factorial_2026-10-23/norm_actual.columns.npz": "618c0c1ee932ecd30cae39583a5a67804664d69f14e20ad52e5e34b8cb7c582d",
+    "harness/evidence/domain_ice_factorial_2026-10-23/norm_cap.columns.npz": "21c81993a275ac1a9fdb5ed0c1c0738e04388ce4fd95ba43623304f04642a58f",
+    "harness/evidence/domain_ice_factorial_2026-10-23/pilot_summary.json": "d28cf4e4b40c40a59e1bc155479bd42fe52d728e561eaa476187d3966c0166b1",
+    "harness/evidence/domain_ice_factorial_2026-10-23/raw_actual.columns.npz": "c8a5edc6357b26464b06e6c5ad101f0a452794cef7891d18184923bd15082c21",
+    "harness/evidence/domain_ice_factorial_2026-10-23/raw_cap.columns.npz": "ba8f01cec49815c3b649951b7d08d2c8a2b97be8f2032b25ba61d2e4c65769a9",
+    "harness/evidence/domain_ice_factorial_2026-10-23/selected_columns.json": "994e58dfe9acf3fc66ff80fbf03cd4d62f1910a4578cad220e0d4894071d06c5",
+    "harness/evidence/domain_ice_factorial_2026-10-23/selected_columns.npz": "b66ec35bd0fcd7ebf6ea1b1d8858a8f96c5284ca956a285830a238df640ae194",
+    "harness/evidence/domain_ice_factorial_2026-10-23/validation.json": "5bdd254864397615acdf291fd13635129bd6a3b8fa94f49dcd85d99024556164"
+  },
+  "private_bulk_artifacts": "Full requests/responses and 4 complete applied_finish profile archives retained under canonical host/research_evidence/mp137_domain_factorial_20261023; public column scalar archives and 5 response slices copied without numerical changes.",
+  "execution_scope": {
+    "full_domain_KDM_calls": 516,
+    "pilot_KDM_calls": 4,
+    "full_host_steps": 0,
+    "RTTOV_calls": 0,
+    "changed_map_AD_certificates": 0,
+    "candidate_selected": false
+  },
+  "executed_runner_vs_reviewed_source": "Snapshot corresponds to the three later arms. Current runner changes only formatting and local l\u2192levels naming relative to this snapshot. Final analyzer executed hash equals current source and verifies all four arms independently.",
+  "runner_attribution": {
+    "snapshot_applies_to": [
+      "norm_cap",
+      "raw_actual",
+      "norm_actual"
+    ],
+    "raw_cap": "Prior resource-parser revision; full controller source hash not captured at run start. Same frozen model binary and all source/request/response identities independently verified.",
+    "timing": "Per-arm recorded elapsed values from surrounding orchestration, not emitted by archived runner."
+  }
+}

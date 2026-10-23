@@ -1,0 +1,50 @@
+{
+  "schema": "kdm6.domain_ice_factorial_execution.v1",
+  "manifest_sha256": "24630a58b03e54d90cc4bb6c6167e0571b02d2d002095424b19789286914601d",
+  "tool_sha256": "b8051d8b8c983dd91e98c98204d900b27da39054eceeb282d4f9e0025cf894e7",
+  "runner_sha256": "298b1f8d8b742e44d47393fbd1f6475ec54d9b1727b465b73e28f86006e5277b",
+  "modes": [
+    {
+      "mode": "raw_cap",
+      "columns": 65988,
+      "completed_chunks": 129,
+      "resumed_chunks": 0,
+      "wall_seconds": 5.496603332925588,
+      "maximum_single_chunk_RSS_bytes": 235061248
+    },
+    {
+      "mode": "norm_cap",
+      "columns": 65988,
+      "completed_chunks": 129,
+      "resumed_chunks": 0,
+      "wall_seconds": 22.462920875288546,
+      "maximum_single_chunk_RSS_bytes": 225427456
+    },
+    {
+      "mode": "raw_actual",
+      "columns": 65988,
+      "completed_chunks": 129,
+      "resumed_chunks": 0,
+      "wall_seconds": 23.404349707998335,
+      "maximum_single_chunk_RSS_bytes": 224395264
+    },
+    {
+      "mode": "norm_actual",
+      "columns": 65988,
+      "completed_chunks": 129,
+      "resumed_chunks": 0,
+      "wall_seconds": 24.044708834029734,
+      "maximum_single_chunk_RSS_bytes": 224935936
+    }
+  ],
+  "calls": 516,
+  "pilot_calls": 4,
+  "initial_coordinate_validation_failure_calls": 0,
+  "resource_reparse_extra_KDM_calls": 0,
+  "model_host_steps": 0,
+  "observation_calls": 0,
+  "workers_per_arm": 10,
+  "threads_per_worker": 1,
+  "arms_sequential": true,
+  "runner_sha256_scope": "Final post-resource-parser-fix runner used for norm_cap, raw_actual, norm_actual. raw_cap completed with an earlier resource-parser revision whose full source was not separately frozen; its original logs were reparsed without a new KDM call. Model executable and all numerical request/response identities are pinned for every arm."
+}

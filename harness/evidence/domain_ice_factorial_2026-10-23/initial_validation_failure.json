@@ -1,0 +1,6 @@
+{
+  "stage": "pre-execution chunk index validation",
+  "reason": "New guarded runner initially used width282 instead of native234; corrected before any KDM call.",
+  "KDM_calls_before_correction": 0,
+  "input_packet_changed": false
+}

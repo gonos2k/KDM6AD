@@ -1,0 +1,75 @@
+{
+  "schema": "kdm6.domain_factorial_pilot.v1",
+  "selected_chunk": {
+    "index": 38,
+    "path": "chunk_19456_19968.npz",
+    "start": 19456,
+    "end": 19968,
+    "columns": 512,
+    "max_column_condensate_inventory_kg_m2": 12.46608178298047,
+    "sum_column_condensate_inventories": 278.49186815244013
+  },
+  "calls": 4,
+  "B": 512,
+  "L": 39,
+  "resource_source": "Darwin /usr/bin/time -l maximum resident set size (bytes); wall via perf_counter includes process startup.",
+  "arms": [
+    {
+      "mode": "raw_cap",
+      "wall_seconds": 0.2839519581757486,
+      "maximum_resident_set_bytes": 214073344,
+      "state_finite": true,
+      "minimum_theta_K": 295.6415352676964,
+      "negative_water_values": 0,
+      "precip_min": 0.0,
+      "total_precip_max_mm": 0.07866765536208094,
+      "request_sha256": "8290c61f41cfef34c9c2892c5e12c171a4f865bbbdffef1429e824f69ea058a1",
+      "response_sha256": "bf4d1e5751ecfa3cedb4e87df21d041f8298eddc45d932ffadd1b63104156434",
+      "source_chunk_sha256": "7af19472cd4e7471566b976c150873658de014575ca5e2b6a456b631dd1efb22",
+      "tool_sha256": "b8051d8b8c983dd91e98c98204d900b27da39054eceeb282d4f9e0025cf894e7"
+    },
+    {
+      "mode": "norm_cap",
+      "wall_seconds": 0.2717795418575406,
+      "maximum_resident_set_bytes": 211550208,
+      "state_finite": true,
+      "minimum_theta_K": 295.6415352676964,
+      "negative_water_values": 0,
+      "precip_min": 0.0,
+      "total_precip_max_mm": 0.07866765536208094,
+      "request_sha256": "8290c61f41cfef34c9c2892c5e12c171a4f865bbbdffef1429e824f69ea058a1",
+      "response_sha256": "0f4693f79dbc3c9d6b00b802e1ab9c1a2251eb3227d4113d8084b77fe202cfbd",
+      "source_chunk_sha256": "7af19472cd4e7471566b976c150873658de014575ca5e2b6a456b631dd1efb22",
+      "tool_sha256": "b8051d8b8c983dd91e98c98204d900b27da39054eceeb282d4f9e0025cf894e7"
+    },
+    {
+      "mode": "raw_actual",
+      "wall_seconds": 0.2737332908436656,
+      "maximum_resident_set_bytes": 215613440,
+      "state_finite": true,
+      "minimum_theta_K": 295.6415352676964,
+      "negative_water_values": 0,
+      "precip_min": 0.0,
+      "total_precip_max_mm": 0.07866765536208094,
+      "request_sha256": "8290c61f41cfef34c9c2892c5e12c171a4f865bbbdffef1429e824f69ea058a1",
+      "response_sha256": "9496d2ed42f8d2a00d82587dcaa078f212f58d038ce910466efb250ca112c6ee",
+      "source_chunk_sha256": "7af19472cd4e7471566b976c150873658de014575ca5e2b6a456b631dd1efb22",
+      "tool_sha256": "b8051d8b8c983dd91e98c98204d900b27da39054eceeb282d4f9e0025cf894e7"
+    },
+    {
+      "mode": "norm_actual",
+      "wall_seconds": 0.27464908408001065,
+      "maximum_resident_set_bytes": 211156992,
+      "state_finite": true,
+      "minimum_theta_K": 295.6415352676964,
+      "negative_water_values": 0,
+      "precip_min": 0.0,
+      "total_precip_max_mm": 0.07866765536208094,
+      "request_sha256": "8290c61f41cfef34c9c2892c5e12c171a4f865bbbdffef1429e824f69ea058a1",
+      "response_sha256": "fd914f5337ffed90779069cfecc686f7aeaf1a50e8af487b90cbfce06e817b06",
+      "source_chunk_sha256": "7af19472cd4e7471566b976c150873658de014575ca5e2b6a456b631dd1efb22",
+      "tool_sha256": "b8051d8b8c983dd91e98c98204d900b27da39054eceeb282d4f9e0025cf894e7"
+    }
+  ],
+  "all_passed": true
+}

@@ -100,3 +100,63 @@ def test_source_contract_checks_namelist_flags_checkpoint_attrs_time_and_grid():
     with pytest.raises(ValueError, match="dimensions"):
         prep.verify_prep_source_contract(valid, attrs, {**dimensions, "west_east": 233},
                                          "2025-07-19_00:00:40")
+
+
+def test_final_packet_inventory_uses_final_producer_and_retains_history():
+    import hashlib
+    import json
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2]
+    evidence = root / "harness/evidence/ice_factorial_2026-10-23"
+    inventory_path = evidence / "full_domain_preparation.json"
+    inventory = json.loads(inventory_path.read_text())
+    generation = inventory["final_packet_generation"]
+    final_sha = generation["producer_sha256"]
+
+    def sha(path):
+        return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+    # The packet's two current producer identities and the pre-generation source
+    # gate must all name the frozen producer used to regenerate the final chunks.
+    assert inventory["producer_sha256"] == final_sha
+    assert inventory["packet_producer_sha256_executed"] == final_sha
+    producer_path = root / "harness/prepare_ice_factorial_domain.py"
+    assert sha(producer_path) == final_sha
+    gate_path = evidence / "final_packet_source_preflight.json"
+    gate = json.loads(gate_path.read_text())
+    assert generation["source_gate_checked_before_generation"] is True
+    assert gate["producer_sha256"] == final_sha
+    assert gate["packet_manifest_sha256"] == inventory["private_packet"]["manifest_sha256"]
+    assert inventory["current_source_preflight"]["sha256"] == sha(gate_path)
+
+    # Keep both earlier fingerprints explicitly historical, with a phase and
+    # source receipt field for each; neither may masquerade as the final producer.
+    prior_receipt_path = evidence / "post_preparation_source_preflight.json"
+    prior_receipt = json.loads(prior_receipt_path.read_text())
+    prior_provenance = {
+        prior_receipt["producer_sha256_prior_inventory"]: (
+            "producer_sha256_prior_inventory", "prior_inventory_fingerprint_before_frozen_source_gate"),
+        prior_receipt["producer_sha256_executed"]: (
+            "producer_sha256_executed", "earlier_fp64_packet_preparation_before_frozen_source_gate"),
+    }
+    history = inventory["producer_history"]
+    by_sha = {entry["sha256"]: entry for entry in history}
+    assert set(prior_provenance) <= set(by_sha)
+    assert inventory["producer_sha256_recorded_prior_to_source_gate"] == prior_receipt[
+        "producer_sha256_prior_inventory"]
+    assert final_sha not in prior_provenance
+    for digest, (source_field, expected_phase) in prior_provenance.items():
+        entry = by_sha[digest]
+        assert entry["phase"] == expected_phase and entry["origin"]
+        reference = entry["reference"]
+        assert reference["file"] == "post_preparation_source_preflight.json"
+        assert reference["field"] == source_field
+        assert reference["receipt_sha256"] == sha(prior_receipt_path)
+
+    study_manifest = json.loads((evidence / "manifest.json").read_text())
+    assert study_manifest["artifact_sha256"][
+        "harness/evidence/ice_factorial_2026-10-23/full_domain_preparation.json"
+    ] == sha(inventory_path)
+    assert study_manifest["source_sha256"]["harness/prepare_ice_factorial_domain.py"] == sha(producer_path)
+    assert study_manifest["source_sha256"]["harness/tests/test_prepare_ice_factorial_domain.py"] == sha(__file__)

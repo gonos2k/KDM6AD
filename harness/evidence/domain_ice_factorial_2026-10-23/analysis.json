@@ -1,0 +1,622 @@
+{
+  "schema": "kdm6.domain_ice_factorial_analysis.v1",
+  "modes": {
+    "raw_cap": {
+      "columns": 65988,
+      "completed_chunks": 129,
+      "minimum_raw_dry_theta_K": 290.5816264612215,
+      "negative_raw_counts_by_state_row": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "within_diagnostic_balance_gate_columns": 33294,
+      "outside_diagnostic_balance_gate_columns": 32694,
+      "statistics": {
+        "raw_water_change": {
+          "count": 65988,
+          "min": -0.4135621359742411,
+          "max": 2.605716310039935e-12,
+          "unweighted_column_mean": -0.0007976462686112297,
+          "rank_p01": -0.0037947732860782123,
+          "rank_p50": -1.8347272039579116e-08,
+          "rank_p99": 5.904467622567123e-16
+        },
+        "cleanup_water_change": {
+          "count": 65988,
+          "min": -1.5657972397589847e-05,
+          "max": 0.0,
+          "unweighted_column_mean": -2.2916040040415766e-07,
+          "rank_p01": -4.369450471714988e-06,
+          "rank_p50": 0.0,
+          "rank_p99": 0.0
+        },
+        "applied_water_change": {
+          "count": 65988,
+          "min": -0.4135666615109718,
+          "max": 2.605716310039935e-12,
+          "unweighted_column_mean": -0.0007978754290116338,
+          "rank_p01": -0.0037947732860782123,
+          "rank_p50": -1.4161627696444091e-06,
+          "rank_p99": 5.706545668946947e-16
+        },
+        "reported_total_precip_mm": {
+          "count": 65988,
+          "min": 0.0,
+          "max": 0.182921642545382,
+          "unweighted_column_mean": 0.0001534297287909016,
+          "rank_p01": 0.0,
+          "rank_p50": 0.0,
+          "rank_p99": 0.00017380104716130975
+        },
+        "snow_ice_subset_mm": {
+          "count": 65988,
+          "min": 0.0,
+          "max": 4.770814834070458e-16,
+          "unweighted_column_mean": 9.094384616663498e-21,
+          "rank_p01": 0.0,
+          "rank_p50": 0.0,
+          "rank_p99": 0.0
+        },
+        "graupel_subset_mm": {
+          "count": 65988,
+          "min": 0.0,
+          "max": 0.0,
+          "unweighted_column_mean": 0.0,
+          "rank_p01": 0.0,
+          "rank_p50": 0.0,
+          "rank_p99": 0.0
+        },
+        "raw_plus_reported_precip_residual": {
+          "count": 65988,
+          "min": -0.4135621359742411,
+          "max": 0.005058514420779037,
+          "unweighted_column_mean": -0.0006442165398203281,
+          "rank_p01": -0.0028139854609754433,
+          "rank_p50": -9.689023536393546e-16,
+          "rank_p99": 6.46252257437141e-16
+        },
+        "H_RATE_column_dry_mass_mean": {
+          "count": 65988,
+          "min": -0.0075619988970061815,
+          "max": 0.0008513872245935363,
+          "unweighted_column_mean": -2.3619842026981146e-05,
+          "rank_p01": -0.0006341744399133533,
+          "rank_p50": 1.9209928797878544e-17,
+          "rank_p99": 0.00011193349855790492
+        },
+        "QV_RATE_column": {
+          "count": 65988,
+          "min": -0.0030166996404865356,
+          "max": 0.03249451447249233,
+          "unweighted_column_mean": 9.502773383958916e-05,
+          "rank_p01": -0.00041420376961471736,
+          "rank_p50": 0.0,
+          "rank_p99": 0.0024381564278032277
+        },
+        "QC_RATE_column": {
+          "count": 65988,
+          "min": -0.03265341063481692,
+          "max": 0.003016699640486504,
+          "unweighted_column_mean": -0.00010891434821673189,
+          "rank_p01": -0.0029253197806724802,
+          "rank_p50": 0.0,
+          "rank_p99": 0.0003022721516728162
+        },
+        "raw_dry_theta_change_column_mean": {
+          "count": 65988,
+          "min": -0.1818461244550893,
+          "max": 0.01979555330604202,
+          "unweighted_column_mean": -0.0005609450512070104,
+          "rank_p01": -0.015027691947539504,
+          "rank_p50": 3.7263864428845843e-16,
+          "rank_p99": 0.0026447393828578705
+        }
+      },
+      "analysis_npz": "raw_cap.npz",
+      "analysis_npz_sha256": "0db8005c69548351038ce83ff904c2b8dd483549d90a0ec2b46d479bf9422bc0",
+      "closed_water_budget_certified": false
+    },
+    "norm_cap": {
+      "columns": 65988,
+      "completed_chunks": 129,
+      "minimum_raw_dry_theta_K": 290.5816264612215,
+      "negative_raw_counts_by_state_row": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "within_diagnostic_balance_gate_columns": 58754,
+      "outside_diagnostic_balance_gate_columns": 7234,
+      "statistics": {
+        "raw_water_change": {
+          "count": 65988,
+          "min": -0.22205005196269978,
+          "max": 3.5264029308427652e-06,
+          "unweighted_column_mean": -0.00026217216101142454,
+          "rank_p01": -0.002098280453281227,
+          "rank_p50": 0.0,
+          "rank_p99": 1.1873332331156295e-15
+        },
+        "cleanup_water_change": {
+          "count": 65988,
+          "min": -1.5580810493392466e-05,
+          "max": 0.0,
+          "unweighted_column_mean": -6.941457539116812e-07,
+          "rank_p01": -6.09978217572199e-06,
+          "rank_p50": 0.0,
+          "rank_p99": 0.0
+        },
+        "applied_water_change": {
+          "count": 65988,
+          "min": -0.22205005196269978,
+          "max": 3.270260729671731e-06,
+          "unweighted_column_mean": -0.0002628663067653362,
+          "rank_p01": -0.0020987287089160598,
+          "rank_p50": -6.235551625825148e-16,
+          "rank_p99": 6.07230137771405e-16
+        },
+        "reported_total_precip_mm": {
+          "count": 65988,
+          "min": 0.0,
+          "max": 0.182921642545382,
+          "unweighted_column_mean": 0.0001534297287909016,
+          "rank_p01": 0.0,
+          "rank_p50": 0.0,
+          "rank_p99": 0.00017380104716130975
+        },
+        "snow_ice_subset_mm": {
+          "count": 65988,
+          "min": 0.0,
+          "max": 9.141206281097292e-18,
+          "unweighted_column_mean": 1.7445444957344916e-22,
+          "rank_p01": 0.0,
+          "rank_p50": 0.0,
+          "rank_p99": 0.0
+        },
+        "graupel_subset_mm": {
+          "count": 65988,
+          "min": 0.0,
+          "max": 0.0,
+          "unweighted_column_mean": 0.0,
+          "rank_p01": 0.0,
+          "rank_p50": 0.0,
+          "rank_p99": 0.0
+        },
+        "raw_plus_reported_precip_residual": {
+          "count": 65988,
+          "min": -0.18177156930768423,
+          "max": 0.005058514420779037,
+          "unweighted_column_mean": -0.00010874243222052295,
+          "rank_p01": -0.00013821625960452712,
+          "rank_p50": 0.0,
+          "rank_p99": 1.3321490449375722e-15
+        },
+        "H_RATE_column_dry_mass_mean": {
+          "count": 65988,
+          "min": -0.007539135862835307,
+          "max": 0.0008536949896202538,
+          "unweighted_column_mean": -2.7651320880695574e-05,
+          "rank_p01": -0.0006412229777943921,
+          "rank_p50": 0.0,
+          "rank_p99": 0.00010172841294408392
+        },
+        "QV_RATE_column": {
+          "count": 65988,
+          "min": -0.0030166996404865356,
+          "max": 0.032433163945493886,
+          "unweighted_column_mean": 0.00010546573721429115,
+          "rank_p01": -0.0003894786243000511,
+          "rank_p50": 0.0,
+          "rank_p99": 0.0024545811773825804
+        },
+        "QC_RATE_column": {
+          "count": 65988,
+          "min": -0.032656732682493896,
+          "max": 0.012117740768911093,
+          "unweighted_column_mean": -0.0001086243999328317,
+          "rank_p01": -0.0029253197806724802,
+          "rank_p50": 0.0,
+          "rank_p99": 0.00030285700860429085
+        },
+        "raw_dry_theta_change_column_mean": {
+          "count": 65988,
+          "min": -0.18131732570805123,
+          "max": 0.019849945088847385,
+          "unweighted_column_mean": -0.0006537603645362889,
+          "rank_p01": -0.015178121318422074,
+          "rank_p50": 0.0,
+          "rank_p99": 0.0024128630404795996
+        }
+      },
+      "analysis_npz": "norm_cap.npz",
+      "analysis_npz_sha256": "f854420235948553f38867dca9c583567a01bcc1327fe11c641b7a5ba849e686",
+      "closed_water_budget_certified": false
+    },
+    "raw_actual": {
+      "columns": 65988,
+      "completed_chunks": 129,
+      "minimum_raw_dry_theta_K": 290.5816264612215,
+      "negative_raw_counts_by_state_row": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "within_diagnostic_balance_gate_columns": 60628,
+      "outside_diagnostic_balance_gate_columns": 5360,
+      "statistics": {
+        "raw_water_change": {
+          "count": 65988,
+          "min": -0.2220500519626998,
+          "max": 3.5264029308113234e-06,
+          "unweighted_column_mean": -0.00026216771268380856,
+          "rank_p01": -0.0020982804532811653,
+          "rank_p50": 0.0,
+          "rank_p99": 1.2177483515649328e-15
+        },
+        "cleanup_water_change": {
+          "count": 65988,
+          "min": -1.3135156721854082e-05,
+          "max": 0.0,
+          "unweighted_column_mean": -3.4562144030874163e-07,
+          "rank_p01": -4.563863736709845e-06,
+          "rank_p50": 0.0,
+          "rank_p99": 0.0
+        },
+        "applied_water_change": {
+          "count": 65988,
+          "min": -0.2220500519626998,
+          "max": 3.5264029308113234e-06,
+          "unweighted_column_mean": -0.0002625133341241173,
+          "rank_p01": -0.0020982804532811653,
+          "rank_p50": -2.9760965822922872e-18,
+          "rank_p99": 8.247813917299299e-16
+        },
+        "reported_total_precip_mm": {
+          "count": 65988,
+          "min": 0.0,
+          "max": 0.182921642545382,
+          "unweighted_column_mean": 0.0001534297287909016,
+          "rank_p01": 0.0,
+          "rank_p50": 0.0,
+          "rank_p99": 0.00017380104716130975
+        },
+        "snow_ice_subset_mm": {
+          "count": 65988,
+          "min": 0.0,
+          "max": 4.770814834070458e-16,
+          "unweighted_column_mean": 9.094384616663498e-21,
+          "rank_p01": 0.0,
+          "rank_p50": 0.0,
+          "rank_p99": 0.0
+        },
+        "graupel_subset_mm": {
+          "count": 65988,
+          "min": 0.0,
+          "max": 0.0,
+          "unweighted_column_mean": 0.0,
+          "rank_p01": 0.0,
+          "rank_p50": 0.0,
+          "rank_p99": 0.0
+        },
+        "raw_plus_reported_precip_residual": {
+          "count": 65988,
+          "min": -0.18177156930768396,
+          "max": 0.005058514420779037,
+          "unweighted_column_mean": -0.00010873798389290691,
+          "rank_p01": -0.00013821625960442634,
+          "rank_p50": 0.0,
+          "rank_p99": 1.3443136821397853e-15
+        },
+        "H_RATE_column_dry_mass_mean": {
+          "count": 65988,
+          "min": -0.007425843271683719,
+          "max": 0.0008881693887898364,
+          "unweighted_column_mean": -2.1549586544878307e-05,
+          "rank_p01": -0.0006347299682081889,
+          "rank_p50": 2.1055511095573262e-17,
+          "rank_p99": 0.0001236456428811353
+        },
+        "QV_RATE_column": {
+          "count": 65988,
+          "min": -0.0030166996404865356,
+          "max": 0.03213416629010383,
+          "unweighted_column_mean": 8.888612739116846e-05,
+          "rank_p01": -0.0004468899553479759,
+          "rank_p50": 0.0,
+          "rank_p99": 0.002436344946845634
+        },
+        "QC_RATE_column": {
+          "count": 65988,
+          "min": -0.03267317232729849,
+          "max": 0.013348070003041822,
+          "unweighted_column_mean": -0.00010720528786461684,
+          "rank_p01": -0.0029413367967886573,
+          "rank_p50": 0.0,
+          "rank_p99": 0.0003092551374119888
+        },
+        "raw_dry_theta_change_column_mean": {
+          "count": 65988,
+          "min": -0.17870093377421253,
+          "max": 0.020645937306955024,
+          "unweighted_column_mean": -0.000512638373649871,
+          "rank_p01": -0.015008818462552443,
+          "rank_p50": 4.059805426542849e-16,
+          "rank_p99": 0.0029209419634036687
+        }
+      },
+      "analysis_npz": "raw_actual.npz",
+      "analysis_npz_sha256": "792d620fa17102c6fbbe10135810785c87af7935ff355afeb2c5c645b936c4b4",
+      "closed_water_budget_certified": false
+    },
+    "norm_actual": {
+      "columns": 65988,
+      "completed_chunks": 129,
+      "minimum_raw_dry_theta_K": 290.5816264612215,
+      "negative_raw_counts_by_state_row": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "within_diagnostic_balance_gate_columns": 58754,
+      "outside_diagnostic_balance_gate_columns": 7234,
+      "statistics": {
+        "raw_water_change": {
+          "count": 65988,
+          "min": -0.22205005196269978,
+          "max": 3.5264029308427652e-06,
+          "unweighted_column_mean": -0.00026217216101142454,
+          "rank_p01": -0.002098280453281227,
+          "rank_p50": 0.0,
+          "rank_p99": 1.1873331272365111e-15
+        },
+        "cleanup_water_change": {
+          "count": 65988,
+          "min": -1.5580810493392466e-05,
+          "max": 0.0,
+          "unweighted_column_mean": -6.941457539116812e-07,
+          "rank_p01": -6.09978217572199e-06,
+          "rank_p50": 0.0,
+          "rank_p99": 0.0
+        },
+        "applied_water_change": {
+          "count": 65988,
+          "min": -0.22205005196269978,
+          "max": 3.270260729671731e-06,
+          "unweighted_column_mean": -0.0002628663067653362,
+          "rank_p01": -0.0020987287089160598,
+          "rank_p50": -6.235551625825148e-16,
+          "rank_p99": 6.07230137771405e-16
+        },
+        "reported_total_precip_mm": {
+          "count": 65988,
+          "min": 0.0,
+          "max": 0.182921642545382,
+          "unweighted_column_mean": 0.0001534297287909016,
+          "rank_p01": 0.0,
+          "rank_p50": 0.0,
+          "rank_p99": 0.00017380104716130975
+        },
+        "snow_ice_subset_mm": {
+          "count": 65988,
+          "min": 0.0,
+          "max": 9.141206281097292e-18,
+          "unweighted_column_mean": 1.7445444957344916e-22,
+          "rank_p01": 0.0,
+          "rank_p50": 0.0,
+          "rank_p99": 0.0
+        },
+        "graupel_subset_mm": {
+          "count": 65988,
+          "min": 0.0,
+          "max": 0.0,
+          "unweighted_column_mean": 0.0,
+          "rank_p01": 0.0,
+          "rank_p50": 0.0,
+          "rank_p99": 0.0
+        },
+        "raw_plus_reported_precip_residual": {
+          "count": 65988,
+          "min": -0.18177156930768423,
+          "max": 0.005058514420779037,
+          "unweighted_column_mean": -0.00010874243222052295,
+          "rank_p01": -0.00013821625960452712,
+          "rank_p50": 0.0,
+          "rank_p99": 1.3321490449375722e-15
+        },
+        "H_RATE_column_dry_mass_mean": {
+          "count": 65988,
+          "min": -0.007539135862835307,
+          "max": 0.0008536949896202538,
+          "unweighted_column_mean": -2.7651320880695574e-05,
+          "rank_p01": -0.0006412229777943921,
+          "rank_p50": 0.0,
+          "rank_p99": 0.00010172841294408392
+        },
+        "QV_RATE_column": {
+          "count": 65988,
+          "min": -0.0030166996404865356,
+          "max": 0.032433163945493886,
+          "unweighted_column_mean": 0.00010546573721429115,
+          "rank_p01": -0.0003894786243000511,
+          "rank_p50": 0.0,
+          "rank_p99": 0.0024545811773825804
+        },
+        "QC_RATE_column": {
+          "count": 65988,
+          "min": -0.032656732682493896,
+          "max": 0.012117740768911093,
+          "unweighted_column_mean": -0.0001086243999328317,
+          "rank_p01": -0.0029253197806724802,
+          "rank_p50": 0.0,
+          "rank_p99": 0.00030285700860429085
+        },
+        "raw_dry_theta_change_column_mean": {
+          "count": 65988,
+          "min": -0.18131732570805123,
+          "max": 0.019849945088847385,
+          "unweighted_column_mean": -0.0006537603645362889,
+          "rank_p01": -0.015178121318422074,
+          "rank_p50": 0.0,
+          "rank_p99": 0.0024128630404795996
+        }
+      },
+      "analysis_npz": "norm_actual.npz",
+      "analysis_npz_sha256": "64473ed0360c4d1f4f3e71949e445c44236073f4a6c351a510b1575d95be4710",
+      "closed_water_budget_certified": false
+    }
+  },
+  "comparisons_to_raw_cap": {
+    "norm_cap": {
+      "raw_water_change_difference": {
+        "count": 65988,
+        "min": -2.038742728771954e-11,
+        "max": 0.4135621357306603,
+        "unweighted_column_mean": 0.000535474107599805,
+        "rank_p01": 0.0,
+        "rank_p50": 0.0,
+        "rank_p99": 0.002256799695174461
+      },
+      "raw_balance_residual_difference": {
+        "count": 65988,
+        "min": -2.038742728771954e-11,
+        "max": 0.4135621357306603,
+        "unweighted_column_mean": 0.000535474107599805,
+        "rank_p01": 0.0,
+        "rank_p50": 0.0,
+        "rank_p99": 0.002256799695174461
+      },
+      "H_RATE_profile_maxabs_difference_per_column": {
+        "count": 65988,
+        "min": 0.0,
+        "max": 0.011275405554395842,
+        "unweighted_column_mean": 0.00012267874137240046,
+        "rank_p01": 0.0,
+        "rank_p50": 0.0,
+        "rank_p99": 0.0005248829063789663
+      },
+      "columns_with_any_H_RATE_bit_change": 32571
+    },
+    "raw_actual": {
+      "raw_water_change_difference": {
+        "count": 65988,
+        "min": -2.035668685355473e-11,
+        "max": 0.4135621357306606,
+        "unweighted_column_mean": 0.0005354785559274211,
+        "rank_p01": 0.0,
+        "rank_p50": 0.0,
+        "rank_p99": 0.0022567996951744188
+      },
+      "raw_balance_residual_difference": {
+        "count": 65988,
+        "min": -2.035668685355473e-11,
+        "max": 0.4135621357306606,
+        "unweighted_column_mean": 0.0005354785559274211,
+        "rank_p01": 0.0,
+        "rank_p50": 0.0,
+        "rank_p99": 0.0022567996951744188
+      },
+      "H_RATE_profile_maxabs_difference_per_column": {
+        "count": 65988,
+        "min": 0.0,
+        "max": 0.005827177370452721,
+        "unweighted_column_mean": 9.240154260887923e-05,
+        "rank_p01": 0.0,
+        "rank_p50": 0.0,
+        "rank_p99": 0.0006659264288423997
+      },
+      "columns_with_any_H_RATE_bit_change": 32362
+    },
+    "norm_actual": {
+      "raw_water_change_difference": {
+        "count": 65988,
+        "min": -2.038742728771954e-11,
+        "max": 0.4135621357306603,
+        "unweighted_column_mean": 0.000535474107599805,
+        "rank_p01": 0.0,
+        "rank_p50": 0.0,
+        "rank_p99": 0.002256799695174461
+      },
+      "raw_balance_residual_difference": {
+        "count": 65988,
+        "min": -2.038742728771954e-11,
+        "max": 0.4135621357306603,
+        "unweighted_column_mean": 0.000535474107599805,
+        "rank_p01": 0.0,
+        "rank_p50": 0.0,
+        "rank_p99": 0.002256799695174461
+      },
+      "H_RATE_profile_maxabs_difference_per_column": {
+        "count": 65988,
+        "min": 0.0,
+        "max": 0.011275405554395842,
+        "unweighted_column_mean": 0.00012267874137240046,
+        "rank_p01": 0.0,
+        "rank_p50": 0.0,
+        "rank_p99": 0.0005248829063789663
+      },
+      "columns_with_any_H_RATE_bit_change": 32571
+    }
+  },
+  "producer_sha256": "a172d91aaf36a1e220f944d38b2ecd67c3e7bb21d8c0118398c6c45b307ab19f",
+  "finish_reference_sha256": "49a1be5dbc8145def704d338ee20eadf2bb0b16124b854fc354e7e9ed31bd61f",
+  "manifest_sha256": "24630a58b03e54d90cc4bb6c6167e0571b02d2d002095424b19789286914601d",
+  "tool_sha256": "b8051d8b8c983dd91e98c98204d900b27da39054eceeb282d4f9e0025cf894e7",
+  "execution_configuration": {
+    "dt_seconds": 20.0,
+    "ncmin_land": 10.0,
+    "ncmin_sea": 10.0,
+    "chunk_columns": 512,
+    "workers_per_arm": 10,
+    "arms_execute_sequentially": true
+  },
+  "units": {
+    "water_changes": "kg/m2 per column; fixed input DEN*DELZ measure",
+    "precipitation": "reported code diagnostic mm per column; total includes all species",
+    "H_RATE": "offline moist-theta rate K/s; not physical T or BT change",
+    "QV_QC_RATE_column": "kg/m2/s per column"
+  },
+  "statistics_contract": "fsum of rounded binary64 weighted terms; all spatial statistics unweighted column distributions, no cell areas; rank quantiles select sorted values without interpolation",
+  "cleanup_finish_scope": "Uniform configured interior-rule cleanup/finish applied offline at every stored column; host boundary cleanup, RK/dynamics and retained-memory consumption not emulated",
+  "limits": [
+    "Raw velocity/code-flux dimensions and number payload basis remain conditional.",
+    "No physical regional kg totals or map-area weighted averages are reported.",
+    "No new-map AD/RTTOV/forecast skill certificate; reported balance gate is a diagnostic, not conservation proof."
+  ]
+}

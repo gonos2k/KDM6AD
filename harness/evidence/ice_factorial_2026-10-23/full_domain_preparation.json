@@ -74,7 +74,7 @@
   "mass_number_volume_convention_certified": false,
   "mu_total": "float32(MUB + MU_2), native addition before widening",
   "number_basis": "research legacy raw restart operands; captured f32 values preserved; physical-number admission=false",
-  "packet_producer_sha256_executed": "ecabad519393c5078a310376ebdf44a188132f88d5f89765e40255db46694056",
+  "packet_producer_sha256_executed": "2e144050b11337fc4b02c3e888129f3a3e260e8ea5b05aaf8b781fc152a29220",
   "physical_number_admission": false,
   "post_preparation_source_preflight": {
     "helper_sha256": "2e144050b11337fc4b02c3e888129f3a3e260e8ea5b05aaf8b781fc152a29220",
@@ -110,7 +110,29 @@
     "post_write_readback": "all 129 chunk hashes, binary64 dtypes, shapes, and contiguous flat indices verified",
     "uncompressed_npz_bytes": 330922260
   },
-  "producer_sha256": "08a41294558673d58e0a98547b9077b1814a5cf8f2bbcd5155e0d708e31598d1",
+  "producer_history": [
+    {
+      "origin": "Earlier inventory fingerprint retained for provenance; it is not the producer identity for the final packet.",
+      "phase": "prior_inventory_fingerprint_before_frozen_source_gate",
+      "reference": {
+        "field": "producer_sha256_prior_inventory",
+        "file": "post_preparation_source_preflight.json",
+        "receipt_sha256": "d6968ce12338567ad4977139cb7c66e75a9be60eb1a032be92494f47858c1641"
+      },
+      "sha256": "08a41294558673d58e0a98547b9077b1814a5cf8f2bbcd5155e0d708e31598d1"
+    },
+    {
+      "origin": "Earlier binary64 packet producer fingerprint reconstructed and recorded in the post-hoc source-check receipt; final packet was regenerated with the source-gated producer.",
+      "phase": "earlier_fp64_packet_preparation_before_frozen_source_gate",
+      "reference": {
+        "field": "producer_sha256_executed",
+        "file": "post_preparation_source_preflight.json",
+        "receipt_sha256": "d6968ce12338567ad4977139cb7c66e75a9be60eb1a032be92494f47858c1641"
+      },
+      "sha256": "ecabad519393c5078a310376ebdf44a188132f88d5f89765e40255db46694056"
+    }
+  ],
+  "producer_sha256": "2e144050b11337fc4b02c3e888129f3a3e260e8ea5b05aaf8b781fc152a29220",
   "producer_sha256_recorded_prior_to_source_gate": "08a41294558673d58e0a98547b9077b1814a5cf8f2bbcd5155e0d708e31598d1",
   "public_view": {
     "local_paths_redacted": true,

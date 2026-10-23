@@ -1,0 +1,212 @@
+{
+  "scope": "Post-hoc slices of stored B=512/final452 responses; not separate B=1 KDM runs or batch-shape equivalence claims. Includes grid endpoints, most negative/positive baseline balance residual and maximal norm_actual H_RATE profile change.",
+  "flat_indices": [
+    0,
+    17662,
+    36010,
+    37415,
+    65987
+  ],
+  "responses": [
+    {
+      "mode": "raw_cap",
+      "flat_index": 0,
+      "i_1based": 1,
+      "j_1based": 1,
+      "batch_index": 0,
+      "B": 512,
+      "row_in_batch": 0,
+      "response_sha256": "d52fea23fe42ae42be5560be94e70ea8de90904a9325d7efe7dfcfba594a439c"
+    },
+    {
+      "mode": "raw_cap",
+      "flat_index": 17662,
+      "i_1based": 113,
+      "j_1based": 76,
+      "batch_index": 34,
+      "B": 512,
+      "row_in_batch": 254,
+      "response_sha256": "57aa802c128fed32ebb0694641365fbf7cf72c2033e21ec9a44b754a166d19e3"
+    },
+    {
+      "mode": "raw_cap",
+      "flat_index": 36010,
+      "i_1based": 209,
+      "j_1based": 154,
+      "batch_index": 70,
+      "B": 512,
+      "row_in_batch": 170,
+      "response_sha256": "d16df9075ac0be9ad7c14061e0d8d92634e53096a9e9f72f4de6157676ad4b70"
+    },
+    {
+      "mode": "raw_cap",
+      "flat_index": 37415,
+      "i_1based": 210,
+      "j_1based": 160,
+      "batch_index": 73,
+      "B": 512,
+      "row_in_batch": 39,
+      "response_sha256": "0a0b323d252f432c1f7a4365794f2577aec0142d2a4206813ff8c639f01dbc89"
+    },
+    {
+      "mode": "raw_cap",
+      "flat_index": 65987,
+      "i_1based": 234,
+      "j_1based": 282,
+      "batch_index": 128,
+      "B": 452,
+      "row_in_batch": 451,
+      "response_sha256": "f24e1312ce346c8d9ff99a030224c14e7a87d107cbf61bedc626e156c0af463d"
+    },
+    {
+      "mode": "norm_cap",
+      "flat_index": 0,
+      "i_1based": 1,
+      "j_1based": 1,
+      "batch_index": 0,
+      "B": 512,
+      "row_in_batch": 0,
+      "response_sha256": "6a239cd99582125cab2e8e8f901c9f4f9f84801a7d568162641524053d6dd52d"
+    },
+    {
+      "mode": "norm_cap",
+      "flat_index": 17662,
+      "i_1based": 113,
+      "j_1based": 76,
+      "batch_index": 34,
+      "B": 512,
+      "row_in_batch": 254,
+      "response_sha256": "f9d905e6943db93dd6767a33b3191a8f9cf9abe8fb6670c38139fa7fe5f4575f"
+    },
+    {
+      "mode": "norm_cap",
+      "flat_index": 36010,
+      "i_1based": 209,
+      "j_1based": 154,
+      "batch_index": 70,
+      "B": 512,
+      "row_in_batch": 170,
+      "response_sha256": "4197673b9a2fc16548847c56a0d9b6b66f654c18d251665404c624d0d750e1e2"
+    },
+    {
+      "mode": "norm_cap",
+      "flat_index": 37415,
+      "i_1based": 210,
+      "j_1based": 160,
+      "batch_index": 73,
+      "B": 512,
+      "row_in_batch": 39,
+      "response_sha256": "00689a5d036579939d7374542c62d3362da03d6280f9b8a1b387f1bc6c585283"
+    },
+    {
+      "mode": "norm_cap",
+      "flat_index": 65987,
+      "i_1based": 234,
+      "j_1based": 282,
+      "batch_index": 128,
+      "B": 452,
+      "row_in_batch": 451,
+      "response_sha256": "cbe7bbd8f60d9e657cc7235ab6344533cc07270062df951d41d206b30cdd9343"
+    },
+    {
+      "mode": "raw_actual",
+      "flat_index": 0,
+      "i_1based": 1,
+      "j_1based": 1,
+      "batch_index": 0,
+      "B": 512,
+      "row_in_batch": 0,
+      "response_sha256": "0f63a53f310d297c2c27945139bc6ec7d4f68bf686eefef56a48c83f27133381"
+    },
+    {
+      "mode": "raw_actual",
+      "flat_index": 17662,
+      "i_1based": 113,
+      "j_1based": 76,
+      "batch_index": 34,
+      "B": 512,
+      "row_in_batch": 254,
+      "response_sha256": "ff40dc82ae7ee092d91a5ff1126142b1737d6cd6ba51901d2116a1d121146c3d"
+    },
+    {
+      "mode": "raw_actual",
+      "flat_index": 36010,
+      "i_1based": 209,
+      "j_1based": 154,
+      "batch_index": 70,
+      "B": 512,
+      "row_in_batch": 170,
+      "response_sha256": "383afb76d0dd403820d1e6df2a993be16508818300fb616e7d634970f0b6d5ad"
+    },
+    {
+      "mode": "raw_actual",
+      "flat_index": 37415,
+      "i_1based": 210,
+      "j_1based": 160,
+      "batch_index": 73,
+      "B": 512,
+      "row_in_batch": 39,
+      "response_sha256": "641597779f59aefbe76dcb9aa905b899f3e27886e53381759fc95d3f74d3be99"
+    },
+    {
+      "mode": "raw_actual",
+      "flat_index": 65987,
+      "i_1based": 234,
+      "j_1based": 282,
+      "batch_index": 128,
+      "B": 452,
+      "row_in_batch": 451,
+      "response_sha256": "7a1025f8cf9f7f0ebfc27ceca885ca6d80e520b1abb32bf87497b6b9738cf593"
+    },
+    {
+      "mode": "norm_actual",
+      "flat_index": 0,
+      "i_1based": 1,
+      "j_1based": 1,
+      "batch_index": 0,
+      "B": 512,
+      "row_in_batch": 0,
+      "response_sha256": "da649f6c779f1193b7a4d521f51a1fc3aac8404bf23f411d442c620cf4d2c603"
+    },
+    {
+      "mode": "norm_actual",
+      "flat_index": 17662,
+      "i_1based": 113,
+      "j_1based": 76,
+      "batch_index": 34,
+      "B": 512,
+      "row_in_batch": 254,
+      "response_sha256": "84ecf8231d2cf5e3862262e2bde24dd4298db62b5a9c623fee1eab71178b4a52"
+    },
+    {
+      "mode": "norm_actual",
+      "flat_index": 36010,
+      "i_1based": 209,
+      "j_1based": 154,
+      "batch_index": 70,
+      "B": 512,
+      "row_in_batch": 170,
+      "response_sha256": "39b03d97abe98089ac89367b6b0d77fe81504712475ed6cbb520b514743f3441"
+    },
+    {
+      "mode": "norm_actual",
+      "flat_index": 37415,
+      "i_1based": 210,
+      "j_1based": 160,
+      "batch_index": 73,
+      "B": 512,
+      "row_in_batch": 39,
+      "response_sha256": "b0897c800841fe039d7f31f83333782137a03ead59793e0dd6f462085b9d5103"
+    },
+    {
+      "mode": "norm_actual",
+      "flat_index": 65987,
+      "i_1based": 234,
+      "j_1based": 282,
+      "batch_index": 128,
+      "B": 452,
+      "row_in_batch": 451,
+      "response_sha256": "410abf65447f7cf83d21f443384f3787e2957aed6b01b7518324ed95d4b15502"
+    }
+  ]
+}

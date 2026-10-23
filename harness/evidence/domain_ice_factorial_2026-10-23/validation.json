@@ -1,0 +1,38 @@
+{
+  "schema": "kdm6.domain_ice_factorial_validation.v1",
+  "local_focused": "32 passed",
+  "public_arithmetic_replay": "10 passed (full-column statistics/gates,516receipts,selectedspeciesbudgets,hashinventory)",
+  "full_harness": {
+    "command": "uv run --no-project --python 3.12 --with numpy==2.4.6 --with pytest==9.1.1 --with netCDF4==1.7.4 python -m pytest -rs -q harness/tests",
+    "result": "2701 passed,69 skipped,309 deselected in98.22s",
+    "environment": "Python3.12 isolated stack withoutTorch/jsonschema/privatehost; local conftest deselection applies",
+    "log_sha256": "f034eb4a91b61a2e8dc9048fb7befc3e6b2abba869104a4cb43d661019efe404"
+  },
+  "Green": {
+    "coverage": "All516 full requests/responses+129inputchunkhashes, fixed identities,echoes,finitearrays verified independently; four pilot calls distinct",
+    "resources": "peak single-child RSS only; no concurrent aggregate measurement",
+    "analysis": "all final arrays bitwise match earlier analysis; no physicalclosureclaim",
+    "timing": "Recorded per-arm elapsed time comes from the surrounding orchestration JSON, not an emitted field of the archived runner; includes admission/I/O/process startup and is not a controlled benchmark."
+  },
+  "Red": {
+    "arithmetic": "columns0,32768,65987 in all4arms directroundedproductfsum; budgets,finish,tendency match",
+    "identity": "normcap/actual finishbitwise same, fullKDMstates differ19853values (QI12014 QS249 NI7590); precipitation notbitwise equal",
+    "actionable": "Resolved: analyzer now independently admits source/request/response/receipt/config/echo and complete-status before arithmetic; 11 focused analyzer tests pass; same saved results reproduced without new KDM calls",
+    "closure": "Final source/admission and public scope reviewed; no remaining actionable finding."
+  },
+  "unchanged_operational_sha256": {
+    "host/KIM-meso_v1.0/main/wrf.exe": "676223e8d61d23456d4ac83713bff0283ea08b1e71776b7f8885b062d97f801b",
+    "libtorch/install/lib/libkdm6_c.2.0.0.dylib": "7adcb6921f6205af66c62720ce9447928a1608f5c261546183b928bebbd9dba7"
+  },
+  "DA_processes": "86154,86179,86180..86189 remain stopped T/Ts; no resume/kill requested or performed",
+  "new_map_AD_certificate": false,
+  "candidate_selected": false,
+  "private_outputs_retained": true,
+  "runtime": {
+    "python": "3.10.11",
+    "platform": "macOS-26.7-arm64-arm-64bit"
+  },
+  "analysis_admission": "All516 chunks passed strict admission; output arrays and metrics unchanged",
+  "source_lint": "newmodules/tests Ruff allchecks +wholeharness F821/F822/F823 andgitdiffcheck passed",
+  "runner_source_attribution_limit": "Final298b snapshot applies to three later arms. raw_cap controller before RSS-parser fix not separately frozen; request/model/response hashes and reparse log hashes verified for all129 chunks."
+}
