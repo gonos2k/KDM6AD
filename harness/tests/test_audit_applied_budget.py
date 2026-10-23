@@ -62,7 +62,12 @@ def test_fixed_fsum_reduction_survives_independent_cancellation_case():
                  for v, w in zip(values, weights)), Fraction())
     assert float(exact) == 1.0
     assert audit._weighted_sum(values, weights) == float(exact)
-    assert sum(float(v) * float(w) for v, w in zip(values, weights)) == 0.0
+    # Python 3.12+ may compensate builtin sum(float); explicitly evaluate the
+    # naive rounded addition sequence rather than assuming its implementation.
+    naive = 0.0
+    for value, weight in zip(values, weights):
+        naive = naive + float(value) * float(weight)
+    assert naive == 0.0
 
 
 def test_saved_qi_row_fsum_matches_exact_sum_of_rounded_products():
@@ -210,7 +215,8 @@ def test_versioned_migration_artifacts_pin_and_preserve_historical_captures():
 
     assert applied_v2["schema"] == "kdm6.applied_change_ledger.v2"
     assert applied_v2["historical_migration"]["source_report_sha256_matches_historical_v1"] is True
-    assert applied_v2["source_report_sha256"] == digest(Path(applied_v2["source_report"]))
+    source = root.parent / summary["applied_ledger"]["source_report_path"]
+    assert applied_v2["source_report_sha256"] == digest(source)
     assert summary["applied_ledger"]["v1_sha256"] == digest(applied_v1)
     assert summary["same_call_ledger"]["historical_sha256"] == digest(same_v1)
     assert summary["operation_contract"]["old_artifacts_mutated"] is False

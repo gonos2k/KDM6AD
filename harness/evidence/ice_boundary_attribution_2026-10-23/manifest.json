@@ -19,13 +19,13 @@
     "oracle/kdm6/sedimentation.py": "0e2b866f1a71937fbc2cf9ff382ced8bd0e439c732992b494b2ea2251f806f89",
     "harness/tests/test_analyze_ice_boundary_trace.py": "d8bbd8cc3a6ec9a6d83d9002befad37eeeceb05fb79995376a4c74a1e05aad4d",
     "harness/tests/test_make_ice_boundary_overlay.py": "6852bfbf6737478d73659c63196487b25902bc1596d3b753fd60e64e3ff4e149",
-    "harness/tests/test_audit_applied_budget.py": "8ad45fc60677c109de6fb5ab8bcb42fe2c128fa7c5ea259536997beb2be30fe8",
+    "harness/tests/test_audit_applied_budget.py": "bde8b1a177ad6b9aca8865760d7a6d86daaf158ab32020c88ac53ad5b0b46864",
     "harness/tests/test_same_call_water_budget.py": "fb1309f64b3e12d108737dc2d95326699e8950ea872b2bf57921c90342a2cc43",
     "harness/tests/test_ice_trace_ad_noninterference.py": "384691b9bf7e10a860ba5ad95569c18d5838b20c978a2eb0aefb316f93e3b302"
   },
   "artifact_sha256": {
     "harness/evidence/ice_boundary_attribution_2026-10-23/SOURCE_AUDIT.md": "6ba8abe5c633c52f27d981cbec808239082155c3c57ad3d63a0d18033d17f137",
-    "harness/evidence/ice_boundary_attribution_2026-10-23/REPORT.md": "8848cf5dc690ca3654bedbbea282ff6c18b456e80ac2e9f381ae56c7da4c5b08",
+    "harness/evidence/ice_boundary_attribution_2026-10-23/REPORT.md": "272ba997f708a8282dc276b94c64456eb41ee97b4c674e9739073f3e88fb19a4",
     "harness/evidence/ice_boundary_attribution_2026-10-23/actual_file_build_receipt.json": "66d0cc4904b2217360e52ef52b6433b2b6447e3e354a9de9569465aa1734dd2a",
     "harness/evidence/ice_boundary_attribution_2026-10-23/applied_change_ledger_v2.json": "94ae5ee8ad3718906be9bba910abb3a9abeddeb4fe41478169c73a2c3864e6e3",
     "harness/evidence/ice_boundary_attribution_2026-10-23/native39_ad_noninterference.json": "38b6999321ff91c92cc25a0500160b0b93c5e1c9b45f7a68d73ab8d77f47d702",
@@ -52,7 +52,9 @@
     "operational_install_changed": false,
     "new_native_host_integrations": 0,
     "new_RTTOV_calls": 0,
-    "operational_physics_and_ABI_source_changed": false
+    "operational_physics_and_ABI_source_changed": false,
+    "final_CI_version_focused_replay": "64 passed; Python3.12 + numpy2.4.6 + pytest9.1.1 + netCDF4 1.7.4",
+    "initial_CI_test_portability_findings": "Explicit sequential-addition witness replaces builtin sum(float) assumption; public source hash lookup uses pinned relative path, not historical absolute workspace."
   },
   "limits": [
     "Nominal state-coordinate balance, not dimensionally certified raw-handoff flux.",

@@ -105,8 +105,18 @@ and full host/RK adjoints are not certified here.
 - Existing native finish/prep tests plus AD noninterference tests:
   **39 passed** (overlaps the focused product tests above).
 - Undefined-name lint and `git diff --check`: passed.
+- Final focused replay with the CI versions (Python 3.12, NumPy 2.4.6,
+  pytest 9.1.1, netCDF4 1.7.4): **64 passed**.
 - Green checked numerical/source consistency; Red checked counterexamples,
   source/request binding, top/bottom distinctions and unit/attribution limits.
+
+The initial Linux CI run exposed two test-only assumptions: Python 3.12's
+builtin float `sum` no longer supplied the naive-addition witness, and a hash
+test tried to read the historical producer's absolute workspace path. The
+witness now spells out sequential additions; public replay resolves the
+source via its pinned repository-relative path. Exact Fraction/fsum and hash
+assertions remain unchanged. No measured array, physical operator or tolerance
+was altered for these corrections.
 
 No operational C++/Fortran source or ABI was modified. The actual private
 instrumented compile/run and derivative comparison are separately attributed;
