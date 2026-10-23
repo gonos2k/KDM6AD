@@ -147,6 +147,9 @@ optimizer remain open work.
 
 ## Intended one-step state-carrying analysis loop
 
+The complete accepted-analysis cycle below is not implemented. The limited
+value-only live prototype described later is a separate bounded forward path.
+
 The requested operational loop is stateful across accepted model steps. The
 complete, balance-adjusted host state produced for the next step becomes that
 step's initial state; each new step must not restore the same original
