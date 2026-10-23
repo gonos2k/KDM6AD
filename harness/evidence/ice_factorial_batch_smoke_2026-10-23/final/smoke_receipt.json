@@ -1,0 +1,39 @@
+{
+  "dt_seconds": 20.0,
+  "modes": [
+    {
+      "B1_B2_column0_precip_bit_equal": true,
+      "B1_B2_column0_state_bit_equal": true,
+      "B2_duplicate_column_state_bit_equal": true,
+      "B2_duplicate_precip_bit_equal": true,
+      "mode": "raw_cap"
+    },
+    {
+      "B1_B2_column0_precip_bit_equal": true,
+      "B1_B2_column0_state_bit_equal": true,
+      "B2_duplicate_column_state_bit_equal": true,
+      "B2_duplicate_precip_bit_equal": true,
+      "mode": "norm_cap"
+    },
+    {
+      "B1_B2_column0_precip_bit_equal": true,
+      "B1_B2_column0_state_bit_equal": true,
+      "B2_duplicate_column_state_bit_equal": true,
+      "B2_duplicate_precip_bit_equal": true,
+      "mode": "raw_actual"
+    },
+    {
+      "B1_B2_column0_precip_bit_equal": true,
+      "B1_B2_column0_state_bit_equal": true,
+      "B2_duplicate_column_state_bit_equal": true,
+      "B2_duplicate_precip_bit_equal": true,
+      "mode": "norm_actual"
+    }
+  ],
+  "profile_levels": 39,
+  "schema": "kdm6.ice_factorial_batch_smoke.v1",
+  "scope": "39-level duplicated single-column tool smoke; sample-specific comparison only, not all-column batch-size invariance",
+  "tool_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_ice_factorial_20261023/batch_tool_build/ice_factorial_batch",
+  "tool_sha256": "b8051d8b8c983dd91e98c98204d900b27da39054eceeb282d4f9e0025cf894e7",
+  "xland": 2.0
+}

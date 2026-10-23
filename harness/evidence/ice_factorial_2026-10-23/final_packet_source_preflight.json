@@ -1,0 +1,29 @@
+{
+  "checkpoint_sha256": "7a353f1fa4f6636864ac169c9ee8d16869d1f38c8e998762c19659404cbb9c8e",
+  "checks": {
+    "checkpoint_dimensions": {
+      "bottom_top": 39,
+      "bottom_top_stag": 40,
+      "south_north": 282,
+      "west_east": 234
+    },
+    "checkpoint_global_attributes": {
+      "MP_PHYSICS": 137,
+      "USE_THETA_M": 1
+    },
+    "checkpoint_times": "2025-07-19_00:00:40",
+    "namelist_selectors": {
+      "hypsometric_opt": 2,
+      "mp_physics": 137,
+      "non_hydrostatic": true,
+      "use_theta_m": 1
+    },
+    "status": "passed"
+  },
+  "execution_phase": "source gate executed before final packet generation",
+  "namelist_output_sha256": "1fa1515fd3006a5a3f2fd0369c8a1dac94ae2ad136a031ab1c9ce0d5103f609e",
+  "numerical_chunks_equal_prior_fp64_packet": true,
+  "packet_manifest_sha256": "24630a58b03e54d90cc4bb6c6167e0571b02d2d002095424b19789286914601d",
+  "producer_sha256": "2e144050b11337fc4b02c3e888129f3a3e260e8ea5b05aaf8b781fc152a29220",
+  "schema": "kdm6.ice_factorial_frozen_packet_preflight.v1"
+}
