@@ -170,10 +170,14 @@ class NativeInputs:
 
     def verify(self) -> None:
         names = [name for name, _ in self.assets]
-        reserved = {"namelist.input", "wrf.exe", "runs"}
+        # Trace and validation receipts are writer-owned too: a staged asset
+        # symlink must never turn either output into a write to a pinned input.
+        reserved = {"namelist.input", "namelist.output", "wrf.exe", "runs",
+                    "native_trace.hex", "transition.json", "validation"}
         if len(set(names)) != len(names) or any(
-                Path(n).name != n or n in reserved or n in ("", ".", "..")
-                or n.startswith(("wrfrst_", "checkpoint_input_", "rsl.", "klfs_", "wrfout_"))
+                Path(n).name != n or n.casefold() in reserved or n in ("", ".", "..")
+                or n.casefold().startswith(("wrfrst_", "checkpoint_input_", "rsl.",
+                                           "klfs_", "wrfout_", "prefix_compare_"))
                 for n in names):
             raise ValueError("native assets need unique safe case basenames")
         keys = [key for key, _ in self.environment]
@@ -202,12 +206,45 @@ def _copy_checkpoint(source: Path, target: Path) -> None:
     shutil.copy2(source, target)
 
 
+def _runner_group_quiescent(pgid: int) -> bool:
+    """Confirm no integrating member after an EPERM signal probe.
+
+    A reaped leader can leave a transient zombie-only process group on macOS.
+    EPERM itself is never evidence of termination: an unavailable/ambiguous ps
+    snapshot or any non-zombie group member must preserve the original error.
+    """
+    try:
+        result = subprocess.run(["ps", "-axo", "pgid=,stat="], capture_output=True,
+                                text=True, timeout=2, check=False)
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+    if result.returncode != 0:
+        return False
+    for row in result.stdout.splitlines():
+        fields = row.split()
+        if len(fields) != 2 or not fields[0].isdigit():
+            return False
+        if int(fields[0]) == pgid and not fields[1].startswith("Z"):
+            return False
+    return True
+
+
+def _signal_runner_group(pgid: int, sig: int) -> bool:
+    """Signal the owned group, ignoring only verified absent/exited groups."""
+    try:
+        os.killpg(pgid, sig)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        if _runner_group_quiescent(pgid):
+            return False
+        raise
+
+
 def _stop_runner_group(process: subprocess.Popen) -> None:
     """Terminate only the new session created for this runner and its children."""
-    try:
-        os.killpg(process.pid, signal.SIGTERM)
-    except ProcessLookupError:
-        pass
+    _signal_runner_group(process.pid, signal.SIGTERM)
     try:
         process.wait(timeout=5)
     except subprocess.TimeoutExpired:
@@ -216,16 +253,11 @@ def _stop_runner_group(process: subprocess.Popen) -> None:
     # children which it may have placed in another process group.
     deadline = time.monotonic() + 5
     while time.monotonic() < deadline:
-        try:
-            os.killpg(process.pid, 0)
-        except ProcessLookupError:
+        if not _signal_runner_group(process.pid, 0):
             break
         time.sleep(0.05)
     # The runner may exit before a descendant which ignores SIGTERM.
-    try:
-        os.killpg(process.pid, signal.SIGKILL)
-    except ProcessLookupError:
-        pass
+    _signal_runner_group(process.pid, signal.SIGKILL)
     process.wait(timeout=5)
 
 
@@ -284,6 +316,43 @@ def compare_restart_metadata(reference, candidate) -> dict:
     return {"passed": not differences, "differences": differences,
             "output_ringing_normalizations": normalized,
             "policy": "override_restart_timers=true; only history/auxhist6 Boolean ringing bits normalized"}
+
+
+def native_step_namelist(text: str, *, start_time: str, dt_seconds: int) -> str:
+    assignments = _namelist_assignments(text)
+    if _parse_max_dom(assignments) != 1 or _parse_nocolons_flag(assignments):
+        raise ValueError("native transition currently supports one colon-named domain")
+    start = datetime.strptime(start_time, _STAMP)
+    end = start + timedelta(seconds=dt_seconds)
+    values = {"run_days": 0, "run_hours": 0, "run_minutes": 0,
+              "run_seconds": dt_seconds, "restart": ".true.",
+              "write_restart_at_0h": ".false.", "write_hist_at_0h_rst": ".false.",
+              "override_restart_timers": ".true.",
+              "rst_inname": '"checkpoint_input_d<domain>_<date>"',
+              "rst_outname": '"wrfrst_d<domain>_<date>"',
+              "restart_interval": 0, "restart_interval_d": 0,
+              "restart_interval_h": 0, "restart_interval_m": 0,
+              "restart_interval_s": dt_seconds,
+              "history_interval": 0, "history_interval_s": dt_seconds}
+    for prefix, stamp in (("start", start), ("end", end)):
+        for key in ("year", "month", "day", "hour", "minute", "second"):
+            values[prefix + "_" + key] = getattr(stamp, key)
+    for key, value in values.items():
+        text = set_or_insert(text, key, str(value), section="&time_control")
+    for key, value, section in (
+        ("mp_physics", 137, "&physics"), ("no_mp_heating", 0, "&physics"),
+        ("use_theta_m", 1, "&dynamics"), ("use_q_diabatic", 0, "&dynamics"),
+        ("time_step", dt_seconds, "&domains"),
+        ("time_step_fract_num", 0, "&domains"), ("time_step_fract_den", 1, "&domains"),
+        ("nproc_x", 1, "&domains"), ("nproc_y", 1, "&domains"),
+        ("use_adaptive_time_step", ".false.", "&domains"),
+        ("step_to_output_time", ".false.", "&domains"),
+    ):
+        text = set_or_insert(text, key, str(value), section=section)
+    # The shared exact-key setter is intentionally narrow. Upper/lower-case
+    # duplicates or other ambiguous template forms must not override a fence.
+    _namelist_assignments(text)
+    return text
 
 
 class NativeHostTransition:
@@ -352,40 +421,7 @@ class NativeHostTransition:
         return state  # Immutable descriptor + verified file bytes, not a hidden cache.
 
     def _namelist(self, text: str, state: NativeCheckpoint) -> str:
-        assignments = _namelist_assignments(text)
-        if _parse_max_dom(assignments) != 1 or _parse_nocolons_flag(assignments):
-            raise ValueError("native transition currently supports one colon-named domain")
-        start = datetime.strptime(state.time, _STAMP)
-        end = start + timedelta(seconds=self.dt_seconds)
-        values = {"run_days": 0, "run_hours": 0, "run_minutes": 0,
-                  "run_seconds": self.dt_seconds, "restart": ".true.",
-                  "write_restart_at_0h": ".false.", "write_hist_at_0h_rst": ".false.",
-                  "override_restart_timers": ".true.",
-                  "rst_inname": '"checkpoint_input_d<domain>_<date>"',
-                  "rst_outname": '"wrfrst_d<domain>_<date>"',
-                  "restart_interval": 0, "restart_interval_d": 0,
-                  "restart_interval_h": 0, "restart_interval_m": 0,
-                  "restart_interval_s": self.dt_seconds,
-                  "history_interval": 0, "history_interval_s": self.dt_seconds}
-        for prefix, stamp in (("start", start), ("end", end)):
-            for key in ("year", "month", "day", "hour", "minute", "second"):
-                values[prefix + "_" + key] = getattr(stamp, key)
-        for key, value in values.items():
-            text = set_or_insert(text, key, str(value), section="&time_control")
-        for key, value, section in (
-            ("mp_physics", 137, "&physics"), ("no_mp_heating", 0, "&physics"),
-            ("use_theta_m", 1, "&dynamics"), ("use_q_diabatic", 0, "&dynamics"),
-            ("time_step", self.dt_seconds, "&domains"),
-            ("time_step_fract_num", 0, "&domains"), ("time_step_fract_den", 1, "&domains"),
-            ("nproc_x", 1, "&domains"), ("nproc_y", 1, "&domains"),
-            ("use_adaptive_time_step", ".false.", "&domains"),
-            ("step_to_output_time", ".false.", "&domains"),
-        ):
-            text = set_or_insert(text, key, str(value), section=section)
-        # The shared exact-key setter is intentionally narrow. Upper/lower-case
-        # duplicates or other ambiguous template forms must not override a fence.
-        _namelist_assignments(text)
-        return text
+        return native_step_namelist(text, start_time=state.time, dt_seconds=self.dt_seconds)
 
     def forward(self, step: int, state: NativeCheckpoint,
                 external: NativeInputs, dt: float) -> NativeCheckpoint:

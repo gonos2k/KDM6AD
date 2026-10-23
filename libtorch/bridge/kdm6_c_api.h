@@ -334,6 +334,43 @@ KDM6_C_API int kdm6_step_ad_number_c(
     uint32_t physics_variant,
     int64_t dry_number);
 
+/* Additive independent state+forcing fp64 AD contract. Same forward and
+ * selectors as kdm6_step_ad_number_c; no existing signature/layout changes.
+ * value_only=0 records all 12 state and four forcing blocks as independent
+ * owning leaves. Forcing order is rho [kg/m^3], pii [1], p [Pa], delz [m].
+ * This exposes partial derivatives of the selected KDM kernel, not host RK,
+ * forcing generation, applied tendency/limiter, RTTOV or a full-host adjoint.
+ * Discrete schedules/branch choices follow the existing piecewise operator.
+ * value_only=1 returns NULL and preserves the existing fp64 forward values.
+ */
+KDM6_C_API int kdm6_step_ad_state_forcing_c(
+    const double* state_in_packed, const double* forcing_packed,
+    int im, int kme, int jme, double dt, int value_only,
+    double* state_out_packed, kdm6_handle_t** handle,
+    const float* xland, double ncmin_land, double ncmin_sea,
+    uint32_t physics_variant, int64_t dry_number);
+
+/* u has 12 blocks; returned state/forcing adjoints have 12/4 blocks in the
+ * same Fortran field-major layouts as the forward inputs. Both output buffers
+ * must be caller-allocated and nonoverlapping. Handles are repeat-callable.
+ * Only handles from kdm6_step_ad_state_forcing_c are accepted; an old
+ * state-only handle returns INVALID_ARG before any tensor/output work.
+ * Null/closed/value-only handles and thread failures follow the existing AD
+ * error contract. All validation/thread failures leave outputs untouched;
+ * after INTERNAL, discard every output (no transactional rollback promised).
+ */
+KDM6_C_API int kdm6_handle_state_forcing_vjp_c(
+    kdm6_handle_t* handle, const double* u_packed,
+    double* state_grad_packed, double* forcing_grad_packed);
+
+/* JVP = K_s * state_direction + K_F * forcing_direction. Direction blocks
+ * have 12/4 fields; the result has 12. Same handle/error contract as above.
+ * These are first-order kernel operators; no HVP certification is implied.
+ */
+KDM6_C_API int kdm6_handle_state_forcing_jvp_c(
+    kdm6_handle_t* handle, const double* state_direction_packed,
+    const double* forcing_direction_packed, double* tangent_out_packed);
+
 /**
  * VJP — J^T @ u. 4D-Var adjoint 용.
  *

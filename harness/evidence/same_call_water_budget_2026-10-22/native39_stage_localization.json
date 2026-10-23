@@ -1,0 +1,164 @@
+{
+  "schema": "kdm6.same_call_water_budget.stage_localization.v1",
+  "classification": "one saved-call fp64 runtime stage localization; no model/RTTOV integration or physical-map change",
+  "case": {
+    "input_request_sha256": "4867805f5318f1ad28b05101ffc583d50000309ed80b81c4379fb9c9e77082e2",
+    "dt_seconds": 20.0,
+    "levels": 39,
+    "loops": 1,
+    "dtcld_seconds": 20.0,
+    "xland": 2.0,
+    "ncmin_land": 10.0,
+    "ncmin_sea": 10.0
+  },
+  "measure": {
+    "formula": "sum_k DENdry[k]*DELZ[k]*(QV+QC+QR+QI+QS+QG)[k]",
+    "units": "kg water m-2",
+    "fixed_weights": true,
+    "water_state_fields": [
+      "QV",
+      "QC",
+      "QR",
+      "QI",
+      "QS",
+      "QG"
+    ],
+    "excluded_fields": [
+      "NN",
+      "NC",
+      "NI",
+      "NR",
+      "BG"
+    ],
+    "stage_delta_method": "math.fsum of all per-species per-level terms, each evaluated as ((q_after-q_before)*DENdry)*DELZ; species subledgers use the same terms. Public harness.same_call_water_budget.stage_changes reproduces the exact order."
+  },
+  "trace_order": {
+    "entry": "WRF state order, bottom-first",
+    "pre_sed": "sedimentation K order, top-first; reverse levels before comparing to WRF-order stages",
+    "post_sed": "WRF state order, bottom-first",
+    "post_micro": "WRF state order, bottom-first",
+    "exit": "WRF state order, bottom-first"
+  },
+  "column_stage_sums_emitted_by_cpp": {
+    "entry": {
+      "qv_kg_m2": 61.01482632806921,
+      "qc_kg_m2": 1.3810696192378339e-12,
+      "qr_kg_m2": 0.00037729388487030795,
+      "qi_kg_m2": 0.0012979597747497613,
+      "qs_kg_m2": 1.9076796350546875e-05,
+      "qg_kg_m2": 4.447765853437978e-13,
+      "total_kg_m2": 61.016520658527
+    },
+    "pre_sed": {
+      "qv_kg_m2": 61.01482632806921,
+      "qc_kg_m2": 1.3810696192378339e-12,
+      "qr_kg_m2": 0.00037729388487030795,
+      "qi_kg_m2": 0.0012979597747497613,
+      "qs_kg_m2": 1.9076796350546875e-05,
+      "qg_kg_m2": 4.447765853437978e-13,
+      "total_kg_m2": 61.01652065852701
+    },
+    "post_sed": {
+      "qv_kg_m2": 61.01482632806921,
+      "qc_kg_m2": 1.3810696192378339e-12,
+      "qr_kg_m2": 0.00037729388487030795,
+      "qi_kg_m2": 2.5247588351088543e-12,
+      "qs_kg_m2": 1.9076796350546875e-05,
+      "qg_kg_m2": 4.447765853437978e-13,
+      "total_kg_m2": 61.01522269875478
+    },
+    "post_micro": {
+      "qv_kg_m2": 61.01353634483267,
+      "qc_kg_m2": 0.0,
+      "qr_kg_m2": 0.00036181743954716457,
+      "qi_kg_m2": 0.0013094168969256259,
+      "qs_kg_m2": 1.4530153092946951e-05,
+      "qg_kg_m2": 0.0,
+      "total_kg_m2": 61.01522210932224
+    },
+    "exit": {
+      "qv_kg_m2": 61.01353634483267,
+      "qc_kg_m2": 0.0,
+      "qr_kg_m2": 0.00036181743954716457,
+      "qi_kg_m2": 0.0013094168969256259,
+      "qs_kg_m2": 1.4530153092946951e-05,
+      "qg_kg_m2": 0.0,
+      "total_kg_m2": 61.01522210932224
+    }
+  },
+  "stage_deltas_recomputed_from_per_level_binary64": {
+    "entry_to_pre_sed_kg_m2": 0.0,
+    "pre_sed_to_post_sed_kg_m2": -0.0012979597722250025,
+    "post_sed_to_post_micro_kg_m2": -5.894325408886351e-07,
+    "post_micro_to_exit_kg_m2": 0.0,
+    "entry_to_exit_kg_m2": -0.0012985492047658913,
+    "sedimentation_species_kg_m2": {
+      "qv": 0.0,
+      "qc": 0.0,
+      "qr": -1.526461977181738e-20,
+      "qi": -0.0012979597722250025,
+      "qs": 1.2377216621973875e-21,
+      "qg": 0.0
+    },
+    "microphysics_species_kg_m2": {
+      "qv": -0.0012899832365351662,
+      "qc": -1.3810696192378339e-12,
+      "qr": -1.5476445323143326e-05,
+      "qi": 0.001309416894400867,
+      "qs": -4.546643257599925e-06,
+      "qg": -4.4477658534379783e-13
+    },
+    "residual_after_stage_decomposition_kg_m2": -2.168404344971009e-19
+  },
+  "precipitation_mm_water_equivalent": {
+    "rain_increment_total_all_species": 0.0,
+    "snow_ice_subset": 0.0,
+    "graupel_subset": 0.0,
+    "all_zero": true,
+    "note": "subsets are not added to total"
+  },
+  "balance": {
+    "kernel_water_delta_kg_m2": -0.0012985492047658913,
+    "total_export_kg_m2": 0.0,
+    "kernel_delta_plus_export_residual_kg_m2": -0.0012985492047658913,
+    "sedimentation_delta_kg_m2": -0.0012979597722250025,
+    "microphysics_delta_kg_m2": -5.894325408886351e-07,
+    "sedimentation_fraction_of_absolute_raw_delta": 0.9995460837843299,
+    "interpretation": "The measured nonclosure is localized to the sedimentation stage; microphysics contributes a smaller separate negative stage delta. No specific sedimentation sub-process attribution is claimed by this trace."
+  },
+  "noninterference": {
+    "control_response_sha256": "93a357b011bab8724a1ff84ce278927abc24f88d9b5f42e1d10f94fa3949cf8d",
+    "overlay_trace_enabled_response_sha256": "93a357b011bab8724a1ff84ce278927abc24f88d9b5f42e1d10f94fa3949cf8d",
+    "overlay_env_unset_response_sha256": "93a357b011bab8724a1ff84ce278927abc24f88d9b5f42e1d10f94fa3949cf8d",
+    "all_response_files_bit_identical": true,
+    "control_request_sha256": "4867805f5318f1ad28b05101ffc583d50000309ed80b81c4379fb9c9e77082e2"
+  },
+  "build_provenance": {
+    "public_worktree_commit": "5202ea117c1661472b79411e07e854b532367854",
+    "base_runtime_cpp_sha256": "4a56110c91b7495aea0542531eb809a048bb7994747cea2be826f9a2f6e26f7a",
+    "overlay_runtime_sha256": "4e943121b47024c8198cc208bc673da1c39147a1387f3a39d9fa17032f40e2f1",
+    "overlay_runtime_object_sha256": "da78e81ca2e10a87767fafc9ebef59547b3e41dfe606fc67c3304e5c004e9c00",
+    "overlay_generator_path": "harness/make_same_call_budget_overlay.py",
+    "overlay_generator_sha256": "7f8a56e2ebe96b9f638545bf5c0a0ab82f9ef7c82245dbde3be79a2302e365cc",
+    "overlay_generator_test_path": "harness/tests/test_make_same_call_budget_overlay.py",
+    "overlay_generator_test_sha256": "a54eab3396038fe4532c972ccdc998631da91591bd43148a7063e278f018e15f",
+    "base_static_archive_sha256": "9d654b4e8e70b73b10c20b570a88ad39918119fb011bca2ee4e653a13f3e4475",
+    "base_static_archive_copied_then_runtime_member_replaced_sha256": "9446bd309cb17732ec3a2fe982ac99b10b638dc0d1ccefa2271be9e6b59e6ebf",
+    "cli_object_sha256": "261a726e36a78dc65cf19b2df343cae7beb9b8024fa8a28cb6785c9884bc668d",
+    "forensic_executable_sha256": "74c78214355d6672f6b8abc288b81ab239a6951f4110caaf56135ae20085576f",
+    "compile_flags_make_sha256": "51167818af8b6e20292580aaab1f57d867e319f5024b24d142086ab53929d748",
+    "link_command_sha256": "037e6d874db7e5c3b8139ec57c443d6d444d2ad820906c1c7325ad7393aa0ab1",
+    "compile_flag_contract": "same CMake arm64 Release flags; -ffp-contract=off; private object/archive/executable only"
+  },
+  "trace_artifact": {
+    "private_path": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_same_call_budget_20261022/capture_bound/stage_trace_overlay.txt",
+    "sha256": "060276fe2ac80febcb858c3bd0f2531546695ff9f8cbfe368ed7715696f32381",
+    "overlay_manifest_sha256": "eafeaa0c8007e532aba018b9d297020a565743322a832662b71bd43e292a7ec6",
+    "public_path": "native39_stage_trace.txt"
+  },
+  "limits": [
+    "Stage localization only; no named process attribution within sedimentation or microphysics.",
+    "No full host/RK integration, energy closure, operational host install, or RTTOV run.",
+    "Existing legacy sedimentation interface behavior is not modified."
+  ]
+}

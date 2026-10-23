@@ -1,0 +1,112 @@
+{
+  "schema": "kdm6.native_pressure_whole_profile_epsilon_sweep_provenance.v1",
+  "sweep_report_sha256": "d0eb097d799f9f6180c82364f3dbcbd65aef7ef7f67f8109d5c8e24060fd597a",
+  "raw_failing_report_sha256": "4d5f69bb6cd2eb0f76d696bcff35e69621d2e228bcc028c22b63061d1ddd5698",
+  "code_and_executable_sha256": {
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_obs_ad_20261021/pressure_k_probe/run_whole_profile_pressure_sweep.py": "22026acd67963360ec051c55809e506aad9fe9cc0688c34a855e872bb9395714",
+    "/private/tmp/KDM6AD-native-obs-ad-20261021/oracle/kdm6/obs/rttov_case_writer.py": "aee152ca3c9fda15b2a9d25f38b4ca784e04f66735b173e73d92f5b6cd80d93d",
+    "/private/tmp/KDM6AD-native-obs-ad-20261021/oracle/kdm6/obs/rttov_runner.py": "100e39c6f56ab5e1ccadb59f6b439ebd20255d139b5d9965063bf0ed393fa441",
+    "/private/tmp/KDM6AD-native-obs-ad-20261021/oracle/kdm6/obs/rttov_input_builder.py": "573cdb1d21c76c2f3bc042c3f50da6f75306668af70b3714b8d6a505ff0e1d45",
+    "/private/tmp/KDM6AD-native-obs-ad-20261021/oracle/kdm6/obs/rttov_obs_operator.py": "40e4cdd9708ab0315c1be5851d65ec5961ac8d6a74a987c98750c688a92a438d",
+    "/private/tmp/KDM6AD-native-obs-ad-20261021/oracle/kdm6/obs/obs_loss.py": "4c39b69bf54be9929d48cc97881887f80fb1f7c9a05d68a6a6111bda1ca9d855",
+    "/private/tmp/KDM6AD-native-obs-ad-20261021/oracle/kdm6/obs/ami_bt_coordinate.py": "e1aec7c9270bbeff6dec9aee0f7b3fa3741528b3e060bc3aa74be721e3ac97cc",
+    "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/main/rttov_intavg_chan_ad.F90": "0b6b75f3288e326626b6144a9be702614f222cbb614bfb9deaf30374d5f9870e",
+    "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd"
+  },
+  "case_output_sha256": {
+    "e0.3_plus": {
+      "in/coef.txt": "3f3d64ad27fd4bc346092a29ac1320a081a3070846637606e343ffeb1da616c0",
+      "in/profiles/001/atm/p.txt": "d3aaaea6c06f189d565acb6eda079e7beac65217c6c90eb7deb6c5e44e4a18d7",
+      "in/profiles/001/atm/p_half.txt": "d2a559da997cefd843c236166798fd395e37b0f29f3dba56187300e8ee8df5b5",
+      "in/profiles/001/atm/q.txt": "edb4c7b8eac3df34f19a73ffc8cb26df7d6876b8e3a3bd99017c1bf5f3cf974c",
+      "in/profiles/001/atm/t.txt": "0a6db1514a7480a1fabe65a0e0d145a2a074ec27075219209974099f77e6ac39",
+      "out/direct/radiance.txt": "419007d812555815dce1c5f34277afcd81ab3200e76f7aedd2c733914a6f9f9a",
+      "out/env.sh": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+      "out/k/profiles_k.txt": "76786044af52bb06e8ab757a08e7b9a984c1effe439174972e85f5e1a5b878ca",
+      "out/k/radiance.txt": "419007d812555815dce1c5f34277afcd81ab3200e76f7aedd2c733914a6f9f9a",
+      "out/rttov_test.log": "795b1a3f6efa5cc1bea30f1341fefc604c573a50b741ec287018b49fdbd54a61",
+      "out/rttov_test.txt": "3da8c44d81d1a0f2332e69d56f9a90799242c663851798f2fbd362b89f894411",
+      "out/run.sh": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+    },
+    "e0.3_minus": {
+      "in/coef.txt": "3f3d64ad27fd4bc346092a29ac1320a081a3070846637606e343ffeb1da616c0",
+      "in/profiles/001/atm/p.txt": "821885458a3a9341d1da31dbc16341095ebda3a18b2987f53405abb4af486614",
+      "in/profiles/001/atm/p_half.txt": "d500bda368b1bd90a85a1b4f9a8a3501e621edd70a14f7eed611309e387f0d8a",
+      "in/profiles/001/atm/q.txt": "edb4c7b8eac3df34f19a73ffc8cb26df7d6876b8e3a3bd99017c1bf5f3cf974c",
+      "in/profiles/001/atm/t.txt": "0a6db1514a7480a1fabe65a0e0d145a2a074ec27075219209974099f77e6ac39",
+      "out/direct/radiance.txt": "fdcb3504c81f9a21a4413314f5f1fee43bb9fd798ea8377c1b1555c6e4bacb15",
+      "out/env.sh": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+      "out/k/profiles_k.txt": "e09773b4179e0c019d1970be531d510e7de3bd5543796ef9afd6afd956863124",
+      "out/k/radiance.txt": "fdcb3504c81f9a21a4413314f5f1fee43bb9fd798ea8377c1b1555c6e4bacb15",
+      "out/rttov_test.log": "795b1a3f6efa5cc1bea30f1341fefc604c573a50b741ec287018b49fdbd54a61",
+      "out/rttov_test.txt": "3da8c44d81d1a0f2332e69d56f9a90799242c663851798f2fbd362b89f894411",
+      "out/run.sh": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+    },
+    "e0.1_plus": {
+      "in/coef.txt": "3f3d64ad27fd4bc346092a29ac1320a081a3070846637606e343ffeb1da616c0",
+      "in/profiles/001/atm/p.txt": "8b0edcb734467eb8e0571a6f0c678976496f55c93ef34fdc8a30feb7ef87dcde",
+      "in/profiles/001/atm/p_half.txt": "eacb8aeacc0ebc25bce9cc98b2de4b67288e6be0fa841a8a12ee4e661b4129dc",
+      "in/profiles/001/atm/q.txt": "edb4c7b8eac3df34f19a73ffc8cb26df7d6876b8e3a3bd99017c1bf5f3cf974c",
+      "in/profiles/001/atm/t.txt": "0a6db1514a7480a1fabe65a0e0d145a2a074ec27075219209974099f77e6ac39",
+      "out/direct/radiance.txt": "274097f7c0ac3672ed5687d40043769a399df63687ba25edee388a89a7e4f842",
+      "out/env.sh": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+      "out/k/profiles_k.txt": "163a6e6a7ae18f845747b1e8afe93ba1b2111acd9cc900c271750f35684940c0",
+      "out/k/radiance.txt": "274097f7c0ac3672ed5687d40043769a399df63687ba25edee388a89a7e4f842",
+      "out/rttov_test.log": "795b1a3f6efa5cc1bea30f1341fefc604c573a50b741ec287018b49fdbd54a61",
+      "out/rttov_test.txt": "3da8c44d81d1a0f2332e69d56f9a90799242c663851798f2fbd362b89f894411",
+      "out/run.sh": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+    },
+    "e0.1_minus": {
+      "in/coef.txt": "3f3d64ad27fd4bc346092a29ac1320a081a3070846637606e343ffeb1da616c0",
+      "in/profiles/001/atm/p.txt": "b24232c078809675a688d91c23b5688fe21d331f8e63812beae33ad704cb0757",
+      "in/profiles/001/atm/p_half.txt": "f8f2811c89f003cef3c9dea600dd3c4a694ecd9239e4cd6fbd256d75e0d9c9a6",
+      "in/profiles/001/atm/q.txt": "edb4c7b8eac3df34f19a73ffc8cb26df7d6876b8e3a3bd99017c1bf5f3cf974c",
+      "in/profiles/001/atm/t.txt": "0a6db1514a7480a1fabe65a0e0d145a2a074ec27075219209974099f77e6ac39",
+      "out/direct/radiance.txt": "81d83e9e7f42e18513149171a7d0d8f9ef6048932f9ebdb980e085e49f2317ea",
+      "out/env.sh": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+      "out/k/profiles_k.txt": "b03bc54ffff24d930e4405979fc1586d3720332e6bbe8a971ed26274f819aed4",
+      "out/k/radiance.txt": "81d83e9e7f42e18513149171a7d0d8f9ef6048932f9ebdb980e085e49f2317ea",
+      "out/rttov_test.log": "795b1a3f6efa5cc1bea30f1341fefc604c573a50b741ec287018b49fdbd54a61",
+      "out/rttov_test.txt": "3da8c44d81d1a0f2332e69d56f9a90799242c663851798f2fbd362b89f894411",
+      "out/run.sh": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+    },
+    "e0.03_plus": {
+      "in/coef.txt": "3f3d64ad27fd4bc346092a29ac1320a081a3070846637606e343ffeb1da616c0",
+      "in/profiles/001/atm/p.txt": "46763ba0a186b1ee3c0578388ff2e0c1ed8fe82350288cd4dc571c9097781e86",
+      "in/profiles/001/atm/p_half.txt": "65639bfb5dc5276d85e5ea55f6c1c3477fb63ab40cb263bd313f85e7ca2c1714",
+      "in/profiles/001/atm/q.txt": "edb4c7b8eac3df34f19a73ffc8cb26df7d6876b8e3a3bd99017c1bf5f3cf974c",
+      "in/profiles/001/atm/t.txt": "0a6db1514a7480a1fabe65a0e0d145a2a074ec27075219209974099f77e6ac39",
+      "out/direct/radiance.txt": "c21c2f6cda8141c7c722e855eade4404979994d53eadc370da40102b95f0f75d",
+      "out/env.sh": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+      "out/k/profiles_k.txt": "29b2532a0db9fd6103a17bf0569bb6b26c933a6ec215306c1cb8e324234ecf7e",
+      "out/k/radiance.txt": "c21c2f6cda8141c7c722e855eade4404979994d53eadc370da40102b95f0f75d",
+      "out/rttov_test.log": "795b1a3f6efa5cc1bea30f1341fefc604c573a50b741ec287018b49fdbd54a61",
+      "out/rttov_test.txt": "3da8c44d81d1a0f2332e69d56f9a90799242c663851798f2fbd362b89f894411",
+      "out/run.sh": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+    },
+    "e0.03_minus": {
+      "in/coef.txt": "3f3d64ad27fd4bc346092a29ac1320a081a3070846637606e343ffeb1da616c0",
+      "in/profiles/001/atm/p.txt": "f7b638579ad0cd571d7752db93595a75016be3868a9d2f1bce3b31e171c69d11",
+      "in/profiles/001/atm/p_half.txt": "78a917edf8eb282e45c6b0e294caeaf0f08d92a67c935618554d6204cd24838e",
+      "in/profiles/001/atm/q.txt": "edb4c7b8eac3df34f19a73ffc8cb26df7d6876b8e3a3bd99017c1bf5f3cf974c",
+      "in/profiles/001/atm/t.txt": "0a6db1514a7480a1fabe65a0e0d145a2a074ec27075219209974099f77e6ac39",
+      "out/direct/radiance.txt": "e8f702d5832a4eab35287a21f258b6c9f4d261d9dd43118df2b6d94b898b89ac",
+      "out/env.sh": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+      "out/k/profiles_k.txt": "a5a7aa81d3afd5c7a30b1b2211bd9cfaf6264d47de9f641ce103fcdd7b8d0990",
+      "out/k/radiance.txt": "e8f702d5832a4eab35287a21f258b6c9f4d261d9dd43118df2b6d94b898b89ac",
+      "out/rttov_test.log": "795b1a3f6efa5cc1bea30f1341fefc604c573a50b741ec287018b49fdbd54a61",
+      "out/rttov_test.txt": "3da8c44d81d1a0f2332e69d56f9a90799242c663851798f2fbd362b89f894411",
+      "out/run.sh": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd"
+    }
+  },
+  "attempts": {
+    "completed_RTTOV_calls": 6,
+    "epsilon_pairs": [
+      0.3,
+      0.1,
+      0.03
+    ],
+    "gate_changes": 0,
+    "new_data_or_source_modifications": false
+  }
+}

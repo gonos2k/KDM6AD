@@ -68,10 +68,10 @@ target_include_directories(kdm6_c
 target_link_libraries(kdm6_c PUBLIC kdm6)
 
 # ── PR3: symbol visibility / export allowlist (docs/PR3_VISIBILITY_DESIGN.md) ─
-# The shipped dylib must export ONLY the 11 C ABI functions (kdm6_c_api.h), not
+# The shipped dylib must export ONLY the 14 C ABI functions (kdm6_c_api.h), not
 # its ~1342-symbol internal world (kdm6::/libtorch/std). Two layers:
 #  (1) compiler visibility hidden on BOTH this bridge and the static kdm6 core
-#      above — each of the 11 is opted back in via KDM6_C_API in the header;
+#      above — each is opted back in via KDM6_C_API in the header;
 #  (2) a linker export allowlist as the load-bearing backstop (macOS
 #      exported_symbols_list / Linux --version-script), which the symbol-surface
 #      CI gate measures. KDM6_C_BUILD makes KDM6_C_API take the producer branch
@@ -164,6 +164,9 @@ if(KDM6_ENABLE_TEST_HOOKS)
     target_compile_definitions(test_c_abi PRIVATE KDM6_ENABLE_TEST_HOOKS)
 endif()
 add_test(NAME c_abi COMMAND test_c_abi)
+add_executable(test_state_forcing_abi tests/test_state_forcing_abi.cpp)
+target_link_libraries(test_state_forcing_abi PRIVATE kdm6_c)
+add_test(NAME state_forcing_abi COMMAND test_state_forcing_abi)
 add_executable(test_autograd_endtoend tests/test_autograd_endtoend.cpp)
 target_link_libraries(test_autograd_endtoend PRIVATE kdm6)
 add_test(NAME autograd_endtoend COMMAND test_autograd_endtoend)
@@ -190,6 +193,26 @@ add_test(NAME conservative_interface COMMAND test_conservative_interface)
 # after ctest, mirroring the test_cpp_parity <-> test_autograd_endtoend flow).
 add_executable(dump_conservative_interface tests/dump_conservative_interface.cpp)
 target_link_libraries(dump_conservative_interface PRIVATE kdm6)
+
+# Isolated research executable for a same-call fp64 single-column budget
+# capture. This is opt-in, links the source-tree static core, and is never
+# installed or wired into the host ABI.
+option(KDM6_BUILD_RESEARCH_COLUMN_BUDGET_TOOL
+    "Build the opt-in same-call fp64 column budget capture tool" OFF)
+if(KDM6_BUILD_RESEARCH_COLUMN_BUDGET_TOOL)
+    add_executable(kdm6_column_budget tools/kdm6_column_budget.cpp)
+    target_link_libraries(kdm6_column_budget PRIVATE kdm6)
+    target_compile_options(kdm6_column_budget PRIVATE -Wall -Wextra -Wpedantic)
+    add_executable(test_column_budget_cli tests/test_column_budget_cli.cpp)
+    target_link_libraries(test_column_budget_cli PRIVATE kdm6)
+    add_test(NAME column_budget_cli_same_call_parity
+        COMMAND test_column_budget_cli $<TARGET_FILE:kdm6_column_budget>)
+    add_test(NAME column_budget_rejects_truncated_request
+        COMMAND ${CMAKE_COMMAND}
+            -DPROGRAM=$<TARGET_FILE:kdm6_column_budget>
+            -DWORK=${CMAKE_CURRENT_BINARY_DIR}/column-budget-reject-test
+            -P ${CMAKE_CURRENT_SOURCE_DIR}/tests/test_column_budget_reject.cmake)
+endif()
 
 # ── Fortran ISO_C_BINDING smoke (optional — Fortran 컴파일러 있을 때만) ──────
 # KIM-meso 통합 시 `kdm6_iso_c` 모듈을 그대로 drop-in 사용. 컴파일러 없으면 skip.
@@ -219,6 +242,17 @@ if(CMAKE_Fortran_COMPILER)
     target_include_directories(test_fortran_normalized_ad PRIVATE "${_fortran_normalized_ad_mod_dir}")
     target_link_libraries(test_fortran_normalized_ad PRIVATE kdm6_c)
     add_test(NAME fortran_normalized_ad COMMAND test_fortran_normalized_ad)
+    add_executable(test_fortran_state_forcing
+        bridge/kdm6_iso_c.f90
+        tests/test_fortran_state_forcing.f90
+    )
+    set(_fortran_state_forcing_mod_dir "${CMAKE_CURRENT_BINARY_DIR}/fortran-state-forcing-mod")
+    file(MAKE_DIRECTORY "${_fortran_state_forcing_mod_dir}")
+    set_target_properties(test_fortran_state_forcing PROPERTIES
+        Fortran_MODULE_DIRECTORY "${_fortran_state_forcing_mod_dir}")
+    target_include_directories(test_fortran_state_forcing PRIVATE "${_fortran_state_forcing_mod_dir}")
+    target_link_libraries(test_fortran_state_forcing PRIVATE kdm6_c)
+    add_test(NAME fortran_state_forcing COMMAND test_fortran_state_forcing)
     message(STATUS "Fortran enabled — test_fortran_smoke will be built")
 else()
     message(STATUS "Fortran compiler not found — skipping test_fortran_smoke")
@@ -235,9 +269,9 @@ endif()
 foreach(t IN ITEMS
         test_smoke test_slope test_progb test_warm test_satadj test_aux_placeholder_gap
         test_cold test_melt_freeze test_sedimentation test_thermo test_coordinator
-        test_cloud_dsd test_c_abi test_autograd_endtoend test_handle_vjp
+        test_cloud_dsd test_c_abi test_state_forcing_abi test_autograd_endtoend test_handle_vjp
         test_dry_number
-        test_conservative_interface)
+        test_conservative_interface test_column_budget_cli)
     if(TARGET ${t})
         target_compile_options(${t} PRIVATE -UNDEBUG)
     endif()

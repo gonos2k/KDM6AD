@@ -128,3 +128,28 @@ def test_config_hash_sensitive_to_grid_values():
     assert pack_rttov_input(p1, _cfg()).config_hash != pack_rttov_input(p2, _cfg()).config_hash
     # deterministic: identical grid -> identical hash
     assert pack_rttov_input(p1, _cfg()).config_hash == pack_rttov_input(_profile(), _cfg()).config_hash
+
+
+def test_pressure_gradient_mode_is_opt_in_and_hash_sensitive():
+    p = _profile()
+    legacy = pack_rttov_input(p, _cfg())
+    opted_in = pack_rttov_input(p, _cfg(pressure_gradients=True))
+    assert _cfg().pressure_gradients is False
+    assert "P" in opted_in.profile and "P_HALF" in opted_in.profile
+    # Exact pre-feature fingerprint for this fixed legacy input/config.
+    assert legacy.config_hash == "87de8ce0f930720b"
+    assert legacy.config_hash != opted_in.config_hash
+
+
+@pytest.mark.parametrize("bad", [1, 0, "true", None])
+def test_pressure_gradient_option_requires_exact_bool(bad):
+    with pytest.raises(ValueError, match="pressure_gradients=.*must be bool"):
+        pack_rttov_input(_profile(), _cfg(pressure_gradients=bad))
+
+
+@pytest.mark.parametrize("field", ["p_lay", "p_half"])
+def test_pressure_gradient_mode_requires_both_pressure_grids(field):
+    profile = _profile()
+    profile = profile._replace(**{field: None})
+    with pytest.raises(ValueError, match=r"requires both p_lay \(P\) and p_half"):
+        pack_rttov_input(profile, _cfg(pressure_gradients=True))

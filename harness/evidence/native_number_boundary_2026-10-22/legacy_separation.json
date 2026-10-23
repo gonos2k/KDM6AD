@@ -1,0 +1,97 @@
+{
+  "schema": "kdm6.native_dry_number_legacy_separation.v1",
+  "receipt_sha256": "d6ab30b3daa7d284c5f3354d8e51212822a9ed5930c356b8d036da8aaa5a0d34",
+  "library_sha256": "3e968dcd43f6d361a2e1be6b963f76dcb9de1381313875e5c805af187a1693e4",
+  "producer_sha256": "fc176a09a2d50726929b08b422456d56c87e2e5353711eb2fb486c7a94d54165",
+  "actual_KDM_calls": 5,
+  "actual_RTTOV_calls": 0,
+  "operational_f32_campaign": false,
+  "legacy_value_repeat_raw_bitwise_equal": true,
+  "legacy_value_graph_raw_bitwise_equal": true,
+  "source_inputs_unchanged": true,
+  "physical_forcing_unchanged": true,
+  "versioned_equals_explicit_conjugation_raw_bitwise": true,
+  "inner_K_recording_vs_value_raw_bitwise": true,
+  "volume_input_roundtrip_vs_source": {
+    "NN": {
+      "max_abs": 1.4901161193847656e-08,
+      "max_ulp": 1
+    },
+    "NC": {
+      "max_abs": 0.0,
+      "max_ulp": 0
+    },
+    "NI": {
+      "max_abs": 0.0,
+      "max_ulp": 0
+    },
+    "NR": {
+      "max_abs": 1.4210854715202004e-14,
+      "max_ulp": 1
+    }
+  },
+  "new_inner_volume_output_vs_source_legacy": {
+    "TH": {
+      "raw_bit_matches": 39,
+      "compared": 39,
+      "max_abs": 0.0
+    },
+    "Q": {
+      "raw_bit_matches": 39,
+      "compared": 39,
+      "max_abs": 0.0
+    },
+    "QC": {
+      "raw_bit_matches": 39,
+      "compared": 39,
+      "max_abs": 0.0
+    },
+    "QR": {
+      "raw_bit_matches": 39,
+      "compared": 39,
+      "max_abs": 0.0
+    },
+    "QI": {
+      "raw_bit_matches": 39,
+      "compared": 39,
+      "max_abs": 0.0
+    },
+    "QS": {
+      "raw_bit_matches": 39,
+      "compared": 39,
+      "max_abs": 0.0
+    },
+    "QG": {
+      "raw_bit_matches": 39,
+      "compared": 39,
+      "max_abs": 0.0
+    },
+    "NN": {
+      "raw_bit_matches": 38,
+      "compared": 39,
+      "max_abs": 1.4901161193847656e-08
+    },
+    "NC": {
+      "raw_bit_matches": 39,
+      "compared": 39,
+      "max_abs": 0.0
+    },
+    "NI": {
+      "raw_bit_matches": 39,
+      "compared": 39,
+      "max_abs": 0.0
+    },
+    "NR": {
+      "raw_bit_matches": 37,
+      "compared": 39,
+      "max_abs": 1.4210854715202004e-14
+    },
+    "BG": {
+      "raw_bit_matches": 39,
+      "compared": 39,
+      "max_abs": 0.0
+    }
+  },
+  "limits": "research fp64 same-case reproducibility and explicit coordinate-map comparison, not a new native f32 parity campaign; no automatic interpretation/migration of historical host number payload",
+  "passed": true
+}

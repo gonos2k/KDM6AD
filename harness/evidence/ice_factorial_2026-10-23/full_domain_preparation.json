@@ -1,0 +1,168 @@
+{
+  "coverage": {
+    "columns_expected": 65988,
+    "columns_written": 65988,
+    "duplicate": 0,
+    "edge_qc": "all native columns passed positive finite prep preflight",
+    "included_edges": true,
+    "missing": 0,
+    "negative_condensate_values_preserved": {
+      "QC": 0,
+      "QG": 0,
+      "QI": 0,
+      "QR": 0,
+      "QS": 0
+    },
+    "negative_raw_state_values_by_field": {
+      "BG": 2,
+      "NC": 1,
+      "NI": 6,
+      "NN": 0,
+      "NR": 0,
+      "Q": 0,
+      "QC": 0,
+      "QG": 0,
+      "QI": 0,
+      "QR": 0,
+      "QS": 0,
+      "TH": 0
+    },
+    "sampled_1d_forward_checks": 387,
+    "sampled_1d_forward_columns": [
+      0,
+      256,
+      511,
+      32768,
+      33024,
+      33279,
+      65536,
+      65762,
+      65987
+    ]
+  },
+  "current_source_preflight": {
+    "path": "final_packet_source_preflight.json",
+    "phase": "source gate executed before final packet generation",
+    "sha256": "45620e746a4aee6f386340d3e0933d9fbd1a5988c6627163b02fd268772d0423"
+  },
+  "execution": {
+    "kdm6_forward": false,
+    "observation_cost": false,
+    "rttov": false,
+    "split_physics_execution": "pending",
+    "wrf_or_host": false
+  },
+  "final_packet_generation": {
+    "description": "Regenerated once with frozen final producer, including strict source-option gates and stored-f64 readback; all129chunkhashes equal the earlier f64 packet.",
+    "earlier_fp64_chunk_payload_hashes_identical": true,
+    "producer_sha256": "2e144050b11337fc4b02c3e888129f3a3e260e8ea5b05aaf8b781fc152a29220",
+    "source_gate_checked_before_generation": true,
+    "source_manifest_sha256": "24630a58b03e54d90cc4bb6c6167e0571b02d2d002095424b19789286914601d"
+  },
+  "forcing_mapping": [
+    "DEN",
+    "PII",
+    "P",
+    "DELZ"
+  ],
+  "forcing_sources": [
+    "native_prep.rho",
+    "native_prep.pii",
+    "native_prep.pressure",
+    "native_prep.delz"
+  ],
+  "mass_number_volume_convention_certified": false,
+  "mu_total": "float32(MUB + MU_2), native addition before widening",
+  "number_basis": "research legacy raw restart operands; captured f32 values preserved; physical-number admission=false",
+  "packet_producer_sha256_executed": "ecabad519393c5078a310376ebdf44a188132f88d5f89765e40255db46694056",
+  "physical_number_admission": false,
+  "post_preparation_source_preflight": {
+    "helper_sha256": "2e144050b11337fc4b02c3e888129f3a3e260e8ea5b05aaf8b781fc152a29220",
+    "packet_producer_sha256_executed": "ecabad519393c5078a310376ebdf44a188132f88d5f89765e40255db46694056",
+    "path": "post_preparation_source_preflight.json",
+    "scope_note": "Earlier fp64 packet post-hoc source check, retained separately; the final frozen-producer packet includes a fresh source gate before generation.",
+    "sha256": "d6968ce12338567ad4977139cb7c66e75a9be60eb1a032be92494f47858c1641",
+    "status": "passed"
+  },
+  "preparation_validation": {
+    "command": "python3 harness/prepare_ice_factorial_domain.py --output <private fp64 output path>",
+    "focused_tests": "python3 -m pytest harness/tests/test_prepare_ice_factorial_domain.py -q",
+    "focused_tests_passed": 4,
+    "interpretation": "The 1-D checks compare public native_prep outputs against the values reread from the binary64 packet. They are not host f32 parity checks.",
+    "producer_sampled_1d_forward_checks": 387
+  },
+  "private_packet": {
+    "chunk_columns": 512,
+    "chunks": 129,
+    "first_chunk_sha256": "12883dc1ecc9607ee9f872cc2378d98e08625ae0139848818f53c9da34c07958",
+    "last_chunk_sha256": "a4a6a787c7b80910024f35f758d7acc3c12da3f5849a4c79a7834b074a6acd71",
+    "layout": {
+      "flat_indices": "int32[B]",
+      "forcing": "float64[4,B,39]",
+      "i": "int32[B]",
+      "j": "int32[B]",
+      "state": "float64[12,B,39]",
+      "xland": "float64[B]"
+    },
+    "manifest_sha256": "24630a58b03e54d90cc4bb6c6167e0571b02d2d002095424b19789286914601d",
+    "packet_schema": "kdm6.ice_factorial_endpoint_preparation.v2",
+    "path": "private-research/mp137_ice_factorial_20261023/domain_preparation_fp64_final",
+    "post_write_readback": "all 129 chunk hashes, binary64 dtypes, shapes, and contiguous flat indices verified",
+    "uncompressed_npz_bytes": 330922260
+  },
+  "producer_sha256": "08a41294558673d58e0a98547b9077b1814a5cf8f2bbcd5155e0d708e31598d1",
+  "producer_sha256_recorded_prior_to_source_gate": "08a41294558673d58e0a98547b9077b1814a5cf8f2bbcd5155e0d708e31598d1",
+  "public_view": {
+    "local_paths_redacted": true,
+    "note": "Private artifact identifiers retain source hashes; actual local manifests/configurations remain with the private packet.",
+    "unredacted_view_sha256": "b5eed4b63fd9e43d96fefac8795eb13b60d5cebfbc4860e2fe99c15b451f3d04"
+  },
+  "schema": "kdm6.ice_factorial_full_domain_preparation_inventory.v3",
+  "scope": "Saved MP137 endpoint restart at 00:00:40 used as offline initial condition; not the actual next MP call and not a forecast step.",
+  "source": {
+    "checkpoint": "private-research/mp137_two_step_20261020/TWO_STEP_SAVED_DA/calls/live_yws3nddy/wrfrst_d01_2025-07-19_00:00:40",
+    "checkpoint_sha256": "7a353f1fa4f6636864ac169c9ee8d16869d1f38c8e998762c19659404cbb9c8e",
+    "checkpoint_times": "2025-07-19_00:00:40",
+    "config": "harness/evidence/native_prep_ad_2026-10-21/native39_prep_ad.json",
+    "config_sha256": "583ca2f3ed4904952bef2283f294ccdc01e87e66f25b0d808a30ac726bb1dc80",
+    "grid": {
+      "interface_levels": 40,
+      "mass_levels": 39,
+      "south_north": 282,
+      "west_east": 234
+    },
+    "namelist_output": "private-research/mp137_two_step_20261020/TWO_STEP_SAVED_DA/calls/live_yws3nddy/namelist.output",
+    "namelist_output_sha256": "1fa1515fd3006a5a3f2fd0369c8a1dac94ae2ad136a031ab1c9ce0d5103f609e"
+  },
+  "state_mapping": [
+    "TH",
+    "Q",
+    "QC",
+    "QR",
+    "QI",
+    "QS",
+    "QG",
+    "NN",
+    "NC",
+    "NI",
+    "NR",
+    "BG"
+  ],
+  "state_sources": [
+    "native_prep.TH",
+    "QVAPOR",
+    "QCLOUD",
+    "QRAIN",
+    "QICE",
+    "QSNOW",
+    "QGRAUP",
+    "QNCCN",
+    "QNCLOUD",
+    "QNICE",
+    "QNRAIN",
+    "QIB"
+  ],
+  "status": "PREPARED_OFFLINE_ENDPOINT_INITIALIZED; SPLIT_PHYSICS_EXECUTION_PENDING",
+  "test_sha256": "d673fdfdc31eb97e7ec8694d798bdf6cdb4f5f1de17ecfdd6470aa0ac0283af2",
+  "thermodynamic_lift": "continuous fp64 native_prep._intermediates batched with torch.vmap; native prep outputs and checkpoint values widened/preserved in binary64 packet"
+}

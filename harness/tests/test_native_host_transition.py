@@ -219,6 +219,39 @@ def test_origin_prefix_mismatch_is_recorded_as_failed_and_not_returned(setup_nat
     }]
 
 
+@pytest.mark.parametrize("asset_name", [
+    "native_trace.hex",
+    "NATIVE_TRACE.HEX",
+    "transition.json",
+    "TRANSITION.JSON",
+    "namelist.output",
+    "NAMELIST.OUTPUT",
+    "prefix_compare_0001.json",
+    "PREFIX_COMPARE_0001.JSON",
+])
+def test_owned_output_asset_name_is_refused_before_staging_or_launch(
+        setup_native, tmp_path, monkeypatch, asset_name):
+    model, state, inputs = setup_native
+    trace_asset = tmp_path / "caller-trace.hex"
+    trace_asset.write_bytes(b"caller-owned trace bytes\n")
+    before = trace_asset.read_bytes()
+    launched = []
+    monkeypatch.setattr(native, "_run_runner", _synthetic_runner(launched))
+    colliding = NativeInputs(
+        inputs.namelist,
+        inputs.assets + ((asset_name, PinnedFile.bind(trace_asset)),),
+        inputs.environment,
+    )
+    case_dirs_before = set(model.work_root.iterdir())
+
+    with pytest.raises(ValueError):
+        model.forward(0, state, colliding, 20)
+
+    assert launched == []
+    assert set(model.work_root.iterdir()) == case_dirs_before
+    assert trace_asset.read_bytes() == before
+
+
 def test_origin_context_rejects_changed_external_or_runtime_before_launch(setup_native, monkeypatch, tmp_path):
     model, state, inputs = setup_native
     calls = []
@@ -363,6 +396,111 @@ def test_runner_timeout_terminates_its_descendant(tmp_path):
             break  # Exited (possibly awaiting reaping), never still integrating.
         assert time.monotonic() < deadline, f"runner descendant survived timeout: {state}"
         time.sleep(0.05)
+
+
+def test_runner_group_eperm_is_ignored_only_when_ps_shows_absent_or_zombie_group(monkeypatch):
+    def ps(stdout, returncode=0):
+        return subprocess.CompletedProcess(["ps"], returncode, stdout=stdout, stderr="")
+
+    monkeypatch.setattr(native.subprocess, "run", lambda *args, **kwargs: ps(" 10 S\n 11 Ss\n"))
+    assert native._runner_group_quiescent(42)
+
+    monkeypatch.setattr(native.subprocess, "run", lambda *args, **kwargs: ps(" 42 Z\n 42 Z+\n"))
+    assert native._runner_group_quiescent(42)
+
+    permission = PermissionError(1, "group signal denied")
+
+    def denied(_pgid, _signal):
+        raise permission
+
+    monkeypatch.setattr(native.os, "killpg", denied)
+    assert native._signal_runner_group(42, 15) is False
+
+    monkeypatch.setattr(native.subprocess, "run", lambda *args, **kwargs: ps(" 42 S\n"))
+    with pytest.raises(PermissionError) as raised:
+        native._signal_runner_group(42, 15)
+    assert raised.value is permission
+
+
+@pytest.mark.parametrize("ps_result", [
+    subprocess.CompletedProcess(["ps"], 1, stdout="", stderr="ps failed"),
+    OSError("ps unavailable"),
+    subprocess.TimeoutExpired(["ps"], 2),
+])
+def test_runner_group_permission_error_propagates_when_ps_is_not_trustworthy(
+        monkeypatch, ps_result):
+    permission = PermissionError(1, "group signal denied")
+
+    def denied(_pgid, _signal):
+        raise permission
+
+    def failed_ps(*args, **kwargs):
+        if isinstance(ps_result, BaseException):
+            raise ps_result
+        return ps_result
+
+    monkeypatch.setattr(native.os, "killpg", denied)
+    monkeypatch.setattr(native.subprocess, "run", failed_ps)
+    with pytest.raises(PermissionError) as raised:
+        native._signal_runner_group(42, 15)
+    assert raised.value is permission
+
+
+def test_stop_runner_group_uses_quiescence_fallback_for_term_probe_and_kill(monkeypatch):
+    class Child:
+        pid = 42
+
+        def __init__(self):
+            self.wait_calls = []
+
+        def wait(self, timeout=None):
+            self.wait_calls.append(timeout)
+            return -15
+
+    child = Child()
+    signals = []
+    ps_calls = []
+
+    def denied(_pgid, sig):
+        signals.append(sig)
+        raise PermissionError(1, "group signal denied")
+
+    def zombie_group(*args, **kwargs):
+        ps_calls.append(args[0])
+        return subprocess.CompletedProcess(["ps"], 0, stdout=" 42 Z\n", stderr="")
+
+    monkeypatch.setattr(native.os, "killpg", denied)
+    monkeypatch.setattr(native.subprocess, "run", zombie_group)
+
+    native._stop_runner_group(child)
+
+    assert signals == [native.signal.SIGTERM, 0, native.signal.SIGKILL]
+    assert len(ps_calls) == 3
+    assert child.wait_calls == [5, 5]
+
+
+def test_stop_runner_group_does_not_hide_eperm_for_live_group(monkeypatch):
+    class Child:
+        pid = 42
+        waited = False
+
+        def wait(self, timeout=None):
+            self.waited = True
+            return -15
+
+    child = Child()
+    permission = PermissionError(1, "group signal denied")
+
+    def denied(_pgid, _signal):
+        raise permission
+
+    monkeypatch.setattr(native.os, "killpg", denied)
+    monkeypatch.setattr(native.subprocess, "run", lambda *args, **kwargs:
+                        subprocess.CompletedProcess(["ps"], 0, stdout=" 42 S\n", stderr=""))
+    with pytest.raises(PermissionError) as raised:
+        native._stop_runner_group(child)
+    assert raised.value is permission
+    assert not child.waited
 
 
 def test_restart_metadata_rejects_changed_global_physics_context(tmp_path):

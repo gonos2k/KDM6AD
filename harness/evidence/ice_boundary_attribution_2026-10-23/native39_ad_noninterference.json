@@ -1,0 +1,162 @@
+{
+  "schema": "kdm6.ice_trace_ad_noninterference.v2",
+  "source_sha256": {
+    "/private/tmp/KDM6AD-ice-boundary-20261023/harness/evidence/same_call_water_budget_2026-10-22/native39_same_call.json": "f4aaacac0b02519aec5bf93b95276c3cf6b8fd40eea136fc95a06978f03c4220",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_same_call_budget_20261022/build/libkdm6_c.2.0.0.dylib": "5292cdec757a602a132a4daf8dc353ed3c1c486723bde0aeec6940610fc81b92",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_ice_boundary_20261023/forensic_c/libkdm6_ice_forensic.2.0.0.dylib": "9d926561e967c2b75ca2fddf6dbf4b9c600b55fbd623a9c2151717f8f12f84df",
+    "/private/tmp/KDM6AD-ice-boundary-20261023/harness/evidence/applied_finish_ad_2026-10-21/native39_finish_ad.json": "49a1be5dbc8145def704d338ee20eadf2bb0b16124b854fc354e7e9ed31bd61f"
+  },
+  "producer_sha256": "5d8cf5accd13fc6a596ee85613cf45be4a05410845c3d88171c040a66f7218ad",
+  "native_column": {
+    "checkpoint_time": "2025-07-19_00:00:40",
+    "nominal_KO_slot": "2025-07-19_00:00:00",
+    "model_minus_nominal_slot_seconds": 40.0,
+    "observation_time_audit_status": "ACTUAL_KO_PIXEL_TIME_NOT_ESTABLISHED",
+    "pixel_acquisition_time_verified": false,
+    "native_indices_1based": [
+      156,
+      21
+    ],
+    "native_flat_index0": 4835,
+    "native_levels": 39,
+    "native_interfaces": 40,
+    "coordinate": "native moist-theta perturbation, QV dry mass ratio, full Pa pressure, full geopotential",
+    "scope": "same-checkpoint model fields, nominal-slot diagnostic cost; no exact pixel-time collocation proof"
+  },
+  "kernel_wrapper_sha256": "08f762aa5802aced370eccfa972308170b1d0a90dd0d5cb9dbc1623bd70a3f26",
+  "finish_adapter_sha256": "d724b1101de04ab8bd9513e03d5ed74312f369f5d78f517537f7a07ea6f5dc60",
+  "kernel_contract": {
+    "physics_variant": 0,
+    "dry_number": 0,
+    "dt_seconds": 20.0,
+    "xland": 2.0,
+    "ncmin_land_sea": [
+      10.0,
+      10.0
+    ],
+    "state_blocks": 12,
+    "forcing_order": [
+      "DEN",
+      "PII",
+      "P",
+      "DELZ"
+    ]
+  },
+  "comparisons": {
+    "instrumented_off": {
+      "state": {
+        "count": 468,
+        "finite": true,
+        "raw_bit_equal": true,
+        "maxabs_difference": 0.0
+      },
+      "jvp": {
+        "count": 468,
+        "finite": true,
+        "raw_bit_equal": true,
+        "maxabs_difference": 0.0
+      },
+      "state_vjp": {
+        "count": 468,
+        "finite": true,
+        "raw_bit_equal": true,
+        "maxabs_difference": 0.0
+      },
+      "forcing_vjp": {
+        "count": 156,
+        "finite": true,
+        "raw_bit_equal": true,
+        "maxabs_difference": 0.0
+      },
+      "applied_finish": {
+        "count": 195,
+        "finite": true,
+        "raw_bit_equal": true,
+        "maxabs_difference": 0.0
+      },
+      "finish_jvp": {
+        "count": 195,
+        "finite": true,
+        "raw_bit_equal": true,
+        "maxabs_difference": 0.0
+      },
+      "finish_state_vjp": {
+        "count": 468,
+        "finite": true,
+        "raw_bit_equal": true,
+        "maxabs_difference": 0.0
+      },
+      "finish_forcing_vjp": {
+        "count": 156,
+        "finite": true,
+        "raw_bit_equal": true,
+        "maxabs_difference": 0.0
+      }
+    },
+    "instrumented_on": {
+      "state": {
+        "count": 468,
+        "finite": true,
+        "raw_bit_equal": true,
+        "maxabs_difference": 0.0
+      },
+      "jvp": {
+        "count": 468,
+        "finite": true,
+        "raw_bit_equal": true,
+        "maxabs_difference": 0.0
+      },
+      "state_vjp": {
+        "count": 468,
+        "finite": true,
+        "raw_bit_equal": true,
+        "maxabs_difference": 0.0
+      },
+      "forcing_vjp": {
+        "count": 156,
+        "finite": true,
+        "raw_bit_equal": true,
+        "maxabs_difference": 0.0
+      },
+      "applied_finish": {
+        "count": 195,
+        "finite": true,
+        "raw_bit_equal": true,
+        "maxabs_difference": 0.0
+      },
+      "finish_jvp": {
+        "count": 195,
+        "finite": true,
+        "raw_bit_equal": true,
+        "maxabs_difference": 0.0
+      },
+      "finish_state_vjp": {
+        "count": 468,
+        "finite": true,
+        "raw_bit_equal": true,
+        "maxabs_difference": 0.0
+      },
+      "finish_forcing_vjp": {
+        "count": 156,
+        "finite": true,
+        "raw_bit_equal": true,
+        "maxabs_difference": 0.0
+      }
+    }
+  },
+  "products": {
+    "control": {
+      "products_sha256": "77191af269cd1203803799b795b273baec50a8b179544b014b59809bf24bbdcb"
+    },
+    "instrumented_off": {
+      "products_sha256": "77191af269cd1203803799b795b273baec50a8b179544b014b59809bf24bbdcb"
+    },
+    "instrumented_on": {
+      "products_sha256": "77191af269cd1203803799b795b273baec50a8b179544b014b59809bf24bbdcb",
+      "trace_sha256": "10900e26bbe9ee3007b1411a1efb6505ae47fb8f02d928a6e27707603e784dcf"
+    }
+  },
+  "processes": 3,
+  "passed": true,
+  "limits": "one native point and fixed seeds; kernel plus cleanup/applied-finish noninterference, not new independent FD, full-host/RK or RTTOV AD validation"
+}

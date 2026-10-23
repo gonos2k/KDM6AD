@@ -7,6 +7,8 @@
 // family) — away from clamp knife-edges. Deterministic directions (fixed
 // seeds); fp64 for derivative gates, f32 ONLY for the determinism gate.
 #include <cassert>
+#include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdio>
 #include <stdexcept>
@@ -53,6 +55,66 @@ Forcing mk_forcing(torch::Dtype dt) {
     f.pii  = t2(0.9704, 0.9031, dt);
     f.p    = t2(9.0e4, 7.0e4, dt);
     f.delz = t2(500.0, 500.0, dt);
+    return f;
+}
+
+torch::Tensor leaf2(double a, double b, torch::Dtype dt = torch::kFloat64) {
+    return torch::tensor({{a, b}}, torch::TensorOptions().dtype(dt)).requires_grad_(true);
+}
+
+State joint_leaf_state() {
+    State s;
+    auto fields = s.fields();
+    for (size_t i = 0; i < fields.size(); ++i)
+        *fields[i] = leaf2(0.2 + 0.07 * static_cast<double>(i),
+                           -0.1 + 0.03 * static_cast<double>(i));
+    return s;
+}
+
+Forcing joint_leaf_forcing() {
+    Forcing f;
+    auto fields = f.fields();
+    for (size_t i = 0; i < fields.size(); ++i)
+        *fields[i] = leaf2(0.4 + 0.11 * static_cast<double>(i),
+                           -0.3 + 0.05 * static_cast<double>(i));
+    return f;
+}
+
+struct LinearCoefficients {
+    std::array<double, 12> state{};
+    std::array<std::array<double, 4>, 12> forcing{};
+};
+
+LinearCoefficients linear_coefficients() {
+    LinearCoefficients c;
+    for (size_t i = 0; i < 12; ++i) {
+        c.state[i] = 0.35 + 0.04 * static_cast<double>(i);
+        for (size_t j = 0; j < 4; ++j)
+            c.forcing[i][j] = (0.015 + 0.002 * static_cast<double>(i + 1)) *
+                              (0.4 + 0.3 * static_cast<double>(j));
+    }
+    return c;
+}
+
+State linear_output(const State& state, const Forcing& forcing,
+                    const LinearCoefficients& c) {
+    State out;
+    auto xs = state.fields();
+    auto fs = forcing.fields();
+    auto ys = out.fields();
+    for (size_t i = 0; i < 12; ++i) {
+        *ys[i] = c.state[i] * *xs[i];
+        for (size_t j = 0; j < 4; ++j)
+            *ys[i] = *ys[i] + c.forcing[i][j] * *fs[j];
+    }
+    return out;
+}
+
+Forcing zero_forcing_direction(const Forcing& ref) {
+    Forcing f;
+    auto r = ref.fields();
+    auto o = f.fields();
+    for (size_t i = 0; i < 4; ++i) *o[i] = torch::zeros_like(*r[i]);
     return f;
 }
 
@@ -126,6 +188,155 @@ int main() {
         double denom = std::max({std::fabs(lhs), std::fabs(rhs), 1e-30});
         if (std::fabs(lhs - rhs) / denom >= 1e-12)
             fail("inner product mismatch: " + std::to_string(lhs) + " vs " + std::to_string(rhs));
+    } END_TEST();
+
+    // Direct joint-Handle contract on an independently specified linear map.
+    // This is a mechanics test, not a KDM6/physics result: output field i is
+    // a_i*x_i + sum_j b_ij*forcing_j, so the exact 12+4 derivatives are known.
+    TEST(joint_handle_linear_map_16_leaves_dot_and_mask) {
+        auto st = joint_leaf_state();
+        auto forcing = joint_leaf_forcing();
+        const auto coeff = linear_coefficients();
+        auto out = linear_output(st, forcing, coeff);
+        Handle handle(st, out, forcing, make_parameters(0), 1.0, false);
+
+        State u = unit_state(101, torch::kFloat64);
+        State v = scaled_direction(st, 103, 2.0e-2);
+        Forcing vf;
+        GraphOptions keep_graph;
+        keep_graph.retain_graph = true;
+        auto vff = vf.fields();
+        auto ref = forcing.fields();
+        for (size_t j = 0; j < 4; ++j)
+            *vff[j] = (0.03 * static_cast<double>(j + 1)) * torch::ones_like(*ref[j]);
+
+        auto actual_jvp = handle.jvp_state_forcing(v, vf, keep_graph);
+        State expected_jvp;
+        auto ej = expected_jvp.fields();
+        auto sf = v.fields();
+        for (size_t i = 0; i < 12; ++i) {
+            *ej[i] = coeff.state[i] * *sf[i];
+            for (size_t j = 0; j < 4; ++j)
+                *ej[i] = *ej[i] + coeff.forcing[i][j] * *vff[j];
+        }
+        auto actual_jvp_fields = actual_jvp.fields();
+        auto expected_jvp_fields = expected_jvp.fields();
+        for (size_t i = 0; i < 12; ++i) {
+            if (!torch::allclose(*actual_jvp_fields[i], *expected_jvp_fields[i], 1e-13, 1e-13))
+                fail("joint linear JVP differs from analytic 16-leaf map at state field " + std::to_string(i));
+        }
+
+        auto actual_vjp = handle.vjp_state_forcing(u, keep_graph);
+        State expected_state;
+        Forcing expected_forcing;
+        auto expected_gs = expected_state.fields();
+        auto expected_gf = expected_forcing.fields();
+        auto uf = u.fields();
+        for (size_t i = 0; i < 12; ++i)
+            *expected_gs[i] = coeff.state[i] * *uf[i];
+        for (size_t j = 0; j < 4; ++j) {
+            *expected_gf[j] = torch::zeros_like(*ref[j]);
+            for (size_t i = 0; i < 12; ++i)
+                *expected_gf[j] = *expected_gf[j] + coeff.forcing[i][j] * *uf[i];
+        }
+        auto gs = actual_vjp.state.fields();
+        auto gf = actual_vjp.forcing.fields();
+        for (size_t i = 0; i < 12; ++i)
+            if (!torch::allclose(*gs[i], *expected_gs[i], 1e-13, 1e-13))
+                fail("joint linear VJP state block differs at field " + std::to_string(i));
+        for (size_t j = 0; j < 4; ++j)
+            if (!torch::allclose(*gf[j], *expected_gf[j], 1e-13, 1e-13))
+                fail("joint linear VJP forcing block differs at field " + std::to_string(j));
+
+        const double lhs = state_dot(actual_jvp, u).item<double>();
+        double rhs = state_dot(v, actual_vjp.state).item<double>();
+        auto vforcing = vf.fields();
+        for (size_t j = 0; j < 4; ++j) rhs += (*vforcing[j] * *gf[j]).sum().item<double>();
+        if (std::fabs(lhs-rhs) > 1e-12 * std::max({1.0, std::fabs(lhs), std::fabs(rhs)}))
+            fail("joint linear map violates the 12+4 adjoint identity");
+
+        GraphOptions masked;
+        masked.active_field_mask = kAllStateFields & ~(1u << 2);
+        masked.retain_graph = true;
+        auto masked_jvp = handle.jvp_state_forcing(v, vf, masked);
+        auto masked_vjp = handle.vjp_state_forcing(u, masked);
+        if ((*masked_vjp.state.fields()[2] != 0).any().item<bool>())
+            fail("joint VJP state mask did not zero the disabled state block");
+        auto masked_vjp_forcing = masked_vjp.forcing.fields();
+        for (size_t j = 0; j < 4; ++j)
+            if (!torch::equal(*masked_vjp_forcing[j], *gf[j]))
+                fail("state active mask incorrectly masked a forcing cotangent");
+        const double masked_lhs = state_dot(masked_jvp, u).item<double>();
+        double masked_rhs = state_dot(v, masked_vjp.state).item<double>();
+        for (size_t j = 0; j < 4; ++j)
+            masked_rhs += (*vforcing[j] * *masked_vjp_forcing[j]).sum().item<double>();
+        if (std::fabs(masked_lhs-masked_rhs) >
+            1e-12 * std::max({1.0, std::fabs(masked_lhs), std::fabs(masked_rhs)}))
+            fail("masked joint 12+4 tangent/adjoint identity failed");
+        handle.close();
+    } END_TEST();
+
+    TEST(joint_handle_rejects_frozen_nonleaf_aliased_and_bad_forcing_directions) {
+        auto st = joint_leaf_state();
+        auto forcing = joint_leaf_forcing();
+        auto out = linear_output(st, forcing, linear_coefficients());
+        Handle handle(st, out, forcing, make_parameters(0), 1.0, false);
+        auto direction = scaled_direction(st, 107, 1.0e-2);
+        auto forcing_direction = zero_forcing_direction(forcing);
+        GraphOptions keep_graph;
+        keep_graph.retain_graph = true;
+        forcing_direction.pii = torch::ones({2, 1}, torch::kFloat64); // same numel, wrong shape
+        bool threw = false;
+        try { (void)handle.jvp_state_forcing(direction, forcing_direction); }
+        catch (const std::exception&) { threw = true; }
+        if (!threw) fail("joint JVP accepted broadcast-compatible forcing shape");
+
+        forcing_direction = zero_forcing_direction(forcing);
+        forcing_direction.rho = torch::ones({1, 2}, torch::kFloat32);
+        threw = false;
+        try { (void)handle.jvp_state_forcing(direction, forcing_direction); }
+        catch (const std::exception&) { threw = true; }
+        if (!threw) fail("joint JVP accepted forcing direction with wrong dtype");
+
+        // Metadata rejection must happen before autograd and leave the live
+        // joint graph usable for a later valid derivative call.
+        forcing_direction = zero_forcing_direction(forcing);
+        auto jv = handle.jvp_state_forcing(direction, forcing_direction, keep_graph);
+        auto grad = handle.vjp_state_forcing(unit_state(109, torch::kFloat64), keep_graph);
+        if (!torch::isfinite(state_dot(jv, jv)).item<bool>() ||
+            !torch::isfinite(state_dot(grad.state, grad.state)).item<bool>())
+            fail("joint graph unusable after rejected forcing directions");
+        handle.close();
+
+        auto reject_forcing = [&](Forcing bad, const char* message) {
+            auto x = joint_leaf_state();
+            auto y = linear_output(x, bad, linear_coefficients());
+            Handle candidate(x, y, bad, make_parameters(0), 1.0, false);
+            bool rejected = false;
+            try { (void)candidate.vjp_state_forcing(unit_state(113, torch::kFloat64)); }
+            catch (const std::exception&) { rejected = true; }
+            if (!rejected) fail(message);
+            candidate.close();
+        };
+
+        auto frozen = joint_leaf_forcing();
+        for (auto* p : frozen.fields()) *p = p->detach().clone();
+        reject_forcing(frozen, "joint VJP accepted frozen forcing leaves");
+
+        auto nonleaf = joint_leaf_forcing();
+        nonleaf.rho = nonleaf.rho * 2.0;
+        reject_forcing(nonleaf, "joint VJP accepted non-leaf forcing");
+
+        auto alias_state = joint_leaf_state();
+        auto aliased = joint_leaf_forcing();
+        aliased.rho = alias_state.th;
+        auto alias_out = linear_output(alias_state, aliased, linear_coefficients());
+        Handle alias_handle(alias_state, alias_out, aliased, make_parameters(0), 1.0, false);
+        threw = false;
+        try { (void)alias_handle.vjp_state_forcing(unit_state(127, torch::kFloat64)); }
+        catch (const std::exception&) { threw = true; }
+        if (!threw) fail("joint VJP accepted repeated state/forcing TensorImpl");
+        alias_handle.close();
     } END_TEST();
 
     // ── masked adjoint identity: same mask both sides stays exactly adjoint ──

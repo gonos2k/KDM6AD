@@ -23,6 +23,9 @@ date_modified: 2026-10-13
 - [[queries/_index|Queries]] - 2 pages
 
 ## Sources
+- [[sources/native-ice-factorial-2026-10-23|Native ice factorial and regional preparation]] — Four-arm column comparison complete; all native columns prepared in fp64, regional execution pending.
+- [[sources/native-ice-boundary-2026-10-23|Native ice boundary attribution]] — Fixed diagnostic reductions; actual QI interface gaps account for the selected loss, with unchanged legacy map and local AD products.
+- [[sources/same-call-water-budget-2026-10-22|Same-call fp64 water accounting]] — Exact state/forcing/export captured; native residual localized separately from cleanup and accepted local AD.
 - [[sources/pr421-calibration-dom-review-2026-10-13|Calibration binding and DOM qualifications]] — Future seven/nine capture pins actual calibration JSON; recorded stream/effective geometry and common cost/prior comparison clarified without experiment replay.
 - [[sources/pr420-dom-nine-channel-analysis-2026-10-13|Actual DOM nine-channel analysis]] — Quality0 on all9, matched DOM7 audit/checkpoint, joint M response and independent gradient direction; separate opt-in H and explicit nonconvergence/provenance limits.
 - [[sources/pr419-postmerge-verification-2026-10-12|PR418 post-merge verification]] — Reader producer now hash-bound and nine-channel capture/audit tests auto-collected in oracle CI; historical H results preserved.

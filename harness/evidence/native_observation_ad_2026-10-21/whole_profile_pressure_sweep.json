@@ -1,0 +1,287 @@
+{
+  "schema": "kdm6.native_pressure_whole_profile_epsilon_sweep.v1",
+  "base_raw_failure_report": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_obs_ad_20261021/pressure_k_probe/pressure_k_probe_all_profile_pressure.json",
+  "base_profile_case": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_obs_ad_20261021/pressure_k_probe/work/case_base_pressure_on",
+  "direction": "all RTTOV layer P and interfaces P_HALF, both 0.01\u00d7baseline, including fixed upper reference prefix; fixed T/Q; direct profile perturbations, not a native-state pressure perturbation",
+  "epsilons": [
+    0.3,
+    0.1,
+    0.03
+  ],
+  "unchanged_gate": {
+    "relative_tolerance": 3e-05,
+    "absolute_tolerance": 1e-08,
+    "applies_to": "each channel BT directional derivative and aggregate masked Huber cost derivative"
+  },
+  "input_and_source_sha256_before": {
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_two_step_20261020/TWO_STEP_SAVED_DA/calls/live_yws3nddy/wrfrst_d01_2025-07-19_00:00:00": "0522208dc78a08ef279223d1638ae67947c8db673e6ab64ecd0902356abbcc82",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/ko7_model_domain_20261014/INPUTS.npz": "c9df709fe00578b4468187cb782006da105cce28c3666d26de5e03c6c4bd461b",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/postcleanup_smoke_20261015_2241/ko7_one_column/temporary/worker-84479/cases/column_04835/probe/w0_0_64d9cl5d/case/out/rttov_test.txt": "6956c5e48c6ef7b57f881edae656858a246c9bbc98422729a465414d8df5506a",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/postcleanup_smoke_20261015_2241/ko7_one_column/temporary/worker-84479/cases/column_04835/probe/w0_0_64d9cl5d/case/out/run.sh": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/postcleanup_smoke_20261015_2241/ko7_one_column/temporary/worker-84479/cases/column_04835/probe/w0_0_64d9cl5d/case/out/env.sh": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/postcleanup_smoke_20261015_2241/ko7_one_column/temporary/worker-84479/cases/column_04835/probe/w0_0_64d9cl5d/case/in/coef.txt": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+    "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+    "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+    "/private/tmp/KDM6AD-native-obs-ad-20261021/oracle/kdm6/obs/rttov_case_writer.py": "aee152ca3c9fda15b2a9d25f38b4ca784e04f66735b173e73d92f5b6cd80d93d",
+    "/private/tmp/KDM6AD-native-obs-ad-20261021/oracle/kdm6/obs/rttov_runner.py": "100e39c6f56ab5e1ccadb59f6b439ebd20255d139b5d9965063bf0ed393fa441",
+    "/private/tmp/KDM6AD-native-obs-ad-20261021/oracle/kdm6/obs/rttov_input_builder.py": "573cdb1d21c76c2f3bc042c3f50da6f75306668af70b3714b8d6a505ff0e1d45",
+    "/private/tmp/KDM6AD-native-obs-ad-20261021/oracle/kdm6/obs/rttov_obs_operator.py": "40e4cdd9708ab0315c1be5851d65ec5961ac8d6a74a987c98750c688a92a438d",
+    "/private/tmp/KDM6AD-native-obs-ad-20261021/oracle/kdm6/obs/obs_loss.py": "4c39b69bf54be9929d48cc97881887f80fb1f7c9a05d68a6a6111bda1ca9d855",
+    "/private/tmp/KDM6AD-native-obs-ad-20261021/oracle/kdm6/obs/ami_bt_coordinate.py": "e1aec7c9270bbeff6dec9aee0f7b3fa3741528b3e060bc3aa74be721e3ac97cc",
+    "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/main/rttov_intavg_chan_ad.F90": "0b6b75f3288e326626b6144a9be702614f222cbb614bfb9deaf30374d5f9870e"
+  },
+  "input_and_source_sha256_after": {
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_two_step_20261020/TWO_STEP_SAVED_DA/calls/live_yws3nddy/wrfrst_d01_2025-07-19_00:00:00": "0522208dc78a08ef279223d1638ae67947c8db673e6ab64ecd0902356abbcc82",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/ko7_model_domain_20261014/INPUTS.npz": "c9df709fe00578b4468187cb782006da105cce28c3666d26de5e03c6c4bd461b",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/postcleanup_smoke_20261015_2241/ko7_one_column/temporary/worker-84479/cases/column_04835/probe/w0_0_64d9cl5d/case/out/rttov_test.txt": "6956c5e48c6ef7b57f881edae656858a246c9bbc98422729a465414d8df5506a",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/postcleanup_smoke_20261015_2241/ko7_one_column/temporary/worker-84479/cases/column_04835/probe/w0_0_64d9cl5d/case/out/run.sh": "88c3100fcd086bbcb7388256bf316f4d4d80c0a63a44a9442b484b0fa43cc0dd",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/postcleanup_smoke_20261015_2241/ko7_one_column/temporary/worker-84479/cases/column_04835/probe/w0_0_64d9cl5d/case/out/env.sh": "5d4f3be9ce8a345b9785a0cf4335bd0f7037795204e744e2273db6665bcbf554",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/postcleanup_smoke_20261015_2241/ko7_one_column/temporary/worker-84479/cases/column_04835/probe/w0_0_64d9cl5d/case/in/coef.txt": "7558022d645501d17d71b0173bf6c9da85477a96db89969249cd5f65a3060fe1",
+    "/Users/yhlee/AD-RTTOV/external/rttov14/src/rtcoef_rttov14/rttov13pred54L/rtcoef_gkompsat2_1_ami_o3co2.dat": "73401691b9e5777daf0e4d8ba6d77dfc912c0d32bd8b70937886fcd91b54a7b5",
+    "/Users/yhlee/AD-RTTOV/external/rttov14/src/bin/rttov_test.exe": "0909d289778d3ea91f6300fd8c5f88e5e1dcc0528d260aec94f3aab0bc7692fd",
+    "/private/tmp/KDM6AD-native-obs-ad-20261021/oracle/kdm6/obs/rttov_case_writer.py": "aee152ca3c9fda15b2a9d25f38b4ca784e04f66735b173e73d92f5b6cd80d93d",
+    "/private/tmp/KDM6AD-native-obs-ad-20261021/oracle/kdm6/obs/rttov_runner.py": "100e39c6f56ab5e1ccadb59f6b439ebd20255d139b5d9965063bf0ed393fa441",
+    "/private/tmp/KDM6AD-native-obs-ad-20261021/oracle/kdm6/obs/rttov_input_builder.py": "573cdb1d21c76c2f3bc042c3f50da6f75306668af70b3714b8d6a505ff0e1d45",
+    "/private/tmp/KDM6AD-native-obs-ad-20261021/oracle/kdm6/obs/rttov_obs_operator.py": "40e4cdd9708ab0315c1be5851d65ec5961ac8d6a74a987c98750c688a92a438d",
+    "/private/tmp/KDM6AD-native-obs-ad-20261021/oracle/kdm6/obs/obs_loss.py": "4c39b69bf54be9929d48cc97881887f80fb1f7c9a05d68a6a6111bda1ca9d855",
+    "/private/tmp/KDM6AD-native-obs-ad-20261021/oracle/kdm6/obs/ami_bt_coordinate.py": "e1aec7c9270bbeff6dec9aee0f7b3fa3741528b3e060bc3aa74be721e3ac97cc",
+    "/Users/yhlee/AD-RTTOV/external/rttov14/src/src/main/rttov_intavg_chan_ad.F90": "0b6b75f3288e326626b6144a9be702614f222cbb614bfb9deaf30374d5f9870e"
+  },
+  "trials": [
+    {
+      "epsilon": 0.3,
+      "BT_fd": [
+        [
+          -0.19365651370823875,
+          -0.10603588162609867,
+          -0.23987609604726384,
+          -0.10594130643795552,
+          -0.12805027130544508,
+          -0.1561045985114144,
+          -0.2063147915759108
+        ]
+      ],
+      "BT_K_direction": [
+        [
+          -0.19378512883216936,
+          -0.10933025833595156,
+          -0.24160658080274672,
+          -0.10928616414924958,
+          -0.13326368120275955,
+          -0.16400322944181067,
+          -0.2121911247322345
+        ]
+      ],
+      "BT_tolerance_ratio": [
+        [
+          22.0853325843472,
+          1001.3583845243786,
+          238.41797823536703,
+          1017.1115504415662,
+          1300.780039987597,
+          1602.1248907348956,
+          921.6716685710835
+        ]
+      ],
+      "max_BT_tolerance_ratio": 1602.1248907348956,
+      "cost_fd": -1.1359794592123271,
+      "cost_K_direction": -1.163466167496922,
+      "cost_abs_error": 0.027486708284594874,
+      "cost_relative_error": 0.023624845356465935,
+      "cost_tolerance_ratio": 787.2692923762737,
+      "passed": false
+    },
+    {
+      "epsilon": 0.1,
+      "BT_fd": [
+        [
+          -0.19365549383309144,
+          -0.10577222111123774,
+          -0.23945536206156248,
+          -0.10507293771325976,
+          -0.1269837071299662,
+          -0.15542636378910402,
+          -0.20603568783855053
+        ]
+      ],
+      "BT_K_direction": [
+        [
+          -0.19378512883216936,
+          -0.10933025833595156,
+          -0.24160658080274672,
+          -0.10928616414924958,
+          -0.13326368120275955,
+          -0.16400322944181067,
+          -0.2121911247322345
+        ]
+      ],
+      "BT_tolerance_ratio": [
+        [
+          22.260461924773217,
+          1081.500605793238,
+          296.3847103478585,
+          1281.1669860279617,
+          1566.894812881899,
+          1739.6951532208288,
+          965.4476085108448
+        ]
+      ],
+      "max_BT_tolerance_ratio": 1739.6951532208288,
+      "cost_fd": -1.1324017734767722,
+      "cost_K_direction": -1.163466167496922,
+      "cost_abs_error": 0.03106439402014982,
+      "cost_relative_error": 0.02669986879548176,
+      "cost_tolerance_ratio": 889.7407155897116,
+      "passed": false
+    },
+    {
+      "epsilon": 0.03,
+      "BT_fd": [
+        [
+          -0.1936758243691846,
+          -0.10629129529888814,
+          -0.2398483954010544,
+          -0.10584547307720035,
+          -0.12805179594674126,
+          -0.15672218467083593,
+          -0.2069323372808185
+        ]
+      ],
+      "BT_K_direction": [
+        [
+          -0.19378512883216936,
+          -0.10933025833595156,
+          -0.24160658080274672,
+          -0.10928616414924958,
+          -0.13326368120275955,
+          -0.16400322944181067,
+          -0.2121911247322345
+        ]
+      ],
+      "BT_tolerance_ratio": [
+        [
+          18.7693744265593,
+          923.7228724698613,
+          242.23444182693717,
+          1046.2527655708643,
+          1300.3996319618939,
+          1476.856326232798,
+          824.8129022077961
+        ]
+      ],
+      "max_BT_tolerance_ratio": 1476.856326232798,
+      "cost_fd": -1.1373673060447231,
+      "cost_K_direction": -1.163466167496922,
+      "cost_abs_error": 0.026098861452198863,
+      "cost_relative_error": 0.02243199001510107,
+      "cost_tolerance_ratio": 747.5188361792535,
+      "passed": false
+    }
+  ],
+  "calls": [
+    {
+      "case_label": "e0.3_plus",
+      "case": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_obs_ad_20261021/pressure_k_probe/whole_profile_sweep_work/e0.3_plus",
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "P_K_nonzero": 458,
+      "P_HALF_K_nonzero": 462
+    },
+    {
+      "case_label": "e0.3_minus",
+      "case": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_obs_ad_20261021/pressure_k_probe/whole_profile_sweep_work/e0.3_minus",
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "P_K_nonzero": 458,
+      "P_HALF_K_nonzero": 462
+    },
+    {
+      "case_label": "e0.1_plus",
+      "case": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_obs_ad_20261021/pressure_k_probe/whole_profile_sweep_work/e0.1_plus",
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "P_K_nonzero": 456,
+      "P_HALF_K_nonzero": 462
+    },
+    {
+      "case_label": "e0.1_minus",
+      "case": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_obs_ad_20261021/pressure_k_probe/whole_profile_sweep_work/e0.1_minus",
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "P_K_nonzero": 457,
+      "P_HALF_K_nonzero": 462
+    },
+    {
+      "case_label": "e0.03_plus",
+      "case": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_obs_ad_20261021/pressure_k_probe/whole_profile_sweep_work/e0.03_plus",
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "P_K_nonzero": 458,
+      "P_HALF_K_nonzero": 462
+    },
+    {
+      "case_label": "e0.03_minus",
+      "case": "/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_native_obs_ad_20261021/pressure_k_probe/whole_profile_sweep_work/e0.03_minus",
+      "rad_quality": [
+        [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "P_K_nonzero": 458,
+      "P_HALF_K_nonzero": 462
+    }
+  ],
+  "passed_any": false,
+  "interpretation": "Epsilon sweep for the previously observed whole-profile pressure-direction mismatch. No cause is asserted from an epsilon-dependent result alone."
+}

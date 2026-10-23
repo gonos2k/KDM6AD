@@ -6,6 +6,7 @@
 #include "kdm6/sedimentation.h"
 
 #include <cmath>
+#include <unordered_set>
 #ifdef KDM6_G33_OP_DUMP
 // ── G3.3-M outer-stage instrumentation (OVERLAY ONLY, diagnostic) ───────────
 // Compiled out entirely when KDM6_G33_OP_DUMP is undefined (protocol §5, §10).
@@ -1015,6 +1016,67 @@ void validate_state_shapes(const State& given, const State& ref,
     }
 }
 
+void validate_state_metadata(const State& given, const State& ref,
+                             const char* arg, const char* ref_name) {
+    auto g = given.fields();
+    auto r = ref.fields();
+    for (size_t i = 0; i < g.size(); ++i) {
+        TORCH_CHECK(g[i]->defined(), arg, " field #", i, " is undefined");
+        TORCH_CHECK(g[i]->sizes() == r[i]->sizes(),
+                    arg, " field #", i, " shape ", g[i]->sizes(),
+                    " != ", ref_name, " shape ", r[i]->sizes());
+        TORCH_CHECK(g[i]->scalar_type() == r[i]->scalar_type(),
+                    arg, " field #", i, " dtype ", g[i]->scalar_type(),
+                    " != ", ref_name, " dtype ", r[i]->scalar_type());
+        TORCH_CHECK(g[i]->device() == r[i]->device(),
+                    arg, " field #", i, " device ", g[i]->device(),
+                    " != ", ref_name, " device ", r[i]->device());
+    }
+}
+
+void validate_forcing_metadata(const Forcing& given, const Forcing& ref,
+                               const char* arg, const char* ref_name) {
+    auto g = given.fields();
+    auto r = ref.fields();
+    for (size_t i = 0; i < g.size(); ++i) {
+        TORCH_CHECK(g[i]->defined(), arg, " field #", i, " is undefined");
+        TORCH_CHECK(g[i]->sizes() == r[i]->sizes(),
+                    arg, " field #", i, " shape ", g[i]->sizes(),
+                    " != ", ref_name, " shape ", r[i]->sizes());
+        TORCH_CHECK(g[i]->scalar_type() == r[i]->scalar_type(),
+                    arg, " field #", i, " dtype ", g[i]->scalar_type(),
+                    " != ", ref_name, " dtype ", r[i]->scalar_type());
+        TORCH_CHECK(g[i]->device() == r[i]->device(),
+                    arg, " field #", i, " device ", g[i]->device(),
+                    " != ", ref_name, " device ", r[i]->device());
+    }
+}
+
+std::vector<torch::Tensor> validate_joint_input_leaves(
+    const State& state, const Forcing& forcing) {
+    std::vector<torch::Tensor> inputs;
+    inputs.reserve(16);
+    auto state_fields = state.fields();
+    auto forcing_fields = forcing.fields();
+    std::unordered_set<const c10::TensorImpl*> tensor_impls;
+    auto append_fields = [&](const auto& fields) {
+        for (const auto* field : fields) {
+            TORCH_CHECK(field->defined(), "joint derivative input is undefined");
+            TORCH_CHECK(field->requires_grad(),
+                        "joint state-forcing derivatives require every input field to require grad");
+            TORCH_CHECK(field->is_leaf(),
+                        "joint state-forcing derivatives require independent leaf inputs");
+            TORCH_CHECK(tensor_impls.insert(field->unsafeGetTensorImpl()).second,
+                        "joint state-forcing derivatives reject repeated TensorImpl identities");
+            inputs.push_back(*field);
+        }
+    };
+    append_fields(state_fields);
+    append_fields(forcing_fields);
+    TORCH_CHECK(inputs.size() == 16, "internal joint input count mismatch");
+    return inputs;
+}
+
 // active_field_mask: zero the fields whose bit is unset (bit i = fields()[i]).
 State apply_active_mask(State s, uint32_t mask) {
     if ((mask & kAllStateFields) == kAllStateFields) return s;
@@ -1134,6 +1196,104 @@ State Handle::jvp(const State& v, const GraphOptions& opts) const {
     return out;
 }
 
+StateForcingGradient Handle::vjp_state_forcing(
+    const State& u, const GraphOptions& opts) const {
+    TORCH_CHECK(impl_, "Handle is moved-from");
+    TORCH_CHECK(!impl_->closed, "Handle is closed");
+    TORCH_CHECK(!impl_->value_only, "Handle is value-only");
+    TORCH_CHECK(opts.mode == GraphMode::RecordGraph,
+                "Handle::vjp_state_forcing: only GraphMode::RecordGraph is implemented");
+    validate_state_metadata(u, impl_->state_out, "u", "state_out");
+    auto inputs = validate_joint_input_leaves(impl_->state_in, impl_->forcing);
+
+    const auto scalar = state_dot(impl_->state_out, u);
+    auto grads = torch::autograd::grad(
+        {scalar}, inputs, /*grad_outputs=*/{},
+        /*retain_graph=*/opts.retain_graph || opts.create_graph,
+        /*create_graph=*/opts.create_graph,
+        /*allow_unused=*/true);
+
+    StateForcingGradient result;
+    auto state_out = result.state.fields();
+    auto forcing_out = result.forcing.fields();
+    for (size_t i = 0; i < 12; ++i) {
+        *state_out[i] = grads[i].defined() ? grads[i] : torch::zeros_like(inputs[i]);
+    }
+    for (size_t i = 0; i < 4; ++i) {
+        *forcing_out[i] = grads[12 + i].defined()
+                              ? grads[12 + i]
+                              : torch::zeros_like(inputs[12 + i]);
+    }
+    result.state = apply_active_mask(std::move(result.state), opts.active_field_mask);
+    return result;
+}
+
+State Handle::jvp_state_forcing(
+    const State& v, const Forcing& vf, const GraphOptions& opts) const {
+    TORCH_CHECK(impl_, "Handle is moved-from");
+    TORCH_CHECK(!impl_->closed, "Handle is closed");
+    TORCH_CHECK(!impl_->value_only, "Handle is value-only");
+    TORCH_CHECK(opts.mode == GraphMode::RecordGraph,
+                "Handle::jvp_state_forcing: only GraphMode::RecordGraph is implemented");
+    validate_state_metadata(v, impl_->state_in, "v", "state_in");
+    validate_forcing_metadata(vf, impl_->forcing, "vf", "forcing");
+    auto inputs = validate_joint_input_leaves(impl_->state_in, impl_->forcing);
+
+    State v_eff = apply_active_mask(v, opts.active_field_mask);
+    auto v_fields = v_eff.fields();
+    auto vf_fields = vf.fields();
+    std::vector<torch::Tensor> directions;
+    directions.reserve(16);
+    for (auto* field : v_fields) directions.push_back(*field);
+    for (auto* field : vf_fields) directions.push_back(*field);
+
+    auto out_fields = impl_->state_out.fields();
+    std::vector<torch::Tensor> u_leaves;
+    u_leaves.reserve(12);
+    State u_state;
+    auto u_fields = u_state.fields();
+    for (size_t i = 0; i < out_fields.size(); ++i) {
+        auto leaf = torch::zeros_like(*out_fields[i]).requires_grad_(true);
+        u_leaves.push_back(leaf);
+        *u_fields[i] = leaf;
+    }
+    const auto scalar = state_dot(impl_->state_out, u_state);
+
+    // w = J^T u with respect to all sixteen independent inputs. Keeping this
+    // reverse sweep differentiable in u gives the joint JVP via Pearlmutter.
+    auto w = torch::autograd::grad(
+        {scalar}, inputs, /*grad_outputs=*/{},
+        /*retain_graph=*/true, /*create_graph=*/true, /*allow_unused=*/true);
+
+    torch::Tensor inner = torch::zeros({}, scalar.options());
+    bool any_term = false;
+    for (size_t i = 0; i < w.size(); ++i) {
+        if (w[i].defined()) {
+            inner = inner + (w[i] * directions[i]).sum();
+            any_term = true;
+        }
+    }
+
+    State tangent;
+    auto tangent_fields = tangent.fields();
+    if (!any_term || !inner.requires_grad()) {
+        for (size_t i = 0; i < tangent_fields.size(); ++i)
+            *tangent_fields[i] = torch::zeros_like(*out_fields[i]);
+        return tangent;
+    }
+
+    auto tangent_grads = torch::autograd::grad(
+        {inner}, u_leaves, /*grad_outputs=*/{},
+        /*retain_graph=*/opts.retain_graph || opts.create_graph,
+        /*create_graph=*/opts.create_graph, /*allow_unused=*/true);
+    for (size_t i = 0; i < tangent_fields.size(); ++i) {
+        *tangent_fields[i] = tangent_grads[i].defined()
+                                 ? tangent_grads[i]
+                                 : torch::zeros_like(*out_fields[i]);
+    }
+    return tangent;
+}
+
 // ── kdm6_step ───────────────────────────────────────────────────────────────
 StepResult kdm6_step(const State& state, const Forcing& forcing,
                      const Parameters& params, double dt, bool value_only,
@@ -1152,8 +1312,9 @@ StepResult kdm6_step(const State& state, const Forcing& forcing,
     TORCH_CHECK(!(param_needs_grad(params.peaut) || param_needs_grad(params.ncrk1) ||
                   param_needs_grad(params.ncrk2) || param_needs_grad(params.eccbrk)),
                 "kdm6_step: parameter gradients are not wired into the forward graph "
-                "(Parameters is reserved). Pass make_parameters(0); only state leaves are "
-                "differentiable. See runtime.h.");
+                "(Parameters is reserved). Pass make_parameters(0); state leaves and, "
+                "through the explicit joint API, independent forcing leaves are supported. "
+                "See runtime.h.");
     if (value_only) {
         torch::NoGradGuard no_grad;
         auto fn_out = kdm6_fn(state, forcing, params, dt, xland, ncmin_land, ncmin_sea, physics,

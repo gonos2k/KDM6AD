@@ -1,0 +1,11 @@
+{
+  "chunks_per_arm": 129,
+  "columns": 65988,
+  "full_domain_KDM_calls": 0,
+  "levels": 39,
+  "plan_path": "../ice_factorial_batch_smoke_2026-10-23/full_domain_batch_plan_fp64.json",
+  "plan_sha256": "c5ea246b084a4307c297343c0730d1be860423102271a70229d338798d935c76",
+  "schema": "kdm6.ice_factorial_batch_plan_status.v2",
+  "status": "VALIDATED_DRY_RUN_ONLY",
+  "supersedes_unpublished_f32_draft": true
+}

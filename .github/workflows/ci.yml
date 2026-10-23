@@ -92,6 +92,8 @@ jobs:
     # compiler/libc under the port. Actions stay on major tags (v4/v5) — the "Record
     # toolchain versions" step logs cmake/g++/gfortran/torch so any drift is visible in the log.
     runs-on: ubuntu-24.04
+    # Bound template-heavy libtorch compilations, including the test targets.
+    # Bare -j can launch all translation units together on the hosted runner.
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
@@ -141,10 +143,11 @@ jobs:
             -DCMAKE_PREFIX_PATH="$(python -c 'import torch, os; print(os.path.dirname(torch.__file__))')" \
             -DCMAKE_INSTALL_PREFIX=../install \
             -DKDM6_ENABLE_TEST_HOOKS=OFF \
+            -DKDM6_BUILD_RESEARCH_COLUMN_BUDGET_TOOL=ON \
             -DCMAKE_CXX_FLAGS=-DKDM6_SUBSTEP_DUMP
 
       - name: Build (shipped)
-        run: cmake --build libtorch/build -j
+        run: cmake --build libtorch/build --parallel 2
 
       - name: Install (file-copy)
         run: cmake --install libtorch/build
@@ -184,17 +187,17 @@ jobs:
           fi
           echo "OK: no test fault seam in the shipped library"
 
-      # PR3: the shipped dylib must export EXACTLY the 11 C ABI functions and leak
+      # PR3: the shipped dylib must export EXACTLY the 14 C ABI functions and leak
       # ZERO internal (kdm6::/libtorch/std) symbols. Uses readelf on Linux with
       # the version-suffix normalization the checker handles (see the script).
-      - name: Assert exported symbol surface is exactly the 11 C ABI functions
+      - name: Assert exported symbol surface is exactly the 14 C ABI functions
         run: |
           LIB=$(ls libtorch/build/libkdm6_c.so* 2>/dev/null | head -1)
           python libtorch/tests/check_c_abi_exports.py "$LIB"
 
       # PR1-B: the shipped library must NOT inject KMP_DUPLICATE_LIB_OK. Fresh-process
       # contract: an UNSET value stays unset; an explicit FALSE/TRUE is preserved; the
-      # 11 C ABI symbols resolve and the ABI version is 2.
+      # 14 C ABI symbols resolve and the ABI version is 2.
       - name: Assert KMP_DUPLICATE_LIB_OK is caller-owned (PR1-B)
         run: |
           LIB=$(ls libtorch/build/libkdm6_c.so.2.0.0 libtorch/build/libkdm6_c.so* 2>/dev/null | head -1)
@@ -220,7 +223,7 @@ jobs:
         run: |
           cd libtorch/build
           cmake .. -DKDM6_ENABLE_TEST_HOOKS=ON
-          cmake --build . --target kdm6_c test_c_abi -j
+          cmake --build . --target kdm6_c test_c_abi --parallel 2
           ctest -R '^c_abi$' -V --output-on-failure
 
       # oracle↔C++ forward-parity regression bound: the f64 Python oracle vs this built C++
@@ -298,6 +301,7 @@ jobs:
             -DCMAKE_INSTALL_PREFIX=../install \
             -DCMAKE_BUILD_TYPE=Release \
             -DKDM6_ENABLE_TEST_HOOKS=OFF \
+            -DKDM6_BUILD_RESEARCH_COLUMN_BUDGET_TOOL=ON \
             -DCMAKE_CXX_FLAGS=-DKDM6_SUBSTEP_DUMP
 
       - name: Build (shipped)
@@ -351,13 +355,13 @@ jobs:
           echo "linked libs:";  otool -L "$LIB" | head -5
           echo "OK: arm64, no seam"
 
-      - name: Assert exported symbol surface is exactly the 11 C ABI functions
+      - name: Assert exported symbol surface is exactly the 14 C ABI functions
         run: python libtorch/tests/check_c_abi_exports.py libtorch/build/libkdm6_c.dylib
 
       - name: Fresh-process ctypes load resolves all 11
         working-directory: libtorch/build
         run: |
-          python -c "import ctypes; lib=ctypes.CDLL('./libkdm6_c.dylib'); [getattr(lib,s) for s in 'kdm6_step_c kdm6_step_ad_c kdm6_step_ad_variant_c kdm6_step_ad_number_c kdm6_step_v2_c kdm6_get_abi_version_c kdm6_step_v2_args_size_c kdm6_handle_vjp_c kdm6_handle_jvp_c kdm6_handle_close_c kdm6_handle_closep_c'.split()]; print('OK all 11 resolve, abi =', lib.kdm6_get_abi_version_c())"
+          python -c "import ctypes; lib=ctypes.CDLL('./libkdm6_c.dylib'); [getattr(lib,s) for s in 'kdm6_step_c kdm6_step_ad_c kdm6_step_ad_variant_c kdm6_step_ad_number_c kdm6_step_v2_c kdm6_get_abi_version_c kdm6_step_v2_args_size_c kdm6_handle_vjp_c kdm6_handle_jvp_c kdm6_handle_close_c kdm6_handle_closep_c kdm6_step_ad_state_forcing_c kdm6_handle_state_forcing_vjp_c kdm6_handle_state_forcing_jvp_c'.split()]; print('OK all 14 resolve, abi =', lib.kdm6_get_abi_version_c())"
 
       # PR1-B: the shipped library must NOT inject KMP_DUPLICATE_LIB_OK. Fresh-process
       # contract: an UNSET value stays unset; an explicit FALSE/TRUE is preserved.

@@ -4,6 +4,7 @@
 // (B, K) 텐서 layout, 12 prognostic + 4 forcing.
 //
 #include <torch/torch.h>
+#include <array>
 #include <cstddef>
 #include <functional>
 
@@ -39,6 +40,13 @@ struct Forcing {
     torch::Tensor pii;
     torch::Tensor p;
     torch::Tensor delz;
+
+    std::array<torch::Tensor*, 4> fields() {
+        return {&rho, &pii, &p, &delz};
+    }
+    std::array<const torch::Tensor*, 4> fields() const {
+        return {&rho, &pii, &p, &delz};
+    }
 };
 
 // ── state-algebra 헬퍼 ─────────────────────────────────────────────────────

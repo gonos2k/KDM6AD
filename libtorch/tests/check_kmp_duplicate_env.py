@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """PR1-B2 fresh-process contract: the shipped dylib must NOT inject
 KMP_DUPLICATE_LIB_OK. In a fresh process, loading the library leaves an UNSET
-value unset and preserves an explicit FALSE/TRUE. Also asserts the 11 C ABI
+value unset and preserves an explicit FALSE/TRUE. Also asserts the 14 C ABI
 symbols resolve and the ABI version is 2.
 
 usage: check_kmp_duplicate_env.py <path-to libkdm6_c .dylib/.so>
@@ -29,6 +29,8 @@ SYMBOLS = [
     "kdm6_step_ad_number_c", "kdm6_step_v2_c", "kdm6_get_abi_version_c",
     "kdm6_step_v2_args_size_c", "kdm6_handle_vjp_c", "kdm6_handle_jvp_c",
     "kdm6_handle_close_c", "kdm6_handle_closep_c",
+    "kdm6_step_ad_state_forcing_c", "kdm6_handle_state_forcing_vjp_c",
+    "kdm6_handle_state_forcing_jvp_c",
 ]
 
 
