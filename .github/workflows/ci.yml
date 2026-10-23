@@ -92,6 +92,8 @@ jobs:
     # compiler/libc under the port. Actions stay on major tags (v4/v5) — the "Record
     # toolchain versions" step logs cmake/g++/gfortran/torch so any drift is visible in the log.
     runs-on: ubuntu-24.04
+    # Bound template-heavy libtorch compilations, including the test targets.
+    # Bare -j can launch all translation units together on the hosted runner.
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
@@ -145,7 +147,7 @@ jobs:
             -DCMAKE_CXX_FLAGS=-DKDM6_SUBSTEP_DUMP
 
       - name: Build (shipped)
-        run: cmake --build libtorch/build -j
+        run: cmake --build libtorch/build --parallel 2
 
       - name: Install (file-copy)
         run: cmake --install libtorch/build
@@ -221,7 +223,7 @@ jobs:
         run: |
           cd libtorch/build
           cmake .. -DKDM6_ENABLE_TEST_HOOKS=ON
-          cmake --build . --target kdm6_c test_c_abi -j
+          cmake --build . --target kdm6_c test_c_abi --parallel 2
           ctest -R '^c_abi$' -V --output-on-failure
 
       # oracle↔C++ forward-parity regression bound: the f64 Python oracle vs this built C++
