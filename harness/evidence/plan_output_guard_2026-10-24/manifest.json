@@ -1,0 +1,15 @@
+{
+  "schema": "kdm6.plan_output_guard_manifest.v1",
+  "base_commit": "a72cdf8eb753bdca6c7ba172a6034b86b591d3d1",
+  "source_sha256": {
+    "harness/run_domain_ice_factorial.py": "ed643b74cf8fe1bf1c4bf59c01c2a84dc8159cc712d383b8ec265e8924ded5a9",
+    "harness/tests/test_run_domain_ice_factorial.py": "a794955295d0dacd74dbbddbb928405b5b2e76941e49e1f3eab88fb9feaed68a",
+    "docs/NATIVE_DOMAIN_ICE_FACTORIAL.md": "5338dfbffb4086c62b5848859a1d1dcfc2b7518564a34d6afac5a2643312e799"
+  },
+  "artifact_sha256": {
+    "harness/evidence/plan_output_guard_2026-10-24/REPORT.md": "94d8fe92243eee3a7975f76b464597995c076139159753aa01f8279c2cabad8c",
+    "harness/evidence/plan_output_guard_2026-10-24/validation.json": "4f93947a76b9bb5b1d02d3e6b634ebd9246e0527ba8c65e7e78a9513e029148f"
+  },
+  "maintained_campaign_manifest_sha256": "dda73e08ef422ede1bdaac62584888a27919cbbfdd8c8989a2abdf31b5c25293",
+  "model_calls": 0
+}

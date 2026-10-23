@@ -1,0 +1,15 @@
+{
+  "schema": "kdm6.plan_output_guard_validation.v1",
+  "base_commit": "a72cdf8eb753bdca6c7ba172a6034b86b591d3d1",
+  "focused": "52 passed (runner41 + analyzer11)",
+  "full_harness": "2726 passed,69 skipped,309 deselected in128.82s; isolatedPython3.12 NumPy2.4.6 pytest9.1.1 netCDF4 1.7.4, withoutTorch/jsonschema/privatehost",
+  "KDM_calls": 0,
+  "host_steps": 0,
+  "RTTOV_calls": 0,
+  "science_arrays_changed": false,
+  "Green": "Path rules/coverage reviewed; canonical admission and atomic no-clobber publish confirmed",
+  "Red": "Final source review: all reported collision cases closed, including missing-source descendants; no remaining actionable issue in plan-json/input-artifact scope; no model run by reviewer",
+  "full_harness_log_sha256": "81136c42d3ada8aa15081b0b31cad91ab119081e1d6e84780f0178bed8a6ab97",
+  "historical_artifacts_verified_unchanged": 15,
+  "original_review_source_hashes_retained": 10
+}

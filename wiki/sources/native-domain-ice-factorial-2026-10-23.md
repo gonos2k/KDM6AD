@@ -26,3 +26,8 @@ coverage and arithmetic checks. [[native-ice-boundary-2026-10-23]] explains the
 one-column loss mechanism, but endpoint regional records do not attribute all
 remaining residuals. No alternate-map derivative certificate or operational
 candidate adoption is claimed.
+
+A subsequent [CLI output guard](../../harness/evidence/plan_output_guard_2026-10-24/REPORT.md)
+rejects existing/aliased report files and input/run-tree overlap before dispatch,
+then publishes exclusively. Temporary-file regression tests replace the model;
+no regional physics rerun or altered scientific result is attributed to this fix.

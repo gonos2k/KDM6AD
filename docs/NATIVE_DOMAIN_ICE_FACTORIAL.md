@@ -71,3 +71,14 @@ A candidate is not selected by this report. Existing accepted Legacy AD and
 RTTOV milestones remain valid within their earlier scopes; there are no new
 RTTOV evaluations, host integrations, optimization trials or forecast-skill
 claims. The historical host number payload has not been migrated or certified.
+
+## CLI report destination protection
+
+`--plan-json` must name a new file outside any supplied run output tree; existing
+files and final symlinks, including dangling links, are refused before dispatch.
+Resolved, case-folded aliases and ancestor/descendant overlap with manifest,
+executable and source-chunk paths are also refused. This protects reserved
+input names even if a chunk is missing. The admitted canonical report path is
+published exclusively; a destination created after preflight is preserved and
+publication fails. Existing report replacement is unsupported, including resume.
+See the [review fix](../harness/evidence/plan_output_guard_2026-10-24/REPORT.md).

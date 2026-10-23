@@ -1,0 +1,268 @@
+{
+  "edges": [
+    {
+      "_origin": "semantic",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "relation": "addressed_by",
+      "source": "plan_json_clobber_review_finding",
+      "source_file": "harness/evidence/plan_output_guard_2026-10-24/REPORT.md",
+      "source_location": "L3-L6",
+      "target": "plan_json_output_path_guard"
+    },
+    {
+      "_origin": "semantic",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "relation": "preflights_then_publishes",
+      "source": "plan_json_output_path_guard",
+      "source_file": "harness/run_domain_ice_factorial.py",
+      "source_location": "L541-L571",
+      "target": "plan_json_atomic_noclobber_publisher"
+    },
+    {
+      "_origin": "semantic",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "relation": "covered_by",
+      "source": "plan_json_output_path_guard",
+      "source_file": "harness/tests/test_run_domain_ice_factorial.py",
+      "source_location": "L305-L515",
+      "target": "plan_json_guard_regression_tests"
+    },
+    {
+      "_origin": "semantic",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "relation": "race_checked_by",
+      "source": "plan_json_atomic_noclobber_publisher",
+      "source_file": "harness/tests/test_run_domain_ice_factorial.py",
+      "source_location": "L414-L440",
+      "target": "plan_json_guard_regression_tests"
+    },
+    {
+      "_origin": "semantic",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "relation": "records_validation_for",
+      "source": "plan_json_guard_validation_receipt",
+      "source_file": "harness/evidence/plan_output_guard_2026-10-24/REPORT.md",
+      "source_location": "L24-L29",
+      "target": "plan_json_guard_published_fix_report"
+    },
+    {
+      "_origin": "semantic",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "relation": "preserves_prior_execution_attribution_for",
+      "source": "domain_execution_hash_history_preserved",
+      "source_file": "harness/evidence/domain_ice_factorial_2026-10-23/manifest.json",
+      "source_location": "/runner_attribution",
+      "target": "plan_guard_changes_only_metadata"
+    },
+    {
+      "_origin": "semantic",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "relation": "summarizes",
+      "source": "plan_guard_wiki_summary",
+      "source_file": "wiki/sources/native-domain-ice-factorial-2026-10-23.md",
+      "source_location": "L30-L33",
+      "target": "plan_json_guard_published_fix_report"
+    },
+    {
+      "_origin": "semantic",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "relation": "validated_without_model_calls",
+      "source": "plan_guard_changes_only_metadata",
+      "source_file": "harness/evidence/plan_output_guard_2026-10-24/validation.json",
+      "source_location": "/KDM_calls",
+      "target": "plan_json_guard_validation_receipt"
+    }
+  ],
+  "hyperedges": [
+    {
+      "_origin": "semantic",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "id": "plan_json_output_clobber_preflight_publication_test_chain",
+      "label": "Plan JSON collision diagnosis, preflight, no-clobber publication and synthetic tests",
+      "nodes": [
+        "plan_json_clobber_review_finding",
+        "plan_json_output_path_guard",
+        "plan_json_atomic_noclobber_publisher",
+        "plan_json_guard_regression_tests",
+        "plan_json_guard_validation_receipt"
+      ],
+      "relation": "fixes_and_verifies",
+      "source_file": "harness/evidence/plan_output_guard_2026-10-24/REPORT.md",
+      "source_location": "H1:Domain runner CLI output protection"
+    },
+    {
+      "_origin": "semantic",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "id": "plan_json_fix_preserves_historical_science_evidence",
+      "label": "CLI metadata repair preserves the prior 516-call domain experiment and runner hash history",
+      "nodes": [
+        "domain_execution_hash_history_preserved",
+        "plan_guard_changes_only_metadata",
+        "plan_json_guard_published_fix_report",
+        "plan_guard_wiki_summary"
+      ],
+      "relation": "preserves_historical_attribution",
+      "source_file": "harness/evidence/domain_ice_factorial_2026-10-23/manifest.json",
+      "source_location": "/runner_attribution"
+    }
+  ],
+  "input_tokens": null,
+  "nodes": [
+    {
+      "_origin": "semantic",
+      "file_type": "document",
+      "finding": "Before the fix, both dry-run and execution CLI branches used write_text without refusing an existing destination.",
+      "id": "plan_json_clobber_review_finding",
+      "label": "Plan JSON writer could overwrite an existing input or prior result",
+      "reproduction_scope": "Path-only/fake-executor tests; no KDM or host call.",
+      "source_file": "harness/evidence/plan_output_guard_2026-10-24/REPORT.md",
+      "source_location": "L3-L6"
+    },
+    {
+      "_origin": "semantic",
+      "canonical_parent_used_for_publish": true,
+      "file_type": "code",
+      "id": "plan_json_output_path_guard",
+      "label": "Plan JSON destination preflight and canonical path admission",
+      "rejects": [
+        "existing files/directories",
+        "hardlink aliases",
+        "final symlinks including dangling",
+        "case-folded run-tree aliases/ancestors",
+        "manifest/executable/source-chunk collisions",
+        "missing reserved source names"
+      ],
+      "source_file": "harness/run_domain_ice_factorial.py",
+      "source_location": "L96-L135, L541-L556"
+    },
+    {
+      "_origin": "semantic",
+      "file_type": "code",
+      "id": "plan_json_atomic_noclobber_publisher",
+      "label": "Atomic exclusive plan JSON publication",
+      "plan_and_execution_results_use_same_publisher": true,
+      "publication": "same-directory temporary file plus exclusive hard link; late destination creation is preserved and publication fails",
+      "source_file": "harness/run_domain_ice_factorial.py",
+      "source_location": "L77-L93, L557-L571"
+    },
+    {
+      "_origin": "semantic",
+      "cases": [
+        "dry/executed existing output paths",
+        "hardlink/symlink/dangling alias",
+        "future chunk output, case alias, symlink-parent, ancestor collision",
+        "missing reserved source name and output-dir descendant",
+        "run tree containing an input",
+        "successful external dry/execution reports",
+        "late leaf race and temporary cleanup",
+        "parent symlink retargeting to canonical admitted directory",
+        "non-directory output parent"
+      ],
+      "executor": "fake only; no KDM",
+      "file_type": "code",
+      "id": "plan_json_guard_regression_tests",
+      "label": "CLI output guard synthetic regression coverage",
+      "source_file": "harness/tests/test_run_domain_ice_factorial.py",
+      "source_location": "L305-L515"
+    },
+    {
+      "KDM_calls": 0,
+      "RTTOV_calls": 0,
+      "_origin": "semantic",
+      "file_type": "document",
+      "full_harness_status": "2726 passed,69 skipped,309 deselected in128.82s; isolatedPython3.12 NumPy2.4.6 pytest9.1.1 netCDF4 1.7.4, withoutTorch/jsonschema/privatehost",
+      "host_steps": 0,
+      "id": "plan_json_guard_validation_receipt",
+      "label": "Plan output guard validation completed without model execution",
+      "science_arrays_changed": false,
+      "source_file": "harness/evidence/plan_output_guard_2026-10-24/validation.json",
+      "source_location": "/"
+    },
+    {
+      "_origin": "semantic",
+      "existing_output_replacement_supported": false,
+      "file_type": "document",
+      "historical_experiment_rerun": false,
+      "id": "plan_json_guard_published_fix_report",
+      "label": "P2 plan output clobber fix and scope",
+      "physics_executable_changed": false,
+      "private_outputs_preserved": true,
+      "source_file": "harness/evidence/plan_output_guard_2026-10-24/REPORT.md",
+      "source_location": "L8-L29"
+    },
+    {
+      "_origin": "semantic",
+      "current_reviewed_source_hashes": {
+        "docs/NATIVE_DOMAIN_ICE_FACTORIAL.md": "5338dfbffb4086c62b5848859a1d1dcfc2b7518564a34d6afac5a2643312e799",
+        "harness/analyze_domain_ice_factorial.py": "a172d91aaf36a1e220f944d38b2ecd67c3e7bb21d8c0118398c6c45b307ab19f",
+        "harness/ice_factorial_batch.py": "7bc300f82bfa870bd4b29f2fb4dc7aa0ada62ed79ee0e94a3bf2b35ba9d629ba",
+        "harness/run_domain_ice_factorial.py": "ed643b74cf8fe1bf1c4bf59c01c2a84dc8159cc712d383b8ec265e8924ded5a9",
+        "harness/tests/test_analyze_domain_ice_factorial.py": "5081d6bc806dfba906dfe34f8a5f7b39e1f3fe8c8d75332bde0d171fe57a4370",
+        "harness/tests/test_domain_ice_factorial_evidence.py": "66c4e3b0c8e455988cbb33bd7025f6a9f907313a0d6ba1d148599debdeeda823",
+        "harness/tests/test_prepare_ice_factorial_domain.py": "a0f39e1bfa63406fa65bb6c6f0fe7171565e33d696e8d28c5c8595783ce9c8eb",
+        "harness/tests/test_run_domain_ice_factorial.py": "a794955295d0dacd74dbbddbb928405b5b2e76941e49e1f3eab88fb9feaed68a",
+        "harness/verify_native_finish_ad.py": "d724b1101de04ab8bd9513e03d5ed74312f369f5d78f517537f7a07ea6f5dc60",
+        "oracle/kdm6/native_finish.py": "1053123132884751f869ccceda00dd2a1cace440c2048cc705f0f3689b61c37a"
+      },
+      "executed_runner_sha256": "298b1f8d8b742e44d47393fbd1f6475ec54d9b1727b465b73e28f86006e5277b",
+      "file_type": "document",
+      "historical_execution_artifacts_preserved": true,
+      "id": "domain_execution_hash_history_preserved",
+      "initial_review_source_hashes": {
+        "docs/NATIVE_DOMAIN_ICE_FACTORIAL.md": "aedb7d9c31779e5dda22933b42b8bfebbdbf45eb719a45dd7ab58698d8d8088c",
+        "harness/analyze_domain_ice_factorial.py": "a172d91aaf36a1e220f944d38b2ecd67c3e7bb21d8c0118398c6c45b307ab19f",
+        "harness/ice_factorial_batch.py": "7bc300f82bfa870bd4b29f2fb4dc7aa0ada62ed79ee0e94a3bf2b35ba9d629ba",
+        "harness/run_domain_ice_factorial.py": "ada402ee4cba14899aadeb7ba7f239eb6318ff8f770b4bb5d571d9543319e0e6",
+        "harness/tests/test_analyze_domain_ice_factorial.py": "5081d6bc806dfba906dfe34f8a5f7b39e1f3fe8c8d75332bde0d171fe57a4370",
+        "harness/tests/test_domain_ice_factorial_evidence.py": "66c4e3b0c8e455988cbb33bd7025f6a9f907313a0d6ba1d148599debdeeda823",
+        "harness/tests/test_prepare_ice_factorial_domain.py": "a0f39e1bfa63406fa65bb6c6f0fe7171565e33d696e8d28c5c8595783ce9c8eb",
+        "harness/tests/test_run_domain_ice_factorial.py": "877dedd336c1f7bd42828da3c135e77d6a4ea38d00e61e1f0f7a11532fd3f919",
+        "harness/verify_native_finish_ad.py": "d724b1101de04ab8bd9513e03d5ed74312f369f5d78f517537f7a07ea6f5dc60",
+        "oracle/kdm6/native_finish.py": "1053123132884751f869ccceda00dd2a1cace440c2048cc705f0f3689b61c37a"
+      },
+      "label": "Historical domain-runner attribution and current reviewed source hashes remain distinct",
+      "raw_cap_controller_sha256_available": false,
+      "snapshot_applies_to": [
+        "norm_cap",
+        "raw_actual",
+        "norm_actual"
+      ],
+      "source_file": "harness/evidence/domain_ice_factorial_2026-10-23/manifest.json",
+      "source_location": "/runner_attribution"
+    },
+    {
+      "KDM_binary_or_operational_install_changed": false,
+      "_origin": "semantic",
+      "file_type": "document",
+      "full_domain_kdm_calls_for_fix": 0,
+      "id": "plan_guard_changes_only_metadata",
+      "label": "Plan output repair changes CLI safeguards without a new scientific run",
+      "original_516_call_execution_reused": true,
+      "scientific_arrays_changed": false,
+      "source_file": "harness/evidence/plan_output_guard_2026-10-24/REPORT.md",
+      "source_location": "L31-L40"
+    },
+    {
+      "_origin": "semantic",
+      "file_type": "document",
+      "id": "plan_guard_wiki_summary",
+      "label": "Wiki source note summarizes the CLI guard without scientific rerun claims",
+      "source_file": "wiki/sources/native-domain-ice-factorial-2026-10-23.md",
+      "source_location": "L30-L33",
+      "summary": "Existing and aliased report destinations and input/run-tree overlap are refused before dispatch; publication is exclusive; no regional physics rerun or scientific result change."
+    }
+  ],
+  "output_tokens": null,
+  "schema": "graphify.semantic.v1",
+  "scope": "Plan JSON destination no-clobber fix and validation only. Historical KDM execution/source evidence is preserved; no new physics, model or observation run. Semantic token usage is unmetered."
+}
