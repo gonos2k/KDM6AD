@@ -1,0 +1,54 @@
+{
+  "schema": "kdm6.applied_transfer_validation.v1",
+  "base_main": "52b8e235912b3e223f3cdcdb5ba5c570f48f6dcc",
+  "KDM_calls": {
+    "same_candidate_value_comparisons": 4,
+    "fresh_process_selected_AD_comparisons": 6,
+    "total": 10
+  },
+  "RTTOV_calls": 0,
+  "native_host_steps": 0,
+  "DA_trials": 0,
+  "whole_domain_repeats": 0,
+  "physical_map_changed": false,
+  "operational_install_changed": false,
+  "new_FD_HVP_or_observation_certificate": false,
+  "full_water_energy_number_budget_certified": false,
+  "trace_targets": [
+    {
+      "chunk": 34,
+      "column": 281,
+      "k_bottom0": 17,
+      "native_i1": 140,
+      "native_j1": 76,
+      "level1": 18
+    },
+    {
+      "chunk": 34,
+      "column": 281,
+      "k_bottom0": 18,
+      "native_i1": 140,
+      "native_j1": 76,
+      "level1": 19
+    },
+    {
+      "chunk": 40,
+      "column": 250,
+      "k_bottom0": 17,
+      "native_i1": 139,
+      "native_j1": 89,
+      "level1": 18
+    }
+  ],
+  "identified_measured_sink": "actual internal threshold cleanup zeroes positive remaining QG at/below1e-9; no QV/T compensation inthatobservedboundary",
+  "unresolved": "why earlier physical processes leave those subthreshold remainders; no universal all-column cause or physical correction claimed",
+  "group_pre_rates": "already process-local capped outputs; before/after refers only to sequential group conservation budgets",
+  "selected_branch": "cold atall3cells;groupfactors1;psdep/pgdepnegative,othersselectedwarmrates0",
+  "primary_reduction": "endpoint field deltas multiplied by fixed actual entry rho*DELZ,roundedproducts+fsum; inventory subtraction secondary only",
+  "trace_scope": "rawdt isactualdtcld; call istrace-enabledcoordinator ordinal perprocess,merged disjointchunksbynumbernotcountofKDMexecutions",
+  "Green": "source,actualrateandstateorder,cleanupstageandnoninterference reviewedindependently",
+  "Red": "sourceinsertions,observerinputbaseguards,source-orderreplay,groupunits/signs/dt/callscope andcausalclaimlimits reviewed",
+  "focused_tests": "22 passed (generator6,analyzer9,publicevidence7)",
+  "full_local_harness": "2869 passed,72 skipped,309 deselected in139.60s; isolatedPython3.12,NumPy2.4.6,pytest9.1.1,netCDF4 1.7.4; optionalTorch/compiled/private integrations unavailable",
+  "full_local_harness_log_sha256": "89130ef7a71719a6bd0b8464e67e1109a629ebb8608c9f4013126b52da007095"
+}
