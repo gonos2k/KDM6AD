@@ -1,0 +1,21 @@
+{
+  "schema": "kdm6.restricted_execution_source_resolution.v1",
+  "source_snapshot_sha256": "3e50c393f32b69588d0b97eb016f657f5201406b5dc966c4453b0f6d0156df93",
+  "executed_source": "source_v2; parent-exact physics plus runner/objective overlays",
+  "scope": "Post-launch public wrapper correction only affects read-only preflight/failure-output ownership; successful physical path functions are AST-identical. Actual immutable source remains authoritative.",
+  "sources": {
+    "run_native_satellite_case.py": {
+      "executed_sha256": "ee23e31fd50cfed35e58caceaf9effbef5b62bd905893c7873d1cc15ccfabd6a",
+      "public_current_sha256": "3c5c36e3852b2ea26bf623adafed9d7b0147dd4b5db991008d452ffd90964335",
+      "AST_changed_or_added_symbols": [
+        "_owns_failure_output",
+        "guarded_main"
+      ]
+    },
+    "native_satellite_objective.py": {
+      "executed_sha256": "57f17c22265348696d5171523e0d68169cc458c3d3db9e58d8c8d5be4c0fbc40",
+      "public_current_sha256": "57f17c22265348696d5171523e0d68169cc458c3d3db9e58d8c8d5be4c0fbc40",
+      "AST_changed_or_added_symbols": []
+    }
+  }
+}

@@ -17,7 +17,13 @@ from harness.run_native_satellite_case import (
     save_chunk,
     validate_request,
     execute_jobs,
+    RESTRICTED_FREEZE_BLOCKS,
+    RESTRICTED_STAGE,
+    _fullfield_direction,
+    _make_restricted_jobs,
+    main,
 )
+from harness.native_satellite_objective import restrict_control_blocks
 
 
 def test_case_request_cannot_silently_change_quality_controls_or_time():
@@ -154,7 +160,9 @@ def test_empty_profile_block_keeps_full_native_rows_without_an_rttov_k_call():
 
 
 def test_parallel_resume_preserves_identity_and_returns_native_chunk_order(tmp_path):
-    pytest.importorskip("torch", reason="worker initializer restricts Torch to one thread")
+    pytest.importorskip(
+        "torch", reason="worker initializer restricts Torch to one thread"
+    )
     jobs = []
     for index in (2, 0, 1):
         folder = tmp_path / "baseline" / f"chunk_{index:05d}"
@@ -177,3 +185,143 @@ def test_parallel_resume_preserves_identity_and_returns_native_chunk_order(tmp_p
         )
     result = execute_jobs(jobs, 2)
     assert [item["chunk_index"] for item in result] == [0, 1, 2]
+
+
+def test_restricted_cli_dispatches_one_confirmation_without_baseline_or_old_trials(
+    monkeypatch, tmp_path
+):
+    import harness.run_native_satellite_case as runner
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError(
+            "restricted confirmation must not run the original baseline/trial campaign"
+        )
+
+    monkeypatch.setattr(runner, "run_restricted_confirmation", lambda args: 17)
+    monkeypatch.setattr(runner, "run_baseline", forbidden)
+    monkeypatch.setattr(runner, "run_trials", forbidden)
+    assert (
+        main(
+            [
+                "--stage",
+                "restricted-confirmation",
+                "--parent-run",
+                str(tmp_path / "parent"),
+                "--candidate-json",
+                str(tmp_path / "candidate.json"),
+                "--output-root",
+                str(tmp_path / "new-run"),
+            ]
+        )
+        == 17
+    )
+
+
+def test_restricted_cli_requires_parent_and_candidate_but_not_case_json(tmp_path):
+    with pytest.raises(SystemExit):
+        main(
+            [
+                "--stage",
+                "restricted-confirmation",
+                "--parent-run",
+                str(tmp_path / "parent"),
+                "--output-root",
+                str(tmp_path / "new-run"),
+            ]
+        )
+
+
+def test_restricted_receipt_identity_cannot_reuse_parent_alpha_trial(tmp_path):
+    folder = tmp_path / RESTRICTED_STAGE / "chunk_00000"
+    binding = chunk_binding(
+        "restricted_run",
+        RESTRICTED_STAGE,
+        0,
+        baseline_sha="parent-baseline-npz",
+        controls_sha="projected-alpha1-z",
+    )
+    receipt = save_chunk(
+        folder, {"flat_index": np.array([0])}, {"chunk_index": 0}, binding
+    )
+    assert read_chunk(folder, binding) == receipt
+    parent_trial_binding = chunk_binding(
+        "parent_run",
+        "TRIAL_alpha_1p0",
+        0,
+        baseline_sha="parent-baseline-npz",
+        controls_sha="old-alpha1-z",
+    )
+    with pytest.raises(ValueError, match="different run/stage"):
+        read_chunk(folder, parent_trial_binding)
+
+
+def test_restricted_job_plan_runs_original_partitions_and_freezes_entire_bad_blocks():
+    total, levels = 65988, 39
+    z = np.ones((2, total, levels), dtype=np.float64)
+    rows, arrays = [], {}
+    start = 0
+    for index in range(129):
+        count = 512 if index < 128 else 452
+        stop = start + count
+        row = {
+            "chunk_index": index,
+            "start": start,
+            "stop": stop,
+            "columns": count,
+            "artifact_sha256": f"base-{index}",
+        }
+        rows.append(row)
+        arrays[index] = {
+            "flat_index": np.arange(start, stop, dtype=np.int32),
+            "qv": np.ones((count, levels), dtype=np.float64),
+        }
+        start = stop
+    summary = {"chunks": rows}
+    controls_sha = "full-projected-control-hash"
+    projected = restrict_control_blocks(
+        z, np.arange(total, dtype=np.int32), RESTRICTED_FREEZE_BLOCKS
+    )
+    projected_before = projected.copy()
+    qv_before = {index: value["qv"].copy() for index, value in arrays.items()}
+    jobs = _make_restricted_jobs(
+        {},
+        "run",
+        "new-id",
+        summary,
+        projected,
+        arrays,
+        set(RESTRICTED_FREEZE_BLOCKS),
+        controls_sha,
+    )
+    assert len(jobs) == 129
+    assert projected.tobytes() == projected_before.tobytes()
+    assert all(
+        arrays[index]["qv"].tobytes() == qv_before[index].tobytes() for index in arrays
+    )
+    assert [job[3] for job in jobs] == list(range(129))
+    assert all(job[4] == RESTRICTED_STAGE for job in jobs)
+    assert all(job[8] == controls_sha for job in jobs)
+    for job in jobs:
+        index, start, stop = job[3], job[5]["start"], job[5]["stop"]
+        zi, delta = job[7], job[6]
+        if index in RESTRICTED_FREEZE_BLOCKS:
+            assert not np.any(zi)
+            assert not np.any(delta)
+        else:
+            assert np.array_equal(zi, np.ones((2, stop - start, levels)))
+            assert np.array_equal(delta[0], np.full((stop - start, levels), 0.2))
+            assert np.array_equal(delta[1], np.full((stop - start, levels), 0.02))
+
+
+def test_restricted_direction_preserves_declared_signed_zero_before_projection():
+    gradient = np.array([[[2.0], [0.0]], [[-1.0], [0.0]]], dtype=np.float64)
+    scale = np.ones_like(gradient)
+    active = np.array([[[True], [False]], [[True], [False]]], dtype=np.bool_)
+    direction = _fullfield_direction(gradient, scale, active)
+    assert np.signbit(direction[0, 1, 0])
+    assert np.signbit(direction[1, 1, 0])
+    projected = restrict_control_blocks(
+        direction, np.array([0, 1], dtype=np.int32), [1], chunk_columns=1
+    )
+    assert not np.signbit(projected[:, 1, 0]).any()
+    assert projected[:, 0, :].tobytes() == direction[:, 0, :].tobytes()

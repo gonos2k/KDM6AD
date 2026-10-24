@@ -1,0 +1,23 @@
+{
+  "schema": "kdm6.restricted_graph_refresh.v1",
+  "phase": "implementation_and_screening_forward_in_progress",
+  "semantic_files_cached": 6,
+  "semantic_nodes": 13,
+  "semantic_edges": 12,
+  "semantic_hyperedges": 2,
+  "graph_nodes": 22649,
+  "graph_edges": 45245,
+  "source_sha256": {
+    "docs/NATIVE_RESTRICTED_CONFIRMATION.md": "efe528adf25570dc95df0ebf6e5d1ebb632e310b70e1a5eaa2d63acd605c3c4d",
+    "harness/evidence/native_satellite_restricted_2026-10-25/README.md": "db5389344441cf72bdf95b4fe263dbc5506dde3e0b5c59ea851d826564febd70",
+    "harness/evidence/native_satellite_restricted_2026-10-25/restricted_block_screen.json": "8131aaa7f743fe6b00d46d8b8bafddfaa8ec1ded000f2e4f1618d091ac616754",
+    "harness/evidence/native_satellite_restricted_2026-10-25/restricted_candidate_sourcebound.json": "2a45cd8269a5c331274c9be0024d3451346c8bf33bec639fdeabe9d7e205d9ed",
+    "harness/run_native_satellite_case.py": "275f9f659a4903937eabb172f07911152f691220ee66e428d242f7adf6ce90cd",
+    "harness/summarize_native_satellite_case.py": "7903dbf5bd071233c8b992a0d2543491c13c5ce3bf730469913b03fe39de419b"
+  },
+  "inherited_extraction_warnings": 486,
+  "graph_sha256": "f8f11cd6fe5001471df84a0a83f049fb5541212e4f090c442cb8d18021f5c489",
+  "semantic_tokens": "unmetered",
+  "raw_reports_in": "graphify-out/",
+  "raw_reports_copied_to_wiki": false
+}

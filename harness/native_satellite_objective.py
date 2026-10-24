@@ -352,6 +352,34 @@ def bounded_control_step(baseline, native_gradient, scale, active_mask, alpha):
     }
 
 
+def restrict_control_blocks(z, flat_indices, frozen_blocks, *, chunk_columns=512):
+    """Zero complete original blocks after constructing the normalized step.
+
+    Keep every other control byte unchanged. In particular, never normalize
+    the projected direction again. Observation support and its normalizer are
+    separate inputs to the objective and are not modified here.
+    """
+    controls = np.asarray(z)
+    flat = np.asarray(flat_indices)
+    if (controls.dtype != np.float64 or controls.ndim != 3
+            or controls.shape[0] != 2 or not all(controls.shape[1:])
+            or not np.isfinite(controls).all()):
+        raise ValueError("z must be finite binary64 with shape (2, columns, levels)")
+    if (flat.dtype.kind not in "iu" or flat.shape != (controls.shape[1],)
+            or not np.array_equal(flat, np.arange(controls.shape[1]))):
+        raise ValueError("flat_indices must cover each native column once in order")
+    if type(chunk_columns) is not int or chunk_columns <= 0:
+        raise ValueError("chunk_columns must be a positive integer")
+    blocks = list(frozen_blocks)
+    count = (flat.size + chunk_columns - 1) // chunk_columns
+    if (not blocks or any(type(b) is not int or not 0 <= b < count for b in blocks)
+            or len(set(blocks)) != len(blocks)):
+        raise ValueError("frozen_blocks must contain distinct in-range integer block IDs")
+    projected = controls.copy()
+    projected[:, np.isin(flat // chunk_columns, blocks), :] = 0.0
+    return projected
+
+
 def cost_decreased(baseline_cost, trial_cost):
     """Apply the fixed numerical acceptance tolerance to two global costs."""
     base, trial = float(baseline_cost), float(trial_cost)

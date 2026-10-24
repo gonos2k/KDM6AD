@@ -1,0 +1,26 @@
+{
+  "schema": "kdm6.restricted_execution_source_resolution.v2",
+  "executed_model_source": "source_v2",
+  "source_snapshot_sha256": "3e50c393f32b69588d0b97eb016f657f5201406b5dc966c4453b0f6d0156df93",
+  "curation_source_sha256": "93ea8adda59a7dc0a2643cabebad6a0e08adef28999d873a3da459706a4cb4ba",
+  "sources": {
+    "run_native_satellite_case.py": {
+      "executed_sha256": "ee23e31fd50cfed35e58caceaf9effbef5b62bd905893c7873d1cc15ccfabd6a",
+      "public_current_sha256": "275f9f659a4903937eabb172f07911152f691220ee66e428d242f7adf6ce90cd",
+      "AST_changed_or_added_symbols": [
+        "_owns_failure_output",
+        "guarded_main",
+        "main",
+        "run_restricted_confirmation"
+      ]
+    },
+    "native_satellite_objective.py": {
+      "executed_sha256": "57f17c22265348696d5171523e0d68169cc458c3d3db9e58d8c8d5be4c0fbc40",
+      "public_current_sha256": "57f17c22265348696d5171523e0d68169cc458c3d3db9e58d8c8d5be4c0fbc40",
+      "AST_changed_or_added_symbols": []
+    }
+  },
+  "post_launch_change": "Failure/preflight ownership only: expected invocation ID metadata is reset/set in entry points; guarded exception output requires matching identity. No successful physical/observation calculation function changed.",
+  "actual_engine_sources_preserved_in": "execution_sources/",
+  "curation": "Frozen separately before first export; no model or derivative calls."
+}
