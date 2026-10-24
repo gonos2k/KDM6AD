@@ -1,0 +1,26 @@
+{
+  "source_sha256": {
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/actual_qr_20261024/build_final/actual_qr_batch": "4d043d7dba858aefd607dfbefaeaa10d65dc6b6e42e8232fc02a7726b3824442",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/actual_qr_20261024/run_blocks.py": "c58c2263da97b265c74b4ef48f762b27037299746cfb598aa71504f8567ed954",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/localized_ice_stage_20261024_c2f9214a/norm_actual_chunk034/request.bin": "6410a9a7970d6afb976e940e0b92d14e6891188667420d9694a7ba9997f70175",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/localized_ice_stage_20261024_c2f9214a/norm_actual_chunk034/response.bin": "84ecf8231d2cf5e3862262e2bde24dd4298db62b5a9c623fee1eab71178b4a52",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/localized_ice_stage_20261024_c2f9214a/norm_actual_chunk034/receipt.json": "87d5c2e2d814e844cd5ccd04a602350a6d4031554837514cf068d629ae73397f",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/localized_ice_stage_20261024_c2f9214a/norm_actual_chunk040/request.bin": "e3f758844dff051dc1c62556216d0fdf639001afc8d0ca825d51c848b9843f14",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/localized_ice_stage_20261024_c2f9214a/norm_actual_chunk040/response.bin": "e05d2e1bee0bf3f6765cc82880bebd84d52de8c4de7396e48dd22971772ed682",
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/localized_ice_stage_20261024_c2f9214a/norm_actual_chunk040/receipt.json": "859aa85a9973a0cf64b63fc28f2fc47d88f77a044fc15a55ea0552d11512f79c"
+  },
+  "B": 512,
+  "L": 39,
+  "chunks": [
+    34,
+    40
+  ],
+  "calls_planned": 6,
+  "ice_mode": "norm_actual",
+  "QR_conditions": [
+    "legacy_off",
+    "actual_off",
+    "actual_on"
+  ],
+  "scope": "six isolated kernel calls; no host/DA/RTTOV or new full-domain run"
+}

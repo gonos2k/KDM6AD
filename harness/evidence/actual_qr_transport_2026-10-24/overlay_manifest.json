@@ -1,0 +1,24 @@
+{
+  "schema": "kdm6.actual_qr_overlay.v1",
+  "producer_sha256": "d0023016201466a0fc06a242fabaeed7578170abae0da9314781768b731658e8",
+  "base_overlay_sha256": {
+    "runtime.cpp": "cbd942ccdcab2e608980264fc9624c6f462388523c3b426af058dd161a4ffd0b",
+    "coordinator.cpp": "373e77cc9f81bd77603c6993a53cd8dfd5e9b3b401da6e102d90bc16028f280e",
+    "sedimentation.cpp": "855f2087a7c5c2bb81debc9bb8a76e7d855dec269d335c2ca9ffdbfe7d6ad104",
+    "sedimentation_conservative.cpp": "c3c63cf65c247921c282fff3c58201e942cc5d5b15d88482359efea259895323"
+  },
+  "overlay_sha256": {
+    "runtime.cpp": "cbd942ccdcab2e608980264fc9624c6f462388523c3b426af058dd161a4ffd0b",
+    "coordinator.cpp": "373e77cc9f81bd77603c6993a53cd8dfd5e9b3b401da6e102d90bc16028f280e",
+    "sedimentation.cpp": "32ffa4e2f15fa7ab487525f595c98c869b51d242b00c6346f78f499151fec9b5",
+    "sedimentation_conservative.cpp": "c3c63cf65c247921c282fff3c58201e942cc5d5b15d88482359efea259895323"
+  },
+  "mode_environment": "KDM6_QR_TRANSPORT",
+  "candidate_mode": "actual_departure",
+  "default": "legacy",
+  "required_ice_mode": "norm_actual",
+  "changed_translation_units": [
+    "sedimentation.cpp"
+  ],
+  "scope": "QR mass state/fall only; NR and other species retain Legacy main equations; fp64 opt-in, no operational install"
+}

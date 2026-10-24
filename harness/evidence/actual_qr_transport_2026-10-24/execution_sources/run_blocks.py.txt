@@ -1,0 +1,70 @@
+"""Original B512 blocks, unchanged-map control and QR candidate trace off/on."""
+from pathlib import Path
+import hashlib
+import json
+import subprocess
+import time
+
+import numpy as np
+
+from harness.ice_factorial_batch import _child_environment, unpack_response
+from harness.run_domain_ice_factorial import _parse_time_log
+
+ROOT = Path(__file__).resolve().parent
+PRIOR = Path('/Users/yhlee/KDM6AD-k/host/research_evidence/localized_ice_stage_20261024_c2f9214a')
+BUILD = ROOT/'build_final'
+TOOL = BUILD/'actual_qr_batch'
+RUNS = ROOT/'runs'
+RUNS.mkdir(exist_ok=False)
+
+
+def sha(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def save(path, data):
+    with path.open('x') as stream:
+        json.dump(data, stream, indent=2, allow_nan=False)
+        stream.write('\n')
+
+
+build = json.loads((BUILD/'receipt.json').read_text())
+pins = {str(TOOL):build['batch_tool_sha256'], str(Path(__file__)):sha(__file__)}
+for chunk in [34, 40]:
+    for name in ['request.bin', 'response.bin', 'receipt.json']:
+        path = PRIOR/f'norm_actual_chunk{chunk:03d}'/name
+        pins[str(path)] = sha(path)
+save(ROOT/'run_prepared.json', {'source_sha256':pins,'B':512,'L':39,'chunks':[34,40],'calls_planned':6,'ice_mode':'norm_actual','QR_conditions':['legacy_off','actual_off','actual_on'],'scope':'six isolated kernel calls; no host/DA/RTTOV or new full-domain run'})
+receipts = []
+for chunk in [34, 40]:
+    old = PRIOR/f'norm_actual_chunk{chunk:03d}'
+    reference = json.loads((old/'receipt.json').read_text())
+    for condition in ['legacy_off', 'actual_off', 'actual_on']:
+        case = RUNS/f'chunk{chunk:03d}_{condition}'
+        case.mkdir()
+        (case/'request.bin').write_bytes((old/'request.bin').read_bytes())
+        env = _child_environment('norm_actual')
+        for key in ['KDM6_RAIN_BOUNDARY_TRACE','KDM6_ACTUAL_QR_TRACE','KDM6_ICE_BOUNDARY_TRACE']:
+            env.pop(key, None)
+        env['KDM6_QR_TRANSPORT'] = 'legacy' if condition == 'legacy_off' else 'actual_departure'
+        if condition == 'actual_on':
+            env['KDM6_ACTUAL_QR_TRACE'] = str(case/'actual_qr.tsv')
+            env['KDM6_ICE_BOUNDARY_TRACE'] = str(case/'stage')
+        assert all(sha(path) == digest for path,digest in pins.items())
+        start = time.monotonic()
+        with (case/'resource.log').open('xb') as log:
+            subprocess.run(['/usr/bin/time','-l',str(TOOL),'--input',str(case/'request.bin'),'--output',str(case/'response.bin')],env=env,stdout=log,stderr=subprocess.STDOUT,check=True)
+        elapsed = time.monotonic()-start
+        response = unpack_response((case/'response.bin').read_bytes())
+        assert all(np.isfinite(array).all() for array in response.values() if isinstance(array,np.ndarray))
+        assert np.min(response['state_out'][1:11]) >= 0
+        if condition == 'legacy_off':
+            assert sha(case/'response.bin') == reference['response_sha256']
+        if condition == 'actual_on':
+            assert (case/'response.bin').read_bytes() == (RUNS/f'chunk{chunk:03d}_actual_off'/'response.bin').read_bytes()
+        row = {'chunk':chunk,'condition':condition,'B':512,'L':39,'dt':20,'request_sha256':sha(case/'request.bin'),'response_sha256':sha(case/'response.bin'),'source_chunk_sha256':reference['source_chunk_sha256'],'prior_response_sha256':reference['response_sha256'],'tool_sha256':sha(TOOL),'controller_sha256':sha(__file__),'wall_seconds':elapsed,'resources':_parse_time_log((case/'resource.log').read_text()),'min_water_and_number':float(response['state_out'][1:11].min()),'trace_sha256':{p.name:sha(p) for p in case.glob('*.tsv')}}
+        save(case/'receipt.json',row)
+        receipts.append(row)
+        print(json.dumps({'chunk':chunk,'condition':condition,'seconds':elapsed,'min_state':row['min_water_and_number']}),flush=True)
+assert all(sha(path) == digest for path,digest in pins.items())
+save(ROOT/'block_execution.json',{'source_sha256':pins,'receipts':receipts,'KDM_calls':6,'host_steps':0,'RTTOV_calls':0})

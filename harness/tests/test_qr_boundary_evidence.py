@@ -118,12 +118,22 @@ def test_first_order_three_way_products_match_exactly_within_each_variant():
                         assert hashlib.sha256(z[key].tobytes()).hexdigest() == expected
 
 
-def test_evidence_and_current_source_hashes():
+def test_evidence_and_executed_source_hashes():
     manifest = json.loads((E / "manifest.json").read_text())
     root = E.parents[2]
     for group in ["source_sha256", "artifact_sha256"]:
         assert manifest[group]
         for path, expected in manifest[group].items():
-            assert hashlib.sha256((root / path).read_bytes()).hexdigest() == expected, (
-                path
-            )
+            # Immutable old receipts bind the source bytes actually executed.
+            archived = {
+                "harness/analyze_rain_boundary_trace.py": "analyze_rain_boundary_trace.py.txt",
+                "harness/tests/test_qr_boundary_evidence.py": "test_qr_boundary_evidence.py.txt",
+            }
+            source = root / path
+            if group == "source_sha256" and path in archived:
+                source = (
+                    root
+                    / "harness/evidence/readable_candidate_tools_2026-10-24/executed_sources"
+                    / archived[path]
+                )
+            assert hashlib.sha256(source.read_bytes()).hexdigest() == expected, path

@@ -1,0 +1,18 @@
+Traceback (most recent call last):
+  File "/opt/local/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/runpy.py", line 196, in _run_module_as_main
+    return _run_code(code, main_globals, None,
+  File "/opt/local/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/runpy.py", line 86, in _run_code
+    exec(code, run_globals)
+  File "/private/tmp/KDM6AD-actual-qr-20261024/harness/run_native_candidate_observation.py", line 1140, in <module>
+    raise SystemExit(main())
+  File "/private/tmp/KDM6AD-actual-qr-20261024/harness/run_native_candidate_observation.py", line 1091, in main
+    prepared = prepare_inputs(
+  File "/private/tmp/KDM6AD-actual-qr-20261024/harness/run_native_candidate_observation.py", line 422, in prepare_inputs
+    return _prepare_inputs_impl(
+  File "/private/tmp/KDM6AD-actual-qr-20261024/harness/run_native_candidate_observation.py", line 534, in _prepare_inputs_impl
+    receipt = make_kernel_coordinate_receipt(
+  File "/private/tmp/KDM6AD-actual-qr-20261024/harness/native_number_qualification.py", line 167, in make_kernel_coordinate_receipt
+    bindings = _validate_bindings(source_bindings, levels)
+  File "/private/tmp/KDM6AD-actual-qr-20261024/harness/native_number_qualification.py", line 74, in _validate_bindings
+    raise ValueError(f"source_bindings missing required values: {', '.join(missing)}")
+ValueError: source_bindings missing required values: trace, namelist, checkpoint, step, i, j, levels, base_native_X_sha256

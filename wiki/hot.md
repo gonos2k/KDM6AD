@@ -6,6 +6,7 @@ date_modified: 2026-10-13
 # Hot Cache
 
 ## Current Focus
+- [[sources/actual-qr-transport-2026-10-24]] — QR actual-departure candidate closes two-block QR accounting; smaller post_micro residual remains, native cost/AD passes without measurable fit gain; controller metadata/readability corrected.
 - [[sources/qr-boundary-attribution-2026-10-24]] — Actual QR transfers distinguish internal arrival loss from bottom diagnostic overcount at two native witnesses; no physics/default change.
 - [[sources/localized-ice-budget-ad-2026-10-24]] — Two B512 residual witnesses localize main QR accounting; raw clamp-crossing FD failures retained, paired/interior controls pass bounded derivative gates.
 - [[sources/native-domain-ice-factorial-2026-10-23]] — Four arms each cover 65,988 columns in 129 actual KDM calls; residuals reduce but physical closure and alternate-map AD remain open.

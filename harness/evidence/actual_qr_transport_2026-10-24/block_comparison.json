@@ -1,0 +1,238 @@
+{
+  "schema": "kdm6.actual_qr_comparison.v1",
+  "source_sha256": {
+    "/Users/yhlee/KDM6AD-k/host/research_evidence/actual_qr_20261024/analyze_blocks_final.py": "b4c48f2587f0b4da695e94e4752807b7772f254c008c4277e089f43eaac07a36",
+    "/private/tmp/KDM6AD-actual-qr-20261024/oracle/kdm6/qr_actual_transport.py": "72368fcf39e6100e10fc9beb0adbd8e0298f850cbc5a87c6e5a09be3f7f14cca"
+  },
+  "cases": [
+    {
+      "chunk": 34,
+      "B": 512,
+      "L": 39,
+      "global_steps": 5,
+      "local_steps_at_witness": 4,
+      "i": 113,
+      "j": 76,
+      "oracle_bit_mismatches": {
+        "q_after": 0,
+        "fall_after": 0,
+        "departure": 0,
+        "arrival": 0
+      },
+      "qr_nonnegative": true,
+      "qr_budget_gate_failures": 0,
+      "max_abs_qr_residual": 2.0816681711721685e-16,
+      "max_abs_interface_gap": 1.3877787807814457e-17,
+      "witness": {
+        "QR_change": -0.045824119604921665,
+        "actual_bottom": 0.0458241196049217,
+        "reported_QR": 0.04582411960492169,
+        "QR_residual": 2.7755575615628914e-17,
+        "legacy_raw_water_residual": 0.005058514420779037,
+        "candidate_raw_water_residual": -1.4988010832439613e-15,
+        "candidate_cleanup": 0.0
+      },
+      "remaining_accounting": {
+        "max_abs_micro_total": 7.422008460557849e-07,
+        "max_abs_non_QR_sed_residual": 1.249000902703301e-16,
+        "max_decomposition_remainder": 1.8992037085715464e-17
+      },
+      "comparisons": {
+        "legacy": {
+          "raw_residual": {
+            "count": 512,
+            "min": -0.015059973056504451,
+            "max": 0.005058514420779037,
+            "unweighted_column_mean": -0.000105994381643309,
+            "rank_p01": -0.0029647168502074995,
+            "rank_p50": -3.7615886154616224e-17,
+            "rank_p99": 1.7644712730843781e-15
+          },
+          "cleanup": {
+            "count": 512,
+            "min": -6.432500805217109e-06,
+            "max": 0.0,
+            "unweighted_column_mean": -7.08791002052529e-07,
+            "rank_p01": -4.44810784535717e-06,
+            "rank_p50": 0.0,
+            "rank_p99": 0.0
+          },
+          "total_precip": {
+            "count": 512,
+            "min": 0.0,
+            "max": 0.08832566480974799,
+            "unweighted_column_mean": 0.0011642985907462922,
+            "rank_p01": 0.0,
+            "rank_p50": 0.0,
+            "rank_p99": 0.025933245439915893
+          },
+          "moment_pairs": {
+            "active_QR_cells": 2161,
+            "active_QR_with_zero_NR": 897,
+            "active_QR_with_NR_below_source_NRMIN": 1037,
+            "QR_zero_NR_positive": 0,
+            "number_basis": "legacy raw kernel volume coordinate; historical host basis unknown; no number-budget claim"
+          }
+        },
+        "actual": {
+          "raw_residual": {
+            "count": 512,
+            "min": -7.422008460553927e-07,
+            "max": 1.9588805810722906e-15,
+            "unweighted_column_mean": -2.449794689873327e-08,
+            "rank_p01": -4.358231128205488e-07,
+            "rank_p50": -3.55798836472129e-17,
+            "rank_p99": 1.6633016578643245e-15
+          },
+          "cleanup": {
+            "count": 512,
+            "min": -6.432500805217109e-06,
+            "max": 0.0,
+            "unweighted_column_mean": -7.08791002052529e-07,
+            "rank_p01": -4.448107845357171e-06,
+            "rank_p50": 0.0,
+            "rank_p99": 0.0
+          },
+          "total_precip": {
+            "count": 512,
+            "min": 0.0,
+            "max": 0.08832566480974799,
+            "unweighted_column_mean": 0.0011108594440014836,
+            "rank_p01": 0.0,
+            "rank_p50": 0.0,
+            "rank_p99": 0.02110294634572947
+          },
+          "moment_pairs": {
+            "active_QR_cells": 2161,
+            "active_QR_with_zero_NR": 897,
+            "active_QR_with_NR_below_source_NRMIN": 1037,
+            "QR_zero_NR_positive": 0,
+            "number_basis": "legacy raw kernel volume coordinate; historical host basis unknown; no number-budget claim"
+          }
+        }
+      },
+      "source_sha256": {
+        "request": "6410a9a7970d6afb976e940e0b92d14e6891188667420d9694a7ba9997f70175",
+        "response": "1b89b1098525243e22e354d50ae1d2906342362b6454465dac78bd3a4743313e",
+        "trace": "b08e70f2f689a83b25a97ed915d7a1168c9136dc211c2c05de776b08dae4f2b4",
+        "stage": "493784de2200e73601cc39c8680e9b380a249f1b3632154b687ac27d291a375d"
+      },
+      "array_sha256": "8e0341ab5a296332d176ddd6b9d773210f1d4a066c91081c4aa4e181ce3adf8d"
+    },
+    {
+      "chunk": 40,
+      "B": 512,
+      "L": 39,
+      "global_steps": 5,
+      "local_steps_at_witness": 1,
+      "i": 131,
+      "j": 88,
+      "oracle_bit_mismatches": {
+        "q_after": 0,
+        "fall_after": 0,
+        "departure": 0,
+        "arrival": 0
+      },
+      "qr_nonnegative": true,
+      "qr_budget_gate_failures": 0,
+      "max_abs_qr_residual": 1.3183898417423734e-16,
+      "max_abs_interface_gap": 2.7755575615628914e-17,
+      "witness": {
+        "QR_change": -2.7328671010212746e-17,
+        "actual_bottom": 0.0,
+        "reported_QR": 0.0,
+        "QR_residual": -2.7328671010212746e-17,
+        "legacy_raw_water_residual": -0.18177156930768423,
+        "candidate_raw_water_residual": 1.6037645303152823e-15,
+        "candidate_cleanup": -6.9495706997567825e-12
+      },
+      "remaining_accounting": {
+        "max_abs_micro_total": 4.1719494005253867e-07,
+        "max_abs_non_QR_sed_residual": 4.3021142204224816e-16,
+        "max_decomposition_remainder": 5.342014452184218e-17
+      },
+      "comparisons": {
+        "legacy": {
+          "raw_residual": {
+            "count": 512,
+            "min": -0.18177156930768423,
+            "max": 0.00018113858119530452,
+            "unweighted_column_mean": -0.0025550682370072534,
+            "rank_p01": -0.06988280344736045,
+            "rank_p50": -2.696434096377499e-17,
+            "rank_p99": 1.457167719820518e-15
+          },
+          "cleanup": {
+            "count": 512,
+            "min": -7.444309421894932e-06,
+            "max": 0.0,
+            "unweighted_column_mean": -9.162691325424625e-07,
+            "rank_p01": -5.139329718903511e-06,
+            "rank_p50": -3.851455928524944e-08,
+            "rank_p99": 0.0
+          },
+          "total_precip": {
+            "count": 512,
+            "min": 0.0,
+            "max": 0.12304197995647596,
+            "unweighted_column_mean": 0.0030770055031662533,
+            "rank_p01": 0.0,
+            "rank_p50": 0.0,
+            "rank_p99": 0.08083382365132787
+          },
+          "moment_pairs": {
+            "active_QR_cells": 1758,
+            "active_QR_with_zero_NR": 276,
+            "active_QR_with_NR_below_source_NRMIN": 443,
+            "QR_zero_NR_positive": 0,
+            "number_basis": "legacy raw kernel volume coordinate; historical host basis unknown; no number-budget claim"
+          }
+        },
+        "actual": {
+          "raw_residual": {
+            "count": 512,
+            "min": -4.1719494005560995e-07,
+            "max": 2.990808115217996e-15,
+            "unweighted_column_mean": -2.077574471508579e-08,
+            "rank_p01": -3.7694297957683705e-07,
+            "rank_p50": 0.0,
+            "rank_p99": 1.6037645303152823e-15
+          },
+          "cleanup": {
+            "count": 512,
+            "min": -7.444309421894932e-06,
+            "max": 0.0,
+            "unweighted_column_mean": -9.162691325424625e-07,
+            "rank_p01": -5.139329718903511e-06,
+            "rank_p50": -3.851455928524944e-08,
+            "rank_p99": 0.0
+          },
+          "total_precip": {
+            "count": 512,
+            "min": 0.0,
+            "max": 0.12788173872967176,
+            "unweighted_column_mean": 0.00332103453293577,
+            "rank_p01": 0.0,
+            "rank_p50": 0.0,
+            "rank_p99": 0.08601312236796098
+          },
+          "moment_pairs": {
+            "active_QR_cells": 1758,
+            "active_QR_with_zero_NR": 276,
+            "active_QR_with_NR_below_source_NRMIN": 443,
+            "QR_zero_NR_positive": 0,
+            "number_basis": "legacy raw kernel volume coordinate; historical host basis unknown; no number-budget claim"
+          }
+        }
+      },
+      "source_sha256": {
+        "request": "e3f758844dff051dc1c62556216d0fdf639001afc8d0ca825d51c848b9843f14",
+        "response": "f6305cae102897474f2981c895da43ddd4e92629ea5db747bb5b001c62a36e69",
+        "trace": "490667a9f91f5c2225ff5faa6e49c209db1fed2a74b272c9f7c8eb1c8e96fc07",
+        "stage": "9a398f02a05bbc29d72aa77f3e75e303e4b7110d3575820e2d343eaa4d3ec3f7"
+      },
+      "array_sha256": "eaf3bb7c001ae8b03ab7d5864c0ee2e3e24c50b9e79ecd47c17303c64ccc16c8"
+    }
+  ],
+  "model_calls_added": 0
+}
