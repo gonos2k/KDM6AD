@@ -1,0 +1,167 @@
+{
+  "controller_sha256": "8599fbdc4eb6b6f338575f90d746116d50e3bee7d542be438b183650331f7689",
+  "calls": 4,
+  "receipts": [
+    {
+      "mode": "norm_actual",
+      "batch_index": 34,
+      "B": 512,
+      "L": 39,
+      "start_flat": 17408,
+      "stop_flat_exclusive": 17920,
+      "manifest_sha256": "24630a58b03e54d90cc4bb6c6167e0571b02d2d002095424b19789286914601d",
+      "source_chunk_sha256": "111a4670b7a4e5f68bf7be7d6d4b962b894140988d2b3d6825a66045719e4f47",
+      "tool_sha256": "b8051d8b8c983dd91e98c98204d900b27da39054eceeb282d4f9e0025cf894e7",
+      "controller_sha256": "8599fbdc4eb6b6f338575f90d746116d50e3bee7d542be438b183650331f7689",
+      "request_sha256": "6410a9a7970d6afb976e940e0b92d14e6891188667420d9694a7ba9997f70175",
+      "response_sha256": "84ecf8231d2cf5e3862262e2bde24dd4298db62b5a9c623fee1eab71178b4a52",
+      "trace_on_matches_prior_trace_off_bytes": true,
+      "wall_seconds": 1.234367999713868,
+      "resources": {
+        "wall": 1.22,
+        "user": 1.11,
+        "system": 0.09,
+        "peak_rss_bytes": 213975040
+      },
+      "traces": {
+        "ice.tsv.layers.tsv": {
+          "sha256": "3da8e353612523c05fc84fee6b854af95d4cef1d395468b8b8134ae4229fd62c",
+          "bytes": 11877803
+        },
+        "ice.tsv": {
+          "sha256": "48c6b6fdb2f31bf14076d28a244458045f5e0e830161084cfe48594eb1cff8f8",
+          "bytes": 11373473
+        },
+        "ice.tsv.water.tsv": {
+          "sha256": "6fc7a7577542b50ee0cae75c01e7bf6e3c76376bdedc7443982213b013578a4f",
+          "bytes": 19252896
+        }
+      },
+      "log_sha256": "9ca5f65fb2387c426fd33d3f0188996a0487b0c613bdffc6c066c97d3f3f11a4",
+      "KDM_calls": 1,
+      "native_host_steps": 0,
+      "RTTOV_calls": 0
+    },
+    {
+      "mode": "norm_actual",
+      "batch_index": 40,
+      "B": 512,
+      "L": 39,
+      "start_flat": 20480,
+      "stop_flat_exclusive": 20992,
+      "manifest_sha256": "24630a58b03e54d90cc4bb6c6167e0571b02d2d002095424b19789286914601d",
+      "source_chunk_sha256": "ab6e1e452b157028675e97ae93d066ba9f8d8ef038bc7b042cb71669d16ecb89",
+      "tool_sha256": "b8051d8b8c983dd91e98c98204d900b27da39054eceeb282d4f9e0025cf894e7",
+      "controller_sha256": "8599fbdc4eb6b6f338575f90d746116d50e3bee7d542be438b183650331f7689",
+      "request_sha256": "e3f758844dff051dc1c62556216d0fdf639001afc8d0ca825d51c848b9843f14",
+      "response_sha256": "e05d2e1bee0bf3f6765cc82880bebd84d52de8c4de7396e48dd22971772ed682",
+      "trace_on_matches_prior_trace_off_bytes": true,
+      "wall_seconds": 1.212100749835372,
+      "resources": {
+        "wall": 1.2,
+        "user": 1.1,
+        "system": 0.09,
+        "peak_rss_bytes": 214368256
+      },
+      "traces": {
+        "ice.tsv.layers.tsv": {
+          "sha256": "12370212d9900579420a3a95c091e46bc3d80b0049b06af1a238a2945a9b506f",
+          "bytes": 11948622
+        },
+        "ice.tsv": {
+          "sha256": "df46e26a993ecb041db2101a7f6c2ff0ffbc1535ca4b5fa27219efcb083d3de6",
+          "bytes": 11381712
+        },
+        "ice.tsv.water.tsv": {
+          "sha256": "9b0b3902cfa74450ce8741fbc3d9739417b9a467bdde453c00f6d9573f7de116",
+          "bytes": 19279834
+        }
+      },
+      "log_sha256": "4da9f75fa2ee4836bae2783f32d44254194aaf5c91871b111864530dbd44e3cb",
+      "KDM_calls": 1,
+      "native_host_steps": 0,
+      "RTTOV_calls": 0
+    },
+    {
+      "mode": "raw_actual",
+      "batch_index": 34,
+      "B": 512,
+      "L": 39,
+      "start_flat": 17408,
+      "stop_flat_exclusive": 17920,
+      "manifest_sha256": "24630a58b03e54d90cc4bb6c6167e0571b02d2d002095424b19789286914601d",
+      "source_chunk_sha256": "111a4670b7a4e5f68bf7be7d6d4b962b894140988d2b3d6825a66045719e4f47",
+      "tool_sha256": "b8051d8b8c983dd91e98c98204d900b27da39054eceeb282d4f9e0025cf894e7",
+      "controller_sha256": "8599fbdc4eb6b6f338575f90d746116d50e3bee7d542be438b183650331f7689",
+      "request_sha256": "6410a9a7970d6afb976e940e0b92d14e6891188667420d9694a7ba9997f70175",
+      "response_sha256": "ff40dc82ae7ee092d91a5ff1126142b1737d6cd6ba51901d2116a1d121146c3d",
+      "trace_on_matches_prior_trace_off_bytes": true,
+      "wall_seconds": 1.198648041114211,
+      "resources": {
+        "wall": 1.19,
+        "user": 1.09,
+        "system": 0.08,
+        "peak_rss_bytes": 210796544
+      },
+      "traces": {
+        "ice.tsv.layers.tsv": {
+          "sha256": "e28b08aa97583dfd3506693ecf391bdb23dbf48d2f14bc3e5b07144366779547",
+          "bytes": 11818386
+        },
+        "ice.tsv": {
+          "sha256": "d6030f58a5205523beebfc66a6ad655298fab33ab1f5a6b88ad083b9ca5136ce",
+          "bytes": 11230787
+        },
+        "ice.tsv.water.tsv": {
+          "sha256": "309060487b3a05f9d438d089bec1897e81d5aa16c30619002ed4de9aebd9ad22",
+          "bytes": 19185246
+        }
+      },
+      "log_sha256": "619c0dda307ae073724bdc9c26612aa22db38352313c6d7d4b4121a394b1ed2c",
+      "KDM_calls": 1,
+      "native_host_steps": 0,
+      "RTTOV_calls": 0
+    },
+    {
+      "mode": "raw_actual",
+      "batch_index": 40,
+      "B": 512,
+      "L": 39,
+      "start_flat": 20480,
+      "stop_flat_exclusive": 20992,
+      "manifest_sha256": "24630a58b03e54d90cc4bb6c6167e0571b02d2d002095424b19789286914601d",
+      "source_chunk_sha256": "ab6e1e452b157028675e97ae93d066ba9f8d8ef038bc7b042cb71669d16ecb89",
+      "tool_sha256": "b8051d8b8c983dd91e98c98204d900b27da39054eceeb282d4f9e0025cf894e7",
+      "controller_sha256": "8599fbdc4eb6b6f338575f90d746116d50e3bee7d542be438b183650331f7689",
+      "request_sha256": "e3f758844dff051dc1c62556216d0fdf639001afc8d0ca825d51c848b9843f14",
+      "response_sha256": "9c2a6249bc92d701d0d874b4b22d24916dd85a275a1885b57769f6c857b9a5db",
+      "trace_on_matches_prior_trace_off_bytes": true,
+      "wall_seconds": 1.203156125266105,
+      "resources": {
+        "wall": 1.19,
+        "user": 1.09,
+        "system": 0.08,
+        "peak_rss_bytes": 211025920
+      },
+      "traces": {
+        "ice.tsv.layers.tsv": {
+          "sha256": "86809546676e84924df0bbf9f289fe1610ed0885fe0e4bf284f546a262ec52ae",
+          "bytes": 11883628
+        },
+        "ice.tsv": {
+          "sha256": "8bfc2f9be31892a1b08516ee05b4122fa9d9ab636d9ac33ca9e564ea32ac1a94",
+          "bytes": 11238210
+        },
+        "ice.tsv.water.tsv": {
+          "sha256": "cadc66c585eaa5583ce5b35adf07d5ce2caa40eca3598f57e4533feae6de760b",
+          "bytes": 19210005
+        }
+      },
+      "log_sha256": "b5b732c90e260b9eaeb5beec7b973c2716560e66c654943848b50acdd5f040d1",
+      "KDM_calls": 1,
+      "native_host_steps": 0,
+      "RTTOV_calls": 0
+    }
+  ],
+  "scope": "two original B512 blocks, two already defined variants; no full-domain repeat, host step or AD/RTTOV certificate"
+}

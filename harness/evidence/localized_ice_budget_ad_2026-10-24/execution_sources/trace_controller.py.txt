@@ -1,0 +1,53 @@
+"""Frozen value-only trace replay of four existing B512 variant requests.
+
+Inventory W=sum_species,levels DEN_in*DELZ_in*q. Compare actual stage
+inventories and call-total precipitation; retain raw-flux/number-unit caveats.
+This controller does not modify a physical map, compiled source or host state.
+"""
+from pathlib import Path
+import hashlib,json,os,subprocess,time
+from harness.run_domain_ice_factorial import build_plan,DEFAULT_MANIFEST,DEFAULT_EXECUTABLE,_load_chunk_from_bytes,_parse_time_log
+from harness.ice_factorial_batch import pack_request,unpack_response,_child_environment
+import numpy as np
+ROOT=Path(__file__).resolve().parent
+PRIOR=Path('/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_domain_factorial_20261023/full')
+
+def sha(data):return hashlib.sha256(data).hexdigest()
+def publish(p,v):
+ with p.open('x') as stream:json.dump(v,stream,indent=2,allow_nan=False);stream.write('\n')
+
+self_hash=sha(Path(__file__).read_bytes())
+planned=[(mode,index) for mode in ('norm_actual','raw_actual') for index in (34,40)]
+publish(ROOT/'prepared.json',{'controller_sha256':self_hash,'calls_planned':4,'modes':['norm_actual','raw_actual'],'indices':[34,40],'B':512,'L':39,'dt':20,'decomposition':'unchanged original B512 blocks, including all neighbor columns','scope':'value-only trace using exact frozen executable/request; zero native host/DA/RTTOV steps','no_new_physics_map':True})
+receipts=[]
+for mode,index in planned:
+ plan=build_plan(mode=mode)
+ task=plan['chunks'][index]
+ source_bytes=Path(task['source_path']).read_bytes()
+ assert sha(source_bytes)==task['source_sha256']
+ s,f,x=_load_chunk_from_bytes(source_bytes,{'start_flat':task['start'],'stop_flat_exclusive':task['end']},task['start'])
+ request=pack_request(s,f,x,20.,10.,10.)
+ prior=json.loads((PRIOR/mode/f'chunk-{index:05d}.receipt.json').read_text())
+ assert prior['request_sha256']==sha(request) and prior['tool_sha256']==plan['tool_sha256']
+ case=ROOT/f'{mode}_chunk{index:03d}';case.mkdir(exist_ok=False)
+ req,res,log=case/'request.bin',case/'response.bin',case/'resource.log'
+ with req.open('xb') as stream:stream.write(request)
+ assert sha(DEFAULT_EXECUTABLE.read_bytes())==plan['tool_sha256']
+ env=_child_environment(mode);env['KDM6_ICE_BOUNDARY_TRACE']=str(case/'ice.tsv')
+ start=time.monotonic()
+ with log.open('xb') as stream:
+  completed=subprocess.run(['/usr/bin/time','-l',str(DEFAULT_EXECUTABLE),'--input',str(req),'--output',str(res)],env=env,stdout=stream,stderr=subprocess.STDOUT)
+ elapsed=time.monotonic()-start
+ assert completed.returncode==0,log
+ assert sha(DEFAULT_EXECUTABLE.read_bytes())==plan['tool_sha256']
+ response_bytes=res.read_bytes();response=unpack_response(response_bytes)
+ assert response['B']==512 and response['L']==39
+ assert np.array_equal(response['state_in'].view('u8'),s.view('u8')) and np.array_equal(response['forcing_in'].view('u8'),f.view('u8'))
+ assert sha(response_bytes)==prior['response_sha256'],'trace-on response differs from frozen original trace-off response'
+ trace_paths=[p for p in case.glob('ice.tsv*') if p.is_file()]
+ assert trace_paths and (case/'ice.tsv.water.tsv').is_file() and (case/'ice.tsv.layers.tsv').is_file()
+ receipt={'mode':mode,'batch_index':index,'B':512,'L':39,'start_flat':task['start'],'stop_flat_exclusive':task['end'],'manifest_sha256':plan['manifest_sha256'],'source_chunk_sha256':task['source_sha256'],'tool_sha256':plan['tool_sha256'],'controller_sha256':self_hash,'request_sha256':sha(request),'response_sha256':sha(response_bytes),'trace_on_matches_prior_trace_off_bytes':True,'wall_seconds':elapsed,'resources':_parse_time_log(log.read_text()),'traces':{p.name:{'sha256':sha(p.read_bytes()),'bytes':p.stat().st_size} for p in trace_paths},'log_sha256':sha(log.read_bytes()),'KDM_calls':1,'native_host_steps':0,'RTTOV_calls':0}
+ publish(case/'receipt.json',receipt);receipts.append(receipt)
+ print(json.dumps({'mode':mode,'chunk':index,'seconds':elapsed,'trace_bytes':sum(v['bytes'] for v in receipt['traces'].values()),'same_response':True}),flush=True)
+assert sha(Path(__file__).read_bytes())==self_hash
+publish(ROOT/'execution.json',{'controller_sha256':self_hash,'calls':4,'receipts':receipts,'scope':'two original B512 blocks, two already defined variants; no full-domain repeat, host step or AD/RTTOV certificate'})

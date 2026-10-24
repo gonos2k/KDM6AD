@@ -1,0 +1,47 @@
+{
+  "schema": "kdm6.localized_ice_validation.v1",
+  "base_commit": "c2f9214ab1452baf257633ad2da26ec216615c31",
+  "KDM_forward_calls_by_task": {
+    "trace_replays": 4,
+    "B512_AD_pilot": 2,
+    "raw_direction_sweep": 164,
+    "NN_one_sided_probes": 6,
+    "trace_AD_noninterference": 8,
+    "initial_entry_interior_pair_sweep": 164,
+    "final_entry_interior_pair_sweep_after_CLI_gate_hardening": 164
+  },
+  "KDM_forward_calls_total": 512,
+  "whole_domain_repeats": 0,
+  "native_host_steps": 0,
+  "RTTOV_calls": 0,
+  "local_focused": "30 passed (stage7 + AD11 + evidence12), with optional Torch present",
+  "full_harness": "2753 passed,72 skipped,309 deselected in85.27s using isolated Python3.12/NumPy2.4.6/pytest9.1.1/netCDF4 1.7.4 withoutTorch/jsonschema/privatehost; public replay checked again after test-only portable seed support adjustment",
+  "physics_translation_units_rebuilt": 0,
+  "operational_install_changed": false,
+  "new_water_closure_certificate": false,
+  "raw_direction_families_passed": false,
+  "entry_interior_pair_direction_case_gates": "16/16 pass;66/80epsilontrials pass;14 fail retained",
+  "raw_verifier_source_snapshot_sha256": "1b22f24db84ed087548d84c337aa2d52385463ba4ab17f149fd276f3762a3163",
+  "Green": "Strict saved-trace reader, source/input/echo/trace orientation validation and applied-out/arrival accounting; reader adds no modelcalls",
+  "Red": "Independent v2product/source hashes, full-array dots and allfieldFD ratios reproduced; original raw clipping failures retained; NN actualone-sided probe verified",
+  "scope_limits": [
+    "Raw number units/flux dimensions remain conditional.",
+    "No unrestricted raw-coordinate, precip/budget,HVP,nativehost,RTTOV or forecast-skill certification.",
+    "KDM internal branch/schedule signatures not exhaustive; onlythermo masksandwhole-B FD explicitlychecked.",
+    "Observedoff-targetzero appliesonlythesevectors/cases.",
+    "No main-rain internal boundary causal attribution yet."
+  ],
+  "C_ABI_JVP_products": 59,
+  "C_ABI_VJP_products": 15,
+  "final_pair_products_match_initial_pair_bits": true,
+  "verifier_CLI": "Final CLI exits1 on failed scientific gate after writing negative evidence; earlier exploratory v1 returned0 for completed measurement with passed=false. This does not alter numerical maps, tolerances or preserved raw failures.",
+  "pre_cli_pair_source_sha256": "395319039b05643410d0c8307eac4d2666d64f907d85cfb2422576181bb33ab6",
+  "full_harness_log_sha256": "c587c89559c6ea4b3141b355d2e29078edc49709ab2859d3d26745009536445d",
+  "research_environment_observed": {
+    "Python": "3.10.11",
+    "Torch": "2.13.0",
+    "platform": "macOS-26.7-arm64-arm-64bit"
+  },
+  "observed_RSS_scope": "Sampled child RSS guarded at12GiB for pilot/full AD sweeps, not aggregate memory or exact /usr/bin/time peak. Separate trace calls have their own resource logs.",
+  "verifier_core_AST_unchanged_after_CLI_hardening": true
+}

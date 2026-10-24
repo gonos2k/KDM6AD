@@ -1,0 +1,39 @@
+{
+  "scope": "actual full-B512 lower entry clamp probe; chosen AD branch derivative is inward one-sided, not a classical derivative valid for every raw direction",
+  "library_sha256": "e412328b7714c6b106268fbd795708aa8434e88338bc9157b8cfe1fffa5315e9",
+  "source_sha256": "1e1b40f4361d41d629ffc89a6c2f42c39df0ab671d7289e9a80591091af73ce0",
+  "results": [
+    {
+      "chunk": 34,
+      "target_row": 254,
+      "level_bottom0": 34,
+      "NN_before": 100000000.0,
+      "NN_base": 100000000.0,
+      "epsilon": 0.0001,
+      "NN_input_direction": 1000000.0,
+      "NN_plus": 100000100.0,
+      "NN_minus": 100000000.0,
+      "JVP": 1000000.0,
+      "forward_sided_FD": 1000000.0,
+      "backward_sided_FD": 0.0,
+      "central_FD": 500000.0,
+      "KDM_forward_calls": 3
+    },
+    {
+      "chunk": 40,
+      "target_row": 8,
+      "level_bottom0": 11,
+      "NN_before": 100000000.0,
+      "NN_base": 100000000.0,
+      "epsilon": 0.0001,
+      "NN_input_direction": 1000000.0,
+      "NN_plus": 100000100.0,
+      "NN_minus": 100000000.0,
+      "JVP": 1000000.0,
+      "forward_sided_FD": 1000000.0,
+      "backward_sided_FD": 0.0,
+      "central_FD": 500000.0,
+      "KDM_forward_calls": 3
+    }
+  ]
+}
