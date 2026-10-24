@@ -92,3 +92,5 @@ date_modified: 2026-10-13
 - [[sources/pr410-retained-case-claims-2026-10-11]] — Retained Jul19 actual fit response and source/input-equivalence inference; no new H/M/date run or process-rate claim.
 
 - [[sources/pr411-v4-actual-integration-2026-10-12]] — One real V4 spawn/RTTOV/analysis/audit/checkpoint path on retained Jul19 inputs; no native rerun/new date or convergence claim.
+
+- [[sources/norm-actual-observation-2026-10-24]] — Full-B512 candidate reaches actual RTTOV cost with three bounded native T/Q directions; the second target is explicitly regression-domain rejected.

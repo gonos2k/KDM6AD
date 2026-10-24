@@ -1,0 +1,36 @@
+{
+  "schema": "kdm6.norm_actual_observation_manifest.v1",
+  "base_main": "230a932d5b8d2d8a68a0bf264e939c2bdd792292",
+  "source_sha256": {
+    "harness/batch_target_kernel.py": "11280e32c7c2ed402f1dbbce29a86ebf567c37d56f5f66d5a4140bfd13b5b12d",
+    "harness/tests/test_batch_target_kernel.py": "fca658f9c7b3aee27eaae7f540116408995ee8a18b5f44e7b3af4c2d5340f49e",
+    "harness/tests/test_norm_actual_observation_evidence.py": "7e1c7fdd2249ba09f09dc79e7dd2caa84f0a478f848064fd133e7aec2a92e215",
+    "harness/native_microphysics_obs.py": "8e3e98da62460e263c2448b5ae4cc8acf4af41bbf3466f5a16e199d27116c195",
+    "harness/verify_localized_ice_ad.py": "175087c794444e878a17628492fbc2efe4389853baad990fc1497f11dfaa2d12",
+    "harness/native_number_boundary.py": "c7c230f17e537532851246c4237ecfba8f319d871a952ef1a657cef023c6f25f",
+    "harness/native_number_qualification.py": "8a0b842a31157d89e1a082b1203dbc2ffff3bc5f904a7406c918945ba5e8be23",
+    "oracle/kdm6/native_prep.py": "b5386603f0cb7f021b7d4c46493bfc77599fd2dcea49d5a67e845904b9b95ed5",
+    "oracle/kdm6/obs/native_profile_builder.py": "480018c36078aaf6952ca5d2e2667f61b563a221a1dc1e3a42290f655680b58e",
+    "oracle/kdm6/obs/native_cloud_profile.py": "2aeb687fed9f660818d76f98d1f8588e2cc21c9d20a7e471ff166a999a5d202c",
+    "oracle/kdm6/obs/rttov_obs_operator.py": "40e4cdd9708ab0315c1be5851d65ec5961ac8d6a74a987c98750c688a92a438d",
+    "docs/NORM_ACTUAL_OBSERVATION_COUPLING.md": "9235fece68786a06ba92e972934d0527b5a80b6624b6d4623f6aaee9743511f3"
+  },
+  "artifact_sha256": {
+    "harness/evidence/norm_actual_observation_2026-10-24/REPORT.md": "e4590867eef3027efeb1d85686436601d19d5f3a4367aa2b766fa8e3a21b67cc",
+    "harness/evidence/norm_actual_observation_2026-10-24/execution_sources/exploratory_fd.py.txt": "4a197540a7a610e2654f54694beae414783bc584316916fab8eb8291d6d4baf0",
+    "harness/evidence/norm_actual_observation_2026-10-24/execution_sources/feasibility.py.txt": "36f21fe41f36efc5b969e4882e5c727ec30b28c615b6ea3a06285b260809101e",
+    "harness/evidence/norm_actual_observation_2026-10-24/execution_sources/final_coupling.py.txt": "20a5f0aa3294a37023c177f26194b8f575994872c52481b71e8ad8c0cdd946e8",
+    "harness/evidence/norm_actual_observation_2026-10-24/native13188_cost.json": "be46f3350c5c82c781eaea8c93ff75dd7df7f6de3ee35a46d855c6fc684c4712",
+    "harness/evidence/norm_actual_observation_2026-10-24/number_qualification.json": "7d9c18c502bb9c0e2c6b7b1a7f10ba2ba9f90051b294a1390fb6625f7c3206a4",
+    "harness/evidence/norm_actual_observation_2026-10-24/prepared.json": "bdf1862e7b117d680445159950f5a8fe4a3270de6e4a34d7ea8b6dfc9688c088",
+    "harness/evidence/norm_actual_observation_2026-10-24/pressure_contribution.json": "63271a4429b4586f0b38b7e530cd451db636c9bb47038c755c0a864ea33c9efb",
+    "harness/evidence/norm_actual_observation_2026-10-24/rejected11376.json": "c5deda5fa90c35e49340f5b2ffd9260d99e7408068937da98950c507bdb70b03",
+    "harness/evidence/norm_actual_observation_2026-10-24/rejected11376_rttov.log": "33476fd39e4ca360011ef6ba31508404eb76ecc6f5fd792c9644b4a718dd9421",
+    "harness/evidence/norm_actual_observation_2026-10-24/results.json": "b8f5a87438cc4a72d8948b63bd3d4493d7546996018d70cafd1067acafd3aedf",
+    "harness/evidence/norm_actual_observation_2026-10-24/validation.json": "0ffa2fd8034e3911704f8de8c41be6cb5fce664e760e21731006715bb5b92ce1",
+    "harness/evidence/norm_actual_observation_2026-10-24/execution_sources/executed_batch_target_kernel.py.txt": "7a6b2a61851fff37853c2060274f562a45fc3bf822851951596f332f15e71a28"
+  },
+  "final_controller_sha256": "20a5f0aa3294a37023c177f26194b8f575994872c52481b71e8ad8c0cdd946e8",
+  "original_model_inputs_altered": false,
+  "source_scope": "Existing algorithms plus selected-column full-batch adapter; actual RTTOV run, bounded native T/Q controls, derived number coordinate, explicit surface/time assumptions"
+}

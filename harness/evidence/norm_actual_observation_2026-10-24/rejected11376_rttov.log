@@ -1,0 +1,20 @@
+Note: The following floating-point exceptions are signalling: IEEE_UNDERFLOW_FLAG
+ 2026/10/24  10:50:15  rttov_check_reg_limits.F90
+     Input water vapour profile exceeds upper coef limit (profile number =        1)
+ 2026/10/24  10:50:15  Limit         =     7.6890
+ 2026/10/24  10:50:15  Layer p (hPa) =    61.4771
+ 2026/10/24  10:50:15  Value         =     7.7329
+Profile     1, channel     1
+Gas optical depth regression limits exceeded
+Profile     1, channel     2
+Gas optical depth regression limits exceeded
+Profile     1, channel     3
+Gas optical depth regression limits exceeded
+Profile     1, channel     4
+Gas optical depth regression limits exceeded
+Profile     1, channel     5
+Gas optical depth regression limits exceeded
+Profile     1, channel     6
+Gas optical depth regression limits exceeded
+Profile     1, channel     7
+Gas optical depth regression limits exceeded

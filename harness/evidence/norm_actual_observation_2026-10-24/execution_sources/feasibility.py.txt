@@ -1,0 +1,92 @@
+"""Native selected-column observation-cost baseline over a preserved B512 map.
+No host step or optimization. Scene navigation/surface residual assumptions
+remain explicit. Batch request is the pinned input trace artifact; no native
+MP_INPUT record is claimed for this target.
+"""
+from pathlib import Path
+import json,hashlib,shutil,os,numpy as np,netCDF4,torch
+from harness.batch_target_kernel import BatchTargetKernel
+from harness.verify_localized_ice_ad import BatchKernel
+from harness.verify_native_prep_ad import Prep,pack_state
+from harness.verify_native_finish_ad import KernelFinish,_api as finish_api
+from harness.native_microphysics_obs import MicrophysicsObservationState
+from harness.native_number_boundary import NativeDryNumberKernel
+from harness.native_number_qualification import make_kernel_coordinate_receipt,apply_receipt
+from harness.verify_native_obs_ad import load_snapshot,PROFILE_KEYS,CLOUD_KEYS,CHANNELS
+from harness.verify_microphysics_obs_ad import observation_arrays
+from oracle.kdm6.obs import native_cloud_profile as cloud_api,native_profile_builder as profile_api
+from oracle.kdm6.obs.rttov_case_writer import make_live_run_k,_resolve_coef_path
+from oracle.kdm6.obs.rttov_input_builder import RttovInputConfig
+from oracle.kdm6.obs.rttov_obs_operator import RttovObsOp
+from oracle.kdm6.obs.obs_loss import compute_obs_loss
+from oracle.kdm6.obs.model_profile_builder import qv_to_q_ppmv_moist
+
+ROOT=Path(__file__).resolve().parent
+REPO=Path('/private/tmp/KDM6AD-norm-obs-coupling-20261024')
+SOURCE=Path('/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_two_step_20261020/TWO_STEP_SAVED_DA/calls/live_yws3nddy')
+CHECKPOINT=SOURCE/'wrfrst_d01_2025-07-19_00:00:40';NML=SOURCE/'namelist.output'
+OBS=Path('/Users/yhlee/KDM6AD-k/host/research_evidence/ko7_model_domain_20261014/INPUTS.npz')
+AUDIT=Path('/Users/yhlee/KDM6AD-k/host/research_evidence/ko7_first_analysis_20261014/OBSERVATION_TIME_AUDIT.json')
+TEMPLATE=Path('/Users/yhlee/KDM6AD-k/host/research_evidence/postcleanup_smoke_20261015_2241/ko7_one_column/temporary/worker-84479/cases/column_04835/probe/w0_0_64d9cl5d/case')
+LIB=Path('/Users/yhlee/KDM6AD-k/host/research_evidence/localized_ice_stage_20261024_c2f9214a/ad_build/libkdm6_ice_factorial_ad.2.0.0.dylib')
+PACKETS=Path('/Users/yhlee/KDM6AD-k/host/research_evidence/mp137_ice_factorial_20261023/domain_preparation_fp64_final')
+def sha(p):return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+def save(p,v):
+ with p.open('x')as f:json.dump(v,f,indent=2,allow_nan=False);f.write('\n')
+if os.environ.get('KDM6_ICE_FACTORIAL_MODE')!='norm_actual':raise ValueError('norm_actual process required')
+torch.set_num_threads(1)
+prep_json=REPO/'harness/evidence/native_prep_ad_2026-10-21/native39_prep_ad.json'
+finish_json=REPO/'harness/evidence/applied_finish_ad_2026-10-21/native39_finish_ad.json'
+prep_config=json.loads(prep_json.read_text())['configuration'];finish_ref=json.loads(finish_json.read_text());manifest=json.loads((PACKETS/'manifest.json').read_text())
+pins={str(p):sha(p)for p in [__file__,CHECKPOINT,NML,OBS,AUDIT,LIB,prep_json,finish_json,PACKETS/'manifest.json',_resolve_coef_path(TEMPLATE)]}
+for name in ['harness/batch_target_kernel.py','harness/verify_localized_ice_ad.py','harness/native_microphysics_obs.py','harness/native_number_boundary.py','harness/native_number_qualification.py']:
+ pins[str(REPO/name)]=sha(REPO/name)
+save(ROOT/'prepared.json',{'source_sha256':pins,'mode':'norm_actual','native_targets':[[113,76],[131,88]],'scope':'two actual spatially matched KO cost baselines; no FD certificate, host/DA or forecast run','B':512,'L':39,'number_coordinate':'derived selected-column dry number; original host basis unknown','surface_assumptions':'native checkpoint TSK/T2/Q2/U10/V10+wind rotation/land/snow, fixed salinity35/foam0/FASTEM and fetch0; fixture spectral emissivity/reference gases fixed; source navigation helper not independently validated, pixelUTC unknown'})
+results=[]
+for i,j in [(113,76),(131,88)]:
+ flat=(j-1)*234+i-1;chunk,local=divmod(flat,512);work=ROOT/f'column_{flat:05d}';work.mkdir(exist_ok=False)
+ entry=manifest['chunks'][chunk];path=PACKETS/entry['path']
+ if sha(path)!=entry['sha256']:raise ValueError('packet changed')
+ with np.load(path,allow_pickle=False)as z:S=z['state'].copy();F=z['forcing'].copy();land=z['xland'].copy()
+ with netCDF4.Dataset(CHECKPOINT)as ds:
+  ds.set_auto_maskandscale(False)
+  def c(name):return np.asarray(ds.variables[name][0,:,j-1,i-1],dtype=np.float32).astype(np.float64)
+  def s(name):return float(np.float32(ds.variables[name][0,j-1,i-1]))
+  geometry={'phb':c('PHB')}
+  for key in ['C3H','C4H','C3F','C4F']:geometry[key.lower()]=np.asarray(ds.variables[key][0],dtype=np.float32).astype(np.float64)
+  thm,qv,ph=c('THM_2'),c('QVAPOR'),c('PH_2');mu=float(np.float32(np.float32(s('MUB'))+np.float32(s('MU_2'))))
+  surf_native={key:s(key)for key in ['TSK','T2','Q2','U10','V10','SINALPHA','COSALPHA','XLAND','SNOWC','SEAICE','HGT','XLAT','XLONG']}
+ prep=Prep(39,geometry,prep_config);x=pack_state((thm,qv,np.array(mu),ph));g=prep.forward(x)
+ old=np.concatenate((S[0,local][None],F[:,local]),axis=0)
+ if not np.allclose(g,old,rtol=2e-13,atol=1e-13):raise ValueError('scalar prep does not match endpoint packet contract')
+ volume_state=np.ascontiguousarray(np.vstack((g[0],qv,S[2:,local])));forcing=np.ascontiguousarray(g[1:]);request_trace=Path('/Users/yhlee/KDM6AD-k/host/research_evidence/localized_ice_stage_20261024_c2f9214a')/f'norm_actual_chunk{chunk:03d}'/'request.bin'
+ bindings={'trace':sha(request_trace),'namelist':sha(NML),'checkpoint':sha(CHECKPOINT),'base_native_X_sha256':hashlib.sha256(x.tobytes()).hexdigest(),'step':2,'i':i,'j':j,'levels':39,'source_artifact_kind':'captured original B512 binary request; not a target native MP_INPUT record','source_chunk_sha256':entry['sha256'],'target_local_row':local,'scalar_prep_maxabs_difference_from_packet':float(abs(g-old).max())}
+ receipt=make_kernel_coordinate_receipt(volume_state,forcing,source_id=f'B512_endpoint_request_selected_{i}_{j}',source_sha256=bindings['trace'],source_bindings=bindings)
+ save(work/'number_receipt.json',receipt);dry,admission=apply_receipt(receipt,volume_state,forcing,bindings,sha(work/'number_receipt.json'))
+ raw=BatchKernel(LIB,land,39);selected=BatchTargetKernel(raw,S,F,local,dt=20.);kernel=NativeDryNumberKernel(selected,admission=admission)
+ api=finish_api();finish=KernelFinish(kernel,api.FinishConfig(**finish_ref['configuration']),api.ZeroOutConfig(**finish_ref['zero_out']));adapter=MicrophysicsObservationState(prep,finish)
+ rest=np.ascontiguousarray(dry[2:]);y,rec=adapter.forward(x,rest,record=True)
+ try:
+  snap=load_snapshot(CHECKPOINT,OBS,i=i,j=j,expected_time='2025-07-19_00:00:40',nominal_time='2025-07-19_00:00:00',time_audit=AUDIT,namelist=NML,all_sky=True,levels=39)
+  geom=profile_api.FrozenNativeProfileGeometry(**{key:torch.from_numpy(v.copy())for key,v in snap.geometry.items()});cfg_native=profile_api.NativeObservationConfig(**snap.constants);reference=profile_api.UpperReferenceProfile(**{key:torch.from_numpy(v.copy())for key,v in snap.reference.items()},fixed_upper_count=27)
+  fields=tuple(torch.from_numpy(v.copy()).requires_grad_()for v in observation_arrays(y,39))
+  def project(*values):return cloud_api.native_to_rttov_cloud_profile(profile_api.NativeObservationState(*values[:4]),cloud_api.NativeCloudState(*values[5:]),geom,cfg_native,reference,rho_d=values[4],xland=snap.xland,ncmin_land=snap.ncmin[0],ncmin_sea=snap.ncmin[1])
+  profile=project(*fields)
+  with np.load(OBS,allow_pickle=False)as z:
+   ge={'zenangle':float(z['ami_geometry_zenangle_deg'].reshape(-1)[flat]),'azangle':float(z['ami_geometry_azangle_deg'].reshape(-1)[flat]),'sunzenangle':0.,'sunazangle':0.,'latitude':surf_native['XLAT'],'longitude':surf_native['XLONG'],'elevation':surf_native['HGT']/1000.}
+  Q2=float(qv_to_q_ppmv_moist(torch.tensor(surf_native['Q2'],dtype=torch.float64),gas_units=2,qv_convention='mixing_ratio_kgkg_dry'))
+  ue=surf_native['U10']*surf_native['COSALPHA']-surf_native['V10']*surf_native['SINALPHA'];vn=surf_native['V10']*surf_native['COSALPHA']+surf_native['U10']*surf_native['SINALPHA']
+  surf={'skin':{'surftype':2 if surf_native['SEAICE']>.5 else(1 if surf_native['XLAND']==2 else 0),'watertype':1,'t':surf_native['TSK'],'salinity':35.,'foam_fraction':0.,'snow_fraction':surf_native['SNOWC'],'fastem':[3.,5.,15.,.1,.3]},'near_surface':{'t2m':surf_native['T2'],'q2m':Q2,'wind_u10m':ue,'wind_v10m':vn,'wind_fetch':0.}}
+  if 'solar' not in (TEMPLATE/'out/rttov_test.txt').read_text().lower():raise ValueError('missing thermal solar configuration')
+  trial_template=work/'template';shutil.copytree(TEMPLATE,trial_template)
+  actual=make_live_run_k(work/'trial',fixture_case_dir=trial_template,ami_kma_bt=True,timeout=180)
+  rcfg=RttovInputConfig(coef_id=sha(_resolve_coef_path(TEMPLATE)),channels=CHANNELS,pressure_gradients=True,geometry=ge,surface=surf)
+  vals=(profile.t_lay,profile.q_lay,profile.p_lay,profile.p_half,profile.clw,profile.ciw,profile.deff_liq,profile.deff_ice)
+  bt,quality=RttovObsOp.apply(actual,rcfg,*vals,profile.cfrac)
+  mask=torch.from_numpy(snap.obs_mask)*(quality==0).to(torch.float64);cost=compute_obs_loss(bt,{'bt':torch.from_numpy(snap.observation)},mask,1.,delta=1.)
+  grads=torch.autograd.grad(cost,fields);gy=np.concatenate([v.detach().numpy().reshape(-1)for v in grads]);gx,gr=adapter.vjp(rec,gy)
+  result={'i':i,'j':j,'flat_index':flat,'chunk':chunk,'local_row':local,'B':512,'L':39,'cost':float(cost.detach()),'BT_KMA':bt.detach().numpy().tolist(),'observation_BT_KMA':snap.observation.tolist(),'quality':quality.detach().numpy().tolist(),'mask':mask.numpy().tolist(),'geometry':ge,'native_surface_raw':surf_native,'surface':surf,'prep_scalar_vs_packet_maxabs':float(abs(g-old).max()),'prep_X':x.tolist(),'number_receipt_sha256':sha(work/'number_receipt.json'),'native_X_cost_gradient':gx.tolist(),'rest_cost_gradient':gr.tolist(),'scope':'baseline value+adjoint only, no finite-difference certificate; background other511 fixed, native prep/finish/EOS/profile/RTTOV linked','RTTOV_calls':1,'KDM_forward_calls':raw.forward_calls}
+  save(work/'baseline.json',result);results.append(result);print(json.dumps({'target':[i,j],'cost':result['cost'],'quality':result['quality']}),flush=True)
+ finally:adapter.close(rec)
+if any(sha(p)!=h for p,h in pins.items()):raise RuntimeError('pinned inputs changed')
+save(ROOT/'pilot_results.json',{'source_sha256':pins,'results':results,'RTTOV_calls':len(results),'scope':'baseline feasibility, not FD verification or native assimilation/forecast'})
