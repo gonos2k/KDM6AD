@@ -1,0 +1,31 @@
+"""Within-variant trace off/on value and first-order product comparison."""
+from pathlib import Path
+import argparse,os,json,hashlib,numpy as np
+from harness.verify_localized_ice_ad import BatchKernel,BatchFinish,directions,SCALES,_api
+from harness.ice_factorial_batch import unpack_response,IN_HEADER,TRACE_ENV_VARS
+p=argparse.ArgumentParser();p.add_argument('--mode',required=True);p.add_argument('--chunk',type=int,required=True);a=p.parse_args()
+root=Path(__file__).resolve().parent;case=root/f'{a.mode}_chunk{a.chunk:03d}';outdir=root/f'noninterference_{a.mode}_{a.chunk:03d}';outdir.mkdir(exist_ok=False)
+if os.environ.get('KDM6_ICE_FACTORIAL_MODE')!=a.mode:raise ValueError('fresh mode process required')
+r=unpack_response((case/'response.bin').read_bytes());s,f=r['state_in'],r['forcing_in'];target=254 if a.chunk==34 else 8
+raw=(case/'request.bin').read_bytes();land=np.frombuffer(raw,dtype='<f8',offset=IN_HEADER.size+16*512*39*8,count=512).copy();library=root/'ad_build/libkdm6_ice_factorial_ad.2.0.0.dylib'
+k=BatchKernel(library,land,39);ref=json.loads(Path('/private/tmp/KDM6AD-localized-ice-20261024/harness/evidence/applied_finish_ad_2026-10-21/native39_finish_ad.json').read_text());op=BatchFinish(_api().FinishConfig(**ref['configuration']),_api().ZeroOutConfig(**ref['zero_out']))
+ds,df=directions(s,f,target,'entry_interior_pairs')['mixed'];products={}
+for label in ['off','on']:
+ for key in TRACE_ENV_VARS:os.environ.pop(key,None)
+ if label=='on':os.environ['KDM6_ICE_BOUNDARY_TRACE']=str(outdir/'ice.tsv')
+ y,h=k.forward(s,f,record=True)
+ try:
+  if not np.array_equal(y.view('u8'),r['state_out'].view('u8')):raise RuntimeError('changed forward')
+  combined=op.value(s,y);u=np.zeros_like(combined);u[:,target]=np.sin(.23*(np.arange(17*39).reshape(17,39)+1))/SCALES[:,0]
+  old,seed=op.vjp(s,y,u);gs,gf=k.vjp(h,seed);gs[:3]+=old
+  tangent=op.jvp(s,y,ds,k.jvp(h,ds,df))
+  arrays={'raw_state':y,'combined':combined,'jvp':tangent,'state_vjp':gs,'forcing_vjp':gf,'ds':ds,'df':df,'u':u}
+  if any(not np.isfinite(v).all() for v in arrays.values()):raise RuntimeError('nonfinite product')
+  products[label]=arrays
+  with(outdir/f'{label}.npz').open('xb')as stream:np.savez_compressed(stream,**arrays)
+ finally:k.close(h)
+checks={name:{'values':arr.size,'raw_bitwise_equal':bool(np.array_equal(arr.view('u8'),products['on'][name].view('u8'))),'off_raw_sha256':hashlib.sha256(arr.tobytes()).hexdigest(),'on_raw_sha256':hashlib.sha256(products['on'][name].tobytes()).hexdigest()} for name,arr in products['off'].items()}
+if not all(x['raw_bitwise_equal'] for x in checks.values()):raise RuntimeError('trace changed first-order product')
+result={'mode':a.mode,'chunk':a.chunk,'B':512,'L':39,'direction':'entry_interior_pairs mixed only; not full Jacobian certification','KDM_forward_calls':k.forward_calls,'controller_sha256':hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),'library_sha256':hashlib.sha256(library.read_bytes()).hexdigest(),'request_sha256':hashlib.sha256((case/'request.bin').read_bytes()).hexdigest(),'response_sha256':hashlib.sha256((case/'response.bin').read_bytes()).hexdigest(),'products':checks,'npz_sha256':{n:hashlib.sha256((outdir/f'{n}.npz').read_bytes()).hexdigest() for n in ['off','on']}}
+with(outdir/'receipt.json').open('x')as stream:json.dump(result,stream,indent=2)
+print(json.dumps({'mode':a.mode,'chunk':a.chunk,'KDM_forward_calls':k.forward_calls,'all_product_bits_equal':True}),flush=True)

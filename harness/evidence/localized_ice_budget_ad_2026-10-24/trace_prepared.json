@@ -1,0 +1,18 @@
+{
+  "controller_sha256": "8599fbdc4eb6b6f338575f90d746116d50e3bee7d542be438b183650331f7689",
+  "calls_planned": 4,
+  "modes": [
+    "norm_actual",
+    "raw_actual"
+  ],
+  "indices": [
+    34,
+    40
+  ],
+  "B": 512,
+  "L": 39,
+  "dt": 20,
+  "decomposition": "unchanged original B512 blocks, including all neighbor columns",
+  "scope": "value-only trace using exact frozen executable/request; zero native host/DA/RTTOV steps",
+  "no_new_physics_map": true
+}
